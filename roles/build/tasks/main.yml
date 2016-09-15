@@ -1,0 +1,24 @@
+---
+- name: Create the host_vars directory
+  file: path={{ playbook_dir }}/host_vars/ state=directory
+
+- include: vsd_build_helper.yml
+  when: myvsds is defined
+
+- include: vsc_build_helper.yml
+  when: myvscs is defined
+
+- include: vstat_build_helper.yml
+  when: myvstats is defined
+
+- include: vrs_build_helper.yml
+  when: myvrss is defined
+
+- name: Create hosts file
+  template: src=hosts.j2 dest="{{ playbook_dir }}/hosts" backup=no
+
+- name: Create the group_vars directory
+  file: path={{ playbook_dir }}/group_vars/ state=directory
+
+- name: Create group_vars/all file
+  template: src=group_vars.all.j2 dest="{{ playbook_dir }}/group_vars/all" backup=no

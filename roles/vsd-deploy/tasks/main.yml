@@ -1,0 +1,244 @@
+---
+- name: Query {{ target_server }} facts
+  action: setup
+  delegate_to: "{{ target_server }}"
+
+- name: Include OS-specific variables.
+  include_vars: "{{ ansible_os_family }}.yml"
+
+- name: List the Virtual Machines running on {{ target_server }}
+  virt: command=list_vms
+  register: virt_vms
+  delegate_to: "{{ target_server }}"
+  remote_user: root
+
+- name: Check if {{ inventory_hostname }} is already running on {{ target_server }}
+  fail: msg="The VM {{ inventory_hostname }} is already defined on this target_server."
+  when: inventory_hostname in virt_vms.list_vms
+
+- name: Create libvirt image directory on {{ target_server }}
+  file: path={{ images_path }}/{{ inventory_hostname }}
+        state=directory
+        owner={{ libvirt.user }}
+        group={{ libvirt.group }}
+  delegate_to: "{{ target_server }}"
+  remote_user: root
+
+- name: Copy the VSD qcow image to virt images directory on {{ target_server }}
+  copy: src={{ vsd_qcow2_path }}/{{ vsd_qcow2_file_name }}
+        dest={{ images_path }}/{{ inventory_hostname }}
+        owner={{ libvirt.user }}
+        group={{ libvirt.group }}
+  delegate_to: "{{ target_server }}"
+  remote_user: root
+
+- name: Create a temporary copy of the network script for eth0 on {{ target_server }}
+  template: src=ifcfg-eth0.j2 backup=no dest={{ images_path }}/{{ inventory_hostname }}/ifcfg-eth0
+  delegate_to: "{{ target_server }}"
+  remote_user: root
+
+- name: Copy eth0 network script file to the VSD image on {{ target_server }}
+  command: guestfish --rw -a {{ images_path }}/{{ inventory_hostname }}/{{ vsd_qcow2_file_name }} -m /dev/sda2 copy-in {{ images_path }}/{{ inventory_hostname }}/ifcfg-eth0 /etc/sysconfig/network-scripts/
+  delegate_to: "{{ target_server }}"
+  remote_user: root
+
+- name: Remove temporary copy of eth0 network script
+  file: path={{ images_path }}/{{ inventory_hostname }}/ifcfg-eth0 state=absent
+  delegate_to: "{{ target_server }}"
+  remote_user: root
+
+- name: Set the owner and group on the eth0 network script file in the VSD image
+  command: guestfish --rw -a {{ images_path }}/{{ inventory_hostname }}/{{ vsd_qcow2_file_name }} -m /dev/sda2 chown 0 0 /etc/sysconfig/network-scripts/ifcfg-eth0
+  delegate_to: "{{ target_server }}"
+  remote_user: root
+
+- name: Create a temporary copy of the syscfg network file on {{ target_server }}
+  template: src=network.j2 backup=no dest={{ images_path }}/{{ inventory_hostname }}/network
+  delegate_to: "{{ target_server }}"
+  remote_user: root
+
+- name: Copy network file to the VSD image
+  command: guestfish --rw -a {{ images_path }}/{{ inventory_hostname }}/{{ vsd_qcow2_file_name }} -m /dev/sda2 copy-in {{ images_path }}/{{ inventory_hostname }}/network /etc/sysconfig/
+  delegate_to: "{{ target_server }}"
+  remote_user: root
+
+- name: Remove temporary copy of network file
+  file: path={{ images_path }}/{{ inventory_hostname }}/network state=absent
+  delegate_to: "{{ target_server }}"
+  remote_user: root
+
+- name: Set the owner and group for the network hostname file on the VSD image
+  command: guestfish --rw -a {{ images_path }}/{{ inventory_hostname }}/{{ vsd_qcow2_file_name }} -m /dev/sda2 chown 0 0 /etc/sysconfig/network
+  delegate_to: "{{ target_server }}"
+  remote_user: root
+
+- name: Create the directory /root/.ssh for authorized_keys
+  command: guestfish --rw -a {{ images_path }}/{{ inventory_hostname }}/{{ vsd_qcow2_file_name }} -m /dev/sda2 mkdir-mode /root/.ssh 0700
+  delegate_to: "{{ target_server }}"
+  remote_user: root
+
+- name: Set the owner and group for the /root/.ssh directory on the VSD image
+  command: guestfish --rw -a {{ images_path }}/{{ inventory_hostname }}/{{ vsd_qcow2_file_name }} -m /dev/sda2 chown 0 0 /root/.ssh
+  delegate_to: "{{ target_server }}"
+  remote_user: root
+
+- name: Create a temporary copy of the authorized_keys file
+  template: src=authorized_keys.j2 backup=no dest={{ images_path }}/{{ inventory_hostname }}/authorized_keys
+  delegate_to: "{{ target_server }}"
+  remote_user: root
+
+- name: Copy authorized_keys file to the VSD image
+  command: guestfish --rw -a {{ images_path }}/{{ inventory_hostname }}/{{ vsd_qcow2_file_name }} -m /dev/sda2 copy-in {{ images_path }}/{{ inventory_hostname }}/authorized_keys /root/.ssh/
+  delegate_to: "{{ target_server }}"
+  remote_user: root
+
+- name: Remove temporary copy of authorized_keys file
+  file: path={{ images_path }}/{{ inventory_hostname }}/authorized_keys state=absent
+  delegate_to: "{{ target_server }}"
+  remote_user: root
+
+- name: Set the owner and group for the authorized_keys file on the VSD image
+  command: guestfish --rw -a {{ images_path }}/{{ inventory_hostname }}/{{ vsd_qcow2_file_name }} -m /dev/sda2 chown 0 0 /root/.ssh/authorized_keys
+  delegate_to: "{{ target_server }}"
+  remote_user: root
+
+- name: Set the mode for the authorized_keys file on the VSD image
+  command: guestfish --rw -a {{ images_path }}/{{ inventory_hostname }}/{{ vsd_qcow2_file_name }} -m /dev/sda2 chmod 0640 /root/.ssh/authorized_keys
+  delegate_to: "{{ target_server }}"
+  remote_user: root
+
+- name: "Define new VSD VM"
+  virt: name="{{ inventory_hostname }}"
+        command=define
+        xml="{{ lookup('template', 'vsd.xml.j2') }}"
+        uri=qemu:///system
+  delegate_to: "{{ target_server }}"
+  remote_user: root
+
+- name: "Run VSD VM"
+  virt: name="{{ inventory_hostname }}"
+        state=running
+        uri=qemu:///system
+  delegate_to: "{{ target_server }}"
+  remote_user: root
+
+- name: Wait for VSD ssh to be ready
+  local_action:
+    module: wait_for
+    port: "22"
+    host: "{{ interfaces.mgmt.ip }}"
+    search_regex: OpenSSH
+    delay: 1
+
+- name: Update /etc/hosts file on {{ inventory_hostname }}
+  blockinfile:
+    dest: /etc/hosts
+    block: |
+      {% for host in groups['vsds']  %}
+      {{ hostvars[host]['interfaces']['mgmt']['ip'] }}    {{ host }}
+      {% endfor %}
+  remote_user: root
+
+- block:
+  - name: Generate SSH keys 
+    shell: ssh-keygen -b 2048 -t rsa -f /root/.ssh/id_rsa -q -N ""
+    args:
+      creates: /root/.ssh/id_rsa
+    remote_user: root
+
+  - name: Get generated SSH keys 
+    shell: cat ~/.ssh/id_rsa.pub
+    register: ssh_key
+    remote_user: root
+
+  - name: Add SSH keys to authorized_keys file
+    shell: "echo {{ssh_key.stdout}} >> /root/.ssh/authorized_keys"
+    delegate_to: "{{ item }}"
+    with_items: "{{ groups['vsds'] }}"
+    remote_user: root
+  when: vsd_standalone == False
+
+- name: Delete the localtime file on {{ inventory_hostname }}
+  file:
+    path: /etc/localtime
+    state: absent
+  remote_user: root
+
+- name: Create the localtime symlink on {{ inventory_hostname }}
+  file:
+    src: /usr/share/zoneinfo/US/Pacific
+    dest: /etc/localtime
+    state: link
+  remote_user: root
+
+- name: Copy files to pin OS version on {{ inventory_hostname }}
+  copy:
+    src: ./roles/vsd-deploy/files/
+    dest: /etc/yum.repos.d/
+  remote_user: root
+
+- name: Execute a yum update on {{ inventory_hostname }}
+  yum:
+    name: '*'
+    state: latest
+  remote_user: root
+
+- name: Remove old NTP servers on {{ inventory_hostname }}
+  lineinfile:
+    dest: /etc/ntp.conf
+    regexp: "^server"
+    state: absent
+  remote_user: root
+
+- name: Configure NTP servers on {{ inventory_hostname }}
+  lineinfile:
+    dest: /etc/ntp.conf
+    line: "server {{ item }}"
+  with_items: "{{ ntp_server_list }}"
+  remote_user: root
+
+- name: Stop the ntpd service if running
+  service:
+    name: ntpd
+    state: stopped
+  remote_user: root
+
+- name: Manually sync time with ntp server
+  command: ntpdate -u "{{ntp_server_list[0]}}"
+  remote_user: root
+
+- name: Start ntpd on {{ inventory_hostname }}
+  service:
+    name: ntpd
+    state: started
+  remote_user: root
+
+- name: check ntp sync state
+  shell: ntpstat | awk 'NR==1{print $1}'
+  register: sync_status
+  until: sync_status.stdout == "synchronised"
+  retries: 29
+  delay: 10
+  remote_user: root
+
+- name: Install VSD software on standalone node
+  command: /opt/vsd/vsd-install.sh -t s -y
+  when: vsd_standalone == True
+  remote_user: root
+
+- block:
+  - name: Install VSD software on HA node1 {{groups['vsds'][0]}}
+    command: "{{ vsd_ha_node1 }}"
+    when: inventory_hostname == groups['vsds'][0]
+    remote_user: root
+
+  - name: Install VSD software on HA node2 {{groups['vsds'][1]}}
+    command: "{{ vsd_ha_node2 }}"
+    when: inventory_hostname == groups['vsds'][1]
+    remote_user: root
+
+  - name: Install VSD software on HA node3 {{groups['vsds'][2]}}
+    command: "{{ vsd_ha_node3 }}"
+    when: inventory_hostname == groups['vsds'][2]
+    remote_user: root
+  when: vsd_standalone == False
