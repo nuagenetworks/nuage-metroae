@@ -34,6 +34,12 @@ The short version of the instructions are:
 
 Note that `install_everything.yml` can be edited or individual roles exec
 
+## Branches
+
+The latest sane code is found in the `master` branch. The `dev` branch is for ongoing development. The stability of the `dev` branch is not guaranteed.
+
+If you want to contribute back, you must create your own branch or fork, oush your changes to that, and create a pull request to the `dev` branch. All pull requests against the `master` branch will be rejected. Sorry. All pull requests should be for fully-tested code changes (where fully-tested means it worked for both Ubuntu and CentOS, for clustered and stand-alone, etc.).
+
 ## Prerequisites
 
 The following restrictions and conditions apply prior to executing the playbooks:
