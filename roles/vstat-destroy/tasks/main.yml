@@ -1,15 +1,7 @@
 ---
-- name: List the Virtual Machines on {{ target_server }}
-  virt: command=list_vms
-  register: virt_vms
-  delegate_to: "{{ target_server }}"
-  remote_user: root
-
-- include: vstat_destroy_helper.yml
-  when: inventory_hostname in virt_vms.list_vms
-
-- name: Destroy the images directory
-  file: path={{ images_path }}/{{ inventory_hostname }}
-        state=absent
-  delegate_to: "{{ target_server }}"
-  remote_user: root
+- include: kvm.yml
+  when: "{{target_server_type}} == "kvm" 
+  tags:
+    - vstat
+    - vstat-destroy
+    - kvm
