@@ -7,7 +7,7 @@
 1. VSD HA/cluster support, limited to exactly 3 VSD nodes
 1. A new pre-deploy build process to simplify variable settings
 
-Feedback and bug reports should be provided to the Nuage CASO team via** *[email to Brian Castelli](mailto://brian.castelli@nokia.com)* **or by creating an issue at the internal** *[gitlab site](http://gitlab.us.alcatel-lucent.com/caso-metro/metro-express/issues)*
+Feedback and bug reports should be provided to the Nuage CASO team via email to *[Brian Castelli](mailto://brian.castelli@nokia.com)*.
 
 ## Overview
 
