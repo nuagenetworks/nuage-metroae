@@ -1,5 +1,24 @@
 ---
-- name: "[check-process] Get PID values"
+- name: "[check-processes] Read out PLATFORM variable from openvswitch config"
+  shell: grep "^PLATFORM=" /etc/default/openvswitch
+  register: platform
+  changed_when: false
+
+- name: Check if this is Openstack compute node with metadata package installed
+  stat: path="/etc/default/nuage-metadata-agent"
+  register: metadata_stat
+  ignore_errors: yes
+  changed_when: no
+
+- name: "[check-processes] Construct processes list based on PLATFORM variable setting"
+  set_fact:
+    processes: >
+        {{ nuage_processes +
+           (nuage_kvm_processes if 'kvm' in (platform.stdout|lower) else []) +
+           (nuage_docker_processes if 'lxc' in (platform.stdout|lower) else []) +
+           (nuage_os_processes if metadata_stat.stat.exists else []) }}
+
+- name: "[check-processes] Get PID values"
   shell: "cat /var/run/openvswitch/{{ item.name }}.pid"
   with_items: "{{ processes }}"
   register: pid
@@ -13,7 +32,7 @@
   changed_when: false
   failed_when: ps_result.rc != 0
 
-- name: "[nuage-processes] Check proper socket connection status for each process"
+- name: "[check-processes] Check proper socket connection status for each process"
   shell: netstat --all --program | grep "{{ pid.results[item[0]].stdout }}/" | grep {{ item[1].netstat_status }}
   with_indexed_items: "{{ processes }}"
   register: netstat_result

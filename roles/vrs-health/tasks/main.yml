@@ -7,59 +7,33 @@
   tags:
    - vrs
    - health
+   - processes
 
-
-- block:
-  - name: Check if openvswitch service is running (RedHat)
-    command: systemctl status openvswitch
-    ignore_errors: yes
-    changed_when: false
-    register: service_openvswitch_status
-  when: ansible_os_family  == "RedHat"
-  tags:
-    - vrs
-    - health
-
-- block:
-  - name: Check if openvswitch service is running (Ubuntu 14.04)
-    command: service nuage-openvswitch-switch status
-    ignore_errors: yes
-    changed_when: false
-    register: service_openvswitch_status
-  when: ansible_distribution == "Ubuntu" and ansible_distribution_version == "14.04" 
-  tags:
-    - vrs
-    - health
-
-
-- name: Report status of Openvswitch
-  fail:
-    msg: |
-      Service Openvswitch is not running.
-      Output:
-      {{ service_openvswitch_status.stdout }}
-      {{ service_openvswitch_status.stderr }}
-  when: service_openvswitch_status | failed
-  
-
-- include: ./roles/vrs-health/tasks/check_processes.yml processes={{nuage_kvm_processes}}
+- include: ./roles/vrs-health/tasks/check_ovs_service.yml
   static: no
   tags:
     - vrs
     - health
+    - ovs-service
+ 
+- include: ./roles/vrs-health/tasks/check_processes.yml 
+  static: no
+  tags:
+    - vrs
+    - health
+    - processes
 
 - include: "./roles/vrs-health/tasks/check_controller.yml"
   static: no
   tags:
     - vrs
     - health
+    - controller
   
 - include: "./roles/vrs-health/tasks/check_vport_resolution.yml"
   static: no
   tags:
     - vrs
     - health
-
-
-
+    - vport-resolution
 
