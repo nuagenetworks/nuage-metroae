@@ -1,0 +1,22 @@
+---
+- name: "[check-process] Get PID values"
+  shell: "cat /var/run/openvswitch/{{ item.name }}.pid"
+  with_items: "{{ processes }}"
+  register: pid
+  changed_when: false
+  failed_when: pid.rc != 0
+
+- name: "[check-processes] Check if processes are actually running agasint the PID"
+  shell: "ps -fp {{ pid.results[item[0]].stdout }}"
+  with_indexed_items: "{{ processes }}"
+  register: ps_result
+  changed_when: false
+  failed_when: ps_result.rc != 0
+
+- name: "[nuage-processes] Check proper socket connection status for each process"
+  shell: netstat --all --program | grep "{{ pid.results[item[0]].stdout }}/" | grep {{ item[1].netstat_status }}
+  with_indexed_items: "{{ processes }}"
+  register: netstat_result
+  changed_when: false
+  failed_when: netstat_result.rc != 0
+  when: item[1].netstat_status is defined and pid.results[item[0]].rc == 0

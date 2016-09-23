@@ -82,11 +82,11 @@ All playbooks, whether installation or destruction, must be executed using the `
 
 Each element to be deployed has up to 5 corresponding playbooks:
 
-* predeploy
-* deploy
-* postdeploy
-* destroy
-* health_checks
+* `predeploy` : prepares infrastructure with necessary packages, finishing up by making the element reachable.
+* `deploy` : installs and configures the element
+* `postdeploy` : 
+* `destroy` : removes the element from the infrastructure
+* `health` : checks health for a running element without assuming it was deployed with Metro.
 
 Every supported element must have at least a deploy playbook.
 
