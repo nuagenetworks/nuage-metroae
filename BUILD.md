@@ -139,8 +139,6 @@ For reference, here is a description of the contents of the `build.yml` file, wi
 #    data_bridge: "virbr1"
 #    # Destination directory for qcow2 images on the hypervisors.
 #    images_path: "/var/lib/libvirt/images/"
-#    # The public ssh key of the ansible user on the deployment host
-#    ansible_user_ssh_key: "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDha+H5IjOGGQ0VPo+WQm9uEDDkm6t5B56GQvivqUmK7QvWA8bYXSqmO4gp3zi6QZ558yHYWMrLS8ZGn93sDs68y24ROnaWJfj4dlp7mHsHVdP3yASeu9xW10p7WuEbriVoOjpX81+BsQwM6jiPzt+7VcbMrfL+Lo08aYW/XZxFe4ogk34AYo1t2eDmxROBk3aZ4hF4yvr0z/M92p4oDoU4FRFHYoAR5Kr8LQk9yGccGjmNFDSxhNZMkEHl0dmpb17xR7f9gbruBHe4NDFcfbCMHxC80uX1QKzj8mNC7dzTA/0CeaDa24pRYNabPHWmaijaQi6pFqPzIPKG48VfMzNn caso@cas-cs2-010"
 #    # NTP servers the VSC, VSD and VSTAT should sync to.
 #    # One or more ntp servers are required
 #    ntp_server_list:
