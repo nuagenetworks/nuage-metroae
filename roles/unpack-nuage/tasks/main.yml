@@ -1,0 +1,130 @@
+---
+
+- name: Ensure AWS CLI tools are present in case source is S3 link
+  pip: name=awscli
+  when: nuage_release_src_path | match("^s3\:\/\/")
+
+- name: Download directory in case source is S3 link
+  shell: "awscli s3 cp {{ nuage_binaries_source_path }} {{ temp-dir }}"
+# note that this requires "AWS_ACCESS_KEY_ID" and "AWS_SECRET_ACCESS_KEY" to be defined as envrionment variables
+  when: nuage_release_src_path | match("^s3\:\/\/")
+
+#################
+# VSD
+#################
+
+- name: Find name of VSD QCOW Archive
+  find: path="{{ nuage_release_src_path }}"  pattern="Nuage-VSD*QCOW*"
+  register: rc_vsd
+
+- name: Create directory to unpack VSD to
+  file: name="{{ nuage_unpacked_dest_path }}/vsd/" state=directory mode=0755
+  when: rc_vsd.matched > 0
+
+- name: Unpack VSD QCOW Archive
+  unarchive: src="{{ rc_vsd.files[0].path}}" dest="{{ nuage_unpacked_dest_path }}/vsd" list_files=yes
+  register: rc_vsd_archive_files
+  when: rc_vsd.matched > 0
+
+- name: Find name of VSD QCOW File
+  find: path="{{ nuage_unpacked_dest_path }}/vsd"  pattern="*.qcow2" recurse=yes
+  register: rc_vsd_file
+
+- name: Register VSD Qcow variables with proper path and image locations for use in other playbooks
+  set_fact:
+    vsd_qcow2_path: "{{ rc_vsc_file.files[0].path | dirname }}"
+    vsd_qcow2_file_name: "{{ rc_vsc_file.files[0].path | basename }}"
+  when: rc_vsd_file.matched > 0
+
+###################
+# Elastic
+###################
+
+- name: Find name of ElasticSearch QCOW Archive
+  find: path="{{ nuage_release_src_path }}"  pattern="Nuage-elastic-*"
+  register: rc_vstat
+
+- name: Create directory to unpack Elastic to
+  file: name="{{ nuage_unpacked_dest_path }}/elastic/" state=directory mode=0755
+  when: rc_vstat.matched > 0
+
+- name: Unpack Elastic QCOW Archive
+  unarchive: src="{{ rc_vstat.files[0].path}}" dest="{{ nuage_unpacked_dest_path }}/elastic" list_files=yes
+  register: rc_vstat_archive_files
+  when: rc_vstat.matched > 0
+
+- name: Find name of Elastic QCOW File
+  find: path="{{ nuage_unpacked_dest_path }}/elastic"  pattern="*.qcow2" recurse=yes
+  register: rc_vstat_file
+
+- name: Register VSTAT Qcow variables with proper path and image locations for use in other playbooks
+  set_fact:
+    vstat_qcow2_path: "{{ rc_vsc_file.files[0].path | dirname }}"
+    vstat_qcow2_file_name: "{{ rc_vsc_file.files[0].path | basename }}"
+  when: rc_vstat_file.matched > 0
+
+
+
+###################
+# VSC
+###################
+
+- name: Find name of VSC QCOW Archive
+  find: path="{{ nuage_release_src_path }}"  pattern="Nuage-VSC*"
+  register: rc_vsc
+
+- name: Create directory to unpack VSC to
+  file: name="{{ nuage_unpacked_dest_path }}/vsc/" state=directory mode=0755
+  when: rc_vsc.matched > 0
+
+- name: Unpack VSC QCOW Archive
+  unarchive: src="{{ rc_vsc.files[0].path}}" dest="{{ nuage_unpacked_dest_path }}/vsc/"  list_files=yes
+  register: rc_vsc_archive_files
+  when: rc_vsc.matched > 0
+
+- name: Find name of VSC QCOW File
+  find: path="{{ nuage_unpacked_dest_path }}/vsc"  pattern="vsc_singledisk.qcow2" recurse=yes
+  register: rc_vsc_file
+
+- name: Register VSC Qcow variables with proper path and image locations for use in other playbooks
+  set_fact:
+    vsc_qcow2_path: "{{ rc_vsc_file.files[0].path | dirname }}"
+    vsc_qcow2_file_name: "{{ rc_vsc_file.files[0].path | basename }}"    
+  when: rc_vsc_file.matched > 0
+
+
+
+################
+# VRS 
+################
+- name: Find name of VRS Archive
+  find: path="{{ nuage_release_src_path }}"  pattern="Nuage-VRS*{{ nuage_target_architecture}}*"
+  register: rc_vrs
+
+- name: Create directory to unpack VRS to
+  file: name="{{ nuage_unpacked_dest_path }}/vrs/" state=directory mode=0755
+  when: rc_vrs.matched > 0
+
+- name: Unpack VRS Archive
+  unarchive: src="{{ rc_vrs.files[0].path}}" dest="{{ nuage_unpacked_dest_path }}/vrs/"  list_files=yes
+  register: rc_vrs_archive_files
+  when: rc_vrs.matched > 0
+
+- name: Find name of VRS Package Files (RH architecture)
+  find: path="{{ nuage_unpacked_dest_path }}/vrs"  pattern="*.rpm" recurse=yes
+  register: rc_vrs_file
+  when: nuage_target_architecture == "el6" or nuage_target_architecture == "el7"
+
+- name: Find name of VRS package files (Ubuntu architecture)
+  find: path="{{ nuage_unpacked_dest_path }}/vrs"  pattern="*.deb" recurse=yes
+  register: rc_vrs_filege_
+  when: nuage_target_architecture == "ubuntu" 
+
+
+- name: Register VSC Qcow variables with proper path and image locations for use in other playbooks
+  set_fact:
+    vrs_package_path: "{{ rc_vrs_file.files[0].path | dirname }}"
+    vrs_package_file_name_list: "{{ rc_vrs_file.files |  map(attribute='path') | list | map('basename') | list }}"
+  when: rc_vrs_file.matched > 0
+
+
