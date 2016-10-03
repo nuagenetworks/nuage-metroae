@@ -1,0 +1,232 @@
+---
+- name: Query {{ target_server }} facts
+  action: setup
+  delegate_to: "{{ target_server }}"
+
+- name: Include OS-specific variables.
+  include_vars: "{{ ansible_os_family }}.yml"
+
+- name: List the Virtual Machines running on {{ target_server }}
+  virt: command=list_vms
+  register: virt_vms
+  delegate_to: "{{ target_server }}"
+  remote_user: root
+
+- name: Check if {{ inventory_hostname }} is already running on {{ target_server }}
+  fail: msg="The VM {{ inventory_hostname }} is already defined on this target_server."
+  when: inventory_hostname in virt_vms.list_vms
+
+- name: Create libvirt image directory on {{ target_server }}
+  file: path={{ images_path }}/{{ inventory_hostname }}
+        state=directory
+        owner={{ libvirt.user }}
+        group={{ libvirt.group }}
+  delegate_to: "{{ target_server }}"
+  remote_user: root
+
+- name: Copy the proxy qcow image to virt images directory on {{ target_server }}
+  copy: src={{ proxy_qcow2_path }}/{{ proxy_qcow2_file_name }}
+        dest={{ images_path }}/{{ inventory_hostname }}
+        owner={{ libvirt.user }}
+        group={{ libvirt.group }}
+  delegate_to: "{{ target_server }}"
+  remote_user: root
+
+- name: Create a temporary copy of the network script for eth0 on {{ target_server }}
+  template: src=ifcfg-eth0.j2 backup=no dest={{ images_path }}/{{ inventory_hostname }}/ifcfg-eth0
+  delegate_to: "{{ target_server }}"
+  remote_user: root
+
+- name: Copy eth0 network script file to the proxy image on {{ target_server }}
+  command: guestfish --rw -a {{ images_path }}/{{ inventory_hostname }}/{{ proxy_qcow2_file_name }} -m /dev/centos/root copy-in {{ images_path }}/{{ inventory_hostname }}/ifcfg-eth0 /etc/sysconfig/network-scripts/
+  delegate_to: "{{ target_server }}"
+  remote_user: root
+
+- name: Remove temporary copy of eth0 network script
+  file: path={{ images_path }}/{{ inventory_hostname }}/ifcfg-eth0 state=absent
+  delegate_to: "{{ target_server }}"
+  remote_user: root
+
+- name: Set the owner and group on the eth0 network script file in the proxy image
+  command: guestfish --rw -a {{ images_path }}/{{ inventory_hostname }}/{{ proxy_qcow2_file_name }} -m /dev/centos/root chown 0 0 /etc/sysconfig/network-scripts/ifcfg-eth0
+  delegate_to: "{{ target_server }}"
+  remote_user: root
+
+- name: Create a temporary copy of the network script for eth1 on {{ target_server }}
+  template: src=ifcfg-eth1.j2 backup=no dest={{ images_path }}/{{ inventory_hostname }}/ifcfg-eth1
+  delegate_to: "{{ target_server }}"
+  remote_user: root
+
+- name: Copy eth1 network script file to the proxy image on {{ target_server }}
+  command: guestfish --rw -a {{ images_path }}/{{ inventory_hostname }}/{{ proxy_qcow2_file_name }} -m /dev/centos/root copy-in {{ images_path }}/{{ inventory_hostname }}/ifcfg-eth1 /etc/sysconfig/network-scripts/
+  delegate_to: "{{ target_server }}"
+  remote_user: root
+
+- name: Remove temporary copy of eth1 network script
+  file: path={{ images_path }}/{{ inventory_hostname }}/ifcfg-eth1 state=absent
+  delegate_to: "{{ target_server }}"
+  remote_user: root
+
+- name: Set the owner and group on the eth1 network script file in the proxy image
+  command: guestfish --rw -a {{ images_path }}/{{ inventory_hostname }}/{{ proxy_qcow2_file_name }} -m /dev/centos/root chown 0 0 /etc/sysconfig/network-scripts/ifcfg-eth1
+  delegate_to: "{{ target_server }}"
+  remote_user: root
+
+- name: Create a temporary copy of the syscfg network file on {{ target_server }}
+  template: src=network.j2 backup=no dest={{ images_path }}/{{ inventory_hostname }}/network
+  delegate_to: "{{ target_server }}"
+  remote_user: root
+
+- name: Copy network file to the proxy image
+  command: guestfish --rw -a {{ images_path }}/{{ inventory_hostname }}/{{ proxy_qcow2_file_name }} -m /dev/centos/root copy-in {{ images_path }}/{{ inventory_hostname }}/network /etc/sysconfig/
+  delegate_to: "{{ target_server }}"
+  remote_user: root
+
+- name: Remove temporary copy of network file
+  file: path={{ images_path }}/{{ inventory_hostname }}/network state=absent
+  delegate_to: "{{ target_server }}"
+  remote_user: root
+
+- name: Set the owner and group for the network hostname file on the proxy image
+  command: guestfish --rw -a {{ images_path }}/{{ inventory_hostname }}/{{ proxy_qcow2_file_name }} -m /dev/centos/root chown 0 0 /etc/sysconfig/network
+  delegate_to: "{{ target_server }}"
+  remote_user: root
+
+- name: Create the directory /root/.ssh for authorized_keys
+  command: guestfish --rw -a {{ images_path }}/{{ inventory_hostname }}/{{ proxy_qcow2_file_name }} -m /dev/centos/root mkdir-mode /root/.ssh 0700
+  delegate_to: "{{ target_server }}"
+  remote_user: root
+
+- name: Set the owner and group for the /root/.ssh directory on the proxy image
+  command: guestfish --rw -a {{ images_path }}/{{ inventory_hostname }}/{{ proxy_qcow2_file_name }} -m /dev/centos/root chown 0 0 /root/.ssh
+  delegate_to: "{{ target_server }}"
+  remote_user: root
+
+- name: Create a temporary copy of the authorized_keys file
+  template: src=authorized_keys.j2 backup=no dest={{ images_path }}/{{ inventory_hostname }}/authorized_keys
+  delegate_to: "{{ target_server }}"
+  remote_user: root
+
+- name: Copy authorized_keys file to the proxy image
+  command: guestfish --rw -a {{ images_path }}/{{ inventory_hostname }}/{{ proxy_qcow2_file_name }} -m /dev/centos/root copy-in {{ images_path }}/{{ inventory_hostname }}/authorized_keys /root/.ssh/
+  delegate_to: "{{ target_server }}"
+  remote_user: root
+
+- name: Remove temporary copy of authorized_keys file
+  file: path={{ images_path }}/{{ inventory_hostname }}/authorized_keys state=absent
+  delegate_to: "{{ target_server }}"
+  remote_user: root
+
+- name: Set the owner and group for the authorized_keys file on the proxy image
+  command: guestfish --rw -a {{ images_path }}/{{ inventory_hostname }}/{{ proxy_qcow2_file_name }} -m /dev/centos/root chown 0 0 /root/.ssh/authorized_keys
+  delegate_to: "{{ target_server }}"
+  remote_user: root
+
+- name: Set the mode for the authorized_keys file on the proxy image
+  command: guestfish --rw -a {{ images_path }}/{{ inventory_hostname }}/{{ proxy_qcow2_file_name }} -m /dev/centos/root chmod 0640 /root/.ssh/authorized_keys
+  delegate_to: "{{ target_server }}"
+  remote_user: root
+
+- name: "Define new Proxy VM"
+  virt: name="{{ inventory_hostname }}"
+        command=define
+        xml="{{ lookup('template', 'proxy.xml.j2') }}"
+        uri=qemu:///system
+  delegate_to: "{{ target_server }}"
+  remote_user: root
+
+- name: "Run Proxy VM"
+  virt: name="{{ inventory_hostname }}"
+        state=running
+        uri=qemu:///system
+  delegate_to: "{{ target_server }}"
+  remote_user: root
+
+- name: Wait for Proxy VM ssh to be ready
+  local_action:
+    module: wait_for
+    port: "22"
+    host: "{{ interfaces.mgmt.ip }}"
+    search_regex: OpenSSH
+    delay: 1
+  delegate_to: "{{ target_server }}"
+  remote_user: root
+
+- name: Update /etc/hosts file on {{ target_server }}
+  lineinfile:
+    dest: /etc/hosts
+    line: "{{ interfaces.mgmt.ip }} {{ inventory_hostname }}"
+  delegate_to: "{{ target_server }}"
+  remote_user: root
+
+- name: Update /etc/hosts file on {{ inventory_hostname }}
+  blockinfile:
+    dest: /etc/hosts
+    block: |
+      {% for host in groups['proxy']  %}
+      {{ hostvars[host]['interfaces']['mgmt']['ip'] }}    {{ host }}
+      {% endfor %}
+
+- name: Delete the localtime file on {{ inventory_hostname }}
+  file:
+    path: /etc/localtime
+    state: absent
+
+- name: Create the localtime symlink on {{ inventory_hostname }}
+  file:
+    src: /usr/share/zoneinfo/US/Pacific
+    dest: /etc/localtime
+    state: link
+
+- name: Install NTP package on the proxy vm
+  yum: name=ntp state=present
+  remote_user: root
+
+- name: Configure NTP servers on {{ inventory_hostname }}
+  lineinfile:
+    dest: /etc/ntp.conf
+    line: "server {{ item }} iburst"
+  with_items: "{{ ntp_server_list }}"
+
+- name: Stop the ntpd service if running
+  service:
+    name: ntpd
+    state: stopped
+
+- name: Manually sync time with ntp server
+  command: ntpdate -u "{{ntp_server_list[0]}}"
+
+- name: Start ntpd on {{ inventory_hostname }}
+  service:
+    name: ntpd
+    state: started
+
+- name: check ntp sync state
+  shell: ntpstat | awk 'NR==1{print $1}'
+  register: sync_status
+  until: sync_status.stdout == "synchronised"
+  retries: 9
+  delay: 10
+
+- name: Install dhcp package on {{ inventory_hostname }}
+  yum: name=dhcp state=present
+  remote_user: root
+
+- name: Copy dhcp config
+  template: src=dhcpd.conf.j2 backup=no dest=/etc/dhcp/dhcpd.conf
+
+- name: Restart dhcp service
+  command: service dhcpd restart
+
+- name: Install dnsmasq package on {{ inventory_hostname }}
+  yum: name=dnsmasq state=present
+  remote_user: root
+
+- name: Copy dnsmasq config to {{ inventory_hostname }}
+  template: src=dnsmasq.conf backup=no dest=/etc/dnsmasq.conf
+
+- name: Start dnsmasq
+  command: service dnsmasq start
+
+- name: Chkconfig of dnsmasq
+  command: chkconfig dnsmasq on
