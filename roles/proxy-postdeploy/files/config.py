@@ -1,6 +1,12 @@
 import sha
-#license
 
+#csp creds
+csp = {
+       "username":  "csproot",
+       "password":  "csproot",
+       "enterprise": "csp",
+       "api_url":   ""
+      }
 #proxy user
 pwd = sha.new('test').hexdigest()
 user_params = {
@@ -8,7 +14,7 @@ user_params = {
 		"lastName":  "test",
 		"userName":  "proxy",
 		"email":     "test@caso.com",
-		"passowrd": pwd,
+		"password": pwd,
 	      }
 
 #nsg infra profile
