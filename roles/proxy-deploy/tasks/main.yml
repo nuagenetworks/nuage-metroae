@@ -216,7 +216,12 @@
   template: src=dhcpd.conf.j2 backup=no dest=/etc/dhcp/dhcpd.conf
 
 - name: Restart dhcp service
-  command: service dhcpd restart
+  service:
+    name: dhcpd
+    state: restarted
+
+- name: Chkconfig of dhcpd
+  command: chkconfig dhcpd on
 
 - name: Install dnsmasq package on {{ inventory_hostname }}
   yum: name=dnsmasq state=present
@@ -226,7 +231,9 @@
   template: src=dnsmasq.conf backup=no dest=/etc/dnsmasq.conf
 
 - name: Start dnsmasq
-  command: service dnsmasq start
+  service:
+    name: dnsmasq
+    state: started
 
 - name: Chkconfig of dnsmasq
   command: chkconfig dnsmasq on
