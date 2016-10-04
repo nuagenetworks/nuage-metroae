@@ -77,7 +77,7 @@ For reference, here is a description of the contents of the `build.yml` file, wi
 #          # The XMPP user name for login to VSD
 #          xmpp_username: vsc,
 #          # One or more static route to be configured on this VSC
-#          vsc_static_route_list: { 0.0.0.0./1 } }
+#          vsc_static_route_list: { 0.0.0.0/1 } }
 #      - { hostname: vsc2.example.com,
 #          target_server: 135.227.181.232,
 #          mgmt_ip: 192.168.122.203,
@@ -88,7 +88,7 @@ For reference, here is a description of the contents of the `build.yml` file, wi
 #          vsd_fqdn: vsd1.example.com,
 #          system_ip: 1.1.1.3,
 #          xmpp_username: vsc,
-#          vsc_static_route_list: { 0.0.0.0./1 } }
+#          vsc_static_route_list: { 0.0.0.0/1 } }
 #    # The path on the ansible host from which VRS packages will be copied
 #    vrs_package_path: "/home/caso/",
 #    # A list of the packages to be installed on the VRS node
