@@ -24,7 +24,7 @@
 - name: Unpack VSD QCOW Archive
   unarchive: src="{{ rc_vsd.files[0].path}}" dest="{{ nuage_unpacked_dest_path }}/vsd" list_files=yes
   register: rc_vsd_archive_files
-  when: rc_vsd.matched > 0
+  when: rc_vsd.matched > 0 and not nuage_unpacked|default(false) 
 
 - name: Find name of VSD QCOW File
   find: path="{{ nuage_unpacked_dest_path }}/vsd"  pattern="*.qcow2" recurse=yes
@@ -32,8 +32,8 @@
 
 - name: Register VSD Qcow variables with proper path and image locations for use in other playbooks
   set_fact:
-    vsd_qcow2_path: "{{ rc_vsc_file.files[0].path | dirname }}"
-    vsd_qcow2_file_name: "{{ rc_vsc_file.files[0].path | basename }}"
+    vsd_qcow2_path: "{{ rc_vsd_file.files[0].path | dirname }}"
+    vsd_qcow2_file_name: "{{ rc_vsd_file.files[0].path | basename }}"
   when: rc_vsd_file.matched > 0
 
 ###################
@@ -51,7 +51,7 @@
 - name: Unpack Elastic QCOW Archive
   unarchive: src="{{ rc_vstat.files[0].path}}" dest="{{ nuage_unpacked_dest_path }}/elastic" list_files=yes
   register: rc_vstat_archive_files
-  when: rc_vstat.matched > 0
+  when: rc_vstat.matched > 0 and not nuage_unpacked|default(false)
 
 - name: Find name of Elastic QCOW File
   find: path="{{ nuage_unpacked_dest_path }}/elastic"  pattern="*.qcow2" recurse=yes
@@ -59,8 +59,8 @@
 
 - name: Register VSTAT Qcow variables with proper path and image locations for use in other playbooks
   set_fact:
-    vstat_qcow2_path: "{{ rc_vsc_file.files[0].path | dirname }}"
-    vstat_qcow2_file_name: "{{ rc_vsc_file.files[0].path | basename }}"
+    vstat_qcow2_path: "{{ rc_vstat_file.files[0].path | dirname }}"
+    vstat_qcow2_file_name: "{{ rc_vstat_file.files[0].path | basename }}"
   when: rc_vstat_file.matched > 0
 
 
@@ -80,7 +80,7 @@
 - name: Unpack VSC QCOW Archive
   unarchive: src="{{ rc_vsc.files[0].path}}" dest="{{ nuage_unpacked_dest_path }}/vsc/"  list_files=yes
   register: rc_vsc_archive_files
-  when: rc_vsc.matched > 0
+  when: rc_vsc.matched > 0  and not nuage_unpacked|default(false)
 
 - name: Find name of VSC QCOW File
   find: path="{{ nuage_unpacked_dest_path }}/vsc"  pattern="vsc_singledisk.qcow2" recurse=yes
@@ -108,7 +108,7 @@
 - name: Unpack VRS Archive
   unarchive: src="{{ rc_vrs.files[0].path}}" dest="{{ nuage_unpacked_dest_path }}/vrs/"  list_files=yes
   register: rc_vrs_archive_files
-  when: rc_vrs.matched > 0
+  when: rc_vrs.matched > 0  and not nuage_unpacked|default(false)
 
 - name: Find name of VRS Package Files (RH architecture)
   find: path="{{ nuage_unpacked_dest_path }}/vrs"  pattern="*.rpm" recurse=yes
