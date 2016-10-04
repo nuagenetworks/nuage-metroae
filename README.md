@@ -5,19 +5,23 @@
 ## What's new
 
 1. VSD HA/cluster support, limited to exactly 3 VSD nodes
+1. Limited VNS support, that handles 1 NSGV at present
 1. A new pre-deploy build process to simplify variable settings
 
 Feedback and bug reports should be provided to the Nuage CASO team via** *[email to Brian Castelli](mailto://brian.castelli@nokia.com)* **or by creating an issue at the internal** *[gitlab site](http://gitlab.us.alcatel-lucent.com/caso-metro/metro-express/issues)*
 
 ## Overview
 
-This set of playbooks can be used to automatically deploy VCS components for use with KVM on Ubuntu or CentOS. Support is provided for:
+This set of playbooks can be used to automatically deploy VCS/VNS components for use with KVM on Ubuntu or CentOS. Support is provided for:
 
 1. VSD (HA or stand-alone)
 2. VSC (1 or more)
 3. VRS on existing nodes (1 or more)
 4. Dockermon on VRS nodes
 5. VSTAT (1 or more)
+6. PROXY (1 or more)
+7. NSGV (1)
+
 
 ## For the impatient
 
