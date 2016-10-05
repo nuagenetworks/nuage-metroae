@@ -12,7 +12,7 @@ or
 
 `./metro-ansible build.yml`
 
-To reset the build to factoery settings, execute:
+To reset the build to factory settings, execute:
 
 `ansible-playbook reset_build.xml`
 
