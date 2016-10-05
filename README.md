@@ -7,7 +7,7 @@
 1. VSD HA/cluster support, limited to exactly 3 VSD nodes
 1. A new pre-deploy build process to simplify variable settings
 
-Feedback and bug reports should be provided to the Nuage CASO team via** *[email to Brian Castelli](mailto://brian.castelli@nokia.com)* **or by creating an issue at the internal** *[gitlab site](http://gitlab.us.alcatel-lucent.com/caso-metro/metro-express/issues)*
+Feedback and bug reports should be provided to the Nuage CASO team via email to *[Brian Castelli](mailto://brian.castelli@nokia.com)*.
 
 ## Overview
 
@@ -33,6 +33,12 @@ The short version of the instructions are:
 1. To destroy all variables and reset `build.yml` to factory settings, execute `./metro-ansible reset_build.yml`. A `build.bak` file will be created just in case you didn't mean it.
 
 Note that `install_everything.yml` can be edited or individual roles exec
+
+## Branches
+
+The latest sane code is found in the `master` branch. The `dev` branch is for ongoing development. The stability of the `dev` branch is not guaranteed.
+
+If you want to contribute back, you must create your own branch or fork, oush your changes to that, and create a pull request to the `dev` branch. All pull requests against the `master` branch will be rejected. Sorry. All pull requests should be for fully-tested code changes (where fully-tested means it worked for both Ubuntu and CentOS, for clustered and stand-alone, etc.).
 
 ## Prerequisites
 
