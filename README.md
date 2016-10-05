@@ -1,4 +1,4 @@
-# Metro: Deployment of Nuage VCS
+# Metro: Automated Deployment of Nuage Software
 
 **NOTE: This package is considered Beta quality. It can be used for customer demos and PoCs but should first be tested in your lab to make sure it will work. It should not be distributed.
 
