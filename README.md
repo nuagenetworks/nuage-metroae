@@ -5,7 +5,7 @@
 ## What's new
 
 1. VSD HA/cluster support, limited to exactly 3 VSD nodes
-1. Limited VNS support, that handles 1 NSGV at present
+1. Limited VNS support, that handles 1 NSGV at present. Requires ansible 2.2 that has SROS module support.
 1. A new pre-deploy build process to simplify variable settings
 
 Feedback and bug reports should be provided to the Nuage CASO team via** *[email to Brian Castelli](mailto://brian.castelli@nokia.com)* **or by creating an issue at the internal** *[gitlab site](http://gitlab.us.alcatel-lucent.com/caso-metro/metro-express/issues)*
@@ -30,7 +30,7 @@ The short version of the instructions are:
 1. Install Ansible 2.1+ on the deployment host
 1. Install Netmiko and its dependencies on deployment host.
 1. Clone this repository to the deployment host
-1. Customize `build.yml` with your VSD, VSC, VRS, and VSTAT information. (See `BUILD.md` for details.)
+1. Customize `build.yml` with your VSD, VSC, VRS, PROXY, NSGV  and VSTAT information. (See `BUILD.md` for details.)
 1. Execute `./metro-ansible build.yml` to automatically populate variables in the appropriate places, e.g. the `host_vars` directory.
 1. Execute `./metro-ansible install_everything.yml`
 1. To get rid of everything that has been deployed, execute `./metro-ansible destroy_everything.yml'
@@ -43,9 +43,8 @@ Note that `install_everything.yml` can be edited or individual roles exec
 The following restrictions and conditions apply prior to executing the playbooks:
 
 1. The hypervisor hosts must be running Ubuntu Linux or CentOS. Testing has been done on Ubuntu 14.04 LTS and CentOS 7.
-1. If host names are used for target systems, VSD, VSC, VSTAT and VRS nodes, those names must be discoverable via DNS *or* added to the /etc/hosts file of the ansible deployment host.
-1. Each VM that is created for VSD, VSC or VSTAT connects to one or more bridges on the target server. Those bridges must be created on the target server prior to deployment and specified in the `user_vars.yml` file.
-1. If host names are used for target systems, VSD, VSC, VSTAT and VRS nodes, those names must be discoverable via DNS *or* added to the /etc/hosts file of the ansible deployment host.
+1. If host names are used for target systems, VSD, VSC, VSTAT, PROXY and VRS nodes, those names must be discoverable via DNS *or* added to the /etc/hosts file of the ansible deployment host.
+1. Each VM that is created for VSD, VSC, VSTAT, PROXY or NSGV connects to one or more bridges on the target server. Those bridges must be created on the target server prior to deployment and specified in the `user_vars.yml` file.
 1. Python 2.7+ and all its dependencies must be installed on the deployment host. Python 3.0 and above is untested.
 1. Ansible 2.1+ and all its dependencies must be installed on the deployment host.
 1. Netmiko and all its dependencies must be installed on deployment host. The easiest way to install Netmiko is by using `pip install netmiko`. A common Netmiko dependency that could be missing is the cryptography package. See https://cryptography.io/en/latest/installation/ for more information.
