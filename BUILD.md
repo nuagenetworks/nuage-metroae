@@ -30,6 +30,8 @@ For reference, here is a description of the contents of the `build.yml` file, wi
 #  roles:
 #    - build
 #  vars:
+#    # When True VNS specific configuration is triggered in the VSD and VSC
+#    vns: False
 #    # When True or undefined, all VSDs will be configured stand-alone. When False
 #    # we will expect 3 VSD definitions, below, for clustered deployment.
 #    vsd_standalone: True
