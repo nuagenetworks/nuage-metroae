@@ -29,20 +29,20 @@
 - name: Delete the temporary file
   local_action: file path={{ playbook_dir }}/scripts/tmp/{{ inventory_hostname }}.tmp state=absent
 
-- name: VRS Verification Result Failure Status
+- name: Check result of VRS verification script
   fail: msg={{ pass.stdout }}
   when: pass.stdout | search("(?i)Error")
 
 - name: VRS Verification Result Success Status
-  debug: var=pass.stdout
+  debug: var=pass.stdout verbosity=1
 
-- name: Register pid of docker process
+- name: Register stats for the docker pid file
   stat: path=/var/run/docker.pid
   register: docker_pid
   remote_user: root
 
-- name: Check if pid of docker exists
-  fail: msg="Docker process is not started. PID not found!"
+- name: Check if docker pid file exists
+  fail: msg="Docker pid file not found!"
   when: docker_pid.stat.exists == false
   remote_user: root
 
@@ -51,13 +51,13 @@
   register: docker_pid_value
   remote_user: root
 
-- name: Register pid of dockermon process
+- name: Register stats for the dockermon pid file
   stat: path=/var/run/openvswitch/nuage-docker-monitor.pid
   register: dockermon_pid
   remote_user: root
 
-- name: Check if pid of dockermon exists
-  fail: msg="Dockermon process is not started. PID not found!"
+- name: Check if dockermon pid file exists
+  fail: msg="Dockermon pid file not found!"
   when: dockermon_pid.stat.exists == false
   remote_user: root
 
@@ -87,20 +87,18 @@
   remote_user: root
 
 - name: Create a temporary copy of the dockermon verification command outputs on ansible host
-  template: src=dockermon_results.yml.j2 backup=no dest={{ playbook_dir }}/scripts/tmp/{{ inventory_hostname }}.yml
-  delegate_to: 127.0.0.1
-  remote_user: root
+  local_action: template src=dockermon_results.yml.j2 backup=no dest={{ playbook_dir }}/scripts/tmp/{{ inventory_hostname }}.yml
 
-- name: Run verification script for VRS
-  local_action: command python {{ playbook_dir }}/scripts/dockermon_result_verify.py {{ inventory_hostname }}.yml {{ playbook_dir }}
-  register: pass
+- name: Run verification script for Dockermon
+  local_action: command python {{ playbook_dir }}/scripts/dockermon_result_verify.py {{ inventory_hostname }}.yml {{ playbook_dir }}/scripts/tmp/
+  register: dockermon_pass
 
-- name: Verification Result Failure Status
-  fail: msg={{ pass.stdout }}
-  when: pass.stdout | search("(?i)Error")
+- name: Check result of Dockermon verification script
+  fail: msg={{ dockermon_pass.stdout }}
+  when: dockermon_pass.stdout | search("(?i)Error")
 
-- name: Verification Result Success Status
-  debug: var=pass.stdout
+- name: Dockermon Verification Result Success Status
+  debug: var=dockermon_pass.stdout verbosity=1
 
 - name: Delete the temporary directory
   local_action: file path={{ playbook_dir }}/scripts/tmp state=absent
