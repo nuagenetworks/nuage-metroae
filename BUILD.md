@@ -173,7 +173,8 @@ For reference, here is a description of the contents of the `build.yml` file, wi
 #    nsgv_qcow2_file_name: "ncpe_centos7.qcow2"
 #    # A dictionary of params for only 1 NSGV instance for current release
 #    mynsgvs:
-#          # The hostname or IP address for this NSGV instance
+#          # Define only hostname for this NSGV instance
+#          # Do not add domain to the host name
 #      - { hostname: nsgv,
 #          # The hypervior target where this PROXY instance will be run
 #          target_server: 135.227.181.232,
