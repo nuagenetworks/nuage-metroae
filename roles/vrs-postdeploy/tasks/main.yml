@@ -36,69 +36,73 @@
 - name: VRS Verification Result Success Status
   debug: var=pass.stdout verbosity=1
 
-- name: Register stats for the docker pid file
-  stat: path=/var/run/docker.pid
-  register: docker_pid
-  remote_user: root
+- block:
+  # Dockermon feature tasks
+  - name: Register stats for the docker pid file
+    stat: path=/var/run/docker.pid
+    register: docker_pid
+    remote_user: root
 
-- name: Check if docker pid file exists
-  fail: msg="Docker pid file not found!"
-  when: docker_pid.stat.exists == false
-  remote_user: root
+  - name: Check if docker pid file exists
+    fail: msg="Docker pid file not found!"
+    when: docker_pid.stat.exists == false
+    remote_user: root
 
-- name: Get pid of docker process
-  command: head -n 1 /var/run/docker.pid
-  register: docker_pid_value
-  remote_user: root
+  - name: Get pid of docker process
+    command: head -n 1 /var/run/docker.pid
+    register: docker_pid_value
+    remote_user: root
 
-- name: Register stats for the dockermon pid file
-  stat: path=/var/run/openvswitch/nuage-docker-monitor.pid
-  register: dockermon_pid
-  remote_user: root
+  - name: Register stats for the dockermon pid file
+    stat: path=/var/run/openvswitch/nuage-docker-monitor.pid
+    register: dockermon_pid
+    remote_user: root
 
-- name: Check if dockermon pid file exists
-  fail: msg="Dockermon pid file not found!"
-  when: dockermon_pid.stat.exists == false
-  remote_user: root
+  - name: Check if dockermon pid file exists
+    fail: msg="Dockermon pid file not found!"
+    when: dockermon_pid.stat.exists == false
+    remote_user: root
 
-- name: Get pid of dockermon process
-  command: head -n 1 /var/run/openvswitch/nuage-docker-monitor.pid
-  register: dockermon_pid_value
-  remote_user: root
+  - name: Get pid of dockermon process
+    command: head -n 1 /var/run/openvswitch/nuage-docker-monitor.pid
+    register: dockermon_pid_value
+    remote_user: root
 
-- name: Get docker status
-  command: service docker status
-  register: docker_status_result
-  remote_user: root
+  - name: Get docker status
+    command: service docker status
+    register: docker_status_result
+    remote_user: root
 
-- name: Get dockermon status
-  command: service nuage-docker-monitor status
-  register: dockermon_status_result
-  remote_user: root
+  - name: Get dockermon status
+    command: service nuage-docker-monitor status
+    register: dockermon_status_result
+    remote_user: root
 
-- name: Get dockermon process details
-  shell: ps -eo lstart,cmd|grep {{ dockermon_pid_value.stdout }}
-  register: ps_docker_result
-  remote_user: root
+  - name: Get dockermon process details
+    shell: ps -eo lstart,cmd|grep {{ dockermon_pid_value.stdout }}
+    register: ps_docker_result
+    remote_user: root
 
-- name: Get dockermon logs
-  command: tail -n 3 /var/log/openvswitch/nuage-docker-monitor.log
-  register: docker_mon_logs
-  remote_user: root
+  - name: Get dockermon logs
+    command: tail -n 3 /var/log/openvswitch/nuage-docker-monitor.log
+    register: docker_mon_logs
+    remote_user: root
 
-- name: Create a temporary copy of the dockermon verification command outputs on ansible host
-  local_action: template src=dockermon_results.yml.j2 backup=no dest={{ playbook_dir }}/scripts/tmp/{{ inventory_hostname }}.yml
+  - name: Create a temporary copy of the dockermon verification command outputs on ansible host
+    local_action: template src=dockermon_results.yml.j2 backup=no dest={{ playbook_dir }}/scripts/tmp/{{ inventory_hostname }}.yml
 
-- name: Run verification script for Dockermon
-  local_action: command python {{ playbook_dir }}/scripts/dockermon_result_verify.py {{ inventory_hostname }}.yml {{ playbook_dir }}/scripts/tmp/
-  register: dockermon_pass
+  - name: Run verification script for Dockermon
+    local_action: command python {{ playbook_dir }}/scripts/dockermon_result_verify.py {{ inventory_hostname }}.yml {{ playbook_dir }}/scripts/tmp/
+    register: dockermon_pass
 
-- name: Check result of Dockermon verification script
-  fail: msg={{ dockermon_pass.stdout }}
-  when: dockermon_pass.stdout | search("(?i)Error")
+  - name: Check result of Dockermon verification script
+    fail: msg={{ dockermon_pass.stdout }}
+    when: dockermon_pass.stdout | search("(?i)Error")
 
-- name: Dockermon Verification Result Success Status
-  debug: var=dockermon_pass.stdout verbosity=1
+  - name: Dockermon Verification Result Success Status
+    debug: var=dockermon_pass.stdout verbosity=1
+  # Only when the feature flag is true
+  when: "{{ dockermon_postdeploy }} == true"
 
 - name: Delete the temporary directory
   local_action: file path={{ playbook_dir }}/scripts/tmp state=absent
