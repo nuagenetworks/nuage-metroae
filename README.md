@@ -69,6 +69,7 @@ Currently VSD in cluster mode is supported exactly for 3 VSD nodes.
 
 `build.yml` contains a set of variables that should be customized by the user prior to running the playbooks. These variables are used to configure network connectivity for the VSC, VSTAT and the VSD.
 
+`zfb.yml` contains a set of variables that should be customized by the user prior to running the nsgv playbooks. These variables are used to create NSG profile in the VSD Architect and also creates ISO file that is attached to NSG VM
 ## Playbook Organization
 
 All playbooks, whether installation or destruction, must be executed using the `metro-ansible` script.
