@@ -115,14 +115,14 @@ def create_iso_file(csp_user, nsg_temp, nsgv_path):
     iso_params["associatedEntityID"] = nsg_temp.id
     job.parameters = iso_params
     csproot.create_child(job)
-    subprocess.call("echo %s | base64 -d > user_image.iso.gz" % job.result,
+    subprocess.call("echo %s | base64 -d > test.iso.gz" % job.result,
                     shell=True)
     sleep(1)
 
     # Extract ISO file and copy to nsg-deploy templates
-    subprocess.call("gzip -f -d user_image.iso.gz", shell=True)
+    subprocess.call("gzip -f -d test.iso.gz", shell=True)
     sleep(1)
-    subprocess.call("cp user_image.iso %s" % nsgv_path, shell=True)
+    subprocess.call("cp test.iso %s" % nsgv_path, shell=True)
 
 
 if __name__ == '__main__':
@@ -148,7 +148,7 @@ if __name__ == '__main__':
     # License
     vsd_license = args.vsd_license
     # Nsgv_path
-    nsgv_path = args.playbook_dir+'/roles/nsgv-deploy/files/'
+    nsgv_path = args.playbook_dir+'/roles/nsgv-deploy/templates/user_image.iso'
 
     # Create a session as csp user
     session = NUVSDSession(**csp)

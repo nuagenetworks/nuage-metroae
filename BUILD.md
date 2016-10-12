@@ -30,8 +30,6 @@ For reference, here is a description of the contents of the `build.yml` file, wi
 #  roles:
 #    - build
 #  vars:
-#    # When True VNS specific configuration is triggered in the VSD and VSC
-#    vns: False
 #    # When True or undefined, all VSDs will be configured stand-alone. When False
 #    # we will expect 3 VSD definitions, below, for clustered deployment.
 #    vsd_standalone: True
@@ -134,13 +132,15 @@ For reference, here is a description of the contents of the `build.yml` file, wi
 #          mgmt_netmask: 255.255.255.0,
 #          # The FQDN for the VSD this VSTAT instance will connect to
 #          vsd_fqdn: vsd1.example.com }
+#    # When True VNS specific configuration is triggered in the VSD and VSC
+#    vns: False
 #    # The path on the ansible host from which PROXY qcow2 images will be copied
-#    proxy_qcow2_path: "/home/caso/"
+#    vnsutil_qcow2_path: "/home/caso/"
 #    # The file name of the qcow2 image
-#    proxy_qcow2_file_name: "vns-util-0.0_98.qcow2"
+#    vnsutil_qcow2_file_name: "vns-util-0.0_98.qcow2"
 #    # A dictionary of params for 0 or more PROXY instances
 #    # Note: Multiple PROXY instances can be copied from the same qcow2
-#    myproxys:
+#    myvnsutils:
 #          # The hostname or IP address for this PROXY instance
 #      - { hostname: proxy.example.com,
 #          # The hypervior target where this PROXY instance will be run
@@ -179,14 +179,7 @@ For reference, here is a description of the contents of the `build.yml` file, wi
 #          # The hypervior target where this PROXY instance will be run
 #          target_server: 135.227.181.232,
 #          # NSGV VM mac addr that goes in to XML config file
-#          nsgv_mac: '52:54:00:88:85:12',
-#          # The FQDN for the VSD. Used to contact VSD API and create profile for creating ISO file  
-#          vsd_fqdn: vsd.example.com,
-#          # Primary controller address that goes into VSC profile
-#          active_controller: 192.168.100.201,
-#          # Secondary controller address that goes into VSC profile
-#          standby_controller: 192.168.100.202}
-
+#          nsgv_mac: '52:54:00:88:85:12'}
 #    # The hostname or IP address of the ansible machine
 #    ansible_host: 135.227.181.232
 #    # The names of the network bridges that are required on the target hosts
@@ -197,8 +190,6 @@ For reference, here is a description of the contents of the `build.yml` file, wi
 #    images_path: "/var/lib/libvirt/images/"
 #    # The public ssh key of the ansible user on the deployment host
 #    ansible_user_ssh_key: "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDha+H5IjOGGQ0VPo+WQm9uEDDkm6t5B56GQvivqUmK7QvWA8bYXSqmO4gp3zi6QZ558yHYWMrLS8ZGn93sDs68y24ROnaWJfj4dlp7mHsHVdP3yASeu9xW10p7WuEbriVoOjpX81+BsQwM6jiPzt+7VcbMrfL+Lo08aYW/XZxFe4ogk34AYo1t2eDmxROBk3aZ4hF4yvr0z/M92p4oDoU4FRFHYoAR5Kr8LQk9yGccGjmNFDSxhNZMkEHl0dmpb17xR7f9gbruBHe4NDFcfbCMHxC80uX1QKzj8mNC7dzTA/0CeaDa24pRYNabPHWmaijaQi6pFqPzIPKG48VfMzNn caso@cas-cs2-010"
-#    # VSD license that is used to create profile and download ISO file for ZFB
-#    vsd_license: "replace this string with the license"
 #    # NTP servers the VSC, VSD, PROXY and VSTAT should sync to.
 #    # One or more ntp servers are required
 #    ntp_server_list:
