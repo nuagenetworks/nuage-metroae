@@ -1,4 +1,7 @@
-from vspk.v4_0 import *
+from vspk.v4_0 import NULicense, NUEnterprise, NUUser, NUNSPortTemplate
+from vspk.v4_0 import NUInfrastructureGatewayProfile, NUNSGatewayTemplate
+from vspk.v4_0 import NUInfrastructureVscProfile, NUVLANTemplate, NUJob
+from vspk.v4_0 import NUNSGateway, NUVSDSession
 import subprocess
 import yaml
 import sys
@@ -53,8 +56,8 @@ def create_nsg_gateway_template(csp_user):
         nsg_infra = NUInfrastructureGatewayProfile(data=vns_nsg)
         csproot.create_child(nsg_infra)
         # Attach the infra profile to NSG template
-        vns_infra_profile = csproot.infrastructure_gateway_profiles.get_first(
-                            filter="name == '%s'" % vns_nsg['name'])
+        vns_infra_profile = csproot.infrastructure_gateway_profiles.\
+            get_first(filter="name == '%s'" % vns_nsg['name'])
         infra_id = vns_infra_profile.id
         nsg_temp.infrastructure_profile_id = infra_id
         csproot.create_child(nsg_temp)
@@ -135,11 +138,11 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     # Nsgv_path
-    nsgv_path = args.playbook_dir+'/roles/nsgv-deploy/files/'
+    nsgv_path = args.playbook_dir + '/roles/nsgv-deploy/files/'
 
     # Get ZFB related parameters
     try:
-        with open(args.playbook_dir+'/zfb.yml', 'r') as fh:
+        with open(args.playbook_dir + '/zfb.yml', 'r') as fh:
             zfb_params = yaml.load(fh)
     except Exception as e:
         print("ERROR: Could not locate file: %s" % e)
