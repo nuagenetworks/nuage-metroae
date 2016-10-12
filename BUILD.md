@@ -2,7 +2,7 @@
 
 The build playbook (`build.yml`) is used to automatically populate a number of custom variable files for the operation of the metro playbooks. Running `./metro-playbook build.yml` will use the variables defined in `build.yml` to create a hosts file, populate a host_vars directory, populate a group_vars directory, and make a few additional variable changes as required. The `build.yml` playbook will do all the work for you.
 
-Note that the syntax of the contents of `build.yml` must be precise. If things get messed up, we have provided the `reset_build.yml` playbook to let you start over. *When you run `./metro-ansible rest_build.yml`, the contents of `build.yml` will be overwritten, the hosts file will be destroywed, the host_vars directory will be destroyed, and the group_vars directory will be destroyed. The variable configuration of metro will be reset to factory settings! You may lose your work!* A backup copy of `build.yml` will be created as `build.bak` just in case you didn't mean it.
+Note that the syntax of the contents of `build.yml` must be precise. If things get messed up, we have provided the `reset_build.yml` playbook to let you start over. *When you run `./metro-ansible rest_build.yml`, the contents of `build.yml` will be overwritten, the hosts file will be destroyed, the host_vars directory will be destroyed, and the group_vars directory will be destroyed. The variable configuration of metro will be reset to factory settings! You may lose your work!* A backup copy of `build.yml` will be created as `build.bak` just in case you didn't mean it.
 
 To run the build, execute:
 
@@ -12,7 +12,7 @@ or
 
 `./metro-ansible build.yml`
 
-To reset the build to factoery settings, execute:
+To reset the build to factory settings, execute:
 
 `ansible-playbook reset_build.xml`
 
@@ -188,8 +188,6 @@ For reference, here is a description of the contents of the `build.yml` file, wi
 #    access_bridge: "access"
 #    # Destination directory for qcow2 images on the hypervisors.
 #    images_path: "/var/lib/libvirt/images/"
-#    # The public ssh key of the ansible user on the deployment host
-#    ansible_user_ssh_key: "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDha+H5IjOGGQ0VPo+WQm9uEDDkm6t5B56GQvivqUmK7QvWA8bYXSqmO4gp3zi6QZ558yHYWMrLS8ZGn93sDs68y24ROnaWJfj4dlp7mHsHVdP3yASeu9xW10p7WuEbriVoOjpX81+BsQwM6jiPzt+7VcbMrfL+Lo08aYW/XZxFe4ogk34AYo1t2eDmxROBk3aZ4hF4yvr0z/M92p4oDoU4FRFHYoAR5Kr8LQk9yGccGjmNFDSxhNZMkEHl0dmpb17xR7f9gbruBHe4NDFcfbCMHxC80uX1QKzj8mNC7dzTA/0CeaDa24pRYNabPHWmaijaQi6pFqPzIPKG48VfMzNn caso@cas-cs2-010"
 #    # NTP servers the VSC, VSD, VNS-UTILITY and VSTAT should sync to.
 #    # One or more ntp servers are required
 #    ntp_server_list:
