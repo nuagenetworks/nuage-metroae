@@ -2,7 +2,7 @@
 
 The build playbook (`build.yml`) is used to automatically populate a number of custom variable files for the operation of the metro playbooks. Running `./metro-playbook build.yml` will use the variables defined in `build.yml` to create a hosts file, populate a host_vars directory, populate a group_vars directory, and make a few additional variable changes as required. The `build.yml` playbook will do all the work for you.
 
-Note that the syntax of the contents of `build.yml` must be precise. If things get messed up, we have provided the `reset_build.yml` playbook to let you start over. *When you run `./metro-ansible rest_build.yml`, the contents of `build.yml` will be overwritten, the hosts file will be destroywed, the host_vars directory will be destroyed, and the group_vars directory will be destroyed. The variable configuration of metro will be reset to factory settings! You may lose your work!* A backup copy of `build.yml` will be created as `build.bak` just in case you didn't mean it.
+Note that the syntax of the contents of `build.yml` must be precise. If things get messed up, we have provided the `reset_build.yml` playbook to let you start over. *When you run `./metro-ansible rest_build.yml`, the contents of `build.yml` will be overwritten, the hosts file will be destroyed, the host_vars directory will be destroyed, and the group_vars directory will be destroyed. The variable configuration of metro will be reset to factory settings! You may lose your work!* A backup copy of `build.yml` will be created as `build.bak` just in case you didn't mean it.
 
 To run the build, execute:
 
@@ -132,14 +132,63 @@ For reference, here is a description of the contents of the `build.yml` file, wi
 #          mgmt_netmask: 255.255.255.0,
 #          # The FQDN for the VSD this VSTAT instance will connect to
 #          vsd_fqdn: vsd1.example.com }
+#    # When True VNS specific configuration is triggered in the VSD and VSC
+#    vns: False
+#    # The path on the ansible host from which VNS-UTILITY qcow2 images will be copied
+#    vnsutil_qcow2_path: "/home/caso/"
+#    # The file name of the qcow2 image
+#    vnsutil_qcow2_file_name: "vns-util-0.0_98.qcow2"
+#    # A dictionary of params for 0 or more VNS-UTILITY instances
+#    # Note: Multiple VNS-UTILITY instances can be copied from the same qcow2
+#    myvnsutils:
+#          # The hostname or IP address for this VNS-UTILITY instance
+#      - { hostname: proxy.example.com,
+#          # The hypervior target where this VNS-UTILITY instance will be run
+#          target_server: 135.227.181.232,
+#          # The management IP address of this VNS-UTILITY instance
+#          mgmt_ip: 10.0.0.50,
+#          # The management gateway IP address of this VNS-UTILITY instance
+#          mgmt_gateway: 10.0.0.1,
+#          # The management network netmask of this VNS-UTILITY instance
+#          mgmt_netmask: 255.255.255.0,
+#          # The data network IP address for this VNS-UTILITY instance
+#          # This also the interface that run DHCP/DNSMASQ servers
+#          # NSGV VM sends DHCP requests to this interface. Hence acts as uplink
+#          data_ip: 10.0.1.50,
+#          # The data network subnet address for this VNS-UTILITY instance
+#          # The subnet is configured in DHCP conf file 
+#          data_subnet: 10.0.1.0,
+#          # The data network netmask of this VNS-UTILITY instance
+#          data_netmask: 255.255.255.0,
+#          # NSGV VM IP addr.
+#          # This IP along with MAC addr is used to serve the DHCP client request coming from NSGV VM
+#          nsgv_ip: 10.0.1.60,
+#          # NSGV VM MAC address
+#          nsgv_mac: '52:54:00:88:85:12',
+#          # The FQDN for the VSD. Used to create certs for VNS-UTILITY VM      
+#          vsd_fqdn: vsd.example.com}
+#    # The path on the ansible host from which VNS-UTILITY qcow2 images will be copied
+#    nsgv_qcow2_path: "/home/caso/"
+#    # The file name of the qcow2 image
+#    nsgv_qcow2_file_name: "ncpe_centos7.qcow2"
+#    # A dictionary of params for only 1 NSGV instance for current release
+#    mynsgvs:
+#          # Define only hostname for this NSGV instance
+#          # Do not add domain to the host name
+#      - { hostname: nsgv,
+#          # The hypervior target where this NSGV instance will be run
+#          target_server: 135.227.181.232,
+#          # NSGV VM mac addr that goes in to XML config file
+#          nsgv_mac: '52:54:00:88:85:12'}
 #    # The hostname or IP address of the ansible machine
 #    ansible_host: 135.227.181.232
 #    # The names of the network bridges that are required on the target hosts
 #    mgmt_bridge: "virbr0"
 #    data_bridge: "virbr1"
+#    access_bridge: "access"
 #    # Destination directory for qcow2 images on the hypervisors.
 #    images_path: "/var/lib/libvirt/images/"
-#    # NTP servers the VSC, VSD and VSTAT should sync to.
+#    # NTP servers the VSC, VSD, VNS-UTILITY and VSTAT should sync to.
 #    # One or more ntp servers are required
 #    ntp_server_list:
 #      - 135.227.181.232
