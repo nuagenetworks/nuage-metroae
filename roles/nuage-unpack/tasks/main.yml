@@ -1,30 +1,22 @@
 ---
 
-- name: Ensure AWS CLI tools are present in case source is S3 link
-  pip: name=awscli
-  when: nuage_release_src_path | match("^s3\:\/\/")
-
-- name: Download directory in case source is S3 link
-  shell: "awscli s3 cp {{ nuage_binaries_source_path }} {{ temp-dir }}"
-# note that this requires "AWS_ACCESS_KEY_ID" and "AWS_SECRET_ACCESS_KEY" to be defined as envrionment variables
-  when: nuage_release_src_path | match("^s3\:\/\/")
-
 #################
 # VSD
 #################
 
-- name: Find name of VSD QCOW Archive
-  find: path="{{ nuage_release_src_path }}"  pattern="Nuage-VSD*QCOW*"
-  register: rc_vsd
-
-- name: Create directory to unpack VSD to
+- name: Ensure binaries directory exists for VSD QCOW 
   file: name="{{ nuage_unpacked_dest_path }}/vsd/" state=directory mode=0755
-  when: rc_vsd.matched > 0
 
-- name: Unpack VSD QCOW Archive
-  unarchive: src="{{ rc_vsd.files[0].path}}" dest="{{ nuage_unpacked_dest_path }}/vsd" list_files=yes
-  register: rc_vsd_archive_files
-  when: rc_vsd.matched > 0 and not nuage_unpacked|default(false) 
+- block:
+  - name: Find name of VSD QCOW Archive
+    find: path="{{ nuage_release_src_path }}"  pattern="Nuage-VSD*QCOW*"
+    register: rc_vsd
+
+  - name: Unpack VSD QCOW Archive
+    unarchive: src="{{ rc_vsd.files[0].path}}" dest="{{ nuage_unpacked_dest_path }}/vsd" list_files=yes
+    register: rc_vsd_archive_files
+    when: rc_vsd.matched > 0 
+  when: not nuage_unpacked|default(false) 
 
 - name: Find name of VSD QCOW File
   find: path="{{ nuage_unpacked_dest_path }}/vsd"  pattern="*.qcow2" recurse=yes
@@ -37,21 +29,23 @@
   when: rc_vsd_file.matched > 0
 
 ###################
-# Elastic
+# VSTAT - ElasticSearch
 ###################
 
-- name: Find name of ElasticSearch QCOW Archive
-  find: path="{{ nuage_release_src_path }}"  pattern="Nuage-elastic-*"
-  register: rc_vstat
 
-- name: Create directory to unpack Elastic to
+- name: Ensure binaries directory exists for ElasticSearch
   file: name="{{ nuage_unpacked_dest_path }}/elastic/" state=directory mode=0755
-  when: rc_vstat.matched > 0
 
-- name: Unpack Elastic QCOW Archive
-  unarchive: src="{{ rc_vstat.files[0].path}}" dest="{{ nuage_unpacked_dest_path }}/elastic" list_files=yes
-  register: rc_vstat_archive_files
-  when: rc_vstat.matched > 0 and not nuage_unpacked|default(false)
+- block:
+  - name: Find name of ElasticSearch QCOW Archive
+    find: path="{{ nuage_release_src_path }}"  pattern="Nuage-elastic-*"
+    register: rc_vstat
+
+  - name: Unpack Elastic QCOW Archive
+    unarchive: src="{{ rc_vstat.files[0].path}}" dest="{{ nuage_unpacked_dest_path }}/elastic" list_files=yes
+    register: rc_vstat_archive_files
+    when: rc_vstat.matched > 0 
+  when: not nuage_unpacked|default(false)
 
 - name: Find name of Elastic QCOW File
   find: path="{{ nuage_unpacked_dest_path }}/elastic"  pattern="*.qcow2" recurse=yes
