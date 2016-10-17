@@ -29,9 +29,8 @@ You can also choose to unpack the binaries yourself, skipping the `nuage-unpack`
 ```
 <your_path>/vsd
 <your_path>/vsc
-<your_path>/vrs
+<your_path>/vrs (VRS and Dockermon files go here)
 <your_path>/vstat
-<your_path>/dockermon
 ```
 
 You can also choose to run the `nuage-unpack` role manually by executing `./metro-ansible nuage_unpack.yml`
