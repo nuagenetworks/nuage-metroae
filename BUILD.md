@@ -1,8 +1,8 @@
-# build and reset-build
+# build and reset-build playbooks
 
-The build playbook (`build.yml`) is used to automatically populate a number of custom variable files for the operation of the metro playbooks. Running `./metro-playbook build.yml` will use the variables defined in `build.yml` to create a hosts file, populate a host_vars directory, populate a group_vars directory, and make a few additional variable changes as required. The `build.yml` playbook will do all the work for you.
+The build playbook (`build.yml`) is used to automatically populate a number of Ansible variable files for the operation of the metro playbooks. Running `./metro-playbook build.yml` will use the variables defined in `build-vars.yml` to create a `hosts` file, populate a `host_vars` directory, populate a `group_vars` directory, and make a few additional variable changes as required. The `build.yml` playbook will do all the work for you.
 
-Note that the syntax of the contents of `build.yml` must be precise. If things get messed up, we have provided the `reset_build.yml` playbook to let you start over. *When you run `./metro-ansible rest_build.yml`, the contents of `build.yml` will be overwritten, the hosts file will be destroyed, the host_vars directory will be destroyed, and the group_vars directory will be destroyed. The variable configuration of metro will be reset to factory settings! You may lose your work!* A backup copy of `build.yml` will be created as `build.bak` just in case you didn't mean it.
+Note that the syntax of the contents of `build-vars.yml` must be precise. If things get messed up, we have provided the `reset_build.yml` playbook to let you start over. *When you run `./metro-ansible rest_build.yml`, the contents of `build-vars.yml` will be overwritten, the `hosts` file will be destroyed, the `host_vars` directory will be destroyed, and the `group_vars` directory will be destroyed. The variable configuration of metro will be reset to factory settings! You may lose your work!* A backup copy of `build-vars.yml` will be created with a proper timestamp in case you did not mean it.
 
 To run the build, execute:
 
@@ -20,23 +20,29 @@ or
 
 `./metro-ansible rest_build.yml`
 
+# nuage_unpack playbook
+
+When you download the Nuage Networks software, it will come as a set of archives for each component of the solution. To deploy the software using Metro-Express only a few of the binaries in those archives are required. As such the `nuage-unpack` playbook will analyze all the archives, extract the necessary binaries and store them in a configurable directory.
+It actually relies on the `nuage-unpack` role, which uses the parameter `nuage_unpacked` as an input if it should actually extract the binaries, or assume this was already done. The role will also set the necessary build variables to be used in the bigger `build.yml` playbook.
+
+
 # Reference
 
-For reference, here is a description of the contents of the `build.yml` file, with comments:
+For reference, here is a description of the contents of the `build-vars.yml` file, with comments:
 
 ```
-#- hosts: localhost
-#  gather_facts: no
-#  roles:
-#    - build
-#  vars:
+#    nuage_release_src_path: "{{ ansible_env.HOME}}/nuage-release"
+#    # The directory where to extract the relevant Nuage Networks binaries to
+#    nuage_unpacked_dest_path: "{{ ansible_env.HOME}}/nuage-unpacked"
+#    # Parameter to define whether archives have to be extracted, or whether only build variables have to be set based on the files present in the binaries directory
+#    nuage_unpacked: true
+#    # Parameter used to define the Hypervisor-Architecture (el6|el7|ubuntu supported for now)
+#    nuage_target_architecture: "el7"
+#
+#    # VSD
 #    # When True or undefined, all VSDs will be configured stand-alone. When False
 #    # we will expect 3 VSD definitions, below, for clustered deployment.
 #    vsd_standalone: True
-#    # The ansible server path where the VSD qcow2 image will be copied from
-#    vsd_qcow2_path: "/home/caso/"
-#    # The name of the VSD qcow2 file
-#    vsd_qcow2_file_name: "VSD-4.0.3_32.qcow2"
 #    # A dictionary of params for 0 or more VSDs
 #    # Note: Multiple VSDs can be deployed from the same qcow2 file
 #    myvsds:
@@ -50,10 +56,25 @@ For reference, here is a description of the contents of the `build.yml` file, wi
 #          mgmt_gateway: 192.168.122.1,
 #          # The netmask of this VSD instance
 #          mgmt_netmask: 255.255.255.0 }
-#    # The ansibe server path where the VSC qcow2 will be copied from
-#    vsc_qcow2_path: "/home/caso/",
-#    # The file name of this VSC qcow2
-#    vsc_qcow2_file_name: "vsc_singledisk.qcow2" }
+#
+#    VSTAT - ElasticSearch
+#    # A dictionary of params for 0 or more VSTAT instances
+#    # Note: Multiple VSTAT instances can be copied from the same qcow2
+#    myvstats:
+#          # The hostname or IP address for this VSTAT instance
+#      - { hostname: vstat1.example.com,
+#          # The hypervior target where this VSTAT instance will be run
+#          target_server: 135.227.181.232,
+#          # The management IP address of this VSTAT instance
+#          mgmt_ip: 192.168.122.204,
+#          # The management gateway IP address of this VSTAT instance
+#          mgmt_gateway: 192.168.122.1,
+#          # The management network netmask of this VSTAT instance
+#          mgmt_netmask: 255.255.255.0,
+#          # The FQDN for the VSD this VSTAT instance will connect to
+#          vsd_fqdn: vsd1.example.com }
+#
+#    VSC
 #    # A dictionary of params for 0 or more VSCs
 #    # Note: Multiple VSCs can be deployed from the same qcow2 file
 #    myvscs:
@@ -89,21 +110,10 @@ For reference, here is a description of the contents of the `build.yml` file, wi
 #          system_ip: 1.1.1.3,
 #          xmpp_username: vsc,
 #          vsc_static_route_list: { 0.0.0.0/1 } }
-#    # The path on the ansible host from which VRS packages will be copied
-#    vrs_package_path: "/home/caso/",
-#    # A list of the packages to be installed on the VRS node
-#    # Note that for RedHat OS family one VRS package is required.
-#    # For example:
-#    # vrs_package_file_name_list: { "nuage-openvswitch-3.2.9-323.el7.x86_64.rpm" }
-#    # But for Debian OS family, three VRS packages are required.
-#    # For example:
-#    # vrs_package_file_name_list: " "nuage-openvswitch-common_3.2.9-323.amd64.deb", "nuage-openvswitch-switch_3.2.9-323.amd64.deb", "nuage-python-openvswitch_3.2.9-323_all.deb" } 
-#    #
-#    vrs_package_file_name_list: { "nuage-python-openvswitch_4.0.3-25_all.deb", "nuage-openvswitch-common_4.0.3-25_all.deb", "nuage-openvswitch-switch_4.0.3-25_amd64.deb"} }
+#
+#    ##  VRS
 #    # When True, install dockermon on the VRS. When False, don't.
 #    dockermon_install: True
-#    # The file name of the dockermon package
-#    dockermon_package_file_name: "nuage-docker-monitor_4.0.3-25_all.deb" }
 #    # A dictionary of params for 0 or more VRSs
 #    # Note: Multiple VRS nodes can be configured from the same packages
 #    myvrss:
@@ -113,27 +123,12 @@ For reference, here is a description of the contents of the `build.yml` file, wi
 #          active_controller_ip: 192.168.122.202,
 #          # The standby VSC IP address for this VRS node
 #          standby_controller_ip: 192.168.122.203 }
-#    # The path on the ansible host from which VSTAT qcow2 images will be copied
-#    vstat_qcow2_path: "/home/caso/",
-#    # The file name of the qcow2 image
-#    vstat_qcow2_file_name: "hd_template.qcow2" }
-#    # A dictionary of params for 0 or more VSTAT instances
-#    # Note: Multiple VSTAT instances can be copied from the same qcow2
-#    myvstats:
-#          # The hostname or IP address for this VSTAT instance
-#      - { hostname: vstat1.example.com,
-#          # The hypervior target where this VSTAT instance will be run
-#          target_server: 135.227.181.232,
-#          # The management IP address of this VSTAT instance
-#          mgmt_ip: 192.168.122.204,
-#          # The management gateway IP address of this VSTAT instance
-#          mgmt_gateway: 192.168.122.1,
-#          # The management network netmask of this VSTAT instance
-#          mgmt_netmask: 255.255.255.0,
-#          # The FQDN for the VSD this VSTAT instance will connect to
-#          vsd_fqdn: vsd1.example.com }
+#
+#    # VNS
 #    # When True VNS specific configuration is triggered in the VSD and VSC
 #    vns: False
+#
+#    ## VNSUTIL
 #    # The path on the ansible host from which VNS-UTILITY qcow2 images will be copied
 #    vnsutil_qcow2_path: "/home/caso/"
 #    # The file name of the qcow2 image
@@ -167,6 +162,8 @@ For reference, here is a description of the contents of the `build.yml` file, wi
 #          nsgv_mac: '52:54:00:88:85:12',
 #          # The FQDN for the VSD. Used to create certs for VNS-UTILITY VM      
 #          vsd_fqdn: vsd.example.com}
+#
+#    ## NSGV
 #    # The path on the ansible host from which VNS-UTILITY qcow2 images will be copied
 #    nsgv_qcow2_path: "/home/caso/"
 #    # The file name of the qcow2 image
@@ -180,6 +177,8 @@ For reference, here is a description of the contents of the `build.yml` file, wi
 #          target_server: 135.227.181.232,
 #          # NSGV VM mac addr that goes in to XML config file
 #          nsgv_mac: '52:54:00:88:85:12'}
+#
+#    # ENVIRONMENT
 #    # The hostname or IP address of the ansible machine
 #    ansible_host: 135.227.181.232
 #    # The names of the network bridges that are required on the target hosts
