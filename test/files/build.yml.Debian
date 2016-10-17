@@ -1,21 +1,28 @@
 ---
 # See BUILD.md for details
+
+# First set of tasks is to gather_facts so that subsequent task list can use these facts as part of variable setting
 - hosts: localhost
-  gather_facts: no
+  gather_facts: yes
+  tasks: []
+
+# Actual tasks to generate build configuration
+- hosts: localhost
   roles:
+    - nuage-unpack
     - build
   vars:
+    nuage_release_src_path: "/tmp/metro"
+    nuage_unpacked_dest_path: "/tmp/metro"
+    nuage_target_architecture: "ubuntu"
+    nuage_unpacked: true
     vsd_standalone: True
-    vsd_qcow2_path: "/tmp/metro/R4"
-    vsd_qcow2_file_name: "VSD-4.0.4_44.qcow2"
     myvsds:
       - { hostname: jenkinsvsd1.example.com,
           target_server: 135.227.181.232,
           mgmt_ip: 192.168.122.211,
           mgmt_gateway: 192.168.122.1,
           mgmt_netmask: 255.255.255.0 }
-    vsc_qcow2_path: "/tmp/metro/R4"
-    vsc_qcow2_file_name: "vsc_singledisk.qcow2"
     myvscs:
       - { hostname: jenkinsvsc1.example.com,
           target_server: 135.227.181.232,
@@ -39,16 +46,11 @@
           system_ip: 1.1.1.3,
           xmpp_username: jenkinsvsc2,
           vsc_static_route_list: { 0.0.0.0/1 } }
-    vrs_package_path: "/tmp/metro/R4"
-    vrs_package_file_name_list: { "nuage-python-openvswitch_4.0.4-49_all.deb", "nuage-openvswitch-common_4.0.4-49_all.deb", "nuage-openvswitch-switch_4.0.4-49_amd64.deb"}
     dockermon_install: True
-    dockermon_package_file_name: "nuage-docker-monitor_4.0.4-49_all.deb" 
     myvrss:
       - { node_ip_addr: 192.168.122.19,
           active_controller_ip: 192.168.122.212,
           standby_controller_ip: 192.168.122.213 }
-    vstat_qcow2_path: "/tmp/metro/R4"
-    vstat_qcow2_file_name: "hd_template.qcow2"
     myvstats:
       - { hostname: jenkinsvstat1.example.com,
           target_server: 135.227.181.232,
@@ -56,7 +58,6 @@
           mgmt_gateway: 192.168.122.1,
           mgmt_netmask: 255.255.255.0,
           vsd_fqdn: jenkinsvsd1.example.com }
-    ansible_host: 135.227.181.232
     vns: False
     vnsutil_qcow2_path: "/tmp/metro/R4"
     vnsutil_qcow2_file_name: "vns-util-0.0_98.qcow2"
@@ -79,6 +80,7 @@
       - { hostname: nsgv,
           target_server: 135.227.181.232,
           nsgv_mac: '52:54:00:88:85:12'}
+    ansible_host: 135.227.181.232
     mgmt_bridge: "virbr0"
     data_bridge: "virbr1"
     access_bridge: "access"
