@@ -22,9 +22,19 @@ or
 
 # nuage_unpack playbook
 
-When you download the Nuage Networks software, it will come as a set of archives for each component of the solution. To deploy the software using Metro-Express only a few of the binaries in those archives are required. As such the `nuage-unpack` playbook will analyze all the archives, extract the necessary binaries and store them in a configurable directory.
-It actually relies on the `nuage-unpack` role, which uses the parameter `nuage_unpacked` as an input if it should actually extract the binaries, or assume this was already done. The role will also set the necessary build variables to be used in the bigger `build.yml` playbook.
+When the `build.yml` playbook is executed, it will first check the setting for the parameter `nuage_unpacked` in the vars section of the plabook. When `nuage_unpacked` is set to `false`, the `nuage-unpack` role will be executed prior to setting other parameters. The `nuage_unpack` role is useful when you download the Nuage Networks software as a set of archives for each component of the solution. To deploy the software using Metro, only a few of the binaries in those archives are required. As such the `nuage-unpack` role will analyze all the archives, extract the necessary binaries, and store them in a configurable directory.
 
+You can also choose to unpack the binaries yourself, skipping the `nuage-unpack` role by setting `nuage_unpacked` to `true` in `build.yml`. In such a case, the playbooks will assume that you have already unpacked the binaries into the appropriate locations, as shown below.
+
+```
+<your_path>/vsd
+<your_path>/vsc
+<your_path>/vrs
+<your_path>/vstat
+<your_path>/dockermon
+```
+
+You can also choose to run the `nuage-unpack` role manually by executing `./metro-ansible nuage_unpack.yml`
 
 # Reference
 
@@ -34,7 +44,7 @@ For reference, here is a description of the contents of the `build-vars.yml` fil
 #    nuage_release_src_path: "{{ ansible_env.HOME}}/nuage-release"
 #    # The directory where to extract the relevant Nuage Networks binaries to
 #    nuage_unpacked_dest_path: "{{ ansible_env.HOME}}/nuage-unpacked"
-#    # Parameter to define whether archives have to be extracted, or whether only build variables have to be set based on the files present in the binaries directory
+#    # Parameter to define whether binaries have already been extracted (`nauge_unpacked: true`) or whether the `nuage-unpack` role should be used to extract them (`nuage_unpacked: false`).
 #    nuage_unpacked: true
 #    # Parameter used to define the Hypervisor-Architecture (el6|el7|ubuntu supported for now)
 #    nuage_target_architecture: "el7"
