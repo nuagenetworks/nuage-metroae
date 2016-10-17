@@ -13,112 +13,110 @@
   delegate_to: "{{ target_server }}"
   remote_user: root
 
-- name: Check if {{ inventory_hostname }} is already running on {{ target_server }}
-  fail: msg="The VM {{ inventory_hostname }} is already defined on this target_server."
-  when: inventory_hostname in virt_vms.list_vms
+- block:
+  - name: Create libvirt image directory on {{ target_server }}
+    file: path={{ images_path }}/{{ inventory_hostname }}
+          state=directory
+          owner={{ libvirt.user }}
+          group={{ libvirt.group }}
+    delegate_to: "{{ target_server }}"
+    remote_user: root
 
-- name: Create libvirt image directory on {{ target_server }}
-  file: path={{ images_path }}/{{ inventory_hostname }}
-        state=directory
-        owner={{ libvirt.user }}
-        group={{ libvirt.group }}
-  delegate_to: "{{ target_server }}"
-  remote_user: root
+  - name: Copy the VSTAT qcow image to virt images directory on {{ target_server }}
+    copy: src={{ vstat_qcow2_path }}/{{ vstat_qcow2_file_name }}
+          dest={{ images_path }}/{{ inventory_hostname }}
+          owner={{ libvirt.user }}
+          group={{ libvirt.group }}
+    delegate_to: "{{ target_server }}"
+    remote_user: root
 
-- name: Copy the VSTAT qcow image to virt images directory on {{ target_server }}
-  copy: src={{ vstat_qcow2_path }}/{{ vstat_qcow2_file_name }}
-        dest={{ images_path }}/{{ inventory_hostname }}
-        owner={{ libvirt.user }}
-        group={{ libvirt.group }}
-  delegate_to: "{{ target_server }}"
-  remote_user: root
+  - name: Create a temporary copy of the network script for eth0 on {{ target_server }}
+    template: src=ifcfg-eth0.j2 backup=no dest={{ images_path }}/{{ inventory_hostname }}/ifcfg-eth0
+    delegate_to: "{{ target_server }}"
+    remote_user: root
 
-- name: Create a temporary copy of the network script for eth0 on {{ target_server }}
-  template: src=ifcfg-eth0.j2 backup=no dest={{ images_path }}/{{ inventory_hostname }}/ifcfg-eth0
-  delegate_to: "{{ target_server }}"
-  remote_user: root
+  - name: Copy eth0 network script file to the VSTAT image on {{ target_server }}
+    command: guestfish --rw -a {{ images_path }}/{{ inventory_hostname }}/{{ vstat_qcow2_file_name }} -m /dev/sda2 copy-in {{ images_path }}/{{ inventory_hostname }}/ifcfg-eth0 /etc/sysconfig/network-scripts/
+    delegate_to: "{{ target_server }}"
+    remote_user: root
 
-- name: Copy eth0 network script file to the VSTAT image on {{ target_server }}
-  command: guestfish --rw -a {{ images_path }}/{{ inventory_hostname }}/{{ vstat_qcow2_file_name }} -m /dev/sda2 copy-in {{ images_path }}/{{ inventory_hostname }}/ifcfg-eth0 /etc/sysconfig/network-scripts/
-  delegate_to: "{{ target_server }}"
-  remote_user: root
+  - name: Remove temporary copy of eth0 network script
+    file: path={{ images_path }}/{{ inventory_hostname }}/ifcfg-eth0 state=absent
+    delegate_to: "{{ target_server }}"
+    remote_user: root
 
-- name: Remove temporary copy of eth0 network script
-  file: path={{ images_path }}/{{ inventory_hostname }}/ifcfg-eth0 state=absent
-  delegate_to: "{{ target_server }}"
-  remote_user: root
+  - name: Set the owner and group on the eth0 network script file in the VSTAT image
+    command: guestfish --rw -a {{ images_path }}/{{ inventory_hostname }}/{{ vstat_qcow2_file_name }} -m /dev/sda2 chown 0 0 /etc/sysconfig/network-scripts/ifcfg-eth0
+    delegate_to: "{{ target_server }}"
+    remote_user: root
 
-- name: Set the owner and group on the eth0 network script file in the VSTAT image
-  command: guestfish --rw -a {{ images_path }}/{{ inventory_hostname }}/{{ vstat_qcow2_file_name }} -m /dev/sda2 chown 0 0 /etc/sysconfig/network-scripts/ifcfg-eth0
-  delegate_to: "{{ target_server }}"
-  remote_user: root
+  - name: Create a temporary copy of the syscfg network file on {{ target_server }}
+    template: src=network.j2 backup=no dest={{ images_path }}/{{ inventory_hostname }}/network
+    delegate_to: "{{ target_server }}"
+    remote_user: root
 
-- name: Create a temporary copy of the syscfg network file on {{ target_server }}
-  template: src=network.j2 backup=no dest={{ images_path }}/{{ inventory_hostname }}/network
-  delegate_to: "{{ target_server }}"
-  remote_user: root
+  - name: Copy network file to the VSTAT image
+    command: guestfish --rw -a {{ images_path }}/{{ inventory_hostname }}/{{ vstat_qcow2_file_name }} -m /dev/sda2 copy-in {{ images_path }}/{{ inventory_hostname }}/network /etc/sysconfig/
+    delegate_to: "{{ target_server }}"
+    remote_user: root
 
-- name: Copy network file to the VSTAT image
-  command: guestfish --rw -a {{ images_path }}/{{ inventory_hostname }}/{{ vstat_qcow2_file_name }} -m /dev/sda2 copy-in {{ images_path }}/{{ inventory_hostname }}/network /etc/sysconfig/
-  delegate_to: "{{ target_server }}"
-  remote_user: root
+  - name: Remove temporary copy of network file
+    file: path={{ images_path }}/{{ inventory_hostname }}/network state=absent
+    delegate_to: "{{ target_server }}"
+    remote_user: root
 
-- name: Remove temporary copy of network file
-  file: path={{ images_path }}/{{ inventory_hostname }}/network state=absent
-  delegate_to: "{{ target_server }}"
-  remote_user: root
+  - name: Set the owner and group for the network hostname file on the VSTAT image
+    command: guestfish --rw -a {{ images_path }}/{{ inventory_hostname }}/{{ vstat_qcow2_file_name }} -m /dev/sda2 chown 0 0 /etc/sysconfig/network
+    delegate_to: "{{ target_server }}"
+    remote_user: root
 
-- name: Set the owner and group for the network hostname file on the VSTAT image
-  command: guestfish --rw -a {{ images_path }}/{{ inventory_hostname }}/{{ vstat_qcow2_file_name }} -m /dev/sda2 chown 0 0 /etc/sysconfig/network
-  delegate_to: "{{ target_server }}"
-  remote_user: root
+  - name: Create the directory /root/.ssh for authorized_keys
+    command: guestfish --rw -a {{ images_path }}/{{ inventory_hostname }}/{{ vstat_qcow2_file_name }} -m /dev/sda2 mkdir-mode /root/.ssh 0700
+    delegate_to: "{{ target_server }}"
+    remote_user: root
 
-- name: Create the directory /root/.ssh for authorized_keys
-  command: guestfish --rw -a {{ images_path }}/{{ inventory_hostname }}/{{ vstat_qcow2_file_name }} -m /dev/sda2 mkdir-mode /root/.ssh 0700
-  delegate_to: "{{ target_server }}"
-  remote_user: root
+  - name: Set the owner and group for the /root/.ssh directory on the VSTAT image
+    command: guestfish --rw -a {{ images_path }}/{{ inventory_hostname }}/{{ vstat_qcow2_file_name }} -m /dev/sda2 chown 0 0 /root/.ssh
+    delegate_to: "{{ target_server }}"
+    remote_user: root
 
-- name: Set the owner and group for the /root/.ssh directory on the VSTAT image
-  command: guestfish --rw -a {{ images_path }}/{{ inventory_hostname }}/{{ vstat_qcow2_file_name }} -m /dev/sda2 chown 0 0 /root/.ssh
-  delegate_to: "{{ target_server }}"
-  remote_user: root
+  - name: Get the public key for the current user
+    local_action: command cat ~/.ssh/id_rsa.pub
+    register: current_user_ssh_key
 
-- name: Get the public key for the current user
-  local_action: command cat ~/.ssh/id_rsa.pub
-  register: current_user_ssh_key
+  - name: Create a temporary copy of the authorized_keys file
+    template: src=authorized_keys.j2 backup=no dest={{ images_path }}/{{ inventory_hostname }}/authorized_keys
+    delegate_to: "{{ target_server }}"
+    remote_user: root
 
-- name: Create a temporary copy of the authorized_keys file
-  template: src=authorized_keys.j2 backup=no dest={{ images_path }}/{{ inventory_hostname }}/authorized_keys
-  delegate_to: "{{ target_server }}"
-  remote_user: root
+  - name: Copy authorized_keys file to the VSTAT image
+    command: guestfish --rw -a {{ images_path }}/{{ inventory_hostname }}/{{ vstat_qcow2_file_name }} -m /dev/sda2 copy-in {{ images_path }}/{{ inventory_hostname }}/authorized_keys /root/.ssh/
+    delegate_to: "{{ target_server }}"
+    remote_user: root
 
-- name: Copy authorized_keys file to the VSTAT image
-  command: guestfish --rw -a {{ images_path }}/{{ inventory_hostname }}/{{ vstat_qcow2_file_name }} -m /dev/sda2 copy-in {{ images_path }}/{{ inventory_hostname }}/authorized_keys /root/.ssh/
-  delegate_to: "{{ target_server }}"
-  remote_user: root
+  - name: Remove temporary copy of authorized_keys file
+    file: path={{ images_path }}/{{ inventory_hostname }}/authorized_keys state=absent
+    delegate_to: "{{ target_server }}"
+    remote_user: root
 
-- name: Remove temporary copy of authorized_keys file
-  file: path={{ images_path }}/{{ inventory_hostname }}/authorized_keys state=absent
-  delegate_to: "{{ target_server }}"
-  remote_user: root
+  - name: Set the owner and group for the authorized_keys file on the VSTAT image
+    command: guestfish --rw -a {{ images_path }}/{{ inventory_hostname }}/{{ vstat_qcow2_file_name }} -m /dev/sda2 chown 0 0 /root/.ssh/authorized_keys
+    delegate_to: "{{ target_server }}"
+    remote_user: root
 
-- name: Set the owner and group for the authorized_keys file on the VSTAT image
-  command: guestfish --rw -a {{ images_path }}/{{ inventory_hostname }}/{{ vstat_qcow2_file_name }} -m /dev/sda2 chown 0 0 /root/.ssh/authorized_keys
-  delegate_to: "{{ target_server }}"
-  remote_user: root
+  - name: Set the mode for the authorized_keys file on the VSTAT image
+    command: guestfish --rw -a {{ images_path }}/{{ inventory_hostname }}/{{ vstat_qcow2_file_name }} -m /dev/sda2 chmod 0640 /root/.ssh/authorized_keys
+    delegate_to: "{{ target_server }}"
+    remote_user: root
 
-- name: Set the mode for the authorized_keys file on the VSTAT image
-  command: guestfish --rw -a {{ images_path }}/{{ inventory_hostname }}/{{ vstat_qcow2_file_name }} -m /dev/sda2 chmod 0640 /root/.ssh/authorized_keys
-  delegate_to: "{{ target_server }}"
-  remote_user: root
-
-- name: "Define new VSTAT VM"
-  virt: name="{{ inventory_hostname }}"
-        command=define
-        xml="{{ lookup('template', 'vstat.xml.j2') }}"
-        uri=qemu:///system
-  delegate_to: "{{ target_server }}"
-  remote_user: root
+  - name: "Define new VSTAT VM"
+    virt: name="{{ inventory_hostname }}"
+          command=define
+          xml="{{ lookup('template', 'vstat.xml.j2') }}"
+          uri=qemu:///system
+    delegate_to: "{{ target_server }}"
+    remote_user: root
+  when: inventory_hostname not in virt_vms.list_vms
 
 - name: "Run VSTAT VM"
   virt: name="{{ inventory_hostname }}"
