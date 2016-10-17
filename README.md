@@ -7,6 +7,7 @@
 1. VSD HA/cluster support, limited to exactly 3 VSD nodes
 1. Limited VNS support, that handles 1 NSGV at present. Requires ansible 2.2 that has SROS module support.
 1. A new pre-deploy build process to simplify variable settings
+1. `nuage-unpack` role added to optionally extract binaries from Nuage distribution archives. Side effect: Names of binary files are automatically pulled and no longer need to be specified in `build.yml`.
 
 Feedback and bug reports should be provided to the Nuage CASO team via email to *[Brian Castelli](mailto://brian.castelli@nokia.com)*.
 
