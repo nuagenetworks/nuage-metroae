@@ -14,19 +14,15 @@
   - name: Find name of VSD QCOW Archive
     find: path="{{ nuage_release_src_path }}"  pattern="Nuage-VSD*QCOW*"
     register: rc_vsd
-    tags:
-      - vsd
-      - nuage-unpack
-
 
   - name: Unpack VSD QCOW Archive
     unarchive: src="{{ rc_vsd.files[0].path}}" dest="{{ nuage_unpacked_dest_path }}/vsd" list_files=yes
     register: rc_vsd_archive_files
     when: rc_vsd.matched > 0 
-    tags:
-      - vsd
-      - nuage-unpack
   when: not nuage_unpacked|default(false) 
+  tags:
+    - vsd
+    - nuage-unpack
 
 - name: Find name of VSD QCOW File
   find: path="{{ nuage_unpacked_dest_path }}/vsd"  pattern="*.qcow2" recurse=yes
@@ -240,16 +236,105 @@
     - nuage-unpack
 
 - block:
+  - name: Set dockermon target path based on version (Ubuntu architecture)
+    set_fact:
+      dockermon_findfile_path: "{{ nuage_unpacked_dest_path }}/dockermon/{{ { 'ubuntu':'ubuntu', 'ubuntu.14.04':'ubuntu-14.0', 'ubuntu.16.04':'ubuntu-16.04' }[nuage_target_architecture] }}"
   - name: Find name of dockermon package files (Ubuntu architecture)
-    find: path="{{ nuage_unpacked_dest_path }}/dockermon"  pattern="*.deb" recurse=yes
+    find: path="{{ dockermon_findfile_path }}"  pattern="*.deb" recurse=yes
     register: rc_dockermon_file
   - name: Register dockermon variables with proper path and image locations for use in other playbooks (Ubuntu architecture)
     set_fact:
       dockermon_package_path: "{{ rc_dockermon_file.files[0].path | dirname }}"
       dockermon_package_file_name: "{{ rc_dockermon_file.files[0].path | basename }}"
     when: rc_dockermon_file.matched > 0
-  when: nuage_target_architecture == "ubuntu"
+  when: nuage_target_architecture | search ("ubuntu")
   tags:
     - dockermon
     - nuage-unpack
 
+################
+# VNS
+#################
+
+- name: Ensure binaries directory exists for VNS
+  file: name="{{ nuage_unpacked_dest_path }}/{{ item }}" state=directory mode=0755
+  with_items:
+    - "vns/nsg/"
+    - "vns/nsg/aws"
+    - "vns/utils/"
+  tags:
+    - vns
+    - nuage-unpack
+
+- block:
+  - name: Find name of VNS Archive
+    find: path="{{ nuage_release_src_path }}"  pattern="Nuage-VNS*"
+    register: rc_vns
+
+  - name: Unpack VNS Archive
+    unarchive: src="{{ rc_vns.files[0].path}}" dest="{{ nuage_unpacked_dest_path }}/vns" list_files=yes
+    register: rc_vns_archive_files
+    when: rc_vns.matched > 0 and false
+   
+  - name: Find name of NSG and Utils archive files
+    find: path="{{ nuage_unpacked_dest_path }}/vns/" pattern="{{ item }}"
+    with_items:
+     - "Nuage-VNS-NSG-*"
+     - "Nuage-VNS-Utils-*"
+    register: rc_vns_archives
+
+  - name: Unpack VNS NSG and Utils archive files
+    unarchive: src="{{ rc_vns_archives.results[item.0].files[0].path }}" dest="{{ nuage_unpacked_dest_path }}/{{ item.1 }}"
+    register: rc_vns_archives_files
+    with_indexed_items:
+      - "vns/nsg/"
+      - "vns/utils/"
+    when: false
+ 
+  - name: Find name of NSG-AWSs archive files
+    find: path="{{ nuage_unpacked_dest_path }}/vns/nsg" pattern="{{ item }}"
+    with_items:
+     - "Nuage-NSG-*AWS*"
+    register: rc_vns_archives
+
+  - name: Unpack VNS NSG and Utils archive files
+    unarchive: src="{{ rc_vns_archives.results[item.0].files[0].path }}" dest="{{ nuage_unpacked_dest_path }}/{{ item.1 }}"
+    register: rc_vns_archives_files
+    with_indexed_items:
+      - "vns/nsg/aws"
+    when: false
+ 
+  when: not nuage_unpacked|default(false)
+  tags:
+    - vns
+    - nuage-unpack
+
+- name: Find name of VNS files
+  find: path="{{ nuage_unpacked_dest_path }}/{{ item.subdir }}"  pattern="{{ item.pattern }}" recurse=yes
+  register: rc_vns_files
+  with_items:
+    - { subdir: "vns/utils/", pattern: "vns-util-*.qcow2" }
+    - { subdir: "vns/nsg/", pattern: "ncpe_centos7.qcow2" }
+    - { subdir: "vns/nsg/aws", pattern: "*.raw" }
+  tags:
+    - vns
+    - nuage-unpack
+
+- name: Register VNS variables with proper path and image locations for use in other playbooks
+  set_fact: 
+    "{{ item.1 }}_path": "{{ rc_vns_files.results[item.0].files[0].path | dirname }}"
+    "{{ item.1 }}_file_name": "{{ rc_vns_files.results[item.0].files[0].path | basename }}"
+  with_indexed_items:
+    - vnsutil_qcow2
+    - nsgv_qcow2
+    - nsgami_raw
+  tags:
+    - vns
+    - nuage-unpack
+
+- block:
+  - debug: var=vnsutil_qcow2_path
+  - debug: var=vnsutil_qcow2_file_name
+  tags:
+    - vns
+    - nuage-unpack
