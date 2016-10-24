@@ -2,7 +2,7 @@
 
 The build playbook (`build.yml`) is used to automatically populate a number of Ansible variable files for the operation of the metro playbooks. Running `./metro-playbook build.yml` will use the variables defined in `build-vars.yml` to create a `hosts` file, populate a `host_vars` directory, populate a `group_vars` directory, and make a few additional variable changes as required. The `build.yml` playbook will do all the work for you.
 
-Note that the syntax of the contents of `build-vars.yml` must be precise. If things get messed up, we have provided the `reset_build.yml` playbook to let you start over. *When you run `./metro-ansible rest_build.yml`, the contents of `build-vars.yml` will be overwritten, the `hosts` file will be destroyed, the `host_vars` directory will be destroyed, and the `group_vars` directory will be destroyed. The variable configuration of metro will be reset to factory settings! You may lose your work!* A backup copy of `build-vars.yml` will be created with a proper timestamp in case you did not mean it.
+Note that the syntax of the contents of `build-vars.yml` must be precise. If things get messed up, we have provided the `reset_build.yml` playbook to let you start over. *When you run `./metro-ansible reset_build.yml`, the contents of `build-vars.yml` will be overwritten, the `hosts` file will be destroyed, the `host_vars` directory will be destroyed, and the `group_vars` directory will be destroyed. The variable configuration of metro will be reset to factory settings! You may lose your work!* A backup copy of `build-vars.yml` will be created with a proper timestamp in case you did not mean it.
 
 To run the build, execute:
 
@@ -29,11 +29,16 @@ You can also choose to unpack the binaries yourself, skipping the `nuage-unpack`
 ```
 <your_path>/vsd
 <your_path>/vsc
-<your_path>/vrs (VRS and Dockermon files go here)
+<your_path>/vrs
+<your_path>/dockermon
 <your_path>/vstat
+<your_path>/vns/nsg
+<your_path>/vns/nsg/aws
+<your_path>/vns/util
 ```
 
 You can also choose to run the `nuage-unpack` role manually by executing `./metro-ansible nuage_unpack.yml`
+The `nuage-unpack` role also uses Ansible tags to limit the extraction or variable setting to a particular component of choice.
 
 # Reference
 
@@ -83,7 +88,7 @@ For reference, here is a description of the contents of the `build-vars.yml` fil
 #          # The FQDN for the VSD this VSTAT instance will connect to
 #          vsd_fqdn: vsd1.example.com }
 #
-#    VSC
+#    ## VSC
 #    # A dictionary of params for 0 or more VSCs
 #    # Note: Multiple VSCs can be deployed from the same qcow2 file
 #    myvscs:
@@ -138,10 +143,6 @@ For reference, here is a description of the contents of the `build-vars.yml` fil
 #    vns: False
 #
 #    ## VNSUTIL
-#    # The path on the ansible host from which VNS-UTILITY qcow2 images will be copied
-#    vnsutil_qcow2_path: "/home/caso/"
-#    # The file name of the qcow2 image
-#    vnsutil_qcow2_file_name: "vns-util-0.0_98.qcow2"
 #    # A dictionary of params for 0 or more VNS-UTILITY instances
 #    # Note: Multiple VNS-UTILITY instances can be copied from the same qcow2
 #    myvnsutils:
@@ -173,10 +174,6 @@ For reference, here is a description of the contents of the `build-vars.yml` fil
 #          vsd_fqdn: vsd.example.com}
 #
 #    ## NSGV
-#    # The path on the ansible host from which VNS-UTILITY qcow2 images will be copied
-#    nsgv_qcow2_path: "/home/caso/"
-#    # The file name of the qcow2 image
-#    nsgv_qcow2_file_name: "ncpe_centos7.qcow2"
 #    # A dictionary of params for only 1 NSGV instance for current release
 #    mynsgvs:
 #          # Define only hostname for this NSGV instance
