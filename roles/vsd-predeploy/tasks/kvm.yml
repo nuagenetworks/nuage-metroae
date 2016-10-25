@@ -32,6 +32,8 @@
    - libguestfs-tools
    - libvirt-python
   when: ansible_os_family == "RedHat"
+  delegate_to: "{{ target_server }}"
+  remote_user: root
 
 - name: If Debian, install packages for Debian OS family distros
   apt: name={{ item }} state=present
@@ -42,7 +44,8 @@
    - libguestfs-tools
    - python-libvirt
   when: ansible_os_family == "Debian"
-  become: true
+  delegate_to: "{{ target_server }}"
+  remote_user: root
 
 - name: List the Virtual Machines running on {{ target_server }}
   virt: command=list_vms
@@ -161,5 +164,3 @@
         uri=qemu:///system
   delegate_to: "{{ target_server }}"
   remote_user: root
-
-

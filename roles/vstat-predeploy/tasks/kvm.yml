@@ -24,7 +24,6 @@
   when: ("{{ mgmt_bridge }}" not in ansible_interfaces)
 
 - name: If RedHat, install packages for RedHat OS family distros
-  remote_user: root
   yum: name={{ item }} state=present
   with_items:
    - qemu-kvm
@@ -33,9 +32,10 @@
    - libguestfs-tools
    - libvirt-python
   when: ansible_os_family == "RedHat"
+  delegate_to: "{{ target_server }}"
+  remote_user: root
 
 - name: If Debian, install packages for Debian OS family distros
-  remote_user: root
   apt: name={{ item }} state=present
   with_items:
    - qemu-kvm
@@ -44,7 +44,8 @@
    - libguestfs-tools
    - python-libvirt
   when: ansible_os_family == "Debian"
-  become: true
+  delegate_to: "{{ target_server }}"
+  remote_user: root
 
 - name: List the Virtual Machines running on {{ target_server }}
   virt: command=list_vms
