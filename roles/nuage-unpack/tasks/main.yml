@@ -175,3 +175,59 @@
       dockermon_package_file_name: "{{ rc_dockermon_file.files[0].path | basename }}"
     when: rc_dockermon_file.matched > 0
   when: nuage_target_architecture == "ubuntu"
+
+#####################
+# VNS Utility/ NSGV
+#####################
+
+- name: Ensure binaries directory exists for VNS QCOW
+  file: name="{{ nuage_unpacked_dest_path }}/vns/" state=directory mode=0755
+
+- block:
+  - name: Find name of VNS QCOW Archive
+    find: path="{{ nuage_release_src_path }}"  pattern="Nuage-VNS*"
+    register: rc_vns
+
+  - name: Unpack VNS QCOW Archive
+    unarchive: src="{{ rc_vns.files[0].path}}" dest="{{ nuage_unpacked_dest_path }}/vns" list_files=yes
+    register: rc_vns_archive_files
+    when: rc_vns.matched > 0
+
+  - name: Find name of VNS Utility QCOW Archive
+    find: path="{{ nuage_release_src_path }}/vns"  pattern="Nuage-VNS-Utils*"
+    register: rc_vnsutil
+
+  - name: Unpack VNS Utility QCOW Archive
+    unarchive: src="{{ rc_vnsutil.files[0].path}}" dest="{{ nuage_unpacked_dest_path }}/vns" list_files=yes
+    register: rc_vnsutil_archive_files
+    when: rc_vnsutil.matched > 0
+
+  - name: Find name of NSGV QCOW Archive
+    find: path="{{ nuage_release_src_path }}/vns"  pattern="Nuage-VNS-NSG*"
+    register: rc_nsgv
+
+  - name: Unpack NSGV QCOW Archive
+    unarchive: src="{{ rc_nsgv.files[0].path}}" dest="{{ nuage_unpacked_dest_path }}/vns" list_files=yes
+    register: rc_nsgv_archive_files
+    when: rc_nsgv.matched > 0  
+  when: not nuage_unpacked|default(false)
+
+- name: Find name of VNS Utility QCOW File
+  find: path="{{ nuage_unpacked_dest_path }}/vns"  pattern="vns-util*.qcow2" recurse=yes
+  register: rc_vnsutil_file
+
+- name: Register VNS Utility Qcow variables with proper path and image locations for use in other playbooks
+  set_fact:
+    vnsutil_qcow2_path: "{{ rc_vnsutil_file.files[0].path | dirname }}"
+    vnsutil_qcow2_file_name: "{{ rc_vnsutil_file.files[0].path | basename }}"
+  when: rc_vnsutil_file.matched > 0
+
+- name: Find name of NSGV QCOW File
+  find: path="{{ nuage_unpacked_dest_path }}/vns"  pattern="ncpe*.qcow2" recurse=yes
+  register: rc_nsgv_file
+
+- name: Register NSGV Qcow variables with proper path and image locations for use in other playbooks
+  set_fact:
+    nsgv_qcow2_path: "{{ rc_nsgv_file.files[0].path | dirname }}"
+    nsgv_qcow2_file_name: "{{ rc_nsgv_file.files[0].path | basename }}"
+  when: rc_nsgv_file.matched > 0
