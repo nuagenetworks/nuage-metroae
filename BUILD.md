@@ -57,6 +57,8 @@ For reference, here is a description of the contents of the `build-vars.yml` fil
 #    myvsds:
 #          # The fqdn of this VSD instance
 #      - { hostname: vsd1.example.com,
+#          # The target server type where this VSD instance will run. Possible values: kvm
+#          target_server_type: kvm,
 #          # The hypervior target where this VSD instance will be run
 #          target_server: 135.227.181.232,
 #          # The IP address of this VSD instance
@@ -72,6 +74,8 @@ For reference, here is a description of the contents of the `build-vars.yml` fil
 #    myvstats:
 #          # The hostname or IP address for this VSTAT instance
 #      - { hostname: vstat1.example.com,
+#          # The target server type where this VSTAT instance will run. Possible values: kvm
+#          target_server_type: kvm,
 #          # The hypervior target where this VSTAT instance will be run
 #          target_server: 135.227.181.232,
 #          # The management IP address of this VSTAT instance
@@ -88,6 +92,8 @@ For reference, here is a description of the contents of the `build-vars.yml` fil
 #    # Note: Multiple VSCs can be deployed from the same qcow2 file
 #    myvscs:
 #      - { hostname: vsc1.example.com,
+#          # The target server type where this VSC instance will run. Possible values: kvm
+#          target_server_type: kvm,
 #          # The hypervior target where this VSC instance will be run
 #          target_server: 135.227.181.232,
 #          # The IP address of this VSC instance
@@ -109,6 +115,8 @@ For reference, here is a description of the contents of the `build-vars.yml` fil
 #          # One or more static route to be configured on this VSC
 #          vsc_static_route_list: { 0.0.0.0/1 } }
 #      - { hostname: vsc2.example.com,
+#          # The target server type where this VSC instance will run. Possible values: kvm
+#          target_server_type: kvm,
 #          target_server: 135.227.181.232,
 #          mgmt_ip: 192.168.122.203,
 #          mgmt_gateway: 192.168.122.1,
@@ -147,6 +155,8 @@ For reference, here is a description of the contents of the `build-vars.yml` fil
 #    myvnsutils:
 #          # The hostname or IP address for this VNS-UTILITY instance
 #      - { hostname: proxy.example.com,
+#          # The target server type where this VNS-UTILITY instance will run. Possible values: kvm
+#          target_server_type: kvm,
 #          # The hypervior target where this VNS-UTILITY instance will be run
 #          target_server: 135.227.181.232,
 #          # The management IP address of this VNS-UTILITY instance
@@ -182,6 +192,8 @@ For reference, here is a description of the contents of the `build-vars.yml` fil
 #          # Define only hostname for this NSGV instance
 #          # Do not add domain to the host name
 #      - { hostname: nsgv,
+#          # The target server type where this NSGV instance will run. Possible values: kvm
+#          target_server_type: kvm,
 #          # The hypervior target where this NSGV instance will be run
 #          target_server: 135.227.181.232,
 #          # NSGV VM mac addr that goes in to XML config file
