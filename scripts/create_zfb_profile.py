@@ -135,7 +135,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("playbook_dir", type=str,
                         help="Set path to playbook directory.")
-    parser.add_argument("nsgv_path", type=str, help="Set path to NSGV ISO output directory"
+    parser.add_argument("nsgv_path", type=str, help="Set path to NSGV ISO output directory")
     args = parser.parse_args()
 
     # Nsgv_path
