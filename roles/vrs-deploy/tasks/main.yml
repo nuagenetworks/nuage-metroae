@@ -7,26 +7,40 @@
   remote_user: root
   file: path={{ temp_dir }}/{{ inventory_hostname }} state=directory
 
-- name: Copy VRS/Dockermon packages to temporary directory
+- name: Copy VRS packages to temporary directory
   remote_user: root
   copy: src={{ vrs_package_path }}/{{ item }} dest={{ temp_dir }}/{{ inventory_hostname }}/{{ item }}
   with_items: "{{ vrs_package_file_name_list }}"
 
+- name: Copy Dockermon packages to temporary directory
+  remote_user: root
+  copy: src={{ vrs_package_path }}/{{ dockermon_package_file_name }} dest={{ temp_dir }}/{{ inventory_hostname }}/{{ dockermon_package_file_name }}
+
 - include: docker.yml
   when: dockermon_install is defined
 
-- name: Install Nuage OpenVSwitch/Dockermon packages on RedHat OS family distros
+- name: Install Nuage OpenVSwitch packages on RedHat OS family distros
   remote_user: root
   yum: name={{ temp_dir }}/{{ inventory_hostname }}/{{ item }} state=present
   with_items:
    - "{{ vrs_package_file_name_list }}"
   when: ansible_os_family == "RedHat"
 
-- name: Install Nuage OpenVSwitch/Dockermon packages on Debian OS family distros
+- name: Install Nuage OpenVSwitch packages on Debian OS family distros
   remote_user: root
   apt: deb={{ temp_dir }}/{{ inventory_hostname }}/{{ item }} state=present
   with_items:
    - "{{ vrs_package_file_name_list }}"
+  when: ansible_os_family == "Debian"
+
+- name: Install Nuage Dockermon packages on RedHat OS family distros
+  remote_user: root
+  yum: name={{ temp_dir }}/{{ inventory_hostname }}/{{ dockermon_package_file_name }} state=present
+  when: ansible_os_family == "RedHat"
+
+- name: Install Nuage Dockermon packages on Debian OS family distros
+  remote_user: root
+  apt: deb={{ temp_dir }}/{{ inventory_hostname }}/{{ dockermon_package_file_name }} state=present
   when: ansible_os_family == "Debian"
 
 - name: Remove temporary directory on {{ inventory_hostname }}

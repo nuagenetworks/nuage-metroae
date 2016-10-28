@@ -7,6 +7,10 @@
     search_regex: OpenSSH
     delay: 1
 
+- name: Pull facts on VRS target {{ inventory_hostname }}
+  remote_user: root
+  action: setup
+
 - name: Get ovs-vsctl show output
   command: ovs-vsctl show
   register: ovs_show_result
@@ -38,48 +42,45 @@
 
 - block:
   # Dockermon feature tasks
-  - name: Register stats for the docker pid file
-    stat: path=/var/run/docker.pid
-    register: docker_pid
-    remote_user: root
+  - name: Get Dockermon version number on Debian OS family distros
+    set_fact: 
+      version_deb: "{{ dockermon_package_file_name|regex_replace('^.*nuage-docker-monitor_(\\d+)\\..*?$', '\\1') }}"
+    when: ansible_os_family == "Debian"
 
-  - name: Check if docker pid file exists
-    fail: msg="Docker pid file not found!"
-    when: docker_pid.stat.exists == false
-    remote_user: root
+  - name: Get Dockermon version number on RedHat OS family distros
+    set_fact: 
+      version_rh: "{{ dockermon_package_file_name|regex_replace('^.*nuage-docker-monitor-(\\d+)\\..*?$', '\\1') }}"
+    when: ansible_os_family == "RedHat"
 
-  - name: Get pid of docker process
-    command: head -n 1 /var/run/docker.pid
-    register: docker_pid_value
-    remote_user: root
-
-  - name: Register stats for the dockermon pid file
-    stat: path=/var/run/openvswitch/nuage-docker-monitor.pid
-    register: dockermon_pid
-    remote_user: root
-
-  - name: Check if dockermon pid file exists
-    fail: msg="Dockermon pid file not found!"
-    when: dockermon_pid.stat.exists == false
-    remote_user: root
-
-  - name: Get pid of dockermon process
-    command: head -n 1 /var/run/openvswitch/nuage-docker-monitor.pid
-    register: dockermon_pid_value
-    remote_user: root
+  # Ansible registers skipped variables as well. So need to create separate variables for version_xx and combine them in this task
+  - name: Combine version number
+    set_fact:
+      version: "{{ version_deb if ansible_os_family == 'Debian' else version_rh if ansible_os_family == 'RedHat' else '' }}"
 
   - name: Get docker status
     command: service docker status
     register: docker_status_result
     remote_user: root
 
-  - name: Get dockermon status
+  - name: Get dockermon status v3
     command: service nuage-docker-monitor status
-    register: dockermon_status_result
+    register: dockermon_status_result_v3
     remote_user: root
+    when: version == '3'
+
+  - name: Get dockermon status v4
+    command: /usr/share/openvswitch/scripts/nuage-docker-monitor.init status
+    register: dockermon_status_result_v4
+    remote_user: root
+    when: version == '4'
+
+  # Ansible registers skipped variables as well. So need to create separate variables for dockermon_status_result_vx and combine them in this task
+  - name: Combine dockermon status result
+    set_fact:
+      dockermon_status_result: "{{ dockermon_status_result_v3 if version == '3' else dockermon_status_result_v4 if version == '4' else '' }}"
 
   - name: Get dockermon process details
-    shell: ps -eo lstart,cmd|grep {{ dockermon_pid_value.stdout }}
+    shell: ps -eo lstart,cmd|grep nuage-docker-monitor
     register: ps_docker_result
     remote_user: root
 
