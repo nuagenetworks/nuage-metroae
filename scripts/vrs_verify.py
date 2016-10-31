@@ -46,7 +46,7 @@ def run_commands(commands, vscs, vrs_ip):
                     'password': 'admin',
                 }
                 output = exec_command(netmiko_vsc, command)
-                if (re.search('\\nva-'+vrs_ip+'/', output)):
+                if (re.search(r'[^0-9]'+vrs_ip+'[^0-9]', output)):
                     result = "VRS "+vrs_ip+" is OK!"
                 else:
                     error_flag = True
