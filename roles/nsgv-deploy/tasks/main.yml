@@ -1,65 +1,17 @@
 ---
+<<<<<<< HEAD
 - name: Query {{ target_server }} facts
   action: setup
   delegate_to: "{{ target_server }}"
   remote_user: root
+=======
+# - name: Wait for NSG  to be ready
+#   local_action:
+#     module: wait_for
+#     port: "22"
+#     host: "{{ interfaces.mgmt.ip }}"
+#     search_regex: OpenSSH
+#     delay: 1
+>>>>>>> f491d009968bf5753bd9574aec32e108536fd266
 
-- name: Include OS-specific variables.
-  include_vars: "{{ ansible_os_family }}.yml"
 
-- name: List the Virtual Machines running on {{ target_server }}
-  virt: command=list_vms
-  register: virt_vms
-  delegate_to: "{{ target_server }}"
-  remote_user: root
-
-- name: Check if {{ inventory_hostname }} is already running on {{ target_server }}
-  fail: msg="The VM {{ inventory_hostname }} is already defined on this target_server."
-  when: inventory_hostname in virt_vms.list_vms
-
-- name: Create libvirt image directory on {{ target_server }}
-  file: path={{ images_path }}/{{ inventory_hostname }}
-        state=directory
-        owner={{ libvirt.user }}
-        group={{ libvirt.group }}
-  delegate_to: "{{ target_server }}"
-  remote_user: root
-
-- name: Copy the NSGV qcow image to virt images directory on {{ target_server }}
-  copy: src={{ nsgv_qcow2_path }}/{{ nsgv_qcow2_file_name }}
-        dest={{ images_path }}/{{ inventory_hostname }}
-        owner={{ libvirt.user }}
-        group={{ libvirt.group }}
-  delegate_to: "{{ target_server }}"
-  remote_user: root
-
-- name: Generate ISO file 
-  local_action: command python {{ playbook_dir }}/roles/nsgv-deploy/files/create_zfb_profile.py "{{ playbook_dir }}"
-  register: output
-
-- name: Search for errors in the output of ZFB script 
-  fail: msg={{ output.stdout }}
-  when: output.stdout | search("(?i)ERROR")
-
-- name: Copy the ISO image to virt images directory on {{ target_server }}
-  copy: src={{playbook_dir }}/roles/nsgv-deploy/files/user_image.iso
-        dest={{ images_path }}/{{ inventory_hostname }}
-        owner={{ libvirt.user }}
-        group={{ libvirt.group }}
-  delegate_to: "{{ target_server }}"
-  remote_user: root
-
-- name: "Define new NSGV VM"
-  virt: name="{{ inventory_hostname }}"
-        command=define
-        xml="{{ lookup('template', 'nsgv.xml.j2') }}"
-        uri=qemu:///system
-  delegate_to: "{{ target_server }}"
-  remote_user: root
-
-- name: "Run NSGV VM"
-  virt: name="{{ inventory_hostname }}"
-        state=running
-        uri=qemu:///system
-  delegate_to: "{{ target_server }}"
-  remote_user: root
