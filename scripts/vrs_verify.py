@@ -1,5 +1,4 @@
 from netmiko import ConnectHandler
-import re
 import yaml
 import sys
 import os.path
@@ -25,7 +24,6 @@ def exec_command(vsc, command):
 
 # Returns the verification status after executing all the commands
 def run_commands(commands, vscs, vrs_ip):
-    error_flag = False
     result = ''
 
     for command in commands:
@@ -46,19 +44,14 @@ def run_commands(commands, vscs, vrs_ip):
                     'password': 'admin',
                 }
                 output = exec_command(netmiko_vsc, command)
-                if (re.search(r'[^0-9]'+vrs_ip+'[^0-9]', output)):
-                    result = "VRS "+vrs_ip+" is OK!"
+                if output.find(vrs_ip):
+                    result = result+"VRS "+vrs_ip+" is OK!"
                 else:
-                    error_flag = True
-                    error = "Error: VSC "+vsc+" did not detect the VRS: "+vrs_ip+"!"
+                    result = result+"Error: VSC "+vsc+" did not detect the VRS: "+vrs_ip+"!"
 
         else:
             print("Error! Unexpected command!")
             sys.exit(1)
-
-    # Set the error results if error flag is set
-    if (error_flag is True):
-        result = "|"+error+"|"
 
     return result
 
