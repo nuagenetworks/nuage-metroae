@@ -1,0 +1,52 @@
+---
+- name: creating VSC stack
+  register: create_stack
+  os_stack:
+    name: "stack_vsc"
+    template: "roles/vsc-test-deploy/templates/vsc.yml"
+    auth:
+      "{{ os_auth }}"
+    parameters:
+      vm_name: "{{inventory_hostname}}"
+      vsc_image: "{{ vsc_image }}"
+      vsc_flavor: "{{ vsc_flavor }}"
+      vsc_net: "{{ vsc_mgmt_net }}"
+      vsc2_net: "{{ vsc_control_net }}"
+  delegate_to: 127.0.0.1
+- debug: var=create_stack['stack']['outputs'][0]['output_value']
+
+- name: Set VSC mgmt ip
+  set_fact:
+    vsc_mgmt_ip: "{{ create_stack['stack']['outputs'][0]['output_value'] }}"
+
+- name: Set VSC control ip
+  set_fact:
+    vsc_control_ip: "{{ create_stack['stack']['outputs'][1]['output_value'] }}"
+
+- name: Update /etc/hosts file on ansible host
+  local_action:
+    lineinfile:
+      dest: /etc/hosts
+      line: "{{ vsc_mgmt_ip }}    {{ inventory_hostname }}"
+
+- name: Get infra server details from OpenStack
+  os_server_facts:
+    auth:
+      "{{ os_auth }}"
+    server: "{{ infra_server_name }}*"
+  register: infra_server
+  delegate_to: 127.0.0.1
+
+- name: Set infra ip
+  set_fact:
+    infra_ip: "{{ infra_server['ansible_facts']['openstack_servers'][0]['private_v4'] }}"
+
+- name: Update DNS entires
+  shell: echo "{{ vsc_mgmt_ip }}"  "{{ inventory_hostname }}" >> /etc/vsp_hosts
+  delegate_to: "{{ infra_ip }}"
+  remote_user: root
+
+- name: Restart DNS service
+  shell: service dnsmasq restart
+  delegate_to: "{{ infra_ip }}"
+  remote_user: root

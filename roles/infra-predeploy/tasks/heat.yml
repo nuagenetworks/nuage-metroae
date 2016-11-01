@@ -1,0 +1,26 @@
+---
+- name: Creating INFRA stack
+  register: infra_stack
+  os_stack:
+    name: "{{ inventory_hostname }}"
+    template: "roles/infra-deploy/templates/infra.yml" 
+    auth:
+      "{{ os_auth }}"
+    parameters:
+      vm_name: "{{inventory_hostname}}"
+      infra_image: "{{infra_image}}"
+      infra_flavor: "{{infra_flavor}}"
+      infra_net: "{{infra_network}}"
+      ssh_key: "{{ ansible_user_ssh_key }}"
+  delegate_to: 127.0.0.1
+- debug: var=infra_stack['stack']['outputs'][0]['output_value']
+
+- name: Set Infra mgmt ip
+  set_fact:
+    infra_mgmt_ip: "{{ infra_stack['stack']['outputs'][0]['output_value'] }}"
+
+- name: Update /etc/hosts file on ansible host
+  local_action:
+    lineinfile:
+      dest: /etc/hosts
+      line: "{{ infra_mgmt_ip }}    {{ inventory_hostname }}"

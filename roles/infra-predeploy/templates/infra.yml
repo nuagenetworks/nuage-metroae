@@ -1,0 +1,61 @@
+heat_template_version: '2014-10-16'
+parameters:
+  vm_name:
+    type: string
+  infra_image:
+    type: string
+  infra_flavor:
+    type: string
+  infra_net:
+    type: string
+  ssh_key: 
+    type: string 
+resources:
+  #association:
+  #  type: OS::Nova::FloatingIPAssociation
+  #  properties:
+      #floating_ip: {get_resource: floating_ip}
+  #    floating_ip: "f33200f9-aa20-4557-93e8-04d2c046e232"
+  #    server_id: { get_resource: mycompute }
+  #my_port:
+  #    type: OS::Neutron::Port
+  #    properties:
+  #        network_id: "private_network"
+  #        fixed_ips: [{"subnet": "private_subnet", "ip_address": {get_param: mgmt_ip}}]
+  my_key:
+    type: OS::Nova::KeyPair
+    properties:
+      public_key: {get_param: ssh_key}
+      name: user_key
+
+  boot_config:
+    type: OS::Heat::CloudConfig
+    properties:
+      cloud_config:
+        write_files:
+        - path: /root/.ssh/authorized_keys
+          owner: root:root
+          content: asrgbqrlfbeqrbf
+          #content: {get_param: ssh_key}
+
+  mycompute:
+    type: OS::Nova::Server
+    properties:
+      name: {get_param: vm_name}
+      flavor: {get_param: infra_flavor}
+      image: {get_param: infra_image}
+      networks:
+      #- port: {get_resource: my_port}
+        - network: {get_param: infra_net}
+      #user_data_format: RAW
+      #user_data: |
+      #!/bin/bash
+      #  echo key ">> /root/.ssh/authorized_keys"
+      key_name: {get_resource: my_key}
+      #user_data_format: SOFTWARE_CONFIG
+      #user_data: {get_resource: boot_config}
+
+outputs:
+  server_ip:
+    description: fixed ip assigned to the server
+    value: { get_attr: [mycompute, networks, {get_param: infra_net}, 0]}
