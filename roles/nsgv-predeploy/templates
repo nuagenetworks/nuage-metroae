@@ -1,0 +1,67 @@
+<domain type='kvm'>
+  <name>{{inventory_hostname}}</name>
+  <memory>4194304</memory>
+  <currentMemory>4194304</currentMemory>
+  <cpu/>
+  <os>
+    <type arch='x86_64' machine='pc'>hvm</type>
+    <smbios mode='sysinfo'/>
+    <boot dev='hd'/>
+  </os>
+  <sysinfo type='smbios'>
+    <system>
+      <entry name='product'>ovs-ncpe</entry>
+    </system>
+  </sysinfo>
+  <features>
+    <apic/>
+  </features>
+  <cpu>
+    <topology sockets='1' cores='1' threads='1'/>
+  </cpu>
+  <clock offset='utc'>
+    <timer name='pit' tickpolicy='delay'/>
+    <timer name='rtc' tickpolicy='delay'/>
+  </clock>
+  <on_poweroff>destroy</on_poweroff>
+  <on_reboot>restart</on_reboot>
+  <on_crash>coredump-destroy</on_crash>
+  <devices>
+    <emulator>{{ libvirt.emulator }}</emulator>
+    <disk type='file' device='disk'>
+      <driver name='qemu' type='qcow2'/>
+      <source file='{{ images_path }}/{{ inventory_hostname }}/{{ nsgv_qcow2_file_name }}'/>
+      <target dev='hda' bus='ide'/>
+      <alias name='ide0-0-0'/>
+      <address type='drive' controller='0' bus='0' target='0' unit='0'/>
+    </disk>
+    <disk type='file' device='cdrom'>
+      <driver name='qemu' type='raw'/>
+      <source file='{{ images_path }}/{{ inventory_hostname }}/user_image.iso'/>
+      <backingStore/>
+      <target dev='hdb' bus='ide'/>
+      <readonly/>
+      <alias name='ide0-0-1'/>
+      <address type='drive' controller='0' bus='0' target='0' unit='1'/>
+    </disk>
+    <controller type='usb' index='0'>
+      <alias name='usb0'/>
+      <address type='pci' domain='0x0000' bus='0x00' slot='0x01' function='0x2'/>
+    </controller>
+    <interface type='bridge'>
+      <source bridge='{{ data_bridge }}'/>
+      <mac address='{{ nsgv.mac }}'/>
+      <target dev='vnet0'/>
+      <model type='virtio'/>
+    </interface>
+    <interface type='bridge'>
+      <source bridge='{{ access_bridge }}'/>
+      <target dev='vnet1'/>
+      <model type='virtio'/>
+    </interface>
+    <memballoon model='virtio'>
+      <address type='pci' domain='0x0000' bus='0x00' slot='0x06' function='0x0'/>
+    </memballoon>
+  </devices>
+  <seclabel type='none'/>
+</domain>

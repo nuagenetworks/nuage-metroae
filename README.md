@@ -5,19 +5,24 @@
 ## What's new
 
 1. VSD HA/cluster support, limited to exactly 3 VSD nodes
+1. Limited VNS support, that handles 1 NSGV at present. Requires ansible 2.2 that has SROS module support.
 1. A new pre-deploy build process to simplify variable settings
+1. `nuage-unpack` role added to optionally extract binaries from Nuage distribution archives. Side effect: Names of binary files are automatically pulled and no longer need to be specified in `build.yml`.
 
 Feedback and bug reports should be provided to the Nuage CASO team via email to *[Brian Castelli](mailto://brian.castelli@nokia.com)*.
 
 ## Overview
 
-This set of playbooks can be used to automatically deploy VCS components for use with KVM on Ubuntu or CentOS. Support is provided for:
+This set of playbooks can be used to automatically deploy VCS/VNS components for use with KVM on Ubuntu or CentOS. Support is provided for:
 
 1. VSD (HA or stand-alone)
 2. VSC (1 or more)
 3. VRS on existing nodes (1 or more)
 4. Dockermon on VRS nodes
 5. VSTAT (1 or more)
+6. VNSUTIL (1 or more)
+7. NSGV (1)
+
 
 ## For the impatient
 
@@ -26,7 +31,7 @@ The short version of the instructions are:
 1. Install Ansible 2.1+ on the deployment host
 1. Install Netmiko and its dependencies on deployment host.
 1. Clone this repository to the deployment host
-1. Customize `build.yml` with your VSD, VSC, VRS, and VSTAT information. (See `BUILD.md` for details.)
+1. Customize `build.yml` with your VSD, VSC, VRS, VNSUTIL, NSGV  and VSTAT information. (See `BUILD.md` for details.)
 1. Execute `./metro-ansible build.yml` to automatically populate variables in the appropriate places, e.g. the `host_vars` directory.
 1. Execute `./metro-ansible install_everything.yml`
 1. To get rid of everything that has been deployed, execute `./metro-ansible destroy_everything.yml'
@@ -45,9 +50,8 @@ If you want to contribute back, you must create your own branch or fork, oush yo
 The following restrictions and conditions apply prior to executing the playbooks:
 
 1. The hypervisor hosts must be running Ubuntu Linux or CentOS. Testing has been done on Ubuntu 14.04 LTS and CentOS 7.
-1. If host names are used for target systems, VSD, VSC, VSTAT and VRS nodes, those names must be discoverable via DNS *or* added to the /etc/hosts file of the ansible deployment host.
-1. Each VM that is created for VSD, VSC or VSTAT connects to one or more bridges on the target server. Those bridges must be created on the target server prior to deployment and specified in the `user_vars.yml` file.
-1. If host names are used for target systems, VSD, VSC, VSTAT and VRS nodes, those names must be discoverable via DNS *or* added to the /etc/hosts file of the ansible deployment host.
+1. If host names are used for target systems, VSD, VSC, VSTAT, VNSUTIL and VRS nodes, those names must be discoverable via DNS *or* added to the /etc/hosts file of the ansible deployment host.
+1. Each VM that is created for VSD, VSC, VSTAT, VNSUTIL or NSGV connects to one or more bridges on the target server. Those bridges must be created on the target server prior to deployment and specified in the `user_vars.yml` file.
 1. Python 2.7+ and all its dependencies must be installed on the deployment host. Python 3.0 and above is untested.
 1. Ansible 2.1+ and all its dependencies must be installed on the deployment host.
 1. Netmiko and all its dependencies must be installed on deployment host. The easiest way to install Netmiko is by using `pip install netmiko`. A common Netmiko dependency that could be missing is the cryptography package. See https://cryptography.io/en/latest/installation/ for more information.
@@ -72,6 +76,7 @@ Currently VSD in cluster mode is supported exactly for 3 VSD nodes.
 
 `build.yml` contains a set of variables that should be customized by the user prior to running the playbooks. These variables are used to configure network connectivity for the VSC, VSTAT and the VSD.
 
+`zfb.yml` contains a set of variables that should be customized by the user prior to running the nsgv playbooks. These variables are used to create NSG profile in the VSD Architect and also creates ISO file that is attached to NSG VM
 ## Playbook Organization
 
 All playbooks, whether installation or destruction, must be executed using the `metro-ansible` script.
