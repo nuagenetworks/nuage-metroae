@@ -55,9 +55,6 @@ For reference, here is a description of the contents of the `build-vars.yml` fil
 #    # If true, the playbooks will *not* unpack. Files in nnuage_unpacked_dest_path
 #    # will be used as is. If false, the nuage_unpack role will be executed.
 #    nuage_unpacked: true
-#    # A global variable to decide the platform
-#    # Avaialable options are kvm, heat
-#    target_server_type: "kvm"
 #    VSD
 #    # When True or undefined, all VSDs will be configured stand-alone. When False
 #    # we will expect 3 VSD definitions, below, for clustered deployment.
