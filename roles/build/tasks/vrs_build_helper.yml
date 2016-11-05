@@ -1,4 +1,12 @@
 ---
+- name: Set myvrss_check
+  set_fact: myvrss_check={{myvrss is defined}}
+
+- name: Assign empty list to myvrss if it is undefined
+  set_fact: myvrss= default([])
+  when: not myvrss_check
+
 - name: Create host_vars files for vrs/dockermon
   template: src=vrs.j2 backup=no dest={{ playbook_dir }}/host_vars/{{ item.node_ip_addr }}
   with_items: "{{ myvrss }}"
+  when: myvrss_check

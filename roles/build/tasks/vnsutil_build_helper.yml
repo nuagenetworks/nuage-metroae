@@ -1,4 +1,12 @@
 ---
+- name: Set myvnsutil_check
+  set_fact: myvnsutil_check={{myvnsutils is defined}}
+
+- name: Assign empty list to myvnsutils if it is undefined 
+  set_fact: myvnsutils= default([])
+  when: not myvnsutil_check
+
 - name: Create host_vars files for vnsutil
   template: src=vnsutil.j2 backup=no dest={{ playbook_dir }}/host_vars/{{ item.hostname }}
   with_items: "{{ myvnsutils }}"
+  when: myvnsutil_check
