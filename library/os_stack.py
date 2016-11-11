@@ -1,5 +1,5 @@
 #!/usr/bin/python
-#coding: utf-8 -*-
+# coding: utf-8 -*-
 
 # (c) 2016, Mathieu Bultel <mbultel@redhat.com>
 # (c) 2016, Steve Baker <sbaker@redhat.com>
@@ -16,9 +16,10 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this software.  If not, see <http://www.gnu.org/licenses/>.
-
-from time import sleep
 from distutils.version import StrictVersion
+from ansible.module_utils.basic import AnsibleModule
+from ansible.module_utils.openstack import openstack_full_argument_spec
+from ansible.module_utils.openstack import openstack_module_kwargs
 try:
     import shade
     HAS_SHADE = True
@@ -43,7 +44,8 @@ options:
       default: present
     name:
       description:
-        - Name of the stack that should be created, name could be char and digit, no space
+        - Name of the stack that should be created,
+          name could be char and digit, no space
       required: true
     template:
       description:
@@ -131,7 +133,8 @@ stack:
     links:
         description: Links to the current Stack.
         type: list of dict
-        sample: "[{'href': 'http://foo:8004/v1/7f6a/stacks/test-stack/97a3f543-8136-4570-920e-fd7605c989d6']"
+        sample: "[{'href': 'http://foo:8004/v1/7f6a/stacks/
+                test-stack/97a3f543-8136-4570-920e-fd7605c989d6']"
     outputs:
         description: Output returned by the Stack.
         type: list of dict
@@ -145,31 +148,36 @@ stack:
                     'OS::stack_id': '97a3f543-8136-4570-920e-fd7605c989d6',
                     'OS::stack_name': 'test-stack',
                     'stack_status': 'CREATE_COMPLETE',
-                    'stack_status_reason': 'Stack CREATE completed successfully',
+                    'stack_status_reason': 'Stack CREATE completed
+                                            successfully',
                     'status': 'COMPLETE',
-                    'template_description': 'HOT template to create a new instance and networks',
+                    'template_description': 'HOT template to create a
+                                             new instance and networks',
                     'timeout_mins': 60,
                     'updated_time': null}"
 '''
 
+
 def _create_stack(module, stack, cloud):
     try:
-        stack = cloud.create_stack(module.params['name'],
-                                       template_file=module.params['template'],
-                                       environment_files=module.params['environment'],
-                                       timeout=module.params['timeout'],
-                                       wait=True,
-                                       rollback=module.params['rollback'],
-                                       **module.params['parameters'])
+        stack = cloud.create_stack(
+                               module.params['name'],
+                               template_file=module.params['template'],
+                               environment_files=module.params['environment'],
+                               timeout=module.params['timeout'],
+                               wait=True,
+                               rollback=module.params['rollback'],
+                               **module.params['parameters'])
 
         stack = cloud.get_stack(stack.id, None)
         if stack.stack_status == 'CREATE_COMPLETE':
             return stack
         else:
             return False
-            module.fail_json(msg = "Failure in creating stack: ".format(stack))
+            module.fail_json(msg="Failure in creating stack: ".format(stack))
     except shade.OpenStackCloudException as e:
         module.fail_json(msg=str(e))
+
 
 def _update_stack(module, stack, cloud):
     try:
@@ -184,10 +192,11 @@ def _update_stack(module, stack, cloud):
         if stack['stack_status'] == 'UPDATE_COMPLETE':
             return stack
         else:
-            module.fail_json(msg = "Failure in updating stack: %s" %
+            module.fail_json(msg="Failure in updating stack: %s" %
                              stack['stack_status_reason'])
     except shade.OpenStackCloudException as e:
         module.fail_json(msg=str(e))
+
 
 def _system_state_change(module, stack, cloud):
     state = module.params['state']
@@ -197,6 +206,7 @@ def _system_state_change(module, stack, cloud):
     if state == 'absent' and stack:
         return True
     return False
+
 
 def main():
 
@@ -215,9 +225,10 @@ def main():
                            supports_check_mode=True,
                            **module_kwargs)
 
-    # stack API introduced in 1.8.0
-    if not HAS_SHADE or (StrictVersion(shade.__version__) < StrictVersion('1.8.0')):
-        module.fail_json(msg='shade 1.8.0 or higher is required for this module')
+    # Stack API introduced in 1.8.0
+    if not HAS_SHADE or (StrictVersion(shade.__version__) <
+                         StrictVersion('1.8.0')):
+        module.fail_json(msg='shade 1.8.0 or higher is required')
 
     state = module.params['state']
     name = module.params['name']
@@ -250,12 +261,11 @@ def main():
             else:
                 changed = True
                 if not cloud.delete_stack(name, wait=module.params['wait']):
-                    module.fail_json(msg='delete stack failed for stack: %s' % name)
+                    module.fail_json(msg='delete stack failed for stack:\
+                                     %s' % name)
             module.exit_json(changed=changed)
     except shade.OpenStackCloudException as e:
         module.fail_json(msg=str(e))
 
-from ansible.module_utils.basic import *
-from ansible.module_utils.openstack import *
 if __name__ == '__main__':
     main()
