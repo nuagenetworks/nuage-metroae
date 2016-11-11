@@ -7,87 +7,68 @@ The zfb.yml file is used to generate Zero Factor Bootstrapping profile for NSGV 
 Here is a description of the contents of the `zfb.yml` file, with comments:
 
 ```
-# vsd_license: "vsd license string goes here"
-# License to operate VSD architect
-# organization:
-# A sample origanization. NSGV will be part of this Org
-#   name: metro-test
-#   Name of the organization
-#   nsg_name: NSG_US
-#   Name of NSGV. This will be used to represent it in VSD architect
-# csp:
-# CSP credentials are used to access the VSD API and create profile
-#   username:  csproot
-#   CSP username
-#   password:  csproot
-#   CSP password
-#   enterprise: csp
-#   CSP org name
-#   api_url: 'https://192.168.122.211:8443'
-#   VSD IP address/hostname
-# user_data:
-#  A proxy used is needed and should be added to CSP root user group 
-#   firstName: metro
-#   First name of the proxy user
-#   lastName: metro
-#   Last name of the proxy user
-#   userName: proxy
-#   User name should be proxy
-#   email: test@caso.com
-#   Email address of the proxy user
-#   password: a94a8fe5ccb19ba61c4c0873d391e987982fbbd3
-#   Only Encrypted password
-# vns_nsg:
-# NSG infrastructure template that contains Utility VM DNS name
-#   name: metro_vns
-#   Name for the template
-#   nsg_template_name: metro-test
-#   NSG template name. This will be poped out of the dictionary to use elsewhere
-#   proxyDNSName: jenkinsvnsutil1.example.com
-#   DNS name of VNS Utility VM
-#   useTwoFactor: False
-#   Should be false for ZFB method
-#   upgradeAction: NONE
-#   Chose to whether to upgrade
-# vns_vsc:
-# VSC template
-#   name: metro_vsc
-#   Name for the vsc template
-#   firstController: 192.168.100.202
-#   IP address of the primary VSC controller
-#   secondController: 192.168.100.203
-#   IP address of the secondary controller. This is optional
-# nsg_ports:
-# NSG ports definition
-#   network_port:
-#   This port is used as an Uplink 
-#     name: port1_network
-#     Name for the port to identify in VSD
-#     physicalName: port1
-#     Name for the port to identify in NSGV
-#     portType: NETWORK
-#     Since it is as Uplink, type is NETWORK
-#   access_port:
-#   Access port definiton
-#     name: port2_access
-#     Name for the port to identify in VSD
-#     physicalName: port2
-#     Name for the port to identigy in NSGV
-#     portType: ACCESS
-#     Since it is as Access port, type is ACCESS
-#     VLANRange: '0-100'
-#     User defined VLAN range
-#     vlan_value: 20
-#     VLAN id desired for access port
-# iso_params:
-# Parameters to generate ISO file for NSGV
-#   mediaType: ISO
-#   Remains ISO for KVM based deployments of NSGV
-#   associatedEntityType: nsgatewaytemplate
-#   This is constant. Should not be changed
-#   NSGType: ANY
-#   Change for desired NSG deployment
-#   associatedEntityID: update
-#   This is constant. Should not change
-
+#    # License to operate VSD architect
+#    vsd_license: "vsd license string goes here"
+#    # A sample origanization. NSGV will be part of this Org
+#    organization:
+#      # Name of the organization
+#      name: metro-test
+#      # Name of NSGV. This will be used to represent it in VSD architect
+#      nsg_name: NSG_US
+#    # CSP credentials are used to access the VSD API and create profile
+#    csp:
+#      # CSP username
+#      username:  csproot
+#      # CSP password
+#      password:  csproot
+#      # CSP org name
+#      enterprise: csp
+#      # VSD IP address/hostname
+#      api_url: 'https://192.168.122.211:8443'
+#    # The proxy user is required and will be added to the CSP root user group
+#    user_data:
+#      # First name of the proxy user
+#      firstName: metro
+#      # Last name of the proxy user
+#      lastName: metro
+#      # Email address of the proxy user
+#      email: test@example.com
+#      # Only Encrypted password
+#      password: a94a8fe5ccb19ba61c4c0873d391e987982fbbd3
+#    # NSG infrastructure template that contains Utility VM DNS name
+#    vns_nsg:
+#      # Name for the template
+#      name: metro_vns
+#      # NSG template name. This will be poped out of the dictionary to use elsewhere
+#      nsg_template_name: metro-test
+#      # DNS name of VNS Utility VM
+#      proxyDNSName: jenkinsvnsutil1.example.com
+#    # VSC template
+#    vns_vsc:
+#      # Name for the vsc template
+#      name: metro_vsc
+#      # IP address of the primary VSC controller
+#      firstController: 192.168.100.202
+#      # IP address of the secondary controller. This is optional
+#      secondController: 192.168.100.203
+#    # NSG ports definition
+#    nsg_ports:
+#      # This port is used as an Uplink 
+#      network_port:
+#        # Name for the port to identify in VSD
+#        name: port1_network
+#        # Name for the port to identify in NSGV
+#        physicalName: port1
+#        # Since it is as Uplink, type is NETWORK
+#        portType: NETWORK
+#      # Access port definiton
+#      access_port:
+#        # Name for the port to identify in VSD
+#        name: port2_access
+#        # Name for the port to identigy in NSGV
+#        physicalName: port2
+#        # User defined VLAN range
+#        VLANRange: '0-100'
+#        # VLAN id desired for access port
+#        vlan_value: 20
 ```
