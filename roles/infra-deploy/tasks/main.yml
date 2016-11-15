@@ -1,0 +1,56 @@
+---
+- name: Wait for INFRA ssh to be ready
+  local_action:
+    module: wait_for
+    port: "22"
+    host: "{{ infra_mgmt_ip }}"
+    search_regex: OpenSSH
+
+- name: Add nameserver
+  command: echo "{{ dns_server_list[1] }}" >> /etc/resolv.conf
+  remote_user: centos
+  become: true
+
+- name: Install DNS if not present
+  yum:
+    name: dnsmasq
+    state: latest
+  remote_user: centos
+  become: true
+
+- name: Configure DNS service
+  lineinfile:
+    dest: /etc/dnsmasq.conf
+    line: "domain= {{ dns_domain }}"
+  remote_user: centos
+  become: true
+
+- name: Start the DNS service
+  command: service dnsmasq start
+  remote_user: centos
+  become: true
+
+- name: Enable the DNS service
+  command: chkconfig dnsmasq on
+  remote_user: centos
+  become: true
+
+- name: Stop the NTP service if running
+  command: service ntpd stop
+  remote_user: centos
+  become: true
+
+- name: Configure NTP service
+  command: ntpdate -q pool.ntp.org
+  remote_user: centos
+  become: true
+
+- name: Start the NTP service
+  command: service ntpd start
+  remote_user: centos
+  become: true
+
+- name: Enable the NTP service
+  command: chkconfig ntpd on
+  remote_user: centos
+  become: true

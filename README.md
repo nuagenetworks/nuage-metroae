@@ -55,6 +55,7 @@ The following restrictions and conditions apply prior to executing the playbooks
 1. Python 2.7+ and all its dependencies must be installed on the deployment host. Python 3.0 and above is untested.
 1. Ansible 2.1+ and all its dependencies must be installed on the deployment host.
 1. Netmiko and all its dependencies must be installed on deployment host. The easiest way to install Netmiko is by using `pip install netmiko`. A common Netmiko dependency that could be missing is the cryptography package. See https://cryptography.io/en/latest/installation/ for more information.
+1. VSPK (nuage python module) must be installed on the deployment host.
 1. The ansible deployment host may also be a target server.
 1. The public ssh key of the ansible user that will run the playbooks must be added to `/root/.ssh/authorized_keys` on each target server, even if the deployment host and the target server are one in the same machine.
 1. It may be necessary to remove the vsd, vsc and vstat entries from the ansible user's `~/.ssh/known_hosts` file to prevent errors from suspected DNS spoofing. This would only be necessary if multiple runs are attempted.

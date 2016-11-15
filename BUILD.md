@@ -29,12 +29,16 @@ You can also choose to unpack the binaries yourself, skipping the `nuage-unpack`
 ```
 <your_path>/vsd
 <your_path>/vsc
-<your_path>/vrs (VRS and Dockermon files go here)
+<your_path>/vrs
+<your_path>/dockermon
 <your_path>/vstat
+<your_path>/vns/nsg
+<your_path>/vns/nsg/aws
+<your_path>/vns/util
 ```
 
 You can also choose to run the `nuage-unpack` role manually by executing `./metro-ansible nuage_unpack.yml`
-
+The `nuage-unpack` role also uses Ansible tags to limit the extraction or variable setting to a particular component of choice.
 # Reference
 
 For reference, here is a description of the contents of the `build-vars.yml` file, with comments:
@@ -51,7 +55,6 @@ For reference, here is a description of the contents of the `build-vars.yml` fil
 #    # If true, the playbooks will *not* unpack. Files in nnuage_unpacked_dest_path
 #    # will be used as is. If false, the nuage_unpack role will be executed.
 #    nuage_unpacked: true
-#
 #    VSD
 #    # When True or undefined, all VSDs will be configured stand-alone. When False
 #    # we will expect 3 VSD definitions, below, for clustered deployment.
@@ -146,15 +149,7 @@ For reference, here is a description of the contents of the `build-vars.yml` fil
 #          # The FQDN for the VSD this VSTAT instance will connect to
 #          vsd_fqdn: vsd1.example.com }
 #
-#    VNS
-#    # When True VNS specific configuration is triggered in the VSD and VSC
-#    vns: False
-#
 #    VNSUTIL
-#    # The path on the ansible host from which VNS-UTILITY qcow2 images will be copied
-#    vnsutil_qcow2_path: "/home/caso/"
-#    # The file name of the qcow2 image
-#    vnsutil_qcow2_file_name: "vns-util-0.0_98.qcow2"
 #    # A dictionary of params for 0 or more VNS-UTILITY instances
 #    # Note: Multiple VNS-UTILITY instances can be copied from the same qcow2
 #    myvnsutils:
@@ -188,10 +183,6 @@ For reference, here is a description of the contents of the `build-vars.yml` fil
 #          vsd_fqdn: vsd.example.com}
 #
 #    NSGV
-#    # The path on the ansible host from which VNS-UTILITY qcow2 images will be copied
-#    nsgv_qcow2_path: "/home/caso/"
-#    # The file name of the qcow2 image
-#    nsgv_qcow2_file_name: "ncpe_centos7.qcow2"
 #    # A dictionary of params for only 1 NSGV instance for current release
 #    mynsgvs:
 #          # Define only hostname for this NSGV instance

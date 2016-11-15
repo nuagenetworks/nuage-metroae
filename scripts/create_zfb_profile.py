@@ -30,7 +30,7 @@ def create_proxy_user(session):
     if 'proxy' not in lst_users:
         proxy_user = NUUser(first_name=zfb_params['user_data']['firstName'],
                             last_name=zfb_params['user_data']['lastName'],
-                            user_name=zfb_params['user_data']['userName'],
+                            user_name=zfb_constants['proxy_user'],
                             email=zfb_params['user_data']['email'],
                             password=zfb_params['user_data']['password'])
         cspenterprise.create_child(proxy_user)
@@ -53,6 +53,8 @@ def create_nsg_gateway_template(csp_user):
     lst_infra_names = [infra.name for infra in infra_profiles]
     if vns_nsg['name'] not in lst_infra_names:
         # Create infra profile
+        zfb_params['vns_nsg']['useTwoFactor'] = zfb_constants['useTwoFactor']
+        zfb_params['vns_nsg']['upgradeAction'] = zfb_constants['upgradeAction']
         nsg_infra = NUInfrastructureGatewayProfile(data=vns_nsg)
         csproot.create_child(nsg_infra)
         # Attach the infra profile to NSG template
@@ -78,12 +80,13 @@ def create_vsc_template(csp_user):
 
 
 def create_nsgv_ports(nsg_temp, vsc_temp):
-    # Createi network port
+    # Create network port
     network_port = zfb_params['nsg_ports']['network_port']
     access_port = zfb_params['nsg_ports']['access_port']
     port_info = nsg_temp.ns_port_templates.get()
     lst_port_name = [port.name for port in port_info]
     if network_port['name'] not in lst_port_name:
+        network_port['portType'] = zfb_constants['network_port_type']
         port_temp = NUNSPortTemplate(data=network_port)
         nsg_temp.create_child(port_temp)
         # Attach vlan0 and vsc profile
@@ -95,6 +98,7 @@ def create_nsgv_ports(nsg_temp, vsc_temp):
     # Create access port
     if access_port['name'] not in lst_port_name:
         vlan_id = access_port.pop('vlan_value')
+        access_port['portType'] = zfb_constants['access_port_type']
         port_temp = NUNSPortTemplate(data=access_port)
         nsg_temp.create_child(port_temp)
         # Attach vlan
@@ -121,8 +125,8 @@ def create_iso_file(csp_user, nsg_temp, nsgv_path):
     # Create an ISO file that's attached to nsgv vm
     job = NUJob()
     job.command = "GET_ZFB_INFO"
-    zfb_params['iso_params']['associatedEntityID'] = nsg_temp.id
-    job.parameters = zfb_params['iso_params']
+    zfb_constants['iso_params']['associatedEntityID'] = nsg_temp.id
+    job.parameters = zfb_constants['iso_params']
     csproot.create_child(job)
     subprocess.call("echo %s | base64 -d > %s/user_image.iso.gz"
                     % (job.result, nsgv_path), shell=True)
@@ -135,7 +139,8 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("playbook_dir", type=str,
                         help="Set path to playbook directory.")
-    parser.add_argument("nsgv_path", type=str, help="Set path to NSGV ISO output directory")
+    parser.add_argument("nsgv_path", type=str, help="Set path to NSGV ISO\
+                        output directory")
     args = parser.parse_args()
 
     # Nsgv_path
@@ -145,6 +150,9 @@ if __name__ == '__main__':
     try:
         with open(args.playbook_dir + '/zfb.yml', 'r') as fh:
             zfb_params = yaml.load(fh)
+        vars_file = '/roles/nsgv-predeploy/vars/main.yml'
+        with open(args.playbook_dir + vars_file, 'r') as fo:
+            zfb_constants = yaml.load(fo)
     except Exception as e:
         print("ERROR: Could not locate file: %s" % e)
 
