@@ -1,7 +1,5 @@
 # Metro: Automated Deployment of Nuage Software
 
-**NOTE: This package is considered Beta quality. It can be used for customer demos and PoCs but should first be tested in your lab to make sure it will work. It should not be distributed.
-
 ## What's new
 
 1. VSD HA/cluster support, limited to exactly 3 VSD nodes
@@ -28,7 +26,7 @@ This set of playbooks can be used to automatically deploy VCS/VNS components for
 
 The short version of the instructions are:
 
-1. Install Ansible 2.1+ on the deployment host
+1. Install Ansible 2.1.1+ on the deployment host (Ansible 2.2 for VNS)
 1. Install Netmiko and its dependencies on deployment host.
 1. Clone this repository to the deployment host
 1. Customize `build.yml` with your VSD, VSC, VRS, VNSUTIL, NSGV  and VSTAT information. (See `BUILD.md` for details.)
