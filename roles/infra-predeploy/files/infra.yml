@@ -1,0 +1,31 @@
+heat_template_version: '2014-10-16'
+parameters:
+  vm_name:
+    type: string
+  infra_image:
+    type: string
+  infra_flavor:
+    type: string
+  infra_net:
+    type: string
+  ssh_key: 
+    type: string 
+resources:
+  my_key:
+    type: OS::Nova::KeyPair
+    properties:
+      public_key: {get_param: ssh_key}
+      name: user_key
+  mycompute:
+    type: OS::Nova::Server
+    properties:
+      name: {get_param: vm_name}
+      flavor: {get_param: infra_flavor}
+      image: {get_param: infra_image}
+      networks:
+        - network: {get_param: infra_net}
+      key_name: {get_resource: my_key}
+outputs:
+  server_ip:
+    description: fixed ip assigned to the server
+    value: { get_attr: [mycompute, networks, {get_param: infra_net}, 0]}

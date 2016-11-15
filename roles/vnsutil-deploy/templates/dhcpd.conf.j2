@@ -1,0 +1,19 @@
+#
+# DHCP Server Configuration file.
+#   see /usr/share/doc/dhcp*/dhcpd.conf.example
+#   see dhcpd.conf(5) man page
+#
+deny bootp;
+default-lease-time 172800;
+max-lease-time 345600;
+authoritative;
+option domain-name-servers {{ interfaces.data.ip }};
+
+shared-network "{{ dns_domain }}" {
+  option domain-name "{{ dns_domain }}";
+  subnet {{ interfaces.data.subnet }} netmask {{ interfaces.data.netmask }} {
+    authoritative;
+    option routers {{ interfaces.data.ip }};
+    host {{ inventory_hostname }} {hardware ethernet {{ interfaces.nsgv.mac }}; fixed-address {{ interfaces.nsgv.ip }}; option domain-name "{{ dns_domain }}";}
+  }
+}

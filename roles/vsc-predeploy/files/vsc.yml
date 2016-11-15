@@ -1,0 +1,30 @@
+heat_template_version: '2014-10-16'
+parameters:
+  vm_name:
+    type: string
+  vsc_image:
+    type: string
+  vsc_flavor:
+    type: string
+  vsc_net:
+    type: string
+  vsc2_net:
+    type: string 
+resources:
+  mycompute:
+    type: OS::Nova::Server
+    properties:
+      name: {get_param: vm_name}
+      flavor: {get_param: vsc_flavor }
+      image: {get_param: vsc_image}
+      networks:
+        - network: {get_param: vsc_net}
+        - network: {get_param: vsc2_net}
+
+outputs:
+  server_ip:
+    description: fixed ip assigned to the server
+    value: { get_attr: [mycompute, networks, {get_param: vsc_net}, 0]}
+  control_ip:
+    description: control ip assigned to the vsc
+    value: { get_attr: [mycompute, networks, {get_param: vsc2_net}, 0]}

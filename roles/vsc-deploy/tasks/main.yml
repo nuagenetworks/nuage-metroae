@@ -1,78 +1,5 @@
 ---
 # tasks file for vsc
-- name: Pull facts on target_server {{ target_server }}
-  action: setup
-  delegate_to: "{{ target_server }}"
-
-- name: List the Virtual Machines on {{ target_server }}
-  virt: command=list_vms
-  register: virt_vms
-  delegate_to: "{{ target_server }}"
-  remote_user: root
-
-- name: Check for a duplicate VM name on {{ target_server }}
-  fail: msg="The VM {{ inventory_hostname }} is already defined on this target_server {{ target_server }}"
-  when: inventory_hostname in virt_vms.list_vms
-
-- name: Include OS-specific variables.
-  include_vars: "{{ ansible_os_family }}.yml"
-
-- name: Create VSC directory on {{ target_server }}
-  file: path={{ images_path }}/{{ inventory_hostname }} state=directory owner={{ libvirt.user }} group={{ libvirt.group }}
-  delegate_to: "{{ target_server }}"
-  remote_user: root
-
-- name: Copy VSC qcow2 image to {{ target_server }}
-  copy: src={{ vsc_qcow2_path }}/{{ vsc_qcow2_file_name }} dest={{ images_path }}/{{ inventory_hostname }}/{{ inventory_hostname }}.qcow2 owner={{ libvirt.user }} group={{ libvirt.group }}
-  delegate_to: "{{ target_server }}"
-  remote_user: root
-
-- name: Setup VSC temporary configuration files on {{ target_server }}
-  template: src={{ item }}.j2 backup=no dest={{ images_path }}/{{ inventory_hostname }}/{{ item }}
-  delegate_to: "{{ target_server }}"
-  with_items:
-    - bof.cfg
-    - config.cfg
-  remote_user: root
-
-- name: Copy temporary configuration files to the VSC image
-  command: guestfish --rw -a {{ images_path }}/{{ inventory_hostname }}/{{ inventory_hostname }}.qcow2 -m {{ vsc_partition }} copy-in {{ images_path }}/{{ inventory_hostname }}/{{ item }} /
-  delegate_to: "{{ target_server }}"
-  with_items:
-    - bof.cfg
-    - config.cfg
-  remote_user: root
-
-- name: Remove temporary configuration files
-  file: path={{ images_path }}/{{ inventory_hostname }}/{{ item }} state=absent
-  delegate_to: "{{ target_server }}"
-  with_items:
-    - bof.cfg
-    - config.cfg
-  remote_user: root
-
-- name: Define VSC guest VM
-  virt: name={{ inventory_hostname }}
-        command=define
-        xml="{{ lookup('template', 'vsc.xml.j2') }}"
-  delegate_to: "{{ target_server }}"
-  remote_user: root
-
-- name: Start VSC guest VM
-  virt: name={{ inventory_hostname }} state=running
-  delegate_to: "{{ target_server }}"
-  remote_user: root
-
-- name: Get updated VM information from {{ target_server }}
-  virt: command=info
-  register: virt_info
-  delegate_to: "{{ target_server }}"
-  remote_user: root
-
-- name: Verify that VSC VM is running on {{ target_server }}
-  assert: { that: "virt_info[inventory_hostname]['state'] == 'running'" }
-  delegate_to: "{{ target_server }}"
-  remote_user: root
 
 - name: Wait for VSC ssh to be ready
   local_action:
@@ -81,3 +8,73 @@
     host: "{{ interfaces.mgmt.ip }}"
     search_regex: OpenSSH
     delay: 1
+  tags:
+    - vsc
+    - vsc-deploy
+
+- block:
+  - name: Get infra server details from OpenStack
+    os_server_facts:
+      auth:
+        "{{ os_auth }}"
+      server: "{{ infra_server_name }}*"
+    register: infra_server
+    delegate_to: 127.0.0.1
+
+  - name: Set infra ip
+    set_fact:
+      infra_ip: "{{ infra_server['ansible_facts']['openstack_servers'][0]['private_v4'] }}"
+
+  - name: Get VSC details from OpenStack
+    os_server_facts:
+      auth:
+        "{{ os_auth }}"
+      server: "{{ inventory_hostname }}*"
+    register: vsc_ip
+    delegate_to: 127.0.0.1
+
+  - name: Set vsc mgmt ip
+    set_fact:
+      vsc_mgmt_ip: "{{ vsc_ip['ansible_facts']['openstack_servers'][0]['private_v4'] }}"
+
+  - name: Set vsc control ip
+    set_fact:
+      vsc_control_ip: "{{ vsc_ip['ansible_facts']['openstack_servers'][0]['private_v4'] }}" 
+
+  - name: Loading system config
+    sros_config:
+      lines:
+        - configure system name "{{inventory_hostname}}"
+        - configure system time ntp server "{{infra_ip}}"
+        - configure router interface system address "{{system_ip}}/32"
+        - configure router interface control address "{{vsc_control_ip}}/24"
+        - configure router router-id "{{system_ip}}"
+        - configure vswitch-controller xmpp-server "{{ xmpp.username }}@{{ vsd_fqdn }}"
+        - admin save
+      provider: "{{ creds }}"
+    delegate_to: 127.0.0.1
+    vars:
+      creds:
+        host: "{{ vsc_mgmt_ip }}"
+        username: admin
+        password: admin
+        transport: cli
+
+  - name: Loading BOF config
+    sros_config:
+      lines:
+        - bof address "{{ vsc_mgmt_ip }}/24"
+        - bof primary-dns "{{ infra_ip }}"
+        - bof dns-domain "{{ dns.domain }}"
+        #- bof static-route "{{ vsc_static_route_list[0] }}" next-hop "{{ interfaces.mgmt.gateway }}"
+        - bof save "cf1:"
+      provider: "{{ creds }}"
+    delegate_to: 127.0.0.1
+    vars:
+      creds:
+        host: "{{ vsc_mgmt_ip }}"
+        username: admin
+        password: admin
+        transport: cli
+
+  when: ("{{ target_server_type }}") == "heat"

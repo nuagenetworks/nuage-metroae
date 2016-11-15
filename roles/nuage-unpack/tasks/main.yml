@@ -1,0 +1,336 @@
+---
+
+#################
+# VSD
+#################
+
+- name: Ensure binaries directory exists for VSD QCOW 
+  file: name="{{ nuage_unpacked_dest_path }}/vsd/" state=directory mode=0755
+  tags:
+    - vsd
+    - nuage-unpack
+
+- block:
+  - name: Find name of VSD QCOW Archive
+    find: path="{{ nuage_release_src_path }}"  pattern="Nuage-VSD*QCOW*"
+    register: rc_vsd
+
+  - name: Unpack VSD QCOW Archive
+    unarchive: src="{{ rc_vsd.files[0].path}}" dest="{{ nuage_unpacked_dest_path }}/vsd" list_files=yes
+    register: rc_vsd_archive_files
+    when: rc_vsd.matched > 0 
+  when: not nuage_unpacked|default(false) 
+  tags:
+    - vsd
+    - nuage-unpack
+
+- name: Find name of VSD QCOW File
+  find: path="{{ nuage_unpacked_dest_path }}/vsd"  pattern="*.qcow2" recurse=yes
+  register: rc_vsd_file
+  tags:
+    - vsd
+    - nuage-unpack
+
+- name: Register VSD Qcow variables with proper path and image locations for use in other playbooks
+  set_fact:
+    vsd_qcow2_path: "{{ rc_vsd_file.files[0].path | dirname }}"
+    vsd_qcow2_file_name: "{{ rc_vsd_file.files[0].path | basename }}"
+  when: rc_vsd_file.matched > 0
+  tags:
+    - vsd
+    - nuage-unpack
+
+###################
+# VSTAT - ElasticSearch
+###################
+
+- name: Ensure binaries directory exists for ElasticSearch
+  file: name="{{ nuage_unpacked_dest_path }}/vstat/" state=directory mode=0755
+  tags:
+    - vstat
+    - nuage-unpack
+
+- block:
+  - name: Find name of ElasticSearch QCOW Archive
+    find: path="{{ nuage_release_src_path }}"  pattern="Nuage-elastic-\d.*" use_regex=true
+    register: rc_vstat
+    tags:
+    - vstat
+    - nuage-unpack
+
+  - name: Unpack Elastic QCOW Archive
+    unarchive: src="{{ rc_vstat.files[0].path}}" dest="{{ nuage_unpacked_dest_path }}/vstat" list_files=yes
+    register: rc_vstat_archive_files
+    when: rc_vstat.matched > 0 
+  when: not nuage_unpacked|default(false)
+
+- name: Find name of Elastic QCOW File
+  find: path="{{ nuage_unpacked_dest_path }}/vstat"  pattern="*.qcow2" recurse=yes
+  register: rc_vstat_file
+  tags:
+    - vstat
+    - nuage-unpack
+
+- name: Register VSTAT Qcow variables with proper path and image locations for use in other playbooks
+  set_fact:
+    vstat_qcow2_path: "{{ rc_vstat_file.files[0].path | dirname }}"
+    vstat_qcow2_file_name: "{{ rc_vstat_file.files[0].path | basename }}"
+  when: rc_vstat_file.matched > 0
+  tags:
+    - vstat
+    - nuage-unpack
+
+###################
+# VSC
+###################
+
+- name: Find name of VSC QCOW Archive
+  find: path="{{ nuage_release_src_path }}"  pattern="Nuage-VSC*"
+  register: rc_vsc
+  tags:
+    - vsc
+    - nuage-unpack
+
+- name: Create directory to unpack VSC to
+  file: name="{{ nuage_unpacked_dest_path }}/vsc/" state=directory mode=0755
+  when: rc_vsc.matched > 0
+  tags:
+    - vsc
+    - nuage-unpack
+
+- name: Unpack VSC QCOW Archive
+  unarchive: src="{{ rc_vsc.files[0].path}}" dest="{{ nuage_unpacked_dest_path }}/vsc/"  list_files=yes
+  register: rc_vsc_archive_files
+  when: rc_vsc.matched > 0  and not nuage_unpacked|default(false)
+  tags:
+    - vsc
+    - nuage-unpack
+
+- name: Find name of VSC QCOW File
+  find: path="{{ nuage_unpacked_dest_path }}/vsc"  pattern="vsc_singledisk.qcow2" recurse=yes
+  register: rc_vsc_file
+  tags:
+    - vsc
+    - nuage-unpack
+
+- name: Register VSC Qcow variables with proper path and image locations for use in other playbooks
+  set_fact:
+    vsc_qcow2_path: "{{ rc_vsc_file.files[0].path | dirname }}"
+    vsc_qcow2_file_name: "{{ rc_vsc_file.files[0].path | basename }}"    
+  when: rc_vsc_file.matched > 0
+  tags:
+    - vsc
+    - nuage-unpack
+
+################
+# VRS 
+################
+
+- name: Find name of VRS Archive
+  find: path="{{ nuage_release_src_path }}"  pattern="Nuage-VRS*{{ nuage_target_architecture}}*"
+  register: rc_vrs
+  tags:
+    - vrs
+    - nuage-unpack
+
+- name: Create directory to unpack VRS to
+  file: name="{{ nuage_unpacked_dest_path }}/vrs/" state=directory mode=0755
+  when: rc_vrs.matched > 0
+  tags:
+    - vrs
+    - nuage-unpack
+
+- name: Unpack VRS Archive
+  unarchive: src="{{ rc_vrs.files[0].path}}" dest="{{ nuage_unpacked_dest_path }}/vrs/"  list_files=yes
+  register: rc_vrs_archive_files
+  when: rc_vrs.matched > 0  and not nuage_unpacked|default(false)
+  tags:
+    - vrs
+    - nuage-unpack
+
+- block:
+  - name: Find name of VRS Package Files (RH architecture)
+    find: path="{{ nuage_unpacked_dest_path }}/vrs"  pattern="*.rpm" recurse=yes
+    register: rc_vrs_file
+  - name: Register VRS package variables with proper path and image locations for use in other playbooks (RH architecture)
+    set_fact:
+      vrs_package_path: "{{ rc_vrs_file.files[0].path | dirname }}"
+      vrs_package_file_name_list: "{{ rc_vrs_file.files |  map(attribute='path') | list | map('basename') | list }}"
+    when: rc_vrs_file.matched > 0 
+  when: nuage_target_architecture == "el6" or nuage_target_architecture == "el7"
+  tags:
+    - vrs
+    - nuage-unpack
+
+- block:
+  # Ubuntu requires 3 packages listed in a specific order of dependeny
+  - name: Find name of VRS python package file (Ubuntu architecture)
+    find: path="{{ nuage_unpacked_dest_path }}/vrs"  pattern="nuage-python-openvswitch*.deb" recurse=yes
+    register: rc_vrs_python_file
+  - name: Register VRS package path and VRS python package file name for use in other playbooks (Ubuntu Architecture)
+    set_fact:
+      vrs_package_path: "{{ rc_vrs_python_file.files[0].path | dirname }}"
+      vrs_package_file_name_list: "{{ rc_vrs_python_file.files |  map(attribute='path') | list | map('basename') | list }}"
+    when: rc_vrs_python_file.matched > 0
+  - name: Find name of VRS common package file (Ubuntu architecture)
+    find: path="{{ nuage_unpacked_dest_path }}/vrs"  pattern="nuage-openvswitch-common*.deb" recurse=yes
+    register: rc_vrs_common_file
+  - name: Register VRS common package file name for use in other playbooks (Ubuntu Architecture)
+    set_fact:
+      vrs_package_file_name_list: "{{ vrs_package_file_name_list }} + {{ rc_vrs_common_file.files |  map(attribute='path') | list | map('basename') | list }}"
+    when: rc_vrs_common_file.matched > 0
+  - name: Find name of VRS switch package file (Ubuntu architecture)
+    find: path="{{ nuage_unpacked_dest_path }}/vrs"  pattern="nuage-openvswitch-switch*.deb" recurse=yes
+    register: rc_vrs_switch_file
+  - name: Register VRS switch package file name for use in other playbooks (Ubuntu Architecture)
+    set_fact:
+      vrs_package_file_name_list: "{{ vrs_package_file_name_list }} + {{ rc_vrs_switch_file.files |  map(attribute='path') | list | map('basename') | list }}"
+    when: rc_vrs_switch_file.matched > 0
+  when: nuage_target_architecture == "ubuntu" or nuage_target_architecture == "ubuntu.14.04" or  nuage_target_architecture == "ubuntu.16.04"
+  tags:
+    - vrs
+    - nuage-unpack
+
+################
+# Docker-Monitor
+#################
+
+- name: Find name of Docker-Monitor Archive
+  find: path="{{ nuage_release_src_path }}"  pattern="Nuage-Docker-Monitor*"
+  register: rc_dockermon
+  tags:
+    - dockermon
+    - nuage-unpack
+
+- name: Create directory to unpack Docker-Monitor to
+  file: name="{{ nuage_unpacked_dest_path }}/dockermon/" state=directory mode=0755
+  when: rc_dockermon.matched > 0
+  tags:
+    - dockermon
+    - nuage-unpack
+
+- name: Unpack Docker-Monitor Archive
+  unarchive: src="{{ rc_dockermon.files[0].path}}" dest="{{ nuage_unpacked_dest_path }}/dockermon/"  list_files=yes
+  register: rc_dockermon_archive_files
+  when: rc_dockermon.matched > 0  and not nuage_unpacked|default(false)
+  tags:
+    - dockermon
+    - nuage-unpack
+
+- block:
+  - name: Find name of dockermon package Files (RH architecture)
+    find: path="{{ nuage_unpacked_dest_path }}/dockermon"  pattern="*.rpm" recurse=yes
+    register: rc_dockermon_file
+  - name: Register dockermon variables with proper path and image locations for use in other playbooks (RH architecture)
+    set_fact:
+      dockermon_package_path: "{{ rc_dockermon_file.files[0].path | dirname }}"
+      dockermon_package_file_name: "{{ rc_dockermon_file.files[0].path | basename }}"
+    when: rc_dockermon_file.matched > 0
+  when: nuage_target_architecture == "el6" or nuage_target_architecture == "el7"
+  tags:
+    - dockermon
+    - nuage-unpack
+
+- block:
+  - name: Set dockermon target path based on version (Ubuntu architecture)
+    set_fact:
+      dockermon_findfile_path: "{{ nuage_unpacked_dest_path }}/dockermon/{{ { 'ubuntu':'ubuntu', 'ubuntu.14.04':'ubuntu-14.04', 'ubuntu.16.04':'ubuntu-16.04' }[nuage_target_architecture] }}"
+  - name: Find name of dockermon package files (Ubuntu architecture)
+    find: path="{{ dockermon_findfile_path }}"  pattern="*.deb" recurse=yes
+    register: rc_dockermon_file
+  - name: Register dockermon variables with proper path and image locations for use in other playbooks (Ubuntu architecture)
+    set_fact:
+      dockermon_package_path: "{{ rc_dockermon_file.files[0].path | dirname }}"
+      dockermon_package_file_name: "{{ rc_dockermon_file.files[0].path | basename }}"
+    when: rc_dockermon_file.matched > 0
+  when: nuage_target_architecture | search ("ubuntu")
+  tags:
+    - dockermon
+    - nuage-unpack
+
+#####################
+# VNS Utility/ NSGV
+#####################
+
+- name: Ensure binaries directory exists for VNS
+  file: name="{{ nuage_unpacked_dest_path }}/{{ item }}" state=directory mode=0755
+  with_items:
+    - "vns/nsg/"
+    - "vns/nsg/aws"
+    - "vns/utils/"
+  tags:
+    - vns
+    - nuage-unpack
+ 
+- block:
+  - name: Find name of VNS Archive
+    find: path="{{ nuage_release_src_path }}"  pattern="Nuage-VNS*"
+    register: rc_vns
+ 
+  - name: Unpack VNS Archive
+    unarchive: src="{{ rc_vns.files[0].path}}" dest="{{ nuage_unpacked_dest_path }}/vns" list_files=yes
+    register: rc_vns_archive_files
+    when: rc_vns.matched > 0 and false
+ 
+  - name: Find name of NSG and Utils archive files
+    find: path="{{ nuage_unpacked_dest_path }}/vns/" pattern="{{ item }}"
+    with_items:
+      - "Nuage-VNS-NSG-*"
+      - "Nuage-VNS-Utils-*"
+    register: rc_vns_archives
+ 
+  - name: Unpack VNS NSG and Utils archive files
+    unarchive: src="{{ rc_vns_archives.results[item.0].files[0].path }}" dest="{{ nuage_unpacked_dest_path }}/{{ item.1 }}"
+    register: rc_vns_archives_files
+    with_indexed_items:
+      - "vns/nsg/"
+      - "vns/utils/"
+    when: false
+  
+  - name: Find name of NSG-AWSs archive files
+    find: path="{{ nuage_unpacked_dest_path }}/vns/nsg" pattern="{{ item }}"
+    with_items:
+      - "Nuage-NSG-*AWS*"
+    register: rc_vns_archives
+ 
+  - name: Unpack VNS NSG and Utils archive files
+    unarchive: src="{{ rc_vns_archives.results[item.0].files[0].path }}" dest="{{ nuage_unpacked_dest_path }}/{{ item.1 }}"
+    register: rc_vns_archives_files
+    with_indexed_items:
+      - "vns/nsg/aws"
+    when: false
+  
+  when: not nuage_unpacked|default(false)
+  tags:
+    - vns
+    - nuage-unpack
+ 
+- name: Find name of VNS files
+  find: path="{{ nuage_unpacked_dest_path }}/{{ item.subdir }}"  pattern="{{ item.pattern }}" recurse=yes
+  register: rc_vns_files
+  with_items:
+    - { subdir: "vns/utils/", pattern: "vns-util-*.qcow2" }
+    - { subdir: "vns/nsg/", pattern: "ncpe_centos7.qcow2" }
+    - { subdir: "vns/nsg/aws", pattern: "*.raw" }
+  tags:
+    - vns
+    - nuage-unpack
+
+- name: Register VNS variables with proper path and image locations for use in other playbooks
+  set_fact: 
+    "{{ item.1 }}_path": "{{ rc_vns_files.results[item.0].files[0].path | dirname }}"
+    "{{ item.1 }}_file_name": "{{ rc_vns_files.results[item.0].files[0].path | basename }}"
+  with_indexed_items:
+    - vnsutil_qcow2
+    - nsgv_qcow2
+    - nsgami_raw
+  tags:
+    - vns
+    - nuage-unpack
+
+- block:
+    - debug: var=vnsutil_qcow2_path
+    - debug: var=vnsutil_qcow2_file_name
+  tags:
+    - vns
+    - nuage-unpack

@@ -1,6 +1,7 @@
 ---
-- name: Are you sure?
-  pause: prompt='This operation will overwrite build.xml and destroy host_vars! Press return to continue. Press Ctrl+c and then "a" to abort'
+- name: Warning! About to overwrite build.xml, delete hosts, and delete host_vars. Customizations will be lost.
+  pause:
+    seconds: "{{ reset_build_pause_secs }}"
 
 - name: Destroy the host_vars directory and its contents
   file: path={{ playbook_dir }}/host_vars/ state=absent
@@ -8,15 +9,8 @@
 - name: Destroy the group_vars directory and its contents
   file: path={{ playbook_dir }}/group_vars/ state=absent
 
-- name: Make a backup copy of build.yml as build.bak
-  copy: src={{ playbook_dir }}/build.yml dest={{ playbook_dir }}/build.bak
-  ignore_errors: yes
-
-- name: Destroy build.yml file in the playbook directory
-  file: path={{ playbook_dir }}/build.yml state=absent
-
-- name: Write out a new build.yml file to the playbook directory
-  copy: src=build.yml dest={{ playbook_dir }}/build.yml
+- name: Write out a clean build.yml file to the playbook directory and backup previous
+  copy: src=build.yml dest={{ playbook_dir }}/build.yml backup=yes
 
 - name: Destroy hosts file in the playbook directory
   file: path={{ playbook_dir }}/hosts state=absent
