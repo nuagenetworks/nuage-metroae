@@ -29,26 +29,33 @@ You can also choose to unpack the binaries yourself, skipping the `nuage-unpack`
 ```
 <your_path>/vsd
 <your_path>/vsc
-<your_path>/vrs (VRS and Dockermon files go here)
+<your_path>/vrs
+<your_path>/dockermon
 <your_path>/vstat
+<your_path>/vns/nsg
+<your_path>/vns/nsg/aws
+<your_path>/vns/util
 ```
 
 You can also choose to run the `nuage-unpack` role manually by executing `./metro-ansible nuage_unpack.yml`
-
+The `nuage-unpack` role also uses Ansible tags to limit the extraction or variable setting to a particular component of choice.
 # Reference
 
 For reference, here is a description of the contents of the `build-vars.yml` file, with comments:
 
 ```
+#    # The directory where the Nuage Networks binariy archives are located. This is only
+#    # required if nauge_unpacked == false. See below.
 #    nuage_release_src_path: "{{ ansible_env.HOME}}/nuage-release"
 #    # The directory where to extract the relevant Nuage Networks binaries to
 #    nuage_unpacked_dest_path: "{{ ansible_env.HOME}}/nuage-unpacked"
-#    # Parameter to define whether binaries have already been extracted (`nauge_unpacked: true`) or whether the `nuage-unpack` role should be used to extract them (`nuage_unpacked: false`).
-#    nuage_unpacked: true
-#    # Parameter used to define the Hypervisor-Architecture (el6|el7|ubuntu supported for now)
+#    # Parameter used to define the Hypervisor-Architecture (One of: el6|el7|ubuntu)
 #    nuage_target_architecture: "el7"
-#
-#    # VSD
+#    # Parameter to define whether binaries have already been extracted
+#    # If true, the playbooks will *not* unpack. Files in nnuage_unpacked_dest_path
+#    # will be used as is. If false, the nuage_unpack role will be executed.
+#    nuage_unpacked: true
+#    VSD
 #    # When True or undefined, all VSDs will be configured stand-alone. When False
 #    # we will expect 3 VSD definitions, below, for clustered deployment.
 #    vsd_standalone: True
@@ -57,6 +64,8 @@ For reference, here is a description of the contents of the `build-vars.yml` fil
 #    myvsds:
 #          # The fqdn of this VSD instance
 #      - { hostname: vsd1.example.com,
+#          # The target server type where this VSD instance will run. Possible values: kvm
+#          target_server_type: kvm,
 #          # The hypervior target where this VSD instance will be run
 #          target_server: 135.227.181.232,
 #          # The IP address of this VSD instance
@@ -66,28 +75,14 @@ For reference, here is a description of the contents of the `build-vars.yml` fil
 #          # The netmask of this VSD instance
 #          mgmt_netmask: 255.255.255.0 }
 #
-#    VSTAT - ElasticSearch
-#    # A dictionary of params for 0 or more VSTAT instances
-#    # Note: Multiple VSTAT instances can be copied from the same qcow2
-#    myvstats:
-#          # The hostname or IP address for this VSTAT instance
-#      - { hostname: vstat1.example.com,
-#          # The hypervior target where this VSTAT instance will be run
-#          target_server: 135.227.181.232,
-#          # The management IP address of this VSTAT instance
-#          mgmt_ip: 192.168.122.204,
-#          # The management gateway IP address of this VSTAT instance
-#          mgmt_gateway: 192.168.122.1,
-#          # The management network netmask of this VSTAT instance
-#          mgmt_netmask: 255.255.255.0,
-#          # The FQDN for the VSD this VSTAT instance will connect to
-#          vsd_fqdn: vsd1.example.com }
 #
 #    VSC
 #    # A dictionary of params for 0 or more VSCs
 #    # Note: Multiple VSCs can be deployed from the same qcow2 file
 #    myvscs:
 #      - { hostname: vsc1.example.com,
+#          # The target server type where this VSC instance will run. Possible values: kvm
+#          target_server_type: kvm,
 #          # The hypervior target where this VSC instance will be run
 #          target_server: 135.227.181.232,
 #          # The IP address of this VSC instance
@@ -109,6 +104,8 @@ For reference, here is a description of the contents of the `build-vars.yml` fil
 #          # One or more static route to be configured on this VSC
 #          vsc_static_route_list: { 0.0.0.0/1 } }
 #      - { hostname: vsc2.example.com,
+#          # The target server type where this VSC instance will run. Possible values: kvm
+#          target_server_type: kvm,
 #          target_server: 135.227.181.232,
 #          mgmt_ip: 192.168.122.203,
 #          mgmt_gateway: 192.168.122.1,
@@ -120,7 +117,7 @@ For reference, here is a description of the contents of the `build-vars.yml` fil
 #          xmpp_username: vsc,
 #          vsc_static_route_list: { 0.0.0.0/1 } }
 #
-#    ##  VRS
+#    VRS
 #    # When True, install dockermon on the VRS. When False, don't.
 #    dockermon_install: True
 #    # A dictionary of params for 0 or more VRSs
@@ -133,20 +130,33 @@ For reference, here is a description of the contents of the `build-vars.yml` fil
 #          # The standby VSC IP address for this VRS node
 #          standby_controller_ip: 192.168.122.203 }
 #
-#    # VNS
-#    # When True VNS specific configuration is triggered in the VSD and VSC
-#    vns: False
+#    VSTAT - ElasticSearch
+#    # A dictionary of params for 0 or more VSTAT instances
+#    # Note: Multiple VSTAT instances can be copied from the same qcow2
+#    myvstats:
+#          # The hostname or IP address for this VSTAT instance
+#      - { hostname: vstat1.example.com,
+#          # The target server type where this VSTAT instance will run. Possible values: kvm
+#          target_server_type: kvm,
+#          # The hypervior target where this VSTAT instance will be run
+#          target_server: 135.227.181.232,
+#          # The management IP address of this VSTAT instance
+#          mgmt_ip: 192.168.122.204,
+#          # The management gateway IP address of this VSTAT instance
+#          mgmt_gateway: 192.168.122.1,
+#          # The management network netmask of this VSTAT instance
+#          mgmt_netmask: 255.255.255.0,
+#          # The FQDN for the VSD this VSTAT instance will connect to
+#          vsd_fqdn: vsd1.example.com }
 #
-#    ## VNSUTIL
-#    # The path on the ansible host from which VNS-UTILITY qcow2 images will be copied
-#    vnsutil_qcow2_path: "/home/caso/"
-#    # The file name of the qcow2 image
-#    vnsutil_qcow2_file_name: "vns-util-0.0_98.qcow2"
+#    VNSUTIL
 #    # A dictionary of params for 0 or more VNS-UTILITY instances
 #    # Note: Multiple VNS-UTILITY instances can be copied from the same qcow2
 #    myvnsutils:
 #          # The hostname or IP address for this VNS-UTILITY instance
 #      - { hostname: proxy.example.com,
+#          # The target server type where this VNS-UTILITY instance will run. Possible values: kvm
+#          target_server_type: kvm,
 #          # The hypervior target where this VNS-UTILITY instance will be run
 #          target_server: 135.227.181.232,
 #          # The management IP address of this VNS-UTILITY instance
@@ -172,16 +182,14 @@ For reference, here is a description of the contents of the `build-vars.yml` fil
 #          # The FQDN for the VSD. Used to create certs for VNS-UTILITY VM      
 #          vsd_fqdn: vsd.example.com}
 #
-#    ## NSGV
-#    # The path on the ansible host from which VNS-UTILITY qcow2 images will be copied
-#    nsgv_qcow2_path: "/home/caso/"
-#    # The file name of the qcow2 image
-#    nsgv_qcow2_file_name: "ncpe_centos7.qcow2"
+#    NSGV
 #    # A dictionary of params for only 1 NSGV instance for current release
 #    mynsgvs:
 #          # Define only hostname for this NSGV instance
 #          # Do not add domain to the host name
 #      - { hostname: nsgv,
+#          # The target server type where this NSGV instance will run. Possible values: kvm
+#          target_server_type: kvm,
 #          # The hypervior target where this NSGV instance will be run
 #          target_server: 135.227.181.232,
 #          # NSGV VM mac addr that goes in to XML config file
