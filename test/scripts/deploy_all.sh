@@ -1,5 +1,7 @@
 #!/bin/sh
 #Running VSD installation script 
+set -e
+
 cp ./test/files/setup.yml.VSDStandalone ./setup.yml
 ansible-playbook setup.yml
 ansible-playbook reset_build.yml
