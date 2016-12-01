@@ -2,7 +2,7 @@
 #Running VSD installation script 
 set -e
 
-cp ./test/files/setup.yml.VSDStandalone ./setup.yml
+cp ./test/files/setup.yml.VSDOnly ./setup.yml
 ansible-playbook setup.yml -vvvv
 ansible-playbook reset_build.yml -vvvv
 ansible-playbook build.yml -vvvv
