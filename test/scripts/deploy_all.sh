@@ -3,20 +3,20 @@
 set -e
 
 cp ./test/files/setup.yml.VSDStandalone ./setup.yml
-ansible-playbook setup.yml
-ansible-playbook reset_build.yml
-ansible-playbook build.yml
+ansible-playbook setup.yml -vvvv
+ansible-playbook reset_build.yml -vvvv
+ansible-playbook build.yml -vvvv
 ./metro-ansible test_install.yml -vvvv
 
 cp ./test/files/setup.yml.VSCOnly ./setup.yml
-ansible-playbook setup.yml
-ansible-playbook reset_build.yml
-ansible-playbook build.yml
+ansible-playbook setup.yml -vvvv
+ansible-playbook reset_build.yml -vvvv
+ansible-playbook build.yml -vvvv
 ./metro-ansible test_install.yml -vvvv
 
 cp ./test/files/setup.yml ./setup.yml
-ansible-playbook setup.yml
-ansible-playbook reset_build.yml
-ansible-playbook build.yml
+ansible-playbook setup.yml -vvvv
+ansible-playbook reset_build.yml -vvvv
+ansible-playbook build.yml -vvvv
 ./metro-ansible test_cleanup.yml -vvvv
 
