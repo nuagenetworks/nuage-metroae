@@ -1,0 +1,28 @@
+---
+# TODO:
+# Check for existing stack or vms
+- name: Create Compute node
+  register: create_stack
+  os_stack:
+    name: "{{ inventory_hostname }}"
+    template: "roles/compute-predeploy/files/compute.yml"
+    auth:
+      "{{ os_auth }}"
+    parameters:
+      vm_name: "{{inventory_hostname}}"
+      compute_image: "{{ compute_image }}"
+      compute_flavor: "{{ compute_flavor }}"
+      compute_net: "{{ compute_network }}"
+      ssh_key: "{{ansible_user_ssh_key}}"
+  delegate_to: 127.0.0.1
+- debug: var=create_stack['stack']['outputs'][0]['output_value']
+ 
+- name: Set the compute mgmt ip
+  set_fact:
+    compute_mgmt_ip: "{{ create_stack['stack']['outputs'][0]['output_value'] }}"
+
+- name: Update /etc/hosts file on ansible host
+  lineinfile:
+    dest: /etc/hosts
+    line: "{{ compute_mgmt_ip }}    {{ inventory_hostname }}"
+  delegate_to: 127.0.0.1

@@ -1,0 +1,35 @@
+heat_template_version: '2014-10-16'
+parameters:
+  vm_name:
+    type: string
+  ssh_key:
+    type: string
+  osc_image:
+    type: string
+  osc_net:
+    type: string
+  osc_flavor:
+    type: string
+ 
+resources:
+  mycompute:
+    type: OS::Nova::Server
+    properties:
+      name: {get_param: vm_name}
+      flavor: {get_param: osc_flavor}
+      image: {get_param: osc_image}
+      networks:
+      - network: {get_param: osc_net}
+      #key_name: {get_resource: vsd_user_key}
+      user_data_format: RAW
+      user_data: 
+        str_replace:
+          template: |
+            #!/bin/bash
+            echo usr >> /root/.ssh/authorized_keys
+          params:
+            usr: {get_param: ssh_key} 
+outputs:
+  server_ip:
+    description: fixed ip assigned to the server
+    value: { get_attr: [mycompute, networks, {get_param: osc_net}, 0]}

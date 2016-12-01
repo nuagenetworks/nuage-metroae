@@ -1,0 +1,188 @@
+---
+- name: Wait for OSC ssh to be ready
+  local_action:
+    module: wait_for
+    port: "22"
+    host: "{{ osc_mgmt_ip }}"
+    search_regex: OpenSSH
+    delay: 1
+
+- name: Pause for ssh port to be active on {{ inventory_hostname }}
+  pause:
+    seconds: 5
+
+- name: Query {{ target_server }} facts
+  action: setup
+  remote_user: root
+
+- name: Set selinux to permissive
+  command: setenforce 0
+  ignore_errors: yes
+ 
+- name: Disable selinux
+  lineinfile:
+    regexp: SELINUX=
+    line: SELINUX=disabled
+    dest: /etc/selinux/config
+
+- name: Disable firewall
+  service:
+    name: iptables
+    enabled: no
+  when:
+    - ansible_distribution == 'CentOS'
+    - ansible_distribution_major_version == '6'
+ 
+- name: Stop firewall
+  service:
+    name: iptables
+    state: stopped
+  when:
+    - ansible_distribution == 'CentOS'
+    - ansible_distribution_major_version == '6'
+
+- name: Disable firewall
+  service: 
+    name: firewalld
+    enabled: no
+  when:
+    - ansible_os_family == 'RedHat'
+  ignore_errors: yes
+
+- name: Stop firewall
+  service:
+    name: firewalld
+    state: stopped 
+  when:
+    - ansible_os_family == 'RedHat'
+  ignore_errors: yes
+
+- name: Disable NetworkManager
+  service:
+    name: NetworkManager
+    enabled: no
+  ignore_errors: yes
+
+- name: Stop NetworkManager
+  service:
+    name: NetworkManager
+    state: stopped
+  ignore_errors: yes
+
+- name: Enable network
+  service:
+    name: network
+    enabled: yes
+ 
+- name: Start netowrk
+  service:
+    name: network
+    state: started
+
+- name: Install EPEL repos on Centos
+  yum:
+    name: epel-release
+    state: present
+  remote_user: root
+  when:
+    - ansible_distribution == 'CentOS'
+
+- name: Load correspoing software repos for OpenStack Centos6
+  yum:
+    name: "{{ os_repo }}"
+    state: present
+  when: 
+    - ansible_distribution == 'CentOS'
+    - ansible_distribution_major_version == '6'
+  remote_user: root
+
+- name: Pause
+  pause:  
+    seconds: 5
+
+- name: Load correspoing software repos for OpenStack Centos7
+  yum:
+    name: "{{os_centos}}{{ os_release }}"
+    state: present
+  when: 
+    - ansible_distribution == 'CentOS'
+    - ansible_distribution_major_version == '7'
+  remote_user: root
+
+- name: Copy Redhat repo file to {{ inventory_hostname }}
+  template:
+    src={{ playbook_dir }}/roles/osc-deploy/templates/redhat.repo.j2
+    dest=/etc/yum.repos.d/rhel.repo
+  when:
+    - ansible_distribution == 'RedHat'
+
+
+- name: Execute a yum update on {{ inventory_hostname }}
+  yum:
+    name: '*'
+    state: latest
+  remote_user: root
+
+- name: Install packstack packages
+  yum:
+    name: openstack-packstack
+    state: present
+  remote_user: root
+
+# Temp task to get around packstack missing packages
+- name: Enable test repos
+  lineinfile:
+    regexp: enabled=
+    line: enabled=1
+    #dest: "/etc/yum.repos.d/rdo-testing.repo"
+    dest: "/etc/yum.repos.d/CentOS-OpenStack-{{os_release}}.repo"
+  when:
+    - ansible_distribution == 'CentOS'
+
+- name: Execute a yum update on {{ inventory_hostname }}
+  yum:
+    name: '*'
+    state: latest
+  remote_user: root
+  when:
+    - ansible_distribution == 'CentOS'
+
+- name: Install OpenStack all-in-one with heat
+  command: install_packstack
+
+- name: Copy Mysql compute query file to controller
+  copy:
+    src={{ playbook_dir }}/roles/osc-deploy/files/del_compute.txt
+    dest=/root/
+
+- name: Delete compute node from controller
+  shell: "mysql -u root < /root/del_compute.txt"
+
+- name: Disabled compute service on controller
+  service:
+    name: openstack-nova-compute
+    enabled: no
+
+- name: Stop the compute service on controller
+  service: 
+    name: openstack-nova-compute
+    state: stopped
+
+- name: Copy Mysql netowrk query file to controller
+  copy:
+    src={{ playbook_dir }}/roles/osc-deploy/files/del_network.txt
+    dest=/root/
+ 
+- name: Delete network,subnets,routers,ports from Neutron
+  shell: "mysql -u root < /root/del_network.txt"
+
+- name: Add * to Server Alias list
+  lineinfile:
+    dest: /etc/httpd/conf.d/15-horizon_vhost.conf 
+    insertafter: '## Server aliases'  
+    line: '  ServerAlias *'
+
+- name: Restart httpd 
+  service: 
+    name: httpd
+    state: restarted

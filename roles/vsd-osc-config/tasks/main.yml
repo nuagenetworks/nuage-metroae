@@ -1,0 +1,133 @@
+---
+- name: Get OSC IP from OS facts 
+  os_server_facts:
+    auth:
+      "{{ os_auth }}"
+    server: "{{ inventory_hostname }}*"
+  register: osc_server
+  delegate_to: 127.0.0.1
+ 
+- name: Set OSC ip
+  set_fact:
+    osc_mgmt_ip: "{{ osc_server['ansible_facts']['openstack_servers'][0]['private_v4'] }}"
+
+- name: Create temporary directory on {{ inventory_hostname }}
+  remote_user: root
+  file: path={{ plugin_dir }}/{{ inventory_hostname }} state=directory
+
+- name: Create temporary directory on {{ inventory_hostname }} to hold upgrade scripts
+  remote_user: root
+  file: path={{ plugin_dir }}/{{ inventory_hostname }}/upgrade state=directory
+ 
+- name: Copy Nuage OS plugins to temporary directory
+  remote_user: root
+  copy: src={{ os_plugin_path }}/{{ item }} dest={{ plugin_dir }}/{{ inventory_hostname }}/{{ item }}
+  with_items: "{{ os_plugins_list }}"
+
+- name: Install Nuage OS plugins 
+  remote_user: root
+  yum: 
+    name: "{{ plugin_dir }}/{{ inventory_hostname }}/{{ item }}" 
+    state: present
+  with_items: "{{ os_plugins_list }}"
+
+- name: Configure Horizon Extension
+  lineinfile:
+    dest: /usr/share/openstack-dashboard/openstack_dashboard/local/local_settings.py
+    insertafter: UNAUTHORIZED},
+    line: "    'customization_module': 'nuage_horizon.customization'"
+
+- name: Add alias
+  lineinfile:
+    dest: /etc/httpd/conf.d/15-horizon_vhost.conf
+    insertbefore: /usr/share/openstack-dashboard/static
+    line: '  Alias /dashboard/static/nuage "/usr/lib/python2.7/site-packages/nuage_horizon/static"'
+
+- name: Restart httpd
+  service:
+    name: httpd
+    state: restarted
+
+- name: Create dir for nuage plugin
+  file:
+    path: "/etc/neutron/plugins/nuage"
+    state: directory
+ 
+- name: Copy ini contents to created file
+  template:
+    src={{ playbook_dir }}/roles/vsd-osc-config/templates/nuage_plugin.ini.j2
+    dest=/etc/neutron/plugins/nuage/nuage_plugin.ini
+
+- name: Remove neutron plugin file
+  file:
+    path: "/etc/neutron/plugin.ini"
+    state: absent
+
+- name: Create link
+  shell: "ln -s /etc/neutron/plugins/nuage/nuage_plugin.ini /etc/neutron/plugin.ini"
+  
+- name: Enable network api class
+  lineinfile:
+    dest: /etc/nova/nova.conf
+    regexp: '#network_api_class='
+    line: 'network_api_class = nova.network.neutronv2.api.API'
+
+- name: Set ovs bridge to alubr0
+  lineinfile:
+    dest: /etc/nova/nova.conf
+    regexp: 'ovs_bridge='
+    line: 'ovs_bridge = alubr0'
+
+- name: Set core plugin in neutron to nuage
+  lineinfile:
+    dest: /etc/neutron/neutron.conf
+    regexp: 'core_plugin='
+    line: 'core_plugin = neutron.plugins.nuage.plugin.NuagePlugin'
+  when: {{ os_release}} == 'liberty'
+
+- name: Set core plugin in neutron to nuage
+  lineinfile:
+    dest: /etc/neutron/neutron.conf
+    regexp: 'core_plugin='
+    line: 'core_plugin = nuage_neutron.plugins.nuage.plugin.NuagePlugin'
+  when: {{ os_release}} == 'mitaka'
+
+- name: Set service plugin in neutron to nuage
+  lineinfile:
+    dest: /etc/neutron/neutron.conf
+    regexp: 'service_plugins='
+    line: 'service_plugins = nuage_neutron.plugins.common.service_plugins.port_attributes.service_plugin.NuagePortAttributesServicePlugin'
+
+- name: Stop OS neutron services
+  service:
+    name: "{{ item }}"
+    state: stopped
+  with_items: "{{ neutron_services }}"
+
+- name: Disable OS neutron services
+  service:
+    name: "{{ item }}"
+    enabled: no 
+  with_items: "{{ neutron_services }}"
+
+#- name: Add CSP root to CMS users group
+# TODO
+
+- name: Find the upgrade tar file
+  find:
+    paths: "{{ plugin_dir }}/{{ inventory_hostname }}/"
+    patterns: "nuage-openstack-upgrade-*.tar.gz"
+  register: tar_file
+
+- name: Extract upgrade scripts to folder
+  shell: "tar xvfz {{ tar_file.files[0].path }} -C {{ plugin_dir }}/{{ inventory_hostname }}/upgrade"
+
+- name: Integrate OSC with VSD
+  command: "python {{ plugin_dir }}/{{ inventory_hostname }}/upgrade/{{ upgrade_cmd }}"
+ 
+#- name: Restart neutron service
+#  service: 
+#    name: neutron-server
+#    state: restarted
+#  delegate_to: "{{ osc_mgmt_ip }}"
+  

@@ -1,0 +1,79 @@
+---
+- name: Get Compute IP from OS facts 
+  os_server_facts:
+    auth:
+      "{{ os_auth }}"
+    server: "{{ inventory_hostname }}*"
+  register: compute_server
+  delegate_to: 127.0.0.1
+ 
+- name: Set Compute ip
+  set_fact:
+    compute_mgmt_ip: "{{ compute_server['ansible_facts']['openstack_servers'][0]['private_v4'] }}"
+
+- name: Remove OVS packages installed 
+  command: "yum -y erase {{ item }}"
+  with_items:
+    - openvswitch.x86_64
+    - openstack-neutron*
+    - python-openvswitch.noarch
+
+- name: Add epel repository on RedHat OS family distros
+  remote_user: root
+  yum_repository:
+    name: epel
+    description: EPEL YUM repo
+    baseurl: http://download.fedoraproject.org/pub/epel/$releasever/$basearch/
+
+- name: Install VRS prerequisite packages on RedHat OS family distros
+  remote_user: root
+  yum: name={{ item }} state=present
+  with_items:
+    - python-twisted-core
+    - perl-JSON
+    - vconfig
+    - libvirt
+    - qemu-kvm
+
+- name: Create temporary directory on {{ inventory_hostname }}
+  remote_user: root
+  file: path={{ temp_dir }}/{{ inventory_hostname }} state=directory
+ 
+- name: Copy VRS packages to temporary directory
+  remote_user: root
+  copy: src={{ vrs_package_path }}/{{ item }} dest={{ temp_dir }}/{{ inventory_hostname }}/{{ item }}
+  with_items: "{{ vrs_package_file_name_list }}"
+
+- name: Install Nuage OpenVSwitch packages on RedHat OS family distros
+  remote_user: root
+  yum: name={{ temp_dir }}/{{ inventory_hostname }}/{{ item }} state=present
+  with_items:
+   - "{{ vrs_package_file_name_list }}"
+
+- name: Add controller info
+  lineinfile:
+    dest: /etc/default/openvswitch
+    regexp: "# ACTIVE_CONTROLLER="
+    line: ACTIVE_CONTROLLER="{{primary_controller}}"
+
+- name: Add alubr0 to nova config
+  lineinfile:
+    dest: /etc/nova/nova.conf
+    regexp: ovs_bridge=
+    line: ovs_bridge=alubr0
+
+- name: Configure VNC proxy client ip address
+  lineinfile:
+    dest: /etc/nova/nova.conf 
+    regexp: vncserver_proxyclient_address=
+    line: vncserver_proxyclient_address={{compute_mgmt_ip}}
+
+- name: Restart OpenStack compute
+  service:
+    name: openstack-nova-compute   
+    state: restarted
+
+- name: Restart OVS
+  service: 
+    name: openvswitch
+    state: restarted

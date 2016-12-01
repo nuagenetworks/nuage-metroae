@@ -1,0 +1,36 @@
+---
+# TODO:
+# Check for existing stack or vms
+
+- name: Create VSD managed network
+  os_network:
+    auth:
+      "{{ os_auth }}"
+    name: vsd1
+  delegate_to: 127.0.0.1
+
+- name: Create OSC node
+  register: create_stack
+  os_stack:
+    name: "{{ inventory_hostname }}"
+    template: "roles/osc-predeploy/files/osc.yml"
+    auth:
+      "{{ os_auth }}"
+    parameters:
+      vm_name: "{{inventory_hostname}}"
+      osc_image: "{{ osc_image }}"
+      osc_flavor: "{{ osc_flavor }}"
+      osc_net: "{{ osc_network }}"
+      ssh_key: "{{ansible_user_ssh_key}}"
+  delegate_to: 127.0.0.1
+- debug: var=create_stack['stack']['outputs'][0]['output_value']
+ 
+- name: Set the OSC mgmt ip
+  set_fact:
+    osc_mgmt_ip: "{{ create_stack['stack']['outputs'][0]['output_value'] }}"
+
+- name: Update /etc/hosts file on ansible host
+  lineinfile:
+    dest: /etc/hosts
+    line: "{{ osc_mgmt_ip }}    {{ inventory_hostname }}"
+  delegate_to: 127.0.0.1
