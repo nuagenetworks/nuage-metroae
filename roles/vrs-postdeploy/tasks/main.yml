@@ -58,7 +58,7 @@
       version: "{{ version_deb if ansible_os_family == 'Debian' else version_rh if ansible_os_family == 'RedHat' else '' }}"
 
   - name: Get docker status
-    command: service docker status
+    shell: service docker status | head -n 5
     register: docker_status_result
     remote_user: root
 
@@ -66,18 +66,18 @@
     command: service nuage-docker-monitor status
     register: dockermon_status_result_v3
     remote_user: root
-    when: version == '3'
+    when: version == '3' and ansible_os_family == "Debian"
 
   - name: Get dockermon status v4
     command: /usr/share/openvswitch/scripts/nuage-docker-monitor.init status
     register: dockermon_status_result_v4
     remote_user: root
-    when: version == '4'
+    when: version == '4' or ansible_os_family == "RedHat"
 
   # Ansible registers skipped variables as well. So need to create separate variables for dockermon_status_result_vx and combine them in this task
   - name: Combine dockermon status result
     set_fact:
-      dockermon_status_result: "{{ dockermon_status_result_v3 if version == '3' else dockermon_status_result_v4 if version == '4' else '' }}"
+      dockermon_status_result: "{{ dockermon_status_result_v3 if version == '3' and ansible_os_family == 'Debian'  else dockermon_status_result_v4 if version == '4' or ansible_os_family == 'RedHat' else '' }}"
 
   - name: Get dockermon process details
     shell: ps -eo lstart,cmd|grep nuage-docker-monitor
@@ -85,7 +85,7 @@
     remote_user: root
 
   - name: Get dockermon logs
-    command: tail -n 3 /var/log/openvswitch/nuage-docker-monitor.log
+    shell: tail -n 3 $(ls -t /var/log/openvswitch/nuage-docker-monitor*| head -n 1)
     register: docker_mon_logs
     remote_user: root
 

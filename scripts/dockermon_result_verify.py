@@ -8,13 +8,14 @@ from datetime import datetime
 def verify_dockermon_result(content):
     result = ""
     error = ""
-    if ("docker start/running, process " not in content["docker_status"]):
+    if ("docker start/running, process " not in content["docker_status"] and "Active:" not in content["docker_status"]):
         error += "Error! Docker service is not running!"
 
     if ("Service nuage-docker-monitor is running" not in content["dockermon_status"]):
         error += "| Error! Dockermon service is not running!"
 
-    if ("/usr/bin/python /usr/bin/nuage-docker-monitor" not in content["process_docker_status"]):
+    if ("/usr/bin/python /usr/bin/nuage-docker-monitor" not in content["process_docker_status"]
+        and "nuage-docker-monitor: monitoring" not in content["process_docker_status"]):
         error += "| Error! Dockermon process is not running!"
 
     # Check the logs only if dockermon and docker have started
@@ -26,6 +27,9 @@ def verify_dockermon_result(content):
         for process_status in process_status_list:
             if ("/usr/bin/python /usr/bin/nuage-docker-monitor" in process_status):
                 dockermon_start_time = process_status.split("/usr/bin/python /usr/bin/nuage-docker-monitor")[0].strip()
+                break
+            elif ("nuage-docker-monitor: monitoring" in process_status):
+                dockermon_start_time = process_status.split("nuage-docker-monitor: monitoring")[0].strip()
                 break
 
         date_dockermon = datetime.strptime(dockermon_start_time, '%a %b %d %H:%M:%S %Y')
@@ -40,7 +44,7 @@ def verify_dockermon_result(content):
         if (date_log >= date_dockermon):
             if (not(("Nuage Docker Monitor started successfully" in content["docker_logs"]) or
                 ("Nuage Docker Monitor is now monitoring container lifecycle events" in content["docker_logs"]) or
-                ("Initial Sync, Resending all the containers" in content["docker_logs"]))):
+                    ("Initial Sync, Resending all the containers" in content["docker_logs"]))):
                 error += "| Error! Nuage Docker Monitor did not start successfully."
         else:
             error += "| Error! Current Nuage Docker Monitor events not found."
