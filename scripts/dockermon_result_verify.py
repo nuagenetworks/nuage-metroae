@@ -14,8 +14,8 @@ def verify_dockermon_result(content):
     if ("Service nuage-docker-monitor is running" not in content["dockermon_status"]):
         error += "| Error! Dockermon service is not running!"
 
-    if ("/usr/bin/python /usr/bin/nuage-docker-monitor" not in content["process_docker_status"]
-        and "nuage-docker-monitor: monitoring" not in content["process_docker_status"]):
+    if (("/usr/bin/python /usr/bin/nuage-docker-monitor" not in content["process_docker_status"])
+            and ("nuage-docker-monitor: monitoring" not in content["process_docker_status"])):
         error += "| Error! Dockermon process is not running!"
 
     # Check the logs only if dockermon and docker have started
