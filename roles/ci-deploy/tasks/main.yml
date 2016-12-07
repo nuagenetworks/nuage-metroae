@@ -1,0 +1,62 @@
+---
+- name: Get {{ inventory_hostname }} details from OS facts
+  os_server_facts:
+    auth:
+      "{{ os_auth }}"
+    server: "{{ inventory_hostname }}*"
+  register: ci_server
+  delegate_to: 127.0.0.1
+
+- name: Get the compute IP
+  set_fact:
+    target_server: "{{ ci_server['ansible_facts']['openstack_servers'][0]['private_v4'] }}"
+
+- name: Extract network part from the compute ip
+  set_fact:
+    network_address: "{{ target_server.split('.')[0:3] | join('.') }}"
+
+- name: Copy test build file for RedHat OS family
+  template:
+    src: "{{ playbook_dir }}/test/files/build.yml.RedHat.j2"
+    dest: "{{ playbook_dir }}/roles/reset-build/files/build.yml"
+  delegate_to: 127.0.0.1
+
+- name: Update /etc/hosts file
+  lineinfile:
+    dest: /etc/hosts
+    line: "{{ item }}"
+  with_items: "{{vsp_ips}}"
+  remote_user: root
+  delegate_to: 127.0.0.1
+
+- name: Wait for {{ inventory_hostname }} ssh to be ready
+  local_action:
+    module: wait_for
+    port: "22"
+    host: "{{ inventory_hostname }}"
+    search_regex: OpenSSH
+    delay: 20
+
+- name: Update /etc/hosts file on {{ inventory_hostname }}
+  lineinfile:
+    dest: /etc/hosts
+    line: "{{ item }}"
+  with_items: "{{vsp_ips}}"
+  remote_user: root
+
+- name: Configure dnsmasq on {{ inventory_hostname }}
+  template:
+    src: "dnsmasq.conf.j2"
+    dest: "/etc/dnsmasq.conf"
+  remote_user: root
+
+- name: Enable dnsmasq
+  command: chkconfig dnsmasq on
+  remote_user: root
+
+- name: Start dnsmasq
+  command: service dnsmasq start
+  remote_user: root
+    
+- name: Copy test.yml file to the playbook root
+  local_action: copy src={{ playbook_dir }}/test/files/test.yml dest={{ playbook_dir }}/test.yml

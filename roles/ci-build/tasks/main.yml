@@ -1,24 +1,20 @@
 ---
+#- name: Create random num and associate to CI hostname
+#  set_fact:
+#    host_name: "CI_Slave_{{ 100 | random }}"
+#  run_once: yes
+#  delegate_to: 127.0.0.1 
+#          
+#- name: Copy the CI build file and generate CI host vars
+#  template:
+#    src: "{{ playbook_dir }}/test/files/build.yml.RedHat.CI.j2"
+#    dest: "{{ playbook_dir }}/roles/reset-build/files/build.yml"
+#  delegate_to: 127.0.0.1
+
 - name: Create the host_vars directory
   file: path={{ playbook_dir }}/host_vars/ state=directory
 
-- include: vsd_build_helper.yml
-
-- include: vsc_build_helper.yml
-
-- include: vstat_build_helper.yml
-
-- include: vnsutil_build_helper.yml
-
-- include: nsgv_build_helper.yml
-
-- include: vrs_build_helper.yml
-
-- include: infra_build_helper.yml
-  when: myinfras is defined
-
 - include: ci_build_helper.yml
-  when: mycis is defined
 
 - name: Create hosts file
   template: src=hosts.j2 dest="{{ playbook_dir }}/hosts" backup=no
@@ -28,3 +24,4 @@
 
 - name: Create group_vars/all file
   template: src=group_vars.all.j2 dest="{{ playbook_dir }}/group_vars/all" backup=no
+

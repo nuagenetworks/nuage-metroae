@@ -1,0 +1,40 @@
+---
+- name: Get {{ inventory_hostname }} details from OS facts
+  os_server_facts:
+    auth:
+      "{{ os_auth }}"
+    server: "{{ inventory_hostname }}*"
+  register: ci_server
+  delegate_to: 127.0.0.1
+
+- name: Set VSD subnet name
+  set_fact:
+    subnet_name: "{{ ci_server['ansible_facts']['openstack_servers'][0]['networks'].keys()[0] }}"
+
+- name: Destroy CI heat template
+  os_stack:
+    name: "{{ inventory_hostname }}"
+    auth:
+      "{{ os_auth }}"
+    state: absent
+  delegate_to: 127.0.0.1
+
+- name: Destroy subnet in VSD
+  local_action: command python {{playbook_dir}}/roles/ci-predeploy/files/create_subnet.py {{playbook_dir}} {{subnet_name}} True
+
+- name: Get the compute IP
+  set_fact:
+    target_server: "{{ ci_server['ansible_facts']['openstack_servers'][0]['private_v4'] }}"
+
+- name: Extract network part from the compute ip
+  set_fact:
+    network_address: "{{ target_server.split('.')[0:3] | join('.') }}"
+
+- name: Delete VSP ips from /etc/hosts file
+  lineinfile:
+    dest: /etc/hosts
+    line: "{{ item }}"
+    state: absent
+  with_items: "{{vsp_ips}}"
+  remote_user: root
+  delegate_to: 127.0.0.1
