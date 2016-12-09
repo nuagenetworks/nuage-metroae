@@ -1,4 +1,6 @@
 #!/bin/sh
+set -e
+
 cp ./test/files/setup.yml.CI setup.yml
 ansible-playbook setup.yml -vvv
 ansible-playbook reset_build.yml -vv
