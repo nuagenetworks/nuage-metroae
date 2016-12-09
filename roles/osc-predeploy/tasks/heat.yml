@@ -1,13 +1,9 @@
 ---
 # TODO:
 # Check for existing stack or vms
-
-- name: Create VSD managed network
-  os_network:
-    auth:
-      "{{ os_auth }}"
-    name: vsd1
-  delegate_to: 127.0.0.1
+- name: Get the public key for the current user
+  local_action: command cat ~/.ssh/id_rsa.pub
+  register: current_user_ssh_key
 
 - name: Create OSC node
   register: create_stack
@@ -21,7 +17,7 @@
       osc_image: "{{ osc_image }}"
       osc_flavor: "{{ osc_flavor }}"
       osc_net: "{{ osc_network }}"
-      ssh_key: "{{ansible_user_ssh_key}}"
+      ssh_key: "{{ current_user_ssh_key.stdout }}"
   delegate_to: 127.0.0.1
 - debug: var=create_stack['stack']['outputs'][0]['output_value']
  
@@ -34,3 +30,4 @@
     dest: /etc/hosts
     line: "{{ osc_mgmt_ip }}    {{ inventory_hostname }}"
   delegate_to: 127.0.0.1
+  remote_user: root

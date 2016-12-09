@@ -9,4 +9,4 @@ ansible-playbook build.yml -vv
 ./metro-ansible ci_deploy.yml -vvvv
 ansible-playbook reset_build.yml -vv
 ansible-playbook build.yml -vv
-./metro-ansible test.yml -vvvv
+#./metro-ansible test.yml -vvvv
