@@ -1,0 +1,131 @@
+---
+- name: Wait for VSD ssh to be ready
+  local_action:
+    module: wait_for
+    port: "22"
+    host: "{{ interfaces.mgmt.ip }}"
+    search_regex: OpenSSH
+    delay: 1
+
+- name: Update /etc/hosts file on {{ inventory_hostname }}
+  blockinfile:
+    dest: /etc/hosts
+    block: |
+      {% for host in groups['vsds']  %}
+      {{ hostvars[host]['interfaces']['mgmt']['ip'] }}    {{ host }}
+      {% endfor %}
+  remote_user: root
+
+- block:
+  - name: Generate SSH keys 
+    shell: ssh-keygen -b 2048 -t rsa -f /root/.ssh/id_rsa -q -N ""
+    args:
+      creates: /root/.ssh/id_rsa
+    remote_user: root
+
+  - name: Get generated SSH keys 
+    shell: cat ~/.ssh/id_rsa.pub
+    register: ssh_key
+    remote_user: root
+
+  - name: Add SSH keys to authorized_keys file
+    shell: "echo {{ssh_key.stdout}} >> /root/.ssh/authorized_keys"
+    delegate_to: "{{ item }}"
+    with_items: "{{ groups['vsds'] }}"
+    remote_user: root
+  when: vsd_standalone == False
+
+- name: Delete the localtime file on {{ inventory_hostname }}
+  file:
+    path: /etc/localtime
+    state: absent
+  remote_user: root
+
+- name: Create the localtime symlink on {{ inventory_hostname }}
+  file:
+    src: /usr/share/zoneinfo/US/Pacific
+    dest: /etc/localtime
+    state: link
+  remote_user: root
+
+- name: Copy files to pin OS version on {{ inventory_hostname }}
+  copy:
+    src: ./roles/vsd-deploy/files/
+    dest: /etc/yum.repos.d/
+  remote_user: root
+
+#- name: Execute a yum update on {{ inventory_hostname }}
+#  yum:
+#    name: '*'
+#    state: latest
+#  remote_user: root
+
+- name: Remove old NTP servers on {{ inventory_hostname }}
+  lineinfile:
+    dest: /etc/ntp.conf
+    regexp: "^server"
+    state: absent
+  remote_user: root
+
+- name: Configure NTP servers on {{ inventory_hostname }}
+  lineinfile:
+    dest: /etc/ntp.conf
+    line: "server {{ item }} iburst"
+  with_items: "{{ ntp_server_list }}"
+  remote_user: root
+
+- name: Stop the ntpd service if running
+  command: service ntpd stop
+  remote_user: root
+
+- name: Manually sync time with ntp server
+  command: ntpdate -u "{{ntp_server_list[0]}}"
+  remote_user: root
+
+- name: Start ntpd on {{ inventory_hostname }}
+  command: service ntpd start
+  remote_user: root
+
+- name: check ntp sync state
+  shell: ntpstat | awk 'NR==1{print $1}'
+  register: sync_status
+  until: sync_status.stdout == "synchronised"
+  retries: 4
+  delay: 5
+  ignore_errors: yes
+  remote_user: root
+
+- block:
+  - name: restart ntp if it hasn't synced yet
+    command: service ntpd restart
+    remote_user: root
+  - name: check ntp sync state
+    shell: ntpstat | awk 'NR==1{print $1}'
+    register: retry_sync_status
+    until: retry_sync_status.stdout == "synchronised"
+    retries: 4
+    delay: 5
+    remote_user: root
+  when: sync_status.stdout != "synchronized"
+
+- name: Install VSD software on standalone node
+  command: /opt/vsd/vsd-install.sh -t s -y
+  when: vsd_standalone == True
+  remote_user: root
+
+- block:
+  - name: Install VSD software on HA node1 {{groups['vsds'][0]}}
+    command: "{{ vsd_ha_node1 }}"
+    when: inventory_hostname == groups['vsds'][0]
+    remote_user: root
+
+  - name: Install VSD software on HA node2 {{groups['vsds'][1]}}
+    command: "{{ vsd_ha_node2 }}"
+    when: inventory_hostname == groups['vsds'][1]
+    remote_user: root
+
+  - name: Install VSD software on HA node3 {{groups['vsds'][2]}}
+    command: "{{ vsd_ha_node3 }}"
+    when: inventory_hostname == groups['vsds'][2]
+    remote_user: root
+  when: vsd_standalone == False

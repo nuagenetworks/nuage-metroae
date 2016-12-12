@@ -1,0 +1,76 @@
+---
+# tasks file for vsc
+- name: Get VSC details from OpenStack
+  os_server_facts:
+    auth:
+      "{{ os_auth }}"
+    server: "{{ inventory_hostname }}*"
+  register: vsc_ip
+  delegate_to: 127.0.0.1
+
+- name: Set vsc mgmt ip
+  set_fact:
+    vsc_mgmt_ip: "{{ vsc_ip['ansible_facts']['openstack_servers'][0]['private_v4'] }}"
+
+- name: Set vsc control ip
+  set_fact:
+    vsc_control_ip: "{{ vsc_ip['ansible_facts']['openstack_servers'][0]['private_v4'] }}"
+
+- name: Wait for VSC ssh to be ready
+  local_action:
+    module: wait_for
+    port: "22"
+    host: "{{ vsc_mgmt_ip }}"
+    search_regex: OpenSSH
+    delay: 1
+  tags:
+    - vsc
+    - vsc-deploy
+
+- name: Get infra server details from OpenStack
+  os_server_facts:
+    auth:
+      "{{ os_auth }}"
+    server: "{{ infra_server_name }}*"
+  register: infra_server
+  delegate_to: 127.0.0.1
+
+- name: Set infra ip
+  set_fact:
+    infra_ip: "{{ infra_server['ansible_facts']['openstack_servers'][0]['private_v4'] }}"
+
+- name: Loading system config
+  sros_config:
+    lines:
+      - configure system name "{{inventory_hostname}}"
+      - configure system time ntp server "{{infra_ip}}"
+      - configure router interface system address "{{system_ip}}/32"
+      - configure router interface control address "{{vsc_control_ip}}/24"
+      - configure router router-id "{{system_ip}}"
+      - configure vswitch-controller xmpp-server "{{ xmpp.username }}@{{ vsd_fqdn }}"
+      - admin save
+    provider: "{{ creds }}"
+  delegate_to: 127.0.0.1
+  vars:
+    creds:
+      host: "{{ vsc_mgmt_ip }}"
+      username: admin
+      password: admin
+      transport: cli
+
+- name: Loading BOF config
+  sros_config:
+    lines:
+      - bof address "{{ vsc_mgmt_ip }}/24"
+      - bof primary-dns "{{ infra_ip }}"
+      - bof dns-domain "{{ dns.domain }}"
+      #- bof static-route "{{ vsc_static_route_list[0] }}" next-hop "{{ interfaces.mgmt.gateway }}"
+      - bof save "cf1:"
+    provider: "{{ creds }}"
+  delegate_to: 127.0.0.1
+  vars:
+    creds:
+      host: "{{ vsc_mgmt_ip }}"
+      username: admin
+      password: admin
+      transport: cli

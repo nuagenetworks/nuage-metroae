@@ -334,3 +334,43 @@
   tags:
     - vns
     - nuage-unpack
+
+##########################
+## Nuage OpenStack Plugins
+##########################
+
+- name: Find name of Nuage OpenStack Plugin Archive
+  find: path="{{ nuage_release_src_path }}"  pattern="Nuage-openstack*{{ nuage_target_architecture}}*"
+  register: rc_nuage_os
+  tags:
+    - nuage-os
+    - nuage-unpack
+
+- name: Create directory to unpack Nuage OpenStack plugins
+  file: name="{{ nuage_unpacked_dest_path }}/nuage_os/" state=directory mode=0755
+  when: rc_nuage_os.matched > 0
+  tags:
+    - nuage-os
+    - nuage-unpack
+
+- name: Unpack Nuage OpenStack Archive
+  unarchive: src="{{ rc_nuage_os.files[0].path}}" dest="{{ nuage_unpacked_dest_path }}/vrs/"  list_files=yes
+  register: rc_nuage_os_archive_files
+  when: rc_nuage_os.matched > 0  and not nuage_unpacked|default(false)
+  tags:
+    - nuage-os
+    - nuage-unpack
+
+- block:
+  - name: Find name of Nuage OpenStack Package Files (RH architecture)
+    find: path="{{ nuage_unpacked_dest_path }}/nuage_os/{{ nuage_os_release }}/el7/"  pattern="*.rpm" recurse=yes
+    register: rc_nuage_os_file
+  - name: Register Nuage OpenStack package variables with proper path and image locations for use in other playbooks (RH architecture)
+    set_fact:
+      nuage_os_package_path: "{{ rc_nuage_os_file.files[0].path | dirname }}"
+      nuage_os_package_file_name_list: "{{ rc_nuage_os_file.files |  map(attribute='path') | list | map('basename') | list }}"
+    when: rc_nuage_os_file.matched > 0
+  when: nuage_target_architecture == "el6" or nuage_target_architecture == "el7"
+  tags:
+    - nuage-os
+    - nuage-unpack

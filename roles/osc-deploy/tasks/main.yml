@@ -1,4 +1,16 @@
 ---
+- name: Get OSC IP from OS facts
+  os_server_facts:
+    auth:
+      "{{ os_auth }}"
+    server: "{{ osc_server_name }}*"
+  register: osc_server
+  delegate_to: 127.0.0.1
+
+- name: Update OSC ip
+  set_fact:
+    osc_ip: "{{ osc_server['ansible_facts']['openstack_servers'][0]['private_v4'] }}"
+
 - name: Wait for OSC ssh to be ready
   local_action:
     module: wait_for
@@ -115,7 +127,6 @@
     dest=/etc/yum.repos.d/rhel.repo
   when:
     - ansible_distribution == 'RedHat'
-
 
 - name: Execute a yum update on {{ inventory_hostname }}
   yum:
