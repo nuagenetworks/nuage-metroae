@@ -19,17 +19,28 @@
   remote_user: root
   file: path={{ plugin_dir }}/{{ inventory_hostname }}/upgrade state=directory
  
-- name: Copy Nuage OS plugins to temporary directory
+- name: Copy Nuage OS plugins to temporary directory on {{ inventory_hostname }}
   remote_user: root
-  copy: src={{ os_plugin_path }}/{{ item }} dest={{ plugin_dir }}/{{ inventory_hostname }}/{{ item }}
-  with_items: "{{ os_plugins_list }}"
+  copy: src={{ nuage_os_package_path }}/{{ item }} dest={{ plugin_dir }}/{{ inventory_hostname }}/{{ item }}
+  with_items: "{{ nuage_os_package_file_name_list }}"
+
+- name: Find the upgrade tar file
+  find:
+    paths: "{{ nuage_os_package_path }}/"
+    patterns: "nuage-openstack-upgrade-*.tar.gz"
+  register: tar_file
+  delegate_to: 127.0.0.1
+
+- name: Copy Nuage upgrade tar file to temporary directory on {{ inventory_hostname }}
+  remote_user: root
+  copy: src={{ tar_file.files[0].path }} dest={{ plugin_dir }}/{{ inventory_hostname }}/
 
 - name: Install Nuage OS plugins 
   remote_user: root
   yum: 
     name: "{{ plugin_dir }}/{{ inventory_hostname }}/{{ item }}" 
     state: present
-  with_items: "{{ os_plugins_list }}"
+  with_items: "{{ nuage_os_package_file_name_list }}"
 
 - name: Configure Horizon Extension
   lineinfile:
@@ -83,14 +94,14 @@
     dest: /etc/neutron/neutron.conf
     regexp: 'core_plugin='
     line: 'core_plugin = neutron.plugins.nuage.plugin.NuagePlugin'
-  when: {{ os_release}} == 'liberty'
+  when: {{ nuage_os_release}} == 'liberty'
 
 - name: Set core plugin in neutron to nuage
   lineinfile:
     dest: /etc/neutron/neutron.conf
     regexp: 'core_plugin='
     line: 'core_plugin = nuage_neutron.plugins.nuage.plugin.NuagePlugin'
-  when: {{ os_release}} == 'mitaka'
+  when: {{ nuage_os_release}} == 'mitaka'
 
 - name: Set service plugin in neutron to nuage
   lineinfile:
@@ -110,9 +121,14 @@
     enabled: no 
   with_items: "{{ neutron_services }}"
 
-#- name: Add CSP root to CMS users group
-# TODO
+- name: Add CSP root to CMS users group
+  local_action: command python {{ playbook_dir }}/files/cms_group.py {{ playbook_dir }}
+  register: output
 
+- name: Search for errors in the output of cms_group script
+  fail: msg={{ output.stdout }}
+  when: output.stdout | search("(?i)ERROR")
+ 
 - name: Find the upgrade tar file
   find:
     paths: "{{ plugin_dir }}/{{ inventory_hostname }}/"
@@ -125,9 +141,9 @@
 - name: Integrate OSC with VSD
   command: "python {{ plugin_dir }}/{{ inventory_hostname }}/upgrade/{{ upgrade_cmd }}"
  
-#- name: Restart neutron service
-#  service: 
-#    name: neutron-server
-#    state: restarted
-#  delegate_to: "{{ osc_mgmt_ip }}"
+- name: Restart neutron service
+  service: 
+    name: neutron-server
+    state: restarted
+  delegate_to: "{{ osc_mgmt_ip }}"
   
