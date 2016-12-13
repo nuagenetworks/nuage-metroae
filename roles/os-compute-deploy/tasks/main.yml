@@ -11,9 +11,28 @@
   set_fact:
     osc_ip: "{{ osc_server['ansible_facts']['openstack_servers'][0]['private_v4'] }}"
 
+- name: Get Compute IP from OS facts
+  os_server_facts:
+    auth:
+      "{{ os_auth }}"
+    server: "{{ inventory_hostname }}*"
+  register: compute_server
+  delegate_to: 127.0.0.1
+
+- name: Set the compute mgmt ip
+  set_fact:
+    compute_mgmt_ip: "{{ compute_server['ansible_facts']['openstack_servers'][0]['private_v4'] }}"
+
+- name: Update /etc/hosts file on ansible host
+  lineinfile:
+    dest: /etc/hosts
+    line: "{{ compute_mgmt_ip }}    {{ inventory_hostname }}"
+  delegate_to: 127.0.0.1
+
 - name: Query {{ target_server }} facts
   action: setup
   remote_user: root
+  delegate_to: "{{ compute_mgmt_ip }}"
 
 - name: Disable firewall
   service:
@@ -68,6 +87,7 @@
   service:
     name: network
     state: started
+  ignore_errors: yes
 
 - name: Install EPEL repos on Centos
   yum:
@@ -90,7 +110,7 @@
 
 - name: Load correspoing software repos for OpenStack Centos7
   yum:
-    name: "{{os_centos}}{{ os_release }}"
+    name: "{{os_centos}}{{ nuage_os_release }}"
     state: present
   when: 
     - ansible_distribution == 'CentOS'

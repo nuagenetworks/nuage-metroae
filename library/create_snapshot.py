@@ -16,7 +16,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this software.  If not, see <http://www.gnu.org/licenses/>.
 
-#TODO(mordred): we need to support "location"(v1) and "locations"(v2)
+# TODO(mordred): we need to support "location"(v1) and "locations"(v2)
+from ansible.module_utils.basic import AnsibleModule
+from ansible.module_utils.openstack import openstack_full_argument_spec
+from ansible.module_utils.openstack import openstack_module_kwargs
 try:
     import shade
     HAS_SHADE = True
@@ -66,7 +69,8 @@ options:
      default: None
    is_public:
      description:
-        - Whether the image can be accessed publicly. Note that publicizing an image requires admin role by default.
+        - Whether the image can be accessed publicly.
+          Note that publicizing an image requires admin role by default.
      required: false
      default: 'yes'
    filename:
@@ -76,12 +80,14 @@ options:
      default: None
    ramdisk:
      description:
-        - The name of an existing ramdisk image that will be associated with this image
+        - The name of an existing ramdisk image that will be associated,
+          with this image
      required: false
      default: None
    kernel:
      description:
-        - The name of an existing kernel image that will be associated with this image
+        - The name of an existing kernel image that will be associated,
+          with this image
      required: false
      default: None
    properties:
@@ -121,8 +127,8 @@ EXAMPLES = '''
 def main():
 
     argument_spec = openstack_full_argument_spec(
-        name              = dict(required=True),
-        vm_name           = dict(required=True),
+        name=dict(required=True),
+        vm_name=dict(required=True),
     )
     module_kwargs = openstack_module_kwargs()
     module = AnsibleModule(argument_spec, **module_kwargs)
@@ -133,18 +139,13 @@ def main():
     try:
         cloud = shade.openstack_cloud(**module.params)
 
-        image = cloud.create_image_snapshot(name=module.params['name'], server=module.params['vm_name'])
-
+        image = cloud.create_image_snapshot(name=module.params['name'],
+                                            server=module.params['vm_name'])
         changed = True
         module.exit_json(changed=changed, image=image)
-
-
     except shade.OpenStackCloudException as e:
         module.fail_json(msg=str(e), extra_data=e.extra_data)
 
-# this is magic, see lib/ansible/module_common.py
-from ansible.module_utils.basic import *
-from ansible.module_utils.openstack import *
 
 if __name__ == "__main__":
     main()
