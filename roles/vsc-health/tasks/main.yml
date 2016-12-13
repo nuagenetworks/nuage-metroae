@@ -1,0 +1,55 @@
+---
+# tasks file for vsc
+
+- name: Wait for VSC ssh to be ready
+  local_action:
+    module: wait_for
+    port: "22"
+    host: "{{ interfaces.mgmt.ip }}"
+    search_regex: OpenSSH
+    delay: 1
+  tags:
+    - vsc
+    - vsc-deploy
+    - vsc-health
+
+- name: Get BGP Admin and BGP Oper States from {{ inventory_hostname }}
+  sros_command:
+    commands:
+      - show router bgp summary | match expression ".*BGP Admin State.*"
+    provider: "{{ vsc_creds }}"
+  register: bgp_summary
+  delegate_to: localhost
+
+- name: BGP Admin State - {{ bgp_summary.stdout_lines[0][0].split(':')[1].split(' ')[1]|trim }}
+  fail: msg="Unexpected BGP Admin State - {{ bgp_summary.stdout_lines[0][0].split(':')[1].split(' ')[1]|trim }}. Expected '{{ expected_bgp_admin_state }}' .Check output of 'show router bgp summary' on {{ inventory_hostname }}."
+  when: "'{{ expected_bgp_admin_state }}' not in bgp_summary.stdout_lines[0][0].split(':')[1]"
+  ignore_errors: yes
+
+- name: BGP Oper State - {{ bgp_summary.stdout_lines[0][0].split(':')[2]|trim }}
+  fail: msg="Unexpected BGP Oper State - {{ bgp_summary.stdout_lines[0][0].split(':')[2]|trim }}. Expected '{{ expected_bgp_oper_state }}'.Check output of 'show router bgp summary' on {{ inventory_hostname }}."
+  when: "'{{ expected_bgp_oper_state }}' not in bgp_summary.stdout_lines[0][0].split(':')[2]"
+  ignore_errors: yes
+
+- name: Get BGP Peers information from {{ inventory_hostname }}
+  sros_command:
+    commands:
+      - show router bgp summary | match expression ".*Total Peers.*"
+    provider: "{{ vsc_creds }}"
+  register: bgp_peers
+  delegate_to: localhost
+
+- name: BGP Peer Count - {{ bgp_peers.stdout_lines[0][0].split(':')[2]|trim }}
+  fail: msg="Invalid BGP Peer count ({{ bgp_peers.stdout_lines[0][0].split(':')[2]|trim }}) detected. Expected '{{ expected_num_bgp_peers }}'. Check 'show router bgp summary' on {{ inventory_hostname }}."
+  when: "'{{ expected_num_bgp_peers }}' != bgp_peers.stdout_lines[0][0].split(':')[2]|trim"
+  ignore_errors: yes
+
+- name: Check for error report
+  stat:
+    path: "{{ failure_report_file_name }}"
+  register: report
+  delegate_to: localhost
+
+- name: Verify report contents
+  fail: msg="One or more failures detected. Check {{ failure_report_file_name }} for details."
+  when: report.stat.exists
