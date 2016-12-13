@@ -3,13 +3,20 @@
   os_server_facts:
     auth:
       "{{ os_auth }}"
-    server: "{{ osc_server_name }}*"
+    server: "{{ inventory_hostname }}*"
   register: osc_server
   delegate_to: 127.0.0.1
 
 - name: Update OSC ip
   set_fact:
-    osc_ip: "{{ osc_server['ansible_facts']['openstack_servers'][0]['private_v4'] }}"
+    osc_mgmt_ip: "{{ osc_server['ansible_facts']['openstack_servers'][0]['private_v4'] }}"
+
+- name: Update /etc/hosts file on ansible host
+  lineinfile:
+    dest: /etc/hosts
+    line: "{{ osc_mgmt_ip }}    {{ inventory_hostname }}"
+  delegate_to: 127.0.0.1
+  remote_user: root
 
 - name: Wait for OSC ssh to be ready
   local_action:
@@ -21,11 +28,12 @@
 
 - name: Pause for ssh port to be active on {{ inventory_hostname }}
   pause:
-    seconds: 5
+    seconds: 10
 
 - name: Query {{ target_server }} facts
   action: setup
   remote_user: root
+  delegate_to: "{{ osc_mgmt_ip }}"
 
 - name: Set selinux to permissive
   command: setenforce 0
@@ -90,6 +98,7 @@
   service:
     name: network
     state: started
+  ignore_errors: yes
 
 - name: Install EPEL repos on Centos
   yum:
@@ -114,7 +123,7 @@
 
 - name: Load correspoing software repos for OpenStack Centos7
   yum:
-    name: "{{os_centos}}{{ os_release }}"
+    name: "{{os_centos}}{{ nuage_os_release }}"
     state: present
   when: 
     - ansible_distribution == 'CentOS'
@@ -140,7 +149,7 @@
     state: present
   remote_user: root
 
-# Temp task to get around packstack missing packages
+ Temp task to get around packstack missing packages
 - name: Enable test repos
   lineinfile:
     regexp: enabled=
