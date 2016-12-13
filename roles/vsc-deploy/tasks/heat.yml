@@ -1,20 +1,19 @@
 ---
-# tasks file for vsc
 - name: Get VSC details from OpenStack
   os_server_facts:
     auth:
       "{{ os_auth }}"
     server: "{{ inventory_hostname }}*"
-  register: vsc_ip
+  register: vsc_server
   delegate_to: 127.0.0.1
 
 - name: Set vsc mgmt ip
   set_fact:
-    vsc_mgmt_ip: "{{ vsc_ip['ansible_facts']['openstack_servers'][0]['private_v4'] }}"
+    vsc_mgmt_ip: "{{ vsc_server['ansible_facts']['openstack_servers'][0]['networks'][vsc_mgmt_network][0] }}"
 
 - name: Set vsc control ip
   set_fact:
-    vsc_control_ip: "{{ vsc_ip['ansible_facts']['openstack_servers'][0]['private_v4'] }}"
+    vsc_control_ip: "{{ vsc_server['ansible_facts']['openstack_servers'][0]['networks'][vsc_control_network][0] }}"
 
 - name: Update /etc/hosts file on ansible host
   lineinfile:
@@ -35,7 +34,9 @@
     infra_ip: "{{ infra_server['ansible_facts']['openstack_servers'][0]['private_v4'] }}"
  
 - name: Update DNS entires
-  shell: echo "{{ vsc_mgmt_ip }}"  "{{ inventory_hostname }}" >> /etc/vsp_hosts
+  lineinfile:
+    line: "{{ vsc_mgmt_ip }}  {{ inventory_hostname }}"
+    dest: /etc/hosts
   delegate_to: "{{ infra_ip }}"
   remote_user: root
  
@@ -54,18 +55,6 @@
   tags:
     - vsc
     - vsc-deploy
-
-- name: Get infra server details from OpenStack
-  os_server_facts:
-    auth:
-      "{{ os_auth }}"
-    server: "{{ infra_server_name }}*"
-  register: infra_server
-  delegate_to: 127.0.0.1
-
-- name: Set infra ip
-  set_fact:
-    infra_ip: "{{ infra_server['ansible_facts']['openstack_servers'][0]['private_v4'] }}"
 
 - name: Loading system config
   sros_config:
@@ -91,8 +80,7 @@
     lines:
       - bof address "{{ vsc_mgmt_ip }}/24"
       - bof primary-dns "{{ infra_ip }}"
-      - bof dns-domain "{{ dns.domain }}"
-      #- bof static-route "{{ vsc_static_route_list[0] }}" next-hop "{{ interfaces.mgmt.gateway }}"
+      - bof dns-domain "{{ dns_domain }}"
       - bof save "cf1:"
     provider: "{{ creds }}"
   delegate_to: 127.0.0.1
