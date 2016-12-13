@@ -1,5 +1,5 @@
 ---
-name: Get VSD details from OpenStack
+- name: Get VSD details from OpenStack
     os_server_facts:
       auth:
         "{{ os_auth }}"
@@ -7,17 +7,65 @@ name: Get VSD details from OpenStack
     register: vsd_ip
     delegate_to: 127.0.0.1
 
-  - name: Set vsd mgmt ip
-    set_fact:
-      vsd_mgmt_ip: "{{ vsd_ip['ansible_facts']['openstack_servers'][0]['private_v4'] }}"
+- name: Set vsd mgmt ip
+  set_fact:
+    vsd_mgmt_ip: "{{ vsd_ip['ansible_facts']['openstack_servers'][0]['private_v4'] }}"
 
-- name: Wait for VSD ssh to be ready
+- name: Get DNS and NTP server details from OS server facts
+  os_server_facts:
+    auth:
+      "{{ os_auth }}"
+    server: "{{ infra_server_name }}*"
+  register: infra_server
+  delegate_to: 127.0.0.1
+
+- name: Set DNS/NTP server ip
+  set_fact:
+    infra_ip: "{{ infra_server['ansible_facts']['openstack_servers'][0]['private_v4'] }}"
+
+- name: Update /etc/hosts file on ansible host
+  lineinfile:
+    dest: /etc/hosts
+    line: "{{ vsd_mgmt_ip }}    {{ inventory_hostname }}"
+  delegate_to: 127.0.0.1
+
+- name: Wait for VSD-HA ssh to be ready
   local_action:
     module: wait_for
     port: "22"
     host: "{{ vsd_mgmt_ip }}"
     search_regex: OpenSSH
     delay: 1
+
+- name: Pause for ssh port to be active on {{ inventory_hostname }}
+  pause:
+    seconds: 5
+
+- name: Update hostname
+  template: src=network.j2 backup=no dest=/etc/sysconfig/network
+
+- name: Add a DNS server to eth0
+  lineinfile:
+    dest: /etc/sysconfig/network-scripts/ifcfg-eth0
+    line: "DNS1={{ infra_ip }}"
+
+- name: Restart networking on {{ inventory_hostname }}
+  command: /etc/init.d/network restart
+  remote_user: root
+
+- name: Resolve fqdn
+  command: hostname "{{ inventory_hostname }}"
+  remote_user: root
+
+- name: Update DNS entires
+  shell: echo "{{ vsd_mgmt_ip }}"  "{{ inventory_hostname }}" >> /etc/hosts
+  delegate_to: "{{ infra_ip }}"
+  remote_user: root
+
+- name: Restart DNS service
+  shell: service dnsmasq restart
+  delegate_to: "{{ infra_ip }}"
+  remote_user: root
 
 #- name: Update /etc/hosts file on {{ inventory_hostname }}
 #  blockinfile:

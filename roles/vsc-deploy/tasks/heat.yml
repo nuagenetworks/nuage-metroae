@@ -16,6 +16,34 @@
   set_fact:
     vsc_control_ip: "{{ vsc_ip['ansible_facts']['openstack_servers'][0]['private_v4'] }}"
 
+- name: Update /etc/hosts file on ansible host
+  lineinfile:
+    dest: /etc/hosts
+    line: "{{ vsc_mgmt_ip }}    {{ inventory_hostname }}"
+  delegate_to: 127.0.0.1
+ 
+- name: Get infra server details from OpenStack
+  os_server_facts:
+    auth:
+      "{{ os_auth }}"
+    server: "{{ infra_server_name }}*"
+  register: infra_server
+  delegate_to: 127.0.0.1
+ 
+- name: Set infra ip
+  set_fact:
+    infra_ip: "{{ infra_server['ansible_facts']['openstack_servers'][0]['private_v4'] }}"
+ 
+- name: Update DNS entires
+  shell: echo "{{ vsc_mgmt_ip }}"  "{{ inventory_hostname }}" >> /etc/vsp_hosts
+  delegate_to: "{{ infra_ip }}"
+  remote_user: root
+ 
+- name: Restart DNS service
+  shell: service dnsmasq restart
+  delegate_to: "{{ infra_ip }}"
+  remote_user: root
+
 - name: Wait for VSC ssh to be ready
   local_action:
     module: wait_for
