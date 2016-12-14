@@ -71,10 +71,8 @@ if __name__ == '__main__':
                         Default is false")
     args = parser.parse_args()
 
-    # Get ZFB related parameters
+    # Get vsd related parameters
     try:
-        with open(args.playbook_dir + '/zfb.yml', 'r') as fh:
-            zfb_params = yaml.load(fh)
         with open(args.playbook_dir + '/roles/ci-predeploy/vars/main.yml',
                   'r') as fo:
             vsd_constants = yaml.load(fo)
@@ -83,7 +81,7 @@ if __name__ == '__main__':
 
     # Create a session as csp user
     try:
-        session = NUVSDSession(**zfb_params['csp'])
+        session = NUVSDSession(**vsd_constants['csp'])
         session.start()
         csproot = session.user
     except:

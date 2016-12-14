@@ -7,9 +7,14 @@
   register: ci_server
   delegate_to: 127.0.0.1
 
+# temp task to get aroud policy issue
+- name: Get the network name
+  set_fact:
+    net_name: "{{ ci_server['ansible_facts']['openstack_servers'][0]['networks'].keys()[1] }}"
+
 - name: Get the compute IP
   set_fact:
-    target_server: "{{ ci_server['ansible_facts']['openstack_servers'][0]['private_v4'] }}"
+    target_server: "{{ ci_server['ansible_facts']['openstack_servers'][0]['networks'][net_name][0]}}"
 
 - name: Extract network part from the compute ip
   set_fact:
@@ -21,11 +26,34 @@
     dest: "{{ playbook_dir }}/roles/reset-build/files/build.yml"
   delegate_to: 127.0.0.1
 
+- name: Update and copy zfb.yml file with vsd ip
+  template:
+    src: "{{ playbook_dir }}/test/files/zfb.yml.j2"
+    dest: "{{ playbook_dir }}"
+  delegate_to: 127.0.0.1
+
 - name: Update /etc/hosts file
   lineinfile:
     dest: /etc/hosts
     line: "{{ item }}"
   with_items: "{{ vsp_ips }}"
+  delegate_to: "{{ ansible_deployment_host }}"
+  remote_user: root
+
+# temp fix to get around policy issue
+- name: Set fronend ip added to static route
+  set_fact:
+    frontend_ip: "{{ ci_server['ansible_facts']['openstack_servers'][0]['networks']['OC_JEN_FrontEnd'][0]}}"
+
+# temp fix to get around policy issue
+- name: Add static route to reach {{ inventory_hostname }}
+  command: "route add -net {{ network_address }}.0/24 gw {{ frontend_ip }} "
+  delegate_to: "{{ ansible_deployment_host }}"
+  remote_user: root
+
+# temp fix to get around policy issue
+- name: Add iptables rule to allow vsd to reach internet route to reach on {{ inventory_hostname }}
+  command: "iptables -t nat -A POSTROUTING -p tcp -s {{ network_address }}.211 -o mgmt -j SNAT --to-source {{ target_server }}:1-1023 "
   delegate_to: "{{ ansible_deployment_host }}"
   remote_user: root
 
@@ -58,7 +86,55 @@
 - name: Start dnsmasq
   command: service dnsmasq start
   remote_user: root
-    
+
+- name: Remove old NTP servers on {{ inventory_hostname }}
+  lineinfile:
+    dest: /etc/ntp.conf
+    regexp: "^server"
+    state: absent
+  remote_user: root
+
+- name: Configure NTP servers on {{ inventory_hostname }}
+  lineinfile:
+    dest: /etc/ntp.conf
+    line: "server {{ item }} iburst"
+  with_items: "{{ ntp_server_list }}"
+  remote_user: root
+
+- name: Stop the ntpd service if running
+  command: service ntpd stop
+  remote_user: root
+
+- name: Manually sync time with ntp server
+  command: ntpdate -u "10.106.0.3"
+  remote_user: root
+
+- name: Start ntpd on {{ inventory_hostname }}
+  command: service ntpd start
+  remote_user: root
+
+- name: check ntp sync state
+  shell: ntpstat | awk 'NR==1{print $1}'
+  register: sync_status
+  until: sync_status.stdout == "synchronised"
+  retries: 4
+  delay: 5
+  ignore_errors: yes
+  remote_user: root
+
+- block:
+  - name: restart ntp if it hasn't synced yet
+    command: service ntpd restart
+    remote_user: root
+  - name: check ntp sync state
+    shell: ntpstat | awk 'NR==1{print $1}'
+    register: retry_sync_status
+    until: retry_sync_status.stdout == "synchronised"
+    retries: 4
+    delay: 5
+    remote_user: root
+  when: sync_status.stdout != "synchronized"
+
 - name: Copy test.yml file to the playbook root
   local_action: copy src={{ playbook_dir }}/test/files/test_install.yml dest={{ playbook_dir }}/test.yml
 
@@ -66,5 +142,34 @@
   lineinfile:
     dest: "{{ playbook_dir }}/roles/vsd-predeploy/vars/main.yml"
     regexp: 'vsd_ram:'
-    line: 'vsd_ram: 9165824'
-  delegate_to: 127.0.0.1
+    line: 'vsd_ram: 9147483'
+  delegate_to: "{{ ansible_deployment_host }}"
+
+- name: Update the vsc ram
+  lineinfile:
+    dest: "{{ playbook_dir }}/roles/vsc-predeploy/vars/main.yml"
+    regexp: 'vsc_ram:'
+    line: 'vsc_ram: 2147483'
+  delegate_to: "{{ ansible_deployment_host }}"
+
+- name: Update the vstat ram
+  lineinfile:
+    dest: "{{ playbook_dir }}/roles/vstat-predeploy/vars/main.yml"
+    regexp: 'vstat_ram:'
+    line: 'vstat_ram: 2147483'
+  delegate_to: "{{ ansible_deployment_host }}"
+
+- name: Update the vnsutil ram
+  lineinfile:
+    dest: "{{ playbook_dir }}/roles/vnsutil-predeploy/vars/main.yml"
+    regexp: 'vnsutil_ram:'
+    line: 'vnsutil_ram: 2147483'
+  delegate_to: "{{ ansible_deployment_host }}"
+
+- name: Update the nsgv ram
+  lineinfile:
+    dest: "{{ playbook_dir }}/roles/nsgv-predeploy/vars/main.yml"
+    regexp: 'nsgv_ram:'
+    line: 'nsgv_ram: 2147483'
+  delegate_to: "{{ ansible_deployment_host }}"
+
