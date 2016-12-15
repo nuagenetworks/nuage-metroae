@@ -51,18 +51,6 @@
   delegate_to: "{{ ansible_deployment_host }}"
   remote_user: root
 
-# temp fix to get around policy issue
-- name: Add iptables rule to allow vsd to reach internet route to reach on {{ inventory_hostname }}
-  command: "iptables -t nat -A POSTROUTING -p tcp -s {{ network_address }}.211 -o mgmt -j SNAT --to-source {{ target_server }}:1-1023 "
-  delegate_to: "{{ ansible_deployment_host }}"
-  remote_user: root
-
-# temp fix to get around policy issue
-- name: Save iptables 
-  command: "iptables-save"
-  delegate_to: "{{ ansible_deployment_host }}"
-  remote_user: root
-
 - name: Wait for {{ inventory_hostname }} ssh to be ready
   local_action:
     module: wait_for
@@ -78,6 +66,16 @@
   with_items: "{{vsp_ips}}"
   remote_user: root
   delegate_to: "{{ inventory_hostname }}"
+
+# temp fix to get around policy issue
+- name: Add iptables rule to allow vsd to reach internet route to reach on {{ inventory_hostname }}
+  command: "iptables -t nat -A POSTROUTING -p tcp -s {{ network_address }}.211 -o mgmt -j SNAT --to-source {{ target_server }}:1-1023 "
+  remote_user: root
+
+# temp fix to get around policy issue
+- name: Save iptables
+  command: "iptables-save"
+  remote_user: root
 
 - name: Configure dnsmasq on {{ inventory_hostname }}
   template:
