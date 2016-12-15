@@ -167,7 +167,10 @@ def exec_command(vsc, command):
 
     try:
         net_connect = ConnectHandler(**vsc)
-        output = net_connect.send_command(command)
+        if command == 'admin save':
+            output = net_connect.send_command(command, expect_string = 'cf1:')
+        else:
+            output = net_connect.send_command(command)
     except:
         print ("Error! Command excution failed!" " Command: {0} Exception: {1}"
                .format(command, sys.exc_info()[0]))
