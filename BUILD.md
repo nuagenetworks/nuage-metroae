@@ -197,7 +197,7 @@ For reference, here is a description of the contents of the `build-vars.yml` fil
 #
 #    # ENVIRONMENT
 #    # The hostname or IP address of the ansible machine
-#    ansible_host: 135.227.181.232
+#    ansible_deployment_host: 135.227.181.232
 #    # The names of the network bridges that are required on the target hosts
 #    mgmt_bridge: "virbr0"
 #    data_bridge: "virbr1"

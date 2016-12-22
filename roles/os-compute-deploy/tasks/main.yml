@@ -1,5 +1,5 @@
 ---
-- name: Get OSC IP from OS facts 
+- name: Get OSC facts from "{{ osc_server_name }}" 
   os_server_facts:
     auth:
       "{{ os_auth }}"
@@ -7,11 +7,11 @@
   register: osc_server
   delegate_to: 127.0.0.1
  
-- name: Update OSC ip
+- name: Save OSC ip
   set_fact:
     osc_ip: "{{ osc_server['ansible_facts']['openstack_servers'][0]['private_v4'] }}"
 
-- name: Get Compute IP from OS facts
+- name: Get os-compute details from OS facts
   os_server_facts:
     auth:
       "{{ os_auth }}"
@@ -19,7 +19,7 @@
   register: compute_server
   delegate_to: 127.0.0.1
 
-- name: Set the compute mgmt ip
+- name: Save os-compute mgmt ip
   set_fact:
     compute_mgmt_ip: "{{ compute_server['ansible_facts']['openstack_servers'][0]['private_v4'] }}"
 
@@ -33,22 +33,6 @@
   action: setup
   remote_user: root
   delegate_to: "{{ compute_mgmt_ip }}"
-
-- name: Disable firewall
-  service:
-    name: iptables
-    enabled: no
-  when:
-    - ansible_distribution == 'CentOS'
-    - ansible_distribution_major_version == '6'
- 
-- name: Stop firewall
-  service:
-    name: iptables
-    state: stopped
-  when:
-    - ansible_distribution == 'CentOS'
-    - ansible_distribution_major_version == '6'
 
 - name: Disable firewall
   service: 
@@ -89,19 +73,10 @@
     state: started
   ignore_errors: yes
 
-- name: Install EPEL repos on Centos
+- name: Install EPEL repos only on Centos
   yum:
     name: epel-release
     state: present
-  remote_user: root
-
-- name: Load correspoing software repos for OpenStack Cento6
-  yum:
-    name: "{{ os_repo }}"
-    state: present
-  when: 
-    - ansible_distribution == 'CentOS'
-    - ansible_distribution_major_version == '6'
   remote_user: root
 
 - name: Pause
@@ -117,7 +92,7 @@
     - ansible_distribution_major_version == '7'
   remote_user: root
 
-- name: Copy Redhat repo file to {{ inventory_hostname }}
+- name: Copy Redhat repo file to {{ inventory_hostname }} for RedHat images
   template:
     src={{ playbook_dir }}/roles/compute-deploy/templates/redhat.repo.j2
     dest=/etc/yum.repos.d/rhel.repo
@@ -131,7 +106,7 @@
   remote_user: root
 
 # Temp task to get around packstact missing packages
-- name: Enable test repos
+- name: Enable test repos on CentOS
   lineinfile:
     regexp: enabled=
     line: enabled=1

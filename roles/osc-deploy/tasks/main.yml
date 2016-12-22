@@ -46,22 +46,6 @@
     dest: /etc/selinux/config
 
 - name: Disable firewall
-  service:
-    name: iptables
-    enabled: no
-  when:
-    - ansible_distribution == 'CentOS'
-    - ansible_distribution_major_version == '6'
- 
-- name: Stop firewall
-  service:
-    name: iptables
-    state: stopped
-  when:
-    - ansible_distribution == 'CentOS'
-    - ansible_distribution_major_version == '6'
-
-- name: Disable firewall
   service: 
     name: firewalld
     enabled: no
@@ -100,22 +84,13 @@
     state: started
   ignore_errors: yes
 
-- name: Install EPEL repos on Centos
+- name: Install EPEL repos only on  CentOS
   yum:
     name: epel-release
     state: present
   remote_user: root
   when:
     - ansible_distribution == 'CentOS'
-
-- name: Load correspoing software repos for OpenStack Centos6
-  yum:
-    name: "{{ os_repo }}"
-    state: present
-  when: 
-    - ansible_distribution == 'CentOS'
-    - ansible_distribution_major_version == '6'
-  remote_user: root
 
 - name: Pause
   pause:  
@@ -130,7 +105,7 @@
     - ansible_distribution_major_version == '7'
   remote_user: root
 
-- name: Copy Redhat repo file to {{ inventory_hostname }}
+- name: Copy Redhat repo file to {{ inventory_hostname }} for RedHat images
   template:
     src={{ playbook_dir }}/roles/osc-deploy/templates/redhat.repo.j2
     dest=/etc/yum.repos.d/rhel.repo
@@ -149,7 +124,7 @@
     state: present
   remote_user: root
 
- Temp task to get around packstack missing packages
+ Temp task to get around packstack missing packages in CentOS 
 - name: Enable test repos
   lineinfile:
     regexp: enabled=

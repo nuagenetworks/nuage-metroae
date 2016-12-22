@@ -24,43 +24,43 @@ except ImportError:
 
 DOCUMENTATION = '''
 ---
-module: create_snapshot
-short_description: Create a snapshot of vm(s) in OpenStack
+module: download_image
+short_description: Download image from glance to local machine
 options:
    auth:
      description:
         - OpenStack credentials
-   name:
+   image_name_id:
      description:
-        - Name that has to be given to the snapshot
+        - Name of the image/id to download
      required: true
      default: None
-   vm_id:
+   path:
      description:
-        - OpenStack vm instance id for which snapshot is to be created
+        - path to download the glance image on to local machine
      required: true
      default: None
 requirements: ["shade"]
 '''
 
 EXAMPLES = '''
-# Create snaphot for vm instance with id 788a8c96547271
-- create_snapshot:
+# Download an image from glance to local machine named centos7
+- download_image:
     auth:
       auth_url: http://localhost/auth/v2.0
       username: admin
       password: passme
       project_name: admin
-    name: snapshot_vm1
-    vm_id: 788a8c96547271
+    image_name_id: centos7
+    path: /root/project/centos7.qcow2
 '''
 
 
 def main():
 
     argument_spec = openstack_full_argument_spec(
-        name=dict(required=True),
-        vm_id=dict(required=True),
+        image_name_id=dict(required=True),
+        path=dict(required=True),
     )
     module_kwargs = openstack_module_kwargs()
     module = AnsibleModule(argument_spec, **module_kwargs)
@@ -71,9 +71,8 @@ def main():
     try:
         cloud = shade.openstack_cloud(**module.params)
 
-        image = cloud.create_image_snapshot(name=module.params['name'],
-                                            server=module.params['vm_id'],
-                                            wait=True)
+        image = cloud.download_image(module.params['image_name_id'],
+                                     output_path=module.params['path'])
         changed = True
         module.exit_json(changed=changed, image=image)
     except shade.OpenStackCloudException as e:

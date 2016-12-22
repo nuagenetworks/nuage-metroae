@@ -5,6 +5,9 @@ from ipaddr import IPAddress
 import argparse
 import json
 
+# Network limit
+net_limit = '10.107.0.0'
+
 
 def get_zone_obj(csp_user, org_name='Nuage_Partition1',
                  l3_domain_name='oc-heat-test'):
@@ -37,11 +40,11 @@ def delete_subnet(network_name, zone):
 
 def create_subnet(zone):
     lst_addr = zone.subnets.get()
-    lst_networks = [net.address for net in lst_addr]
+    lst_networks = [IPAddress(net.address) for net in lst_addr]
     # Incerement the subnet value by 256 to create new subnet
     lst_networks.sort()
-    new_sub = IPAddress(lst_networks[-1]) + 256
-    if new_sub == '10.107.0.0':
+    new_sub = lst_networks[-1] + 256
+    if new_sub == net_limit:
         print("ERROR: Exceeded max network limit")
         sys.exit(1)
     gateway_addr = new_sub + 1
