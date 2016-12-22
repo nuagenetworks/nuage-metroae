@@ -61,22 +61,19 @@ def verify_dockermon_result(content):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("dockermon_data_file", type=str,
-                        help="Name of the input file that contains dockermon data to be verified.")
-    parser.add_argument("dockermon_file_path", type=str,
-                        help="Path to location of dockermon data file.")
+                        help="YAML file that contains Nuage dockermon configuration information to be verified.")
     args = parser.parse_args()
     dockermon_data_file = args.dockermon_data_file
 
-    dockermon_file_path = args.dockermon_file_path + dockermon_data_file
-    if (not os.path.exists(dockermon_file_path)):
-        print ("ERROR! Nuage Docker Monitor data file not found.")
+    if (not os.path.exists(dockermon_data_file)):
+        print ("ERROR! Nuage dockermon YAML configuration file not found.")
         sys.exit(1)
 
     try:
-        with open(dockermon_file_path, "r") as stream:
+        with open(dockermon_data_file, "r") as stream:
             file_content = yaml.safe_load(stream)
     except:
-        print("Error processing dockermon results output file {0}:{1}" .format(dockermon_file_path, sys.exc_info()[0]))
+        print("Error processing Nuage dockermon configration file {0}:{1}" .format(dockermon_data_file, sys.exc_info()[0]))
         sys.exit(1)
 
     result = verify_dockermon_result(file_content)

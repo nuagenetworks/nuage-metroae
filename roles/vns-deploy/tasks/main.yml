@@ -1,4 +1,9 @@
 ---
+- name: Clean known_hosts of VSC's on "{{ target_server }}"
+  command: ssh-keygen -R "{{ interfaces.mgmt.ip }}" -f /root/.ssh/known_hosts
+  delegate_to: "{{ target_server }}"
+  remote_user: root 
+
 - name: Change XMPP connection to TLS on VSD
   command: /opt/vsd/bin/ejmode allow -y
   remote_user: root
@@ -19,27 +24,23 @@
 
 - name: Create and transfer certs from VSD to {{ inventory_hostname }}
   expect:
+   timeout: 55
    command: "{{ create_certs }}"
    responses:
      (?i)password: "admin"
   delegate_to: "{{ vsd_fqdn }}"
-  
-- name: Create tls-profile on {{ inventory_hostname }}
-  sros_config:
-    lines:
-      - configure system security tls-profile vns-tls-profile own-key "cf1:\{{ xmpp.username }}-Key.pem"
-      - configure system security tls-profile vns-tls-profile own-certificate "cf1:\{{ xmpp.username }}.pem"
-      - configure system security tls-profile vns-tls-profile ca-certificate "cf1:\{{ xmpp.username }}-CA.pem"
-      - configure system security tls-profile vns-tls-profile no shutdown
-      - configure vswitch-controller open-flow tls-profile vns-tls-profile
-      - configure vswitch-controller xmpp tls-profile vns-tls-profile
-    provider: "{{ creds }}"
-    save: yes
-  delegate_to: "{{ target_server }}"
   remote_user: root
-  vars:
-    creds:
-      host: "{{ interfaces.mgmt.ip }}"
-      username: admin
-      password: admin
-      transport: cli
+
+- block:
+  - name: Create TLS profile in {{ inventory_hostname }}
+    local_action: command python {{playbook_dir}}/roles/vns-deploy/files/vsc_config.py {{ playbook_dir  }} {{ xmpp.username }}
+    register: output
+
+  - name: Verification Result Failure Status
+    fail: msg={{ output.stdout }}
+    when: output.stdout | search("(?i)MINOR")
+
+  - name: Verification Result Success Status
+    debug: var=output.stdout
+  when: ansible_version.minor < 2
+

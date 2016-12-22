@@ -1,0 +1,39 @@
+---
+# See BUILD.md for details
+
+# First set of tasks is to gather_facts so that subsequent task list can use these facts as part of variable setting
+- hosts: localhost
+  gather_facts: yes
+  tasks: []
+
+# Actual tasks to generate build configuration
+- hosts: localhost
+  roles:
+    - nuage-unpack
+    - build
+  vars:
+    nuage_release_src_path: "/home/caso/metro/R4/"
+    nuage_unpacked_dest_path: "/home/caso/metro/R4/"
+    nuage_target_architecture: "el7"
+    nuage_unpacked: true
+
+    vsd_standalone: True
+    myvsds:
+      - { hostname: jenkinsvsd1.example.com,
+          target_server_type: "kvm",
+          target_server: 135.227.181.233,
+          mgmt_ip: 192.168.122.211,
+          mgmt_gateway: 192.168.122.1,
+          mgmt_netmask: 255.255.255.0 }
+    ansible_host: 135.227.181.233
+    mgmt_bridge: "virbr0"
+    data_bridge: "virbr1"
+    access_bridge: "access"
+    images_path: "/var/lib/libvirt/images/"
+    ntp_server_list:
+      - 135.227.181.232
+      - 128.138.141.172
+    dns_server_list:
+      - 192.168.122.1
+      - 128.251.10.145
+    dns_domain: example.com

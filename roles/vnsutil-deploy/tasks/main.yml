@@ -23,17 +23,20 @@
       {% for host in groups['vnsutils']  %}
       {{ hostvars[host]['interfaces']['mgmt']['ip'] }}    {{ host }}
       {% endfor %}
+  remote_user: root
 
 - name: Delete the localtime file on {{ inventory_hostname }}
   file:
     path: /etc/localtime
     state: absent
+  remote_user: root
 
 - name: Create the localtime symlink on {{ inventory_hostname }}
   file:
     src: /usr/share/zoneinfo/US/Pacific
     dest: /etc/localtime
     state: link
+  remote_user: root
 
 - name: Install NTP package on the vnsutil vm
   yum: name=ntp state=present
@@ -44,26 +47,45 @@
     dest: /etc/ntp.conf
     line: "server {{ item }} iburst"
   with_items: "{{ ntp_server_list }}"
+  remote_user: root
 
 - name: Stop the ntpd service if running
   service:
     name: ntpd
     state: stopped
+  remote_user: root
 
 - name: Manually sync time with ntp server
   command: ntpdate -u "{{ntp_server_list[0]}}"
+  remote_user: root
 
 - name: Start ntpd on {{ inventory_hostname }}
   service:
     name: ntpd
     state: started
+  remote_user: root
 
 - name: check ntp sync state
   shell: ntpstat | awk 'NR==1{print $1}'
   register: sync_status
   until: sync_status.stdout == "synchronised"
-  retries: 9
-  delay: 10
+  retries: 4
+  delay: 5
+  ignore_errors: yes
+  remote_user: root
+
+- block:
+  - name: restart ntp if it hasn't synced yet
+    command: service ntpd restart
+    remote_user: root
+  - name: check ntp sync state
+    shell: ntpstat | awk 'NR==1{print $1}'
+    register: retry_sync_status
+    until: retry_sync_status.stdout == "synchronised"
+    retries: 4
+    delay: 5
+    remote_user: root
+  when: sync_status.stdout != "synchronized"
 
 - name: Install dhcp package on {{ inventory_hostname }}
   yum: name=dhcp state=present
@@ -71,26 +93,32 @@
 
 - name: Copy dhcp config
   template: src=dhcpd.conf.j2 backup=no dest=/etc/dhcp/dhcpd.conf
+  remote_user: root
 
 - name: Restart dhcp service
   service:
     name: dhcpd
     state: restarted
+  remote_user: root
 
 - name: Chkconfig of dhcpd
   command: chkconfig dhcpd on
+  remote_user: root
 
 - name: Install dnsmasq package on {{ inventory_hostname }}
-  yum: name=dnsmasq.j2 state=present
+  yum: name=dnsmasq state=present
   remote_user: root
 
 - name: Copy dnsmasq config to {{ inventory_hostname }}
-  template: src=dnsmasq.conf backup=no dest=/etc/dnsmasq.conf
+  template: src=dnsmasq.conf.j2 backup=no dest=/etc/dnsmasq.conf
+  remote_user: root
 
 - name: Start dnsmasq
   service:
     name: dnsmasq
     state: started
+  remote_user: root
 
 - name: Chkconfig of dnsmasq
   command: chkconfig dnsmasq on
+  remote_user: root

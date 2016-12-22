@@ -1,7 +1,5 @@
 # Metro: Automated Deployment of Nuage Software
 
-**NOTE: This package is considered Beta quality. It can be used for customer demos and PoCs but should first be tested in your lab to make sure it will work. It should not be distributed.
-
 ## What's new
 
 1. VSD HA/cluster support, limited to exactly 3 VSD nodes
@@ -28,7 +26,7 @@ This set of playbooks can be used to automatically deploy VCS/VNS components for
 
 The short version of the instructions are:
 
-1. Install Ansible 2.1+ on the deployment host
+1. Install Ansible 2.1.1+ on the deployment host (Ansible 2.2 for VNS)
 1. Install Netmiko and its dependencies on deployment host.
 1. Clone this repository to the deployment host
 1. Customize `build.yml` with your VSD, VSC, VRS, VNSUTIL, NSGV  and VSTAT information. (See `BUILD.md` for details.)
@@ -55,6 +53,7 @@ The following restrictions and conditions apply prior to executing the playbooks
 1. Python 2.7+ and all its dependencies must be installed on the deployment host. Python 3.0 and above is untested.
 1. Ansible 2.1+ and all its dependencies must be installed on the deployment host.
 1. Netmiko and all its dependencies must be installed on deployment host. The easiest way to install Netmiko is by using `pip install netmiko`. A common Netmiko dependency that could be missing is the cryptography package. See https://cryptography.io/en/latest/installation/ for more information.
+1. VSPK (nuage python module) must be installed on the deployment host.
 1. The ansible deployment host may also be a target server.
 1. The public ssh key of the ansible user that will run the playbooks must be added to `/root/.ssh/authorized_keys` on each target server, even if the deployment host and the target server are one in the same machine.
 1. It may be necessary to remove the vsd, vsc and vstat entries from the ansible user's `~/.ssh/known_hosts` file to prevent errors from suspected DNS spoofing. This would only be necessary if multiple runs are attempted.
@@ -83,11 +82,11 @@ All playbooks, whether installation or destruction, must be executed using the `
 
 Each element to be deployed has up to 5 corresponding playbooks:
 
-* predeploy
-* deploy
-* postdeploy
-* destroy
-* health_checks
+* `predeploy` : prepares infrastructure with necessary packages, finishing up by making the element reachable.
+* `deploy` : installs and configures the element
+* `postdeploy` : 
+* `destroy` : removes the element from the infrastructure
+* `health` : checks health for a running element without assuming it was deployed with Metro.
 
 Every supported element must have at least a deploy playbook.
 
