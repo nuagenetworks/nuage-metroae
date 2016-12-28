@@ -1,6 +1,6 @@
 # ci-build role
 
-The ci-build role is used to automatically populate a number of Ansible variable files for the operation of the metro playbookson OpenStack. Running `./metro-ansible setup_ci.yml` located in test/files sub dir,  will generate a random hostname that is used to populate `build.yml.RedHatCI.j2` and `build.yml.Debian.j2` (not supported) file to create a `hosts` file, populate a `host_vars` directory, populate a `group_vars` directory, that are consumed by ci-predeploy/deploy/destroy roles.
+The ci-build role is used to automatically populate a number of Ansible variable files for the operation of the metro playbooks on OpenStack. Running `./metro-ansible setup_ci.yml` located in test/files sub dir,  will generate a random hostname that is used to populate `build.yml.RedHatCI.j2` and `build.yml.Debian.j2` (not supported) file to create a `hosts` file, populate a `host_vars` directory, populate a `group_vars` directory, that are consumed by ci-predeploy/deploy/destroy roles.
 
 # ci-predeploy role
 
