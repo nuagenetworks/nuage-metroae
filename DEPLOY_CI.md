@@ -1,8 +1,8 @@
-# CI-BUILD
+# DEPLOY_CI
 
 ## Overview
 
-CI-BUILD is used to dynamically create a deployment environment. It is specifically targeted for Metro deployments in OpenStack. At the behest of a CI server, e.g. Jenkins, one or more slave VMs are created as well as a subnet to connect them. The end result is a deployment environment that the CI server can use as target servers for Metro. It is intended that the environment live only as long as required, being torn down automatically after testing is complete.   
+DEPLOY_CI is used to dynamically create a deployment environment. It is specifically targeted for Metro deployments in OpenStack. At the behest of a CI server, e.g. Jenkins, one or more slave VMs are created as well as a subnet to connect them. The end result is a deployment environment that the CI server can use as target servers for Metro. It is intended that the environment live only as long as required, being torn down automatically after testing is complete.   
 
 ## Details
 
