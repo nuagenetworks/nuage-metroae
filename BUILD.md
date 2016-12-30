@@ -197,8 +197,10 @@ For reference, here is a description of the contents of the `build-vars.yml` fil
 #
 #    # ENVIRONMENT
 #    # The hostname or IP address of the ansible machine
-#    ansible_deployment_host: 135.227.181.232
-#    # The names of the network bridges that are required on the target hosts
+#    ansible_host: 135.227.181.232
+#    # The VMs require interfaces, usually network bridges, on the target hypervisor system to connect
+#    # to. These are the names of the network bridges that you have already configured for that purpose.
+#    # These bridges are *not* created by Metro.
 #    mgmt_bridge: "virbr0"
 #    data_bridge: "virbr1"
 #    access_bridge: "access"
