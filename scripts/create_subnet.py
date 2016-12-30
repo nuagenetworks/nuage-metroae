@@ -39,18 +39,6 @@ def get_zone_obj(csp_user, org_name='Nuage_Partition1',
     return (zone)
 
 
-def delete_subnet(network_name, zone):
-    network = zone.subnets.get_first(filter="name=='%s'" % network_name)
-    if network is None:
-        print("%s network does not exist to delete" % network_name)
-        sys.exit(1)
-    if network.name != network_name:
-        print("ERROR: Could not delete %s network on VSD or network does\
-              not exist" % network_name)
-        sys.exit(1)
-    network.delete()
-
-
 def create_subnet(zone):
     lst_addr = zone.subnets.get()
     lst_networks = [IPAddress(net.address) for net in lst_addr]
@@ -79,12 +67,7 @@ def create_subnet(zone):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("playbook_dir", type=str,
-                        help="Set path to playbook directory.")
-    parser.add_argument("subnet_name", type=str, default=None, nargs='?',
-                        help="VSD subnet name to delete.")
-    parser.add_argument("delete_subnet", type=bool, default=False, nargs='?',
-                        help="Set to True if subnet needs to delete. \
-                        Default is false")
+                        help="Path to playbook directory.")
     args = parser.parse_args()
 
     # Get vsd related parameters
@@ -108,19 +91,12 @@ if __name__ == '__main__':
     zone_obj = get_zone_obj(csproot, vsd_constants['org_name'],
                             vsd_constants['domain_name'])
 
-    # Delete subnet
-    del_subnet = args.delete_subnet
-    if del_subnet:
-        del_subnet_name = args.subnet_name
-        delete_subnet(del_subnet_name, zone_obj)
-        print("Deleted subnet %s from VSD" % del_subnet_name)
-    else:
-        # Create subnet
-        network, network_str = create_subnet(zone_obj)
-        sub_info = {'sub_id': network.id,
-                    'net_name': network.name,
-                    'vsd_net': network.address,
-                    'subnet_name': 'OC_JEN_SUBNET' + network_str
-                    }
-        json_info = json.dumps(sub_info)
-        print json_info
+    # Create subnet
+    network, network_str = create_subnet(zone_obj)
+    sub_info = {'sub_id': network.id,
+                'net_name': network.name,
+                'vsd_net': network.address,
+                'subnet_name': 'OC_JEN_SUBNET' + network_str
+                }
+    json_info = json.dumps(sub_info)
+    print json_info

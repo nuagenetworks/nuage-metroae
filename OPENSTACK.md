@@ -1,66 +1,58 @@
 # Support for deploying VSP components in OpenStack through metro(limited support)
 # Note: This is purely for internal lab. Not meant for customer use.
 
-Using metro, users can deploy VSP components into OpenStack. Apart from the VSP components there is also support for deploying OpenStack Controller (OSC) using packstack and adding computes(vms) to the OSC by replacing OVS packages with nuage VRS. Users can also make backups of an entire project or set of VMs in a project using snapshot role. 
+## Overview
 
-These snapshots are stored downloaded to local machine. Currently they are not archived or exported to a remote machine. So, make sure the local machine has enough storage.
+Using metro, users can deploy VSP components into OpenStack. These are the following components/roles supported by metro on OpenStack.
 
-An infra VM is aslo deployed which acts as private DNS server and ntp server for VSD and VSC. The DNS entries are automatically populated with the delp of vsd-deploy and vsc-deploy roles. For this reason the user has to specify the infra VM FQDN for VSD and VSC build-vars
+1. Deploy Infra VM
+2. Deploy VSD (Standalone only)
+3. Deploy VSC (1)
+4. Deploy OSC (1)
+5. Deploy OSC Computes (1 or more) and add them to OSC with VRS packages
+6. VSD-OSC intergaration
+7. Create Snapshot of project or VMs
 
-To summarize, these are the following components/roles supported by metro on OpenStack
+## Details
 
-```
-Deploy INFRA server
-Deploy VSD (Standalone)
-Deploy a single VSC
-Deploy OpenStack controller (OSC)
-Deploy OpenStack computes(VMs)
-Add computes to OSC and add VRS packages
-Support for project/vms snapshot
-```
+### Infra VM
 
-The build playbook (`build.yml`) is used to automatically populate a number of Ansible variable files for the operation of the metro playbooks. Running `./metro-playbook build.yml` will use the variables defined in `build-vars.yml` to create a `hosts` file, populate a `host_vars` directory, populate a `group_vars` directory, and make a few additional variable changes as required. The `build.yml` playbook will do all the work for you.
+An infra VM is deployed to act as private DNS server and ntp server for VSD and VSC. The DNS entries are automatically populated with the hostname and IP addr mappings of VSD and VSC with the help of vsd-deploy and vsc-deploy roles. For this reason the user has to specify the infra VM FQDN in VSD and VSC build-vars (see reference below).
 
-Note that the syntax of the contents of `build-vars.yml` must be precise. If things get messed up, we have provided the `reset_build.yml` playbook to let you start over. *When you run `./metro-ansible rest_build.yml`, the contents of `build-vars.yml` will be overwritten, the `hosts` file will be destroyed, the `host_vars` directory will be destroyed, and the `group_vars` directory will be destroyed. The variable configuration of metro will be reset to factory settings! You may lose your work!* A backup copy of `build-vars.yml` will be created with a proper timestamp in case you did not mean it.
+### VSD 
 
-To run the build, execute:
+Deloying VSD in OpenStack requires the user to upload VSD qcow2 image to glance. For this release, the user is also required to create network and create a flavor that is inline with VSD resource requirements (refer VSP install guide). Only standalone mode is tested and supported.
 
-`ansible-playbook build.yml`
+### VSC
 
-or
+Deploying VSC in OpenStack requires the user to upload VSC qcow2 image to glance. For this release, the user is also required to create a mgmt, control networks and create a flavor that is inline with VSC resource requirements (refer VSP install guide). Only a single VSC is supported.
 
-`./metro-ansible build.yml`
+### OSC
 
-To reset the build to factory settings, execute:
+`osc-predploy` and `osc-deploy` roles are used to deploy OpenStack Controller (OSC) using packstack. The user needs to upload a cloud image (only CentOS/RHEL 7 are supported) with cloud-init support to glance. The netowrk, flavor and OpenStack release string needs to be supplied by user as well.
 
-`ansible-playbook reset_build.xml`
+### OSC Computes
 
-or
+`os-compute-predeploy` and `os-compute-deploy` roles are used in deploying compute vms that will be managed by OSC. `os-compute-postdeploy` role will replace the ovs packages in thesecompute vms with Nuage VRS packages. The user requirements are same as OSC.
 
-`./metro-ansible rest_build.yml`
+### VSD-OSC intergration
 
-# nuage_unpack playbook
+`vsd-osc-config` role helps to integrate OSC with VSD by making necessary changes to horizon and nuetron plugin files. It will also add csproot user to CMS group on VSD.
 
-When the `build.yml` playbook is executed, it will first check the setting for the parameter `nuage_unpacked` in the vars section of the plabook. When `nuage_unpacked` is set to `false`, the `nuage-unpack` role will be executed prior to setting other parameters. The `nuage_unpack` role is useful when you download the Nuage Networks software as a set of archives for each component of the solution. To deploy the software using Metro, only a few of the binaries in those archives are required. As such the `nuage-unpack` role will analyze all the archives, extract the necessary binaries, and store them in a configurable directory.
+### Snapshots and backup
 
-You can also choose to unpack the binaries yourself, skipping the `nuage-unpack` role by setting `nuage_unpacked` to `true` in `build.yml`. In such a case, the playbooks will assume that you have already unpacked the binaries into the appropriate locations, as shown below.
+`os-snapshot` roles is used to make backups of an entire project or set of VMs in a project. These snapshots are downloaded to local machine. Currently they are not archived or exported to a remote machine. So, make sure the local machine has enough storage.
 
-```
-<your_path>/vsc
-<your_path>/vrs
-<your_path>/dockermon
-<your_path>/vstat
-<your_path>/vns/nsg
-<your_path>/vns/nsg/aws
-<your_path>/vns/util
-<your_path>/nuage_os
-```
+For details about build and nuage-unpack roles and how to execute them please refer to `BUILD.md` file.
 
-You can also choose to run the `nuage-unpack` role manually by executing `./metro-ansible nuage_unpack.yml`
-The `nuage-unpack` role also uses Ansible tags to limit the extraction or variable setting to a particular component of choice.
+## Runnning playbooks
+
+For playbook organization please refer to `playbook organization` section of `README.md`
+All the above roles/components can be run individually with `./metro-ansible <playbook>.yml` command
+
 # Reference
 
-For reference, here is a description of the contents of the `build-vars.yml` file, with comments:
+For reference, here is a description of the contents of the `build-vars.yml` file for OpenStack, with comments:
 
 ```
 #    # The directory where the Nuage Networks binariy archives are located. This is only
