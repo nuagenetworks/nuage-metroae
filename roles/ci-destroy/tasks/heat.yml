@@ -1,0 +1,51 @@
+---
+- name: Get {{ inventory_hostname }} details from OS facts
+  os_server_facts:
+    auth:
+      "{{ os_auth }}"
+    server: "{{ inventory_hostname }}*"
+  register: ci_server
+  delegate_to: 127.0.0.1
+
+- name: Set VSD subnet name
+  set_fact:
+    subnet_name: "{{ ci_server['ansible_facts']['openstack_servers'][0]['networks'].keys()[1] }}"
+
+- name: Destroy CI heat template
+  os_stack:
+    name: "{{ inventory_hostname }}"
+    auth:
+      "{{ os_auth }}"
+    state: absent
+  delegate_to: 127.0.0.1
+
+- name: Destroy subnet in VSD
+  local_action: command python {{playbook_dir}}/scripts/delete_subnet.py {{playbook_dir}} {{subnet_name}}
+
+- name: Get the compute IP
+  set_fact:
+    target_server: "{{ ci_server['ansible_facts']['openstack_servers'][0]['networks'][subnet_name][0]}}"
+
+- name: Extract network part from the compute ip
+  set_fact:
+    network_address: "{{ target_server.split('.')[0:3] | join('.') }}"
+
+- name: Delete VSP ips from /etc/hosts file
+  lineinfile:
+    dest: /etc/hosts
+    line: "{{ item }}"
+    state: absent
+  with_items: "{{vsp_ips}}"
+  remote_user: root
+  delegate_to: "{{ ansible_deployment_host }}"
+
+# temp fix to get around policy issue
+- name: Set fronend ip added to static route
+  set_fact:
+    frontend_ip: "{{ ci_server['ansible_facts']['openstack_servers'][0]['networks']['OC_JEN_FrontEnd'][0]}}"
+
+# temp fix to get around policy issue
+- name: Delete static route on ansible host
+  command: "route del -net {{ network_address }}.0/24 gw {{ frontend_ip }} "
+  delegate_to: "{{ ansible_deployment_host }}"
+  remote_user: root

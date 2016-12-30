@@ -1,0 +1,12 @@
+---
+- name: Set myoscomputes_check
+  set_fact: myoscomputes_check={{myoscomputes is defined}}
+ 
+- name: Assign empty list to myoscomputes if it is undefined
+  set_fact: myoscomputes= default([])
+  when: not myoscomputes_check
+ 
+- name: Create host_vars files for os-compute server
+  template: src=os_compute.j2 backup=no dest={{ playbook_dir }}/host_vars/{{ item.hostname }}
+  with_items: "{{ myoscomputes }}"
+  when: myoscomputes_check
