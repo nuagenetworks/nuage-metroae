@@ -9,7 +9,22 @@
 
 - name: Set VSD subnet name
   set_fact:
-    subnet_name: "{{ ci_server['ansible_facts']['openstack_servers'][0]['networks'].keys()[1] }}"
+    subnet_name1: "{{ ci_server['ansible_facts']['openstack_servers'][0]['networks'].keys()[0] }}"
+    subnet_name2: "{{ ci_server['ansible_facts']['openstack_servers'][0]['networks'].keys()[1] }}"
+
+- block:
+  - name: Set the compute IP
+    set_fact:
+      target_server: "{{ ci_server['ansible_facts']['openstack_servers'][0]['networks'][subnet_name2][0]}}"
+      subnet_name: "{{ subnet_name2 }}"
+  when: subnet_name1 == 'OC_JEN_FrontEnd'
+ 
+- block:
+  - name: Set the compute IP
+    set_fact:
+      target_server: "{{ ci_server['ansible_facts']['openstack_servers'][0]['networks'][subnet_name1][0]}}"
+      subnet_name: "{{ subnet_name1 }}"
+  when: subnet_name2 == 'OC_JEN_FrontEnd'
 
 - name: Destroy CI heat template
   os_stack:
@@ -21,10 +36,6 @@
 
 - name: Destroy subnet in VSD
   local_action: command python {{playbook_dir}}/scripts/delete_subnet.py {{playbook_dir}} {{subnet_name}}
-
-- name: Get the compute IP
-  set_fact:
-    target_server: "{{ ci_server['ansible_facts']['openstack_servers'][0]['networks'][subnet_name][0]}}"
 
 - name: Extract network part from the compute ip
   set_fact:

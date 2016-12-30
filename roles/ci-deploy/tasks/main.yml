@@ -8,13 +8,22 @@
   delegate_to: 127.0.0.1
 
 # temp task to get aroud policy issue
-- name: Get the network name
+- name: Set the network names
   set_fact:
-    net_name: "{{ ci_server['ansible_facts']['openstack_servers'][0]['networks'].keys()[1] }}"
+    net_name1: "{{ ci_server['ansible_facts']['openstack_servers'][0]['networks'].keys()[0] }}"
+    net_name2: "{{ ci_server['ansible_facts']['openstack_servers'][0]['networks'].keys()[1] }}"
 
-- name: Get the compute IP
-  set_fact:
-    target_server: "{{ ci_server['ansible_facts']['openstack_servers'][0]['networks'][net_name][0]}}"
+- block:
+  - name: Set the compute IP
+    set_fact:
+      target_server: "{{ ci_server['ansible_facts']['openstack_servers'][0]['networks'][net_name2][0]}}"
+  when: net_name1 == 'OC_JEN_FrontEnd'
+
+- block:
+  - name: Set the compute IP
+    set_fact:
+      target_server: "{{ ci_server['ansible_facts']['openstack_servers'][0]['networks'][net_name1][0]}}"
+  when: net_name2 == 'OC_JEN_FrontEnd'
 
 - name: Extract network part from the compute ip
   set_fact:
