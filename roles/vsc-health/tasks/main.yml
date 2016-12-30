@@ -13,43 +13,70 @@
     - vsc-deploy
     - vsc-health
 
-- name: Get BGP Admin and BGP Oper States from {{ inventory_hostname }}
+- name: Get output of 'show router bgp summary'
   sros_command:
     commands:
-      - show router bgp summary | match expression ".*BGP Admin State.*"
+      - show router bgp summary
     provider: "{{ vsc_creds }}"
   register: bgp_summary
   delegate_to: localhost
 
-- name: BGP Admin State - {{ bgp_summary.stdout_lines[0][0].split(':')[1].split(' ')[1]|trim }}
-  fail: msg="Unexpected BGP Admin State - {{ bgp_summary.stdout_lines[0][0].split(':')[1].split(' ')[1]|trim }}. Expected '{{ expected_bgp_admin_state }}' .Check output of 'show router bgp summary' on {{ inventory_hostname }}."
-  when: "'{{ expected_bgp_admin_state }}' not in bgp_summary.stdout_lines[0][0].split(':')[1]"
+- name: Print 'show router bgp summary' when verbosity >= 1
+  debug: var=bgp_summary verbosity=1
+
+- name: Create local variable with BGP Summary in json
+  set_fact: bgp_summary_json="{{ bgp_summary.stdout[0]|bgp_summary_to_json }}"
+
+- name: Print BGP Summary in json when verbosity >= 1
+  debug: var=bgp_summary_json verbosity=1
+
+- name: Create local variable with BGP Admin State
+  set_fact: bgp_admin_state="{{ bgp_summary_json['BGP Admin State'] }}"
+
+- name: Print BGP Admin State when verbosity >= 1
+  debug: var=bgp_admin_state verbosity=1
+
+- name: Check for expected BGP Admin State, skip if okay
+  fail: msg="Unexpected BGP Admin State - {{ bgp_admin_state }}. Expected '{{ expected_bgp_admin_state }}'. Check output of 'show router bgp summary' on {{ inventory_hostname }}."
+  when: "'{{ expected_bgp_admin_state }}' not in bgp_admin_state"
   ignore_errors: yes
 
-- name: BGP Oper State - {{ bgp_summary.stdout_lines[0][0].split(':')[2]|trim }}
-  fail: msg="Unexpected BGP Oper State - {{ bgp_summary.stdout_lines[0][0].split(':')[2]|trim }}. Expected '{{ expected_bgp_oper_state }}'.Check output of 'show router bgp summary' on {{ inventory_hostname }}."
-  when: "'{{ expected_bgp_oper_state }}' not in bgp_summary.stdout_lines[0][0].split(':')[2]"
+- name: Create local variable for BGP Oper State
+  set_fact: bgp_oper_state="{{ bgp_summary_json['BGP Oper State'] }}"
+
+- name: Print BGP Oper State when verbosity >= 1
+  debug: var=bgp_oper_state verbosity=1
+
+- name: Check for expected BGP Oper State, skip if okay
+  fail: msg="Unexpected BGP Oper State - {{ bgp_oper_state }}. Expected '{{ expected_bgp_oper_state }}'. Check output of 'show router bgp summary' on {{ inventory_hostname }}."
+  when: "'{{ expected_bgp_oper_state }}' not in bgp_oper_state"
   ignore_errors: yes
 
-- name: Get BGP Peers information from {{ inventory_hostname }}
-  sros_command:
-    commands:
-      - show router bgp summary | match expression ".*Total Peers.*"
-    provider: "{{ vsc_creds }}"
-  register: bgp_peers
-  delegate_to: localhost
+- name: Create local variable for BGP Peer Count
+  set_fact: bgp_peer_count="{{ bgp_summary_json['Total Peers'] }}"
 
-- name: BGP Peer Count - {{ bgp_peers.stdout_lines[0][0].split(':')[2]|trim }}
-  fail: msg="Invalid BGP Peer count ({{ bgp_peers.stdout_lines[0][0].split(':')[2]|trim }}) detected. Expected '{{ expected_num_bgp_peers }}'. Check 'show router bgp summary' on {{ inventory_hostname }}."
-  when: "'{{ expected_num_bgp_peers }}' != bgp_peers.stdout_lines[0][0].split(':')[2]|trim"
+- name: Print BGP Peer Count when verbosity >= 1
+  debug: var=bgp_peer_count verbosity=1
+
+- name: Check for expected BGP Peer Count, skip if okay
+  fail: msg="Invalid BGP Peer count ({{ bgp_peer_count }}) detected. Expected '{{ expected_num_bgp_peers }}'. Check 'show router bgp summary' on {{ inventory_hostname }}."
+  when: "{{ expected_num_bgp_peers }} != {{ bgp_peer_count }}"
   ignore_errors: yes
 
-- name: Check for error report
+- name: Print number of BGP Peer details when verbosity >= 1
+  debug: var=bgp_summary_json['Peers']|length verbosity=1
+
+- name: Make sure we have details for the correct number of peers, skip if okay
+  fail: msg="Didn't find enough sets of details for BGP peers. Found {{ bgp_summary_json['Peers']|length }}. Expected '{{ expected_num_bgp_peers }}'. Check 'show router bgp summary' on {{ inventory_hostname }}."
+  when: "{{ expected_num_bgp_peers }} != {{ bgp_summary_json['Peers']|length }}"
+  ignore_errors: yes
+
+- name: Check for existence of error report
   stat:
     path: "{{ failure_report_file_name }}"
   register: report
   delegate_to: localhost
 
-- name: Verify report contents
+- name: If the error report exists declare failure, otherwise skip (Success!)
   fail: msg="One or more failures detected. Check {{ failure_report_file_name }} for details."
   when: report.stat.exists
