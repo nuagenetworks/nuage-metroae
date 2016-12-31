@@ -29,21 +29,34 @@
   set_fact:
     network_address: "{{ target_server.split('.')[0:3] | join('.') }}"
 
-- block:
-  - name: Copy test build file for RedHat OS family
-    template:
-      src: "{{ playbook_dir }}/test/files/build.yml.RedHat.j2"
-      dest: "{{ playbook_dir }}/roles/reset-build/files/build.yml"
-    delegate_to: 127.0.0.1
-  when: ci_target_architecture == 'el7'
+- name: Query {{ target_server }} facts
+  action: setup
+  remote_user: root
+  delegate_to: "{{ target_server }}"
 
 - block:
-  - name: Copy test build file for Debian OS family
+  - name: Set nuage_target_architecture
+    set_fact:
+      target_os: 'el7'
+
+  - name: Copy test build file for RedHat OS family
     template:
-      src: "{{ playbook_dir }}/test/files/build.yml.Debian.j2"
+      src: "{{ playbook_dir }}/test/files/build.yml.all.j2"
       dest: "{{ playbook_dir }}/roles/reset-build/files/build.yml"
     delegate_to: 127.0.0.1
-  when: ci_target_architecture == 'ubuntu.14.04'
+  when: ansible_os_family == 'RedHat'
+
+- block:
+  - name: Set nuage_target_architecture
+    set_fact:
+      target_os: 'ubuntu.14.04'
+
+  - name: Copy test build file for Debian OS family
+    template:
+      src: "{{ playbook_dir }}/test/files/build.yml.all.j2"
+      dest: "{{ playbook_dir }}/roles/reset-build/files/build.yml"
+    delegate_to: 127.0.0.1
+  when: ansible_os_family == 'Debian'
 
 - name: Update and copy zfb.yml file with vsd ip
   template:
