@@ -29,11 +29,21 @@
   set_fact:
     network_address: "{{ target_server.split('.')[0:3] | join('.') }}"
 
-- name: Copy test build file for RedHat OS family
-  template:
-    src: "{{ playbook_dir }}/test/files/build.yml.RedHat.j2"
-    dest: "{{ playbook_dir }}/roles/reset-build/files/build.yml"
-  delegate_to: 127.0.0.1
+- block:
+  - name: Copy test build file for RedHat OS family
+    template:
+      src: "{{ playbook_dir }}/test/files/build.yml.RedHat.j2"
+      dest: "{{ playbook_dir }}/roles/reset-build/files/build.yml"
+    delegate_to: 127.0.0.1
+  when: ci_target_architecute == 'el7'
+
+- block:
+  - name: Copy test build file for Debian OS family
+    template:
+      src: "{{ playbook_dir }}/test/files/build.yml.Debian.j2"
+      dest: "{{ playbook_dir }}/roles/reset-build/files/build.yml"
+    delegate_to: 127.0.0.1
+  when: ci_target_architecute == 'ubuntu.14.04'
 
 - name: Update and copy zfb.yml file with vsd ip
   template:
