@@ -147,39 +147,81 @@
   with_items: "{{ ntp_server_list }}"
   remote_user: root
 
-- name: Stop the ntpd service if running
-  command: service ntpd stop
-  remote_user: root
+- block:
+  - name: Stop the ntpd service if running
+    command: service ntpd stop
+    remote_user: root
+  when: ansible_os_family == 'RedHat'
+
+- block:
+  - name: Stop the ntpd service if running
+    command: service ntp stop
+    remote_user: root
+  when: ansible_os_family == 'Debian'
 
 - name: Manually sync time with ntp server
   command: ntpdate -u "{{ ntp_server_list[0] }}"
   remote_user: root
 
-- name: Start ntpd on {{ inventory_hostname }}
-  command: service ntpd start
-  remote_user: root
-
-- name: check ntp sync state
-  shell: ntpstat | awk 'NR==1{print $1}'
-  register: sync_status
-  until: sync_status.stdout == "synchronised"
-  retries: 4
-  delay: 5
-  ignore_errors: yes
-  remote_user: root
+- block:
+  - name: Start ntpd on {{ inventory_hostname }}
+    command: service ntpd start
+    remote_user: root
+  when: ansible_os_family == 'RedHat'
 
 - block:
-  - name: restart ntp if it hasn't synced yet
-    command: service ntpd restart
+  - name: Start ntpd on {{ inventory_hostname }}
+    command: service ntp start
     remote_user: root
+  when: ansible_os_family == 'Debian'
+
+- block:
   - name: check ntp sync state
     shell: ntpstat | awk 'NR==1{print $1}'
-    register: retry_sync_status
-    until: retry_sync_status.stdout == "synchronised"
+    register: sync_status
+    until: sync_status.stdout == "synchronised"
     retries: 4
     delay: 5
+    ignore_errors: yes
     remote_user: root
-  when: sync_status.stdout != "synchronized"
+
+  - block:
+    - name: restart ntp if it hasn't synced yet
+      command: service ntpd restart
+      remote_user: root
+    - name: check ntp sync state
+      shell: ntpstat | awk 'NR==1{print $1}'
+      register: retry_sync_status
+      until: retry_sync_status.stdout == "synchronised"
+      retries: 4
+      delay: 5
+      remote_user: root
+    when: sync_status.stdout != "synchronized"
+  when: ansible_os_family == 'RedHat'
+
+- block:
+  - name: check ntp sync state
+    shell: ntpq -p | grep '*' | awk 'NR==1{print $1}'
+    register: sync_status
+    until: sync_status.stdout != ""
+    retries: 4
+    delay: 5
+    ignore_errors: yes
+    remote_user: root
+
+  - block:
+    - name: restart ntp if it hasn't synced yet
+      command: service ntpd restart
+      remote_user: root
+    - name: check ntp sync state
+      shell: ntpq -p | grep '*' | awk 'NR==1{print $1}'
+      register: retry_sync_status
+      until: retry_sync_status.stdout != ""
+      retries: 4
+      delay: 5
+      remote_user: root
+    when: sync_status.stdout != ""
+  when: ansible_os_family == 'RedHat'
 
 - name: Copy test.yml file to the playbook root
   local_action: copy src={{ playbook_dir }}/test/files/test_install.yml dest={{ playbook_dir }}/test.yml
