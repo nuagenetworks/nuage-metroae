@@ -1,20 +1,24 @@
-# Make coding more python3-ish
-from __future__ import (absolute_import, division, print_function)
-__metaclass__ = type
+#!/usr/bin/python
 
 import os
 import time
-import json
 
-from ansible.module_utils._text import to_bytes
 from ansible.plugins.callback import CallbackBase
 
 
-# NOTE: in Ansible 1.2 or later general logging is available without
-# this plugin, just set ANSIBLE_LOG_PATH as an environment variable
-# or log_path in the DEFAULTS section of your ansible configuration
-# file.  This callback is an example of per hosts logging for those
-# that want it.
+#    Copyright 2017 Nokia
+#
+#    Licensed under the Apache License, Version 2.0 (the "License"); you may
+#    not use this file except in compliance with the License. You may obtain
+#    a copy of the License at
+#
+#         http://www.apache.org/licenses/LICENSE-2.0
+#
+#    Unless required by applicable law or agreed to in writing, software
+#    distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+#    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+#    License for the specific language governing permissions and limitations
+#    under the License.
 
 
 class CallbackModule(CallbackBase):
@@ -26,9 +30,9 @@ class CallbackModule(CallbackBase):
     CALLBACK_NAME = 'report_failures'
     CALLBACK_NEEDS_WHITELIST = True
 
-    TIME_FORMAT="%b %d %Y %H:%M:%S"
+    TIME_FORMAT = "%b %d %Y %H:%M:%S"
 
-    DESTINATION_FILE="./failure_report.log"
+    DESTINATION_FILE = "./failure_report.log"
 
     def __init__(self):
 
@@ -45,7 +49,7 @@ class CallbackModule(CallbackBase):
         else:
             with open(self.DESTINATION_FILE, "ab") as fd:
                 fd.write(u'{0}: {1}: {2}: {3}\n'.format(now, category, host, "Unknown failure"))
-                
+
     def runner_on_failed(self, host, res, ignore_errors=False):
         self.log_failed(host, 'FAILED', res)
 
@@ -66,4 +70,3 @@ class CallbackModule(CallbackBase):
 
     def playbook_on_not_import_for_host(self, host, missing_file):
         pass
-
