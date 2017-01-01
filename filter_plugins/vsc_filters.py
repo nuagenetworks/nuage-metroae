@@ -1,8 +1,6 @@
 #!/usr/bin/python
 
 from ansible.errors import AnsibleError
-from ansible.plugins.lookup import LookupBase
-from ansible.utils.listify import listify_lookup_plugin_terms
 import re
 
 # Copyright 2017 Nokia
@@ -18,6 +16,7 @@ import re
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
+
 
 def bgp_summary_to_json(string):
     ''' Given a string representation of the output of "show router bgp summary"
@@ -43,13 +42,13 @@ def bgp_summary_to_json(string):
       ]
     }
     '''
-    IP_ADDR_COMP_REGEX="(?:[0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])"
-    IP_ADDR_REGEX="(?:(?:" + IP_ADDR_COMP_REGEX + "\.){3}" + IP_ADDR_COMP_REGEX + ")"
-    UPTIME_REGEX="(?:[0-2][0-9]h[0-5][0-9]m[0-5][0-9]s)"
-    CONN_REGEX="(?:" + IP_ADDR_REGEX + "(?:\s+[0-9]+\s+[0-9]+\s+[0-9]+\s+)" + UPTIME_REGEX + ")"
-    BGP_ADMIN_STATE="BGP Admin State"
-    BGP_OPER_STATE="BGP Oper State"
-    TOTAL_PEERS="Total Peers"
+    IP_ADDR_COMP_REGEX = "(?:[0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])"
+    IP_ADDR_REGEX = "(?:(?:" + IP_ADDR_COMP_REGEX + "\.){3}" + IP_ADDR_COMP_REGEX + ")"
+    UPTIME_REGEX = "(?:[0-2][0-9]h[0-5][0-9]m[0-5][0-9]s)"
+    CONN_REGEX = "(?:" + IP_ADDR_REGEX + "(?:\s+[0-9]+\s+[0-9]+\s+[0-9]+\s+)" + UPTIME_REGEX + ")"
+    BGP_ADMIN_STATE = "BGP Admin State"
+    BGP_OPER_STATE = "BGP Oper State"
+    TOTAL_PEERS = "Total Peers"
     json = "{"
     scratch = string.split('\n')
     found = False
@@ -69,7 +68,7 @@ def bgp_summary_to_json(string):
             json += "\"" + BGP_OPER_STATE + "\": "
             if len(line.split(':')) < 3:
                 raise AnsibleError(BGP_OPER_STATE + ' output unexpected format')
-            json += "\"" + line.split(':')[2].strip() + "\",\n"
+            json += "\"" + line.split(':')[2].strip() + "\","
             found = True
             break
     if not found:
@@ -80,7 +79,7 @@ def bgp_summary_to_json(string):
             json += "\"" + TOTAL_PEERS + "\": "
             if len(line.split(':')) < 3:
                 raise AnsibleError(TOTAL_PEERS + ' output unexpected format')
-            json += "\"" + line.split(':')[2].strip() + "\",\n"
+            json += "\"" + line.split(':')[2].strip() + "\","
             found = True
             break
     if not found:
@@ -105,10 +104,64 @@ def bgp_summary_to_json(string):
     json += "]}"
     return json
 
+
+def xmpp_server_detail_to_json(string):
+    ''' Given a string representation of the output of "show vswitch-controller xmpp-server detail"
+    as a string, return a JSON representation of a subset of the data in that output.
+    A sample of the output:
+    {
+      "XMPP FQDN": "vsd1.example.com",
+      "XMPP User Name": "vsc3",
+      "State": "Functional"
+    }
+    '''
+    XMPP_FQDN = "XMPP FQDN"
+    XMPP_USER_NAME = "XMPP User Name"
+    STATE = "State"
+    json = "{"
+    scratch = string.split('\n')
+    found = False
+    for line in scratch:
+        if XMPP_FQDN in line:
+            json += "\"" + XMPP_FQDN + "\": "
+            if len(line.split()) < 4:
+                raise AnsibleError(XMPP_FQDN + ' output unexpected format')
+            json += "\"" + line.split()[3].strip() + "\","
+            found = True
+            break
+    if not found:
+        raise AnsibleError(XMPP_FQDN + ' not found')
+    found = False
+    for line in scratch:
+        if XMPP_USER_NAME in line:
+            json += "\"" + XMPP_USER_NAME + "\": "
+            if len(line.split()) < 5:
+                raise AnsibleError(XMPP_USER_NAME + ' output unexpected format')
+            json += "\"" + line.split()[4].strip() + "\","
+            found = True
+            break
+    if not found:
+        raise AnsibleError(XMPP_USER_NAME + ' not found')
+    found = False
+    for line in scratch:
+        if STATE in line:
+            json += "\"" + STATE + "\": "
+            if len(line.split()) < 3:
+                raise AnsibleError(STATE + ' output unexpected format')
+            json += "\"" + line.split()[2].strip() + "\""
+            found = True
+            break
+    if not found:
+        raise AnsibleError(STATE + ' not found')
+    json += "}"
+    return json
+
+
 class FilterModule(object):
     ''' Query filter '''
 
     def filters(self):
         return {
-            'bgp_summary_to_json': bgp_summary_to_json
+            'bgp_summary_to_json': bgp_summary_to_json,
+            'xmpp_server_detail_to_json': xmpp_server_detail_to_json
         }
