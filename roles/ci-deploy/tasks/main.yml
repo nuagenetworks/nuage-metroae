@@ -7,7 +7,7 @@
   register: ci_server
   delegate_to: 127.0.0.1
 
-# temp task to get aroud policy issue
+# Temp task to get aroud policy issue
 - name: Set the network names
   set_fact:
     net_name1: "{{ ci_server['ansible_facts']['openstack_servers'][0]['networks'].keys()[0] }}"
@@ -43,12 +43,12 @@
   delegate_to: "{{ ansible_deployment_host }}"
   remote_user: root
 
-# temp fix to get around policy issue
+# Temp task to get around policy issue
 - name: Set fronend ip added to static route
   set_fact:
     frontend_ip: "{{ ci_server['ansible_facts']['openstack_servers'][0]['networks']['OC_JEN_FrontEnd'][0]}}"
 
-# temp fix to get around policy issue
+# Temp task to get around policy issue
 - name: Add static route to reach {{ inventory_hostname }}
   command: "route add -net {{ network_address }}.0/24 gw {{ frontend_ip }} "
   delegate_to: "{{ ansible_deployment_host }}"
@@ -76,10 +76,10 @@
     set_fact:
       target_os: 'el7'
 
-  - name: Copy test build file for RedHat OS family
+  - name: Update test build file for RedHat OS family
     template:
       src: "{{ playbook_dir }}/test/files/build.yml.all.j2"
-      dest: "{{ playbook_dir }}/roles/reset-build/files/build.yml"
+      dest: "{{ playbook_dir }}/test/files/build.yml.all"
     delegate_to: 127.0.0.1
 
   - name: Update test build file for VSDOnly  RedHat OS family
@@ -106,10 +106,10 @@
     set_fact:
       target_os: 'ubuntu.14.04'
 
-  - name: Copy test build file for Debian OS family
+  - name: Update test build file for Debian OS family
     template:
       src: "{{ playbook_dir }}/test/files/build.yml.all.j2"
-      dest: "{{ playbook_dir }}/roles/reset-build/files/build.yml"
+      dest: "{{ playbook_dir }}/test/files/build.yml.all"
     delegate_to: 127.0.0.1
 
   - name: Copy test build file for VSDOnly  Debian OS family
@@ -131,7 +131,15 @@
     delegate_to: 127.0.0.1
   when: ansible_os_family == 'Debian'
 
-- name: Update the VSDOnly setup file
+- name: Update the setup file with new test build file
+  replace:
+    dest: "{{ playbook_dir }}/test/files/setup.yml"
+    regexp: 'yml\.\{\{ ansible_os_family \}\}'
+    replace: 'yml.all'
+  delegate_to: "{{ ansible_deployment_host }}"
+  remote_user: root
+
+- name: Update the VSDOnly setup file with new VSDOnly build file
   replace:
     dest: "{{ playbook_dir }}/test/files/setup.yml.VSDOnly"
     regexp: 'VSDOnly\.\{\{ ansible_os_family \}\}'
@@ -139,7 +147,7 @@
   delegate_to: "{{ ansible_deployment_host }}"
   remote_user: root
 
-- name: Update the VSCOnly setup file
+- name: Update the VSCOnly setup file with new VSCOnly build file
   replace:
     dest: "{{ playbook_dir }}/test/files/setup.yml.VSCOnly"
     regexp: 'VSCOnly\.\{\{ ansible_os_family \}\}'
@@ -147,7 +155,7 @@
   delegate_to: "{{ ansible_deployment_host }}"
   remote_user: root
 
-- name: Update the VSTATOnly setup file
+- name: Update the VSTATOnly setup file with new VSTAT build file
   replace:
     dest: "{{ playbook_dir }}/test/files/setup.yml.VSTATOnly"
     regexp: 'VSTATOnly\.\{\{ ansible_os_family \}\}'
@@ -162,17 +170,17 @@
   with_items: "{{vsp_ips}}"
   remote_user: root
 
-# temp fix to get around policy issue
+# Temp task to get around policy issue
 - name: Add iptables rule to allow vsd to reach internet route to reach on {{ inventory_hostname }}
   command: "iptables -t nat -A POSTROUTING -p tcp -s {{ network_address }}.211 -o mgmt -j SNAT --to-source {{ target_server }}:1-1023 "
   remote_user: root
 
-# temp fix to get around policy issue
+# Temp task to get around policy issue
 - name: Add iptables rule to allow vnsutil to reach internet route to reach on {{ inventory_hostname }}
   command: "iptables -t nat -A POSTROUTING -p tcp -s {{ network_address }}.215 -o mgmt -j SNAT --to-source {{ target_server }}:1-1023 "
   remote_user: root
 
-# temp fix to get around policy issue
+# Temp task to get around policy issue
 - name: Save iptables
   command: "iptables-save"
   remote_user: root
@@ -183,6 +191,8 @@
     dest: "/etc/dnsmasq.conf"
   remote_user: root
 
+# Could not get over interface booting order issue in Ubuntu cloud image
+# This is a temp task
 - block:
   - name: Change default route on Debian images
     command: "route del -net 0.0.0.0/0"
@@ -292,9 +302,6 @@
       remote_user: root
     when: sync_status.stdout == ""
   when: ansible_os_family == 'Debian'
-
-- name: Copy test.yml file to the playbook root
-  local_action: copy src={{ playbook_dir }}/test/files/test_install.yml dest={{ playbook_dir }}/test.yml
 
 - name: Update the vsd ram
   lineinfile:
