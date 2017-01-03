@@ -124,6 +124,16 @@
   remote_user: root
 
 - block:
+  - name: Change default route on Debian images
+    command: "route del -net 0.0.0.0/0"
+    remote_user: root
+
+  - name: Add mgmt bridge as default route
+    command: "route add -net 0.0.0.0/0 gw {{ network_address }}.1"
+    remote_user: root
+  when: ansible_os_family == 'Debian'
+
+- block:
   - name: Enable dnsmasq
     command: chkconfig dnsmasq on
     remote_user: root
