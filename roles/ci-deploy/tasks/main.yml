@@ -82,19 +82,19 @@
       dest: "{{ playbook_dir }}/roles/reset-build/files/build.yml"
     delegate_to: 127.0.0.1
 
-  - name: Copy test build file for VSDOnly  RedHat OS family
+  - name: Update test build file for VSDOnly  RedHat OS family
     template:
       src: "{{ playbook_dir }}/test/files/build.yml.VSDOnly.j2"
       dest: "{{ playbook_dir }}/test/files/build.yml.VSDOnly"
     delegate_to: 127.0.0.1
-  
-  - name: Copy test build file for VSCOnly  RedHat OS family
+
+  - name: Update test build file for VSCOnly  RedHat OS family
     template:
       src: "{{ playbook_dir }}/test/files/build.yml.VSCOnly.j2"
       dest: "{{ playbook_dir }}/test/files/build.yml.VSCOnly"
     delegate_to: 127.0.0.1
-  
-  - name: Copy test build file for VSTATOnly  RedHat OS family
+
+  - name: Update test build file for VSTATOnly  RedHat OS family
     template:
       src: "{{ playbook_dir }}/test/files/build.yml.VSTATOnly.j2"
       dest: "{{ playbook_dir }}/test/files/build.yml.VSTATOnly"
@@ -130,6 +130,30 @@
       dest: "{{ playbook_dir }}/test/files/build.yml.VSTATOnly"
     delegate_to: 127.0.0.1
   when: ansible_os_family == 'Debian'
+
+- name: Update the VSDOnly setup file
+  replace:
+    dest: "{{ playbook_dir }}/test/files/setup.yml.VSDOnly"
+    regexp: 'VSDOnly\.\{\{ ansible_os_family \}\}'
+    replace: 'VSDOnly'
+  delegate_to: "{{ ansible_deployment_host }}"
+  remote_user: root
+
+- name: Update the VSCOnly setup file
+  replace:
+    dest: "{{ playbook_dir }}/test/files/setup.yml.VSCOnly"
+    regexp: 'VSCOnly\.\{\{ ansible_os_family \}\}'
+    replace: 'VSCOnly'
+  delegate_to: "{{ ansible_deployment_host }}"
+  remote_user: root
+
+- name: Update the VSTATOnly setup file
+  replace:
+    dest: "{{ playbook_dir }}/test/files/setup.yml.VSTATOnly"
+    regexp: 'VSTATOnly\.\{\{ ansible_os_family \}\}'
+    replace: 'VSTATOnly'
+  delegate_to: "{{ ansible_deployment_host }}"
+  remote_user: root
 
 - name: Update /etc/hosts file on {{ inventory_hostname }}
   lineinfile:
