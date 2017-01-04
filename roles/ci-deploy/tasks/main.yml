@@ -203,10 +203,9 @@
     remote_user: root
   when: ansible_os_family == 'Debian'
 
-- block:
-  - name: Enable dnsmasq
-    command: chkconfig dnsmasq on
-    remote_user: root
+- name: Enable dnsmasq
+  command: chkconfig dnsmasq on
+  remote_user: root
   when: ansible_os_family == 'RedHat'
 
 - name: Start dnsmasq
@@ -227,32 +226,29 @@
   with_items: "{{ ntp_server_list }}"
   remote_user: root
 
-- block:
-  - name: Stop the ntpd service if running
-    command: service ntpd stop
-    remote_user: root
+- name: Stop the ntpd service if running
+  command: service ntpd stop
+  remote_user: root
   when: ansible_os_family == 'RedHat'
 
-- block:
-  - name: Stop the ntpd service if running
-    command: service ntp stop
-    remote_user: root
+- name: Stop the ntpd service if running
+  command: service ntp stop
+  remote_user: root
   when: ansible_os_family == 'Debian'
 
 - name: Manually sync time with ntp server
   command: ntpdate -u "{{ ntp_server_list[0] }}"
   remote_user: root
-
-- block:
-  - name: Start ntpd on {{ inventory_hostname }}
-    command: service ntpd start
-    remote_user: root
   when: ansible_os_family == 'RedHat'
 
-- block:
-  - name: Start ntpd on {{ inventory_hostname }}
-    command: service ntp start
-    remote_user: root
+- name: Start ntpd on {{ inventory_hostname }}
+  command: service ntpd start
+  remote_user: root
+  when: ansible_os_family == 'RedHat'
+
+- name: Start ntpd on {{ inventory_hostname }}
+  command: service ntp start
+  remote_user: root
   when: ansible_os_family == 'Debian'
 
 - block:
