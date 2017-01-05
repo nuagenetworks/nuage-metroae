@@ -99,6 +99,28 @@
   when: expected_xmpp_server_state != xmpp_server_state
   ignore_errors: yes
 
+- name: Get output of 'show vswitch-controller vswitches'
+  sros_command:
+    commands:
+      - show vswitch-controller vswitches
+    provider: "{{ vsc_creds }}"
+  register: show_vswitches
+  delegate_to: localhost
+
+- name: Print output of 'show vswitch-controller vswitches' when verbosity >= 1
+  debug: var=show_vswitches verbosity=1
+
+- name: Create local variable with show vswitches output in json
+  set_fact: show_vswitches_json="{{ show_vswitches.stdout[0]|show_vswitches_to_json }}"
+
+- name: Print show vswitches in json when verbosity >= 1
+  debug: var=show_vswitches_json verbosity=1
+
+- name: Check for the expected number of vswitches, skip if okay
+  fail: msg="Invalid vswitch count ({{ show_vswitches_json['No. of virtual switches'] }}) detected. Expected {{ expected_num_vswitches }}. Check 'show vswitch-controller vswitches' on {{ inventory_hostname }}."
+  when: "{{ expected_num_vswitches }} != {{ show_vswitches_json['No. of virtual switches'] }}"
+  ignore_errors: yes
+
 - name: Check for existence of error report
   stat:
     path: "{{ failure_report_file_name }}"

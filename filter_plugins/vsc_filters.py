@@ -157,11 +157,37 @@ def xmpp_server_detail_to_json(string):
     return json
 
 
+def show_vswitches_to_json(string):
+    ''' Given a string representation of the output of "show vswitch-controller vswitches"
+    as a string, return a JSON representation of a subset of the data in that output.
+    A sample of the output:
+    {
+      "No. of virtual switches": "27"
+    }
+    '''
+    NUMVSWITCHES = "No. of virtual switches"
+    json = "{\"" + NUMVSWITCHES + "\": "
+    scratch = string.split('\n')
+    found = False
+    for line in scratch:
+        if NUMVSWITCHES in line:
+            if len(line.split(':')) < 2:
+                raise AnsibleError(NUMVSWITCHES + ' output unexpected format')
+            json += "\"" + line.split(':')[1].strip() + "\","
+            found = True
+            break
+    if not found:
+        json += "\"0\","
+    json += "}"
+    return json
+
+
 class FilterModule(object):
     ''' Query filter '''
 
     def filters(self):
         return {
             'bgp_summary_to_json': bgp_summary_to_json,
-            'xmpp_server_detail_to_json': xmpp_server_detail_to_json
+            'xmpp_server_detail_to_json': xmpp_server_detail_to_json,
+            'show_vswitches_to_json': show_vswitches_to_json
         }
