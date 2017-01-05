@@ -126,21 +126,43 @@
     commands:
       - show vswitch-controller vports type host detail
     provider: "{{ vsc_creds }}"
-  register: show_vports
+  register: show_host_vports
   delegate_to: localhost
 
 - name: Print output of 'show vswitch-controller vports type host detail' when verbosity >= 1
-  debug: var=show_vports verbosity=1
+  debug: var=show_host_vports verbosity=1
 
-- name: Create local variable with show vports output in json
-  set_fact: show_vports_json="{{ show_vports.stdout[0]|show_vports_to_json }}"
+- name: Create local variable with show host vports output in json
+  set_fact: show_host_vports_json="{{ show_host_vports.stdout[0]|show_vports_to_json }}"
 
-- name: Print show vports in json when verbosity >= 1
-  debug: var=show_vports_json verbosity=1
+- name: Print show host vports in json when verbosity >= 1
+  debug: var=show_host_vports_json verbosity=1
 
-- name: Check for the expected number of vports, skip if okay
-  fail: msg="Invalid vport count ({{ show_vports_json['No. of virtual ports'] }}) detected. Expected {{ expected_num_vports }}. Check 'show vswitch-controller vports type host detail' on {{ inventory_hostname }}."
-  when: "{{ expected_num_vports }} != {{ show_vports_json['No. of virtual ports'] }}"
+- name: Check for the expected number of host vports, skip if okay
+  fail: msg="Invalid host vport count ({{ show_host_vports_json['No. of virtual ports'] }}) detected. Expected {{ expected_host_num_vports }}. Check 'show vswitch-controller vports type host detail' on {{ inventory_hostname }}."
+  when: "{{ expected_num_host_vports }} != {{ show_host_vports_json['No. of virtual ports'] }}"
+  ignore_errors: yes
+
+- name: Get output of 'show vswitch-controller vports type vm detail'
+  sros_command:
+    commands:
+      - show vswitch-controller vports type vm detail
+    provider: "{{ vsc_creds }}"
+  register: show_vm_vports
+  delegate_to: localhost
+
+- name: Print output of 'show vswitch-controller vports type vm detail' when verbosity >= 1
+  debug: var=show_vm_vports verbosity=1
+
+- name: Create local variable with show vm vports output in json
+  set_fact: show_vm_vports_json="{{ show_vm_vports.stdout[0]|show_vports_to_json }}"
+
+- name: Print show vm vports in json when verbosity >= 1
+  debug: var=show_vm_vports_json verbosity=1
+
+- name: Check for the expected number of vm vports, skip if okay
+  fail: msg="Invalid vm vport count ({{ show_vm_vports_json['No. of virtual ports'] }}) detected. Expected {{ expected_vm_num_vports }}. Check 'show vswitch-controller vports type vm detail' on {{ inventory_hostname }}."
+  when: "{{ expected_num_vm_vports }} != {{ show_vm_vports_json['No. of virtual ports'] }}"
   ignore_errors: yes
 
 - name: Check for existence of error report

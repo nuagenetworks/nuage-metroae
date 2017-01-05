@@ -183,7 +183,8 @@ def show_vswitches_to_json(string):
 
 
 def show_vports_to_json(string):
-    ''' Given a string representation of the output of "show vswitch-controller vports type host detail"
+    ''' Given a string representation of the output of "show vswitch-controller vports type vm detail"
+    or "show vswitch-controller vports type host detail"
     as a string, return a JSON representation of a subset of the data in that output.
     A sample of the output:
     {
