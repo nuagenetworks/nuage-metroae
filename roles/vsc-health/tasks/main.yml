@@ -36,9 +36,11 @@
 - name: Print BGP Admin State when verbosity >= 1
   debug: var=bgp_admin_state verbosity=1
 
-- name: Check for expected BGP Admin State, skip if okay
-  fail: msg="Unexpected BGP Admin State - {{ bgp_admin_state }}. Expected '{{ expected_bgp_admin_state }}'. Check output of 'show router bgp summary' on {{ inventory_hostname }}."
-  when: "'{{ expected_bgp_admin_state }}' not in bgp_admin_state"
+- name: Check for expected BGP Admin State
+  assert: { 
+    that: "'{{ expected_bgp_admin_state }}' in bgp_admin_state",
+    msg: "Unexpected BGP Admin State - {{ bgp_admin_state }}. Expected '{{ expected_bgp_admin_state }}'. Check output of 'show router bgp summary' on {{ inventory_hostname }}."
+  }
   ignore_errors: yes
 
 - name: Create local variable for BGP Oper State
@@ -47,9 +49,11 @@
 - name: Print BGP Oper State when verbosity >= 1
   debug: var=bgp_oper_state verbosity=1
 
-- name: Check for expected BGP Oper State, skip if okay
-  fail: msg="Unexpected BGP Oper State - {{ bgp_oper_state }}. Expected '{{ expected_bgp_oper_state }}'. Check output of 'show router bgp summary' on {{ inventory_hostname }}."
-  when: "'{{ expected_bgp_oper_state }}' not in bgp_oper_state"
+- name: Check for expected BGP Oper State
+  assert: { 
+    that: "'{{ expected_bgp_oper_state }}' in bgp_oper_state",
+    msg: "Unexpected BGP Oper State - {{ bgp_oper_state }}. Expected '{{ expected_bgp_oper_state }}'. Check output of 'show router bgp summary' on {{ inventory_hostname }}."
+  }
   ignore_errors: yes
 
 - name: Create local variable for BGP Peer Count
@@ -58,17 +62,21 @@
 - name: Print BGP Peer Count when verbosity >= 1
   debug: var=bgp_peer_count verbosity=1
 
-- name: Check for expected BGP Peer Count, skip if okay
-  fail: msg="Invalid BGP Peer count ({{ bgp_peer_count }}) detected. Expected '{{ expected_num_bgp_peers }}'. Check 'show router bgp summary' on {{ inventory_hostname }}."
-  when: "{{ expected_num_bgp_peers }} != {{ bgp_peer_count }}"
+- name: Check for expected BGP Peer Count
+  assert: { 
+    that: "{{ expected_num_bgp_peers }} == {{ bgp_peer_count }}",
+    msg: "Invalid BGP Peer count ({{ bgp_peer_count }}) detected. Expected '{{ expected_num_bgp_peers }}'. Check 'show router bgp summary' on {{ inventory_hostname }}."
+  }
   ignore_errors: yes
 
 - name: Print number of BGP Peer details when verbosity >= 1
   debug: var=bgp_summary_json['Peers']|length verbosity=1
 
-- name: Make sure we have details for the correct number of peers, skip if okay
-  fail: msg="Didn't find enough sets of details for BGP peers. Found {{ bgp_summary_json['Peers']|length }}. Expected '{{ expected_num_bgp_peers }}'. Check 'show router bgp summary' on {{ inventory_hostname }}."
-  when: "{{ expected_num_bgp_peers }} != {{ bgp_summary_json['Peers']|length }}"
+- name: Check for details for the correct number of BGP Peers
+  assert: { 
+    that: "{{ expected_num_bgp_peers }} == {{ bgp_summary_json['Peers']|length }}",
+    msg: "Didn't find enough sets of details for BGP peers. Found {{ bgp_summary_json['Peers']|length }}. Expected '{{ expected_num_bgp_peers }}'. Check 'show router bgp summary' on {{ inventory_hostname }}."
+  }
   ignore_errors: yes
 
 - name: Get output of 'show vswitch-controller xmpp-server detail'
@@ -94,9 +102,11 @@
 - name: Print xmpp-server state when verbosity >= 1
   debug: var=xmpp_server_state verbosity=1
 
-- name: Check for the expected xmpp-server state, skip if okay
-  fail: msg="Invalid xmpp-server state ({{ xmpp_server_state }}) detected. Expected {{ expected_xmpp_server_state }}. Check 'show vswitch-controller xmpp-server details' on {{ inventory_hostname }}."
-  when: expected_xmpp_server_state != xmpp_server_state
+- name: Check for the expected xmpp-server state
+  assert: { 
+    that: "{{ expected_xmpp_server_state == xmpp_server_state }}",
+    msg: "Invalid xmpp-server state ({{ xmpp_server_state }}) detected. Expected {{ expected_xmpp_server_state }}. Check 'show vswitch-controller xmpp-server details' on {{ inventory_hostname }}."
+  }
   ignore_errors: yes
 
 - name: Get output of 'show vswitch-controller vswitches'
@@ -116,9 +126,11 @@
 - name: Print show vswitches in json when verbosity >= 1
   debug: var=show_vswitches_json verbosity=1
 
-- name: Check for the expected number of vswitches, skip if okay
-  fail: msg="Invalid vswitch count ({{ show_vswitches_json['No. of virtual switches'] }}) detected. Expected {{ expected_num_vswitches }}. Check 'show vswitch-controller vswitches' on {{ inventory_hostname }}."
-  when: "{{ expected_num_vswitches }} != {{ show_vswitches_json['No. of virtual switches'] }}"
+- name: Check for the expected number of vswitches
+  assert: { 
+    that: "{{ expected_num_vswitches }} == {{ show_vswitches_json['No. of virtual switches'] }}",
+    msg: "Invalid vswitch count ({{ show_vswitches_json['No. of virtual switches'] }}) detected. Expected {{ expected_num_vswitches }}. Check 'show vswitch-controller vswitches' on {{ inventory_hostname }}."
+  }
   ignore_errors: yes
 
 - name: Get output of 'show vswitch-controller vports type host detail'
@@ -138,9 +150,11 @@
 - name: Print show host vports in json when verbosity >= 1
   debug: var=show_host_vports_json verbosity=1
 
-- name: Check for the expected number of host vports, skip if okay
-  fail: msg="Invalid host vport count ({{ show_host_vports_json['No. of virtual ports'] }}) detected. Expected {{ expected_host_num_vports }}. Check 'show vswitch-controller vports type host detail' on {{ inventory_hostname }}."
-  when: "{{ expected_num_host_vports }} != {{ show_host_vports_json['No. of virtual ports'] }}"
+- name: Check for the expected number of host vports
+  assert: { 
+    that: "{{ expected_num_host_vports }} == {{ show_host_vports_json['No. of virtual ports'] }}",
+    msg: "Invalid host vport count ({{ show_host_vports_json['No. of virtual ports'] }}) detected. Expected {{ expected_num_host_vports }}. Check 'show vswitch-controller vports type host detail' on {{ inventory_hostname }}."
+  }
   ignore_errors: yes
 
 - name: Get output of 'show vswitch-controller vports type vm detail'
@@ -160,17 +174,28 @@
 - name: Print show vm vports in json when verbosity >= 1
   debug: var=show_vm_vports_json verbosity=1
 
-- name: Check for the expected number of vm vports, skip if okay
-  fail: msg="Invalid vm vport count ({{ show_vm_vports_json['No. of virtual ports'] }}) detected. Expected {{ expected_vm_num_vports }}. Check 'show vswitch-controller vports type vm detail' on {{ inventory_hostname }}."
-  when: "{{ expected_num_vm_vports }} != {{ show_vm_vports_json['No. of virtual ports'] }}"
+- name: Check for the expected number of vm vports
+  assert: { 
+    that: "{{ expected_num_vm_vports }} == {{ show_vm_vports_json['No. of virtual ports'] }}",
+    msg: "Invalid vm vport count ({{ show_vm_vports_json['No. of virtual ports'] }}) detected. Expected {{ expected_num_vm_vports }}. Check 'show vswitch-controller vports type vm detail' on {{ inventory_hostname }}."
+  }
   ignore_errors: yes
 
-- name: Check for existence of error report
+- name: TODO reminder about section 3.2.7, redundant VRS-G Status
+  assert: { 
+    that: "false",
+    msg: "TODO reminder to add support for section 3.2.7, redundant VGR-G status"
+  }
+  ignore_errors: yes
+
+- name: Lookup the error report file
   stat:
     path: "{{ failure_report_file_name }}"
   register: report
   delegate_to: localhost
 
-- name: If the error report exists declare failure, otherwise skip (Success!)
-  fail: msg="One or more failures detected. Check {{ failure_report_file_name }} for details."
-  when: report.stat.exists
+- name: Check for failures
+  assert: { 
+    that: "not report.stat.exists",
+    msg: "Failures detected. Check {{ failure_report_file_name }}."
+  }
