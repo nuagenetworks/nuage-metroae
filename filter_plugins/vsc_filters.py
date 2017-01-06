@@ -1,6 +1,5 @@
 #!/usr/bin/python
 
-from ansible.errors import AnsibleError
 import re
 
 # Copyright 2017 Nokia
@@ -31,6 +30,7 @@ def name_value_helper(name, delimiter, string):
     else:
         json += "\"0\""
     return json
+
 
 def bgp_summary_to_json(string):
     ''' Given a string representation of the output of "show router bgp summary"
