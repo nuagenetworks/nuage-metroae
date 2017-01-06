@@ -44,7 +44,7 @@ def bgp_summary_to_json(string):
         {
           "IP addr": "1.1.1.2",
           "Uptime": "01h02m03s",
-          "IPV4 counts": "0/0/0",
+          "IPV4 counts": "0/0/1",
           "evpn counts": "0/0/31"
         },
         {
