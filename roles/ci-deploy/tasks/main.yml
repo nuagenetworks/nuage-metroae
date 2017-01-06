@@ -49,7 +49,7 @@
     frontend_ip: "{{ ci_server['ansible_facts']['openstack_servers'][0]['networks']['OC_JEN_FrontEnd'][0]}}"
 
 # Temp task to get around policy issue
-- name: Add static route to reach {{ inventory_hostname }}
+- name: Add static route to reach 
   command: "route add -net {{ network_address }}.0/24 gw {{ frontend_ip }} "
   delegate_to: "{{ ansible_deployment_host }}"
   remote_user: root
@@ -212,18 +212,10 @@
   command: service dnsmasq restart
   remote_user: root
 
-- name: Remove old NTP servers on {{ inventory_hostname }}
-  lineinfile:
-    dest: /etc/ntp.conf
-    regexp: "^server"
-    state: absent
-  remote_user: root
-
-- name: Configure NTP servers on {{ inventory_hostname }}
-  lineinfile:
-    dest: /etc/ntp.conf
-    line: "server {{ item }} iburst"
-  with_items: "{{ ntp_server_list }}"
+- name: Copy ntp conf 
+  template:
+    src: "/etc/ntp.conf.j2"
+    dest: "/etc/ntp.conf"
   remote_user: root
 
 - name: Stop the ntpd service if running
