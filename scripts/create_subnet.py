@@ -54,7 +54,7 @@ def create_subnet(zone):
     subnet_info = {'address': str(new_sub),
                    'gateway': str(gateway_addr),
                    'netmask': vsd_constants['netmask'],
-                   'name': 'OC_JEN_CI'+net_name[2],
+                   'name': 'OC_JEN_CI' + net_name[2],
                    'underlay': vsd_constants['underlay'],
                    'underlayEnabled': vsd_constants['underlayEnabled'],
                    'PATEnabled': vsd_constants['PATEnabled']
