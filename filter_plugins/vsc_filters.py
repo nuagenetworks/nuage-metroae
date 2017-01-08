@@ -23,7 +23,7 @@ def name_value_helper(name, delimiter, string):
     is optional.
     '''
     VALUE_RE = "\s*" + delimiter + "\s*(\S+)\s+"
-    scratch = re.search(name+VALUE_RE, string)
+    scratch = re.search(name + VALUE_RE, string)
     json = "\"" + name + "\": "
     if scratch:
         json += "\"" + scratch.group(1) + "\""
