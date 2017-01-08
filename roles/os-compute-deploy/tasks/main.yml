@@ -1,0 +1,167 @@
+---
+- name: Get OSC facts from "{{ osc_server_name }}" 
+  os_server_facts:
+    auth:
+      "{{ os_auth }}"
+    server: "{{ osc_server_name }}*"
+  register: osc_server
+  delegate_to: 127.0.0.1
+ 
+- name: Save OSC ip
+  set_fact:
+    osc_ip: "{{ osc_server['ansible_facts']['openstack_servers'][0]['private_v4'] }}"
+
+- name: Get os-compute details from OS facts
+  os_server_facts:
+    auth:
+      "{{ os_auth }}"
+    server: "{{ inventory_hostname }}*"
+  register: compute_server
+  delegate_to: 127.0.0.1
+
+- name: Save os-compute mgmt ip
+  set_fact:
+    compute_mgmt_ip: "{{ compute_server['ansible_facts']['openstack_servers'][0]['private_v4'] }}"
+
+- name: Update /etc/hosts file on ansible host
+  lineinfile:
+    dest: /etc/hosts
+    line: "{{ compute_mgmt_ip }}    {{ inventory_hostname }}"
+  delegate_to: 127.0.0.1
+
+- name: Query {{ target_server }} facts
+  action: setup
+  remote_user: root
+  delegate_to: "{{ compute_mgmt_ip }}"
+
+- name: Disable firewall
+  service: 
+    name: firewalld
+    enabled: no
+  when:
+    - ansible_os_family == 'RedHat'
+  ignore_errors: yes
+
+- name: Stop firewall
+  service:
+    name: firewalld
+    state: stopped 
+  when:
+    - ansible_os_family == 'RedHat'
+  ignore_errors: yes
+
+- name: Disable NetworkManager
+  service:
+    name: NetworkManager
+    enabled: no
+  ignore_errors: yes
+
+- name: Stop NetworkManager
+  service:
+    name: NetworkManager
+    state: stopped
+  ignore_errors: yes
+
+- name: Enable network
+  service:
+    name: network
+    enabled: yes
+ 
+- name: Start netowrk
+  service:
+    name: network
+    state: started
+  ignore_errors: yes
+
+- name: Install EPEL repos only on Centos
+  yum:
+    name: epel-release
+    state: present
+  remote_user: root
+  when: ansible_distribution == 'CentOS'
+
+- name: Pause
+  pause:  
+    seconds: 5
+
+- name: Load correspoing software repos for OpenStack Centos7
+  yum:
+    name: "{{os_centos}}{{ nuage_os_release }}"
+    state: present
+  when: 
+    - ansible_distribution == 'CentOS'
+    - ansible_distribution_major_version == '7'
+  remote_user: root
+
+- name: Copy Redhat repo file to {{ inventory_hostname }} for RedHat images
+  template:
+    src={{ playbook_dir }}/roles/compute-deploy/templates/redhat.repo.j2
+    dest=/etc/yum.repos.d/rhel.repo
+  when:
+    - ansible_distribution == 'RedHat'
+
+- name: Execute a yum update on {{ inventory_hostname }}
+  yum:
+    name: '*'
+    state: latest
+  remote_user: root
+
+# Temp task to get around packstact missing packages
+- name: Enable test repos on CentOS
+  lineinfile:
+    regexp: enabled=
+    line: enabled=1
+    dest: "/etc/yum.repos.d/CentOS-OpenStack-{{os_release}}.repo"
+  when:
+    - ansible_distribution == 'CentOS'
+
+- name: Execute a yum update on {{ inventory_hostname }}
+  yum:
+    name: '*'
+    state: latest
+  remote_user: root
+  when:
+    - ansible_distribution == 'CentOS'
+
+- name: Generate SSH keys on OSC
+  shell: ssh-keygen -b 2048 -t rsa -f /root/.ssh/id_rsa -q -N ""
+  args:
+    creates: /root/.ssh/id_rsa
+  remote_user: root
+  delegate_to: "{{ osc_ip }}"
+ 
+- name: Get generated SSH keys
+  shell: cat ~/.ssh/id_rsa.pub
+  register: ssh_key
+  remote_user: root
+  delegate_to: "{{ osc_ip }}"
+ 
+- name: Copy SSH key to {{ inventory_hostname }}
+  shell: "echo {{ssh_key.stdout}} >> /root/.ssh/authorized_keys"
+  remote_user: root
+ 
+- name: Find the answers file on the OSC
+  find:
+    paths: "/root"
+    patterns: "packstack*.txt"
+  register: answer_file
+  delegate_to: "{{ osc_ip }}"
+ 
+- name: Update the answer file with compute node ip
+  lineinfile:
+    dest: "{{ answer_file.files[0].path }}"
+    regexp: CONFIG_COMPUTE_HOSTS=
+    line: CONFIG_COMPUTE_HOSTS={{ compute_mgmt_ip }}
+  delegate_to: "{{ osc_ip }}"
+ 
+ 
+- name: Update the answer file with compute node ip
+  lineinfile:
+    dest: "{{ answer_file.files[0].path }}"
+    regexp: EXCLUDE_SERVERS=
+    line: EXCLUDE_SERVERS={{ osc_ip }}
+  delegate_to: "{{ osc_ip }}"
+
+- name: Add compute node to OSC
+  command: "packstack --answer-file={{ answer_file.files[0].path }}"
+  delegate_to: "{{ osc_ip }}"
