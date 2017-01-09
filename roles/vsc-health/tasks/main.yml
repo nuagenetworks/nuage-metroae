@@ -1,6 +1,4 @@
 ---
-# tasks file for vsc
-
 - name: Wait for VSC ssh to be ready
   local_action:
     module: wait_for
@@ -29,6 +27,10 @@
 
 - name: Print BGP Summary in json when verbosity >= 1
   debug: var=bgp_summary_json verbosity=1
+
+- name: Write BGP Admin State JSON to file
+  nuage_append: filename="{{ report_filename }}" text="{{ inventory_hostname }} {{ bgp_summary_json }}\n"
+  delegate_to: localhost
 
 - name: Create local variable with BGP Admin State
   set_fact: bgp_admin_state="{{ bgp_summary_json['BGP Admin State'] }}"
@@ -96,6 +98,10 @@
 - name: Print xmpp-server detail in json when verbosity >= 1
   debug: var=xmpp_detail_json verbosity=1
 
+- name: Write xmpp-server detail json to report
+  nuage_append: filename="{{ report_filename }}" text="{{ inventory_hostname }} {{ xmpp_detail_json }}\n"
+  delegate_to: localhost
+
 - name: Create local variable for xmpp-server state
   set_fact: xmpp_server_state="{{ xmpp_detail_json['State'] }}"
 
@@ -126,6 +132,10 @@
 - name: Print show vswitches in json when verbosity >= 1
   debug: var=show_vswitches_json verbosity=1
 
+- name: Write vswiches json to report
+  nuage_append: filename="{{ report_filename }}" text="{{ inventory_hostname }} {{ show_vswitches_json }}\n"
+  delegate_to: localhost
+
 - name: Check for the expected number of vswitches
   assert: { 
     that: "{{ expected_num_vswitches }} == {{ show_vswitches_json['No. of virtual switches'] }}",
@@ -150,6 +160,10 @@
 - name: Print show host vports in json when verbosity >= 1
   debug: var=show_host_vports_json verbosity=1
 
+- name: Write host vports json to report
+  nuage_append: filename="{{ report_filename }}" text="{{ inventory_hostname }} {{ show_host_vports_json }}\n"
+  delegate_to: localhost
+
 - name: Check for the expected number of host vports
   assert: { 
     that: "{{ expected_num_host_vports }} == {{ show_host_vports_json['No. of virtual ports'] }}",
@@ -173,6 +187,14 @@
 
 - name: Print show vm vports in json when verbosity >= 1
   debug: var=show_vm_vports_json verbosity=1
+
+- name: Write vm vports json to report
+  nuage_append: filename="{{ report_filename }}" text="{{ inventory_hostname }} {{ show_vm_vports_json }}\n"
+  delegate_to: localhost
+
+- name: Write vm vports json to report
+  nuage_append: filename="{{ report_filename }}" text="{{ inventory_hostname }} {{ show_vm_vports_json }}\n"
+  delegate_to: localhost
 
 - name: Check for the expected number of vm vports
   assert: { 

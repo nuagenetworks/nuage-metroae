@@ -1,16 +1,16 @@
 ---
-- hosts: vscs
-  gather_facts: no
+- hosts: localhost
   vars:
-    vsc_creds:
-      host: "{{ interfaces.mgmt.ip }}"
-      username: admin
-      password: admin
-      transport: cli
-    expected_num_bgp_peers: 3
-    expected_xmpp_server_state: Functional
-    expected_num_vswitches: 2
-    expected_num_host_vports: 0
-    expected_num_vm_vports: 0
-  roles:
-    - vsc-health
+    report_filename: ./report.txt
+
+  tasks:
+  - name: Clean up tmp files from previous runs
+    file: path="{{ report_filename }}" state=absent
+  - name: Write title to report file
+    nuage_append: filename="{{ report_filename }}" text="VSC Health Report\n"
+  - name: Write date to report file
+    nuage_append: filename="{{ report_filename }}" text="{{ ansible_date_time.date }}@{{ ansible_date_time.time }}\n"
+  - name: Write seperator to report file
+    nuage_append: filename="{{ report_filename }}" text="================================================================================\n"
+
+- include: vsc_health_helper.yml report_filename={{ report_filename }}
