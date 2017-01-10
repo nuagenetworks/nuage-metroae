@@ -22,14 +22,24 @@
   remote_user: root
   delegate_to: "{{ vsd_fqdn }}"
 
-- name: Create and transfer certs from VSD to {{ inventory_hostname }}
-  expect:
-   timeout: 55
-   command: "{{ create_certs }}"
-   responses:
-     (?i)password: "admin"
-  delegate_to: "{{ vsd_fqdn }}"
-  remote_user: root
+- block:
+   - name: Create and transfer certs from VSD to {{ inventory_hostname }}
+     expect:
+      timeout: 55
+      command: "{{ create_certs }}"
+      responses:
+        (?i)password: "admin"
+     delegate_to: "{{ vsd_fqdn }}"
+     remote_user: root
+  rescue:
+   - name: Retry creating and transfering certs from VSD to {{ inventory_hostname }}
+     expect:
+      timeout: 55
+      command: "{{ create_certs_alt }}"
+      responses:
+        (?i)password: "admin"
+     delegate_to: "{{ vsd_fqdn }}"
+     remote_user: root
 
 - block:
   - name: Create TLS profile in {{ inventory_hostname }}
