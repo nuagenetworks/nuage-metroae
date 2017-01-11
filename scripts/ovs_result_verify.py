@@ -31,19 +31,19 @@ def get_bridge_info(ovs_show_result):
 
             try:
                 controller_info["target"] = re.search('target: \"tcp:(.+?):',
-                                                      ovs_show_result[i+1]).group(1)
+                                                      ovs_show_result[i + 1]).group(1)
             except:
                 controller_info["target"] = 'NA'
 
-            if ('role:' in ovs_show_result[i+2]):
+            if ('role:' in ovs_show_result[i + 2]):
                 controller_info["role"] = 'master' if ('master'
-                                                       in ovs_show_result[i+2]) else 'slave'
+                                                       in ovs_show_result[i + 2]) else 'slave'
             else:
                 controller_info["role"] = 'NA'
 
             try:
                 controller_info["connected"] = re.search('is_connected: (.*)',
-                                                         ovs_show_result[i+3]).group(1)
+                                                         ovs_show_result[i + 3]).group(1)
             except:
                 controller_info["connected"] = 'NA'
 
@@ -114,7 +114,7 @@ if __name__ == '__main__':
         sys.exit(1)
 
     vrs_ip = args.vrs_ip
-    ovs_file_path = playbook_dir+"/scripts/tmp/"+ovs_output_file
+    ovs_file_path = playbook_dir + "/scripts/tmp/" + ovs_output_file
     if (not os.path.exists(ovs_file_path)):
         print ("ERROR! Temporary file {0} not found." .format(ovs_file_path))
         sys.exit(1)
@@ -135,8 +135,8 @@ if __name__ == '__main__':
     error_list = verify_ovs_result(ovs_show_result)
 
     if (not error_list):
-        result = "VRS "+vrs_ip+" is OK!"
+        result = "VRS " + vrs_ip + " is OK!"
     else:
-        result = "Error! VRS "+vrs_ip+" did not detect the following controllers:"+str(error_list)
+        result = "Error! VRS " + vrs_ip + " did not detect the following controllers:" + str(error_list)
 
     print result

@@ -1,0 +1,22 @@
+---
+# TODO:
+# Check for existing stack or vms
+- name: Get the public key for the current user
+  local_action: command cat ~/.ssh/id_rsa.pub
+  register: current_user_ssh_key
+
+- name: Create Compute node
+  register: create_stack
+  os_stack:
+    name: "{{ inventory_hostname }}"
+    template: "roles/compute-predeploy/files/os_compute.yml"
+    auth:
+      "{{ os_auth }}"
+    parameters:
+      vm_name: "{{inventory_hostname}}"
+      compute_image: "{{ compute_image }}"
+      compute_flavor: "{{ compute_flavor }}"
+      compute_net: "{{ compute_network }}"
+      ssh_key: "{{ current_user_ssh_key.stdout }}"
+  delegate_to: 127.0.0.1
+- debug: var=create_stack['stack']['outputs'][0]['output_value']

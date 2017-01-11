@@ -1,7 +1,7 @@
 ---
 - name: Clean known_hosts of VSC's on "{{ target_server }}"
   command: ssh-keygen -R "{{ interfaces.mgmt.ip }}" -f /root/.ssh/known_hosts
-  delegate_to: "{{ target_server }}"
+  delegate_to: "{{ ansible_deployment_host }}"
   remote_user: root 
 
 - name: Change XMPP connection to TLS on VSD
@@ -49,6 +49,7 @@
   - name: Verification Result Failure Status
     fail: msg={{ output.stdout }}
     when: output.stdout | search("(?i)MINOR")
+    ignore_errors: yes
 
   - name: Verification Result Success Status
     debug: var=output.stdout

@@ -269,37 +269,31 @@
  
   - name: Unpack VNS Archive
     unarchive: src="{{ rc_vns.files[0].path}}" dest="{{ nuage_unpacked_dest_path }}/vns" list_files=yes
-    register: rc_vns_archive_files
     when: rc_vns.matched > 0
  
-  - name: Find name of NSG and Utils archive files
-    find: path="{{ nuage_unpacked_dest_path }}/vns/" pattern="{{ item }}"
-    with_items:
-      - "Nuage-VNS-NSG-*"
-      - "Nuage-VNS-Utils-*"
-    register: rc_vns_archives
+  - name: Find name of NSG archive file
+    find: path="{{ nuage_unpacked_dest_path }}/vns/" pattern="Nuage-VNS-NSG-*"
+    register: rc_nsg_archive
  
-  - name: Unpack VNS NSG and Utils archive files
-    unarchive: src="{{ rc_vns_archives.results[item.0].files[0].path }}" dest="{{ nuage_unpacked_dest_path }}/{{ item.1 }}"
-    register: rc_vns_archives_files
-    with_indexed_items:
-      - "vns/nsg/"
-      - "vns/utils/"
-    when: true
+  - name: Unpack VNS NSG archive file
+    unarchive: src="{{ rc_nsg_archive.files[0].path }}" dest="{{ nuage_unpacked_dest_path }}/vns/nsg/"
+    when: rc_nsg_archive.matched > 0
   
-  - name: Find name of NSG-AWSs archive files
-    find: path="{{ nuage_unpacked_dest_path }}/vns/nsg" pattern="{{ item }}"
-    with_items:
-      - "Nuage-NSG-*AWS*"
-    register: rc_vns_archives
+  - name: Find name of Utils archive file
+    find: path="{{ nuage_unpacked_dest_path }}/vns/" pattern="Nuage-VNS-Utils-*"
+    register: rc_utils_archive
  
-  - name: Unpack VNS NSG and Utils archive files
-    unarchive: src="{{ rc_vns_archives.results[item.0].files[0].path }}" dest="{{ nuage_unpacked_dest_path }}/{{ item.1 }}"
-    register: rc_vns_archives_files
-    with_indexed_items:
-      - "vns/nsg/aws"
-    when: true
+  - name: Unpack VNS Utils archive file
+    unarchive: src="{{ rc_utils_archive.files[0].path }}" dest="{{ nuage_unpacked_dest_path }}/vns/utils/"
+    when: rc_utils_archive.matched > 0
   
+  - name: Find name of NSG-AWSs archive file
+    find: path="{{ nuage_unpacked_dest_path }}/vns/nsg" pattern="Nuage-NSG-*AWS*"
+    register: rc_aws_archive
+ 
+  - name: Unpack NSG-AWS archive file
+    unarchive: src="{{ rc_aws_archive.files[0].path }}" dest="{{ nuage_unpacked_dest_path }}/vns/nsg/aws"
+    when: rc_aws_archive.matched > 0
   when: not nuage_unpacked|default(false)
   tags:
     - vns
@@ -333,4 +327,50 @@
     - debug: var=vnsutil_qcow2_file_name
   tags:
     - vns
+    - nuage-unpack
+
+##########################
+## Nuage OpenStack Plugins
+##########################
+
+- name: Find name of Nuage OpenStack Plugin Archive
+  find: path="{{ nuage_release_src_path }}"  pattern="Nuage-openstack*"
+  register: rc_nuage_os
+  tags:
+    - nuage-os
+    - nuage-unpack
+
+- name: Create directory to unpack Nuage OpenStack plugins
+  file: name="{{ nuage_unpacked_dest_path }}/nuage_os/" state=directory mode=0755
+  when: rc_nuage_os.matched > 0
+  tags:
+    - nuage-os
+    - nuage-unpack
+
+- name: Unpack Nuage OpenStack Archive
+  unarchive: src="{{ rc_nuage_os.files[0].path}}" dest="{{ nuage_unpacked_dest_path }}/vrs/"  list_files=yes
+  register: rc_nuage_os_archive_files
+  when: rc_nuage_os.matched > 0  and not nuage_unpacked|default(false)
+  tags:
+    - nuage-os
+    - nuage-unpack
+
+- block:
+  - name: Find name of Nuage OpenStack Package Files (RH architecture)
+    find: path="{{ nuage_unpacked_dest_path }}/nuage_os/{{ nuage_os_release }}/el7/"  pattern="*.rpm" recurse=yes
+    register: rc_nuage_os_file
+  - name: Register Nuage OpenStack package variables with proper path and image locations for use in other playbooks (RH architecture)
+    set_fact:
+      nuage_os_package_path: "{{ rc_nuage_os_file.files[0].path | dirname }}"
+      nuage_os_package_file_name_list: "{{ rc_nuage_os_file.files |  map(attribute='path') | list | map('basename') | list }}"
+    when: rc_nuage_os_file.matched > 0
+ 
+  - name: Register nuage release variables with proper path and image locations for use in other playbooks
+    set_fact:
+      nuage_os_release: "{{ nuage_os_release }}"
+  when:
+    - nuage_target_architecture == "el6" or nuage_target_architecture == "el7"
+    - nuage_os_release is defined
+  tags:
+    - nuage-os
     - nuage-unpack
