@@ -37,6 +37,7 @@ def bgp_summary_to_json(string):
     as a string, return a JSON representation of a subset of the data in that output.
     A sample of the output:
     {
+      "Command": "show router bgp summary",
       "BGP Admin State": "Up",
       "BGP Oper State": "Up",
       "Total Peers": "2",
@@ -60,16 +61,16 @@ def bgp_summary_to_json(string):
     BGP_OPER_STATE = "BGP Oper State"
     TOTAL_PEERS = "Total Peers"
     PEER_RE = "\s+((?:(?:[0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}(?:[0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5]))\s+\S+\s+\S+\s+\S+\s+(\S+)\s+(\S+)\s+\S+\s+\S+\s+\S+\s+(\S+)\s+\S+"
-    json = "{"
+    json = "{\"Command\": \"show router bgp summary\","
     json += name_value_helper(BGP_ADMIN_STATE, ':', string) + ","
     json += name_value_helper(BGP_OPER_STATE, ':', string) + ","
     json += name_value_helper(TOTAL_PEERS, ':', string) + ","
     json += "\"Peers\": ["
     peers = re.findall(PEER_RE, string)
     for peer in peers:
-        json += "{\"IP Addr\": \"%s\"," % (peer[0])
-        json += "\"Uptime\": \"%s\"," % (peer[1])
-        json += "\"IPV4 counts\": \"%s\"," % (peer[2])
+        json += "{\"IP Addr\": \"%s\",\n" % (peer[0])
+        json += "\"Uptime\": \"%s\",\n" % (peer[1])
+        json += "\"IPV4 counts\": \"%s\",\n" % (peer[2])
         json += "\"evpn counts\": \"%s\"}" % (peer[3])
         if peer != peers[-1]:
             json += ","
@@ -82,6 +83,7 @@ def xmpp_server_detail_to_json(string):
     as a string, return a JSON representation of a subset of the data in that output.
     A sample of the output:
     {
+      "Command": "show vswitch-controller xmpp-server detail",
       "XMPP FQDN": "vsd1.example.com",
       "XMPP User Name": "vsc3",
       "State": "Functional"
@@ -90,7 +92,7 @@ def xmpp_server_detail_to_json(string):
     XMPP_FQDN = "XMPP FQDN"
     XMPP_USER_NAME = "XMPP User Name"
     STATE = "State"
-    json = "{"
+    json = "{\"Command\": \"show vswitch-controller xmpp-server detail\","
     json += name_value_helper(XMPP_FQDN, ':', string) + ","
     json += name_value_helper(XMPP_USER_NAME, ':', string) + ","
     json += name_value_helper(STATE, ':', string)
@@ -103,26 +105,67 @@ def show_vswitches_to_json(string):
     as a string, return a JSON representation of a subset of the data in that output.
     A sample of the output:
     {
-      "No. of virtual switches": "27"
+      "Command": "show vswitch-controller vswitches",
+      "No. of virtual switches": "27",
+      "Instances": [
+        {
+          "vswitch-instance": "va-192.168.1.117/1",
+          "Personality": "VRS",
+          "Uptime": "0d 03:32:51",
+          "Num": "0/0/0"
+        },
+        {
+          "vswitch-instance": "va-192.168.1.177/1",
+          "Personality": "VRS_G",
+          "Uptime": "0d 03:32:51",
+          "Num": "0/0/0"
+        }
+      ]
     }
     '''
     NUMVSWITCHES = "No. of virtual switches"
-    json = "{" + name_value_helper(NUMVSWITCHES, ':', string)
-    json += "}"
+    INSTANCE_RE = "(\S+)\s+(\S+)\s+(\S+d \S+:\S+:\S+)\s+(\S+)"
+    json = "{\"Command\": \"show vswitch-controller vswitches\","
+    json += name_value_helper(NUMVSWITCHES, ':', string) + ","
+    json += "\"Instances\": ["
+    instances = re.findall(INSTANCE_RE, string)
+    for instance in instances:
+        json += "{\"vswitch-instance\": \"%s\"," % (instance[0])
+        json += "\"Personality\": \"%s\"," % (instance[1])
+        json += "\"Uptime\": \"%s\"," % (instance[2])
+        json += "\"Num\": \"%s\"}" % (instance[3])
+        if instance != instances[-1]:
+            json += ","
+    json += "]}"
     return json
 
 
-def show_vports_to_json(string):
-    ''' Given a string representation of the output of "show vswitch-controller vports type vm detail"
-    or "show vswitch-controller vports type host detail"
+def show_host_vports_to_json(string):
+    ''' Given a string representation of the output of "show vswitch-controller vports type host detail"
     as a string, return a JSON representation of a subset of the data in that output.
     A sample of the output:
     {
+      "Command": "show vswitch-controller vports type host detail",
       "No. of virtual ports": "12"
     }
     '''
     NUMVPORTS = "No. of virtual ports"
-    json = "{" + name_value_helper(NUMVPORTS, ':', string)
+    json = "{\"Command\": \"show vswitch-controller vports type host detail\"," + name_value_helper(NUMVPORTS, ':', string)
+    json += "}"
+    return json
+
+
+def show_vm_vports_to_json(string):
+    ''' Given a string representation of the output of "show vswitch-controller vports type vm detail"
+    as a string, return a JSON representation of a subset of the data in that output.
+    A sample of the output:
+    {
+      "Command": "show vswitch-controller vports type vm detail",
+      "No. of virtual ports": "12"
+    }
+    '''
+    NUMVPORTS = "No. of virtual ports"
+    json = "{\"Command\": \"show vswitch-controller vports type vm detail\"," + name_value_helper(NUMVPORTS, ':', string)
     json += "}"
     return json
 
@@ -135,5 +178,6 @@ class FilterModule(object):
             'bgp_summary_to_json': bgp_summary_to_json,
             'xmpp_server_detail_to_json': xmpp_server_detail_to_json,
             'show_vswitches_to_json': show_vswitches_to_json,
-            'show_vports_to_json': show_vports_to_json
+            'show_host_vports_to_json': show_host_vports_to_json,
+            'show_vm_vports_to_json': show_vm_vports_to_json
         }

@@ -29,7 +29,7 @@
   debug: var=bgp_summary_json verbosity=1
 
 - name: Write BGP Admin State JSON to file
-  nuage_append: filename="{{ report_filename }}" text="{{ inventory_hostname }} {{ bgp_summary_json }}\n"
+  nuage_append: filename="{{ report_filename }}" text="{{ inventory_hostname }} {{ bgp_summary_json|to_nice_json }}\n"
   delegate_to: localhost
 
 - name: Create local variable with BGP Admin State
@@ -99,7 +99,7 @@
   debug: var=xmpp_detail_json verbosity=1
 
 - name: Write xmpp-server detail json to report
-  nuage_append: filename="{{ report_filename }}" text="{{ inventory_hostname }} {{ xmpp_detail_json }}\n"
+  nuage_append: filename="{{ report_filename }}" text="{{ inventory_hostname }} {{ xmpp_detail_json|to_nice_json }}\n"
   delegate_to: localhost
 
 - name: Create local variable for xmpp-server state
@@ -133,7 +133,7 @@
   debug: var=show_vswitches_json verbosity=1
 
 - name: Write vswiches json to report
-  nuage_append: filename="{{ report_filename }}" text="{{ inventory_hostname }} {{ show_vswitches_json }}\n"
+  nuage_append: filename="{{ report_filename }}" text="{{ inventory_hostname }} {{ show_vswitches_json|to_nice_json }}\n"
   delegate_to: localhost
 
 - name: Check for the expected number of vswitches
@@ -155,13 +155,13 @@
   debug: var=show_host_vports verbosity=1
 
 - name: Create local variable with show host vports output in json
-  set_fact: show_host_vports_json="{{ show_host_vports.stdout[0]|show_vports_to_json }}"
+  set_fact: show_host_vports_json="{{ show_host_vports.stdout[0]|show_host_vports_to_json }}"
 
 - name: Print show host vports in json when verbosity >= 1
   debug: var=show_host_vports_json verbosity=1
 
 - name: Write host vports json to report
-  nuage_append: filename="{{ report_filename }}" text="{{ inventory_hostname }} HOST VPORTS {{ show_host_vports_json }}\n"
+  nuage_append: filename="{{ report_filename }}" text="{{ inventory_hostname }} HOST VPORTS {{ show_host_vports_json|to_nice_json }}\n"
   delegate_to: localhost
 
 - name: Check for the expected number of host vports
@@ -183,13 +183,13 @@
   debug: var=show_vm_vports verbosity=1
 
 - name: Create local variable with show vm vports output in json
-  set_fact: show_vm_vports_json="{{ show_vm_vports.stdout[0]|show_vports_to_json }}"
+  set_fact: show_vm_vports_json="{{ show_vm_vports.stdout[0]|show_vm_vports_to_json }}"
 
 - name: Print show vm vports in json when verbosity >= 1
   debug: var=show_vm_vports_json verbosity=1
 
 - name: Write vm vports json to report
-  nuage_append: filename="{{ report_filename }}" text="{{ inventory_hostname }} VM VPORTS {{ show_vm_vports_json }}\n"
+  nuage_append: filename="{{ report_filename }}" text="{{ inventory_hostname }} VM VPORTS {{ show_vm_vports_json|to_nice_json }}\n"
   delegate_to: localhost
 
 - name: Check for the expected number of vm vports
@@ -224,3 +224,4 @@
     that: "not report.stat.exists",
     msg: "Failures detected. Check {{ failure_report_file_name }}."
   }
+  ignore_errors: yes

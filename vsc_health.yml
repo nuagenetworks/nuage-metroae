@@ -7,10 +7,19 @@
   - name: Clean up tmp files from previous runs
     file: path="{{ report_filename }}" state=absent
   - name: Write title to report file
-    nuage_append: filename="{{ report_filename }}" text="VSC Health Report\n"
+    nuage_append: filename="{{ report_filename }}" text="VSC Health Report Start\n"
   - name: Write date to report file
     nuage_append: filename="{{ report_filename }}" text="{{ ansible_date_time.date }}@{{ ansible_date_time.time }}\n"
   - name: Write seperator to report file
     nuage_append: filename="{{ report_filename }}" text="================================================================================\n"
 
 - include: vsc_health_helper.yml report_filename={{ report_filename }} pass_on_todo=true
+
+- hosts: localhost
+  vars:
+    report_filename: ./vsc_health_report.txt
+  tasks:
+  - name: Write seperator to report file
+    nuage_append: filename="{{ report_filename }}" text="================================================================================\n"
+  - name: Write out footer
+    nuage_append: filename="{{ report_filename }}" text="VSC Health Report End\n"
