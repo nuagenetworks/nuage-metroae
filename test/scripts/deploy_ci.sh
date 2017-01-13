@@ -15,4 +15,4 @@ ansible-playbook build.yml -vvvv
 ./metro-ansible test_install.yml -vvvv
 ./metro-ansible test_cleanup.yml -vvvv
 
-./metro-ansible ci_destroy.yml -vvvv
+#./metro-ansible ci_destroy.yml -vvvv
