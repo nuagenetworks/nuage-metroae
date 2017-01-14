@@ -70,20 +70,20 @@ def bgp_summary_to_json(string):
     BGP_ADMIN_STATE = "BGP Admin State"
     BGP_OPER_STATE = "BGP Oper State"
     TOTAL_PEERS = "Total Peers"
-    PEER_RE = "\s+((?:(?:[0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}(?:[0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5]))\s+\S+\s+\S+\s+\S+\s+(\S+)\s+(\S+)\s+\S+\s+\S+\s+\S+\s+(\S+)\s+\S+"
+    PEER_RE = "\s+(?P<ip>(?:(?:[0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}(?:[0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5]))\s+\S+\s+\S+\s+\S+\s+(?P<up>\S+)\s+(?P<icount>\S+)\s+\S+\s+\S+\s+\S+\s+(?P<ecount>\S+)\s+\S+"
     dict = {}
     peer_list = []
     dict["Command"] = "show router bgp summary"
     dict[BGP_ADMIN_STATE] = string_name_value_helper(BGP_ADMIN_STATE, ':', string) + ","
     dict[BGP_OPER_STATE] = string_name_value_helper(BGP_OPER_STATE, ':', string) + ","
     dict[TOTAL_PEERS] = numeric_name_value_helper(TOTAL_PEERS, ':', string) + ","
-    peers = re.findall(PEER_RE, string)
+    peers = re.finditer(PEER_RE, string)
     for peer in peers:
         peer_dict = {}
-        peer_dict["IP Addr"] = peer[0]
-        peer_dict["Uptime"] = peer[1]
-        peer_dict["IPV4 counts"] = peer[2]
-        peer_dict["evpn counts"] = peer[3]
+        peer_dict["IP Addr"] = peer.group('ip')
+        peer_dict["Uptime"] = peer.group('up')
+        peer_dict["IPV4 counts"] = peer.group('icount')
+        peer_dict["evpn counts"] = peer.group('ecount')
         peer_list.append(peer_dict)
     dict["Peers"] = peer_list
     return json.dumps(dict)
@@ -135,18 +135,18 @@ def show_vswitches_to_json(string):
     }
     '''
     NUMVSWITCHES = "No. of virtual switches"
-    INSTANCE_RE = "(\S+)\s+(\S+)\s+(\S+d \S+:\S+:\S+)\s+(\S+)"
+    INSTANCE_RE = "(?P<inst>\S+)\s+(?P<pers>\S+)\s+(?P<up>\S+d \S+:\S+:\S+)\s+(?P<num>\S+)"
     dict = {}
     inst_list = []
     dict["Command"] = "show vswitch-controller vswitches"
     dict[NUMVSWITCHES] = numeric_name_value_helper(NUMVSWITCHES, ':', string)
-    instances = re.findall(INSTANCE_RE, string)
+    instances = re.finditer(INSTANCE_RE, string)
     for instance in instances:
         inst_dict = {}
-        inst_dict["vswitch-instance"] = instance[0]
-        inst_dict["Personality"] = instance[1]
-        inst_dict["Uptime"] = instance[2]
-        inst_dict["Num"] = instance[3]
+        inst_dict["vswitch-instance"] = instance.group('inst')
+        inst_dict["Personality"] = instance.group('pers')
+        inst_dict["Uptime"] = instance.group('up')
+        inst_dict["Num"] = instance.group('num')
         inst_list.append(inst_dict)
     dict["Instances"] = inst_list
     return json.dumps(dict)
@@ -180,7 +180,7 @@ def show_host_vports_to_json(string):
     }
     '''
     NUMVPORTS = "No. of virtual ports"
-    VPORTS_RE = "(\S+)\s+(\S+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+\.\d+\.\d+\.\d+\/\d+)"
+    VPORTS_RE = "(?P<vpname>\S+)\s+(?P<port>\S+)\s+(?P<vlan>\d+)\s+(?P<vprn>\d+)\s+(?P<evpn>\d+)\s+(?P<vpip>\d+\.\d+\.\d+\.\d+\/\d+)"
     dict = {}
     port_list = []
     dict["Command"] = "show vswitch-controller vports type host detail"
@@ -188,12 +188,12 @@ def show_host_vports_to_json(string):
     ports = re.findall(VPORTS_RE, string)
     for port in ports:
         port_dict = {}
-        port_dict["VP Name"] = port[0]
-        port_dict["G/W PortName"] = port[1]
-        port_dict["VLAN ID"] = port[2]
-        port_dict["VPRN"] = port[3]
-        port_dict["EVPN"] = port[4]
-        port_dict["VP IP Address"] = port[5]
+        port_dict["VP Name"] = port.group('vpname')
+        port_dict["G/W PortName"] = port.group('port')
+        port_dict["VLAN ID"] = port.group('vlan')
+        port_dict["VPRN"] = port.group('vprn')
+        port_dict["EVPN"] = port.group('evpn')
+        port_dict["VP IP Address"] = port.group('vpip')
         port_list.append(port_dict)
     dict["Vports"] = port_list
     return json.dumps(dict)
@@ -229,7 +229,7 @@ def show_vm_vports_to_json(string):
     }
     '''
     NUMVPORTS = "No. of virtual ports"
-    VPORTS_RE = "(\S+)\s+(\S+)\s+(\d+)\s+(\d+)\s+(\S+)\s+(\d+\.\d+\.\d+\.\d+\/\d+)\s+(\d+:\d+:\d+:\d+:\d+:\d+)"
+    VPORTS_RE = "(?P<vpname>\S+)\s+(?P<vmname>\S+)\s+(?P<vprn>\d+)\s+(?P<evpn>\d+)\s+(?P<multi>\S+)\s+(?P<vpip>\d+\.\d+\.\d+\.\d+\/\d+)\s+(?P<mac>\d+:\d+:\d+:\d+:\d+:\d+)"
     dict = {}
     port_list = []
     dict["Command"] = "show vswitch-controller vports type vm detail"
@@ -237,13 +237,13 @@ def show_vm_vports_to_json(string):
     ports = re.findall(VPORTS_RE, string)
     for port in ports:
         port_dict = {}
-        port_dict["VP Name"] = port[0]
-        port_dict["VM Name"] = port[1]
-        port_dict["VPRN"] = port[2]
-        port_dict["EVPN"] = port[3]
-        port_dict["Multicast"] = port[4]
-        port_dict["VP IP Address"] = port[5]
-        port_dict["Mac Address"] = port[6]
+        port_dict["VP Name"] = port.group('vpname')
+        port_dict["VM Name"] = port.group('vmname')
+        port_dict["VPRN"] = port.group('vprn')
+        port_dict["EVPN"] = port.group('evpn')
+        port_dict["Multicast"] = port.group('multi')
+        port_dict["VP IP Address"] = port.group('vpip')
+        port_dict["Mac Address"] = port.group('mac')
         port_list.append(port_dict)
     dict["Vports"] = port_list
     return json.dumps(dict)
