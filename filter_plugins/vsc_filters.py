@@ -70,7 +70,8 @@ def bgp_summary_to_json(string):
     BGP_ADMIN_STATE = "BGP Admin State"
     BGP_OPER_STATE = "BGP Oper State"
     TOTAL_PEERS = "Total Peers"
-    PEER_RE = "\s+(?P<ip>(?:(?:[0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}(?:[0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5]))\s+\S+\s+\S+\s+\S+\s+(?P<up>\S+)\s+(?P<icount>\S+)\s+\S+\s+\S+\s+\S+\s+(?P<ecount>\S+)\s+\S+"
+    PEER_RE = ("\s+(?P<ip>\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\s+\S+\s+\S+\s+\S+"
+        "\s+(?P<up>\S+)\s+(?P<icount>\S+)\s+\S+\s+\S+\s+\S+\s+(?P<ecount>\S+)\s+\S+")
     dict = {}
     peer_list = []
     dict["Command"] = "show router bgp summary"
@@ -180,7 +181,8 @@ def show_host_vports_to_json(string):
     }
     '''
     NUMVPORTS = "No. of virtual ports"
-    VPORTS_RE = "(?P<vpname>\S+)\s+(?P<port>\S+)\s+(?P<vlan>\d+)\s+(?P<vprn>\d+)\s+(?P<evpn>\d+)\s+(?P<vpip>\d+\.\d+\.\d+\.\d+\/\d+)"
+    VPORTS_RE = ("(?P<vpname>\S+)\s+(?P<port>\S+)\s+(?P<vlan>\d+)\s+"
+        "(?P<vprn>\d+)\s+(?P<evpn>\d+)\s+(?P<vpip>\d+\.\d+\.\d+\.\d+\/\d+)")
     dict = {}
     port_list = []
     dict["Command"] = "show vswitch-controller vports type host detail"
@@ -229,7 +231,8 @@ def show_vm_vports_to_json(string):
     }
     '''
     NUMVPORTS = "No. of virtual ports"
-    VPORTS_RE = "(?P<vpname>\S+)\s+(?P<vmname>\S+)\s+(?P<vprn>\d+)\s+(?P<evpn>\d+)\s+(?P<multi>\S+)\s+(?P<vpip>\d+\.\d+\.\d+\.\d+\/\d+)\s+(?P<mac>\d+:\d+:\d+:\d+:\d+:\d+)"
+    VPORTS_RE = ("(?P<vpname>\S+)\s+(?P<vmname>\S+)\s+(?P<vprn>\d+)\s+(?P<evpn>\d+)\s+"
+        "(?P<multi>\S+)\s+(?P<vpip>\d+\.\d+\.\d+\.\d+\/\d+)\s+(?P<mac>\d+:\d+:\d+:\d+:\d+:\d+)")
     dict = {}
     port_list = []
     dict["Command"] = "show vswitch-controller vports type vm detail"
