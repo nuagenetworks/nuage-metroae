@@ -1,0 +1,36 @@
+#How to become a contributor and submit your code to nuage-metro
+
+Thank you for your interest in contributing!
+
+The following is a set of guidelines for contributing to the nuage-metro project.
+
+##Summary
+
+- All contributions must be made via pull request (PR) to the *dev* branch. PRs on other branches will be closed without review.
+- PRs may be initiated from your personal branch or fork.
+- Your personal branch or fork must be updated (merged) from the latest dev branch prior to initiating the PR. 
+- The repo owner will review your PR prior to merge into the dev branch.
+- Comments from the repo owner and other contributors must be answered prior to merge to dev.
+- All contributions must be tested on Debian- and RedHat-family hypervisors.
+
+##User input
+
+All variables that can be modified by a user must be included in the build.yml playbook process. As much as possible, we require that
+all user-modifyable variables be included in the `vars` section of `build.yml`. Variables that are almost never modified may be included
+in standard Ansible variable locations.
+
+##Playbook Design
+
+All contributions must be consistent with the deisgn of existing playbooks and roles. Specifically, playbooks and roles fall into one
+of the following categories:
+
+- Predeploy - For prerequisites and getting VMs up and running. This is the only hypervisor-dependent playbook or role.
+- Deploy - For installing software, upgrading the OS, and configuring the system
+- Postdeploy - For component-level sanity validation
+- Health - For system-level sanity validation and monitoring
+- Destroy - For tear down of components and connections
+
+##Reporting bugs and enhancement requests
+
+You can contribute to nuage-metro by reporting bugs you find and suggesting new features and enhancements. These should be initiated
+via the Github Issues feature.
