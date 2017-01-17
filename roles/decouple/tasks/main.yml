@@ -28,7 +28,7 @@
 
   - name: Verify the ejabbered p1db output in empty string
     assert:
-      that: "p1db_json['p1db_users']"
+      that: "not p1db_json['p1db_users']"
       msg: "Ejabbered is not decoupled"
 
   - name: Confirm ejabbered is decoupled form cluster
@@ -48,6 +48,10 @@
         - "'ejabberd@{{ inventory_hostname }}' == cluster_json['cluster_users'][0]"
         - "cluster_json['cluster_users'] | length == 1" 
       msg: "Ejjaberd is not decoupled successfully"
+ 
+  - name: Wait for ejabberd to clean connected clients other than itself
+    pause:
+      seconds: 10
 
   - name: Confirm ejabbered has connections from its own clients
     command: "{{ connected_users }}"

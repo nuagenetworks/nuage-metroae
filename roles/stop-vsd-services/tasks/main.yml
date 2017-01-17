@@ -13,9 +13,9 @@
 
   - name: Kill the stats pids if they exists
     shell: "kill -9 {{ item }}"
-    with_items: "{{ list_stats_pids.stdout_lines }}"
-    ignore_erros: yes
-    when: list_stats_pids.stdout_lines
+    with_items: "{{ list_stats_pids.stdout_lines|default([]) }}"
+    ignore_errors: yes
+    when: list_stats_pids.stdout.strip()!= ""
 
   - name: Stop vsd core services on node1 and node3
     shell: "{{ stop_vsd_core }}"
@@ -30,9 +30,9 @@
 
   - name: Kill the vsd-core pids if they exists
     shell: "kill -9 {{ item }}"
-    with_items: "{{ list_core_pids.stdout_lines }}"
+    with_items: "{{ list_core_pids.stdout_lines|default([]) }}"
     ignore_errors: yes
-    when: list_core_pids.stdout_lines
+    when: list_core_pids.stdout.strip()!=""
 
   - name: Stop vsd common services
     shell: "{{ stop_vsd_common }}"
@@ -47,7 +47,7 @@
 
   - name: Kill the vsd-common pids if they exists
     shell: "kill -9 {{ item }}"
-    with_items: "{{ list_common_pids.stdout_lines }}"
+    with_items: "{{ list_common_pids.stdout_lines|default([]) }}"
     ignore_errors: yes
-    when: list_common_pids.stdout_lines
+    when: list_common_pids.stdout.strip()!=""
   when: inventory_hostname == groups['vsds'][0] or inventory_hostname == groups['vsds'][2]
