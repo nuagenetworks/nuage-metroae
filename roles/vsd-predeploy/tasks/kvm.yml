@@ -70,23 +70,27 @@
     delegate_to: "{{ target_server }}"
     remote_user: root
 
-  - name: Create local variable for guestfish mount when not RedHat
-    set_fact: guestfish_mount=/dev/sda2
-    when: ansible_distribution != "RedHat"
-
-  - name: Create local variable for guestfish mount when RedHat
-    set_fact: guestfish_mount=/dev/rhel/rootvol
-    when: ansible_distribution == "RedHat"
-
   - name: Create a temporary copy of the network script for eth0 on {{ target_server }}
     template: src=ifcfg-eth0.j2 backup=no dest={{ images_path }}/{{ inventory_hostname }}/ifcfg-eth0
     delegate_to: "{{ target_server }}"
     remote_user: root
 
-  - name: Copy eth0 network script file to the VSD image on {{ target_server }}
-    command: guestfish --rw -a {{ images_path }}/{{ inventory_hostname }}/{{ vsd_qcow2_file_name }} -m {{ guestfish_mount }} copy-in {{ images_path }}/{{ inventory_hostname }}/ifcfg-eth0 /etc/sysconfig/network-scripts/
-    delegate_to: "{{ target_server }}"
-    remote_user: root
+  - block:
+    - name: Copy eth0 network script file to the VSD image on {{ target_server }}
+      command: guestfish --rw -a {{ images_path }}/{{ inventory_hostname }}/{{ vsd_qcow2_file_name }} -m /dev/sda2 copy-in {{ images_path }}/{{ inventory_hostname }}/ifcfg-eth0 /etc/sysconfig/network-scripts/
+      delegate_to: "{{ target_server }}"
+      remote_user: root
+    - name: Set guestfish mount variable
+      set_fact: guestfish_mount=/dev/sda2
+    rescue:
+    - name: Copy eth0 network script file to the VSD image on {{ target_server }}
+      command: guestfish --rw -a {{ images_path }}/{{ inventory_hostname }}/{{ vsd_qcow2_file_name }} -m /dev/rhel/rootvol copy-in {{ images_path }}/{{ inventory_hostname }}/ifcfg-eth0 /etc/sysconfig/network-scripts/
+      delegate_to: "{{ target_server }}"
+      remote_user: root
+    - name: Set guestfish mount variable
+      set_fact: guestfish_mount=/dev/rhel/rootvol
+
+  - debug: var=guestfish_mount verbosity=1
 
   - name: Remove temporary copy of eth0 network script
     file: path={{ images_path }}/{{ inventory_hostname }}/ifcfg-eth0 state=absent
