@@ -187,7 +187,7 @@ def show_host_vports_to_json(string):
     port_list = []
     dict["Command"] = "show vswitch-controller vports type host detail"
     dict[NUMVPORTS] = numeric_name_value_helper(NUMVPORTS, ':', string)
-    ports = re.findall(VPORTS_RE, string)
+    ports = re.finditer(VPORTS_RE, string)
     for port in ports:
         port_dict = {}
         port_dict["VP Name"] = port.group('vpname')
@@ -237,7 +237,7 @@ def show_vm_vports_to_json(string):
     port_list = []
     dict["Command"] = "show vswitch-controller vports type vm detail"
     dict[NUMVPORTS] = numeric_name_value_helper(NUMVPORTS, ':', string)
-    ports = re.findall(VPORTS_RE, string)
+    ports = re.finditer(VPORTS_RE, string)
     for port in ports:
         port_dict = {}
         port_dict["VP Name"] = port.group('vpname')
@@ -252,6 +252,107 @@ def show_vm_vports_to_json(string):
     return json.dumps(dict)
 
 
+def show_gateway_ports_to_json(string):
+    ''' Given a string representation of the output of "show vswitch-controller gateway ports"
+    as a string, return a JSON representation of a subset of the data in that output.
+    A sample of the output:
+    {
+      "Command": "show vswitch-controller gateway ports",
+      "No. of ports": "2",
+      "Ports": [
+        {
+          "HB VLAN Interval": "n/a",
+          "VSD Role": "n/a",
+          "Port Mode": "access",
+          "Gateway IP/Nsg Id": "10.15.2.254",
+          "Gw Role": "n/a",
+          "VSD Red State": "false",
+          "HB VLAN Id": "n/a",
+          "Portname": "eth2",
+          "Gw Red State": "false",
+          "Vlan-Range": "0-4094"
+        },
+        {
+          "HB VLAN Interval": "n/a",
+          "VSD Role": "n/a",
+          "Port Mode": "access",
+          "Gateway IP/Nsg Id": "10.15.33.254",
+          "Gw Role": "n/a",
+          "VSD Red State": "false",
+          "HB VLAN Id": "n/a",
+          "Portname": "eth2",
+          "Gw Red State": "false",
+          "Vlan-Range": "0-4094"
+        }
+      ]
+    }
+    TODO: Remove this string and use real input
+    '''
+    mystring = '''===============================================================================
+Gateway Ports Information Table
+===============================================================================
+Gateway IP/Nsg Id  : 10.15.2.254
+Portname           : eth2               Port Mode          : access
+VSD Role           : n/a                Gw Role            : n/a
+HB VLAN Id         : n/a                HB VLAN Interval   : n/a
+VSD Red State      : false              Gw Red State       : false
+Vlan-Range         : 0-4094
+
+Gateway IP/Nsg Id  : 10.15.33.254
+Portname           : eth2               Port Mode          : access
+VSD Role           : n/a                Gw Role            : n/a
+HB VLAN Id         : n/a                HB VLAN Interval   : n/a
+VSD Red State      : false              Gw Red State       : false
+Vlan-Range         : 0-4094
+
+-------------------------------------------------------------------------------
+No. of Ports: 2
+======================================================================= '''
+    NUMPORTS = "No. of Ports"
+    RE = '>\S+)\s+'
+    DEL = '\s+:\s+(?P<'
+
+    GATEIP = 'Gateway IP/Nsg Id'
+    PORTNM = 'Portname'
+    PORTMD = 'Port Mode'
+    VSDROLE = 'VSD Role'
+    GWROLE = 'Gw Role'
+    VLANID = 'HB VLAN Id'
+    VLANINT = 'HB VLAN Interval'
+    VSDRED = 'VSD Red State'
+    GWRED = 'Gw Red State'
+    VLANR = 'Vlan-Range'
+
+    items = []
+    items.append((GATEIP, 'gateip'))
+    items.append((PORTNM, 'portnm'))
+    items.append((PORTMD, 'portmd'))
+    items.append((VSDROLE, 'vsdrole'))
+    items.append((GWROLE, 'gwrole'))
+    items.append((VLANID, 'vlanid'))
+    items.append((VLANINT, 'vlanint'))
+    items.append((VSDRED, 'vsdred'))
+    items.append((GWRED, 'gwred'))
+    items.append((VLANR, 'vlanr'))
+
+    myregex = ''
+    for item in items:
+        myregex += '%s%s%s%s' % (item[0], DEL, item[1], RE)
+
+    dict = {}
+    port_list = []
+    dict["Command"] = "show vswitch-controller gateway ports"
+    dict[NUMPORTS] = numeric_name_value_helper(NUMPORTS, ':', mystring)
+    ports = re.finditer(myregex, mystring)
+    for port in ports:
+        port_dict = {}
+        for item in items:
+            port_dict[item[0]] = port.group(item[1])
+        port_list.append(port_dict)
+    dict["Ports"] = port_list
+    return json.dumps(dict)
+
+
 class FilterModule(object):
     ''' Query filter '''
 
@@ -261,5 +362,6 @@ class FilterModule(object):
             'xmpp_server_detail_to_json': xmpp_server_detail_to_json,
             'show_vswitches_to_json': show_vswitches_to_json,
             'show_host_vports_to_json': show_host_vports_to_json,
-            'show_vm_vports_to_json': show_vm_vports_to_json
+            'show_vm_vports_to_json': show_vm_vports_to_json,
+            'show_gateway_ports_to_json': show_gateway_ports_to_json
         }
