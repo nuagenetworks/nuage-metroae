@@ -1,0 +1,12 @@
+---
+- name: Set myoscs_check
+  set_fact: myoscs_check={{myoscs is defined}}
+ 
+- name: Assign empty list to myoscs if it is undefined
+  set_fact: myoscs= default([])
+  when: not myoscs_check
+ 
+- name: Create host_vars files for osc server
+  template: src=osc.j2 backup=no dest={{ playbook_dir }}/host_vars/{{ item.hostname }}
+  with_items: "{{ myoscs }}"
+  when: myoscs_check

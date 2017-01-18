@@ -39,15 +39,15 @@ def run_commands(commands, vscs, vrs_ip):
 
                 netmiko_vsc = {
                     'device_type': 'alcatel_sros',
-                    'ip':   vsc,
+                    'ip': vsc,
                     'username': 'admin',
                     'password': 'admin',
                 }
                 output = exec_command(netmiko_vsc, command)
                 if output.find(vrs_ip):
-                    result = result+"VRS "+vrs_ip+" is OK!"
+                    result = result + "VRS " + vrs_ip + " is OK!"
                 else:
-                    result = result+"Error: VSC "+vsc+" did not detect the VRS: "+vrs_ip+"!"
+                    result = result + "Error: VSC " + vsc + " did not detect the VRS: " + vrs_ip + "!"
 
         else:
             print("Error! Unexpected command!")
@@ -135,7 +135,7 @@ if __name__ == '__main__':
 
     if ("is OK!" not in ovs_show_result):
         if ("is OK!" not in result):
-            result += "|"+ovs_show_result
+            result += "|" + ovs_show_result
         else:
             result = ovs_show_result
 

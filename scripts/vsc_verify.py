@@ -29,7 +29,7 @@ def get_vsclines(fp):
 # Returns the list of VSC hosts
 def get_vschosts(playbook_dir):
     fp = ''
-    hosts_file = playbook_dir+'/hosts'
+    hosts_file = playbook_dir + '/hosts'
     vsc_host_list = []
 
     if (not os.path.exists(hosts_file)):
@@ -55,7 +55,7 @@ def get_vscinfo(playbook_dir):
     vsc_host_vars = {}
 
     for vscs in vsc_hosts:
-        host_vars_path = playbook_dir+"/host_vars/"+vscs
+        host_vars_path = playbook_dir + "/host_vars/" + vscs
         if (not os.path.exists(host_vars_path)):
             print ("ERROR! Host_vars file not found for host: {0}." .format(host_vars_path))
             sys.exit(1)
@@ -126,13 +126,13 @@ def run_commands(commands, vsc_host_vars, vsc, retry_timeout):
                 # Execute command
                 output = exec_command(vsc, command)
                 if (re.search(r'Functional\n', output, re.I)):
-                    result = "VSC "+vsc['ip']+" is OK!"
+                    result = "VSC " + vsc['ip'] + " is OK!"
                 elif (re.search(r'Active\n', output, re.I)):
                     error_flag = True
-                    error1 = "Error: VSC "+vsc['ip']+(" XMPP connection with VSD not set.")
+                    error1 = "Error: VSC " + vsc['ip'] + (" XMPP connection with VSD not set.")
                 else:
                     error_flag = True
-                    error1 = "Error: VSC "+vsc['ip']+(" was unable to discover VSD.")
+                    error1 = "Error: VSC " + vsc['ip'] + (" was unable to discover VSD.")
 
         elif (command == 'show router bgp summary all'):
             bad_neighbor_list = []
@@ -142,13 +142,13 @@ def run_commands(commands, vsc_host_vars, vsc, retry_timeout):
             for vsc_host in vsc_host_vars:
 
                 if (vsc_host_vars[vsc_host]['interfaces']['mgmt']['ip'] != vsc['ip']):
-                    if (re.search((vsc_host_vars[vsc_host]['system_ip']+'\n'), output)):
-                        result = "VSC "+vsc['ip']+" is OK!"
+                    if (re.search((vsc_host_vars[vsc_host]['system_ip'] + '\n'), output)):
+                        result = "VSC " + vsc['ip'] + " is OK!"
                     else:
                         error_flag = True
                         bad_neighbor_list.append(vsc_host_vars
                                                  [vsc_host]['interfaces']['mgmt']['ip'])
-                        error2 = "Error: Missing VSC "+vsc['ip']+(" peers:")+str(bad_neighbor_list)
+                        error2 = "Error: Missing VSC " + vsc['ip'] + (" peers:") + str(bad_neighbor_list)
 
         else:
             print("Error! Unexpected command!")
@@ -156,7 +156,7 @@ def run_commands(commands, vsc_host_vars, vsc, retry_timeout):
 
     # Set the error results if error flag is set
     if (error_flag is True):
-        result = "|"+error1+"|"+error2
+        result = "|" + error1 + "|" + error2
 
     return result
 
@@ -191,7 +191,7 @@ if __name__ == '__main__':
 
     vsc = {
         'device_type': 'alcatel_sros',
-        'ip':   args.ip,
+        'ip': args.ip,
         'username': 'admin',
         'password': 'admin',
     }

@@ -11,11 +11,6 @@ parameters:
   ssh_key: 
     type: string 
 resources:
-  my_key:
-    type: OS::Nova::KeyPair
-    properties:
-      public_key: {get_param: ssh_key}
-      name: user_key
   mycompute:
     type: OS::Nova::Server
     properties:
@@ -24,7 +19,14 @@ resources:
       image: {get_param: infra_image}
       networks:
         - network: {get_param: infra_net}
-      key_name: {get_resource: my_key}
+      user_data_format: RAW
+      user_data:
+        str_replace:
+          template: |
+            #!/bin/bash
+            echo usr >> /root/.ssh/authorized_keys
+          params:
+            usr: {get_param: ssh_key}
 outputs:
   server_ip:
     description: fixed ip assigned to the server

@@ -1,4 +1,22 @@
 ---
+- name: Get Infra server details from OpenStack
+  os_server_facts:
+    auth:
+      "{{ os_auth }}"
+    server: "{{ inventory_hostname }}*"
+  register: infra_server
+  delegate_to: 127.0.0.1
+
+- name: Set Infra mgmt ip
+  set_fact:
+    infra_mgmt_ip: "{{ infra_server['ansible_facts']['openstack_servers'][0]['private_v4'] }}"
+ 
+- name: Update /etc/hosts file on ansible host
+  lineinfile:
+    dest: /etc/hosts
+    line: "{{ infra_mgmt_ip }}    {{ inventory_hostname }}"
+  delegate_to: 127.0.0.1
+
 - name: Wait for INFRA ssh to be ready
   local_action:
     module: wait_for
@@ -8,49 +26,95 @@
 
 - name: Add nameserver
   command: echo "{{ dns_server_list[1] }}" >> /etc/resolv.conf
-  remote_user: centos
-  become: true
+  remote_user: root
 
 - name: Install DNS if not present
   yum:
     name: dnsmasq
     state: latest
-  remote_user: centos
-  become: true
+  remote_user: root
 
-- name: Configure DNS service
-  lineinfile:
-    dest: /etc/dnsmasq.conf
-    line: "domain= {{ dns_domain }}"
-  remote_user: centos
-  become: true
+- name: Configure dnsmasq on {{ inventory_hostname }}
+  template:
+    src: "dnsmasq.conf.j2"
+    dest: "/etc/dnsmasq.conf"
+  remote_user: root
 
 - name: Start the DNS service
   command: service dnsmasq start
-  remote_user: centos
-  become: true
+  remote_user: root
 
 - name: Enable the DNS service
   command: chkconfig dnsmasq on
-  remote_user: centos
-  become: true
+  remote_user: root
 
-- name: Stop the NTP service if running
+- name: Install NTP if not present
+  yum:
+    name: ntp
+    state: latest
+  remote_user: root
+
+- name: Delete the localtime file on {{ inventory_hostname }}
+  file:
+    path: /etc/localtime
+    state: absent
+  remote_user: root
+
+- name: Create the localtime symlink on {{ inventory_hostname }}
+  file:
+    src: /usr/share/zoneinfo/US/Pacific
+    dest: /etc/localtime
+    state: link
+  remote_user: root
+
+- name: Remove old NTP servers on {{ inventory_hostname }}
+  lineinfile:
+    dest: /etc/ntp.conf
+    regexp: "^server"
+    state: absent
+  remote_user: root
+
+- name: Configure NTP servers on {{ inventory_hostname }}
+  lineinfile:
+    dest: /etc/ntp.conf
+    line: "server {{ item }} iburst"
+  with_items: "{{ ntp_server_list }}"
+  remote_user: root
+
+- name: Stop the ntpd service if running
   command: service ntpd stop
-  remote_user: centos
-  become: true
+  remote_user: root
 
-- name: Configure NTP service
-  command: ntpdate -q pool.ntp.org
-  remote_user: centos
-  become: true
+- name: Manually sync time with ntp server
+  command: ntpdate -u "{{ntp_server_list[0]}}"
+  remote_user: root
 
-- name: Start the NTP service
+- name: Start ntpd on {{ inventory_hostname }}
   command: service ntpd start
-  remote_user: centos
-  become: true
+  remote_user: root
+
+- name: check ntp sync state
+  shell: ntpstat | awk 'NR==1{print $1}'
+  register: sync_status
+  until: sync_status.stdout == "synchronised"
+  retries: 4
+  delay: 5
+  ignore_errors: yes
+  remote_user: root
+
+- block:
+  - name: restart ntp if it hasn't synced yet
+    command: service ntpd restart
+    remote_user: root
+  - name: check ntp sync state
+    shell: ntpstat | awk 'NR==1{print $1}'
+    register: retry_sync_status
+    until: retry_sync_status.stdout == "synchronised"
+    retries: 4
+    delay: 5
+    remote_user: root
+  when: sync_status.stdout != "synchronized"
 
 - name: Enable the NTP service
   command: chkconfig ntpd on
-  remote_user: centos
-  become: true
+  remote_user: root

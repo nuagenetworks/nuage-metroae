@@ -53,7 +53,7 @@ def get_vsdlines(fp):
 # Returns the list of VSC hosts
 def get_vschosts(playbook_dir):
     fp = ''
-    hosts_file = playbook_dir+'/hosts'
+    hosts_file = playbook_dir + '/hosts'
 
     if (not os.path.exists(hosts_file)):
         print ("ERROR! Hosts file not found.")
@@ -74,7 +74,7 @@ def get_vschosts(playbook_dir):
 # Returns the list of VSD hosts
 def get_vsdhosts(playbook_dir):
     fp = ''
-    hosts_file = playbook_dir+'/hosts'
+    hosts_file = playbook_dir + '/hosts'
 
     if (not os.path.exists(hosts_file)):
         print ("ERROR! Hosts file not found.")
@@ -100,7 +100,7 @@ def get_vscinfo(playbook_dir):
     vsc_host_vars = {}
 
     for vscs in vsc_hosts:
-        host_vars_path = playbook_dir+"/host_vars/"+vscs
+        host_vars_path = playbook_dir + "/host_vars/" + vscs
         if (not os.path.exists(host_vars_path)):
             print ("ERROR! Host_vars file not found for host: {0}."
                    .format(host_vars_path))
@@ -125,7 +125,7 @@ def get_vsdinfo(playbook_dir):
     vsd_host_vars = {}
 
     for vsds in vsd_hosts:
-        host_vars_path = playbook_dir+"/host_vars/"+vsds
+        host_vars_path = playbook_dir + "/host_vars/" + vsds
         if (not os.path.exists(host_vars_path)):
             print ("ERROR! Host_vars file not found for host: {0}."
                    .format(host_vars_path))
@@ -192,7 +192,7 @@ def run_commands(commands, vsc, vsd_hosts_vars):
     # Verify if stats collector info is present on vsc
     if stats_info['StatisticsEnabled'] == 'False':
         error = "[ERROR]: Stats collection not enabled on the vsc %s\n" \
-                 % vsc['ip']
+            % vsc['ip']
         return error
     elif stats_info['StatisticsEnabled'] == 'True':
         result = result + "Stats enabled on vsc %s\n" % vsc['ip']
@@ -200,19 +200,19 @@ def run_commands(commands, vsc, vsd_hosts_vars):
     # Verify stats server info on vsc
     for vsd in vsd_host_vars:
         server_count += 1
-        stats_server = 'StatsServer'+str(server_count)
+        stats_server = 'StatsServer' + str(server_count)
         server_addr = stats_server + 'Address'
         server_port = stats_server + 'Port'
         server_proto = stats_server + 'ProtoBufPort'
         if (server_addr and server_port and server_proto) not in stats_info:
             server_info_error = server_info_error + \
-                                "[ERROR]: Could not find %s info on vsc %s\n" \
-                                % (stats_server, vsc['ip'])
+                "[ERROR]: Could not find %s info on vsc %s\n" \
+                % (stats_server, vsc['ip'])
         else:
             result = result + "Verified %s info on vsc %s\n" \
-                     % (stats_server, vsc['ip'])
+                % (stats_server, vsc['ip'])
 
-    return result+server_info_error
+    return result + server_info_error
 
 
 # Main

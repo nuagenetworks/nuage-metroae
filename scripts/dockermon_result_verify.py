@@ -8,14 +8,15 @@ from datetime import datetime
 def verify_dockermon_result(content):
     result = ""
     error = ""
-    if ("docker start/running, process " + content["docker_pid"] not in content["docker_status"]):
+    if ("docker start/running, process " not in content["docker_status"] and "Active:" not in content["docker_status"]):
         error += "Error! Docker service is not running!"
 
     if ("Service nuage-docker-monitor is running" not in content["dockermon_status"]):
         error += "| Error! Dockermon service is not running!"
 
-    if ("nuage-docker-monitor: monitoring pid " + content["dockermon_pid"] + " healthy" not in content["process_docker_status"]):
-        error += "| Error! Dockermon is not monitoring!"
+    if (("/usr/bin/python /usr/bin/nuage-docker-monitor" not in content["process_docker_status"]) and
+            ("nuage-docker-monitor: monitoring" not in content["process_docker_status"])):
+        error += "| Error! Dockermon process is not running!"
 
     # Check the logs only if dockermon and docker have started
     if (error == ''):
@@ -24,8 +25,12 @@ def verify_dockermon_result(content):
         # Check if logs are generated after the dockermon process started
         process_status_list = content["process_docker_status"].split("||")
         for process_status in process_status_list:
-            if ("nuage-docker-monitor: monitoring pid" in process_status):
-                dockermon_start_time = process_status.split("nuage-docker-monitor")[0].strip()
+            if ("/usr/bin/python /usr/bin/nuage-docker-monitor" in process_status):
+                dockermon_start_time = process_status.split("/usr/bin/python /usr/bin/nuage-docker-monitor")[0].strip()
+                break
+            elif ("nuage-docker-monitor: monitoring" in process_status):
+                dockermon_start_time = process_status.split("nuage-docker-monitor: monitoring")[0].strip()
+                break
 
         date_dockermon = datetime.strptime(dockermon_start_time, '%a %b %d %H:%M:%S %Y')
 
@@ -37,12 +42,10 @@ def verify_dockermon_result(content):
 
         # The first log should have been generated after dockermon started
         if (date_log >= date_dockermon):
-            if ("Nuage Docker Monitor started successfully" not in content["docker_logs"]):
+            if (not(("Nuage Docker Monitor started successfully" in content["docker_logs"]) or
+                ("Nuage Docker Monitor is now monitoring container lifecycle events" in content["docker_logs"]) or
+                    ("Initial Sync, Resending all the containers" in content["docker_logs"]))):
                 error += "| Error! Nuage Docker Monitor did not start successfully."
-            if ("Nuage Docker Monitor is now monitoring container lifecycle events" not in content["docker_logs"]):
-                error += "| Error! Nuage Docker Monitor is not monitoring container lifecycle events."
-            if ("Initial Sync, Resending all the containers..." not in content["docker_logs"]):
-                error += "| Error! Nuage Docker Monitor initial sync not detected."
         else:
             error += "| Error! Current Nuage Docker Monitor events not found."
 
@@ -58,22 +61,19 @@ def verify_dockermon_result(content):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("dockermon_data_file", type=str,
-                        help="Name of the input file that contains dockermon data to be verified.")
-    parser.add_argument("dockermon_file_path", type=str,
-                        help="Path to location of dockermon data file.")
+                        help="YAML file that contains Nuage dockermon configuration information to be verified.")
     args = parser.parse_args()
     dockermon_data_file = args.dockermon_data_file
 
-    dockermon_file_path = args.dockermon_file_path + dockermon_data_file
-    if (not os.path.exists(dockermon_file_path)):
-        print ("ERROR! Nuage Docker Monitor data file not found.")
+    if (not os.path.exists(dockermon_data_file)):
+        print ("ERROR! Nuage dockermon YAML configuration file not found.")
         sys.exit(1)
 
     try:
-        with open(dockermon_file_path, "r") as stream:
+        with open(dockermon_data_file, "r") as stream:
             file_content = yaml.safe_load(stream)
     except:
-        print("Error processing dockermon results output file {0}:{1}" .format(dockermon_file_path, sys.exc_info()[0]))
+        print("Error processing Nuage dockermon configration file {0}:{1}" .format(dockermon_data_file, sys.exc_info()[0]))
         sys.exit(1)
 
     result = verify_dockermon_result(file_content)
