@@ -2,12 +2,13 @@
 
 ## What's new
 
-1. VSD HA/cluster support, limited to exactly 3 VSD nodes
-1. Limited VNS support, that handles 1 NSGV at present. Requires ansible 2.2 that has SROS module support.
-1. A new pre-deploy build process to simplify variable settings
-1. `nuage-unpack` role added to optionally extract binaries from Nuage distribution archives. Side effect: Names of binary files are automatically pulled and no longer need to be specified in `build.yml`.
-
-Feedback and bug reports should be provided to the Nuage CASO team via email to *[Brian Castelli](mailto://brian.castelli@nokia.com)*.
+1. Added VRS Health check.
+1. Added Dockermon version support.
+1. Enhanced testing of stand-alone component deployments.
+1. Added support for deploying on OpenStack via HEAT.
+1. Added support for vnsutil and nsg-v.
+1. Enhanced NTP sync on VSD.
+Feedback and bug reports should be provided via the Issues feature of Github or via to [Brian Castelli](mailto://brian.castelli@nokia.com).
 
 ## Overview
 
