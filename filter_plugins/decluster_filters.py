@@ -63,6 +63,8 @@ def clients_to_json(string):
                            ]
     }
     '''
+    if not string:
+        return json.dumps(cluster_users={'connected_clients': []})
     lst_clients = string.split('\n')
     clients = {'connected_clients': lst_clients}
     return json.dumps(clients)
