@@ -8,7 +8,9 @@
 1. Added support for deploying on OpenStack via HEAT.
 1. Added support for vnsutil and nsg-v.
 1. Enhanced NTP sync on VSD.
-Feedback and bug reports should be provided via the Issues feature of Github or via to [Brian Castelli](mailto://brian.castelli@nokia.com).
+1. Tested with *3.2R8 and 4.0R4*
+
+Feedback and bug reports should be provided via the Issues feature of Github or via email to [Brian Castelli](mailto://brian.castelli@nokia.com).
 
 ## Overview
 
