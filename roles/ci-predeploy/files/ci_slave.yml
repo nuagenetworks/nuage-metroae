@@ -1,0 +1,60 @@
+heat_template_version: '2014-10-16'
+parameters:
+  vm_name:
+    type: string
+  ci_flavor:
+    type: string
+  ci_image: 
+    type: string
+  ssh_key:
+    type: string 
+  subnet_name:
+    type: string
+  network_name:
+    type: string
+  cidr:
+    type: string
+  nuage_partition:
+    type: string
+  nuage_netid:
+    type: string
+ 
+resources:
+  private_net:
+    type: OS::Neutron::Net
+    properties:
+      name: { get_param: network_name }
+  private_subnet:
+    type: OS::Neutron::Subnet
+    properties:
+      name: { get_param: subnet_name }
+      network_id: { get_resource: private_net }
+      cidr: { get_param: cidr }
+      value_specs: { net_partition: { get_param: nuage_partition }, nuagenet: { get_param: nuage_netid}}
+  net_port:
+    type: OS::Neutron::Port
+    properties:
+      network_id: { get_resource: private_net }
+      fixed_ips:
+        - subnet_id: { get_resource: private_subnet }
+  mycompute:
+    type: OS::Nova::Server
+    properties:
+      name: {get_param: vm_name}
+      flavor: {get_param: ci_flavor}
+      image: {get_param: ci_image}
+      networks:
+        - port: { get_resource: net_port }
+        - network: 'OC_JEN_FrontEnd'
+      user_data_format: RAW
+      user_data:
+        str_replace:
+          template: |
+            #!/bin/bash
+            echo usr >> /root/.ssh/authorized_keys
+          params:
+            usr: {get_param: ssh_key}
+outputs:
+  server_ip:
+    description: fixed ip assigned to the server
+    value: { get_attr: [mycompute, first_address] }

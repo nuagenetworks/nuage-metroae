@@ -2,12 +2,13 @@
 
 ## What's new
 
-1. VSD HA/cluster support, limited to exactly 3 VSD nodes
-1. Limited VNS support, that handles 1 NSGV at present. Requires ansible 2.2 that has SROS module support.
-1. A new pre-deploy build process to simplify variable settings
-1. `nuage-unpack` role added to optionally extract binaries from Nuage distribution archives. Side effect: Names of binary files are automatically pulled and no longer need to be specified in `build.yml`.
-
-Feedback and bug reports should be provided to the Nuage CASO team via email to *[Brian Castelli](mailto://brian.castelli@nokia.com)*.
+1. Added VRS Health check.
+1. Added Dockermon version support.
+1. Enhanced testing of stand-alone component deployments.
+1. Added support for deploying on OpenStack via HEAT.
+1. Added support for vnsutil and nsg-v.
+1. Enhanced NTP sync on VSD.
+Feedback and bug reports should be provided via the Issues feature of Github or via to [Brian Castelli](mailto://brian.castelli@nokia.com).
 
 ## Overview
 
@@ -49,7 +50,7 @@ The following restrictions and conditions apply prior to executing the playbooks
 
 1. The hypervisor hosts must be running Ubuntu Linux or CentOS. Testing has been done on Ubuntu 14.04 LTS and CentOS 7.
 1. If host names are used for target systems, VSD, VSC, VSTAT, VNSUTIL and VRS nodes, those names must be discoverable via DNS *or* added to the /etc/hosts file of the ansible deployment host.
-1. Each VM that is created for VSD, VSC, VSTAT, VNSUTIL or NSGV connects to one or more bridges on the target server. Those bridges must be created on the target server prior to deployment and specified in the `user_vars.yml` file.
+1. Each VM that is created for VSD, VSC, VSTAT, VNSUTIL or NSGV connects to one or more bridges on the target server. Those bridges must be created on the target server prior to deployment. Their names must be specified in the `build.yml` file. See `BUILD.md` for details.
 1. Python 2.7+ and all its dependencies must be installed on the deployment host. Python 3.0 and above is untested.
 1. Ansible 2.1+ and all its dependencies must be installed on the deployment host.
 1. Netmiko and all its dependencies must be installed on deployment host. The easiest way to install Netmiko is by using `pip install netmiko`. A common Netmiko dependency that could be missing is the cryptography package. See https://cryptography.io/en/latest/installation/ for more information.

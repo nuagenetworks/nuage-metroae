@@ -373,8 +373,6 @@
       - nsgv_qcow2
       #- nsgami_raw
   when: myvnsutils is defined and mynsgvs is defined
-  tags:
-    - vns
 
 - name: Make sure the proper VNS variables have been defined
   set_fact: 
@@ -385,3 +383,46 @@
     - nsgv_qcow2
     - nsgami_raw
   when: vnsutil_qcow2_path is not defined
+
+##########################
+## Nuage OpenStack Plugins
+##########################
+
+- block:
+  - block:
+    - name: Find name of Nuage OpenStack Plugin Archive
+      find: path="{{ nuage_release_src_path }}"  pattern="Nuage-openstack*"
+      register: rc_nuage_os
+    - debug: var=rc_nuage_os verbosity=1
+    - block:
+      - name: Clean up after previous unpack runs
+        file: name="{{ nuage_unpacked_dest_path }}/nuage_os/" state=absent
+      - name: Create directory to unpack Nuage OpenStack plugins
+        file: name="{{ nuage_unpacked_dest_path }}/nuage_os/" state=directory mode=0755
+      - name: Unpack Nuage OpenStack Archive
+        unarchive: src="{{ rc_nuage_os.files[0].path}}" dest="{{ nuage_unpacked_dest_path }}/vrs/"  list_files=yes
+        register: rc_nuage_os_archive_files
+      - debug: var=rc_nuage_os_archive_files
+      when: rc_nuage_os.matched > 0
+    when: not nuage_unpacked|default(false)
+    tags:
+      - nuage_unpack
+  - name: Find name of Nuage OpenStack Package Files (RH architecture)
+    find: path="{{ nuage_unpacked_dest_path }}/nuage_os/{{ nuage_os_release }}/el7/"  pattern="*.rpm" recurse=yes
+    register: rc_nuage_os_file
+  - debug: var=rc_nuage_os_file verbosity=1
+  - name: Verify that OpenStack files were found
+    assert: { 
+      that: "{{ rc_nuage_os_file.matched }} > 0",
+      msg: "Unable to find OpenStack files"
+    }
+  - name: Register Nuage OpenStack package variables with proper path and image locations for use in other playbooks (RH architecture)
+    set_fact:
+      nuage_os_package_path: "{{ rc_nuage_os_file.files[0].path | dirname }}"
+      nuage_os_package_file_name_list: "{{ rc_nuage_os_file.files |  map(attribute='path') | list | map('basename') | list }}"
+      nuage_os_release: "{{ nuage_os_release }}"
+  when: 
+    - nuage_os_release is defined
+    - nuage_target_architecture == "el6" or nuage_target_architecture == "el7"
+  tags:
+    - nuage_os

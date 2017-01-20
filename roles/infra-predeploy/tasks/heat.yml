@@ -1,4 +1,8 @@
 ---
+- name: Get the public key for the current user
+  local_action: command cat ~/.ssh/id_rsa.pub
+  register: current_user_ssh_key
+
 - name: Creating INFRA stack
   register: infra_stack
   os_stack:
@@ -11,16 +15,6 @@
       infra_image: "{{infra_image}}"
       infra_flavor: "{{infra_flavor}}"
       infra_net: "{{infra_network}}"
-      ssh_key: "{{ ansible_user_ssh_key }}"
+      ssh_key: "{{ current_user_ssh_key.stdout }}"
   delegate_to: 127.0.0.1
 - debug: var=infra_stack['stack']['outputs'][0]['output_value']
-
-- name: Set Infra mgmt ip
-  set_fact:
-    infra_mgmt_ip: "{{ infra_stack['stack']['outputs'][0]['output_value'] }}"
-
-- name: Update /etc/hosts file on ansible host
-  lineinfile:
-    dest: /etc/hosts
-    line: "{{ infra_mgmt_ip }}    {{ inventory_hostname }}"
-  delegate_to: 127.0.0.1
