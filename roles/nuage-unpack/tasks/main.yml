@@ -269,37 +269,31 @@
  
   - name: Unpack VNS Archive
     unarchive: src="{{ rc_vns.files[0].path}}" dest="{{ nuage_unpacked_dest_path }}/vns" list_files=yes
-    register: rc_vns_archive_files
-    when: rc_vns.matched > 0 and false
+    when: rc_vns.matched > 0
  
-  - name: Find name of NSG and Utils archive files
-    find: path="{{ nuage_unpacked_dest_path }}/vns/" pattern="{{ item }}"
-    with_items:
-      - "Nuage-VNS-NSG-*"
-      - "Nuage-VNS-Utils-*"
-    register: rc_vns_archives
+  - name: Find name of NSG archive file
+    find: path="{{ nuage_unpacked_dest_path }}/vns/" pattern="Nuage-VNS-NSG-*"
+    register: rc_nsg_archive
  
-  - name: Unpack VNS NSG and Utils archive files
-    unarchive: src="{{ rc_vns_archives.results[item.0].files[0].path }}" dest="{{ nuage_unpacked_dest_path }}/{{ item.1 }}"
-    register: rc_vns_archives_files
-    with_indexed_items:
-      - "vns/nsg/"
-      - "vns/utils/"
-    when: false
+  - name: Unpack VNS NSG archive file
+    unarchive: src="{{ rc_nsg_archive.files[0].path }}" dest="{{ nuage_unpacked_dest_path }}/vns/nsg/"
+    when: rc_nsg_archive.matched > 0
   
-  - name: Find name of NSG-AWSs archive files
-    find: path="{{ nuage_unpacked_dest_path }}/vns/nsg" pattern="{{ item }}"
-    with_items:
-      - "Nuage-NSG-*AWS*"
-    register: rc_vns_archives
+  - name: Find name of Utils archive file
+    find: path="{{ nuage_unpacked_dest_path }}/vns/" pattern="Nuage-VNS-Utils-*"
+    register: rc_utils_archive
  
-  - name: Unpack VNS NSG and Utils archive files
-    unarchive: src="{{ rc_vns_archives.results[item.0].files[0].path }}" dest="{{ nuage_unpacked_dest_path }}/{{ item.1 }}"
-    register: rc_vns_archives_files
-    with_indexed_items:
-      - "vns/nsg/aws"
-    when: false
+  - name: Unpack VNS Utils archive file
+    unarchive: src="{{ rc_utils_archive.files[0].path }}" dest="{{ nuage_unpacked_dest_path }}/vns/utils/"
+    when: rc_utils_archive.matched > 0
   
+  - name: Find name of NSG-AWSs archive file
+    find: path="{{ nuage_unpacked_dest_path }}/vns/nsg" pattern="Nuage-NSG-*AWS*"
+    register: rc_aws_archive
+ 
+  - name: Unpack NSG-AWS archive file
+    unarchive: src="{{ rc_aws_archive.files[0].path }}" dest="{{ nuage_unpacked_dest_path }}/vns/nsg/aws"
+    when: rc_aws_archive.matched > 0
   when: not nuage_unpacked|default(false)
   tags:
     - vns
@@ -329,8 +323,8 @@
     - nuage-unpack
 
 - block:
-    - debug: var=vnsutil_qcow2_path
-    - debug: var=vnsutil_qcow2_file_name
+    - debug: var=vnsutil_qcow2_path verbosity=1
+    - debug: var=vnsutil_qcow2_file_name verbosity=1
   tags:
     - vns
     - nuage-unpack

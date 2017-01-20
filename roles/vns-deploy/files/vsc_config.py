@@ -52,7 +52,7 @@ def get_vsdlines(fp):
 # Returns the list of VSC hosts
 def get_vschosts(playbook_dir):
     fp = ''
-    hosts_file = playbook_dir+'/hosts'
+    hosts_file = playbook_dir + '/hosts'
 
     if (not os.path.exists(hosts_file)):
         print ("ERROR! Hosts file not found.")
@@ -73,7 +73,7 @@ def get_vschosts(playbook_dir):
 # Returns the list of VSD hosts
 def get_vsdhosts(playbook_dir):
     fp = ''
-    hosts_file = playbook_dir+'/hosts'
+    hosts_file = playbook_dir + '/hosts'
 
     if (not os.path.exists(hosts_file)):
         print ("ERROR! Hosts file not found.")
@@ -99,7 +99,7 @@ def get_vscinfo(playbook_dir):
     vsc_host_vars = {}
 
     for vscs in vsc_hosts:
-        host_vars_path = playbook_dir+"/host_vars/"+vscs
+        host_vars_path = playbook_dir + "/host_vars/" + vscs
         if (not os.path.exists(host_vars_path)):
             print ("ERROR! Host_vars file not found for host: {0}."
                    .format(host_vars_path))
@@ -124,7 +124,7 @@ def get_vsdinfo(playbook_dir):
     vsd_host_vars = {}
 
     for vsds in vsd_hosts:
-        host_vars_path = playbook_dir+"/host_vars/"+vsds
+        host_vars_path = playbook_dir + "/host_vars/" + vsds
         if (not os.path.exists(host_vars_path)):
             print ("ERROR! Host_vars file not found for host: {0}."
                    .format(host_vars_path))
@@ -189,7 +189,7 @@ def run_commands(commands, vsc, vsd_hosts_vars, xmpp_username):
                     tls + 'own-certificate cf1:\%s.pem' % xmpp_username,
                     tls + 'ca-certificate cf1:\%s-CA.pem' % xmpp_username]
 
-    commands = tls_commands+commands
+    commands = tls_commands + commands
     print commands
     # Convert cmd output to dict
     for cmd in commands:
