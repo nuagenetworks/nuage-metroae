@@ -1,2 +1,196 @@
 ---
+- name: Gathering info on VM
+  connection: local
+  vmware_guest:
+    hostname: "{{ target_server }}"
+    username: "{{ vcenter.username }}"
+    password: "{{ vcenter.password }}"
+    name: "{{ inventory_hostname }}"
+    validate_certs: no
+  register: vsd_vm_facts
+  ignore_errors: yes
 
+- debug: var=vsd_vm_facts verbosity=1
+
+- name: Verify the VSD {{ inventory_hostname }} VM does not exist
+  assert: 
+    that: "vsd_vm_facts.failed"
+    msg: "VM {{ inventory_hostname }} already exists, quiting"
+
+- name: Deploy VSD Image on vCenter
+  connection: local
+  command: >
+    {{ vcenter.ovftool }}
+    --acceptAllEulas
+    --noSSLVerify
+    --powerOn
+    --machineOutput
+    -dm=thin
+    -ds={{ vcenter.datastore }}
+    -n={{ inventory_hostname }}
+    --net:"VM Network={{ data_bridge }}"
+    "{{ vsd_ova_path }}/{{ vsd_ova_file_name }}"
+    vi://'{{ vcenter.username | urlencode }}':'{{ vcenter.password | urlencode }}'@{{ target_server }}/{{ vcenter.datacenter }}/host/{{ vcenter.cluster }} 
+
+- name: Waiting 120 seconds to make sure the VSD {{ inventory_hostname }} is up
+  pause: 
+    seconds: 120
+
+- name: Gathering info on VM
+  connection: local
+  vmware_guest:
+    hostname: "{{ target_server }}"
+    username: "{{ vcenter.username }}"
+    password: "{{ vcenter.password }}"
+    name: "{{ inventory_hostname }}"
+    validate_certs: no
+  register: vsd_vm_facts
+
+- debug: var=vsd_vm_facts verbosity=1
+
+- name: Verify the VSD {{ inventory_hostname }} VM came up correctly
+  assert: 
+    that: 
+      - "vsd_vm_facts.instance.hw_guest_id is defined"
+      - "not vsd_vm_facts.instance.hw_guest_id is none"
+      - "not vsd_vm_facts.instance.hw_guest_id == ''"
+    msg: "VSD VM {{ inventory_hostname }} did not come up after two minutes"
+
+- name: Writing eth0 network script file to the VSD VM {{ inventory_hostname }} 
+  connection: local
+  vmware_vm_shell:
+    hostname: "{{ target_server }}"
+    username: "{{ vcenter.username }}"
+    password: "{{ vcenter.password }}"
+    datacenter: "{{ vcenter.datacenter }}"
+    cluster: "{{ vcenter.cluster }}"
+    validate_certs: no
+    vm_id: "{{ inventory_hostname }}"
+    vm_username: "root"
+    vm_password: "Alcateldc"
+    vm_shell: "/usr/bin/echo"
+    vm_shell_args: " '{{ lookup('template', 'ifcfg-eth0.j2') }}' > /etc/sysconfig/network-scripts/ifcfg-eth0" 
+
+- name: Set the owner and group on the eth0 network script file in the VSD VM {{ inventory_hostname }} 
+  connection: local
+  vmware_vm_shell:
+    hostname: "{{ target_server }}"
+    username: "{{ vcenter.username }}"
+    password: "{{ vcenter.password }}"
+    datacenter: "{{ vcenter.datacenter }}"
+    cluster: "{{ vcenter.cluster }}"
+    validate_certs: no
+    vm_id: "{{ inventory_hostname }}"
+    vm_username: "root"
+    vm_password: "Alcateldc"
+    vm_shell: "/usr/bin/chown"
+    vm_shell_args: " 0 0 /etc/sysconfig/network-scripts/ifcfg-eth0" 
+
+- name: Writing network file to the VSD VM {{ inventory_hostname }} 
+  connection: local
+  vmware_vm_shell:
+    hostname: "{{ target_server }}"
+    username: "{{ vcenter.username }}"
+    password: "{{ vcenter.password }}"
+    datacenter: "{{ vcenter.datacenter }}"
+    cluster: "{{ vcenter.cluster }}"
+    validate_certs: no
+    vm_id: "{{ inventory_hostname }}"
+    vm_username: "root"
+    vm_password: "Alcateldc"
+    vm_shell: "/usr/bin/echo"
+    vm_shell_args: " '{{ lookup('template', 'network.j2') }}' > /etc/sysconfig/network" 
+
+- name: Set the owner and group on the network file in the VSD VM {{ inventory_hostname }} 
+  connection: local
+  vmware_vm_shell:
+    hostname: "{{ target_server }}"
+    username: "{{ vcenter.username }}"
+    password: "{{ vcenter.password }}"
+    datacenter: "{{ vcenter.datacenter }}"
+    cluster: "{{ vcenter.cluster }}"
+    validate_certs: no
+    vm_id: "{{ inventory_hostname }}"
+    vm_username: "root"
+    vm_password: "Alcateldc"
+    vm_shell: "/usr/bin/chown"
+    vm_shell_args: " 0 0 /etc/sysconfig/network" 
+
+- name: Create the directory /root/.ssh for authorized_keys on the VSD VM {{ inventory_hostname }} 
+  connection: local
+  vmware_vm_shell:
+    hostname: "{{ target_server }}"
+    username: "{{ vcenter.username }}"
+    password: "{{ vcenter.password }}"
+    datacenter: "{{ vcenter.datacenter }}"
+    cluster: "{{ vcenter.cluster }}"
+    validate_certs: no
+    vm_id: "{{ inventory_hostname }}"
+    vm_username: "root"
+    vm_password: "Alcateldc"
+    vm_shell: "/usr/bin/mkdir"
+    vm_shell_args: " -p /root/.ssh" 
+
+- name: Set the owner and group for the /root/.ssh directory in the VSD VM {{ inventory_hostname }} 
+  connection: local
+  vmware_vm_shell:
+    hostname: "{{ target_server }}"
+    username: "{{ vcenter.username }}"
+    password: "{{ vcenter.password }}"
+    datacenter: "{{ vcenter.datacenter }}"
+    cluster: "{{ vcenter.cluster }}"
+    validate_certs: no
+    vm_id: "{{ inventory_hostname }}"
+    vm_username: "root"
+    vm_password: "Alcateldc"
+    vm_shell: "/usr/bin/chown"
+    vm_shell_args: " 0 0 /root/.ssh" 
+
+- name: Get the public key for the current user
+  local_action: command cat ~/.ssh/id_rsa.pub
+  register: current_user_ssh_key
+
+- name: Writing authorized_keys to the VSD VM {{ inventory_hostname }} 
+  connection: local
+  vmware_vm_shell:
+    hostname: "{{ target_server }}"
+    username: "{{ vcenter.username }}"
+    password: "{{ vcenter.password }}"
+    datacenter: "{{ vcenter.datacenter }}"
+    cluster: "{{ vcenter.cluster }}"
+    validate_certs: no
+    vm_id: "{{ inventory_hostname }}"
+    vm_username: "root"
+    vm_password: "Alcateldc"
+    vm_shell: "/usr/bin/echo"
+    vm_shell_args: " '{{ lookup('template', 'authorized_keys.j2') }}' > /root/.ssh/authorized_keys" 
+
+- name: Set the mode on the authorized_keys file in the VSD VM {{ inventory_hostname }} 
+  connection: local
+  vmware_vm_shell:
+    hostname: "{{ target_server }}"
+    username: "{{ vcenter.username }}"
+    password: "{{ vcenter.password }}"
+    datacenter: "{{ vcenter.datacenter }}"
+    cluster: "{{ vcenter.cluster }}"
+    validate_certs: no
+    vm_id: "{{ inventory_hostname }}"
+    vm_username: "root"
+    vm_password: "Alcateldc"
+    vm_shell: "/usr/bin/chmod"
+    vm_shell_args: " 0640 /root/.ssh/authorized_keys" 
+
+- name: Reboot VSD VM {{ inventory_hostname }}
+  connection: local
+  vmware_vm_shell:
+    hostname: "{{ target_server }}"
+    username: "{{ vcenter.username }}"
+    password: "{{ vcenter.password }}"
+    datacenter: "{{ vcenter.datacenter }}"
+    cluster: "{{ vcenter.cluster }}"
+    validate_certs: no
+    vm_id: "{{ inventory_hostname }}"
+    vm_username: "root"
+    vm_password: "Alcateldc"
+    vm_shell: "/usr/sbin/reboot"
+  
