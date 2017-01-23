@@ -43,7 +43,9 @@
   remote_user: root
 
 - name: Stop the ntpd service if running
-  command: service ntpd stop
+  systemd:
+    name: ntpd
+    state: stopped
   remote_user: root
 
 - name: Manually sync time with ntp server
@@ -51,7 +53,15 @@
   remote_user: root
 
 - name: Start ntpd on {{ inventory_hostname }}
-  command: service ntpd start
+  systemd:
+    name: ntpd
+    state: started
+  remote_user: root
+
+- name: Enable ntpd on boot on {{ inventory_hostname }}
+  systemd:
+    name: ntpd
+    enabled: yes
   remote_user: root
 
 - name: check ntp sync state
@@ -65,7 +75,9 @@
 
 - block:
   - name: restart ntp if it hasn't synced yet
-    command: service ntpd restart
+    systemd:
+      name: ntpd
+      state: restarted
     remote_user: root
   - name: check ntp sync state
     shell: ntpstat | awk 'NR==1{print $1}'
@@ -91,7 +103,9 @@
   remote_user: root
 
 - name: Restart elastic search {{ inventory_hostname }}
-  command: systemctl restart elasticsearch
+  systemd:
+    name: elasticsearch
+    state: restarted
   remote_user: root
 
 - name: Enable stats collection on the VSD VM
