@@ -8,19 +8,42 @@
   command: /opt/vsd/bin/ejmode allow -y
   remote_user: root
   delegate_to: "{{ vsd_fqdn }}"
+
+- block: 
+  - name: Install pip on VSD
+    easy_install:
+      name: pip
+      state: latest
+    remote_user: root
+    delegate_to: "{{ vsd_fqdn }}"
  
-- name: Install pip on VSD
-  easy_install:
-    name: pip
-    state: latest
-  remote_user: root
-  delegate_to: "{{ vsd_fqdn }}"
+  - name: Install pexpect on VSD
+    pip:
+      name: pexpect
+    remote_user: root
+    delegate_to: "{{ vsd_fqdn }}"
+  when: yum_proxy == 'NONE'
+
+- block: 
+  - name: Install pip on VSD
+    easy_install:
+      name: pip
+      state: latest
+    remote_user: root
+    delegate_to: "{{ vsd_fqdn }}"
+    environment:
+      http_proxy: "{{ yum_proxy }}"
+      https_proxy: "{{ yum_proxy }}"
  
-- name: Install pexpect on VSD
-  pip:
-    name: pexpect
-  remote_user: root
-  delegate_to: "{{ vsd_fqdn }}"
+  - name: Install pexpect on VSD
+    pip:
+      name: pexpect
+    remote_user: root
+    delegate_to: "{{ vsd_fqdn }}"
+    environment:
+      http_proxy: "{{ yum_proxy }}"
+      https_proxy: "{{ yum_proxy }}"
+  when: yum_proxy != 'NONE'
 
 - block:
    - name: Create and transfer certs from VSD to {{ inventory_hostname }}
