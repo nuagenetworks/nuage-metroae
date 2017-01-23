@@ -1,5 +1,5 @@
 ---
-- name: Wait for VSD ssh to be ready
+- name: Wait for VCIN ssh to be ready
   connection: local
   wait_for:
     port: "22"
@@ -11,29 +11,10 @@
   blockinfile:
     dest: /etc/hosts
     block: |
-      {% for host in groups['vsds']  %}
+      {% for host in groups['vcins']  %}
       {{ hostvars[host]['interfaces']['mgmt']['ip'] }}    {{ host }}
       {% endfor %}
   remote_user: root
-
-- block:
-  - name: Generate SSH keys 
-    shell: ssh-keygen -b 2048 -t rsa -f /root/.ssh/id_rsa -q -N ""
-    args:
-      creates: /root/.ssh/id_rsa
-    remote_user: root
-
-  - name: Get generated SSH keys 
-    shell: cat ~/.ssh/id_rsa.pub
-    register: ssh_key
-    remote_user: root
-
-  - name: Add SSH keys to authorized_keys file
-    shell: "echo {{ssh_key.stdout}} >> /root/.ssh/authorized_keys"
-    delegate_to: "{{ item }}"
-    with_items: "{{ groups['vsds'] }}"
-    remote_user: root
-  when: vsd_standalone == False
 
 - name: Delete the localtime file
   file:
@@ -50,7 +31,7 @@
 
 - name: Copy files to pin OS version
   copy:
-    src: ./roles/vsd-deploy/files/
+    src: ./roles/vcin-deploy/files/
     dest: /etc/yum.repos.d/
   remote_user: root
 
@@ -142,24 +123,6 @@
     remote_user: root
   when: sync_status.stdout != "synchronized"
 
-- name: Install VSD software on standalone node
+- name: Install VCIN software
   command: /opt/vsd/vsd-install.sh -t s -y
-  when: vsd_standalone == True
   remote_user: root
-
-- block:
-  - name: Install VSD software on HA node1 {{groups['vsds'][0]}}
-    command: "{{ vsd_ha_node1 }}"
-    when: inventory_hostname == groups['vsds'][0]
-    remote_user: root
-
-  - name: Install VSD software on HA node2 {{groups['vsds'][1]}}
-    command: "{{ vsd_ha_node2 }}"
-    when: inventory_hostname == groups['vsds'][1]
-    remote_user: root
-
-  - name: Install VSD software on HA node3 {{groups['vsds'][2]}}
-    command: "{{ vsd_ha_node3 }}"
-    when: inventory_hostname == groups['vsds'][2]
-    remote_user: root
-  when: vsd_standalone == False
