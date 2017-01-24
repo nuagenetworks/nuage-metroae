@@ -1,14 +1,12 @@
 ---
 - block:
-  - name: Put all domains in maintainance mode
-    local_action: command python {{playbook_dir}}/scripts/enable_maintainance_mode.py {{playbook_dir}}
-    register: mode
+  - name: Enabled maintainance mode on all l3/l2 domains
+    vsd_maintainance:
+      vsd_auth:
+        "{{ vsd_creds }}"
+      state: enabled
+    delegate_to: 127.0.0.1
 
-  - name: Search for errors in the enable maintainance mode script
-    assert: 
-      that: "not 'ERROR' in mode.stdout"
-      msg: "Failed to enable maintainance mode on l3/l2 domains in VSD"
-    
   - name: Reading the status of the DB upgrade directory
     stat:
       path: "/var/lib/mysql/nuageDbUpgrade/"
@@ -33,14 +31,12 @@
       msg: "Could not find nuageDbUpgrade database in mysql"
 
   - name: Update gateway purge timer 
-    local_action: command python {{playbook_dir}}/scripts/vsd_sys_config.py {{playbook_dir}}
-    register: update
+    config_vsd_system:
+      vsd_auth:
+        "{{ vsd_creds }}"
+      gateway_purge_time: 86400
+    delegate_to: 127.0.0.1
  
-  - name: Search for errors in the gateway purge timer update
-    assert: 
-      that: "not 'ERROR' in update.stdout"
-      msg: "Could not find nuageDbUpgrade database in MySQL"
-
   - name: Purge the alarms and event history from database
     shell: "{{ item }}"
     with_items: "{{ purge_cmd }}"
