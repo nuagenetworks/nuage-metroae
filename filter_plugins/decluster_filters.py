@@ -17,13 +17,16 @@ import json
 #    under the License.
 
 
-def p1db_to_json(string):
+def ejabberd_list_p1db_to_json(string):
     ''' Given a string representation of the output of
     "/opt/ejabberd/bin/ejabberdctl list_p1db" as a string,
     return a JSON representation of a subset of the data in that output.
     A sample of the output after running script
     {
       "p1db_users": []
+    }
+    {
+      "p1db_users": ["'ejabberd@vsd1.example.com'","'ejabberd@vsd3.example.com'"]
     }
     '''
     if string:
@@ -34,7 +37,7 @@ def p1db_to_json(string):
     return json.dumps(p1db)
 
 
-def cluster_to_json(string):
+def ejabberd_list_cluster_to_json(string):
     ''' Given a string representation of the output of
     "/opt/ejabberd/bin/ejabberdctl list_cluster" as a string,
     return a JSON representation of a subset of the data in that output.
@@ -44,16 +47,16 @@ def cluster_to_json(string):
     }
     '''
     if not string:
-        return json.dumps(cluster_users={'cluster_users': []})
+        return json.dumps({'cluster_users': []})
     string = string.replace("'", "")
     lst_cluster_users = string.split('\n')
     cluster_users = {'cluster_users': lst_cluster_users}
     return json.dumps(cluster_users)
 
 
-def clients_to_json(string):
+def ejabberd_list_clients_to_json(string):
     ''' Given a string representation of the output of
-    "/opt/ejabberd/bin/ejabberdctl list_cluster" as a string,
+    "/opt/ejabberd/bin/ejabberdctl connected_users" as a string,
     return a JSON representation of a subset of the data in that output.
     A sample of the output after running script
     {
@@ -64,7 +67,7 @@ def clients_to_json(string):
     }
     '''
     if not string:
-        return json.dumps(cluster_users={'connected_clients': []})
+        return json.dumps({'connected_clients': []})
     lst_clients = string.split('\n')
     clients = {'connected_clients': lst_clients}
     return json.dumps(clients)
@@ -75,7 +78,7 @@ class FilterModule(object):
 
     def filters(self):
         return {
-            'p1db_to_json': p1db_to_json,
-            'cluster_to_json': cluster_to_json,
-            'clients_to_json': clients_to_json,
+            'ejabberd_p1db_to_json': ejabberd_list_p1db_to_json,
+            'ejabberd_cluster_to_json': ejabberd_list_cluster_to_json,
+            'ejabberd_clients_to_json': ejabberd_list_clients_to_json,
         }
