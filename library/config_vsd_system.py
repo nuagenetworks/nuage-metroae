@@ -25,7 +25,7 @@ options:
 '''
 
 EXAMPLES = '''
-# Verify the state of program "ntpd-status" state.
+# Configure gateway purge time in VSD
 - config_vsd_system:
     vsd_auth:
       username: csproot
