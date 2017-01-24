@@ -56,16 +56,16 @@ For reference, here is a description of the contents of the `build-vars.yml` fil
 
 ```
 #    # The directory where the Nuage Networks binariy archives are located. This is only
-#    # required if nauge_unpacked == false. See below.
-#    nuage_release_src_path: "{{ ansible_env.HOME}}/nuage-release"
+#    # required if nauge_already_unpacked == false. See below.
+#    nuage_packed_src_path: "{{ ansible_env.HOME}}/nuage-release"
 #    # The directory where to extract the relevant Nuage Networks binaries to
 #    nuage_unpacked_dest_path: "{{ ansible_env.HOME}}/nuage-unpacked"
-#    # Parameter used to define the Hypervisor-Architecture (One of: el6|el7|ubuntu)
-#    nuage_target_architecture: "el7"
 #    # Parameter to define whether binaries have already been extracted
 #    # If true, the playbooks will *not* unpack. Files in nnuage_unpacked_dest_path
 #    # will be used as is. If false, the nuage_unpack role will be executed.
-#    nuage_unpacked: true
+#    nuage_already_unpacked: true
+#    # Parameter used to define the Hypervisor-Architecture (One of: el6|el7|ubuntu)
+#    nuage_target_architecture: "el7"
 #    # Nuage OpenStack release
 #    # required to populate/unpack nuage openstack packages
 #    # supported OpenStack release for metro - liberty, mitaka
