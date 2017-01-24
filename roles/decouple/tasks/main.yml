@@ -1,0 +1,71 @@
+---
+- block:
+  - name: Check media ISO is mounted
+    shell: "mount | grep VSD | grep /media/CDROM"
+    register: mount_file
+    remote_user: root
+
+  - name: Verify mount path exists for decouple script
+    assert:
+      that:
+        - "'iso' in mount_file.stdout"
+      msg: "Did not find iso file in mount path"
+
+  - name: Decouple VSD Node
+    command: "/media/CDROM/decouple.sh -y"
+    remote_user: root
+
+  - name: Confirm ejaabered is decoupled from p1db
+    command: "{{ p1db_cmd }}"
+    register: ejab_users
+ 
+  - name: Create local variable with p1db output to json
+    set_fact: p1db_json="{{ ejab_users.stdout|p1db_to_json }}"
+  
+  - name: Write p1bd JSON to file
+    nuage_append: filename="{{ report_filename }}" text="{{ inventory_hostname }} {{ p1db_json|to_nice_json }}\n"
+    delegate_to: localhost
+
+  - name: Verify the ejabbered p1db output in empty string
+    assert:
+      that: "not p1db_json['p1db_users']"
+      msg: "Ejabbered is not decoupled"
+
+  - name: Confirm ejabbered is decoupled form cluster
+    command: "{{ ejabber_decouple }}"
+    register: cluster_users
+
+  - name: Create local variable with ejabberd cluster output to json
+    set_fact: cluster_json="{{ cluster_users.stdout|cluster_to_json }}"
+  
+  - name: Write cluster JSON to file
+    nuage_append: filename="{{ report_filename }}" text="{{ inventory_hostname }} {{ cluster_json|to_nice_json }}\n"
+    delegate_to: localhost
+
+  - name: Veriy cluster output lists only itself
+    assert:
+      that: 
+        - "'ejabberd@{{ inventory_hostname }}' == cluster_json['cluster_users'][0]"
+        - "cluster_json['cluster_users'] | length == 1" 
+      msg: "Ejjaberd is not decoupled successfully"
+ 
+  - name: Wait for ejabberd to clean connected clients other than itself
+    pause:
+      seconds: 10
+
+  - name: Confirm ejabbered has connections from its own clients
+    command: "{{ connected_users }}"
+    register: client_list
+
+  - name: Create local variable with ejabberd connected clients to json
+    set_fact: clients_json="{{ client_list.stdout|clients_to_json }}"
+  
+  - name: Write clients JSON to file
+    nuage_append: filename="{{ report_filename }}" text="{{ inventory_hostname }} {{ clients_json|to_nice_json }}\n"
+    delegate_to: localhost
+
+  - name: Verify ejabbered does not contain clients other that itself
+    assert:
+      that: "clients_json['connected_clients'] | length == 3"
+      msg: " Ejabberd has more than 3 connected clients than itself" 
+  when: inventory_hostname == groups['vsds'][1]

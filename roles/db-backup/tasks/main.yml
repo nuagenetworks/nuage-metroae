@@ -1,0 +1,88 @@
+---
+- block:
+  - name: Put all domains in maintainance mode
+    local_action: command python {{playbook_dir}}/scripts/enable_maintainance_mode.py {{playbook_dir}}
+    register: mode
+ 
+  - name: Search for errors in the enable maintainance mode script
+    fail: msg={{ mode.stdout }}
+    when: mode.stdout | search("(?i)ERROR") 
+    
+  - name: Check dir for database exists
+    stat:
+      path: "/var/lib/mysql/nuageDbUpgrade/"
+    register: db_dir
+    remote_user: root
+  
+  - name: Verify if dir exists
+    assert: 
+      that: 
+        - db_dir.stat.exists == True
+      msg: "nuageDbUpgrade dir does not exist"
+
+  - name: Check the database is properly identified by MySQL
+    shell: "mysql -e 'show databases;' | grep nuageDbUpgrade"
+    register: db
+    remote_user: root
+  
+  - name: Verify the database name
+    assert: 
+      that: 
+        - "'nuageDbUpgrade' == db.stdout"
+      msg: "Could not find nuageDbUpgrade database in mysql"
+
+  - name: Update gateway purge timer 
+    local_action: command python {{playbook_dir}}/scripts/vsd_sys_config.py {{playbook_dir}}
+    register: update
+ 
+  - name: Search for errors in the gateway purge timer update script
+    fail: msg={{ update.stdout }}
+    when: update.stdout | search("(?i)ERROR")
+
+  - name: Purge the alarms and event history from database
+    shell: "{{ item }}"
+    with_items: "{{ purge_cmd }}"
+    remote_user: root
+  
+  - name: Check media ISO is mounted
+    shell: "mount | grep VSD | grep /media/CDROM"
+    register: mount_file
+    remote_user: root
+
+  - name: Verify mount path exists for backup scripts
+    assert: 
+      that:
+        - "'.iso' in mount_file.stdout"
+      msg: "Did not find iso file in mount path"
+
+  - name: Run backup script from mount location
+    shell: "{{ backup_cmd }}"
+    remote_user: root
+ 
+  - name: Find files created in /tmp/backup
+    find:
+      path: "/tmp/backup"
+      patterns: "{{ item }}"
+    with_items:
+      - "myappconfiguration-*.gz"
+      - "mycertificate-*.gz"
+      - "mydatabase-*.gz" 
+    remote_user: root
+    register: lst_files
+
+  - name: Verify files found in /tmp/backup
+    assert:
+      that: "{{ item.matched }} > 0"
+      msg: "Could not find file {{ item.item }}"
+    with_items: "{{ lst_files.results }}"
+  
+  #TODO: Update Readme 
+  #The vsd node where backup is generated should have password less access to backup machine
+  - name: Copy the backup to {{ backup_machine }}
+    synchronize:
+      src: "/tmp/backup/"
+      dest: "/tmp/backup/"
+      mode: pull 
+    remote_user: root
+    delegate_to: "{{ backup_machine }}"
+  when: inventory_hostname == groups['vsds'][0]
