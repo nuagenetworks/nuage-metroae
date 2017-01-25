@@ -12,6 +12,7 @@
 #  License for the specific language governing permissions and limitations
 #  under the License.
 from vspk.v4_0 import NUVSDSession, NUSubnet
+from bambou import exceptions
 import yaml
 import sys
 from ipaddr import IPAddress
@@ -19,7 +20,9 @@ import argparse
 import json
 
 # Network limit
-net_limit = '10.107.0.0'
+NET_LIMIT = '10.107.0.0'
+# Status of network creation
+NET_CREATE = False
 
 
 def get_zone_obj(csp_user, org_name='Nuage_Partition1',
@@ -39,18 +42,10 @@ def get_zone_obj(csp_user, org_name='Nuage_Partition1',
     return (zone)
 
 
-def create_subnet(zone):
-    lst_addr = zone.subnets.get()
-    lst_networks = [IPAddress(net.address) for net in lst_addr]
-    # Incerement the subnet value by 256 to create new subnet
-    lst_networks.sort()
-    new_sub = lst_networks[-1] + 256
-    if new_sub == net_limit:
-        print("ERROR: Exceeded max network limit")
-        sys.exit(1)
+def update_subnet_info(subnet_addr):
+    new_sub = subnet_addr
     gateway_addr = new_sub + 1
     net_name = str(new_sub).split('.')
-
     subnet_info = {'address': str(new_sub),
                    'gateway': str(gateway_addr),
                    'netmask': vsd_constants['netmask'],
@@ -60,8 +55,30 @@ def create_subnet(zone):
                    'PATEnabled': vsd_constants['PATEnabled']
                    }
     sub_obj = NUSubnet(data=subnet_info)
-    zone.create_child(sub_obj)
     return (sub_obj, net_name[2])
+
+
+def create_subnet(zone):
+    global NET_CREATE
+    lst_addr = zone.subnets.get()
+    lst_networks = [IPAddress(net.address) for net in lst_addr]
+    # Incerement the subnet value by 256 to create new subnet
+    lst_networks.sort()
+    new_sub = lst_networks[-1] + 256
+    if new_sub == NET_LIMIT:
+        print("ERROR: Exceeded max network limit")
+        sys.exit(1)
+    sub_obj, net_name = update_subnet_info(new_sub)
+    while not NET_CREATE:
+        try:
+            zone.create_child(sub_obj)
+            NET_CREATE = True
+        except exceptions.BambouHTTPError as e:
+            if 'Network overlaps' in e.message:
+                new_sub = new_sub + 256
+                sub_obj, net_name = update_subnet_info(new_sub)
+            pass
+    return (sub_obj, net_name)
 
 
 if __name__ == '__main__':
