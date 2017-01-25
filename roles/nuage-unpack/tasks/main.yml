@@ -7,7 +7,7 @@
 - block:
   - block:
     - name: Find name of VSD QCOW2 Archive
-      find: path="{{ nuage_release_src_path }}"  pattern="Nuage-VSD*QCOW*"
+      find: path="{{ nuage_packed_src_path }}"  pattern="Nuage-VSD*QCOW*"
       register: rc_vsd
     - debug: var=rc_vsd verbosity=1
     - block:
@@ -20,7 +20,7 @@
         register: rc_vsd_archive_files
       - debug: var=rc_vsd_archive_files verbosity=1
       when: rc_vsd.matched > 0 
-    when: not nuage_unpacked|default(false)
+    when: not nuage_already_unpacked|default(false)
     tags:
       - nuage-unpack
   - name: Find name of VSD QCOW2 File
@@ -48,7 +48,7 @@
 - block:
   - block:
     - name: Find name of VSD OVA Archive
-      find: path="{{ nuage_release_src_path }}"  pattern="Nuage-VSD*OVA*"
+      find: path="{{ nuage_packed_src_path }}"  pattern="Nuage-VSD*OVA*"
       register: rc_vsd
     - debug: var=rc_vsd verbosity=1
     - block:
@@ -104,7 +104,7 @@
 - block:
   - block:
     - name: Find name of Stats VM Archive
-      find: path="{{ nuage_release_src_path }}"  pattern="Nuage-elastic-\d.*" use_regex=true
+      find: path="{{ nuage_packed_src_path }}"  pattern="Nuage-elastic-\d.*" use_regex=true
       register: rc_vstat
     - debug: var=rc_vstat verbosity=1
     - block:
@@ -117,7 +117,7 @@
         register: rc_vstat_archive_files
       - debug: var=rc_vstat_archive_files verbosity=1
       when: rc_vstat.matched > 0 
-    when: not nuage_unpacked|default(false) and myvstats is defined
+    when: not nuage_already_unpacked|default(false) and myvstats is defined
     tags:
       - nuage-unpack
   - block:
@@ -175,7 +175,7 @@
 - block:
   - block:
     - name: Find name of VSC Archive
-      find: path="{{ nuage_release_src_path }}"  pattern="Nuage-VSC*"
+      find: path="{{ nuage_packed_src_path }}"  pattern="Nuage-VSC*"
       register: rc_vsc
     - debug: var=rc_vsc verbosity=1
     - block:
@@ -188,7 +188,7 @@
         register: rc_vsc_archive_files
       - debug: var=rc_vsc_archive_files verbosity=1
       when: rc_vsc.matched > 0
-    when: not nuage_unpacked|default(false)
+    when: not nuage_already_unpacked|default(false)
     tags:
       - nuage-unpack
   - block:
@@ -247,7 +247,7 @@
 - block:
   - block:
     - name: Find name of VRS Archive
-      find: path="{{ nuage_release_src_path }}"  pattern="Nuage-VRS*{{ nuage_target_architecture}}*"
+      find: path="{{ nuage_packed_src_path }}"  pattern="Nuage-VRS*{{ nuage_target_architecture}}*"
       register: rc_vrs
     - debug: var=rc_vrs verbosity=1
     - block:
@@ -260,7 +260,7 @@
         register: rc_vrs_archive_files
       - debug: var=rc_vrs_archive_files verbosity=1
       when: rc_vrs.matched > 0
-    when: not nuage_unpacked|default(false)
+    when: not nuage_already_unpacked|default(false)
     tags:
       - nuage-unpack
   - block:
@@ -335,7 +335,7 @@
 - block:
   - block:
     - name: Find name of Docker-Monitor Archive
-      find: path="{{ nuage_release_src_path }}"  pattern="Nuage-Docker-Monitor*"
+      find: path="{{ nuage_packed_src_path }}"  pattern="Nuage-Docker-Monitor*"
       register: rc_dockermon
     - debug: var=rc_dockermon verbosity=1
     - block:
@@ -348,7 +348,7 @@
         register: rc_dockermon_archive_files
         when: rc_dockermon.matched > 0
       - debug: var=rc_dockermon_archive_files verbosity=1
-    when: not nuage_unpacked|default(false)
+    when: not nuage_already_unpacked|default(false)
     tags:
       - nuage-unpack
   - block:
@@ -404,7 +404,7 @@
 - block:
   - block:
     - name: Find name of VNS Archive
-      find: path="{{ nuage_release_src_path }}"  pattern="Nuage-VNS*"
+      find: path="{{ nuage_packed_src_path }}"  pattern="Nuage-VNS*"
       register: rc_vns
     - debug: var=rc_vns verbosity=1
     - block:
@@ -419,7 +419,7 @@
       - name: Unpack VNS Archive
         unarchive: src="{{ rc_vns.files[0].path}}" dest="{{ nuage_unpacked_dest_path }}/vns" list_files=yes
         register: rc_vns_archive_files
-      when: rc_vns.matched > 0 and false
+      when: rc_vns.matched > 0
     - name: Find name of NSG and Utils archive files
       find: path="{{ nuage_unpacked_dest_path }}/vns/" pattern="{{ item }}"
       with_items:
@@ -448,7 +448,7 @@
         with_indexed_items:
           - "vns/nsg/aws"
       when: false
-    when: not nuage_unpacked|default(false)
+    when: not nuage_already_unpacked|default(false)
     tags:
       - nuage-unpack
   - name: Find names of VNS files
@@ -491,7 +491,7 @@
 - block:
   - block:
     - name: Find name of Nuage OpenStack Plugin Archive
-      find: path="{{ nuage_release_src_path }}"  pattern="Nuage-openstack*"
+      find: path="{{ nuage_packed_src_path }}"  pattern="Nuage-openstack*"
       register: rc_nuage_os
     - debug: var=rc_nuage_os verbosity=1
     - block:
@@ -504,7 +504,7 @@
         register: rc_nuage_os_archive_files
       - debug: var=rc_nuage_os_archive_files
       when: rc_nuage_os.matched > 0
-    when: not nuage_unpacked|default(false)
+    when: not nuage_already_unpacked|default(false)
     tags:
       - nuage_unpack
   - name: Find name of Nuage OpenStack Package Files (RH architecture)
