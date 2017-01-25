@@ -48,8 +48,8 @@ def get_vsd_session(vsd_auth):
 
 
 arg_spec = dict(
-        vsd_auth=dict(required=True, type='dict'),
-        gateway_purge_time=dict(required=True, type='int')
+    vsd_auth=dict(required=True, type='dict'),
+    gateway_purge_time=dict(required=True, type='int')
 )
 module = AnsibleModule(argument_spec=arg_spec, supports_check_mode=True)
 if not HAS_VSPK:

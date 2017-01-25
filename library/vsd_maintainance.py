@@ -52,7 +52,7 @@ def set_maintainance_mode(csproot, state):
             result_str = result_str + \
                 'Maintainance mode for all L3 domains-%s,' % state
         else:
-            result_str = result_str+'No L3 domains found\
+            result_str = result_str + 'No L3 domains found\
                          to %s maintainance mode,' % state
 
         lst_l2_domains = csproot.l2_domains.get()
@@ -67,7 +67,7 @@ def set_maintainance_mode(csproot, state):
             result_str = result_str + \
                 ' Maintainance mode for all L2 domains-%s,' % state
         else:
-            result_str = result_str+' No L2 domains found\
+            result_str = result_str + ' No L2 domains found\
                          to %s maintainance mode' % state
     except Exception as e:
         module.fail_json(msg="Could not set maintainance mode : %s" % e)
@@ -85,8 +85,8 @@ def get_vsd_session(vsd_auth):
 
 
 arg_spec = dict(
-        vsd_auth=dict(required=True, type='dict'),
-        state=dict(required=True, choices=['enabled', 'disabled'])
+    vsd_auth=dict(required=True, type='dict'),
+    state=dict(required=True, choices=['enabled', 'disabled'])
 )
 module = AnsibleModule(argument_spec=arg_spec, supports_check_mode=True)
 if not HAS_VSPK:
