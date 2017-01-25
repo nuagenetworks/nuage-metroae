@@ -1,55 +1,64 @@
 ---
 - block:
-  - name: Put all domains in maintainance mode
-    local_action: command python {{playbook_dir}}/scripts/enable_maintainance_mode.py {{playbook_dir}}
-    register: mode
- 
-  - name: Search for errors in the enable maintainance mode script
-    fail: msg={{ mode.stdout }}
-    when: mode.stdout | search("(?i)ERROR") 
-    
-  - name: Check dir for database exists
+  - name: Enabled maintainance mode on all l3/l2 domains
+    vsd_maintainance:
+      vsd_auth:
+        "{{ vsd_creds }}"
+      state: enabled
+    register: mode_status
+    delegate_to: 127.0.0.1
+
+  - name: Print vsd maintainance mode output when verbosity >= 1
+    debug: var=mode_status verbosity=1
+
+  - name: Reading the status of the DB upgrade directory
     stat:
       path: "/var/lib/mysql/nuageDbUpgrade/"
     register: db_dir
     remote_user: root
   
-  - name: Verify if dir exists
+  - name: Verify that DB upgrade directory exists
     assert: 
       that: 
         - db_dir.stat.exists == True
       msg: "nuageDbUpgrade dir does not exist"
 
-  - name: Check the database is properly identified by MySQL
+  - name: Check that the database is properly identified by MySQL
     shell: "mysql -e 'show databases;' | grep nuageDbUpgrade"
     register: db
     remote_user: root
   
-  - name: Verify the database name
+  - name: Verify the upgrade database name
     assert: 
       that: 
         - "'nuageDbUpgrade' == db.stdout"
       msg: "Could not find nuageDbUpgrade database in mysql"
 
   - name: Update gateway purge timer 
-    local_action: command python {{playbook_dir}}/scripts/vsd_sys_config.py {{playbook_dir}}
-    register: update
+    config_vsd_system:
+      vsd_auth:
+        "{{ vsd_creds }}"
+      gateway_purge_time: 86400
+    register: update_time_status
+    delegate_to: 127.0.0.1
  
-  - name: Search for errors in the gateway purge timer update script
-    fail: msg={{ update.stdout }}
-    when: update.stdout | search("(?i)ERROR")
+  - name: Print update time output when verbosity >= 1
+    debug: var=update_time_status verbosity=1
 
   - name: Purge the alarms and event history from database
     shell: "{{ item }}"
     with_items: "{{ purge_cmd }}"
     remote_user: root
   
-  - name: Check media ISO is mounted
+  - name: List VSD-related mounts
     shell: "mount | grep VSD | grep /media/CDROM"
     register: mount_file
     remote_user: root
 
-  - name: Verify mount path exists for backup scripts
+  - name: Print mount output when verbosity >= 1
+    debug: var=mount_file verbosity=1
+
+  - name: Verify that the ISO is mounted
     assert: 
       that:
         - "'.iso' in mount_file.stdout"
@@ -77,12 +86,12 @@
     with_items: "{{ lst_files.results }}"
   
   #TODO: Update Readme 
-  #The vsd node where backup is generated should have password less access to backup machine
+  #The backup_machine should have password less access to vsd node1 where backup is generated
   - name: Copy the backup to {{ backup_machine }}
     synchronize:
       src: "/tmp/backup/"
       dest: "/tmp/backup/"
-      mode: pull 
+      mode: pull
     remote_user: root
     delegate_to: "{{ backup_machine }}"
   when: inventory_hostname == groups['vsds'][0]
