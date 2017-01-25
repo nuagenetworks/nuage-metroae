@@ -12,10 +12,24 @@
   copy: src={{ vrs_package_path }}/{{ item }} dest={{ temp_dir }}/{{ inventory_hostname }}/{{ item }}
   with_items: "{{ vrs_package_file_name_list }}"
 
+#- name: Set dockermon_check
+#  set_fact: myvscs_check={{myvscs is defined}}
+
+- name: Assign empty list to dockermon_package_file_name if it is undefined
+  set_fact: dockermon_package_file_name= default([])
+#  when: not myvscs_check
+  when: not dockermon_flag
+
+#- name: Create host_vars files for vsc
+#  template: src=vsc.j2 backup=no dest={{ playbook_dir }}/host_vars/{{ item.hostname }}
+#  with_items: "{{ myvscs }}"
+#  when: myvscs_check
+
 - name: Copy Dockermon package to temporary directory
   remote_user: root
   copy: src={{ dockermon_package_path }}/{{ item }} dest={{ temp_dir }}/{{ inventory_hostname }}/{{ item }}
   with_items: "{{ dockermon_package_file_name }}"
+  when: dockermon_flag
 
 - include: docker.yml
   when: dockermon_install is defined
