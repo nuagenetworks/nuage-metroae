@@ -7,6 +7,10 @@
     search_regex: OpenSSH
     delay: 1
 
+- name: Query {{ target_server }} facts
+  action: setup
+  remote_user: root
+  
 - name: Update /etc/hosts file on {{ inventory_hostname }}
   blockinfile:
     dest: /etc/hosts
@@ -53,7 +57,7 @@
     src: ./roles/vsd-deploy/files/
     dest: /etc/yum.repos.d/
   remote_user: root
-  when: ansible_lsb.release <= 6.6
+  when: "{{ ansible_distribution_version }} == 6.6"
 
 - name: Execute a yum update on {{ inventory_hostname }}
   yum:
