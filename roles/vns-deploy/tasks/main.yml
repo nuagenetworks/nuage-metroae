@@ -44,17 +44,14 @@
      delegate_to: "{{ vsd_fqdn }}"
      remote_user: root
 
-- block:
-  - name: Create TLS profile in {{ inventory_hostname }}
-    local_action: command python {{playbook_dir}}/roles/vns-deploy/files/vsc_config.py {{ playbook_dir  }} {{ xmpp.username }}
-    register: output
+- name: Create TLS profile in {{ inventory_hostname }}
+  local_action: command python {{playbook_dir}}/roles/vns-deploy/files/vsc_config.py {{ playbook_dir  }} {{ xmpp.username }}
+  register: output
 
-  - name: Verification Result Failure Status
-    fail: msg={{ output.stdout }}
-    when: output.stdout | search("(?i)MINOR")
-    ignore_errors: yes
+- name: Verification Result Failure Status
+  fail: msg={{ output.stdout }}
+  when: output.stdout | search("(?i)MINOR")
+  ignore_errors: yes
 
-  - name: Verification Result Success Status
-    debug: var=output.stdout
-  when: ansible_version.minor < 2
-
+- name: Verification Result Success Status
+  debug: var=output.stdout verbosity=1
