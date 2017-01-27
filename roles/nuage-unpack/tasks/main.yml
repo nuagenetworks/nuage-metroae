@@ -12,11 +12,11 @@
     - debug: var=rc_vsd verbosity=1
     - block:
       - name: Clean up any previous unpacked files
-        file: name="{{ nuage_unpacked_dest_path }}/vsd/" state=absent
+        file: name="{{ nuage_unpacked_dest_path }}/vsd/qcow2" state=absent
       - name: Create subdirectory for unpacked files
-        file: name="{{ nuage_unpacked_dest_path }}/vsd/" state=directory mode=0775
+        file: name="{{ nuage_unpacked_dest_path }}/vsd/qcow2" state=directory mode=0775
       - name: Unpack VSD QCOW2 Archive
-        unarchive: src="{{ rc_vsd.files[0].path}}" dest="{{ nuage_unpacked_dest_path }}/vsd" list_files=yes
+        unarchive: src="{{ rc_vsd.files[0].path}}" dest="{{ nuage_unpacked_dest_path }}/vsd/qcow2" list_files=yes
         register: rc_vsd_archive_files
       - debug: var=rc_vsd_archive_files verbosity=1
       when: rc_vsd.matched > 0 
@@ -24,7 +24,7 @@
     tags:
       - nuage-unpack
   - name: Find name of VSD QCOW2 File
-    find: path="{{ nuage_unpacked_dest_path }}/vsd"  pattern="*.qcow2" recurse=yes
+    find: path="{{ nuage_unpacked_dest_path }}/vsd/qcow2"  pattern="*.qcow2" recurse=yes
     register: rc_vsd_file
   - debug: var=rc_vsd_file verbosity=1
   - name: Verify that a VSD QCOW2 file was found
@@ -38,9 +38,10 @@
       vsd_qcow2_file_name: "{{ rc_vsd_file.files[0].path | basename }}"
       vcin_qcow2_path: "{{ rc_vsd_file.files[0].path | dirname }}"
       vcin_qcow2_file_name: "{{ rc_vsd_file.files[0].path | basename }}"
-  when: 
-    - myvsds is defined
-    - myvsds[0].target_server_type == "kvm" or myvsds[0].target_server_type == "heat"
+  when: ( myvsds is defined and 
+        ( myvsds | map(attribute='target_server_type') | list | issuperset(["kvm"]) or myvsds | map(attribute='target_server_type') | list | issuperset(["heat"]) ) ) or
+        ( myvcins is defined and
+        ( myvcins | map(attribute='target_server_type') | list | issuperset(["kvm"]) or myvcins | map(attribute='target_server_type') | list | issuperset(["heat"]) ) )
   tags:
     - vsd
 
@@ -53,11 +54,11 @@
     - debug: var=rc_vsd verbosity=1
     - block:
       - name: Clean up any previous unpacked files
-        file: name="{{ nuage_unpacked_dest_path }}/vsd/" state=absent
+        file: name="{{ nuage_unpacked_dest_path }}/vsd/ova" state=absent
       - name: Create subdirectory for unpacked files
-        file: name="{{ nuage_unpacked_dest_path }}/vsd/" state=directory mode=0755
+        file: name="{{ nuage_unpacked_dest_path }}/vsd/ova" state=directory mode=0755
       - name: Unpack VSD OVA Archive
-        unarchive: src="{{ rc_vsd.files[0].path}}" dest="{{ nuage_unpacked_dest_path }}/vsd" list_files=yes
+        unarchive: src="{{ rc_vsd.files[0].path}}" dest="{{ nuage_unpacked_dest_path }}/vsd/ova" list_files=yes
         register: rc_vsd_archive_files
       - debug: var=rc_vsd_archive_files verbosity=1
       when: rc_vsd.matched > 0 
@@ -65,7 +66,7 @@
     tags:
       - nuage-unpack
   - name: Find name of VSD OVA File
-    find: path="{{ nuage_unpacked_dest_path }}/vsd"  pattern="*.ova" recurse=yes
+    find: path="{{ nuage_unpacked_dest_path }}/vsd/ova"  pattern="*.ova" recurse=yes
     register: rc_vsd_file
   - debug: var=rc_vsd_file verbosity=1
   - name: Verify that a VSD OVA file was found
@@ -79,9 +80,10 @@
       vsd_ova_file_name: "{{ rc_vsd_file.files[0].path | basename }}"
       vcin_ova_path: "{{ rc_vsd_file.files[0].path | dirname }}"
       vcin_ova_file_name: "{{ rc_vsd_file.files[0].path | basename }}"
-  when: 
-    - myvsds is defined
-    - myvsds[0].target_server_type == "vcenter"
+  when: ( myvsds is defined and 
+        myvsds | map(attribute='target_server_type') | list | issuperset(["vcenter"]) ) or
+        ( myvcins is defined and
+        myvcins | map(attribute='target_server_type') | list | issuperset(["vcenter"]) )
   tags:
     - vsd
 
@@ -147,7 +149,7 @@
         vstat_qcow2_path: "{{ rc_vstat_file.files[0].path | dirname }}"
         vstat_qcow2_file_name: "{{ rc_vstat_file.files[0].path | basename }}"
       when: rc_vstat_file.matched > 0
-    when: myvstats[0].target_server_type == "kvm" or myvstats[0].target_server_type == "heat"
+    when: myvstats | map(attribute='target_server_type') | list | issuperset(["kvm"]) or myvstats | map(attribute='target_server_type') | list | issuperset(["heat"])
   - block:
     - name: Find name of Stats VM OVF File
       find: path="{{ nuage_unpacked_dest_path }}/vstat"  pattern="*.ovf" recurse=yes
@@ -163,7 +165,7 @@
         vstat_ovf_path: "{{ rc_vstat_file.files[0].path | dirname }}"
         vstat_ovf_file_name: "{{ rc_vstat_file.files[0].path | basename }}"
       when: rc_vstat_file.matched > 0
-    when: myvstats[0].target_server_type == "vcenter"
+    when: myvstats | map(attribute='target_server_type') | list | issuperset(["vcenter"])
   when: myvstats is defined
   tags:
     - vstat
@@ -218,7 +220,7 @@
         vsc_qcow2_path: "{{ rc_vsc_file.files[0].path | dirname }}"
         vsc_qcow2_file_name: "{{ rc_vsc_file.files[0].path | basename }}"
       when: rc_vsc_file.matched > 0
-    when: myvscs[0].target_server_type == "kvm" or myvscs[0].target_server_type == "heat"
+    when: myvscs | map(attribute='target_server_type') | list | issuperset(["kvm"]) or myvscs | map(attribute='target_server_type') | list | issuperset(["heat"])
   - block:
     - name: Find name of VSC OVA File
       find: path="{{ nuage_unpacked_dest_path }}/vsc"  pattern="vsc_singledisk.ova" recurse=yes
@@ -234,7 +236,7 @@
         vsc_ova_path: "{{ rc_vsc_file.files[0].path | dirname }}"
         vsc_ova_file_name: "{{ rc_vsc_file.files[0].path | basename }}"
       when: rc_vsc_file.matched > 0
-    when: myvscs[0].target_server_type == "vcenter"
+    when: myvscs | map(attribute='target_server_type') | list | issuperset(["vcenter"])
   when: myvscs is defined
   tags:
     - vsc
