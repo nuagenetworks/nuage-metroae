@@ -3,6 +3,7 @@
 # VSD
 #################
 
+# QCOW2
 - block:
   - block:
     - name: Find name of VSD QCOW2 Archive
@@ -11,11 +12,11 @@
     - debug: var=rc_vsd verbosity=1
     - block:
       - name: Clean up any previous unpacked files
-        file: name="{{ nuage_unpacked_dest_path }}/vsd/" state=absent
+        file: name="{{ nuage_unpacked_dest_path }}/vsd/qcow2" state=absent
       - name: Create subdirectory for unpacked files
-        file: name="{{ nuage_unpacked_dest_path }}/vsd/" state=directory mode=0775
+        file: name="{{ nuage_unpacked_dest_path }}/vsd/qcow2" state=directory mode=0775
       - name: Unpack VSD QCOW2 Archive
-        unarchive: src="{{ rc_vsd.files[0].path}}" dest="{{ nuage_unpacked_dest_path }}/vsd" list_files=yes
+        unarchive: src="{{ rc_vsd.files[0].path}}" dest="{{ nuage_unpacked_dest_path }}/vsd/qcow2" list_files=yes
         register: rc_vsd_archive_files
       - debug: var=rc_vsd_archive_files verbosity=1
       when: rc_vsd.matched > 0 
@@ -23,7 +24,7 @@
     tags:
       - nuage-unpack
   - name: Find name of VSD QCOW2 File
-    find: path="{{ nuage_unpacked_dest_path }}/vsd"  pattern="*.qcow2" recurse=yes
+    find: path="{{ nuage_unpacked_dest_path }}/vsd/qcow2"  pattern="*.qcow2" recurse=yes
     register: rc_vsd_file
   - debug: var=rc_vsd_file verbosity=1
   - name: Verify that a VSD QCOW2 file was found
@@ -35,7 +36,54 @@
     set_fact:
       vsd_qcow2_path: "{{ rc_vsd_file.files[0].path | dirname }}"
       vsd_qcow2_file_name: "{{ rc_vsd_file.files[0].path | basename }}"
-  when: myvsds is defined
+      vcin_qcow2_path: "{{ rc_vsd_file.files[0].path | dirname }}"
+      vcin_qcow2_file_name: "{{ rc_vsd_file.files[0].path | basename }}"
+  when: ( myvsds is defined and 
+        ( myvsds | map(attribute='target_server_type') | list | issuperset(["kvm"]) or myvsds | map(attribute='target_server_type') | list | issuperset(["heat"]) ) ) or
+        ( myvcins is defined and
+        ( myvcins | map(attribute='target_server_type') | list | issuperset(["kvm"]) or myvcins | map(attribute='target_server_type') | list | issuperset(["heat"]) ) )
+  tags:
+    - vsd
+
+# OVA
+- block:
+  - block:
+    - name: Find name of VSD OVA Archive
+      find: path="{{ nuage_packed_src_path }}"  pattern="Nuage-VSD*OVA*"
+      register: rc_vsd
+    - debug: var=rc_vsd verbosity=1
+    - block:
+      - name: Clean up any previous unpacked files
+        file: name="{{ nuage_unpacked_dest_path }}/vsd/ova" state=absent
+      - name: Create subdirectory for unpacked files
+        file: name="{{ nuage_unpacked_dest_path }}/vsd/ova" state=directory mode=0755
+      - name: Unpack VSD OVA Archive
+        unarchive: src="{{ rc_vsd.files[0].path}}" dest="{{ nuage_unpacked_dest_path }}/vsd/ova" list_files=yes
+        register: rc_vsd_archive_files
+      - debug: var=rc_vsd_archive_files verbosity=1
+      when: rc_vsd.matched > 0 
+    when: not nuage_already_unpacked|default(false)
+    tags:
+      - nuage-unpack
+  - name: Find name of VSD OVA File
+    find: path="{{ nuage_unpacked_dest_path }}/vsd/ova"  pattern="*.ova" recurse=yes
+    register: rc_vsd_file
+  - debug: var=rc_vsd_file verbosity=1
+  - name: Verify that a VSD OVA file was found
+    assert: { 
+      that: "{{ rc_vsd_file.matched }} > 0",
+      msg: "Unable to find VSD VM image file"
+    }
+  - name: Register VSD OVA variables with proper path and image locations for use in other playbooks
+    set_fact:
+      vsd_ova_path: "{{ rc_vsd_file.files[0].path | dirname }}"
+      vsd_ova_file_name: "{{ rc_vsd_file.files[0].path | basename }}"
+      vcin_ova_path: "{{ rc_vsd_file.files[0].path | dirname }}"
+      vcin_ova_file_name: "{{ rc_vsd_file.files[0].path | basename }}"
+  when: ( myvsds is defined and 
+        myvsds | map(attribute='target_server_type') | list | issuperset(["vcenter"]) ) or
+        ( myvcins is defined and
+        myvcins | map(attribute='target_server_type') | list | issuperset(["vcenter"]) )
   tags:
     - vsd
 
@@ -45,13 +93,31 @@
     vsd_qcow2_file_name: "None"
   when: vsd_qcow2_path is not defined
 
+- name: Ensure that VSD OVA variables are set
+  set_fact:
+    vsd_ova_path: "None"
+    vsd_ova_file_name: "None"
+  when: vsd_ova_path is not defined
+
+- name: Ensure that VCIN QCOW2 variables are set
+  set_fact:
+    vcin_qcow2_path: "None"
+    vcin_qcow2_file_name: "None"
+  when: vcin_qcow2_path is not defined
+
+- name: Ensure that VCIN OVA variables are set
+  set_fact:
+    vcin_ova_path: "None"
+    vcin_ova_file_name: "None"
+  when: vcin_ova_path is not defined
+
 ###################
 # VSTAT - Stats VM
 ###################
 
 - block:
   - block:
-    - name: Find name of Stats VM QCOW2 Archive
+    - name: Find name of Stats VM Archive
       find: path="{{ nuage_packed_src_path }}"  pattern="Nuage-elastic-\d.*" use_regex=true
       register: rc_vstat
     - debug: var=rc_vstat verbosity=1
@@ -60,7 +126,7 @@
         file: name="{{ nuage_unpacked_dest_path }}/vstat/" state=absent
       - name: Ensure binaries target directory exists for Stats VM
         file: name="{{ nuage_unpacked_dest_path }}/vstat/" state=directory mode=0775
-      - name: Unpack Stats VM QCOW2 Archive
+      - name: Unpack Stats VM Archive
         unarchive: src="{{ rc_vstat.files[0].path}}" dest="{{ nuage_unpacked_dest_path }}/vstat" list_files=yes
         register: rc_vstat_archive_files
       - debug: var=rc_vstat_archive_files verbosity=1
@@ -68,20 +134,38 @@
     when: not nuage_already_unpacked|default(false) and myvstats is defined
     tags:
       - nuage-unpack
-  - name: Find name of Stats VM QCOW2 File
-    find: path="{{ nuage_unpacked_dest_path }}/vstat"  pattern="*.qcow2" recurse=yes
-    register: rc_vstat_file
-  - debug: var=rc_vstat_file verbosity=1
-  - name: Verify that a Stats VM QCOW2 file was found
-    assert: { 
-      that: "{{ rc_vstat_file.matched }} > 0",
-      msg: "Unable to find Stats VM image file"
-    }
-  - name: Register VSTAT QCOW2 variables with proper path and image locations for use in other playbooks
-    set_fact:
-      vstat_qcow2_path: "{{ rc_vstat_file.files[0].path | dirname }}"
-      vstat_qcow2_file_name: "{{ rc_vstat_file.files[0].path | basename }}"
-    when: rc_vstat_file.matched > 0
+  - block:
+    - name: Find name of Stats VM QCOW2 File
+      find: path="{{ nuage_unpacked_dest_path }}/vstat"  pattern="*.qcow2" recurse=yes
+      register: rc_vstat_file
+    - debug: var=rc_vstat_file verbosity=1
+    - name: Verify that a Stats VM QCOW2 file was found
+      assert: { 
+        that: "{{ rc_vstat_file.matched }} > 0",
+        msg: "Unable to find Stats VM QCOW2 image file"
+      }
+    - name: Register VSTAT QCOW2 variables with proper path and image locations for use in other playbooks
+      set_fact:
+        vstat_qcow2_path: "{{ rc_vstat_file.files[0].path | dirname }}"
+        vstat_qcow2_file_name: "{{ rc_vstat_file.files[0].path | basename }}"
+      when: rc_vstat_file.matched > 0
+    when: myvstats | map(attribute='target_server_type') | list | issuperset(["kvm"]) or myvstats | map(attribute='target_server_type') | list | issuperset(["heat"])
+  - block:
+    - name: Find name of Stats VM OVF File
+      find: path="{{ nuage_unpacked_dest_path }}/vstat"  pattern="*.ovf" recurse=yes
+      register: rc_vstat_file
+    - debug: var=rc_vstat_file verbosity=1
+    - name: Verify that a Stats VM OVF file was found
+      assert: { 
+        that: "{{ rc_vstat_file.matched }} > 0",
+        msg: "Unable to find Stats VM OVF image file"
+      }
+    - name: Register VSTAT OVF variables with proper path and image locations for use in other playbooks
+      set_fact:
+        vstat_ovf_path: "{{ rc_vstat_file.files[0].path | dirname }}"
+        vstat_ovf_file_name: "{{ rc_vstat_file.files[0].path | basename }}"
+      when: rc_vstat_file.matched > 0
+    when: myvstats | map(attribute='target_server_type') | list | issuperset(["vcenter"])
   when: myvstats is defined
   tags:
     - vstat
@@ -92,13 +176,19 @@
     vstat_qcow2_file_name: "None"
   when: vstat_qcow2_path is not defined
 
+- name: Ensure that Stats VM OVF variables are set
+  set_fact:
+    vstat_ovf_path: "None"
+    vstat_ovf_file_name: "None"
+  when: vstat_ovf_path is not defined
+
 ###################
 # VSC
 ###################
 
 - block:
   - block:
-    - name: Find name of VSC QCOW2 Archive
+    - name: Find name of VSC Archive
       find: path="{{ nuage_packed_src_path }}"  pattern="Nuage-VSC*"
       register: rc_vsc
     - debug: var=rc_vsc verbosity=1
@@ -107,7 +197,7 @@
         file: name="{{ nuage_unpacked_dest_path }}/vsc/" state=absent
       - name: Ensure binaries target directory exists for VSC QCOW2 
         file: name="{{ nuage_unpacked_dest_path }}/vsc/" state=directory mode=0775
-      - name: Unpack VSC QCOW2 Archive
+      - name: Unpack VSC Archive
         unarchive: src="{{ rc_vsc.files[0].path}}" dest="{{ nuage_unpacked_dest_path }}/vsc/"  list_files=yes
         register: rc_vsc_archive_files
       - debug: var=rc_vsc_archive_files verbosity=1
@@ -115,19 +205,38 @@
     when: not nuage_already_unpacked|default(false)
     tags:
       - nuage-unpack
-  - name: Find name of VSC QCOW2 File
-    find: path="{{ nuage_unpacked_dest_path }}/vsc"  pattern="vsc_singledisk.qcow2" recurse=yes
-    register: rc_vsc_file
-  - debug: var=rc_vsc_file verbosity=1
-  - name: Verify that a VSC QCOW2 file was found
-    assert: { 
-      that: "{{ rc_vsc_file.matched }} > 0",
-      msg: "Unable to find VSC VM image file"
-    }
-  - name: Register VSC QCOW2 variables with proper path and image locations for use in other playbooks
-    set_fact:
-      vsc_qcow2_path: "{{ rc_vsc_file.files[0].path | dirname }}"
-      vsc_qcow2_file_name: "{{ rc_vsc_file.files[0].path | basename }}"
+  - block:
+    - name: Find name of VSC QCOW2 File
+      find: path="{{ nuage_unpacked_dest_path }}/vsc"  pattern="vsc_singledisk.qcow2" recurse=yes
+      register: rc_vsc_file
+    - debug: var=rc_vsc_file verbosity=1
+    - name: Verify that a VSC QCOW2 file was found
+      assert: { 
+        that: "{{ rc_vsc_file.matched }} > 0",
+        msg: "Unable to find VSC VM QCOW2 image file"
+      }
+    - name: Register VSC QCOW2 variables with proper path and image locations for use in other playbooks
+      set_fact:
+        vsc_qcow2_path: "{{ rc_vsc_file.files[0].path | dirname }}"
+        vsc_qcow2_file_name: "{{ rc_vsc_file.files[0].path | basename }}"
+      when: rc_vsc_file.matched > 0
+    when: myvscs | map(attribute='target_server_type') | list | issuperset(["kvm"]) or myvscs | map(attribute='target_server_type') | list | issuperset(["heat"])
+  - block:
+    - name: Find name of VSC OVA File
+      find: path="{{ nuage_unpacked_dest_path }}/vsc"  pattern="vsc_singledisk.ova" recurse=yes
+      register: rc_vsc_file
+    - debug: var=rc_vsc_file verbosity=1
+    - name: Verify that a VSC OVA file was found
+      assert: { 
+        that: "{{ rc_vsc_file.matched }} > 0",
+        msg: "Unable to find VSC VM OVA image file"
+      }
+    - name: Register VSC OVA variables with proper path and image locations for use in other playbooks
+      set_fact:
+        vsc_ova_path: "{{ rc_vsc_file.files[0].path | dirname }}"
+        vsc_ova_file_name: "{{ rc_vsc_file.files[0].path | basename }}"
+      when: rc_vsc_file.matched > 0
+    when: myvscs | map(attribute='target_server_type') | list | issuperset(["vcenter"])
   when: myvscs is defined
   tags:
     - vsc
@@ -137,6 +246,12 @@
     vsc_qcow2_path: "None"
     vsc_qcow2_file_name: "None"
   when: vsc_qcow2_path is not defined
+
+- name: Ensure that VSC OVA variables are set
+  set_fact:
+    vsc_ova_path: "None"
+    vsc_ova_file_name: "None"
+  when: vsc_ova_path is not defined
 
 ################
 # VRS 

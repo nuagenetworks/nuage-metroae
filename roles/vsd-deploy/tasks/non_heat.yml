@@ -47,7 +47,7 @@
 
 - name: Create the localtime symlink on {{ inventory_hostname }}
   file:
-    src: /usr/share/zoneinfo/US/Pacific
+    src: /usr/share/zoneinfo/{{ timezone }}
     dest: /etc/localtime
     state: link
   remote_user: root
@@ -57,13 +57,23 @@
     src: ./roles/vsd-deploy/files/
     dest: /etc/yum.repos.d/
   remote_user: root
-  when: "{{ ansible_distribution_version }} == 6.6"
+  when: 
+    - yum_pin
+    - "{{ ansible_distribution_version }} == 6.6"
+
+- name: Configure yum proxy on {{ inventory_hostname }}
+  lineinfile:
+    dest: /etc/yum.conf
+    line: "proxy={{ yum_proxy }}"
+  remote_user: root
+  when: yum_proxy != 'NONE'
 
 - name: Execute a yum update on {{ inventory_hostname }}
   yum:
     name: '*'
     state: latest
   remote_user: root
+  when: yum_update
 
 - name: Remove old NTP servers on {{ inventory_hostname }}
   lineinfile:
