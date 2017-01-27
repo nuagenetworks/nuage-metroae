@@ -7,6 +7,10 @@
     search_regex: OpenSSH
     delay: 1
 
+- name: Query {{ target_server }} facts
+  action: setup
+  remote_user: root
+  
 - name: Update /etc/hosts file on {{ inventory_hostname }}
   blockinfile:
     dest: /etc/hosts
@@ -55,7 +59,7 @@
   remote_user: root
   when: 
     - yum_pin
-    - ansible_lsb.release <= 6.6
+    - "{{ ansible_distribution_version }} == 6.6"
 
 - name: Configure yum proxy on {{ inventory_hostname }}
   lineinfile:
