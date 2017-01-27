@@ -9,33 +9,42 @@
   remote_user: root
   delegate_to: "{{ vsd_fqdn }}"
 
-- block: 
-  - name: Install pip on VSD
-    easy_install:
-      name: pip
-      state: latest
-    remote_user: root
+- block:
+  - name: Download pip installer
+    command: curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
     delegate_to: "{{ vsd_fqdn }}"
+    remote_user: root
+  
+  - name: Execute pip installer
+    command: python get-pip.py
+    delegate_to: "{{ vsd_fqdn }}"
+    remote_user: root
  
   - name: Install pexpect on VSD
     pip:
       name: pexpect
     remote_user: root
     delegate_to: "{{ vsd_fqdn }}"
-  when: yum_proxy == 'NONE'
+  when: yum_proxy != 'NONE'
 
-- block: 
-  - name: Install pip on VSD
-    easy_install:
-      name: pip
-      state: latest
-    remote_user: root
+- block:
+  - name: Download pip installer through proxy
+    command: curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
     delegate_to: "{{ vsd_fqdn }}"
+    remote_user: root
+    environment:
+      http_proxy: "{{ yum_proxy }}"
+      https_proxy: "{{ yum_proxy }}"
+
+  - name: Execute pip installer through proxy
+    command: python get-pip.py
+    delegate_to: "{{ vsd_fqdn }}"
+    remote_user: root
     environment:
       http_proxy: "{{ yum_proxy }}"
       https_proxy: "{{ yum_proxy }}"
  
-  - name: Install pexpect on VSD
+  - name: Install pexpect on VSD through proxy
     pip:
       name: pexpect
     remote_user: root
@@ -64,17 +73,14 @@
      delegate_to: "{{ vsd_fqdn }}"
      remote_user: root
 
-- block:
-  - name: Create TLS profile in {{ inventory_hostname }}
-    local_action: command python {{playbook_dir}}/roles/vns-deploy/files/vsc_config.py {{ playbook_dir  }} {{ xmpp.username }}
-    register: output
+- name: Create TLS profile in {{ inventory_hostname }}
+  local_action: command python {{playbook_dir}}/roles/vns-deploy/files/vsc_config.py {{ playbook_dir  }} {{ xmpp.username }}
+  register: output
 
-  - name: Verification Result Failure Status
-    fail: msg={{ output.stdout }}
-    when: output.stdout | search("(?i)MINOR")
-    ignore_errors: yes
+- name: Verification Result Failure Status
+  fail: msg={{ output.stdout }}
+  when: output.stdout | search("(?i)MINOR")
+  ignore_errors: yes
 
-  - name: Verification Result Success Status
-    debug: var=output.stdout
-  when: ansible_version.minor < 2
-
+- name: Verification Result Success Status
+  debug: var=output.stdout verbosity=1
