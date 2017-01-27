@@ -64,19 +64,17 @@
   delegate_to: "{{ infra_ip }}"
   remote_user: root
 
+- name: Update DNS entires
+  lineinfile:
+    line: "{{ vsd_mgmt_ip }}  xmpp.{{ dns_domain }}"
+    dest: "/etc/hosts"
+  delegate_to: "{{ infra_ip }}"
+  remote_user: root
+
 - name: Restart DNS service
   shell: service dnsmasq restart
   delegate_to: "{{ infra_ip }}"
   remote_user: root
-
-#- name: Update /etc/hosts file on {{ inventory_hostname }}
-#  blockinfile:
-#    dest: /etc/hosts
-#    block: |
-#      {% for host in groups['vsds']  %}
-#      {{ hostvars[host]['interfaces']['mgmt']['ip'] }}    {{ host }}
-#      {% endfor %}
-#  remote_user: root
 
 - name: Update /etc/hosts file on {{ inventory_hostname }}
   lineinfile: 

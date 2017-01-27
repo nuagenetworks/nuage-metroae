@@ -6,20 +6,20 @@
 - block:
   - block:
     - name: Find name of VSD QCOW2 Archive
-      find: path="{{ nuage_release_src_path }}"  pattern="Nuage-VSD*QCOW*"
+      find: path="{{ nuage_packed_src_path }}"  pattern="Nuage-VSD*QCOW*"
       register: rc_vsd
     - debug: var=rc_vsd verbosity=1
     - block:
       - name: Clean up any previous unpacked files
         file: name="{{ nuage_unpacked_dest_path }}/vsd/" state=absent
       - name: Create subdirectory for unpacked files
-        file: name="{{ nuage_unpacked_dest_path }}/vsd/" state=directory mode=0755
+        file: name="{{ nuage_unpacked_dest_path }}/vsd/" state=directory mode=0775
       - name: Unpack VSD QCOW2 Archive
         unarchive: src="{{ rc_vsd.files[0].path}}" dest="{{ nuage_unpacked_dest_path }}/vsd" list_files=yes
         register: rc_vsd_archive_files
       - debug: var=rc_vsd_archive_files verbosity=1
       when: rc_vsd.matched > 0 
-    when: not nuage_unpacked|default(false)
+    when: not nuage_already_unpacked|default(false)
     tags:
       - nuage-unpack
   - name: Find name of VSD QCOW2 File
@@ -52,20 +52,20 @@
 - block:
   - block:
     - name: Find name of Stats VM QCOW2 Archive
-      find: path="{{ nuage_release_src_path }}"  pattern="Nuage-elastic-\d.*" use_regex=true
+      find: path="{{ nuage_packed_src_path }}"  pattern="Nuage-elastic-\d.*" use_regex=true
       register: rc_vstat
     - debug: var=rc_vstat verbosity=1
     - block:
       - name: Clean up unpacked files from previous run
         file: name="{{ nuage_unpacked_dest_path }}/vstat/" state=absent
       - name: Ensure binaries target directory exists for Stats VM
-        file: name="{{ nuage_unpacked_dest_path }}/vstat/" state=directory mode=0755
+        file: name="{{ nuage_unpacked_dest_path }}/vstat/" state=directory mode=0775
       - name: Unpack Stats VM QCOW2 Archive
         unarchive: src="{{ rc_vstat.files[0].path}}" dest="{{ nuage_unpacked_dest_path }}/vstat" list_files=yes
         register: rc_vstat_archive_files
       - debug: var=rc_vstat_archive_files verbosity=1
       when: rc_vstat.matched > 0 
-    when: not nuage_unpacked|default(false) and myvstats is defined
+    when: not nuage_already_unpacked|default(false) and myvstats is defined
     tags:
       - nuage-unpack
   - name: Find name of Stats VM QCOW2 File
@@ -99,20 +99,20 @@
 - block:
   - block:
     - name: Find name of VSC QCOW2 Archive
-      find: path="{{ nuage_release_src_path }}"  pattern="Nuage-VSC*"
+      find: path="{{ nuage_packed_src_path }}"  pattern="Nuage-VSC*"
       register: rc_vsc
     - debug: var=rc_vsc verbosity=1
     - block:
       - name: Clean up unpacked directory from previous runs
         file: name="{{ nuage_unpacked_dest_path }}/vsc/" state=absent
       - name: Ensure binaries target directory exists for VSC QCOW2 
-        file: name="{{ nuage_unpacked_dest_path }}/vsc/" state=directory mode=0755
+        file: name="{{ nuage_unpacked_dest_path }}/vsc/" state=directory mode=0775
       - name: Unpack VSC QCOW2 Archive
         unarchive: src="{{ rc_vsc.files[0].path}}" dest="{{ nuage_unpacked_dest_path }}/vsc/"  list_files=yes
         register: rc_vsc_archive_files
       - debug: var=rc_vsc_archive_files verbosity=1
       when: rc_vsc.matched > 0
-    when: not nuage_unpacked|default(false)
+    when: not nuage_already_unpacked|default(false)
     tags:
       - nuage-unpack
   - name: Find name of VSC QCOW2 File
@@ -146,20 +146,20 @@
 - block:
   - block:
     - name: Find name of VRS Archive
-      find: path="{{ nuage_release_src_path }}"  pattern="Nuage-VRS*{{ nuage_target_architecture}}*"
+      find: path="{{ nuage_packed_src_path }}"  pattern="Nuage-VRS*{{ nuage_target_architecture}}*"
       register: rc_vrs
     - debug: var=rc_vrs verbosity=1
     - block:
       - name: Clean up after any previous unpack runs
         file: name="{{ nuage_unpacked_dest_path }}/vrs/" state=absent
       - name: Ensure that VRS binary target directory exists
-        file: name="{{ nuage_unpacked_dest_path }}/vrs/" state=directory mode=0755
+        file: name="{{ nuage_unpacked_dest_path }}/vrs/" state=directory mode=0775
       - name: Unpack VRS Archive
         unarchive: src="{{ rc_vrs.files[0].path}}" dest="{{ nuage_unpacked_dest_path }}/vrs/"  list_files=yes
         register: rc_vrs_archive_files
       - debug: var=rc_vrs_archive_files verbosity=1
       when: rc_vrs.matched > 0
-    when: not nuage_unpacked|default(false)
+    when: not nuage_already_unpacked|default(false)
     tags:
       - nuage-unpack
   - block:
@@ -234,20 +234,20 @@
 - block:
   - block:
     - name: Find name of Docker-Monitor Archive
-      find: path="{{ nuage_release_src_path }}"  pattern="Nuage-Docker-Monitor*"
+      find: path="{{ nuage_packed_src_path }}"  pattern="Nuage-Docker-Monitor*"
       register: rc_dockermon
     - debug: var=rc_dockermon verbosity=1
     - block:
       - name: Clean up after previous unpack runs
         file: name="{{ nuage_unpacked_dest_path }}/dockermon/" state=absent
       - name: Create directory to unpack Docker-Monitor to
-        file: name="{{ nuage_unpacked_dest_path }}/dockermon/" state=directory mode=0755
+        file: name="{{ nuage_unpacked_dest_path }}/dockermon/" state=directory mode=0775
       - name: Unpack Docker-Monitor Archive
         unarchive: src="{{ rc_dockermon.files[0].path}}" dest="{{ nuage_unpacked_dest_path }}/dockermon/"  list_files=yes
         register: rc_dockermon_archive_files
         when: rc_dockermon.matched > 0
       - debug: var=rc_dockermon_archive_files verbosity=1
-    when: not nuage_unpacked|default(false)
+    when: not nuage_already_unpacked|default(false)
     tags:
       - nuage-unpack
   - block:
@@ -303,14 +303,14 @@
 - block:
   - block:
     - name: Find name of VNS Archive
-      find: path="{{ nuage_release_src_path }}"  pattern="Nuage-VNS*"
+      find: path="{{ nuage_packed_src_path }}"  pattern="Nuage-VNS*"
       register: rc_vns
     - debug: var=rc_vns verbosity=1
     - block:
-      - name: Cleanup files from previous unpack run
+      - name: Clean up files from previous unpack run
         file: name="{{ nuage_unpacked_dest_path }}/vns" state=absent
       - name: Ensure target directory exists for VNS
-        file: name="{{ nuage_unpacked_dest_path }}/{{ item }}" state=directory mode=0755
+        file: name="{{ nuage_unpacked_dest_path }}/{{ item }}" state=directory mode=0775
         with_items:
           - "vns/nsg/"
           - "vns/utils/"
@@ -318,7 +318,7 @@
       - name: Unpack VNS Archive
         unarchive: src="{{ rc_vns.files[0].path}}" dest="{{ nuage_unpacked_dest_path }}/vns" list_files=yes
         register: rc_vns_archive_files
-      when: rc_vns.matched > 0 and false
+      when: rc_vns.matched > 0
     - name: Find name of NSG and Utils archive files
       find: path="{{ nuage_unpacked_dest_path }}/vns/" pattern="{{ item }}"
       with_items:
@@ -347,7 +347,7 @@
         with_indexed_items:
           - "vns/nsg/aws"
       when: false
-    when: not nuage_unpacked|default(false)
+    when: not nuage_already_unpacked|default(false)
     tags:
       - nuage-unpack
   - name: Find names of VNS files
@@ -390,20 +390,20 @@
 - block:
   - block:
     - name: Find name of Nuage OpenStack Plugin Archive
-      find: path="{{ nuage_release_src_path }}"  pattern="Nuage-openstack*"
+      find: path="{{ nuage_packed_src_path }}"  pattern="Nuage-openstack*"
       register: rc_nuage_os
     - debug: var=rc_nuage_os verbosity=1
     - block:
       - name: Clean up after previous unpack runs
         file: name="{{ nuage_unpacked_dest_path }}/nuage_os/" state=absent
       - name: Create directory to unpack Nuage OpenStack plugins
-        file: name="{{ nuage_unpacked_dest_path }}/nuage_os/" state=directory mode=0755
+        file: name="{{ nuage_unpacked_dest_path }}/nuage_os/" state=directory mode=0775
       - name: Unpack Nuage OpenStack Archive
         unarchive: src="{{ rc_nuage_os.files[0].path}}" dest="{{ nuage_unpacked_dest_path }}/vrs/"  list_files=yes
         register: rc_nuage_os_archive_files
       - debug: var=rc_nuage_os_archive_files
       when: rc_nuage_os.matched > 0
-    when: not nuage_unpacked|default(false)
+    when: not nuage_already_unpacked|default(false)
     tags:
       - nuage_unpack
   - name: Find name of Nuage OpenStack Package Files (RH architecture)
