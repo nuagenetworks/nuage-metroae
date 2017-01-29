@@ -1,0 +1,46 @@
+---
+# See BUILD.md for details
+
+# First set of tasks is to gather_facts so that subsequent task list can use these facts as part of variable setting
+- hosts: localhost
+  gather_facts: yes
+  tasks: []
+
+# Actual tasks to generate build configuration
+- hosts: localhost
+  vars:
+    nuage_packed_src_path: "/home/caso/metro/4.0R6/packed"
+    nuage_unpacked_dest_path: "/home/caso/metro/4.0R6/unpacked"
+    nuage_already_unpacked: false
+    nuage_target_architecture: "el7"
+    vsd_standalone: True
+    myvsdson_install: True
+    myvrss:
+      type1:
+        - { vrs_os_type: debian,
+          active_controller_ip: 192.168.122.202,
+          standby_controller_ip: 192.168.122.203,
+          vrs_ip_list: [ "10.10.10.2", "10.10.10.3", "10.10.10.4"] }
+      type2:
+        - { vrs_os_type: redhat,
+          active_controller_ip: 192.168.122.202,
+          standby_controller_ip: 192.168.122.203,
+          vrs_ip_list: [ "10.10.10.5", "10.10.10.6", "10.10.10.7" ] }
+  tasks:
+  - shell: /usr/bin/uptime  
+    register: outp
+
+  - debug:
+      msg: "vrs type is : {{ item.vrs_os_type }}"
+    with_items: "{{ myvrss }}"
+      #verbosity: 2
+
+  - debug:
+      msg: "vrs ip's are : {{ item.1 }}"
+    with_subelements:  
+      - "{{ myvrss }}"
+      - vrs_ip_list
+
+#  - name: Create host_vars files for vrs
+#    template: src=vrs.j2 backup=no dest=./host_vars/{{ item.node_ip_addr }}
+#    with_items: "{{ myvrss }}"
