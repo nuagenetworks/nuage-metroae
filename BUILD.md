@@ -27,14 +27,14 @@ When the `build.yml` playbook is executed, it will first check the setting for t
 You can also choose to unpack the binaries yourself, skipping the `nuage-unpack` role by setting `nuage_already_unpacked` to `true` in `build.yml`. In such a case, the playbooks will assume that you have already unpacked the binaries into the appropriate locations, as shown below.
 
 ```
-<your_path>/vsd
-<your_path>/vsc
-<your_path>/vrs
-<your_path>/dockermon
-<your_path>/vstat
-<your_path>/vns/nsg
-<your_path>/vns/nsg/aws
-<your_path>/vns/util
+<your_path>/vsd/qcow2/ (or <your_path>/vsd/ova/ for VMware)
+<your_path>/vsc/
+<your_path>/vrs/
+<your_path>/dockermon/
+<your_path>/vstat/
+<your_path>/vns/nsg/
+<your_path>/vns/nsg/aws/
+<your_path>/vns/util/
 ```
 
 # Reference
