@@ -22,39 +22,37 @@ or
 
 # nuage_unpack playbook
 
-When the `build.yml` playbook is executed, it will first check the setting for the parameter `nuage_unpacked` in the vars section of the plabook. When `nuage_unpacked` is set to `false`, the `nuage-unpack` role will be executed prior to setting other parameters. The `nuage_unpack` role is useful when you download the Nuage Networks software as a set of archives for each component of the solution. To deploy the software using Metro, only a few of the binaries in those archives are required. As such the `nuage-unpack` role will analyze all the archives, extract the necessary binaries, and store them in a configurable directory.
+When the `build.yml` playbook is executed, it will first check the setting for the parameter `nuage_already_unpacked` in the vars section of the playbook. When `nuage_already_unpacked` is set to `false`, the `nuage-unpack` role will look for and unpack Nuage binary archives. The `nuage-unpack` role is useful when you download the Nuage Networks software as a set of archives for each component of the solution. To deploy the software using Metro, only a few of the binaries in those archives are required. As such the `nuage-unpack` role will analyze all the archives, extract the necessary binaries, and store them in a configurable directory.
 
-You can also choose to unpack the binaries yourself, skipping the `nuage-unpack` role by setting `nuage_unpacked` to `true` in `build.yml`. In such a case, the playbooks will assume that you have already unpacked the binaries into the appropriate locations, as shown below.
+You can also choose to unpack the binaries yourself, skipping the `nuage-unpack` role by setting `nuage_already_unpacked` to `true` in `build.yml`. In such a case, the playbooks will assume that you have already unpacked the binaries into the appropriate locations, as shown below.
 
 ```
-<your_path>/vsd
-<your_path>/vsc
-<your_path>/vrs
-<your_path>/dockermon
-<your_path>/vstat
-<your_path>/vns/nsg
-<your_path>/vns/nsg/aws
-<your_path>/vns/util
+<your_path>/vsd/qcow2/ (or <your_path>/vsd/ova/ for VMware)
+<your_path>/vsc/
+<your_path>/vrs/
+<your_path>/dockermon/
+<your_path>/vstat/
+<your_path>/vns/nsg/
+<your_path>/vns/nsg/aws/
+<your_path>/vns/util/
 ```
 
-You can also choose to run the `nuage-unpack` role manually by executing `./metro-ansible nuage_unpack.yml`
-The `nuage-unpack` role also uses Ansible tags to limit the extraction or variable setting to a particular component of choice.
 # Reference
 
 For reference, here is a description of the contents of the `build-vars.yml` file, with comments:
 
 ```
 #    # The directory where the Nuage Networks binariy archives are located. This is only
-#    # required if nauge_unpacked == false. See below.
-#    nuage_release_src_path: "{{ ansible_env.HOME}}/nuage-release"
+#    # required if nauge_already_unpacked == false. See below.
+#    nuage_packed_src_path: "{{ ansible_env.HOME}}/nuage-release"
 #    # The directory where to extract the relevant Nuage Networks binaries to
 #    nuage_unpacked_dest_path: "{{ ansible_env.HOME}}/nuage-unpacked"
-#    # Parameter used to define the Hypervisor-Architecture (One of: el6|el7|ubuntu)
-#    nuage_target_architecture: "el7"
 #    # Parameter to define whether binaries have already been extracted
 #    # If true, the playbooks will *not* unpack. Files in nnuage_unpacked_dest_path
 #    # will be used as is. If false, the nuage_unpack role will be executed.
-#    nuage_unpacked: true
+#    nuage_already_unpacked: true
+#    # Parameter used to define the Hypervisor-Architecture (One of: el6|el7|ubuntu)
+#    nuage_target_architecture: "el7"
 #    VSD
 #    # When True or undefined, all VSDs will be configured stand-alone. When False
 #    # we will expect 3 VSD definitions, below, for clustered deployment.

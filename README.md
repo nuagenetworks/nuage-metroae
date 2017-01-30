@@ -2,12 +2,13 @@
 
 ## What's new
 
-1. VSD HA/cluster support, limited to exactly 3 VSD nodes
-1. Limited VNS support, that handles 1 NSGV at present. Requires ansible 2.2 that has SROS module support.
-1. A new pre-deploy build process to simplify variable settings
-1. `nuage-unpack` role added to optionally extract binaries from Nuage distribution archives. Side effect: Names of binary files are automatically pulled and no longer need to be specified in `build.yml`.
+1. Added `HOWTO.md` with instructions for how to accomplish a few interesting deployments using Metro.
+1. Added the `examples/` directory with a few sample build files.
+1. Fixed bugs related to unpack. Renamed some variables in build.yml to help clarify their purpose.
+1. Added `CONTRIBUTING.md` for instructions on how to participate in this project.
+1. Tested with *3.2R8 and 4.0R4*
 
-Feedback and bug reports should be provided to the Nuage CASO team via email to *[Brian Castelli](mailto://brian.castelli@nokia.com)*.
+Feedback and bug reports should be provided via the Issues feature of Github or via email to [Brian Castelli](mailto://brian.castelli@nokia.com).
 
 ## Overview
 
@@ -41,7 +42,7 @@ Note that `install_everything.yml` can be edited or individual roles exec
 
 The latest sane code is found in the `master` branch. The `dev` branch is for ongoing development. The stability of the `dev` branch is not guaranteed.
 
-If you want to contribute back, you must create your own branch or fork, oush your changes to that, and create a pull request to the `dev` branch. All pull requests against the `master` branch will be rejected. Sorry. All pull requests should be for fully-tested code changes (where fully-tested means it worked for both Ubuntu and CentOS, for clustered and stand-alone, etc.).
+If you want to contribute back, you must create your own branch or fork, oush your changes to that, and create a pull request to the `dev` branch. All pull requests against the `master` branch will be rejected. Sorry. All pull requests should include tests for new functionality. See `CONTRIBUTING.md` for more details.
 
 ## Prerequisites
 
@@ -68,6 +69,14 @@ Currently VSD in cluster mode is supported exactly for 3 VSD nodes.
 ## metro-ansible
 
 `metro-ansible` is a shell script that executes ansible-playbook with the proper includes and command line switches. `metro-ansible` should be used when running *any* of the playbooks provided herein.
+
+## HOWTO
+
+The file `HOWTO.md` has been provided. It contains a few procedures for doing some more-complex deployments using Metro, e.g. deploying VRS to both Debian and RedHat family compute nodes.
+
+## examples/
+
+The `examples/` directory is populated with samples of files that can be used as models for particular kinds of operations, e.g. VSD only.
 
 ## Customization
 
