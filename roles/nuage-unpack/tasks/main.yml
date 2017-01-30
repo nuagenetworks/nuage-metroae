@@ -144,9 +144,23 @@
 
 # TODO: Support VRS target architecture different than VSD/VSC/etc.
 - block:
+  - name: Create facts to be used with vrs deploy if vrs is Debian based
+    set_fact: vrs_debian="True"
+    when: item.value.vrs_os_type == "Debian"
+    with_dict: "{{ myvrss }}"
+
+  - name: Create facts to be used with vrs deploy if vrs is Redhat based
+    set_fact: vrs_redhat="True"
+    when: item.value.vrs_os_type == "Redhat"
+    with_dict: "{{ myvrss }}"
+
+  - debug: msg="vrs_debian is set to "{{ vrs_debian }}" "
+
+  - debug: msg="vrs_redhatn is set to "{{ vrs_redhat }}" "
+
   - block:
     - name: Find name of VRS Archive
-      find: path="{{ nuage_packed_src_path }}"  pattern="Nuage-VRS*{{ nuage_target_architecture}}*"
+      find: path="{{ nuage_packed_src_path }}"  pattern="Nuage-VRS*"
       register: rc_vrs
     - debug: var=rc_vrs verbosity=1
     - block:
@@ -155,13 +169,14 @@
       - name: Ensure that VRS binary target directory exists
         file: name="{{ nuage_unpacked_dest_path }}/vrs/" state=directory mode=0775
       - name: Unpack VRS Archive
-        unarchive: src="{{ rc_vrs.files[0].path}}" dest="{{ nuage_unpacked_dest_path }}/vrs/"  list_files=yes
+        unarchive: src="{{ item.path }}" dest="{{ nuage_unpacked_dest_path }}/vrs/"  list_files=yes
+        with_items: "{{ rc_vrs.files }}"
         register: rc_vrs_archive_files
       - debug: var=rc_vrs_archive_files verbosity=1
       when: rc_vrs.matched > 0
     when: not nuage_already_unpacked|default(false)
     tags:
-      - nuage-unpack
+      - nuage-unpack-vrs
   - block:
     - name: Find name of VRS Package Files (RH architecture)
       find: path="{{ nuage_unpacked_dest_path }}/vrs"  pattern="*.rpm" recurse=yes
@@ -191,7 +206,7 @@
     - name: Register VRS package path and VRS python package file name for use in other playbooks (Debian Architecture)
       set_fact:
         vrs_package_path: "{{ rc_vrs_python_file.files[0].path | dirname }}"
-        vrs_package_file_name_list: "{{ rc_vrs_python_file.files |  map(attribute='path') | list | map('basename') | list }}"
+        vrs_package_file_name_list_deb: "{{ rc_vrs_python_file.files |  map(attribute='path') | list | map('basename') | list }}"
     - name: Find name of VRS common package file (Debian architecture)
       find: path="{{ nuage_unpacked_dest_path }}/vrs"  pattern="nuage-openvswitch-common*.deb" recurse=yes
       register: rc_vrs_common_file
@@ -203,7 +218,7 @@
       }
     - name: Register VRS common package file name for use in other playbooks (Debian Architecture)
       set_fact:
-        vrs_package_file_name_list: "{{ vrs_package_file_name_list }} + {{ rc_vrs_common_file.files |  map(attribute='path') | list | map('basename') | list }}"
+        vrs_package_file_name_list_deb: "{{ vrs_package_file_name_list_deb }} + {{ rc_vrs_common_file.files |  map(attribute='path') | list | map('basename') | list }}"
     - name: Find name of VRS switch package file (Debian architecture)
       find: path="{{ nuage_unpacked_dest_path }}/vrs"  pattern="nuage-openvswitch-switch*.deb" recurse=yes
       register: rc_vrs_switch_file
@@ -215,8 +230,8 @@
       }
     - name: Register VRS switch package file name for use in other playbooks (Debian Architecture)
       set_fact:
-        vrs_package_file_name_list: "{{ vrs_package_file_name_list }} + {{ rc_vrs_switch_file.files |  map(attribute='path') | list | map('basename') | list }}"
-    when: nuage_target_architecture | search ("ubuntu")
+        vrs_package_file_name_list_deb: "{{ vrs_package_file_name_list_deb }} + {{ rc_vrs_switch_file.files |  map(attribute='path') | list | map('basename') | list }}"
+    when: vrs_debian == True
   when: myvrss is defined
   tags:
     - vrs
@@ -225,6 +240,7 @@
   set_fact:
     vrs_package_path: "None"
     vrs_package_file_name_list: '"None" | list'
+    vrs_package_file_name_list_deb: '"None" | list'
   when: vrs_package_path is not defined
 
 ################
