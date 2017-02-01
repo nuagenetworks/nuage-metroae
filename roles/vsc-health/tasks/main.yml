@@ -199,10 +199,38 @@
   }
   ignore_errors: yes
 
-- name: TODO sections 3.2.7-8, VRS-G Status and Port Info
+- name: TODO sections 3.2.7, VRS-G Status
   assert: { 
     that: "{{ pass_on_todo }}",
-    msg: "TODO sections 3.2.7-8, VRS-G Status and Port Info"
+    msg: "TODO sections 3.2.7, VRS-G Status"
+  }
+  ignore_errors: yes
+
+- name: Get output of 'show vswitch-controller gateway ports'
+  sros_command:
+    commands:
+      - show vswitch-controller gateway ports
+    provider: "{{ vsc_creds }}"
+  register: show_gateway_ports
+  delegate_to: localhost
+
+- name: Print output of 'show vswitch-controller gateway ports' when verbosity >= 1
+  debug: var=show_gateway_ports verbosity=1
+
+- name: Create local variable with show gateway ports output in json
+  set_fact: show_gateway_ports_json="{{ show_gateway_ports.stdout[0]|show_gateway_ports_to_json }}"
+
+- name: Print show gateway ports in json when verbosity >= 1
+  debug: var=show_gateway_ports_json verbosity=1
+
+- name: Write gateway ports json to report
+  nuage_append: filename="{{ report_filename }}" text="{{ inventory_hostname }} GATEWAY VPORTS {{ show_gateway_ports_json|to_nice_json }}\n"
+  delegate_to: localhost
+
+- name: Check for the expected number of gateway ports
+  assert: { 
+    that: "{{ expected_num_gateway_ports }} == {{ show_gateway_ports_json['No. of Ports'] }}",
+    msg: "Invalid gateway port count ({{ show_gateway_ports_json['No. of Ports'] }}) detected. Expected {{ expected_num_gateway_ports }}. Check 'show vswitch-controller gateway ports' on {{ inventory_hostname }}."
   }
   ignore_errors: yes
 
