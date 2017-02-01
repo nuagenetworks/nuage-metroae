@@ -1,0 +1,51 @@
+#TODO
+- name: Get current network config from VSD Node1 and Node3
+  network_info:
+    mac_addr: True
+  register: net_conf
+ 
+- name: Print network config when verbosity >= 1
+  debug: var=net_conf.info verbosity=1
+ 
+- name: Write network config to json file
+  nuage_append: filename="{{ report_filename }}" text="{{ net_conf.info | to_nice_json}}\n"
+  delegate_to: localhost
+
+- name: Create a directory on VSD Node1
+  file:  
+    path: "/opt/vsd/data"
+    state: directory
+  when: inventory_hostname == groups['vsds'][0]
+ 
+- name: Configure passwordless access from backup machine to new VSD Node1
+  pause:
+    prompt: "Configure password-less access from backup_machine {{ backup_machine}} to {{ inventory_hostname }}. Press Enter when done!"
+ 
+- name: Copy backup files from backup_machine to VSD Node1
+  synchronize:
+    src: "/tmp/backup/"
+    dest: "/opt/vsd/data/"
+  remote_user: root
+  delegate_to: "{{ backup_machine }}"
+  when: inventory_hostname == groups['vsds'][0]
+
+- name: Delete log files from /opt/vsd/data/ directory
+  shell: "rm -rf /opt/vsd/data/*.log"
+  when: inventory_hostname == groups['vsds'][0]
+
+- name: Get list of files in /opt/vsd/data/ directory
+  find:
+    path: "/opt/vsd/data/"
+    pattern: "*.tar.gz"
+  register: lst_files
+  when: inventory_hostname == groups['vsds'][0]
+
+- name: Verify  /opt/vsd/data/ directory contains exactly 3 files
+  assert:
+    that: "lst_files.examined == 3"
+    msg: "/opt/vsd/data on VSD node1 contains more than 3 files"
+  when: inventory_hostname == groups['vsds'][0]
+
+- name: Install VSD on Node1
+  include_role:
+    name: vsd-deploy
