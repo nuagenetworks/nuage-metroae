@@ -54,9 +54,6 @@ For reference, here is a description of the contents of the `build-vars.yml` fil
 #    # Parameter used to define the Hypervisor-Architecture (One of: el6|el7|ubuntu)
 #    nuage_target_architecture: "el7"
 #    VSD
-#    # When set to 'True' couple of tasks in vsd-deploy are not executed for upgrade purposes.
-#    # By default it is set to False. 
-#    vsd_upgrade: False
 #    # When True or undefined, all VSDs will be configured stand-alone. When False
 #    # we will expect 3 VSD definitions, below, for clustered deployment.
 #    vsd_standalone: True
