@@ -1,8 +1,6 @@
 #!/usr/bin/python
 
-import datetime
 import re
-import json
 from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils.six import b
 
@@ -23,9 +21,9 @@ from ansible.module_utils.six import b
 DOCUMENTATION = '''
 ---
 module: network_info
-short_description: Gathers interfaces and their ip addr and 
+short_description: Gathers interfaces and their ip addr and
                    if specified their mac addr.
-                   It also collects the hostname of the machine. 
+                   It also collects the hostname of the machine.
 options:
   mac_addr:
     description:
@@ -38,6 +36,7 @@ EXAMPLES = '''
 - network_info:
     mac_addr: True
 '''
+
 
 def parse_ipv4cmd_output(ip_str):
     for ip_line in ip_str.split('\n'):
@@ -59,16 +58,16 @@ def parse_maccmd_output(mac_str):
             net_info['interfaces'][intf_name[:-1]]['mac_addr'] = mac_addr
         except:
             pass
-    
+
 
 def execute_cmd(cmd):
     rc, out, err = module.run_command(cmd, check_rc=False)
     if err is None:
         err = b('')
- 
+
     if out is None:
         out = b('')
- 
+
     if rc != 0:
         module.fail_json(msg="command failed",
                          rc=rc,
@@ -84,27 +83,30 @@ arg_spec = dict(
 )
 module = AnsibleModule(argument_spec=arg_spec)
 net_info = {'interfaces': {}}
+
+
 def main():
-    collect_mac_addr = module.params['mac_addr'] 
+    collect_mac_addr = module.params['mac_addr']
     IPCMD = module.get_bin_path('ip', True)
     HOSTCMD = module.get_bin_path('hostname', True)
 
     ipv4_cmd = "%s -o -family inet addr" % (IPCMD)
     mac_cmd = "%s -o -family link addr" % (IPCMD)
     host_cmd = "%s -f" % (HOSTCMD)
-    
+
     ip_str = execute_cmd(ipv4_cmd)
     mac_str = execute_cmd(mac_cmd)
     hostname = execute_cmd(host_cmd)
-    
+
     parse_ipv4cmd_output(ip_str)
     if collect_mac_addr:
         parse_maccmd_output(mac_str)
-    
+
     net_info['hostname'] = hostname.strip()
-    module.exit_json(cmd = ip_str,info=net_info,
+    module.exit_json(cmd=ip_str, info=net_info,
                      rawout=(ip_str, mac_str),
                      changed=True)
+
 
 if __name__ == '__main__':
     main()
