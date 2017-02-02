@@ -41,7 +41,8 @@
   debug: var=pass.stdout verbosity=1
 
 - name: set dockermon_postdeploy variable as per dockermon_install
-  set_fact: dockermon_check = dockermon_install | default(false)
+  set_fact: 
+    dockermon_check: dockermon_install | default(false)
 
 - block:
   # Dockermon feature tasks
@@ -106,7 +107,7 @@
   - name: Dockermon Verification Result Success Status
     debug: var=dockermon_pass.stdout verbosity=1
   # Only when the feature flag is true
-  when: "{{ dockermon_postdeploy }} == true and {{ dockermon_check }} == true"
+  when: "{{ dockermon_postdeploy }} == true and dockermon_check == true"
 
 - name: Delete the temporary directory
   local_action: file path={{ playbook_dir }}/scripts/tmp state=absent
