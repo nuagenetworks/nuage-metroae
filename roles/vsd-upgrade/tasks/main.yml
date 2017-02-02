@@ -1,13 +1,39 @@
 ---
-- include: kvm.yml
-  when: ("{{ target_server_type }}" == "kvm")
-  tags:
-    - vsd
-    - vsd-upgrade
+- name: Gather VSD network information from current VSD's
+  include_role: 
+    name: vsd-health
+  vars:
+    report_filename: vsd_pre_upgrade_report.txt
+  
+- block:
+  - name: Shutdown/Destroy VSD Node1 and Node3
+    include_role: 
+      name: vsd-destroy
 
-- include: heat.yml
-  when: ("{{ target_server_type }}" == "heat")
-  tags:
-    - vsd
-    - heat
-    - vsd-upgrade
+  - name: Deploy VSD Node1 and Node3 with new version
+    include_role:
+      name: vsd-predeploy
+
+  - name: Wait for VSD ssh to be ready
+    local_action:
+      module: wait_for
+      port: "22"
+      host: "{{ interfaces.mgmt.ip }}"
+      search_regex: OpenSSH
+      delay: 1
+
+  - include: copy_backup_files.yml
+
+  - name: Gather VSD network information from new VSD's
+    include_role:
+      name: vsd-health
+    vars:
+      report_filename: vsd_upgrade_report.txt
+  
+  #TODO: 
+  #- name: Compare network information of VSD's
+
+  - name: Install VSD on Node1 and Node3
+    include_role:
+      name: vsd-deploy
+  when: inventory_hostname == groups['vsds'][0] or inventory_hostname == groups['vsds'][2]
