@@ -41,7 +41,15 @@ if __name__ == '__main__':
         with open(args.playbook_dir + '/zfb.yml', 'r') as fh:
             zfb_params = yaml.load(fh)
     except Exception as e:
-        print("ERROR: Could not locate file: %s" % e)
+        print("ERROR: Failure reading file: %s" % e)
+
+    # Get VSD license
+    vsd_license = ""
+    try:
+        with open(zfb_params['vsd_license_file'], 'r') as lf:
+            vsd_license = lf.read()
+    except Exception as e:
+        print("ERROR: Failure reading file: %s" % e)
 
     # Create a session as csp user
     try:
@@ -51,5 +59,5 @@ if __name__ == '__main__':
     except:
         print("ERROR: Could not establish connection to VSD API")
         sys.exit(1)
-    install_license(csproot, zfb_params['vsd_license'])
+    install_license(csproot, vsd_license )
     add_cspto_cms(session)
