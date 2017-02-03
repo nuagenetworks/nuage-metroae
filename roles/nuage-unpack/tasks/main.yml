@@ -258,10 +258,43 @@
 ################
 
 # TODO: Support VRS target architecture different than VSD/VSC/etc.
+# TODO: Optimize the looping through build.yml for vrs arch types in case of large deployments
 - block:
+  - name: Create facts to be used with vrs deploy if vrs is Debian 14.04 based
+    set_fact: vrs_u14_04="True"
+    when: item.vrs_os_type == "u14.04"
+    with_items: "{{ myvrss }}"
+
+  - name: Create facts to be used with vrs deploy if vrs is Debian 16.04 based
+    set_fact: vrs_u16_04="True"
+    when: item.vrs_os_type == "u16.04"
+    with_items: "{{ myvrss }}"
+
+  - name: Create facts to be used with vrs deploy if vrs is Redhat el6 based
+    set_fact: vrs_el6="True"
+    when: item.vrs_os_type == "el6"
+    with_items: "{{ myvrss }}"
+
+  - name: Create facts to be used with vrs deploy if vrs is Redhat el7 based
+    set_fact: vrs_el7="True"
+    when: item.vrs_os_type == "el7"
+    with_items: "{{ myvrss }}"
+
+  - debug: msg="vrs_u14_04 is set to "{{ vrs_u14_04 }}" " verbosity=1
+    when: vrs_u14_04 is defined
+
+  - debug: msg="vrs_u16_04 is set to "{{ vrs_u16_04 }}" " verbosity=1
+    when: vrs_u16_04  is defined
+
+  - debug: msg="vrs_el6 is set to "{{ vrs_el6 }}" " verbosity=1
+    when: vrs_el6 is defined
+
+  - debug: msg="vrs_el7 is set to "{{ vrs_el7 }}" " verbosity=1
+    when: vrs_el7 is defined
+
   - block:
     - name: Find name of VRS Archive
-      find: path="{{ nuage_packed_src_path }}"  pattern="Nuage-VRS*{{ nuage_target_architecture}}*"
+      find: path="{{ nuage_packed_src_path }}"  pattern="Nuage-VRS*"
       register: rc_vrs
     - debug: var=rc_vrs verbosity=1
     - block:
@@ -269,78 +302,213 @@
         file: name="{{ nuage_unpacked_dest_path }}/vrs/" state=absent
       - name: Ensure that VRS binary target directory exists
         file: name="{{ nuage_unpacked_dest_path }}/vrs/" state=directory mode=0775
-      - name: Unpack VRS Archive
-        unarchive: src="{{ rc_vrs.files[0].path}}" dest="{{ nuage_unpacked_dest_path }}/vrs/"  list_files=yes
-        register: rc_vrs_archive_files
-      - debug: var=rc_vrs_archive_files verbosity=1
+      - block:
+        - name: Find name of EL6 VRS Archive
+          find: path="{{ nuage_packed_src_path }}"  pattern="Nuage-VRS*-el6*"
+          register: rc_vrs_el6
+        - debug: var=rc_vrs_el6 verbosity=1
+        - name: Ensure that VRS binary target directory exists if vrs is el6
+          file: name="{{ nuage_unpacked_dest_path }}/vrs/el6" state=directory mode=0775
+          when: vrs_el6 is defined
+        - name: Unpack VRS Archive
+          unarchive: src="{{ item.path }}" dest="{{ nuage_unpacked_dest_path }}/vrs/el6"  list_files=yes
+          with_items: "{{ rc_vrs_el6.files }}"
+          register: rc_vrs_el6_archive_files
+        - debug: var=rc_vrs_el6_archive_files verbosity=1
+        when: vrs_el6 is defined
+      - block:
+        - name: Find name of EL7 VRS Archive
+          find: path="{{ nuage_packed_src_path }}"  pattern="Nuage-VRS*-el7*"
+          register: rc_vrs_el7
+        - debug: var=rc_vrs_el7 verbosity=1
+        - name: Ensure that VRS binary target directory exists if vrs is el7
+          file: name="{{ nuage_unpacked_dest_path }}/vrs/el7" state=directory mode=0775
+          when: vrs_el7 is defined  
+        - name: Unpack VRS Archive
+          unarchive: src="{{ item.path }}" dest="{{ nuage_unpacked_dest_path }}/vrs/el7"  list_files=yes
+          with_items: "{{ rc_vrs_el7.files }}"
+          register: rc_vrs_el7_archive_files
+        - debug: var=rc_vrs_el7_archive_files verbosity=1
+        when: vrs_el7 is defined
+      - block:
+        - name: Find name of ubuntu-14.04 VRS Archive
+          find: path="{{ nuage_packed_src_path }}"  pattern="Nuage-VRS*-ubuntu.14.04*"
+          register: rc_vrs_u14_04
+        - debug: var=rc_vrs_u14_04 verbosity=1
+        - name: Ensure that VRS binary target directory exists if vrs is ubuntu 14.04
+          file: name="{{ nuage_unpacked_dest_path }}/vrs/u14_04" state=directory mode=0775
+          when: vrs_u14_04 is defined
+        - name: Unpack VRS Archive
+          unarchive: src="{{ item.path }}" dest="{{ nuage_unpacked_dest_path }}/vrs/u14_04"  list_files=yes
+          with_items: "{{ rc_vrs_u14_04.files }}"
+          register: rc_vrs_u14_04_archive_files
+        - debug: var=rc_vrs_u14_04_archive_files verbosity=1
+        when: vrs_u14_04 is defined
+      - block:
+        - name: Find name of ubuntu-16.04 VRS Archive
+          find: path="{{ nuage_packed_src_path }}"  pattern="Nuage-VRS*-ubuntu.16.04*"
+          register: rc_vrs_u16_04
+        - debug: var=rc_vrs_u16_04 verbosity=1
+        - name: Ensure that VRS binary target directory exists if vrs is ubuntu 16.04
+          file: name="{{ nuage_unpacked_dest_path }}/vrs/u16_04" state=directory mode=0775
+          when: vrs_u16_04 is defined
+        - name: Unpack VRS Archive
+          unarchive: src="{{ item.path }}" dest="{{ nuage_unpacked_dest_path }}/vrs/u16_04"  list_files=yes
+          with_items: "{{ rc_vrs_u16_04.files }}"
+          register: rc_vrs_u16_04_archive_files
+        - debug: var=rc_vrs_u16_04_archive_files verbosity=1
+        when: vrs_u16_04 is defined
       when: rc_vrs.matched > 0
     when: not nuage_already_unpacked|default(false)
     tags:
       - nuage-unpack
   - block:
-    - name: Find name of VRS Package Files (RH architecture)
-      find: path="{{ nuage_unpacked_dest_path }}/vrs"  pattern="*.rpm" recurse=yes
-      register: rc_vrs_file
-    - debug: var=rc_vrs_file verbosity=1
+    - name: Find name of VRS Package Files (EL6 architecture)
+      find: path="{{ nuage_unpacked_dest_path }}/vrs/el6"  pattern="*.rpm" recurse=yes
+      register: rc_vrs_file_el6
+    - debug: var=rc_vrs_file_el6 verbosity=1
     - name: Verify that VRS file was found
       assert: { 
-        that: "{{ rc_vrs_file.matched }} > 0",
+        that: "{{ rc_vrs_file_el6.matched }} > 0",
         msg: "Unable to find VRS files"
       }
-    - name: Register VRS package variables with proper path and image locations for use in other playbooks (RH architecture)
+    - name: Register VRS package variables with proper path and image locations for use in other playbooks (EL6 architecture)
       set_fact:
-        vrs_package_path: "{{ rc_vrs_file.files[0].path | dirname }}"
-        vrs_package_file_name_list: "{{ rc_vrs_file.files |  map(attribute='path') | list | map('basename') | list }}"
-    when: nuage_target_architecture == "el6" or nuage_target_architecture == "el7"
+        el6_vrs_package_path: "{{ rc_vrs_file_el6.files[0].path | dirname }}/"
+        el6_vrs_package_file_name_list: "{{ rc_vrs_file_el6.files |  map(attribute='path') | list | map('basename') | list }}"
+    when: vrs_el6|default(false)
+  - block:
+    - name: Find name of VRS Package Files (EL7 architecture)
+      find: path="{{ nuage_unpacked_dest_path }}/vrs/el7"  pattern="*.rpm" recurse=yes
+      register: rc_vrs_file_el7
+    - debug: var=rc_vrs_file_el7 verbosity=1
+    - name: Verify that VRS file was found
+      assert: { 
+        that: "{{ rc_vrs_file_el7.matched }} > 0",
+        msg: "Unable to find VRS files"
+      }
+    - name: Register VRS package variables with proper path and image locations for use in other playbooks (EL7 architecture)
+      set_fact:
+        el7_vrs_package_path: "{{ rc_vrs_file_el7.files[0].path | dirname }}/"
+        el7_vrs_package_file_name_list: "{{ rc_vrs_file_el7.files |  map(attribute='path') | list | map('basename') | list }}"
+    when: vrs_el7|default(false)
   - block:
     # Debian requires 3 packages listed in a specific order of dependeny
     - name: Find name of VRS python package file (Debian architecture)
-      find: path="{{ nuage_unpacked_dest_path }}/vrs"  pattern="nuage-python-openvswitch*.deb" recurse=yes
-      register: rc_vrs_python_file
-    - debug: var=rc_vrs_python_file verbosity=1
+      find: path="{{ nuage_unpacked_dest_path }}/vrs/u14_04"  pattern="nuage-python-openvswitch*.deb" recurse=yes
+      register: rc_vrs_python_file_u14_04
+    - debug: var=rc_vrs_python_file_u14_04 verbosity=1
     - name: Verify that VRS python package file was found
       assert: { 
-        that: "{{ rc_vrs_python_file.matched }} > 0",
+        that: "{{ rc_vrs_python_file_u14_04.matched }} > 0",
         msg: "Unable to find VRS python file"
       }
     - name: Register VRS package path and VRS python package file name for use in other playbooks (Debian Architecture)
       set_fact:
-        vrs_package_path: "{{ rc_vrs_python_file.files[0].path | dirname }}"
-        vrs_package_file_name_list: "{{ rc_vrs_python_file.files |  map(attribute='path') | list | map('basename') | list }}"
+        u14_04_vrs_package_path: "{{ rc_vrs_python_file_u14_04.files[0].path | dirname }}/"
+        u14_04_vrs_package_file_name_list: "{{ rc_vrs_python_file_u14_04.files |  map(attribute='path') | list | map('basename') | list }}"
     - name: Find name of VRS common package file (Debian architecture)
-      find: path="{{ nuage_unpacked_dest_path }}/vrs"  pattern="nuage-openvswitch-common*.deb" recurse=yes
-      register: rc_vrs_common_file
-    - debug: var=rc_vrs_common_file verbosity=1
+      find: path="{{ nuage_unpacked_dest_path }}/vrs/u14_04"  pattern="nuage-openvswitch-common*.deb" recurse=yes
+      register: rc_vrs_common_file_u14_04
+    - debug: var=rc_vrs_common_file_u14_04 verbosity=1
     - name: Verify that VRS common package file was found
       assert: { 
-        that: "{{ rc_vrs_common_file.matched }} > 0",
+        that: "{{ rc_vrs_common_file_u14_04.matched }} > 0",
         msg: "Unable to find VRS common file"
       }
     - name: Register VRS common package file name for use in other playbooks (Debian Architecture)
       set_fact:
-        vrs_package_file_name_list: "{{ vrs_package_file_name_list }} + {{ rc_vrs_common_file.files |  map(attribute='path') | list | map('basename') | list }}"
+        u14_04_vrs_package_file_name_list: "{{ u14_04_vrs_package_file_name_list }} + {{ rc_vrs_common_file_u14_04.files |  map(attribute='path') | list | map('basename') | list }}"
     - name: Find name of VRS switch package file (Debian architecture)
-      find: path="{{ nuage_unpacked_dest_path }}/vrs"  pattern="nuage-openvswitch-switch*.deb" recurse=yes
-      register: rc_vrs_switch_file
-    - debug: var=rc_vrs_switch_file verbosity=1
+      find: path="{{ nuage_unpacked_dest_path }}/vrs/u14_04"  pattern="nuage-openvswitch-switch*.deb" recurse=yes
+      register: rc_vrs_switch_file_u14_04
+    - debug: var=rc_vrs_switch_file_u14_04 verbosity=1
     - name: Verify that VRS switch package file was found
       assert: { 
-        that: "{{ rc_vrs_switch_file.matched }} > 0",
+        that: "{{ rc_vrs_switch_file_u14_04.matched }} > 0",
         msg: "Unable to find VRS switch file"
       }
     - name: Register VRS switch package file name for use in other playbooks (Debian Architecture)
       set_fact:
-        vrs_package_file_name_list: "{{ vrs_package_file_name_list }} + {{ rc_vrs_switch_file.files |  map(attribute='path') | list | map('basename') | list }}"
-    when: nuage_target_architecture | search ("ubuntu")
+        u14_04_vrs_package_file_name_list: "{{ u14_04_vrs_package_file_name_list }} + {{ rc_vrs_switch_file_u14_04.files |  map(attribute='path') | list | map('basename') | list }}"
+    when: vrs_u14_04|default(false)
+  - block:
+     # Debian requires 3 packages listed in a specific order of dependeny
+      - name: Find name of VRS python package file (Debian architecture)
+        find: path="{{ nuage_unpacked_dest_path }}/vrs/u16_04"  pattern="nuage-python-openvswitch*.deb" recurse=yes
+        register: rc_vrs_python_file_u16_04
+      - debug: var=rc_vrs_python_file_u16_04 verbosity=1
+      - name: Verify that VRS python package file was found
+        assert: { 
+          that: "{{ rc_vrs_python_file_u16_04.matched }} > 0",
+          msg: "Unable to find VRS python file"
+        }
+      - name: Register VRS package path and VRS python package file name for use in other playbooks (Debian Architecture)
+        set_fact:
+          u16_04_vrs_package_path: "{{ rc_vrs_python_file_u16_04.files[0].path | dirname }}/"
+          u16_04_vrs_package_file_name_list: "{{ rc_vrs_python_file_u16_04.files |  map(attribute='path') | list | map('basename') | list }}"
+      - name: Find name of VRS common package file (Debian architecture)
+        find: path="{{ nuage_unpacked_dest_path }}/vrs/u16_04"  pattern="nuage-openvswitch-common*.deb" recurse=yes
+        register: rc_vrs_common_file_u16_04
+      - debug: var=rc_vrs_common_file_u16_04 verbosity=1
+      - name: Verify that VRS common package file was found
+        assert: { 
+          that: "{{ rc_vrs_common_file_u16_04.matched }} > 0",
+          msg: "Unable to find VRS common file"
+        }
+      - name: Register VRS common package file name for use in other playbooks (Debian Architecture)
+        set_fact:
+          u16_04_vrs_package_file_name_list: "{{ u16_04_vrs_package_file_name_list }} + {{ rc_vrs_common_file_u16_04.files |  map(attribute='path') | list | map('basename') | list }}"
+      - name: Find name of VRS switch package file (Debian architecture)
+        find: path="{{ nuage_unpacked_dest_path }}/vrs/u16_04"  pattern="nuage-openvswitch-switch*.deb" recurse=yes
+        register: rc_vrs_switch_file_u16_04
+      - debug: var=rc_vrs_switch_file_u16_04 verbosity=1
+      - name: Verify that VRS switch package file was found
+        assert: { 
+          that: "{{ rc_vrs_switch_file_u16_04.matched }} > 0",
+          msg: "Unable to find VRS switch file"
+        }
+      - name: Register VRS switch package file name for use in other playbooks (Debian Architecture)
+        set_fact:
+          u16_04_vrs_package_file_name_list: "{{ u16_04_vrs_package_file_name_list }} + {{ rc_vrs_switch_file_u16_04.files |  map(attribute='path') | list | map('basename') | list }}"
+    when: vrs_u16_04|default(false)
   when: myvrss is defined
   tags:
     - vrs
+    - vrs_unpack_test
 
-- name: Ensure that VRS variables are set 
+- name: Ensure that el7 VRS package path variables are set 
   set_fact:
-    vrs_package_path: "None"
-    vrs_package_file_name_list: '"None" | list'
-  when: vrs_package_path is not defined
+    el7_vrs_package_path: "None"
+  when: el7_vrs_package_path is not defined
+- name: Ensure that el6 VRS package path variables are set 
+  set_fact:
+    el6_vrs_package_path: "None"
+  when: el6_vrs_package_path is not defined
+- name: Ensure that ubuntu 14.04 VRS package path variables are set 
+  set_fact:
+    u14_04_vrs_package_path: "None"
+  when: u14_04_vrs_package_path is not defined
+- name: Ensure that ubuntu 16.04 VRS package path variables are set 
+  set_fact:
+    u16_04_vrs_package_path: "None"
+  when: u16_04_vrs_package_path is not defined
+- name: Ensure that ubuntu 14.04 VRS package list variables are set 
+  set_fact:
+    u14_04_vrs_package_file_name_list: '"None" | list'
+  when: u14_04_vrs_package_path is not defined
+- name: Ensure that ubuntu 16.04 VRS package list variables are set 
+  set_fact:
+    u16_04_vrs_package_file_name_list: '"None" | list'
+  when: u16_04_vrs_package_path is not defined
+- name: Ensure that el6 VRS package list variables are set 
+  set_fact:
+    el6_vrs_package_file_name_list: '"None" | list'
+  when: el6_vrs_package_path is not defined
+- name: Ensure that el7 VRS package list variables are set 
+  set_fact:
+    el7_vrs_package_file_name_list: '"None" | list'
+  when: el7_vrs_package_path is not defined
 
 ################
 # Docker-Monitor
@@ -380,14 +548,15 @@
         dockermon_package_path: "{{ rc_dockermon_file.files[0].path | dirname }}"
         dockermon_package_file_name: "{{ rc_dockermon_file.files[0].path | basename }}"
       when: rc_dockermon_file.matched > 0
-    when: nuage_target_architecture == "el6" or nuage_target_architecture == "el7"
+    when: vrs_el6|default(false) == True or vrs_el7|default(false) == True
   - block:
-    - name: Set dockermon target path based on version (Debian architecture)
+    - name: Set dockermon target path based on version (Ubuntu 14.04 architecture)
       set_fact:
-        dockermon_findfile_path: "{{ nuage_unpacked_dest_path }}/dockermon/{{ { 'ubuntu':'ubuntu', 'ubuntu.14.04':'ubuntu-14.04', 'ubuntu.16.04':'ubuntu-16.04' }[nuage_target_architecture] }}"
+        #dockermon_findfile_path: "{{ nuage_unpacked_dest_path }}/dockermon/{{ { 'ubuntu':'ubuntu', 'ubuntu.14.04':'ubuntu-14.04', 'ubuntu.16.04':'ubuntu-16.04' }[nuage_target_architecture] }}"
+        dockermon_findfile_path: "{{ nuage_unpacked_dest_path }}/dockermon/ubuntu-14.04"
     - name: Find name of dockermon package files (Debian architecture)
-      #find: path="{{ dockermon_findfile_path }}"  pattern="*.deb" recurse=yes
-      find: path="{{ nuage_unpacked_dest_path }}/dockermon/"  pattern="*.deb" recurse=yes
+      find: path="{{ dockermon_findfile_path }}"  pattern="*.deb" recurse=yes
+      #find: path="{{ nuage_unpacked_dest_path }}/dockermon/"  pattern="*.deb" recurse=yes
       register: rc_dockermon_file
     - debug: var=rc_dockermon_file verbosity=1
     - name: Verify that Dockermon package file was found
@@ -397,10 +566,31 @@
       }
     - name: Register dockermon variables with proper path and image locations for use in other playbooks (Debian architecture)
       set_fact:
-        dockermon_package_path: "{{ rc_dockermon_file.files[0].path | dirname }}"
-        dockermon_package_file_name: "{{ rc_dockermon_file.files[0].path | basename }}"
+        u14_04_dockermon_package_path: "{{ rc_dockermon_file.files[0].path | dirname }}"
+        u14_04_dockermon_package_file_name: "{{ rc_dockermon_file.files[0].path | basename }}"
       when: rc_dockermon_file.matched > 0
-    when: nuage_target_architecture | search ("ubuntu")
+    when: vrs_u14_04|default(false) == True
+  - block:
+    - name: Set dockermon target path based on version (Ubuntu 16.04  architecture)
+      set_fact:
+        #dockermon_findfile_path: "{{ nuage_unpacked_dest_path }}/dockermon/{{ { 'ubuntu':'ubuntu', 'ubuntu.14.04':'ubuntu-14.04', 'ubuntu.16.04':'ubuntu-16.04' }[nuage_target_architecture] }}"
+        dockermon_findfile_path: "{{ nuage_unpacked_dest_path }}/dockermon/ubuntu-16.04"
+    - name: Find name of dockermon package files (Debian architecture)
+      find: path="{{ dockermon_findfile_path }}"  pattern="*.deb" recurse=yes
+      #find: path="{{ dockermon_findfile_path  }}/dockermon/"  pattern="*.deb" recurse=yes
+      register: rc_dockermon_file
+    - debug: var=rc_dockermon_file verbosity=1
+    - name: Verify that Dockermon package file was found
+      assert: { 
+        that: "{{ rc_dockermon_file.matched }} > 0",
+        msg: "Unable to find Dockermon file"
+      }
+    - name: Register dockermon variables with proper path and image locations for use in other playbooks (Debian architecture)
+      set_fact:
+        u16_04_dockermon_package_path: "{{ rc_dockermon_file.files[0].path | dirname }}"
+        u16_04_dockermon_package_file_name: "{{ rc_dockermon_file.files[0].path | basename }}"
+      when: rc_dockermon_file.matched > 0
+    when: vrs_u16_04|default(false) == True
   when: dockermon_install | default(false)
   tags:
     - dockermon
@@ -410,6 +600,7 @@
     dockermon_package_path: "None"
     dockermon_package_file_name_list: "None"
   when: dockermon_package_path is not defined
+
 
 #####################
 # VNS Utility/ NSGV

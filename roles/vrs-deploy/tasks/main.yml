@@ -7,10 +7,17 @@
   remote_user: root
   file: path={{ temp_dir }}/{{ inventory_hostname }} state=directory
 
-- name: Copy VRS packages to temporary directory
+- name: Copy VRS packages to temporary directory for Redhat OS Family Distros
   remote_user: root
   copy: src={{ vrs_package_path }}/{{ item }} dest={{ temp_dir }}/{{ inventory_hostname }}/{{ item }}
   with_items: "{{ vrs_package_file_name_list }}"
+  when: ansible_os_family == "RedHat" 
+
+- name: Copy VRS packages to temporary directory for ubuntu OS Family Distros
+  remote_user: root
+  copy: src={{ vrs_package_path }}/{{ item }} dest={{ temp_dir }}/{{ inventory_hostname }}/{{ item }}
+  with_items: "{{ vrs_package_file_name_list }}"
+  when: ansible_os_family == "Debian" 
 
 - name: Copy Dockermon package to temporary directory
   remote_user: root
