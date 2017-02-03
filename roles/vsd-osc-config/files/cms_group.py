@@ -59,5 +59,5 @@ if __name__ == '__main__':
     except:
         print("ERROR: Could not establish connection to VSD API")
         sys.exit(1)
-    install_license(csproot, vsd_license )
+    install_license(csproot, vsd_license)
     add_cspto_cms(session)
