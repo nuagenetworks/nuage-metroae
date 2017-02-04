@@ -172,12 +172,12 @@
 
 # Temp task to get around policy issue
 - name: Add iptables rule to allow vsd to reach internet route to reach on {{ inventory_hostname }}
-  command: "iptables -t nat -A POSTROUTING -p tcp -s {{ network_address }}.211 -o mgmt -j SNAT --to-source {{ target_server }}:1-1023 "
+  command: "iptables -t nat -A POSTROUTING -s {{ network_address }}.211 -j SNAT --to-source {{ target_server }} "
   remote_user: root
 
 # Temp task to get around policy issue
 - name: Add iptables rule to allow vnsutil to reach internet route to reach on {{ inventory_hostname }}
-  command: "iptables -t nat -A POSTROUTING -p tcp -s {{ network_address }}.215 -o mgmt -j SNAT --to-source {{ target_server }}:1-1023 "
+  command: "iptables -t nat -A POSTROUTING -s {{ network_address }}.215 -j SNAT --to-source {{ target_server }} "
   remote_user: root
 
 # Temp task to get around policy issue
@@ -274,15 +274,12 @@
     command: "yum clean all"
     remote_user: root
 
-#  - name: Update yum
-#    yum:
-#      name: '*'
-#      state: latest
-#    remote_user: root
-#
-  - name: Run tcpudump on port 53 and 80
-    shell: "tcpdump -i any port 53 or port 80 > slave.pcap &"
+  - name: Update yum
+    yum:
+      name: '*'
+      state: latest
     remote_user: root
+
   when: ansible_os_family == 'RedHat'
 
 - block:
