@@ -1,0 +1,36 @@
+---
+- name: Gathering info on VM
+  connection: local
+  vmware_guest:
+    hostname: "{{ target_server }}"
+    username: "{{ vcenter.username }}"
+    password: "{{ vcenter.password }}"
+    name: "{{ inventory_hostname }}"
+    validate_certs: no
+  register: vsd_vm_facts
+  ignore_errors: on
+
+- debug: var=vsd_vm_facts verbosity=1
+
+- block:
+  - name: Power off the VSD VM
+    connection: local
+    vmware_guest:
+      hostname: "{{ target_server }}"
+      username: "{{ vcenter.username }}"
+      password: "{{ vcenter.password }}"
+      name: "{{ inventory_hostname }}"
+      validate_certs: no
+      state: "poweredoff"
+
+  - name: Removing the VSD VM
+    connection: local
+    vmware_guest:
+      hostname: "{{ target_server }}"
+      username: "{{ vcenter.username }}"
+      password: "{{ vcenter.password }}"
+      name: "{{ inventory_hostname }}"
+      validate_certs: no
+      state: "absent"
+
+  when: not vsd_vm_facts.failed
