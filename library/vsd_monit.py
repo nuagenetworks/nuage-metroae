@@ -49,7 +49,8 @@ def main():
             parts = line.split()
             if len(parts) > 2:
                 if (parts[0].lower() == 'program' or
-                   parts[0].lower() == 'process'):
+                   parts[0].lower() == 'process'  or
+                   parts[0].lower() == 'file'):
                     if parts[1] == "'%s'" % proc_name:
                         return ' '.join(parts[2:]).lower()
         else:
