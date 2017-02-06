@@ -8,7 +8,7 @@ Here is a description of the contents of the `zfb.yml` file, with comments:
 
 ```
 #    # License to operate VSD architect
-#    vsd_license: "vsd license string goes here"
+#    vsd_license_file: "/path/to/license/file"
 #    # A sample origanization. NSGV will be part of this Org
 #    organization:
 #      # Name of the organization
