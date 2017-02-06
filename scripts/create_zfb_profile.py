@@ -154,7 +154,15 @@ if __name__ == '__main__':
         with open(args.playbook_dir + vars_file, 'r') as fo:
             zfb_constants = yaml.load(fo)
     except Exception as e:
-        print("ERROR: Could not locate file: %s" % e)
+        print("ERROR: Failure reading file: %s" % e)
+
+    # Get VSD license
+    vsd_license = ""
+    try:
+        with open(zfb_params['vsd_license_file'], 'r') as lf:
+            vsd_license = lf.read()
+    except Exception as e:
+        print("ERROR: Failure reading file: %s" % e)
 
     # Create a session as csp user
     try:
@@ -165,7 +173,7 @@ if __name__ == '__main__':
         print("ERROR: Could not establish connection to VSD API")
         sys.exit(1)
     # Create nsg templates and iso file
-    install_license(csproot, zfb_params['vsd_license'])
+    install_license(csproot, vsd_license)
     create_proxy_user(session)
     nsg_temp = create_nsg_gateway_template(csproot)
     vsc_temp = create_vsc_template(csproot)

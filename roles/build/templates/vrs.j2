@@ -2,16 +2,47 @@
 # This is a generated file. Manual changes to this file
 # will be lost if reset-build or build is run
 #
-node_ip_addr: {{ item.node_ip_addr }}
-active_controller_addr: {{ item.active_controller_ip }}
-standby_controller_addr: {{ item.standby_controller_ip }}
-vrs_package_path: {{ vrs_package_path }}
+{% set vrs_arch = item.0.vrs_os_type %}
+vrs_arch: {{ vrs_arch }}
+node_ip_addr: {{ item.1 }}
+active_controller_addr: {{ item.0.active_controller_ip }}
+standby_controller_addr: {{ item.0.standby_controller_ip }}
+{% if vrs_arch|string() == "el6" %}
+vrs_package_path: {{ el6_vrs_package_path }}
 vrs_package_file_name_list:
-{% for file_name in vrs_package_file_name_list %}
-  - {{ file_name }}
+{% for el6_file_name in el6_vrs_package_file_name_list %}
+  - {{ el6_file_name }}
 {% endfor %}
+{% elif vrs_arch|string() == "el7" %}
+vrs_package_path: {{ el7_vrs_package_path }}
+vrs_package_file_name_list:
+{% for el7_file_name in el7_vrs_package_file_name_list %}
+  - {{ el7_file_name }}
+{% endfor %}
+{% elif vrs_arch|string() == "u14.04" %}
+vrs_package_path: {{ u14_04_vrs_package_path }}
+vrs_package_file_name_list:
+{% for u14_04_file_name in u14_04_vrs_package_file_name_list %}
+  - {{ u14_04_file_name }}
+{% endfor %}
+{% elif vrs_arch|string() == "u16.04" %}
+vrs_package_path: {{ u16_04_vrs_package_path }}
+vrs_package_file_name_list:
+{% for u16_04_file_name in u16_04_vrs_package_file_name_list %}
+  - {{ u16_04_file_name }}
+{% endfor %}
+{% endif %}
+{% set dockermon_install = dockermon_install | default(false) %}
 {% if dockermon_install == true or dockermon_install == True %}
+{% if vrs_arch|string() == "el6" or vrs_arch|string() == "el7" %}
 dockermon_package_path: {{ dockermon_package_path }}
 dockermon_package_file_name: {{ dockermon_package_file_name }}
+{% elif vrs_arch|string() == "u14.04"%}
+dockermon_package_path: {{ u14_04_dockermon_package_path }}
+dockermon_package_file_name: {{ u14_04_dockermon_package_file_name }}
+{% elif vrs_arch|string() == "u16.04"%}
+dockermon_package_path: {{ u16_04_dockermon_package_path }}
+dockermon_package_file_name: {{ u16_04_dockermon_package_file_name }}
+{% endif %}
 dockermon_install: true
 {% endif %}
