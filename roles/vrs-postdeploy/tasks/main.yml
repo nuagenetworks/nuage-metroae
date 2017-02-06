@@ -16,22 +16,25 @@
   register: ovs_show_result
   remote_user: root
 
+- name: Create a temporary directory name using timestamp
+  set_fact:
+    tmp_scripts_dir: "{{ playbook_dir }}/scripts/{{ lookup('pipe', 'date +%Y%m%d%H%M%S.%5N') }}/tmp"
+
+- debug: var=tmp_scripts_dir verbosity=1
+
 - name: Create a temporary directory
-  local_action: file path={{ playbook_dir }}/scripts/tmp  state=directory
+  local_action: file path={{ tmp_scripts_dir }}  state=directory
 
 - name: Copy ovs-vsctl show output to a temporary file
-  local_action: copy content={{ ovs_show_result.stdout }} dest={{ playbook_dir }}/scripts/tmp/{{ inventory_hostname }}.tmp
+  local_action: copy content={{ ovs_show_result.stdout }} dest={{ tmp_scripts_dir }}/{{ inventory_hostname }}.tmp
 
 - name: Run verification script for OVS show command
-  local_action: command python {{ playbook_dir }}/scripts/ovs_result_verify.py {{ node_ip_addr }} {{ inventory_hostname }}.tmp {{ playbook_dir }}
+  local_action: command python {{ playbook_dir }}/scripts/ovs_result_verify.py {{ node_ip_addr }} {{ tmp_scripts_dir }}/{{ inventory_hostname }}.tmp
   register: ovs_show_result
 
 - name: Run verification script for VRS
   local_action: command python {{ playbook_dir }}/scripts/vrs_verify.py {{ node_ip_addr }} {{ active_controller_addr }} {{ standby_controller_addr }} {{ playbook_dir }} "{{ ovs_show_result.stdout }}"
   register: pass
-
-- name: Delete the temporary file
-  local_action: file path={{ playbook_dir }}/scripts/tmp/{{ inventory_hostname }}.tmp state=absent
 
 - name: Check result of VRS verification script
   fail: msg={{ pass.stdout }}
@@ -94,10 +97,10 @@
     remote_user: root
 
   - name: Create a temporary copy of the dockermon verification command outputs on ansible host
-    local_action: template src=dockermon_results.yml.j2 backup=no dest={{ playbook_dir }}/scripts/tmp/{{ inventory_hostname }}.yml
+    local_action: template src=dockermon_results.yml.j2 backup=no dest={{ tmp_scripts_dir }}/{{ inventory_hostname }}.yml
 
   - name: Run verification script for Dockermon
-    local_action: command python {{ playbook_dir }}/scripts/dockermon_result_verify.py {{ playbook_dir }}/scripts/tmp/{{ inventory_hostname }}.yml
+    local_action: command python {{ playbook_dir }}/scripts/dockermon_result_verify.py {{ tmp_scripts_dir }}/{{ inventory_hostname }}.yml
     register: dockermon_pass
 
   - name: Check result of Dockermon verification script
@@ -110,4 +113,4 @@
   when: "{{ dockermon_postdeploy }} == true and dockermon_check == true"
 
 - name: Delete the temporary directory
-  local_action: file path={{ playbook_dir }}/scripts/tmp state=absent
+  local_action: file path={{ tmp_scripts_dir }}  state=absent
