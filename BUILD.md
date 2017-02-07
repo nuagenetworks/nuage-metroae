@@ -122,7 +122,7 @@ For reference, here is a description of the contents of the `build-vars.yml` fil
 #    # Note: Multiple VRS nodes can be configured from the same packages
 #    myvrss:
 #          # VRS set one
-#          # Arbitrary name for a set of vrs nodes
+#          # Friendly name for a set of vrs nodes
 #      - { vrs_set_name: vrs_set_uswest2,
 #          # OS type of the vrs nodes in this set, allowed values are el6/el7,u14.04/u16.04
 #          vrs_os_type: u14.04,
