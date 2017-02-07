@@ -121,8 +121,9 @@ For reference, here is a description of the contents of the `build-vars.yml` fil
 #    # A dictionary of params for 0 or more VRSs
 #    # Note: Multiple VRS nodes can be configured from the same packages
 #    myvrss:
-#          # Arbitrary name for a set of vrs nodes
-#      - { vrs_set_name: vrs_set_u14_04,
+#          # VRS set one
+#          # Friendly name for a set of vrs nodes
+#      - { vrs_set_name: vrs_set_uswest2,
 #          # OS type of the vrs nodes in this set, allowed values are el6/el7,u14.04/u16.04
 #          vrs_os_type: u14.04,
 #          # The active VSC IP address for this set of VRS nodes
@@ -133,7 +134,21 @@ For reference, here is a description of the contents of the `build-vars.yml` fil
 #          vrs_ip_list: [ 
 #           192.168.122.101,
 #           192.168.122.142 ] }
-#
+#          # VRS set two
+#      - { vrs_set_name: vrs_set_uswest2,
+#          vrs_os_type: el7,
+#          active_controller_ip: 192.168.122.202,
+#          standby_controller_ip: 192.168.122.203,
+#          vrs_ip_list: [
+#           192.168.122.83,
+#           192.168.122.238 ] }
+#          # VRS set three
+#      - { vrs_set_name: vrs_set_uswest3,
+#          vrs_os_type: u16.04,
+#          active_controller_ip: 192.168.122.202,
+#          standby_controller_ip: 192.168.122.203,
+#          vrs_ip_list: [
+#           192.168.122.236 ] }
 #
 #    VSTAT - ElasticSearch
 #    # A dictionary of params for 0 or more VSTAT instances
