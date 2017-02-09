@@ -279,6 +279,19 @@
     when: item.vrs_os_type == "el7"
     with_items: "{{ myvrss }}"
 
+  - name: initialize vrs_target_os_is_supported to be evaluated for vrs supported target os types
+    set_fact: vrs_target_os_is_supported="True"
+
+  - name: Set facts if vrs os type in build.yml is set to a supported version
+    set_fact: vrs_target_os_is_supported="False"
+    when: item.vrs_os_type not in supported_vrs_target_os_types
+    with_items: "{{ myvrss }}"
+
+  - assert:
+      that: 
+        - "vrs_target_os_is_supported == True"
+      msg: "unsupported OS type/typo in build.yml. Supported OS Types are el6,el7,u14.04,u16.04"
+
   - debug: msg="vrs_u14_04 is set to "{{ vrs_u14_04 }}" " verbosity=1
     when: vrs_u14_04 is defined
 
@@ -474,7 +487,6 @@
   when: myvrss is defined
   tags:
     - vrs
-    - vrs_unpack_test
 
 - name: Ensure that el7 VRS package path variables are set 
   set_fact:
