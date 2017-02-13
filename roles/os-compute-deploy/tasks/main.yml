@@ -7,7 +7,7 @@
   register: osc_server
   delegate_to: 127.0.0.1
  
-- name: Save OSC ip
+- name: Set OSC ip
   set_fact:
     osc_ip: "{{ osc_server['ansible_facts']['openstack_servers'][0]['private_v4'] }}"
 
@@ -21,13 +21,39 @@
 
 - name: Save os-compute mgmt ip
   set_fact:
-    compute_mgmt_ip: "{{ compute_server['ansible_facts']['openstack_servers'][0]['private_v4'] }}"
+    compute_mgmt_ip: "{{ compute_server['ansible_facts']['openstack_servers'][0]['networks'][compute_mgmt_network][0] }}"
 
 - name: Update /etc/hosts file on ansible host
   lineinfile:
     dest: /etc/hosts
     line: "{{ compute_mgmt_ip }}    {{ inventory_hostname }}"
   delegate_to: 127.0.0.1
+
+- block:
+  - name: Get infra server details from OS server facts
+    os_server_facts:
+      auth:
+        "{{ os_auth }}"
+      server: "{{ infra_server_name }}"
+    register: infra_server
+    delegate_to: 127.0.0.1
+
+  - name: Set DNS/NTP server ip
+    set_fact:
+      infra_ip: "{{ infra_server['ansible_facts']['openstack_servers'][0]['private_v4'] }}"
+
+  - name: Update DNS entires
+    lineinfile:
+      line: "{{ compute_mgmt_ip }}  {{ inventory_hostname }}"
+      dest: "/etc/hosts"
+    delegate_to: "{{ infra_ip }}"
+    remote_user: root
+
+  - name: Restart DNS service
+    shell: service dnsmasq restart
+    delegate_to: "{{ infra_ip }}"
+    remote_user: root
+  when: infra_server_name is defined
 
 - name: Query {{ target_server }} facts
   action: setup
@@ -62,6 +88,14 @@
     state: stopped
   ignore_errors: yes
 
+- name: Copy eth0 config to os_compute
+  template: src=ifcfg-eth0.j2 backup=no dest=/etc/sysconfig/network-scripts/ifcfg-eth0
+  remote_user: root
+
+- name: Copy eht1 config to os_compute
+  template: src=ifcfg-eth1.j2 backup=no dest=/etc/sysconfig/network-scripts/ifcfg-eth1
+  remote_user: root
+
 - name: Enable network
   service:
     name: network
@@ -86,7 +120,7 @@
 
 - name: Load correspoing software repos for OpenStack Centos7
   yum:
-    name: "{{os_centos}}{{ nuage_os_release }}"
+    name: "{{ os_centos }}{{ nuage_os_release }}"
     state: present
   when: 
     - ansible_distribution == 'CentOS'
@@ -105,23 +139,6 @@
     name: '*'
     state: latest
   remote_user: root
-
-# Temp task to get around packstact missing packages
-- name: Enable test repos on CentOS
-  lineinfile:
-    regexp: enabled=
-    line: enabled=1
-    dest: "/etc/yum.repos.d/CentOS-OpenStack-{{os_release}}.repo"
-  when:
-    - ansible_distribution == 'CentOS'
-
-- name: Execute a yum update on {{ inventory_hostname }}
-  yum:
-    name: '*'
-    state: latest
-  remote_user: root
-  when:
-    - ansible_distribution == 'CentOS'
 
 - name: Generate SSH keys on OSC
   shell: ssh-keygen -b 2048 -t rsa -f /root/.ssh/id_rsa -q -N ""

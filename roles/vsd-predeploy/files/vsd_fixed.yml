@@ -16,6 +16,11 @@ parameters:
     type: string
  
 resources:
+  mgmt_port:
+    type: OS::Neutron::Port
+    properties:
+      network_id: {get_param: vsd_net}
+      fixed_ips: [{"subnet": {get_param: vsd_subnet}, "ip_address": {get_param: mgmt_ip}}]
   mycompute:
     type: OS::Nova::Server
     properties:
@@ -23,7 +28,7 @@ resources:
       flavor: {get_param: vsd_flavor}
       image: {get_param: vsd_image}
       networks:
-      - network: {get_param: vsd_net}
+        - port: {get_resource: mgmt_port}
       user_data_format: RAW
       user_data: 
         str_replace:
