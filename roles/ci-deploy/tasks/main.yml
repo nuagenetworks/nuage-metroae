@@ -7,6 +7,28 @@
   register: ci_server
   delegate_to: 127.0.0.1
 
+- name: Get {{ vrs_u14_name }} details from OS facts
+  os_server_facts:
+    auth:
+      "{{ os_auth }}"
+    server: "{{ vrs_u14_name }}"
+  register: vrs_u14_server
+  delegate_to: 127.0.0.1
+
+- name: Get {{ vrs_u16_name }} details from OS facts
+  os_server_facts:
+    auth:
+      "{{ os_auth }}"
+    server: "{{ vrs_u16_name }}"
+  register: vrs_u16_server
+  delegate_to: 127.0.0.1
+
+- debug: var=ci_server
+
+- debug: var=vrs_u14_server
+
+- debug: var=vrs_u16_server
+
 # Temp task to get around policy issue
 - name: Set the network names
   set_fact:
@@ -24,6 +46,19 @@
     set_fact:
       target_server: "{{ ci_server['ansible_facts']['openstack_servers'][0]['networks'][net_name1][0]}}"
   when: net_name2 == 'OC_JEN_FrontEnd'
+
+
+- block:
+  - name: Set the Ubuntu 14.04 VRS compute IP
+    set_fact:
+      vrs_u14_target_server: "{{ vrs_u14_server['ansible_facts']['openstack_servers'][0]['networks'][net_name1][0]}}"
+  when: u14_vrs_net_name == 'OC_JEN_FrontEnd'
+
+ - block:
+  - name: Set the Ubuntu 16.04 VRS compute IP
+    set_fact:
+      vrs_u16_target_server: "{{ vrs_u16_server['ansible_facts']['openstack_servers'][0]['networks'][net_name1][0]}}"
+  when: u16_vrs_net_name == 'OC_JEN_FrontEnd'
 
 - name: Extract network part from the compute ip
   set_fact:
