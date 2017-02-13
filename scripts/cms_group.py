@@ -28,18 +28,19 @@ if __name__ == '__main__':
 
     # Get VSD related parameters
     try:
-        with open(args.playbook_dir + '/roles/vsd-osc-config/vars/main.yml', 'r') as fh:
+        with open(args.playbook_dir + '/roles/vsd-osc-config/vars/main.yml',
+                  'r') as fh:
             vsd_params = yaml.load(fh)
     except Exception as e:
         print("ERROR: Failure reading file: %s" % e)
 
     # Create a session as csp user
     try:
-        vsd_params['csp']['api_url'] = 'https://'+args.vsd_ip_addr+':8443'
+        vsd_params['csp']['api_url'] = 'https://' + args.vsd_ip_addr + ':8443'
         session = NUVSDSession(**vsd_params['csp'])
         session.start()
         csproot = session.user
     except Exception as e:
-        print("ERROR: Could not establish connection to VSD API %s %s" % (vsd_params['csp'],e))
+        print("ERROR: Could not establish connection to VSD API")
         sys.exit(1)
     add_cspto_cms(session)

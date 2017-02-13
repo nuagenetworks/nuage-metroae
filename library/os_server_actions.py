@@ -16,7 +16,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this software.  If not, see <http://www.gnu.org/licenses/>.
 
-
+from ansible.module_utils.basic import AnsibleModule
+from ansible.module_utils.openstack import openstack_full_argument_spec
+from ansible.module_utils.openstack import openstack_module_kwargs
 try:
     import shade
     HAS_SHADE = True
@@ -87,7 +89,7 @@ _action_map = {'stop': 'SHUTOFF',
 _admin_actions = ['pause', 'unpause', 'suspend', 'resume', 'lock', 'unlock']
 
 
-def _wait(timeout, cloud, server, action):
+def _wait(timeout, cloud, server, action, module):
     """Wait for the server to reach the desired state for the given action."""
 
     for count in shade._utils._iterate_timeout(
@@ -102,7 +104,9 @@ def _wait(timeout, cloud, server, action):
             return
 
         if server.status == 'ERROR':
-            module.fail_json(msg="Server reached ERROR state while attempting to %s" % action)
+            module.fail_json(msg="Server reached ERROR state while\
+                             attempting to %s" % action)
+
 
 def _system_state_change(action, status):
     """Check if system state would change."""
@@ -110,15 +114,18 @@ def _system_state_change(action, status):
         return False
     return True
 
+
 def main():
     argument_spec = openstack_full_argument_spec(
         server=dict(required=True),
-        action=dict(required=True, choices=['stop', 'start', 'pause', 'unpause',
-                                            'lock', 'unlock', 'suspend', 'resume', 'reboot']),
+        action=dict(required=True, choices=['stop', 'start', 'pause',
+                                            'unpause', 'lock', 'unlock',
+                                            'suspend', 'resume', 'reboot']),
     )
 
     module_kwargs = openstack_module_kwargs()
-    module = AnsibleModule(argument_spec, supports_check_mode=True, **module_kwargs)
+    module = AnsibleModule(argument_spec, supports_check_mode=True,
+                           **module_kwargs)
 
     if not HAS_SHADE:
         module.fail_json(msg='shade is required for this module')
@@ -146,7 +153,7 @@ def main():
 
             cloud.nova_client.servers.stop(server=server.id)
             if wait:
-                _wait(timeout, cloud, server, action)
+                _wait(timeout, cloud, server, action, module)
                 module.exit_json(changed=True)
 
         if action == 'start':
@@ -155,7 +162,7 @@ def main():
 
             cloud.nova_client.servers.start(server=server.id)
             if wait:
-                _wait(timeout, cloud, server, action)
+                _wait(timeout, cloud, server, action, module)
                 module.exit_json(changed=True)
 
         if action == 'pause':
@@ -164,7 +171,7 @@ def main():
 
             cloud.nova_client.servers.pause(server=server.id)
             if wait:
-                _wait(timeout, cloud, server, action)
+                _wait(timeout, cloud, server, action, module)
                 module.exit_json(changed=True)
 
         elif action == 'unpause':
@@ -173,7 +180,7 @@ def main():
 
             cloud.nova_client.servers.unpause(server=server.id)
             if wait:
-                _wait(timeout, cloud, server, action)
+                _wait(timeout, cloud, server, action, module)
             module.exit_json(changed=True)
 
         elif action == 'lock':
@@ -192,7 +199,7 @@ def main():
 
             cloud.nova_client.servers.suspend(server=server.id)
             if wait:
-                _wait(timeout, cloud, server, action)
+                _wait(timeout, cloud, server, action, module)
             module.exit_json(changed=True)
 
         elif action == 'resume':
@@ -201,24 +208,22 @@ def main():
 
             cloud.nova_client.servers.resume(server=server.id)
             if wait:
-                _wait(timeout, cloud, server, action)
+                _wait(timeout, cloud, server, action, module)
             module.exit_json(changed=True)
 
         elif action == 'reboot':
             if not _system_state_change(action, status):
                 module.exit_json(changed=False)
 
-            cloud.nova_client.servers.reboot(server=server.id, reboot_type='HARD')
+            cloud.nova_client.servers.reboot(server=server.id,
+                                             reboot_type='HARD')
             if wait:
-                _wait(timeout, cloud, server, action)
+                _wait(timeout, cloud, server, action, module)
             module.exit_json(changed=True)
-
 
     except shade.OpenStackCloudException as e:
         module.fail_json(msg=str(e), extra_data=e.extra_data)
 
-# this is magic, see lib/ansible/module_common.py
-from ansible.module_utils.basic import *
-from ansible.module_utils.openstack import *
+
 if __name__ == '__main__':
     main()
