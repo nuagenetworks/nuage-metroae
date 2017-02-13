@@ -11,6 +11,11 @@
   set_fact:
     vsd_mgmt_ip: "{{ vsd_ip['ansible_facts']['openstack_servers'][0]['networks'][vsd_network][0] }}"
 
+- name: Clean known_hosts of VSD's
+  command: ssh-keygen -R "{{ vsd_mgmt_ip }}" -f /root/.ssh/known_hosts
+  delegate_to: "{{ ansible_deployment_host }}"
+  remote_user: root
+
 - block:
   - name: Get infra server details from OS server facts
     os_server_facts:
@@ -37,7 +42,7 @@
       dest: "/etc/hosts"
     delegate_to: "{{ infra_ip }}"
     remote_user: root
-    when: vsd_standalone == True
+    when: vsd_standalone == False
 
   - name: Restart DNS service
     shell: service dnsmasq restart
