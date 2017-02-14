@@ -1,48 +1,54 @@
 ---
-- hosts: cis-centos7
-  - name: Get {{ inventory_hostname }} details from OS facts
-    os_server_facts:
-      auth:
-        "{{ os_auth }}"
-      server: "{{ inventory_hostname }}"
-    register: ci_server
-    delegate_to: 127.0.0.1
+- name: Gather facts and set variables
+  hosts: all
+  tasks:
+    - name: Get {{ inventory_hostname }} details from OS facts
+      os_server_facts:
+        auth:
+          "{{ os_auth }}"
+        server: "{{ inventory_hostname }}"
+      register: ci_server
+      delegate_to: 127.0.0.1
 
 
-# Temp task to get around policy issue
-  - name: Set the network names
-    set_fact:
-      net_name1: "{{ ci_server['ansible_facts']['openstack_servers'][0]['networks'].keys()[0] }}"
-      net_name2: "{{ ci_server['ansible_facts']['openstack_servers'][0]['networks'].keys()[1] }}"
-
-  - block:
-    - name: Set the compute IP
+    # Temp task to get around policy issue
+    - name: Set the network names
       set_fact:
-        target_server: "{{ ci_server['ansible_facts']['openstack_servers'][0]['networks'][net_name2][0]}}"
-    when: net_name1 == 'OC_JEN_FrontEnd' and ci_image == 'jen-centos7'
+        net_name1: "{{ ci_server['ansible_facts']['openstack_servers'][0]['networks'].keys()[0] }}"
+        net_name2: "{{ ci_server['ansible_facts']['openstack_servers'][0]['networks'].keys()[1] }}"
 
-- block:
-  - name: Set the compute IP
-    set_fact:
-      target_server: "{{ ci_server['ansible_facts']['openstack_servers'][0]['networks'][net_name1][0]}}"
-  when: net_name2 == 'OC_JEN_FrontEnd'  and ci_image == 'jen-centos7'
+    - block:
+      - name: Set the compute IP
+        set_fact:
+          target_server: "{{ ci_server['ansible_facts']['openstack_servers'][0]['networks'][net_name2][0]}}"
+      - debug: var=target_server
+      when: net_name1 == 'OC_JEN_FrontEnd' and ci_image == 'jen-centos7'
+
+    - block:
+      - name: Set the compute IP
+        set_fact:
+          target_server: "{{ ci_server['ansible_facts']['openstack_servers'][0]['networks'][net_name1][0]}}"
+      - debug: var=target_server    
+      when: net_name2 == 'OC_JEN_FrontEnd'  and ci_image == 'jen-centos7'
 
 
-- block:
-  - name: Set the Ubuntu 14.04 VRS compute IP
-    set_fact:
-      vrs_u14_target_server: "{{ ci_server['ansible_facts']['openstack_servers'][0]['networks'][net_name1][0]}}"
-  when: net_name1 == 'OC_JEN_FrontEnd'  and ci_image == 'jen-ubuntu14'
+    - block:
+      - name: Set the Ubuntu 14.04 VRS compute IP
+        set_fact:
+          vrs_u14_target_server: "{{ ci_server['ansible_facts']['openstack_servers'][0]['networks'][net_name1][0]}}"
+      - debug: var=vrs_u14_target_server
+      when: net_name1 == 'OC_JEN_FrontEnd'  and ci_image == 'jen-ubuntu14'
 
-- debug: var=vrs_u14_target_server
 
-- block:
-  - name: Set the Ubuntu 16.04 VRS compute IP
-    set_fact:
-      vrs_u16_target_server: "{{ ci_server['ansible_facts']['openstack_servers'][0]['networks'][net_name1][0]}}"
-  when: net_name1 == 'OC_JEN_FrontEnd'  and ci_image == 'jen-ubuntu16'
 
-- debug: var=vrs_u16_target_server
+    - block:
+      - name: Set the Ubuntu 16.04 VRS compute IP
+        set_fact:
+          vrs_u16_target_server: "{{ ci_server['ansible_facts']['openstack_servers'][0]['networks'][net_name1][0]}}"
+      - debug: var=vrs_u16_target_server
+      when: net_name1 == 'OC_JEN_FrontEnd'  and ci_image == 'jen-ubuntu16'
+
+
 
 - name: Extract network part from the compute ip
   set_fact:
