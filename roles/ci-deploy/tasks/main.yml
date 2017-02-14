@@ -1,24 +1,25 @@
 ---
-- name: Get {{ inventory_hostname }} details from OS facts
-  os_server_facts:
-    auth:
-      "{{ os_auth }}"
-    server: "{{ inventory_hostname }}"
-  register: ci_server
-  delegate_to: 127.0.0.1
+- hosts: cis-centos7
+  - name: Get {{ inventory_hostname }} details from OS facts
+    os_server_facts:
+      auth:
+        "{{ os_auth }}"
+      server: "{{ inventory_hostname }}"
+    register: ci_server
+    delegate_to: 127.0.0.1
 
 
 # Temp task to get around policy issue
-- name: Set the network names
-  set_fact:
-    net_name1: "{{ ci_server['ansible_facts']['openstack_servers'][0]['networks'].keys()[0] }}"
-    net_name2: "{{ ci_server['ansible_facts']['openstack_servers'][0]['networks'].keys()[1] }}"
-
-- block:
-  - name: Set the compute IP
+  - name: Set the network names
     set_fact:
-      target_server: "{{ ci_server['ansible_facts']['openstack_servers'][0]['networks'][net_name2][0]}}"
-  when: net_name1 == 'OC_JEN_FrontEnd' and ci_image == 'jen-centos7'
+      net_name1: "{{ ci_server['ansible_facts']['openstack_servers'][0]['networks'].keys()[0] }}"
+      net_name2: "{{ ci_server['ansible_facts']['openstack_servers'][0]['networks'].keys()[1] }}"
+
+  - block:
+    - name: Set the compute IP
+      set_fact:
+        target_server: "{{ ci_server['ansible_facts']['openstack_servers'][0]['networks'][net_name2][0]}}"
+    when: net_name1 == 'OC_JEN_FrontEnd' and ci_image == 'jen-centos7'
 
 - block:
   - name: Set the compute IP
