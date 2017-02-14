@@ -39,7 +39,7 @@ The VCS/NVS components that are supported are:
 
 The short version of the instructions are:
 
-1. Install Ansible 2.2.1+ on the deployment host
+1. Install Ansible 2.2 on the deployment host for full support
 1. Install Netmiko and its dependencies on deployment host.
 1. Clone this repository to the deployment host
 1. Customize `build.yml` with your VSD, VSC, VRS, VNSUTIL, NSGV  and VSTAT information. (See `BUILD.md` for details.)
@@ -64,7 +64,7 @@ The following restrictions and conditions apply prior to executing the playbooks
 1. If host names are used for target systems, VSD, VSC, VSTAT, VNSUTIL and VRS nodes, those names must be discoverable via DNS *or* added to the /etc/hosts file of the ansible deployment host.
 1. Each VM that is created for VSD, VSC, VSTAT, VNSUTIL or NSGV connects to one or more bridges on the target server. Those bridges must be created on the target server prior to deployment. Their names must be specified in the `build.yml` file. See `BUILD.md` for details.
 1. Python 2.7+ and all its dependencies must be installed on the deployment host. Python 3.0 and above is untested.
-1. Ansible 2.2.1+ and all its dependencies must be installed on the deployment host.
+1. Ansible 2.2 and all its dependencies must be installed on the deployment host.
 1. Netmiko and all its dependencies must be installed on deployment host. The easiest way to install Netmiko is by using `pip install netmiko`. A common Netmiko dependency that could be missing is the cryptography package. See https://cryptography.io/en/latest/installation/ for more information.
 1. VSPK (nuage python module) must be installed on the deployment host.
 1. The ansible deployment host may also be a target server.
