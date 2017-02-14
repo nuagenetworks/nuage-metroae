@@ -2,21 +2,9 @@ heat_template_version: '2014-10-16'
 parameters:
   vm_name:
     type: string
-  vrs_u14_name:
-    type: string
-  vrs_u16_name:
-    type: string
   ci_flavor:
     type: string
-  vrs_u14_ci_flavor:
-    type: string
-  vrs_u16_ci_flavor:
-    type: string
   ci_image: 
-    type: string
-  vrs_u14_ci_image:
-    type: string
-  vrs_u16_ci_image:
     type: string
   ssh_key:
     type: string 
@@ -49,18 +37,6 @@ resources:
       network_id: { get_resource: private_net }
       fixed_ips:
         - subnet_id: { get_resource: private_subnet }
-  vrs_u14_net_port:
-    type: OS::Neutron::Port
-    properties:
-      network_id: { get_resource: private_net }
-      fixed_ips:
-        - subnet_id: { get_resource: private_subnet }
-  vrs_u16_net_port:
-    type: OS::Neutron::Port
-    properties:
-      network_id: { get_resource: private_net }
-      fixed_ips:
-        - subnet_id: { get_resource: private_subnet }
   mycompute:
     type: OS::Nova::Server
     properties:
@@ -78,47 +54,7 @@ resources:
             echo usr >> /root/.ssh/authorized_keys
           params:
             usr: {get_param: ssh_key}
-   vrs_u14_compute:
-    type: OS::Nova::Server
-    properties:
-      name: {get_param: vrs_u14_name}
-      flavor: {get_param: vrs_u14_ci_flavor}
-      image: {get_param: vrs_u14_ci_image}
-      networks:
-        - port: { get_resource: vrs_u14_net_port }
-        - network: 'OC_JEN_FrontEnd'
-      user_data_format: RAW
-      user_data:
-        str_replace:
-          template: |
-            #!/bin/bash
-            echo usr >> /root/.ssh/authorized_keys
-          params:
-            usr: {get_param: ssh_key}
-    vrs_u16_compute:
-    type: OS::Nova::Server
-    properties:
-      name: {get_param: vrs_u16_name}
-      flavor: {get_param: vrs_u16_ci_flavor}
-      image: {get_param: vrs_u16_ci_image}
-      networks:
-        - port: { get_resource: vrs_u16_net_port }
-        - network: 'OC_JEN_FrontEnd'
-      user_data_format: RAW
-      user_data:
-        str_replace:
-          template: |
-            #!/bin/bash
-            echo usr >> /root/.ssh/authorized_keys
-          params:
-            usr: {get_param: ssh_key}
 outputs:
   server_ip:
     description: fixed ip assigned to the server
     value: { get_attr: [mycompute, first_address] }
-  vrs_u14_ip:
-    description: fixed ip assigned to the ubuntu 14.04 vrs
-    value: { get_attr: [vrs_u14_compute, first_address] }
-  vrs_u16_ip:
-    description: fixed ip assigned to the ubuntu 16.04 vrs
-    value: { get_attr: [vrs_u16_compute, first_address] }
