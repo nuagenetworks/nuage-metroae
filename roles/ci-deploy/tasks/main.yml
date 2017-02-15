@@ -54,13 +54,7 @@
       dest: "{{ playbook_dir }}/zfb.yml"
     delegate_to: 127.0.0.1
 
-  - name: Update /etc/hosts file
-    lineinfile:
-      dest: /etc/hosts
-      line: "{{ item }}"
-    with_items: "{{ vsp_ips }}"
-    delegate_to: "{{ ansible_deployment_host }}"
-    remote_user: root
+
 
   # Temp task to get around policy issue
   - name: Set front end ip added to static route
@@ -73,6 +67,14 @@
     delegate_to: "{{ ansible_deployment_host }}"
     remote_user: root
   when: ci_image == 'jen-centos7'
+
+- name: Update /etc/hosts file
+    lineinfile:
+      dest: /etc/hosts
+      line: "{{ item }}"
+    with_items: "{{ vsp_ips }}"
+    delegate_to: "{{ ansible_deployment_host }}"
+    remote_user: root
 
 - name: Wait for {{ inventory_hostname }} ssh to be ready
   local_action:
