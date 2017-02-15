@@ -15,6 +15,25 @@
     line: "{{ interfaces.mgmt.ip }} {{ inventory_hostname }}"
   remote_user: root
 
+- block:
+  - name: Generate SSH keys
+    shell: ssh-keygen -b 2048 -t rsa -f /root/.ssh/id_rsa -q -N ""
+    args:
+      creates: /root/.ssh/id_rsa
+    remote_user: root
+
+  - name: Get generated SSH keys
+    shell: cat ~/.ssh/id_rsa.pub
+    register: ssh_key
+    remote_user: root
+
+  - name: Add SSH keys to authorized_keys file
+    shell: "echo {{ssh_key.stdout}} >> /root/.ssh/authorized_keys"
+    delegate_to: "{{ item }}"
+    with_items: "{{ groups['vstats'] }}"
+    remote_user: root
+  when: vstat_standalone == False
+
 - name: Delete the localtime file on {{ inventory_hostname }}
   file:
     path: /etc/localtime
@@ -108,7 +127,35 @@
     state: restarted
   remote_user: root
 
+- block:
+  - name: Execute VSTAT cluster script on VSD
+    command: /opt/vsd/vsd-es-cluster-config.sh -e {{ inventory_hostname }}
+    delegate_to: "{{vsd_fqdn}}"
+    remote_user: root
+  when: vstat_standalone == false
+
 - name: Enable stats collection on the VSD VM
   command: /opt/vsd/vsd-stats.sh -e {{inventory_hostname}}
   delegate_to: "{{vsd_fqdn}}"
   remote_user: root
+  when: vsd_standalone == true
+
+- block:
+  - name: Enable stats collection on the VSD HA node1 {{groups['vsds'][0]}}
+    command: /opt/vsd/vsd-stats.sh -e groups['vsds'][0]
+    when: inventory_hostname == groups['vsds'][0]
+    remote_user: root
+
+  - name: Enable stats collection on the VSD HA no
+de2 {{groups['vsds'][1]}}
+    command: /opt/vsd/vsd-stats.sh -e groups['vsds'][1]
+    when: inventory_hostname == groups['vsds'][1]
+    remote_user: root
+
+  - name: Enable stats collection on the VSD HA no
+de3 {{groups['vsds'][2]}}
+    command: /opt/vsd/vsd-stats.sh -e groups['vsds'][2]
+    when: inventory_hostname == groups['vsds'][2]
+    remote_user: root
+  when: vsd_standalone == False
+
