@@ -17,7 +17,23 @@
     that: "vstat_vm_facts.failed"
     msg: "VM {{ inventory_hostname }} already exists, quiting"
 
-- name: Deploy Stats Image on vCenter
+- name: Deploy Stats OVA on vCenter
+  connection: local
+  command: >
+    {{ vcenter.ovftool }}
+    --acceptAllEulas
+    --noSSLVerify
+    --powerOn
+    --machineOutput
+    -dm=thin
+    -ds={{ vcenter.datastore }}
+    -n={{ inventory_hostname }}
+    --net:"Management={{ mgmt_bridge }}"
+    "{{ vstat_ova_path }}/{{ vstat_ova_file_name }}"
+    vi://'{{ vcenter.username | urlencode }}':'{{ vcenter.password | urlencode }}'@{{ target_server }}/{{ vcenter.datacenter }}/host/{{ vcenter.cluster }} 
+  when: "'.ova' in vstat_ova_file_name"
+
+- name: Deploy Stats OVF on vCenter
   connection: local
   command: >
     {{ vcenter.ovftool }}
@@ -29,8 +45,9 @@
     -ds={{ vcenter.datastore }}
     -n={{ inventory_hostname }}
     --net:"OVS DataPath={{ mgmt_bridge }}"
-    "{{ vstat_ovf_path }}/{{ vstat_ovf_file_name }}"
+    "{{ vstat_ova_path }}/{{ vstat_ova_file_name }}"
     vi://'{{ vcenter.username | urlencode }}':'{{ vcenter.password | urlencode }}'@{{ target_server }}/{{ vcenter.datacenter }}/host/{{ vcenter.cluster }} 
+  when: "'.ovf' in vstat_ova_file_name"
 
 - name: Waiting 120 seconds to make sure the Stats {{ inventory_hostname }} is up
   pause: 
