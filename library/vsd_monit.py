@@ -7,11 +7,6 @@ DOCUMENTATION = '''
 module: vsd_monit
 short_description: Verify the summary of vsd processes via monit
 options:
-  name:
-    description:
-      - The name of the I(monit) program/process
-    required: true
-    default: null
   state:
     description:
       - The state of service
@@ -21,46 +16,43 @@ options:
 '''
 
 EXAMPLES = '''
-# Verify the state of program "ntpd-status" state.
-- monit: name=ntpd-status state=summary
+# Verify the state of vsd program/processes.
+- vsd_monit: state=summary
 '''
 
 
 def main():
     arg_spec = dict(
-        name=dict(required=True, type='list'),
         state=dict(required=True, choices=['summary'])
     )
 
-    monit_stats = dict()
+    monit_status = dict()
     module = AnsibleModule(argument_spec=arg_spec, supports_check_mode=True)
 
-    vsd_stats_proc = module.params['name']
     state = module.params['state']
 
     MONIT = module.get_bin_path('monit', True)
 
-    def status(proc_name):
-        """Return the status of the process in monit, or
+    def status():
+        """Return the status of the vsd process in monit, or
         the empty string if not present."""
-        rc, out, err = module.run_command('%s summary %s'
-                                          % (MONIT, proc_name), check_rc=True)
+        rc, out, err = module.run_command('%s summary'
+                                          % (MONIT), check_rc=True)
         for line in out.split('\n'):
-            parts = line.split()
-            if len(parts) > 2:
-                if (parts[0].lower() == 'program' or
-                   parts[0].lower() == 'process'  or
-                   parts[0].lower() == 'file'):
-                    if parts[1] == "'%s'" % proc_name:
-                        return ' '.join(parts[2:]).lower()
-        else:
-            return ''
+            if 'daemon' not in line:
+                parts = line.split()
+                if len(parts) > 2:
+                    if (parts[0].lower() == 'program' or
+                       parts[0].lower() == 'process' or
+                       parts[0].lower() == 'file'):
+                        proc_name = parts[1].strip("'")
+                        proc_status = ' '.join(parts[2:]).lower()
+                        monit_status.setdefault(proc_name, proc_status)
+        return (monit_status)
 
     if state == 'summary':
-        for proc_name in vsd_stats_proc:
-            proc_status = status(proc_name)
-            monit_stats[proc_name] = proc_status
-        module.exit_json(changed=True, name=proc_name, state=monit_stats)
+        vsd_proc_status = status()
+        module.exit_json(changed=True, state=vsd_proc_status)
 
 # Run the main
 

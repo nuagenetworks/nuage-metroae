@@ -1,6 +1,5 @@
-- name: Get monit summary for vsd processes common to cluster and standalone deployments
+- name: Get monit summary for vsd processes
   vsd_monit: 
-    name: "{{ vsd_processes }}" 
     state: summary
   register: vsd_proc
 
@@ -11,35 +10,3 @@
   nuage_append: filename="{{ report_path }}" text="{{ inventory_hostname }} {{ vsd_proc.state | to_nice_json}}\n"
   delegate_to: "{{ ansible_deployment_host }}"
   remote_user: root
-
-- block:
-  - name: Get monit summary for vsd processes specific to standalone deployments
-    vsd_monit:
-      name: "{{  vsd_sa_processes }}"
-      state: summary
-    register: vsd_sa_proc
- 
-  - name: Print monit status for vsd standalone process when verbosity >= 1
-    debug: var=vsd_sa_proc
-
-  - name: Write vsd monit status for standalone process to json file
-    nuage_append: filename="{{ report_path }}" text="{{ inventory_hostname }} {{ vsd_sa_proc.state | to_nice_json}}\n"
-    delegate_to: "{{ ansible_deployment_host }}"
-    remote_user: root
-  when: vsd_standalone == True
-
-- block:
-  - name: Get monit summary for vsd processes specific to cluster deployments
-    vsd_monit:
-      name: "{{  vsd_cluster_processes }}"
-      state: summary
-    register: vsd_cluster_proc
-
-  - name: Print monit status for vsd cluster proccess when verbosity >= 1
-    debug: var=vsd_cluster_proc
-
-  - name: Write vsd monit status for cluster process to json file
-    nuage_append: filename="{{ report_path }}" text="{{ inventory_hostname }} {{ vsd_cluster_proc.state | to_nice_json}}\n"
-    delegate_to: "{{ ansible_deployment_host }}"
-    remote_user: root
-  when: vsd_standalone == False
