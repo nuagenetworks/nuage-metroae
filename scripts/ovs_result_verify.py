@@ -95,18 +95,11 @@ if __name__ == '__main__':
                         help="IP address of the VRS.")
     parser.add_argument("ovs_output_file", type=str,
                         help="File for output of command ovs-vsctl show.")
-    parser.add_argument("playbook_dir", type=str,
-                        help="Path of playbook directory.")
     args = parser.parse_args()
     ovs_output_file = args.ovs_output_file
-    playbook_dir = args.playbook_dir
 
     if (not is_valid_ip(args.vrs_ip)):
         print (" Error! Invalid input: vrs_ip.")
-        sys.exit(1)
-
-    if (not playbook_dir):
-        print ("Error! Invalid input: playbook_dir.")
         sys.exit(1)
 
     if (not ovs_output_file):
@@ -114,17 +107,16 @@ if __name__ == '__main__':
         sys.exit(1)
 
     vrs_ip = args.vrs_ip
-    ovs_file_path = playbook_dir + "/scripts/tmp/" + ovs_output_file
-    if (not os.path.exists(ovs_file_path)):
-        print ("ERROR! Temporary file {0} not found." .format(ovs_file_path))
+    if (not os.path.exists(ovs_output_file)):
+        print ("ERROR! Temporary file {0} not found." .format(ovs_output_file))
         sys.exit(1)
 
     try:
-        with open(ovs_file_path, "r") as fp:
+        with open(ovs_output_file, "r") as fp:
             ovs_show_result = fp.readlines()
     except:
         print("Error processing temporary file {0}:"
-              "{1}" .format(ovs_file_path, sys.exc_info()[0]))
+              "{1}" .format(ovs_output_file, sys.exc_info()[0]))
         sys.exit(1)
 
     if (not ovs_show_result):
