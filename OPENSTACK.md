@@ -8,11 +8,11 @@ Using metro, users can deploy VSP components into OpenStack. These are the follo
 1. Deploy Infra VM
 2. Deploy VSD (Standalone or HA)
 3. Deploy VSTAT (Standalone)
-3. Deploy VSC (1 or in pair without BGP support)
-4. Deploy OSC (1)
-5. Deploy OSC Computes (1 or more) and add them to OSC with VRS packages
-6. VSD-OSC intergaration
-7. Create Snapshot of project or VMs
+4. Deploy VSC (1 or in pair without BGP support)
+5. Deploy OSC (1)
+6. Deploy OSC Computes (1 or more) and add them to OSC with VRS packages
+7. VSD-OSC intergaration
+8. Create Snapshot of project or VMs
 
 ## Details
 
@@ -35,7 +35,7 @@ Deloying VSTAT in OpenStack requires the user to upload VSTAT qcow2 image to gla
 ### OSC
 
 `osc-predploy` and `osc-deploy` roles are used to deploy OpenStack Controller (OSC) using packstack. The user needs to upload a cloud image (only CentOS/RHEL 7 are supported) with cloud-init support to glance. The netowrk, flavor and OpenStack release string needs to be supplied by user as well.
-User needs to define a folder with name `nuage_os` and place nuage openstaclk plugin tar file in it. This folder needs to be defined under `nuage_nuage_packed_src_path` if `nuage_already_unpacked: False` or `nuage_nuage_packed_dst_path` if `nuage_already_unpacked: True` in `build.yml`
+User needs to define a folder with name `nuage_os` and place nuage openstaclk plugin tar file in it. This folder needs to be defined under `nuage_packed_src_path` if `nuage_already_unpacked: False` or `nuage_packed_dst_path` if `nuage_already_unpacked: True` in `build.yml`
 
 ### OSC Computes
 
@@ -86,7 +86,7 @@ For reference, here is a description of the contents of the `build-vars.yml` fil
 #      - { hostname: infra.example.com,
 #          # The target server type where this INFRA instance will run. Possible values: heat
 #          target_server_type: heat,
-#          # When set to True, DHCP based deployemnts are supported. Default is True. 
+#          # When set to True, DHCP based deployments are supported. Default is True. 
 #          # When set to False, Static IP based deployments are supported.
 #          dhcp: False,
 #          # Required when dhcp is set to False
@@ -107,7 +107,7 @@ For reference, here is a description of the contents of the `build-vars.yml` fil
 #      - { hostname: vsd1.example.com,
 #          # The target server type where this VSD instance will run. Possible values: heat
 #          target_server_type: heat,
-#          # When set to True, DHCP based deployemnts are supported. Default is True. 
+#          # When set to True, DHCP based deployments are supported. Default is True. 
 #          # When set to False, Static IP based deployments are supported.
 #          dhcp: False,
 #          # Required when dhcp is set to False
@@ -130,7 +130,7 @@ For reference, here is a description of the contents of the `build-vars.yml` fil
 #      - { hostname: vsc1.example.com,
 #          # The target server type where this VSC instance will run. Possible values: heat
 #          target_server_type: heat,
-#          # When set to True, DHCP based deployemnts are supported. Default is True.
+#          # When set to True, DHCP based deployments are supported. Default is True.
 #          # When set to False, Static IP based deployments are supported.
 #          dhcp: False,
 #          # Required when dhcp is set to False
@@ -142,9 +142,9 @@ For reference, here is a description of the contents of the `build-vars.yml` fil
 #          # VSC flavor to be used. Must exist  on OpenStack
 #          vsc_flavor: vsc-r4,
 #          # VSC management network. Must exist on OpenStack
-#          vsc_management_network: mgmt,
+#          vsc_mgmt_network: mgmt,
 #          # VSC management subnet. Required when dhcp is set to False  
-#          vsc_management_subnet: mgmt_subnet,
+#          vsc_mgmt_subnet: mgmt_subnet,
 #          # VSC control network. Must exist on OpenStack
 #          vsc_control_network: control_net, 
 #          # VSC control subnet. Required when dhcp is set to False
@@ -165,7 +165,7 @@ For reference, here is a description of the contents of the `build-vars.yml` fil
 #      - { hostname: vstat1.example.com,
 #          # The target server type where this VSTAT instance will run. Possible values: heat
 #          target_server_type: heat,
-#          # When set to True, DHCP based deployemnts are supported. Default is True.
+#          # When set to True, DHCP based deployments are supported. Default is True.
 #          # When set to False, Static IP based deployments are supported.
 #          dhcp: False,
 #          # Required when dhcp is set to False
@@ -188,7 +188,7 @@ For reference, here is a description of the contents of the `build-vars.yml` fil
 #      - { hostname: osc1.example.com,
 #          # The target server type where this OSC instance will run. Possible values: heat
 #          target_server_type: heat,
-#          # When set to True, DHCP based deployemnts are supported. Default is True.
+#          # When set to True, DHCP based deployments are supported. Default is True.
 #          # When set to False, Static IP based deployments are supported.
 #          dhcp: False,
 #          # Required when dhcp is set to False
@@ -218,7 +218,7 @@ For reference, here is a description of the contents of the `build-vars.yml` fil
 #      - { hostname: oscompute1.example.com,
 #          # The target server type where this OS-COMPUTE instance will run. Possible values: heat
 #          target_server_type: heat,
-#          # When set to True, DHCP based deployemnts are supported. Default is True.
+#          # When set to True, DHCP based deployments are supported. Default is True.
 #          # When set to False, Static IP based deployments are supported.
 #          dhcp: False,
 #          # Required when dhcp is set to False
