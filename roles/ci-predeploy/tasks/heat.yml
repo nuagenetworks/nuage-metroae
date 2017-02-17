@@ -15,7 +15,7 @@
   local_action: command cat ~/.ssh/id_rsa.pub
   register: current_user_ssh_key
 
-- name: Create VSD managed subnet, CI slave VM in OpenStack
+- name: Create VSD managed subnet, CI slave VM in OpenStack for Centos 7 VRS
   register: create_stack
   os_stack:
     name: "{{ inventory_hostname }}"
@@ -34,5 +34,29 @@
       nuage_partition: "{{ org_name }}"
   delegate_to: 127.0.0.1
   when: ci_image == 'jen-centos7'
+
 - debug: var=create_stack['stack']['outputs'][0]['output_value']
   when: ci_image == 'jen-centos7'
+
+- name: Create CI slave VM in OpenStack for Ubuntu VRSs
+  register: create_stack
+  os_stack:
+    name: "{{ inventory_hostname }}"
+    template: "roles/ci-predeploy/files/ci_slave_ubuntu.yml"
+    auth:
+      "{{ os_auth }}"
+    parameters:
+      vm_name: "{{ inventory_hostname }}"
+      ci_image: "{{ ci_image }}"
+      ci_flavor: "{{ ci_flavor }}"
+      ssh_key: "{{ current_user_ssh_key.stdout }}"
+      subnet_name: "{{ (vsd_subnet_id.stdout|from_json).subnet_name }}"
+      network_name: "{{ (vsd_subnet_id.stdout|from_json).net_name }}"
+      cidr: "{{ (vsd_subnet_id.stdout|from_json).vsd_net }}/24"
+      nuage_netid: "{{ (vsd_subnet_id.stdout|from_json).sub_id }}"
+      nuage_partition: "{{ org_name }}"
+  delegate_to: 127.0.0.1
+  when: ci_image == 'jen-ubuntu14' or ci_image == 'jen-ubuntu16'
+
+- debug: var=create_stack['stack']['outputs'][0]['output_value']
+  when: ci_image == 'jen-ubuntu14' or ci_image == 'jen-ubuntu16'
