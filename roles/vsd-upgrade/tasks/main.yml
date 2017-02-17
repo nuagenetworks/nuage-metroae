@@ -1,39 +1,29 @@
 ---
-- name: Gather VSD network information from current VSD's
+- name: Shutdown/Destroy Current vsd node(s)
   include_role: 
-    name: vsd-health
-  vars:
-    report_filename: vsd_pre_upgrade_report.txt
-  
-- block:
-  - name: Shutdown/Destroy VSD Node1 and Node3
-    include_role: 
-      name: vsd-destroy
+    name: vsd-destroy
 
-  - name: Deploy VSD Node1 and Node3 with new version
-    include_role:
-      name: vsd-predeploy
+- name: Deploy VSD nodes with new version
+  include_role:
+    name: vsd-predeploy
 
-  - name: Wait for VSD ssh to be ready
-    local_action:
-      module: wait_for
-      port: "22"
-      host: "{{ interfaces.mgmt.ip }}"
-      search_regex: OpenSSH
-      delay: 1
+- name: Wait for VSD ssh to be ready
+  local_action:
+    module: wait_for
+    port: "22"
+    host: "{{ interfaces.mgmt.ip }}"
+    search_regex: OpenSSH
+    delay: 1
 
- - include: copy_backup_files.yml
+- include: copy_backup_files.yml
 
-  - name: Gather VSD network information from new VSD's
-    include_role:
-      name: vsd-health
-    vars:
-      report_filename: vsd_upgrade_report.txt
-  
-  #TODO: 
-  #- name: Compare network information of VSD's
+#TODO: 
+#- name: Compare network information of VSD's across pre-uppgrade and upgrade
 
-  - name: Install VSD on Node1 and Node3
-    include_role:
-      name: vsd-deploy
-  when: inventory_hostname == groups['vsds'][0] or inventory_hostname == groups['vsds'][2]
+- name: Install VSD on new node(s)
+  include_role:
+    name: vsd-deploy
+
+- name: Pause to wait for VSD processes to come up
+  pause:
+    minutes: 5

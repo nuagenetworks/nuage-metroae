@@ -353,6 +353,71 @@ No. of Ports: 2
     return json.dumps(dict)
 
 
+def show_bof_to_json(string):
+    ''' Given a string representation of the output of "show bof"
+    as a string, return a JSON representation of a subset of the data in that output.
+    A sample of the output:
+    {
+       "Command": "show bof",
+       "image_folder": "timos",
+       "mgmt_ip": "10.0.0.13",
+       "primary_config": "cf1:\\config.cfg",
+       "primary_image": "cf1:\\timos\\cpm.tim"
+    }
+    '''
+    dict = {}
+    dict["Command"] = "show bof"
+    image_re = re.compile(r'primary-image\s+(.*)')
+    folder_re = re.compile(r'cf1:\\(\w+)')
+    config_re = re.compile(r'primary-config\s+(.*)')
+    addr_re = re.compile(r'([0-9]+(?:\.[0-9]+){3})')
+
+    img_path = re.search(image_re, string)
+    img_folder = re.search(folder_re, img_path.group(1))
+    config_path = re.search(config_re, string)
+    ip_addr = re.search(addr_re, string)
+
+    dict["primary_image"] = img_path.group(1)
+    dict["primary_config"] = config_path.group(1)
+    dict["mgmt_ip"] = ip_addr.group(1)
+    dict["image_folder"] = img_folder.group(1)
+    return json.dumps(dict)
+
+
+def image_version_to_json(string):
+    ''' Given a string representation of the output of "file version timos/cpm.tim"
+    as a string, return a JSON representation of a subset of the data in that output.
+    A sample of the output:
+    {
+       "Command": "file version timos/cpm.tim",
+       "vsc_image_version": "4.0.4"
+    }
+    '''
+    dict = {}
+    dict["Command"] = "file version timos/cpm.tim"
+    version_re = re.search(r'\w+-\w+-\w+-(\d+\.\d+\.\d+)', string)
+    dict["vsc_image_version"] = version_re.group(1)
+    return json.dumps(dict)
+
+
+def vsc_system_connections_to_json(string):
+    ''' Given a string representation of the output of "show system connections port 5222"
+    as a string, return a JSON representation of a subset of the data in that output.
+    A sample of the output:
+    {
+       "Command": "show system connections port 5222",
+       "local_ip": "10.0.0.13",
+       "remote_ip": "10.0.0.42"
+    }
+    '''
+    dict = {}
+    lst_ipaddr = re.findall(r'([0-9]+(?:\.[0-9]+){3})', string)
+    dict["Command"] = "show system connections port 5222"
+    dict["local_ip"] = lst_ipaddr[0]
+    dict["remote_ip"] = lst_ipaddr[1]
+    return json.dumps(dict)
+
+
 class FilterModule(object):
     ''' Query filter '''
 
@@ -363,5 +428,8 @@ class FilterModule(object):
             'show_vswitches_to_json': show_vswitches_to_json,
             'show_host_vports_to_json': show_host_vports_to_json,
             'show_vm_vports_to_json': show_vm_vports_to_json,
-            'show_gateway_ports_to_json': show_gateway_ports_to_json
+            'show_gateway_ports_to_json': show_gateway_ports_to_json,
+            'show_bof_to_json': show_bof_to_json,
+            'image_version_to_json': image_version_to_json,
+            'vsc_system_connections_to_json': vsc_system_connections_to_json
         }
