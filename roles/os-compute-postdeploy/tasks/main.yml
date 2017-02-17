@@ -46,6 +46,7 @@
       - openvswitch.x86_64
       - openstack-neutron*
       - python-openvswitch.noarch
+    remote_user: root
 
   - name: Set primary_controller ip
     set_fact:
@@ -74,20 +75,31 @@
       dest: /etc/nova/nova.conf
       regexp: ovs_bridge=
       line: ovs_bridge=alubr0
+    remote_user: root
 
   - name: Configure VNC proxy client ip address
     lineinfile:
       dest: /etc/nova/nova.conf 
       regexp: vncserver_proxyclient_address=
       line: vncserver_proxyclient_address={{compute_mgmt_ip}}
+    remote_user: root
+
+  - name: Configure cpu_mode to none
+    lineinfile:
+      dest: /etc/nova/nova.conf
+      regexp: cpu_mode=host-model
+      line: cpu_mode=none
+    remote_user: root
 
   - name: Restart OpenStack compute
     service:
       name: openstack-nova-compute   
       state: restarted
+    remote_user: root
 
   - name: Restart OVS
     service: 
       name: openvswitch
       state: restarted
+    remote_user: root
   when: inventory_hostname in groups['os_computes']
