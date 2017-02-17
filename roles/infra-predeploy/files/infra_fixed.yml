@@ -15,6 +15,11 @@ parameters:
   mgmt_ip:
     type: string 
 resources:
+  mgmt_port:
+    type: OS::Neutron::Port
+    properties:
+      network_id: {get_param: infra_network}
+      fixed_ips: [{"subnet": {get_param: infra_subnet}, "ip_address": {get_param: mgmt_ip}}]
   mycompute:
     type: OS::Nova::Server
     properties:
@@ -22,7 +27,7 @@ resources:
       flavor: {get_param: infra_flavor}
       image: {get_param: infra_image}
       networks:
-        - network: {get_param: infra_network}
+        - port: {get_resource: mgmt_port}
       user_data_format: RAW
       user_data:
         str_replace:

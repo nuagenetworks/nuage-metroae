@@ -1,37 +1,41 @@
 ---
 # TODO:
 # Check for existing stack or vms
+
 - name: Get the public key for the current user
   local_action: command cat ~/.ssh/id_rsa.pub
   register: current_user_ssh_key
 
 - name: Get heat stack for fixed ip deployments
   set_fact:
-    compute_heat_template: "roles/os-compute-predeploy/files/os_compute_fixed.yml"
+    vstat_heat_template: "roles/vstat-predeploy/files/vstat_fixed.yml"
   when: dhcp == False
 
 - name: Get heat stack for dhcp based deployments
   set_fact:
-    compute_heat_template: "roles/os-compute-predeploy/files/os_compute.yml"
+    vstat_heat_template: "roles/vstat-predeploy/files/vstat.yml"
   when: dhcp == True
 
-- name: Create Compute node
+- name: Creating VSD stack
   register: create_stack
   os_stack:
     name: "{{ stack_name | default(inventory_hostname) }}"
-    template: "{{ compute_heat_template }}"
+    template: "{{ vstat_heat_template }}"
     auth:
       "{{ os_auth }}"
     parameters:
       vm_name: "{{inventory_hostname}}"
-      compute_image: "{{ compute_image }}"
-      compute_flavor: "{{ compute_flavor }}"
-      compute_mgmt_network: "{{ compute_mgmt_network }}"
-      compute_mgmt_subnet: "{{ compute_mgmt_subnet | default('NONE') }}"
-      compute_data_network: "{{ compute_data_network }}"
-      compute_data_subnet: "{{ compute_data_subnet | default('NONE') }}"
+      vstat_image: "{{ vstat_image }}"
+      vstat_flavor: "{{ vstat_flavor }}"
+      vstat_network: "{{ vstat_network }}"
+      vstat_subnet: "{{ vstat_subnet | default('NONE') }}"
       mgmt_ip: "{{ mgmt_ip | default('NONE') }}"
-      data_ip: "{{ data_ip | default('NONE') }}"
       ssh_key: "{{ current_user_ssh_key.stdout }}"
   delegate_to: 127.0.0.1
 - debug: var=create_stack['stack']['outputs'][0]['output_value']
+
+- name: Update /etc/hosts file on ansible host
+  lineinfile:
+    dest: /etc/hosts
+    line: "{{ create_stack['stack']['outputs'][0]['output_value'] }}    {{ inventory_hostname }}"
+  delegate_to: 127.0.0.1

@@ -4,36 +4,40 @@ parameters:
     type: string
   ssh_key:
     type: string
-  vsd_image:
+  osc_image:
     type: string
-  vsd_network:
+  osc_network:
     type: string
-  vsd_subnet:
+  osc_subnet:
     type: string
-  vsd_flavor:
+  osc_flavor:
     type: string
   mgmt_ip:
     type: string
  
 resources:
+  mgmt_port:
+    type: OS::Neutron::Port
+    properties:
+      network_id: {get_param: osc_network}
+      fixed_ips: [{"subnet": {get_param: osc_subnet}, "ip_address": {get_param: mgmt_ip}}] 
   mycompute:
     type: OS::Nova::Server
     properties:
       name: {get_param: vm_name}
-      flavor: {get_param: vsd_flavor}
-      image: {get_param: vsd_image}
+      flavor: {get_param: osc_flavor}
+      image: {get_param: osc_image}
       networks:
-      - network: {get_param: vsd_network}
+        - port: {get_resource: mgmt_port}
       user_data_format: RAW
       user_data: 
         str_replace:
           template: |
             #!/bin/bash
-            mkdir /root/.ssh/
             echo usr >> /root/.ssh/authorized_keys
           params:
             usr: {get_param: ssh_key} 
 outputs:
   server_ip:
-    description: mgmt ip assigned to vsd
-    value: { get_attr: [mycompute, networks, {get_param: vsd_network}, 0]}
+    description: mgmt ip assigned to osc server
+    value: { get_attr: [mycompute, networks, {get_param: osc_network}, 0]}
