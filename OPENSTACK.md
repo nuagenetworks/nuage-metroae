@@ -1,5 +1,5 @@
 # Support for deploying VSP components in OpenStack through metro(limited support)
-# Note: This is purely for internal lab. Not meant for customer use.
+# Note: This is purely for internal lab. Not meant for customer use. Yet.
 
 ## Overview
 
