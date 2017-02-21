@@ -228,6 +228,7 @@ For reference, here is a description of the contents of the `build-vars.yml` fil
 #    images_path: "/var/lib/libvirt/images/"
 #    # NTP servers the VSC, VSD, VNS-UTILITY and VSTAT should sync to.
 #    # One or more ntp servers are required
+#    # Please note: the NTP servers need to be in dotted decimal format (as below). 
 #    ntp_server_list:
 #      - 135.227.181.232
 #      - 128.138.141.172
