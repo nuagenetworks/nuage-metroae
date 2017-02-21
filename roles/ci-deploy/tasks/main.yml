@@ -93,6 +93,16 @@
       line: "{{ vrs_u14_target_server }}    {{inventory_hostname }}"
     delegate_to: "{{ ansible_deployment_host }}"
     remote_user: root
+  # Temp task to get around policy issue
+  - name: Set front end ip added to static route
+    set_fact:
+      frontend_ip: "{{ ci_server['ansible_facts']['openstack_servers'][0]['networks']['OC_JEN_FrontEnd'][0]}}"
+
+  # Temp task to get around policy issue
+  - name: Add static route to reach
+    command: "route add -net {{ vrs_u14_target_server }}.0/24 gw {{ frontend_ip }} "
+    delegate_to: "{{ ansible_deployment_host }}"
+    remote_user: root
   when: ci_image == 'jen-ubuntu14'
 
 - block:
@@ -100,6 +110,16 @@
     lineinfile:
       dest: /etc/hosts
       line: "{{ vrs_u16_target_server }}    {{inventory_hostname }}"
+    delegate_to: "{{ ansible_deployment_host }}"
+    remote_user: root
+  # Temp task to get around policy issue
+  - name: Set front end ip added to static route
+    set_fact:
+      frontend_ip: "{{ ci_server['ansible_facts']['openstack_servers'][0]['networks']['OC_JEN_FrontEnd'][0]}}"
+
+  # Temp task to get around policy issue
+  - name: Add static route to reach
+    command: "route add -net {{ vrs_u16_target_server }}.0/24 gw {{ frontend_ip }} "
     delegate_to: "{{ ansible_deployment_host }}"
     remote_user: root
   when: ci_image == 'jen-ubuntu16'
