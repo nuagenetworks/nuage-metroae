@@ -4,23 +4,30 @@
     path: "/opt/proxy/config/keys"
     state: directory
   remote_user: root
+
+- name: Get VSD version
+  shell: echo $VSD_VERSION
+  register: vsd_version
+  delegate_to: "{{ vsd_fqdn }}"
+  remote_user: root
   
-- block:
-   - name: Create and transfer certs to {{ inventory_hostname }}
-     expect:
-       command: "{{ create_certs }}"
-       responses:
-         (?i)password: "Alcateldc"
-     delegate_to: "{{ vsd_fqdn }}"
-     remote_user: root
-  rescue:
-   - name: Retry creating and transferring certs to {{ inventory_hostname }}
-     expect:
-       command: "{{ create_certs_alt }}"
-       responses:
-         (?i)password: "Alcateldc"
-     delegate_to: "{{ vsd_fqdn }}"
-     remote_user: root
+- name: Create and transfer certs for VSD 4.0.4 to {{ inventory_hostname }}
+  expect:
+    command: "{{ create_certs_404 }}"
+    responses:
+      (?i)password: "Alcateldc"
+  delegate_to: "{{ vsd_fqdn }}"
+  remote_user: root
+  when: vsd_version.stdout == "4.0.4"
+
+- name: Create and transfer certs to {{ inventory_hostname }}
+  expect:
+    command: "{{ create_certs }}"
+    responses:
+      (?i)password: "Alcateldc"
+  delegate_to: "{{ vsd_fqdn }}"
+  remote_user: root
+  when: vsd_version.stdout != "4.0.4"
 
 - name: Install supervisord and haproxy
   command: "{{ install_cmd }}"
