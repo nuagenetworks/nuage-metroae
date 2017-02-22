@@ -3,7 +3,7 @@
   os_server_facts:
     auth:
       "{{ os_auth }}"
-    server: "{{ inventory_hostname }}*"
+    server: "{{ inventory_hostname }}"
   register: vsc_server
   delegate_to: 127.0.0.1
 
@@ -15,36 +15,43 @@
   set_fact:
     vsc_control_ip: "{{ vsc_server['ansible_facts']['openstack_servers'][0]['networks'][vsc_control_network][0] }}"
 
+- name: Clean known_hosts of VSC's
+  command: ssh-keygen -R "{{ vsc_mgmt_ip }}" -f /root/.ssh/known_hosts
+  delegate_to: "{{ ansible_deployment_host }}"
+  remote_user: root
+
+- block:
+  - name: Get infra server details from OpenStack
+    os_server_facts:
+      auth:
+        "{{ os_auth }}"
+      server: "{{ infra_server_name }}"
+    register: infra_server
+    delegate_to: 127.0.0.1
+
+  - name: Set infra ip
+    set_fact:
+      infra_ip: "{{ infra_server['ansible_facts']['openstack_servers'][0]['private_v4'] }}"
+
+  - name: Update DNS entries
+    lineinfile:
+      line: "{{ vsc_mgmt_ip }}  {{ inventory_hostname }}"
+      dest: /etc/hosts
+    delegate_to: "{{ infra_ip }}"
+    remote_user: root
+
+  - name: Restart DNS service
+    shell: service dnsmasq restart
+    delegate_to: "{{ infra_ip }}"
+    remote_user: root
+  when: infra_server_name is defined
+
 - name: Update /etc/hosts file on ansible host
   lineinfile:
     dest: /etc/hosts
     line: "{{ vsc_mgmt_ip }}    {{ inventory_hostname }}"
   delegate_to: 127.0.0.1
  
-- name: Get infra server details from OpenStack
-  os_server_facts:
-    auth:
-      "{{ os_auth }}"
-    server: "{{ infra_server_name }}*"
-  register: infra_server
-  delegate_to: 127.0.0.1
- 
-- name: Set infra ip
-  set_fact:
-    infra_ip: "{{ infra_server['ansible_facts']['openstack_servers'][0]['private_v4'] }}"
- 
-- name: Update DNS entires
-  lineinfile:
-    line: "{{ vsc_mgmt_ip }}  {{ inventory_hostname }}"
-    dest: /etc/hosts
-  delegate_to: "{{ infra_ip }}"
-  remote_user: root
- 
-- name: Restart DNS service
-  shell: service dnsmasq restart
-  delegate_to: "{{ infra_ip }}"
-  remote_user: root
-
 - name: Wait for VSC ssh to be ready
   local_action:
     module: wait_for
@@ -58,35 +65,26 @@
 
 - name: Loading system config
   sros_config:
-    lines:
-      - configure system name "{{inventory_hostname}}"
-      - configure system time ntp server "{{infra_ip}}"
-      - configure router interface system address "{{system_ip}}/32"
-      - configure router interface control address "{{vsc_control_ip}}/24"
-      - configure router router-id "{{system_ip}}"
-      - configure vswitch-controller xmpp-server "{{ xmpp.username }}@{{ vsd_fqdn }}"
-      - admin save
-    provider: "{{ creds }}"
+    src: config.cfg.j2
+    provider: "{{ vsc_creds }}"
+    save: yes
   delegate_to: 127.0.0.1
-  vars:
-    creds:
-      host: "{{ vsc_mgmt_ip }}"
-      username: admin
-      password: admin
-      transport: cli
 
 - name: Loading BOF config
   sros_config:
     lines:
       - bof address "{{ vsc_mgmt_ip }}/24"
-      - bof primary-dns "{{ infra_ip }}"
+      - bof primary-dns "{{ infra_ip | default(dns_server_list[0]) }}"
       - bof dns-domain "{{ dns_domain }}"
       - bof save "cf1:"
-    provider: "{{ creds }}"
+    provider: "{{ vsc_creds }}"
   delegate_to: 127.0.0.1
-  vars:
-    creds:
-      host: "{{ vsc_mgmt_ip }}"
-      username: admin
-      password: admin
-      transport: cli
+
+- name: Reboot VSC VM
+  os_server_actions:
+    auth:
+      "{{ os_auth }}"
+    server: "{{ inventory_hostname }}"
+    action: reboot
+    wait: no
+  delegate_to: 127.0.0.1

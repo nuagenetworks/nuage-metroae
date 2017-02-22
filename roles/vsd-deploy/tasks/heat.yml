@@ -3,25 +3,52 @@
   os_server_facts:
     auth:
       "{{ os_auth }}"
-    server: "{{ inventory_hostname }}*"
+    server: "{{ inventory_hostname }}"
   register: vsd_ip
   delegate_to: 127.0.0.1
 
 - name: Set vsd mgmt ip
   set_fact:
-    vsd_mgmt_ip: "{{ vsd_ip['ansible_facts']['openstack_servers'][0]['private_v4'] }}"
+    vsd_mgmt_ip: "{{ vsd_ip['ansible_facts']['openstack_servers'][0]['networks'][vsd_network][0] }}"
 
-- name: Get DNS and NTP server details from OS server facts
-  os_server_facts:
-    auth:
-      "{{ os_auth }}"
-    server: "{{ infra_server_name }}*"
-  register: infra_server
-  delegate_to: 127.0.0.1
+- name: Clean known_hosts of VSD's
+  command: ssh-keygen -R "{{ vsd_mgmt_ip }}" -f /root/.ssh/known_hosts
+  delegate_to: "{{ ansible_deployment_host }}"
+  remote_user: root
 
-- name: Set DNS/NTP server ip
-  set_fact:
-    infra_ip: "{{ infra_server['ansible_facts']['openstack_servers'][0]['private_v4'] }}"
+- block:
+  - name: Get infra server details from OS server facts
+    os_server_facts:
+      auth:
+        "{{ os_auth }}"
+      server: "{{ infra_server_name }}"
+    register: infra_server
+    delegate_to: 127.0.0.1
+
+  - name: Set DNS/NTP server ip
+    set_fact:
+      infra_ip: "{{ infra_server['ansible_facts']['openstack_servers'][0]['private_v4'] }}"
+
+  - name: Update DNS entries
+    lineinfile:
+      line: "{{ vsd_mgmt_ip }}  {{ inventory_hostname }}"
+      dest: "/etc/hosts"
+    delegate_to: "{{ infra_ip }}"
+    remote_user: root
+
+  - name: Update XMPP DNS entries for VSD cluster deployments 
+    lineinfile:
+      line: "{{ vsd_mgmt_ip }}  xmpp.{{ dns_domain }}"
+      dest: "/etc/hosts"
+    delegate_to: "{{ infra_ip }}"
+    remote_user: root
+    when: vsd_standalone == False
+
+  - name: Restart DNS service
+    shell: service dnsmasq restart
+    delegate_to: "{{ infra_ip }}"
+    remote_user: root
+  when: infra_server_name is defined
 
 - name: Update /etc/hosts file on ansible host
   lineinfile:
@@ -37,9 +64,22 @@
     search_regex: OpenSSH
     delay: 1
 
+- name: Inject ssh key of ansible_deployment_host to VSD if cloud-init did not work
+  expect:
+    command: "ssh-copy-id -i root@{{ vsd_mgmt_ip }}"
+    responses:
+      (?i)yes: "yes"
+      (?i)password: "Alcateldc"
+  remote_user: root
+  delegate_to: localhost  
+    
 - name: Pause for ssh port to be active on {{ inventory_hostname }}
   pause:
     seconds: 5
+
+- name: Query {{ target_server }} facts
+  action: setup
+  remote_user: root
 
 - name: Update hostname
   template: src=network.j2 backup=no dest=/etc/sysconfig/network
@@ -47,7 +87,13 @@
 - name: Add a DNS server to eth0
   lineinfile:
     dest: /etc/sysconfig/network-scripts/ifcfg-eth0
-    line: "DNS1={{ infra_ip }}"
+    line: "DNS1={{ infra_ip | default(dns_server_list[0]) }}"
+  when: infra_server_name is defined
+
+- name: Add nameserver
+  command: echo "{{ infra_ip }}" >> /etc/resolv.conf
+  remote_user: root
+  when: infra_server_name is defined
 
 - name: Restart networking on {{ inventory_hostname }}
   command: /etc/init.d/network restart
@@ -57,30 +103,34 @@
   command: hostname "{{ inventory_hostname }}"
   remote_user: root
 
-- name: Update DNS entires
-  lineinfile:  
-    line: "{{ vsd_mgmt_ip }}  {{ inventory_hostname }}"
-    dest: "/etc/hosts"
-  delegate_to: "{{ infra_ip }}"
-  remote_user: root
-
-- name: Update DNS entires
-  lineinfile:
-    line: "{{ vsd_mgmt_ip }}  xmpp.{{ dns_domain }}"
-    dest: "/etc/hosts"
-  delegate_to: "{{ infra_ip }}"
-  remote_user: root
-
-- name: Restart DNS service
-  shell: service dnsmasq restart
-  delegate_to: "{{ infra_ip }}"
-  remote_user: root
-
 - name: Update /etc/hosts file on {{ inventory_hostname }}
   lineinfile: 
     dest: /etc/hosts
     line: "{{ vsd_mgmt_ip }}  {{ inventory_hostname }}"
   remote_user: root
+
+- name: Copy files to pin OS version on {{ inventory_hostname }} when CentOS 6.6
+  copy:
+    src: ./roles/vsd-deploy/files/
+    dest: /etc/yum.repos.d/
+  remote_user: root
+  when:
+    - yum_pin
+    - "{{ ansible_distribution_version }} == 6.6"
+
+- name: Configure yum proxy on {{ inventory_hostname }}
+  lineinfile:
+    dest: /etc/yum.conf
+    line: "proxy={{ yum_proxy }}"
+  remote_user: root
+  when: yum_proxy != 'NONE'
+
+- name: Execute a yum update on {{ inventory_hostname }}
+  yum:
+    name: '*'
+    state: latest
+  remote_user: root
+  when: yum_update
 
 - block:
   - name: Generate SSH keys 

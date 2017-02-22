@@ -6,11 +6,14 @@ parameters:
     type: string
   osc_image:
     type: string
-  osc_net:
+  osc_network:
+    type: string
+  osc_subnet:
     type: string
   osc_flavor:
     type: string
- 
+  mgmt_ip:
+    type: string
 resources:
   mycompute:
     type: OS::Nova::Server
@@ -19,7 +22,7 @@ resources:
       flavor: {get_param: osc_flavor}
       image: {get_param: osc_image}
       networks:
-      - network: {get_param: osc_net}
+        - network: {get_param: osc_network}
       user_data_format: RAW
       user_data: 
         str_replace:
@@ -30,5 +33,5 @@ resources:
             usr: {get_param: ssh_key} 
 outputs:
   server_ip:
-    description: fixed ip assigned to the server
-    value: { get_attr: [mycompute, networks, {get_param: osc_net}, 0]}
+    description: mgmt ip assigned to osc server
+    value: { get_attr: [mycompute, networks, {get_param: osc_network}, 0]}

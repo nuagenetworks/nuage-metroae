@@ -54,24 +54,31 @@
       https_proxy: "{{ yum_proxy }}"
   when: yum_proxy != 'NONE'
 
-- block:
-   - name: Create and transfer certs from VSD to {{ inventory_hostname }}
-     expect:
-      timeout: 55
-      command: "{{ create_certs }}"
-      responses:
-        (?i)password: "admin"
-     delegate_to: "{{ vsd_fqdn }}"
-     remote_user: root
-  rescue:
-   - name: Retry creating and transfering certs from VSD to {{ inventory_hostname }}
-     expect:
-      timeout: 55
-      command: "{{ create_certs_alt }}"
-      responses:
-        (?i)password: "admin"
-     delegate_to: "{{ vsd_fqdn }}"
-     remote_user: root
+- name: Get VSD version
+  shell: echo $VSD_VERSION
+  register: vsd_version
+  delegate_to: "{{ vsd_fqdn }}"
+  remote_user: root
+
+- name: Create and transfer certs from 4.0.4 VSD to {{ inventory_hostname }}
+  expect:
+   timeout: 55
+   command: "{{ create_certs_404 }}"
+   responses:
+     (?i)password: "admin"
+  delegate_to: "{{ vsd_fqdn }}"
+  remote_user: root
+  when: "'4.0.4' in vsd_version.stdout"
+
+- name: Create and transfer certs from VSD to {{ inventory_hostname }}
+  expect:
+   timeout: 55
+   command: "{{ create_certs }}"
+   responses:
+     (?i)password: "admin"
+  delegate_to: "{{ vsd_fqdn }}"
+  remote_user: root
+  when: "'4.0.4' not in vsd_version.stdout"
 
 - name: Create TLS profile in {{ inventory_hostname }}
   local_action: command python {{playbook_dir}}/roles/vns-deploy/files/vsc_config.py {{ playbook_dir  }} {{ xmpp.username }}
