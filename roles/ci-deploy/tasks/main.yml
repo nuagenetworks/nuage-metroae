@@ -84,6 +84,13 @@
     command: "route add -net {{ network_address }}.0/24 gw {{ frontend_ip }} "
     delegate_to: "{{ ansible_deployment_host }}"
     remote_user: root
+
+  - name: Update group vars file with centos 7 VRS IP
+    lineinfile:
+      dest: "{{ playbook_dir }}/group_vars/all"
+      line: "centos7_vrs_ip: {{ target_server }}"
+    delegate_to: "{{ ansible_deployment_host }}"
+    remote_user: root
   when: ci_image == 'jen-centos7'
 
 - block:
@@ -103,6 +110,13 @@
     command: "route add {{ vrs_u14_target_server }}/32 gw {{ frontend_ip }} "
     delegate_to: "{{ ansible_deployment_host }}"
     remote_user: root
+
+  - name: Update group vars file with ubuntu 14.04 VRS IP
+    lineinfile:
+      dest: "{{ playbook_dir }}/group_vars/all"
+      line: "ubuntu14_vrs_ip: {{ vrs_u14_target_server }}"
+    delegate_to: "{{ ansible_deployment_host }}"
+    remote_user: root
   when: ci_image == 'jen-ubuntu14'
 
 - block:
@@ -120,6 +134,13 @@
   # Temp task to get around policy issue
   - name: Add static route to reach
     command: "route add {{ vrs_u16_target_server }}/32 gw {{ frontend_ip }} "
+    delegate_to: "{{ ansible_deployment_host }}"
+    remote_user: root
+
+  - name: Update group vars file with ubuntu 16.04 VRS IP
+    lineinfile:
+      dest: "{{ playbook_dir }}/group_vars/all"
+      line: "ubuntu16_vrs_ip: {{ vrs_u16_target_server }}"
     delegate_to: "{{ ansible_deployment_host }}"
     remote_user: root
   when: ci_image == 'jen-ubuntu16'
@@ -186,7 +207,7 @@
     dest: "{{ playbook_dir }}/test/files/build.yml.VSCOnly"
   delegate_to: 127.0.0.1
 
-- name: Update test build file for VSTATOnly 
+- name: Update test build file for VSTATOnly
   template:
     src: "{{ playbook_dir }}/test/files/build.yml.VSTATOnly.j2"
     dest: "{{ playbook_dir }}/test/files/build.yml.VSTATOnly"
