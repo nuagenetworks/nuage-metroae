@@ -14,7 +14,11 @@
 - name: Pause for cloud-init to inject ssh keys
   pause:
     seconds: 300
+  run_once: true
 
+- debug: var=target_server
+
+- debug: var=vrs_u14_target_server
 
 - name: Update test build file
   template:
@@ -107,22 +111,6 @@
   remote_user: root
   run_once: true
 
-
-
-# Temp task to get around policy issue
-- name: Add iptables rule to allow vsd to reach internet route to reach on {{ inventory_hostname }}
-  command: "iptables -t nat -A POSTROUTING -s {{ network_address }}.211 -j SNAT --to-source {{ target_server }} "
-  remote_user: root
-
-# Temp task to get around policy issue
-- name: Add iptables rule to allow vnsutil to reach internet route to reach on {{ inventory_hostname }}
-  command: "iptables -t nat -A POSTROUTING -s {{ network_address }}.215 -j SNAT --to-source {{ target_server }} "
-  remote_user: root
-
-# Temp task to get around policy issue
-- name: Save iptables
-  command: "iptables-save"
-  remote_user: root
 
 - name: Configure dnsmasq on {{ inventory_hostname }}
   copy:

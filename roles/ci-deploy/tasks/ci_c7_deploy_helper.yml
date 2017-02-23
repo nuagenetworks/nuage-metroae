@@ -95,4 +95,19 @@
     with_items: "{{vsp_ips}}"
     remote_user: root
 
+    # Temp task to get around policy issue
+  - name: Add iptables rule to allow vsd to reach internet route to reach on {{ inventory_hostname }}
+    command: "iptables -t nat -A POSTROUTING -s {{ network_address }}.211 -j SNAT --to-source {{ target_server }} "
+    remote_user: root
+
+  # Temp task to get around policy issue
+  - name: Add iptables rule to allow vnsutil to reach internet route to reach on {{ inventory_hostname }}
+    command: "iptables -t nat -A POSTROUTING -s {{ network_address }}.215 -j SNAT --to-source {{ target_server }} "
+    remote_user: root
+
+  # Temp task to get around policy issue
+  - name: Save iptables
+    command: "iptables-save"
+    remote_user: root
+
   when: ci_image == 'jen-centos7'
