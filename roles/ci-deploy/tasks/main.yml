@@ -1,149 +1,7 @@
 ---
-- name: Get {{ inventory_hostname }} details from OS facts
-  os_server_facts:
-    auth:
-      "{{ os_auth }}"
-    server: "{{ inventory_hostname }}"
-  register: ci_server
-  delegate_to: 127.0.0.1
-
-
-# Temp task to get around policy issue
-- name: Set the network names
-  set_fact:
-    net_name1: "{{ ci_server['ansible_facts']['openstack_servers'][0]['networks'].keys()[0] }}"
-    net_name2: "{{ ci_server['ansible_facts']['openstack_servers'][0]['networks'].keys()[1] }}"
-
-- block:
-  - name: Set the compute IP
-    set_fact:
-      target_server: "{{ ci_server['ansible_facts']['openstack_servers'][0]['networks'][net_name2][0]}}"
-  when: net_name1 == 'OC_JEN_FrontEnd' and ci_image == 'jen-centos7'
-
-- block:
-  - name: Set the compute IP
-    set_fact:
-      target_server: "{{ ci_server['ansible_facts']['openstack_servers'][0]['networks'][net_name1][0]}}"
-  when: net_name2 == 'OC_JEN_FrontEnd'  and ci_image == 'jen-centos7'
-
-
-- block:
-  - name: Set the Ubuntu 14.04 VRS compute IP
-    set_fact:
-      vrs_u14_target_server: "{{ ci_server['ansible_facts']['openstack_servers'][0]['networks'][net_name2][0]}}"
-  when: net_name1 == 'OC_JEN_FrontEnd'  and ci_image == 'jen-ubuntu14'
-
-- block:
-  - name: Set the Ubuntu 14.04 VRS compute IP
-    set_fact:
-      vrs_u14_target_server: "{{ ci_server['ansible_facts']['openstack_servers'][0]['networks'][net_name1][0]}}"
-  when: net_name2 == 'OC_JEN_FrontEnd'  and ci_image == 'jen-ubuntu14'
-
-- debug: var=vrs_u14_target_server
-
-- block:
-  - name: Set the Ubuntu 16.04 VRS compute IP
-    set_fact:
-      vrs_u16_target_server: "{{ ci_server['ansible_facts']['openstack_servers'][0]['networks'][net_name2][0]}}"
-  when: net_name1 == 'OC_JEN_FrontEnd'  and ci_image == 'jen-ubuntu16'
-
-- block:
-  - name: Set the Ubuntu 16.04 VRS compute IP
-    set_fact:
-      vrs_u16_target_server: "{{ ci_server['ansible_facts']['openstack_servers'][0]['networks'][net_name1][0]}}"
-  when: net_name2 == 'OC_JEN_FrontEnd'  and ci_image == 'jen-ubuntu16'
-
-- debug: var=vrs_u16_target_server
-
-- block:
-  - name: Extract network part from the compute ip
-    set_fact:
-      network_address: "{{ target_server.split('.')[0:3] | join('.') }}"
-
-  - name: Update and copy zfb.yml file with vsd ip
-    template:
-      src: "{{ playbook_dir }}/test/files/zfb.yml.j2"
-      dest: "{{ playbook_dir }}/zfb.yml"
-    delegate_to: 127.0.0.1
-
-  - name: Update /etc/hosts file for VSP devices and Centos7 VRS
-    lineinfile:
-      dest: /etc/hosts
-      line: "{{ item }}"
-    with_items: "{{ vsp_ips }}"
-    delegate_to: "{{ ansible_deployment_host }}"
-    remote_user: root
-
-  # Temp task to get around policy issue
-  - name: Set front end ip added to static route
-    set_fact:
-      frontend_ip: "{{ ci_server['ansible_facts']['openstack_servers'][0]['networks']['OC_JEN_FrontEnd'][0]}}"
-
-  # Temp task to get around policy issue
-  - name: Add static route to reach
-    command: "route add -net {{ network_address }}.0/24 gw {{ frontend_ip }} "
-    delegate_to: "{{ ansible_deployment_host }}"
-    remote_user: root
-
-  - name: Update group vars file with centos 7 VRS IP
-    lineinfile:
-      dest: "{{ playbook_dir }}/roles/ci-deploy/vars/main.yml"
-      line: "target_server_temp: {{ target_server }}"
-    delegate_to: "{{ ansible_deployment_host }}"
-    remote_user: root
-  when: ci_image == 'jen-centos7'
-
-- block:
-  - name: Update /etc/hosts file with ubuntu 14.04 VRS
-    lineinfile:
-      dest: /etc/hosts
-      line: "{{ vrs_u14_target_server }}    {{inventory_hostname }}"
-    delegate_to: "{{ ansible_deployment_host }}"
-    remote_user: root
-  # Temp task to get around policy issue
-  - name: Set front end ip added to static route
-    set_fact:
-      frontend_ip: "{{ ci_server['ansible_facts']['openstack_servers'][0]['networks']['OC_JEN_FrontEnd'][0]}}"
-
-  # Temp task to get around policy issue
-  - name: Add static route to reach
-    command: "route add {{ vrs_u14_target_server }}/32 gw {{ frontend_ip }} "
-    delegate_to: "{{ ansible_deployment_host }}"
-    remote_user: root
-
-  - name: Update group vars file with ubuntu 14.04 VRS IP
-    lineinfile:
-      dest: "{{ playbook_dir }}/roles/ci-deploy/vars/main.yml"
-      line: "vrs_u14_target_server_temp: {{ vrs_u14_target_server }}"
-    delegate_to: "{{ ansible_deployment_host }}"
-    remote_user: root
-  when: ci_image == 'jen-ubuntu14'
-
-- block:
-  - name: Update /etc/hosts file with ubuntu 16.04 VRS
-    lineinfile:
-      dest: /etc/hosts
-      line: "{{ vrs_u16_target_server }}    {{inventory_hostname }}"
-    delegate_to: "{{ ansible_deployment_host }}"
-    remote_user: root
-  # Temp task to get around policy issue
-  - name: Set front end ip added to static route
-    set_fact:
-      frontend_ip: "{{ ci_server['ansible_facts']['openstack_servers'][0]['networks']['OC_JEN_FrontEnd'][0]}}"
-
-  # Temp task to get around policy issue
-  - name: Add static route to reach
-    command: "route add {{ vrs_u16_target_server }}/32 gw {{ frontend_ip }} "
-    delegate_to: "{{ ansible_deployment_host }}"
-    remote_user: root
-
-  - name: Update group vars file with ubuntu 16.04 VRS IP
-    lineinfile:
-      dest: "{{ playbook_dir }}/roles/ci-deploy/vars/main.yml"
-      line: "vrs_u16_target_server_temp: {{ vrs_u16_target_server }}"
-    delegate_to: "{{ ansible_deployment_host }}"
-    remote_user: root
-  when: ci_image == 'jen-ubuntu16'
+- include ci_c7_deploy_helper.yml
+- include ci_u14_deploy_helper.yml
+- include ci_u16_deploy_helper.yml
 
 - name: Wait for {{ inventory_hostname }} ssh to be ready
   local_action:
@@ -157,121 +15,99 @@
   pause:
     seconds: 300
 
-- name: Query {{ target_server }} facts
-  action: setup
+
+- name: Update test build file
+  template:
+    src: "{{ playbook_dir }}/test/files/build.yml.all.j2"
+    dest: "{{ playbook_dir }}/test/files/build.yml.all"
+  delegate_to: 127.0.0.1
+  run_once: true
+
+- name: Update test build file for VSDOnly
+  template:
+    src: "{{ playbook_dir }}/test/files/build.yml.VSDOnly.j2"
+    dest: "{{ playbook_dir }}/test/files/build.yml.VSDOnly"
+  delegate_to: 127.0.0.1
+  run_once: true
+
+- name: Update test build file for VSCOnly
+  template:
+    src: "{{ playbook_dir }}/test/files/build.yml.VSCOnly.j2"
+    dest: "{{ playbook_dir }}/test/files/build.yml.VSCOnly"
+  delegate_to: 127.0.0.1
+  run_once: true
+
+- name: Update test build file for VSTATOnly
+  template:
+    src: "{{ playbook_dir }}/test/files/build.yml.VSTATOnly.j2"
+    dest: "{{ playbook_dir }}/test/files/build.yml.VSTATOnly"
+  delegate_to: 127.0.0.1
+  run_once: true
+
+
+- name: Update the setup file with new test build file
+  replace:
+    dest: "{{ playbook_dir }}/test/files/setup.yml"
+    regexp: 'yml\.\{\{ ansible_os_family \}\}'
+    replace: 'yml.all'
+  delegate_to: "{{ ansible_deployment_host }}"
   remote_user: root
-  delegate_to: "{{ target_server }}"
-  when: ci_image == 'jen-centos7'
+  run_once: true
 
-- name: Query {{ vrs_u14_target_server }} facts
-  action: setup
+- name: Update the VSDOnly setup file with new VSDOnly build file
+  replace:
+    dest: "{{ playbook_dir }}/test/files/setup.yml.VSDOnly"
+    regexp: 'VSDOnly\.\{\{ ansible_os_family \}\}'
+    replace: 'VSDOnly'
+  delegate_to: "{{ ansible_deployment_host }}"
   remote_user: root
-  delegate_to: "{{ vrs_u14_target_server }}"
-  when: ci_image == 'jen-ubuntu14'
+  run_once: true
 
-- name: Query {{ vrs_u16_target_server }} facts
-  action: setup
+- name: Update the VSCOnly setup file with new VSCOnly build file
+  replace:
+    dest: "{{ playbook_dir }}/test/files/setup.yml.VSCOnly"
+    regexp: 'VSCOnly\.\{\{ ansible_os_family \}\}'
+    replace: 'VSCOnly'
+  delegate_to: "{{ ansible_deployment_host }}"
   remote_user: root
-  delegate_to: "{{ vrs_u16_target_server }}"
-  when: ci_image == 'jen-ubuntu16'
+  run_once: true
 
-- block:
-  - name: Set nuage_target_architecture
-    set_fact:
-      target_os: 'el7'
-  when: ansible_os_family == 'RedHat' and ci_image == 'jen-centos7'
+- name: Update the VSTATOnly setup file with new VSTAT build file
+  replace:
+    dest: "{{ playbook_dir }}/test/files/setup.yml.VSTATOnly"
+    regexp: 'VSTATOnly\.\{\{ ansible_os_family \}\}'
+    replace: 'VSTATOnly'
+  delegate_to: "{{ ansible_deployment_host }}"
+  remote_user: root
+  run_once: true
 
+- name: Update the VRSOnly setup file with new VRS build file
+  replace:
+    dest: "{{ playbook_dir }}/test/files/setup.yml.VRSOnly"
+    regexp: 'VRSOnly\.\{\{ ansible_os_family \}\}'
+    replace: 'VRSOnly'
+  delegate_to: "{{ ansible_deployment_host }}"
+  remote_user: root
+  run_once: true
 
-- block:
-  - name: Set nuage_target_architecture
-    set_fact:
-      target_os: 'ubuntu.14.04'
+- name: Update the VNSOnly setup file with new VNS build file
+  replace:
+    dest: "{{ playbook_dir }}/test/files/setup.yml.VNSOnly"
+    regexp: 'VNSOnly\.\{\{ ansible_os_family \}\}'
+    replace: 'VNSOnly'
+  delegate_to: "{{ ansible_deployment_host }}"
+  remote_user: root
+  run_once: true
 
-  when: ansible_os_family == 'Debian' and ( ci_image == 'jen-ubuntu14' or ci_image == 'jen-ubuntu16' )
-
-- block:
-  - name: Update test build file
-    template:
-      src: "{{ playbook_dir }}/test/files/build.yml.all.j2"
-      dest: "{{ playbook_dir }}/test/files/build.yml.all"
-    delegate_to: 127.0.0.1
-
-  - name: Update test build file for VSDOnly
-    template:
-      src: "{{ playbook_dir }}/test/files/build.yml.VSDOnly.j2"
-      dest: "{{ playbook_dir }}/test/files/build.yml.VSDOnly"
-    delegate_to: 127.0.0.1
-
-  - name: Update test build file for VSCOnly
-    template:
-      src: "{{ playbook_dir }}/test/files/build.yml.VSCOnly.j2"
-      dest: "{{ playbook_dir }}/test/files/build.yml.VSCOnly"
-    delegate_to: 127.0.0.1
-
-  - name: Update test build file for VSTATOnly
-    template:
-      src: "{{ playbook_dir }}/test/files/build.yml.VSTATOnly.j2"
-      dest: "{{ playbook_dir }}/test/files/build.yml.VSTATOnly"
-    delegate_to: 127.0.0.1
+- name: Update /etc/hosts file on {{ inventory_hostname }}
+  lineinfile:
+    dest: /etc/hosts
+    line: "{{ item }}"
+  with_items: "{{vsp_ips}}"
+  remote_user: root
+  run_once: true
 
 
-
-  - name: Update the setup file with new test build file
-    replace:
-      dest: "{{ playbook_dir }}/test/files/setup.yml"
-      regexp: 'yml\.\{\{ ansible_os_family \}\}'
-      replace: 'yml.all'
-    delegate_to: "{{ ansible_deployment_host }}"
-    remote_user: root
-
-  - name: Update the VSDOnly setup file with new VSDOnly build file
-    replace:
-      dest: "{{ playbook_dir }}/test/files/setup.yml.VSDOnly"
-      regexp: 'VSDOnly\.\{\{ ansible_os_family \}\}'
-      replace: 'VSDOnly'
-    delegate_to: "{{ ansible_deployment_host }}"
-    remote_user: root
-
-  - name: Update the VSCOnly setup file with new VSCOnly build file
-    replace:
-      dest: "{{ playbook_dir }}/test/files/setup.yml.VSCOnly"
-      regexp: 'VSCOnly\.\{\{ ansible_os_family \}\}'
-      replace: 'VSCOnly'
-    delegate_to: "{{ ansible_deployment_host }}"
-    remote_user: root
-
-  - name: Update the VSTATOnly setup file with new VSTAT build file
-    replace:
-      dest: "{{ playbook_dir }}/test/files/setup.yml.VSTATOnly"
-      regexp: 'VSTATOnly\.\{\{ ansible_os_family \}\}'
-      replace: 'VSTATOnly'
-    delegate_to: "{{ ansible_deployment_host }}"
-    remote_user: root
-
-  - name: Update the VRSOnly setup file with new VRS build file
-    replace:
-      dest: "{{ playbook_dir }}/test/files/setup.yml.VRSOnly"
-      regexp: 'VRSOnly\.\{\{ ansible_os_family \}\}'
-      replace: 'VRSOnly'
-    delegate_to: "{{ ansible_deployment_host }}"
-    remote_user: root
-
-  - name: Update the VNSOnly setup file with new VNS build file
-    replace:
-      dest: "{{ playbook_dir }}/test/files/setup.yml.VNSOnly"
-      regexp: 'VNSOnly\.\{\{ ansible_os_family \}\}'
-      replace: 'VNSOnly'
-    delegate_to: "{{ ansible_deployment_host }}"
-    remote_user: root
-
-  - name: Update /etc/hosts file on {{ inventory_hostname }}
-    lineinfile:
-      dest: /etc/hosts
-      line: "{{ item }}"
-    with_items: "{{vsp_ips}}"
-    remote_user: root
-
-  when: ansible_os_family == 'RedHat' and ci_image == 'jen-centos7'
 
 # Temp task to get around policy issue
 - name: Add iptables rule to allow vsd to reach internet route to reach on {{ inventory_hostname }}
