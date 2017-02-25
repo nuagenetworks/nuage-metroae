@@ -209,6 +209,14 @@
   delegate_to: "{{ ansible_deployment_host }}"
   remote_user: root
 
+- name: Update the VNSOnlyWithVSC setup file with new VNSOnly build file
+  replace:
+    dest: "{{ playbook_dir }}/test/files/setup.yml.VNSOnlyWithVSC"
+    regexp: 'VNSOnlyWithVSC\.\{\{ ansible_os_family \}\}'
+    replace: 'VNSOnlyWithVSC'
+  delegate_to: "{{ ansible_deployment_host }}"
+  remote_user: root
+
 - name: Update /etc/hosts file on {{ inventory_hostname }}
   lineinfile:
     dest: /etc/hosts
@@ -320,12 +328,11 @@
     command: "yum clean all"
     remote_user: root
 
-  - name: Update yum
-    yum:
-      name: '*'
-      state: latest
-    remote_user: root
-
+#  - name: Update yum
+#    yum:
+#      name: '*'
+#      state: latest
+#    remote_user: root
   when: ansible_os_family == 'RedHat'
 
 - block:
