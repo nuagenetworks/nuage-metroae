@@ -58,6 +58,32 @@
   delegate_to: 127.0.0.1
 
 
+- name: get the centos 7 vrs name temp file contents
+  command: cat "/tmp/{{ net_name_temp }}_vrs_name_centos7"
+  register: centos7_vrs_name
+  run_once: true
+  delegate_to: 127.0.0.1
+
+- name: register centos 7 vrs host name
+  set_fact :
+    target_server_name: "{{ centos7_vrs_name.stdout }}"
+  run_once: true
+  delegate_to: 127.0.0.1
+
+
+- name: get the u14 vrs name temp file contents
+  command: cat "/tmp/{{ net_name_temp }}_vrs_name_u14"
+  register: u14_vrs_name
+  run_once: true
+  delegate_to: 127.0.0.1
+
+- name: register u14 vrs target_server name
+  set_fact :
+    vrs_u14_target_server_name: "{{ u14_vrs_name.stdout }}"
+  run_once: true
+  delegate_to: 127.0.0.1
+
+
 #- name: get the u16 vrs temp file contents
 #  command: cat /tmp/u16_vrs_ip
 #  register: u16_vrs_ip
@@ -301,6 +327,21 @@
       remote_user: root
     when: sync_status.stdout == ""
   when: ansible_os_family == 'Debian'
+
+
+  - name: Remove temporary centos7 vrs ip adress file
+  file: path=/tmp/{{ net_name_temp }}_vrs_ip_centos7 state=absent
+  delegate_to: "{{ ansible_deployment_host }}"
+  remote_user: root
+  run_once: true
+
+  - name: Remove temporary ubuntu 14 vrs ip adress file
+  file: path=/tmp/{{ net_name_temp }}_vrs_ip_u14 state=absent
+  delegate_to: "{{ ansible_deployment_host }}"
+  remote_user: root
+  run_once: true
+
+
 
 - name: Update the vsd ram
   lineinfile:
