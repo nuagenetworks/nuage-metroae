@@ -11,29 +11,35 @@
   register: ci_server
   delegate_to: 127.0.0.1
 
-- name: get the centos 7 vrs temp file contents
-  command: cat /tmp/centos7_vrs_ip
-  register: centos7_vrs_ip
-  run_once: true
-  delegate_to: 127.0.0.1
+- block:
+  - name: get the centos 7 vrs temp file contents
+    command: cat "/tmp/vrs_ip_{{ inventory_hostname }}"
+    register: centos7_vrs_ip
+    run_once: true
+    delegate_to: 127.0.0.1
 
-- name: register target_server
-  set_fact :
-    target_server: "{{ centos7_vrs_ip.stdout }}"
-  run_once: true
-  delegate_to: 127.0.0.1
+  - name: register target_server
+    set_fact :
+      target_server: "{{ centos7_vrs_ip.stdout }}"
+    run_once: true
+    delegate_to: 127.0.0.1
 
-- name: get the u14 vrs temp file contents
-  command: cat /tmp/u14_vrs_ip
-  register: u14_vrs_ip
-  run_once: true
-  delegate_to: 127.0.0.1
+  when: ci_image == 'jen-centos7'
+  
 
-- name: register u14 vrs target_server
-  set_fact :
-    vrs_u14_target_server: "{{ u14_vrs_ip.stdout }}"
-  run_once: true
-  delegate_to: 127.0.0.1
+- block:
+  - name: get the u14 vrs temp file contents
+    command: cat "/tmp/vrs_ip_{{ inventory_hostname }}"
+    register: u14_vrs_ip
+    run_once: true
+    delegate_to: 127.0.0.1
+
+  - name: register u14 vrs target_server
+    set_fact :
+      vrs_u14_target_server: "{{ u14_vrs_ip.stdout }}"
+    run_once: true
+    delegate_to: 127.0.0.1
+  when: ci_image == 'jen-ubuntu14'
 
 #- name: get the u16 vrs temp file contents
 #  command: cat /tmp/u16_vrs_ip
@@ -242,7 +248,16 @@
 
   when: ansible_os_family == 'RedHat'
 
+
 - block:
+ - name: Run the equivalent of "apt-get update"
+    apt:
+      update_cache: yes
+
+  - name: Update all packages to the latest version
+    apt:
+      upgrade: dist
+
   - name: check ntp sync state
     shell: ntpq -p | grep '*' | awk 'NR==1{print $1}'
     register: sync_status
