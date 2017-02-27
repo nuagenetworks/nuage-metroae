@@ -1,7 +1,7 @@
 ---
 - include: ci_c7_deploy_helper.yml
 - include: ci_u14_deploy_helper.yml
-- include: ci_u16_deploy_helper.yml
+#- include: ci_u16_deploy_helper.yml
 
 - name: Get {{ inventory_hostname }} details from OS facts
   os_server_facts:
@@ -22,42 +22,44 @@
       set_fact:
         net_name_temp: "{{ net_name2 }}"
   when: net_name1 == 'OC_JEN_FrontEnd'
+  run_once: true
 
 - block:
   - name: Set the network name to find out correct CI slave temp file
     set_fact:
       net_name_temp: "{{ net_name1 }}"
   when: net_name2 == 'OC_JEN_FrontEnd'
-
-- block:
-  - name: get the centos 7 vrs temp file contents
-    command: cat "/tmp/{{ net_name_temp }}_vrs_ip_centos7"
-    register: centos7_vrs_ip
-    #run_once: true
-    delegate_to: 127.0.0.1
-
-  - name: register target_server
-    set_fact :
-      target_server: "{{ centos7_vrs_ip.stdout }}"
-    #run_once: true
-    delegate_to: 127.0.0.1
-
-  when: ci_image == 'jen-centos7'
+  run_once: true
 
 
-- block:
-  - name: get the u14 vrs temp file contents
-    command: cat "/tmp/{{ net_name_temp }}_vrs_ip_u14"
-    register: u14_vrs_ip
-    #run_once: true
-    delegate_to: 127.0.0.1
+- name: get the centos 7 vrs temp file contents
+  command: cat "/tmp/{{ net_name_temp }}_vrs_ip_centos7"
+  register: centos7_vrs_ip
+  run_once: true
+  delegate_to: 127.0.0.1
 
-  - name: register u14 vrs target_server
-    set_fact :
-      vrs_u14_target_server: "{{ u14_vrs_ip.stdout }}"
-    #run_once: true
-    delegate_to: 127.0.0.1
-  when: ci_image == 'jen-ubuntu14'
+- name: register target_server
+  set_fact :
+    target_server: "{{ centos7_vrs_ip.stdout }}"
+  run_once: true
+  delegate_to: 127.0.0.1
+
+
+
+
+
+- name: get the u14 vrs temp file contents
+  command: cat "/tmp/{{ net_name_temp }}_vrs_ip_u14"
+  register: u14_vrs_ip
+  run_once: true
+  delegate_to: 127.0.0.1
+
+- name: register u14 vrs target_server
+  set_fact :
+    vrs_u14_target_server: "{{ u14_vrs_ip.stdout }}"
+  run_once: true
+  delegate_to: 127.0.0.1
+
 
 #- name: get the u16 vrs temp file contents
 #  command: cat /tmp/u16_vrs_ip
@@ -73,9 +75,11 @@
 
 - debug: var=target_server
   delegate_to: 127.0.0.1
+  run_once: true
 
 - debug: var=vrs_u14_target_server
   delegate_to: 127.0.0.1
+  run_once: true
 
 - name: Update test build file
   template:
