@@ -24,7 +24,7 @@ This set of playbooks can be used to automatically deploy VCS/VNS components wit
 1. ubuntu14.04 (deprecated for all but VRS)
 1. ubuntu16.04 (deprecated for all but VRS)
 
-The VCS/NVS components that are supported are:
+The VCS/VNS components that are supported are:
 
 1. VSD (HA or stand-alone)
 2. VSC (1 or more)
