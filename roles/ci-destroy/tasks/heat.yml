@@ -29,14 +29,14 @@
 - block:
   - name: Set the network name to find out correct CI slave temp file
     set_fact:
-      net_name_temp: "{{ net_name2 }}"
+      subnet_name_temp: "{{ subnet_name2 }}"
   when: net_name1 == 'OC_JEN_FrontEnd'
   run_once: true
 
 - block:
   - name: Set the network name to find out correct CI slave temp file
     set_fact:
-      net_name_temp: "{{ net_name1 }}"
+      subnet_name_temp: "{{ subnet_name1 }}"
   when: net_name2 == 'OC_JEN_FrontEnd'
   run_once: true
 
@@ -62,6 +62,7 @@
 
 - name: Destroy subnet in VSD
   local_action: command python {{playbook_dir}}/scripts/delete_subnet.py {{playbook_dir}} {{subnet_name}}
+  run_once: true
 
 - name: Extract network part from the compute ip
   set_fact:
@@ -95,14 +96,14 @@
     command: "route del -net {{ network_address }}.0/24 gw {{ frontend_ip }} "
     delegate_to: "{{ ansible_deployment_host }}"
     remote_user: root
-  when: ci_image == 'jen-centos7'
+  when: ansible_os_family == 'RedHat'
 
 - block:
   - name: Delete static route on ansible host is ubuntu 14
     command: "route del -net {{ vrs_u14_target_server }}/32 gw {{ frontend_ip }} "
     delegate_to: "{{ ansible_deployment_host }}"
     remote_user: root
-  when: ci_image == 'jen-ubuntu14'
+  when: ansible_os_family == 'Debian'
 
 
 - name: Remove temporary centos7 vrs ip adress file
