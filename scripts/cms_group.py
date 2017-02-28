@@ -1,19 +1,7 @@
-from vspk.v4_0 import NULicense, NUEnterprise, NUUser, NUVSDSession
+from vspk.v4_0 import NUEnterprise, NUUser, NUVSDSession
 import yaml
 import sys
 import argparse
-
-
-def install_license(csp_user, vsd_license):
-    csproot = csp_user
-    # Clear any existing license
-    installed_licenses = csproot.licenses.get()
-    for lic in installed_licenses:
-        lic.delete()
-
-    # Push the license
-    test_license = NULicense(license=vsd_license)
-    csproot.create_child(test_license)
 
 
 def add_cspto_cms(session):
@@ -34,30 +22,25 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("playbook_dir", type=str,
                         help="Set path to playbook directory.")
+    parser.add_argument("vsd_ip_addr", type=str,
+                        help="IP address of VSD machine")
     args = parser.parse_args()
 
-    # Get ZFB related parameters
+    # Get VSD related parameters
     try:
-        with open(args.playbook_dir + '/zfb.yml', 'r') as fh:
-            zfb_params = yaml.load(fh)
-    except Exception as e:
-        print("ERROR: Failure reading file: %s" % e)
-
-    # Get VSD license
-    vsd_license = ""
-    try:
-        with open(zfb_params['vsd_license_file'], 'r') as lf:
-            vsd_license = lf.read()
+        with open(args.playbook_dir + '/roles/vsd-osc-config/vars/main.yml',
+                  'r') as fh:
+            vsd_params = yaml.load(fh)
     except Exception as e:
         print("ERROR: Failure reading file: %s" % e)
 
     # Create a session as csp user
     try:
-        session = NUVSDSession(**zfb_params['csp'])
+        vsd_params['csp']['api_url'] = 'https://' + args.vsd_ip_addr + ':8443'
+        session = NUVSDSession(**vsd_params['csp'])
         session.start()
         csproot = session.user
-    except:
+    except Exception as e:
         print("ERROR: Could not establish connection to VSD API")
         sys.exit(1)
-    install_license(csproot, vsd_license)
     add_cspto_cms(session)

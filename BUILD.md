@@ -1,8 +1,8 @@
 # build and reset-build playbooks
 
-The build playbook (`build.yml`) is used to automatically populate a number of Ansible variable files for the operation of the metro playbooks. Running `./metro-playbook build.yml` will use the variables defined in `build-vars.yml` to create a `hosts` file, populate a `host_vars` directory, populate a `group_vars` directory, and make a few additional variable changes as required. The `build.yml` playbook will do all the work for you.
+The build playbook (`build.yml`) is used to automatically populate a number of Ansible variable files for the operation of the metro playbooks. Running `./metro-ansible build.yml` will use the variables defined therein to create a `hosts` file, populate a `host_vars` directory, populate a `group_vars` directory, and make a few additional variable changes as required. The `build.yml` playbook will do all the work for you.
 
-Note that the syntax of the contents of `build-vars.yml` must be precise. If things get messed up, we have provided the `reset_build.yml` playbook to let you start over. *When you run `./metro-ansible rest_build.yml`, the contents of `build-vars.yml` will be overwritten, the `hosts` file will be destroyed, the `host_vars` directory will be destroyed, and the `group_vars` directory will be destroyed. The variable configuration of metro will be reset to factory settings! You may lose your work!* A backup copy of `build-vars.yml` will be created with a proper timestamp in case you did not mean it.
+Note that the syntax of the contents of `build.yml` must be precise. If things get messed up, we have provided the `reset_build.yml` playbook to let you start over. *When you run `./metro-ansible rest_build.yml`, the contents of `build.yml` will be overwritten, the `hosts` file will be destroyed, the `host_vars` directory will be destroyed, and the `group_vars` directory will be destroyed. The variable configuration of metro will be reset to factory settings! You may lose your work!* A backup copy of `build.yml` will be created with a proper timestamp in case you did not mean it.
 
 To run the build, execute:
 
@@ -228,6 +228,7 @@ For reference, here is a description of the contents of the `build-vars.yml` fil
 #    images_path: "/var/lib/libvirt/images/"
 #    # NTP servers the VSC, VSD, VNS-UTILITY and VSTAT should sync to.
 #    # One or more ntp servers are required
+#    # Please note: the NTP servers need to be specified in dotted decimal format (as below). 
 #    ntp_server_list:
 #      - 135.227.181.232
 #      - 128.138.141.172
@@ -238,4 +239,18 @@ For reference, here is a description of the contents of the `build-vars.yml` fil
 #      - 128.251.10.145
 #    # The dns search domain
 #    dns_domain: example.com
+#    # the timezone of the deployment location
+#    timezone: US/Pacific
+#    # yum params for the deployment.
+#    yum_proxy: "NONE"
+#    yum_update: yes
+#    yum_pin: yes
+#    # vcenter params
+#    vcenter:
+#      username: administrator@vsphere.local
+#      password: Alcateldc
+#      datacenter: Datacenter
+#      cluster: Management
+#      datastore: datastore
+#      ovftool: /usr/bin/ovftool
 ```
