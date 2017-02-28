@@ -26,6 +26,32 @@
       subnet_name: "{{ subnet_name1 }}"
   when: subnet_name2 == 'OC_JEN_FrontEnd'
 
+- block:
+  - name: Set the network name to find out correct CI slave temp file
+    set_fact:
+      net_name_temp: "{{ net_name2 }}"
+  when: net_name1 == 'OC_JEN_FrontEnd'
+  run_once: true
+
+- block:
+  - name: Set the network name to find out correct CI slave temp file
+    set_fact:
+      net_name_temp: "{{ net_name1 }}"
+  when: net_name2 == 'OC_JEN_FrontEnd'
+  run_once: true
+
+- name: get the u14 vrs temp file contents
+  command: cat "/tmp/{{ net_name_temp }}_vrs_ip_u14"
+  register: u14_vrs_ip
+  run_once: true
+  delegate_to: 127.0.0.1
+
+- name: register u14 vrs target_server
+  set_fact :
+    vrs_u14_target_server: "{{ u14_vrs_ip.stdout }}"
+  run_once: true
+  delegate_to: 127.0.0.1
+
 - name: Destroy CI heat template
   os_stack:
     name: "{{ inventory_hostname }}"
@@ -50,13 +76,55 @@
   remote_user: root
   delegate_to: "{{ ansible_deployment_host }}"
 
+- name: Delete ubuntu 14 VRS ips from /etc/hosts file
+  lineinfile:
+    dest: /etc/hosts
+    line: "{{ vrs_u14_target_server }}    {{inventory_hostname }}"
+    state: absent
+  remote_user: root
+  delegate_to: "{{ ansible_deployment_host }}"
+
 # temp fix to get around policy issue
 - name: Set fronend ip added to static route
   set_fact:
     frontend_ip: "{{ ci_server['ansible_facts']['openstack_servers'][0]['networks']['OC_JEN_FrontEnd'][0]}}"
 
 # temp fix to get around policy issue
-- name: Delete static route on ansible host
-  command: "route del -net {{ network_address }}.0/24 gw {{ frontend_ip }} "
+- block:
+  - name: Delete static route on ansible host when vrs is centos7
+    command: "route del -net {{ network_address }}.0/24 gw {{ frontend_ip }} "
+    delegate_to: "{{ ansible_deployment_host }}"
+    remote_user: root
+  when: ci_image == 'jen-centos7'
+
+- block:
+  - name: Delete static route on ansible host is ubuntu 14
+    command: "route del -net {{ vrs_u14_target_server }}/32 gw {{ frontend_ip }} "
+    delegate_to: "{{ ansible_deployment_host }}"
+    remote_user: root
+  when: ci_image == 'jen-ubuntu14'
+
+
+- name: Remove temporary centos7 vrs ip adress file
+  file: path=/tmp/{{ net_name_temp }}_vrs_ip_centos7 state=absent
   delegate_to: "{{ ansible_deployment_host }}"
   remote_user: root
+  run_once: true
+
+- name: Remove temporary ubuntu 14 vrs ip adress file
+  file: path=/tmp/{{ net_name_temp }}_vrs_ip_u14 state=absent
+  delegate_to: "{{ ansible_deployment_host }}"
+  remote_user: root
+  run_once: true
+
+- name: Remove temporary centos7 vrs name file
+  file: path=/tmp/{{ net_name_temp }}_vrs_name_centos7 state=absent
+  delegate_to: "{{ ansible_deployment_host }}"
+  remote_user: root
+  run_once: true
+
+- name: Remove temporary ubuntu 14 vrs name file
+  file: path=/tmp/{{ net_name_temp }}_vrs_name_u14 state=absent
+  delegate_to: "{{ ansible_deployment_host }}"
+  remote_user: root
+  run_once: true
