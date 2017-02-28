@@ -7,7 +7,7 @@
 1. Enhanced support for Dockermon install.
 1. Documentation enhancements, including examples and how-tos.
 1. Several bug fixes and infrastruture upgrades, including enhanced OpenStack deployment support and Jenkins CI integration.
-1. Tested with *3.2R8, 4.0R4, and 4.0R6*
+1. Tested with *3.2R8, 4.0R4, and 4.0R7*
 
 Feedback and bug reports should be provided via the Issues feature of Github or via email to [Brian Castelli](mailto://brian.castelli@nokia.com).
 
