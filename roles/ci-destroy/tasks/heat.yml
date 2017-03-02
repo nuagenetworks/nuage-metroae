@@ -64,7 +64,7 @@
   run_once: true
   delegate_to: 127.0.0.1
 
-- name: Destroy CI heat template
+- name: Destroy CI heat templates for all 3 hypervisor types
   os_stack:
     name: "{{ inventory_hostname }}"
     auth:
@@ -80,7 +80,7 @@
   set_fact:
     network_address: "{{ target_server.split('.')[0:3] | join('.') }}"
 
-- name: Delete VSP ips from /etc/hosts file
+- name: Delete VSP ips and centos 7 vrs ip from /etc/hosts file
   lineinfile:
     dest: /etc/hosts
     line: "{{ item }}"
@@ -110,38 +110,24 @@
   set_fact:
     frontend_ip: "{{ ci_server['ansible_facts']['openstack_servers'][0]['networks']['OC_JEN_FrontEnd'][0]}}"
 
-# temp fix to get around policy issue
-#- block:
-#  - name: Delete static route on ansible host when vrs is centos7
-#    command: "route del -net {{ network_address }}.0/24 gw {{ frontend_ip }} "
-#    delegate_to: "{{ ansible_deployment_host }}"
-#    remote_user: root
-#  rescue:
-#  - name: Delete static route on ansible host is ubuntu 14
-#    command: "route del -net {{ vrs_u14_target_server }}/32 gw {{ frontend_ip }} "
-#    delegate_to: "{{ ansible_deployment_host }}"
-#    remote_user: root
-
-####
-- name: Delete static route on ansible host when vrs is centos7
+- name: Delete static route on ansible host for centos7 VRS
   command: "route del -net {{ network_address }}.0/24 gw {{ frontend_ip }} "
   delegate_to: "{{ ansible_deployment_host }}"
   remote_user: root
-  when: "'u14' not in inventory_hostname" or "'u16' not in inventory_hostname"
+  when: ('u14' not in inventory_hostname) and ('u16' not in inventory_hostname)
 
-- name: Delete static route on ansible host is ubuntu 14
-  command: "route del -net {{ vrs_u14_target_server }}/32 gw {{ frontend_ip }} "
+- name: Delete static route on ansible host for ubuntu 14 VRS
+  command: "route del -host {{ vrs_u14_target_server }} gw {{ frontend_ip }} "
   delegate_to: "{{ ansible_deployment_host }}"
   remote_user: root
   when: "'u14' in inventory_hostname"
 
-- name: Delete static route on ansible host is ubuntu 16
-  command: "route del -net {{ vrs_u16_target_server }}/32 gw {{ frontend_ip }} "
+- name: Delete static route on ansible host for ubuntu 16 VRS
+  command: "route del -host {{ vrs_u16_target_server }} gw {{ frontend_ip }} "
   delegate_to: "{{ ansible_deployment_host }}"
   remote_user: root
   when: "'u16' in inventory_hostname"
 
-####
 
 - name: Remove temporary centos7 vrs ip adress file
   file: path=/tmp/{{ subnet_name_temp }}_vrs_ip_centos7 state=absent
