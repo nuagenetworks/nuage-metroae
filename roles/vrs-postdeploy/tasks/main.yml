@@ -8,13 +8,13 @@
     delay: 1
 
 - name: Pull facts on VRS target {{ inventory_hostname }}
-  remote_user: root
+  remote_user: "{{ target_server_username }}"
   action: setup
 
 - name: Get ovs-vsctl show output
   command: ovs-vsctl show
   register: ovs_show_result
-  remote_user: root
+  remote_user: "{{ target_server_username }}"
 
 - name: Create a temporary directory name using timestamp
   set_fact:
@@ -67,18 +67,18 @@
   - name: Get docker status
     shell: service docker status | head -n 5
     register: docker_status_result
-    remote_user: root
+    remote_user: "{{ target_server_username }}"
 
   - name: Get dockermon status v3
     command: service nuage-docker-monitor status
     register: dockermon_status_result_v3
-    remote_user: root
+    remote_user: "{{ target_server_username }}"
     when: version == '3' and ansible_os_family == "Debian"
 
   - name: Get dockermon status v4
     command: /usr/share/openvswitch/scripts/nuage-docker-monitor.init status
     register: dockermon_status_result_v4
-    remote_user: root
+    remote_user: "{{ target_server_username }}"
     when: version == '4' or ansible_os_family == "RedHat"
 
   # Ansible registers skipped variables as well. So need to create separate variables for dockermon_status_result_vx and combine them in this task
@@ -89,12 +89,12 @@
   - name: Get dockermon process details
     shell: ps -eo lstart,cmd|grep nuage-docker-monitor
     register: ps_docker_result
-    remote_user: root
+    remote_user: "{{ target_server_username }}"
 
   - name: Get dockermon logs
     shell: tail -n 3 $(ls -t /var/log/openvswitch/nuage-docker-monitor*| head -n 1)
     register: docker_mon_logs
-    remote_user: root
+    remote_user: "{{ target_server_username }}"
 
   - name: Create a temporary copy of the dockermon verification command outputs on ansible host
     local_action: template src=dockermon_results.yml.j2 backup=no dest={{ tmp_scripts_dir }}/{{ inventory_hostname }}.yml

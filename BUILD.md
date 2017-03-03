@@ -53,6 +53,8 @@ For reference, here is a description of the contents of the `build-vars.yml` fil
 #    nuage_already_unpacked: true
 #    # Parameter used to define the Hypervisor-Architecture (One of: el6|el7|ubuntu)
 #    nuage_target_architecture: "el7"
+#    # Parameter to define the remote username to use on target servers, e.g. hypevisors.
+#    target_server_username: "root"
 #    VSD
 #    # When True or undefined, all VSDs will be configured stand-alone. When False
 #    # we will expect 3 VSD definitions, below, for clustered deployment.
