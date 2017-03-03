@@ -17,6 +17,10 @@
   - name: Decouple VSD Node2
     command: "/media/CDROM/decouple.sh -y"
     remote_user: root
+  
+  - name: Pause for decoulping to finish
+    pause:
+      seconds: 10
 
   - name: Execute list_p1db command on node2
     command: "{{ p1db_cmd }}"
@@ -58,13 +62,12 @@
         - "ejabberd_cluster_json['cluster_users'] | length == 1" 
       msg: "Ejabberd is not decoupled successfully"
  
-  - name: Wait for ejabberd to clean connected clients other than itself
-    pause:
-      seconds: 10
-
   - name: Excute connected_users command on node2
     command: "{{ connected_users }}"
     register: client_list
+    until: client_list.stdout.find("cna") != -1
+    retries: 10
+    delay: 20
 
   - name: Print ejabberd connected_users output when verbosity >= 1
     debug: var=client_list verbosity=1

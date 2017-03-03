@@ -1,24 +1,26 @@
 ---
-- block: 
-  - name: Stop vsd statistics services on node1 and node3
-    shell: "{{ stop_stats }}"
+- block:
+  - block: 
+    - name: Stop vsd statistics services on node1 and node3
+      shell: "{{ stop_stats }}"
   
-  - name: Pause for proccesses to exit
-    pause:
-      seconds: 20
+    - name: Pause for proccesses to exit
+      pause:
+        seconds: 20
 
-  - name: Check for left over stats proccesses
-    shell: "{{ stats_pids }}" 
-    register: list_stats_pids
+    - name: Check for left over stats proccesses
+      shell: "{{ stats_pids }}" 
+      register: list_stats_pids
   
-  - name: Print stats_pids output when verbosity >= 1
-    debug: var=list_stats_pids verbosity=1
+    - name: Print stats_pids output when verbosity >= 1
+      debug: var=list_stats_pids verbosity=1
  
-  - name: Kill the stats pids if they exists
-    shell: "kill -9 {{ item }}"
-    with_items: "{{ list_stats_pids.stdout_lines|default([]) }}"
-    ignore_errors: yes
-    when: list_stats_pids.stdout.strip()!= ""
+    - name: Kill the stats pids if they exists
+      shell: "kill -9 {{ item }}"
+      with_items: "{{ list_stats_pids.stdout_lines|default([]) }}"
+      ignore_errors: yes
+      when: list_stats_pids.stdout.strip()!= ""
+    when: groups['mystats'] is defined and groups['myvstats']
 
   - name: Stop vsd core services on node1 and node3
     shell: "{{ stop_vsd_core }}"
