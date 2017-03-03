@@ -2,7 +2,8 @@
 
 ## What's new
 
-1. Added support for different target server users, default is still root
+1. Added support for different target server users, default is `root`
+1. Added check to verify that the ntp servers are specified in dotted-decimal notation
 
 Feedback and bug reports should be provided via the Issues feature of Github or via email to [Brian Castelli](mailto://brian.castelli@nokia.com).
 
