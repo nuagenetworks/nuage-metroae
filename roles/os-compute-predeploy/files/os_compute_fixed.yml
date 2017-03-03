@@ -1,0 +1,58 @@
+heat_template_version: '2014-10-16'
+parameters:
+  vm_name:
+    type: string
+  ssh_key:
+    type: string
+  compute_image:
+    type: string
+  compute_mgmt_network:
+    type: string
+  compute_mgmt_subnet:
+    type: string
+  compute_data_network:
+    type: string
+  compute_data_subnet:
+    type: string
+  compute_flavor:
+    type: string
+  mgmt_ip:
+    type: string
+  data_ip:
+    type: string
+resources:
+  mgmt_port:
+    type: OS::Neutron::Port
+    properties:
+      network_id: {get_param: compute_mgmt_network}
+      fixed_ips: [{"subnet": {get_param: compute_mgmt_subnet}, "ip_address": {get_param: mgmt_ip}}]
+  data_port:
+    type: OS::Neutron::Port
+    properties:
+      network_id: {get_param: compute_data_network}
+      fixed_ips: [{"subnet": {get_param: compute_data_subnet}, "ip_address": {get_param: data_ip}}]
+  mycompute:
+    type: OS::Nova::Server
+    properties:
+      name: {get_param: vm_name}
+      flavor: {get_param: compute_flavor}
+      image: {get_param: compute_image}
+      networks:
+        - port: {get_resource: mgmt_port}
+        - port: {get_resource: data_port}
+      #key_name: {get_resource: vsd_user_key}
+      user_data_format: RAW
+      user_data: 
+        str_replace:
+          template: |
+            #!/bin/bash
+            echo usr >> /root/.ssh/authorized_keys
+          params:
+            usr: {get_param: ssh_key} 
+outputs:
+  compute_mgmt_ip:
+    description: mgmt ip assigned to os_compute
+    value: { get_attr: [mycompute, networks, {get_param: compute_mgmt_network}, 0]}
+  compute_data_ip:
+    description: control ip assigned to os_compute
+    value: { get_attr: [mycompute, networks, {get_param: compute_data_network}, 0]}

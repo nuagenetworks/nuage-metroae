@@ -3,7 +3,7 @@
   os_server_facts:
     auth:
       "{{ os_auth }}"
-    server: "{{ inventory_hostname }}*"
+    server: "{{ inventory_hostname }}"
   register: osc_server
   delegate_to: 127.0.0.1
  
@@ -11,17 +11,38 @@
   set_fact:
     osc_mgmt_ip: "{{ osc_server['ansible_facts']['openstack_servers'][0]['private_v4'] }}"
 
+- name: Set vsd mgmt ip
+  set_fact:
+    vsd_mgmt_ip: "{{ vsd_ip }}"
+  when: vsd_ip is defined
+
+- block:
+  - name: Get vsd mgmt IP 
+    os_server_facts:
+      auth:
+        "{{ os_auth }}"
+      server: "{{ vsd_server_name }}"
+    register: vsc_server
+    delegate_to: 127.0.0.1
+
+  - name: Set vsd mgmt ip
+    set_fact:
+      vsd_mgmt_ip: "{{ vsc_server['ansible_facts']['openstack_servers'][0]['private_v4'] }}"
+  when: vsd_server_name is defined
+
 - name: Create temporary directory on {{ inventory_hostname }}
-  remote_user: root
+  remote_user: "{{ target_server_username }}"
   file: path={{ plugin_dir }}/{{ inventory_hostname }} state=directory
 
 - name: Create temporary directory on {{ inventory_hostname }} to hold upgrade scripts
-  remote_user: root
+  remote_user: "{{ target_server_username }}"
   file: path={{ plugin_dir }}/{{ inventory_hostname }}/upgrade state=directory
  
 - name: Copy Nuage OS plugins to temporary directory on {{ inventory_hostname }}
-  remote_user: root
-  copy: src={{ nuage_os_package_path }}/{{ item }} dest={{ plugin_dir }}/{{ inventory_hostname }}/{{ item }}
+  copy: 
+    src: "{{ nuage_os_package_path }}/{{ nuage_os_release }}/{{ nuage_target_architecture }}/{{ item }}"
+    dest: "{{ plugin_dir }}/{{ inventory_hostname }}/{{ item }}"
+  remote_user: "{{ target_server_username }}"
   with_items: "{{ nuage_os_package_file_name_list }}"
 
 - name: Find the upgrade tar file
@@ -32,97 +53,133 @@
   delegate_to: 127.0.0.1
 
 - name: Copy Nuage upgrade tar file to temporary directory on {{ inventory_hostname }}
-  remote_user: root
   copy: src={{ tar_file.files[0].path }} dest={{ plugin_dir }}/{{ inventory_hostname }}/
+  remote_user: "{{ target_server_username }}"
 
 - name: Install Nuage OS plugins 
-  remote_user: root
   yum: 
     name: "{{ plugin_dir }}/{{ inventory_hostname }}/{{ item }}" 
     state: present
   with_items: "{{ nuage_os_package_file_name_list }}"
+  remote_user: "{{ target_server_username }}"
 
 - name: Configure Horizon Extension
   lineinfile:
     dest: /usr/share/openstack-dashboard/openstack_dashboard/local/local_settings.py
     insertafter: UNAUTHORIZED},
     line: "    'customization_module': 'nuage_horizon.customization'"
+  remote_user: "{{ target_server_username }}"
 
 - name: Add alias
   lineinfile:
     dest: /etc/httpd/conf.d/15-horizon_vhost.conf
     insertbefore: /usr/share/openstack-dashboard/static
     line: '  Alias /dashboard/static/nuage "/usr/lib/python2.7/site-packages/nuage_horizon/static"'
+  remote_user: "{{ target_server_username }}"
 
 - name: Restart httpd
   service:
     name: httpd
     state: restarted
+  remote_user: "{{ target_server_username }}"
 
 - name: Create dir for nuage plugin
   file:
     path: "/etc/neutron/plugins/nuage"
     state: directory
+  remote_user: "{{ target_server_username }}"
  
 - name: Copy ini contents to created file
   template:
     src={{ playbook_dir }}/roles/vsd-osc-config/templates/nuage_plugin.ini.j2
     dest=/etc/neutron/plugins/nuage/nuage_plugin.ini
+  remote_user: "{{ target_server_username }}"
 
 - name: Remove neutron plugin file
   file:
     path: "/etc/neutron/plugin.ini"
     state: absent
+  remote_user: "{{ target_server_username }}"
 
 - name: Create link
   shell: "ln -s /etc/neutron/plugins/nuage/nuage_plugin.ini /etc/neutron/plugin.ini"
+  remote_user: "{{ target_server_username }}"
   
 - name: Enable network api class
   lineinfile:
     dest: /etc/nova/nova.conf
     regexp: '#network_api_class='
     line: 'network_api_class = nova.network.neutronv2.api.API'
+  remote_user: "{{ target_server_username }}"
 
 - name: Set ovs bridge to alubr0
   lineinfile:
     dest: /etc/nova/nova.conf
     regexp: 'ovs_bridge='
     line: 'ovs_bridge = alubr0'
+  remote_user: "{{ target_server_username }}"
 
 - name: Set core plugin in neutron to nuage
   lineinfile:
     dest: /etc/neutron/neutron.conf
-    regexp: 'core_plugin='
+    regexp: 'core_plugin ='
     line: 'core_plugin = neutron.plugins.nuage.plugin.NuagePlugin'
-  when: {{ nuage_os_release}} == 'liberty'
+  remote_user: "{{ target_server_username }}"
+  when: nuage_os_release == 'liberty'
 
 - name: Set core plugin in neutron to nuage
   lineinfile:
     dest: /etc/neutron/neutron.conf
     regexp: 'core_plugin='
-    line: 'core_plugin = nuage_neutron.plugins.nuage.plugin.NuagePlugin'
-  when: {{ nuage_os_release}} == 'mitaka'
+    line: 'core_plugin=nuage_neutron.plugins.nuage.plugin.NuagePlugin'
+  remote_user: "{{ target_server_username }}"
+  when: nuage_os_release == 'mitaka'
+
+- name: Set service plugin in neutron to nuage
+  lineinfile:
+    dest: /etc/neutron/neutron.conf
+    regexp: 'service_plugins ='
+    line: 'service_plugins = nuage_neutron.plugins.common.service_plugins.port_attributes.service_plugin.NuagePortAttributesServicePlugin'
+  remote_user: "{{ target_server_username }}"
+  when: nuage_os_release == 'liberty'
 
 - name: Set service plugin in neutron to nuage
   lineinfile:
     dest: /etc/neutron/neutron.conf
     regexp: 'service_plugins='
-    line: 'service_plugins = nuage_neutron.plugins.common.service_plugins.port_attributes.service_plugin.NuagePortAttributesServicePlugin'
+    line: 'service_plugins=nuage_neutron.plugins.common.service_plugins.port_attributes.service_plugin.NuagePortAttributesServicePlugin'
+  remote_user: "{{ target_server_username }}"
+  when: nuage_os_release == 'mitaka'
 
 - name: Stop OS neutron services
   service:
     name: "{{ item }}"
     state: stopped
+  remote_user: "{{ target_server_username }}"
   with_items: "{{ neutron_services }}"
 
 - name: Disable OS neutron services
   service:
     name: "{{ item }}"
     enabled: no 
+  remote_user: "{{ target_server_username }}"
   with_items: "{{ neutron_services }}"
 
+- name: Comment nuage css part from horizon settings
+  lineinfile:
+    dest: "/usr/lib/python2.7/site-packages/nuage_horizon/dashboards/project/dashboard.py"
+    regexp: "horizon.Horizon._conf['scss_files'].append('nuage/css/nuage.scss')"
+    line: "#horizon.Horizon._conf['scss_files'].append('nuage/css/nuage.scss')"
+  remote_user: "{{ target_server_username }}"
+ 
+- name: Restart httpd
+  service:
+    name: httpd
+    state: restarted
+  remote_user: "{{ target_server_username }}"
+
 - name: Add CSP root to CMS users group
-  local_action: command python {{ playbook_dir }}/files/cms_group.py {{ playbook_dir }}
+  local_action: command python {{ playbook_dir }}/scripts/cms_group.py {{ playbook_dir }} {{ vsd_mgmt_ip }}
   register: output
 
 - name: Search for errors in the output of cms_group script
@@ -137,13 +194,14 @@
 
 - name: Extract upgrade scripts to folder
   shell: "tar xvfz {{ tar_file.files[0].path }} -C {{ plugin_dir }}/{{ inventory_hostname }}/upgrade"
+  remote_user: "{{ target_server_username }}"
 
 - name: Integrate OSC with VSD
   command: "python {{ plugin_dir }}/{{ inventory_hostname }}/upgrade/{{ upgrade_cmd }}"
+  remote_user: "{{ target_server_username }}"
  
 - name: Restart neutron service
   service: 
     name: neutron-server
     state: restarted
-  delegate_to: "{{ osc_mgmt_ip }}"
-  
+  remote_user: "{{ target_server_username }}"
