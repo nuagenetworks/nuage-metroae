@@ -22,9 +22,9 @@ or
 
 # nuage_unpack playbook
 
-When the `build.yml` playbook is executed, it will first check the setting for the parameter `nuage_already_unpacked` in `build_vars.yml`. When `nuage_already_unpacked` is set to `false`, the `nuage-unpack` role will look for and unpack Nuage binary archives. The `nuage-unpack` role is useful when you download the Nuage Networks software as a set of archives for each component of the solution. To deploy the software using Metro, only a few of the binaries in those archives are required. As such the `nuage-unpack` role will analyze all the archives, extract the necessary binaries, and store them in a configurable directory.
+When the `build.yml` playbook is executed, it expects to find Nuage software binaries (QCOW2, OVA, and Linux Package files) in specific places. You can either copy the proper files to their locations, shown below, or you can use the nuage_unpack.yml playbook to do the work for you. Simply specify the proper source and target directories in `build_vars.yml` and `nuage_unpack.yml` will do the heavy lifting.
 
-You can also choose to unpack the binaries yourself, skipping the `nuage-unpack` role by setting `nuage_already_unpacked` to `true` in `build_vars.yml`. In such a case, the playbooks will assume that you have already unpacked the binaries into the appropriate locations, as shown below.
+Here are the expected paths to binaries.
 
 ```
 <your_path>/vsd/qcow2/ (or <your_path>/vsd/ova/ for VMware)
@@ -43,14 +43,10 @@ For reference, here is a description of the contents of the `build_vars.yml` fil
 
 ```
 #    # The directory where the Nuage Networks binariy archives are located. This is only
-#    # required if nauge_already_unpacked == false. See below.
+#    # required for the `nuage_unpack.yml` playbook.
 #    nuage_packed_src_path: "{{ ansible_env.HOME}}/nuage-release"
 #    # The directory where to extract the relevant Nuage Networks binaries to
 #    nuage_unpacked_dest_path: "{{ ansible_env.HOME}}/nuage-unpacked"
-#    # Parameter to define whether binaries have already been extracted
-#    # If true, the playbooks will *not* unpack. Files in nnuage_unpacked_dest_path
-#    # will be used as is. If false, the nuage_unpack role will be executed.
-#    nuage_already_unpacked: true
 #    # Parameter used to define the Hypervisor-Architecture (One of: el6|el7|ubuntu)
 #    nuage_target_architecture: "el7"
 #    # Parameter to define the remote username to use on target servers, e.g. hypevisors.
