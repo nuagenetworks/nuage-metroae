@@ -1,8 +1,8 @@
 # build and reset-build playbooks
 
-The build playbook (`build.yml`) is used to automatically populate a number of Ansible variable files for the operation of the metro playbooks. Running `./metro-ansible build.yml` will use the variables defined therein to create a `hosts` file, populate a `host_vars` directory, populate a `group_vars` directory, and make a few additional variable changes as required. The `build.yml` playbook will do all the work for you.
+The build playbook (`build.yml`) is used to automatically populate a number of Ansible variable files for the operation of the metro playbooks. Running `./metro-ansible build.yml` will use the variables defined in `build_vars.yml` to create a `hosts` file, populate a `host_vars` directory, populate a `group_vars` directory, and make a few additional variable changes as required. The `build.yml` playbook will do all the work for you.
 
-Note that the syntax of the contents of `build.yml` must be precise. If things get messed up, we have provided the `reset_build.yml` playbook to let you start over. *When you run `./metro-ansible rest_build.yml`, the contents of `build.yml` will be overwritten, the `hosts` file will be destroyed, the `host_vars` directory will be destroyed, and the `group_vars` directory will be destroyed. The variable configuration of metro will be reset to factory settings! You may lose your work!* A backup copy of `build.yml` will be created with a proper timestamp in case you did not mean it.
+Note that the syntax of the contents of `build_vars.yml` must be precise. If things get messed up, we have provided the `reset_build.yml` playbook to let you start over. *When you run `./metro-ansible rest_build.yml`, the contents of `build_vars.yml` will be overwritten, the `hosts` file will be destroyed, the `host_vars` directory will be destroyed, and the `group_vars` directory will be destroyed. The variable configuration of metro will be reset to factory settings! You may lose your work!* A backup copy of `build_vars.yml` will be created with a proper timestamp in case you did not mean it.
 
 To run the build, execute:
 
@@ -14,7 +14,7 @@ or
 
 To reset the build to factory settings, execute:
 
-`ansible-playbook reset_build.xml`
+`ansible-playbook reset_build.yml`
 
 or
 
@@ -22,9 +22,9 @@ or
 
 # nuage_unpack playbook
 
-When the `build.yml` playbook is executed, it will first check the setting for the parameter `nuage_already_unpacked` in the vars section of the playbook. When `nuage_already_unpacked` is set to `false`, the `nuage-unpack` role will look for and unpack Nuage binary archives. The `nuage-unpack` role is useful when you download the Nuage Networks software as a set of archives for each component of the solution. To deploy the software using Metro, only a few of the binaries in those archives are required. As such the `nuage-unpack` role will analyze all the archives, extract the necessary binaries, and store them in a configurable directory.
+When the `build.yml` playbook is executed, it will first check the setting for the parameter `nuage_already_unpacked` in `build_vars.yml`. When `nuage_already_unpacked` is set to `false`, the `nuage-unpack` role will look for and unpack Nuage binary archives. The `nuage-unpack` role is useful when you download the Nuage Networks software as a set of archives for each component of the solution. To deploy the software using Metro, only a few of the binaries in those archives are required. As such the `nuage-unpack` role will analyze all the archives, extract the necessary binaries, and store them in a configurable directory.
 
-You can also choose to unpack the binaries yourself, skipping the `nuage-unpack` role by setting `nuage_already_unpacked` to `true` in `build.yml`. In such a case, the playbooks will assume that you have already unpacked the binaries into the appropriate locations, as shown below.
+You can also choose to unpack the binaries yourself, skipping the `nuage-unpack` role by setting `nuage_already_unpacked` to `true` in `build_vars.yml`. In such a case, the playbooks will assume that you have already unpacked the binaries into the appropriate locations, as shown below.
 
 ```
 <your_path>/vsd/qcow2/ (or <your_path>/vsd/ova/ for VMware)
@@ -39,7 +39,7 @@ You can also choose to unpack the binaries yourself, skipping the `nuage-unpack`
 
 # Reference
 
-For reference, here is a description of the contents of the `build-vars.yml` file, with comments:
+For reference, here is a description of the contents of the `build_vars.yml` file, with comments:
 
 ```
 #    # The directory where the Nuage Networks binariy archives are located. This is only

@@ -4,6 +4,7 @@
 
 1. Added support for different target server users, default is `root`
 1. Added check to verify that the ntp servers are specified in dotted-decimal notation
+1. Moved build variables out of `build.yml` and into `build_vars.yml`
 
 Feedback and bug reports should be provided via the Issues feature of Github or via email to [Brian Castelli](mailto://brian.castelli@nokia.com).
 
@@ -38,11 +39,11 @@ The short version of the instructions are:
 1. Install Ansible 2.2 on the deployment host for full support
 1. Install Netmiko and its dependencies on deployment host.
 1. Clone this repository to the deployment host
-1. Customize `build.yml` with your VSD, VSC, VRS, VNSUTIL, NSGV  and VSTAT information. (See `BUILD.md` for details.)
+1. Customize `build_vars.yml` with your VSD, VSC, VRS, VNSUTIL, NSGV  and VSTAT information. (See `BUILD.md` for details.)
 1. Execute `./metro-ansible build.yml` to automatically populate variables in the appropriate places, e.g. the `host_vars` directory.
 1. Execute `./metro-ansible install_everything.yml`
 1. To get rid of everything that has been deployed, execute `./metro-ansible destroy_everything.yml'
-1. To destroy all variables and reset `build.yml` to factory settings, execute `./metro-ansible reset_build.yml`. A `build.bak` file will be created just in case you didn't mean it.
+1. To destroy all variables and reset `build.yml` to factory settings, execute `./metro-ansible reset_build.yml`. A backup of the existing `build_vars.yml` file will be created just in case you didn't mean it. The file name will be of the form `build_vars.yml.<date and time>~`.
 
 Note that `install_everything.yml` can be edited for customizing your deployment.
 
@@ -58,7 +59,7 @@ The following restrictions and conditions apply prior to executing the playbooks
 
 1. The hypervisor hosts must be running RedHat or CentOS. Support for Ubuntu exists but has been deprecated.
 1. If host names are used for target systems, VSD, VSC, VSTAT, VNSUTIL and VRS nodes, those names must be discoverable via DNS *or* added to the /etc/hosts file of the ansible deployment host.
-1. Each VM that is created for VSD, VSC, VSTAT, VNSUTIL or NSGV connects to one or more bridges on the target server. Those bridges must be created on the target server prior to deployment. Their names must be specified in the `build.yml` file. See `BUILD.md` for details.
+1. Each VM that is created for VSD, VSC, VSTAT, VNSUTIL or NSGV connects to one or more bridges on the target server. Those bridges must be created on the target server prior to deployment. Their names must be specified in the `build_vars.yml` file. See `BUILD.md` for details.
 1. Python 2.7+ and all its dependencies must be installed on the deployment host. Python 3.0 and above is untested.
 1. Ansible 2.2 and all its dependencies must be installed on the deployment host.
 1. Netmiko and all its dependencies must be installed on deployment host. The easiest way to install Netmiko is by using `pip install netmiko`. A common Netmiko dependency that could be missing is the cryptography package. See https://cryptography.io/en/latest/installation/ for more information.
@@ -87,9 +88,9 @@ The `examples/` directory is populated with samples of files that can be used as
 
 ## Customization
 
-### build.yml
+### build_vars.yml
 
-`build.yml` contains a set of variables that should be customized by the user prior to running the playbooks. These variables are used to configure network connectivity for the VSC, VSTAT and the VSD.
+`build_vars.yml` contains a set of variables that should be customized by the user prior to running the playbooks. These variables are used to configure network connectivity for the VSC, VSTAT and the VSD.
 
 `zfb.yml` contains a set of variables that should be customized by the user prior to running the nsgv playbooks. These variables are used to create NSG profile in the VSD Architect and also creates ISO file that is attached to NSG VM
 
