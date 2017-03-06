@@ -2,7 +2,7 @@
 
 ## What's new
 
-1. Added support for different target server users, default is `root`
+1. Added support for different target server and Ansible host sudo usernames, default is `root`
 1. Added check to verify that the ntp servers are specified in dotted-decimal notation
 1. Moved build variables out of `build.yml` and into `build_vars.yml`
 1. Decoupled nuage_unpack from build. Now you are required to run nuage_unpack separately if you are deploying from tar-gz archives. Bonus: You need only run the unpack once!
