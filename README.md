@@ -2,12 +2,8 @@
 
 ## What's new
 
-1. Added pre-deploy support for VMware. Tested on R4.0R6.1 and 4.0R7.
-1. Added support for mixed VRS architectures. That is, you can have some VRSs deployed on Ubuntu and some on RedHat/CentOS all using a single build.yml file.
-1. Enhanced support for Dockermon install.
-1. Documentation enhancements, including examples and how-tos.
-1. Several bug fixes and infrastruture upgrades, including enhanced OpenStack deployment support and Jenkins CI integration.
-1. Tested with *3.2R8, 4.0R4, and 4.0R6*
+1. Added support for different target server users, default is `root`
+1. Added check to verify that the ntp servers are specified in dotted-decimal notation
 
 Feedback and bug reports should be provided via the Issues feature of Github or via email to [Brian Castelli](mailto://brian.castelli@nokia.com).
 
@@ -24,7 +20,7 @@ This set of playbooks can be used to automatically deploy VCS/VNS components wit
 1. ubuntu14.04 (deprecated for all but VRS)
 1. ubuntu16.04 (deprecated for all but VRS)
 
-The VCS/NVS components that are supported are:
+The VCS/VNS components that are supported are:
 
 1. VSD (HA or stand-alone)
 2. VSC (1 or more)

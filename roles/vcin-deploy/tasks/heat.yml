@@ -51,68 +51,68 @@
 
 - name: Restart networking on {{ inventory_hostname }}
   command: /etc/init.d/network restart
-  remote_user: root
+  remote_user: "{{ target_server_username }}"
 
 - name: Resolve fqdn
   command: hostname "{{ inventory_hostname }}"
-  remote_user: root
+  remote_user: "{{ target_server_username }}"
 
 - name: Update DNS entries
   lineinfile:  
     line: "{{ vcin_mgmt_ip }}  {{ inventory_hostname }}"
     dest: "/etc/hosts"
   delegate_to: "{{ infra_ip }}"
-  remote_user: root
+  remote_user: "{{ target_server_username }}"
 
 - name: Restart DNS service
   shell: service dnsmasq restart
   delegate_to: "{{ infra_ip }}"
-  remote_user: root
+  remote_user: "{{ target_server_username }}"
 
 - name: Update /etc/hosts file on {{ inventory_hostname }}
   lineinfile: 
     dest: /etc/hosts
     line: "{{ vcin_mgmt_ip }}  {{ inventory_hostname }}"
-  remote_user: root
+  remote_user: "{{ target_server_username }}"
 
 - name: Delete the localtime file on {{ inventory_hostname }}
   file:
     path: /etc/localtime
     state: absent
-  remote_user: root
+  remote_user: "{{ target_server_username }}"
 
 - name: Create the localtime symlink on {{ inventory_hostname }}
   file:
     src: /usr/share/zoneinfo/{{ timezone }}
     dest: /etc/localtime
     state: link
-  remote_user: root
+  remote_user: "{{ target_server_username }}"
 
 - name: Remove old NTP servers on {{ inventory_hostname }}
   lineinfile:
     dest: /etc/ntp.conf
     regexp: "^server"
     state: absent
-  remote_user: root
+  remote_user: "{{ target_server_username }}"
 
 - name: Configure NTP servers on {{ inventory_hostname }}
   lineinfile:
     dest: /etc/ntp.conf
     line: "server {{ item }} iburst"
   with_items: "{{ ntp_server_list }}"
-  remote_user: root
+  remote_user: "{{ target_server_username }}"
 
 - name: Stop the ntpd service if running
   command: service ntpd stop
-  remote_user: root
+  remote_user: "{{ target_server_username }}"
 
 - name: Manually sync time with ntp server
   command: ntpdate -u "{{ntp_server_list[0]}}"
-  remote_user: root
+  remote_user: "{{ target_server_username }}"
 
 - name: Start ntpd on {{ inventory_hostname }}
   command: service ntpd start
-  remote_user: root
+  remote_user: "{{ target_server_username }}"
 
 - name: check ntp sync state
   shell: ntpstat | awk 'NR==1{print $1}'
@@ -121,22 +121,22 @@
   retries: 4
   delay: 5
   ignore_errors: yes
-  remote_user: root
+  remote_user: "{{ target_server_username }}"
 
 - block:
   - name: restart ntp if it hasn't synced yet
     command: service ntpd restart
-    remote_user: root
+    remote_user: "{{ target_server_username }}"
   - name: check ntp sync state
     shell: ntpstat | awk 'NR==1{print $1}'
     register: retry_sync_status
     until: retry_sync_status.stdout == "synchronised"
     retries: 4
     delay: 5
-    remote_user: root
+    remote_user: "{{ target_server_username }}"
   when: sync_status.stdout != "synchronized"
 
 - name: Install VCIN software
   command: /opt/vsd/vsd-install.sh -t s -y
-  remote_user: root
+  remote_user: "{{ target_server_username }}"
 
