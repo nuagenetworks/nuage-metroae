@@ -44,25 +44,12 @@
   run_once: true
   delegate_to: 127.0.0.1
 
-- name: Update /etc/hosts file
-  lineinfile:
-    dest: /etc/hosts
-    line: "{{ item }}"
-  with_items: "{{ vsp_ips }}"
-  delegate_to: "{{ ansible_deployment_host }}"
-  remote_user: "{{ ansible_sudo_username }}"
 
 - name: get the u14 vrs ip temp file contents
   command: cat "/tmp/{{ net_name_temp }}_vrs_ip_u14"
   register: u14_vrs_ip
   run_once: true
   delegate_to: 127.0.0.1
-
-# Temp task to get around policy issue
-- name: Add static route to reach 
-  command: "route add -net {{ network_address }}.0/24 gw {{ frontend_ip }} "
-  delegate_to: "{{ ansible_deployment_host }}"
-  remote_user: "{{ ansible_sudo_username }}"
 
 - name: register u14 vrs target_server
   set_fact :
@@ -168,10 +155,8 @@
     regexp: 'yml\.\{\{ ansible_os_family \}\}'
     replace: 'yml.all'
   delegate_to: "{{ ansible_deployment_host }}"
-  remote_user: "{{ target_server_username }}"
   run_once: true
   remote_user: "{{ ansible_sudo_username }}"
-
 
 - name: Update the VSDOnly setup file with new VSDOnly build file
   replace:
@@ -182,7 +167,6 @@
   run_once: true
   remote_user: "{{ ansible_sudo_username }}"
 
-
 - name: Update the VSCOnly setup file with new VSCOnly build file
   replace:
     dest: "{{ playbook_dir }}/test/files/setup.yml.VSCOnly"
@@ -192,7 +176,6 @@
   run_once: true
   remote_user: "{{ ansible_sudo_username }}"
 
-
 - name: Update the VSTATOnly setup file with new VSTAT build file
   replace:
     dest: "{{ playbook_dir }}/test/files/setup.yml.VSTATOnly"
@@ -201,7 +184,6 @@
   delegate_to: "{{ ansible_deployment_host }}"
   run_once: true
   remote_user: "{{ ansible_sudo_username }}"
-
 
 - name: Update the VRSOnly setup file with new VRS build file
   replace:
@@ -229,20 +211,6 @@
   run_once: true
   remote_user: "root"
 
-# Temp task to get around policy issue
-- name: Add iptables rule to allow vsd to reach internet route to reach on {{ inventory_hostname }}
-  command: "iptables -t nat -A POSTROUTING -s {{ network_address }}.211 -j SNAT --to-source {{ target_server }} "
-  remote_user: "{{ target_server_username }}"
-
-# Temp task to get around policy issue
-- name: Add iptables rule to allow vnsutil to reach internet route to reach on {{ inventory_hostname }}
-  command: "iptables -t nat -A POSTROUTING -s {{ network_address }}.215 -j SNAT --to-source {{ target_server }} "
-  remote_user: "{{ target_server_username }}"
-
-# Temp task to get around policy issue
-- name: Save iptables
-  command: "iptables-save"
-  remote_user: "root"
 
 - name: Configure dnsmasq on {{ inventory_hostname }}
   copy:
