@@ -25,7 +25,6 @@
         ("{{ data_bridge }}" not in ansible_interfaces)
 
 - name: If RedHat, install packages for RedHat OS family distros
-  remote_user: "{{ target_server_username }}"
   yum: name={{ item }} state=present
   with_items:
    - qemu-kvm
@@ -35,10 +34,10 @@
    - libvirt-python
   when: ansible_os_family == "RedHat"
   become: true
+  remote_user: "{{ target_server_username }}"
   delegate_to: "{{ target_server }}"
 
 - name: If Debian, install packages for Debian OS family distros
-  remote_user: "{{ target_server_username }}"
   apt: name={{ item }} state=present
   with_items:
    - qemu-kvm
@@ -48,6 +47,7 @@
    - python-libvirt
   when: ansible_os_family == "Debian"
   become: true
+  remote_user: "{{ target_server_username }}"
   delegate_to: "{{ target_server }}"
 
 - name: List the Virtual Machines running on {{ target_server }}

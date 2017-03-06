@@ -86,7 +86,7 @@
     line: "{{ item }}"
     state: absent
   with_items: "{{vsp_ips}}"
-  remote_user: "{{ target_server_username }}"
+  remote_user: "{{ ansible_sudo_username }}"
   delegate_to: "{{ ansible_deployment_host }}"
 
 - name: Delete ubuntu 14 VRS ips from /etc/hosts file
@@ -94,7 +94,7 @@
     dest: /etc/hosts
     line: "{{ vrs_u14_target_server }}    {{inventory_hostname }}"
     state: absent
-  remote_user: "{{ target_server_username }}"
+  remote_user: "{{ ansible_sudo_username }}"
   delegate_to: "{{ ansible_deployment_host }}"
 
 - name: Delete ubuntu 16 VRS ips from /etc/hosts file
@@ -102,7 +102,7 @@
     dest: /etc/hosts
     line: "{{ vrs_u16_target_server }}    {{inventory_hostname }}"
     state: absent
-  remote_user: "{{ target_server_username }}"
+  remote_user: "{{ ansible_sudo_username }}"
   delegate_to: "{{ ansible_deployment_host }}"
 
 # temp fix to get around policy issue
@@ -113,55 +113,58 @@
 - name: Delete static route on ansible host for centos7 VRS
   command: "route del -net {{ network_address }}.0/24 gw {{ frontend_ip }} "
   delegate_to: "{{ ansible_deployment_host }}"
-  remote_user: "{{ target_server_username }}"
+  remote_user: "{{ ansible_sudo_username }}"
   when: ('u14' not in inventory_hostname) and ('u16' not in inventory_hostname)
 
 - name: Delete static route on ansible host for ubuntu 14 VRS
   command: "route del -host {{ vrs_u14_target_server }} gw {{ frontend_ip }} "
   delegate_to: "{{ ansible_deployment_host }}"
-  remote_user: "{{ target_server_username }}"
+  remote_user: "{{ ansible_sudo_username }}"
   when: "'u14' in inventory_hostname"
 
 - name: Delete static route on ansible host for ubuntu 16 VRS
   command: "route del -host {{ vrs_u16_target_server }} gw {{ frontend_ip }} "
   delegate_to: "{{ ansible_deployment_host }}"
-  remote_user: "{{ target_server_username }}"
+  remote_user: "{{ ansible_sudo_username }}"
   when: "'u16' in inventory_hostname"
 
 - name: Remove temporary centos7 vrs ip adress file
   file: path=/tmp/{{ subnet_name_temp }}_vrs_ip_centos7 state=absent
   delegate_to: "{{ ansible_deployment_host }}"
-  remote_user: "{{ target_server_username }}"
+  remote_user: "{{ ansible_sudo_username }}"
   run_once: true
 
 - name: Remove temporary ubuntu 14 vrs ip adress file
   file: path=/tmp/{{ subnet_name_temp }}_vrs_ip_u14 state=absent
   delegate_to: "{{ ansible_deployment_host }}"
-  remote_user: "{{ target_server_username }}"
+  remote_user: "{{ ansible_sudo_username }}"
   run_once: true
 
 - name: Remove temporary ubuntu 16 vrs ip adress file
   file: path=/tmp/{{ subnet_name_temp }}_vrs_ip_u16 state=absent
   delegate_to: "{{ ansible_deployment_host }}"
-  remote_user: "{{ target_server_username }}"
+  remote_user: "{{ ansible_sudo_username }}"
   run_once: true
 
 - name: Remove temporary centos7 vrs name file
   file: path=/tmp/{{ subnet_name_temp }}_vrs_name_centos7 state=absent
   delegate_to: "{{ ansible_deployment_host }}"
-  remote_user: "{{ target_server_username }}"
+  remote_user: "{{ ansible_sudo_username }}"
   run_once: true
 
 - name: Remove temporary ubuntu 14 vrs name file
   file: path=/tmp/{{ subnet_name_temp }}_vrs_name_u14 state=absent
   delegate_to: "{{ ansible_deployment_host }}"
-  remote_user: "{{ target_server_username }}"
+  remote_user: "{{ ansible_sudo_username }}"
   run_once: true
 
 - name: Remove temporary ubuntu 16 vrs name file
   file: path=/tmp/{{ subnet_name_temp }}_vrs_name_u16 state=absent
   delegate_to: "{{ ansible_deployment_host }}"
-  remote_user: "{{ target_server_username }}"
+  remote_user: "{{ ansible_sudo_username }}"
   run_once: true
-  remote_user: "{{ target_server_username }}"
+  remote_user: "{{ ansible_sudo_username }}"
 
+=======
+  remote_user: "{{ ansible_sudo_username }}"
+>>>>>>> upstream/dev
