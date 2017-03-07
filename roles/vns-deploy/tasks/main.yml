@@ -2,28 +2,28 @@
 - name: Clean known_hosts of VSC's on "{{ target_server }}"
   command: ssh-keygen -R "{{ interfaces.mgmt.ip }}" -f /root/.ssh/known_hosts
   delegate_to: "{{ ansible_deployment_host }}"
-  remote_user: root 
+  remote_user: "{{ target_server_username }}" 
 
 - name: Change XMPP connection to TLS on VSD
   command: /opt/vsd/bin/ejmode allow -y
-  remote_user: root
+  remote_user: "{{ target_server_username }}"
   delegate_to: "{{ vsd_fqdn }}"
 
 - block:
   - name: Download pip installer
     command: curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
     delegate_to: "{{ vsd_fqdn }}"
-    remote_user: root
+    remote_user: "{{ target_server_username }}"
   
   - name: Execute pip installer
     command: python get-pip.py
     delegate_to: "{{ vsd_fqdn }}"
-    remote_user: root
+    remote_user: "{{ target_server_username }}"
  
   - name: Install pexpect on VSD
     pip:
       name: pexpect
-    remote_user: root
+    remote_user: "{{ target_server_username }}"
     delegate_to: "{{ vsd_fqdn }}"
   when: yum_proxy == 'NONE'
 
@@ -31,7 +31,7 @@
   - name: Download pip installer through proxy
     command: curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
     delegate_to: "{{ vsd_fqdn }}"
-    remote_user: root
+    remote_user: "{{ target_server_username }}"
     environment:
       http_proxy: "{{ yum_proxy }}"
       https_proxy: "{{ yum_proxy }}"
@@ -39,7 +39,7 @@
   - name: Execute pip installer through proxy
     command: python get-pip.py
     delegate_to: "{{ vsd_fqdn }}"
-    remote_user: root
+    remote_user: "{{ target_server_username }}"
     environment:
       http_proxy: "{{ yum_proxy }}"
       https_proxy: "{{ yum_proxy }}"
@@ -47,7 +47,7 @@
   - name: Install pexpect on VSD through proxy
     pip:
       name: pexpect
-    remote_user: root
+    remote_user: "{{ target_server_username }}"
     delegate_to: "{{ vsd_fqdn }}"
     environment:
       http_proxy: "{{ yum_proxy }}"
@@ -58,7 +58,7 @@
   shell: echo $VSD_VERSION
   register: vsd_version
   delegate_to: "{{ vsd_fqdn }}"
-  remote_user: root
+  remote_user: "{{ target_server_username }}"
 
 - name: Create and transfer certs from 4.0.4 VSD to {{ inventory_hostname }}
   expect:
@@ -67,7 +67,7 @@
    responses:
      (?i)password: "admin"
   delegate_to: "{{ vsd_fqdn }}"
-  remote_user: root
+  remote_user: "{{ target_server_username }}"
   when: "'4.0.4' in vsd_version.stdout"
 
 - name: Create and transfer certs from VSD to {{ inventory_hostname }}
@@ -77,7 +77,7 @@
    responses:
      (?i)password: "admin"
   delegate_to: "{{ vsd_fqdn }}"
-  remote_user: root
+  remote_user: "{{ target_server_username }}"
   when: "'4.0.4' not in vsd_version.stdout"
 
 - name: Create TLS profile in {{ inventory_hostname }}

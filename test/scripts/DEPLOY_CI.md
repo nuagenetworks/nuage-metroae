@@ -12,7 +12,7 @@ Executing this script will copy the `setup.yml.CI` file to metro root folder and
  
 ### setup.yml.CI
 
-This setup file is responsible for creating a random hostname for CI VMs that will be deloyed in OpenStack. This hostname is populated in `build.yml.RedHat.CI.j2` build file and is copied to reset-build role files.
+This setup file is responsible for creating a random hostname for CI VMs that will be deloyed in OpenStack. This hostname is populated in `build_vars.yml.RedHat.CI.j2` build file and is copied to reset-build role files.
 
 ### ci-build role
 
@@ -33,7 +33,7 @@ Finally the ci-desroy role will free up the resources by deleting networks in VS
 
 ## Reference
 
-For reference, here is a description of the contents of the `build.yml.Redhat.CI.j2` file, with comments:
+For reference, here is a description of the contents of the `build_vars.yml.Redhat.CI.j2` file, with comments:
 
 ```
 #    CI VMs

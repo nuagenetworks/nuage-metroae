@@ -1,5 +1,4 @@
 #!/bin/sh
-#Running VSD installation script 
 set -e
 cp ./test/files/setup.yml.CI setup.yml
 ansible-playbook setup.yml -vvvv

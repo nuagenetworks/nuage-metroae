@@ -18,7 +18,7 @@
 - name: Clean known_hosts of VSC's
   command: ssh-keygen -R "{{ vsc_mgmt_ip }}" -f /root/.ssh/known_hosts
   delegate_to: "{{ ansible_deployment_host }}"
-  remote_user: root
+  remote_user: "{{ ansible_sudo_user }}"
 
 - block:
   - name: Get infra server details from OpenStack
@@ -38,12 +38,12 @@
       line: "{{ vsc_mgmt_ip }}  {{ inventory_hostname }}"
       dest: /etc/hosts
     delegate_to: "{{ infra_ip }}"
-    remote_user: root
+    remote_user: "root"
 
   - name: Restart DNS service
     shell: service dnsmasq restart
     delegate_to: "{{ infra_ip }}"
-    remote_user: root
+    remote_user: "root"
   when: infra_server_name is defined
 
 - name: Update /etc/hosts file on ansible host

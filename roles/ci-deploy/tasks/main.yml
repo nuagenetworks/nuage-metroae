@@ -41,7 +41,7 @@
     line: "{{ item }}"
   with_items: "{{ vsp_ips }}"
   delegate_to: "{{ ansible_deployment_host }}"
-  remote_user: root
+  remote_user: "{{ ansible_sudo_username }}"
 
 # Temp task to get around policy issue
 - name: Set front end ip added to static route
@@ -52,7 +52,7 @@
 - name: Add static route to reach 
   command: "route add -net {{ network_address }}.0/24 gw {{ frontend_ip }} "
   delegate_to: "{{ ansible_deployment_host }}"
-  remote_user: root
+  remote_user: "{{ ansible_sudo_username }}"
 
 - name: Wait for {{ inventory_hostname }} ssh to be ready
   local_action:
@@ -68,7 +68,7 @@
 
 - name: Query {{ target_server }} facts
   action: setup
-  remote_user: root
+  remote_user: "{{ target_server_username }}"
   delegate_to: "{{ target_server }}"
 
 - block:
@@ -167,7 +167,7 @@
     regexp: 'yml\.\{\{ ansible_os_family \}\}'
     replace: 'yml.all'
   delegate_to: "{{ ansible_deployment_host }}"
-  remote_user: root
+  remote_user: "{{ ansible_sudo_username }}"
 
 - name: Update the VSDOnly setup file with new VSDOnly build file
   replace:
@@ -175,7 +175,7 @@
     regexp: 'VSDOnly\.\{\{ ansible_os_family \}\}'
     replace: 'VSDOnly'
   delegate_to: "{{ ansible_deployment_host }}"
-  remote_user: root
+  remote_user: "{{ ansible_sudo_username }}"
 
 - name: Update the VSCOnly setup file with new VSCOnly build file
   replace:
@@ -183,7 +183,7 @@
     regexp: 'VSCOnly\.\{\{ ansible_os_family \}\}'
     replace: 'VSCOnly'
   delegate_to: "{{ ansible_deployment_host }}"
-  remote_user: root
+  remote_user: "{{ ansible_sudo_username }}"
 
 - name: Update the VSTATOnly setup file with new VSTAT build file
   replace:
@@ -191,7 +191,7 @@
     regexp: 'VSTATOnly\.\{\{ ansible_os_family \}\}'
     replace: 'VSTATOnly'
   delegate_to: "{{ ansible_deployment_host }}"
-  remote_user: root
+  remote_user: "{{ ansible_sudo_username }}"
 
 - name: Update the VRSOnly setup file with new VRS build file
   replace:
@@ -199,7 +199,7 @@
     regexp: 'VRSOnly\.\{\{ ansible_os_family \}\}'
     replace: 'VRSOnly'
   delegate_to: "{{ ansible_deployment_host }}"
-  remote_user: root
+  remote_user: "{{ ansible_sudo_username }}"
 
 - name: Update the VNSOnly setup file with new VNS build file
   replace:
@@ -207,7 +207,7 @@
     regexp: 'VNSOnly\.\{\{ ansible_os_family \}\}'
     replace: 'VNSOnly'
   delegate_to: "{{ ansible_deployment_host }}"
-  remote_user: root
+  remote_user: "{{ ansible_sudo_username }}"
 
 - name: Update the VNSOnlyWithVSC setup file with new VNSOnly build file
   replace:
@@ -222,79 +222,79 @@
     dest: /etc/hosts
     line: "{{ item }}"
   with_items: "{{vsp_ips}}"
-  remote_user: root
+  remote_user: "root"
 
 # Temp task to get around policy issue
 - name: Add iptables rule to allow vsd to reach internet route to reach on {{ inventory_hostname }}
   command: "iptables -t nat -A POSTROUTING -s {{ network_address }}.211 -j SNAT --to-source {{ target_server }} "
-  remote_user: root
+  remote_user: "{{ target_server_username }}"
 
 # Temp task to get around policy issue
 - name: Add iptables rule to allow vnsutil to reach internet route to reach on {{ inventory_hostname }}
   command: "iptables -t nat -A POSTROUTING -s {{ network_address }}.215 -j SNAT --to-source {{ target_server }} "
-  remote_user: root
+  remote_user: "{{ target_server_username }}"
 
 # Temp task to get around policy issue
 - name: Save iptables
   command: "iptables-save"
-  remote_user: root
+  remote_user: "root"
 
 - name: Configure dnsmasq on {{ inventory_hostname }}
   copy:
     src: "{{playbook_dir}}/roles/ci-deploy/files/dnsmasq.conf"
     dest: "/etc/dnsmasq.conf"
-  remote_user: root
+  remote_user: "root"
 
 # Could not get over interface booting order issue in Ubuntu cloud image
 # This is a temp task
 - block:
   - name: Change default route on Debian images
     command: "route del -net 0.0.0.0/0"
-    remote_user: root
+    remote_user: "root"
 
   - name: Add mgmt bridge as default route
     command: "route add -net 0.0.0.0/0 gw {{ network_address }}.1"
-    remote_user: root
+    remote_user: "root"
   when: ansible_os_family == 'Debian'
 
 - name: Enable dnsmasq
   command: chkconfig dnsmasq on
-  remote_user: root
+  remote_user: "root"
   when: ansible_os_family == 'RedHat'
 
 - name: Start dnsmasq
   command: service dnsmasq restart
-  remote_user: root
+  remote_user: "root"
 
 - name: Copy ntp conf
   template:
     src: "ntp.conf.j2"
     dest: "/etc/ntp.conf"
-  remote_user: root
+  remote_user: "root"
 
 - name: Stop the ntpd service if running
   command: service ntpd stop
-  remote_user: root
+  remote_user: "root"
   when: ansible_os_family == 'RedHat'
 
 - name: Stop the ntpd service if running
   command: service ntp stop
-  remote_user: root
+  remote_user: "root"
   when: ansible_os_family == 'Debian'
 
 - name: Manually sync time with ntp server
   command: ntpdate -u "{{ ntp_server_list[0] }}"
-  remote_user: root
+  remote_user: "root"
   when: ansible_os_family == 'RedHat'
 
 - name: Start ntpd on {{ inventory_hostname }}
   command: service ntpd start
-  remote_user: root
+  remote_user: "root"
   when: ansible_os_family == 'RedHat'
 
 - name: Start ntpd on {{ inventory_hostname }}
   command: service ntp start
-  remote_user: root
+  remote_user: "root"
   when: ansible_os_family == 'Debian'
 
 - block:
@@ -305,34 +305,28 @@
     retries: 4
     delay: 5
     ignore_errors: yes
-    remote_user: root
+    remote_user: "root"
 
   - block:
     - name: restart ntp if it hasn't synced yet
       command: service ntpd restart
-      remote_user: root
+      remote_user: "root"
     - name: check ntp sync state
       shell: ntpstat | awk 'NR==1{print $1}'
       register: retry_sync_status
       until: retry_sync_status.stdout == "synchronised"
       retries: 4
       delay: 5
-      remote_user: root
+      remote_user: "root"
     when: sync_status.stdout != "synchronized"
 
   - name: Clean yum cache
     command: "rm -fr /var/cache/yum/*"
-    remote_user: root
+    remote_user: "root"
 
   - name: Clean yum
     command: "yum clean all"
-    remote_user: root
-
-#  - name: Update yum
-#    yum:
-#      name: '*'
-#      state: latest
-#    remote_user: root
+    remote_user: "root"
   when: ansible_os_family == 'RedHat'
 
 - block:
@@ -343,19 +337,19 @@
     retries: 4
     delay: 5
     ignore_errors: yes
-    remote_user: root
+    remote_user: "root"
 
   - block:
     - name: restart ntp if it hasn't synced yet
       command: service ntpd restart
-      remote_user: root
+      remote_user: "root"
     - name: check ntp sync state
       shell: ntpq -p | grep '*' | awk 'NR==1{print $1}'
       register: retry_sync_status
       until: retry_sync_status.stdout != ""
       retries: 4
       delay: 5
-      remote_user: root
+      remote_user: "root"
     when: sync_status.stdout == ""
   when: ansible_os_family == 'Debian'
 
@@ -365,7 +359,7 @@
     regexp: 'vsd_ram:'
     line: 'vsd_ram: 9147483'
   delegate_to: "{{ ansible_deployment_host }}"
-  remote_user: root
+  remote_user: "{{ ansible_sudo_username }}"
 
 - name: Update the vsc ram
   lineinfile:
@@ -373,7 +367,7 @@
     regexp: 'vsc_ram:'
     line: 'vsc_ram: 2147483'
   delegate_to: "{{ ansible_deployment_host }}"
-  remote_user: root
+  remote_user: "{{ ansible_sudo_username }}"
 
 - name: Update the vstat ram
   lineinfile:
@@ -381,7 +375,7 @@
     regexp: 'vstat_ram:'
     line: 'vstat_ram: 2147483'
   delegate_to: "{{ ansible_deployment_host }}"
-  remote_user: root
+  remote_user: "{{ ansible_sudo_username }}"
 
 - name: Update the vnsutil ram
   lineinfile:
@@ -389,7 +383,7 @@
     regexp: 'vnsutil_ram:'
     line: 'vnsutil_ram: 2147483'
   delegate_to: "{{ ansible_deployment_host }}"
-  remote_user: root
+  remote_user: "{{ ansible_sudo_username }}"
 
 - name: Update the nsgv ram
   lineinfile:
@@ -397,4 +391,4 @@
     regexp: 'nsgv_ram:'
     line: 'nsgv_ram: 2147483'
   delegate_to: "{{ ansible_deployment_host }}"
-  remote_user: root
+  remote_user: "{{ ansible_sudo_username }}"
