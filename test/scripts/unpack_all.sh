@@ -31,4 +31,4 @@ cp ./test/files/test_unpack.yml .
 ./metro-ansible setup.yml -vvvv
 ./metro-ansible reset_build.yml -vvvv
 ./metro-ansible build.yml -vvvv
-./metro-ansible test_unpack -vvvv
+./metro-ansible test_unpack.yml -vvvv
