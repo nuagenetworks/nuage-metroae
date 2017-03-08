@@ -26,7 +26,7 @@ cp ./test/files/test_cleanup.yml .
 cp ./test/files/build_vars_vsdonly.yml roles/reset-build/files/build_vars.yml
 run_iter $1 $TESTINSTALL
 
-cp ./test/files/build_vars_vsdonly.yml roles/reset-build/files/build_vars.yml
+cp ./test/files/build_vars_vsconly.yml roles/reset-build/files/build_vars.yml
 run_iter $1 $TESTINSTALL
 
 cp ./test/files/build_vars_vstatonly.yml roles/reset-build/files/build_vars.yml
