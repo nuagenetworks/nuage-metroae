@@ -10,14 +10,13 @@ then
     exit 1
 fi
 
-cp ./test/files/setup.yml.CI setup.yml
-ansible-playbook setup.yml -vvvv
-
 if [ $1 = 4.0R4 ];
 then
-sed -i  '/- { hostname: {{ vrs_u16_host_name }},/,/ci_flavor: m1.medium }/d' roles/reset-build/files/build_vars.yml
+sed -i  '/- { hostname: {{ vrs_u16_host_name }},/,/ci_flavor: m1.medium }/d' test/files/build_vars.yml.CI.j2
 fi
 
+cp ./test/files/setup.yml.CI setup.yml
+ansible-playbook setup.yml -vvvv
 ansible-playbook reset_build.yml -vvvv
 ansible-playbook build.yml -vvvv
 ./metro-ansible ci_predeploy.yml -vvvv
