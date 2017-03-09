@@ -21,8 +21,8 @@ ansible-playbook reset_build.yml -vvvv
 ansible-playbook build.yml -vvvv
 if [ $1 = 4.0R4 ];
 then
-    sed -i  '/- { hostname: {{ vrs_u16_target_server_name }},/,/ci_flavor: jenkins }/ d' roles/reset-build/files/build_vars.yml.all.j2
-    sed -i '/- { vrs_os_type: u16.04,/,/standby_controller_ip: {{ network_address }}.213 }/d' roles/reset-build/files/build_vars.yml.all.j2
+    sed -i  '/- { hostname: {{ vrs_u16_target_server_name }},/,/ci_flavor: jenkins }/ d' test/files/build_vars.yml.all.j2
+    sed -i '/- { vrs_os_type: u16.04,/,/standby_controller_ip: {{ network_address }}.213 }/d' test/files/build_vars.yml.all.j2
 fi
 ./metro-ansible ci_predeploy.yml -vvvv
 ./metro-ansible ci_deploy.yml -vvvv
