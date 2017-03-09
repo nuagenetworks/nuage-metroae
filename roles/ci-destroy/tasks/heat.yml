@@ -64,12 +64,68 @@
   run_once: true
   delegate_to: 127.0.0.1
 
-- name: Destroy CI heat templates for all 3 hypervisor types
+# get the vrs names to use to delete heat templates
+- name: get the centos7 vrs name temp file contents
+  command: cat "/tmp/{{ subnet_name_temp }}_vrs_name_centos7"
+  register: c7_vrs_name
+  run_once: true
+  delegate_to: 127.0.0.1
+
+- name: register centos7 vrs name target_server
+  set_fact :
+    vrs_c7_target_server_name: "{{ c7_vrs_name.stdout }}"
+  run_once: true
+  delegate_to: 127.0.0.1
+
+- name: get the u14 vrs name temp file contents
+  command: cat "/tmp/{{ subnet_name_temp }}_vrs_name_u14"
+  register: u14_vrs_name
+  run_once: true
+  delegate_to: 127.0.0.1
+
+- name: register u14 vrs name target_server
+  set_fact :
+    vrs_u14_target_server_name: "{{ u14_vrs_name.stdout }}"
+  run_once: true
+  delegate_to: 127.0.0.1
+
+- name: get the u16 vrs name temp file contents
+  command: cat "/tmp/{{ subnet_name_temp }}_vrs_name_u16"
+  register: u16_vrs_name
+  run_once: true
+  delegate_to: 127.0.0.1
+
+- name: register u16 vrs target_server name
+  set_fact :
+    vrs_u16_target_server_name: "{{ u16_vrs_name.stdout }}"
+  run_once: true
+  delegate_to: 127.0.0.1
+
+- name: Destroy CI heat templates for centos7 hypervisor types
   os_stack:
-    name: "{{ inventory_hostname }}"
+    name: "{{ vrs_c7_target_server_name }}"
     auth:
       "{{ os_auth }}"
     state: absent
+  run_once: true
+  delegate_to: 127.0.0.1
+
+- name: Destroy CI heat templates for ubuntu 14 hypervisor types
+  os_stack:
+    name: "{{ vrs_u14_target_server_name }}"
+    auth:
+      "{{ os_auth }}"
+    state: absent
+  run_once: true
+  delegate_to: 127.0.0.1
+
+- name: Destroy CI heat templates for ubuntu 16 hypervisor types
+  os_stack:
+    name: "{{ vrs_u16_target_server_name }}"
+    auth:
+      "{{ os_auth }}"
+    state: absent
+  run_once: true
   delegate_to: 127.0.0.1
 
 - name: Destroy subnet in VSD
