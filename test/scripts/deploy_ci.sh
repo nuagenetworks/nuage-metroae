@@ -12,7 +12,7 @@ fi
 
 if [ $1 = 4.0R4 ];
 then
-sed -i  '/- { hostname: {{ vrs_u16_host_name }},/,/ci_flavor: m1.medium }/d' test/files/build_vars.yml.CI.j2
+    sed -i  '/- { hostname: {{ vrs_u16_host_name }},/,/ci_flavor: m1.medium }/d' test/files/build_vars.yml.CI.j2
 fi
 
 cp ./test/files/setup.yml.CI setup.yml
@@ -26,9 +26,6 @@ then
 fi
 ./metro-ansible ci_predeploy.yml -vvvv
 ./metro-ansible ci_deploy.yml -vvvv
-
-
-
 
 cp ./test/files/build_vars.yml.all roles/reset-build/files/build_vars.yml
 cp ./test/files/test_install.yml .
