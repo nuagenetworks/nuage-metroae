@@ -19,20 +19,18 @@ cp ./test/files/setup.yml.CI setup.yml
 ansible-playbook setup.yml -vvvv
 ansible-playbook reset_build.yml -vvvv
 ansible-playbook build.yml -vvvv
+if [ $1 = 4.0R4 ];
+then
+    sed -i  '/- { hostname: {{ vrs_u16_target_server_name }},/,/ci_flavor: jenkins }/ d' roles/reset-build/files/build_vars.yml.all.j2
+    sed -i '/- { vrs_os_type: u16.04,/,/standby_controller_ip: {{ network_address }}.213 }/d' roles/reset-build/files/build_vars.yml.all.j2
+fi
 ./metro-ansible ci_predeploy.yml -vvvv
 ./metro-ansible ci_deploy.yml -vvvv
 
 
-if [ $1 = 4.0R4 ];
-then
-    cp ./test/files/build_vars.yml.all roles/reset-build/files/build_vars.yml
-    sed -i  '/- { hostname: {{ vrs_u16_target_server_name }},/,/ci_flavor: jenkins }/ d' roles/reset-build/files/build_vars.yml
-    sed -i '/- { vrs_os_type: u16.04,/,/standby_controller_ip: {{ network_address }}.213 }/d' roles/reset-build/files/build_vars.yml
 
-else
-    cp ./test/files/build_vars.yml.all roles/reset-build/files/build_vars.yml
-fi
 
+cp ./test/files/build_vars.yml.all roles/reset-build/files/build_vars.yml
 cp ./test/files/test_install.yml .
 cp ./test/files/test_cleanup.yml .
 sed -i "s/VERSION/$1/g" roles/reset-build/files/build_vars.yml
