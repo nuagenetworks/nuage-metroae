@@ -25,7 +25,9 @@ ansible-playbook build.yml -vvvv
 
 if [ $1 = 4.0R4 ];
 then
-    cp ./test/files/build_vars_4.0R4.yml.all roles/reset-build/files/build_vars.yml
+    cp ./test/files/build_vars.yml.all roles/reset-build/files/build_vars.yml
+    sed -i  '/- { hostname: {{ vrs_u16_target_server_name }},/,/ci_flavor: jenkins }/ d' roles/reset-build/files/build_vars.yml
+    sed -i '/- { vrs_os_type: u16.04,/,/standby_controller_ip: {{ network_address }}.213 }/d' roles/reset-build/files/build_vars.yml
 
 else
     cp ./test/files/build_vars.yml.all roles/reset-build/files/build_vars.yml
