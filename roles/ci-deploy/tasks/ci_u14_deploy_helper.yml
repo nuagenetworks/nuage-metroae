@@ -1,5 +1,4 @@
 ---
-
 - name: Get {{ inventory_hostname }} details from OS facts
   os_server_facts:
     auth:
@@ -14,7 +13,6 @@
     set_fact:
       net_name1: "{{ ci_server['ansible_facts']['openstack_servers'][0]['networks'].keys()[0] }}"
       net_name2: "{{ ci_server['ansible_facts']['openstack_servers'][0]['networks'].keys()[1] }}"
-
 
   - block:
     - name: Set the Ubuntu 14.04 VRS compute IP
@@ -46,7 +44,6 @@
 
   - debug: var=vrs_u14_target_server verbosity=1
 
-
   - name: Extract network part from the compute ip
     set_fact:
       network_address: "{{ vrs_u14_target_server.split('.')[0:3] | join('.') }}"
@@ -57,12 +54,10 @@
       dest: "{{ playbook_dir }}/zfb.yml"
     delegate_to: 127.0.0.1
 
-
   # Temp task to get around policy issue
   - name: Set front end ip added to static route
     set_fact:
       frontend_ip: "{{ ci_server['ansible_facts']['openstack_servers'][0]['networks']['OC_JEN_FrontEnd'][0]}}"
-
 
   - name: Update /etc/hosts file with ubuntu 14.04 VRS
     lineinfile:
@@ -81,7 +76,6 @@
     delegate_to: "{{ ansible_deployment_host }}"
     remote_user: root
 
-
   - name: Wait for {{ inventory_hostname }} ssh to be ready
     local_action:
       module: wait_for
@@ -94,7 +88,6 @@
     pause:
       seconds: 300
 
-
   - name: Query {{ vrs_u14_target_server }} facts
     action: setup
     remote_user: root
@@ -103,8 +96,6 @@
   - name: Set nuage_target_architecture
     set_fact:
       target_os: 'ubuntu.14.04'
-
-
 
     # Temp task to get around policy issue
   - name: Add iptables rule to allow vsd to reach internet route to reach on {{ inventory_hostname }}
@@ -122,4 +113,3 @@
     remote_user: root
 
   when: ci_image == 'jen-ubuntu14'
-
