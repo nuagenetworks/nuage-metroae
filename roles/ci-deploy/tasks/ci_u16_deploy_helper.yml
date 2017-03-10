@@ -1,5 +1,4 @@
 ---
-
 - name: Get {{ inventory_hostname }} details from OS facts
   os_server_facts:
     auth:
@@ -14,7 +13,6 @@
     set_fact:
       net_name1: "{{ ci_server['ansible_facts']['openstack_servers'][0]['networks'].keys()[0] }}"
       net_name2: "{{ ci_server['ansible_facts']['openstack_servers'][0]['networks'].keys()[1] }}"
-
 
   - block:
     - name: Set the Ubuntu 16.04 VRS compute IP
@@ -64,12 +62,10 @@
       dest: "{{ playbook_dir }}/zfb.yml"
     delegate_to: 127.0.0.1
 
-
   # Temp task to get around policy issue
   - name: Set front end ip added to static route
     set_fact:
       frontend_ip: "{{ ci_server['ansible_facts']['openstack_servers'][0]['networks']['OC_JEN_FrontEnd'][0]}}"
-
 
   - name: Update /etc/hosts file with ubuntu 16.04 VRS
     lineinfile:
@@ -95,7 +91,6 @@
     delegate_to: "{{ ansible_deployment_host }}"
     remote_user: root
 
-
   - name: Wait for {{ inventory_hostname }} ssh to be ready
     local_action:
       module: wait_for
@@ -107,7 +102,6 @@
   - name: Pause for cloud-init to inject ssh keys
     pause:
       seconds: 300
-
 
   - name: Query {{ vrs_u16_target_server }} facts
     action: setup
@@ -134,4 +128,3 @@
     remote_user: root
 
   when: ci_image == 'jen-ubuntu16'
-
