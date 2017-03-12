@@ -34,8 +34,8 @@ Deloying VSTAT in OpenStack requires the user to upload VSTAT qcow2 image to gla
 
 ### OSC
 
-`osc-predploy` and `osc-deploy` roles are used to deploy OpenStack Controller (OSC) using packstack. The user needs to upload a cloud image (only CentOS/RHEL 7 are supported) with cloud-init support to glance. The netowrk, flavor and OpenStack release string needs to be supplied by user as well.
-User needs to define a folder with name `nuage_os` and place nuage openstaclk plugin tar file in it. This folder needs to be defined under `nuage_packed_src_path` if `nuage_already_unpacked: False` or `nuage_packed_dst_path` if `nuage_already_unpacked: True` in `build.yml`
+`osc-predploy` and `osc-deploy` roles are used to deploy OpenStack Controller (OSC) using packstack. The user needs to upload a cloud image (only CentOS/RHEL 7 are supported) with cloud-init support to glance. The network, flavor and OpenStack release string needs to be supplied by user as well.
+The user may be depoying the OpenStack plugin from a tar-gz archive. The archive may be automatically unpacked using the `nuage_unpack` playbook. Define the `nuage_packed_src_path` and `nuage_packed_dst_path` in `build_vars.yml` and run `./metro-ansible nuage_unpack.yml`. 
 
 ### OSC Computes
 
@@ -62,14 +62,10 @@ For reference, here is a description of the contents of the `build-vars.yml` fil
 
 ```
 #    # The directory where the Nuage Networks binariy archives are located. This is only
-#    # required if nauge_already_unpacked == false. See below.
+#    # required if you will be running the nuage_unpack.yml playbook.
 #    nuage_packed_src_path: "{{ ansible_env.HOME}}/nuage-release"
 #    # The directory where to extract the relevant Nuage Networks binaries to
 #    nuage_unpacked_dest_path: "{{ ansible_env.HOME}}/nuage-unpacked"
-#    # Parameter to define whether binaries have already been extracted
-#    # If true, the playbooks will *not* unpack. Files in nnuage_unpacked_dest_path
-#    # will be used as is. If false, the nuage_unpack role will be executed.
-#    nuage_already_unpacked: true
 #    # Parameter used to define the Hypervisor-Architecture (One of: el6|el7|ubuntu)
 #    nuage_target_architecture: "el7"
 #    # Nuage OpenStack release

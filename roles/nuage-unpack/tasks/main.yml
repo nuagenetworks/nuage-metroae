@@ -5,763 +5,245 @@
 
 # QCOW2
 - block:
+  - name: Find VSD QCOW2 Archive
+    find: path="{{ nuage_packed_src_path }}"  pattern="Nuage-VSD*QCOW*"
+    register: rc_vsd
+  - debug: var=rc_vsd verbosity=1
   - block:
-    - name: Find name of VSD QCOW2 Archive
-      find: path="{{ nuage_packed_src_path }}"  pattern="Nuage-VSD*QCOW*"
-      register: rc_vsd
-    - debug: var=rc_vsd verbosity=1
-    - block:
-      - name: Clean up any previous unpacked files
-        file: name="{{ nuage_unpacked_dest_path }}/vsd/qcow2" state=absent
-      - name: Create subdirectory for unpacked files
-        file: name="{{ nuage_unpacked_dest_path }}/vsd/qcow2" state=directory mode=0775
-      - name: Unpack VSD QCOW2 Archive
-        unarchive: src="{{ rc_vsd.files[0].path}}" dest="{{ nuage_unpacked_dest_path }}/vsd/qcow2" list_files=yes
-        register: rc_vsd_archive_files
-      - debug: var=rc_vsd_archive_files verbosity=1
-      when: rc_vsd.matched > 0 
-    when: not nuage_already_unpacked|default(false)
-    tags:
-      - nuage-unpack
-  - name: Find name of VSD QCOW2 File
-    find: path="{{ nuage_unpacked_dest_path }}/vsd/qcow2"  pattern="*.qcow2" recurse=yes
-    register: rc_vsd_file
-  - debug: var=rc_vsd_file verbosity=1
-  - name: Verify that a VSD QCOW2 file was found
-    assert: { 
-      that: "{{ rc_vsd_file.matched }} > 0",
-      msg: "Unable to find VSD VM image file"
-    }
-  - name: Register VSD QCOW2 variables with proper path and image locations for use in other playbooks
-    set_fact:
-      vsd_qcow2_path: "{{ rc_vsd_file.files[0].path | dirname }}"
-      vsd_qcow2_file_name: "{{ rc_vsd_file.files[0].path | basename }}"
-      vcin_qcow2_path: "{{ rc_vsd_file.files[0].path | dirname }}"
-      vcin_qcow2_file_name: "{{ rc_vsd_file.files[0].path | basename }}"
-  when: ( myvsds is defined and 
-        ( myvsds | map(attribute='target_server_type') | list | issuperset(["kvm"]) ) ) or
-        ( myvcins is defined and
-        ( myvcins | map(attribute='target_server_type') | list | issuperset(["kvm"]) ) )
+    - name: Clean up any previous unpacked files
+      file: name="{{ nuage_unpacked_dest_path }}/vsd/qcow2" state=absent
+    - name: Create subdirectory for unpacked files
+      file: name="{{ nuage_unpacked_dest_path }}/vsd/qcow2" state=directory mode=0775
+    - name: Unpack VSD QCOW2 Archive
+      unarchive: src="{{ rc_vsd.files[0].path}}" dest="{{ nuage_unpacked_dest_path }}/vsd/qcow2" list_files=yes
+      register: rc_vsd_archive_files
+    - debug: var=rc_vsd_archive_files verbosity=1
+    when: rc_vsd.matched > 0 
+
+  - name: Find VSD OVA Archive
+    find: path="{{ nuage_packed_src_path }}"  pattern="Nuage-VSD*OVA*"
+    register: rc_vsd
+  - debug: var=rc_vsd verbosity=1
+  - block:
+    - name: Clean up any previous unpacked files
+      file: name="{{ nuage_unpacked_dest_path }}/vsd/ova" state=absent
+    - name: Create subdirectory for unpacked files
+      file: name="{{ nuage_unpacked_dest_path }}/vsd/ova" state=directory mode=0755
+    - name: Unpack VSD OVA Archive
+      unarchive: src="{{ rc_vsd.files[0].path}}" dest="{{ nuage_unpacked_dest_path }}/vsd/ova" list_files=yes
+      register: rc_vsd_archive_files
+    - debug: var=rc_vsd_archive_files verbosity=1
+    when: rc_vsd.matched > 0 
   tags:
     - vsd
-
-# OVA
-- block:
-  - block:
-    - name: Find name of VSD OVA Archive
-      find: path="{{ nuage_packed_src_path }}"  pattern="Nuage-VSD*OVA*"
-      register: rc_vsd
-    - debug: var=rc_vsd verbosity=1
-    - block:
-      - name: Clean up any previous unpacked files
-        file: name="{{ nuage_unpacked_dest_path }}/vsd/ova" state=absent
-      - name: Create subdirectory for unpacked files
-        file: name="{{ nuage_unpacked_dest_path }}/vsd/ova" state=directory mode=0755
-      - name: Unpack VSD OVA Archive
-        unarchive: src="{{ rc_vsd.files[0].path}}" dest="{{ nuage_unpacked_dest_path }}/vsd/ova" list_files=yes
-        register: rc_vsd_archive_files
-      - debug: var=rc_vsd_archive_files verbosity=1
-      when: rc_vsd.matched > 0 
-    when: not nuage_already_unpacked|default(false)
-    tags:
-      - nuage-unpack
-  - name: Find name of VSD OVA File
-    find: path="{{ nuage_unpacked_dest_path }}/vsd/ova"  pattern="*.ova" recurse=yes
-    register: rc_vsd_file
-  - debug: var=rc_vsd_file verbosity=1
-  - name: Verify that a VSD OVA file was found
-    assert: { 
-      that: "{{ rc_vsd_file.matched }} > 0",
-      msg: "Unable to find VSD VM image file"
-    }
-  - name: Register VSD OVA variables with proper path and image locations for use in other playbooks
-    set_fact:
-      vsd_ova_path: "{{ rc_vsd_file.files[0].path | dirname }}"
-      vsd_ova_file_name: "{{ rc_vsd_file.files[0].path | basename }}"
-      vcin_ova_path: "{{ rc_vsd_file.files[0].path | dirname }}"
-      vcin_ova_file_name: "{{ rc_vsd_file.files[0].path | basename }}"
-  when: ( myvsds is defined and 
-        myvsds | map(attribute='target_server_type') | list | issuperset(["vcenter"]) ) or
-        ( myvcins is defined and
-        myvcins | map(attribute='target_server_type') | list | issuperset(["vcenter"]) )
-  tags:
-    - vsd
-
-- name: Ensure that VSD QCOW2 variables are set
-  set_fact:
-    vsd_qcow2_path: "None"
-    vsd_qcow2_file_name: "None"
-  when: vsd_qcow2_path is not defined
-
-- name: Ensure that VSD OVA variables are set
-  set_fact:
-    vsd_ova_path: "None"
-    vsd_ova_file_name: "None"
-  when: vsd_ova_path is not defined
-
-- name: Ensure that VCIN QCOW2 variables are set
-  set_fact:
-    vcin_qcow2_path: "None"
-    vcin_qcow2_file_name: "None"
-  when: vcin_qcow2_path is not defined
-
-- name: Ensure that VCIN OVA variables are set
-  set_fact:
-    vcin_ova_path: "None"
-    vcin_ova_file_name: "None"
-  when: vcin_ova_path is not defined
 
 ###################
 # VSTAT - Stats VM
 ###################
 
 - block:
+  - name: Find Stats VM Archive
+    find: path="{{ nuage_packed_src_path }}"  pattern="Nuage-elastic-\d.*" use_regex=true
+    register: rc_vstat
+  - debug: var=rc_vstat verbosity=1
   - block:
-    - name: Find name of Stats VM Archive
-      find: path="{{ nuage_packed_src_path }}"  pattern="Nuage-elastic-\d.*" use_regex=true
-      register: rc_vstat
-    - debug: var=rc_vstat verbosity=1
-    - block:
-      - name: Clean up unpacked files from previous run
-        file: name="{{ nuage_unpacked_dest_path }}/vstat/" state=absent
-      - name: Ensure binaries target directory exists for Stats VM
-        file: name="{{ nuage_unpacked_dest_path }}/vstat/" state=directory mode=0775
-      - name: Unpack Stats VM Archive
-        unarchive: src="{{ rc_vstat.files[0].path}}" dest="{{ nuage_unpacked_dest_path }}/vstat" list_files=yes
-        register: rc_vstat_archive_files
-      - debug: var=rc_vstat_archive_files verbosity=1
-      when: rc_vstat.matched > 0 
-    when: not nuage_already_unpacked|default(false) and myvstats is defined
-    tags:
-      - nuage-unpack
-  - block:
-    - name: Find name of Stats VM QCOW2 File
-      find: path="{{ nuage_unpacked_dest_path }}/vstat"  pattern="*.qcow2" recurse=yes
-      register: rc_vstat_file
-    - debug: var=rc_vstat_file verbosity=1
-    - name: Verify that a Stats VM QCOW2 file was found
-      assert: { 
-        that: "{{ rc_vstat_file.matched }} > 0",
-        msg: "Unable to find Stats VM QCOW2 image file"
-      }
-    - name: Register VSTAT QCOW2 variables with proper path and image locations for use in other playbooks
-      set_fact:
-        vstat_qcow2_path: "{{ rc_vstat_file.files[0].path | dirname }}"
-        vstat_qcow2_file_name: "{{ rc_vstat_file.files[0].path | basename }}"
-      when: rc_vstat_file.matched > 0
-    when: myvstats | map(attribute='target_server_type') | list | issuperset(["kvm"]) 
-  - block:
-    - name: Find name of Stats VM OVF/OVA File
-      find: path="{{ nuage_unpacked_dest_path }}/vstat"  patterns="*.ova,*.ovf" recurse=yes
-      register: rc_vstat_file
-    - debug: var=rc_vstat_file verbosity=1
-    - name: Verify that a Stats VM OVF file was found
-      assert: { 
-        that: "{{ rc_vstat_file.matched }} > 0",
-        msg: "Unable to find Stats VM OVF/OVA image file"
-      }
-    - name: Register VSTAT OVF/OVA variables with proper path and image locations for use in other playbooks
-      set_fact:
-        vstat_ova_path: "{{ rc_vstat_file.files[0].path | dirname }}"
-        vstat_ova_file_name: "{{ rc_vstat_file.files[0].path | basename }}"
-      when: rc_vstat_file.matched > 0
-    when: myvstats | map(attribute='target_server_type') | list | issuperset(["vcenter"])
-  when: myvstats is defined
+    - name: Clean up unpacked files from previous run
+      file: name="{{ nuage_unpacked_dest_path }}/vstat/" state=absent
+    - name: Ensure binaries target directory exists for Stats VM
+      file: name="{{ nuage_unpacked_dest_path }}/vstat/" state=directory mode=0775
+    - name: Unpack Stats VM Archive
+      unarchive: src="{{ rc_vstat.files[0].path}}" dest="{{ nuage_unpacked_dest_path }}/vstat" list_files=yes
+      register: rc_vstat_archive_files
+    - debug: var=rc_vstat_archive_files verbosity=1
+    when: rc_vstat.matched > 0 
   tags:
     - vstat
  
-- name: Ensure that Stats VM QCOW2 variables are set
-  set_fact:
-    vstat_qcow2_path: "None"
-    vstat_qcow2_file_name: "None"
-  when: vstat_qcow2_path is not defined
-
-- name: Ensure that Stats VM OVF/OVA variables are set
-  set_fact:
-    vstat_ova_path: "None"
-    vstat_ova_file_name: "None"
-  when: vstat_ova_path is not defined
-
 ###################
 # VSC
 ###################
 
 - block:
+  - name: Find VSC Archive
+    find: path="{{ nuage_packed_src_path }}"  pattern="Nuage-VSC*"
+    register: rc_vsc
+  - debug: var=rc_vsc verbosity=1
   - block:
-    - name: Find name of VSC Archive
-      find: path="{{ nuage_packed_src_path }}"  pattern="Nuage-VSC*"
-      register: rc_vsc
-    - debug: var=rc_vsc verbosity=1
-    - block:
-      - name: Clean up unpacked directory from previous runs
-        file: name="{{ nuage_unpacked_dest_path }}/vsc/" state=absent
-      - name: Ensure binaries target directory exists for VSC QCOW2 
-        file: name="{{ nuage_unpacked_dest_path }}/vsc/" state=directory mode=0775
-      - name: Unpack VSC Archive
-        unarchive: src="{{ rc_vsc.files[0].path}}" dest="{{ nuage_unpacked_dest_path }}/vsc/"  list_files=yes
-        register: rc_vsc_archive_files
-      - debug: var=rc_vsc_archive_files verbosity=1
-      when: rc_vsc.matched > 0
-    when: not nuage_already_unpacked|default(false)
-    tags:
-      - nuage-unpack
-  - block:
-    - name: Find name of VSC QCOW2 File
-      find: path="{{ nuage_unpacked_dest_path }}/vsc"  pattern="vsc_singledisk.qcow2" recurse=yes
-      register: rc_vsc_file
-    - debug: var=rc_vsc_file verbosity=1
-    - name: Verify that a VSC QCOW2 file was found
-      assert: { 
-        that: "{{ rc_vsc_file.matched }} > 0",
-        msg: "Unable to find VSC VM QCOW2 image file"
-      }
-    - name: Register VSC QCOW2 variables with proper path and image locations for use in other playbooks
-      set_fact:
-        vsc_qcow2_path: "{{ rc_vsc_file.files[0].path | dirname }}"
-        vsc_qcow2_file_name: "{{ rc_vsc_file.files[0].path | basename }}"
-      when: rc_vsc_file.matched > 0
-    when: myvscs | map(attribute='target_server_type') | list | issuperset(["kvm"]) 
-  - block:
-    - name: Find name of VSC OVA File
-      find: path="{{ nuage_unpacked_dest_path }}/vsc"  pattern="vsc_singledisk.ova" recurse=yes
-      register: rc_vsc_file
-    - debug: var=rc_vsc_file verbosity=1
-    - name: Verify that a VSC OVA file was found
-      assert: { 
-        that: "{{ rc_vsc_file.matched }} > 0",
-        msg: "Unable to find VSC VM OVA image file"
-      }
-    - name: Register VSC OVA variables with proper path and image locations for use in other playbooks
-      set_fact:
-        vsc_ova_path: "{{ rc_vsc_file.files[0].path | dirname }}"
-        vsc_ova_file_name: "{{ rc_vsc_file.files[0].path | basename }}"
-      when: rc_vsc_file.matched > 0
-    when: myvscs | map(attribute='target_server_type') | list | issuperset(["vcenter"])
-  - block:
-    - name: Find name of VSC TIM File
-      find: path="{{ nuage_unpacked_dest_path }}/vsc"  pattern="cpm.tim" recurse=yes
-      register: rc_vsc_tim_file
-    - debug: var=rc_vsc_tim_file verbosity=1
-    - name: Verify that a VSC TIM file was found
-      assert: {
-        that: "{{ rc_vsc_tim_file.matched }} > 0",
-        msg: "Unable to find VSC VM tim image file"
-      }
-      ignore_errors: yes
-    - name: Register VSC TIM variables with proper path and image locations for use in other playbooks
-      set_fact:
-        vsc_tim_path: "{{ rc_vsc_tim_file.files[0].path | dirname }}"
-        vsc_tim_file_name: "{{ rc_vsc_tim_file.files[0].path | basename }}"
-      when: rc_vsc_tim_file.matched > 0
-    when: myvscs | map(attribute='target_server_type') | list | issuperset(["kvm"]) or myvscs | map(attribute='target_server_type') | list | issuperset(["vcenter"]) or myvscs | map(attribute='target_server_type') | list | issuperset(["heat"])
-  when: myvscs is defined
+    - name: Clean up unpacked directory from previous runs
+      file: name="{{ nuage_unpacked_dest_path }}/vsc/" state=absent
+    - name: Ensure binaries target directory exists for VSC QCOW2 
+      file: name="{{ nuage_unpacked_dest_path }}/vsc/" state=directory mode=0775
+    - name: Unpack VSC Archive
+      unarchive: src="{{ rc_vsc.files[0].path}}" dest="{{ nuage_unpacked_dest_path }}/vsc/"  list_files=yes
+      register: rc_vsc_archive_files
+    - debug: var=rc_vsc_archive_files verbosity=1
+    when: rc_vsc.matched > 0
   tags:
     - vsc
-
-- name: Ensure that VSC QCOW2 variables are set
-  set_fact:
-    vsc_qcow2_path: "None"
-    vsc_qcow2_file_name: "None"
-  when: vsc_qcow2_path is not defined
-
-- name: Ensure that VSC OVA variables are set
-  set_fact:
-    vsc_ova_path: "None"
-    vsc_ova_file_name: "None"
-  when: vsc_ova_path is not defined
-
-- name: Ensure that VSC TIM variables are set
-  set_fact:
-    vsc_tim_path: "None"
-    vsc_tim_file_name: "None"
-  when: vsc_tim_path is not defined
 
 ################
 # VRS 
 ################
 
-# TODO: Optimize the looping through build.yml for vrs arch types in case of large deployments
 - block:
-  - name: Create facts to be used with vrs deploy if vrs is Debian 14.04 based
-    set_fact: vrs_u14_04="True"
-    when: item.vrs_os_type == "u14.04"
-    with_items: "{{ myvrss }}"
-
-  - name: Create facts to be used with vrs deploy if vrs is Debian 16.04 based
-    set_fact: vrs_u16_04="True"
-    when: item.vrs_os_type == "u16.04"
-    with_items: "{{ myvrss }}"
-
-  - name: Create facts to be used with vrs deploy if vrs is Redhat el6 based
-    set_fact: vrs_el6="True"
-    when: item.vrs_os_type == "el6"
-    with_items: "{{ myvrss }}"
-
-  - name: Create facts to be used with vrs deploy if vrs is Redhat el7 based
-    set_fact: vrs_el7="True"
-    when: item.vrs_os_type == "el7"
-    with_items: "{{ myvrss }}"
-
-  - name: initialize vrs_target_os_is_supported to be evaluated for vrs supported target os types
-    set_fact: vrs_target_os_is_supported="True"
-
-  - name: Set facts if vrs os type in build.yml is set to a supported version
-    set_fact: vrs_target_os_is_supported="False"
-    when: item.vrs_os_type not in supported_vrs_target_os_types
-    with_items: "{{ myvrss }}"
-
-  - assert:
-      that: 
-        - "vrs_target_os_is_supported == True"
-      msg: "unsupported OS type/typo in build.yml. Supported OS Types are el6,el7,u14.04,u16.04"
-
-  - debug: msg="vrs_u14_04 is set to "{{ vrs_u14_04 }}" " verbosity=1
-    when: vrs_u14_04 is defined
-
-  - debug: msg="vrs_u16_04 is set to "{{ vrs_u16_04 }}" " verbosity=1
-    when: vrs_u16_04  is defined
-
-  - debug: msg="vrs_el6 is set to "{{ vrs_el6 }}" " verbosity=1
-    when: vrs_el6 is defined
-
-  - debug: msg="vrs_el7 is set to "{{ vrs_el7 }}" " verbosity=1
-    when: vrs_el7 is defined
-
+  - name: Find EL6 VRS Archive
+    find: path="{{ nuage_packed_src_path }}"  pattern="Nuage-VRS*-el6*"
+    register: rc_vrs_el6
+  - debug: var=rc_vrs_el6 verbosity=1
   - block:
-    - name: Find name of VRS Archive
-      find: path="{{ nuage_packed_src_path }}"  pattern="Nuage-VRS*"
-      register: rc_vrs
-    - debug: var=rc_vrs verbosity=1
-    - block:
-      - name: Clean up after any previous unpack runs
-        file: name="{{ nuage_unpacked_dest_path }}/vrs/" state=absent
-      - name: Ensure that VRS binary target directory exists
-        file: name="{{ nuage_unpacked_dest_path }}/vrs/" state=directory mode=0775
-      - block:
-        - name: Find name of EL6 VRS Archive
-          find: path="{{ nuage_packed_src_path }}"  pattern="Nuage-VRS*-el6*"
-          register: rc_vrs_el6
-        - debug: var=rc_vrs_el6 verbosity=1
-        - name: Ensure that VRS binary target directory exists if vrs is el6
-          file: name="{{ nuage_unpacked_dest_path }}/vrs/el6" state=directory mode=0775
-          when: vrs_el6 is defined
-        - name: Unpack VRS Archive
-          unarchive: src="{{ item.path }}" dest="{{ nuage_unpacked_dest_path }}/vrs/el6"  list_files=yes
-          with_items: "{{ rc_vrs_el6.files }}"
-          register: rc_vrs_el6_archive_files
-        - debug: var=rc_vrs_el6_archive_files verbosity=1
-        when: vrs_el6 is defined
-      - block:
-        - name: Find name of EL7 VRS Archive
-          find: path="{{ nuage_packed_src_path }}"  pattern="Nuage-VRS*-el7*"
-          register: rc_vrs_el7
-        - debug: var=rc_vrs_el7 verbosity=1
-        - name: Ensure that VRS binary target directory exists if vrs is el7
-          file: name="{{ nuage_unpacked_dest_path }}/vrs/el7" state=directory mode=0775
-          when: vrs_el7 is defined  
-        - name: Unpack VRS Archive
-          unarchive: src="{{ item.path }}" dest="{{ nuage_unpacked_dest_path }}/vrs/el7"  list_files=yes
-          with_items: "{{ rc_vrs_el7.files }}"
-          register: rc_vrs_el7_archive_files
-        - debug: var=rc_vrs_el7_archive_files verbosity=1
-        when: vrs_el7 is defined
-      - block:
-        - name: Find name of ubuntu-14.04 VRS Archive
-          find: path="{{ nuage_packed_src_path }}"  pattern="Nuage-VRS*-ubuntu.14.04*"
-          register: rc_vrs_u14_04
-        - debug: var=rc_vrs_u14_04 verbosity=1
-        - name: Ensure that VRS binary target directory exists if vrs is ubuntu 14.04
-          file: name="{{ nuage_unpacked_dest_path }}/vrs/u14_04" state=directory mode=0775
-          when: vrs_u14_04 is defined
-        - name: Unpack VRS Archive
-          unarchive: src="{{ item.path }}" dest="{{ nuage_unpacked_dest_path }}/vrs/u14_04"  list_files=yes
-          with_items: "{{ rc_vrs_u14_04.files }}"
-          register: rc_vrs_u14_04_archive_files
-        - debug: var=rc_vrs_u14_04_archive_files verbosity=1
-        when: vrs_u14_04 is defined
-      - block:
-        - name: Find name of ubuntu-16.04 VRS Archive
-          find: path="{{ nuage_packed_src_path }}"  pattern="Nuage-VRS*-ubuntu.16.04*"
-          register: rc_vrs_u16_04
-        - debug: var=rc_vrs_u16_04 verbosity=1
-        - name: Ensure that VRS binary target directory exists if vrs is ubuntu 16.04
-          file: name="{{ nuage_unpacked_dest_path }}/vrs/u16_04" state=directory mode=0775
-          when: vrs_u16_04 is defined
-        - name: Unpack VRS Archive
-          unarchive: src="{{ item.path }}" dest="{{ nuage_unpacked_dest_path }}/vrs/u16_04"  list_files=yes
-          with_items: "{{ rc_vrs_u16_04.files }}"
-          register: rc_vrs_u16_04_archive_files
-        - debug: var=rc_vrs_u16_04_archive_files verbosity=1
-        when: vrs_u16_04 is defined
-      when: rc_vrs.matched > 0
-    when: not nuage_already_unpacked|default(false)
-    tags:
-      - nuage-unpack
+    - name: Clean up unpacked directory from previous runs
+      file: name="{{ nuage_unpacked_dest_path }}/vrs/el6/" state=absent
+    - name: Ensure that VRS binary target directory exists if vrs is el6
+      file: name="{{ nuage_unpacked_dest_path }}/vrs/el6/" state=directory mode=0775
+    - name: Unpack VRS Archive
+      unarchive: src="{{ item.path }}" dest="{{ nuage_unpacked_dest_path }}/vrs/el6"  list_files=yes
+      with_items: "{{ rc_vrs_el6.files }}"
+      register: rc_vrs_el6_archive_files
+    - debug: var=rc_vrs_el6_archive_files verbosity=1
+    when: rc_vrs_el6.matched > 0
+
+  - name: Find EL7 VRS Archive
+    find: path="{{ nuage_packed_src_path }}"  pattern="Nuage-VRS*-el7*"
+    register: rc_vrs_el7
+  - debug: var=rc_vrs_el7 verbosity=1
   - block:
-    - name: Find name of VRS Package Files (EL6 architecture)
-      find: path="{{ nuage_unpacked_dest_path }}/vrs/el6"  pattern="*.rpm" recurse=yes
-      register: rc_vrs_file_el6
-    - debug: var=rc_vrs_file_el6 verbosity=1
-    - name: Verify that VRS file was found
-      assert: { 
-        that: "{{ rc_vrs_file_el6.matched }} > 0",
-        msg: "Unable to find VRS files"
-      }
-    - name: Register VRS package variables with proper path and image locations for use in other playbooks (EL6 architecture)
-      set_fact:
-        el6_vrs_package_path: "{{ rc_vrs_file_el6.files[0].path | dirname }}/"
-        el6_vrs_package_file_name_list: "{{ rc_vrs_file_el6.files |  map(attribute='path') | list | map('basename') | list }}"
-    when: vrs_el6|default(false)
+    - name: Clean up unpacked directory from previous runs
+      file: name="{{ nuage_unpacked_dest_path }}/vrs/el7/" state=absent
+    - name: Ensure that VRS binary target directory exists if vrs is el7
+      file: name="{{ nuage_unpacked_dest_path }}/vrs/el7/" state=directory mode=0775
+    - name: Unpack VRS Archive
+      unarchive: src="{{ item.path }}" dest="{{ nuage_unpacked_dest_path }}/vrs/el7"  list_files=yes
+      with_items: "{{ rc_vrs_el7.files }}"
+      register: rc_vrs_el7_archive_files
+    - debug: var=rc_vrs_el7_archive_files verbosity=1
+    when: rc_vrs_el7.matched > 0
+
+  - name: Find ubuntu-14.04 VRS Archive
+    find: path="{{ nuage_packed_src_path }}"  pattern="Nuage-VRS*-ubuntu.14.04*"
+    register: rc_vrs_u14_04
+  - debug: var=rc_vrs_u14_04 verbosity=1
   - block:
-    - name: Find name of VRS Package Files (EL7 architecture)
-      find: path="{{ nuage_unpacked_dest_path }}/vrs/el7"  pattern="*.rpm" recurse=yes
-      register: rc_vrs_file_el7
-    - debug: var=rc_vrs_file_el7 verbosity=1
-    - name: Verify that VRS file was found
-      assert: { 
-        that: "{{ rc_vrs_file_el7.matched }} > 0",
-        msg: "Unable to find VRS files"
-      }
-    - name: Register VRS package variables with proper path and image locations for use in other playbooks (EL7 architecture)
-      set_fact:
-        el7_vrs_package_path: "{{ rc_vrs_file_el7.files[0].path | dirname }}/"
-        el7_vrs_package_file_name_list: "{{ rc_vrs_file_el7.files |  map(attribute='path') | list | map('basename') | list }}"
-    when: vrs_el7|default(false)
+    - name: Clean up unpacked directory from previous runs
+      file: name="{{ nuage_unpacked_dest_path }}/vrs/u14_04/" state=absent
+    - name: Ensure that VRS binary target directory exists if vrs is u14_04
+      file: name="{{ nuage_unpacked_dest_path }}/vrs/u14_04/" state=directory mode=0775
+    - name: Unpack VRS Archive
+      unarchive: src="{{ item.path }}" dest="{{ nuage_unpacked_dest_path }}/vrs/u14_04"  list_files=yes
+      with_items: "{{ rc_vrs_u14_04.files }}"
+      register: rc_vrs_u14_04_archive_files
+    - debug: var=rc_vrs_u14_04_archive_files verbosity=1
+    when: rc_vrs_u14_04.matched > 0
+
+  - name: Find ubuntu-16.04 VRS Archive
+    find: path="{{ nuage_packed_src_path }}"  pattern="Nuage-VRS*-ubuntu.16.04*"
+    register: rc_vrs_u16_04
+  - debug: var=rc_vrs_u16_04 verbosity=1
   - block:
-    # Debian requires 3 packages listed in a specific order of dependeny
-    - name: Find name of VRS python package file (Debian architecture)
-      find: path="{{ nuage_unpacked_dest_path }}/vrs/u14_04"  pattern="nuage-python-openvswitch*.deb" recurse=yes
-      register: rc_vrs_python_file_u14_04
-    - debug: var=rc_vrs_python_file_u14_04 verbosity=1
-    - name: Verify that VRS python package file was found
-      assert: { 
-        that: "{{ rc_vrs_python_file_u14_04.matched }} > 0",
-        msg: "Unable to find VRS python package for Ubuntu 14.04"
-      }
-    - name: Register VRS package path and VRS python package file name for use in other playbooks (Debian Architecture)
-      set_fact:
-        u14_04_vrs_package_path: "{{ rc_vrs_python_file_u14_04.files[0].path | dirname }}/"
-        u14_04_vrs_package_file_name_list: "{{ rc_vrs_python_file_u14_04.files |  map(attribute='path') | list | map('basename') | list }}"
-    - name: Find name of VRS common package file (Debian architecture)
-      find: path="{{ nuage_unpacked_dest_path }}/vrs/u14_04"  pattern="nuage-openvswitch-common*.deb" recurse=yes
-      register: rc_vrs_common_file_u14_04
-    - debug: var=rc_vrs_common_file_u14_04 verbosity=1
-    - name: Verify that VRS common package file was found
-      assert: { 
-        that: "{{ rc_vrs_common_file_u14_04.matched }} > 0",
-        msg: "Unable to find VRS common file"
-      }
-    - name: Register VRS common package file name for use in other playbooks (Debian Architecture)
-      set_fact:
-        u14_04_vrs_package_file_name_list: "{{ u14_04_vrs_package_file_name_list }} + {{ rc_vrs_common_file_u14_04.files |  map(attribute='path') | list | map('basename') | list }}"
-    - name: Find name of VRS switch package file (Debian architecture)
-      find: path="{{ nuage_unpacked_dest_path }}/vrs/u14_04"  pattern="nuage-openvswitch-switch*.deb" recurse=yes
-      register: rc_vrs_switch_file_u14_04
-    - debug: var=rc_vrs_switch_file_u14_04 verbosity=1
-    - name: Verify that VRS switch package file was found
-      assert: { 
-        that: "{{ rc_vrs_switch_file_u14_04.matched }} > 0",
-        msg: "Unable to find VRS switch file"
-      }
-    - name: Register VRS switch package file name for use in other playbooks (Debian Architecture)
-      set_fact:
-        u14_04_vrs_package_file_name_list: "{{ u14_04_vrs_package_file_name_list }} + {{ rc_vrs_switch_file_u14_04.files |  map(attribute='path') | list | map('basename') | list }}"
-    when: vrs_u14_04|default(false)
-  - block:
-     # Debian requires 3 packages listed in a specific order of dependeny
-      - name: Find name of VRS python package file (Debian architecture)
-        find: path="{{ nuage_unpacked_dest_path }}/vrs/u16_04"  pattern="nuage-python-openvswitch*.deb" recurse=yes
-        register: rc_vrs_python_file_u16_04
-      - debug: var=rc_vrs_python_file_u16_04 verbosity=1
-      - name: Verify that VRS python package file was found
-        assert: { 
-          that: "{{ rc_vrs_python_file_u16_04.matched }} > 0",
-          msg: "Unable to find VRS python package for Ubuntu 16.04"
-        }
-      - name: Register VRS package path and VRS python package file name for use in other playbooks (Debian Architecture)
-        set_fact:
-          u16_04_vrs_package_path: "{{ rc_vrs_python_file_u16_04.files[0].path | dirname }}/"
-          u16_04_vrs_package_file_name_list: "{{ rc_vrs_python_file_u16_04.files |  map(attribute='path') | list | map('basename') | list }}"
-      - name: Find name of VRS common package file (Debian architecture)
-        find: path="{{ nuage_unpacked_dest_path }}/vrs/u16_04"  pattern="nuage-openvswitch-common*.deb" recurse=yes
-        register: rc_vrs_common_file_u16_04
-      - debug: var=rc_vrs_common_file_u16_04 verbosity=1
-      - name: Verify that VRS common package file was found
-        assert: { 
-          that: "{{ rc_vrs_common_file_u16_04.matched }} > 0",
-          msg: "Unable to find VRS common file"
-        }
-      - name: Register VRS common package file name for use in other playbooks (Debian Architecture)
-        set_fact:
-          u16_04_vrs_package_file_name_list: "{{ u16_04_vrs_package_file_name_list }} + {{ rc_vrs_common_file_u16_04.files |  map(attribute='path') | list | map('basename') | list }}"
-      - name: Find name of VRS switch package file (Debian architecture)
-        find: path="{{ nuage_unpacked_dest_path }}/vrs/u16_04"  pattern="nuage-openvswitch-switch*.deb" recurse=yes
-        register: rc_vrs_switch_file_u16_04
-      - debug: var=rc_vrs_switch_file_u16_04 verbosity=1
-      - name: Verify that VRS switch package file was found
-        assert: { 
-          that: "{{ rc_vrs_switch_file_u16_04.matched }} > 0",
-          msg: "Unable to find VRS switch file"
-        }
-      - name: Register VRS switch package file name for use in other playbooks (Debian Architecture)
-        set_fact:
-          u16_04_vrs_package_file_name_list: "{{ u16_04_vrs_package_file_name_list }} + {{ rc_vrs_switch_file_u16_04.files |  map(attribute='path') | list | map('basename') | list }}"
-    when: vrs_u16_04|default(false)
-  when: myvrss is defined
+    - name: Clean up unpacked directory from previous runs
+      file: name="{{ nuage_unpacked_dest_path }}/vrs/u16_04/" state=absent
+    - name: Ensure that VRS binary target directory exists if vrs is u16_04
+      file: name="{{ nuage_unpacked_dest_path }}/vrs/u16_04/" state=directory mode=0775
+    - name: Unpack VRS Archive
+      unarchive: src="{{ item.path }}" dest="{{ nuage_unpacked_dest_path }}/vrs/u16_04"  list_files=yes
+      with_items: "{{ rc_vrs_u16_04.files }}"
+      register: rc_vrs_u16_04_archive_files
+    - debug: var=rc_vrs_u16_04_archive_files verbosity=1
+    when: rc_vrs_u16_04.matched > 0
   tags:
     - vrs
-
-- name: Ensure that el7 VRS package path variables are set 
-  set_fact:
-    el7_vrs_package_path: "None"
-  when: el7_vrs_package_path is not defined
-- name: Ensure that el6 VRS package path variables are set 
-  set_fact:
-    el6_vrs_package_path: "None"
-  when: el6_vrs_package_path is not defined
-- name: Ensure that ubuntu 14.04 VRS package path variables are set 
-  set_fact:
-    u14_04_vrs_package_path: "None"
-  when: u14_04_vrs_package_path is not defined
-- name: Ensure that ubuntu 16.04 VRS package path variables are set 
-  set_fact:
-    u16_04_vrs_package_path: "None"
-  when: u16_04_vrs_package_path is not defined
-- name: Ensure that ubuntu 14.04 VRS package list variables are set 
-  set_fact:
-    u14_04_vrs_package_file_name_list: '"None" | list'
-  when: u14_04_vrs_package_file_name_list is not defined
-- name: Ensure that ubuntu 16.04 VRS package list variables are set 
-  set_fact:
-    u16_04_vrs_package_file_name_list: '"None" | list'
-  when: u16_04_vrs_package_file_name_list is not defined
-- name: Ensure that el6 VRS package list variables are set 
-  set_fact:
-    el6_vrs_package_file_name_list: '"None" | list'
-  when: el6_vrs_package_file_name_list is not defined
-- name: Ensure that el7 VRS package list variables are set 
-  set_fact:
-    el7_vrs_package_file_name_list: '"None" | list'
-  when: el7_vrs_package_file_name_list is not defined
 
 ################
 # Docker-Monitor
 #################
 
 - block:
+  - name: Find Docker-Monitor Archive
+    find: path="{{ nuage_packed_src_path }}"  pattern="Nuage-Docker-Monitor*"
+    register: rc_dockermon
+  - debug: var=rc_dockermon verbosity=1
   - block:
-    - name: Find name of Docker-Monitor Archive
-      find: path="{{ nuage_packed_src_path }}"  pattern="Nuage-Docker-Monitor*"
-      register: rc_dockermon
-    - debug: var=rc_dockermon verbosity=1
-    - block:
-      - name: Clean up after previous unpack runs
-        file: name="{{ nuage_unpacked_dest_path }}/dockermon/" state=absent
-      - name: Create directory to unpack Docker-Monitor to
-        file: name="{{ nuage_unpacked_dest_path }}/dockermon/" state=directory mode=0775
-      - name: Unpack Docker-Monitor Archive
-        unarchive: src="{{ rc_dockermon.files[0].path}}" dest="{{ nuage_unpacked_dest_path }}/dockermon/"  list_files=yes
-        register: rc_dockermon_archive_files
-        when: rc_dockermon.matched > 0
-      - debug: var=rc_dockermon_archive_files verbosity=1
-    when: not nuage_already_unpacked|default(false)
-    tags:
-      - nuage-unpack
-  - block:
-    - name: Find name of dockermon package Files (RH architecture)
-      find: path="{{ nuage_unpacked_dest_path }}/dockermon"  pattern="*.rpm" recurse=yes
-      register: rc_dockermon_file
-    - debug: var=rc_dockermon_file verbosity=1
-    - name: Verify that Dockermon package file was found
-      assert: { 
-        that: "{{ rc_dockermon_file.matched }} > 0",
-        msg: "Unable to find Dockermon file"
-      }
-    - name: Register dockermon variables with proper path and image locations for use in other playbooks (RH architecture)
-      set_fact:
-        dockermon_package_path: "{{ rc_dockermon_file.files[0].path | dirname }}"
-        dockermon_package_file_name: "{{ rc_dockermon_file.files[0].path | basename }}"
-      when: rc_dockermon_file.matched > 0
-    when: vrs_el6|default(false) == True or vrs_el7|default(false) == True
-  - block:
-    - name: Set dockermon target path based on version (Ubuntu 14.04 architecture)
-      set_fact:
-        #dockermon_findfile_path: "{{ nuage_unpacked_dest_path }}/dockermon/{{ { 'ubuntu':'ubuntu', 'ubuntu.14.04':'ubuntu-14.04', 'ubuntu.16.04':'ubuntu-16.04' }[nuage_target_architecture] }}"
-        dockermon_findfile_path: "{{ nuage_unpacked_dest_path }}/dockermon/ubuntu-14.04"
-    - name: Find name of dockermon package files (Debian architecture)
-      find: path="{{ dockermon_findfile_path }}"  pattern="*.deb" recurse=yes
-      #find: path="{{ nuage_unpacked_dest_path }}/dockermon/"  pattern="*.deb" recurse=yes
-      register: rc_dockermon_file
-    - debug: var=rc_dockermon_file verbosity=1
-    - name: Verify that Dockermon package file was found
-      assert: { 
-        that: "{{ rc_dockermon_file.matched }} > 0",
-        msg: "Unable to find Dockermon file"
-      }
-    - name: Register dockermon variables with proper path and image locations for use in other playbooks (Debian architecture)
-      set_fact:
-        u14_04_dockermon_package_path: "{{ rc_dockermon_file.files[0].path | dirname }}"
-        u14_04_dockermon_package_file_name: "{{ rc_dockermon_file.files[0].path | basename }}"
-      when: rc_dockermon_file.matched > 0
-    when: vrs_u14_04|default(false) == True
-  - block:
-    - name: Set dockermon target path based on version (Ubuntu 16.04  architecture)
-      set_fact:
-        #dockermon_findfile_path: "{{ nuage_unpacked_dest_path }}/dockermon/{{ { 'ubuntu':'ubuntu', 'ubuntu.14.04':'ubuntu-14.04', 'ubuntu.16.04':'ubuntu-16.04' }[nuage_target_architecture] }}"
-        dockermon_findfile_path: "{{ nuage_unpacked_dest_path }}/dockermon/ubuntu-16.04"
-    - name: Find name of dockermon package files (Debian architecture)
-      find: path="{{ dockermon_findfile_path }}"  pattern="*.deb" recurse=yes
-      #find: path="{{ dockermon_findfile_path  }}/dockermon/"  pattern="*.deb" recurse=yes
-      register: rc_dockermon_file
-    - debug: var=rc_dockermon_file verbosity=1
-    - name: Verify that Dockermon package file was found
-      assert: { 
-        that: "{{ rc_dockermon_file.matched }} > 0",
-        msg: "Unable to find Dockermon file"
-      }
-    - name: Register dockermon variables with proper path and image locations for use in other playbooks (Debian architecture)
-      set_fact:
-        u16_04_dockermon_package_path: "{{ rc_dockermon_file.files[0].path | dirname }}"
-        u16_04_dockermon_package_file_name: "{{ rc_dockermon_file.files[0].path | basename }}"
-      when: rc_dockermon_file.matched > 0
-    when: vrs_u16_04|default(false) == True
-  when: dockermon_install | default(false)
+    - name: Clean up after previous unpack runs
+      file: name="{{ nuage_unpacked_dest_path }}/dockermon/" state=absent
+    - name: Create directory to unpack Docker-Monitor to
+      file: name="{{ nuage_unpacked_dest_path }}/dockermon/" state=directory mode=0775
+    - name: Unpack Docker-Monitor Archive
+      unarchive: src="{{ rc_dockermon.files[0].path}}" dest="{{ nuage_unpacked_dest_path }}/dockermon/"  list_files=yes
+      register: rc_dockermon_archive_files
+    - debug: var=rc_dockermon_archive_files verbosity=1
+    when: rc_dockermon.matched > 0
   tags:
     - dockermon
-
-- name: Ensure that Dockermon variables are set
-  set_fact:
-    dockermon_package_path: "None"
-    dockermon_package_file_name_list: "None"
-  when: dockermon_package_path is not defined
-
 
 #####################
 # VNS Utility/ NSGV
 #####################
 
 - block:
+  - name: Find VNS Archive
+    find: path="{{ nuage_packed_src_path }}"  pattern="Nuage-VNS*"
+    register: rc_vns
+  - debug: var=rc_vns verbosity=1
   - block:
-    - name: Find name of VNS Archive
-      find: path="{{ nuage_packed_src_path }}"  pattern="Nuage-VNS*"
-      register: rc_vns
-    - debug: var=rc_vns verbosity=1
-    - block:
-      - name: Clean up files from previous unpack run
-        file: name="{{ nuage_unpacked_dest_path }}/vns" state=absent
-      - name: Ensure target directory exists for VNS
-        file: name="{{ nuage_unpacked_dest_path }}/{{ item }}" state=directory mode=0775
-        with_items:
-          - "vns/nsg/"
-          - "vns/utils/"
-          - "vns/nsg/aws"
-      - name: Unpack VNS Archive
-        unarchive: src="{{ rc_vns.files[0].path}}" dest="{{ nuage_unpacked_dest_path }}/vns" list_files=yes
-        register: rc_vns_archive_files
-      when: rc_vns.matched > 0
-    - name: Find name of NSG and Utils archive files
-      find: path="{{ nuage_unpacked_dest_path }}/vns/" pattern="{{ item }}"
+    - name: Clean up files from previous unpack run
+      file: name="{{ nuage_unpacked_dest_path }}/vns" state=absent
+    - name: Ensure target directory exists for VNS
+      file: name="{{ nuage_unpacked_dest_path }}/{{ item }}" state=directory mode=0775
       with_items:
-        - "Nuage-VNS-NSG-*"
-        - "Nuage-VNS-Utils-*"
+        - "vns/nsg/"
+        - "vns/utils/"
+        - "vns/nsg/aws"
+    - name: Unpack VNS Archive
+      unarchive: src="{{ rc_vns.files[0].path}}" dest="{{ nuage_unpacked_dest_path }}/vns" list_files=yes
+      register: rc_vns_archive_files
+    when: rc_vns.matched > 0
+
+  - name: Find NSG and Utils archive files
+    find: path="{{ nuage_unpacked_dest_path }}/vns/" pattern="{{ item }}"
+    with_items:
+      - "Nuage-VNS-NSG-*"
+      - "Nuage-VNS-Utils-*"
+    register: rc_vns_archives
+  - debug: var=rc_vns_archives verbosity=1
+  - name: Unpack VNS NSG and Utils archive files
+    unarchive: src="{{ rc_vns_archives.results[item.0].files[0].path }}" dest="{{ nuage_unpacked_dest_path }}/{{ item.1 }}"
+    register: rc_vns_archives_files
+    with_indexed_items:
+      - "vns/nsg/"
+      - "vns/utils/"
+    when: rc_vns_archives.results[0].matched > 0 and rc_vns_archives.results[1].matched > 0
+  - block:
+    # Don't do AWS just yet...
+    - name: Find name of NSG-AWSs archive files
+      find: path="{{ nuage_unpacked_dest_path }}/vns/nsg" pattern="{{ item }}"
+      with_items:
+        - "Nuage-NSG-*AWS*"
       register: rc_vns_archives
     - debug: var=rc_vns_archives verbosity=1
     - name: Unpack VNS NSG and Utils archive files
       unarchive: src="{{ rc_vns_archives.results[item.0].files[0].path }}" dest="{{ nuage_unpacked_dest_path }}/{{ item.1 }}"
       register: rc_vns_archives_files
       with_indexed_items:
-        - "vns/nsg/"
-        - "vns/utils/"
-      when: rc_vns_archives.results[0].matched > 0 and rc_vns_archives.results[1].matched > 0
-    - block:
-      # Don't do AWS just yet...
-      - name: Find name of NSG-AWSs archive files
-        find: path="{{ nuage_unpacked_dest_path }}/vns/nsg" pattern="{{ item }}"
-        with_items:
-          - "Nuage-NSG-*AWS*"
-        register: rc_vns_archives
-      - debug: var=rc_vns_archives verbosity=1
-      - name: Unpack VNS NSG and Utils archive files
-        unarchive: src="{{ rc_vns_archives.results[item.0].files[0].path }}" dest="{{ nuage_unpacked_dest_path }}/{{ item.1 }}"
-        register: rc_vns_archives_files
-        with_indexed_items:
-          - "vns/nsg/aws"
-      when: false
-    when: not nuage_already_unpacked|default(false)
-    tags:
-      - nuage-unpack
-  - name: Find names of VNS files
-    find: path="{{ nuage_unpacked_dest_path }}/{{ item.subdir }}"  pattern="{{ item.pattern }}" recurse=yes
-    register: rc_vns_files
-    with_items:
-      - { subdir: "vns/utils/", pattern: "vns-util-*.qcow2" }
-      - { subdir: "vns/nsg/", pattern: "ncpe_centos7.qcow2" }
-      #- { subdir: "vns/nsg/aws", pattern: "*.raw" }
-  - debug: var=rc_vns_files verbosity=1
-  - name: Verify that VNS files were found
-    assert: { 
-      that: "{{ rc_vns_files.results[0].matched }} > 0 and {{ rc_vns_files.results[1].matched }} > 0",
-      msg: "Unable to find VNS files"
-    }
-  - name: Register VNS variables with proper path and image locations for use in other playbooks
-    set_fact: 
-      "{{ item.1 }}_path": "{{ rc_vns_files.results[item.0].files[0].path | dirname }}"
-      "{{ item.1 }}_file_name": "{{ rc_vns_files.results[item.0].files[0].path | basename }}"
-    with_indexed_items:
-      - vnsutil_qcow2
-      - nsgv_qcow2
-      #- nsgami_raw
-  when: myvnsutils is defined and mynsgvs is defined
-
-- name: Make sure the proper VNS variables have been defined
-  set_fact: 
-    "{{ item.1 }}_path": "None"
-    "{{ item.1 }}_file_name": "None"
-  with_indexed_items:
-    - vnsutil_qcow2
-    - nsgv_qcow2
-    - nsgami_raw
-  when: vnsutil_qcow2_path is not defined
+        - "vns/nsg/aws"
+    when: false
 
 ##########################
 ## Nuage OpenStack Plugins
 ##########################
 
 - block:
+  - name: Find the Nuage OpenStack Plugin Archive
+    find: path="{{ nuage_packed_src_path }}"  pattern="Nuage-openstack*"
+    register: rc_nuage_os
+  - debug: var=rc_nuage_os verbosity=1
   - block:
-    - name: Find name of Nuage OpenStack Plugin Archive
-      find: path="{{ nuage_packed_src_path }}"  pattern="Nuage-openstack*"
-      register: rc_nuage_os
-    - debug: var=rc_nuage_os verbosity=1
-    - block:
-      - name: Clean up after previous unpack runs
-        file: name="{{ nuage_unpacked_dest_path }}/nuage_os/" state=absent
-      - name: Create directory to unpack Nuage OpenStack plugins
-        file: name="{{ nuage_unpacked_dest_path }}/nuage_os/" state=directory mode=0775
-      - name: Unpack Nuage OpenStack Archive
-        unarchive: src="{{ rc_nuage_os.files[0].path}}" dest="{{ nuage_unpacked_dest_path }}/nuage_os/"  list_files=yes
-        register: rc_nuage_os_archive_files
-      - debug: var=rc_nuage_os_archive_files
-      when: rc_nuage_os.matched > 0
-    when: not nuage_already_unpacked|default(false)
-    tags:
-      - nuage_unpack
-  - name: Find name of Nuage OpenStack Package Files (RH architecture)
-    find: path="{{ nuage_unpacked_dest_path }}/nuage_os/{{ nuage_os_release }}/el7/"  pattern="*.rpm" recurse=yes
-    register: rc_nuage_os_file
-  - debug: var=rc_nuage_os_file verbosity=1
-  - name: Verify that OpenStack files were found
-    assert: { 
-      that: "{{ rc_nuage_os_file.matched }} > 0",
-      msg: "Unable to find OpenStack files"
-    }
-  - name: Register Nuage OpenStack package variables with proper path and image locations for use in other playbooks (RH architecture)
-    set_fact:
-      nuage_os_package_path: "{{ nuage_unpacked_dest_path }}/nuage_os/" 
-      nuage_os_package_file_name_list: "{{ rc_nuage_os_file.files |  map(attribute='path') | list | map('basename') | list }}"
-      nuage_os_release: "{{ nuage_os_release }}"
-  when: 
-    - nuage_os_release is defined
-    - nuage_target_architecture == "el6" or nuage_target_architecture == "el7"
+    - name: Clean up after previous unpack runs
+      file: name="{{ nuage_unpacked_dest_path }}/nuage_os/" state=absent
+    - name: Create directory to unpack Nuage OpenStack plugins
+      file: name="{{ nuage_unpacked_dest_path }}/nuage_os/" state=directory mode=0775
+    - name: Unpack Nuage OpenStack Archive
+      unarchive: src="{{ rc_nuage_os.files[0].path}}" dest="{{ nuage_unpacked_dest_path }}/nuage_os/"  list_files=yes
+      register: rc_nuage_os_archive_files
+    - debug: var=rc_nuage_os_archive_files
+    when: rc_nuage_os.matched > 0
   tags:
     - nuage_os

@@ -47,18 +47,18 @@
       line: "{{ compute_mgmt_ip }}  {{ inventory_hostname }}"
       dest: "/etc/hosts"
     delegate_to: "{{ infra_ip }}"
-    remote_user: "{{ target_server_username }}"
+    remote_user: "root"
 
   - name: Restart DNS service
     shell: service dnsmasq restart
     delegate_to: "{{ infra_ip }}"
-    remote_user: "{{ target_server_username }}"
+    remote_user: "root"
   when: infra_server_name is defined
 
 - name: Clean known_hosts of OS_computes
   command: ssh-keygen -R "{{ compute_mgmt_ip }}" -f /root/.ssh/known_hosts
   delegate_to: "{{ ansible_deployment_host }}"
-  remote_user: "{{ target_server_username }}"
+  remote_user: "{{ ansible_sudo_username }}"
 
 - name: Wait for os_compute ssh to be ready
   local_action:
@@ -71,21 +71,21 @@
 - name: Query {{ target_server }} facts
   action: setup
   delegate_to: "{{ compute_mgmt_ip }}"
-  remote_user: "{{ target_server_username }}"
+  remote_user: "root"
 
 - name: Update /etc/hosts file on os_compute
   lineinfile:
     dest: /etc/hosts
     line: "{{ compute_mgmt_ip }}    {{ inventory_hostname }}"
-  remote_user: "{{ target_server_username }}"
+  remote_user: "root"
 
 - name: Update hostname
   template: src=network.j2 backup=no dest=/etc/sysconfig/network
-  remote_user: "{{ target_server_username }}"
+  remote_user: "root"
 
 - name: Add nameserver
   command: echo "{{ infra_ip }}" >> /etc/resolv.conf
-  remote_user: "{{ target_server_username }}"
+  remote_user: "root"
   when: infra_server_name is defined
 
 - name: Disable firewall
@@ -95,7 +95,7 @@
   when:
     - ansible_os_family == 'RedHat'
   ignore_errors: yes
-  remote_user: "{{ target_server_username }}"
+  remote_user: "root"
 
 - name: Stop firewall
   service:
@@ -104,87 +104,87 @@
   when:
     - ansible_os_family == 'RedHat'
   ignore_errors: yes
-  remote_user: "{{ target_server_username }}"
+  remote_user: "root"
 
 - name: Disable NetworkManager
   service:
     name: NetworkManager
     enabled: no
   ignore_errors: yes
-  remote_user: "{{ target_server_username }}"
+  remote_user: "root"
 
 - name: Stop NetworkManager
   service:
     name: NetworkManager
     state: stopped
   ignore_errors: yes
-  remote_user: "{{ target_server_username }}"
+  remote_user: "root"
 
 - name: Copy eth0 config to os_compute
   template: src=ifcfg-eth0.j2 backup=no dest=/etc/sysconfig/network-scripts/ifcfg-eth0
-  remote_user: "{{ target_server_username }}"
+  remote_user: "root"
 
 - name: Copy eht1 config to os_compute
   template: src=ifcfg-eth1.j2 backup=no dest=/etc/sysconfig/network-scripts/ifcfg-eth1
-  remote_user: "{{ target_server_username }}"
+  remote_user: "root"
 
 - name: Enable network
   service:
     name: network
     enabled: yes
-  remote_user: "{{ target_server_username }}"
+  remote_user: "root"
  
 - name: Start netowrk
   service:
     name: network
     state: restarted
   ignore_errors: yes
-  remote_user: "{{ target_server_username }}"
+  remote_user: "root"
 
 - name: Install NTP if not present
   yum:
     name: ntp
     state: latest
-  remote_user: "{{ target_server_username }}"
+  remote_user: "root"
 
 - name: Delete the localtime file on {{ inventory_hostname }}
   file:
     path: /etc/localtime
     state: absent
-  remote_user: "{{ target_server_username }}"
+  remote_user: "root"
 
 - name: Create the localtime symlink on {{ inventory_hostname }}
   file:
     src: /usr/share/zoneinfo/US/Pacific
     dest: /etc/localtime
     state: link
-  remote_user: "{{ target_server_username }}"
+  remote_user: "root"
 
 - name: Remove old NTP servers on {{ inventory_hostname }}
   lineinfile:
     dest: /etc/ntp.conf
     regexp: "^server"
     state: absent
-  remote_user: "{{ target_server_username }}"
+  remote_user: "root"
 
 - name: Configure NTP servers on {{ inventory_hostname }}
   lineinfile:
     dest: /etc/ntp.conf
     line: "server {{ item }} iburst"
   with_items: "{{ ntp_server_list }}"
-  remote_user: "{{ target_server_username }}"
+  remote_user: "root"
 
 - name: Stop the ntpd service if running
   command: service ntpd stop
-  remote_user: "{{ target_server_username }}"
+  remote_user: "root"
 
 - name: Manually sync time with ntp server
   command: ntpdate -u "{{ntp_server_list[0]}}"
-  remote_user: "{{ target_server_username }}"
+  remote_user: "root"
 
 - name: Start ntpd on {{ inventory_hostname }}
   command: service ntpd start
-  remote_user: "{{ target_server_username }}"
+  remote_user: "root"
 
 - name: check ntp sync state
   shell: ntpstat | awk 'NR==1{print $1}'
@@ -193,25 +193,25 @@
   retries: 4
   delay: 5
   ignore_errors: yes
-  remote_user: "{{ target_server_username }}"
+  remote_user: "root"
 
 - block:
   - name: restart ntp if it hasn't synced yet
     command: service ntpd restart
-    remote_user: "{{ target_server_username }}"
+    remote_user: "root"
   - name: check ntp sync state
     shell: ntpstat | awk 'NR==1{print $1}'
     register: retry_sync_status
     until: retry_sync_status.stdout == "synchronised"
     retries: 4
     delay: 5
-    remote_user: "{{ target_server_username }}"
+    remote_user: "root"
 
 - name: Install EPEL repos only on Centos
   yum:
     name: epel-release
     state: present
-  remote_user: "{{ target_server_username }}"
+  remote_user: "root"
   when: ansible_distribution == 'CentOS'
 
 - name: Pause
@@ -222,7 +222,7 @@
   yum:
     name: "{{ os_centos }}{{ nuage_os_release }}"
     state: present
-  remote_user: "{{ target_server_username }}"
+  remote_user: "root"
   when: 
     - ansible_distribution == 'CentOS'
     - ansible_distribution_major_version == '7'
@@ -231,31 +231,31 @@
   template:
     src={{ playbook_dir }}/roles/compute-deploy/templates/redhat.repo.j2
     dest=/etc/yum.repos.d/rhel.repo
-  remote_user: "{{ target_server_username }}"
+  remote_user: "root"
   when: ansible_distribution == 'RedHat'
 
 - name: Execute a yum update on {{ inventory_hostname }}
   yum:
     name: '*'
     state: latest
-  remote_user: "{{ target_server_username }}"
+  remote_user: "root"
 
 - name: Generate SSH keys on OSC
   shell: ssh-keygen -b 2048 -t rsa -f /root/.ssh/id_rsa -q -N ""
   args:
     creates: /root/.ssh/id_rsa
-  remote_user: "{{ target_server_username }}"
+  remote_user: "root"
   delegate_to: "{{ osc_ip }}"
  
 - name: Get generated SSH keys
   shell: cat ~/.ssh/id_rsa.pub
   register: ssh_key
-  remote_user: "{{ target_server_username }}"
+  remote_user: "root"
   delegate_to: "{{ osc_ip }}"
  
 - name: Copy SSH key to {{ inventory_hostname }}
   shell: "echo {{ssh_key.stdout}} >> /root/.ssh/authorized_keys"
-  remote_user: "{{ target_server_username }}"
+  remote_user: "root"
  
 - name: Find the answers file on the OSC
   find:
@@ -269,7 +269,7 @@
     dest: "{{ answer_file.files[0].path }}"
     regexp: CONFIG_COMPUTE_HOSTS=
     line: CONFIG_COMPUTE_HOSTS={{ compute_mgmt_ip }}
-  remote_user: "{{ target_server_username }}"
+  remote_user: "root"
   delegate_to: "{{ osc_ip }}"
  
 - name: Update the answer file with compute node ip
@@ -277,10 +277,10 @@
     dest: "{{ answer_file.files[0].path }}"
     regexp: EXCLUDE_SERVERS=
     line: EXCLUDE_SERVERS={{ osc_ip }} 
-  remote_user: "{{ target_server_username }}"
+  remote_user: "root"
   delegate_to: "{{ osc_ip }}"
 
 - name: Add compute node to OSC
   command: "packstack --answer-file={{ answer_file.files[0].path }}"
-  remote_user: "{{ target_server_username }}"
+  remote_user: "root"
   delegate_to: "{{ osc_ip }}"

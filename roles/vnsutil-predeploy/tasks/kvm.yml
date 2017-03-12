@@ -25,7 +25,6 @@
         ("{{ data_bridge }}" not in ansible_interfaces)
 
 - name: If RedHat, install packages for RedHat OS family distros
-  remote_user: "{{ target_server_username }}"
   yum: name={{ item }} state=present
   with_items:
    - qemu-kvm
@@ -35,10 +34,10 @@
    - libvirt-python
   when: ansible_os_family == "RedHat"
   become: true
+  remote_user: "{{ target_server_username }}"
   delegate_to: "{{ target_server }}"
 
 - name: If Debian, install packages for Debian OS family distros
-  remote_user: "{{ target_server_username }}"
   apt: name={{ item }} state=present
   with_items:
    - qemu-kvm
@@ -48,6 +47,7 @@
    - python-libvirt
   when: ansible_os_family == "Debian"
   become: true
+  remote_user: "{{ target_server_username }}"
   delegate_to: "{{ target_server }}"
 
 - name: List the Virtual Machines running on {{ target_server }}
@@ -81,8 +81,29 @@
   delegate_to: "{{ target_server }}"
   remote_user: "{{ target_server_username }}"
 
+- name: Get list of partitions
+  shell: "guestfish -r -a {{ images_path }}/{{ inventory_hostname }}/{{ vnsutil_qcow2_file_name }} run : list-filesystems | grep -Ev '(unknown|swap)'"
+  delegate_to: "{{ target_server }}"
+  remote_user: "{{ target_server_username }}"
+  register: partitions_list
+
+- name: Check partition content
+  shell: "guestfish -r -a {{ images_path }}/{{ inventory_hostname }}/{{ vnsutil_qcow2_file_name }} run : mount {{ item.split(':')[0] }} / : ls /"
+  delegate_to: "{{ target_server }}"
+  register: partitions
+  with_items: "{{ partitions_list.stdout_lines }}"
+  remote_user: "{{ target_server_username }}"
+
+- name: Find root partition
+  set_fact:
+    guestfish_mount: "{{ item.item.split(':')[0]}}"
+  with_items: "{{ partitions.results }}"
+  when: '"proc" in item.stdout'
+
+- debug: var=guestfish_mount verbosity=1
+
 - name: Copy eth0 network script file to the vnsutil image on {{ target_server }}
-  command: guestfish --rw -a {{ images_path }}/{{ inventory_hostname }}/{{ vnsutil_qcow2_file_name }} -m /dev/centos/root copy-in {{ images_path }}/{{ inventory_hostname }}/ifcfg-eth0 /etc/sysconfig/network-scripts/
+  command: guestfish --rw -a {{ images_path }}/{{ inventory_hostname }}/{{ vnsutil_qcow2_file_name }} -m {{ guestfish_mount }} copy-in {{ images_path }}/{{ inventory_hostname }}/ifcfg-eth0 /etc/sysconfig/network-scripts/
   delegate_to: "{{ target_server }}"
   remote_user: "{{ target_server_username }}"
 
@@ -92,7 +113,7 @@
   remote_user: "{{ target_server_username }}"
 
 - name: Set the owner and group on the eth0 network script file in the vnsutil image
-  command: guestfish --rw -a {{ images_path }}/{{ inventory_hostname }}/{{ vnsutil_qcow2_file_name }} -m /dev/centos/root chown 0 0 /etc/sysconfig/network-scripts/ifcfg-eth0
+  command: guestfish --rw -a {{ images_path }}/{{ inventory_hostname }}/{{ vnsutil_qcow2_file_name }} -m {{ guestfish_mount }} chown 0 0 /etc/sysconfig/network-scripts/ifcfg-eth0
   delegate_to: "{{ target_server }}"
   remote_user: "{{ target_server_username }}"
 
@@ -102,7 +123,7 @@
   remote_user: "{{ target_server_username }}"
 
 - name: Copy eth1 network script file to the vnsutil image on {{ target_server }}
-  command: guestfish --rw -a {{ images_path }}/{{ inventory_hostname }}/{{ vnsutil_qcow2_file_name }} -m /dev/centos/root copy-in {{ images_path }}/{{ inventory_hostname }}/ifcfg-eth1 /etc/sysconfig/network-scripts/
+  command: guestfish --rw -a {{ images_path }}/{{ inventory_hostname }}/{{ vnsutil_qcow2_file_name }} -m {{ guestfish_mount }} copy-in {{ images_path }}/{{ inventory_hostname }}/ifcfg-eth1 /etc/sysconfig/network-scripts/
   delegate_to: "{{ target_server }}"
   remote_user: "{{ target_server_username }}"
 
@@ -112,7 +133,7 @@
   remote_user: "{{ target_server_username }}"
 
 - name: Set the owner and group on the eth1 network script file in the vnsutil image
-  command: guestfish --rw -a {{ images_path }}/{{ inventory_hostname }}/{{ vnsutil_qcow2_file_name }} -m /dev/centos/root chown 0 0 /etc/sysconfig/network-scripts/ifcfg-eth1
+  command: guestfish --rw -a {{ images_path }}/{{ inventory_hostname }}/{{ vnsutil_qcow2_file_name }} -m {{ guestfish_mount }} chown 0 0 /etc/sysconfig/network-scripts/ifcfg-eth1
   delegate_to: "{{ target_server }}"
   remote_user: "{{ target_server_username }}"
 
@@ -122,7 +143,7 @@
   remote_user: "{{ target_server_username }}"
 
 - name: Copy network file to the vnsutil image
-  command: guestfish --rw -a {{ images_path }}/{{ inventory_hostname }}/{{ vnsutil_qcow2_file_name }} -m /dev/centos/root copy-in {{ images_path }}/{{ inventory_hostname }}/network /etc/sysconfig/
+  command: guestfish --rw -a {{ images_path }}/{{ inventory_hostname }}/{{ vnsutil_qcow2_file_name }} -m {{ guestfish_mount }} copy-in {{ images_path }}/{{ inventory_hostname }}/network /etc/sysconfig/
   delegate_to: "{{ target_server }}"
   remote_user: "{{ target_server_username }}"
 
@@ -132,17 +153,17 @@
   remote_user: "{{ target_server_username }}"
 
 - name: Set the owner and group for the network hostname file on the vnsutil image
-  command: guestfish --rw -a {{ images_path }}/{{ inventory_hostname }}/{{ vnsutil_qcow2_file_name }} -m /dev/centos/root chown 0 0 /etc/sysconfig/network
+  command: guestfish --rw -a {{ images_path }}/{{ inventory_hostname }}/{{ vnsutil_qcow2_file_name }} -m {{ guestfish_mount }} chown 0 0 /etc/sysconfig/network
   delegate_to: "{{ target_server }}"
   remote_user: "{{ target_server_username }}"
 
 - name: Create the directory /root/.ssh for authorized_keys
-  command: guestfish --rw -a {{ images_path }}/{{ inventory_hostname }}/{{ vnsutil_qcow2_file_name }} -m /dev/centos/root mkdir-mode /root/.ssh 0700
+  command: guestfish --rw -a {{ images_path }}/{{ inventory_hostname }}/{{ vnsutil_qcow2_file_name }} -m {{ guestfish_mount }} mkdir-mode /root/.ssh 0700
   delegate_to: "{{ target_server }}"
   remote_user: "{{ target_server_username }}"
 
 - name: Set the owner and group for the /root/.ssh directory on the vnsutil image
-  command: guestfish --rw -a {{ images_path }}/{{ inventory_hostname }}/{{ vnsutil_qcow2_file_name }} -m /dev/centos/root chown 0 0 /root/.ssh
+  command: guestfish --rw -a {{ images_path }}/{{ inventory_hostname }}/{{ vnsutil_qcow2_file_name }} -m {{ guestfish_mount }} chown 0 0 /root/.ssh
   delegate_to: "{{ target_server }}"
   remote_user: "{{ target_server_username }}"
 
@@ -156,7 +177,7 @@
   remote_user: "{{ target_server_username }}"
 
 - name: Copy authorized_keys file to the vnsutil image
-  command: guestfish --rw -a {{ images_path }}/{{ inventory_hostname }}/{{ vnsutil_qcow2_file_name }} -m /dev/centos/root copy-in {{ images_path }}/{{ inventory_hostname }}/authorized_keys /root/.ssh/
+  command: guestfish --rw -a {{ images_path }}/{{ inventory_hostname }}/{{ vnsutil_qcow2_file_name }} -m {{ guestfish_mount }} copy-in {{ images_path }}/{{ inventory_hostname }}/authorized_keys /root/.ssh/
   delegate_to: "{{ target_server }}"
   remote_user: "{{ target_server_username }}"
 
@@ -166,12 +187,12 @@
   remote_user: "{{ target_server_username }}"
 
 - name: Set the owner and group for the authorized_keys file on the vnsutil image
-  command: guestfish --rw -a {{ images_path }}/{{ inventory_hostname }}/{{ vnsutil_qcow2_file_name }} -m /dev/centos/root chown 0 0 /root/.ssh/authorized_keys
+  command: guestfish --rw -a {{ images_path }}/{{ inventory_hostname }}/{{ vnsutil_qcow2_file_name }} -m {{ guestfish_mount }} chown 0 0 /root/.ssh/authorized_keys
   delegate_to: "{{ target_server }}"
   remote_user: "{{ target_server_username }}"
 
 - name: Set the mode for the authorized_keys file on the vnsutil image
-  command: guestfish --rw -a {{ images_path }}/{{ inventory_hostname }}/{{ vnsutil_qcow2_file_name }} -m /dev/centos/root chmod 0640 /root/.ssh/authorized_keys
+  command: guestfish --rw -a {{ images_path }}/{{ inventory_hostname }}/{{ vnsutil_qcow2_file_name }} -m {{ guestfish_mount }} chmod 0640 /root/.ssh/authorized_keys
   delegate_to: "{{ target_server }}"
   remote_user: "{{ target_server_username }}"
 
