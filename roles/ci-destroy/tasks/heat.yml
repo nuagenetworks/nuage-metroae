@@ -5,14 +5,14 @@
       "{{ os_auth }}"
     server: "{{ inventory_hostname }}"
   register: ci_server
-  run_once: true
+  when: inventory_hostname == ansible_play_hosts[0]
   delegate_to: 127.0.0.1
 
 - name: Set VSD subnet name
   set_fact:
     subnet_name1: "{{ ci_server['ansible_facts']['openstack_servers'][0]['networks'].keys()[0] }}"
     subnet_name2: "{{ ci_server['ansible_facts']['openstack_servers'][0]['networks'].keys()[1] }}"
-  run_once: true
+  when: inventory_hostname == ansible_play_hosts[0]
   delegate_to: 127.0.0.1
 
 - block:
@@ -21,7 +21,7 @@
       target_server: "{{ ci_server['ansible_facts']['openstack_servers'][0]['networks'][subnet_name2][0]}}"
       subnet_name: "{{ subnet_name2 }}"
   when: subnet_name1 == 'OC_JEN_FrontEnd'
-  run_once: true
+  when: inventory_hostname == ansible_play_hosts[0]
   delegate_to: 127.0.0.1
  
 - block:
@@ -30,7 +30,7 @@
       target_server: "{{ ci_server['ansible_facts']['openstack_servers'][0]['networks'][subnet_name1][0]}}"
       subnet_name: "{{ subnet_name1 }}"
   when: subnet_name2 == 'OC_JEN_FrontEnd'
-  run_once: true
+  when: inventory_hostname == ansible_play_hosts[0]
   delegate_to: 127.0.0.1
 
 - block:
@@ -38,7 +38,7 @@
     set_fact:
       subnet_name_temp: "{{ subnet_name2 }}"
   when: subnet_name1 == 'OC_JEN_FrontEnd'
-  run_once: true
+  when: inventory_hostname == ansible_play_hosts[0]
   delegate_to: 127.0.0.1
 
 - block:
@@ -46,32 +46,32 @@
     set_fact:
       subnet_name_temp: "{{ subnet_name1 }}"
   when: subnet_name2 == 'OC_JEN_FrontEnd'
-  run_once: true
+  when: inventory_hostname == ansible_play_hosts[0]
   delegate_to: 127.0.0.1
 
 - name: get the u14 vrs temp file contents
   command: cat "/tmp/{{ subnet_name_temp }}_vrs_ip_u14"
   register: u14_vrs_ip
-  run_once: true
+  when: inventory_hostname == ansible_play_hosts[0]
   delegate_to: 127.0.0.1
 
 - name: register u14 vrs target_server
   set_fact :
     vrs_u14_target_server: "{{ u14_vrs_ip.stdout }}"
-  run_once: true
+  when: inventory_hostname == ansible_play_hosts[0]
   delegate_to: 127.0.0.1
 
 - name: get the u16 vrs temp file contents
   command: cat "/tmp/{{ subnet_name_temp }}_vrs_ip_u16"
   register: u16_vrs_ip
-  run_once: true
+  when: inventory_hostname == ansible_play_hosts[0]
   delegate_to: 127.0.0.1
   ignore_errors: yes
 
 - name: register u16 vrs target_server
   set_fact :
     vrs_u16_target_server: "{{ u16_vrs_ip.stdout }}"
-  run_once: true
+  when: inventory_hostname == ansible_play_hosts[0]
   delegate_to: 127.0.0.1
   ignore_errors: yes
 
@@ -79,41 +79,40 @@
 - name: get the centos7 vrs name temp file contents
   command: cat "/tmp/{{ subnet_name_temp }}_vrs_name_centos7"
   register: c7_vrs_name
-  run_once: true
+  when: inventory_hostname == ansible_play_hosts[0]
   delegate_to: 127.0.0.1
 
 - name: register centos7 vrs name target_server
   set_fact :
     vrs_c7_target_server_name: "{{ c7_vrs_name.stdout }}"
-  run_once: true
+  when: inventory_hostname == ansible_play_hosts[0]
   delegate_to: 127.0.0.1
 
 - name: get the u14 vrs name temp file contents
   command: cat "/tmp/{{ subnet_name_temp }}_vrs_name_u14"
   register: u14_vrs_name
-  run_once: true
+  when: inventory_hostname == ansible_play_hosts[0]
   delegate_to: 127.0.0.1
 
 - name: register u14 vrs name target_server
   set_fact :
     vrs_u14_target_server_name: "{{ u14_vrs_name.stdout }}"
-  run_once: true
+  when: inventory_hostname == ansible_play_hosts[0]
   delegate_to: 127.0.0.1
 
 - name: get the u16 vrs name temp file contents
   command: cat "/tmp/{{ subnet_name_temp }}_vrs_name_u16"
   register: u16_vrs_name
-  run_once: true
+  when: inventory_hostname == ansible_play_hosts[0]
   delegate_to: 127.0.0.1
   ignore_errors: yes
 
 - name: register u16 vrs target_server name
   set_fact :
     vrs_u16_target_server_name: "{{ u16_vrs_name.stdout }}"
-  run_once: true
+  when: inventory_hostname == ansible_play_hosts[0]
   delegate_to: 127.0.0.1
   ignore_errors: yes
-
 
 - name: Destroy CI heat templates for ubuntu 14 hypervisor types
   os_stack:
@@ -121,7 +120,7 @@
     auth:
       "{{ os_auth }}"
     state: absent
-  run_once: true
+  when: inventory_hostname == ansible_play_hosts[0]
   delegate_to: 127.0.0.1
 
 - name: Destroy CI heat templates for ubuntu 16 hypervisor types
@@ -130,7 +129,7 @@
     auth:
       "{{ os_auth }}"
     state: absent
-  run_once: true
+  when: inventory_hostname == ansible_play_hosts[0]
   delegate_to: 127.0.0.1
   ignore_errors: yes
 
@@ -140,12 +139,12 @@
     auth:
       "{{ os_auth }}"
     state: absent
-  run_once: true
+  when: inventory_hostname == ansible_play_hosts[0]
   delegate_to: 127.0.0.1
 
 - name: Destroy subnet in VSD
   local_action: command python {{playbook_dir}}/scripts/delete_subnet.py {{playbook_dir}} {{subnet_name}}
-  run_once: true
+  when: inventory_hostname == ansible_play_hosts[0]
 
 - name: Extract network part from the compute ip
   set_fact:
@@ -205,37 +204,37 @@
   file: path=/tmp/{{ subnet_name_temp }}_vrs_ip_centos7 state=absent
   delegate_to: "{{ ansible_deployment_host }}"
   remote_user: "{{ ansible_sudo_username }}"
-  run_once: true
+  when: inventory_hostname == ansible_play_hosts[0]
 
 - name: Remove temporary ubuntu 14 vrs ip adress file
   file: path=/tmp/{{ subnet_name_temp }}_vrs_ip_u14 state=absent
   delegate_to: "{{ ansible_deployment_host }}"
   remote_user: "{{ ansible_sudo_username }}"
-  run_once: true
+  when: inventory_hostname == ansible_play_hosts[0]
 
 - name: Remove temporary ubuntu 16 vrs ip adress file
   file: path=/tmp/{{ subnet_name_temp }}_vrs_ip_u16 state=absent
   delegate_to: "{{ ansible_deployment_host }}"
   remote_user: "{{ ansible_sudo_username }}"
-  run_once: true
+  when: inventory_hostname == ansible_play_hosts[0]
   ignore_errors: yes
 
 - name: Remove temporary centos7 vrs name file
   file: path=/tmp/{{ subnet_name_temp }}_vrs_name_centos7 state=absent
   delegate_to: "{{ ansible_deployment_host }}"
   remote_user: "{{ ansible_sudo_username }}"
-  run_once: true
+  when: inventory_hostname == ansible_play_hosts[0]
 
 - name: Remove temporary ubuntu 14 vrs name file
   file: path=/tmp/{{ subnet_name_temp }}_vrs_name_u14 state=absent
   delegate_to: "{{ ansible_deployment_host }}"
   remote_user: "{{ ansible_sudo_username }}"
-  run_once: true
+  when: inventory_hostname == ansible_play_hosts[0]
 
 - name: Remove temporary ubuntu 16 vrs name file
   file: path=/tmp/{{ subnet_name_temp }}_vrs_name_u16 state=absent
   delegate_to: "{{ ansible_deployment_host }}"
   remote_user: "{{ ansible_sudo_username }}"
-  run_once: true
+  when: inventory_hostname == ansible_play_hosts[0]
   remote_user: "{{ ansible_sudo_username }}"
   ignore_errors: yes
