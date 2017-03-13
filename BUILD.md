@@ -44,9 +44,9 @@ For reference, here is a description of the contents of the `build_vars.yml` fil
 ```
 #    # The directory where the Nuage Networks binariy archives are located. This is only
 #    # required for the `nuage_unpack.yml` playbook.
-#    nuage_packed_src_path: "{{ ansible_env.HOME}}/nuage-release"
-#    # The directory where to extract the relevant Nuage Networks binaries to
-#    nuage_unpacked_dest_path: "{{ ansible_env.HOME}}/nuage-unpacked"
+#    nuage_tar_gz_files_dir: "{{ ansible_env.HOME}}/nuage-release"
+#    # The directory where the required Nuage Networks binaries (*.qcow2, *.ova, *.rpm, *.deb) exist
+#    nuage_binary_files_dir: "{{ ansible_env.HOME}}/nuage-unpacked"
 #    # Parameter used to define the Hypervisor-Architecture (One of: el6|el7|ubuntu)
 #    nuage_target_architecture: "el7"
 #    # Parameter to define the remote sudo username to use on target servers, e.g. hypevisors.

@@ -63,9 +63,8 @@ As an example, let's consider using Nuage-Metro to deploy a VSD cluster by itsel
 For deploying a VSD cluster, you must define 3 VSD entries in the `myvsds` dictionary in `build_vars.yml`. You must also have the other required definitions in place. Here is an example of the `build_vars.yml` file that deploys a cluster of 3 VSDs:
 
 ```
-vars:
-  nuage_release_src_path: "/home/caso/metro/4.0R4/nuage-packed"
-  nuage_unpacked_dest_path: "/home/caso/metro/4.0R4/nuage-unpacked"
+  nuage_tar_gz_files_dir: "/home/caso/metro/4.0R4/nuage-packed"
+  nuage_binary_files_dir: "/home/caso/metro/4.0R4/nuage-unpacked"
   nuage_unpacked: true
   nuage_target_architecture: "el7"
   vsd_standalone: false
@@ -104,11 +103,11 @@ vars:
 
 Some items to note in the example, above:
 
-* `nuage_release_src_path`, `nuage_unpacked_dest_path`, and `nuage_unpacked` must be set appropriately for your environment.
+* `nuage_release_src_path`, `nuage_binary_files_dir`, and `nuage_unpacked` must be set appropriately for your environment.
 
- * If `nuage_unpacked` is `false`, the directory configured for `nuage_release_src_path` must contain the archive of the VSD QCOW2 image. The build playbook will unpack the QCOW2 image and place it in `nuage_unpacked_dest_path`.
+ * If `nuage_unpacked` is `false`, the directory configured for `nuage_release_src_path` must contain the archive of the VSD QCOW2 image. The build playbook will unpack the QCOW2 image and place it in `nuage_binary_files_dir`.
 
- * If `nuage_unpacked` is `true`, the directory configured for `nuage_unpacked_dest_path` must contain the VSD QCOW2 image for the version of VSD you wish to deploy.
+ * If `nuage_unpacked` is `true`, the directory configured for `nuage_binary_files_dir` must contain the VSD QCOW2 image for the version of VSD you wish to deploy.
 
 * `vsd_standalone` must be set to `false`. If it is true, Nuage-Metro will deploy 3 stand-alone VSDs without clustering them.
 

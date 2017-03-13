@@ -6,31 +6,31 @@
 # QCOW2
 - block:
   - name: Find VSD QCOW2 Archive
-    find: path="{{ nuage_packed_src_path }}"  pattern="Nuage-VSD*QCOW*"
+    find: path="{{ nuage_tar_gz_files_dir }}"  pattern="Nuage-VSD*QCOW*"
     register: rc_vsd
   - debug: var=rc_vsd verbosity=1
   - block:
     - name: Clean up any previous unpacked files
-      file: name="{{ nuage_unpacked_dest_path }}/vsd/qcow2" state=absent
+      file: name="{{ nuage_binary_files_dir }}/vsd/qcow2" state=absent
     - name: Create subdirectory for unpacked files
-      file: name="{{ nuage_unpacked_dest_path }}/vsd/qcow2" state=directory mode=0775
+      file: name="{{ nuage_binary_files_dir }}/vsd/qcow2" state=directory mode=0775
     - name: Unpack VSD QCOW2 Archive
-      unarchive: src="{{ rc_vsd.files[0].path}}" dest="{{ nuage_unpacked_dest_path }}/vsd/qcow2" list_files=yes
+      unarchive: src="{{ rc_vsd.files[0].path}}" dest="{{ nuage_binary_files_dir }}/vsd/qcow2" list_files=yes
       register: rc_vsd_archive_files
     - debug: var=rc_vsd_archive_files verbosity=1
     when: rc_vsd.matched > 0 
 
   - name: Find VSD OVA Archive
-    find: path="{{ nuage_packed_src_path }}"  pattern="Nuage-VSD*OVA*"
+    find: path="{{ nuage_tar_gz_files_dir }}"  pattern="Nuage-VSD*OVA*"
     register: rc_vsd
   - debug: var=rc_vsd verbosity=1
   - block:
     - name: Clean up any previous unpacked files
-      file: name="{{ nuage_unpacked_dest_path }}/vsd/ova" state=absent
+      file: name="{{ nuage_binary_files_dir }}/vsd/ova" state=absent
     - name: Create subdirectory for unpacked files
-      file: name="{{ nuage_unpacked_dest_path }}/vsd/ova" state=directory mode=0755
+      file: name="{{ nuage_binary_files_dir }}/vsd/ova" state=directory mode=0755
     - name: Unpack VSD OVA Archive
-      unarchive: src="{{ rc_vsd.files[0].path}}" dest="{{ nuage_unpacked_dest_path }}/vsd/ova" list_files=yes
+      unarchive: src="{{ rc_vsd.files[0].path}}" dest="{{ nuage_binary_files_dir }}/vsd/ova" list_files=yes
       register: rc_vsd_archive_files
     - debug: var=rc_vsd_archive_files verbosity=1
     when: rc_vsd.matched > 0 
@@ -43,16 +43,16 @@
 
 - block:
   - name: Find Stats VM Archive
-    find: path="{{ nuage_packed_src_path }}"  pattern="Nuage-elastic-\d.*" use_regex=true
+    find: path="{{ nuage_tar_gz_files_dir }}"  pattern="Nuage-elastic-\d.*" use_regex=true
     register: rc_vstat
   - debug: var=rc_vstat verbosity=1
   - block:
     - name: Clean up unpacked files from previous run
-      file: name="{{ nuage_unpacked_dest_path }}/vstat/" state=absent
+      file: name="{{ nuage_binary_files_dir }}/vstat/" state=absent
     - name: Ensure binaries target directory exists for Stats VM
-      file: name="{{ nuage_unpacked_dest_path }}/vstat/" state=directory mode=0775
+      file: name="{{ nuage_binary_files_dir }}/vstat/" state=directory mode=0775
     - name: Unpack Stats VM Archive
-      unarchive: src="{{ rc_vstat.files[0].path}}" dest="{{ nuage_unpacked_dest_path }}/vstat" list_files=yes
+      unarchive: src="{{ rc_vstat.files[0].path}}" dest="{{ nuage_binary_files_dir }}/vstat" list_files=yes
       register: rc_vstat_archive_files
     - debug: var=rc_vstat_archive_files verbosity=1
     when: rc_vstat.matched > 0 
@@ -65,16 +65,16 @@
 
 - block:
   - name: Find VSC Archive
-    find: path="{{ nuage_packed_src_path }}"  pattern="Nuage-VSC*"
+    find: path="{{ nuage_tar_gz_files_dir }}"  pattern="Nuage-VSC*"
     register: rc_vsc
   - debug: var=rc_vsc verbosity=1
   - block:
     - name: Clean up unpacked directory from previous runs
-      file: name="{{ nuage_unpacked_dest_path }}/vsc/" state=absent
+      file: name="{{ nuage_binary_files_dir }}/vsc/" state=absent
     - name: Ensure binaries target directory exists for VSC QCOW2 
-      file: name="{{ nuage_unpacked_dest_path }}/vsc/" state=directory mode=0775
+      file: name="{{ nuage_binary_files_dir }}/vsc/" state=directory mode=0775
     - name: Unpack VSC Archive
-      unarchive: src="{{ rc_vsc.files[0].path}}" dest="{{ nuage_unpacked_dest_path }}/vsc/"  list_files=yes
+      unarchive: src="{{ rc_vsc.files[0].path}}" dest="{{ nuage_binary_files_dir }}/vsc/"  list_files=yes
       register: rc_vsc_archive_files
     - debug: var=rc_vsc_archive_files verbosity=1
     when: rc_vsc.matched > 0
@@ -87,64 +87,64 @@
 
 - block:
   - name: Find EL6 VRS Archive
-    find: path="{{ nuage_packed_src_path }}"  pattern="Nuage-VRS*-el6*"
+    find: path="{{ nuage_tar_gz_files_dir }}"  pattern="Nuage-VRS*-el6*"
     register: rc_vrs_el6
   - debug: var=rc_vrs_el6 verbosity=1
   - block:
     - name: Clean up unpacked directory from previous runs
-      file: name="{{ nuage_unpacked_dest_path }}/vrs/el6/" state=absent
+      file: name="{{ nuage_binary_files_dir }}/vrs/el6/" state=absent
     - name: Ensure that VRS binary target directory exists if vrs is el6
-      file: name="{{ nuage_unpacked_dest_path }}/vrs/el6/" state=directory mode=0775
+      file: name="{{ nuage_binary_files_dir }}/vrs/el6/" state=directory mode=0775
     - name: Unpack VRS Archive
-      unarchive: src="{{ item.path }}" dest="{{ nuage_unpacked_dest_path }}/vrs/el6"  list_files=yes
+      unarchive: src="{{ item.path }}" dest="{{ nuage_binary_files_dir }}/vrs/el6"  list_files=yes
       with_items: "{{ rc_vrs_el6.files }}"
       register: rc_vrs_el6_archive_files
     - debug: var=rc_vrs_el6_archive_files verbosity=1
     when: rc_vrs_el6.matched > 0
 
   - name: Find EL7 VRS Archive
-    find: path="{{ nuage_packed_src_path }}"  pattern="Nuage-VRS*-el7*"
+    find: path="{{ nuage_tar_gz_files_dir }}"  pattern="Nuage-VRS*-el7*"
     register: rc_vrs_el7
   - debug: var=rc_vrs_el7 verbosity=1
   - block:
     - name: Clean up unpacked directory from previous runs
-      file: name="{{ nuage_unpacked_dest_path }}/vrs/el7/" state=absent
+      file: name="{{ nuage_binary_files_dir }}/vrs/el7/" state=absent
     - name: Ensure that VRS binary target directory exists if vrs is el7
-      file: name="{{ nuage_unpacked_dest_path }}/vrs/el7/" state=directory mode=0775
+      file: name="{{ nuage_binary_files_dir }}/vrs/el7/" state=directory mode=0775
     - name: Unpack VRS Archive
-      unarchive: src="{{ item.path }}" dest="{{ nuage_unpacked_dest_path }}/vrs/el7"  list_files=yes
+      unarchive: src="{{ item.path }}" dest="{{ nuage_binary_files_dir }}/vrs/el7"  list_files=yes
       with_items: "{{ rc_vrs_el7.files }}"
       register: rc_vrs_el7_archive_files
     - debug: var=rc_vrs_el7_archive_files verbosity=1
     when: rc_vrs_el7.matched > 0
 
   - name: Find ubuntu-14.04 VRS Archive
-    find: path="{{ nuage_packed_src_path }}"  pattern="Nuage-VRS*-ubuntu.14.04*"
+    find: path="{{ nuage_tar_gz_files_dir }}"  pattern="Nuage-VRS*-ubuntu.14.04*"
     register: rc_vrs_u14_04
   - debug: var=rc_vrs_u14_04 verbosity=1
   - block:
     - name: Clean up unpacked directory from previous runs
-      file: name="{{ nuage_unpacked_dest_path }}/vrs/u14_04/" state=absent
+      file: name="{{ nuage_binary_files_dir }}/vrs/u14_04/" state=absent
     - name: Ensure that VRS binary target directory exists if vrs is u14_04
-      file: name="{{ nuage_unpacked_dest_path }}/vrs/u14_04/" state=directory mode=0775
+      file: name="{{ nuage_binary_files_dir }}/vrs/u14_04/" state=directory mode=0775
     - name: Unpack VRS Archive
-      unarchive: src="{{ item.path }}" dest="{{ nuage_unpacked_dest_path }}/vrs/u14_04"  list_files=yes
+      unarchive: src="{{ item.path }}" dest="{{ nuage_binary_files_dir }}/vrs/u14_04"  list_files=yes
       with_items: "{{ rc_vrs_u14_04.files }}"
       register: rc_vrs_u14_04_archive_files
     - debug: var=rc_vrs_u14_04_archive_files verbosity=1
     when: rc_vrs_u14_04.matched > 0
 
   - name: Find ubuntu-16.04 VRS Archive
-    find: path="{{ nuage_packed_src_path }}"  pattern="Nuage-VRS*-ubuntu.16.04*"
+    find: path="{{ nuage_tar_gz_files_dir }}"  pattern="Nuage-VRS*-ubuntu.16.04*"
     register: rc_vrs_u16_04
   - debug: var=rc_vrs_u16_04 verbosity=1
   - block:
     - name: Clean up unpacked directory from previous runs
-      file: name="{{ nuage_unpacked_dest_path }}/vrs/u16_04/" state=absent
+      file: name="{{ nuage_binary_files_dir }}/vrs/u16_04/" state=absent
     - name: Ensure that VRS binary target directory exists if vrs is u16_04
-      file: name="{{ nuage_unpacked_dest_path }}/vrs/u16_04/" state=directory mode=0775
+      file: name="{{ nuage_binary_files_dir }}/vrs/u16_04/" state=directory mode=0775
     - name: Unpack VRS Archive
-      unarchive: src="{{ item.path }}" dest="{{ nuage_unpacked_dest_path }}/vrs/u16_04"  list_files=yes
+      unarchive: src="{{ item.path }}" dest="{{ nuage_binary_files_dir }}/vrs/u16_04"  list_files=yes
       with_items: "{{ rc_vrs_u16_04.files }}"
       register: rc_vrs_u16_04_archive_files
     - debug: var=rc_vrs_u16_04_archive_files verbosity=1
@@ -158,16 +158,16 @@
 
 - block:
   - name: Find Docker-Monitor Archive
-    find: path="{{ nuage_packed_src_path }}"  pattern="Nuage-Docker-Monitor*"
+    find: path="{{ nuage_tar_gz_files_dir }}"  pattern="Nuage-Docker-Monitor*"
     register: rc_dockermon
   - debug: var=rc_dockermon verbosity=1
   - block:
     - name: Clean up after previous unpack runs
-      file: name="{{ nuage_unpacked_dest_path }}/dockermon/" state=absent
+      file: name="{{ nuage_binary_files_dir }}/dockermon/" state=absent
     - name: Create directory to unpack Docker-Monitor to
-      file: name="{{ nuage_unpacked_dest_path }}/dockermon/" state=directory mode=0775
+      file: name="{{ nuage_binary_files_dir }}/dockermon/" state=directory mode=0775
     - name: Unpack Docker-Monitor Archive
-      unarchive: src="{{ rc_dockermon.files[0].path}}" dest="{{ nuage_unpacked_dest_path }}/dockermon/"  list_files=yes
+      unarchive: src="{{ rc_dockermon.files[0].path}}" dest="{{ nuage_binary_files_dir }}/dockermon/"  list_files=yes
       register: rc_dockermon_archive_files
     - debug: var=rc_dockermon_archive_files verbosity=1
     when: rc_dockermon.matched > 0
@@ -180,32 +180,32 @@
 
 - block:
   - name: Find VNS Archive
-    find: path="{{ nuage_packed_src_path }}"  pattern="Nuage-VNS*"
+    find: path="{{ nuage_tar_gz_files_dir }}"  pattern="Nuage-VNS*"
     register: rc_vns
   - debug: var=rc_vns verbosity=1
   - block:
     - name: Clean up files from previous unpack run
-      file: name="{{ nuage_unpacked_dest_path }}/vns" state=absent
+      file: name="{{ nuage_binary_files_dir }}/vns" state=absent
     - name: Ensure target directory exists for VNS
-      file: name="{{ nuage_unpacked_dest_path }}/{{ item }}" state=directory mode=0775
+      file: name="{{ nuage_binary_files_dir }}/{{ item }}" state=directory mode=0775
       with_items:
         - "vns/nsg/"
         - "vns/utils/"
         - "vns/nsg/aws"
     - name: Unpack VNS Archive
-      unarchive: src="{{ rc_vns.files[0].path}}" dest="{{ nuage_unpacked_dest_path }}/vns" list_files=yes
+      unarchive: src="{{ rc_vns.files[0].path}}" dest="{{ nuage_binary_files_dir }}/vns" list_files=yes
       register: rc_vns_archive_files
     when: rc_vns.matched > 0
 
   - name: Find NSG and Utils archive files
-    find: path="{{ nuage_unpacked_dest_path }}/vns/" pattern="{{ item }}"
+    find: path="{{ nuage_binary_files_dir }}/vns/" pattern="{{ item }}"
     with_items:
       - "Nuage-VNS-NSG-*"
       - "Nuage-VNS-Utils-*"
     register: rc_vns_archives
   - debug: var=rc_vns_archives verbosity=1
   - name: Unpack VNS NSG and Utils archive files
-    unarchive: src="{{ rc_vns_archives.results[item.0].files[0].path }}" dest="{{ nuage_unpacked_dest_path }}/{{ item.1 }}"
+    unarchive: src="{{ rc_vns_archives.results[item.0].files[0].path }}" dest="{{ nuage_binary_files_dir }}/{{ item.1 }}"
     register: rc_vns_archives_files
     with_indexed_items:
       - "vns/nsg/"
@@ -214,13 +214,13 @@
   - block:
     # Don't do AWS just yet...
     - name: Find name of NSG-AWSs archive files
-      find: path="{{ nuage_unpacked_dest_path }}/vns/nsg" pattern="{{ item }}"
+      find: path="{{ nuage_binary_files_dir }}/vns/nsg" pattern="{{ item }}"
       with_items:
         - "Nuage-NSG-*AWS*"
       register: rc_vns_archives
     - debug: var=rc_vns_archives verbosity=1
     - name: Unpack VNS NSG and Utils archive files
-      unarchive: src="{{ rc_vns_archives.results[item.0].files[0].path }}" dest="{{ nuage_unpacked_dest_path }}/{{ item.1 }}"
+      unarchive: src="{{ rc_vns_archives.results[item.0].files[0].path }}" dest="{{ nuage_binary_files_dir }}/{{ item.1 }}"
       register: rc_vns_archives_files
       with_indexed_items:
         - "vns/nsg/aws"
@@ -232,16 +232,16 @@
 
 - block:
   - name: Find the Nuage OpenStack Plugin Archive
-    find: path="{{ nuage_packed_src_path }}"  pattern="Nuage-openstack*"
+    find: path="{{ nuage_tar_gz_files_dir }}"  pattern="Nuage-openstack*"
     register: rc_nuage_os
   - debug: var=rc_nuage_os verbosity=1
   - block:
     - name: Clean up after previous unpack runs
-      file: name="{{ nuage_unpacked_dest_path }}/nuage_os/" state=absent
+      file: name="{{ nuage_binary_files_dir }}/nuage_os/" state=absent
     - name: Create directory to unpack Nuage OpenStack plugins
-      file: name="{{ nuage_unpacked_dest_path }}/nuage_os/" state=directory mode=0775
+      file: name="{{ nuage_binary_files_dir }}/nuage_os/" state=directory mode=0775
     - name: Unpack Nuage OpenStack Archive
-      unarchive: src="{{ rc_nuage_os.files[0].path}}" dest="{{ nuage_unpacked_dest_path }}/nuage_os/"  list_files=yes
+      unarchive: src="{{ rc_nuage_os.files[0].path}}" dest="{{ nuage_binary_files_dir }}/nuage_os/"  list_files=yes
       register: rc_nuage_os_archive_files
     - debug: var=rc_nuage_os_archive_files
     when: rc_nuage_os.matched > 0
