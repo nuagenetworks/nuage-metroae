@@ -42,7 +42,7 @@ sed -i "s/VERSION/$1/g" roles/reset-build/files/build_vars.yml
 
 ansible-playbook reset_build.yml -vvvv
 ansible-playbook build.yml -vvvv
-./metro-ansible test_install.yml -vvvv
+#./metro-ansible test_install.yml -vvvv
 ./metro-ansible test_cleanup.yml -vvvv
 
 ./metro-ansible ci_destroy.yml -vvvv
