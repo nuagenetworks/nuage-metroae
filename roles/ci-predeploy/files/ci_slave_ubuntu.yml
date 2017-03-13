@@ -20,23 +20,6 @@ parameters:
     type: string
  
 resources:
-  private_net:
-    type: OS::Neutron::Net
-    properties:
-      name: { get_param: network_name }
-  private_subnet:
-    type: OS::Neutron::Subnet
-    properties:
-      name: { get_param: subnet_name }
-      network_id: { get_resource: private_net }
-      cidr: { get_param: cidr }
-      value_specs: { net_partition: { get_param: nuage_partition }, nuagenet: { get_param: nuage_netid}}
-  net_port:
-    type: OS::Neutron::Port
-    properties:
-      network_id: { get_resource: private_net }
-      fixed_ips:
-        - subnet_id: { get_resource: private_subnet }
   mycompute:
     type: OS::Nova::Server
     properties:
@@ -44,7 +27,7 @@ resources:
       flavor: {get_param: ci_flavor}
       image: {get_param: ci_image}
       networks:
-        - port: { get_resource: net_port }
+        - network: { get_param: network_name }
         - network: 'OC_JEN_FrontEnd'
       user_data_format: RAW
       user_data:
