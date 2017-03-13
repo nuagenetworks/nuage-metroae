@@ -1,6 +1,6 @@
 - block: 
   - name: Clean known_hosts of VSC's on "{{ target_server }}"
-    command: ssh-keygen -R "{{ interfaces.mgmt.ip }}" -f /root/.ssh/known_hosts
+    command: ssh-keygen -R "{{ mgmt_ip }}" -f /root/.ssh/known_hosts
     delegate_to: "{{ ansible_deployment_host }}"
     remote_user: root
 
@@ -49,26 +49,38 @@
     remote_user: root
     delegate_to: "{{ ansible_deployment_host }}"
 
-  - name: Stop VSC guest VM
-    virt: name={{ inventory_hostname }} state=destroyed
-    delegate_to: "{{ target_server }}"
-    remote_user: root
+  - block:
+    - name: Stop VSC guest VM
+      virt: name={{ inventory_hostname }} state=destroyed
+      delegate_to: "{{ target_server }}"
+      remote_user: root
 
-  - name: Restart VSC guest VM
-    virt: name={{ inventory_hostname }} state=running
-    delegate_to: "{{ target_server }}"
-    remote_user: root
+    - name: Restart VSC guest VM
+      virt: name={{ inventory_hostname }} state=running
+      delegate_to: "{{ target_server }}"
+      remote_user: root
+    when: target_server_type == 'kvm'
+
+  - name: Reboot VSC VM
+    os_server_actions:
+      auth:
+        "{{ os_auth }}"
+      server: "{{ inventory_hostname }}"
+      action: reboot
+      wait: no
+    delegate_to: 127.0.0.1
+    when: target_server_type == 'heat'
 
   - name: Wait for VSC ssh to be ready
     local_action:
       module: wait_for
       port: "22"
-      host: "{{ interfaces.mgmt.ip }}"
+      host: "{{ mgmt_ip }}"
       search_regex: OpenSSH
       delay: 1
 
   - name: Clean known_hosts of VSC's on "{{ target_server }}"
-    command: ssh-keygen -R "{{ interfaces.mgmt.ip }}" -f /root/.ssh/known_hosts
+    command: ssh-keygen -R "{{ mgmt_ip }}" -f /root/.ssh/known_hosts
     delegate_to: "{{ ansible_deployment_host }}"
     remote_user: root
 
@@ -142,4 +154,3 @@
     remote_user: root
     when: inventory_hostname == groups['vsds'][0] or inventory_hostname == groups['vsds'][3]
   when: minor_upgrade == True
-

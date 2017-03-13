@@ -1,3 +1,19 @@
+- block:
+  - name: Clean known_hosts of VSD's
+    command: ssh-keygen -R "{{ mgmt_ip }}" -f /root/.ssh/known_hosts
+    delegate_to: "{{ ansible_deployment_host }}"
+    remote_user: root
+ 
+  - name: Inject ssh key of ansible_deployment_host to VSD if cloud-init did not work
+    expect:
+      command: "ssh-copy-id -i root@{{ mgmt_ip }}"
+      responses:
+        (?i)yes: "yes"
+        (?i)password: "Alcateldc"
+    remote_user: root
+    delegate_to: localhost
+  when: target_server_type == 'heat'
+
 - name: Create a directory on VSD Node1
   file:  
     path: "/opt/vsd/data"
