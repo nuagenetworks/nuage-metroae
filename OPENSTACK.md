@@ -66,8 +66,6 @@ For reference, here is a description of the contents of the `build-vars.yml` fil
 #    nuage_tar_gz_files_dir: "{{ ansible_env.HOME}}/nuage-release"
 #    # The directory where to extract the relevant Nuage Networks binaries to
 #    nuage_binary_files_dir: "{{ ansible_env.HOME}}/nuage-unpacked"
-#    # Parameter used to define the Hypervisor-Architecture (One of: el6|el7|ubuntu)
-#    nuage_target_architecture: "el7"
 #    # Nuage OpenStack release
 #    # required to populate/unpack nuage openstack packages
 #    # supported OpenStack release for metro - liberty, mitaka

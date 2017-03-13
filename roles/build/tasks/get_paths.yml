@@ -3,51 +3,48 @@
 # VSD
 #################
 
-# QCOW2
 - block:
-  - name: Find name of VSD QCOW2 File
-    find: path="{{ nuage_binary_files_dir }}/vsd/qcow2"  pattern="*.qcow2" recurse=yes
-    register: rc_vsd_file
-  - debug: var=rc_vsd_file verbosity=1
-  - name: Verify that a VSD QCOW2 file was found
-    assert: { 
-      that: "{{ rc_vsd_file.matched }} > 0",
-      msg: "Unable to find VSD VM image file"
-    }
-  - name: Register VSD QCOW2 variables with proper path and image locations for use in other playbooks
-    set_fact:
-      vsd_qcow2_path: "{{ rc_vsd_file.files[0].path | dirname }}"
-      vsd_qcow2_file_name: "{{ rc_vsd_file.files[0].path | basename }}"
-      vcin_qcow2_path: "{{ rc_vsd_file.files[0].path | dirname }}"
-      vcin_qcow2_file_name: "{{ rc_vsd_file.files[0].path | basename }}"
-  when: ( myvsds is defined and 
-        ( myvsds | map(attribute='target_server_type') | list | issuperset(["kvm"]) or myvsds | map(attribute='target_server_type') | list | issuperset(["heat"]) ) ) or
-        ( myvcins is defined and
-        ( myvcins | map(attribute='target_server_type') | list | issuperset(["kvm"]) or myvcins | map(attribute='target_server_type') | list | issuperset(["heat"]) ) )
-  tags:
-    - vsd
-
-# OVA
-- block:
-  - name: Find name of VSD OVA File
-    find: path="{{ nuage_binary_files_dir }}/vsd/ova"  pattern="*.ova" recurse=yes
-    register: rc_vsd_file
-  - debug: var=rc_vsd_file verbosity=1
-  - name: Verify that a VSD OVA file was found
-    assert: { 
-      that: "{{ rc_vsd_file.matched }} > 0",
-      msg: "Unable to find VSD VM image file"
-    }
-  - name: Register VSD OVA variables with proper path and image locations for use in other playbooks
-    set_fact:
-      vsd_ova_path: "{{ rc_vsd_file.files[0].path | dirname }}"
-      vsd_ova_file_name: "{{ rc_vsd_file.files[0].path | basename }}"
-      vcin_ova_path: "{{ rc_vsd_file.files[0].path | dirname }}"
-      vcin_ova_file_name: "{{ rc_vsd_file.files[0].path | basename }}"
-  when: ( myvsds is defined and 
-        myvsds | map(attribute='target_server_type') | list | issuperset(["vcenter"]) ) or
-        ( myvcins is defined and
-        myvcins | map(attribute='target_server_type') | list | issuperset(["vcenter"]) )
+  - block: # QCOW2
+    - name: Find name of VSD QCOW2 File
+      find: path="{{ nuage_binary_files_dir }}/vsd/qcow2"  pattern="*.qcow2" recurse=yes
+      register: rc_vsd_file
+    - debug: var=rc_vsd_file verbosity=1
+    - name: Verify that a VSD QCOW2 file was found
+      assert: { 
+        that: "{{ rc_vsd_file.matched }} > 0",
+        msg: "Unable to find VSD VM image file"
+      }
+    - name: Register VSD QCOW2 variables with proper path and image locations for use in other playbooks
+      set_fact:
+        vsd_qcow2_path: "{{ rc_vsd_file.files[0].path | dirname }}"
+        vsd_qcow2_file_name: "{{ rc_vsd_file.files[0].path | basename }}"
+        vcin_qcow2_path: "{{ rc_vsd_file.files[0].path | dirname }}"
+        vcin_qcow2_file_name: "{{ rc_vsd_file.files[0].path | basename }}"
+    when: ( myvsds is defined and 
+          ( myvsds | map(attribute='target_server_type') | list | issuperset(["kvm"]) or myvsds | map(attribute='target_server_type') | list | issuperset(["heat"]) ) ) or
+          ( myvcins is defined and
+          ( myvcins | map(attribute='target_server_type') | list | issuperset(["kvm"]) or myvcins | map(attribute='target_server_type') | list | issuperset(["heat"]) ) )
+    when: (vsd_requires_binaries|default(True)) or (vcin_requires_binaries|default(False))
+  - block: # OVA
+    - name: Find name of VSD OVA File
+      find: path="{{ nuage_binary_files_dir }}/vsd/ova"  pattern="*.ova" recurse=yes
+      register: rc_vsd_file
+    - debug: var=rc_vsd_file verbosity=1
+    - name: Verify that a VSD OVA file was found
+      assert: { 
+        that: "{{ rc_vsd_file.matched }} > 0",
+        msg: "Unable to find VSD VM image file"
+      }
+    - name: Register VSD OVA variables with proper path and image locations for use in other playbooks
+      set_fact:
+        vsd_ova_path: "{{ rc_vsd_file.files[0].path | dirname }}"
+        vsd_ova_file_name: "{{ rc_vsd_file.files[0].path | basename }}"
+        vcin_ova_path: "{{ rc_vsd_file.files[0].path | dirname }}"
+        vcin_ova_file_name: "{{ rc_vsd_file.files[0].path | basename }}"
+    when: ( myvsds is defined and 
+          myvsds | map(attribute='target_server_type') | list | issuperset(["vcenter"]) ) or
+          ( myvcins is defined and
+          myvcins | map(attribute='target_server_type') | list | issuperset(["vcenter"]) )
   tags:
     - vsd
 
@@ -112,7 +109,9 @@
         vstat_ova_file_name: "{{ rc_vstat_file.files[0].path | basename }}"
       when: rc_vstat_file.matched > 0
     when: myvstats | map(attribute='target_server_type') | list | issuperset(["vcenter"])
-  when: myvstats is defined
+  when:
+    - myvstats is defined
+    - vstat_requires_binaries|default(True)
   tags:
     - vstat
  
@@ -165,7 +164,9 @@
         vsc_ova_file_name: "{{ rc_vsc_file.files[0].path | basename }}"
       when: rc_vsc_file.matched > 0
     when: myvscs | map(attribute='target_server_type') | list | issuperset(["vcenter"])
-  when: myvscs is defined
+  when:
+    - myvscs is defined
+    - vsc_requires_binaries|default(True)
   tags:
     - vsc
 
@@ -342,7 +343,9 @@
         set_fact:
           u16_04_vrs_package_file_name_list: "{{ u16_04_vrs_package_file_name_list }} + {{ rc_vrs_switch_file_u16_04.files |  map(attribute='path') | list | map('basename') | list }}"
     when: vrs_u16_04|default(false)
-  when: myvrss is defined
+  when:
+    - myvrss is defined
+    - vrs_requires_binaries|default(True)
   tags:
     - vrs
 
@@ -403,11 +406,9 @@
   - block:
     - name: Set dockermon target path based on version (Ubuntu 14.04 architecture)
       set_fact:
-        #dockermon_findfile_path: "{{ nuage_binary_files_dir }}/dockermon/{{ { 'ubuntu':'ubuntu', 'ubuntu.14.04':'ubuntu-14.04', 'ubuntu.16.04':'ubuntu-16.04' }[nuage_target_architecture] }}"
         dockermon_findfile_path: "{{ nuage_binary_files_dir }}/dockermon/ubuntu-14.04"
     - name: Find name of dockermon package files (Debian architecture)
       find: path="{{ dockermon_findfile_path }}"  pattern="*.deb" recurse=yes
-      #find: path="{{ nuage_binary_files_dir }}/dockermon/"  pattern="*.deb" recurse=yes
       register: rc_dockermon_file
     - debug: var=rc_dockermon_file verbosity=1
     - name: Verify that Dockermon package file was found
@@ -424,7 +425,6 @@
   - block:
     - name: Set dockermon target path based on version (Ubuntu 16.04  architecture)
       set_fact:
-        #dockermon_findfile_path: "{{ nuage_binary_files_dir }}/dockermon/{{ { 'ubuntu':'ubuntu', 'ubuntu.14.04':'ubuntu-14.04', 'ubuntu.16.04':'ubuntu-16.04' }[nuage_target_architecture] }}"
         dockermon_findfile_path: "{{ nuage_binary_files_dir }}/dockermon/ubuntu-16.04"
     - name: Find name of dockermon package files (Debian architecture)
       find: path="{{ dockermon_findfile_path }}"  pattern="*.deb" recurse=yes
@@ -479,7 +479,9 @@
       - vnsutil_qcow2
       - nsgv_qcow2
       #- nsgami_raw
-  when: myvnsutils is defined
+  when:
+    - myvnsutils is defined
+    - vnsutil_requires_binaries|default(True)
 
 - name: Make sure the proper VNS variables have been defined
   set_fact: 
@@ -512,6 +514,5 @@
       nuage_os_release: "{{ nuage_os_release }}"
   when: 
     - nuage_os_release is defined
-    - nuage_target_architecture == "el6" or nuage_target_architecture == "el7"
   tags:
     - nuage_os
