@@ -1,5 +1,13 @@
 #!/bin/bash
 set -e
+USAGE="Usage: $0 version"
+
+if [ $# -ne 1 ];
+then
+    echo "Requires exactly 1 argument"
+    echo $USAGE
+    exit 1
+fi
 
 USAGE="Usage: $0 version"
 

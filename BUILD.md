@@ -199,6 +199,10 @@ For reference, here is a description of the contents of the `build_vars.yml` fil
 #          nsgv_ip: 10.0.1.60,
 #          # NSGV VM MAC address
 #          nsgv_mac: '52:54:00:88:85:12',
+#          # NSGV FQDN
+#          # VNSUTIL vm can have multiple fqdn's. This var is used to set the fqdn that nsgv's use
+#          # Default is set to inventory_hostname if not specified
+#          nsgv_fqdn: data.example.com,
 #          # The FQDN for the VSD. Used to create certs for VNS-UTILITY VM      
 #          vsd_fqdn: vsd.example.com}
 #

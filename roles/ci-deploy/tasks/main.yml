@@ -70,7 +70,6 @@
   run_once: true
   delegate_to: 127.0.0.1
 
-
 - name: get the u14 vrs name temp file contents
   command: cat "/tmp/{{ net_name_temp }}_vrs_name_u14"
   register: u14_vrs_name
@@ -82,7 +81,6 @@
     vrs_u14_target_server_name: "{{ u14_vrs_name.stdout }}"
   run_once: true
   delegate_to: 127.0.0.1
-
 
 - name: get the u16 vrs ip temp file contents
   command: cat /tmp/{{ net_name_temp }}_vrs_ip_u16
@@ -125,13 +123,7 @@
   run_once: true
   ignore_errors: yes
 
-#- name: Update test build file for 4.0R4
-#  template:
-#    src: "{{ playbook_dir }}/test/files/build_vars_4.0R4.yml.all.j2"
-#    dest: "{{ playbook_dir }}/test/files/build_vars_4.0R4.yml.all"
-#  delegate_to: 127.0.0.1
-#  run_once: true
-
+#No need to have two sections for Redhat and Ubuntu since we only support Redhat for VSP components now
 - name: Update test build file
   template:
     src: "{{ playbook_dir }}/test/files/build_vars.yml.all.j2"
@@ -160,7 +152,26 @@
   delegate_to: 127.0.0.1
   run_once: true
 
+- name: Update test build file for VRSOnly
+  template:
+    src: "{{ playbook_dir }}/test/files/build_vars.yml.VRSOnly.j2"
+    dest: "{{ playbook_dir }}/test/files/build_vars.yml.VRSOnly"
+  delegate_to: 127.0.0.1
+  run_once: true
 
+- name: Update test build file for VNSOnly
+  template:
+    src: "{{ playbook_dir }}/test/files/build_vars.yml.VNSOnly.j2"
+    dest: "{{ playbook_dir }}/test/files/build_vars.yml.VNSOnly"
+  delegate_to: 127.0.0.1
+  run_once: true
+
+- name: Update test build file for VNSOnlyWithVSC
+  template:
+    src: "{{ playbook_dir }}/test/files/build_vars.yml.VNSOnlyWithVSC.j2"
+    dest: "{{ playbook_dir }}/test/files/build_vars.yml.VNSOnlyWithVSC"
+  delegate_to: 127.0.0.1
+  run_once: true
 
 - name: Update /etc/hosts file on {{ inventory_hostname }}
   lineinfile:
@@ -169,7 +180,6 @@
   with_items: "{{vsp_ips}}"
   run_once: true
   remote_user: "root"
-
 
 - name: Configure dnsmasq on {{ inventory_hostname }}
   copy:
@@ -264,8 +274,7 @@
     yum:
       name: '*'
       state: latest
-    remote_user: "root"
-
+    remote_user: root
   when: ansible_os_family == 'RedHat'
 
 

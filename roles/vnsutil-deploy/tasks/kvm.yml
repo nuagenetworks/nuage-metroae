@@ -3,7 +3,7 @@
   local_action:
     module: wait_for
     port: "22"
-    host: "{{ interfaces.mgmt.ip }}"
+    host: "{{ mgmt_ip }}"
     search_regex: OpenSSH
     delay: 1
   delegate_to: "{{ target_server }}"
@@ -12,7 +12,7 @@
 - name: Update /etc/hosts file on {{ target_server }}
   lineinfile:
     dest: /etc/hosts
-    line: "{{ interfaces.mgmt.ip }} {{ inventory_hostname }}"
+    line: "{{ mgmt_ip }} {{ inventory_hostname }}"
   delegate_to: "{{ target_server }}"
   remote_user: "{{ target_server_username }}"
 
@@ -21,7 +21,7 @@
     dest: /etc/hosts
     block: |
       {% for host in groups['vnsutils']  %}
-      {{ hostvars[host]['interfaces']['mgmt']['ip'] }}    {{ host }}
+      {{ hostvars[host]['mgmt_ip'] }}    {{ host }}
       {% endfor %}
   remote_user: "root"
 
