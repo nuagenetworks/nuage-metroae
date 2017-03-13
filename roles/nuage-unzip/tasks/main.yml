@@ -269,29 +269,28 @@
       - "Nuage-VNS-Utils-*"
     register: rc_vns_archives
   - debug: var=rc_vns_archives verbosity=1
-  - name: Unpack VNS NSG and Utils archive files
-    unarchive: src="{{ rc_vns_archives.results[item.0].files[0].path }}" dest="{{ nuage_unzipped_files_dir }}/{{ item.1 }}" mode=0775
-    register: rc_vns_archives_files
-    with_indexed_items:
-      - "vns/nsg/"
-      - "vns/utils/"
-    remote_user: root
-    when: rc_vns_archives.results[0].matched > 0 and rc_vns_archives.results[1].matched > 0
   - block:
-    # Don't do AWS just yet...
-    - name: Find name of NSG-AWSs archive files
-      find: path="{{ nuage_unzipped_files_dir }}/vns/nsg" pattern="{{ item }}"
-      with_items:
-        - "Nuage-NSG-*AWS*"
-      register: rc_vns_archives
-    - debug: var=rc_vns_archives verbosity=1
     - name: Unpack VNS NSG and Utils archive files
       unarchive: src="{{ rc_vns_archives.results[item.0].files[0].path }}" dest="{{ nuage_unzipped_files_dir }}/{{ item.1 }}" mode=0775
       register: rc_vns_archives_files
       with_indexed_items:
+        - "vns/nsg/"
+        - "vns/utils/"
+    - name: Find name of NSG-AWSs archive files
+      find: path="{{ nuage_unzipped_files_dir }}/vns/nsg" pattern="{{ item }}"
+      with_items:
+        - "Nuage-NSG-*AWS*"
+      register: rc_vns_aws_archives
+    - debug: var=rc_vns_aws_archives verbosity=1
+    - name: Unpack VNS NSG AWS archive files
+      unarchive: src="{{ rc_vns_aws_archives.results[item.0].files[0].path }}" dest="{{ nuage_unzipped_files_dir }}/{{ item.1 }}"  mode=0775
+      register: rc_vns_aws_archives_files
+      with_indexed_items:
         - "vns/nsg/aws"
-    remote_user: root
-    when: false
+      when: rc_vns_aws_archives.results[0].matched > 0
+  when: rc_vns_archives.results[0].matched > 0 and rc_vns_archives.results[1].matched > 0
+  tags:
+    - vns
 
 ##########################
 ## Nuage OpenStack Plugins
