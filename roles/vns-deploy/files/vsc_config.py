@@ -231,7 +231,7 @@ if __name__ == '__main__':
 
     # Execute commads on each vsc
     for vsc in vsc_host_vars:
-        vsc_conn['ip'] = vsc_host_vars[vsc]['interfaces']['mgmt']['ip']
+        vsc_conn['ip'] = vsc_host_vars[vsc]['mgmt_ip']
         result = run_commands(commands, vsc_conn, vsd_host_vars, xmpp_username)
 
     # Display the final results

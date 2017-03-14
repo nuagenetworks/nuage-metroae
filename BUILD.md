@@ -44,11 +44,9 @@ For reference, here is a description of the contents of the `build_vars.yml` fil
 ```
 #    # The directory where the Nuage Networks binariy archives are located. This is only
 #    # required for the `nuage_unpack.yml` playbook.
-#    nuage_packed_src_path: "{{ ansible_env.HOME}}/nuage-release"
-#    # The directory where to extract the relevant Nuage Networks binaries to
-#    nuage_unpacked_dest_path: "{{ ansible_env.HOME}}/nuage-unpacked"
-#    # Parameter used to define the Hypervisor-Architecture (One of: el6|el7|ubuntu)
-#    nuage_target_architecture: "el7"
+#    nuage_tar_gz_files_dir: "{{ ansible_env.HOME}}/nuage-release"
+#    # The directory where the required Nuage Networks binaries (*.qcow2, *.ova, *.rpm, *.deb) exist
+#    nuage_binary_files_dir: "{{ ansible_env.HOME}}/nuage-unpacked"
 #    # Parameter to define the remote sudo username to use on target servers, e.g. hypevisors.
 #    target_server_username: "root"
 #    # Parameter to define the sudo username to use on the ansible server.
@@ -57,6 +55,9 @@ For reference, here is a description of the contents of the `build_vars.yml` fil
 #    # When True or undefined, all VSDs will be configured stand-alone. When False
 #    # we will expect 3 VSD definitions, below, for clustered deployment.
 #    vsd_standalone: True
+#    # When True, look for binary files during the build, error if not found.
+#    # When false, do not check for binaries during the build.
+#    vsd_requires_binaries: True
 #    # A dictionary of params for 0 or more VSDs
 #    # Note: Multiple VSDs can be deployed from the same qcow2 file
 #    myvsds:
@@ -77,6 +78,10 @@ For reference, here is a description of the contents of the `build_vars.yml` fil
 #    VSC
 #    # A dictionary of params for 0 or more VSCs
 #    # Note: Multiple VSCs can be deployed from the same qcow2 file
+#
+#    # When True, look for binary files during the build, error if not found.
+#    # When false, do not check for binaries during the build.
+#    vsc_requires_binaries: True
 #    myvscs:
 #      - { hostname: vsc1.example.com,
 #          # The target server type where this VSC instance will run. Possible values: kvm
@@ -116,6 +121,9 @@ For reference, here is a description of the contents of the `build_vars.yml` fil
 #          vsc_static_route_list: { 0.0.0.0/1 } }
 #
 #    VRS
+#    # When True, look for binary files during the build, error if not found.
+#    # When false, do not check for binaries during the build.
+#    vrs_requires_binaries: True
 #    # When True, install dockermon on the VRS. When False, don't.
 #    dockermon_install: True
 #    # A dictionary of params for 0 or more VRSs
@@ -153,6 +161,10 @@ For reference, here is a description of the contents of the `build_vars.yml` fil
 #    VSTAT - ElasticSearch
 #    # A dictionary of params for 0 or more VSTAT instances
 #    # Note: Multiple VSTAT instances can be copied from the same qcow2
+#
+#    # When True, look for binary files during the build, error if not found.
+#    # When false, do not check for binaries during the build.
+#    vstat_requires_binaries: True
 #    myvstats:
 #          # The hostname or IP address for this VSTAT instance
 #      - { hostname: vstat1.example.com,
@@ -172,6 +184,10 @@ For reference, here is a description of the contents of the `build_vars.yml` fil
 #    VNSUTIL
 #    # A dictionary of params for 0 or more VNS-UTILITY instances
 #    # Note: Multiple VNS-UTILITY instances can be copied from the same qcow2
+#
+#    # When True, look for binary files during the build, error if not found.
+#    # When false, do not check for binaries during the build.
+#    vnsutil_requires_binaries: True
 #    myvnsutils:
 #          # The hostname or IP address for this VNS-UTILITY instance
 #      - { hostname: proxy.example.com,
@@ -199,10 +215,18 @@ For reference, here is a description of the contents of the `build_vars.yml` fil
 #          nsgv_ip: 10.0.1.60,
 #          # NSGV VM MAC address
 #          nsgv_mac: '52:54:00:88:85:12',
+#          # NSGV FQDN
+#          # VNSUTIL vm can have multiple fqdn's. This var is used to set the fqdn that nsgv's use
+#          # Default is set to inventory_hostname if not specified
+#          nsgv_fqdn: data.example.com,
 #          # The FQDN for the VSD. Used to create certs for VNS-UTILITY VM      
 #          vsd_fqdn: vsd.example.com}
 #
 #    NSGV
+#
+#    # When True, look for binary files during the build, error if not found.
+#    # When false, do not check for binaries during the build.
+#    nsgv_requires_binaries: True
 #    # A dictionary of params for only 1 NSGV instance for current release
 #    mynsgvs:
 #          # Define only hostname for this NSGV instance

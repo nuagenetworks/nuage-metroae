@@ -6,6 +6,8 @@
 1. Added check to verify that the ntp servers are specified in dotted-decimal notation
 1. Moved build variables out of `build.yml` and into `build_vars.yml`
 1. Decoupled nuage_unpack from build. Now you are required to run nuage_unpack separately if you are deploying from tar-gz archives. Bonus: You need only run the unpack once!
+1. Renamed the `packed` and `unpacked` directory-name variables to be easier to understand. The are now `nuage_tar_gz_files_dir` and `nuage_binary_files_dir`, respectively.
+1. Added variables to support requring binaries for some components and not for others. See, for example, `vsd_requires_binaries` in `build_vars.yml` and `BUILD.md`.
 
 Feedback and bug reports should be provided via the Issues feature of Github or via email to [Brian Castelli](mailto://brian.castelli@nokia.com).
 
@@ -68,6 +70,18 @@ The following restrictions and conditions apply prior to executing the playbooks
 1. The ansible deployment host may also be a target server.
 1. It may be necessary to remove the vsd, vsc and vstat entries from the ansible user's `~/.ssh/known_hosts` file to prevent errors from suspected DNS spoofing. This would only be necessary if multiple runs are attempted.
 1. Under certain conditions, the `destroy_everything.yml` playbook must be run as sudo/root.
+
+## Vcenter Prerequisites
+
+In addition to the above prerequisites, the following packages are needed for vcenter deployments
+
+1. `ovftool` package needs to installed on ansible deployment host. This package is available to download from here https://www.vmware.com/support/developer/ovf/.
+
+## OpenStack Prerequisites
+
+In addition to the above prerequisites, the following packages are needed for openstack deployments
+
+1. `shade` python module needs to installed on ansible deployment host. You can install using pip.
 
 **Note:** These playbooks should work as long as there is network connectivity between the deployment host, the hypervisors, and the VMs on the hypervisors. Connectivity in this case means they can ping one another's hostname or IP address.
 

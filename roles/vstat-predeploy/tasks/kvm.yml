@@ -69,6 +69,27 @@
           group={{ libvirt.group }}
     delegate_to: "{{ target_server }}"
     remote_user: "{{ target_server_username }}"
+ 
+  - name: Get list of partitions
+    shell: "guestfish -r -a {{ images_path }}/{{ inventory_hostname }}/{{ vstat_qcow2_file_name }} run : list-filesystems | grep -Ev '(unknown|swap)'"
+    delegate_to: "{{ target_server }}"
+    remote_user: "{{ target_server_username }}"
+    register: partitions_list
+
+  - name: Check partition content
+    shell: "guestfish -r -a {{ images_path }}/{{ inventory_hostname }}/{{ vstat_qcow2_file_name }} run : mount {{ item.split(':')[0] }} / : ls /"
+    delegate_to: "{{ target_server }}"
+    register: partitions
+    with_items: "{{ partitions_list.stdout_lines }}"
+    remote_user: "{{ target_server_username }}"
+
+  - name: Find root partition
+    set_fact:
+      guestfish_mount: "{{ item.item.split(':')[0]}}"
+    with_items: "{{ partitions.results }}"
+    when: '"proc" in item.stdout'
+
+  - debug: var=guestfish_mount verbosity=1
 
   - name: Create a temporary copy of the network script for eth0 on {{ target_server }}
     template: src=ifcfg-eth0.j2 backup=no dest={{ images_path }}/{{ inventory_hostname }}/ifcfg-eth0
@@ -76,7 +97,7 @@
     remote_user: "{{ target_server_username }}"
 
   - name: Copy eth0 network script file to the VSTAT image on {{ target_server }}
-    command: guestfish --rw -a {{ images_path }}/{{ inventory_hostname }}/{{ vstat_qcow2_file_name }} -m /dev/sda2 copy-in {{ images_path }}/{{ inventory_hostname }}/ifcfg-eth0 /etc/sysconfig/network-scripts/
+    command: guestfish --rw -a {{ images_path }}/{{ inventory_hostname }}/{{ vstat_qcow2_file_name }} -m {{ guestfish_mount }} copy-in {{ images_path }}/{{ inventory_hostname }}/ifcfg-eth0 /etc/sysconfig/network-scripts/
     delegate_to: "{{ target_server }}"
     remote_user: "{{ target_server_username }}"
 
@@ -86,7 +107,7 @@
     remote_user: "{{ target_server_username }}"
 
   - name: Set the owner and group on the eth0 network script file in the VSTAT image
-    command: guestfish --rw -a {{ images_path }}/{{ inventory_hostname }}/{{ vstat_qcow2_file_name }} -m /dev/sda2 chown 0 0 /etc/sysconfig/network-scripts/ifcfg-eth0
+    command: guestfish --rw -a {{ images_path }}/{{ inventory_hostname }}/{{ vstat_qcow2_file_name }} -m {{ guestfish_mount }} chown 0 0 /etc/sysconfig/network-scripts/ifcfg-eth0
     delegate_to: "{{ target_server }}"
     remote_user: "{{ target_server_username }}"
 
@@ -96,7 +117,7 @@
     remote_user: "{{ target_server_username }}"
 
   - name: Copy network file to the VSTAT image
-    command: guestfish --rw -a {{ images_path }}/{{ inventory_hostname }}/{{ vstat_qcow2_file_name }} -m /dev/sda2 copy-in {{ images_path }}/{{ inventory_hostname }}/network /etc/sysconfig/
+    command: guestfish --rw -a {{ images_path }}/{{ inventory_hostname }}/{{ vstat_qcow2_file_name }} -m {{ guestfish_mount }} copy-in {{ images_path }}/{{ inventory_hostname }}/network /etc/sysconfig/
     delegate_to: "{{ target_server }}"
     remote_user: "{{ target_server_username }}"
 
@@ -106,17 +127,17 @@
     remote_user: "{{ target_server_username }}"
 
   - name: Set the owner and group for the network hostname file on the VSTAT image
-    command: guestfish --rw -a {{ images_path }}/{{ inventory_hostname }}/{{ vstat_qcow2_file_name }} -m /dev/sda2 chown 0 0 /etc/sysconfig/network
+    command: guestfish --rw -a {{ images_path }}/{{ inventory_hostname }}/{{ vstat_qcow2_file_name }} -m {{ guestfish_mount }} chown 0 0 /etc/sysconfig/network
     delegate_to: "{{ target_server }}"
     remote_user: "{{ target_server_username }}"
 
   - name: Create the directory /root/.ssh for authorized_keys
-    command: guestfish --rw -a {{ images_path }}/{{ inventory_hostname }}/{{ vstat_qcow2_file_name }} -m /dev/sda2 mkdir-mode /root/.ssh 0700
+    command: guestfish --rw -a {{ images_path }}/{{ inventory_hostname }}/{{ vstat_qcow2_file_name }} -m {{ guestfish_mount }} mkdir-mode /root/.ssh 0700
     delegate_to: "{{ target_server }}"
     remote_user: "{{ target_server_username }}"
 
   - name: Set the owner and group for the /root/.ssh directory on the VSTAT image
-    command: guestfish --rw -a {{ images_path }}/{{ inventory_hostname }}/{{ vstat_qcow2_file_name }} -m /dev/sda2 chown 0 0 /root/.ssh
+    command: guestfish --rw -a {{ images_path }}/{{ inventory_hostname }}/{{ vstat_qcow2_file_name }} -m {{ guestfish_mount }} chown 0 0 /root/.ssh
     delegate_to: "{{ target_server }}"
     remote_user: "{{ target_server_username }}"
 
@@ -130,7 +151,7 @@
     remote_user: "{{ target_server_username }}"
 
   - name: Copy authorized_keys file to the VSTAT image
-    command: guestfish --rw -a {{ images_path }}/{{ inventory_hostname }}/{{ vstat_qcow2_file_name }} -m /dev/sda2 copy-in {{ images_path }}/{{ inventory_hostname }}/authorized_keys /root/.ssh/
+    command: guestfish --rw -a {{ images_path }}/{{ inventory_hostname }}/{{ vstat_qcow2_file_name }} -m {{ guestfish_mount }} copy-in {{ images_path }}/{{ inventory_hostname }}/authorized_keys /root/.ssh/
     delegate_to: "{{ target_server }}"
     remote_user: "{{ target_server_username }}"
 
@@ -140,12 +161,12 @@
     remote_user: "{{ target_server_username }}"
 
   - name: Set the owner and group for the authorized_keys file on the VSTAT image
-    command: guestfish --rw -a {{ images_path }}/{{ inventory_hostname }}/{{ vstat_qcow2_file_name }} -m /dev/sda2 chown 0 0 /root/.ssh/authorized_keys
+    command: guestfish --rw -a {{ images_path }}/{{ inventory_hostname }}/{{ vstat_qcow2_file_name }} -m {{ guestfish_mount }} chown 0 0 /root/.ssh/authorized_keys
     delegate_to: "{{ target_server }}"
     remote_user: "{{ target_server_username }}"
 
   - name: Set the mode for the authorized_keys file on the VSTAT image
-    command: guestfish --rw -a {{ images_path }}/{{ inventory_hostname }}/{{ vstat_qcow2_file_name }} -m /dev/sda2 chmod 0640 /root/.ssh/authorized_keys
+    command: guestfish --rw -a {{ images_path }}/{{ inventory_hostname }}/{{ vstat_qcow2_file_name }} -m {{ guestfish_mount }} chmod 0640 /root/.ssh/authorized_keys
     delegate_to: "{{ target_server }}"
     remote_user: "{{ target_server_username }}"
 
