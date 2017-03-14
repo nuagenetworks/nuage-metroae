@@ -22,7 +22,7 @@ These are the following playbooks/roles supported by metro for upgrade.
 
 ### vsd_health.yml
 
-This playbook/role is used to gather network and monit information of vsd(s) prior/post upgrade process. A report file with network and monit informations is created (filename can be configured inside the vsd_health.yml playbook) inside reports folder. 
+This playbook/role is used to gather network and monit information of vsd(s) prior/post upgrade process. A report file with network and monit information is created (filename can be configured inside the vsd_health.yml playbook) inside reports folder. 
 
 ### vsd_decluster.yml
 
@@ -38,9 +38,9 @@ This playbook/role destroy the exsitng vsd vm(s) and boots a new vsd vm(s) with 
 
 The playbook can be configured with interested vsd(s).
 e.g. 
-If user is interested in upgrading vsd node1, hosts would like this
+If user is interested in upgrading vsd node1, hosts can be defined as below
 - hosts: vsd_ha_node1
-If user is interested in upgrading vsd node1 and node3, hosts would like this
+If user is interested in upgrading vsd node1 and node3, hosts can be defined as below
 - hosts: vsd_ha_node1:vsd_ha_node3
 To upgrade all vsd nodes
 - hosts: vsds
@@ -51,7 +51,7 @@ This  playbook/role is used to gather operational information of vsc(s) prior/po
 
 ### vsc_backup.yml
 
-This playbook/role is used to make backup of exsiting vsc configuration, bof configuration and .tim file and copy them to ansible deploymetn host. These are used in case a rollback is needed.
+This playbook/role is used to make backup of exsiting vsc configuration, bof configuration and .tim file and copy them to ansible deployment host. These are used in case a rollback is needed.
 
 ### vsc_upgrade.yml
 
@@ -68,7 +68,7 @@ To upgrade all vsc nodes
 
 ### vsp_upgrade.yml
 
-All the above playbooks are captured inside a single playbook `vsp_upgrade.yml`. This palybook follows the instructions and the order as specified in VCS install guide.
+All the above playbooks are captured inside a single playbook `vsp_upgrade.yml`. This playbook follows the instructions and the order of upgrading nuage components as specified in VCS install guide.
 
 # build and reset-build playbooks
 
