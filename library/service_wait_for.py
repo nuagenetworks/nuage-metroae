@@ -6,19 +6,13 @@ import time
 DOCUMENTATION = '''
 ---
 module: service_wait_for
-short_description: Wait for a service managed by monit to come to active state within a given time period
+short_description: Wait for a service/program/process managed by monit to come to active state within a given time period
 options:
   name:
     description:
-      - The name of the I(monit/systemd) program/process
+      - The name of the monit program/process
     required: true
     default: null
-  state:
-    description:
-      - The state of service
-    required: true
-    default: null
-    choices: [ "Running" ]
   period:
     description:
       - time period to monitor
@@ -26,14 +20,14 @@ options:
     default: null
   frequency:
     description:
-      - polling frequency
+      - frequency of polling
     required: true
     default: null
 '''
 
 EXAMPLES = '''
-# Verify the state of program "ntpd-status" state.
-- monit: name=ntpd-status state=summary
+# Wait for the state of program "ejabberd-status" to become ok polling every 30 seconds for 600 seconds
+- service_wait_for: name=ejabberd-status period=600 frequency=30
 '''
 
 
@@ -41,7 +35,6 @@ def main():
     arg_spec = dict(
         name=dict(required=True, type='list'),
         period=dict(required=True, type='int'),
-        state=dict(required=True, choices=['Running']),
         frequency=dict(required=True, type='int')
     )
 
@@ -49,7 +42,6 @@ def main():
     module = AnsibleModule(argument_spec=arg_spec, supports_check_mode=True)
 
     vsd_stats_proc = module.params['name']
-    state = module.params['state']
     period = module.params['period']
     frequency = module.params['frequency']
 
@@ -63,8 +55,10 @@ def main():
         for line in out.split('\n'):
             parts = line.split()
             if len(parts) > 2:
-                if (parts[0].lower() == 'program' or
-                            parts[0].lower() == 'process'):
+                if parts[0].lower() == 'program':
+                    if parts[1] == "'%s'" % proc_name:
+                        return ' '.join(parts[2:]).lower()
+                elif parts[0].lower() == 'process':
                     if parts[1] == "'%s'" % proc_name:
                         return ' '.join(parts[3:]).lower()
         else:
@@ -76,7 +70,7 @@ def main():
     for proc_name in vsd_stats_proc:
         proc_status = status(proc_name)
         while desired_state == False and time_elapsed < period:
-            if proc_status == "ok":
+            if proc_status == 'ok' or 'running':
                 desired_state = True
             else:
                 time.sleep(frequency)
