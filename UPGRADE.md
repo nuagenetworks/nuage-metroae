@@ -72,10 +72,8 @@ To upgrade all vsc nodes
 
 All the above playbooks are captured inside a single playbook `vsp_upgrade.yml`. This playbook follows the instructions and the order of upgrading nuage components as specified in VCS install guide.
 
-# build and reset-build playbooks
+## build and reset-build playbooks
 
-Refer `BUILD.md` build and reset-build playbooks section for more details
+The build_upgrade playbook (`build_upgrade.yml`) is used to automatically populate a number of Ansible variable files for the operation of the metro playbooks. Running `./metro-ansible build_upgrade.yml` will use the variables defined in `build_vars.yml` to create a `hosts` file, populate a `host_vars` directory, populate a `group_vars` directory, and make a few additional variable changes as required. The `build_upgrade.yml` playbook will do all the work for you.
 
-# nuage_unpack playbook
-
-Refer `BUILD.md` nuage_unpack playbook section for more details
+Refer `BUILD.md` reset-build playbooks section for more details
