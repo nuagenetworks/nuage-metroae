@@ -6,7 +6,7 @@ import time
 DOCUMENTATION = '''
 ---
 module: service_wait_for
-short_description: Wait for a service managed by monit or systemd to come to a state within a given time period
+short_description: Wait for a service managed by monit to come to active state within a given time period
 options:
   name:
     description:
@@ -18,16 +18,15 @@ options:
       - The state of service
     required: true
     default: null
-    choices: [ "summary" ]
-  stype:
-    description:
-      - Type of service manager
-    required: true
-    default: null
-    choices: [ "monit" , "systemctl"]
+    choices: [ "Running" ]
   period:
     description:
       - time period to monitor
+    required: true
+    default: null
+  frequency:
+    description:
+      - polling frequency
     required: true
     default: null
 '''
@@ -67,7 +66,7 @@ def main():
                 if (parts[0].lower() == 'program' or
                             parts[0].lower() == 'process'):
                     if parts[1] == "'%s'" % proc_name:
-                        return ' '.join(parts[2:]).lower()
+                        return ' '.join(parts[3:]).lower()
         else:
             return ''
 
@@ -77,7 +76,7 @@ def main():
     for proc_name in vsd_stats_proc:
         proc_status = status(proc_name)
         while desired_state == False and time_elapsed < period:
-            if proc_status.lower() == state.lower():
+            if proc_status == "ok":
                 desired_state = True
             else:
                 time.sleep(frequency)
