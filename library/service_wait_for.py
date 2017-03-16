@@ -57,10 +57,10 @@ def main():
             if len(parts) > 2:
                 if parts[0].lower() == 'program':
                     if parts[1] == "'%s'" % proc_name:
-                        return ' '.join(parts[2:]).lower()
+                        return ' '.join(parts[3:]).lower()
                 elif parts[0].lower() == 'process':
                     if parts[1] == "'%s'" % proc_name:
-                        return ' '.join(parts[3:]).lower()
+                        return ' '.join(parts[2:]).lower()
         else:
             return ''
 
