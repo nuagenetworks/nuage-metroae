@@ -3,13 +3,18 @@
   local_action:
     module: wait_for
     port: "22"
-    host: "{{ interfaces.mgmt.ip }}"
+    host: "{{ mgmt_ip }}"
     search_regex: OpenSSH
     delay: 1
   tags:
     - vsc
     - vsc-deploy
     - vsc-health
+
+- name: Clean known_hosts of VSC's 
+  command: ssh-keygen -R "{{ mgmt_ip }}" -f /root/.ssh/known_hosts
+  delegate_to: "{{ ansible_deployment_host }}"
+  remote_user: "{{ ansible_sudo_username }}"
 
 - name: Get output of 'show router bgp summary'
   sros_command:

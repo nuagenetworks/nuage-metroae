@@ -1,4 +1,9 @@
 - block: 
+  - name: Clean known_hosts of VSC's on "{{ target_server }}"
+    command: ssh-keygen -R "{{ mgmt_ip }}" -f /root/.ssh/known_hosts
+    delegate_to: "{{ ansible_deployment_host }}"
+    remote_user: "{{ ansible_sudo_username }}"
+
   - name: Get output of 'show bof'
     sros_command:
       commands:
@@ -20,7 +25,7 @@
   - name: Get current file version of image on VSC
     sros_command:
       commands:
-        - file version "{{ bof_json['image_folder']/cpm.tim }}"
+        - file version "{{ bof_json['image_folder'] }}/cpm.tim"
       provider: "{{ vsc_creds }}"
     register: image
     delegate_to: localhost
@@ -30,34 +35,54 @@
 
   - name: Create local variable with image version in json
     set_fact:
-      bof_json: "{{ image.stdout[0]|image_version_to_json }}"
+      version_json: "{{ image.stdout[0]|image_version_to_json }}"
 
   - name: Print image version in json  when verbosity >= 1
-    debug: var=bof_json verbosity=1
+    debug: var=version_json verbosity=1
 
   - name: Copy new VSC image to VSC nodes
     expect:
-      command: "{{ vsc_qcow2_path }}/{{ vsc_tim_file_name }} admin@{{ interfaces.mgmt.ip }}:bof_json['image_folder']/cpm.tim"
+      command: "{{ vsc_image_copy }}"
       responses:
         (?i)password: "admin"
-    remote_user: root
+      timeout: 240
+    remote_user: "{{ ansible_sudo_username }}"
     delegate_to: "{{ ansible_deployment_host }}"
 
-  - name: Reboot VSC node
-    sros_command:
-      commands:
-        - admin reboot now
-      provider: "{{ vsc_creds }}"
-    register: bof_config
-    delegate_to: localhost
+  - block:
+    - name: Stop VSC guest VM
+      virt: name={{ inventory_hostname }} state=destroyed
+      delegate_to: "{{ target_server }}"
+      remote_user: root
+
+    - name: Restart VSC guest VM
+      virt: name={{ inventory_hostname }} state=running
+      delegate_to: "{{ target_server }}"
+      remote_user: root
+    when: target_server_type == 'kvm'
+
+  - name: Reboot VSC VM
+    os_server_actions:
+      auth:
+        "{{ os_auth }}"
+      server: "{{ inventory_hostname }}"
+      action: reboot
+      wait: no
+    delegate_to: 127.0.0.1
+    when: target_server_type == 'heat'
 
   - name: Wait for VSC ssh to be ready
     local_action:
       module: wait_for
       port: "22"
-      host: "{{ interfaces.mgmt.ip }}"
+      host: "{{ mgmt_ip }}"
       search_regex: OpenSSH
       delay: 1
+
+  - name: Clean known_hosts of VSC's on "{{ target_server }}"
+    command: ssh-keygen -R "{{ mgmt_ip }}" -f /root/.ssh/known_hosts
+    delegate_to: "{{ ansible_deployment_host }}"
+    remote_user: "{{ ansible_sudo_username }}"
 
   - name: Get output of 'show vswitch-controller xmpp-server detail'
     sros_command:
@@ -65,6 +90,9 @@
         - show vswitch-controller xmpp-server detail
       provider: "{{ vsc_creds }}"
     register: xmpp_detail
+    until: xmpp_detail.stdout[0].find('Functional') != -1
+    retries: 5
+    delay: 10
     delegate_to: localhost
 
   - name: Print 'show vswitch-controller xmpp-server detail' when verbosity >= 1
@@ -101,15 +129,28 @@
 
   - name: Verify VSD Node1 is found in vsd_detail
     assert:
-      that: "cna@{{ vsd_fqdn }}/{{ groups['vsds'][0].split('.')[0:1] }} in vsd_detail.stdout[0]"
+      that: "'cna@{{ vsd_fqdn }}/{{ groups['vsds'][0].split('.')[0:1] | join('.') }}' in vsd_detail.stdout[0]"
       msg: "VSD Node1 could not be found in 'show vswitch-controller vsd detail'"
 
   - name: Verify VSD Node3 is found in vsd_detail
     assert:
-      that: "cna@{{ vsd_fqdn }}/{{ groups['vsds'][2].split('.')[0:1] }} in vsd_detail.stdout[0]"
+      that: "'cna@{{ vsd_fqdn }}/{{ groups['vsds'][2].split('.')[0:1] | join('.') }}' in vsd_detail.stdout[0]"
       msg: "VSD Node3 could not be found in 'show vswitch-controller vsd detail'"
-when: inventory_hostname in groups['vscs']
+  when: inventory_hostname in groups['vscs']
 
-- name: Turn on VSD API on new VSD's
-  command: "{{ enable_vsd_api }}"
-  when: inventory_hostname in groups['vsds']
+- block:
+  - name: Set upgrade complete flag to 1 for minor upgrade on vsd
+    expect:
+      command: "{{ minor_upgrade_cmd }}"
+      responses:
+        (?i)ye: "yes"
+        (?i)yes: "yes"
+      timeout: 100
+    remote_user: root
+    when: inventory_hostname == groups['vsds'][0]
+
+  - name: Restart Jboss on VSD Node1
+    shell: "monit restart jboss"
+    remote_user: root
+    when: inventory_hostname == groups['vsds'][0] or inventory_hostname == groups['vsds'][3]
+  when: minor_upgrade == True

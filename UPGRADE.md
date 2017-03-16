@@ -1,63 +1,79 @@
-# Special instructions while upgrade work is in flight...
+# Metro: Automated Upgrade of Nuage Software
 
-## Upgrade steps
+## Current support for upgrade
 
-As of this writing, only `vsc-health` is supported. Other things will be supported shortly. Look here for updates on progress and process.
+1. As of this writing only VSD and VSC upgrade is supported
+2. Supported upgrade paths
+   1. 3.2.R10 to 4.0.R7
+   1. 4.0.R4 to 4.0.R7
+   1. Other upgrades should be tried in a test environment before production
 
-Using `vsc-health` is a process to use at the moment. You need to:
- 
-1. Edit build.yml such that the `myvscs` group is populated and the other component sections, e.g. `myvsds`, are removed. I have pasted an example vars section at the bottom of this message. Even though you aren’t deploying anything, you’ll need to make sure nuage_unpacked, nuage_unpacked_dest_path, and nauge_release_src_path are set correctly. Also, you must have the VSC binary files on disk in those locations. In the example I have given you, nuage_unpacked is false, so the playbook will expect to find the VSC gzipped tarball in /home/caso/metro/4.0R4/nuage-packed. (We will soon fix it so that you don’t need to have the archive present…)
-1. Edit vsc_health.yml to set the location and file name of the output report. Note that you must change it in two places in that file!
-1. Edit roles/vsc-health/vars/main.yml to set test comparison values such as the expected number of BGP peers.
-1. Run the build step to populate hosts and variables. ./metro-ansible build.yml is the command.
-1. Run the vsc-health check. ./metro-ansible vsc_health.yml
- 
-## 'build.yml' example
+## Overview
 
-The following is an example of a 'build.yml' file that can be used to prepare for a run of vsc-health against an existing VSP deployment.
+These are the following playbooks/roles supported by metro for upgrade.
 
-```
-vars:
-    nuage_release_src_path: "/home/caso/metro/4.0R4/nuage-packed"
-    nuage_unpacked_dest_path: "/home/caso/metro/4.0R4/nuage-unpacked"
-    nuage_unpacked: false
-    nuage_target_architecture: "el7"
-    vsd_standalone: true
-    myvscs:
-      - { hostname: jenkinsvsc1.example.com,
-          target_server_type: "kvm",
-          target_server: 135.227.181.233,
-          mgmt_ip: 192.168.122.212,
-          mgmt_gateway: 192.168.122.1,
-          mgmt_netmask_prefix: 24,
-          ctrl_ip: 192.168.100.202,
-          ctrl_netmask_prefix: 24,
-          vsd_fqdn: jenkinsvsd1.example.com,
-          system_ip: 1.1.1.2,
-          xmpp_username: jenkinsvsc1,
-          vsc_static_route_list: { 0.0.0.0/1 } }
-      - { hostname: jenkinsvsc2.example.com,
-          target_server_type: "kvm",
-          target_server: 135.227.181.233,
-          mgmt_ip: 192.168.122.213,
-          mgmt_gateway: 192.168.122.1,
-          mgmt_netmask_prefix: 24,
-          ctrl_ip: 192.168.100.203,
-          ctrl_netmask_prefix: 24,
-          vsd_fqdn: jenkinsvsd1.example.com,
-          system_ip: 1.1.1.3,
-          xmpp_username: jenkinsvsc2,
-          vsc_static_route_list: { 0.0.0.0/1 } }
-    ansible_deployment_host: 135.227.181.233
-    mgmt_bridge: "virbr0"
-    data_bridge: "virbr1"
-    access_bridge: "access"
-    images_path: "/var/lib/libvirt/images/"
-    ntp_server_list:
-      - 135.227.181.232
-      - 192.96.202.120
-    dns_server_list:
-      - 192.168.122.1
-      - 128.251.10.145
-    dns_domain: example.com
-```
+1. vsd_health.yml
+2. vsd_decluster.yml
+3. vsd_upgrade.yml
+4. vsc_health.yml
+5. vsc_backup.yml
+6. vsc_upgrade.yml
+7. vsp_upgrade.yml
+
+## Details
+
+### vsd_health.yml
+
+This playbook/role is used to gather network and monit information of vsd(s) prior/post upgrade process. A report file with network and monit information is created (filename can be configured inside the vsd_health.yml playbook) inside reports folder. 
+
+### vsd_decluster.yml
+
+This playbook is a collection three individual playbooks/roles that help in making database backup, decoupling existing vsd cluster setup and gracefully stopping vsd processes. The user is expected to mount the migration scritps in respective vsd(s).
+
+a. vsd_dbbackup.yml: This playbook/role makes vsd database backup and stores it on ansible deployment host, which is later used for spinning up new vsd(s)
+b. vsd_decouple.yml: This playbook/role executes decouple script and checks for client connections
+c. stop_vsd_services.yml: This playbook/role stops all vsd services on vsd(s) gracefully
+
+### vsd_upgrade.yml
+
+This playbook/role destroys the exsitng vsd vm(s) and boots a new vsd vm(s) with backup database. It is recommended for user to take snapshot of the old vsd vm(s) before the upgrade as they are destroyed. Current VSD upgrade supports only clustered setup.
+
+The playbook can be configured with interested vsd(s).
+e.g. 
+If user is interested in upgrading vsd node1, hosts can be defined as below
+- hosts: vsd_ha_node1
+If user is interested in upgrading vsd node1 and node3, hosts can be defined as below
+- hosts: vsd_ha_node1:vsd_ha_node3
+To upgrade all vsd nodes
+- hosts: vsds
+
+### vsc_health.yml
+
+This  playbook/role is used to gather operational information of vsc(s) prior/post upgrade process. A report file with the operational output is created (filename can be configured inside the vsc_health.yml playbook) inside reports folder.
+
+### vsc_backup.yml
+
+This playbook/role is used to make backup of exsiting vsc configuration, bof configuration and .tim file and copy them to ansible deployment host. These are used in case a rollback is needed.
+
+### vsc_upgrade.yml
+
+This playbook/role is used to upgrade vsc to new versions by copying new .tim file to the existing vsc(s) and rebooting them.
+
+The playbook can be configured with interested vsc(s)
+e.g. 
+If user is interested in upgrading vsc node1, hosts can be defined as below
+- hosts: vsc_ha_node1
+If user is interested in upgrading vsc node1 and node2, hosts can be defined as below
+- hosts: vsc_ha_node1:vsc_ha_node2
+To upgrade all vsc nodes
+- hosts: vscs
+
+### vsp_upgrade.yml
+
+All the above playbooks are captured inside a single playbook `vsp_upgrade.yml`. This playbook follows the instructions and the order of upgrading nuage components as specified in VCS install guide.
+
+## build and reset-build playbooks
+
+The build_upgrade playbook (`build_upgrade.yml`) is used to automatically populate a number of Ansible variable files for the operation of the metro playbooks. Running `./metro-ansible build_upgrade.yml` will use the variables defined in `build_vars.yml` to create a `hosts` file, populate a `host_vars` directory, populate a `group_vars` directory, and make a few additional variable changes as required. The `build_upgrade.yml` playbook will do all the work for you.
+
+Refer `BUILD.md` reset-build playbooks section for more details
