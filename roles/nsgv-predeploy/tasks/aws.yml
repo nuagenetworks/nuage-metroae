@@ -22,14 +22,12 @@
     type: NSGateway
     parent_id: "{{ nuage_enterprise.id }}"
     parent_type: Enterprise
+    match_filter: "name == '{{ inventory_hostname }}'"
     state: present
     properties:
       name: "{{ inventory_hostname }}"
       template_id: "7971ff5b-1ecd-4410-b8cb-b3ab5141d27a"
-      personality: "NSG"
   register: nuage_nsg
-  when: false
-  # Not Idempotent yet
 
 - name: Create Job to download auto-bootstrap info
   connection: local
@@ -41,10 +39,9 @@
     state: present
     properties:
       command: GET_ZFB_INFO
-      parameters: '{ "mediaType": "YAML", "NSGType": "NSG-AMI", "associatedEntityType": "nsgateway", "associatedEntityId": "2eed7b37-57df-4757-9db6-42fe5ec00e5f" }'
+      parameters: '{ "mediaType": "YAML", "NSGType": "NSG-AMI", "associatedEntityType": "nsgateway", "associatedEntityId": "{{ nuage_nsg.id }}" }'
   register: nuage_nsg_zfb
   when: false
-
 - debug: var=nuage_nsg_zfb
   when: false
 
