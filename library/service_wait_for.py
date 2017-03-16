@@ -70,13 +70,12 @@ def main():
     for proc_name in vsd_stats_proc:
         proc_status = status(proc_name)
         while desired_state == False and time_elapsed < period:
-              if proc_status == 'ok' or 'running':
+              if proc_status == 'ok' or proc_status == 'running':
                  desired_state = True
               else:
                  time.sleep(frequency)
                  time_elapsed = time_elapsed + frequency
-
-              proc_status = status(proc_name)
+                 proc_status = status(proc_name)
 
         monit_stats[proc_name] = proc_status
         monit_stats["Time taken"] = time_elapsed
