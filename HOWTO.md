@@ -63,9 +63,8 @@ As an example, let's consider using Nuage-Metro to deploy a VSD cluster by itsel
 For deploying a VSD cluster, you must define 3 VSD entries in the `myvsds` dictionary in `build_vars.yml`. You must also have the other required definitions in place. Here is an example of the `build_vars.yml` file that deploys a cluster of 3 VSDs:
 
 ```
-  nuage_tar_gz_files_dir: "/home/caso/metro/4.0R4/nuage-packed"
-  nuage_binary_files_dir: "/home/caso/metro/4.0R4/nuage-unpacked"
-  nuage_unpacked: true
+  nuage_zipped_files_dir: "/home/caso/metro/4.0R4/nuage-packed"
+  nuage_unzipped_files_dir: "/home/caso/metro/4.0R4/nuage-unpacked"
   vsd_standalone: false
   myvsds:
     - { hostname: jenkinsvsd1.example.com,
