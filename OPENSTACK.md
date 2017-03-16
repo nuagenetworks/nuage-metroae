@@ -35,7 +35,7 @@ Deloying VSTAT in OpenStack requires the user to upload VSTAT qcow2 image to gla
 ### OSC
 
 `osc-predploy` and `osc-deploy` roles are used to deploy OpenStack Controller (OSC) using packstack. The user needs to upload a cloud image (only CentOS/RHEL 7 are supported) with cloud-init support to glance. The network, flavor and OpenStack release string needs to be supplied by user as well.
-The user may be depoying the OpenStack plugin from a tar-gz archive. The archive may be automatically unpacked using the `nuage_unpack` playbook. Define the `nuage_tar_gz_files_dir` and `nuage_binary_files_dir` in `build_vars.yml` and run `./metro-ansible nuage_unpack.yml`. 
+The user may be depoying the OpenStack plugin from a tar-gz archive. The archive may be automatically unzipped using the `nuage_unzip.yml` playbook. Define the `nuage_zipped_files_dir` and `nuage_unzipped_files_dir` in `build_vars.yml` and run `./metro-ansible nuage_unzip.yml`. 
 
 ### OSC Computes
 
@@ -49,7 +49,7 @@ The user may be depoying the OpenStack plugin from a tar-gz archive. The archive
 
 `os-snapshot` roles is used to make backups of an entire project or set of VMs in a project. These snapshots are downloaded to local machine. Currently they are not archived or exported to a remote machine. So, make sure the local machine has enough storage.
 
-For details about build and nuage-unpack roles and how to execute them please refer to `BUILD.md` file.
+For details about build and nuage-unzip roles and how to execute them please refer to `BUILD.md` file.
 
 ## Runnning playbooks
 
@@ -61,13 +61,13 @@ All the above roles/components can be run individually with `./metro-ansible <pl
 For reference, here is a description of the contents of the `build-vars.yml` file for OpenStack, with comments:
 
 ```
-#    # The directory where the Nuage Networks binariy archives are located. This is only
-#    # required if you will be running the nuage_unpack.yml playbook.
-#    nuage_tar_gz_files_dir: "{{ ansible_env.HOME}}/nuage-release"
-#    # The directory where to extract the relevant Nuage Networks binaries to
-#    nuage_binary_files_dir: "{{ ansible_env.HOME}}/nuage-unpacked"
+#    # The directory where the Nuage Networks zipped archives are located. This is only
+#    # required if you will be running the nuage_unzip.yml playbook.
+#    nuage_zipped_files_dir: "{{ ansible_env.HOME}}/nuage-release"
+#    # The directory where to extract/find the relevant Nuage Networks unzipped files
+#    nuage_unzipped_files_dir: "{{ ansible_env.HOME}}/nuage-unpacked"
 #    # Nuage OpenStack release
-#    # required to populate/unpack nuage openstack packages
+#    # required to populate/unzip nuage openstack packages
 #    # supported OpenStack release for metro - liberty, mitaka
 #    nuage_os_release: "liberty"
 #    VSD

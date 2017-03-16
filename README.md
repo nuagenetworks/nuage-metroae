@@ -5,8 +5,8 @@
 1. Added support for different target server and Ansible host sudo usernames, default is `root`
 1. Added check to verify that the ntp servers are specified in dotted-decimal notation
 1. Moved build variables out of `build.yml` and into `build_vars.yml`
-1. Decoupled nuage_unpack from build. Now you are required to run nuage_unpack separately if you are deploying from tar-gz archives. Bonus: You need only run the unpack once!
-1. Renamed the `packed` and `unpacked` directory-name variables to be easier to understand. The are now `nuage_tar_gz_files_dir` and `nuage_binary_files_dir`, respectively.
+1. Decoupled nuage-unpack from build and renamed it as `nuage-unzip`. Now you are required to run nuage-unzip separately if you are deploying from tar-gz archives. Bonus: You need only run the unzip once!
+1. Renamed the `packed` and `unpacked` directory-name variables to be easier to understand. The are now `nuage_zipped_files_dir` and `nuage_unzipped_files_dir`, respectively.
 1. Added variables to support requring binaries for some components and not for others. See, for example, `vsd_requires_binaries` in `build_vars.yml` and `BUILD.md`.
 
 Feedback and bug reports should be provided via the Issues feature of Github or via email to [Brian Castelli](mailto://brian.castelli@nokia.com).
@@ -46,7 +46,7 @@ The short version of the instructions are:
 1. Clone this repository to the Ansible host
 1. Customize `build_vars.yml` with your VSD, VSC, VRS, VNSUTIL, NSGV  and VSTAT information. (See `BUILD.md` for details.)
 1. Copy your binary files to the proper locations. (See `BUILD.md` for details.)
-1. Optionally execute `./metro-ansible nuage_unpack.yml` if you are installing from tar-gz files.
+1. Optionally execute `./metro-ansible nuage_unzip.yml` if you are installing from tar-gz files.
 1. Execute `./metro-ansible build.yml` to automatically populate variables in the appropriate places, e.g. the `host_vars` directory.
 1. Execute `./metro-ansible install_everything.yml`
 1. To get rid of everything that has been deployed, execute `./metro-ansible destroy_everything.yml'
@@ -75,6 +75,7 @@ The following restrictions and conditions apply prior to executing the playbooks
 
 In addition to the above prerequisites, the following packages are needed for vcenter deployments
 
+1. Nuage software version 4.0R7 and greater is supported. Previous versions of Nuage software lack the required support.
 1. `ovftool` package needs to installed on ansible deployment host. This package is available to download from here https://www.vmware.com/support/developer/ovf/.
 
 ## OpenStack Prerequisites

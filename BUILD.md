@@ -18,11 +18,11 @@ To reset the build to factory settings, execute:
 
 or
 
-`./metro-ansible rest_build.yml`
+`./metro-ansible reset_build.yml`
 
-# nuage_unpack playbook
+# nuage_unzip.yml playbook
 
-When the `build.yml` playbook is executed, it expects to find Nuage software binaries (QCOW2, OVA, and Linux Package files) in specific places. You can either copy the proper files to their locations, shown below, or you can use the nuage_unpack.yml playbook to do the work for you. Simply specify the proper source and target directories in `build_vars.yml` and `nuage_unpack.yml` will do the heavy lifting.
+When the `build.yml` playbook is executed, it expects to find unzipped Nuage software files (QCOW2, OVA, and Linux Package files) for items that are being upgraded or installed. You can either copy the proper files to their locations, shown below, or you can use the nuage_unzip.yml playbook to do the work for you. Simply specify the proper source and target directories in `build_vars.yml` and `nuage_unzip.yml` will do the heavy lifting.
 
 Here are the expected paths to binaries.
 
@@ -42,11 +42,14 @@ Here are the expected paths to binaries.
 For reference, here is a description of the contents of the `build_vars.yml` file, with comments:
 
 ```
-#    # The directory where the Nuage Networks binariy archives are located. This is only
-#    # required for the `nuage_unpack.yml` playbook.
-#    nuage_tar_gz_files_dir: "{{ ansible_env.HOME}}/nuage-release"
-#    # The directory where the required Nuage Networks binaries (*.qcow2, *.ova, *.rpm, *.deb) exist
-#    nuage_binary_files_dir: "{{ ansible_env.HOME}}/nuage-unpacked"
+#    # The directory where the Nuage Networks zipped (tar.gx) archives are located. This is only
+#    # required if you are going to run the `nuage_unzip.yml` playbook.
+#    nuage_zipped_files_dir: "{{ ansible_env.HOME}}/nuage-release"
+#    # The directory where the Nuage Networks unzipped files (qcow2, ova, rpm, deb) are located.
+#    # This is only required if 1) you are going to run the `nuage_unzip.yml` playbook or 2)
+#    # you will be installing or upgrading software components (e.g. VSD). If you are just running
+#    # health or audit playbooks, for example, this path need not be specified.
+#    nuage_unzipped_files_dir: "{{ ansible_env.HOME}}/nuage-unpacked"
 #    # Parameter to define the remote sudo username to use on target servers, e.g. hypevisors.
 #    target_server_username: "root"
 #    # Parameter to define the sudo username to use on the ansible server.
