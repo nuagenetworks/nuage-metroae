@@ -1,0 +1,92 @@
+---
+
+- name: Include OS-specific variables.
+  include_vars: "aws.yml"
+
+# Create NSGV in VSD
+#
+- name: Finding Enterprise
+  connection: local
+  nuage_vspk:
+    auth: "{{ myvsd.auth }}"
+    type: Enterprise
+    command: find
+    properties:
+      name: "{{ myvsd.enterprise_name }}"
+  register: nuage_enterprise
+
+- name: Create NSG Gateway
+  connection: local
+  nuage_vspk:
+    auth: "{{ myvsd.auth }}"
+    type: NSGateway
+    parent_id: "{{ nuage_enterprise.id }}"
+    parent_type: Enterprise
+    state: present
+    properties:
+      name: "{{ inventory_hostname }}"
+      template_id: "7971ff5b-1ecd-4410-b8cb-b3ab5141d27a"
+      personality: "NSG"
+  register: nuage_nsg
+  when: false
+  # Not Idempotent yet
+
+- name: Create Job to download auto-bootstrap info
+  connection: local
+  nuage_vspk:
+    auth: "{{ myvsd.auth }}"
+    type: Job
+    parent_id: "{{ nuage_enterprise.id }}"
+    parent_type: Enterprise
+    state: present
+    properties:
+      command: GET_ZFB_INFO
+      parameters: '{ "mediaType": "YAML", "NSGType": "NSG-AMI", "associatedEntityType": "nsgateway", "associatedEntityId": "2eed7b37-57df-4757-9db6-42fe5ec00e5f" }'
+  register: nuage_nsg_zfb
+  when: false
+
+- debug: var=nuage_nsg_zfb
+  when: false
+
+- name: Deploy Sample Network Structure if desired
+  delegate_to: localhost  
+  cloudformation:
+    stack_name: "Metro-{{vpc_name}}"
+    state: "present"
+    region: "us-east-1"
+    template: "roles/nsgv-predeploy/files/cfn-template-sample-vpc-structure.json"
+    template_parameters: "{{ vpc_structure }}"
+  register: rc_aws_cfn_nuagevpc
+  when: vpc_name is defined
+
+- name: Set Network variables
+  set_fact: { "{{ item.key }}": "{{ item.value }}" }
+  with_items:
+   - { key: "NSGLANENI", value: "{{ rc_aws_cfn_nuagevpc.stack_outputs.NSGLANENIId }}" } 
+   - { key: "NSGWANENI", value: "{{ rc_aws_cfn_nuagevpc.stack_outputs.NSGWANENIId }}" }
+   - { key: "NSGLANENIIP", value: "{{ rc_aws_cfn_nuagevpc.stack_outputs.NSGLANENIIP }}" }
+  when: rc_aws_cfn_nuagevpc.failed is not defined
+
+- name: Generate CloudFormation Template
+  delegate_to: localhost
+  template: 
+    src: "cfn-template-nsg-aws-with-eni.json.j2" 
+    dest: "/tmp/cfn-template-nsg-aws-with-eni.json" 
+
+- name: Deploy NSG-AWS Stack
+  delegate_to: localhost
+  cloudformation:
+    stack_name: "{{ inventory_hostname }}"
+    state: "present"
+    region: "{{ region }}"
+    template: "/tmp/cfn-template-nsg-aws-with-eni.json" 
+    template_parameters:
+      AMI: "{{ nsg_ami.id }}"
+      InstanceName: "{{ inventory_hostname }}"
+      InstanceType: "{{ nsg_ami.type }}"
+      KeyName: "{{ nsg_ami.keyname }}"
+      NSGLANENI: "{{ NSGLANENI }}"
+      NSGWANENI: "{{ NSGWANENI }}"
+      NSGWANEIPAllocId: "{{ nsg_ami.eip_allocid | default('') }}"
+  register: rc_aws_cfn_nsgami
+

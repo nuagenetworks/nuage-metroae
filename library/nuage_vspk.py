@@ -1,0 +1,1 @@
+../../vspk-ansible/library/nuage_vspk.py
