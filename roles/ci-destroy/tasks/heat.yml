@@ -87,6 +87,7 @@
       vrs_u14_target_server_name: "{{ u14_vrs_name.stdout }}"
     delegate_to: 127.0.0.1
 
+# ignore errors for u16.04 tasks incase for VSP 4.04R4 and below where VRS was unsupported for U16.04
   - name: get the u16 vrs name temp file contents
     command: cat "/tmp/{{ subnet_name_temp }}_vrs_name_u16"
     register: u16_vrs_name
@@ -143,7 +144,7 @@
   - name: Delete ubuntu 14 VRS ips from /etc/hosts file
     lineinfile:
       dest: /etc/hosts
-      line: "{{ vrs_u14_target_server }}"
+      line: "{{ vrs_u14_target_server }}"    {{ vrs_u14_target_server_name }}
       state: absent
     remote_user: "{{ ansible_sudo_username }}"
     delegate_to: "{{ ansible_deployment_host }}"
@@ -151,7 +152,7 @@
   - name: Delete ubuntu 16 VRS ips from /etc/hosts file
     lineinfile:
       dest: /etc/hosts
-      line: "{{ vrs_u16_target_server }}"
+      line: "{{ vrs_u16_target_server }}"    {{ vrs_u16_target_server_name }}
       state: absent
     remote_user: "{{ ansible_sudo_username }}"
     delegate_to: "{{ ansible_deployment_host }}"
@@ -166,19 +167,19 @@
     command: "route del -net {{ network_address }}.0/24 "
     delegate_to: "{{ ansible_deployment_host }}"
     remote_user: "{{ ansible_sudo_username }}"
-    when: ('u14' not in inventory_hostname) and ('u16' not in inventory_hostname)
+   # when: ('u14' not in inventory_hostname) and ('u16' not in inventory_hostname)
 
   - name: Delete static route on ansible host for ubuntu 14 VRS
     command: "route del -host {{ vrs_u14_target_server }}"
     delegate_to: "{{ ansible_deployment_host }}"
     remote_user: "{{ ansible_sudo_username }}"
-    when: "'u14' in inventory_hostname"
+  #  when: "'u14' in inventory_hostname"
 
   - name: Delete static route on ansible host for ubuntu 16 VRS
     command: "route del -host {{ vrs_u16_target_server }}"
     delegate_to: "{{ ansible_deployment_host }}"
     remote_user: "{{ ansible_sudo_username }}"
-    when: "'u16' in inventory_hostname"
+   # when: "'u16' in inventory_hostname"
     ignore_errors: yes
 
   - name: Remove temporary centos7 vrs ip adress file
@@ -215,3 +216,4 @@
     ignore_errors: yes
 
   when: inventory_hostname == ansible_play_hosts[0]
+#use above block to accomodate serial = 1 set in ci_destroy.yml
