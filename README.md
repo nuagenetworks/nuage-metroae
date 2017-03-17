@@ -2,12 +2,12 @@
 
 ## What's new
 
-1. Added support for different target server and Ansible host sudo usernames, default is `root`
-1. Added check to verify that the ntp servers are specified in dotted-decimal notation
-1. Moved build variables out of `build.yml` and into `build_vars.yml`
+1. *Moved build variables out of `build.yml` and into `build_vars.yml`* _Requires that you move changes you have made from your old `build.yml` file to the new `build_vars.yml` file._
 1. Decoupled nuage-unpack from build and renamed it as `nuage-unzip`. Now you are required to run nuage-unzip separately if you are deploying from tar-gz archives. Bonus: You need only run the unzip once!
 1. Renamed the `packed` and `unpacked` directory-name variables to be easier to understand. The are now `nuage_zipped_files_dir` and `nuage_unzipped_files_dir`, respectively.
-1. Added variables to support requring binaries for some components and not for others. See, for example, `vsd_requires_binaries` in `build_vars.yml` and `BUILD.md`.
+1. Added variables to support tagging the operations you are planning to perform on each component. See, for example, `vsd_operations_list` in `build_vars.yml`.
+1. Added support for different target server and Ansible host sudo usernames, default is `root`
+1. Added check to verify that the ntp servers are specified in dotted-decimal notation
 
 Feedback and bug reports should be provided via the Issues feature of Github or via email to [Brian Castelli](mailto://brian.castelli@nokia.com).
 

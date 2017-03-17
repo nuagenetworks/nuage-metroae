@@ -44,7 +44,10 @@
           myvsds | map(attribute='target_server_type') | list | issuperset(["vcenter"]) ) or
           ( myvcins is defined and
           myvcins | map(attribute='target_server_type') | list | issuperset(["vcenter"]) )
-  when: (vsd_requires_binaries|default(True)) or (vcin_requires_binaries|default(False))
+  when: "'upgrade' in vsd_operations_list|default(['None']) or
+        'install' in vsd_operations_list|default(['None']) or
+        'upgrade' in vcin_operations_list|default(['None']) or
+        'install' in vcin_operations_list|default(['None'])"
   tags:
     - vsd
 
@@ -111,7 +114,8 @@
     when: myvstats | map(attribute='target_server_type') | list | issuperset(["vcenter"])
   when:
     - myvstats is defined
-    - vstat_requires_binaries|default(True)
+    - "'install' in vstat_operations_list|default(['None']) or
+      'upgrade' in vstat_operations_list|default(['None'])" 
   tags:
     - vstat
  
@@ -166,7 +170,7 @@
     when: myvscs | map(attribute='target_server_type') | list | issuperset(["vcenter"])
   when:
     - myvscs is defined
-    - vsc_requires_binaries|default(True)
+    - "'install' in vsc_operations_list|default(['None'])"
   tags:
     - vsc
 
@@ -345,7 +349,7 @@
     when: vrs_u16_04|default(false)
   when:
     - myvrss is defined
-    - vrs_requires_binaries|default(True)
+    - "'install' in vrs_operations_list|default(['None'])"
   tags:
     - vrs
 
@@ -367,19 +371,19 @@
   when: u16_04_vrs_package_path is not defined
 - name: Ensure that ubuntu 14.04 VRS package list variables are set 
   set_fact:
-    u14_04_vrs_package_file_name_list: '"None" | list'
+    u14_04_vrs_package_file_name_list: "['None']"
   when: u14_04_vrs_package_file_name_list is not defined
 - name: Ensure that ubuntu 16.04 VRS package list variables are set 
   set_fact:
-    u16_04_vrs_package_file_name_list: '"None" | list'
+    u16_04_vrs_package_file_name_list: "['None']"
   when: u16_04_vrs_package_file_name_list is not defined
 - name: Ensure that el6 VRS package list variables are set 
   set_fact:
-    el6_vrs_package_file_name_list: '"None" | list'
+    el6_vrs_package_file_name_list: "['None']"
   when: el6_vrs_package_file_name_list is not defined
 - name: Ensure that el7 VRS package list variables are set 
   set_fact:
-    el7_vrs_package_file_name_list: '"None" | list'
+    el7_vrs_package_file_name_list: "['None']"
   when: el7_vrs_package_file_name_list is not defined
 
 ################
@@ -457,6 +461,7 @@
 # VNS Utility/ NSGV
 #####################
 
+# TODO: Add AWS support
 - block:
   - name: Find names of VNS files
     find: path="{{ nuage_unzipped_files_dir }}/{{ item.subdir }}"  pattern="{{ item.pattern }}" recurse=yes
@@ -464,7 +469,6 @@
     with_items:
       - { subdir: "vns/utils/", pattern: "vns-util-*.qcow2" }
       - { subdir: "vns/nsg/", pattern: "ncpe_centos7.qcow2" }
-      #- { subdir: "vns/nsg/aws", pattern: "*.raw" }
   - debug: var=rc_vns_files verbosity=1
   - name: Verify that VNS files were found
     assert: { 
@@ -478,20 +482,22 @@
     with_indexed_items:
       - vnsutil_qcow2
       - nsgv_qcow2
-      #- nsgami_raw
   when:
     - myvnsutils is defined
-    - vnsutil_requires_binaries|default(True)
+    - mynsgvs is defined
+    - "'install' in vns_operations_list|default(['None'])"
 
-- name: Make sure the proper VNS variables have been defined
+- name: Make sure the proper VNSUTILS variables have been defined
   set_fact: 
-    "{{ item.1 }}_path": "None"
-    "{{ item.1 }}_file_name": "None"
-  with_indexed_items:
-    - vnsutil_qcow2
-    - nsgv_qcow2
-    - nsgami_raw
+    vnsutil_qcow2_path: "None"
+    vnsutil_qcow2_file_name: "None"
   when: vnsutil_qcow2_path is not defined
+
+- name: Make sure the proper NSGV variables have been defined
+  set_fact: 
+    nsgv_qcow2_path: "None"
+    nsgv_qcow2_file_name: "None"
+  when: nsgv_qcow2_path is not defined
 
 ##########################
 ## Nuage OpenStack Plugins
