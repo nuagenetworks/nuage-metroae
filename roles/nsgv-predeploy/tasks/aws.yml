@@ -72,7 +72,7 @@
   cloudformation:
     stack_name: "Metro-{{vpc_name}}"
     state: "present"
-    region: "us-east-1"
+    region: "{{ region }}"
     template: "roles/nsgv-predeploy/files/cfn-template-sample-vpc-structure.json"
     template_parameters: "{{ vpc_structure }}"
   register: rc_aws_cfn_nuagevpc
@@ -91,7 +91,7 @@
   delegate_to: localhost
   template: 
     src: "cfn-template-nsg-aws-with-eni.json.j2" 
-    dest: "/tmp/cfn-template-nsg-aws-with-eni.json" 
+    dest: "/tmp/cfn-template-nsg-aws-with-eni-{{ inventory_hostname }}.json" 
 
 - name: Deploy NSG-AWS Stack
   delegate_to: localhost
@@ -99,7 +99,7 @@
     stack_name: "{{ inventory_hostname }}"
     state: "present"
     region: "{{ region }}"
-    template: "/tmp/cfn-template-nsg-aws-with-eni.json" 
+    template: "/tmp/cfn-template-nsg-aws-with-eni-{{ inventory_hostname }}.json" 
     template_parameters:
       AMI: "{{ nsg_ami.id }}"
       InstanceName: "{{ inventory_hostname }}"
