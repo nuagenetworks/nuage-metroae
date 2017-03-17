@@ -15,7 +15,7 @@
       name: "{{ myvsd.enterprise_name }}"
   register: nuage_enterprise
 
-- name: Create NSG Gateway
+- name: Ensure NSG Gateway is provisioned in the enterprise
   connection: local
   nuage_vspk:
     auth: "{{ myvsd.auth }}"
@@ -29,6 +29,31 @@
       template_id: "7971ff5b-1ecd-4410-b8cb-b3ab5141d27a"
   register: nuage_nsg
 
+- name: Find port1 of the NSG-AMI 
+  connection: local
+  nuage_vspk:
+    auth: "{{ myvsd.auth }}"
+    type: NSPort
+    parent_type: NSGateway
+    parent_id: "{{ nuage_nsg.id }}"
+    command: find
+    properties:
+      name: "port1"
+  register: nuage_nsg_port1
+  when: false
+
+- name: Ensure 1:1 NAT is enabled on port1 of the NSG-AMI
+  connection: local
+  nuage_vspk:
+    auth: "{{ myvsd.auth }}"
+    type: NSPort
+    id: "{{ nuage_nsg_port1.id }}"
+    state: present
+    properties:
+      NATTraversal: "ONE_TO_ONE_NAT"
+  when: false   # Currently this gives an error "NAT Traversal not accpeted"
+
+   
 - name: Create Job to download auto-bootstrap info
   connection: local
   nuage_vspk:
@@ -39,11 +64,8 @@
     state: present
     properties:
       command: GET_ZFB_INFO
-      parameters: '{ "mediaType": "YAML", "NSGType": "NSG-AMI", "associatedEntityType": "nsgateway", "associatedEntityId": "{{ nuage_nsg.id }}" }'
+      parameters: '{ "mediaType": "YAML", "NSGType": "NSG-AMI", "associatedEntityType": "nsgateway", "associatedEntityID": "{{ nuage_nsg.id }}" }'
   register: nuage_nsg_zfb
-  when: false
-- debug: var=nuage_nsg_zfb
-  when: false
 
 - name: Deploy Sample Network Structure if desired
   delegate_to: localhost  
@@ -62,7 +84,8 @@
    - { key: "NSGLANENI", value: "{{ rc_aws_cfn_nuagevpc.stack_outputs.NSGLANENIId }}" } 
    - { key: "NSGWANENI", value: "{{ rc_aws_cfn_nuagevpc.stack_outputs.NSGWANENIId }}" }
    - { key: "NSGLANENIIP", value: "{{ rc_aws_cfn_nuagevpc.stack_outputs.NSGLANENIIP }}" }
-  when: rc_aws_cfn_nuagevpc.failed is not defined
+   - { key: "nsg_ami_user_data", value: "{{ nuage_nsg_zfb.entities[0].result }}" }
+  when: (rc_aws_cfn_nuagevpc.failed is not defined) and (nuage_nsg_zfb.entities[0].status == "SUCCESS")
 
 - name: Generate CloudFormation Template
   delegate_to: localhost
