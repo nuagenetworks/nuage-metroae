@@ -26,7 +26,7 @@
     state: present
     properties:
       name: "{{ inventory_hostname }}"
-      template_id: "7971ff5b-1ecd-4410-b8cb-b3ab5141d27a"
+      template_id: "{{ nsg_template_id }}"
   register: nuage_nsg
 
 - name: Find port1 of the NSG-AMI 
@@ -40,7 +40,6 @@
     properties:
       name: "port1"
   register: nuage_nsg_port1
-  when: false
 
 - name: Ensure 1:1 NAT is enabled on port1 of the NSG-AMI
   connection: local
@@ -50,9 +49,7 @@
     id: "{{ nuage_nsg_port1.id }}"
     state: present
     properties:
-      NATTraversal: "ONE_TO_ONE_NAT"
-  when: false   # Currently this gives an error "NAT Traversal not accpeted"
-
+      nat_traversal: "ONE_TO_ONE_NAT"
    
 - name: Create Job to download auto-bootstrap info
   connection: local
