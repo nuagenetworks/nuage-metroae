@@ -31,9 +31,9 @@
     --net:"Management Network={{ mgmt_bridge }}"
     --net:"Datapath Network={{ data_bridge }}"
     --prop:"DHCP=False"
-    --prop:"Management_IP={{ interfaces.mgmt.ip }}/{{ interfaces.mgmt.netmask_prefix }}"
+    --prop:"Management_IP={{ mgmt_ip }}/{{ mgmt_netmask_prefix }}"
     {% if vsc_static_route_list[0] is defined %}
-    --prop:"Static_Routes={% for sr in vsc_static_route_list %}{{ sr }} {{ interfaces.mgmt.gateway }}{% if not loop.last %};{% endif %}{% endfor %}"
+    --prop:"Static_Routes={% for sr in vsc_static_route_list %}{{ sr }} {{ mgmt_gateway }}{% if not loop.last %};{% endif %}{% endfor %}"
     {% else %}
     --prop:"Static_Routes="
     {% endif %}
@@ -43,7 +43,7 @@
     {% else %}
     --prop:"DNS_Server_2=0.0.0.0"
     {% endif %}
-    {% if dns_server_list[1] is defined %}
+    {% if dns_server_list[2] is defined %}
     --prop:"DNS_Server_3={{ dns_server_list[2] }}"
     {% else %}
     --prop:"DNS_Server_3=0.0.0.0"
@@ -56,8 +56,8 @@
     {% else %}
     --prop:"SNTP_Server=0.0.0.0"
     {% endif %}
-    {% if interfaces.control.ip is defined and interfaces.control.netmask_prefix is defined %}
-    --prop:"Datapath_IP={{ interfaces.control.ip }}/{{ interfaces.control.netmask_prefix }}"
+    {% if control_ip is defined and control_netmask_prefix is defined %}
+    --prop:"Datapath_IP={{ control_ip }}/{{ control_netmask_prefix }}"
     {% else %}
     --prop:"Datapath_IP=0.0.0.0/32"
     {% endif %}
@@ -95,7 +95,7 @@
   connection: local
   wait_for:
     port: "22"
-    host: "{{ interfaces.mgmt.ip }}"
+    host: "{{ mgmt_ip }}"
     search_regex: OpenSSH
     delay: 1
 
@@ -113,7 +113,7 @@
 
 - name: Copy VSC config file to VSC
   connection: local
-  command: "sshpass -p admin scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null /tmp/ansible-config-{{ inventory_hostname }}/config.cfg admin@{{ interfaces.mgmt.ip }}:"
+  command: "sshpass -p admin scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null /tmp/ansible-config-{{ inventory_hostname }}/config.cfg admin@{{ mgmt_ip }}:"
 
 - name: Reboot VSC VM
   connection: local

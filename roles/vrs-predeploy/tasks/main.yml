@@ -1,10 +1,10 @@
 ---
 - name: Pull facts on vrs target {{ inventory_hostname }}
-  remote_user: root
+  remote_user: "{{ target_server_username }}"
   action: setup
 
 - name: Add epel repository on RedHat OS family distros
-  remote_user: root
+  remote_user: "{{ target_server_username }}"
   yum_repository:
     name: epel
     description: EPEL YUM repo
@@ -12,14 +12,14 @@
   when: ansible_os_family == "RedHat"
 
 - name: Upgrade all packages on RedHat OS family distros
-  remote_user: root
+  remote_user: "{{ target_server_username }}"
   yum:
     name: "*"
     state: latest
   when: ansible_os_family == "RedHat"
 
 - name: Install VRS prerequisite packages on RedHat OS family distros
-  remote_user: root
+  remote_user: "{{ target_server_username }}"
   yum: name={{ item }} state=present
   with_items:
    - python-twisted-core
@@ -31,13 +31,13 @@
   when: ansible_os_family == "RedHat"
 
 - name: Upgrade all packages on Debian OS family distros
-  remote_user: root
+  remote_user: "{{ target_server_username }}"
   apt:
     upgrade: dist
   when: ansible_os_family == "Debian"
 
 - name: Install VRS prerequisite packages on Debian OS family distros
-  remote_user: root
+  remote_user: "{{ target_server_username }}"
   apt: name={{ item }} state=present
   with_items:
    - qemu-kvm

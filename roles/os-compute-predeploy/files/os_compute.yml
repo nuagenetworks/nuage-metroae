@@ -6,9 +6,19 @@ parameters:
     type: string
   compute_image:
     type: string
-  compute_net:
+  compute_mgmt_network:
+    type: string
+  compute_mgmt_subnet:
+    type: string
+  compute_data_network:
+    type: string
+  compute_data_subnet:
     type: string
   compute_flavor:
+    type: string
+  mgmt_ip:
+    type: string
+  data_ip:
     type: string
  
 resources:
@@ -19,8 +29,8 @@ resources:
       flavor: {get_param: compute_flavor}
       image: {get_param: compute_image}
       networks:
-      - network: {get_param: compute_net}
-      #key_name: {get_resource: vsd_user_key}
+      - network: {get_param: compute_mgmt_network}
+      - network: {get_param: compute_data_network}
       user_data_format: RAW
       user_data: 
         str_replace:
@@ -30,6 +40,9 @@ resources:
           params:
             usr: {get_param: ssh_key} 
 outputs:
-  server_ip:
-    description: fixed ip assigned to the server
-    value: { get_attr: [mycompute, networks, {get_param: compute_net}, 0]}
+  compute_mgmt_ip:
+    description: mgmt ip assigned to os_compute
+    value: { get_attr: [mycompute, networks, {get_param: compute_mgmt_network}, 0]}
+  compute_data_ip:
+    description: data ip assigned to os_compute
+    value: { get_attr: [mycompute, networks, {get_param: compute_data_network}, 0]}

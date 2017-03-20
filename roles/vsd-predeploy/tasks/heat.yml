@@ -6,18 +6,30 @@
   local_action: command cat ~/.ssh/id_rsa.pub
   register: current_user_ssh_key
 
+- name: Get heat stack for fixed ip deployments
+  set_fact:
+    vsd_heat_template: "roles/vsd-predeploy/files/vsd_fixed.yml"
+  when: dhcp == False
+
+- name: Get heat stack for dhcp based deployments
+  set_fact:
+    vsd_heat_template: "roles/vsd-predeploy/files/vsd.yml"
+  when: dhcp == True
+
 - name: Creating VSD stack
   register: create_stack
   os_stack:
     name: "{{ stack_name | default(inventory_hostname) }}"
-    template: "roles/vsd-predeploy/files/vsd.yml" 
+    template: "{{ vsd_heat_template }}"
     auth:
       "{{ os_auth }}"
     parameters:
       vm_name: "{{inventory_hostname}}"
       vsd_image: "{{ vsd_image }}"
       vsd_flavor: "{{ vsd_flavor }}"
-      vsd_net: "{{ vsd_network }}"
+      vsd_network: "{{ vsd_network }}"
+      vsd_subnet: "{{ vsd_subnet | default('NONE') }}"
+      mgmt_ip: "{{ mgmt_ip | default('NONE') }}"
       ssh_key: "{{ current_user_ssh_key.stdout }}"
   delegate_to: 127.0.0.1
 - debug: var=create_stack['stack']['outputs'][0]['output_value']

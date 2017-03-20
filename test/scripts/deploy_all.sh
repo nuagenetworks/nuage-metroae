@@ -1,40 +1,22 @@
-#!/bin/sh
-#Running VSD installation script 
+#!/bin/bash
 set -e
 
-cp ./test/files/setup.yml.VSDOnly ./setup.yml
-ansible-playbook setup.yml -vvvv
-ansible-playbook reset_build.yml -vvvv
-ansible-playbook build.yml -vvvv
-./metro-ansible test_install.yml -vvvv
+USAGE="Usage: $0 version"
 
-cp ./test/files/setup.yml.VSCOnly ./setup.yml
-ansible-playbook setup.yml -vvvv
-ansible-playbook reset_build.yml -vvvv
-ansible-playbook build.yml -vvvv
-./metro-ansible test_install.yml -vvvv
+if [ $# -ne 1 ];
+then
+    echo "Requires exactly 1 argument"
+    echo $USAGE
+    exit 1
+fi
 
-cp ./test/files/setup.yml.VSTATOnly ./setup.yml
-ansible-playbook setup.yml -vvvv
-ansible-playbook reset_build.yml -vvvv
-ansible-playbook build.yml -vvvv
-./metro-ansible test_install.yml -vvvv
+cp ./test/files/build_vars_all.yml roles/reset-build/files/build_vars.yml
+cp ./test/files/test_install.yml .
+cp ./test/files/test_cleanup.yml .
 
-cp ./test/files/setup.yml.VRSOnly ./setup.yml
-ansible-playbook setup.yml -vvvv
-ansible-playbook reset_build.yml -vvvv
-ansible-playbook build.yml -vvvv
-./metro-ansible test_install.yml -vvvv
+sed -i "s/VERSION/$1/g" roles/reset-build/files/build_vars.yml
 
-cp ./test/files/setup.yml.VNSOnly ./setup.yml
-ansible-playbook setup.yml -vvvv
-ansible-playbook reset_build.yml -vvvv
-ansible-playbook build.yml -vvvv
+./metro-ansible reset_build.yml -vvvv
+./metro-ansible build.yml -vvvv
 ./metro-ansible test_install.yml -vvvv
-
-cp ./test/files/setup.yml ./setup.yml
-ansible-playbook setup.yml -vvvv
-ansible-playbook reset_build.yml -vvvv
-ansible-playbook build.yml -vvvv
 ./metro-ansible test_cleanup.yml -vvvv
-
