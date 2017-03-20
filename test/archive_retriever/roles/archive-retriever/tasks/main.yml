@@ -1,0 +1,49 @@
+---
+- name: Register Jenkins directory status
+  stat: path="{{ nuage_directory_path }}/jenkins/"
+  register: jenkins_dir
+  remote_user: root
+
+- name: Create non-existent directory for Jenkins job on localhost
+  file: name="{{ nuage_directory_path }}/jenkins/" state=directory mode=0755
+  when: jenkins_dir.stat.exists == false
+  remote_user: root
+
+- name: Check contents of jenkins directory
+  shell: "ls -1 {{ nuage_directory_path }}/jenkins/"
+  register: contents
+  remote_user: root
+
+
+- name: Remove directories of release versions not in the list
+  file: path={{ nuage_directory_path }}/jenkins/{{ item }} state=absent
+  with_items: "{{ contents.stdout_lines }}"
+  when: item not in "{{ nuage_release }}"
+  remote_user: root
+
+- name: Create directory for specific release on localhost
+  file: name="{{ nuage_directory_path }}/jenkins/{{ item }}/" state=directory mode=0755
+  with_items: "{{ nuage_release }}"
+  remote_user: root
+
+- name: Create directory for downloaded Nuage tar files on localhost
+  file: name="{{ nuage_directory_path }}/jenkins/{{ item }}/nuage-packed/" state=directory mode=0755
+  with_items: "{{ nuage_release }}"
+  remote_user: root
+
+- name: Create directory for unpacking Nuage tar files on localhost
+  file: name="{{ nuage_directory_path }}/jenkins/{{ item }}/nuage-unpacked/" state=directory mode=0755
+  with_items: "{{ nuage_release }}"
+  remote_user: root
+  
+- name: Download files to the directory for Nuage tar files on localhost
+  shell: "wget ftp://nuage-release:4lcap2tan@172.22.34.57/{{ item[1] }}/{{ item[0] }} -P {{ nuage_directory_path }}/jenkins/{{ item[1] }}/nuage-packed/"
+  with_nested: 
+    - "{{ filename_patterns }}"
+    - "{{ nuage_release }}"
+  remote_user: root
+
+- name: Delete older files
+  shell: " find {{ nuage_directory_path }}/jenkins/{{ item }}/nuage-packed/ -name '*[0-9]' -delete"
+  with_items: "{{ nuage_release }}"
+  remote_user: root

@@ -63,11 +63,8 @@ As an example, let's consider using Nuage-Metro to deploy a VSD cluster by itsel
 For deploying a VSD cluster, you must define 3 VSD entries in the `myvsds` dictionary in `build_vars.yml`. You must also have the other required definitions in place. Here is an example of the `build_vars.yml` file that deploys a cluster of 3 VSDs:
 
 ```
-vars:
-  nuage_release_src_path: "/home/caso/metro/4.0R4/nuage-packed"
-  nuage_unpacked_dest_path: "/home/caso/metro/4.0R4/nuage-unpacked"
-  nuage_unpacked: true
-  nuage_target_architecture: "el7"
+  nuage_zipped_files_dir: "/home/caso/metro/4.0R4/nuage-packed"
+  nuage_unzipped_files_dir: "/home/caso/metro/4.0R4/nuage-unpacked"
   vsd_standalone: false
   myvsds:
     - { hostname: jenkinsvsd1.example.com,
@@ -104,21 +101,11 @@ vars:
 
 Some items to note in the example, above:
 
-* `nuage_release_src_path`, `nuage_unpacked_dest_path`, and `nuage_unpacked` must be set appropriately for your environment.
-
- * If `nuage_unpacked` is `false`, the directory configured for `nuage_release_src_path` must contain the archive of the VSD QCOW2 image. The build playbook will unpack the QCOW2 image and place it in `nuage_unpacked_dest_path`.
-
- * If `nuage_unpacked` is `true`, the directory configured for `nuage_unpacked_dest_path` must contain the VSD QCOW2 image for the version of VSD you wish to deploy.
-
-* `vsd_standalone` must be set to `false`. If it is true, Nuage-Metro will deploy 3 stand-alone VSDs without clustering them.
+* `vsd_standalone` must be set to `False`. If it is True, Nuage-Metro will deploy 3 stand-alone VSDs without clustering them.
 
 ## Deploying VRS on Multiple Target Architectures
 
 Some customer environments use a mix of Debian- and RedHat-family Linux distributions in their compute nodes, where Debian == Ubuntu and Redhat == CentOS or RHEL.
-
-### `nuage_target_architecture`
-
-As of this writing, `build_vars.yml` file contains the variable `nuage_target_architecture`. This variable is used in the playbooks to conditionally execute when there are differences in commands and operations between the target architectures. For example, Ubuntu targets would use `apt install` for package installation while CentOS targets would use `yum install`. Nuage-Metro currently supports one and only one `nuage_target_architecture` at a time.
 
 ### Two build files for two architectures
 
