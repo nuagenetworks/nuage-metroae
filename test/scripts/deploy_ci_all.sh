@@ -9,15 +9,6 @@ then
     exit 1
 fi
 
-USAGE="Usage: $0 version"
-
-if [ $# -ne 1 ];
-then
-    echo "Requires exactly 1 argument"
-    echo $USAGE
-    exit 1
-fi
-
 if [ $1 = 4.0R4 ] || [ $1 = 3.2R10 ];
 then
     sed -i  '/- { hostname: {{ vrs_u16_host_name }},/,/ci_flavor: m1.medium }/d' test/files/build_vars.yml.CI.j2
