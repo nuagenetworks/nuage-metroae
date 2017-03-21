@@ -161,13 +161,14 @@
     state: restarted
   remote_user: "root"
 
-- name: Execute VSTAT cluster script on VSD
-  command: /opt/vsd/vsd-es-cluster-config.sh -e {{ groups['vstats'][0] }},{{ groups['vstats'][1] }},{{ groups['vstats'][2] }}
-  delegate_to: "{{vsd_fqdn}}"
-  remote_user: root
-  environment:
-    SSHPASS: "{{lookup('env','SSHPASS')}}"
-  run_once: true
+- block:
+  - name: Execute VSTAT cluster script on VSD
+    command: /opt/vsd/vsd-es-cluster-config.sh -e {{ groups['vstats'][0] }},{{ groups['vstats'][1] }},{{ groups['vstats'][2] }}
+    delegate_to: "{{vsd_fqdn}}"
+    remote_user: root
+    environment:
+      SSHPASS: "{{lookup('env','SSHPASS')}}"
+    run_once: true
   when: vstat_standalone == false
 
 - name: Enable stats collection on the VSD VM
