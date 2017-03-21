@@ -27,15 +27,10 @@ cp ./test/files/setup.yml.CI setup.yml
 ansible-playbook setup.yml -vvvv
 ansible-playbook reset_build.yml -vvvv
 ansible-playbook build.yml -vvvv
-if [ $1 = 4.0R4 ] || [ $1 = 3.2R10 ];
-then
-    sed -i  '/- { hostname: {{ vrs_u16_target_server_name }},/,/ci_flavor: jenkins }/ d' test/files/build_vars.yml.all.j2
-    sed -i '/- { vrs_os_type: u16.04,/,/standby_controller_ip: {{ network_address }}.213 }/d' test/files/build_vars.yml.all.j2
-fi
 ./metro-ansible ci_predeploy.yml -vvvv
 ./metro-ansible ci_deploy.yml -vvvv
 
-cp ./test/files/build_vars.yml.all roles/reset-build/files/build_vars.yml
+cp ./test/files/build_vars_all.yml roles/reset-build/files/build_vars.yml
 cp ./test/files/test_install.yml .
 cp ./test/files/test_cleanup.yml .
 sed -i "s/VERSION/$1/g" roles/reset-build/files/build_vars.yml
