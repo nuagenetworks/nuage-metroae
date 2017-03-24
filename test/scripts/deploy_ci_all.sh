@@ -14,6 +14,7 @@ then
     sed -i  '/- { hostname: {{ vrs_u16_host_name }},/,/ci_flavor: m1.medium }/d' test/files/build_vars.yml.CI.j2
 fi
 
+# Use heat to deploy VMs on OpenStack
 cp ./test/files/setup.yml.CI setup.yml
 ansible-playbook setup.yml -vvvv
 ansible-playbook reset_build.yml -vvvv
@@ -21,9 +22,11 @@ ansible-playbook build.yml -vvvv
 ./metro-ansible ci_predeploy.yml -vvvv
 ./metro-ansible ci_deploy.yml -vvvv
 
+# Setup and run
 cp ./test/files/test_install.yml .
 cp ./test/files/test_cleanup.yml .
 
+# ci-deploy has fixed up the build_vars files for us.
 cp ./test/files/build_vars_vsdonly.yml roles/reset-build/files/build_vars.yml
 sed -i "s/VERSION/$1/g" roles/reset-build/files/build_vars.yml
 ansible-playbook reset_build.yml -vvvv
