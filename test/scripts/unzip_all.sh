@@ -10,7 +10,7 @@ then
     exit 1
 fi
 
-cp ./test/files/build_vars_all.yml roles/reset-build/files/build_vars.yml
+cp ./test/files/build_vars_unzip.yml roles/reset-build/files/build_vars.yml
 cp ./test/files/test_unzip.yml .
 
 sed -i "s/VERSION/$1/g" roles/reset-build/files/build_vars.yml
