@@ -11,9 +11,8 @@ then
 fi
 
 cp ./test/files/build_vars_unzip.yml roles/reset-build/files/build_vars.yml
-cp ./test/files/test_unzip.yml .
 
 sed -i "s/VERSION/$1/g" roles/reset-build/files/build_vars.yml
 
 ./metro-ansible reset_build.yml -vvvv
-./metro-ansible test_unzip.yml -vvvv
+ansible-playbook nuage_unzip.yml -u root -vvvv
