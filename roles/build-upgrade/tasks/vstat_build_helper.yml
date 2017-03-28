@@ -1,0 +1,12 @@
+---
+- name: Set myvstat_check
+  set_fact: myvstat_check={{myvstats is defined}}
+
+- name: Assign empty list to myvstats if it is undefined
+  set_fact: myvstats= default([])
+  when: not myvstat_check
+
+- name: Create host_vars files for vstat
+  template: src=vstat.j2 backup=no dest={{ playbook_dir }}/host_vars/{{ item.hostname }}
+  with_items: "{{ myvstats }}"
+  when: myvstat_check
