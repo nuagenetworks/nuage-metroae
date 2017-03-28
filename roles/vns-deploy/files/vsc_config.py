@@ -179,7 +179,7 @@ def exec_command(vsc, command):
                .format(command, sys.exc_info()[0]))
         sys.exit(1)
 
-    net_connect.disconnect()    
+    net_connect.disconnect()
     return output
 
 
