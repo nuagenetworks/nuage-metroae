@@ -5,7 +5,7 @@
   remote_user: root
 
 - name: Create target directory if necessary
-  file: name="{{ nuage_directory_path }}" state=directory mode=0755
+  file: name="{{ nuage_directory_path }}" state=directory mode=0775 owner=jenkins group=jenkins
   when: target_dir.stat.exists == false
   remote_user: root
 
@@ -17,26 +17,26 @@
 - name: Remove directories of release versions not in the list
   file: path={{ nuage_directory_path }}/{{ item }} state=absent
   with_items: "{{ contents.stdout_lines }}"
-  when: (item not in "{{ nuage_release }}") and (item != 'license')
+  when: (item not in "{{ nuage_release }}") and (item != 'misc')
   remote_user: root
 
 - name: Create directory for specific release on localhost
-  file: name="{{ nuage_directory_path }}/{{ item }}/" state=directory mode=0755
+  file: name="{{ nuage_directory_path }}/{{ item }}/" state=directory mode=0775 owner=jenkins group=jenkins
   with_items: "{{ nuage_release }}"
   remote_user: root
 
 - name: Create directory for downloaded Nuage tar files on localhost
-  file: name="{{ nuage_directory_path }}/{{ item }}/nuage-packed/" state=directory mode=0755
+  file: name="{{ nuage_directory_path }}/{{ item }}/nuage-packed/" state=directory mode=0775 owner=jenkins group=jenkins
   with_items: "{{ nuage_release }}"
   remote_user: root
 
 - name: Create directory for unpacking Nuage tar files on localhost
-  file: name="{{ nuage_directory_path }}/{{ item }}/nuage-unpacked/" state=directory mode=0755
+  file: name="{{ nuage_directory_path }}/{{ item }}/nuage-unpacked/" state=directory mode=0775 owner=jenkins group=jenkins
   with_items: "{{ nuage_release }}"
   remote_user: root
   
 - name: Download files to the directory for Nuage tar files on localhost
-  shell: "wget ftp://nuage-release:4lcap2tan@172.22.34.57/{{ item[1] }}/{{ item[0] }} -P {{ nuage_directory_path }}/{{ item[1] }}/nuage-packed/"
+  shell: "wget ftp://{{ archive_retriever_ftp_username }}:{{ archive_retriever_ftp_password }}@{{ archive_retriever_ftp_host }}/{{ item[1] }}/{{ item[0] }} -P {{ nuage_directory_path }}/{{ item[1] }}/nuage-packed/"
   with_nested: 
     - "{{ filename_patterns }}"
     - "{{ nuage_release }}"
