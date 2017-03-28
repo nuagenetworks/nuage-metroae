@@ -11,4 +11,4 @@ then
 fi
 
 sed -i "s/TARGET_HOST/$1/g" test/archive_retriever/hosts
-$(which ansible-playbook) -i test/archive_retriever/hosts test/archive_retriever/archive_retriever.yml -vvvv
+$(which ansible-playbook) -i test/archive_retriever/archive_retriever_hosts test/archive_retriever/archive_retriever.yml -vvvv
