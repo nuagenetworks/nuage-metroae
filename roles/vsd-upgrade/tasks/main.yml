@@ -1,0 +1,29 @@
+---
+- name: Shutdown/Destroy Current vsd node(s)
+  include_role: 
+    name: vsd-destroy
+
+- name: Deploy VSD nodes with new version
+  include_role:
+    name: vsd-predeploy
+
+- name: Wait for VSD ssh to be ready
+  local_action:
+    module: wait_for
+    port: "22"
+    host: "{{ mgmt_ip }}"
+    search_regex: OpenSSH
+    delay: 1
+
+- include: copy_backup_files.yml
+
+#TODO: 
+#- name: Compare network information of VSD's across pre-uppgrade and upgrade
+
+- name: Install VSD on new node(s)
+  include_role:
+    name: vsd-deploy
+
+- name: Pause to wait for VSD processes to come up
+  pause:
+    minutes: 5
