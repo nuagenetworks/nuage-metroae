@@ -160,13 +160,12 @@ def get_commands(playbook_dir):
 
 
 # Returns result of executing commands
-def exec_command(vsc, command):
-    if (not vsc or not command):
+def exec_command(net_connect, command):
+    if (not net_connect or not command):
         print("Error! Bad arguments!")
         sys.exit(1)
 
     try:
-        net_connect = ConnectHandler(**vsc)
         if command == 'admin save':
             try:
                 output = net_connect.send_command(command, expect_string='cf1:')
@@ -179,7 +178,6 @@ def exec_command(vsc, command):
                .format(command, sys.exc_info()[0]))
         sys.exit(1)
 
-    net_connect.disconnect()    
     return output
 
 
@@ -191,10 +189,16 @@ def run_commands(commands, vsc, vsd_hosts_vars, xmpp_username):
                     tls + 'ca-certificate cf1:\%s-CA.pem' % xmpp_username]
 
     commands = tls_commands + commands
-    print commands
+    try:
+        net_connect = ConnectHandler(**vsc)
+    except:
+        print ("Error! Netmiko connection failed!" " Exception: {0}"
+               .format(sys.exc_info()[0]))
+        sys.exit(1)
+
     # Convert cmd output to dict
     for cmd in commands:
-        vswitch_info = exec_command(vsc, cmd)
+        vswitch_info = exec_command(net_connect, cmd)
 
     return vswitch_info
 
