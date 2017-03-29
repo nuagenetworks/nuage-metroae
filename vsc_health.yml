@@ -1,0 +1,28 @@
+---
+- hosts: localhost
+  vars:
+    report_filename: vsc_health_report.txt
+  tasks:
+    - name: Create a reports folder
+      file: path="{{playbook_dir}}"/reports state=directory
+    - name: Set path for reports file name
+      set_fact: report_path="{{playbook_dir}}/reports/{{ report_filename }}"
+    - name: Clean up tmp files from previous runs
+      file: path="{{ report_path }}" state=absent
+    - name: Write title to report file
+      nuage_append: filename="{{ report_path }}" text="VSC Health Report Start\n"
+    - name: Write date to report file
+      nuage_append: filename="{{ report_path }}" text="{{ ansible_date_time.date }}@{{ ansible_date_time.time }}\n"
+    - name: Write seperator to report file
+      nuage_append: filename="{{ report_path }}" text="================================================================================\n"
+
+- include: vsc_health_helper.yml report_filename=./reports/vsc_health_report.txt pass_on_todo=true
+
+- hosts: localhost
+  vars:
+    report_filename: ./reports/vsc_health_report.txt
+  tasks:
+  - name: Write seperator to report file
+    nuage_append: filename="{{ report_filename }}" text="================================================================================\n"
+  - name: Write out footer
+    nuage_append: filename="{{ report_filename }}" text="VSC Health Report End\n"
