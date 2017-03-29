@@ -54,7 +54,7 @@
       - "{{ ssh_key_lst.results }}"
     remote_user: root
     run_once: true
-  when: vstat_standalone == False
+  when: not vstat_standalone
 
 - name: Delete the localtime file on {{ inventory_hostname }}
   file:
@@ -141,7 +141,6 @@
 
 - name: Create firewall vars file
   template: src="{{ playbook_dir }}/roles/vstat-deploy/templates/firewall.j2" dest="{{ playbook_dir }}/roles/vstat-deploy/vars/main.yml" backup=no
-  #when: groups['vstats'] is defined
   delegate_to: "{{ target_server }}"
   remote_user: "{{ target_server_username }}"
 
@@ -161,7 +160,7 @@
   with_items:
     - "{{ firewall_cluster_commands }}"
   when: 
-    - vstat_standalone == false
+    - not vstat_standalone
     - item.find(mgmt_ip) == -1
   remote_user: "root"
 
@@ -179,13 +178,13 @@
     environment:
       SSHPASS: "{{lookup('env','SSHPASS')}}"
     run_once: true
-  when: vstat_standalone == false
+  when: not vstat_standalone
 
 - name: Enable stats collection on the VSD VM
   command: /opt/vsd/vsd-stats.sh -e {{inventory_hostname}}
   delegate_to: "{{vsd_fqdn}}"
   remote_user: "root"
-  when: vsd_standalone == true
+  when: vsd_standalone
 
 - block:
   - name: Enable stats collection on the VSD HA node1 {{groups['vsds'][0]}}
@@ -202,4 +201,4 @@
     command: /opt/vsd/vsd-stats.sh -e groups['vsds'][2]
     when: inventory_hostname == groups['vsds'][2]
     remote_user: root
-  when: vsd_standalone == False
+  when: not vsd_standalone
