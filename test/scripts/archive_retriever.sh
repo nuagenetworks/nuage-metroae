@@ -10,5 +10,5 @@ then
     exit 1
 fi
 
-sed -i "s/TARGET_HOST/$1/g" test/archive_retriever/hosts
+sed -i "s/TARGET_HOST/$1/g" test/archive_retriever/archive_retriever_hosts
 $(which ansible-playbook) -i test/archive_retriever/archive_retriever_hosts test/archive_retriever/archive_retriever.yml -vvvv
