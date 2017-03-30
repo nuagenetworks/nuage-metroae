@@ -22,8 +22,8 @@ ansible-playbook build.yml -vvvv
 
 if [ $1 = 4.0.R4 ] || [ $1 = 3.2.R10 ];
 then
-    sed -i  '/- { hostname: {{ vrs_u16_target_server_name }},/,/ci_flavor: jenkins }/ d' test/files/build_vars_all.yml
-    sed -i '/- { vrs_os_type: u16.04,/,/standby_controller_ip: {{ network_address }}.213 }/d' test/files/build_vars_all.yml
+    sed -i  '/- { hostname: {{ vrs_u16_target_server_name }},/,/ci_flavor: jenkins }/ d' test/files/build_vars.yml.all.j2
+    sed -i '/- { vrs_os_type: u16.04,/,/standby_controller_ip: {{ network_address }}.213 }/d' test/files/build_vars.yml.all.j2
 fi
 
 ./metro-ansible ci_predeploy.yml -vvvv
