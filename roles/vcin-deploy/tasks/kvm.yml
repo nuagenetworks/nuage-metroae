@@ -7,7 +7,7 @@
     search_regex: OpenSSH
     delay: 1
 
-- name: Update /etc/hosts file on {{ inventory_hostname }}
+- name: Update /etc/hosts file
   blockinfile:
     dest: /etc/hosts
     block: |
@@ -16,48 +16,48 @@
       {% endfor %}
   remote_user: "root"
 
-- name: Delete the localtime file on {{ inventory_hostname }}
+- name: Delete the localtime file
   file:
     path: /etc/localtime
     state: absent
   remote_user: "root"
 
-- name: Create the localtime symlink on {{ inventory_hostname }}
+- name: Create the localtime symlink
   file:
     src: /usr/share/zoneinfo/{{ timezone }}
     dest: /etc/localtime
     state: link
   remote_user: "root"
 
-- name: Copy files to pin OS version on {{ inventory_hostname }}
+- name: Copy files to pin OS version
   copy:
     src: ./roles/vcin-deploy/files/
     dest: /etc/yum.repos.d/
   remote_user: "root"
   when: yum_pin
 
-- name: Configure yum proxy on {{ inventory_hostname }}
+- name: Configure yum proxy
   lineinfile:
     dest: /etc/yum.conf
     line: "proxy={{ yum_proxy }}"
   remote_user: "root"
   when: yum_proxy != 'NONE'
 
-- name: Execute a yum update on {{ inventory_hostname }}
+- name: Execute a yum update
   yum:
     name: '*'
     state: latest
   remote_user: "root"
   when: yum_update
 
-- name: Remove old NTP servers on {{ inventory_hostname }}
+- name: Remove old NTP servers
   lineinfile:
     dest: /etc/ntp.conf
     regexp: "^server"
     state: absent
   remote_user: "root"
 
-- name: Configure NTP servers on {{ inventory_hostname }}
+- name: Configure NTP servers
   lineinfile:
     dest: /etc/ntp.conf
     line: "server {{ item }} iburst"
@@ -72,7 +72,7 @@
   command: ntpdate -u "{{ntp_server_list[0]}}"
   remote_user: "root"
 
-- name: Start ntpd on {{ inventory_hostname }}
+- name: Start ntpd
   command: service ntpd start
   remote_user: "root"
 

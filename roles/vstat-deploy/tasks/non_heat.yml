@@ -9,33 +9,33 @@
   delegate_to: "{{ target_server }}"
   remote_user: "{{ target_server_username }}"
 
-- name: Update /etc/hosts file on {{ inventory_hostname }}
+- name: Update /etc/hosts file
   lineinfile:
     dest: /etc/hosts
     line: "{{ mgmt_ip }} {{ inventory_hostname }}"
   remote_user: "root"
 
-- name: Delete the localtime file on {{ inventory_hostname }}
+- name: Delete the localtime file
   file:
     path: /etc/localtime
     state: absent
   remote_user: "root"
 
-- name: Create the localtime symlink on {{ inventory_hostname }}
+- name: Create the localtime symlink
   file:
     src: /usr/share/zoneinfo/{{ timezone }}
     dest: /etc/localtime
     state: link
   remote_user: "root"
 
-- name: Remove old NTP servers on {{ inventory_hostname }}
+- name: Remove old NTP servers
   lineinfile:
     dest: /etc/ntp.conf
     regexp: "^server"
     state: absent
   remote_user: "root"
 
-- name: Configure NTP servers on {{ inventory_hostname }}
+- name: Configure NTP servers
   lineinfile:
     dest: /etc/ntp.conf
     line: "server {{ item }} iburst"
@@ -52,13 +52,13 @@
   command: ntpdate -u "{{ntp_server_list[0]}}"
   remote_user: "root"
 
-- name: Start ntpd on {{ inventory_hostname }}
+- name: Start ntpd
   systemd:
     name: ntpd
     state: started
   remote_user: "root"
 
-- name: Enable ntpd on boot on {{ inventory_hostname }}
+- name: Enable ntpd on boot
   systemd:
     name: ntpd
     enabled: yes

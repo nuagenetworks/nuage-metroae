@@ -16,7 +16,7 @@
   delegate_to: "{{ target_server }}"
   remote_user: "{{ target_server_username }}"
 
-- name: Update /etc/hosts file on {{ inventory_hostname }}
+- name: Update /etc/hosts file
   blockinfile:
     dest: /etc/hosts
     block: |
@@ -25,13 +25,13 @@
       {% endfor %}
   remote_user: "root"
 
-- name: Delete the localtime file on {{ inventory_hostname }}
+- name: Delete the localtime file
   file:
     path: /etc/localtime
     state: absent
   remote_user: "root"
 
-- name: Create the localtime symlink on {{ inventory_hostname }}
+- name: Create the localtime symlink
   file:
     src: /usr/share/zoneinfo/US/Pacific
     dest: /etc/localtime
@@ -42,7 +42,7 @@
   yum: name=ntp state=present
   remote_user: "root"
 
-- name: Configure NTP servers on {{ inventory_hostname }}
+- name: Configure NTP servers
   lineinfile:
     dest: /etc/ntp.conf
     line: "server {{ item }} iburst"
@@ -59,7 +59,7 @@
   command: ntpdate -u "{{ntp_server_list[0]}}"
   remote_user: "root"
 
-- name: Start ntpd on {{ inventory_hostname }}
+- name: Start ntpd
   service:
     name: ntpd
     state: started
@@ -87,7 +87,7 @@
     remote_user: "root"
   when: sync_status.stdout != "synchronized"
 
-- name: Install dhcp package on {{ inventory_hostname }}
+- name: Install dhcp package
   yum: name=dhcp state=present
   remote_user: "root"
 
@@ -105,11 +105,11 @@
   command: chkconfig dhcpd on
   remote_user: "root"
 
-- name: Install dnsmasq package on {{ inventory_hostname }}
+- name: Install dnsmasq package
   yum: name=dnsmasq state=present
   remote_user: "root"
 
-- name: Copy dnsmasq config to {{ inventory_hostname }}
+- name: Copy dnsmasq config
   template: src=dnsmasq.conf.j2 backup=no dest=/etc/dnsmasq.conf
   remote_user: "root"
 
