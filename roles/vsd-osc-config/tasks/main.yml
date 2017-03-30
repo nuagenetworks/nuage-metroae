@@ -30,15 +30,15 @@
       vsd_mgmt_ip: "{{ vsc_server['ansible_facts']['openstack_servers'][0]['private_v4'] }}"
   when: vsd_server_name is defined
 
-- name: Create temporary directory on {{ inventory_hostname }}
+- name: Create temporary directory
   remote_user: "root"
   file: path={{ plugin_dir }}/{{ inventory_hostname }} state=directory
 
-- name: Create temporary directory on {{ inventory_hostname }} to hold upgrade scripts
+- name: Create temporary directory to hold upgrade scripts
   remote_user: "root"
   file: path={{ plugin_dir }}/{{ inventory_hostname }}/upgrade state=directory
  
-- name: Copy Nuage OS plugins to temporary directory on {{ inventory_hostname }}
+- name: Copy Nuage OS plugins to temporary directory
   copy: 
     src: "{{ nuage_os_package_path }}/{{ nuage_os_release }}/{{ nuage_target_architecture }}/{{ item }}"
     dest: "{{ plugin_dir }}/{{ inventory_hostname }}/{{ item }}"
@@ -52,7 +52,7 @@
   register: tar_file
   delegate_to: 127.0.0.1
 
-- name: Copy Nuage upgrade tar file to temporary directory on {{ inventory_hostname }}
+- name: Copy Nuage upgrade tar file to temporary directory
   copy: src={{ tar_file.files[0].path }} dest={{ plugin_dir }}/{{ inventory_hostname }}/
   remote_user: "root"
 
