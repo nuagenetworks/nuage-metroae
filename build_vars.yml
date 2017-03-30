@@ -7,8 +7,8 @@
 # Both are required to run the nuage_unzip role. nuage_unzipped_files_dir
 # is required when one or more operation lists, below, are set to 'install'
 # or 'upgrade'.
-nuage_zipped_files_dir: "/home/caso/metro/4.0R7/nuage-packed"
-nuage_unzipped_files_dir: "/home/caso/metro/4.0R7/nuage-unpacked"
+nuage_zipped_files_dir: "/home/caso/metro/4.0R4/packed"
+nuage_unzipped_files_dir: "/home/caso/metro/4.0R4/unpacked"
 ###
 # Usernames
 # remote_user names for ansible to execute as on the target server (hypervisor)
@@ -19,7 +19,7 @@ ansible_sudo_username: "root"
 ###
 # VSD params
 # vsd_standalone = False for cluster, True for standalone deployment
-vsd_standalone: True
+vsd_standalone: False
 # vsd_operations_list = A list of the operations you intend for the VSD. The
 # list could include 1 or more of the following:
 # - install
@@ -33,8 +33,20 @@ vsd_operations_list:
 myvsds:
   - { hostname: vsd1.example.com,
       target_server_type: "kvm",
-      target_server: 135.227.181.232,
+      target_server: 10.31.177.9,
       mgmt_ip: 192.168.122.201,
+      mgmt_gateway: 192.168.122.1,
+      mgmt_netmask: 255.255.255.0 }
+  - { hostname: vsd2.example.com,
+      target_server_type: "kvm",
+      target_server: 10.31.177.9,
+      mgmt_ip: 192.168.122.208,
+      mgmt_gateway: 192.168.122.1,
+      mgmt_netmask: 255.255.255.0 }
+  - { hostname: vsd3.example.com,
+      target_server_type: "kvm",
+      target_server: 10.31.177.9,
+      mgmt_ip: 192.168.122.209,
       mgmt_gateway: 192.168.122.1,
       mgmt_netmask: 255.255.255.0 }
 ###
@@ -52,25 +64,25 @@ vsc_operations_list:
 myvscs:
   - { hostname: vsc1.example.com,
       target_server_type: "kvm",
-      target_server: 135.227.181.232,
+      target_server: 10.31.177.9,
       mgmt_ip: 192.168.122.202,
       mgmt_gateway: 192.168.122.1,
       mgmt_netmask_prefix: 24,
       ctrl_ip: 192.168.100.202,
       ctrl_netmask_prefix: 24,
-      vsd_fqdn: vsd1.example.com,
+      vsd_fqdn: xmpp.example.com,
       system_ip: 1.1.1.2,
       xmpp_username: vsc1,
       vsc_static_route_list: { 0.0.0.0/1 } }
   - { hostname: vsc2.example.com,
       target_server_type: "kvm",
-      target_server: 135.227.181.232,
+      target_server: 10.31.177.9,
       mgmt_ip: 192.168.122.203,
       mgmt_gateway: 192.168.122.1,
       mgmt_netmask_prefix: 24,
       ctrl_ip: 192.168.100.203,
       ctrl_netmask_prefix: 24,
-      vsd_fqdn: vsd1.example.com,
+      vsd_fqdn: xmpp.example.com,
       system_ip: 1.1.1.3,
       xmpp_username: vsc2,
       vsc_static_route_list: { 0.0.0.0/1 } }
@@ -95,20 +107,13 @@ myvrss:
       active_controller_ip: 192.168.122.202,
       standby_controller_ip: 192.168.122.203,
       vrs_ip_list: [ 
-       192.168.122.101] }
+       192.168.122.83] }
   - { vrs_set_name: vrs_set_usewest2,
       vrs_os_type: el7,
       active_controller_ip: 192.168.122.202,
       standby_controller_ip: 192.168.122.203,
       vrs_ip_list: [
-       192.168.122.83,
-       192.168.122.238 ] }
-  - { vrs_set_name: vrs_set_uswest3,
-      vrs_os_type: u16.04,
-      active_controller_ip: 192.168.122.202,
-      standby_controller_ip: 192.168.122.203,
-      vrs_ip_list: [
-       192.168.122.215 ] }
+       192.168.122.8 ] }
 ###
 # Stats VM (ElasticSearch) params
 # vstat_operations_list = A list of the operations you intend for the ES node. The
@@ -124,58 +129,25 @@ vstat_operations_list:
 myvstats:
   - { hostname: vstat1.example.com,
       target_server_type: "kvm",
-      target_server: 135.227.181.232,
+      target_server: 10.31.177.9,
       mgmt_ip: 192.168.122.204,
       mgmt_gateway: 192.168.122.1,
       mgmt_netmask: 255.255.255.0,
       vsd_fqdn: vsd1.example.com }
 ###
-# VNS params
-# vns_operations_list = A list of the operations you intend for the VNS. The
-# list could include 1 or more of the following:
-# - install
-# - upgrade
-# - health
-# - TBD
-vns_operations_list:
-  - install
-# myvnsutils is a collection of parameters for the VNSUTIL. 
-# One set of parameters is required for each VNSUTIL.
-myvnsutils:
-  - { hostname: vnsutil1.example.com,
-      target_server_type: "kvm",
-      target_server: 135.227.181.232,
-      mgmt_ip: 192.168.122.205,
-      mgmt_gateway: 192.168.122.1,
-      mgmt_netmask: 255.255.255.0,
-      data_ip: 192.168.100.205,
-      data_subnet: 192.168.100.0,
-      data_netmask: 255.255.255.0,
-      nsgv_ip: 192.168.122.206,
-      nsgv_mac: '52:54:00:88:85:12',
-      nsgv_hostname: nsgv1.example.com,
-      vsd_fqdn: vsd1.example.com }
-# mynsgvs is a collection of parameters for the NSGV. 
-# One set of parameters is required for each NSGV.
-mynsgvs:
-  - { hostname: nsgv1.example.com,
-      target_server_type: "kvm",
-      target_server: 135.227.181.232,
-      nsgv_mac: '52:54:00:88:85:12' }
-###
 # Ansible
 # The IP addr or hostname of the Ansible host
-ansible_deployment_host: 135.227.181.232
+ansible_deployment_host: 10.31.177.9
 ###
 # Hypervisor network bridges
 # Network bridges required on the target server (hypervisor) for VM deployment
 mgmt_bridge: "virbr0"
-data_bridge: "virbr1"
+data_bridge: "virbr2"
 access_bridge: "access"
 ###
 # Hypervisor VM image file location
 # Location to create VM images on KVM target servers
-images_path: "/var/lib/libvirt/images/"
+images_path: "/home/caso/images/"
 ###
 # Common Nuage params
 # NTP configuration
