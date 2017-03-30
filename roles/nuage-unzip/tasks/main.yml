@@ -57,6 +57,24 @@
       remote_user: root
     - debug: var=rc_vsd_archive_files verbosity=1
     when: rc_vsd.matched > 0 
+
+  - name: Find VSD mmigration Archive
+    find: path="{{ nuage_zipped_files_dir }}"  pattern="Nuage-VSD-migration*ISO*"
+    register: rc_vsd_migration
+  - debug: var=rc_vsd_migration verbosity=1
+  - block:
+    - name: Clean up any previous unzipped files
+      file: name="{{ nuage_unzipped_files_dir }}/vsd/migration" state=absent
+      remote_user: root
+    - name: Create subdirectory for unzipped files
+      file: name="{{ nuage_unzipped_files_dir }}/vsd/migration" state=directory mode=0775
+      remote_user: root
+    - name: Unpack VSD migration Archive
+      unarchive: src="{{ rc_vsd_migration.files[0].path}}" dest="{{ nuage_unzipped_files_dir }}/vsd/migration" list_files=yes mode=0775
+      register: rc_vsd_migration_files
+      remote_user: root
+    - debug: var=rc_vsd_migration_files verbosity=1
+    when: rc_vsd_migration.matched > 0 
   tags:
     - vsd
 
