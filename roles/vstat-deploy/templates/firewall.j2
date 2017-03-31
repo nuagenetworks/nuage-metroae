@@ -1,0 +1,19 @@
+# *** WARNING ***
+# This is a generated file. Manual changes to this file
+# will be lost if reset-build or build is run
+#
+firewall_std_commands:
+  - "firewall-cmd --set-default-zone=public"
+  - "firewall-cmd --permanent --remove-port=9200/tcp"
+  - "firewall-cmd --permanent --remove-port=9300/tcp"
+firewall_std_commands:
+{% for vstat in groups['vstats'] %}
+  - "firewall-cmd --permanent --zone=public --add-rich-rule=\"rule family=\"ipv4\" source address=\"{{ ip_addr.stdout.split()[1] }}\" port protocol=\"tcp\" port=\"9200\" accept\""
+  - "firewall-cmd --permanent --zone=public --add-rich-rule=\"rule family=\"ipv4\" source address=\"{{ ip_addr.stdout.split()[1] }}\" port protocol=\"tcp\" port=\"9300\" accept\""
+{% endfor %}
+firewall_cluster_commands:
+{% for vstat in groups['vstats'] %}
+  - "firewall-cmd --permanent --zone=public --add-rich-rule=\"rule family=\"ipv4\" source address=\"{{ hostvars[vstat]['mgmt_ip'] }}\" port protocol=\"tcp\" port=\"9200\" accept\""
+  - "firewall-cmd --permanent --zone=public --add-rich-rule=\"rule family=\"ipv4\" source address=\"{{ hostvars[vstat]['mgmt_ip'] }}\" port protocol=\"tcp\" port=\"9300\" accept\""
+{% endfor %}
+  - "firewall-cmd --reload"
