@@ -151,6 +151,20 @@
         vsc_qcow2_path: "{{ rc_vsc_file.files[0].path | dirname }}"
         vsc_qcow2_file_name: "{{ rc_vsc_file.files[0].path | basename }}"
       when: rc_vsc_file.matched > 0
+    - name: Find name of VSC TIM File
+      find: path="{{ nuage_unzipped_files_dir }}/vsc"  pattern="cpm.tim" recurse=yes
+      register: rc_vsc_tim_file
+    - debug: var=rc_vsc_tim_file verbosity=1
+    - name: Verify that a VSC TIM ile was found
+      assert: { 
+        that: "{{ rc_vsc_tim_file.matched }} > 0",
+        msg: "Unable to find VSC TIM image file"
+      }
+    - name: Register VSC TIM variables with proper path and image locations for use in other playbooks
+      set_fact:
+        vsc_tim_path: "{{ rc_vsc_tim_file.files[0].path | dirname }}"
+        vsc_tim_file_name: "{{ rc_vsc_tim_file.files[0].path | basename }}"
+      when: rc_vsc_tim_file.matched > 0
     when: myvscs | map(attribute='target_server_type') | list | issuperset(["kvm"]) or myvscs | map(attribute='target_server_type') | list | issuperset(["heat"])
   - block:
     - name: Find name of VSC OVA File
