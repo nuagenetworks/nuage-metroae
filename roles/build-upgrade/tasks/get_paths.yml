@@ -20,6 +20,19 @@
         vsd_qcow2_file_name: "{{ rc_vsd_file.files[0].path | basename }}"
         vcin_qcow2_path: "{{ rc_vsd_file.files[0].path | dirname }}"
         vcin_qcow2_file_name: "{{ rc_vsd_file.files[0].path | basename }}"
+    - name: Find name of VSD Migration ISO File
+      find: path="{{ nuage_unzipped_files_dir }}/vsd/migration"  pattern="*.iso" recurse=yes
+      register: rc_vsd_migration_file
+    - debug: var=rc_vsd_migration_file verbosity=1
+    - name: Verify that a VSD migration ISO file was found
+      assert: {
+        that: "{{ rc_vsd_migration_file.matched }} > 0",
+        msg: "Unable to find VSD Migration ISO image file"
+      }
+    - name: Register VSD Migration ISO variables with proper path and image locations for use in other playbooks
+      set_fact:
+        vsd_migration_iso_path: "{{ rc_vsd_migration_file.files[0].path | dirname }}"
+        vsd_migration_iso_file_name: "{{ rc_vsd_migration_file.files[0].path | basename }}"
     when: ( myvsds is defined and 
           ( myvsds | map(attribute='target_server_type') | list | issuperset(["kvm"]) or myvsds | map(attribute='target_server_type') | list | issuperset(["heat"]) ) ) or
           ( myvcins is defined and
@@ -151,6 +164,7 @@
         vsc_qcow2_path: "{{ rc_vsc_file.files[0].path | dirname }}"
         vsc_qcow2_file_name: "{{ rc_vsc_file.files[0].path | basename }}"
       when: rc_vsc_file.matched > 0
+
     - name: Find name of VSC TIM File
       find: path="{{ nuage_unzipped_files_dir }}/vsc"  pattern="cpm.tim" recurse=yes
       register: rc_vsc_tim_file
