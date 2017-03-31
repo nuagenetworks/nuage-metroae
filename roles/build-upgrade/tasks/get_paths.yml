@@ -44,7 +44,10 @@
           myvsds | map(attribute='target_server_type') | list | issuperset(["vcenter"]) ) or
           ( myvcins is defined and
           myvcins | map(attribute='target_server_type') | list | issuperset(["vcenter"]) )
-  when: (vsd_requires_binaries|default(True)) or (vcin_requires_binaries|default(False))
+  when: "'upgrade' in vsd_operations_list|default(['None']) or
+        'install' in vsd_operations_list|default(['None']) or
+        'upgrade' in vcin_operations_list|default(['None']) or
+        'install' in vcin_operations_list|default(['None'])"
   tags:
     - vsd
 
@@ -83,7 +86,7 @@
       register: rc_vstat_file
     - debug: var=rc_vstat_file verbosity=1
     - name: Verify that a Stats VM QCOW2 file was found
-      assert: {
+      assert: { 
         that: "{{ rc_vstat_file.matched }} > 0",
         msg: "Unable to find Stats VM QCOW2 image file"
       }
@@ -99,7 +102,7 @@
       register: rc_vstat_file
     - debug: var=rc_vstat_file verbosity=1
     - name: Verify that a Stats VM OVF file was found
-      assert: {
+      assert: { 
         that: "{{ rc_vstat_file.matched }} > 0",
         msg: "Unable to find Stats VM OVF/OVA image file"
       }
@@ -112,10 +115,10 @@
   when:
     - myvstats is defined
     - "'install' in vstat_operations_list|default(['None']) or
-      'upgrade' in vstat_operations_list|default(['None'])"
+      'upgrade' in vstat_operations_list|default(['None'])" 
   tags:
     - vstat
-
+ 
 - name: Ensure that Stats VM QCOW2 variables are set
   set_fact:
     vstat_qcow2_path: "None"
@@ -139,7 +142,7 @@
       register: rc_vsc_file
     - debug: var=rc_vsc_file verbosity=1
     - name: Verify that a VSC QCOW2 file was found
-      assert: {
+      assert: { 
         that: "{{ rc_vsc_file.matched }} > 0",
         msg: "Unable to find VSC VM QCOW2 image file"
       }
@@ -155,7 +158,7 @@
       register: rc_vsc_file
     - debug: var=rc_vsc_file verbosity=1
     - name: Verify that a VSC OVA file was found
-      assert: {
+      assert: { 
         that: "{{ rc_vsc_file.matched }} > 0",
         msg: "Unable to find VSC VM OVA image file"
       }
@@ -184,7 +187,7 @@
   when: vsc_ova_path is not defined
 
 ################
-# VRS
+# VRS 
 ################
 
 # TODO: Optimize the looping through vrs arch types in case of large deployments
@@ -218,7 +221,7 @@
     with_items: "{{ myvrss }}"
 
   - assert:
-      that:
+      that: 
         - "vrs_target_os_is_supported == True"
       msg: "unsupported OS type/typo in build.yml. Supported OS Types are el6,el7,u14.04,u16.04"
 
@@ -240,7 +243,7 @@
       register: rc_vrs_file_el6
     - debug: var=rc_vrs_file_el6 verbosity=1
     - name: Verify that VRS file was found
-      assert: {
+      assert: { 
         that: "{{ rc_vrs_file_el6.matched }} > 0",
         msg: "Unable to find VRS files"
       }
@@ -255,7 +258,7 @@
       register: rc_vrs_file_el7
     - debug: var=rc_vrs_file_el7 verbosity=1
     - name: Verify that VRS file was found
-      assert: {
+      assert: { 
         that: "{{ rc_vrs_file_el7.matched }} > 0",
         msg: "Unable to find VRS files"
       }
@@ -271,7 +274,7 @@
       register: rc_vrs_python_file_u14_04
     - debug: var=rc_vrs_python_file_u14_04 verbosity=1
     - name: Verify that VRS python package file was found
-      assert: {
+      assert: { 
         that: "{{ rc_vrs_python_file_u14_04.matched }} > 0",
         msg: "Unable to find VRS python package for Ubuntu 14.04"
       }
@@ -284,7 +287,7 @@
       register: rc_vrs_common_file_u14_04
     - debug: var=rc_vrs_common_file_u14_04 verbosity=1
     - name: Verify that VRS common package file was found
-      assert: {
+      assert: { 
         that: "{{ rc_vrs_common_file_u14_04.matched }} > 0",
         msg: "Unable to find VRS common file"
       }
@@ -296,7 +299,7 @@
       register: rc_vrs_switch_file_u14_04
     - debug: var=rc_vrs_switch_file_u14_04 verbosity=1
     - name: Verify that VRS switch package file was found
-      assert: {
+      assert: { 
         that: "{{ rc_vrs_switch_file_u14_04.matched }} > 0",
         msg: "Unable to find VRS switch file"
       }
@@ -311,7 +314,7 @@
         register: rc_vrs_python_file_u16_04
       - debug: var=rc_vrs_python_file_u16_04 verbosity=1
       - name: Verify that VRS python package file was found
-        assert: {
+        assert: { 
           that: "{{ rc_vrs_python_file_u16_04.matched }} > 0",
           msg: "Unable to find VRS python package for Ubuntu 16.04"
         }
@@ -324,7 +327,7 @@
         register: rc_vrs_common_file_u16_04
       - debug: var=rc_vrs_common_file_u16_04 verbosity=1
       - name: Verify that VRS common package file was found
-        assert: {
+        assert: { 
           that: "{{ rc_vrs_common_file_u16_04.matched }} > 0",
           msg: "Unable to find VRS common file"
         }
@@ -336,7 +339,7 @@
         register: rc_vrs_switch_file_u16_04
       - debug: var=rc_vrs_switch_file_u16_04 verbosity=1
       - name: Verify that VRS switch package file was found
-        assert: {
+        assert: { 
           that: "{{ rc_vrs_switch_file_u16_04.matched }} > 0",
           msg: "Unable to find VRS switch file"
         }
@@ -350,35 +353,35 @@
   tags:
     - vrs
 
-- name: Ensure that el7 VRS package path variables are set
+- name: Ensure that el7 VRS package path variables are set 
   set_fact:
     el7_vrs_package_path: "None"
   when: el7_vrs_package_path is not defined
-- name: Ensure that el6 VRS package path variables are set
+- name: Ensure that el6 VRS package path variables are set 
   set_fact:
     el6_vrs_package_path: "None"
   when: el6_vrs_package_path is not defined
-- name: Ensure that ubuntu 14.04 VRS package path variables are set
+- name: Ensure that ubuntu 14.04 VRS package path variables are set 
   set_fact:
     u14_04_vrs_package_path: "None"
   when: u14_04_vrs_package_path is not defined
-- name: Ensure that ubuntu 16.04 VRS package path variables are set
+- name: Ensure that ubuntu 16.04 VRS package path variables are set 
   set_fact:
     u16_04_vrs_package_path: "None"
   when: u16_04_vrs_package_path is not defined
-- name: Ensure that ubuntu 14.04 VRS package list variables are set
+- name: Ensure that ubuntu 14.04 VRS package list variables are set 
   set_fact:
     u14_04_vrs_package_file_name_list: "['None']"
   when: u14_04_vrs_package_file_name_list is not defined
-- name: Ensure that ubuntu 16.04 VRS package list variables are set
+- name: Ensure that ubuntu 16.04 VRS package list variables are set 
   set_fact:
     u16_04_vrs_package_file_name_list: "['None']"
   when: u16_04_vrs_package_file_name_list is not defined
-- name: Ensure that el6 VRS package list variables are set
+- name: Ensure that el6 VRS package list variables are set 
   set_fact:
     el6_vrs_package_file_name_list: "['None']"
   when: el6_vrs_package_file_name_list is not defined
-- name: Ensure that el7 VRS package list variables are set
+- name: Ensure that el7 VRS package list variables are set 
   set_fact:
     el7_vrs_package_file_name_list: "['None']"
   when: el7_vrs_package_file_name_list is not defined
@@ -394,7 +397,7 @@
       register: rc_dockermon_file
     - debug: var=rc_dockermon_file verbosity=1
     - name: Verify that Dockermon package file was found
-      assert: {
+      assert: { 
         that: "{{ rc_dockermon_file.matched }} > 0",
         msg: "Unable to find Dockermon file"
       }
@@ -413,7 +416,7 @@
       register: rc_dockermon_file
     - debug: var=rc_dockermon_file verbosity=1
     - name: Verify that Dockermon package file was found
-      assert: {
+      assert: { 
         that: "{{ rc_dockermon_file.matched }} > 0",
         msg: "Unable to find Dockermon file"
       }
@@ -433,7 +436,7 @@
       register: rc_dockermon_file
     - debug: var=rc_dockermon_file verbosity=1
     - name: Verify that Dockermon package file was found
-      assert: {
+      assert: { 
         that: "{{ rc_dockermon_file.matched }} > 0",
         msg: "Unable to find Dockermon file"
       }
@@ -486,12 +489,12 @@
       - { subdir: "vns/nsg/", pattern: "ncpe_centos7.qcow2" }
   - debug: var=rc_vns_files verbosity=1
   - name: Verify that VNS files were found
-    assert: {
+    assert: { 
       that: "{{ rc_vns_files.results[0].matched }} > 0 and {{ rc_vns_files.results[1].matched }} > 0",
       msg: "Unable to find VNS files"
     }
   - name: Register VNS variables with proper path and image locations for use in other playbooks
-    set_fact:
+    set_fact: 
       "{{ item.1 }}_path": "{{ rc_vns_files.results[item.0].files[0].path | dirname }}"
       "{{ item.1 }}_file_name": "{{ rc_vns_files.results[item.0].files[0].path | basename }}"
     with_indexed_items:
@@ -503,13 +506,13 @@
     - "'install' in vns_operations_list|default(['None'])"
 
 - name: Make sure the proper VNSUTILS variables have been defined
-  set_fact:
+  set_fact: 
     vnsutil_qcow2_path: "None"
     vnsutil_qcow2_file_name: "None"
   when: vnsutil_qcow2_path is not defined
 
 - name: Make sure the proper NSGV variables have been defined
-  set_fact:
+  set_fact: 
     nsgv_qcow2_path: "None"
     nsgv_qcow2_file_name: "None"
   when: nsgv_qcow2_path is not defined
@@ -524,17 +527,16 @@
     register: rc_nuage_os_file
   - debug: var=rc_nuage_os_file verbosity=1
   - name: Verify that OpenStack files were found
-    assert: {
+    assert: { 
       that: "{{ rc_nuage_os_file.matched }} > 0",
       msg: "Unable to find OpenStack files"
     }
   - name: Register Nuage OpenStack package variables with proper path and image locations for use in other playbooks (RH architecture)
     set_fact:
-      nuage_os_package_path: "{{ nuage_unzipped_files_dir }}/nuage_os/"
+      nuage_os_package_path: "{{ nuage_unzipped_files_dir }}/nuage_os/" 
       nuage_os_package_file_name_list: "{{ rc_nuage_os_file.files |  map(attribute='path') | list | map('basename') | list }}"
       nuage_os_release: "{{ nuage_os_release }}"
-  when:
+  when: 
     - nuage_os_release is defined
   tags:
     - nuage_os
-
