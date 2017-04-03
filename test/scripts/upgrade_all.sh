@@ -23,8 +23,9 @@ sed -i "s/VERSION/$2/g" roles/reset-build/files/upgrade_vars.yml
 ./metro-ansible build.yml -vvvv
 # run the VSP deployment
 ./metro-ansible test_install.yml -vvvv
-#delete any vsd backups from previous jobs
+#delete any vsd backups and reports from previous jobs
 rm -rf /tmp/backup
+rm -rf ./reports/
 # create build vars required for upgrade
 ./metro-ansible build_upgrade.yml -vvvv
 # run the VSP upgrade
