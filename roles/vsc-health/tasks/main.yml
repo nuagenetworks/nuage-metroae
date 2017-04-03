@@ -1,4 +1,6 @@
 ---
+- include: report_header.yml
+
 - name: Wait for VSC ssh to be ready
   local_action:
     module: wait_for
@@ -34,7 +36,7 @@
   debug: var=bgp_summary_json verbosity=1
 
 - name: Write BGP Admin State JSON to file
-  nuage_append: filename="{{ report_filename }}" text="{{ inventory_hostname }} {{ bgp_summary_json|to_nice_json }}\n"
+  nuage_append: filename="{{ report_path }}" text="{{ inventory_hostname }} {{ bgp_summary_json|to_nice_json }}\n"
   delegate_to: localhost
 
 - name: Create local variable with BGP Admin State
@@ -104,7 +106,7 @@
   debug: var=xmpp_detail_json verbosity=1
 
 - name: Write xmpp-server detail json to report
-  nuage_append: filename="{{ report_filename }}" text="{{ inventory_hostname }} {{ xmpp_detail_json|to_nice_json }}\n"
+  nuage_append: filename="{{ report_path }}" text="{{ inventory_hostname }} {{ xmpp_detail_json|to_nice_json }}\n"
   delegate_to: localhost
 
 - name: Create local variable for xmpp-server state
@@ -138,7 +140,7 @@
   debug: var=show_vswitches_json verbosity=1
 
 - name: Write vswiches json to report
-  nuage_append: filename="{{ report_filename }}" text="{{ inventory_hostname }} {{ show_vswitches_json|to_nice_json }}\n"
+  nuage_append: filename="{{ report_path }}" text="{{ inventory_hostname }} {{ show_vswitches_json|to_nice_json }}\n"
   delegate_to: localhost
 
 - name: Check for the expected number of vswitches
@@ -166,7 +168,7 @@
   debug: var=show_host_vports_json verbosity=1
 
 - name: Write host vports json to report
-  nuage_append: filename="{{ report_filename }}" text="{{ inventory_hostname }} HOST VPORTS {{ show_host_vports_json|to_nice_json }}\n"
+  nuage_append: filename="{{ report_path }}" text="{{ inventory_hostname }} HOST VPORTS {{ show_host_vports_json|to_nice_json }}\n"
   delegate_to: localhost
 
 - name: Check for the expected number of host vports
@@ -194,7 +196,7 @@
   debug: var=show_vm_vports_json verbosity=1
 
 - name: Write vm vports json to report
-  nuage_append: filename="{{ report_filename }}" text="{{ inventory_hostname }} VM VPORTS {{ show_vm_vports_json|to_nice_json }}\n"
+  nuage_append: filename="{{ report_path }}" text="{{ inventory_hostname }} VM VPORTS {{ show_vm_vports_json|to_nice_json }}\n"
   delegate_to: localhost
 
 - name: Check for the expected number of vm vports
@@ -229,7 +231,7 @@
   debug: var=show_gateway_ports_json verbosity=1
 
 - name: Write gateway ports json to report
-  nuage_append: filename="{{ report_filename }}" text="{{ inventory_hostname }} GATEWAY VPORTS {{ show_gateway_ports_json|to_nice_json }}\n"
+  nuage_append: filename="{{ report_path }}" text="{{ inventory_hostname }} GATEWAY VPORTS {{ show_gateway_ports_json|to_nice_json }}\n"
   delegate_to: localhost
 
 - name: Check for the expected number of gateway ports
@@ -258,3 +260,5 @@
     msg: "Failures detected. Check {{ failure_report_file_name }}."
   }
   ignore_errors: yes
+
+- include: report_footer.yml
