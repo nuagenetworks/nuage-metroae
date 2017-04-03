@@ -1,0 +1,177 @@
+---
+###
+# See BUILD.md for details
+###
+# Paths
+# Paths to find zipped (tar.gz) files and unzipped files (e.g. qcow2)
+# Both are required to run the nuage_unzip role. nuage_unzipped_files_dir
+# is required when one or more operation lists, below, are set to 'install'
+# or 'upgrade'.
+nuage_zipped_files_dir: "/home/caso/metro/4.0R4/packed"
+nuage_unzipped_files_dir: "/home/caso/metro/4.0R4/unpacked"
+###
+# Usernames
+# remote_user names for ansible to execute as on the target server (hypervisor)
+# and Ansible host. target_server_username is the remote_user for all hypervisors.
+# ansible_sudo_username is the sudo user for local actions.
+target_server_username: "root"
+ansible_sudo_username: "root"
+###
+# VSD params
+# vsd_standalone = False for cluster, True for standalone deployment
+vsd_standalone: False
+# vsd_operations_list = A list of the operations you intend for the VSD. The
+# list could include 1 or more of the following:
+# - install
+# - upgrade
+# - health
+# - TBD
+vsd_operations_list:
+  - install
+# myvsds is a collection of parameters for VSDs. 
+# One set of parameters is required for each VSD.
+myvsds:
+  - { hostname: vsd1.example.com,
+      target_server_type: "kvm",
+      target_server: 10.31.177.9,
+      mgmt_ip: 192.168.122.201,
+      mgmt_gateway: 192.168.122.1,
+      mgmt_netmask: 255.255.255.0 }
+  - { hostname: vsd2.example.com,
+      target_server_type: "kvm",
+      target_server: 10.31.177.9,
+      mgmt_ip: 192.168.122.208,
+      mgmt_gateway: 192.168.122.1,
+      mgmt_netmask: 255.255.255.0 }
+  - { hostname: vsd3.example.com,
+      target_server_type: "kvm",
+      target_server: 10.31.177.9,
+      mgmt_ip: 192.168.122.209,
+      mgmt_gateway: 192.168.122.1,
+      mgmt_netmask: 255.255.255.0 }
+###
+# VSC params
+# vsc_operations_list = A list of the operations you intend for the VSC. The
+# list could include 1 or more of the following:
+# - install
+# - upgrade
+# - health
+# - TBD
+vsc_operations_list:
+  - install
+# myvscs is a collection of parameters for VSCs. 
+# One set of parameters is required for each VSC.
+myvscs:
+  - { hostname: vsc1.example.com,
+      target_server_type: "kvm",
+      target_server: 10.31.177.9,
+      mgmt_ip: 192.168.122.202,
+      mgmt_gateway: 192.168.122.1,
+      mgmt_netmask_prefix: 24,
+      ctrl_ip: 192.168.100.202,
+      ctrl_netmask_prefix: 24,
+      vsd_fqdn: xmpp.example.com,
+      system_ip: 1.1.1.2,
+      xmpp_username: vsc1,
+      vsc_static_route_list: { 0.0.0.0/1 } }
+  - { hostname: vsc2.example.com,
+      target_server_type: "kvm",
+      target_server: 10.31.177.9,
+      mgmt_ip: 192.168.122.203,
+      mgmt_gateway: 192.168.122.1,
+      mgmt_netmask_prefix: 24,
+      ctrl_ip: 192.168.100.203,
+      ctrl_netmask_prefix: 24,
+      vsd_fqdn: xmpp.example.com,
+      system_ip: 1.1.1.3,
+      xmpp_username: vsc2,
+      vsc_static_route_list: { 0.0.0.0/1 } }
+###
+# VRS params
+# vrs_operations_list = A list of the operations you intend for the VRS. The
+# list could include 1 or more of the following:
+# - install
+# - upgrade
+# - health
+# - TBD
+vrs_operations_list:
+  - install
+# dockermon_install = True when Docker Monitor is to be installed along with
+# the VRS. False if not.
+dockermon_install: True
+# myvrss is a collection of parameters for the targets where VRS is to be deployed. 
+# One set of parameters is required for each set or group of VRS targets.
+myvrss:
+  - { vrs_set_name: vrs_set_uswest1,
+      vrs_os_type: u14.04,
+      active_controller_ip: 192.168.122.202,
+      standby_controller_ip: 192.168.122.203,
+      vrs_ip_list: [ 
+       192.168.122.83] }
+  - { vrs_set_name: vrs_set_usewest2,
+      vrs_os_type: el7,
+      active_controller_ip: 192.168.122.202,
+      standby_controller_ip: 192.168.122.203,
+      vrs_ip_list: [
+       192.168.122.8 ] }
+###
+# Stats VM (ElasticSearch) params
+# vstat_operations_list = A list of the operations you intend for the ES node. The
+# list could include 1 or more of the following:
+# - install
+# - upgrade
+# - health
+# - TBD
+vstat_operations_list:
+  - install
+# myvstats is a collection of parameters for the VSTAT. 
+# One set of parameters is required for each VSTAT.
+myvstats:
+  - { hostname: vstat1.example.com,
+      target_server_type: "kvm",
+      target_server: 10.31.177.9,
+      mgmt_ip: 192.168.122.204,
+      mgmt_gateway: 192.168.122.1,
+      mgmt_netmask: 255.255.255.0,
+      vsd_fqdn: vsd1.example.com }
+###
+# Ansible
+# The IP addr or hostname of the Ansible host
+ansible_deployment_host: 10.31.177.9
+###
+# Hypervisor network bridges
+# Network bridges required on the target server (hypervisor) for VM deployment
+mgmt_bridge: "virbr0"
+data_bridge: "virbr2"
+access_bridge: "access"
+###
+# Hypervisor VM image file location
+# Location to create VM images on KVM target servers
+images_path: "/home/caso/images/"
+###
+# Common Nuage params
+# NTP configuration
+# Note: Must be in dotted-decimal format
+ntp_server_list:
+  - 135.227.181.232
+  - 128.138.141.172
+# DNS configuration
+dns_server_list:
+  - 192.168.122.1
+  - 128.251.10.145
+dns_domain: example.com
+###
+# Misc. params
+timezone: US/Pacific
+yum_proxy: "NONE"
+yum_update: yes
+yum_pin: yes
+###
+# Vcenter params
+vcenter:
+  username: administrator@vsphere.local
+  password: Alcateldc
+  datacenter: Datacenter
+  cluster: Management
+  datastore: datastore
+  ovftool: /usr/bin/ovftool

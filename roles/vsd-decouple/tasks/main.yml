@@ -1,5 +1,26 @@
 ---
 - block:
+  - name: Copy the VSD migration script ISO to VSD's temp directory
+    command: "{{ vsd_migration_iso_copy }}"
+    remote_user: "{{ ansible_sudo_username }}"
+    delegate_to: "{{ ansible_deployment_host }}"
+
+  - name: Register target directory status
+    stat: path="/media/CDROM"
+    register: cdrom_dir
+    remote_user: root
+
+  - name: Create target directory to mount ISO if necessary
+    file: name="/media/CDROM" state=directory mode=0775
+    when: cdrom_dir.stat.exists == false
+    remote_user: root
+
+  - name: mount ISO as loop back device
+    shell: "mount -o loop /tmp/{{ vsd_migration_iso_file_name }} /media/CDROM/"
+    register: mount_out
+
+  - debug: var=mount_out verbosity=1
+
   - name: List VSD-related mounts
     shell: "mount | grep VSD | grep /media/CDROM"
     register: mount_file

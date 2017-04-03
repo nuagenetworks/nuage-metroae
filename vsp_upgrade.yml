@@ -7,6 +7,9 @@
   roles:
     - vsd-health
 
+- name: Get VSC nodes information prior to upgrade
+  include: vsc_health.yml report_filename=vsc_pre_upgrade_report.txt
+
 - name: Decouple VSD node1 and node3
   include: vsd_decluster.yml
 
@@ -17,8 +20,16 @@
   roles:
     - vsd-upgrade
 
-- name: Get VSC nodes inofrmation prior to upgrade 
-  include: vsc_health.yml 
+- name: Get VSD nodes network and monit information post VSD1 and VSD3 upgrade after enabling VSD API
+  hosts: vsds
+  any_errors_fatal: true
+  vars:
+    report_filename: vsd_post_vsd1_3_upgrade_report.txt
+  roles:
+    - vsd-health
+
+- name: Get VSC nodes information prior to upgrade VSC1 
+  include: vsc_health.yml report_filename=vsc_pre_vsc1_upgrade_report.txt
 
 - name: Backup VSC node1
   hosts: vsc_ha_node1
@@ -34,11 +45,14 @@
   roles:
     - vsc-upgrade
 
-- name: Gather network and monit information of new VSD node1 and node3 after enabling VSD api
-  hosts: vsd_ha_node1:vsd_ha_node3
+- name: Get VSC nodes information post VSC1 upgrade
+  include: vsc_health.yml report_filename=vsc_post_vsc1_upgrade_report.txt
+
+- name: Gather network and monit information of VSDs after VSC1 upgrade
+  hosts: vsds
   any_errors_fatal: true
   vars:
-    report_filename: vsd_post_upgrade_report.txt
+    report_filename: vsd_post_vsc1_upgrade_report.txt
   roles:
     - vsd-health
 
@@ -48,6 +62,9 @@
   any_errors_fatal: true
   roles:
     - vsc-upgrade
+
+- name: Get VSC nodes information post VSC2 upgrade
+  include: vsc_health.yml report_filename=vsc_post_vsc2_upgrade_report.txt
 
 - name: Upgrade VSD node2
   hosts: vsd_ha_node2
@@ -63,3 +80,6 @@
     report_filename: vsd_post_upgrade_report.txt
   roles:
     - vsd-health
+
+- name: Get VSC nodes information post upgrade
+  include: vsc_health.yml report_filename=vsc_post_upgrade_report.txt

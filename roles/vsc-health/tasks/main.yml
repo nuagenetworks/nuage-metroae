@@ -1,4 +1,6 @@
 ---
+- include: report_header.yml
+
 - name: Wait for VSC ssh to be ready
   local_action:
     module: wait_for
@@ -34,7 +36,7 @@
   debug: var=bgp_summary_json verbosity=1
 
 - name: Write BGP Admin State JSON to file
-  nuage_append: filename="{{ report_filename }}" text="{{ inventory_hostname }} {{ bgp_summary_json|to_nice_json }}\n"
+  nuage_append: filename="{{ report_path }}" text="{{ inventory_hostname }} {{ bgp_summary_json|to_nice_json }}\n"
   delegate_to: localhost
 
 - name: Create local variable with BGP Admin State
@@ -46,7 +48,7 @@
 - name: Check for expected BGP Admin State
   assert: { 
     that: "'{{ expected_bgp_admin_state }}' in bgp_admin_state",
-    msg: "Unexpected BGP Admin State - {{ bgp_admin_state }}. Expected '{{ expected_bgp_admin_state }}'. Check output of 'show router bgp summary' on {{ inventory_hostname }}."
+    msg: "Unexpected BGP Admin State - {{ bgp_admin_state }}. Expected '{{ expected_bgp_admin_state }}'. Check output of 'show router bgp summary'."
   }
   ignore_errors: yes
 
@@ -59,7 +61,7 @@
 - name: Check for expected BGP Oper State
   assert: { 
     that: "'{{ expected_bgp_oper_state }}' in bgp_oper_state",
-    msg: "Unexpected BGP Oper State - {{ bgp_oper_state }}. Expected '{{ expected_bgp_oper_state }}'. Check output of 'show router bgp summary' on {{ inventory_hostname }}."
+    msg: "Unexpected BGP Oper State - {{ bgp_oper_state }}. Expected '{{ expected_bgp_oper_state }}'. Check output of 'show router bgp summary'."
   }
   ignore_errors: yes
 
@@ -72,7 +74,7 @@
 - name: Check for expected BGP Peer Count
   assert: { 
     that: "{{ expected_num_bgp_peers }} == {{ bgp_peer_count }}",
-    msg: "Invalid BGP Peer count ({{ bgp_peer_count }}) detected. Expected '{{ expected_num_bgp_peers }}'. Check 'show router bgp summary' on {{ inventory_hostname }}."
+    msg: "Invalid BGP Peer count ({{ bgp_peer_count }}) detected. Expected '{{ expected_num_bgp_peers }}'. Check 'show router bgp summary'."
   }
   ignore_errors: yes
 
@@ -82,7 +84,7 @@
 - name: Check for details for the correct number of BGP Peers
   assert: { 
     that: "{{ expected_num_bgp_peers }} == {{ bgp_summary_json['Peers']|length }}",
-    msg: "Didn't find enough sets of details for BGP peers. Found {{ bgp_summary_json['Peers']|length }}. Expected '{{ expected_num_bgp_peers }}'. Check 'show router bgp summary' on {{ inventory_hostname }}."
+    msg: "Didn't find enough sets of details for BGP peers. Found {{ bgp_summary_json['Peers']|length }}. Expected '{{ expected_num_bgp_peers }}'. Check 'show router bgp summary'."
   }
   ignore_errors: yes
 
@@ -104,7 +106,7 @@
   debug: var=xmpp_detail_json verbosity=1
 
 - name: Write xmpp-server detail json to report
-  nuage_append: filename="{{ report_filename }}" text="{{ inventory_hostname }} {{ xmpp_detail_json|to_nice_json }}\n"
+  nuage_append: filename="{{ report_path }}" text="{{ inventory_hostname }} {{ xmpp_detail_json|to_nice_json }}\n"
   delegate_to: localhost
 
 - name: Create local variable for xmpp-server state
@@ -116,7 +118,7 @@
 - name: Check for the expected xmpp-server state
   assert: { 
     that: "{{ expected_xmpp_server_state == xmpp_server_state }}",
-    msg: "Invalid xmpp-server state ({{ xmpp_server_state }}) detected. Expected {{ expected_xmpp_server_state }}. Check 'show vswitch-controller xmpp-server details' on {{ inventory_hostname }}."
+    msg: "Invalid xmpp-server state ({{ xmpp_server_state }}) detected. Expected {{ expected_xmpp_server_state }}. Check 'show vswitch-controller xmpp-server details'."
   }
   ignore_errors: yes
 
@@ -138,13 +140,13 @@
   debug: var=show_vswitches_json verbosity=1
 
 - name: Write vswiches json to report
-  nuage_append: filename="{{ report_filename }}" text="{{ inventory_hostname }} {{ show_vswitches_json|to_nice_json }}\n"
+  nuage_append: filename="{{ report_path }}" text="{{ inventory_hostname }} {{ show_vswitches_json|to_nice_json }}\n"
   delegate_to: localhost
 
 - name: Check for the expected number of vswitches
   assert: { 
     that: "{{ expected_num_vswitches }} == {{ show_vswitches_json['No. of virtual switches'] }}",
-    msg: "Invalid vswitch count ({{ show_vswitches_json['No. of virtual switches'] }}) detected. Expected {{ expected_num_vswitches }}. Check 'show vswitch-controller vswitches' on {{ inventory_hostname }}."
+    msg: "Invalid vswitch count ({{ show_vswitches_json['No. of virtual switches'] }}) detected. Expected {{ expected_num_vswitches }}. Check 'show vswitch-controller vswitches'."
   }
   ignore_errors: yes
 
@@ -166,13 +168,13 @@
   debug: var=show_host_vports_json verbosity=1
 
 - name: Write host vports json to report
-  nuage_append: filename="{{ report_filename }}" text="{{ inventory_hostname }} HOST VPORTS {{ show_host_vports_json|to_nice_json }}\n"
+  nuage_append: filename="{{ report_path }}" text="{{ inventory_hostname }} HOST VPORTS {{ show_host_vports_json|to_nice_json }}\n"
   delegate_to: localhost
 
 - name: Check for the expected number of host vports
   assert: { 
     that: "{{ expected_num_host_vports }} == {{ show_host_vports_json['No. of virtual ports'] }}",
-    msg: "Invalid host vport count ({{ show_host_vports_json['No. of virtual ports'] }}) detected. Expected {{ expected_num_host_vports }}. Check 'show vswitch-controller vports type host detail' on {{ inventory_hostname }}."
+    msg: "Invalid host vport count ({{ show_host_vports_json['No. of virtual ports'] }}) detected. Expected {{ expected_num_host_vports }}. Check 'show vswitch-controller vports type host detail'."
   }
   ignore_errors: yes
 
@@ -194,13 +196,13 @@
   debug: var=show_vm_vports_json verbosity=1
 
 - name: Write vm vports json to report
-  nuage_append: filename="{{ report_filename }}" text="{{ inventory_hostname }} VM VPORTS {{ show_vm_vports_json|to_nice_json }}\n"
+  nuage_append: filename="{{ report_path }}" text="{{ inventory_hostname }} VM VPORTS {{ show_vm_vports_json|to_nice_json }}\n"
   delegate_to: localhost
 
 - name: Check for the expected number of vm vports
   assert: { 
     that: "{{ expected_num_vm_vports }} == {{ show_vm_vports_json['No. of virtual ports'] }}",
-    msg: "Invalid vm vport count ({{ show_vm_vports_json['No. of virtual ports'] }}) detected. Expected {{ expected_num_vm_vports }}. Check 'show vswitch-controller vports type vm detail' on {{ inventory_hostname }}."
+    msg: "Invalid vm vport count ({{ show_vm_vports_json['No. of virtual ports'] }}) detected. Expected {{ expected_num_vm_vports }}. Check 'show vswitch-controller vports type vm detail'."
   }
   ignore_errors: yes
 
@@ -229,13 +231,13 @@
   debug: var=show_gateway_ports_json verbosity=1
 
 - name: Write gateway ports json to report
-  nuage_append: filename="{{ report_filename }}" text="{{ inventory_hostname }} GATEWAY VPORTS {{ show_gateway_ports_json|to_nice_json }}\n"
+  nuage_append: filename="{{ report_path }}" text="{{ inventory_hostname }} GATEWAY VPORTS {{ show_gateway_ports_json|to_nice_json }}\n"
   delegate_to: localhost
 
 - name: Check for the expected number of gateway ports
   assert: { 
     that: "{{ expected_num_gateway_ports }} == {{ show_gateway_ports_json['No. of Ports'] }}",
-    msg: "Invalid gateway port count ({{ show_gateway_ports_json['No. of Ports'] }}) detected. Expected {{ expected_num_gateway_ports }}. Check 'show vswitch-controller gateway ports' on {{ inventory_hostname }}."
+    msg: "Invalid gateway port count ({{ show_gateway_ports_json['No. of Ports'] }}) detected. Expected {{ expected_num_gateway_ports }}. Check 'show vswitch-controller gateway ports'."
   }
   ignore_errors: yes
 
@@ -258,3 +260,5 @@
     msg: "Failures detected. Check {{ failure_report_file_name }}."
   }
   ignore_errors: yes
+
+- include: report_footer.yml

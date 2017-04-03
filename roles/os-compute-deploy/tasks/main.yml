@@ -147,27 +147,27 @@
     state: latest
   remote_user: "root"
 
-- name: Delete the localtime file on {{ inventory_hostname }}
+- name: Delete the localtime file
   file:
     path: /etc/localtime
     state: absent
   remote_user: "root"
 
-- name: Create the localtime symlink on {{ inventory_hostname }}
+- name: Create the localtime symlink
   file:
     src: /usr/share/zoneinfo/US/Pacific
     dest: /etc/localtime
     state: link
   remote_user: "root"
 
-- name: Remove old NTP servers on {{ inventory_hostname }}
+- name: Remove old NTP servers
   lineinfile:
     dest: /etc/ntp.conf
     regexp: "^server"
     state: absent
   remote_user: "root"
 
-- name: Configure NTP servers on {{ inventory_hostname }}
+- name: Configure NTP servers
   lineinfile:
     dest: /etc/ntp.conf
     line: "server {{ item }} iburst"
@@ -182,7 +182,7 @@
   command: ntpdate -u "{{ntp_server_list[0]}}"
   remote_user: "root"
 
-- name: Start ntpd on {{ inventory_hostname }}
+- name: Start ntpd
   command: service ntpd start
   remote_user: "root"
 
@@ -227,14 +227,14 @@
     - ansible_distribution == 'CentOS'
     - ansible_distribution_major_version == '7'
 
-- name: Copy Redhat repo file to {{ inventory_hostname }} for RedHat images
+- name: Copy Redhat repo file for RedHat images
   template:
     src={{ playbook_dir }}/roles/compute-deploy/templates/redhat.repo.j2
     dest=/etc/yum.repos.d/rhel.repo
   remote_user: "root"
   when: ansible_distribution == 'RedHat'
 
-- name: Execute a yum update on {{ inventory_hostname }}
+- name: Execute a yum update
   yum:
     name: '*'
     state: latest
@@ -253,7 +253,7 @@
   remote_user: "root"
   delegate_to: "{{ osc_ip }}"
  
-- name: Copy SSH key to {{ inventory_hostname }}
+- name: Copy SSH key
   shell: "echo {{ssh_key.stdout}} >> /root/.ssh/authorized_keys"
   remote_user: "root"
  
