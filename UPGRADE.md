@@ -2,11 +2,12 @@
 
 ## Current support for upgrade
 
-1. As of this writing only VSD and VSC upgrade is supported
+1. As of this writing only VSD and VSC upgrade are supported
 2. Supported upgrade paths
    1. 3.2.R10 to 4.0.R7
    1. 4.0.R4 to 4.0.R7
    1. Other upgrades should be tried in a test environment before production
+3. Only clustered VSD upgrade is supported   
 
 ## Overview
 
@@ -19,6 +20,12 @@ These are the following playbooks/roles supported by metro for upgrade.
 5. vsc_backup.yml
 6. vsc_upgrade.yml
 7. vsp_upgrade.yml
+
+The recommended workflow for an upgrade is to 
+1. generate necessary data for the ansible playbooks to run by executing build_upgrade playbook. This require both build_vars.yml and upgrade_vars.yml to be populated according to the environment.
+2. run vsp_upgrade playbook for an end to end upgrade that covers clustered VSDs and dual VSCs.
+3. Individual upgrades for VSDs and VSc are possible with some tweaking of ansible inventory hosts.
+4. VSD and VSC health checks can be run anytime irrespective of upgrade process
 
 ## Details
 
@@ -51,6 +58,10 @@ To upgrade all vsd nodes
 
 This  playbook/role is used to gather operational information of vsc(s) prior/post upgrade process. A report file with the operational output is created (filename can be configured inside the vsc_health.yml playbook) inside reports folder.
 
+VSC health can check the health of a VSC against preconfigured expected values such as number of bgp peers and expected number of vswitches which is the number of VRSs under the VSC control.If run outside of the upgrade playbooks, VSC health checks can be invoked with the following manner.
+
+ansible-playbook vsc_health.yml -i hosts -e "expected_num_bgp_peers=1 expected_num_vswitches=2"
+
 ### vsc_backup.yml
 
 This playbook/role is used to make backup of exsiting vsc configuration, bof configuration and .tim file and copy them to ansible deployment host. These are used in case a rollback is needed.
@@ -74,6 +85,6 @@ All the above playbooks are captured inside a single playbook `vsp_upgrade.yml`.
 
 ## build and reset-build playbooks
 
-The build_upgrade playbook (`build_upgrade.yml`) is used to automatically populate a number of Ansible variable files for the operation of the metro playbooks. Running `./metro-ansible build_upgrade.yml` will use the variables defined in `build_vars.yml` to create a `hosts` file, populate a `host_vars` directory, populate a `group_vars` directory, and make a few additional variable changes as required. The `build_upgrade.yml` playbook will do all the work for you.
+The build_upgrade playbook (`build_upgrade.yml`) is used to automatically populate a number of Ansible variable files for the operation of the metro playbooks. Running `./metro-ansible build_upgrade.yml` will use the variables defined in `build_vars.yml` and `upgrade_vars.yml` to create a `hosts` file, populate a `host_vars` directory, populate a `group_vars` directory, and make a few additional variable changes as required. The `build_upgrade.yml` playbook will do all the work for you.
 
 Refer `BUILD.md` reset-build playbooks section for more details
