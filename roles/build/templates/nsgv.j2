@@ -3,6 +3,11 @@
 # will be lost if reset-build or build is run
 #
 target_server_type: {{ item.target_server_type }}
+
+{% if item.nsg_template_id is defined %}
+nsg_template_id: "{{ item.nsg_template_id }}"
+{% endif %}
+
 {% if item.target_server_type == "kvm" %}
 target_server: {{ item.target_server }}
 
@@ -10,4 +15,31 @@ nsgv_mac: '{{ item.nsgv_mac }}'
 
 nsgv_qcow2_path: {{ nsgv_qcow2_path }}
 nsgv_qcow2_file_name: {{ nsgv_qcow2_file_name }}
+
+{% elif item.target_server_type == "aws" %}
+
+region: "{{ item.region }}"
+
+{% if item.provision_vpc is defined %}
+provision_vpc: 
+  VPCCIDR: "{{ item.provision_vpc.cidr }}"
+  NSGWANSubnetCIDR: "{{ item.provision_vpc.nsg_wan_subnet }}"
+  NSGLANSubnetCIDR: "{{ item.provision_vpc.nsg_lan_subnet }}"
+  PrivateSubnetCIDR: "{{ item.provision_vpc.private_subnet }}"
+{% elif item.use_vpc is defined %}
+use_vpc:
+  nsg_lan_eni: "{{ item.use_vpc.nsg_lan_eni }}"
+  nsg_wan_eni: "{{ item.use_vpc.nsg_wan_eni }}"
 {% endif %}
+
+nsg_ami:
+  id: "{{ item.nsg_ami.id }}"
+  type: "{{ item.nsg_ami.type | default('t2.medium') }}"
+  keyname: "{{ item.nsg_ami.keyname }}" 
+{% if item.nsg_ami.eip_allocid is defined %}
+  eip_allocid: "{{ item.nsg_ami.eip_allocid }}"
+{% endif %}
+
+{% endif %}
+
+
