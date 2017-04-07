@@ -44,21 +44,29 @@
     expect:
       command: "{{ vsc_image_copy }}"
       responses:
-        (?i)password: "admin"
-      timeout: 240
+        (?i)password: "{{ vsc_password }}"
+      timeout: 360
     remote_user: "{{ ansible_sudo_username }}"
     delegate_to: "{{ ansible_deployment_host }}"
 
-  - block:
-    - name: Stop VSC guest VM
-      virt: name={{ inventory_hostname }} state=destroyed
-      delegate_to: "{{ target_server }}"
-      remote_user: root
+#  - block:
+#    - name: Stop VSC guest VM
+#      virt: name={{ inventory_hostname }} state=destroyed
+#      delegate_to: "{{ target_server }}"
+#      remote_user: root
 
-    - name: Restart VSC guest VM
-      virt: name={{ inventory_hostname }} state=running
-      delegate_to: "{{ target_server }}"
-      remote_user: root
+#    - name: Restart VSC guest VM
+#      virt: name={{ inventory_hostname }} state=running
+#      delegate_to: "{{ target_server }}"
+#      remote_user: root
+#    when: target_server_type == 'kvm'
+
+  - name: Reboot VSC VM
+    sros_command:
+      commands:
+        - admin save
+        - reboot now
+      provider: "{{ vsc_creds }}"
     when: target_server_type == 'kvm'
 
   - name: Reboot VSC VM
@@ -115,7 +123,11 @@
       that: "{{ expected_xmpp_server_state == xmpp_server_state }}",
       msg: "Invalid xmpp-server state ({{ xmpp_server_state }}) detected. Expected {{ expected_xmpp_server_state }}. Check 'show vswitch-controller xmpp-server details'."
   }
-  
+  - name: define variable to match vsd strings in sh vswitch vsd details
+    set_fact:
+      vsd1_s: "'cna@{{ vsd_fqdn }}/{{ groups['vsds'][0].split('.')[0:1] | join('.') }}' in vsd_detail.stdout[0]"
+      vsd3_s: "'cna@{{ vsd_fqdn }}/{{ groups['vsds'][0].split('.')[0:2] | join('.') }}' in vsd_detail.stdout[0]"
+
   - name: Get output of 'show vswitch-controller vsd detail'
     sros_command:
       commands:
@@ -123,6 +135,9 @@
       provider: "{{ vsc_creds }}"
     register: vsd_detail
     delegate_to: localhost
+    until: vsd_detail.stdout[0].find(vsd1_s) != -1
+    retries: 5
+    delay: 30
 
   - name: Print 'show vswitch-controller vsd' when verbosity >= 1
     debug: var=vsd_detail verbosity=1

@@ -13,12 +13,13 @@
 - name: Decouple VSD node1 and node3
   include: vsd_decluster.yml
 
-- name: Upgrade VSD Node1 and Node3
+- name: Upgrade VSD Node1 and Node3 and install pexpect on them
   hosts: vsd_ha_node1:vsd_ha_node3
   gather_facts: no
   any_errors_fatal: true
   roles:
     - vsd-upgrade
+    - vsd-postupgrade
 
 - name: Get VSD nodes network and monit information post VSD1 and VSD3 upgrade after enabling VSD API
   hosts: vsds
@@ -37,6 +38,13 @@
   any_errors_fatal: true
   roles:
    - vsc-backup
+
+- name: Prep VSC node1 for upgrade
+  hosts: vsc_ha_node1
+  gather_facts: no
+  any_errors_fatal: true
+  roles:
+     - vsc-preupgrade  
 
 - name: Upgrade VSC node1
   hosts: vsc_ha_node1:vsd_ha_node1:vsd_ha_node3
@@ -66,12 +74,13 @@
 - name: Get VSC nodes information post VSC2 upgrade
   include: vsc_health.yml report_filename=vsc_post_vsc2_upgrade_report.txt
 
-- name: Upgrade VSD node2
+- name: Upgrade VSD node2 and install pexpect
   hosts: vsd_ha_node2
   gather_facts: no
   any_errors_fatal: true
   roles:
     - vsd-upgrade 
+    - vsd-postupgrade
 
 - name: Gather network and monit information of all VSD's post upgrade
   hosts: vsds
