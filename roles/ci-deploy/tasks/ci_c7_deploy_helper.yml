@@ -34,14 +34,14 @@
       content: "{{ target_server }}"
       dest: "/tmp/{{ net_name_temp }}_vrs_ip_centos7"
     delegate_to: "{{ ansible_deployment_host }}"
-    remote_user: root
+    remote_user: "{{ ansible_sudo_username }}"
 
   - name: Create a temp file with VRS hostname on ansible host for later use
     copy:
       content: "{{ inventory_hostname }}"
       dest: "/tmp/{{ net_name_temp }}_vrs_name_centos7"
     delegate_to: "{{ ansible_deployment_host }}"
-    remote_user: root
+    remote_user: "{{ ansible_sudo_username }}"
 
   - name: Extract network part from the compute ip
     set_fact:
@@ -59,7 +59,7 @@
       line: "{{ item }}"
     with_items: "{{ vsp_ips }}"
     delegate_to: "{{ ansible_deployment_host }}"
-    remote_user: root
+    remote_user: "{{ ansible_sudo_username }}"
 
   # Temp task to get around policy issue
   - name: Set front end ip added to static route
@@ -70,7 +70,7 @@
   - name: Add static route to reach
     command: "route add -net {{ network_address }}.0/24 gw {{ frontend_ip }} "
     delegate_to: "{{ ansible_deployment_host }}"
-    remote_user: root
+    remote_user: "{{ ansible_sudo_username }}"
 
   - name: Wait for ssh to be ready
     local_action:
