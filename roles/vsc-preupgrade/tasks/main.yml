@@ -1,9 +1,8 @@
-- block:
-  - name: Query facts on ansible_deployment_host
-    action: setup
-    run_once: true
-    delegate_to: "{{ ansible_deployment_host }}"
-    remote_user: "{{ ansible_sudo_username }}"
+#  - name: Query facts on ansible_deployment_host
+#    action: setup
+#    run_once: true
+#    delegate_to: "{{ ansible_deployment_host }}"
+#    remote_user: "{{ ansible_sudo_username }}"
     
 
   - name: Clean known_hosts of VSC's on "{{ target_server }}"
@@ -46,6 +45,11 @@
 
   - name: Print vsc system connetion in json  when verbosity >= 1
     debug: var=vsc_sys_conn_json verbosity=1
+     
+  - name: Block access to decoupled VSD node2 from VSC1
+    command: "iptables -I INPUT -s {{ vsc_sys_conn_json['local_ip'] }} -j DROP"
+    remote_user: root
+    delegate_to: "{{ groups['vsds'][1] }}"
   
   - name: Get output of 'show vswitch-controller xmpp-server detail'
     sros_command:
@@ -73,23 +77,15 @@
   - name: Check for the expected xmpp-server state
     assert: { 
       that: "{{ expected_xmpp_server_state == xmpp_server_state }}",
-      msg: "Invalid xmpp-server state ({{ xmpp_server_state }}) detected. Expected {{ expected_xmpp_server_state }}. Check 'show vswitch-controller xmpp-server details'."
-  }
+      msg: "Invalid xmpp-server state ({{ xmpp_server_state }}) detected. Expected {{ expected_xmpp_server_state }}. Check 'show vswitch-controller xmpp-server details'."  }
 
-  - name: Save existing configuration on VSC1
+  - name: Save VSC configs
     sros_command:
       commands:
-        - bof save
         - admin save
       provider: "{{ vsc_creds }}"
-    register: conf_save
+    register: vsc_config_save
     delegate_to: localhost
 
-  - name: Print 'bof save' when verbosity >= 1
-    debug: var=conf_save.stdout[0] verbosity=1
-
   - name: Print 'admin save' when verbosity >= 1
-    debug: var=conf_save.stdout[1] verbosity=1
-
-  - include: backup_vsc.yml
-  when: inventory_hostname in groups['vscs']
+    debug: var=vsc_config_save verbosity=1 
