@@ -138,20 +138,3 @@
       msg: "VSD Node3 could not be found in 'show vswitch-controller vsd detail'"
     when: vsd_sa_or_ha == 'ha'
   when: inventory_hostname in groups['vscs']
-
-- block:
-  - name: Set upgrade complete flag to 1 for minor upgrade on vsd
-    expect:
-      command: "{{ minor_upgrade_cmd }}"
-      responses:
-        (?i)ye: "yes"
-        (?i)yes: "yes"
-      timeout: 100
-    remote_user: root
-    when: inventory_hostname == groups['vsds'][0]
-
-  - name: Restart Jboss on VSD Node1
-    shell: "monit restart jboss"
-    remote_user: root
-    when: inventory_hostname == groups['vsds'][0] or inventory_hostname == groups['vsds'][3]
-  when: minor_upgrade == True
