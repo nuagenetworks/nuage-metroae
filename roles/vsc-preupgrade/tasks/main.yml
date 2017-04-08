@@ -1,9 +1,8 @@
-- block:
-  - name: Query facts on ansible_deployment_host
-    action: setup
-    run_once: true
-    delegate_to: "{{ ansible_deployment_host }}"
-    remote_user: "{{ ansible_sudo_username }}"
+#  - name: Query facts on ansible_deployment_host
+#    action: setup
+#    run_once: true
+#    delegate_to: "{{ ansible_deployment_host }}"
+#    remote_user: "{{ ansible_sudo_username }}"
     
 
   - name: Clean known_hosts of VSC's on "{{ target_server }}"
@@ -78,6 +77,15 @@
   - name: Check for the expected xmpp-server state
     assert: { 
       that: "{{ expected_xmpp_server_state == xmpp_server_state }}",
-      msg: "Invalid xmpp-server state ({{ xmpp_server_state }}) detected. Expected {{ expected_xmpp_server_state }}. Check 'show vswitch-controller xmpp-server details'."
-  }
+      msg: "Invalid xmpp-server state ({{ xmpp_server_state }}) detected. Expected {{ expected_xmpp_server_state }}. Check 'show vswitch-controller xmpp-server details'."  }
 
+  - name: Save VSC configs
+    sros_command:
+      commands:
+        - admin save
+      provider: "{{ vsc_creds }}"
+    register: vsc_config_save
+    delegate_to: localhost
+
+  - name: Print 'admin save' when verbosity >= 1
+    debug: var=vsc_config_save verbosity=1 
