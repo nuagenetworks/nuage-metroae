@@ -1,0 +1,33 @@
+- block:
+  - name: Get vsd_upgrade_complete flag value
+    command: "{{ mysql_cmd }}"
+    register: upgrade_complete
+    remote_user: root
+
+  - name: Set upgrade complete flag to 1 for minor upgrade on vsd
+    expect:
+      command: "{{ minor_upgrade_cmd }}"
+      responses:
+        (?i)ye: "yes"
+        (?i)yes: "yes"
+      timeout: 100
+    remote_user: root
+    when: 
+      - inventory_hostname == groups['vsds'][0]
+      - upgrade_complete.stdout == '1'
+
+  - name: Restart Jboss on VSD Node1
+    shell: "monit restart jboss"
+    remote_user: root
+  when: major_or_minor_upgrade == 'minor'
+
+- block:
+  - name: Turn on API on vsd's
+    expect:
+      command: "{{ major_upgrade_cmd }}"
+      responses:
+        (?i)ye: "yes"
+        (?i)yes: "yes"
+      timeout: 100
+    remote_user: root
+  when: major_or_minor_upgrade == 'major'
