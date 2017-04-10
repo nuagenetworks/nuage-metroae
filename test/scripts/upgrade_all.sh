@@ -32,5 +32,3 @@ rm -rf ./reports/
 ./metro-ansible vsp_upgrade.yml -vvvv
 # clean up the whole setup except vrss
 ./metro-ansible test_cleanup.yml -vvvv
-# cleanup vrss packages
-ansible-playbook vrs_destroy.yml -i hosts --limit=vrss

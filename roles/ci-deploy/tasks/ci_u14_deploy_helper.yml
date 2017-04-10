@@ -33,14 +33,14 @@
       content: "{{ vrs_u14_target_server }}"
       dest: "/tmp/{{ net_name_temp }}_vrs_ip_u14"
     delegate_to: "{{ ansible_deployment_host }}"
-    remote_user: root
+    remote_user: "{{ ansible_sudo_username }}"
 
   - name: Create a temp file with VRS hostname on ansible host for later use
     copy:
       content: "{{ inventory_hostname }}"
       dest: "/tmp/{{ net_name_temp }}_vrs_name_u14"
     delegate_to: "{{ ansible_deployment_host }}"
-    remote_user: root
+    remote_user: "{{ ansible_sudo_username }}"
 
   - debug: var=vrs_u14_target_server verbosity=1
 
@@ -64,7 +64,7 @@
       dest: /etc/hosts
       line: "{{ vrs_u14_target_server }}    {{inventory_hostname }}"
     delegate_to: "{{ ansible_deployment_host }}"
-    remote_user: root
+    remote_user: "{{ ansible_sudo_username }}"
   # Temp task to get around policy issue
   - name: Set front end ip added to static route
     set_fact:
@@ -74,7 +74,7 @@
   - name: Add static route to reach
     command: "route add {{ vrs_u14_target_server }}/32 gw {{ frontend_ip }} "
     delegate_to: "{{ ansible_deployment_host }}"
-    remote_user: root
+    remote_user: "{{ ansible_sudo_username }}"
 
   - name: Wait for ssh to be ready
     local_action:

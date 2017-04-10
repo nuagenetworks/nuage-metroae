@@ -1,6 +1,15 @@
 ---
 - include: report_header.yml
 
+- name: Get current version of VSD software
+  command: echo $VSD_VERSION
+  register: vsd_version
+
+- name: Write VSD version to json file
+  nuage_append: filename="{{ report_path }}" text="{{ vsd_version.stdout | to_nice_json}}\n"
+  delegate_to: "{{ ansible_deployment_host }}"
+  remote_user: root
+
 - name: Get current network config of all VSD nodes
   network_info:
     mac_addr: False

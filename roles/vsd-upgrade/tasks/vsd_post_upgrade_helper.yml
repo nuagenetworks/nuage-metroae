@@ -1,0 +1,41 @@
+---
+- block:
+  - name: Download pip installer
+    command: curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
+    remote_user: "root"
+ 
+  - name: Execute pip installer
+    command: python get-pip.py
+    remote_user: "root"
+ 
+  - name: Install pexpect on VSD
+    pip:
+      name: pexpect
+    remote_user: "root"
+  when: yum_proxy == 'NONE'
+
+- block:
+  - name: Download pip installer through proxy
+    command: curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
+    remote_user: "root"
+    environment:
+      http_proxy: "{{ yum_proxy }}"
+      https_proxy: "{{ yum_proxy }}"
+
+  - name: Execute pip installer through proxy
+    command: python get-pip.py
+    remote_user: "root"
+    environment:
+      http_proxy: "{{ yum_proxy }}"
+      https_proxy: "{{ yum_proxy }}"
+ 
+  - name: Install pexpect on VSD through proxy
+    pip:
+      name: pexpect
+    remote_user: "root"
+    environment:
+      http_proxy: "{{ yum_proxy }}"
+      https_proxy: "{{ yum_proxy }}"
+  when: yum_proxy != 'NONE'
+
+
