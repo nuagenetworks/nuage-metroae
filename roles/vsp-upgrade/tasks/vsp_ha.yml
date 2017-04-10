@@ -35,13 +35,12 @@
 
 - name: Stop vsd services gracefully
   include_role:
-    name: stop-vsd-services
+    name: vsd-services-stop
 
 - name: Upgrade VSD node1 and node3
   include_role:
     name: vsd-upgrade
   when: inventory_hostname == vsd_ha_node1 or inventory_hostname == vsd_ha_node3
-
 
 - name: Get VSD nodes network and monit information post VSD1 and VSD3 upgrade after enabling VSD API
   any_errors_fatal: true
@@ -64,6 +63,11 @@
     name: vsc-backup
   when: inventory_hostname == vsc_ha_node1
 
+- name: Prep VSC node1 for upgrade
+  any_errors_fatal: true
+  include_role:
+    name: vsc-preupgrade
+  when: inventory_hostname == vsc_ha_node1
 
 - name: Upgrade VSC node1
   gather_facts: no
@@ -79,6 +83,12 @@
   include_role:
     name: vsc-health
   when: inventory_hostname in groups['vscs']
+
+- name: Set upgrade flag for major or minor upgrade
+  run_once: true
+  include_role: 
+    name: set-upgrade-flag
+  when: inventory_hostname in groups['vsds']
 
 - name: Upgrade VSC node2
   gather_facts: no
