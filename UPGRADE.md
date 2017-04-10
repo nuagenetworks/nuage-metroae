@@ -2,16 +2,16 @@
 
 ## Current support for upgrade
 
-1. As of this writing only VSD and VSC upgrade are supported
+1. As of this writing only VSD and VSC upgrades are supported
 2. Supported upgrade paths
    1. 3.2.R10 to 4.0.R7
-   1. 4.0.R4 to 4.0.R7
-   1. Other upgrades should be tried in a test environment before production
+   2. 4.0.R4 to 4.0.R7
+   3. Other upgrades should be tried in a test environment before production
 3. Only clustered VSD upgrade is supported   
 
 ## Overview
 
-These are the following playbooks/roles supported by metro for upgrade.
+These are the playbooks/roles supported by metro for upgrade covering different VCS components.
 
 1. vsd_health.yml
 2. vsd_decluster.yml
@@ -21,11 +21,53 @@ These are the following playbooks/roles supported by metro for upgrade.
 6. vsc_upgrade.yml
 7. vsp_upgrade.yml
 
-The recommended workflow for an upgrade is to 
+### Logical Upgrade work flow
+Following is the upgrade sequence for a clustered VSD deployment supported by this playbooks.
+
+Phase 1
+1. Gather VSD and VSC health and generate reports on ansible deploy host
+2. Backup VSD data base
+3. Decouple VSDs
+4. Upgrade VSD1 and VSD3
+5. Run VSD/VSC health checks
+6. Backup VSC1
+7. Upgrade VSC1
+8. Run VSD/VSC health checks
+
+Phase 2
+1. Upgrade VSC2
+2. Run VSD/VSC health checks
+3. Upgrade VSD2
+4. Run VSD/VSC health checks
+
+It is expected that all VRSs will be upgraded between phase 1 and phase 2. VRS upgrades are not cuurently supported by the playbooks and are in the roadmap.
+
+### Metro workflow for an upgrade
+Following steps are recommended to be executed for an upgrade using metro playbooks
+
 1. generate necessary data for the ansible playbooks to run by executing build_upgrade playbook. This require both build_vars.yml and upgrade_vars.yml to be populated according to the environment.
-2. run vsp_upgrade playbook for an end to end upgrade that covers clustered VSDs and dual VSCs.
-3. Individual upgrades for VSDs and VSc are possible with some tweaking of ansible inventory hosts.
-4. VSD and VSC health checks can be run anytime irrespective of upgrade process
+
+```
+./metro-ansible build.yml -vvvv
+
+./metro-ansible build_upgrade.yml -vvvv
+```
+
+2. run vsp_upgrade_phase1.yml playbook to go through phase 1 upgrades.
+
+```
+./metro-ansible vsp_upgrade_phase1.yml -vvvv
+```
+
+3. Upgrade the VRS/VRSG outside of the metro playbooks
+4. run vsp_upgrade_phase2.yml playbook to go through phase 2 upgrades.
+
+```
+./metro-ansible vsp_upgrade_phase2.yml -vvvv
+```
+
+5. Individual upgrades for VSDs and VSc are possible with some tweaking of ansible inventory hosts.
+6. VSD and VSC health checks can be run anytime irrespective of upgrade process
 
 ## Details
 
@@ -60,7 +102,9 @@ This  playbook/role is used to gather operational information of vsc(s) prior/po
 
 VSC health can check the health of a VSC against preconfigured expected values such as number of bgp peers and expected number of vswitches which is the number of VRSs under the VSC control.If run outside of the upgrade playbooks, VSC health checks can be invoked with the following manner.
 
+```
 ansible-playbook vsc_health.yml -i hosts -e "expected_num_bgp_peers=1 expected_num_vswitches=2"
+```
 
 ### vsc_backup.yml
 
@@ -79,9 +123,13 @@ If user is interested in upgrading vsc node1 and node2, hosts can be defined as 
 To upgrade all vsc nodes
 - hosts: vscs
 
-### vsp_upgrade.yml
+### vsp_upgrade_phase1.yml
 
-All the above playbooks are captured inside a single playbook `vsp_upgrade.yml`. This playbook follows the instructions and the order of upgrading nuage components as specified in VCS install guide.
+All the above playbooks required for phase 1 of the upgrade process are captured inside a single playbook `vsp_upgrade_phase1.yml`. This playbook follows the instructions and the order of upgrading nuage components as specified in VCS install guide. Please see above upgrade work flow for the phase 1 specific details.
+
+### vsp_upgrade_phase2.yml
+
+All the above playbooks required for phase 2 of the upgrade process are captured inside a single playbook `vsp_upgrade_phase2.yml`. This playbook follows the instructions and the order of upgrading nuage components as specified in VCS install guide. Please see above upgrade work flow for the phase 2 specific details.
 
 ## build and reset-build playbooks
 
