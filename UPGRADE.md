@@ -39,7 +39,7 @@ This playbook is a collection three individual playbooks/roles that help in maki
 
 a. vsd_dbbackup.yml: This playbook/role makes vsd database backup and stores it on ansible deployment host, which is later used for spinning up new vsd(s)
 b. vsd_decouple.yml: This playbook/role executes decouple script and checks for client connections
-c. stop_vsd_services.yml: This playbook/role stops all vsd services on vsd(s) gracefully
+c. vsd_services_stop.yml: This playbook/role stops all vsd services on vsd(s) gracefully
 
 ### vsd_upgrade.yml
 
