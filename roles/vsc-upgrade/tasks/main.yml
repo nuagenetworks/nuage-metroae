@@ -49,16 +49,13 @@
     remote_user: "{{ ansible_sudo_username }}"
     delegate_to: "{{ ansible_deployment_host }}"
 
-  - block:
-    - name: Stop VSC guest VM
-      virt: name={{ inventory_hostname }} state=destroyed
-      delegate_to: "{{ target_server }}"
-      remote_user: root
-
-    - name: Restart VSC guest VM
-      virt: name={{ inventory_hostname }} state=running
-      delegate_to: "{{ target_server }}"
-      remote_user: root
+  - name: Reboot VSC VM
+    sros_command:
+      commands: 
+        - admin reboot now
+      provider: "{{ vsc_creds }}"
+    delegate_to: 127.0.0.1
+    ignore_errors: true
     when: target_server_type == 'kvm'
 
   - name: Reboot VSC VM
