@@ -1,21 +1,40 @@
 ---
+# Install Prerequisites
+#
+- name: Pull facts of localhost
+  connection: local
+  action: setup
+
+- name: Install boto-module on RedHat OS family distribution
+  yum: name=python-boto
+  connection: local
+  when: ansible_os_family == "RedHat"
+
+- name: Install boto-module on Debian OS family distribution
+  apt: name=python-boto
+  connection: local
+  when: ansible_os_family == "Debian"
+
+- name: Install Nuage Python VSPK
+  pip: name=vspk
+  connection: local
 
 # Create NSGV in VSD
 #
 - name: Finding Enterprise
   connection: local
   nuage_vspk:
-    auth: "{{ myvsd.auth }}"
+    auth: "{{ vsd_auth }}"
     type: Enterprise
     command: find
     properties:
-      name: "{{ myvsd.enterprise_name }}"
+      name: "{{ enterprise }}"
   register: nuage_enterprise
 
 - name: Ensure NSG Gateway is provisioned in the enterprise
   connection: local
   nuage_vspk:
-    auth: "{{ myvsd.auth }}"
+    auth: "{{ vsd_auth }}"
     type: NSGateway
     parent_id: "{{ nuage_enterprise.id }}"
     parent_type: Enterprise
@@ -29,7 +48,7 @@
 - name: Find port1 of the NSG-AMI 
   connection: local
   nuage_vspk:
-    auth: "{{ myvsd.auth }}"
+    auth: "{{ vsd_auth }}"
     type: NSPort
     parent_type: NSGateway
     parent_id: "{{ nuage_nsg.id }}"
@@ -41,7 +60,7 @@
 - name: Ensure 1:1 NAT is enabled on port1 of the NSG-AMI
   connection: local
   nuage_vspk:
-    auth: "{{ myvsd.auth }}"
+    auth: "{{ vsd_auth }}"
     type: NSPort
     id: "{{ nuage_nsg_port1.id }}"
     state: present
@@ -51,7 +70,7 @@
 - name: Create Job to download auto-bootstrap info
   connection: local
   nuage_vspk:
-    auth: "{{ myvsd.auth }}"
+    auth: "{{ vsd_auth }}"
     type: Job
     parent_id: "{{ nuage_enterprise.id }}"
     parent_type: Enterprise
@@ -67,9 +86,9 @@
     cloudformation:
       stack_name: "VPC-{{inventory_hostname}}"
       state: "present"
-      region: "{{ region }}"
+      region: "{{ aws_region }}"
       template: "roles/nsgv-predeploy/files/cfn-template-sample-vpc-structure.json"
-      template_parameters: "{{ vpc_structure }}"
+      template_parameters: "{{ provision_vpc }}"
     register: rc_aws_cfn_nuagevpc
   
   - name: Set Network variables
@@ -88,7 +107,7 @@
     ec2_eni_facts: 
       filters:
         network-interface-id: "{{ use_vpc.nsg_lan_eni }}"
-      region:  "{{ region }}"
+      region:  "{{ aws_region }}"
     register: rc_aws_nsg_lan_eni_facts
   - debug: var=rc_aws_nsg_lan_eni_facts 
   - name: Set Network variables
@@ -114,7 +133,7 @@
   cloudformation:
     stack_name: "{{ inventory_hostname }}"
     state: "present"
-    region: "{{ region }}"
+    region: "{{ aws_region }}"
     template: "/tmp/cfn-template-nsg-aws-with-eni-{{ inventory_hostname }}.json" 
     template_parameters:
       AMI: "{{ nsg_ami.id }}"
