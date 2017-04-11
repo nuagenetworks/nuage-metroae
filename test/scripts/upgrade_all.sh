@@ -28,9 +28,11 @@ rm -rf /tmp/backup
 rm -rf ./reports/
 # create build vars required for upgrade
 ./metro-ansible build_upgrade.yml -vvvv
+# run upgrade
+./metro-ansible vsp_upgrade.yml -vvvv
 # run the VSP upgrade phase 1
-./metro-ansible vsp_upgrade_phase1.yml -vvvv
+#./metro-ansible vsp_upgrade_phase1.yml -vvvv
 # run the VSP upgrade phase 2
-./metro-ansible vsp_upgrade_phase2.yml -vvvv
+#./metro-ansible vsp_upgrade_phase2.yml -vvvv
 # clean up the whole setup
 ./metro-ansible test_cleanup.yml -vvvv
