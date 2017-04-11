@@ -29,23 +29,30 @@
   - name: Print bof config in json  when verbosity >= 1
     debug: var=bof_json verbosity=1
 
-  - name: Get output of 'show system connections port 5222'
-    sros_command:
-      commands:
-        - show system connections port 5222
-      provider: "{{ vsc_creds }}"
-    register: vsc_sys_conn
-    delegate_to: localhost
+  - block:
+    - name: Get output of 'show system connections port 5222'
+      sros_command:
+        commands:
+          - show system connections port 5222
+        provider: "{{ vsc_creds }}"
+      register: vsc_sys_conn
+      delegate_to: localhost
 
-  - name: Print 'show system connections port 5222' when verbosity >= 1
-    debug: var=vsc_sys_conn verbosity=1
+    - name: Print 'show system connections port 5222' when verbosity >= 1
+      debug: var=vsc_sys_conn verbosity=1
 
-  - name: Create local variable with vsc system connetion in json
-    set_fact: 
-      vsc_sys_conn_json: "{{ vsc_sys_conn.stdout[0]|vsc_system_connections_to_json }}"
+    - name: Create local variable with vsc system connection in json
+      set_fact: 
+        vsc_sys_conn_json: "{{ vsc_sys_conn.stdout[0]|vsc_system_connections_to_json }}"
 
-  - name: Print vsc system connetion in json  when verbosity >= 1
-    debug: var=vsc_sys_conn_json verbosity=1
+    - name: Print vsc system connection in json  when verbosity >= 1
+      debug: var=vsc_sys_conn_json verbosity=1
+     
+    - name: Block access to decoupled VSD node2 from VSC1
+      command: "iptables -I INPUT -s {{ vsc_sys_conn_json['local_ip'] }} -j DROP"
+      remote_user: root
+      delegate_to: "{{ groups['vsds'][1] }}"
+    when: vsd_sa_or_ha == 'ha'
   
   - name: Get output of 'show vswitch-controller xmpp-server detail'
     sros_command:

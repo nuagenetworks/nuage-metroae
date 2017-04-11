@@ -66,7 +66,7 @@ For deploying a VSD cluster, you must define 3 VSD entries in the `myvsds` dicti
 ```
   nuage_zipped_files_dir: "/home/caso/metro/4.0R4/nuage-packed"
   nuage_unzipped_files_dir: "/home/caso/metro/4.0R4/nuage-unpacked"
-  vsd_standalone: false
+  vsd_sa_or_ha: ha
   myvsds:
     - { hostname: jenkinsvsd1.example.com,
         target_server_type: "kvm",
@@ -102,7 +102,7 @@ For deploying a VSD cluster, you must define 3 VSD entries in the `myvsds` dicti
 
 Some items to note in the example, above:
 
-* `vsd_standalone` must be set to `False`. If it is True, Nuage-Metro will deploy 3 stand-alone VSDs without clustering them.
+* `vsd_sa_or_ha` must be set to `ha`. If it is `sa`, Nuage-Metro will deploy 3 stand-alone VSDs without clustering them.
 
 ## Deploying VRS on Multiple Target Architectures
 
