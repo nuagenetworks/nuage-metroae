@@ -4,6 +4,7 @@
 
 * [Customizing the Component Mix](Customizing the Component Mix)
 * [Deploying VRS on Multiple Target Architectures](Deploying VRS on Multiple Target Architectures)
+* [Deploying NSG in AWS](Deploying NSG in AWS)
 * [Questions and Issues](Questions and Issues)
 
 ## Customizing the Component Mix
@@ -135,6 +136,117 @@ myvrss:
       vrs_ip_list: [
        192.168.122.215 ] }
 ```
+
+
+## Deploying NSG in AWS
+
+Metro supports the deployment of NSGs in AWS and configuring those as Network Gateways in a particular enterprise of a Nuage Networks installation.
+It assumes the necessary enterprise and NSG template has been preconfigured:
+It can either
+- use an existing VPC, and attach the network interfaces of the NSG-AMI, or
+- provision a new VPC with a set of subnets, and configure some default routing tables and security groups.
+
+Once it has been deployed, it is up to end-user to configure the necessary VPort Bridge in a domain of choice and conifgure the necessary RedirectionTarget and Static Route to enable routing from any other Nuage-managed endpoint to this VPC.
+
+### Pre-Configuration on AWS
+As part of deploying the NSG-AMI on AWS, you need to upload the NSG-AWS image to S3 and make it available to a Region of your interest.
+
+You also need to set up authentication credentials so the playbooks can access AWS. Credentials for this AWS account can be generated in the [IAM Console](https://console.aws.amazon.com/iam/home). You can create or use an existing user. 
+
+The AWS account needs to be configured for Read/Write access for VPC, EC2 and CloudFormation.
+
+The below snippet shows an Amazon IAM policy that you can assign to the AWS User/Group
+```
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Action": "ec2:*",
+            "Effect": "Allow",
+            "Resource": "*"
+        },
+        {
+            "Effect": "Allow",
+            "Action": "vpc:*",
+            "Resource": "*"
+        },
+        {
+            "Effect": "Allow",
+            "Action": "cloudformation:*",
+            "Resource": "*"
+        }
+    ]
+}
+```
+
+### Pre-configuration tasks on Ansible Deployment Host
+
+The playbooks relies on the `boto` python library for accessing and configuring the necessary AWS resources. Of the many mechanisms that can be used to pass the AWS Account credentials, the easiest is to define them in a file called  `~/.boto` or `~/.aws/credentials`. Configure it with the `ACCESS_KEY` and `SECRET_KEY` for the Account as configured in previous step: 
+
+```
+[default]
+aws_access_key_id = YOUR_ACCESS_KEY
+aws_secret_access_key = YOUR_SECRET_KEY 
+```
+
+### Configuration of `user_creds.yml`
+Given that the deployment can take place against a pre-existing Nuage Networks instatllation, the API end-point and VSD credentials are stored in the top-level file `user_creds.yml`.
+
+Example shown below:
+```
+myvsd:
+  auth:
+    api_username: csproot
+    api_password: csproot
+    api_enterprise: csp
+    api_url: https://PUBLIC-IP:8443
+```
+
+### Example `build_vars.yml` file
+
+Under the `examples` directory, an `build_vars.yml.nsg_ami` is located.
+The relevant parameters are shown under `mynsgvs`
+
+```
+mynsgvs:
+  - { 
+      # Name of the NSG, will also be used as the Ansible hostname
+      hostname: "l-vpc1-nsgv",
+      # target_server_type needs to be configured as "aws"
+      target_server_type: "aws",
+      # ID of the NSG Template that will be used for the NSG-AWS
+      nsg_template_id: "7971ff5b-1ecd-4410-b8cb-b3ab5141d27a",
+      # Nuage Enterprise where the NSGateway will be provisioned under
+      enterprise: "vns9", 
+      # AWS Region
+      aws_region: "eu-west-2",
+      # Parameters if a pre-existing VPC is to be used to launch the NSG-AMI in. 
+      # AWS ENI's need to be pre-created to attach the NSG-AMI to.
+      use_vpc: { nsg_lan_eni: "eni-7aad1d37", nsg_wan_eni: "eni-dfa91992" },
+      # Parameters to define the AMI and the EC2 instance type for the NSG-AMI. 
+      # Optionally the Elastic IP Allocation ID can be specified. If omitted, a new Elastic IP will be requested.
+      nsg_ami: { id: "ami-35a4b151", type: "t2.medium", keyname: "VPC-KeyPair", eip_allocid: "eipalloc-d39069ba" } }
+  - { 
+      # Name of the NSG, will also be used as the Ansible hostname
+      hostname: "l-vpc2-nsgv",
+      # target_server_type needs to be configured as "aws"
+      target_server_type: "aws",
+      # ID of the NSG Template that will be used for the NSG-AWS
+      nsg_template_id: "7971ff5b-1ecd-4410-b8cb-b3ab5141d27a",
+      # Nuage Enterprise where the NSGateway will be provisioned under
+      enterprise: "vns9",
+      # AWS Region
+      aws_region: "eu-west-2",
+      # Parameters if a new VPC is to be created to launch the NSG-AMI in.
+      # This will also provision route-tables, and security groups
+      provision_vpc: { cidr: "10.4.0.0/16", nsg_wan_subnet: "10.4.10.0/24", nsg_lan_subnet: "10.4.20.0/24", private_subnet: "10.4.30.0/24" },
+      # Parameters to define the AMI and the EC2 instance type for the NSG-AMI.
+      # Optionally the Elastic IP Allocation ID can be specified. If omitted, a new Elastic IP will be requested.
+      nsg_ami: { id: "ami-35a4b151", type: "t2.medium", keyname: "VPC-KeyPair" } }
+```
+
+
+
 
 ## Questions and Issues
 
