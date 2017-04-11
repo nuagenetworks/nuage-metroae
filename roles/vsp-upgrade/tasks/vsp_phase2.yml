@@ -1,0 +1,45 @@
+---
+- name: Set upgrade flag for major or minor upgrade
+  run_once: true
+  include_role: 
+    name: set-upgrade-flag
+  when: inventory_hostname in groups['vsds']
+
+- name: Upgrade VSC node2
+  any_errors_fatal: true
+  include_role:
+    name: vsc-upgrade
+  when: inventory_hostname in groups['vsc_ha_node2']
+
+- name: Get VSC nodes information post VSC2 upgrade
+  any_errors_fatal: true
+  vars:
+    report_filename: vsc_post_vsc2_upgrade_report.txt
+  include_role:
+    name: vsc-health
+  when: inventory_hostname in groups['vscs']
+
+- block:
+  - name: Upgrade VSD node2
+    include_role:
+      name: vsd-upgrade
+    when: inventory_hostname in groups['vsd_ha_node2']
+  when: vsd_sa_or_ha == 'ha'
+
+- name: Get VSD nodes network and monit information post upgrade
+  any_errors_fatal: true
+  vars:
+    report_filename: vsd_post_upgrade_report.txt
+  include_role:
+    name: vsd-health
+  when: 
+    - inventory_hostname in groups['vsds']
+    - vsd_sa_or_ha == 'ha'
+
+- name: Get VSC nodes information post upgrade
+  any_errors_fatal: true
+  vars:
+    report_filename: vsc_post_upgrade_report.txt
+  include_role:
+    name: vsc-health
+  when: inventory_hostname in groups['vscs']
