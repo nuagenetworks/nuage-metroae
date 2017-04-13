@@ -6,6 +6,7 @@ STCv vm deployment is supported via the stcv-vm-deploy role. You should first po
 To run STCv vm deployment:
 
 `ansible-playbook stcv_vm_deploy.yml`
+
 or
 
 `./metro-ansible stcv_vm_deploy.yml`
@@ -13,6 +14,7 @@ or
 To run post deploy checks:
 
 `ansible-playbook stcv_vm_postdeploy.yml`
+
 or
 
 `./metro-ansible stcv_vm_postdeploy.yml`
