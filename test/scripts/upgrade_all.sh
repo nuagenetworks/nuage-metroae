@@ -38,4 +38,4 @@ rm -rf ./reports/
 # Upgrade VSD2
 ./metro-ansible vsd_ha_node2_upgrade.yml -vvvv
 # clean up the whole setup
-#./metro-ansible test_cleanup.yml -vvvv
+./metro-ansible test_cleanup.yml -vvvv
