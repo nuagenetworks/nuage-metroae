@@ -31,7 +31,9 @@
 
   - name: Print vsd maintainance mode output when verbosity >= 1
     debug: var=mode_status verbosity=1
+  when: inventory_hostname == groups['vsds'][0]
 
+- block:
   - name: Reading the status of the DB upgrade directory
     stat:
       path: "/var/lib/mysql/nuageDbUpgrade/"
@@ -109,7 +111,11 @@
   - name: Run backup script from mount location
     shell: "{{ backup_cmd }}"
     remote_user: root
- 
+
+  - name: Umount the ISO
+    shell: "umount /media/CDROM" 
+    remote_user: root
+      
   - name: Find files created in /tmp/backup
     find:
       path: "/tmp/backup"
@@ -131,8 +137,8 @@
   - name: Copy the backup folder to backup_machine
     synchronize:
       src: "/tmp/backup/"
-      dest: "/tmp/backup/"
+      dest: "/tmp/backup-{{inventory_hostname }}-{{ ansible_date_time.iso8601_basic_short }}"
       mode: pull
     remote_user: "{{ ansible_sudo_username }}"
     delegate_to: "{{ ansible_deployment_host }}"
-  when: inventory_hostname == groups['vsds'][0]
+  when: inventory_hostname == groups['vsds'][0] or inventory_hostname in groups['vcins']
