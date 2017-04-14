@@ -108,6 +108,9 @@
         - "'.iso' in mount_file.stdout"
       msg: "Did not find iso file in mount path"
 
+  - name: Set name of backup directory
+    set_fact: vsdbackup_dir="/tmp/backup-{{ inventory_hostname }}-{{ ansible_date_time.iso8601_basic_short }}/"
+
   - name: Run backup script from mount location
     shell: "{{ backup_cmd }}"
     remote_user: root
@@ -116,9 +119,9 @@
     shell: "umount /media/CDROM" 
     remote_user: root
       
-  - name: Find files created in /tmp/backup
+  - name: Find files created in {{ vsdbackup_dir }}
     find:
-      path: "/tmp/backup"
+      path: "{{ vsdbackup_dir }}"
       patterns: "{{ item }}"
     with_items:
       - "myappconfiguration-*.gz"
@@ -127,18 +130,24 @@
     remote_user: root
     register: lst_files
 
-  - name: Verify files found in /tmp/backup
+  - name: Verify files found in {{ vsdbackup_dir }}
     assert:
       that: "{{ item.matched }} > 0"
       msg: "Could not find file {{ item.item }}"
     with_items: "{{ lst_files.results }}"
   
-  #TODO: Update Readme 
   - name: Copy the backup folder to backup_machine
     synchronize:
-      src: "/tmp/backup/"
-      dest: "/tmp/backup-{{inventory_hostname }}-{{ ansible_date_time.iso8601_basic_short }}"
+      src: "{{ vsdbackup_dir }}"
+      dest: "{{ vsdbackup_dir }}"
       mode: pull
     remote_user: "{{ ansible_sudo_username }}"
     delegate_to: "{{ ansible_deployment_host }}"
+  
+  - name: Create symbolic link to backup location
+    file: dest="/tmp/backup-{{ inventory_hostname }}-latest" src="{{  vsdbackup_dir }}"  state=link
+    remote_user: "{{ ansible_sudo_username }}"
+    delegate_to: "{{ ansible_deployment_host }}"
+
+
   when: inventory_hostname == groups['vsds'][0] or inventory_hostname in groups['vcins']
