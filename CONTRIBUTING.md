@@ -11,12 +11,12 @@ The following is a set of guidelines for contributing to the nuage-metro project
 - Your personal branch or fork must be updated (merged) from the latest dev branch prior to initiating the PR. 
 - The repo owner will review your PR prior to merge into the dev branch.
 - Comments from the repo owner and other contributors must be answered prior to merge to dev.
-- All contributions must be tested on Debian- and RedHat-family hypervisors.
+- All contributions must be tested on appropriate target servers, e.g. KVM or ESX.
 
 ##User input
 
-All variables that can be modified by a user must be included in the build.yml playbook process. As much as possible, we require that
-all user-modifyable variables be included in the `vars` section of `build.yml`. Variables that are almost never modified may be included
+All variables that can be modified by a user must be included in one of the variable files: `build_vars.yml`, `upgrade_vars.yml`, and `user_vars.yml`.
+The variable specifications must include comments that explain the variable's purpose and acceptable vallues. Variables that are almost never modified may be included
 in standard Ansible variable locations.
 
 ##Playbook Design

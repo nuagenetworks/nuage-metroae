@@ -8,6 +8,7 @@
 1. Added variables to support tagging the operations you are planning to perform on each component. See, for example, `vsd_operations_list` in `build_vars.yml`.
 1. Added support for different target server and Ansible host sudo usernames, default is `root`
 1. Added check to verify that the ntp servers are specified in dotted-decimal notation
+1. Added preliminary support for VSD and VSC upgrades. As of this writing we are working to cover some gaps in operation. For example, the upgrade will fail if the VSD configuration contains one or more shared subnets.
 
 Feedback and bug reports should be provided via the Issues feature of Github or via email to [Brian Castelli](mailto://brian.castelli@nokia.com).
 
@@ -21,8 +22,8 @@ This set of playbooks can be used to automatically deploy VCS/VNS components wit
 1. el7 (CentOS, RedHat)
 1. el6 (CentOS, RedHat)
 1. esx (VMware)
-1. ubuntu14.04 (deprecated for all but VRS)
-1. ubuntu16.04 (deprecated for all but VRS)
+1. ubuntu14.04 (VRS only)
+1. ubuntu16.04 (VRS only)
 
 The VCS/VNS components that are supported are:
 
