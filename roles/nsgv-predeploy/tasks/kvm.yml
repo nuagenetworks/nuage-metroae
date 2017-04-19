@@ -72,25 +72,27 @@
     delegate_to: "{{ target_server }}"
     remote_user: "{{ target_server_username }}"
 
-  - name: Create local temp directory
-    local_action: command mktemp -d "{{ lookup('env', 'TMPDIR') | default('/tmp/', true) }}ansible.XXXX"
-    register: mktemp_output
+  - block:
+    - name: Create local temp directory
+      local_action: command mktemp -d "{{ lookup('env', 'TMPDIR') | default('/tmp/', true) }}ansible.XXXX"
+      register: mktemp_output
 
-  - name: Generate ISO file
-    local_action: command python {{ playbook_dir }}/scripts/create_zfb_profile.py {{ playbook_dir }} {{ mktemp_output.stdout }}
-    register: output
+    - name: Generate ISO file
+      local_action: command python {{ playbook_dir }}/scripts/create_zfb_profile.py {{ playbook_dir }} {{ mktemp_output.stdout }}
+      register: output
 
-  - name: Search for errors in the output of ZFB script
-    fail: msg={{ output.stdout }}
-    when: output.stdout | search("(?i)ERROR")
+    - name: Search for errors in the output of ZFB script
+      fail: msg={{ output.stdout }}
+      when: output.stdout | search("(?i)ERROR")
 
-  - name: Copy the ISO image to virt images directory on {{ target_server }}
-    copy: src="{{ mktemp_output.stdout }}/user_image.iso"
-          dest={{ images_path }}/{{ inventory_hostname }}
-          owner={{ libvirt.user }}
-          group={{ libvirt.group }}
-    delegate_to: "{{ target_server }}"
-    remote_user: "{{ target_server_username }}"
+    - name: Copy the ISO image to virt images directory on {{ target_server }}
+      copy: src="{{ mktemp_output.stdout }}/user_image.iso"
+            dest={{ images_path }}/{{ inventory_hostname }}
+            owner={{ libvirt.user }}
+            group={{ libvirt.group }}
+      delegate_to: "{{ target_server }}"
+      remote_user: "{{ target_server_username }}"
+    when: bootstrap_method == 'zfb_metro'
 
   - name: "Define new NSGV VM"
     virt: name="{{ inventory_hostname }}"
