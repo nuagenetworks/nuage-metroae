@@ -105,7 +105,6 @@ def main():
     state = module.params['state']
 
     csproot = get_vsd_session(vsd_auth)
-    #get_domain_details(csproot)
     set_maintainance_mode(csproot, state)
 
 
