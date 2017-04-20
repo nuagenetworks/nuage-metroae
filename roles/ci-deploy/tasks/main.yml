@@ -1,5 +1,9 @@
 ---
-- name: Get {{ inventory_hostname }} details from OS facts
+- include: ci_c7_deploy_helper.yml
+- include: ci_u14_deploy_helper.yml
+- include: ci_u16_deploy_helper.yml
+
+- name: Get details from OS facts
   os_server_facts:
     auth:
       "{{ os_auth }}"
@@ -7,280 +11,232 @@
   register: ci_server
   delegate_to: 127.0.0.1
 
-# Temp task to get around policy issue
 - name: Set the network names
   set_fact:
     net_name1: "{{ ci_server['ansible_facts']['openstack_servers'][0]['networks'].keys()[0] }}"
     net_name2: "{{ ci_server['ansible_facts']['openstack_servers'][0]['networks'].keys()[1] }}"
+  run_once: true
 
 - block:
-  - name: Set the compute IP
-    set_fact:
-      target_server: "{{ ci_server['ansible_facts']['openstack_servers'][0]['networks'][net_name2][0]}}"
+    - name: Set the network name to find out correct CI slave temp file
+      set_fact:
+        net_name_temp: "{{ net_name2 }}"
   when: net_name1 == 'OC_JEN_FrontEnd'
+  run_once: true
 
 - block:
-  - name: Set the compute IP
+  - name: Set the network name to find out correct CI slave temp file
     set_fact:
-      target_server: "{{ ci_server['ansible_facts']['openstack_servers'][0]['networks'][net_name1][0]}}"
+      net_name_temp: "{{ net_name1 }}"
   when: net_name2 == 'OC_JEN_FrontEnd'
+  run_once: true
 
-- name: Extract network part from the compute ip
-  set_fact:
-    network_address: "{{ target_server.split('.')[0:3] | join('.') }}"
 
-- name: Update and copy zfb.yml file with vsd ip
-  template:
-    src: "{{ playbook_dir }}/test/files/zfb.yml.j2"
-    dest: "{{ playbook_dir }}/zfb.yml"
+- name: get the centos 7 vrs ip temp file contents
+  command: cat "/tmp/{{ net_name_temp }}_vrs_ip_centos7"
+  register: centos7_vrs_ip
+  run_once: true
   delegate_to: 127.0.0.1
+
+- name: register target_server
+  set_fact :
+    target_server: "{{ centos7_vrs_ip.stdout }}"
+  run_once: true
+  delegate_to: 127.0.0.1
+
+
+- name: get the u14 vrs ip temp file contents
+  command: cat "/tmp/{{ net_name_temp }}_vrs_ip_u14"
+  register: u14_vrs_ip
+  run_once: true
+  delegate_to: 127.0.0.1
+
+- name: register u14 vrs target_server
+  set_fact :
+    vrs_u14_target_server: "{{ u14_vrs_ip.stdout }}"
+  run_once: true
+  delegate_to: 127.0.0.1
+
+
+- name: get the centos 7 vrs name temp file contents
+  command: cat "/tmp/{{ net_name_temp }}_vrs_name_centos7"
+  register: centos7_vrs_name
+  run_once: true
+  delegate_to: 127.0.0.1
+
+- name: register centos 7 vrs host name
+  set_fact :
+    target_server_name: "{{ centos7_vrs_name.stdout }}"
+  run_once: true
+  delegate_to: 127.0.0.1
+
+- name: get the u14 vrs name temp file contents
+  command: cat "/tmp/{{ net_name_temp }}_vrs_name_u14"
+  register: u14_vrs_name
+  run_once: true
+  delegate_to: 127.0.0.1
+
+- name: register u14 vrs target_server name
+  set_fact :
+    vrs_u14_target_server_name: "{{ u14_vrs_name.stdout }}"
+  run_once: true
+  delegate_to: 127.0.0.1
+
+- name: get the u16 vrs ip temp file contents
+  command: cat /tmp/{{ net_name_temp }}_vrs_ip_u16
+  register: u16_vrs_ip
+  run_once: true
+  delegate_to: 127.0.0.1
+  ignore_errors: yes
+
+- name: register u16 vrs target_server
+  set_fact :
+    vrs_u16_target_server: "{{ u16_vrs_ip.stdout }}"
+  run_once: true
+  delegate_to: 127.0.0.1
+  ignore_errors: yes
+
+- name: get the u16 vrs name temp file contents
+  command: cat "/tmp/{{ net_name_temp }}_vrs_name_u16"
+  register: u16_vrs_name
+  run_once: true
+  delegate_to: 127.0.0.1
+  ignore_errors: yes
+
+- name: register u16 vrs target_server name
+  set_fact :
+    vrs_u16_target_server_name: "{{ u16_vrs_name.stdout }}"
+  run_once: true
+  delegate_to: 127.0.0.1
+  ignore_errors: yes
+
+- debug: var=target_server verbosity=1
+  delegate_to: 127.0.0.1
+  run_once: true
+
+- debug: var=vrs_u14_target_server verbosity=1
+  delegate_to: 127.0.0.1
+  run_once: true
+
+- debug: var=vrs_u16_target_server verbosity=1
+  delegate_to: 127.0.0.1
+  run_once: true
+  ignore_errors: yes
+
+#No need to have two sections for Redhat and Ubuntu since we only support Redhat for VSP components now
+- name: Update test build file
+  template:
+    src: "{{ playbook_dir }}/test/files/build_vars.yml.all.j2"
+    dest: "{{ playbook_dir }}/test/files/build_vars_all.yml"
+  delegate_to: 127.0.0.1
+  run_once: true
+
+- name: Update test build file for VSDOnly
+  template:
+    src: "{{ playbook_dir }}/test/files/build_vars.yml.VSDOnly.j2"
+    dest: "{{ playbook_dir }}/test/files/build_vars_vsdonly.yml"
+  delegate_to: 127.0.0.1
+  run_once: true
+
+- name: Update test build file for VSCOnly
+  template:
+    src: "{{ playbook_dir }}/test/files/build_vars.yml.VSCOnly.j2"
+    dest: "{{ playbook_dir }}/test/files/build_vars_vsconly.yml"
+  delegate_to: 127.0.0.1
+  run_once: true
+
+- name: Update test build file for VSTATOnly
+  template:
+    src: "{{ playbook_dir }}/test/files/build_vars.yml.VSTATOnly.j2"
+    dest: "{{ playbook_dir }}/test/files/build_vars_vstatonly.yml"
+  delegate_to: 127.0.0.1
+  run_once: true
+
+- name: Update test build file for VRSOnly
+  template:
+    src: "{{ playbook_dir }}/test/files/build_vars.yml.VRSOnly.j2"
+    dest: "{{ playbook_dir }}/test/files/build_vars_vrsonly.yml"
+  delegate_to: 127.0.0.1
+  run_once: true
+
+- name: Update test build file for VNSOnly
+  template:
+    src: "{{ playbook_dir }}/test/files/build_vars.yml.VNSOnly.j2"
+    dest: "{{ playbook_dir }}/test/files/build_vars_vnsonly.yml"
+  delegate_to: 127.0.0.1
+  run_once: true
+
+- name: Update test build file for VNSOnlyWithVSC
+  template:
+    src: "{{ playbook_dir }}/test/files/build_vars.yml.VNSOnlyWithVSC.j2"
+    dest: "{{ playbook_dir }}/test/files/build_vars_vnsonlywithvsc.yml"
+  delegate_to: 127.0.0.1
+  run_once: true
 
 - name: Update /etc/hosts file
   lineinfile:
     dest: /etc/hosts
     line: "{{ item }}"
-  with_items: "{{ vsp_ips }}"
-  delegate_to: "{{ ansible_deployment_host }}"
-  remote_user: root
-
-# Temp task to get around policy issue
-- name: Set front end ip added to static route
-  set_fact:
-    frontend_ip: "{{ ci_server['ansible_facts']['openstack_servers'][0]['networks']['OC_JEN_FrontEnd'][0]}}"
-
-# Temp task to get around policy issue
-- name: Add static route to reach 
-  command: "route add -net {{ network_address }}.0/24 gw {{ frontend_ip }} "
-  delegate_to: "{{ ansible_deployment_host }}"
-  remote_user: root
-
-- name: Wait for {{ inventory_hostname }} ssh to be ready
-  local_action:
-    module: wait_for
-    port: "22"
-    host: "{{ inventory_hostname }}"
-    search_regex: OpenSSH
-    delay: 10
-
-- name: Pause for cloud-init to inject ssh keys
-  pause:
-    seconds: 30
-
-- name: Query {{ target_server }} facts
-  action: setup
-  remote_user: root
-  delegate_to: "{{ target_server }}"
-
-- block:
-  - name: Set nuage_target_architecture
-    set_fact:
-      target_os: 'el7'
-
-  - name: Update test build file for RedHat OS family
-    template:
-      src: "{{ playbook_dir }}/test/files/build.yml.all.j2"
-      dest: "{{ playbook_dir }}/test/files/build.yml.all"
-    delegate_to: 127.0.0.1
-
-  - name: Update test build file for VSDOnly  RedHat OS family
-    template:
-      src: "{{ playbook_dir }}/test/files/build.yml.VSDOnly.j2"
-      dest: "{{ playbook_dir }}/test/files/build.yml.VSDOnly"
-    delegate_to: 127.0.0.1
-
-  - name: Update test build file for VSCOnly  RedHat OS family
-    template:
-      src: "{{ playbook_dir }}/test/files/build.yml.VSCOnly.j2"
-      dest: "{{ playbook_dir }}/test/files/build.yml.VSCOnly"
-    delegate_to: 127.0.0.1
-
-  - name: Update test build file for VSTATOnly  RedHat OS family
-    template:
-      src: "{{ playbook_dir }}/test/files/build.yml.VSTATOnly.j2"
-      dest: "{{ playbook_dir }}/test/files/build.yml.VSTATOnly"
-    delegate_to: 127.0.0.1
-
-  - name: Update test build file for VRSOnly  RedHat OS family
-    template:
-      src: "{{ playbook_dir }}/test/files/build.yml.VRSOnly.j2"
-      dest: "{{ playbook_dir }}/test/files/build.yml.VRSOnly"
-    delegate_to: 127.0.0.1
-
-  - name: Update test build file for VNSOnly  RedHat OS family
-    template:
-      src: "{{ playbook_dir }}/test/files/build.yml.VNSOnly.j2"
-      dest: "{{ playbook_dir }}/test/files/build.yml.VNSOnly"
-    delegate_to: 127.0.0.1
-  when: ansible_os_family == 'RedHat'
-
-- block:
-  - name: Set nuage_target_architecture
-    set_fact:
-      target_os: 'ubuntu.14.04'
-
-  - name: Update test build file for Debian OS family
-    template:
-      src: "{{ playbook_dir }}/test/files/build.yml.all.j2"
-      dest: "{{ playbook_dir }}/test/files/build.yml.all"
-    delegate_to: 127.0.0.1
-
-  - name: Copy test build file for VSDOnly  Debian OS family
-    template:
-      src: "{{ playbook_dir }}/test/files/build.yml.VSDOnly.j2"
-      dest: "{{ playbook_dir }}/test/files/build.yml.VSDOnly"
-    delegate_to: 127.0.0.1
- 
-  - name: Copy test build file for VSCOnly  Debian OS family
-    template:
-      src: "{{ playbook_dir }}/test/files/build.yml.VSCOnly.j2"
-      dest: "{{ playbook_dir }}/test/files/build.yml.VSCOnly"
-    delegate_to: 127.0.0.1
- 
-  - name: Copy test build file for VSTATOnly  Debian OS family
-    template:
-      src: "{{ playbook_dir }}/test/files/build.yml.VSTATOnly.j2"
-      dest: "{{ playbook_dir }}/test/files/build.yml.VSTATOnly"
-    delegate_to: 127.0.0.1
-  
-  - name: Copy test build file for VRSOnly  Debian OS family
-    template:
-      src: "{{ playbook_dir }}/test/files/build.yml.VRSOnly.j2"
-      dest: "{{ playbook_dir }}/test/files/build.yml.VRSOnly"
-    delegate_to: 127.0.0.1
-  
-  - name: Copy test build file for VNSOnly  Debian OS family
-    template:
-      src: "{{ playbook_dir }}/test/files/build.yml.VNSOnly.j2"
-      dest: "{{ playbook_dir }}/test/files/build.yml.VNSOnly"
-    delegate_to: 127.0.0.1
-  when: ansible_os_family == 'Debian'
-
-- name: Update the setup file with new test build file
-  replace:
-    dest: "{{ playbook_dir }}/test/files/setup.yml"
-    regexp: 'yml\.\{\{ ansible_os_family \}\}'
-    replace: 'yml.all'
-  delegate_to: "{{ ansible_deployment_host }}"
-  remote_user: root
-
-- name: Update the VSDOnly setup file with new VSDOnly build file
-  replace:
-    dest: "{{ playbook_dir }}/test/files/setup.yml.VSDOnly"
-    regexp: 'VSDOnly\.\{\{ ansible_os_family \}\}'
-    replace: 'VSDOnly'
-  delegate_to: "{{ ansible_deployment_host }}"
-  remote_user: root
-
-- name: Update the VSCOnly setup file with new VSCOnly build file
-  replace:
-    dest: "{{ playbook_dir }}/test/files/setup.yml.VSCOnly"
-    regexp: 'VSCOnly\.\{\{ ansible_os_family \}\}'
-    replace: 'VSCOnly'
-  delegate_to: "{{ ansible_deployment_host }}"
-  remote_user: root
-
-- name: Update the VSTATOnly setup file with new VSTAT build file
-  replace:
-    dest: "{{ playbook_dir }}/test/files/setup.yml.VSTATOnly"
-    regexp: 'VSTATOnly\.\{\{ ansible_os_family \}\}'
-    replace: 'VSTATOnly'
-  delegate_to: "{{ ansible_deployment_host }}"
-  remote_user: root
-
-- name: Update the VRSOnly setup file with new VRS build file
-  replace:
-    dest: "{{ playbook_dir }}/test/files/setup.yml.VRSOnly"
-    regexp: 'VRSOnly\.\{\{ ansible_os_family \}\}'
-    replace: 'VRSOnly'
-  delegate_to: "{{ ansible_deployment_host }}"
-  remote_user: root
-
-- name: Update the VNSOnly setup file with new VNS build file
-  replace:
-    dest: "{{ playbook_dir }}/test/files/setup.yml.VNSOnly"
-    regexp: 'VNSOnly\.\{\{ ansible_os_family \}\}'
-    replace: 'VNSOnly'
-  delegate_to: "{{ ansible_deployment_host }}"
-  remote_user: root
-
-- name: Update /etc/hosts file on {{ inventory_hostname }}
-  lineinfile:
-    dest: /etc/hosts
-    line: "{{ item }}"
   with_items: "{{vsp_ips}}"
-  remote_user: root
+  run_once: true
+  remote_user: "root"
 
-# Temp task to get around policy issue
-- name: Add iptables rule to allow vsd to reach internet route to reach on {{ inventory_hostname }}
-  command: "iptables -t nat -A POSTROUTING -s {{ network_address }}.211 -j SNAT --to-source {{ target_server }} "
-  remote_user: root
-
-# Temp task to get around policy issue
-- name: Add iptables rule to allow vnsutil to reach internet route to reach on {{ inventory_hostname }}
-  command: "iptables -t nat -A POSTROUTING -s {{ network_address }}.215 -j SNAT --to-source {{ target_server }} "
-  remote_user: root
-
-# Temp task to get around policy issue
-- name: Save iptables
-  command: "iptables-save"
-  remote_user: root
-
-- name: Configure dnsmasq on {{ inventory_hostname }}
+- name: Configure dnsmasq
   copy:
     src: "{{playbook_dir}}/roles/ci-deploy/files/dnsmasq.conf"
     dest: "/etc/dnsmasq.conf"
-  remote_user: root
+  remote_user: "root"
 
 # Could not get over interface booting order issue in Ubuntu cloud image
 # This is a temp task
 - block:
   - name: Change default route on Debian images
     command: "route del -net 0.0.0.0/0"
-    remote_user: root
+    remote_user: "root"
 
   - name: Add mgmt bridge as default route
     command: "route add -net 0.0.0.0/0 gw {{ network_address }}.1"
-    remote_user: root
+    remote_user: "root"
   when: ansible_os_family == 'Debian'
 
 - name: Enable dnsmasq
   command: chkconfig dnsmasq on
-  remote_user: root
+  remote_user: "root"
   when: ansible_os_family == 'RedHat'
 
 - name: Start dnsmasq
   command: service dnsmasq restart
-  remote_user: root
+  remote_user: "root"
 
 - name: Copy ntp conf
   template:
     src: "ntp.conf.j2"
     dest: "/etc/ntp.conf"
-  remote_user: root
+  remote_user: "root"
 
 - name: Stop the ntpd service if running
   command: service ntpd stop
-  remote_user: root
+  remote_user: "root"
   when: ansible_os_family == 'RedHat'
 
 - name: Stop the ntpd service if running
   command: service ntp stop
-  remote_user: root
+  remote_user: "root"
   when: ansible_os_family == 'Debian'
 
 - name: Manually sync time with ntp server
   command: ntpdate -u "{{ ntp_server_list[0] }}"
-  remote_user: root
+  remote_user: "root"
   when: ansible_os_family == 'RedHat'
 
-- name: Start ntpd on {{ inventory_hostname }}
+- name: Start ntpd
   command: service ntpd start
-  remote_user: root
+  remote_user: "root"
   when: ansible_os_family == 'RedHat'
 
-- name: Start ntpd on {{ inventory_hostname }}
+- name: Start ntpd
   command: service ntp start
-  remote_user: root
+  remote_user: "root"
   when: ansible_os_family == 'Debian'
 
 - block:
@@ -291,38 +247,48 @@
     retries: 4
     delay: 5
     ignore_errors: yes
-    remote_user: root
+    remote_user: "root"
 
   - block:
     - name: restart ntp if it hasn't synced yet
       command: service ntpd restart
-      remote_user: root
+      remote_user: "root"
     - name: check ntp sync state
       shell: ntpstat | awk 'NR==1{print $1}'
       register: retry_sync_status
       until: retry_sync_status.stdout == "synchronised"
       retries: 4
       delay: 5
-      remote_user: root
+      remote_user: "root"
     when: sync_status.stdout != "synchronized"
 
   - name: Clean yum cache
     command: "rm -fr /var/cache/yum/*"
-    remote_user: root
+    remote_user: "root"
 
   - name: Clean yum
     command: "yum clean all"
-    remote_user: root
+    remote_user: "root"
 
   - name: Update yum
     yum:
       name: '*'
       state: latest
     remote_user: root
-
   when: ansible_os_family == 'RedHat'
 
+
 - block:
+  - name: Run the equivalent of "apt-get update"
+    apt:
+      update_cache: yes
+    remote_user: "{{ target_server_username }}"
+
+  - name: Update all packages to the latest version
+    apt:
+      upgrade: dist
+    remote_user: "{{ target_server_username }}"
+
   - name: check ntp sync state
     shell: ntpq -p | grep '*' | awk 'NR==1{print $1}'
     register: sync_status
@@ -330,21 +296,22 @@
     retries: 4
     delay: 5
     ignore_errors: yes
-    remote_user: root
+    remote_user: "root"
 
   - block:
     - name: restart ntp if it hasn't synced yet
-      command: service ntpd restart
-      remote_user: root
+      command: service ntp restart
+      remote_user: "root"
     - name: check ntp sync state
       shell: ntpq -p | grep '*' | awk 'NR==1{print $1}'
       register: retry_sync_status
       until: retry_sync_status.stdout != ""
       retries: 4
       delay: 5
-      remote_user: root
+      remote_user: "root"
     when: sync_status.stdout == ""
   when: ansible_os_family == 'Debian'
+
 
 - name: Update the vsd ram
   lineinfile:
@@ -352,7 +319,7 @@
     regexp: 'vsd_ram:'
     line: 'vsd_ram: 9147483'
   delegate_to: "{{ ansible_deployment_host }}"
-  remote_user: root
+  remote_user: "{{ ansible_sudo_username }}"
 
 - name: Update the vsc ram
   lineinfile:
@@ -360,7 +327,7 @@
     regexp: 'vsc_ram:'
     line: 'vsc_ram: 2147483'
   delegate_to: "{{ ansible_deployment_host }}"
-  remote_user: root
+  remote_user: "{{ ansible_sudo_username }}"
 
 - name: Update the vstat ram
   lineinfile:
@@ -368,7 +335,7 @@
     regexp: 'vstat_ram:'
     line: 'vstat_ram: 2147483'
   delegate_to: "{{ ansible_deployment_host }}"
-  remote_user: root
+  remote_user: "{{ ansible_sudo_username }}"
 
 - name: Update the vnsutil ram
   lineinfile:
@@ -376,7 +343,7 @@
     regexp: 'vnsutil_ram:'
     line: 'vnsutil_ram: 2147483'
   delegate_to: "{{ ansible_deployment_host }}"
-  remote_user: root
+  remote_user: "{{ ansible_sudo_username }}"
 
 - name: Update the nsgv ram
   lineinfile:
@@ -384,4 +351,4 @@
     regexp: 'nsgv_ram:'
     line: 'nsgv_ram: 2147483'
   delegate_to: "{{ ansible_deployment_host }}"
-  remote_user: root
+  remote_user: "{{ ansible_sudo_username }}"

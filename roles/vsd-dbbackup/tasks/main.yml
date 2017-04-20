@@ -1,0 +1,153 @@
+---
+
+# Install Pre-Requisites
+- name: Pull facts of localhost
+  connection: local
+  action: setup
+
+- name: Install pip on RedHat OS family distribution
+  yum: name="python-pip" state="present"
+  connection: local
+  when: ansible_os_family == "RedHat"
+
+- name: Install pip on Debian OS family distribution
+  apt: name="python-pip" state="present" 
+  connection: local
+  when: ansible_os_family == "Debian"
+
+
+- name: Install Nuage Python VSPK
+  pip: name=vspk
+  connection: local
+
+- block:
+  - name: Enable maintainance mode on all l3/l2 domains
+    vsd_maintainance:
+      vsd_auth:
+        "{{ vsd_auth }}"
+      state: enabled
+    register: mode_status
+    delegate_to: 127.0.0.1
+
+  - name: Print vsd maintainance mode output when verbosity >= 1
+    debug: var=mode_status verbosity=1
+  when: inventory_hostname == groups['vsds'][0]
+
+- block:
+  - name: Reading the status of the DB upgrade directory
+    stat:
+      path: "/var/lib/mysql/nuageDbUpgrade/"
+    register: db_dir
+    remote_user: root
+  
+  - name: Verify that DB upgrade directory exists
+    assert: 
+      that: 
+        - db_dir.stat.exists == True
+      msg: "nuageDbUpgrade dir does not exist"
+
+  - name: Check that the database is properly identified by MySQL
+    shell: "mysql -e 'show databases;' | grep nuageDbUpgrade"
+    register: db
+    remote_user: root
+  
+  - name: Verify the upgrade database name
+    assert: 
+      that: 
+        - "'nuageDbUpgrade' == db.stdout"
+      msg: "Could not find nuageDbUpgrade database in mysql"
+
+  - name: Update gateway purge timer 
+    config_vsd_system:
+      vsd_auth:
+        "{{ vsd_auth }}"
+      gateway_purge_time: 86400
+    register: update_time_status
+    delegate_to: 127.0.0.1
+ 
+  - name: Print update time output when verbosity >= 1
+    debug: var=update_time_status verbosity=1
+
+  - name: Purge the alarms and event history from database
+    shell: "{{ item }}"
+    with_items: "{{ purge_cmd }}"
+    remote_user: root
+  
+  - name: Copy the VSD migration script ISO to VSD's temp directory
+    command: "{{ vsd_migration_iso_copy }}"
+    remote_user: "{{ ansible_sudo_username }}"
+    delegate_to: "{{ ansible_deployment_host }}"
+
+  - name: Register target directory status
+    stat: path="/media/CDROM"
+    register: cdrom_dir
+    remote_user: root
+
+  - name: Create target directory to mount ISO if necessary
+    file: name="/media/CDROM" state=directory mode=0775
+    when: cdrom_dir.stat.exists == false
+    remote_user: root
+
+  - name: mount ISO as loop back device
+    shell: "mount -o loop /tmp/{{ vsd_migration_iso_file_name }} /media/CDROM/" 
+    register: mount_out
+  
+  - debug: var=mount_out verbosity=1
+
+  - name: List VSD-related mounts
+    shell: "mount | grep VSD | grep /media/CDROM"
+    register: mount_file
+    remote_user: root
+
+  - name: Print mount output when verbosity >= 1
+    debug: var=mount_file verbosity=1
+
+  - name: Verify that the ISO is mounted
+    assert: 
+      that:
+        - "'.iso' in mount_file.stdout"
+      msg: "Did not find iso file in mount path"
+
+  - name: Set name of backup directory
+    set_fact: vsdbackup_dir="/tmp/backup-{{ inventory_hostname }}-{{ ansible_date_time.iso8601_basic_short }}/"
+
+  - name: Run backup script from mount location
+    shell: "{{ backup_cmd }}"
+    remote_user: root
+
+  - name: Umount the ISO
+    shell: "umount /media/CDROM" 
+    remote_user: root
+      
+  - name: Find files created in {{ vsdbackup_dir }}
+    find:
+      path: "{{ vsdbackup_dir }}"
+      patterns: "{{ item }}"
+    with_items:
+      - "myappconfiguration-*.gz"
+      - "mycertificate-*.gz"
+      - "mydatabase-*.gz" 
+    remote_user: root
+    register: lst_files
+
+  - name: Verify files found in {{ vsdbackup_dir }}
+    assert:
+      that: "{{ item.matched }} > 0"
+      msg: "Could not find file {{ item.item }}"
+    with_items: "{{ lst_files.results }}"
+  
+  - name: Copy the backup folder to backup_machine
+    synchronize:
+      src: "{{ vsdbackup_dir }}"
+      dest: "{{ vsdbackup_dir }}"
+      mode: pull
+    remote_user: "{{ ansible_sudo_username }}"
+    delegate_to: "{{ ansible_deployment_host }}"
+  
+  - name: Create symbolic link to backup location
+    file: dest="/tmp/backup-{{ inventory_hostname }}-latest" src="{{  vsdbackup_dir }}"  state=link
+    remote_user: "{{ ansible_sudo_username }}"
+    delegate_to: "{{ ansible_deployment_host }}"
+
+
+  when: inventory_hostname == groups['vsds'][0] or inventory_hostname in groups['vcins']

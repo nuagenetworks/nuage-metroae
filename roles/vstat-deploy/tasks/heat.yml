@@ -14,7 +14,7 @@
 - name: Clean known_hosts of VSTAT's
   command: ssh-keygen -R "{{ vstat_mgmt_ip }}" -f /root/.ssh/known_hosts
   delegate_to: "{{ ansible_deployment_host }}"
-  remote_user: root
+  remote_user: "{{ ansible_sudo_username }}"
 
 - block:
   - name: Get infra server details from OS server facts
@@ -34,12 +34,12 @@
       line: "{{ vstat_mgmt_ip }}  {{ inventory_hostname }}"
       dest: "/etc/hosts"
     delegate_to: "{{ infra_ip }}"
-    remote_user: root
+    remote_user: "root"
 
   - name: Restart DNS service
     shell: service dnsmasq restart
     delegate_to: "{{ infra_ip }}"
-    remote_user: root
+    remote_user: "root"
   when: infra_server_name is defined
 
 - name: Update /etc/hosts file on ansible host
@@ -62,10 +62,10 @@
     responses:
       (?i)yes: "yes"
       (?i)password: "Alcateldc"
-  remote_user: root
+  remote_user: "root"
   delegate_to: localhost  
     
-- name: Pause for ssh port to be active on {{ inventory_hostname }}
+- name: Pause for ssh port to be active
   pause:
     seconds: 5
 
@@ -80,61 +80,61 @@
 
 - name: Add nameserver
   command: echo "{{ infra_ip }}" >> /etc/resolv.conf
-  remote_user: root
+  remote_user: "root"
   when: infra_server_name is defined
 
-- name: Restart networking on {{ inventory_hostname }}
+- name: Restart networking
   command: /etc/init.d/network restart
-  remote_user: root
+  remote_user: "root"
 
 - name: Resolve fqdn
   command: hostname "{{ inventory_hostname }}"
-  remote_user: root
+  remote_user: "root"
 
-- name: Update /etc/hosts file on {{ inventory_hostname }}
+- name: Update /etc/hosts file
   lineinfile: 
     dest: /etc/hosts
     line: "{{ vstat_mgmt_ip }}  {{ inventory_hostname }}"
-  remote_user: root
+  remote_user: "root"
 
-- name: Delete the localtime file on {{ inventory_hostname }}
+- name: Delete the localtime file
   file:
     path: /etc/localtime
     state: absent
-  remote_user: root
+  remote_user: "root"
 
-- name: Create the localtime symlink on {{ inventory_hostname }}
+- name: Create the localtime symlink
   file:
     src: /usr/share/zoneinfo/{{ timezone }}
     dest: /etc/localtime
     state: link
-  remote_user: root
+  remote_user: "root"
 
-- name: Remove old NTP servers on {{ inventory_hostname }}
+- name: Remove old NTP servers
   lineinfile:
     dest: /etc/ntp.conf
     regexp: "^server"
     state: absent
-  remote_user: root
+  remote_user: "root"
 
-- name: Configure NTP servers on {{ inventory_hostname }}
+- name: Configure NTP servers
   lineinfile:
     dest: /etc/ntp.conf
     line: "server {{ item }} iburst"
   with_items: "{{ ntp_server_list }}"
-  remote_user: root
+  remote_user: "root"
 
 - name: Stop the ntpd service if running
   command: service ntpd stop
-  remote_user: root
+  remote_user: "root"
 
 - name: Manually sync time with ntp server
   command: ntpdate -u "{{ntp_server_list[0]}}"
-  remote_user: root
+  remote_user: "root"
 
-- name: Start ntpd on {{ inventory_hostname }}
+- name: Start ntpd
   command: service ntpd start
-  remote_user: root
+  remote_user: "root"
 
 - name: check ntp sync state
   shell: ntpstat | awk 'NR==1{print $1}'
@@ -143,43 +143,43 @@
   retries: 4
   delay: 5
   ignore_errors: yes
-  remote_user: root
+  remote_user: "root"
 
 - block:
   - name: restart ntp if it hasn't synced yet
     command: service ntpd restart
-    remote_user: root
+    remote_user: "root"
   - name: check ntp sync state
     shell: ntpstat | awk 'NR==1{print $1}'
     register: retry_sync_status
     until: retry_sync_status.stdout == "synchronised"
     retries: 4
     delay: 5
-    remote_user: root
+    remote_user: "root"
   when: sync_status.stdout != "synchronized"
 
 - name: Resolve "{{ vsd_fqdn }}"  to ip addr
   shell: host "{{ vsd_fqdn }}" | awk '{print $3,$4}'
   register: ip_addr
-  remote_user: root
+  remote_user: "root"
 
 - name: Check for ip addr in the registered var
   fail: msg="Could not resolve ip addr of "{{ vsd_fqdn }}" "
   when: ip_addr.stdout == "not found:"
-  remote_user: root
+  remote_user: "root"
 
 - name: Config firewall on VSTAT vm to accept conn on ports 9200,9300 from vsd(s)
   script: firewall.sh "{{ ip_addr.stdout.split()[1] }}"
-  remote_user: root
+  remote_user: "root"
 
 - name: Restart elastic search {{ inventory_hostname }}
   systemd:
     name: elasticsearch
     state: restarted
-  remote_user: root
+  remote_user: "root"
 
 - name: Enable stats collection on the VSD VM
   command: /opt/vsd/vsd-stats.sh -e {{inventory_hostname}}
   delegate_to: "{{ vsd_fqdn }}"
-  remote_user: root
+  remote_user: "root"
 

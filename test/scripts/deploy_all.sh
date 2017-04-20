@@ -1,44 +1,22 @@
-#!/bin/sh
+#!/bin/bash
 set -e
 
-cp ./test/files/setup.yml.VSDOnly ./setup.yml
-ansible-playbook setup.yml -vvvv
-ansible-playbook reset_build.yml -vvvv
-ansible-playbook build.yml -vvvv
+USAGE="Usage: $0 version"
+
+if [ $# -ne 1 ];
+then
+    echo "Requires exactly 1 argument"
+    echo $USAGE
+    exit 1
+fi
+
+cp ./test/files/build_vars_all.yml roles/reset-build/files/build_vars.yml
+cp ./test/files/test_install.yml .
+cp ./test/files/test_cleanup.yml .
+
+sed -i "s/VERSION/$1/g" roles/reset-build/files/build_vars.yml
+
+./metro-ansible reset_build.yml -vvvv
+./metro-ansible build.yml -vvvv
 ./metro-ansible test_install.yml -vvvv
-
-cp ./test/files/setup.yml.VSCOnly ./setup.yml
-ansible-playbook setup.yml -vvvv
-ansible-playbook reset_build.yml -vvvv
-ansible-playbook build.yml -vvvv
-./metro-ansible test_install.yml -vvvv
-
-cp ./test/files/setup.yml.VSTATOnly ./setup.yml
-ansible-playbook setup.yml -vvvv
-ansible-playbook reset_build.yml -vvvv
-ansible-playbook build.yml -vvvv
-./metro-ansible test_install.yml -vvvv
-
-cp ./test/files/setup.yml.VRSOnly ./setup.yml
-ansible-playbook setup.yml -vvvv
-ansible-playbook reset_build.yml -vvvv
-ansible-playbook build.yml -vvvv
-./metro-ansible test_install.yml -vvvv
-
-cp ./test/files/setup.yml.VNSOnly ./setup.yml
-ansible-playbook setup.yml -vvvv
-ansible-playbook reset_build.yml -vvvv
-ansible-playbook build.yml -vvvv
-./metro-ansible test_cleanup.yml -vvvv
-
-cp ./test/files/setup.yml.VNSOnlyWithVSC ./setup.yml
-ansible-playbook setup.yml -vvvv
-ansible-playbook reset_build.yml -vvvv
-ansible-playbook build.yml -vvvv
-./metro-ansible install_vns.yml -vvvv
-
-cp ./test/files/setup.yml ./setup.yml
-ansible-playbook setup.yml -vvvv
-ansible-playbook reset_build.yml -vvvv
-ansible-playbook build.yml -vvvv
 ./metro-ansible test_cleanup.yml -vvvv

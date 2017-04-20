@@ -2,12 +2,13 @@
 
 ## What's new
 
-1. Added pre-deploy support for VMware. Tested on R4.0R6.1 and 4.0R7.
-1. Added support for mixed VRS architectures. That is, you can have some VRSs deployed on Ubuntu and some on RedHat/CentOS all using a single build.yml file.
-1. Enhanced support for Dockermon install.
-1. Documentation enhancements, including examples and how-tos.
-1. Several bug fixes and infrastruture upgrades, including enhanced OpenStack deployment support and Jenkins CI integration.
-1. Tested with *3.2R8, 4.0R4, and 4.0R7*
+1. *Moved build variables out of `build.yml` and into `build_vars.yml`* _Requires that you move changes you have made from your old `build.yml` file to the new `build_vars.yml` file._
+1. Decoupled nuage-unpack from build and renamed it as `nuage-unzip`. Now you are required to run nuage-unzip separately if you are deploying from tar-gz archives. Bonus: You need only run the unzip once!
+1. Renamed the `packed` and `unpacked` directory-name variables to be easier to understand. The are now `nuage_zipped_files_dir` and `nuage_unzipped_files_dir`, respectively.
+1. Added variables to support tagging the operations you are planning to perform on each component. See, for example, `vsd_operations_list` in `build_vars.yml`.
+1. Added support for different target server and Ansible host sudo usernames, default is `root`
+1. Added check to verify that the ntp servers are specified in dotted-decimal notation
+1. Added preliminary support for VSD and VSC upgrades. As of this writing we are working to cover some gaps in operation. For example, the upgrade will fail if the VSD configuration contains one or more shared subnets.
 
 Feedback and bug reports should be provided via the Issues feature of Github or via email to [Brian Castelli](mailto://brian.castelli@nokia.com).
 
@@ -21,8 +22,8 @@ This set of playbooks can be used to automatically deploy VCS/VNS components wit
 1. el7 (CentOS, RedHat)
 1. el6 (CentOS, RedHat)
 1. esx (VMware)
-1. ubuntu14.04 (deprecated for all but VRS)
-1. ubuntu16.04 (deprecated for all but VRS)
+1. ubuntu14.04 (VRS only)
+1. ubuntu16.04 (VRS only)
 
 The VCS/VNS components that are supported are:
 
@@ -39,14 +40,18 @@ The VCS/VNS components that are supported are:
 
 The short version of the instructions are:
 
-1. Install Ansible 2.2 on the deployment host for full support
-1. Install Netmiko and its dependencies on deployment host.
-1. Clone this repository to the deployment host
-1. Customize `build.yml` with your VSD, VSC, VRS, VNSUTIL, NSGV  and VSTAT information. (See `BUILD.md` for details.)
+1. Install Ansible 2.2 on the Ansible host for full support
+1. Install Netmiko and its dependencies on the Ansible host.
+1. Install netaddr and its dependencies on the Ansible host.
+1. Install VSPK Python module
+1. Clone this repository to the Ansible host
+1. Customize `build_vars.yml` with your VSD, VSC, VRS, VNSUTIL, NSGV  and VSTAT information. (See `BUILD.md` for details.)
+1. Copy your binary files to the proper locations. (See `BUILD.md` for details.)
+1. Optionally execute `./metro-ansible nuage_unzip.yml` if you are installing from tar-gz files.
 1. Execute `./metro-ansible build.yml` to automatically populate variables in the appropriate places, e.g. the `host_vars` directory.
 1. Execute `./metro-ansible install_everything.yml`
 1. To get rid of everything that has been deployed, execute `./metro-ansible destroy_everything.yml'
-1. To destroy all variables and reset `build.yml` to factory settings, execute `./metro-ansible reset_build.yml`. A `build.bak` file will be created just in case you didn't mean it.
+1. To destroy all variables and reset `build.yml` to factory settings, execute `./metro-ansible reset_build.yml`. A backup of the existing `build_vars.yml` file will be created just in case you didn't mean it. The file name will be of the form `build_vars.yml.<date and time>~`.
 
 Note that `install_everything.yml` can be edited for customizing your deployment.
 
@@ -56,20 +61,29 @@ The latest sane code is found in the `master` branch. The `dev` branch is for on
 
 If you want to contribute back, you must create your own branch or fork, push your changes to that, and create a pull request to the `dev` branch. All pull requests against the `master` branch will be rejected. Sorry. All pull requests should include tests for new functionality. See `CONTRIBUTING.md` for more details.
 
-## Prerequisites
+## Additional Prerequisites
 
 The following restrictions and conditions apply prior to executing the playbooks:
 
 1. The hypervisor hosts must be running RedHat or CentOS. Support for Ubuntu exists but has been deprecated.
 1. If host names are used for target systems, VSD, VSC, VSTAT, VNSUTIL and VRS nodes, those names must be discoverable via DNS *or* added to the /etc/hosts file of the ansible deployment host.
-1. Each VM that is created for VSD, VSC, VSTAT, VNSUTIL or NSGV connects to one or more bridges on the target server. Those bridges must be created on the target server prior to deployment. Their names must be specified in the `build.yml` file. See `BUILD.md` for details.
-1. Python 2.7+ and all its dependencies must be installed on the deployment host. Python 3.0 and above is untested.
-1. Ansible 2.2 and all its dependencies must be installed on the deployment host.
-1. Netmiko and all its dependencies must be installed on deployment host. The easiest way to install Netmiko is by using `pip install netmiko`. A common Netmiko dependency that could be missing is the cryptography package. See https://cryptography.io/en/latest/installation/ for more information.
-1. VSPK (nuage python module) must be installed on the deployment host.
+1. Each VM that is created for VSD, VSC, VSTAT, VNSUTIL or NSGV connects to one or more bridges on the target server. Those bridges must be created on the target server prior to deployment. Their names must be specified in the `build_vars.yml` file. See `BUILD.md` for details.
 1. The ansible deployment host may also be a target server.
 1. It may be necessary to remove the vsd, vsc and vstat entries from the ansible user's `~/.ssh/known_hosts` file to prevent errors from suspected DNS spoofing. This would only be necessary if multiple runs are attempted.
 1. Under certain conditions, the `destroy_everything.yml` playbook must be run as sudo/root.
+
+## Vcenter Prerequisites
+
+In addition to the above prerequisites, the following packages are needed for vcenter deployments
+
+1. Nuage software version 4.0R7 and greater is supported. Previous versions of Nuage software lack the required support.
+1. `ovftool` package needs to installed on ansible deployment host. This package is available to download from here https://www.vmware.com/support/developer/ovf/.
+
+## OpenStack Prerequisites
+
+In addition to the above prerequisites, the following packages are needed for openstack deployments
+
+1. `shade` python module needs to installed on ansible deployment host. You can install using pip.
 
 **Note:** These playbooks should work as long as there is network connectivity between the deployment host, the hypervisors, and the VMs on the hypervisors. Connectivity in this case means they can ping one another's hostname or IP address.
 
@@ -91,9 +105,9 @@ The `examples/` directory is populated with samples of files that can be used as
 
 ## Customization
 
-### build.yml
+### build_vars.yml
 
-`build.yml` contains a set of variables that should be customized by the user prior to running the playbooks. These variables are used to configure network connectivity for the VSC, VSTAT and the VSD.
+`build_vars.yml` contains a set of variables that should be customized by the user prior to running the playbooks. These variables are used to configure network connectivity for the VSC, VSTAT and the VSD.
 
 `zfb.yml` contains a set of variables that should be customized by the user prior to running the nsgv playbooks. These variables are used to create NSG profile in the VSD Architect and also creates ISO file that is attached to NSG VM
 

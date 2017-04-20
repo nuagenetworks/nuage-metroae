@@ -29,12 +29,12 @@
       line: "{{ osc_mgmt_ip }}  {{ inventory_hostname }}"
       dest: "/etc/hosts"
     delegate_to: "{{ infra_ip }}"
-    remote_user: root
+    remote_user: "root"
 
   - name: Restart DNS service
     shell: service dnsmasq restart
     delegate_to: "{{ infra_ip }}"
-    remote_user: root
+    remote_user: "root"
   when: infra_server_name is defined
 
 - name: Update /etc/hosts file on ansible host
@@ -42,12 +42,12 @@
     dest: /etc/hosts
     line: "{{ osc_mgmt_ip }}    {{ inventory_hostname }}"
   delegate_to: 127.0.0.1
-  remote_user: root
+  remote_user: "{{ ansible_sudo_username }}"
 
 - name: Clean known_hosts of OSC's
   command: ssh-keygen -R "{{ osc_mgmt_ip }}" -f /root/.ssh/known_hosts
   delegate_to: "{{ ansible_deployment_host }}"
-  remote_user: root
+  remote_user: "{{ ansible_sudo_username }}"
 
 - name: Wait for OSC ssh to be ready
   local_action:
@@ -57,27 +57,27 @@
     search_regex: OpenSSH
     delay: 1
 
-- name: Pause for ssh port to be active on {{ inventory_hostname }}
+- name: Pause for ssh port to be active
   pause:
     seconds: 10
 
 - name: Query {{ target_server }} facts
   action: setup
-  remote_user: root
+  remote_user: "root"
   delegate_to: "{{ osc_mgmt_ip }}"
 
 - name: Update /etc/hosts file on osc
   lineinfile:
     dest: /etc/hosts
     line: "{{ osc_mgmt_ip }}    {{ inventory_hostname }}"
-  remote_user: root
+  remote_user: "root"
 
 - name: Update hostname
   template: src=network.j2 backup=no dest=/etc/sysconfig/network
 
 - name: Add nameserver
   command: echo "{{ infra_ip }}" >> /etc/resolv.conf
-  remote_user: root
+  remote_user: "root"
   when: infra_server_name is defined
 
 
@@ -85,7 +85,7 @@
   service: 
     name: firewalld
     enabled: no
-  remote_user: root
+  remote_user: "root"
   when:
     - ansible_os_family == 'RedHat'
   ignore_errors: yes
@@ -94,7 +94,7 @@
   service:
     name: firewalld
     state: stopped 
-  remote_user: root
+  remote_user: "root"
   when:
     - ansible_os_family == 'RedHat'
   ignore_errors: yes
@@ -103,37 +103,37 @@
   service:
     name: NetworkManager
     enabled: no
-  remote_user: root
+  remote_user: "root"
   ignore_errors: yes
 
 - name: Stop NetworkManager
   service:
     name: NetworkManager
     state: stopped
-  remote_user: root
+  remote_user: "root"
   ignore_errors: yes
 
 - name: Copy eth0 config to osc 
   template: src=ifcfg-eth0.j2 backup=no dest=/etc/sysconfig/network-scripts/ifcfg-eth0
-  remote_user: root
+  remote_user: "root"
 
 - name: Delete eht1 config on osc
   file:
     path: "/etc/sysconfig/network-scripts/ifcfg-eth1"
     state: absent
-  remote_user: root
+  remote_user: "root"
 
 - name: Enable network
   service:
     name: network
     enabled: yes
-  remote_user: root
+  remote_user: "root"
  
 - name: Start netowrk
   service:
     name: network
     state: started
-  remote_user: root
+  remote_user: "root"
   ignore_errors: yes
 
 - name: Pause
@@ -144,46 +144,46 @@
   yum:
     name: ntp
     state: latest
-  remote_user: root
+  remote_user: "root"
 
-- name: Delete the localtime file on {{ inventory_hostname }}
+- name: Delete the localtime file
   file:
     path: /etc/localtime
     state: absent
-  remote_user: root
+  remote_user: "root"
 
-- name: Create the localtime symlink on {{ inventory_hostname }}
+- name: Create the localtime symlink
   file:
     src: /usr/share/zoneinfo/US/Pacific
     dest: /etc/localtime
     state: link
-  remote_user: root
+  remote_user: "root"
 
-- name: Remove old NTP servers on {{ inventory_hostname }}
+- name: Remove old NTP servers
   lineinfile:
     dest: /etc/ntp.conf
     regexp: "^server"
     state: absent
-  remote_user: root
+  remote_user: "root"
 
-- name: Configure NTP servers on {{ inventory_hostname }}
+- name: Configure NTP servers
   lineinfile:
     dest: /etc/ntp.conf
     line: "server {{ item }} iburst"
   with_items: "{{ ntp_server_list }}"
-  remote_user: root
+  remote_user: "root"
 
 - name: Stop the ntpd service if running
   command: service ntpd stop
-  remote_user: root
+  remote_user: "root"
 
 - name: Manually sync time with ntp server
   command: ntpdate -u "{{ntp_server_list[0]}}"
-  remote_user: root
+  remote_user: "root"
 
-- name: Start ntpd on {{ inventory_hostname }}
+- name: Start ntpd
   command: service ntpd start
-  remote_user: root
+  remote_user: "root"
 
 - name: check ntp sync state
   shell: ntpstat | awk 'NR==1{print $1}'
@@ -192,95 +192,95 @@
   retries: 4
   delay: 5
   ignore_errors: yes
-  remote_user: root
+  remote_user: "root"
 
 - block:
   - name: restart ntp if it hasn't synced yet
     command: service ntpd restart
-    remote_user: root
+    remote_user: "root"
   - name: check ntp sync state
     shell: ntpstat | awk 'NR==1{print $1}'
     register: retry_sync_status
     until: retry_sync_status.stdout == "synchronised"
     retries: 4
     delay: 5
-    remote_user: root
+    remote_user: "root"
   when: sync_status.stdout != "synchronized"
 
 - name: Load correspoing software repos for OpenStack Centos7
   yum:
     name: "{{ os_centos }}{{ nuage_os_release }}"
     state: present
-  remote_user: root
+  remote_user: "root"
   when: 
     - ansible_distribution == 'CentOS'
     - ansible_distribution_major_version == '7'
 
-- name: Copy Redhat repo file to {{ inventory_hostname }} for RedHat images
+- name: Copy Redhat repo file for RedHat images
   template:
     src={{ playbook_dir }}/roles/osc-deploy/templates/redhat.repo.j2
     dest=/etc/yum.repos.d/rhel.repo
-  remote_user: root
+  remote_user: "root"
   when:
     - ansible_distribution == 'RedHat'
 
-- name: Execute a yum update on {{ inventory_hostname }}
+- name: Execute a yum update
   yum:
     name: '*'
     state: latest
-  remote_user: root
+  remote_user: "root"
 
 - name: Install packstack packages
   yum:
     name: openstack-packstack
     state: present
-  remote_user: root
+  remote_user: "root"
 
 - name: Install OpenStack packstack 
   command: "{{ install_packstack }}"
-  remote_user: root
+  remote_user: "root"
 
 - name: Copy Mysql compute query file to controller
   copy:
     src={{ playbook_dir }}/roles/osc-deploy/files/del_compute.txt
     dest=/root/
-  remote_user: root
+  remote_user: "root"
 
 - name: Delete compute node from controller
   shell: "mysql -u root < /root/del_compute.txt"
-  remote_user: root
+  remote_user: "root"
 
 - name: Disable compute service on controller
   service:
     name: openstack-nova-compute
     enabled: no
-  remote_user: root
+  remote_user: "root"
 
 - name: Stop the compute service on controller
   service: 
     name: openstack-nova-compute
     state: stopped
-  remote_user: root
+  remote_user: "root"
 
 - name: Copy Mysql netowrk query file to controller
   copy:
     src={{ playbook_dir }}/roles/osc-deploy/files/del_network.txt
     dest=/root/
-  remote_user: root
+  remote_user: "root"
  
 - name: Delete network,subnets,routers,ports from Neutron
   shell: "mysql -u root < /root/del_network.txt"
-  remote_user: root
+  remote_user: "root"
 
 - name: Add * to Server Alias list
   lineinfile:
     dest: /etc/httpd/conf.d/15-horizon_vhost.conf 
     insertafter: '## Server aliases'  
     line: '  ServerAlias *'
-  remote_user: root
+  remote_user: "root"
 
 - name: Restart httpd 
   service: 
     name: httpd
     state: restarted
-  remote_user: root
+  remote_user: "root"
