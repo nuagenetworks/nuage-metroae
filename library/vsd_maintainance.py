@@ -40,23 +40,22 @@ EXAMPLES = '''
 def set_maintainance_mode(csproot, state):
     result_str = ''
     lst_enterprise_ids = []
-   
     try:
         lst_enterprises = csproot.enterprises.get()
         for enterprise in lst_enterprises:
             lst_enterprise_ids.append(enterprise.id)
         lst_l3_domains = csproot.domains.get()
         if lst_l3_domains:
-           for l3_domain in lst_l3_domains:
-               if l3_domain.parent_id in lst_enterprise_ids:
-                  if state == 'enabled':
-                     l3_domain.maintenance_mode = 'ENABLED'
-                     l3_domain.save()
-                  elif state == 'disabled':
-                       l3_domain.maintenance_mode = 'DISABLED'
-                       l3_domain.save()
-           result_str = result_str + \
-                  'Maintainance mode for all non shared L3 domains-%s,' % state
+            for l3_domain in lst_l3_domains:
+                if l3_domain.parent_id in lst_enterprise_ids:
+                    if state == 'enabled':
+                        l3_domain.maintenance_mode = 'ENABLED'
+                        l3_domain.save()
+                    elif state == 'disabled':
+                        l3_domain.maintenance_mode = 'DISABLED'
+                        l3_domain.save()
+            result_str = result_str + \
+                'Maintainance mode for all non shared L3 domains-%s,' % state
         else:
             result_str = result_str + 'No L3 domains found\
                          to %s maintainance mode,' % state
@@ -65,10 +64,10 @@ def set_maintainance_mode(csproot, state):
         if lst_l2_domains:
             for l2_domain in lst_l2_domains:
                 if l2_domain.parent_id in lst_enterprise_ids:
-                   if state == 'enabled':
-                      l2_domain.maintenance_mode = 'ENABLED'
-                      l2_domain.save()
-                   elif state == 'disabled':
+                    if state == 'enabled':
+                        l2_domain.maintenance_mode = 'ENABLED'
+                        l2_domain.save()
+                    elif state == 'disabled':
                         l2_domain.maintenance_mode = 'DISABLED'
                         l2_domain.save()
             result_str = result_str + \
@@ -90,7 +89,7 @@ def get_vsd_session(vsd_auth):
     except Exception as e:
         module.fail_json(msg="Could not establish connection to VSD %s" % e)
 
-   
+
 arg_spec = dict(
     vsd_auth=dict(required=True, type='dict'),
     state=dict(required=True, choices=['enabled', 'disabled'])
@@ -105,7 +104,6 @@ def main():
     state = module.params['state']
 
     csproot = get_vsd_session(vsd_auth)
-    #get_domain_details(csproot)
     set_maintainance_mode(csproot, state)
 
 
