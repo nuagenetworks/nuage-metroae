@@ -43,9 +43,10 @@ The short version of the instructions are:
 1. Install Ansible 2.2 on the Ansible host for full support
 1. Install Netmiko and its dependencies on the Ansible host.
 1. Install netaddr and its dependencies on the Ansible host.
+1. Install Python pexpect module
 1. Install VSPK Python module
 1. Clone this repository to the Ansible host
-1. Customize `build_vars.yml` with your VSD, VSC, VRS, VNSUTIL, NSGV  and VSTAT information. (See `BUILD.md` for details.)
+1. Customize `build_vars.yml`  and `zfb.yml` with your VSD, VSC, VRS, VNSUTIL, NSGV  and VSTAT information. (See `BUILD.md` and `ZFB.md` for details.)
 1. Copy your binary files to the proper locations. (See `BUILD.md` for details.)
 1. Optionally execute `./metro-ansible nuage_unzip.yml` if you are installing from tar-gz files.
 1. Execute `./metro-ansible build.yml` to automatically populate variables in the appropriate places, e.g. the `host_vars` directory.
