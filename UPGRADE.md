@@ -19,7 +19,6 @@ Following steps are recommended to be executed for an upgrade using metro playbo
 1. Generate necessary data for the ansible playbooks to run by executing `build_upgrade` playbook. This requires both `build_vars.yml`,  `upgrade_vars.yml` and `user_creds.yml` to be populated according to the environment.
 
 ```
-./metro-ansible build.yml
 ./metro-ansible build_upgrade.yml
 ```
 
