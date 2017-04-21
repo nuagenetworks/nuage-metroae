@@ -1,6 +1,27 @@
 ---
+
+# Install Pre-Requisites
+- name: Pull facts of localhost
+  connection: local
+  action: setup
+
+- name: Install pip on RedHat OS family distribution
+  yum: name="python-pip" state="present"
+  connection: local
+  when: ansible_os_family == "RedHat"
+
+- name: Install pip on Debian OS family distribution
+  apt: name="python-pip" state="present" 
+  connection: local
+  when: ansible_os_family == "Debian"
+
+
+- name: Install Nuage Python VSPK
+  pip: name=vspk
+  connection: local
+
 - block:
-  - name: Enabled maintainance mode on all l3/l2 domains
+  - name: Enable maintainance mode on all l3/l2 domains
     vsd_maintainance:
       vsd_auth:
         "{{ vsd_auth }}"
@@ -10,7 +31,9 @@
 
   - name: Print vsd maintainance mode output when verbosity >= 1
     debug: var=mode_status verbosity=1
+  when: inventory_hostname == groups['vsds'][0]
 
+- block:
   - name: Reading the status of the DB upgrade directory
     stat:
       path: "/var/lib/mysql/nuageDbUpgrade/"
@@ -85,13 +108,20 @@
         - "'.iso' in mount_file.stdout"
       msg: "Did not find iso file in mount path"
 
+  - name: Set name of backup directory
+    set_fact: vsdbackup_dir="/tmp/backup-{{ inventory_hostname }}-{{ ansible_date_time.iso8601_basic_short }}/"
+
   - name: Run backup script from mount location
     shell: "{{ backup_cmd }}"
     remote_user: root
- 
-  - name: Find files created in /tmp/backup
+
+  - name: Umount the ISO
+    shell: "umount /media/CDROM" 
+    remote_user: root
+      
+  - name: Find files created in {{ vsdbackup_dir }}
     find:
-      path: "/tmp/backup"
+      path: "{{ vsdbackup_dir }}"
       patterns: "{{ item }}"
     with_items:
       - "myappconfiguration-*.gz"
@@ -100,18 +130,24 @@
     remote_user: root
     register: lst_files
 
-  - name: Verify files found in /tmp/backup
+  - name: Verify files found in {{ vsdbackup_dir }}
     assert:
       that: "{{ item.matched }} > 0"
       msg: "Could not find file {{ item.item }}"
     with_items: "{{ lst_files.results }}"
   
-  #TODO: Update Readme 
   - name: Copy the backup folder to backup_machine
     synchronize:
-      src: "/tmp/backup/"
-      dest: "/tmp/backup/"
+      src: "{{ vsdbackup_dir }}"
+      dest: "{{ vsdbackup_dir }}"
       mode: pull
     remote_user: "{{ ansible_sudo_username }}"
     delegate_to: "{{ ansible_deployment_host }}"
-  when: inventory_hostname == groups['vsds'][0]
+  
+  - name: Create symbolic link to backup location
+    file: dest="/tmp/backup-{{ inventory_hostname }}-latest" src="{{  vsdbackup_dir }}"  state=link
+    remote_user: "{{ ansible_sudo_username }}"
+    delegate_to: "{{ ansible_deployment_host }}"
+
+
+  when: inventory_hostname == groups['vsds'][0] or inventory_hostname in groups['vcins']

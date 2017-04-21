@@ -1,4 +1,12 @@
 ---
+- block:
+  - name: Stop vsd services gracefully
+    include_role:
+      name: vsd-services-stop
+    when:
+    - inventory_hostname in groups['vsd_ha_node1'] or inventory_hostname in groups['vsd_ha_node3']
+  when: vsd_sa_or_ha == 'ha'
+
 - name: Shutdown/Destroy Current vsd node(s)
   include_role: 
     name: vsd-destroy
@@ -18,8 +26,14 @@
     delay: 1
 
 - include: vsd_post_upgrade_helper.yml
+  tags: 
+   - vcin
+   - vsd
 
 - include: copy_backup_files.yml
+  tags:
+   - vcin
+   - vsd
 
 #TODO: 
 #- name: Compare network information of VSD's across pre-uppgrade and upgrade

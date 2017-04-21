@@ -10,7 +10,7 @@ except ImportError:
 DOCUMENTATION = '''
 ---
 module: vsd_maintainance
-short_description: Enable/Disable maintainance mode on all l3/l2 domains
+short_description: Enable/Disable maintainance mode on all l3/l2 domains except domains with shared resources
 options:
   vsd_auth:
     description:
@@ -26,7 +26,7 @@ options:
 '''
 
 EXAMPLES = '''
-# Enable maintainance mode on all l3/l3 domains
+# Enable maintainance mode on all l3/l3 domains except domains with shared resources
 - vsd_maintainace:
     vsd_auth:
       username: csproot
@@ -39,18 +39,23 @@ EXAMPLES = '''
 
 def set_maintainance_mode(csproot, state):
     result_str = ''
+    lst_enterprise_ids = []
     try:
+        lst_enterprises = csproot.enterprises.get()
+        for enterprise in lst_enterprises:
+            lst_enterprise_ids.append(enterprise.id)
         lst_l3_domains = csproot.domains.get()
         if lst_l3_domains:
             for l3_domain in lst_l3_domains:
-                if state == 'enabled':
-                    l3_domain.maintenance_mode = 'ENABLED'
-                    l3_domain.save()
-                elif state == 'disabled':
-                    l3_domain.maintenance_mode = 'DISABLED'
-                    l3_domain.save()
+                if l3_domain.parent_id in lst_enterprise_ids:
+                    if state == 'enabled':
+                        l3_domain.maintenance_mode = 'ENABLED'
+                        l3_domain.save()
+                    elif state == 'disabled':
+                        l3_domain.maintenance_mode = 'DISABLED'
+                        l3_domain.save()
             result_str = result_str + \
-                'Maintainance mode for all L3 domains-%s,' % state
+                'Maintainance mode for all non shared L3 domains-%s,' % state
         else:
             result_str = result_str + 'No L3 domains found\
                          to %s maintainance mode,' % state
@@ -58,14 +63,15 @@ def set_maintainance_mode(csproot, state):
         lst_l2_domains = csproot.l2_domains.get()
         if lst_l2_domains:
             for l2_domain in lst_l2_domains:
-                if state == 'enabled':
-                    l2_domain.maintenance_mode = 'ENABLED'
-                    l2_domain.save()
-                elif state == 'disabled':
-                    l2_domain.maintenance_mode = 'DISABLED'
-                    l2_domain.save()
+                if l2_domain.parent_id in lst_enterprise_ids:
+                    if state == 'enabled':
+                        l2_domain.maintenance_mode = 'ENABLED'
+                        l2_domain.save()
+                    elif state == 'disabled':
+                        l2_domain.maintenance_mode = 'DISABLED'
+                        l2_domain.save()
             result_str = result_str + \
-                ' Maintainance mode for all L2 domains-%s,' % state
+                ' Maintainance mode for all non shared L2 domains-%s,' % state
         else:
             result_str = result_str + ' No L2 domains found\
                          to %s maintainance mode' % state

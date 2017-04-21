@@ -5,6 +5,7 @@
 #
 target_server_username: {{ target_server_username | default('root') }}
 ansible_sudo_username: {{ ansible_sudo_username | default('root') }}
+user_ssh_pub_key: {{ user_ssh_pub_key | default('~/.ssh/id_rsa.pub') }}
 
 vsd_fqdn: {{ vsd_fqdn | default('NONE') }}
 
@@ -13,15 +14,22 @@ data_bridge: {{ data_bridge | default('NONE') }}
 access_bridge: {{ access_bridge | default('NONE') }}
 images_path: {{ images_path | default('NONE') }}
 ansible_deployment_host: {{ ansible_deployment_host }}
+
+{% if ntp_server_list  is defined %}
 ntp_server_list:
 {% for server in ntp_server_list %}
   - {{ server }}
 {% endfor %}
+{% endif %}
+
+{% if dns_server_list  is defined %}
 dns_server_list:
 {% for server in dns_server_list %}
   - {{ server }}
 {% endfor %}
-dns_domain: {{ dns_domain }}
+{% endif %}
+
+dns_domain: {{ dns_domain | default('localdomain') }}
 timezone: {{ timezone | default('US/Pacific') }}
 yum_proxy: "{{ yum_proxy | default('NONE') }}"
 yum_update: {{ yum_update | default(True) }}

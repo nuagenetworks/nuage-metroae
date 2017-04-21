@@ -1,3 +1,15 @@
+- name: Backup VSC node1
+  any_errors_fatal: true
+  include_role:
+    name: vsc-backup
+  when: inventory_hostname in groups['vsc_ha_node1']
+
+- name: Prep VSC node1 for upgrade
+  any_errors_fatal: true
+  include_role:
+    name: vsc-preupgrade
+  when: inventory_hostname in groups['vsc_ha_node1']
+
 - block: 
   - name: Clean known_hosts of VSC's on "{{ target_server }}"
     command: ssh-keygen -R "{{ mgmt_ip }}" -f /root/.ssh/known_hosts
@@ -114,8 +126,7 @@
   }
   - name: define variable to match vsd strings in sh vswitch vsd details
     set_fact:
-      vsd1_s: "cna@{{ vsd_fqdn }}/{{ groups['vsds'][0].split('.')[0:1] | join('.') }}"
-      vsd3_s: "cna@{{ vsd_fqdn }}/{{ groups['vsds'][0].split('.')[0:2] | join('.') }}"
+      vsd1_s: "cna@{{ vsd_fqdn }}"
 
   - name: Get output of 'show vswitch-controller vsd detail'
     sros_command:
@@ -135,26 +146,17 @@
     assert:
       that: "'cna@{{ vsd_fqdn }}/{{ groups['vsds'][0].split('.')[0:1] | join('.') }}' in vsd_detail.stdout[0]"
       msg: "VSD Node1 could not be found in 'show vswitch-controller vsd detail'"
+    when: vsd_sa_or_ha == 'ha'
+
+  - name: Verify VSD Node1 is found in vsd_detail
+    assert:
+      that: "'cna@{{ vsd_fqdn }}' in vsd_detail.stdout[0]"
+      msg: "VSD Node1 could not be found in 'show vswitch-controller vsd detail'"
+    when: vsd_sa_or_ha == 'sa'
 
   - name: Verify VSD Node3 is found in vsd_detail
     assert:
       that: "'cna@{{ vsd_fqdn }}/{{ groups['vsds'][2].split('.')[0:1] | join('.') }}' in vsd_detail.stdout[0]"
       msg: "VSD Node3 could not be found in 'show vswitch-controller vsd detail'"
+    when: vsd_sa_or_ha == 'ha'
   when: inventory_hostname in groups['vscs']
-
-- block:
-  - name: Set upgrade complete flag to 1 for minor upgrade on vsd
-    expect:
-      command: "{{ minor_upgrade_cmd }}"
-      responses:
-        (?i)ye: "yes"
-        (?i)yes: "yes"
-      timeout: 100
-    remote_user: root
-    when: inventory_hostname == groups['vsds'][0]
-
-  - name: Restart Jboss on VSD Node1
-    shell: "monit restart jboss"
-    remote_user: root
-    when: inventory_hostname == groups['vsds'][0] or inventory_hostname == groups['vsds'][3]
-  when: minor_upgrade == True
