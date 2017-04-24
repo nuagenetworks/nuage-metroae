@@ -43,7 +43,7 @@ The following is the workflow to acheive clustered vsp upgrade using above set o
 Upgrade vrs(s) manually
 
 ```
-./metro-ansible vsc_ha_node2.yml
+./metro-ansible vsc_ha_node2_upgrade.yml
 ./metro-ansible vsd_ha_node2_upgrade.yml
 ```
 
@@ -57,7 +57,7 @@ The following is the workflow to upgrade a full Nuage Networks VSP installation 
 ```
 Upgrade vrs(s) manually
 ```
-./metro-ansible vsc_ha_node2.yml
+./metro-ansible vsc_ha_node2_upgrade.yml
 ```
 
 ## Details

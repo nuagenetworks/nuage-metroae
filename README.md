@@ -40,7 +40,7 @@ The VCS/VNS components that are supported are:
 
 The short version of the instructions are:
 
-1. Install Ansible 2.2 on the Ansible host for full support
+1. Install Ansible 2.2.1 on the Ansible host for full support
 1. Install Netmiko and its dependencies on the Ansible host.
 1. Install netaddr and its dependencies on the Ansible host.
 1. Install Python pexpect module
