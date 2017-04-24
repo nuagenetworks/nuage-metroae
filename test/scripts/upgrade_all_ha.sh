@@ -34,13 +34,17 @@ rm -rf ./reports/
 ./metro-ansible reset_build.yml -vvvv
 # create build vars required for upgrade
 ./metro-ansible build_upgrade.yml -vvvv
+sleep 60
 # run upgrade
 # Upgrade vsd 1 and 3
 ./metro-ansible vsd_ha_node1_3_upgrade.yml -vvvv
+sleep 120
 # Upgrade VSC1
 ./metro-ansible vsc_ha_node1_upgrade.yml -vvvv
+sleep 60
 # Upgrade VSC2
 ./metro-ansible vsc_ha_node2_upgrade.yml -vvvv
+sleep 60
 # Upgrade VSD2
 ./metro-ansible vsd_ha_node2_upgrade.yml -vvvv
 # clean up the whole setup

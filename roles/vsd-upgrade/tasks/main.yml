@@ -59,4 +59,45 @@
 
   - name: Print vsd maintainance mode output when verbosity >= 1
     debug: var=mode_status verbosity=1
-  when: inventory_hostname == groups['vsds'][0]
+
+  - name: Clean known_hosts of VSC 1 on "{{ target_server }}"
+    command: ssh-keygen -R "{{  groups['vscs'][0] }}" -f /root/.ssh/known_hosts
+    delegate_to: "{{ ansible_deployment_host }}"
+    remote_user: "{{ ansible_sudo_username }}"
+
+  - name: Clean known_hosts of VSC 2 on "{{ target_server }}"
+    command: ssh-keygen -R "{{  groups['vscs'][1] }}" -f /root/.ssh/known_hosts
+    delegate_to: "{{ ansible_deployment_host }}"
+    remote_user: "{{ ansible_sudo_username }}"
+
+  - name: shut/noshut vswitch controller on vsc1 after disabling VSD maintenance mode
+    sros_config:
+      lines:
+          - configure vswitch-controller shutdown
+          - configure vswitch-controller no shutdown
+      provider: 
+        host: "{{ groups['vscs'][0] }}"
+        username: "{{ vsc_user }}"
+        password: "{{ vsc_password }}"
+        transport: cli 
+    register: vsc1_command_status
+    delegate_to: localhost
+
+  - debug: var=vsc1_command_statusa verbosity=1
+
+  - name: shut/noshut vswitch controller on vsc2 after disabling VSD maintenance mode
+    sros_config:
+      lines:
+          - configure vswitch-controller shutdown
+          - configure vswitch-controller no shutdown
+      provider: 
+        host: "{{ groups['vscs'][1] }}"
+        username: "{{ vsc_user }}"
+        password: "{{ vsc_password }}"
+        transport: cli 
+    register: vsc2_command_status verbosity=1
+    delegate_to: localhost
+
+  - debug: var=vsc2_command_status
+
+  when: (inventory_hostname == groups['vsds'][0] and vsd_sa_or_ha == "sa") or (inventory_hostname == groups['vsds'][1] and vsd_sa_or_ha == "ha")
