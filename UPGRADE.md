@@ -16,7 +16,7 @@ Metro provides a set of playbooks and roles to automate the upgrade of a full Nu
 ### Metro workflow for an upgrade
 Following steps are recommended to be executed for an upgrade using metro playbooks
 
-1. Generate necessary data for the ansible playbooks to run by executing `build_upgrade` playbook. This requires both `build_vars.yml`,  `upgrade_vars.yml` and `user_creds.yml` to be populated according to the environment.
+1. Generate necessary data for the ansible playbooks to run by executing `build_upgrade` playbook. This requires both `build_vars.yml`,  `upgrade_vars.yml` and `user_creds.yml` to be populated according to the environment. `user_creds.yml` is not included in the repo. It must be created manually. It must contain VSD and VSC credentials as shown in the example file `examples\user_creds.yml` .
 
 ```
 ./metro-ansible build_upgrade.yml
