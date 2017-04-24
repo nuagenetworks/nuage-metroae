@@ -10,7 +10,8 @@
       responses:
         (?i)yes: "yes"
         (?i)password: "Alcateldc"
-    remote_user: root
+    delegate_to: "{{ ansible_deployment_host }}"
+    remote_user: "{{ ansible_sudo_username }}"
     delegate_to: localhost
   when: target_server_type == 'heat'
 
@@ -19,6 +20,7 @@
     file:  
       path: "/opt/vsd/data"
       state: directory
+    remote_user: root
  
   - name: Copy backup files from backup_machine
     copy:
@@ -28,12 +30,14 @@
 
   - name: Delete log files from /opt/vsd/data/ directory
     shell: "rm -rf /opt/vsd/data/*.log"
+    remote_user: root
 
   - name: Get list of files in /opt/vsd/data/ directory
     find:
       path: "/opt/vsd/data/"
       pattern: "*.tar.gz"
     register: lst_files
+    remote_user: root
 
   - name: Verify  /opt/vsd/data/ directory contains exactly 3 files
     assert:
