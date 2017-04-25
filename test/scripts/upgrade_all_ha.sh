@@ -18,6 +18,7 @@ cp ./test/files/test_cleanup.yml .
 sed -i "s/VERSION/$1/g" roles/reset-build/files/build_vars.yml
 sed -i "s/VERSION/$2/g" roles/reset-build/files/upgrade_vars.yml
 #update ansible.cfg
+echo >> ansible.cfg
 echo "[ssh_connection]" >> ansible.cfg
 echo "ssh_args = -o ControlMaster=auto -o ControlPersist=600s" >> ansible.cfg
 echo "pipelining = True" >> ansible.cfg
