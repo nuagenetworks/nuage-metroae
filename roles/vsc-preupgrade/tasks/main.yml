@@ -46,6 +46,23 @@
     command: "iptables -I INPUT -s {{ vsc_sys_conn_json['local_ip'] }} -j DROP"
     remote_user: root
     delegate_to: "{{ groups['vsds'][1] }}"
+  
+  - name: check xmpp connectivity after iptables on vsd2
+    sros_command:
+      commands:
+        - show vswitch-controller xmpp-server | match Functional
+      wait_for:
+        - result[0] contains Functional
+      provider: "{{ vsc_creds }}"  
+      interval: 10
+      retries: 6
+    register: xmpp_status
+    delegate_to: "{{ ansible_deployment_host }}"
+    remote_user: "{{ ansible_sudo_username }}"
+  
+  - name: Print vsc xmpp status  when verbosity >= 1
+    debug: var=xmpp_status verbosity=1
+
   when: vsd_sa_or_ha == 'ha'
 
 - name: Get output of 'show vswitch-controller xmpp-server detail'
