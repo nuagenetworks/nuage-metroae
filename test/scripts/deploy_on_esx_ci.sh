@@ -10,7 +10,7 @@ then
     exit 1
 fi
 
-cp ./test/files/build_vars_esx.yml roles/reset_build/files/build_vars.yml
+cp ./test/files/build_vars_esx.yml roles/reset-build/files/build_vars.yml
 cp ./test/files/test_install_on_esx.yml .
 cp ./test/files/test_cleanup_on_esx.yml .
 
