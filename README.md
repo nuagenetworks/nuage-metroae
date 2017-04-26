@@ -2,13 +2,19 @@
 
 ## What's new
 
-1. *Moved build variables out of `build.yml` and into `build_vars.yml`* _Requires that you move changes you have made from your old `build.yml` file to the new `build_vars.yml` file._
-1. Decoupled nuage-unpack from build and renamed it as `nuage-unzip`. Now you are required to run nuage-unzip separately if you are deploying from tar-gz archives. Bonus: You need only run the unzip once!
-1. Renamed the `packed` and `unpacked` directory-name variables to be easier to understand. The are now `nuage_zipped_files_dir` and `nuage_unzipped_files_dir`, respectively.
-1. Added variables to support tagging the operations you are planning to perform on each component. See, for example, `vsd_operations_list` in `build_vars.yml`.
-1. Added support for different target server and Ansible host sudo usernames, default is `root`
-1. Added check to verify that the ntp servers are specified in dotted-decimal notation
-1. Added preliminary support for VSD and VSC upgrades. As of this writing we are working to cover some gaps in operation. For example, the upgrade will fail if the VSD configuration contains one or more shared subnets.
+1. Preview support for VSD/VSC upgrade. See `UPGRADE.md`.
+1. Moved build variables out of `build.yml`, creating `build_vars.yml`. See `BUILD.md`.
+1. Simplifed and renamed a few build variables.
+1. Renamed `nuage-unpack` to `nuage-unzip` and decoupled from build. Now you run `nauge_unzip.yml` if and only if you want to unzip tar.gz files.
+1. Added support for identifying the operation you are performing on each component. See `build_vars.yml`.
+1. Added support to use custom hypervisor and Ansible host usernames. Default is `root`.
+1. Added check to verify that NTP servers are specified using the proper format.
+1. Added support for up to 6 NSGV ports and enhanced bootstrap support.
+1. Added acpi support for NSGV.
+1. Added support for specifying ssh keys to be used during deployment and upgrades.
+1. Moved user credentials to an external file, `user_creds.yml`.
+1. Added support to launch Spirent STCv test ports.
+1. Added RELEASE_NOTES.md
 
 Feedback and bug reports should be provided via the Issues feature of Github or via email to [Brian Castelli](mailto://brian.castelli@nokia.com).
 
@@ -17,7 +23,7 @@ In the near future (date TBD), Metro is going to drop support for using Ubuntu a
 
 ## Overview
 
-This set of playbooks can be used to automatically deploy VCS/VNS components with target servers of the following types:
+This set of playbooks can be used to automatically deploy and (in some cases) upgrade VCS/VNS components with target servers of the following types:
 
 1. el7 (CentOS, RedHat)
 1. el6 (CentOS, RedHat)
@@ -58,7 +64,7 @@ Note that `install_everything.yml` can be edited for customizing your deployment
 
 ## Branches
 
-The latest sane code is found in the `master` branch. The `dev` branch is for ongoing development. The stability of the `dev` branch is not guaranteed.
+The latest stable code is found in the `master` branch. The `dev` branch is for ongoing development. The stability of the `dev` branch is not guaranteed.
 
 If you want to contribute back, you must create your own branch or fork, push your changes to that, and create a pull request to the `dev` branch. All pull requests against the `master` branch will be rejected. Sorry. All pull requests should include tests for new functionality. See `CONTRIBUTING.md` for more details.
 
