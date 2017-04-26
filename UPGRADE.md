@@ -4,8 +4,8 @@
 
 1. As of this writing only VSD and VSC upgrades are supported
 2. Supported upgrade paths
-   1. 3.2.R10 to 4.0.R7
-   2. 4.0.R4 to 4.0.R7
+   1. 3.2.R8 to 4.0.Rn
+   2. 4.0.Rn to 4.0.Rn+
    3. Other upgrades should be tried in a test environment before production
 3. Standalone and clustered VSD upgrade are supported
 
