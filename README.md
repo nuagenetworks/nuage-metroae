@@ -42,34 +42,24 @@ The VCS/VNS components that are supported are:
 The short version of the instructions are:
 
 1. Create ssh key pair for the user that runs metro playbooks
-
-`ssh-keygen`
+    > `ssh-keygen`
 1. Copy ssh keys to localhosts's authorized key file
-
-`ssh-copy-id localhost`
+    > `ssh-copy-id localhost`
 1. Install python pip on the Ansible host based on Redhat or Debian OS families
-
-`yum install python2-pip` 
-
-`apt-get install python-pip`
+    > `yum install python2-pip` 
+    > `apt-get install python-pip`
 1. Install Ansible 2.2.1 on the Ansible host for full support
-
-`pip install ansible`
+    > `pip install ansible`
 1. Install Netmiko and its dependencies on the Ansible host.
-
-`pip install netmiko`
+    > `pip install netmiko`
 1. Install netaddr and its dependencies on the Ansible host.
-
-`pip install netaddr`
+    > `pip install netaddr`
 1. Install ipaddress and its dependencies on the Ansible host.
-
-`pip install ipaddress`
+    > `pip install ipaddress`
 1. Install Python pexpect module
-
-`pip install pexpect`
+    > `pip install pexpect`
 1. Install VSPK Python module
-
-`pip install vspk`
+    > `pip install vspk`
 1. Clone this repository to the Ansible host
 1. Customize `build_vars.yml`  and `zfb.yml` with your VSD, VSC, VRS, VNSUTIL, NSGV  and VSTAT information. (See `BUILD.md` and `ZFB.md` for details.)
 1. Copy your binary files to the proper locations. (See `BUILD.md` for details.)
@@ -77,7 +67,7 @@ The short version of the instructions are:
 1. Execute `./metro-ansible build.yml` to automatically populate variables in the appropriate places, e.g. the `host_vars` directory.
 1. Execute `./metro-ansible install_everything.yml`
 1. To get rid of everything that has been deployed, execute `./metro-ansible destroy_everything.yml'
-1. To destroy all variables and reset `build.yml` to factory settings, execute `./metro-ansible reset_build.yml`. A backup of the existing `build_vars.yml` file will be created just in case you didn't mean it. The file name will be of the form `build_vars.yml.<date and time>~`.
+1. To destroy all variables and reset `build_vars.yml` to factory settings, execute `./metro-ansible reset_build.yml`. A backup of the existing `build_vars.yml` file will be created just in case you didn't mean it. The file name will be of the form `build_vars.yml.<date and time>~`.
 
 Note that `install_everything.yml` can be edited for customizing your deployment.
 
