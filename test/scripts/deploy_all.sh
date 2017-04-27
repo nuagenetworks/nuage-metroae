@@ -13,6 +13,7 @@ fi
 cp ./test/files/build_vars_all.yml roles/reset-build/files/build_vars.yml
 cp ./test/files/test_install.yml .
 cp ./test/files/test_cleanup.yml .
+cp ./test/files/zfb.yml .
 
 sed -i "s/VERSION/$1/g" roles/reset-build/files/build_vars.yml
 
