@@ -36,15 +36,40 @@ The VCS/VNS components that are supported are:
 7. NSGV (1)
 8. VCIN
 
+
 ## For the impatient
 
 The short version of the instructions are:
 
-1. Install Ansible 2.2 on the Ansible host for full support
+1. Create ssh key pair for the user that runs metro playbooks
+
+`ssh-keygen`
+1. Copy ssh keys to localhosts's authorized key file
+
+`ssh-copyid localhost`
+1. Install python pip on the Ansible host based on Redhat or Debian OS families
+
+`yum install python2-pip` 
+
+`apt-get install python-pip`
+1. Install Ansible 2.2.1 on the Ansible host for full support
+
+`pip install ansible`
 1. Install Netmiko and its dependencies on the Ansible host.
+
+`pip install netmiko`
 1. Install netaddr and its dependencies on the Ansible host.
+
+`pip install netaddr`
+1. Install ipaddress and its dependencies on the Ansible host.
+
+`pip install ipaddress`
 1. Install Python pexpect module
+
+`pip install pexpect`
 1. Install VSPK Python module
+
+`pip install vspk`
 1. Clone this repository to the Ansible host
 1. Customize `build_vars.yml`  and `zfb.yml` with your VSD, VSC, VRS, VNSUTIL, NSGV  and VSTAT information. (See `BUILD.md` and `ZFB.md` for details.)
 1. Copy your binary files to the proper locations. (See `BUILD.md` for details.)
