@@ -1,0 +1,52 @@
+#TODO: Handle nfs related backups
+#- name: Mount elasticsearch backup location
+
+- name: Create backup location dir
+  file:
+    dest: "{{ vstat_backup_location }}"
+    state: directory
+  remote_user: "{{ ansible_sudo_username }}"
+
+- name: Configure backup location in elasticseach.yml file
+  lineinfile:
+    dest: "/etc/elasticsearch/elasticsearch.yml" 
+    line: "path.repo: [{{ vstat_backup_location }}]"
+  remote_user: "{{ ansible_sudo_username }}"
+
+- name: Add user permission to backup location
+  file:
+    dest: "{{ vstat_backup_location }}" 
+    owner: "elasticsearch"
+    group: "elasticsearch"
+    recurse: yes
+    mode: 775
+  remote_user: "{{ ansible_sudo_username }}"
+
+- name: Restart elasticsearch process
+  systemd:
+    name: elasticsearch
+    state: restarted
+  remote_user: "{{ ansible_sudo_username }}"
+
+- name: Get elasticsearch current status
+  systemd:
+    name: elasticsearch
+    state: started
+  register: es_status
+  remote_user: "{{ ansible_sudo_username }}"
+
+- name: Check elasticsearch status is active
+  assert: 
+    that: es_status.status.ActiveState == 'active'
+    msg: "Elasticserach process in not active after restart"
+
+- name: Check elasticsearch process is running
+  assert:
+    that: es_status.status.SubState == 'running'
+    msg: "Elasticsearch process is not running after restart"
+
+- name: Copy the elasticsearch  data backup scripts ISO to temp directory
+  command: "{{ vstat_backup_script_copy }}"
+  with_items: "{{ vstat_backup_scripts_file_list }}"
+  remote_user: "{{ ansible_sudo_username }}"
+  delegate_to: "{{ ansible_deployment_host }}"
