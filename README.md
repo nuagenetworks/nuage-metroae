@@ -46,7 +46,7 @@ The short version of the instructions are:
 `ssh-keygen`
 1. Copy ssh keys to localhosts's authorized key file
 
-`ssh-copyid localhost`
+`ssh-copy-id localhost`
 1. Install python pip on the Ansible host based on Redhat or Debian OS families
 
 `yum install python2-pip` 
