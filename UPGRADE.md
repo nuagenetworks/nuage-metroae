@@ -4,8 +4,8 @@
 
 1. As of this writing only VSD and VSC upgrades are supported
 2. Supported upgrade paths
-   1. 3.2.R10 to 4.0.R7
-   2. 4.0.R4 to 4.0.R7
+   1. 3.2.R8 to 4.0.Rn
+   2. 4.0.Rn to 4.0.Rn+
    3. Other upgrades should be tried in a test environment before production
 3. Standalone and clustered VSD upgrade are supported
 
@@ -16,10 +16,9 @@ Metro provides a set of playbooks and roles to automate the upgrade of a full Nu
 ### Metro workflow for an upgrade
 Following steps are recommended to be executed for an upgrade using metro playbooks
 
-1. Generate necessary data for the ansible playbooks to run by executing `build_upgrade` playbook. This requires both `build_vars.yml`,  `upgrade_vars.yml` and `user_creds.yml` to be populated according to the environment.
+1. Generate necessary data for the ansible playbooks to run by executing `build_upgrade` playbook. This requires both `build_vars.yml`,  `upgrade_vars.yml` and `user_creds.yml` to be populated according to the environment. `user_creds.yml` is not included in the repo. It must be created manually. It must contain VSD and VSC credentials as shown in the example file `examples\user_creds.yml` .
 
 ```
-./metro-ansible build.yml
 ./metro-ansible build_upgrade.yml
 ```
 
@@ -44,7 +43,7 @@ The following is the workflow to acheive clustered vsp upgrade using above set o
 Upgrade vrs(s) manually
 
 ```
-./metro-ansible vsc_ha_node2.yml
+./metro-ansible vsc_ha_node2_upgrade.yml
 ./metro-ansible vsd_ha_node2_upgrade.yml
 ```
 
@@ -58,7 +57,7 @@ The following is the workflow to upgrade a full Nuage Networks VSP installation 
 ```
 Upgrade vrs(s) manually
 ```
-./metro-ansible vsc_ha_node2.yml
+./metro-ansible vsc_ha_node2_upgrade.yml
 ```
 
 ## Details
