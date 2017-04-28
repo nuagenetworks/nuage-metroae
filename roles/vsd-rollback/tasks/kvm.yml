@@ -1,0 +1,148 @@
+---
+#- name: Assert if upgrade was triggered with preserve_vsd flag set
+#  assert: 
+#     that:
+#       - "preserve_vsd == 'True'" 
+#     msg: "preserve_vsd flag must have been set to True for rollback"
+
+- name: Pull facts on target_server
+  setup: gather_subset=!all
+  delegate_to: "{{ target_server }}"
+  remote_user: "{{ target_server_username }}"
+
+- name: List the Virtual Machines on target_server
+  virt: command=list_vms
+  register: virt_vms
+  delegate_to: "{{ target_server }}"
+  remote_user: "{{ target_server_username }}"
+
+- block:
+  - name: Destroy VSD VM
+    virt:
+      name: "{{ inventory_hostname }}"
+      state: destroyed
+      uri: qemu:///system
+    delegate_to: "{{ target_server }}"
+    remote_user: "{{ target_server_username }}"
+
+  - name: Undefine VSD VM
+    virt:
+      name: "{{ inventory_hostname }}"
+      command: undefine
+      uri: qemu:///system
+    delegate_to: "{{ target_server }}"
+    remote_user: "{{ target_server_username }}"
+  when: inventory_hostname in virt_vms.list_vms
+
+- name: Destroy the images directory
+  file: path={{ images_path }}/{{ inventory_hostname }}
+        state=absent
+  delegate_to: "{{ target_server }}"
+  remote_user: "{{ target_server_username }}"
+
+- name: Find VSD backup folder
+  shell: ls "{{ images_path }}" | grep "{{ inventory_hostname }}.backup.*"
+  register: vsd_backup_dir
+  delegate_to: "{{ target_server }}"
+  remote_user: "{{ target_server_username }}"
+
+- debug: var=vsd_backup_dir.stdout
+  delegate_to: "{{ target_server }}"
+  remote_user: "{{ target_server_username }}"
+
+- name: Move the the vsd backup directory to vsd directory
+  command: "cp -R {{ images_path }}/{{ vsd_backup_dir.stdout }} {{ images_path }}/{{ inventory_hostname }}"
+  delegate_to: "{{ target_server }}"
+  remote_user: "{{ target_server_username }}"
+
+- name: Define VSD vm with KVM XML config file from backup
+  virt:
+    name: "{{ inventory_hostname }}"
+    command: define
+    xml: "{{ lookup('template', '{{ images_path }}/{{ inventory_hostname }}/{{ inventory_hostname }}.xml') }}" 
+    uri: qemu:///system
+  register: vsd_xml
+  delegate_to: "{{ target_server }}"
+  remote_user: "{{ target_server_username }}"
+
+- name: "Run backed up VSD VM"
+  virt: name="{{ inventory_hostname }}"
+        state=running
+        uri=qemu:///system
+  delegate_to: "{{ target_server }}"
+  remote_user: "{{ target_server_username }}"
+
+- name: Wait for VSD ssh to be ready
+  local_action:
+    module: wait_for
+    port: "22"
+    host: "{{ mgmt_ip }}"
+    search_regex: OpenSSH
+    delay: 1
+
+- name: wait for ejabberd-status to become running
+  monit_waitfor_service:
+    name: "ejabberd-status"
+    timeout_seconds: 600
+    test_interval_seconds: 30
+  remote_user: "root"
+
+- name: wait for ejbca-status to become running
+  monit_waitfor_service:
+    name: "ejbca-status"
+    timeout_seconds: 600
+    test_interval_seconds: 30
+  remote_user: "root"
+
+- name: Disable maintainance mode on all l3/l2 domains
+  vsd_maintainance:
+    vsd_auth:
+      "{{ vsd_auth }}"
+    state: disabled
+  register: mode_status
+  delegate_to: 127.0.0.1
+
+- name: Print vsd maintainance mode output when verbosity >= 1
+  debug: var=mode_status verbosity=1
+
+- name: Clean known_hosts of VSC 1 on "{{ target_server }}"
+  command: ssh-keygen -R "{{  groups['vscs'][0] }}" -f /root/.ssh/known_hosts
+  delegate_to: "{{ ansible_deployment_host }}"
+  remote_user: "{{ ansible_sudo_username }}"
+
+- name: Clean known_hosts of VSC 2 on "{{ target_server }}"
+  command: ssh-keygen -R "{{  groups['vscs'][1] }}" -f /root/.ssh/known_hosts
+  delegate_to: "{{ ansible_deployment_host }}"
+  remote_user: "{{ ansible_sudo_username }}"
+
+- name: shut/noshut vswitch controller on vsc1 after disabling VSD maintenance mode
+  sros_config:
+    lines:
+        - configure vswitch-controller shutdown
+        - configure vswitch-controller no shutdown
+    provider:
+      host: "{{ groups['vscs'][0] }}"
+      username: "{{ vsc_user }}"
+      password: "{{ vsc_password }}"
+      transport: cli
+  register: vsc1_command_status
+  delegate_to: "{{ ansible_deployment_host }}"
+  remote_user: "{{ ansible_sudo_username }}"
+                                                                   
+- debug: var=vsc1_command_statusa verbosity=1
+
+- name: shut/noshut vswitch controller on vsc2 after disabling VSD maintenance mode
+  sros_config:
+    lines:
+        - configure vswitch-controller shutdown
+        - configure vswitch-controller no shutdown
+    provider:
+      host: "{{ groups['vscs'][1] }}"
+      username: "{{ vsc_user }}"
+      password: "{{ vsc_password }}"
+      transport: cli
+  register: vsc2_command_status verbosity=1
+  delegate_to: "{{ ansible_deployment_host }}"
+  remote_user: "{{ ansible_sudo_username }}"
+
+- debug: var=vsc2_command_status
