@@ -170,7 +170,7 @@ if __name__ == '__main__':
         session.start()
         csproot = session.user
     except:
-        print("ERROR: Could not establish connection to VSD API")
+        print("ERROR: Could not establish connection to VSD API using %s" % zfb_params['csp'])
         sys.exit(1)
     # Create nsg templates and iso file
     install_license(csproot, vsd_license)

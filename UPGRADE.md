@@ -60,6 +60,12 @@ Upgrade vrs(s) manually
 ./metro-ansible vsc_ha_node2_upgrade.yml
 ```
 
+5. Run health checks on VSD and VSC post upgrade
+```
+./metro-ansible vsd_health.yml
+./metro-ansible vsc_health.yml
+```
+
 ## Details
 
 ### Checking health of VSD (`vsd_health.yml`)
