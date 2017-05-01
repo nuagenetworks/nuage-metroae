@@ -1,10 +1,4 @@
 ---
-#- name: Assert if upgrade was triggered with preserve_vsd flag set
-#  assert: 
-#     that:
-#       - "preserve_vsd == 'True'" 
-#     msg: "preserve_vsd flag must have been set to True for rollback"
-
 - name: Pull facts on target_server
   setup: gather_subset=!all
   delegate_to: "{{ target_server }}"
@@ -46,7 +40,7 @@
   delegate_to: "{{ target_server }}"
   remote_user: "{{ target_server_username }}"
 
-- debug: var=vsd_backup_dir.stdout
+- debug: var=vsd_backup_dir.stdout verbosity=1
   delegate_to: "{{ target_server }}"
   remote_user: "{{ target_server_username }}"
 
@@ -80,19 +74,39 @@
     search_regex: OpenSSH
     delay: 1
 
-- name: wait for ejabberd-status to become running
+- name: wait for VSD common , core and stats services to become running
   monit_waitfor_service:
-    name: "ejabberd-status"
+    name: "{{ item }}"
     timeout_seconds: 600
     test_interval_seconds: 30
+  with_items:
+    - ejabberd
+    - ejabberd-status
+    - ejbca-status
+    - jboss
+    - jboss-status
+    - zookeeper
+    - zookeeper-status
+    - mediator
+    - mediator-status
+    - vsd-core-status
+    - keyserver-status
+    - stats-collector
+    - stats-collector-status
+    - elasticsearch-status
+    - mysql
+    - mysql-status
+    - ntp-status
+    - tca-daemon
+    - tca-daemon-status  
   remote_user: "root"
 
-- name: wait for ejbca-status to become running
-  monit_waitfor_service:
-    name: "ejbca-status"
-    timeout_seconds: 600
-    test_interval_seconds: 30
-  remote_user: "root"
+#- name: wait for ejbca-status to become running
+#  monit_waitfor_service:
+#    name: "ejbca-status"
+#    timeout_seconds: 600
+#    test_interval_seconds: 30
+#  remote_user: "root"
 
 - name: Disable maintainance mode on all l3/l2 domains
   vsd_maintainance:
