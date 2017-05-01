@@ -23,21 +23,26 @@ EXAMPLES = '''
 
 def main():
     arg_spec = dict(
-        state=dict(required=True, choices=['summary'])
+        state=dict(required=True, choices=['summary', 'group_summary']),
+        group=dict(default=None, choices=['vsd-stats', 'vsd-core',
+                                          'vsd-common'], type='str')
     )
 
     monit_status = dict()
     module = AnsibleModule(argument_spec=arg_spec, supports_check_mode=True)
 
     state = module.params['state']
-
+    group_name = module.params['group']
     MONIT = module.get_bin_path('monit', True)
 
-    def status():
+    def status(group=None):
         """Return the status of the vsd process in monit, or
         the empty string if not present."""
         rc, out, err = module.run_command('%s summary'
                                           % (MONIT), check_rc=True)
+        if group:
+            rc, out, err = module.run_command('%s summary -g %s'
+                                              % (MONIT, group), check_rc=True)
         for line in out.split('\n'):
             if 'daemon' not in line:
                 parts = line.split()
@@ -52,6 +57,10 @@ def main():
 
     if state == 'summary':
         vsd_proc_status = status()
+        module.exit_json(changed=True, state=vsd_proc_status)
+
+    if state == 'group_summary':
+        vsd_proc_status = status(group=group_name)
         module.exit_json(changed=True, state=vsd_proc_status)
 
 # Run the main
