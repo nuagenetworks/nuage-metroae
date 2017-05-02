@@ -22,7 +22,8 @@
         - show bof
       provider: "{{ vsc_creds }}"
     register: bof_config
-    delegate_to: localhost
+    delegate_to: "{{ ansible_deployment_host }}"
+    remote_user: "{{ ansible_sudo_username }}"
 
   - name: Print 'show bof' when verbosity >= 1
     debug: var=bof_config.stdout[0] verbosity=1
@@ -40,7 +41,8 @@
         - file version "{{ bof_json['image_folder'] }}/cpm.tim"
       provider: "{{ vsc_creds }}"
     register: image
-    delegate_to: localhost
+    delegate_to: "{{ ansible_deployment_host }}"
+    remote_user: "{{ ansible_sudo_username }}"
 
   - name: Print image version when verbosity >= 1
     debug: var=image.stdout[0] verbosity=1
@@ -66,7 +68,8 @@
       commands: 
         - admin reboot now
       provider: "{{ vsc_creds }}"
-    delegate_to: 127.0.0.1
+    delegate_to: "{{ ansible_deployment_host }}"
+    remote_user: "{{ ansible_sudo_username }}"
     ignore_errors: true
     when: target_server_type == 'kvm'
 
@@ -77,7 +80,8 @@
       server: "{{ inventory_hostname }}"
       action: reboot
       wait: no
-    delegate_to: 127.0.0.1
+    delegate_to: "{{ ansible_deployment_host }}"
+    remote_user: "{{ ansible_sudo_username }}"
     when: target_server_type == 'heat'
 
   - name: Wait for VSC ssh to be ready
@@ -99,10 +103,11 @@
         - show vswitch-controller xmpp-server detail
       provider: "{{ vsc_creds }}"
     register: xmpp_detail
+    delegate_to: "{{ ansible_deployment_host }}"
+    remote_user: "{{ ansible_sudo_username }}"
     until: xmpp_detail.stdout[0].find('Functional') != -1
     retries: 5
     delay: 30
-    delegate_to: localhost
 
   - name: Print 'show vswitch-controller xmpp-server detail' when verbosity >= 1
     debug: var=xmpp_detail verbosity=1
@@ -134,7 +139,8 @@
         - show vswitch-controller vsd detail
       provider: "{{ vsc_creds }}"
     register: vsd_detail
-    delegate_to: localhost
+    delegate_to: "{{ ansible_deployment_host }}"
+    remote_user: "{{ ansible_sudo_username }}"
     until: vsd_detail.stdout[0].find(vsd1_s) != -1
     retries: 5
     delay: 30

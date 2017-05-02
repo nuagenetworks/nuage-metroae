@@ -30,14 +30,16 @@
       - show version
     provider: "{{ vsc_creds }}"
   register: sh_version
-  delegate_to: localhost
+  delegate_to: "{{ ansible_deployment_host }}"
+  remote_user: "{{ ansible_sudo_username }}"
 
 - name: Print 'show version' when verbosity >= 1
   debug: var=sh_version verbosity=1
 
 - name: Write show version json to report
   nuage_append: filename="{{ report_path }}" text="{{ inventory_hostname }} {{ sh_version|to_nice_json }}\n"
-  delegate_to: localhost
+  delegate_to: "{{ ansible_deployment_host }}"
+  remote_user: "{{ ansible_sudo_username }}"
 
 - name: Get output of 'show router bgp summary'
   sros_command:
@@ -45,7 +47,8 @@
       - show router bgp summary
     provider: "{{ vsc_creds }}"
   register: bgp_summary
-  delegate_to: localhost
+  delegate_to: "{{ ansible_deployment_host }}"
+  remote_user: "{{ ansible_sudo_username }}"
 
 - name: Print 'show router bgp summary' when verbosity >= 1
   debug: var=bgp_summary verbosity=1
@@ -58,7 +61,8 @@
 
 - name: Write BGP Admin State JSON to file
   nuage_append: filename="{{ report_path }}" text="{{ inventory_hostname }} {{ bgp_summary_json|to_nice_json }}\n"
-  delegate_to: localhost
+  delegate_to: "{{ ansible_deployment_host }}"
+  remote_user: "{{ ansible_sudo_username }}"
 
 - name: Create local variable with BGP Admin State
   set_fact: bgp_admin_state="{{ bgp_summary_json['BGP Admin State'] }}"
@@ -105,7 +109,8 @@
       - show vswitch-controller xmpp-server detail
     provider: "{{ vsc_creds }}"
   register: xmpp_detail
-  delegate_to: localhost
+  delegate_to: "{{ ansible_deployment_host }}"
+  remote_user: "{{ ansible_sudo_username }}"
 
 - name: Print 'show vswitch-controller xmpp-server detail' when verbosity >= 1
   debug: var=xmpp_detail verbosity=1
@@ -118,7 +123,8 @@
 
 - name: Write xmpp-server detail json to report
   nuage_append: filename="{{ report_path }}" text="{{ inventory_hostname }} {{ xmpp_detail_json|to_nice_json }}\n"
-  delegate_to: localhost
+  delegate_to: "{{ ansible_deployment_host }}"
+  remote_user: "{{ ansible_sudo_username }}"
 
 - name: Create local variable for xmpp-server state
   set_fact: xmpp_server_state="{{ xmpp_detail_json['State'] }}"
@@ -139,7 +145,8 @@
       - show vswitch-controller vswitches
     provider: "{{ vsc_creds }}"
   register: show_vswitches
-  delegate_to: localhost
+  delegate_to: "{{ ansible_deployment_host }}"
+  remote_user: "{{ ansible_sudo_username }}"
 
 - name: Print output of 'show vswitch-controller vswitches' when verbosity >= 1
   debug: var=show_vswitches verbosity=1
@@ -152,7 +159,8 @@
 
 - name: Write vswiches json to report
   nuage_append: filename="{{ report_path }}" text="{{ inventory_hostname }} {{ show_vswitches_json|to_nice_json }}\n"
-  delegate_to: localhost
+  delegate_to: "{{ ansible_deployment_host }}"
+  remote_user: "{{ ansible_sudo_username }}"
 
 - name: Check for the expected number of vswitches
   assert: { 
@@ -167,7 +175,8 @@
       - show vswitch-controller vports type host detail
     provider: "{{ vsc_creds }}"
   register: show_host_vports
-  delegate_to: localhost
+  delegate_to: "{{ ansible_deployment_host }}"
+  remote_user: "{{ ansible_sudo_username }}"
 
 - name: Print output of 'show vswitch-controller vports type host detail' when verbosity >= 1
   debug: var=show_host_vports verbosity=1
@@ -180,7 +189,8 @@
 
 - name: Write host vports json to report
   nuage_append: filename="{{ report_path }}" text="{{ inventory_hostname }} HOST VPORTS {{ show_host_vports_json|to_nice_json }}\n"
-  delegate_to: localhost
+  delegate_to: "{{ ansible_deployment_host }}"
+  remote_user: "{{ ansible_sudo_username }}"
 
 - name: Check for the expected number of host vports
   assert: { 
@@ -195,7 +205,8 @@
       - show vswitch-controller vports type vm detail
     provider: "{{ vsc_creds }}"
   register: show_vm_vports
-  delegate_to: localhost
+  delegate_to: "{{ ansible_deployment_host }}"
+  remote_user: "{{ ansible_sudo_username }}"
 
 - name: Print output of 'show vswitch-controller vports type vm detail' when verbosity >= 1
   debug: var=show_vm_vports verbosity=1
@@ -208,7 +219,8 @@
 
 - name: Write vm vports json to report
   nuage_append: filename="{{ report_path }}" text="{{ inventory_hostname }} VM VPORTS {{ show_vm_vports_json|to_nice_json }}\n"
-  delegate_to: localhost
+  delegate_to: "{{ ansible_deployment_host }}"
+  remote_user: "{{ ansible_sudo_username }}"
 
 - name: Check for the expected number of vm vports
   assert: { 
@@ -230,7 +242,8 @@
       - show vswitch-controller gateway ports
     provider: "{{ vsc_creds }}"
   register: show_gateway_ports
-  delegate_to: localhost
+  delegate_to: "{{ ansible_deployment_host }}"
+  remote_user: "{{ ansible_sudo_username }}"
 
 - name: Print output of 'show vswitch-controller gateway ports' when verbosity >= 1
   debug: var=show_gateway_ports verbosity=1
@@ -243,7 +256,8 @@
 
 - name: Write gateway ports json to report
   nuage_append: filename="{{ report_path }}" text="{{ inventory_hostname }} GATEWAY VPORTS {{ show_gateway_ports_json|to_nice_json }}\n"
-  delegate_to: localhost
+  delegate_to: "{{ ansible_deployment_host }}"
+  remote_user: "{{ ansible_sudo_username }}"
 
 - name: Check for the expected number of gateway ports
   assert: { 
@@ -263,7 +277,8 @@
   stat:
     path: "{{ failure_report_file_name }}"
   register: report
-  delegate_to: localhost
+  delegate_to: "{{ ansible_deployment_host }}"
+  remote_user: "{{ ansible_sudo_username }}"
 
 - name: Check for failures
   assert: { 

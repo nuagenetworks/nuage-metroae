@@ -7,8 +7,15 @@
 # Both are required to run the nuage_unzip role. nuage_unzipped_files_dir
 # is required when one or more operation lists, below, are set to 'install'
 # or 'upgrade'.
-nuage_zipped_files_dir: "/home/caso/nfs-data/4.0.R4/nuage-packed"
-nuage_unzipped_files_dir: "/home/caso/nfs-data/4.0.R4/nuage-unpacked"
+nuage_zipped_files_dir: "/home/caso/nfs-data/VERSION/nuage-packed"
+nuage_unzipped_files_dir: "/home/caso/nfs-data/VERSION/nuage-unpacked"
+###
+# Path to a public key file to be injected in to VSD,VNS Util, VCIN and VSTAT vms
+# during deployment and corresponding private file to be used to connect to the
+# components during deployment
+user_ssh_pub_key: ~/.ssh/id_rsa.pub
+user_ssh_priv_key: ~/.ssh/id_rsa
+###
 ###
 # Usernames
 # remote_user names for ansible to execute as on the target server (hypervisor)
@@ -102,18 +109,12 @@ dockermon_install: True
 # myvrss is a collection of parameters for the targets where VRS is to be deployed. 
 # One set of parameters is required for each set or group of VRS targets.
 myvrss:
-  - { vrs_set_name: vrs_set_uswest1,
-      vrs_os_type: u14.04,
-      active_controller_ip: 192.168.122.202,
-      standby_controller_ip: 192.168.122.203,
-      vrs_ip_list: [ 
-       192.168.122.83] }
   - { vrs_set_name: vrs_set_usewest2,
       vrs_os_type: el7,
       active_controller_ip: 192.168.122.202,
       standby_controller_ip: 192.168.122.203,
       vrs_ip_list: [
-       192.168.122.8 ] }
+       192.168.122.248 ] }
 ###
 # Stats VM (ElasticSearch) params
 # vstat_operations_list = A list of the operations you intend for the ES node. The
@@ -134,6 +135,49 @@ myvstats:
       mgmt_gateway: 192.168.122.1,
       mgmt_netmask: 255.255.255.0,
       vsd_fqdn: vsd1.example.com }
+###
+# VNS params
+# vns_operations_list = A list of the operations you intend for the VNS. The
+# list could include 1 or more of the following:
+# - install
+# - upgrade
+# - health
+# - TBD
+vns_operations_list:
+  - install
+# myvnsutils is a collection of parameters for the VNSUTIL. 
+# One set of parameters is required for each VNSUTIL.
+myvnsutils:
+  - { hostname: vnsutil1.example.com,
+      target_server_type: "kvm",
+      target_server: 10.31.177.9,
+      mgmt_ip: 192.168.122.205,
+      mgmt_gateway: 192.168.122.1,
+      mgmt_netmask: 255.255.255.0,
+      data_ip: 192.168.100.205,
+      data_subnet: 192.168.100.0,
+      data_netmask: 255.255.255.0,
+      nsgv_ip: 192.168.122.206,
+      nsgv_mac: '52:54:00:88:85:12',
+      nsgv_hostname: nsgv1.example.com,
+      vsd_fqdn: vsd1.example.com }
+# mynsgvs is a collection of parameters for the NSGV. 
+# One set of parameters is required for each NSGV.
+# bootstrap_method = A list of options
+# - zfb_metro (ZFB process supported by metro, needs zfb.yml updated by user)
+# - zfb_external (ZFB process taken care by third party iso file. Needs two additional vars iso_path, iso_file)
+# - none (nsgv is deployed without any bootstrapping)
+mynsgvs:
+  - { hostname: nsgv1.example.com,
+      target_server_type: "kvm",
+      target_server: 10.31.177.9,
+      bootstrap_method: zfb_metro,
+      # Needed only when bootstrap_method: zfb_external
+      iso_path: '/tmp/iso',
+      # Needed only when bootstrap_method: zfb_external
+      iso_file: 'user_img.iso',
+      # Needed only when bootstrap_method: zfb_metro
+      nsgv_mac: '52:54:00:88:85:12' }
 ###
 # Ansible
 # The IP addr or hostname of the Ansible host
