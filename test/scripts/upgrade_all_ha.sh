@@ -18,6 +18,7 @@ cp ./test/files/user_creds.yml.clustered_vsd ./user_creds.yml
 
 sed -i "s/VERSION/$1/g" roles/reset-build/files/build_vars.yml
 sed -i "s/VERSION/$2/g" roles/reset-build/files/upgrade_vars.yml
+sed -i "s/FROM_VERSION/$1/g" roles/reset-build/files/upgrade_vars.yml
 #update ansible.cfg
 echo >> ansible.cfg
 echo "[ssh_connection]" >> ansible.cfg
@@ -45,5 +46,7 @@ rm -rf ./reports/
 ./metro-ansible vsc_ha_node2_upgrade.yml -vvvv
 # Upgrade VSD2
 ./metro-ansible vsd_ha_node2_upgrade.yml -vvvv
+# Upgrade vstat nodes
+./metro-ansible vstat_upgrade.yml -vvvv
 # clean up the whole setup
 ./metro-ansible test_cleanup.yml -vvvv
