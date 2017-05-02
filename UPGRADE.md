@@ -37,7 +37,6 @@ These health checks can be ran at any time of the upgrade process.
 The following is the workflow to acheive clustered vsp upgrade using above set of playbooks
 
 ```
-./metro-ansible vsd_decluster.yml
 ./metro-ansible vsd_ha_node1_3_upgrade.yml
 ./metro-ansible vsc_ha_node1_upgrade.yml
 ```
