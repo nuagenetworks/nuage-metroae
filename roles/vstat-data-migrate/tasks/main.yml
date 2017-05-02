@@ -1,8 +1,31 @@
+- block:
+  - name: Copy the elasticsearch  data backup scripts ISO to temp directory
+    command: "{{ transfer_vstat_scripts }}"
+    with_items: "{{ vstat_backup_scripts_file_list }}"
+    remote_user: "{{ ansible_sudo_username }}"
+    delegate_to: "{{ ansible_deployment_host }}"
+
+  - name: Create repo on the new vstat vm 
+    command: "{{ create_repo }}"
+    remote_user: "{{ ansible_sudo_username }}"
+
+  - name: Verify repo created by backup script
+    command: "python /tmp/{{ show_repo }}"
+    register: repo_path
+    remote_user: "{{ ansible_sudo_username }}"
+
+  - name: Migrate statistics data to new vstat vm
+    command: "{{ migrate_data }}"
+    remote_user: "{{ ansible_sudo_username }}"
+  when: 
+    - inventory_hostname in groups['vstats']
+    - upgrade_from_version != '4.0.1'
+
 - name: Get current VSD version
   command: echo $VSD_VERSION
   register: vsd_version
 
-- name: Print update time output when verbosity >= 1
+- name: Print vsd version when verbosity >= 1
   debug: var=vsd_version verbosity=1
 
 - block:      
@@ -58,4 +81,7 @@
       that: stats_current_state['state']['{{ item }}'] == 'running' or stats_current_state['state']['{{ item }}'] == 'status ok'
       msg: item  is still running
     with_items: "{{ stats_current_state.state.keys() }}"
-  when: vsd_version.stdout in supported_vsd_versions
+  when: 
+    - vsd_version.stdout in supported_vsd_versions
+    - update_from_version == '4.0.1'
+    - inventory_hostname in groups['vsds']
