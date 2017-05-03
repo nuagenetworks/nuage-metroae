@@ -38,7 +38,7 @@
       state: group_summary
       group: vsd-stats
     register: stats_state
-    remote_user: "{{ ansible_sudo_username }}"
+    remote_user: root
 
   - name: Verify stats processes are stopped
     assert: 
@@ -63,9 +63,9 @@
   - name: Get monit state for stat processes
     vsd_monit:
       state: group_summary
-      group: vsd-core
+      group: vsd-stats
     register: stats_current_state
-    remote_user: "{{ ansible_sudo_username }}"
+    remote_user: root
  
   - name: Fetch stats processess current state
     vsd_monit:
@@ -74,7 +74,7 @@
     until: stats_current_state['state']['{{ item }}'] == 'running' or stats_current_state['state']['{{ item }}'] == 'status ok'
     retries: 5
     delay: 30
-    remote_user: "{{ ansible_sudo_username }}"
+    remote_user: root
     with_items: "{{ stats_current_state.state.keys() }}"
 
   - name: Verify stats processes are started/running
