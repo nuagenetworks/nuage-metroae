@@ -132,6 +132,62 @@
   when: vstat_ova_path is not defined
 
 ###################
+# DNS - DNS VM
+###################
+
+- block:
+  - block:
+    - name: Find name of DNS VM QCOW2 File
+      find: path="{{ nuage_unzipped_files_dir }}/dns"  pattern="*.qcow2" recurse=yes
+      register: rc_dns_file
+    - debug: var=rc_dns_file verbosity=1
+    - name: Verify that a DNS VM QCOW2 file was found
+      assert: { 
+        that: "{{ rc_dns_file.matched }} > 0",
+        msg: "Unable to find DNS VM QCOW2 image file"
+      }
+    - name: Register DNS QCOW2 variables with proper path and image locations for use in other playbooks
+      set_fact:
+        dns_qcow2_path: "{{ rc_dns_file.files[0].path | dirname }}"
+        dns_qcow2_file_name: "{{ rc_dns_file.files[0].path | basename }}"
+      when: rc_dns_file.matched > 0
+    when: mydnss | map(attribute='target_server_type') | list | issuperset(["kvm"]) or mydnss | map(attribute='target_server_type') | list | issuperset(["heat"])
+  - block:
+    - name: Find name of DNS VM OVF/OVA File
+      find: path="{{ nuage_unzipped_files_dir }}/dns"  patterns="*.ova,*.ovf" recurse=yes
+      register: rc_dns_file
+    - debug: var=rc_dns_file verbosity=1
+    - name: Verify that a DNS VM OVF file was found
+      assert: { 
+        that: "{{ rc_dns_file.matched }} > 0",
+        msg: "Unable to find DNS VM OVF/OVA image file"
+      }
+    - name: Register DNS OVF/OVA variables with proper path and image locations for use in other playbooks
+      set_fact:
+        dns_ova_path: "{{ rc_dns_file.files[0].path | dirname }}"
+        dns_ova_file_name: "{{ rc_dns_file.files[0].path | basename }}"
+      when: rc_dns_file.matched > 0
+    when: mydnss | map(attribute='target_server_type') | list | issuperset(["vcenter"])
+  when:
+    - mydnss is defined
+    - "'install' in dns_operations_list|default(['None']) or
+      'upgrade' in dns_operations_list|default(['None'])" 
+  tags:
+    - dns
+ 
+- name: Ensure that DNS VM QCOW2 variables are set
+  set_fact:
+    dns_qcow2_path: "None"
+    dns_qcow2_file_name: "None"
+  when: dns_qcow2_path is not defined
+
+- name: Ensure that DNS VM OVF/OVA variables are set
+  set_fact:
+    dns_ova_path: "None"
+    dns_ova_file_name: "None"
+  when: dns_ova_path is not defined
+
+###################
 # VSC
 ###################
 
