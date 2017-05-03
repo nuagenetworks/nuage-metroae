@@ -24,6 +24,16 @@
   connection: local
   remote_user: "root"
 
+- name: Set name of backup directory
+  set_fact: vsdbackup_dir="/tmp/backup-{{ inventory_hostname }}-{{ ansible_date_time.iso8601_basic_short }}/"
+
+- file:
+    path: "{{ vsdbackup_dir }}"
+    state: directory
+    mode: 0755
+  remote_user: "{{ ansible_sudo_username }}"
+  delegate_to: "{{ ansible_deployment_host }}"
+
 - block:
   - name: Enable maintainance mode on all l3/l2 domains
     vsd_maintainance:
@@ -61,6 +71,25 @@
         - "'nuageDbUpgrade' == db.stdout"
       msg: "Could not find nuageDbUpgrade database in mysql"
 
+  - name: Read gateway purge timer
+    get_gw_purge_time:
+      vsd_auth:
+        "{{ vsd_auth }}"
+      get_gateway_purge_time: yes
+    register: update_time_status
+    remote_user: "{{ ansible_sudo_username }}"
+    delegate_to: "{{ ansible_deployment_host }}"
+
+  - debug: var=update_time_status verbosity=1
+
+  - name: Create a file with purge timer value to be restored after VSD upgrade
+    copy:
+      content: "{{ update_time_status.result }}"
+      dest: "{{ vsdbackup_dir }}/purge_time"
+    remote_user: "{{ ansible_sudo_username }}"
+    delegate_to: "{{ ansible_deployment_host }}"
+
+#TODO move updating gateway purge timer from vsd-dbbackup
   - name: Update gateway purge timer 
     config_vsd_system:
       vsd_auth:
@@ -113,8 +142,8 @@
         - "'.iso' in mount_file.stdout"
       msg: "Did not find iso file in mount path"
 
-  - name: Set name of backup directory
-    set_fact: vsdbackup_dir="/tmp/backup-{{ inventory_hostname }}-{{ ansible_date_time.iso8601_basic_short }}/"
+#  - name: Set name of backup directory
+#    set_fact: vsdbackup_dir="/tmp/backup-{{ inventory_hostname }}-{{ ansible_date_time.iso8601_basic_short }}/"
 
   - name: Run backup script from mount location
     shell: "{{ backup_cmd }}"
