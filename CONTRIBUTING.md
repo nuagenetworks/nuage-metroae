@@ -12,6 +12,7 @@ The following is a set of guidelines for contributing to the nuage-metro project
 - The repo owner will review your PR prior to merge into the dev branch.
 - Comments from the repo owner and other contributors must be answered prior to merge to dev.
 - All contributions must be tested on appropriate target servers, e.g. KVM or ESX.
+- Questions and support can be found on the `nuage-metro-interest@lists.nokia.com` mailing list.
 
 ##User input
 
@@ -24,11 +25,13 @@ in standard Ansible variable locations.
 All contributions must be consistent with the deisgn of existing playbooks and roles. Specifically, playbooks and roles fall into one
 of the following categories:
 
-- Predeploy - For prerequisites and getting VMs up and running. This is the only hypervisor-dependent playbook or role.
-- Deploy - For installing software, upgrading the OS, and configuring the system
-- Postdeploy - For component-level sanity validation
-- Health - For system-level sanity validation and monitoring
-- Destroy - For tear down of components and connections
+- Predeploy - For prerequisites and getting VMs up and running. This is one of two hypervisor-dependent roles (destroy is the other). If you find yourself adding conditional execution based on kvm or vcenter anywhere else, it's probably a mistake.
+- Deploy - For installing software, upgrading the OS, and configuring the system.
+- Postdeploy - For component-level sanity validation.
+- Health - For system-level sanity validation and monitoring.
+- Destroy - For tear down of components and connections. This is one of two hypervisor-dependent roles (predeploy is the other). If you find yourself adding conditional execution based on kvm or vcenter anywhere else, it's probably a mistake.
+- Upgrade - For upgrading components from one release to another.
+- Rollback - For restoring components to their previous version if an upgrade fails.
 
 ##Reporting bugs and enhancement requests
 
