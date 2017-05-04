@@ -13,6 +13,7 @@ The following is a set of guidelines for contributing to the nuage-metro project
 - Comments from the repo owner and other contributors must be answered prior to merge to dev.
 - All contributions must be tested on appropriate target servers, e.g. KVM or ESX.
 - Questions and support can be found on the `nuage-metro-interest@list.nokia.com` mailing list.
+- Add a brief description of your bug fix or enhancement to the `What's New` section of `README.md`.
 
 ## User input
 
