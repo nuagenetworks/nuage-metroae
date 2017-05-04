@@ -2,7 +2,7 @@
 
 ## What's new
 
-1. Add your new features and bug fixes to this list.
+1. Added fix for ElasticSearch bug reported in Issue #162.
 
 Feedback and bug reports should be provided via the Issues feature of Github or via email to [Brian Castelli](mailto://brian.castelli@nokia.com).
 
