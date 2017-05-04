@@ -54,6 +54,5 @@ def main():
         vsd_proc_status = status()
         module.exit_json(changed=True, state=vsd_proc_status)
 
-# Run the main
 
 main()
