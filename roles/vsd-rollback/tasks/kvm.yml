@@ -10,29 +10,12 @@
   delegate_to: "{{ target_server }}"
   remote_user: "{{ target_server_username }}"
 
-- block:
-  - name: Destroy VSD VM
-    virt:
-      name: "{{ inventory_hostname }}"
-      state: destroyed
-      uri: qemu:///system
-    delegate_to: "{{ target_server }}"
-    remote_user: "{{ target_server_username }}"
-
-  - name: Undefine VSD VM
-    virt:
-      name: "{{ inventory_hostname }}"
-      command: undefine
-      uri: qemu:///system
-    delegate_to: "{{ target_server }}"
-    remote_user: "{{ target_server_username }}"
-  when: inventory_hostname in virt_vms.list_vms
-
-- name: Destroy the images directory
-  file: path={{ images_path }}/{{ inventory_hostname }}
-        state=absent
-  delegate_to: "{{ target_server }}"
-  remote_user: "{{ target_server_username }}"
+- name: Shutdown/Destroy Current vsd node(s)
+  include_role:
+    name: vsd-destroy
+  vars:
+    preserve_vsd: True
+    rollback: True
 
 - name: Find VSD backup folder
   shell: ls "{{ images_path }}" | grep "{{ inventory_hostname }}.backup.*"
@@ -77,7 +60,7 @@
 - name: wait for VSD common , core and stats services to become running
   monit_waitfor_service:
     name: "{{ item }}"
-    timeout_seconds: 600
+    timeout_seconds: 1200
     test_interval_seconds: 30
   with_items:
     - ejabberd
@@ -100,13 +83,6 @@
     - tca-daemon
     - tca-daemon-status  
   remote_user: "root"
-
-#- name: wait for ejbca-status to become running
-#  monit_waitfor_service:
-#    name: "ejbca-status"
-#    timeout_seconds: 600
-#    test_interval_seconds: 30
-#  remote_user: "root"
 
 - name: Disable maintainance mode on all l3/l2 domains
   vsd_maintainance:

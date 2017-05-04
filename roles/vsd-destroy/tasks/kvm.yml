@@ -21,13 +21,24 @@
 
   - name: Set VSD backup flag
     set_fact: backup_vsd="{{ preserve_vsd|default('False') }}"
+  
+  - name: Set if this is for a rollback
+    set_fact: rollback="{{ rollback|default('False') }}" 
+
   - block:
-    - name: Create backup directory name
+    - name: Create backup directory name when not a rollback
       set_fact: backup_dir="{{ images_path }}/{{ inventory_hostname }}.backup.{{ ansible_date_time.date }}@{{ ansible_date_time.time }}"
+      when: not rollback
+
+    - name: Create backup directory name when rollback
+      set_fact: backup_dir="{{ images_path }}/{{ inventory_hostname }}.rollback.{{ ansible_date_time.date }}@{{ ansible_date_time.time }}"
+      when: rollback
+
     - name: Move the old VM image dir to the backup directory
       command: "mv {{ images_path }}/{{ inventory_hostname }}/ {{ backup_dir }}"
       delegate_to: "{{ target_server }}"
       remote_user: "{{ target_server_username }}"
+
     - name: Get XML for old VM
       virt:
         name: "{{ inventory_hostname }}"
@@ -36,7 +47,9 @@
       register: vsd_xml
       delegate_to: "{{ target_server }}"
       remote_user: "{{ target_server_username }}"
+
     - debug: var=vsd_xml verbosity=1
+
     - name: Write VM XML to file
       copy:
         content: "{{ vsd_xml.get_xml }}"
