@@ -1,6 +1,11 @@
 #TODO: Handle nfs related backups
 #- name: Mount elasticsearch backup location
 
+- name: Enable vstat upgrade
+  assert:
+    that: vstat_upgrade_enabled|default(False)
+    msg: Elastisearch upgrade is still in testing phase. Hence not supported
+
 - block:
   - name: Create backup location dir
     file:
@@ -54,7 +59,7 @@
 
   - name: Run backup script to backup data
     command: "python /tmp/{{ backup_cmd }}"
-    remote: root 
+    remote_user: root 
 
   - name: Verify repo created by backup script
     command: "python /tmp/{{ show_repo }}"
@@ -68,4 +73,6 @@
       mode: pull
     remote_user: "{{ ansible_sudo_username }}"
     delegate_to: "{{ ansible_deployment_host }}"
-  when: upgrade_from_version != '4.0.1' 
+  when: 
+    - upgrade_from_version != '4.0.1' 
+
