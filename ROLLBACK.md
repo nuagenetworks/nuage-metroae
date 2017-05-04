@@ -1,7 +1,9 @@
 # Rollback VSD and VSC after an upgrade
 
-Rollback playbooks allow you to rollback VSD or VSC to the previous version of VSP code at certain points during or after an upgrade. For a successful rollback, `preserve_vsd: True` flag must be set, and the VSC upgrade must
-create a back up copy of the current cpm.tim. These are the default settinggs. VSD/VSC health reports will be generated and placed in the reports folder on the currrnet directory where the playbooks are run.
+Rollback playbooks allow rollback of VSD or VSC to the previous version of VSP code at certain points during or after an upgrade. For a successful rollback, `preserve_vsd: True` flag must be set during upgrade, and the VSC upgrade must
+create a back up copy of the current cpm.tim. These are the default settings. VSD/VSC health reports will be generated and placed in the reports folder on the current directory where the playbooks are run.
+
+Inaddition a copy of the upgraded VSD disk image will be preserved for forensics later on. This is controlled by the variable `rollback: True` which is set to true by default.
 
 ## To rollback VSD deployed on KVM platform after a standalone VSD upgrade:
 
