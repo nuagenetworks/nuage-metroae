@@ -57,31 +57,19 @@
     search_regex: OpenSSH
     delay: 1
 
+- name: Get monit summary for all process on VSD
+  vsd_monit:
+    state: summary
+  register: proc_list
+  remote_user: "root"
+
 - name: wait for VSD common , core and stats services to become running
   monit_waitfor_service:
     name: "{{ item }}"
     timeout_seconds: 1200
     test_interval_seconds: 30
-  with_items:
-    - ejabberd
-    - ejabberd-status
-    - ejbca-status
-    - jboss
-    - jboss-status
-    - zookeeper
-    - zookeeper-status
-    - mediator
-    - mediator-status
-    - vsd-core-status
-    - keyserver-status
-    - stats-collector
-    - stats-collector-status
-    - elasticsearch-status
-    - mysql
-    - mysql-status
-    - ntp-status
-    - tca-daemon
-    - tca-daemon-status  
+  with_items: "{{ proc_list['state'].keys() }}"
+
   remote_user: "root"
 
 - name: Disable maintainance mode on all l3/l2 domains
