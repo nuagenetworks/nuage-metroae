@@ -129,15 +129,16 @@
     remote_user: "root"
   when: sync_status.stdout != "synchronized"
 
-- name: Resolve "{{vsd_fqdn}}"  to ip addr
-  shell: host "{{vsd_fqdn}}" | awk '{print $3,$4}'
-  register: ip_addr
-  remote_user: "root"
+- block:
+  - name: Resolve "{{vsd_fqdn}}"  to ip addr
+    shell: host "{{vsd_fqdn}}" | awk '{print $3,$4}'
+    register: ip_addr
+    remote_user: "root"
 
-- name: Check for ip addr in the registered var
-  fail: msg="Could not resolve ip addr of "{{vsd_fqdn}}" "
-  when: ip_addr.stdout == "not found:"
-  remote_user: "root"
+  - name: Check for ip addr in the registered var
+    fail: msg="Could not resolve ip addr of "{{vsd_fqdn}}" "
+    when: ip_addr.stdout == "not found:"
+  when: vsd_sa_or_ha == 'sa'
 
 - name: Create firewall vars file on ansible host
   template: src="{{ playbook_dir }}/roles/vstat-deploy/templates/firewall.j2" dest="{{ playbook_dir }}/roles/vstat-deploy/vars/main.yml" backup=no mode=0755
@@ -153,14 +154,13 @@
   with_items:
     - "{{ firewall_std_commands }}"
   remote_user: "root"
+  when: vsd_sa_or_ha == 'sa'
 
-- name: Config firewall on VSTAT vm to accept conn on ports 9200, 9300 from other vstat (s)
+- name: Config firewall on VSTAT vm to accept conn on ports 9200, 9300 from vsd(s) in cluster setup
   shell: "{{ item }}"
   with_items:
     - "{{ firewall_cluster_commands }}"
-  when: 
-    - not vstat_standalone
-    - item.find(mgmt_ip) == -1
+  when: vsd_sa_or_ha == 'ha'
   remote_user: "root"
 
 - name: Restart elastic search
@@ -169,35 +169,40 @@
     state: restarted
   remote_user: "root"
 
-- block:
-  - name: Execute VSTAT cluster script on VSD
-    command: /opt/vsd/vsd-es-cluster-config.sh -e {{ groups['vstats'][0] }},{{ groups['vstats'][1] }},{{ groups['vstats'][2] }}
-    delegate_to: "{{vsd_fqdn}}"
-    remote_user: root
-    environment:
-      SSHPASS: "{{lookup('env','SSHPASS')}}"
-    run_once: true
-  when: not vstat_standalone
+- name: Execute VSTAT cluster script on VSD
+  command: /opt/vsd/vsd-es-cluster-config.sh -e {{ groups['vstats'][0] }},{{ groups['vstats'][1] }},{{ groups['vstats'][2] }}
+  delegate_to: "{{vsd_fqdn}}"
+  remote_user: root
+  environment:
+    SSHPASS: "{{lookup('env','SSHPASS')}}"
+  run_once: true
+  when: 
+    - not vstat_standalone
+    - vsd_sa_or_ha == 'sa' 
+
+- name: Execute VSTAT cluster script on VSD
+  command: /opt/vsd/vsd-es-cluster-config.sh -e {{ groups['vstats'][0] }},{{ groups['vstats'][1] }},{{ groups['vstats'][2] }}
+  delegate_to: "{{ item }}"
+  remote_user: root
+  environment:
+    SSHPASS: "{{lookup('env','SSHPASS')}}"
+  with_items: groups['vsds']
+  run_once: true
+  when: 
+    - not vstat_standalone
+    - vsd_sa_or_ha == 'ha'
 
 - name: Enable stats collection on the VSD VM
-  command: /opt/vsd/vsd-stats.sh -e {{inventory_hostname}}
+  command: /opt/vsd/vsd-stats.sh -e {{ inventory_hostname }}
   delegate_to: "{{vsd_fqdn}}"
   remote_user: "root"
+  run_once: true
   when: vsd_sa_or_ha == 'sa'
 
-- block:
-  - name: Enable stats collection on the VSD HA node1 {{groups['vsds'][0]}}
-    command: /opt/vsd/vsd-stats.sh -e groups['vsds'][0]
-    when: inventory_hostname == groups['vsds'][0]
-    remote_user: root
-
-  - name: Enable stats collection on the VSD HA node2 {{groups['vsds'][1]}}
-    command: /opt/vsd/vsd-stats.sh -e groups['vsds'][1]
-    when: inventory_hostname == groups['vsds'][1]
-    remote_user: root
-
-  - name: Enable stats collection on the VSD HA node3 {{groups['vsds'][2]}}
-    command: /opt/vsd/vsd-stats.sh -e groups['vsds'][2]
-    when: inventory_hostname == groups['vsds'][2]
-    remote_user: root
+- name: Enable stats collection on the VSDs in cluster setup
+  command: /opt/vsd/vsd-stats.sh -e {{ inventory_hostname }}
+  delegate_to: "{{ item }}"
+  remote_user: root
+  with_items: "{{ groups['vsds'] }}"
+  run_once: true
   when: vsd_sa_or_ha == 'ha'
