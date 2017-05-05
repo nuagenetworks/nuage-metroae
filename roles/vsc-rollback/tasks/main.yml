@@ -1,15 +1,3 @@
-- name: Backup VSC node1
-  any_errors_fatal: true
-  include_role:
-    name: vsc-backup
-  when: inventory_hostname in groups['vsc_ha_node1']
-
-- name: Prep VSC node1 for upgrade
-  any_errors_fatal: true
-  include_role:
-    name: vsc-preupgrade
-  when: inventory_hostname in groups['vsc_ha_node1']
-
 - block: 
   - name: Clean known_hosts of VSC's on "{{ target_server }}"
     command: ssh-keygen -R "{{ mgmt_ip }}" -f /root/.ssh/known_hosts
@@ -35,15 +23,6 @@
   - name: Print bof config in json  when verbosity >= 1
     debug: var=bof_json verbosity=1
 
-  - name: Copy current primary image file as a backup for rollback
-    sros_command:
-      commands:
-        - file copy "{{ bof_json['image_folder'] }}/cpm.tim" "{{ bof_json['image_folder'] }}/cpm.tim.backup" force
-      provider: "{{ vsc_creds }}"
-    register: backup_image
-    delegate_to: "{{ ansible_deployment_host }}"
-    remote_user: "{{ ansible_sudo_username }}"
-
   - name: Get current file version of image on VSC
     sros_command:
       commands:
@@ -56,21 +35,23 @@
   - name: Print image version when verbosity >= 1
     debug: var=image.stdout[0] verbosity=1
 
-  - name: Create local variable with image version in json
-    set_fact:
-      version_json: "{{ image.stdout[0]|image_version_to_json }}"
-
-  - name: Print image version in json  when verbosity >= 1
-    debug: var=version_json verbosity=1
-
-  - name: Copy new VSC image to VSC nodes
-    expect:
-      command: "{{ vsc_image_copy }}"
-      responses:
-        (?i)password: "{{ vsc_password }}"
-      timeout: "{{ vsc_scp_timeout }}"
-    remote_user: "{{ ansible_sudo_username }}"
+  - name: Delete current primary image
+    sros_command:
+      commands:
+        - file delete "{{ bof_json['image_folder'] }}/cpm.tim" force
+      provider: "{{ vsc_creds }}"
+    register: image_delete
     delegate_to: "{{ ansible_deployment_host }}"
+    remote_user: "{{ ansible_sudo_username }}"
+
+  - name: Copy backup images taken before the upgrade as primary image
+    sros_command:
+      commands:
+        - file copy "{{ bof_json['image_folder'] }}/cpm.tim.backup" "{{ bof_json['image_folder'] }}/cpm.tim"
+      provider: "{{ vsc_creds }}"
+    register: image_move
+    delegate_to: "{{ ansible_deployment_host }}"
+    remote_user: "{{ ansible_sudo_username }}"
 
   - name: Reboot VSC VM
     sros_command:
@@ -81,17 +62,6 @@
     remote_user: "{{ ansible_sudo_username }}"
     ignore_errors: true
     when: target_server_type == 'kvm'
-
-  - name: Reboot VSC VM
-    os_server_actions:
-      auth:
-        "{{ os_auth }}"
-      server: "{{ inventory_hostname }}"
-      action: reboot
-      wait: no
-    delegate_to: "{{ ansible_deployment_host }}"
-    remote_user: "{{ ansible_sudo_username }}"
-    when: target_server_type == 'heat'
 
   - name: Wait for VSC ssh to be ready
     local_action:
