@@ -1,14 +1,173 @@
 ---
-- include: kvm.yml
-  when: target_server_type == "kvm"
-  tags:
-    - dns
-    - dns-deploy
+- name: Wait for DNS Utility VM ssh to be ready
+  local_action:
+    module: wait_for
+    port: "22"
+    host: "{{ mgmt_ip }}"
+    search_regex: OpenSSH
+    delay: 1
+  delegate_to: "{{ target_server }}"
+  remote_user: "{{ target_server_username }}"
 
-- include: heat.yml
-  when: target_server_type == "heat"
-  tags:
-    - dns
-    - heat
-    - dns-destroy
+- name: stop and flush firewall
+  service: name=firewalld state=stopped
+  remote_user: "{{ target_server_username }}"
 
+- name: disable firewall services for automatic start
+  service:
+    name:  "firewalld"
+    enabled: no
+  remote_user: "{{ target_server_username }}"
+
+- name: Update /etc/hosts file on {{ target_server }}
+  lineinfile:
+    dest: /etc/hosts
+    line: "{{ mgmt_ip }} {{ inventory_hostname }}"
+  delegate_to: "{{ target_server }}"
+  remote_user: "{{ target_server_username }}"
+
+- name: Update /etc/hosts file
+  blockinfile:
+    dest: /etc/hosts
+    block: |
+      {% for host in groups['dnss']  %}
+      {{ hostvars[host]['mgmt_ip'] }}    {{ host }}
+      {% endfor %}
+  remote_user: "{{ target_server_username }}"
+
+- name: Delete the localtime file
+  file:
+    path: /etc/localtime
+    state: absent
+  remote_user: "{{ target_server_username }}"
+
+- name: Create the localtime symlink
+  file:
+    src: /usr/share/zoneinfo/{{ timezone }}
+    dest: /etc/localtime
+    state: link
+  remote_user: "{{ target_server_username }}"
+
+#- name: Replace /etc/hostname
+#  replace:
+#    dest: /etc/hostname
+#    regexp: '\s*local.*$'
+#    replace: '{{ inventory_hostname }}'
+#  remote_user: "{{ target_server_username }}"
+
+- name: restart network service
+  service: name=network state=restarted
+  remote_user: "{{ target_server_username }}"
+
+- name: Install bind on {{ target_server }}
+  yum: name=bind state=latest
+  remote_user: "{{ target_server_username }}"
+
+- name: Install bind-utils on {{ target_server }}
+  yum: name=bind-utils state=latest
+  remote_user: "{{ target_server_username }}"
+#
+- name: Delete the /etc/named.conf file
+  file:
+    path: /etc/named.conf
+    state: absent
+  remote_user: "{{ target_server_username }}"
+
+- name: Create /etc/named.conf on {{ target_server }}
+  template: src=named.conf.j2 backup=no dest=/etc/named.conf owner=root group=named mode=0640
+  remote_user: "{{ target_server_username }}"
+#
+
+#
+- name: Delete the /var/named/data.training.net.zone file
+  file:
+    path: /var/named/data.training.net.zone
+    state: absent
+  remote_user: "{{ target_server_username }}"
+
+- name: Create /var/named/data.training.net.zone on {{ target_server }}
+  template: src=data.training.net.zone.j2 backup=no dest=/var/named/data.training.net.zone owner=root group=named mode=0640
+  remote_user: "{{ target_server_username }}"
+#
+
+#
+- name: Delete the /var/named/mgmt.training.net.zone file
+  file:
+    path: /var/named/mgmt.training.net.zone
+    state: absent
+  remote_user: "{{ target_server_username }}"
+
+- name: Create /var/named/mgmt.training.net.zone on {{ target_server }}
+  template: src=mgmt.training.net.zone.j2 backup=no dest=/var/named/mgmt.training.net.zone owner=root group=named mode=0640
+  remote_user: "{{ target_server_username }}"
+#
+
+#
+- name: Delete the /var/named/{{ data_reverse }}.in-addr.arpa file
+  file:
+    path: /var/named/{{ data_reverse }}.in-addr.arpa
+    state: absent
+  remote_user: "{{ target_server_username }}"
+
+- name: Create /var/named/{{ data_reverse }}.in-addr.arpa on {{ target_server }}
+  template: src=data.in-addr.arpa.j2 backup=no dest=/var/named/{{ data_reverse }}.in-addr.arpa owner=root group=named mode=0640
+  remote_user: "{{ target_server_username }}"
+#
+
+#
+- name: Delete the /var/named/{{ mgmt_reverse }}.in-addr.arpa file
+  file:
+    path: /var/named/{{ mgmt_reverse }}.in-addr.arpa
+    state: absent
+  remote_user: "{{ target_server_username }}"
+
+- name: Create /var/named/{{ mgmt_reverse }}.in-addr.arpa on {{ target_server }}
+  template: src=mgmt.in-addr.arpa.j2 backup=no dest=/var/named/{{ mgmt_reverse }}.in-addr.arpa owner=root group=named mode=0640
+  remote_user: "{{ target_server_username }}"
+#
+- name: Install ntp client on {{ target_server }}
+  yum: name=ntp state=latest
+  remote_user: "{{ target_server_username }}"
+
+- name: Stop the ntpd service if running
+  service: name=ntpd state=stopped
+  remote_user: "{{ target_server_username }}"
+#
+- name: Manually sync time with ntp server
+  command: ntpdate -u pool.ntp.org
+  remote_user: "{{ target_server_username }}"
+
+- name: enable ntp server for automatic start
+  service: name=ntpd enabled=on
+  remote_user: "{{ target_server_username }}"
+
+- name: start ntp
+  service: name=ntpd state=restarted
+  remote_user: "{{ target_server_username }}"
+
+- name: check ntp sync state
+  shell: ntpstat | awk 'NR==1{print $1}'
+  register: sync_status
+  until: sync_status.stdout == "synchronised"
+  retries: 9
+  delay: 10
+  remote_user: "{{ target_server_username }}"
+- debug: var=sync_status
+
+- name: enable named server
+  service: name=named enabled=on
+  remote_user: "{{ target_server_username }}"
+
+- name: start named server
+  service: name=named state=restarted
+  remote_user: "{{ target_server_username }}"
+
+- name: start named server
+  service: name=named state=restarted
+  remote_user: "{{ target_server_username }}"
+
+- name: enable named services for automatic start
+  service:
+    name:  "named"
+    enabled: yes
+  remote_user: "{{ target_server_username }}"
