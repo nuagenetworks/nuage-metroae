@@ -2,6 +2,7 @@
 
 ## What's new
 
+<<<<<<< HEAD
 1. Preview support for VSD/VSC upgrade. See `UPGRADE.md`.
 1. Moved build variables out of `build.yml`, creating `build_vars.yml`. See `BUILD.md`.
 1. Simplifed and renamed a few build variables.
@@ -16,6 +17,9 @@
 1. Added support to launch Spirent STCv test ports.
 1. Added RELEASE_NOTES.md
 1. Added support for DNS/NTP server
+=======
+1. Added fix for ElasticSearch bug reported in Issue #162.
+>>>>>>> upstream/dev
 
 Feedback and bug reports should be provided via the Issues feature of Github or via email to [Brian Castelli](mailto://brian.castelli@nokia.com).
 
