@@ -15,7 +15,11 @@ cp ./test/files/test_install.yml .
 cp ./test/files/test_cleanup.yml .
 cp ./test/files/zfb.yml .
 
+# Get IP address of server on which script is being run
+IPADDR=`ifconfig | grep netmask | grep broadcast | awk '{print $2}'`
+
 sed -i "s/VERSION/$1/g" roles/reset-build/files/build_vars.yml
+sed -i "s/TARGET_SERVER/${IPADDR}/g" roles/reset-build/files/build_vars.yml
 
 ./metro-ansible reset_build.yml -vvvv
 ./metro-ansible build.yml -vvvv
