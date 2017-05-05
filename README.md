@@ -2,6 +2,9 @@
 
 ## What's new
 
+1. Preview support for upgrade rollback for standalone VSD and VSC on KVM platform.See `UPGRADE.md`.
+1. Added support to specify custom xmpp URL for clustered VSD deployments
+1. Added support for preserving gateway purge timer during upgrades. See `UPGRADE.md`.
 1. Added fix for ElasticSearch bug reported in Issue #162.
 
 Feedback and bug reports should be provided via the Issues feature of Github or via email to [Brian Castelli](mailto://brian.castelli@nokia.com).
