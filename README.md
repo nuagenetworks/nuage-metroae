@@ -6,6 +6,8 @@
 1. Added support to specify custom xmpp URL for clustered VSD deployments
 1. Added support for preserving gateway purge timer during upgrades. See `UPGRADE.md`.
 1. Added fix for ElasticSearch bug reported in Issue #162.
+1. Added support for DNS/NTP server
+=======
 
 Feedback and bug reports should be provided via the Issues feature of Github or via email to [Brian Castelli](mailto://brian.castelli@nokia.com).
 
@@ -32,6 +34,7 @@ The VCS/VNS components that are supported are:
 6. VNSUTIL (1 or more)
 7. NSGV (1)
 8. VCIN
+9. DNS/NTP (1)
 
 
 ## For the impatient
@@ -80,9 +83,9 @@ The following restrictions and conditions apply prior to executing the playbooks
 
 1. The hypervisor hosts must be running RedHat or CentOS. Support for Ubuntu exists but has been deprecated.
 1. If host names are used for target systems, VSD, VSC, VSTAT, VNSUTIL and VRS nodes, those names must be discoverable via DNS *or* added to the /etc/hosts file of the ansible deployment host.
-1. Each VM that is created for VSD, VSC, VSTAT, VNSUTIL or NSGV connects to one or more bridges on the target server. Those bridges must be created on the target server prior to deployment. Their names must be specified in the `build_vars.yml` file. See `BUILD.md` for details.
+1. Each VM that is created for VSD, VSC, VSTAT, VNSUTIL, NSGV and DNS/NTP connects to one or more bridges on the target server. Those bridges must be created on the target server prior to deployment. Their names must be specified in the `build_vars.yml` file. See `BUILD.md` for details.
 1. The ansible deployment host may also be a target server.
-1. It may be necessary to remove the vsd, vsc and vstat entries from the ansible user's `~/.ssh/known_hosts` file to prevent errors from suspected DNS spoofing. This would only be necessary if multiple runs are attempted.
+1. It may be necessary to remove the vsd, vsc, vstat and dns/ntp entries from the ansible user's `~/.ssh/known_hosts` file to prevent errors from suspected DNS spoofing. This would only be necessary if multiple runs are attempted.
 1. Under certain conditions, the `destroy_everything.yml` playbook must be run as sudo/root.
 
 ## Vcenter Prerequisites
@@ -120,7 +123,7 @@ The `examples/` directory is populated with samples of files that can be used as
 
 ### build_vars.yml
 
-`build_vars.yml` contains a set of variables that should be customized by the user prior to running the playbooks. These variables are used to configure network connectivity for the VSC, VSTAT and the VSD.
+`build_vars.yml` contains a set of variables that should be customized by the user prior to running the playbooks. These variables are used to configure network connectivity for the VSC, VSTAT, VSD and the DNS/NTP.
 
 `zfb.yml` contains a set of variables that should be customized by the user prior to running the nsgv playbooks. These variables are used to create NSG profile in the VSD Architect and also creates ISO file that is attached to NSG VM
 
