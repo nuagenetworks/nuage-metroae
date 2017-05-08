@@ -14,6 +14,8 @@ then
     sed -i  '/- { hostname: {{ vrs_u16_host_name }},/,/ci_flavor: m1.medium }/d' test/files/build_vars.yml.CI.j2
 fi
 
+IPADDR=`/usr/sbin/ifconfig | grep netmask | grep broadcast | head -n 1 | awk '{print $2}'`
+
 # use heat to deploy the test VMs on OS
 cp ./test/files/setup.yml.CI setup.yml
 ansible-playbook setup.yml -vvvv
@@ -35,6 +37,7 @@ cp ./test/files/test_cleanup.yml .
 # ci-deploy has updated the build_vars file for us. Now copy it and go...
 cp ./test/files/build_vars_all.yml roles/reset-build/files/build_vars.yml
 sed -i "s/VERSION/$1/g" roles/reset-build/files/build_vars.yml
+sed -i "s/TARGET_SERVER/$IPADDR/g" roles/reset-build/files/build_vars.yml
 
 ansible-playbook reset_build.yml -vvvv
 ansible-playbook build.yml -vvvv
