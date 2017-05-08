@@ -15,6 +15,7 @@ v2.1.1
 ## Resolved Issues
 1. Preserving gateway purge timer during upgrades.
 1. Enable TLS on all VSDs during installing VNS on clustered VSD setup.
+1. Added fix for ElasticSearch bug reported in Issue #162.
  
 ## Known Issues
 1. Upgrade may continue in certain cases despite the errors encountered.
