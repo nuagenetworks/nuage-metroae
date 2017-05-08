@@ -48,13 +48,6 @@
     state: link
   remote_user: "{{ target_server_username }}"
 
-#- name: Replace /etc/hostname
-#  replace:
-#    dest: /etc/hostname
-#    regexp: '\s*local.*$'
-#    replace: '{{ inventory_hostname }}'
-#  remote_user: "{{ target_server_username }}"
-
 - name: restart network service
   service: name=network state=restarted
   remote_user: "{{ target_server_username }}"
@@ -66,7 +59,7 @@
 - name: Install bind-utils on {{ target_server }}
   yum: name=bind-utils state=latest
   remote_user: "{{ target_server_username }}"
-#
+
 - name: Delete the /etc/named.conf file
   file:
     path: /etc/named.conf
@@ -76,9 +69,7 @@
 - name: Create /etc/named.conf on {{ target_server }}
   template: src=named.conf.j2 backup=no dest=/etc/named.conf owner=root group=named mode=0640
   remote_user: "{{ target_server_username }}"
-#
 
-#
 - name: Delete the /var/named/data.training.net.zone file
   file:
     path: /var/named/data.training.net.zone
@@ -88,9 +79,7 @@
 - name: Create /var/named/data.training.net.zone on {{ target_server }}
   template: src=data.training.net.zone.j2 backup=no dest=/var/named/data.training.net.zone owner=root group=named mode=0640
   remote_user: "{{ target_server_username }}"
-#
 
-#
 - name: Delete the /var/named/mgmt.training.net.zone file
   file:
     path: /var/named/mgmt.training.net.zone
@@ -100,9 +89,7 @@
 - name: Create /var/named/mgmt.training.net.zone on {{ target_server }}
   template: src=mgmt.training.net.zone.j2 backup=no dest=/var/named/mgmt.training.net.zone owner=root group=named mode=0640
   remote_user: "{{ target_server_username }}"
-#
 
-#
 - name: Delete the /var/named/{{ data_reverse }}.in-addr.arpa file
   file:
     path: /var/named/{{ data_reverse }}.in-addr.arpa
@@ -112,9 +99,7 @@
 - name: Create /var/named/{{ data_reverse }}.in-addr.arpa on {{ target_server }}
   template: src=data.in-addr.arpa.j2 backup=no dest=/var/named/{{ data_reverse }}.in-addr.arpa owner=root group=named mode=0640
   remote_user: "{{ target_server_username }}"
-#
 
-#
 - name: Delete the /var/named/{{ mgmt_reverse }}.in-addr.arpa file
   file:
     path: /var/named/{{ mgmt_reverse }}.in-addr.arpa
@@ -124,7 +109,7 @@
 - name: Create /var/named/{{ mgmt_reverse }}.in-addr.arpa on {{ target_server }}
   template: src=mgmt.in-addr.arpa.j2 backup=no dest=/var/named/{{ mgmt_reverse }}.in-addr.arpa owner=root group=named mode=0640
   remote_user: "{{ target_server_username }}"
-#
+
 - name: Install ntp client on {{ target_server }}
   yum: name=ntp state=latest
   remote_user: "{{ target_server_username }}"
@@ -132,7 +117,7 @@
 - name: Stop the ntpd service if running
   service: name=ntpd state=stopped
   remote_user: "{{ target_server_username }}"
-#
+
 - name: Manually sync time with ntp server
   command: ntpdate -u pool.ntp.org
   remote_user: "{{ target_server_username }}"

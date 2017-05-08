@@ -27,6 +27,11 @@ ansible_sudo_username: "root"
 # VSD params
 # vsd_sa_or_ha = ha for cluster, sa for standalone deployment
 vsd_sa_or_ha: sa
+###
+# VSD FQDN
+# Use xmpp fqdn for clustered VSDs and the vsd fqdn for stand alone
+# This variable must be populated for all the components except VRS deployment
+vsd_fqdn_global: vsd1.example.com
 # vsd_operations_list = A list of the operations you intend for the VSD. The
 # list could include 1 or more of the following:
 # - install
@@ -57,6 +62,7 @@ vsc_operations_list:
   - install
 # myvscs is a collection of parameters for VSCs. 
 # One set of parameters is required for each VSC.
+# Do not update {{ vsd_fqdn_global }} here as it reads from previous section
 myvscs:
   - { hostname: vsc1.example.com,
       target_server_type: "kvm",
@@ -66,7 +72,7 @@ myvscs:
       mgmt_netmask_prefix: 24,
       ctrl_ip: 192.168.100.202,
       ctrl_netmask_prefix: 24,
-      vsd_fqdn: vsd1.example.com,
+      vsd_fqdn: "{{ vsd_fqdn_global }}",
       system_ip: 1.1.1.2,
       xmpp_username: vsc1,
       vsc_static_route_list: { 0.0.0.0/1 } }
@@ -78,7 +84,7 @@ myvscs:
       mgmt_netmask_prefix: 24,
       ctrl_ip: 192.168.100.203,
       ctrl_netmask_prefix: 24,
-      vsd_fqdn: vsd1.example.com,
+      vsd_fqdn: "{{ vsd_fqdn_global }}",
       system_ip: 1.1.1.3,
       xmpp_username: vsc2,
       vsc_static_route_list: { 0.0.0.0/1 } }
@@ -166,6 +172,7 @@ myvnsutils:
       nsgv_mac: '52:54:00:88:85:12',
       nsgv_hostname: nsgv1.example.com,
       vsd_fqdn: vsd1.example.com }
+
 ###
 # DNS params
 # dns_operations_list = A list of the operations you intend for the DNS. The
@@ -186,47 +193,47 @@ dns_operations_list:
 # dns_server dns server of this server
 
 mydnss:
-      - { hostname: g5dns.mgmt.training.net,
-          target_server_type: "kvm",
-          target_server: 10.167.53.5,
-          mgmt_ip: 10.167.53.3,
-          mgmt_gateway: 10.167.53.254,
-          mgmt_netmask: 255.255.255.0,
-          data_ip: 10.167.54.3,
-          data_subnet: 10.167.54.0,
-          data_netmask: 255.255.255.0,
-          data_static_route: [ 10.165.53.0/24, 10.165.54.0/24, 10.165.55.0/24 ],
-          dns_server: 8.8.8.8, 
-	  dns_mgmt: g5dns.mgmt.training.net.,
-	  dns_data: g5dns.data.training.net.,
-	  dns_mgmt_lookup: {g5dns.mgmt.training.net.: 10.166.53.3, 
-		ns1.mgmt.training.net.: 10.166.53.2,
-		ns2.mgmt.training.net.: 10.166.53.2,
-		server1.mgmt.training.net.: 10.166.53.5,
-		server2.mgmt.training.net.: 10.166.53.6,
-		g1vsd.mgmt.training.net.: 10.166.53.11,
-		g1es.mgmt.training.net.: 10.166.53.12,
-		g1util.mgmt.training.net.: 10.166.53.13,
-		g1vsc1.mgmt.training.net.: 10.166.53.14,
-		g1vsc2.mgmt.training.net.: 10.166.53.15,
-		g1pe.mgmt.training.net.: 10.166.53.16,
-		g1ppsvm.mgmt.training.net.: 10.166.53.17,
-		g1ubuntu.mgmt.training.net.: 10.166.53.18,
-		g1cpe.mgmt.training.net.: 10.166.53.19,
-		g1utilinternet.mgmt.training.net.: 10.166.53.20,
-		g1uitlnokianet.mgmt.training.net.: 10.166.53.21},
-	  dns_data_lookup: {g1utilnokianet.data.training.net.: 10.167.53.21, 
-		g1utilinternet.data.training.net.: 10.167.54.20,
-		g1pe.data.training.net.: 10.167.54.16,
-		g1vsc2.data.training.net.: 10.167.54.15,
-		g1vsc1.data.training.net.: 10.167.54.14,
-		g1util.data.training.net.: 10.167.54.13,
-		g5dns.data.training.net.: 10.167.54.3,
-		server2.data.training.net.: 10.167.54.6,
-		server1.data.training.net.: 10.167.54.5,
-		ns1.data.training.net.: 10.167.54.3,
-		ns2.data.training.net.: 10.167.54.3}
-	  }
+  - { hostname: g5dns.mgmt.training.net,
+      target_server_type: "kvm",
+      target_server: 10.167.53.5,
+      mgmt_ip: 10.167.53.3,
+      mgmt_gateway: 10.167.53.254,
+      mgmt_netmask: 255.255.255.0,
+      data_ip: 10.167.54.3,
+      data_subnet: 10.167.54.0,
+      data_netmask: 255.255.255.0,
+      data_static_route: [ 10.165.53.0/24, 10.165.54.0/24, 10.165.55.0/24 ],
+      dns_server: 8.8.8.8, 
+      dns_mgmt: g5dns.mgmt.training.net.,
+      dns_data: g5dns.data.training.net.,
+      dns_mgmt_lookup: {g5dns.mgmt.training.net.: 10.166.53.3, 
+        ns1.mgmt.training.net.: 10.166.53.2,
+        ns2.mgmt.training.net.: 10.166.53.2,
+        server1.mgmt.training.net.: 10.166.53.5,
+        server2.mgmt.training.net.: 10.166.53.6,
+        g1vsd.mgmt.training.net.: 10.166.53.11,
+        g1es.mgmt.training.net.: 10.166.53.12,
+        g1util.mgmt.training.net.: 10.166.53.13,
+        g1vsc1.mgmt.training.net.: 10.166.53.14,
+        g1vsc2.mgmt.training.net.: 10.166.53.15,
+        g1pe.mgmt.training.net.: 10.166.53.16,
+        g1ppsvm.mgmt.training.net.: 10.166.53.17,
+        g1ubuntu.mgmt.training.net.: 10.166.53.18,
+        g1cpe.mgmt.training.net.: 10.166.53.19,
+        g1utilinternet.mgmt.training.net.: 10.166.53.20,
+        g1uitlnokianet.mgmt.training.net.: 10.166.53.21},
+      dns_data_lookup: {g1utilnokianet.data.training.net.: 10.167.53.21, 
+        g1utilinternet.data.training.net.: 10.167.54.20,
+        g1pe.data.training.net.: 10.167.54.16,
+        g1vsc2.data.training.net.: 10.167.54.15,
+        g1vsc1.data.training.net.: 10.167.54.14,
+        g1util.data.training.net.: 10.167.54.13,
+        g5dns.data.training.net.: 10.167.54.3,
+        server2.data.training.net.: 10.167.54.6,
+        server1.data.training.net.: 10.167.54.5,
+        ns1.data.training.net.: 10.167.54.3,
+        ns2.data.training.net.: 10.167.54.3}}
+
 # mynsgvs is a collection of parameters for the NSGV. 
 # One set of parameters is required for each NSGV.
 # bootstrap_method = A list of options
