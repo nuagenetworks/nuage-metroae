@@ -1,0 +1,78 @@
+#TODO: Handle nfs related backups
+#- name: Mount elasticsearch backup location
+
+- name: Enable vstat upgrade
+  assert:
+    that: vstat_upgrade_enabled|default(False)
+    msg: Elastisearch upgrade is still in testing phase. Hence not supported
+
+- block:
+  - name: Create backup location dir
+    file:
+      dest: "{{ vstat_backup_location }}"
+      state: directory
+    remote_user: root
+
+  - name: Configure backup location in elasticseach.yml file
+    lineinfile:
+      dest: "/etc/elasticsearch/elasticsearch.yml" 
+      line: "path.repo: [{{ vstat_backup_location }}]"
+    remote_user: root
+
+  - name: Add user permission to backup location
+    file:
+      dest: "{{ vstat_backup_location }}" 
+      owner: "elasticsearch"
+      group: "elasticsearch"
+      recurse: yes
+      mode: 775
+    remote_user: root
+
+  - name: Restart elasticsearch process
+    systemd:
+      name: elasticsearch
+      state: restarted
+    remote_user: root
+
+  - name: Get elasticsearch current status
+    systemd:
+      name: elasticsearch
+      state: started
+    register: es_status
+    remote_user: root
+
+  - name: Check elasticsearch status is active
+    assert: 
+      that: es_status.status.ActiveState == 'active'
+      msg: "Elasticserach process in not active after restart"
+
+  - name: Check elasticsearch process is running
+    assert:
+      that: es_status.status.SubState == 'running'
+      msg: "Elasticsearch process is not running after restart"
+
+  - name: Copy the elasticsearch  data backup scripts ISO to temp directory
+    command: "{{ transfer_vstat_scripts }}"
+    with_items: "{{ vstat_backup_scripts_file_list }}"
+    remote_user: "{{ ansible_sudo_username }}"
+    delegate_to: "{{ ansible_deployment_host }}"
+
+  - name: Run backup script to backup data
+    command: "python /tmp/{{ backup_cmd }}"
+    remote_user: root 
+
+  - name: Verify repo created by backup script
+    command: "python /tmp/{{ show_repo }}"
+    register: repo_path
+    remote_user: root
+
+  - name: Copy backup folder to backup_machine
+    synchronize:
+      src: "{{ vstat_backup_location }}"
+      dest: "{{ vstat_backup_location }}"
+      mode: pull
+    remote_user: "{{ ansible_sudo_username }}"
+    delegate_to: "{{ ansible_deployment_host }}"
+  when: 
+    - upgrade_from_version != '4.0.1' 
+
