@@ -1,4 +1,5 @@
 ---
+##TODO: Rewrite the vnsutil role to remove configuration from post deploy
 - name: Create dir to hold the keys 
   file: 
     path: "/opt/proxy/config/keys"
@@ -66,3 +67,10 @@
     name: firewalld
     state: restarted
   remote_user: "root"
+
+- name: Verify if vsc user is connected to the VSD
+  command: /opt/ejabberd/bin/ejabberdctl connected_users
+  register: proxy_user
+  remote_user: root
+  delegate_to: "{{ groups['vsds'][0] }}"
+  failed_when: "'proxy' not in proxy_user.stdout"
