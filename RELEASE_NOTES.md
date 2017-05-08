@@ -7,12 +7,15 @@ v2.1.1
 1. Preview support for upgrade rollback for standalone VSD and VSC on KVM platform.See `UPGRADE.md`.
 1. Added support to specify custom xmpp URL for clustered VSD deployments
 1. Added support for preserving gateway purge timer during upgrades. See `UPGRADE.md`.
+1. Added vns post deploy checks to verify TLS settings for XMPP on VSD.
  
 ## Usage Notes
 1. Added new variable vsd_fqdn_global in to build_bars.yml to be used by other components. 
  
 ## Resolved Issues
-1. Many issues have been resolved, too many to list here.
+1. Preserving gateway purge timer during upgrades.
+1. Enable TLS on all VSDs during installing VNS on clustered VSD setup.
+1. Added fix for ElasticSearch bug reported in Issue #162.
  
 ## Known Issues
 1. Upgrade may continue in certain cases despite the errors encountered.
