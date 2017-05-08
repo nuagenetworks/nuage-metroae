@@ -1,8 +1,11 @@
 #!/bin/sh
 set -e
 
+IPADDR=`/usr/sbin/ifconfig | grep netmask | grep broadcast | head -n 1 | awk '{print $2}'`
+
 function run_iter {
     sed -i "s/VERSION/$1/g" roles/reset-build/files/build_vars.yml
+    sed -i "s/TARGET_SERVER/$IPADDR/g" roles/reset-build/files/build_vars.yml
     ./metro-ansible reset_build.yml -vvvv
     ./metro-ansible build.yml -vvvv
     ./metro-ansible $2 -vvvv
@@ -22,6 +25,7 @@ fi
 
 cp ./test/files/test_install.yml .
 cp ./test/files/test_cleanup.yml .
+cp ./test/files/zfb.yml .
 
 cp ./test/files/build_vars_vsdonly.yml roles/reset-build/files/build_vars.yml
 run_iter $1 $TESTINSTALL

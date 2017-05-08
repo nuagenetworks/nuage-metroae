@@ -1,0 +1,93 @@
+- name: Enable vstat upgrade
+  assert:
+    that: vstat_upgrade_enabled|default(False)
+    msg: Elastisearch upgrade is still in testing phase. Hence not supported
+
+- block:
+  - name: Copy the elasticsearch  data backup scripts ISO to temp directory
+    command: "{{ transfer_vstat_scripts }}"
+    with_items: "{{ vstat_backup_scripts_file_list }}"
+    remote_user: "{{ ansible_sudo_username }}"
+    delegate_to: "{{ ansible_deployment_host }}"
+
+  - name: Create repo on the new vstat vm 
+    command: "{{ create_repo }}"
+    remote_user: root
+
+  - name: Verify repo created by backup script
+    command: "python /tmp/{{ show_repo }}"
+    register: repo_path
+    remote_user: root
+
+  - name: Migrate statistics data to new vstat vm
+    command: "{{ migrate_data }}"
+    remote_user: root
+  when: 
+    - inventory_hostname in groups['vstats']
+    - upgrade_from_version != '4.0.1'
+
+- name: Get current VSD version
+  command: echo $VSD_VERSION
+  register: vsd_version
+
+- name: Print vsd version when verbosity >= 1
+  debug: var=vsd_version verbosity=1
+
+- block:      
+  - name: Stop vsd-stats group on VSD(s)
+    command: monit stop -g vsd-stats
+    remote_user: root
+
+  - name: Get monit state for stat processes
+    vsd_monit:
+      state: group_summary
+      group: vsd-stats
+    register: stats_state
+    remote_user: root
+
+  - name: Verify stats processes are stopped
+    assert: 
+      that: stats_state['state']['{{ item }}'] == 'not monitored'
+      msg: item  is still running 
+    with_items: "{{ stats_state.state.keys() }}" 
+
+  - name: Migrate current date data to new schema version
+    command: "{{ migrate_current_data }}"
+    remote_user: root
+    when: current_day_data
+
+  - name: Migrate previous day data to new schema version
+    command: "{{ migrate_previous_data }}"
+    remote_user: root
+    when: not current_day_data
+
+  - name: Start vsd-stats processess
+    command: "monit start -g vsd-stats"
+    remote_user: root
+
+  - name: Get monit state for stat processes
+    vsd_monit:
+      state: group_summary
+      group: vsd-stats
+    register: stats_current_state
+    remote_user: root
+ 
+  - name: Fetch stats processess current state
+    vsd_monit:
+      state: group_summary
+      group: vsd-stats
+    until: stats_current_state['state']['{{ item }}'] == 'running' or stats_current_state['state']['{{ item }}'] == 'status ok'
+    retries: 5
+    delay: 30
+    remote_user: root
+    with_items: "{{ stats_current_state.state.keys() }}"
+
+  - name: Verify stats processes are started/running
+    assert:
+      that: stats_current_state['state']['{{ item }}'] == 'running' or stats_current_state['state']['{{ item }}'] == 'status ok'
+      msg: item  is still running
+    with_items: "{{ stats_current_state.state.keys() }}"
+  when: 
+    - vsd_version.stdout in supported_vsd_versions
+    - update_from_version == '4.0.1'
+    - inventory_hostname in groups['vsds']
