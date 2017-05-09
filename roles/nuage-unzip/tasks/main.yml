@@ -91,6 +91,10 @@
     find: path="{{ nuage_zipped_files_dir }}"  pattern="Nuage-elastic-\d.*" use_regex=true
     register: rc_vstat
   - debug: var=rc_vstat verbosity=1
+  - name: Find Stats VM backup Archive
+    find: path="{{ nuage_zipped_files_dir }}"  pattern="Nuage-elastic-backup-\d.*" use_regex=true
+    register: rc_vstat_backup
+  - debug: var=rc_vstat_backup verbosity=1
   - block:
     - name: Clean up unzipped files from previous run
       file: name="{{ nuage_unzipped_files_dir }}/vstat/" state=absent
@@ -98,12 +102,20 @@
     - name: Ensure binaries target directory exists for Stats VM
       file: name="{{ nuage_unzipped_files_dir }}/vstat/" state=directory mode=0775
       remote_user: "{{ unzip_user }}"
+    - name: Ensure binaries target directory exists for Stats VM vackup scripts
+      file: name="{{ nuage_unzipped_files_dir }}/vstat/backup/" state=directory mode=0775
+      remote_user: "{{ unzip_user }}"
     - name: Unpack Stats VM Archive
       unarchive: src="{{ rc_vstat.files[0].path}}" dest="{{ nuage_unzipped_files_dir }}/vstat" list_files=yes mode=0775
       register: rc_vstat_archive_files
       remote_user: "{{ unzip_user }}"
     - debug: var=rc_vstat_archive_files verbosity=1
-    when: rc_vstat.matched > 0 
+    - name: Unpack Stats VM backup Archive
+      unarchive: src="{{ rc_vstat_backup.files[0].path}}" dest="{{ nuage_unzipped_files_dir }}/vstat/backup" list_files=yes mode=0775
+      register: rc_vstat_backup_archive_files
+      remote_user: "{{ unzip_user }}"
+    - debug: var=rc_vstat_backup_archive_files verbosity=1
+    when: rc_vstat.matched > 0 and rc_vstat_backup.matched > 0
   tags:
     - vstat
  
