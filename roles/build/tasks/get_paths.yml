@@ -517,6 +517,44 @@
     nsgv_qcow2_file_name: "None"
   when: nsgv_qcow2_path is not defined
 
+###################
+# DNS - DNS VM
+###################
+
+- block:
+  - block:
+    - name: create dns directory
+      file: path={{ nuage_unzipped_files_dir }}/dns state=directory
+    - name: Copy vstat directory to dns directory
+      copy: src={{ vstat_qcow2_path }}/{{ vstat_qcow2_file_name }} dest={{ nuage_unzipped_files_dir }}/dns/dns.qcow2 force=yes
+    - name: Find name of DNS VM QCOW2 File
+      find: path="{{ nuage_unzipped_files_dir }}/dns"  pattern="*.qcow2" recurse=yes
+      register: rc_dns_file
+    - debug: var=rc_dns_file verbosity=1
+    - name: Verify that a DNS VM QCOW2 file was found
+      assert: { 
+        that: "{{ rc_dns_file.matched }} > 0",
+        msg: "Unable to find DNS VM QCOW2 image file"
+      }
+    - name: Register DNS QCOW2 variables with proper path and image locations for use in other playbooks
+      set_fact:
+        dns_qcow2_path: "{{ rc_dns_file.files[0].path | dirname }}"
+        dns_qcow2_file_name: "{{ rc_dns_file.files[0].path | basename }}"
+      when: rc_dns_file.matched > 0
+    when: mydnss | map(attribute='target_server_type') | list | issuperset(["kvm"]) or mydnss | map(attribute='target_server_type') | list | issuperset(["heat"])
+  when:
+    - mydnss is defined
+    - "'install' in dns_operations_list|default(['None']) or
+      'upgrade' in dns_operations_list|default(['None'])" 
+  tags:
+    - dns
+ 
+- name: Ensure that DNS VM QCOW2 variables are set
+  set_fact:
+    dns_qcow2_path: "None"
+    dns_qcow2_file_name: "None"
+  when: dns_qcow2_path is not defined
+
 ##########################
 ## Nuage OpenStack Plugins
 ##########################
