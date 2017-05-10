@@ -2,6 +2,7 @@
 - name: Get the os env file contents from the controller
   shell: cat "{{ os_env_file }}"
   register: os_env_contents
+  remote_user: root
 
 - name: Print the os env file contents when verbosity >= 1, otherwise skip
   debug: msg="{{ os_env_contents }}" verbosity=1
@@ -16,6 +17,7 @@
   shell: openstack stack list
   environment: "{{ os_env }}"
   register: os_stack_list
+  remote_user: root
 
 - debug: var=os_stack_list verbosity=1
 
@@ -35,6 +37,7 @@
   - name: Delete the ubuntu VMs first
     shell: "openstack stack delete {{ item|json_query('Name') }}"
     environment: "{{ os_env }}"
+    remote_user: root
     when: "'u16' in item|json_query('Name') or 'u14' in item|json_query('Name')"
     with_items:
       - "{{ os_stack_stacks_json }}"
