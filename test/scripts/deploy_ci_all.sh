@@ -58,20 +58,19 @@ ansible-playbook reset_build.yml -vvvv
 ansible-playbook build.yml -vvvv
 ./metro-ansible test_install.yml -vvvv
 
-cp ./test/files/build_vars_vnsonly.yml roles/reset-build/files/build_vars.yml
-sed -i "s/VERSION/$1/g" roles/reset-build/files/build_vars.yml
-sed -i "s/TARGET_SERVER/$IPADDR/g" roles/reset-build/files/build_vars.yml
-ansible-playbook reset_build.yml -vvvv
-ansible-playbook build.yml -vvvv
-#./metro-ansible test_cleanup.yml -vvvv
-./metro-ansible install_vns.yml -vvvv
-
-#cp ./test/files/build_vars_vnsonlywithvsc.yml roles/reset-build/files/build_vars.yml
+#cp ./test/files/build_vars_vnsonly.yml roles/reset-build/files/build_vars.yml
 #sed -i "s/VERSION/$1/g" roles/reset-build/files/build_vars.yml
 #sed -i "s/TARGET_SERVER/$IPADDR/g" roles/reset-build/files/build_vars.yml
 #ansible-playbook reset_build.yml -vvvv
 #ansible-playbook build.yml -vvvv
-#./metro-ansible install_vns.yml -vvvv
+#./metro-ansible test_cleanup.yml -vvvv
+
+cp ./test/files/build_vars_vnsonlywithvsc.yml roles/reset-build/files/build_vars.yml
+sed -i "s/VERSION/$1/g" roles/reset-build/files/build_vars.yml
+sed -i "s/TARGET_SERVER/$IPADDR/g" roles/reset-build/files/build_vars.yml
+ansible-playbook reset_build.yml -vvvv
+ansible-playbook build.yml -vvvv
+./metro-ansible install_vns.yml -vvvv
 
 cp ./test/files/build_vars_all.yml roles/reset-build/files/build_vars.yml
 sed -i "s/VERSION/$1/g" roles/reset-build/files/build_vars.yml
