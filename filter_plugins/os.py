@@ -1,6 +1,5 @@
 #!/usr/bin/python
 
-from ansible.errors import AnsibleError
 import re
 import json
 from datetime import datetime, timedelta
@@ -39,6 +38,7 @@ def os_env_dict(os_env_string):
     for pair in pairs:
         dict[pair.group('name')] = pair.group('value').strip('"')
     return dict
+
 
 def openstack_stack_list_to_json(string, older_than_hours=0, use_utc=True):
     ''' Given a string representation of the output of "openstack stack list"
@@ -100,10 +100,11 @@ def older_than_helper(stack_time, older_than_hours, current_time):
     False if the stack_time is less than older_than_hours old.
     '''
     target_time = current_time - timedelta(hours=older_than_hours)
-    stack_time_parsed = datetime.strptime( stack_time, '%Y-%m-%dT%H:%M:%S' )
+    stack_time_parsed = datetime.strptime(stack_time, '%Y-%m-%dT%H:%M:%S')
     if stack_time_parsed < target_time:
         return True
     return False
+
 
 class FilterModule(object):
     ''' Query filter '''
@@ -113,4 +114,3 @@ class FilterModule(object):
             'os_env_dict': os_env_dict,
             'openstack_stack_list_to_json': openstack_stack_list_to_json
         }
-
