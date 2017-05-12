@@ -13,29 +13,27 @@
 
 - debug: var=vsd_vm_facts verbosity=1
 
-- name: Verify the VSD VM exists
-  assert:
-    that:
-      - "vsd_vm_facts.failed is not defined"
-
-- name: Power off the VSD VM
-  connection: local
-  vmware_guest:
-    hostname: "{{ target_server }}"
-    username: "{{ vcenter.username }}"
-    password: "{{ vcenter.password }}"
-    name: "{{ inventory_hostname }}"
-    validate_certs: no
-    state: "poweredoff"
-  when: vsd_vm_facts['instance']['hw_power_status'] == 'poweredOn'
-
-
-- name: Removing the VSD VM
-  connection: local
-  vmware_guest:
-    hostname: "{{ target_server }}"
-    username: "{{ vcenter.username }}"
-    password: "{{ vcenter.password }}"
-    name: "{{ inventory_hostname }}"
-    validate_certs: no
-    state: "absent"
+- block:
+  - name: Power off the VSD VM
+    connection: local
+    vmware_guest:
+      hostname: "{{ target_server }}"
+      username: "{{ vcenter.username }}"
+      password: "{{ vcenter.password }}"
+      name: "{{ inventory_hostname }}"
+      validate_certs: no
+      state: "poweredoff"
+    when: vsd_vm_facts['instance']['hw_power_status'] == 'poweredOn'
+  
+  
+  - name: Removing the VSD VM
+    connection: local
+    vmware_guest:
+      hostname: "{{ target_server }}"
+      username: "{{ vcenter.username }}"
+      password: "{{ vcenter.password }}"
+      name: "{{ inventory_hostname }}"
+      validate_certs: no
+      state: "absent"
+    when: vsd_vm_facts['instance']['hw_power_status'] == 'poweredOff'
+  when: vsd_vm_facts.failed is not defined

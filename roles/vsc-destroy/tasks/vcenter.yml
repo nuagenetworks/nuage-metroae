@@ -13,28 +13,26 @@
 
 - debug: var=vsc_vm_facts verbosity=1
 
-- name: Verify the VSC VM exists
-  assert:
-    that:
-      - "vsc_vm_facts.failed is not defined"
-
-- name: Power off the VSC VM
-  connection: local
-  vmware_guest:
-    hostname: "{{ target_server }}"
-    username: "{{ vcenter.username }}"
-    password: "{{ vcenter.password }}"
-    name: "{{ inventory_hostname }}"
-    validate_certs: no
-    state: "poweredoff"
-  when: vsc_vm_facts['instance']['hw_power_status'] == 'poweredOn'
-
-- name: Removing the VSC VM
-  connection: local
-  vmware_guest:
-    hostname: "{{ target_server }}"
-    username: "{{ vcenter.username }}"
-    password: "{{ vcenter.password }}"
-    name: "{{ inventory_hostname }}"
-    validate_certs: no
-    state: "absent"
+- block:
+  - name: Power off the VSC VM
+    connection: local
+    vmware_guest:
+      hostname: "{{ target_server }}"
+      username: "{{ vcenter.username }}"
+      password: "{{ vcenter.password }}"
+      name: "{{ inventory_hostname }}"
+      validate_certs: no
+      state: "poweredoff"
+    when: vsc_vm_facts['instance']['hw_power_status'] == 'poweredOn'
+  
+  - name: Removing the VSC VM
+    connection: local
+    vmware_guest:
+      hostname: "{{ target_server }}"
+      username: "{{ vcenter.username }}"
+      password: "{{ vcenter.password }}"
+      name: "{{ inventory_hostname }}"
+      validate_certs: no
+      state: "absent"
+    when: vsc_vm_facts['instance']['hw_power_status'] == 'poweredOff'
+  when: vsc_vm_facts.failed is not defined
