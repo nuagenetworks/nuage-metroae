@@ -23,7 +23,8 @@
       name: "{{ inventory_hostname }}"
       validate_certs: no
       state: "poweredoff"
-
+    when: vsc_vm_facts['instance']['hw_power_status'] == 'poweredOn'
+  
   - name: Removing the VSC VM
     connection: local
     vmware_guest:
@@ -33,5 +34,5 @@
       name: "{{ inventory_hostname }}"
       validate_certs: no
       state: "absent"
-
-  when: not vsc_vm_facts.failed
+    when: vsc_vm_facts['instance']['hw_power_status'] == 'poweredOff'
+  when: vsc_vm_facts.failed is not defined
