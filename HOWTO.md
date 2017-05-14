@@ -4,15 +4,16 @@
 
 * [Customizing the Component Mix](Customizing the Component Mix)
 * [Deploying VRS on Multiple Target Architectures](Deploying VRS on Multiple Target Architectures)
+* [Deploying NSG in AWS](Deploying NSG in AWS)
 * [Questions and Issues](Questions and Issues)
 
 ## Customizing the Component Mix
 
-Nuage-Metro supports customizing the roster of components the playbooks operate on.
+Nuage-Metro supports customizing the list of components the playbooks operate on.
 
-### `build.yml` defines the roster
+### `build_vars.yml` defines the list
 
-`README.md` and `BUILD.md` describe how to configure the `vars` section of `build.yml` to define the components Nuage-Metro will operate on. `build.yml` has a `vars` section that contains a dictionary of configuration parameters for each component in the roster. For example, to operationalize two VSCs, the `vars` section of `build.yml` would contain the following:
+`README.md` and `BUILD.md` describe how to configure the variable in `build_vars.yml` to define the components Nuage-Metro will operate on. `build_vars.yml` contains a dictionary of configuration parameters for each component in the list. For example, to operationalize two VSCs, `build_vars.yml` would contain the following:
 
 ```
 myvscs:
@@ -42,33 +43,30 @@ myvscs:
       vsc_static_route_list: { 0.0.0.0/1 } }
 ```
 
-### Initializing the roster
+### Initializing the list
 
-You can customize the roster of components Nuage-Metro operates on by including or excluding components from the `vars` section of `build.yml`. When the build playbook is run (`./metro-ansible build.yml`), the following occurs:
+You can customize the list of components Nuage-Metro operates on by including or excluding components from `build_vars.yml`. When the build playbook is run (`./metro-ansible build.yml`), the following occurs:
 
-* The `hosts` file is populated with the hostnames of all components in the roster. The `hosts` file defines the inventory playbooks will operate on.
-* The `host_vars` subdirectory is populated with variable files for each component in the roster. These variable files contain configuration information specific to each component in the roster.
+* The `hosts` file is populated with the hostnames of all components in the list. The `hosts` file defines the inventory playbooks will operate on.
+* The `host_vars` subdirectory is populated with variable files for each component in the list. These variable files contain configuration information specific to each component in the list.
 * Various variables are set that configure the overall operation of the playbooks.
 
-In a manner of speaking, then, the contents of the `vars` section of `build.yml` defines the roster of components that Nuage-Metro will operate on. It also defines how those components will be operated on.
+In a manner of speaking, then, `build_vars.yml` defines the list of components that Nuage-Metro will operate on. It also defines how those components will be operated on.
 
-### Playbooks and the roster
+### Playbooks and the list
 
-Nuage-Metro playbooks have been designed to operate on only the components that appear in the roster. If you run a playbook for a component that is not in the roster, the playbook will skip all tasks associated with that component and run to completion without error. Thus running the `install_everything.yml` playbook when only VRS appears in the roster will deploy VRS successfully while happily ignoring the tasks for components that do not appear in the roster.
+Nuage-Metro playbooks have been designed to operate on only the components that appear in the list. If you run a playbook for a component that is not in the list, the playbook will skip all tasks associated with that component and run to completion without error. Thus running the `install_everything.yml` playbook when only VRS appears in the list will deploy VRS successfully while happily ignoring the tasks for components that do not appear in the list.
 
 ### Example
 
-As an example, let's consider using Nuage-Metro to deploy a VSD cluster by itself. The basic pattern described here applies to deploying only VSD, VSD+VSC, VSD+VSC+VRS, VSC only, VSTAT only, and a number of other combination of roster components.
+As an example, let's consider using Nuage-Metro to deploy a VSD cluster by itself. The basic pattern described here applies to deploying only VSD, VSD+VSC, VSD+VSC+VRS, VSC only, VSTAT only, and a number of other combination of list components.
 
-For deploying a VSD cluster, you must define 3 VSD entries in the `myvsds` dictionary in `build.yml`. You must also have the other required definitions in place. Here is an example of the `vars` section of a `build.yml` file that deploys a cluster of 3 VSDs:
+For deploying a VSD cluster, you must define 3 VSD entries in the `myvsds` dictionary in `build_vars.yml`. You must also have the other required definitions in place. Here is an example of the `build_vars.yml` file that deploys a cluster of 3 VSDs:
 
 ```
-vars:
-  nuage_release_src_path: "/home/caso/metro/4.0R4/nuage-packed"
-  nuage_unpacked_dest_path: "/home/caso/metro/4.0R4/nuage-unpacked"
-  nuage_unpacked: true
-  nuage_target_architecture: "el7"
-  vsd_standalone: false
+  nuage_zipped_files_dir: "/home/caso/metro/4.0R4/nuage-packed"
+  nuage_unzipped_files_dir: "/home/caso/metro/4.0R4/nuage-unpacked"
+  vsd_sa_or_ha: ha
   myvsds:
     - { hostname: jenkinsvsd1.example.com,
         target_server_type: "kvm",
@@ -104,111 +102,151 @@ vars:
 
 Some items to note in the example, above:
 
-* `nuage_release_src_path`, `nuage_unpacked_dest_path`, and `nuage_unpacked` must be set appropriately for your environment.
-
- * If `nuage_unpacked` is `false`, the directory configured for `nuage_release_src_path` must contain the archive of the VSD QCOW2 image. The build playbook will unpack the QCOW2 image and place it in `nuage_unpacked_dest_path`.
-
- * If `nuage_unpacked` is `true`, the directory configured for `nuage_unpacked_dest_path` must contain the VSD QCOW2 image for the version of VSD you wish to deploy.
-
-* `vsd_standalone` must be set to `false`. If it is true, Nuage-Metro will deploy 3 stand-alone VSDs without clustering them.
+* `vsd_sa_or_ha` must be set to `ha`. If it is `sa`, Nuage-Metro will deploy 3 stand-alone VSDs without clustering them.
 
 ## Deploying VRS on Multiple Target Architectures
 
 Some customer environments use a mix of Debian- and RedHat-family Linux distributions in their compute nodes, where Debian == Ubuntu and Redhat == CentOS or RHEL.
 
-### `nuage_target_architecture`
-
-As of this writing, the `vars` section of the `build.yml` file contains the variable `nuage_target_architecture`. This variable is used in the playbooks to conditionally execute when there are differences in commands and operations between the target architectures. For example, Ubuntu targets would use `apt install` for package installation while CentOS targets would use `yum install`. Nuage-Metro currently supports one and only one `nuage_target_architecture` at a time.
-
 ### Two build files for two architectures
 
-Nuage-Metro supports deploying VRS onto two target architectures by requiring two build files and two separate playbook runs. Here's the sequence:
+Nuage-Metro supports deploying VRS onto two target architectures by supporting VRS groups in `build_vars.yml`. The following is an example of deloying VRSs on 3 target architectures using one 'build_vars.yml' file.
 
-1. Create two build files, `build.yml.RedHat` and `build.yml.Debian`. Examples of these files can be found below. Each file should contain an entry for each VRS target node for the named architecture.
-1. Copy one build file, say `build.yml.Debian`, to `build.yml' in the playbook root directory.
-1. Execute `./metro-ansible build.yml`.
-1. Execute `./metro-ansible install_everything.yml`. (Or you could execute the playbooks `vrs_predeploy.yml`, `vrs_deploy.yml`, and `vrs_postdeploy.yml` to achieve the same effects.)
-1. Copy the other build file, say `build.yml.RedHat`, to `build.yml` in the playbook root directory.
-1. Execute `./metro-ansible build.yml`.
-1. Execute `./metro-ansible install_everything.yml`. (Or you could execute the playbooks `vrs_predeploy.yml`, `vrs_deploy.yml`, and `vrs_postdeploy.yml` to achieve the same effects.)
-
-This sequence will result in your VRSs deployed to a mix of Ubuntu and CentOS (or RHEL) targets.
-
-### Example build files for two target architectures
-
-The following examples show sample `vars` sections for `build.yml` files that support VRS deployment on different target architectures. Using these files to execute the procedure, above, would result in four VRS deployments on Ubuntu and four VRS deployments on CentOS.
-
-#### `build.yml.RedHat`
+### Example build_vars.yml file for three VRS target architectures
 
 ```
-vars:
-  nuage_release_src_path: "/home/caso/metro/4.0R4/nuage-packed"
-  nuage_unpacked_dest_path: "/home/caso/metro/4.0R4/nuage-unpacked"
-  nuage_unpacked: true
-  nuage_target_architecture: "el7"
-  vsd_standalone: false
-  myvrss:
-    - { hostname: 192.168.122.241,
-        primary_controller: 192.168.122.201,
-        secondary_controller: 192.168.122.202 }
-    - { hostname: 192.168.122.242,
-        primary_controller: 192.168.122.201,
-        secondary_controller: 192.168.122.202 }
-    - { hostname: 192.168.122.243,
-        primary_controller: 192.168.122.201,
-        secondary_controller: 192.168.122.202 }
-    - { hostname: 192.168.122.244,
-        primary_controller: 192.168.122.201,
-        secondary_controller: 192.168.122.202 }
-  ansible_deployment_host: 135.227.181.233
-  mgmt_bridge: "virbr0"
-  data_bridge: "virbr1"
-  access_bridge: "access"
-  images_path: "/var/lib/libvirt/images/"
-  ntp_server_list:
-    - 135.227.181.232
-    - 128.138.141.172
-  dns_server_list:
-    - 192.168.122.1
-    - 128.251.10.145
-  dns_domain: example.com
+myvrss:
+  - { vrs_set_name: vrs_set_uswest1,
+      vrs_os_type: u14.04,
+      active_controller_ip: 192.168.122.202,
+      standby_controller_ip: 192.168.122.203,
+      vrs_ip_list: [
+       192.168.122.101] }
+  - { vrs_set_name: vrs_set_usewest2,
+      vrs_os_type: el7,
+      active_controller_ip: 192.168.122.202,
+      standby_controller_ip: 192.168.122.203,
+      vrs_ip_list: [
+       192.168.122.83,
+       192.168.122.238 ] }
+  - { vrs_set_name: vrs_set_uswest3,
+      vrs_os_type: u16.04,
+      active_controller_ip: 192.168.122.202,
+      standby_controller_ip: 192.168.122.203,
+      vrs_ip_list: [
+       192.168.122.215 ] }
 ```
 
-#### `build.yml.Debian`
+
+## Deploying NSG in AWS
+
+Metro supports the deployment of NSGs in AWS and configuring those as Network Gateways in a particular enterprise of a Nuage Networks installation.
+It assumes the necessary enterprise and NSG template has been preconfigured:
+It can either
+- use an existing VPC, and attach the network interfaces of the NSG-AMI, or
+- provision a new VPC with a set of subnets, and configure some default routing tables and security groups.
+
+Once it has been deployed, it is up to end-user to configure the necessary VPort Bridge in a domain of choice and conifgure the necessary RedirectionTarget and Static Route to enable routing from any other Nuage-managed endpoint to this VPC.
+
+### Pre-Configuration on AWS
+As part of deploying the NSG-AMI on AWS, you need to upload the NSG-AWS image to S3 and make it available to a Region of your interest.
+
+You also need to set up authentication credentials so the playbooks can access AWS. Credentials for this AWS account can be generated in the [IAM Console](https://console.aws.amazon.com/iam/home). You can create or use an existing user. 
+
+The AWS account needs to be configured for Read/Write access for VPC, EC2 and CloudFormation.
+
+The below snippet shows an Amazon IAM policy that you can assign to the AWS User/Group
+```
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Action": "ec2:*",
+            "Effect": "Allow",
+            "Resource": "*"
+        },
+        {
+            "Effect": "Allow",
+            "Action": "vpc:*",
+            "Resource": "*"
+        },
+        {
+            "Effect": "Allow",
+            "Action": "cloudformation:*",
+            "Resource": "*"
+        }
+    ]
+}
+```
+
+### Pre-configuration tasks on Ansible Deployment Host
+
+The playbooks relies on the `boto` python library for accessing and configuring the necessary AWS resources. Of the many mechanisms that can be used to pass the AWS Account credentials, the easiest is to define them in a file called  `~/.boto` or `~/.aws/credentials`. Configure it with the `ACCESS_KEY` and `SECRET_KEY` for the Account as configured in previous step: 
 
 ```
-vars:
-  nuage_release_src_path: "/home/caso/metro/4.0R4/nuage-packed"
-  nuage_unpacked_dest_path: "/home/caso/metro/4.0R4/nuage-unpacked"
-  nuage_unpacked: true
-  nuage_target_architecture: "ubuntu"
-  vsd_standalone: false
-  myvrss:
-    - { hostname: 192.168.122.251,
-        primary_controller: 192.168.122.201,
-        secondary_controller: 192.168.122.202 }
-    - { hostname: 192.168.122.252,
-        primary_controller: 192.168.122.201,
-        secondary_controller: 192.168.122.202 }
-    - { hostname: 192.168.122.253,
-        primary_controller: 192.168.122.201,
-        secondary_controller: 192.168.122.202 }
-    - { hostname: 192.168.122.254,
-        primary_controller: 192.168.122.201,
-        secondary_controller: 192.168.122.202 }
-  ansible_deployment_host: 135.227.181.233
-  mgmt_bridge: "virbr0"
-  data_bridge: "virbr1"
-  access_bridge: "access"
-  images_path: "/var/lib/libvirt/images/"
-  ntp_server_list:
-    - 135.227.181.232
-    - 128.138.141.172
-  dns_server_list:
-    - 192.168.122.1
-    - 128.251.10.145
-  dns_domain: example.com
+[default]
+aws_access_key_id = YOUR_ACCESS_KEY
+aws_secret_access_key = YOUR_SECRET_KEY 
 ```
+
+### Configuration of `user_creds.yml`
+Given that the deployment can take place against a pre-existing Nuage Networks instatllation, the API end-point and VSD credentials are stored in the top-level file `user_creds.yml`.
+
+Example shown below:
+```
+myvsd:
+  auth:
+    api_username: csproot
+    api_password: csproot
+    api_enterprise: csp
+    api_url: https://PUBLIC-IP:8443
+```
+
+### Example `build_vars.yml` file
+
+Under the `examples` directory, an `build_vars.yml.nsg_ami` is located.
+The relevant parameters are shown under `mynsgvs`
+
+```
+mynsgvs:
+  - { 
+      # Name of the NSG, will also be used as the Ansible hostname
+      hostname: "l-vpc1-nsgv",
+      # target_server_type needs to be configured as "aws"
+      target_server_type: "aws",
+      # ID of the NSG Template that will be used for the NSG-AWS
+      nsg_template_id: "7971ff5b-1ecd-4410-b8cb-b3ab5141d27a",
+      # Nuage Enterprise where the NSGateway will be provisioned under
+      enterprise: "vns9", 
+      # AWS Region
+      aws_region: "eu-west-2",
+      # Parameters if a pre-existing VPC is to be used to launch the NSG-AMI in. 
+      # AWS ENI's need to be pre-created to attach the NSG-AMI to.
+      use_vpc: { nsg_lan_eni: "eni-7aad1d37", nsg_wan_eni: "eni-dfa91992" },
+      # Parameters to define the AMI and the EC2 instance type for the NSG-AMI. 
+      # Optionally the Elastic IP Allocation ID can be specified. If omitted, a new Elastic IP will be requested.
+      nsg_ami: { id: "ami-35a4b151", type: "t2.medium", keyname: "VPC-KeyPair", eip_allocid: "eipalloc-d39069ba" } }
+  - { 
+      # Name of the NSG, will also be used as the Ansible hostname
+      hostname: "l-vpc2-nsgv",
+      # target_server_type needs to be configured as "aws"
+      target_server_type: "aws",
+      # ID of the NSG Template that will be used for the NSG-AWS
+      nsg_template_id: "7971ff5b-1ecd-4410-b8cb-b3ab5141d27a",
+      # Nuage Enterprise where the NSGateway will be provisioned under
+      enterprise: "vns9",
+      # AWS Region
+      aws_region: "eu-west-2",
+      # Parameters if a new VPC is to be created to launch the NSG-AMI in.
+      # This will also provision route-tables, and security groups
+      provision_vpc: { cidr: "10.4.0.0/16", nsg_wan_subnet: "10.4.10.0/24", nsg_lan_subnet: "10.4.20.0/24", private_subnet: "10.4.30.0/24" },
+      # Parameters to define the AMI and the EC2 instance type for the NSG-AMI.
+      # Optionally the Elastic IP Allocation ID can be specified. If omitted, a new Elastic IP will be requested.
+      nsg_ami: { id: "ami-35a4b151", type: "t2.medium", keyname: "VPC-KeyPair" } }
+```
+
+
+
 
 ## Questions and Issues
 

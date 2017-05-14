@@ -3,67 +3,67 @@
   local_action:
     module: wait_for
     port: "22"
-    host: "{{ interfaces.mgmt.ip }}"
+    host: "{{ mgmt_ip }}"
     search_regex: OpenSSH
     delay: 1
   delegate_to: "{{ target_server }}"
-  remote_user: root
+  remote_user: "{{ target_server_username }}"
 
 - name: Update /etc/hosts file on {{ target_server }}
   lineinfile:
     dest: /etc/hosts
-    line: "{{ interfaces.mgmt.ip }} {{ inventory_hostname }}"
+    line: "{{ mgmt_ip }} {{ inventory_hostname }}"
   delegate_to: "{{ target_server }}"
-  remote_user: root
+  remote_user: "{{ target_server_username }}"
 
-- name: Update /etc/hosts file on {{ inventory_hostname }}
+- name: Update /etc/hosts file
   blockinfile:
     dest: /etc/hosts
     block: |
       {% for host in groups['vnsutils']  %}
-      {{ hostvars[host]['interfaces']['mgmt']['ip'] }}    {{ host }}
+      {{ hostvars[host]['mgmt_ip'] }}    {{ host }}
       {% endfor %}
-  remote_user: root
+  remote_user: "root"
 
-- name: Delete the localtime file on {{ inventory_hostname }}
+- name: Delete the localtime file
   file:
     path: /etc/localtime
     state: absent
-  remote_user: root
+  remote_user: "root"
 
-- name: Create the localtime symlink on {{ inventory_hostname }}
+- name: Create the localtime symlink
   file:
     src: /usr/share/zoneinfo/US/Pacific
     dest: /etc/localtime
     state: link
-  remote_user: root
+  remote_user: "root"
 
 - name: Install NTP package on the vnsutil vm
   yum: name=ntp state=present
-  remote_user: root
+  remote_user: "root"
 
-- name: Configure NTP servers on {{ inventory_hostname }}
+- name: Configure NTP servers
   lineinfile:
     dest: /etc/ntp.conf
     line: "server {{ item }} iburst"
   with_items: "{{ ntp_server_list }}"
-  remote_user: root
+  remote_user: "root"
 
 - name: Stop the ntpd service if running
   service:
     name: ntpd
     state: stopped
-  remote_user: root
+  remote_user: "root"
 
 - name: Manually sync time with ntp server
   command: ntpdate -u "{{ntp_server_list[0]}}"
-  remote_user: root
+  remote_user: "root"
 
-- name: Start ntpd on {{ inventory_hostname }}
+- name: Start ntpd
   service:
     name: ntpd
     state: started
-  remote_user: root
+  remote_user: "root"
 
 - name: check ntp sync state
   shell: ntpstat | awk 'NR==1{print $1}'
@@ -72,53 +72,53 @@
   retries: 4
   delay: 5
   ignore_errors: yes
-  remote_user: root
+  remote_user: "root"
 
 - block:
   - name: restart ntp if it hasn't synced yet
     command: service ntpd restart
-    remote_user: root
+    remote_user: "root"
   - name: check ntp sync state
     shell: ntpstat | awk 'NR==1{print $1}'
     register: retry_sync_status
     until: retry_sync_status.stdout == "synchronised"
     retries: 4
     delay: 5
-    remote_user: root
+    remote_user: "root"
   when: sync_status.stdout != "synchronized"
 
-- name: Install dhcp package on {{ inventory_hostname }}
+- name: Install dhcp package
   yum: name=dhcp state=present
-  remote_user: root
+  remote_user: "root"
 
 - name: Copy dhcp config
   template: src=dhcpd.conf.j2 backup=no dest=/etc/dhcp/dhcpd.conf
-  remote_user: root
+  remote_user: "root"
 
 - name: Restart dhcp service
   service:
     name: dhcpd
     state: restarted
-  remote_user: root
+  remote_user: "root"
 
 - name: Chkconfig of dhcpd
   command: chkconfig dhcpd on
-  remote_user: root
+  remote_user: "root"
 
-- name: Install dnsmasq package on {{ inventory_hostname }}
+- name: Install dnsmasq package
   yum: name=dnsmasq state=present
-  remote_user: root
+  remote_user: "root"
 
-- name: Copy dnsmasq config to {{ inventory_hostname }}
+- name: Copy dnsmasq config
   template: src=dnsmasq.conf.j2 backup=no dest=/etc/dnsmasq.conf
-  remote_user: root
+  remote_user: "root"
 
 - name: Start dnsmasq
   service:
     name: dnsmasq
     state: started
-  remote_user: root
+  remote_user: "root"
 
 - name: Chkconfig of dnsmasq
   command: chkconfig dnsmasq on
-  remote_user: root
+  remote_user: "root"

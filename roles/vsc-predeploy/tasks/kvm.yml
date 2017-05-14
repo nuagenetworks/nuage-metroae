@@ -1,7 +1,7 @@
 ---
 - name: Pull facts on target_server {{ target_server }}
   action: setup
-  remote_user: root
+  remote_user: "{{ target_server_username }}"
   delegate_to: "{{ target_server }}"
 
 - name: Check target for supported OS
@@ -22,7 +22,7 @@
         ("{{ data_bridge }}" not in ansible_interfaces)
 
 - name: Install packages for RedHat OS family distros
-  remote_user: root
+  remote_user: "{{ target_server_username }}"
   delegate_to: "{{ target_server }}"
   yum: name={{ item }} state=present
   with_items:
@@ -34,7 +34,7 @@
   when: ansible_os_family == "RedHat"
 
 - name: Install packages for Debian OS family distros
-  remote_user: root
+  remote_user: "{{ target_server_username }}"
   delegate_to: "{{ target_server }}"
   apt: name={{ item }} state=present
   with_items:
@@ -45,84 +45,86 @@
    - python-libvirt
   when: ansible_os_family == "Debian"
 
-- name: Pull facts on target_server {{ target_server }}
+- name: Pull facts on target_server
   action: setup
   delegate_to: "{{ target_server }}"
-  remote_user: root
+  remote_user: "{{ target_server_username }}"
 
-- name: List the Virtual Machines on {{ target_server }}
+- name: List the Virtual Machines
   virt: command=list_vms
   register: virt_vms
   delegate_to: "{{ target_server }}"
-  remote_user: root
+  remote_user: "{{ target_server_username }}"
+
+- name: Verify that the VM is not already running
+  assert:
+    that: "inventory_hostname not in virt_vms.list_vms"
+    msg: "{{ inventory_hostname }} is already running on {{ target_server }}"
 
 - name: Include OS-specific variables.
   include_vars: "{{ ansible_os_family }}.yml"
 
-- block:
-  - name: Create VSC directory on {{ target_server }}
-    file: path={{ images_path }}/{{ inventory_hostname }} state=directory owner={{ libvirt.user }} group={{ libvirt.group }}
-    delegate_to: "{{ target_server }}"
-    remote_user: root
+- name: Create VSC directory
+  file: path={{ images_path }}/{{ inventory_hostname }} state=directory owner={{ libvirt.user }} group={{ libvirt.group }}
+  delegate_to: "{{ target_server }}"
+  remote_user: "{{ target_server_username }}"
 
-  - name: Copy VSC qcow2 image to {{ target_server }}
-    copy: src={{ vsc_qcow2_path }}/{{ vsc_qcow2_file_name }} dest={{ images_path }}/{{ inventory_hostname }}/{{ inventory_hostname }}.qcow2 owner={{ libvirt.user }} group={{ libvirt.group }}
-    delegate_to: "{{ target_server }}"
-    remote_user: root
+- name: Copy VSC qcow2 image to {{ target_server }}
+  copy: src={{ vsc_qcow2_path }}/{{ vsc_qcow2_file_name }} dest={{ images_path }}/{{ inventory_hostname }}/{{ inventory_hostname }}.qcow2 owner={{ libvirt.user }} group={{ libvirt.group }}
+  delegate_to: "{{ target_server }}"
+  remote_user: "{{ target_server_username }}"
 
-  - name: Setup VSC temporary configuration files on {{ target_server }}
-    template: src={{ item }}.j2 backup=no dest={{ images_path }}/{{ inventory_hostname }}/{{ item }}
-    delegate_to: "{{ target_server }}"
-    with_items:
-      - bof.cfg
-      - config.cfg
-    remote_user: root
+- name: Setup VSC temporary configuration files
+  template: src={{ item }}.j2 backup=no dest={{ images_path }}/{{ inventory_hostname }}/{{ item }}
+  delegate_to: "{{ target_server }}"
+  with_items:
+    - bof.cfg
+    - config.cfg
+  remote_user: "{{ target_server_username }}"
 
-  - name: Copy temporary configuration files to the VSC image
-    command: guestfish --rw -a {{ images_path }}/{{ inventory_hostname }}/{{ inventory_hostname }}.qcow2 -m {{ vsc_partition }} copy-in {{ images_path }}/{{ inventory_hostname }}/{{ item }} /
-    delegate_to: "{{ target_server }}"
-    with_items:
-      - bof.cfg
-      - config.cfg
-    remote_user: root
+- name: Copy temporary configuration files to the VSC image
+  command: guestfish --rw -a {{ images_path }}/{{ inventory_hostname }}/{{ inventory_hostname }}.qcow2 -m {{ vsc_partition }} copy-in {{ images_path }}/{{ inventory_hostname }}/{{ item }} /
+  delegate_to: "{{ target_server }}"
+  with_items:
+    - bof.cfg
+    - config.cfg
+  remote_user: "{{ target_server_username }}"
 
-  - name: Remove temporary configuration files
-    file: path={{ images_path }}/{{ inventory_hostname }}/{{ item }} state=absent
-    delegate_to: "{{ target_server }}"
-    with_items:
-      - bof.cfg
-      - config.cfg
-    remote_user: root
+- name: Remove temporary configuration files
+  file: path={{ images_path }}/{{ inventory_hostname }}/{{ item }} state=absent
+  delegate_to: "{{ target_server }}"
+  with_items:
+    - bof.cfg
+    - config.cfg
+  remote_user: "{{ target_server_username }}"
 
-  - name: Define VSC guest VM
-    virt: name={{ inventory_hostname }}
-          command=define
-          xml="{{ lookup('template', 'vsc.xml.j2') }}"
-    delegate_to: "{{ target_server }}"
-    remote_user: root
-  when: inventory_hostname not in virt_vms.list_vms
-
+- name: Define VSC guest VM
+  virt: name={{ inventory_hostname }}
+        command=define
+        xml="{{ lookup('template', 'vsc.xml.j2') }}"
+  delegate_to: "{{ target_server }}"
+  remote_user: "{{ target_server_username }}"
 
 - name: Start VSC guest VM
   virt: name={{ inventory_hostname }} state=running
   delegate_to: "{{ target_server }}"
-  remote_user: root
+  remote_user: "{{ target_server_username }}"
 
 - name: Get updated VM information from {{ target_server }}
   virt: command=info
   register: virt_info
   delegate_to: "{{ target_server }}"
-  remote_user: root
+  remote_user: "{{ target_server_username }}"
 
-- name: Verify that VSC VM is running on {{ target_server }}
+- name: Verify that VSC VM is running
   assert: { that: "virt_info[inventory_hostname]['state'] == 'running'" }
   delegate_to: "{{ target_server }}"
-  remote_user: root
+  remote_user: "{{ target_server_username }}"
 
 - name: Wait for VSC ssh to be ready
   local_action:
     module: wait_for
     port: "22"
-    host: "{{ interfaces.mgmt.ip }}"
+    host: "{{ mgmt_ip }}"
     search_regex: OpenSSH
     delay: 1

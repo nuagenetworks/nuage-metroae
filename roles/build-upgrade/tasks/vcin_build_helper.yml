@@ -1,0 +1,12 @@
+---
+- name: Set myvcins_check
+  set_fact: myvcins_check={{myvcins is defined}}
+
+- name: Assign empty list to myvcins if it is undefined
+  set_fact: myvcins= default([])
+  when: not myvcins_check
+
+- name: Create host_vars files for vcin
+  template: src=vcin.j2 backup=no dest={{ playbook_dir }}/host_vars/{{ item.hostname }}
+  with_items: "{{ myvcins }}"
+  when: myvcins_check

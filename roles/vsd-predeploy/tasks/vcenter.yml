@@ -7,6 +7,7 @@
     password: "{{ vcenter.password }}"
     name: "{{ inventory_hostname }}"
     validate_certs: no
+    state: gatherfacts
   register: vsd_vm_facts
   ignore_errors: yes
 
@@ -14,7 +15,7 @@
 
 - name: Verify the VSD VM does not exist
   assert: 
-    that: "vsd_vm_facts.failed"
+    that: "vsd_vm_facts.failed is defined"
     msg: "VM {{ inventory_hostname }} already exists, quiting"
 
 - name: Deploy VSD Image on vCenter
@@ -32,7 +33,7 @@
     "{{ vsd_ova_path }}/{{ vsd_ova_file_name }}"
     vi://'{{ vcenter.username | urlencode }}':'{{ vcenter.password | urlencode }}'@{{ target_server }}/{{ vcenter.datacenter }}/host/{{ vcenter.cluster }} 
 
-- name: Waiting 120 seconds to make sure the VSD {{ inventory_hostname }} is up
+- name: Waiting 120 seconds to make sure the VSD is up
   pause: 
     seconds: 120
 
@@ -44,6 +45,7 @@
     password: "{{ vcenter.password }}"
     name: "{{ inventory_hostname }}"
     validate_certs: no
+    state: gatherfacts
   register: vsd_vm_facts
 
 - debug: var=vsd_vm_facts verbosity=1
@@ -147,7 +149,7 @@
     vm_shell_args: " 0 0 /root/.ssh" 
 
 - name: Get the public key for the current user
-  local_action: command cat ~/.ssh/id_rsa.pub
+  local_action: command cat "{{ user_ssh_pub_key }}"
   register: current_user_ssh_key
 
 - name: Writing authorized_keys to the VSD VM
