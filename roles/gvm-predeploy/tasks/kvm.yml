@@ -6,7 +6,7 @@
 
 - name: Check target for supported OS
   fail: msg="Unsupported OS family ({{ ansible_os_family }})"
-  when: ansible_os_family not in vm_target_server_os_family_list
+  when: ansible_os_family not in gvm_target_server_os_family_list
 
 - name: Include OS-specific variables.
   include_vars: "{{ ansible_os_family }}.yml"
@@ -17,7 +17,6 @@
    - qemu-kvm
    - libvirt
    - bridge-utils
-   - libguestfs-tools
    - libvirt-python
   when: ansible_os_family == "RedHat"
   delegate_to: "{{ target_server }}"
@@ -29,7 +28,6 @@
    - qemu-kvm
    - libvirt-bin
    - bridge-utils
-   - libguestfs-tools
    - python-libvirt
   when: ansible_os_family == "Debian"
   delegate_to: "{{ target_server }}"
@@ -55,7 +53,7 @@
   remote_user: "{{ target_server_username }}"
 
 - name: Copy the vm image to virt images directory
-  copy: src={{ vm_image_dir }}/{{ vm_image_filename }}
+  copy: src={{ gvm_image_dir }}/{{ gvm_image_filename }}
         dest={{ images_path }}/{{ inventory_hostname }}
         owner={{ libvirt.user }}
         group={{ libvirt.group }}
@@ -65,7 +63,7 @@
 - name: "Define new VSD VM"
   virt: name="{{ inventory_hostname }}"
         command=define
-        xml="{{ lookup('template', 'vm.xml.j2') }}"
+        xml="{{ lookup('template', 'gvm.xml.j2') }}"
         uri=qemu:///system
   delegate_to: "{{ target_server }}"
   remote_user: "{{ target_server_username }}"
