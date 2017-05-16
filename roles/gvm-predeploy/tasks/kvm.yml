@@ -44,26 +44,10 @@
     that: "inventory_hostname not in virt_vms.list_vms"
     msg: "{{ inventory_hostname }} is already running on {{ target_server }}"
 
-- name: Create libvirt image directory
-  file: path={{ images_path }}/{{ inventory_hostname }}
-        state=directory
-        owner={{ libvirt.user }}
-        group={{ libvirt.group }}
-  delegate_to: "{{ target_server }}"
-  remote_user: "{{ target_server_username }}"
-
-- name: Copy the vm image to virt images directory
-  copy: src={{ gvm_image_dir }}/{{ gvm_image_filename }}
-        dest={{ images_path }}/{{ inventory_hostname }}
-        owner={{ libvirt.user }}
-        group={{ libvirt.group }}
-  delegate_to: "{{ target_server }}"
-  remote_user: "{{ target_server_username }}"
-
-- name: "Define new VSD VM"
+- name: "Define new VM"
   virt: name="{{ inventory_hostname }}"
         command=define
-        xml="{{ lookup('template', 'gvm.xml.j2') }}"
+        xml="{{ lookup('file', gvm_xml_file) }}"
         uri=qemu:///system
   delegate_to: "{{ target_server }}"
   remote_user: "{{ target_server_username }}"

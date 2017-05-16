@@ -7,8 +7,8 @@
 # Both are required to run the nuage_unzip role. nuage_unzipped_files_dir
 # is required when one or more operation lists, below, are set to 'install'
 # or 'upgrade'.
-nuage_zipped_files_dir: "/home/caso/metro/4.0R7/nuage-packed"
-nuage_unzipped_files_dir: "/home/caso/metro/4.0R7/nuage-unpacked"
+nuage_zipped_files_dir: "/home/caso/nfs-data/4.0.R7/nuage-packed"
+nuage_unzipped_files_dir: "/home/caso/nfs-data/4.0.R7/nuage-unpacked"
 ###
 # Path to a public key file to be injected in to VSD,VNS Util, VCIN and VSTAT vms
 # during deployment and corresponding private file to be used to connect to the
@@ -45,7 +45,7 @@ vsd_operations_list:
 myvsds:
   - { hostname: vsd1.example.com,
       target_server_type: "kvm",
-      target_server: 135.227.181.232,
+      target_server: 135.227.181.233,
       mgmt_ip: 192.168.122.201,
       mgmt_gateway: 192.168.122.1,
       mgmt_netmask: 255.255.255.0 }
@@ -66,7 +66,7 @@ vsc_operations_list:
 myvscs:
   - { hostname: vsc1.example.com,
       target_server_type: "kvm",
-      target_server: 135.227.181.232,
+      target_server: 135.227.181.233,
       mgmt_ip: 192.168.122.202,
       mgmt_gateway: 192.168.122.1,
       mgmt_netmask_prefix: 24,
@@ -78,7 +78,7 @@ myvscs:
       vsc_static_route_list: { 0.0.0.0/1 } }
   - { hostname: vsc2.example.com,
       target_server_type: "kvm",
-      target_server: 135.227.181.232,
+      target_server: 135.227.181.233,
       mgmt_ip: 192.168.122.203,
       mgmt_gateway: 192.168.122.1,
       mgmt_netmask_prefix: 24,
@@ -132,6 +132,7 @@ myvrss:
 # - install
 # - upgrade
 # - health
+# - dns (specified when deploying the VSTAT image as a DNS server)
 # - TBD
 vstat_operations_list:
   - install
@@ -141,7 +142,7 @@ vstat_operations_list:
 myvstats:
   - { hostname: vstat1.example.com,
       target_server_type: "kvm",
-      target_server: 135.227.181.232,
+      target_server: 135.227.181.233,
       mgmt_ip: 192.168.122.204,
       mgmt_gateway: 192.168.122.1,
       mgmt_netmask: 255.255.255.0,
@@ -163,7 +164,7 @@ vns_operations_list:
 myvnsutils:
   - { hostname: vnsutil1.example.com,
       target_server_type: "kvm",
-      target_server: 135.227.181.232,
+      target_server: 135.227.181.233,
       mgmt_ip: 192.168.122.205,
       mgmt_gateway: 192.168.122.1,
       mgmt_netmask: 255.255.255.0,
@@ -178,6 +179,8 @@ myvnsutils:
 
 ###
 # DNS params
+# NOTE: This code assumes that the DNS image is the VSTAT/ElasticSearch image.
+# For this code to work, myvstats must also be defined.
 # dns_operations_list = A list of the operations you intend for the DNS. The
 # list could include 1 or more of the following:
 # - install
@@ -249,17 +252,13 @@ gvm_operations_list:
   - install
 # mygvms is a collection of parameters for the generic vms. 
 # One set of parameters is required for each generic VM.
-
+#
+# gvm_xml_file is the full path to the XML file that defines the VM.
 mygvms:
-  - { hostname: gvm.example.com,
+  - { hostname: jenkinsgvm1.example.com,
       target_server_type: "kvm",
       target_server: 135.227.181.233,
-      gvm_image_dir: /home/caso/nfs-data/nuage-unpacked/4.0.R8/vsd/qcow2
-      gvm_image_filename: VSD-4.0.8_171.qcow2
-      gvm_ram_kb: 25165824,
-      gvm_interface_bridges:
-        - { source_bridge: virbir0,
-            model_type: virtio }}
+      gvm_xml_file: /home/caso/images/jenkinsgvm1.example.com/gvm.xml }
 
 # mynsgvs is a collection of parameters for the NSGV. 
 # One set of parameters is required for each NSGV.
@@ -270,7 +269,7 @@ mygvms:
 mynsgvs:
   - { hostname: nsgv1.example.com,
       target_server_type: "kvm",
-      target_server: 135.227.181.232,
+      target_server: 135.227.181.233,
       bootstrap_method: zfb_metro,
       # Needed only when bootstrap_method: zfb_external
       iso_path: '/tmp/iso',
@@ -282,7 +281,7 @@ mynsgvs:
 ###
 # Ansible
 # The IP addr or hostname of the Ansible host
-ansible_deployment_host: 135.227.181.232
+ansible_deployment_host: 135.227.181.233
 
 
 ###
