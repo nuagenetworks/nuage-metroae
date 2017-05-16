@@ -10,18 +10,115 @@
     remote_user: "{{ ansible_sudo_username }}"
     delegate_to: "{{ ansible_deployment_host }}"
 
+  - name: Create backup location dir
+    file:
+      dest: "{{ vstat_backup_location }}"
+      owner: "elasticsearch"
+      group: "elasticsearch"
+      state: directory
+      mode: 0775
+    remote_user: root
+
+  - name: Configure backup location in elasticseach.yml file
+    lineinfile:
+      dest: "/etc/elasticsearch/elasticsearch.yml"
+      line: "path.repo: [{{ vstat_backup_location }}]"
+    remote_user: root
+ 
+  - name: Restart elasticsearch process
+    systemd:
+      name: elasticsearch
+      state: restarted
+    remote_user: root
+ 
+  - name: Get elasticsearch current status
+    systemd:
+      name: elasticsearch
+      state: started
+    register: es_status
+    remote_user: root
+ 
+  - name: Check elasticsearch status is active
+    assert:
+      that: es_status.status.ActiveState == 'active'
+      msg: "Elasticserach process in not active after restart"
+ 
+  - name: Wiat for elasticsearch process to come up
+    pause:
+      seconds: 20
+ 
+  - name: Check elasticsearch process is running
+    assert:
+      that: es_status.status.SubState == 'running'
+      msg: "Elasticsearch process is not running after restart"
+ 
+  - name: Read the repo name to be recreated from the file
+    command: "cat /tmp/vstat_bakcups/repo_snapshot_name"
+    register: names
+    remote_user: "{{ ansible_sudo_username }}"
+    delegate_to: "{{ ansible_deployment_host }}"
+    
   - name: Create repo on the new vstat vm 
     command: "{{ create_repo }}"
     remote_user: root
 
-  - name: Verify repo created by backup script
+  - name: Get the repo created by backup script 
     command: "python /tmp/{{ show_repo }}"
     register: repo_path
     remote_user: root
 
-  - name: Migrate statistics data to new vstat vm
-    command: "{{ migrate_data }}"
+  - name: Print contents of show_repo output when verbosity >= 1
+    debug: var=repo_path verbosity=1
+
+  - name: Verify repo is created
+    assert:
+      that: '"Error in getting repo" not in repo_path.stdout'
+      msg: Failed to verify the repo created
+
+  - name: Transfer the backup folder to vstat node
+    command: "{{ transfer_backup_folder }}"
+    remote_user: "{{ ansible_sudo_username }}"
+    delegate_to: "{{ ansible_deployment_host }}"
+    
+  - name: Restore the snapshot on the new vstat VM
+    command: "{{ restore_snapshot }}"
+    register: restore_snap
     remote_user: root
+
+  - name: Print contents of restore_snapshot output when verbosity >= 1
+    debug: var=restore_snapshot verbosity=1
+
+  - name: Get the contents of created snapshot
+    command: "python /tmp/{{ show_snapshot }}"
+    register: snapshot_contents
+    remote_user: root
+
+  - name: Create local variable with snap_contents output to json
+    set_fact: snapshot_contents_json="{{ snapshot_contents.stdout|snapshot_list_indices_to_json }}"
+
+  - name: Print contents of snapshot_contents output when verbosity >= 1
+    debug: var=snapshot_contents verbosity=1
+
+  - block:
+    - name: Verify the contents of the snapshot created
+      assert:
+        that: '"{{ item }}" in list_of_indices'
+        msg: "{{ item }} index was not found"
+      with_items: "{{ snapshot_contents_json['indices'] }}"
+    when: list_of_indices is defined
+
+  - block:
+    - name: Get the list of all inices
+      command: "python /tmp/{{ get_indices }}"
+      remote_user: root
+      register: indices_output
+
+    - name: Verify the contents of the snapshot created
+      assert:
+        that: '"{{ item }}" in indices_output.stdout'
+        msg: "{{ item }} index was not found"
+      with_items: "{{ snapshot_contents_json['indices'] }}"
+    when: list_of_indices is not defined
   when: 
     - inventory_hostname in groups['vstats']
     - upgrade_from_version != '4.0.1'
@@ -48,7 +145,7 @@
   - name: Verify stats processes are stopped
     assert: 
       that: stats_state['state']['{{ item }}'] == 'not monitored'
-      msg: item  is still running 
+      msg: item   is still running 
     with_items: "{{ stats_state.state.keys() }}" 
 
   - name: Migrate current date data to new schema version

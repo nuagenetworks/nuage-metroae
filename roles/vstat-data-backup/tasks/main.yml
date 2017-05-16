@@ -1,5 +1,7 @@
 #TODO: Handle nfs related backups
-#- name: Mount elasticsearch backup location
+- name: Pull facts of localhost
+  setup:
+  delegate_to: localhost
 
 - name: Enable vstat upgrade
   assert:
@@ -12,6 +14,13 @@
       dest: "{{ vstat_backup_location }}"
       state: directory
     remote_user: root
+  
+  - name: Create backup location dir on ansible_deployment_host
+    file:
+      dest: "/tmp/vstat_backups/"
+      state: directory
+    remote_user: "{{ ansible_sudo_username }}"
+    delegate_to: "{{ ansible_deployment_host }}"
 
   - name: Configure backup location in elasticseach.yml file
     lineinfile:
@@ -25,7 +34,6 @@
       owner: "elasticsearch"
       group: "elasticsearch"
       recurse: yes
-      mode: 775
     remote_user: root
 
   - name: Restart elasticsearch process
@@ -46,6 +54,10 @@
       that: es_status.status.ActiveState == 'active'
       msg: "Elasticserach process in not active after restart"
 
+  - name: Wiat for elasticsearch process to come up
+    pause:
+      seconds: 20
+
   - name: Check elasticsearch process is running
     assert:
       that: es_status.status.SubState == 'running'
@@ -56,21 +68,81 @@
     with_items: "{{ vstat_backup_scripts_file_list }}"
     remote_user: "{{ ansible_sudo_username }}"
     delegate_to: "{{ ansible_deployment_host }}"
+  
+  - name: Set the repo name to be created
+    set_fact:
+      repo_name: "{{ ansible_date_time.iso8601_basic_short }}"
 
-  - name: Run backup script to backup data
-    command: "python /tmp/{{ backup_cmd }}"
+  - name: Create a repository to backup ES data
+    command: "python /tmp/{{ create_repo }}"
     remote_user: root 
 
-  - name: Verify repo created by backup script
+  - name: Get the repo created by backup script
     command: "python /tmp/{{ show_repo }}"
     register: repo_path
     remote_user: root
 
-  - name: Copy backup folder to backup_machine
-    synchronize:
-      src: "{{ vstat_backup_location }}"
-      dest: "{{ vstat_backup_location }}"
-      mode: pull
+  - name: Print contents of show_repo output when verbosity >= 1
+    debug: var=repo_path verbosity=1
+
+  - name: Verify repo is created
+    assert:
+      that: '"Error in getting repo" not in repo_path.stdout'
+      msg: Failed to verify the repo created
+
+  - name: Set the snapshot name to be created
+    set_fact:
+      snap_name: "{{ ansible_date_time.iso8601_basic_short }}"
+
+  - name: Create snapshot with all indicies
+    command: "python /tmp/{{ create_snapshot }}"
+    register: snapshot
+    remote_user: root
+
+  - name: Print contents of create_snapshot output when verbosity >= 1
+    debug: var=snapshot verbosity=1
+
+  - name: Get the contents of created snapshot
+    command: "python /tmp/{{ show_snapshot }}"
+    register: snapshot_contents
+    remote_user: root
+
+  - name: Create local variable with snap_contents output to json
+    set_fact: snapshot_contents_json="{{ snapshot_contents.stdout|snapshot_list_indices_to_json }}"
+
+  - name: Print contents of snapshot_contents output when verbosity >= 1
+    debug: var=snapshot_contents verbosity=1
+
+  - block:
+    - name: Verify the contents of the snapshot created
+      assert:
+        that: '"{{ item }}" in list_of_indices'
+        msg: "{{ item }} index was not found"
+      with_items: "{{ snapshot_contents_json['indices'] }}"
+    when: list_of_indices is defined
+
+  - block:
+    - name: Get the list of all inices
+      command: "python /tmp/{{ get_indices }}"
+      remote_user: root
+      register: indices_output
+
+    - name: Verify the contents of the snapshot created
+      assert:
+        that: '"{{ item }}" in indices_output.stdout'
+        msg: "{{ item }} index was not found"
+      with_items: "{{ snapshot_contents_json['indices'] }}"
+    when: list_of_indices is not defined
+
+  - name: Create file to store repo and snapshot names to use them in migrate role
+    copy:
+      content: "repo-{{ repo_name }}\nsnap-{{ snap_name }}"
+      dest: "/tmp/vstat_backups/repo_snapshot_name"
+    remote_user: "{{ ansible_sudo_username }}"
+    delegate_to: "{{ ansible_deployment_host }}"
+
+  - name: Copy the elasticsearch  data backup scripts ISO to temp directory
+    command: "{{ transfer_backup }}"
     remote_user: "{{ ansible_sudo_username }}"
     delegate_to: "{{ ansible_deployment_host }}"
   when: 
