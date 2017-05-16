@@ -2,12 +2,14 @@
 
 ## What's new
 
-1. Preview support for upgrade rollback for standalone VSD and VSC on KVM platform.See `UPGRADE.md`.
+1. Rollback for VSD and VSC on KVM platform. See `UPGRADE.md`.
 1. Added support to specify custom xmpp URL for clustered VSD deployments
 1. Added support for preserving gateway purge timer during upgrades. See `UPGRADE.md`.
 1. Added fix for ElasticSearch bug reported in Issue #162.
 1. Added support for DNS/NTP server
 1. Added fix to enable TLS on all VSDs when deploying VNS on a VSD cluster.
+1. Added support for deploying DNS (Uses STATS VM as image...)
+1. Added support for deploy/destroy generic VM (qcow2 only with XML predefined)
 
 =======
 
@@ -15,6 +17,101 @@ Feedback and bug reports should be provided via the Issues feature of Github or 
 
 ## Deprecation notice
 In the near future (date TBD), Metro is going to drop support for using Ubuntu as a deployment target for new VMs, e.g. VSD, VSC, VSTAT, etc. VRS and Dockermon will continue to be supported on Ubuntu 14.04 and Ubuntu 16.04.
+
+## Metro Playbook Categories
+
+### Core Playbooks
+These are playbooks that are fully tested and supported.
+
+- build
+- build_upgrade
+- gvm-predeploy
+- gvm-destroy
+- nsgv-destroy
+- nsgv-predeploy
+- nuage-predeploy
+- nuage-unzip
+- reset-build
+- set-upgrade-flag
+- validate-build-vars
+- vcin-deploy
+- vcin-destroy
+- vcin-predeploy
+- vns-deploy
+- vns-postdeploy-vsc
+- vns-postdeploy-vsd
+- vns-predeploy
+- vnsutil-deploy
+- vnsutil-destroy
+- vnsutil-postdeploy
+- vnsutil-predeploy
+- vrs-deploy
+- vrs-destroy
+- vrs-health
+- vrs-postdeploy
+- vrs-predeploy
+- vsc-backup
+- vsc-deploy
+- vsc-destroy
+- vsc-health
+- vsc-postdeploy
+- vsc-predeploy
+- vsc-preupgrade
+- vsc-rollback
+- vsc-upgrade
+- vsd-dbbackup
+- vsd-decouple
+- vsd-deploy
+- vsd-destroy
+- vsd-health
+- vsd-license
+- vsd-predeploy
+- vsd-rollback
+- vsd-services-stop
+- vsd-upgrade
+- vstat-deploy
+- vstat-destroy
+- vstat-health
+- vstat-postdeploy
+- vstat-predeploy
+- vstat-vrs-health
+- vstat-vsc-health
+- vstat-vsd-health
+
+### Experimental
+These are playbooks that are stable but under development or contributed from the field. Support is _best effort_.
+
+- dns-deploy
+- dns-destroy
+- dns-postdeploy
+- dns-predeploy
+- mesos-deploy
+- stcv-postdeploy
+- stcv-predeploy
+- vstat-data-backup
+- vstat-data-migrate
+- vstat-upgrade
+
+### Lab Playbooks
+These are playbooks that are intended for use in the Metro Lab. You are welcome to use them.
+
+- ci-build
+- ci-deploy
+- ci-destroy
+- ci-predeploy
+- infra-deploy
+- infra-destroy
+- infra-predeploy
+- osc-deploy
+- osc-destroy
+- os-compute-deploy
+- os-compute-destroy
+- os-compute-postdeploy
+- os-compute-predeploy
+- os-snapshot
+- stacks_destroy
+- util-setup
+- vsd-osc-config
 
 ## Overview
 
