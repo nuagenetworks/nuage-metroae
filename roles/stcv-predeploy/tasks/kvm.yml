@@ -38,8 +38,8 @@
     delegate_to: "{{ target_server }}"
     remote_user: "{{ target_server_username }}"
 
-  - name: Copy the KVM qcow image to virt images directory on {{ target_server }}
-    copy: src={{ src_qcow2_path }}/{{ src_qcow2_file_name }}
+  - name: Copy the KVM image to virt images directory on {{ target_server }}
+    copy: src={{ stcv_image_path }}/{{ stcv_image_filename }}
           dest={{ images_path }}/{{ vm_hostname }}
           owner={{ libvirt.user }}
           group={{ libvirt.group }}
@@ -47,13 +47,13 @@
     remote_user: "{{ target_server_username }}"
 
   - name: Get list of partitions
-    shell: "guestfish -r -a {{ images_path }}/{{ vm_hostname }}/{{ src_qcow2_file_name }} run : list-filesystems | grep -Ev '(unknown|swap)'"
+    shell: "guestfish -r -a {{ images_path }}/{{ vm_hostname }}/{{ stcv_image_filename }} run : list-filesystems | grep -Ev '(unknown|swap)'"
     delegate_to: "{{ target_server }}"
     remote_user: "{{ target_server_username }}"
     register: partitions_list
 
   - name: Check partition content
-    shell: "guestfish -r -a {{ images_path }}/{{ vm_hostname }}/{{ src_qcow2_file_name }} run : mount {{ item.split(':')[0] }} / : ls /"
+    shell: "guestfish -r -a {{ images_path }}/{{ vm_hostname }}/{{ stcv_image_filename }} run : mount {{ item.split(':')[0] }} / : ls /"
     delegate_to: "{{ target_server }}"
     register: partitions
     with_items: "{{ partitions_list.stdout_lines }}"
@@ -73,7 +73,7 @@
     remote_user: "{{ target_server_username }}"
 
   - name: Copy admin.conf file to the KVM image on {{ target_server }}
-    command: guestfish --rw -a {{ images_path }}/{{ vm_hostname }}/{{ src_qcow2_file_name }} -m {{ guestfish_mount }} copy-in {{ images_path }}/{{ vm_hostname }}/admin.conf /chassis/conf/
+    command: guestfish --rw -a {{ images_path }}/{{ vm_hostname }}/{{ stcv_image_filename }} -m {{ guestfish_mount }} copy-in {{ images_path }}/{{ vm_hostname }}/admin.conf /chassis/conf/
     delegate_to: "{{ target_server }}"
     remote_user: "{{ target_server_username }}"
 

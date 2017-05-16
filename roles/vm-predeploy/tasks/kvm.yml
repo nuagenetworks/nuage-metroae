@@ -1,0 +1,78 @@
+---
+- name: Query {{ target_server }} facts
+  action: setup
+  remote_user: "{{ target_server_username }}"
+  delegate_to: "{{ target_server }}"
+
+- name: Check target for supported OS
+  fail: msg="Unsupported OS family ({{ ansible_os_family }})"
+  when: ansible_os_family not in vm_target_server_os_family_list
+
+- name: Include OS-specific variables.
+  include_vars: "{{ ansible_os_family }}.yml"
+
+- name: If RedHat, install packages for RedHat OS family distros
+  yum: name={{ item }} state=present
+  with_items:
+   - qemu-kvm
+   - libvirt
+   - bridge-utils
+   - libguestfs-tools
+   - libvirt-python
+  when: ansible_os_family == "RedHat"
+  delegate_to: "{{ target_server }}"
+  remote_user: "{{ target_server_username }}"
+
+- name: If Debian, install packages for Debian OS family distros
+  apt: name={{ item }} state=present
+  with_items:
+   - qemu-kvm
+   - libvirt-bin
+   - bridge-utils
+   - libguestfs-tools
+   - python-libvirt
+  when: ansible_os_family == "Debian"
+  delegate_to: "{{ target_server }}"
+  remote_user: "{{ target_server_username }}"
+
+- name: List the Virtual Machines running
+  virt: command=list_vms
+  register: virt_vms
+  delegate_to: "{{ target_server }}"
+  remote_user: "{{ target_server_username }}"
+
+- name: Verify that the VM is not already running
+  assert:
+    that: "inventory_hostname not in virt_vms.list_vms"
+    msg: "{{ inventory_hostname }} is already running on {{ target_server }}"
+
+- name: Create libvirt image directory
+  file: path={{ images_path }}/{{ inventory_hostname }}
+        state=directory
+        owner={{ libvirt.user }}
+        group={{ libvirt.group }}
+  delegate_to: "{{ target_server }}"
+  remote_user: "{{ target_server_username }}"
+
+- name: Copy the vm image to virt images directory
+  copy: src={{ vm_image_dir }}/{{ vm_image_filename }}
+        dest={{ images_path }}/{{ inventory_hostname }}
+        owner={{ libvirt.user }}
+        group={{ libvirt.group }}
+  delegate_to: "{{ target_server }}"
+  remote_user: "{{ target_server_username }}"
+
+- name: "Define new VSD VM"
+  virt: name="{{ inventory_hostname }}"
+        command=define
+        xml="{{ lookup('template', 'vm.xml.j2') }}"
+        uri=qemu:///system
+  delegate_to: "{{ target_server }}"
+  remote_user: "{{ target_server_username }}"
+
+- name: "Run VSD VM"
+  virt: name="{{ inventory_hostname }}"
+        state=running
+        uri=qemu:///system
+  delegate_to: "{{ target_server }}"
+  remote_user: "{{ target_server_username }}"

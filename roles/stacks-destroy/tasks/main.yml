@@ -17,7 +17,7 @@
   shell: openstack stack list
   environment: "{{ os_env }}"
   register: os_stack_list
-  delegate_to: 127.0.0.1
+  remote_user: root
 
 - debug: var=os_stack_list verbosity=1
 
@@ -37,6 +37,7 @@
   - name: Delete the ubuntu VMs first
     shell: "openstack stack delete {{ item|json_query('Name') }}"
     environment: "{{ os_env }}"
+    remote_user: root
     when: "'u16' in item|json_query('Name') or 'u14' in item|json_query('Name')"
     with_items:
       - "{{ os_stack_stacks_json }}"
