@@ -1,0 +1,13 @@
+- name: Clean known_hosts of VSD's
+  command: ssh-keygen -R "{{ mgmt_ip }}" -f /root/.ssh/known_hosts
+  delegate_to: "{{ ansible_deployment_host }}"
+  remote_user: "{{ ansible_sudo_username }}"
+
+- name: Verify if VSD TLS mode is set to allow
+  command: /opt/vsd/bin/ejmode status
+  delegate_to: "{{ item }}"
+  register: ejmode
+  remote_user: root
+  with_items: "{{ groups['vsds'] }}"
+  failed_when: "'allow' not in ejmode.stdout"
+  run_once: true

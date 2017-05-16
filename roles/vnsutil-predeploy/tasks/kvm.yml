@@ -50,17 +50,18 @@
   remote_user: "{{ target_server_username }}"
   delegate_to: "{{ target_server }}"
 
-- name: List the Virtual Machines running on {{ target_server }}
+- name: List the Virtual Machines
   virt: command=list_vms
   register: virt_vms
   delegate_to: "{{ target_server }}"
   remote_user: "{{ target_server_username }}"
 
-- name: Check if the VM is already running on {{ target_server }}
-  fail: msg="The VM is already defined on this target_server."
-  when: inventory_hostname in virt_vms.list_vms
+- name: Verify that the VM is not already running
+  assert:
+    that: "inventory_hostname not in virt_vms.list_vms"
+    msg: "{{ inventory_hostname }} is already running on {{ target_server }}"
 
-- name: Create libvirt image directory on {{ target_server }}
+- name: Create libvirt image directory
   file: path={{ images_path }}/{{ inventory_hostname }}
         state=directory
         owner={{ libvirt.user }}
@@ -68,7 +69,7 @@
   delegate_to: "{{ target_server }}"
   remote_user: "{{ target_server_username }}"
 
-- name: Copy the vnsutil qcow image to virt images directory on {{ target_server }}
+- name: Copy the vnsutil qcow image to virt images directory
   copy: src={{ vnsutil_qcow2_path }}/{{ vnsutil_qcow2_file_name }}
         dest={{ images_path }}/{{ inventory_hostname }}
         owner={{ libvirt.user }}
@@ -76,7 +77,7 @@
   delegate_to: "{{ target_server }}"
   remote_user: "{{ target_server_username }}"
 
-- name: Create a temporary copy of the network script for eth0 on {{ target_server }}
+- name: Create a temporary copy of the network script for eth0
   template: src=ifcfg-eth0.j2 backup=no dest={{ images_path }}/{{ inventory_hostname }}/ifcfg-eth0
   delegate_to: "{{ target_server }}"
   remote_user: "{{ target_server_username }}"
@@ -102,7 +103,7 @@
 
 - debug: var=guestfish_mount verbosity=1
 
-- name: Copy eth0 network script file to the vnsutil image on {{ target_server }}
+- name: Copy eth0 network script file to the vnsutil image
   command: guestfish --rw -a {{ images_path }}/{{ inventory_hostname }}/{{ vnsutil_qcow2_file_name }} -m {{ guestfish_mount }} copy-in {{ images_path }}/{{ inventory_hostname }}/ifcfg-eth0 /etc/sysconfig/network-scripts/
   delegate_to: "{{ target_server }}"
   remote_user: "{{ target_server_username }}"
@@ -117,12 +118,12 @@
   delegate_to: "{{ target_server }}"
   remote_user: "{{ target_server_username }}"
 
-- name: Create a temporary copy of the network script for eth1 on {{ target_server }}
+- name: Create a temporary copy of the network script for eth1
   template: src=ifcfg-eth1.j2 backup=no dest={{ images_path }}/{{ inventory_hostname }}/ifcfg-eth1
   delegate_to: "{{ target_server }}"
   remote_user: "{{ target_server_username }}"
 
-- name: Copy eth1 network script file to the vnsutil image on {{ target_server }}
+- name: Copy eth1 network script file to the vnsutil image
   command: guestfish --rw -a {{ images_path }}/{{ inventory_hostname }}/{{ vnsutil_qcow2_file_name }} -m {{ guestfish_mount }} copy-in {{ images_path }}/{{ inventory_hostname }}/ifcfg-eth1 /etc/sysconfig/network-scripts/
   delegate_to: "{{ target_server }}"
   remote_user: "{{ target_server_username }}"
@@ -137,7 +138,7 @@
   delegate_to: "{{ target_server }}"
   remote_user: "{{ target_server_username }}"
 
-- name: Create a temporary copy of the syscfg network file on {{ target_server }}
+- name: Create a temporary copy of the syscfg network file
   template: src=network.j2 backup=no dest={{ images_path }}/{{ inventory_hostname }}/network
   delegate_to: "{{ target_server }}"
   remote_user: "{{ target_server_username }}"

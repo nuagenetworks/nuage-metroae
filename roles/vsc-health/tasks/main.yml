@@ -18,6 +18,12 @@
   delegate_to: "{{ ansible_deployment_host }}"
   remote_user: "{{ ansible_sudo_username }}"
 
+# Without this, the run creates a false positive as it finds the files
+# from the previous run
+- name: Remove older failure_report.log files
+  command: rm -f {{ failure_report_file_name }}
+  delegate_to: localhost
+
 - name: Get output of 'show version'
   sros_command:
     commands:
@@ -94,16 +100,6 @@
   assert: { 
     that: "{{ expected_num_bgp_peers }} == {{ bgp_peer_count }}",
     msg: "Invalid BGP Peer count ({{ bgp_peer_count }}) detected. Expected '{{ expected_num_bgp_peers }}'. Check 'show router bgp summary'."
-  }
-  ignore_errors: yes
-
-- name: Print number of BGP Peer details when verbosity >= 1
-  debug: var=bgp_summary_json['Peers']|length verbosity=1
-
-- name: Check for details for the correct number of BGP Peers
-  assert: { 
-    that: "{{ expected_num_bgp_peers }} == {{ bgp_summary_json['Peers']|length }}",
-    msg: "Didn't find enough sets of details for BGP peers. Found {{ bgp_summary_json['Peers']|length }}. Expected '{{ expected_num_bgp_peers }}'. Check 'show router bgp summary'."
   }
   ignore_errors: yes
 

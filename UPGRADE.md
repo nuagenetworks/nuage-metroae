@@ -37,7 +37,6 @@ These health checks can be ran at any time of the upgrade process.
 The following is the workflow to acheive clustered vsp upgrade using above set of playbooks
 
 ```
-./metro-ansible vsd_decluster.yml
 ./metro-ansible vsd_ha_node1_3_upgrade.yml
 ./metro-ansible vsc_ha_node1_upgrade.yml
 ```
@@ -59,6 +58,12 @@ The following is the workflow to upgrade a full Nuage Networks VSP installation 
 Upgrade vrs(s) manually
 ```
 ./metro-ansible vsc_ha_node2_upgrade.yml
+```
+
+5. Run health checks on VSD and VSC post upgrade
+```
+./metro-ansible vsd_health.yml
+./metro-ansible vsc_health.yml
 ```
 
 ## Details

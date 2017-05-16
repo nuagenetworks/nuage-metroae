@@ -13,6 +13,7 @@
     name: vsd-destroy
   vars:
     preserve_vsd: True
+    rollback: False
 
 - name: Deploy VSD nodes with new version
   include_role:
@@ -103,6 +104,21 @@
     delegate_to: "{{ ansible_deployment_host }}"
     remote_user: "{{ ansible_sudo_username }}"
 
-  - debug: var=vsc2_command_status
+  - debug: var=vsc2_command_status verbosity=1
+
+  - name: read saved vsd purge time before upgrade
+    command: cat "/tmp/backup-{{ groups['vsd_ha_node1'][0] }}-latest/purge_time"
+    register: purge_time_saved
+    delegate_to: 127.0.0.1
+
+  - debug: var=purge_time_saved.stdout verbosity=1
+
+  - name: Update gateway purge timer to original value
+    config_vsd_system:
+      vsd_auth:
+        "{{ vsd_auth }}"
+      gateway_purge_time: "{{ purge_time_saved.stdout }}"
+    register: update_time_status
+    delegate_to: 127.0.0.1
 
   when: (inventory_hostname == groups['vsds'][0] and vsd_sa_or_ha == "sa") or (inventory_hostname == groups['vsds'][1] and vsd_sa_or_ha == "ha")

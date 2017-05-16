@@ -27,6 +27,11 @@ ansible_sudo_username: "root"
 # VSD params
 # vsd_sa_or_ha = ha for cluster, sa for standalone deployment
 vsd_sa_or_ha: ha
+###
+# VSD FQDN
+# Use xmpp fqdn for clustered VSDs and the vsd fqdn for stand alone
+# This variable must be populated for all the components except VRS deployment
+vsd_fqdn_global: xmpp.example.com
 # vsd_operations_list = A list of the operations you intend for the VSD. The
 # list could include 1 or more of the following:
 # - install
@@ -40,19 +45,19 @@ vsd_operations_list:
 myvsds:
   - { hostname: vsd1.example.com,
       target_server_type: "kvm",
-      target_server: 10.31.177.9,
+      target_server: TARGET_SERVER,
       mgmt_ip: 192.168.122.201,
       mgmt_gateway: 192.168.122.1,
       mgmt_netmask: 255.255.255.0 }
   - { hostname: vsd2.example.com,
       target_server_type: "kvm",
-      target_server: 10.31.177.9,
+      target_server: TARGET_SERVER,
       mgmt_ip: 192.168.122.208,
       mgmt_gateway: 192.168.122.1,
       mgmt_netmask: 255.255.255.0 }
   - { hostname: vsd3.example.com,
       target_server_type: "kvm",
-      target_server: 10.31.177.9,
+      target_server: TARGET_SERVER,
       mgmt_ip: 192.168.122.209,
       mgmt_gateway: 192.168.122.1,
       mgmt_netmask: 255.255.255.0 }
@@ -68,28 +73,29 @@ vsc_operations_list:
   - install
 # myvscs is a collection of parameters for VSCs. 
 # One set of parameters is required for each VSC.
+# Do not update {{ vsd_fqdn_global }} here as it reads from previous section 
 myvscs:
   - { hostname: vsc1.example.com,
       target_server_type: "kvm",
-      target_server: 10.31.177.9,
+      target_server: TARGET_SERVER,
       mgmt_ip: 192.168.122.202,
       mgmt_gateway: 192.168.122.1,
       mgmt_netmask_prefix: 24,
       ctrl_ip: 192.168.100.202,
       ctrl_netmask_prefix: 24,
-      vsd_fqdn: xmpp.example.com,
+      vsd_fqdn: "{{ vsd_fqdn_global }}",
       system_ip: 1.1.1.2,
       xmpp_username: vsc1,
       vsc_static_route_list: { 0.0.0.0/1 } }
   - { hostname: vsc2.example.com,
       target_server_type: "kvm",
-      target_server: 10.31.177.9,
+      target_server: TARGET_SERVER,
       mgmt_ip: 192.168.122.203,
       mgmt_gateway: 192.168.122.1,
       mgmt_netmask_prefix: 24,
       ctrl_ip: 192.168.100.203,
       ctrl_netmask_prefix: 24,
-      vsd_fqdn: xmpp.example.com,
+      vsd_fqdn: "{{ vsd_fqdn_global }}",
       system_ip: 1.1.1.3,
       xmpp_username: vsc2,
       vsc_static_route_list: { 0.0.0.0/1 } }
@@ -130,11 +136,11 @@ vstat_operations_list:
 myvstats:
   - { hostname: vstat1.example.com,
       target_server_type: "kvm",
-      target_server: 10.31.177.9,
+      target_server: TARGET_SERVER,
       mgmt_ip: 192.168.122.204,
       mgmt_gateway: 192.168.122.1,
       mgmt_netmask: 255.255.255.0,
-      vsd_fqdn: vsd1.example.com }
+      vsd_fqdn: "{{ vsd_fqdn_global }}" }
 ###
 # VNS params
 # vns_operations_list = A list of the operations you intend for the VNS. The
@@ -150,17 +156,18 @@ vns_operations_list:
 myvnsutils:
   - { hostname: vnsutil1.example.com,
       target_server_type: "kvm",
-      target_server: 10.31.177.9,
+      target_server: TARGET_SERVER,
       mgmt_ip: 192.168.122.205,
       mgmt_gateway: 192.168.122.1,
       mgmt_netmask: 255.255.255.0,
+      data_fqdn: vnsutil1.data.example.com,
       data_ip: 192.168.100.205,
       data_subnet: 192.168.100.0,
       data_netmask: 255.255.255.0,
       nsgv_ip: 192.168.122.206,
       nsgv_mac: '52:54:00:88:85:12',
       nsgv_hostname: nsgv1.example.com,
-      vsd_fqdn: vsd1.example.com }
+      vsd_fqdn: "{{ vsd_fqdn_global }}" }
 # mynsgvs is a collection of parameters for the NSGV. 
 # One set of parameters is required for each NSGV.
 # bootstrap_method = A list of options
@@ -170,7 +177,7 @@ myvnsutils:
 mynsgvs:
   - { hostname: nsgv1.example.com,
       target_server_type: "kvm",
-      target_server: 10.31.177.9,
+      target_server: TARGET_SERVER,
       bootstrap_method: zfb_metro,
       # Needed only when bootstrap_method: zfb_external
       iso_path: '/tmp/iso',
@@ -181,7 +188,7 @@ mynsgvs:
 ###
 # Ansible
 # The IP addr or hostname of the Ansible host
-ansible_deployment_host: 10.31.177.9
+ansible_deployment_host: TARGET_SERVER
 ###
 # Hypervisor network bridges
 # Network bridges required on the target server (hypervisor) for VM deployment

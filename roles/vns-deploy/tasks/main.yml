@@ -7,7 +7,8 @@
 - name: Change XMPP connection to TLS on VSD
   command: /opt/vsd/bin/ejmode allow -y
   remote_user: "root"
-  delegate_to: "{{ vsd_fqdn }}"
+  delegate_to: "{{  item }}"
+  with_items: "{{ groups['vsds'] }}"
 
 - name: wait for ejabberd-status to become running
   monit_waitfor_service:
@@ -15,7 +16,8 @@
     timeout_seconds: 600
     test_interval_seconds: 30
   remote_user: "root"
-  delegate_to: "{{ vsd_fqdn }}"
+  delegate_to: "{{ item }}"
+  with_items: "{{ groups['vsds'] }}"
 
 - name: wait for ejbca-status to become running
   monit_waitfor_service:
@@ -23,57 +25,64 @@
     timeout_seconds: 600
     test_interval_seconds: 30
   remote_user: "root"
-  delegate_to: "{{ vsd_fqdn }}"
+  delegate_to: "{{ item }}"
+  with_items: "{{ groups['vsds'] }}"
 
 - block:
   - name: Download pip installer
     command: curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
-    delegate_to: "{{ vsd_fqdn }}"
+    delegate_to: "{{ item }}"
     remote_user: "root"
+    with_items: "{{ groups['vsds'] }}"
   
   - name: Execute pip installer
     command: python get-pip.py
-    delegate_to: "{{ vsd_fqdn }}"
+    delegate_to: "{{ item }}"
     remote_user: "root"
+    with_items: "{{ groups['vsds'] }}"
  
   - name: Install pexpect on VSD
     pip:
       name: pexpect
-    delegate_to: "{{ vsd_fqdn }}"
+    delegate_to: "{{ item }}"
     remote_user: "root"
+    with_items: "{{ groups['vsds'] }}"
   when: yum_proxy == 'NONE'
 
 - block:
   - name: Download pip installer through proxy
     command: curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
-    delegate_to: "{{ vsd_fqdn }}"
+    delegate_to: "{{ item }}"
     remote_user: "root"
     environment:
       http_proxy: "{{ yum_proxy }}"
       https_proxy: "{{ yum_proxy }}"
+    with_items: "{{ groups['vsds'] }}"
 
   - name: Execute pip installer through proxy
     command: python get-pip.py
-    delegate_to: "{{ vsd_fqdn }}"
+    delegate_to: "{{ item }}"
     remote_user: "root"
     environment:
       http_proxy: "{{ yum_proxy }}"
       https_proxy: "{{ yum_proxy }}"
+    with_items: "{{ groups['vsds'] }}"
  
   - name: Install pexpect on VSD through proxy
     pip:
       name: pexpect
-    delegate_to: "{{ vsd_fqdn }}"
+    delegate_to: "{{ item }}"
     remote_user: "root"
     environment:
       http_proxy: "{{ yum_proxy }}"
       https_proxy: "{{ yum_proxy }}"
+    with_items: "{{ groups['vsds'] }}"
   when: yum_proxy != 'NONE'
 
 - name: Get VSD version
   shell: echo $VSD_VERSION
   register: vsd_version
-  delegate_to: "{{ vsd_fqdn }}"
+  delegate_to: "{{ groups['vsds'][0] }}"
   remote_user: "root"
 
 - name: Create and transfer certs from 4.0.4 VSD
@@ -82,7 +91,7 @@
    command: "{{ create_certs_404 }}"
    responses:
      (?i)password: "admin"
-  delegate_to: "{{ vsd_fqdn }}"
+  delegate_to: "{{ groups['vsds'][0] }}"
   remote_user: "root"
   when: "'4.0.4' in vsd_version.stdout"
 
@@ -92,7 +101,7 @@
    command: "{{ create_certs }}"
    responses:
      (?i)password: "admin"
-  delegate_to: "{{ vsd_fqdn }}"
+  delegate_to: "{{ groups['vsds'][0] }}"
   remote_user: "root"
   when: "'4.0.4' not in vsd_version.stdout"
 
@@ -107,3 +116,19 @@
 
 - name: Verification Result Success Status
   debug: var=output.stdout verbosity=1
+
+- name: check xmpp connectivity between VSC and VSD after enabling TLS
+  sros_command:
+    commands:
+      - show vswitch-controller xmpp-server | match Functional
+    wait_for:
+      - result[0] contains Functional
+    provider: "{{ vsc_creds }}"
+    interval: 10
+    retries: 6
+  register: xmpp_status
+  delegate_to: "{{ ansible_deployment_host }}"
+  remote_user: "{{ ansible_sudo_username }}"
+
+- name: Print 'show vswitch-controller xmpp-server detail' when verbosity >= 1
+  debug: var=xmpp_status verbosity=1

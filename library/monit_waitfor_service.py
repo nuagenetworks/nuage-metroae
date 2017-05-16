@@ -61,6 +61,9 @@ def main():
                 elif parts[0].lower() == 'process':
                     if parts[1] == "'%s'" % proc_name:
                         return ' '.join(parts[2:]).lower()
+                elif parts[0].lower() == 'file':
+                    if parts[1] == "'%s'" % proc_name:
+                        return ' '.join(parts[2:]).lower()
         else:
             return ''
 
@@ -70,7 +73,7 @@ def main():
     for proc_name in vsd_stats_proc:
         proc_status = status(proc_name)
         while not desired_state and time_elapsed < timeout_seconds:
-            if proc_status == 'ok' or proc_status == 'running':
+            if proc_status == 'ok' or proc_status == 'running' or proc_status == 'accessible':
                 desired_state = True
             else:
                 time.sleep(test_interval_seconds)
