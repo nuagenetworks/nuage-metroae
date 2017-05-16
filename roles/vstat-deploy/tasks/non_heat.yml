@@ -18,14 +18,15 @@
       {% endfor %}
   remote_user: "root"
 
-- name: Update /etc/hosts file on {{ vsd_fqdn }}
+- name: Update /etc/hosts file on VSD(s)
   blockinfile:
     dest: /etc/hosts
     block: |
       {% for host in groups['vstats']  %}
       {{ hostvars[host]['mgmt_ip'] }}    {{ host }}
       {% endfor %}
-  delegate_to: "{{ vsd_fqdn }}"
+  delegate_to: "{{ item }}"
+  with_items: "{{ groups['vsds'] }}"
   remote_user: "root"
 
 - block:
@@ -186,7 +187,7 @@
   remote_user: root
   environment:
     SSHPASS: "{{lookup('env','SSHPASS')}}"
-  with_items: groups['vsds']
+  with_items: "{{ groups['vsds'] }}"
   run_once: true
   when: 
     - not vstat_standalone
