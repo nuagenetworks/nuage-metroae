@@ -11,7 +11,7 @@ then
 fi
 
 cp ./test/files/build_vars.yml.standalone_vsd_vstat roles/reset-build/files/build_vars.yml
-cp ./test/files/upgrade_vars.yml.standalone_vsd_vstat roles/reset-build/files/upgrade_vars.yml
+cp ./test/files/upgrade_vars.yml.standalone_vsd roles/reset-build/files/upgrade_vars.yml
 cp ./test/files/test_install.yml .
 cp ./test/files/test_cleanup.yml .
 cp ./test/files/user_creds.yml.standalone_vsd ./user_creds.yml
