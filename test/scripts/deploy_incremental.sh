@@ -8,7 +8,7 @@ function run_iter {
     sed -i "s/TARGET_SERVER/$IPADDR/g" roles/reset-build/files/build_vars.yml
     ./metro-ansible reset_build.yml -vvvv
     ./metro-ansible build.yml -vvvv
-    if [ $2 -eq "VSTAT" ];
+    if [ $2 == "VSTAT" ];
     then
         ./metro-ansible vstat_predeploy.yml -vvvv
         ./metro-ansible vstat_deploy.yml -vvvv
