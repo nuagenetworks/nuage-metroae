@@ -33,16 +33,13 @@ run_iter $1 $TESTINSTALL
 cp ./test/files/build_vars_vsconly.yml roles/reset-build/files/build_vars.yml
 run_iter $1 $TESTINSTALL
 
-cp ./test/files/build_vars_vstatonly.yml roles/reset-build/files/build_vars.yml
+cp ./test/files/build_vars_vstatonlywithvsd.yml roles/reset-build/files/build_vars.yml
 run_iter $1 $TESTINSTALL
 
 cp ./test/files/build_vars_vrsonly.yml roles/reset-build/files/build_vars.yml
 run_iter $1 $TESTINSTALL
 
-cp ./test/files/build_vars_vnsonly.yml roles/reset-build/files/build_vars.yml
-run_iter $1 $TESTCLEANUP
-
-cp ./test/files/build_vars_vnsonlywithvsc.yml roles/reset-build/files/build_vars.yml
+cp ./test/files/build_vars_vnsonlywithvscvsd.yml roles/reset-build/files/build_vars.yml
 run_iter $1 $INSTALLVNS
 
 cp ./test/files/build_vars_all.yml roles/reset-build/files/build_vars.yml
