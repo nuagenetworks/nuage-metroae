@@ -63,6 +63,5 @@ def main():
         vsd_proc_status = status(group=group_name)
         module.exit_json(changed=True, state=vsd_proc_status)
 
-# Run the main
 
 main()

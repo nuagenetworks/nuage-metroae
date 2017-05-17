@@ -2,12 +2,112 @@
 
 ## What's new
 
-1. Added fix for ElasticSearch bug reported in Issue #162.
+1. Fix VSTAT cluster Iptables rules and Incremental CI script.
+1. Add new items here...
 
-Feedback and bug reports should be provided via the Issues feature of Github or via email to [Brian Castelli](mailto://brian.castelli@nokia.com).
+## Questions, Feedback, and Issues
+
+Questions should be directed to the [nuage-metro-interest mailing list](mailto://nuage-metro-interest@list.nokia.com).
+
+Feedback and issues should be reported via the Github Issues feature or via email to [Brian Castelli](mailto://brian.castelli@nokia.com).
 
 ## Deprecation notice
 In the near future (date TBD), Metro is going to drop support for using Ubuntu as a deployment target for new VMs, e.g. VSD, VSC, VSTAT, etc. VRS and Dockermon will continue to be supported on Ubuntu 14.04 and Ubuntu 16.04.
+
+## Metro Playbook Categories
+
+### Core Playbooks
+These are playbooks that are fully tested and supported.
+
+- build
+- build_upgrade
+- gvm-predeploy
+- gvm-destroy
+- nsgv-destroy
+- nsgv-predeploy
+- nuage-predeploy
+- nuage-unzip
+- reset-build
+- set-upgrade-flag
+- validate-build-vars
+- vcin-deploy
+- vcin-destroy
+- vcin-predeploy
+- vns-deploy
+- vns-postdeploy-vsc
+- vns-postdeploy-vsd
+- vns-predeploy
+- vnsutil-deploy
+- vnsutil-destroy
+- vnsutil-postdeploy
+- vnsutil-predeploy
+- vrs-deploy
+- vrs-destroy
+- vrs-health
+- vrs-postdeploy
+- vrs-predeploy
+- vsc-backup
+- vsc-deploy
+- vsc-destroy
+- vsc-health
+- vsc-postdeploy
+- vsc-predeploy
+- vsc-preupgrade
+- vsc-rollback
+- vsc-upgrade
+- vsd-dbbackup
+- vsd-decouple
+- vsd-deploy
+- vsd-destroy
+- vsd-health
+- vsd-license
+- vsd-predeploy
+- vsd-rollback
+- vsd-services-stop
+- vsd-upgrade
+- vstat-deploy
+- vstat-destroy
+- vstat-health
+- vstat-postdeploy
+- vstat-predeploy
+- vstat-vrs-health
+- vstat-vsc-health
+- vstat-vsd-health
+
+### Experimental
+These are playbooks that are stable but under development or contributed from the field. Support is _best effort_.
+
+- dns-deploy
+- dns-destroy
+- dns-postdeploy
+- dns-predeploy
+- mesos-deploy
+- stcv-postdeploy
+- stcv-predeploy
+- vstat-data-backup
+- vstat-data-migrate
+- vstat-upgrade
+
+### Lab Playbooks
+These are playbooks that are intended for use in the Metro Lab. You are welcome to use them.
+
+- ci-build
+- ci-deploy
+- ci-destroy
+- ci-predeploy
+- infra-deploy
+- infra-destroy
+- infra-predeploy
+- osc-deploy
+- osc-destroy
+- os-compute-deploy
+- os-compute-destroy
+- os-compute-postdeploy
+- os-compute-predeploy
+- os-snapshot
+- stacks_destroy
+- util-setup
+- vsd-osc-config
 
 ## Overview
 
@@ -29,6 +129,7 @@ The VCS/VNS components that are supported are:
 6. VNSUTIL (1 or more)
 7. NSGV (1)
 8. VCIN
+9. DNS/NTP (1)
 
 
 ## For the impatient
@@ -77,9 +178,9 @@ The following restrictions and conditions apply prior to executing the playbooks
 
 1. The hypervisor hosts must be running RedHat or CentOS. Support for Ubuntu exists but has been deprecated.
 1. If host names are used for target systems, VSD, VSC, VSTAT, VNSUTIL and VRS nodes, those names must be discoverable via DNS *or* added to the /etc/hosts file of the ansible deployment host.
-1. Each VM that is created for VSD, VSC, VSTAT, VNSUTIL or NSGV connects to one or more bridges on the target server. Those bridges must be created on the target server prior to deployment. Their names must be specified in the `build_vars.yml` file. See `BUILD.md` for details.
+1. Each VM that is created for VSD, VSC, VSTAT, VNSUTIL, NSGV and DNS/NTP connects to one or more bridges on the target server. Those bridges must be created on the target server prior to deployment. Their names must be specified in the `build_vars.yml` file. See `BUILD.md` for details.
 1. The ansible deployment host may also be a target server.
-1. It may be necessary to remove the vsd, vsc and vstat entries from the ansible user's `~/.ssh/known_hosts` file to prevent errors from suspected DNS spoofing. This would only be necessary if multiple runs are attempted.
+1. It may be necessary to remove the vsd, vsc, vstat and dns/ntp entries from the ansible user's `~/.ssh/known_hosts` file to prevent errors from suspected DNS spoofing. This would only be necessary if multiple runs are attempted.
 1. Under certain conditions, the `destroy_everything.yml` playbook must be run as sudo/root.
 
 ## Vcenter Prerequisites
@@ -117,7 +218,7 @@ The `examples/` directory is populated with samples of files that can be used as
 
 ### build_vars.yml
 
-`build_vars.yml` contains a set of variables that should be customized by the user prior to running the playbooks. These variables are used to configure network connectivity for the VSC, VSTAT and the VSD.
+`build_vars.yml` contains a set of variables that should be customized by the user prior to running the playbooks. These variables are used to configure network connectivity for the VSC, VSTAT, VSD and the DNS/NTP.
 
 `zfb.yml` contains a set of variables that should be customized by the user prior to running the nsgv playbooks. These variables are used to create NSG profile in the VSD Architect and also creates ISO file that is attached to NSG VM
 

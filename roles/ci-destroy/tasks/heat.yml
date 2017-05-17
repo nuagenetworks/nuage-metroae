@@ -135,11 +135,13 @@
   - name: Delete VSP ips and centos 7 vrs ip from /etc/hosts file
     lineinfile:
       dest: /etc/hosts
-      line: "{{ item }}"
+      line: "{{ vsp_item }}"
       state: absent
     with_items: "{{vsp_ips}}"
     remote_user: "{{ ansible_sudo_username }}"
     delegate_to: "{{ ansible_deployment_host }}"
+    loop_control:
+      loop_var: vsp_item
 
   - name: Delete ubuntu 14 VRS ips from /etc/hosts file
     lineinfile:
@@ -209,8 +211,6 @@
     file: path=/tmp/{{ subnet_name_temp }}_vrs_name_u16 state=absent
     delegate_to: "{{ ansible_deployment_host }}"
     remote_user: "{{ ansible_sudo_username }}"
-    remote_user: "{{ ansible_sudo_username }}"
     ignore_errors: yes
-
+  # Conditional, below, effectively provides serial = 1 set in ci_destroy.yml
   when: inventory_hostname == ansible_play_hosts[0]
-#use above block to accomodate serial = 1 set in ci_destroy.yml
