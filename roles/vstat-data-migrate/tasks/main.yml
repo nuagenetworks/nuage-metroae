@@ -10,19 +10,23 @@
     remote_user: "{{ ansible_sudo_username }}"
     delegate_to: "{{ ansible_deployment_host }}"
 
-  - name: Create backup location dir
+  - name: Set name of backup directory
+    set_fact: vstat_backup_dir="/tmp/backup-{{ inventory_hostname }}-{{ ansible_date_time.iso8601_basic_short }}/"
+
+  - name: Create backup dir
     file:
-      dest: "{{ vstat_backup_location }}"
+      dest: "{{ vstat_backup_dir }}"
       owner: "elasticsearch"
       group: "elasticsearch"
       state: directory
+      recurse: yes
       mode: 0775
     remote_user: root
 
-  - name: Configure backup location in elasticseach.yml file
+  - name: Configure backup dir in elasticseach.yml file
     lineinfile:
       dest: "/etc/elasticsearch/elasticsearch.yml"
-      line: "path.repo: [{{ vstat_backup_location }}]"
+      line: "path.repo: [{{ vstat_backup_dir }}]"
     remote_user: root
  
   - name: Restart elasticsearch process
@@ -30,6 +34,10 @@
       name: elasticsearch
       state: restarted
     remote_user: root
+
+  - name: Wiat for elasticsearch process to come up
+    pause:
+      seconds: 20
  
   - name: Get elasticsearch current status
     systemd:
@@ -43,23 +51,19 @@
       that: es_status.status.ActiveState == 'active'
       msg: "Elasticserach process in not active after restart"
  
-  - name: Wiat for elasticsearch process to come up
-    pause:
-      seconds: 20
- 
   - name: Check elasticsearch process is running
     assert:
       that: es_status.status.SubState == 'running'
       msg: "Elasticsearch process is not running after restart"
  
   - name: Read the repo name to be recreated from the file
-    command: "cat /tmp/vstat_bakcups/repo_snapshot_name"
+    command: "cat /tmp/backup-{{ inventory_hostname }}-latest/repo_snapshot_name"
     register: names
     remote_user: "{{ ansible_sudo_username }}"
     delegate_to: "{{ ansible_deployment_host }}"
     
   - name: Create repo on the new vstat vm 
-    command: "{{ create_repo }}"
+    command: "python /tmp/{{ create_repo }}"
     remote_user: root
 
   - name: Get the repo created by backup script 
@@ -74,14 +78,40 @@
     assert:
       that: '"Error in getting repo" not in repo_path.stdout'
       msg: Failed to verify the repo created
-
+  
+  - name: Get the dir name of backup folder under latest folder
+    find:
+      path: "/tmp/backup-{{ inventory_hostname }}-latest/"
+      file_type: directory
+      pattern: "backup*"
+    register: lst_dirs
+    delegate_to: "{{ ansible_deployment_host }}"
+    remote_user: "{{ ansible_sudo_username }}"
+  
+  - name: Print contents of lst_dirs when verbosity >= 1 
+    debug: var=lst_dirs
+ 
+  - name: Set the name of backup folder to be transferred
+    set_fact: 
+      folder_tobe_transferred: "{{ lst_dirs['files'][0]['path'] }}"
+  
   - name: Transfer the backup folder to vstat node
-    command: "{{ transfer_backup_folder }}"
+    shell: "{{ transfer_backup_folder }}"
     remote_user: "{{ ansible_sudo_username }}"
     delegate_to: "{{ ansible_deployment_host }}"
-    
+   
+  - name: Set permissions after transferring the backup files
+    file:
+      dest: "{{ vstat_backup_dir }}"
+      owner: "elasticsearch"
+      group: "elasticsearch"
+      state: directory
+      recurse: yes
+      mode: 0775
+    remote_user: root
+ 
   - name: Restore the snapshot on the new vstat VM
-    command: "{{ restore_snapshot }}"
+    command: "python /tmp/{{ restore_snapshot }}"
     register: restore_snap
     remote_user: root
 
@@ -126,6 +156,9 @@
 - name: Get current VSD version
   command: echo $VSD_VERSION
   register: vsd_version
+
+- name: Print vsd version when verbosity >= 1
+  debug: var=upgrade_from_version verbosity=1
 
 - name: Print vsd version when verbosity >= 1
   debug: var=vsd_version verbosity=1
@@ -186,5 +219,5 @@
     with_items: "{{ stats_current_state.state.keys() }}"
   when: 
     - vsd_version.stdout in supported_vsd_versions
-    - update_from_version == '4.0.1'
+    - upgrade_from_version == '4.0.1'
     - inventory_hostname in groups['vsds']

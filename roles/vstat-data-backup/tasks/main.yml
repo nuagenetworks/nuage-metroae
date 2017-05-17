@@ -9,15 +9,18 @@
     msg: Elastisearch upgrade is still in testing phase. Hence not supported
 
 - block:
-  - name: Create backup location dir
+  - name: Set name of backup directory
+    set_fact: vstat_backup_dir="/tmp/backup-{{ inventory_hostname }}-{{ ansible_date_time.iso8601_basic_short }}/"
+
+  - name: Create backup dir
     file:
-      dest: "{{ vstat_backup_location }}"
+      dest: "{{ vstat_backup_dir }}"
       state: directory
     remote_user: root
   
-  - name: Create backup location dir on ansible_deployment_host
+  - name: Create backup dir on ansible_deployment_host
     file:
-      dest: "/tmp/vstat_backups/"
+      dest: "{{ vstat_backup_dir }}"
       state: directory
     remote_user: "{{ ansible_sudo_username }}"
     delegate_to: "{{ ansible_deployment_host }}"
@@ -25,12 +28,12 @@
   - name: Configure backup location in elasticseach.yml file
     lineinfile:
       dest: "/etc/elasticsearch/elasticsearch.yml" 
-      line: "path.repo: [{{ vstat_backup_location }}]"
+      line: "path.repo: [{{ vstat_backup_dir }}]"
     remote_user: root
 
   - name: Add user permission to backup location
     file:
-      dest: "{{ vstat_backup_location }}" 
+      dest: "{{ vstat_backup_dir }}" 
       owner: "elasticsearch"
       group: "elasticsearch"
       recurse: yes
@@ -134,17 +137,25 @@
       with_items: "{{ snapshot_contents_json['indices'] }}"
     when: list_of_indices is not defined
 
-  - name: Create file to store repo and snapshot names to use them in migrate role
-    copy:
-      content: "repo-{{ repo_name }}\nsnap-{{ snap_name }}"
-      dest: "/tmp/vstat_backups/repo_snapshot_name"
-    remote_user: "{{ ansible_sudo_username }}"
-    delegate_to: "{{ ansible_deployment_host }}"
-
   - name: Copy the elasticsearch  data backup scripts ISO to temp directory
     command: "{{ transfer_backup }}"
     remote_user: "{{ ansible_sudo_username }}"
     delegate_to: "{{ ansible_deployment_host }}"
+
+  - name: Create symbolic link to backup location
+    #file: dest="/tmp/backup-{{ inventory_hostname }}-latest" src="{{  vstat_backup_dir }}"  state=link
+    file: dest="/tmp/backup-els2.example.com-latest" src="{{  vstat_backup_dir }}"  state=link
+    remote_user: "{{ ansible_sudo_username }}"
+    delegate_to: "{{ ansible_deployment_host }}"
+
+  - name: Create file to store repo and snapshot names to use them in migrate role
+    copy:
+      content: "repo-{{ repo_name | lower }}\nsnap-{{ snap_name | lower }}"
+      #dest: "/tmp/backup-{{ inventory_hostname }}-latest/repo_snapshot_name"
+      dest: "/tmp/backup-els2.example.com-latest/repo_snapshot_name"
+    remote_user: "{{ ansible_sudo_username }}"
+    delegate_to: "{{ ansible_deployment_host }}"
+
   when: 
     - upgrade_from_version != '4.0.1' 
 
