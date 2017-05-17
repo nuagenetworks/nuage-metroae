@@ -3,11 +3,6 @@
   setup:
   delegate_to: localhost
 
-- name: Enable vstat upgrade
-  assert:
-    that: vstat_upgrade_enabled|default(False)
-    msg: Elastisearch upgrade is still in testing phase. Hence not supported
-
 - block:
   - name: Set name of backup directory
     set_fact: vstat_backup_dir="/tmp/backup-{{ inventory_hostname }}-{{ ansible_date_time.iso8601_basic_short }}/"
@@ -24,6 +19,13 @@
       state: directory
     remote_user: "{{ ansible_sudo_username }}"
     delegate_to: "{{ ansible_deployment_host }}"
+
+  - name: Cleanup backup dir in elasticseach.yml file
+    lineinfile:
+      dest: "/etc/elasticsearch/elasticsearch.yml"
+      regexp: "path.repo"
+      state: absent
+    remote_user: root
 
   - name: Configure backup location in elasticseach.yml file
     lineinfile:
@@ -143,8 +145,7 @@
     delegate_to: "{{ ansible_deployment_host }}"
 
   - name: Create symbolic link to backup location
-    #file: dest="/tmp/backup-{{ inventory_hostname }}-latest" src="{{  vstat_backup_dir }}"  state=link
-    file: dest="/tmp/backup-els2.example.com-latest" src="{{  vstat_backup_dir }}"  state=link
+    file: dest="/tmp/backup-{{ inventory_hostname }}-latest" src="{{  vstat_backup_dir }}"  state=link
     remote_user: "{{ ansible_sudo_username }}"
     delegate_to: "{{ ansible_deployment_host }}"
 
@@ -155,7 +156,6 @@
       dest: "/tmp/backup-els2.example.com-latest/repo_snapshot_name"
     remote_user: "{{ ansible_sudo_username }}"
     delegate_to: "{{ ansible_deployment_host }}"
-
   when: 
     - upgrade_from_version != '4.0.1' 
 
