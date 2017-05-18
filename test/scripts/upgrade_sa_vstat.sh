@@ -38,7 +38,7 @@ rm -rf ./reports/
 # reset the env before upgrade
 ./metro-ansible reset_build.yml -vvvv
 # update vsd_operations to health
-sed -i "s/VSD_OPERATION/health/g" build_vars.yml 
+sed -i '0,/install/ s//health/' build_vars.yml
 # create build vars required for upgrade
 ./metro-ansible build_upgrade.yml -vvvv
 # run upgrade
