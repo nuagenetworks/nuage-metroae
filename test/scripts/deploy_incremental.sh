@@ -10,6 +10,7 @@ function run_iter {
     ./metro-ansible build.yml -vvvv
     if [ $2 == "VSTAT" ];
     then
+        ./metro-ansible vstat_destroy.yml -vvvv
         ./metro-ansible vstat_predeploy.yml -vvvv
         ./metro-ansible vstat_deploy.yml -vvvv
         ./metro-ansible vstat_postdeploy.yml -vvvv
