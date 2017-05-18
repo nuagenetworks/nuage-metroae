@@ -46,5 +46,7 @@ rm -rf ./reports/
 ./metro-ansible vsc_ha_node1_upgrade.yml -vvvv
 # Upgrade VSC2
 ./metro-ansible vsc_ha_node2_upgrade.yml -vvvv
+# Upgrade vstat 
+./metro-ansible vstat_upgrade.yml -vvvv
 # clean up the whole setup
 #./metro-ansible test_cleanup.yml -vvvv
