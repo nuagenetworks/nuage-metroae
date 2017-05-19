@@ -2,13 +2,14 @@
 
 ## Current support for upgrade
 
-1. As of this writing only VSD and VSC upgrades are supported
+1. As of this writing only VSD,VSC and VSTAT upgrades are supported
 1. Supported upgrade paths
    1. 3.2.R8 to 4.0.Rn
    1. 3.2.R10 to 4.0.Rn
    1. 4.0.Rn to 4.0.Rn+
    1. Other upgrades should be tried in a test environment before production
 1. Standalone and clustered VSD upgrade are supported
+1. Standalone VSTAT upgrade is supported
 
 ## Overview
 
@@ -23,12 +24,13 @@ Following steps are recommended to be executed for an upgrade using metro playbo
 ./metro-ansible build_upgrade.yml
 ```
 
-2. Run health checks on VSD and VSC
+2. Run health checks on VSD,VSC and VSTAT
 ```
 ./metro-ansible vsd_health.yml
 ./metro-ansible vsc_health.yml
+./metro-ansible vstat_health.yml
 ```
-Any reported error should carefully be checed before proceeding with the next steps.
+Any reported error should carefully be checked before proceeding with the next steps.
 
 These health checks can be ran at any time of the upgrade process.
 
@@ -45,6 +47,7 @@ Upgrade vrs(s) manually
 ```
 ./metro-ansible vsc_ha_node2_upgrade.yml
 ./metro-ansible vsd_ha_node2_upgrade.yml
+./metro-ansible vstat_upgrade.yml
 ```
 
 4. Workflow for VSP upgrade with standalone VSD
@@ -58,12 +61,14 @@ The following is the workflow to upgrade a full Nuage Networks VSP installation 
 Upgrade vrs(s) manually
 ```
 ./metro-ansible vsc_ha_node2_upgrade.yml
+./metro-ansible vstat_upgrade.yml
 ```
 
-5. Run health checks on VSD and VSC post upgrade
+5. Run health checks on VSD,VSC and VSTAT post upgrade
 ```
 ./metro-ansible vsd_health.yml
 ./metro-ansible vsc_health.yml
+./metro-ansible vstat_health.yml
 ```
 
 ## Details
@@ -107,6 +112,21 @@ This playbook/role is used to make backup of exsiting vsc configuration, bof con
 
 These playbooks are used to upgrade vsc(s) to new versions by copying new .tim file to the existing vsc(s) and rebooting them.
 
+### Checking health of VSTAT (`vstat_health.yml`)
+
+This playbook/role is used to gather network information related to vstat nodes and monit information relatated to stats processes on vsd prior/post upgrade process. A report file witn network and monit information is created (filename can be configured inside the `vstat_health.yml` playbook) inside `reports` folder.
+
+### Backup of VSTAT data (`vstat_data_backup.yml`)
+
+This playbook/role is used to take backup of Elastic search data and copy the backup folder to ansible deployment host. This folder is later used in vstat upgrade process.
+
+### Migrate VSTAT data (`vstat_data_migrate.yml`)
+
+This playbook/role is used to migrate the Elastic search data from prevoius version to the latest version.
+
+### Upgrading standalone VSTAT (`vstat_upgrade.yml`)
+
+This playbook/role helps to execute standalone upgrade for VSTAT. It is recommended for user to take snapshot of the old vstat vm(s) before the upgrade as they are destroyed.
 
 ## `build` and `reset-build` playbooks
 
