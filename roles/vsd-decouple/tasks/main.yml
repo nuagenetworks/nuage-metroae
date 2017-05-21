@@ -1,8 +1,14 @@
 ---
 - block:
+  - name: get the username running the deploy
+    local_action: command whoami
+    register: username_on_the_host
+
+  - debug: var=username_on_the_host
+
   - name: Copy the VSD migration script ISO to VSD's temp directory
     command: "{{ vsd_migration_iso_copy }}"
-    remote_user: "{{ ansible_sudo_username }}"
+    remote_user: "{{ username_on_the_host.stdout }}"
     delegate_to: "{{ ansible_deployment_host }}"
 
   - name: Register target directory status
