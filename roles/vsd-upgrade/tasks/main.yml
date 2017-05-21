@@ -106,10 +106,19 @@
 
   - debug: var=vsc2_command_status verbosity=1
 
-  - name: read saved vsd purge time before upgrade
-    command: cat "/tmp/backup-{{ groups['vsd_ha_node1'][0] }}-latest/purge_time"
-    register: purge_time_saved
-    delegate_to: 127.0.0.1
+  - block:
+    - name: read saved vsd purge time before upgrade
+      command: cat "/tmp/backup-{{ groups['vsd_ha_node1'][0] }}-latest/purge_time"
+      register: purge_time_saved
+      delegate_to: 127.0.0.1
+    when: vsd_sa_or_ha == "ha"
+
+  - block:
+    - name: read saved vsd purge time before upgrade
+      command: cat "/tmp/backup-{{ groups['vsds'][0] }}-latest/purge_time"
+      register: purge_time_saved
+      delegate_to: 127.0.0.1
+    when: vsd_sa_or_ha == "sa"
 
   - debug: var=purge_time_saved.stdout verbosity=1
 
