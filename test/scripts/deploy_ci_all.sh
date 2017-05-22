@@ -12,7 +12,8 @@ fi
 if [ $1 = 4.0.R4 ] || [ $1 = 3.2.R10 ];
 then
     sed -i  '/- { hostname: {{ vrs_u16_host_name }},/,/ci_flavor: m1.medium }/d' test/files/build_vars.yml.CI.j2
-    sed -i  '/- { hostname: {{ vrs_u16_host_name }},/,/ci_flavor: m1.medium }/d' test/files/build_vars.yml.all.j2
+    sed -i  '/- { hostname: {{ vrs_u16_target_server_name }},/,/ci_flavor: jenkins }/d' test/files/build_vars.yml.all.j2
+    sed -i  '/- { vrs_os_type: u16.04,/,/standby_controller_ip: {{ network_address }}.213 }/d' test/files/build_vars.yml.all.j2
 fi
 
 # Use heat to deploy VMs on OpenStack
