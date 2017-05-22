@@ -6,6 +6,22 @@
   action: setup
   remote_user: "root"
 
+- name: Get the public key for the ansible sudo  user
+  local_action: command cat "{{ ansible_sudo_user_pub_key }}"
+  register: vsd_sudo_user_ssh_key
+
+- name: Insert sudo user key to the VSD authorized keys
+  lineinfile:
+    dest: /root/.ssh/authorized_keys
+    line: "{{ vsd_sudo_user_ssh_key.stdout }}"
+  remote_user: root
+
+- name: get the username running the deploy
+  local_action: command whoami
+  register: username_on_the_host
+
+- debug: var=username_on_the_host
+
 - name: Install pip on RedHat OS family distribution
   yum: name="python-pip" state="present"
   connection: local
@@ -17,7 +33,6 @@
   connection: local
   when: ansible_os_family == "Debian"
   remote_user: "root"
-
 
 - name: Install Nuage Python VSPK
   pip: name=vspk
@@ -108,7 +123,7 @@
   
   - name: Copy the VSD migration script ISO to VSD's temp directory
     command: "{{ vsd_migration_iso_copy }}"
-    remote_user: "{{ ansible_sudo_username }}"
+    remote_user: "{{ username_on_the_host.stdout }}"
     delegate_to: "{{ ansible_deployment_host }}"
 
   - name: Register target directory status
@@ -166,7 +181,7 @@
       that: "{{ item.matched }} > 0"
       msg: "Could not find file {{ item.item }}"
     with_items: "{{ lst_files.results }}"
-  
+ 
   - name: Copy the backup folder to backup_machine
     synchronize:
       src: "{{ vsdbackup_dir }}"
@@ -174,11 +189,10 @@
       mode: pull
     remote_user: "{{ ansible_sudo_username }}"
     delegate_to: "{{ ansible_deployment_host }}"
-  
+
   - name: Create symbolic link to backup location
     file: dest="/tmp/backup-{{ inventory_hostname }}-latest" src="{{  vsdbackup_dir }}"  state=link
     remote_user: "{{ ansible_sudo_username }}"
     delegate_to: "{{ ansible_deployment_host }}"
-
 
   when: inventory_hostname == groups['vsds'][0]
