@@ -114,7 +114,7 @@ These playbooks are used to upgrade vsc(s) to new versions by copying new .tim f
 
 ### Checking health of VSTAT (`vstat_health.yml`)
 
-This playbook/role is used to gather network information related to vstat nodes and monit information relatated to stats processes on vsd prior/post upgrade process. A report file witn network and monit information is created (filename can be configured inside the `vstat_health.yml` playbook) inside `reports` folder.
+This playbook/role is used to gather network information related to vstat nodes and monit information related to stats processes on vsd prior/post upgrade process. A report file with network and monit information is created (filename can be configured inside the `vstat_health.yml` playbook) inside `reports` folder.
 
 ### Backup of VSTAT data (`vstat_data_backup.yml`)
 
