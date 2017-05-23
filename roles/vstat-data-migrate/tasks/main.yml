@@ -1,3 +1,15 @@
+- name: Get the nfs shared folder details
+  shell: "mount | grep nfs"
+  register: nfs_folder
+  remote_user: root
+ 
+- block:
+  - name: Verify backup folder path is nfs shared
+    assert:
+      that: vstat_nfs_backup_path[:-1] in nfs_folder.stdout
+      msg:  "{{ vstat_nfs_backup_path }} is not nfs shared"
+  when: vstat_nfs_backup_path[-1] == '/'
+
 - block:
   - name: Copy elasticsearch backup scritps
     copy: src={{ vstat_backup_scripts_path }}/{{ item }}
@@ -13,7 +25,7 @@
 
   - name: Set name of vstat backup dir
     set_fact: 
-      vstat_backup_dir: "{{ backup_path }}/{{ backup_dir_name }}"
+      vstat_backup_dir: "{{ vstat_nfs_backup_path }}/{{ backup_dir_name }}"
 
   - name: Create backup dir
     file:
@@ -111,7 +123,6 @@
   - name: Transfer the backup folder to vstat node
     shell: "{{ transfer_backup_folder }}"
     remote_user: "{{ username_on_the_host.stdout }}"
-    #remote_user: "{{ ansible_sudo_username }}"
     delegate_to: "{{ ansible_deployment_host }}"
    
   - name: Set permissions after transferring the backup files
