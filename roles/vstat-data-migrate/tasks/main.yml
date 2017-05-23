@@ -103,10 +103,15 @@
 #  - name: Set the name of backup folder to be transferred
 #    set_fact: 
 #      folder_tobe_transferred: "{{ lst_dirs['files'][0]['path'] }}"
+
+  - name: Get the username running the playbooks
+    local_action: command whoami
+    register: username_on_the_host
   
   - name: Transfer the backup folder to vstat node
-    shell: "{{ transfer_backup_folder }}"
-    remote_user: "{{ ansible_sudo_username }}"
+    command: "{{ transfer_backup_folder }}"
+    remote_user: "{{ username_on_the_host.stdout }}"
+    #remote_user: "{{ ansible_sudo_username }}"
     delegate_to: "{{ ansible_deployment_host }}"
    
   - name: Set permissions after transferring the backup files
