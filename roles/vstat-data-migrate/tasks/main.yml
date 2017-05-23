@@ -1,17 +1,19 @@
-- name: Enable vstat upgrade
-  assert:
-    that: vstat_upgrade_enabled|default(False)
-    msg: Elastisearch upgrade is still in testing phase. Hence not supported
-
 - block:
-  - name: Copy the elasticsearch  data backup scripts ISO to temp directory
-    command: "{{ transfer_vstat_scripts }}"
+  - name: Copy elasticsearch backup scritps
+    copy: src={{ vstat_backup_scripts_path }}/{{ item }}
+        dest=/tmp/
     with_items: "{{ vstat_backup_scripts_file_list }}"
-    remote_user: "{{ ansible_sudo_username }}"
-    delegate_to: "{{ ansible_deployment_host }}"
+    remote_user: root
+  
+  - name: Set the name of backup dir path
+    set_fact: backup_path="/tmp"
 
   - name: Set name of backup directory
-    set_fact: vstat_backup_dir="/tmp/backup-{{ inventory_hostname }}-{{ ansible_date_time.iso8601_basic_short }}/"
+    set_fact: backup_dir_name="backup-{{ inventory_hostname }}-{{ ansible_date_time.iso8601_basic_short }}/"
+
+  - name: Set name of vstat backup dir
+    set_fact: 
+      vstat_backup_dir: "{{ backup_path }}/{{ backup_dir_name }}"
 
   - name: Create backup dir
     file:
