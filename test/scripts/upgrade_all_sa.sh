@@ -35,6 +35,9 @@ echo "pipelining = True" >> ansible.cfg
 #delete any vsd backups and reports from previous jobs
 rm -rf /tmp/backup
 rm -rf ./reports/
+# add nfs shared folder as backup path on vstat vms
+sed -i "s/TARGET_SERVER/$IPADDR/g" test/files/set_nfs_shared_folder.yml 
+./metro-ansible test/files/set_nfs_shared_folder.yml -vvvv
 # reset the env before upgrade
 ./metro-ansible reset_build.yml -vvvv
 # create build vars required for upgrade
