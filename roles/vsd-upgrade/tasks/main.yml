@@ -8,12 +8,23 @@
     remote_user: root
   when: vsd_sa_or_ha == 'ha'
 
-- name: Shutdown/Destroy Current vsd node(s)
-  include_role: 
-    name: vsd-destroy
-  vars:
-    preserve_vsd: True
-    rollback: False
+- block:
+  - name: Backup and Shutdown/Destroy Current vsd nodes 1 and 3
+    include_role: 
+      name: vsd-destroy
+    vars:
+      preserve_vsd: True
+      rollback: False
+  when: inventory_hostname in groups['vsd_ha_node1'] or inventory_hostname in groups['vsd_ha_node3']
+
+- block:
+  - name: Shutdown/Destroy Current vsd node 2
+    include_role: 
+      name: vsd-destroy
+    vars:
+      preserve_vsd: False
+      rollback: False
+  when: inventory_hostname in groups['vsd_ha_node2'] 
 
 - name: Deploy VSD nodes with new version
   include_role:
