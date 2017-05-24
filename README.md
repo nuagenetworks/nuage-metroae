@@ -1,4 +1,4 @@
-# Metro: Automated Deployment of Nuage Software
+# Metro: Nuage Networks Deployment Automation Services
 
 ## What's new
 
