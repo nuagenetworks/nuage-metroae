@@ -9,7 +9,7 @@
    1. 4.0.Rn to 4.0.Rn+
    1. Other upgrades should be tried in a test environment before production
 1. Standalone and clustered VSD upgrade are supported
-1. Standalone VSTAT upgrade is supported
+1. Standalone and clustered VSTAT upgrade is supported
 
 ## Overview
 

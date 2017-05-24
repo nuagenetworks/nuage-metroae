@@ -11,6 +11,7 @@ then
 fi
 
 cp ./test/files/build_vars.yml.standalone_vsd_vstat roles/reset-build/files/build_vars.yml
+sed -i "s/TARGET_SERVER/$IPADDR/g" test/files/upgrade_vars.yml.standalone_vsd
 cp ./test/files/upgrade_vars.yml.standalone_vsd roles/reset-build/files/upgrade_vars.yml
 cp ./test/files/test_install.yml .
 cp ./test/files/test_cleanup.yml .
@@ -35,9 +36,6 @@ echo "pipelining = True" >> ansible.cfg
 #delete any vsd backups and reports from previous jobs
 rm -rf /tmp/backup
 rm -rf ./reports/
-# add nfs shared folder to vstat vms
-sed -i "s/TARGET_SERVER/$IPADDR/g" test/files/set_nfs_shared_folder.yml
-./metro-ansible test/files/set_nfs_shared_folder.yml -vvvv
 # reset the env before upgrade
 ./metro-ansible reset_build.yml -vvvv
 # update vsd_operations to health

@@ -1,3 +1,23 @@
+- name: Install mount package 
+  yum: name=libnfsidmap state=present
+  remote_user: root
+
+- name: Create dir with vstat data backup path
+  file:
+    dest: "{{ vstat_nfs_backup_path }}"
+    state: directory
+    mode: 0777
+    recurse: yes
+  remote_user: root
+ 
+- name: Mount the nfs folder on to vstat vm
+  mount:
+    src: "{{ nfs_server_with_folder }}"
+    name: "{{ vstat_nfs_backup_path }}"
+    state: mounted
+    fstype: nfs4
+  remote_user: root
+
 - name: Get the nfs shared folder details
   shell: "mount | grep nfs"
   register: nfs_folder
