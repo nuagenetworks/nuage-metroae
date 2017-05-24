@@ -1,39 +1,39 @@
-- name: Install mount package
-  yum: name={{ item }} state=present
-  remote_user: root
-  with_items:
-    - libnfsidmap
-    - nfs-utils
-
-- name: Create dir with vstat data backup path
-  file:
-    dest: "{{ vstat_nfs_backup_path }}"
-    state: directory
-    mode: 0777
-    recurse: yes
-  remote_user: root
-
-- name: Mount the nfs folder on to vstat vm
-  mount:
-    src: "{{ nfs_server_with_folder }}"
-    name: "{{ vstat_nfs_backup_path }}"
-    state: mounted
-    fstype: nfs4
-  remote_user: root
-
-- name: Get the nfs shared folder details
-  shell: "mount | grep nfs"
-  register: nfs_folder
-  remote_user: root
- 
 - block:
-  - name: Verify backup folder path is nfs shared
-    assert:
-      that: vstat_nfs_backup_path[:-1] in nfs_folder.stdout
-      msg:  "{{ vstat_nfs_backup_path }} is not nfs shared"
-  when: vstat_nfs_backup_path[-1] == '/'
+  - name: Install mount packages
+    yum: name={{ item }} state=present
+    remote_user: root
+    with_items:
+      - libnfsidmap
+      - nfs-utils
 
-- block:
+  - name: Create dir with vstat data backup path
+    file:
+      dest: "{{ vstat_nfs_backup_path }}"
+      state: directory
+      mode: 0777
+      recurse: yes
+    remote_user: root
+
+  - name: Mount the nfs folder on to vstat vm
+    mount:
+      src: "{{ nfs_server_with_folder }}"
+      name: "{{ vstat_nfs_backup_path }}"
+      state: mounted
+      fstype: nfs4
+    remote_user: root
+
+  - name: Get the nfs shared folder details
+    shell: "mount | grep nfs"
+    register: nfs_folder
+    remote_user: root
+
+  - block:
+    - name: Verify backup folder path is nfs shared
+      assert:
+        that: vstat_nfs_backup_path[:-1] in nfs_folder.stdout
+        msg:  "{{ vstat_nfs_backup_path }} is not nfs shared"
+    when: vstat_nfs_backup_path[-1] == '/'
+
   - name: Copy elasticsearch backup scritps
     copy: src={{ vstat_backup_scripts_path }}/{{ item }}
         dest=/tmp/
