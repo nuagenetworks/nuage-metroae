@@ -1,4 +1,9 @@
 ---
+- name: Pull facts of localhost
+  connection: local
+  action: setup
+  remote_user: "root"
+
 - block:
   - name: get the username running the deploy
     local_action: command whoami
@@ -6,6 +11,39 @@
 
   - debug: var=username_on_the_host
 
+  - name: Create backup directory  for VSD2
+    set_fact: backup_dir="{{ images_path }}/{{ inventory_hostname }}.backup.{{ ansible_date_time.date }}@{{ ansible_date_time.time }}"
+  
+  - file:
+      path: "{{ backup_dir }}"
+      state: directory
+      mode: 0755
+    delegate_to: "{{ target_server }}"
+    remote_user: "{{ target_server_username }}"
+
+  - name: Copy the VSD2 VM image dir to the backup directory for rollback
+    command: "cp -r {{ images_path }}/{{ inventory_hostname }}/{{ vsd_current_qcow2_file_name}} {{ backup_dir }}"
+    delegate_to: "{{ target_server }}"
+    remote_user: "{{ target_server_username }}"
+  
+  - name: Get XML for VSD2 VM
+    virt:
+      name: "{{ inventory_hostname }}"
+      command: get_xml
+      uri: qemu:///system
+    register: vsd_xml
+    delegate_to: "{{ target_server }}"
+    remote_user: "{{ target_server_username }}"
+  
+  - debug: var=vsd_xml verbosity=1
+  
+  - name: Write VM XML to file
+    copy:
+      content: "{{ vsd_xml.get_xml }}"
+      dest: "{{ backup_dir }}/{{ inventory_hostname }}.xml"
+    delegate_to: "{{ target_server }}"
+    remote_user: "{{ target_server_username }}"
+    
   - name: Copy the VSD migration script ISO to VSD's temp directory
     command: "{{ vsd_migration_iso_copy }}"
     remote_user: "{{ username_on_the_host.stdout }}"
