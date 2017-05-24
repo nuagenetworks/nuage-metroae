@@ -10,13 +10,14 @@ then
     exit 1
 fi
 
+IPADDR=`/usr/sbin/ifconfig | grep netmask | grep broadcast | head -n 1 | awk '{print $2}'`
+
 cp ./test/files/build_vars.yml.clustered_vsd roles/reset-build/files/build_vars.yml
+sed -i "s/TARGET_SERVER/$IPADDR/g" test/files/upgrade_vars.yml.clustered_vsd
 cp ./test/files/upgrade_vars.yml.clustered_vsd roles/reset-build/files/upgrade_vars.yml
 cp ./test/files/test_install.yml .
 cp ./test/files/test_cleanup.yml .
 cp ./test/files/user_creds.yml.clustered_vsd ./user_creds.yml
-
-IPADDR=`/usr/sbin/ifconfig | grep netmask | grep broadcast | head -n 1 | awk '{print $2}'`
 
 sed -i "s/VERSION/$1/g" roles/reset-build/files/build_vars.yml
 sed -i "s/TARGET_SERVER/$IPADDR/g" roles/reset-build/files/build_vars.yml
@@ -35,8 +36,6 @@ echo "pipelining = True" >> ansible.cfg
 #delete any vsd backups and reports from previous jobs
 rm -rf /tmp/backup
 rm -rf ./reports/
-# add nfs shared folder as backup path on vstat vms
-sed -i "s/TARGET_SERVER/$IPADDR/g" test/files/set_nfs_shared_folder.yml 
 ./metro-ansible test/files/set_nfs_shared_folder.yml -vvvv
 # reset the env before upgrade
 ./metro-ansible reset_build.yml -vvvv
