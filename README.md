@@ -89,6 +89,7 @@ These are playbooks that are stable but under development or contributed from th
 - mesos-deploy
 - stcv-postdeploy
 - stcv-predeploy
+- vstat-rollback
 
 ### Lab Playbooks
 These are playbooks that are intended for use in the Metro Lab. You are welcome to use them.
