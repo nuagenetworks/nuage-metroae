@@ -36,6 +36,7 @@ def snapshot_list_indices_to_json(string):
         indices = {'indices': []}
     return json.dumps(indices)
 
+
 class FilterModule(object):
     ''' Query filter '''
 
@@ -43,4 +44,3 @@ class FilterModule(object):
         return {
             'snapshot_list_indices_to_json': snapshot_list_indices_to_json,
         }
-
