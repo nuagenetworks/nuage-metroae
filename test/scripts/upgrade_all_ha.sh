@@ -13,8 +13,8 @@ fi
 IPADDR=`/usr/sbin/ifconfig | grep netmask | grep broadcast | head -n 1 | awk '{print $2}'`
 
 cp ./test/files/build_vars.yml.clustered_vsd roles/reset-build/files/build_vars.yml
-sed -i "s/TARGET_SERVER/$IPADDR/g" test/files/upgrade_vars.yml.clustered_vsd
-cp ./test/files/upgrade_vars.yml.clustered_vsd roles/reset-build/files/upgrade_vars.yml
+sed -i "s/TARGET_SERVER/$IPADDR/g" test/files/upgrade_vars.yml.vcs
+cp ./test/files/upgrade_vars.yml.vcs roles/reset-build/files/upgrade_vars.yml
 cp ./test/files/test_install.yml .
 cp ./test/files/test_cleanup.yml .
 cp ./test/files/user_creds.yml.clustered_vsd ./user_creds.yml
@@ -36,7 +36,6 @@ echo "pipelining = True" >> ansible.cfg
 #delete any vsd backups and reports from previous jobs
 rm -rf /tmp/backup
 rm -rf ./reports/
-./metro-ansible test/files/set_nfs_shared_folder.yml -vvvv
 # reset the env before upgrade
 ./metro-ansible reset_build.yml -vvvv
 # create build vars required for upgrade
@@ -50,5 +49,7 @@ rm -rf ./reports/
 ./metro-ansible vsc_ha_node2_upgrade.yml -vvvv
 # Upgrade VSD2
 ./metro-ansible vsd_ha_node2_upgrade.yml -vvvv
+# Upgrade VSTAT
+./metro-ansible vstat_upgrade.yml -vvvv
 # clean up the whole setup
 ./metro-ansible test_cleanup.yml -vvvv
