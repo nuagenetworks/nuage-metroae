@@ -1,4 +1,6 @@
 ---
+- include: report_header.yml
+
 - block:
   - name: get the username running the deploy
     local_action: command whoami
@@ -62,7 +64,7 @@
     set_fact: ejabberd_p1db_json="{{ list_p1db_output.stdout|ejabberd_p1db_to_json }}"
   
   - name: Write p1bd JSON to file
-    nuage_append: filename="{{ report_filename }}" text="{{ inventory_hostname }} {{ ejabberd_p1db_json|to_nice_json }}\n"
+    nuage_append: filename="{{ report_path }}" text="{{ inventory_hostname }} {{ ejabberd_p1db_json|to_nice_json }}\n"
     remote_user: "{{ ansible_sudo_username }}"
     delegate_to: "{{ ansible_deployment_host }}"
 
@@ -84,7 +86,7 @@
     set_fact: ejabberd_cluster_json="{{ list_cluster_output.stdout|ejabberd_cluster_to_json }}"
   
   - name: Write cluster JSON to file
-    nuage_append: filename="{{ report_filename }}" text="{{ inventory_hostname }} {{ ejabberd_cluster_json|to_nice_json }}\n"
+    nuage_append: filename="{{ report_path }}" text="{{ inventory_hostname }} {{ ejabberd_cluster_json|to_nice_json }}\n"
     remote_user: "{{ ansible_sudo_username }}"
     delegate_to: "{{ ansible_deployment_host }}"
 
@@ -110,7 +112,7 @@
     set_fact: ejabberd_clients_json="{{ client_list.stdout|ejabberd_clients_to_json }}"
   
   - name: Write clients JSON to file
-    nuage_append: filename="{{ report_filename }}" text="{{ inventory_hostname }} {{ ejabberd_clients_json|to_nice_json }}\n"
+    nuage_append: filename="{{ report_path }}" text="{{ inventory_hostname }} {{ ejabberd_clients_json|to_nice_json }}\n"
     remote_user: "{{ ansible_sudo_username }}"
     delegate_to: "{{ ansible_deployment_host }}"
 

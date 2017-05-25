@@ -68,11 +68,16 @@ These are playbooks that are fully tested and supported.
 - vstat-deploy
 - vstat-destroy
 - vstat-health
+- vstat-data-backup
+- vstat-upgrade
+- vstat-data-migrate
+- vstat-rollback
 - vstat-postdeploy
 - vstat-predeploy
 - vstat-vrs-health
 - vstat-vsc-health
 - vstat-vsd-health
+
 
 ### Experimental
 These are playbooks that are stable but under development or contributed from the field. Support is _best effort_.
@@ -84,9 +89,7 @@ These are playbooks that are stable but under development or contributed from th
 - mesos-deploy
 - stcv-postdeploy
 - stcv-predeploy
-- vstat-data-backup
-- vstat-data-migrate
-- vstat-upgrade
+- vstat-rollback
 
 ### Lab Playbooks
 These are playbooks that are intended for use in the Metro Lab. You are welcome to use them.
