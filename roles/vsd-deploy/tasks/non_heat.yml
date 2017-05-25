@@ -194,6 +194,9 @@
   remote_user: "root"
 
 - block:
+  - name: Set if this is for a rollback
+    set_fact: rollback="{{ rollback|default('False') }}" 
+
   - name: Install VSD software on HA node1 {{groups['vsds'][0]}}
     command: "{{ vsd_ha_node1 }}"
     when: inventory_hostname == groups['vsds'][0]
@@ -201,7 +204,12 @@
 
   - name: Install VSD software on HA node2 {{groups['vsds'][1]}}
     command: "{{ vsd_ha_node2 }}"
-    when: inventory_hostname == groups['vsds'][1]
+    when: inventory_hostname == groups['vsds'][1] and not rollback
+    remote_user: "root"
+
+  - name: Install VSD software on HA node2 {{groups['vsds'][1]}}
+    command: "{{ vsd_ha_node2_rollback }}"
+    when: inventory_hostname == groups['vsds'][1] and rollback
     remote_user: "root"
 
   - name: Install VSD software on HA node3 {{groups['vsds'][2]}}
