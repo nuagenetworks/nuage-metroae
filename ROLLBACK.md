@@ -1,6 +1,6 @@
 # Rollback VSD and VSC after an upgrade
 
-Rollback playbooks allow rollback of VSD or VSC to the previous version of VSP code at certain points during or after an upgrade. For a successful VSD rollback, `preserve_vsd: True` flag must be set during upgrade . This will result in metro taking backupss of the disk images and the kvm configs just before the VSD decouple take place. Similarily the VSC upgrade must create a back up copy of the current cpm.tim. These are the default settings and are not exposed to the users. 
+Rollback playbooks allow rollback of VSD or VSC to the previous version of VSP code at certain points during or after an upgrade. For a successful VSD rollback, `preserve_vsd_for_rollback: True` flag must be set during upgrade . This will result in metro taking backupss of the disk images and the kvm configs just before the VSD decouple take place. Similarily the VSC upgrade must create a back up copy of the current cpm.tim. These are the default settings and are not exposed to the users. 
 
 VSD/VSC health reports will be generated and placed in the reports folder on the current directory where the playbooks are run.
 
