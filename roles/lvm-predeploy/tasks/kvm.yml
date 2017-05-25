@@ -1,26 +1,26 @@
 ---
 - name: Query {{ target_server }} facts
   action: setup
-  remote_user: "{{ target_server_username }}"
   delegate_to: "{{ target_server }}"
+  remote_user: "{{ target_server_username }}"
 
 - name: Include OS-specific variables.
   include_vars: "{{ ansible_os_family }}.yml"
 
 - name: Check target for supported OS
   fail: msg="Unsupported OS family ({{ ansible_os_family }})"
-  when: ansible_os_family not in vsd_target_server_os_family_list
+  when: ansible_os_family not in lvm_target_server_os_family_list
 
 - name: Check target memory
   fail: msg="Not enough memory ({{ ansible_memtotal_mb }})"
-  when: ansible_memtotal_mb < {{ vsd_target_server_memory_mb_min }}
+  when: ansible_memtotal_mb < {{ lvm_target_server_memory_mb_min }}
 
 - name: Check target cores
   fail: msg="Not enough cores ({{ ansible_processor_vcpus }})"
-  when: ansible_processor_vcpus < {{ vsd_target_server_vcpus_min }}
+  when: ansible_processor_vcpus < {{ lvm_target_server_vcpus_min }}
 
 - name: Check target bridges
-  fail: msg="Required network bridges not found"
+  fail: msg="Required network bridge not found"
   when: ("{{ mgmt_bridge }}" not in ansible_interfaces)
 
 - name: If RedHat, install packages for RedHat OS family distros
@@ -66,19 +66,22 @@
   delegate_to: "{{ target_server }}"
   remote_user: "{{ target_server_username }}"
 
-- name: Copy the VSD qcow image to virt images directory
-  shell: cp {{ vsd_qcow2_path }}/{{ vsd_qcow2_file_name }} {{ images_path }}/{{ inventory_hostname }}
+- name: Copy the lvm qcow image to virt images directory
+  copy: src={{ lvm_qcow2_path }}/{{ lvm_qcow2_file_name }}
+        dest={{ images_path }}/{{ inventory_hostname }}
+        owner={{ libvirt.user }}
+        group={{ libvirt.group }}
   delegate_to: "{{ target_server }}"
   remote_user: "{{ target_server_username }}"
 
 - name: Get list of partitions
-  shell: "guestfish -r -a {{ images_path }}/{{ inventory_hostname }}/{{ vsd_qcow2_file_name }} run : list-filesystems | grep -Ev '(unknown|swap)'"
+  shell: "guestfish -r -a {{ images_path }}/{{ inventory_hostname }}/{{ lvm_qcow2_file_name }} run : list-filesystems | grep -Ev '(unknown|swap)'"
   delegate_to: "{{ target_server }}"
   remote_user: "{{ target_server_username }}"
   register: partitions_list
 
 - name: Check partition content
-  shell: "guestfish -r -a {{ images_path }}/{{ inventory_hostname }}/{{ vsd_qcow2_file_name }} run : mount {{ item.split(':')[0] }} / : ls /"
+  shell: "guestfish -r -a {{ images_path }}/{{ inventory_hostname }}/{{ lvm_qcow2_file_name }} run : mount {{ item.split(':')[0] }} / : ls /"
   delegate_to: "{{ target_server }}"
   register: partitions
   with_items: "{{ partitions_list.stdout_lines }}"
@@ -97,8 +100,8 @@
   delegate_to: "{{ target_server }}"
   remote_user: "{{ target_server_username }}"
 
-- name: Copy eth0 network script file to the VSD image
-  command: guestfish --rw -a {{ images_path }}/{{ inventory_hostname }}/{{ vsd_qcow2_file_name }} -m {{ guestfish_mount }} copy-in {{ images_path }}/{{ inventory_hostname }}/ifcfg-eth0 /etc/sysconfig/network-scripts/
+- name: Copy eth0 network script file to the lvm image
+  command: guestfish --rw -a {{ images_path }}/{{ inventory_hostname }}/{{ lvm_qcow2_file_name }} -m {{ guestfish_mount }} copy-in {{ images_path }}/{{ inventory_hostname }}/ifcfg-eth0 /etc/sysconfig/network-scripts/
   delegate_to: "{{ target_server }}"
   remote_user: "{{ target_server_username }}"
 
@@ -107,8 +110,8 @@
   delegate_to: "{{ target_server }}"
   remote_user: "{{ target_server_username }}"
 
-- name: Set the owner and group on the eth0 network script file in the VSD image
-  command: guestfish --rw -a {{ images_path }}/{{ inventory_hostname }}/{{ vsd_qcow2_file_name }} -m {{ guestfish_mount }} chown 0 0 /etc/sysconfig/network-scripts/ifcfg-eth0
+- name: Set the owner and group on the eth0 network script file in the lvm image
+  command: guestfish --rw -a {{ images_path }}/{{ inventory_hostname }}/{{ lvm_qcow2_file_name }} -m {{ guestfish_mount }} chown 0 0 /etc/sysconfig/network-scripts/ifcfg-eth0
   delegate_to: "{{ target_server }}"
   remote_user: "{{ target_server_username }}"
 
@@ -117,8 +120,8 @@
   delegate_to: "{{ target_server }}"
   remote_user: "{{ target_server_username }}"
 
-- name: Copy network file to the VSD image
-  command: guestfish --rw -a {{ images_path }}/{{ inventory_hostname }}/{{ vsd_qcow2_file_name }} -m {{ guestfish_mount }} copy-in {{ images_path }}/{{ inventory_hostname }}/network /etc/sysconfig/
+- name: Copy network file to the lvm image
+  command: guestfish --rw -a {{ images_path }}/{{ inventory_hostname }}/{{ lvm_qcow2_file_name }} -m {{ guestfish_mount }} copy-in {{ images_path }}/{{ inventory_hostname }}/network /etc/sysconfig/
   delegate_to: "{{ target_server }}"
   remote_user: "{{ target_server_username }}"
 
@@ -127,18 +130,18 @@
   delegate_to: "{{ target_server }}"
   remote_user: "{{ target_server_username }}"
 
-- name: Set the owner and group for the network hostname file on the VSD image
-  command: guestfish --rw -a {{ images_path }}/{{ inventory_hostname }}/{{ vsd_qcow2_file_name }} -m {{ guestfish_mount }} chown 0 0 /etc/sysconfig/network
+- name: Set the owner and group for the network hostname file on the lvm image
+  command: guestfish --rw -a {{ images_path }}/{{ inventory_hostname }}/{{ lvm_qcow2_file_name }} -m {{ guestfish_mount }} chown 0 0 /etc/sysconfig/network
   delegate_to: "{{ target_server }}"
   remote_user: "{{ target_server_username }}"
 
 - name: Create the directory /root/.ssh for authorized_keys
-  command: guestfish --rw -a {{ images_path }}/{{ inventory_hostname }}/{{ vsd_qcow2_file_name }} -m {{ guestfish_mount }} mkdir-mode /root/.ssh 0700
+  command: guestfish --rw -a {{ images_path }}/{{ inventory_hostname }}/{{ lvm_qcow2_file_name }} -m {{ guestfish_mount }} mkdir-mode /root/.ssh 0700
   delegate_to: "{{ target_server }}"
   remote_user: "{{ target_server_username }}"
 
-- name: Set the owner and group for the /root/.ssh directory on the VSD image
-  command: guestfish --rw -a {{ images_path }}/{{ inventory_hostname }}/{{ vsd_qcow2_file_name }} -m {{ guestfish_mount }} chown 0 0 /root/.ssh
+- name: Set the owner and group for the /root/.ssh directory on the lvm image
+  command: guestfish --rw -a {{ images_path }}/{{ inventory_hostname }}/{{ lvm_qcow2_file_name }} -m {{ guestfish_mount }} chown 0 0 /root/.ssh
   delegate_to: "{{ target_server }}"
   remote_user: "{{ target_server_username }}"
 
@@ -151,8 +154,8 @@
   delegate_to: "{{ target_server }}"
   remote_user: "{{ target_server_username }}"
 
-- name: Copy authorized_keys file to the VSD image
-  command: guestfish --rw -a {{ images_path }}/{{ inventory_hostname }}/{{ vsd_qcow2_file_name }} -m {{ guestfish_mount }} copy-in {{ images_path }}/{{ inventory_hostname }}/authorized_keys /root/.ssh/
+- name: Copy authorized_keys file to the lvm image
+  command: guestfish --rw -a {{ images_path }}/{{ inventory_hostname }}/{{ lvm_qcow2_file_name }} -m {{ guestfish_mount }} copy-in {{ images_path }}/{{ inventory_hostname }}/authorized_keys /root/.ssh/
   delegate_to: "{{ target_server }}"
   remote_user: "{{ target_server_username }}"
 
@@ -161,25 +164,25 @@
   delegate_to: "{{ target_server }}"
   remote_user: "{{ target_server_username }}"
 
-- name: Set the owner and group for the authorized_keys file on the VSD image
-  command: guestfish --rw -a {{ images_path }}/{{ inventory_hostname }}/{{ vsd_qcow2_file_name }} -m {{ guestfish_mount }} chown 0 0 /root/.ssh/authorized_keys
+- name: Set the owner and group for the authorized_keys file on the lvm image
+  command: guestfish --rw -a {{ images_path }}/{{ inventory_hostname }}/{{ lvm_qcow2_file_name }} -m {{ guestfish_mount }} chown 0 0 /root/.ssh/authorized_keys
   delegate_to: "{{ target_server }}"
   remote_user: "{{ target_server_username }}"
 
-- name: Set the mode for the authorized_keys file on the VSD image
-  command: guestfish --rw -a {{ images_path }}/{{ inventory_hostname }}/{{ vsd_qcow2_file_name }} -m {{ guestfish_mount }} chmod 0640 /root/.ssh/authorized_keys
+- name: Set the mode for the authorized_keys file on the lvm image
+  command: guestfish --rw -a {{ images_path }}/{{ inventory_hostname }}/{{ lvm_qcow2_file_name }} -m {{ guestfish_mount }} chmod 0640 /root/.ssh/authorized_keys
   delegate_to: "{{ target_server }}"
   remote_user: "{{ target_server_username }}"
 
-- name: "Define new VSD VM"
+- name: "Define new lvm VM"
   virt: name="{{ inventory_hostname }}"
         command=define
-        xml="{{ lookup('template', 'vsd.xml.j2') }}"
+        xml="{{ lookup('template', 'lvm.xml.j2') }}"
         uri=qemu:///system
   delegate_to: "{{ target_server }}"
   remote_user: "{{ target_server_username }}"
 
-- name: "Run VSD VM"
+- name: "Run lvm VM"
   virt: name="{{ inventory_hostname }}"
         state=running
         uri=qemu:///system

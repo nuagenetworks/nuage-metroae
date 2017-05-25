@@ -10,13 +10,14 @@ then
     exit 1
 fi
 
+IPADDR=`/usr/sbin/ifconfig | grep netmask | grep broadcast | head -n 1 | awk '{print $2}'`
+
 cp ./test/files/build_vars.yml.clustered_vsd roles/reset-build/files/build_vars.yml
-cp ./test/files/upgrade_vars.yml.clustered_vsd roles/reset-build/files/upgrade_vars.yml
+sed -i "s/TARGET_SERVER/$IPADDR/g" test/files/upgrade_vars.yml.vcs
+cp ./test/files/upgrade_vars.yml.vcs roles/reset-build/files/upgrade_vars.yml
 cp ./test/files/test_install.yml .
 cp ./test/files/test_cleanup.yml .
 cp ./test/files/user_creds.yml.clustered_vsd ./user_creds.yml
-
-IPADDR=`/usr/sbin/ifconfig | grep netmask | grep broadcast | head -n 1 | awk '{print $2}'`
 
 sed -i "s/VERSION/$1/g" roles/reset-build/files/build_vars.yml
 sed -i "s/TARGET_SERVER/$IPADDR/g" roles/reset-build/files/build_vars.yml
@@ -48,5 +49,7 @@ rm -rf ./reports/
 ./metro-ansible vsc_ha_node2_upgrade.yml -vvvv
 # Upgrade VSD2
 ./metro-ansible vsd_ha_node2_upgrade.yml -vvvv
+# Upgrade VSTAT
+./metro-ansible vstat_upgrade.yml -vvvv
 # clean up the whole setup
 ./metro-ansible test_cleanup.yml -vvvv
