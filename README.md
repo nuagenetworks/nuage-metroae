@@ -11,9 +11,6 @@ Questions should be directed to the [nuage-metro-interest mailing list](mailto:/
 
 Feedback and issues should be reported via the Github Issues feature or via email to [Brian Castelli](mailto://brian.castelli@nokia.com).
 
-## Deprecation notice
-In the near future (date TBD), Metro is going to drop support for using Ubuntu as a deployment target for new VMs, e.g. VSD, VSC, VSTAT, etc. VRS and Dockermon will continue to be supported on Ubuntu 14.04 and Ubuntu 16.04.
-
 ## Metro Playbook Categories
 
 ### Core Playbooks
@@ -175,10 +172,11 @@ The latest stable code is found in the `master` branch. The `dev` branch is for 
 
 If you want to contribute back, you must create your own branch or fork, push your changes to that, and create a pull request to the `dev` branch. All pull requests against the `master` branch will be rejected. Sorry. All pull requests should include tests for new functionality. See `CONTRIBUTING.md` for more details.
 
-## Additional Prerequisites
+## General Prerequisites
 
 The following restrictions and conditions apply prior to executing the playbooks:
 
+1. The Ansible host must have the package python-jinja2 >= 2.7. python-jinja2 is installed by default with Ansible, but el6 hosts (e.g. CentOS 6.8) are limited to python-jinja2 < 2.7. Therefore, Nuage Metro will not run on el6 hosts.
 1. The hypervisor hosts must be running RedHat or CentOS. Support for Ubuntu exists but has been deprecated.
 1. If host names are used for target systems, VSD, VSC, VSTAT, VNSUTIL and VRS nodes, those names must be discoverable via DNS *or* added to the /etc/hosts file of the ansible deployment host.
 1. Each VM that is created for VSD, VSC, VSTAT, VNSUTIL, NSGV and DNS/NTP connects to one or more bridges on the target server. Those bridges must be created on the target server prior to deployment. Their names must be specified in the `build_vars.yml` file. See `BUILD.md` for details.
@@ -253,6 +251,9 @@ ansible supports different levels of verbosity, specified with one of the follow
 * `-vvvv`
 
 More letters means more verbose. The highest level, `-vvvv`, provides ssh connectivity information.
+
+## Deprecation notice
+In the near future (date TBD), Metro is going to drop support for using Ubuntu as a deployment target for new VMs, e.g. VSD, VSC, VSTAT, etc. VRS and Dockermon will continue to be supported on Ubuntu 14.04 and Ubuntu 16.04.
 
 ## License
 

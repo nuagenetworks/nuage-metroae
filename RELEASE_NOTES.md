@@ -26,3 +26,4 @@ v2.1.2
 1. VSD health checks during the upgrade only takes in to account monit summary, not other checks.
 1. No support for release specific commands to stop elastic search/vstat process on vsd.
 1. No support for release specific commands to stop core process on vsd.
+1. Nuage Metro will not run on el6 (e.g. CentOS 6.8) hosts due to a lack of modern python-jinja2 support.
