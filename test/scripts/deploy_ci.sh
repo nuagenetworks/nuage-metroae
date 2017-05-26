@@ -1,6 +1,6 @@
 #!/bin/bash
 set -e
-USAGE="Usage: $0 current version upgrade version"
+USAGE="Usage: $0 version deployment mode (sa or ha)"
 
 if [ $# -ne 2 ];
 then
