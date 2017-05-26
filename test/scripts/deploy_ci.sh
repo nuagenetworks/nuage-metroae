@@ -1,10 +1,10 @@
 #!/bin/bash
 set -e
-USAGE="Usage: $0 version"
+USAGE="Usage: $0 version deployment mode (sa or ha)"
 
-if [ $# -ne 1 ];
+if [ $# -ne 2 ];
 then
-    echo "Requires exactly 1 argument"
+    echo "Requires exactly 2 arguments: version and deployment mode (sa or ha)"
     echo $USAGE
     exit 1
 fi
@@ -16,6 +16,8 @@ fi
 
 IPADDR=`/usr/sbin/ifconfig | grep netmask | grep broadcast | head -n 1 | awk '{print $2}'`
 
+#update deployment mode in ci-deploy
+sed -i "s/deployment_mode: sa/deployment_mode: $2/g" roles/ci-deploy/vars/main.yml
 # use heat to deploy the test VMs on OS
 cp ./test/files/setup.yml.CI setup.yml
 ansible-playbook setup.yml -vvvv
