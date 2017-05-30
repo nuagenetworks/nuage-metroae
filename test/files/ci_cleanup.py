@@ -204,8 +204,8 @@ if __name__ == '__main__':
               % args.older_than_hours)
         sys.exit(0)
     # Delete stacks, networks, route entries in the order
-    delete_stacks(conn, stack_list)
     net_details = get_network_details(conn, stack_list)
+    delete_stacks(conn, stack_list)
     delete_subnets_from_vsd(net_details)
     delete_route_entries(net_details)
     print json.dumps(get_etc_entries(net_details))
