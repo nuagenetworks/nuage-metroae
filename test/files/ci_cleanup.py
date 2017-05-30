@@ -60,7 +60,15 @@ def delete_stacks(os_conn, stack_list):
     Given a list of stack, this func will delete the heat stack
     from OpenStack
     '''
-    for stack in stack_list:
+    # Filter ubuntu vms and delete them first
+    ubuntu_stacks = [ubuntu_stack['Name'] for ubuntu_stack in stack_list
+                     if 'jen-slave-u' in ubuntu_stack['Name']]
+    logger.info('Ubuntu Stacks: \n%s' % ubuntu_stacks)
+    rest_of_the_stacks = [centos_stack['Name'] for centos_stack in stack_list
+                          if 'jen-slave-u' not in centos_stack['Name']]
+    logger.info('Rest of the stacks: \n%s' % rest_of_the_stacks)
+
+    for stack in ubuntu_stacks + rest_of_the_stacks:
         logger.info("Deleting stack %s" % stack['Name'])
         os_conn.delete_stack(stack['ID'], wait=True)
 
@@ -180,9 +188,9 @@ def delete_route_entries(net_list):
         net_target = net + '.0/24'
         host1_target = net + '.3/32'
         host2_target = net + '.4/32'
-        subprocess.call('route del -net %s' % net_target, shell=True)
-        subprocess.call('route del -host %s' % host1_target, shell=True)
-        subprocess.call('route del -host %s' % host2_target, shell=True)
+        subprocess.call('sudo route del -net %s' % net_target, shell=True)
+        subprocess.call('sudo route del -host %s' % host1_target, shell=True)
+        subprocess.call('sudo route del -host %s' % host2_target, shell=True)
 
 
 if __name__ == '__main__':
