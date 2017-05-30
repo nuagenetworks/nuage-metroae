@@ -247,14 +247,17 @@ def main():
                                                           cloud))
 
         if state == 'present':
-            if not stack:
-                stack = _create_stack(module, stack, cloud)
-            else:
-                stack = _update_stack(module, stack, cloud)
-            changed = True
-            module.exit_json(changed=changed,
-                             stack=stack,
-                             id=stack.id)
+            try:
+                if not stack:
+                    stack = _create_stack(module, stack, cloud)
+                else:
+                    stack = _update_stack(module, stack, cloud)
+                changed = True
+                module.exit_json(changed=changed,
+                                 stack=stack,
+                                 id=stack.id)
+            except Exception as e:
+                module.fail_json(msg='%s' % e)
         elif state == 'absent':
             if not stack:
                 changed = False
