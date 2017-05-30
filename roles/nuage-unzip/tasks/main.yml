@@ -276,6 +276,13 @@
       unarchive: src="{{ rc_vns.files[0].path}}" dest="{{ nuage_unzipped_files_dir }}/vns" list_files=yes mode=0775
       register: rc_vns_archive_files
       remote_user: "{{ unzip_user }}"
+      when: rc_vns.matched == 1
+    - copy:
+        src: "{{ item .path}}"
+        dest: "{{ nuage_unzipped_files_dir }}/vns"
+      with_items: "{{ rc_vns.files }}"
+      remote_user: "{{ unzip_user }}"
+      when: rc_vns.matched == 2
     when: rc_vns.matched > 0
 
   - name: Find NSG and Utils archive files

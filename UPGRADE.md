@@ -7,6 +7,7 @@
    1. 3.2.R8 to 4.0.Rn
    1. 3.2.R10 to 4.0.Rn
    1. 4.0.Rn to 4.0.Rn+
+   1. 4.0.Rn to 5.0.Rn+
    1. Other upgrades should be tried in a test environment before production
 1. Standalone and clustered VSD upgrade are supported
 1. Standalone and clustered VSTAT upgrade is supported
@@ -34,7 +35,7 @@ Any reported error should carefully be checked before proceeding with the next s
 
 These health checks can be ran at any time of the upgrade process.
 
-3. Workflow for VSP upgrade with clustered VSD
+3. Workflow for VSP upgrade with clustered VSD (upgrade to pre 5.x)
 
 The following is the workflow to acheive clustered vsp upgrade using above set of playbooks
 
@@ -47,6 +48,21 @@ Upgrade vrs(s) manually
 ```
 ./metro-ansible vsc_ha_node2_upgrade.yml
 ./metro-ansible vsd_ha_node2_upgrade.yml
+./metro-ansible vstat_upgrade.yml
+```
+
+4. Workflow for VSP upgrade with clustered VSD (upgrade to 5.x)
+
+A VSP upgrade to VSP 5.0.1 does not support incremental upgrade. Those upgrade paths are targeted for any deployments where downtime on operations and traffic loss is tolerated during the upgrade.
+The following is the workflow to acheive clustered vsp upgrade using above set of playbooks
+
+```
+./metro-ansible vsd_ha_major_upgrade.yml
+```
+Upgrade vrs(s) manually
+
+```
+./metro-ansible vsc_ha_node2_upgrade.yml
 ./metro-ansible vstat_upgrade.yml
 ```
 
