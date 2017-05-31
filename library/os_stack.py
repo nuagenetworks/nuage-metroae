@@ -173,8 +173,8 @@ def _create_stack(module, stack, cloud):
         if stack.stack_status == 'CREATE_COMPLETE':
             return stack
         else:
-            return False
             module.fail_json(msg="Failure in creating stack: ".format(stack))
+            return False
     except shade.OpenStackCloudException as e:
         module.fail_json(msg=str(e))
 
@@ -247,17 +247,14 @@ def main():
                                                           cloud))
 
         if state == 'present':
-            try:
-                if not stack:
-                    stack = _create_stack(module, stack, cloud)
-                else:
-                    stack = _update_stack(module, stack, cloud)
-                changed = True
-                module.exit_json(changed=changed,
+            if not stack:
+                stack = _create_stack(module, stack, cloud)
+            else:
+                stack = _update_stack(module, stack, cloud)
+            changed = True
+            module.exit_json(changed=changed,
                                  stack=stack,
                                  id=stack.id)
-            except Exception as e:
-                module.fail_json(msg='%s' % e)
         elif state == 'absent':
             if not stack:
                 changed = False
