@@ -253,8 +253,8 @@ def main():
                 stack = _update_stack(module, stack, cloud)
             changed = True
             module.exit_json(changed=changed,
-                                 stack=stack,
-                                 id=stack.id)
+                             stack=stack,
+                             id=stack.id)
         elif state == 'absent':
             if not stack:
                 changed = False
