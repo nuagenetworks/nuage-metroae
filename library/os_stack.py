@@ -173,8 +173,12 @@ def _create_stack(module, stack, cloud):
         if stack.stack_status == 'CREATE_COMPLETE':
             return stack
         else:
-            module.fail_json(msg="Failure in creating stack: ".format(stack))
-            return False
+            # Comment out bogus return. Wait for Ansible code fix.
+            # return False
+            # Comment out and replace with correct msg. Wait for Ansible code fix.
+            # module.fail_json(msg="Failure in creating stack: ".format(stack))
+            module.fail_json(msg="Failure in creating stack: %s" %
+                             stack['stack_status_reason'])
     except shade.OpenStackCloudException as e:
         module.fail_json(msg=str(e))
 
