@@ -173,7 +173,7 @@ def get_etc_entries(net_list):
     /etc/hosts file to be deleted
     '''
     # Get /etc/hosts related params
-    etc_entries = {'etc_entires': net_list['network_address']}
+    etc_entries = {'etc_entries': net_list['network_address']}
     return (etc_entries)
 
 
@@ -206,7 +206,7 @@ if __name__ == '__main__':
         print("ERROR: Could not establish connection to OpenStack")
     stack_list = get_stacks(conn, args.older_than_hours)
     if not stack_list:
-        print json.dumps({'etc_entires': []})
+        print json.dumps({'etc_entries': []})
         logger.info('No stacks were found older than %s hours'
                     % args.older_than_hours)
         sys.exit(0)
