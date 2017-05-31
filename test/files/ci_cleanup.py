@@ -206,8 +206,9 @@ if __name__ == '__main__':
         print("ERROR: Could not establish connection to OpenStack")
     stack_list = get_stacks(conn, args.older_than_hours)
     if not stack_list:
-        print('No stacks were found older than %s hours'
-              % args.older_than_hours)
+        print json.dumps({'etc_entires': []})
+        logger.info('No stacks were found older than %s hours'
+                    % args.older_than_hours)
         sys.exit(0)
     # Delete stacks, networks, route entries in the order
     net_details = get_network_details(conn, stack_list)
