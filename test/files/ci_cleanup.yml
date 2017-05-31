@@ -1,0 +1,23 @@
+--- 
+- hosts: localhost
+  gather_facts: no
+  tasks:
+    - name: Delete Stacks, Subents and route entries
+      command: "python ci_cleanup.py 1"
+      register: cleanup
+      remote_user: root
+    
+    - name: Check cleanup script for errors
+      assert:
+        that: "'ERROR' not in cleanup.stdout"
+        msg: "ci_cleanup.py script has error. Refer ci_cleanup.log for more details"
+
+    - debug: var="cleanup.stdout"
+
+    - name: Delete /etc/hosts entries for correspoding subnets
+      lineinfile:
+        dest: "/etc/hosts"
+        regexp: "{{ item }}"
+        state: absent
+      remote_user: root
+      with_items: "{{ (cleanup.stdout|from_json).etc_entries }}" 

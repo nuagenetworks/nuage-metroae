@@ -173,8 +173,8 @@ def _create_stack(module, stack, cloud):
         if stack.stack_status == 'CREATE_COMPLETE':
             return stack
         else:
-            return False
             module.fail_json(msg="Failure in creating stack: ".format(stack))
+            return False
     except shade.OpenStackCloudException as e:
         module.fail_json(msg=str(e))
 
