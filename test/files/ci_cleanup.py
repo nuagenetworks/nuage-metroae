@@ -57,7 +57,7 @@ def get_stacks(os_conn, older_than_hours, use_utc=True):
 
 def delete_stacks(os_conn, stack_list):
     '''
-    Given a list of stack, this func will delete the heat stack
+    Given a list of stacks, this func will delete the heat stack
     from OpenStack
     '''
     # Filter ubuntu vms and delete them first
@@ -99,7 +99,7 @@ def get_network_details(os_conn, stack_list):
     for stack in stack_list:
         slave_vm = os_conn.get_stack(stack['Name'])
 
-        # Get subnet names and extrack network part
+        # Get subnet names and extract network part from the net addr
         net_name = str(slave_vm['parameters']['network_name'])
         net_address = '.'.join(str(slave_vm['parameters']['cidr'])
                                .split('.')[0:3])
