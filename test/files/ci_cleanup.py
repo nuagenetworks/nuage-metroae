@@ -61,12 +61,10 @@ def delete_stacks(os_conn, stack_list):
     from OpenStack
     '''
     # Filter ubuntu vms and delete them first
-    ubuntu_stacks = [ubuntu_stack['Name'] for ubuntu_stack in stack_list
+    ubuntu_stacks = [ubuntu_stack for ubuntu_stack in stack_list
                      if 'jen-slave-u' in ubuntu_stack['Name']]
-    logger.info('Ubuntu Stacks: \n%s' % ubuntu_stacks)
-    rest_of_the_stacks = [centos_stack['Name'] for centos_stack in stack_list
+    rest_of_the_stacks = [centos_stack for centos_stack in stack_list
                           if 'jen-slave-u' not in centos_stack['Name']]
-    logger.info('Rest of the stacks: \n%s' % rest_of_the_stacks)
 
     for stack in ubuntu_stacks + rest_of_the_stacks:
         logger.info("Deleting stack %s" % stack['Name'])
