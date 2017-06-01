@@ -1,6 +1,9 @@
 --- 
 - hosts: localhost
   gather_facts: no
+  vars:
+    ansible_deployment_host: 10.106.0.2
+    ansible_sudo_username: root
   tasks:
     - name: Delete Stacks, Subents and route entries
       command: "python ci_cleanup.py 1"
@@ -19,5 +22,6 @@
         dest: "/etc/hosts"
         regexp: "{{ item }}"
         state: absent
-      remote_user: root
-      with_items: "{{ (cleanup.stdout|from_json).etc_entries }}" 
+      with_items: "{{ (cleanup.stdout|from_json).etc_entries }}"
+      delegate_to: "{{ ansible_deployment_host }}"
+      remote_user: "{{ ansible_sudo_username }}"

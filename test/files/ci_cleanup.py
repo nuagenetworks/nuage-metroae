@@ -33,8 +33,12 @@ def get_stacks(os_conn, older_than_hours, use_utc=True):
     dict["Older Than Hours"] = older_than_hours
     current_time = datetime.utcnow() if use_utc else datetime.now()
     dict["Current Time"] = current_time.strftime('%Y-%m-%dT%H:%M:%S')
-
-    stacks = os_conn.list_stacks()
+    
+    try:
+        stacks = os_conn.list_stacks()
+    except Exception as e:
+        print("ERROR: Could not get stack list from OpenStack :%s" % e)
+        sys.exit(0)
     # Filter stacks based on time
     for stack in stacks:
         stack_count_total += 1
@@ -68,7 +72,10 @@ def delete_stacks(os_conn, stack_list):
 
     for stack in ubuntu_stacks + rest_of_the_stacks:
         logger.info("Deleting stack %s" % stack['Name'])
-        os_conn.delete_stack(stack['ID'], wait=True)
+        try:
+            os_conn.delete_stack(stack['ID'], wait=True)
+        except Exception as e:
+            print("ERROR: Could not delete stack from OpenStack: %s" % e)
 
 
 def older_than_helper(stack_time, older_than_hours, current_time):
@@ -97,7 +104,10 @@ def get_network_details(os_conn, stack_list):
                     'network_address': []
                     }
     for stack in stack_list:
-        slave_vm = os_conn.get_stack(stack['Name'])
+        try:
+            slave_vm = os_conn.get_stack(stack['Name'])
+        except Exception as e:
+            print("ERROR: Could not get stack details: %s" % e)
 
         # Get subnet names and extract network part from the net addr
         net_name = str(slave_vm['parameters']['network_name'])
