@@ -33,7 +33,7 @@ def get_stacks(os_conn, older_than_hours, use_utc=True):
     dict["Older Than Hours"] = older_than_hours
     current_time = datetime.utcnow() if use_utc else datetime.now()
     dict["Current Time"] = current_time.strftime('%Y-%m-%dT%H:%M:%S')
-    
+
     try:
         stacks = os_conn.list_stacks()
     except Exception as e:
