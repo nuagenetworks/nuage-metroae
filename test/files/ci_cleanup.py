@@ -149,7 +149,7 @@ def get_zone_obj():
     Read VSD credentials and get zone object from VSD
     '''
     # Get vsd related params
-    with open('/root/ci_cleanup_vars.yml', 'r') as fh:
+    with open('ci_cleanup_vars.yml', 'r') as fh:
         params = yaml.load(fh)
     # Get vsd connection
     try:
@@ -208,7 +208,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     # Get os related params
-    with open('/root/ci_cleanup_vars.yml', 'r') as fh:
+    with open('ci_cleanup_vars.yml', 'r') as fh:
         params = yaml.load(fh)
     try:
         conn = shade.openstack_cloud(**params['os_auth'])
