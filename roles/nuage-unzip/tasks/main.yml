@@ -149,24 +149,43 @@
 ################
 
 - block:
-  - name: Find EL6 VRS Archive
-    find: path="{{ nuage_zipped_files_dir }}"  pattern="Nuage-VRS*-el6*"
-    register: rc_vrs_el6
-  - debug: var=rc_vrs_el6 verbosity=1
+  - name: Find hyperv VRS Archive
+    find: path="{{ nuage_zipped_files_dir }}"  pattern="Nuage-VRS*-hyperV*"
+    register: rc_vrs_hyperv
+  - debug: var=rc_vrs_hyperv verbosity=1
   - block:
     - name: Clean up unzipped directory from previous runs
-      file: name="{{ nuage_unzipped_files_dir }}/vrs/el6/" state=absent
+      file: name="{{ nuage_unzipped_files_dir }}/vrs/hyperv/" state=absent
       remote_user: "{{ unzip_user }}"
-    - name: Ensure that VRS binary target directory exists if vrs is el6
-      file: name="{{ nuage_unzipped_files_dir }}/vrs/el6/" state=directory mode=0775
+    - name: Ensure that VRS binary target directory exists if vrs is hyperv
+      file: name="{{ nuage_unzipped_files_dir }}/vrs/hyperv/" state=directory mode=0775
       remote_user: "{{ unzip_user }}"
     - name: Unpack VRS Archive
-      unarchive: src="{{ item.path }}" dest="{{ nuage_unzipped_files_dir }}/vrs/el6" list_files=yes mode=0775
-      with_items: "{{ rc_vrs_el6.files }}"
-      register: rc_vrs_el6_archive_files
+      unarchive: src="{{ item.path }}" dest="{{ nuage_unzipped_files_dir }}/vrs/hyperv" list_files=yes mode=0775
+      with_items: "{{ rc_vrs_hyperv.files }}"
+      register: rc_vrs_hyperv_archive_files
       remote_user: "{{ unzip_user }}"
-    - debug: var=rc_vrs_el6_archive_files verbosity=1
-    when: rc_vrs_el6.matched > 0
+    - debug: var=rc_vrs_hyperv_archive_files verbosity=1
+    when: rc_vrs_hyperv.matched > 0
+
+  - name: Find vmware VRS Archive
+    find: path="{{ nuage_zipped_files_dir }}"  pattern="Nuage-VRS*-vmware*"
+    register: rc_vrs_vmware
+  - debug: var=rc_vrs_vmware verbosity=1
+  - block:
+    - name: Clean up unzipped directory from previous runs
+      file: name="{{ nuage_unzipped_files_dir }}/vrs/vmware/" state=absent
+      remote_user: "{{ unzip_user }}"
+    - name: Ensure that VRS binary target directory exists if vrs is vmware
+      file: name="{{ nuage_unzipped_files_dir }}/vrs/vmware/" state=directory mode=0775
+      remote_user: "{{ unzip_user }}"
+    - name: Unpack VRS Archive
+      unarchive: src="{{ item.path }}" dest="{{ nuage_unzipped_files_dir }}/vrs/vmware" list_files=yes mode=0775
+      with_items: "{{ rc_vrs_vmware.files }}"
+      register: rc_vrs_vmware_archive_files
+      remote_user: "{{ unzip_user }}"
+    - debug: var=rc_vrs_vmware_archive_files verbosity=1
+    when: rc_vrs_vmware.matched > 0
 
   - name: Find EL7 VRS Archive
     find: path="{{ nuage_zipped_files_dir }}"  pattern="Nuage-VRS*-el7*"
