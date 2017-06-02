@@ -232,7 +232,7 @@ def show_vm_vports_to_json(string):
     '''
     NUMVPORTS = "No. of virtual ports"
     VPORTS_RE = ("(?P<vpname>\S+)\s+(?P<vmname>\S+)\s+(?P<vprn>\d+)\s+(?P<evpn>\d+)\s+"
-                 "(?P<multi>\S+)\s+(?P<vpip>\d+\.\d+\.\d+\.\d+\/\d+)\s+(?P<mac>\d+:\d+:\d+:\d+:\d+:\d+)")
+                 "(?P<multi>\S+)\s+(?P<vpip>\d+\.\d+\.\d+\.\d+\/\d+)\s+(?P<mac>.*")
     dict = {}
     port_list = []
     dict["Command"] = "show vswitch-controller vports type vm detail"
@@ -418,6 +418,30 @@ def vsc_system_connections_to_json(string):
     return json.dumps(dict)
 
 
+def vsd_detail_to_json(string):
+    ''' Given a string representation of the output of "show vswitch-controller vsd detail
+    as a string, return a JSON representation of a subset of the date in that output.
+    A sample of the output:
+    {
+       "Command": "show vswitch-controller vsd detail",
+       "VSD-Info": [{"vsd-user": "cna@uc-xmpp.example.com/vsd1", "status": "available"},
+                    {"vsd-user": "cna@uc-xmpp.example.com/vsd2", "status": "available"},
+                   ]
+    }
+    '''
+    dict = {}
+    dict["Command"] = "show vswitch-controller vsd detail"
+    dict["VSD-Info"] = []
+    vsd_re = re.compile(r'VSD User Name\s+:\s+(?P<vsduser>(.*))\s+Uptime.*\s+Status\s+:\s+(?P<status>(\w+))')
+    vsd_details = re.finditer(vsd_re, string)
+    for vsd in vsd_details:
+        vsd_dict = {"vsd_user": vsd.group('vsduser'),
+                    "status": vsd.group('status')
+                    }
+        dict["VSD-Info"].append(vsd_dict)
+    return json.dumps(dict)
+
+
 class FilterModule(object):
     ''' Query filter '''
 
@@ -431,5 +455,6 @@ class FilterModule(object):
             'show_gateway_ports_to_json': show_gateway_ports_to_json,
             'show_bof_to_json': show_bof_to_json,
             'image_version_to_json': image_version_to_json,
-            'vsc_system_connections_to_json': vsc_system_connections_to_json
+            'vsc_system_connections_to_json': vsc_system_connections_to_json,
+            'vsd_detail_to_json': vsd_detail_to_json
         }
