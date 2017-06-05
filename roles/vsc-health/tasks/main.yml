@@ -139,6 +139,42 @@
   }
   ignore_errors: yes
 
+- name: Create local variable for xmpp-server state
+  set_fact: xmpp_server_state="{{ xmpp_detail_json['State'] }}"
+
+- name: Print xmpp-server state when verbosity >= 1
+  debug: var=xmpp_server_state verbosity=1
+
+- name: Check for the expected xmpp-server state
+  assert: { 
+    that: "{{ expected_xmpp_server_state == xmpp_server_state }}",
+    msg: "Invalid xmpp-server state ({{ xmpp_server_state }}) detected. Expected {{ expected_xmpp_server_state }}. Check 'show vswitch-controller xmpp-server details'."
+  }
+  ignore_errors: yes
+
+- name: Get output of 'show vswitch-controller vsd detail'
+  sros_command:
+    commands:
+      - show vswitch-controller vsd detail
+    provider: "{{ vsc_creds }}"
+  register: vsd_detail
+  delegate_to: "{{ ansible_deployment_host }}"
+  remote_user: "{{ ansible_sudo_username }}"
+
+- name: Print 'show vswitch-controller vsd detail' when verbosity >= 1
+  debug: var=vsd_detail verbosity=1
+
+- name: Create local variable with vsd detail in json
+  set_fact: vsd_detail_json="{{ vsd_detail.stdout[0]|vsd_detail_to_json }}"
+
+- name: Print vsd detail in json when verbosity >= 1
+  debug: var=vsd_detail_json verbosity=1
+
+- name: Write vsd detail json to report
+  nuage_append: filename="{{ report_path }}" text="{{ inventory_hostname }} {{ vsd_detail_json|to_nice_json }}\n"
+  delegate_to: "{{ ansible_deployment_host }}"
+  remote_user: "{{ ansible_sudo_username }}"
+
 - name: Get output of 'show vswitch-controller vswitches'
   sros_command:
     commands:
