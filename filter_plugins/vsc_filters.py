@@ -154,11 +154,11 @@ def show_vswitches_to_json(string):
 
 
 def show_host_vports_to_json(string):
-    ''' Given a string representation of the output of "show vswitch-controller vports type host detail"
+    ''' Given a string representation of the output of "show vswitch-controller vports type host"
     as a string, return a JSON representation of a subset of the data in that output.
     A sample of the output:
     {
-      "Command": "show vswitch-controller vports type host detail",
+      "Command": "show vswitch-controller vports type host",
       "No. of virtual ports": "12",
       "Vports": [
         {
@@ -185,7 +185,7 @@ def show_host_vports_to_json(string):
                  "(?P<vprn>\d+)\s+(?P<evpn>\d+)\s+(?P<vpip>\d+\.\d+\.\d+\.\d+\/\d+)")
     dict = {}
     port_list = []
-    dict["Command"] = "show vswitch-controller vports type host detail"
+    dict["Command"] = "show vswitch-controller vports type host"
     dict[NUMVPORTS] = numeric_name_value_helper(NUMVPORTS, ':', string)
     ports = re.finditer(VPORTS_RE, string)
     for port in ports:
@@ -202,11 +202,11 @@ def show_host_vports_to_json(string):
 
 
 def show_vm_vports_to_json(string):
-    ''' Given a string representation of the output of "show vswitch-controller vports type vm detail"
+    ''' Given a string representation of the output of "show vswitch-controller vports type vm"
     as a string, return a JSON representation of a subset of the data in that output.
     A sample of the output:
     {
-      "Command": "show vswitch-controller vports type vm detail",
+      "Command": "show vswitch-controller vports type vm",
       "No. of virtual ports": "12",
       "Vports": [
         {
