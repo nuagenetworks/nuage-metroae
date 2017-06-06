@@ -3,6 +3,18 @@
   remote_user: "{{ target_server_username }}"
   action: setup
 
+- name: Enable optional rmps to install twisted core package on RedHat OS family distors
+  blockinfile:
+    path: /etc/yum.repos.d/redhat.repo
+    block: |
+      [rhel-7-server-optional-rpms]
+      name = Red Hat Enterprise Linux 7 Server - Optional (RPMs)
+      Enabled=1
+  remote_user: "{{ target_server_username }}"
+  when:
+    - ansible_os_family == "RedHat"
+    - ansible_distribution_major_version == '7' 
+     
 - name: Add epel repository on RedHat OS family distros
   remote_user: "{{ target_server_username }}"
   yum_repository:
