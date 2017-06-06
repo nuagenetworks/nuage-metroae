@@ -235,7 +235,7 @@ def show_vm_vports_to_json(string):
                  "(?P<multi>\S+)\s+(?P<vpip>\d+\.\d+\.\d+\.\d+\/\d+)\s+(?P<mac>.*")
     dict = {}
     port_list = []
-    dict["Command"] = "show vswitch-controller vports type vm detail"
+    dict["Command"] = "show vswitch-controller vports type vm"
     dict[NUMVPORTS] = numeric_name_value_helper(NUMVPORTS, ':', string)
     ports = re.finditer(VPORTS_RE, string)
     for port in ports:
