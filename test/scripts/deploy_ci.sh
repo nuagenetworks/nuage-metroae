@@ -23,7 +23,7 @@ IPADDR=`/usr/sbin/ifconfig | grep netmask | grep broadcast | head -n 1 | awk '{p
 
 # update deployment mode in ci-deploy
 sed -i "s/deployment_mode: sa/deployment_mode: $2/g" roles/ci-deploy/vars/main.yml
-# Cut down rest build wait time from 30 sec to 1 sec
+# Cut down reset build wait time from 30 sec to 1 sec
 sed -i "s/reset_build_pause_secs: 30/reset_build_pause_secs: 1/g" roles/reset-build/vars/main.yml
 # use heat to deploy the test VMs on OS
 cp ./test/files/setup.yml.CI setup.yml
