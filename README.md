@@ -132,9 +132,7 @@ The VCS/VNS components that are supported are:
 9. DNS/NTP (1)
 
 
-## For the impatient
-
-The short version of the instructions are:
+## Detailed Instructions
 
 1. Create ssh key pair for the user that runs metro playbooks
     > `ssh-keygen`
