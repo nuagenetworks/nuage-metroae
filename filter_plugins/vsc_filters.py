@@ -286,28 +286,7 @@ def show_gateway_ports_to_json(string):
         }
       ]
     }
-    TODO: Remove this string and use real input
     '''
-    mystring = '''===============================================================================
-Gateway Ports Information Table
-===============================================================================
-Gateway IP/Nsg Id  : 10.15.2.254
-Portname           : eth2               Port Mode          : access
-VSD Role           : n/a                Gw Role            : n/a
-HB VLAN Id         : n/a                HB VLAN Interval   : n/a
-VSD Red State      : false              Gw Red State       : false
-Vlan-Range         : 0-4094
-
-Gateway IP/Nsg Id  : 10.15.33.254
-Portname           : eth2               Port Mode          : access
-VSD Role           : n/a                Gw Role            : n/a
-HB VLAN Id         : n/a                HB VLAN Interval   : n/a
-VSD Red State      : false              Gw Red State       : false
-Vlan-Range         : 0-4094
-
--------------------------------------------------------------------------------
-No. of Ports: 2
-======================================================================= '''
     NUMPORTS = "No. of Ports"
     RE = '>\S+)\s+'
     DEL = '\s+:\s+(?P<'
@@ -342,8 +321,8 @@ No. of Ports: 2
     dict = {}
     port_list = []
     dict["Command"] = "show vswitch-controller gateway ports"
-    dict[NUMPORTS] = numeric_name_value_helper(NUMPORTS, ':', mystring)
-    ports = re.finditer(myregex, mystring)
+    dict[NUMPORTS] = numeric_name_value_helper(NUMPORTS, ':', string)
+    ports = re.finditer(myregex, string)
     for port in ports:
         port_dict = {}
         for item in items:
