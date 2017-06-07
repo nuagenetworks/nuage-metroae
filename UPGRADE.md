@@ -54,7 +54,8 @@ Upgrade vrs(s) manually
 4. Workflow for VSP upgrade with clustered VSD (upgrade to 5.x)
 
 A VSP upgrade to VSP 5.0.1 does not support incremental upgrade. Those upgrade paths are targeted for any deployments where downtime on operations and traffic loss is tolerated during the upgrade.
-The following is the workflow to acheive clustered vsp upgrade using above set of playbooks
+The following is the workflow to acheive clustered vsp upgrade using above set of playbooks. Note that the upgrade will pause if the existing licenses are invalid after the upgrade. Once new license 
+are ready, hitting enter will continue the upgrade.
 
 ```
 ./metro-ansible vsd_ha_major_upgrade.yml
