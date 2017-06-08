@@ -232,7 +232,7 @@ def show_vm_vports_to_json(string):
     '''
     NUMVPORTS = "No. of virtual ports"
     VPORTS_RE = ("(?P<vpname>\S+)\s+(?P<vmname>\S+)\s+(?P<vprn>\d+)\s+(?P<evpn>\d+)\s+"
-                 "(?P<multi>\S+)\s+(?P<vpip>\d+\.\d+\.\d+\.\d+\/\d+)\s+(?P<mac>.*")
+                 "(?P<multi>\S+)\s+(?P<vpip>\d+\.\d+\.\d+\.\d+\/\d+)\s+(?P<mac>.*)")
     dict = {}
     port_list = []
     dict["Command"] = "show vswitch-controller vports type vm"
