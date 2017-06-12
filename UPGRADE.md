@@ -87,6 +87,18 @@ Upgrade vrs(s) manually
 ./metro-ansible vstat_health.yml
 ```
 
+# nuage_unzip.yml playbook
+
+When the `build_upgrade.yml` playbook is executed, in addition to unzipped Nuage software files (QCOW2, OVA, and Linux Package files, refer BUILD.md for more details) for items that are being upgraded or installed, it requires additional folders to be created for upgrading VSD and VSTAT components. You can either copy the proper files to their locations, shown below, or you can use the nuage_unzip.yml playbook to do the work for you.
+
+Here are the expected paths to binaries. Binaries that are not required need not have a path here.
+
+```
+<your_path>/vsd/migration/
+<your_path>/vstat/backup/
+
+```
+
 ## Details
 
 ### Checking health of VSD (`vsd_health.yml`)
