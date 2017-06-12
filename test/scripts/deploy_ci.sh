@@ -23,7 +23,7 @@ IPADDR=`/usr/sbin/ifconfig | grep netmask | grep broadcast | head -n 1 | awk '{p
 
 # update deployment mode in ci-deploy
 sed -i "s/deployment_mode: sa/deployment_mode: $2/g" roles/ci-deploy/vars/main.yml
-# Cut down rest build wait time from 30 sec to 1 sec
+# Cut down reset build wait time from 30 sec to 1 sec
 sed -i "s/reset_build_pause_secs: 30/reset_build_pause_secs: 1/g" roles/reset-build/vars/main.yml
 # use heat to deploy the test VMs on OS
 cp ./test/files/setup.yml.CI setup.yml
@@ -34,7 +34,7 @@ ansible-playbook build.yml -vvvv
 if [ $1 = 4.0.R4 ] || [ $1 = 3.2.R10 ];
 then
     sed -i  '/- { hostname: {{ vrs_u16_target_server_name }},/,/ci_flavor: jenkins }/ d' test/files/build_vars.yml.all.j2
-    sed -i '/- { vrs_os_type: u16.04,/,/standby_controller_ip: {{ network_address }}.213 }/d' test/files/build_vars.yml.all.j2
+    sed -i '/- { vrs_os_type: u16.04,/,/standby_controller_ip: {{ network_address }}.215 }/d' test/files/build_vars.yml.all.j2
 fi
 
 ./metro-ansible ci_predeploy.yml -vvvv
