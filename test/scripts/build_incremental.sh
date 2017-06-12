@@ -6,9 +6,10 @@ IPADDR=`/usr/sbin/ifconfig | grep netmask | grep broadcast | head -n 1 | awk '{p
 function run_iter {
     sed -i "s/VERSION/$1/g" roles/reset-build/files/build_vars.yml
     sed -i "s/TARGET_SERVER/$IPADDR/g" roles/reset-build/files/build_vars.yml
+    sed -i "s/SERVER_TYPE/$2/g" roles/reset-build/files/build_vars.yml
     ./metro-ansible reset_build.yml -vvvv
     ./metro-ansible build.yml -vvvv
-    ./metro-ansible $2 -vvvv
+    ./metro-ansible $3 -vvvv
 }
 
 USAGE="Usage: $0 version"
@@ -16,9 +17,9 @@ TESTINSTALL="test_install.yml"
 TESTCLEANUP="test_cleanup.yml"
 INSTALLVNS="install_vns.yml"
 
-if [ $# -ne 1 ];
+if [ $# -ne 2 ];
 then
-    echo "Requires exactly 1 argument"
+    echo "Requires exactly 2 arguments"
     echo $USAGE
     exit 1
 fi
@@ -28,7 +29,7 @@ cp ./test/files/test_cleanup.yml .
 cp ./test/files/zfb.yml .
 
 cp ./test/files/build_vars_vsdonly.yml roles/reset-build/files/build_vars.yml
-run_iter $1 $TESTINSTALL
+run_iter $1 $2 $TESTINSTALL
 
 cp ./test/files/build_vars_vsconly.yml roles/reset-build/files/build_vars.yml
 run_iter $1 $TESTINSTALL
