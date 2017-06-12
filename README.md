@@ -138,9 +138,13 @@ The VCS/VNS components that are supported are:
     > `ssh-keygen`
 1. Copy ssh keys to localhosts's authorized key file
     > `ssh-copy-id localhost`
+1. Install dependencies for python-pip/python2-pip
+    > 'yum install epel-release python-devel openssl-devel libguestfs-tools'
 1. Install python pip on the Ansible host based on Redhat or Debian OS families
     > `yum install python2-pip` 
     > `apt-get install python-pip`
+1. Install dependencies for ansible and netmiko
+    > 'pip install pyOpenSSL'
 1. Install Ansible 2.2.1 on the Ansible host for full support
     > `pip install ansible`
 1. Install Netmiko and its dependencies on the Ansible host.
