@@ -99,6 +99,7 @@ Here are the expected paths to binaries. Binaries that are not required need not
 <your_path>/vstat/backup/
 
 ```
+Upgrading VSC requires only .tim file to be present in the VSC image path(refer BUILD.md). There is no need to create additional folder.
 
 ## Details
 
