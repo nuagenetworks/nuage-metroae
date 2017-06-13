@@ -153,11 +153,12 @@ Upgrading VSD and VSTAT requires the user to define additional paths apart from 
 
 ```
 <yourpath>/vsd/migration/
-
+```
 As part of VSD upgrade, migration scripts are provided as seperate package (Nuage-VSD-migration-scripts-<version>-ISO.tar.gz) that perform database backup and decluster existing VSDcluster. This package should be placed inside the `migration` folder of vsd path as shown above.
 
+```
 <yourpath>/vstat/backup/
-
+```
 As part of VSTAT upgrade, backup scripts are provided as seperate package (Nuage-elastic-backup-<version>-.tar.gz) that perform backup of existing indices of ElasticSearch node. This package should be placed inside the `backup` folder of vstat path as shown above.
 
 Upgrading VSC requires <.tim> file that needs to be present in VSC path <yourpath>/vsc/
