@@ -16,7 +16,7 @@ run_iter() {
     ./metro-ansible $3 -vvvv
 }
 
-USAGE="Usage: $0 version"
+USAGE="Usage: $0 version <kvm|vcenter>:"
 TESTINSTALL="test_install.yml"
 TESTCLEANUP="test_cleanup.yml"
 INSTALLVNS="install_vns.yml"
