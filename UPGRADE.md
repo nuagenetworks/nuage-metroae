@@ -88,18 +88,6 @@ Upgrade vrs(s) manually
 ./metro-ansible vstat_health.yml
 ```
 
-# nuage_unzip.yml playbook
-
-When the `build_upgrade.yml` playbook is executed, in addition to unzipped Nuage software files (QCOW2, OVA, and Linux Package files, refer BUILD.md for more details) for items that are being upgraded or installed, it requires additional folders to be created for upgrading VSD and VSTAT components. You can either copy the proper files to their locations, shown below, or you can use the nuage_unzip.yml playbook to do the work for you.
-
-Here are the expected paths to binaries. Binaries that are not required need not have a path here.
-
-```
-<your_path>/vsd/migration/
-<your_path>/vstat/backup/
-```
-Upgrading VSC requires only .tim file to be present in the VSC image path. There is no need to create additional folder.
-
 ## Details
 
 ### Checking health of VSD (`vsd_health.yml`)
@@ -157,8 +145,19 @@ This playbook/role is used to migrate the Elastic search data from prevoius vers
 
 This playbook/role helps to execute standalone upgrade for VSTAT. It is recommended for user to take snapshot of the old vstat vm(s) before the upgrade as they are destroyed.
 
-## `build` and `reset-build` playbooks
+## `build_upgrade`
 
-The build_upgrade playbook (`build_upgrade.yml`) is used to automatically populate a number of Ansible variable files for the operation of the metro playbooks. Running `./metro-ansible build_upgrade.yml` will use the variables defined in `build_vars.yml` and `upgrade_vars.yml` to create a `hosts` file, populate a `host_vars` directory, populate a `group_vars` directory, and make a few additional variable changes as required. The `build_upgrade.yml` playbook will do all the work for you.
+The build_upgrade playbook (`build_upgrade.yml`) is used to automatically populate a number of Ansible variable files for the operation of the metro playbooks. Running `./metro-ansible build_upgrade.yml` will use the variables defined in `build_vars.yml` and `upgrade_vars.yml` to create a `hosts` file, populate a `host_vars` directory, populate a `group_vars` directory, and make a few additional variable changes as required.
 
-Refer `BUILD.md` reset-build playbooks section for more details
+Upgrading VSD and VSTAT requires the user to define additional paths apart from the ones that were defined in nuage_unzip.yml section of BUILD.md file. Discussed below are these additional paths.
+
+```
+<yourpath>/vsd/migration/
+
+As part of VSD upgrade, migration scripts are provided as seperate package (Nuage-VSD-migration-scripts-<version>-ISO.tar.gz) that perform database backup and decluster existing VSDcluster. This package should be placed inside the `migration` folder of vsd path as shown above.
+
+<yourpath>/vstat/backup/
+
+As part of VSTAT upgrade, backup scripts are provided as seperate package (Nuage-elastic-backup-<version>-.tar.gz) that perform backup of existing indices of ElasticSearch node. This package should be placed inside the `backup` folder of vstat path as shown above.
+
+Upgrading VSC requires <.tim> file that needs to be present in VSC path <yourpath>/vsc/
