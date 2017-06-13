@@ -47,6 +47,7 @@ cp ./test/files/test_cleanup.yml .
 cp ./test/files/build_vars_all.yml roles/reset-build/files/build_vars.yml
 sed -i "s/VERSION/$1/g" roles/reset-build/files/build_vars.yml
 sed -i "s/TARGET_SERVER/$IPADDR/g" roles/reset-build/files/build_vars.yml
+sed -i "s/SERVER_TYPE/kvm/g" roles/reset-build/files/build_vars.yml
 
 ansible-playbook reset_build.yml -vvvv
 ansible-playbook build.yml -vvvv
