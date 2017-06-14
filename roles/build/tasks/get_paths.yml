@@ -479,7 +479,7 @@
 # VNS Utility/ NSGV
 #####################
 
-- block:
+- block: #QCOW2
   - name: Find names of VNS files
     find: path="{{ nuage_unzipped_files_dir }}/{{ item.subdir }}"  pattern="{{ item.pattern }}" recurse=yes
     register: rc_vns_files
@@ -502,6 +502,33 @@
   when:
     - (myvnsutils is defined or mynsgvs is defined)
     - "'install' in vns_operations_list|default(['None'])"
+    - ( myvnsutils | map(attribute='target_server_type') | list | issuperset(["kvm"]) or myvnsutils | map(attribute='target_server_type') | list | issuperset(["heat"]) )
+
+- block: #OVA/OVF
+  - name: Find names of VNS files
+    find: path="{{ nuage_unzipped_files_dir }}/{{ item.subdir }}"  pattern="{{ item.pattern }}" recurse=yes
+    register: rc_vns_files
+    with_items:
+      - { subdir: "vns/utils/", pattern: "vns-util-*.ova" }
+      - { subdir: "vns/nsg/", pattern: "NSG-*.ovf" }
+  - debug: var=rc_vns_files verbosity=1
+  - name: Verify that VNS files were found
+    assert: {
+      that: "{{ rc_vns_files.results[0].matched }} > 0 and {{ rc_vns_files.results[1].matched }} > 0",
+      msg: "Unable to find VNS files"
+    }
+  - name: Register VNS variables with proper path and image locations for use in other playbooks
+    set_fact:
+      "{{ item.1 }}_path": "{{ rc_vns_files.results[item.0].files[0].path | dirname }}"
+      "{{ item.1 }}_file_name": "{{ rc_vns_files.results[item.0].files[0].path | basename }}"
+    with_indexed_items:
+      - vnsutil_ova
+      - nsgv_ovf
+  when:
+    - (myvnsutils is defined or mynsgvs is defined)
+    - "'install' in vns_operations_list|default(['None'])"
+    - ( myvnsutils | map(attribute='target_server_type') | list | issuperset(["vcenter"]))
+
   tags:
     - nsgv
 
@@ -517,6 +544,17 @@
     nsgv_qcow2_file_name: "None"
   when: nsgv_qcow2_path is not defined
 
+- name: Make sure the proper VNSUTILS OVA variables have been defined
+  set_fact:
+    vnsutil_ova_path: "None"
+    vnsutil_ova_file_name: "None"
+  when: vnsutil_ova_path is not defined
+
+- name: Make sure the proper NSGV OVF variables have been defined
+  set_fact:
+    nsgv_ovf_path: "None"
+    nsgv_ovf_file_name: "None"
+  when: nsgv_ovf_path is not defined
 ###################
 # DNS - DNS VM
 ###################
