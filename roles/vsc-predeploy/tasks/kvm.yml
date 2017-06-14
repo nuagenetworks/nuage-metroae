@@ -21,17 +21,24 @@
   when: ("{{ mgmt_bridge }}" not in ansible_interfaces) or
         ("{{ data_bridge }}" not in ansible_interfaces)
 
-- name: Install packages for RedHat OS family distros
-  remote_user: "{{ target_server_username }}"
-  delegate_to: "{{ target_server }}"
-  yum: name={{ item }} state=present
-  with_items:
-   - qemu-kvm
-   - libvirt
-   - bridge-utils
-   - libguestfs-tools
-   - libvirt-python
+- block:
+  - name: If RedHat, install packages for RedHat OS family distros
+    yum: name={{ item }} state=present
+    with_items:
+     - qemu-kvm
+     - libvirt
+     - bridge-utils
+     - libguestfs-tools
+     - libvirt-python
+
+  - service:
+    name: libvirtd
+    enabled: yes
+    state: started
+
   when: ansible_os_family == "RedHat"
+  delegate_to: "{{ target_server }}"
+  remote_user: "{{ target_server_username }}"
 
 - name: Install packages for Debian OS family distros
   remote_user: "{{ target_server_username }}"
