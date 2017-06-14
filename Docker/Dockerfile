@@ -14,5 +14,4 @@ ARG git_password
 RUN git clone https://$git_user:$git_password@github.com/nuagenetworks/nuage-metro.git && \
     sed -i 's|build_vars.yml|/files/build_vars.yml|g' nuage-metro/build.yml
 
-ADD build_install.yml /
 ADD ecStart.sh /
