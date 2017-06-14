@@ -4,7 +4,7 @@ USAGE="Usage: $0 version deployment mode (sa or ha)"
 
 if [ $# -ne 3 ];
 then
-    echo "Requires exactly 3 arguments: version,deployment mode (sa or ha) and vmname_test (yes or not)"
+    echo "Requires exactly 3 arguments: version,deployment mode (sa or ha) and vmname_test (True or False)"
     echo $USAGE
     exit 1
 fi
@@ -24,7 +24,7 @@ IPADDR=`/usr/sbin/ifconfig | grep netmask | grep broadcast | head -n 1 | awk '{p
 # update deployment mode in ci-deploy
 sed -i "s/deployment_mode: sa/deployment_mode: $2/g" roles/ci-deploy/vars/main.yml
 # update vmname_test var
-sed -i "s/vmname_test: no/vmname_test: $3/g" roles/ci-deploy/vars/main.yml
+sed -i "s/vmname_test: False/vmname_test: $3/g" roles/ci-deploy/vars/main.yml
 # Cut down reset build wait time from 30 sec to 1 sec
 sed -i "s/reset_build_pause_secs: 30/reset_build_pause_secs: 1/g" roles/reset-build/vars/main.yml
 # use heat to deploy the test VMs on OS
