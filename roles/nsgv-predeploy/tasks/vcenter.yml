@@ -15,7 +15,7 @@
 
 - name: Verify the NSGV VM does not exist
   assert: 
-    that: "nsgv_vm_facts.failed"
+    that: "nsgv_vm_facts.failed is defined"
     msg: "VM {{ inventory_hostname }} already exists, quiting"
 
 - name: Deploy NSGV OVA on vCenter
@@ -29,13 +29,15 @@
     -dm=thin
     -ds={{ vcenter.datastore }}
     -n={{ inventory_hostname }}
-    --net:"Management={{ mgmt_bridge }}"
-    "{{ nsgv_ova_path }}/{{ nsgv_ova_file_name }}"
+    --net:"OVS Management={{ mgmt_bridge }}"
+    --net:"OVS DataPath={{ data_bridge }}"
+    --net:"port_vmnic={{ access_bridge }}"
+    "{{ nsgv_ovf_path }}/{{ nsgv_ovf_file_name }}"
     vi://'{{ vcenter.username | urlencode }}':'{{ vcenter.password | urlencode }}'@{{ target_server }}/{{ vcenter.datacenter }}/host/{{ vcenter.cluster }} 
-  when: "'.ova' in nsgv_ova_file_name"
+  when: "'.ovf' in nsgv_ovf_file_name"
 
 
-- name: Waiting 120 seconds to make sure the Stats VM is up
+- name: Waiting 120 seconds to make sure the NSGv VM is up
   pause: 
     seconds: 120
 
@@ -51,12 +53,3 @@
   register: nsgv_vm_facts
 
 - debug: var=nsgv_vm_facts verbosity=1
-
-- name: Verify the nsgv VM came up correctly
-  assert: 
-    that: 
-      - "nsgv_vm_facts.instance.hw_guest_id is defined"
-      - "not nsgv_vm_facts.instance.hw_guest_id is none"
-      - "not nsgv_vm_facts.instance.hw_guest_id == ''"
-    msg: "Stats VM {{ inventory_hostname }} did not come up after two minutes"
-
