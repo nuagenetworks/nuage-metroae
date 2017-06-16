@@ -10,6 +10,7 @@
 1. Added fix to enable TLS on all VSDs when deploying VNS on a VSD cluster.
 1. Added support for deploying DNS (Uses STATS VM as image...)
 1. Added support for deploy/destroy generic VM (qcow2 only with XML predefined)
+1. Added a YAML Syntax Checker and a basic build_vars.yml checker
 
 =======
 
@@ -155,6 +156,8 @@ The short version of the instructions are:
     > `pip install netaddr`
 1. Install ipaddress and its dependencies on the Ansible host.
     > `pip install ipaddress`
+1. Install PyYaml and its dependencies on the Ansible host.
+    > `pip install pyyaml`
 1. Install Python pexpect module
     > `pip install pexpect`
 1. Install VSPK Python module
