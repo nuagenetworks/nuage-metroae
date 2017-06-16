@@ -8,6 +8,7 @@ v2.1.1
 1. Added support to specify custom xmpp URL for clustered VSD deployments
 1. Added support for preserving gateway purge timer during upgrades. See `UPGRADE.md`.
 1. Added vns post deploy checks to verify TLS settings for XMPP on VSD.
+1. Added modules to check YAML Syntax and validity of build_vars.yml.
  
 ## Usage Notes
 1. Added new variable vsd_fqdn_global in to build_bars.yml to be used by other components. 
