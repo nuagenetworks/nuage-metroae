@@ -8,13 +8,13 @@
     name: "{{ inventory_hostname }}"
     validate_certs: no
     state: gatherfacts
-  register: vnsutil_vm_facts
+  register: nsgv_facts
   ignore_errors: on
 
-- debug: var=vnsutil_vm_facts verbosity=1
+- debug: var=nsgv_facts verbosity=1
 
 - block:
-  - name: Power off the VSD VM
+  - name: Power off the NSGv VM
     connection: local
     vmware_guest:
       hostname: "{{ target_server }}"
@@ -23,9 +23,9 @@
       name: "{{ inventory_hostname }}"
       validate_certs: no
       state: "poweredoff"
-    when: vnsutil_vm_facts['instance']['hw_power_status'] == 'poweredOn'
+    when: nsgv_facts['instance']['hw_power_status'] == 'poweredOn'
 
-  - name: Removing the VSD VM
+  - name: Removing the NSGv VM
     connection: local
     vmware_guest:
       hostname: "{{ target_server }}"
@@ -34,4 +34,4 @@
       name: "{{ inventory_hostname }}"
       validate_certs: no
       state: "absent"
-  when: vnsutil_vm_facts.failed is not defined
+  when: nsgv_facts.failed is not defined
