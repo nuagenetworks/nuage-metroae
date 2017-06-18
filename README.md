@@ -188,6 +188,7 @@ In addition to the above prerequisites, the following packages are needed for vc
 
 1. Nuage software version 4.0R7 and greater is supported. Previous versions of Nuage software lack the required support.
 1. `ovftool` package needs to installed on ansible deployment host. This package is available to download from here https://www.vmware.com/support/developer/ovf/.
+1. pysphere  and pyvmomi packages needs to be installed on ansible deployment host. This can be done with pip install pysphere pyvmomi.
 
 ## OpenStack Prerequisites
 
