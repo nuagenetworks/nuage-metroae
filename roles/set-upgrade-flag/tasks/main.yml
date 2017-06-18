@@ -22,6 +22,19 @@
   when: upgrade_major_or_minor == 'minor'
 
 - block:
+  - name: Get current version of VSD software
+    command: echo $VSD_VERSION
+    register: vsd_version
+    remote_user: "root"
+
+  - name: Print vsd_version output when verbosity >= 1
+    debug: var=vsd_version verbosity=1
+
+  - name: Install pip on vsd running 3.2 version prior to turning on major upgrade flag
+    include: vsd_post_upgrade_helper.yml
+    run_once: true
+    when: vsd_version.stdout[0] == '3'
+
   - name: Turn on API on vsd's for major upgrade
     expect:
       command: "{{ major_upgrade }}"
@@ -30,4 +43,31 @@
         (?i)yes: "yes"
       timeout: 100
     remote_user: root
+  
+  - name: Get monit state for vsd processes
+    vsd_monit:
+      state: summary
+    register: vsd_current_state
+    remote_user: root
+
+  - name: Fetch vsd processess current state
+    vsd_monit:
+      state: summary
+    until: vsd_temp_state['state']['{{ item }}'] == 'running' or 
+           vsd_temp_state['state']['{{ item }}'] == 'status ok' or 
+           vsd_temp_state['state']['{{ item }}'] == 'accessible'
+    retries: 10
+    delay: 30
+    remote_user: root
+    register: vsd_temp_state
+    with_items: "{{ vsd_current_state.state.keys() }}"
+
+  - name: Verify vsd processes are started/running
+    assert:
+      that: vsd_current_state['state']['{{ item }}'] == 'running' or 
+            vsd_current_state['state']['{{ item }}'] == 'status ok' or 
+            vsd_current_state['state']['{{ item }}'] == 'accessible'
+      msg: item  is not running
+    with_items: "{{ vsd_current_state.state.keys() }}"
+
   when: upgrade_major_or_minor == 'major'

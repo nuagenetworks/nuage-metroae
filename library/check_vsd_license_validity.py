@@ -1,11 +1,9 @@
 #!/usr/bin/python
 
 from ansible.module_utils.basic import AnsibleModule
-try:
-    from vspk.v4_0 import NUVSDSession
-    HAS_VSPK = True
-except ImportError:
-    HAS_VSPK = False
+import importlib
+
+VSPK = None
 
 DOCUMENTATION = '''
 ---
@@ -15,6 +13,11 @@ options:
   vsd_auth:
     description:
       - VSD credentials to access VSD GUI
+    required: true
+    default: null
+  api_version:
+    description:
+      - VSD version
     required: true
     default: null
 '''
@@ -27,7 +30,7 @@ EXAMPLES = '''
       password: csproot
       enterprise: csp
       api_url: https://10.0.0.10:8443
-    state: enabled
+    api_version: 4.0.R8
 '''
 
 
@@ -45,9 +48,25 @@ def check_license_mode(csproot):
     module.exit_json(changed=False, result="%s" % valid)
 
 
+def format_api_version(version):
+    # Handle 3.2 seperately
+    if version.startswith('3'):
+        return ('v3_2')
+    else:
+        return ('v' + version[0] + '_0')
+
+
 def get_vsd_session(vsd_auth):
+    # Format api version
+    version = format_api_version(module.params['api_version'])
     try:
-        session = NUVSDSession(**vsd_auth)
+        global VSPK
+        VSPK = importlib.import_module('vspk.{0:s}'.format(version))
+    except ImportError:
+            module.fail_json(msg='vspk is required for this module, or\
+                             API version specified does not exist.')
+    try:
+        session = VSPK.NUVSDSession(**vsd_auth)
         session.start()
         csproot = session.user
         return csproot
@@ -55,14 +74,12 @@ def get_vsd_session(vsd_auth):
         module.fail_json(msg="Could not establish connection to VSD %s" % e)
 
 
-arg_spec = dict(vsd_auth=dict(required=True, type='dict'))
+arg_spec = dict(vsd_auth=dict(required=True, type='dict'),
+                api_version=dict(required=True, type='str'))
 module = AnsibleModule(argument_spec=arg_spec, supports_check_mode=True)
 
 
 def main():
-    if not HAS_VSPK:
-            module.fail_json(msg='vspk is required for this module')
-
     vsd_auth = module.params['vsd_auth']
 
     csproot = get_vsd_session(vsd_auth)
