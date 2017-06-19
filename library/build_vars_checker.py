@@ -1,7 +1,5 @@
 #!/usr/bin/python
 import yaml
-import sys
-import collections
 from ansible.module_utils.basic import AnsibleModule
 from yaml.constructor import ConstructorError
 
@@ -55,12 +53,14 @@ def check_buildvars(filepath):
 	else:
 		module.exit_json(msg="FAIL: vsd_sa_or_ha should be one of sa or ha")
 
+
 arg_spec = dict(path=dict(required=False, default = './build_vars.yml', type='str'))
 module = AnsibleModule(argument_spec=arg_spec, supports_check_mode=True)
 
 def main():
     path = module.params['path']
     check_buildvars(path)
+
 
 if __name__ == '__main__':
     main()
