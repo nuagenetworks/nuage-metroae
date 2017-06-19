@@ -9,12 +9,14 @@
   delegate_to: "{{ target_server }}"
   remote_user: "{{ target_server_username }}"
 
-- name: Update /etc/hosts file on {{ target_server }}
-  lineinfile:
-    dest: /etc/hosts
-    line: "{{ mgmt_ip }} {{ inventory_hostname }}"
-  delegate_to: "{{ target_server }}"
-  remote_user: "{{ target_server_username }}"
+- block:
+  - name: Update /etc/hosts file on {{ target_server }}
+    lineinfile:
+      dest: /etc/hosts
+      line: "{{ mgmt_ip }} {{ inventory_hostname }}"
+    delegate_to: "{{ target_server }}"
+    remote_user: "{{ target_server_username }}"
+  when: ("{{ target_server_type }}" != "vcenter")
 
 - name: Update /etc/hosts file
   blockinfile:
