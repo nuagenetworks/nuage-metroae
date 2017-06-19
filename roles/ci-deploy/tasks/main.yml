@@ -1,7 +1,7 @@
 ---
 - include: ci_c7_deploy_helper.yml
-- include: ci_u14_deploy_helper.yml
 - include: ci_u16_deploy_helper.yml
+- include: ci_u14_deploy_helper.yml
 
 - name: Get details from OS facts
   os_server_facts:
@@ -181,11 +181,27 @@
   run_once: true
   remote_user: "root"
 
+- name: Update /etc/hosts file with xmpp entires
+  lineinfile:
+    dest: /etc/hosts
+    line: "{{ item }}"
+  with_items: "{{ xmpp_entries }}"
+  remote_user: "root"
+  when: deployment_mode == 'ha'
+
 - name: Configure dnsmasq
   copy:
     src: "{{playbook_dir}}/roles/ci-deploy/files/dnsmasq.conf"
     dest: "/etc/dnsmasq.conf"
   remote_user: "root"
+  when: deployment_mode == 'sa'
+
+- name: Configure dnsmasq
+  template:
+    src: "dnsmasq.conf.j2"
+    dest: "/etc/dnsmasq.conf"
+  remote_user: "root"
+  when: deployment_mode == 'ha'
 
 # Could not get over interface booting order issue in Ubuntu cloud image
 # This is a temp task
@@ -261,6 +277,13 @@
       delay: 5
       remote_user: "root"
     when: sync_status.stdout != "synchronized"
+  
+  - name: Disable gpgcheck in /etc/yum.conf
+    lineinfile:
+      dest: "/etc/yum.conf"
+      regexp: "gpgcheck=1"
+      line: "gpgcheck=0"
+    remote_user: root
 
   - name: Clean yum cache
     command: "rm -fr /var/cache/yum/*"
@@ -282,11 +305,6 @@
   - name: Run the equivalent of "apt-get update"
     apt:
       update_cache: yes
-    remote_user: "{{ target_server_username }}"
-
-  - name: Update all packages to the latest version
-    apt:
-      upgrade: dist
     remote_user: "{{ target_server_username }}"
 
   - name: check ntp sync state
@@ -317,7 +335,7 @@
   lineinfile:
     dest: "{{ playbook_dir }}/roles/vsd-predeploy/vars/main.yml"
     regexp: 'vsd_ram:'
-    line: 'vsd_ram: 9147483'
+    line: 'vsd_ram: 8147483'
   delegate_to: "{{ ansible_deployment_host }}"
   remote_user: "{{ ansible_sudo_username }}"
 
@@ -325,7 +343,7 @@
   lineinfile:
     dest: "{{ playbook_dir }}/roles/vsc-predeploy/vars/main.yml"
     regexp: 'vsc_ram:'
-    line: 'vsc_ram: 2147483'
+    line: 'vsc_ram: 1147483'
   delegate_to: "{{ ansible_deployment_host }}"
   remote_user: "{{ ansible_sudo_username }}"
 
@@ -341,7 +359,7 @@
   lineinfile:
     dest: "{{ playbook_dir }}/roles/vnsutil-predeploy/vars/main.yml"
     regexp: 'vnsutil_ram:'
-    line: 'vnsutil_ram: 2147483'
+    line: 'vnsutil_ram: 1147483'
   delegate_to: "{{ ansible_deployment_host }}"
   remote_user: "{{ ansible_sudo_username }}"
 
@@ -349,6 +367,6 @@
   lineinfile:
     dest: "{{ playbook_dir }}/roles/nsgv-predeploy/vars/main.yml"
     regexp: 'nsgv_ram:'
-    line: 'nsgv_ram: 2147483'
+    line: 'nsgv_ram: 1147483'
   delegate_to: "{{ ansible_deployment_host }}"
   remote_user: "{{ ansible_sudo_username }}"

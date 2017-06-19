@@ -2,13 +2,15 @@
 
 ## Current support for upgrade
 
-1. As of this writing only VSD and VSC upgrades are supported
+1. As of this writing only VSD,VSC and VSTAT upgrades are supported
 1. Supported upgrade paths
    1. 3.2.R8 to 4.0.Rn
    1. 3.2.R10 to 4.0.Rn
    1. 4.0.Rn to 4.0.Rn+
+   1. 4.0.Rn to 5.0.Rn+
    1. Other upgrades should be tried in a test environment before production
 1. Standalone and clustered VSD upgrade are supported
+1. Standalone and clustered VSTAT upgrade is supported
 
 ## Overview
 
@@ -23,16 +25,17 @@ Following steps are recommended to be executed for an upgrade using metro playbo
 ./metro-ansible build_upgrade.yml
 ```
 
-2. Run health checks on VSD and VSC
+2. Run health checks on VSD,VSC and VSTAT
 ```
 ./metro-ansible vsd_health.yml
 ./metro-ansible vsc_health.yml
+./metro-ansible vstat_health.yml
 ```
-Any reported error should carefully be checed before proceeding with the next steps.
+Any reported error should carefully be checked before proceeding with the next steps.
 
 These health checks can be ran at any time of the upgrade process.
 
-3. Workflow for VSP upgrade with clustered VSD
+3. Workflow for VSP upgrade with clustered VSD (upgrade to pre 5.x)
 
 The following is the workflow to acheive clustered vsp upgrade using above set of playbooks
 
@@ -45,6 +48,23 @@ Upgrade vrs(s) manually
 ```
 ./metro-ansible vsc_ha_node2_upgrade.yml
 ./metro-ansible vsd_ha_node2_upgrade.yml
+./metro-ansible vstat_upgrade.yml
+```
+
+4. Workflow for VSP upgrade with clustered VSD (upgrade to 5.x)
+
+A VSP upgrade to VSP 5.0.1 does not support incremental upgrade. Those upgrade paths are targeted for any deployments where downtime on operations and traffic loss is tolerated during the upgrade.
+The following is the workflow to acheive clustered vsp upgrade using above set of playbooks. Note that the upgrade will pause if the existing licenses are invalid after the upgrade. Once new license 
+are ready, hitting enter will continue the upgrade.
+
+```
+./metro-ansible vsd_ha_major_upgrade.yml
+```
+Upgrade vrs(s) manually
+
+```
+./metro-ansible vsc_ha_node2_upgrade.yml
+./metro-ansible vstat_upgrade.yml
 ```
 
 4. Workflow for VSP upgrade with standalone VSD
@@ -58,12 +78,14 @@ The following is the workflow to upgrade a full Nuage Networks VSP installation 
 Upgrade vrs(s) manually
 ```
 ./metro-ansible vsc_ha_node2_upgrade.yml
+./metro-ansible vstat_upgrade.yml
 ```
 
-5. Run health checks on VSD and VSC post upgrade
+5. Run health checks on VSD,VSC and VSTAT post upgrade
 ```
 ./metro-ansible vsd_health.yml
 ./metro-ansible vsc_health.yml
+./metro-ansible vstat_health.yml
 ```
 
 ## Details
@@ -107,9 +129,36 @@ This playbook/role is used to make backup of exsiting vsc configuration, bof con
 
 These playbooks are used to upgrade vsc(s) to new versions by copying new .tim file to the existing vsc(s) and rebooting them.
 
+### Checking health of VSTAT (`vstat_health.yml`)
 
-## `build` and `reset-build` playbooks
+This playbook/role is used to gather network information related to vstat nodes and monit information related to stats processes on vsd prior/post upgrade process. A report file with network and monit information is created (filename can be configured inside the `vstat_health.yml` playbook) inside `reports` folder.
 
-The build_upgrade playbook (`build_upgrade.yml`) is used to automatically populate a number of Ansible variable files for the operation of the metro playbooks. Running `./metro-ansible build_upgrade.yml` will use the variables defined in `build_vars.yml` and `upgrade_vars.yml` to create a `hosts` file, populate a `host_vars` directory, populate a `group_vars` directory, and make a few additional variable changes as required. The `build_upgrade.yml` playbook will do all the work for you.
+### Backup of VSTAT data (`vstat_data_backup.yml`)
 
-Refer `BUILD.md` reset-build playbooks section for more details
+This playbook/role is used to take backup of Elastic search data and copy the backup folder to ansible deployment host. This folder is later used in vstat upgrade process.
+
+### Migrate VSTAT data (`vstat_data_migrate.yml`)
+
+This playbook/role is used to migrate the Elastic search data from prevoius version to the latest version.
+
+### Upgrading standalone VSTAT (`vstat_upgrade.yml`)
+
+This playbook/role helps to execute standalone upgrade for VSTAT. It is recommended for user to take snapshot of the old vstat vm(s) before the upgrade as they are destroyed.
+
+## `build_upgrade`
+
+The build_upgrade playbook (`build_upgrade.yml`) is used to automatically populate a number of Ansible variable files for the operation of the metro playbooks. Running `./metro-ansible build_upgrade.yml` will use the variables defined in `build_vars.yml` and `upgrade_vars.yml` to create a `hosts` file, populate a `host_vars` directory, populate a `group_vars` directory, and make a few additional variable changes as required.
+
+Upgrading VSD and VSTAT requires the user to define additional paths apart from the ones that were defined in nuage_unzip.yml section of BUILD.md file. Discussed below are these additional paths.
+
+```
+<yourpath>/vsd/migration/
+```
+As part of VSD upgrade, migration scripts are provided as seperate package (Nuage-VSD-migration-scripts-version-ISO.tar.gz) that perform database backup and decluster existing VSD cluster. This package should be placed inside the `migration` folder of vsd path as shown above.
+
+```
+<yourpath>/vstat/backup/
+```
+As part of VSTAT upgrade, backup scripts are provided as seperate package (Nuage-elastic-backup-version-.tar.gz) that perform backup of existing indices of ElasticSearch node. This package should be placed inside the `backup` folder of vstat path as shown above.
+
+Upgrading VSC requires <.tim> file that needs to be present in VSC path <yourpath>/vsc/

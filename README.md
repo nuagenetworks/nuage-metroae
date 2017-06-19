@@ -1,7 +1,8 @@
-# Metro: Automated Deployment of Nuage Software
+# Metro: Nuage Networks Deployment Automation Services
 
 ## What's new
 
+<<<<<<< HEAD
 1. Rollback for VSD and VSC on KVM platform. See `UPGRADE.md`.
 1. Added support to specify custom xmpp URL for clustered VSD deployments
 1. Added support for preserving gateway purge timer during upgrades. See `UPGRADE.md`.
@@ -11,13 +12,16 @@
 1. Added support for deploying DNS (Uses STATS VM as image...)
 1. Added support for deploy/destroy generic VM (qcow2 only with XML predefined)
 1. Added a YAML Syntax Checker and a basic build_vars.yml checker
-
 =======
+1. Fix VSTAT cluster Iptables rules and Incremental CI script.
+1. Add new items here...
+>>>>>>> upstream/dev
 
-Feedback and bug reports should be provided via the Issues feature of Github or via email to [Brian Castelli](mailto://brian.castelli@nokia.com).
+## Questions, Feedback, and Issues
 
-## Deprecation notice
-In the near future (date TBD), Metro is going to drop support for using Ubuntu as a deployment target for new VMs, e.g. VSD, VSC, VSTAT, etc. VRS and Dockermon will continue to be supported on Ubuntu 14.04 and Ubuntu 16.04.
+Questions should be directed to the [nuage-metro-interest mailing list](mailto://nuage-metro-interest@list.nokia.com).
+
+Feedback and issues should be reported via the Github Issues feature or via email to [Brian Castelli](mailto://brian.castelli@nokia.com).
 
 ## Metro Playbook Categories
 
@@ -73,11 +77,16 @@ These are playbooks that are fully tested and supported.
 - vstat-deploy
 - vstat-destroy
 - vstat-health
+- vstat-data-backup
+- vstat-upgrade
+- vstat-data-migrate
+- vstat-rollback
 - vstat-postdeploy
 - vstat-predeploy
 - vstat-vrs-health
 - vstat-vsc-health
 - vstat-vsd-health
+
 
 ### Experimental
 These are playbooks that are stable but under development or contributed from the field. Support is _best effort_.
@@ -89,9 +98,7 @@ These are playbooks that are stable but under development or contributed from th
 - mesos-deploy
 - stcv-postdeploy
 - stcv-predeploy
-- vstat-data-backup
-- vstat-data-migrate
-- vstat-upgrade
+- vstat-rollback
 
 ### Lab Playbooks
 These are playbooks that are intended for use in the Metro Lab. You are welcome to use them.
@@ -137,9 +144,7 @@ The VCS/VNS components that are supported are:
 9. DNS/NTP (1)
 
 
-## For the impatient
-
-The short version of the instructions are:
+## Detailed Instructions
 
 1. Create ssh key pair for the user that runs metro playbooks
     > `ssh-keygen`
@@ -163,7 +168,7 @@ The short version of the instructions are:
 1. Install VSPK Python module
     > `pip install vspk`
 1. Clone this repository to the Ansible host
-1. Customize `build_vars.yml`  and `zfb.yml` with your VSD, VSC, VRS, VNSUTIL, NSGV  and VSTAT information. (See `BUILD.md` and `ZFB.md` for details.)
+1. Customize `build_vars.yml` (and `zfb.yml` if you are deploying VNS) with your VSD, VSC, VRS, VNSUTIL, NSGV  and VSTAT information. (See `BUILD.md` and `ZFB.md` for details.)
 1. Copy your binary files to the proper locations. (See `BUILD.md` for details.)
 1. Optionally execute `./metro-ansible nuage_unzip.yml` if you are installing from tar-gz files.
 1. Execute `./metro-ansible build.yml` to automatically populate variables in the appropriate places, e.g. the `host_vars` directory.
@@ -179,10 +184,11 @@ The latest stable code is found in the `master` branch. The `dev` branch is for 
 
 If you want to contribute back, you must create your own branch or fork, push your changes to that, and create a pull request to the `dev` branch. All pull requests against the `master` branch will be rejected. Sorry. All pull requests should include tests for new functionality. See `CONTRIBUTING.md` for more details.
 
-## Additional Prerequisites
+## General Prerequisites
 
 The following restrictions and conditions apply prior to executing the playbooks:
 
+1. The Ansible host must have the package python-jinja2 >= 2.7. python-jinja2 is installed by default with Ansible, but el6 hosts (e.g. CentOS 6.8) are limited to python-jinja2 < 2.7. Therefore, Nuage Metro will not run on el6 hosts.
 1. The hypervisor hosts must be running RedHat or CentOS. Support for Ubuntu exists but has been deprecated.
 1. If host names are used for target systems, VSD, VSC, VSTAT, VNSUTIL and VRS nodes, those names must be discoverable via DNS *or* added to the /etc/hosts file of the ansible deployment host.
 1. Each VM that is created for VSD, VSC, VSTAT, VNSUTIL, NSGV and DNS/NTP connects to one or more bridges on the target server. Those bridges must be created on the target server prior to deployment. Their names must be specified in the `build_vars.yml` file. See `BUILD.md` for details.
@@ -196,6 +202,7 @@ In addition to the above prerequisites, the following packages are needed for vc
 
 1. Nuage software version 4.0R7 and greater is supported. Previous versions of Nuage software lack the required support.
 1. `ovftool` package needs to installed on ansible deployment host. This package is available to download from here https://www.vmware.com/support/developer/ovf/.
+1. pysphere  and pyvmomi packages needs to be installed on ansible deployment host. This can be done with pip install pysphere pyvmomi.
 
 ## OpenStack Prerequisites
 
@@ -257,6 +264,9 @@ ansible supports different levels of verbosity, specified with one of the follow
 * `-vvvv`
 
 More letters means more verbose. The highest level, `-vvvv`, provides ssh connectivity information.
+
+## Deprecation notice
+In the near future (date TBD), Metro is going to drop support for using Ubuntu as a deployment target for new VMs, e.g. VSD, VSC, VSTAT, etc. VRS and Dockermon will continue to be supported on Ubuntu 14.04 and Ubuntu 16.04.
 
 ## License
 

@@ -18,14 +18,15 @@
       {% endfor %}
   remote_user: "root"
 
-- name: Update /etc/hosts file on {{ vsd_fqdn }}
+- name: Update /etc/hosts file on VSD(s)
   blockinfile:
     dest: /etc/hosts
     block: |
       {% for host in groups['vstats']  %}
       {{ hostvars[host]['mgmt_ip'] }}    {{ host }}
       {% endfor %}
-  delegate_to: "{{ vsd_fqdn }}"
+  delegate_to: "{{ item }}"
+  with_items: "{{ groups['vsds'] }}"
   remote_user: "root"
 
 - block:
@@ -140,6 +141,18 @@
     when: ip_addr.stdout == "not found:"
   when: vsd_sa_or_ha == 'sa'
 
+- name: Start firewalld
+  systemd:
+    name: firewalld
+    state: started
+  remote_user: "root"
+
+- name: Enable firewalld on boot
+  systemd:
+    name: firewalld
+    enabled: yes
+  remote_user: "root"
+
 - name: Create firewall vars file on ansible host
   template: src="{{ playbook_dir }}/roles/vstat-deploy/templates/firewall.j2" dest="{{ playbook_dir }}/roles/vstat-deploy/vars/main.yml" backup=no mode=0755
   delegate_to: "{{ ansible_deployment_host }}"
@@ -169,40 +182,42 @@
     state: restarted
   remote_user: "root"
 
-- name: Execute VSTAT cluster script on VSD
+- name: Execute VSTAT cluster script on standalone or clustered vsds
   command: /opt/vsd/vsd-es-cluster-config.sh -e {{ groups['vstats'][0] }},{{ groups['vstats'][1] }},{{ groups['vstats'][2] }}
-  delegate_to: "{{vsd_fqdn}}"
+  delegate_to: "{{ vsd_fqdn }}"
   remote_user: root
   environment:
     SSHPASS: "{{lookup('env','SSHPASS')}}"
   run_once: true
   when: 
     - not vstat_standalone
-    - vsd_sa_or_ha == 'sa' 
+    - vsd_sa_or_ha == 'sa' or vsd_sa_or_ha == 'ha'
 
-- name: Execute VSTAT cluster script on VSD
-  command: /opt/vsd/vsd-es-cluster-config.sh -e {{ groups['vstats'][0] }},{{ groups['vstats'][1] }},{{ groups['vstats'][2] }}
-  delegate_to: "{{ item }}"
-  remote_user: root
-  environment:
-    SSHPASS: "{{lookup('env','SSHPASS')}}"
-  with_items: groups['vsds']
-  run_once: true
-  when: 
-    - not vstat_standalone
-    - vsd_sa_or_ha == 'ha'
-
-- name: Enable stats collection on the VSD VM
+- name: Enable stats collection on standalone vsd when vstat is standalone
   command: /opt/vsd/vsd-stats.sh -e {{ inventory_hostname }}
   delegate_to: "{{vsd_fqdn}}"
   remote_user: "root"
   run_once: true
-  when: vsd_sa_or_ha == 'sa'
+  when: 
+    - vsd_sa_or_ha == 'sa'
+    - vstat_standalone
 
-- name: Enable stats collection on the VSDs in cluster setup
+- name: Enable stats collection on the cluster vsds when vstat is standalone
   command: /opt/vsd/vsd-stats.sh -e {{ inventory_hostname }}
+  delegate_to: "{{ item }}"
+  remote_user: "root"
+  run_once: true
+  with_items: "{{ groups['vsds'] }}"
+  when:
+    - vsd_sa_or_ha == 'ha'
+    - vstat_standalone
+ 
+- name: Enable stats collection on the  vsd(s) when vstat is clustered
+  command: /opt/vsd/vsd-stats.sh -e {{ groups['vstats'][0] }},{{ groups['vstats'][1] }},{{ groups['vstats'][2] }}
   delegate_to: "{{ item }}"
   remote_user: root
   with_items: "{{ groups['vsds'] }}"
   run_once: true
-  when: vsd_sa_or_ha == 'ha'
+  when: 
+    - not vstat_standalone 
+    - vsd_sa_or_ha == 'sa' or vsd_sa_or_ha == 'ha'

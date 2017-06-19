@@ -12,6 +12,8 @@ fi
 if [ $1 = 4.0.R4 ] || [ $1 = 3.2.R10 ];
 then
     sed -i  '/- { hostname: {{ vrs_u16_host_name }},/,/ci_flavor: m1.medium }/d' test/files/build_vars.yml.CI.j2
+    sed -i  '/- { hostname: {{ vrs_u16_target_server_name }},/,/ci_flavor: jenkins }/d' test/files/build_vars.yml.all.j2
+    sed -i  '/- { vrs_os_type: u16.04,/,/standby_controller_ip: {{ network_address }}.213 }/d' test/files/build_vars.yml.all.j2
 fi
 
 # Use heat to deploy VMs on OpenStack
@@ -49,7 +51,10 @@ sed -i "s/VERSION/$1/g" roles/reset-build/files/build_vars.yml
 sed -i "s/TARGET_SERVER/$IPADDR/g" roles/reset-build/files/build_vars.yml
 ansible-playbook reset_build.yml -vvvv
 ansible-playbook build.yml -vvvv
-./metro-ansible test_install.yml -vvvv
+./metro-ansible  vstat_destroy.yml -vvvv
+./metro-ansible  vstat_predeploy.yml -vvvv
+./metro-ansible  vstat_deploy.yml -vvvv
+./metro-ansible  vstat_postdeploy.yml -vvvv
 
 cp ./test/files/build_vars_vrsonly.yml roles/reset-build/files/build_vars.yml
 sed -i "s/VERSION/$1/g" roles/reset-build/files/build_vars.yml

@@ -13,13 +13,9 @@ run_iter() {
     fi    
     ./metro-ansible reset_build.yml -vvvv
     ./metro-ansible build.yml -vvvv
-    ./metro-ansible $3 -vvvv
 }
 
 USAGE="Usage: $0 version <kvm|vcenter>:"
-TESTINSTALL="test_install.yml"
-TESTCLEANUP="test_cleanup.yml"
-INSTALLVNS="install_vns.yml"
 
 if [ $# -ne 2 ];
 then
@@ -28,28 +24,20 @@ then
     exit 1
 fi
 
-
-cp ./test/files/test_install.yml .
-cp ./test/files/test_cleanup.yml .
-cp ./test/files/zfb.yml .
-
 cp ./test/files/build_vars_vsdonly.yml roles/reset-build/files/build_vars.yml
-run_iter $1 $2 $TESTINSTALL
+run_iter $1 $2
 
 cp ./test/files/build_vars_vsconly.yml roles/reset-build/files/build_vars.yml
-run_iter $1 $2 $TESTINSTALL
+run_iter $1 $2
 
 cp ./test/files/build_vars_vstatonly.yml roles/reset-build/files/build_vars.yml
-run_iter $1 $2 $TESTINSTALL
+run_iter $1 $2
 
 cp ./test/files/build_vars_vrsonly.yml roles/reset-build/files/build_vars.yml
-run_iter $1 $2 $TESTINSTALL
+run_iter $1 $2
 
 cp ./test/files/build_vars_vnsonly.yml roles/reset-build/files/build_vars.yml
-run_iter $1 $2 $TESTCLEANUP
-
-cp ./test/files/build_vars_vnsonlywithvsc.yml roles/reset-build/files/build_vars.yml
-run_iter $1 $2 $INSTALLVNS
+run_iter $1 $2
 
 cp ./test/files/build_vars_all.yml roles/reset-build/files/build_vars.yml
-run_iter $1 $2 $TESTCLEANUP
+run_iter $1 $2
