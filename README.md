@@ -2,18 +2,14 @@
 
 ## What's new
 
-1. Rollback for VSD and VSC on KVM platform. See `UPGRADE.md`.
-1. Added support to specify custom xmpp URL for clustered VSD deployments
-1. Added support for preserving gateway purge timer during upgrades. See `UPGRADE.md`.
-1. Added fix for ElasticSearch bug reported in Issue #162.
-1. Added support for DNS/NTP server
-1. Added fix to enable TLS on all VSDs when deploying VNS on a VSD cluster.
-1. Added support for deploying DNS (Uses STATS VM as image...)
-1. Added support for deploy/destroy generic VM (qcow2 only with XML predefined)
+1. Fix VSTAT cluster Iptables rules and Incremental CI script.
+1. Add new items here...
 
-=======
+## Questions, Feedback, and Issues
 
-Feedback and bug reports should be provided via the Issues feature of Github or via email to [Brian Castelli](mailto://brian.castelli@nokia.com).
+Questions should be directed to the [nuage-metro-interest mailing list](mailto://nuage-metro-interest@list.nokia.com).
+
+Feedback and issues should be reported via the Github Issues feature or via email to [Brian Castelli](mailto://brian.castelli@nokia.com).
 
 ## Deprecation notice
 In the near future (date TBD), Metro is going to drop support for using Ubuntu as a deployment target for new VMs, e.g. VSD, VSC, VSTAT, etc. VRS and Dockermon will continue to be supported on Ubuntu 14.04 and Ubuntu 16.04.

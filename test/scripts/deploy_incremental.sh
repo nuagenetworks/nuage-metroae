@@ -8,13 +8,22 @@ function run_iter {
     sed -i "s/TARGET_SERVER/$IPADDR/g" roles/reset-build/files/build_vars.yml
     ./metro-ansible reset_build.yml -vvvv
     ./metro-ansible build.yml -vvvv
-    ./metro-ansible $2 -vvvv
+    if [ $2 == "VSTAT" ];
+    then
+        ./metro-ansible vstat_destroy.yml -vvvv
+        ./metro-ansible vstat_predeploy.yml -vvvv
+        ./metro-ansible vstat_deploy.yml -vvvv
+        ./metro-ansible vstat_postdeploy.yml -vvvv
+    else 
+       ./metro-ansible $2 -vvvv
+    fi
 }
 
 USAGE="Usage: $0 version"
 TESTINSTALL="test_install.yml"
 TESTCLEANUP="test_cleanup.yml"
 INSTALLVNS="install_vns.yml"
+INSTALLVSTAT="VSTAT"
 
 if [ $# -ne 1 ];
 then
@@ -33,16 +42,13 @@ run_iter $1 $TESTINSTALL
 cp ./test/files/build_vars_vsconly.yml roles/reset-build/files/build_vars.yml
 run_iter $1 $TESTINSTALL
 
-cp ./test/files/build_vars_vstatonly.yml roles/reset-build/files/build_vars.yml
-run_iter $1 $TESTINSTALL
+cp ./test/files/build_vars_vstatonlywithvsd.yml roles/reset-build/files/build_vars.yml
+run_iter $1 $INSTALLVSTAT
 
 cp ./test/files/build_vars_vrsonly.yml roles/reset-build/files/build_vars.yml
 run_iter $1 $TESTINSTALL
 
-cp ./test/files/build_vars_vnsonly.yml roles/reset-build/files/build_vars.yml
-run_iter $1 $TESTCLEANUP
-
-cp ./test/files/build_vars_vnsonlywithvsc.yml roles/reset-build/files/build_vars.yml
+cp ./test/files/build_vars_vnsonlywithvscvsd.yml roles/reset-build/files/build_vars.yml
 run_iter $1 $INSTALLVNS
 
 cp ./test/files/build_vars_all.yml roles/reset-build/files/build_vars.yml

@@ -49,7 +49,10 @@ sed -i "s/VERSION/$1/g" roles/reset-build/files/build_vars.yml
 sed -i "s/TARGET_SERVER/$IPADDR/g" roles/reset-build/files/build_vars.yml
 ansible-playbook reset_build.yml -vvvv
 ansible-playbook build.yml -vvvv
-./metro-ansible test_install.yml -vvvv
+./metro-ansible  vstat_destroy.yml -vvvv
+./metro-ansible  vstat_predeploy.yml -vvvv
+./metro-ansible  vstat_deploy.yml -vvvv
+./metro-ansible  vstat_postdeploy.yml -vvvv
 
 cp ./test/files/build_vars_vrsonly.yml roles/reset-build/files/build_vars.yml
 sed -i "s/VERSION/$1/g" roles/reset-build/files/build_vars.yml
