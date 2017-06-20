@@ -79,7 +79,7 @@ def get_vsd_session(vsd_auth):
         csproot = session.user
         return csproot
     except:
-        module.exit_json(changed=False, result="Could not establish\
+        module.fail_json(changed=False, result="Could not establish\
                           connection to VSD")
 
 
