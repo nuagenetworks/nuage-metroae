@@ -25,7 +25,7 @@ EXAMPLES = '''
 def check_yaml(filepath):
     fil = open(filepath, 'r')
     try:
-        config = yaml.load(fil, yaml.SafeLoader)
+        yaml.load(fil, yaml.SafeLoader)
         module.exit_json(changed=False)
     except yaml.YAMLError as exc:
         print("Error while parsing YAML file:")

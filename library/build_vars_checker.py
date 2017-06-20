@@ -1,7 +1,6 @@
 #!/usr/bin/python
 import yaml
 from ansible.module_utils.basic import AnsibleModule
-from yaml.constructor import ConstructorError
 
 DOCUMENTATION = '''
 
@@ -19,11 +18,6 @@ options:
 EXAMPLES = '''
 - build_vars_checker: path=./build_vars.yml
 '''
-
-try:
-    from yaml import CLoader as Loader
-except ImportError:
-    from yaml import Loader
 
 
 def no_duplicates_constructor(loader, node, deep=False):
