@@ -3,6 +3,8 @@
 ## Metro version
 v2.1.2
 
+# Metro assumes that user will not change the names of Nuage distributed files
+
 ## New features
 1. Added VSD/VSC rollback for clustered VSD upgrades on KVM platform.
 1. Added support for Standalone and Clustered VSTAT upgrade
@@ -12,7 +14,6 @@ v2.1.2
 1. Introduced vmname as a variable that can used to set name of the vm on kvm and vcenter
  
 ## Usage Notes
-1. Added new variable ansible_sudo_user_pub_key in to upgrade_vars.yml. This is required for VSD file copy operations during upgrades. 
  
 ## Resolved Issues
 1. VSD DB backup failure during upgrades.
@@ -21,6 +22,7 @@ v2.1.2
 1. Added missing command to enable stats on vsd(s) when vstat is clustered
 1. Fixed technical alert 17-0506
 1. Remove hard coded vspk versions and use vsd version to load the vspk version dynamically 
+
 ## Known Issues
  
 ## Known Limitations
@@ -36,3 +38,4 @@ v2.1.2
 1. VNS support is only available for VSP version 5.0.1 and later.
 1. VNS utility deployed has only a single NIC compared to KVM deployed VMs with 2 NICs.
 1. VSPK version in nuage_vspk.py is set to v4_0 for aws deployments of nsgv
+
