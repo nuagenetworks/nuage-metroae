@@ -19,7 +19,8 @@ v2.1.2
 1. VSD purge timer restore failure during standalone upgrades.
 1. VSD decouple report path is fixed. It now logs to reports folder. 
 1. Added missing command to enable stats on vsd(s) when vstat is clustered
- 
+1. Fixed technical alert 17-0506
+1. Remove hard coded vspk versions and use vsd version to load the vspk version dynamically 
 ## Known Issues
  
 ## Known Limitations
