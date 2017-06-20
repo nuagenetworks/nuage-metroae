@@ -34,3 +34,4 @@ v2.1.2
 1. VSC disconnect from VSD prior 5.0.1 upgrade is not yet implemented
 1. VNS support is only available for VSP version 5.0.1 and later.
 1. VNS utility deployed has only a single NIC compared to KVM deployed VMs with 2 NICs.
+1. VSPK version in nuage_vspk.py is set to v4_0 for aws deployments of nsgv
