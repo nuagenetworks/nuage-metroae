@@ -10,7 +10,7 @@
 - name: Query {{ target_server }} facts
   action: setup
   remote_user: "root"
-  
+
 - name: Update /etc/hosts file
   blockinfile:
     dest: /etc/hosts
@@ -25,7 +25,7 @@
     shell: echo $VSD_VERSION | cut -d . -f 1
     register: vsd_version
     remote_user: root
-  
+
   - debug: var=vsd_version.stdout
 
   - block:
@@ -33,11 +33,11 @@
       shell: ssh-keygen -b 2048 -t rsa -f /root/.ssh/id_rsa -q -N ""
       args:
         creates: /root/.ssh/id_rsa
-      remote_user: root 
+      remote_user: root
       delegate_to: "{{ item }}"
       with_items: "{{ groups['vsds'] }}"
       run_once: true
-      
+
     - name: Get generated SSH keys
       shell: cat ~/.ssh/id_rsa.pub
       register: ssh_key_lst
@@ -45,7 +45,7 @@
       delegate_to: "{{ item }}"
       with_items: "{{ groups['vsds'] }}"
       run_once: true
-   
+
     - name: Add SSH keys to authorized_keys file
       shell: "echo {{ item[1].stdout }} >> /root/.ssh/authorized_keys"
       delegate_to: "{{ item[0] }}"
@@ -60,11 +60,11 @@
       shell: sudo -u vsd ssh-keygen -b 2048 -t rsa -f /home/vsd/.ssh/id_rsa -q -N ""
       args:
         creates: /root/.ssh/id_rsa
-      remote_user: root 
+      remote_user: root
       delegate_to: "{{ item }}"
       with_items: "{{ groups['vsds'] }}"
       run_once: true
-      
+
     - name: Get generated SSH keys
       shell: cat /home/vsd/.ssh/id_rsa.pub
       register: ssh_key_lst
@@ -72,7 +72,7 @@
       delegate_to: "{{ item }}"
       with_items: "{{ groups['vsds'] }}"
       run_once: true
-   
+
     - name: Add SSH keys to authorized_keys file
       shell: "echo {{ item[1].stdout }} >> /home/vsd/.ssh/authorized_keys"
       delegate_to: "{{ item[0] }}"
@@ -122,7 +122,7 @@
     src: ./roles/vsd-deploy/files/c68/
     dest: /etc/yum.repos.d/
   remote_user: "root"
-  when: 
+  when:
     - yum_pin
     - "{{ ansible_distribution_version }} == 6.8"
 
@@ -195,25 +195,25 @@
 
 - block:
   - name: Set if this is for a rollback
-    set_fact: rollback="{{ rollback|default('False') }}" 
+    set_fact: rollback="{{ rollback|default('False') }}"
 
   - name: Install VSD software on HA node1 {{groups['vsds'][0]}}
-    command: "{{ vsd_ha_node1 }}"
+    command: "{{ vsd_node2 }}"
     when: inventory_hostname == groups['vsds'][0]
     remote_user: "root"
 
   - name: Install VSD software on HA node2 {{groups['vsds'][1]}}
-    command: "{{ vsd_ha_node2 }}"
+    command: "{{ vsd_node1 }}"
     when: inventory_hostname == groups['vsds'][1] and not rollback
     remote_user: "root"
 
   - name: Install VSD software on HA node2 {{groups['vsds'][1]}}
-    command: "{{ vsd_ha_node2_rollback }}"
+    command: "{{ vsd_node1_rollback }}"
     when: inventory_hostname == groups['vsds'][1] and rollback
     remote_user: "root"
 
   - name: Install VSD software on HA node3 {{groups['vsds'][2]}}
-    command: "{{ vsd_ha_node3 }}"
+    command: "{{ vsd_node3 }}"
     when: inventory_hostname == groups['vsds'][2]
     remote_user: "root"
   when: vsd_sa_or_ha == 'ha'

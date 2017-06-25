@@ -1,4 +1,20 @@
 ---
+- block:
+  - name: Verify that upgrade_vmname is defined if this is an upgrade
+    assert:
+      that: "upgrade_vmname is defined"
+      msg: "upgrade_vmname is required for upgrade"
+  - name: Set local variable with upgrade_vmname
+    set_fact:
+      vm_name: "{{ upgrade_vmname }}"
+  when: nuage_upgrade
+
+- block:
+  - name: Set local variable with vmname
+    set_fact:
+      vm_name: "{{ vmname | default(inventory_hostname) }}"
+  when: not nuage_upgrade
+
 - name: Query {{ target_server }} facts
   action: setup
   remote_user: "{{ target_server_username }}"
@@ -63,8 +79,8 @@
 
 - name: Verify that the VM is not already running
   assert:
-    that: "inventory_hostname not in virt_vms.list_vms"
-    msg: "{{ inventory_hostname }} is already running on {{ target_server }}"
+    that: "vm_name not in virt_vms.list_vms"
+    msg: "{{ vm_name }} is already running on {{ target_server }}"
 
 - name: Create libvirt image directory
   file: path={{ images_path }}/{{ inventory_hostname }}
@@ -183,7 +199,7 @@
   remote_user: "{{ target_server_username }}"
 
 - name: "Define new VSD VM"
-  virt: name="{{ inventory_hostname }}"
+  virt: name="{{ vm_name }}"
         command=define
         xml="{{ lookup('template', 'vsd.xml.j2') }}"
         uri=qemu:///system
@@ -191,7 +207,7 @@
   remote_user: "{{ target_server_username }}"
 
 - name: "Run VSD VM"
-  virt: name="{{ inventory_hostname }}"
+  virt: name="{{ vm_name }}"
         state=running
         uri=qemu:///system
   delegate_to: "{{ target_server }}"
