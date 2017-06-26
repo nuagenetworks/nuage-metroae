@@ -41,7 +41,7 @@ The following is the workflow to acheive clustered vsp upgrade using above set o
 
 ```
 ./metro-ansible vsd_ha_node2_3_upgrade.yml
-./metro-ansible vsc_ha_node1_upgrade.yml
+./metro-ansible vsc_node1_upgrade.yml
 ```
 Upgrade vrs(s) manually
 

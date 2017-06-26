@@ -7,13 +7,17 @@
   - name: Set local variable with upgrade_vmname
     set_fact:
       vm_name: "{{ upgrade_vmname }}"
-  when: nuage_upgrade
+  when: nuage_upgrade | default( False )
 
 - block:
+  - name: Verify that vmname is defined
+    assert:
+      that: "vmname is defined"
+      msg: "vmname is required for vsd_predeploy"
   - name: Set local variable with vmname
     set_fact:
       vm_name: "{{ vmname | default(inventory_hostname) }}"
-  when: not nuage_upgrade
+  when: not nuage_upgrade | default( False )
 
 - name: Gathering info on VM
   connection: local
@@ -32,7 +36,7 @@
 - name: Verify the VSD VM does not exist
   assert:
     that: "vsd_vm_facts.failed is defined"
-    msg: "VM {{ inventory_hostname }} already exists, quiting"
+    msg: "VM {{ vm_name }} already exists, quiting"
 
 - name: Deploy VSD Image on vCenter
   connection: local
@@ -83,7 +87,7 @@
     datacenter: "{{ vcenter.datacenter }}"
     cluster: "{{ vcenter.cluster }}"
     validate_certs: no
-    vm_id: "{{ inventory_hostname }}"
+    vm_id: "{{ vm_name }}"
     vm_username: "root"
     vm_password: "Alcateldc"
     vm_shell: "/usr/bin/echo"
@@ -98,7 +102,7 @@
     datacenter: "{{ vcenter.datacenter }}"
     cluster: "{{ vcenter.cluster }}"
     validate_certs: no
-    vm_id: "{{ inventory_hostname }}"
+    vm_id: "{{ vm_name }}"
     vm_username: "root"
     vm_password: "Alcateldc"
     vm_shell: "/usr/bin/chown"
@@ -113,7 +117,7 @@
     datacenter: "{{ vcenter.datacenter }}"
     cluster: "{{ vcenter.cluster }}"
     validate_certs: no
-    vm_id: "{{ inventory_hostname }}"
+    vm_id: "{{ vm_name }}"
     vm_username: "root"
     vm_password: "Alcateldc"
     vm_shell: "/usr/bin/echo"
@@ -128,7 +132,7 @@
     datacenter: "{{ vcenter.datacenter }}"
     cluster: "{{ vcenter.cluster }}"
     validate_certs: no
-    vm_id: "{{ inventory_hostname }}"
+    vm_id: "{{ vm_name }}"
     vm_username: "root"
     vm_password: "Alcateldc"
     vm_shell: "/usr/bin/chown"
@@ -143,7 +147,7 @@
     datacenter: "{{ vcenter.datacenter }}"
     cluster: "{{ vcenter.cluster }}"
     validate_certs: no
-    vm_id: "{{ inventory_hostname }}"
+    vm_id: "{{ vm_name }}"
     vm_username: "root"
     vm_password: "Alcateldc"
     vm_shell: "/usr/bin/mkdir"
@@ -158,7 +162,7 @@
     datacenter: "{{ vcenter.datacenter }}"
     cluster: "{{ vcenter.cluster }}"
     validate_certs: no
-    vm_id: "{{ inventory_hostname }}"
+    vm_id: "{{ vm_name }}"
     vm_username: "root"
     vm_password: "Alcateldc"
     vm_shell: "/usr/bin/chown"
@@ -177,7 +181,7 @@
     datacenter: "{{ vcenter.datacenter }}"
     cluster: "{{ vcenter.cluster }}"
     validate_certs: no
-    vm_id: "{{ inventory_hostname }}"
+    vm_id: "{{ vm_name }}"
     vm_username: "root"
     vm_password: "Alcateldc"
     vm_shell: "/usr/bin/echo"
@@ -192,7 +196,7 @@
     datacenter: "{{ vcenter.datacenter }}"
     cluster: "{{ vcenter.cluster }}"
     validate_certs: no
-    vm_id: "{{ inventory_hostname }}"
+    vm_id: "{{ vm_name }}"
     vm_username: "root"
     vm_password: "Alcateldc"
     vm_shell: "/usr/bin/chmod"
@@ -207,7 +211,7 @@
     datacenter: "{{ vcenter.datacenter }}"
     cluster: "{{ vcenter.cluster }}"
     validate_certs: no
-    vm_id: "{{ inventory_hostname }}"
+    vm_id: "{{ vm_name }}"
     vm_username: "root"
     vm_password: "Alcateldc"
     vm_shell: "/usr/sbin/reboot"

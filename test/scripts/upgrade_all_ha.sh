@@ -44,7 +44,7 @@ rm -rf ./reports/
 # Upgrade vsd 2 and 3
 ./metro-ansible vsd_ha_node2_3_upgrade.yml -vvvv
 # Upgrade VSC1
-./metro-ansible vsc_ha_node1_upgrade.yml -vvvv
+./metro-ansible vsc_node1_upgrade.yml -vvvv
 # Upgrade VSC2
 ./metro-ansible vsc_ha_node2_upgrade.yml -vvvv
 # Upgrade VSD1
