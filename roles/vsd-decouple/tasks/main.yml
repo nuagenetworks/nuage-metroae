@@ -13,7 +13,7 @@
 
   - debug: var=username_on_the_host
 
-  - name: Create backup directory  for VSD2
+  - name: Create backup directory  for VSD3
     set_fact: backup_dir="{{ images_path }}/{{ inventory_hostname }}.backup.{{ ansible_date_time.date }}@{{ ansible_date_time.time }}"
   
   - block:
@@ -25,11 +25,11 @@
       remote_user: "{{ target_server_username }}"
   
     - name: Copy the VSD2 VM image dir to the backup directory for rollback
-      command: "cp -r {{ images_path }}/{{ inventory_hostname }}/{{ vsd_current_qcow2_file_name}} {{ backup_dir }}"
+      shell: "cp -r {{ images_path }}/{{ inventory_hostname }}/*.qcow2 {{ backup_dir }}"
       delegate_to: "{{ target_server }}"
       remote_user: "{{ target_server_username }}"
     
-    - name: Get XML for VSD2 VM
+    - name: Get XML for VSD3 VM
       virt:
         name: "{{ inventory_hostname }}"
         command: get_xml
@@ -49,10 +49,10 @@
     when: ("{{ target_server_type }}" == 'kvm')
     
   - name: Copy the VSD migration script ISO to VSD's temp directory
-    command: "{{ vsd_migration_iso_copy }}"
-    remote_user: "{{ username_on_the_host.stdout }}"
-    delegate_to: "{{ ansible_deployment_host }}"
-
+    copy: src={{ vsd_migration_iso_path }}/{{ vsd_migration_iso_file_name }}
+        dest=/tmp/
+    remote_user: root
+    
   - name: Register target directory status
     stat: path="/media/CDROM"
     register: cdrom_dir
@@ -92,7 +92,7 @@
     pause:
       seconds: 10
 
-  - name: Execute list_p1db command on node2
+  - name: Execute list_p1db command on node3
     command: "{{ p1db_cmd }}"
     register: list_p1db_output
     remote_user: root
@@ -114,7 +114,7 @@
       that: "not ejabberd_p1db_json['p1db_users']"
       msg: "Ejabbered is not decoupled"
 
-  - name: Execute list_cluster command on node2
+  - name: Execute list_cluster command on node3
     command: "{{ ejabber_decouple }}"
     register: list_cluster_output
     remote_user: root
@@ -137,7 +137,7 @@
         - "ejabberd_cluster_json['cluster_users'] | length == 1" 
       msg: "Ejabberd is not decoupled successfully"
  
-  - name: Excute connected_users command on node2
+  - name: Excute connected_users command on node3
     command: "{{ connected_users }}"
     register: client_list
     until: client_list.stdout.find("cna") != -1
@@ -161,5 +161,5 @@
       that: "ejabberd_clients_json['connected_clients'] | length == 3"
       msg: " Ejabberd has more than 3 connected clients than itself" 
   when: 
-    - inventory_hostname == groups['vsds'][1]
+    - inventory_hostname == groups['vsds'][2]
     - vsd_sa_or_ha == 'ha'

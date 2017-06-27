@@ -110,6 +110,10 @@
       state: restarted
     remote_user: root
 
+  - name: Wait for elasticsearch process to come up
+    pause:
+      seconds: 20
+
   - name: Get elasticsearch current status
     systemd:
       name: elasticsearch
@@ -121,10 +125,6 @@
     assert: 
       that: es_status.status.ActiveState == 'active'
       msg: "Elasticserach process in not active after restart"
-
-  - name: Wait for elasticsearch process to come up
-    pause:
-      seconds: 20
 
   - name: Check elasticsearch process is running
     assert:
@@ -245,5 +245,5 @@
     delegate_to: "{{ ansible_deployment_host }}"
     run_once: true
   when: 
-    - upgrade_from_version != '4.0.1' 
+    - upgrade_from_version != '4.0.1' or upgrade_from_version != '4.0.R1'
 

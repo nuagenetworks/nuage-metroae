@@ -379,6 +379,22 @@ def image_version_to_json(string):
     return json.dumps(dict)
 
 
+def show_version_to_json(string):
+    ''' Given a string representation of the output of "show version"
+    as a string, return a JSON representation of a subset of the data in that output.
+    A sample of the output:
+    {
+       "Command": "show version",
+       "vsc_version": "4.0.4"
+    }
+    '''
+    dict = {}
+    dict["Command"] = "show version"
+    version_re = re.search(r'TiMOS-.*-(\d+\.\d+\.\d+)', string)
+    dict["vsc_version"] = version_re.group(1)
+    return json.dumps(dict)
+
+
 def vsc_system_connections_to_json(string):
     ''' Given a string representation of the output of "show system connections port 5222"
     as a string, return a JSON representation of a subset of the data in that output.
@@ -434,6 +450,7 @@ class FilterModule(object):
             'show_gateway_ports_to_json': show_gateway_ports_to_json,
             'show_bof_to_json': show_bof_to_json,
             'image_version_to_json': image_version_to_json,
+            'show_version_to_json': show_version_to_json,
             'vsc_system_connections_to_json': vsc_system_connections_to_json,
             'vsd_detail_to_json': vsd_detail_to_json
         }
