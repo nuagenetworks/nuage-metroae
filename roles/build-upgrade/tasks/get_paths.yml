@@ -20,23 +20,6 @@
         vsd_qcow2_file_name: "{{ rc_vsd_file.files[0].path | basename }}"
         vcin_qcow2_path: "{{ rc_vsd_file.files[0].path | dirname }}"
         vcin_qcow2_file_name: "{{ rc_vsd_file.files[0].path | basename }}"
-
-  - block: # QCOW2 used for rollback
-    - name: Find name of current VSD QCOW2 File
-      find: path="{{ nuage_unzipped_files_dir }}/vsd/qcow2"  pattern="*.qcow2" recurse=yes
-      register: rc_vsd_file_current
-    - debug: var=rc_vsd_file_current verbosity=1
-    - name: Verify that a VSD QCOW2 file was found
-      assert: { 
-        that: "{{ rc_vsd_file_current.matched }} > 0",
-        msg: "Unable to find current VSD VM image file for rollback"
-      }
-    - name: Register current VSD QCOW2 variables with proper path and image locations for use in other playbooks
-      set_fact:
-        vsd_current_qcow2_path: "{{ rc_vsd_file_current.files[0].path | dirname }}"
-        vsd_current_qcow2_file_name: "{{ rc_vsd_file_current.files[0].path | basename }}"
-        vcin_current_qcow2_path: "{{ rc_vsd_file_current.files[0].path | dirname }}"
-        vcin_current_qcow2_file_name: "{{ rc_vsd_file_current.files[0].path | basename }}"
   
     - name: Find name of VSD Migration ISO File
       find: path="{{ nuage_upgrade_unzipped_files_dir }}/vsd/migration"  pattern="*.iso" recurse=yes
@@ -58,44 +41,37 @@
           ( myvsds | map(attribute='target_server_type') | list | issuperset(["kvm"]) or myvsds | map(attribute='target_server_type') | list | issuperset(["heat"]) ) ) or
           ( myvcins is defined and
           ( myvcins | map(attribute='target_server_type') | list | issuperset(["kvm"]) or myvcins | map(attribute='target_server_type') | list | issuperset(["heat"]) ) )
+
   - block: # OVA
     - name: Find name of VSD OVA File
       find: path="{{ nuage_upgrade_unzipped_files_dir }}/vsd/ova"  pattern="*.ova" recurse=yes
       register: rc_vsd_file
+
     - debug: var=rc_vsd_file verbosity=1
+
     - name: Verify that a VSD OVA file was found
       assert: { 
         that: "{{ rc_vsd_file.matched }} > 0",
         msg: "Unable to find VSD VM image file"
       }
-    - name: Find name of current VSD OVA File
-      find: path="{{ nuage_unzipped_files_dir }}/vsd/ova"  pattern="*.ova" recurse=yes
-      register: rc_vsd_file_current
-    - debug: var=rc_vsd_file_current verbosity=1
-    - name: Verify that a current VSD OVA file was found
-      assert: { 
-        that: "{{ rc_vsd_file_current.matched }} > 0",
-        msg: "Unable to find current VSD VM image file for rollback"
-      }
+
     - name: Find name of VSD Migration ISO File
       find: path="{{ nuage_upgrade_unzipped_files_dir }}/vsd/migration"  pattern="*.iso" recurse=yes
       register: rc_vsd_migration_file
+
     - debug: var=rc_vsd_migration_file verbosity=1
+
     - name: Verify that a VSD migration ISO file was found
       assert: {
         that: "{{ rc_vsd_migration_file.matched }} > 0",
         msg: "Unable to find VSD Migration ISO image file"
       }
+
     - name: Register VSD Migration ISO variables with proper path and image locations for use in other playbooks
       set_fact:
         vsd_migration_iso_path: "{{ rc_vsd_migration_file.files[0].path | dirname }}"
         vsd_migration_iso_file_name: "{{ rc_vsd_migration_file.files[0].path | basename }}"
-    - name: Register current VSD OVA variables with proper path and image locations for use in other playbooks
-      set_fact:
-        vsd_current_ova_path: "{{ rc_vsd_file_current.files[0].path | dirname }}"
-        vsd_current_ova_file_name: "{{ rc_vsd_file_current.files[0].path | basename }}"
-        vcin_current_ova_path: "{{ rc_vsd_file_current.files[0].path | dirname }}"
-        vcin_current_ova_file_name: "{{ rc_vsd_file_current.files[0].path | basename }}"
+
     - name: Register VSD OVA variables with proper path and image locations for use in other playbooks
       set_fact:
         vsd_ova_path: "{{ rc_vsd_file.files[0].path | dirname }}"

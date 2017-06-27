@@ -1,0 +1,128 @@
+---
+- name: Clean known_hosts of VSC's on "{{ target_server }}"
+  command: ssh-keygen -R "{{ mgmt_ip }}" -f /root/.ssh/known_hosts
+  delegate_to: "{{ ansible_deployment_host }}"
+  remote_user: "{{ ansible_sudo_username }}"
+
+- name: Get output of 'show vswitch-controller xmpp-server detail'
+  sros_command:
+    commands:
+      - show vswitch-controller xmpp-server detail
+    provider: "{{ vsc_creds }}"
+  register: xmpp_detail
+  delegate_to: "{{ ansible_deployment_host }}"
+  remote_user: "{{ ansible_sudo_username }}"
+  until: xmpp_detail.stdout[0].find('Functional') != -1
+  retries: 5
+  delay: 30
+
+- name: Print 'show vswitch-controller xmpp-server detail' when verbosity >= 1
+  debug: var=xmpp_detail verbosity=1
+
+- name: Create local variable with xmpp-server detail in json
+  set_fact: xmpp_detail_json="{{ xmpp_detail.stdout[0]|xmpp_server_detail_to_json }}"
+
+- name: Print xmpp-server detail in json when verbosity >= 1
+  debug: var=xmpp_detail_json verbosity=1
+
+- name: Create local variable for xmpp-server state
+  set_fact: xmpp_server_state="{{ xmpp_detail_json['State'] }}"
+
+- name: Print xmpp-server state when verbosity >= 1
+  debug: var=xmpp_server_state verbosity=1
+
+- name: Check for the expected xmpp-server state
+  assert: {
+    that: "{{ expected_xmpp_server_state == xmpp_server_state }}",
+    msg: "Invalid xmpp-server state ({{ xmpp_server_state }}) detected. Expected {{ expected_xmpp_server_state }}. Check 'show vswitch-controller xmpp-server details'."
+}
+- name: define variable to match vsd strings in sh vswitch vsd details
+  set_fact:
+    vsd1_s: "cna@{{ vsd_fqdn }}"
+
+- name: Get output of 'show vswitch-controller vsd detail'
+  sros_command:
+    commands:
+      - show vswitch-controller vsd detail
+    provider: "{{ vsc_creds }}"
+  register: vsd_detail
+  delegate_to: "{{ ansible_deployment_host }}"
+  remote_user: "{{ ansible_sudo_username }}"
+  until: vsd_detail.stdout[0].find(vsd1_s) != -1
+  retries: 5
+  delay: 30
+
+- name: Print 'show vswitch-controller vsd' when verbosity >= 1
+  debug: var=vsd_detail verbosity=1
+
+- name: Verify VSD Node1 is found in vsd_detail
+  assert:
+    that: "'cna@{{ vsd_fqdn }}' in vsd_detail.stdout[0]"
+    msg: "VSD Node1 could not be found in 'show vswitch-controller vsd detail'"
+  when: vsd_sa_or_ha == 'sa'
+
+- name: Verify VSD Node2 is found in vsd_detail
+  assert:
+    that: "'cna@{{ vsd_fqdn }}/{{ groups['vsds'][1].split('.')[0:1] | join('.') }}' in vsd_detail.stdout[0]"
+    msg: "VSD Node2 could not be found in 'show vswitch-controller vsd detail'"
+  when: vsd_sa_or_ha == 'ha'
+
+- name: Verify VSD Node3 is found in vsd_detail
+  assert:
+    that: "'cna@{{ vsd_fqdn }}/{{ groups['vsds'][2].split('.')[0:1] | join('.') }}' in vsd_detail.stdout[0]"
+    msg: "VSD Node3 could not be found in 'show vswitch-controller vsd detail'"
+  when: vsd_sa_or_ha == 'ha'
+
+- block:
+  - name: Set mgmt_ip to second vsc node
+    set_fact:
+      mgmt_ip: "{{ hostvars[groups['vscs'][1]]['mgmt_ip'] }}"
+
+  - name: Check if vsc ha node2 is configured with PBR config
+    sros_command:
+      commands: admin display-config
+      provider: "{{ vsc_creds }}"
+    register: pbr_config_ha_node2
+    delegate_to: "{{ ansible_deployment_host }}"
+    remote_user: "{{ ansible_sudo_username }}"
+
+  - name: Print 'admin display-config' when verbosity >= 1
+    debug: var=pbr_config_ha_node2.stdout[0] verbosity=1
+
+  - name: Delete PBR backward compatibility config on second VSC node
+    sros_config:
+      lines:
+        - configure router bgp evpn-pre-rfc no send-opaque-community
+        - configure router bgp evpn-pre-rfc no non-compliant
+        - admin save
+      provider: "{{ vsc_creds }}"
+    delegate_to: "{{ ansible_deployment_host }}"
+    remote_user: "{{ ansible_sudo_username }}"
+    when: pbr_config_ha_node2.stdout[0].find('evpn-pre-rfc') != -1
+
+  - name: Set mgmt_ip to first vsc node
+    set_fact:
+      mgmt_ip: "{{ hostvars[groups['vscs'][0]]['mgmt_ip'] }}"
+
+  - name: Check if vsc ha node1 is configured with PBR config
+    sros_command:
+      commands: admin display-config
+      provider: "{{ vsc_creds }}"
+    register: pbr_config_ha_node1
+    delegate_to: "{{ ansible_deployment_host }}"
+    remote_user: "{{ ansible_sudo_username }}"
+
+  - name: Print 'admin display-config' when verbosity >= 1
+    debug: var=pbr_config_ha_node1.stdout[0] verbosity=1
+
+  - name: Delete PBR backward compatibility config on first VSC node
+    sros_config:
+      lines:
+        - configure router bgp evpn-pre-rfc no send-opaque-community
+        - configure router bgp evpn-pre-rfc no non-compliant
+        - admin save
+      provider: "{{ vsc_creds }}"
+    delegate_to: "{{ ansible_deployment_host }}"
+    remote_user: "{{ ansible_sudo_username }}"
+    when: pbr_config_ha_node1.stdout[0].find('evpn-pre-rfc') != -1
+  when: inventory_hostname in groups['vsc_node2']

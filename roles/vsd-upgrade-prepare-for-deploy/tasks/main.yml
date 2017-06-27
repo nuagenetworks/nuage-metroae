@@ -1,0 +1,37 @@
+- name: Wait for VSD ssh to be ready
+  local_action:
+    module: wait_for
+    port: "22"
+    host: "{{ mgmt_ip }}"
+    search_regex: OpenSSH
+    delay: 1
+
+- name: Create the directory on VSD to store backup files in
+  file:  
+    path: "/opt/vsd/data"
+    state: directory
+  remote_user: root
+
+- name: Copy backup files from backup_machine
+  copy:
+    src: "{{ item }}"
+    dest: "/opt/vsd/data/"
+  with_fileglob:
+    - "/tmp/backup-{{ inventory_hostname }}-latest/*.tar.gz"
+  remote_user: root
+
+- name: Delete log files from /opt/vsd/data/ directory
+  shell: "rm -rf /opt/vsd/data/*.log"
+  remote_user: root
+
+- name: Get list of files in /opt/vsd/data/ directory
+  find:
+    path: "/opt/vsd/data/"
+    pattern: "*.tar.gz"
+  register: lst_files
+  remote_user: root
+
+- name: Verify  /opt/vsd/data/ directory contains exactly 3 files
+  assert:
+    that: "lst_files.examined == 3"
+    msg: "/opt/vsd/data does not contain exactly 3 files"

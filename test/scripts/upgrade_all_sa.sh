@@ -41,13 +41,13 @@ rm -rf ./reports/
 # create build vars required for upgrade
 ./metro-ansible build_upgrade.yml -vvvv
 # run upgrade
-# Upgrade vsd 1 
+# Upgrade vsd 1
 ./metro-ansible vsd_sa_upgrade.yml -vvvv
 # Upgrade VSC1
-./metro-ansible vsc_ha_node1_upgrade.yml -vvvv
+./metro-ansible vsc_node1_upgrade.yml -vvvv
 # Upgrade VSC2
 ./metro-ansible vsc_ha_node2_upgrade.yml -vvvv
-# Upgrade vstat 
+# Upgrade vstat
 ./metro-ansible vstat_upgrade.yml -vvvv
 # clean up the whole setup
 #./metro-ansible test_cleanup.yml -vvvv
