@@ -22,6 +22,16 @@
   when: upgrade_major_or_minor == 'minor'
 
 - block:
+  - name: Get current version of VSD software
+    command: echo $VSD_VERSION
+    register: vsd_version
+    remote_user: "root"
+
+  - name: Print vsd_version output when verbosity >= 1
+    debug: var=vsd_version verbosity=1
+
+  - include: vsd_post_upgrade_helper.yml
+
   - name: Turn on API on vsd's for major upgrade
     expect:
       command: "{{ major_upgrade }}"
@@ -30,4 +40,35 @@
         (?i)yes: "yes"
       timeout: 100
     remote_user: root
+ 
+  - name: Fetch vsd processess current state
+    command: "monit summary"
+    until: vsd_temp_state.stdout.find("Running") != -1 and
+           vsd_temp_state.stdout.find("Status ok") != -1 and
+           vsd_temp_state.stdout.find("Accessible") != -1 and
+           "Not monitored" not in vsd_temp_state.stdout and
+           "Initializing" not in vsd_temp_state.stdout and
+           "Status failed" not in vsd_temp_state.stdout
+    retries: 10
+    delay: 50
+    remote_user: root
+    register: vsd_temp_state
+
+  - name: Get monit state for vsd processes
+    vsd_monit:
+      state: summary
+    register: vsd_current_state
+    remote_user: root
+
+  - name: Print 'monit summary' when verbosity >= 1
+    debug: var=vsd_current_state.state verbosity=1
+
+  - name: Verify vsd processes are started/running
+    assert:
+      that: vsd_current_state['state']['{{ item }}'] == 'running' or
+            vsd_current_state['state']['{{ item }}'] == 'status ok' or
+            vsd_current_state['state']['{{ item }}'] == 'accessible'
+      msg: "{{ item }} is either not running or not accessible "
+    with_items: "{{ vsd_current_state.state.keys() }}"
+
   when: upgrade_major_or_minor == 'major'
