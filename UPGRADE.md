@@ -40,21 +40,21 @@ These health checks can be ran at any time of the upgrade process.
 The following is the workflow to acheive clustered vsp upgrade using above set of playbooks
 
 ```
-./metro-ansible vsd_ha_node1_3_upgrade.yml
-./metro-ansible vsc_ha_node1_upgrade.yml
+./metro-ansible vsd_ha_node2_3_upgrade.yml
+./metro-ansible vsc_node1_upgrade.yml
 ```
 Upgrade vrs(s) manually
 
 ```
 ./metro-ansible vsc_ha_node2_upgrade.yml
-./metro-ansible vsd_ha_node2_upgrade.yml
+./metro-ansible vsd_ha_node1_upgrade.yml
 ./metro-ansible vstat_upgrade.yml
 ```
 
 4. Workflow for VSP upgrade with clustered VSD (upgrade to 5.x)
 
 A VSP upgrade to VSP 5.0.1 does not support incremental upgrade. Those upgrade paths are targeted for any deployments where downtime on operations and traffic loss is tolerated during the upgrade.
-The following is the workflow to acheive clustered vsp upgrade using above set of playbooks. Note that the upgrade will pause if the existing licenses are invalid after the upgrade. Once new license 
+The following is the workflow to acheive clustered vsp upgrade using above set of playbooks. Note that the upgrade will pause if the existing licenses are invalid after the upgrade. Once new license
 are ready, hitting enter will continue the upgrade.
 
 ```
@@ -69,15 +69,15 @@ Upgrade vrs(s) manually
 
 4. Workflow for VSP upgrade with standalone VSD
 
-The following is the workflow to upgrade a full Nuage Networks VSP installation with standalone VSD 
+The following is the workflow to upgrade a full Nuage Networks VSP installation with standalone VSD
 
 ```
 ./metro-ansible vsd_sa_upgrade.yml
-./metro-ansible vsc_ha_node1_upgrade.yml
+./metro-ansible vsc_node1_upgrade.yml
 ```
 Upgrade vrs(s) manually
 ```
-./metro-ansible vsc_ha_node2_upgrade.yml
+./metro-ansible vsc_node2_upgrade.yml
 ./metro-ansible vstat_upgrade.yml
 ```
 
@@ -92,7 +92,7 @@ Upgrade vrs(s) manually
 
 ### Checking health of VSD (`vsd_health.yml`)
 
-This playbook/role is used to gather network and monit information of vsd(s) prior/post upgrade process. A report file with network and monit information is created (filename can be configured inside the `vsd_health.yml` playbook) inside `reports` folder. 
+This playbook/role is used to gather network and monit information of vsd(s) prior/post upgrade process. A report file with network and monit information is created (filename can be configured inside the `vsd_health.yml` playbook) inside `reports` folder.
 
 ### Backup and decouple VSD node from cluster (`vsd_decluster.yml`)
 
@@ -106,7 +106,7 @@ c. `vsd_services_stop.yml`: This playbook/role stops all vsd services on vsd(s) 
 
 This playbook/role helps to execute standalone upgrade for VSD. It is recommended for user to take snapshot of the old vsd vm(s) before the upgrade as they are destroyed.
 
-### Upgrade majority of VSD cluster (`vsd_ha_node1_3_upgrade.yml` and `vsd_ha_node2_upgrade.yml`)
+### Upgrade majority of VSD cluster (`vsd_node2_3_upgrade.yml` and `vsd_node1_upgrade.yml`)
 
 These playbooks together help to execute cluster upgrade for VSD. It is recommended for user to take snapshot of the old vsd vm(s) before the upgrade as they are destroyed.
 The playbook can be configured with interested vsd(s).

@@ -1,16 +1,35 @@
 ---
+- block:
+  - name: Verify that upgrade_vmname is defined if this is an upgrade VM
+    assert:
+      that: "upgrade_vmname is defined"
+      msg: "For vsd-upgrade-destroy, upgrade_vmname must be defined in build_vars.yml"
+  - name: Set local variable with upgrade_vmname
+    set_fact:
+      vm_name: "{{ upgrade_vmname }}"
+  when: destroy_upgrade_vm | default( False )
+
+- block:
+  - name: Set local variable with vmname
+    set_fact:
+      vm_name: "{{ vmname | default(inventory_hostname) }}"
+  when: not destroy_upgrade_vm | default( False )
+
 - name: Gathering info on VM
   connection: local
   vmware_guest:
     hostname: "{{ target_server }}"
     username: "{{ vcenter.username }}"
     password: "{{ vcenter.password }}"
-    name: "{{ vmname | default(inventory_hostname) }}"
+    name: "{{ vm_name }}"
     validate_certs: no
     state: gatherfacts
   register: vsd_vm_facts
 
 - debug: var=vsd_vm_facts verbosity=1
+
+- name: Set VSD backup flag
+  set_fact: save_vsd="{{ preserve_vsd_for_rollback|default('False') }}"
 
 - block:
   - name: Power off the VSD VM
@@ -19,18 +38,20 @@
       hostname: "{{ target_server }}"
       username: "{{ vcenter.username }}"
       password: "{{ vcenter.password }}"
-      name: "{{ vmname | default(inventory_hostname) }}"
+      name: "{{ vm_name }}"
       validate_certs: no
       state: "poweredoff"
     when: vsd_vm_facts['instance']['hw_power_status'] == 'poweredOn'
 
-  - name: Removing the VSD VM
-    connection: local
-    vmware_guest:
-      hostname: "{{ target_server }}"
-      username: "{{ vcenter.username }}"
-      password: "{{ vcenter.password }}"
-      name: "{{ vmname | default(inventory_hostname) }}"
-      validate_certs: no
-      state: "absent"
+  - block:
+    - name: Removing the VSD VM
+      connection: local
+      vmware_guest:
+        hostname: "{{ target_server }}"
+        username: "{{ vcenter.username }}"
+        password: "{{ vcenter.password }}"
+        name: "{{ vm_name }}"
+        validate_certs: no
+        state: "absent"
+    when: not save_vsd
   when: vsd_vm_facts.failed is not defined

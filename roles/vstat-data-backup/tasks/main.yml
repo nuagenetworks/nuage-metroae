@@ -17,7 +17,7 @@
  
 - name: Mount the nfs folder on to vstat vm
   mount:
-    src: "{{ nfs_server_with_folder }}"
+    src: "{{ vstat_nfs_server_with_folder }}"
     name: "{{ vstat_nfs_backup_path }}"
     state: mounted
     fstype: nfs4
@@ -110,6 +110,10 @@
       state: restarted
     remote_user: root
 
+  - name: Wait for elasticsearch process to come up
+    pause:
+      seconds: 20
+
   - name: Get elasticsearch current status
     systemd:
       name: elasticsearch
@@ -121,10 +125,6 @@
     assert: 
       that: es_status.status.ActiveState == 'active'
       msg: "Elasticserach process in not active after restart"
-
-  - name: Wait for elasticsearch process to come up
-    pause:
-      seconds: 20
 
   - name: Check elasticsearch process is running
     assert:
