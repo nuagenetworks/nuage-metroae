@@ -1,0 +1,443 @@
+---
+###
+# See BUILD.md for details
+###
+# Paths
+# Paths to find zipped (tar.gz) files and unzipped files (e.g. qcow2)
+# Both are required to run the nuage_unzip role. nuage_unzipped_files_dir
+# is required when one or more operation lists, below, are set to 'install'
+# or 'upgrade'.
+nuage_zipped_files_dir: "/home/caso/nfs-data/4.0.R7/nuage-packed"
+nuage_unzipped_files_dir: "/home/caso/nfs-data/4.0.R7/nuage-unpacked"
+###
+# Path to a public key file to be injected in to VSD,VNS Util, VCIN and VSTAT vms
+# during deployment and corresponding private file to be used to connect to the
+# components during deployment
+user_ssh_pub_key: ~/.ssh/id_rsa.pub
+user_ssh_priv_key: ~/.ssh/id_rsa
+###
+# Usernames
+# remote_user names for ansible to execute as on the target server (hypervisor)
+# and Ansible host. target_server_username is the remote_user for all hypervisors.
+# ansible_sudo_username is the sudo user for local actions.
+target_server_username: "root"
+ansible_sudo_username: "root"
+
+###
+# VSD params
+# vsd_sa_or_ha = ha for cluster, sa for standalone deployment
+vsd_sa_or_ha: sa
+###
+# VSD FQDN
+# Use xmpp fqdn for clustered VSDs and the vsd fqdn for stand alone
+# This variable must be populated for all the components except VRS deployment
+vsd_fqdn_global: vsd1.example.com
+# vsd_operations_list = A list of the operations you intend for the VSD. The
+# list could include 1 or more of the following:
+# - install
+# - upgrade
+# - health
+# - TBD
+vsd_operations_list:
+  - install
+# myvsds is a variable that represents one or more collections of parameters for
+# VSDs. One set of parameters is required for each VSD. The paramters are as
+# follows:
+# hostname
+# Required always: The FQDN or IP address of the VSD management port
+# vmname
+# Optional for predeploy, defaults to hostname: VM name to use during the vsd-predepoy step. If undefined,
+# Ansible will use the hostname as the vmname.
+# upgrade_vmname
+# Required for upgrade, ignored otherwise: VM name to use during the vsd_predeploy
+# step of an upgrade. An upgrade VM name is required on upgrade so that the previous
+# version VM can be preserved for possible rollback.
+# target_server_type
+# Required: The type of hypervisor the VSD will be deployed on. Supported values
+# are kvm, vcenter, and heat.
+# target_server
+# Required: The hostname or IP address of the hyervisor where this VSD will be instantiated.
+# mgmt_ip
+# The IP address of the VSDs management port.
+# mgmt_gateway
+# The IP address for the default gateway.
+# mgmt_netmask
+# The netmask for the management port.
+
+myvsds:
+  - { hostname: vsd1.example.com,
+      vmname: vsd1-3.2.R10-dc1,
+      upgrade_vmname: vsd1-4.0.R10-dc1
+      target_server_type: "kvm",
+      target_server: 135.227.181.233,
+      mgmt_ip: 192.168.122.201,
+      mgmt_gateway: 192.168.122.1,
+      mgmt_netmask: 255.255.255.0 }
+
+###
+# VSC params
+# vsc_operations_list = A list of the operations you intend for the VSC. The
+# list could include 1 or more of the following:
+# - install
+# - upgrade
+# - health
+# - TBD
+vsc_operations_list:
+  - install
+# myvscs is a collection of parameters for VSCs.
+# One set of parameters is required for each VSC.
+# Do not update {{ vsd_fqdn_global }} here as it reads from previous section
+myvscs:
+  - { hostname: vsc1.example.com,
+      target_server_type: "kvm",
+      target_server: 135.227.181.233,
+      mgmt_ip: 192.168.122.202,
+      mgmt_gateway: 192.168.122.1,
+      mgmt_netmask_prefix: 24,
+      ctrl_ip: 192.168.100.202,
+      ctrl_netmask_prefix: 24,
+      vsd_fqdn: "{{ vsd_fqdn_global }}",
+      system_ip: 1.1.1.2,
+      xmpp_username: vsc1,
+      vsc_static_route_list: { 0.0.0.0/1 } }
+  - { hostname: vsc2.example.com,
+      target_server_type: "kvm",
+      target_server: 135.227.181.233,
+      mgmt_ip: 192.168.122.203,
+      mgmt_gateway: 192.168.122.1,
+      mgmt_netmask_prefix: 24,
+      ctrl_ip: 192.168.100.203,
+      ctrl_netmask_prefix: 24,
+      vsd_fqdn: "{{ vsd_fqdn_global }}",
+      system_ip: 1.1.1.3,
+      xmpp_username: vsc2,
+      vsc_static_route_list: { 0.0.0.0/1 } }
+
+###
+# VRS params
+# vrs_operations_list = A list of the operations you intend for the VRS. The
+# list could include 1 or more of the following:
+# - install
+# - upgrade
+# - health
+# - TBD
+vrs_operations_list:
+  - install
+# dockermon_install = True when Docker Monitor is to be installed along with
+# the VRS. False if not.
+dockermon_install: True
+# myvrss is a collection of parameters for the targets where VRS is to be deployed.
+# One set of parameters is required for each set or group of VRS targets.
+myvrss:
+  - { vrs_set_name: vrs_set_uswest1,
+      vrs_os_type: u14.04,
+      active_controller_ip: 192.168.122.202,
+      standby_controller_ip: 192.168.122.203,
+      vrs_ip_list: [
+       192.168.122.101] }
+  - { vrs_set_name: vrs_set_usewest2,
+      vrs_os_type: el7,
+      active_controller_ip: 192.168.122.202,
+      standby_controller_ip: 192.168.122.203,
+      vrs_ip_list: [
+       192.168.122.83,
+       192.168.122.238 ] }
+  - { vrs_set_name: vrs_set_uswest3,
+      vrs_os_type: u16.04,
+      active_controller_ip: 192.168.122.202,
+      standby_controller_ip: 192.168.122.203,
+      vrs_ip_list: [
+       192.168.122.215 ] }
+
+###
+# Stats VM (ElasticSearch) params
+# vstat_operations_list = A list of the operations you intend for the ES node. The
+# list could include 1 or more of the following:
+# - install
+# - upgrade
+# - health
+# - dns (specified when deploying the VSTAT image as a DNS server)
+# - TBD
+vstat_operations_list:
+  - install
+# myvstats is a collection of parameters for the VSTAT.
+# One set of parameters is required for each VSTAT.
+# Do not update {{ vsd_fqdn_global }} here as it reads from previous section
+myvstats:
+  - { hostname: vstat1.example.com,
+      target_server_type: "kvm",
+      target_server: 135.227.181.233,
+      mgmt_ip: 192.168.122.204,
+      mgmt_gateway: 192.168.122.1,
+      mgmt_netmask: 255.255.255.0,
+      vsd_fqdn: "{{ vsd_fqdn_global }}" }
+
+###
+# VNS params
+# vns_operations_list = A list of the operations you intend for the VNS. The
+# list could include 1 or more of the following:
+# - install
+# - upgrade
+# - health
+# - TBD
+vns_operations_list:
+  - install
+# myvnsutils is a collection of parameters for the VNSUTIL.
+# One set of parameters is required for each VNSUTIL.
+# Do not update {{ vsd_fqdn_global }} here as it reads from previous section
+myvnsutils:
+  - { hostname: vnsutil1.example.com,
+      target_server_type: "kvm",
+      target_server: 135.227.181.233,
+      mgmt_ip: 192.168.122.205,
+      mgmt_gateway: 192.168.122.1,
+      mgmt_netmask: 255.255.255.0,
+      data_fqdn: vnsutil1.data.example.com,
+      data_ip: 192.168.100.205,
+      data_subnet: 192.168.100.0,
+      data_netmask: 255.255.255.0,
+      nsgv_ip: 192.168.100.206,
+      nsgv_mac: '52:54:00:88:85:12',
+      nsgv_hostname: nsgv1.example.com,
+      vsd_fqdn: "{{ vsd_fqdn_global }}" }
+
+# mynsgvs is a collection of parameters for the NSGV.
+# One set of parameters is required for each NSGV.
+# bootstrap_method = A list of options
+# - zfb_metro (ZFB process supported by metro, needs zfb.yml updated by user)
+# - zfb_external (ZFB process taken care by third party iso file. Needs two additional vars iso_path, iso_file)
+# - none (nsgv is deployed without any bootstrapping)
+mynsgvs:
+  - { hostname: nsgv1.example.com,
+      # vmname is used to identify vm on the hypervisor/vcenter
+      # This is optional. If vmname is not defined, it defaults to the name set in hostname.
+      vmname: nsgv-dc1,
+      target_server_type: "kvm",
+      target_server: 135.227.181.233,
+      bootstrap_method: zfb_metro,
+      # Needed only when bootstrap_method: zfb_external
+      iso_path: '/tmp/iso',
+      # Needed only when bootstrap_method: zfb_external
+      iso_file: 'user_img.iso',
+      # Needed only when bootstrap_method: zfb_metro
+      nsgv_mac: '52:54:00:88:85:12' }
+
+###
+# Utility VMs
+###
+# DNS params
+# NOTE: This code assumes that the DNS image is the VSTAT/ElasticSearch image.
+# For this code to work, myvstats must also be defined.
+# dns_operations_list = A list of the operations you intend for the DNS. The
+# list could include 1 or more of the following:
+# - install
+# - upgrade
+# - health
+# - TBD
+dns_operations_list:
+  - install
+# mydnss is a collection of parameters for the DNS.
+# One set of parameters is required for each DNS.
+# data_static_route list of eth1 static routes to the data networks
+# dns_mgmt_lookup list of management dns lookup
+# dns_data_lookup list of data dns lookup
+# dns_mgmt name server of managment network
+# dns_data name server of data network
+# dns_server dns server of this server
+
+mydnss:
+  - { hostname: g5dns.mgmt.training.net,
+      target_server_type: "kvm",
+      target_server: 10.167.53.5,
+      mgmt_ip: 10.167.53.3,
+      mgmt_gateway: 10.167.53.254,
+      mgmt_netmask: 255.255.255.0,
+      data_ip: 10.167.54.3,
+      data_subnet: 10.167.54.0,
+      data_netmask: 255.255.255.0,
+      data_static_route: [ 10.165.53.0/24, 10.165.54.0/24, 10.165.55.0/24 ],
+      dns_server: 8.8.8.8,
+      dns_mgmt: g5dns.mgmt.training.net.,
+      dns_data: g5dns.data.training.net.,
+      dns_mgmt_lookup: {g5dns.mgmt.training.net.: 10.166.53.3,
+        ns1.mgmt.training.net.: 10.166.53.2,
+        ns2.mgmt.training.net.: 10.166.53.2,
+        server1.mgmt.training.net.: 10.166.53.5,
+        server2.mgmt.training.net.: 10.166.53.6,
+        g1vsd.mgmt.training.net.: 10.166.53.11,
+        g1es.mgmt.training.net.: 10.166.53.12,
+        g1util.mgmt.training.net.: 10.166.53.13,
+        g1vsc1.mgmt.training.net.: 10.166.53.14,
+        g1vsc2.mgmt.training.net.: 10.166.53.15,
+        g1pe.mgmt.training.net.: 10.166.53.16,
+        g1ppsvm.mgmt.training.net.: 10.166.53.17,
+        g1ubuntu.mgmt.training.net.: 10.166.53.18,
+        g1cpe.mgmt.training.net.: 10.166.53.19,
+        g1utilinternet.mgmt.training.net.: 10.166.53.20,
+        g1uitlnokianet.mgmt.training.net.: 10.166.53.21},
+        dns_data_lookup: {g1utilnokianet.data.training.net.: 10.167.53.21,
+        g1utilinternet.data.training.net.: 10.167.54.20,
+        g1pe.data.training.net.: 10.167.54.16,
+        g1vsc2.data.training.net.: 10.167.54.15,
+        g1vsc1.data.training.net.: 10.167.54.14,
+        g1util.data.training.net.: 10.167.54.13,
+        g5dns.data.training.net.: 10.167.54.3,
+        server2.data.training.net.: 10.167.54.6,
+        server1.data.training.net.: 10.167.54.5,
+        ns1.data.training.net.: 10.167.54.3,
+        ns2.data.training.net.: 10.167.54.3}}
+
+###
+# Generic VM params
+# gvm_operations_list = A list of the operations you intend for the vms. The
+# list could include 1 or more of the following:
+# - install
+# - upgrade
+# - health
+# - TBD
+gvm_operations_list:
+  - install
+# mygvms is a collection of parameters for the generic vms.
+# One set of parameters is required for each generic VM.
+#
+# gvm_xml_file is the full path to the XML file that defines the VM.
+mygvms:
+  - { hostname: gvm1.example.com,
+      target_server_type: "kvm",
+      target_server: 135.227.181.233,
+      gvm_xml_file: /home/caso/images/jenkinsgvm1.example.com/gvm.xml }
+
+###
+# Linux VM params
+# lvm_operations_list = A list of the operations you intend for the vms. The
+# list could include 1 or more of the following:
+# - install
+# - upgrade
+# - health
+# - TBD
+lvm_operations_list:
+  - install
+# mylvms is a collection of parameters for the linux vms.
+# One set of parameters is required for each linux VM.
+#
+# lvm_ram is the amount of RAM to configure the lvm for.
+# lvm_vcpus is the number of virtual cores to use.
+#mylvms:
+#  - { hostname: lvm1.example.com,
+#      target_server_type: "kvm",
+#      target_server: 135.227.181.233,
+#      interfaces:
+#        eth0:
+#          ip: 192.168.122.206
+#          gateway: 192.168.122.1
+#          netmask: 255.255.255.0
+#          bridge: virbr0
+#        eth1:
+#          ip: 192.168.122.207
+#          gateway: 192.168.122.1
+#          netmask: 255.255.255.0
+#          bridge: virbr0
+#      lvm_ram: 16777216
+#      lvm_vcpus: 4
+#   }
+
+###
+# Ansible
+# The IP addr or hostname of the Ansible host
+ansible_deployment_host: 135.227.181.233
+
+
+###
+# Hypervisor network bridges
+# Network bridges required on the target server (hypervisor) for VM deployment.
+# On KVM, the bridges must exist as specified. The VSD needs mgmt_bridge. The VSC
+# needs mgmt_bridge and data_bridge. nsgv requires the access_bridge. On vcenter,
+# mgmt_bridge specifies the portgroup in vCenter to which the management interfaces
+# need to be connected to, and data_bridge specifies the portgroup in vCenter to
+# which the data interfaces need to be connected to. In vCenter/ESXi, you have
+# virtual switches and portgroups. A virtual switch is similar to a normal switch,
+# a network separation object. VMs on different vSwitches can not communicate
+# directly with each other, they have to leave the host through the physical
+# uplinks of the vSwitch, up to the physical network, to connect to each other
+# (if the physical network is configured correctly). A portgroup is a sub section
+# of a vSwitch that groups ports, this group of ports have the same configuration
+# (for instance, the same VLAN, same security settings, …). A port can only be
+# part of one portgroup, a VM can of course have multiple interfaces on multiple
+# portgroups (and a vm can have interfaces on portgroups that are on different
+# vSwitches as well).
+mgmt_bridge: "virbr0"
+data_bridge: "virbr1"
+access_bridge: "access"
+###
+# Hypervisor VM image file location
+# Location to create VM images on KVM target servers
+images_path: "/var/lib/libvirt/images/"
+###
+# Common Nuage params
+# NTP configuration
+# Note: Must be in dotted-decimal format
+ntp_server_list:
+  - 135.227.181.232
+  - 128.138.141.172
+# DNS configuration
+dns_server_list:
+  - 192.168.122.1
+  - 128.251.10.145
+dns_domain: example.com
+###
+# Misc. param
+timezone: US/Pacific
+yum_proxy: "NONE"
+yum_update: yes
+yum_pin: yes
+###
+# Vcenter params
+# username
+# The vCenter user with proper permissions to deploy an OVA on the specified cluster
+# (at least: create VM, configure VM, boot VM, Allocate disk space, connect networks
+# (there might be other permissions required)
+#
+# password
+# The password with which to connect to vCenter, matching the user specified in the
+# username field
+#
+# datacenter
+# The vCenter datacenter in which the cluster is located, a Datacenter is the first
+# level of objects beneath the root vCenter object
+#
+# cluster
+# The vCenter cluster where the VMs need to be deployed in. A cluster is a grouping
+# of ESXi hosts with more or less the same purpose. In a typical datacenter deployment,
+# you will see a management cluster, a grouping of ESXi hosts where all management
+# components run (for instance vCenter, Active Directory, DNS/NTP servers, …);
+# and one or more compute or customer clusters, a grouping of ESXi hosts with the
+# purpose of handling non-management VMs (compute nodes)
+#
+# datastore
+# The vCenter datastore where the VMs need to be located. A datastore is a set
+# of disks (local storage), an NFS server or an iSCSI/FiberChannel  LUN which is
+# exposed to one or more ESXi hosts. In case a datastore is specified to which only
+# one ESXi host is connected (for instance in case of local storage), the VM that
+# is being deployed, will only be able to run on that specific ESXi host. If the
+# datastore is available on multiple ESXi hosts in the specified cluster (in case
+# of shared storage like NFS, iSCSI or FC), when the VM is booted, vCenter will
+# pick a host to boot the VM on (random, or based on the load of the cluster,
+# depending on the cluster configuration). Datastores can be renamed… by default,
+# if a local datastore is created on an ESXi host of the local disks, it get the
+# name 'datastore', in case multiple ESXi hosts are added to vCenter and each has
+# a local datastore called 'datastore', they will get a follow number ('datastore (1)',
+# 'datastore (2)', …). It is recommended that you rename the local datastore from
+# the default to the same name as the host it is from, that clearly identifies the
+# local datastore of a specific ESXi host.  In case a datastore is shared (NFS,
+# iSCSI, FC) on multiple hosts, it will only show up once in vCenter, but the hosts
+# tab will show it is available on multiple hosts (view in the screenshot below)
+#
+# ovftool
+# Binary location of the ovftool
+vcenter:
+  username: administrator@vsphere.local
+  password: Alcateldc
+  datacenter: Datacenter
+  cluster: Management
+  datastore: datastore
+  ovftool: /usr/bin/ovftool
