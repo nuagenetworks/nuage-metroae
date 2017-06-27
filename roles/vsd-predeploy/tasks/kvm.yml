@@ -63,8 +63,8 @@
 
 - name: Verify that the VM is not already running
   assert:
-    that: "inventory_hostname not in virt_vms.list_vms"
-    msg: "{{ inventory_hostname }} is already running on {{ target_server }}"
+    that: "vmname | default(inventory_hostname) not in virt_vms.list_vms"
+    msg: "{{ vmname | default(inventory_hostname) }} is already running on {{ target_server }}"
 
 - name: Create libvirt image directory
   file: path={{ images_path }}/{{ inventory_hostname }}
@@ -183,15 +183,22 @@
   remote_user: "{{ target_server_username }}"
 
 - name: "Define new VSD VM"
-  virt: name="{{ inventory_hostname }}"
+  virt: name="{{ vmname | default(inventory_hostname) }}"
         command=define
         xml="{{ lookup('template', 'vsd.xml.j2') }}"
         uri=qemu:///system
   delegate_to: "{{ target_server }}"
   remote_user: "{{ target_server_username }}"
 
-- name: "Run VSD VM"
+- name: "Configure VSD VM for autostart"
   virt: name="{{ inventory_hostname }}"
+        command=autostart
+        uri=qemu:///system
+  delegate_to: "{{ target_server }}"
+  remote_user: "{{ target_server_username }}"
+
+- name: "Run VSD VM"
+  virt: name="{{ vmname | default(inventory_hostname) }}"
         state=running
         uri=qemu:///system
   delegate_to: "{{ target_server }}"

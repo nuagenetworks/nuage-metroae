@@ -2,7 +2,6 @@
   any_errors_fatal: true
   include_role:
     name: vsc-backup
-  when: inventory_hostname in groups['vsc_ha_node1']
 
 - name: Prep VSC node1 for upgrade
   any_errors_fatal: true
@@ -49,19 +48,19 @@
       commands:
         - file version "{{ bof_json['image_folder'] }}/cpm.tim"
       provider: "{{ vsc_creds }}"
-    register: image
+    register: current_image
     delegate_to: "{{ ansible_deployment_host }}"
     remote_user: "{{ ansible_sudo_username }}"
 
-  - name: Print image version when verbosity >= 1
-    debug: var=image.stdout[0] verbosity=1
+  - name: Print current vsc image version when verbosity >= 1
+    debug: var=current_image.stdout[0] verbosity=1
 
-  - name: Create local variable with image version in json
+  - name: Create local variable with current vsc image version in json
     set_fact:
-      version_json: "{{ image.stdout[0]|image_version_to_json }}"
+      current_version_json: "{{ current_image.stdout[0]|image_version_to_json }}"
 
-  - name: Print image version in json  when verbosity >= 1
-    debug: var=version_json verbosity=1
+  - name: Print current vsc image version in json  when verbosity >= 1
+    debug: var=current_version_json verbosity=1
 
   - name: Copy new VSC image to VSC nodes
     expect:
@@ -72,6 +71,25 @@
     remote_user: "{{ ansible_sudo_username }}"
     delegate_to: "{{ ansible_deployment_host }}"
 
+  - name: Get file version of new image on VSC
+    sros_command:
+      commands:
+        - file version "{{ bof_json['image_folder'] }}/cpm.tim"
+      provider: "{{ vsc_creds }}"
+    register: new_image
+    delegate_to: "{{ ansible_deployment_host }}"
+    remote_user: "{{ ansible_sudo_username }}"
+
+  - name: Print new vsc image version when verbosity >= 1
+    debug: var=new_image.stdout[0] verbosity=1
+
+  - name: Create local variable with new vsc image version in json
+    set_fact:
+      new_version_json: "{{ new_image.stdout[0]|image_version_to_json }}"
+
+  - name: Print new vsc image version in json  when verbosity >= 1
+    debug: var=new_version_json verbosity=1
+
   - name: Reboot VSC VM
     sros_command:
       commands: 
@@ -80,7 +98,7 @@
     delegate_to: "{{ ansible_deployment_host }}"
     remote_user: "{{ ansible_sudo_username }}"
     ignore_errors: true
-    when: target_server_type == 'kvm'
+    when: target_server_type == 'kvm' or target_server_type == 'vcenter'
 
   - name: Reboot VSC VM
     os_server_actions:
@@ -106,6 +124,30 @@
     delegate_to: "{{ ansible_deployment_host }}"
     remote_user: "{{ ansible_sudo_username }}"
 
+  - name: Get output of 'show version'
+    sros_command:
+      commands:
+        - show version
+      provider: "{{ vsc_creds }}"
+    register: vsc_version
+    delegate_to: "{{ ansible_deployment_host }}"
+    remote_user: "{{ ansible_sudo_username }}"
+
+  - name: Print 'show version' when verbosity >= 1
+    debug: var=vsc_version.stdout[0] verbosity=1
+
+  - name: Create local variable with show version in json
+    set_fact:
+      vsc_version_json: "{{ vsc_version.stdout[0]|show_version_to_json }}"
+
+  - name: Print show version in json  when verbosity >= 1
+    debug: var=vsc_version_json verbosity=1
+
+  - name: Verify VSC came up with new version
+    assert:
+      that: "{{ vsc_version_json['vsc_version'] == new_version_json['vsc_image_version'] }}"
+      msg: "VSC is still running old version - {{ vsc_version_json['vsc_image_version'] }}"
+ 
   - name: Get output of 'show vswitch-controller xmpp-server detail'
     sros_command:
       commands:
@@ -174,4 +216,59 @@
       that: "'cna@{{ vsd_fqdn }}/{{ groups['vsds'][2].split('.')[0:1] | join('.') }}' in vsd_detail.stdout[0]"
       msg: "VSD Node3 could not be found in 'show vswitch-controller vsd detail'"
     when: vsd_sa_or_ha == 'ha'
+
+  - block:
+    - name: Set mgmt_ip to second vsc node
+      set_fact:
+        mgmt_ip: "{{ hostvars[groups['vscs'][1]]['mgmt_ip'] }}"
+
+    - name: Check if vsc ha node2 is configured with PBR config
+      sros_command:
+        commands: admin display-config
+        provider: "{{ vsc_creds }}"
+      register: pbr_config_ha_node2
+      delegate_to: "{{ ansible_deployment_host }}"
+      remote_user: "{{ ansible_sudo_username }}"
+
+    - name: Print 'admin display-config' when verbosity >= 1
+      debug: var=pbr_config_ha_node2.stdout[0] verbosity=1
+
+    - name: Delete PBR backward compatibility config on second VSC node
+      sros_config:
+        lines:
+          - configure router bgp evpn-pre-rfc no send-opaque-community
+          - configure router bgp evpn-pre-rfc no non-compliant
+          - admin save
+        provider: "{{ vsc_creds }}"
+      delegate_to: "{{ ansible_deployment_host }}"
+      remote_user: "{{ ansible_sudo_username }}"
+      when: pbr_config_ha_node2.stdout[0].find('evpn-pre-rfc') != -1
+
+    - name: Set mgmt_ip to first vsc node
+      set_fact:
+        mgmt_ip: "{{ hostvars[groups['vscs'][0]]['mgmt_ip'] }}"
+
+    - name: Check if vsc ha node1 is configured with PBR config
+      sros_command:
+        commands: admin display-config
+        provider: "{{ vsc_creds }}"
+      register: pbr_config_ha_node1
+      delegate_to: "{{ ansible_deployment_host }}"
+      remote_user: "{{ ansible_sudo_username }}"
+
+    - name: Print 'admin display-config' when verbosity >= 1
+      debug: var=pbr_config_ha_node1.stdout[0] verbosity=1
+
+    - name: Delete PBR backward compatibility config on first VSC node
+      sros_config:
+        lines:
+          - configure router bgp evpn-pre-rfc no send-opaque-community
+          - configure router bgp evpn-pre-rfc no non-compliant
+          - admin save
+        provider: "{{ vsc_creds }}"
+      delegate_to: "{{ ansible_deployment_host }}"
+      remote_user: "{{ ansible_sudo_username }}"
+      when: pbr_config_ha_node1.stdout[0].find('evpn-pre-rfc') != -1
+    when: inventory_hostname in groups['vsc_ha_node2']
+
   when: inventory_hostname in groups['vscs']

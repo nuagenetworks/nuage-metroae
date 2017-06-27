@@ -5,7 +5,7 @@
     hostname: "{{ target_server }}"
     username: "{{ vcenter.username }}"
     password: "{{ vcenter.password }}"
-    name: "{{ inventory_hostname }}"
+    name: "{{ vmname | default(inventory_hostname) }}"
     validate_certs: no
     state: gatherfacts
   register: vsc_vm_facts
@@ -16,7 +16,7 @@
 - name: Verify the VSC VM does not exist
   assert: 
     that: "vsc_vm_facts.failed is defined"
-    msg: "VM {{ inventory_hostname }} already exists, quiting"
+    msg: "VM {{ vmname | default(inventory_hostname) }} already exists, quiting"
 
 - name: Deploy VSC Image on vCenter
   connection: local
@@ -28,7 +28,7 @@
     --machineOutput
     -dm=thin
     -ds={{ vcenter.datastore }}
-    -n={{ inventory_hostname }}
+    -n={{ vmname | default(inventory_hostname) }}
     --net:"Management Network={{ mgmt_bridge }}"
     --net:"Datapath Network={{ data_bridge }}"
     --prop:"DHCP=False"
@@ -81,7 +81,7 @@
     hostname: "{{ target_server }}"
     username: "{{ vcenter.username }}"
     password: "{{ vcenter.password }}"
-    name: "{{ inventory_hostname }}"
+    name: "{{ vmname | default(inventory_hostname) }}"
     validate_certs: no
   register: vsc_vm_facts
 
@@ -90,7 +90,7 @@
 - name: Verify VM is running
   assert:
     that: "not vsc_vm_facts.failed"
-    msg: "VSC VM {{ inventory_hostname }} is not created"
+    msg: "VSC VM {{ vmname | default(inventory_hostname) }} is not created"
 
 - name: Wait for VSC ssh to be ready
   connection: local
@@ -122,7 +122,7 @@
     hostname: "{{ target_server }}"
     username: "{{ vcenter.username }}"
     password: "{{ vcenter.password }}"
-    name: "{{ inventory_hostname }}"
+    name: "{{ vmname | default(inventory_hostname) }}"
     validate_certs: no
     state: "restarted"
 

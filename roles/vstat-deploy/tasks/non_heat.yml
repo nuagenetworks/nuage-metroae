@@ -55,7 +55,7 @@
       - "{{ ssh_key_lst.results }}"
     remote_user: root
     run_once: true
-  when: not vstat_standalone
+  when: vstat_sa_or_ha == 'ha'
 
 - name: Delete the localtime file
   file:
@@ -190,7 +190,7 @@
     SSHPASS: "{{lookup('env','SSHPASS')}}"
   run_once: true
   when: 
-    - not vstat_standalone
+    - vstat_sa_or_ha == 'ha'
     - vsd_sa_or_ha == 'sa' or vsd_sa_or_ha == 'ha'
 
 - name: Enable stats collection on standalone vsd when vstat is standalone
@@ -200,7 +200,7 @@
   run_once: true
   when: 
     - vsd_sa_or_ha == 'sa'
-    - vstat_standalone
+    - vstat_sa_or_ha == 'sa'
 
 - name: Enable stats collection on the cluster vsds when vstat is standalone
   command: /opt/vsd/vsd-stats.sh -e {{ inventory_hostname }}
@@ -210,7 +210,7 @@
   with_items: "{{ groups['vsds'] }}"
   when:
     - vsd_sa_or_ha == 'ha'
-    - vstat_standalone
+    - vstat_sa_or_ha == 'sa'
  
 - name: Enable stats collection on the  vsd(s) when vstat is clustered
   command: /opt/vsd/vsd-stats.sh -e {{ groups['vstats'][0] }},{{ groups['vstats'][1] }},{{ groups['vstats'][2] }}
@@ -219,5 +219,5 @@
   with_items: "{{ groups['vsds'] }}"
   run_once: true
   when: 
-    - not vstat_standalone 
+    - vstat_sa_or_ha == 'ha'
     - vsd_sa_or_ha == 'sa' or vsd_sa_or_ha == 'ha'
