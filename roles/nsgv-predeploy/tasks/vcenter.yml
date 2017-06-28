@@ -5,7 +5,7 @@
     hostname: "{{ target_server }}"
     username: "{{ vcenter.username }}"
     password: "{{ vcenter.password }}"
-    name: "{{ inventory_hostname }}"
+    name: "{{ vmname | default(inventory_hostname) }}"
     validate_certs: no
     state: gatherfacts
   register: nsgv_vm_facts
@@ -16,7 +16,7 @@
 - name: Verify the NSGV VM does not exist
   assert: 
     that: "nsgv_vm_facts.failed is defined"
-    msg: "VM {{ inventory_hostname }} already exists, quiting"
+    msg: "VM {{ vmname | default(inventory_hostname) }} already exists, quiting"
 
 - block:
   - name: Create local temp directory
@@ -34,7 +34,7 @@
   - name: Copy the ISO image to vcenter datastore
     vsphere_copy: 
           src: "{{ mktemp_output.stdout }}/user_image.iso"
-          path: "{{ inventory_hostname }}/user_image.iso"
+          path: "{{ vmname | default(inventory_hostname) }}/user_image.iso"
           host: "{{ target_server }}"
           login: "{{ vcenter.username }}"
           password: "{{ vcenter.password }}"
@@ -55,7 +55,7 @@
     -dm=thin
     --powerOn
     -ds={{ vcenter.datastore }}
-    -n={{ inventory_hostname }}
+    -n={{ vmname | default(inventory_hostname) }}
     --net:"OVS Management={{ mgmt_bridge }}"
     --net:"OVS DataPath={{ data_bridge }}"
     --net:"port_vmnic={{ access_bridge }}"
@@ -63,20 +63,39 @@
     vi://'{{ vcenter.username | urlencode }}':'{{ vcenter.password | urlencode }}'@{{ target_server }}/{{ vcenter.datacenter }}/host/{{ vcenter.cluster }} 
   when: "'.ovf' in nsgv_ovf_file_name"
 
-- name: Mount ISO
-  vsphere_guest:
-    vcenter_hostname: "{{ target_server }}"
-    username: "{{ vcenter.username }}"
-    password: "{{ vcenter.password }}"
-    guest: "{{ inventory_hostname }}"
-    validate_certs: no
-    state: reconfigured
-    vm_hardware:
-      vm_cdrom:
-        type: "iso"
-        iso_path: "{{ vcenter.datastore }}/{{ inventory_hostname }}/user_image.iso"
-  delegate_to: "{{ ansible_deployment_host}}"
-  remote_user: "{{ ansible_sudo_username }}"
+- block:
+  - name: Mount ISO when ZFB method is metro
+    vsphere_guest:
+      vcenter_hostname: "{{ target_server }}"
+      username: "{{ vcenter.username }}"
+      password: "{{ vcenter.password }}"
+      guest: "{{ inventory_hostname }}"
+      validate_certs: no
+      state: reconfigured
+      vm_hardware:
+        vm_cdrom:
+          type: "iso"
+          iso_path: "{{ vcenter.datastore }}/{{ inventory_hostname }}/user_image.iso"
+    delegate_to: "{{ ansible_deployment_host}}"
+    remote_user: "{{ ansible_sudo_username }}"
+  when: bootstrap_method == 'zfb_metro'
+
+- block:
+  - name: Mount ISO when ZFB method is external
+    vsphere_guest:
+      vcenter_hostname: "{{ target_server }}"
+      username: "{{ vcenter.username }}"
+      password: "{{ vcenter.password }}"
+      guest: "{{ inventory_hostname }}"
+      validate_certs: no
+      state: reconfigured
+      vm_hardware:
+        vm_cdrom:
+          type: "iso"
+          iso_path: "{{ iso_path}}/{{ iso_file }}"
+    delegate_to: "{{ ansible_deployment_host}}"
+    remote_user: "{{ ansible_sudo_username }}"
+  when: bootstrap_method == 'zfb_external'
 
 - name: Waiting 120 seconds to make sure the NSGv VM is up
   pause: 
@@ -88,7 +107,7 @@
     hostname: "{{ target_server }}"
     username: "{{ vcenter.username }}"
     password: "{{ vcenter.password }}"
-    name: "{{ inventory_hostname }}"
+    name: "{{ vmname | default(inventory_hostname) }}"
     validate_certs: no
     state: gatherfacts
   register: nsgv_vm_facts

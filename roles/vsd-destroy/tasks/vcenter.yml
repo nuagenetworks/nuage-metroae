@@ -5,7 +5,7 @@
     hostname: "{{ target_server }}"
     username: "{{ vcenter.username }}"
     password: "{{ vcenter.password }}"
-    name: "{{ inventory_hostname }}"
+    name: "{{ vmname | default(inventory_hostname) }}"
     validate_certs: no
     state: gatherfacts
   register: vsd_vm_facts
@@ -20,7 +20,7 @@
       hostname: "{{ target_server }}"
       username: "{{ vcenter.username }}"
       password: "{{ vcenter.password }}"
-      name: "{{ inventory_hostname }}"
+      name: "{{ vmname | default(inventory_hostname) }}"
       validate_certs: no
       state: "poweredoff"
     when: vsd_vm_facts['instance']['hw_power_status'] == 'poweredOn'
@@ -31,7 +31,7 @@
       hostname: "{{ target_server }}"
       username: "{{ vcenter.username }}"
       password: "{{ vcenter.password }}"
-      name: "{{ inventory_hostname }}"
+      name: "{{ vmname | default(inventory_hostname) }}"
       validate_certs: no
       state: "absent"
   when: vsd_vm_facts.failed is not defined

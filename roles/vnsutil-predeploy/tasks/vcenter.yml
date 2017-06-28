@@ -5,7 +5,7 @@
     hostname: "{{ target_server }}"
     username: "{{ vcenter.username }}"
     password: "{{ vcenter.password }}"
-    name: "{{ inventory_hostname }}"
+    name: "{{ vmname | default(inventory_hostname) }}"
     validate_certs: no
     state: gatherfacts
   register: vnsutil_vm_facts
@@ -16,7 +16,7 @@
 - name: Verify the VNSUTIL VM does not exist
   assert: 
     that: "vnsutil_vm_facts.failed is defined"
-    msg: "VM {{ inventory_hostname }} already exists, quiting"
+    msg: "VM {{ vmname | default(inventory_hostname) }} already exists, quiting"
 
 - name: Deploy VNSUTIL Image on vCenter
   connection: local
@@ -28,7 +28,7 @@
     --machineOutput
     -dm=thin
     -ds={{ vcenter.datastore }}
-    -n={{ inventory_hostname }}
+    -n={{ vmname | default(inventory_hostname) }}
     --net:"Management={{ mgmt_bridge }}"
     "{{ vnsutil_ova_path }}/{{ vnsutil_ova_file_name }}"
     vi://'{{ vcenter.username | urlencode }}':'{{ vcenter.password | urlencode }}'@{{ target_server }}/{{ vcenter.datacenter }}/host/{{ vcenter.cluster }} 
@@ -43,7 +43,7 @@
     hostname: "{{ target_server }}"
     username: "{{ vcenter.username }}"
     password: "{{ vcenter.password }}"
-    name: "{{ inventory_hostname }}"
+    name: "{{ vmname | default(inventory_hostname) }}"
     validate_certs: no
     state: gatherfacts
   register: vnsutil_vm_facts
@@ -56,7 +56,7 @@
       - "vnsutil_vm_facts.instance.hw_guest_id is defined"
       - "not vnsutil_vm_facts.instance.hw_guest_id is none"
       - "not vnsutil_vm_facts.instance.hw_guest_id == ''"
-    msg: "VNSUTIL VM {{ inventory_hostname }} did not come up after two minutes"
+    msg: "VNSUTIL VM {{ vmname | default(inventory_hostname) }} did not come up after two minutes"
 
 - name: Writing eth0 network script file to the VNSUTIL VM
   connection: local
@@ -67,9 +67,9 @@
     datacenter: "{{ vcenter.datacenter }}"
     cluster: "{{ vcenter.cluster }}"
     validate_certs: no
-    vm_id: "{{ inventory_hostname }}"
-    vm_username: "root"
-    vm_password: "Alcateldc"
+    vm_id: "{{ vmid }}"
+    vm_username: "{{ vmuser }}"
+    vm_password: "{{ vmpass }}"
     vm_shell: "/usr/bin/echo"
     vm_shell_args: " '{{ lookup('template', 'ifcfg-eth0.j2') }}' > /etc/sysconfig/network-scripts/ifcfg-eth0" 
 
@@ -82,9 +82,9 @@
     datacenter: "{{ vcenter.datacenter }}"
     cluster: "{{ vcenter.cluster }}"
     validate_certs: no
-    vm_id: "{{ inventory_hostname }}"
-    vm_username: "root"
-    vm_password: "Alcateldc"
+    vm_id: "{{ vmid }}"
+    vm_username: "{{ vmuser }}"
+    vm_password: "{{ vmpass }}"
     vm_shell: "/usr/bin/chown"
     vm_shell_args: " 0 0 /etc/sysconfig/network-scripts/ifcfg-eth0" 
 
@@ -97,9 +97,9 @@
 #    datacenter: "{{ vcenter.datacenter }}"
 #    cluster: "{{ vcenter.cluster }}"
 #    validate_certs: no
-#    vm_id: "{{ inventory_hostname }}"
-#    vm_username: "root"
-#    vm_password: "Alcateldc"
+#    vm_id: "{{ vmid }}"
+#    vm_username: "{{ vmuser }}"
+#    vm_password: "{{ vmpass }}"
 #    vm_shell: "/usr/bin/echo"
 #    vm_shell_args: " '{{ lookup('template', 'ifcfg-eth1.j2') }}' > /etc/sysconfig/network-scripts/ifcfg-eth1"
 #
@@ -112,9 +112,9 @@
 #    datacenter: "{{ vcenter.datacenter }}"
 #    cluster: "{{ vcenter.cluster }}"
 #    validate_certs: no
-#    vm_id: "{{ inventory_hostname }}"
-#    vm_username: "root"
-#    vm_password: "Alcateldc"
+#    vm_id: "{{ vmid }}"
+#    vm_username: "{{ vmuser }}"
+#    vm_password: "{{ vmpass }}"
 #    vm_shell: "/usr/bin/chown"
 #    vm_shell_args: " 0 0 /etc/sysconfig/network-scripts/ifcfg-eth1"
 #
@@ -127,9 +127,9 @@
     datacenter: "{{ vcenter.datacenter }}"
     cluster: "{{ vcenter.cluster }}"
     validate_certs: no
-    vm_id: "{{ inventory_hostname }}"
-    vm_username: "root"
-    vm_password: "Alcateldc"
+    vm_id: "{{ vmid }}"
+    vm_username: "{{ vmuser }}"
+    vm_password: "{{ vmpass }}"
     vm_shell: "/usr/bin/echo"
     vm_shell_args: " '{{ lookup('template', 'network.j2') }}' > /etc/sysconfig/network" 
 
@@ -142,9 +142,9 @@
     datacenter: "{{ vcenter.datacenter }}"
     cluster: "{{ vcenter.cluster }}"
     validate_certs: no
-    vm_id: "{{ inventory_hostname }}"
-    vm_username: "root"
-    vm_password: "Alcateldc"
+    vm_id: "{{ vmid }}"
+    vm_username: "{{ vmuser }}"
+    vm_password: "{{ vmpass }}"
     vm_shell: "/usr/bin/chown"
     vm_shell_args: " 0 0 /etc/sysconfig/network" 
 
@@ -157,9 +157,9 @@
     datacenter: "{{ vcenter.datacenter }}"
     cluster: "{{ vcenter.cluster }}"
     validate_certs: no
-    vm_id: "{{ inventory_hostname }}"
-    vm_username: "root"
-    vm_password: "Alcateldc"
+    vm_id: "{{ vmid }}"
+    vm_username: "{{ vmuser }}"
+    vm_password: "{{ vmpass }}"
     vm_shell: "/usr/bin/mkdir"
     vm_shell_args: " -p /root/.ssh" 
 
@@ -172,9 +172,9 @@
     datacenter: "{{ vcenter.datacenter }}"
     cluster: "{{ vcenter.cluster }}"
     validate_certs: no
-    vm_id: "{{ inventory_hostname }}"
-    vm_username: "root"
-    vm_password: "Alcateldc"
+    vm_id: "{{ vmid }}"
+    vm_username: "{{ vmuser }}"
+    vm_password: "{{ vmpass }}"
     vm_shell: "/usr/bin/chown"
     vm_shell_args: " 0 0 /root/.ssh" 
 
@@ -191,9 +191,9 @@
     datacenter: "{{ vcenter.datacenter }}"
     cluster: "{{ vcenter.cluster }}"
     validate_certs: no
-    vm_id: "{{ inventory_hostname }}"
-    vm_username: "root"
-    vm_password: "Alcateldc"
+    vm_id: "{{ vmid }}"
+    vm_username: "{{ vmuser }}"
+    vm_password: "{{ vmpass }}"
     vm_shell: "/usr/bin/echo"
     vm_shell_args: " '{{ lookup('template', 'authorized_keys.j2') }}' > /root/.ssh/authorized_keys" 
 
@@ -206,9 +206,9 @@
     datacenter: "{{ vcenter.datacenter }}"
     cluster: "{{ vcenter.cluster }}"
     validate_certs: no
-    vm_id: "{{ inventory_hostname }}"
-    vm_username: "root"
-    vm_password: "Alcateldc"
+    vm_id: "{{ vmid }}"
+    vm_username: "{{ vmuser }}"
+    vm_password: "{{ vmpass }}"
     vm_shell: "/usr/bin/chmod"
     vm_shell_args: " 0640 /root/.ssh/authorized_keys" 
 
@@ -221,7 +221,7 @@
     datacenter: "{{ vcenter.datacenter }}"
     cluster: "{{ vcenter.cluster }}"
     validate_certs: no
-    vm_id: "{{ inventory_hostname }}"
-    vm_username: "root"
-    vm_password: "Alcateldc"
+    vm_id: "{{ vmid }}"
+    vm_username: "{{ vmuser }}"
+    vm_password: "{{ vmpass }}"
     vm_shell: "/usr/sbin/reboot"
