@@ -4,6 +4,8 @@
     register: upgrade_complete
     remote_user: root
 
+  - include: vsd_post_upgrade_helper.yml
+
   - name: Set upgrade complete flag to 1 for minor upgrade on vsd
     expect:
       command: "{{ minor_upgrade }}"
@@ -12,13 +14,13 @@
         (?i)yes: "yes"
       timeout: 100
     remote_user: root
-    when: 
-      - inventory_hostname == groups['vsds'][0]
-      - upgrade_complete.stdout != '1'
+    when: '1' not in upgrade_complete.stdout
 
   - name: Restart Jboss on VSD Node1
     shell: "monit restart jboss"
     remote_user: root
+  
+  - include: check_monit_status.yml
   when: upgrade_major_or_minor == 'minor'
 
 - block:
@@ -40,35 +42,6 @@
         (?i)yes: "yes"
       timeout: 100
     remote_user: root
- 
-  - name: Fetch vsd processess current state
-    command: "monit summary"
-    until: vsd_temp_state.stdout.find("Running") != -1 and
-           vsd_temp_state.stdout.find("Status ok") != -1 and
-           vsd_temp_state.stdout.find("Accessible") != -1 and
-           "Not monitored" not in vsd_temp_state.stdout and
-           "Initializing" not in vsd_temp_state.stdout and
-           "Status failed" not in vsd_temp_state.stdout
-    retries: 10
-    delay: 50
-    remote_user: root
-    register: vsd_temp_state
 
-  - name: Get monit state for vsd processes
-    vsd_monit:
-      state: summary
-    register: vsd_current_state
-    remote_user: root
-
-  - name: Print 'monit summary' when verbosity >= 1
-    debug: var=vsd_current_state.state verbosity=1
-
-  - name: Verify vsd processes are started/running
-    assert:
-      that: vsd_current_state['state']['{{ item }}'] == 'running' or
-            vsd_current_state['state']['{{ item }}'] == 'status ok' or
-            vsd_current_state['state']['{{ item }}'] == 'accessible'
-      msg: "{{ item }} is either not running or not accessible "
-    with_items: "{{ vsd_current_state.state.keys() }}"
-
+  - include: check_monit_status.yml
   when: upgrade_major_or_minor == 'major'
