@@ -2,7 +2,6 @@
 
 ## What's new
 
-<<<<<<< HEAD
 1. Rollback for VSD and VSC on KVM platform. See `UPGRADE.md`.
 1. Added support to specify custom xmpp URL for clustered VSD deployments
 1. Added support for preserving gateway purge timer during upgrades. See `UPGRADE.md`.
@@ -15,7 +14,6 @@
 =======
 1. Fix VSTAT cluster Iptables rules and Incremental CI script.
 1. Add new items here...
->>>>>>> upstream/dev
 
 ## Questions, Feedback, and Issues
 
