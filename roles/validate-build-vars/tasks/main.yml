@@ -1,9 +1,22 @@
 ---
-- name: Install packages for RedHat OS family distros
-  yum: name=python-netaddr state=present
-  when: ansible_os_family == "RedHat"
-  delegate_to: "{{ ansible_deployment_host }}"
-  remote_user: "{{ ansible_sudo_username }}"
+- block:
+  - name: Install packages for RedHat OS family distros
+    yum: name=python-netaddr state=present
+    when: ansible_os_family == "RedHat"
+    delegate_to: "{{ ansible_deployment_host }}"
+    remote_user: "{{ ansible_sudo_username }}"
+    environment:
+      http_proxy: "{{ yum_proxy }}"
+      https_proxy: "{{ yum_proxy }}"
+  when: yum_proxy != 'NONE'
+
+- block:
+  - name: Install packages for RedHat OS family distros
+    yum: name=python-netaddr state=present
+    when: ansible_os_family == "RedHat"
+    delegate_to: "{{ ansible_deployment_host }}"
+    remote_user: "{{ ansible_sudo_username }}"
+  when: yum_proxy == 'NONE'
 
 - name: Install python-netaddr package for Debian OS family distros
   apt: name=python-netaddr state=present
