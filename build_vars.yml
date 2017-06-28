@@ -40,13 +40,34 @@ vsd_fqdn_global: vsd1.example.com
 # - TBD
 vsd_operations_list:
   - install
-# myvsds is a collection of parameters for VSDs.
-# One set of parameters is required for each VSD.
+# myvsds is a variable that represents one or more collections of parameters for
+# VSDs. One set of parameters is required for each VSD. The paramters are as
+# follows:
+# hostname
+# Required always: The FQDN or IP address of the VSD management port
+# vmname
+# Optional for predeploy, defaults to hostname: VM name to use during the vsd-predepoy step. If undefined,
+# Ansible will use the hostname as the vmname.
+# upgrade_vmname
+# Required for upgrade, ignored otherwise: VM name to use during the vsd_predeploy
+# step of an upgrade. An upgrade VM name is required on upgrade so that the previous
+# version VM can be preserved for possible rollback.
+# target_server_type
+# Required: The type of hypervisor the VSD will be deployed on. Supported values
+# are kvm, vcenter, and heat.
+# target_server
+# Required: The hostname or IP address of the hyervisor where this VSD will be instantiated.
+# mgmt_ip
+# The IP address of the VSDs management port.
+# mgmt_gateway
+# The IP address for the default gateway.
+# mgmt_netmask
+# The netmask for the management port.
+
 myvsds:
   - { hostname: vsd1.example.com,
-      # vmname is used to identify vm on the hypervisor/vcenter
-      # This is optional. If vmname is not defined, it defaults to the name set in hostname.
-      vmname: vsd1-dc1,   
+      vmname: vsd1-3.2.R10-dc1,
+      upgrade_vmname: vsd1-4.0.R10-dc1
       target_server_type: "kvm",
       target_server: 135.227.181.233,
       mgmt_ip: 192.168.122.201,
@@ -67,9 +88,6 @@ vsc_operations_list:
 # Do not update {{ vsd_fqdn_global }} here as it reads from previous section
 myvscs:
   - { hostname: vsc1.example.com,
-      # vmname is used to identify vm on the hypervisor/vcenter
-      # This is optional. If vmname is not defined, it defaults to the name set in hostname.
-      vmname: vsc1-dc1,
       target_server_type: "kvm",
       target_server: 135.227.181.233,
       mgmt_ip: 192.168.122.202,
@@ -82,9 +100,6 @@ myvscs:
       xmpp_username: vsc1,
       vsc_static_route_list: { 0.0.0.0/1 } }
   - { hostname: vsc2.example.com,
-      # vmname is used to identify vm on the hypervisor/vcenter
-      # This is optional. If vmname is not defined, it defaults to the name set in hostname.
-      vmname: vsc2-dc1,
       target_server_type: "kvm",
       target_server: 135.227.181.233,
       mgmt_ip: 192.168.122.203,
@@ -171,9 +186,6 @@ vns_operations_list:
 # Do not update {{ vsd_fqdn_global }} here as it reads from previous section
 myvnsutils:
   - { hostname: vnsutil1.example.com,
-      # vmname is used to identify vm on the hypervisor/vcenter
-      # This is optional. If vmname is not defined, it defaults to the name set in hostname.
-      vmname: vnsutil-dc1,
       target_server_type: "kvm",
       target_server: 135.227.181.233,
       mgmt_ip: 192.168.122.205,
@@ -188,6 +200,29 @@ myvnsutils:
       nsgv_hostname: nsgv1.example.com,
       vsd_fqdn: "{{ vsd_fqdn_global }}" }
 
+# mynsgvs is a collection of parameters for the NSGV.
+# One set of parameters is required for each NSGV.
+# bootstrap_method = A list of options
+# - zfb_metro (ZFB process supported by metro, needs zfb.yml updated by user)
+# - zfb_external (ZFB process taken care by third party iso file. Needs two additional vars iso_path, iso_file)
+# - none (nsgv is deployed without any bootstrapping)
+mynsgvs:
+  - { hostname: nsgv1.example.com,
+      # vmname is used to identify vm on the hypervisor/vcenter
+      # This is optional. If vmname is not defined, it defaults to the name set in hostname.
+      vmname: nsgv-dc1,
+      target_server_type: "kvm",
+      target_server: 135.227.181.233,
+      bootstrap_method: zfb_metro,
+      # Needed only when bootstrap_method: zfb_external
+      iso_path: '/tmp/iso',
+      # Needed only when bootstrap_method: zfb_external
+      iso_file: 'user_img.iso',
+      # Needed only when bootstrap_method: zfb_metro
+      nsgv_mac: '52:54:00:88:85:12' }
+
+###
+# Utility VMs
 ###
 # DNS params
 # NOTE: This code assumes that the DNS image is the VSTAT/ElasticSearch image.
@@ -239,7 +274,7 @@ mydnss:
         g1cpe.mgmt.training.net.: 10.166.53.19,
         g1utilinternet.mgmt.training.net.: 10.166.53.20,
         g1uitlnokianet.mgmt.training.net.: 10.166.53.21},
-      dns_data_lookup: {g1utilnokianet.data.training.net.: 10.167.53.21,
+        dns_data_lookup: {g1utilnokianet.data.training.net.: 10.167.53.21,
         g1utilinternet.data.training.net.: 10.167.54.20,
         g1pe.data.training.net.: 10.167.54.16,
         g1vsc2.data.training.net.: 10.167.54.15,
@@ -305,29 +340,6 @@ lvm_operations_list:
 #      lvm_vcpus: 4
 #   }
 
-# Minimum required memory, in MB.
-
-# mynsgvs is a collection of parameters for the NSGV.
-# One set of parameters is required for each NSGV.
-# bootstrap_method = A list of options
-# - zfb_metro (ZFB process supported by metro, needs zfb.yml updated by user)
-# - zfb_external (ZFB process taken care by third party iso file. Needs two additional vars iso_path, iso_file)
-# - none (nsgv is deployed without any bootstrapping)
-mynsgvs:
-  - { hostname: nsgv1.example.com,
-      # vmname is used to identify vm on the hypervisor/vcenter
-      # This is optional. If vmname is not defined, it defaults to the name set in hostname.
-      vmname: nsgv-dc1,
-      target_server_type: "kvm",
-      target_server: 135.227.181.233,
-      bootstrap_method: zfb_metro,
-      # Needed only when bootstrap_method: zfb_external
-      iso_path: '/tmp/iso',
-      # Needed only when bootstrap_method: zfb_external
-      iso_file: 'user_img.iso',
-      # Needed only when bootstrap_method: zfb_metro
-      nsgv_mac: '52:54:00:88:85:12' }
-
 ###
 # Ansible
 # The IP addr or hostname of the Ansible host
@@ -336,7 +348,22 @@ ansible_deployment_host: 135.227.181.233
 
 ###
 # Hypervisor network bridges
-# Network bridges required on the target server (hypervisor) for VM deployment
+# Network bridges required on the target server (hypervisor) for VM deployment.
+# On KVM, the bridges must exist as specified. The VSD needs mgmt_bridge. The VSC
+# needs mgmt_bridge and data_bridge. nsgv requires the access_bridge. On vcenter,
+# mgmt_bridge specifies the portgroup in vCenter to which the management interfaces
+# need to be connected to, and data_bridge specifies the portgroup in vCenter to
+# which the data interfaces need to be connected to. In vCenter/ESXi, you have
+# virtual switches and portgroups. A virtual switch is similar to a normal switch,
+# a network separation object. VMs on different vSwitches can not communicate
+# directly with each other, they have to leave the host through the physical
+# uplinks of the vSwitch, up to the physical network, to connect to each other
+# (if the physical network is configured correctly). A portgroup is a sub section
+# of a vSwitch that groups ports, this group of ports have the same configuration
+# (for instance, the same VLAN, same security settings, …). A port can only be
+# part of one portgroup, a VM can of course have multiple interfaces on multiple
+# portgroups (and a vm can have interfaces on portgroups that are on different
+# vSwitches as well).
 mgmt_bridge: "virbr0"
 data_bridge: "virbr1"
 access_bridge: "access"
@@ -357,13 +384,55 @@ dns_server_list:
   - 128.251.10.145
 dns_domain: example.com
 ###
-# Misc. params
+# Misc. param
 timezone: US/Pacific
 yum_proxy: "NONE"
 yum_update: yes
 yum_pin: yes
 ###
 # Vcenter params
+# username
+# The vCenter user with proper permissions to deploy an OVA on the specified cluster
+# (at least: create VM, configure VM, boot VM, Allocate disk space, connect networks
+# (there might be other permissions required)
+#
+# password
+# The password with which to connect to vCenter, matching the user specified in the
+# username field
+#
+# datacenter
+# The vCenter datacenter in which the cluster is located, a Datacenter is the first
+# level of objects beneath the root vCenter object
+#
+# cluster
+# The vCenter cluster where the VMs need to be deployed in. A cluster is a grouping
+# of ESXi hosts with more or less the same purpose. In a typical datacenter deployment,
+# you will see a management cluster, a grouping of ESXi hosts where all management
+# components run (for instance vCenter, Active Directory, DNS/NTP servers, …);
+# and one or more compute or customer clusters, a grouping of ESXi hosts with the
+# purpose of handling non-management VMs (compute nodes)
+#
+# datastore
+# The vCenter datastore where the VMs need to be located. A datastore is a set
+# of disks (local storage), an NFS server or an iSCSI/FiberChannel  LUN which is
+# exposed to one or more ESXi hosts. In case a datastore is specified to which only
+# one ESXi host is connected (for instance in case of local storage), the VM that
+# is being deployed, will only be able to run on that specific ESXi host. If the
+# datastore is available on multiple ESXi hosts in the specified cluster (in case
+# of shared storage like NFS, iSCSI or FC), when the VM is booted, vCenter will
+# pick a host to boot the VM on (random, or based on the load of the cluster,
+# depending on the cluster configuration). Datastores can be renamed… by default,
+# if a local datastore is created on an ESXi host of the local disks, it get the
+# name 'datastore', in case multiple ESXi hosts are added to vCenter and each has
+# a local datastore called 'datastore', they will get a follow number ('datastore (1)',
+# 'datastore (2)', …). It is recommended that you rename the local datastore from
+# the default to the same name as the host it is from, that clearly identifies the
+# local datastore of a specific ESXi host.  In case a datastore is shared (NFS,
+# iSCSI, FC) on multiple hosts, it will only show up once in vCenter, but the hosts
+# tab will show it is available on multiple hosts (view in the screenshot below)
+#
+# ovftool
+# Binary location of the ovftool
 vcenter:
   username: administrator@vsphere.local
   password: Alcateldc

@@ -2,14 +2,15 @@
   any_errors_fatal: true
   include_role:
     name: vsc-backup
+  when: inventory_hostname in groups['vsc_node1']
 
 - name: Prep VSC node1 for upgrade
   any_errors_fatal: true
   include_role:
     name: vsc-preupgrade
-  when: inventory_hostname in groups['vsc_ha_node1']
+  when: inventory_hostname in groups['vsc_node1']
 
-- block: 
+- block:
   - name: Clean known_hosts of VSC's on "{{ target_server }}"
     command: ssh-keygen -R "{{ mgmt_ip }}" -f /root/.ssh/known_hosts
     delegate_to: "{{ ansible_deployment_host }}"
@@ -34,7 +35,7 @@
   - name: Print bof config in json  when verbosity >= 1
     debug: var=bof_json verbosity=1
 
-  - name: Copy current primary image file as a backup for rollback
+  - name: Copy current tim file as a backup for rollback
     sros_command:
       commands:
         - file copy "{{ bof_json['image_folder'] }}/cpm.tim" "{{ bof_json['image_folder'] }}/cpm.tim.backup" force
@@ -92,7 +93,7 @@
 
   - name: Reboot VSC VM
     sros_command:
-      commands: 
+      commands:
         - admin reboot now
       provider: "{{ vsc_creds }}"
     delegate_to: "{{ ansible_deployment_host }}"
@@ -176,7 +177,7 @@
     debug: var=xmpp_server_state verbosity=1
 
   - name: Check for the expected xmpp-server state
-    assert: { 
+    assert: {
       that: "{{ expected_xmpp_server_state == xmpp_server_state }}",
       msg: "Invalid xmpp-server state ({{ xmpp_server_state }}) detected. Expected {{ expected_xmpp_server_state }}. Check 'show vswitch-controller xmpp-server details'."
   }
@@ -269,6 +270,5 @@
       delegate_to: "{{ ansible_deployment_host }}"
       remote_user: "{{ ansible_sudo_username }}"
       when: pbr_config_ha_node1.stdout[0].find('evpn-pre-rfc') != -1
-    when: inventory_hostname in groups['vsc_ha_node2']
-
+    when: inventory_hostname in groups['vsc_node2']
   when: inventory_hostname in groups['vscs']

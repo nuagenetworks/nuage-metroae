@@ -110,6 +110,7 @@ def get_gateway_purge_time_value(csproot):
     module.exit_json(changed=True,
                      result=purge_val)
 
+
 arg_spec = dict(
     vsd_auth=dict(required=True, type='dict'),
     api_version=dict(required=True, type='str'),
