@@ -6,7 +6,14 @@
   set_fact: myvsds= default([])
   when: not myvsds_check
 
-- name: Create host_vars files for vsd
-  template: src=vsd.j2 backup=no dest={{ playbook_dir }}/host_vars/{{ item.hostname }}
-  with_items: "{{ myvsds }}"
+- block:
+  - name: Verify that vsd_fqdn_globl is defined
+    assert:
+      that:
+        - "vsd_fqdn_global is defined"
+      msg: "vsd_fqdn_global must be defined. See build_vars.yml."
+      
+  - name: Create host_vars files for vsd
+    template: src=vsd.j2 backup=no dest={{ playbook_dir }}/host_vars/{{ item.hostname }}
+    with_items: "{{ myvsds }}"
   when: myvsds_check
