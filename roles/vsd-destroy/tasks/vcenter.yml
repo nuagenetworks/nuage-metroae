@@ -24,9 +24,13 @@
     name: "{{ vm_name }}"
     validate_certs: no
     state: gatherfacts
+  ignore_errors: true
   register: vsd_vm_facts
 
 - debug: var=vsd_vm_facts verbosity=1
+
+- fail: msg="Exception found {{ vsd_vm_facts.exception }}"
+  when: vsd_vm_facts.exception is defined
 
 - name: Set VSD backup flag
   set_fact: save_vsd="{{ preserve_vsd_for_rollback|default('False') }}"
