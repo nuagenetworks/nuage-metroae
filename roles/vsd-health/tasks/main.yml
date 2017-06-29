@@ -73,6 +73,24 @@
   remote_user: "{{ ansible_sudo_username }}"
   delegate_to: "{{ ansible_deployment_host }}"
 
+- name: Verify cna user is found in connected_users of ejabberd in vsds
+  assert:
+    that: "'cna@{{ vsd_fqdn }}/{{ item.split('.')[0:1] | join('.') }}' in ejabberd_clients_json['connected_clients']"
+    msg: "{{ item }} could not be found in '/opt/ejabberd/bin/ejabberdctl connected_users'"
+  with_items: "{{ ansible_play_hosts }}"
+
+- name: Verify push user is found in connected_users of ejabberd in vsds
+  assert:
+    that: "'push@{{ vsd_fqdn }}/{{ item.split('.')[0:1] | join('.') }}' in ejabberd_clients_json['connected_clients']"
+    msg: "{{ item }} could not be found in '/opt/ejabberd/bin/ejabberdctl connected_users'"
+  with_items: "{{ ansible_play_hosts }}"
+
+- name: Verify keyserver user is found in connected_users of ejabberd in vsds
+  assert:
+    that: "'keyserver@{{ vsd_fqdn }}/{{ item.split('.')[0:1] | join('.') }}' in ejabberd_clients_json['connected_clients']"
+    msg: "{{ item }} could not be found in '/opt/ejabberd/bin/ejabberdctl connected_users'"
+  with_items: "{{ ansible_play_hosts }}"
+
 - include: monit_status.yml
 
 - include: report_footer.yml
