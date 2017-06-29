@@ -243,6 +243,25 @@
       remote_user: "{{ unzip_user }}"
     - debug: var=rc_vrs_u16_04_archive_files verbosity=1
     when: rc_vrs_u16_04.matched > 0
+
+  - name: Find VMWare VRS Archive
+    find: path="{{ nuage_zipped_files_dir }}"  pattern="Nuage-VRS*-vmware*"
+    register: rc_vrs_vmware
+  - debug: var=rc_vrs_vmware verbosity=1
+  - block:
+    - name: Clean up unzipped directory from previous runs
+      file: name="{{ nuage_unzipped_files_dir }}/vrs/vmware/" state=absent
+      remote_user: "{{ unzip_user }}"
+    - name: Ensure that VRS binary target directory exists if vrs is vmware
+      file: name="{{ nuage_unzipped_files_dir }}/vrs/vmware/" state=directory mode=0775
+      remote_user: "{{ unzip_user }}"
+    - name: Unpack VRS Archive
+      unarchive: src="{{ item.path }}" dest="{{ nuage_unzipped_files_dir }}/vrs/vmware" list_files=yes mode=0775 extra_opts="--no-same-owner"
+      with_items: "{{ rc_vrs_vmware.files }}"
+      register: rc_vrs_vmware_archive_files
+      remote_user: "{{ unzip_user }}"
+    - debug: var=rc_vrs_vmware_archive_files verbosity=1
+    when: rc_vrs_vmware.matched > 0
   tags:
     - vrs
 
