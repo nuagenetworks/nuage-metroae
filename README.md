@@ -2,6 +2,15 @@
 
 ## What's new
 
+1. Rollback for VSD and VSC on KVM platform. See `UPGRADE.md`.
+1. Added support to specify custom xmpp URL for clustered VSD deployments
+1. Added support for preserving gateway purge timer during upgrades. See `UPGRADE.md`.
+1. Added fix for ElasticSearch bug reported in Issue #162.
+1. Added support for DNS/NTP server
+1. Added fix to enable TLS on all VSDs when deploying VNS on a VSD cluster.
+1. Added support for deploying DNS (Uses STATS VM as image...)
+1. Added support for deploy/destroy generic VM (qcow2 only with XML predefined)
+1. Added a YAML Syntax Checker and a basic build_vars.yml checker
 1. Fix VSTAT cluster Iptables rules and Incremental CI script.
 1. Add new items here...
 
@@ -149,6 +158,8 @@ The VCS/VNS components that are supported are:
     > `pip install netaddr`
 1. Install ipaddress and its dependencies on the Ansible host.
     > `pip install ipaddress`
+1. Install PyYaml and its dependencies on the Ansible host.
+    > `pip install pyyaml`
 1. Install Python pexpect module
     > `pip install pexpect`
 1. Install VSPK Python module
