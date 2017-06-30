@@ -11,8 +11,7 @@ options:
    path:
      description:
          - The name(along with path) of the file to be checked
-     required: False
-     default: './build_vars.yml'
+     required: True
 '''
 
 EXAMPLES = '''
@@ -40,7 +39,7 @@ yaml.add_constructor(
 
 
 def check_buildvars(filepath):
-    fil = open('build_vars.yml')
+    fil = open(filepath)
     config = yaml.load(fil)
     if config['vsd_sa_or_ha'] == 'ha':
         if len(config['myvsds']) != 3:
@@ -57,7 +56,6 @@ def check_buildvars(filepath):
 arg_spec = dict(
     path=dict(
         required=False,
-        default='./build_vars.yml',
         type='str'))
 module = AnsibleModule(argument_spec=arg_spec, supports_check_mode=True)
 

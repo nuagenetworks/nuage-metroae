@@ -12,8 +12,7 @@ options:
   path:
     description:
       - The file path to the file that needs to be checked
-    required:False
-    default: './build_vars.yml'
+    required:True
 
 '''
 
@@ -45,8 +44,7 @@ def check_yaml(filepath):
 
 arg_spec = dict(
     path=dict(
-        required=False,
-        default='./build_vars.yml',
+        required=True,
         type='str'))
 module = AnsibleModule(argument_spec=arg_spec, supports_check_mode=True)
 
