@@ -294,7 +294,7 @@ Writes out new health reports that can be compared to those produced in step one
 
 ```
 ./metro-ansible vstat_upgrade.yml
-
+```
 
 
 ## `build_upgrade.yml` requirements
