@@ -11,7 +11,6 @@
 1. Added support for deploying DNS (Uses STATS VM as image...)
 1. Added support for deploy/destroy generic VM (qcow2 only with XML predefined)
 1. Added a YAML Syntax Checker and a basic build_vars.yml checker
-=======
 1. Fix VSTAT cluster Iptables rules and Incremental CI script.
 1. Add new items here...
 
