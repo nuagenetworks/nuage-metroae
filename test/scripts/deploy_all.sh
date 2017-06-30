@@ -53,12 +53,6 @@ iptables -t nat -F POSTROUTING
 # Give current user write access to /etc/hosts
 chmod 777 /etc/hosts
 
-LH="127.0.0.1   localhost localhost.localdomain localhost4 localhost4.localdomain4
-\n::1         localhost localhost.localdomain localhost6 localhost6.localdomain6"
-
-echo -e $LH > /etc/hosts
-
-
 # Allowing these masquerades must be the first route added
 # otherwise the precedence will not work correctly.
 
