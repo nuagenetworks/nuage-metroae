@@ -44,7 +44,7 @@ Skip the VSTAT health run if VSTAT is not present. The health reports and any re
 
 These health checks can be run at any time of the upgrade process.
 
-3. Databse Backup and decouple the VSD cluster
+3. Database Backup and decouple the VSD cluster
 
 ```
 ./metro-ansible vsd_ha_upgrade_database_backup_and_decouple.yml -vvv
@@ -297,11 +297,15 @@ Writes out new health reports that can be compared to those produced in step one
 
 
 
-## `build_upgrade`
+## `build_upgrade.yml` requirements
 
-The build_upgrade playbook (`build_upgrade.yml`) is used to automatically populate a number of Ansible variable files for the operation of the metro playbooks. Running `./metro-ansible build_upgrade.yml` will use the variables defined in `build_vars.yml` and `upgrade_vars.yml` to create a `hosts` file, populate a `host_vars` directory, populate a `group_vars` directory, and make a few additional variable changes as required.
+The playbook `build_upgrade.yml` relies on build_vars.yml, upgrade_vars.yml and user_creds.yml to automatically populate a number of Ansible variable files for the operation of the metro playbooks. 
+ 
+Upgrading VSD and VSTAT nodes require following changes to ```build_vars.yml``` file.
+1. Users should define ```upgrade_vmname``` in the build_vars.yml file. This name is used to bring up the new vsd and vstat nodes as part of ugrade procedure
 
-Upgrading VSD and VSTAT requires the user to define additional paths apart from the ones that were defined in nuage_unzip.yml section of BUILD.md file. Discussed below are these additional paths.
+Upgrading VSD and VSTAT nodes require following changes when user decides not to run nuage_unzip.yml
+1. Users should define additional paths apart from the ones that were mentioned in nuage_unzip.yml section of BUILD.md file. Discussed below are these additional paths.
 
 ```
 <yourpath>/vsd/migration/
