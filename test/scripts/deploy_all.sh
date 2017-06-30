@@ -50,9 +50,6 @@ IPADDR=`/usr/sbin/ifconfig | grep netmask | grep broadcast | head -n 1 | awk '{p
 iptables -t nat -F PREROUTING
 iptables -t nat -F POSTROUTING
 
-# Give current user write access to /etc/hosts
-chmod 777 /etc/hosts
-
 # Allowing these masquerades must be the first route added
 # otherwise the precedence will not work correctly.
 
