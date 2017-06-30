@@ -1,0 +1,90 @@
+---
+- name: Gathering info on VM
+  connection: local
+  vmware_guest:
+    hostname: "{{ target_server }}"
+    username: "{{ vcenter.username }}"
+    password: "{{ vcenter.password }}"
+    name: "{{ vm_hostname }}"
+    validate_certs: no
+    state: gatherfacts
+  register: stcv_vm_facts
+  ignore_errors: yes
+
+- debug: var=stcv_vm_facts verbosity=1
+
+- name: Verify the STCv VM does not exist
+  assert:
+    that: "stcv_vm_facts.failed is defined"
+    msg: "VM {{ vm_hostname }} already exists, quiting"
+
+- name: Deploy STCv Image on vCenter
+  connection: local
+  command: >
+    {{ vcenter.ovftool }}
+    --acceptAllEulas
+    --noSSLVerify
+    --powerOn
+    --machineOutput
+    -dm=thin
+    -ds={{ vcenter.datastore }}
+    -n={{ vm_hostname }}
+    --net:"ManagementNet={{ mgmt_bridge }}"
+    --net:"TestNet1={{ data_bridge1 }}"
+    --prop:"ipaddress={{ vm_mgmt_ip }}"
+    --prop:"netmask={{ vm_mgmt_netmask }}"
+    --prop:"gwaddress={{ vm_mgmt_gateway }}"
+    --prop:"telnetd=off"
+    --prop:"ntp={{dns_server_list[0]}}"
+    "{{ stcv_image_path }}/{{ stcv_image_filename }}"
+    vi://'{{ vcenter.username | urlencode }}':'{{ vcenter.password | urlencode }}'@{{ target_server }}/{{ vcenter.datacenter }}/host/{{ vcenter.cluster }}
+  when: data_bridge2 is not defined
+
+- name: Deploy STCv Image on vCenter
+  connection: local
+  command: >
+    {{ vcenter.ovftool }}
+    --acceptAllEulas
+    --noSSLVerify
+    --powerOn
+    --machineOutput
+    -dm=thin
+    -ds={{ vcenter.datastore }}
+    -n={{ vm_hostname }}
+    --net:"ManagementNet={{ mgmt_bridge }}"
+    --net:"TestNet1={{ data_bridge1 }}"
+    --net:"TestNet2={{ data_bridge2 }}"
+    --prop:"ipaddress={{ vm_mgmt_ip }}"
+    --prop:"netmask={{ vm_mgmt_netmask }}"
+    --prop:"gwaddress={{ vm_mgmt_gateway }}"
+    --prop:"telnetd=off"
+    --prop:"ntp={{dns_server_list[0]}}"
+    "{{ stcv_image_path }}/{{ stcv_image_filename }}"
+    vi://'{{ vcenter.username | urlencode }}':'{{ vcenter.password | urlencode }}'@{{ target_server }}/{{ vcenter.datacenter }}/host/{{ vcenter.cluster }}
+  when: data_bridge2 is defined
+
+- name: Waiting 120 seconds to make sure the STCv VM is up
+  pause:
+    seconds: 120
+
+- name: Gathering info on VM
+  connection: local
+  vmware_guest:
+    hostname: "{{ target_server }}"
+    username: "{{ vcenter.username }}"
+    password: "{{ vcenter.password }}"
+    name: "{{ vm_hostname }}"
+    validate_certs: no
+    state: gatherfacts
+  register: stcv_vm_facts
+
+- debug: var=stcv_vm_facts verbosity=1
+
+- name: Verify the STCv VM came up correctly
+  assert:
+    that:
+      - "stcv_vm_facts.instance.hw_product_uuid is defined"
+      - "not stcv_vm_facts.instance.hw_product_uuid is none"
+      - "not stcv_vm_facts.instance.hw_product_uuid == ''"
+    msg: "STVc VM {{ vm_hostname }} did not come up after two minutes"
+
