@@ -1,5 +1,9 @@
 <domain type='kvm'>
-  <name>{{ vmname | default(hostname) }}</name>
+  {% if upgrade_vmname is defined %}
+  <name>{{ upgrade_vmname | default(inventory_hostname) }}</name>
+  {% else %}
+  <name>{{ vmname | default(inventory_hostname) }}</name>
+  {% endif %} 
   <memory unit='KiB'>{{ vsd_ram }}</memory>
   <currentMemory unit='KiB'>{{ vsd_ram }}</currentMemory>
   <vcpu placement='static'>6</vcpu>
@@ -23,7 +27,11 @@
     <emulator>{{ libvirt.emulator }}</emulator>
     <disk type='file' device='disk'>
       <driver name='qemu' type='qcow2'/>
-      <source file='{{ images_path }}/{{ vmname | default(hostname) }}/{{ vsd_qcow2_file_name }}'/>
+  {% if upgrade_vmname is defined %}
+      <source file='{{ images_path }}/{{ upgrade_vmname | default(inventory_hostname) }}/{{ vsd_qcow2_file_name }}'/>
+  {% else %}
+      <source file='{{ images_path }}/{{ vmname | default(inventory_hostname) }}/{{ vsd_qcow2_file_name }}'/>
+  {% endif %} 
       <target dev='vda' bus='virtio'/>
       <alias name='virtio-disk0'/>
       <address type='pci' domain='0x0000' bus='0x00' slot='0x04' function='0x0'/>
