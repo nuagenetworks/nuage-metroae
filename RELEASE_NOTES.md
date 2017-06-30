@@ -22,6 +22,13 @@ v2.1.2
 1. Added missing command to enable stats on vsd(s) when vstat is clustered
 1. Fixed technical alert 17-0506 - VSD Cluster upgrade failure due to out of memory problem
 1. Remove hard coded vspk versions and use vsd version to load the vspk version dynamically 
+1. Added support for setting /etc/hostname
+1. Fixed issue unzipping to NFS-mounted file systems
+1. Fixed issue with yum updates needing to use a proxy under certain circumstances
+1. Added support to unzip VRS for VMware
+1. Fixed "creates" value when deploying via heat
+1. Added verification that vsd_fqdn_global is set during the build process
+1. libvirtd is now started when setting up hypervisor prerequisites
 
 ## Known Issues
  

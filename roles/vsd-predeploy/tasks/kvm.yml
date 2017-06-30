@@ -159,6 +159,26 @@
   delegate_to: "{{ target_server }}"
   remote_user: "{{ target_server_username }}"
 
+- name: Create a temporary copy of the hostname file (for VSD version 4.0.R7 and on)
+  template: src=hostname.j2 backup=no dest={{ images_path }}/{{ vm_name }}/hostname
+  delegate_to: "{{ target_server }}"
+  remote_user: "{{ target_server_username }}"
+
+- name: Copy hostname file to the VSD image
+  command: guestfish --rw -a {{ images_path }}/{{ vm_name }}/{{ vsd_qcow2_file_name }} -m {{ guestfish_mount }} copy-in {{ images_path }}/{{ vm_name }}/hostname /etc/
+  delegate_to: "{{ target_server }}"
+  remote_user: "{{ target_server_username }}"
+
+- name: Remove temporary copy of hostname file
+  file: path={{ images_path }}/{{ vm_name }}/hostname state=absent
+  delegate_to: "{{ target_server }}"
+  remote_user: "{{ target_server_username }}"
+
+- name: Set the owner and group for the hostname file on the VSD image
+  command: guestfish --rw -a {{ images_path }}/{{ vm_name }}/{{ vsd_qcow2_file_name }} -m {{ guestfish_mount }} chown 0 0 /etc/hostname
+  delegate_to: "{{ target_server }}"
+  remote_user: "{{ target_server_username }}"
+
 - name: Create the directory /root/.ssh for authorized_keys
   command: guestfish --rw -a {{ images_path }}/{{ vm_name }}/{{ vsd_qcow2_file_name }} -m {{ guestfish_mount }} mkdir-mode /root/.ssh 0700
   delegate_to: "{{ target_server }}"
@@ -202,6 +222,13 @@
   virt: name="{{ vm_name }}"
         command=define
         xml="{{ lookup('template', 'vsd.xml.j2') }}"
+        uri=qemu:///system
+  delegate_to: "{{ target_server }}"
+  remote_user: "{{ target_server_username }}"
+
+- name: "Configure VSD VM for autostart"
+  virt: name="{{ vmname | default(inventory_hostname) }}"
+        command=autostart
         uri=qemu:///system
   delegate_to: "{{ target_server }}"
   remote_user: "{{ target_server_username }}"

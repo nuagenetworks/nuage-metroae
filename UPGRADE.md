@@ -2,148 +2,187 @@
 
 ## Current support for upgrade
 
-1. As of this writing only VSD,VSC and VSTAT upgrades are supported
+1. Nuage Networks components supported
+   1. VSD, HA and SA
+   1. VSC
+   1. VSTAT (ElasticSearch), HA and SA
 1. Supported upgrade paths
    1. 3.2.R8 to 4.0.Rn
    1. 3.2.R10 to 4.0.Rn
    1. 4.0.Rn to 4.0.Rn+
-   1. 4.0.Rn to 5.0.Rn+
-   1. Other upgrades should be tried in a test environment before production
-1. Standalone and clustered VSD upgrade are supported
-1. Standalone and clustered VSTAT upgrade is supported
+   1. 4.0.Rn to 5.0.n+
+   1. All upgrades should be tested in a lab environment before running at a customer site
 
 ## Overview
 
-Metro provides a set of playbooks and roles to automate the upgrade of a full Nuage VSP installation. They are basically implementing the sequence as described in the VSP Insallation Guide. While the overall upgrade can be execued by a single instruction, the different playbooks allow for a modular or staged execution to allow for manual checks in the middle.
+Metro provides a set of playbooks and roles to automate the upgrade of significant parts of a Nuage Networks VSP installation. The upgrade process is composed of executing a series of modular playbooks with defined stopping points.
 
-### Metro workflow for an upgrade
-Following steps are recommended to be executed for an upgrade using metro playbooks
+## Sample HA Metro workflow for an upgrade
 
-1. Generate necessary data for the ansible playbooks to run by executing `build_upgrade` playbook. This requires `build_vars.yml`,  `upgrade_vars.yml`, and `user_creds.yml` to be populated according to the environment. It must contain VSD and VSC credentials as shown in the example file `examples\user_creds.yml` .
+For the purposes of this sample, an HA deployment is one that consists 3 VSD nodes in a cluster, two VSC nodes, a single VSTAT node, and a number of deployed VRS instances. Nuage-Metro supports upgrades to both HA and SA deployments as well as 3-node VSTAT clusters on KVM and VMware. This document will describe the specific procedure for the upgrade of an HA deployment defined above. Slight modifications to this procedure will enable Metro to support other possible upgrades, e.g. one VSD, one VSC, one VSTAT.
+
+1. Generate necessary data for the ansible playbooks to run by executing `build_upgrade` playbook. This requires `build_vars.yml`,  `upgrade_vars.yml`, and `user_creds.yml` to be populated according to the environment. The `user_creds.yml` file must contain VSD and VSC credentials as shown in the example file `examples\user_creds.yml`. This example assumes the following:
+  - vsd_sa_or_ha will be set to ha
+  - There will be exactly 3 VSD definitions
+  - The VSD definitions will be ordered such that the third VSD definition will be that of the VSD node to be decoupled during the upgrade. This VSD will be tagged as ‘vsd_node3’ and will be decoupled. The other two VSDs will be tagged as ‘vsd_node1’ and vsd_node2’, respectively. Make sure that you define the VSD node that you want to decouple last in the build_vars.yml file.
+  - There will be exactly 2 VSC definitions.
+  - The VSC definitions will be ordered such that the first VSC will be that of the first VSC node to be upgraded. The other VSC will be upgraded second. The first VSC will be tagged as ‘vsc_node1’. The second VSC will be tagged as ‘vsc_node2’.
+
+Edit the files listed above, then run:
 
 ```
-./metro-ansible build_upgrade.yml
+./metro-ansible build_upgrade.yml -vvv
 ```
 
 2. Run health checks on VSD,VSC and VSTAT
-```
-./metro-ansible vsd_health.yml
-./metro-ansible vsc_health.yml
-./metro-ansible vstat_health.yml
-```
-Any reported error should carefully be checked before proceeding with the next steps.
-
-These health checks can be ran at any time of the upgrade process.
-
-3. Workflow for VSP upgrade with clustered VSD (upgrade to pre 5.x)
-
-The following is the workflow to acheive clustered vsp upgrade using above set of playbooks
 
 ```
-./metro-ansible vsd_ha_node2_3_upgrade.yml
-./metro-ansible vsc_node1_upgrade.yml
+./metro-ansible vsp_preupgrade_health.yml -vvv
+./metro-ansible vstat_health.yml -vvv
 ```
-Upgrade vrs(s) manually
+Skip the VSTAT health run if VSTAT is not present. The health reports and any reported error should carefully be checked before proceeding with the next steps.
+
+These health checks can be run at any time of the upgrade process.
+
+3. Backup and decouple the VSD cluster
 
 ```
-./metro-ansible vsc_ha_node2_upgrade.yml
-./metro-ansible vsd_ha_node1_upgrade.yml
+./metro-ansible vsd_ha_upgrade_backup_and_decouple.yml -vvv
+```
+
+At this point, vsd_node3 has been decoupled from the cluster and is running in SA mode. If you experience a failure in the previous step, recovery depends on the state of vsd_node3. If it’s still in the cluster, you can simply retry. If not, you will need to redeploy vsd_node3 from a backup or otherwise recover.
+
+4. Power off vsd_node1 and vsd_node2
+
+```
+./metro-ansible vsd_ha_upgrade_shutdown_1_and_2.yml -vvv
+```
+
+At this point, vsd_node1 and vsd_node2 are shut down, but not deleted. The new nodes will be brought up with new VM names. Note that this step may be done manually if the user chooses. If you experience a failure running the Metro playbook for this step, a retry is advised. Or you can power off the VMs manually.
+
+5. Predeploy new vsd_node1 and vsd_node2
+
+```
+./metro-ansible vsd_ha_upgrade_predeploy_1_and_2.yml -vvv
+```
+
+At this point, the new vsd_node1 and vsd_node2 are up and running, but they have not yet been configured. If you experience a failure in this step, execute the playbook vsd_ha_upgrade_destroy_1_and_2 to delete the new nodes. Then retry the step.
+
+6. Deploy new vsd_node1 and vsd_node2
+
+```
+./metro-ansible vsd_ha_upgrade_deploy_1_and_2.yml -vvv
+```
+
+At this point, two VSD nodes have been upgraded. You are ready to move on to the first VSC. If you experience a failure before the VSD install script runs, retry playbook vsd_ha_upgrade_deploy_1_and_2.yml. If that fails again or the failure comes after the VSD install script runs, destroy the VMs manually or use vsd_ha_upgrade_destroy_1_and_2.yml, then retry starting at step 5.
+
+7. Run VSC health checks
+
+```
+./metro-ansible vsc_ha_preupgrade_health.yml -vvv
+```
+
+This step is already done in step 2. You can skip it here if you wish. It is good practice to re-run at this point in orfder to inspect the report to make sure the VSD upgrade work has not caused problems.
+
+8.  Run VSC backup and prep on vsc_node1
+
+```
+./metro-ansible vsc_ha_upgrade_backup_and_prep_1.yml -vvv
+```
+
+If this fails, retry.
+
+9. Run VSC deploy on vsc_node1
+
+```
+./metro-ansible vsc_ha_upgrade_deploy_1.yml -vvv
+```
+
+If the step fails, you can retry. Backup plan is to manually copy a valid .tim file to the VSC to affect either the deployment (new version of tim file) or a rollback. (old version of tim file). If rollback fails, you will need to deploy a new VSC using the old version--or recover the VM from a backup. You can use Metro for the deployment (vsc_predeploy, vsc_deploy, vsc_postdeploy...).
+
+10. Run VSC postdeploy on vsc_node1
+
+```
+./metro-ansible vsc_ha_upgrade_postdeploy_1.yml -vvv
+```
+
+At this point, you have one VSC running the old version, one running the new. It is time for you to leave this procedure to execute an upgrade of your VRSs, NSGs, and so on.
+
+If this step fails, the recovery is much like that of the previous step: Manually update the tim file or a complete deploy of the old VSC followed by a retry.
+
+*Upgrade VRS here!*
+
+11.  Run VSC backup and prep on vsc_node2
+
+```
+./metro-ansible vsc_ha_upgrade_backup_and_prep_2.yml -vvv
+```
+
+If this fails, retry.
+
+12. Run VSC deploy on vsc_node2
+
+```
+./metro-ansible vsc_ha_upgrade_deploy_2.yml -vvv
+```
+
+If the step fails, you can retry. Backup plan is to manually copy a valid .tim file to the VSC to affect either the deployment (new version of tim file) or a rollback. (old version of tim file). If rollback fails, you will need to deploy a new VSC using the old version--or recover the VM from a backup. You can use Metro for the deployment (vsc_predeploy, vsc_deploy, vsc_postdeploy...).
+
+13. Run VSC postdeploy on vsc_node2
+
+```
+./metro-ansible vsc_ha_upgrade_postdeploy_2.yml -vvv
+```
+
+At this point, you have both VSCs running the new version. It is time for you to upgrade the final VSD.
+
+If this step fails, the recovery is much like that of the previous step: Manually update the tim file or a complete deploy of the old VSC followed by a retry.
+
+14. Power off vsd_node3
+
+```
+./metro-ansible vsd_ha_upgrade_shutdown_3.yml -vvv
+```
+
+At this point, vsd_node2 is shut down, but not deleted. The new node will be brought up with a new VM name. Note that this step may be done manually if the user chooses. If you experience a failure running the Metro playbook for this step, a retry is advised. Or you can power off the VM manually.
+
+15. Run predeploy on vsd_node3
+
+```
+./metro-ansible vsd_ha_upgrade_predeploy_3.yml -vvv
+```
+
+At this point, the new vsd_node3 is up and running, but t has not yet been configured. If you experience a failure in this step, execute the playbook vsd_ha_upgrade_destroy_3.yml to delete the new node. Then retry the step.
+
+16. Run deploy on vsd_node3
+
+```
+./metro-ansible vsd_ha_upgrade_deploy_3.yml -vvv
+```
+
+At this point, all 3 VSD nodes have been upgraded. If you experience a failure before the VSD install script runs, retry playbook vsd_ha_upgrade_deploy_3.yml. If that fails again or the failure comes after the VSD install script runs, destroy the VMs manually or use vsd_ha_upgrade_destroy_3.yml, then retry starting at step 15.
+
+17. Run VSP upgrade wrapup to finalize settings
+
+```
+./metro-ansible vsp_ha_upgrade_wrapup.yml -vvv
+```
+
+This will execute the final steps of the upgrade. It can be rerun if there is a failure.
+
+18. Run VSP post-upgrade heath
+
+```
+./metro-ansible vsp_postupgrade_health.yml -vvv
+```
+
+Writes out new health reports that can be compared to those prodced in step one. Any errors or discrepancies should be investigated carefully.
+
+19. Upgrade VSTAT
+
+```
 ./metro-ansible vstat_upgrade.yml
 ```
-
-4. Workflow for VSP upgrade with clustered VSD (upgrade to 5.x)
-
-A VSP upgrade to VSP 5.0.1 does not support incremental upgrade. Those upgrade paths are targeted for any deployments where downtime on operations and traffic loss is tolerated during the upgrade.
-The following is the workflow to acheive clustered vsp upgrade using above set of playbooks. Note that the upgrade will pause if the existing licenses are invalid after the upgrade. Once new license
-are ready, hitting enter will continue the upgrade.
-
-```
-./metro-ansible vsd_ha_major_upgrade.yml
-```
-Upgrade vrs(s) manually
-
-```
-./metro-ansible vsc_ha_node2_upgrade.yml
-./metro-ansible vstat_upgrade.yml
-```
-
-4. Workflow for VSP upgrade with standalone VSD
-
-The following is the workflow to upgrade a full Nuage Networks VSP installation with standalone VSD
-
-```
-./metro-ansible vsd_sa_upgrade.yml
-./metro-ansible vsc_node1_upgrade.yml
-```
-Upgrade vrs(s) manually
-```
-./metro-ansible vsc_node2_upgrade.yml
-./metro-ansible vstat_upgrade.yml
-```
-
-5. Run health checks on VSD,VSC and VSTAT post upgrade
-```
-./metro-ansible vsd_health.yml
-./metro-ansible vsc_health.yml
-./metro-ansible vstat_health.yml
-```
-
-## Details
-
-### Checking health of VSD (`vsd_health.yml`)
-
-This playbook/role is used to gather network and monit information of vsd(s) prior/post upgrade process. A report file with network and monit information is created (filename can be configured inside the `vsd_health.yml` playbook) inside `reports` folder.
-
-### Backup and decouple VSD node from cluster (`vsd_decluster.yml`)
-
-This playbook is a collection three individual playbooks/roles that help in making database backup, decoupling existing vsd cluster setup and gracefully stopping vsd processes.
-
-a. `vsd_dbbackup.yml`: This playbook/role makes vsd database backup and stores it on ansible deployment host, which is later used for spinning up new vsd(s)
-b. `vsd_decouple.yml`: This playbook/role executes decouple script and checks for client connections
-c. `vsd_services_stop.yml`: This playbook/role stops all vsd services on vsd(s) gracefully
-
-### Upgrading standalone VSD (`vsd_sa_upgrade.yml`)
-
-This playbook/role helps to execute standalone upgrade for VSD. It is recommended for user to take snapshot of the old vsd vm(s) before the upgrade as they are destroyed.
-
-### Upgrade majority of VSD cluster (`vsd_node2_3_upgrade.yml` and `vsd_node1_upgrade.yml`)
-
-These playbooks together help to execute cluster upgrade for VSD. It is recommended for user to take snapshot of the old vsd vm(s) before the upgrade as they are destroyed.
-The playbook can be configured with interested vsd(s).
-
-### Checking health of VSC (`vsc_health.yml`)
-
-This playbook/role is used to gather operational information of vsc(s) prior/post upgrade process. A report file with the operational output is created (filename can be configured inside the `vsc_health.yml` playbook) inside reports folder.
-
-VSC health can check the health of a VSC against preconfigured expected values such as number of bgp peers and expected number of vswitches which is the number of VRSs under the VSC control.If run outside of the upgrade playbooks, VSC health checks can be invoked with the following manner.
-
-```
-./metro-ansible vsc_health.yml -i hosts -e "expected_num_bgp_peers=1 expected_num_vswitches=2"
-```
-
-### Backup of VSC (`vsc_backup.yml`)
-
-This playbook/role is used to make backup of exsiting vsc configuration, bof configuration and .tim file and copy them to ansible deployment host. These are used in case a rollback is needed.
-
-### Upgrade of VSC (`vsc_node1_upgrade.yml` and `vsc_node2_upgrade.yml`)
-
-These playbooks are used to upgrade vsc(s) to new versions by copying new .tim file to the existing vsc(s) and rebooting them.
-
-### Checking health of VSTAT (`vstat_health.yml`)
-
-This playbook/role is used to gather network information related to vstat nodes and monit information related to stats processes on vsd prior/post upgrade process. A report file with network and monit information is created (filename can be configured inside the `vstat_health.yml` playbook) inside `reports` folder.
-
-### Backup of VSTAT data (`vstat_data_backup.yml`)
-
-This playbook/role is used to take backup of Elastic search data and copy the backup folder to ansible deployment host. This folder is later used in vstat upgrade process.
-
-### Migrate VSTAT data (`vstat_data_migrate.yml`)
-
-This playbook/role is used to migrate the Elastic search data from prevoius version to the latest version.
-
-### Upgrading standalone VSTAT (`vstat_upgrade.yml`)
-
-This playbook/role helps to execute standalone upgrade for VSTAT. It is recommended for user to take snapshot of the old vstat vm(s) before the upgrade as they are destroyed.
 
 ## `build_upgrade`
 
