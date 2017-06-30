@@ -36,13 +36,13 @@
     delegate_to: "{{ infra_ip }}"
     remote_user: "root"
 
-  - name: Update XMPP DNS entries for VSD cluster deployments 
+  - name: Update XMPP DNS entries for VSD cluster deployments
     lineinfile:
       line: "{{ vsd_mgmt_ip }}  xmpp.{{ dns_domain }}"
       dest: "/etc/hosts"
     delegate_to: "{{ infra_ip }}"
     remote_user: "root"
-    when: vsd_standalone == False
+    when: vsd_sa_or_ha == 'ha'
 
   - name: Restart DNS service
     shell: service dnsmasq restart
@@ -71,8 +71,8 @@
       (?i)yes: "yes"
       (?i)password: "Alcateldc"
   remote_user: "root"
-  delegate_to: localhost  
-    
+  delegate_to: localhost
+
 - name: Pause for ssh port to be active
   pause:
     seconds: 5
@@ -104,7 +104,7 @@
   remote_user: "root"
 
 - name: Update /etc/hosts file
-  lineinfile: 
+  lineinfile:
     dest: /etc/hosts
     line: "{{ vsd_mgmt_ip }}  {{ inventory_hostname }}"
   remote_user: "root"
@@ -141,7 +141,7 @@
     delegate_to: "{{ item }}"
     with_items: "{{ groups['vsds'] }}"
     run_once: true
- 
+
   - name: Get generated SSH keys
     shell: cat ~/.ssh/id_rsa.pub
     register: ssh_key_lst
@@ -149,7 +149,7 @@
     delegate_to: "{{ item }}"
     with_items: "{{ groups['vsds'] }}"
     run_once: true
- 
+
   - name: Add SSH keys to authorized_keys file
     shell: "echo {{ item[1].stdout }} >> /root/.ssh/authorized_keys"
     delegate_to: "{{ item[0] }}"
@@ -228,17 +228,17 @@
 
 - block:
   - name: Install VSD software on HA node1 {{groups['vsds'][0]}}
-    command: "{{ vsd_ha_node1 }}"
+    command: "{{ vsd_node1_install_cmd }}"
     when: inventory_hostname == groups['vsds'][0]
     remote_user: "root"
 
   - name: Install VSD software on HA node2 {{groups['vsds'][1]}}
-    command: "{{ vsd_ha_node2 }}"
+    command: "{{ vsd_node2_install_cmd }}"
     when: inventory_hostname == groups['vsds'][1]
     remote_user: "root"
 
   - name: Install VSD software on HA node3 {{groups['vsds'][2]}}
-    command: "{{ vsd_ha_node3 }}"
+    command: "{{ vsd_node3_install_cmd }}"
     when: inventory_hostname == groups['vsds'][2]
     remote_user: "root"
   when: vsd_sa_or_ha == 'ha'

@@ -1,11 +1,31 @@
 ---
+- block:
+  - name: Verify that upgrade_vmname is defined if this is an upgrade
+    assert:
+      that: "upgrade_vmname is defined"
+      msg: "upgrade_vmname is required for upgrade"
+  - name: Set local variable with upgrade_vmname
+    set_fact:
+      vm_name: "{{ upgrade_vmname }}"
+  when: nuage_upgrade | default( False )
+
+- block:
+  - name: Verify that vmname is defined
+    assert:
+      that: "vmname is defined"
+      msg: "vmname is required for vsd_predeploy"
+  - name: Set local variable with vmname
+    set_fact:
+      vm_name: "{{ vmname | default(inventory_hostname) }}"
+  when: not nuage_upgrade | default( False )
+
 - name: Gathering info on VM
   connection: local
   vmware_guest:
     hostname: "{{ target_server }}"
     username: "{{ vcenter.username }}"
     password: "{{ vcenter.password }}"
-    name: "{{ inventory_hostname }}"
+    name: "{{ vmname | default(inventory_hostname) }}"
     validate_certs: no
     state: gatherfacts
   register: vstat_vm_facts
@@ -16,7 +36,7 @@
 - name: Verify the Stats VM does not exist
   assert: 
     that: "vstat_vm_facts.failed"
-    msg: "VM {{ inventory_hostname }} already exists, quiting"
+    msg: "VM {{ vmname | default(inventory_hostname) }} already exists, quiting"
 
 - name: Deploy Stats OVA on vCenter
   connection: local
@@ -28,11 +48,11 @@
     --machineOutput
     -dm=thin
     -ds={{ vcenter.datastore }}
-    -n={{ inventory_hostname }}
+    -n={{ vmname | default(inventory_hostname) }}
     --net:"Management={{ mgmt_bridge }}"
-    "{{ vstat_ova_path }}/{{ vstat_ova_file_name }}"
+    "{{ vstat_ova_or_ovf_path }}/{{ vstat_ova_or_ovf_file_name }}"
     vi://'{{ vcenter.username | urlencode }}':'{{ vcenter.password | urlencode }}'@{{ target_server }}/{{ vcenter.datacenter }}/host/{{ vcenter.cluster }} 
-  when: "'.ova' in vstat_ova_file_name"
+  when: "'.ova' in vstat_ova_or_ovf_file_name"
 
 - name: Deploy Stats OVF on vCenter
   connection: local
@@ -44,11 +64,11 @@
     --machineOutput
     -dm=thin
     -ds={{ vcenter.datastore }}
-    -n={{ inventory_hostname }}
+    -n={{ vmname | default(inventory_hostname) }}
     --net:"OVS DataPath={{ mgmt_bridge }}"
-    "{{ vstat_ova_path }}/{{ vstat_ova_file_name }}"
+    "{{ vstat_ova_or_ovf_path }}/{{ vstat_ova_or_ovf_file_name }}"
     vi://'{{ vcenter.username | urlencode }}':'{{ vcenter.password | urlencode }}'@{{ target_server }}/{{ vcenter.datacenter }}/host/{{ vcenter.cluster }} 
-  when: "'.ovf' in vstat_ova_file_name"
+  when: "'.ovf' in vstat_ova_or_ovf_file_name"
 
 - name: Waiting 120 seconds to make sure the Stats VM is up
   pause: 
@@ -60,7 +80,7 @@
     hostname: "{{ target_server }}"
     username: "{{ vcenter.username }}"
     password: "{{ vcenter.password }}"
-    name: "{{ inventory_hostname }}"
+    name: "{{ vmname | default(inventory_hostname) }}"
     validate_certs: no
     state: gatherfacts
   register: vstat_vm_facts
@@ -73,7 +93,7 @@
       - "vstat_vm_facts.instance.hw_guest_id is defined"
       - "not vstat_vm_facts.instance.hw_guest_id is none"
       - "not vstat_vm_facts.instance.hw_guest_id == ''"
-    msg: "Stats VM {{ inventory_hostname }} did not come up after two minutes"
+    msg: "Stats VM {{ vmname | default(inventory_hostname) }} did not come up after two minutes"
 
 - name: Writing eth0 network script file to the Stats VM
   connection: local
@@ -84,9 +104,9 @@
     datacenter: "{{ vcenter.datacenter }}"
     cluster: "{{ vcenter.cluster }}"
     validate_certs: no
-    vm_id: "{{ inventory_hostname }}"
-    vm_username: "root"
-    vm_password: "Alcateldc"
+    vm_id: "{{ vmid }}"
+    vm_username: "{{ vmuser }}"
+    vm_password: "{{ vmpass }}"
     vm_shell: "/usr/bin/echo"
     vm_shell_args: " '{{ lookup('template', 'ifcfg-eth0.j2') }}' > /etc/sysconfig/network-scripts/ifcfg-eth0" 
 
@@ -99,9 +119,9 @@
     datacenter: "{{ vcenter.datacenter }}"
     cluster: "{{ vcenter.cluster }}"
     validate_certs: no
-    vm_id: "{{ inventory_hostname }}"
-    vm_username: "root"
-    vm_password: "Alcateldc"
+    vm_id: "{{ vmid }}"
+    vm_username: "{{ vmuser }}"
+    vm_password: "{{ vmpass }}"
     vm_shell: "/usr/bin/chown"
     vm_shell_args: " 0 0 /etc/sysconfig/network-scripts/ifcfg-eth0" 
 
@@ -114,9 +134,9 @@
     datacenter: "{{ vcenter.datacenter }}"
     cluster: "{{ vcenter.cluster }}"
     validate_certs: no
-    vm_id: "{{ inventory_hostname }}"
-    vm_username: "root"
-    vm_password: "Alcateldc"
+    vm_id: "{{ vmid }}"
+    vm_username: "{{ vmuser }}"
+    vm_password: "{{ vmpass }}"
     vm_shell: "/usr/bin/echo"
     vm_shell_args: " '{{ lookup('template', 'network.j2') }}' > /etc/sysconfig/network" 
 
@@ -129,9 +149,9 @@
     datacenter: "{{ vcenter.datacenter }}"
     cluster: "{{ vcenter.cluster }}"
     validate_certs: no
-    vm_id: "{{ inventory_hostname }}"
-    vm_username: "root"
-    vm_password: "Alcateldc"
+    vm_id: "{{ vmid }}"
+    vm_username: "{{ vmuser }}"
+    vm_password: "{{ vmpass }}"
     vm_shell: "/usr/bin/chown"
     vm_shell_args: " 0 0 /etc/sysconfig/network" 
 
@@ -144,9 +164,9 @@
     datacenter: "{{ vcenter.datacenter }}"
     cluster: "{{ vcenter.cluster }}"
     validate_certs: no
-    vm_id: "{{ inventory_hostname }}"
-    vm_username: "root"
-    vm_password: "Alcateldc"
+    vm_id: "{{ vmid }}"
+    vm_username: "{{ vmuser }}"
+    vm_password: "{{ vmpass }}"
     vm_shell: "/usr/bin/mkdir"
     vm_shell_args: " -p /root/.ssh" 
 
@@ -159,9 +179,9 @@
     datacenter: "{{ vcenter.datacenter }}"
     cluster: "{{ vcenter.cluster }}"
     validate_certs: no
-    vm_id: "{{ inventory_hostname }}"
-    vm_username: "root"
-    vm_password: "Alcateldc"
+    vm_id: "{{ vmid }}"
+    vm_username: "{{ vmuser }}"
+    vm_password: "{{ vmpass }}"
     vm_shell: "/usr/bin/chown"
     vm_shell_args: " 0 0 /root/.ssh" 
 
@@ -178,9 +198,9 @@
     datacenter: "{{ vcenter.datacenter }}"
     cluster: "{{ vcenter.cluster }}"
     validate_certs: no
-    vm_id: "{{ inventory_hostname }}"
-    vm_username: "root"
-    vm_password: "Alcateldc"
+    vm_id: "{{ vmid }}"
+    vm_username: "{{ vmuser }}"
+    vm_password: "{{ vmpass }}"
     vm_shell: "/usr/bin/echo"
     vm_shell_args: " '{{ lookup('template', 'authorized_keys.j2') }}' > /root/.ssh/authorized_keys" 
 
@@ -193,9 +213,9 @@
     datacenter: "{{ vcenter.datacenter }}"
     cluster: "{{ vcenter.cluster }}"
     validate_certs: no
-    vm_id: "{{ inventory_hostname }}"
-    vm_username: "root"
-    vm_password: "Alcateldc"
+    vm_id: "{{ vmid }}"
+    vm_username: "{{ vmuser }}"
+    vm_password: "{{ vmpass }}"
     vm_shell: "/usr/bin/chmod"
     vm_shell_args: " 0640 /root/.ssh/authorized_keys" 
 
@@ -208,7 +228,7 @@
     datacenter: "{{ vcenter.datacenter }}"
     cluster: "{{ vcenter.cluster }}"
     validate_certs: no
-    vm_id: "{{ inventory_hostname }}"
-    vm_username: "root"
-    vm_password: "Alcateldc"
+    vm_id: "{{ vmid }}"
+    vm_username: "{{ vmuser }}"
+    vm_password: "{{ vmpass }}"
     vm_shell: "/usr/sbin/reboot"

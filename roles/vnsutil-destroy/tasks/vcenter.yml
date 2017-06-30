@@ -1,0 +1,37 @@
+---
+- name: Gathering info on VM
+  connection: local
+  vmware_guest:
+    hostname: "{{ target_server }}"
+    username: "{{ vcenter.username }}"
+    password: "{{ vcenter.password }}"
+    name: "{{ vmname | default(inventory_hostname) }}"
+    validate_certs: no
+    state: gatherfacts
+  register: vnsutil_vm_facts
+  ignore_errors: on
+
+- debug: var=vnsutil_vm_facts verbosity=1
+
+- block:
+  - name: Power off the VNSUTIL VM
+    connection: local
+    vmware_guest:
+      hostname: "{{ target_server }}"
+      username: "{{ vcenter.username }}"
+      password: "{{ vcenter.password }}"
+      name: "{{ vmname | default(inventory_hostname) }}"
+      validate_certs: no
+      state: "poweredoff"
+    when: vnsutil_vm_facts['instance']['hw_power_status'] == 'poweredOn'
+
+  - name: Removing the VNSUTIL VM
+    connection: local
+    vmware_guest:
+      hostname: "{{ target_server }}"
+      username: "{{ vcenter.username }}"
+      password: "{{ vcenter.password }}"
+      name: "{{ vmname | default(inventory_hostname) }}"
+      validate_certs: no
+      state: "absent"
+  when: vnsutil_vm_facts.failed is not defined

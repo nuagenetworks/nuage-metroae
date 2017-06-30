@@ -4,6 +4,8 @@
     register: upgrade_complete
     remote_user: root
 
+  - include: vsd_post_upgrade_helper.yml
+
   - name: Set upgrade complete flag to 1 for minor upgrade on vsd
     expect:
       command: "{{ minor_upgrade }}"
@@ -12,16 +14,26 @@
         (?i)yes: "yes"
       timeout: 100
     remote_user: root
-    when: 
-      - inventory_hostname == groups['vsds'][0]
-      - upgrade_complete.stdout != '1'
+    when: "'1' not in {{ upgrade_complete.stdout }}"
 
   - name: Restart Jboss on VSD Node1
     shell: "monit restart jboss"
     remote_user: root
+  
+  - include: check_monit_status.yml
   when: upgrade_major_or_minor == 'minor'
 
 - block:
+  - name: Get current version of VSD software
+    command: echo $VSD_VERSION
+    register: vsd_version
+    remote_user: "root"
+
+  - name: Print vsd_version output when verbosity >= 1
+    debug: var=vsd_version verbosity=1
+
+  - include: vsd_post_upgrade_helper.yml
+
   - name: Turn on API on vsd's for major upgrade
     expect:
       command: "{{ major_upgrade }}"
@@ -30,4 +42,6 @@
         (?i)yes: "yes"
       timeout: 100
     remote_user: root
+
+  - include: check_monit_status.yml
   when: upgrade_major_or_minor == 'major'

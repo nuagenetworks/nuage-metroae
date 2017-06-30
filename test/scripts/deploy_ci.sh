@@ -2,9 +2,9 @@
 set -e
 USAGE="Usage: $0 version deployment mode (sa or ha)"
 
-if [ $# -ne 2 ];
+if [ $# -ne 3 ];
 then
-    echo "Requires exactly 2 arguments: version and deployment mode (sa or ha)"
+    echo "Requires exactly 3 arguments: version,deployment mode (sa or ha) and vmname_test (True or False)"
     echo $USAGE
     exit 1
 fi
@@ -23,6 +23,8 @@ IPADDR=`/usr/sbin/ifconfig | grep netmask | grep broadcast | head -n 1 | awk '{p
 
 # update deployment mode in ci-deploy
 sed -i "s/deployment_mode: sa/deployment_mode: $2/g" roles/ci-deploy/vars/main.yml
+# update vmname_test var
+sed -i "s/vmname_test: False/vmname_test: $3/g" roles/ci-deploy/vars/main.yml
 # Cut down reset build wait time from 30 sec to 1 sec
 sed -i "s/reset_build_pause_secs: 30/reset_build_pause_secs: 1/g" roles/reset-build/vars/main.yml
 # use heat to deploy the test VMs on OS
@@ -47,6 +49,7 @@ cp ./test/files/test_cleanup.yml .
 cp ./test/files/build_vars_all.yml roles/reset-build/files/build_vars.yml
 sed -i "s/VERSION/$1/g" roles/reset-build/files/build_vars.yml
 sed -i "s/TARGET_SERVER/$IPADDR/g" roles/reset-build/files/build_vars.yml
+sed -i "s/SERVER_TYPE/kvm/g" roles/reset-build/files/build_vars.yml
 
 ansible-playbook reset_build.yml -vvvv
 ansible-playbook build.yml -vvvv
