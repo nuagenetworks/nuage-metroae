@@ -149,7 +149,7 @@ At this point, vsd_node2 is shut down, but not deleted. The new node will be bro
 15. Run predeploy on vsd_node3
 
 ```
-./metro-ansible vsd_ha_upgrade_repredeploy_3.yml -vvv
+./metro-ansible vsd_ha_upgrade_predeploy_3.yml -vvv
 ```
 
 At this point, the new vsd_node3 is up and running, but t has not yet been configured. If you experience a failure in this step, execute the playbook vsd_ha_upgrade_destroy_3.yml to delete the new node. Then retry the step.
@@ -160,12 +160,12 @@ At this point, the new vsd_node3 is up and running, but t has not yet been confi
 ./metro-ansible vsd_ha_upgrade_deploy_3.yml -vvv
 ```
 
-At this point, all 3 VSD nodes have been upgraded. If you experience a failure before the VSD install script runs, retry playbook vsp_ha_upgrade_deploy.yml. If that fails again or the failure comes after the VSD install script runs, destroy the VMs manually or use vsd_ha_upgrade_destroy_3.yml, then retry starting at step 15.
+At this point, all 3 VSD nodes have been upgraded. If you experience a failure before the VSD install script runs, retry playbook vsd_ha_upgrade_deploy_3.yml. If that fails again or the failure comes after the VSD install script runs, destroy the VMs manually or use vsd_ha_upgrade_destroy_3.yml, then retry starting at step 15.
 
-17. Run VSP upgrade deploy to finalize settings
+17. Run VSP upgrade wrapup to finalize settings
 
 ```
-./metro-ansible vsp_ha_upgrade_deploy.yml -vvv
+./metro-ansible vsp_ha_upgrade_wrapup.yml -vvv
 ```
 
 This will execute the final steps of the upgrade. It can be rerun if there is a failure.
