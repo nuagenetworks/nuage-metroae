@@ -17,6 +17,29 @@
 
 Metro provides a set of playbooks and roles to automate the upgrade of significant parts of a Nuage Networks VSP installation. The upgrade process is composed of executing a series of modular playbooks with defined stopping points.
 
+## `build_upgrade.yml` requirements
+
+The playbook `build_upgrade.yml` relies on build_vars.yml, upgrade_vars.yml and user_creds.yml to automatically populate a number of Ansible variable files for the operation of the metro playbooks.
+
+Upgrading VSD and VSTAT nodes require following changes to ```build_vars.yml``` file.
+1. Users should define ```upgrade_vmname``` in the build_vars.yml file. This name is used to bring up the new vsd and vstat nodes as part of ugrade procedure
+
+Upgrading VSD and VSTAT nodes require following changes when user decides not to run nuage_unzip.yml
+1. Users should define additional paths apart from the ones that were mentioned in nuage_unzip.yml section of BUILD.md file. Discussed below are these additional paths.
+
+```
+<yourpath>/vsd/migration/
+```
+As part of VSD upgrade, migration scripts are provided as seperate package (Nuage-VSD-migration-scripts-version-ISO.tar.gz) that perform database backup and decluster existing VSD cluster. This package should be placed inside the `migration` folder of vsd path as shown above.
+
+```
+<yourpath>/vstat/backup/
+```
+As part of VSTAT upgrade, backup scripts are provided as seperate package (Nuage-elastic-backup-version-.tar.gz) that perform backup of existing indices of ElasticSearch node. This package should be placed inside the `backup` folder of vstat path as shown above.
+
+Upgrading VSC requires <.tim> file that needs to be present in VSC path <yourpath>/vsc/
+
+
 ## Sample HA Metro workflow for an upgrade
 
 For the purposes of this sample, an HA deployment is one that consists 3 VSD nodes in a cluster, two VSC nodes, a single VSTAT node, and a number of deployed VRS instances. Nuage-Metro supports upgrades to both HA and SA deployments as well as 3-node VSTAT clusters on KVM and VMware. This document will describe the specific procedure for the upgrade of an HA deployment defined above. Slight modifications to this procedure will enable Metro to support other possible upgrades, e.g. one VSD, one VSC, one VSTAT.
@@ -295,26 +318,3 @@ Writes out new health reports that can be compared to those produced in step one
 ```
 ./metro-ansible vstat_upgrade.yml
 ```
-
-
-## `build_upgrade.yml` requirements
-
-The playbook `build_upgrade.yml` relies on build_vars.yml, upgrade_vars.yml and user_creds.yml to automatically populate a number of Ansible variable files for the operation of the metro playbooks. 
- 
-Upgrading VSD and VSTAT nodes require following changes to ```build_vars.yml``` file.
-1. Users should define ```upgrade_vmname``` in the build_vars.yml file. This name is used to bring up the new vsd and vstat nodes as part of ugrade procedure
-
-Upgrading VSD and VSTAT nodes require following changes when user decides not to run nuage_unzip.yml
-1. Users should define additional paths apart from the ones that were mentioned in nuage_unzip.yml section of BUILD.md file. Discussed below are these additional paths.
-
-```
-<yourpath>/vsd/migration/
-```
-As part of VSD upgrade, migration scripts are provided as seperate package (Nuage-VSD-migration-scripts-version-ISO.tar.gz) that perform database backup and decluster existing VSD cluster. This package should be placed inside the `migration` folder of vsd path as shown above.
-
-```
-<yourpath>/vstat/backup/
-```
-As part of VSTAT upgrade, backup scripts are provided as seperate package (Nuage-elastic-backup-version-.tar.gz) that perform backup of existing indices of ElasticSearch node. This package should be placed inside the `backup` folder of vstat path as shown above.
-
-Upgrading VSC requires <.tim> file that needs to be present in VSC path <yourpath>/vsc/
