@@ -4,6 +4,9 @@
     register: upgrade_complete
     remote_user: root
 
+  - name: Print upgrade_complete output when verbosity >= 1 
+    debug: var=upgrade_complete verbosity=1
+ 
   - include: vsd_post_upgrade_helper.yml
 
   - name: Set upgrade complete flag to 1 for minor upgrade on vsd
@@ -14,7 +17,7 @@
         (?i)yes: "yes"
       timeout: 100
     remote_user: root
-    when: "'1' not in {{ upgrade_complete.stdout }}"
+    when: upgrade_complete.stdout == '0'
 
   - name: Restart Jboss on VSD Node1
     shell: "monit restart jboss"
