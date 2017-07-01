@@ -209,7 +209,7 @@ Writes out new health reports that can be compared to those produced in step one
 
 ## Sample Metro workflow for standalone upgrade
 
-For the purpose of this sample, a Standalone deployment is one that consists exactly one VSD node, one VSC node, a single VSTAT node, and a number of deployed VRS instances.
+For the purpose of this sample, a Standalone deployment is one that consists exactly one VSD node, one VSC node, a single VSTAT node, and a number of deployed VRS instances. Note that if you have 2 VSCs, after the VSD upgrade is complete, follow the VSC upgrade instructions from the HA procedure, above.
 
 1. Generate necessary data for the ansible playbooks to run by executing `build_upgrade` playbook. This requires `build_vars.yml`,  `upgrade_vars.yml`, and `user_creds.yml` to be populated according to the environment. The `user_creds.yml` file must contain VSD and VSC credentials as shown in the example file `examples\user_creds.yml`. This example assumes the following:
   - vsd_sa_or_ha will be set to sa
@@ -253,7 +253,7 @@ At this point, vsd is shut down, but not deleted. The new node will be brought u
 ./metro-ansible vsd_predeploy.yml -vvv
 ```
 
-At this point, the new vsd ndoe is up and running, but they have not yet been configured. If you experience a failure in this step, execute the playbook vsd_destroy.yml to delete the new node. Then retry the step.
+At this point, the new vsd node is up and running, but it has not yet been configured. If you experience a failure in this step, execute the playbook vsd_destroy.yml to delete the new node. Then retry the step.
 
 6. Deploy new vsd node
 
