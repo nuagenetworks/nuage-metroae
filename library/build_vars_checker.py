@@ -41,12 +41,13 @@ yaml.add_constructor(
 def check_buildvars(filepath):
     fil = open(filepath)
     config = yaml.load(fil)
-    if config['vsd_sa_or_ha'] == 'ha':
-        if len(config['myvsds']) != 3:
-            module.fail_json(
-                msg="FAIL: HA Deployments require 3 VSDs to be defined")
-    elif config['vsd_sa_or_ha'] != 'sa':
-        module.fail_json(msg="FAIL: vsd_sa_or_ha should be one of sa or ha")
+    if 'vsd_sa_or_ha' in config:
+        if config['vsd_sa_or_ha'] == 'ha':
+            if len(config['myvsds']) != 3:
+                module.fail_json(
+                    msg="FAIL: HA Deployments require 3 VSDs to be defined")
+        elif config['vsd_sa_or_ha'] != 'sa':
+            module.fail_json(msg="FAIL: vsd_sa_or_ha should be one of sa or ha")
     hostnames = []
     for key in config:
         if type(config[key]) is list:
