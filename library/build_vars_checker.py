@@ -41,23 +41,24 @@ yaml.add_constructor(
 def check_buildvars(filepath):
     fil = open(filepath)
     config = yaml.load(fil)
-    if config['vsd_sa_or_ha'] == 'ha':
-        if len(config['myvsds']) != 3:
-            module.fail_json(
-                msg="FAIL: HA Deployments require 3 VSDs to be defined")
-    elif config['vsd_sa_or_ha'] != 'sa':
-        module.fail_json(msg="FAIL: vsd_sa_or_ha should be one of sa or ha")
-    hostnames=[]
+    if 'vsd_sa_or_ha' in config:
+        if config['vsd_sa_or_ha'] == 'ha':
+            if len(config['myvsds']) != 3:
+                module.fail_json(
+                    msg="FAIL: HA Deployments require 3 VSDs to be defined")
+        elif config['vsd_sa_or_ha'] != 'sa':
+            module.fail_json(msg="FAIL: vsd_sa_or_ha should be one of sa or ha")
+    hostnames = []
     for key in config:
         if type(config[key]) is list:
-           for dic in config[key]:
-              if 'hostname' in dic:
-                 hostnames.append(dic['hostname'])
+            for dic in config[key]:
+                if 'hostname' in dic:
+                    hostnames.append(dic['hostname'])
     hostnames_set = set([x for x in hostnames if hostnames.count(x) > 1])
-    if len(hostnames_set)!=0:
-       module.fail_json(msg=("Error : The following hostnames are not unique - " + ','.join(hostnames_set)))
+    if len(hostnames_set) != 0:
+        module.fail_json(msg=("Error : The following hostnames are not unique - " + ','.join(hostnames_set)))
     else:
-       module.exit_json(changed=False)
+        module.exit_json(changed=False)
 
 arg_spec = dict(
     path=dict(
