@@ -66,24 +66,24 @@
 
 - name: Verify that the VM is not already running
   assert:
-    that: "inventory_hostname not in virt_vms.list_vms"
-    msg: "{{ inventory_hostname }} is already running on {{ target_server }}"
+    that: "vmname not in virt_vms.list_vms"
+    msg: "{{ vmname }} is already running on {{ target_server }}"
 
 - name: Include OS-specific variables.
   include_vars: "{{ ansible_os_family }}.yml"
 
 - name: Create VSC directory
-  file: path={{ images_path }}/{{ inventory_hostname }} state=directory owner={{ libvirt.user }} group={{ libvirt.group }}
+  file: path={{ images_path }}/{{ vmname }} state=directory owner={{ libvirt.user }} group={{ libvirt.group }}
   delegate_to: "{{ target_server }}"
   remote_user: "{{ target_server_username }}"
 
 - name: Copy VSC qcow2 image to {{ target_server }}
-  copy: src={{ vsc_qcow2_path }}/{{ vsc_qcow2_file_name }} dest={{ images_path }}/{{ inventory_hostname }}/{{ inventory_hostname }}.qcow2 owner={{ libvirt.user }} group={{ libvirt.group }}
+  copy: src={{ vsc_qcow2_path }}/{{ vsc_qcow2_file_name }} dest={{ images_path }}/{{ vmname }}/{{ inventory_hostname }}.qcow2 owner={{ libvirt.user }} group={{ libvirt.group }}
   delegate_to: "{{ target_server }}"
   remote_user: "{{ target_server_username }}"
 
 - name: Setup VSC temporary configuration files
-  template: src={{ item }}.j2 backup=no dest={{ images_path }}/{{ inventory_hostname }}/{{ item }}
+  template: src={{ item }}.j2 backup=no dest={{ images_path }}/{{ vmname }}/{{ item }}
   delegate_to: "{{ target_server }}"
   with_items:
     - bof.cfg
@@ -91,7 +91,7 @@
   remote_user: "{{ target_server_username }}"
 
 - name: Copy temporary configuration files to the VSC image
-  command: guestfish --rw -a {{ images_path }}/{{ inventory_hostname }}/{{ inventory_hostname }}.qcow2 -m {{ vsc_partition }} copy-in {{ images_path }}/{{ inventory_hostname }}/{{ item }} /
+  command: guestfish --rw -a {{ images_path }}/{{ vmname }}/{{ inventory_hostname }}.qcow2 -m {{ vsc_partition }} copy-in {{ images_path }}/{{ vmname }}/{{ item }} /
   delegate_to: "{{ target_server }}"
   with_items:
     - bof.cfg
@@ -99,7 +99,7 @@
   remote_user: "{{ target_server_username }}"
 
 - name: Remove temporary configuration files
-  file: path={{ images_path }}/{{ inventory_hostname }}/{{ item }} state=absent
+  file: path={{ images_path }}/{{ vmname }}/{{ item }} state=absent
   delegate_to: "{{ target_server }}"
   with_items:
     - bof.cfg

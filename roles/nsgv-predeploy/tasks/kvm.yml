@@ -57,11 +57,11 @@
 
 - name: Verify that the VM is not already running
   assert:
-    that: "inventory_hostname not in virt_vms.list_vms"
-    msg: "{{ inventory_hostname }} is already running on {{ target_server }}"
+    that: "vmname not in virt_vms.list_vms"
+    msg: "{{ vmname }} is already running on {{ target_server }}"
 
 - name: Create libvirt image directory
-  file: path={{ images_path }}/{{ inventory_hostname }}
+  file: path={{ images_path }}/{{ vmname }}
         state=directory
         owner={{ libvirt.user }}
         group={{ libvirt.group }}
@@ -70,7 +70,7 @@
 
 - name: Copy the NSGV qcow image to virt images directory
   copy: src={{ nsgv_qcow2_path }}/{{ nsgv_qcow2_file_name }}
-        dest={{ images_path }}/{{ inventory_hostname }}
+        dest={{ images_path }}/{{ vmname }}
         owner={{ libvirt.user }}
         group={{ libvirt.group }}
   delegate_to: "{{ target_server }}"
@@ -91,7 +91,7 @@
 
   - name: Copy the ISO image to virt images directory
     copy: src="{{ mktemp_output.stdout }}/user_image.iso"
-          dest={{ images_path }}/{{ inventory_hostname }}
+          dest={{ images_path }}/{{ vmname }}
           owner={{ libvirt.user }}
           group={{ libvirt.group }}
     delegate_to: "{{ target_server }}"
