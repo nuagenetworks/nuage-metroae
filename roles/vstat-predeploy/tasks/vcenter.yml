@@ -16,7 +16,7 @@
       msg: "vmname is required for vsd_predeploy"
   - name: Set local variable with vmname
     set_fact:
-      vm_name: "{{ vmname | default(inventory_hostname) }}"
+      vm_name: "{{ vmname }}"
   when: not nuage_upgrade | default( False )
 
 - name: Gathering info on VM
@@ -25,7 +25,7 @@
     hostname: "{{ target_server }}"
     username: "{{ vcenter.username }}"
     password: "{{ vcenter.password }}"
-    name: "{{ vmname | default(inventory_hostname) }}"
+    name: "{{ vmname }}"
     validate_certs: no
     state: gatherfacts
   register: vstat_vm_facts
@@ -36,7 +36,7 @@
 - name: Verify the Stats VM does not exist
   assert: 
     that: "vstat_vm_facts.failed"
-    msg: "VM {{ vmname | default(inventory_hostname) }} already exists, quiting"
+    msg: "VM {{ vmname }} already exists, quiting"
 
 - name: Deploy Stats OVA on vCenter
   connection: local
@@ -48,7 +48,7 @@
     --machineOutput
     -dm=thin
     -ds={{ vcenter.datastore }}
-    -n={{ vmname | default(inventory_hostname) }}
+    -n={{ vmname }}
     --net:"Management={{ mgmt_bridge }}"
     "{{ vstat_ova_or_ovf_path }}/{{ vstat_ova_or_ovf_file_name }}"
     vi://'{{ vcenter.username | urlencode }}':'{{ vcenter.password | urlencode }}'@{{ target_server }}/{{ vcenter.datacenter }}/host/{{ vcenter.cluster }} 
@@ -64,7 +64,7 @@
     --machineOutput
     -dm=thin
     -ds={{ vcenter.datastore }}
-    -n={{ vmname | default(inventory_hostname) }}
+    -n={{ vmname }}
     --net:"OVS DataPath={{ mgmt_bridge }}"
     "{{ vstat_ova_or_ovf_path }}/{{ vstat_ova_or_ovf_file_name }}"
     vi://'{{ vcenter.username | urlencode }}':'{{ vcenter.password | urlencode }}'@{{ target_server }}/{{ vcenter.datacenter }}/host/{{ vcenter.cluster }} 
@@ -80,7 +80,7 @@
     hostname: "{{ target_server }}"
     username: "{{ vcenter.username }}"
     password: "{{ vcenter.password }}"
-    name: "{{ vmname | default(inventory_hostname) }}"
+    name: "{{ vmname }}"
     validate_certs: no
     state: gatherfacts
   register: vstat_vm_facts
@@ -93,7 +93,7 @@
       - "vstat_vm_facts.instance.hw_guest_id is defined"
       - "not vstat_vm_facts.instance.hw_guest_id is none"
       - "not vstat_vm_facts.instance.hw_guest_id == ''"
-    msg: "Stats VM {{ vmname | default(inventory_hostname) }} did not come up after two minutes"
+    msg: "Stats VM {{ vmname }} did not come up after two minutes"
 
 - name: Writing eth0 network script file to the Stats VM
   connection: local

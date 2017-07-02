@@ -13,7 +13,7 @@
 - block:
   - name: Destroy VSTAT VM
     virt:
-      name: "{{ vmname | default(inventory_hostname) }}"
+      name: "{{ vmname }}"
       state: destroyed
       uri: qemu:///system
     delegate_to: "{{ target_server }}"
@@ -27,21 +27,21 @@
 
   - block:
     - name: Create backup directory name when not a rollback
-      set_fact: backup_dir="{{ images_path }}/{{ inventory_hostname }}.backup.{{ ansible_date_time.date }}@{{ ansible_date_time.time }}"
+      set_fact: backup_dir="{{ images_path }}/{{ vmname }}.backup.{{ ansible_date_time.date }}@{{ ansible_date_time.time }}"
       when: not rollback
 
     - name: Create backup directory name when rollback
-      set_fact: backup_dir="{{ images_path }}/{{ inventory_hostname }}.rollback.{{ ansible_date_time.date }}@{{ ansible_date_time.time }}"
+      set_fact: backup_dir="{{ images_path }}/{{ vmname }}.rollback.{{ ansible_date_time.date }}@{{ ansible_date_time.time }}"
       when: rollback
 
     - name: Move the old VM image dir to the backup directory
-      command: "mv {{ images_path }}/{{ inventory_hostname }}/ {{ backup_dir }}"
+      command: "mv {{ images_path }}/{{ vmname }}/ {{ backup_dir }}"
       delegate_to: "{{ target_server }}"
       remote_user: "{{ target_server_username }}"
 
     - name: Get XML for old VM
       virt:
-        name: "{{ vmname | default(inventory_hostname) }}"
+        name: "{{ vmname }}"
         command: get_xml
         uri: qemu:///system
       register: vstat_xml
@@ -53,14 +53,14 @@
     - name: Write VM XML to file
       copy:
         content: "{{ vstat_xml.get_xml }}"
-        dest: "{{ backup_dir }}/{{ inventory_hostname }}.xml"
+        dest: "{{ backup_dir }}/{{ vmname }}.xml"
       delegate_to: "{{ target_server }}"
       remote_user: "{{ target_server_username }}"
     when: backup_vstat
 
   - name: Undefine VSTAT VM
     virt:
-      name: "{{ vmname | default(inventory_hostname) }}"
+      name: "{{ vmname }}"
       command: undefine
       uri: qemu:///system
     delegate_to: "{{ target_server }}"
@@ -68,7 +68,7 @@
   when: inventory_hostname in virt_vms.list_vms
 
 - name: Destroy the images directory
-  file: path={{ images_path }}/{{ inventory_hostname }}
+  file: path={{ images_path }}/{{ vmname }}
         state=absent
   delegate_to: "{{ target_server }}"
   remote_user: "{{ target_server_username }}"

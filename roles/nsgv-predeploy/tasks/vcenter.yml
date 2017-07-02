@@ -5,7 +5,7 @@
     hostname: "{{ target_server }}"
     username: "{{ vcenter.username }}"
     password: "{{ vcenter.password }}"
-    name: "{{ vmname | default(inventory_hostname) }}"
+    name: "{{ vmname }}"
     validate_certs: no
     state: gatherfacts
   register: nsgv_vm_facts
@@ -16,7 +16,7 @@
 - name: Verify the NSGV VM does not exist
   assert: 
     that: "nsgv_vm_facts.failed is defined"
-    msg: "VM {{ vmname | default(inventory_hostname) }} already exists, quiting"
+    msg: "VM {{ vmname }} already exists, quiting"
 
 - block:
   - name: Create local temp directory
@@ -34,7 +34,7 @@
   - name: Copy the ISO image to vcenter datastore
     vsphere_copy: 
           src: "{{ mktemp_output.stdout }}/user_image.iso"
-          path: "{{ vmname | default(inventory_hostname) }}/user_image.iso"
+          path: "{{ vmname }}/user_image.iso"
           host: "{{ target_server }}"
           login: "{{ vcenter.username }}"
           password: "{{ vcenter.password }}"
@@ -55,7 +55,7 @@
     -dm=thin
     --powerOn
     -ds={{ vcenter.datastore }}
-    -n={{ vmname | default(inventory_hostname) }}
+    -n={{ vmname }}
     --net:"OVS Management={{ mgmt_bridge }}"
     --net:"OVS DataPath={{ data_bridge }}"
     --net:"port_vmnic={{ access_bridge }}"
@@ -107,7 +107,7 @@
     hostname: "{{ target_server }}"
     username: "{{ vcenter.username }}"
     password: "{{ vcenter.password }}"
-    name: "{{ vmname | default(inventory_hostname) }}"
+    name: "{{ vmname }}"
     validate_certs: no
     state: gatherfacts
   register: nsgv_vm_facts
