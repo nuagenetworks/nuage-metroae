@@ -27,15 +27,15 @@
 
   - block:
     - name: Create backup directory name when not a rollback
-      set_fact: backup_dir="{{ images_path }}/{{ inventory_hostname }}.backup.{{ ansible_date_time.date }}@{{ ansible_date_time.time }}"
+      set_fact: backup_dir="{{ images_path }}/{{ vmname }}.backup.{{ ansible_date_time.date }}@{{ ansible_date_time.time }}"
       when: not rollback
 
     - name: Create backup directory name when rollback
-      set_fact: backup_dir="{{ images_path }}/{{ inventory_hostname }}.rollback.{{ ansible_date_time.date }}@{{ ansible_date_time.time }}"
+      set_fact: backup_dir="{{ images_path }}/{{ vmname }}.rollback.{{ ansible_date_time.date }}@{{ ansible_date_time.time }}"
       when: rollback
 
     - name: Move the old VM image dir to the backup directory
-      command: "mv {{ images_path }}/{{ inventory_hostname }}/ {{ backup_dir }}"
+      command: "mv {{ images_path }}/{{ vmname }}/ {{ backup_dir }}"
       delegate_to: "{{ target_server }}"
       remote_user: "{{ target_server_username }}"
 
@@ -53,7 +53,7 @@
     - name: Write VM XML to file
       copy:
         content: "{{ vstat_xml.get_xml }}"
-        dest: "{{ backup_dir }}/{{ inventory_hostname }}.xml"
+        dest: "{{ backup_dir }}/{{ vmname }}.xml"
       delegate_to: "{{ target_server }}"
       remote_user: "{{ target_server_username }}"
     when: backup_vstat
@@ -68,7 +68,7 @@
   when: inventory_hostname in virt_vms.list_vms
 
 - name: Destroy the images directory
-  file: path={{ images_path }}/{{ inventory_hostname }}
+  file: path={{ images_path }}/{{ vmname }}
         state=absent
   delegate_to: "{{ target_server }}"
   remote_user: "{{ target_server_username }}"
