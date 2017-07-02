@@ -5,7 +5,7 @@
     hostname: "{{ target_server }}"
     username: "{{ vcenter.username }}"
     password: "{{ vcenter.password }}"
-    name: "{{ vmname | default(inventory_hostname) }}"
+    name: "{{ vmname }}"
     validate_certs: no
     state: gatherfacts
   register: vnsutil_vm_facts
@@ -16,7 +16,7 @@
 - name: Verify the VNSUTIL VM does not exist
   assert: 
     that: "vnsutil_vm_facts.failed is defined"
-    msg: "VM {{ vmname | default(inventory_hostname) }} already exists, quiting"
+    msg: "VM {{ vmname }} already exists, quiting"
 
 - name: Deploy VNSUTIL Image on vCenter
   connection: local
@@ -28,7 +28,7 @@
     --machineOutput
     -dm=thin
     -ds={{ vcenter.datastore }}
-    -n={{ vmname | default(inventory_hostname) }}
+    -n={{ vmname }}
     --net:"Management={{ mgmt_bridge }}"
     "{{ vnsutil_ova_path }}/{{ vnsutil_ova_file_name }}"
     vi://'{{ vcenter.username | urlencode }}':'{{ vcenter.password | urlencode }}'@{{ target_server }}/{{ vcenter.datacenter }}/host/{{ vcenter.cluster }} 
@@ -43,7 +43,7 @@
     hostname: "{{ target_server }}"
     username: "{{ vcenter.username }}"
     password: "{{ vcenter.password }}"
-    name: "{{ vmname | default(inventory_hostname) }}"
+    name: "{{ vmname }}"
     validate_certs: no
     state: gatherfacts
   register: vnsutil_vm_facts
@@ -56,7 +56,7 @@
       - "vnsutil_vm_facts.instance.hw_guest_id is defined"
       - "not vnsutil_vm_facts.instance.hw_guest_id is none"
       - "not vnsutil_vm_facts.instance.hw_guest_id == ''"
-    msg: "VNSUTIL VM {{ vmname | default(inventory_hostname) }} did not come up after two minutes"
+    msg: "VNSUTIL VM {{ vmname }} did not come up after two minutes"
 
 - name: Writing eth0 network script file to the VNSUTIL VM
   connection: local
