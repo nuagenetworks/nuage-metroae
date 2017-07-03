@@ -207,6 +207,7 @@ def main():
             name_match=dict(required=False, type='str', default='first'),
             uuid=dict(required=False, type='str'),
             folder=dict(required=False, type='str', default='/vm'),
+            datacenter=dict(required=True, type='str'),
         ),
     )
 
