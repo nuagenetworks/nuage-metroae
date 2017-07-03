@@ -116,10 +116,11 @@ class PyVmomiHelper(object):
         self.content = connect_to_api(self.module)
 
     def getvm(self, name=None, uuid=None, folder=None):
+        si = self.content.searchIndex
         vm = None
 
         if uuid:
-            vm = find_vm_by_id(self.content, vm_id=uuid, vm_id_type="uuid")
+            vm = si.FindByUuid(instanceUuid=False, uuid=uuid, vmSearch=True)
         elif folder:
             # Build the absolute folder path to pass into the search method
             if not self.params['folder'].startswith('/'):
@@ -148,8 +149,9 @@ class PyVmomiHelper(object):
         tools_running = False
         vm_facts = {}
         poll_num = 0
+        vm_uuid = vm.config.uuid
         while not tools_running and poll_num <= poll:
-            newvm = self.getvm(uuid=vm.config.uuid)
+            newvm = self.getvm(uuid=vm_uuid)
             vm_facts = self.gather_facts(newvm)
             if vm_facts['guest_tools_status'] == 'guestToolsRunning':
                 tools_running = True
@@ -232,7 +234,7 @@ def main():
                 module.exit_json(**result)
         except Exception:
             e = get_exception()
-            module.fail_json(msg="Waiting for tools failed with exception %s" % e)
+            module.fail_json(msg="Waiting for tools failed with exception: %s" % e)
     else:
         module.fail_json(msg="Unable to wait for tools for non-existing VM %(name)s" % module.params)
 
