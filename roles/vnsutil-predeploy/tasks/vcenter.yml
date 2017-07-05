@@ -33,30 +33,18 @@
     "{{ vnsutil_ova_path }}/{{ vnsutil_ova_file_name }}"
     vi://'{{ vcenter.username | urlencode }}':'{{ vcenter.password | urlencode }}'@{{ target_server }}/{{ vcenter.datacenter }}/host/{{ vcenter.cluster }} 
 
-- name: Waiting 120 seconds to make sure the VNSUTIL is up
-  pause: 
-    seconds: 120
-
-- name: Gathering info on VM
+- name: Waiting until VMware tools becomes available
   connection: local
-  vmware_guest:
+  vmware_guest_tools_wait:
     hostname: "{{ target_server }}"
     username: "{{ vcenter.username }}"
     password: "{{ vcenter.password }}"
     name: "{{ vmname }}"
+    datacenter: "{{ vcenter.datacenter }}"
     validate_certs: no
-    state: gatherfacts
   register: vnsutil_vm_facts
 
 - debug: var=vnsutil_vm_facts verbosity=1
-
-- name: Verify the VNSUTIL VM came up correctly
-  assert: 
-    that: 
-      - "vnsutil_vm_facts.instance.hw_guest_id is defined"
-      - "not vnsutil_vm_facts.instance.hw_guest_id is none"
-      - "not vnsutil_vm_facts.instance.hw_guest_id == ''"
-    msg: "VNSUTIL VM {{ vmname }} did not come up after two minutes"
 
 - name: Writing eth0 network script file to the VNSUTIL VM
   connection: local

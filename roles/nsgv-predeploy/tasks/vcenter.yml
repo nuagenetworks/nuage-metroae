@@ -97,19 +97,15 @@
     remote_user: "{{ ansible_sudo_username }}"
   when: bootstrap_method == 'zfb_external'
 
-- name: Waiting 120 seconds to make sure the NSGv VM is up
-  pause: 
-    seconds: 120
-
-- name: Gathering info on VM
+- name: Waiting until VMware tools becomes available
   connection: local
-  vmware_guest:
+  vmware_guest_tools_wait:
     hostname: "{{ target_server }}"
     username: "{{ vcenter.username }}"
     password: "{{ vcenter.password }}"
     name: "{{ vmname }}"
+    datacenter: "{{ vcenter.datacenter }}"
     validate_certs: no
-    state: gatherfacts
   register: nsgv_vm_facts
 
 - debug: var=nsgv_vm_facts verbosity=1
