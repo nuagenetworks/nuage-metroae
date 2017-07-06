@@ -136,9 +136,9 @@ For reference, here is a description of the contents of the `build-vars.yml` fil
 #    - TBD
 #    # vsc_operations_list:
 #       - install
-# myvscs is a collection of parameters for VSCs.
-# One set of parameters is required for each VSC.
-# Do not update {{ vsd_fqdn_global }} here as it reads from previous section
+#    myvscs is a collection of parameters for VSCs.
+#    One set of parameters is required for each VSC.
+#    Do not update {{ vsd_fqdn_global }} here as it reads from previous section
 #    myvscs:
 #          # The fqdn of this VSC instance
 #      - { hostname: vsc1.example.com,
