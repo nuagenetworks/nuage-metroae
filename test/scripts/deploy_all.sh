@@ -61,8 +61,8 @@ gwIP=$(ip addr show br-eth1 | grep "inet\b" | awk '{print $2}' | cut -d/ -f1)
 removed=${gwIP:9}
 mgmtIP=${gwIP:0:9}
 incremented=$(($removed+110))
-mgmtIP="${mgmtIP}$incremented"
 dataGW="${mgmtIP}0"
+mgmtIP="${mgmtIP}$incremented"
 
 sed -i "s/MGMT_GATEWAY/$gwIP/g" roles/reset-build/files/build_vars.yml
 sed -i "s/DNS_VSD/$gwIP/g" roles/reset-build/files/build_vars.yml
