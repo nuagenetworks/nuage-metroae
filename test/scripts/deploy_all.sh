@@ -130,7 +130,10 @@ iptables -t nat -A POSTROUTING -s $mgmtIP -j SNAT --to-source $gwIP
 
 if [ $2 = "ha" ];
 then
+    sed -i "s/GLOBAL_VSD_FQDN/xmpp.example.com/g" roles/reset-build/files/build_vars.yml
+
     sed -i "82,95 s/^#//" roles/reset-build/files/build_vars.yml
+
     mgmtIP=${mgmtIP:0:9}
     incremented=$(($incremented+10))
     mgmtIP="${mgmtIP}$incremented"
@@ -195,6 +198,7 @@ sed -i "s/VNSUTIL1_DATA/$mgmtIP/g" roles/reset-build/files/build_vars.yml
 #iptables -t nat -A PREROUTING -s $gwIP -j DNAT --to $mgmtIP
 #iptables -t nat -A POSTROUTING -s $mgmtIP -j SNAT --to-source $gwIP
 
+sed -i "s/GLOBAL_VSD_FQDN/jenkinsvsd1.example.com/g" roles/reset-build/files/build_vars.yml
 sed -i "s/VERSION/$1/g" roles/reset-build/files/build_vars.yml
 sed -i "s/ENVIRONMENT_TYPE/$2/g" roles/reset-build/files/build_vars.yml
 sed -i "s/TARGET_SERVER/$IPADDR/g" roles/reset-build/files/build_vars.yml
