@@ -150,7 +150,6 @@ sed -i "s/VERSION/$1/g" roles/reset-build/files/build_vars.yml
 sed -i "s/TARGET_SERVER/$IPADDR/g" roles/reset-build/files/build_vars.yml
 sed -i "s/SERVER_TYPE/kvm/g" roles/reset-build/files/build_vars.yml
 
-./metro-ansible destroy_everything.yml -vvvv
 ./metro-ansible reset_build.yml -vvvv
 ./metro-ansible build.yml -vvvv
 ./metro-ansible install_vcs.yml -vvvv
