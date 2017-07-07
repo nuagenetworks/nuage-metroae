@@ -3,9 +3,9 @@ set -e
 
 USAGE="Usage: $0 version"
 
-if [ $# -ne 1 ];
+if [ $# -ne 2 ];
 then
-    echo "Requires exactly 1 argument"
+    echo "Requires exactly 2 arguments"
     echo $USAGE
     exit 1
 fi
@@ -147,6 +147,7 @@ sed -i "s/VNSUTIL1_DATA/$mgmtIP/g" roles/reset-build/files/build_vars.yml
 #iptables -t nat -A POSTROUTING -s $mgmtIP -j SNAT --to-source $gwIP
 
 sed -i "s/VERSION/$1/g" roles/reset-build/files/build_vars.yml
+sed -i "s/ENVIRONMENT_TYPE/$2/g" roles/reset-build/files/build_vars.yml
 sed -i "s/TARGET_SERVER/$IPADDR/g" roles/reset-build/files/build_vars.yml
 sed -i "s/SERVER_TYPE/kvm/g" roles/reset-build/files/build_vars.yml
 
