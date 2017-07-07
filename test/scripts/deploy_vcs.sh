@@ -74,6 +74,30 @@ sed -i "s/VSD1_IP/$mgmtIP/g" roles/reset-build/files/build_vars.yml
 iptables -t nat -A PREROUTING -s $gwIP -j DNAT --to $mgmtIP
 iptables -t nat -A POSTROUTING -s $mgmtIP -j SNAT --to-source $gwIP
 
+# The following is for HA deployments only.
+
+if [ $2 = "ha" ];
+then
+    sed -i "17,28 s/^/#/' roles/reset-build/files/build_vars.yml
+    mgmtIP=${mgmtIP:0:9}
+    incremented=$(($incremented+10))
+    mgmtIP="${mgmtIP}$incremented"
+
+    sed -i "s/VSD2_IP/$mgmtIP/g" roles/reset-build/files/build_vars.yml
+
+    iptables -t nat -A PREROUTING -s $gwIP -j DNAT --to $mgmtIP
+    iptables -t nat -A POSTROUTING -s $mgmtIP -j SNAT --to-source $gwIP
+
+    mgmtIP=${mgmtIP:0:9}
+    incremented=$(($incremented+10))
+    mgmtIP="${mgmtIP}$incremented"
+
+    sed -i "s/VSD3_IP/$mgmtIP/g" roles/reset-build/files/build_vars.yml
+
+    iptables -t nat -A PREROUTING -s $gwIP -j DNAT --to $mgmtIP
+    iptables -t nat -A POSTROUTING -s $mgmtIP -j SNAT --to-source $gwIP
+fi
+
 mgmtIP=${mgmtIP:0:9}
 incremented=$(($incremented+10))
 mgmtIP="${mgmtIP}$incremented"
