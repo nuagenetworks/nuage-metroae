@@ -68,7 +68,7 @@ sed -i "s/MGMT_GATEWAY/$gwIP/g" roles/reset-build/files/build_vars.yml
 sed -i "s/DNS_VSD/$gwIP/g" roles/reset-build/files/build_vars.yml
 sed -i "s/DATA_GATEWAY/$dataGW/g" roles/reset-build/files/build_vars.yml
 sed -i "s/VSD1_IP/$mgmtIP/g" roles/reset-build/files/build_vars.yml
-sed -i "s/VSD1/$mgmtIP/g" test/files/zfb.yml
+sed -i "s/VSD1/$mgmtIP/g" zfb.yml
 
 iptables -t nat -A PREROUTING -s $gwIP -j DNAT --to $mgmtIP
 iptables -t nat -A POSTROUTING -s $mgmtIP -j SNAT --to-source $gwIP
@@ -102,7 +102,7 @@ incremented=$(($incremented+10))
 mgmtIP="${mgmtIP}$incremented"
 
 sed -i "s/VSC1_IP/$mgmtIP/g" roles/reset-build/files/build_vars.yml
-sed -i "s/VSC1/$mgmtIP/g" test/files/zfb.yml
+sed -i "s/VSC1/$mgmtIP/g" zfb.yml
 
 iptables -t nat -A PREROUTING -s $gwIP -j DNAT --to $mgmtIP
 iptables -t nat -A POSTROUTING -s $mgmtIP -j SNAT --to-source $gwIP
@@ -112,7 +112,7 @@ incremented=$(($incremented+10))
 mgmtIP="${mgmtIP}$incremented"
 
 sed -i "s/VSC2_IP/$mgmtIP/g" roles/reset-build/files/build_vars.yml
-sed -i "s/VSC2/$mgmtIP/g" test/files/zfb.yml
+sed -i "s/VSC2/$mgmtIP/g" zfb.yml
 
 iptables -t nat -A PREROUTING -s $gwIP -j DNAT --to $mgmtIP
 iptables -t nat -A POSTROUTING -s $mgmtIP -j SNAT --to-source $gwIP
