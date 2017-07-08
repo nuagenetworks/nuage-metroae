@@ -16,7 +16,7 @@
       line: "{{ mgmt_ip }} {{ inventory_hostname }}"
     delegate_to: "{{ target_server }}"
     remote_user: "{{ target_server_username }}"
-  when: ("{{ target_server_type }}" != "vcenter")
+  when: not target_server_type | match("vcenter")
 
 - name: Update /etc/hosts file
   blockinfile:
@@ -87,7 +87,7 @@
     retries: 4
     delay: 5
     remote_user: "root"
-  when: sync_status.stdout != "synchronized"
+  when: not sync_status.stdout | match("synchronized")
 
 - name: Install dhcp package
   yum: name=dhcp state=present
