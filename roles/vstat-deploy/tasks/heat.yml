@@ -156,7 +156,7 @@
     retries: 4
     delay: 5
     remote_user: "root"
-  when: sync_status.stdout != "synchronized"
+  when: not sync_status.stdout | match("synchronized")
 
 - name: Resolve "{{ vsd_fqdn }}"  to ip addr
   shell: host "{{ vsd_fqdn }}" | awk '{print $3,$4}'
@@ -165,7 +165,7 @@
 
 - name: Check for ip addr in the registered var
   fail: msg="Could not resolve ip addr of "{{ vsd_fqdn }}" "
-  when: ip_addr.stdout == "not found:"
+  when: ip_addr.stdout | match("not found:")
   remote_user: "root"
 
 - name: Config firewall on VSTAT vm to accept conn on ports 9200,9300 from vsd(s)

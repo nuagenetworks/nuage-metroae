@@ -55,7 +55,7 @@
       - "{{ ssh_key_lst.results }}"
     remote_user: root
     run_once: true
-  when: vstat_sa_or_ha == 'ha'
+  when: vstat_sa_or_ha | match('ha')
 
 - name: Delete the localtime file
   file:
@@ -128,7 +128,7 @@
     retries: 4
     delay: 5
     remote_user: "root"
-  when: sync_status.stdout != "synchronized"
+  when: not sync_status.stdout | match("synchronized")
 
 - block:
   - name: Resolve "{{vsd_fqdn}}"  to ip addr
@@ -138,8 +138,8 @@
 
   - name: Check for ip addr in the registered var
     fail: msg="Could not resolve ip addr of "{{vsd_fqdn}}" "
-    when: ip_addr.stdout == "not found:"
-  when: vsd_sa_or_ha == 'sa'
+    when: ip_addr.stdout | match("not found:")
+  when: vsd_sa_or_ha | match('sa')
 
 - name: Start firewalld
   systemd:
@@ -167,13 +167,13 @@
   with_items:
     - "{{ firewall_std_commands }}"
   remote_user: "root"
-  when: vsd_sa_or_ha == 'sa'
+  when: vsd_sa_or_ha | match('sa')
 
 - name: Config firewall on VSTAT vm to accept conn on ports 9200, 9300 from vsd(s) in cluster setup
   shell: "{{ item }}"
   with_items:
     - "{{ firewall_cluster_commands }}"
-  when: vsd_sa_or_ha == 'ha'
+  when: vsd_sa_or_ha | match('ha')
   remote_user: "root"
 
 - name: Restart elastic search
@@ -190,8 +190,8 @@
     SSHPASS: "{{lookup('env','SSHPASS')}}"
   run_once: true
   when: 
-    - vstat_sa_or_ha == 'ha'
-    - vsd_sa_or_ha == 'sa' or vsd_sa_or_ha == 'ha'
+    - vstat_sa_or_ha | match('ha')
+    - vsd_sa_or_ha | match('sa') or vsd_sa_or_ha | match('ha')
 
 - name: Enable stats collection on standalone vsd when vstat is standalone
   command: /opt/vsd/vsd-stats.sh -e {{ inventory_hostname }}
@@ -199,8 +199,8 @@
   remote_user: "root"
   run_once: true
   when: 
-    - vsd_sa_or_ha == 'sa'
-    - vstat_sa_or_ha == 'sa'
+    - vsd_sa_or_ha | match('sa')
+    - vstat_sa_or_ha | match('sa')
 
 - name: Enable stats collection on the cluster vsds when vstat is standalone
   command: /opt/vsd/vsd-stats.sh -e {{ inventory_hostname }}
@@ -209,8 +209,8 @@
   run_once: true
   with_items: "{{ groups['vsds'] }}"
   when:
-    - vsd_sa_or_ha == 'ha'
-    - vstat_sa_or_ha == 'sa'
+    - vsd_sa_or_ha | match('ha')
+    - vstat_sa_or_ha | match('sa')
  
 - name: Enable stats collection on the  vsd(s) when vstat is clustered
   command: /opt/vsd/vsd-stats.sh -e {{ groups['vstats'][0] }},{{ groups['vstats'][1] }},{{ groups['vstats'][2] }}
@@ -219,5 +219,5 @@
   with_items: "{{ groups['vsds'] }}"
   run_once: true
   when: 
-    - vstat_sa_or_ha == 'ha'
-    - vsd_sa_or_ha == 'sa' or vsd_sa_or_ha == 'ha'
+    - vstat_sa_or_ha | match('ha')
+    - vsd_sa_or_ha | match('sa') or vsd_sa_or_ha | match('ha')

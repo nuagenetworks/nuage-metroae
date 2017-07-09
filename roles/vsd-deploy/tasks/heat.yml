@@ -42,7 +42,7 @@
       dest: "/etc/hosts"
     delegate_to: "{{ infra_ip }}"
     remote_user: "root"
-    when: vsd_sa_or_ha == 'ha'
+    when: vsd_sa_or_ha | match('ha')
 
   - name: Restart DNS service
     shell: service dnsmasq restart
@@ -123,7 +123,7 @@
     dest: /etc/yum.conf
     line: "proxy={{ yum_proxy }}"
   remote_user: "root"
-  when: yum_proxy != 'NONE'
+  when: not yum_proxy | match('NONE')
 
 - name: Execute a yum update
   yum:
@@ -206,7 +206,7 @@
       with_items: "{{ groups['vsds'] }}"
       run_once: true
     when: vsd_version.stdout | int >= 5
-  when: vsd_sa_or_ha == 'ha'
+  when: vsd_sa_or_ha | match('ha')
 
 - name: Delete the localtime file
   file:
@@ -267,11 +267,11 @@
     retries: 4
     delay: 5
     remote_user: "root"
-  when: sync_status.stdout != "synchronized"
+  when: not sync_status.stdout | match("synchronized")
 
 - name: Install VSD software on standalone node
   command: /opt/vsd/vsd-install.sh -t s -y
-  when: vsd_sa_or_ha == 'sa'
+  when: vsd_sa_or_ha | match('sa')
   remote_user: "root"
 
 - block:
@@ -289,4 +289,4 @@
     command: "{{ vsd_node3_install_cmd }}"
     when: inventory_hostname == groups['vsds'][2]
     remote_user: "root"
-  when: vsd_sa_or_ha == 'ha'
+  when: vsd_sa_or_ha | match('ha')
