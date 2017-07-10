@@ -124,7 +124,9 @@ class PyVmomiHelper(object):
         elif folder:
             # Build the absolute folder path to pass into the search method
             if not self.params['folder'].startswith('/'):
-                self.module.fail_json(msg="Folder %(folder)s needs to be an absolute path, starting with '/'." % self.params)
+                self.module.fail_json(
+                    msg="Folder %(folder)s needs to be an absolute path, starting with '/'." %
+                    self.params)
             searchpath = '%(datacenter)s%(folder)s' % self.params
 
             # get all objects for this path ...
@@ -160,7 +162,10 @@ class PyVmomiHelper(object):
                 poll_num += 1
 
         if not tools_running:
-            return {'failed': True, 'msg': 'VMware tools either not present or not running after {0} seconds'.format((poll*sleep))}
+            return {
+                'failed': True,
+                'msg': 'VMware tools either not present or not running after {0} seconds'.format(
+                    (poll * sleep))}
 
         changed = False
         if poll_num > 0:
@@ -213,8 +218,10 @@ def main():
         ),
     )
 
-    # Prepend /vm if it was missing from the folder path, also strip trailing slashes
-    if not module.params['folder'].startswith('/vm') and module.params['folder'].startswith('/'):
+    # Prepend /vm if it was missing from the folder path, also strip trailing
+    # slashes
+    if not module.params['folder'].startswith(
+            '/vm') and module.params['folder'].startswith('/'):
         module.params['folder'] = '/vm%(folder)s' % module.params
     module.params['folder'] = module.params['folder'].rstrip('/')
 
@@ -234,9 +241,14 @@ def main():
                 module.exit_json(**result)
         except Exception:
             e = get_exception()
-            module.fail_json(msg="Waiting for tools failed with exception: %s" % e)
+            module.fail_json(
+                msg="Waiting for tools failed with exception: %s" %
+                e)
     else:
-        module.fail_json(msg="Unable to wait for tools for non-existing VM %(name)s" % module.params)
+        module.fail_json(
+            msg="Unable to wait for tools for non-existing VM %(name)s" %
+            module.params)
+
 
 if __name__ == '__main__':
     main()
