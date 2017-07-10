@@ -1,10 +1,8 @@
 - name: Query facts on ansible_deployment_host
   action: setup
-  connection: local
   
 - name: Clean known_hosts of VSC's on "{{ target_server }}"
   command: ssh-keygen -R "{{ mgmt_ip }}" -f /root/.ssh/known_hosts
-  connection: local
 
 - name: Get output of 'show bof'
   sros_command:
@@ -12,8 +10,6 @@
       - show bof
     provider: "{{ vsc_creds }}"
   register: bof_config
-  connection: local 
-  connection: local
 
 - name: Print 'show bof' when verbosity >= 1
   debug: var=bof_config.stdout[0] verbosity=1
@@ -32,8 +28,6 @@
         - show system connections port 5222
       provider: "{{ vsc_creds }}"
     register: vsc_sys_conn
-    delegate_to: "{{ ansible_deployment_host }}"
-    remote_user: "{{ ansible_sudo_username }}"
 
   - name: Print 'show system connections port 5222' when verbosity >= 1
     debug: var=vsc_sys_conn verbosity=1
@@ -52,7 +46,6 @@
       - show vswitch-controller xmpp-server detail
     provider: "{{ vsc_creds }}"
   register: xmpp_detail
-  connection: local
 
 - name: Print 'show vswitch-controller xmpp-server detail' when verbosity >= 1
   debug: var=xmpp_detail verbosity=1
@@ -82,7 +75,6 @@
       - admin save
     provider: "{{ vsc_creds }}"
   register: conf_save
-  connection: local
 
 - name: Print 'bof save' when verbosity >= 1
   debug: var=conf_save.stdout[0] verbosity=1
