@@ -265,6 +265,34 @@
   tags:
     - vrs
 
+################
+# Libnetwork
+#################
+
+- block:
+  - name: Find Libnetwork Archive
+    find: path="{{ nuage_zipped_files_dir }}"  pattern="Nuage-libnetwork*"
+    register: rc_libnetwork
+  - debug: var=rc_libnetwork verbosity=1
+  - block:
+    - name: Clean up after previous unzipped runs
+      file: name="{{ nuage_unzipped_files_dir }}/libnetwork/" state=absent
+      remote_user: "{{ unzip_user }}"
+    - name: Create directory to unzipped Libnetwork to
+      file: name="{{ nuage_unzipped_files_dir }}/libnetwork/" state=directory mode=0775
+      remote_user: "{{ unzip_user }}"
+    - name: Unpack Libnetwork Archive
+      unarchive: src="{{ rc_libnetwork.files[0].path}}" dest="{{ nuage_unzipped_files_dir }}/libnetwork/" list_files=yes mode=0775
+      register: rc_libnetwork_archive_files
+      remote_user: "{{ unzip_user }}"
+    - debug: var=rc_libnetwork_archive_files verbosity=1
+    when: rc_libnetwork.matched > 0
+  tags:
+    - libnetwork
+
+
+
+
 #####################
 # VNS Utility/ NSGV
 #####################
