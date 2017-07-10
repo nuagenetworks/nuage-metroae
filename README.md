@@ -146,7 +146,7 @@ The VCS/VNS components that are supported are:
 1. Install dependencies for ansible and netmiko
     > `pip install pyOpenSSL`
 1. Install Ansible 2.2.1 on the Ansible host for full support
-    > `pip install ansible`
+    > `pip install ansible==2.2.1`
 1. Install Netmiko and its dependencies on the Ansible host.
     > `pip install netmiko`
 1. Install netaddr and its dependencies on the Ansible host.

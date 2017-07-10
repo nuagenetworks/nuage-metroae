@@ -50,30 +50,18 @@
     vi://'{{ vcenter.username | urlencode }}':'{{ vcenter.password | urlencode }}'@{{ target_server }}/{{ vcenter.datacenter }}/host/{{ vcenter.cluster }} 
   when: "'.ovf' in vstat_ova_file_name"
 
-- name: Waiting 120 seconds to make sure the Stats VM is up
-  pause: 
-    seconds: 120
-
-- name: Gathering info on VM
+- name: Waiting until VMware tools becomes available
   connection: local
-  vmware_guest:
+  vmware_guest_tools_wait:
     hostname: "{{ target_server }}"
     username: "{{ vcenter.username }}"
     password: "{{ vcenter.password }}"
     name: "{{ inventory_hostname }}"
+    datacenter: "{{ vcenter.datacenter }}"
     validate_certs: no
-    state: gatherfacts
   register: vstat_vm_facts
 
 - debug: var=vstat_vm_facts verbosity=1
-
-- name: Verify the Stats VM came up correctly
-  assert: 
-    that: 
-      - "vstat_vm_facts.instance.hw_guest_id is defined"
-      - "not vstat_vm_facts.instance.hw_guest_id is none"
-      - "not vstat_vm_facts.instance.hw_guest_id == ''"
-    msg: "Stats VM {{ inventory_hostname }} did not come up after two minutes"
 
 - name: Writing eth0 network script file to the Stats VM
   connection: local

@@ -4,6 +4,7 @@
     assert:
       that: "upgrade_vmname is defined"
       msg: "For vsd-upgrade-destroy, upgrade_vmname must be defined in build_vars.yml"
+
   - name: Set local variable with upgrade_vmname
     set_fact:
       vm_name: "{{ upgrade_vmname }}"
@@ -12,7 +13,7 @@
 - block:
   - name: Set local variable with vmname
     set_fact:
-      vm_name: "{{ vmname | default(inventory_hostname) }}"
+      vm_name: "{{ vmname }}"
   when: not destroy_upgrade_vm | default( False )
 
 - name: Pull facts on target_server
@@ -26,56 +27,22 @@
   delegate_to: "{{ target_server }}"
   remote_user: "{{ target_server_username }}"
 
+- name: Destroy VSD VM
+  virt:
+    name: "{{ vm_name }}"
+    state: destroyed
+    uri: qemu:///system
+  delegate_to: "{{ target_server }}"
+  remote_user: "{{ target_server_username }}"
+  when: vm_name in virt_vms.list_vms
+
 - block:
-  - name: Destroy VSD VM
+  - name: Undefine VSD VM
     virt:
       name: "{{ vm_name }}"
-      state: destroyed
+      command: undefine
       uri: qemu:///system
     delegate_to: "{{ target_server }}"
     remote_user: "{{ target_server_username }}"
+  when: vm_name in virt_vms.list_vms and (not nuage_upgrade or destroy_upgrade_vm | default( False ))
 
-  - name: Set VSD backup flag
-    set_fact: save_vsd="{{ preserve_vsd_for_rollback|default('False') }}"
-
-  - name: Set if this is for a rollback
-    set_fact: rollback="{{ rollback|default('False') }}"
-
-  - block:
-    - name: Create backup directory name when not a rollback
-      set_fact: backup_dir="{{ images_path }}/{{ vm_name }}.backup.{{ ansible_date_time.date }}@{{ ansible_date_time.time }}"
-      when: not rollback
-
-    - name: Create backup directory name when rollback
-      set_fact: backup_dir="{{ images_path }}/{{ vm_name }}.rollback.{{ ansible_date_time.date }}@{{ ansible_date_time.time }}"
-      when: rollback
-
-    - name: Get XML for old VM
-      virt:
-        name: "{{ vm_name }}"
-        command: get_xml
-        uri: qemu:///system
-      register: vsd_xml
-      delegate_to: "{{ target_server }}"
-      remote_user: "{{ target_server_username }}"
-
-    - debug: var=vsd_xml verbosity=1
-
-    - name: Write VM XML to file
-      copy:
-        content: "{{ vsd_xml.get_xml }}"
-        dest: "{{ backup_dir }}/{{ vm_name }}.xml"
-      delegate_to: "{{ target_server }}"
-      remote_user: "{{ target_server_username }}"
-    when: save_vsd
-
-  - block:
-    - name: Undefine VSD VM
-      virt:
-        name: "{{ vm_name }}"
-        command: undefine
-        uri: qemu:///system
-      delegate_to: "{{ target_server }}"
-      remote_user: "{{ target_server_username }}"
-    when: not save_vsd
-  when: vm_name in virt_vms.list_vms

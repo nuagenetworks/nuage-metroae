@@ -12,41 +12,6 @@
     register: username_on_the_host
 
   - debug: var=username_on_the_host
-
-  - name: Create backup directory  for VSD3
-    set_fact: backup_dir="{{ images_path }}/{{ inventory_hostname }}.backup.{{ ansible_date_time.date }}@{{ ansible_date_time.time }}"
-  
-  - block:
-    - file:
-        path: "{{ backup_dir }}"
-        state: directory
-        mode: 0755
-      delegate_to: "{{ target_server }}"
-      remote_user: "{{ target_server_username }}"
-  
-    - name: Copy the VSD2 VM image dir to the backup directory for rollback
-      shell: "cp -r {{ images_path }}/{{ inventory_hostname }}/*.qcow2 {{ backup_dir }}"
-      delegate_to: "{{ target_server }}"
-      remote_user: "{{ target_server_username }}"
-    
-    - name: Get XML for VSD3 VM
-      virt:
-        name: "{{ inventory_hostname }}"
-        command: get_xml
-        uri: qemu:///system
-      register: vsd_xml
-      delegate_to: "{{ target_server }}"
-      remote_user: "{{ target_server_username }}"
-    
-    - debug: var=vsd_xml verbosity=1
-  
-    - name: Write VM XML to file
-      copy:
-        content: "{{ vsd_xml.get_xml }}"
-        dest: "{{ backup_dir }}/{{ inventory_hostname }}.xml"
-      delegate_to: "{{ target_server }}"
-      remote_user: "{{ target_server_username }}"
-    when: ("{{ target_server_type }}" == 'kvm')
     
   - name: Copy the VSD migration script ISO to VSD's temp directory
     copy: src={{ vsd_migration_iso_path }}/{{ vsd_migration_iso_file_name }}
