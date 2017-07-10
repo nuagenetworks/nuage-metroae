@@ -1,4 +1,20 @@
 ---
+- block:
+  - name: Verify that upgrade_vmname is defined if this is an upgrade
+    assert:
+      that: "upgrade_vmname is defined"
+      msg: "upgrade_vmname is required for upgrade"
+  - name: Set local variable with upgrade_vmname
+    set_fact:
+      vm_name: "{{ upgrade_vmname }}"
+  when: nuage_upgrade | default( False )
+
+- block:
+  - name: Set local variable with vmname
+    set_fact:
+      vm_name: "{{ vmname }}"
+  when: not nuage_upgrade | default( False )
+
 - name: Query {{ target_server }} facts
   action: setup
   delegate_to: "{{ target_server }}"
@@ -13,15 +29,15 @@
 
 - name: Check target memory
   fail: msg="Not enough memory ({{ ansible_memtotal_mb }})"
-  when: ansible_memtotal_mb < {{ vstat_target_server_memory_mb_min }}
+  when: ansible_memtotal_mb < vstat_target_server_memory_mb_min
 
 - name: Check target cores
   fail: msg="Not enough cores ({{ ansible_processor_vcpus }})"
-  when: ansible_processor_vcpus < {{ vstat_target_server_vcpus_min }}
+  when: ansible_processor_vcpus < vstat_target_server_vcpus_min
 
 - name: Check target bridges
   fail: msg="Required network bridge not found"
-  when: ("{{ mgmt_bridge }}" not in ansible_interfaces)
+  when: mgmt_bridge not in ansible_interfaces
 
 - block:
   - name: If RedHat, install packages for RedHat OS family distros
@@ -39,7 +55,7 @@
       enabled: yes
       state: started
 
-  when: ansible_os_family == "RedHat"
+  when: ansible_os_family | match("RedHat")
   delegate_to: "{{ target_server }}"
   remote_user: "{{ target_server_username }}"
 
@@ -51,7 +67,7 @@
    - bridge-utils
    - libguestfs-tools
    - python-libvirt
-  when: ansible_os_family == "Debian"
+  when: ansible_os_family | match("Debian")
   delegate_to: "{{ target_server }}"
   remote_user: "{{ target_server_username }}"
 

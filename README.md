@@ -142,7 +142,7 @@ The VCS/VNS components that are supported are:
     > `yum install python2-pip` 
     > `apt-get install python-pip`
 1. Install Ansible 2.2.1 on the Ansible host for full support
-    > `pip install ansible`
+    > `pip install ansible==2.2.1`
 1. Install Netmiko and its dependencies on the Ansible host.
     > `pip install netmiko`
 1. Install netaddr and its dependencies on the Ansible host.
