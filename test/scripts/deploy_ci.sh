@@ -41,7 +41,7 @@ fi
 
 if [ $1 = 3.2.R10 ];
 then
-    sed -i  '/vns_operations_list:/,/nsgv_mac: '52:54:00:88:85:12' }/ d' test/files/build_vars.yml.all.j2
+    sed -i  "/vns_operations_list:/,/nsgv_mac: '52:54:00:88:85:12' }/ d" test/files/build_vars.yml.all.j2
 fi
 
 ./metro-ansible ci_predeploy.yml -vvvv
