@@ -45,7 +45,9 @@
       test_interval_seconds: 30
     with_items: "{{ proc_list['state'].keys() }}"
     remote_user: "root"
- 
+  when: vsd_sa_or_ha | match('sa') or inventory_hostname in groups['vcins'] 
+
+- block: 
   - name: Get current version of VSD software
     command: echo $VSD_VERSION
     register: vsd_version
@@ -92,4 +94,6 @@
                                                                      
   - debug: var=vsc_command_status verbosity=1
   
-  when: vsd_sa_or_ha | match('sa')
+  when: 
+   - vsd_sa_or_ha | match('sa')
+   - inventory_hostname not in groups['vcins']
