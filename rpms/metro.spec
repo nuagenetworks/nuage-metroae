@@ -32,5 +32,12 @@ rm -rf $RPM_BUILD_ROOT
 
 %files
 %defattr(-,root,root,-)
-/opt/nuage-metro-2.1.2
+/opt/nuage-metro-%{version}
 
+%post
+# gets executed after installatin of the files
+if [ -e /opt/nuage-metro-%{version} ]
+then
+    pip install -r /opt/nuage-metro-%{version}/pip-requirements
+fi
+echo | sh /opt/nuage-metro-%{version}/rpms/VMware-ovftool-4.2.0-4586971-lin.x86_64.bundle.txt --eulas-agreed --regular
