@@ -1,4 +1,14 @@
 - block:
+  - name: Pull facts of localhost
+    action: setup
+    connection: local
+    remote_user: "{{ ansible_sudo_username }}"
+
+  - name: Set name of vstat data backup dir
+    set_fact:
+      vstat_backup_dir: "/tmp/backup-{{ inventory_hostname }}-{{ ansible_date_time.iso8601_basic_short }}/"
+    run_once: true
+
   - name: Install mount packages
     yum: name={{ item }} state=present
     remote_user: root
@@ -8,7 +18,7 @@
 
   - name: Create dir with vstat data backup path
     file:
-      dest: "{{ vstat_nfs_backup_path }}"
+      dest: "{{ vstat_backup_dir }}"
       state: directory
       mode: 0777
       recurse: yes
@@ -17,7 +27,7 @@
   - name: Mount the nfs folder on to vstat vm
     mount:
       src: "{{ vstat_nfs_server_with_folder }}"
-      name: "{{ vstat_nfs_backup_path }}"
+      name: "{{ vstat_backup_dir }}"
       state: mounted
       fstype: nfs4
     remote_user: root
@@ -27,12 +37,10 @@
     register: nfs_folder
     remote_user: root
 
-  - block:
-    - name: Verify backup folder path is nfs shared
-      assert:
-        that: vstat_nfs_backup_path[:-1] in nfs_folder.stdout
-        msg:  "{{ vstat_nfs_backup_path }} is not nfs shared"
-    when: vstat_nfs_backup_path[-1] == '/'
+  - name: Verify backup folder path is nfs shared
+    assert:
+      that: vstat_backup_dir[:-1] in nfs_folder.stdout
+      msg:  "{{ vstat_backup_dir }} is not nfs shared"
 
   - name: Copy elasticsearch backup scritps
     copy: src={{ vstat_backup_scripts_path }}/{{ item }}
@@ -40,31 +48,7 @@
     with_items: "{{ vstat_backup_scripts_file_list }}"
     remote_user: root
     run_once: true
-   
-  - name: Pull facts of localhost
-    action: setup
-    connection: local
-    remote_user: "{{ ansible_sudo_username }}"
 
-  - name: Set name of backup directory
-    set_fact: backup_dir_name="backup-{{ inventory_hostname }}-{{ ansible_date_time.iso8601_basic_short }}/"
-    run_once: true
-
-  - name: Set name of vstat backup dir
-    set_fact: 
-      vstat_backup_dir: "{{ vstat_nfs_backup_path }}/{{ backup_dir_name }}"
-    run_once: true
-
-  - name: Create backup dir
-    file:
-      dest: "{{ vstat_backup_dir }}"
-      owner: "elasticsearch"
-      group: "elasticsearch"
-      state: directory
-      recurse: yes
-      mode: 0777
-    remote_user: root
-  
   - name: Cleanup backup dir in elasticseach.yml file
     lineinfile:
       dest: "/etc/elasticsearch/elasticsearch.yml"
