@@ -1,4 +1,5 @@
-o "Create RPM Build Env"
+#!/bin/bash
+echo "Create RPM Build Env"
 rpmdev-setuptree
 pwd
 cp ./rpms/metro.spec ~/rpmbuild/SPECS/
