@@ -55,17 +55,19 @@
   delegate_to: "{{ ansible_deployment_host }}"
   run_once: true
 
-- name: Enable maintainance mode on all l3/l2 domains
-  vsd_maintainance:
-    vsd_auth:
-      "{{ vsd_auth }}"
-    state: enabled
-    api_version: "{{ vsd_version.stdout }}"
-  register: mode_status
-  delegate_to: 127.0.0.1
+- block:
+  - name: Enable maintainance mode on all l3/l2 domains
+    vsd_maintainance:
+      vsd_auth:
+        "{{ vsd_auth }}"
+      state: enabled
+      api_version: "{{ vsd_version.stdout }}"
+    register: mode_status
+    delegate_to: 127.0.0.1
 
-- name: Print vsd maintainance mode output when verbosity >= 1
-  debug: var=mode_status verbosity=1
+  - name: Print vsd maintainance mode output when verbosity >= 1
+    debug: var=mode_status verbosity=1
+  when: inventory_hostname in groups['vsds']
 
 - name: Reading the status of the DB upgrade directory
   stat:
@@ -90,38 +92,40 @@
       - "'nuageDbUpgrade' == db.stdout"
     msg: "Could not find nuageDbUpgrade database in mysql"
 
-- name: Read gateway purge timer
-  config_vsd_system:
-    vsd_auth:
-      "{{ vsd_auth }}"
-    get_gateway_purge_time: True
-    api_version: "{{ vsd_version.stdout }}"
-  register: update_time_status
-  remote_user: "{{ ansible_sudo_username }}"
-  delegate_to: "{{ ansible_deployment_host }}"
-
-- debug: var=update_time_status verbosity=1
-
-- name: Create a file with purge timer value to be restored after VSD upgrade
-  copy:
-    content: "{{ update_time_status.result }}"
-    dest: "{{ vsdbackup_dir }}/purge_time"
-  remote_user: "{{ ansible_sudo_username }}"
-  delegate_to: "{{ ansible_deployment_host }}"
-
-#TODO move updating gateway purge timer from vsd-dbbackup
-- name: Update gateway purge timer 
-  config_vsd_system:
-    vsd_auth:
-      "{{ vsd_auth }}"
-    gateway_purge_time: 86400
-    api_version: "{{ vsd_version.stdout }}"
-  register: update_time_status
-  delegate_to: 127.0.0.1
-
-- name: Print update time output when verbosity >= 1
-  debug: var=update_time_status verbosity=1
-
+- block:
+  - name: Read gateway purge timer
+    config_vsd_system:
+      vsd_auth:
+        "{{ vsd_auth }}"
+      get_gateway_purge_time: True
+      api_version: "{{ vsd_version.stdout }}"
+    register: update_time_status
+    remote_user: "{{ ansible_sudo_username }}"
+    delegate_to: "{{ ansible_deployment_host }}"
+  
+  - debug: var=update_time_status verbosity=1
+  
+  - name: Create a file with purge timer value to be restored after VSD upgrade
+    copy:
+      content: "{{ update_time_status.result }}"
+      dest: "{{ vsdbackup_dir }}/purge_time"
+    remote_user: "{{ ansible_sudo_username }}"
+    delegate_to: "{{ ansible_deployment_host }}"
+  
+  #TODO move updating gateway purge timer from vsd-dbbackup
+  - name: Update gateway purge timer 
+    config_vsd_system:
+      vsd_auth:
+        "{{ vsd_auth }}"
+      gateway_purge_time: 86400
+      api_version: "{{ vsd_version.stdout }}"
+    register: update_time_status
+    delegate_to: 127.0.0.1
+  
+  - name: Print update time output when verbosity >= 1
+    debug: var=update_time_status verbosity=1
+  when: inventory_hostname in groups['vsds']  
+   
 - name: Purge the alarms and event history from database
   shell: "{{ item }}"
   with_items: "{{ purge_cmd }}"
