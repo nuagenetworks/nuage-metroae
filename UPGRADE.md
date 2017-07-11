@@ -6,6 +6,7 @@
    1. VSD, HA and SA
    1. VSC
    1. VSTAT (ElasticSearch), HA and SA
+   1. VCIN
 1. Supported upgrade paths
    1. 3.2.R8 to 4.0.Rn
    1. 3.2.R10 to 4.0.Rn
