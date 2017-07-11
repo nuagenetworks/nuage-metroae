@@ -15,4 +15,4 @@ cd ~/rpmbuild
 rpmbuild -vv -bb SPECS/metro.spec
 echo "Completed creating RPM"
 
-cp -r ~/rpmbuild/RPMS/*.rpm /home/caso/nfs-data/misc/
+cp -r ~/rpmbuild/RPMS/noarch/*.rpm /home/caso/nfs-data/misc/
