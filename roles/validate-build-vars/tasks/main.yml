@@ -1,4 +1,13 @@
 ---
+
+- name: Check if required OS packages are installed
+  command: rpm -q python-netaddr
+  when: ansible_os_family | match("RedHat")
+  delegate_to: "{{ ansible_deployment_host }}"
+  remote_user: "{{ ansible_sudo_username }}"
+  register: rpm_check
+  ignore_errors: True
+
 - block:
   - name: Install packages for RedHat OS family distros
     yum: name=python-netaddr state=present
@@ -8,7 +17,7 @@
     environment:
       http_proxy: "{{ yum_proxy }}"
       https_proxy: "{{ yum_proxy }}"
-  when: yum_proxy|default('NONE') != 'NONE'
+  when: yum_proxy|default('NONE') != 'NONE' and rpm_check.rc == 1
 
 - block:
   - name: Install packages for RedHat OS family distros
@@ -16,7 +25,7 @@
     when: ansible_os_family == "RedHat"
     delegate_to: "{{ ansible_deployment_host }}"
     remote_user: "{{ ansible_sudo_username }}"
-  when: yum_proxy|default('NONE') == 'NONE'
+  when: yum_proxy|default('NONE') == 'NONE' and rpm_check.rc == 1
 
 - name: Install python-netaddr package for Debian OS family distros
   apt: name=python-netaddr state=present
