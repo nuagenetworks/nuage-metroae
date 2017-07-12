@@ -63,66 +63,57 @@
   register: virt_vms
   delegate_to: "{{ target_server }}"
   remote_user: "{{ target_server_username }}"
+  
+- set_fact: vsc_running="vm_name in virt_vms.list_vms"
 
-- name: Verify that the VM is not already running
-  assert:
-    that: "vmname not in virt_vms.list_vms"
-    msg: "{{ vmname }} is already running on {{ target_server }}"
+# - name: Verify that the VM is not already running
+#   assert:
+#     that: "vmname not in virt_vms.list_vms"
+#     msg: "{{ vmname }} is already running on {{ target_server }}"
 
 - name: Include OS-specific variables.
   include_vars: "{{ ansible_os_family }}.yml"
 
-- name: Create VSC directory
-  file: path={{ images_path }}/{{ vmname }} state=directory owner={{ libvirt.user }} group={{ libvirt.group }}
-  delegate_to: "{{ target_server }}"
-  remote_user: "{{ target_server_username }}"
+- block:
+  - name: Create VSC directory
+    file: path={{ images_path }}/{{ vmname }} state=directory owner={{ libvirt.user }} group={{ libvirt.group }}
+  
+  - name: Copy VSC qcow2 image to {{ target_server }}
+    copy: src={{ vsc_qcow2_path }}/{{ vsc_qcow2_file_name }} dest={{ images_path }}/{{ vmname }}/{{ inventory_hostname }}.qcow2 owner={{ libvirt.user }} group={{ libvirt.group }}
+  
+  - name: Setup VSC temporary configuration files
+    template: src={{ item }}.j2 backup=no dest={{ images_path }}/{{ vmname }}/{{ item }}
+    with_items:
+      - bof.cfg
+      - config.cfg
+  
+  - name: Copy temporary configuration files to the VSC image
+    command: guestfish --rw -a {{ images_path }}/{{ vmname }}/{{ inventory_hostname }}.qcow2 -m {{ vsc_partition }} copy-in {{ images_path }}/{{ vmname }}/{{ item }} /
+    with_items:
+      - bof.cfg
+      - config.cfg
+  
+  - name: Remove temporary configuration files
+    file: path={{ images_path }}/{{ vmname }}/{{ item }} state=absent
+    with_items:
+      - bof.cfg
+      - config.cfg
+  
+  - name: Define VSC guest VM
+    virt: name={{ vmname }}
+          command=define
+          xml="{{ lookup('template', 'vsc.xml.j2') }}"
+          uri=qemu:///system
+  
+  - name: Mark VSC as autostart
+    virt: name={{ vmname }}
+          command=autostart
+          uri=qemu:///system
+  
+  - name: Start VSC guest VM
+    virt: name={{ vmname }} state=running
 
-- name: Copy VSC qcow2 image to {{ target_server }}
-  copy: src={{ vsc_qcow2_path }}/{{ vsc_qcow2_file_name }} dest={{ images_path }}/{{ vmname }}/{{ inventory_hostname }}.qcow2 owner={{ libvirt.user }} group={{ libvirt.group }}
-  delegate_to: "{{ target_server }}"
-  remote_user: "{{ target_server_username }}"
-
-- name: Setup VSC temporary configuration files
-  template: src={{ item }}.j2 backup=no dest={{ images_path }}/{{ vmname }}/{{ item }}
-  delegate_to: "{{ target_server }}"
-  with_items:
-    - bof.cfg
-    - config.cfg
-  remote_user: "{{ target_server_username }}"
-
-- name: Copy temporary configuration files to the VSC image
-  command: guestfish --rw -a {{ images_path }}/{{ vmname }}/{{ inventory_hostname }}.qcow2 -m {{ vsc_partition }} copy-in {{ images_path }}/{{ vmname }}/{{ item }} /
-  delegate_to: "{{ target_server }}"
-  with_items:
-    - bof.cfg
-    - config.cfg
-  remote_user: "{{ target_server_username }}"
-
-- name: Remove temporary configuration files
-  file: path={{ images_path }}/{{ vmname }}/{{ item }} state=absent
-  delegate_to: "{{ target_server }}"
-  with_items:
-    - bof.cfg
-    - config.cfg
-  remote_user: "{{ target_server_username }}"
-
-- name: Define VSC guest VM
-  virt: name={{ vmname }}
-        command=define
-        xml="{{ lookup('template', 'vsc.xml.j2') }}"
-        uri=qemu:///system
-  delegate_to: "{{ target_server }}"
-  remote_user: "{{ target_server_username }}"
-
-- name: Mark VSC as autostart
-  virt: name={{ vmname }}
-        command=autostart
-        uri=qemu:///system
-  delegate_to: "{{ target_server }}"
-  remote_user: "{{ target_server_username }}"
-
-- name: Start VSC guest VM
-  virt: name={{ vmname }} state=running
+  when: "not vsc_running"
   delegate_to: "{{ target_server }}"
   remote_user: "{{ target_server_username }}"
 
