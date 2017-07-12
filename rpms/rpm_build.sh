@@ -18,7 +18,7 @@ then
     echo "setting rpm version to $ver" 
     sed -i "s/0.0.0/$ver/g" ~/rpmbuild/SPECS/metro.spec
 else
-    ver="0.0.0"
+    ver="v0.0.0"
 fi
 
 mkdir -p ~/rpmbuild/SOURCES/metro-$ver/opt/nuage-metro-$ver/
@@ -32,6 +32,6 @@ cd ~/rpmbuild
 rpmbuild -vv -bb SPECS/metro.spec
 echo "Completed building RPM"
 
-echo "Copying RPM to NFS share"
-cp -r ~/rpmbuild/RPMS/noarch/*.rpm /home/caso/nfs-data/rpms/
-echo "Completed copying RPM to NFS share"
+echo "Copying RPM to FTP server"
+scp -r ~/rpmbuild/RPMS/noarch/*.rpm rpm@135.227.181.233:/home/rpm
+echo "Completed copying RPM to FTP server"
