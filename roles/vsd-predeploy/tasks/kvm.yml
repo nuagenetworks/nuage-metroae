@@ -29,15 +29,15 @@
 
 - name: Check target memory
   fail: msg="Not enough memory ({{ ansible_memtotal_mb }})"
-  when: ansible_memtotal_mb < {{ vsd_target_server_memory_mb_min }}
+  when: ansible_memtotal_mb < vsd_target_server_memory_mb_min
 
 - name: Check target cores
   fail: msg="Not enough cores ({{ ansible_processor_vcpus }})"
-  when: ansible_processor_vcpus < {{ vsd_target_server_vcpus_min }}
+  when: ansible_processor_vcpus < vsd_target_server_vcpus_min
 
 - name: Check target bridges
   fail: msg="Required network bridges not found"
-  when: ("{{ mgmt_bridge }}" not in ansible_interfaces)
+  when: mgmt_bridge not in ansible_interfaces
 
 - block:
   - name: If RedHat, install packages for RedHat OS family distros
@@ -55,7 +55,7 @@
       enabled: yes
       state: started
 
-  when: ansible_os_family == "RedHat"
+  when: ansible_os_family | match("RedHat")
   delegate_to: "{{ target_server }}"
   remote_user: "{{ target_server_username }}"
 
@@ -67,7 +67,7 @@
    - bridge-utils
    - libguestfs-tools
    - python-libvirt
-  when: ansible_os_family == "Debian"
+  when: ansible_os_family | match("Debian")
   delegate_to: "{{ target_server }}"
   remote_user: "{{ target_server_username }}"
 
@@ -226,16 +226,26 @@
   delegate_to: "{{ target_server }}"
   remote_user: "{{ target_server_username }}"
 
-- name: "Configure VSD VM for autostart"
-  virt: name="{{ vm_name }}"
-        command=autostart
-        uri=qemu:///system
-  delegate_to: "{{ target_server }}"
-  remote_user: "{{ target_server_username }}"
-
 - name: "Run VSD VM"
   virt: name="{{ vm_name }}"
         state=running
+        autostart=True
         uri=qemu:///system
   delegate_to: "{{ target_server }}"
   remote_user: "{{ target_server_username }}"
+  when: ansible_version.full | version_compare('2.3', '>=')
+
+- block:
+  - name: "Configure VM to autostart"
+    command: virsh autostart {{ vm_name }}
+    delegate_to: "{{ target_server }}"
+    remote_user: "{{ target_server_username }}"
+
+  - name: "Run VSD VM"
+    virt: name="{{ vm_name }}"
+          state=running
+          uri=qemu:///system
+    delegate_to: "{{ target_server }}"
+    remote_user: "{{ target_server_username }}"
+  when: ansible_version.full | version_compare('2.3', '<')
+

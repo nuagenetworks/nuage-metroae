@@ -1,7 +1,7 @@
 # Metro: Release Notes
 
 ## Metro version
-v2.1.2
+v2.2.0
 
 # Metro assumes that user will not change the names of Nuage distributed files
 
@@ -34,15 +34,11 @@ v2.1.2
  
 ## Known Limitations
  
-1. No rollback support for VSC/VSD clustered upgrades on Vmware platform.
-1. No rollback support for VSC/VSD standalone upgrades for Vmware platform.
-1. Rollback support for VSTAT is experimental
 1. VSD health checks during the upgrade only takes in to account monit summary, not other checks.
 1. No support for release specific commands to stop elastic search/vstat process on vsd.
 1. No support for release specific commands to stop core process on vsd.
 1. Nuage Metro will not run on el6 (e.g. CentOS 6.8) hosts due to a lack of modern python-jinja2 support.
 1. VSC disconnect from VSD prior 5.0.1 upgrade is not yet implemented
-1. VNS support is only available for VSP version 5.0.1 and later.
-1. VNS utility deployed has only a single NIC compared to KVM deployed VMs with 2 NICs.
+1. VNS support on VMware is only available for VSP version 5.0.1 and later.
 1. VSPK version in nuage_vspk.py is set to v4_0 for aws deployments of nsgv
 

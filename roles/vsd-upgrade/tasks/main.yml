@@ -6,8 +6,10 @@
     remote_user: "root"
 
   - name: Print vsd_version output when verbosity >= 1
-    debug: var=vsd_version verbosity=1
-  when: (inventory_hostname == groups['vsds'][0] and vsd_sa_or_ha == "sa") or (inventory_hostname == groups['vsds'][1] and vsd_sa_or_ha == "ha")
+    debug: var=vsd_old_version verbosity=1
+  when: 
+    - inventory_hostname in groups['vsds']
+    - inventory_hostname == groups['vsds'][0] and vsd_sa_or_ha | match("sa")) or (inventory_hostname == groups['vsds'][1] and vsd_sa_or_ha | match("ha"))
 
 - block:
   - name: Stop vsd services gracefully
@@ -22,8 +24,7 @@
       include_role: 
         name: vsd-destroy
       vars:
-        preserve_vsd_for_rollback: True
-        rollback: False
+        nuage_upgrade: True
     when: inventory_hostname in groups['vsd_node2'] or inventory_hostname in groups['vsd_node3']
   
   - block:
@@ -31,19 +32,17 @@
       include_role: 
         name: vsd-destroy
       vars:
-        preserve_vsd_for_rollback: False
-        rollback: False
+         nuage_upgrade: True
     when: inventory_hostname in groups['vsd_node1'] 
-  when: vsd_sa_or_ha == 'ha'
+  when: vsd_sa_or_ha | match('ha')
 
 - block:
   - name: Backup and Shutdown/Destroy Current vsd node 1  for SA
     include_role: 
       name: vsd-destroy
     vars:
-      preserve_vsd_for_rollback: True
-      rollback: False
-  when: vsd_sa_or_ha == 'sa'
+      nuage_upgrade: True
+  when: vsd_sa_or_ha | match('sa')
 
 - name: Deploy VSD nodes with new version
   include_role:
@@ -58,9 +57,6 @@
     delay: 1
 
 - include: copy_backup_files.yml
-  tags:
-   - vcin
-   - vsd
 
 #TODO: 
 #- name: Compare network information of VSD's across pre-uppgrade and upgrade
@@ -69,58 +65,61 @@
   include_role:
     name: vsd-deploy
 
-#TODO
-#Add polling of VSD processes similar to VNS deploy instead of fix timeout
-- name: Pause to wait for VSD processes to come up
-  pause:
-    minutes: 10
+- name: Get monit summary for all process on VSD
+  vsd_monit:
+    state: summary
+  register: proc_list
+  remote_user: "root"
+
+- name: wait for VSD common , core and stats services to become running
+  monit_waitfor_service:
+    name: "{{ item }}"
+    timeout_seconds: 1200
+    test_interval_seconds: 30
+  with_items: "{{ proc_list['state'].keys() }}"
+  remote_user: "root"
+
 
 #TODO:
 #-update vsd_post_upgrade_helper to include disabling VSD maintenance mode
 - block:
+  - name: Get current version of VSD software
+    command: echo $VSD_VERSION
+    register: vsd_version
+    remote_user: "root"
+
+  - name: Print vsd_version output when verbosity >= 1
+    debug: var=vsd_version verbosity=1
+
   - name: Disable maintainance mode on all l3/l2 domains
     vsd_maintainance:
       vsd_auth:
         "{{ vsd_auth }}"
       state: disabled
-      api_version: "{{ vsd_old_version.stdout }}"
+      api_version: "{{ vsd_version.stdout }}"
     register: mode_status
     delegate_to: 127.0.0.1
 
   - name: Print vsd maintainance mode output when verbosity >= 1
     debug: var=mode_status verbosity=1
 
-  - name: shut/noshut vswitch controller on vsc1 after disabling VSD maintenance mode
+  - name: shut/noshut vswitch controller on VSCs after disabling VSD maintenance mode
     sros_config:
       lines:
           - configure vswitch-controller shutdown
           - configure vswitch-controller no shutdown
-      provider: 
-        host: "{{ groups['vscs'][0] }}"
+      provider:
+        host: "{{ item }}"
         username: "{{ vsc_user }}"
         password: "{{ vsc_password }}"
-        transport: cli 
-    register: vsc1_command_status
+        transport: cli
+    register: vsc_command_status
+    #connection: local
     delegate_to: "{{ ansible_deployment_host }}"
     remote_user: "{{ ansible_sudo_username }}"
+    with_items: "{{ groups['vscs'] }}"
 
-  - debug: var=vsc1_command_statusa verbosity=1
-
-  - name: shut/noshut vswitch controller on vsc2 after disabling VSD maintenance mode
-    sros_config:
-      lines:
-          - configure vswitch-controller shutdown
-          - configure vswitch-controller no shutdown
-      provider: 
-        host: "{{ groups['vscs'][1] }}"
-        username: "{{ vsc_user }}"
-        password: "{{ vsc_password }}"
-        transport: cli 
-    register: vsc2_command_status verbosity=1
-    delegate_to: "{{ ansible_deployment_host }}"
-    remote_user: "{{ ansible_sudo_username }}"
-
-  - debug: var=vsc2_command_status verbosity=1
+  - debug: var=vsc_command_status verbosity=1
 
   - block:
     - name: read saved vsd purge time before upgrade
@@ -138,7 +137,7 @@
         api_version: "{{ vsd_old_version.stdout }}"
       register: update_time_status
       delegate_to: 127.0.0.1
-    when: vsd_sa_or_ha == "ha"
+    when: vsd_sa_or_ha | match("ha")
 
   - block:
     - name: read saved vsd purge time before upgrade
@@ -156,5 +155,7 @@
         api_version: "{{ vsd_old_version.stdout }}"
       register: update_time_status
       delegate_to: 127.0.0.1
-    when: vsd_sa_or_ha == "sa"
-  when: (inventory_hostname == groups['vsds'][0] and vsd_sa_or_ha == "sa") or (inventory_hostname == groups['vsds'][1] and vsd_sa_or_ha == "ha")
+    when: vsd_sa_or_ha | match("sa")
+  when: 
+   - inventory_hostname in groups['vsds']
+   - (inventory_hostname == groups['vsds'][0] and vsd_sa_or_ha | match("sa")) or (inventory_hostname == groups['vsds'][1] and vsd_sa_or_ha | match("ha"))

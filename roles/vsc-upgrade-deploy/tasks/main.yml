@@ -1,7 +1,5 @@
 - name: Clean known_hosts of VSC's on "{{ target_server }}"
   command: ssh-keygen -R "{{ mgmt_ip }}" -f /root/.ssh/known_hosts
-  delegate_to: "{{ ansible_deployment_host }}"
-  remote_user: "{{ ansible_sudo_username }}"
 
 - name: Get output of 'show bof'
   sros_command:
@@ -9,8 +7,6 @@
       - show bof
     provider: "{{ vsc_creds }}"
   register: bof_config
-  delegate_to: "{{ ansible_deployment_host }}"
-  remote_user: "{{ ansible_sudo_username }}"
 
 - name: Print 'show bof' when verbosity >= 1
   debug: var=bof_config.stdout[0] verbosity=1
@@ -22,23 +18,12 @@
 - name: Print bof config in json  when verbosity >= 1
   debug: var=bof_json verbosity=1
 
-- name: Copy current tim file as a backup for rollback
-  sros_command:
-    commands:
-      - file copy "{{ bof_json['image_folder'] }}/cpm.tim" "{{ bof_json['image_folder'] }}/cpm.tim.backup" force
-    provider: "{{ vsc_creds }}"
-  register: backup_image
-  delegate_to: "{{ ansible_deployment_host }}"
-  remote_user: "{{ ansible_sudo_username }}"
-
 - name: Get current file version of image on VSC
   sros_command:
     commands:
       - file version "{{ bof_json['image_folder'] }}/cpm.tim"
     provider: "{{ vsc_creds }}"
   register: image
-  delegate_to: "{{ ansible_deployment_host }}"
-  remote_user: "{{ ansible_sudo_username }}"
 
 - name: Print image version when verbosity >= 1
   debug: var=image.stdout[0] verbosity=1
@@ -54,20 +39,17 @@
   expect:
     command: "{{ vsc_image_copy }}"
     responses:
+      (?i)yes: "yes"
       (?i)password: "{{ vsc_password }}"
     timeout: "{{ vsc_scp_timeout }}"
-  remote_user: "{{ ansible_sudo_username }}"
-  delegate_to: "{{ ansible_deployment_host }}"
 
 - name: Reboot VSC VM
   sros_command:
     commands:
       - admin reboot now
     provider: "{{ vsc_creds }}"
-  delegate_to: "{{ ansible_deployment_host }}"
-  remote_user: "{{ ansible_sudo_username }}"
   ignore_errors: true
-  when: target_server_type == 'kvm' or target_server_type == 'vcenter'
+  when: target_server_type | match('kvm') or target_server_type | match('vcenter')
 
 - name: Reboot VSC VM
   os_server_actions:
@@ -76,9 +58,7 @@
     server: "{{ inventory_hostname }}"
     action: reboot
     wait: no
-  delegate_to: "{{ ansible_deployment_host }}"
-  remote_user: "{{ ansible_sudo_username }}"
-  when: target_server_type == 'heat'
+  when: target_server_type | match('heat')
 
 - name: Wait for VSC ssh to be ready
   local_action:

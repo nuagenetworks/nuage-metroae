@@ -70,10 +70,6 @@ For reference, here is a description of the contents of the `build-vars.yml` fil
 #    # required to populate/unzip nuage openstack packages
 #    # supported OpenStack release for metro - liberty, mitaka
 #    nuage_os_release: "liberty"
-#    VSD
-#    # When True or undefined, all VSDs will be configured stand-alone. 
-#    # Only standlone mode is supported on OpenStack through metro
-#    vsd_standalone: True
 #    # A dictionary of params for INFRA server
 #    myinfras:
 #          # The fqdn of this INFRA instance
@@ -94,7 +90,21 @@ For reference, here is a description of the contents of the `build-vars.yml` fil
 #          # INFRA subnet. Required when dhcp is set to False
 #          infra_subnet: mgmt_subnet }
 #
-#    VSD
+#    VSD params
+#    vsd_sa_or_ha = ha for cluster, sa for standalone deployment
+#    vsd_sa_or_ha: sa
+#    VSD FQDN
+#    Use xmpp fqdn for clustered VSDs and the vsd fqdn for stand alone
+#    This variable must be populated for all the components except VRS deployment
+#    vsd_fqdn_global: vsd1.example.com
+#    vsd_operations_list = A list of the operations you intend for the VSD. The
+#    list could include 1 or more of the following:
+#    - install
+#    - upgrade
+#    - health
+#    - TBD
+#    # vsd_operations_list:
+#       - install
 #    # A dictionary of params for 1 VSD
 #    myvsds:
 #          # The fqdn of this VSD instance
@@ -117,8 +127,18 @@ For reference, here is a description of the contents of the `build-vars.yml` fil
 #          # INFRA server vm fqdn name. This is optional. If not set, user has to take care of DNS entries.
 #          infra_server_name: infra.example.com }
 #
-#    VSC
-#    # A dictionary of params for 1 VSC
+#    VSC params
+#    vsc_operations_list = A list of the operations you intend for the VSC. The
+#    list could include 1 or more of the following:
+#    - install
+#    - upgrade
+#    - health
+#    - TBD
+#    # vsc_operations_list:
+#       - install
+#    myvscs is a collection of parameters for VSCs.
+#    One set of parameters is required for each VSC.
+#    Do not update {{ vsd_fqdn_global }} here as it reads from previous section
 #    myvscs:
 #          # The fqdn of this VSC instance
 #      - { hostname: vsc1.example.com,
@@ -144,7 +164,7 @@ For reference, here is a description of the contents of the `build-vars.yml` fil
 #          # VSC control subnet. Required when dhcp is set to False
 #          vsc_control_subnet: control_subnet,
 #          # The FQDN of the VSD this VSC should conect to
-#          vsd_fqdn: vsd1.example.com,
+#          vsd_fqdn: "{{ vsd_fqdn_global }}",
 #          # The system IP address and name for this VSC instance
 #          system_ip: 1.1.1.2,
 #          # The XMPP user name for login to VSD
@@ -152,9 +172,20 @@ For reference, here is a description of the contents of the `build-vars.yml` fil
 #          # INFRA server vm fqdn name. This is optional. If not set, user has to take care of DNS entries.
 #          infra_server_name: infra.example.com }
 #
-#    VSTAT
-#    # A dictionary of params for 1 VSTAT
-#    myvsds:
+#    Stats VM (ElasticSearch) params
+#    vstat_operations_list = A list of the operations you intend for the ES node. The
+#    list could include 1 or more of the following:
+#    - install
+#    - upgrade
+#    - health
+#    - dns (specified when deploying the VSTAT image as a DNS server)
+#    - TBD
+#    # vstat_operations_list:
+#       - install
+#    myvstats is a collection of parameters for the VSTAT.
+#    One set of parameters is required for each VSTAT.
+#    Do not update {{ vsd_fqdn_global }} here as it reads from previous section
+#    myvstats:
 #          # The fqdn of this VSD instance
 #      - { hostname: vstat1.example.com,
 #          # The target server type where this VSTAT instance will run. Possible values: heat
@@ -172,6 +203,7 @@ For reference, here is a description of the contents of the `build-vars.yml` fil
 #          vstat_network: mgmt,
 #          # VSTAT subnet. Required when dhcp is set to False  
 #          vstat_subnet: mgmt_subnet,
+#          vsd_fqdn: "{{ vsd_fqdn_global }}" 
 #          # INFRA server vm fqdn name. This is optional. If not set, user has to take care of DNS entries.
 #          infra_server_name: infra.example.com }
 #

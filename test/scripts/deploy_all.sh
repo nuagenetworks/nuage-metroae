@@ -10,6 +10,11 @@ then
     exit 1
 fi
 
+if [ $1 = 3.2.R10 ];
+then
+    sed -i  "/vns_operations_list:/,/nsgv_mac: '52:54:00:88:85:12' }/ d" test/files/build_vars_all.yml
+fi
+
 cp ./test/files/build_vars_all.yml roles/reset-build/files/build_vars.yml
 cp ./test/files/test_install.yml .
 cp ./test/files/test_cleanup.yml .
