@@ -1,18 +1,35 @@
 #!/bin/bash
+set -e
+USAGE="Usage: $0 branch (dev or master)"
+
+if [ $# -ne 1 ];
+then
+    echo "Requires branch (dev or master)"
+    echo $USAGE
+    exit 1
+fi
+
 echo "Create RPM Build Env"
 rpmdev-setuptree
-pwd
 cp ./rpms/metro.spec ~/rpmbuild/SPECS/
-mkdir -p ~/rpmbuild/SOURCES/metro-2.1.2/opt/nuage-metro-2.1.2/
-cp -R . ~/rpmbuild/SOURCES/metro-2.1.2/opt/nuage-metro-2.1.2/
+if [ $1 == 'master' ]
+then
+    ver=`git describe --tags $(git rev-list --tags --max-count=1)`
+    echo "setting rpm version to $ver" 
+    sed -i "s/0.0.0/$ver/g" ~/rpmbuild/SPECS/metro.spec
+fi
+
+mkdir -p ~/rpmbuild/SOURCES/metro-$ver/opt/nuage-metro-$ver/
+cp -R . ~/rpmbuild/SOURCES/metro-$ver/opt/nuage-metro-$ver/
 cd  ~/rpmbuild/SOURCES
-tar -zcvf metro-2.1.2.tar.gz metro-2.1.2/
+tar -zcvf metro-$ver.tar.gz metro-$ver/
 echo "Completed creating RPM build Env"
 
-pwd
 echo "Building metro RPM"
 cd ~/rpmbuild
 rpmbuild -vv -bb SPECS/metro.spec
-echo "Completed creating RPM"
+echo "Completed building RPM"
 
-cp -r ~/rpmbuild/RPMS/noarch/*.rpm /home/caso/nfs-data/misc/
+echo "Copying RPM to NFS share"
+cp -r ~/rpmbuild/RPMS/noarch/*.rpm /home/caso/nfs-data/rpms/
+echo "Completed copying RPM to NFS share"

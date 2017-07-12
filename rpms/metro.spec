@@ -1,5 +1,5 @@
 Name: metro          
-Version:    2.1.2    
+Version:    0.0.0    
 Release:        1%{?dist}
 Summary:        Nuage metro packages
 
