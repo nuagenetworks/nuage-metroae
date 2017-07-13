@@ -6,6 +6,7 @@
    1. VSD, HA and SA
    1. VSC
    1. VSTAT (ElasticSearch), HA and SA
+   1. VCIN
 1. Supported upgrade paths
    1. 3.2.R8 to 4.0.Rn
    1. 3.2.R10 to 4.0.Rn
@@ -23,6 +24,9 @@ The playbook `build_upgrade.yml` relies on build_vars.yml, upgrade_vars.yml and 
 
 Upgrading VSD and VSTAT nodes require following changes to ```build_vars.yml``` file.
 1. Users should define ```upgrade_vmname``` in the build_vars.yml file. This name is used to bring up the new vsd and vstat nodes as part of ugrade procedure
+
+Upgrading VSTAT nodes require following changes to ```upgrade_vars.yml``` file.
+1. Users should define a NFS shared location for upgrading VSTAT(ES nodes) - ```vstat_nfs_server_with_folder```. The location specifed in this variable along with the NFS server will be mounted on to all the VSTAT nodes.
 
 Upgrading VSD and VSTAT nodes require following changes when user decides not to run nuage_unzip.yml
 1. Users should define additional paths apart from the ones that were mentioned in nuage_unzip.yml section of BUILD.md file. Discussed below are these additional paths.
@@ -50,6 +54,7 @@ For the purposes of this sample, an HA deployment is one that consists 3 VSD nod
   - The VSD definitions will be ordered such that the third VSD definition will be that of the VSD node to be decoupled during the upgrade. This VSD will be tagged as ‘vsd_node3’ and will be decoupled. The other two VSDs will be tagged as ‘vsd_node1’ and vsd_node2’, respectively. Make sure that you define the VSD node that you want to decouple last in the build_vars.yml file.
   - There will be exactly 2 VSC definitions.
   - The VSC definitions will be ordered such that the first VSC will be that of the first VSC node to be upgraded. The other VSC will be upgraded second. The first VSC will be tagged as ‘vsc_node1’. The second VSC will be tagged as ‘vsc_node2’.
+  - There will be exactly 3 VSTAT definitions
 
 Edit the files listed above, then run:
 
@@ -185,7 +190,58 @@ At this point, the new vsd_node3 is up and running, but t has not yet been confi
 
 At this point, all 3 VSD nodes have been upgraded. If you experience a failure before the VSD install script runs, retry playbook vsd_ha_upgrade_deploy_3.yml. If that fails again or the failure comes after the VSD install script runs, destroy the VMs manually or use vsd_ha_upgrade_destroy_3.yml, then retry starting at step 15.
 
-17. Run VSP upgrade wrapup to finalize settings
+*If VSTAT nodes exist upgrade them using following procedure, if not skip to step 23 to finalize VSP upgrade*
+
+17. Run VSTAT health checks
+
+```
+./metro-ansible vstat_preupgrade_health.yml -vvv
+```
+
+This step is already done in step 2. You can skip it here if you wish. It is good practice to re-run at this point in orfder to inspect the report to make sure the VSD upgrade work has not caused problems.
+
+18. Run vstat_upgrade_data_backup
+
+```
+./metro-ansible vstat_upgrade_data_backup.yml -vvv
+```
+
+At this point the data from the vstat nodes is backed in the NFS shared folder. If you experience a failure in the previous step, you can simply retry.
+
+19. Power off all vstats
+
+```
+./metro-ansible vstat_destroy.yml -vvv
+```
+
+At this point, all vstat nodes are shut down, but not deleted. The new nodes will be brought up with new VM names. Note that this step may be done manually if the user chooses. If you experience a failure running the Metro playbook for this step, a retry is advised. Or you can power off the VMs manually.
+
+20. Predeploy new vstat nodes
+
+```
+./metro-ansible vstat_predeploy.yml -vvv
+```
+
+At this point, the new vstat nodes are up and running, but they have not yet been configured. If you experience a failure in this step, execute the playbook vstat_upgrade_destroy.yml to delete the new nodes. Then retry the step.
+
+21. Deploy new vstat nodes
+
+```
+./metro-ansible vstat_deploy.yml -vvv
+```
+
+At this point, new vstat nodes have been deployed and configured to talk with VSD(s). If you experience a failure, retry playbook vstat_deploy.yml. If that fails again, destroy the VMs manually or use vstat_upgrade_destroy.yml, then retry starting at step 20.
+
+22. Run vstat_upgrade_data_migrate
+
+```
+./metro-ansible vstat_upgrade_data_migrate.yml -vvv
+```
+
+At this point the data from the old vstat nodes is migrated to the new VSTAT nodes from the NFS shared folder. If you experience a failure in the previous step, you can simply retry.
+
+ 
+23. Run VSP upgrade wrapup to finalize settings
 
 ```
 ./metro-ansible vsp_ha_upgrade_wrapup.yml -vvv
@@ -193,7 +249,7 @@ At this point, all 3 VSD nodes have been upgraded. If you experience a failure b
 
 This will execute the final steps of the upgrade. It can be rerun if there is a failure.
 
-18. Run VSP post-upgrade heath
+24. Run VSP post-upgrade heath
 
 ```
 ./metro-ansible vsp_postupgrade_health.yml -vvv
@@ -201,11 +257,6 @@ This will execute the final steps of the upgrade. It can be rerun if there is a 
 
 Writes out new health reports that can be compared to those produced in step one. Any errors or discrepancies should be investigated carefully.
 
-19. Upgrade VSTAT
-
-```
-./metro-ansible vstat_upgrade.yml
-```
 
 ## Sample Metro workflow for standalone upgrade
 
@@ -215,6 +266,7 @@ For the purpose of this sample, a Standalone deployment is one that consists exa
   - vsd_sa_or_ha will be set to sa
   - There will be exactly 1 VSD definition
   - There will be exactly 1 VSC definition
+  - There will be exactly 1 VSTAT definition
 
 Edit the files listed above, then run:
 
@@ -253,7 +305,7 @@ At this point, vsd is shut down, but not deleted. The new node will be brought u
 ./metro-ansible vsd_predeploy.yml -vvv
 ```
 
-At this point, the new vsd node is up and running, but it has not yet been configured. If you experience a failure in this step, execute the playbook vsd_destroy.yml to delete the new node. Then retry the step.
+At this point, the new vsd node is up and running, but it has not yet been configured. If you experience a failure in this step, execute the playbook vsd_sa_upgrade_destroy.yml to delete the new node. Then retry the step.
 
 6. Deploy new vsd node
 
@@ -297,6 +349,8 @@ If this step fails, the recovery is much like that of the previous step: Manuall
 
 *Upgrade VRS here!*
 
+*If VSTAT node exist upgrade it using steps 17-22 in HA upgrade workflow mentioned in above section, if not skip to step 11 to finalize VSP upgrade*
+
 11. Run VSP upgrade wrapup to finalize settings
 
 ```
@@ -312,9 +366,3 @@ This will execute the final steps of the upgrade. It can be rerun if there is a 
 ```
 
 Writes out new health reports that can be compared to those produced in step one. Any errors or discrepancies should be investigated carefully.
-
-13. Upgrade VSTAT
-
-```
-./metro-ansible vstat_upgrade.yml
-```
