@@ -15,6 +15,15 @@
       vm_name: "{{ vmname }}"
   when: not nuage_upgrade | default( False )
 
+- name: Check that VSD IPs are unique
+  assert:
+    that: 
+      - hostvars[groups['vsds'][0]]['mgmt_ip'] != hostvars[groups['vsds'][1]]['mgmt_ip']
+      - hostvars[groups['vsds'][0]]['mgmt_ip'] != hostvars[groups['vsds'][2]]['mgmt_ip']
+      - hostvars[groups['vsds'][1]]['mgmt_ip'] != hostvars[groups['vsds'][2]]['mgmt_ip']
+    msg: "VSD hostnames and IP addresses must be unique!"
+  when: vsd_sa_or_ha == 'ha'
+  
 - name: Query {{ target_server }} facts
   action: setup
   remote_user: "{{ target_server_username }}"
@@ -78,6 +87,7 @@
   remote_user: "{{ target_server_username }}"
   
 - set_fact: vsd_running="{{ vm_name in virt_vms.list_vms }}"
+- debug: var=vsd_running verbosity=1
 
 #- name: Verify that the VM is not already running
 #  assert:
