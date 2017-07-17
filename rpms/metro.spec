@@ -23,6 +23,7 @@ Metro playbooks and dependencies
 %install
 mkdir -p $RPM_BUILD_ROOT
 cp -R * $RPM_BUILD_ROOT
+exit 0
 
 %clean
 rm -rf $RPM_BUILD_ROOT
