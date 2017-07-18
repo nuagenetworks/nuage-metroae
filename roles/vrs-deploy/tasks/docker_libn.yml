@@ -1,0 +1,46 @@
+---
+
+- name: Ensure old versions of Docker are not installed.
+  package:
+    name: '{{ item }}'
+    state: absent
+  with_items:
+    - docker
+    - docker-common
+    - docker-engine
+
+- name: Add Docker GPG key.
+  rpm_key:
+    key: https://download.docker.com/linux/centos/gpg
+    state: present
+
+- name: Add Docker repository.
+  get_url:
+    url: https://download.docker.com/linux/centos/docker-ce.repo
+    dest: /etc/yum.repos.d/docker-ce.repo
+    owner: root
+    group: root
+    mode: 0644
+
+- name: Configure Docker Edge repo.
+  ini_file:
+    dest: /etc/yum.repos.d/docker-ce.repo
+    section: docker-ce-edge
+    option: enabled
+    value: 0
+
+- name: Configure Docker Test repo.
+  ini_file:
+    dest: /etc/yum.repos.d/docker-ce.repo'
+    section: docker-ce-test
+    option: enabled
+    value: 0
+
+- name: Install Docker.
+  package: name=docker-ce state=present
+
+- name: Ensure Docker is started and enabled at boot.
+  service:
+    name: docker
+    state: started
+    enabled: yes
