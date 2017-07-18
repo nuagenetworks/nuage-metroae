@@ -1,5 +1,5 @@
 ---
-- name: Pull facts on VRS target {{ inventory_hostname }}
+- name: Pull facts on VRS hosts
   remote_user: "{{ target_server_username }}"
   action: setup
 
@@ -141,7 +141,8 @@
   when: ansible_os_family == "RedHat" and not avrs
 
 - block:
-  - shell: service virtual-accelerator start  # JvB 'service' task fails
+  - name: Start 6wind virtual-accelerator service - if it fails, reboot host for SELinux change
+    service: name=virtual-accelerator state=started  # JvB exits immediately, may fail if host is not rebooted after SELinux change
   - service: name=openvswitch state=restarted
   - service: name=libvirtd state=restarted
   remote_user: "{{ target_server_username }}"
