@@ -7,8 +7,8 @@
 # Both are required to run the nuage_unzip role. nuage_unzipped_files_dir
 # is required when one or more operation lists, below, are set to 'install'
 # or 'upgrade'.
-nuage_zipped_files_dir: "/home/caso/nfs-data/5.0.1/nuage-packed"
-nuage_unzipped_files_dir: "/home/caso/nfs-data/5.0.1/nuage-unpacked"
+nuage_zipped_files_dir: "/home/caso/nfs-data/4.0.R7/nuage-packed"
+nuage_unzipped_files_dir: "/home/caso/nfs-data/4.0.R7/nuage-unpacked"
 ###
 # Path to a public key file to be injected in to VSD,VNS Util, VCIN and VSTAT vms
 # during deployment and corresponding private file to be used to connect to the
@@ -68,11 +68,11 @@ myvsds:
   - { hostname: vsd1.example.com,
       # vmname is used to identify vm on the hypervisor/vcenter
       # This is optional. If vmname is not defined, it defaults to the name set in hostname.
-      vmname: vsd1-5.0.1-dc1,
+      vmname: vsd1-3.2.R10-dc1,
       # upgrade_vmname needed only when performing an upgrade
-      #upgrade_vmname: vsd1-4.0.R10-dc1,
+      upgrade_vmname: vsd1-4.0.R10-dc1,
       target_server_type: "kvm",
-      target_server: 135.227.144.130,
+      target_server: 135.227.181.233,
       mgmt_ip: 192.168.122.201,
       mgmt_gateway: 192.168.122.1,
       mgmt_netmask: 255.255.255.0 }
@@ -96,7 +96,7 @@ myvscs:
       # This is optional. If vmname is not defined, it defaults to the name set in hostname.
       vmname: vsc1-dc1,
       target_server_type: "kvm",
-      target_server: 135.227.144.130,
+      target_server: 135.227.181.233,
       mgmt_ip: 192.168.122.202,
       mgmt_gateway: 192.168.122.1,
       mgmt_netmask_prefix: 24,
@@ -111,7 +111,7 @@ myvscs:
       # This is optional. If vmname is not defined, it defaults to the name set in hostname.
       vmname: vsc2-dc1,
       target_server_type: "kvm",
-      target_server: 135.227.144.130,
+      target_server: 135.227.181.233,
       mgmt_ip: 192.168.122.203,
       mgmt_gateway: 192.168.122.1,
       mgmt_netmask_prefix: 24,
@@ -134,20 +134,30 @@ vrs_operations_list:
   - install
 # dockermon_install = True when Docker Monitor is to be installed along with
 # the VRS. False if not.
-#dockermon_install: True
-libnetwork_install: True
-libnetwork:
-  scope: single
-  cluster_store_url: consul://192.168.122.1:8500
+dockermon_install: True
 # myvrss is a collection of parameters for the targets where VRS is to be deployed.
 # One set of parameters is required for each set or group of VRS targets.
 myvrss:
   - { vrs_set_name: vrs_set_uswest1,
-      vrs_os_type: el7,
+      vrs_os_type: u14.04,
       active_controller_ip: 192.168.122.202,
       standby_controller_ip: 192.168.122.203,
       vrs_ip_list: [
        192.168.122.101] }
+  - { vrs_set_name: vrs_set_usewest2,
+      vrs_os_type: el7,
+      active_controller_ip: 192.168.122.202,
+      standby_controller_ip: 192.168.122.203,
+      vrs_ip_list: [
+       192.168.122.83,
+       192.168.122.238 ] }
+  - { vrs_set_name: vrs_set_uswest3,
+      vrs_os_type: u16.04,
+      active_controller_ip: 192.168.122.202,
+      standby_controller_ip: 192.168.122.203,
+      vrs_ip_list: [
+       192.168.122.215 ] }
+
 ###
 # Stats VM (ElasticSearch) params
 # vstat_operations_list = A list of the operations you intend for the ES node. The
@@ -168,9 +178,9 @@ myvstats:
       # This is optional. If vmname is not defined, it defaults to the name set in hostname.
       vmname: vstat1-dc1,
       # upgrade_vmname needed only when performing an upgrade
-      #upgrade_vmname: vstat1-4.0.R10-dc1,
+      upgrade_vmname: vstat1-4.0.R10-dc1,
       target_server_type: "kvm",
-      target_server: 135.227.144.130,
+      target_server: 135.227.181.233,
       mgmt_ip: 192.168.122.204,
       mgmt_gateway: 192.168.122.1,
       mgmt_netmask: 255.255.255.0,
@@ -184,29 +194,29 @@ myvstats:
 # - upgrade
 # - health
 # - TBD
-#vns_operations_list:
-#  - install
+vns_operations_list:
+  - install
 # myvnsutils is a collection of parameters for the VNSUTIL.
 # One set of parameters is required for each VNSUTIL.
 # Do not update {{ vsd_fqdn_global }} here as it reads from previous section
-#myvnsutils:
-#  - { hostname: vnsutil1.example.com,
+myvnsutils:
+  - { hostname: vnsutil1.example.com,
       # vmname is used to identify vm on the hypervisor/vcenter
       # This is optional. If vmname is not defined, it defaults to the name set in hostname.
-#      vmname: vnsutil-dc1,
-#      target_server_type: "kvm",
-#      target_server: 135.227.144.130,
-#      mgmt_ip: 192.168.122.205,
-#      mgmt_gateway: 192.168.122.1,
-#      mgmt_netmask: 255.255.255.0,
-#      data_fqdn: vnsutil1.data.example.com,
-#      data_ip: 192.168.100.205,
-#      data_subnet: 192.168.100.0,
-#      data_netmask: 255.255.255.0,
-#      nsgv_ip: 192.168.100.206,
-#      nsgv_mac: '52:54:00:88:85:12',
-#      nsgv_hostname: nsgv1.example.com,
-#      vsd_fqdn: "{{ vsd_fqdn_global }}" }
+      vmname: vnsutil-dc1,
+      target_server_type: "kvm",
+      target_server: 135.227.181.233,
+      mgmt_ip: 192.168.122.205,
+      mgmt_gateway: 192.168.122.1,
+      mgmt_netmask: 255.255.255.0,
+      data_fqdn: vnsutil1.data.example.com,
+      data_ip: 192.168.100.205,
+      data_subnet: 192.168.100.0,
+      data_netmask: 255.255.255.0,
+      nsgv_ip: 192.168.100.206,
+      nsgv_mac: '52:54:00:88:85:12',
+      nsgv_hostname: nsgv1.example.com,
+      vsd_fqdn: "{{ vsd_fqdn_global }}" }
 
 # mynsgvs is a collection of parameters for the NSGV.
 # One set of parameters is required for each NSGV.
@@ -214,20 +224,20 @@ myvstats:
 # - zfb_metro (ZFB process supported by metro, needs zfb.yml updated by user)
 # - zfb_external (ZFB process taken care by third party iso file. Needs two additional vars iso_path, iso_file)
 # - none (nsgv is deployed without any bootstrapping)
-#mynsgvs:
-#  - { hostname: nsgv1.example.com,
+mynsgvs:
+  - { hostname: nsgv1.example.com,
       # vmname is used to identify vm on the hypervisor/vcenter
       # This is optional. If vmname is not defined, it defaults to the name set in hostname.
-#      vmname: nsgv-dc1,
-#      target_server_type: "kvm",
-#      target_server: 135.227.144.130,
-#      bootstrap_method: zfb_metro,
+      vmname: nsgv-dc1,
+      target_server_type: "kvm",
+      target_server: 135.227.181.233,
+      bootstrap_method: zfb_metro,
       # Needed only when bootstrap_method: zfb_external
-#      iso_path: '/tmp/iso',
+      iso_path: '/tmp/iso',
       # Needed only when bootstrap_method: zfb_external
-#      iso_file: 'user_img.iso',
+      iso_file: 'user_img.iso',
       # Needed only when bootstrap_method: zfb_metro
-#      nsgv_mac: '52:54:00:88:85:12' }
+      nsgv_mac: '52:54:00:88:85:12' }
 
 ###
 # Utility VMs
@@ -302,17 +312,17 @@ mydnss:
 # - upgrade
 # - health
 # - TBD
-#gvm_operations_list:
-#  - install
+gvm_operations_list:
+  - install
 # mygvms is a collection of parameters for the generic vms.
 # One set of parameters is required for each generic VM.
 #
 # gvm_xml_file is the full path to the XML file that defines the VM.
-#mygvms:
-#  - { hostname: gvm1.example.com,
-#      target_server_type: "kvm",
-#      target_server: 135.227.144.130,
-#      gvm_xml_file: /home/caso/images/jenkinsgvm1.example.com/gvm.xml }
+mygvms:
+  - { hostname: gvm1.example.com,
+      target_server_type: "kvm",
+      target_server: 135.227.181.233,
+      gvm_xml_file: /home/caso/images/jenkinsgvm1.example.com/gvm.xml }
 
 ###
 # Linux VM params
@@ -322,8 +332,8 @@ mydnss:
 # - upgrade
 # - health
 # - TBD
-#lvm_operations_list:
-#  - install
+lvm_operations_list:
+  - install
 # mylvms is a collection of parameters for the linux vms.
 # One set of parameters is required for each linux VM.
 #
@@ -332,7 +342,7 @@ mydnss:
 #mylvms:
 #  - { hostname: lvm1.example.com,
 #      target_server_type: "kvm",
-#      target_server: 135.227.144.130,
+#      target_server: 135.227.181.233,
 #      interfaces:
 #        eth0:
 #          ip: 192.168.122.206
@@ -351,7 +361,7 @@ mydnss:
 ###
 # Ansible
 # The IP addr or hostname of the Ansible host
-ansible_deployment_host: 135.227.144.130
+ansible_deployment_host: 135.227.181.233
 
 
 ###
@@ -441,10 +451,10 @@ yum_pin: yes
 #
 # ovftool
 # Binary location of the ovftool
-#vcenter:
-#  username: administrator@vsphere.local
-#  password: Alcateldc
-#  datacenter: Datacenter
-#  cluster: Management
-#  datastore: datastore
-#  ovftool: /usr/bin/ovftool
+vcenter:
+  username: administrator@vsphere.local
+  password: Alcateldc
+  datacenter: Datacenter
+  cluster: Management
+  datastore: datastore
+  ovftool: /usr/bin/ovftool
