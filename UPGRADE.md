@@ -6,6 +6,7 @@
    1. VSD, HA and SA
    1. VSC
    1. VSTAT (ElasticSearch), HA and SA
+   1. VCIN
 1. Supported upgrade paths
    1. 3.2.R8 to 4.0.Rn
    1. 3.2.R10 to 4.0.Rn
@@ -23,6 +24,9 @@ The playbook `build_upgrade.yml` relies on build_vars.yml, upgrade_vars.yml and 
 
 Upgrading VSD and VSTAT nodes require following changes to ```build_vars.yml``` file.
 1. Users should define ```upgrade_vmname``` in the build_vars.yml file. This name is used to bring up the new vsd and vstat nodes as part of ugrade procedure
+
+Upgrading VSTAT nodes require following changes to ```upgrade_vars.yml``` file.
+1. Users should define a NFS shared location for upgrading VSTAT(ES nodes) - ```vstat_nfs_server_with_folder```. The location specifed in this variable along with the NFS server will be mounted on to all the VSTAT nodes.
 
 Upgrading VSD and VSTAT nodes require following changes when user decides not to run nuage_unzip.yml
 1. Users should define additional paths apart from the ones that were mentioned in nuage_unzip.yml section of BUILD.md file. Discussed below are these additional paths.
