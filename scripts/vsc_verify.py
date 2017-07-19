@@ -198,7 +198,6 @@ if __name__ == '__main__':
         'ip': args.ip,
         'username': 'admin',
         'password': 'admin',
-        'verbose' : True
     }
 
     retry_timeout = float(args.retry_timeout)
