@@ -127,6 +127,14 @@
     line: "PERSONALITY=avrs"
   when: ansible_os_family == "RedHat" and avrs
   
+- name: Disable CPUSET for AVRS
+  remote_user: "{{ target_server_username }}"
+  lineinfile:
+    dest: /usr/local/etc/cpuset.env
+    regexp: "#?*: ${CPUSET_ENABLE:="
+    line: ": ${CPUSET_ENABLE:=0}"
+  when: ansible_os_family == "RedHat" and avrs
+  
 - name: Update platform setting in /etc/default/openvswitch-switch file on Debian OS family when Dockermon is installed
   remote_user: "{{ target_server_username }}"
   lineinfile:
@@ -145,6 +153,7 @@
     service: name=virtual-accelerator state=started  # JvB exits immediately, may fail if host is not rebooted after SELinux change
   - service: name=openvswitch state=restarted
   - service: name=libvirtd state=restarted
+  - service: name=network state=restarted            # JvB reconfigure network interfaces
   remote_user: "{{ target_server_username }}"
   when: ansible_os_family == "RedHat" and avrs
   
