@@ -9,9 +9,9 @@ Now the users can go to /opt/nuage-metro-version/ , update build_vars.yml and ru
 
 
 To remove metro packages and all dependencies installed, 
-1. yum remove metro-2.1.2 
-2. yum autoremove
-3. pip uninstall –r rpms/pip-requirements
+1. pip uninstall –r rpms/pip-requirements 
+2. yum remove metro-2.1.2
+3. yum autoremove
 
 Updated metro code can be downloaded via git clone now or through remove/reinstall of the RPM package.
 
