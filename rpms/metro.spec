@@ -10,7 +10,7 @@ BuildArch: noarch
 BuildRoot: %{_tmppath}/%{name}-buildroot
 
 
-Requires: git gcc sshpass openssl-devel 
+Requires: git gcc sshpass openssl-devel libvirt-client
 Requires: python2-pip python-ipaddr python-netaddr python-netifaces python-devel python-devel 
 Requires: PyYAML python-jinja2 python-paramiko pycrypto python-setuptools
 
