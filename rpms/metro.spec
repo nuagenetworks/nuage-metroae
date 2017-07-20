@@ -29,30 +29,9 @@ exit 0
 rm -rf $RPM_BUILD_ROOT
 
 %files
-%defattr(0644,root,root,0755)
-/opt/nuage-metro-%{version}/roles
-/opt/nuage-metro-%{version}/Docker
-/opt/nuage-metro-%{version}/callback_plugins
-/opt/nuage-metro-%{version}/filter_plugins
-/opt/nuage-metro-%{version}/examples
-/opt/nuage-metro-%{version}/library
-/opt/nuage-metro-%{version}/test/files
-/opt/nuage-metro-%{version}/test/nuage_unzip
-/opt/nuage-metro-%{version}/test/archive_retriever
-/opt/nuage-metro-%{version}/.git
-/opt/nuage-metro-%{version}/.gitignore
-/opt/nuage-metro-%{version}/.mailmap
-/opt/nuage-metro-%{version}/*.md
-/opt/nuage-metro-%{version}/*.yml
-/opt/nuage-metro-%{version}/*.cfg
-/opt/nuage-metro-%{version}/rpms
-/opt/nuage-metro-%{version}/scripts/vars
+%defattr(-,root,root,-)
+/opt/nuage-metro-%{version}
 
-
-%attr(0755,root,root)
-/opt/nuage-metro-%{version}/test/scripts/*.*
-/opt/nuage-metro-%{version}/scripts/*.*
-/opt/nuage-metro-%{version}/metro-ansible
 
 %pre
 
