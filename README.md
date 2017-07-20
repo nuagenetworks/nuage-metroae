@@ -172,7 +172,6 @@ These are Ansible roles that are fully tested and supported.
 - gvm-predeploy
 - nsgv-destroy
 - nsgv-predeploy
-- nuage-predeploy
 - nuage-unzip
 - reset-build
 - set-upgrade-flag

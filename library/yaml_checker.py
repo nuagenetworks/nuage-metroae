@@ -17,7 +17,7 @@ options:
 '''
 
 EXAMPLES = '''
-- yaml_checker: path=./roles/nuage-predeploy/tasks/main.yml
+- yaml_checker: path=./roles/vsd-predeploy/tasks/main.yml
 '''
 
 
