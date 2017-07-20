@@ -22,7 +22,12 @@ or
 
 # nuage_unzip.yml playbook
 
-When the `build.yml` playbook is executed, it expects to find unzipped Nuage software files (QCOW2, OVA, and Linux Package files) for items that are being upgraded or installed. You can either copy the proper files to their locations, shown below, or you can use the nuage_unzip.yml playbook to do the work for you. Simply specify the proper source and target directories in `build_vars.yml` and `nuage_unzip.yml` will do the heavy lifting.
+When the `build.yml` playbook is executed, it expects to find unzipped Nuage software files (QCOW2, OVA, and Linux Package files) for items that are being upgraded or installed. You can either copy the proper files to their locations, shown below, or you can use the nuage_unzip.yml playbook to do the work for you. Simply specify the proper source and target directories in `build_vars.yml`:
+```
+nuage_zipped_files_dir: "<your_path_with_zipped_software>"
+nuage_unzipped_files_dir: "<your_path_for_unzipped_software>"
+```
+and run `./metro-ansible nuage_unzip.yml` playbook to do the heavy lifting.
 
 Here are the expected paths to binaries. Binaries that are not required need not have a path here.
 

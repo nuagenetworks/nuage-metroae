@@ -48,6 +48,14 @@
   fail: msg="Required network bridges not found"
   when: mgmt_bridge not in ansible_interfaces
 
+- name: Check if required OS packages are installed
+  command: rpm -q qemu-kvm libvirt bridge-utils libguestfs-tools libvirt-python
+  when: ansible_os_family | match("RedHat")
+  delegate_to: "{{ target_server }}"
+  remote_user: "{{ target_server_username }}"
+  register: rpm_check
+  ignore_errors: True
+
 - block:
   - name: If RedHat, install packages for RedHat OS family distros
     yum: name={{ item }} state=present
@@ -64,7 +72,7 @@
       enabled: yes
       state: started
 
-  when: ansible_os_family | match("RedHat")
+  when: ansible_os_family | match("RedHat") and rpm_check.rc == 1
   delegate_to: "{{ target_server }}"
   remote_user: "{{ target_server_username }}"
 

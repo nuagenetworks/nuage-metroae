@@ -6,6 +6,9 @@ import time
 import os.path
 import argparse
 
+import logging
+logging.basicConfig(filename='vsc_verify.log', level=logging.DEBUG)
+logger = logging.getLogger("netmiko")
 
 # Returns lines with vsc host names
 def get_vsclines(fp):
@@ -40,8 +43,11 @@ def get_vschosts(playbook_dir):
         with open(hosts_file, 'r') as fp:
             for lines in get_vsclines(fp):
                 vsc_host_list.append(lines)
-    except:
-        print("Error processing hosts file {0}:{1}" .format(hosts_file, sys.exc_info()[0]))
+    except BaseException:
+        print(
+            "Error processing hosts file {0}:{1}" .format(
+                hosts_file,
+                sys.exc_info()[0]))
         sys.exit(1)
 
     return vsc_host_list
@@ -57,13 +63,14 @@ def get_vscinfo(playbook_dir):
     for vscs in vsc_hosts:
         host_vars_path = playbook_dir + "/host_vars/" + vscs
         if (not os.path.exists(host_vars_path)):
-            print ("ERROR! Host_vars file not found for host: {0}." .format(host_vars_path))
+            print (
+                "ERROR! Host_vars file not found for host: {0}." .format(host_vars_path))
             sys.exit(1)
 
         try:
             with open(host_vars_path, "r") as stream:
                 vsc_host_vars[vscs] = yaml.safe_load(stream)
-        except:
+        except BaseException:
             print("Error processing host_vars file {0}:"
                   "{1}" .format(host_vars_path, sys.exc_info()[0]))
             sys.exit(1)
@@ -81,8 +88,11 @@ def get_commands(playbook_dir):
     try:
         with open(command_path, "r") as stream:
             commands = yaml.safe_load(stream)
-    except:
-        print("Error processing commands file {0}:{1}" .format(command_path, sys.exc_info()[0]))
+    except BaseException:
+        print(
+            "Error processing commands file {0}:{1}" .format(
+                command_path,
+                sys.exc_info()[0]))
         sys.exit(1)
 
     return commands['vsc_commands']
@@ -97,6 +107,7 @@ def exec_command(vsc, command):
     try:
         net_connect = ConnectHandler(**vsc)
         output = net_connect.send_command(command)
+        net_connect.disconnect()
     except:
         print ("Error! Command excution failed!"
                " Command: {0} Exception: {1}" .format(command, sys.exc_info()[0]))
@@ -129,10 +140,12 @@ def run_commands(commands, vsc_host_vars, vsc, retry_timeout):
                     result = "VSC " + vsc['ip'] + " is OK!"
                 elif (re.search(r'Active\n', output, re.I)):
                     error_flag = True
-                    error1 = "Error: VSC " + vsc['ip'] + (" XMPP connection with VSD not set.")
+                    error1 = "Error: VSC " + \
+                        vsc['ip'] + (" XMPP connection with VSD not set.")
                 else:
                     error_flag = True
-                    error1 = "Error: VSC " + vsc['ip'] + (" was unable to discover VSD.")
+                    error1 = "Error: VSC " + \
+                        vsc['ip'] + (" was unable to discover VSD.")
 
         elif (command == 'show router bgp summary all'):
             bad_neighbor_list = []
@@ -142,13 +155,15 @@ def run_commands(commands, vsc_host_vars, vsc, retry_timeout):
             for vsc_host in vsc_host_vars:
 
                 if (vsc_host_vars[vsc_host]['mgmt_ip'] != vsc['ip']):
-                    if (re.search((vsc_host_vars[vsc_host]['system_ip'] + '\n'), output)):
+                    if (re.search(
+                            (vsc_host_vars[vsc_host]['system_ip'] + '\n'), output)):
                         result = "VSC " + vsc['ip'] + " is OK!"
                     else:
                         error_flag = True
                         bad_neighbor_list.append(vsc_host_vars
                                                  [vsc_host]['mgmt_ip'])
-                        error2 = "Error: Missing VSC " + vsc['ip'] + (" peers:") + str(bad_neighbor_list)
+                        error2 = "Error: Missing VSC " + \
+                            vsc['ip'] + (" peers:") + str(bad_neighbor_list)
 
         else:
             print("Error! Unexpected command!")
@@ -168,7 +183,7 @@ def is_valid_ip(ip):
         return False
     try:
         return all(0 <= int(piece) < 256 for piece in pieces)
-    except:
+    except BaseException:
         return False
 
     return True
