@@ -39,9 +39,6 @@ Here are the expected paths to binaries. Binaries that are not required need not
 <your_path>/vrs/u16_04/
 <your_path>/vrs/vmware/
 <your_path>/vrs/hyperv/
-<your_path>/dockermon/el7/
-<your_path>/dockermon/ubuntu-14.04/
-<your_path>/dockermon/ubuntu-16.04/
 <your_path>/vstat/
 <your_path>/vns/nsg/
 <your_path>/vns/util/
