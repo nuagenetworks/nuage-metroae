@@ -21,7 +21,9 @@ cp ./test/files/test_cleanup.yml .
 cp ./test/files/zfb.yml .
 
 # Get IP address of server on which script is being run
-IPADDR=`/usr/sbin/ifconfig | grep netmask | grep broadcast | head -n 1 | awk '{print $2}'`
+#IPADDR=`/usr/sbin/ifconfig | grep netmask | grep broadcast | head -n 1 | awk '{print $2}'`
+
+IPADDR=$3
 
 # Does not touch the netmask as we assume 0/24 prefix
 
@@ -52,14 +54,18 @@ IPADDR=`/usr/sbin/ifconfig | grep netmask | grep broadcast | head -n 1 | awk '{p
 # POSTROUTING are flushed before new entries
 # are added to the iptables
 
+sshpass -p "caso" ssh root@ $IPADDR << EOM
 iptables -t nat -F PREROUTING
 iptables -t nat -F POSTROUTING
+EOM
 
 # Allowing these masquerades must be the first route added
 # otherwise the precedence will not work correctly.
 
+sshpass -p "caso" ssh root@ $IPADDR << EOM
 iptables -t nat -A POSTROUTING -o br-eth0 -j MASQUERADE
 iptables -t nat -A POSTROUTING -o br-eth1 -j MASQUERADE
+EOM
 
 #gwIP=$(ip addr show br-eth1 | grep "inet\b" | awk '{print $2}' | cut -d/ -f1)
 
@@ -77,8 +83,10 @@ sed -i "s/DATA_GATEWAY/$dataGW/g" roles/reset-build/files/build_vars.yml
 sed -i "s/VSD1_IP/$mgmtIP/g" roles/reset-build/files/build_vars.yml
 sed -i "s/VSD1/$mgmtIP/g" zfb.yml
 
+sshpass -p "caso" ssh root@ $IPADDR << EOM
 iptables -t nat -A PREROUTING -s $gwIP -j DNAT --to $mgmtIP
 iptables -t nat -A POSTROUTING -s $mgmtIP -j SNAT --to-source $gwIP
+EOM
 
 # The following is for HA deployments only.
 
@@ -91,8 +99,10 @@ then
 
     sed -i "s/VSD2_IP/$mgmtIP/g" roles/reset-build/files/build_vars.yml
 
+    sshpass -p "caso" ssh root@ $IPADDR << EOM
     iptables -t nat -A PREROUTING -s $gwIP -j DNAT --to $mgmtIP
     iptables -t nat -A POSTROUTING -s $mgmtIP -j SNAT --to-source $gwIP
+    EOM
 
     mgmtIP=${mgmtIP:0:9}
     incremented=$(($incremented+10))
@@ -100,8 +110,10 @@ then
 
     sed -i "s/VSD3_IP/$mgmtIP/g" roles/reset-build/files/build_vars.yml
 
+    sshpass -p "caso" ssh root@ $IPADDR << EOM
     iptables -t nat -A PREROUTING -s $gwIP -j DNAT --to $mgmtIP
     iptables -t nat -A POSTROUTING -s $mgmtIP -j SNAT --to-source $gwIP
+    EOM
 fi
 
 mgmtIP=${mgmtIP:0:9}
@@ -111,8 +123,10 @@ mgmtIP="${mgmtIP}$incremented"
 sed -i "s/VSC1_IP/$mgmtIP/g" roles/reset-build/files/build_vars.yml
 sed -i "s/VSC1/$mgmtIP/g" zfb.yml
 
+sshpass -p "caso" ssh root@ $IPADDR << EOM
 iptables -t nat -A PREROUTING -s $gwIP -j DNAT --to $mgmtIP
 iptables -t nat -A POSTROUTING -s $mgmtIP -j SNAT --to-source $gwIP
+EOM
 
 mgmtIP=${mgmtIP:0:9}
 incremented=$(($incremented+10))
@@ -121,8 +135,10 @@ mgmtIP="${mgmtIP}$incremented"
 sed -i "s/VSC2_IP/$mgmtIP/g" roles/reset-build/files/build_vars.yml
 sed -i "s/VSC2/$mgmtIP/g" zfb.yml
 
+sshpass -p "caso" ssh root@ $IPADDR << EOM
 iptables -t nat -A PREROUTING -s $gwIP -j DNAT --to $mgmtIP
 iptables -t nat -A POSTROUTING -s $mgmtIP -j SNAT --to-source $gwIP
+EOM
 
 mgmtIP=${mgmtIP:0:9}
 incremented=$(($incremented+10))
@@ -130,8 +146,10 @@ mgmtIP="${mgmtIP}$incremented"
 
 sed -i "s/VSTAT1_IP/$mgmtIP/g" roles/reset-build/files/build_vars.yml
 
+sshpass -p "caso" ssh root@ $IPADDR << EOM
 iptables -t nat -A PREROUTING -s $gwIP -j DNAT --to $mgmtIP
 iptables -t nat -A POSTROUTING -s $mgmtIP -j SNAT --to-source $gwIP
+EOM
 
 # The following conditional is for HA deployments only
 
@@ -147,8 +165,10 @@ then
 
     sed -i "s/VSTAT2_IP/$mgmtIP/g" roles/reset-build/files/build_vars.yml
 
+    sshpass -p "caso" ssh root@ $IPADDR << EOM
     iptables -t nat -A PREROUTING -s $gwIP -j DNAT --to $mgmtIP
     iptables -t nat -A POSTROUTING -s $mgmtIP -j SNAT --to-source $gwIP
+    EOM
 
     mgmtIP=${mgmtIP:0:9}
     incremented=$(($incremented+10))
@@ -156,8 +176,10 @@ then
 
     sed -i "s/VSTAT3_IP/$mgmtIP/g" roles/reset-build/files/build_vars.yml
 
+    sshpass -p "caso" ssh root@ $IPADDR << EOM
     iptables -t nat -A PREROUTING -s $gwIP -j DNAT --to $mgmtIP
     iptables -t nat -A POSTROUTING -s $mgmtIP -j SNAT --to-source $gwIP
+    EOM
 fi
 
 mgmtIP=${mgmtIP:0:9}
@@ -166,8 +188,10 @@ mgmtIP="${mgmtIP}$incremented"
 
 sed -i "s/VNSUTIL1_IP/$mgmtIP/g" roles/reset-build/files/build_vars.yml
 
+sshpass -p "caso" ssh root@ $IPADDR << EOM
 iptables -t nat -A PREROUTING -s $gwIP -j DNAT --to $mgmtIP
 iptables -t nat -A POSTROUTING -s $mgmtIP -j SNAT --to-source $gwIP
+EOM
 
 mgmtIP=${mgmtIP:0:9}
 incremented=$(($incremented+10))
@@ -175,8 +199,10 @@ mgmtIP="${mgmtIP}$incremented"
 
 sed -i "s/NSGV_IP/$mgmtIP/g" roles/reset-build/files/build_vars.yml
 
+sshpass -p "caso" ssh root@ $IPADDR << EOM
 iptables -t nat -A PREROUTING -s $gwIP -j DNAT --to $mgmtIP
 iptables -t nat -A POSTROUTING -s $mgmtIP -j SNAT --to-source $gwIP
+EOM
 
 mgmtIP=${mgmtIP:0:9}
 incremented=$(($incremented+10))
@@ -204,8 +230,6 @@ sed -i "s/VNSUTIL1_DATA/$mgmtIP/g" roles/reset-build/files/build_vars.yml
 
 #iptables -t nat -A PREROUTING -s $gwIP -j DNAT --to $mgmtIP
 #iptables -t nat -A POSTROUTING -s $mgmtIP -j SNAT --to-source $gwIP
-
-IPADDR=$3
 
 sed -i "s/GLOBAL_VSD_FQDN/jenkinsvsd1.example.com/g" roles/reset-build/files/build_vars.yml
 sed -i "s/VERSION/$1/g" roles/reset-build/files/build_vars.yml
