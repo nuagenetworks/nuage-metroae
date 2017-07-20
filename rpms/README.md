@@ -7,7 +7,6 @@ After the install, rpm will place the nuage code in the /opt/nuage-metro-version
 
 Now the users can go to /opt/nuage-metro-version/ , update build_vars.yml and run the playbooks. 
 
-
 To remove metro packages and all dependencies installed, 
 1. pip uninstall –r rpms/pip-requirements 
 2. yum remove metro
