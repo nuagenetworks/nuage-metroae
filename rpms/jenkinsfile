@@ -1,27 +1,46 @@
-node("cas-cs2-011-BM_ONLY") {
-     stage "Checkout github code"
-        deleteDir()
-        git url: "https://github.com/wasanthag/nuage-metro.git", branch: 'master', credentialsId: 'b71cbc52-dcc5-46a0-8bde-7a825ef3fa5b'
-    
-        sh "git rev-parse HEAD > .git/commit-id"
-        def commit_id = readFile('.git/commit-id').trim()
-        println commit_id
+pipeline {
+    agent { label 'rpm_build' }
+    environment {
+     VER = "v.0.0.0"
+   }
+    stages {
+        stage ('Checkout github code') {
+            agent { label 'rpm_build' }
+            steps {
+                deleteDir()
+                git url: "https://github.com/wasanthag/nuage-metro.git", branch: 'master', credentialsId: 'wasanthag'
+                sh "git rev-parse HEAD > .git/commit-id"
+            }
+        }
 
+        stage ('Create RPM Build Env') {
+            agent { label 'rpm_build' }
+            steps {
+                 sh 'echo "Create RPM build Env"'
+                sh 'rpmdev-setuptree'
+                sh 'cp ./rpms/metro.spec ~/rpmbuild/SPECS/'
+                sh 'mkdir -p ~/rpmbuild/SOURCES/metro-${VER}/opt/nuage-metro-${VER}/'
+                sh 'cp -R . ~/rpmbuild/SOURCES/metro-${VER}/opt/nuage-metro-${VER}/'
+                sh 'scp root@135.227.181.233:/home/rpm/VMware-ovftool* ~/rpmbuild/SOURCES/metro-${VER}/opt/nuage-metro-${VER}/rpms'
+                sh 'cd  ~/rpmbuild/SOURCES; tar -zcvf metro-${VER}.tar.gz metro-${VER}/'
+                sh 'echo "Completed creating RPM build Env"'
+            }
+        }
 
-     stage "Create RPM Build Env" 
-        sh 'echo "Create RPM build Env"'
-        sh 'mkdir -p /tmp/rpmbuild/{BUILD,RPMS,SOURCES,SPECS,SRPMS}'
-        sh 'cp rpms/metro.spec /tmp/rpmbuild/SPECS/'
-        sh 'cp -r . /tmp/rpmbuild/SOURCES/metro-2.1.2/opt/nuage-metro-2.1.2/'
-        sh 'echo "Completed creating RPM build Env"'
-
-
-     stage "Build metro RPM"
-        sh 'echo "Building metro RPM"'
-        sh 'rpmbuild -v -bb /tmp/rpmbuild/SPECS/metro.spec'
-        sh 'echo "Completed creating RPM"'
-
-     stage "Copy RPM to NFS share"
-        sh 'cp -r /tmp/rpmbuild/RPMS/*.rpm /home/caso/nfs-data/misc/'
-
+        stage ('Build metro RPM') {
+            agent { label 'rpm_build' }
+            steps {
+                 sh 'echo "Building metro RPM"'
+                 sh 'cd ~/rpmbuild; rpmbuild -vv -bb SPECS/metro.spec'
+                 sh 'echo "Completed creating RPM"'
+            }
+        }
+       
+        stage ('Copy RPM to NFS share'){
+            agent { label 'rpm_build' }
+            steps{
+                sh 'scp -r ~/rpmbuild/RPMS/noarch/*.rpm rpm@135.227.181.233:/home/rpm'
+            }
+        }
+    }
 }
