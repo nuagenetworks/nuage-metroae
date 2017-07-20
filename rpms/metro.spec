@@ -32,10 +32,10 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(0644,root,root,0755)
 /opt/nuage-metro-%{version}
 %exclude 
-/opt/nuage-metro-%{version}/test/scripts
+/opt/nuage-metro-%{version}/test/scripts/*.*
 /opt/nuage-metro-%{version}/metro-ansible
 %attr(0755, root, root)
-/opt/nuage-metro-%{version}/test/scripts
+/opt/nuage-metro-%{version}/test/scripts/*.*
 /opt/nuage-metro-%{version}/metro-ansible
 
 %pre
