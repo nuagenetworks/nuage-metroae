@@ -29,7 +29,7 @@ exit 0
 rm -rf $RPM_BUILD_ROOT
 
 %files
-%defattr(-,root,root,-)
+%defattr(755,root,root,755)
 /opt/nuage-metro-%{version}
 
 %pre
