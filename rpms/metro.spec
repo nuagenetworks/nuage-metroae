@@ -29,8 +29,9 @@ exit 0
 rm -rf $RPM_BUILD_ROOT
 
 %files
-%defattr(644,root,root,644)
-/opt/nuage-metro-%{version}
+%defattr(644,root,root,644) /opt/nuage-metro-%{version}
+%attr(644, root, root) /opt/nuage-metro-%{version}/test/scripts/
+%attr(644, root, root) /opt/nuage-metro-%{version}/scripts/
 
 %pre
 
