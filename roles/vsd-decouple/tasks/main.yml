@@ -1,10 +1,23 @@
 ---
-- block:
-  - name: Copy the VSD migration script ISO to VSD's temp directory
-    command: "{{ vsd_migration_iso_copy }}"
-    remote_user: "{{ ansible_sudo_username }}"
-    delegate_to: "{{ ansible_deployment_host }}"
+- name: Pull facts of localhost
+  connection: local
+  action: setup
+  remote_user: "root"
 
+- include: report_header.yml
+
+- block:
+  - name: get the username running the deploy
+    local_action: command whoami
+    register: username_on_the_host
+
+  - debug: var=username_on_the_host
+    
+  - name: Copy the VSD migration script ISO to VSD's temp directory
+    copy: src={{ vsd_migration_iso_path }}/{{ vsd_migration_iso_file_name }}
+        dest=/tmp/
+    remote_user: root
+    
   - name: Register target directory status
     stat: path="/media/CDROM"
     register: cdrom_dir
@@ -36,7 +49,7 @@
         - "'iso' in mount_file.stdout"
       msg: "Did not find iso file in mount path"
 
-  - name: Decouple VSD Node2
+  - name: Decouple VSD Node3
     command: "/media/CDROM/decouple.sh -y"
     remote_user: root
   
@@ -44,7 +57,7 @@
     pause:
       seconds: 10
 
-  - name: Execute list_p1db command on node2
+  - name: Execute list_p1db command on node3
     command: "{{ p1db_cmd }}"
     register: list_p1db_output
     remote_user: root
@@ -56,7 +69,7 @@
     set_fact: ejabberd_p1db_json="{{ list_p1db_output.stdout|ejabberd_p1db_to_json }}"
   
   - name: Write p1bd JSON to file
-    nuage_append: filename="{{ report_filename }}" text="{{ inventory_hostname }} {{ ejabberd_p1db_json|to_nice_json }}\n"
+    nuage_append: filename="{{ report_path }}" text="{{ inventory_hostname }} {{ ejabberd_p1db_json|to_nice_json }}\n"
     remote_user: "{{ ansible_sudo_username }}"
     delegate_to: "{{ ansible_deployment_host }}"
 
@@ -66,7 +79,7 @@
       that: "not ejabberd_p1db_json['p1db_users']"
       msg: "Ejabbered is not decoupled"
 
-  - name: Execute list_cluster command on node2
+  - name: Execute list_cluster command on node3
     command: "{{ ejabber_decouple }}"
     register: list_cluster_output
     remote_user: root
@@ -78,7 +91,7 @@
     set_fact: ejabberd_cluster_json="{{ list_cluster_output.stdout|ejabberd_cluster_to_json }}"
   
   - name: Write cluster JSON to file
-    nuage_append: filename="{{ report_filename }}" text="{{ inventory_hostname }} {{ ejabberd_cluster_json|to_nice_json }}\n"
+    nuage_append: filename="{{ report_path }}" text="{{ inventory_hostname }} {{ ejabberd_cluster_json|to_nice_json }}\n"
     remote_user: "{{ ansible_sudo_username }}"
     delegate_to: "{{ ansible_deployment_host }}"
 
@@ -89,7 +102,7 @@
         - "ejabberd_cluster_json['cluster_users'] | length == 1" 
       msg: "Ejabberd is not decoupled successfully"
  
-  - name: Excute connected_users command on node2
+  - name: Excute connected_users command on node3
     command: "{{ connected_users }}"
     register: client_list
     until: client_list.stdout.find("cna") != -1
@@ -104,7 +117,7 @@
     set_fact: ejabberd_clients_json="{{ client_list.stdout|ejabberd_clients_to_json }}"
   
   - name: Write clients JSON to file
-    nuage_append: filename="{{ report_filename }}" text="{{ inventory_hostname }} {{ ejabberd_clients_json|to_nice_json }}\n"
+    nuage_append: filename="{{ report_path }}" text="{{ inventory_hostname }} {{ ejabberd_clients_json|to_nice_json }}\n"
     remote_user: "{{ ansible_sudo_username }}"
     delegate_to: "{{ ansible_deployment_host }}"
 
@@ -113,5 +126,5 @@
       that: "ejabberd_clients_json['connected_clients'] | length == 3"
       msg: " Ejabberd has more than 3 connected clients than itself" 
   when: 
-    - inventory_hostname == groups['vsds'][1]
+    - inventory_hostname == groups['vsds'][2]
     - vsd_sa_or_ha == 'ha'

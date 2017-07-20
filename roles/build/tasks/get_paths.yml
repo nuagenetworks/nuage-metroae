@@ -21,9 +21,9 @@
         vcin_qcow2_path: "{{ rc_vsd_file.files[0].path | dirname }}"
         vcin_qcow2_file_name: "{{ rc_vsd_file.files[0].path | basename }}"
     when: ( myvsds is defined and 
-          ( myvsds | map(attribute='target_server_type') | list | issuperset(["kvm"]) or myvsds | map(attribute='target_server_type') | list | issuperset(["heat"]) ) ) or
+          ( myvsds | map(attribute='target_server_type') | list | issuperset(["kvm"]) ) ) or
           ( myvcins is defined and
-          ( myvcins | map(attribute='target_server_type') | list | issuperset(["kvm"]) or myvcins | map(attribute='target_server_type') | list | issuperset(["heat"]) ) )
+          ( myvcins | map(attribute='target_server_type') | list | issuperset(["kvm"]) ) )
   - block: # OVA
     - name: Find name of VSD OVA File
       find: path="{{ nuage_unzipped_files_dir }}/vsd/ova"  pattern="*.ova" recurse=yes
@@ -95,7 +95,7 @@
         vstat_qcow2_path: "{{ rc_vstat_file.files[0].path | dirname }}"
         vstat_qcow2_file_name: "{{ rc_vstat_file.files[0].path | basename }}"
       when: rc_vstat_file.matched > 0
-    when: myvstats | map(attribute='target_server_type') | list | issuperset(["kvm"]) or myvstats | map(attribute='target_server_type') | list | issuperset(["heat"])
+    when: myvstats | map(attribute='target_server_type') | list | issuperset(["kvm"])
   - block:
     - name: Find name of Stats VM OVF/OVA File
       find: path="{{ nuage_unzipped_files_dir }}/vstat"  patterns="*.ova,*.ovf" recurse=yes
@@ -108,8 +108,8 @@
       }
     - name: Register VSTAT OVF/OVA variables with proper path and image locations for use in other playbooks
       set_fact:
-        vstat_ova_path: "{{ rc_vstat_file.files[0].path | dirname }}"
-        vstat_ova_file_name: "{{ rc_vstat_file.files[0].path | basename }}"
+        vstat_ova_or_ovf_path: "{{ rc_vstat_file.files[0].path | dirname }}"
+        vstat_ova_or_ovf_file_name: "{{ rc_vstat_file.files[0].path | basename }}"
       when: rc_vstat_file.matched > 0
     when: myvstats | map(attribute='target_server_type') | list | issuperset(["vcenter"])
   when:
@@ -127,9 +127,9 @@
 
 - name: Ensure that Stats VM OVF/OVA variables are set
   set_fact:
-    vstat_ova_path: "None"
-    vstat_ova_file_name: "None"
-  when: vstat_ova_path is not defined
+    vstat_ova_or_ovf_path: "None"
+    vstat_ova_or_ovf_file_name: "None"
+  when: vstat_ova_or_ovf_path is not defined
 
 ###################
 # VSC
@@ -151,7 +151,7 @@
         vsc_qcow2_path: "{{ rc_vsc_file.files[0].path | dirname }}"
         vsc_qcow2_file_name: "{{ rc_vsc_file.files[0].path | basename }}"
       when: rc_vsc_file.matched > 0
-    when: myvscs | map(attribute='target_server_type') | list | issuperset(["kvm"]) or myvscs | map(attribute='target_server_type') | list | issuperset(["heat"])
+    when: myvscs | map(attribute='target_server_type') | list | issuperset(["kvm"])
   - block:
     - name: Find name of VSC OVA File
       find: path="{{ nuage_unzipped_files_dir }}/vsc"  pattern="vsc_singledisk.ova" recurse=yes
@@ -479,7 +479,7 @@
 # VNS Utility/ NSGV
 #####################
 
-- block:
+- block: #QCOW2
   - name: Find names of VNS files
     find: path="{{ nuage_unzipped_files_dir }}/{{ item.subdir }}"  pattern="{{ item.pattern }}" recurse=yes
     register: rc_vns_files
@@ -500,8 +500,35 @@
       - vnsutil_qcow2
       - nsgv_qcow2
   when:
-    - (myvnsutils is defined or mynsgvs is defined)
-    - "'install' in vns_operations_list|default(['None'])"
+    ( mynsgvs is defined or
+    ( myvnsutils is defined and  myvnsutils | map(attribute='target_server_type') | list | issuperset(["kvm"]) or myvnsutils | map(attribute='target_server_type') | list | issuperset(["heat"]) ) and
+    ("'install' in vns_operations_list|default(['None'])"))
+
+- block: #OVA/OVF
+  - name: Find names of VNS files
+    find: path="{{ nuage_unzipped_files_dir }}/{{ item.subdir }}"  pattern="{{ item.pattern }}" recurse=yes
+    register: rc_vns_files
+    with_items:
+      - { subdir: "vns/utils/", pattern: "vns-util-*.ova" }
+      - { subdir: "vns/nsg/", pattern: "NSG-*.ovf" }
+  - debug: var=rc_vns_files verbosity=1
+  - name: Verify that VNS files were found
+    assert: {
+      that: "{{ rc_vns_files.results[0].matched }} > 0 and {{ rc_vns_files.results[1].matched }} > 0",
+      msg: "Unable to find VNS files"
+    }
+  - name: Register VNS variables with proper path and image locations for use in other playbooks
+    set_fact:
+      "{{ item.1 }}_path": "{{ rc_vns_files.results[item.0].files[0].path | dirname }}"
+      "{{ item.1 }}_file_name": "{{ rc_vns_files.results[item.0].files[0].path | basename }}"
+    with_indexed_items:
+      - vnsutil_ova
+      - nsgv_ovf
+  when:
+    ( mynsgvs is defined or
+    ( myvnsutils is defined and  myvnsutils | map(attribute='target_server_type') | list | issuperset(["vcenter"]) ) and
+    ("'install' in vns_operations_list|default(['None'])"))
+
   tags:
     - nsgv
 
@@ -517,6 +544,17 @@
     nsgv_qcow2_file_name: "None"
   when: nsgv_qcow2_path is not defined
 
+- name: Make sure the proper VNSUTILS OVA variables have been defined
+  set_fact:
+    vnsutil_ova_path: "None"
+    vnsutil_ova_file_name: "None"
+  when: vnsutil_ova_path is not defined
+
+- name: Make sure the proper NSGV OVF variables have been defined
+  set_fact:
+    nsgv_ovf_path: "None"
+    nsgv_ovf_file_name: "None"
+  when: nsgv_ovf_path is not defined
 ###################
 # DNS - DNS VM
 ###################

@@ -1,7 +1,50 @@
-- name: Clean known_hosts of VSC's on "{{ target_server }}"
-  command: ssh-keygen -R "{{ mgmt_ip }}" -f /root/.ssh/known_hosts
-  delegate_to: "{{ ansible_deployment_host }}"
-  remote_user: "{{ ansible_sudo_username }}"
+- name: Get output of 'show version'
+  sros_command:
+    commands:
+      - show version
+    provider: "{{ vsc_creds }}"
+  register: vsc_version
+
+- name: Print 'show version' when verbosity >= 1
+  debug: var=vsc_version.stdout[0] verbosity=1
+
+- name: Create local variable with show version in json
+  set_fact:
+    vsc_version_json: "{{ vsc_version.stdout[0]|show_version_to_json }}"
+
+- name: Print show version in json  when verbosity >= 1
+  debug: var=vsc_version_json verbosity=1
+
+- block:
+  - name: Set mgmt_ip to first vsc node 
+    set_fact:
+      mgmt_ip: "{{ hostvars[groups['vscs'][0]]['mgmt_ip'] }}"
+
+  - name: Configure PBR backward compatibility on first VSC node running 3.2 version
+    sros_config:
+      lines:
+        - configure router bgp evpn-pre-rfc send-opaque-community
+        - configure router bgp evpn-pre-rfc non-compliant
+        - configure router bgp no shutdown
+        - admin save
+      provider: "{{ vsc_creds }}"
+
+  - name: Set mgmt_ip to second vsc node
+    set_fact:
+      mgmt_ip: "{{ hostvars[groups['vscs'][1]]['mgmt_ip'] }}"
+
+  - name: Configure PBR backward compatibility on second VSC node running 3.2 version
+    sros_config:
+      lines:
+        - configure router bgp evpn-pre-rfc send-opaque-community
+        - configure router bgp evpn-pre-rfc non-compliant
+        - configure router bgp no shutdown
+        - admin save
+      provider: "{{ vsc_creds }}"
+  when:
+    - "{{ vsc_version_json['vsc_version'][0] }} == 3" 
+    - inventory_hostname in groups['vscs'][0]
+    - groups['vscs'][1] is defined
 
 - name: Get output of 'show bof'
   sros_command:
@@ -9,8 +52,6 @@
       - show bof
     provider: "{{ vsc_creds }}"
   register: bof_config
-  delegate_to: "{{ ansible_deployment_host }}"
-  remote_user: "{{ ansible_sudo_username }}"
 
 - name: Print 'show bof' when verbosity >= 1
   debug: var=bof_config.stdout[0] verbosity=1
@@ -29,13 +70,11 @@
         - show system connections port 5222
       provider: "{{ vsc_creds }}"
     register: vsc_sys_conn
-    delegate_to: "{{ ansible_deployment_host }}"
-    remote_user: "{{ ansible_sudo_username }}"
 
   - name: Print 'show system connections port 5222' when verbosity >= 1
     debug: var=vsc_sys_conn verbosity=1
 
-  - name: Create local variable with vsc system connetion in json
+  - name: Create local variable with VSC system connetion in json
     set_fact: 
       vsc_sys_conn_json: "{{ vsc_sys_conn.stdout[0]|vsc_system_connections_to_json }}"
 
@@ -57,8 +96,6 @@
       interval: 10
       retries: 6
     register: xmpp_status
-    delegate_to: "{{ ansible_deployment_host }}"
-    remote_user: "{{ ansible_sudo_username }}"
   
   - name: Print vsc xmpp status  when verbosity >= 1
     debug: var=xmpp_status verbosity=1
@@ -71,8 +108,6 @@
       - show vswitch-controller xmpp-server detail
     provider: "{{ vsc_creds }}"
   register: xmpp_detail
-  delegate_to: "{{ ansible_deployment_host }}"
-  remote_user: "{{ ansible_sudo_username }}"
 
 - name: Print 'show vswitch-controller xmpp-server detail' when verbosity >= 1
   debug: var=xmpp_detail verbosity=1
@@ -100,8 +135,6 @@
       - admin save
     provider: "{{ vsc_creds }}"
   register: vsc_config_save
-  delegate_to: "{{ ansible_deployment_host }}"
-  remote_user: "{{ ansible_sudo_username }}"
 
 - name: Print 'admin save' when verbosity >= 1
   debug: var=vsc_config_save verbosity=1 

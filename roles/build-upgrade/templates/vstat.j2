@@ -3,26 +3,42 @@
 # will be lost if reset-build or build is run
 #
 target_server_type: {{ item.target_server_type }}
-{% if item.target_server_type == "kvm" or item.target_server_type == "vcenter" %}
+{% if item.target_server_type | match("kvm") or item.target_server_type | match("vcenter") %}
 target_server: {{ item.target_server }}
-
+hostname: {{ item.hostname }}
+{% if item.vmname is defined %}
+vmname: {{ item.vmname }}
+{% else %}
+vmname: {{ item.hostname }}
+{% endif %}
+upgrade_vmname: {{ item.upgrade_vmname }}
 mgmt_ip: {{ item.mgmt_ip }}
 mgmt_gateway: {{ item.mgmt_gateway }}
 mgmt_netmask: {{ item.mgmt_netmask }}
 
 vsd_fqdn: {{ item.vsd_fqdn }}
+{% if vstat_sa_or_ha is defined %}
+vstat_sa_or_ha: {{ vstat_sa_or_ha }}
+{% else %}
+vstat_sa_or_ha: sa
+{% endif %}
 
-{% if item.target_server_type == "kvm" %}
+{% if "health" not in vstat_operations_list %}
+vstat_nfs_server_with_folder: {{ vstat_nfs_server_with_folder }}
+{% endif %}
+{% if item.target_server_type | match("kvm") %}
 vstat_qcow2_path: {{ vstat_qcow2_path }}
 vstat_qcow2_file_name: {{ vstat_qcow2_file_name }}
 {% endif %}
-{% if item.target_server_type == "vcenter" %}
-vstat_ovf_path: {{ vstat_ovf_path }}
-vstat_ovf_file_name: {{ vstat_ovf_file_name }}
+{% if item.target_server_type | match("vcenter") %}
+vstat_ova_or_ovf_path: {{ vstat_ova_or_ovf_path }}
+vstat_ova_or_ovf_file_name: {{ vstat_ova_or_ovf_file_name }}
 {% endif %}
 {% endif %}
-{% if item.vstat_backup_location is defined%}
-vstat_backup_location: {{ item.vstat_backup_location }}
+{% if item.list_of_indices is defined %}
+list_of_indices: {{ item.list_of_indices }}
 {% endif %}
+{% if vstat_operations_list is defined and vstat_operations_list != 'health' %}
 vstat_backup_scripts_path: {{ vstat_backup_scripts_path }}
 vstat_backup_scripts_file_list: {{ vstat_backup_scripts_file_list }}
+{% endif %}

@@ -15,14 +15,11 @@
 
 - name: Clean known_hosts of VSC's 
   command: ssh-keygen -R "{{ mgmt_ip }}" -f /root/.ssh/known_hosts
-  delegate_to: "{{ ansible_deployment_host }}"
-  remote_user: "{{ ansible_sudo_username }}"
 
 # Without this, the run creates a false positive as it finds the files
 # from the previous run
 - name: Remove older failure_report.log files
   command: rm -f {{ failure_report_file_name }}
-  delegate_to: localhost
 
 - name: Get output of 'show version'
   sros_command:
@@ -30,16 +27,12 @@
       - show version
     provider: "{{ vsc_creds }}"
   register: sh_version
-  delegate_to: "{{ ansible_deployment_host }}"
-  remote_user: "{{ ansible_sudo_username }}"
 
 - name: Print 'show version' when verbosity >= 1
   debug: var=sh_version verbosity=1
 
 - name: Write show version json to report
   nuage_append: filename="{{ report_path }}" text="{{ inventory_hostname }} {{ sh_version|to_nice_json }}\n"
-  delegate_to: "{{ ansible_deployment_host }}"
-  remote_user: "{{ ansible_sudo_username }}"
 
 - name: Get output of 'show router bgp summary'
   sros_command:
@@ -47,8 +40,6 @@
       - show router bgp summary
     provider: "{{ vsc_creds }}"
   register: bgp_summary
-  delegate_to: "{{ ansible_deployment_host }}"
-  remote_user: "{{ ansible_sudo_username }}"
 
 - name: Print 'show router bgp summary' when verbosity >= 1
   debug: var=bgp_summary verbosity=1
@@ -61,8 +52,6 @@
 
 - name: Write BGP Admin State JSON to file
   nuage_append: filename="{{ report_path }}" text="{{ inventory_hostname }} {{ bgp_summary_json|to_nice_json }}\n"
-  delegate_to: "{{ ansible_deployment_host }}"
-  remote_user: "{{ ansible_sudo_username }}"
 
 - name: Create local variable with BGP Admin State
   set_fact: bgp_admin_state="{{ bgp_summary_json['BGP Admin State'] }}"
@@ -109,8 +98,6 @@
       - show vswitch-controller xmpp-server detail
     provider: "{{ vsc_creds }}"
   register: xmpp_detail
-  delegate_to: "{{ ansible_deployment_host }}"
-  remote_user: "{{ ansible_sudo_username }}"
 
 - name: Print 'show vswitch-controller xmpp-server detail' when verbosity >= 1
   debug: var=xmpp_detail verbosity=1
@@ -123,8 +110,6 @@
 
 - name: Write xmpp-server detail json to report
   nuage_append: filename="{{ report_path }}" text="{{ inventory_hostname }} {{ xmpp_detail_json|to_nice_json }}\n"
-  delegate_to: "{{ ansible_deployment_host }}"
-  remote_user: "{{ ansible_sudo_username }}"
 
 - name: Create local variable for xmpp-server state
   set_fact: xmpp_server_state="{{ xmpp_detail_json['State'] }}"
@@ -139,14 +124,44 @@
   }
   ignore_errors: yes
 
+- name: Create local variable for xmpp-server state
+  set_fact: xmpp_server_state="{{ xmpp_detail_json['State'] }}"
+
+- name: Print xmpp-server state when verbosity >= 1
+  debug: var=xmpp_server_state verbosity=1
+
+- name: Check for the expected xmpp-server state
+  assert: { 
+    that: "{{ expected_xmpp_server_state == xmpp_server_state }}",
+    msg: "Invalid xmpp-server state ({{ xmpp_server_state }}) detected. Expected {{ expected_xmpp_server_state }}. Check 'show vswitch-controller xmpp-server details'."
+  }
+  ignore_errors: yes
+
+- name: Get output of 'show vswitch-controller vsd detail'
+  sros_command:
+    commands:
+      - show vswitch-controller vsd detail
+    provider: "{{ vsc_creds }}"
+  register: vsd_detail
+
+- name: Print 'show vswitch-controller vsd detail' when verbosity >= 1
+  debug: var=vsd_detail verbosity=1
+
+- name: Create local variable with vsd detail in json
+  set_fact: vsd_detail_json="{{ vsd_detail.stdout[0]|vsd_detail_to_json }}"
+
+- name: Print vsd detail in json when verbosity >= 1
+  debug: var=vsd_detail_json verbosity=1
+
+- name: Write vsd detail json to report
+  nuage_append: filename="{{ report_path }}" text="{{ inventory_hostname }} {{ vsd_detail_json|to_nice_json }}\n"
+
 - name: Get output of 'show vswitch-controller vswitches'
   sros_command:
     commands:
       - show vswitch-controller vswitches
     provider: "{{ vsc_creds }}"
   register: show_vswitches
-  delegate_to: "{{ ansible_deployment_host }}"
-  remote_user: "{{ ansible_sudo_username }}"
 
 - name: Print output of 'show vswitch-controller vswitches' when verbosity >= 1
   debug: var=show_vswitches verbosity=1
@@ -159,8 +174,6 @@
 
 - name: Write vswiches json to report
   nuage_append: filename="{{ report_path }}" text="{{ inventory_hostname }} {{ show_vswitches_json|to_nice_json }}\n"
-  delegate_to: "{{ ansible_deployment_host }}"
-  remote_user: "{{ ansible_sudo_username }}"
 
 - name: Check for the expected number of vswitches
   assert: { 
@@ -169,16 +182,14 @@
   }
   ignore_errors: yes
 
-- name: Get output of 'show vswitch-controller vports type host detail'
+- name: Get output of 'show vswitch-controller vports type host'
   sros_command:
     commands:
-      - show vswitch-controller vports type host detail
+      - show vswitch-controller vports type host
     provider: "{{ vsc_creds }}"
   register: show_host_vports
-  delegate_to: "{{ ansible_deployment_host }}"
-  remote_user: "{{ ansible_sudo_username }}"
 
-- name: Print output of 'show vswitch-controller vports type host detail' when verbosity >= 1
+- name: Print output of 'show vswitch-controller vports type host' when verbosity >= 1
   debug: var=show_host_vports verbosity=1
 
 - name: Create local variable with show host vports output in json
@@ -189,26 +200,22 @@
 
 - name: Write host vports json to report
   nuage_append: filename="{{ report_path }}" text="{{ inventory_hostname }} HOST VPORTS {{ show_host_vports_json|to_nice_json }}\n"
-  delegate_to: "{{ ansible_deployment_host }}"
-  remote_user: "{{ ansible_sudo_username }}"
 
 - name: Check for the expected number of host vports
   assert: { 
     that: "{{ expected_num_host_vports }} == {{ show_host_vports_json['No. of virtual ports'] }}",
-    msg: "Invalid host vport count ({{ show_host_vports_json['No. of virtual ports'] }}) detected. Expected {{ expected_num_host_vports }}. Check 'show vswitch-controller vports type host detail'."
+    msg: "Invalid host vport count ({{ show_host_vports_json['No. of virtual ports'] }}) detected. Expected {{ expected_num_host_vports }}. Check 'show vswitch-controller vports type host'."
   }
   ignore_errors: yes
 
-- name: Get output of 'show vswitch-controller vports type vm detail'
+- name: Get output of 'show vswitch-controller vports type vm'
   sros_command:
     commands:
-      - show vswitch-controller vports type vm detail
+      - show vswitch-controller vports type vm
     provider: "{{ vsc_creds }}"
   register: show_vm_vports
-  delegate_to: "{{ ansible_deployment_host }}"
-  remote_user: "{{ ansible_sudo_username }}"
 
-- name: Print output of 'show vswitch-controller vports type vm detail' when verbosity >= 1
+- name: Print output of 'show vswitch-controller vports type vm' when verbosity >= 1
   debug: var=show_vm_vports verbosity=1
 
 - name: Create local variable with show vm vports output in json
@@ -219,13 +226,11 @@
 
 - name: Write vm vports json to report
   nuage_append: filename="{{ report_path }}" text="{{ inventory_hostname }} VM VPORTS {{ show_vm_vports_json|to_nice_json }}\n"
-  delegate_to: "{{ ansible_deployment_host }}"
-  remote_user: "{{ ansible_sudo_username }}"
 
 - name: Check for the expected number of vm vports
   assert: { 
     that: "{{ expected_num_vm_vports }} == {{ show_vm_vports_json['No. of virtual ports'] }}",
-    msg: "Invalid vm vport count ({{ show_vm_vports_json['No. of virtual ports'] }}) detected. Expected {{ expected_num_vm_vports }}. Check 'show vswitch-controller vports type vm detail'."
+    msg: "Invalid vm vport count ({{ show_vm_vports_json['No. of virtual ports'] }}) detected. Expected {{ expected_num_vm_vports }}. Check 'show vswitch-controller vports type vm'."
   }
   ignore_errors: yes
 
@@ -242,8 +247,6 @@
       - show vswitch-controller gateway ports
     provider: "{{ vsc_creds }}"
   register: show_gateway_ports
-  delegate_to: "{{ ansible_deployment_host }}"
-  remote_user: "{{ ansible_sudo_username }}"
 
 - name: Print output of 'show vswitch-controller gateway ports' when verbosity >= 1
   debug: var=show_gateway_ports verbosity=1
@@ -256,8 +259,6 @@
 
 - name: Write gateway ports json to report
   nuage_append: filename="{{ report_path }}" text="{{ inventory_hostname }} GATEWAY VPORTS {{ show_gateway_ports_json|to_nice_json }}\n"
-  delegate_to: "{{ ansible_deployment_host }}"
-  remote_user: "{{ ansible_sudo_username }}"
 
 - name: Check for the expected number of gateway ports
   assert: { 
@@ -277,8 +278,6 @@
   stat:
     path: "{{ failure_report_file_name }}"
   register: report
-  delegate_to: "{{ ansible_deployment_host }}"
-  remote_user: "{{ ansible_sudo_username }}"
 
 - name: Check for failures
   assert: { 

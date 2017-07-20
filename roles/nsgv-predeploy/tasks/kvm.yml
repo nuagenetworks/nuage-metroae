@@ -13,17 +13,17 @@
 
 - name: Check target memory
   fail: msg="Not enough memory ({{ ansible_memtotal_mb }})"
-  when: ansible_memtotal_mb < {{ nsgv_target_server_memory_mb_min }}
+  when: ansible_memtotal_mb < nsgv_target_server_memory_mb_min
 
 - name: Check target cores
   fail: msg="Not enough cores ({{ ansible_processor_vcpus }})"
-  when: ansible_processor_vcpus < {{ nsgv_target_server_vcpus_min }}
+  when: ansible_processor_vcpus < nsgv_target_server_vcpus_min
 
 - name: Check target bridges
   fail: msg="Required network bridges not found"
-  when: ("{{ mgmt_bridge }}" not in ansible_interfaces) or
-        ("{{ data_bridge }}" not in ansible_interfaces) or
-        ("{{ access_bridge }}" not in ansible_interfaces) 
+  when: (mgmt_bridge not in ansible_interfaces) or
+        (data_bridge not in ansible_interfaces) or
+        (access_bridge not in ansible_interfaces) 
         
 - name: Install packages for RedHat OS family distros
   yum: name={{ item }} state=present
@@ -33,7 +33,7 @@
    - bridge-utils
    - libguestfs-tools
    - libvirt-python
-  when: ansible_os_family == "RedHat"
+  when: ansible_os_family | match("RedHat")
   delegate_to: "{{ target_server }}"
   remote_user: "{{ target_server_username }}"
 
@@ -45,7 +45,7 @@
    - bridge-utils
    - libguestfs-tools
    - python-libvirt
-  when: ansible_os_family == "Debian"
+  when: ansible_os_family | match("Debian")
   delegate_to: "{{ target_server }}"
   remote_user: "{{ target_server_username }}"
 
@@ -57,11 +57,11 @@
 
 - name: Verify that the VM is not already running
   assert:
-    that: "inventory_hostname not in virt_vms.list_vms"
-    msg: "{{ inventory_hostname }} is already running on {{ target_server }}"
+    that: "vmname not in virt_vms.list_vms"
+    msg: "{{ vmname }} is already running on {{ target_server }}"
 
 - name: Create libvirt image directory
-  file: path={{ images_path }}/{{ inventory_hostname }}
+  file: path={{ images_path }}/{{ vmname }}
         state=directory
         owner={{ libvirt.user }}
         group={{ libvirt.group }}
@@ -70,7 +70,7 @@
 
 - name: Copy the NSGV qcow image to virt images directory
   copy: src={{ nsgv_qcow2_path }}/{{ nsgv_qcow2_file_name }}
-        dest={{ images_path }}/{{ inventory_hostname }}
+        dest={{ images_path }}/{{ vmname }}
         owner={{ libvirt.user }}
         group={{ libvirt.group }}
   delegate_to: "{{ target_server }}"
@@ -91,15 +91,15 @@
 
   - name: Copy the ISO image to virt images directory
     copy: src="{{ mktemp_output.stdout }}/user_image.iso"
-          dest={{ images_path }}/{{ inventory_hostname }}
+          dest={{ images_path }}/{{ vmname }}
           owner={{ libvirt.user }}
           group={{ libvirt.group }}
     delegate_to: "{{ target_server }}"
     remote_user: "{{ target_server_username }}"
-  when: bootstrap_method == 'zfb_metro'
+  when: bootstrap_method | match('zfb_metro')
 
 - name: "Define new NSGV VM"
-  virt: name="{{ inventory_hostname }}"
+  virt: name="{{ vmname }}"
         command=define
         xml="{{ lookup('template', 'nsgv.xml.j2') }}"
         uri=qemu:///system
@@ -107,7 +107,7 @@
   remote_user: "{{ target_server_username }}"
 
 - name: "Run NSGV VM"
-  virt: name="{{ inventory_hostname }}"
+  virt: name="{{ vmname }}"
         state=running
         uri=qemu:///system
   delegate_to: "{{ target_server }}"

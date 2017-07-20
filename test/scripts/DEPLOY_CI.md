@@ -14,9 +14,6 @@ Executing this script will copy the `setup.yml.CI` file to metro root folder and
 
 This setup file is responsible for creating a random hostname for CI VMs that will be deloyed in OpenStack. This hostname is populated in `build_vars.yml.RedHat.CI.j2` build file and is copied to reset-build role files.
 
-### ci-build role
-
-The ci-build role is used to automatically populate a number of Ansible variable files for the operation of the metro playbooks on OpenStack. This is used to create a `hosts` file, populate a `host_vars` directory, populate a `group_vars` directory, that are consumed by ci-predeploy/deploy/destroy roles.
 
 ### ci-predeploy role
 

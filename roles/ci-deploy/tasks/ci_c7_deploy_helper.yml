@@ -78,11 +78,11 @@
       port: "22"
       host: "{{ inventory_hostname }}"
       search_regex: OpenSSH
-      delay: 60
+      delay: 10
 
   - name: Pause for cloud-init to inject ssh keys
     pause:
-      seconds: 300
+      seconds: 40
 
   - name: Query facts
     action: setup
@@ -97,13 +97,33 @@
     remote_user: root
 
     # Temp task to get around policy issue
-  - name: Add iptables rule to allow vsd to reach internet route to reach
+  - name: Add iptables rule to allow vsd to reach internet 
     command: "iptables -t nat -A POSTROUTING -s {{ network_address }}.211 -j SNAT --to-source {{ target_server }} "
     remote_user: root
 
+  - name: Add iptables rule to allow vsds to reach internet
+    command: "{{ item }}"
+    with_items: 
+      - "iptables -t nat -A POSTROUTING -s {{ network_address }}.212 -j SNAT --to-source {{ target_server }} "
+      - "iptables -t nat -A POSTROUTING -s {{ network_address }}.213 -j SNAT --to-source {{ target_server }} "
+    remote_user: root
+    when: deployment_mode == 'ha'
+
+  - name: Add iptables rule to allow vstat to reach internet
+    command: "iptables -t nat -A POSTROUTING -s {{ network_address }}.216 -j SNAT --to-source {{ target_server }} "
+    remote_user: root
+
+  - name: Add iptables rule to allow vstats to reach internet 
+    command: "{{ item }}"
+    with_items:
+      - "iptables -t nat -A POSTROUTING -s {{ network_address }}.217 -j SNAT --to-source {{ target_server }} "
+      - "iptables -t nat -A POSTROUTING -s {{ network_address }}.218 -j SNAT --to-source {{ target_server }} "
+    remote_user: root
+    when: deployment_mode == 'ha'
+
   # Temp task to get around policy issue
   - name: Add iptables rule to allow vnsutil to reach internet route to reach
-    command: "iptables -t nat -A POSTROUTING -s {{ network_address }}.215 -j SNAT --to-source {{ target_server }} "
+    command: "iptables -t nat -A POSTROUTING -s {{ network_address }}.219 -j SNAT --to-source {{ target_server }} "
     remote_user: root
 
   # Temp task to get around policy issue
@@ -111,4 +131,4 @@
     command: "iptables-save"
     remote_user: root
 
-  when: ci_image == 'jen-centos7'
+  when: '"jen-centos" in ci_image'

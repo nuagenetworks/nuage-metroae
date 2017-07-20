@@ -154,11 +154,11 @@ def show_vswitches_to_json(string):
 
 
 def show_host_vports_to_json(string):
-    ''' Given a string representation of the output of "show vswitch-controller vports type host detail"
+    ''' Given a string representation of the output of "show vswitch-controller vports type host"
     as a string, return a JSON representation of a subset of the data in that output.
     A sample of the output:
     {
-      "Command": "show vswitch-controller vports type host detail",
+      "Command": "show vswitch-controller vports type host",
       "No. of virtual ports": "12",
       "Vports": [
         {
@@ -185,7 +185,7 @@ def show_host_vports_to_json(string):
                  "(?P<vprn>\d+)\s+(?P<evpn>\d+)\s+(?P<vpip>\d+\.\d+\.\d+\.\d+\/\d+)")
     dict = {}
     port_list = []
-    dict["Command"] = "show vswitch-controller vports type host detail"
+    dict["Command"] = "show vswitch-controller vports type host"
     dict[NUMVPORTS] = numeric_name_value_helper(NUMVPORTS, ':', string)
     ports = re.finditer(VPORTS_RE, string)
     for port in ports:
@@ -202,11 +202,11 @@ def show_host_vports_to_json(string):
 
 
 def show_vm_vports_to_json(string):
-    ''' Given a string representation of the output of "show vswitch-controller vports type vm detail"
+    ''' Given a string representation of the output of "show vswitch-controller vports type vm"
     as a string, return a JSON representation of a subset of the data in that output.
     A sample of the output:
     {
-      "Command": "show vswitch-controller vports type vm detail",
+      "Command": "show vswitch-controller vports type vm",
       "No. of virtual ports": "12",
       "Vports": [
         {
@@ -232,10 +232,10 @@ def show_vm_vports_to_json(string):
     '''
     NUMVPORTS = "No. of virtual ports"
     VPORTS_RE = ("(?P<vpname>\S+)\s+(?P<vmname>\S+)\s+(?P<vprn>\d+)\s+(?P<evpn>\d+)\s+"
-                 "(?P<multi>\S+)\s+(?P<vpip>\d+\.\d+\.\d+\.\d+\/\d+)\s+(?P<mac>\d+:\d+:\d+:\d+:\d+:\d+)")
+                 "(?P<multi>\S+)\s+(?P<vpip>\d+\.\d+\.\d+\.\d+\/\d+)\s+(?P<mac>.*)")
     dict = {}
     port_list = []
-    dict["Command"] = "show vswitch-controller vports type vm detail"
+    dict["Command"] = "show vswitch-controller vports type vm"
     dict[NUMVPORTS] = numeric_name_value_helper(NUMVPORTS, ':', string)
     ports = re.finditer(VPORTS_RE, string)
     for port in ports:
@@ -286,28 +286,7 @@ def show_gateway_ports_to_json(string):
         }
       ]
     }
-    TODO: Remove this string and use real input
     '''
-    mystring = '''===============================================================================
-Gateway Ports Information Table
-===============================================================================
-Gateway IP/Nsg Id  : 10.15.2.254
-Portname           : eth2               Port Mode          : access
-VSD Role           : n/a                Gw Role            : n/a
-HB VLAN Id         : n/a                HB VLAN Interval   : n/a
-VSD Red State      : false              Gw Red State       : false
-Vlan-Range         : 0-4094
-
-Gateway IP/Nsg Id  : 10.15.33.254
-Portname           : eth2               Port Mode          : access
-VSD Role           : n/a                Gw Role            : n/a
-HB VLAN Id         : n/a                HB VLAN Interval   : n/a
-VSD Red State      : false              Gw Red State       : false
-Vlan-Range         : 0-4094
-
--------------------------------------------------------------------------------
-No. of Ports: 2
-======================================================================= '''
     NUMPORTS = "No. of Ports"
     RE = '>\S+)\s+'
     DEL = '\s+:\s+(?P<'
@@ -342,8 +321,8 @@ No. of Ports: 2
     dict = {}
     port_list = []
     dict["Command"] = "show vswitch-controller gateway ports"
-    dict[NUMPORTS] = numeric_name_value_helper(NUMPORTS, ':', mystring)
-    ports = re.finditer(myregex, mystring)
+    dict[NUMPORTS] = numeric_name_value_helper(NUMPORTS, ':', string)
+    ports = re.finditer(myregex, string)
     for port in ports:
         port_dict = {}
         for item in items:
@@ -400,6 +379,22 @@ def image_version_to_json(string):
     return json.dumps(dict)
 
 
+def show_version_to_json(string):
+    ''' Given a string representation of the output of "show version"
+    as a string, return a JSON representation of a subset of the data in that output.
+    A sample of the output:
+    {
+       "Command": "show version",
+       "vsc_version": "4.0.4"
+    }
+    '''
+    dict = {}
+    dict["Command"] = "show version"
+    version_re = re.search(r'TiMOS-.*-(\d+\.\d+\.\d+)', string)
+    dict["vsc_version"] = version_re.group(1)
+    return json.dumps(dict)
+
+
 def vsc_system_connections_to_json(string):
     ''' Given a string representation of the output of "show system connections port 5222"
     as a string, return a JSON representation of a subset of the data in that output.
@@ -418,6 +413,30 @@ def vsc_system_connections_to_json(string):
     return json.dumps(dict)
 
 
+def vsd_detail_to_json(string):
+    ''' Given a string representation of the output of "show vswitch-controller vsd detail
+    as a string, return a JSON representation of a subset of the date in that output.
+    A sample of the output:
+    {
+       "Command": "show vswitch-controller vsd detail",
+       "VSD-Info": [{"vsd-user": "cna@uc-xmpp.example.com/vsd1", "status": "available"},
+                    {"vsd-user": "cna@uc-xmpp.example.com/vsd2", "status": "available"},
+                   ]
+    }
+    '''
+    dict = {}
+    dict["Command"] = "show vswitch-controller vsd detail"
+    dict["VSD-Info"] = []
+    vsd_re = re.compile(r'VSD User Name\s+:\s+(?P<vsduser>(.*))\s+Uptime.*\s+Status\s+:\s+(?P<status>(\w+))')
+    vsd_details = re.finditer(vsd_re, string)
+    for vsd in vsd_details:
+        vsd_dict = {"vsd_user": vsd.group('vsduser'),
+                    "status": vsd.group('status')
+                    }
+        dict["VSD-Info"].append(vsd_dict)
+    return json.dumps(dict)
+
+
 class FilterModule(object):
     ''' Query filter '''
 
@@ -431,5 +450,7 @@ class FilterModule(object):
             'show_gateway_ports_to_json': show_gateway_ports_to_json,
             'show_bof_to_json': show_bof_to_json,
             'image_version_to_json': image_version_to_json,
-            'vsc_system_connections_to_json': vsc_system_connections_to_json
+            'show_version_to_json': show_version_to_json,
+            'vsc_system_connections_to_json': vsc_system_connections_to_json,
+            'vsd_detail_to_json': vsd_detail_to_json
         }

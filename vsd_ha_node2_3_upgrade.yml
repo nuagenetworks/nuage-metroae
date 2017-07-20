@@ -1,0 +1,35 @@
+---
+- hosts: vsds
+  gather_facts: no
+  any_errors_fatal: true
+  vars:
+    report_filename: vsd_node2_3_pre_upgrade_report.txt
+  roles:
+    - vsd-health
+
+- hosts: vsd_node2
+  gather_facts: no
+  any_errors_fatal: true
+  roles:
+    - vsd-dbbackup
+
+- hosts: vsd_node1
+  gather_facts: no
+  any_errors_fatal: true
+  vars:
+    report_filename: vsd_decouple_report.txt
+  roles:
+    - vsd-decouple
+ 
+- hosts: vsd_node2:vsd_node3
+  gather_facts: no
+  roles:
+    - vsd-upgrade
+
+- hosts: vsds
+  gather_facts: no
+  any_errors_fatal: true
+  vars:
+    report_filename: vsd_node2_3_post_upgrade_report.txt
+  roles:
+    - vsd-health
