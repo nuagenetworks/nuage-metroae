@@ -10,6 +10,7 @@ import logging
 logging.basicConfig(filename='vsc_verify.log', level=logging.DEBUG)
 logger = logging.getLogger("netmiko")
 
+
 # Returns lines with vsc host names
 def get_vsclines(fp):
     vsc_start = False
