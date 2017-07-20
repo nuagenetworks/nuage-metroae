@@ -44,10 +44,10 @@ rm -rf $RPM_BUILD_ROOT
 opt/nuage-metro-%{version}/*.cfg
 
 
-%attr(0755,root,root,0755)
+%attr(0755,root,root)
 /opt/nuage-metro-%{version}/test/scripts
 /opt/nuage-metro-%{version}/scripts
-opt/nuage-metro-%{version}/metro-ansible
+/opt/nuage-metro-%{version}/metro-ansible
 
 %pre
 
