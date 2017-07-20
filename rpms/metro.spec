@@ -46,6 +46,7 @@ rm -rf $RPM_BUILD_ROOT
 /opt/nuage-metro-%{version}/*.yml
 /opt/nuage-metro-%{version}/*.cfg
 /opt/nuage-metro-%{version}/rpms
+/opt/nuage-metro-%{version}/scripts/vars
 
 
 %attr(0755,root,root)
