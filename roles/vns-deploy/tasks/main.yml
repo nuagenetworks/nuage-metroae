@@ -1,6 +1,8 @@
 ---
 - name: Clean known_hosts of VSC's on "{{ target_server }}"
   command: ssh-keygen -R "{{ mgmt_ip }}" -f /root/.ssh/known_hosts
+  args:
+    removes: "/root/.ssh/known_hosts"
   delegate_to: "{{ ansible_deployment_host }}"
   remote_user: "{{ ansible_sudo_username }}" 
 
@@ -79,6 +81,16 @@
     with_items: "{{ groups['vsds'] }}"
   when: yum_proxy != 'NONE'
 
+- name: Revoke old certs
+  expect:
+   timeout: 55
+   command: "{{ revoke_certs }}"
+   responses:
+     (?i)password: "admin"
+  delegate_to: "{{ groups['vsds'][0] }}"
+  remote_user: "root"
+  ignore_errors: yes
+
 - name: Get VSD version
   shell: echo $VSD_VERSION
   register: vsd_version
@@ -116,6 +128,14 @@
 
 - name: Verification Result Success Status
   debug: var=output.stdout verbosity=1
+
+# JvB sros_command fails if ~/.ssh/known_hosts does not exist on the Ansible host
+- file:
+    path: ~/.ssh/known_hosts
+    state: touch
+    mode: 0644
+  delegate_to: "{{ ansible_deployment_host }}"
+  remote_user: "{{ ansible_sudo_username }}"
 
 - name: check xmpp connectivity between VSC and VSD after enabling TLS
   sros_command:
