@@ -35,9 +35,19 @@ rm -rf $RPM_BUILD_ROOT
 /opt/nuage-metro-%{version}/callback_plugins
 /opt/nuage-metro-%{version}/filter_plugins
 /opt/nuage-metro-%{version}/examples
+/opt/nuage-metro-%{version}/library
+/opt/nuage-metro-%{version}/test/files
+/opt/nuage-metro-%{version}/test/nuage_unzip
+/opt/nuage-metro-%{version}/.git
+/opt/nuage-metro-%{version}/*.md
 /opt/nuage-metro-%{version}/*.yml
+opt/nuage-metro-%{version}/*.cfg
 
 
+%attr(0755,root,root,0755)
+/opt/nuage-metro-%{version}/test/scripts
+/opt/nuage-metro-%{version}/scripts
+opt/nuage-metro-%{version}/metro-ansible
 
 %pre
 
