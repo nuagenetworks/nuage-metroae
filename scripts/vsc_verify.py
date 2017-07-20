@@ -6,6 +6,9 @@ import time
 import os.path
 import argparse
 
+import logging
+logging.basicConfig(filename='vsc_verify.log', level=logging.DEBUG)
+logger = logging.getLogger("netmiko")
 
 # Returns lines with vsc host names
 def get_vsclines(fp):
@@ -104,7 +107,8 @@ def exec_command(vsc, command):
     try:
         net_connect = ConnectHandler(**vsc)
         output = net_connect.send_command(command)
-    except BaseException:
+        net_connect.disconnect()
+    except:
         print ("Error! Command excution failed!"
                " Command: {0} Exception: {1}" .format(command, sys.exc_info()[0]))
         sys.exit(1)
