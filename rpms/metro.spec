@@ -32,24 +32,24 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(0644,root,root,0755)
 /opt/nuage-metro-%{version}
 %attr(0755, root, root)
-metro-ansible
-roles/vsd-license/files/vsd_license.py
-roles/vsd-license/files/vsp_base_license.txt
-rpms/metro.spec
-rpms/rpm_build.sh
-scripts/create_zfb_profile.py
-scripts/vrs_verify.py
-scripts/vsc_verify.py
-test/files/archive-ansible
-test/scripts/archive_retriever.sh
-test/scripts/build_incremental.sh
-test/scripts/deploy_all.sh
-test/scripts/deploy_ci.sh
-test/scripts/deploy_ci_all.sh
-test/scripts/deploy_on_esx_ci.sh
-test/scripts/unzip_all.sh
-test/scripts/upgrade_all_ha.sh
-test/scripts/upgrade_all_sa.sh
+/opt/nuage-metro-%{version}/metro-ansible
+/opt/nuage-metro-%{version}/roles/vsd-license/files/vsd_license.py
+/opt/nuage-metro-%{version}/roles/vsd-license/files/vsp_base_license.txt
+/opt/nuage-metro-%{version}/rpms/metro.spec
+/opt/nuage-metro-%{version}/rpms/rpm_build.sh
+/opt/nuage-metro-%{version}/scripts/create_zfb_profile.py
+/opt/nuage-metro-%{version}/scripts/vrs_verify.py
+/opt/nuage-metro-%{version}/scripts/vsc_verify.py
+/opt/nuage-metro-%{version}/test/files/archive-ansible
+/opt/nuage-metro-%{version}/test/scripts/archive_retriever.sh
+/opt/nuage-metro-%{version}/test/scripts/build_incremental.sh
+/opt/nuage-metro-%{version}/test/scripts/deploy_all.sh
+/opt/nuage-metro-%{version}/test/scripts/deploy_ci.sh
+/opt/nuage-metro-%{version}/test/scripts/deploy_ci_all.sh
+/opt/nuage-metro-%{version}/test/scripts/deploy_on_esx_ci.sh
+/opt/nuage-metro-%{version}/test/scripts/unzip_all.sh
+/opt/nuage-metro-%{version}/test/scripts/upgrade_all_ha.sh
+/opt/nuage-metro-%{version}/test/scripts/upgrade_all_sa.sh
 
 
 %pre
