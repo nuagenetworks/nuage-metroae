@@ -3,7 +3,7 @@ set -e
 
 USAGE="Usage: $0 version"
 
-if [ $# -ne 3 ];
+if [ $# -ne 4 ];
 then
     echo "Requires exactly 2 arguments"
     echo $USAGE
@@ -61,7 +61,9 @@ iptables -t nat -F POSTROUTING
 iptables -t nat -A POSTROUTING -o br-eth0 -j MASQUERADE
 iptables -t nat -A POSTROUTING -o br-eth1 -j MASQUERADE
 
-gwIP=$(ip addr show br-eth1 | grep "inet\b" | awk '{print $2}' | cut -d/ -f1)
+#gwIP=$(ip addr show br-eth1 | grep "inet\b" | awk '{print $2}' | cut -d/ -f1)
+
+gwIP=$4
 
 removed=${gwIP:9}
 mgmtIP=${gwIP:0:9}
