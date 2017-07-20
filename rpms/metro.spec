@@ -38,10 +38,14 @@ rm -rf $RPM_BUILD_ROOT
 /opt/nuage-metro-%{version}/library
 /opt/nuage-metro-%{version}/test/files
 /opt/nuage-metro-%{version}/test/nuage_unzip
+/opt/nuage-metro-%{version}/test/archive_retriever
 /opt/nuage-metro-%{version}/.git
+/opt/nuage-metro-%{version}/.gitignore
+/opt/nuage-metro-%{version}/.mailmap
 /opt/nuage-metro-%{version}/*.md
 /opt/nuage-metro-%{version}/*.yml
 /opt/nuage-metro-%{version}/*.cfg
+/opt/nuage-metro-%{version}/rpms
 
 
 %attr(0755,root,root)
