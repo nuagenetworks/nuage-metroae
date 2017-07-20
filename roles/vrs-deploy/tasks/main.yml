@@ -49,6 +49,75 @@
     when: ansible_os_family == "Debian"
   when: dockermon_install | default(False)
 
+- block:
+  - name: Copy Libnetwork package to temporary directory
+    remote_user: "{{ target_server_username }}"
+    copy: src={{ libnetwork_package_path }}/{{ item }} dest={{ temp_dir }}/{{ inventory_hostname }}/{{ item }}
+    with_items: "{{ libnetwork_package_file_name }}"
+  
+  - name: Create docker service directory
+    file: path=/etc/systemd/system/docker.service.d  state=directory
+
+  - name: Add the docker conf file
+    blockinfile: 
+      dest: /etc/systemd/system/docker.service.d/docker.conf
+      create: yes
+      block: |
+        [Service]
+        ExecStart=
+        ExecStart=/usr/bin/dockerd -D --cluster-store={{ libnetwork_cluster_store_url }} --cluster-advertise={{ node_ip_addr }}:2376
+  
+  - name: Create the docker socket file
+    blockinfile:
+      dest: /usr/lib/systemd/system/docker.socket
+      create: yes
+      block: |
+        [Unit]
+        Description=Docker Socket for the API
+        PartOf=docker.service
+        [Socket]
+        ListenStream=/var/run/docker.sock
+        SocketMode=0660
+        SocketUser=root
+        SocketGroup=docker
+         
+        [Install]
+        WantedBy=sockets.target     
+  
+  - name: Restart docker service
+    command: service docker restart
+
+  - name: Install Nuage Libnetwork package on RedHat OS family distros
+    remote_user: "{{ target_server_username }}"
+    yum: name={{ temp_dir }}/{{ inventory_hostname }}/{{ item }} state=present
+    with_items:
+     - "{{ libnetwork_package_file_name }}"
+    when: ansible_os_family == "RedHat"
+
+  - name: Install Nuage Libnetwork package on Debian OS family distros
+    remote_user: "{{ target_server_username }}"
+    apt: deb={{ temp_dir }}/{{ inventory_hostname }}/{{ item }} state=present
+    with_items:
+     - "{{ libnetwork_package_file_name }}"
+    when: ansible_os_family == "Debian"
+
+  - replace:
+      dest: /etc/default/libnetwork-nuage.yaml
+      regexp: '(?<=https:\/\/).*?(?=:8443)'
+      replace: '{{ vsd_fqdn }}'
+   
+  - replace:
+      dest: /etc/default/libnetwork-nuage.yaml
+      regexp: 'scope:          "global"'
+      replace: 'scope:          "{{ libnetwork_scope }}"'
+
+  - name: Ensure that Nuage IPAM and daemon are running
+    systemd: state=started name=libnetwork-nuage
+
+  - name: Start Nuage-Libnetwork
+    systemd: state=started name=libnetwork-nuage
+  when: libnetwork_install | default(False)
+
 - name: Remove temporary directory
   remote_user: "{{ target_server_username }}"
   file: path={{ temp_dir }}/{{ inventory_hostname }} state=absent

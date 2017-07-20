@@ -63,3 +63,13 @@
    - dkms
    - linux-headers-{{ ansible_kernel }}
   when: ansible_os_family == "Debian"
+
+
+- name: Make sure Docker is installed if libnetwork_install is true
+  command: "docker -v"
+  ignore_errors: True
+  register: docker_installed_version
+  
+- name : Check if docker is installed when libnetwork_install is True
+  fail: msg="Libnetwork_install is True but Docker is not installed"
+  when: (docker_installed_version | failure) and (libnetwork_install | default(False))
