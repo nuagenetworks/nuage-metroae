@@ -22,19 +22,16 @@ Metro playbooks and dependencies
 
 %install
 mkdir -p $RPM_BUILD_ROOT
-cp -R * $RPM_BUILD_ROOT
+cp -pR * $RPM_BUILD_ROOT
 exit 0
 
 %clean
 rm -rf $RPM_BUILD_ROOT
 
 %files
-%defattr(0644,root,root,0644)
+%defattr(-,root,root,-)
 /opt/nuage-metro-%{version}
-%attr(0755, root, root)
-/opt/nuage-metro-%{version}/test/scripts/
-%attr(0755, root, root)
-/opt/nuage-metro-%{version}/scripts/
+
 
 %pre
 
