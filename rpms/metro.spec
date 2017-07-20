@@ -29,6 +29,11 @@ exit 0
 rm -rf $RPM_BUILD_ROOT
 
 %files
+%defattr(0644,root,root,0755)
+/opt/nuage-metro-%{version}
+%exclude 
+/opt/nuage-metro-%{version}/test/scripts
+/opt/nuage-metro-%{version}/opt/nuage-metro-%{version}/metro-ansible
 %attr(0755, root, root)
 /opt/nuage-metro-%{version}/metro-ansible
 /opt/nuage-metro-%{version}/roles/vsd-license/files/vsd_license.py
@@ -48,8 +53,6 @@ rm -rf $RPM_BUILD_ROOT
 /opt/nuage-metro-%{version}/test/scripts/unzip_all.sh
 /opt/nuage-metro-%{version}/test/scripts/upgrade_all_ha.sh
 /opt/nuage-metro-%{version}/test/scripts/upgrade_all_sa.sh
-%defattr(0644,root,root,0755)
-/opt/nuage-metro-%{version}
 
 
 %pre
