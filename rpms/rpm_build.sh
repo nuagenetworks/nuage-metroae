@@ -22,7 +22,7 @@ else
 fi
 
 mkdir -p ~/rpmbuild/SOURCES/metro-$ver/opt/nuage-metro-$ver/
-cp -R . ~/rpmbuild/SOURCES/metro-$ver/opt/nuage-metro-$ver/
+cp -pR . ~/rpmbuild/SOURCES/metro-$ver/opt/nuage-metro-$ver/
 scp root@135.227.181.233:/home/rpm/VMware-ovftool* ~/rpmbuild/SOURCES/metro-$ver/opt/nuage-metro-$ver/rpms
 cd  ~/rpmbuild/SOURCES
 tar -zcvf metro-$ver.tar.gz metro-$ver/
