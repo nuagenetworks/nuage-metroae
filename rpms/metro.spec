@@ -51,6 +51,7 @@ rm -rf $RPM_BUILD_ROOT
 /opt/nuage-metro-%{version}/test/scripts
 /opt/nuage-metro-%{version}/scripts
 /opt/nuage-metro-%{version}/metro-ansible
+/opt/nuage-metro-%{version}/roles/vsd-license
 
 
 %pre
