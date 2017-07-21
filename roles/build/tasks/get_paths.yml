@@ -398,18 +398,28 @@
       - { subdir: "vns/utils/", pattern: "vns-util-*.qcow2" }
       - { subdir: "vns/nsg/", pattern: "ncpe_centos7.qcow2" }
   - debug: var=rc_vns_files verbosity=1
-  - name: Verify that VNS files were found
-    assert: { 
-      that: "{{ rc_vns_files.results[0].matched }} > 0 and {{ rc_vns_files.results[1].matched }} > 0",
-      msg: "Unable to find VNS files"
-    }
-  - name: Register VNS variables with proper path and image locations for use in other playbooks
-    set_fact: 
-      "{{ item.1 }}_path": "{{ rc_vns_files.results[item.0].files[0].path | dirname }}"
-      "{{ item.1 }}_file_name": "{{ rc_vns_files.results[item.0].files[0].path | basename }}"
-    with_indexed_items:
-      - vnsutil_qcow2
-      - nsgv_qcow2
+  - block:
+    - name: Verify that VNS-UTILS files were found
+      assert: { 
+        that: "{{ rc_vns_files.results[0].matched }} > 0",
+        msg: "Unable to find VNS-UTILS files"
+      }
+    - name: Register VNS-UTILS variables with proper path and image locations for use in other playbooks
+      set_fact:
+        vnsutil_qcow2_path: "{{ rc_vns_files.results[0].files[0].path | dirname }}"
+        vnsutil_qcow2_file_name: "{{ rc_vns_files.results[0].files[0].path | basename }}"
+    when: myvnsutils is defined
+  - block:
+    - name: Verify that VNS-NSG files were found
+      assert: {
+        that: "{{ rc_vns_files.results[1].matched }} > 0",
+        msg: "Unable to find VNS-NSG files"
+      }
+    - name: Register VNS-NSG variables with proper path and image locations for use in other playbooks
+      set_fact:
+        nsgv_qcow2_path: "{{ rc_vns_files.results[1].files[0].path | dirname }}"
+        nsgv_qcow2_file_name: "{{ rc_vns_files.results[1].files[0].path | basename }}"
+    when: mynsgvs is defined
   when:
     ( mynsgvs is defined or
     ( myvnsutils is defined and  myvnsutils | map(attribute='target_server_type') | list | issuperset(["kvm"]) or myvnsutils | map(attribute='target_server_type') | list | issuperset(["heat"]) ) and
@@ -423,18 +433,28 @@
       - { subdir: "vns/utils/", pattern: "vns-util-*.ova" }
       - { subdir: "vns/nsg/", pattern: "NSG-*.ovf" }
   - debug: var=rc_vns_files verbosity=1
-  - name: Verify that VNS files were found
-    assert: {
-      that: "{{ rc_vns_files.results[0].matched }} > 0 and {{ rc_vns_files.results[1].matched }} > 0",
-      msg: "Unable to find VNS files"
-    }
-  - name: Register VNS variables with proper path and image locations for use in other playbooks
-    set_fact:
-      "{{ item.1 }}_path": "{{ rc_vns_files.results[item.0].files[0].path | dirname }}"
-      "{{ item.1 }}_file_name": "{{ rc_vns_files.results[item.0].files[0].path | basename }}"
-    with_indexed_items:
-      - vnsutil_ova
-      - nsgv_ovf
+  - block:
+    - name: Verify that VNS-UTILS files were found
+      assert: {
+        that: "{{ rc_vns_files.results[0].matched }} > 0",
+        msg: "Unable to find VNS-UTILS files"
+      }
+    - name: Register VNS-UTILS variables with proper path and image locations for use in other playbooks
+      set_fact:
+        vnsutil_ova_path: "{{ rc_vns_files.results[0].files[0].path | dirname }}"
+        vnsutil_ova_file_name: "{{ rc_vns_files.results[0].files[0].path | basename }}"
+    when: myvnsutils is defined
+  - block:
+    - name: Verify that VNS-NSG files were found
+      assert: {
+        that: "{{ rc_vns_files.results[1].matched }} > 0",
+        msg: "Unable to find VNS-NSG files"
+      }
+    - name: Register VNS-NSG variables with proper path and image locations for use in other playbooks
+      set_fact:
+        nsgv_ovf_path: "{{ rc_vns_files.results[1].files[0].path | dirname }}"
+        nsgv_ovf_file_name: "{{ rc_vns_files.results[1].files[0].path | basename }}"
+    when: mynsgvs is defined
   when:
     ( mynsgvs is defined or
     ( myvnsutils is defined and  myvnsutils | map(attribute='target_server_type') | list | issuperset(["vcenter"]) ) and
