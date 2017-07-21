@@ -5,7 +5,7 @@ USAGE="Usage: $0 version testbedID"
 
 if [ $# -ne 2 ];
 then
-    echo "Requires exactly 2 argument"
+    echo "Requires exactly 2 arguments"
     echo $USAGE
     exit 1
 fi
