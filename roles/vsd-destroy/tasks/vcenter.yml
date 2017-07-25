@@ -4,6 +4,7 @@
     assert:
       that: "upgrade_vmname is defined"
       msg: "For vsd-upgrade-destroy, upgrade_vmname must be defined in build_vars.yml"
+
   - name: Set local variable with upgrade_vmname
     set_fact:
       vm_name: "{{ upgrade_vmname }}"
@@ -32,9 +33,6 @@
 - fail: msg="Exception found {{ vsd_vm_facts.exception }}"
   when: vsd_vm_facts.exception is defined
 
-- name: Set VSD backup flag
-  set_fact: save_vsd="{{ preserve_vsd_for_rollback|default('False') }}"
-
 - block:
   - name: Power off the VSD VM
     connection: local
@@ -47,15 +45,14 @@
       state: "poweredoff"
     when: vsd_vm_facts['instance']['hw_power_status'] == 'poweredOn'
 
-  - block:
-    - name: Removing the VSD VM
-      connection: local
-      vmware_guest:
-        hostname: "{{ target_server }}"
-        username: "{{ vcenter.username }}"
-        password: "{{ vcenter.password }}"
-        name: "{{ vm_name }}"
-        validate_certs: no
-        state: "absent"
-    when: not save_vsd
+  - name: Removing the VSD VM
+    connection: local
+    vmware_guest:
+      hostname: "{{ target_server }}"
+      username: "{{ vcenter.username }}"
+      password: "{{ vcenter.password }}"
+      name: "{{ vm_name }}"
+      validate_certs: no
+      state: "absent"
+    when: not nuage_upgrade or destroy_upgrade_vm | default( False )
   when: vsd_vm_facts.failed is not defined
