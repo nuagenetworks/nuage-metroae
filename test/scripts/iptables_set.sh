@@ -8,6 +8,7 @@ iptables -t nat -A POSTROUTING -o br-eth0 -j MASQUERADE
 iptables -t nat -A POSTROUTING -o br-eth1 -j MASQUERADE
 
 gwIP=$(ip addr show br-eth1 | grep "inet\b" | awk '{print $2}' | cut -d/ -f1)
+gwIP2="10.106.1.40"
 
 removed=${gwIP:9}
 mgmtIP=${gwIP:0:9}
@@ -19,6 +20,9 @@ mgmtIP="${mgmtIP}$incremented"
 iptables -t nat -A PREROUTING -s $gwIP -j DNAT --to $mgmtIP
 iptables -t nat -A POSTROUTING -s $mgmtIP -j SNAT --to-source $gwIP
 
+iptables -t nat -A PREROUTING -s $gwIP2 -j DNAT --to $mgmtIP
+iptables -t nat -A POSTROUTING -s $mgmtIP -j SNAT --to-source $gwIP2
+
 mgmtIP=${mgmtIP:0:9}
 incremented=$(($incremented+10))
 mgmtIP="${mgmtIP}$incremented"
@@ -26,6 +30,9 @@ mgmtIP="${mgmtIP}$incremented"
 # VSC1
 iptables -t nat -A PREROUTING -s $gwIP -j DNAT --to $mgmtIP
 iptables -t nat -A POSTROUTING -s $mgmtIP -j SNAT --to-source $gwIP
+
+iptables -t nat -A PREROUTING -s $gwIP2 -j DNAT --to $mgmtIP
+iptables -t nat -A POSTROUTING -s $mgmtIP -j SNAT --to-source $gwIP2
 
 mgmtIP=${mgmtIP:0:9}
 incremented=$(($incremented+10))
@@ -35,6 +42,9 @@ mgmtIP="${mgmtIP}$incremented"
 iptables -t nat -A PREROUTING -s $gwIP -j DNAT --to $mgmtIP
 iptables -t nat -A POSTROUTING -s $mgmtIP -j SNAT --to-source $gwIP
 
+iptables -t nat -A PREROUTING -s $gwIP2 -j DNAT --to $mgmtIP
+iptables -t nat -A POSTROUTING -s $mgmtIP -j SNAT --to-source $gwIP2
+
 mgmtIP=${mgmtIP:0:9}
 incremented=$(($incremented+10))
 mgmtIP="${mgmtIP}$incremented"
@@ -42,6 +52,9 @@ mgmtIP="${mgmtIP}$incremented"
 # VSTAT1
 iptables -t nat -A PREROUTING -s $gwIP -j DNAT --to $mgmtIP
 iptables -t nat -A POSTROUTING -s $mgmtIP -j SNAT --to-source $gwIP
+
+iptables -t nat -A PREROUTING -s $gwIP2 -j DNAT --to $mgmtIP
+iptables -t nat -A POSTROUTING -s $mgmtIP -j SNAT --to-source $gwIP2
 
 mgmtIP=${mgmtIP:0:9}
 incremented=$(($incremented+10))
@@ -51,6 +64,9 @@ mgmtIP="${mgmtIP}$incremented"
 iptables -t nat -A PREROUTING -s $gwIP -j DNAT --to $mgmtIP
 iptables -t nat -A POSTROUTING -s $mgmtIP -j SNAT --to-source $gwIP
 
+iptables -t nat -A PREROUTING -s $gwIP2 -j DNAT --to $mgmtIP
+iptables -t nat -A POSTROUTING -s $mgmtIP -j SNAT --to-source $gwIP2
+
 mgmtIP=${mgmtIP:0:9}
 incremented=$(($incremented+10))
 mgmtIP="${mgmtIP}$incremented"
@@ -58,3 +74,6 @@ mgmtIP="${mgmtIP}$incremented"
 # NSGV
 iptables -t nat -A PREROUTING -s $gwIP -j DNAT --to $mgmtIP
 iptables -t nat -A POSTROUTING -s $mgmtIP -j SNAT --to-source $gwIP
+
+iptables -t nat -A PREROUTING -s $gwIP2 -j DNAT --to $mgmtIP
+iptables -t nat -A POSTROUTING -s $mgmtIP -j SNAT --to-source $gwIP2
