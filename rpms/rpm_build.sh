@@ -16,7 +16,7 @@ if [ $1 == 'master' ]
 then
     ver=`git describe --tags $(git rev-list --tags --max-count=1)`
     echo "setting rpm version to $ver" 
-    sed -i "s/0.0.0/$ver/g" ~/rpmbuild/SPECS/metro.spec
+    sed -i "s/v0.0.0/$ver/g" ~/rpmbuild/SPECS/metro.spec
 else
     ver="v0.0.0"
 fi
