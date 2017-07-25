@@ -59,7 +59,7 @@
   register: proc_list
   remote_user: "root"
 
-- name: wait for VSD common , core and stats services to become running
+- name: wait for VSD common, core and stats services to become running
   monit_waitfor_service:
     name: "{{ item }}"
     timeout_seconds: 1200
@@ -71,13 +71,18 @@
 #TODO:
 #-update vsd_post_upgrade_helper to include disabling VSD maintenance mode
 - block:
-  - name: Get current version of VSD software
+  - name: Get upgraded version of VSD software
     command: echo $VSD_VERSION
     register: vsd_version
     remote_user: "root"
 
   - name: Print vsd_version output when verbosity >= 1
     debug: var=vsd_version verbosity=1
+
+  - name: Install updated version of vspk
+    pip: name=vspk version="{{vsd_version.stdout}}"
+    delegate_to: "{{ ansible_deployment_host }}"
+    remote_user: "{{ ansible_sudo_username }}"
 
   - name: Disable maintainance mode on all l3/l2 domains
     vsd_maintainance:
@@ -86,7 +91,8 @@
       state: disabled
       api_version: "{{ vsd_version.stdout }}"
     register: mode_status
-    delegate_to: 127.0.0.1
+    delegate_to: "{{ ansible_deployment_host }}"
+    remote_user: "{{ ansible_sudo_username }}"
 
   - name: Print vsd maintainance mode output when verbosity >= 1
     debug: var=mode_status verbosity=1

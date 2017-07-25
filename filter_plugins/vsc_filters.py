@@ -347,7 +347,7 @@ def show_bof_to_json(string):
     dict = {}
     dict["Command"] = "show bof"
     image_re = re.compile(r'primary-image\s+(.*)')
-    folder_re = re.compile(r'cf1:\\(\w+)')
+    folder_re = re.compile(r'cf[1-3]:\\(\w+)')
     config_re = re.compile(r'primary-config\s+(.*)')
     addr_re = re.compile(r'([0-9]+(?:\.[0-9]+){3})')
 
