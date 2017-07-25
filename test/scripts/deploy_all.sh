@@ -233,10 +233,10 @@ sed -i "s/GLOBAL_VSD_FQDN/jenkinsvsd1.example.com/g" roles/reset-build/files/bui
 sed -i "s/VERSION/$1/g" roles/reset-build/files/build_vars.yml
 sed -i "s/ENVIRONMENT_TYPE/$2/g" roles/reset-build/files/build_vars.yml
 sed -i "s/SERVER_TYPE/kvm/g" roles/reset-build/files/build_vars.yml
+sed -i "s/TARGET_SERVER/$IPADDR/g" roles/reset-build/files/build_vars.yml
 
 if [ $2 = "sa" ];
 then
-   sed -i "s/TARGET_SERVER/$IPADDR/g" roles/reset-build/files/build_vars.yml
    sed -i "s/TARGET_2SERVER/$IPADDR/g" roles/reset-build/files/build_vars.yml
 fi
 
