@@ -104,7 +104,7 @@ iptables -t nat -A POSTROUTING -s $mgmtIP -j SNAT --to-source $gwIP
 
 if [ $2 = "ha" ];
 then
-    sed -i "18,29 s/^#//" roles/reset-build/files/build_vars.yml
+    sed -i "18,31 s/^#//" roles/reset-build/files/build_vars.yml
     mgmtIP=${mgmtIP:0:9}
     incremented=$(($incremented+10))
     mgmtIP="${mgmtIP}$incremented"
@@ -136,7 +136,7 @@ iptables -t nat -A POSTROUTING -s $mgmtIP -j SNAT --to-source $gwIP
 
 if [ $2 = "ha" ];
 then
-    sed -i "46,58 s/^#//" roles/reset-build/files/build_vars.yml
+    sed -i "48,60 s/^#//" roles/reset-build/files/build_vars.yml
     mgmtIP=${mgmtIP:0:9}
     incremented=$(($incremented+10))
     mgmtIP="${mgmtIP}$incremented"
@@ -163,7 +163,7 @@ if [ $2 = "ha" ];
 then
     sed -i "s/GLOBAL_VSD_FQDN/xmpp.example.com/g" roles/reset-build/files/build_vars.yml
 
-    sed -i "85,99 s/^#//" roles/reset-build/files/build_vars.yml
+    sed -i "88,103 s/^#//" roles/reset-build/files/build_vars.yml
 
     mgmtIP=${mgmtIP:0:9}
     incremented=$(($incremented+10))
