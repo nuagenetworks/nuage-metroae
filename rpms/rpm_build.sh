@@ -34,5 +34,11 @@ rpmbuild -vv -bb SPECS/metro.spec
 echo "Completed building RPM"
 
 echo "Copying RPM to FTP server"
-scp -r ~/rpmbuild/RPMS/noarch/*.rpm rpm@135.227.181.233:/home/rpm
+if [ $1 == 'master' ]
+then
+    scp -r ~/rpmbuild/RPMS/noarch/*.rpm rpm@135.227.181.233:/home/rpm/master
+else
+    scp -r ~/rpmbuild/RPMS/noarch/*.rpm rpm@135.227.181.233:/home/rpm/dev
+fi
+
 echo "Completed copying RPM to FTP server"
