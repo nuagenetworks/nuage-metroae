@@ -26,29 +26,6 @@
    - "{{ vrs_package_file_name_list }}"
   when: ansible_os_family == "RedHat"
 
-- block:
-  - name: Copy Dockermon package to temporary directory
-    remote_user: "{{ target_server_username }}"
-    copy: src={{ dockermon_package_path }}/{{ item }} dest={{ temp_dir }}/{{ inventory_hostname }}/{{ item }}
-    with_items: "{{ dockermon_package_file_name }}"
-
-  - include: docker.yml
-
-  - name: Install Nuage Dockermon package on RedHat OS family distros
-    remote_user: "{{ target_server_username }}"
-    yum: name={{ temp_dir }}/{{ inventory_hostname }}/{{ item }} state=present
-    with_items:
-     - "{{ dockermon_package_file_name }}"
-    when: ansible_os_family == "RedHat"
-  
-  - name: Install Nuage Dockermon package on Debian OS family distros
-    remote_user: "{{ target_server_username }}"
-    apt: deb={{ temp_dir }}/{{ inventory_hostname }}/{{ item }} state=present
-    with_items:
-     - "{{ dockermon_package_file_name }}"
-    when: ansible_os_family == "Debian"
-  when: dockermon_install | default(False)
-
 - name: Remove temporary directory
   remote_user: "{{ target_server_username }}"
   file: path={{ temp_dir }}/{{ inventory_hostname }} state=absent
@@ -84,22 +61,6 @@
     regexp: "^STANDBY_CONTROLLER="
     line: "STANDBY_CONTROLLER={{ standby_controller_addr }}"
   when: ansible_os_family == "Debian"
-
-- name: Update platform setting in /etc/default/openvswitch file on RedHat OS family when Dockermon is installed
-  remote_user: "{{ target_server_username }}"
-  lineinfile:
-    dest: /etc/default/openvswitch
-    regexp: ^PLATFORM=
-    line: PLATFORM="kvm, lxc"
-  when: ansible_os_family == "Redhat" and dockermon_install | default(False)
-
-- name: Update platform setting in /etc/default/openvswitch-switch file on Debian OS family when Dockermon is installed
-  remote_user: "{{ target_server_username }}"
-  lineinfile:
-    dest: /etc/default/openvswitch-switch
-    regexp: ^PLATFORM=
-    line: PLATFORM="kvm, lxc"
-  when: ansible_os_family == "Debian" and dockermon_install | default(False)
 
 - name: Restart OpenVSwitch Service on RedHat OS family distros
   remote_user: "{{ target_server_username }}"

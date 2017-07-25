@@ -1,23 +1,21 @@
 ---
 - hosts: localhost
-
   pre_tasks:
-    
+    - name: Check for Ansible version 2.2
+      assert:
+        that: "ansible_version.major == 2 and ansible_version.minor == 2"
+        msg:  "Only Ansible version 2.2 is supported by Metro, you are using {{ansible_version.full}}"    
     - name: Set build_vars variable
       set_fact: 
         build_vars: "{{ build_vars_file | default ('build_vars.yml') }}"
-
     - name: Check YAML syntax
       yaml_checker: 
         path: "{{ build_vars }}"
-
     - name: Check build_vars.yml
       build_vars_checker: 
         path: "{{ build_vars }}"
-
     - name: Include build variable files
       include_vars: "{{ build_vars }}"
   roles:
-    - nuage-predeploy
     - validate-build-vars
     - build
