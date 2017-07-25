@@ -232,21 +232,26 @@ sed -i "s/VNSUTIL1_DATA/$mgmtIP/g" roles/reset-build/files/build_vars.yml
 sed -i "s/GLOBAL_VSD_FQDN/jenkinsvsd1.example.com/g" roles/reset-build/files/build_vars.yml
 sed -i "s/VERSION/$1/g" roles/reset-build/files/build_vars.yml
 sed -i "s/ENVIRONMENT_TYPE/$2/g" roles/reset-build/files/build_vars.yml
-sed -i "s/TARGET_SERVER/$IPADDR/g" roles/reset-build/files/build_vars.yml
 sed -i "s/SERVER_TYPE/kvm/g" roles/reset-build/files/build_vars.yml
+
+if [ $2 = "sa" ];
+then
+   sed -i "s/TARGET_SERVER/$IPADDR/g" roles/reset-build/files/build_vars.yml
+   sed -i "s/TARGET_2SERVER/$IPADDR/g" roles/reset-build/files/build_vars.yml
+fi
 
 if [ $2 = "ha" ];
 then
     if [ $# -eq 4 ];
     then
-        sed -i "s/TARGET_SERVER2/$node2IP/g" roles/reset-build/files/build_vars.yml
-        sed -i "s/TARGET_SERVER3/$node3IP/g" roles/reset-build/files/build_vars.yml
+        sed -i "s/TARGET_2SERVER/$node2IP/g" roles/reset-build/files/build_vars.yml
+        sed -i "s/TARGET_3SERVER/$node3IP/g" roles/reset-build/files/build_vars.yml
     fi
 
     if [ $# -eq 3 ];
     then
-        sed -i "s/TARGET_SERVER2/$node2IP/g" roles/reset-build/files/build_vars.yml
-        sed -i "s/TARGET_SERVER3/$IPADDR/g" roles/reset-build/files/build_vars.yml
+        sed -i "s/TARGET_2SERVER/$node2IP/g" roles/reset-build/files/build_vars.yml
+        sed -i "s/TARGET_3SERVER/$IPADDR/g" roles/reset-build/files/build_vars.yml
     fi
 fi
 
