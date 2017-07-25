@@ -1,13 +1,35 @@
 #!/bin/bash
 set -e
 
-USAGE="Usage: $0 version"
+USAGESA="Usage: $0 NuageVersion EnvType"
+USAGEHA="Usage: $0 NuageVersion EnvType Node2IP Node3IP"
+
+if [ $2 = "sa" ];
+then 
 
 if [ $# -ne 2 ];
 then
     echo "Requires exactly 2 arguments"
     echo $USAGE
     exit 1
+fi
+
+fi
+
+if [ $2 = "ha" ];
+then
+    if [ $# -eq 4 ];
+    then
+        echo "This environment has 3 hypervisors to deploy on."
+        node2IP=$3
+        node3IP=$4
+    fi
+    
+    if [ $# -eq 3 ];
+    then
+        echo "This ha environment has only 2 hypervisors to deploy on."
+        node2IP=$3
+    fi
 fi
 
 if [ $1 = 3.2.R10 ];
@@ -112,15 +134,19 @@ sed -i "s/VSC1/$mgmtIP/g" zfb.yml
 iptables -t nat -A PREROUTING -s $gwIP -j DNAT --to $mgmtIP
 iptables -t nat -A POSTROUTING -s $mgmtIP -j SNAT --to-source $gwIP
 
-mgmtIP=${mgmtIP:0:9}
-incremented=$(($incremented+10))
-mgmtIP="${mgmtIP}$incremented"
+if [ $2 = "ha" ];
+then
+    sed -i "46,58 s/^#//" roles/reset-build/files/build_vars.yml
+    mgmtIP=${mgmtIP:0:9}
+    incremented=$(($incremented+10))
+    mgmtIP="${mgmtIP}$incremented"
 
-sed -i "s/VSC2_IP/$mgmtIP/g" roles/reset-build/files/build_vars.yml
-sed -i "s/VSC2/$mgmtIP/g" zfb.yml
+    sed -i "s/VSC2_IP/$mgmtIP/g" roles/reset-build/files/build_vars.yml
+    sed -i "s/VSC2/$mgmtIP/g" zfb.yml
 
-iptables -t nat -A PREROUTING -s $gwIP -j DNAT --to $mgmtIP
-iptables -t nat -A POSTROUTING -s $mgmtIP -j SNAT --to-source $gwIP
+    iptables -t nat -A PREROUTING -s $gwIP -j DNAT --to $mgmtIP
+    iptables -t nat -A POSTROUTING -s $mgmtIP -j SNAT --to-source $gwIP
+fi
 
 mgmtIP=${mgmtIP:0:9}
 incremented=$(($incremented+10))
@@ -208,6 +234,21 @@ sed -i "s/VERSION/$1/g" roles/reset-build/files/build_vars.yml
 sed -i "s/ENVIRONMENT_TYPE/$2/g" roles/reset-build/files/build_vars.yml
 sed -i "s/TARGET_SERVER/$IPADDR/g" roles/reset-build/files/build_vars.yml
 sed -i "s/SERVER_TYPE/kvm/g" roles/reset-build/files/build_vars.yml
+
+if [ $2 = "ha" ];
+then
+    if [ $# -eq 4 ];
+    then
+        sed -i "s/TARGET_SERVER2/$node2IP/g" roles/reset-build/files/build_vars.yml
+        sed -i "s/TARGET_SERVER3/$node3IP/g" roles/reset-build/files/build_vars.yml
+    fi
+
+    if [ $# -eq 3 ];
+    then
+        sed -i "s/TARGET_SERVER2/$node2IP/g" roles/reset-build/files/build_vars.yml
+        sed -i "s/TARGET_SERVER3/$IPADDR/g" roles/reset-build/files/build_vars.yml
+    fi
+fi
 
 ./metro-ansible reset_build.yml -vvvv
 ./metro-ansible build.yml -vvvv
