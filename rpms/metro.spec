@@ -21,6 +21,7 @@ Metro playbooks and dependencies
 %setup -q
 
 %install
+rm -rf $RPM_BUILD_ROOT
 mkdir -p $RPM_BUILD_ROOT
 cp -pR * $RPM_BUILD_ROOT
 exit 0
@@ -46,12 +47,12 @@ rm -rf $RPM_BUILD_ROOT
 /opt/nuage-metro-%{version}/*.yml
 /opt/nuage-metro-%{version}/*.cfg
 /opt/nuage-metro-%{version}/rpms
-
-
-%attr(0755,root,root)
+%defattr(0755,root,root,0755)
 /opt/nuage-metro-%{version}/test/scripts
 /opt/nuage-metro-%{version}/scripts
 /opt/nuage-metro-%{version}/metro-ansible
+/opt/nuage-metro-%{version}/roles/vsd-license
+
 
 %pre
 
