@@ -9,8 +9,8 @@
   ignore_errors: True
 
 - block:
-  - name: Install packages for RedHat OS family distros
-    yum: name=python-netaddr state=present
+  - name: Install packages for RedHat OS family distros via proxy
+    yum: name=python-netaddr,python-dns state=present
     when: ansible_os_family == "RedHat"
     delegate_to: "{{ ansible_deployment_host }}"
     remote_user: "{{ ansible_sudo_username }}"
@@ -21,14 +21,14 @@
 
 - block:
   - name: Install packages for RedHat OS family distros
-    yum: name=python-netaddr state=present
+    yum: name=python-netaddr,python-dns state=present
     when: ansible_os_family == "RedHat"
     delegate_to: "{{ ansible_deployment_host }}"
     remote_user: "{{ ansible_sudo_username }}"
   when: yum_proxy|default('NONE') == 'NONE' and rpm_check.rc == 1
 
 - name: Install python-netaddr package for Debian OS family distros
-  apt: name=python-netaddr state=present
+  apt: name=python-netaddr,python-dns state=present
   when: ansible_os_family == "Debian"
   delegate_to: "{{ ansible_deployment_host }}"
   remote_user: "{{ ansible_sudo_username }}"
@@ -39,3 +39,25 @@
     msg: "{{ item }} is not a valid NTP server IP address, quiting"
   with_items: "{{ ntp_server_list }}"
   when: ntp_server_list is defined
+
+- name: Verify VSD DNS entries exist at server {{ dns_server_list[0] }}, and hostnames map to their management IPs ( uses python-dns )
+  assert:
+    that: "{{ lookup('dig', item.hostname, '@'+dns_server_list[0] ) == item.mgmt_ip }}"
+    msg: "Querying {{ dns_server_list[0] }} for IPv4 address for {{item.hostname}} != {{item.mgmt_ip}}"
+  with_items: "{{ myvsds }}"
+  when: dns_server_list is defined and myvsds is defined
+
+- name: Verify VStat DNS entries exist at server {{ dns_server_list[0] }}, and hostnames map to their management IPs
+  assert:
+    that: "{{ lookup('dig', item.hostname, '@'+dns_server_list[0] ) == item.mgmt_ip }}"
+    msg: "Querying {{ dns_server_list[0] }} for IPv4 address for {{item.hostname}} != {{item.mgmt_ip}}"
+  with_items: "{{ myvstats }}"
+  when: dns_server_list is defined and myvstats is defined
+
+- name: Verify VNS Utils DNS entries exist at server {{ dns_server_list[0] }}, and hostnames map to their IPs
+  assert:
+    that: "{{ lookup('dig', item.hostname, '@'+dns_server_list[0] ) == item.mgmt_ip and lookup('dig', item.data_fqdn, '@'+dns_server_list[0] ) == item.data_ip}}"
+    msg: "Failed to verify Util VM DNS entries at {{ dns_server_list[0] }}"
+  with_items: "{{ myvnsutils }}"
+  when: dns_server_list is defined and myvnsutils is defined
+
