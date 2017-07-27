@@ -134,8 +134,8 @@ sed -i "s/VSC1/$mgmtIP/g" zfb.yml
 iptables -t nat -A PREROUTING -s $gwIP -j DNAT --to $mgmtIP
 iptables -t nat -A POSTROUTING -s $mgmtIP -j SNAT --to-source $gwIP
 
-if [ $2 = "ha" ];
-then
+#if [ $2 = "ha" ];
+#then
     sed -i "48,60 s/^#//" roles/reset-build/files/build_vars.yml
     mgmtIP=${mgmtIP:0:9}
     incremented=$(($incremented+10))
@@ -146,7 +146,7 @@ then
 
     iptables -t nat -A PREROUTING -s $gwIP -j DNAT --to $mgmtIP
     iptables -t nat -A POSTROUTING -s $mgmtIP -j SNAT --to-source $gwIP
-fi
+#fi
 
 mgmtIP=${mgmtIP:0:9}
 incremented=$(($incremented+10))
