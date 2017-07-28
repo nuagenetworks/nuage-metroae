@@ -391,6 +391,11 @@
 # Libnetwork
 #################
 
+- name: Check if any of the VRSs have libnetwork_install set
+  set_fact: libn= True 
+  when: item.libnetwork_install
+  with_items: "{{ myvrss }}"
+
 - block:
   - block:
     - name: Find name of libnetwork package Files (RH architecture)
@@ -446,7 +451,7 @@
         u16_04_libnetwork_package_path: "{{ rc_libnetwork_file.files[0].path | dirname }}"
       when: rc_libnetwork_file.matched > 0
     when: vrs_u16_04|default(false) == True
-  when: libnetwork.required | default(false)
+  when: libn | default(false)
 
   tags:
     - libnetwork
