@@ -5,17 +5,17 @@ import yaml
 DOCUMENTATION = '''
 
 ---
-module: libn_install
+module: get_libn_host_list
 short_description: Returns list of hosts on which Libnetwork is to be installed
 options:
    path:
      description:
-         - Path to the build_var.yml file that has the VRS information.
+         - Path to the file that has the VRS information.
      required: True
 '''
 
 EXAMPLES = '''
-- libn_install: path=./build_vars.yml
+- get_libn_host_list: path=./build_vars.yml
 '''
 
 
@@ -24,7 +24,7 @@ def libn_check(filepath):
     config = yaml.load(fil)
     vrs_list = []
     for item in config['myvrss']:
-        if item['libnetwork_install'] == "True" or item['libnetwork_install'] == "true":
+        if item['libnetwork_install'] == True or item['libnetwork_install'] == "true":
             for ip in item['vrs_ip_list']:
                 vrs_list.append(ip)
     return vrs_list
