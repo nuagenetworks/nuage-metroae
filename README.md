@@ -240,7 +240,6 @@ These are playbooks that are stable but under development or contributed from th
 - dns-destroy
 - dns-postdeploy
 - dns-predeploy
-- lvm-predeploy
 - mesos-deploy
 - stcv-postdeploy
 - stcv-predeploy
