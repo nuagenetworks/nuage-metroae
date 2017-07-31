@@ -23,12 +23,12 @@ def libn_check(filepath):
     try:
         with open(filepath) as fil:
             config = yaml.load(fil)
-    except IOError:
-        module.fail_json(msg="File with VRS Info not found")
+    except IOError as details:
+        module.fail_json(msg="Error processing YAML file: %s"%details)
 
     vrs_list = []
     for item in config['myvrss']:
-        if item['libnetwork_install'] is True or item['libnetwork_install'] == "true":
+        if item['libnetwork_install'] or item['libnetwork_install'] == "true":
             for ip in item['vrs_ip_list']:
                 vrs_list.append(ip)
     return vrs_list
