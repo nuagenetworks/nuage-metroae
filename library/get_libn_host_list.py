@@ -28,7 +28,7 @@ def libn_check(filepath):
 
     vrs_list = []
     for item in config['myvrss']:
-        if item['libnetwork_install'] or item['libnetwork_install'] == "true":
+        if item['libnetwork_install']:
             for ip in item['vrs_ip_list']:
                 vrs_list.append(ip)
     return vrs_list
