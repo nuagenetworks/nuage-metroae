@@ -69,7 +69,7 @@ gwIP=$4
 
 removed=${gwIP:9}
 mgmtIP=${gwIP:0:9}
-incremented=$(($removed+110))
+incremented=$(($removed+10))
 dataGW="${mgmtIP}0"
 mgmtIP="${mgmtIP}$incremented"
 
@@ -211,6 +211,7 @@ sed -i "s/GLOBAL_VSD_FQDN/jenkinsvsd1.example.com/g" roles/reset-build/files/bui
 sed -i "s/VERSION/$1/g" roles/reset-build/files/build_vars.yml
 sed -i "s/ENVIRONMENT_TYPE/$2/g" roles/reset-build/files/build_vars.yml
 sed -i "s/TARGET_SERVER/$IPADDR/g" roles/reset-build/files/build_vars.yml
+sed -i "s/TARGET_2SERVER/$IPADDR/g" roles/reset-build/files/build_vars.yml
 sed -i "s/SERVER_TYPE/kvm/g" roles/reset-build/files/build_vars.yml
 
 ./metro-ansible reset_build.yml -vvvv
