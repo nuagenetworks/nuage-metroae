@@ -24,7 +24,7 @@ def libn_check(filepath):
         with open(filepath) as fil:
             config = yaml.load(fil)
     except IOError as details:
-        module.fail_json(msg="Error processing YAML file: %s"%details)
+        module.fail_json(msg="Error processing YAML file: %s" % details)
 
     vrs_list = []
     for item in config['myvrss']:

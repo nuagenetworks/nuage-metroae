@@ -22,8 +22,7 @@
         - show bof
       provider: "{{ vsc_creds }}"
     register: bof_config
-    delegate_to: "{{ ansible_deployment_host }}"
-    remote_user: "{{ ansible_sudo_username }}"
+    connection: local
 
   - name: Print 'show bof' when verbosity >= 1
     debug: var=bof_config.stdout[0] verbosity=1
@@ -41,8 +40,7 @@
         - file copy "{{ bof_json['image_folder'] }}/cpm.tim" "{{ bof_json['image_folder'] }}/cpm.tim.backup" force
       provider: "{{ vsc_creds }}"
     register: backup_image
-    delegate_to: "{{ ansible_deployment_host }}"
-    remote_user: "{{ ansible_sudo_username }}"
+    connection: local
 
   - name: Get current file version of image on VSC
     sros_command:
@@ -50,8 +48,7 @@
         - file version "{{ bof_json['image_folder'] }}/cpm.tim"
       provider: "{{ vsc_creds }}"
     register: current_image
-    delegate_to: "{{ ansible_deployment_host }}"
-    remote_user: "{{ ansible_sudo_username }}"
+    connection: local
 
   - name: Print current vsc image version when verbosity >= 1
     debug: var=current_image.stdout[0] verbosity=1
@@ -67,7 +64,7 @@
     expect:
       command: "{{ vsc_image_copy }}"
       responses:
-        (?i)password: "{{ vsc_password }}"
+        (?i)password: "{{ vsc_password|default('admin') }}"
       timeout: "{{ vsc_scp_timeout }}"
     remote_user: "{{ ansible_sudo_username }}"
     delegate_to: "{{ ansible_deployment_host }}"
@@ -78,8 +75,7 @@
         - file version "{{ bof_json['image_folder'] }}/cpm.tim"
       provider: "{{ vsc_creds }}"
     register: new_image
-    delegate_to: "{{ ansible_deployment_host }}"
-    remote_user: "{{ ansible_sudo_username }}"
+    connection: local
 
   - name: Print new vsc image version when verbosity >= 1
     debug: var=new_image.stdout[0] verbosity=1
@@ -96,8 +92,7 @@
       commands:
         - admin reboot now
       provider: "{{ vsc_creds }}"
-    delegate_to: "{{ ansible_deployment_host }}"
-    remote_user: "{{ ansible_sudo_username }}"
+    connection: local
     ignore_errors: true
     when: target_server_type | match("kvm") or target_server_type | match("vcenter")
 
@@ -131,8 +126,7 @@
         - show version
       provider: "{{ vsc_creds }}"
     register: vsc_version
-    delegate_to: "{{ ansible_deployment_host }}"
-    remote_user: "{{ ansible_sudo_username }}"
+    connection: local
 
   - name: Print 'show version' when verbosity >= 1
     debug: var=vsc_version.stdout[0] verbosity=1
@@ -155,8 +149,7 @@
         - show vswitch-controller xmpp-server detail
       provider: "{{ vsc_creds }}"
     register: xmpp_detail
-    delegate_to: "{{ ansible_deployment_host }}"
-    remote_user: "{{ ansible_sudo_username }}"
+    connection: local
     until: xmpp_detail.stdout[0].find('Functional') != -1
     retries: 5
     delay: 30
@@ -191,8 +184,7 @@
         - show vswitch-controller vsd detail
       provider: "{{ vsc_creds }}"
     register: vsd_detail
-    delegate_to: "{{ ansible_deployment_host }}"
-    remote_user: "{{ ansible_sudo_username }}"
+    connection: local
     until: vsd_detail.stdout[0].find(vsd1_s) != -1
     retries: 5
     delay: 30
@@ -228,8 +220,7 @@
         commands: admin display-config
         provider: "{{ vsc_creds }}"
       register: pbr_config_ha_node2
-      delegate_to: "{{ ansible_deployment_host }}"
-      remote_user: "{{ ansible_sudo_username }}"
+      connection: local
 
     - name: Print 'admin display-config' when verbosity >= 1
       debug: var=pbr_config_ha_node2.stdout[0] verbosity=1
@@ -241,8 +232,7 @@
           - configure router bgp evpn-pre-rfc no non-compliant
           - admin save
         provider: "{{ vsc_creds }}"
-      delegate_to: "{{ ansible_deployment_host }}"
-      remote_user: "{{ ansible_sudo_username }}"
+      connection: local
       when: pbr_config_ha_node2.stdout[0].find('evpn-pre-rfc') != -1
 
     - name: Set mgmt_ip to first vsc node
@@ -254,8 +244,7 @@
         commands: admin display-config
         provider: "{{ vsc_creds }}"
       register: pbr_config_ha_node1
-      delegate_to: "{{ ansible_deployment_host }}"
-      remote_user: "{{ ansible_sudo_username }}"
+      connection: local
 
     - name: Print 'admin display-config' when verbosity >= 1
       debug: var=pbr_config_ha_node1.stdout[0] verbosity=1
@@ -267,8 +256,7 @@
           - configure router bgp evpn-pre-rfc no non-compliant
           - admin save
         provider: "{{ vsc_creds }}"
-      delegate_to: "{{ ansible_deployment_host }}"
-      remote_user: "{{ ansible_sudo_username }}"
+      connection: local
       when: pbr_config_ha_node1.stdout[0].find('evpn-pre-rfc') != -1
     when: inventory_hostname in groups['vsc_node2']
   when: inventory_hostname in groups['vscs']
