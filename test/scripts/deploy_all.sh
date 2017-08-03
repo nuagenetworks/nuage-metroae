@@ -198,6 +198,15 @@ mgmtIP=${mgmtIP:0:9}
 incremented=$(($incremented+10))
 mgmtIP="${mgmtIP}$incremented"
 
+sed -i "s/NSGV1_IP/$mgmtIP/g" roles/reset-build/files/build_vars.yml
+
+iptables -t nat -A PREROUTING -s $gwIP -j DNAT --to $mgmtIP
+iptables -t nat -A POSTROUTING -s $mgmtIP -j SNAT --to-source $gwIP
+
+mgmtIP=${mgmtIP:0:9}
+incremented=$(($incremented+10))
+mgmtIP="${mgmtIP}$incremented"
+
 sed -i "s/VSC1_CTRL/$mgmtIP/g" roles/reset-build/files/build_vars.yml
 
 #iptables -t nat -A PREROUTING -s $gwIP -j DNAT --to $mgmtIP
