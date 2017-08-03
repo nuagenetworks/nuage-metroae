@@ -22,14 +22,32 @@ Metro provides a set of playbooks and roles to automate the upgrade of significa
 
 The playbook `build_upgrade.yml` relies on build_vars.yml, upgrade_vars.yml and user_creds.yml to automatically populate a number of Ansible variable files for the operation of the metro playbooks.
 
-Upgrading VSD and VSTAT nodes require following changes to ```build_vars.yml``` file.
-1. Users should define ```upgrade_vmname``` in the build_vars.yml file. This name is used to bring up the new vsd and vstat nodes as part of ugrade procedure
+Upgrading VSD and VSTAT nodes require following changes to `build_vars.yml` file.
+- Users must define a value for `upgrade_vmname` for each VSD and VSTAT being upgraded. The values of `upgrade_vmname` must be different from the VM name currently being used by the VMs that are running. `upgrade_vmname` is required because the upgrade process will simply power down the old VMs, not delete them. We keep the old VMs around in case a rollback is required. For example:
+
+```
+myvsds:
+
+- { hostname: nl-gv-pbl-a1-sdn-nvd01.sdn-acc.kpn.com,
+    upgrade_vmname: nl-gv-plb-a1-sdn-upg01,
+    target_server_type: "kvm",
+    target_server: 10.242.103.55,
+    mgmt_ip: 10.242.103.30,
+    mgmt_gateway: 10.242.103.1,
+    mgmt_netmask: 255.255.255.0 }
+```
 
 Upgrading VSTAT nodes require following changes to ```upgrade_vars.yml``` file.
-1. Users should define a NFS shared location for upgrading VSTAT(ES nodes) - ```vstat_nfs_server_with_folder```. The location specifed in this variable along with the NFS server will be mounted on to all the VSTAT nodes.
+- Users must define a value for `vstats_nfs_server_with_folder` that will be mounted on the VSTAT VM. It will be used as the backup and restore location for ES files during the upgrade and rollback. The value must be of the form `host_or_ip:/nfs/exported/folder`. For example:
+
+```
+vstat_nfs_server_with_folder: 135.227.181.233:/tmp/vstat/
+```
+
+The folder listed must be NFS exported by the server prior to running the upgrade.
 
 Upgrading VSD and VSTAT nodes require following changes when user decides not to run nuage_unzip.yml
-1. Users should define additional paths apart from the ones that were mentioned in nuage_unzip.yml section of BUILD.md file. Discussed below are these additional paths.
+- Users should define additional paths apart from the ones that were mentioned in nuage_unzip.yml section of BUILD.md file. Discussed below are these additional paths.
 
 ```
 <yourpath>/vsd/migration/

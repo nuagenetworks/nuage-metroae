@@ -31,13 +31,12 @@ vsd_sa_or_ha: sa
 # VSD FQDN
 # Use xmpp fqdn for clustered VSDs and the vsd fqdn for stand alone
 # This variable must be populated for all the components except VRS deployment
-vsd_fqdn_global: vsd1.example.com
+vsd_fqdn_global: "vsd1.{{ dns_domain }}"
 # vsd_operations_list = A list of the operations you intend for the VSD. The
 # list could include 1 or more of the following:
 # - install
 # - upgrade
 # - health
-# - TBD
 vsd_operations_list:
   - install
 # myvsds is a variable that represents one or more collections of parameters for
@@ -65,7 +64,7 @@ vsd_operations_list:
 # The netmask for the management port.
 
 myvsds:
-  - { hostname: vsd1.example.com,
+  - { hostname: "vsd1.{{ dns_domain }}",
       # vmname is used to identify vm on the hypervisor/vcenter
       # This is optional. If vmname is not defined, it defaults to the name set in hostname.
       vmname: vsd1-3.2.R10-dc1,
@@ -84,14 +83,13 @@ myvsds:
 # - install
 # - upgrade
 # - health
-# - TBD
 vsc_operations_list:
   - install
 # myvscs is a collection of parameters for VSCs.
 # One set of parameters is required for each VSC.
 # Do not update {{ vsd_fqdn_global }} here as it reads from previous section
 myvscs:
-  - { hostname: vsc1.example.com,
+  - { hostname: "vsc1.{{ dns_domain }}",
       # vmname is used to identify vm on the hypervisor/vcenter
       # This is optional. If vmname is not defined, it defaults to the name set in hostname.
       vmname: vsc1-dc1,
@@ -105,8 +103,8 @@ myvscs:
       vsd_fqdn: "{{ vsd_fqdn_global }}",
       system_ip: 1.1.1.2,
       xmpp_username: vsc1,
-      vsc_static_route_list: { 0.0.0.0/1 } }
-  - { hostname: vsc2.example.com,
+      vsc_static_route_list: [ 0.0.0.0/1, 128.0.0.1/1 ] }
+  - { hostname: "vsc2.{{ dns_domain }}",
       # vmname is used to identify vm on the hypervisor/vcenter
       # This is optional. If vmname is not defined, it defaults to the name set in hostname.
       vmname: vsc2-dc1,
@@ -120,7 +118,17 @@ myvscs:
       vsd_fqdn: "{{ vsd_fqdn_global }}",
       system_ip: 1.1.1.3,
       xmpp_username: vsc2,
-      vsc_static_route_list: { 0.0.0.0/1 } }
+      vsc_static_route_list: [ 0.0.0.0/1, 128.0.0.1/1 ] }
+
+###
+#LIBNETWORK
+#'scope: local' means that connectivity between containers is limited to within the local host.
+#'scope: global' means that connectivity between containers may span across hosts in the cluster.
+#cluster_store_url must point to the key-value store used for the cluster
+###
+libnetwork:
+  scope: local
+  cluster_store_url: consul://192.168.122.1:8500
 
 ###
 # VRS params
@@ -129,23 +137,21 @@ myvscs:
 # - install
 # - upgrade
 # - health
-# - TBD
 vrs_operations_list:
   - install
-# dockermon_install = True when Docker Monitor is to be installed along with
-# the VRS. False if not.
-dockermon_install: True
 # myvrss is a collection of parameters for the targets where VRS is to be deployed.
 # One set of parameters is required for each set or group of VRS targets.
 myvrss:
   - { vrs_set_name: vrs_set_uswest1,
       vrs_os_type: u14.04,
+      libnetwork_install: False,
       active_controller_ip: 192.168.122.202,
       standby_controller_ip: 192.168.122.203,
       vrs_ip_list: [
        192.168.122.101] }
   - { vrs_set_name: vrs_set_usewest2,
       vrs_os_type: el7,
+      libnetwork_install: False,
       active_controller_ip: 192.168.122.202,
       standby_controller_ip: 192.168.122.203,
       vrs_ip_list: [
@@ -153,6 +159,7 @@ myvrss:
        192.168.122.238 ] }
   - { vrs_set_name: vrs_set_uswest3,
       vrs_os_type: u16.04,
+      libnetwork_install: False,
       active_controller_ip: 192.168.122.202,
       standby_controller_ip: 192.168.122.203,
       vrs_ip_list: [
@@ -166,14 +173,13 @@ myvrss:
 # - upgrade
 # - health
 # - dns (specified when deploying the VSTAT image as a DNS server)
-# - TBD
 vstat_operations_list:
   - install
 # myvstats is a collection of parameters for the VSTAT.
 # One set of parameters is required for each VSTAT.
 # Do not update {{ vsd_fqdn_global }} here as it reads from previous section
 myvstats:
-  - { hostname: vstat1.example.com,
+  - { hostname: "vstat1.{{ dns_domain }}",
       # vmname is used to identify vm on the hypervisor/vcenter
       # This is optional. If vmname is not defined, it defaults to the name set in hostname.
       vmname: vstat1-dc1,
@@ -193,14 +199,13 @@ myvstats:
 # - install
 # - upgrade
 # - health
-# - TBD
 vns_operations_list:
   - install
 # myvnsutils is a collection of parameters for the VNSUTIL.
 # One set of parameters is required for each VNSUTIL.
 # Do not update {{ vsd_fqdn_global }} here as it reads from previous section
 myvnsutils:
-  - { hostname: vnsutil1.example.com,
+  - { hostname: "vnsutil1.{{ dns_domain }}",
       # vmname is used to identify vm on the hypervisor/vcenter
       # This is optional. If vmname is not defined, it defaults to the name set in hostname.
       vmname: vnsutil-dc1,
@@ -209,14 +214,25 @@ myvnsutils:
       mgmt_ip: 192.168.122.205,
       mgmt_gateway: 192.168.122.1,
       mgmt_netmask: 255.255.255.0,
-      data_fqdn: vnsutil1.data.example.com,
+      data_fqdn: "vnsutil1.data.{{ dns_domain }}",
       data_ip: 192.168.100.205,
-      data_subnet: 192.168.100.0,
       data_netmask: 255.255.255.0,
-      nsgv_ip: 192.168.100.206,
-      nsgv_mac: '52:54:00:88:85:12',
-      nsgv_hostname: nsgv1.example.com,
-      vsd_fqdn: "{{ vsd_fqdn_global }}" }
+      ## BEGIN DHCP BOOTSTRAP CONFIG
+      # Metro supports deploying one or more NSGVs. As a special case, Metro supports automatically
+      # bootstrapping (ZFB) a single NSGV at time of deployment of the VNS UTIL VM. To enable this
+      # special case, the variables in this section must be uncommented and defined so that Metro
+      # can configure the DHCP server on the VNS UTIL VM to participate in this process. If you are
+      # *not* going to use Metro's automatic bootstrap of a single NSGV, the variables in this section
+      # must not be defined.
+      #
+      # Uncomment for DHCP bootstrap support:
+      # data_subnet: 192.168.100.0,
+      # nsgv_ip: 192.168.100.206,
+      # nsgv_mac: '52:54:00:88:85:12',
+      # nsgv_hostname: "nsgv1.{{ dns_domain }}",
+      ## END DHCP BOOTSTRAP CONFIG
+      vsd_fqdn: "{{ vsd_fqdn_global }}"
+    }
 
 # mynsgvs is a collection of parameters for the NSGV.
 # One set of parameters is required for each NSGV.
@@ -225,7 +241,7 @@ myvnsutils:
 # - zfb_external (ZFB process taken care by third party iso file. Needs two additional vars iso_path, iso_file)
 # - none (nsgv is deployed without any bootstrapping)
 mynsgvs:
-  - { hostname: nsgv1.example.com,
+  - { hostname: "nsgv1.{{ dns_domain }}",
       # vmname is used to identify vm on the hypervisor/vcenter
       # This is optional. If vmname is not defined, it defaults to the name set in hostname.
       vmname: nsgv-dc1,
@@ -248,9 +264,6 @@ mynsgvs:
 # dns_operations_list = A list of the operations you intend for the DNS. The
 # list could include 1 or more of the following:
 # - install
-# - upgrade
-# - health
-# - TBD
 dns_operations_list:
   - install
 # mydnss is a collection of parameters for the DNS.
@@ -309,9 +322,6 @@ mydnss:
 # gvm_operations_list = A list of the operations you intend for the vms. The
 # list could include 1 or more of the following:
 # - install
-# - upgrade
-# - health
-# - TBD
 gvm_operations_list:
   - install
 # mygvms is a collection of parameters for the generic vms.
@@ -319,50 +329,15 @@ gvm_operations_list:
 #
 # gvm_xml_file is the full path to the XML file that defines the VM.
 mygvms:
-  - { hostname: gvm1.example.com,
+  - { hostname: "gvm1.{{ dns_domain }}",
       target_server_type: "kvm",
       target_server: 135.227.181.233,
-      gvm_xml_file: /home/caso/images/jenkinsgvm1.example.com/gvm.xml }
-
-###
-# Linux VM params
-# lvm_operations_list = A list of the operations you intend for the vms. The
-# list could include 1 or more of the following:
-# - install
-# - upgrade
-# - health
-# - TBD
-lvm_operations_list:
-  - install
-# mylvms is a collection of parameters for the linux vms.
-# One set of parameters is required for each linux VM.
-#
-# lvm_ram is the amount of RAM to configure the lvm for.
-# lvm_vcpus is the number of virtual cores to use.
-#mylvms:
-#  - { hostname: lvm1.example.com,
-#      target_server_type: "kvm",
-#      target_server: 135.227.181.233,
-#      interfaces:
-#        eth0:
-#          ip: 192.168.122.206
-#          gateway: 192.168.122.1
-#          netmask: 255.255.255.0
-#          bridge: virbr0
-#        eth1:
-#          ip: 192.168.122.207
-#          gateway: 192.168.122.1
-#          netmask: 255.255.255.0
-#          bridge: virbr0
-#      lvm_ram: 16777216
-#      lvm_vcpus: 4
-#   }
+      gvm_xml_file: "/home/caso/images/jenkinsgvm1.{{ dns_domain }}/gvm.xml" }
 
 ###
 # Ansible
 # The IP addr or hostname of the Ansible host
 ansible_deployment_host: 135.227.181.233
-
 
 ###
 # Hypervisor network bridges
@@ -407,6 +382,29 @@ timezone: US/Pacific
 yum_proxy: "NONE"
 yum_update: yes
 yum_pin: yes
+###
+# VCIN params
+# vcin_operations_list = A list of the operations you intend for the VCIN. The
+# list could include 1 or more of the following:
+# - install
+# - upgrade
+vcin_operations_list:
+  - install
+# myvcins is a collection of parameters for VCINs.
+# One set of parameters is required for each VCIN.
+myvcins:
+    - { hostname: vcin-metro.phd.eu.nuagedemo.net,
+      target_server_type: "vcenter",
+      target_server: vc01.phd.eu.nuagedemo.net,
+      mgmt_ip: 10.189.1.246,
+      mgmt_gateway: 10.0.0.1,
+      mgmt_netmask: 255.0.0.0,
+      vcenter: { username: administrator@vsphere.local,
+        password: Alcateldc,
+        datacenter: Antwerp,
+        cluster: Management,
+        datastore: esxi02 }
+      }
 ###
 # Vcenter params
 # username

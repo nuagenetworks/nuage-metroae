@@ -40,6 +40,13 @@
     state: link
   remote_user: "root"
 
+- name: Configure yum proxy
+  lineinfile:
+    dest: /etc/yum.conf
+    line: "proxy={{ yum_proxy }}"
+  remote_user: "root"
+  when: not yum_proxy | match('NONE')
+
 - name: Install NTP package on the vnsutil vm
   yum: name=ntp state=present
   remote_user: "root"
@@ -89,38 +96,40 @@
     remote_user: "root"
   when: not sync_status.stdout | match("synchronized")
 
-- name: Install dhcp package
-  yum: name=dhcp state=present
-  remote_user: "root"
+- block:
+  - name: Install dhcp package
+    yum: name=dhcp state=present
+    remote_user: "root"
 
-- name: Copy dhcp config
-  template: src=dhcpd.conf.j2 backup=no dest=/etc/dhcp/dhcpd.conf
-  remote_user: "root"
+  - name: Copy dhcp config
+    template: src=dhcpd.conf.j2 backup=no dest=/etc/dhcp/dhcpd.conf
+    remote_user: "root"
 
-- name: Restart dhcp service
-  service:
-    name: dhcpd
-    state: restarted
-  remote_user: "root"
+  - name: Restart dhcp service
+    service:
+      name: dhcpd
+      state: restarted
+    remote_user: "root"
 
-- name: Chkconfig of dhcpd
-  command: chkconfig dhcpd on
-  remote_user: "root"
+  - name: Chkconfig of dhcpd
+    command: chkconfig dhcpd on
+    remote_user: "root"
 
-- name: Install dnsmasq package
-  yum: name=dnsmasq state=present
-  remote_user: "root"
+  - name: Install dnsmasq package
+    yum: name=dnsmasq state=present
+    remote_user: "root"
 
-- name: Copy dnsmasq config
-  template: src=dnsmasq.conf.j2 backup=no dest=/etc/dnsmasq.conf
-  remote_user: "root"
+  - name: Copy dnsmasq config
+    template: src=dnsmasq.conf.j2 backup=no dest=/etc/dnsmasq.conf
+    remote_user: "root"
 
-- name: Start dnsmasq
-  service:
-    name: dnsmasq
-    state: started
-  remote_user: "root"
+  - name: Start dnsmasq
+    service:
+      name: dnsmasq
+      state: started
+    remote_user: "root"
 
-- name: Chkconfig of dnsmasq
-  command: chkconfig dnsmasq on
-  remote_user: "root"
+  - name: Chkconfig of dnsmasq
+    command: chkconfig dnsmasq on
+    remote_user: "root"
+  when: nsgv_ip is defined or nsgv_mac is defined or nsgv_host_name is defined

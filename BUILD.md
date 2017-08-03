@@ -32,18 +32,15 @@ and run `./metro-ansible nuage_unzip.yml` playbook to do the heavy lifting.
 Here are the expected paths to binaries. Binaries that are not required need not have a path here.
 
 ```
-<your_path>/vsd/qcow2/ (or <your_path>/vsd/ova/ for VMware)
-<your_path>/vsc/
-<your_path>/vrs/el7/
-<your_path>/vrs/u14_04/
-<your_path>/vrs/u16_04/
-<your_path>/vrs/vmware/
-<your_path>/vrs/hyperv/
-<your_path>/dockermon/el7/
-<your_path>/dockermon/ubuntu-14.04/
-<your_path>/dockermon/ubuntu-16.04/
-<your_path>/vstat/
-<your_path>/vns/nsg/
-<your_path>/vns/util/
+<nuage_unzipped_files_dir>/vsd/qcow2/ (or <nuage_unzipped_files_dir>/vsd/ova/ for VMware)
+<nuage_unzipped_files_dir>/vsc/
+<nuage_unzipped_files_dir>/vrs/el7/
+<nuage_unzipped_files_dir>/vrs/u14_04/
+<nuage_unzipped_files_dir>/vrs/u16_04/
+<nuage_unzipped_files_dir>/vrs/vmware/
+<nuage_unzipped_files_dir>/vrs/hyperv/
+<nuage_unzipped_files_dir>/vstat/
+<nuage_unzipped_files_dir>/vns/nsg/
+<nuage_unzipped_files_dir>/vns/util/
 ```
 

@@ -14,7 +14,7 @@ def exec_command(vsc, command):
     try:
         net_connect = ConnectHandler(**vsc)
         output = net_connect.send_command(command)
-    except:
+    except BaseException:
         print ("Error! Command excution failed!"
                " Command: {0} Exception: {1}" .format(command, sys.exc_info()[0]))
         sys.exit(1)
@@ -47,7 +47,8 @@ def run_commands(commands, vscs, vrs_ip):
                 if output.find(vrs_ip):
                     result = result + "VRS " + vrs_ip + " is OK!"
                 else:
-                    result = result + "Error: VSC " + vsc + " did not detect the VRS: " + vrs_ip + "!"
+                    result = result + "Error: VSC " + vsc + \
+                        " did not detect the VRS: " + vrs_ip + "!"
 
         else:
             print("Error! Unexpected command!")
@@ -66,8 +67,11 @@ def get_commands(playbook_dir):
     try:
         with open(command_path, "r") as stream:
             commands = yaml.safe_load(stream)
-    except:
-        print("Error processing commands file {0}:{1}" .format(command_path, sys.exc_info()[0]))
+    except BaseException:
+        print(
+            "Error processing commands file {0}:{1}" .format(
+                command_path,
+                sys.exc_info()[0]))
         sys.exit(1)
 
     return commands['vrs_commands']
@@ -80,7 +84,7 @@ def is_valid_ip(ip):
         return False
     try:
         return all(0 <= int(piece) < 256 for piece in pieces)
-    except:
+    except BaseException:
         return False
 
     return True
