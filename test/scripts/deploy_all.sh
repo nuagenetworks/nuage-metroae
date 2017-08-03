@@ -24,7 +24,8 @@ then
         node2IP=$3
         node3IP=$4
     fi
-    
+
+    # The following conditional case should be rarely used    
     if [ $# -eq 3 ];
     then
         echo "This ha environment has only 2 hypervisors to deploy on."
@@ -50,11 +51,11 @@ IPADDR=`/usr/sbin/ifconfig | grep netmask | grep broadcast | head -n 1 | awk '{p
 # The following "sed" commands populate the build_vars.yml file with
 # the correct mgmt IP addresses for the following naming convention:
 # if the hypervisor's given Jen-BackEnd IP is 10.106.1.7, the mgmt IP for:
-# VSD1 will be 10.106.1.17
-# VSC1 will be 10.106.1.27
-# VSC2 will be 10.106.1.37
-# VSTAT1 will be 10.106.1.47
-# VNSUTIL1 will be 10.106.1.57
+# VSD1 will be 10.106.1.117
+# VSC1 will be 10.106.1.127
+# VSC2 will be 10.106.1.137
+# VSTAT1 will be 10.106.1.147
+# VNSUTIL1 will be 10.106.1.157
 
 # If given the hypervisor's Jen-BackEnd IP, the first machine will be given
 # an IP of the correct subnet, and the final number in the IP address will
@@ -87,7 +88,7 @@ gwIP=$(ip addr show br-eth1 | grep "inet\b" | awk '{print $2}' | cut -d/ -f1)
 
 removed=${gwIP:9}
 mgmtIP=${gwIP:0:9}
-incremented=$(($removed+10))
+incremented=$(($removed+110))
 dataGW="${mgmtIP}0"
 mgmtIP="${mgmtIP}$incremented"
 
@@ -189,15 +190,6 @@ incremented=$(($incremented+10))
 mgmtIP="${mgmtIP}$incremented"
 
 sed -i "s/VNSUTIL1_IP/$mgmtIP/g" roles/reset-build/files/build_vars.yml
-
-iptables -t nat -A PREROUTING -s $gwIP -j DNAT --to $mgmtIP
-iptables -t nat -A POSTROUTING -s $mgmtIP -j SNAT --to-source $gwIP
-
-mgmtIP=${mgmtIP:0:9}
-incremented=$(($incremented+10))
-mgmtIP="${mgmtIP}$incremented"
-
-sed -i "s/NSGV_IP/$mgmtIP/g" roles/reset-build/files/build_vars.yml
 
 iptables -t nat -A PREROUTING -s $gwIP -j DNAT --to $mgmtIP
 iptables -t nat -A POSTROUTING -s $mgmtIP -j SNAT --to-source $gwIP
