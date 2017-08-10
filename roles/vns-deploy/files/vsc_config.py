@@ -156,7 +156,7 @@ def get_commands(playbook_dir):
               .format(command_path, sys.exc_info()[0]))
         sys.exit(1)
 
-    return commands['vns_config']
+    return commands['vns_config_commands']
 
 
 # Returns result of executing commands
