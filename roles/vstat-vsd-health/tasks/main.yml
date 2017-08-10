@@ -1,12 +1,12 @@
 - name: Get monit summary for all stats process on VSD
   vsd_monit:
-    name: "{{vsd_stats}}"
-    state: summary
+    state: group_summary
+    group: vsd-stats
   register: chk
   remote_user: "root"
 
-- name: Verify vsd-stats-status program on VSD
-  fail: msg="Cannot verify vsd-stats-status. Program not running"
+- name: Verify elasticsearch-status program on VSD
+  fail: msg="Cannot verify elasticsearch-status. Program not running"
   when: chk['state']['elasticsearch-status'] != "status ok"
 
 - name: Verify tca-daemon-status program on VSD
@@ -17,10 +17,3 @@
   fail: msg="Cannot verify stats-collector-status. Program not running"
   when: chk['state']['stats-collector-status'] != "status ok"
 
-- name: Verify tca-daemon process on VSD
-  fail: msg="Cannot verify tca-daemon. Process not running"
-  when: chk['state']['tca-daemon'] != "running"
-
-- name: Verify stats-collector process on VSD
-  fail: msg="Cannot verify stats-collector. Process not running"
-  when: chk['state']['stats-collector'] != "running"

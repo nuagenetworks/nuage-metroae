@@ -44,15 +44,14 @@ def main():
             rc, out, err = module.run_command('%s summary -g %s'
                                               % (MONIT, group), check_rc=True)
         for line in out.split('\n'):
-            if 'daemon' not in line:
-                parts = line.split()
-                if len(parts) > 2:
-                    if (parts[0].lower() == 'program' or
-                       parts[0].lower() == 'process' or
-                       parts[0].lower() == 'file'):
-                        proc_name = parts[1].strip("'")
-                        proc_status = ' '.join(parts[2:]).lower()
-                        monit_status.setdefault(proc_name, proc_status)
+            parts = line.split()
+            if len(parts) > 2:
+                if (parts[0].lower() == 'program' or
+                   parts[0].lower() == 'process' or
+                   parts[0].lower() == 'file'):
+                    proc_name = parts[1].strip("'")
+                    proc_status = ' '.join(parts[2:]).lower()
+                    monit_status.setdefault(proc_name, proc_status)
         return (monit_status)
 
     if state == 'summary':
