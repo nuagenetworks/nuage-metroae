@@ -7,61 +7,57 @@ DOCUMENTATION = '''
 module: vsd_monit
 short_description: Verify the summary of vsd processes via monit
 options:
-  state:
+  group:
     description:
-      - The state of service
+      - The collection of services to return
     required: true
-    default: null
-    choices: [ "summary" ]
+    default: all
+    choices: [ "all", "vsd-stats", "vsd-core", "vsd-common", "check" ]
 '''
 
 EXAMPLES = '''
-# Verify the state of vsd program/processes.
-- vsd_monit: state=summary
+- vsd_monit: group=vsd-stats
 '''
 
 
 def main():
     arg_spec = dict(
-        state=dict(required=True, choices=['summary', 'group_summary']),
-        group=dict(default=None, choices=['vsd-stats', 'vsd-core',
-                                          'vsd-common'], type='str')
+        group=dict(required=True, choices=['all', 'vsd-stats', 'vsd-core',
+                                           'vsd-common', 'check'], type='str')
     )
 
     monit_status = dict()
     module = AnsibleModule(argument_spec=arg_spec, supports_check_mode=True)
 
-    state = module.params['state']
     group_name = module.params['group']
     MONIT = module.get_bin_path('monit', True)
 
-    def status(group=None):
-        """Return the status of the vsd process in monit, or
-        the empty string if not present."""
-        rc, out, err = module.run_command('%s summary'
-                                          % (MONIT), check_rc=True)
-        if group:
-            rc, out, err = module.run_command('%s summary -g %s'
-                                              % (MONIT, group), check_rc=True)
-        for line in out.split('\n'):
-            if 'daemon' not in line:
-                parts = line.split()
-                if len(parts) > 2:
-                    if (parts[0].lower() == 'program' or
-                       parts[0].lower() == 'process' or
-                       parts[0].lower() == 'file'):
-                        proc_name = parts[1].strip("'")
-                        proc_status = ' '.join(parts[2:]).lower()
-                        monit_status.setdefault(proc_name, proc_status)
-        return (monit_status)
+    cmd = ''
+    if group_name == 'all':
+        cmd = "%s summary" % (MONIT)
+    else:
+        cmd = "%s summary -g %s" % (MONIT, group_name)
+    rc, out, err = module.run_command(cmd, check_rc=True)
 
-    if state == 'summary':
-        vsd_proc_status = status()
-        module.exit_json(changed=True, state=vsd_proc_status)
+    if rc != 0:
+        module.fail_json(msg="command failed",
+                         rc=rc,
+                         cmd=cmd,
+                         stdout=out,
+                         stderr=err,
+                         changed=False)
 
-    if state == 'group_summary':
-        vsd_proc_status = status(group=group_name)
-        module.exit_json(changed=True, state=vsd_proc_status)
+    for line in out.split('\n'):
+        parts = line.split()
+        if len(parts) > 2:
+            if (parts[0].lower() == 'program' or
+               parts[0].lower() == 'process' or
+               parts[0].lower() == 'file'):
+                proc_name = parts[1].strip("'")
+                proc_status = ' '.join(parts[2:]).lower()
+                monit_status.setdefault(proc_name, proc_status)
+
+    module.exit_json(changed=True, state=monit_status)
 
 
 main()

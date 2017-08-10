@@ -49,9 +49,24 @@
 - name: Print ejabberd list_cluster output when verbosity >= 1
   debug: var=list_cluster_output verbosity=1
 
+- name: Verify cna user is found in connected_users of ejabberd in vsds
+  assert:
+    that: "client_list.stdout|search('cna@{{ vsd_fqdn }}')"
+    msg: "cna@{{ vsd_fqdn }} could not be found in '/opt/ejabberd/bin/ejabberdctl connected_users'"
+
+- name: Verify push user is found in connected_users of ejabberd in vsds
+  assert:
+    that: "client_list.stdout|search('push@{{ vsd_fqdn }}')"
+    msg: "push@{{ vsd_fqdn }} could not be found in '/opt/ejabberd/bin/ejabberdctl connected_users'"
+
+- name: Verify keyserver user is found in connected_users of ejabberd in vsds
+  assert:
+    that: "client_list.stdout|search('keyserver@{{ vsd_fqdn }}')"
+    msg: "keyserver@{{ vsd_fqdn }} could not be found in '/opt/ejabberd/bin/ejabberdctl connected_users'"
+
 - name: Create local variable with ejabberd cluster output to json
   set_fact: ejabberd_cluster_json="{{ list_cluster_output.stdout|ejabberd_cluster_to_json }}"
-  
+
 - name: Write cluster JSON to file
   nuage_append: filename="{{ report_path }}" text="{{ inventory_hostname }} {{ ejabberd_cluster_json|to_nice_json }}\n"
   remote_user: "{{ ansible_sudo_username }}"
@@ -72,24 +87,6 @@
   nuage_append: filename="{{ report_path }}" text="{{ inventory_hostname }} {{ ejabberd_clients_json|to_nice_json }}\n"
   remote_user: "{{ ansible_sudo_username }}"
   delegate_to: "{{ ansible_deployment_host }}"
-
-- name: Verify cna user is found in connected_users of ejabberd in vsds
-  assert:
-    that: "'cna@{{ vsd_fqdn }}/{{ item.split('.')[0:1] | join('.') }}' in ejabberd_clients_json['connected_clients']"
-    msg: "{{ item }} could not be found in '/opt/ejabberd/bin/ejabberdctl connected_users'"
-  with_items: "{{ ansible_play_hosts }}"
-
-- name: Verify push user is found in connected_users of ejabberd in vsds
-  assert:
-    that: "'push@{{ vsd_fqdn }}/{{ item.split('.')[0:1] | join('.') }}' in ejabberd_clients_json['connected_clients']"
-    msg: "{{ item }} could not be found in '/opt/ejabberd/bin/ejabberdctl connected_users'"
-  with_items: "{{ ansible_play_hosts }}"
-
-- name: Verify keyserver user is found in connected_users of ejabberd in vsds
-  assert:
-    that: "'keyserver@{{ vsd_fqdn }}/{{ item.split('.')[0:1] | join('.') }}' in ejabberd_clients_json['connected_clients']"
-    msg: "{{ item }} could not be found in '/opt/ejabberd/bin/ejabberdctl connected_users'"
-  with_items: "{{ ansible_play_hosts }}"
 
 - include: monit_status.yml
 

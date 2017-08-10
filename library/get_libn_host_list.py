@@ -27,8 +27,13 @@ def libn_check(filepath):
         module.fail_json(msg="Error processing YAML file: %s" % details)
 
     vrs_list = []
+    if 'myvrss' not in config:
+        return vrs_list
+
     for item in config['myvrss']:
-        if item['libnetwork_install']:
+        if 'libnetwork_install' in item and item['libnetwork_install']:
+            if 'vrs_ip_list' not in item:
+                module.fail_json(msg="Build variables specify libnetwork_install without VRS IP addressess")
             for ip in item['vrs_ip_list']:
                 vrs_list.append(ip)
     return vrs_list
