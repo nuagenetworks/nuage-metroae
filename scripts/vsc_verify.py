@@ -156,15 +156,16 @@ def run_commands(commands, vsc_host_vars, vsc, retry_timeout):
             for vsc_host in vsc_host_vars:
 
                 if (vsc_host_vars[vsc_host]['mgmt_ip'] != vsc['ip']):
-                    if (re.search(
-                            (vsc_host_vars[vsc_host]['system_ip'] + '\n'), output)):
-                        result = "VSC " + vsc['ip'] + " is OK!"
-                    else:
-                        error_flag = True
-                        bad_neighbor_list.append(vsc_host_vars
-                                                 [vsc_host]['mgmt_ip'])
-                        error2 = "Error: Missing VSC " + \
-                            vsc['ip'] + (" peers:") + str(bad_neighbor_list)
+                    if 'system_ip' in vsc_host_vars[vsc_host]:
+                        if (re.search(
+                                (vsc_host_vars[vsc_host]['system_ip'] + '\n'), output)):
+                            result = "VSC " + vsc['ip'] + " is OK!"
+                        else:
+                            error_flag = True
+                            bad_neighbor_list.append(vsc_host_vars
+                                                     [vsc_host]['mgmt_ip'])
+                            error2 = "Error: Missing VSC " + \
+                                vsc['ip'] + (" peers:") + str(bad_neighbor_list)
 
         else:
             print("Error! Unexpected command!")
