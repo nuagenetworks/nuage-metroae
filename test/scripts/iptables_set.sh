@@ -1,5 +1,5 @@
 #!/bin/bash
-# Sets iptable rules for a given machine.
+# Sets iptable rules for a given slave machine. Used in conjunction with deploy_diff_static.sh.
 
 iptables -t nat -F PREROUTING
 iptables -t nat -F POSTROUTING
