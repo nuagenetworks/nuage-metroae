@@ -1,4 +1,8 @@
 #!/bin/bash
+
+# This script allows you to utilize two hosts, one as the Jenkins slave, the other
+# as the deployment host.
+
 set -e
 
 USAGE="Usage: $0 version"
