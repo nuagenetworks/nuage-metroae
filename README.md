@@ -51,9 +51,50 @@ The latest stable code is found in the `master` branch. The `dev` branch is for 
 
 If you want to contribute back, you must create your own branch or fork, push your changes to that, and create a pull request to the `dev` branch. All pull requests against the `master` branch will be rejected. Sorry. All pull requests should include tests for new functionality. See `CONTRIBUTING.md` for more details.
 
-## General Prerequisites
+## Prerequisites
 
-The following restrictions and conditions apply prior to executing the playbooks:
+### Priviledged execution on the Ansible host.
+
+Metro operation requires priviledged execution on the Ansible host. By default, the variable `ansible_sudo_username` in build_vars.yml is set to `root` for priviledge execution. When `ansible_sudo_username` is set to `root`, no additional configuration on the Ansible host is required. For situations where you aren't allowed to use `root` for priviledged execution, changes are required in the `/etc/sudoers` file on the Ansible host.
+
+When `root` is not used, passwordless execution must be enabled for the username set for `ansible_sudo_username`. The command `sudo visudo` must be used to make this change. Execute the command and configure:
+
+```
+## Next comes the main part: which users can run what software on
+## which machines (the sudoers file can be shared between multiple
+## systems).
+## Syntax:
+##
+##      user    MACHINE=COMMANDS
+##
+## The COMMANDS section may have other options added to it.
+##
+## Allow root to run any commands anywhere
+root    ALL=(ALL)       ALL
+<ansible_sudo_username> ALL=(ALL) NOPASSWD: ALL
+```
+
+Substitute the username for `<ansible_sudo_username>` in the /etc/sudoers file. For example:
+
+`jenkins ALL=(ALL) NOPASSWD: ALL`
+
+Also, when `root` is not used, tty must not be required for the username set for `ansible_sudo_username`. The command `sudo visudo` must be used to make this change. Execute the command and configure:
+
+```
+#
+# Disable "ssh hostname sudo <cmd>", because it will show the password in clear.
+#         You have to run "ssh -t hostname sudo <cmd>".
+#
+#Defaults    requiretty
+Defaults:<ansible_sudo_username> !requiretty
+```
+
+Substitute the username for `<ansible_sudo_username>` in the /etc/sudoers file. For example:
+
+`Defaults:jenkins !requiretty`
+`jenkins ALL=(ALL) NOPASSWD: ALL`
+
+### Other Prerequisites
 
 1. Ansible 2.2.1 is required.
 1. The Ansible host must have the package python-jinja2 >= 2.7. python-jinja2 is installed by default with Ansible, but el6 hosts (e.g. CentOS 6.8) are limited to python-jinja2 < 2.7. Therefore, Nuage Metro will not run on el6 hosts.
@@ -107,7 +148,7 @@ In addition to the above prerequisites, the following packages are needed for op
     > `pip install vspk`
 1. Clone this repository to the Ansible host
 1. Customize `build_vars.yml` (and `zfb.yml` if you are deploying VNS) with your VSD, VSC, VRS, VNSUTIL, NSGV  and VSTAT information. (See `BUILD.md` and `ZFB.md` for details.)
-1. Copy your binary files to the proper locations. (See `BUILD.md` for details.)
+1. Copy your binary files to the proper locations. (See `BUILD.md` for details.) *If the files are not copied to the proper locations, the next step will fail to find them!*
 1. Optionally execute `./metro-ansible nuage_unzip.yml` if you are installing from tar-gz files.
 1. Execute `./metro-ansible build.yml` to automatically populate variables in the appropriate places, e.g. the `host_vars` directory.
 1. Execute `./metro-ansible install_everything.yml`
@@ -172,7 +213,6 @@ These are Ansible roles that are fully tested and supported.
 - gvm-predeploy
 - nsgv-destroy
 - nsgv-predeploy
-- nuage-predeploy
 - nuage-unzip
 - reset-build
 - set-upgrade-flag
@@ -241,7 +281,6 @@ These are playbooks that are stable but under development or contributed from th
 - dns-destroy
 - dns-postdeploy
 - dns-predeploy
-- lvm-predeploy
 - mesos-deploy
 - stcv-postdeploy
 - stcv-predeploy

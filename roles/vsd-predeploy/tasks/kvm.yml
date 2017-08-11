@@ -40,6 +40,14 @@
   when: mgmt_bridge not in ansible_interfaces
 
 - block:
+  - name: Check if required OS packages are installed
+    command: rpm -q qemu-kvm libvirt bridge-utils libguestfs-tools libvirt-python
+    register: rpm_check
+    ignore_errors: True
+
+  - name: Print rpm_check when verbosity >= 1
+    debug: var=rpm_check verbosity=1
+
   - name: If RedHat, install packages for RedHat OS family distros
     yum: name={{ item }} state=present
     with_items:
@@ -48,6 +56,7 @@
      - bridge-utils
      - libguestfs-tools
      - libvirt-python
+    when: rpm_check.rc == 1
 
   - name: Make sure libvirtd has started
     service:
@@ -55,7 +64,7 @@
       enabled: yes
       state: started
 
-  when: ansible_os_family | match("RedHat")
+  when: ansible_os_family|match("RedHat")
   delegate_to: "{{ target_server }}"
   remote_user: "{{ target_server_username }}"
 
