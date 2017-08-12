@@ -119,17 +119,17 @@
     debug: var=output.stdout verbosity=1
   
   - name: check xmpp connectivity between VSC and VSD after enabling TLS
-    sros_command:
-      commands:
-        - show vswitch-controller xmpp-server | match Functional
-      wait_for:
-        - result[0] contains Functional
-      provider: "{{ vsc_creds }}"
-      interval: 10
-      retries: 6
+    vsc_command:
+      command: show vswitch-controller xmpp-server | match Functional
+      mgmt_ip: "{{ mgmt_ip }}"
+      username: admin
+      password: admin
     register: xmpp_status
+    until: xmpp_status.result.find('Functional') != -1
+    retries: 6
+    delay: 10
     delegate_to: localhost
-  
+
   - name: Print output of 'show vswitch-controller xmpp-server' when verbosity >= 1
     debug: var=xmpp_status verbosity=1
   when: groups['vnsutils'] is defined 
