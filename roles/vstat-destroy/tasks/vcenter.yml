@@ -1,17 +1,37 @@
 ---
+- block:
+  - name: Verify that upgrade_vmname is defined if this is an upgrade VM
+    assert:
+      that: "upgrade_vmname is defined"
+      msg: "For vstat-upgrade-destroy, upgrade_vmname must be defined in build_vars.yml"
+
+  - name: Set local variable with upgrade_vmname
+    set_fact:
+      vm_name: "{{ upgrade_vmname }}"
+  when: destroy_upgrade_vm | default( False )
+
+- block:
+  - name: Set local variable with vmname
+    set_fact:
+      vm_name: "{{ vmname }}"
+  when: not destroy_upgrade_vm | default( False )
+
 - name: Gathering info on VM
   connection: local
   vmware_guest:
     hostname: "{{ target_server }}"
     username: "{{ vcenter.username }}"
     password: "{{ vcenter.password }}"
-    name: "{{ vmname }}"
+    name: "{{ vm_name }}"
     validate_certs: no
     state: gatherfacts
   register: vstat_vm_facts
-  ignore_errors: on
+  ignore_errors: true
 
 - debug: var=vstat_vm_facts verbosity=1
+
+- fail: msg="Exception found {{ vstat_vm_facts.exception }}"
+  when: vstat_vm_facts.exception is defined
 
 - block:
   - name: Power off the Stats VM
@@ -20,9 +40,10 @@
       hostname: "{{ target_server }}"
       username: "{{ vcenter.username }}"
       password: "{{ vcenter.password }}"
-      name: "{{ vmname }}"
+      name: "{{ vm_name }}"
       validate_certs: no
       state: "poweredoff"
+    when: vstat_vm_facts['instance']['hw_power_status'] == 'poweredOn'
 
   - name: Removing the Stats VM
     connection: local
@@ -30,9 +51,8 @@
       hostname: "{{ target_server }}"
       username: "{{ vcenter.username }}"
       password: "{{ vcenter.password }}"
-      name: "{{ vmname }}"
+      name: "{{ vm_name }}"
       validate_certs: no
       state: "absent"
-
+    when: not nuage_upgrade or destroy_upgrade_vm | default( False )
   when: vstat_vm_facts.failed is not defined
-
