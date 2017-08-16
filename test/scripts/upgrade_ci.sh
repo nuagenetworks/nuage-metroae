@@ -2,7 +2,7 @@
 set -e
 USAGE="Usage: $0 version deployment mode (sa or ha)"
 
-if [ $# -ne 3 ];
+if [ $# -ne 4 ];
 then
     echo "Requires exactly 4 arguments: upgrade_from_version, deployment mode (sa or ha), test_vmname (True or False) and upgrade_to_version"
     echo $USAGE
@@ -57,8 +57,6 @@ ansible-playbook build.yml -vvvv
 ./metro-ansible test_install.yml -vvvv
 
 # VCS deployment is finished. Now prepare the setup for upgrade
-ansible-playbook reset_build.yml -vvvv
-cp ./test/files/build_vars_upgrade_all.yml roles/reset-build/files/build_vars.yml
 cp ./test/files/upgrade_vars.yml.all roles/reset-build/files/upgrade_vars.yml
 cp ./test/file/user_creds_all.yml .
 
@@ -66,6 +64,7 @@ sed -i "s/install/upgrade/g" roles/reset-build/files/build_vars.yml
 sed -i "s/VERSION/$4/g" roles/reset-build/files/upgrade_vars.yml
 sed -i "s/UPGRADE_MAJOR_MINOR/major/g" roles/reset-build/files/upgrade_vars.yml
 sed -i "s/UPGRADE_FROM_VERSION/$1/g" roles/reset-build/files/upgrade_vars.yml
+ansible-playbook reset_build.yml -vvvv
 
 ./metro-ansible build_upgrade.yml -vvv
 
