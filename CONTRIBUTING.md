@@ -7,7 +7,7 @@ All contributions must be consistent with the design of the existing playbooks a
 * **Postdeploy** - For component-level sanity validation.
 * **Health** - For system-level sanity validation and monitoring.
 * **Destroy** - For tear down of components and connections. This is one of two hypervisor-dependent roles (predeploy is the other). If you find yourself adding conditional execution based on the hypervisor anywhere else, it's probably a mistake.
-* **Upgrade** - For upgrading components form one release to another.
+* **Upgrade** - For upgrading components from one release to another.
 * **Rollback** - For restoring components to their previous version if an upgrade fails.
 
 ## Submitting Code
