@@ -58,8 +58,7 @@ ansible-playbook build.yml -vvvv
 
 # VCS deployment is finished. Now prepare the setup for upgrade
 cp ./test/files/upgrade_vars.yml.all roles/reset-build/files/upgrade_vars.yml
-cp ./test/file/user_creds_all.yml .
-
+cp ./test/files/user_creds_all.yml .
 sed -i "s/install/upgrade/g" roles/reset-build/files/build_vars.yml
 sed -i "s/VERSION/$4/g" roles/reset-build/files/upgrade_vars.yml
 sed -i "s/UPGRADE_MAJOR_MINOR/major/g" roles/reset-build/files/upgrade_vars.yml
