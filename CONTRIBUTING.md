@@ -16,10 +16,10 @@ All contributions must be consistent with the design of the existing playbooks a
 * Develop and test all proposed contributions on the appropriate hypervisors.
 * If you choose not to provide support for one or more supported hypervisors, you must provide graceful error handling for those types.
 * Requirements for User Input Variables
- * Include all variables that can be modified by a user in one of the variable files:`build_vars.yml`, `upgrade_vars.yml`, and `user_creds.yml`.
- * Ensure that the copies of the variable files in `roles/reset-build/files/` are identical to `build_vars.yml`, `upgrade_vars.yml`, and `user_creds.yml`.
- * Include comments with the variable specifications that explain the variable's purpose and acceptable values.
- * Variables that are almost never modifed may be included in standard Ansible variable locations, e.g. `vars/main.yml`.
+    * Include all variables that can be modified by a user in one of the variable files:`build_vars.yml`, `upgrade_vars.yml`, and `user_creds.yml`.
+    * Ensure that the copies of the variable files in `roles/reset-build/files/` are identical to `build_vars.yml`, `upgrade_vars.yml`, and `user_creds.yml`.
+    * Include comments with the variable specifications that explain the variable's purpose and acceptable values.
+    * Variables that are almost never modifed may be included in standard Ansible variable locations, e.g. `vars/main.yml`.
 * Update (merge) your personal fork from the latest dev branch.
 * Push your changes to your own fork.
 * Add a brief description of your bug fix or enhancement to `RELEASE_NOTES.md` and to the `What's New` section of `README.md`.
