@@ -54,27 +54,29 @@
   delegate_to: "{{ ansible_deployment_host }}"
 
 - name: Execute list_cluster command on VSD(s)
-  command: "{{ ejabber_decouple }}"
+  command: "{{ ejabber_cluster_list_command }}"
   register: list_cluster_output
   remote_user: root
 
 - name: Print ejabberd list_cluster output when verbosity >= 1
   debug: var=list_cluster_output verbosity=1
 
-- name: Verify cna user is found in connected_users of ejabberd in vsds
-  assert:
-    that: "list_cluster_output.stdout|search('cna@{{ vsd_fqdn }}')"
-    msg: "cna@{{ vsd_fqdn }} could not be found in '/opt/ejabberd/bin/ejabberdctl connected_users'"
+- block:
+  - name: Verify cna user is found in connected_users of ejabberd in vsds
+    assert:
+      that: "list_cluster_output.stdout|search('cna@{{ vsd_fqdn }}')"
+      msg: "cna@{{ vsd_fqdn }} could not be found in '/opt/ejabberd/bin/ejabberdctl connected_users'"
 
-- name: Verify push user is found in connected_users of ejabberd in vsds
-  assert:
-    that: "list_cluster_output.stdout|search('push@{{ vsd_fqdn }}')"
-    msg: "push@{{ vsd_fqdn }} could not be found in '/opt/ejabberd/bin/ejabberdctl connected_users'"
+  - name: Verify push user is found in connected_users of ejabberd in vsds
+    assert:
+      that: "list_cluster_output.stdout|search('push@{{ vsd_fqdn }}')"
+      msg: "push@{{ vsd_fqdn }} could not be found in '/opt/ejabberd/bin/ejabberdctl connected_users'"
 
-- name: Verify keyserver user is found in connected_users of ejabberd in vsds
-  assert:
-    that: "list_cluster_output.stdout|search('keyserver@{{ vsd_fqdn }}')"
-    msg: "keyserver@{{ vsd_fqdn }} could not be found in '/opt/ejabberd/bin/ejabberdctl connected_users'"
+  - name: Verify keyserver user is found in connected_users of ejabberd in vsds
+    assert:
+      that: "list_cluster_output.stdout|search('keyserver@{{ vsd_fqdn }}')"
+      msg: "keyserver@{{ vsd_fqdn }} could not be found in '/opt/ejabberd/bin/ejabberdctl connected_users'"
+  when: (vsd_sa_or_ha == 'sa') or (vsd_sa_or_ha == 'SA')
 
 - name: Create local variable with ejabberd cluster output to json
   set_fact: ejabberd_cluster_json="{{ list_cluster_output.stdout|ejabberd_cluster_to_json }}"
@@ -84,8 +86,8 @@
   remote_user: "{{ ansible_sudo_username }}"
   delegate_to: "{{ ansible_deployment_host }}"
 
-- name: Excute connected_users command on VSD(s)
-  command: "{{ connected_users }}"
+- name: Excute ejabberd_connected_users_command command on VSD(s)
+  command: "{{ ejabberd_connected_users_command }}"
   register: client_list
   remote_user: root
 
