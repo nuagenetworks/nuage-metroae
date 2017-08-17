@@ -62,7 +62,7 @@ cp ./test/files/user_creds_all.yml .
 sed -i "s/install/upgrade/g" roles/reset-build/files/build_vars.yml
 sed -i "s/VERSION/$4/g" roles/reset-build/files/upgrade_vars.yml
 sed -i "s/UPGRADE_MAJOR_MINOR/major/g" roles/reset-build/files/upgrade_vars.yml
-sed -i "s/UPGRADE_FROM_VERSION/$1/g" roles/reset-build/files/upgrade_vars.yml
+sed -i "s/UPGRADE_FROM/$1/g" roles/reset-build/files/upgrade_vars.yml
 ansible-playbook reset_build.yml -vvvv
 
 ./metro-ansible build_upgrade.yml -vvv
