@@ -68,7 +68,7 @@ ansible-playbook reset_build.yml -vvvv
 ./metro-ansible build_upgrade.yml -vvv
 
 # Upgrade workflow for SA deployments
-if [$2 = sa]
+if [ $2 == sa ]
 then
     # Run health checks
     ./metro-ansible vsp_preupgrade_health.yml -vvv
