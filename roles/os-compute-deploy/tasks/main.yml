@@ -1,12 +1,12 @@
 ---
-- name: Get OSC facts from "{{ osc_server_name }}" 
+- name: Get OSC facts from "{{ osc_server_name }}"
   os_server_facts:
     auth:
       "{{ os_auth }}"
     server: "{{ osc_server_name }}"
   register: osc_server
   delegate_to: 127.0.0.1
- 
+
 - name: Set OSC ip
   set_fact:
     osc_ip: "{{ osc_server['ansible_facts']['openstack_servers'][0]['private_v4'] }}"
@@ -56,7 +56,7 @@
   when: infra_server_name is defined
 
 - name: Clean known_hosts of OS_computes
-  command: ssh-keygen -R "{{ compute_mgmt_ip }}" -f /root/.ssh/known_hosts
+  command: ssh-keygen -R "{{ compute_mgmt_ip }}"
   delegate_to: "{{ ansible_deployment_host }}"
   remote_user: "{{ ansible_sudo_username }}"
 
@@ -89,7 +89,7 @@
   when: infra_server_name is defined
 
 - name: Disable firewall
-  service: 
+  service:
     name: firewalld
     enabled: no
   when:
@@ -100,7 +100,7 @@
 - name: Stop firewall
   service:
     name: firewalld
-    state: stopped 
+    state: stopped
   when:
     - ansible_os_family == 'RedHat'
   ignore_errors: yes
@@ -133,7 +133,7 @@
     name: network
     enabled: yes
   remote_user: "root"
- 
+
 - name: Start netowrk
   service:
     name: network
@@ -215,7 +215,7 @@
   when: ansible_distribution == 'CentOS'
 
 - name: Pause
-  pause:  
+  pause:
     seconds: 5
 
 - name: Load correspoing software repos for OpenStack Centos7
@@ -223,7 +223,7 @@
     name: "{{ os_centos }}{{ nuage_os_release }}"
     state: present
   remote_user: "root"
-  when: 
+  when:
     - ansible_distribution == 'CentOS'
     - ansible_distribution_major_version == '7'
 
@@ -246,24 +246,24 @@
     creates: /root/.ssh/id_rsa
   remote_user: "root"
   delegate_to: "{{ osc_ip }}"
- 
+
 - name: Get generated SSH keys
   shell: cat ~/.ssh/id_rsa.pub
   register: ssh_key
   remote_user: "root"
   delegate_to: "{{ osc_ip }}"
- 
+
 - name: Copy SSH key
   shell: "echo {{ssh_key.stdout}} >> /root/.ssh/authorized_keys"
   remote_user: "root"
- 
+
 - name: Find the answers file on the OSC
   find:
     paths: "/root"
     patterns: "packstack*.txt"
   register: answer_file
   delegate_to: "{{ osc_ip }}"
- 
+
 - name: Update the answer file with compute node ip
   lineinfile:
     dest: "{{ answer_file.files[0].path }}"
@@ -271,12 +271,12 @@
     line: CONFIG_COMPUTE_HOSTS={{ compute_mgmt_ip }}
   remote_user: "root"
   delegate_to: "{{ osc_ip }}"
- 
+
 - name: Update the answer file with compute node ip
   lineinfile:
     dest: "{{ answer_file.files[0].path }}"
     regexp: EXCLUDE_SERVERS=
-    line: EXCLUDE_SERVERS={{ osc_ip }} 
+    line: EXCLUDE_SERVERS={{ osc_ip }}
   remote_user: "root"
   delegate_to: "{{ osc_ip }}"
 
