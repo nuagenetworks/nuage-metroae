@@ -84,6 +84,7 @@ def main():
     if module.params['logging']:
         logging.basicConfig(filename=module.params['log_file_name'], level=logging.DEBUG)
         logger = logging.getLogger("netmiko")
+        logger.info('begin logging for vcs_command')
 
     vsc_conn_params = {
         'device_type': 'alcatel_sros',
