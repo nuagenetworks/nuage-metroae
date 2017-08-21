@@ -76,7 +76,7 @@ def main():
                          stderr=MESSAGE,
                          changed=False)
 
-    if module.params[debug]:
+    if module.params['debug']:
         logging.basicConfig(filename='vsc_command.log', level=logging.DEBUG)
         logger = logging.getLogger("netmiko")
 
