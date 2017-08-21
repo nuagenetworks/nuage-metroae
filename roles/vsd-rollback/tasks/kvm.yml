@@ -37,7 +37,7 @@
       group: all
     register: proc_list
     remote_user: "root"
-  
+
   - name: wait for VSD common , core and stats services to become running
     monit_waitfor_service:
       name: "{{ item }}"
@@ -45,9 +45,9 @@
       test_interval_seconds: 30
     with_items: "{{ proc_list['state'].keys() }}"
     remote_user: "root"
-  when: vsd_sa_or_ha | match('sa') or inventory_hostname in groups['vcins'] 
+  when: vsd_sa_or_ha | match('sa') or inventory_hostname in groups['vcins']
 
-- block: 
+- block:
   - name: Get current version of VSD software
     command: echo $VSD_VERSION
     register: vsd_version
@@ -55,7 +55,7 @@
 
   - name: Print vsd_version output when verbosity >= 1
     debug: var=vsd_version verbosity=1
- 
+
   - name: Disable maintainance mode on all l3/l2 domains
     vsd_maintainance:
       vsd_auth: "{{ vsd_auth }}"
@@ -69,13 +69,13 @@
 
   - name: Print vsd maintainance mode output when verbosity >= 1
     debug: var=mode_status verbosity=1
-  
+
   - name: Clean known_hosts of VSCs on "{{ target_server }}"
-    command: ssh-keygen -R "{{  item }}" -f /root/.ssh/known_hosts
+    command: ssh-keygen -R "{{  item }}"
     delegate_to: "{{ ansible_deployment_host }}"
     remote_user: "{{ ansible_sudo_username }}"
     with_items: "{{ groups['vscs'] }}"
-  
+
   - name: shut/noshut vswitch controller on VSCs after disabling VSD maintenance mode
     sros_config:
       lines:
@@ -91,9 +91,9 @@
     delegate_to: "{{ ansible_deployment_host }}"
     remote_user: "{{ ansible_sudo_username }}"
     with_items: "{{ groups['vscs'] }}"
-                                                                     
+
   - debug: var=vsc_command_status verbosity=1
-  
-  when: 
+
+  when:
    - vsd_sa_or_ha | match('sa')
    - inventory_hostname not in groups['vcins']

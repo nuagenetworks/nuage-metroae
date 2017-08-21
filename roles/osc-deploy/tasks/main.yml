@@ -45,7 +45,7 @@
   remote_user: "{{ ansible_sudo_username }}"
 
 - name: Clean known_hosts of OSC's
-  command: ssh-keygen -R "{{ osc_mgmt_ip }}" -f /root/.ssh/known_hosts
+  command: ssh-keygen -R "{{ osc_mgmt_ip }}"
   delegate_to: "{{ ansible_deployment_host }}"
   remote_user: "{{ ansible_sudo_username }}"
 
@@ -82,7 +82,7 @@
 
 
 - name: Disable firewall
-  service: 
+  service:
     name: firewalld
     enabled: no
   remote_user: "root"
@@ -93,7 +93,7 @@
 - name: Stop firewall
   service:
     name: firewalld
-    state: stopped 
+    state: stopped
   remote_user: "root"
   when:
     - ansible_os_family == 'RedHat'
@@ -113,7 +113,7 @@
   remote_user: "root"
   ignore_errors: yes
 
-- name: Copy eth0 config to osc 
+- name: Copy eth0 config to osc
   template: src=ifcfg-eth0.j2 backup=no dest=/etc/sysconfig/network-scripts/ifcfg-eth0
   remote_user: "root"
 
@@ -128,7 +128,7 @@
     name: network
     enabled: yes
   remote_user: "root"
- 
+
 - name: Start netowrk
   service:
     name: network
@@ -137,7 +137,7 @@
   ignore_errors: yes
 
 - name: Pause
-  pause:  
+  pause:
     seconds: 5
 
 - name: Install NTP if not present
@@ -212,7 +212,7 @@
     name: "{{ os_centos }}{{ nuage_os_release }}"
     state: present
   remote_user: "root"
-  when: 
+  when:
     - ansible_distribution == 'CentOS'
     - ansible_distribution_major_version == '7'
 
@@ -236,7 +236,7 @@
     state: present
   remote_user: "root"
 
-- name: Install OpenStack packstack 
+- name: Install OpenStack packstack
   command: "{{ install_packstack }}"
   remote_user: "root"
 
@@ -257,7 +257,7 @@
   remote_user: "root"
 
 - name: Stop the compute service on controller
-  service: 
+  service:
     name: openstack-nova-compute
     state: stopped
   remote_user: "root"
@@ -267,20 +267,20 @@
     src={{ playbook_dir }}/roles/osc-deploy/files/del_network.txt
     dest=/root/
   remote_user: "root"
- 
+
 - name: Delete network,subnets,routers,ports from Neutron
   shell: "mysql -u root < /root/del_network.txt"
   remote_user: "root"
 
 - name: Add * to Server Alias list
   lineinfile:
-    dest: /etc/httpd/conf.d/15-horizon_vhost.conf 
-    insertafter: '## Server aliases'  
+    dest: /etc/httpd/conf.d/15-horizon_vhost.conf
+    insertafter: '## Server aliases'
     line: '  ServerAlias *'
   remote_user: "root"
 
-- name: Restart httpd 
-  service: 
+- name: Restart httpd
+  service:
     name: httpd
     state: restarted
   remote_user: "root"

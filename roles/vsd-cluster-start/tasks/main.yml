@@ -27,13 +27,13 @@
 - name: Start vsd core services
   shell: "{{ start_vsd_core }}"
   remote_user: "root"
- 
+
 - name: Pause 120 seconds for vsd core proccesses to start
   pause:
     seconds: 120
   remote_user: "root"
 
-- name: Start vsd statistics services 
+- name: Start vsd statistics services
   shell: "{{ start_stats }}"
   remote_user: "root"
 
@@ -54,13 +54,13 @@
   - name: Print vsd maintainance mode output when verbosity >= 1
     debug: var=mode_status verbosity=1
 
-  - name: Clean known_hosts of VSC 1 on "{{ target_server }}"
-    command: ssh-keygen -R "{{  groups['vscs'][0] }}" -f /root/.ssh/known_hosts
+  - name: Clean known_hosts of VSC 1
+    command: ssh-keygen -R "{{  groups['vscs'][0] }}"
     delegate_to: "{{ ansible_deployment_host }}"
     remote_user: "{{ ansible_sudo_username }}"
 
-  - name: Clean known_hosts of VSC 2 on "{{ target_server }}"
-    command: ssh-keygen -R "{{  groups['vscs'][1] }}" -f /root/.ssh/known_hosts
+  - name: Clean known_hosts of VSC 2
+    command: ssh-keygen -R "{{  groups['vscs'][1] }}"
     delegate_to: "{{ ansible_deployment_host }}"
     remote_user: "{{ ansible_sudo_username }}"
 
@@ -69,11 +69,11 @@
       lines:
           - configure vswitch-controller shutdown
           - configure vswitch-controller no shutdown
-      provider: 
+      provider:
         host: "{{ groups['vscs'][0] }}"
         username: "{{ vsc_user|default('admin') }}"
         password: "{{ vsc_password|default('admin') }}"
-        transport: cli 
+        transport: cli
     register: vsc1_command_status
     delegate_to: "{{ ansible_deployment_host }}"
     remote_user: "{{ ansible_sudo_username }}"
@@ -85,11 +85,11 @@
       lines:
           - configure vswitch-controller shutdown
           - configure vswitch-controller no shutdown
-      provider: 
+      provider:
         host: "{{ groups['vscs'][1] }}"
         username: "{{ vsc_user|default('admin') }}"
         password: "{{ vsc_password|default('admin') }}"
-        transport: cli 
+        transport: cli
     register: vsc2_command_status verbosity=1
     delegate_to: "{{ ansible_deployment_host }}"
     remote_user: "{{ ansible_sudo_username }}"
@@ -113,4 +113,4 @@
       delegate_to: 127.0.0.1
     when: vsd_sa_or_ha | match("ha")
 
-  when: inventory_hostname == groups['vsds'][2] 
+  when: inventory_hostname == groups['vsds'][2]
