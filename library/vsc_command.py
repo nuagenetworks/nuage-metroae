@@ -30,9 +30,12 @@ options:
     description:
       - The command to execute on the vsc
     required: true
-  debug:
+  logging:
     description:
-      - Optional boolean. When True, turn on netmiko logging and write log to vsc_command.log.
+      - Optional boolean. When True, turn on netmiko logging.
+  log_file_name:
+    description:
+      - Optional file name for logging. Only used when logging is True
 '''
 
 EXAMPLES = '''
@@ -49,7 +52,8 @@ EXAMPLES = '''
       mgmt_ip: 192.168.122.123
       username: admin
       password: admin
-      debug: True
+      logging: True
+      log_file_name: my_task.log
     register: xmpp_status
     until: xmpp_status.result.find('Functional') != -1
     retries: 6
@@ -63,7 +67,8 @@ def main():
         username=dict(required=True, type='str', no_log=True),
         password=dict(required=True, type='str', no_log=True),
         command=dict(required=True, type='str'),
-        debug=dict(default=False, type='bool')
+        logging=dict(default=False, type='bool'),
+        log_file_name=dict(default='vsc_command.log', type='str')
     )
 
     module = AnsibleModule(argument_spec=arg_spec, supports_check_mode=True)
@@ -76,8 +81,8 @@ def main():
                          stderr=MESSAGE,
                          changed=False)
 
-    if module.params['debug']:
-        logging.basicConfig(filename='vsc_command.log', level=logging.DEBUG)
+    if module.params['logging']:
+        logging.basicConfig(filename=module.params['log_file_name'], level=logging.DEBUG)
         logger = logging.getLogger("netmiko")
 
     vsc_conn_params = {
