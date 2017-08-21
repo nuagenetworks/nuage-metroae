@@ -80,12 +80,13 @@ def main():
         vsc_connect = ConnectHandler(**vsc_conn_params)
         output = vsc_connect.send_command(module.params['command'])
         vsc_connect.disconnect()
-    except:
+    except Exception as e:
         module.fail_json(msg='Failed to execute command on vsc',
                          rc=-1,
                          cmd=module.params['command'],
                          stdout=output,
-                         stderr='Connection: %s' % vsc_conn_params,
+                         conn='Connection: %s' % vsc_conn_params,
+                         stderr='Python exception: %s' % e,
                          changed=False)
 
     module.exit_json(changed=True, result=output)
