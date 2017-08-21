@@ -12,12 +12,12 @@
     register: username_on_the_host
 
   - debug: var=username_on_the_host
-    
+
   - name: Copy the VSD migration script ISO to VSD's temp directory
     copy: src={{ vsd_migration_iso_path }}/{{ vsd_migration_iso_file_name }}
         dest=/tmp/
     remote_user: root
-    
+
   - name: Register target directory status
     stat: path="/media/CDROM"
     register: cdrom_dir
@@ -39,7 +39,7 @@
     shell: "mount | grep VSD | grep /media/CDROM"
     register: mount_file
     remote_user: root
-  
+
   - name: Print mount output when verbosity >= 1
     debug: var=mount_file verbosity=1
 
@@ -52,7 +52,7 @@
   - name: Decouple VSD Node3
     command: "/media/CDROM/decouple.sh -y"
     remote_user: root
-  
+
   - name: Pause for decoulping to finish
     pause:
       seconds: 10
@@ -64,10 +64,10 @@
 
   - name: Print ejabberd list_p1db output when verbosity >= 1
     debug: var=list_p1db_output verbosity=1
- 
+
   - name: Create local variable with p1db output to json
     set_fact: ejabberd_p1db_json="{{ list_p1db_output.stdout|ejabberd_p1db_to_json }}"
-  
+
   - name: Write p1bd JSON to file
     nuage_append: filename="{{ report_path }}" text="{{ inventory_hostname }} {{ ejabberd_p1db_json|to_nice_json }}\n"
     remote_user: "{{ ansible_sudo_username }}"
@@ -80,16 +80,16 @@
       msg: "Ejabbered is not decoupled"
 
   - name: Execute list_cluster command on node3
-    command: "{{ ejabber_decouple }}"
+    command: "{{ ejabber_cluster_list_command }}"
     register: list_cluster_output
     remote_user: root
-    
+
   - name: Print ejabberd list_cluster output when verbosity >= 1
     debug: var=list_cluster_output verbosity=1
 
   - name: Create local variable with ejabberd cluster output to json
     set_fact: ejabberd_cluster_json="{{ list_cluster_output.stdout|ejabberd_cluster_to_json }}"
-  
+
   - name: Write cluster JSON to file
     nuage_append: filename="{{ report_path }}" text="{{ inventory_hostname }} {{ ejabberd_cluster_json|to_nice_json }}\n"
     remote_user: "{{ ansible_sudo_username }}"
@@ -97,13 +97,13 @@
 
   - name: Veriy cluster output lists only itself
     assert:
-      that: 
+      that:
         - "'ejabberd@{{ inventory_hostname }}' == ejabberd_cluster_json['cluster_users'][0]"
-        - "ejabberd_cluster_json['cluster_users'] | length == 1" 
+        - "ejabberd_cluster_json['cluster_users'] | length == 1"
       msg: "Ejabberd is not decoupled successfully"
- 
-  - name: Excute connected_users command on node3
-    command: "{{ connected_users }}"
+
+  - name: Excute ejabberd_connected_users_command command on node3
+    command: "{{ ejabberd_connected_users_command }}"
     register: client_list
     until: client_list.stdout.find("cna") != -1
     retries: 10
@@ -115,7 +115,7 @@
 
   - name: Create local variable with ejabberd connected clients to json
     set_fact: ejabberd_clients_json="{{ client_list.stdout|ejabberd_clients_to_json }}"
-  
+
   - name: Write clients JSON to file
     nuage_append: filename="{{ report_path }}" text="{{ inventory_hostname }} {{ ejabberd_clients_json|to_nice_json }}\n"
     remote_user: "{{ ansible_sudo_username }}"
@@ -124,7 +124,7 @@
   - name: Verify ejabbered does not contain clients other that itself
     assert:
       that: "ejabberd_clients_json['connected_clients'] | length == 3"
-      msg: " Ejabberd has more than 3 connected clients than itself" 
-  when: 
+      msg: " Ejabberd has more than 3 connected clients than itself"
+  when:
     - inventory_hostname == groups['vsds'][2]
     - vsd_sa_or_ha == 'ha'
