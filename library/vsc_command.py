@@ -1,6 +1,7 @@
 #!/usr/bin/python
 
 from ansible.module_utils.basic import AnsibleModule
+import logging
 
 try:
     from netmiko import ConnectHandler
@@ -29,6 +30,9 @@ options:
     description:
       - The command to execute on the vsc
     required: true
+  debug:
+    description:
+      - Optional boolean. When True, turn on netmiko logging and write log to vsc_command.log.
 '''
 
 EXAMPLES = '''
@@ -45,6 +49,7 @@ EXAMPLES = '''
       mgmt_ip: 192.168.122.123
       username: admin
       password: admin
+      debug: True
     register: xmpp_status
     until: xmpp_status.result.find('Functional') != -1
     retries: 6
@@ -58,6 +63,7 @@ def main():
         username=dict(required=True, type='str', no_log=True),
         password=dict(required=True, type='str', no_log=True),
         command=dict(required=True, type='str'),
+        debug=dict(default=False, type='bool')
     )
 
     module = AnsibleModule(argument_spec=arg_spec, supports_check_mode=True)
@@ -69,6 +75,10 @@ def main():
                          stdout='None',
                          stderr=MESSAGE,
                          changed=False)
+
+    if module.params[debug]:
+        logging.basicConfig(filename='vsc_command.log', level=logging.DEBUG)
+        logger = logging.getLogger("netmiko")
 
     vsc_conn_params = {
         'device_type': 'alcatel_sros',
