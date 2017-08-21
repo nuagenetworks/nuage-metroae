@@ -2,35 +2,37 @@
   command: ssh-keygen -R "{{ mgmt_ip }}" -f /root/.ssh/known_hosts
 
 - name: Get output of 'show bof'
-  sros_command:
-    commands:
-      - show bof
-    provider: "{{ vsc_creds }}"
+  vsc_command:
+    command: show bof
+    mgmt_ip: "{{ vsc_creds.mgmt_ip }}"
+    username: "{{ vsc_creds.username }}"
+    password: "{{ vsc_creds.password }}"
   register: bof_config
 
 - name: Print 'show bof' when verbosity >= 1
-  debug: var=bof_config.stdout[0] verbosity=1
+  debug: var=bof_config verbosity=1
 
 - name: Create local variable with bof config in json
   set_fact:
-    bof_json: "{{ bof_config.stdout[0]|show_bof_to_json }}"
+    bof_json: "{{ bof_config.result|show_bof_to_json }}"
 
 - name: Print bof config in json  when verbosity >= 1
   debug: var=bof_json verbosity=1
 
 - name: Get current file version of image on VSC
-  sros_command:
-    commands:
-      - file version "{{ bof_json['primary_image'] }}"
-    provider: "{{ vsc_creds }}"
+  vsc_command:
+    command: file version "{{ bof_json['primary_image'] }}"
+    mgmt_ip: "{{ vsc_creds.mgmt_ip }}"
+    username: "{{ vsc_creds.username }}"
+    password: "{{ vsc_creds.password }}"
   register: image
 
 - name: Print image version when verbosity >= 1
-  debug: var=image.stdout[0] verbosity=1
+  debug: var=image verbosity=1
 
 - name: Create local variable with image version in json
   set_fact:
-    version_json: "{{ image.stdout[0]|image_version_to_json }}"
+    version_json: "{{ image.result|image_version_to_json }}"
 
 - name: Print image version in json  when verbosity >= 1
   debug: var=version_json verbosity=1
@@ -44,10 +46,11 @@
     timeout: "{{ vsc_scp_timeout }}"
 
 - name: Reboot VSC VM
-  sros_command:
-    commands:
-      - admin reboot now
-    provider: "{{ vsc_creds }}"
+  vsc_command:
+    command: admin reboot now
+    mgmt_ip: "{{ vsc_creds.mgmt_ip }}"
+    username: "{{ vsc_creds.username }}"
+    password: "{{ vsc_creds.password }}"
   ignore_errors: true
   when: target_server_type | match('kvm') or target_server_type | match('vcenter')
 
@@ -67,4 +70,3 @@
     host: "{{ mgmt_ip }}"
     search_regex: OpenSSH
     delay: 1
-

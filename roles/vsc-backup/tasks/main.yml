@@ -1,57 +1,60 @@
 - name: Query facts on ansible_deployment_host
   action: setup
-  
+
 - name: Clean known_hosts of VSC's on "{{ target_server }}"
   command: ssh-keygen -R "{{ mgmt_ip }}" -f /root/.ssh/known_hosts
 
 - name: Get output of 'show bof'
-  sros_command:
-    commands:
-      - show bof
-    provider: "{{ vsc_creds }}"
+  vsc_command:
+    command: show bof
+    mgmt_ip: "{{ vsc_creds.mgmt_ip }}"
+    username: "{{ vsc_creds.username }}"
+    password: "{{ vsc_creds.password }}"
   register: bof_config
 
 - name: Print 'show bof' when verbosity >= 1
-  debug: var=bof_config.stdout[0] verbosity=1
+  debug: var=bof_config verbosity=1
 
 - name: Create local variable with bof config in json
   set_fact:
-    bof_json: "{{ bof_config.stdout[0]|show_bof_to_json }}"
+    bof_json: "{{ bof_config.result|show_bof_to_json }}"
 
 - name: Print bof config in json  when verbosity >= 1
-  debug: var=bof_json 
+  debug: var=bof_json
 
 - block:
   - name: Get output of 'show system connections port 5222'
-    sros_command:
-      commands:
-        - show system connections port 5222
-      provider: "{{ vsc_creds }}"
+    vsc_command:
+      command: show system connections port 5222
+      mgmt_ip: "{{ vsc_creds.mgmt_ip }}"
+      username: "{{ vsc_creds.username }}"
+      password: "{{ vsc_creds.password }}"
     register: vsc_sys_conn
 
   - name: Print 'show system connections port 5222' when verbosity >= 1
     debug: var=vsc_sys_conn verbosity=1
 
   - name: Create local variable with vsc system connection in json
-    set_fact: 
-      vsc_sys_conn_json: "{{ vsc_sys_conn.stdout[0]|vsc_system_connections_to_json }}"
+    set_fact:
+      vsc_sys_conn_json: "{{ vsc_sys_conn.result|vsc_system_connections_to_json }}"
 
   - name: Print vsc system connection in json  when verbosity >= 1
     debug: var=vsc_sys_conn_json verbosity=1
   when: vsd_sa_or_ha == 'ha'
 
 - name: Get output of 'show vswitch-controller xmpp-server detail'
-  sros_command:
-    commands:
-      - show vswitch-controller xmpp-server detail
-    provider: "{{ vsc_creds }}"
+  vsc_command:
+    command: show vswitch-controller xmpp-server detail
+    mgmt_ip: "{{ vsc_creds.mgmt_ip }}"
+    username: "{{ vsc_creds.username }}"
+    password: "{{ vsc_creds.password }}"
   register: xmpp_detail
 
 - name: Print 'show vswitch-controller xmpp-server detail' when verbosity >= 1
   debug: var=xmpp_detail verbosity=1
 
 - name: Create local variable with xmpp-server detail in json
-  set_fact: xmpp_detail_json="{{ xmpp_detail.stdout[0]|xmpp_server_detail_to_json }}"
+  set_fact: xmpp_detail_json="{{ xmpp_detail.result|xmpp_server_detail_to_json }}"
 
 - name: Print xmpp-server detail in json when verbosity >= 1
   debug: var=xmpp_detail_json verbosity=1
@@ -63,23 +66,31 @@
   debug: var=xmpp_server_state verbosity=1
 
 - name: Check for the expected xmpp-server state
-  assert: { 
+  assert: {
     that: "{{ expected_xmpp_server_state == xmpp_server_state }}",
     msg: "Invalid xmpp-server state ({{ xmpp_server_state }}) detected. Expected {{ expected_xmpp_server_state }}. Check 'show vswitch-controller xmpp-server details'."
 }
 
-- name: Save existing configuration on VSC
-  sros_command:
-    commands:
-      - bof save
-      - admin save
-    provider: "{{ vsc_creds }}"
-  register: conf_save
+- name: Save existing bof configuration on VSC
+  vsc_command:
+    command: bof save
+    mgmt_ip: "{{ vsc_creds.mgmt_ip }}"
+    username: "{{ vsc_creds.username }}"
+    password: "{{ vsc_creds.password }}"
+  register: bof_save
 
 - name: Print 'bof save' when verbosity >= 1
-  debug: var=conf_save.stdout[0] verbosity=1
+  debug: var=bof_save verbosity=1
+
+- name: Save existing admin configuration on VSC
+  vsc_command:
+    command: admin save
+    mgmt_ip: "{{ vsc_creds.mgmt_ip }}"
+    username: "{{ vsc_creds.username }}"
+    password: "{{ vsc_creds.password }}"
+  register: admin_save
 
 - name: Print 'admin save' when verbosity >= 1
-  debug: var=conf_save.stdout[1] verbosity=1
+  debug: var=admin_save verbosity=1
 
 - include: backup_vsc.yml

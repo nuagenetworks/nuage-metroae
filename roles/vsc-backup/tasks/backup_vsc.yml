@@ -11,34 +11,46 @@
   when: ansible_os_family == "Debian"
 
 - name: Install pexpect module via pip
-  pip: name=pexpect state="present" 
+  pip: name=pexpect state="present"
 
 - name: Set name for backup folder
   set_fact:
     backup_folder: "backup-{{inventory_hostname}}-{{ ansible_date_time.iso8601_basic_short }}"
 
 - name: Create a backup folder on VSC
-  sros_command:
-    commands:
-      - file md "{{ backup_folder }}"
-    provider: "{{ vsc_creds }}"
+  vsc_command:
+    command: file md "{{ backup_folder }}"
+    mgmt_ip: "{{ vsc_creds.mgmt_ip }}"
+    username: "{{ vsc_creds.username }}"
+    password: "{{ vsc_creds.password }}"
   register: dir_status
 
 - name: Verify backup folder is created on VSC
   assert:
-    that: "dir_status.stdout[0] == ''"
+    that: "dir_status.result == ''"
     msg: "Could not create backup folder on VSC"
 
-- name: Copy bof and existing config files to backup folder on VSC
-  sros_command:
-    commands:
-      - file copy *.cfg "{{ backup_folder }}"
-      - file copy "{{ bof_json['primary_image'] }}" "{{ backup_folder }}"
-    provider: "{{ vsc_creds }}"
-  register: copy_status
+- name: Copy config files to backup folder on VSC
+  vsc_command:
+    command: file copy *.cfg "{{ backup_folder }}"
+    mgmt_ip: "{{ vsc_creds.mgmt_ip }}"
+    username: "{{ vsc_creds.username }}"
+    password: "{{ vsc_creds.password }}"
+  register: cfg_copy_status
 
-- name: Print 'file copy *.cfg backup' when verbosity >= 1
-  debug: var=copy_status verbosity=1
+- name: Print 'file copy *.cfg backup' result when verbosity >= 1
+  debug: var=cfg_copy_status verbosity=1
+
+- name: Copy bof to backup folder on VSC
+  vsc_command:
+    command: file copy *.cfg "{{ backup_folder }}"
+    mgmt_ip: "{{ vsc_creds.mgmt_ip }}"
+    username: "{{ vsc_creds.username }}"
+    password: "{{ vsc_creds.password }}"
+  register: bof_copy_status
+
+- name: Print 'file copy bof' result when verbosity >= 1
+  debug: var=bof_copy_status verbosity=1
 
 - name: Create dir on ansible_deployment_host to hold backup files
   file:
@@ -52,7 +64,6 @@
       (?i)yes: "yes"
       (?i)password: "{{ vsc_password|default('admin') }}"
     timeout: "{{ vsc_scp_timeout }}"
-  
+
 - name: Create symbolic link to backup location
   file: dest="/tmp/backup-{{ inventory_hostname }}-latest" src="/tmp/{{  backup_folder }}"  state=link
-

@@ -1,62 +1,73 @@
-- block: 
+- block:
   - name: Clean known_hosts of VSC's on "{{ target_server }}"
     command: ssh-keygen -R "{{ mgmt_ip }}" -f /root/.ssh/known_hosts
     delegate_to: "{{ ansible_deployment_host }}"
     remote_user: "{{ ansible_sudo_username }}"
 
   - name: Get output of 'show bof'
-    sros_command:
-      commands:
-        - show bof
-      provider: "{{ vsc_creds }}"
+    vsc_command:
+      command: show bof
+      mgmt_ip: "{{ vsc_creds.mgmt_ip }}"
+      username: "{{ vsc_creds.username }}"
+      password: "{{ vsc_creds.password }}"
     register: bof_config
     connection: local
 
   - name: Print 'show bof' when verbosity >= 1
-    debug: var=bof_config.stdout[0] verbosity=1
+    debug: var=bof_config verbosity=1
 
   - name: Create local variable with bof config in json
     set_fact:
-      bof_json: "{{ bof_config.stdout[0]|show_bof_to_json }}"
+      bof_json: "{{ bof_config.result|show_bof_to_json }}"
 
   - name: Print bof config in json  when verbosity >= 1
     debug: var=bof_json verbosity=1
 
   - name: Get current file version of image on VSC
-    sros_command:
-      commands:
-        - file version "{{ bof_json['image_folder'] }}/cpm.tim"
-      provider: "{{ vsc_creds }}"
+    vsc_command:
+      command: file version "{{ bof_json['image_folder'] }}/cpm.tim"
+      mgmt_ip: "{{ vsc_creds.mgmt_ip }}"
+      username: "{{ vsc_creds.username }}"
+      password: "{{ vsc_creds.password }}"
     register: image
     connection: local
 
   - name: Print image version when verbosity >= 1
-    debug: var=image.stdout[0] verbosity=1
+    debug: var=image verbosity=1
 
   - name: Delete current primary image
-    sros_command:
-      commands:
-        - file delete "{{ bof_json['image_folder'] }}/cpm.tim" force
-      provider: "{{ vsc_creds }}"
+    vsc_command:
+      command: file delete "{{ bof_json['image_folder'] }}/cpm.tim" force
+      mgmt_ip: "{{ vsc_creds.mgmt_ip }}"
+      username: "{{ vsc_creds.username }}"
+      password: "{{ vsc_creds.password }}"
     register: image_delete
     connection: local
 
+  - name: Print image delete result when verbosity >= 1
+    debug: var=image_delete verbosity=1
+
   - name: Copy backup images taken before the upgrade as primary image
-    sros_command:
-      commands:
-        - file copy "{{ bof_json['image_folder'] }}/cpm.tim.backup" "{{ bof_json['image_folder'] }}/cpm.tim"
-      provider: "{{ vsc_creds }}"
+    vsc_command:
+      command: file copy "{{ bof_json['image_folder'] }}/cpm.tim.backup" "{{ bof_json['image_folder'] }}/cpm.tim"
+      mgmt_ip: "{{ vsc_creds.mgmt_ip }}"
+      username: "{{ vsc_creds.username }}"
+      password: "{{ vsc_creds.password }}"
     register: image_move
     connection: local
 
+  - name: Print image copy result when verbosity >= 1
+    debug: var=image_move verbosity=1
+
   - name: Reboot VSC VM
-    sros_command:
-      commands: 
-        - admin reboot now
-      provider: "{{ vsc_creds }}"
+    vsc_command:
+      command: admin reboot now
+      mgmt_ip: "{{ vsc_creds.mgmt_ip }}"
+      username: "{{ vsc_creds.username }}"
+      password: "{{ vsc_creds.password }}"
     connection: local
     ignore_errors: true
-    when: target_server_type == 'kvm'
+    when: target_server_type | match('kvm') or target_server_type | match('vcenter')
 
   - name: Wait for VSC ssh to be ready
     local_action:
@@ -72,13 +83,14 @@
     remote_user: "{{ ansible_sudo_username }}"
 
   - name: Get output of 'show vswitch-controller xmpp-server detail'
-    sros_command:
-      commands:
-        - show vswitch-controller xmpp-server detail
-      provider: "{{ vsc_creds }}"
+    vsc_command:
+      command: show vswitch-controller xmpp-server detail
+      mgmt_ip: "{{ vsc_creds.mgmt_ip }}"
+      username: "{{ vsc_creds.username }}"
+      password: "{{ vsc_creds.password }}"
     register: xmpp_detail
     connection: local
-    until: xmpp_detail.stdout[0].find('Functional') != -1
+    until: xmpp_detail.result.find('Functional') != -1
     retries: 5
     delay: 30
 
@@ -98,7 +110,7 @@
     debug: var=xmpp_server_state verbosity=1
 
   - name: Check for the expected xmpp-server state
-    assert: { 
+    assert: {
       that: "{{ expected_xmpp_server_state == xmpp_server_state }}",
       msg: "Invalid xmpp-server state ({{ xmpp_server_state }}) detected. Expected {{ expected_xmpp_server_state }}. Check 'show vswitch-controller xmpp-server details'."
   }
@@ -107,14 +119,15 @@
       vsd1_s: "cna@{{ vsd_fqdn }}"
 
   - name: Get output of 'show vswitch-controller vsd detail'
-    sros_command:
-      commands:
-        - show vswitch-controller vsd detail
-      provider: "{{ vsc_creds }}"
+    vsc_command:
+      command: show vswitch-controller vsd detail
+      mgmt_ip: "{{ vsc_creds.mgmt_ip }}"
+      username: "{{ vsc_creds.username }}"
+      password: "{{ vsc_creds.password }}"
     register: vsd_detail
     connection: local
     remote_user: "{{ ansible_sudo_username }}"
-    until: vsd_detail.stdout[0].find(vsd1_s) != -1
+    until: vsd_detail.result.find(vsd1_s) != -1
     retries: 5
     delay: 30
 

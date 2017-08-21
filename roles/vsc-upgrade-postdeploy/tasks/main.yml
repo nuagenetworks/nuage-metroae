@@ -3,12 +3,13 @@
   command: ssh-keygen -R "{{ mgmt_ip }}" -f /root/.ssh/known_hosts
 
 - name: Get output of 'show vswitch-controller xmpp-server detail'
-  sros_command:
-    commands:
-      - show vswitch-controller xmpp-server detail
-    provider: "{{ vsc_creds }}"
+  vsc_command:
+    command: show vswitch-controller xmpp-server detail
+    mgmt_ip: "{{ vsc_sros_creds.host }}"
+    username: "{{ vsc_sros_creds.username }}"
+    password: "{{ vsc_sros_creds.password }}"
   register: xmpp_detail
-  until: xmpp_detail.stdout[0].find('Functional') != -1
+  until: xmpp_detail.result.find('Functional') != -1
   retries: 5
   delay: 30
 
@@ -37,12 +38,13 @@
     vsd1_s: "cna@{{ vsd_fqdn }}"
 
 - name: Get output of 'show vswitch-controller vsd detail'
-  sros_command:
-    commands:
-      - show vswitch-controller vsd detail
-    provider: "{{ vsc_creds }}"
+  vsc_command:
+    command: show vswitch-controller vsd detail
+    mgmt_ip: "{{ vsc_sros_creds.host }}"
+    username: "{{ vsc_sros_creds.username }}"
+    password: "{{ vsc_sros_creds.password }}"
   register: vsd_detail
-  until: vsd_detail.stdout[0].find(vsd1_s) != -1
+  until: vsd_detail.result.find(vsd1_s) != -1
   retries: 5
   delay: 30
 
@@ -73,13 +75,15 @@
       mgmt_ip: "{{ hostvars[groups['vscs'][1]]['mgmt_ip'] }}"
 
   - name: Check if vsc ha node2 is configured with PBR config
-    sros_command:
-      commands: admin display-config
-      provider: "{{ vsc_creds }}"
+  vsc_command:
+    command: admin display-config
+    mgmt_ip: "{{ mgmt_ip }}"
+    username: "{{ vsc_sros_creds.username }}"
+    password: "{{ vsc_sros_creds.password }}"
     register: pbr_config_ha_node2
 
   - name: Print 'admin display-config' when verbosity >= 1
-    debug: var=pbr_config_ha_node2.stdout[0] verbosity=1
+    debug: var=pbr_config_ha_node2 verbosity=1
 
   - name: Delete PBR backward compatibility config on second VSC node
     sros_config:
@@ -87,7 +91,7 @@
         - configure router bgp evpn-pre-rfc no send-opaque-community
         - configure router bgp evpn-pre-rfc no non-compliant
         - admin save
-      provider: "{{ vsc_creds }}"
+      provider: "{{ vsc_sros_creds }}"
     delegate_to: "{{ ansible_deployment_host }}"
     remote_user: "{{ ansible_sudo_username }}"
     when: pbr_config_ha_node2.stdout[0].find('evpn-pre-rfc') != -1
@@ -97,13 +101,15 @@
       mgmt_ip: "{{ hostvars[groups['vscs'][0]]['mgmt_ip'] }}"
 
   - name: Check if vsc ha node1 is configured with PBR config
-    sros_command:
-      commands: admin display-config
-      provider: "{{ vsc_creds }}"
+    vsc_command:
+      command: admin display-config
+      mgmt_ip: "{{ mgmt_ip }}"
+      username: "{{ vsc_sros_creds.username }}"
+      password: "{{ vsc_sros_creds.password }}"
     register: pbr_config_ha_node1
 
   - name: Print 'admin display-config' when verbosity >= 1
-    debug: var=pbr_config_ha_node1.stdout[0] verbosity=1
+    debug: var=pbr_config_ha_node1 verbosity=1
 
   - name: Delete PBR backward compatibility config on first VSC node
     sros_config:
@@ -111,8 +117,8 @@
         - configure router bgp evpn-pre-rfc no send-opaque-community
         - configure router bgp evpn-pre-rfc no non-compliant
         - admin save
-      provider: "{{ vsc_creds }}"
+      provider: "{{ vsc_sros_creds }}"
     when: pbr_config_ha_node1.stdout[0].find('evpn-pre-rfc') != -1
   when:
-    - groups['vscs'] is defined and groups['vscs'][1] is defined 
+    - groups['vscs'] is defined and groups['vscs'][1] is defined
     - inventory_hostname in groups['vsc_node2']
