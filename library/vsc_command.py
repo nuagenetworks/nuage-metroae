@@ -92,14 +92,15 @@ def main():
         'username': module.params['username'],
         'password': module.params['password']
     }
+    cmd = module.params['command']
     try:
         vsc_connect = ConnectHandler(**vsc_conn_params)
-        output = vsc_connect.send_command(module.params['command'])
+        output = vsc_connect.send_command(cmd)
         vsc_connect.disconnect()
     except Exception as e:
         module.fail_json(msg='Failed to execute command on vsc',
                          rc=-1,
-                         cmd=module.params['command'],
+                         cmd=cmd,
                          stdout=output,
                          conn='Connection: %s' % vsc_conn_params,
                          stderr='Python exception: %s' % e,
