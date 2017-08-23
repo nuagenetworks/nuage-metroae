@@ -101,7 +101,7 @@ def main():
         module.fail_json(msg='Failed to execute command on vsc',
                          rc=-1,
                          cmd=cmd,
-                         stdout=output,
+                         results=output,
                          conn='Connection: %s' % vsc_conn_params,
                          stderr='Python exception: %s' % e,
                          changed=False)
