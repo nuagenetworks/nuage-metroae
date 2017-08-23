@@ -29,7 +29,7 @@ echo "ssh_args = -o ControlMaster=auto -o ControlPersist=600s" >> ansible.cfg
 echo "pipelining = True" >> ansible.cfg
 
 # generate build vars for deployment
-./metro-ansible reset_build.yml -vvvv
+./metro-ansible reset_build.yml --extra-vars "skip_reset_build_pause=True" -vvvv
 ./metro-ansible build.yml -vvvv
 # run the VSP deployment
 ./metro-ansible test_install.yml -vvvv
@@ -37,7 +37,7 @@ echo "pipelining = True" >> ansible.cfg
 rm -rf /tmp/backup
 rm -rf ./reports/
 # reset the env before upgrade
-./metro-ansible reset_build.yml -vvvv
+./metro-ansible reset_build.yml --extra-vars "skip_reset_build_pause=True" -vvvv
 # create build vars required for upgrade
 ./metro-ansible build_upgrade.yml -vvvv
 # run upgrade

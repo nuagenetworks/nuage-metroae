@@ -16,7 +16,7 @@ cp ./test/files/test_cleanup_on_esx.yml .
 
 sed -i "s/VERSION/$1/g" roles/reset-build/files/build_vars.yml
 
-./metro-ansible reset_build.yml -vvvv
+./metro-ansible reset_build.yml --extra-vars "skip_reset_build_pause=True" -vvvv
 ./metro-ansible build.yml -vvvv
 ./metro-ansible test_install_on_esx.yml -vvvv
 #./metro_ansible test_cleanup_on_esx.yml -vvvv

@@ -10,8 +10,8 @@ run_iter() {
     if [ $2 = vcenter ];
     then
         echo -e "\nvcenter: \n  username: administrator@vsphere.local\n  password: Alcateldc\n  datacenter: Datacenter\n  cluster: Management\n  datastore: datastore" >> roles/reset-build/files/build_vars.yml
-    fi    
-    ./metro-ansible reset_build.yml -vvvv
+    fi
+    ./metro-ansible reset_build.yml --extra-vars "skip_reset_build_pause=True" -vvvv
     ./metro-ansible build.yml -vvvv
 }
 

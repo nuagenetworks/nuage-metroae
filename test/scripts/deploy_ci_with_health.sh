@@ -30,7 +30,7 @@ sed -i "s/reset_build_pause_secs: 30/reset_build_pause_secs: 1/g" roles/reset-bu
 # use heat to deploy the test VMs on OS
 cp ./test/files/setup.yml.CI setup.yml
 ansible-playbook setup.yml -vvvv
-ansible-playbook reset_build.yml -vvvv
+ansible-playbook reset_build.yml --extra-vars "skip_reset_build_pause=True" -vvvv
 ansible-playbook build.yml -vvvv
 
 if [ $1 = 4.0.R4 ] || [ $1 = 3.2.R10 ];
@@ -56,7 +56,7 @@ sed -i "s/VERSION/$1/g" roles/reset-build/files/build_vars.yml
 sed -i "s/TARGET_SERVER/$IPADDR/g" roles/reset-build/files/build_vars.yml
 sed -i "s/SERVER_TYPE/kvm/g" roles/reset-build/files/build_vars.yml
 
-ansible-playbook reset_build.yml -vvvv
+ansible-playbook reset_build.yml --extra-vars "skip_reset_build_pause=True" -vvvv
 ansible-playbook build.yml -vvvv
 ./metro-ansible test_install.yml -vvvv
 ./metro-ansible vsc_health.yml -vvvv

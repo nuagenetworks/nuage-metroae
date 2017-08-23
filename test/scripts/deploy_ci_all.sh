@@ -19,7 +19,7 @@ fi
 # Use heat to deploy VMs on OpenStack
 cp ./test/files/setup.yml.CI setup.yml
 ansible-playbook setup.yml -vvvv
-ansible-playbook reset_build.yml -vvvv
+ansible-playbook reset_build.yml --extra-vars "skip_reset_build_pause=True" -vvvv
 ansible-playbook build.yml -vvvv
 ./metro-ansible ci_predeploy.yml -vvvv
 ./metro-ansible ci_deploy.yml -vvvv
@@ -35,21 +35,21 @@ cp ./test/files/build_vars_vsdonly.yml roles/reset-build/files/build_vars.yml
 sed -i "s/VERSION/$1/g" roles/reset-build/files/build_vars.yml
 sed -i "s/TARGET_SERVER/$IPADDR/g" roles/reset-build/files/build_vars.yml
 
-ansible-playbook reset_build.yml -vvvv
+ansible-playbook reset_build.yml --extra-vars "skip_reset_build_pause=True" -vvvv
 ansible-playbook build.yml -vvvv
 ./metro-ansible test_install.yml -vvvv
 
 cp ./test/files/build_vars_vsconly.yml roles/reset-build/files/build_vars.yml
 sed -i "s/VERSION/$1/g" roles/reset-build/files/build_vars.yml
 sed -i "s/TARGET_SERVER/$IPADDR/g" roles/reset-build/files/build_vars.yml
-ansible-playbook reset_build.yml -vvvv
+ansible-playbook reset_build.yml --extra-vars "skip_reset_build_pause=True" -vvvv
 ansible-playbook build.yml -vvvv
 ./metro-ansible test_install.yml -vvvv
 
 cp ./test/files/build_vars_vstatonly.yml roles/reset-build/files/build_vars.yml
 sed -i "s/VERSION/$1/g" roles/reset-build/files/build_vars.yml
 sed -i "s/TARGET_SERVER/$IPADDR/g" roles/reset-build/files/build_vars.yml
-ansible-playbook reset_build.yml -vvvv
+ansible-playbook reset_build.yml --extra-vars "skip_reset_build_pause=True" -vvvv
 ansible-playbook build.yml -vvvv
 ./metro-ansible  vstat_destroy.yml -vvvv
 ./metro-ansible  vstat_predeploy.yml -vvvv
@@ -59,23 +59,22 @@ ansible-playbook build.yml -vvvv
 cp ./test/files/build_vars_vrsonly.yml roles/reset-build/files/build_vars.yml
 sed -i "s/VERSION/$1/g" roles/reset-build/files/build_vars.yml
 sed -i "s/TARGET_SERVER/$IPADDR/g" roles/reset-build/files/build_vars.yml
-ansible-playbook reset_build.yml -vvvv
+ansible-playbook reset_build.yml --extra-vars "skip_reset_build_pause=True" -vvvv
 ansible-playbook build.yml -vvvv
 ./metro-ansible test_install.yml -vvvv
 
 cp ./test/files/build_vars_vnsonlywithvsc.yml roles/reset-build/files/build_vars.yml
 sed -i "s/VERSION/$1/g" roles/reset-build/files/build_vars.yml
 sed -i "s/TARGET_SERVER/$IPADDR/g" roles/reset-build/files/build_vars.yml
-ansible-playbook reset_build.yml -vvvv
+ansible-playbook reset_build.yml --extra-vars "skip_reset_build_pause=True" -vvvv
 ansible-playbook build.yml -vvvv
 ./metro-ansible install_vns.yml -vvvv
 
 cp ./test/files/build_vars_all.yml roles/reset-build/files/build_vars.yml
 sed -i "s/VERSION/$1/g" roles/reset-build/files/build_vars.yml
 sed -i "s/TARGET_SERVER/$IPADDR/g" roles/reset-build/files/build_vars.yml
-ansible-playbook reset_build.yml -vvvv
+ansible-playbook reset_build.yml --extra-vars "skip_reset_build_pause=True" -vvvv
 ansible-playbook build.yml -vvvv
 ./metro-ansible test_cleanup.yml -vvvv
 
 ./metro-ansible ci_destroy.yml -vvvv
-

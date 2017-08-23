@@ -5,7 +5,7 @@ USAGESA="Usage: $0 NuageVersion EnvType"
 USAGEHA="Usage: $0 NuageVersion EnvType Node2IP Node3IP"
 
 if [ $2 = "sa" ];
-then 
+then
 
 if [ $# -ne 2 ];
 then
@@ -25,7 +25,7 @@ then
         node3IP=$4
     fi
 
-    # The following conditional case should be rarely used    
+    # The following conditional case should be rarely used
     if [ $# -eq 3 ];
     then
         echo "This ha environment has only 2 hypervisors to deploy on."
@@ -61,17 +61,17 @@ IPADDR=`/usr/sbin/ifconfig | grep netmask | grep broadcast | head -n 1 | awk '{p
 # an IP of the correct subnet, and the final number in the IP address will
 # be incremented by 110 from the initial Jen-BackEnd IP.
 
-# Every sequential machine after the first will increment by only 10 as 
+# Every sequential machine after the first will increment by only 10 as
 # shown in the example above.
 
-# The hypervisor's given Jen-BackEnd IP will be the mgmt gateway and the 
+# The hypervisor's given Jen-BackEnd IP will be the mgmt gateway and the
 # dns server given to the VSD.
 
 # With each sed for each VM, the correct iptables entries
 # have been added to ensure connection to the VMs
 # *iptables entries commented out for ctrl & data planes
 
-# Previous iptables entries for PREROUTING and 
+# Previous iptables entries for PREROUTING and
 # POSTROUTING are flushed before new entries
 # are added to the iptables
 
@@ -256,7 +256,7 @@ then
     fi
 fi
 
-./metro-ansible reset_build.yml -vvvv
+./metro-ansible reset_build.yml --extra-vars "skip_reset_build_pause=True" -vvvv
 ./metro-ansible build.yml -vvvv
 ./metro-ansible test_install.yml -vvvv
 ./metro-ansible test_cleanup.yml -vvvv

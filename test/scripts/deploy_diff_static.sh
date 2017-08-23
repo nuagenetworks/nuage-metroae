@@ -41,10 +41,10 @@ IPADDR=$3
 # an IP of the correct subnet, and the final number in the IP address will
 # be incremented by 110 from the initial Jen-BackEnd IP.
 
-# Every sequential machine after the first will increment by only 10 as 
+# Every sequential machine after the first will increment by only 10 as
 # shown in the example above.
 
-# The hypervisor's given Jen-BackEnd IP will be the mgmt gateway and the 
+# The hypervisor's given Jen-BackEnd IP will be the mgmt gateway and the
 # dns server given to the VSD.
 
 # With each sed for each VM, the correct iptables entries
@@ -163,7 +163,7 @@ sed -i "s/TARGET_SERVER/$IPADDR/g" roles/reset-build/files/build_vars.yml
 sed -i "s/TARGET_2SERVER/$IPADDR/g" roles/reset-build/files/build_vars.yml
 sed -i "s/SERVER_TYPE/kvm/g" roles/reset-build/files/build_vars.yml
 
-./metro-ansible reset_build.yml -vvvv
+./metro-ansible reset_build.yml --extra-vars "skip_reset_build_pause=True" -vvvv
 ./metro-ansible build.yml -vvvv
 ./metro-ansible test_install.yml -vvvv
 ./metro-ansible test_cleanup.yml -vvvv
