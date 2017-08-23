@@ -55,7 +55,7 @@ EXAMPLES = '''
       logging: True
       log_file_name: my_task.log
     register: xmpp_status
-    until: xmpp_status.result.find('Functional') != -1
+    until: xmpp_status.results.find('Functional') != -1
     retries: 6
     delay: 10
 '''
@@ -106,7 +106,7 @@ def main():
                          stderr='Python exception: %s' % e,
                          changed=False)
 
-    module.exit_json(changed=True, result=output)
+    module.exit_json(changed=True, results=output)
 
 
 main()

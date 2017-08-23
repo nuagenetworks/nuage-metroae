@@ -30,7 +30,7 @@
 
   - name: Create local variable with bof config in json
     set_fact:
-      bof_json: "{{ bof_config.result|show_bof_to_json }}"
+      bof_json: "{{ bof_config.results|show_bof_to_json }}"
 
   - name: Print bof config in json when verbosity >= 1
     debug: var=bof_json verbosity=1
@@ -61,7 +61,7 @@
 
   - name: Create local variable with current vsc image version in json
     set_fact:
-      current_version_json: "{{ current_image.result|image_version_to_json }}"
+      current_version_json: "{{ current_image.results|image_version_to_json }}"
 
   - name: Print current vsc image version in json  when verbosity >= 1
     debug: var=current_version_json verbosity=1
@@ -89,7 +89,7 @@
 
   - name: Create local variable with new vsc image version in json
     set_fact:
-      new_version_json: "{{ new_image.result|image_version_to_json }}"
+      new_version_json: "{{ new_image.results|image_version_to_json }}"
 
   - name: Print new vsc image version in json when verbosity >= 1
     debug: var=new_version_json verbosity=1
@@ -142,7 +142,7 @@
 
   - name: Create local variable with show version in json
     set_fact:
-      vsc_version_json: "{{ vsc_version.result|show_version_to_json }}"
+      vsc_version_json: "{{ vsc_version.results|show_version_to_json }}"
 
   - name: Print show version in json when verbosity >= 1
     debug: var=vsc_version_json verbosity=1
@@ -160,7 +160,7 @@
       password: "{{ vsc_sros_creds.password }}"
     register: xmpp_detail
     connection: local
-    until: xmpp_detail.result.find('Functional') != -1
+    until: xmpp_detail.results.find('Functional') != -1
     retries: 5
     delay: 30
 
@@ -168,7 +168,7 @@
     debug: var=xmpp_detail verbosity=1
 
   - name: Create local variable with xmpp-server detail in json
-    set_fact: xmpp_detail_json="{{ xmpp_detail.result|xmpp_server_detail_to_json }}"
+    set_fact: xmpp_detail_json="{{ xmpp_detail.results|xmpp_server_detail_to_json }}"
 
   - name: Print xmpp-server detail in json when verbosity >= 1
     debug: var=xmpp_detail_json verbosity=1
@@ -196,7 +196,7 @@
       password: "{{ vsc_sros_creds.password }}"
     register: vsd_detail
     connection: local
-    until: vsd_detail.result.find(vsd1_s) != -1
+    until: vsd_detail.results.find(vsd1_s) != -1
     retries: 5
     delay: 30
 
@@ -205,19 +205,19 @@
 
   - name: Verify VSD Node1 is found in vsd_detail
     assert:
-      that: "'cna@{{ vsd_fqdn }}/{{ groups['vsds'][0].split('.')[0:1] | join('.') }}' in vsd_detail.result"
+      that: "'cna@{{ vsd_fqdn }}/{{ groups['vsds'][0].split('.')[0:1] | join('.') }}' in vsd_detail.results"
       msg: "VSD Node1 could not be found in 'show vswitch-controller vsd detail'"
     when: vsd_sa_or_ha == 'ha'
 
   - name: Verify VSD Node1 is found in vsd_detail
     assert:
-      that: "'cna@{{ vsd_fqdn }}' in vsd_detail.result"
+      that: "'cna@{{ vsd_fqdn }}' in vsd_detail.results"
       msg: "VSD Node1 could not be found in 'show vswitch-controller vsd detail'"
     when: vsd_sa_or_ha == 'sa'
 
   - name: Verify VSD Node3 is found in vsd_detail
     assert:
-      that: "'cna@{{ vsd_fqdn }}/{{ groups['vsds'][2].split('.')[0:1] | join('.') }}' in vsd_detail.result"
+      that: "'cna@{{ vsd_fqdn }}/{{ groups['vsds'][2].split('.')[0:1] | join('.') }}' in vsd_detail.results"
       msg: "VSD Node3 could not be found in 'show vswitch-controller vsd detail'"
     when: vsd_sa_or_ha == 'ha'
 
