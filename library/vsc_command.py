@@ -65,7 +65,7 @@ def main():
     arg_spec = dict(
         mgmt_ip=dict(required=True, type='str'),
         username=dict(required=True, type='str'),
-        password=dict(required=True, type='str'),
+        password=dict(required=True, type='str', no_log=True),
         command=dict(required=True, type='str'),
         logging=dict(default=False, type='bool'),
         log_file_name=dict(default='vsc_command.log', type='str')

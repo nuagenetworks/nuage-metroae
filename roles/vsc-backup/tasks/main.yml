@@ -86,30 +86,23 @@
 - name: Print 'bof save' when verbosity >= 1
   debug: var=bof_save verbosity=1
 
-- name: Test another admin command on VSC
-  vsc_command:
-    command: 'admin clear lockout all'
-    mgmt_ip: "{{ vsc_creds.mgmt_ip }}"
-    username: "{{ vsc_creds.username }}"
-    password: "{{ vsc_creds.password }}"
-  delegate_to: "{{ ansible_deployment_host }}"
-  remote_user: "{{ ansible_sudo_username }}"
-  register: admin_display_config
-
-- name: Print 'admin display-config' when verbosity >= 1
-  debug: var=admin_display_config verbosity=1
-
-- name: Save existing admin configuration on VSC
+- name: Save existing admin configuration on VSC, ignore connection drops
   vsc_command:
     command: 'admin save'
     mgmt_ip: "{{ vsc_creds.mgmt_ip }}"
     username: "{{ vsc_creds.username }}"
     password: "{{ vsc_creds.password }}"
-  delegate_to: "{{ ansible_deployment_host }}"
-  remote_user: "{{ ansible_sudo_username }}"
+  delegate_to: localhost
   register: admin_save
+  ignore_errors: yes
 
 - name: Print 'admin save' when verbosity >= 1
   debug: var=admin_save verbosity=1
+
+- name: Verify that the admin save command worked even if connection dropped
+  assert: {
+    that: "{{ admin_save|find('Saving configuration ... OK') }}",
+    msg: "admin save was not successful"
+}
 
 - include: backup_vsc.yml
