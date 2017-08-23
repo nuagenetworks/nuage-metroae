@@ -86,13 +86,27 @@
 - name: Print 'bof save' when verbosity >= 1
   debug: var=bof_save verbosity=1
 
+- name: Test another admin command on VSC
+  vsc_command:
+    command: 'admin clear lockout all'
+    mgmt_ip: "{{ vsc_creds.mgmt_ip }}"
+    username: "{{ vsc_creds.username }}"
+    password: "{{ vsc_creds.password }}"
+  delegate_to: "{{ ansible_deployment_host }}"
+  remote_user: "{{ ansible_sudo_username }}"
+  register: admin_display_config
+
+- name: Print 'admin display-config' when verbosity >= 1
+  debug: var=admin_display_config verbosity=1
+
 - name: Save existing admin configuration on VSC
   vsc_command:
     command: 'admin save'
     mgmt_ip: "{{ vsc_creds.mgmt_ip }}"
     username: "{{ vsc_creds.username }}"
     password: "{{ vsc_creds.password }}"
-  delegate_to: localhost
+  delegate_to: "{{ ansible_deployment_host }}"
+  remote_user: "{{ ansible_sudo_username }}"
   register: admin_save
 
 - name: Print 'admin save' when verbosity >= 1
