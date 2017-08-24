@@ -14,7 +14,7 @@ cp ./test/files/build_vars_unzip.yml roles/reset-build/files/build_vars.yml
 
 sed -i "s/VERSION/$1/g" roles/reset-build/files/build_vars.yml
 
-./metro-ansible reset_build.yml --extra-vars "skip_reset_build_pause=True" -vvvv
+./metro-ansible reset_build.yml -vvvv
 
 sed -i "s/TARGET_HOST/$2/g" ./test/nuage_unzip/nuage_unzip_hosts
 sed -i "s/localhost/nuage_unzip_targets/g" nuage_unzip.yml

@@ -256,7 +256,7 @@ then
     fi
 fi
 
-./metro-ansible reset_build.yml --extra-vars "skip_reset_build_pause=True" -vvvv
-./metro-ansible build.yml -vvvv
+./metro-ansible reset_build.yml --extra-vars "test_run=True" -vvvv
+./metro-ansible build.yml --extra-vars "test_run=True" -vvvv
 ./metro-ansible test_install.yml -vvvv
 ./metro-ansible test_cleanup.yml -vvvv

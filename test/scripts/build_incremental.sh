@@ -11,8 +11,8 @@ run_iter() {
     then
         echo -e "\nvcenter: \n  username: administrator@vsphere.local\n  password: Alcateldc\n  datacenter: Datacenter\n  cluster: Management\n  datastore: datastore" >> roles/reset-build/files/build_vars.yml
     fi
-    ./metro-ansible reset_build.yml --extra-vars "skip_reset_build_pause=True" -vvvv
-    ./metro-ansible build.yml -vvvv
+    ./metro-ansible reset_build.yml --extra-vars "test_run=True" -vvvv
+    ./metro-ansible build.yml --extra-vars "test_run=True" -vvvv
 }
 
 USAGE="Usage: $0 version <kvm|vcenter>:"
