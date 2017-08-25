@@ -1,5 +1,5 @@
-- name: Clean known_hosts of VSC's on "{{ target_server }}"
-  command: ssh-keygen -R "{{ mgmt_ip }}" -f /root/.ssh/known_hosts
+- name: Clean known_hosts of VSC's
+  command: ssh-keygen -R "{{ mgmt_ip }}"
 
 - name: Get output of 'show bof'
   vsc_command:
@@ -44,6 +44,26 @@
       (?i)yes: "yes"
       (?i)password: "{{ vsc_password|default('admin') }}"
     timeout: "{{ vsc_scp_timeout }}"
+
+- name: Get file version of new image on VSC
+  vsc_command:
+    command: file version "{{ bof_json['primary_image'] }}"
+    mgmt_ip: "{{ vsc_creds.mgmt_ip }}"
+    username: "{{ vsc_creds.username }}"
+    password: "{{ vsc_creds.password }}"
+  register: new_image
+
+- name: Print new image version when verbosity >= 1
+  debug: var=new_image verbosity=1
+
+- name: Create local variable with new_image version in json
+  set_fact:
+    new_version_json: "{{ new_image.results|image_version_to_json }}"
+
+- name: Verify new cpm.tim file is transferred
+  assert:
+    that: "version_json.vsc_image_version != new_version_json.vsc_image_version"
+    msg: "Old VSC version - {{ version_json.vsc_image_version }} and new VSC version - {{ new_version_json.vsc_image_version }} are same"
 
 - name: Reboot VSC VM
   vsc_command:
