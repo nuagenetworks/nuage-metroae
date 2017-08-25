@@ -209,7 +209,7 @@
 - block:
   - block:
     - name: Find name of VSC QCOW2 File
-      find: path="{{ nuage_upgrade_unzipped_files_dir }}/vsc/singledisk"  pattern="vsc_singledisk.qcow2" recurse=yes
+      find: path="{{ nuage_upgrade_unzipped_files_dir }}/vsc"  pattern="vsc_singledisk.qcow2" recurse=yes
       register: rc_vsc_file
     - debug: var=rc_vsc_file verbosity=1
     - name: Verify that a VSC QCOW2 file was found
@@ -224,7 +224,7 @@
       when: rc_vsc_file.matched > 0
 
     - name: Find name of VSC TIM File
-      find: path="{{ nuage_upgrade_unzipped_files_dir }}/vsc"  pattern="cpm.tim" recurse=yes
+      find: path="{{ nuage_upgrade_unzipped_files_dir }}/vsc/single_disk"  pattern="cpm.tim" recurse=yes
       register: rc_vsc_tim_file
     - debug: var=rc_vsc_tim_file verbosity=1
     - name: Verify that a VSC TIM ile was found
@@ -237,6 +237,24 @@
         vsc_tim_path: "{{ rc_vsc_tim_file.files[0].path | dirname }}"
         vsc_tim_file_name: "{{ rc_vsc_tim_file.files[0].path | basename }}"
       when: rc_vsc_tim_file.matched > 0
+
+    - block:
+      - name: Find name of VSC BOOT TIM File
+        find: path="{{ nuage_upgrade_unzipped_files_dir }}/vsc/single_disk"  pattern="boot.tim" recurse=yes
+        register: rc_vsc_boot_tim_file
+      - debug: var=rc_vsc_bot_tim_file verbosity=1
+      - name: Verify that a VSC BOOT TIM file was found
+        assert: {
+          that: "{{ rc_vsc_boot_tim_file.matched }} > 0",
+          msg: "Unable to find VSC BOOT TIM image file"
+        }
+      - name: Register VSC BOOT TIM variables with proper path and image locations for use in other playbooks
+        set_fact:
+          vsc_boot_tim_path: "{{ rc_vsc_boot_tim_file.files[0].path | dirname }}"
+          vsc_boot_tim_file_name: "{{ rc_vsc_boot_tim_file.files[0].path | basename }}"
+        when: rc_vsc_boot_tim_file.matched > 0
+      when: test_boot_tim | default(False)
+
     when: myvscs | map(attribute='target_server_type') | list | issuperset(["kvm"]) or myvscs | map(attribute='target_server_type') | list | issuperset(["heat"]) or myvscs | map(attribute='target_server_type') | list | issuperset(["vcenter"])
   - block:
     - name: Find name of VSC OVA File
@@ -293,6 +311,14 @@
     vsc_tim_file_name: "None"
   when: 
     - vsc_tim_path is not defined
+    - "'health' in vsc_operations_list|default(['None'])"
+
+- name: Ensure that VSC BOOT TIM variables are set
+  set_fact:
+    vsc_boot_tim_path: "None"
+    vsc_boot_tim_file_name: "None"
+  when:
+    - vsc_boot_tim_path is not defined
     - "'health' in vsc_operations_list|default(['None'])"
 
 

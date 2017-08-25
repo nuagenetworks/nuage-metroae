@@ -37,13 +37,23 @@
 - name: Print image version in json  when verbosity >= 1
   debug: var=version_json verbosity=1
 
-- name: Copy new VSC image to VSC nodes
+- name: Copy new cpm.tim VSC image to VSC nodes
   expect:
     command: "{{ vsc_image_copy }}"
     responses:
       (?i)yes: "yes"
       (?i)password: "{{ vsc_password|default('admin') }}"
     timeout: "{{ vsc_scp_timeout }}"
+
+- name: Copy new boot.tim VSC image to VSC nodes
+  expect:
+    command: "{{ vsc_boot_image_copy }}"
+    responses:
+      (?i)yes: "yes"
+      (?i)password: "{{ vsc_password|default('admin') }}"
+    timeout: "{{ vsc_scp_timeout }}"
+  when: test_boot | default(False)
+
 
 - name: Get file version of new image on VSC
   vsc_command:
