@@ -56,3 +56,7 @@ Note: The `master` branch contains the latest stable code. the `dev` branch is f
  2. Destroy the existing deployment with the following command:  
  `./metro-ansible destroy_everything.yml`
  3. Proceed to `BUILD.md` for instructions on Customizing the Environment and Deploying.
+---
+Report bugs you find and suggest new features and enhancements via the [GitHub Issues](https://github.com/nuagenetworks/nuage-metro/issues "nuage-metro issues") feature.
+
+ You may also ask questions and get support on the [nuage-metro-interest@list.nokia.com](mailto:nuage-metro-interest@list.nokia.com "send email to nuage-metro project") mailing list.
