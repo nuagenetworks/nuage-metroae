@@ -30,4 +30,13 @@ sed -i "s/SERVER_TYPE/kvm/g" roles/reset-build/files/build_vars.yml
 ./metro-ansible reset_build.yml -vvvv
 ./metro-ansible build.yml -vvvv
 ./metro-ansible test_install.yml -vvvv
+./metro-ansible vsc_health.yml -vvvv
+./metro-ansible vsc_sa_preupgrade_health.yml -vvvv
+./metro-ansible vsc_backup.yml -vvvv
+./metro-ansible vstat_health.yml -vvvv
+./metro-ansible vstats_preupgrade_health.yml -vvvv
+./metro-ansible vsd_health.yml -vvvv
+./metro-ansible vrs_health.yml -vvvv
+./metro-ansible vsp_preupgrade_health.yml -vvvv
+./metro-ansible vsp_postupgrade_health.yml -vvvv
 ./metro-ansible test_cleanup.yml -vvvv

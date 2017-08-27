@@ -84,7 +84,7 @@ Edit the files listed above, then run:
 
 ```
 ./metro-ansible vsp_preupgrade_health.yml -vvv
-./metro-ansible vstat_health.yml -vvv
+./metro-ansible vstat_preupgrade_health.yml -vvv
 ```
 Skip the VSTAT health run if VSTAT is not present. The health reports and any reported error should carefully be checked before proceeding with the next steps.
 
@@ -296,7 +296,7 @@ Edit the files listed above, then run:
 
 ```
 ./metro-ansible vsp_preupgrade_health.yml -vvv
-./metro-ansible vstat_health.yml -vvv
+./metro-ansible vstat_preupgrade_health.yml -vvv
 ```
 Skip the VSTAT health run if VSTAT is not present. The health reports and any reported error should carefully be checked before proceeding with the next steps.
 
