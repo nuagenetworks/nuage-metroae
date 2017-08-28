@@ -1,46 +1,89 @@
-# build and reset-build playbooks
+# Customizing the Nuage MetroAG Ansible Environment
+After you have set up the Nuage MetroAG Ansible environment per `SETUP.md` you'll need to perform a few more tasks (specified below) before executing the `build.yml` playbook. If you have issues during the build, you can always start over fresh as detailed later in this document.
+## Customize Variables
+`build_vars.yml` contains a dictionary of configuration parameters for each component. You determine which components MetroAG operates on, as well as *how* those components are operated on, by including them or excluding them in `build_vars.yml` file.
 
-The build playbook (`build.yml`) is used to automatically populate a number of Ansible variable files for the operation of the metro playbooks. Running `./metro-ansible build.yml` will use the variables defined in `build_vars.yml` to create a `hosts` file, populate a `host_vars` directory, populate a `group_vars` directory, and make a few additional variable changes as required. The `build.yml` playbook will do all the work for you.
+MetroAG configures network connectivity for VSD, VSC, VSTAT, and DNS/NTP, and creates the NSG profile in the VSD Architect, as applicable. Each VM that is created for VSD, VSC, VSTAT, VNSUTIL, NSGV and DNS/NTP connects to one or more bridges on the target server. Prior to deployment specify their names in `build_vars.yml` to create those bridges on the target server. See `examples` in the repo for specific configurations.
 
-Note that the syntax of the contents of `build_vars.yml` must be precise. If things get messed up, we have provided the `reset_build.yml` playbook to let you start over. *When you run `./metro-ansible rest_build.yml`, the contents of `build_vars.yml` will be overwritten, the `hosts` file will be destroyed, the `host_vars` directory will be destroyed, and the `group_vars` directory will be destroyed. The variable configuration of metro will be reset to factory settings! You may lose your work!* A backup copy of `build_vars.yml` will be created with a proper timestamp in case you did not mean it.
+If multiple runs are attempted, it may be necessary to remove the vsd, vsc, vstat and dns/ntp entries from the installation user's `~/.ssh/known_hosts` file to prevent errors from suspected DNS spoofing.
 
-To run the build, execute:
+If you are deploying zero factor bootstrapping on VNS, also refer to `ZFB.md` for more information.
 
-`ansible-playbook build.yml`
+Note: Precise syntax is crucial for success.
 
-or
+## Make Unzipped Nuage Software Files Available
+Before installing or upgrading with Nuage MetroAG for the first time, ensure that the required unzipped Nuage software files (QCOW2, OVA, and Linux Package files) are available for the components being installed or upgraded. Use one of the two methods below.
+* Copy the proper files to their locations as shown below, as applicable.
+
+  ```
+  <nuage_unzipped_files_dir/vsd/qcow2/
+  <nuage_unzipped_files_dir/vsd/ova/ (for VMware)
+  <nuage_unzipped_files_dir/vsc/
+  <nuage_unzipped_files_dir/vrs/el7/
+  <nuage_unzipped_files_dir/vrs/u14_04/
+  <nuage_unzipped_files_dir/vrs/ul16_04/
+  <nuage_unzipped_files_dir/vrs/vmware/
+  <nuage_unzipped_files_dir/vrs/hyperv/
+  <nuage_unzipped_files_dirh/vstat/
+  <nuage_unzipped_files_dir/vns/nsg/
+  <nuage_unzipped_files_dir/vns/util/
+  ```
+* Or you can let MetroAG do the heavy lifting for you. Simply specify the appropriate source and target directories in `build_vars.yml` as follows:  
+```
+ nuage_zipped_files_dir: "<your_path_with_zipped_software>"    
+ nuage_unzipped_files_dir: <your_path_for_unzipped_software  
+```
+  Then execute the following command:
+
+  `./metro-ansible nuage_unzip.yml`
+
+## Are you Deploying VNS?
+If you are deploying VNS, see ZFB.md for fur
+## Execute build.yml
+After you've set up your variables and made the required software files available, run the playbook with the following command to automatically populate the Ansible variable files:
 
 `./metro-ansible build.yml`
 
-To reset the build to factory settings, execute:
+Note: `metro-ansible` is a shell script that executes `ansible-playbook` with the proper includes and command line switches. Use `metro-ansible` (instead of `ansible-playbook`) when running any of the playbooks provided herein.
 
-`ansible-playbook reset_build.yml`
+  When you execute `build.yml`, it takes the variables that you defined in `build_vars.yml` and performs the following tasks for you.
+* creates a `host` file populated with the hostnames of all components in the list. (The host file defines the inventory that the playbooks operate on.)
+* populates a `host_vars` subdirectory with the variable files for each component in the list. (These variable files contain configuration information specific to each component in the list.)
+* populates a `group_vars` directory
+* sets additional variables that configure the overall operation of the playbooks
+***
+## Debug
+`ansible.cfg` is provided for debugging. By default, it tells Ansible to log to `./ansible.log`. Ansible supports different levels of verbosity, specified with one of the command line flags below. More letters means more verbosity. The highest level, -vvvv, provides ssh connectivity information.
+* -v
+* -vv
+* -vvv
+* -vvvv
 
-or
+## Having Issues? Do You Want to Start Over?
+If you have issues with running the build, you can reset to factory settings and start over.
+
+WARNING: **You may lose your work!** A timestamped backup copy, in the form of `build_vars.yml.<date and time>~` is created (in case you change your mind.) Make sure you have enough storage for it.
+
+
+Reset the build with the following command.
+
 
 `./metro-ansible reset_build.yml`
 
-# nuage_unzip.yml playbook
+Note: `metro-ansible` is a shell script that executes `ansible-playbook` with the proper includes and command line switches. Use `metro-ansible` (instead of `ansible-playbook`) when running any of the playbooks provided herein.
 
-When the `build.yml` playbook is executed, it expects to find unzipped Nuage software files (QCOW2, OVA, and Linux Package files) for items that are being upgraded or installed. You can either copy the proper files to their locations, shown below, or you can use the nuage_unzip.yml playbook to do the work for you. Simply specify the proper source and target directories in `build_vars.yml`:
-```
-nuage_zipped_files_dir: "<your_path_with_zipped_software>"
-nuage_unzipped_files_dir: "<your_path_for_unzipped_software>"
-```
-and run `./metro-ansible nuage_unzip.yml` playbook to do the heavy lifting.
+`reset_build.yml` performs the following tasks for you.
+* overwrites the contents of `build_vars.yml`
+* detroys the `host` file
+* destroys the `host_vars` directory
+* destroys the `group_vars` directory
+* resets the variable configuration of Metro to factory settings
 
-Here are the expected paths to binaries. Binaries that are not required need not have a path here.
+## Ready to Deploy?
 
-```
-<nuage_unzipped_files_dir>/vsd/qcow2/ (or <nuage_unzipped_files_dir>/vsd/ova/ for VMware)
-<nuage_unzipped_files_dir>/vsc/
-<nuage_unzipped_files_dir>/vrs/el7/
-<nuage_unzipped_files_dir>/vrs/u14_04/
-<nuage_unzipped_files_dir>/vrs/u16_04/
-<nuage_unzipped_files_dir>/vrs/vmware/
-<nuage_unzipped_files_dir>/vrs/hyperv/
-<nuage_unzipped_files_dir>/vstat/
-<nuage_unzipped_files_dir>/vns/nsg/
-<nuage_unzipped_files_dir>/vns/util/
-```
+Proceed to `DEPLOY.md`.
 
+---
+Report bugs you find and suggest new features and enhancements via the [GitHub Issues](https://github.com/nuagenetworks/nuage-metro/issues "nuage-metro issues") feature.
+
+ You may also ask questions and get support on the [nuage-metro-interest@list.nokia.com](mailto:nuage-metro-interest@list.nokia.com "send email to nuage-metro project") mailing list.
