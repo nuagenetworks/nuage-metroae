@@ -1,13 +1,13 @@
 # Customizing the Nuage MetroAG Ansible Environment
 After you have set up the Nuage MetroAG Ansible environment per `SETUP.md` you'll need to perform a few more tasks (specified below) before executing the `build.yml` playbook. If you have issues during the build, you can always start over fresh as detailed later in this document.
 ## Customize Variables
-`build_vars.yml` contains a dictionary of configuration parameters for each component. You determine which components MetroAG operates on, as well as *how* those components are operated on, by including them or excluding them in `build_vars.yml` file.
+`build_vars.yml` contains a dictionary of configuration parameters for each component. You determine which components MetroAG operates on, as well as *how* those components are operated on, by including them or excluding them in the `build_vars.yml` file.
 
 MetroAG configures network connectivity for VSD, VSC, VSTAT, and DNS/NTP, and creates the NSG profile in the VSD Architect, as applicable. Each VM that is created for VSD, VSC, VSTAT, VNSUTIL, NSGV and DNS/NTP connects to one or more bridges on the target server. Prior to deployment specify their names in `build_vars.yml` to create those bridges on the target server. See `examples` in the repo for specific configurations.
 
 If multiple runs are attempted, it may be necessary to remove the vsd, vsc, vstat and dns/ntp entries from the installation user's `~/.ssh/known_hosts` file to prevent errors from suspected DNS spoofing.
 
-If you are deploying zero factor bootstrapping on VNS, also refer to `ZFB.md` for more information.
+If you are using zero factor bootstrapping on VNS, also refer to `ZFB.md` for more information.
 
 Note: Precise syntax is crucial for success.
 
@@ -37,8 +37,6 @@ Before installing or upgrading with Nuage MetroAG for the first time, ensure tha
 
   `./metro-ansible nuage_unzip.yml`
 
-## Are you Deploying VNS?
-If you are deploying VNS, see ZFB.md for fur
 ## Execute build.yml
 After you've set up your variables and made the required software files available, run the playbook with the following command to automatically populate the Ansible variable files:
 
