@@ -2,6 +2,7 @@
 
 LOG=./metro-setup.log
 
+FAILED=0
 NORMAL=$(tput sgr0)
 GREEN=$(tput setaf 2; tput bold)
 YELLOW=$(tput setaf 3)
@@ -28,6 +29,7 @@ function echo_failure() {
   echo -n "]"
   echo -ne "\r"
   echo " [ FAILED ]" >> $LOG
+  FAILED=1
   return 1
 }
 
@@ -81,6 +83,17 @@ function exists() {
   check_retcode $?;
 }
 
+function check_user_privilege() {
+  printn "Checking user privileges... ";
+  if [[ $UID -ne 0 ]]
+  then
+    echo_failure
+  else
+    echo_success
+  fi
+  echo
+}
+
 function check_os_type() {
   ver=`rpm -q --whatprovides /etc/redhat-release | tr "[:upper:]" "[:lower:]"`
   printn "Checking OS type... "
@@ -104,11 +117,18 @@ function check_os_version() {
   else
     echo_failure
   fi
+  echo
 }
 
 yum_install() {
   printn "Installing $1... "
   yum install -y $1 >> $LOG 2>&1
+  check_retcode $?
+}
+
+pip_install() {
+  printn "Installing $1... "
+  pip install $1 >> $LOG 2>&1
   check_retcode $?
 }
 
@@ -119,6 +139,18 @@ function main() {
   echo ""
   echo "Setting up Nuage Metro Automation Engine"
   echo ""
+
+  check_user_privilege
+
+  if [[ $FAILED -ne 0 ]]
+  then
+    echo ""
+    echo ""
+    printn "This script has to be run as root or with root privileges. Try again as root or with sudo"
+    echo ""
+    echo ""
+    exit 1
+  fi
 
   check_os_type;
   check_os_version;
@@ -131,10 +163,26 @@ function main() {
   yum_install "sshpass"
   yum_install "git"
 
-  echo ""
-  echo "Setup complete!"
-  echo ""
+  pip_install "ansible==2.2.1"
+  pip_install "netmiko"
+  pip_install "netaddr"
+  pip_install "ipaddr"
+  pip_install "pexpect"
+  pip_install "vspk"
+  pip_install "pyvmomi"
 
+  if [[ $FAILED -ne 0 ]]
+  then
+    echo ""
+    echo ""
+    printn "There appears to be some errors. Please check $LOG for details"
+    echo ""
+    echo ""
+  else
+    echo ""
+    echo "Setup complete!"
+    echo ""
+  fi
 }
 
 main
