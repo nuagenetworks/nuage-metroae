@@ -3,17 +3,22 @@ After you have set up the Nuage MetroAG Ansible environment per `SETUP.md` you'l
 ## Customize Variables
 `build_vars.yml` contains a dictionary of configuration parameters for each component. You determine which components MetroAG operates on, as well as *how* those components are operated on, by including them or excluding them in the `build_vars.yml` file.
 
-MetroAG configures network connectivity for VSD, VSC, VSTAT, and DNS/NTP, and creates the NSG profile in the VSD Architect, as applicable. Each VM that is created for VSD, VSC, VSTAT, VNSUTIL, NSGV and DNS/NTP connects to one or more bridges on the target server. Prior to deployment specify their names in `build_vars.yml` to create those bridges on the target server. See `examples` in the repo for specific configurations.
-
-If multiple runs are attempted, it may be necessary to remove the vsd, vsc, vstat and dns/ntp entries from the installation user's `~/.ssh/known_hosts` file to prevent errors from suspected DNS spoofing.
-
 If you are using zero factor bootstrapping on VNS, also refer to `ZFB.md` for more information.
 
 Note: Precise syntax is crucial for success.
 
 ## Make Unzipped Nuage Software Files Available
 Before installing or upgrading with Nuage MetroAG for the first time, ensure that the required unzipped Nuage software files (QCOW2, OVA, and Linux Package files) are available for the components being installed or upgraded. Use one of the two methods below.
-* Copy the proper files to their locations as shown below, as applicable.
+* Specify the appropriate source and target directories in `build_vars.yml` as follows and let MetroAG do the heavy lifting for you:  
+```
+ nuage_zipped_files_dir: "<your_path_with_zipped_software>"    
+ nuage_unzipped_files_dir: <your_path_for_unzipped_software  
+```
+  Then execute the following command:
+
+  `./metro-ansible nuage_unzip.yml`
+
+* Or you can manually copy the proper files to their locations as shown below, as applicable.
 
   ```
   <nuage_unzipped_files_dir/vsd/qcow2/
@@ -28,14 +33,6 @@ Before installing or upgrading with Nuage MetroAG for the first time, ensure tha
   <nuage_unzipped_files_dir/vns/nsg/
   <nuage_unzipped_files_dir/vns/util/
   ```
-* Or you can let MetroAG do the heavy lifting for you. Simply specify the appropriate source and target directories in `build_vars.yml` as follows:  
-```
- nuage_zipped_files_dir: "<your_path_with_zipped_software>"    
- nuage_unzipped_files_dir: <your_path_for_unzipped_software  
-```
-  Then execute the following command:
-
-  `./metro-ansible nuage_unzip.yml`
 
 ## Execute build.yml
 After you've set up your variables and made the required software files available, run the playbook with the following command to automatically populate the Ansible variable files:
@@ -50,13 +47,6 @@ Note: `metro-ansible` is a shell script that executes `ansible-playbook` with th
 * populates a `group_vars` directory
 * sets additional variables that configure the overall operation of the playbooks
 ***
-## Debug
-`ansible.cfg` is provided for debugging. By default, it tells Ansible to log to `./ansible.log`. Ansible supports different levels of verbosity, specified with one of the command line flags below. More letters means more verbosity. The highest level, -vvvv, provides ssh connectivity information.
-* -v
-* -vv
-* -vvv
-* -vvvv
-
 ## Having Issues? Do You Want to Start Over?
 If you have issues with running the build, you can reset to factory settings and start over.
 
