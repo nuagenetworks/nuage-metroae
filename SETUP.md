@@ -20,7 +20,7 @@ Note: Modern Ubuntu versions, such as 14.04 and 16.04, may also work as Ansible 
    1C. Follow the prompts to complete creation. It is normal to accept all defaults.
  2. Copy the ssh public key to the installation user's `authorized_keys` file. Have the file copied automatically as follows:
    2A. Login to the Ansible deployment host as the installation user.  
-   2B. Execute the command: `ssh-copy-id`  
+   2B. Execute the command: `ssh-copy-id hostname`, where *hostname* is the name of the Ansible deployment host.  
    2C. Enter the user's password if prompted.
 ### Install Packages Required on the Ansible Deployment host
  1. Install Python pip  
@@ -40,7 +40,7 @@ Note: Modern Ubuntu versions, such as 14.04 and 16.04, may also work as Ansible 
 `pip install vspk`  
 
   #### Additional Steps for vCenter Deployments Only  
-  Note: Only Nuage software version 4.0R7 and greater is supported.  
+  Note: vCenter deployments are supported for Nuage software version 4.0R7 and greater.  
 
   8. Install pysphere and pyvmomi packages on the Ansible deployment host  
 `pip install pysphere pyvmomi`  
