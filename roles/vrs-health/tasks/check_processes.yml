@@ -5,7 +5,7 @@
   changed_when: false
 
 - name: "[check-processes] Read out PERSONALITY variable from openvswitch config"
-  shell: "grep '^PERSONALITY=' {{ openvswitch_config_path }}"
+  shell: "awk -F '=' '/^PERSONALITY/ {print $2}' {{ openvswitch_config_path }}"
   register: personality
   changed_when: false
 
@@ -15,11 +15,13 @@
   ignore_errors: yes
   changed_when: no
 
-- name: "[check-processes] Construct processes list based on PLATFORM variable setting"
+- debug: var=personality.stdout
+
+- name: "[check-processes] Construct processes list based on PERSONALITY variable setting"
   set_fact:
     processes: >
         {{ nuage_processes +
-           (nuage_kvm_processes if 'kvm' in (platform.stdout|lower) else []) +
+           (nuage_kvm_processes if (personality.stdout|lower == 'vrs') else []) +
            (nuage_os_processes if metadata_stat.stat.exists else []) }}
 
 - name: "[check-processes] Get PID values"
