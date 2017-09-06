@@ -79,7 +79,7 @@ then
     ./metro-ansible vsd_predeploy.yml -vvv
     ./metro-ansible vsd_sa_upgrade_deploy.yml -vvv
     # Sleep for vsd processes to available
-    sleep 60
+    sleep 240
     # Run vsc health checks
     ./metro-ansible vsc_sa_preupgrade_health.yml -vvv
     # Upgrade VSC
