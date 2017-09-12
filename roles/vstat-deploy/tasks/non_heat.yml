@@ -19,6 +19,7 @@
 - name: Update /etc/hosts file on VSD(s)
   blockinfile:
     dest: /etc/hosts
+    marker: "# {mark} Ansible created entries for stats nodes"
     block: |
       {% for host in groups['vstats']  %}
       {{ hostvars[host]['mgmt_ip'] }}    {{ host }}
@@ -139,40 +140,48 @@
     when: ip_addr.stdout | match("not found:")
   when: vsd_sa_or_ha | match('sa')
 
-- name: Start firewalld
-  systemd:
-    name: firewalld
-    state: started
-  remote_user: "root"
+- name: check for firewalld
+  shell: "service firewalld status"
+  register: _svc_firewalld
+  ignore_errors: True
 
-- name: Enable firewalld on boot
-  systemd:
-    name: firewalld
-    enabled: yes
-  remote_user: "root"
+- block:
+  - name: Start firewalld
+    systemd:
+      name: firewalld
+      state: started
+    remote_user: "root"
+  
+  - name: Enable firewalld on boot
+    systemd:
+      name: firewalld
+      enabled: yes
+    remote_user: "root"
+  
+  - name: Create firewall vars file on ansible host
+    template: src="{{ playbook_dir }}/roles/vstat-deploy/templates/firewall.j2" dest="/tmp/main.yml" backup=no mode=0755
+    delegate_to: "{{ ansible_deployment_host }}"
+    remote_user: "{{ ansible_sudo_username }}"
+  
+  - name: Include variable file.
+    include_vars: /tmp/main.yml
+    remote_user: "root"
+  
+  - name: Config firewall on VSTAT vm to accept conn on ports 9200,9300 from vsd(s)
+    shell: "{{ item }}"
+    with_items:
+      - "{{ firewall_std_commands }}"
+    remote_user: "root"
+    when: vsd_sa_or_ha | match('sa')
+  
+  - name: Config firewall on VSTAT vm to accept conn on ports 9200, 9300 from vsd(s) in cluster setup
+    shell: "{{ item }}"
+    with_items:
+      - "{{ firewall_cluster_commands }}"
+    when: vsd_sa_or_ha | match('ha')
+    remote_user: "root"
 
-- name: Create firewall vars file on ansible host
-  template: src="{{ playbook_dir }}/roles/vstat-deploy/templates/firewall.j2" dest="/tmp/metro_stats_firewall_rules.yml" backup=no mode=0755
-  delegate_to: "{{ ansible_deployment_host }}"
-  remote_user: "{{ ansible_sudo_username }}"
-
-- name: Include variable file.
-  include_vars: /tmp/metro_stats_firewall_rules.yml
-  remote_user: "root"
-
-- name: Config firewall on VSTAT vm to accept conn on ports 9200,9300 from vsd(s)
-  shell: "{{ item }}"
-  with_items:
-    - "{{ firewall_std_commands }}"
-  remote_user: "root"
-  when: vsd_sa_or_ha | match('sa')
-
-- name: Config firewall on VSTAT vm to accept conn on ports 9200, 9300 from vsd(s) in cluster setup
-  shell: "{{ item }}"
-  with_items:
-    - "{{ firewall_cluster_commands }}"
-  when: vsd_sa_or_ha | match('ha')
-  remote_user: "root"
+  when: "_svc_firewalld.rc == 0"
 
 - name: Restart elastic search
   systemd:
