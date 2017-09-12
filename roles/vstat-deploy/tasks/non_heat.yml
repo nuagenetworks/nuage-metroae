@@ -144,6 +144,7 @@
   shell: "service firewalld status"
   register: _svc_firewalld
   ignore_errors: True
+  remote_user: "root"
 
 - block:
   - name: Start firewalld
@@ -165,7 +166,8 @@
   
   - name: Include variable file.
     include_vars: /tmp/main.yml
-    remote_user: "root"
+    delegate_to: "{{ ansible_deployment_host }}"
+    remote_user: "{{ ansible_sudo_username }}"
   
   - name: Config firewall on VSTAT vm to accept conn on ports 9200,9300 from vsd(s)
     shell: "{{ item }}"
