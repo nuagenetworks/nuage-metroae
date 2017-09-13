@@ -11,7 +11,7 @@
   when: ansible_os_family == "Debian"
 
 - name: Install pexpect module via pip
-  pip: name=pexpect state="present" 
+  pip: name=pexpect state="present"
 
 - name: Set name for backup folder
   set_fact:
@@ -22,6 +22,7 @@
     commands:
       - file md "{{ backup_folder }}"
     provider: "{{ vsc_creds }}"
+  delegate_to: localhost
   register: dir_status
 
 - name: Verify backup folder is created on VSC
@@ -35,6 +36,7 @@
       - file copy *.cfg "{{ backup_folder }}"
       - file copy "{{ bof_json['primary_image'] }}" "{{ backup_folder }}"
     provider: "{{ vsc_creds }}"
+  delegate_to: localhost
   register: copy_status
 
 - name: Print 'file copy *.cfg backup' when verbosity >= 1
@@ -52,7 +54,6 @@
       (?i)yes: "yes"
       (?i)password: "{{ vsc_password|default('admin') }}"
     timeout: "{{ vsc_scp_timeout }}"
-  
+
 - name: Create symbolic link to backup location
   file: dest="/tmp/backup-{{ inventory_hostname }}-latest" src="/tmp/{{  backup_folder }}"  state=link
-
