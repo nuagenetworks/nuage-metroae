@@ -7,6 +7,7 @@
     commands:
       - show vswitch-controller xmpp-server detail
     provider: "{{ vsc_creds }}"
+  delegate_to: localhost
   register: xmpp_detail
   until: xmpp_detail.stdout[0].find('Functional') != -1
   retries: 5
@@ -41,6 +42,7 @@
     commands:
       - show vswitch-controller vsd detail
     provider: "{{ vsc_creds }}"
+  delegate_to: localhost
   register: vsd_detail
   until: vsd_detail.stdout[0].find(vsd1_s) != -1
   retries: 5
@@ -76,6 +78,7 @@
     sros_command:
       commands: admin display-config
       provider: "{{ vsc_creds }}"
+    delegate_to: localhost
     register: pbr_config_ha_node2
 
   - name: Print 'admin display-config' when verbosity >= 1
@@ -88,8 +91,7 @@
         - configure router bgp evpn-pre-rfc no non-compliant
         - admin save
       provider: "{{ vsc_creds }}"
-    delegate_to: "{{ ansible_deployment_host }}"
-    remote_user: "{{ ansible_sudo_username }}"
+    delegate_to: localhost
     when: pbr_config_ha_node2.stdout[0].find('evpn-pre-rfc') != -1
 
   - name: Set mgmt_ip to first vsc node
@@ -100,6 +102,7 @@
     sros_command:
       commands: admin display-config
       provider: "{{ vsc_creds }}"
+    delegate_to: localhost
     register: pbr_config_ha_node1
 
   - name: Print 'admin display-config' when verbosity >= 1
@@ -112,6 +115,7 @@
         - configure router bgp evpn-pre-rfc no non-compliant
         - admin save
       provider: "{{ vsc_creds }}"
+    delegate_to: localhost
     when: pbr_config_ha_node1.stdout[0].find('evpn-pre-rfc') != -1
   when:
     - groups['vscs'] is defined and groups['vscs'][1] is defined
