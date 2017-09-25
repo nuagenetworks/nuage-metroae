@@ -11,7 +11,7 @@ def get_vsclines(fp):
     vsc_start = False
     for line in fp:
         # Removes any whitespace before and after the line
-        line = line.strip()
+        line = line.strip().split(" ")[0]
         if (line.startswith("[vscs]")):
             vsc_start = True
 
@@ -33,7 +33,7 @@ def get_vsdlines(fp):
     vsd_start = False
     for line in fp:
         # Removes any whitespace before and after the line
-        line = line.strip()
+        line = line.strip().split(" ")[0]
         if (line.startswith("[vsds]")):
             vsd_start = True
 
