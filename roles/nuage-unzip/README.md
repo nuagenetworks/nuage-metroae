@@ -9,7 +9,7 @@ for this role 2 variables should be defined in `build_vars.yml`:
 - `nuage_zipped_files_dir` - defines absolute path to folder where all zip archive stored
 - `nuage_unzipped_files_dir` - defines absolute path to folder where unarchived files will be store in structure tree during role execution.
 
-Note: no need run `./metro-ansible buil.yml` as variables from `build_vars.yml` will be imported explicitly.
+Note: no need run `./metro-ansible build.yml` as variables from `build_vars.yml` will be imported explicitly.
 
 Example Playbook
 ================
@@ -30,7 +30,7 @@ Example Playbook
 
 How to use tags
 ===============
-To unpack only specific component of Nuage distributive, then specific tag can be used.
+To unpack only specific components of Nuage distribution, specific tags can be used.
 To list all supported tags:
 ```bash
 nuage-metro]$ ./metro-ansible nuage_unzip.yml --list-tags
