@@ -36,21 +36,20 @@
 
   - debug: var='{{ unpack_register_var }}' verbosity=1
 
+  - block:
+      - debug: var=rc_nokia_vsr_archive.files verbosity=1
+
+      - name: Move file to root directory
+        command: mv '{{ nuage_unzipped_files_dir }}/{{ unpack_target_folder }}/{{ item }}' '{{ nuage_unzipped_files_dir }}/{{ unpack_target_folder }}'
+        remote_user: "{{ unzip_user }}"
+        when: item.split(".")[-1] in ['txt','ova','qcow2']
+        with_items: '{{rc_nokia_vsr_archive.files}}'
+
+      - name: Delete unused VSR folder
+        file:
+          name: '{{ nuage_unzipped_files_dir }}/{{ unpack_target_folder }}/vm'
+          state: absent
+        remote_user: "{{ unzip_user }}"
+
+    when: rc_nokia_vsr_archive is defined
   when: unpack_src_file.matched > 0
-
-- block:
-    - debug: var=rc_nokia_vsr_archive.files verbosity=1
-
-    - name: Move file to root directory
-      command: mv '{{ nuage_unzipped_files_dir }}/{{ unpack_target_folder }}/{{ item }}' '{{ nuage_unzipped_files_dir }}/{{ unpack_target_folder }}'
-      remote_user: "{{ unzip_user }}"
-      when: item.split(".")[-1] in ['txt','ova','qcow2']
-      with_items: '{{rc_nokia_vsr_archive.files}}'
-
-    - name: Delete unused VSR folder
-      file:
-        name: '{{ nuage_unzipped_files_dir }}/{{ unpack_target_folder }}/vm'
-        state: absent
-      remote_user: "{{ unzip_user }}"
-
-  when: rc_nokia_vsr_archive is defined
