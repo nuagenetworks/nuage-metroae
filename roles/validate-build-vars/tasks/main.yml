@@ -37,6 +37,14 @@
     msg: "{{ item }} is not a valid NTP server IP address, quiting"
   with_items: "{{ ntp_server_list }}"
   when: ntp_server_list is defined
+
+- name: Verify that the VSC hostnames are not longer than 32 characters
+  assert:
+    that: "'{{item.hostname}}'|length <= 32"
+    msg: "{{item.hostname}} is too long to be a valid VSC name, quitting"
+  with_items: "{{ myvscs }}"
+  when: myvscs is defined
+
 # TODO:
 # Use the floowing block to disable the feature for now. We need to update our
 # test infrastructure to accomodate.
