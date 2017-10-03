@@ -1,6 +1,19 @@
 # Customizing the Nuage MetroAG Ansible Environment
-After you have set up the Nuage MetroAG Ansible environment per `SETUP.md` you'll need to perform a few more tasks (specified below) before executing the `build.yml` playbook. If you have issues during the build, you can always start over fresh as detailed later in this document.
-## Customize Variables
+
+The *BUILD* phase refers to the modeling part of your environment. It involves setting all variables correctly so that the automated deployment scripts later are actually configuring the right thing. 
+
+It involves:
+1. Customizing Variables
+1. Unzip NuageNetworks Software
+1. Execute `build.yml` or `upgrade_build.yml` to generate necessary Ansible host and group variable files
+
+
+This phase assumes you have already set up the Nuage MetroAG Ansible environment per `SETUP.md`.
+
+Note that if you have issues during the *BUILD* phase, you can always start over fresh as detailed later in this document.
+
+## Customizing Variables
+
 `build_vars.yml` contains a dictionary of configuration parameters for each component. You determine which components MetroAG operates on, as well as *how* those components are operated on, by including them or excluding them in the `build_vars.yml` file.
 
 If you are using zero factor bootstrapping on VNS, also refer to `ZFB.md` for more information.
@@ -8,6 +21,7 @@ If you are using zero factor bootstrapping on VNS, also refer to `ZFB.md` for mo
 Note: Precise syntax is crucial for success.
 
 ## Make Unzipped Nuage Software Files Available
+
 Before installing or upgrading with Nuage MetroAG for the first time, ensure that the required unzipped Nuage software files (QCOW2, OVA, and Linux Package files) are available for the components being installed or upgraded. Use one of the two methods below.
 * Specify the appropriate source and target directories in `build_vars.yml` as follows and let MetroAG do the heavy lifting for you:  
 ```
@@ -35,6 +49,7 @@ Before installing or upgrading with Nuage MetroAG for the first time, ensure tha
   ```
 
 ## Execute build.yml
+
 After you've set up your variables and made the required software files available, run the playbook with the following command to automatically populate the Ansible variable files:
 
 `./metro-ansible build.yml`

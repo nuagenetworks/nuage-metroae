@@ -12,11 +12,15 @@ Before you begin working with MetroAG, please take these requirements and restri
 * The *Ansible Host* must run el7 Linux host, e.g. CentOS 7.\* or RHEL 7.\*. 
 * The *MetroAG User* setting up the environment must be the root user or have *sudo* privileges.
 * Password-less ssh access from the *Ansible Host* to the *Target Server* must be configured.  
+
 ## Cloning Nuage MetroAG
 Install a copy of the Nuage MetroAG repository onto the Ansible host. Nuage MetroAG is available on [GitHub.com](https://github.com/nuagenetworks/nuage-metro). From the website, you can download a zip of the archive. Or you can execute a `git clone` on your Ansible deployment host. (git will need to be installed first...)  
+
 ## Setting Up the Ansible Host
 Prior to running MetroAG, use one of the two methods below to install the required packages onto the Ansible host.
+
 ### Set Up Ansible Host Automatically (recommended)
+
 A *metro-setup.sh* script is provided along with the MetroAG code. The script installs the packages and modules required for MetroAG. If any of the packages or modules are already present, the script does not upgrade or overwrite them. The script can also be run multiple times without effecting the system.
 ```
 [JohnDoe@metroag-host ~]$ sudo ./metro-setup.sh
@@ -72,7 +76,7 @@ VSPK Python module | `pip install vspk`
  pysphere and pyvmomi | `pip install pyshpere pyvmomi`  
  
  
- 3. Install the following module for **OpenStack Only**:  
+3. Install the following module for **OpenStack Only**:  
  
   **Module** | **Command**  
  -----| ------  
@@ -92,7 +96,7 @@ VSPK Python module | `pip install vspk`
  If you are installing VSP components in a VMware environment (ESXi/vCenter) you will also need to download and install the [ovftool](https://www.vmware.com/support/developer/ovf/) from VMware. MetroAG uses ovftool for OVA operations.  
 
 ## Next Steps
-* If you would like to deploy Nuage software components for the first time or add new components to an existing deployment, proceed to `BUILD.md` for instructions on customizing the environment and deploying.
+* If you would like to deploy Nuage software components for the first time or add new components to an existing deployment, proceed to [BUILD.md](BUILD.md) for instructions on customizing the environment and deploying.
 
 * If you would like to upgrade existing Nuage software components to a newer version, proceed to `UPGRADE.md` for instructions on customizing the environment and upgrading.  
 
