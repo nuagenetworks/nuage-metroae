@@ -148,7 +148,7 @@ if __name__ == '__main__':
 
     # Get ZFB related parameters
     try:
-        with open(args.playbook_dir + '/zfb.yml', 'r') as fh:
+        with open(args.playbook_dir + '/zfb_vars.yml', 'r') as fh:
             zfb_params = yaml.load(fh)
         vars_file = '/roles/nsgv-predeploy/vars/main.yml'
         with open(args.playbook_dir + vars_file, 'r') as fo:

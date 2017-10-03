@@ -147,7 +147,7 @@ In addition to the above prerequisites, the following packages are needed for op
 1. Install VSPK Python module
     > `pip install vspk`
 1. Clone this repository to the Ansible host
-1. Customize `build_vars.yml` (and `zfb.yml` if you are deploying VNS) with your VSD, VSC, VRS, VNSUTIL, NSGV  and VSTAT information. (See `BUILD.md` and `ZFB.md` for details.)
+1. Customize `build_vars.yml` (and `zfb_vars.yml` if you are deploying VNS) with your VSD, VSC, VRS, VNSUTIL, NSGV  and VSTAT information. (See `BUILD.md` and `ZFB.md` for details.)
 1. Copy your binary files to the proper locations. (See `BUILD.md` for details.) *If the files are not copied to the proper locations, the next step will fail to find them!*
 1. Optionally execute `./metro-ansible nuage_unzip.yml` if you are installing from tar-gz files.
 1. Execute `./metro-ansible build.yml` to automatically populate variables in the appropriate places, e.g. the `host_vars` directory.
@@ -171,7 +171,7 @@ The `examples/` directory is populated with samples of files that can be used as
 
 `build_vars.yml` contains a set of variables that should be customized by the user prior to running the playbooks. These variables are used to configure network connectivity for the VSC, VSTAT, VSD and the DNS/NTP.
 
-`zfb.yml` contains a set of variables that should be customized by the user prior to running the nsgv playbooks. These variables are used to create NSG profile in the VSD Architect and also creates ISO file that is attached to NSG VM
+`zfb_vars.yml` contains a set of variables that should be customized by the user prior to running the nsgv playbooks. These variables are used to create NSG profile in the VSD Architect and also creates ISO file that is attached to NSG VM
 
 ## Playbook Organization
 
