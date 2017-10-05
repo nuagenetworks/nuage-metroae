@@ -3,16 +3,16 @@ set -ex
 #
 # Wrapper around ansible-playbook for the installation of Nuage components
 
-PLAYBOOK=$@
+PLAYBOOK=$1
+COMMAND='$(which ansible-playbook) -i hosts'
 
-if [[ ! -a $PLAYBOOK  ]]; then
-  PLAYBOOK="./playbooks/$PLAYBOOK"
-  if [[ ! -a $PLAYBOOK  ]]; then
-    echo "Requested Metro-Playbook could not be found"
-    exit 1
-  fi
+if [[ -a $PLAYBOOK  ]]; then
+  echo "Executing $@"
+  $COMMAND $@
+elif [[ -a ./playbooks/$PLAYBOOK ]]; then
+  echo "Executing ./playbooks/$@"
+  $COMMAND ./playbooks/$@
+else
+  echo "Requested Metro-Playbook could not be found"
+  exit 1
 fi
-
-echo "Executing $PLAYBOOK"
-
-$(which ansible-playbook) -i hosts $PLAYBOOK
