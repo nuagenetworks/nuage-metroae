@@ -2,4 +2,16 @@
 #
 # Wrapper around ansible-playbook for the installation of Nuage components
 
-$(which ansible-playbook) -i hosts $@
+PLAYBOOK=$@
+
+if [[ ! -a $PLAYBOOK  ]]; then
+  PLAYBOOK="./playbooks/$PLAYBOOK"
+  if [[ ! -a $PLAYBOOK  ]]; then
+    echo "Requested Metro-Playbook could not be found"
+    return 0
+  fi
+fi
+
+echo "Executing $PLAYBOOK"
+
+$(which ansible-playbook) -i hosts $PLAYBOOK

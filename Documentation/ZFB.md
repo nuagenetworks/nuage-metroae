@@ -1,10 +1,10 @@
-# zfb.yml 
+# zfb_vars.yml 
 
-The zfb.yml file is used to generate Zero Factor Bootstrapping profile for NSGV VMs on the VSD architect. This file is directly consumed by a python script that talks to VSD APIs to generate ISO file needed for ZFB of NSGVs. 
+The zfb_vars.yml file is used to generate Zero Factor Bootstrapping profile for NSGV VMs on the VSD architect. This file is directly consumed by a python script that talks to VSD APIs to generate ISO file needed for ZFB of NSGVs. 
 
 # Reference
 
-Here is a description of the contents of the `zfb.yml` file, with comments:
+Here is a description of the contents of the `zfb_vars.yml` file, with comments:
 
 ```
 #    # License to operate VSD architect
