@@ -31,9 +31,9 @@ def get_vsclines(fp):
 
 
 # Returns the list of VSC hosts
-def get_vschosts(playbook_dir):
+def get_vschosts(working_dir):
     fp = ''
-    hosts_file = playbook_dir + '/hosts'
+    hosts_file = working_dir + '/hosts'
     vsc_host_list = []
 
     if (not os.path.exists(hosts_file)):
@@ -55,14 +55,14 @@ def get_vschosts(playbook_dir):
 
 
 # Returns a dictionary of hostvars of each vsc
-def get_vscinfo(playbook_dir):
+def get_vscinfo(working_dir):
     # get vsc hostnames list
-    vsc_hosts = get_vschosts(playbook_dir)
+    vsc_hosts = get_vschosts(working_dir)
     # Extract data from each host into a dictionary list
     vsc_host_vars = {}
 
     for vscs in vsc_hosts:
-        host_vars_path = playbook_dir + "/host_vars/" + vscs
+        host_vars_path = working_dir + "/host_vars/" + vscs
         if (not os.path.exists(host_vars_path)):
             print (
                 "ERROR! Host_vars file not found for host: {0}." .format(host_vars_path))
@@ -80,8 +80,8 @@ def get_vscinfo(playbook_dir):
 
 
 # Returns the commands to be executed
-def get_commands(playbook_dir):
-    command_path = playbook_dir + "/scripts/vars/commands.yml"
+def get_commands(working_dir):
+    command_path = working_dir + "/scripts/vars/commands.yml"
     if (not os.path.exists(command_path)):
         print ("ERROR! Commands.yml file not found.")
         sys.exit(1)
@@ -198,8 +198,8 @@ if __name__ == '__main__':
                         help="Set host IP address.")
     parser.add_argument("retry_timeout", type=float,
                         help="Set timeout to check XMPP connection stability.")
-    parser.add_argument("playbook_dir", type=str,
-                        help="Set path to playbook directory.")
+    parser.add_argument("working_dir", type=str,
+                        help="Set path to working directory.")
     args = parser.parse_args()
 
     if (not is_valid_ip(args.ip)):
@@ -214,15 +214,15 @@ if __name__ == '__main__':
     }
 
     retry_timeout = float(args.retry_timeout)
-    playbook_dir = args.playbook_dir
-    if (not playbook_dir):
-        print ("Error! Playbook directory not found!")
+    working_dir = args.working_dir
+    if (not working_dir):
+        print ("Error! Working directory not found!")
         sys.exit(1)
 
     # Parse commands from the yml file
-    commands = get_commands(playbook_dir)
+    commands = get_commands(working_dir)
     # Get details from all VSCs for checking BGP
-    vsc_host_vars = get_vscinfo(playbook_dir)
+    vsc_host_vars = get_vscinfo(working_dir)
 
     if (not commands and not vsc_host_vars):
         print ("Error! Commands and VSC Host vars not extracted!")
