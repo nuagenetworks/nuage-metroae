@@ -42,6 +42,16 @@
 - debug: var=create_stack['stack']['outputs'][0]['output_value']
   when: '"jen-centos" in ci_image'
 
+- name: Stat the heat template
+  stat:
+    path: "{{ playbook_dir }}/../roles/ci-predeploy/files/ci_slave_ubuntu.yml"
+  register: heat_template
+
+- name: Verify that the heat template exists
+  assert:
+    that: "heat_template.stat.exists"
+    msg:  "Heat teamplate not found. Quitting..."
+
 - name: Create CI slave VMs in OpenStack for Ubuntu VRSs
   register: create_stack
   os_stack:
