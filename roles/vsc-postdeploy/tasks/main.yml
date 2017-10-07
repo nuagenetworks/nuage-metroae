@@ -1,11 +1,49 @@
 ---
-- name: Run verification script for VSC
-  local_action: command python scripts/vsc_verify.py {{ mgmt_ip }} {{ retry_timeout }} {{ playbook_dir }}/../
-  register: pass
+- name : BGP Peers
+  debug: var={{ expected_num_bgp_peers }}  verbosity=1  
+    
+- name : check xmpp connectivity between VSC and VSD 
+  sros_command:
+      commands:
+        - show vswitch-controller xmpp-server | match Functional
+        - show router bgp summary
+      provider: "{{ vsc_creds }}"
+      interval: 10
+      retries: 6     
+  register: xmpp_status
+  delegate_to: localhost 
+  
+- name : Debug the xmpp results
+  debug: var=xmpp_status.stdout[0] verbosity=1
 
-- name: Verification Result Failure Status
-  fail: msg={{ pass.stdout }}
-  when: pass.stdout | search("(?i)Error")
+- name : Debug the BGP results
+  debug: var=xmpp_status.stdout[1]  verbosity=1  
+  
+- name: Create local variable with BGP Summary in json
+  set_fact: bgp_summary_json="{{ xmpp_status.stdout[1]| bgp_summary_to_json }}"  
+  
+- name: Print BGP Summary in json when verbosity >= 1
+  debug: var=bgp_summary_json verbosity=1  
+  
+- name: Create local variable for BGP Peer Count
+  set_fact: bgp_peer_count="{{ bgp_summary_json['Total Peers'] }}"
 
-- name: Verification Result Success Status
-  debug: var=pass.stdout
+- name: Print BGP Peer Count when verbosity >= 1
+  debug: var=bgp_peer_count   verbosity=1
+
+- name: Check for expected BGP Peer Count
+  assert: { 
+    that: "{{ expected_num_bgp_peers }} == {{ bgp_peer_count }}",
+    msg: "Invalid BGP Peer count ({{ bgp_peer_count }}) detected. Expected '{{ expected_num_bgp_peers }}'. Check 'show router bgp summary'."
+  }
+  when: expected_num_bgp_peers > 0
+  
+- name : Check if Xmpp server is Functional
+  assert: 
+   that : xmpp_status.stdout[0] | search("Functional") == true
+   msg: "XMPP Server is not functional"
+   
+- name : Check if Xmpp server is Active
+  assert: 
+   that : xmpp_status.stdout[0] | search("Active") == false
+   msg: "XMPP Server is Active"
