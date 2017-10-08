@@ -50,9 +50,9 @@ def get_vsdlines(fp):
 
 
 # Returns the list of VSC hosts
-def get_vschosts(playbook_dir):
+def get_vschosts(working_dir):
     fp = ''
-    hosts_file = playbook_dir + '/hosts'
+    hosts_file = working_dir + '/hosts'
 
     if (not os.path.exists(hosts_file)):
         print ("ERROR! Hosts file not found.")
@@ -71,9 +71,9 @@ def get_vschosts(playbook_dir):
 
 
 # Returns the list of VSD hosts
-def get_vsdhosts(playbook_dir):
+def get_vsdhosts(working_dir):
     fp = ''
-    hosts_file = playbook_dir + '/hosts'
+    hosts_file = working_dir + '/hosts'
 
     if (not os.path.exists(hosts_file)):
         print ("ERROR! Hosts file not found.")
@@ -92,14 +92,14 @@ def get_vsdhosts(playbook_dir):
 
 
 # Returns a dictionary of hostvars of each vsc
-def get_vscinfo(playbook_dir):
+def get_vscinfo(working_dir):
     # Get vsc hostnames list
-    vsc_hosts = get_vschosts(playbook_dir)
+    vsc_hosts = get_vschosts(working_dir)
     # Extract data from each host into a dictionary list
     vsc_host_vars = {}
 
     for vscs in vsc_hosts:
-        host_vars_path = playbook_dir + "/host_vars/" + vscs
+        host_vars_path = working_dir + "/host_vars/" + vscs
         if (not os.path.exists(host_vars_path)):
             print ("ERROR! Host_vars file not found for host: {0}."
                    .format(host_vars_path))
@@ -117,14 +117,14 @@ def get_vscinfo(playbook_dir):
 
 
 # Returns a dictionary of hostvars of each vsd
-def get_vsdinfo(playbook_dir):
+def get_vsdinfo(working_dir):
     # Get vsd hostnames list
-    vsd_hosts = get_vsdhosts(playbook_dir)
+    vsd_hosts = get_vsdhosts(working_dir)
     # Extract data from each host into a dictionary list
     vsd_host_vars = {}
 
     for vsds in vsd_hosts:
-        host_vars_path = playbook_dir + "/host_vars/" + vsds
+        host_vars_path = working_dir + "/host_vars/" + vsds
         if (not os.path.exists(host_vars_path)):
             print ("ERROR! Host_vars file not found for host: {0}."
                    .format(host_vars_path))
@@ -142,8 +142,8 @@ def get_vsdinfo(playbook_dir):
 
 
 # Returns the commands to be executed
-def get_commands(playbook_dir):
-    command_path = playbook_dir + "/../roles/vsc-vns-deploy/vars/main.yml"
+def get_commands(working_dir):
+    command_path = working_dir + "/roles/vsc-vns-deploy/vars/main.yml"
     if (not os.path.exists(command_path)):
         print ("ERROR! %s file not found." % command_path)
         sys.exit(1)
@@ -206,8 +206,8 @@ def run_commands(commands, vsc, vsd_hosts_vars, xmpp_username):
 # Main
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument("playbook_dir", type=str,
-                        help="Set path to playbook directory.")
+    parser.add_argument("working_dir", type=str,
+                        help="Set path to working directory.")
     parser.add_argument("xmpp_user_name", type=str,
                         help="xmpp username")
     args = parser.parse_args()
@@ -219,17 +219,17 @@ if __name__ == '__main__':
         'password': 'admin',
     }
 
-    playbook_dir = args.playbook_dir
-    if (not playbook_dir):
-        print ("Error! Playbook directory not found!")
+    working_dir = args.working_dir
+    if (not working_dir):
+        print ("Error! Working directory not found!")
         sys.exit(1)
 
     # Parse commands from the yml file
-    commands = get_commands(playbook_dir)
+    commands = get_commands(working_dir)
 
     # Get details from all VSCs and VSDs for checking stats server info
-    vsc_host_vars = get_vscinfo(playbook_dir)
-    vsd_host_vars = get_vsdinfo(playbook_dir)
+    vsc_host_vars = get_vscinfo(working_dir)
+    vsd_host_vars = get_vsdinfo(working_dir)
     if (not commands and not vsc_host_vars and not vsd_host_vars):
         print ("Error! Commands and VSC Host vars not extracted!")
         sys.exit(1)
