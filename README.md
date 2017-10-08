@@ -15,7 +15,7 @@ MetroAG is a set of Ansible playbooks that can be used to automatically deploy a
 
 All the above components (except for VRS) are deployed as VMs. Supported hypervisor types are EL7, EL6, ESXi, Ubuntu14.04, Ubuntu 16.04.
 
-As a user of MetroAG, you will mostly interact with `metro-ansible` which is a shell script that executes ansible-playbook with the proper includes and command line switches. 
+As a user of MetroAG, you will mostly interact with `metro-ansible` which is a shell script that executes ansible-playbook with the proper includes and command line switches.
 
 
 ## What's new
@@ -48,7 +48,7 @@ The file [HOWTO.md](Documentation/HOWTO.md) has been provided. It contains a few
 
 All playbooks, whether installation or destruction, must be executed using the `metro-ansible` script.
 There are a few playbooks at top-level directory such as `install_everything.yml` and `destroy_everything.yml` which are provided as a convenience.
-More modular playbooks are stored in `playbooks` folder that can be run stand-alone. This is especially useful for debuuging, or skipping steps that you are confident are not needed or don't have to bre repeated. 
+More modular playbooks are stored in `playbooks` folder that can be run stand-alone. This is especially useful for debuuging, or skipping steps that you are confident are not needed or don't have to bre repeated.
 It also allows the user to execute only a very specific role on a given component without having to construct its own playbook.
 
 When browsing through this repository, you will see each component has up to 5 corresponding roles:
@@ -89,7 +89,7 @@ These are Ansible roles that are fully tested and supported.
 - vcin-destroy
 - vcin-health
 - vcin-predeploy
-- vns-deploy
+- vsc-vns-deploy
 - vns-postdeploy-vsc
 - vns-postdeploy-vsd
 - vnsutil-deploy

@@ -143,9 +143,9 @@ def get_vsdinfo(playbook_dir):
 
 # Returns the commands to be executed
 def get_commands(playbook_dir):
-    command_path = playbook_dir + "/roles/vns-deploy/vars/main.yml"
+    command_path = playbook_dir + "/../roles/vsc-vns-deploy/vars/main.yml"
     if (not os.path.exists(command_path)):
-        print ("ERROR! Commands.yml file not found.")
+        print ("ERROR! %s file not found." % command_path)
         sys.exit(1)
 
     try:
