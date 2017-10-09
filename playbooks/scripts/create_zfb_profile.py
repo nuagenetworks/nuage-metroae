@@ -137,7 +137,7 @@ def create_iso_file(csp_user, nsg_temp, nsgv_path):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument("playbook_dir", type=str,
+    parser.add_argument("working_dir", type=str,
                         help="Set path to playbook directory.")
     parser.add_argument("nsgv_path", type=str, help="Set path to NSGV ISO\
                         output directory")
@@ -148,10 +148,10 @@ if __name__ == '__main__':
 
     # Get ZFB related parameters
     try:
-        with open(args.playbook_dir + '/zfb_vars.yml', 'r') as fh:
+        with open(args.working_dir + '/zfb_vars.yml', 'r') as fh:
             zfb_params = yaml.load(fh)
         vars_file = '/roles/nsgv-predeploy/vars/main.yml'
-        with open(args.playbook_dir + vars_file, 'r') as fo:
+        with open(args.working_dir + vars_file, 'r') as fo:
             zfb_constants = yaml.load(fo)
     except Exception as e:
         print("ERROR: Failure reading file: %s" % e)
