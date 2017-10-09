@@ -81,7 +81,7 @@ def get_vscinfo(working_dir):
 
 # Returns the commands to be executed
 def get_commands(working_dir):
-    command_path = working_dir + "playbooks/scripts/vars/commands.yml"
+    command_path = working_dir + "/playbooks/scripts/vars/commands.yml"
     if (not os.path.exists(command_path)):
         print ("ERROR! Commands.yml file not found.")
         sys.exit(1)
