@@ -1,0 +1,14 @@
+- name: Get monit summary for all process on VSD
+  vsd_monit:
+    group: all
+  register: proc_list
+  remote_user: "root"
+
+- name: wait for VSD common , core and stats services to become running
+  monit_waitfor_service:
+    name: "{{ item }}"
+    timeout_seconds: 1200
+    test_interval_seconds: 30
+  with_items: "{{ proc_list['state'].keys() }}"
+  remote_user: "root"
+

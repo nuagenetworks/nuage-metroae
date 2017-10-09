@@ -1,0 +1,108 @@
+---
+- name: Get details from OS facts
+  os_server_facts:
+    auth:
+      "{{ os_auth }}"
+    server: "{{ inventory_hostname }}"
+  register: ci_server
+  delegate_to: 127.0.0.1
+
+- block:
+  # Temp task to get around policy issue
+  - name: Set the network names
+    set_fact:
+      net_name1: "{{ ci_server['ansible_facts']['openstack_servers'][0]['networks'].keys()[0] }}"
+      net_name2: "{{ ci_server['ansible_facts']['openstack_servers'][0]['networks'].keys()[1] }}"
+
+  - block:
+    - name: Set the Ubuntu 14.04 VRS compute IP
+      set_fact:
+        vrs_u14_target_server: "{{ ci_server['ansible_facts']['openstack_servers'][0]['networks'][net_name2][0]}}"
+        net_name_temp: "{{ net_name2 }}"
+    when: net_name1 == 'OC_JEN_FrontEnd'
+
+  - block:
+    - name: Set the Ubuntu 14.04 VRS compute IP
+      set_fact:
+        vrs_u14_target_server: "{{ ci_server['ansible_facts']['openstack_servers'][0]['networks'][net_name1][0]}}"
+        net_name_temp: "{{ net_name1 }}"
+    when: net_name2 == 'OC_JEN_FrontEnd'
+
+  - name: Create a temp file with VRS ip address on ansible host for later use
+    copy:
+      content: "{{ vrs_u14_target_server }}"
+      dest: "/tmp/{{ net_name_temp }}_vrs_ip_u14"
+    delegate_to: "{{ ansible_deployment_host }}"
+    remote_user: "{{ ansible_sudo_username }}"
+
+  - name: Create a temp file with VRS hostname on ansible host for later use
+    copy:
+      content: "{{ inventory_hostname }}"
+      dest: "/tmp/{{ net_name_temp }}_vrs_name_u14"
+    delegate_to: "{{ ansible_deployment_host }}"
+    remote_user: "{{ ansible_sudo_username }}"
+
+  - debug: var=vrs_u14_target_server verbosity=1
+
+  - name: Extract network part from the compute ip
+    set_fact:
+      network_address: "{{ vrs_u14_target_server.split('.')[0:3] | join('.') }}"
+
+  - name: Update and copy zfb_vars.yml file with vsd ip
+    template:
+      src: "{{ playbook_dir }}/test/files/zfb_vars.yml.j2"
+      dest: "{{ playbook_dir }}/zfb_vars.yml"
+    delegate_to: 127.0.0.1
+
+  # Temp task to get around policy issue
+  - name: Set front end ip added to static route
+    set_fact:
+      frontend_ip: "{{ ci_server['ansible_facts']['openstack_servers'][0]['networks']['OC_JEN_FrontEnd'][0]}}"
+
+  - name: Update /etc/hosts file with ubuntu 14.04 VRS
+    lineinfile:
+      dest: /etc/hosts
+      line: "{{ vrs_u14_target_server }}    {{inventory_hostname }}"
+    delegate_to: "{{ ansible_deployment_host }}"
+    remote_user: "{{ ansible_sudo_username }}"
+  # Temp task to get around policy issue
+  - name: Set front end ip added to static route
+    set_fact:
+      frontend_ip: "{{ ci_server['ansible_facts']['openstack_servers'][0]['networks']['OC_JEN_FrontEnd'][0]}}"
+
+  # Temp task to get around policy issue
+  - name: Add static route to reach
+    command: "route add {{ vrs_u14_target_server }}/32 gw {{ frontend_ip }} "
+    delegate_to: "{{ ansible_deployment_host }}"
+    remote_user: "{{ ansible_sudo_username }}"
+
+  - name: Wait for ssh to be ready
+    local_action:
+      module: wait_for
+      port: "22"
+      host: "{{ inventory_hostname }}"
+      search_regex: OpenSSH
+      delay: 50
+
+
+  - name: Query facts
+    action: setup
+    remote_user: root
+    delegate_to: "{{ vrs_u14_target_server }}"
+
+    # Temp task to get around policy issue
+  - name: Add iptables rule to allow vsd to reach internet route to reach
+    command: "iptables -t nat -A POSTROUTING -s {{ network_address }}.211 -j SNAT --to-source {{ vrs_u14_target_server }} "
+    remote_user: root
+
+  # Temp task to get around policy issue
+  - name: Add iptables rule to allow vnsutil to reach internet route to reach
+    command: "iptables -t nat -A POSTROUTING -s {{ network_address }}.215 -j SNAT --to-source {{ vrs_u14_target_server }} "
+    remote_user: root
+
+  # Temp task to get around policy issue
+  - name: Save iptables
+    command: "iptables-save"
+    remote_user: root
+
+  when: ci_image == 'jen-ubuntu14'

@@ -1,0 +1,104 @@
+---
+- block:
+  - name: Get vsc primary controller ip
+    os_server_facts:
+      auth:
+        "{{ os_auth }}"
+      server: "{{ vsc_primary_server }}"
+    register: vsc_primary
+    delegate_to: 127.0.0.1
+
+  - name: Set primary_controller ip
+    set_fact:
+      primary_controller: "{{ vsc_primary['ansible_facts']['openstack_servers'][0]['networks'][compute_data_network][0] }}"
+  when: vsc_primary_server is defined
+
+- block:
+  - name: Get vsc secondary controller ip
+    os_server_facts:
+      auth:
+        "{{ os_auth }}"
+      server: "{{ vsc_secondary_server }}"
+    register: vsc_secondary
+    delegate_to: 127.0.0.1
+
+  - name: Set secondary_controller ip
+    set_fact:
+      secondary_controller: "{{ vsc_secondary['ansible_facts']['openstack_servers'][0]['networks'][compute_data_network][0] }}"
+  when: vsc_secondary_server is defined
+
+- block:
+  - name: Get Compute IP from OS facts 
+    os_server_facts:
+      auth:
+        "{{ os_auth }}"
+      server: "{{ inventory_hostname }}*"
+    register: compute_server
+    delegate_to: 127.0.0.1
+ 
+  - name: Save Compute ip
+    set_fact:
+      compute_mgmt_ip: "{{ compute_server['ansible_facts']['openstack_servers'][0]['networks'][compute_mgmt_network][0] }}"
+
+  - name: Remove OVS packages installed 
+    command: "yum -y erase {{ item }}"
+    with_items:
+      - openvswitch.x86_64
+      - openstack-neutron*
+      - python-openvswitch.noarch
+    remote_user: "root"
+
+  - name: Set primary_controller ip
+    set_fact:
+      primary_controller: "{{ vsc_primary_ip }}"
+    when: vsc_primary_ip is defined
+
+  - name: Set secondary_controller ip
+    set_fact:
+      secondary_controller: "{{ vsc_secondary_ip }}"
+    when: vsc_secondary_ip is defined
+
+  - name: Install prerequisites for nuage vrs
+    include_role:
+      name: vrs-predeploy
+
+  - name: Deploy nuage vrs to os_compute hosts
+    include_role:
+      name: vrs-deploy
+    vars:
+      active_controller_addr: "{{ primary_controller }}" 
+      standby_controller_addr: "{{ secondary_controller | default(primary_controller) }}"
+
+  - name: Add alubr0 to nova config
+    lineinfile:
+      dest: /etc/nova/nova.conf
+      regexp: ovs_bridge=
+      line: ovs_bridge=alubr0
+    remote_user: "root"
+
+  - name: Configure VNC proxy client ip address
+    lineinfile:
+      dest: /etc/nova/nova.conf 
+      regexp: vncserver_proxyclient_address=
+      line: vncserver_proxyclient_address={{compute_mgmt_ip}}
+    remote_user: "root"
+
+  - name: Configure cpu_mode to none
+    lineinfile:
+      dest: /etc/nova/nova.conf
+      regexp: cpu_mode=host-model
+      line: cpu_mode=none
+    remote_user: "root"
+
+  - name: Restart OpenStack compute
+    service:
+      name: openstack-nova-compute   
+      state: restarted
+    remote_user: "root"
+
+  - name: Restart OVS
+    service: 
+      name: openvswitch
+      state: restarted
+    remote_user: "root"
+  when: inventory_hostname in groups['os_computes']

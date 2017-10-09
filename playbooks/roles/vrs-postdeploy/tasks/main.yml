@@ -1,0 +1,47 @@
+---
+- name: Wait for active VSC ssh to be ready
+  local_action:
+    module: wait_for
+    port: "22"
+    host: "{{ active_controller_addr }}"
+    search_regex: OpenSSH
+    delay: 1
+
+- name: Pull facts on VRS target {{ inventory_hostname }}
+  remote_user: "{{ target_server_username }}"
+  action: setup
+
+- name: Get ovs-vsctl show output
+  command: ovs-vsctl show
+  register: ovs_show_result
+  remote_user: "{{ target_server_username }}"
+
+- name: Create a temporary directory name using timestamp
+  set_fact:
+    tmp_scripts_dir: "{{ playbook_dir }}/scripts/{{ lookup('pipe', 'date +%Y%m%d%H%M%S.%5N') }}/tmp"
+
+- debug: var=tmp_scripts_dir verbosity=1
+
+- name: Create a temporary directory
+  local_action: file path={{ tmp_scripts_dir }}  state=directory
+
+- name: Copy ovs-vsctl show output to a temporary file
+  local_action: copy content={{ ovs_show_result.stdout }} dest={{ tmp_scripts_dir }}/{{ inventory_hostname }}.tmp
+
+- name: Run verification script for OVS show command
+  local_action: command python {{ playbook_dir }}/scripts/ovs_result_verify.py {{ node_ip_addr }} {{ tmp_scripts_dir }}/{{ inventory_hostname }}.tmp
+  register: ovs_show_result
+
+- name: Run verification script for VRS
+  local_action: command python {{ playbook_dir }}/scripts/vrs_verify.py {{ node_ip_addr }} {{ active_controller_addr }} {{ standby_controller_addr }} {{ playbook_dir }} "{{ ovs_show_result.stdout }}"
+  register: pass
+
+- name: Check result of VRS verification script
+  fail: msg={{ pass.stdout }}
+  when: pass.stdout | search("(?i)Error")
+
+- name: VRS Verification Result Success Status
+  debug: var=pass.stdout verbosity=1
+
+- name: Delete the temporary directory
+  local_action: file path={{ tmp_scripts_dir }}  state=absent

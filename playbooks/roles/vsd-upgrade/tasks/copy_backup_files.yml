@@ -1,0 +1,47 @@
+- block:
+  - name: Clean known_hosts of VSD's
+    command: ssh-keygen -R "{{ mgmt_ip }}"
+    delegate_to: "{{ ansible_deployment_host }}"
+    remote_user: "{{ ansible_sudo_username }}"
+
+  - name: Inject ssh key of ansible_deployment_host to VSD if cloud-init did not work
+    expect:
+      command: "ssh-copy-id -i root@{{ mgmt_ip }}"
+      responses:
+        (?i)yes: "yes"
+        (?i)password: "Alcateldc"
+    delegate_to: "{{ ansible_deployment_host }}"
+    remote_user: "{{ ansible_sudo_username }}"
+  when: target_server_type | match('heat')
+
+- block:
+  - name: Create the directory on VSD to store backup files in
+    file:
+      path: "/opt/vsd/data"
+      state: directory
+    remote_user: root
+
+  - name: Copy backup files from backup_machine
+    copy:
+      src: "{{ item }}"
+      dest: "/opt/vsd/data/"
+    with_fileglob:
+      - "/tmp/backup-{{ inventory_hostname }}-latest/*.tar.gz"
+    remote_user: root
+
+  - name: Delete log files from /opt/vsd/data/ directory
+    shell: "rm -rf /opt/vsd/data/*.log"
+    remote_user: root
+
+  - name: Get list of files in /opt/vsd/data/ directory
+    find:
+      path: "/opt/vsd/data/"
+      pattern: "*.tar.gz"
+    register: lst_files
+    remote_user: root
+
+  - name: Verify  /opt/vsd/data/ directory contains exactly 3 files
+    assert:
+      that: "lst_files.examined == 3"
+      msg: "/opt/vsd/data on VSD node1 contains more than 3 files"
+  when: inventory_hostname == groups['vsds'][0] or inventory_hostname in groups['vcins']|default([])

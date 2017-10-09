@@ -1,8 +1,15 @@
 ---
 - include: get_paths.yml
 
+- name: Clear host_vars directory
+  file: path={{ playbook_dir }}/host_vars/ state=absent
+  tags:
+    - always
+
 - name: Create the host_vars directory
   file: path={{ playbook_dir }}/host_vars/ state=directory
+  tags:
+    - always
 
 - include: vsd_build_helper.yml
 
@@ -32,11 +39,21 @@
 
 - include: os_compute_build_helper.yml
 
+- include: vsr_build_helper.yml
+  tags:
+    - vsr
+
 - name: Create hosts file
   template: src=hosts.j2 dest="{{ playbook_dir }}/hosts" backup=no
+  tags:
+    - always
 
 - name: Create the group_vars directory
   file: path={{ playbook_dir }}/group_vars/ state=directory
-
+  tags:
+    - always
+    
 - name: Create group_vars/all file
   template: src=group_vars.all.j2 dest="{{ playbook_dir }}/group_vars/all" backup=no
+  tags:
+    - always
