@@ -1,0 +1,141 @@
+---
+- name: Gathering info on VM
+  connection: local
+  vmware_guest:
+    hostname: "{{ target_server }}"
+    username: "{{ vcenter.username }}"
+    password: "{{ vcenter.password }}"
+    name: "{{ vmname }}"
+    validate_certs: no
+    state: gatherfacts
+  register: nsgv_vm_facts
+  ignore_errors: yes
+
+- debug: var=nsgv_vm_facts verbosity=1
+
+- name: Verify the NSGV VM does not exist
+  assert:
+    that: "nsgv_vm_facts.failed is defined"
+    msg: "VM {{ vmname }} already exists, quiting"
+
+- block:
+  - name: Create local temp directory
+    local_action: command mktemp -d "{{ lookup('env', 'TMPDIR') | default('/tmp/', true) }}ansible.XXXX"
+    register: mktemp_output
+
+  - name: Generate ISO file
+    local_action: command python {{ playbook_dir }}/scripts/create_zfb_profile.py {{ playbook_dir }}/ {{ mktemp_output.stdout }}
+    register: output
+
+  - name: Search for errors in the output of ZFB script
+    fail: msg={{ output.stdout }}
+    when: output.stdout | search("(?i)ERROR")
+
+  - name: Copy the ISO image to vcenter datastore
+    vsphere_copy:
+          src: "{{ mktemp_output.stdout }}/user_image.iso"
+          path: "{{ vmname }}/user_image.iso"
+          host: "{{ target_server }}"
+          login: "{{ vcenter.username }}"
+          password: "{{ vcenter.password }}"
+          datacenter: "{{ vcenter.datacenter }}"
+          datastore: "{{ vcenter.datastore }}"
+          validate_certs: no
+    delegate_to: "{{ ansible_deployment_host}}"
+    remote_user: "{{ ansible_sudo_username }}"
+  when: bootstrap_method == 'zfb_metro'
+
+- name: Deploy NSGV OVA on vCenter
+  connection: local
+  command: >
+    {{ vcenter.ovftool }}
+    --acceptAllEulas
+    --noSSLVerify
+    --machineOutput
+    -dm=thin
+    --powerOn
+    -ds={{ vcenter.datastore }}
+    -n={{ vmname }}
+    --net:"OVS Management={{ mgmt_bridge }}"
+    --net:"OVS DataPath={{ data_bridge }}"
+    --net:"port_vmnic={{ access_bridge }}"
+    "{{ nsgv_ovf_path }}/{{ nsgv_ovf_file_name }}"
+    vi://'{{ vcenter.username | urlencode }}':'{{ vcenter.password | urlencode }}'@{{ target_server }}/{{ vcenter.datacenter }}/host/{{ vcenter.cluster }}
+  when: "'.ovf' in nsgv_ovf_file_name"
+
+- block:
+  - name: Mount ISO when ZFB method is metro
+    vsphere_guest:
+      vcenter_hostname: "{{ target_server }}"
+      username: "{{ vcenter.username }}"
+      password: "{{ vcenter.password }}"
+      guest: "{{ inventory_hostname }}"
+      validate_certs: no
+      state: reconfigured
+      vm_hardware:
+        vm_cdrom:
+          type: "iso"
+          iso_path: "{{ vcenter.datastore }}/{{ inventory_hostname }}/user_image.iso"
+    delegate_to: "{{ ansible_deployment_host}}"
+    remote_user: "{{ ansible_sudo_username }}"
+  when: bootstrap_method == 'zfb_metro'
+
+- block:
+  - name: Mount ISO when ZFB method is external
+    vsphere_guest:
+      vcenter_hostname: "{{ target_server }}"
+      username: "{{ vcenter.username }}"
+      password: "{{ vcenter.password }}"
+      guest: "{{ inventory_hostname }}"
+      validate_certs: no
+      state: reconfigured
+      vm_hardware:
+        vm_cdrom:
+          type: "iso"
+          iso_path: "{{ iso_path}}/{{ iso_file }}"
+    delegate_to: "{{ ansible_deployment_host}}"
+    remote_user: "{{ ansible_sudo_username }}"
+  when: bootstrap_method == 'zfb_external'
+
+- block:
+  - name: Waiting until VMware tools becomes available
+    connection: local
+    vmware_guest_tools_wait:
+      hostname: "{{ target_server }}"
+      username: "{{ vcenter.username }}"
+      password: "{{ vcenter.password }}"
+      name: "{{ vmname }}"
+      datacenter: "{{ vcenter.datacenter }}"
+      validate_certs: no
+    register: nsgv_vm_facts
+
+  - debug: var=nsgv_vm_facts verbosity=1
+  when: ansible_version.full | version_compare('2.3', '>=')
+
+- block:
+  - name: Waiting 120 seconds to make sure the NSGv is up
+    pause:
+      seconds: 120
+
+  - name: Gathering info on VM
+    connection: local
+    vmware_guest:
+      hostname: "{{ target_server }}"
+      username: "{{ vcenter.username }}"
+      password: "{{ vcenter.password }}"
+      name: "{{ vm_name }}"
+      datacenter: "{{ vcenter.datacenter }}"
+      state: gatherfacts
+      validate_certs: no
+    register: nsgv_vm_facts
+
+  - debug: var=nsgv_vm_facts verbosity=1
+
+  - name: Verify the NSGv VM came up correctly
+    assert:
+      that:
+        - "nsgv_vm_facts.instance.hw_guest_id is defined"
+        - "not nsgv_vm_facts.instance.hw_guest_id is none"
+        - "not nsgv_vm_facts.instance.hw_guest_id == ''"
+      msg: "NSGv VM {{ inventory_hostname }} did not come up after two minutes"
+  when: ansible_version.full | version_compare('2.3', '<')
