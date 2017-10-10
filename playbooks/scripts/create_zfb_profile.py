@@ -169,8 +169,9 @@ if __name__ == '__main__':
         session = NUVSDSession(**zfb_params['csp'])
         session.start()
         csproot = session.user
-    except:
+    except Exception as e:
         print("ERROR: Could not establish connection to VSD API using %s" % zfb_params['csp'])
+        print("ERROR: Exception: %s" % e)
         sys.exit(1)
     # Create nsg templates and iso file
     install_license(csproot, vsd_license)
