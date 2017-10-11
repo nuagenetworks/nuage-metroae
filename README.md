@@ -23,7 +23,7 @@ As a user of MetroAG, you will mostly interact with `metro-ansible` which is a s
 The [MetroAG Release Notes](Documentation/RELEASE_NOTES.md) contain a full list of all changes that went into the last major version(s).
 Some of the highlights are:
 
-- New upgrade procedure for VSD, VSC and VSTAT (ElasticSearch). See [UPGRADE.md](Documentation/Upgrade.md) for details.
+- New upgrade procedure for VSD, VSC and VSTAT (ElasticSearch). See [UPGRADE.md](Documentation/UPGRADE.md) for details.
 - Added support for upgrade and rollback of VCIN.
 - Added syntax checker for build_vars.yml.
 - Deploy STCv on VMware.
@@ -32,7 +32,7 @@ Some of the highlights are:
 # Getting Started...
 
 Metro can be used to facilitate mulitple parts of Nuage lifecycle. A typical worfklow would be:
-1. Setup your environment for use with MetroAG - See [SETUP.md](Documentation/Setup.md)
+1. Setup your environment for use with MetroAG - See [SETUP.md](Documentation/SETUP.md)
 2. Build (or model) your environment - See [BUILD.md](Documentation/BUILD.md)
 3. Deploy NuageNetworks software in your environemnt - See [DEPLOY.md](Documentation/DEPLOY.md)
 4. Upgrade the NuageNetworks software - See [UPGRADE.md](Documentation/UPGRADE.md)
