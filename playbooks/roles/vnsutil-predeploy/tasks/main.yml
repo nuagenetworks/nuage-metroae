@@ -1,4 +1,24 @@
 ---
+- name: Ping VNSUTIL hostname
+  command: ping -c 1 {{ hostname }}
+  register: ping_result
+  delegate_to: localhost
+
+- name: Assert no response to ping of VNSUTIL hostname
+  assert:
+    that: "'FAILED' in ping_result.stdout"
+    msg:  "Someone responded to ping of VNSUTIL hostname. Quitting."
+
+- name: Ping VNSUTIL IP address
+  command: ping -c 1 {{ mgmt_ip }}
+  register: ping_result
+  delegate_to: localhost
+
+- name: Assert no response to ping of VNSUTIL IP address
+  assert:
+    that: "'FAILED' in ping_result.stdout"
+    msg:  "Someone responded to ping of VNSUTIL IP address. Quitting."
+
 - include: kvm.yml
   when: target_server_type | match("kvm")
   tags:
