@@ -1,11 +1,25 @@
 ---
-- name: Checking stats connection info between VSC and VSD
-  local_action: command python {{ role_path }}/files/vstat_vsc_verify.py {{ playbook_dir }}
-  register: output
+- name: Get output of 'show vswitch-controller information' on VSC
+  sros_command:
+    commands:
+      - show vswitch-controller information
+    provider: "{{ vsc_creds }}"
+  delegate_to: localhost
+  register: vsc_info
 
-- name: Verification Result Failure Status
-  fail: msg={{ output.stdout }}
-  when: output.stdout | search("(?i)ERROR")
 
-- name: Verification Result Success Status
-  debug: var=output.stdout
+- name: Create local variable with VSC system connetion in json
+  set_fact:
+    vsc_info_out: "{{ vsc_info.stdout[0] }}" 
+
+
+- name: Check proper connectivity to VSTAT
+  assert: 
+    that: "vsc_info_out | regex_search('Statistics Enabled *: True')"
+
+- name: Check if all VSDs are registered 
+  assert: 
+   that:
+    - "vsc_info_out  | regex_search('Stats Server [0-9] Address *: {{ hostvars[item].mgmt_ip }}')"
+  with_items: "{{ groups['vsds'] }}" 
+
