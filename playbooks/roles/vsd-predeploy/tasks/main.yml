@@ -1,4 +1,26 @@
 ---
+- name: Ping VSD hostname
+  command: ping -c 1 {{ hostname }}
+  ignore_errors: yes
+  register: ping_result
+  delegate_to: localhost
+
+- name: Assert no response to ping of VSD hostname
+  assert:
+    that: "ping_result.rc != 0"
+    msg:  "Someone responded to ping of VSD hostname. Quitting."
+
+- name: Ping VSD IP address
+  command: ping -c 1 {{ mgmt_ip }}
+  ignore_errors: yes
+  register: ping_result
+  delegate_to: localhost
+
+- name: Assert no response to ping of VSD IP address
+  assert:
+    that: "ping_result.rc != 0"
+    msg:  "Someone responded to ping of VSD IP address. Quitting."
+
 - include: kvm.yml
   when: target_server_type | match("kvm")
   tags:
