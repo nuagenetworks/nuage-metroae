@@ -2,7 +2,7 @@
 - name : BGP Peers
   debug: var={{ expected_num_bgp_peers }}  verbosity=1  
     
-- name : check xmpp connectivity between VSC and VSD 
+- name : Check xmpp connectivity between VSC and VSD 
   sros_command:
       commands:
         - show vswitch-controller xmpp-server | match Functional
@@ -13,10 +13,10 @@
   register: xmpp_status
   delegate_to: localhost 
   
-- name : Debug the xmpp results
+- name : Print expected_num_bgp_peers
   debug: var=xmpp_status.stdout[0] verbosity=1
 
-- name : Debug the BGP results
+- name : Print BGP summary results
   debug: var=xmpp_status.stdout[1]  verbosity=1  
   
 - name: Create local variable with BGP Summary in json
@@ -29,7 +29,7 @@
   set_fact: bgp_peer_count="{{ bgp_summary_json['Total Peers'] }}"
 
 - name: Print BGP Peer Count when verbosity >= 1
-  debug: var=bgp_peer_count   verbosity=1
+  debug: var=bgp_peer_count verbosity=1
 
 - name: Check for expected BGP Peer Count
   assert: { 
@@ -38,12 +38,8 @@
   }
   when: expected_num_bgp_peers  | default(0) > 0 
   
-- name : Check if Xmpp server is Functional
+- name : Check xmpp server state
   assert: 
-   that : xmpp_status.stdout[0] | search("Functional") == true
+   that : xmpp_status.stdout[0] | search("{{ vsc_health_expected_xmpp_server_state | default('Functional') }}")
    msg: "XMPP Server is not functional"
    
-- name : Check if Xmpp server is Active
-  assert: 
-   that : xmpp_status.stdout[0] | search("Active") == false
-   msg: "XMPP Server is Active"
