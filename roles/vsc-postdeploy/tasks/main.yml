@@ -1,57 +1,10 @@
 ---
-- name: Set local variable for expected XMPP server state
-  set_fact:
-    expected_xmpp_server_state: "{{ vsc_health_expected_xmpp_server_state | default('Functional') }}"
-    
-- name: Get xmpp status between VSC and VSD 
-  sros_command:
-      commands:
-        - show vswitch-controller xmpp-server | match {{ expected_xmpp_server_state }}
-      provider: "{{ vsc_creds }}"
-  register: xmpp_status
-  delegate_to: localhost 
 
-- name: Print XMPP status
-  debug: var=xmpp_status.stdout[0] verbosity=1
-
-- name: Validate xmpp server state
-  assert: 
-   that: xmpp_status.stdout[0] | search("{{ expected_xmpp_server_state }}")
-   msg: "XMPP Server state is not {{ expected_xmpp_server_state }}. Quitting."
-
-- block:
-  - name: Print expected number of BGP Peers
-    debug: var={{ expected_num_bgp_peers }}  verbosity=1  
-
-  - name: Get BGP Summary 
-    sros_command:
-        commands:
-          - show router bgp summary
-        provider: "{{ vsc_creds }}"
-    register: bgp_summary
-    delegate_to: localhost 
-
-  - name: Print BGP summary results
-    debug: var=bgp_summary.stdout[0]  verbosity=1
-
-  - name: Create local variable with BGP Summary in json
-    set_fact: bgp_summary_json="{{ bgp_summary.stdout[0]| bgp_summary_to_json }}"
-
-  - name: Print BGP Summary in json when verbosity >= 1
-    debug: var=bgp_summary_json verbosity=1
-
-  - name: Create local variable for BGP Peer Count
-    set_fact: bgp_peer_count="{{ bgp_summary_json['Total Peers'] }}"
-
-  - name: Print BGP Peer Count when verbosity >= 1
-    debug: var=bgp_peer_count verbosity=1
-
-  - name: Validate expected BGP Peer Count
-    assert: { 
-      that: "{{ expected_num_bgp_peers }} == {{ bgp_peer_count }}",
-      msg: "Invalid BGP Peer count ({{ bgp_peer_count }}) detected. Expected '{{ expected_num_bgp_peers }}'. Check 'show router bgp summary'."
-    }
-  when: expected_num_bgp_peers | default(0) > 0 
+- name: Check VSC Health after deployment
+  include_role: name="vsc-health" 
+  vars:
+    report_filename: vsc-postdeploy-health.yml   
+  delegate_to: "{{ ansible_deployment_host }}" 
 
 - name: Get NTP status
   sros_command:
@@ -69,3 +22,4 @@
   assert: 
    that: not ntp_status.stdout[0]|search('none')
    msg: "NTP Status not okay: {{ ntp_status.stdout[0] }}. Quitting."
+

@@ -37,7 +37,7 @@ myvsds:
     mgmt_netmask: 255.255.255.0 }
 ```
 
-Upgrading VSTAT nodes require following changes to ```upgrade_vars.yml``` file.
+Upgrading VSTAT nodes require following changes to `upgrade_vars.yml` file.
 - Users must define a value for `vstats_nfs_server_with_folder` that will be mounted on the VSTAT VM. It will be used as the backup and restore location for ES files during the upgrade and rollback. The value must be of the form `host_or_ip:/nfs/exported/folder`. For example:
 
 ```
