@@ -1,6 +1,4 @@
----
-###
-# See BUILD.md for details
+ee BUILD.md for details
 ###
 # Paths
 # Paths to find zipped (tar.gz) files and unzipped files (e.g. qcow2)
@@ -31,7 +29,7 @@ ansible_sudo_username: "root"
 
 ###
 # The IP addr or hostname of the Ansible host
-ansible_deployment_host: "localhost"
+ansible_deployment_host: 135.227.181.233
 
 
 ###
@@ -139,6 +137,14 @@ yum_pin: yes
 #
 # ovftool
 # Binary location of the ovftool
+vcenter:
+  username: administrator@vsphere.local
+  password: Alcateldc
+  datacenter: Datacenter
+  cluster: Management
+  datastore: datastore
+  ovftool: /usr/bin/ovftool
+
 ###
 # VSD params
 # vsd_sa_or_ha = ha for cluster, sa for standalone deployment
@@ -199,7 +205,7 @@ myvsds:
       # upgrade_vmname needed only when performing an upgrade
       upgrade_vmname: vsd1-4.0.R10-dc1,
       target_server_type: "kvm",
-      target_server: 135.227.144.130,
+      target_server: 135.227.181.233,
       # mgmt_bridge is an optional bridge to override the global mgmt_bridge
       # setting. Omit mgmt_bridge here to use the global mgmt_bridge setting.
       mgmt_bridge: br0,
@@ -214,14 +220,110 @@ myvsds:
 # - install
 # - upgrade
 # - health
+vsc_operations_list:
+  - install
 
 # myvscs is a collection of parameters for VSCs.
 # One set of parameters is required for each VSC.
 # Do not update {{ vsd_fqdn_global }} here as it reads from previous section
+myvscs:
+  - { hostname: "vsc1.{{ dns_domain }}",
+      # vmname is optional. If not defined, it defaults to the name set in
+      # hostname.
+      vmname: vsc1-dc1,
+      target_server_type: "kvm",
+      target_server: 135.227.181.233,
+      # mgmt_bridge is an optional bridge to override the global mgmt_bridge
+      # setting. Omit mgmt_bridge here to use the global mgmt_bridge setting.
+      mgmt_bridge: br1,
+      mgmt_ip: 192.168.122.202,
+      mgmt_gateway: 192.168.122.1,
+      mgmt_netmask_prefix: 24,
+      ctrl_ip: 192.168.100.202,
+      ctrl_netmask_prefix: 24,
+      vsd_fqdn: "{{ vsd_fqdn_global }}",
+      # system_ip is optional, only required when IGP or BGP routing will be
+      # configured
+      system_ip: 1.1.1.2,
+      xmpp_username: vsc1,
+      vsc_mgmt_static_route_list: [ 0.0.0.0/1, 128.0.0.1/1 ] }
+  - { hostname: "vsc2.{{ dns_domain }}",
+      vmname: vsc2-dc1,
+      target_server_type: "kvm",
+      target_server: 135.227.181.233,
+      # mgmt_bridge is an optional bridge to override the global mgmt_bridge
+      # setting. Omit mgmt_bridge here to use the global mgmt_bridge setting.
+      mgmt_bridge: br1,
+      mgmt_ip: 192.168.122.203,
+      mgmt_gateway: 192.168.122.1,
+      mgmt_netmask_prefix: 24,
+      ctrl_ip: 192.168.100.203,
+      ctrl_netmask_prefix: 24,
+      vsd_fqdn: "{{ vsd_fqdn_global }}",
+      system_ip: 1.1.1.3,
+      xmpp_username: vsc2,
+      vsc_mgmt_static_route_list: [ 0.0.0.0/1, 128.0.0.1/1 ] }
+
 # vsc-health params
 # The following varaibles are used when vsc-health is run. They may be omitted
 # when not running vsc-health or doing an upgrade.
 #
+vsc_health_expected_bgp_admin_state: Up
+vsc_health_expected_bgp_oper_state: Up
+vsc_health_expected_xmpp_server_state: Functional
+vsc_health_expected_num_host_vports: 0
+vsc_health_expected_num_vm_vports: 0
+vsc_health_expected_num_gateway_ports: 0
+
+###
+# LIBNETWORK
+# 'scope: local' means that connectivity between containers is limited to within
+# the local host.
+# 'scope: global' means that connectivity between containers may span across
+# hosts in the cluster.
+# cluster_store_url must point to the key-value store used for the cluster
+###
+libnetwork:
+  scope: local
+  cluster_store_url: consul://192.168.122.1:8500
+
+###
+# VRS params
+# vrs_operations_list = A list of the operations you intend for the VRS. The
+# list could include 1 or more of the following:
+# - install
+# - upgrade
+# - health
+vrs_operations_list:
+  - install
+
+# myvrss is a collection of parameters for the targets where VRS is to be
+# deployed. One set of parameters is required for each set or group of VRS
+# targets.
+myvrss:
+  - { vrs_set_name: vrs_set_uswest1,
+      vrs_os_type: u14.04,
+      libnetwork_install: False,
+      active_controller_ip: 192.168.122.202,
+      standby_controller_ip: 192.168.122.203,
+      vrs_ip_list: [
+       192.168.122.101] }
+  - { vrs_set_name: vrs_set_usewest2,
+      vrs_os_type: el7,
+      libnetwork_install: False,
+      active_controller_ip: 192.168.122.202,
+      standby_controller_ip: 192.168.122.203,
+      vrs_ip_list: [
+       192.168.122.83,
+       192.168.122.238 ] }
+  - { vrs_set_name: vrs_set_uswest3,
+      vrs_os_type: u16.04,
+      libnetwork_install: False,
+      active_controller_ip: 192.168.122.202,
+      standby_controller_ip: 192.168.122.203,
+      vrs_ip_list: [
+       192.168.122.215 ] }
+
 ###
 # Stats VM (ElasticSearch) params
 # vstat_operations_list = A list of the operations you intend for the ES node.
@@ -230,10 +332,26 @@ myvsds:
 # - upgrade
 # - health
 # - dns (specified when deploying the VSTAT image as a DNS server)
+vstat_operations_list:
+  - install
 
 # myvstats is a collection of parameters for the VSTAT.
 # One set of parameters is required for each VSTAT.
 # Do not update {{ vsd_fqdn_global }} here as it reads from previous section
+myvstats:
+  - { hostname: "vstat1.{{ dns_domain }}",
+      vmname: vstat1-dc1,
+      # upgrade_vmname needed only when performing an upgrade
+      upgrade_vmname: vstat1-4.0.R10-dc1,
+      target_server_type: "kvm",
+      target_server: 135.227.181.233,
+      # mgmt_bridge is an optional bridge to override the global mgmt_bridge
+      # setting. Omit mgmt_bridge here to use the global mgmt_bridge setting.
+      mgmt_bridge: bridge1,
+      mgmt_ip: 192.168.122.204,
+      mgmt_gateway: 192.168.122.1,
+      mgmt_netmask: 255.255.255.0,
+      vsd_fqdn: "{{ vsd_fqdn_global }}" }
 
 ###
 # VNS params
@@ -242,9 +360,78 @@ myvsds:
 # - install
 # - upgrade
 # - health
+vns_operations_list:
+  - install
+
 # myvnsutils is a collection of parameters for the VNSUTIL.
 # One set of parameters is required for each VNSUTIL.
 # Do not update {{ vsd_fqdn_global }} here as it reads from previous section
+myvnsutils:
+  - { hostname: "vnsutil1.{{ dns_domain }}",
+      vmname: vnsutil-dc1,
+      target_server_type: "kvm",
+      target_server: 135.227.181.233,
+      # mgmt_bridge is an optional bridge to override the global mgmt_bridge
+      # setting. Omit mgmt_bridge here to use the global mgmt_bridge setting.
+      mgmt_bridge: bridge2,
+      mgmt_ip: 192.168.122.205,
+      mgmt_gateway: 192.168.122.1,
+      mgmt_netmask: 255.255.255.0,
+      data_fqdn: "vnsutil1.data.{{ dns_domain }}",
+      data_ip: 192.168.100.205,
+      data_netmask: 255.255.255.0,
+      ## BEGIN DHCP BOOTSTRAP CONFIG
+      # Metro supports deploying one or more NSGVs. As a special case, Metro
+      # supports automatically bootstrapping (ZFB) a single NSGV at time of
+      # deployment of the VNS UTIL VM. To enable this special case, the
+      # variables in this section must be uncommented and defined so that Metro
+      # can configure the DHCP server on the VNS UTIL VM to participate in this
+      # process. If you are *not* going to use Metro's automatic bootstrap of
+      # a single NSGV, the variables in this section must not be defined.
+      #
+      # Uncomment for DHCP bootstrap support:
+      # data_subnet: 192.168.100.0,
+      # nsgv_ip: 192.168.100.206,
+      # nsgv_mac: '52:54:00:88:85:12',
+      # nsgv_hostname: "nsgv1.{{ dns_domain }}",
+      ## END DHCP BOOTSTRAP CONFIG
+      vsd_fqdn: "{{ vsd_fqdn_global }}"
+    }
+
+# mynsgvs is a collection of parameters for the NSGV.
+# One set of parameters is required for each NSGV.
+# bootstrap_method = A list of options
+# - zfb_metro
+#     ZFB process supported by metro, needs zfb_vars.yml updated by user
+# - zfb_external
+#     ZFB process taken care by third party iso file. Needs two additional vars
+#     iso_path, iso_file)
+# - none (nsgv is deployed without any bootstrapping)
+mynsgvs:
+  - { hostname: "nsgv1.{{ dns_domain }}",
+      vmname: nsgv-dc1,
+      target_server_type: "kvm",
+      target_server: 135.227.181.233,
+      bootstrap_method: zfb_metro,
+      # Needed only when bootstrap_method: zfb_external
+      iso_path: '/tmp/iso',
+      # Needed only when bootstrap_method: zfb_external
+      iso_file: 'user_img.iso',
+      # Needed only when bootstrap_method: zfb_metro
+      nsgv_mac: '52:54:00:88:85:12' }
+
+###
+# Utility VMs
+###
+# DNS params
+# NOTE: This code assumes that the DNS image is the VSTAT/ElasticSearch image.
+# For this code to work, myvstats must also be defined.
+# dns_operations_list = A list of the operations you intend for the DNS. The
+# list could include 1 or more of the following:
+# - install
+dns_operations_list:
+  - install
+
 # mydnss is a collection of parameters for the DNS.
 # One set of parameters is required for each DNS.
 # data_static_route list of eth1 static routes to the data networks
@@ -301,6 +488,17 @@ mydnss:
 # gvm_operations_list = A list of the operations you intend for the vms. The
 # list could include 1 or more of the following:
 # - install
+gvm_operations_list:
+  - install
+# mygvms is a collection of parameters for the generic vms.
+# One set of parameters is required for each generic VM.
+#
+# gvm_xml_file is the full path to the XML file that defines the VM.
+mygvms:
+  - { hostname: "gvm1.{{ dns_domain }}",
+      target_server_type: "kvm",
+      target_server: 135.227.181.233,
+      gvm_xml_file: "/home/caso/images/jenkinsgvm1.{{ dns_domain }}/gvm.xml" }
 
 ###
 # VCIN params
@@ -308,8 +506,34 @@ mydnss:
 # list could include 1 or more of the following:
 # - install
 # - upgrade
+vcin_operations_list:
+  - install
+# myvcins is a collection of parameters for VCINs.
+# One set of parameters is required for each VCIN.
+myvcins:
+    - { hostname: vcin-metro.phd.eu.nuagedemo.net,
+      target_server_type: "vcenter",
+      target_server: vc01.phd.eu.nuagedemo.net,
+      mgmt_ip: 10.189.1.246,
+      mgmt_gateway: 10.0.0.1,
+      mgmt_netmask: 255.0.0.0,
+      vcenter: { username: administrator@vsphere.local,
+        password: Alcateldc,
+        datacenter: Antwerp,
+        cluster: Management,
+        datastore: esxi02 }
+      }
+
+
+###
+# VSR params
+# vsr_operations_list = A list of the operations you intend for the VSR. The
 # list could include 1 or more of the following:
 # - install
+vsr_operations_list:
+  - install
+# myvsrs is a collection of parameters for the targets where VSR is to be
+# deployed. One set of parameters is required for each set or group of VSR
 # targets.
 # mgmt_* - configuration of VSR bof interface
 # ports - a list of VSR traffic ports (1/1/1, 1/1/2 and etc)
@@ -317,3 +541,16 @@ mydnss:
 #   file.
 # deploy_cfg_file - absolute path to file with configuration for vsr-deploy
 #   role.
+myvsrs:
+  - { hostname: "vsr1.{{ dns_domain }}",
+      vmname: "vsr1",
+      target_server_type: "kvm",
+      target_server: 10.167.28.4,
+      mgmt_ip: 10.167.28.91,
+      mgmt_gateway: 10.167.28.1,
+      mgmt_netmask_prefix: 24,
+      mgmt_static_route_list: [ 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16 ],
+      mgmt_to_hv_bridge: 'br0',
+      ports_to_hv_bridges: ['br0', 'br1','br0','br1'],
+      license_file: '/path/on/ansible/deployment/host/license.zip',
+      deploy_cfg_file: '/path/on/ansible/deployment/host/config_flat.txt'}
