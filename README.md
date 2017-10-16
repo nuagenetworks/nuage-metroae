@@ -1,188 +1,95 @@
-# Overview on NuageNetworks Metro Automation EnGine(AG)
+# Nuage Networks MetroAG Automation EnGine (AG)
+## Overview
+MetroAG is an automation engine used for deploying and upgrading Nuage Networks components. You specify the individual details for your target platform and MetroAG (built with Ansible playbooks and roles) executes the commands, deploying and configuring your components for you.
 
-MetroAG is a set of Ansible playbooks that can be used to automatically deploy and (in some cases) upgrade NuageNetworks VCS/VNS and closely related components. Following components are supported
+## Scope of Services
+### Supported Platforms
+You can automatically deploy and, in some cases, upgrade VCS/VNS components with the following target server types.
+* KVM el7 (RedHat, CentOS)
+* KVM el6 (RedHat, CentOS)
+* ESXi (VMware)
+* Ubuntu 14.04 (VRS only)
+* Ubuntu 16.04 (VRS only)
 
-1. Virtualized Services Directory (VSD): clustered or stand-alone
-2. Virtualized Services Controller (VSC): 1 or more
-3. Virtual Routing & Switching (VRS) on existing nodes 1 or more
-4. Libnetwork on VRS nodes to add docker network support
-5. ElasticSearch (VSTAT): 1 or more
-6. Virtualized Network Services - Util VM: 1 or more
-7. Networks Services Gateway - Virtual: 1
-8. vCenter Integration Node (VCIN): 1
-9. DNS/NTP (1)
+Note: Ubuntu as a deployment target for new VMs (including VSD, VSC, VSD Stats) is no longer supported. VRS and Libnetwork continues to be supported for Ubuntu 14.04 and Ubuntu 16.04.
 
+### Supported VSP Components
+All supported components (except for VRS) are deployed as VMs.
+* VSD (Virtualized Services Directory): clustered (HA) or stand-alone (SA)
+* VSC (Virtualized Services Controller): one or more
+* VRS (Virtual Routing & Switching) on existing nodes: one or more
+* Libnetwork on VRS nodes to add Docker network support
+* VSD Stats (ElasticSearch): one or more
+* VNSUTIL (Virtualized Network Services - Utility) VM: one or more
+* NSG-V (Network Services Gateway-Virtual): one
+* VCIN (vCenter Integration Node): one
+* DNS/NTP: one
 
-All the above components (except for VRS) are deployed as VMs. Supported hypervisor types are EL7, EL6, ESXi, Ubuntu14.04, Ubuntu 16.04.
+![topology](topology.png)
 
-As a user of MetroAG, you will mostly interact with `metro-ansible` which is a shell script that executes ansible-playbook with the proper includes and command line switches.
+MetroAG currently has fully tested and supported roles for the elements marked below.  
 
+Install | Stand-alone (SA) | Clustered (HA) | KVM | ESXi 
+------- | ---------------- | -------------- | --- | --- 
+VSD | X | X | X | X 
+VSC | X | X | X | X 
+VSD Stats (ElasticSearch) | X | X | X | X
+VCIN | X |  | X | X 
+VNS-UTIL | X |  | X | X
 
-## What's new
+Upgrade | KVM | ESXi
+------- | --- | --- 
+VSD | X | X | 
+VSC |X | X |
 
-The [MetroAG Release Notes](Documentation/RELEASE_NOTES.md) contain a full list of all changes that went into the last major version(s).
-Some of the highlights are:
+## Ansible Playbooks and Roles  
+**Ansible** provides a method to easily define one or more actions to be performed on one or more computers. These tasks can target the local system Ansible is running from, as well as other systems that Ansible can reach over the network. The Ansible engine has minimal installation requirements. Python, with a few additional libraries, is all that is needed for the core engine. MetroAG includes a few custom Python modules and scripts. Agent software is not required on the hosts to be managed. Communication with target hosts defaults to SSH. Ansible does not require the use of a persistent state engine. Every Ansible run determines state as it goes, and adjusts as necessary given the action requirements. Running Ansible requires only an inventory of potential targets, state directives, either expressed as an ad hoc action, or a series coded in a YAML file, and the credentials necessary to communicate with the target.
 
-- New upgrade procedure for VSD, VSC and VSTAT (ElasticSearch). See [UPGRADE.md](Documentation/UPGRADE.md) for details.
-- Added support for upgrade and rollback of VCIN.
-- Added syntax checker for build_vars.yml.
-- Deploy STCv on VMware.
-- Sample Docker file to build Metro container.
+**Playbooks** are the language by which Ansible orchestrates, configures, administers and deploys systems. They are YAML-formatted files that collect one or more plays. Plays are one or more tasks linked to the hosts that they are to be executed on.   
 
-# Getting Started...
+**Roles** build on the idea of include files and combine them to form clean, reusable abstractions. Roles are ways of automatically loading certain vars files, tasks, and handlers based on a known file structure.
 
-Metro can be used to facilitate mulitple parts of Nuage lifecycle. A typical worfklow would be:
-1. Setup your environment for use with MetroAG - See [SETUP.md](Documentation/SETUP.md)
-2. Build (or model) your environment - See [BUILD.md](Documentation/BUILD.md)
-3. Deploy NuageNetworks software in your environemnt - See [DEPLOY.md](Documentation/DEPLOY.md)
-4. Upgrade the NuageNetworks software - See [UPGRADE.md](Documentation/UPGRADE.md)
-5. Destroy the environment - See [DESTROY.md](Documentation/DESTROY.md)
+### MetroAG Playbooks and Roles
+MetroAG playbooks and roles fall into the following categories:   
 
+Playbook/Role | Description |
+------------- | ----------- |
+Predeploy | prepares infrastructure with necessary packages and makes the component(s) reachable |
+Deploy | installs and configures component(s) |
+Postdeploy | performs integration checks, and some basic commissioning tests |
+Health | checks health for a running component without assuming it was deployed with MetroAG |
+Destroy | removes component(s) from the infrastructure |
+Upgrade | upgrades component(s) from one release to another |
+Rollback | restores component(s) to their previous version (if an upgrade fails) |
 
-## More Advanced Use cases
+## Workflow
+First, if you haven't already done so, [set up the Nuage MetroAG Ansible environment](Documentation/SETUP.md) on the host on which MetroAG is to be run.
 
-The file [HOWTO.md](Documentation/HOWTO.md) has been provided. It contains a few procedures for doing some more-complex deployments using Metro, e.g. deploying VRS to both Debian and RedHat family compute nodes.
+Second, [specify the individual details](Documentation/BUILD.md) for your particular system.
 
+Third, if the components have not previously been deployed on your system, it's time to [deploy](Documentation/DEPLOY.md). Otherwise, you can [upgrade](Documentation/UPGRADE.md) to a newer version.
 
-## Playbook Organization
+## Documentation
+The [Documentation](Documentation/) directory contains the following guides to assist you in successfully working with MetroAG.  
 
-All playbooks, whether installation or destruction, must be executed using the `metro-ansible` script.
-There are a few playbooks at top-level directory such as `install_everything.yml` and `destroy_everything.yml` which are provided as a convenience.
-More modular playbooks are stored in `playbooks` folder that can be run stand-alone. This is especially useful for debuuging, or skipping steps that you are confident are not needed or don't have to bre repeated.
-It also allows the user to execute only a very specific role on a given component without having to construct its own playbook.
+File name | Description
+--------- | --------
+[BUILD.md](Documentation/BUILD.md) | Populate variables for your specific environment, unzip Nuage software, and execute the build.
+[CONTRIBUTING.md](Documentation/CONTRIBUTING.md) | Submit your code and become a contributor to Nuage MetroAG.
+[DESTROY.md](Documentation/DESTROY.md) | Remove existing deployment(s) and start over.
+[DEPLOY.md](Documentation/DEPLOY.md) | Deploy all VSP components or choose components individually.
+[OPENSTACK.md](Documentation/OPENSTACK.md) | Deploy VSP components in OpenStack (limited support).
+[RELEASE_NOTES.md](Documentation/RELEASE_NOTES.md) | New features, resolved issues and known limitations and issues
+[ROLLBACK.md](Documentation/ROLLBACK.md) | Restore VSP components to their previous version if an upgrade fails.
+[SETUP.md](Documentation/SETUP.md) | Set up your environment by cloning the repo, installing packages and configuring access.
+[UPGRADE.md](Documentation/UPGRADE.md) | Upgrade component(s) from one release to the next.
 
-When browsing through this repository, you will see each component has up to 5 corresponding roles:
+## Questions, Feedback and Contributing
+Ask questions and get support on the [nuage-metro-interest@list.nokia.com](mailto:nuage-metro-interest@list.nokia.com "send email to nuage-metro project") mailing list.   
 
-* `predeploy` : prepares infrastructure with necessary packages, finishing up by making the element reachable.
-* `deploy` : installs and configures the element
-* `postdeploy` : performs integration checks, and some basic commissioning tests
-* `destroy` : removes the element from the infrastructure
-* `health` : checks health for a running element without assuming it was deployed with Metro.
-
-Every supported element must have at least a deploy playbook.
-
-# Developing and Contributing to Metro
-
-
-The latest stable code is found in the `master` branch. The `dev` branch is for ongoing development. The stability of the `dev` branch is not guaranteed.
-
-If you want to contribute back, you must create your own branch or fork, push your changes to that, and create a pull request to the `dev` branch. All pull requests against the `master` branch will be rejected. Sorry. All pull requests should include tests for new functionality. See [CONTRIBUTING.md](Documentation/CONTRIBUTING.md) for more details.
-
-
-# Metro Ansible Role Categories
-
-## Core Ansible Roles
-
-These are Ansible roles that are fully tested and supported.
-
-- build-upgrade
-- build
-- gvm-destroy
-- gvm-predeploy
-- nsgv-destroy
-- nsgv-predeploy
-- nuage-unzip
-- reset-build
-- set-upgrade-flag
-- validate-build-vars
-- vcin-deploy
-- vcin-destroy
-- vcin-health
-- vcin-predeploy
-- vsc-vns-deploy
-- vns-postdeploy-vsc
-- vns-postdeploy-vsd
-- vnsutil-deploy
-- vnsutil-destroy
-- vnsutil-postdeploy
-- vnsutil-predeploy
-- vrs-deploy
-- vrs-destroy
-- vrs-health
-- vrs-postdeploy
-- vrs-predeploy
-- vsc-backup
-- vsc-deploy
-- vsc-destroy
-- vsc-health
-- vsc-postdeploy
-- vsc-predeploy
-- vsc-preupgrade
-- vsc-rollback
-- vsc-upgrade-deploy
-- vsc-upgrade-postdeploy
-- vsc-upgrade
-- vsd-cluster-start
-- vsd-dbbackup
-- vsd-decouple
-- vsd-deploy
-- vsd-destroy
-- vsd-ha-upgrade-block-access
-- vsd-health
-- vsd-license
-- vsd-predeploy
-- vsd-preupgrade
-- vsd-rollback
-- vsd-services-stop
-- vsd-upgrade-destroy
-- vsd-upgrade-postdeploy
-- vsd-upgrade-prepare-for-deploy
-- vsd-upgrade
-- vstat-data-backup
-- vstat-data-migrate
-- vstat-deploy
-- vstat-destroy
-- vstat-health
-- vstat-postdeploy
-- vstat-predeploy
-- vstat-rollback
-- vstat-upgrade-destroy
-- vstat-upgrade
-- vstat-vrs-health
-- vstat-vsc-health
-- vstat-vsd-health
-
-## Experimental
-These are playbooks that are stable but under development or contributed from the field. Support is _best effort_.
-
-- dns-deploy
-- dns-destroy
-- dns-postdeploy
-- dns-predeploy
-- mesos-deploy
-- stcv-postdeploy
-- stcv-predeploy
-
-## Lab Playbooks
-These are playbooks that are intended for use in the Metro Lab. You are welcome to use them, but they are not designed for general use.
-
-- ci-deploy
-- ci-destroy
-- ci-predeploy
-- infra-deploy
-- infra-destroy
-- infra-predeploy
-- os-compute-deploy
-- os-compute-destroy
-- os-compute-postdeploy
-- os-compute-predeploy
-- os-snapshot
-- osc-deploy
-- osc-destroy
-- osc-predeploy
-- util-setup
-- vsd-osc-config
-
-# Deprecation notice
-In the near future (date TBD), Metro is going to drop support for using Ubuntu as a deployment target for new VMs, e.g. VSD, VSC, VSTAT, etc. VRS and Dockermon will continue to be supported on Ubuntu 14.04 and Ubuntu 16.04.
-
-
-# Questions, Feedback, and Issues
-
-Questions should be directed to the [nuage-metro-interest mailing list](mailto://nuage-metro-interest@list.nokia.com).
-
-Feedback and issues should be reported via the Github Issues feature or via email to [Brian Castelli](mailto://brian.castelli@nokia.com).
-
-# License
-
+Report bugs you find and suggest new features and enhancements via the [GitHub Issues](https://github.com/nuagenetworks/nuage-metro/issues "nuage-metro issues") feature.
+ 
+You may also [contribute](Documentation/CONTRIBUTING.md) to Nuage MetroAG by submitting your own code to the project.
+ 
+## License
 TBD
