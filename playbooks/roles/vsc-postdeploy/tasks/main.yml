@@ -14,7 +14,7 @@
 - name: Print XMPP status
   debug: var=xmpp_status.stdout[0] verbosity=1
 
-- name: Check xmpp server state
+- name: Validate xmpp server state
   assert: 
    that: xmpp_status.stdout[0] | search("{{ expected_xmpp_server_state }}")
    msg: "XMPP Server state is not {{ expected_xmpp_server_state }}. Quitting."
@@ -46,7 +46,7 @@
   - name: Print BGP Peer Count when verbosity >= 1
     debug: var=bgp_peer_count verbosity=1
 
-  - name: Check for expected BGP Peer Count
+  - name: Validate expected BGP Peer Count
     assert: { 
       that: "{{ expected_num_bgp_peers }} == {{ bgp_peer_count }}",
       msg: "Invalid BGP Peer count ({{ bgp_peer_count }}) detected. Expected '{{ expected_num_bgp_peers }}'. Check 'show router bgp summary'."
@@ -58,11 +58,14 @@
       commands:
         - show system ntp | match "Clock Source"
       provider: "{{ vsc_creds }}"
-  register: xmpp_status
-  until: not xmpp_status.stdout[0]|search('none')
+  register: ntp_status
+  until: not ntp_status.stdout[0]|search('none')
   retries: 5
   delay: 10
   delegate_to: localhost
+  ignore_errors: yes
 
-- name: Print XMPP status
-  debug: var=xmpp_status.stdout[0] verbosity=1
+- name: Verify NTP status
+  assert: 
+   that: not ntp_status.stdout[0]|search('none')
+   msg: "NTP Status not okay: {{ ntp_status.stdout[0] }}. Quitting."
