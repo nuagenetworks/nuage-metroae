@@ -22,11 +22,10 @@
   command: rm -f {{ failure_report_file_name }}
 
 - name: Get output of 'show version'
-  vsc_command:
-    command: show version
-    mgmt_ip: "{{ mgmt_ip }}"
-    username: "{{ vsc_user | default('admin') }}"
-    password: "{{ vsc_password | default('admin') }}"
+  sros_command:
+    commands:
+      - show show version
+    provider: "{{ vsc_creds }}"
   delegate_to: localhost
   register: sh_version
 
@@ -37,11 +36,10 @@
   nuage_append: filename="{{ report_path }}" text="{{ inventory_hostname }} {{ sh_version|to_nice_json }}\n"
 
 - name: Get output of 'show router bgp summary'
-  vsc_command:
-    command: show router bgp summary
-    mgmt_ip: "{{ mgmt_ip }}"
-    username: "{{ vsc_user | default('admin') }}"
-    password: "{{ vsc_password | default('admin') }}"
+  sros_command:
+    commands:
+      - show router bgp summary
+    provider: "{{ vsc_creds }}"
   delegate_to: localhost
   register: bgp_summary
 
@@ -98,11 +96,10 @@
   when: expected_num_bgp_peers | default(0) > 0
 
 - name: Get output of 'show vswitch-controller xmpp-server detail'
-  vsc_command:
-    command: show vswitch-controller xmpp-server detail
-    mgmt_ip: "{{ mgmt_ip }}"
-    username: "{{ vsc_user | default('admin') }}"
-    password: "{{ vsc_password | default('admin') }}"
+  sros_command:
+    commands:
+      - show vswitch-controller xmpp-server detail
+    provider: "{{ vsc_creds }}"
   delegate_to: localhost
   register: xmpp_detail
 
@@ -145,11 +142,10 @@
   ignore_errors: yes
 
 - name: Get output of 'show vswitch-controller vsd detail'
-  vsc_command:
-    command: show vswitch-controller vsd detail
-    mgmt_ip: "{{ mgmt_ip }}"
-    username: "{{ vsc_user | default('admin') }}"
-    password: "{{ vsc_password | default('admin') }}"
+  sros_command:
+    commands:
+      - show vswitch-controller vsd detail
+    provider: "{{ vsc_creds }}"
   delegate_to: localhost
   register: vsd_detail
 
@@ -166,11 +162,10 @@
   nuage_append: filename="{{ report_path }}" text="{{ inventory_hostname }} {{ vsd_detail_json|to_nice_json }}\n"
 
 - name: Get output of 'show vswitch-controller vswitches'
-  vsc_command:
-    command: show vswitch-controller vswitches
-    mgmt_ip: "{{ mgmt_ip }}"
-    username: "{{ vsc_user | default('admin') }}"
-    password: "{{ vsc_password | default('admin') }}"
+  sros_command:
+    commands:
+      - show vswitch-controller vswitches
+    provider: "{{ vsc_creds }}"
   delegate_to: localhost
   register: show_vswitches
 
@@ -195,11 +190,10 @@
   when: expected_num_vswitches | default(0) > 0
 
 - name: Get output of 'show vswitch-controller vports type host'
-  vsc_command:
-    command: show vswitch-controller vports type host
-    mgmt_ip: "{{ mgmt_ip }}"
-    username: "{{ vsc_user | default('admin') }}"
-    password: "{{ vsc_password | default('admin') }}"
+  sros_command:
+    commands:
+      - show vswitch-controller vports type host
+    provider: "{{ vsc_creds }}"
   delegate_to: localhost
   register: show_host_vports
 
@@ -224,11 +218,10 @@
   when: expected_num_host_vports | default(0) > 0
 
 - name: Get output of 'show vswitch-controller vports type vm'
-  vsc_command:
-    command: show vswitch-controller vports type vm
-    mgmt_ip: "{{ mgmt_ip }}"
-    username: "{{ vsc_user | default('admin') }}"
-    password: "{{ vsc_password | default('admin') }}"
+  sros_command:
+    commands:
+      - show vswitch-controller vports type vm
+    provider: "{{ vsc_creds }}"
   delegate_to: localhost
   register: show_vm_vports
 
@@ -260,11 +253,10 @@
   ignore_errors: yes
 
 - name: Get output of 'show vswitch-controller gateway ports'
-  vsc_command:
-    command: show vswitch-controller gateway ports
-    mgmt_ip: "{{ mgmt_ip }}"
-    username: "{{ vsc_user | default('admin') }}"
-    password: "{{ vsc_password | default('admin') }}"
+  sros_command:
+    commands:
+      - show vswitch-controller gateway ports
+    provider: "{{ vsc_creds }}"
   delegate_to: localhost
   register: show_gateway_ports
 
@@ -287,7 +279,24 @@
   }
   ignore_errors: yes
   when: expected_num_gateway_ports | default(0) > 0
-  
+
+- name: Get NTP status
+  sros_command:
+    commands:
+      - show system ntp | match "Clock Source"
+    provider: "{{ vsc_creds }}"
+  register: ntp_status
+  delegate_to: localhost
+  ignore_errors: yes
+
+- name: Verify NTP status
+  assert:
+   that: not ntp_status.stdout[0]|search('none')
+   msg: "NTP Status not okay: {{ ntp_status.stdout[0] }}. Quitting."
+  ignore_errors: yes
+
+- name: Write NTP status to report
+  nuage_append: filename="{{ report_path }}" text="{{ inventory_hostname }} NTP Status {{ ntp_status.stdout[0] }}\n"
 
 - name: TODO section 3.2.9, vport-to-FIP associations
   assert: {
