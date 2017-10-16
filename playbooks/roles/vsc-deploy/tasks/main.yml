@@ -1,6 +1,11 @@
 ---
-- include: kvm.yml
-  when: target_server_type | match("kvm")
+- name: Wait for VSC ssh to be ready
+  local_action:
+    module: wait_for
+    port: "22"
+    host: "{{ mgmt_ip }}"
+    search_regex: OpenSSH
+    delay: 1
   tags:
     - vsc
     - vsc-deploy
@@ -10,10 +15,4 @@
   tags:
     - vsc
     - heat
-    - vsc-deploy
-
-- include: vcenter.yml
-  when: target_server_type | match("vcenter")
-  tags:
-    - vsc
     - vsc-deploy
