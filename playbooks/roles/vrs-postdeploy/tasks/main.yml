@@ -15,33 +15,14 @@
   command: ovs-vsctl show
   register: ovs_show_result
   remote_user: "{{ target_server_username }}"
+  
+- name : Check if Active controller is connected
+  assert: 
+   that : ovs_show_result.stdout  | search ('\"tcp:{{ active_controller_addr }}:6633\"\\n.*role:\smaster\n.*is_connected:\strue')  
+   msg: " {{ active_controller_addr }} is not connected"
+   
+- name : Check if Standby controller is connected
+  assert: 
+   that : ovs_show_result.stdout  | search ('\"tcp:{{ standby_controller_addr }}:6633\"\\n.*role:\sslave\n.*is_connected:\strue')  
+   msg: " {{ standby_controller_addr }} is not connected"   
 
-- name: Create a temporary directory name using timestamp
-  set_fact:
-    tmp_scripts_dir: "{{ playbook_dir }}/scripts/{{ lookup('pipe', 'date +%Y%m%d%H%M%S.%5N') }}/tmp"
-
-- debug: var=tmp_scripts_dir verbosity=1
-
-- name: Create a temporary directory
-  local_action: file path={{ tmp_scripts_dir }}  state=directory
-
-- name: Copy ovs-vsctl show output to a temporary file
-  local_action: copy content={{ ovs_show_result.stdout }} dest={{ tmp_scripts_dir }}/{{ inventory_hostname }}.tmp
-
-- name: Run verification script for OVS show command
-  local_action: command python {{ playbook_dir }}/scripts/ovs_result_verify.py {{ node_ip_addr }} {{ tmp_scripts_dir }}/{{ inventory_hostname }}.tmp
-  register: ovs_show_result
-
-- name: Run verification script for VRS
-  local_action: command python {{ playbook_dir }}/scripts/vrs_verify.py {{ node_ip_addr }} {{ active_controller_addr }} {{ standby_controller_addr }} {{ playbook_dir }} "{{ ovs_show_result.stdout }}"
-  register: pass
-
-- name: Check result of VRS verification script
-  fail: msg={{ pass.stdout }}
-  when: pass.stdout | search("(?i)Error")
-
-- name: VRS Verification Result Success Status
-  debug: var=pass.stdout verbosity=1
-
-- name: Delete the temporary directory
-  local_action: file path={{ tmp_scripts_dir }}  state=absent
