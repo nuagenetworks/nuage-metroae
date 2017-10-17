@@ -124,54 +124,20 @@
   ignore_errors: yes
 
 #No need to have two sections for Redhat and Ubuntu since we only support Redhat for VSP components now
-- name: Update test build file
+- name: Update test files
   template:
-    src: "{{ playbook_dir }}/test/files/build_vars.yml.all.j2"
-    dest: "{{ playbook_dir }}/test/files/build_vars_all.yml"
+    src: "{{ role_path }}/files/{{ item.src }}"
+    dest: "{{ role_path }}/files/{{ item.dest }}" 
   delegate_to: 127.0.0.1
   run_once: true
-
-- name: Update test build file for VSDOnly
-  template:
-    src: "{{ playbook_dir }}/test/files/build_vars.yml.VSDOnly.j2"
-    dest: "{{ playbook_dir }}/test/files/build_vars_vsdonly.yml"
-  delegate_to: 127.0.0.1
-  run_once: true
-
-- name: Update test build file for VSCOnly
-  template:
-    src: "{{ playbook_dir }}/test/files/build_vars.yml.VSCOnly.j2"
-    dest: "{{ playbook_dir }}/test/files/build_vars_vsconly.yml"
-  delegate_to: 127.0.0.1
-  run_once: true
-
-- name: Update test build file for VSTATOnly
-  template:
-    src: "{{ playbook_dir }}/test/files/build_vars.yml.VSTATOnly.j2"
-    dest: "{{ playbook_dir }}/test/files/build_vars_vstatonly.yml"
-  delegate_to: 127.0.0.1
-  run_once: true
-
-- name: Update test build file for VRSOnly
-  template:
-    src: "{{ playbook_dir }}/test/files/build_vars.yml.VRSOnly.j2"
-    dest: "{{ playbook_dir }}/test/files/build_vars_vrsonly.yml"
-  delegate_to: 127.0.0.1
-  run_once: true
-
-- name: Update test build file for VNSOnly
-  template:
-    src: "{{ playbook_dir }}/test/files/build_vars.yml.VNSOnly.j2"
-    dest: "{{ playbook_dir }}/test/files/build_vars_vnsonly.yml"
-  delegate_to: 127.0.0.1
-  run_once: true
-
-- name: Update test build file for VNSOnlyWithVSC
-  template:
-    src: "{{ playbook_dir }}/test/files/build_vars.yml.VNSOnlyWithVSC.j2"
-    dest: "{{ playbook_dir }}/test/files/build_vars_vnsonlywithvsc.yml"
-  delegate_to: 127.0.0.1
-  run_once: true
+  with_items:
+    - { src: build_vars.yml.all.j2, dest: build_vars_all.yml }
+    - { src: build_vars.yml.VSDOnly.j2, dest: build_vars_vsdonly.yml }
+    - { src: build_vars.yml.VSCOnly.j2, dest: build_vars_vsconly.yml }
+    - { src: build_vars.yml.VSTATOnly.j2, dest: build_vars_vstatonly.yml }
+    - { src: build_vars.yml.VRSOnly.j2, dest: build_vars_vrsonly.yml }
+    - { src: build_vars.yml.VNSOnly.j2,dest: build_vars_vnsonly.yml }
+    - { src: build_vars.yml.VNSOnlyWithVSC.j2, dest: build_vars_vnsonlywithvsc.yml }
 
 - name: Update /etc/hosts file
   lineinfile:
@@ -333,7 +299,7 @@
 
 - name: Update the vsd ram
   lineinfile:
-    dest: "{{ playbook_dir }}/roles/vsd-predeploy/vars/main.yml"
+    dest: "{{ role_path }}/../vsd-predeploy/vars/main.yml"
     regexp: 'vsd_ram:'
     line: 'vsd_ram: 8147483'
   delegate_to: "{{ ansible_deployment_host }}"
@@ -341,7 +307,7 @@
 
 - name: Update the vsc ram
   lineinfile:
-    dest: "{{ playbook_dir }}/roles/vsc-predeploy/vars/main.yml"
+    dest: "{{ role_path }}/../vsc-predeploy/vars/main.yml"
     regexp: 'vsc_ram:'
     line: 'vsc_ram: 1147483'
   delegate_to: "{{ ansible_deployment_host }}"
@@ -349,7 +315,7 @@
 
 - name: Update the vstat ram
   lineinfile:
-    dest: "{{ playbook_dir }}/roles/vstat-predeploy/vars/main.yml"
+    dest: "{{ role_path }}/../vstat-predeploy/vars/main.yml"
     regexp: 'vstat_ram:'
     line: 'vstat_ram: 2147483'
   delegate_to: "{{ ansible_deployment_host }}"
@@ -357,7 +323,7 @@
 
 - name: Update the vnsutil ram
   lineinfile:
-    dest: "{{ playbook_dir }}/roles/vnsutil-predeploy/vars/main.yml"
+    dest: "{{ role_path }}/../vnsutil-predeploy/vars/main.yml"
     regexp: 'vnsutil_ram:'
     line: 'vnsutil_ram: 1147483'
   delegate_to: "{{ ansible_deployment_host }}"
@@ -365,8 +331,9 @@
 
 - name: Update the nsgv ram
   lineinfile:
-    dest: "{{ playbook_dir }}/roles/nsgv-predeploy/vars/main.yml"
+    dest: "{{ role_path }}/../nsgv-predeploy/vars/main.yml"
     regexp: 'nsgv_ram:'
     line: 'nsgv_ram: 1147483'
   delegate_to: "{{ ansible_deployment_host }}"
   remote_user: "{{ ansible_sudo_username }}"
+

@@ -178,9 +178,14 @@
     state: restarted
   remote_user: "root"
 
+
+- name: Set Top-Level-Directory
+  set_fact: tld="{{ role_path }}/../../"
+
 - name: Add CSP root to CMS users group
-  local_action: command python {{ role_path }}/files/cms_group.py ./ {{ vsd_mgmt_ip }}
+  local_action: command python {{ role_path }}/files/cms_group.py {{ tld }} {{ vsd_mgmt_ip }}
   register: output
+  # TOOD: replace with call to nuage_vspk module
 
 - name: Search for errors in the output of cms_group script
   fail: msg={{ output.stdout }}

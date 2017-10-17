@@ -23,8 +23,11 @@
     local_action: command mktemp -d "{{ lookup('env', 'TMPDIR') | default('/tmp/', true) }}ansible.XXXX"
     register: mktemp_output
 
+  - name: Set Top-Level-Directory
+    set_fact: tld="{{ role_path }}/../../"
+
   - name: Generate ISO file
-    local_action: command python {{ playbook_dir }}/scripts/create_zfb_profile.py {{ playbook_dir }} {{ mktemp_output.stdout }}
+    local_action: command python {{ role_path }}/files/create_zfb_profile.py {{ tld }} {{ mktemp_output.stdout }}
     register: output
 
   - name: Search for errors in the output of ZFB script

@@ -106,9 +106,13 @@
     remote_user: "root"
     when: "'4.0.4' not in vsd_version.stdout"
 
+  - name: Set Top-Level-Directory
+    set_fact: tld="{{ role_path }}/../../"
+
   - name: Create TLS profile
-    local_action: command python {{ playbook_dir }}/roles/vsc-vns-deploy/files/vsc_config.py {{ playbook_dir }} {{ xmpp.username }}
+    local_action: command python {{ role_path }}/files/vsc_config.py {{ tld }} {{ xmpp.username }}
     register: output
+    # TODO: Replace by vsc_command, or sros_command module calls
 
   - name: Verification Result Failure Status
     fail: msg={{ output.stdout }}

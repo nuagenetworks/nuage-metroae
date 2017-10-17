@@ -6,8 +6,11 @@
   local_action: command pwd
   register: directory
 
+- name: Set Top-Level-Directory
+  set_fact: tld="{{ role_path }}/../../"
+
 - name: Create subnet in VSD
-  local_action: command python {{ playbook_dir }}/test/scripts/create_subnet.py {{ playbook_dir }}/
+  local_action: command python {{ role_path }}/scripts/create_subnet.py {{ tld }}/
   register: vsd_subnet_id
   run_once: true
 
@@ -23,7 +26,7 @@
   register: create_stack
   os_stack:
     name: "{{ inventory_hostname }}"
-    template: "{{ playbook_dir }}/roles/ci-predeploy/files/ci_slave.yml"
+    template: "{{ role_path }}/files/ci_slave.yml"
     auth:
       "{{ os_auth }}"
     parameters:
@@ -44,7 +47,7 @@
 
 - name: Stat the heat template
   stat:
-    path: "{{ playbook_dir }}/roles/ci-predeploy/files/ci_slave_ubuntu.yml"
+    path: "{{ role_path }}/files/ci_slave_ubuntu.yml"
   delegate_to: localhost
   register: heat_template
 
@@ -57,7 +60,7 @@
   register: create_stack
   os_stack:
     name: "{{ inventory_hostname }}"
-    template: "{{ playbook_dir }}/roles/ci-predeploy/files/ci_slave_ubuntu.yml"
+    template: "{{ role_path }}/files/ci_slave_ubuntu.yml"
     auth:
       "{{ os_auth }}"
     parameters:
