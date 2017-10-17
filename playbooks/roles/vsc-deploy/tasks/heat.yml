@@ -15,6 +15,14 @@
   set_fact:
     vsc_control_ip: "{{ vsc_server['ansible_facts']['openstack_servers'][0]['networks'][vsc_control_network][0] }}"
 
+- name: Set VSC creds
+  set_fact:
+    heat_vsc_creds:
+      host: "{{ vsc_mgmt_ip }}"
+      username: "{{ vsc_user|default('admin') }}"
+      password: "{{ vsc_password|default('admin') }}"
+      transport: cli
+
 - name: Clean known_hosts of VSC's
   command: ssh-keygen -R "{{ vsc_mgmt_ip }}"
   delegate_to: "{{ ansible_deployment_host }}"
@@ -66,7 +74,7 @@
 - name: Loading system config
   sros_config:
     src: config.cfg.j2
-    provider: "{{ vsc_creds }}"
+    provider: "{{ heat_vsc_creds }}"
     save: yes
   delegate_to: localhost
 
@@ -77,7 +85,8 @@
       - bof primary-dns "{{ infra_ip | default(dns_server_list[0]) }}"
       - bof dns-domain "{{ dns_domain }}"
       - bof save "cf1:"
-    provider: "{{ vsc_creds }}"
+      - admin save
+    provider: "{{ heat_vsc_creds }}"
   delegate_to: localhost
 
 - name: Reboot VSC VM

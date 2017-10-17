@@ -1,15 +1,4 @@
 ---
-- name: Wait for VSC ssh to be ready
-  local_action:
-    module: wait_for
-    port: "22"
-    host: "{{ mgmt_ip }}"
-    search_regex: OpenSSH
-    delay: 1
-  tags:
-    - vsc
-    - vsc-deploy
-
 - include: heat.yml
   when: target_server_type | match("heat")
   tags:
@@ -17,9 +6,21 @@
     - heat
     - vsc-deploy
 
-- name: Save admin state
-  sros_config:
-    lines:
-      - admin save
-    provider: "{{ vsc_creds }}"
-  delegate_to: localhost
+- block:
+  - name: Wait for VSC ssh to be ready
+    local_action:
+      module: wait_for
+      port: "22"
+      host: "{{ mgmt_ip }}"
+      search_regex: OpenSSH
+      delay: 1
+  - name: Save admin state
+    sros_config:
+      lines:
+        - admin save
+      provider: "{{ vsc_creds }}"
+    delegate_to: localhost
+  when: not target_server_type | match("heat")
+  tags:
+    - vsc
+    - vsc-deploy
