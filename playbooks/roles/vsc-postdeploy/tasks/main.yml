@@ -2,34 +2,34 @@
 - name: Set local variable for expected XMPP server state
   set_fact:
     expected_xmpp_server_state: "{{ vsc_health_expected_xmpp_server_state | default('Functional') }}"
-    
-- name: Get xmpp status between VSC and VSD 
+
+- name: Get xmpp status between VSC and VSD
   sros_command:
       commands:
         - show vswitch-controller xmpp-server | match {{ expected_xmpp_server_state }}
       provider: "{{ vsc_creds }}"
   register: xmpp_status
-  delegate_to: localhost 
+  delegate_to: localhost
 
 - name: Print XMPP status
   debug: var=xmpp_status.stdout[0] verbosity=1
 
 - name: Validate xmpp server state
-  assert: 
+  assert:
    that: xmpp_status.stdout[0] | search("{{ expected_xmpp_server_state }}")
    msg: "XMPP Server state is not {{ expected_xmpp_server_state }}. Quitting."
 
 - block:
   - name: Print expected number of BGP Peers
-    debug: var={{ expected_num_bgp_peers }}  verbosity=1  
+    debug: var={{ expected_num_bgp_peers }}  verbosity=1
 
-  - name: Get BGP Summary 
+  - name: Get BGP Summary
     sros_command:
         commands:
           - show router bgp summary
         provider: "{{ vsc_creds }}"
     register: bgp_summary
-    delegate_to: localhost 
+    delegate_to: localhost
 
   - name: Print BGP summary results
     debug: var=bgp_summary.stdout[0]  verbosity=1
@@ -47,11 +47,11 @@
     debug: var=bgp_peer_count verbosity=1
 
   - name: Validate expected BGP Peer Count
-    assert: { 
+    assert: {
       that: "{{ expected_num_bgp_peers }} == {{ bgp_peer_count }}",
       msg: "Invalid BGP Peer count ({{ bgp_peer_count }}) detected. Expected '{{ expected_num_bgp_peers }}'. Check 'show router bgp summary'."
     }
-  when: expected_num_bgp_peers | default(0) > 0 
+  when: expected_num_bgp_peers | default(0) > 0
 
 - name: Get NTP status
   sros_command:
@@ -60,12 +60,12 @@
       provider: "{{ vsc_creds }}"
   register: ntp_status
   until: not ntp_status.stdout[0]|search('none')
-  retries: 5
+  retries: 60
   delay: 10
   delegate_to: localhost
   ignore_errors: yes
 
 - name: Verify NTP status
-  assert: 
+  assert:
    that: not ntp_status.stdout[0]|search('none')
    msg: "NTP Status not okay: {{ ntp_status.stdout[0] }}. Quitting."
