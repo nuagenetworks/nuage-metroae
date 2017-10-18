@@ -250,9 +250,9 @@
 - name: check ntp sync state
   shell: ntpstat | awk 'NR==1{print $1}'
   register: sync_status
-  until: sync_status.stdout == "synchronised"
-  retries: 4
-  delay: 5
+  until: sync_status.stdout | search('synchronised')
+  retries: "{{ ntp_sync_retries }}"
+  delay: "{{ ntp_sync_delay }}"
   ignore_errors: yes
   remote_user: "root"
 
@@ -264,10 +264,10 @@
     shell: ntpstat | awk 'NR==1{print $1}'
     register: retry_sync_status
     until: retry_sync_status.stdout == "synchronised"
-    retries: 4
-    delay: 5
+    retries: "{{ ntp_sync_retries }}"
+    delay: "{{ ntp_sync_delay }}"
     remote_user: "root"
-  when: not sync_status.stdout | match("synchronized")
+  when: not sync_status.stdout | search('synchronized')
 
 - name: Install VSD software on standalone node
   command: /opt/vsd/vsd-install.sh -t s -y
