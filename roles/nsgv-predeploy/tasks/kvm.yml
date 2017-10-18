@@ -1,0 +1,117 @@
+---
+- name: Query {{ target_server }} facts
+  action: setup
+  delegate_to: "{{ target_server }}"
+  remote_user: "{{ target_server_username }}"
+
+- name: Include OS-specific variables.
+  include_vars: "{{ ansible_os_family }}.yml"
+
+- name: Check target for supported OS
+  fail: msg="Unsupported OS family ({{ ansible_os_family }})"
+  when: ansible_os_family not in nsgv_target_server_os_family_list
+
+- name: Check target memory
+  fail: msg="Not enough memory ({{ ansible_memtotal_mb }})"
+  when: ansible_memtotal_mb < nsgv_target_server_memory_mb_min
+
+- name: Check target cores
+  fail: msg="Not enough cores ({{ ansible_processor_vcpus }})"
+  when: ansible_processor_vcpus < nsgv_target_server_vcpus_min
+
+- name: Check target bridges
+  fail: msg="Required network bridges not found"
+  when: (mgmt_bridge not in ansible_interfaces) or
+        (data_bridge not in ansible_interfaces) or
+        (access_bridge not in ansible_interfaces)
+
+- name: Install packages for RedHat OS family distros
+  yum: name={{ item }} state=present
+  with_items:
+   - qemu-kvm
+   - libvirt
+   - bridge-utils
+   - libguestfs-tools
+   - libvirt-python
+  when: ansible_os_family | match("RedHat")
+  delegate_to: "{{ target_server }}"
+  remote_user: "{{ target_server_username }}"
+
+- name: Install packages for Debian OS family distros
+  apt: name={{ item }} state=present
+  with_items:
+   - qemu-kvm
+   - libvirt-bin
+   - bridge-utils
+   - libguestfs-tools
+   - python-libvirt
+  when: ansible_os_family | match("Debian")
+  delegate_to: "{{ target_server }}"
+  remote_user: "{{ target_server_username }}"
+
+- name: List the Virtual Machines running
+  virt: command=list_vms
+  register: virt_vms
+  delegate_to: "{{ target_server }}"
+  remote_user: "{{ target_server_username }}"
+
+- name: Verify that the VM is not already running
+  assert:
+    that: "vmname not in virt_vms.list_vms"
+    msg: "{{ vmname }} is already running on {{ target_server }}"
+
+- name: Create libvirt image directory
+  file: path={{ images_path }}/{{ vmname }}
+        state=directory
+        owner={{ libvirt.user }}
+        group={{ libvirt.group }}
+  delegate_to: "{{ target_server }}"
+  remote_user: "{{ target_server_username }}"
+
+- name: Copy the NSGV qcow image to virt images directory
+  copy: src={{ nsgv_qcow2_path }}/{{ nsgv_qcow2_file_name }}
+        dest={{ images_path }}/{{ vmname }}
+        owner={{ libvirt.user }}
+        group={{ libvirt.group }}
+  delegate_to: "{{ target_server }}"
+  remote_user: "{{ target_server_username }}"
+
+- block:
+  - name: Create local temp directory
+    local_action: command mktemp -d "{{ lookup('env', 'TMPDIR') | default('/tmp/', true) }}ansible.XXXX"
+    register: mktemp_output
+
+  - name: Set Top-Level-Directory
+    set_fact: tld="{{ role_path }}/../../"
+
+  - name: Generate ISO file
+    local_action: command python {{ role_path }}/files/create_zfb_profile.py {{ tld }} {{ mktemp_output.stdout }}
+    register: output
+
+  - name: Search for errors in the output of ZFB script
+    fail: msg={{ output.stdout }}
+    when: output.stdout | search("(?i)ERROR")
+
+  - name: Copy the ISO image to virt images directory
+    copy: src="{{ mktemp_output.stdout }}/user_image.iso"
+          dest={{ images_path }}/{{ vmname }}
+          owner={{ libvirt.user }}
+          group={{ libvirt.group }}
+    delegate_to: "{{ target_server }}"
+    remote_user: "{{ target_server_username }}"
+  when: bootstrap_method | match('zfb_metro')
+
+- name: "Define new NSGV VM"
+  virt: name="{{ vmname }}"
+        command=define
+        xml="{{ lookup('template', 'nsgv.xml.j2') }}"
+        uri=qemu:///system
+  delegate_to: "{{ target_server }}"
+  remote_user: "{{ target_server_username }}"
+
+- name: "Run NSGV VM"
+  virt: name="{{ vmname }}"
+        state=running
+        uri=qemu:///system
+  delegate_to: "{{ target_server }}"
+  remote_user: "{{ target_server_username }}"
