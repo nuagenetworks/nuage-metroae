@@ -14,7 +14,14 @@ Before you begin working with MetroAG, please take these requirements and restri
 * Password-less ssh access from the *Ansible Host* to the *Target Server* must be configured.  
 
 ## Cloning Nuage MetroAG
-Install a copy of the Nuage MetroAG repository onto the Ansible host. Nuage MetroAG is available on [GitHub.com](https://github.com/nuagenetworks/nuage-metro). From the website, you can download a zip of the archive. Or you can execute a `git clone` on your Ansible deployment host. (git will need to be installed first...)  
+Install a copy of the Nuage MetroAG repository onto the Ansible host. Nuage MetroAG is available on [GitHub.com](https://github.com/nuagenetworks/nuage-metro). From the website, you can download a zip of the archive. 
+
+Alternatively on your Ansible deployment host, you can execute 
+```
+yum install -y git
+git clone https://github.com/nuagenetworks/nuage-metro
+```
+
 
 ## Setting Up the Ansible Host
 Prior to running MetroAG, use one of the two methods below to install the required packages onto the Ansible host.
@@ -48,6 +55,7 @@ Installing pyvmomi... [ OK ]
 
 Setup complete!
 ```
+
 The script writes a detailed log into *metro-setup.log*.
 
 ### Set Up Ansible Host Manually
@@ -83,7 +91,7 @@ VSPK Python module | `pip install vspk`
  shade python | `pip install shade`  
  
  
- ## Generating ssh Keys for Password-less ssh Access
+## Generating ssh Keys for Password-less ssh Access
  If the public/private ssh keys have not been created for the MetroAG User, create them as follows:  
  1. Login to the Ansible Host as the MetroAG User.
  2. Execute the command: `ssh-keygen`  
@@ -92,15 +100,16 @@ VSPK Python module | `pip install vspk`
  5. Execute the command: `ssh-copy-id-hostname`, where *hostname* is the name of the Ansible Host. This command copies the public key to the *Target Server* and to the *Ansible Host*.  
  6. Enter the MetroAG User's password, if prompted.  
  
- ## Installing ovftool for VMware Environment  
+## Installing ovftool for VMware Environment  
  If you are installing VSP components in a VMware environment (ESXi/vCenter) you will also need to download and install the [ovftool](https://www.vmware.com/support/developer/ovf/) from VMware. MetroAG uses ovftool for OVA operations.  
 
 ## Next Steps
-* If you would like to deploy Nuage software components for the first time or add new components to an existing deployment, proceed to [BUILD.md](BUILD.md) for instructions on customizing the environment and deploying.
+* Proceed to [BUILD.md](BUILD.md) for instructions on definining your network environment and deployment specifics.
 
-* If you would like to upgrade existing Nuage software components to a newer version, proceed to `UPGRADE.md` for instructions on customizing the environment and upgrading.  
+* If you would like to deploy Nuage software components from scratch, proceed to [BUILD.md](BUILD.md).
+* If you then would like to upgrade existing Nuage software components to a newer version, proceed to [UPGRADE.md](UPGRADE.md).
+* If you have previously deployed VSP, and would like to remove it and start over, proceed to [DESTROY.md](DESTROY.md) for instructions on removing an existing deployment.  
 
-* If you have previously deployed VSP, and would like to remove it and start over, proceed to `DESTROY.md` for instructions on removing an existing deployment.  
 ---
 Report bugs you find and suggest new features and enhancements via the [GitHub Issues](https://github.com/nuagenetworks/nuage-metro/issues "nuage-metro issues") feature.
 

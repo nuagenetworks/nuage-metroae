@@ -10,24 +10,64 @@ All contributions must be consistent with the design of the existing playbooks a
 * **Upgrade** - For upgrading components from one release to another.
 * **Rollback** - For restoring components to their previous version if an upgrade fails.
 
-## Submitting Code
-### Before You Create a Pull Request
-* Create your own fork from the [*dev* branch](https://github.com/nuagenetworks/nuage-metro/tree/dev) of nuage-metro.
-* Develop and test all proposed contributions on the appropriate hypervisors.
-* If you choose not to provide support for one or more supported hypervisors, you must provide graceful error handling for those types.
-* Requirements for User Input Variables
-    * Include all variables that can be modified by a user in one of the variable files:`build_vars.yml`, `upgrade_vars.yml`, and `user_creds.yml`.
+## Developing and Submitting Code
+
+### Developing your code on a fork
+
+* Before you start your development, create your own fork from the upstream Metro repo [https://github.com/nuagenetworks/nuage-metro/](https://github.com/nuagenetworks/nuage-metro/) 
+* Clone your own fork on your machine and switch to _dev_ branch
+```
+git clone https://github.com/<your handle>/nuage-metro.git metro-fork/
+cd metro-fork/
+git checkout dev
+```
+
+* Develop and test all proposed contributions on the appropriate hypervisors in the `metro-fork` directory. 
+  If you choose not to provide support for one or more supported hypervisors, you must provide graceful error handling for those types.
+
+* If you are requiring any new User Input Variable:
+    * Extend the Metro variable files with sensible example values: `build_vars.yml`, `upgrade_vars.yml`, and `user_creds.yml`.
     * Ensure that the copies of the variable files in `roles/reset-build/files/` are identical to `build_vars.yml`, `upgrade_vars.yml`, and `user_creds.yml`.
     * Include comments with the variable specifications that explain the variable's purpose and acceptable values.
     * Variables that are almost never modifed may be included in standard Ansible variable locations, e.g. `vars/main.yml`.
-* Update (merge) your personal fork from the latest dev branch.
-* Push your changes to your own fork.
-* Add a brief description of your bug fix or enhancement to `RELEASE_NOTES.md` and to the `What's New` section of `README.md`.
 
-### Create a Pull Request
-* You may initiate PRs from your personal fork.
-* Create PRs to the dev branch only. PRs on other branches (i.e. the master branch) will be closed without review.
-* Include tests for new functionality.
+* If you are developing a new role, ensure to include a `README.md` at the base folder with a clear desription, requirements, dependencies, and example playbook. See also the [ansible-galaxy](https://galaxy.ansible.com/intro) for further best-practices.
+
+* Add a brief description of your bug fix or enhancement to `RELEASE_NOTES.md`.
+
+* Add your changes to git and do a local code commit:
+``` 
+git add .
+git commit -am "SHORT DESCRIPTION OF THIS COMMIT"
+``` 
+
+### Finalizing your code contribution
+
+* Ensure your personal fork has the latest changes of the [*dev* branch](https://github.com/nuagenetworks/nuage-metro/tree/dev) included. Do this by by adding the upstream code as additional _remote_, fetch the newest upstream code, and _rebase_ your code:
+```
+git remote add upstream https://github.com/nuagenetworks/nuage-metro.git
+git fetch
+git rebase upstream/dev
+``` 
+
+* This last command will show you if there are any merge-conflicts to manage, or if your tree can be successfully fast-forwarded to the latest commit of the *dev* branch with your changes on top.
+* If necessary, solve all merge conflicts and re-test your code.
+
+* Push your changes to your own fork:
+```
+git push origin dev
+``` 
+In case you already pushed your code in a previous step as part of devleopment, you may have to add the `--force` parameter to this command to ensure your fork becomes fully aligned with the upstream _dev_ branch history.
+
+
+### Create a Pull Request (PR)
+
+Once you have developed and pushed your code into your fork, you may initiate the PR process through github site:
+* Create PRs to the dev branch only. PRs on other branches (eg. the _master_ branch) will be closed without review.
+* Include a summary description of the intent of your pull request.
+
+Please consider to work with many smaller pull-requests instead of one large pull-request.
+It reduces reviewing time and it gives a gradual evolution of capabilities (instead of step-wise big differences). 
 
 ### After You Create a Pull Request
 * Before your PR is merged into the dev branch the repo owner will test and review it.
