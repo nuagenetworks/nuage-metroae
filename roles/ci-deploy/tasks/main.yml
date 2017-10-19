@@ -9,7 +9,7 @@
       "{{ os_auth }}"
     server: "{{ inventory_hostname }}"
   register: ci_server
-  delegate_to: 127.0.0.1
+  delegate_to: localhost
 
 - name: Set the network names
   set_fact:
@@ -36,99 +36,98 @@
   command: cat "/tmp/{{ net_name_temp }}_vrs_ip_centos7"
   register: centos7_vrs_ip
   run_once: true
-  delegate_to: 127.0.0.1
+  delegate_to: localhost
 
 - name: register target_server
   set_fact :
     target_server: "{{ centos7_vrs_ip.stdout }}"
   run_once: true
-  delegate_to: 127.0.0.1
+  delegate_to: localhost
 
 
 - name: get the u14 vrs ip temp file contents
   command: cat "/tmp/{{ net_name_temp }}_vrs_ip_u14"
   register: u14_vrs_ip
   run_once: true
-  delegate_to: 127.0.0.1
+  delegate_to: localhost
 
 - name: register u14 vrs target_server
   set_fact :
     vrs_u14_target_server: "{{ u14_vrs_ip.stdout }}"
   run_once: true
-  delegate_to: 127.0.0.1
+  delegate_to: localhost
 
 
 - name: get the centos 7 vrs name temp file contents
   command: cat "/tmp/{{ net_name_temp }}_vrs_name_centos7"
   register: centos7_vrs_name
   run_once: true
-  delegate_to: 127.0.0.1
+  delegate_to: localhost
 
 - name: register centos 7 vrs host name
   set_fact :
     target_server_name: "{{ centos7_vrs_name.stdout }}"
   run_once: true
-  delegate_to: 127.0.0.1
+  delegate_to: localhost
 
 - name: get the u14 vrs name temp file contents
   command: cat "/tmp/{{ net_name_temp }}_vrs_name_u14"
   register: u14_vrs_name
   run_once: true
-  delegate_to: 127.0.0.1
+  delegate_to: localhost
 
 - name: register u14 vrs target_server name
   set_fact :
     vrs_u14_target_server_name: "{{ u14_vrs_name.stdout }}"
   run_once: true
-  delegate_to: 127.0.0.1
+  delegate_to: localhost
 
 - name: get the u16 vrs ip temp file contents
   command: cat /tmp/{{ net_name_temp }}_vrs_ip_u16
   register: u16_vrs_ip
   run_once: true
-  delegate_to: 127.0.0.1
+  delegate_to: localhost
   ignore_errors: yes
 
 - name: register u16 vrs target_server
   set_fact :
     vrs_u16_target_server: "{{ u16_vrs_ip.stdout }}"
   run_once: true
-  delegate_to: 127.0.0.1
+  delegate_to: localhost
   ignore_errors: yes
 
 - name: get the u16 vrs name temp file contents
   command: cat "/tmp/{{ net_name_temp }}_vrs_name_u16"
   register: u16_vrs_name
   run_once: true
-  delegate_to: 127.0.0.1
+  delegate_to: localhost
   ignore_errors: yes
 
 - name: register u16 vrs target_server name
   set_fact :
     vrs_u16_target_server_name: "{{ u16_vrs_name.stdout }}"
   run_once: true
-  delegate_to: 127.0.0.1
+  delegate_to: localhost
   ignore_errors: yes
 
 - debug: var=target_server verbosity=1
-  delegate_to: 127.0.0.1
+  delegate_to: localhost
   run_once: true
 
 - debug: var=vrs_u14_target_server verbosity=1
-  delegate_to: 127.0.0.1
+  delegate_to: localhost
   run_once: true
 
 - debug: var=vrs_u16_target_server verbosity=1
-  delegate_to: 127.0.0.1
+  delegate_to: localhost
   run_once: true
   ignore_errors: yes
 
-#No need to have two sections for Redhat and Ubuntu since we only support Redhat for VSP components now
 - name: Update test files
   template:
     src: "{{ role_path }}/files/{{ item.src }}"
-    dest: "{{ role_path }}/files/{{ item.dest }}" 
-  delegate_to: 127.0.0.1
+    dest: "{{ role_path }}/files/{{ item.dest }}"
+  delegate_to: localhost
   run_once: true
   with_items:
     - { src: build_vars.yml.all.j2, dest: build_vars_all.yml }
@@ -336,4 +335,3 @@
     line: 'nsgv_ram: 1147483'
   delegate_to: "{{ ansible_deployment_host }}"
   remote_user: "{{ ansible_sudo_username }}"
-
