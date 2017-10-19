@@ -7,12 +7,13 @@
 # This looks like some duplicate code
 
 
-- name: Check connection to controllers
+- name: Get connection to controllers
   shell: "ovs-vsctl show | grep -Pzl '(?s)Controller \"ctrl(1|2)\"\\n *target: \"tcp:({{ item }}):6633\"\\n *role: (master|slave)\\n *is_connected: true'"
   with_items:
     - "{{ active_controller_addr }}"
     - "{{ standby_controller_addr }}"
   register: command_result
+  remote_user: "{{ target_server_username }}"
   changed_when: false
 
 - block:
@@ -23,7 +24,7 @@
     register: mktemp_output
 
   - name: Copy ovs-vsctl show output to a temporary file
-    local_action: copy content={{ ovs_show_result.stdout }} dest={{ mktemp_output.stdout  }}/{{ inventory_hostname }}.tmp
+    local_action: copy content={{ command_result.results }} dest={{ mktemp_output.stdout }}/{{ inventory_hostname }}.tmp
 
   - name: Run verification script for OVS show command
     local_action: command python {{ role_path }}/files/ovs_result_verify.py {{ node_ip_addr }} {{ mktemp_output.stdout }}/{{ inventory_hostname }}.tmp
@@ -32,10 +33,9 @@
   always:
   - name: Delete the temporary directory
     local_action: file path={{ mktemp_output.stdout }}  state=absent
- 
+
 - name: Verify registration on Active and Standby Controller
-  include: check_vsc_registration.yml controller_addr="{{item}}" 
+  include: check_vsc_registration.yml controller_addr="{{item}}"
   with_items:
    - "{{ active_controller_addr }}"
    - "{{ standby_controller_addr }}"
-
