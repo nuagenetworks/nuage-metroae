@@ -3,7 +3,7 @@ Before deploying any components, you must have previously [set up your Nuage Met
 * a `hosts` file in `nuage-metro/`, which acts as the Ansible inventory file
 * a dynamically-generated `host_vars/` and `group_vars/` directory containing variables that are used for every component in the system.
 
-**TIP**: Make sure you unzipped the Nuage Networks *.tar.gz files into their proper locations in the directory structure, so MetroAG can find the path of the Nuage components automatically when running `build.yml`. You should have done this in the BUILD phase. See BUILD.md for details.
+**TIP**: Make sure you unzipped the Nuage Networks *.tar.gz files into their proper locations in the directory structure, so MetroAG can find the path of the Nuage components automatically when running `build.yml`. You should have done this in the BUILD phase. See [BUILD.md](BUILD.md) for details.
 
 You can deploy all specified VSP components with a single command or individual components with separate commands. 
 ## Deploy All Components
@@ -41,7 +41,7 @@ TIP: Make sure to use the  `./metro-ansible` executable to ensure variables are 
 MetroAG can automatically bootstrap (ZFB) a NSGV when deploying a VNS UTIL VM. To direct MetroAG to generate the ISO file needed for zero factor bootstrapping, perform the following tasks before deploying:
 
 * Customize variables in [`zfb_vars.yml`](/zfb_vars.yml "link to zfb_vars.yml file")
-* Specify `bootstrap_method: zfb_metro,` in mynsgvs parameters in  [`build_vars.yml`](/build_vars.yml "link to build_vars.yml file)
+* Specify `bootstrap_method: zfb_metro,` in mynsgvs parameters in [`build_vars.yml`](/build_vars.yml "link to build_vars.yml file")
 
 ## Debugging
 By default, ansible.cfg tells ansible to log to ./ansible.log.
