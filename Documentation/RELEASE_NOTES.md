@@ -12,6 +12,7 @@ v2.2.0
 1. Added VSD license validation for upgrades across major versions (ex. 4.0.x to 5.0.1)
 1. Added VNS support for Vmware platforms to deploy VNS utility vm and NSGv
 1. Introduced vmname as a variable that can used to set name of the vm on kvm and vcenter
+1. Enhanced license script to deploy multiple licenses
  
 ## Usage Notes
  
