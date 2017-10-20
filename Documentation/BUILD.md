@@ -56,13 +56,25 @@ After you've set up your variables and made the required software files availabl
 
 Note: `metro-ansible` is a shell script that executes `ansible-playbook` with the proper includes and command line switches. Use `metro-ansible` (instead of `ansible-playbook`) when running any of the playbooks provided herein.
 
-  When you execute `build.yml`, it takes the variables that you defined in `build_vars.yml` and performs the following tasks for you.
+When you execute `build.yml`, it takes the variables that you defined in `build_vars.yml` and performs the following tasks for you.
+
 * creates a `host` file populated with the hostnames of all components in the list. (The host file defines the inventory that the playbooks operate on.)
 * populates a `host_vars` subdirectory with the variable files for each component in the list. (These variable files contain configuration information specific to each component in the list.)
 * populates a `group_vars` directory
 * sets additional variables that configure the overall operation of the playbooks
-***
-## Having Issues? Do You Want to Start Over?
+
+## Hosting your variable files outside of the repo
+
+When you are contributing code, or pulling new versions of Metro quite often, it may make sense to host your variable files in a separate directory outside of `nuage-metro/`.
+Both `nuage-unzip.yml` and `build.yml` support passing the location of this file explicitly as extra variable:
+
+```
+./metro-ansible nuage_unzip.yml -e build_vars_file="/path/to/your/build_vars.yml/file"
+./metro-ansible build.yml -e build_vars_file="/path/to/your/build_vars.yml/file" user_creds_file=/path/to/your/user_creds.yml/file"
+``` 
+
+
+## Having Issues? Reset your environment 
 If you have issues with running the build, you can reset to factory settings and start over.
 
 WARNING: **You may lose your work!** A timestamped backup copy, in the form of `build_vars.yml.<date and time>~` is created (in case you change your mind.) Make sure you have enough storage for it.
