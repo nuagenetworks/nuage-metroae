@@ -1,46 +1,78 @@
-# Metro: Release Notes
-
-## Metro version
-v2.2.0
-
-# Metro assumes that user will not change the names of Nuage distributed files
-
-## New features
-1. Added VSD/VSC rollback for clustered VSD upgrades on KVM platform.
-1. Added support for Standalone and Clustered VSTAT upgrade
-1. Added support for deployments and upgrades to 5.0.x covering changes introduced in VSD 5.0.1 related to new VSD user
-1. Added VSD license validation for upgrades across major versions (ex. 4.0.x to 5.0.1)
-1. Added VNS support for Vmware platforms to deploy VNS utility vm and NSGv
-1. Introduced vmname as a variable that can used to set name of the vm on kvm and vcenter
-1. Enhanced license script to deploy multiple licenses
- 
-## Usage Notes
- 
+# MetroAG Release Notes
+## New Features and Enhancements in Release 2.3
+*	Early DNS validation
+*	Retargeted VCIN deploy to use VSD roles
+*	Move vsc-health variables to build_vars.yml
+*	Support Ansible 2.3/2.4
+*	Added script to setup Metro environment
+*	Added VRSG health checks
+*	Support per-VM network bridges
+*	Nuage-unzip enhancments
+*	VSR deploy support
+*	Remove test directory and its contents
+*	Introduce playbooks and documentation directories
+*	Allow XMPP connection type setting on VSD
+*	Add vsd-postdeploy
+*	Support per-VSC health variable setting
+* Enhanced license script to deploy multiple licenses
 ## Resolved Issues
-1. VSD DB backup failure during upgrades.
-1. VSD purge timer restore failure during standalone upgrades.
-1. VSD decouple report path is fixed. It now logs to reports folder. 
-1. Added missing command to enable stats on vsd(s) when vstat is clustered
-1. Fixed technical alert 17-0506 - VSD Cluster upgrade failure due to out of memory problem
-1. Remove hard coded vspk versions and use vsd version to load the vspk version dynamically 
-1. Added support for setting /etc/hostname
-1. Fixed issue unzipping to NFS-mounted file systems
-1. Fixed issue with yum updates needing to use a proxy under certain circumstances
-1. Added support to unzip VRS for VMware
-1. Fixed "creates" value when deploying via heat
-1. Added verification that vsd_fqdn_global is set during the build process
-1. libvirtd is now started when setting up hypervisor prerequisites
-1. Added iptables support for vstat
-
-## Known Issues
- 
+*	Align vsd-destroy for vcenter with vsd-destroy fo kvm
+*	Several fixes for VSC/VSD upgrade
+*	Ejabberd connected user test
+*	Make system_ip in build_vars.yml optional
+*	Fix vstat-destroy to preserve VMs on upgrade
+*	Fix known_hosts file cleaning
+*	Fix vstat-deploy to look for firewalld
+*	Add more time for NTP sync
+*	Fix error when producing lists of VRS packages to install
+*	Check max length of VSC hostname
+* Added iptables for VSTAT
 ## Known Limitations
- 
-1. VSD health checks during the upgrade only takes in to account monit summary, not other checks.
-1. No support for release specific commands to stop elastic search/vstat process on vsd.
-1. No support for release specific commands to stop core process on vsd.
-1. Nuage Metro will not run on el6 (e.g. CentOS 6.8) hosts due to a lack of modern python-jinja2 support.
-1. VSC disconnect from VSD prior 5.0.1 upgrade is not yet implemented
-1. VNS support on VMware is only available for VSP version 5.0.1 and later.
-1. VSPK version in nuage_vspk.py is set to v4_0 for aws deployments of nsgv
+*	VSD health checks during the upgrade only takes in to account monit summary, not other checks.
+*	No support for release specific commands to stop elastic search/vstat process on vsd.
+*	No support for release specific commands to stop core process on vsd.
+*	Nuage Metro will not run on el6 (e.g. CentOS 6.8) hosts due to a lack of modern python-jinja2 support.
+*	VSC disconnect from VSD prior 5.0.1 upgrade is not yet implemented
+*	VNS support on VMware is only available for VSP version 5.0.1 and later.
+*	VSPK version in nuage_vspk.py is set to v4_0 for aws deployments of nsgv
+* When using Ansible 2.3.1, it is possible to have a VSC operation fail similar to the following:
+```
+01:41:05 fatal: [jenkinsvsc1.example.com -> localhost]: FAILED! => {
+01:41:05     "changed": false, 
+01:41:05     "err": "[Errno 111] Connection refused", 
+01:41:05     "failed": true, 
+01:41:05     "invocation": {
+01:41:05         "module_args": {
+01:41:05             "backup": false, 
+01:41:05             "config": null, 
+01:41:05             "defaults": false, 
+01:41:05             "host": null, 
+01:41:05             "lines": [
+01:41:05                 "******** save"
+01:41:05             ], 
+01:41:05             "match": "line", 
+01:41:05             "parents": null, 
+01:41:05             "password": null, 
+01:41:05             "port": null, 
+01:41:05             "provider": {
+01:41:05                 "host": "192.168.122.214", 
+01:41:05                 "password": "VALUE_SPECIFIED_IN_NO_LOG_PARAMETER", 
+01:41:05                 "port": null, 
+01:41:05                 "ssh_keyfile": null, 
+01:41:05                 "timeout": null, 
+01:41:05                 "transport": "cli", 
+01:41:05                 "username": "VALUE_SPECIFIED_IN_NO_LOG_PARAMETER"
+01:41:05             }, 
+01:41:05             "save": false, 
+01:41:05             "src": null, 
+01:41:05             "ssh_keyfile": null, 
+01:41:05             "timeout": null, 
+01:41:05             "username": null
+01:41:05         }
+01:41:05     }, 
+01:41:05     "msg": "unable to connect to socket"
+01:41:05 }
+```
+This is a result of a bug in Ansible 2.3.1. When making connections to network devices, such as a VSC, Ansible uses a “persistent connection” mode. That is, Ansible opens a socket to the network device and keeps it open for some time after the task that opened the connection completes. If another task wants to make a connection to the network device and the socket is still present, the new task reuses the socket, saving the overhead of creating a new socket. This was added for performance enhancement. Under some circumstances, notably when deploying the same VM over and over again, the socket file on disk that represents the connection isn’t properly cleaned up. When one of these stale files exists, it can sometimes cause the error, above.
 
+The work around is to manually delete the socket file. Ansible puts the persistent connection socket file in the directory `~/.ansble/pc/`. If you experience the error, above, try deleting the contents of `~/.ansible/pc/`, then re-running the playbook.
