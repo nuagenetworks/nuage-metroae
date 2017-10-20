@@ -29,6 +29,7 @@ v2.2.0
 1. Fixed "creates" value when deploying via heat
 1. Added verification that vsd_fqdn_global is set during the build process
 1. libvirtd is now started when setting up hypervisor prerequisites
+1. Added iptables support for vstat
 
 ## Known Issues
  

@@ -140,6 +140,51 @@
     when: ip_addr.stdout | match("not found:")
   when: vsd_sa_or_ha | match('sa')
 
+- name: check for iptables
+  shell: "service iptables status"
+  register: _svc_iptables
+  ignore_errors: True
+  remote_user: "root"
+
+- block:
+  - name: Start iptables
+    systemd:
+      name: iptables
+      state: started
+    remote_user: "root"
+
+  - name: Enable iptables on boot
+    systemd:
+      name: iptables
+      enabled: yes
+    remote_user: "root"
+
+  - name: Create iptables vars file on ansible host
+    template: src="{{ role_path }}/templates/iptables.j2" dest="/tmp/main.yml" backup=no mode=0755
+    delegate_to: "{{ ansible_deployment_host }}"
+    remote_user: "{{ ansible_sudo_username }}"
+
+  - name: Include variable file.
+    include_vars: /tmp/main.yml
+    delegate_to: "{{ ansible_deployment_host }}"
+    remote_user: "{{ ansible_sudo_username }}"
+
+  - name: Config iptables on VSTAT vm to accept conn on ports 9200,9300 from vsd(s)
+    shell: "{{ item }}"
+    with_items:
+      - "{{ iptables_std_commands }}"
+    remote_user: "root"
+    when: vsd_sa_or_ha | match('sa')
+
+  - name: Config iptables on VSTAT vm to accept conn on ports 9200, 9300 from vsd(s) in cluster setup
+    shell: "{{ item }}"
+    with_items:
+      - "{{ iptables_cluster_commands }}"
+    when: vsd_sa_or_ha | match('ha')
+    remote_user: "root"
+
+  when: "_svc_iptables.rc == 0"
+
 - name: check for firewalld
   shell: "service firewalld status"
   register: _svc_firewalld
@@ -183,7 +228,9 @@
     when: vsd_sa_or_ha | match('ha')
     remote_user: "root"
 
-  when: "_svc_firewalld.rc == 0"
+  when:
+    - "_svc_firewalld.rc == 0"
+    - "_svc_iptables.rc != 0"
 
 - name: Restart elastic search
   systemd:
