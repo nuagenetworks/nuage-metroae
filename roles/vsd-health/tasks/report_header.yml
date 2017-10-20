@@ -1,0 +1,42 @@
+- name: Pull facts of localhost
+  connection: local
+  action: setup
+
+- name: Create report folder on ansible deployment host
+  file:
+    path: "{{ metro_reports_dir}}"
+    state: directory
+  remote_user: "{{ ansible_sudo_username }}"
+  delegate_to: "{{ ansible_deployment_host }}"
+  run_once: true
+
+- name: Set path to write report
+  set_fact:
+    report_path: "{{ metro_reports_dir }}/{{ report_filename }}-{{ mgmt_ip }}"
+
+- name: Clean up tmp files from previous runs
+  file:
+    path: "{{ report_path }}"
+    state: absent
+  remote_user: "{{ ansible_sudo_username }}"
+  delegate_to: "{{ ansible_deployment_host }}"
+  run_once: true
+
+- name: Write title to report file
+  nuage_append: filename="{{ report_path }}" text="VSD Health Report Start\n"
+  remote_user: "{{ ansible_sudo_username }}"
+  delegate_to: "{{ ansible_deployment_host }}"
+  run_once: true
+
+- name: Write date to report file
+  nuage_append: filename="{{ report_path }}" text="{{ ansible_date_time.date }}@{{ ansible_date_time.time }}\n"
+  remote_user: "{{ ansible_sudo_username }}"
+  delegate_to: "{{ ansible_deployment_host }}"
+  run_once: true
+
+- name: Write seperator to report file
+  nuage_append: filename="{{ report_path }}" text="================================================================================\n"
+  remote_user: "{{ ansible_sudo_username }}"
+  delegate_to: "{{ ansible_deployment_host }}"
+  run_once: true
+

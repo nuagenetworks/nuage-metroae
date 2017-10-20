@@ -1,0 +1,138 @@
+---
+- block:
+  - name: Clean known_hosts
+    command: ssh-keygen -R "{{ mgmt_ip }}"
+    delegate_to: "{{ ansible_deployment_host }}"
+    remote_user: "{{ ansible_sudo_username }}"
+
+  - name: Change XMPP connection to TLS on VSD
+    command: /opt/vsd/bin/ejmode allow -y
+    remote_user: "root"
+    delegate_to: "{{  item }}"
+    with_items: "{{ groups['vsds'] }}"
+
+  - name: wait for ejabberd-status to become running
+    monit_waitfor_service:
+      name: "ejabberd-status"
+      timeout_seconds: 600
+      test_interval_seconds: 30
+    remote_user: "root"
+    delegate_to: "{{ item }}"
+    with_items: "{{ groups['vsds'] }}"
+
+  - name: wait for ejbca-status to become running
+    monit_waitfor_service:
+      name: "ejbca-status"
+      timeout_seconds: 600
+      test_interval_seconds: 30
+    remote_user: "root"
+    delegate_to: "{{ item }}"
+    with_items: "{{ groups['vsds'] }}"
+
+  - block:
+    - name: Download pip installer
+      command: curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
+      delegate_to: "{{ item }}"
+      remote_user: "root"
+      with_items: "{{ groups['vsds'] }}"
+
+    - name: Execute pip installer
+      command: python get-pip.py
+      delegate_to: "{{ item }}"
+      remote_user: "root"
+      with_items: "{{ groups['vsds'] }}"
+
+    - name: Install pexpect on VSD
+      pip:
+        name: pexpect
+      delegate_to: "{{ item }}"
+      remote_user: "root"
+      with_items: "{{ groups['vsds'] }}"
+    when: yum_proxy == 'NONE'
+
+  - block:
+    - name: Download pip installer through proxy
+      command: curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
+      delegate_to: "{{ item }}"
+      remote_user: "root"
+      environment:
+        http_proxy: "{{ yum_proxy }}"
+        https_proxy: "{{ yum_proxy }}"
+      with_items: "{{ groups['vsds'] }}"
+
+    - name: Execute pip installer through proxy
+      command: python get-pip.py
+      delegate_to: "{{ item }}"
+      remote_user: "root"
+      environment:
+        http_proxy: "{{ yum_proxy }}"
+        https_proxy: "{{ yum_proxy }}"
+      with_items: "{{ groups['vsds'] }}"
+
+    - name: Install pexpect on VSD through proxy
+      pip:
+        name: pexpect
+      delegate_to: "{{ item }}"
+      remote_user: "root"
+      environment:
+        http_proxy: "{{ yum_proxy }}"
+        https_proxy: "{{ yum_proxy }}"
+      with_items: "{{ groups['vsds'] }}"
+    when: yum_proxy != 'NONE'
+
+  - name: Get VSD version
+    shell: echo $VSD_VERSION
+    register: vsd_version
+    delegate_to: "{{ groups['vsds'][0] }}"
+    remote_user: "root"
+
+  - name: Create and transfer certs from 4.0.4 VSD
+    expect:
+     timeout: 55
+     command: "{{ create_certs_404 }}"
+     responses:
+       (?i)password: "admin"
+    delegate_to: "{{ groups['vsds'][0] }}"
+    remote_user: "root"
+    when: "'4.0.4' in vsd_version.stdout"
+
+  - name: Create and transfer certs from VSD
+    expect:
+     timeout: 120
+     command: "{{ create_certs }}"
+     responses:
+       (?i)password: "admin"
+    delegate_to: "{{ groups['vsds'][0] }}"
+    remote_user: "root"
+    when: "'4.0.4' not in vsd_version.stdout"
+
+  - name: Set Top-Level-Directory
+    set_fact: tld="{{ role_path }}/../../"
+
+  - name: Create TLS profile
+    local_action: command python {{ role_path }}/files/vsc_config.py {{ tld }} {{ xmpp.username }}
+    register: output
+    # TODO: Replace by vsc_command, or sros_command module calls
+
+  - name: Verification Result Failure Status
+    fail: msg={{ output.stdout }}
+    when: output.stdout | search("(?i)MINOR")
+    ignore_errors: yes
+
+  - name: Verification Result Success Status
+    debug: var=output.stdout verbosity=1
+
+  - name: check xmpp connectivity between VSC and VSD after enabling TLS
+    sros_command:
+      commands:
+        - show vswitch-controller xmpp-server | match Functional
+      provider: "{{ vsc_creds }}"
+    register: xmpp_status
+    until: xmpp_status.stdout[0].find('Functional') != -1
+    retries: 6
+    delay: 10
+    delegate_to: localhost
+
+  - name: Print output of 'show vswitch-controller xmpp-server' when verbosity >= 1
+    debug: var=xmpp_status verbosity=1
+  when: groups['vnsutils'] is defined

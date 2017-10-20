@@ -37,7 +37,7 @@ myvsds:
     mgmt_netmask: 255.255.255.0 }
 ```
 
-Upgrading VSTAT nodes require following changes to ```upgrade_vars.yml``` file.
+Upgrading VSTAT nodes require following changes to `upgrade_vars.yml` file.
 - Users must define a value for `vstats_nfs_server_with_folder` that will be mounted on the VSTAT VM. It will be used as the backup and restore location for ES files during the upgrade and rollback. The value must be of the form `host_or_ip:/nfs/exported/folder`. For example:
 
 ```
@@ -80,14 +80,13 @@ Edit the files listed above, then run:
 ./metro-ansible build_upgrade.yml -vvv
 ```
 
-2. Run health checks on VSD,VSC and VSTAT
+2. Run a pre-upgrade health checks on the platform
 
 ```
 ./metro-ansible vsp_preupgrade_health.yml -vvv
-./metro-ansible vstat_preupgrade_health.yml -vvv
 ```
-Skip the VSTAT health run if VSTAT is not present. The health reports and any reported error should carefully be checked before proceeding with the next steps.
 
+The health reports and any reported error should carefully be checked before proceeding with the next steps.
 These health checks can be run at any time of the upgrade process.
 
 3. Database Backup and decouple the VSD cluster
@@ -125,10 +124,10 @@ At this point, two VSD nodes have been upgraded. You are ready to move on to the
 7. Run VSC health checks
 
 ```
-./metro-ansible vsc_ha_preupgrade_health.yml -vvv
+./metro-ansible vsc_health.yml -e report_filename=vsc_preupgrade_health.txt -vvv
 ```
 
-This step is already done in step 2. You can skip it here if you wish. It is good practice to re-run at this point in orfder to inspect the report to make sure the VSD upgrade work has not caused problems.
+This step is already done in step 2. You can skip it here if you wish. It is good practice to re-run at this point in order to inspect the report to make sure the VSD upgrade work has not caused problems.
 
 8.  Run VSC backup and prep on vsc_node1
 
@@ -213,7 +212,7 @@ At this point, all 3 VSD nodes have been upgraded. If you experience a failure b
 17. Run VSTAT health checks
 
 ```
-./metro-ansible vstat_preupgrade_health.yml -vvv
+./metro-ansible vstat_health.yml -e report_filename=vstat_preupgrade_health.txt -vvv
 ```
 
 This step is already done in step 2. You can skip it here if you wish. It is good practice to re-run at this point in orfder to inspect the report to make sure the VSD upgrade work has not caused problems.
@@ -296,9 +295,8 @@ Edit the files listed above, then run:
 
 ```
 ./metro-ansible vsp_preupgrade_health.yml -vvv
-./metro-ansible vstat_preupgrade_health.yml -vvv
 ```
-Skip the VSTAT health run if VSTAT is not present. The health reports and any reported error should carefully be checked before proceeding with the next steps.
+The health reports and any reported error should carefully be checked before proceeding with the next steps.
 
 These health checks can be run at any time of the upgrade process.
 
@@ -336,10 +334,10 @@ At this point, VSD node is upgraded. You are ready to move on to the VSC node. I
 7. Run VSC health checks
 
 ```
-./metro-ansible vsc_sa_preupgrade_health.yml -vvv
+./metro-ansible vsc_health.yml -e report_filename=vsc_preupgrade_health.txt -vvv
 ```
 
-This step is already done in step 2. You can skip it here if you wish. It is good practice to re-run at this point in orfder to inspect the report to make sure the VSD upgrade work has not caused problems.
+This step is already done in step 2. You can skip it here if you wish. It is good practice to re-run at this point in order to inspect the report to make sure the VSD upgrade work has not caused problems.
 
 8.  Run VSC backup and prep on vsc
 
