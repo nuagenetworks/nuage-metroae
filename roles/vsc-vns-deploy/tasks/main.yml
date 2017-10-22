@@ -2,13 +2,12 @@
 - block:
   - name: Clean known_hosts
     command: ssh-keygen -R "{{ mgmt_ip }}"
-    delegate_to: "{{ ansible_deployment_host }}"
-    remote_user: "{{ ansible_sudo_username }}"
+    delegate_to: localhost
 
   - name: Change XMPP connection to TLS on VSD
     command: /opt/vsd/bin/ejmode allow -y
     remote_user: "root"
-    delegate_to: "{{  item }}"
+    delegate_to: "{{ item }}"
     with_items: "{{ groups['vsds'] }}"
 
   - name: wait for ejabberd-status to become running
