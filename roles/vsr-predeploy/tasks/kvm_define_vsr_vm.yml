@@ -1,41 +1,33 @@
 - debug: msg='{{ lookup("template", "vsr_xml.j2") }}' verbosity=1
 
-- name: Define VSR guest VM
-  virt:
-    name: '{{ vmname }}'
-    command: define
-    xml: '{{ lookup("template", "vsr_xml.j2") }}'
-    uri: qemu:///system
-  delegate_to: "{{ target_server }}"
-
 - block:
+
+  - name: Define VSR guest VM
+    virt:
+      name: '{{ vmname }}'
+      command: define
+      xml: '{{ lookup("template", "vsr_xml.j2") }}'
+      uri: qemu:///system
+
   - name: Start VSR and mark for autostart
     virt:
       name: '{{ vmname }}'
       state: running
       autostart: True
       uri: qemu:///system
+    when: ansible_version.full | version_compare('2.3', '>=')
 
-  when: ansible_version.full | version_compare('2.3', '>=')
-  delegate_to: "{{ target_server }}"
-  remote_user: "{{ target_server_username }}"
+  - block:
+    - name: "Configure VM to autostart"
+      command: virsh autostart {{ vmname }}
 
+    - name: "Run VSR VM"
+      virt:
+        name: '{{ vmname }}'
+        state: running
+        uri: qemu:///system
+    when: ansible_version.full | version_compare('2.3', '<')
 
-- block:
-  - name: "Configure VM to autostart"
-    command: virsh autostart {{ vmname }}
-
-  - name: "Run VSR VM"
-    virt:
-      name: '{{ vmname }}'
-      state: running
-      uri: qemu:///system
-
-  when: ansible_version.full | version_compare('2.3', '<')
-  delegate_to: "{{ target_server }}"
-  remote_user: "{{ target_server_username }}"
-
-- block:
   - name: Get updated VM information from {{ target_server }}
     virt: command=info
     register: virt_info
