@@ -14,7 +14,7 @@ If you have not previously used `build.yml` to deploy components, or your config
 ./metro-ansible build.yml
 ```  
 ## 2. Remove Components
-When `build_vars.yml` is accurate and you have run `./metro-ansible build.yml` you have the option of removing the entire deployment or only specified individual components.
+You have the option of removing the entire deployment or only specified individual components.
 ### Remove All Components  
 Remove the entire existing deployment with one command as follows:  
 ```
