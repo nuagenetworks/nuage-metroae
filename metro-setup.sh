@@ -223,7 +223,7 @@ function main() {
   yum_install "git"
 
   # pip modules
-  pip_install "ansible==2.2.1"
+  pip_install "ansible==2.4.0"
   pip_install "netmiko"
   pip_install "netaddr"
   pip_install "ipaddr"
