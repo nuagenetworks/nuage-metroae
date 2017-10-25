@@ -88,6 +88,26 @@
   command: ntpdate -u "{{ntp_server_list[0]}}"
   remote_user: "root"
 
+- name: Delete the default steptickers file
+  file:
+    path: /etc/ntp/step-tickers
+    state: absent
+  remote_user: "root"
+
+- name: Configure NTP servers for ntpdate
+  lineinfile:
+    dest: /etc/ntp/step-tickers
+    line: "{{ item }}"
+    create: yes
+  with_items: "{{ ntp_server_list }}"
+  remote_user: "root"
+
+- name: Enable ntpdate
+  service:
+    name: ntpdate
+    enabled: yes
+    state: started
+
 - name: Start ntpd
   systemd:
     name: ntpd
@@ -108,6 +128,27 @@
   delay: 5
   ignore_errors: yes
   remote_user: "root"
+
+- name: Disable cloud-init on VCIN, to avoid boot time delays
+  command: chkconfig cloud-init off
+  remote_user: "root"
+
+- block:
+  - name: Find location of CloudMgmt rpm
+    find: path="/opt/vsd/Packages/"  pattern="CloudMgmt-vmware*rpm" recurse=yes
+    register: rc_cloudmgmt_rpm
+
+  - name: install CloudMgmt rpm for create dvSwitch script
+    yum:
+      name: {{ rc_cloudmgmt_rpm.files[0].path }}
+      state: present
+
+  - name: Create dvSwitch if specified
+    command: >
+      /opt/vsd/CloudMgmt-vmware/cli.bash create_dvswitch --num-portgroup-ports 128 --num-portgroups 1 -u {{ vcenter.username }}
+        -p {{ vcenter.password }} -r {{ vcenter.cluster }} --provider-vdc-id 1 --url https://{{ vcenter.fqdn }}/sdk
+  remote_user: "root"
+  when: vcenter.fqdn is defined
 
 - block:
   - name: restart ntp if it hasn't synced yet
