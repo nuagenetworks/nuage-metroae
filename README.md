@@ -3,7 +3,7 @@
 MetroAG is an automation engine used for deploying and upgrading Nuage Networks components. 
 After specifing the individual details for your target platform, MetroAG (leveraging Ansible playbooks and roles) will setup the environment as specified. Alternatively, the environment could be upgraded, rolled-back, health-checked, etc.
 
-## Getting started#
+## Getting started
 
 To get started, you would typically go through these steps:
 
@@ -29,7 +29,7 @@ VNSUTIL (Virtualized Network Services - Utility) VM | X |  | X | X
 
 Dataplane coponents are as follows (installed as package/agent):
 
-Component |  KVM <br \>(el6, el7 or ubuntu 14.04/16.04) | ESXi
+Component |  KVM <br>(el6, el7 or ubuntu 14.04/16.04) | ESXi
 --------- | ---- | -------
 VRS (Virtual Routing & Switching) | X | (upgrade only)
 Libnetwork on VRS nodes  | X | 
