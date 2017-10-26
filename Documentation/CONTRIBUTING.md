@@ -1,9 +1,9 @@
 # Submitting Your Code and Becoming a Contributor to Nuage MetroAG
-Thank you for your interest! The main steps for submitting your code to Nuage Networks MetroAG are:
-1. Develop code on a fork
-2. Finalize code contribution
-3. Create pull request (PR)
-4. Address comments and inquiries
+Thank you for your interest! The main steps for submitting your code to Nuage Networks MetroAG are:  
+[1. Develop code on a fork](#1-develop-code-on-a-fork)  
+[2. Finalize code contribution](#2-finalize-code-contribution)  
+[3. Create pull request (PR)](#3-create-pull-request-pr)  
+[4. Address comments and inquiries](#4-address-comments-and-inquiries)  
 ## Prerequisites / Requirements
 All contributions must be consistent with the design of the existing **playbooks** and **roles**, which fall into the following categories:
 
@@ -18,8 +18,8 @@ Upgrade | For upgrading components from one release to another.
 Rollback | For restoring components to their previous version if an upgrade fails.
 ## 1. Develop Code on a Fork
 1. Before you start developing code, create your own fork from the upstream MetroAG repo. [https://github.com/nuagenetworks/nuage-metro/](https://github.com/nuagenetworks/nuage-metro/)
-2. Clone your own fork on your machine and switch to the _dev_ branch.
-Note: By default the fork clones into `nuage-metro`, but you have the option of providing a target dir for the clone, as shown below with `metro-fork`.
+2. Clone your own fork on your machine and switch to the _dev_ branch.  
+Note: By default the fork clones into `nuage-metro`. Consider creating a separate branch, other than dev, for feature development. Alternatively, you may provide a target dir for the clone, as shown below with `metro-fork`.
 ```
 git clone https://github.com/<your handle>/nuage-metro.git metro-fork/
 cd metro-fork/
