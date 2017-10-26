@@ -102,9 +102,9 @@ After all [Prerequisites](#prerequisites) are met, run the following set of play
 
 ## VSD, VSC, & VSTAT (elasticsearch ) SA/Standalone upgrade at a glance
 
-A sample workflow for 5.0.2 to 5.1.1 upgrade. For detailed workflow refer [Sample Metro workflow for standalone upgrade]
+A sample workflow for 5.0.2 to 5.1.1 upgrade. For detailed workflow refer [Sample Metro workflow for standalone upgrade](#sample-metro-workflow-for-standalone-upgrade)
 
-After all [Pre-Requisites] are met, run the following set of playbooks in the order specified to upgrade vsd,vsc,vstat deployed in SA/Standalone mode.
+After all [Prerequisites](#prerequisites) are met, run the following set of playbooks in the order specified to upgrade vsd,vsc,vstat deployed in SA/Standalone mode.
 1. ./metro-ansible vsp_preupgrade_health.yml -vvvv
 2. ./metro-ansible vsd_sa_upgrade_database_backup.yml -vvvv
 3. ./metro-ansible vsd_sa_upgrade_shutdown.yml -vvvv
@@ -189,7 +189,39 @@ At this point, the new vsd_node1 and vsd_node2 are up and running, but they have
 
 At this point, two VSD nodes have been upgraded. You are ready to move on to the first VSC. If you experience a failure before the VSD install script runs, retry playbook vsd_ha_upgrade_deploy_1_and_2.yml. If that fails again or the failure comes after the VSD install script runs, destroy the VMs manually or use vsd_ha_upgrade_destroy_1_and_2.yml, then retry starting at step 5.
 
-7. Run VSC health checks
+7. Power off vsd_node3
+
+```
+./metro-ansible vsd_ha_upgrade_shutdown_3.yml -vvvv
+```
+
+At this point, vsd_node3 is shut down, but not deleted. The new node will be brought up with a new VM name. Note that this step may be done manually if the user chooses. If you experience a failure running the Metro playbook for this step, a retry is advised. Or you can power off the VM manually.
+
+8. Run predeploy on vsd_node3
+
+```
+./metro-ansible vsd_ha_upgrade_predeploy_3.yml -vvvv
+```
+
+At this point, the new vsd_node3 is up and running, but t has not yet been configured. If you experience a failure in this step, execute the playbook vsd_ha_upgrade_destroy_3.yml to delete the new node. Then retry the step.
+
+9. Run deploy on vsd_node3
+
+```
+./metro-ansible vsd_ha_upgrade_deploy_3.yml -vvvv
+```
+
+At this point, all 3 VSD nodes have been upgraded. If you experience a failure before the VSD install script runs, retry playbook vsd_ha_upgrade_deploy_3.yml. If that fails again or the failure comes after the VSD install script runs, destroy the VMs manually or use vsd_ha_upgrade_destroy_3.yml, then retry starting at step 8.
+
+10. Set the VSD upgrade complete flag
+
+```
+./metro-ansible vsd_upgrade_complete_flag.yml -vvvv
+```
+
+After all the VSDs are upgraded, this step sets the upgrade flag to complete. It can be re-run in case of failure. It would be good time to login to VSD and verify the new version.
+
+11. Run VSC health checks
 
 ```
 ./metro-ansible vsc_health.yml -e report_filename=vsc_preupgrade_health.txt -vvvv
@@ -197,7 +229,7 @@ At this point, two VSD nodes have been upgraded. You are ready to move on to the
 
 This step is already done in step 2. You can skip it here if you wish. It is good practice to re-run at this point in order to inspect the report to make sure the VSD upgrade work has not caused problems.
 
-8.  Run VSC backup and prep on vsc_node1
+12.  Run VSC backup and prep on vsc_node1
 
 ```
 ./metro-ansible vsc_ha_upgrade_backup_and_prep_1.yml -vvvv
@@ -205,7 +237,7 @@ This step is already done in step 2. You can skip it here if you wish. It is goo
 
 If this fails, retry.
 
-9. Run VSC deploy on vsc_node1
+13. Run VSC deploy on vsc_node1
 
 ```
 ./metro-ansible vsc_ha_upgrade_deploy_1.yml -vvvv
@@ -213,7 +245,7 @@ If this fails, retry.
 
 If the step fails, you can retry. Backup plan is to manually copy a valid .tim file to the VSC to affect either the deployment (new version of tim file) or a rollback. (old version of tim file). If rollback fails, you will need to deploy a new VSC using the old version--or recover the VM from a backup. You can use Metro for the deployment (vsc_predeploy, vsc_deploy, vsc_postdeploy...).
 
-10. Run VSC postdeploy on vsc_node1
+14. Run VSC postdeploy on vsc_node1
 
 ```
 ./metro-ansible vsc_ha_upgrade_postdeploy_1.yml -vvvv
@@ -225,7 +257,7 @@ If this step fails, the recovery is much like that of the previous step: Manuall
 
 *Upgrade VRS here!*
 
-11.  Run VSC backup and prep on vsc_node2
+14.  Run VSC backup and prep on vsc_node2
 
 ```
 ./metro-ansible vsc_ha_upgrade_backup_and_prep_2.yml -vvvv
@@ -233,7 +265,7 @@ If this step fails, the recovery is much like that of the previous step: Manuall
 
 If this fails, retry.
 
-12. Run VSC deploy on vsc_node2
+15. Run VSC deploy on vsc_node2
 
 ```
 ./metro-ansible vsc_ha_upgrade_deploy_2.yml -vvvv
@@ -241,7 +273,7 @@ If this fails, retry.
 
 If the step fails, you can retry. Backup plan is to manually copy a valid .tim file to the VSC to affect either the deployment (new version of tim file) or a rollback. (old version of tim file). If rollback fails, you will need to deploy a new VSC using the old version--or recover the VM from a backup. You can use Metro for the deployment (vsc_predeploy, vsc_deploy, vsc_postdeploy...).
 
-13. Run VSC postdeploy on vsc_node2
+16. Run VSC postdeploy on vsc_node2
 
 ```
 ./metro-ansible vsc_ha_upgrade_postdeploy_2.yml -vvvv
@@ -251,29 +283,6 @@ At this point, you have both VSCs running the new version. It is time for you to
 
 If this step fails, the recovery is much like that of the previous step: Manually update the tim file or a complete deploy of the old VSC followed by a retry.
 
-14. Power off vsd_node3
-
-```
-./metro-ansible vsd_ha_upgrade_shutdown_3.yml -vvvv
-```
-
-At this point, vsd_node2 is shut down, but not deleted. The new node will be brought up with a new VM name. Note that this step may be done manually if the user chooses. If you experience a failure running the Metro playbook for this step, a retry is advised. Or you can power off the VM manually.
-
-15. Run predeploy on vsd_node3
-
-```
-./metro-ansible vsd_ha_upgrade_predeploy_3.yml -vvvv
-```
-
-At this point, the new vsd_node3 is up and running, but t has not yet been configured. If you experience a failure in this step, execute the playbook vsd_ha_upgrade_destroy_3.yml to delete the new node. Then retry the step.
-
-16. Run deploy on vsd_node3
-
-```
-./metro-ansible vsd_ha_upgrade_deploy_3.yml -vvvv
-```
-
-At this point, all 3 VSD nodes have been upgraded. If you experience a failure before the VSD install script runs, retry playbook vsd_ha_upgrade_deploy_3.yml. If that fails again or the failure comes after the VSD install script runs, destroy the VMs manually or use vsd_ha_upgrade_destroy_3.yml, then retry starting at step 15.
 
 *If VSTAT nodes exist upgrade them using following procedure, if not skip to step 23 to finalize VSP upgrade*
 
@@ -326,10 +335,10 @@ At this point, new vstat nodes have been deployed and configured to talk with VS
 At this point the data from the old vstat nodes is migrated to the new VSTAT nodes from the NFS shared folder. If you experience a failure in the previous step, you can simply retry.
 
 
-23. Run VSP upgrade wrapup to finalize settings
+23. Run VSP upgrade postdeploy to finalize settings
 
 ```
-./metro-ansible vsp_ha_upgrade_wrapup.yml -vvvv
+./metro-ansible vsp_upgrade_postdeploy.yml -vvvv
 ```
 
 This will execute the final steps of the upgrade. It can be rerun if there is a failure.
@@ -399,7 +408,16 @@ At this point, the new vsd node is up and running, but it has not yet been confi
 
 At this point, VSD node is upgraded. You are ready to move on to the VSC node. If you experience a failure before the VSD install script runs, retry playbook vsd_sa_upgrade_deploy.yml. If that fails again or the failure comes after the VSD install script runs, destroy the VMs manually or use vsd_destroy.yml, then retry starting at step 5.
 
-7. Run VSC health checks
+7. Set the VSD upgrade complete flag
+
+```
+./metro-ansible vsd_upgrade_complete_flag.yml -vvvv
+```
+
+After all the VSDs are upgraded, this step sets the upgrade flag to complete. It can be re-run in case of failure. It would be good time to login to VSD and v
+erify the new version.
+
+8. Run VSC health checks
 
 ```
 ./metro-ansible vsc_health.yml -e report_filename=vsc_preupgrade_health.txt -vvvv
@@ -407,13 +425,13 @@ At this point, VSD node is upgraded. You are ready to move on to the VSC node. I
 
 This step is already done in step 2. You can skip it here if you wish. It is good practice to re-run at this point in order to inspect the report to make sure the VSD upgrade work has not caused problems.
 
-8.  Run VSC backup and prep on vsc
+9.  Run VSC backup and prep on vsc
 
 ```
 ./metro-ansible vsc_sa_upgrade_backup_and_prep.yml -vvvv
 ```
 
-9. Run VSC deploy on vsc
+10. Run VSC deploy on vsc
 
 ```
 ./metro-ansible vsc_sa_upgrade_deploy.yml -vvvv
@@ -421,7 +439,7 @@ This step is already done in step 2. You can skip it here if you wish. It is goo
 
 If the step fails, you can retry. Backup plan is to manually copy a valid .tim file to the VSC to affect either the deployment (new version of tim file) or a rollback. (old version of tim file). If rollback fails, you will need to deploy a new VSC using the old version--or recover the VM from a backup. You can use Metro for the deployment (vsc_predeploy, vsc_deploy, vsc_postdeploy...).
 
-10. Run VSC postdeploy on vsc
+11. Run VSC postdeploy on vsc
 
 ```
 ./metro-ansible vsc_sa_upgrade_postdeploy.yml -vvvv
@@ -435,15 +453,15 @@ If this step fails, the recovery is much like that of the previous step: Manuall
 
 *If VSTAT node exist upgrade it using steps 17-22 in HA upgrade workflow mentioned in above section, if not skip to step 11 to finalize VSP upgrade*
 
-11. Run VSP upgrade wrapup to finalize settings
+12. Run VSP upgrade postdeploy to finalize settings
 
 ```
-./metro-ansible vsp_sa_upgrade_wrapup.yml -vvvv
+./metro-ansible vsp_upgrade_postdeploy.yml -vvvv
 ```
 
 This will execute the final steps of the upgrade. It can be rerun if there is a failure.
 
-12. Run VSP post-upgrade heath
+13. Run VSP post-upgrade heath
 
 ```
 ./metro-ansible vsp_postupgrade_health.yml -vvvv
