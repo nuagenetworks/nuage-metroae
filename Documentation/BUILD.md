@@ -2,7 +2,7 @@
 The main steps for customizing (modeling) your Nuage MetroAG environment are:  
 [1. Customize variables](#1-customize-variables)  
 [2. Make files available](#2-make-files-available)  
-[3. Execute `build.yml`](#3-execute-build.yml)  
+[3. Execute build.yml](#3-execute-build.yml)  
 ## Prerequisites / Requirements
 If you have not previously set up the Nuage MetroAG Ansible environment, see [SETUP.md](SETUP.md) before proceeding.
 
