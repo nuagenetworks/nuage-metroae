@@ -1,6 +1,6 @@
 # Removing Nuage Networks Components with MetroAG
 The main steps for removing a deployment are:
-[1. Check existing configuration](#1.-check-existing-configuration)
+[1. Check existing configuration](#1.-check-existing-configuration)  
 [2. Remove component(s)](#2.-remove-component(s))  
 ## Prerequisites / Requirements
 Use this procedure when you have previously deployed VSP components and would like to remove all or some of the components and start over.  
