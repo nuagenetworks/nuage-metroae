@@ -69,13 +69,13 @@ Generate necessary data for the ansible playbooks to run by executing `build_upg
 A sample workflow for 5.0.2 to 5.1.1 upgrade. For more detailed workflow refer [Sample HA Metro workflow for an upgrade]
 
 After all [Pre-Requisites] are met, run the following set of playbooks in the order specified to upgrade vsd,vsc,vstat deployed in HA/Cluster mode.
-1 ./metro-ansible vsp_preupgrade_health.yml -vvvv
-2 ./metro-ansible vsd_ha_upgrade_database_backup_and_decouple.yml -vvvv
-3 ./metro-ansible vsd_ha_upgrade_shutdown_1_and_2.yml -vvvv
-4 ./metro-ansible vsd_ha_upgrade_predeploy_1_and_2.yml -vvvv
-5 ./metro-ansible vsd_ha_upgrade_deploy_1_and_2.yml -vvvv
-6 ./metro-ansible vsd_ha_upgrade_shutdown_3.yml -vvvv
-7 ./metro-ansible vsd_ha_upgrade_predeploy_3.yml -vvvv
+1. ./metro-ansible vsp_preupgrade_health.yml -vvvv
+2. ./metro-ansible vsd_ha_upgrade_database_backup_and_decouple.yml -vvvv
+3. ./metro-ansible vsd_ha_upgrade_shutdown_1_and_2.yml -vvvv
+4. ./metro-ansible vsd_ha_upgrade_predeploy_1_and_2.yml -vvvv
+5. ./metro-ansible vsd_ha_upgrade_deploy_1_and_2.yml -vvvv
+6. ./metro-ansible vsd_ha_upgrade_shutdown_3.yml -vvvv
+7. ./metro-ansible vsd_ha_upgrade_predeploy_3.yml -vvvv
 8 ./metro-ansible vsd_ha_upgrade_deploy_3.yml -vvvv
 9 ./metro-ansible vsd_upgrade_complete_flag.yml -vvv
 10 ./metro-ansible vsc_health.yml -e report_filename=vsc_preupgrade_health.txt -vvvv
@@ -127,7 +127,7 @@ After all [Pre-Requisites] are met, run the following set of playbooks in the or
 
 ** FINALIZE UPGRADE **
 17 ./metro-ansible vsp_upgrade_postdeploy.yml -vvvv
-17 ./metro-ansible vsp_postupgrade_health.yml -vvvv 
+18 ./metro-ansible vsp_postupgrade_health.yml -vvvv 
 
 
 ## Sample HA Metro workflow for an upgrade
