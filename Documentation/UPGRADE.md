@@ -23,7 +23,7 @@ The playbook `build_upgrade.yml` relies on build_vars.yml, upgrade_vars.yml and 
 
 1. `build_upgrade.yml` requirements
 
-Upgrading VSD and VSTAT nodes require following changes to `build_vars.yml` file.
+ Upgrading VSD and VSTAT nodes require following changes to `build_vars.yml` file.
 - Users must define a value for `upgrade_vmname` for each VSD and VSTAT being upgraded. The values of `upgrade_vmname` must be different from the VM name currently being used by the VMs that are running. `upgrade_vmname` is required because the upgrade process will simply power down the old VMs, not delete them. We keep the old VMs around in case a rollback is required. For example:
 
 ```
