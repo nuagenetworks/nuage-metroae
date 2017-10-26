@@ -30,6 +30,7 @@ The playbook `build_upgrade.yml` relies on build_vars.yml, upgrade_vars.yml and 
 myvsds:
 
 - { hostname: nl-gv-pbl-a1-sdn-nvd01.sdn-acc.kpn.com,
+    vmname: nl-gv-plb-a1-sdn-upg00,
     upgrade_vmname: nl-gv-plb-a1-sdn-upg01,
     target_server_type: "kvm",
     target_server: 10.242.103.55,
