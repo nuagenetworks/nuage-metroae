@@ -1,21 +1,21 @@
 # Nuage Networks MetroAG Automation EnGine (AG)
 ## Overview
 MetroAG is an automation engine used for deploying and upgrading Nuage Networks components. 
-After specifing the individual details for your target platform, MetroAG (leveraging Ansible playbooks and roles) will setup the environment as specified. Alternatively, the environment could be upgraded, rolled-back, health-checked, etc.
+After specifying the individual details for your target platform, MetroAG (leveraging Ansible playbooks and roles) sets up the environment as specified. Alternatively, the environment could be upgraded, rolled-back, health-checked, etc.
 
-## Getting started
+## Getting Started
 
 To get started, you would typically go through these steps:
 
 1. [Setup](Documentation/SETUP.md) your Nuage MetroAG Ansible environment on the host on which MetroAG is to be run.
 
-2. [Customize](Documentation/BUILD.md) variable files so they match your network topology and desribe your NuageNetworks deployment specifics.
+2. [Customize](Documentation/BUILD.md) variable files so they match your network topology and describe your NuageNetworks deployment specifics.
 
-3. [Deploy](Documentation/DEPLOY.md) the various components (if they have not previously been deployed), perform an [Upgrade](Documentation/UPGRADE.md), or run a [Health check](Documentation/HEALTH.md) on your system.
+3. [Deploy](Documentation/DEPLOY.md) the various components (if they have not previously been deployed), perform an [upgrade](Documentation/UPGRADE.md), or run a health check on your system.
 
-4. If things did notwork out as expected, [Destroy](Documentation/DESTROY.md) or [Rollback](Documentation/ROLLBACK.md) your environment.
+4. If things did not work out as expected, [destroy](Documentation/DESTROY.md) or [rollback](Documentation/ROLLBACK.md) your environment.
 
-## Supported Nuage VSP Components for deployment
+## Supported Nuage VSP Components for Deployment
 The following Nuage VSP components are supported for deployment using MetroAG. These are all deployed as VMs on a given _target server_.
 
 
@@ -27,7 +27,7 @@ VSC (Virtualized Services Controller) | X | X | X | X
 VCIN (vCenter Integration Node) | X |  | X | X
 VNSUTIL (Virtualized Network Services - Utility) VM | X |  | X | X
 
-Dataplane coponents are as follows (installed as package/agent):
+Dataplane components are as follows (installed as package/agent):
 
 Component |  KVM <br>(el6, el7 or ubuntu 14.04/16.04) | ESXi
 --------- | ---- | -------
@@ -40,7 +40,7 @@ Auxiliary services are also provided:
 
 ![topology](topology.png)
 
-## Supported Nuage VSP Components for upgrade
+## Supported Nuage VSP Components for Upgrade
 
 MetroAG currently also provides upgrade support for
 
@@ -86,12 +86,14 @@ File name | Description
 [OPENSTACK.md](Documentation/OPENSTACK.md) | Deploy VSP components in OpenStack (limited support).
 
 
-## Questions, Feedback and Contributing
-Ask questions and get support on the [nuage-metro-interest@list.nokia.com](mailto:nuage-metro-interest@list.nokia.com "send email to nuage-metro project") mailing list.   
+## Questions, Feedback, and Contributing
+Ask questions and get support via email.  
+  Outside Nokia: [devops@nuagenetworks.net](mailto:deveops@nuagenetworks.net "send email to nuage-metro project")  
+  Internal Nokia: [nuage-metro-interest@list.nokia.com](mailto:nuage-metro-interest@list.nokia.com "send email to nuage-metro project")
 
 Report bugs you find and suggest new features and enhancements via the [GitHub Issues](https://github.com/nuagenetworks/nuage-metro/issues "nuage-metro issues") feature.
- 
-You may also [contribute](Documentation/CONTRIBUTING.md) to Nuage MetroAG by submitting your own code to the project.
+
+You may also [contribute](CONTRIBUTING.MD) to Nuage MetroAG by submitting your own code to the project.
  
 ## License
 Apache License 2.0
