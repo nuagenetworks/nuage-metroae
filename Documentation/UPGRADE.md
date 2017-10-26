@@ -1,6 +1,6 @@
 # Metro: Automated Upgrade of Nuage Software
 
-## Current support for upgrade on KVM and vmWARE
+## Current support for upgrade on KVM and VMware
 
 1. Nuage Networks components supported
    1. VSD - HA and SA deployments
@@ -11,9 +11,9 @@
 Following ugrade path is tested with metro for HA and SA deployments
 `5.0.2 to 5.1.1`
 
-For other supported upgrade paths, refer to official NuageNetworks Documentation 
+For other supported upgrade paths, refer to official NuageNetworks Documentation
 
-`All upgrades should be tested in a lab environment before running at a customer site`
+** All upgrades should be tested in a lab environment before running at a customer site **
 
 ## Prerequisites
 
@@ -22,6 +22,7 @@ Metro provides a set of playbooks and roles to automate the upgrade of significa
 The playbook `build_upgrade.yml` relies on build_vars.yml, upgrade_vars.yml and user_creds.yml to automatically populate a number of Ansible variable files for the operation of the metro playbooks.
 
 1. `build_upgrade.yml` requirements
+
 Upgrading VSD and VSTAT nodes require following changes to `build_vars.yml` file.
 - Users must define a value for `upgrade_vmname` for each VSD and VSTAT being upgraded. The values of `upgrade_vmname` must be different from the VM name currently being used by the VMs that are running. `upgrade_vmname` is required because the upgrade process will simply power down the old VMs, not delete them. We keep the old VMs around in case a rollback is required. For example:
 
@@ -36,7 +37,9 @@ myvsds:
     mgmt_gateway: 10.242.103.1,
     mgmt_netmask: 255.255.255.0 }
 ```
+
 2. `upgrade_vars.yml` requirements
+
 Upgrading VSTAT nodes require following changes to `upgrade_vars.yml` file.
 - Users must define a value for `vstats_nfs_server_with_folder` that will be mounted on the VSTAT VM. It will be used as the backup and restore location for ES files during the upgrade and rollback. The value must be of the form `host_or_ip:/nfs/exported/folder`. For example:
 
@@ -46,6 +49,7 @@ vstat_nfs_server_with_folder: 135.227.181.233:/tmp/vstat/
 The folder listed must be NFS exported by the server prior to running the upgrade.
 
 3. `VSD and VSTAT path requirements` 
+
 Upgrading VSD and VSTAT nodes require following changes when user decides not to run nuage_unzip.yml
 - Users should define additional paths apart from the ones that were mentioned in nuage_unzip.yml section of BUILD.md file. Discussed below are these additional paths.
 
@@ -60,6 +64,7 @@ As part of VSD upgrade, migration scripts are provided as seperate package (Nuag
 As part of VSTAT upgrade, backup scripts are provided as seperate package (Nuage-elastic-backup-version-.tar.gz) that perform backup of existing indices of ElasticSearch node. This package should be placed inside the `backup` folder of vstat path as shown above.
 
 4. `VSC path requirements`
+
 Upgrading VSC requires <.tim> file that needs to be present in VSC path <yourpath>/vsc/
 
 Generate necessary data for the ansible playbooks to run by executing `build_upgrade` playbook. This requires `build_vars.yml`,  `upgrade_vars.yml`, and `user_creds.yml` to be populated according to the environment. The `user_creds.yml` file must contain VSD and VSC credentials as shown in the example file `examples\user_creds.yml` 
@@ -99,6 +104,7 @@ After all [Prerequisites](#prerequisites) are met, run the following set of play
 22. ./metro-ansible vstat_upgrade_data_migrate.yml -vvvv
 
 ** FINALIZE UPGRADE **
+
 23. ./metro-ansible vsp_upgrade_postdeploy.yml -vvvv
 24. ./metro-ansible vsp_postupgrade_health.yml -vvvv
  
@@ -129,6 +135,7 @@ After all [Prerequisites](#prerequisites) are met, run the following set of play
 16. ./metro-ansible vstat_upgrade_data_migrate.yml -vvvv
 
 ** FINALIZE UPGRADE **
+
 17 ./metro-ansible vsp_upgrade_postdeploy.yml -vvvv
 18 ./metro-ansible vsp_postupgrade_health.yml -vvvv 
 
