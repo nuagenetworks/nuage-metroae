@@ -29,12 +29,11 @@
 * Added iptables for VSTAT
 ## Known Limitations
 *	VSD health checks during the upgrade only takes in to account monit summary, not other checks.
-*	No support for release specific commands to stop elastic search/vstat process on vsd.
-*	No support for release specific commands to stop core process on vsd.
+*	No support for release specific commands to stop elastic search/vstat process on vsd when upgrading from 3.2R8 to 4.0RX.
+*	No support for release specific commands to stop core process on vsd when upgrading from 3.2R8 to 4.0RX.
 *	Nuage Metro will not run on el6 (e.g. CentOS 6.8) hosts due to a lack of modern python-jinja2 support.
-*	VSC disconnect from VSD prior 5.0.1 upgrade is not yet implemented
 *	VNS support on VMware is only available for VSP version 5.0.1 and later.
-*	VSPK version in nuage_vspk.py is set to v4_0 for aws deployments of nsgv
+* VSPK version for the `nsgv-predeploy` role is hardcoded to v4_0 in `library/nuage_vspk.py`. If you need v5_0, edit `library/nuage_vspk.py` accordingly.
 * When using Ansible 2.3.1, it is possible to have a VSC operation fail similar to the following:
 ```
 01:41:05 fatal: [jenkinsvsc1.example.com -> localhost]: FAILED! => {

@@ -1,8 +1,8 @@
 # Deploying Nuage Networks Components with MetroAG
 You can execute MetroAG playbooks to perform the following installations:
-* Deploy All Components
-* Deploy Individual Modules
-* Install a Particular Role or Host
+* [Deploy All Components](#deploy-all-components)  
+* [Deploy Individual Modules](#deploy-individual-modules)  
+* [Install a Particular Role or Host](#install-a-particular-role-or-host)  
 ## Prerequisites / Requirements
 Before deploying any components, you must have previously [set up your Nuage MetroAG Ansible environment](SETUP.md "link to SETUP documentation") and [customized the environment for your target platform](BUILD.md "link to BUILD documentation"). If you have set up and built your environment successfully you will have
 * a `hosts` file in `nuage-metro/`, which acts as the Ansible inventory file

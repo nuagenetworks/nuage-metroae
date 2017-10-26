@@ -1,9 +1,9 @@
 # Setting Up the Nuage MetroAG Ansible Environment
-The main steps for setting up your Nuage MetroAG environment are:
-1. Clone Nuage MetroAG repository
-2. Set up Ansible host
-3. Generate SSH keys
-4. Install ovftool (for VMware only)
+The main steps for setting up your Nuage MetroAG environment are:  
+[1. Clone Nuage MetroAG repository](#1-clone-nuage-metroag-repository)  
+[2. Set up Ansible host](#2-set-up-ansible-host)  
+[3. Generate SSH keys](#3-generate-ssh-keys)  
+[4. Install ovftool (for VMware only)](#4-install-ovftool-for-vmware-only)  
 
 ## Prerequisites / Requirements
 Before you begin working with MetroAG, please take these requirements and restrictions into account. Also, review [README.md](/README.md) for a list of supported VCS/VNS components, as well as supported target server types.
@@ -87,7 +87,7 @@ VSPK Python module | `pip install vspk`
  -----| ------
  shade python | `pip install shade`
 
-## 3. Generate SSH Keys and enable passwordless SSH
+## 3. Generate SSH Keys
  To enable passwordless SSH access, public/private SSH keys must be created and distributed for the MetroAG and root users. This can be done as follows:
  1. Login to the Ansible Host as the MetroAG User.
  2. Execute the command: `ssh-keygen`
