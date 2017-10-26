@@ -66,7 +66,7 @@ Python-devel | `yum install -y python-devel.x86_64`
 Openssl-devel | `yum install -y openssl-devel`
 Python pip | `yum install -y python2-pip `
 Development Tools | `yum install -y "@Development tools"`
-Ansible 2.2.1 (for full support) | `pip install ansible==2.2.1`
+Ansible 2.4 (for full support) | `pip install ansible==2.4`
 Netmiko and its dependencies | `pip install netmiko`
 Netaddr and its dependencies | `pip install netaddr`
 IPaddress and its dependencies | `pip install ipaddress`
@@ -87,10 +87,9 @@ VSPK Python module | `pip install vspk`
  -----| ------
  shade python | `pip install shade`
 
-## 3. Generate SSH Keys
- If the public/private SSH keys for password-less SSH access have not been created for the MetroAG User, create them as follows:
+## 3. Generate SSH Keys and enable passwordless SSH
+ To enable passwordless SSH access, public/private SSH keys must be created and distributed for the MetroAG and root users. This can be done as follows:
  1. Login to the Ansible Host as the MetroAG User.
-
  2. Execute the command: `ssh-keygen`
  3. Follow the prompts. It is normal to accept all defaults.
  4. Copy the SSH public key to the MetroAG User's authorized keys file.  
