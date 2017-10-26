@@ -1,38 +1,33 @@
 # Customizing the Nuage MetroAG Ansible Environment
+The main steps for customizing (modeling) your Nuage MetroAG environment are:
+1. Customize variables
+2. Make files available
+3. Execute `build.yml`
+## Prerequisites / Requirements
+If you have not previously set up the Nuage MetroAG Ansible environment, see [SETUP.md](SETUP.md) before proceeding.
 
-The *BUILD* phase refers to the modeling part of your environment. It involves setting all variables correctly so that the automated deployment scripts later are actually configuring the right thing. 
-
-It involves:
-1. Customizing Variables
-1. Unzip NuageNetworks Software
-1. Execute `build.yml` or `upgrade_build.yml` to generate necessary Ansible host and group variable files
-
-
-This phase assumes you have already set up the Nuage MetroAG Ansible environment per `SETUP.md`.
-
-Note that if you have issues during the *BUILD* phase, you can always start over fresh as detailed later in this document.
-
-## Customizing Variables
+## 1. Customize Variables
+Setting variables correctly ensures that when the automated deployment scripts are run later they configure components as intended. Precise syntax is crucial for success.
 
 `build_vars.yml` contains a dictionary of configuration parameters for each component. You determine which components MetroAG operates on, as well as *how* those components are operated on, by including them or excluding them in the `build_vars.yml` file.
 
-If you are using zero factor bootstrapping on VNS, also refer to `ZFB.md` for more information.
+If you are using zero factor bootstrapping on VNS, also refer to [ZFB.md](ZFB.md) for more information.
 
-Note: Precise syntax is crucial for success.
-
-## Make Unzipped Nuage Software Files Available
+## 2. Make Files Available
 
 Before installing or upgrading with Nuage MetroAG for the first time, ensure that the required unzipped Nuage software files (QCOW2, OVA, and Linux Package files) are available for the components being installed or upgraded. Use one of the two methods below.
-* Specify the appropriate source and target directories in `build_vars.yml` as follows and let MetroAG do the heavy lifting for you:  
+### Make Files Available Automatically
+1. Specify the appropriate source and target directories in `build_vars.yml` as follows:
 ```
- nuage_zipped_files_dir: "<your_path_with_zipped_software>"    
- nuage_unzipped_files_dir: <your_path_for_unzipped_software  
+ nuage_zipped_files_dir: "<your_path_with_zipped_software>"
+ nuage_unzipped_files_dir: <your_path_for_unzipped_software>"
 ```
-  Then execute the following command:
-
-  `./metro-ansible nuage_unzip.yml`
-
-* Or you can manually copy the proper files to their locations as shown below, as applicable.
+2. Execute the following command:
+```
+./metro-ansible nuage_unzip.yml
+```
+### Make Files Available Manually
+Alternatively, you can manually copy the proper files to their locations as shown below, as applicable.
 
   ```
   <nuage_unzipped_files_dir/vsd/qcow2/
@@ -48,9 +43,9 @@ Before installing or upgrading with Nuage MetroAG for the first time, ensure tha
   <nuage_unzipped_files_dir/vns/util/
   ```
 
-## Execute build.yml
+## 3. Execute build.yml
 
-After you've set up your variables and made the required software files available, run the playbook with the following command to automatically populate the Ansible variable files:
+After you have set up your variables and made the required software files available, automatically populate the Ansible variable files by running the `build` playbook with the following command:
 
 `./metro-ansible build.yml`
 
@@ -69,36 +64,42 @@ When you are contributing code, or pulling new versions of Metro quite often, it
 Both `nuage-unzip.yml` and `build.yml` support passing the location of this file explicitly as extra variable:
 
 ```
-./metro-ansible nuage_unzip.yml -e build_vars_file="/path/to/your/build_vars.yml/file"
-./metro-ansible build.yml -e build_vars_file="/path/to/your/build_vars.yml/file" user_creds_file=/path/to/your/user_creds.yml/file"
-``` 
-
-
-## Having Issues? Reset your environment 
+./metro-ansible nuage_unzip.yml -e build_vars_file="/path/to/your/build_vars.yml"
+./metro-ansible build.yml -e build_vars_file="/path/to/your/build_vars.yml" user_creds_file=/path/to/your/user_creds.yml"
+```
+## Having Issues? Reset your environment
 If you have issues with running the build, you can reset to factory settings and start over.
 
 WARNING: **You may lose your work!** A timestamped backup copy, in the form of `build_vars.yml.<date and time>~` is created (in case you change your mind.) Make sure you have enough storage for it.
 
-
-Reset the build with the following command.
-
-
-`./metro-ansible reset_build.yml`
-
+Reset the build with the following command:
+```
+./metro-ansible reset_build.yml
+```
 Note: `metro-ansible` is a shell script that executes `ansible-playbook` with the proper includes and command line switches. Use `metro-ansible` (instead of `ansible-playbook`) when running any of the playbooks provided herein.
 
 `reset_build.yml` performs the following tasks for you.
-* overwrites the contents of `build_vars.yml`
-* detroys the `host` file
+* overwrites `build_vars.yml`, `upgrade_vars.yml`, and hosts
+* destroys the `host` file
 * destroys the `host_vars` directory
 * destroys the `group_vars` directory
 * resets the variable configuration of Metro to factory settings
 
-## Ready to Deploy?
+## Next Steps
+After successfully building your environment you have several options. Refer to the applicable documentation below for instructions.
 
-Proceed to `DEPLOY.md`.
+What Do You Want to Do Next? | Documentation
+---- | ----
+Deploy Nuage components for the first time | [DEPLOY.md](DEPLOY.md)
+Add additional components to an existing deployment | [DEPLOY.md](DEPLOY.md)
+Upgrade existing components to a newer version | [UPGRADE.md](UPGRADE.md)
+Remove previously deployed component(s) | [DESTROY.md](DESTROY.md)
 
----
+## Questions, Feedback, and Contributing
+Ask questions and get support via email.  
+  Outside Nokia: [devops@nuagenetworks.net](mailto:deveops@nuagenetworks.net "send email to nuage-metro project")  
+  Internal Nokia: [nuage-metro-interest@list.nokia.com](mailto:nuage-metro-interest@list.nokia.com "send email to nuage-metro project")
+
 Report bugs you find and suggest new features and enhancements via the [GitHub Issues](https://github.com/nuagenetworks/nuage-metro/issues "nuage-metro issues") feature.
 
- You may also ask questions and get support on the [nuage-metro-interest@list.nokia.com](mailto:nuage-metro-interest@list.nokia.com "send email to nuage-metro project") mailing list.
+You may also [contribute](CONTRIBUTING.md) to Nuage MetroAG by submitting your own code to the project.
