@@ -7,6 +7,7 @@
    1. VSC - HA and SA deployments
    1. VSTAT (ElasticSearch) - HA and SA deployments
    1. VCIN
+
 Following ugrade path is tested with metro for HA and SA deployments
 `5.0.2 to 5.1.1`
 For other supported upgrade paths, refer to official NuageNetworks Documentation 
