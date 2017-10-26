@@ -10,7 +10,9 @@
 
 Following ugrade path is tested with metro for HA and SA deployments
 `5.0.2 to 5.1.1`
+
 For other supported upgrade paths, refer to official NuageNetworks Documentation 
+
 `All upgrades should be tested in a lab environment before running at a customer site`
 
 ## Prerequisites
