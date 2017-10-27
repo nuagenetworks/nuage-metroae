@@ -1,18 +1,21 @@
 # MetroAG Release Notes
 ## New Features and Enhancements in Release 2.3
-*	Early DNS validation
+*	Support Ansible 2.3/2.4 (Use Ansible==2.4)
+*	Added script to setup Metro environment
+* Moved playbooks and docs to subfolders to reduce clutter
+* Reorganized and clarified docs
+*	Added support for per-VM network bridges
+*	Added VSR deploy support
+* Added VRS upgrade support
+*	Added vsd-postdeploy
+*	Added Early DNS validation
+* Added build_var.yml validation
 *	Retargeted VCIN deploy to use VSD roles
 *	Move vsc-health variables to build_vars.yml
-*	Support Ansible 2.3/2.4
-*	Added script to setup Metro environment
 *	Added VRSG health checks
-*	Support per-VM network bridges
-*	Nuage-unzip enhancments
-*	VSR deploy support
-*	Remove test directory and its contents
-*	Introduce playbooks and documentation directories
+*	Enhanced Nuage-unzip
+*	Removed test directory and its contents
 *	Allow XMPP connection type setting on VSD
-*	Add vsd-postdeploy
 *	Support per-VSC health variable setting
 * Enhanced license script to deploy multiple licenses
 ## Resolved Issues
