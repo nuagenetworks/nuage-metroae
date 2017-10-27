@@ -49,7 +49,7 @@ vstat_nfs_server_with_folder: 135.227.181.233:/tmp/vstat/
 ```
 The folder listed must be NFS exported by the server prior to running the upgrade.
 
-3. `VSD and VSTAT path requirements` 
+3. `VSD and VSTAT path requirements`
 
 Upgrading VSD and VSTAT nodes require following changes when user decides not to run nuage_unzip.yml
 - Users should define additional paths apart from the ones that were mentioned in nuage_unzip.yml section of BUILD.md file. Discussed below are these additional paths.
@@ -68,7 +68,7 @@ As part of VSTAT upgrade, backup scripts are provided as seperate package (Nuage
 
 Upgrading VSC requires <.tim> file that needs to be present in VSC path <yourpath>/vsc/
 
-Generate necessary data for the ansible playbooks to run by executing `build_upgrade` playbook. This requires `build_vars.yml`,  `upgrade_vars.yml`, and `user_creds.yml` to be populated according to the environment. The `user_creds.yml` file must contain VSD and VSC credentials as shown in the example file `examples\user_creds.yml` 
+Generate necessary data for the ansible playbooks to run by executing `build_upgrade` playbook. This requires `build_vars.yml`,  `upgrade_vars.yml`, and `user_creds.yml` to be populated according to the environment. The `user_creds.yml` file must contain VSD and VSC credentials as shown in the example file `examples\user_creds.yml`
 
 5. Run `./metro-ansible build_upgrade.yml -vvvv` to generate variables and files nedded for upgrade
 
@@ -108,7 +108,7 @@ After all [Prerequisites](#prerequisites) are met, run the following set of play
 
 23. ./metro-ansible vsp_upgrade_postdeploy.yml -vvvv
 24. ./metro-ansible vsp_postupgrade_health.yml -vvvv
- 
+
 
 ## VSD, VSC, & VSTAT (elasticsearch ) SA/Standalone upgrade at a glance
 
@@ -138,7 +138,7 @@ After all [Prerequisites](#prerequisites) are met, run the following set of play
 ** FINALIZE UPGRADE **
 
 17 ./metro-ansible vsp_upgrade_postdeploy.yml -vvvv
-18 ./metro-ansible vsp_postupgrade_health.yml -vvvv 
+18 ./metro-ansible vsp_postupgrade_health.yml -vvvv
 
 
 ## Sample HA Metro workflow for an upgrade
@@ -214,7 +214,7 @@ At this point, vsd_node3 is shut down, but not deleted. The new node will be bro
 ./metro-ansible vsd_ha_upgrade_predeploy_3.yml -vvvv
 ```
 
-At this point, the new vsd_node3 is up and running, but t has not yet been configured. If you experience a failure in this step, execute the playbook vsd_ha_upgrade_destroy_3.yml to delete the new node. Then retry the step.
+At this point, the new vsd_node3 is up and running, but it has not yet been configured. If you experience a failure in this step, execute the playbook vsd_ha_upgrade_destroy_3.yml to delete the new node. Then retry the step.
 
 9. Run deploy on vsd_node3
 
