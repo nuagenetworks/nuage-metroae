@@ -8,6 +8,7 @@ echo "System Configuration"
         name {{ inventory_hostname }}
         time
             ntp
+                ntp-server
             {% for ntp_server in ntp_server_list %}
                 server {{ ntp_server }}
             {% endfor %}
@@ -16,10 +17,10 @@ echo "System Configuration"
         exit
     exit
 #--------------------------------------------------
-#echo "System Security Configuration"               
+#echo "System Security Configuration"
 #--------------------------------------------------
-    system                                         
-        security                                   
+    system
+        security
             tls-profile "vns-tls-profile" create
                 shutdown
             exit
@@ -59,8 +60,10 @@ echo "Router (Network Side) Configuration"
 ##--------------------------------------------------
         {% for vsc_item in list_of_vscs %}
           {% if vsc_item != inventory_hostname %}
-            {% if hostvars[vsc_item].system_ip != system_ip %}
+            {% if hostvars[vsc_item].system_ip is defined %}
+              {% if hostvars[vsc_item].system_ip != system_ip %}
         static-route {{ hostvars[vsc_item].system_ip }}/32 next-hop {{ vsc_control_ip }}
+              {% endif %}
             {% endif %}
           {% endif %}
         {% endfor %}
@@ -75,13 +78,17 @@ echo "Router (Network Side) Configuration"
                     send-orf
                 exit
             exit
+            rapid-withdrawal
+            rapid-update evpn
             group internal
                 type internal
                 {% for vsc_item in list_of_vscs %}
                   {% if vsc_item != inventory_hostname %}
-                    {% if hostvars[vsc_item].system_ip != system_ip %}
+                    {% if hostvars[vsc_item].system_ip is defined %}
+                      {% if hostvars[vsc_item].system_ip != system_ip %}
                 neighbor {{ hostvars[vsc_item].system_ip }}
                 exit
+                      {% endif %}
                     {% endif %}
                   {% endif %}
                 {% endfor %}

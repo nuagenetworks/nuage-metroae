@@ -5,7 +5,7 @@
       "{{ os_auth }}"
     server: "{{ inventory_hostname }}"
   register: ci_server
-  delegate_to: 127.0.0.1
+  delegate_to: localhost
 
 - block:
   # Temp task to get around policy issue
@@ -56,11 +56,11 @@
     set_fact:
       network_address: "{{ vrs_u16_target_server.split('.')[0:3] | join('.') }}"
 
-  - name: Update and copy zfb.yml file with vsd ip
+  - name: Update and copy zfb_vars.yml file with vsd ip
     template:
-      src: "{{ playbook_dir }}/test/files/zfb.yml.j2"
-      dest: "{{ playbook_dir }}/zfb.yml"
-    delegate_to: 127.0.0.1
+      src: "{{ role_path }}/files/zfb_vars.yml.j2"
+      dest: "{{ role_path }}/../../zfb_vars.yml"
+    delegate_to: localhost
 
   # Temp task to get around policy issue
   - name: Set front end ip added to static route
@@ -86,7 +86,7 @@
 
   - name: Update group vars file with ubuntu 16.04 VRS IP
     lineinfile:
-      dest: "{{ playbook_dir }}/roles/ci-deploy/vars/main.yml"
+      dest: "{{ role_path }}/vars/main.yml"
       line: "vrs_u16_target_server: {{ vrs_u16_target_server }}"
     delegate_to: "{{ ansible_deployment_host }}"
     remote_user: "{{ ansible_sudo_username }}"

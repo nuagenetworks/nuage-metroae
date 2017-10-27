@@ -23,8 +23,8 @@
   fail: msg="Required network bridges not found"
   when: (mgmt_bridge not in ansible_interfaces) or
         (data_bridge not in ansible_interfaces) or
-        (access_bridge not in ansible_interfaces) 
-        
+        (access_bridge not in ansible_interfaces)
+
 - name: Install packages for RedHat OS family distros
   yum: name={{ item }} state=present
   with_items:
@@ -81,8 +81,11 @@
     local_action: command mktemp -d "{{ lookup('env', 'TMPDIR') | default('/tmp/', true) }}ansible.XXXX"
     register: mktemp_output
 
+  - name: Set Top-Level-Directory
+    set_fact: tld="{{ role_path }}/../../"
+
   - name: Generate ISO file
-    local_action: command python {{ playbook_dir }}/scripts/create_zfb_profile.py {{ playbook_dir }} {{ mktemp_output.stdout }}
+    local_action: command python {{ role_path }}/files/create_zfb_profile.py {{ tld }} {{ mktemp_output.stdout }}
     register: output
 
   - name: Search for errors in the output of ZFB script
@@ -112,4 +115,3 @@
         uri=qemu:///system
   delegate_to: "{{ target_server }}"
   remote_user: "{{ target_server_username }}"
-

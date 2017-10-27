@@ -1,44 +1,32 @@
 ---
 - block:
-  - name: Get current version of VSD software to use it in loading correct vspk version
-    command: echo $VSD_VERSION
-    register: vsd_old_version
-    remote_user: "root"
-
-  - name: Print vsd_version output when verbosity >= 1
-    debug: var=vsd_old_version verbosity=1
-  when: 
-    - inventory_hostname in groups['vsds']
-    - inventory_hostname == groups['vsds'][0] and vsd_sa_or_ha | match("sa")) or (inventory_hostname == groups['vsds'][1] and vsd_sa_or_ha | match("ha"))
-
-- block:
   - name: Stop vsd services gracefully
     include_role:
       name: vsd-services-stop
     when:
     - inventory_hostname in groups['vsd_node2'] or inventory_hostname in groups['vsd_node3']
     remote_user: root
-  
+
   - block:
     - name: Backup and Shutdown/Destroy Current vsd nodes 1 and 3
-      include_role: 
+      include_role:
         name: vsd-destroy
       vars:
         nuage_upgrade: True
     when: inventory_hostname in groups['vsd_node2'] or inventory_hostname in groups['vsd_node3']
-  
+
   - block:
     - name: Shutdown/Destroy Current vsd node 2
-      include_role: 
+      include_role:
         name: vsd-destroy
       vars:
          nuage_upgrade: True
-    when: inventory_hostname in groups['vsd_node1'] 
+    when: inventory_hostname in groups['vsd_node1']
   when: vsd_sa_or_ha | match('ha')
 
 - block:
   - name: Backup and Shutdown/Destroy Current vsd node 1  for SA
-    include_role: 
+    include_role:
       name: vsd-destroy
     vars:
       nuage_upgrade: True
@@ -58,7 +46,7 @@
 
 - include: copy_backup_files.yml
 
-#TODO: 
+#TODO:
 #- name: Compare network information of VSD's across pre-uppgrade and upgrade
 
 - name: Install VSD on new node(s)
@@ -71,7 +59,7 @@
   register: proc_list
   remote_user: "root"
 
-- name: wait for VSD common , core and stats services to become running
+- name: wait for VSD common, core and stats services to become running
   monit_waitfor_service:
     name: "{{ item }}"
     timeout_seconds: 1200
@@ -83,13 +71,18 @@
 #TODO:
 #-update vsd_post_upgrade_helper to include disabling VSD maintenance mode
 - block:
-  - name: Get current version of VSD software
+  - name: Get upgraded version of VSD software
     command: echo $VSD_VERSION
     register: vsd_version
     remote_user: "root"
 
   - name: Print vsd_version output when verbosity >= 1
     debug: var=vsd_version verbosity=1
+
+  - name: Install updated version of vspk
+    pip: name=vspk state=latest
+    delegate_to: "{{ ansible_deployment_host }}"
+    remote_user: "{{ ansible_sudo_username }}"
 
   - name: Disable maintainance mode on all l3/l2 domains
     vsd_maintainance:
@@ -98,7 +91,8 @@
       state: disabled
       api_version: "{{ vsd_version.stdout }}"
     register: mode_status
-    delegate_to: 127.0.0.1
+    delegate_to: "{{ ansible_deployment_host }}"
+    remote_user: "{{ ansible_sudo_username }}"
 
   - name: Print vsd maintainance mode output when verbosity >= 1
     debug: var=mode_status verbosity=1
@@ -110,13 +104,10 @@
           - configure vswitch-controller no shutdown
       provider:
         host: "{{ item }}"
-        username: "{{ vsc_user }}"
-        password: "{{ vsc_password }}"
-        transport: cli
+        username: "{{ vsc_user|default('admin') }}"
+        password: "{{ vsc_password|default('admin') }}"
+    delegate_to: localhost
     register: vsc_command_status
-    #connection: local
-    delegate_to: "{{ ansible_deployment_host }}"
-    remote_user: "{{ ansible_sudo_username }}"
     with_items: "{{ groups['vscs'] }}"
 
   - debug: var=vsc_command_status verbosity=1
@@ -156,6 +147,6 @@
       register: update_time_status
       delegate_to: 127.0.0.1
     when: vsd_sa_or_ha | match("sa")
-  when: 
+  when:
    - inventory_hostname in groups['vsds']
    - (inventory_hostname == groups['vsds'][0] and vsd_sa_or_ha | match("sa")) or (inventory_hostname == groups['vsds'][1] and vsd_sa_or_ha | match("ha"))

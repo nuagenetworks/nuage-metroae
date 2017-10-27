@@ -1,12 +1,12 @@
 ---
-- name: Get OSC IP from OS facts 
+- name: Get OSC IP from OS facts
   os_server_facts:
     auth:
       "{{ os_auth }}"
     server: "{{ inventory_hostname }}"
   register: osc_server
   delegate_to: 127.0.0.1
- 
+
 - name: Set OSC ip
   set_fact:
     osc_mgmt_ip: "{{ osc_server['ansible_facts']['openstack_servers'][0]['private_v4'] }}"
@@ -17,7 +17,7 @@
   when: vsd_ip is defined
 
 - block:
-  - name: Get vsd mgmt IP 
+  - name: Get vsd mgmt IP
     os_server_facts:
       auth:
         "{{ os_auth }}"
@@ -37,9 +37,9 @@
 - name: Create temporary directory to hold upgrade scripts
   remote_user: "root"
   file: path={{ plugin_dir }}/{{ inventory_hostname }}/upgrade state=directory
- 
+
 - name: Copy Nuage OS plugins to temporary directory
-  copy: 
+  copy:
     src: "{{ nuage_os_package_path }}/{{ nuage_os_release }}/{{ nuage_target_architecture }}/{{ item }}"
     dest: "{{ plugin_dir }}/{{ inventory_hostname }}/{{ item }}"
   remote_user: "root"
@@ -56,9 +56,9 @@
   copy: src={{ tar_file.files[0].path }} dest={{ plugin_dir }}/{{ inventory_hostname }}/
   remote_user: "root"
 
-- name: Install Nuage OS plugins 
-  yum: 
-    name: "{{ plugin_dir }}/{{ inventory_hostname }}/{{ item }}" 
+- name: Install Nuage OS plugins
+  yum:
+    name: "{{ plugin_dir }}/{{ inventory_hostname }}/{{ item }}"
     state: present
   with_items: "{{ nuage_os_package_file_name_list }}"
   remote_user: "root"
@@ -88,10 +88,10 @@
     path: "/etc/neutron/plugins/nuage"
     state: directory
   remote_user: "root"
- 
+
 - name: Copy ini contents to created file
   template:
-    src={{ playbook_dir }}/roles/vsd-osc-config/templates/nuage_plugin.ini.j2
+    src=nuage_plugin.ini.j2
     dest=/etc/neutron/plugins/nuage/nuage_plugin.ini
   remote_user: "root"
 
@@ -104,7 +104,7 @@
 - name: Create link
   shell: "ln -s /etc/neutron/plugins/nuage/nuage_plugin.ini /etc/neutron/plugin.ini"
   remote_user: "root"
-  
+
 - name: Enable network api class
   lineinfile:
     dest: /etc/nova/nova.conf
@@ -161,7 +161,7 @@
 - name: Disable OS neutron services
   service:
     name: "{{ item }}"
-    enabled: no 
+    enabled: no
   remote_user: "root"
   with_items: "{{ neutron_services }}"
 
@@ -171,21 +171,26 @@
     regexp: "horizon.Horizon._conf['scss_files'].append('nuage/css/nuage.scss')"
     line: "#horizon.Horizon._conf['scss_files'].append('nuage/css/nuage.scss')"
   remote_user: "root"
- 
+
 - name: Restart httpd
   service:
     name: httpd
     state: restarted
   remote_user: "root"
 
+
+- name: Set Top-Level-Directory
+  set_fact: tld="{{ role_path }}/../../"
+
 - name: Add CSP root to CMS users group
-  local_action: command python {{ playbook_dir }}/scripts/cms_group.py {{ playbook_dir }} {{ vsd_mgmt_ip }}
+  local_action: command python {{ role_path }}/files/cms_group.py {{ tld }} {{ vsd_mgmt_ip }}
   register: output
+  # TOOD: replace with call to nuage_vspk module
 
 - name: Search for errors in the output of cms_group script
   fail: msg={{ output.stdout }}
   when: output.stdout | search("(?i)ERROR")
- 
+
 - name: Find the upgrade tar file
   find:
     paths: "{{ plugin_dir }}/{{ inventory_hostname }}/"
@@ -199,9 +204,9 @@
 - name: Integrate OSC with VSD
   command: "python {{ plugin_dir }}/{{ inventory_hostname }}/upgrade/{{ upgrade_cmd }}"
   remote_user: "root"
- 
+
 - name: Restart neutron service
-  service: 
+  service:
     name: neutron-server
     state: restarted
   remote_user: "root"

@@ -1,0 +1,37 @@
+---
+# Check registration of VRS on Controller
+
+- name: Set JSON Query to retrieve MgmtIP for VSC({{ controller_addr }})
+  set_fact:
+    ctrl_query: "*|[?control_ip=='{{controller_addr}}'].{mgmt_ip: mgmt_ip, username: vsc_user, password: vsc_password, transport: 'cli', timeout: '180' }"
+
+- name: Query host variables for VSC Controller({{ controller_addr }})
+  set_fact:
+   vsc_creds: '{{ hostvars|json_query(ctrl_query)}}'
+
+- block:
+  - name: Clean known_hosts of VSC Controller on "{{ ansible_deployment_host }}"
+    known_hosts:
+      name: "{{ vsc_creds[0].mgmt_ip }}"
+      state: absent
+    delegate_to: localhost
+
+
+  - name: Get VTEP IP address of compute server
+    shell: "ip -o route get {{ controller_addr }} | awk '{ print $5 }'"
+    register: ovs_vtep_ip
+
+  - name: Get output of 'show vswitch-controller information' on VSC ({{ controller_addr }})
+    vsc_command:
+      command: "show vswitch-controller vswitches vs-ip {{ ovs_vtep_ip.stdout }} detail"
+      mgmt_ip: "{{ vsc_creds[0].mgmt_ip }}"
+      username: "{{ vsc_creds[0].username }}"
+      password: "{{ vsc_creds[0].password }}"
+    delegate_to: localhost
+    register: vsc_vsw_info
+
+  - name: Assert that VRS has been registered properly
+    assert:
+      that: "'Cntrl. Conn. state         : ready' in vsc_vsw_info.result"
+
+  when: vsc_creds | length == 1

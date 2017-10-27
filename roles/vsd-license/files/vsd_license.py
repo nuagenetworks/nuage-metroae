@@ -11,8 +11,9 @@ vsd_demo = VsdClient(vsd_service_ip)
 temp_dir = '/tmp/vsd_license'
 license_file = os.path.join(temp_dir, 'vsp_base_license.txt')
 with open(license_file, "r") as lic_file:
-    vsd_license = lic_file.read()
-    vsd_demo.install_license(vsd_license.strip())
+    vsd_licenses = lic_file.readlines()
+    for vsd_license in vsd_licenses:
+        vsd_demo.install_license(vsd_license.strip())
 
 vsd_demo.add_csproot_to_cms_group()
 domains = vsd_demo.get_domains()

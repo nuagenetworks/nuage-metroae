@@ -1,274 +1,99 @@
-# Metro: Nuage Networks Deployment Automation Services
-
-## What's new
-
-1. New upgrade procedure for VSD, VSC and VSTAT (ElasticSearch). See UPGRADE.md for details.
-1. Added support for upgrade and rollback of VCIN.
-1. Several enhancements to VMware support.
-1. Added YAML syntax checker for build_vars.yml.
-1. Mark VMs to autostart.
-1. Deploy STCv on VMware.
-1. Support ZFB external ISOs.
-1. yum proxy support.
-1. Sample Docker file to build Metro container.
-1. Start libvirtd when doing a fresh install.
-1. Updates and bug fixes for infra, upgrade, and deployment. See RELEASE_NOTES.md.
-1. Tested with 4.0.R10 and 5.0.1.
-1. Regression tested with 3.2.R10, 4.0.R4, 4.0.R8.
-1. Many more...
-
-## Questions, Feedback, and Issues
-
-Questions should be directed to the [nuage-metro-interest mailing list](mailto://nuage-metro-interest@list.nokia.com).
-
-Feedback and issues should be reported via the Github Issues feature or via email to [Brian Castelli](mailto://brian.castelli@nokia.com).
-
+# Nuage Networks MetroAG Automation EnGine (AG)
 ## Overview
+MetroAG is an automation engine used for deploying and upgrading Nuage Networks components. 
+After specifying the individual details for your target platform, MetroAG (leveraging Ansible playbooks and roles) sets up the environment as specified. Alternatively, the environment could be upgraded, rolled-back, health-checked, etc.
 
-This set of playbooks can be used to automatically deploy and (in some cases) upgrade VCS/VNS components with target servers of the following types:
+## Getting Started
 
-1. el7 (CentOS, RedHat)
-1. el6 (CentOS, RedHat)
-1. esx (VMware)
-1. ubuntu14.04 (VRS only)
-1. ubuntu16.04 (VRS only)
+To get started, you would typically go through these steps:
 
-The VCS/VNS components that are supported are:
+1. [Setup](Documentation/SETUP.md) your Nuage MetroAG Ansible environment on the host on which MetroAG is to be run.
 
-1. VSD (HA or stand-alone)
-2. VSC (1 or more)
-3. VRS on existing nodes (1 or more)
-4. Dockermon on VRS nodes
-5. VSTAT (1 or more)
-6. VNSUTIL (1 or more)
-7. NSGV (1)
-8. VCIN
-9. DNS/NTP (1)
+2. [Customize](Documentation/BUILD.md) variable files so they match your network topology and describe your NuageNetworks deployment specifics.
 
-## Branches
+3. [Deploy](Documentation/DEPLOY.md) the various components (if they have not previously been deployed), perform an [upgrade](Documentation/UPGRADE.md), or run a health check on your system.
 
-The latest stable code is found in the `master` branch. The `dev` branch is for ongoing development. The stability of the `dev` branch is not guaranteed.
+4. If things did not work out as expected, [destroy](Documentation/DESTROY.md) or [rollback](Documentation/ROLLBACK.md) your environment.
 
-If you want to contribute back, you must create your own branch or fork, push your changes to that, and create a pull request to the `dev` branch. All pull requests against the `master` branch will be rejected. Sorry. All pull requests should include tests for new functionality. See `CONTRIBUTING.md` for more details.
+## Supported Nuage VSP Components for Deployment
+The following Nuage VSP components are supported for deployment using MetroAG. These are all deployed as VMs on a given _target server_.
 
-## General Prerequisites
 
-The following restrictions and conditions apply prior to executing the playbooks:
+Component | Stand-alone (SA) | Clustered (HA) | KVM (el7) | ESXi 
+------- | ---------------- | -------------- | --- | --- 
+VSD (Virtualized Services Directory) | X | X | X | X
+VSTAT (Elastic Backend for statistics)  | X | X | X | X
+VSC (Virtualized Services Controller) | X | X | X | X
+VCIN (vCenter Integration Node) | X |  | X | X
+VNSUTIL (Virtualized Network Services - Utility) VM | X |  | X | X
 
-1. Ansible 2.2.1 is required.
-1. The Ansible host must have the package python-jinja2 >= 2.7. python-jinja2 is installed by default with Ansible, but el6 hosts (e.g. CentOS 6.8) are limited to python-jinja2 < 2.7. Therefore, Nuage Metro will not run on el6 hosts.
-1. The hypervisor hosts must be running RedHat or CentOS. Support for Ubuntu exists but has been deprecated.
-1. If host names are used for target systems, VSD, VSC, VSTAT, VNSUTIL and VRS nodes, those names must be discoverable via DNS *or* added to the /etc/hosts file of the ansible deployment host.
-1. Each VM that is created for VSD, VSC, VSTAT, VNSUTIL, NSGV and DNS/NTP connects to one or more bridges on the target server. Those bridges must be created on the target server prior to deployment. Their names must be specified in the `build_vars.yml` file. See `BUILD.md` for details.
-1. The ansible deployment host may also be a target server.
-1. It may be necessary to remove the vsd, vsc, vstat and dns/ntp entries from the ansible user's `~/.ssh/known_hosts` file to prevent errors from suspected DNS spoofing. This would only be necessary if multiple runs are attempted.
-1. Under certain conditions, the `destroy_everything.yml` playbook must be run as sudo/root.
+Dataplane components are as follows (installed as package/agent):
 
-## Vcenter Prerequisites
+Component |  KVM <br>(el6, el7 or ubuntu 14.04/16.04) | ESXi
+--------- | ---- | -------
+VRS (Virtual Routing & Switching) | X | (upgrade only)
+Libnetwork on VRS nodes  | X | 
+NSG-V (Network Services Gateway-Virtual) |  X |
 
-In addition to the above prerequisites, the following packages are needed for vcenter deployments
+Auxiliary services are also provided:
+* DNS/NTP
 
-1. Nuage software version 4.0R7 and greater is supported. Previous versions of Nuage software lack the required support.
-1. `ovftool` package needs to installed on ansible deployment host. This package is available to download from here https://www.vmware.com/support/developer/ovf/.
-1. pysphere  and pyvmomi packages needs to be installed on ansible deployment host. This can be done with pip install pysphere pyvmomi.
+![topology](topology.png)
 
-## OpenStack Prerequisites
+## Supported Nuage VSP Components for Upgrade
 
-In addition to the above prerequisites, the following packages are needed for openstack deployments
+MetroAG currently also provides upgrade support for
 
-1. `shade` python module needs to installed on ansible deployment host. You can install using pip.
+Component | KVM (el7) | ESXi
+------- | --- | --- 
+VSD | X | X
+VCIN | X | X
+VSC |X | X
 
-**Note:** These playbooks should work as long as there is network connectivity between the deployment host, the hypervisors, and the VMs on the hypervisors. Connectivity in this case means they can ping one another's hostname or IP address.
+## Use of Ansible Playbooks and Roles  
+**Ansible** provides a method to easily define one or more actions to be performed on one or more computers. These tasks can target the local system Ansible is running from, as well as other systems that Ansible can reach over the network. The Ansible engine has minimal installation requirements. Python, with a few additional libraries, is all that is needed for the core engine. MetroAG includes a few custom Python modules and scripts. Agent software is not required on the hosts to be managed. Communication with target hosts defaults to SSH. Ansible does not require the use of a persistent state engine. Every Ansible run determines state as it goes, and adjusts as necessary given the action requirements. Running Ansible requires only an inventory of potential targets, state directives, either expressed as an ad hoc action, or a series coded in a YAML file, and the credentials necessary to communicate with the target.
 
-## metro-ansible
+**Playbooks** are the language by which Ansible orchestrates, configures, administers and deploys systems. They are YAML-formatted files that collect one or more plays. Plays are one or more tasks linked to the hosts that they are to be executed on. 
 
-`metro-ansible` is a shell script that executes ansible-playbook with the proper includes and command line switches. `metro-ansible` should be used when running *any* of the playbooks provided herein.
+**Roles** build on the idea of include files and combine them to form clean, reusable abstractions. Roles are ways of automatically loading certain vars files, tasks, and handlers based on a known file structure.
 
-## Detailed Instructions
+### MetroAG Playbooks and Roles
+MetroAG playbooks and roles fall into the following categories:   
 
-1. Create ssh key pair for the user that runs metro playbooks
-    > `ssh-keygen`
-1. Copy ssh keys to localhosts's authorized key file
-    > `ssh-copy-id localhost`
-1. Install python pip on the Ansible host based on Redhat or Debian OS families
-    > `yum install python2-pip` 
-    > `apt-get install python-pip`
-1. Install Ansible 2.2.1 on the Ansible host for full support
-    > `pip install ansible==2.2.1`
-1. Install Netmiko and its dependencies on the Ansible host.
-    > `pip install netmiko`
-1. Install netaddr and its dependencies on the Ansible host.
-    > `pip install netaddr`
-1. Install ipaddress and its dependencies on the Ansible host.
-    > `pip install ipaddress`
-1. Install Python pexpect module
-    > `pip install pexpect`
-1. Install VSPK Python module
-    > `pip install vspk`
-1. Clone this repository to the Ansible host
-1. Customize `build_vars.yml` (and `zfb.yml` if you are deploying VNS) with your VSD, VSC, VRS, VNSUTIL, NSGV  and VSTAT information. (See `BUILD.md` and `ZFB.md` for details.)
-1. Copy your binary files to the proper locations. (See `BUILD.md` for details.)
-1. Optionally execute `./metro-ansible nuage_unzip.yml` if you are installing from tar-gz files.
-1. Execute `./metro-ansible build.yml` to automatically populate variables in the appropriate places, e.g. the `host_vars` directory.
-1. Execute `./metro-ansible install_everything.yml`
-1. To get rid of everything that has been deployed, execute `./metro-ansible destroy_everything.yml'
-1. To destroy all variables and reset `build_vars.yml` to factory settings, execute `./metro-ansible reset_build.yml`. A backup of the existing `build_vars.yml` file will be created just in case you didn't mean it. The file name will be of the form `build_vars.yml.<date and time>~`.
+Playbook/Role | Description |
+------------- | ----------- |
+Predeploy | prepares infrastructure with necessary packages and makes the component(s) reachable |
+Deploy | installs and configures component(s) |
+Postdeploy | performs integration checks, and some basic commissioning tests |
+Health | checks health for a running component without assuming it was deployed with MetroAG |
+Destroy | removes component(s) from the infrastructure |
+Upgrade | upgrades component(s) from one release to another |
+Rollback | restores component(s) to their previous version (if an upgrade fails) |
 
-Note that `install_everything.yml` can be edited for customizing your deployment.
+## Documentation
+The [Documentation](Documentation/) directory contains the following guides to assist you in successfully working with MetroAG.
 
-## HOWTO
+File name | Description
+--------- | --------
+[RELEASE_NOTES.md](Documentation/RELEASE_NOTES.md) | New features, resolved issues and known limitations and issues
+[SETUP.md](Documentation/SETUP.md) | Set up your environment by cloning the repo, installing packages and configuring access.
+[BUILD.md](Documentation/BUILD.md) | Populate variables for your specific environment, unzip Nuage software, and execute the build.
+[DEPLOY.md](Documentation/DEPLOY.md) | Deploy all VSP components or choose components individually.
+[DESTROY.md](Documentation/DESTROY.md) | Remove existing deployment(s) and start over.
+[UPGRADE.md](Documentation/UPGRADE.md) | Upgrade component(s) from one release to the next.
+[ROLLBACK.md](Documentation/ROLLBACK.md) | Restore VSP components to their previous version if an upgrade fails.
+[CONTRIBUTING.md](Documentation/CONTRIBUTING.md) | Submit your code and become a contributor to Nuage MetroAG.
+[OPENSTACK.md](Documentation/OPENSTACK.md) | Deploy VSP components in OpenStack (limited support).
 
-The file `HOWTO.md` has been provided. It contains a few procedures for doing some more-complex deployments using Metro, e.g. deploying VRS to both Debian and RedHat family compute nodes.
 
-## examples/
+## Questions, Feedback, and Contributing
+Ask questions and get support via email.  
+  Outside Nokia: [devops@nuagenetworks.net](mailto:deveops@nuagenetworks.net "send email to nuage-metro project")  
+  Internal Nokia: [nuage-metro-interest@list.nokia.com](mailto:nuage-metro-interest@list.nokia.com "send email to nuage-metro project")
 
-The `examples/` directory is populated with samples of files that can be used as models for particular kinds of operations, e.g. VSD only.
+Report bugs you find and suggest new features and enhancements via the [GitHub Issues](https://github.com/nuagenetworks/nuage-metro/issues "nuage-metro issues") feature.
 
-## Customization
-
-### build_vars.yml
-
-`build_vars.yml` contains a set of variables that should be customized by the user prior to running the playbooks. These variables are used to configure network connectivity for the VSC, VSTAT, VSD and the DNS/NTP.
-
-`zfb.yml` contains a set of variables that should be customized by the user prior to running the nsgv playbooks. These variables are used to create NSG profile in the VSD Architect and also creates ISO file that is attached to NSG VM
-
-## Playbook Organization
-
-All playbooks, whether installation or destruction, must be executed using the `metro-ansible` script.
-
-Each element to be deployed has up to 5 corresponding playbooks:
-
-* `predeploy` : prepares infrastructure with necessary packages, finishing up by making the element reachable.
-* `deploy` : installs and configures the element
-* `postdeploy` : 
-* `destroy` : removes the element from the infrastructure
-* `health` : checks health for a running element without assuming it was deployed with Metro.
-
-Every supported element must have at least a deploy playbook.
-
-Playbooks `install_everything.yml` and `destroy_everything.yml` are provided as a convenience, but any playbook may be run stand-alone. This is especially useful for debugging or for skipping steps that you are confident need not be repeated.
-
-## Debug
-
-`ansible.cfg` is provided. By default, it tells ansible to log to ./ansible.log.
-
-ansible supports different levels of verbosity, specified with one of the following command line flags:
-
-* `-v`
-* `-vv`
-* `-vvv`
-* `-vvvv`
-
-More letters means more verbose. The highest level, `-vvvv`, provides ssh connectivity information.
-
-## Metro Ansible Role Categories
-
-### Core Ansible Roles
-These are Ansible roles that are fully tested and supported.
-
-- build-upgrade
-- build
-- gvm-destroy
-- gvm-predeploy
-- nsgv-destroy
-- nsgv-predeploy
-- nuage-predeploy
-- nuage-unzip
-- reset-build
-- set-upgrade-flag
-- validate-build-vars
-- vcin-deploy
-- vcin-destroy
-- vcin-health
-- vcin-predeploy
-- vns-deploy
-- vns-postdeploy-vsc
-- vns-postdeploy-vsd
-- vnsutil-deploy
-- vnsutil-destroy
-- vnsutil-postdeploy
-- vnsutil-predeploy
-- vrs-deploy
-- vrs-destroy
-- vrs-health
-- vrs-postdeploy
-- vrs-predeploy
-- vsc-backup
-- vsc-deploy
-- vsc-destroy
-- vsc-health
-- vsc-postdeploy
-- vsc-predeploy
-- vsc-preupgrade
-- vsc-rollback
-- vsc-upgrade-deploy
-- vsc-upgrade-postdeploy
-- vsc-upgrade
-- vsd-cluster-start
-- vsd-dbbackup
-- vsd-decouple
-- vsd-deploy
-- vsd-destroy
-- vsd-ha-upgrade-block-access
-- vsd-health
-- vsd-license
-- vsd-predeploy
-- vsd-preupgrade
-- vsd-rollback
-- vsd-services-stop
-- vsd-upgrade-destroy
-- vsd-upgrade-postdeploy
-- vsd-upgrade-prepare-for-deploy
-- vsd-upgrade
-- vstat-data-backup
-- vstat-data-migrate
-- vstat-deploy
-- vstat-destroy
-- vstat-health
-- vstat-postdeploy
-- vstat-predeploy
-- vstat-rollback
-- vstat-upgrade-destroy
-- vstat-upgrade
-- vstat-vrs-health
-- vstat-vsc-health
-- vstat-vsd-health
-
-### Experimental
-These are playbooks that are stable but under development or contributed from the field. Support is _best effort_.
-
-- dns-deploy
-- dns-destroy
-- dns-postdeploy
-- dns-predeploy
-- lvm-predeploy
-- mesos-deploy
-- stcv-postdeploy
-- stcv-predeploy
-
-### Lab Playbooks
-These are playbooks that are intended for use in the Metro Lab. You are welcome to use them, but they are not designed for general use.
-
-- ci-deploy
-- ci-destroy
-- ci-predeploy
-- infra-deploy
-- infra-destroy
-- infra-predeploy
-- os-compute-deploy
-- os-compute-destroy
-- os-compute-postdeploy
-- os-compute-predeploy
-- os-snapshot
-- osc-deploy
-- osc-destroy
-- osc-predeploy
-- util-setup
-- vsd-osc-config
-
-## Deprecation notice
-In the near future (date TBD), Metro is going to drop support for using Ubuntu as a deployment target for new VMs, e.g. VSD, VSC, VSTAT, etc. VRS and Dockermon will continue to be supported on Ubuntu 14.04 and Ubuntu 16.04.
-
+You may also [contribute](CONTRIBUTING.MD) to Nuage MetroAG by submitting your own code to the project.
+ 
 ## License
-
-TBD
+Apache License 2.0

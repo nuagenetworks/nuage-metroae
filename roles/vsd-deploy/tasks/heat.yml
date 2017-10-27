@@ -12,9 +12,10 @@
     vsd_mgmt_ip: "{{ vsd_ip['ansible_facts']['openstack_servers'][0]['networks'][vsd_network][0] }}"
 
 - name: Clean known_hosts of VSD's
-  command: ssh-keygen -R "{{ vsd_mgmt_ip }}" -f /root/.ssh/known_hosts
-  delegate_to: "{{ ansible_deployment_host }}"
-  remote_user: "{{ ansible_sudo_username }}"
+  known_hosts:
+    name: "{{ vsd_mgmt_ip }}"
+    state: absent
+  delegate_to: localhost
 
 - block:
   - name: Get infra server details from OS server facts
@@ -109,14 +110,23 @@
     line: "{{ vsd_mgmt_ip }}  {{ inventory_hostname }}"
   remote_user: "root"
 
-- name: Copy files to pin OS version when CentOS 6.6
+- name: Copy files to pin OS version when CentOS 6.6 or 6.5
   copy:
-    src: ./roles/vsd-deploy/files/
+    src: ./roles/vsd-deploy/files/c66/
     dest: /etc/yum.repos.d/
   remote_user: "root"
   when:
     - yum_pin
-    - "{{ ansible_distribution_version }} == 6.6"
+    - ansible_distribution_version|match('6.6') or ansible_distribution_version|match('6.5')
+
+- name: Copy files to pin OS version when CentOS 6.8
+  copy:
+    src: ./roles/vsd-deploy/files/c68/
+    dest: /etc/yum.repos.d/
+  remote_user: "root"
+  when:
+    - yum_pin
+    - ansible_distribution_version|match('6.8')
 
 - name: Configure yum proxy
   lineinfile:
@@ -149,7 +159,7 @@
       delegate_to: "{{ item }}"
       with_items: "{{ groups['vsds'] }}"
       run_once: true
-  
+
     - name: Get generated SSH keys
       shell: cat ~/.ssh/id_rsa.pub
       register: ssh_key_lst
@@ -157,7 +167,7 @@
       delegate_to: "{{ item }}"
       with_items: "{{ groups['vsds'] }}"
       run_once: true
-  
+
     - name: Add SSH keys to authorized_keys file
       shell: "echo {{ item[1].stdout }} >> /root/.ssh/authorized_keys"
       delegate_to: "{{ item[0] }}"
@@ -177,7 +187,7 @@
       delegate_to: "{{ item }}"
       with_items: "{{ groups['vsds'] }}"
       run_once: true
-  
+
     - name: Get generated SSH keys
       shell: cat /home/vsd/.ssh/id_rsa.pub
       register: ssh_key_lst
@@ -185,7 +195,7 @@
       delegate_to: "{{ item }}"
       with_items: "{{ groups['vsds'] }}"
       run_once: true
-  
+
     - name: Add SSH keys to authorized_keys file
       shell: "echo {{ item[1].stdout }} >> /home/vsd/.ssh/authorized_keys"
       delegate_to: "{{ item[0] }}"
@@ -250,9 +260,9 @@
 - name: check ntp sync state
   shell: ntpstat | awk 'NR==1{print $1}'
   register: sync_status
-  until: sync_status.stdout == "synchronised"
-  retries: 4
-  delay: 5
+  until: sync_status.stdout | search('synchronised')
+  retries: "{{ ntp_sync_retries }}"
+  delay: "{{ ntp_sync_delay }}"
   ignore_errors: yes
   remote_user: "root"
 
@@ -264,10 +274,10 @@
     shell: ntpstat | awk 'NR==1{print $1}'
     register: retry_sync_status
     until: retry_sync_status.stdout == "synchronised"
-    retries: 4
-    delay: 5
+    retries: "{{ ntp_sync_retries }}"
+    delay: "{{ ntp_sync_delay }}"
     remote_user: "root"
-  when: not sync_status.stdout | match("synchronized")
+  when: not sync_status.stdout | search('synchronized')
 
 - name: Install VSD software on standalone node
   command: /opt/vsd/vsd-install.sh -t s -y
@@ -290,3 +300,7 @@
     when: inventory_hostname == groups['vsds'][2]
     remote_user: "root"
   when: vsd_sa_or_ha | match('ha')
+
+- name: Set XMPP connection to allow both clear and TLS
+  command: /opt/vsd/bin/ejmode allow -y
+  remote_user: "root"

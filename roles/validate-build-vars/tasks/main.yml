@@ -1,23 +1,30 @@
 ---
 - block:
-  - name: Install packages for RedHat OS family distros
-    yum: name=python-netaddr state=present
-    when: ansible_os_family == "RedHat"
+  - name: Check if required OS packages are installed
+    command: rpm -q python-netaddr
     delegate_to: "{{ ansible_deployment_host }}"
     remote_user: "{{ ansible_sudo_username }}"
-    environment:
-      http_proxy: "{{ yum_proxy }}"
-      https_proxy: "{{ yum_proxy }}"
-  when: yum_proxy|default('NONE') != 'NONE'
+    register: rpm_check
+    ignore_errors: True
 
-- block:
-  - name: Install packages for RedHat OS family distros
-    yum: name=python-netaddr state=present
-    when: ansible_os_family == "RedHat"
-    delegate_to: "{{ ansible_deployment_host }}"
-    remote_user: "{{ ansible_sudo_username }}"
-  when: yum_proxy|default('NONE') == 'NONE'
+  - block:
+    - name: Install packages for RedHat OS family distros
+      yum: name=python-netaddr state=present
+      delegate_to: "{{ ansible_deployment_host }}"
+      remote_user: "{{ ansible_sudo_username }}"
+      environment:
+        http_proxy: "{{ yum_proxy }}"
+        https_proxy: "{{ yum_proxy }}"
+    when: yum_proxy|default('NONE') != 'NONE' and rpm_check.rc == 1
 
+  - block:
+    - name: Install packages for RedHat OS family distros
+      yum: name=python-netaddr state=present
+      delegate_to: "{{ ansible_deployment_host }}"
+      remote_user: "{{ ansible_sudo_username }}"
+    when: yum_proxy|default('NONE') == 'NONE' and rpm_check.rc == 1
+  when: ansible_os_family | match("RedHat")
+  
 - name: Install python-netaddr package for Debian OS family distros
   apt: name=python-netaddr state=present
   when: ansible_os_family == "Debian"
@@ -30,3 +37,30 @@
     msg: "{{ item }} is not a valid NTP server IP address, quiting"
   with_items: "{{ ntp_server_list }}"
   when: ntp_server_list is defined
+
+- name: Verify that the VSC hostnames are not longer than 32 characters
+  assert:
+    that: "'{{item.hostname}}'|length <= 32"
+    msg: "{{item.hostname}} is too long to be a valid VSC name, quitting"
+  with_items: "{{ myvscs }}"
+  when: myvscs is defined
+
+# TODO:
+# Use the floowing block to disable the feature for now. We need to update our
+# test infrastructure to accomodate.
+- block:
+  - name: Verify VSD DNS entries exist at server {{ dns_server_list[0] }}, and hostnames map to their m
+    include: check_dns.yml
+    with_items: "{{ myvsds }}"
+    when: dns_server_list is defined and myvsds is defined
+
+  - name: Verify VStat DNS entries exist at server {{ dns_server_list[0] }}, and hostnames map to their management IPs
+    include: check_dns.yml
+    with_items: "{{ myvstats }}"
+    when: dns_server_list is defined and myvstats is defined
+
+  - name: Verify VNS Utils DNS entries exist at server {{ dns_server_list[0] }}, and hostnames map to their IPs
+    include: check_dns.yml
+    with_items: "{{ myvnsutils }}"
+    when: dns_server_list is defined and myvnsutils is defined
+  when: false

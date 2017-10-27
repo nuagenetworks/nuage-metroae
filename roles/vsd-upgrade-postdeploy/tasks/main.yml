@@ -1,7 +1,7 @@
 ---
 - name: Get monit summary for all process on VSD
   vsd_monit:
-    state: summary
+    group: all
   register: proc_list
   remote_user: "root"
 
@@ -33,19 +33,21 @@
 - name: Print vsd maintainance mode output when verbosity >= 1
   debug: var=mode_status verbosity=1
 
-# TODO: Determine if cleaning known_hosts of vscs is required here. 
+# TODO: Determine if cleaning known_hosts of vscs is required here.
 - name: Clean known_hosts of VSC 1 on "{{ target_server }}"
-  command: ssh-keygen -R "{{  groups['vscs'][0] }}" -f /root/.ssh/known_hosts
-  delegate_to: "{{ ansible_deployment_host }}"
-  remote_user: "{{ ansible_sudo_username }}"
+  known_hosts:
+    name: "{{ groups['vscs'][0] }}"
+    state: absent
+  delegate_to: localhost
   run_once: true
   when: groups['vscs'] is defined and groups['vscs'][0] is defined
 
-# TODO: Determine if cleaning known_hosts of vscs is required here. 
+# TODO: Determine if cleaning known_hosts of vscs is required here.
 - name: Clean known_hosts of VSC 2 on "{{ target_server }}"
-  command: ssh-keygen -R "{{  groups['vscs'][1] }}" -f /root/.ssh/known_hosts
-  delegate_to: "{{ ansible_deployment_host }}"
-  remote_user: "{{ ansible_sudo_username }}"
+  known_hosts:
+    name: "{{ groups['vscs'][1] }}"
+    state: absent
+  delegate_to: localhost
   run_once: true
   when: groups['vscs'] is defined and groups['vscs'][1] is defined
 
@@ -56,12 +58,10 @@
         - configure vswitch-controller no shutdown
     provider:
       host: "{{ groups['vscs'][0] }}"
-      username: "{{ vsc_user }}"
-      password: "{{ vsc_password }}"
-      transport: cli
+      username: "{{ vsc_user|default('admin') }}"
+      password: "{{ vsc_password|default('admin') }}"
+  delegate_to: localhost
   register: vsc1_command_status
-  delegate_to: "{{ ansible_deployment_host }}"
-  remote_user: "{{ ansible_sudo_username }}"
   run_once: true
   when: groups['vscs'] is defined and groups['vscs'][0] is defined
 
@@ -74,19 +74,17 @@
         - configure vswitch-controller no shutdown
     provider:
       host: "{{ groups['vscs'][1] }}"
-      username: "{{ vsc_user }}"
-      password: "{{ vsc_password }}"
-      transport: cli
+      username: "{{ vsc_user|default('admin') }}"
+      password: "{{ vsc_password|default('admin') }}"
+  delegate_to: localhost
   register: vsc2_command_status verbosity=1
-  delegate_to: "{{ ansible_deployment_host }}"
-  remote_user: "{{ ansible_sudo_username }}"
   run_once: true
   when: groups['vscs'] is defined and groups['vscs'][1] is defined
 
 - debug: var=vsc2_command_status verbosity=1
 
 - name: read saved vsd purge time before upgrade
-  command: cat "/tmp/backup-{{ groups['vsd_node1'][0] }}-latest/purge_time"
+  command: cat "/tmp/backup-{{ groups['vsds'][0] }}-latest/purge_time"
   register: purge_time_saved
   delegate_to: 127.0.0.1
 

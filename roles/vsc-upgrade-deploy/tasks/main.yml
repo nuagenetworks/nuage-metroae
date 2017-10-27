@@ -1,11 +1,15 @@
-- name: Clean known_hosts of VSC's on "{{ target_server }}"
-  command: ssh-keygen -R "{{ mgmt_ip }}" -f /root/.ssh/known_hosts
+- name: Clean known_hosts of VSC's
+  known_hosts:
+    name: "{{ mgmt_ip }}"
+    state: absent
+  delegate_to: localhost
 
 - name: Get output of 'show bof'
   sros_command:
     commands:
       - show bof
     provider: "{{ vsc_creds }}"
+  delegate_to: localhost
   register: bof_config
 
 - name: Print 'show bof' when verbosity >= 1
@@ -21,8 +25,9 @@
 - name: Get current file version of image on VSC
   sros_command:
     commands:
-      - file version "{{ bof_json['image_folder'] }}/cpm.tim"
+      - file version "{{ bof_json['primary_image'] }}"
     provider: "{{ vsc_creds }}"
+  delegate_to: localhost
   register: image
 
 - name: Print image version when verbosity >= 1
@@ -40,14 +45,15 @@
     command: "{{ vsc_image_copy }}"
     responses:
       (?i)yes: "yes"
-      (?i)password: "{{ vsc_password }}"
-    timeout: "{{ vsc_scp_timeout }}"
+      (?i)password: "{{ vsc_password|default('admin') }}"
+    timeout: "{{ vsc_scp_timeout_seconds }}"
 
 - name: Reboot VSC VM
   sros_command:
     commands:
       - admin reboot now
     provider: "{{ vsc_creds }}"
+  delegate_to: localhost
   ignore_errors: true
   when: target_server_type | match('kvm') or target_server_type | match('vcenter')
 
@@ -67,4 +73,3 @@
     host: "{{ mgmt_ip }}"
     search_regex: OpenSSH
     delay: 1
-

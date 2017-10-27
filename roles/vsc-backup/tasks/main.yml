@@ -1,14 +1,19 @@
 - name: Query facts on ansible_deployment_host
   action: setup
-  
-- name: Clean known_hosts of VSC's on "{{ target_server }}"
-  command: ssh-keygen -R "{{ mgmt_ip }}" -f /root/.ssh/known_hosts
+  delegate_to: localhost
+
+- name: Clean known_hosts of VSC's
+  known_hosts:
+    name: "{{ mgmt_ip }}"
+    state: absent
+  delegate_to: localhost
 
 - name: Get output of 'show bof'
   sros_command:
     commands:
       - show bof
     provider: "{{ vsc_creds }}"
+  delegate_to: localhost
   register: bof_config
 
 - name: Print 'show bof' when verbosity >= 1
@@ -19,7 +24,7 @@
     bof_json: "{{ bof_config.stdout[0]|show_bof_to_json }}"
 
 - name: Print bof config in json  when verbosity >= 1
-  debug: var=bof_json 
+  debug: var=bof_json
 
 - block:
   - name: Get output of 'show system connections port 5222'
@@ -27,13 +32,14 @@
       commands:
         - show system connections port 5222
       provider: "{{ vsc_creds }}"
+    delegate_to: localhost
     register: vsc_sys_conn
 
   - name: Print 'show system connections port 5222' when verbosity >= 1
     debug: var=vsc_sys_conn verbosity=1
 
   - name: Create local variable with vsc system connection in json
-    set_fact: 
+    set_fact:
       vsc_sys_conn_json: "{{ vsc_sys_conn.stdout[0]|vsc_system_connections_to_json }}"
 
   - name: Print vsc system connection in json  when verbosity >= 1
@@ -45,6 +51,7 @@
     commands:
       - show vswitch-controller xmpp-server detail
     provider: "{{ vsc_creds }}"
+  delegate_to: localhost
   register: xmpp_detail
 
 - name: Print 'show vswitch-controller xmpp-server detail' when verbosity >= 1
@@ -63,10 +70,11 @@
   debug: var=xmpp_server_state verbosity=1
 
 - name: Check for the expected xmpp-server state
-  assert: { 
+  assert: {
     that: "{{ expected_xmpp_server_state == xmpp_server_state }}",
     msg: "Invalid xmpp-server state ({{ xmpp_server_state }}) detected. Expected {{ expected_xmpp_server_state }}. Check 'show vswitch-controller xmpp-server details'."
 }
+  when: vsd_sa_or_ha == 'ha'
 
 - name: Save existing configuration on VSC
   sros_command:
@@ -74,6 +82,7 @@
       - bof save
       - admin save
     provider: "{{ vsc_creds }}"
+  delegate_to: localhost
   register: conf_save
 
 - name: Print 'bof save' when verbosity >= 1

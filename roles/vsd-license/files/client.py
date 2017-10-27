@@ -91,7 +91,7 @@ class VsdClient(object):
                  user=u'csproot',
                  password=u'csproot',
                  port=8443,
-                 prefix="/nuage/api/v3_2",
+                 prefix="/nuage/api/v4_0",
                  protocol='https://'):
         self.prefix = prefix
         self.protocol = protocol

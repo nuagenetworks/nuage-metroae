@@ -53,14 +53,14 @@
         - "{{ groups['vsds'] }}"
         - "{{ ssh_key_lst.results }}"
       run_once: true
-      remote_user: "{{ target_server_username }}"
+      remote_user: root
     when: vsd_version.stdout | int < 5
   - block:
     - name: Generate SSH keys
       shell: sudo -u vsd ssh-keygen -b 2048 -t rsa -f /home/vsd/.ssh/id_rsa -q -N ""
       args:
         creates: /home/vsd/.ssh/id_rsa
-      remote_user: root 
+      remote_user: root
       delegate_to: "{{ item }}"
       with_items: "{{ groups['vsds'] }}"
       run_once: true
@@ -80,7 +80,7 @@
         - "{{ groups['vsds'] }}"
         - "{{ ssh_key_lst.results }}"
       run_once: true
-      remote_user: "{{ target_server_username }}"
+      remote_user: root
 
     - name: Change owner and permissions of VSD authorized keys
       file:
@@ -115,7 +115,7 @@
   remote_user: "root"
   when:
     - yum_pin
-    - "({{ ansible_distribution_version }} == 6.6) or ({{ ansible_distribution_version }} == 6.5)"
+    - ansible_distribution_version|match('6.6') or ansible_distribution_version|match('6.5')
 
 - name: Copy files to pin OS version when CentOS 6.8
   copy:
@@ -124,7 +124,7 @@
   remote_user: "root"
   when:
     - yum_pin
-    - "{{ ansible_distribution_version }} == 6.8"
+    - ansible_distribution_version|match('6.8')
 
 - name: Configure yum proxy
   lineinfile:
@@ -162,6 +162,27 @@
   command: ntpdate -u "{{ntp_server_list[0]}}"
   remote_user: "root"
 
+- name: Delete the default steptickers file
+  file:
+    path: /etc/ntp/step-tickers
+    state: absent
+  remote_user: "root"
+
+- name: Configure NTP servers for ntpdate
+  lineinfile:
+    dest: /etc/ntp/step-tickers
+    line: "{{ item }}"
+    create: yes
+  with_items: "{{ ntp_server_list }}"
+  remote_user: "root"
+
+- name: Enable ntpdate
+  service:
+    name: ntpdate
+    enabled: yes
+    state: started
+  remote_user: "root"
+
 - name: Start ntpd
   command: service ntpd start
   remote_user: "root"
@@ -169,10 +190,14 @@
 - name: check ntp sync state
   shell: ntpstat | awk 'NR==1{print $1}'
   register: sync_status
-  until: sync_status.stdout == "synchronised"
-  retries: 4
-  delay: 5
+  until: sync_status.stdout | search('synchronised')
+  retries: "{{ ntp_sync_retries }}"
+  delay: "{{ ntp_sync_delay }}"
   ignore_errors: yes
+  remote_user: "root"
+
+- name: Disable cloud-init on VSD, to avoid boot time delays
+  command: chkconfig cloud-init off
   remote_user: "root"
 
 - block:
@@ -183,10 +208,10 @@
     shell: ntpstat | awk 'NR==1{print $1}'
     register: retry_sync_status
     until: retry_sync_status.stdout == "synchronised"
-    retries: 4
-    delay: 5
+    retries: "{{ ntp_sync_retries }}"
+    delay: "{{ ntp_sync_delay }}"
     remote_user: "root"
-  when: sync_status.stdout | match("synchronized")
+  when: not sync_status.stdout | search("synchronized")
 
 - name: Install VSD software on standalone node
   command: /opt/vsd/vsd-install.sh -t s -y
@@ -217,3 +242,7 @@
     when: inventory_hostname == groups['vsds'][2]
     remote_user: "root"
   when: vsd_sa_or_ha | match('ha')
+
+- name: Set XMPP connection to allow both clear and TLS
+  command: /opt/vsd/bin/ejmode allow -y
+  remote_user: "root"

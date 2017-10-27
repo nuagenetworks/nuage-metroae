@@ -19,6 +19,7 @@
 - name: Update /etc/hosts file on VSD(s)
   blockinfile:
     dest: /etc/hosts
+    marker: "# {mark} Ansible created entries for stats nodes"
     block: |
       {% for host in groups['vstats']  %}
       {{ hostvars[host]['mgmt_ip'] }}    {{ host }}
@@ -139,40 +140,97 @@
     when: ip_addr.stdout | match("not found:")
   when: vsd_sa_or_ha | match('sa')
 
-- name: Start firewalld
-  systemd:
-    name: firewalld
-    state: started
+- name: check for iptables
+  shell: "service iptables status"
+  register: _svc_iptables
+  ignore_errors: True
   remote_user: "root"
 
-- name: Enable firewalld on boot
-  systemd:
-    name: firewalld
-    enabled: yes
+- block:
+  - name: Start iptables
+    systemd:
+      name: iptables
+      state: started
+    remote_user: "root"
+
+  - name: Enable iptables on boot
+    systemd:
+      name: iptables
+      enabled: yes
+    remote_user: "root"
+
+  - name: Create iptables vars file on ansible host
+    template: src="{{ role_path }}/templates/iptables.j2" dest="/tmp/main.yml" backup=no mode=0755
+    delegate_to: "{{ ansible_deployment_host }}"
+    remote_user: "{{ ansible_sudo_username }}"
+
+  - name: Include variable file.
+    include_vars: /tmp/main.yml
+    delegate_to: "{{ ansible_deployment_host }}"
+    remote_user: "{{ ansible_sudo_username }}"
+
+  - name: Config iptables on VSTAT vm to accept conn on ports 9200,9300 from vsd(s)
+    shell: "{{ item }}"
+    with_items:
+      - "{{ iptables_std_commands }}"
+    remote_user: "root"
+    when: vsd_sa_or_ha | match('sa')
+
+  - name: Config iptables on VSTAT vm to accept conn on ports 9200, 9300 from vsd(s) in cluster setup
+    shell: "{{ item }}"
+    with_items:
+      - "{{ iptables_cluster_commands }}"
+    when: vsd_sa_or_ha | match('ha')
+    remote_user: "root"
+
+  when: "_svc_iptables.rc == 0"
+
+- name: check for firewalld
+  shell: "service firewalld status"
+  register: _svc_firewalld
+  ignore_errors: True
   remote_user: "root"
 
-- name: Create firewall vars file on ansible host
-  template: src="{{ playbook_dir }}/roles/vstat-deploy/templates/firewall.j2" dest="{{ playbook_dir }}/roles/vstat-deploy/vars/main.yml" backup=no mode=0755
-  delegate_to: "{{ ansible_deployment_host }}"
-  remote_user: "{{ ansible_sudo_username }}"
+- block:
+  - name: Start firewalld
+    systemd:
+      name: firewalld
+      state: started
+    remote_user: "root"
 
-- name: Include variable file.
-  include_vars: main.yml
-  remote_user: "root"
+  - name: Enable firewalld on boot
+    systemd:
+      name: firewalld
+      enabled: yes
+    remote_user: "root"
 
-- name: Config firewall on VSTAT vm to accept conn on ports 9200,9300 from vsd(s)
-  shell: "{{ item }}"
-  with_items:
-    - "{{ firewall_std_commands }}"
-  remote_user: "root"
-  when: vsd_sa_or_ha | match('sa')
+  - name: Create firewall vars file on ansible host
+    template: src="{{ role_path }}/templates/firewall.j2" dest="/tmp/main.yml" backup=no mode=0755
+    delegate_to: "{{ ansible_deployment_host }}"
+    remote_user: "{{ ansible_sudo_username }}"
 
-- name: Config firewall on VSTAT vm to accept conn on ports 9200, 9300 from vsd(s) in cluster setup
-  shell: "{{ item }}"
-  with_items:
-    - "{{ firewall_cluster_commands }}"
-  when: vsd_sa_or_ha | match('ha')
-  remote_user: "root"
+  - name: Include variable file.
+    include_vars: /tmp/main.yml
+    delegate_to: "{{ ansible_deployment_host }}"
+    remote_user: "{{ ansible_sudo_username }}"
+
+  - name: Config firewall on VSTAT vm to accept conn on ports 9200,9300 from vsd(s)
+    shell: "{{ item }}"
+    with_items:
+      - "{{ firewall_std_commands }}"
+    remote_user: "root"
+    when: vsd_sa_or_ha | match('sa')
+
+  - name: Config firewall on VSTAT vm to accept conn on ports 9200, 9300 from vsd(s) in cluster setup
+    shell: "{{ item }}"
+    with_items:
+      - "{{ firewall_cluster_commands }}"
+    when: vsd_sa_or_ha | match('ha')
+    remote_user: "root"
+
+  when:
+    - "_svc_firewalld.rc == 0"
+    - "_svc_iptables.rc != 0"
 
 - name: Restart elastic search
   systemd:
@@ -187,7 +245,7 @@
   environment:
     SSHPASS: "{{lookup('env','SSHPASS')}}"
   run_once: true
-  when: 
+  when:
     - vstat_sa_or_ha | match('ha')
     - vsd_sa_or_ha | match('sa') or vsd_sa_or_ha | match('ha')
 
@@ -196,7 +254,7 @@
   delegate_to: "{{vsd_fqdn}}"
   remote_user: "root"
   run_once: true
-  when: 
+  when:
     - vsd_sa_or_ha | match('sa')
     - vstat_sa_or_ha | match('sa')
 
@@ -209,13 +267,13 @@
   when:
     - vsd_sa_or_ha | match('ha')
     - vstat_sa_or_ha | match('sa')
- 
+
 - name: Enable stats collection on the  vsd(s) when vstat is clustered
   command: /opt/vsd/vsd-stats.sh -e {{ groups['vstats'][0] }},{{ groups['vstats'][1] }},{{ groups['vstats'][2] }}
   delegate_to: "{{ item }}"
   remote_user: root
   with_items: "{{ groups['vsds'] }}"
   run_once: true
-  when: 
+  when:
     - vstat_sa_or_ha | match('ha')
     - vsd_sa_or_ha | match('sa') or vsd_sa_or_ha | match('ha')

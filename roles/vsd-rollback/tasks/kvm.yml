@@ -23,6 +23,7 @@
   delegate_to: "{{ target_server }}"
   remote_user: "{{ target_server_username }}"
 
+
 - name: Wait for VSD ssh to be ready
   local_action:
     module: wait_for
@@ -31,13 +32,37 @@
     search_regex: OpenSSH
     delay: 1
 
+# Since VSD VM might have been down for a while, it is good to force NTP sync
+
+- name: Stop the ntpd service if running
+  service: name=ntpd state=stopped
+  remote_user: "root"
+
+- name: Manually sync time with ntp server
+  command: ntpdate -u "{{ntp_server_list[0]}}"
+  remote_user: "root"
+
+- name: Start ntpd
+  service: name=ntpd state=started
+  remote_user: "root"
+
+- name: check ntp sync state
+  shell: ntpstat | awk 'NR==1{print $1}'
+  register: sync_status
+  until: sync_status.stdout == "synchronised"
+  retries: 4
+  delay: 5
+  ignore_errors: yes
+  remote_user: "root"
+
+
 - block:
   - name: Get monit summary for all process on VSD
     vsd_monit:
-      state: summary
+      group: all
     register: proc_list
     remote_user: "root"
-  
+
   - name: wait for VSD common , core and stats services to become running
     monit_waitfor_service:
       name: "{{ item }}"
@@ -45,9 +70,9 @@
       test_interval_seconds: 30
     with_items: "{{ proc_list['state'].keys() }}"
     remote_user: "root"
-  when: vsd_sa_or_ha | match('sa') or inventory_hostname in groups['vcins'] 
+  when: vsd_sa_or_ha | match('sa') or inventory_hostname in groups['vcins']
 
-- block: 
+- block:
   - name: Get current version of VSD software
     command: echo $VSD_VERSION
     register: vsd_version
@@ -55,7 +80,7 @@
 
   - name: Print vsd_version output when verbosity >= 1
     debug: var=vsd_version verbosity=1
- 
+
   - name: Disable maintainance mode on all l3/l2 domains
     vsd_maintainance:
       vsd_auth: "{{ vsd_auth }}"
@@ -69,13 +94,12 @@
 
   - name: Print vsd maintainance mode output when verbosity >= 1
     debug: var=mode_status verbosity=1
-  
+
   - name: Clean known_hosts of VSCs on "{{ target_server }}"
-    command: ssh-keygen -R "{{  item }}" -f /root/.ssh/known_hosts
-    delegate_to: "{{ ansible_deployment_host }}"
-    remote_user: "{{ ansible_sudo_username }}"
+    command: ssh-keygen -R "{{ item }}"
+    delegate_to: localhost
     with_items: "{{ groups['vscs'] }}"
-  
+
   - name: shut/noshut vswitch controller on VSCs after disabling VSD maintenance mode
     sros_config:
       lines:
@@ -83,17 +107,14 @@
           - configure vswitch-controller no shutdown
       provider:
         host: "{{ item }}"
-        username: "{{ vsc_user }}"
-        password: "{{ vsc_password }}"
-        transport: cli
+        username: "{{ vsc_user|default('admin') }}"
+        password: "{{ vsc_password|default('admin') }}"
+    delegate_to: localhost
     register: vsc_command_status
-    #connection: local
-    delegate_to: "{{ ansible_deployment_host }}"
-    remote_user: "{{ ansible_sudo_username }}"
     with_items: "{{ groups['vscs'] }}"
-                                                                     
+
   - debug: var=vsc_command_status verbosity=1
-  
-  when: 
+
+  when:
    - vsd_sa_or_ha | match('sa')
    - inventory_hostname not in groups['vcins']
