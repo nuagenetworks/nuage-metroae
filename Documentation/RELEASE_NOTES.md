@@ -2,6 +2,7 @@
 ## Release 2.3.1
 ### Resolved Issues
 * Under certain conditions, VSTAT upgrade would fail because we didn't use the _upgrade_ VM name for the new VM.
+* Change VSTAT password from env variable to vsc_creds.yml
 ## Release 2.3.0
 ### New Features and Enhancements
 *	Support Ansible 2.3/2.4 (Use Ansible==2.4)
