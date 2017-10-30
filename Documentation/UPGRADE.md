@@ -70,7 +70,7 @@ Upgrading VSC requires <.tim> file that needs to be present in VSC path <yourpat
 
 Generate necessary data for the ansible playbooks to run by executing `build_upgrade` playbook. This requires `build_vars.yml`,  `upgrade_vars.yml`, and `user_creds.yml` to be populated according to the environment. The `user_creds.yml` file must contain VSD and VSC credentials as shown in the example file `examples\user_creds.yml`
 
-5. Run `./metro-ansible build_upgrade.yml -vvvv` to generate variables and files nedded for upgrade
+5. Run `./metro-ansible build_upgrade.yml -vvvv` to generate variables and files needed for upgrade
 
 
 ## VSD, VSC, & VSTAT (elasticsearch ) HA/Cluster upgrade at a glance
