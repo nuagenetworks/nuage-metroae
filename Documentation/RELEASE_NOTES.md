@@ -1,5 +1,9 @@
 # MetroAG Release Notes
-## New Features and Enhancements in Release 2.3
+## Release 2.3.1
+### Resolved Issues
+* Under certain conditions, VSTAT upgrade would fail because we didn't use the _upgrade_ VM name for the new VM.
+## Release 2.3.0
+### New Features and Enhancements
 *	Support Ansible 2.3/2.4 (Use Ansible==2.4)
 *	Added script to setup Metro environment
 * Moved playbooks and docs to subfolders to reduce clutter
@@ -18,7 +22,7 @@
 *	Allow XMPP connection type setting on VSD
 *	Support per-VSC health variable setting
 * Enhanced license script to deploy multiple licenses
-## Resolved Issues
+### Resolved Issues
 *	Align vsd-destroy for vcenter with vsd-destroy fo kvm
 *	Several fixes for VSC/VSD upgrade
 *	Ejabberd connected user test
@@ -30,7 +34,7 @@
 *	Fix error when producing lists of VRS packages to install
 *	Check max length of VSC hostname
 * Added iptables for VSTAT
-## Known Limitations
+### Known Limitations
 *	VSD health checks during the upgrade only takes in to account monit summary, not other checks.
 *	No support for release specific commands to stop elastic search/vstat process on vsd when upgrading from 3.2R8 to 4.0RX.
 *	No support for release specific commands to stop core process on vsd when upgrading from 3.2R8 to 4.0RX.
