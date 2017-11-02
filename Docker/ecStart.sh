@@ -165,14 +165,6 @@ if [ ! -e /files/id_rsa ]; then
   ssh-keygen -h -f /files/id_rsa -N ''
 fi
 
-if [ ! -e /files/ansible.cfg ]; then
-cat > /files/ansible.cfg << EOF
-# Sample config file, modify to override settings
-[ssh_connection]
-# scp_if_ssh = True
-EOF
-fi
-
 # Always re-copy, even if already done
 # ssh-copy-id -i /files/id_rsa.pub root@127.0.0.1 || exit 1
 cp /files/id_rsa* ~/.ssh/ && chmod 600 ~/.ssh/id_rsa*

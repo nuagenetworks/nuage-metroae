@@ -20,5 +20,4 @@ RUN chmod 600 /root/.ssh/config
 # RUN git clone https://$git_user:$git_password@github.com/nuagenetworks/nuage-metro.git && \
 #    sed -i 's|build_vars.yml|/files/build_vars.yml|g' nuage-metro/build.yml
 ADD nuage-metro /nuage-metro
-
 ADD nuage-metro/Docker/ecStart.sh /
