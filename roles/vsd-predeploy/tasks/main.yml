@@ -9,19 +9,19 @@
   assert:
     that: "ping_result.rc != 0"
     msg:  "Someone responded to ping of VSD hostname. Quitting."
-  when: not vsd_running
+  when: not target_server_type | match("kvm")
 
 - name: Ping VSD IP address
   command: ping -c 1 {{ mgmt_ip }}
   ignore_errors: yes
-  register: ping_result
+  register: ping2_result
   delegate_to: localhost
 
 - name: Assert no response to ping of VSD IP address
   assert:
-    that: "ping_result.rc != 0"
+    that: "ping2_result.rc != 0"
     msg:  "Someone responded to ping of VSD IP address. Quitting."
-  when: not vsd_running
+  when: not target_server_type | match("kvm")
 
 - include: kvm.yml
   when: target_server_type | match("kvm")
@@ -29,6 +29,17 @@
     - vsd
     - vsd-predeploy
 
+-block:
+  - name: Assert no response to ping of VSD hostname, unless vsd_running
+    assert:
+      that: "ping_result.rc != 0"
+      msg:  "Someone responded to ping of VSD hostname. Quitting."
+  - name: Assert no response to ping of VSD IP address, unless vsd_running
+    assert:
+      that: "ping2_result.rc != 0"
+      msg:  "Someone responded to ping of VSD IP address. Quitting."
+  when: target_server_type | match("kvm") and not vsd_running
+  
 - include: heat.yml
   when: target_server_type | match("heat")
   tags:
