@@ -28,16 +28,26 @@
   connection: local
   action: setup
 
-- name: Install unzip on RedHat OS family distribution
-  yum: name=unzip
-  connection: local
-  when: ansible_os_family == "RedHat"
+- block:
+  - name: Check if required OS packages are installed
+    command: rpm -q unzip
+    connection: local
+    register: rpm_check
+    ignore_errors: True
+
+  - name: Install packages for RedHat OS family distros
+    yum: name=unzip state=present
+    connection: local
+    environment:
+      http_proxy: "{{ yum_proxy | default('') }}"
+      https_proxy: "{{ yum_proxy | default('') }}"
+    when: rpm_check.rc == 1
+  when: ansible_os_family | match("RedHat")
 
 - name: Install unzip on Debian OS family distribution
-  apt: name=unzip
+  apt: name=unzip state=present
   connection: local
   when: ansible_os_family == "Debian"
-
 
 
 #################
