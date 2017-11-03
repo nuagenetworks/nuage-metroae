@@ -7,7 +7,7 @@
 * Updated Dockerfile support
 * Fixed several typos
 * Replaced list_of_vscs variable to elimiinate undefined var error
-* Fix vstat credentials
+* Add dvSwitch when deploying VCIN
 ## Release 2.3.0
 ### New Features and Enhancements
 *	Support Ansible 2.3/2.4 (Use Ansible==2.4)
