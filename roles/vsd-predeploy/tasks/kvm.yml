@@ -91,8 +91,14 @@
   delegate_to: "{{ target_server }}"
   remote_user: "{{ target_server_username }}"
 
-- set_fact: vsd_running="{{ vm_name in virt_vms.list_vms }}"
+- name: Set fact to check if VSD VM is running
+  set_fact: vsd_running="{{ vm_name in virt_vms.list_vms and keep_existing_vms is defined }}"
 - debug: var=vsd_running verbosity=1
+
+- name: Verify that the VSD VM is not already running ( add 'keep_existing_vms' to skip this check )
+  assert:
+    that: not vsd_running or keep_existing_vms is defined
+    msg: "{{ vm_name }} is already running on {{ target_server }}"
 
 - block:
   - name: Create libvirt image directory

@@ -77,11 +77,10 @@
   set_fact: vsc_running="{{ vmname in virt_vms.list_vms and keep_existing_vms is defined }}"
 - debug: var=vsc_running verbosity=1
 
-- name: Verify that the VM is not already running ( add 'keep_existing_vms' to skip this check )
+- name: Verify that the VSC VM is not already running ( add 'keep_existing_vms' to skip this check )
   assert:
-    that: "vmname not in virt_vms.list_vms"
+    that: not vsc_running or keep_existing_vms is defined
     msg: "{{ vmname }} is already running on {{ target_server }}"
-  when: keep_existing_vms is not defined
 
 - name: Include OS-specific variables.
   include_vars: "{{ ansible_os_family }}.yml"
