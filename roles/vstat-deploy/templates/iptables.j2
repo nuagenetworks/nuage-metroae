@@ -1,7 +1,7 @@
 {% if vsd_sa_or_ha == "sa" %}
 iptables_std_commands:
   - "ipset flush"
-  - "ipset create vsd hash:ip"
+  - "ipset -exist create vsd hash:ip"
   - "ipset add vsd {{ ip_addr.stdout.split()[1] }}"
   - "ipset save -f /etc/sysconfig/ipset"
   - "iptables -R INPUT 5 -m set --match-set vsd src -p tcp --dport 9200 -j ACCEPT"
@@ -11,7 +11,7 @@ iptables_std_commands:
 {% if vsd_sa_or_ha == "ha" %}
 iptables_cluster_commands:
   - "ipset flush"
-  - "ipset create vsd hash:ip"
+  - "ipset -exist create vsd hash:ip"
 {% for vsd in groups['vsds'] %}
   - "ipset add vsd {{ hostvars[vsd]['mgmt_ip'] }}"
 {% endfor %}
