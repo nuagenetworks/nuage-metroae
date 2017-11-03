@@ -11,6 +11,16 @@
   register: vsd_version
   delegate_to: "{{ vsd_fqdn }}"
   remote_user: "root"
+
+# JvB: revoke cert in case it exists, ignore errors
+- name: Revoke any previous proxy certificate from VSD
+  expect:
+    command: "{{ revoke_certs }}"
+    responses:
+      (?i)password: "Alcateldc"
+  delegate_to: "{{ vsd_fqdn }}"
+  remote_user: "root"
+  ignore_errors: yes
   
 - name: Create and transfer certs for VSD 4.0.4
   expect:
