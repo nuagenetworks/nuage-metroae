@@ -9,17 +9,19 @@
   assert:
     that: "ping_result.rc != 0"
     msg:  "Someone responded to ping of VSTAT hostname. Quitting."
+  when: not target_server_type | match("kvm")
 
 - name: Ping VSTAT IP address
   command: ping -c 1 {{ mgmt_ip }}
   ignore_errors: yes
-  register: ping_result
+  register: ping2_result
   delegate_to: localhost
 
 - name: Assert no response to ping of VSTAT IP address
   assert:
-    that: "ping_result.rc != 0"
+    that: "ping2_result.rc != 0"
     msg:  "Someone responded to ping of VSTAT IP address. Quitting."
+  when: not target_server_type | match("kvm")
 
 - name: Verify that the myvsd section is defined
   assert:
@@ -31,6 +33,17 @@
   tags:
     - vstat
     - vstat-predeploy
+
+- block:
+  - name: Assert no response to ping of VStat hostname, unless vstat_running
+    assert:
+      that: "ping_result.rc != 0"
+      msg:  "Someone responded to ping of VStat hostname. Quitting."
+  - name: Assert no response to ping of VStat IP address, unless vstat_running
+    assert:
+      that: "ping2_result.rc != 0"
+      msg:  "Someone responded to ping of VStat IP address. Quitting."
+  when: target_server_type | match("kvm") and not vstat_running
 
 - include: vcenter.yml
   when: target_server_type | match("vcenter")
