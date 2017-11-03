@@ -13,12 +13,12 @@
 - name: Ping VSC IP address
   command: ping -c 1 {{ mgmt_ip }}
   ignore_errors: yes
-  register: ping_result
+  register: ping2_result
   delegate_to: localhost
 
 - name: Assert no response to ping of VSC IP address
   assert:
-    that: "ping_result.rc != 0"
+    that: "ping2_result.rc != 0"
     msg:  "Someone responded to ping of VSC IP address. Quitting."
 
 - include: kvm.yml
@@ -26,6 +26,17 @@
   tags:
     - vsc
     - vsc-predeploy
+
+- block:
+  - name: Assert no response to ping of VSC hostname, unless vsd_running
+    assert:
+      that: "ping_result.rc != 0"
+      msg:  "Someone responded to ping of VSD hostname. Quitting."
+  - name: Assert no response to ping of VSC IP address, unless vsd_running
+    assert:
+      that: "ping2_result.rc != 0"
+      msg:  "Someone responded to ping of VSC IP address. Quitting."
+  when: target_server_type | match("kvm") and not vsc_running
 
 - include: heat.yml
   when: target_server_type | match("heat")
