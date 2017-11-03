@@ -8,6 +8,7 @@
 * Fixed several typos
 * Replaced list_of_vscs variable to elimiinate undefined var error
 * Add dvSwitch when deploying VCIN
+* fallocate space for VSD VM during perdeploy
 ## Release 2.3.0
 ### New Features and Enhancements
 *	Support Ansible 2.3/2.4 (Use Ansible==2.4)
