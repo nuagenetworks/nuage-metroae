@@ -165,21 +165,23 @@
     remote_user: "{{ ansible_sudo_username }}"
 
   - name: Include variable file.
-    include_vars: /tmp/main.yml
+    include_vars: 
+      file: /tmp/main.yml
+      name: cmd
     delegate_to: "{{ ansible_deployment_host }}"
     remote_user: "{{ ansible_sudo_username }}"
 
   - name: Config iptables on VSTAT vm to accept conn on ports 9200,9300 from vsd(s)
     shell: "{{ item }}"
     with_items:
-      - "{{ iptables_std_commands }}"
+      - "{{ cmd.iptables_std_commands }}"
     remote_user: "root"
     when: vsd_sa_or_ha | match('sa')
 
   - name: Config iptables on VSTAT vm to accept conn on ports 9200, 9300 from vsd(s) in cluster setup
     shell: "{{ item }}"
     with_items:
-      - "{{ iptables_cluster_commands }}"
+      - "{{ cmd.iptables_cluster_commands }}"
     when: vsd_sa_or_ha | match('ha')
     remote_user: "root"
 
@@ -210,21 +212,23 @@
     remote_user: "{{ ansible_sudo_username }}"
 
   - name: Include variable file.
-    include_vars: /tmp/main.yml
+    include_vars: 
+      file: /tmp/main.yml
+      name: fw
     delegate_to: "{{ ansible_deployment_host }}"
     remote_user: "{{ ansible_sudo_username }}"
 
   - name: Config firewall on VSTAT vm to accept conn on ports 9200,9300 from vsd(s)
     shell: "{{ item }}"
     with_items:
-      - "{{ firewall_std_commands }}"
+      - "{{ fw.firewall_std_commands }}"
     remote_user: "root"
     when: vsd_sa_or_ha | match('sa')
 
   - name: Config firewall on VSTAT vm to accept conn on ports 9200, 9300 from vsd(s) in cluster setup
     shell: "{{ item }}"
     with_items:
-      - "{{ firewall_cluster_commands }}"
+      - "{{ fw.firewall_cluster_commands }}"
     when: vsd_sa_or_ha | match('ha')
     remote_user: "root"
 
