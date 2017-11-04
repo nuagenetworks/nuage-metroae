@@ -131,14 +131,14 @@
   command: chkconfig cloud-init off
   remote_user: "root"
 
-- name: Configure ntpd and ntpdate
+- name: Configure ntpd and ntpdate and local time zone
   include_role:
     name: common
     tasks_from: linux-ntp
 
 - name: Install VSD software on standalone node
   command: /opt/vsd/vsd-install.sh -t s -y
-  when: vsd_sa_or_ha | match('sa')
+  when: vsd_sa_or_ha | match('sa') and not vsd_running
   remote_user: "root"
 
 - block:
@@ -148,23 +148,21 @@
   - name: Install VSD software on HA node1 {{groups['vsds'][0]}}
     command: "{{ vsd_node1_install_cmd }}"
     when: inventory_hostname == groups['vsds'][0]
-    remote_user: "root"
 
   - name: Install VSD software on HA node2 {{groups['vsds'][1]}}
     command: "{{ vsd_node2_install_cmd }}"
     when: inventory_hostname == groups['vsds'][1] and not rollback
-    remote_user: "root"
 
   - name: Install VSD software on HA node2 {{groups['vsds'][1]}}
     command: "{{ vsd_node1_rollback }}"
     when: inventory_hostname == groups['vsds'][1] and rollback
-    remote_user: "root"
 
   - name: Install VSD software on HA node3 {{groups['vsds'][2]}}
     command: "{{ vsd_node3_install_cmd }}"
     when: inventory_hostname == groups['vsds'][2]
-    remote_user: "root"
-  when: vsd_sa_or_ha | match('ha')
+    
+  when: vsd_sa_or_ha | match('ha') and not vsd_running
+  remote_user: "root"
 
 - name: Set XMPP connection to allow both clear and TLS
   command: /opt/vsd/bin/ejmode allow -y
