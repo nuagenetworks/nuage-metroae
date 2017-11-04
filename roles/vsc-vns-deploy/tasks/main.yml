@@ -8,55 +8,58 @@
     delegate_to: localhost
 
   - block:
-    - name: Download pip installer
-      command: curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
-      delegate_to: "{{ item }}"
-      remote_user: "root"
-      with_items: "{{ groups['vsds'] }}"
+    - name: Change XMPP connection to TLS on VSD
+        command: /opt/vsd/bin/ejmode allow -y
 
-    - name: Execute pip installer
-      command: python get-pip.py
-      delegate_to: "{{ item }}"
-      remote_user: "root"
-      with_items: "{{ groups['vsds'] }}"
+    - name: wait for ejabberd-status to become running
+      monit_waitfor_service:
+        name: "ejabberd-status"
+        timeout_seconds: 600
+        test_interval_seconds: 30
 
-    - name: Install pexpect on VSD
-      pip:
-        name: pexpect
-      delegate_to: "{{ item }}"
-      remote_user: "root"
-      with_items: "{{ groups['vsds'] }}"
-    when: yum_proxy == 'NONE'
+    - name: wait for ejbca-status to become running
+      monit_waitfor_service:
+        name: "ejbca-status"
+        timeout_seconds: 600
+        test_interval_seconds: 30
 
-  - block:
-    - name: Download pip installer through proxy
-      command: curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
+    - block:
+      - name: Download pip installer
+        command: curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
+
+      - name: Execute pip installer
+        command: python get-pip.py
+
+      - name: Install pexpect on VSD
+        pip:
+          name: pexpect
+
       delegate_to: "{{ item }}"
-      remote_user: "root"
+      # JvB TODO should default to '' (empty) such that we can use the same logic everywhere
+      when: yum_proxy == 'NONE'
+
+    - block:
+      - name: Download pip installer through proxy
+        command: curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
+
+      - name: Execute pip installer through proxy
+        command: python get-pip.py
+
+      - name: Install pexpect on VSD through proxy
+        pip:
+          name: pexpect
+
+      delegate_to: "{{ item }}"
+      when: yum_proxy != 'NONE'
       environment:
         http_proxy: "{{ yum_proxy }}"
         https_proxy: "{{ yum_proxy }}"
-      with_items: "{{ groups['vsds'] }}"
 
-    - name: Execute pip installer through proxy
-      command: python get-pip.py
-      delegate_to: "{{ item }}"
-      remote_user: "root"
-      environment:
-        http_proxy: "{{ yum_proxy }}"
-        https_proxy: "{{ yum_proxy }}"
-      with_items: "{{ groups['vsds'] }}"
-
-    - name: Install pexpect on VSD through proxy
-      pip:
-        name: pexpect
-      delegate_to: "{{ item }}"
-      remote_user: "root"
-      environment:
-        http_proxy: "{{ yum_proxy }}"
-        https_proxy: "{{ yum_proxy }}"
-      with_items: "{{ groups['vsds'] }}"
-    when: yum_proxy != 'NONE'
+  remote_user: "root"
+  delegate_to: "{{ item }}"
+  with_items: "{{ groups['vsds'] }}"
+  # JvB run_once doesn't work here because of serial=1 in the playbook
+  run_once: true
 
   - name: Get VSD version
     shell: echo $VSD_VERSION
