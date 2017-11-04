@@ -1,34 +1,11 @@
 ---
+
 - block:
   - name: Clean known_hosts
     known_hosts:
       name: "{{ mgmt_ip }}"
       state: absent
     delegate_to: localhost
-
-  - name: Change XMPP connection to TLS on VSD
-    command: /opt/vsd/bin/ejmode allow -y
-    remote_user: "root"
-    delegate_to: "{{ item }}"
-    with_items: "{{ groups['vsds'] }}"
-
-  - name: wait for ejabberd-status to become running
-    monit_waitfor_service:
-      name: "ejabberd-status"
-      timeout_seconds: 600
-      test_interval_seconds: 30
-    remote_user: "root"
-    delegate_to: "{{ item }}"
-    with_items: "{{ groups['vsds'] }}"
-
-  - name: wait for ejbca-status to become running
-    monit_waitfor_service:
-      name: "ejbca-status"
-      timeout_seconds: 600
-      test_interval_seconds: 30
-    remote_user: "root"
-    delegate_to: "{{ item }}"
-    with_items: "{{ groups['vsds'] }}"
 
   - block:
     - name: Download pip installer
@@ -136,4 +113,4 @@
 
   - name: Print output of 'show vswitch-controller xmpp-server' when verbosity >= 1
     debug: var=xmpp_status verbosity=1
-  when: groups['vnsutils'] is defined
+  when: configure_for_vns

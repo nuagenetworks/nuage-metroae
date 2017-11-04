@@ -133,3 +133,23 @@
     command: chkconfig dnsmasq on
     remote_user: "root"
   when: nsgv_ip is defined or nsgv_mac is defined or nsgv_host_name is defined
+
+- block:
+  - name: Change XMPP connection to TLS on VSD
+      command: /opt/vsd/bin/ejmode allow -y
+
+  - name: wait for ejabberd-status to become running
+    monit_waitfor_service:
+      name: "ejabberd-status"
+      timeout_seconds: 600
+      test_interval_seconds: 30
+
+  - name: wait for ejbca-status to become running
+    monit_waitfor_service:
+      name: "ejbca-status"
+      timeout_seconds: 600
+      test_interval_seconds: 30
+
+  remote_user: "root"
+  delegate_to: "{{ item }}"
+  with_items: "{{ groups['vsds'] }}"
