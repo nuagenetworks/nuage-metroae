@@ -32,7 +32,7 @@
     --net:"Management Network={{ mgmt_bridge }}"
     --net:"Datapath Network={{ data_bridge }}"
     --prop:"DHCP=False"
-    --prop:"Management_IP={{ mgmt_ip }}/{{ mgmt_netmask_prefix }}"
+    --prop:"Management_IP={{ bof_ip }}/{{ mgmt_netmask_prefix }}"
     {% if vsc_mgmt_static_route_list[0] is defined %}
     --prop:"Static_Routes={% for sr in vsc_mgmt_static_route_list %}{{ sr }} {{ mgmt_gateway }}{% if not loop.last %};{% endif %}{% endfor %}"
     {% else %}
@@ -96,7 +96,7 @@
   connection: local
   wait_for:
     port: "22"
-    host: "{{ mgmt_ip }}"
+    host: "{{ hostname }}"
     search_regex: OpenSSH
     delay: 1
 
@@ -114,7 +114,7 @@
 
 - name: Copy VSC config file to VSC
   connection: local
-  command: "sshpass -p admin scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null /tmp/ansible-config-{{ inventory_hostname }}/config.cfg admin@{{ mgmt_ip }}:"
+  command: "sshpass -p admin scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null /tmp/ansible-config-{{ inventory_hostname }}/config.cfg admin@{{ hostname }}:"
 
 - name: Reboot VSC VM
   connection: local

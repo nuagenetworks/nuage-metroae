@@ -1,7 +1,7 @@
 ---
 - name: Clean known_hosts of VSC's on "{{ target_server }}"
   known_hosts:
-    name: "{{ mgmt_ip }}"
+    name: "{{ hostname }}"
     state: absent
   delegate_to: localhost
 
@@ -73,14 +73,10 @@
   when: vsd_sa_or_ha | match('ha')
 
 - block:
-  - name: Set mgmt_ip to second vsc node
-    set_fact:
-      mgmt_ip: "{{ hostvars[groups['vscs'][1]]['mgmt_ip'] }}"
-
   - name: Check if vsc ha node2 is configured with PBR config
     sros_command:
       commands: admin display-config
-      provider: "{{ vsc_creds }}"
+      provider: "{{ vsc_creds | combine({'host':hostvars[groups['vscs'][1]]['mgmt_ip']}) }}"
     delegate_to: localhost
     register: pbr_config_ha_node2
 
@@ -93,18 +89,14 @@
         - configure router bgp evpn-pre-rfc no send-opaque-community
         - configure router bgp evpn-pre-rfc no non-compliant
         - admin save
-      provider: "{{ vsc_creds }}"
+      provider: "{{ vsc_creds | combine({'host':hostvars[groups['vscs'][1]]['mgmt_ip']}) }}"
     delegate_to: localhost
     when: pbr_config_ha_node2.stdout[0].find('evpn-pre-rfc') != -1
-
-  - name: Set mgmt_ip to first vsc node
-    set_fact:
-      mgmt_ip: "{{ hostvars[groups['vscs'][0]]['mgmt_ip'] }}"
 
   - name: Check if vsc ha node1 is configured with PBR config
     sros_command:
       commands: admin display-config
-      provider: "{{ vsc_creds }}"
+      provider: "{{ vsc_creds | combine({'host':hostvars[groups['vscs'][0]]['mgmt_ip']}) }}"
     delegate_to: localhost
     register: pbr_config_ha_node1
 
@@ -117,7 +109,7 @@
         - configure router bgp evpn-pre-rfc no send-opaque-community
         - configure router bgp evpn-pre-rfc no non-compliant
         - admin save
-      provider: "{{ vsc_creds }}"
+      provider: "{{ vsc_creds | combine({'host':hostvars[groups['vscs'][0]]['mgmt_ip']}) }}"
     delegate_to: localhost
     when: pbr_config_ha_node1.stdout[0].find('evpn-pre-rfc') != -1
   when:

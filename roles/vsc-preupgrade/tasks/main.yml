@@ -17,10 +17,6 @@
   debug: var=vsc_version_json verbosity=1
 
 - block:
-  - name: Set mgmt_ip to first vsc node
-    set_fact:
-      mgmt_ip: "{{ hostvars[groups['vscs'][0]]['mgmt_ip'] }}"
-
   - name: Configure PBR backward compatibility on first VSC node running 3.2 version
     sros_config:
       lines:
@@ -28,12 +24,8 @@
         - configure router bgp evpn-pre-rfc non-compliant
         - configure router bgp no shutdown
         - admin save
-      provider: "{{ vsc_creds }}"
+      provider: "{{ vsc_creds | combine({'host':hostvars[groups['vscs'][0]]['mgmt_ip']}) }}"
     delegate_to: localhost
-
-  - name: Set mgmt_ip to second vsc node
-    set_fact:
-      mgmt_ip: "{{ hostvars[groups['vscs'][1]]['mgmt_ip'] }}"
 
   - name: Configure PBR backward compatibility on second VSC node running 3.2 version
     sros_config:
@@ -42,7 +34,7 @@
         - configure router bgp evpn-pre-rfc non-compliant
         - configure router bgp no shutdown
         - admin save
-      provider: "{{ vsc_creds }}"
+      provider: "{{ vsc_creds | combine({'host':hostvars[groups['vscs'][1]]['mgmt_ip']}) }}"
     delegate_to: localhost
   when:
     - "{{ vsc_version_json['vsc_version'][0] }} == 3"
