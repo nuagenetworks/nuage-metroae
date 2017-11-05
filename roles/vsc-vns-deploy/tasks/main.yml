@@ -20,6 +20,16 @@
     delegate_to: "{{ groups['vsds'][0] }}"
     remote_user: "root"
 
+  - name: Revoke old VSC cert, if any
+    expect:
+      timeout: 55
+      command: "{{ revoke_certs }}"
+      responses:
+       (?i)password: "admin"
+    delegate_to: "{{ groups['vsds'][0] }}"
+    remote_user: "root"
+    ignore_errors: yes
+
   - name: Create and transfer certs from 4.0.4 VSD
     expect:
      timeout: 55
@@ -77,12 +87,12 @@
         - show vswitch-controller xmpp-server | match Functional
       provider: "{{ vsc_creds }}"
     register: xmpp_status
-    until: xmpp_status.stdout[0].find('Functional') != -1
+    until: xmpp_status.stdout is defined and xmpp_status.stdout[0].find('Functional') != -1
     retries: 6
     delay: 10
     delegate_to: localhost
 
   - name: Print output of 'show vswitch-controller xmpp-server' when verbosity >= 1
     debug: var=xmpp_status verbosity=1
-  when: configure_for_vns
+
   tags: vsc
