@@ -58,29 +58,35 @@
 #    register: output
 #    # TODO: Replace by vsc_command, or sros_command module calls
 
+  - name: Patch bug in sros_config module
+    shell: |
+      sed -i 's/{,3}(/{,3}>?(/g' /usr/lib/python2.7/site-packages/ansible/plugins/terminal/sros.py
+      rm -f /usr/lib/python2.7/site-packages/ansible/plugins/terminal/sros.pyc
+    delegate_to: "{{ ansible_deployment_host }}"
+
   - name: Configure VSC for VNS
     sros_config:
       lines:
-        - 'configure system security tls-profile "vns-tls-profile" create
-          own-key "cf1:/{{xmpp.username}}-Key.pem"
-          own-certificate "cf1:/{{xmpp.username}}.pem"
-          ca-certificate "cf1:/{{xmpp.username}}-CA.pem"
-          no shutdown'
-        - 'configure vswitch-controller open-flow {{ openflow_use_tls | ternary( "tls-profile vns-tls-profile", "no tls-profile" ) }}'
-        - 'configure vswitch-controller xmpp {{ xmpp_use_tls | ternary( "tls-profile vns-tls-profile", "no tls-profile" ) }}'
-        - 'configure system time ntp ntp-server
+        - configure system security tls-profile "vns-tls-profile" create
+        - configure system security tls-profile "vns-tls-profile" own-key "cf1:/{{xmpp.username}}-Key.pem"
+        - configure system security tls-profile "vns-tls-profile" own-certificate "cf1:/{{xmpp.username}}.pem"
+        - configure system security tls-profile "vns-tls-profile" ca-certificate "cf1:/{{xmpp.username}}-CA.pem"
+        - configure system security tls-profile "vns-tls-profile" no shutdown
+        - configure vswitch-controller open-flow {{ openflow_use_tls | ternary( "tls-profile vns-tls-profile", "no tls-profile" ) }}
+        - configure vswitch-controller xmpp {{ xmpp_use_tls | ternary( "tls-profile vns-tls-profile", "no tls-profile" ) }}
+        - configure vswitch-controller {{ xmpp_inband | ternary( "route-preference primary inband secondary none", "no route-preference" ) }}
+        - configure system time ntp ntp-server
       save: true
       provider: "{{ vsc_creds }}"
     delegate_to: localhost
-    register: output
 
-  - name: Verification Result Failure Status
-    fail: msg={{ output.stdout }}
-    when: output.stdout | search("(?i)MINOR")
-    ignore_errors: yes
+#  - name: Verification Result Failure Status
+#    fail: msg={{ output.stdout }}
+#    when: output.stdout | search("(?i)MINOR")
+#    ignore_errors: yes
 
-  - name: Verification Result Success Status
-    debug: var=output.stdout verbosity=1
+#  - name: Verification Result Success Status
+#    debug: var=output.stdout verbosity=1
 
   - name: check xmpp connectivity between VSC and VSD after enabling TLS
     sros_command:
