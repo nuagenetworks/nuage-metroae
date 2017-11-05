@@ -59,18 +59,19 @@
 #    # TODO: Replace by vsc_command, or sros_command module calls
 
   - name: Configure VSC for VNS
-    sros_command:
-      commands: 
-        - configure system security tls-profile vns-tls-profile 
-          own-key cf1:{{xmpp.username}}-Key.pem
-          own-certificate cf1:{{xmpp.username}}.pem
-          ca-certificate cf1:{{xmpp.username}}-CA.pem
-          no shutdown
+    sros_config:
+      lines:
+        - configure system security tls-profile vns-tls-profile create
+        - configure system security tls-profile vns-tls-profile own-key "cf1:/{{xmpp.username}}-Key.pem"
+        - configure system security tls-profile vns-tls-profile own-certificate "cf1:/{{xmpp.username}}.pem"
+        - configure system security tls-profile vns-tls-profile ca-certificate "cf1:/{{xmpp.username}}-CA.pem"
+        - configure system security tls-profile vns-tls-profile no shutdown
         - configure vswitch-controller open-flow {{ openflow_use_tls | ternary( "tls-profile vns-tls-profile", "no tls-profile" ) }}
         - configure vswitch-controller xmpp {{ xmpp_use_tls | ternary( "tls-profile vns-tls-profile", "no tls-profile" ) }}
         - configure system time ntp ntp-server
-        - admin save
+      save: true
       provider: "{{ vsc_creds }}"
+    delegate_to: localhost
     register: output
 
   - name: Verification Result Failure Status
