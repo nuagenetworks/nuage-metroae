@@ -60,6 +60,7 @@ def check_buildvars(filepath):
     else:
         module.exit_json(changed=False)
 
+
 arg_spec = dict(
     path=dict(
         required=False,
