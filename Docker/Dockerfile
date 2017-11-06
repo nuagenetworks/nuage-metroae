@@ -4,7 +4,7 @@ ENTRYPOINT ["/ecStart.sh"]
 CMD [""]
 
 RUN yum install -y epel-release && yum update -y && \
-    yum install -y python python-devel python-pip sshpass git gcc libssl2-dev libffi-devel python-devel openssl-devel python-netaddr python-dns unzip && \
+    yum install -y python python-devel python-pip sshpass git gcc libssl2-dev libffi-devel python-devel openssl-devel python-netaddr python-dns python-jmespath unzip && \
     pip install ansible==2.4 netmiko netaddr && \
     yum clean all && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
