@@ -76,6 +76,10 @@ def main():
             if proc_status == 'ok' or proc_status == 'running' or proc_status == 'accessible':
                 desired_state = True
             else:
+                # JvB sometimes keyserver-status ends up as 'execution failed' - restart it
+                if proc_status == 'failed':
+                   module.run_command('%s restart %s'
+                                        % (MONIT, proc_name), check_rc=True)
                 time.sleep(test_interval_seconds)
                 time_elapsed = time_elapsed + test_interval_seconds
                 proc_status = status(proc_name)
