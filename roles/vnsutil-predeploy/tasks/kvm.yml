@@ -118,6 +118,12 @@
   delegate_to: "{{ target_server }}"
   remote_user: "{{ target_server_username }}"
 
+- name: Remove cloud-init files to stop it from overwriting our network config
+  command: guestfish --rw -a {{ images_path }}/{{ vmname }}/{{ vnsutil_qcow2_file_name }} -m {{ guestfish_mount }} glob rm-rf /etc/systemd/system/multi-user.target.wants/cloud-*.service
+  delegate_to: "{{ target_server }}"
+  remote_user: "{{ target_server_username }}"
+  ignore_errors: true
+
 - block:
   - name: Create a temporary copy of the network script for eth1
     template: src=ifcfg-eth1.j2 backup=no dest={{ images_path }}/{{ vmname }}/ifcfg-eth1
