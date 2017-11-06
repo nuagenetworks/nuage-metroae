@@ -69,6 +69,7 @@ def main():
 
     desired_state = False
     time_elapsed = 0
+    restarted = False
 
     for proc_name in vsd_stats_proc:
         proc_status = status(proc_name)
@@ -77,7 +78,8 @@ def main():
                 desired_state = True
             else:
                 # JvB sometimes keyserver-status ends up as 'execution failed' - restart it
-                if proc_status == 'failed':
+                if proc_status == 'failed' and not restarted:
+                   restarted = True
                    module.run_command('%s restart %s'
                                         % (MONIT, proc_name), check_rc=True)
                 time.sleep(test_interval_seconds)
