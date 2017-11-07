@@ -9,17 +9,19 @@
   assert:
     that: "ping_result.rc > 0"
     msg:  "Someone responded to ping of VNSUTIL hostname. Quitting."
+  when: not target_server_type | match("kvm")
 
 - name: Ping VNSUTIL IP address
   command: ping -c 1 {{ mgmt_ip }}
   ignore_errors: yes
-  register: ping_result
+  register: ping_result2
   delegate_to: localhost
 
 - name: Assert no response to ping of VNSUTIL IP address
   assert:
-    that: "ping_result.rc > 0"
+    that: "ping_result2.rc > 0"
     msg:  "Someone responded to ping of VNSUTIL IP address. Quitting."
+  when: not target_server_type | match("kvm")
 
 - include: kvm.yml
   when: target_server_type | match("kvm")
@@ -27,9 +29,22 @@
     - vnsutil
     - vnsutil-predeploy
 
+- block:
+  - name: Assert no response to ping of VNSUTIL hostname unless util_running
+    assert:
+      that: "ping_result.rc > 0"
+      msg:  "Someone responded to ping of VNSUTIL hostname. Quitting."
+    when: target_server_type | match("kvm") and not util_running
+
+  - name: Assert no response to ping of VNSUTIL IP address unless util_running
+    assert:
+      that: "ping_result2.rc > 0"
+      msg:  "Someone responded to ping of VNSUTIL IP address. Quitting."
+  when: not target_server_type | match("kvm") and util_running
+
 - include: vcenter.yml
   when: target_server_type | match("vcenter")
   static: no
   tags:
-    - nsgv
-    - nsgv-predeploy
+    - vnsutil
+    - vnsutil-predeploy
