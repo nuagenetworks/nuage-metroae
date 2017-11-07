@@ -1,0 +1,26 @@
+---
+- name: Ping hostname
+  command: ping -c 1 {{ hostname }}
+  ignore_errors: yes
+  register: host_ping_result
+  delegate_to: localhost
+
+- name: Ping IP address
+  command: ping -c 1 {{ mgmt_ip }}
+  ignore_errors: yes
+  register: mgmt_ip_ping_result
+  delegate_to: localhost
+
+- name: Assert no response to ping of hostname
+  assert:
+    that: "host_ping_result.rc != 0 or mgmt_ip_ping_result.rc == 0"
+    msg:  "Someone responded to ping of hostname: {{ hostname }} Quitting."
+
+- name: Assert no response to ping of IP address
+  assert:
+    that: "host_ping_result.rc == 0 or mgmt_ip_ping_result.rc != 0"
+    msg:  "Someone responded to ping of IP address: {{ mgmt_ip }}. Quitting."
+
+- name: Set fact for node reachability
+  set_fact:
+    node_reachable: "{{ host_ping_result.rc == 0 and mgmt_ip_ping_result.rc == 0 }}"

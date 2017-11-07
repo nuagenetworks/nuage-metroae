@@ -1,0 +1,21 @@
+---
+
+- name: List the Virtual Machines running
+  virt: command=list_vms
+  register: virt_vms
+  delegate_to: "{{ target_server }}"
+  remote_user: "{{ target_server_username }}"
+
+- name: Verify that the VM is not already running
+  assert:
+    that: "vm_name not in virt_vms.list_vms or node_reachable"
+    msg: "{{ vm_name }} is already running on {{ target_server }}"
+
+- name: Verify that the VM is running
+  assert:
+    that: "vm_name in virt_vms.list_vms or not node_reachable"
+    msg: "{{ vm_name }} is not running on {{ target_server }}"
+
+- name: Set fact for node running
+  set_fact:
+    node_running: "{{ vm_name in virt_vms.list_vms }}"

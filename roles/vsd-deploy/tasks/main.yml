@@ -1,12 +1,19 @@
 ---
+
+- name: "Check if monit summary is already up"
+  command: monit summary
+  ignore_errors: yes
+  register: monit_result
+  remote_user: root
+
 - include: non_heat.yml
-  when: not target_server_type | match("heat")
+  when: monit_result.rc != 0 and not target_server_type | match("heat")
   tags:
     - vsd
     - vsd-deploy
 
 - include: heat.yml
-  when: target_server_type | match("heat")
+  when: monit_result.rc != 0 and target_server_type | match("heat")
   tags:
     - vsd
     - heat
