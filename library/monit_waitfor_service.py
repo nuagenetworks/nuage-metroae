@@ -69,6 +69,7 @@ def main():
 
     desired_state = False
     time_elapsed = 0
+    restarted = False
 
     for proc_name in vsd_stats_proc:
         proc_status = status(proc_name)
@@ -76,6 +77,10 @@ def main():
             if proc_status == 'ok' or proc_status == 'running' or proc_status == 'accessible':
                 desired_state = True
             else:
+                if proc_status == 'failed' and not restarted:
+                    restarted = True
+                    module.run_command('%s restart %s'
+                                       % (MONIT, proc_name), check_rc=True)
                 time.sleep(test_interval_seconds)
                 time_elapsed = time_elapsed + test_interval_seconds
                 proc_status = status(proc_name)
