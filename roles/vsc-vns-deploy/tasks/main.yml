@@ -14,31 +14,34 @@
     # JvB run_once doesn't work here because of serial=1 in the playbook
     run_once: true
 
-  - name: Get VSD version
-    shell: echo $VSD_VERSION
-    register: vsd_version
+  - block:
+    - name: Get VSD version
+      shell: echo $VSD_VERSION
+      register: vsd_version
+
+    - name: Revoke old VSC cert, if any
+      command: "{{ revoke_certs }}"
+      ignore_errors: yes
+
+    - name: Create and transfer certs from 4.0.4 VSD
+      expect:
+       timeout: 55
+       command: "{{ create_certs_404 }}"
+       responses:
+         (?i)password: "admin"
+      when: "'4.0.4' in vsd_version.stdout"
+
+    - name: Create and transfer certs from VSD
+      expect:
+       timeout: 120
+       command: "{{ create_certs }}"
+       responses:
+         (?i)password: "admin"
+      when: "'4.0.4' not in vsd_version.stdout"
+ 
     delegate_to: "{{ groups['vsds'][0] }}"
     remote_user: "root"
 
-  - name: Create and transfer certs from 4.0.4 VSD
-    expect:
-     timeout: 55
-     command: "{{ create_certs_404 }}"
-     responses:
-       (?i)password: "admin"
-    delegate_to: "{{ groups['vsds'][0] }}"
-    remote_user: "root"
-    when: "'4.0.4' in vsd_version.stdout"
-
-  - name: Create and transfer certs from VSD
-    expect:
-     timeout: 120
-     command: "{{ create_certs }}"
-     responses:
-       (?i)password: "admin"
-    delegate_to: "{{ groups['vsds'][0] }}"
-    remote_user: "root"
-    when: "'4.0.4' not in vsd_version.stdout"
 
 #  - name: Set Top-Level-Directory
 #    set_fact: tld="{{ role_path }}/../../"
