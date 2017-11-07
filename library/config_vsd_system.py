@@ -78,9 +78,9 @@ def get_vsd_session(vsd_auth):
         session.start()
         csproot = session.user
         return csproot
-    except:
-        module.fail_json(changed=False, result="Could not establish\
-                          connection to VSD")
+    except as e:
+        module.fail_json(changed=False, msg="Could not establish\
+                          connection to VSD : %s" % e)
 
 
 def set_gateway_purge_time(csproot, gw_purge_time):
