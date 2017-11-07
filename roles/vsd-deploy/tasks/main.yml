@@ -13,14 +13,33 @@
   register: monit_result
   remote_user: root
 
+- name: Read the VSD version
+  shell: echo $VSD_VERSION
+  register: vsd_version
+  remote_user: root
+
+- name: Set if VSD versions match
+  set_fact: vsd_versions_match="{{ vsd_version.stdout == vsd_qcow2_file_name | regex_search('([0-9]+\\.[0-9]+\\.[0-9A-Za-z]+)') }}"
+
+- name: Set if skipping VSD deploy
+  set_fact: skip_vsd_deploy="{{ vsd_versions_match and monit_result.rc == 0 }}"
+
+- name: Display if skipping VSD deploy
+  debug:
+    msg:
+      - "*************************************************"
+      - "Skipping VSD deploy because it is already running"
+      - "*************************************************"
+  when: skip_vsd_deploy
+
 - include: non_heat.yml
-  when: monit_result.rc != 0 and not target_server_type | match("heat")
+  when: not skip_vsd_deploy and not target_server_type | match("heat")
   tags:
     - vsd
     - vsd-deploy
 
 - include: heat.yml
-  when: monit_result.rc != 0 and target_server_type | match("heat")
+  when: not skip_vsd_deploy and target_server_type | match("heat")
   tags:
     - vsd
     - heat
