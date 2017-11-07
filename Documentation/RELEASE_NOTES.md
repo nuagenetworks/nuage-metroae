@@ -5,14 +5,14 @@
 * Change VSTAT password from env variable to vsc_creds.yml
 * Added python-six dependency to vrs-predeploy
 * Updated Dockerfile support
-* Fixed several typos
-* Replaced list_of_vscs variable to elimiinate undefined var error
+* Replaced list_of_vscs variable to eliminate undefined var error
 * Add dvSwitch when deploying VCIN
-* fallocate space for VSD VM during perdeploy
+* fallocate space for VSD VM during predeploy
+* Remove cloud init files from VNS Utils VM (for 5.1.2 support)
 ## Release 2.3.0
 ### New Features and Enhancements
 *	Support Ansible 2.3/2.4 (Use Ansible==2.4)
-*	Added script to setup Metro environment
+*	Added script to setup MetroAG environment
 * Moved playbooks and docs to subfolders to reduce clutter
 * Reorganized and clarified docs
 *	Added support for per-VM network bridges
