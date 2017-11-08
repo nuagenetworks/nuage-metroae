@@ -7,7 +7,11 @@
 function show_usage() {
  echo "Copyright (C) 2017 Nuage Networks, all rights reserved. Version 1.0 2017-06-14"
  echo "Usage: docker run -it --rm -v \`pwd\`:/files nuage/metro" 
- echo "  add 'destroy' to remove everything"
+ echo "  add 'health' to check, 'destroy' to remove everything"
+ echo "  tip: You can add '--dns:x.x.x.x' to specify a DNS server for the Ansible host (this container) to use"
+ echo "  You may have to 'ssh-copy-id -i id_rsa user@target_server' to the target servers"
+ echo "  To deploy a subset of servers, you can add '--limit=vstats' ( or vsds, vscs, etc. ) at the end"
+ echo "  Also, you may use --tags xxxx to only execute certain tasks"
  
  exit 0
 }
@@ -16,92 +20,109 @@ if [ $# == 0 ] || [ ! -d /files ]; then
  show_usage
 fi
 
-# Generate sample 
-if [ ! -f /files/build_vars.yml ]; then
+# Always copy Ansible scripts, such that users can customize if needed
+cp -Rn nuage-metro /files
 
-# Copy sample config file to bind-mounted user dir, dont overwrite changes
-cp -n nuage-metro/examples/* /files/
-
-cat > /files/build_vars.yml << EOF
-nuage_zipped_files_dir: "/files"
-nuage_unzipped_files_dir: "/files/nuage-unpacked"
-
-###
-# Usernames
-# remote_user names for ansible to execute as on the target server (hypervisor)
-# and Ansible host. target_server_username is the remote_user for all hypervisors.
-# ansible_sudo_username is the sudo user for local actions.
-target_server_username: "root"
-ansible_sudo_username: "root"
-
-vsd_standalone: False
-vsd_sa_or_ha: ha
-vsd_fqdn_global: xmpp.example.com
-vsd_operations_list:
-  - install
-myvsds:
-  - { hostname: vsd1.example.com,
-      target_server_type: "kvm",
-      target_server: 10.0.0.10,
-      mgmt_ip: 192.168.0.10,
-      mgmt_gateway: 192.168.0.1,
-      mgmt_netmask: 255.255.255.0 }
-  - { hostname: vsd2.example.com,
-      target_server_type: "kvm",
-      target_server: 10.0.0.11,
-      mgmt_ip: 192.168.0.11,
-      mgmt_gateway: 192.168.0.1,
-      mgmt_netmask: 255.255.255.0 }
-  - { hostname: vsd3.example.com,
-      target_server_type: "kvm",
-      target_server: 10.0.0.12,
-      mgmt_ip: 192.168.0.12,
-      mgmt_gateway: 192.168.0.1,
-      mgmt_netmask: 255.255.255.0 }
-ansible_deployment_host: 172.17.0.1
-mgmt_bridge: "br0"
-data_bridge: "br1"
-images_path: "/var/lib/libvirt/images/"
-ntp_server_list:
-  - 10.0.0.2
-  - 10.0.0.3
-dns_server_list:
-  - 10.0.0.4
-  - 10.0.0.5
-dns_domain: example.com
-
-EOF
-
-echo "Sample config file created as 'build_vars.yml', edit it and then re-run this tool"
-exit 0
-fi
+# Copy sample to root dir, if not existing
+cp -n nuage-metro/build_vars.yml /files
 
 # Generate new host key if needed
 mkdir -p --mode=700 ~/.ssh 
 if [ ! -e /files/id_rsa ]; then
   ssh-keygen -h -f /files/id_rsa -N ''
 fi
+
 # Always re-copy, even if already done
-ssh-copy-id -i /files/id_rsa.pub root@172.17.0.1 || exit 1
+# ssh-copy-id -i /files/id_rsa.pub root@127.0.0.1 || exit 1
 cp /files/id_rsa* ~/.ssh/ && chmod 600 ~/.ssh/id_rsa*
 
 # Run Ansible playbooks
 export ANSIBLE_HOST_KEY_CHECKING=False
-cp /files/build_vars.yml nuage-metro/
+export PARAMIKO_HOST_KEY_AUTO_ADD=True
+cp /files/build_vars.yml /files/nuage-metro/
 
-if [ "$1" == "destroy" ]; then
-  cd nuage-metro && \
+if [ "$1" == "health" ]; then
+  shift
+  cd /files/nuage-metro && \
   ansible-playbook --key-file=/files/id_rsa build.yml && \
-  ansible-playbook -i hosts --key-file=/files/id_rsa destroy_everything.yml
+  ansible-playbook -i hosts --key-file=/files/id_rsa nuage_health.yml $@
+  exit $?
+fi
+if [ "$1" == "upgrade-vsd" ]; then
+  shift
+  if [ ! -e /files/upgrade_vars.yml ]; then
+     cp nuage-metro/upgrade_vars.yml /files
+     echo "Please edit the sample 'upgrade_vars.yml' and try again
+     exit 1
+  fi
+  cp /files/upgrade_vars.yml /files/nuage-metro/ 
+  cd /files/nuage-metro && \
+  ansible-playbook --key-file=/files/id_rsa build_upgrade.yml && \
+  ansible-playbook -i hosts --key-file=/files/id_rsa vsp_preupgrade_health.yml $@ && \
+  ansible-playbook -i hosts --key-file=/files/id_rsa vsd_ha_upgrade_database_backup_and_decouple.yml $@ && \
+  ansible-playbook -i hosts --key-file=/files/id_rsa vsd_ha_upgrade_shutdown_1_and_2.yml $@ && \
+  ansible-playbook -i hosts --key-file=/files/id_rsa vsd_ha_upgrade_predeploy_1_and_2.yml $@ && \
+  ansible-playbook -i hosts --key-file=/files/id_rsa vsd_ha_upgrade_deploy_1_and_2.yml $@ && \
+  ansible-playbook -i hosts --key-file=/files/id_rsa vsd_ha_upgrade_shutdown_3.yml $@ && \
+  ansible-playbook -i hosts --key-file=/files/id_rsa vsd_ha_upgrade_predeploy_3.yml $@ && \
+  ansible-playbook -i hosts --key-file=/files/id_rsa vsd_ha_upgrade_deploy_3.yml $@ && \
+  ansible-playbook -i hosts --key-file=/files/id_rsa vsd_upgrade_complete_flag.yml $@ && \
+  exit $?
+fi
+if [ "$1" == "upgrade-vsc" ]; then
+  shift
+  if [ ! -e /files/upgrade_vars.yml ]; then
+     cp nuage-metro/upgrade_vars.yml /files
+     echo "Please edit the sample 'upgrade_vars.yml' and try again
+     exit 1
+  fi
+  cp /files/upgrade_vars.yml /files/nuage-metro/ 
+  cd /files/nuage-metro && \
+  ansible-playbook --key-file=/files/id_rsa build_upgrade.yml && \
+  ansible-playbook -i hosts --key-file=/files/id_rsa vsc_health.yml -e report_filename=vsc_preupgrade_health.txt $@ && \
+  ansible-playbook -i hosts --key-file=/files/id_rsa vsc_ha_upgrade_backup_and_prep_1.yml $@ && \
+  ansible-playbook -i hosts --key-file=/files/id_rsa vsc_ha_upgrade_deploy_1.yml $@ && \
+  ansible-playbook -i hosts --key-file=/files/id_rsa vsc_ha_upgrade_postdeploy_1.yml $@ && \
+  read -p "Now upgrade *all* VRSs (--limit=vrss)... press any key to continue" -n1 -s && \
+  ansible-playbook -i hosts --key-file=/files/id_rsa vsc_ha_upgrade_backup_and_prep_2.yml $@ && \
+  ansible-playbook -i hosts --key-file=/files/id_rsa vsc_ha_upgrade_deploy_2.yml $@ && \
+  ansible-playbook -i hosts --key-file=/files/id_rsa vsc_ha_upgrade_postdeploy_2.yml $@
+  exit $?
+fi
+if [ "$1" == "upgrade-es" ]; then
+  shift
+  if [ ! -e /files/upgrade_vars.yml ]; then
+     cp nuage-metro/upgrade_vars.yml /files
+     echo "Please edit the sample 'upgrade_vars.yml' and try again
+     exit 1
+  fi
+  cp /files/upgrade_vars.yml /files/nuage-metro/ 
+  cd /files/nuage-metro && \
+  ansible-playbook --key-file=/files/id_rsa build_upgrade.yml && \
+  ansible-playbook -i hosts --key-file=/files/id_rsa vstat_health.yml -e report_filename=vstat_preupgrade_health.txt $@ && \
+  ansible-playbook -i hosts --key-file=/files/id_rsa vstat_upgrade_data_backup.yml $@ && \
+  ansible-playbook -i hosts --key-file=/files/id_rsa vstat_destroy.yml $@ && \
+  ansible-playbook -i hosts --key-file=/files/id_rsa vstat_predeploy.yml $@ && \
+  ansible-playbook -i hosts --key-file=/files/id_rsa vstat_deploy.yml $@ && \
+  ansible-playbook -i hosts --key-file=/files/id_rsa vstat_upgrade_data_migrate.yml $@ && \
+  ansible-playbook -i hosts --key-file=/files/id_rsa vsp_upgrade_postdeploy.yml $@ && \
+  ansible-playbook -i hosts --key-file=/files/id_rsa vsp_postupgrade_health.yml $@
+  exit $?
+fi
+if [ "$1" == "destroy" ]; then
+  shift
+  cd /files/nuage-metro && \
+  ansible-playbook --key-file=/files/id_rsa build.yml && \
+  ansible-playbook -i hosts --key-file=/files/id_rsa destroy_everything.yml $@
   exit $?
 fi
 
-if [ ! -d /files/nuage-unpacked ]; then
-ansible-playbook nuage-metro/nuage_unzip.yml $@
+if [ ! -d /files/nuage-unpacked ] || [ "$1" == "unpack" ]; then
+ansible-playbook /files/nuage-metro/nuage_unzip.yml $@
 fi
 
-cd nuage-metro && \
-ansible-playbook --key-file=/files/id_rsa build.yml $@ && \
+cd /files/nuage-metro && \
+ansible-playbook --key-file=/files/id_rsa build.yml && \
 ansible-playbook -i hosts --key-file=/files/id_rsa install_everything.yml $@
 
 exit $?
