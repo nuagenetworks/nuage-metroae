@@ -29,11 +29,13 @@
     remote_user: root
 
   - name: mount ISO as loop back device
-    shell: "mount -o loop /tmp/{{ vsd_migration_iso_file_name }} /media/CDROM/"
-    register: mount_out
+    mount:
+      src: "/tmp/{{ vsd_migration_iso_file_name }}"
+      path: "/media/CDROM/"
+      state: mounted
+      opts: "loop, ro"
+      fstab: "/tmp/fstab"  
     remote_user: root
-
-  - debug: var=mount_out verbosity=1
 
   - name: List VSD-related mounts
     shell: "mount | grep VSD | grep /media/CDROM"
