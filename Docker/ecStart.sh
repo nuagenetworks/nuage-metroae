@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# exit on non-zero return code
+set -e
+
 #
 # Start script for Nuage Metro container
 #
@@ -63,17 +66,17 @@ fi
 if [ "$1" == "upgrade-vsd" ]; then
   shift
   copy_upgrade_vars 
-  cd /files/nuage-metro && \
-  ansible-playbook --key-file=/files/id_rsa build_upgrade.yml -v && \
-  ansible-playbook -i hosts --key-file=/files/id_rsa playbooks/vsp_preupgrade_health.yml $@ && \
-  ansible-playbook -i hosts --key-file=/files/id_rsa playbooks/vsd_ha_upgrade_database_backup_and_decouple.yml $@ && \
-  ansible-playbook -i hosts --key-file=/files/id_rsa playbooks/vsd_ha_upgrade_shutdown_1_and_2.yml $@ && \
-  ansible-playbook -i hosts --key-file=/files/id_rsa playbooks/vsd_ha_upgrade_predeploy_1_and_2.yml $@ && \
-  ansible-playbook -i hosts --key-file=/files/id_rsa playbooks/vsd_ha_upgrade_deploy_1_and_2.yml $@ && \
-  ansible-playbook -i hosts --key-file=/files/id_rsa playbooks/vsd_ha_upgrade_shutdown_3.yml $@ && \
-  ansible-playbook -i hosts --key-file=/files/id_rsa playbooks/vsd_ha_upgrade_predeploy_3.yml $@ && \
-  ansible-playbook -i hosts --key-file=/files/id_rsa playbooks/vsd_ha_upgrade_deploy_3.yml $@ && \
-  ansible-playbook -i hosts --key-file=/files/id_rsa playbooks/vsd_upgrade_complete_flag.yml $@ && \
+  cd /files/nuage-metro
+  ansible-playbook --key-file=/files/id_rsa build_upgrade.yml -v
+  ansible-playbook -i hosts --key-file=/files/id_rsa playbooks/vsp_preupgrade_health.yml $@
+  ansible-playbook -i hosts --key-file=/files/id_rsa playbooks/vsd_ha_upgrade_database_backup_and_decouple.yml $@
+  ansible-playbook -i hosts --key-file=/files/id_rsa playbooks/vsd_ha_upgrade_shutdown_1_and_2.yml $@
+  ansible-playbook -i hosts --key-file=/files/id_rsa playbooks/vsd_ha_upgrade_predeploy_1_and_2.yml $@
+  ansible-playbook -i hosts --key-file=/files/id_rsa playbooks/vsd_ha_upgrade_deploy_1_and_2.yml $@
+  ansible-playbook -i hosts --key-file=/files/id_rsa playbooks/vsd_ha_upgrade_shutdown_3.yml $@
+  ansible-playbook -i hosts --key-file=/files/id_rsa playbooks/vsd_ha_upgrade_predeploy_3.yml $@
+  ansible-playbook -i hosts --key-file=/files/id_rsa playbooks/vsd_ha_upgrade_deploy_3.yml $@
+  ansible-playbook -i hosts --key-file=/files/id_rsa playbooks/vsd_upgrade_complete_flag.yml $@
   exit $?
 fi
 if [ "$1" == "upgrade-vsc" ]; then
