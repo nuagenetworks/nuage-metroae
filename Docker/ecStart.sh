@@ -16,6 +16,18 @@ function show_usage() {
  exit 0
 }
 
+function copy_upgrade_vars() {
+  if [ ! -e /files/upgrade_vars.yml ]; then
+     cp nuage-metro/upgrade_vars.yml /files
+     sed -i 's|nuage_upgrade_unzipped_files_dir=.*|nuage_upgrade_unzipped_files_dir=/files/nuage-unpacked|g' /files/upgrade_vars.yml
+     sed -i 's|user_ssh_pub_key=.*|user_ssh_pub_key=/files/id_rsa.pub|g' /files/upgrade_vars.yml
+     sed -i 's|user_ssh_priv_key=.*|user_ssh_priv_key=/files/id_rsa|g' /files/upgrade_vars.yml
+     echo "Please edit the sample 'upgrade_vars.yml' and try again
+     exit 1
+  fi
+  cp /files/upgrade_vars.yml /files/nuage-metro/
+}
+
 if [ $# == 0 ] || [ ! -d /files ]; then
  show_usage
 fi
@@ -50,63 +62,48 @@ if [ "$1" == "health" ]; then
 fi
 if [ "$1" == "upgrade-vsd" ]; then
   shift
-  if [ ! -e /files/upgrade_vars.yml ]; then
-     cp nuage-metro/upgrade_vars.yml /files
-     echo "Please edit the sample 'upgrade_vars.yml' and try again
-     exit 1
-  fi
-  cp /files/upgrade_vars.yml /files/nuage-metro/ 
+  copy_upgrade_vars 
   cd /files/nuage-metro && \
-  ansible-playbook --key-file=/files/id_rsa build_upgrade.yml && \
-  ansible-playbook -i hosts --key-file=/files/id_rsa vsp_preupgrade_health.yml $@ && \
-  ansible-playbook -i hosts --key-file=/files/id_rsa vsd_ha_upgrade_database_backup_and_decouple.yml $@ && \
-  ansible-playbook -i hosts --key-file=/files/id_rsa vsd_ha_upgrade_shutdown_1_and_2.yml $@ && \
-  ansible-playbook -i hosts --key-file=/files/id_rsa vsd_ha_upgrade_predeploy_1_and_2.yml $@ && \
-  ansible-playbook -i hosts --key-file=/files/id_rsa vsd_ha_upgrade_deploy_1_and_2.yml $@ && \
-  ansible-playbook -i hosts --key-file=/files/id_rsa vsd_ha_upgrade_shutdown_3.yml $@ && \
-  ansible-playbook -i hosts --key-file=/files/id_rsa vsd_ha_upgrade_predeploy_3.yml $@ && \
-  ansible-playbook -i hosts --key-file=/files/id_rsa vsd_ha_upgrade_deploy_3.yml $@ && \
-  ansible-playbook -i hosts --key-file=/files/id_rsa vsd_upgrade_complete_flag.yml $@ && \
+  ansible-playbook --key-file=/files/id_rsa build_upgrade.yml -v && \
+  ansible-playbook -i hosts --key-file=/files/id_rsa playbooks/vsp_preupgrade_health.yml $@ && \
+  ansible-playbook -i hosts --key-file=/files/id_rsa playbooks/vsd_ha_upgrade_database_backup_and_decouple.yml $@ && \
+  ansible-playbook -i hosts --key-file=/files/id_rsa playbooks/vsd_ha_upgrade_shutdown_1_and_2.yml $@ && \
+  ansible-playbook -i hosts --key-file=/files/id_rsa playbooks/vsd_ha_upgrade_predeploy_1_and_2.yml $@ && \
+  ansible-playbook -i hosts --key-file=/files/id_rsa playbooks/vsd_ha_upgrade_deploy_1_and_2.yml $@ && \
+  ansible-playbook -i hosts --key-file=/files/id_rsa playbooks/vsd_ha_upgrade_shutdown_3.yml $@ && \
+  ansible-playbook -i hosts --key-file=/files/id_rsa playbooks/vsd_ha_upgrade_predeploy_3.yml $@ && \
+  ansible-playbook -i hosts --key-file=/files/id_rsa playbooks/vsd_ha_upgrade_deploy_3.yml $@ && \
+  ansible-playbook -i hosts --key-file=/files/id_rsa playbooks/vsd_upgrade_complete_flag.yml $@ && \
   exit $?
 fi
 if [ "$1" == "upgrade-vsc" ]; then
   shift
-  if [ ! -e /files/upgrade_vars.yml ]; then
-     cp nuage-metro/upgrade_vars.yml /files
-     echo "Please edit the sample 'upgrade_vars.yml' and try again
-     exit 1
-  fi
-  cp /files/upgrade_vars.yml /files/nuage-metro/ 
+  copy_upgrade_vars
   cd /files/nuage-metro && \
   ansible-playbook --key-file=/files/id_rsa build_upgrade.yml && \
-  ansible-playbook -i hosts --key-file=/files/id_rsa vsc_health.yml -e report_filename=vsc_preupgrade_health.txt $@ && \
-  ansible-playbook -i hosts --key-file=/files/id_rsa vsc_ha_upgrade_backup_and_prep_1.yml $@ && \
-  ansible-playbook -i hosts --key-file=/files/id_rsa vsc_ha_upgrade_deploy_1.yml $@ && \
-  ansible-playbook -i hosts --key-file=/files/id_rsa vsc_ha_upgrade_postdeploy_1.yml $@ && \
+  ansible-playbook -i hosts --key-file=/files/id_rsa playbooks/vsc_health.yml -e report_filename=vsc_preupgrade_health.txt $@ && \
+  ansible-playbook -i hosts --key-file=/files/id_rsa playbooks/vsc_ha_upgrade_backup_and_prep_1.yml $@ && \
+  ansible-playbook -i hosts --key-file=/files/id_rsa playbooks/vsc_ha_upgrade_deploy_1.yml $@ && \
+  ansible-playbook -i hosts --key-file=/files/id_rsa playbooks/vsc_ha_upgrade_postdeploy_1.yml $@ && \
   read -p "Now upgrade *all* VRSs (--limit=vrss)... press any key to continue" -n1 -s && \
-  ansible-playbook -i hosts --key-file=/files/id_rsa vsc_ha_upgrade_backup_and_prep_2.yml $@ && \
-  ansible-playbook -i hosts --key-file=/files/id_rsa vsc_ha_upgrade_deploy_2.yml $@ && \
-  ansible-playbook -i hosts --key-file=/files/id_rsa vsc_ha_upgrade_postdeploy_2.yml $@
+  ansible-playbook -i hosts --key-file=/files/id_rsa playbooks/vsc_ha_upgrade_backup_and_prep_2.yml $@ && \
+  ansible-playbook -i hosts --key-file=/files/id_rsa playbooks/vsc_ha_upgrade_deploy_2.yml $@ && \
+  ansible-playbook -i hosts --key-file=/files/id_rsa playbooks/vsc_ha_upgrade_postdeploy_2.yml $@
   exit $?
 fi
 if [ "$1" == "upgrade-es" ]; then
   shift
-  if [ ! -e /files/upgrade_vars.yml ]; then
-     cp nuage-metro/upgrade_vars.yml /files
-     echo "Please edit the sample 'upgrade_vars.yml' and try again
-     exit 1
-  fi
-  cp /files/upgrade_vars.yml /files/nuage-metro/ 
+  copy_upgrade_vars
   cd /files/nuage-metro && \
   ansible-playbook --key-file=/files/id_rsa build_upgrade.yml && \
-  ansible-playbook -i hosts --key-file=/files/id_rsa vstat_health.yml -e report_filename=vstat_preupgrade_health.txt $@ && \
-  ansible-playbook -i hosts --key-file=/files/id_rsa vstat_upgrade_data_backup.yml $@ && \
-  ansible-playbook -i hosts --key-file=/files/id_rsa vstat_destroy.yml $@ && \
-  ansible-playbook -i hosts --key-file=/files/id_rsa vstat_predeploy.yml $@ && \
-  ansible-playbook -i hosts --key-file=/files/id_rsa vstat_deploy.yml $@ && \
-  ansible-playbook -i hosts --key-file=/files/id_rsa vstat_upgrade_data_migrate.yml $@ && \
-  ansible-playbook -i hosts --key-file=/files/id_rsa vsp_upgrade_postdeploy.yml $@ && \
-  ansible-playbook -i hosts --key-file=/files/id_rsa vsp_postupgrade_health.yml $@
+  ansible-playbook -i hosts --key-file=/files/id_rsa playbooks/vstat_health.yml -e report_filename=vstat_preupgrade_health.txt $@ && \
+  ansible-playbook -i hosts --key-file=/files/id_rsa playbooks/vstat_upgrade_data_backup.yml $@ && \
+  ansible-playbook -i hosts --key-file=/files/id_rsa playbooks/vstat_destroy.yml $@ && \
+  ansible-playbook -i hosts --key-file=/files/id_rsa playbooks/vstat_predeploy.yml $@ && \
+  ansible-playbook -i hosts --key-file=/files/id_rsa playbooks/vstat_deploy.yml $@ && \
+  ansible-playbook -i hosts --key-file=/files/id_rsa playbooks/vstat_upgrade_data_migrate.yml $@ && \
+  ansible-playbook -i hosts --key-file=/files/id_rsa playbooks/vsp_upgrade_postdeploy.yml $@ && \
+  ansible-playbook -i hosts --key-file=/files/id_rsa playbooks/vsp_postupgrade_health.yml $@
   exit $?
 fi
 if [ "$1" == "destroy" ]; then
