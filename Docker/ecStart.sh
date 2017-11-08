@@ -85,7 +85,7 @@ if [ "$1" == "upgrade-vsc" ]; then
   ansible-playbook -i hosts --key-file=/files/id_rsa playbooks/vsc_ha_upgrade_backup_and_prep_1.yml $@ && \
   ansible-playbook -i hosts --key-file=/files/id_rsa playbooks/vsc_ha_upgrade_deploy_1.yml $@ && \
   ansible-playbook -i hosts --key-file=/files/id_rsa playbooks/vsc_ha_upgrade_postdeploy_1.yml $@ && \
-  read -p "Now upgrade *all* VRSs (--limit=vrss)... press any key to continue" -n1 -s && \
+  read -p "Now upgrade *all* VRSs \(--limit=vrss\)... press any key to continue" -n1 -s && \
   ansible-playbook -i hosts --key-file=/files/id_rsa playbooks/vsc_ha_upgrade_backup_and_prep_2.yml $@ && \
   ansible-playbook -i hosts --key-file=/files/id_rsa playbooks/vsc_ha_upgrade_deploy_2.yml $@ && \
   ansible-playbook -i hosts --key-file=/files/id_rsa playbooks/vsc_ha_upgrade_postdeploy_2.yml $@
