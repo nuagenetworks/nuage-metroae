@@ -22,7 +22,7 @@ function copy_upgrade_vars() {
      sed -i 's|nuage_upgrade_unzipped_files_dir=.*|nuage_upgrade_unzipped_files_dir=/files/nuage-unpacked|g' /files/upgrade_vars.yml
      sed -i 's|user_ssh_pub_key=.*|user_ssh_pub_key=/files/id_rsa.pub|g' /files/upgrade_vars.yml
      sed -i 's|user_ssh_priv_key=.*|user_ssh_priv_key=/files/id_rsa|g' /files/upgrade_vars.yml
-     echo "Please edit the sample 'upgrade_vars.yml' and try again
+     echo "Please edit the sample 'upgrade_vars.yml' and try again"
      exit 1
   fi
   cp /files/upgrade_vars.yml /files/nuage-metro/
@@ -85,7 +85,7 @@ if [ "$1" == "upgrade-vsc" ]; then
   ansible-playbook -i hosts --key-file=/files/id_rsa playbooks/vsc_ha_upgrade_backup_and_prep_1.yml $@ && \
   ansible-playbook -i hosts --key-file=/files/id_rsa playbooks/vsc_ha_upgrade_deploy_1.yml $@ && \
   ansible-playbook -i hosts --key-file=/files/id_rsa playbooks/vsc_ha_upgrade_postdeploy_1.yml $@ && \
-  read -p "Now upgrade *all* VRSs \(--limit=vrss\)... press any key to continue" -n1 -s && \
+  read -p 'Now upgrade *all* VRSs (--limit=vrss)... press any key to continue' -n1 -s && \
   ansible-playbook -i hosts --key-file=/files/id_rsa playbooks/vsc_ha_upgrade_backup_and_prep_2.yml $@ && \
   ansible-playbook -i hosts --key-file=/files/id_rsa playbooks/vsc_ha_upgrade_deploy_2.yml $@ && \
   ansible-playbook -i hosts --key-file=/files/id_rsa playbooks/vsc_ha_upgrade_postdeploy_2.yml $@
