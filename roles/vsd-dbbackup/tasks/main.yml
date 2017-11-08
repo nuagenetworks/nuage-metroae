@@ -12,18 +12,6 @@
 
 - debug: var=username_on_the_host
 
-- name: Install pip on RedHat OS family distribution
-  yum: name="python-pip" state="present"
-  remote_user: "{{ ansible_sudo_username }}"
-  delegate_to: "{{ ansible_deployment_host }}"
-  when: ansible_os_family == "RedHat"
-
-- name: Install pip on Debian OS family distribution
-  apt: name="python-pip" state="present"
-  remote_user: "{{ ansible_sudo_username }}"
-  delegate_to: "{{ ansible_deployment_host }}"
-  when: ansible_os_family == "Debian"
-
 - name: Get current version of VSD software
   command: echo $VSD_VERSION
   register: vsd_version
@@ -37,12 +25,18 @@
   remote_user: "{{ ansible_sudo_username }}"
   delegate_to: "{{ ansible_deployment_host }}"
   when: vsd_version.stdout[0] != '3'
+  environment:
+        http_proxy: "{{ yum_proxy=='None' | ternary("",yum_proxy) }}"
+        https_proxy: "{{ yum_proxy=='None' | ternary("",yum_proxy) }}"
 
 - name: Install 3.2-compatible Nuage Python VSPK
   pip: name=vspk version=4.0.9
   remote_user: "{{ ansible_sudo_username }}"
   delegate_to: "{{ ansible_deployment_host }}"
   when: vsd_version.stdout[0] == '3'
+  environment:
+        http_proxy: "{{ yum_proxy=='None' | ternary("",yum_proxy) }}"
+        https_proxy: "{{ yum_proxy=='None' | ternary("",yum_proxy) }}"
 
 - name: Set name of backup directory
   set_fact: vsdbackup_dir="/tmp/backup-{{ inventory_hostname }}-{{ ansible_date_time.iso8601_basic_short }}/"
