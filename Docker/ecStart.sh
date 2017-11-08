@@ -51,6 +51,9 @@ fi
 # ssh-copy-id -i /files/id_rsa.pub root@127.0.0.1 || exit 1
 cp /files/id_rsa* ~/.ssh/ && chmod 600 ~/.ssh/id_rsa*
 
+# Clear Ansible tmp directory
+[ -d /files/.ansible/tmp ] && rm -rf /files/.ansible/tmp/*
+
 # Run Ansible playbooks
 export ANSIBLE_HOST_KEY_CHECKING=False
 export PARAMIKO_HOST_KEY_AUTO_ADD=True
