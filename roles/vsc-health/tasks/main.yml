@@ -70,7 +70,7 @@
     that: "'{{ expected_bgp_admin_state }}' in bgp_admin_state",
     msg: "Unexpected BGP Admin State - {{ bgp_admin_state }}. Expected '{{ expected_bgp_admin_state }}'. Check output of 'show router bgp summary'."
   }
-  ignore_errors: yes
+  ignore_errors: "{{ not nuage_upgrade }}"
 
 - name: Create local variable for BGP Oper State
   set_fact: bgp_oper_state="{{ bgp_summary_json['BGP Oper State'] }}"
@@ -83,7 +83,7 @@
     that: "'{{ expected_bgp_oper_state }}' in bgp_oper_state",
     msg: "Unexpected BGP Oper State - {{ bgp_oper_state }}. Expected '{{ expected_bgp_oper_state }}'. Check output of 'show router bgp summary'."
   }
-  ignore_errors: yes
+  ignore_errors: "{{ not nuage_upgrade }}"
 
 - name: Create local variable for BGP Peer Count
   set_fact: bgp_peer_count="{{ bgp_summary_json['Total Peers'] }}"
@@ -96,7 +96,7 @@
     that: "{{ expected_num_bgp_peers }} == {{ bgp_peer_count }}",
     msg: "Invalid BGP Peer count ({{ bgp_peer_count }}) detected. Expected '{{ expected_num_bgp_peers }}'. Check 'show router bgp summary'."
   }
-  ignore_errors: yes
+  ignore_errors: "{{ not nuage_upgrade }}"
   when: expected_num_bgp_peers | default(0) > 0
 
 # XMPP Server detail
@@ -179,7 +179,7 @@
     that: "{{ expected_num_vswitches }} == {{ show_vswitches_json['No. of virtual switches'] }}",
     msg: "Invalid vswitch count ({{ show_vswitches_json['No. of virtual switches'] }}) detected. Expected {{ expected_num_vswitches }}. Check 'show vswitch-controller vswitches'."
   }
-  ignore_errors: yes
+  ignore_errors: "{{ not nuage_upgrade }}"
   when: expected_num_vswitches | default(0) > 0
 
 - name: Get output of 'show vswitch-controller vports type host'
@@ -207,7 +207,7 @@
     that: "{{ expected_num_host_vports }} == {{ show_host_vports_json['No. of virtual ports'] }}",
     msg: "Invalid host vport count ({{ show_host_vports_json['No. of virtual ports'] }}) detected. Expected {{ expected_num_host_vports }}. Check 'show vswitch-controller vports type host'."
   }
-  ignore_errors: yes
+  ignore_errors: "{{ not nuage_upgrade }}"
   when: expected_num_host_vports | default(0) > 0
 
 - name: Get output of 'show vswitch-controller vports type vm'
@@ -235,7 +235,7 @@
     that: "{{ expected_num_vm_vports }} == {{ show_vm_vports_json['No. of virtual ports'] }}",
     msg: "Invalid vm vport count ({{ show_vm_vports_json['No. of virtual ports'] }}) detected. Expected {{ expected_num_vm_vports }}. Check 'show vswitch-controller vports type vm'."
   }
-  ignore_errors: yes
+  ignore_errors: "{{ not nuage_upgrade }}"
   when: expected_num_vm_vports | default(0) > 0
 
 - name: Get output of 'show vswitch-controller gateway ports'
@@ -263,7 +263,7 @@
     that: "{{ expected_num_gateway_ports }} == {{ show_gateway_ports_json['No. of Ports'] }}",
     msg: "Invalid gateway port count ({{ show_gateway_ports_json['No. of Ports'] }}) detected. Expected {{ expected_num_gateway_ports }}. Check 'show vswitch-controller gateway ports'."
   }
-  ignore_errors: yes
+  ignore_errors: "{{ not nuage_upgrade }}"
   when: expected_num_gateway_ports | default(0) > 0
 
 - name: Get NTP status
@@ -276,13 +276,13 @@
   retries: "{{ ntp_sync_retries }}"
   delay: "{{ ntp_sync_delay }}"
   delegate_to: localhost
-  ignore_errors: yes
+  ignore_errors: "{{ not nuage_upgrade }}"
 
 - name: Verify NTP status
   assert:
    that: not ntp_status.stdout[0]|search('none')
    msg: "NTP Status not okay: {{ ntp_status.stdout[0] }}. Quitting."
-  ignore_errors: yes
+  ignore_errors: "{{ not nuage_upgrade }}"
 
 - name: Write NTP status to report
   nuage_append: filename="{{ report_path }}" text="{{ inventory_hostname }} NTP Status {{ ntp_status.stdout[0] }}\n"
