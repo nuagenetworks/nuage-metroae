@@ -1,4 +1,9 @@
 # MetroAG Release Notes
+## Release 0.0.0
+### New Features and Enhancements
+* Execute vsd-health as part of vsd-post-deploy
+### Resolved Issues
+* Eliminate check for exactly 3 XMPP users
 ## Release 2.3.1
 ### Resolved Issues
 * Under certain conditions, VSTAT upgrade would fail because we didn't use the _upgrade_ VM name for the new VM.
