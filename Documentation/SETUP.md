@@ -11,8 +11,8 @@ Before you begin working with MetroAG, please take these requirements and restri
 * The *MetroAG User* setting up the environment must be the root user or have *sudo* privileges.
 * Password-less SSH access from the *Ansible Host* to the *Target Server* must be configured.
 ### Nomenclature
-**Ansible Host**: Host on which MetroAG is run. Ansible and the required packages are installed on this host. MetroAG is designed to run on CentOS 7.x and RHEL 7.x systems.
-**MetroAG User**: The user running MetroAG to deploy and upgrade Nuage VSP components. The MetroAG User is either the root user on the *Ansible Host* or a user who has sudo privileges.
+**Ansible Host**: Host on which MetroAG is run. Ansible and the required packages are installed on this host. MetroAG is designed to run on CentOS 7.x and RHEL 7.x systems.  
+**MetroAG User**: The user running MetroAG to deploy and upgrade Nuage VSP components. The MetroAG User is either the root user on the *Ansible Host* or a user who has sudo privileges.  
 **Target Server**: Hypervisor on which one or more VSP components (VSD, VSC etc.) are installed as VMs. MetroAG supports all Target Server types supported by the VSP platform: KVM and VMware hypervisors. Each deployment may contain more than one Target Server.
 
 ## 1. Clone Nuage MetroAG Repository
