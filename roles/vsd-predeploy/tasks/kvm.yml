@@ -97,6 +97,22 @@
 
 - block:
 
+  - name: Create libvirt image directory
+    file: path={{ images_path }}/{{ vm_name }}
+          state=directory
+          owner={{ libvirt.user }}
+          group={{ libvirt.group }}
+    delegate_to: "{{ target_server }}"
+    remote_user: "{{ target_server_username }}"
+
+  - name: Copy the VSD qcow image to virt images directory
+    copy: src={{ vsd_qcow2_path }}/{{ vsd_qcow2_file_name }}
+          dest={{ images_path }}/{{ vm_name }}
+          owner={{ libvirt.user }}
+          group={{ libvirt.group }}
+    delegate_to: "{{ target_server }}"
+    remote_user: "{{ target_server_username }}"
+
   - name: Get list of partitions
     shell: "guestfish -r -a {{ images_path }}/{{ vm_name }}/{{ vsd_qcow2_file_name }} run : list-filesystems | grep -Ev '(unknown|swap)'"
     delegate_to: "{{ target_server }}"
