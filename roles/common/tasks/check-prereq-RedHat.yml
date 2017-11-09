@@ -1,0 +1,20 @@
+---
+
+- name: Define list of required packages
+  setfact:
+    prereqs:
+      - python-pip
+# ... add more packages here...
+
+- name: Get installed packages
+  sudo: yes
+  yum:  list=installed
+  register: yum_packages
+  changed_when: False
+  
+- name: Check that all required packages are installed
+  assert: 
+    that: {{ item in yum_packages }}
+    msg:  "Missing required package: {{ item }}. Please refer to metro-setup.sh"
+  with_items: {[ yum_packages }}
+  
