@@ -1,17 +1,17 @@
 ---
-- name: Resolve hostname from first DNS server
-  set_fact:
-    resolved_ip: "{{ lookup('dig', hostname, '@{{dns_server_list[0]}}', 'qtype=A') }}"
+# - name: Resolve hostname from first DNS server
+#   set_fact:
+#     resolved_ip: "{{ lookup('dig', hostname, '@{{dns_server_list[0]}}', 'qtype=A') }}"
 
-- name: Check DNS response
-  assert:
-    that: resolved_ip | ipaddr
-    msg: "{{ hostname }} cannot be resolved"
+# - name: Check DNS response
+#   assert:
+#     that: resolved_ip | ipaddr
+#     msg: "{{ hostname }} cannot be resolved"
 
-- name: Check if resolved IP is equal to management IP
-  assert:
-    that: resolved_ip == mgmt_ip
-    msg: "Resolved {{ resolved_ip }} address is not equal to management IP {{ mgmt_ip }} for {{ hostname}}"
+# - name: Check if resolved IP is equal to management IP
+#   assert:
+#     that: resolved_ip == mgmt_ip
+#     msg: "Resolved {{ resolved_ip }} address is not equal to management IP {{ mgmt_ip }} for {{ hostname}}"
 
 - name: Ping hostname
   command: ping -c 1 {{ hostname }}
@@ -30,11 +30,13 @@
     that: "host_ping_result.rc != 0 or mgmt_ip_ping_result.rc == 0"
     msg:  "Someone responded to ping of hostname: {{ hostname }} Quitting."
 
-- name: Assert no response to ping of IP address
-  assert:
-    that: "host_ping_result.rc == 0 or mgmt_ip_ping_result.rc != 0"
-    msg:  "Someone responded to ping of IP address: {{ mgmt_ip }}. Quitting."
+- block:
+  - name: Assert no response to ping of IP address
+    assert:
+      that: "host_ping_result.rc == 0 or mgmt_ip_ping_result.rc != 0"
+      msg:  "Someone responded to ping of IP address: {{ mgmt_ip }}. Quitting."
+  when: not target_server_type | match("heat") or not dhcp
 
 - name: Set fact for node reachability
   set_fact:
-    node_reachable: "{{ host_ping_result.rc == 0 and mgmt_ip_ping_result.rc == 0 }}"
+    node_reachable: "{{ host_ping_result.rc == 0 }}"

@@ -6,6 +6,7 @@
     host: "{{ mgmt_ip }}"
     search_regex: OpenSSH
     delay: 1
+  when: not target_server_type | match("heat") or not dhcp
 
 - name: "Check if monit summary is already up"
   command: monit summary
@@ -27,7 +28,7 @@
   when: vsd_ova_file_name is defined
 
 - name: Set if skipping VSD deploy
-  set_fact: skip_vsd_deploy="{{ vsd_versions_match and monit_result.rc == 0 }}"
+  set_fact: skip_vsd_deploy="{{ vsd_versions_match is defined and vsd_versions_match and monit_result.rc == 0 }}"
 
 - name: Display if skipping VSD deploy
   debug:
