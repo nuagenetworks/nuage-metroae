@@ -18,6 +18,7 @@
         for v in ${vnics//\\n/ }; do ovs-vsctl show | grep -Pzl "(?s)Port \"$v\"\\n.*Interface \"$v\""; done
       args:
         executable: /bin/bash
+      changed_when: false
 
     - name: Check if EVPN got resolved for each VPort
       shell: |
@@ -27,7 +28,7 @@
         executable: /bin/bash
       register: results
       failed_when: results.rc == 0
-    changed_when: false
+      changed_when: false
     with_items: "{{ tapinterfaces.results | map(attribute='stdout') | list}}"
 
   when: (personality.stdout|lower == 'vrs')
