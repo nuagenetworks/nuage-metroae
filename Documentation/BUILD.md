@@ -5,9 +5,9 @@ To confirm that the intended deployment is supported by MetroAG, see [README.md]
 If you have not previously set up your MetroAG Ansible environment, see [SETUP.md](SETUP.md) before proceeding.
 
 ## Main Steps
-1. Customize variables
-2. Unzip Nuage files
-3. Execute `build.yml` playbook  
+[1. Customize variables](#1-customize-variables)  
+[2. Unzip Nuage files](#2-unzip-nuage-files)  
+[3. Execute `build.yml` playbook](#3-execute-buildyml-playbook)  
 
 ## 1. Customize Variables
 Setting variables correctly ensures that when you subsequently execute the deploy playbook(s) they configure components as intended. Precise syntax is crucial for success. See the [examples directory](/examples/) for references. *Up to* three variable files are used to build the deployment environment: `user_creds.yml`, `build_vars.yml` and `zfb_vars.yml`.
@@ -97,10 +97,10 @@ The reset build playbook performs the following tasks for you.
 The next step is to deploy your components. See [DEPLOY.md](DEPLOY.md) for guidance.
 
 ## Questions, Feedback, and Contributing
-Ask questions and get support via email.
-  Outside Nokia: [devops@nuagenetworks.net](mailto:deveops@nuagenetworks.net "send email to nuage-metro project")
-  Internal Nokia: [nuage-metro-interest@list.nokia.com](mailto:nuage-metro-interest@list.nokia.com "send email to nuage-metro project")
-
+Ask questions and get support via email.  
+  Outside Nokia: [devops@nuagenetworks.net](mailto:deveops@nuagenetworks.net "send email to nuage-metro project")  
+  Internal Nokia: [nuage-metro-interest@list.nokia.com](mailto:nuage-metro-interest@list.nokia.com "send email to nuage-metro project")  
+  
 Report bugs you find and suggest new features and enhancements via the [GitHub Issues](https://github.com/nuagenetworks/nuage-metro/issues "nuage-metro issues") feature.
 
 You may also [contribute](CONTRIBUTING.MD) to Nuage MetroAG by submitting your own code to the project.
