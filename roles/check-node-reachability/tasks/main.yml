@@ -22,22 +22,23 @@
   register: host_ping_result
   delegate_to: localhost
 
-- name: Ping IP address
-  command: ping -c 1 {{ mgmt_ip }}
-  ignore_errors: yes
-  register: mgmt_ip_ping_result
-  delegate_to: localhost
-
-- name: Assert no response to ping of hostname
-  assert:
-    that: "host_ping_result.rc != 0 or mgmt_ip_ping_result.rc == 0"
-    msg:  "Someone responded to ping of hostname: {{ hostname }} Quitting."
-
 - block:
+  - name: Ping IP address
+    command: ping -c 1 {{ mgmt_ip }}
+    ignore_errors: yes
+    register: mgmt_ip_ping_result
+    delegate_to: localhost
+
+  - name: Assert no response to ping of hostname
+    assert:
+      that: "host_ping_result.rc != 0 or mgmt_ip_ping_result.rc == 0"
+      msg:  "Someone responded to ping of hostname: {{ hostname }} Quitting."
+
   - name: Assert no response to ping of IP address
     assert:
       that: "host_ping_result.rc == 0 or mgmt_ip_ping_result.rc != 0"
       msg:  "Someone responded to ping of IP address: {{ mgmt_ip }}. Quitting."
+
   when: not target_server_type | match("heat") or not dhcp
 
 - name: Set fact for node reachability
