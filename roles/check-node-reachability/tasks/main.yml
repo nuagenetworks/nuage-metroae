@@ -1,17 +1,18 @@
 ---
-# - name: Resolve hostname from first DNS server
-#   set_fact:
-#     resolved_ip: "{{ lookup('dig', hostname, '@{{dns_server_list[0]}}', 'qtype=A') }}"
+- name: Resolve hostname DNS IP
+  shell: "getent hosts {{ hostname }} | awk '{print $1}'"
+  register: resolved_ip_result
+  delegate_to: localhost
 
-# - name: Check DNS response
-#   assert:
-#     that: resolved_ip | ipaddr
-#     msg: "{{ hostname }} cannot be resolved"
+- name: Check DNS response
+  assert:
+    that: resolved_ip_result.stdout | ipaddr
+    msg: "{{ hostname }} cannot be resolved"
 
-# - name: Check if resolved IP is equal to management IP
-#   assert:
-#     that: resolved_ip == mgmt_ip
-#     msg: "Resolved {{ resolved_ip }} address is not equal to management IP {{ mgmt_ip }} for {{ hostname}}"
+- name: Check if resolved IP is equal to management IP
+  assert:
+    that: resolved_ip_result.stdout == mgmt_ip
+    msg: "Resolved {{ resolved_ip_result.stdout }} address is not equal to management IP {{ mgmt_ip }} for {{ hostname }}"
 
 - name: Ping hostname
   command: ping -c 1 {{ hostname }}
