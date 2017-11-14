@@ -14,7 +14,7 @@
 - debug: var=vsc_vm_facts verbosity=1
 
 - name: Verify the VSC VM does not exist
-  assert: 
+  assert:
     that: "vsc_vm_facts.failed is defined"
     msg: "VM {{ vmname }} already exists, quiting"
 
@@ -73,7 +73,7 @@
     --prop:"Autonomous_System=64000"
     --prop:"BGP_Group=internal"
     "{{ vsc_ova_path }}/{{ vsc_ova_file_name }}"
-    vi://'{{ vcenter.username | urlencode }}':'{{ vcenter.password | urlencode }}'@{{ target_server }}/{{ vcenter.datacenter }}/host/{{ vcenter.cluster }} 
+    vi://'{{ vcenter.username | urlencode }}':'{{ vcenter.password | urlencode }}'@{{ target_server }}/{{ vcenter.datacenter }}/host/{{ vcenter.cluster }}
 
 - name: Gathering info on VM
   connection: local
@@ -87,47 +87,61 @@
 
 - debug: var=vsc_vm_facts verbosity=1
 
-- name: Verify VM is running
-  assert:
-    that: "not vsc_vm_facts.failed"
-    msg: "VSC VM {{ vmname }} is not created"
+- name: Set local variable with vmname
+  set_fact:
+    vm_name: "{{ vmname }}"
 
-- name: Wait for VSC ssh to be ready
-  connection: local
-  wait_for:
-    port: "22"
-    host: "{{ mgmt_ip }}"
-    search_regex: OpenSSH
-    delay: 1
+- include_role:
+    name: check-node-running
 
-- name: Creating temp folder for config file
-  connection: local
-  file:
-    path: "/tmp/ansible-config-{{ inventory_hostname }}"
-    state: directory
+- name: Display if skipping VSC predeploy
+  debug:
+    msg:
+      - "****************************************************"
+      - "Skipping VSC predeploy because it is already present"
+      - "****************************************************"
+  when: node_running
 
-- name: Creating VSC config file
-  connection: local
-  template:
-    src: config.cfg.j2
-    dest: "/tmp/ansible-config-{{ inventory_hostname }}/config.cfg"
+- block:
 
-- name: Copy VSC config file to VSC
-  connection: local
-  command: "sshpass -p admin scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null /tmp/ansible-config-{{ inventory_hostname }}/config.cfg admin@{{ mgmt_ip }}:"
+  - name: Wait for VSC ssh to be ready
+    connection: local
+    wait_for:
+      port: "22"
+      host: "{{ mgmt_ip }}"
+      search_regex: OpenSSH
+      delay: 1
 
-- name: Reboot VSC VM
-  connection: local
-  vmware_guest:
-    hostname: "{{ target_server }}"
-    username: "{{ vcenter.username }}"
-    password: "{{ vcenter.password }}"
-    name: "{{ vmname }}"
-    validate_certs: no
-    state: "restarted"
+  - name: Creating temp folder for config file
+    connection: local
+    file:
+      path: "/tmp/ansible-config-{{ inventory_hostname }}"
+      state: directory
 
-- name: Removing temp folder
-  connection: local
-  file:
-    path: "/tmp/ansible-config-{{ inventory_hostname }}"
-    state: absent
+  - name: Creating VSC config file
+    connection: local
+    template:
+      src: config.cfg.j2
+      dest: "/tmp/ansible-config-{{ inventory_hostname }}/config.cfg"
+
+  - name: Copy VSC config file to VSC
+    connection: local
+    command: "sshpass -p admin scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null /tmp/ansible-config-{{ inventory_hostname }}/config.cfg admin@{{ mgmt_ip }}:"
+
+  - name: Reboot VSC VM
+    connection: local
+    vmware_guest:
+      hostname: "{{ target_server }}"
+      username: "{{ vcenter.username }}"
+      password: "{{ vcenter.password }}"
+      name: "{{ vmname }}"
+      validate_certs: no
+      state: "restarted"
+
+  - name: Removing temp folder
+    connection: local
+    file:
+      path: "/tmp/ansible-config-{{ inventory_hostname }}"
+      state: absent
+
+  when: not node_running

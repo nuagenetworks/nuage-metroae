@@ -1,25 +1,10 @@
 ---
-- name: Ping VSC hostname
-  command: ping -c 1 {{ hostname }}
-  ignore_errors: yes
-  register: ping_result
-  delegate_to: localhost
 
-- name: Assert no response to ping of VSC hostname
-  assert:
-    that: "ping_result.rc != 0"
-    msg:  "Someone responded to ping of VSC hostname. Quitting."
+- include_role:
+    name: check-node-reachability
 
-- name: Ping VSC IP address
-  command: ping -c 1 {{ mgmt_ip }}
-  ignore_errors: yes
-  register: ping_result
-  delegate_to: localhost
-
-- name: Assert no response to ping of VSC IP address
-  assert:
-    that: "ping_result.rc != 0"
-    msg:  "Someone responded to ping of VSC IP address. Quitting."
+### TODO
+### Add check for VSC running
 
 - include: kvm.yml
   when: target_server_type | match("kvm")
