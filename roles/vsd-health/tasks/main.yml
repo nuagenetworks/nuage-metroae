@@ -1,5 +1,7 @@
 ---
 
+- include: report_header.yml
+
 - block:
   - name: Get NTP status of the target server hosting VSD ( and test SSH access / become root )
     command: ntpq -np
@@ -8,11 +10,11 @@
   
   - name: Verify NTP status of {{ target_server }}
     assert:
-     that: "ntp_status.stdout|join(' ')|search('*')"
+     that: "ntp_status.stdout|search('\\*')"
      msg: "NTP Status of {{ target_server }} not okay: {{ ntp_status.stdout }}. Quitting."
   
   - name: Write NTP status to report
-    nuage_append: filename="{{ report_path }}" text="{{ target_server }} NTP Status {{ ntp_status.stdout[0] }}\n"
+    nuage_append: filename="{{ report_path }}" text="{{ target_server }} NTP Status {{ ntp_status.stdout }}\n"
 
   delegate_to: "{{ target_server }}"
   become: yes
@@ -33,8 +35,6 @@
     name: "{{ mgmt_ip }}"
     state: absent
   delegate_to: localhost
-
-- include: report_header.yml
 
 - name: Get current version of VSD software
   command: echo $VSD_VERSION
