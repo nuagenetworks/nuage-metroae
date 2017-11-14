@@ -2,8 +2,11 @@
 ## Release 0.0.0
 ### New Features and Enhancements
 * Execute vsd-health as part of vsd-post-deploy
+* In vrs-health, look for interfaces connected to alubr0 instead of named tap*
 ### Resolved Issues
 * Eliminate check for exactly 3 XMPP users
+* Allow NSGV MAC address to be set
+* Support limit on VSC system name length without limiting hostname length
 ## Release 2.3.1
 ### Resolved Issues
 * Under certain conditions, VSTAT upgrade would fail because we didn't use the _upgrade_ VM name for the new VM.
