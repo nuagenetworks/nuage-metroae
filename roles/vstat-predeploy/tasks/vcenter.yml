@@ -19,234 +19,230 @@
       vm_name: "{{ vmname }}"
   when: not nuage_upgrade | default( False )
 
-- name: Gathering info on VM
-  connection: local
-  vmware_guest:
-    hostname: "{{ target_server }}"
-    username: "{{ vcenter.username }}"
-    password: "{{ vcenter.password }}"
-    name: "{{ vm_name }}"
-    validate_certs: no
-    state: gatherfacts
-  register: vstat_vm_facts
-  ignore_errors: yes
+- include_role:
+    name: check-node-running
 
-- debug: var=vstat_vm_facts verbosity=1
-
-- name: Verify the Stats VM does not exist
-  assert:
-    that: "vstat_vm_facts.failed"
-    msg: "VM {{ vm_name }} already exists, quiting"
-
-- name: Deploy Stats OVA on vCenter
-  connection: local
-  command: >
-    {{ vcenter.ovftool }}
-    --acceptAllEulas
-    --noSSLVerify
-    --powerOn
-    --machineOutput
-    -dm=thin
-    -ds={{ vcenter.datastore }}
-    -n={{ vm_name }}
-    --net:"Management={{ mgmt_bridge }}"
-    "{{ vstat_ova_or_ovf_path }}/{{ vstat_ova_or_ovf_file_name }}"
-    vi://'{{ vcenter.username | urlencode }}':'{{ vcenter.password | urlencode }}'@{{ target_server }}/{{ vcenter.datacenter }}/host/{{ vcenter.cluster }}
-  when: "'.ova' in vstat_ova_or_ovf_file_name"
-
-- name: Deploy Stats OVF on vCenter
-  connection: local
-  command: >
-    {{ vcenter.ovftool }}
-    --acceptAllEulas
-    --noSSLVerify
-    --powerOn
-    --machineOutput
-    -dm=thin
-    -ds={{ vcenter.datastore }}
-    -n={{ vm_name }}
-    --net:"OVS DataPath={{ mgmt_bridge }}"
-    "{{ vstat_ova_or_ovf_path }}/{{ vstat_ova_or_ovf_file_name }}"
-    vi://'{{ vcenter.username | urlencode }}':'{{ vcenter.password | urlencode }}'@{{ target_server }}/{{ vcenter.datacenter }}/host/{{ vcenter.cluster }}
-  when: "'.ovf' in vstat_ova_or_ovf_file_name"
+- name: Display if skipping VSTAT predeploy
+  debug:
+    msg:
+      - "****************************************************"
+      - "Skipping VSTAT predeploy because it is already present"
+      - "****************************************************"
+  when: node_running
 
 - block:
-  - name: Waiting until VMware tools becomes available
+
+  - name: Deploy Stats OVA on vCenter
     connection: local
-    vmware_guest_tools_wait:
+    command: >
+      {{ vcenter.ovftool }}
+      --acceptAllEulas
+      --noSSLVerify
+      --powerOn
+      --machineOutput
+      -dm=thin
+      -ds={{ vcenter.datastore }}
+      -n={{ vm_name }}
+      --net:"Management={{ mgmt_bridge }}"
+      "{{ vstat_ova_or_ovf_path }}/{{ vstat_ova_or_ovf_file_name }}"
+      vi://'{{ vcenter.username | urlencode }}':'{{ vcenter.password | urlencode }}'@{{ target_server }}/{{ vcenter.datacenter }}/host/{{ vcenter.cluster }}
+    when: "'.ova' in vstat_ova_or_ovf_file_name"
+
+  - name: Deploy Stats OVF on vCenter
+    connection: local
+    command: >
+      {{ vcenter.ovftool }}
+      --acceptAllEulas
+      --noSSLVerify
+      --powerOn
+      --machineOutput
+      -dm=thin
+      -ds={{ vcenter.datastore }}
+      -n={{ vm_name }}
+      --net:"OVS DataPath={{ mgmt_bridge }}"
+      "{{ vstat_ova_or_ovf_path }}/{{ vstat_ova_or_ovf_file_name }}"
+      vi://'{{ vcenter.username | urlencode }}':'{{ vcenter.password | urlencode }}'@{{ target_server }}/{{ vcenter.datacenter }}/host/{{ vcenter.cluster }}
+    when: "'.ovf' in vstat_ova_or_ovf_file_name"
+
+  - block:
+    - name: Waiting until VMware tools becomes available
+      connection: local
+      vmware_guest_tools_wait:
+        hostname: "{{ target_server }}"
+        username: "{{ vcenter.username }}"
+        password: "{{ vcenter.password }}"
+        name: "{{ vm_name }}"
+        datacenter: "{{ vcenter.datacenter }}"
+        validate_certs: no
+      register: vstat_vm_facts
+
+    - debug: var=vstat_vm_facts verbosity=1
+    when: ansible_version.full | version_compare('2.3', '>=')
+
+  - block:
+    - name: Waiting 120 seconds to make sure the VSTAT is up
+      pause:
+        seconds: 120
+
+    - name: Gathering info on VM
+      connection: local
+      vmware_guest:
+        hostname: "{{ target_server }}"
+        username: "{{ vcenter.username }}"
+        password: "{{ vcenter.password }}"
+        name: "{{ vm_name }}"
+        datacenter: "{{ vcenter.datacenter }}"
+        state: gatherfacts
+        validate_certs: no
+      register: vstat_vm_facts
+
+    - debug: var=vstat_vm_facts verbosity=1
+
+    - name: Verify the Stats VM came up correctly
+      assert:
+        that:
+          - "vstat_vm_facts.instance.hw_guest_id is defined"
+          - "not vstat_vm_facts.instance.hw_guest_id is none"
+          - "not vstat_vm_facts.instance.hw_guest_id == ''"
+        msg: "Stats VM {{ inventory_hostname }} did not come up after two minutes"
+    when: ansible_version.full | version_compare('2.3', '<')
+
+  - name: Writing eth0 network script file to the Stats VM
+    connection: local
+    vmware_vm_shell:
       hostname: "{{ target_server }}"
       username: "{{ vcenter.username }}"
       password: "{{ vcenter.password }}"
-      name: "{{ vm_name }}"
       datacenter: "{{ vcenter.datacenter }}"
+      cluster: "{{ vcenter.cluster }}"
       validate_certs: no
-    register: vstat_vm_facts
+      vm_id: "{{ vmid }}"
+      vm_username: "{{ vmuser }}"
+      vm_password: "{{ vmpass }}"
+      vm_shell: "/usr/bin/echo"
+      vm_shell_args: " '{{ lookup('template', 'ifcfg-eth0.j2') }}' > /etc/sysconfig/network-scripts/ifcfg-eth0"
 
-  - debug: var=vstat_vm_facts verbosity=1
-  when: ansible_version.full | version_compare('2.3', '>=')
-
-- block:
-  - name: Waiting 120 seconds to make sure the VSTAT is up
-    pause:
-      seconds: 120
-
-  - name: Gathering info on VM
+  - name: Set the owner and group on the eth0 network script file in the Stats VM
     connection: local
-    vmware_guest:
+    vmware_vm_shell:
       hostname: "{{ target_server }}"
       username: "{{ vcenter.username }}"
       password: "{{ vcenter.password }}"
-      name: "{{ vm_name }}"
       datacenter: "{{ vcenter.datacenter }}"
-      state: gatherfacts
+      cluster: "{{ vcenter.cluster }}"
       validate_certs: no
-    register: vstat_vm_facts
+      vm_id: "{{ vmid }}"
+      vm_username: "{{ vmuser }}"
+      vm_password: "{{ vmpass }}"
+      vm_shell: "/usr/bin/chown"
+      vm_shell_args: " 0 0 /etc/sysconfig/network-scripts/ifcfg-eth0"
 
-  - debug: var=vstat_vm_facts verbosity=1
+  - name: Writing network file to the Stats VM
+    connection: local
+    vmware_vm_shell:
+      hostname: "{{ target_server }}"
+      username: "{{ vcenter.username }}"
+      password: "{{ vcenter.password }}"
+      datacenter: "{{ vcenter.datacenter }}"
+      cluster: "{{ vcenter.cluster }}"
+      validate_certs: no
+      vm_id: "{{ vmid }}"
+      vm_username: "{{ vmuser }}"
+      vm_password: "{{ vmpass }}"
+      vm_shell: "/usr/bin/echo"
+      vm_shell_args: " '{{ lookup('template', 'network.j2') }}' > /etc/sysconfig/network"
 
-  - name: Verify the Stats VM came up correctly
-    assert:
-      that:
-        - "vstat_vm_facts.instance.hw_guest_id is defined"
-        - "not vstat_vm_facts.instance.hw_guest_id is none"
-        - "not vstat_vm_facts.instance.hw_guest_id == ''"
-      msg: "Stats VM {{ inventory_hostname }} did not come up after two minutes"
-  when: ansible_version.full | version_compare('2.3', '<')
+  - name: Set the owner and group on the network file in the Stats VM
+    connection: local
+    vmware_vm_shell:
+      hostname: "{{ target_server }}"
+      username: "{{ vcenter.username }}"
+      password: "{{ vcenter.password }}"
+      datacenter: "{{ vcenter.datacenter }}"
+      cluster: "{{ vcenter.cluster }}"
+      validate_certs: no
+      vm_id: "{{ vmid }}"
+      vm_username: "{{ vmuser }}"
+      vm_password: "{{ vmpass }}"
+      vm_shell: "/usr/bin/chown"
+      vm_shell_args: " 0 0 /etc/sysconfig/network"
 
-- name: Writing eth0 network script file to the Stats VM
-  connection: local
-  vmware_vm_shell:
-    hostname: "{{ target_server }}"
-    username: "{{ vcenter.username }}"
-    password: "{{ vcenter.password }}"
-    datacenter: "{{ vcenter.datacenter }}"
-    cluster: "{{ vcenter.cluster }}"
-    validate_certs: no
-    vm_id: "{{ vmid }}"
-    vm_username: "{{ vmuser }}"
-    vm_password: "{{ vmpass }}"
-    vm_shell: "/usr/bin/echo"
-    vm_shell_args: " '{{ lookup('template', 'ifcfg-eth0.j2') }}' > /etc/sysconfig/network-scripts/ifcfg-eth0"
+  - name: Create the directory /root/.ssh for authorized_keys on the Stats VM
+    connection: local
+    vmware_vm_shell:
+      hostname: "{{ target_server }}"
+      username: "{{ vcenter.username }}"
+      password: "{{ vcenter.password }}"
+      datacenter: "{{ vcenter.datacenter }}"
+      cluster: "{{ vcenter.cluster }}"
+      validate_certs: no
+      vm_id: "{{ vmid }}"
+      vm_username: "{{ vmuser }}"
+      vm_password: "{{ vmpass }}"
+      vm_shell: "/usr/bin/mkdir"
+      vm_shell_args: " -p /root/.ssh"
 
-- name: Set the owner and group on the eth0 network script file in the Stats VM
-  connection: local
-  vmware_vm_shell:
-    hostname: "{{ target_server }}"
-    username: "{{ vcenter.username }}"
-    password: "{{ vcenter.password }}"
-    datacenter: "{{ vcenter.datacenter }}"
-    cluster: "{{ vcenter.cluster }}"
-    validate_certs: no
-    vm_id: "{{ vmid }}"
-    vm_username: "{{ vmuser }}"
-    vm_password: "{{ vmpass }}"
-    vm_shell: "/usr/bin/chown"
-    vm_shell_args: " 0 0 /etc/sysconfig/network-scripts/ifcfg-eth0"
+  - name: Set the owner and group for the /root/.ssh directory in the Stats VM
+    connection: local
+    vmware_vm_shell:
+      hostname: "{{ target_server }}"
+      username: "{{ vcenter.username }}"
+      password: "{{ vcenter.password }}"
+      datacenter: "{{ vcenter.datacenter }}"
+      cluster: "{{ vcenter.cluster }}"
+      validate_certs: no
+      vm_id: "{{ vmid }}"
+      vm_username: "{{ vmuser }}"
+      vm_password: "{{ vmpass }}"
+      vm_shell: "/usr/bin/chown"
+      vm_shell_args: " 0 0 /root/.ssh"
 
-- name: Writing network file to the Stats VM
-  connection: local
-  vmware_vm_shell:
-    hostname: "{{ target_server }}"
-    username: "{{ vcenter.username }}"
-    password: "{{ vcenter.password }}"
-    datacenter: "{{ vcenter.datacenter }}"
-    cluster: "{{ vcenter.cluster }}"
-    validate_certs: no
-    vm_id: "{{ vmid }}"
-    vm_username: "{{ vmuser }}"
-    vm_password: "{{ vmpass }}"
-    vm_shell: "/usr/bin/echo"
-    vm_shell_args: " '{{ lookup('template', 'network.j2') }}' > /etc/sysconfig/network"
+  - name: Get the public key for the current user
+    local_action: command cat "{{ user_ssh_pub_key }}"
+    register: current_user_ssh_key
 
-- name: Set the owner and group on the network file in the Stats VM
-  connection: local
-  vmware_vm_shell:
-    hostname: "{{ target_server }}"
-    username: "{{ vcenter.username }}"
-    password: "{{ vcenter.password }}"
-    datacenter: "{{ vcenter.datacenter }}"
-    cluster: "{{ vcenter.cluster }}"
-    validate_certs: no
-    vm_id: "{{ vmid }}"
-    vm_username: "{{ vmuser }}"
-    vm_password: "{{ vmpass }}"
-    vm_shell: "/usr/bin/chown"
-    vm_shell_args: " 0 0 /etc/sysconfig/network"
+  - name: Writing authorized_keys to the Stats VM
+    connection: local
+    vmware_vm_shell:
+      hostname: "{{ target_server }}"
+      username: "{{ vcenter.username }}"
+      password: "{{ vcenter.password }}"
+      datacenter: "{{ vcenter.datacenter }}"
+      cluster: "{{ vcenter.cluster }}"
+      validate_certs: no
+      vm_id: "{{ vmid }}"
+      vm_username: "{{ vmuser }}"
+      vm_password: "{{ vmpass }}"
+      vm_shell: "/usr/bin/echo"
+      vm_shell_args: " '{{ lookup('template', 'authorized_keys.j2') }}' > /root/.ssh/authorized_keys"
 
-- name: Create the directory /root/.ssh for authorized_keys on the Stats VM
-  connection: local
-  vmware_vm_shell:
-    hostname: "{{ target_server }}"
-    username: "{{ vcenter.username }}"
-    password: "{{ vcenter.password }}"
-    datacenter: "{{ vcenter.datacenter }}"
-    cluster: "{{ vcenter.cluster }}"
-    validate_certs: no
-    vm_id: "{{ vmid }}"
-    vm_username: "{{ vmuser }}"
-    vm_password: "{{ vmpass }}"
-    vm_shell: "/usr/bin/mkdir"
-    vm_shell_args: " -p /root/.ssh"
+  - name: Set the mode on the authorized_keys file in the Stats VM
+    connection: local
+    vmware_vm_shell:
+      hostname: "{{ target_server }}"
+      username: "{{ vcenter.username }}"
+      password: "{{ vcenter.password }}"
+      datacenter: "{{ vcenter.datacenter }}"
+      cluster: "{{ vcenter.cluster }}"
+      validate_certs: no
+      vm_id: "{{ vmid }}"
+      vm_username: "{{ vmuser }}"
+      vm_password: "{{ vmpass }}"
+      vm_shell: "/usr/bin/chmod"
+      vm_shell_args: " 0640 /root/.ssh/authorized_keys"
 
-- name: Set the owner and group for the /root/.ssh directory in the Stats VM
-  connection: local
-  vmware_vm_shell:
-    hostname: "{{ target_server }}"
-    username: "{{ vcenter.username }}"
-    password: "{{ vcenter.password }}"
-    datacenter: "{{ vcenter.datacenter }}"
-    cluster: "{{ vcenter.cluster }}"
-    validate_certs: no
-    vm_id: "{{ vmid }}"
-    vm_username: "{{ vmuser }}"
-    vm_password: "{{ vmpass }}"
-    vm_shell: "/usr/bin/chown"
-    vm_shell_args: " 0 0 /root/.ssh"
+  - name: Reboot Stats VM
+    connection: local
+    vmware_vm_shell:
+      hostname: "{{ target_server }}"
+      username: "{{ vcenter.username }}"
+      password: "{{ vcenter.password }}"
+      datacenter: "{{ vcenter.datacenter }}"
+      cluster: "{{ vcenter.cluster }}"
+      validate_certs: no
+      vm_id: "{{ vmid }}"
+      vm_username: "{{ vmuser }}"
+      vm_password: "{{ vmpass }}"
+      vm_shell: "/usr/sbin/reboot"
 
-- name: Get the public key for the current user
-  local_action: command cat "{{ user_ssh_pub_key }}"
-  register: current_user_ssh_key
-
-- name: Writing authorized_keys to the Stats VM
-  connection: local
-  vmware_vm_shell:
-    hostname: "{{ target_server }}"
-    username: "{{ vcenter.username }}"
-    password: "{{ vcenter.password }}"
-    datacenter: "{{ vcenter.datacenter }}"
-    cluster: "{{ vcenter.cluster }}"
-    validate_certs: no
-    vm_id: "{{ vmid }}"
-    vm_username: "{{ vmuser }}"
-    vm_password: "{{ vmpass }}"
-    vm_shell: "/usr/bin/echo"
-    vm_shell_args: " '{{ lookup('template', 'authorized_keys.j2') }}' > /root/.ssh/authorized_keys"
-
-- name: Set the mode on the authorized_keys file in the Stats VM
-  connection: local
-  vmware_vm_shell:
-    hostname: "{{ target_server }}"
-    username: "{{ vcenter.username }}"
-    password: "{{ vcenter.password }}"
-    datacenter: "{{ vcenter.datacenter }}"
-    cluster: "{{ vcenter.cluster }}"
-    validate_certs: no
-    vm_id: "{{ vmid }}"
-    vm_username: "{{ vmuser }}"
-    vm_password: "{{ vmpass }}"
-    vm_shell: "/usr/bin/chmod"
-    vm_shell_args: " 0640 /root/.ssh/authorized_keys"
-
-- name: Reboot Stats VM
-  connection: local
-  vmware_vm_shell:
-    hostname: "{{ target_server }}"
-    username: "{{ vcenter.username }}"
-    password: "{{ vcenter.password }}"
-    datacenter: "{{ vcenter.datacenter }}"
-    cluster: "{{ vcenter.cluster }}"
-    validate_certs: no
-    vm_id: "{{ vmid }}"
-    vm_username: "{{ vmuser }}"
-    vm_password: "{{ vmpass }}"
-    vm_shell: "/usr/sbin/reboot"
+  when: not node_running

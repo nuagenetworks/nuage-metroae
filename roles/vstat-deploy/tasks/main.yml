@@ -1,12 +1,57 @@
 ---
+- name: Wait for VSTAT ssh to be ready
+  local_action:
+    module: wait_for
+    port: "22"
+    host: "{{ mgmt_ip }}"
+    search_regex: OpenSSH
+    delay: 1
+  when: not target_server_type | match("heat") or not dhcp
+
+- name: "Check if monit summary is already up"
+  command: monit summary
+  ignore_errors: yes
+  register: monit_result
+  remote_user: root
+
+# TODO
+# Find a way to get VSTAT version
+
+# - name: Read the VSTAT version
+#   shell: echo $VSTAT_VERSION
+#   register: vstat_version
+#   remote_user: root
+
+# - name: Set if VSTAT versions match qcow2
+#   set_fact: vstat_versions_match="{{ vstat_version.stdout == vsd_qcow2_file_name | regex_search('([0-9]+\\.[0-9]+\\.[0-9A-Za-z]+)') }}"
+#   when: vsd_qcow2_file_name is defined
+
+# - name: Set if VSTAT versions match ova
+#   set_fact: vstat_versions_match="{{ vstat_version.stdout == vsd_ova_file_name | regex_search('([0-9]+\\.[0-9]+\\.[0-9A-Za-z]+)') }}"
+#   when: vsd_ova_file_name is defined
+
+- name: REMOVE ME hack to set versions matching
+  set_fact: vstat_versions_match = True
+
+- name: Set if skipping VSTAT deploy
+  set_fact: skip_vstat_deploy="{{ vstat_versions_match is defined and vstat_versions_match and monit_result.rc == 0 }}"
+
+- name: Display if skipping VSTAT deploy
+  debug:
+    msg:
+      - "*************************************************"
+      - "Skipping VSTAT deploy because it is already running"
+      - "*************************************************"
+  when: skip_vstat_deploy
+
 - include: non_heat.yml
-  when: not target_server_type | match("heat")
+  when: not skip_vstat_deploy and not target_server_type | match("heat")
   tags:
     - vstat
     - vstat-deploy
 
 - include: heat.yml
-  when: target_server_type | match("heat")
+  when: not skip_vstat_deploy and target_server_type | match("heat")
   tags:
     - vstat
     - heat

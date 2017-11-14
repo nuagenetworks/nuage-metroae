@@ -9,19 +9,19 @@
     name: "{{ vm_name }}"
     validate_certs: no
     state: gatherfacts
-  register: vsd_vm_facts
+  register: vm_facts
   ignore_errors: yes
 
 - name: Verify that the VM is not already running
   assert:
-    that: "vsd_vm_facts.failed is defined or node_reachable or vm_name == upgrade_vmname"
+    that: "vm_facts.failed is defined or node_reachable or vm_name == upgrade_vmname"
     msg: "{{ vm_name }} is already running on {{ target_server }}"
 
 - name: Verify that the VM is running
   assert:
-    that: "vsd_vm_facts.failed is not defined or not node_reachable or vm_name == upgrade_vmname"
+    that: "vm_facts.failed is not defined or not node_reachable or vm_name == upgrade_vmname"
     msg: "{{ vm_name }} is not running on {{ target_server }}"
 
 - name: Set fact for node running
   set_fact:
-    node_running: "{{ vsd_vm_facts.failed is not defined }}"
+    node_running: "{{ vm_facts.failed is not defined }}"
