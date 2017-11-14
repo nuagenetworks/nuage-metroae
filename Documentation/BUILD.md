@@ -75,7 +75,7 @@ Both `nuage-unzip.yml` and `build.yml` support passing the location of this file
 
 ```
 ./metro-ansible nuage_unzip.yml -e build_vars_file="/path/to/your/build_vars.yml"
-./metro-ansible build.yml -e build_vars_file="/path/to/your/build_vars.yml" user_creds_file=/path/to/your/user_creds.yml"
+./metro-ansible build.yml -e build_vars_file="/path/to/your/build_vars.yml" -e user_creds_file="/path/to/your/user_creds.yml"
 ```
 ## Having Issues? Reset your environment
 If you have issues with running the build, you can reset to factory settings and start over.
@@ -100,7 +100,7 @@ The next step is to deploy your components. See [DEPLOY.md](DEPLOY.md) for guida
 Ask questions and get support via email.  
   Outside Nokia: [devops@nuagenetworks.net](mailto:deveops@nuagenetworks.net "send email to nuage-metro project")  
   Internal Nokia: [nuage-metro-interest@list.nokia.com](mailto:nuage-metro-interest@list.nokia.com "send email to nuage-metro project")  
-  
+
 Report bugs you find and suggest new features and enhancements via the [GitHub Issues](https://github.com/nuagenetworks/nuage-metro/issues "nuage-metro issues") feature.
 
 You may also [contribute](CONTRIBUTING.MD) to Nuage MetroAG by submitting your own code to the project.
