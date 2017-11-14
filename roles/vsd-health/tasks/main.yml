@@ -1,4 +1,24 @@
 ---
+
+- block:
+  - name: Get NTP status of the target server hosting VSD ( and test SSH access / become root )
+    command: ntpq -np
+    register: ntp_status
+  
+  - name: Verify NTP status of {{ target_server }}
+    assert:
+     that: "ntp_status.stdout|join(' ')|search('*')"
+     msg: "NTP Status of {{ target_server }} not okay: {{ ntp_status.stdout }}. Quitting."
+  
+  - name: Write NTP status to report
+    nuage_append: filename="{{ report_path }}" text="{{ target_server }} NTP Status {{ ntp_status.stdout[0] }}\n"
+
+  delegate_to: "{{ target_server }}"
+  become: yes
+  become_user: root
+  ignore_errors: "{{ not nuage_upgrade }}"
+  when: target_server_type | match('kvm')
+
 - name: Wait for VM to be ready
   local_action:
     module: wait_for
