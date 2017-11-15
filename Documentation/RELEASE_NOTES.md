@@ -3,6 +3,7 @@
 ### New Features and Enhancements
 * Execute vsd-health as part of vsd-post-deploy
 * In vrs-health, look for interfaces connected to alubr0 instead of named tap*
+* In vrs-postdeploy, better regex to determine ovs-vtep ip in case VSC is routed via default route, or indirect route
 ### Resolved Issues
 * Eliminate check for exactly 3 XMPP users
 * Allow NSGV MAC address to be set
