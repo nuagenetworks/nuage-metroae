@@ -7,13 +7,6 @@
       state: absent
     delegate_to: localhost
 
-  - include: update-vsd.yml
-    remote_user: "root"
-    delegate_to: "{{ item }}"
-    with_items: "{{ groups['vsds'] }}"
-    # JvB run_once doesn't work here because of serial=1 in the playbook
-    run_once: true
-
   - block:
     - name: Get VSD version
       shell: echo $VSD_VERSION
@@ -42,15 +35,6 @@
     delegate_to: "{{ groups['vsds'][0] }}"
     remote_user: "root"
 
-
-#  - name: Set Top-Level-Directory
-#    set_fact: tld="{{ role_path }}/../../"
-
-#  - name: Create TLS profile
-#    local_action: command python {{ role_path }}/files/vsc_config.py {{ tld }} {{ xmpp.username }}
-#    register: output
-#    # TODO: Replace by vsc_command, or sros_command module calls
-
   - name: Patch bug in sros_config module
     shell: |
       sed -i 's/{,3}(/{,3}>?(/g' /usr/lib/python2.7/site-packages/ansible/plugins/terminal/sros.py
@@ -72,14 +56,6 @@
       save: true
       provider: "{{ vsc_creds }}"
     delegate_to: localhost
-
-#  - name: Verification Result Failure Status
-#    fail: msg={{ output.stdout }}
-#    when: output.stdout | search("(?i)MINOR")
-#    ignore_errors: yes
-
-#  - name: Verification Result Success Status
-#    debug: var=output.stdout verbosity=1
 
   - name: check xmpp connectivity between VSC and VSD after enabling TLS
     sros_command:
