@@ -9,6 +9,31 @@
 * Add dvSwitch when deploying VCIN
 * fallocate space for VSD VM during predeploy
 * Remove cloud init files from VNS Utils VM (for 5.1.2 support)
+
+### Known Limitations
+When using Ansible 2.4.0 with MetroAG 2.3.1 the shell fails to open on VSC healthcheck.
+
+Example:
+```
+TASK [vsc-health : Get output of 'show version'] ************************************************************
+task path: /metro/nuage-metro-2.3.1/roles/vsc-health/tasks/main.yml:27
+<localhost> using connection plugin network_cli
+<localhost> socket_path: None
+fatal: [vsc1-404.newport.npi -> localhost]: FAILED! => {
+    "changed": false,
+    "failed": true,
+    "msg": "unable to open shell. Please see: https://docs.ansible.com/ansible/network_debug_troubleshooting.html#unable-to-open-shell"
+}
+```
+This is a result of a bug in paramiko 2.3.1, the Python package that is installed with Ansible 2.4. Ansible uses paramiko to connect to SROS devices, e.g. VSC. We have a couple of workarounds to choose from.
+
+* Downgrade to paramiko==2.2.1.  
+`pip install paramiko==2.2.1`  
+See also instructions for [debugging this error](http://docs.ansible.com/ansible/latest/network_debug_troubleshooting.html#unable-to-open-shell) and for [enabling network logging](http://docs.ansible.com/ansible/latest/network_debug_troubleshooting.html#enable-network-logging) in Ansible for guidance.
+
+* Remove the python-gssapi package.  
+`pip uninstall python-gssapi`  
+The specific bug in paramiko that we are addressing is that it throws an exception loading the GSSAPI package. A possible alternative to downgrading paramiko to 2.2.1 is to remove the python-gssapi package. It isn’t needed, and removing it will not affect MetroAG operation.
 ## Release 2.3.0
 ### New Features and Enhancements
 *	Support Ansible 2.3/2.4 (Use Ansible==2.4)
