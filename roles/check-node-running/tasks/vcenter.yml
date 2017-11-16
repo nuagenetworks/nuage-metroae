@@ -12,15 +12,15 @@
   register: vm_facts
   ignore_errors: yes
 
-- name: Verify that the VM is not already running
+- name: Verify that the VM is not running if not reachable
   assert:
-    that: "vm_facts.failed is defined or node_reachable or vm_name == upgrade_vmname"
-    msg: "{{ vm_name }} is already running on {{ target_server }}"
+    that: "not (vm_facts.failed is not defined and not node_reachable)"
+    msg: "{{ vm_name }} is running on {{ target_server }} but is not reachable. Quitting."
 
-- name: Verify that the VM is running
+- name: Verify that the VM is running if reachable
   assert:
-    that: "vm_facts.failed is not defined or not node_reachable or vm_name == upgrade_vmname"
-    msg: "{{ vm_name }} is not running on {{ target_server }}"
+    that: "not (vm_facts.failed is defined and node_reachable)"
+    msg: "{{ vm_name }} is not running on {{ target_server }} but the address is reachable. Quitting."
 
 - name: Set fact for node running
   set_fact:
