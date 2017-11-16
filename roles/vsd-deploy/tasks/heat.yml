@@ -218,66 +218,10 @@
     when: vsd_version.stdout | int >= 5
   when: vsd_sa_or_ha | match('ha')
 
-- name: Delete the localtime file
-  file:
-    path: /etc/localtime
-    state: absent
-  remote_user: "root"
-
-- name: Create the localtime symlink
-  file:
-    src: /usr/share/zoneinfo/{{ timezone }}
-    dest: /etc/localtime
-    state: link
-  remote_user: "root"
-
-- name: Remove old NTP servers
-  lineinfile:
-    dest: /etc/ntp.conf
-    regexp: "^server"
-    state: absent
-  remote_user: "root"
-
-- name: Configure NTP servers
-  lineinfile:
-    dest: /etc/ntp.conf
-    line: "server {{ item }} iburst"
-  with_items: "{{ ntp_server_list }}"
-  remote_user: "root"
-
-- name: Stop the ntpd service if running
-  command: service ntpd stop
-  remote_user: "root"
-
-- name: Manually sync time with ntp server
-  command: ntpdate -u "{{ntp_server_list[0]}}"
-  remote_user: "root"
-
-- name: Start ntpd
-  command: service ntpd start
-  remote_user: "root"
-
-- name: check ntp sync state
-  shell: ntpstat | awk 'NR==1{print $1}'
-  register: sync_status
-  until: sync_status.stdout | search('synchronised')
-  retries: "{{ ntp_sync_retries }}"
-  delay: "{{ ntp_sync_delay }}"
-  ignore_errors: yes
-  remote_user: "root"
-
-- block:
-  - name: restart ntp if it hasn't synced yet
-    command: service ntpd restart
-    remote_user: "root"
-  - name: check ntp sync state
-    shell: ntpstat | awk 'NR==1{print $1}'
-    register: retry_sync_status
-    until: retry_sync_status.stdout == "synchronised"
-    retries: "{{ ntp_sync_retries }}"
-    delay: "{{ ntp_sync_delay }}"
-    remote_user: "root"
-  when: not sync_status.stdout | search('synchronized')
+- name: Configure ntpd and ntpdate and local time zone
+  include_role:
+    name: common
+    tasks_from: linux-ntp
 
 - name: Install VSD software on standalone node
   command: /opt/vsd/vsd-install.sh -t s -y
