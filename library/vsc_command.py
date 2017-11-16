@@ -76,6 +76,7 @@ def main():
         'username': module.params['username'],
         'password': module.params['password']
     }
+    output = None
     try:
         vsc_connect = ConnectHandler(**vsc_conn_params)
         output = vsc_connect.send_command(module.params['command'])
