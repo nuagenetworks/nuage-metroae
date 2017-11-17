@@ -269,18 +269,15 @@
     when: vrs_el7|default(false)
   - block:
     - name: Find name of Selinux Package Files (EL7 architecture)
-      find: path="{{ nuage_unzipped_files_dir }}/selinux"  pattern="*.rpm" recurse=yes
+      find: path="{{ nuage_unzipped_files_dir }}/selinux"  pattern="selinux-policy-nuage-[0-9]*.rpm" recurse=yes
       register: rc_selinux_file
     - debug: var=rc_selinux_file verbosity=1
-    - name: Verify that Selinux file was found
-      assert: {
-        that: "{{ rc_selinux_file.matched }} > 0",
-        msg: "Unable to find Selinux files"
-      }
+    # No assert on selinux files, skip if the package is not there
     - name: Register Selinux package variables with proper path and image locations for use in other playbooks (EL7 architecture)
       set_fact:
         selinux_package_path: "{{ rc_selinux_file.files[0].path | dirname }}/"
         selinux_package_file_name_list: "{{ rc_selinux_file.files |  map(attribute='path') | list | map('basename') | list }}"
+      when: rc_selinux_file.matched
     when: vrs_el7|default(false)
   - block:
     # Debian requires 3 packages listed in a specific order of dependeny
