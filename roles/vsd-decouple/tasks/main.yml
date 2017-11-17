@@ -4,6 +4,11 @@
   action: setup
   remote_user: "root"
 
+- name: Reset keystore password to default, if changed
+  include_role:
+    name: common
+    tasks_from: vsd-reset-keystorepass
+  
 - include: report_header.yml
 
 - block:
@@ -29,11 +34,14 @@
     remote_user: root
 
   - name: mount ISO as loop back device
-    shell: "mount -o loop /tmp/{{ vsd_migration_iso_file_name }} /media/CDROM/"
-    register: mount_out
+    mount:
+      src: "/tmp/{{ vsd_migration_iso_file_name }}"
+      path: "/media/CDROM/"
+      state: mounted
+      opts: "loop"
+      fstab: "/tmp/fstab"
+      fstype: "iso9660"
     remote_user: root
-
-  - debug: var=mount_out verbosity=1
 
   - name: List VSD-related mounts
     shell: "mount | grep VSD | grep /media/CDROM"
