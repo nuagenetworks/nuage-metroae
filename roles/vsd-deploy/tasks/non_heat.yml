@@ -95,19 +95,6 @@
     when: vsd_version.stdout | int >= 5
   when: vsd_sa_or_ha | match('ha')
 
-- name: Delete the localtime file
-  file:
-    path: /etc/localtime
-    state: absent
-  remote_user: "root"
-
-- name: Create the localtime symlink
-  file:
-    src: /usr/share/zoneinfo/{{ timezone }}
-    dest: /etc/localtime
-    state: link
-  remote_user: "root"
-
 - name: Copy files to pin OS version when CentOS 6.6 or 6.5
   copy:
     src: ./roles/vsd-deploy/files/c66/
@@ -140,78 +127,14 @@
   remote_user: "root"
   when: yum_update
 
-- name: Remove old NTP servers
-  lineinfile:
-    dest: /etc/ntp.conf
-    regexp: "^server"
-    state: absent
-  remote_user: "root"
-
-- name: Configure NTP servers
-  lineinfile:
-    dest: /etc/ntp.conf
-    line: "server {{ item }} iburst"
-  with_items: "{{ ntp_server_list }}"
-  remote_user: "root"
-
-- name: Stop the ntpd service if running
-  command: service ntpd stop
-  remote_user: "root"
-
-- name: Manually sync time with ntp server
-  command: ntpdate -u "{{ntp_server_list[0]}}"
-  remote_user: "root"
-
-- name: Delete the default steptickers file
-  file:
-    path: /etc/ntp/step-tickers
-    state: absent
-  remote_user: "root"
-
-- name: Configure NTP servers for ntpdate
-  lineinfile:
-    dest: /etc/ntp/step-tickers
-    line: "{{ item }}"
-    create: yes
-  with_items: "{{ ntp_server_list }}"
-  remote_user: "root"
-
-- name: Enable ntpdate
-  service:
-    name: ntpdate
-    enabled: yes
-    state: started
-  remote_user: "root"
-
-- name: Start ntpd
-  command: service ntpd start
-  remote_user: "root"
-
-- name: check ntp sync state
-  shell: ntpstat | awk 'NR==1{print $1}'
-  register: sync_status
-  until: sync_status.stdout | search('synchronised')
-  retries: "{{ ntp_sync_retries }}"
-  delay: "{{ ntp_sync_delay }}"
-  ignore_errors: yes
-  remote_user: "root"
-
 - name: Disable cloud-init on VSD, to avoid boot time delays
   command: chkconfig cloud-init off
   remote_user: "root"
 
-- block:
-  - name: restart ntp if it hasn't synced yet
-    command: service ntpd restart
-    remote_user: "root"
-  - name: check ntp sync state
-    shell: ntpstat | awk 'NR==1{print $1}'
-    register: retry_sync_status
-    until: retry_sync_status.stdout == "synchronised"
-    retries: "{{ ntp_sync_retries }}"
-    delay: "{{ ntp_sync_delay }}"
-    remote_user: "root"
-  when: not sync_status.stdout | search("synchronized")
+- name: Configure ntpd and ntpdate and local time zone
+  include_role:
+    name: common
+    tasks_from: linux-ntp
 
 - name: Install VSD software on standalone node
   command: /opt/vsd/vsd-install.sh -t s -y
@@ -225,23 +148,21 @@
   - name: Install VSD software on HA node1 {{groups['vsds'][0]}}
     command: "{{ vsd_node1_install_cmd }}"
     when: inventory_hostname == groups['vsds'][0]
-    remote_user: "root"
 
   - name: Install VSD software on HA node2 {{groups['vsds'][1]}}
     command: "{{ vsd_node2_install_cmd }}"
     when: inventory_hostname == groups['vsds'][1] and not rollback
-    remote_user: "root"
 
   - name: Install VSD software on HA node2 {{groups['vsds'][1]}}
     command: "{{ vsd_node1_rollback }}"
     when: inventory_hostname == groups['vsds'][1] and rollback
-    remote_user: "root"
 
   - name: Install VSD software on HA node3 {{groups['vsds'][2]}}
     command: "{{ vsd_node3_install_cmd }}"
     when: inventory_hostname == groups['vsds'][2]
-    remote_user: "root"
+    
   when: vsd_sa_or_ha | match('ha')
+  remote_user: "root"
 
 - name: Set XMPP connection to allow both clear and TLS
   command: /opt/vsd/bin/ejmode allow -y

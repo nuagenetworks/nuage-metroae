@@ -38,10 +38,11 @@
   with_items: "{{ ntp_server_list }}"
   when: ntp_server_list is defined
 
-- name: Verify that the VSC hostnames are not longer than 32 characters
+- name: Verify that the VSC system name is not longer than 32 characters
   assert:
-    that: "'{{item.hostname}}'|length <= 32"
-    msg: "{{item.hostname}} is too long to be a valid VSC name, quitting"
+    that: "'{{item.system_name|default(item.hostname)}}'|length <= 32"
+    msg: "'{{item.system_name|default(item.hostname)}}' is too long to be a valid VSC system name, 
+          please define a 'system_name' with up to 32 chars for {{ item.hostname }}"
   with_items: "{{ myvscs }}"
   when: myvscs is defined
 
