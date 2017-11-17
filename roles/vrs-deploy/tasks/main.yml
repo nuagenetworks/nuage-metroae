@@ -17,7 +17,7 @@
   apt: deb={{ temp_dir }}/{{ inventory_hostname }}/{{ item }} state=present
   with_items:
    - "{{ vrs_package_file_name_list }}"
-  when: ansible_os_family == "Debian" 
+  when: ansible_os_family == "Debian"
 
 - name: Install Nuage OpenVSwitch packages on RedHat OS family distros
   remote_user: "{{ target_server_username }}"
@@ -30,37 +30,29 @@
   remote_user: "{{ target_server_username }}"
   file: path={{ temp_dir }}/{{ inventory_hostname }} state=absent
 
-- name: Update active controller in /etc/default/openvswitch file on RedHat OS family distros
-  remote_user: "{{ target_server_username }}"
-  lineinfile:
-    dest: /etc/default/openvswitch
-    regexp: "^ACTIVE_CONTROLLER="
-    line: "ACTIVE_CONTROLLER={{ active_controller_addr }}"
+- name: Set openvswitch file on RedHat OS family distros
+  set_fact:
+    openvswitch_file: "/etc/default/openvswitch"
   when: ansible_os_family == "RedHat"
 
-- name: Update active controller in /etc/default/openvswitch-switch file on Debian OS family distros
+- name: Set openvswitch file on Debian OS family distros
+  set_fact:
+    openvswitch_file: "/etc/default/openvswitch-switch"
+  when: ansible_os_family == "Debian"
+
+- name: Update active controller in {{ openvswitch_file }} file
   remote_user: "{{ target_server_username }}"
   lineinfile:
-    dest: /etc/default/openvswitch-switch
+    dest: {{ openvswitch_file }}
     regexp: "^ACTIVE_CONTROLLER="
     line: "ACTIVE_CONTROLLER={{ active_controller_addr }}"
-  when: ansible_os_family == "Debian"
 
-- name: Update standby controller in /etc/default/openvswitch file on RedHat OS family distros
+- name: Update standby controller in {{ openvswitch_file }} file
   remote_user: "{{ target_server_username }}"
   lineinfile:
-    dest: /etc/default/openvswitch
+    dest: {{ openvswitch_file }}
     regexp: "^STANDBY_CONTROLLER="
     line: "STANDBY_CONTROLLER={{ standby_controller_addr }}"
-  when: ansible_os_family == "RedHat"
-
-- name: Update standby controller in /etc/default/openvswitch-switch file on Debian OS family distros
-  remote_user: "{{ target_server_username }}"
-  lineinfile:
-    dest: /etc/default/openvswitch-switch
-    regexp: "^STANDBY_CONTROLLER="
-    line: "STANDBY_CONTROLLER={{ standby_controller_addr }}"
-  when: ansible_os_family == "Debian"
 
 - name: Restart OpenVSwitch Service on RedHat OS family distros
   remote_user: "{{ target_server_username }}"
