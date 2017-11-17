@@ -1,0 +1,61 @@
+---
+
+- hosts: localhost
+  gather_facts: no
+  vars:
+    nuage: "{{ lookup('file','nuage.json')|from_json }}"
+
+  tasks:
+  - name: Store Nuage variables in hostvars for localhost
+    set_fact:
+      nuage: "{{ nuage }}"
+  - name: Iterate over VSD and VSC hosts
+    add_host: 
+      name: "{{ item.host }}"
+      groups: servers
+      ansible_user: "root"
+      nuage: "{{ nuage }}"
+    with_items: 
+    - "{{ nuage.vsds }}"
+    - "{{ nuage.vscs }}"
+
+  - name: Create VSD VM hosts
+    add_host: 
+      name: "{{ item.1.mgmt_ip }}"
+      groups: vsds
+      ansible_user: "root"
+      nuage: "{{ nuage }}"
+      vsd: "{{ item.1 }}"
+      id: "{{'vsd%1d' | format(item.0+1) }}"
+      mgmt_bridge: "{{ item.1.mgmt_bridge | default( nuage.networks['mgmt'].bridge ) }}"
+    with_indexed_items: "{{ nuage.vsds }}"
+  
+  - name: Create VSC VM hosts
+    add_host: 
+      name: "{{ item.1.mgmt_ip }}"
+      groups: vscs
+      ansible_user: "root"
+      nuage: "{{ nuage }}"
+      vsc: "{{ item.1 }}"
+      id: "{{'vsc%02d' | format(item.0+1) }}"
+    with_indexed_items: "{{ nuage.vscs }}"
+
+- hosts: servers
+  gather_facts: yes
+  roles:
+    - vm-host
+
+- include: copy_vsd_qcow.yml
+  vars: 
+    nuage: "{{ hostvars['localhost'].nuage }}"
+
+- hosts: vsds
+  serial: 1
+  gather_facts: no
+  roles:
+    - vsd
+
+- hosts: vscs
+  gather_facts: no
+  roles:
+    - vsc

@@ -1,0 +1,45 @@
+---
+
+- hosts: localhost
+  gather_facts: no
+  tasks:
+    - name: Find name of VSD QCOW2 File
+      find: path="{{ nuage.unzipped_files_dir }}/vsd/qcow2"  pattern="*.qcow2" recurse=yes
+      register: rc_vsd_file
+    - debug: var=rc_vsd_file verbosity=1
+    - name: Verify that a VSD QCOW2 file was found
+      assert: {
+        that: "{{ rc_vsd_file.matched }} > 0",
+        msg: "Unable to find VSD VM image file"
+      }
+  
+    - name: Register VSD QCOW2 variables with proper path and image locations for use in other playbooks
+      set_fact:
+        vsd_qcow2_path: "{{ rc_vsd_file.files[0].path | dirname }}"
+        vsd_qcow2_file_name: "{{ rc_vsd_file.files[0].path | basename }}"
+
+- hosts: "{{ nuage.vsds | map(attribute='host') | list | unique }}"
+  gather_facts: no
+  tasks:
+    - name: Copy VSD QCOW2 variables locally
+      set_fact:
+        vsd_qcow2_path: "{{ hostvars['localhost'].vsd_qcow2_path }}"
+        vsd_qcow2_file_name: "{{ hostvars['localhost'].vsd_qcow2_file_name }}"
+    - name: Copy VSD qcow to all VSD hosts, once per host, but only if it does not exist ( TODO upgrades -> include version number )
+      copy: src="{{ vsd_qcow2_path }}/{{ vsd_qcow2_file_name }}"
+            dest="{{ nuage.images_path }}/vsd.qcow2"
+            force=no
+    - name: Get list of partitions
+      shell: "guestfish -r -a {{ nuage.images_path }}/vsd.qcow2 run : list-filesystems | grep -Ev '(unknown|swap)'"
+      register: partitions_list
+
+    - name: Check partition content
+      shell: "guestfish -r -a {{ nuage.images_path }}/vsd.qcow2 run : mount {{ item.split(':')[0] }} / : ls /"
+      register: partitions
+      with_items: "{{ partitions_list.stdout_lines }}"
+  
+    - name: Find root partition
+      set_fact:
+        guestfish_mount: "{{ item.item.split(':')[0]}}"
+      with_items: "{{ partitions.results }}"
+      when: '"proc" in item.stdout'
