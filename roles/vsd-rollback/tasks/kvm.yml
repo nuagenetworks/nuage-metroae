@@ -34,27 +34,10 @@
 
 # Since VSD VM might have been down for a while, it is good to force NTP sync
 
-- name: Stop the ntpd service if running
-  service: name=ntpd state=stopped
-  remote_user: "root"
-
-- name: Manually sync time with ntp server
-  command: ntpdate -u "{{ntp_server_list[0]}}"
-  remote_user: "root"
-
-- name: Start ntpd
-  service: name=ntpd state=started
-  remote_user: "root"
-
-- name: check ntp sync state
-  shell: ntpstat | awk 'NR==1{print $1}'
-  register: sync_status
-  until: sync_status.stdout == "synchronised"
-  retries: 4
-  delay: 5
-  ignore_errors: yes
-  remote_user: "root"
-
+- name: Configure ntpd and ntpdate and local time zone, sync ntp
+  include_role:
+    name: common
+    tasks_from: linux-ntp
 
 - block:
   - name: Get monit summary for all process on VSD
