@@ -60,7 +60,7 @@
   include_role:
     name: common
     tasks_from: linux-ntp
-  
+
 - block:
   - name: Resolve "{{vsd_fqdn}}"  to ip addr
     shell: host "{{vsd_fqdn}}" | awk '{print $3,$4}'
@@ -101,19 +101,47 @@
     delegate_to: "{{ ansible_deployment_host }}"
     remote_user: "{{ ansible_sudo_username }}"
 
-  - name: Config iptables on VSTAT vm to accept conn on ports 9200,9300 from vsd(s)
-    shell: "{{ item }}"
-    with_items:
-      - "{{ iptables_std_commands }}"
-    remote_user: "root"
+  - block:
+
+    - name: Config iptables on VSTAT vm to accept conn on ports 9200,9300 from vsd(s)
+      shell: "{{ item }}"
+      with_items:
+        - "{{ iptables_std_commands }}"
+      remote_user: "root"
+      register: iptables_results
+      ignore_errors: True
+
+    - name: Verify iptables rules installation
+      assert:
+        that: "{{ item.rc }} == 0 or
+               {{ item.stderr | search('already exists') }} or
+               {{ item.stderr | search('already added') }}"
+        msg: "iptables rule was not installed"
+      with_items:
+        - "{{ iptables_results.results }}"
+
     when: vsd_sa_or_ha | match('sa')
 
-  - name: Config iptables on VSTAT vm to accept conn on ports 9200, 9300 from vsd(s) in cluster setup
-    shell: "{{ item }}"
-    with_items:
-      - "{{ iptables_cluster_commands }}"
+  - block:
+
+    - name: Config iptables on VSTAT vm to accept conn on ports 9200, 9300 from vsd(s) in cluster setup
+      shell: "{{ item }}"
+      with_items:
+        - "{{ iptables_cluster_commands }}"
+      remote_user: "root"
+      register: iptables_results
+      ignore_errors: True
+
+    - name: Verify iptables rules installation
+      assert:
+        that: "{{ item.rc }} == 0 or
+               {{ item.stderr | search('already exists') }} or
+               {{ item.stderr | search('already added') }}"
+        msg: "iptables rule was not installed"
+      with_items:
+        - "{{ iptables_results.results }}"
+
     when: vsd_sa_or_ha | match('ha')
-    remote_user: "root"
 
   when: "_svc_iptables.rc == 0"
 

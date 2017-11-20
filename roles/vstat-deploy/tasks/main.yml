@@ -8,40 +8,63 @@
     delay: 1
   when: not target_server_type | match("heat") or not dhcp
 
-- name: "Check if monit summary is already up"
-  command: monit summary
-  ignore_errors: yes
-  register: monit_result
+- name: Get status of elasticsearch process
+  command: systemctl is-active elasticsearch
+  ignore_errors: True
+  register: es_status
   remote_user: root
 
-# TODO
-# Find a way to get VSTAT version
+- name: Check if elasticsearch status is active
+  set_fact:
+    es_active: "{{ es_status is defined and es_status.stdout=='active' }}"
 
-# - name: Read the VSTAT version
-#   shell: echo $VSTAT_VERSION
-#   register: vstat_version
-#   remote_user: root
+- name: Get status of iptables process
+  shell: "service iptables status"
+  ignore_errors: True
+  register: iptables_status
+  remote_user: root
 
-# - name: Set if VSTAT versions match qcow2
-#   set_fact: vstat_versions_match="{{ vstat_version.stdout == vsd_qcow2_file_name | regex_search('([0-9]+\\.[0-9]+\\.[0-9A-Za-z]+)') }}"
-#   when: vsd_qcow2_file_name is defined
+- name: Check if iptables status is active
+  set_fact:
+    iptables_active: "{{ iptables_status is defined and iptables_status.rc == 0 }}"
 
-# - name: Set if VSTAT versions match ova
-#   set_fact: vstat_versions_match="{{ vstat_version.stdout == vsd_ova_file_name | regex_search('([0-9]+\\.[0-9]+\\.[0-9A-Za-z]+)') }}"
-#   when: vsd_ova_file_name is defined
+- name: Get status of firewalld process
+  shell: "service firewalld status"
+  ignore_errors: True
+  register: firewalld_status
+  remote_user: root
 
-- name: REMOVE ME hack to set versions matching
-  set_fact: vstat_versions_match = True
+- name: Check if firewalld status is active
+  set_fact:
+    firewalld_active: "{{ firewalld_status is defined and firewalld_status.rc == 0 }}"
+
+- name: Read the VSTAT version
+  shell: egrep -o '([0-9]+\.[0-9]+\.[0-9A-Za-z]+)' /etc/profile.d/nuage-elastic-banner.sh
+  ignore_errors: True
+  register: vstat_version_line
+  remote_user: root
+
+- block:
+
+  - name: Set if VSTAT versions match qcow2
+    set_fact: vstat_versions_match="{{ vstat_version_line.stdout == vstat_qcow2_file_name | regex_search('([0-9]+\\.[0-9]+\\.[0-9A-Za-z]+)') }}"
+    when: vstat_qcow2_file_name is defined
+
+  - name: Set if VSTAT versions match ova
+    set_fact: vstat_versions_match="{{ vstat_version_line.stdout == vstat_ova_file_name | regex_search('([0-9]+\\.[0-9]+\\.[0-9A-Za-z]+)') }}"
+    when: vstat_ova_file_name is defined
+
+  when: vstat_version_line is defined
 
 - name: Set if skipping VSTAT deploy
-  set_fact: skip_vstat_deploy="{{ vstat_versions_match is defined and vstat_versions_match and monit_result.rc == 0 }}"
+  set_fact: skip_vstat_deploy="{{ vstat_versions_match is defined and vstat_versions_match and es_active and iptables_active and firewalld_active }}"
 
 - name: Display if skipping VSTAT deploy
   debug:
     msg:
-      - "*************************************************"
+      - "***************************************************"
       - "Skipping VSTAT deploy because it is already running"
-      - "*************************************************"
+      - "***************************************************"
   when: skip_vstat_deploy
 
 - include: non_heat.yml

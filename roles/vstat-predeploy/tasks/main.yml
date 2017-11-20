@@ -2,8 +2,19 @@
 - include_role:
     name: check-node-reachability
 
-### TODO
-### Add check for VSTAT running
+- name: Get VSTAT directory stat
+  stat:
+    path: /etc/profile.d/nuage-elastic-banner.sh
+  remote_user: root
+  register: vstat_file
+  when: node_reachable
+
+- name: Set fact for VSTAT present
+  set_fact:
+    vstat_present: "{{ vstat_file is defined and
+                       vstat_file.stat is defined and
+                       vstat_file.stat.exists is defined and
+                       vstat_file.stat.exists }}"
 
 - name: Verify that the myvsd section is defined
   assert:
