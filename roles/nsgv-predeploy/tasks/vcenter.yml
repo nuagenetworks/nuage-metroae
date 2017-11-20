@@ -63,6 +63,15 @@
 
 - block:
 
+  - name: Configure vCenter path
+    set_fact:
+      vcenter_path: "vi://'{{ vcenter.username | urlencode }}':'{{ vcenter.password | urlencode }}'@{{ target_server }}/{{ vcenter.datacenter }}/host/{{ vcenter.cluster }}"
+
+  - name: Update vCenter path if resource pool is configured
+    set_fact:
+      vcenter_path: "vi://'{{ vcenter.username | urlencode }}':'{{ vcenter.password | urlencode }}'@{{ target_server }}/{{ vcenter.datacenter }}/host/{{ vcenter.cluster }}/Resources/{{ vcenter.resource_pool | urlencode }}"
+    when: vcenter.resource_pool != 'NONE'
+
   - name: Deploy NSGV OVA on vCenter
     connection: local
     command: >
@@ -78,8 +87,7 @@
       --net:"OVS DataPath={{ data_bridge }}"
       --net:"port_vmnic={{ access_bridge }}"
       "{{ nsgv_ovf_path }}/{{ nsgv_ovf_file_name }}"
-      vi://'{{ vcenter.username | urlencode }}':'{{ vcenter.password | urlencode }}'@{{ target_server }}/{{ vcenter.datacenter }}/host/{{ vcenter.cluster }}
-    when: "'.ovf' in nsgv_ovf_file_name"
+      {{ vcenter_path }}
 
   - block:
     - name: Mount ISO when ZFB method is metro

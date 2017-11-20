@@ -16,6 +16,15 @@
 
 - block:
 
+  - name: Configure vCenter path
+    set_fact:
+      vcenter_path: "vi://'{{ vcenter.username | urlencode }}':'{{ vcenter.password | urlencode }}'@{{ target_server }}/{{ vcenter.datacenter }}/host/{{ vcenter.cluster }}"
+
+  - name: Update vCenter path if resource pool is configured
+    set_fact:
+      vcenter_path: "vi://'{{ vcenter.username | urlencode }}':'{{ vcenter.password | urlencode }}'@{{ target_server }}/{{ vcenter.datacenter }}/host/{{ vcenter.cluster }}/Resources/{{ vcenter.resource_pool | urlencode }}"
+    when: vcenter.resource_pool != 'NONE'
+
   - name: Deploy VNSUTIL Image on vCenter
     connection: local
     command: >
@@ -29,7 +38,7 @@
       -n={{ vmname }}
       --net:"Management={{ mgmt_bridge }}"
       "{{ vnsutil_ova_path }}/{{ vnsutil_ova_file_name }}"
-      vi://'{{ vcenter.username | urlencode }}':'{{ vcenter.password | urlencode }}'@{{ target_server }}/{{ vcenter.datacenter }}/host/{{ vcenter.cluster }}
+      {{ vcenter_path }}
 
   - block:
     - name: Waiting until VMware tools becomes available

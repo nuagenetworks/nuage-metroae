@@ -24,6 +24,15 @@
     that: "gvm_vm_facts.failed"
     msg: "VM {{ inventory_hostname }} already exists, quiting"
 
+- name: Configure vCenter path
+  set_fact:
+    vcenter_path: "vi://'{{ vcenter.username | urlencode }}':'{{ vcenter.password | urlencode }}'@{{ target_server }}/{{ vcenter.datacenter }}/host/{{ vcenter.cluster }}"
+
+- name: Update vCenter path if resource pool is configured
+  set_fact:
+    vcenter_path: "vi://'{{ vcenter.username | urlencode }}':'{{ vcenter.password | urlencode }}'@{{ target_server }}/{{ vcenter.datacenter }}/host/{{ vcenter.cluster }}/Resources/{{ vcenter.resource_pool | urlencode }}"
+  when: vcenter.resource_pool != 'NONE'
+
 - name: Deploy GVM Image on vCenter
   connection: local
   command: >
@@ -37,7 +46,7 @@
     -n={{ inventory_hostname }}
     --net:"VM Network={{ mgmt_bridge }}"
     "{{ vsd_ova_path }}/{{ vsd_ova_file_name }}"
-    vi://'{{ vcenter.username | urlencode }}':'{{ vcenter.password | urlencode }}'@{{ target_server }}/{{ vcenter.datacenter }}/host/{{ vcenter.cluster }}
+    {{ vcenter_path }}
 
 - block:
   - name: Waiting until VMware tools becomes available

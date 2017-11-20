@@ -32,17 +32,14 @@
 
 - block:
 
-  - name: Gathering info on VM
-    connection: local
-    vmware_guest:
-      hostname: "{{ target_server }}"
-      username: "{{ vcenter.username }}"
-      password: "{{ vcenter.password }}"
-      name: "{{ vm_name }}"
-      validate_certs: no
-      state: gatherfacts
-    register: vsd_vm_facts
-    ignore_errors: yes
+ - name: Configure vCenter path
+    set_fact:
+      vcenter_path: "vi://'{{ vcenter.username | urlencode }}':'{{ vcenter.password | urlencode }}'@{{ target_server }}/{{ vcenter.datacenter }}/host/{{ vcenter.cluster }}"
+
+  - name: Update vCenter path if resource pool is configured
+    set_fact:
+      vcenter_path: "vi://'{{ vcenter.username | urlencode }}':'{{ vcenter.password | urlencode }}'@{{ target_server }}/{{ vcenter.datacenter }}/host/{{ vcenter.cluster }}/Resources/{{ vcenter.resource_pool | urlencode }}"
+    when: vcenter.resource_pool != 'NONE'
 
   - name: Deploy VSD Image on vCenter
     connection: local
@@ -57,7 +54,7 @@
       -n={{ vm_name }}
       --net:"VM Network={{ mgmt_bridge }}"
       "{{ vsd_ova_path }}/{{ vsd_ova_file_name }}"
-      vi://'{{ vcenter.username | urlencode }}':'{{ vcenter.password | urlencode }}'@{{ target_server }}/{{ vcenter.datacenter }}/host/{{ vcenter.cluster }}
+      {{ vcenter_path }}
 
   - block:
     - name: Waiting until VMware tools becomes available

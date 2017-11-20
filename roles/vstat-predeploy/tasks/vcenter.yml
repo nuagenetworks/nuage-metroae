@@ -32,7 +32,16 @@
 
 - block:
 
-  - name: Deploy Stats OVA on vCenter
+  - name: Configure vCenter path
+    set_fact:
+      vcenter_path: "vi://'{{ vcenter.username | urlencode }}':'{{ vcenter.password | urlencode }}'@{{ target_server }}/{{ vcenter.datacenter }}/host/{{ vcenter.cluster }}"
+
+  - name: Update vCenter path if resource pool is configured
+    set_fact:
+      vcenter_path: "vi://'{{ vcenter.username | urlencode }}':'{{ vcenter.password | urlencode }}'@{{ target_server }}/{{ vcenter.datacenter }}/host/{{ vcenter.cluster }}/Resources/{{ vcenter.resource_pool | urlencode }}"
+    when: vcenter.resource_pool != 'NONE'
+
+  - name: Deploy Stats image on vCenter
     connection: local
     command: >
       {{ vcenter.ovftool }}
@@ -45,24 +54,7 @@
       -n={{ vm_name }}
       --net:"Management={{ mgmt_bridge }}"
       "{{ vstat_ova_or_ovf_path }}/{{ vstat_ova_or_ovf_file_name }}"
-      vi://'{{ vcenter.username | urlencode }}':'{{ vcenter.password | urlencode }}'@{{ target_server }}/{{ vcenter.datacenter }}/host/{{ vcenter.cluster }}
-    when: "'.ova' in vstat_ova_or_ovf_file_name"
-
-  - name: Deploy Stats OVF on vCenter
-    connection: local
-    command: >
-      {{ vcenter.ovftool }}
-      --acceptAllEulas
-      --noSSLVerify
-      --powerOn
-      --machineOutput
-      -dm=thin
-      -ds={{ vcenter.datastore }}
-      -n={{ vm_name }}
-      --net:"OVS DataPath={{ mgmt_bridge }}"
-      "{{ vstat_ova_or_ovf_path }}/{{ vstat_ova_or_ovf_file_name }}"
-      vi://'{{ vcenter.username | urlencode }}':'{{ vcenter.password | urlencode }}'@{{ target_server }}/{{ vcenter.datacenter }}/host/{{ vcenter.cluster }}
-    when: "'.ovf' in vstat_ova_or_ovf_file_name"
+      {{ vcenter_path }}
 
   - block:
     - name: Waiting until VMware tools becomes available

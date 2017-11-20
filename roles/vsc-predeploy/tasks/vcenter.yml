@@ -16,6 +16,15 @@
 
 - block:
 
+  - name: Configure vCenter path
+    set_fact:
+      vcenter_path: "vi://'{{ vcenter.username | urlencode }}':'{{ vcenter.password | urlencode }}'@{{ target_server }}/{{ vcenter.datacenter }}/host/{{ vcenter.cluster }}"
+
+  - name: Update vCenter path if resource pool is configured
+    set_fact:
+      vcenter_path: "vi://'{{ vcenter.username | urlencode }}':'{{ vcenter.password | urlencode }}'@{{ target_server }}/{{ vcenter.datacenter }}/host/{{ vcenter.cluster }}/Resources/{{ vcenter.resource_pool | urlencode }}"
+    when: vcenter.resource_pool != 'NONE'
+
   - name: Deploy VSC Image on vCenter
     connection: local
     command: >
@@ -71,7 +80,7 @@
       --prop:"Autonomous_System=64000"
       --prop:"BGP_Group=internal"
       "{{ vsc_ova_path }}/{{ vsc_ova_file_name }}"
-      vi://'{{ vcenter.username | urlencode }}':'{{ vcenter.password | urlencode }}'@{{ target_server }}/{{ vcenter.datacenter }}/host/{{ vcenter.cluster }}
+      {{ vcenter_path }}
 
   - name: Gathering info on VM
     connection: local

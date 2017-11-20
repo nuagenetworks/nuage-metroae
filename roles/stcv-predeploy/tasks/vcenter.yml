@@ -18,27 +18,14 @@
     that: "stcv_vm_facts.failed is defined"
     msg: "VM {{ vm_hostname }} already exists, quiting"
 
-- name: Deploy STCv Image on vCenter
-  connection: local
-  command: >
-    {{ vcenter.ovftool }}
-    --acceptAllEulas
-    --noSSLVerify
-    --powerOn
-    --machineOutput
-    -dm=thin
-    -ds={{ vcenter.datastore }}
-    -n={{ vm_hostname }}
-    --net:"ManagementNet={{ mgmt_bridge }}"
-    --net:"TestNet1={{ data_bridge1 }}"
-    --prop:"ipaddress={{ vm_mgmt_ip }}"
-    --prop:"netmask={{ vm_mgmt_netmask }}"
-    --prop:"gwaddress={{ vm_mgmt_gateway }}"
-    --prop:"telnetd=off"
-    --prop:"ntp={{dns_server_list[0]}}"
-    "{{ stcv_image_path }}/{{ stcv_image_filename }}"
-    vi://'{{ vcenter.username | urlencode }}':'{{ vcenter.password | urlencode }}'@{{ target_server }}/{{ vcenter.datacenter }}/host/{{ vcenter.cluster }}
-  when: data_bridge2 is not defined
+- name: Configure vCenter path
+  set_fact:
+    vcenter_path: "vi://'{{ vcenter.username | urlencode }}':'{{ vcenter.password | urlencode }}'@{{ target_server }}/{{ vcenter.datacenter }}/host/{{ vcenter.cluster }}"
+
+- name: Update vCenter path if resource pool is configured
+  set_fact:
+    vcenter_path: "vi://'{{ vcenter.username | urlencode }}':'{{ vcenter.password | urlencode }}'@{{ target_server }}/{{ vcenter.datacenter }}/host/{{ vcenter.cluster }}/Resources/{{ vcenter.resource_pool | urlencode }}"
+  when: vcenter.resource_pool != 'NONE'
 
 - name: Deploy STCv Image on vCenter
   connection: local
@@ -53,15 +40,16 @@
     -n={{ vm_hostname }}
     --net:"ManagementNet={{ mgmt_bridge }}"
     --net:"TestNet1={{ data_bridge1 }}"
+    {% if data_bridge2 is defined %}
     --net:"TestNet2={{ data_bridge2 }}"
+    {% endif %}
     --prop:"ipaddress={{ vm_mgmt_ip }}"
     --prop:"netmask={{ vm_mgmt_netmask }}"
     --prop:"gwaddress={{ vm_mgmt_gateway }}"
     --prop:"telnetd=off"
     --prop:"ntp={{dns_server_list[0]}}"
     "{{ stcv_image_path }}/{{ stcv_image_filename }}"
-    vi://'{{ vcenter.username | urlencode }}':'{{ vcenter.password | urlencode }}'@{{ target_server }}/{{ vcenter.datacenter }}/host/{{ vcenter.cluster }}
-  when: data_bridge2 is defined
+    {{ vcenter_path }}
 
 - block:
   - name: Waiting until VMware tools becomes available
