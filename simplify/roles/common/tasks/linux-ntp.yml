@@ -15,7 +15,7 @@
 
   - name: Create the localtime symlink
     file:
-      src: /usr/share/zoneinfo/{{ timezone }}
+      src: /usr/share/zoneinfo/{{ nuage.timezone | default(timezone) }}
       dest: /etc/localtime
       state: link
 
@@ -29,7 +29,7 @@
     lineinfile:
       dest: /etc/ntp.conf
       line: "server {{ item }} iburst"
-    with_items: "{{ ntp_server_list }}"
+    with_items: "{{ nuage.ntp_server_list }}"
 
   - name: Stop the ntpd and ntpdate services if running
     service:
@@ -40,7 +40,7 @@
        - "ntpdate"
 
   - name: Manually sync time with ntp server
-    command: ntpdate -u "{{ntp_server_list[0]}}"
+    command: ntpdate -u "{{nuage.ntp_server_list[0]}}"
 
   - name: Delete the default steptickers file
     file:
@@ -52,7 +52,7 @@
       dest: /etc/ntp/step-tickers
       line: "{{ item }}"
       create: yes
-    with_items: "{{ ntp_server_list }}"
+    with_items: "{{ nuage.ntp_server_list }}"
 
   - name: Enable ntpdate
     service:
