@@ -1,131 +1,134 @@
 ---
 
-- name: Include OS specific variables (TODO move to vm-host role)
-  include_vars: "{{ hostvars[vsd.host].ansible_os_family }}.yml"
-   
-- name: Set VSD VM name
-  set_fact: vm_name="{{ id + "." + nuage.domain }}"
+- name: Check for VSD standalone or cluster
+  set_fact:
+    vsd_cluster: "{{ nuage.vsds | length == 3}}"
 
-- name: List the Virtual Machines running
-  virt: command=list_vms
-  register: virt_vms
-  delegate_to: "{{ vsd.host }}"
-  remote_user: "root"
-
-- name: Set fact to check if VSD VM {{ vm_name }} is running
-  set_fact: vsd_running="{{ vm_name in virt_vms.list_vms }}"
-- debug: var=vsd_running verbosity=1
-
-- name: Verify that the VSD VM is not already running ( add 'keep_existing_vms' to skip this check )
-  assert:
-    that: not vsd_running|bool or keep_existing_vms | default(false)
-    msg: "{{ vm_name }} is already running on {{ vsd.host }}"
+- name: Wait for VSD ssh to be ready
+  local_action:
+    module: wait_for
+    port: "22"
+    host: "{{ vsd.mgmt_ip }}"
+    search_regex: OpenSSH
+    delay: 1
 
 - block:
-  - name: Create libvirt image directory
-    file: path={{ nuage.images_path }}/{{ vm_name }}
-          state=directory
-          owner={{ libvirt.user }}
-          group={{ libvirt.group }}
+  - name: Update /etc/hosts file
+    blockinfile:
+      dest: /etc/hosts
+      block: |
+        {% for host in nuage.vsds  %}
+        {{ host.mgmt_ip }}    {{ hostvars[host.mgmt_ip].id + "." + nuage.domain }}
+        {% endfor %}
+  - name: Read the VSD version
+    shell: echo $VSD_VERSION | cut -d . -f 1
+    register: vsd_version
 
-  - name: Copy the VSD qcow image to virt images directory, locally
-    copy: src={{ nuage.images_path }}/vsd.qcow2
-          remote_src=yes
-          dest={{ nuage.images_path }}/{{ vm_name }}
-          owner={{ libvirt.user }}
-          group={{ libvirt.group }}
+  - debug: var=vsd_version.stdout verbosity=1
 
-  - name: Set fact to capture guestfish command
-    set_fact: guestfish_cmd="guestfish --rw -a {{ nuage.images_path }}/{{ vm_name }}/vsd.qcow2 -m {{ hostvars[vsd.host].guestfish_mount }}"
+  - name: Determine .ssh path
+    set_fact:
+      ssh_path: "{{ ( vsd_version.stdout | int < 5 ) | ternary( '/root/.ssh', '/home/vsd/.ssh') }}"
+  
+  - name: Generate SSH keys
+    shell: ssh-keygen -b 2048 -t rsa -f {{ssh_path}}/id_rsa -q -N ""
+    args:
+      creates: "{{ssh_path}}/id_rsa"
+    delegate_to: "{{ item }}"
+    with_items: "{{ groups['vsds'] }}"
+    run_once: true
 
-  - name: Create a temporary copy of the network script for eth0
-    template: src=ifcfg-eth0.j2 backup=no dest={{ nuage.images_path }}/{{ vm_name }}/ifcfg-eth0
+  - name: Get generated SSH keys
+    shell: cat {{ssh_path}}/id_rsa.pub
+    register: ssh_key_lst
+    delegate_to: "{{ item }}"
+    with_items: "{{ groups['vsds'] }}"
+    run_once: true
 
-  - name: Copy eth0 network script file to the VSD image
-    command: "{{guestfish_cmd}} copy-in {{ nuage.images_path }}/{{ vm_name }}/ifcfg-eth0 /etc/sysconfig/network-scripts/"
+  - name: Add SSH keys to authorized_keys file
+    shell: "echo {{ item[1].stdout }} >> {{ssh_path}}/authorized_keys"
+    delegate_to: "{{ item[0] }}"
+    with_nested:
+      - "{{ groups['vsds'] }}"
+      - "{{ ssh_key_lst.results }}"
+    run_once: true
 
-  - name: Remove temporary copy of eth0 network script
-    file: path={{ nuage.images_path }}/{{ vm_name }}/ifcfg-eth0 state=absent
+  - name: Change owner and permissions of VSD authorized keys
+    file:
+      path: /home/vsd/.ssh/authorized_keys
+      owner: vsd
+      group: hadoopusers
+      mode: 0640
+    delegate_to: "{{ item }}"
+    with_items: "{{ groups['vsds'] }}"
+    run_once: true
+    when: vsd_version.stdout | int >= 5
 
-  - name: Set the owner and group on the eth0 network script file in the VSD image
-    command: "{{guestfish_cmd}} chown 0 0 /etc/sysconfig/network-scripts/ifcfg-eth0"
+  when: vsd_cluster
+  remote_user: root
 
-  - name: Create a temporary copy of the syscfg network file
-    template: src=network.j2 backup=no dest={{ nuage.images_path }}/{{ vm_name }}/network
-
-  - name: Copy network file to the VSD image
-    command: "{{guestfish_cmd}} copy-in {{ nuage.images_path }}/{{ vm_name }}/network /etc/sysconfig/"
-
-  - name: Remove temporary copy of network file
-    file: path={{ nuage.images_path }}/{{ vm_name }}/network state=absent
-
-  - name: Set the owner and group for the network hostname file on the VSD image
-    command: "{{guestfish_cmd}} chown 0 0 /etc/sysconfig/network"
-
-  - name: Create a temporary copy of the hostname file (for VSD version 4.0.R7 and on)
-    template: src=hostname.j2 backup=no dest={{ nuage.images_path }}/{{ vm_name }}/hostname
-
-  - name: Copy hostname file to the VSD image
-    command: "{{guestfish_cmd}} copy-in {{ nuage.images_path }}/{{ vm_name }}/hostname /etc/"
-
-  - name: Remove temporary copy of hostname file
-    file: path={{ nuage.images_path }}/{{ vm_name }}/hostname state=absent
-
-  - name: Set the owner and group for the hostname file on the VSD image
-    command: "{{guestfish_cmd}} chown 0 0 /etc/hostname"
-
-  - name: Create the directory /root/.ssh for authorized_keys
-    command: "{{guestfish_cmd}} mkdir-mode /root/.ssh 0700"
-
-  - name: Set the owner and group for the /root/.ssh directory on the VSD image
-    command: "{{guestfish_cmd}} chown 0 0 /root/.ssh"
-
-  - name: Get the public key for the current user
-    local_action: command cat "{{ nuage.user_ssh_pub_key }}"
-    register: current_user_ssh_key
-
-  - name: Create a temporary copy of the authorized_keys file
-    template: src=authorized_keys.j2 backup=no dest={{ nuage.images_path }}/{{ vm_name }}/authorized_keys
-
-  - name: Copy authorized_keys file to the VSD image
-    command: "{{guestfish_cmd}} copy-in {{ nuage.images_path }}/{{ vm_name }}/authorized_keys /root/.ssh/"
-
-  - name: Remove temporary copy of authorized_keys file
-    file: path={{ nuage.images_path }}/{{ vm_name }}/authorized_keys state=absent
-
-  - name: Set the owner and group for the authorized_keys file on the VSD image
-    command: "{{guestfish_cmd}} chown 0 0 /root/.ssh/authorized_keys"
-
-  - name: Set the mode for the authorized_keys file on the VSD image
-    command: "{{guestfish_cmd}} chmod 0640 /root/.ssh/authorized_keys"
-
-  - name: "Define new VSD VM"
-    virt: name="{{ vm_name }}"
-          command=define
-          xml="{{ lookup('template', 'vsd.xml.j2') }}"
-          uri=qemu:///system
-
-  - name: "Run VSD VM"
-    virt: name="{{ vm_name }}"
-          state=running
-          autostart=True
-          uri=qemu:///system
-    when: ansible_version.full | version_compare('2.3', '>=')
-
-  - block:
-    - name: "Configure VM to autostart"
-      command: virsh autostart {{ vm_name }}
-
-    - name: "Run VSD VM"
-      virt: name="{{ vm_name }}"
-            state=running
-            uri=qemu:///system
-    when: ansible_version.full | version_compare('2.3', '<')
-
-## JvB condition for the whole block 
-  when: "not vsd_running"
-  delegate_to: "{{ vsd.host }}"
+# TODO currently requires gather_facts, takes long time
+- name: Copy files to pin OS version when CentOS 6.6 or 6.5
+  copy:
+    src: ./roles/vsd-deploy/files/c66/
+    dest: /etc/yum.repos.d/
   remote_user: "root"
-  
-- include_tasks: configure.yml
-  
+  when:
+    - yum_pin is defined
+    - ansible_distribution_version|match('6.6') or ansible_distribution_version|match('6.5')
+
+- name: Copy files to pin OS version when CentOS 6.8
+  copy:
+    src: ./roles/vsd-deploy/files/c68/
+    dest: /etc/yum.repos.d/
+  remote_user: "root"
+  when:
+    - yum_pin is defined
+    - ansible_distribution_version|match('6.8')
+
+- name: Configure yum proxy
+  lineinfile:
+    dest: /etc/yum.conf
+    regexp: "^proxy="
+    line: "proxy={{ nuage.proxy }}"
+  remote_user: "root"
+  when: nuage.proxy is defined
+
+- name: Execute a yum update
+  yum:
+    name: '*'
+    state: latest
+  remote_user: "root"
+  when: yum_update is defined
+
+- name: Disable cloud-init on VSD, to avoid boot time delays
+  command: chkconfig cloud-init off
+  remote_user: "root"
+
+- name: Configure ntpd and ntpdate and local time zone
+  include_role:
+    name: common
+    tasks_from: linux-ntp
+
+- name: Install VSD software on standalone node
+  command: /opt/vsd/vsd-install.sh -t s -y
+  when: not vsd_cluster and not vsd_running
+  remote_user: "root"
+
+- block:
+  - name: Configure install commands
+    set_fact:
+      cmd: 
+        vsd1: "/opt/vsd/vsd-install.sh -t 1 -a vsd1.{{nuage.domain}} -b vsd2.{{nuage.domain}} -c vsd3.{{nuage.domain}} -x xmpp.{{nuage.domain}} -y"
+        vsd2: "/opt/vsd/vsd-install.sh -1 vsd1.{{nuage.domain}} -t 2 -x xmpp.{{nuage.domain}} -y"
+        vsd3: "/opt/vsd/vsd-install.sh -1 vsd1.{{nuage.domain}} -t 3 -x xmpp.{{nuage.domain}} -y"
+
+  - name: Install VSD software on HA node {{ id }}
+    command: "{{ cmd[ id ] }}"
+    remote_user: "root"
+    
+  when: vsd_cluster and not vsd_running
+
+- name: Set XMPP connection to allow both clear and TLS
+  command: /opt/vsd/bin/ejmode allow -y
+  remote_user: "root"
