@@ -3,11 +3,16 @@
 - name: Include OS specific variables
   include_vars: "{{ hostvars[vsd.host].ansible_os_family }}.yml"
 
-- include_tasks: copy_vsd_qcow.yml vsd_host="{{item}}"
+- include_tasks: copy_vsd_qcow.yml
   with_items: "{{ nuage.vsds | map(attribute='host') | list | unique }}"
+  loop_control:
+    loop_var: vsd_host
+  run_once: true
   
-- name: Set VSD VM name
-  set_fact: vm_name="{{ id + "." + nuage.domain }}"
+- name: Set VSD VM name and QCow image name
+  set_fact: 
+    vm_name: "{{ id + "." + nuage.domain }}"
+    qcow_name: "{{hostvars['localhost'].vsd_qcow2_file_name}}"
 
 - name: List the Virtual Machines running
   virt: command=list_vms
@@ -15,7 +20,7 @@
   delegate_to: "{{ vsd.host }}"
   remote_user: "root"
 
-- name: Set fact to check if VSD VM {{ vm_name }} is running
+- name: Set fact to check if VSD VM is running
   set_fact: vsd_running="{{ vm_name in virt_vms.list_vms }}"
 - debug: var=vsd_running verbosity=1
 
@@ -32,14 +37,14 @@
           group={{ libvirt.group }}
 
   - name: Copy the VSD qcow image to virt images directory, locally
-    copy: src={{ nuage.images_path }}/vsd.qcow2
+    copy: src={{ nuage.images_path }}/{{ qcow_name }}
           remote_src=yes
-          dest={{ nuage.images_path }}/{{ vm_name }}
+          dest={{ nuage.images_path }}/{{ vm_name }}/{{ qcow_name }}
           owner={{ libvirt.user }}
           group={{ libvirt.group }}
 
   - name: Set fact to capture guestfish command
-    set_fact: guestfish_cmd="guestfish --rw -a {{ nuage.images_path }}/{{ vm_name }}/vsd.qcow2 -m {{ hostvars[vsd.host].guestfish_mount }}"
+    set_fact: guestfish_cmd="guestfish --rw -a {{ nuage.images_path }}/{{ vm_name }}/{{ qcow_name }} -m {{ hostvars[vsd.host].guestfish_mount }}"
 
   - name: Create a temporary copy of the network script for eth0
     template: src=ifcfg-eth0.j2 backup=no dest={{ nuage.images_path }}/{{ vm_name }}/ifcfg-eth0
