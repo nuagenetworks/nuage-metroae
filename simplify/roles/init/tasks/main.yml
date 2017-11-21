@@ -11,17 +11,24 @@
     tasks_from: init
   tags: vsd
 
-- name: Iterate over VSD and VSC hosts
+- name: Iterate over VSD hosts, add to 'servers'
   add_host: 
     name: "{{ item.host }}"
     groups: servers
-    ansible_user: "root"
+    ansible_user: "{{ nuage.ansible_user | default("root") }}"
     nuage: "{{ nuage }}"
-  with_items: 
-  - "{{ nuage.vsds }}"
-  - "{{ nuage.vscs }}"
-  tags: [ 'vsd', 'vsc' ]
+  with_items: "{{ nuage.vsds }}"
+  tags: vsd # Copy&paste code such that we can use tags
 
+- name: Iterate over VSC hosts, add to 'servers'
+  add_host: 
+    name: "{{ item.host }}"
+    groups: servers
+    ansible_user: "{{ nuage.ansible_user | default("root") }}"
+    nuage: "{{ nuage }}"
+  with_items: "{{ nuage.vscs }}"
+  tags: vsc
+  
 - name: Create VSD VM hosts
   add_host: 
     name: "{{ item.1.mgmt_ip }}"
@@ -40,7 +47,7 @@
   add_host: 
     name: "{{ item.1.mgmt_ip }}"
     groups: vscs
-    ansible_user: "root"
+    ansible_user: "admin"
     nuage: "{{ nuage }}"
     vsc: "{{ item.1 }}"
     id: "{{'vsc%02d' | format(item.0+1) }}"
