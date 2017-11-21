@@ -37,8 +37,8 @@ echo "Router (Network Side) Configuration"
 #--------------------------------------------------
     router
         interface "control"
-        {% if vsc.control_ip is defined and nuage.networks['data'].prefix is defined %}
-            address {{ vsc.control_ip }}/{{ nuage.networks['data'].prefix }}
+        {% if vsc.control_ip is defined and nuage.networks['data'].netmask is defined %}
+            address {{ ( vsc.control_ip + '/' + nuage.networks['data'].netmask ) | ipaddr('net') }}
             no shutdown
         {% endif %}
         exit
@@ -50,9 +50,8 @@ echo "Router (Network Side) Configuration"
             shutdown
         {% endif %}
         exit
-        {% if nuage.as_number is defined %}
-        autonomous-system {{ nuage.as_number }}
-        {% endif %}
+        autonomous-system {{ nuage.as_number | default(65000) }}
+        
         {% if vsc.system_ip is defined %}
         router-id {{ vsc.system_ip }}
         {% endif %}
