@@ -33,14 +33,12 @@
         creates: "~/.ssh/id_rsa"
       delegate_to: "{{ item }}"
       with_items: "{{ groups['vsds'] }}"
-      run_once: true
   
     - name: Get generated SSH keys
       shell: cat ~/.ssh/id_rsa.pub
       register: ssh_key_lst
       delegate_to: "{{ item }}"
       with_items: "{{ groups['vsds'] }}"
-      run_once: true
   
     - name: Add SSH keys to authorized_keys file
       shell: "echo {{ item[1].stdout }} >> ~/.ssh/authorized_keys"
@@ -48,9 +46,9 @@
       with_nested:
         - "{{ groups['vsds'] }}"
         - "{{ ssh_key_lst.results }}"
-      run_once: true
     become: yes
     become_user: "{{ ( vsd_version.stdout | int < 5 ) | ternary('root','vsd') }}"
+    when: inventory_hostname == groups['vsds'][0]
 
   - name: Change owner and permissions of VSD authorized keys
     file:
