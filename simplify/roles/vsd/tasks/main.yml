@@ -107,21 +107,17 @@
     name: common
     tasks_from: linux-ntp
 
-- name: Install VSD software on standalone node
-  command: /opt/vsd/vsd-install.sh -t s -y
-  when: not vsd_cluster and not vsd_running
-  remote_user: "root"
-
 - block:
   - name: Configure install commands
     set_fact:
-      cmd: 
+      cmd:
+        vsd:  "/opt/vsd/vsd-install.sh -t s -y"
         vsd1: "/opt/vsd/vsd-install.sh -t 1 -a vsd1.{{nuage.domain}} -b vsd2.{{nuage.domain}} -c vsd3.{{nuage.domain}} -x xmpp.{{nuage.domain}} -y"
         vsd2: "/opt/vsd/vsd-install.sh -1 vsd1.{{nuage.domain}} -t 2 -x xmpp.{{nuage.domain}} -y"
         vsd3: "/opt/vsd/vsd-install.sh -1 vsd1.{{nuage.domain}} -t 3 -x xmpp.{{nuage.domain}} -y"
 
-  - name: Install VSD software on HA node {{ id }}
-    command: "{{ cmd[ id ] }}"
+  - name: Install VSD software on node {{ inventory_hostname }}
+    command: "{{ cmd[ inventory_hostname_short ] }}"
     remote_user: "root"
     
   when: vsd_cluster and not vsd_running

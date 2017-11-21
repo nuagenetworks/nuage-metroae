@@ -1,5 +1,14 @@
 ---
 
+- name: Check for valid VSD configuration
+  assert:
+    that: (nuage.vsds | length == 1) or (nuage.vsds | length == 3)
+    msg:  "A VSD config must consist of either 1 or 3 nodes"
+
+- name: Check for VSD standalone or cluster
+  set_fact:
+    vsd_cluster: "{{ nuage.vsds | length == 3}}"
+
 - name: Find name of VSD QCOW2 File
   find: path="{{ nuage.unzipped_files_dir }}/vsd/qcow2"  pattern="*.qcow2" recurse=yes
   register: rc_vsd_file

@@ -52,13 +52,12 @@
   
 - name: Create VSD VM hosts
   add_host:
-    name: "{{'vsd%1d' | format(item.0+1) + '.' + nuage.domain }}"
+    name: "{{ vsd_cluster|ternary( 'vsd%1d' | format(item.0+1), 'vsd' ) + '.' + nuage.domain }}"
     ip: "{{ item.1.mgmt_ip }}"
     groups: vsds
     ansible_user: "root"
     nuage: "{{ nuage }}"
     vsd: "{{ item.1 }}"
-    id: "{{'vsd%1d' | format(item.0+1) }}" 
     host: "{{ item.1.host }}"
     on_vmware: "{{ nuage.vcenter is defined and nuage.vcenter.ip == item.1.host }}"
     mgmt_bridge: "{{ item.1.mgmt_bridge | default( nuage.networks['mgmt'].bridge ) }}"
