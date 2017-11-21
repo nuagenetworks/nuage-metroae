@@ -1,0 +1,23 @@
+primary-image        cf1:/timos/cpm.tim
+primary-config       cf1:/config.cfg
+autonegotiate
+duplex               full
+speed                100
+wait                 3
+persist              off
+console-speed        115200
+{% set ip = vsc.mgmt_ip + '/' + nuage.networks['mgmt'].netmask %}
+address          {{ ip | ipaddr() }}
+primary-dns      {{ nuage.dns_server_list[0] }}
+{% if nuage.dns_server_list[1] is defined %}
+secondary-dns    {{ nuage.dns_server_list[1] }}
+{% endif %}
+{% if nuage.dns_server_list[2] is defined %}
+tertiary-dns     {{ nuage.dns_server_list[2] }}
+{% endif %}
+dns-domain       {{ nuage.domain }}
+{% if vsc.mgmt_static_route_list is defined %}
+{% for static_route in vsc.mgmt_static_route_list %}
+static-route {{ static_route }} next-hop {{ nuage.networks['mgmt'].gateway }}
+{% endfor %}
+{% endif %}

@@ -1,0 +1,35 @@
+---
+
+- name: "Configure yum proxy {{ nuage.proxy }}"
+  lineinfile:
+    path: /etc/yum.conf
+    state: present
+    regexp: '^proxy='
+    line: "proxy={{ nuage.proxy }}"
+  remote_user: "root"
+  when: nuage.proxy is defined
+
+- name: Check if required OS packages are installed
+  command: rpm -q qemu-kvm libvirt bridge-utils libguestfs-tools libvirt-python ntp
+  register: rpm_check
+  ignore_errors: True
+
+- name: Print rpm_check when verbosity >= 1
+  debug: var=rpm_check verbosity=1
+
+- name: Install packages for RedHat OS family distros
+  yum: name={{ item }} state=present
+  with_items:
+   - qemu-kvm
+   - libvirt
+   - bridge-utils
+   - libguestfs-tools
+   - libvirt-python
+   - ntp
+  when: rpm_check.rc == 1
+
+- name: Make sure libvirtd has started
+  service:
+    name: libvirtd
+    enabled: yes
+    state: started

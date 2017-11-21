@@ -1,0 +1,86 @@
+exit all
+configure
+
+#--------------------------------------------------
+echo "System Configuration"
+#--------------------------------------------------
+    system
+        name {{ id }}
+        time
+            ntp
+            {% for ntp_server in nuage.ntp_server_list %}
+                server {{ ntp_server }}
+            {% endfor %}
+                no shutdown
+            exit
+        exit
+    exit
+#--------------------------------------------------
+#echo "System Security Configuration"
+#--------------------------------------------------
+    system
+        security
+            tls-profile "vns-tls-profile" create
+                shutdown
+            exit
+        exit
+    exit
+#--------------------------------------------------
+echo "Virtual Switch Controller Configuration"
+#--------------------------------------------------
+    vswitch-controller
+        xmpp-server "{{ id }}@{{ (nuage.vsds|count == 1) | ternary('vsd1','xmpp') + '.' + nuage.domain }}"
+    exit
+
+#--------------------------------------------------
+echo "Router (Network Side) Configuration"
+#--------------------------------------------------
+    router
+        interface "control"
+        {% if vsc.control_ip is defined and nuage.networks['data'].netmask is defined %}
+            address {{ ( vsc.control_ip + '/' + nuage.networks['data'].netmask ) | ipaddr() }}
+            no shutdown
+        {% endif %}
+        exit
+        interface "system"
+        {% if vsc.system_ip is defined %}
+            address {{ vsc.system_ip }}/32
+            no shutdown
+        {% else %}
+            shutdown
+        {% endif %}
+        exit
+        autonomous-system {{ as_number }}
+        
+        router-id {{ vsc.system_ip | default(vsc.control_ip) }}
+#--------------------------------------------------
+##echo "Static Route Configuration"
+###--------------------------------------------------
+       
+#--------------------------------------------------
+##echo "BGP Configuration"
+###--------------------------------------------------
+        bgp
+            connect-retry 2
+            min-route-advertisement 1
+            rapid-withdrawal
+            rapid-update evpn
+            outbound-route-filtering
+                extended-community
+                    send-orf
+                exit
+            exit
+            group "internal"
+                type internal
+                {% for vsc_item in groups['vscs'] %}
+                  {% if vsc_item != inventory_hostname %}
+                neighbor {{ hostvars[vsc_item].vsc.control_ip }}
+                exit
+                  {% endif %}
+                {% endfor %}
+                family evpn
+            exit
+        exit
+    exit
+exit
+exit all

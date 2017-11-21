@@ -1,0 +1,44 @@
+---
+
+- hosts: localhost
+  connection: local
+  gather_facts: no
+  roles:
+    - init
+
+- hosts: servers
+  gather_facts: yes
+  roles:
+    - { role: vm-host, tags: [ 'vsd', 'predeploy', 'vsc' ] }
+
+- hosts: vsds
+  gather_facts: no
+  tags: [ 'vsd', 'predeploy' ]
+  tasks:
+    - name: Create VSD Linux VM for {{ id }}
+      include_role:
+        name: vsd
+        tasks_from: create-vm
+      when: not on_vmware
+
+- hosts: vsds
+  serial: 1
+  gather_facts: no
+  roles:
+    - { role: vsd, tags: [ 'vsd', 'install' ] }
+
+- hosts: vscs
+  gather_facts: no
+  tags: [ 'vsc', 'predeploy' ]
+  tasks:
+    - name: Create and configure VSC Linux VM for {{ id }}
+      include_role:
+        name: vsc
+        tasks_from: create-linux-vm
+      when: not on_vmware
+    - name: Create and configure VSC ESXi VM for {{ id }}
+      include_role:
+        name: vsc
+        tasks_from: create-vmware-vm
+      when: on_vmware
+

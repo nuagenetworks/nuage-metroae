@@ -1,0 +1,23 @@
+---
+- block:
+  - name: List the Virtual Machines on {{ host }}
+    virt: command=list_vms
+    register: virt_vms
+  
+  - block:
+    - name: Destroy the VM {{ vm_name }}
+      virt:
+        name: "{{ vm_name }}"
+        state: destroyed
+        uri: qemu:///system
+ 
+    - name: Undefine VM {{ vm_name }}
+      virt:
+        name: "{{ vm_name }}"
+        command: undefine
+        uri: qemu:///system
+    when: vm_name in virt_vms.list_vms
+
+  delegate_to: "{{ host }}"
+  remote_user: "root"
+

@@ -1,0 +1,84 @@
+---
+
+- name: Store Nuage variables in hostvars for localhost
+  set_fact:
+    nuage: "{{ lookup('file','nuage.json')|from_json }}"
+  tags: always
+
+- name: Store default VMWare Datastore
+  set_fact:
+    vmware_ds: "{{ ( nuage.vmware is defined ) | ternary( nuage.vmware.datastore, '' ) }}"
+  tags: always 
+  
+- name: Initialize VSD variables
+  include_role:
+    name: vsd
+    tasks_from: init
+  tags: vsd
+
+- name: Initialize VSC variables
+  include_role:
+    name: vsc
+    tasks_from: init
+  tags: vsc
+
+- name: List VSDs running on VMWare
+  set_fact:
+     vmware_vsds: "{{ nuage.vsds | selectattr('host', 'equalto', nuage.vcenter.ip | default('') ) | list }}"
+  tags: vsd
+  
+- name: Iterate over VSD Linux hosts, add to 'servers'
+  add_host: 
+    name: "{{ item.host }}"
+    groups: servers
+    ansible_user: "{{ nuage.ansible_user | default('root') }}"
+    nuage: "{{ nuage }}"
+  with_items: "{{ nuage.vsds | difference( vmware_vsds ) }}"
+  tags: vsd # Copy&paste code such that we can use tags
+
+- name: List VSCs running on VMWare
+  set_fact:
+     vmware_vscs: "{{ nuage.vscs | selectattr('host', 'equalto', nuage.vcenter.ip | default('') ) | list }}"
+  tags: vsc
+  
+- name: Iterate over VSC Linux hosts, add to 'servers'
+  add_host: 
+    name: "{{ item.host }}"
+    groups: servers
+    ansible_user: "{{ nuage.ansible_user | default('root') }}"
+    nuage: "{{ nuage }}"
+  with_items: "{{ nuage.vscs | difference( vmware_vscs ) }}"
+  tags: vsc
+  
+- name: Create VSD VM hosts
+  add_host: 
+    name: "{{ item.1.mgmt_ip }}"
+    groups: vsds
+    ansible_user: "root"
+    nuage: "{{ nuage }}"
+    vsd: "{{ item.1 }}"
+    id: "{{'vsd%1d' | format(item.0+1) }}"
+    vm_name: "{{'vsd%1d' | format(item.0+1) + '.' + nuage.domain }}"
+    host: "{{ item.1.host }}"
+    on_vmware: "{{ nuage.vcenter is defined and nuage.vcenter.ip == item.1.host }}"
+    mgmt_bridge: "{{ item.1.mgmt_bridge | default( nuage.networks['mgmt'].bridge ) }}"
+  with_indexed_items: "{{ nuage.vsds }}"
+  tags: vsd
+
+- name: Create VSC VM hosts
+  add_host: 
+    name: "{{ item.1.mgmt_ip }}"
+    groups: vscs
+    ansible_user: "admin"
+    nuage: "{{ nuage }}"
+    vsc: "{{ item.1 }}"
+    id: "{{'vsc%02d' | format(item.0+1) }}"
+    index: item.0
+    vm_name: "{{'vsc%02d' | format(item.0+1) + '.' + nuage.domain }}"
+    host: "{{ item.1.host }}"
+    on_vmware: "{{ nuage.vcenter is defined and nuage.vcenter.ip == item.1.host }}"
+    mgmt_bridge: "{{ item.1.mgmt_bridge | default( nuage.networks['mgmt'].bridge ) }}"
+    data_bridge: "{{ item.1.data_bridge | default( nuage.networks['data'].bridge ) }}"
+    vmware_ds: "{{ item.1.vmware_ds | default( vmware_ds ) }}"
+  with_indexed_items: "{{ nuage.vscs }}"
+  tags: vsc
