@@ -122,8 +122,17 @@ if [ "$1" == "destroy" ]; then
   exit $?
 fi
 
-if [ ! -d /files/nuage-unpacked ] || [ "$1" == "unpack" ]; then
+if [[ ! -d /files/nuage-unpacked || (( "$1" == "unpack" && shift )) ]]; then
 ansible-playbook /files/nuage-metro/nuage_unzip.yml $@
+fi
+
+if [ "$1" == "shell" ]; then
+   echo "This is a Docker shell. Use <CTRL>-(p + q) to exit while keeping the container running - alias 'deploy' is defined for your convenience"
+cat > /etc/profile.d/metro.sh << EOF
+alias deploy="cd /files/nuage-metro && ansible-playbook --key-file=/files/id_rsa build.yml && ansible-playbook -i hosts --key-file=/files/id_rsa install_everything.yml"
+EOF
+   /bin/bash
+   exit $?
 fi
 
 cd /files/nuage-metro && \
