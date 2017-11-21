@@ -1,0 +1,20 @@
+---
+
+- name: Gathering info on VSC VM {{ id }}
+  connection: local
+  vmware_guest:
+    hostname: "{{ vsc.host }}"
+    username: "{{ nuage.vcenter.username }}"
+    password: "{{ nuage.vcenter.password }}"
+    name: "{{ vm_name }}"
+    validate_certs: no
+    state: gatherfacts
+  register: vsc_vm_facts
+  ignore_errors: yes
+
+- debug: var=vsc_vm_facts verbosity=1
+
+- name: Verify the VSC VM does not exist
+  assert: 
+    that: "vsc_vm_facts.failed is defined"
+    msg: "VM {{ vm_name }} already exists, quiting"
