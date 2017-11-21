@@ -51,14 +51,14 @@
   tags: vsc
   
 - name: Create VSD VM hosts
-  add_host: 
-    name: "{{ item.1.mgmt_ip }}"
+  add_host:
+    name: "{{'vsd%1d' | format(item.0+1) + '.' + nuage.domain }}"
+    ip: "{{ item.1.mgmt_ip }}"
     groups: vsds
     ansible_user: "root"
     nuage: "{{ nuage }}"
     vsd: "{{ item.1 }}"
-    id: "{{'vsd%1d' | format(item.0+1) }}"
-    vm_name: "{{'vsd%1d' | format(item.0+1) + '.' + nuage.domain }}"
+    id: "{{'vsd%1d' | format(item.0+1) }}" 
     host: "{{ item.1.host }}"
     on_vmware: "{{ nuage.vcenter is defined and nuage.vcenter.ip == item.1.host }}"
     mgmt_bridge: "{{ item.1.mgmt_bridge | default( nuage.networks['mgmt'].bridge ) }}"
@@ -66,15 +66,15 @@
   tags: vsd
 
 - name: Create VSC VM hosts
-  add_host: 
-    name: "{{ item.1.mgmt_ip }}"
+  add_host:
+    name: "{{'vsc%02d' | format(item.0+1) + '.' + nuage.domain }}"
+    ip: "{{ item.1.mgmt_ip }}"
     groups: vscs
     ansible_user: "admin"
     nuage: "{{ nuage }}"
     vsc: "{{ item.1 }}"
     id: "{{'vsc%02d' | format(item.0+1) }}"
     index: item.0
-    vm_name: "{{'vsc%02d' | format(item.0+1) + '.' + nuage.domain }}"
     host: "{{ item.1.host }}"
     on_vmware: "{{ nuage.vcenter is defined and nuage.vcenter.ip == item.1.host }}"
     mgmt_bridge: "{{ item.1.mgmt_bridge | default( nuage.networks['mgmt'].bridge ) }}"

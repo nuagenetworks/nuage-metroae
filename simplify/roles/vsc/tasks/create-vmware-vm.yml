@@ -6,7 +6,7 @@
     hostname: "{{ vsc.host }}"
     username: "{{ nuage.vcenter.username }}"
     password: "{{ nuage.vcenter.password }}"
-    name: "{{ vm_name }}"
+    name: "{{ name }}"
     validate_certs: no
     state: gatherfacts
   register: vsc_vm_facts
@@ -17,7 +17,7 @@
 - name: Verify the VSC VM does not exist
   assert: 
     that: "vsc_vm_facts.failed is defined"
-    msg: "VM {{ vm_name }} already exists, quiting"
+    msg: "VM {{ name }} already exists, quiting"
 
 - name: Deploy VSC Image on vCenter
   connection: local
@@ -29,7 +29,7 @@
     --machineOutput
     -dm=thin
     -ds={{ vmware_ds }}
-    -n={{ vm_name }}
+    -n={{ name }}
     --net:"Management Network={{ mgmt_bridge }}"
     --net:"Datapath Network={{ data_bridge }}"
     --prop:"DHCP=False"
@@ -82,7 +82,7 @@
     hostname: "{{ vsc.host }}"
     username: "{{ vcenter.username }}"
     password: "{{ vcenter.password }}"
-    name: "{{ vm_name }}"
+    name: "{{ name }}"
     validate_certs: no
   register: vsc_vm_facts
 
@@ -91,7 +91,7 @@
 - name: Verify VM is running
   assert:
     that: "not vsc_vm_facts.failed"
-    msg: "VSC VM {{ vm_name }} is not created"
+    msg: "VSC VM {{ name }} is not created"
 
 - block:
   - name: Wait for VSC ssh to be ready
