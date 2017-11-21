@@ -1,0 +1,186 @@
+- name: Set Top-Level-Directory
+  set_fact: tld="{{ role_path }}/../../"
+
+#- name: Add CSP root to CMS users group
+#  local_action: command python {{ role_path }}/files/cms_group.py {{ tld }} {{ vsd_mgmt_ip }}
+#  register: output
+#  # TOOD: replace with call to nuage_vspk module
+
+- name: Find the upgrade tar file
+  find:
+    paths: "{{ plugin_dir }}/{{ inventory_hostname }}/"
+    patterns: "nuage-openstack-upgrade-*.tar.gz"
+  register: tar_file
+
+- name: Create temporary directory to hold nuage openstack plugins
+  file: path={{ plugin_dir }}/{{ inventory_hostname }} state=directory
+  remote_user: "root"
+
+- name: Create temporary directory to hold upgrade scripts
+  remote_user: "root"
+  file: path={{ plugin_dir }}/{{ inventory_hostname }}/upgrade state=directory
+
+- name: Copy Nuage OS plugins to temporary directory
+  copy:
+    src: "{{ nuage_os_package_path }}/{{ nuage_os_release }}/{{ nuage_target_architecture }}/{{ item }}"
+    dest: "{{ plugin_dir }}/{{ inventory_hostname }}/{{ item }}"
+  remote_user: "root"
+  with_items: "{{ nuage_os_package_file_name_list }}"
+
+- name: Find Nuage upgrade tar file
+  find:
+    paths: "{{ nuage_os_package_path }}/"
+    patterns: "nuage-openstack-upgrade-*.tar.gz"
+  register: tar_file
+  delegate_to: 127.0.0.1
+
+- name: Copy Nuage upgrade tar file to temporary directory
+  copy: src={{ tar_file.files[0].path }} dest={{ plugin_dir }}/{{ inventory_hostname }}/
+  remote_user: "root"
+
+#- name: Install Nuage OS plugins
+#  yum:
+#    name: "{{ plugin_dir }}/{{ inventory_hostname }}/{{ item }}"
+#    state: present
+#  with_items: "{{ nuage_os_package_file_name_list }}"
+#  remote_user: "root"
+#
+## BEGIN Horizon changes
+#- name: Configure Horizon Extensions
+#  lineinfile:
+#    dest: /usr/share/openstack-dashboard/openstack_dashboard/local/local_settings.py
+#    insertafter: UNAUTHORIZED},
+#    line: "    'customization_module': 'nuage_horizon.customization',"
+#  remote_user: "root"
+#
+#- name: Configure Horizon extension
+#  blockinfile:
+#    path: /etc/httpd/conf.d/15-horizon_vhost.conf
+#    insertafter: "## Alias declarations for resources outside the DocumentRoot"
+#    content: |
+#      #dummy
+#        Alias /dashboard/static/nuage "/usr/lib/python2.7/site-packages/nuage_horizon/static"
+#        <Directory /usr/lib/python2.7/site-packages/nuage_horizon>
+#          Options FollowSymLinks
+#          AllowOverride None
+#          Require all granted
+#        </Directory>
+#  remote_user: root
+#
+#- name: Comment nuage css part from horizon settings
+#  lineinfile:
+#    dest: "/usr/lib/python2.7/site-packages/nuage_horizon/dashboards/project/dashboard.py"
+#    regexp: "horizon.Horizon._conf['scss_files'].append('nuage/css/nuage.scss')"
+#    line: "#horizon.Horizon._conf['scss_files'].append('nuage/css/nuage.scss')"
+#  remote_user: "root"
+## END Horizon changes 
+#
+#- name: Restart httpd
+#  service:
+#    name: httpd
+#    state: restarted
+#  remote_user: "root"
+#
+## BEGIN Nova changes
+#- name: Configure nova to use neutron
+#  lineinfile:
+#    dest: /etc/nova/nova.conf
+#    insertafter: "[DEFAULT]"
+#    line: 'use_neutron = True'
+#
+#- name: Set ovs bridge to alubr0 in nova
+#  lineinfile:
+#    dest: /etc/nova/nova.conf
+#    regexp: 'ovs_bridge='
+#    line: 'ovs_bridge = alubr0'
+#  remote_user: "root"
+## END Nova changes
+#
+## BEGIN Neutron changes
+#- name: Create dir for nuage plugin in neutron folder
+#  file:
+#    path: "/etc/neutron/plugins/nuage"
+#    state: directory
+#  remote_user: "root"
+#
+#- name: Copy ini contents to created file
+#  template:
+#    src=nuage_plugin.ini.j2
+#    dest=/etc/neutron/plugins/nuage/nuage_plugin.ini
+#  remote_user: "root"
+#
+#- name: Remove neutron plugin file
+#  file:
+#    path: "/etc/neutron/plugin.ini"
+#    state: absent
+#  remote_user: "root"
+#
+#- name: Create symbolic link
+#  file:
+#    src: /etc/neutron/plugins/nuage/nuage_plugin.ini
+#    dest: /etc/neutron/plugin.ini
+#    state: link
+#  remote_user: root
+#
+#- name: Set core plugin in neutron to nuage
+#  lineinfile:
+#    dest: /etc/neutron/neutron.conf
+#    regexp: 'core_plugin='
+#    line: 'core_plugin = ml2'
+#  remote_user: "root"
+#
+#- name: Set service plugin in neutron to nuage
+#  lineinfile:
+#    dest: /etc/neutron/neutron.conf
+#    regexp: 'service_plugins='
+#    line: 'service_plugins = NuageL3, NuageAPI, NuagePortAttributes'
+#  remote_user: "root"
+#
+#- name: Edit ml2_conf.ini
+#  blockinfile:
+#    path: /etc/neutron/plugins/ml2/ml2_conf.ini
+#    insertafter: "#mechanism_drivers ="
+#    content: |
+#      mechanism_drivers = nuage
+#      extension_drivers = nuage_subnet, nuage_port, port_security
+#
+#- name: Run the DB migration script
+#  #shell: su -s /bin/sh -c "neutron-db-manage --config-file /etc/neutron/neutron.conf upgrade head" neutron
+#  shell: "{{ upgrade_db_cmd }}"
+## END Neutron Changes
+#
+#- name: Stop OS neutron services
+#  service:
+#    name: "{{ item }}"
+#    state: stopped
+#  remote_user: "root"
+#  with_items: "{{ neutron_services }}"
+#
+#- name: Disable OS neutron services
+#  service:
+#    name: "{{ item }}"
+#    enabled: no
+#  remote_user: "root"
+#  with_items: "{{ neutron_services }}"
+#
+#- name: Find the upgrade tar file
+#  find:
+#    paths: "{{ plugin_dir }}/{{ inventory_hostname }}/"
+#    patterns: "nuage-openstack-upgrade-*.tar.gz"
+#  register: tar_file
+#
+#- name: Extract upgrade scripts to folder
+#  shell: "tar xvfz {{ tar_file.files[0].path }} -C {{ plugin_dir }}/{{ inventory_hostname }}/upgrade"
+#  remote_user: "root"
+#
+#- name: Integrate OSC with VSD
+#  command: "{{ generate_cms_id }}"
+#  args:
+#    chdir: "{{ plugin_dir }}/{{ inventory_hostname }}/upgrade"
+#  remote_user: "root"
+#
+#- name: Restart neutron service
+#  service:
+#    name: neutron-server
+#    state: restarted
+#  remote_user: "root"
