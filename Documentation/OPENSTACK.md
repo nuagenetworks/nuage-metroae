@@ -43,7 +43,7 @@ The user may be depoying the OpenStack plugin from a tar-gz archive. The archive
 
 ### VSD-OSC intergration
 
-`vsd-osc-config` role helps to integrate OSC with VSD by making necessary changes to horizon and nuetron plugin files. It will also add csproot user to CMS group on VSD.
+`os-vsd-osc-integration` role helps to integrate OSC with VSD by making necessary changes to horizon and nuetron plugin files. It will also add csproot user to CMS group on VSD.
 
 ### Snapshots and backup
 
@@ -207,7 +207,13 @@ For reference, here is a description of the contents of the `build-vars.yml` fil
 #          # INFRA server vm fqdn name. This is optional. If not set, user has to take care of DNS entries.
 #          infra_server_name: infra.example.com }
 #
-#    OSC
+#    OpenStack Controller params
+#    osc_operations_list = A list of the operations you intend for the ES node. The
+#    list could include only one option from the following:
+#    - install or
+#    - integrate_with_vsd
+#    # osc_operations_list:
+#      - install
 #    # A dictionary of params for 1 OSC
 #    myoscs:
 #          # The fqdn of this OSC instance
@@ -229,8 +235,8 @@ For reference, here is a description of the contents of the `build-vars.yml` fil
 #          osc_subnet: osc_subnet,
 #          # OpenStack release num
 #          # This is used for RedHat images to download OpenStack release related packages
-#          # Possible and supported values 8 (Liberty) and 9 (Mitaka) 
-#          os_release_num: 8, 
+#          # Possible and supported values 10 (Newton) and 11 (Ocata) 
+#          os_release_num: 11, 
 #          # VSD IP. This is later used in a rest proxy config file to integrate OSC with VSD
 #          # Required when dhcp is set to False
 #          vsd_ip: 192.168.10.20,
@@ -265,8 +271,8 @@ For reference, here is a description of the contents of the `build-vars.yml` fil
 #          compute_data_subnet: data_subnet,
 #          # OpenStack release num
 #          # This is used for RedHat images to download OpenStack release related packages
-#          # Possible and supported values 8 (Liberty) and 9 (Mitaka) 
-#          os_release_num: 8, 
+#          # Possible and supported values 10 (Newton) and 11 (Ocata) 
+#          os_release_num: 11, 
 #          # OSC Serer name. FQDN of the OpenStack Controller
 #          osc_server_name: osc1.example.com,
 #          # Primary vsc controller IP. This is used to configure VRS on the computes
