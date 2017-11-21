@@ -5,10 +5,10 @@ configure
 echo "System Configuration"
 #--------------------------------------------------
     system
-        name {{ system_name | default(inventory_hostname) }}
+        name {{ id }}
         time
             ntp
-            {% for ntp_server in ntp_server_list %}
+            {% for ntp_server in nuage.ntp_server_list %}
                 server {{ ntp_server }}
             {% endfor %}
                 no shutdown
@@ -29,7 +29,7 @@ echo "System Configuration"
 echo "Virtual Switch Controller Configuration"
 #--------------------------------------------------
     vswitch-controller
-        xmpp-server "{{ xmpp.username }}@{{ vsd_fqdn }}"
+        xmpp-server "{{ id }}@{{ (nuage.vsds|count == 1) | ternary('vsd1','xmpp') + '.' + nuage.domain }}"
     exit
 
 #--------------------------------------------------
@@ -37,43 +37,37 @@ echo "Router (Network Side) Configuration"
 #--------------------------------------------------
     router
         interface "control"
-        {% if control_ip is defined and control_netmask_prefix is defined %}
-            address {{ control_ip }}/{{ control_netmask_prefix }}
+        {% if vsc.control_ip is defined and nuage.networks['data'].prefix is defined %}
+            address {{ vsc.control_ip }}/{{ nuage.networks['data'].prefix }}
             no shutdown
         {% endif %}
         exit
         interface "system"
-        {% if system_ip is defined %}
-            address {{ system_ip }}/32
+        {% if vsc.system_ip is defined %}
+            address {{ vsc.system_ip }}/32
             no shutdown
         {% else %}
             shutdown
         {% endif %}
         exit
-        {% if as_number %}
-        autonomous-system {{ as_number }}
+        {% if nuage.as_number is defined %}
+        autonomous-system {{ nuage.as_number }}
         {% endif %}
-        {% if system_ip is defined %}
-        router-id {{ system_ip }}
+        {% if vsc.system_ip is defined %}
+        router-id {{ vsc.system_ip }}
         {% endif %}
 #--------------------------------------------------
 ##echo "Static Route Configuration"
 ###--------------------------------------------------
-        {% for vsc_item in groups['vscs'] %}
-          {% if vsc_item != inventory_hostname %}
-            {% if hostvars[vsc_item].system_ip is defined %}
-              {% if hostvars[vsc_item].system_ip != system_ip | default('') %}
-        static-route {{ hostvars[vsc_item].system_ip }}/32 next-hop {{ hostvars[vsc_item].control_ip }}
-              {% endif %}
-            {% endif %}
-          {% endif %}
-        {% endfor %}
+       
 #--------------------------------------------------
 ##echo "BGP Configuration"
 ###--------------------------------------------------
         bgp
             connect-retry 2
             min-route-advertisement 1
+            rapid-withdrawal
+            rapid-update evpn
             outbound-route-filtering
                 extended-community
                     send-orf
@@ -83,12 +77,8 @@ echo "Router (Network Side) Configuration"
                 type internal
                 {% for vsc_item in groups['vscs'] %}
                   {% if vsc_item != inventory_hostname %}
-                    {% if hostvars[vsc_item].system_ip is defined %}
-                      {% if hostvars[vsc_item].system_ip != system_ip %}
-                neighbor {{ hostvars[vsc_item].system_ip }}
+                neighbor {{ hostvars[vsc_item].vsc.control_ip }}
                 exit
-                      {% endif %}
-                    {% endif %}
                   {% endif %}
                 {% endfor %}
                 family evpn
