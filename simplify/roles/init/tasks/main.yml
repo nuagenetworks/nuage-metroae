@@ -3,11 +3,13 @@
 - name: Store Nuage variables in hostvars for localhost
   set_fact:
     nuage: "{{ lookup('file','nuage.json')|from_json }}"
+  tags: always
 
 - name: Initialize VSD variables
   include_role:
     name: vsd
     tasks_from: init
+  tags: vsd
 
 - name: Iterate over VSD and VSC hosts
   add_host: 
@@ -18,6 +20,7 @@
   with_items: 
   - "{{ nuage.vsds }}"
   - "{{ nuage.vscs }}"
+  tags: [ 'vsd', 'vsc' ]
 
 - name: Create VSD VM hosts
   add_host: 
@@ -31,6 +34,7 @@
     host: "{{ item.1.host }}"
     mgmt_bridge: "{{ item.1.mgmt_bridge | default( nuage.networks['mgmt'].bridge ) }}"
   with_indexed_items: "{{ nuage.vsds }}"
+  tags: vsd
 
 - name: Create VSC VM hosts
   add_host: 
@@ -43,3 +47,4 @@
     vm_name: "{{'vsc%02d' | format(item.0+1) + '.' + nuage.domain }}"
     host: "{{ item.1.host }}"
   with_indexed_items: "{{ nuage.vscs }}"
+  tags: vsc
