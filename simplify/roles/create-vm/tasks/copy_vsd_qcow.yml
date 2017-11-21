@@ -1,0 +1,27 @@
+---
+
+- block:
+  - name: Copy VSD QCOW2 variables locally
+    set_fact:
+      vsd_qcow2_path: "{{ hostvars['localhost'].vsd_qcow2_path }}"
+      vsd_qcow2_file_name: "{{ hostvars['localhost'].vsd_qcow2_file_name }}"
+  - name: Copy VSD qcow to all VSD hosts, once per host, but only if it does not exist ( TODO upgrades -> include version number )
+    copy: src="{{ vsd_qcow2_path }}/{{ vsd_qcow2_file_name }}"
+          dest="{{ nuage.images_path }}/vsd.qcow2"
+          force=no
+  - name: Get list of partitions
+    shell: "guestfish -r -a {{ nuage.images_path }}/vsd.qcow2 run : list-filesystems | grep -Ev '(unknown|swap)'"
+    register: partitions_list
+
+  - name: Check partition content
+    shell: "guestfish -r -a {{ nuage.images_path }}/vsd.qcow2 run : mount {{ item.split(':')[0] }} / : ls /"
+    register: partitions
+    with_items: "{{ partitions_list.stdout_lines }}"
+
+  - name: Find root partition
+    set_fact:
+      guestfish_mount: "{{ item.item.split(':')[0]}}"
+    with_items: "{{ partitions.results }}"
+    when: '"proc" in item.stdout'
+
+  delegate_to: "{{ vsd_host }}"

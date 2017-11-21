@@ -1,8 +1,11 @@
 ---
 
-- name: Include OS specific variables (TODO move to vm-host role)
+- name: Include OS specific variables
   include_vars: "{{ hostvars[vsd.host].ansible_os_family }}.yml"
-   
+
+- include_tasks: copy_vsd_qcow.yml vsd_host="{{item}}"
+  with_items: "{{ nuage.vsds | map(attribute='host') | list | unique }}"
+  
 - name: Set VSD VM name
   set_fact: vm_name="{{ id + "." + nuage.domain }}"
 
