@@ -11,6 +11,12 @@
     tasks_from: init
   tags: vsd
 
+- name: Initialize VSC variables
+  include_role:
+    name: vsc
+    tasks_from: init
+  tags: vsc
+  
 - name: Iterate over VSD hosts, add to 'servers'
   add_host: 
     name: "{{ item.host }}"
@@ -51,7 +57,10 @@
     nuage: "{{ nuage }}"
     vsc: "{{ item.1 }}"
     id: "{{'vsc%02d' | format(item.0+1) }}"
+    index: item.0
     vm_name: "{{'vsc%02d' | format(item.0+1) + '.' + nuage.domain }}"
     host: "{{ item.1.host }}"
+    mgmt_bridge: "{{ item.1.mgmt_bridge | default( nuage.networks['mgmt'].bridge ) }}"
+    data_bridge: "{{ item.1.data_bridge | default( nuage.networks['data'].bridge ) }}"
   with_indexed_items: "{{ nuage.vscs }}"
   tags: vsc

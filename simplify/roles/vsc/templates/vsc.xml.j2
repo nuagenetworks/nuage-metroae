@@ -1,0 +1,72 @@
+<domain type='kvm'>
+  <name>{{ vm_name }}</name>
+  <description>Timos VM</description>
+  <memory>{{ vsc_ram }}</memory>
+  <currentMemory>{{ vsc_ram }}</currentMemory>
+  <vcpu current='{{vsc_vcpus}}'>{{vsc_vcpus}}</vcpu>
+  <cputune>
+    {% for c in range(0,vsc_vcpus-1) %}
+    <vcpupin vcpu='{{c}}' cpuset='{{ vsc_vcpus*index + c}}'/>
+    {% endfor %}
+  </cputune>
+  <os>
+    <type arch='x86_64'>hvm</type>
+    <smbios mode='sysinfo'/>
+  </os>
+  <sysinfo type='smbios'>
+    <system>
+      <entry name='product'>Nuage Networks Virtual Services Controller</entry>
+    </system>
+  </sysinfo>
+  <features>
+    <apic/>
+  </features>
+  <cpu>
+    <topology sockets='{{vsc_vcpus}}' cores='1' threads='1'/>
+  </cpu>
+  <clock offset='utc'>
+    <timer name='pit' tickpolicy='catchup'/>
+    <timer name='rtc' tickpolicy='catchup'/>
+  </clock>
+  <on_poweroff>destroy</on_poweroff>
+  <on_reboot>restart</on_reboot>
+  <on_crash>coredump-destroy</on_crash>
+  <devices>
+    <emulator>{{ libvirt.emulator }}</emulator>
+    <controller type='ide' index='0'>
+      <alias name='ide0'/>
+      <address type='pci' domain='0x0000' bus='0x00' slot='0x01' function='0x1'/>
+    </controller>
+    <controller type='usb' index='0'>
+      <alias name='usb0'/>
+      <address type='pci' domain='0x0000' bus='0x00' slot='0x01' function='0x2'/>
+    </controller>
+    <disk type='file' device='disk' snapshot='no'>
+      <driver name='qemu' type='qcow2' cache='writethrough'/>
+      <source file='{{ nuage.images_path }}/{{ vm_name }}/{{ qcow_name }}'/>
+      <target dev='hda' bus='ide'/>
+      <boot order='1'/>
+    </disk>
+    <interface type='bridge'>
+      <source bridge='{{ mgmt_bridge }}'/>
+      <model type='virtio'/>
+      <address type='pci' domain='0x0000' bus='0x00' slot='0x03' function='0x0'/>
+    </interface>
+    <interface type='bridge'>
+      <source bridge='{{ data_bridge }}'/>
+      <model type='virtio'/>
+      <address type='pci' domain='0x0000' bus='0x00' slot='0x04' function='0x0'/>
+    </interface>
+    <serial type='pty'>
+      <source path='/dev/pts/1'/>
+      <target port='0'/>
+      <alias name='serial0'/>
+    </serial>
+    <console type='pty' tty='/dev/pts/1'>
+      <source path='/dev/pts/1'/>
+      <target type='serial' port='0'/>
+      <alias name='serial0'/>
+    </console>
+    </devices>
+  <seclabel type='none'/>
+</domain>

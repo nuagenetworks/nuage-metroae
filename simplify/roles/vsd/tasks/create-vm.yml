@@ -1,7 +1,12 @@
 ---
 
 - name: Include OS specific variables
-  include_vars: "{{ hostvars[vsd.host].ansible_os_family }}.yml"
+  include_role: 
+    name: vm-host
+    tasks_from: check-resources
+    vars_from: "{{ hostvars[vsd.host].ansible_os_family }}.yml"
+    vars:
+       ram: "24G"
 
 - include_tasks: copy_vsd_qcow.yml
   with_items: "{{ nuage.vsds | map(attribute='host') | list | unique }}"
@@ -9,7 +14,7 @@
     loop_var: vsd_host
   run_once: true
   
-- name: Set VSD VM name and QCow image name
+- name: Set VSD VM name and Qcow image name
   set_fact:
     qcow_name: "{{hostvars['localhost'].vsd_qcow2_file_name}}"
 
