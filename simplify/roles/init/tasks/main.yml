@@ -16,23 +16,31 @@
     name: vsc
     tasks_from: init
   tags: vsc
+
+- name: List VSDs running on VMWare
+  set_fact:
+     vmware_vsds: "{{ nuage.vsds | selectattr("host", "equalto", nuage.vcenter.ip | default('') ) }}"
   
-- name: Iterate over VSD hosts, add to 'servers'
+- name: Iterate over VSD Linux hosts, add to 'servers'
   add_host: 
     name: "{{ item.host }}"
     groups: servers
     ansible_user: "{{ nuage.ansible_user | default('root') }}"
     nuage: "{{ nuage }}"
-  with_items: "{{ nuage.vsds }}"
+  with_items: "{{ nuage.vsds | difference( vmware_vsds ) }}"
   tags: vsd # Copy&paste code such that we can use tags
 
-- name: Iterate over VSC hosts, add to 'servers'
+- name: List VSCs running on VMWare
+  set_fact:
+     vmware_vscs: "{{ nuage.vscs | selectattr("host", "equalto", nuage.vcenter.ip | default('') ) }}"
+  
+- name: Iterate over VSC Linux hosts, add to 'servers'
   add_host: 
     name: "{{ item.host }}"
     groups: servers
     ansible_user: "{{ nuage.ansible_user | default('root') }}"
     nuage: "{{ nuage }}"
-  with_items: "{{ nuage.vscs }}"
+  with_items: "{{ nuage.vscs | difference( vmware_vscs ) }}"
   tags: vsc
   
 - name: Create VSD VM hosts
@@ -45,6 +53,7 @@
     id: "{{'vsd%1d' | format(item.0+1) }}"
     vm_name: "{{'vsd%1d' | format(item.0+1) + '.' + nuage.domain }}"
     host: "{{ item.1.host }}"
+    on_vmware: "{{ nuage.vcenter is defined and nuage.vcenter.ip == item.1.host }}"
     mgmt_bridge: "{{ item.1.mgmt_bridge | default( nuage.networks['mgmt'].bridge ) }}"
   with_indexed_items: "{{ nuage.vsds }}"
   tags: vsd
@@ -60,6 +69,7 @@
     index: item.0
     vm_name: "{{'vsc%02d' | format(item.0+1) + '.' + nuage.domain }}"
     host: "{{ item.1.host }}"
+    on_vmware: "{{ nuage.vcenter is defined and nuage.vcenter.ip == item.1.host }}"
     mgmt_bridge: "{{ item.1.mgmt_bridge | default( nuage.networks['mgmt'].bridge ) }}"
     data_bridge: "{{ item.1.data_bridge | default( nuage.networks['data'].bridge ) }}"
   with_indexed_items: "{{ nuage.vscs }}"
