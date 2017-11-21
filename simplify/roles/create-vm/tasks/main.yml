@@ -10,8 +10,7 @@
   run_once: true
   
 - name: Set VSD VM name and QCow image name
-  set_fact: 
-    vm_name: "{{ id + "." + nuage.domain }}"
+  set_fact:
     qcow_name: "{{hostvars['localhost'].vsd_qcow2_file_name}}"
 
 - name: List the Virtual Machines running
@@ -44,7 +43,7 @@
           group={{ libvirt.group }}
 
   - name: Set fact to capture guestfish command
-    set_fact: guestfish_cmd="guestfish --rw -a {{ nuage.images_path }}/{{ vm_name }}/{{ qcow_name }} -m {{ hostvars[vsd.host].guestfish_mount }}"
+    set_fact: guestfish_cmd="guestfish --rw -a {{ nuage.images_path }}/{{ vm_name }}/{{ qcow_name }} -m {{ hostvars[ groups['vsds'][0] ].guestfish_mount }}"
 
   - name: Create a temporary copy of the network script for eth0
     template: src=ifcfg-eth0.j2 backup=no dest={{ nuage.images_path }}/{{ vm_name }}/ifcfg-eth0

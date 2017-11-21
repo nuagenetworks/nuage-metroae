@@ -12,17 +12,19 @@
   - name: Get list of partitions
     shell: "guestfish -r -a {{ nuage.images_path }}/{{ vsd_qcow2_file_name }} run : list-filesystems | grep -Ev '(unknown|swap)'"
     register: partitions_list
+    changed_when: false
 
   - name: Check partition content
     shell: "guestfish -r -a {{ nuage.images_path }}/{{ vsd_qcow2_file_name }} run : mount {{ item.split(':')[0] }} / : ls /"
     register: partitions
     with_items: "{{ partitions_list.stdout_lines }}"
+    changed_when: false
 
   - name: Find root partition
     set_fact:
       guestfish_mount: "{{ item.item.split(':')[0]}}"
     with_items: "{{ partitions.results }}"
     when: '"proc" in item.stdout'
+    changed_when: false
 
   delegate_to: "{{ vsd_host }}"
-  delegate_facts: True
