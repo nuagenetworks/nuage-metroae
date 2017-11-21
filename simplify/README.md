@@ -9,7 +9,7 @@ with the way metro is built up that make things much harder than they need to be
 * Support for KVM, VMWare
 
 ## Points needing improvement
-* Significant duplication of code and logic, cumbersome 'roles' structure, ,multiple inconsistent default values
+* Significant duplication of code and logic, cumbersome 'roles' structure, multiple inconsistent default values in some cases
 * Indirect build-up of inventory and variable files means adding parameters/features affects many different files ( build/templates, build-upgrade/templates, etc. )
 * Duplicate and potentially inconsistent semantics as to what the user wants to do ( playbook selected, 'operations' parameter in Yaml, tags/limits applied, etc. )
 * Many conditional tasks which get skipped ( clobbered output )
