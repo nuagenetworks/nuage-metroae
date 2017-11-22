@@ -7,6 +7,7 @@
   register: vsc_server
   delegate_to: 127.0.0.1
 
+# JvB note that this assumes the VSC is managed through bof, typically the case but not always
 - name: Set vsc mgmt ip
   set_fact:
     vsc_mgmt_ip: "{{ vsc_server['ansible_facts']['openstack_servers'][0]['networks'][vsc_mgmt_network][0] }}"
@@ -15,16 +16,9 @@
   set_fact:
     vsc_control_ip: "{{ vsc_server['ansible_facts']['openstack_servers'][0]['networks'][vsc_control_network][0] }}"
 
-- name: Set VSC creds
-  set_fact:
-    heat_vsc_creds:
-      host: "{{ vsc_mgmt_ip }}"
-      username: "{{ vsc_user|default('admin') }}"
-      password: "{{ vsc_password|default('admin') }}"
-
 - name: Clean known_hosts of VSC's
   known_hosts:
-    name: "{{ vsc_mgmt_ip }}"
+    name: "{{ hostname }}"
     state: absent
   delegate_to: localhost
 
@@ -74,7 +68,7 @@
 - name: Loading system config
   sros_config:
     src: config.cfg.j2
-    provider: "{{ heat_vsc_creds }}"
+    provider: "{{ vsc_creds }}"
     save: yes
   delegate_to: localhost
 
@@ -86,7 +80,7 @@
       - bof dns-domain "{{ dns_domain }}"
       - bof save "cf1:"
       - admin save
-    provider: "{{ heat_vsc_creds }}"
+    provider: "{{ vsc_creds }}"
   delegate_to: localhost
 
 - name: Reboot VSC VM

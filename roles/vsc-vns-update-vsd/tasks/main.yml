@@ -1,0 +1,34 @@
+---
+- block:
+  - name: Change XMPP connection to TLS on VSD
+    command: /opt/vsd/bin/ejmode allow -y
+
+  - block:
+    - name: Download pip installer through proxy {{ yum_proxy }}
+      command: curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
+
+    - name: Execute pip installer through proxy
+      command: python get-pip.py
+
+    - name: Install pexpect on VSD1 {{ groups['vsds'][0] }}
+      pip:
+        name: pexpect
+
+    when: inventory_hostname == groups['vsds'][0]
+    environment:
+      http_proxy:  "{{ (yum_proxy!='NONE') | ternary(yum_proxy,'') }}"
+      https_proxy: "{{ (yum_proxy!='NONE') | ternary(yum_proxy,'') }}"
+
+  - name: wait for ejabberd-status to become running
+    monit_waitfor_service:
+      name: "ejabberd-status"
+      timeout_seconds: 600
+      test_interval_seconds: 30
+
+  - name: wait for ejbca-status to become running
+    monit_waitfor_service:
+      name: "ejbca-status"
+      timeout_seconds: 600
+      test_interval_seconds: 30
+
+  remote_user: root
