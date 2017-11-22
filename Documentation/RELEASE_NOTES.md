@@ -6,6 +6,7 @@
 * In vrs-postdeploy, better regex to determine ovs-vtep ip in case VSC is routed via default route, or indirect route
 * For VSC, vsc_mgmt_static_route_list is now optional for cases where no static route list is required.
 * Skip VSD predeploy and deploy when already present.
+* Add installation of nuage-selinux packages.
 ### Resolved Issues
 * Eliminate check for exactly 3 XMPP users
 * Allow NSGV MAC address to be set
