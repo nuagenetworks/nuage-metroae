@@ -40,7 +40,25 @@
    - libvirt
    - qemu-kvm
    - python-six
-  when: ansible_os_family == "RedHat"
+  when: ansible_os_family == "RedHat" and not avrs
+
+- block:
+  - name: Disable SELinux ( may need to reboot host for this to take effect! )
+    selinux: state=disabled
+  - name: Install Linux-headers
+    yum: name=kernel-headers-{{ ansible_kernel }},kernel-devel-{{ ansible_kernel }} state=present disable_gpg_check=true
+  - name: Install DKMS 
+    yum: name=dkms state=latest disable_gpg_check=true
+  - name: Install 6Wind repo
+    yum: name="http://repo.6wind.com/rpm/6wind-public-1.0-1.noarch.rpm" state=present disable_gpg_check=true
+    environment:
+      http_proxy: "{{ yum_proxy }}"
+  - name: Install libvirt packages
+    yum: name=qemu-kvm-rhev,libvirt,libvirt-python state=latest disable_gpg_check=true
+  - name: Restart libvirtd
+    service: name=libvirtd state=restarted
+  remote_user: "{{ target_server_username }}"
+  when: ansible_os_family == "RedHat" and avrs
 
 - name: Upgrade all packages on Debian OS family distros
   remote_user: "{{ target_server_username }}"

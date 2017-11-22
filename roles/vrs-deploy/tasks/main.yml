@@ -11,6 +11,13 @@
   remote_user: "{{ target_server_username }}"
   copy: src={{ vrs_package_path }}/{{ item }} dest={{ temp_dir }}/{{ inventory_hostname }}/{{ item }}
   with_items: "{{ vrs_package_file_name_list }}"
+  when: not avrs
+
+- name: Copy AVRS packages to temporary directory for Redhat OS Family Distros
+  remote_user: "{{ target_server_username }}"
+  copy: src={{ item }} dest={{ temp_dir }}/{{ inventory_hostname }}/{{ item | basename }}
+  with_items: "{{ el7_avrs_package_files + el7_avrs_package_6wind_files + el7_avrs_package_6wind_va_files }}"
+  when: ansible_os_family == "RedHat" and avrs
 
 - name: Copy Selinux packages to temporary directory for RHEL7 and Centos7
   remote_user: "{{ target_server_username }}"
@@ -25,12 +32,23 @@
    - "{{ vrs_package_file_name_list }}"
   when: ansible_os_family == "Debian" 
 
+- name: Remove any conflicting OpenVSwitch packages on RedHat OS family distros ( may break connectivity... )
+  remote_user: "{{ target_server_username }}"
+  yum: name="openvswitch*" state=absent
+  when: ansible_os_family == "RedHat"
+
 - name: Install Nuage OpenVSwitch packages on RedHat OS family distros
   remote_user: "{{ target_server_username }}"
   yum: name={{ temp_dir }}/{{ inventory_hostname }}/{{ item }} state=present
   with_items:
    - "{{ vrs_package_file_name_list }}"
-  when: ansible_os_family == "RedHat"
+  when: ansible_os_family == "RedHat" and not avrs
+
+- name: Install AVRS packages using DKMS - may take several minutes...
+  yum: name={{ temp_dir }}/{{ inventory_hostname }}/{{ item | basename }} state=present
+  with_items: "{{ el7_avrs_package_6wind_files + el7_avrs_package_files + el7_avrs_package_6wind_va_files }}"
+  remote_user: "{{ target_server_username }}"
+  when: ansible_os_family == "RedHat" and avrs
 
 - name: Install Selinux package for RHEL7 and Centos7
   remote_user: "{{ target_server_username }}"
@@ -78,10 +96,25 @@
     line: "STANDBY_CONTROLLER={{ standby_controller_addr }}"
   when: ansible_os_family == "Debian"
 
+- name: Update PERSONALITY to avrs
+  remote_user: "{{ target_server_username }}"
+  lineinfile:
+    dest: /etc/default/openvswitch
+    regexp: ^PERSONALITY
+    line: "PERSONALITY=avrs"
+  when: ansible_os_family == "RedHat" and avrs
+
 - name: Restart OpenVSwitch Service on RedHat OS family distros
   remote_user: "{{ target_server_username }}"
   service: name=openvswitch state=restarted
-  when: ansible_os_family == "RedHat"
+  when: ansible_os_family == "RedHat" and not avrs
+
+- block:
+  - service: name=virtual-accelerator state=restarted
+  - service: name=openvswitch state=restarted
+  - service: name=libvirtd state=restarted
+  remote_user: "{{ target_server_username }}"
+  when: ansible_os_family == "RedHat" and avrs
 
 - name: Restart OpenVSwitch Service on Debian OS family distros
   remote_user: "{{ target_server_username }}"
