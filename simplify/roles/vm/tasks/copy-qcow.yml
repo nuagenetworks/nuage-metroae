@@ -1,5 +1,21 @@
 ---
 
+- name: Find name of QCOW2 File
+  find: path="{{ nuage.unzipped_files_dir }}/{{ vm_role }}/qcow2"  pattern="*.qcow2" recurse=yes
+  register: qcow_file
+
+- debug: var=qcow_file verbosity=1
+
+- name: Verify that a QCOW2 file was found
+  assert: {
+    that: "{{ qcow_file.matched }} > 0",
+    msg: "Unable to find VM image file for {{ vm_role }}"
+  }
+
+- name: Register QCOW2 location
+  set_fact:
+    src: "{{ qcow_file.files[0].path }}"
+
 - block:
   - name: Copy VM qcow to all hosts, once per host, but only if it does not exist
     copy: src="{{ src }}"

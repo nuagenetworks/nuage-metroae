@@ -1,12 +1,24 @@
 ---
 
 - name: Include OS specific variables
-  include_vars: "../../vm-host/vars/{{ hostvars[vsc.host].ansible_os_family }}.yml"
+  include_vars: "../../vm-host/vars/{{ hostvars[host].ansible_os_family }}.yml"
 
+- name: Find name of VSC QCOW2 File
+  find: path="{{ nuage.unzipped_files_dir }}/vsc"  pattern="vsc_singledisk.qcow2" recurse=yes
+  register: rc_vsc_file
+
+- debug: var=rc_vsc_file verbosity=1
+
+- name: Verify that a VSC QCOW2 file was found
+  assert: {
+    that: "{{ rc_vsc_file.matched }} > 0",
+    msg: "Unable to find VSC VM image file"
+  }
+ 
 - name: Set VSC VM name and Qcow image name
   set_fact:
     vm_name: "{{ inventory_hostname }}"
-    qcow_name: "{{hostvars['localhost'].vsc_qcow2_file_name}}"
+    qcow_name: "{{ rc_vsc_file.files[0].path | basename }}"
 
 - name: List the Virtual Machines running
   virt: command=list_vms
@@ -31,7 +43,7 @@
           group={{ libvirt.group }}
 
   - name: Copy the VSC qcow image to virt images directory, remotely
-    copy: src={{ hostvars['localhost'].vsc_qcow2_path }}/{{ qcow_name }}
+    copy: src={{ rc_vsc_file.files[0].path }}
           dest={{ nuage.images_path }}/{{ vm_name }}/{{ qcow_name }}
           owner={{ libvirt.user }}
           group={{ libvirt.group }}

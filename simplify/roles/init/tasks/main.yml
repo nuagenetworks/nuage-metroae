@@ -6,6 +6,11 @@
     set_fact:
       nuage: "{{ lookup('file','nuage.json') | regex_replace( '[^:]//(.*)' ) | from_json }}"
 
+  - name: Check for valid VSD configuration
+    assert:
+      that: (nuage.vsds | length == 1) or (nuage.vsds | length == 3)
+      msg:  "A VSD config must consist of either 1 or 3 nodes"
+
   - name: Store default VMWare Datastore
     set_fact:
       vmware_ds: "{{ ( nuage.vcenter is defined ) | ternary( nuage.vcenter.datastore | default(''), '' ) }}"
@@ -14,27 +19,25 @@
 - name: Process VSD hosts
   include_tasks: add-hosts.yml
   vars:
-    vm_role: 'vsd'
     vms: "{{ nuage.vsds }}"
-    vm_hostname: "{{ vsd_cluster|ternary( 'vsd%1d', 'vsd' ) }}"
+    vm_hostname: "{{ (nuage.vsds | length == 3) | ternary( 'vsd%1d', 'vsd' ) }}"
     group: "vsds"
   tags: vsd
   
 - name: Process VSC hosts
   include_tasks: add-hosts.yml
   vars:
-    vm_role: 'vsc'
     vms: "{{ nuage.vscs }}"
     vm_hostname: 'vsc%02d'
     ansible_user: "admin"
     group: "vscs"
   tags: vsc
 
-- name: Process ES hosts
+- name: Process ES hosts (optional)
   include_tasks: add-hosts.yml
   vars:
-    vm_role: 'es'
     vms: "{{ nuage.stats }}"
     vm_hostname: 'es%1d'
     group: "ess"
   tags: es
+  when: nuage.stats is defined
