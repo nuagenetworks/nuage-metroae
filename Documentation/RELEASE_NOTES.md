@@ -5,7 +5,7 @@
 * In vrs-health, look for interfaces connected to alubr0 instead of named tap*
 * In vrs-postdeploy, better regex to determine ovs-vtep ip in case VSC is routed via default route, or indirect route
 * For VSC, vsc_mgmt_static_route_list is now optional for cases where no static route list is required.
-* Skip VSD predeploy and deploy when already present.
+* Skip predeploy and deploy when already present, allowing, for example, re-running install_everything multiple times.
 * Add installation of nuage-selinux packages.
 ### Resolved Issues
 * Eliminate check for exactly 3 XMPP users
