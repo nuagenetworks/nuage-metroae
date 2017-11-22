@@ -17,8 +17,12 @@
   tasks:
     - name: Create VSD Linux VM for {{ inventory_hostname }}
       include_role:
-        name: vsd
-        tasks_from: create-vm
+        name: vm
+        tasks_from: create-kvm
+      vars:
+        hosts: "{{ nuage.vsds | map(attribute='host') | list | unique }}"
+        src: "{{ hostvars['localhost'].vsd_qcow2 }}"
+        template: "vsd.xml.j2"
       when: not on_vmware
 
 - hosts: vsds

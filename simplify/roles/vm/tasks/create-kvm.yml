@@ -1,23 +1,23 @@
 ---
 
 - name: Include OS specific variables
-  include_vars: "../../vm-host/vars/{{ hostvars[vsd.host].ansible_os_family }}.yml"
+  include_vars: "../../vm-host/vars/{{ hostvars[host].ansible_os_family }}.yml"
 
-- include_tasks: copy_vsd_qcow.yml
-  with_items: "{{ nuage.vsds | map(attribute='host') | list | unique }}"
+- include_tasks: copy-qcow.yml
+  with_items: "{{ hosts }}"
   loop_control:
-    loop_var: vsd_host
+    loop_var: vm_host
   run_once: true
   
 - name: Set VSD VM name and Qcow image name
   set_fact:
     vm_name: "{{ inventory_hostname }}"
-    qcow_name: "{{hostvars['localhost'].vsd_qcow2_file_name}}"
+    qcow_name: "{{ src | basename }}"
 
 - name: List the Virtual Machines running
   virt: command=list_vms
   register: virt_vms
-  delegate_to: "{{ vsd.host }}"
+  delegate_to: "{{ host }}"
   remote_user: "root"
 
 - name: Set fact to check if VSD VM is running
@@ -110,7 +110,7 @@
   - name: "Define new VSD VM"
     virt: name="{{ vm_name }}"
           command=define
-          xml="{{ lookup('template', 'vsd.xml.j2') }}"
+          xml="{{ lookup('template', template) }}"
           uri=qemu:///system
 
   - name: "Run VSD VM"
@@ -132,5 +132,5 @@
 
 ## JvB condition for the whole block 
   when: "not vsd_running"
-  delegate_to: "{{ vsd.host }}"
+  delegate_to: "{{ host }}"
   remote_user: "root"  
