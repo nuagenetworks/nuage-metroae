@@ -1,0 +1,13 @@
+---
+
+- name: List VMs running on VMWare
+  set_fact:
+     vmware_vms: "{{ vms | selectattr('host', 'equalto', nuage.vcenter.ip | default('') ) | list }}"
+  
+- name: Iterate over Linux hosts, add to 'servers'
+  add_host: 
+    name: "{{ item.host }}"
+    groups: servers
+    ansible_user: "{{ nuage.ansible_user | default('root') }}"
+    nuage: "{{ nuage }}"
+  with_items: "{{ vms | difference( vmware_vms ) }}"
