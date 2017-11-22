@@ -1,9 +1,10 @@
 ---
 
 - block:
+
   - name: Store Nuage variables in hostvars for localhost, allow '//' for comments
     set_fact:
-      nuage: "{{ lookup('file','nuage.json') | regex_replace( '[^:]//.*$' ) | from_json }}"
+      nuage: "{{ lookup('file','nuage.json') | regex_replace( '[^:]//(.*)' ) | from_json }}"
 
   - name: Store default VMWare Datastore
     set_fact:
@@ -22,33 +23,23 @@
     tasks_from: init
   tags: vsc
 
-- name: List VSDs running on VMWare
-  set_fact:
-     vmware_vsds: "{{ nuage.vsds | selectattr('host', 'equalto', nuage.vcenter.ip | default('') ) | list }}"
+- name: Process VSD hosts
+  include_tasks: add-hosts.yml
+  vars: 
+    vms: "{{ nuage.vsds }}"
   tags: vsd
   
-- name: Iterate over VSD Linux hosts, add to 'servers'
-  add_host: 
-    name: "{{ item.host }}"
-    groups: servers
-    ansible_user: "{{ nuage.ansible_user | default('root') }}"
-    nuage: "{{ nuage }}"
-  with_items: "{{ nuage.vsds | difference( vmware_vsds ) }}"
-  tags: vsd # Copy&paste code such that we can use tags
+- name: Process VSC hosts
+  include_tasks: add-hosts.yml
+  vars: 
+    vms: "{{ nuage.vscs }}"
+  tags: vsc
 
-- name: List VSCs running on VMWare
-  set_fact:
-     vmware_vscs: "{{ nuage.vscs | selectattr('host', 'equalto', nuage.vcenter.ip | default('') ) | list }}"
-  tags: vsc
-  
-- name: Iterate over VSC Linux hosts, add to 'servers'
-  add_host: 
-    name: "{{ item.host }}"
-    groups: servers
-    ansible_user: "{{ nuage.ansible_user | default('root') }}"
-    nuage: "{{ nuage }}"
-  with_items: "{{ nuage.vscs | difference( vmware_vscs ) }}"
-  tags: vsc
+- name: Process ES hosts
+  include_tasks: add-hosts.yml
+  vars: 
+    vms: "{{ nuage.stats }}"
+  tags: es
   
 - name: Create VSD VM hosts
   add_host:
