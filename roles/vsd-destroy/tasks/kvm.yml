@@ -36,13 +36,18 @@
   remote_user: "{{ target_server_username }}"
   when: vm_name in virt_vms.list_vms
 
-- block:
-  - name: Undefine VSD VM
-    virt:
-      name: "{{ vm_name }}"
-      command: undefine
-      uri: qemu:///system
-    delegate_to: "{{ target_server }}"
-    remote_user: "{{ target_server_username }}"
-  when: vm_name in virt_vms.list_vms and (not nuage_upgrade or destroy_upgrade_vm | default( False ))
+- name: Undefine VSD VM
+  virt:
+    name: "{{ vm_name }}"
+    command: undefine
+    uri: qemu:///system
+  delegate_to: "{{ target_server }}"
+  remote_user: "{{ target_server_username }}"
+  when: vm_name in virt_vms.list_vms and ((not nuage_upgrade|default(False)) or (destroy_upgrade_vm|default( False )))
 
+- name: Delete vsd libvirt image directory and contents
+  file: path={{ images_path }}/{{ vm_name }}
+        state=absent
+  delegate_to: "{{ target_server }}"
+  remote_user: "{{ target_server_username }}"
+  when: (not nuage_upgrade|default( False )) or (destroy_upgrade_vm|default( False ))

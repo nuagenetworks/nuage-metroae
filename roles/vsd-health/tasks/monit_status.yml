@@ -1,5 +1,19 @@
 - name: Get monit summary for vsd processes
-  vsd_monit: 
+  vsd_monit:
+    group: all
+  register: vsd_proc_pre
+  remote_user: root
+
+- name: wait for VSD common, core and stats services to become running
+  monit_waitfor_service:
+    name: "{{ item }}"
+    timeout_seconds: 1200
+    test_interval_seconds: 30
+  with_items: "{{ vsd_proc_pre['state'].keys() }}"
+  remote_user: "root"
+
+- name: Get monit summary for vsd processes
+  vsd_monit:
     group: all
   register: vsd_proc
   remote_user: root
@@ -9,5 +23,5 @@
 
 - name: Write vsd monit status to json file
   nuage_append: filename="{{ report_path }}" text="{{ inventory_hostname }} {{ vsd_proc.state | to_nice_json}}\n"
-  delegate_to: "{{ ansible_deployment_host }}"
-  remote_user: "{{ ansible_sudo_username }}"
+  delegate_to: localhost
+  

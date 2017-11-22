@@ -1,25 +1,21 @@
 ---
-- name: Ping VSD hostname
-  command: ping -c 1 {{ hostname }}
-  ignore_errors: yes
-  register: ping_result
-  delegate_to: localhost
 
-- name: Assert no response to ping of VSD hostname
-  assert:
-    that: "ping_result.rc != 0"
-    msg:  "Someone responded to ping of VSD hostname. Quitting."
+- include_role:
+    name: check-node-reachability
 
-- name: Ping VSD IP address
-  command: ping -c 1 {{ mgmt_ip }}
-  ignore_errors: yes
-  register: ping_result
-  delegate_to: localhost
+- name: Get VSD directory stat
+  stat:
+    path: /opt/vsd
+  remote_user: root
+  register: vsd_dir
+  when: node_reachable
 
-- name: Assert no response to ping of VSD IP address
-  assert:
-    that: "ping_result.rc != 0"
-    msg:  "Someone responded to ping of VSD IP address. Quitting."
+- name: Set fact for VSD present
+  set_fact:
+    vsd_present: "{{ vsd_dir is defined and
+                     vsd_dir.stat is defined and
+                     vsd_dir.stat.isdir is defined and
+                     vsd_dir.stat.isdir }}"
 
 - include: kvm.yml
   when: target_server_type | match("kvm")
