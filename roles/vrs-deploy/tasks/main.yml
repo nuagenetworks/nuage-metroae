@@ -3,6 +3,16 @@
   remote_user: "{{ target_server_username }}"
   action: setup
 
+- name: Set openvswitch file on RedHat OS family distros
+  set_fact:
+    openvswitch_file: "/etc/default/openvswitch"
+  when: ansible_os_family == "RedHat"
+
+- name: Set openvswitch file on Debian OS family distros
+  set_fact:
+    openvswitch_file: "/etc/default/openvswitch-switch"
+  when: ansible_os_family == "Debian"
+
 - name: Check whether active controller address is already configured
   command: grep -Fq "ACTIVE_CONTROLLER={{ active_controller_addr }}" {{ openvswitch_file }}
   remote_user: "{{ target_server_username }}"
