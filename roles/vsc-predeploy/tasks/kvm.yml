@@ -66,100 +66,108 @@
   delegate_to: "{{ target_server }}"
   remote_user: "{{ target_server_username }}"
 
-- name: List the Virtual Machines
-  virt: command=list_vms
-  register: virt_vms
-  delegate_to: "{{ target_server }}"
-  remote_user: "{{ target_server_username }}"
+- name: Set local variable with vmname
+  set_fact:
+    vm_name: "{{ vmname }}"
 
-- name: Verify that the VM is not already running
-  assert:
-    that: "vmname not in virt_vms.list_vms"
-    msg: "{{ vmname }} is already running on {{ target_server }}"
+- include_role:
+    name: check-node-running
 
-- name: Include OS-specific variables.
-  include_vars: "{{ ansible_os_family }}.yml"
-
-- name: Create VSC directory
-  file: path={{ images_path }}/{{ vmname }} state=directory owner={{ libvirt.user }} group={{ libvirt.group }}
-  delegate_to: "{{ target_server }}"
-  remote_user: "{{ target_server_username }}"
-
-- name: Copy VSC qcow2 image to {{ target_server }}
-  copy: src={{ vsc_qcow2_path }}/{{ vsc_qcow2_file_name }} dest={{ images_path }}/{{ vmname }}/{{ inventory_hostname }}.qcow2 owner={{ libvirt.user }} group={{ libvirt.group }}
-  delegate_to: "{{ target_server }}"
-  remote_user: "{{ target_server_username }}"
-
-- name: Setup VSC temporary configuration files
-  template: src={{ item }}.j2 backup=no dest={{ images_path }}/{{ vmname }}/{{ item }}
-  delegate_to: "{{ target_server }}"
-  with_items:
-    - bof.cfg
-    - config.cfg
-  remote_user: "{{ target_server_username }}"
-
-- name: Copy temporary configuration files to the VSC image
-  command: guestfish --rw -a {{ images_path }}/{{ vmname }}/{{ inventory_hostname }}.qcow2 -m {{ vsc_partition }} copy-in {{ images_path }}/{{ vmname }}/{{ item }} /
-  delegate_to: "{{ target_server }}"
-  with_items:
-    - bof.cfg
-    - config.cfg
-  remote_user: "{{ target_server_username }}"
-
-- name: Remove temporary configuration files
-  file: path={{ images_path }}/{{ vmname }}/{{ item }} state=absent
-  delegate_to: "{{ target_server }}"
-  with_items:
-    - bof.cfg
-    - config.cfg
-  remote_user: "{{ target_server_username }}"
-
-- name: Define VSC guest VM
-  virt: name={{ vmname }}
-        command=define
-        xml="{{ lookup('template', 'vsc.xml.j2') }}"
-        uri=qemu:///system
-  delegate_to: "{{ target_server }}"
-  remote_user: "{{ target_server_username }}"
-
-- name: Mark VSC as autostart
-  virt: name={{ vmname }}
-        state=running
-        autostart=True
-        uri=qemu:///system
-  delegate_to: "{{ target_server }}"
-  remote_user: "{{ target_server_username }}"
-  when: ansible_version.full | version_compare('2.3', '>=')
+- name: Display if skipping VSC predeploy
+  debug:
+    msg:
+      - "****************************************************"
+      - "Skipping VSC predeploy because it is already present"
+      - "****************************************************"
+  when: vsc_present
 
 - block:
-  - name: "Configure VM to autostart"
-    command: virsh autostart {{ vmname }}
+
+  - name: Include OS-specific variables.
+    include_vars: "{{ ansible_os_family }}.yml"
+
+  - name: Create VSC directory
+    file: path={{ images_path }}/{{ vmname }} state=directory owner={{ libvirt.user }} group={{ libvirt.group }}
     delegate_to: "{{ target_server }}"
     remote_user: "{{ target_server_username }}"
 
-  - name: "Run VSC VM"
-    virt: name="{{ vmname }}"
-          state=running
+  - name: Copy VSC qcow2 image to {{ target_server }}
+    copy: src={{ vsc_qcow2_path }}/{{ vsc_qcow2_file_name }} dest={{ images_path }}/{{ vmname }}/{{ inventory_hostname }}.qcow2 owner={{ libvirt.user }} group={{ libvirt.group }}
+    delegate_to: "{{ target_server }}"
+    remote_user: "{{ target_server_username }}"
+
+  - name: Setup VSC temporary configuration files
+    template: src={{ item }}.j2 backup=no dest={{ images_path }}/{{ vmname }}/{{ item }}
+    delegate_to: "{{ target_server }}"
+    with_items:
+      - bof.cfg
+      - config.cfg
+    remote_user: "{{ target_server_username }}"
+
+  - name: Copy temporary configuration files to the VSC image
+    command: guestfish --rw -a {{ images_path }}/{{ vmname }}/{{ inventory_hostname }}.qcow2 -m {{ vsc_partition }} copy-in {{ images_path }}/{{ vmname }}/{{ item }} /
+    delegate_to: "{{ target_server }}"
+    with_items:
+      - bof.cfg
+      - config.cfg
+    remote_user: "{{ target_server_username }}"
+
+  - name: Remove temporary configuration files
+    file: path={{ images_path }}/{{ vmname }}/{{ item }} state=absent
+    delegate_to: "{{ target_server }}"
+    with_items:
+      - bof.cfg
+      - config.cfg
+    remote_user: "{{ target_server_username }}"
+
+  - name: Define VSC guest VM
+    virt: name={{ vmname }}
+          command=define
+          xml="{{ lookup('template', 'vsc.xml.j2') }}"
           uri=qemu:///system
     delegate_to: "{{ target_server }}"
     remote_user: "{{ target_server_username }}"
-  when: ansible_version.full | version_compare('2.3', '<')
 
-- name: Get updated VM information from {{ target_server }}
-  virt: command=info
-  register: virt_info
-  delegate_to: "{{ target_server }}"
-  remote_user: "{{ target_server_username }}"
+  - name: Mark VSC as autostart
+    virt: name={{ vmname }}
+          state=running
+          autostart=True
+          uri=qemu:///system
+    delegate_to: "{{ target_server }}"
+    remote_user: "{{ target_server_username }}"
+    when: ansible_version.full | version_compare('2.3', '>=')
 
-- name: Verify that VSC VM is running
-  assert: { that: "virt_info['{{ vmname }}']['state'] == 'running'" }
-  delegate_to: "{{ target_server }}"
-  remote_user: "{{ target_server_username }}"
+  - block:
+    - name: "Configure VM to autostart"
+      command: virsh autostart {{ vmname }}
+      delegate_to: "{{ target_server }}"
+      remote_user: "{{ target_server_username }}"
 
-- name: Wait for VSC ssh to be ready
-  local_action:
-    module: wait_for
-    port: "22"
-    host: "{{ mgmt_ip }}"
-    search_regex: OpenSSH
-    delay: 1
+    - name: "Run VSC VM"
+      virt: name="{{ vmname }}"
+            state=running
+            uri=qemu:///system
+      delegate_to: "{{ target_server }}"
+      remote_user: "{{ target_server_username }}"
+    when: ansible_version.full | version_compare('2.3', '<')
+
+  - name: Get updated VM information from {{ target_server }}
+    virt: command=info
+    register: virt_info
+    delegate_to: "{{ target_server }}"
+    remote_user: "{{ target_server_username }}"
+
+  - name: Verify that VSC VM is running
+    assert: { that: "virt_info['{{ vmname }}']['state'] == 'running'" }
+    delegate_to: "{{ target_server }}"
+    remote_user: "{{ target_server_username }}"
+
+  - name: Wait for VSC ssh to be ready
+    local_action:
+      module: wait_for
+      port: "22"
+      host: "{{ mgmt_ip }}"
+      search_regex: OpenSSH
+      delay: 1
+
+  when: not vsc_present
