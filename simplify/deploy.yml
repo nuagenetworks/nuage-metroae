@@ -22,7 +22,6 @@
       vars:
         vm_role: "vsd"
         hosts:  "{{ nuage.vsds | map(attribute='host') | list | unique }}"
-        src:    "{{ hostvars['localhost'].vsd_qcow2 }}"
         vcpus:  "{{ vsd_vcpus }}"
         ram_gb: "{{ vsd_ram_gb }}"
       when: not on_vmware
@@ -47,4 +46,19 @@
         name: vsc
         tasks_from: create-vmware-vm
       when: on_vmware
+
+- hosts: ess
+  gather_facts: no
+  tags: [ 'es', 'predeploy' ]
+  tasks:
+    - name: Create ES Linux VM for {{ inventory_hostname }}
+      include_role:
+        name: vm
+        tasks_from: create-kvm
+      vars:
+        vm_role: "es"
+        hosts:  "{{ nuage.stats | map(attribute='host') | list | unique }}"
+        vcpus:  "{{ es_vcpus }}"
+        ram_gb: "{{ es_ram_gb }}"
+      when: not on_vmware
 
