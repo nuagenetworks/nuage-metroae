@@ -1,17 +1,13 @@
 ---
 
-#
-# Tried allowing for comments using "| regex_replace( '//.*$' )" but no luck
-#
+- block:
+  - name: Store Nuage variables in hostvars for localhost, allow '//' for comments
+    set_fact:
+      nuage: "{{ lookup('file','nuage.json') | regex_replace( '[^:]//.*$' ) | from_json }}"
 
-- name: Store Nuage variables in hostvars for localhost
-  set_fact:
-    nuage: "{{ lookup('file','nuage.json') | from_json }}"
-  tags: always
-
-- name: Store default VMWare Datastore
-  set_fact:
-    vmware_ds: "{{ ( nuage.vcenter is defined ) | ternary( nuage.vcenter.datastore | default(''), '' ) }}"
+  - name: Store default VMWare Datastore
+    set_fact:
+      vmware_ds: "{{ ( nuage.vcenter is defined ) | ternary( nuage.vcenter.datastore | default(''), '' ) }}"
   tags: always 
   
 - name: Initialize VSD variables
