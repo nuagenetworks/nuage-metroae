@@ -9,66 +9,32 @@
   - name: Store default VMWare Datastore
     set_fact:
       vmware_ds: "{{ ( nuage.vcenter is defined ) | ternary( nuage.vcenter.datastore | default(''), '' ) }}"
-  tags: always 
-  
-- name: Initialize VSD variables
-  include_role:
-    name: vsd
-    tasks_from: init
-  tags: vsd
-
-- name: Initialize VSC variables
-  include_role:
-    name: vsc
-    tasks_from: init
-  tags: vsc
+  tags: always
 
 - name: Process VSD hosts
   include_tasks: add-hosts.yml
-  vars: 
+  vars:
+    vm_role: 'vsd'
     vms: "{{ nuage.vsds }}"
+    vm_hostname: "{{ vsd_cluster|ternary( 'vsd%1d', 'vsd' ) }}"
+    group: "vsds"
   tags: vsd
   
 - name: Process VSC hosts
   include_tasks: add-hosts.yml
-  vars: 
+  vars:
+    vm_role: 'vsc'
     vms: "{{ nuage.vscs }}"
+    vm_hostname: 'vsc%02d'
+    ansible_user: "admin"
+    group: "vscs"
   tags: vsc
 
 - name: Process ES hosts
   include_tasks: add-hosts.yml
-  vars: 
+  vars:
+    vm_role: 'es'
     vms: "{{ nuage.stats }}"
+    vm_hostname: 'es%1d'
+    group: "ess"
   tags: es
-  
-- name: Create VSD VM hosts
-  add_host:
-    name: "{{ vsd_cluster|ternary( 'vsd%1d' | format(item.0+1), 'vsd' ) + '.' + nuage.domain }}"
-    ip: "{{ item.1.mgmt_ip }}"
-    groups: vsds
-    ansible_user: "root"
-    nuage: "{{ nuage }}"
-    vsd: "{{ item.1 }}"
-    host: "{{ item.1.host }}"
-    on_vmware: "{{ nuage.vcenter is defined and nuage.vcenter.ip == item.1.host }}"
-    mgmt_bridge: "{{ item.1.mgmt_bridge | default( nuage.networks['mgmt'].bridge ) }}"
-  with_indexed_items: "{{ nuage.vsds }}"
-  tags: vsd
-
-- name: Create VSC VM hosts
-  add_host:
-    name: "{{'vsc%02d' | format(item.0+1) + '.' + nuage.domain }}"
-    ip: "{{ item.1.mgmt_ip }}"
-    groups: vscs
-    ansible_user: "admin"
-    nuage: "{{ nuage }}"
-    vsc: "{{ item.1 }}"
-    id: "{{'vsc%02d' | format(item.0+1) }}"
-    index: item.0
-    host: "{{ item.1.host }}"
-    on_vmware: "{{ nuage.vcenter is defined and nuage.vcenter.ip == item.1.host }}"
-    mgmt_bridge: "{{ item.1.mgmt_bridge | default( nuage.networks['mgmt'].bridge ) }}"
-    data_bridge: "{{ item.1.data_bridge | default( nuage.networks['data'].bridge ) }}"
-    vmware_ds: "{{ item.1.vmware_ds | default( vmware_ds ) }}"
-  with_indexed_items: "{{ nuage.vscs }}"
-  tags: vsc

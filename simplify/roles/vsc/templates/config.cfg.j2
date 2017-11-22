@@ -5,7 +5,7 @@ configure
 echo "System Configuration"
 #--------------------------------------------------
     system
-        name {{ id }}
+        name {{ inventory_hostname_short }}
         time
             ntp
             {% for ntp_server in nuage.ntp_server_list %}
@@ -29,7 +29,7 @@ echo "System Configuration"
 echo "Virtual Switch Controller Configuration"
 #--------------------------------------------------
     vswitch-controller
-        xmpp-server "{{ id }}@{{ (nuage.vsds|count == 1) | ternary('vsd','xmpp') + '.' + nuage.domain }}"
+        xmpp-server "{{ inventory_hostname_short }}@{{ (nuage.vsds|count == 1) | ternary('vsd','xmpp') + '.' + nuage.domain }}"
     exit
 
 #--------------------------------------------------
@@ -37,14 +37,14 @@ echo "Router (Network Side) Configuration"
 #--------------------------------------------------
     router
         interface "control"
-        {% if vsc.control_ip is defined and nuage.networks['data'].netmask is defined %}
-            address {{ ( vsc.control_ip + '/' + nuage.networks['data'].netmask ) | ipaddr() }}
+        {% if vm.control_ip is defined and nuage.networks['data'].netmask is defined %}
+            address {{ ( vm.control_ip + '/' + nuage.networks['data'].netmask ) | ipaddr() }}
             no shutdown
         {% endif %}
         exit
         interface "system"
-        {% if vsc.system_ip is defined %}
-            address {{ vsc.system_ip }}/32
+        {% if vm.system_ip is defined %}
+            address {{ vm.system_ip }}/32
             no shutdown
         {% else %}
             shutdown
@@ -52,7 +52,7 @@ echo "Router (Network Side) Configuration"
         exit
         autonomous-system {{ as_number }}
         
-        router-id {{ vsc.system_ip | default(vsc.control_ip) }}
+        router-id {{ vm.system_ip | default(vm.control_ip) }}
 #--------------------------------------------------
 ##echo "Static Route Configuration"
 ###--------------------------------------------------
@@ -74,7 +74,7 @@ echo "Router (Network Side) Configuration"
                 type internal
                 {% for vsc_item in groups['vscs'] %}
                   {% if vsc_item != inventory_hostname %}
-                neighbor {{ hostvars[vsc_item].vsc.control_ip }}
+                neighbor {{ hostvars[vsc_item].vm.control_ip }}
                 exit
                   {% endif %}
                 {% endfor %}

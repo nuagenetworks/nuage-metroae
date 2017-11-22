@@ -1,5 +1,10 @@
 ---
 
+- name: Initialize VM role variables
+  include_role:
+    name: "{{ vm_role }}"
+    tasks_from: init
+
 - name: List VMs running on VMWare
   set_fact:
      vmware_vms: "{{ vms | selectattr('host', 'equalto', nuage.vcenter.ip | default('') ) | list }}"
@@ -11,3 +16,17 @@
     ansible_user: "{{ nuage.ansible_user | default('root') }}"
     nuage: "{{ nuage }}"
   with_items: "{{ vms | difference( vmware_vms ) }}"
+  
+- name: Create inventory hosts representing VMs
+  add_host:
+    name: "{{ vm_hostname | format(item.0+1) + '.' + nuage.domain }}"
+    ip: "{{ item.1.mgmt_ip }}"
+    groups: "{{ $group }}"
+    ansible_user: "{{ ansible_user | default('root') }}"
+    nuage: "{{ nuage }}"
+    vm: "{{ item.1 }}"
+    host: "{{ item.1.host }}"
+    on_vmware: "{{ nuage.vcenter is defined and nuage.vcenter.ip == item.1.host }}"
+    mgmt_bridge: "{{ item.1.mgmt_bridge | default( nuage.networks['mgmt'].bridge ) }}"
+    data_bridge: "{{ item.1.data_bridge | default( nuage.networks['data'].bridge ) }}"
+  with_indexed_items: "{{ vms }}"
