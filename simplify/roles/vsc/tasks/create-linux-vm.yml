@@ -6,6 +6,7 @@
 - name: Find name of VSC QCOW2 File
   find: path="{{ nuage.unzipped_files_dir }}/vsc"  pattern="vsc_singledisk.qcow2" recurse=yes
   register: rc_vsc_file
+  delegate_to: localhost
 
 - debug: var=rc_vsc_file verbosity=1
 
@@ -23,7 +24,7 @@
 - name: List the Virtual Machines running
   virt: command=list_vms
   register: virt_vms
-  delegate_to: "{{ vsc.host }}"
+  delegate_to: "{{ host }}"
   remote_user: "root"
 
 - name: Set fact to check if VSC VM is running
@@ -33,7 +34,7 @@
 - name: Verify that the VSC VM is not already running ( add 'keep_existing_vms' to skip this check )
   assert:
     that: not vsc_running|bool or keep_existing_vms | default(false)
-    msg: "{{ vm_name }} is already running on {{ vsc.host }}"
+    msg: "{{ vm_name }} is already running on {{ host }}"
 
 - block:
   - name: Create libvirt image directory
@@ -79,17 +80,7 @@
           uri=qemu:///system
     when: ansible_version.full | version_compare('2.3', '>=')
 
-  - block:
-    - name: "Configure VM to autostart"
-      command: virsh autostart {{ vm_name }}
-
-    - name: "Run VSC VM"
-      virt: name="{{ vm_name }}"
-            state=running
-            uri=qemu:///system
-    when: ansible_version.full | version_compare('2.3', '<')
-
 ## JvB condition for the whole block 
   when: "not vsc_running"
-  delegate_to: "{{ vsc.host }}"
+  delegate_to: "{{ host }}"
   remote_user: "root"  
