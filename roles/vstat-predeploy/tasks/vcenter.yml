@@ -1,4 +1,9 @@
 ---
+- name: Check for Ansible version >= 2.4
+  assert:
+    that: "ansible_version.major == 2 and ansible_version.minor >= 4"
+    msg:  "Only Ansible version >= 2.4 is supported for VMware deployment, you are using {{ansible_version.full}}"
+
 - block:
   - name: Verify that upgrade_vmname is defined if this is an upgrade
     assert:
@@ -56,48 +61,18 @@
       "{{ vstat_ova_or_ovf_path }}/{{ vstat_ova_or_ovf_file_name }}"
       {{ vcenter_path }}
 
-  - block:
-    - name: Waiting until VMware tools becomes available
-      connection: local
-      vmware_guest_tools_wait:
-        hostname: "{{ target_server }}"
-        username: "{{ vcenter.username }}"
-        password: "{{ vcenter.password }}"
-        name: "{{ vm_name }}"
-        datacenter: "{{ vcenter.datacenter }}"
-        validate_certs: no
-      register: vstat_vm_facts
+  - name: Waiting until VMware tools becomes available
+    connection: local
+    vmware_guest_tools_wait:
+      hostname: "{{ target_server }}"
+      username: "{{ vcenter.username }}"
+      password: "{{ vcenter.password }}"
+      name: "{{ vm_name }}"
+      datacenter: "{{ vcenter.datacenter }}"
+      validate_certs: no
+    register: vstat_vm_facts
 
-    - debug: var=vstat_vm_facts verbosity=1
-    when: ansible_version.full | version_compare('2.3', '>=')
-
-  - block:
-    - name: Waiting 120 seconds to make sure the VSTAT is up
-      pause:
-        seconds: 120
-
-    - name: Gathering info on VM
-      connection: local
-      vmware_guest:
-        hostname: "{{ target_server }}"
-        username: "{{ vcenter.username }}"
-        password: "{{ vcenter.password }}"
-        name: "{{ vm_name }}"
-        datacenter: "{{ vcenter.datacenter }}"
-        state: gatherfacts
-        validate_certs: no
-      register: vstat_vm_facts
-
-    - debug: var=vstat_vm_facts verbosity=1
-
-    - name: Verify the Stats VM came up correctly
-      assert:
-        that:
-          - "vstat_vm_facts.instance.hw_guest_id is defined"
-          - "not vstat_vm_facts.instance.hw_guest_id is none"
-          - "not vstat_vm_facts.instance.hw_guest_id == ''"
-        msg: "Stats VM {{ inventory_hostname }} did not come up after two minutes"
-    when: ansible_version.full | version_compare('2.3', '<')
+  - debug: var=vstat_vm_facts verbosity=1
 
   - name: Writing eth0 network script file to the Stats VM
     connection: local
@@ -108,7 +83,7 @@
       datacenter: "{{ vcenter.datacenter }}"
       cluster: "{{ vcenter.cluster }}"
       validate_certs: no
-      vm_id: "{{ vmid }}"
+      vm_id: "{{ vm_name }}"
       vm_username: "{{ vmuser }}"
       vm_password: "{{ vmpass }}"
       vm_shell: "/usr/bin/echo"
@@ -123,7 +98,7 @@
       datacenter: "{{ vcenter.datacenter }}"
       cluster: "{{ vcenter.cluster }}"
       validate_certs: no
-      vm_id: "{{ vmid }}"
+      vm_id: "{{ vm_name }}"
       vm_username: "{{ vmuser }}"
       vm_password: "{{ vmpass }}"
       vm_shell: "/usr/bin/chown"
@@ -138,7 +113,7 @@
       datacenter: "{{ vcenter.datacenter }}"
       cluster: "{{ vcenter.cluster }}"
       validate_certs: no
-      vm_id: "{{ vmid }}"
+      vm_id: "{{ vm_name }}"
       vm_username: "{{ vmuser }}"
       vm_password: "{{ vmpass }}"
       vm_shell: "/usr/bin/echo"
@@ -153,7 +128,7 @@
       datacenter: "{{ vcenter.datacenter }}"
       cluster: "{{ vcenter.cluster }}"
       validate_certs: no
-      vm_id: "{{ vmid }}"
+      vm_id: "{{ vm_name }}"
       vm_username: "{{ vmuser }}"
       vm_password: "{{ vmpass }}"
       vm_shell: "/usr/bin/chown"
@@ -168,7 +143,7 @@
       datacenter: "{{ vcenter.datacenter }}"
       cluster: "{{ vcenter.cluster }}"
       validate_certs: no
-      vm_id: "{{ vmid }}"
+      vm_id: "{{ vm_name }}"
       vm_username: "{{ vmuser }}"
       vm_password: "{{ vmpass }}"
       vm_shell: "/usr/bin/mkdir"
@@ -183,7 +158,7 @@
       datacenter: "{{ vcenter.datacenter }}"
       cluster: "{{ vcenter.cluster }}"
       validate_certs: no
-      vm_id: "{{ vmid }}"
+      vm_id: "{{ vm_name }}"
       vm_username: "{{ vmuser }}"
       vm_password: "{{ vmpass }}"
       vm_shell: "/usr/bin/chown"
@@ -202,7 +177,7 @@
       datacenter: "{{ vcenter.datacenter }}"
       cluster: "{{ vcenter.cluster }}"
       validate_certs: no
-      vm_id: "{{ vmid }}"
+      vm_id: "{{ vm_name }}"
       vm_username: "{{ vmuser }}"
       vm_password: "{{ vmpass }}"
       vm_shell: "/usr/bin/echo"
@@ -217,7 +192,7 @@
       datacenter: "{{ vcenter.datacenter }}"
       cluster: "{{ vcenter.cluster }}"
       validate_certs: no
-      vm_id: "{{ vmid }}"
+      vm_id: "{{ vm_name }}"
       vm_username: "{{ vmuser }}"
       vm_password: "{{ vmpass }}"
       vm_shell: "/usr/bin/chmod"
@@ -232,7 +207,7 @@
       datacenter: "{{ vcenter.datacenter }}"
       cluster: "{{ vcenter.cluster }}"
       validate_certs: no
-      vm_id: "{{ vmid }}"
+      vm_id: "{{ vm_name }}"
       vm_username: "{{ vmuser }}"
       vm_password: "{{ vmpass }}"
       vm_shell: "/usr/sbin/reboot"
