@@ -58,12 +58,11 @@
     when: target_server_type == 'kvm'
 
   - name: Wait for VSC ssh to be ready
-    local_action:
-      module: wait_for
-      port: "22"
-      host: "{{ mgmt_ip }}"
-      search_regex: OpenSSH
-      delay: 1
+    include_role:
+      name: common
+      tasks_from: wait-for-ssh
+      vars:
+        ssh_host: {{ "mgmt_ip" }}
 
   - name: Clean known_hosts of VSC's
     known_hosts:
@@ -101,7 +100,7 @@
     assert: {
       that: "{{ expected_xmpp_server_state == xmpp_server_state }}",
       msg: "Invalid xmpp-server state ({{ xmpp_server_state }}) detected. Expected {{ expected_xmpp_server_state }}. Check 'show vswitch-controller xmpp-server details'."
-  }
+      }
   - name: define variable to match vsd strings in sh vswitch vsd details
     set_fact:
       vsd1_s: "cna@{{ vsd_fqdn }}"

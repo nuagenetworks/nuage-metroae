@@ -1,11 +1,10 @@
 ---
 - name: Wait for VSD ssh to be ready
-  local_action:
-    module: wait_for
-    port: "22"
-    host: "{{ mgmt_ip }}"
-    search_regex: OpenSSH
-    delay: 1
+  include_role:
+    name: common
+    tasks_from: wait-for-ssh
+    vars:
+      ssh_host: {{ "mgmt_ip" }}
 
 - name: Query {{ target_server }} facts
   action: setup
@@ -135,7 +134,7 @@
 - name: Configure ntpd and ntpdate and local time zone
   include_role:
     name: common
-    tasks_from: linux-ntp
+    tasks_from: linux-ntp-sync
 
 - name: Install VSD software on standalone node
   command: /opt/vsd/vsd-install.sh -t s -y
@@ -161,7 +160,7 @@
   - name: Install VSD software on HA node3 {{groups['vsds'][2]}}
     command: "{{ vsd_node3_install_cmd }}"
     when: inventory_hostname == groups['vsds'][2]
-    
+
   when: vsd_sa_or_ha | match('ha')
   remote_user: "root"
 

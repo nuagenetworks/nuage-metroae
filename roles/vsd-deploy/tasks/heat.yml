@@ -58,12 +58,11 @@
   delegate_to: 127.0.0.1
 
 - name: Wait for VSD-HA ssh to be ready
-  local_action:
-    module: wait_for
-    port: "22"
-    host: "{{ vsd_mgmt_ip }}"
-    search_regex: OpenSSH
-    delay: 1
+  include_role:
+    name: common
+    tasks_from: wait-for-ssh
+    vars:
+      ssh_host: {{ "vsd_mgmt_ip" }}
 
 - name: Inject ssh key of ansible_deployment_host to VSD if cloud-init did not work
   expect:
@@ -222,7 +221,7 @@
 - name: Configure ntpd and ntpdate and local time zone
   include_role:
     name: common
-    tasks_from: linux-ntp
+    tasks_from: linux-ntp-sync
 
 - name: Install VSD software on standalone node
   command: /opt/vsd/vsd-install.sh -t s -y

@@ -77,13 +77,12 @@
     remote_user: "{{ ansible_sudo_username }}"
 
   - name: Wait for ssh to be ready
-    local_action:
-      module: wait_for
-      port: "22"
-      host: "{{ inventory_hostname }}"
-      search_regex: OpenSSH
-      delay: 50
-
+    include_role:
+      name: common
+      tasks_from: wait-for-ssh
+      vars:
+        ssh_host: {{ "inventory_hostname" }}
+        ssh_delay_seconds: 50
 
   - name: Query facts
     action: setup
