@@ -55,26 +55,29 @@
   delegate_to: "{{ target_server }}"
   remote_user: "{{ target_server_username }}"
 
-- name: Verify that the VM is not already running
-  assert:
-    that: "vmname not in virt_vms.list_vms"
-    msg: "{{ vmname }} is already running on {{ target_server }}"
+- name: Set fact for VM already running
+  set_fact:
+    node_running: "{{ vmname in virt_vms.list_vms }}"
 
-- name: Create libvirt image directory
-  file: path={{ images_path }}/{{ vmname }}
-        state=directory
-        owner={{ libvirt.user }}
-        group={{ libvirt.group }}
-  delegate_to: "{{ target_server }}"
-  remote_user: "{{ target_server_username }}"
+- block:
 
-- name: Copy the NSGV qcow image to virt images directory
-  copy: src={{ nsgv_qcow2_path }}/{{ nsgv_qcow2_file_name }}
-        dest={{ images_path }}/{{ vmname }}
-        owner={{ libvirt.user }}
-        group={{ libvirt.group }}
-  delegate_to: "{{ target_server }}"
-  remote_user: "{{ target_server_username }}"
+  - name: Create libvirt image directory
+    file: path={{ images_path }}/{{ vmname }}
+          state=directory
+          owner={{ libvirt.user }}
+          group={{ libvirt.group }}
+    delegate_to: "{{ target_server }}"
+    remote_user: "{{ target_server_username }}"
+
+  - name: Copy the NSGV qcow image to virt images directory
+    copy: src={{ nsgv_qcow2_path }}/{{ nsgv_qcow2_file_name }}
+          dest={{ images_path }}/{{ vmname }}
+          owner={{ libvirt.user }}
+          group={{ libvirt.group }}
+    delegate_to: "{{ target_server }}"
+    remote_user: "{{ target_server_username }}"
+
+  when: not node_running
 
 - block:
   - name: Create local temp directory
@@ -89,8 +92,14 @@
     register: output
 
   - name: Search for errors in the output of ZFB script
-    fail: msg={{ output.stdout }}
-    when: output.stdout | search("(?i)ERROR")
+    assert:
+      that: "not output.stdout | search('(?i)ERROR')"
+      msg: "{{ output.stdout }}"
+
+  - name: Ensure NSGV has the correct configuration
+    assert:
+      that: "not node_running or output.stdout | search('NSG ALREADY CONFIGURED')"
+      msg: "NSGV is already running, but there was no corresponding configuration for it."
 
   - name: Copy the ISO image to virt images directory
     copy: src="{{ mktemp_output.stdout }}/user_image.iso"
@@ -101,17 +110,29 @@
     remote_user: "{{ target_server_username }}"
   when: bootstrap_method | match('zfb_metro')
 
-- name: "Define new NSGV VM"
-  virt: name="{{ vmname }}"
-        command=define
-        xml="{{ lookup('template', 'nsgv.xml.j2') }}"
-        uri=qemu:///system
-  delegate_to: "{{ target_server }}"
-  remote_user: "{{ target_server_username }}"
+- name: Display if skipping NSGV predeploy
+  debug:
+    msg:
+      - "*****************************************************"
+      - "Skipping NSGV predeploy because it is already present"
+      - "*****************************************************"
+  when: node_running
 
-- name: "Run NSGV VM"
-  virt: name="{{ vmname }}"
-        state=running
-        uri=qemu:///system
-  delegate_to: "{{ target_server }}"
-  remote_user: "{{ target_server_username }}"
+- block:
+
+  - name: "Define new NSGV VM"
+    virt: name="{{ vmname }}"
+          command=define
+          xml="{{ lookup('template', 'nsgv.xml.j2') }}"
+          uri=qemu:///system
+    delegate_to: "{{ target_server }}"
+    remote_user: "{{ target_server_username }}"
+
+  - name: "Run NSGV VM"
+    virt: name="{{ vmname }}"
+          state=running
+          uri=qemu:///system
+    delegate_to: "{{ target_server }}"
+    remote_user: "{{ target_server_username }}"
+
+  when: not node_running

@@ -16,38 +16,33 @@
       vm_name: "{{ vmname }}"
   when: not destroy_upgrade_vm | default( False )
 
-- name: Pull facts on target_server
-  setup: gather_subset=!all
-  delegate_to: "{{ target_server }}"
-  remote_user: "{{ target_server_username }}"
+- block:
 
-- name: List the Virtual Machines on target_server
-  virt: command=list_vms
-  register: virt_vms
-  delegate_to: "{{ target_server }}"
-  remote_user: "{{ target_server_username }}"
+  - name: Pull facts on target_server
+    setup: gather_subset=!all
 
-- name: Destroy VSD VM
-  virt:
-    name: "{{ vm_name }}"
-    state: destroyed
-    uri: qemu:///system
-  delegate_to: "{{ target_server }}"
-  remote_user: "{{ target_server_username }}"
-  when: vm_name in virt_vms.list_vms
+  - name: List the Virtual Machines on target_server
+    virt: command=list_vms
+    register: virt_vms
 
-- name: Undefine VSD VM
-  virt:
-    name: "{{ vm_name }}"
-    command: undefine
-    uri: qemu:///system
-  delegate_to: "{{ target_server }}"
-  remote_user: "{{ target_server_username }}"
-  when: vm_name in virt_vms.list_vms and ((not nuage_upgrade|default(False)) or (destroy_upgrade_vm|default( False )))
+  - name: Destroy VSD VM
+    virt:
+      name: "{{ vm_name }}"
+      state: destroyed
+      uri: qemu:///system
+    when: vm_name in virt_vms.list_vms
 
-- name: Delete vsd libvirt image directory and contents
-  file: path={{ images_path }}/{{ vm_name }}
-        state=absent
+  - name: Undefine VSD VM
+    virt:
+      name: "{{ vm_name }}"
+      command: undefine
+      uri: qemu:///system
+    when: vm_name in virt_vms.list_vms and ((not nuage_upgrade|default(False)) or (destroy_upgrade_vm|default( False )))
+
+  - name: Delete vsd libvirt image directory and contents
+    file: path={{ images_path }}/{{ vm_name }}
+          state=absent
+    when: (not nuage_upgrade|default( False )) or (destroy_upgrade_vm|default( False ))
+
   delegate_to: "{{ target_server }}"
   remote_user: "{{ target_server_username }}"
-  when: (not nuage_upgrade|default( False )) or (destroy_upgrade_vm|default( False ))
