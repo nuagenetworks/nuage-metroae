@@ -43,7 +43,7 @@ The user may be depoying the OpenStack plugin from a tar-gz archive. The archive
 
 ### VSD-OSC intergration
 
-`vsd-osc-integration` role helps to integrate OpenStackController(OSC) with VSD by making necessary changes to horizon, nova and neutron plugin files on OSC. This role can be run individually provided, OSC and VSD are installed by user. Prior to running this role/playbook, user needs to provide information related to e.g. openstack release, nuage openstack plugins dir, etc. A sample yml file can be found in [examples](../examples/build_vars.yml.vsd_osc_integration). A sample workflow for vsd-osc integration in defined below.
+`vsd-osc-integration` role helps to integrate OpenStackController(OSC) with VSD by making necessary changes to horizon, nova and neutron plugin files on OSC. This role can be run individually provided, OSC and VSD are installed by user. Prior to running this role/playbook, user needs to provide information related to e.g. openstack release, nuage openstack plugins dir, etc. A sample yml file can be found in [examples](../examples/build_vars.yml.vsd_osc_integration). A sample workflow for vsd-osc integration is defined below.
 
 1. Edit build_vars.yml according to [examples](../examples/build_vars.yml.vsd_osc_integration)
 2. Provide vsd login info in uesr_creds.yml
