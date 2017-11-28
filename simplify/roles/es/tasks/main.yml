@@ -26,8 +26,8 @@
       dest: /etc/hosts
       marker: "# {mark} Ansible created entries for stats nodes"
       block: |
-        {% for host in groups['vstats']  %}
-        {{ hostvars[host]['mgmt_ip'] }}    {{ host }}
+        {% for host in groups['ess']  %}
+        {{ hostvars[host]['ip'] }}    {{ host }}
         {% endfor %}
     delegate_to: "{{ item }}"
     with_items: "{{ groups['vsds'] }}"
@@ -63,27 +63,60 @@
       name: common
       tasks_from: linux-ntp
 
-  - name: Start firewalld
-    systemd:
-      name: firewalld
-      state: started
-      enabled: yes
+  - name: check for iptables
+    shell: "service iptables status"
+    register: _svc_iptables
+    ignore_errors: True
 
-  - name: Reset firewalld on VSTAT
-    command: "{{ item }}"
-    with_items:
-      - "firewall-cmd --set-default-zone=public"
-      - "firewall-cmd --permanent --remove-port=9200/tcp --remove-port=9300/tcp"
+  - block:
+    - name: Start iptables
+      systemd:
+        name: iptables
+        state: started
+        enabled: yes
+    - name: Configure iptables
+      shell: |
+        ipset flush &&
+        ipset -exist create vsd hash:ip &&
+        {% for vsd in nuage.vsds %}
+        ipset add vsd {{ vsd.mgmt_ip }} &&
+        {% endfor %}
+        ipset save -f /etc/sysconfig/ipset &&
+        iptables -R INPUT 5 -m set --match-set vsd src -p tcp --dport 9200 -j ACCEPT &&
+        iptables -R INPUT 6 -m set --match-set vsd src -p tcp --dport 9300 -j ACCEPT &&
+        service iptables save
+    when: "_svc_iptables.rc == 0"
 
-  - name: Config firewalld on VSTAT vm to accept conn on ports 9200,9300 from vsd(s)
-    command: |
-       "firewall-cmd --permanent --zone=public 
-         --add-rich-rule=\"rule family=\"ipv4\" source address=\"{{ item.mgmt_ip }}\" port protocol=\"tcp\" port=\"9200\" accept\"
-         --add-rich-rule=\"rule family=\"ipv4\" source address=\"{{ item.mgmt_ip }}\" port protocol=\"tcp\" port=\"9300\" accept\""
-    with_items: "{{ nuage.vsds }}"
+  - name: check for firewalld
+    shell: "service firewalld status"
+    register: _svc_firewalld
+    ignore_errors: True
 
-  - name: Reload firewalld on VSTAT
-    command: "firewall-cmd --reload" 
+  - block:
+    - name: Start firewalld
+      systemd:
+        name: firewalld
+        state: started
+        enabled: yes
+
+    - name: Reset firewalld on VSTAT
+      command: "{{ item }}"
+      with_items:
+        - "firewall-cmd --set-default-zone=public"
+        - "firewall-cmd --permanent --remove-port=9200/tcp --remove-port=9300/tcp"
+
+    - name: Config firewalld on VSTAT vm to accept conn on ports 9200,9300 from vsd(s)
+      command: |
+         "firewall-cmd --permanent --zone=public 
+           --add-rich-rule=\"rule family=\"ipv4\" source address=\"{{ item.mgmt_ip }}\" port protocol=\"tcp\" port=\"9200\" accept\"
+           --add-rich-rule=\"rule family=\"ipv4\" source address=\"{{ item.mgmt_ip }}\" port protocol=\"tcp\" port=\"9300\" accept\""
+      with_items: "{{ nuage.vsds }}"
+
+    - name: Reload firewalld on VSTAT
+      command: "firewall-cmd --reload" 
+    when: 
+      - "_svc_firewalld.rc == 0"
+      - "_svc_iptables.rc != 0"
 
   - name: Restart elastic search
     systemd:
@@ -99,7 +132,7 @@
     when: es_cluster
   
   - name: Enable stats collection on the vsd(s)
-    command: /opt/vsd/vsd-stats.sh -e {{ groups['ess'][0] }} {{ es_cluster | ternary( ',' groups['ess'][1] ',' groups['ess'][2], '' ) }}
+    command: /opt/vsd/vsd-stats.sh -e {{ groups['ess'][0] }} {% if es_cluster %} , {{ groups['ess'][1] }} , {{ groups['ess'][2] }} {% endif %}
     delegate_to: "{{ item }}"
     with_items: "{{ groups['vsds'] }}"
     run_once: true
@@ -137,11 +170,20 @@
 
     delegate_to: "{{ groups['vsds'][0] }}"
 
-    - name: Chown
-      command: "chown -R root:root /etc/nginx/ssl"
+  - name: Chown
+    command: "chown -R root:root /etc/nginx/ssl"
 
-    - name: Chmod
-      command: "chmod -R 600 /etc/nginx/ssl"
+  - name: Chmod
+    command: "chmod -R 600 /etc/nginx/ssl"
+  
+  - name: Create symlinks for certificates
+    file:
+      src: '/etc/nginx/ssl/{{ item.src }}'
+      dest: '/etc/nginx/ssl/{{ item.dest }}'
+      state: link
+    with_items:
+      - { src: '{{inventory_hostname_short}}Cert.pem', dest: 'elasticCert.pem' }
+      - { src: '{{inventory_hostname_short}}-Key.pem', dest: 'elastic-Key.pem' }
 
   # block properties
   remote_user: "root"
