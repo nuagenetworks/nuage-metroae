@@ -68,64 +68,75 @@
   when: vsd_cluster
   remote_user: root
 
-# TODO currently requires gather_facts, takes long time
-- name: Copy files to pin OS version when CentOS 6.6 or 6.5
-  copy:
-    src: ./roles/vsd-deploy/files/c66/
-    dest: /etc/yum.repos.d/
-  remote_user: "root"
-  when:
-    - yum_pin is defined
-    - ansible_distribution_version|match('6.6') or ansible_distribution_version|match('6.5')
-
-- name: Copy files to pin OS version when CentOS 6.8
-  copy:
-    src: ./roles/vsd-deploy/files/c68/
-    dest: /etc/yum.repos.d/
-  remote_user: "root"
-  when:
-    - yum_pin is defined
-    - ansible_distribution_version|match('6.8')
-
-- name: Configure yum proxy
-  lineinfile:
-    dest: /etc/yum.conf
-    regexp: "^proxy="
-    line: "proxy={{ nuage.proxy }}"
-  remote_user: "root"
-  when: nuage.proxy is defined
-
-- name: Execute a yum update
-  yum:
-    name: '*'
-    state: latest
-  remote_user: "root"
-  when: yum_update is defined
-
-- name: Disable cloud-init on VSD, to avoid boot time delays
-  command: chkconfig cloud-init off
-  remote_user: "root"
-
-- name: Configure ntpd and ntpdate and local time zone
-  include_role:
-    name: common
-    tasks_from: linux-ntp
-
 - block:
-  - name: Configure install commands
-    set_fact:
-      cmd:
-        vsd:  "/opt/vsd/vsd-install.sh -t s -y"
-        vsd1: "/opt/vsd/vsd-install.sh -t 1 -a vsd1.{{nuage.domain}} -b vsd2.{{nuage.domain}} -c vsd3.{{nuage.domain}} -x xmpp.{{nuage.domain}} -y"
-        vsd2: "/opt/vsd/vsd-install.sh -1 vsd1.{{nuage.domain}} -t 2 -x xmpp.{{nuage.domain}} -y"
-        vsd3: "/opt/vsd/vsd-install.sh -1 vsd1.{{nuage.domain}} -t 3 -x xmpp.{{nuage.domain}} -y"
+  # TODO currently requires gather_facts, takes long time
+  - name: Copy files to pin OS version when CentOS 6.6 or 6.5
+    copy:
+      src: ./roles/vsd-deploy/files/c66/
+      dest: /etc/yum.repos.d/
+    when:
+      - yum_pin is defined
+      - ansible_distribution_version|match('6.6') or ansible_distribution_version|match('6.5')
 
-  - name: Install VSD software on node {{ inventory_hostname }}
-    command: "{{ cmd[ inventory_hostname_short ] }}"
-    remote_user: "root"
-    
-  when: vsd_cluster and not vm_running
+  - name: Copy files to pin OS version when CentOS 6.8
+    copy:
+      src: ./roles/vsd-deploy/files/c68/
+      dest: /etc/yum.repos.d/
+    when:
+      - yum_pin is defined
+      - ansible_distribution_version|match('6.8')
 
-- name: Set XMPP connection to allow both clear and TLS
-  command: /opt/vsd/bin/ejmode allow -y
+  - name: Configure yum proxy
+    lineinfile:
+      dest: /etc/yum.conf
+      regexp: "^proxy="
+      line: "proxy={{ nuage.proxy }}"
+    when: nuage.proxy is defined
+
+  - name: Execute a yum update
+    yum:
+      name: '*'
+      state: latest
+    when: yum_update is defined
+
+  - name: Disable cloud-init on VSD, to avoid boot time delays
+    command: chkconfig cloud-init off
+
+  - name: Configure ntpd and ntpdate and local time zone
+    include_role:
+      name: common
+      tasks_from: linux-ntp
+
+  - block:
+    - name: Configure install commands
+      set_fact:
+        cmd:
+          vsd:  "/opt/vsd/vsd-install.sh -t s -y"
+          vsd1: "/opt/vsd/vsd-install.sh -t 1 -a vsd1.{{nuage.domain}} -b vsd2.{{nuage.domain}} -c vsd3.{{nuage.domain}} -x xmpp.{{nuage.domain}} -y"
+          vsd2: "/opt/vsd/vsd-install.sh -1 vsd1.{{nuage.domain}} -t 2 -x xmpp.{{nuage.domain}} -y"
+          vsd3: "/opt/vsd/vsd-install.sh -1 vsd1.{{nuage.domain}} -t 3 -x xmpp.{{nuage.domain}} -y"
+
+    - name: Install VSD software on node {{ inventory_hostname }}
+      command: "{{ cmd[ inventory_hostname_short ] }}"
+
+    when: vsd_cluster and not vm_running
+  
+  - name: Set XMPP connection to allow both clear and TLS
+    command: /opt/vsd/bin/ejmode allow -y
+
+  - block:
+      - name: Download pip installer through proxy
+        command: curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
+
+      - name: Execute pip installer through proxy
+        command: python get-pip.py
+
+      - name: Install pexpect on VSD1 {{ groups['vsds'][0] }} through proxy
+        pip:
+          name: pexpect
+      environment:
+        http_proxy: "{{ nuage.proxy is defined | ternary( nuage.proxy, '' ) }}"
+        https_proxy: "{{ nuage.proxy is defined | ternary( nuage.proxy, '' ) }}"
+    when: inventory_hostname == groups['vsds'][0]
+  
   remote_user: "root"

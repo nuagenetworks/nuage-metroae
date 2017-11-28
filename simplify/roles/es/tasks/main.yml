@@ -63,11 +63,6 @@
       name: common
       tasks_from: linux-ntp
 
-  - name: check for iptables
-    shell: "service iptables status"
-    register: _svc_iptables
-    ignore_errors: True
-
   - block:
     - name: Start iptables
       systemd:
@@ -85,38 +80,6 @@
         iptables -R INPUT 5 -m set --match-set vsd src -p tcp --dport 9200 -j ACCEPT &&
         iptables -R INPUT 6 -m set --match-set vsd src -p tcp --dport 9300 -j ACCEPT &&
         service iptables save
-    when: "_svc_iptables.rc == 0"
-
-  - name: check for firewalld
-    shell: "service firewalld status"
-    register: _svc_firewalld
-    ignore_errors: True
-
-  - block:
-    - name: Start firewalld
-      systemd:
-        name: firewalld
-        state: started
-        enabled: yes
-
-    - name: Reset firewalld on VSTAT
-      command: "{{ item }}"
-      with_items:
-        - "firewall-cmd --set-default-zone=public"
-        - "firewall-cmd --permanent --remove-port=9200/tcp --remove-port=9300/tcp"
-
-    - name: Config firewalld on VSTAT vm to accept conn on ports 9200,9300 from vsd(s)
-      command: |
-         "firewall-cmd --permanent --zone=public 
-           --add-rich-rule=\"rule family=\"ipv4\" source address=\"{{ item.mgmt_ip }}\" port protocol=\"tcp\" port=\"9200\" accept\"
-           --add-rich-rule=\"rule family=\"ipv4\" source address=\"{{ item.mgmt_ip }}\" port protocol=\"tcp\" port=\"9300\" accept\""
-      with_items: "{{ nuage.vsds }}"
-
-    - name: Reload firewalld on VSTAT
-      command: "firewall-cmd --reload" 
-    when: 
-      - "_svc_firewalld.rc == 0"
-      - "_svc_iptables.rc != 0"
 
   - name: Restart elastic search
     systemd:
@@ -142,33 +105,18 @@
 
   - block:
     - block:
-      - name: Download pip installer through proxy
-        command: curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
-
-      - name: Execute pip installer through proxy
-        command: python get-pip.py
-
-      - name: Install pexpect on VSD1 {{ groups['vsds'][0] }} through proxy
-        pip:
-          name: pexpect
-      environment:
-        http_proxy: "{{ nuage.proxy is defined | ternary( nuage.proxy, '' ) }}"
-        https_proxy: "{{ nuage.proxy is defined | ternary( nuage.proxy, '' ) }}"
-      run_once: true
-
-    - name: Revoke old stats cert, if any
-      command: "/opt/vsd/ejbca/deploy/certMgmt.sh -a revoke -u {{ inventory_hostname_short }}"
-      ignore_errors: yes
-
-    - name: Create and transfer certs from VSD for VSS
-      expect:
-       timeout: 120
-       command: "/opt/vsd/ejbca/deploy/certMgmt.sh -a generate -u {{ inventory_hostname_short }} -c {{ inventory_hostname_short }} 
-                 -d {{ inventory_hostname }} -f pem -t server -s root@{{inventory_hostname}}:/etc/nginx/ssl -o csp"
-       responses:
-         (?i)password: "Alcateldc"
-
-    delegate_to: "{{ groups['vsds'][0] }}"
+      - name: Revoke old stats cert, if any
+        command: "/opt/vsd/ejbca/deploy/certMgmt.sh -a revoke -u {{ inventory_hostname_short }}"
+        ignore_errors: yes
+  
+      - name: Create and transfer certs from VSD for VSS ( requires pexpect )
+        expect:
+         timeout: 120
+         command: "/opt/vsd/ejbca/deploy/certMgmt.sh -a generate -u {{ inventory_hostname_short }} -c {{ inventory_hostname_short }} 
+                   -d {{ inventory_hostname }} -f pem -t server -s root@{{inventory_hostname}}:/etc/nginx/ssl -o csp"
+         responses:
+           (?i)password: "Alcateldc"
+      delegate_to: "{{ groups['vsds'][0] }}"
 
   - name: Chown
     command: "chown -R root:root /etc/nginx/ssl"
@@ -184,6 +132,11 @@
     with_items:
       - { src: '{{inventory_hostname_short}}Cert.pem', dest: 'elasticCert.pem' }
       - { src: '{{inventory_hostname_short}}-Key.pem', dest: 'elastic-Key.pem' }
+
+  - name: Restart nginx
+    systemd:
+      name: nginx
+      state: restarted
 
   # block properties
   remote_user: "root"
