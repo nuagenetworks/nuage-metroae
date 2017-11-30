@@ -33,3 +33,66 @@
     name: libvirtd
     enabled: yes
     state: started
+
+- debug: var=hostvars[inventory_hostname]
+
+- block:
+  - name: Create management network bridge if not existing
+    copy:
+      dest: "/etc/sysconfig/network-scripts/ifcfg-{{nuage.networks.mgmt.bridge}}"
+      content: |
+        DEVICE={{nuage.networks.mgmt.bridge}}
+        NAME={{nuage.networks.mgmt.bridge}}
+        TYPE=Bridge
+        HOTPLUG=no
+        ONBOOT=yes
+        NM_CONTROLLED=no
+        BOOTPROTO=static
+        IPADDR={{inventory_hostname}}
+        NETMASK={{nuage.networks.mgmt.netmask}}
+        GATEWAY={{nuage.networks.mgmt.gateway}}
+        IPV4_FAILURE_FATAL=yes
+        {% if nuage.dns_server_list is defined %}
+        {% if nuage.dns_server_list[0] is defined %}
+        DNS1="{{ nuage.dns_server_list[0] }}"
+        {% endif %}
+        {% if nuage.dns_server_list[1] is defined %}
+        DNS2="{{ nuage.dns_server_list[1] }}"
+        {% endif %}
+        {% endif %}
+        IPV6INIT=no
+  - name: Move management interface {{ansible_default_ipv4.interface}} to bridge
+    copy:
+      dest: "/etc/sysconfig/network-scripts/ifcfg-{{ansible_default_ipv4.interface}}"
+      backup: yes
+      content: |
+        DEVICE={{ansible_default_ipv4.interface}}
+        NAME={{ansible_default_ipv4.interface}}
+        TYPE=Ethernet
+        HOTPLUG=no
+        ONBOOT=yes
+        NM_CONTROLLED=no
+        BOOTPROTO=none
+        BRIDGE="{{nuage.networks.mgmt.bridge}}"
+  when: nuage.networks.mgmt.bridge not in ansible_interfaces
+      
+# Assume data bridge has no IP
+- name: Create data network bridge if not existing
+  copy:
+    dest: "/etc/sysconfig/network-scripts/ifcfg-{{nuage.networks.data.bridge}}"
+    content: |
+      DEVICE={{nuage.networks.data.bridge}}
+      NAME={{nuage.networks.data.bridge}}
+      TYPE=Bridge
+      HOTPLUG=no
+      ONBOOT=yes
+      NM_CONTROLLED=no
+      BOOTPROTO=none
+      IPV6INIT=no
+  when: nuage.networks.data.bridge not in ansible_interfaces
+  
+- name: Restart networking if something changed
+  service:
+    name: network
+    state: restarted
+  when: nuage.networks.mgmt.bridge not in ansible_interfaces or nuage.networks.data.bridge not in ansible_interfaces
