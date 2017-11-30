@@ -1,0 +1,13 @@
+---
+  
+- name: Iterate over VRS hosts, add to 'servers' by IP address
+  add_host: 
+    name: "{{ item.1 }}"
+    id: "{{ name | format( item.0 ) }}"
+    groups: servers, vrs
+    on_vmware: "{{ vrs_group.on_vmware | default(false) }}"
+    ansible_user: "{{ vrs_group.ansible_user | default( nuage.ansible_user | default('root') ) }}"
+    nuage: "{{ nuage }}"
+  with_indexed_items: "{{ vrs_group.1.hosts }}"
+
+# TODO for VRS on ESXi, call VCIN API to add config using nuagee_vspk module 

@@ -1,0 +1,51 @@
+---
+
+- block:
+  - name: Revoke old VSC cert, if any
+    command: "/opt/vsd/ejbca/deploy/certMgmt.sh -a revoke -u {{ inventory_hostname_short }}"
+    ignore_errors: yes
+
+  - name: Create and transfer certs from VSD for VSC ( requires pexpect )
+    expect:
+      timeout: 120
+      command: "/opt/vsd/ejbca/deploy/certMgmt.sh -a generate -u {{ inventory_hostname_short }} -c {{ inventory_hostname_short }} 
+             -d {{ inventory_hostname }} -f pem -t server -s {{ vsc_creds.username }}@{{inventory_hostname}}:/ -o csp"
+      responses:
+        (?i)password: "{{ vsc_creds.password }}"
+  delegate_to: "{{ groups['vsds'][0] }}"
+  remote_user: "root"
+
+- block:
+  - name: Patch bug in sros_config module
+    shell: |
+      sed -i 's/{,3}(/{,3}>?(/g' /usr/lib/python2.7/site-packages/ansible/plugins/terminal/sros.py
+      rm -f /usr/lib/python2.7/site-packages/ansible/plugins/terminal/sros.pyc
+
+  - name: Configure VSC for VNS
+    sros_config:
+      lines:
+        - /configure system security tls-profile "vns-tls-profile" create
+        - /configure system security tls-profile "vns-tls-profile" own-key "cf1:/{{inventory_hostname_short}}-Key.pem"
+        - /configure system security tls-profile "vns-tls-profile" own-certificate "cf1:/{{inventory_hostname_short}}.pem"
+        - /configure system security tls-profile "vns-tls-profile" ca-certificate "cf1:/{{inventory_hostname_short}}-CA.pem"
+        - /configure system security tls-profile "vns-tls-profile" no shutdown
+        - /configure vswitch-controller open-flow {{ openflow_use_tls | ternary( "tls-profile vns-tls-profile", "no tls-profile" ) }}
+        - /configure vswitch-controller xmpp {{ xmpp_use_tls | ternary( "tls-profile vns-tls-profile", "no tls-profile" ) }}
+        - /configure vswitch-controller {{ xmpp_inband | ternary( "route-preference primary inband secondary none", "no route-preference" ) }}
+        - /configure system time ntp ntp-server
+      save: true
+      provider: "{{ vsc_creds }}"
+
+  - name: check xmpp connectivity between VSC and VSD after enabling TLS
+    sros_command:
+      commands:
+        - show vswitch-controller xmpp-server | match Functional
+      provider: "{{ vsc_creds }}"
+    register: xmpp_status
+    until: xmpp_status.stdout is defined and xmpp_status.stdout[0].find('Functional') != -1
+    retries: 6
+    delay: 10
+  delegate_to: localhost
+
+- name: Print output of 'show vswitch-controller xmpp-server' when verbosity >= 1
+  debug: var=xmpp_status verbosity=1
