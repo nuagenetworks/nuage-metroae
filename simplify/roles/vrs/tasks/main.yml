@@ -1,6 +1,42 @@
 ---
 
+# - debug: var=hostvars[inventory_hostname]
+
 - include: install_{{ ansible_os_family | lower }}.yml
+
+- name: Find name of VRS Package Files
+  find: path="{{ nuage.unzipped_files_dir }}/vrs/{{ pkg_dir }}"  pattern="*.rpm" recurse=yes
+  register: rc_vrs_files
+  delegate_to: localhost
+- debug: var=rc_vrs_files verbosity=1
+- name: Verify that VRS files were found
+  assert: { 
+    that: "{{ rc_vrs_files.matched }} > 0",
+    msg: "Unable to find VRS files"
+  }
+- name: Register VRS package variables with proper path and image locations
+  set_fact:
+    vrs_package_path: "{{ rc_vrs_files.files[0].path | dirname }}/"
+    vrs_package_file_name_list: "{{ rc_vrs_files.files |  map(attribute='path') | list | map('basename') | list }}"
+
+- name: Create temporary directory
+  file: path={{ temp_dir }}/{{ inventory_hostname }} state=directory
+
+- name: Copy VRS packages to temporary directory 
+  copy: src={{ vrs_package_path }}/{{ item }} dest={{ temp_dir }}/{{ inventory_hostname }}/{{ item }}
+  with_items: "{{ vrs_package_file_name_list }}"
+
+- name: Install Nuage OpenVSwitch packages on Debian OS family distros
+  apt: deb={{ temp_dir }}/{{ inventory_hostname }}/{{ item }} state=present
+  with_items:
+   - "{{ vrs_package_file_name_list }}"
+  when: ansible_os_family == "Debian" 
+
+- name: Install Nuage OpenVSwitch packages on RedHat OS family distros
+  yum: name={{ temp_dir }}/{{ inventory_hostname }}/{{ item }} state=present
+  with_items:
+   - "{{ vrs_package_file_name_list }}"
+  when: ansible_os_family == "RedHat"
 
 - name: Update active controller in {{ ovs_config_file }} file
   lineinfile:
