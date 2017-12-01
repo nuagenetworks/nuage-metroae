@@ -1,0 +1,31 @@
+---
+
+- name: Set variables
+  set_var:
+    auth:
+      api_username: csproot
+      api_password: csproot
+      api_enterprise: csp
+      api_url: "https://{{nuage.vsds[0].mgmt_ip}}:8443"
+
+- block:
+  - name: Find CSP enterprise
+    nuage_vspk:
+      auth: "{{ auth }}"
+      type: Enterprise
+      command: find
+      properties:
+        name: "csp"
+    register: csp_enterprise
+
+  - name: Create infra profile
+    nuage_vspk:
+      auth: "{{ auth }}"
+      type: InfrastructureGatewayProfile
+      state: present
+      properties:
+        name: "InfraProfile"
+        proxyDNSName: "proxy.{{nuaage.domain}}"
+    register: infra_profile
+
+  connection: local
