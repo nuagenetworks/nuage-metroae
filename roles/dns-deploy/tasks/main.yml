@@ -1,13 +1,10 @@
 ---
 - name: Wait for DNS Utility VM ssh to be ready
-  local_action:
-    module: wait_for
-    port: "22"
-    host: "{{ mgmt_ip }}"
-    search_regex: OpenSSH
-    delay: 1
-  delegate_to: "{{ target_server }}"
-  remote_user: "{{ target_server_username }}"
+  include_role:
+    name: common
+    tasks_from: wait-for-ssh
+  vars:
+    ssh_host: "{{ mgmt_ip }}"
 
 - name: stop and flush firewall
   service: name=firewalld state=stopped
@@ -42,7 +39,7 @@
 - name: Configure ntpd and ntpdate and local time zone
   include_role:
     name: common
-    tasks_from: linux-ntp
+    tasks_from: linux-ntp-sync
 
 - name: restart network service
   service: name=network state=restarted

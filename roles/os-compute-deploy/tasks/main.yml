@@ -60,12 +60,12 @@
   delegate_to: localhost
 
 - name: Wait for os_compute ssh to be ready
-  local_action:
-    module: wait_for
-    port: "22"
-    host: "{{ compute_mgmt_ip }}"
-    search_regex: OpenSSH
-    delay: 10
+  include_role:
+    name: common
+    tasks_from: wait-for-ssh
+  vars:
+    ssh_host: "{{ compute_mgmt_ip }}"
+    ssh_delay_seconds: 50
 
 - name: Query {{ target_server }} facts
   action: setup
@@ -149,7 +149,7 @@
 - name: Configure ntpd and ntpdate and local time zone
   include_role:
     name: common
-    tasks_from: linux-ntp
+    tasks_from: linux-ntp-sync
 
 - name: Install EPEL repos only on Centos
   yum:
