@@ -1,0 +1,39 @@
+---
+- name: Check if hostname is defined
+  assert:
+    that: hostname is defined
+    msg: "'hostname' is mandatory variable and have to be defined in 'build_vars.yml'"
+
+- name: Resolve hostname from first DNS server
+  set_fact:
+    item: "{{ lookup('dig', hostname, '@{{item}}', 'qtype=A') }}"
+  with_items: "{{ dns_server_list }}"
+  register: all_resolved_ip
+
+- debug: var=all_resolved_ip verbosity=1
+
+- name: Get list of resolved IP
+  set_fact:
+    resolved_ip: "{{ all_resolved_ip.results | map(attribute='ansible_facts.item') | list | unique }}"
+
+- name: Check DSN response
+  assert:
+    that:
+      - "{{ resolved_ip | length == 1 }}"
+      - resolved_ip[0] != "NXDOMAIN"
+    msg: "DNS servers responses inconsistent or IP unresolved. This is the list of resolved IP for {{ hostname }}: {{ resolved_ip}}"
+
+- name: Check if resolved IP is equal to management IP
+  assert:
+    that: resolved_ip[0] == expected_resolved_ip
+    msg: "Resolved IP address is not equal to management IP for {{ hostname }}"
+
+- name: Check if SSH service is absent for management IP
+  local_action:
+    module: wait_for
+    connect_timeout: 1
+    timeout: 3
+    host: "{{ resolved_ip }}"
+    port: 22
+    state: absent
+
