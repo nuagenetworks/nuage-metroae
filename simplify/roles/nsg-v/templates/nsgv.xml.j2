@@ -1,0 +1,75 @@
+<domain type='kvm'>
+  <name>{{ inventory_hostname }}</name>
+  <memory unit='GiB'>{{ nsgv_ram_gb }}</memory>
+  <currentMemory unit='GiB'>{{ nsgv_ram_gb }}</currentMemory>
+  <vcpu placement='static'>{{nsgv_vcpus}}</vcpu>
+  <cpu/>
+  <os>
+    <type arch='x86_64' machine='pc'>hvm</type>
+    <smbios mode='sysinfo'/>
+    <boot dev='hd'/>
+  </os>
+  <sysinfo type='smbios'>
+    <system>
+      <entry name='product'>ovs-ncpe</entry>
+    </system>
+  </sysinfo>
+  <features>
+    <apic/>
+    <acpi/>
+  </features>
+  <cpu>
+    <topology sockets='{{nsgv_vcpus}}' cores='1' threads='1'/>
+  </cpu>
+  <clock offset='utc'>
+    <timer name='pit' tickpolicy='delay'/>
+    <timer name='rtc' tickpolicy='delay'/>
+  </clock>
+  <on_poweroff>destroy</on_poweroff>
+  <on_reboot>restart</on_reboot>
+  <on_crash>coredump-destroy</on_crash>
+  <devices>
+    <emulator>{{ libvirt.emulator }}</emulator>
+    <disk type='file' device='disk'>
+      <driver name='qemu' type='qcow2'/>
+      <source file='{{ nuage.images_path }}/{{ inventory_hostname }}/{{ qcow_name }}'/>
+      <target dev='hda' bus='ide'/>
+      <alias name='ide0-0-0'/>
+      <address type='drive' controller='0' bus='0' target='0' unit='0'/>
+    </disk>
+{% if false %}
+    <disk type='file' device='cdrom'>
+      <driver name='qemu' type='raw'/>
+      <source file='{{ images_path }}/{{ vmname }}/user_image.iso'/>
+      <backingStore/>
+      <target dev='hdb' bus='ide'/>
+      <readonly/>
+      <alias name='ide0-0-1'/>
+      <address type='drive' controller='0' bus='0' target='0' unit='1'/>
+    </disk>
+{% endif %}
+    <controller type='usb' index='0'>
+      <alias name='usb0'/>
+      <address type='pci' domain='0x0000' bus='0x00' slot='0x01' function='0x2'/>
+    </controller>
+    <interface type='bridge'>
+      <source bridge='{{ data_bridge }}'/>
+      <target dev='vnet0'/>
+      <model type='virtio'/>
+    </interface>
+    <interface type='bridge'>
+      <source bridge='{{ mgmt_bridge }}'/>
+      <target dev='vnet1'/>
+      <model type='virtio'/>
+    </interface>
+    <console type='pty' tty='/dev/pts/16'>
+      <source path='/dev/pts/16'/>
+      <target type='serial' port='0'/>
+      <alias name='serial0'/>
+    </console>
+    <memballoon model='virtio'>
+      <address type='pci' domain='0x0000' bus='0x00' slot='0x06' function='0x0'/>
+    </memballoon>
+  </devices>
+  <seclabel type='none'/>
+</domain>
