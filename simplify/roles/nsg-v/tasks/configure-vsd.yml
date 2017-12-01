@@ -1,7 +1,7 @@
 ---
 
 - name: Set variables
-  set_var:
+  set_fact:
     auth:
       api_username: csproot
       api_password: csproot
@@ -9,23 +9,72 @@
       api_url: "https://{{nuage.vsds[0].mgmt_ip}}:8443"
 
 - block:
-  - name: Find CSP enterprise
-    nuage_vspk:
-      auth: "{{ auth }}"
-      type: Enterprise
-      command: find
-      properties:
-        name: "csp"
-    register: csp_enterprise
-
   - name: Create infra profile
     nuage_vspk:
       auth: "{{ auth }}"
       type: InfrastructureGatewayProfile
       state: present
+      match_filter: "name == 'InfraProfile'"
       properties:
         name: "InfraProfile"
-        proxyDNSName: "proxy.{{nuaage.domain}}"
+        proxy_dns_name: "proxy.{{nuage.domain}}"
+        use_two_factor: false
     register: infra_profile
 
+  - name: Create VSC profile
+    nuage_vspk:
+      auth: "{{ auth }}"
+      type: InfrastructureVscProfile
+      state: present
+      match_filter: "name == 'VSC Profile'"
+      properties:
+        name: "VSC Profile"
+        first_controller: "{{ nuage.vscs[0].control_ip }}"
+        second_controller: "{{ ( nuage.vscs | length > 1 ) | ternary( nuage.vscs[1].control_ip, '0.0.0.0' ) }}"
+    register: vsc_profile
+
+  - name: Create NSG template
+    nuage_vspk:
+      auth: "{{ auth }}"
+      type: NSGatewayTemplate
+      state: present
+      match_filter: "name == 'NSG-V Template'"
+      properties:
+        name: "NSG-V Template"
+        infrastructure_profile_id: "{{ infra_profile.id }}"
+    register: nsg_template
+
+  - name: Create NSG port1 template
+    nuage_vspk:
+      auth: "{{ auth }}"
+      type: NSPortTemplate
+      state: present
+      parent_id: "{{ nsg_template.id }}"
+      parent_type: NSGatewayTemplate
+      match_filter: "name == 'WAN'"
+      properties:
+        name: "WAN"
+        physical_name: "port1"
+        port_type: "NETWORK"
+        vlan_range: "0"
+    register: nsg_wan_port_template
+
+  - name: Create NSG port2 template
+    nuage_vspk:
+      auth: "{{ auth }}"
+      type: NSPortTemplate
+      state: present
+      parent_id: "{{ nsg_template.id }}"
+      parent_type: NSGatewayTemplate
+      match_filter: "name == 'LAN'"
+      properties:
+        name: "LAN"
+        physical_name: "port2"
+        port_type: "ACCESS"
+        vlan_range: "0"
+    register: nsg_lan_port_template
+
+  - name: A better way
+    nuage-import:
+       vsd: "{{ nuage.vsds[0].mgmt_ip }}"
   connection: local
