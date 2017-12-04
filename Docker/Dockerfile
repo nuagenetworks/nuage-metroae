@@ -6,7 +6,8 @@ CMD [""]
 RUN yum install -y epel-release && yum update -y && \
     yum install -y python python-devel python-pip sshpass git gcc libssl2-dev libffi-devel python-devel openssl-devel && \
     pip install ansible==2.4 netmiko netaddr && \
-    mkdir -p /root/.ansible && cd /root/.ansible && npm i ansible-node-module &&
+    mkdir -p /root/.ansible && cd /root/.ansible && \
+    npm i superagent agentkeepalive netmask express netmask body-parser multer && \
     yum clean all && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 ADD ssh_config /root/.ssh/config

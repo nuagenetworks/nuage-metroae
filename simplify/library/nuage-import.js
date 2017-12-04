@@ -2,28 +2,81 @@
 
 // WANT_JSON
 
-const ansible = require('ansible-node-module');
+const fs = require('fs');
+const util = require('util');
+
+const argsReg = /(\w+)="(\w+)"/g;
+
+function parseJSON(str){
+    try{
+        return JSON.parse(str);
+    } catch(e){
+        return undefined;
+    }
+}
+
+function readArguments() {
+    return new Promise((resolve, reject) => {
+        fs.readFile(process.argv[2], (err, data) => {
+            if (err) {
+                reject(err);
+            }
+
+            const content = data.toString('utf-8');
+            let args = parseJSON(content);
+
+            if (args === undefined){
+                args = {};
+                let matching;
+
+                while((matching = argsReg.exec(content)) != null) {
+                    args[matching[1]] = matching[2];
+                }
+            }
+
+            args.content = content;
+            resolve(args);
+        });
+    });
+}
+
+function main(callback) {
+    return readArguments()
+        .then(callback)
+        .then((result) => {
+            if (!util.isNullOrUndefined(result)) {
+                console.log(JSON.stringify(result));
+            }
+        })
+        .catch((err) => {
+            console.log(`{"failed":true, "msg":"${err.message}"}`);
+            throw err;
+        });
+}
 
 var msg = "";
-var nesting2 = 0;
 
-ansible.main((args) => {
+// require the EventEmitter from the events module
+//const EventEmitter = require('events').EventEmitter
+
+// create an instance of the EventEmitter object
+//const eventEmitter = new EventEmitter()
+//eventEmitter.on( 'exit', function (result) {
+//  console.error( result );
+//});
+
+main((args) => {
 
     doImport( args.vsd, args.organization, args.config ) 
-    // while (nesting>0);
-	
-	//while (nesting>0) {
-		var waitTill = new Date(new Date().getTime() + 5 * 1000);
-		while(waitTill > new Date()){}
-	//}
-	
+
+    /* The way this is structured does not allow to take advantage of Node async processing	
     return {
       changed: true,
       failed:  false,
-      msg: api.print_stats(),
-      str: msg,
       rc: 0
     };
+	*/
+	return null;
 });
 
 /**
@@ -134,15 +187,25 @@ function doExit() {
 	 vms = null;
 	 createVMs( v );
   } else {
-		var exitCode = 0;	// exit with error in case of API error responses
+		var exitCode = apiErrors ? 100 : 0;	// exit with error in case of API error responses
 		for ( r in to_resolve ) {
 		   msg += ( "Unable to resolve: '" + r + "' (check spelling, case sensitive!) recurse="+to_resolve[r].recurse )
 		   ++exitCode;
 		}
 		
-		msg += ( "doExit: exiting nesting=" + nesting + " API errors=" + apiErrors );
+		console.error( '{ "doExit": "exiting nesting=' + nesting + ' API errors=' + apiErrors + '"}' );
 		// api.print_stats();
 		// process.exit( exitCode );
+                // eventEmitter.emit('exit', msg)
+				
+		var result = {
+			changed: true,
+			failed:  apiErrors>0,
+			rc: exitCode,
+			debug: msg,
+			ids: name_2_id
+		}
+		console.log(JSON.stringify(result));
   }
 }
 
@@ -401,7 +464,7 @@ function zeropad(num, size) {
 }
 
 function onError(err) {
-	console.error( "Error response from API call: " + JSON.stringify(err) );
+	msg += ( "Error response from API call: " + JSON.stringify(err) );
 	++apiErrors;
 	if ( --nesting==0 ) doExit()
 }
@@ -476,7 +539,7 @@ function updateObject( context, id ) {
 	}
 }
 
-async function createRecursive( context ) {
+function createRecursive( context ) {
   // console.log( "createRecursive: context=" + JSON.stringify(context) )
   
   // Bulk testing feature: Allow '#count' parameter
@@ -547,7 +610,7 @@ async function createRecursive( context ) {
   
   ++nesting;
   
-  await api.get( context.root + '/' + context.set, filter, function (objs) {
+  api.get( context.root + '/' + context.set, filter, function (objs) {
 	  if ( objs && (objs.length>0) ) {
 		
 		console.info( "RESULT: " + JSON.stringify(objs) );
@@ -801,15 +864,15 @@ function updateGlobals( set, values ) {
 	if (values.forEach) values.forEach( function(r) { updateGlobal(set,r) } );
 }
 	
-async function updateGlobal( set, r ) {
-	// console.log( "updateGlobal set="+set+" r="+JSON.stringify(r) );
+function updateGlobal( set, r ) {
+	console.error( "updateGlobal set="+set+" r="+JSON.stringify(r) );
 	var u = resolveVars( { template: r }, function() { updateGlobal(set,r) } );
 	if (!u) return;	// resolution pending
 
 	incRef( to_resolve[ set + "." + getKey(u) ] );
 	
 	++nesting
-	await api.get( "/" + set, u.name ? "name == '"+u.name+"'" : null, function(globals) {
+	api.get( "/" + set, u.name ? "name == '"+u.name+"'" : null, function(globals) {
 
 		if ( globals[0] ) {
 			var cur = globals[0]
@@ -821,7 +884,7 @@ async function updateGlobal( set, r ) {
 				name_2_parentId[ set + "." + key ] = cur.parentID;
 			}
 			
-			msg += ( "Updating shared resource..." )
+			console.error( "Updating shared resource..." )
 			
 			// Cannot modify 'underlay' flag once created
 			delete u.underlay;
@@ -834,7 +897,7 @@ async function updateGlobal( set, r ) {
 				decRef( to_resolve[ set + "." + key ] );
 	
 				createArrays( { template : u, set : set, count : 0 }, cur.ID );
-				if ( --nesting==0 ) console.log('done'); // doExit()
+				if ( --nesting==0 ) doExit()
 			}, onError )
 		} else {
 			msg += ( "Global resource not found: " + u.name )
@@ -1098,14 +1161,14 @@ function processTemplate(template) {
  
 }
 
-async function doImport( vsd_ip, enterprise, template ) {
+function doImport( vsd_ip, enterprise, template ) {
 
     api.set_verbose( true )
-	++nesting2;
-    await api.init( vsd_ip, "csp", "csproot", "csproot", function(res) {
+	++nesting;
+    api.init( vsd_ip, "csp", "csproot", "csproot", function(res) {
 		// csp_id = res[0].enterpriseID;
 		if ( enterprise == "csp" ) {
-			msg += ( "Processing template for CSP..." );
+			console.error( "Processing template for CSP..." );
 			processTemplate( template );
 		} else {
 			++nesting;
@@ -1119,14 +1182,14 @@ async function doImport( vsd_ip, enterprise, template ) {
 				   process.exit(-3)
 				}
 				// process.exit(0) no, wait until all async calls have finished
-				--nesting;
+				if (--nesting==0) doExit();
 			}, function (err) {
 				console.log( "Error getting enterprise '"+enterprise+"':" + err )
 				process.exit(-2)
 			} )
 		}
-		console.log( "doImport exiting;nesting="+nesting );
-		--nesting2;
+		console.error( "doImport exiting;nesting="+nesting );
+		if (--nesting==0) doExit();
     })
 }	// doImport
 
@@ -1186,7 +1249,7 @@ function pollForEvents(eventHandler,uuid,verbose) {
 }
 
 function getLatestAPIVersionURL(host,callback) {
-	if (_verbose) console.info( "Getting latest API info from VSD at " + host );
+	if (_verbose) console.error( "Getting latest API info from VSD at " + host );
 	superagent.get( "https://" + host + ":8443/nuage" )
 		.agent(keepaliveAgent)
 		.end( function(err,res) {
@@ -1202,12 +1265,12 @@ function getLatestAPIVersionURL(host,callback) {
 		})
 }
 
-async function getToken(callback) {
+function getToken(callback) {
 	if (_verbose) {
 		msg += ( "Getting token from :" + _url + "/me" );
 		msg += ( "Authorization: " + _authorization )
 	}
-	await superagent.get( _url + "/me" )
+	superagent.get( _url + "/me" )
 		.agent(keepaliveAgent)
 		.set( 'Authorization', "XREST " + _authorization )
 		.set( 'X-Nuage-Organization', _organization )
@@ -1233,7 +1296,7 @@ async function getToken(callback) {
  * @param {String} password Password for the given user
  * @param {Function} Callback to be called with the response upon completion
  */
-api.init = async function( host, organization, user, password, callback ) {
+api.init = function( host, organization, user, password, callback ) {
 	_host = host;
 	_user = user;
 	_authorization = new Buffer( user + ':' + password ).toString('base64')
@@ -1242,11 +1305,11 @@ api.init = async function( host, organization, user, password, callback ) {
 	// Ignore TLS error of self-signed cert
 	process.env.NODE_TLS_REJECT_UNAUTHORIZED = 0;
 
-	await getLatestAPIVersionURL( host, async function(api_url) {
+	getLatestAPIVersionURL( host, function(api_url) {
 		_url = api_url;
 		
 		// get token
-		await getToken( function(res) {
+		getToken( function(res) {
 			// Allow app to receive push events
 			callback( res, function(eventhandler,verbose) {
 				pollForEvents( eventhandler, null, verbose );
@@ -1302,9 +1365,9 @@ function makeRESTcall( req, body, filter, onSuccess, onError, no_log, isRetry ) 
  * @param {Function} onError [optional] callback to call upon errors (err)
  * 
  */
-api.get = async function( path, filter, onSuccess, onError, no_log ) {
+api.get = function( path, filter, onSuccess, onError, no_log ) {
    if (_verbose && !no_log) msg += ( "GET: path = " + path + " filter = " + filter )
-   await makeRESTcall( superagent.get( _url + path ), "", filter, onSuccess, onError, no_log )
+   makeRESTcall( superagent.get( _url + path ), "", filter, onSuccess, onError, no_log )
 }
 
 /**
@@ -1314,9 +1377,9 @@ api.get = async function( path, filter, onSuccess, onError, no_log ) {
  * @param {Function} onSuccess Callback to call upon completion (res)
  * @param {Function} onError [optional] callback to call upon errors (err)
  */
-api.post = async function( path, body, onSuccess, onError ) {
-   if (_verbose) console.info( "POST: path = " + path + " body = " + JSON.stringify(body) )
-   await makeRESTcall( superagent.post( _url + path + "?responseChoice=1" ), body, "", onSuccess, onError )
+api.post = function( path, body, onSuccess, onError ) {
+   if (_verbose) console.error( "POST: path = " + path + " body = " + JSON.stringify(body) )
+   makeRESTcall( superagent.post( _url + path + "?responseChoice=1" ), body, "", onSuccess, onError )
 }
 
 /**
@@ -1327,9 +1390,9 @@ api.post = async function( path, body, onSuccess, onError ) {
  * @param {Function} onSuccess Callback to call upon completion (res)
  * @param {Function} onError [optional] callback to call upon errors (err)
  */
-api.proxy_post = async function( proxyUser, path, body, onSuccess, onError ) {
-   if (_verbose) console.info( "POST with proxy user: proxyUser="+proxyUser+" path = " + path + " body = " + JSON.stringify(body) )
-   await makeRESTcall( superagent.post( _url + path ).set( 'X-Nuage-ProxyUser', proxyUser ), body, "", onSuccess, onError )
+api.proxy_post = function( proxyUser, path, body, onSuccess, onError ) {
+   if (_verbose) console.error( "POST with proxy user: proxyUser="+proxyUser+" path = " + path + " body = " + JSON.stringify(body) )
+   makeRESTcall( superagent.post( _url + path ).set( 'X-Nuage-ProxyUser', proxyUser ), body, "", onSuccess, onError )
 }
 
 /**
@@ -1339,9 +1402,9 @@ api.proxy_post = async function( proxyUser, path, body, onSuccess, onError ) {
  * @param {Function} onSuccess Callback to call upon completion (res)
  * @param {Function} onError [optional] callback to call upon errors (err)
  */
-api.put = async function( path, body, onSuccess, onError ) {
+api.put = function( path, body, onSuccess, onError ) {
    if (_verbose) msg += ( "PUT: path = " + path + " body = " + JSON.stringify(body) )
-   await makeRESTcall( superagent.put( _url + path + "?responseChoice=1" ), body, "", onSuccess, onError )
+   makeRESTcall( superagent.put( _url + path + "?responseChoice=1" ), body, "", onSuccess, onError )
 }
 
 /**
@@ -1350,9 +1413,9 @@ api.put = async function( path, body, onSuccess, onError ) {
  * @param {Function} onSuccess Callback to call upon completion (res)
  * @param {Function} onError [optional] callback to call upon errors (err)
  */
-api.del = async function( path, onSuccess, onError ) {
+api.del = function( path, onSuccess, onError ) {
    if (_verbose) console.info( "DELETE: path = " + path )
-   await makeRESTcall( superagent.del( _url + path + "?responseChoice=1" ), "", "", onSuccess, onError )	// can use filter expression?
+   makeRESTcall( superagent.del( _url + path + "?responseChoice=1" ), "", "", onSuccess, onError )	// can use filter expression?
 }
 
 /**
@@ -1363,16 +1426,16 @@ api.del = async function( path, onSuccess, onError ) {
  * @param {Function} onSuccess Callback to call upon completion (res)
  * @param {Function} onError [optional] callback to call upon errors (err)
  */
-api.get_post = async function( path, obj, filter, onSuccess, onError ) {
+api.get_post = function( path, obj, filter, onSuccess, onError ) {
    if (_verbose) msg += ( "get_post: path = " + path + " obj=" + JSON.stringify(obj) )
    
-   var create_if_not_exists = async function() {
-	 await api.post( path, obj, function (res) {
+   var create_if_not_exists = function() {
+	 api.post( path, obj, function (res) {
 		!onSuccess || onSuccess( res, true )
 	 }, onError );
    }
    
-   await api.get( path, filter, function (body) {
+   api.get( path, filter, function (body) {
 	 if ( body && body[0] ) {
 		!onSuccess || onSuccess( body );	// pass as array
 	 } else {

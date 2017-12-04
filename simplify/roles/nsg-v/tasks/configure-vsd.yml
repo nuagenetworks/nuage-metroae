@@ -1,15 +1,7 @@
 ---
 
-- name: Set variables
-  set_fact:
-    auth:
-      api_username: csproot
-      api_password: csproot
-      api_enterprise: csp
-      api_url: "https://{{nuage.vsds[0].mgmt_ip}}:8443"
-
 - block:
-  - name: A better way
+  - name: Provision VSD
     nuage-import:
        vsd: "{{ nuage.vsds[0].mgmt_ip }}"
        organization: csp
@@ -17,5 +9,28 @@
           infrastructurevscprofiles:
             - { name: "VSC1", firstController: "{{ nuage.vscs[0].control_ip }}" }
             - { name: "VSC2", firstController: "{{ nuage.vscs[1].control_ip }}" }
+            - { name: "VSC1+2", firstController: "{{ nuage.vscs[0].control_ip }}", secondController: "{{ nuage.vscs[1].control_ip }}" }
+          infrastructuregatewayprofiles:
+            - { name: "Infra", proxyDNSName: "proxy.{{ nuage.domain }}" }
+          nsgatewaytemplates:
+            - { name: "NSG-V", 
+                infrastructureProfileID: "ID:infrastructuregatewayprofiles.Infra",
+                nsporttemplates: [ 
+                  { name : "WAN", userMnemonic : "uplink1", physicalName : "port1", portType : "NETWORK", VLANRange : "0",
+                    vlantemplates : [ { value : 0, description : "untagged", associatedVSCProfileID : "ID:infrastructurevscprofiles.VSC1+2" } ] },
+                  { name : "LAN", userMnemonic : "lan1",    physicalName : "port2", portType : "ACCESS", VLANRange : "0",
+                    vlantemplates : [ { value : 0, description : "untagged" } ] }
+                ]
+              }
+    register: output
+  - debug: var=output
+  - name: Provision NSGs
+    nuage-import:
+       vsd: "{{ nuage.vsds[0].mgmt_ip }}"
+       organization: Test
+       config:
+          nsgateways:
+            - { name : "{{hostvars[item].inventory_hostname_short}}", templateID : "{{ output.ids['nsgatewaytemplates.NSG-V'] }}" }
+    with_items: "{{ groups['nsgs'] }}"
        
   connection: local
