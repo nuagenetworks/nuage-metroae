@@ -9,9 +9,9 @@ RUN yum install -y epel-release && yum update -y && \
     pip install ansible==2.4 netmiko netaddr pexpect && \
     mkdir -p /root/.ansible && cd /root/.ansible && \
     npm i superagent agentkeepalive netmask express netmask body-parser multer && \
-    yum clean all && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+    yum clean all && rm -rf /var/cache/yum /tmp/* /var/tmp/*
 
-ADD nuage-metro/Docker/ssh_config /root/.ssh/config
+ADD simplify/Docker/ssh_config /root/.ssh/config
 RUN chmod 600 /root/.ssh/config
 
 ADD simplify /simplify

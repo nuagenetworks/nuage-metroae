@@ -73,6 +73,22 @@
   roles:
     - { role: vrs, tags: [ 'vrs', 'install' ] }
 
+- hosts: proxy
+  gather_facts: no
+  tags: [ 'proxy', 'predeploy' ]
+  tasks:
+    - name: Create Proxy Linux VM for {{ inventory_hostname }}
+      include_role:
+        name: vm
+        tasks_from: create-kvm
+      vars:
+        vm_role: "vns/utils"
+        hosts:  "{{ nuage.proxy.host }}"
+        vcpus:  "{{ proxy_vcpus }}"
+        ram_gb: "{{ proxy_ram_gb }}"
+        data_nic: true
+      when: not on_vmware
+
 - hosts: nsgs
   gather_facts: no
   tags: [ 'nsg' ]

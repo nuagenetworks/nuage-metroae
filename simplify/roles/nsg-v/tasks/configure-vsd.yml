@@ -24,13 +24,33 @@
               }
     register: output
   - debug: var=output
-  - name: Provision NSGs
+  - name: Provision NSGs and create ZFB .iso file for each
     nuage-import:
        vsd: "{{ nuage.vsds[0].mgmt_ip }}"
        organization: Test
        config:
           nsgateways:
-            - { name : "{{hostvars[item].inventory_hostname_short}}", templateID : "{{ output.ids['nsgatewaytemplates.NSG-V'] }}" }
+            - { name : "{{hostvars[item].inventory_hostname_short}}", templateID : "{{ output.ids['nsgatewaytemplates.NSG-V'] }}",
+                nsports: [ { name: "WAN", vlans: [ { value: 0, uplinkconnections: [{ 
+					role: "PRIMARY", 
+					mode: "Static", 
+					address: "{{hostvars[item].ip}}",
+                    gateway: "{{nuage.networks['data'].gateway}}", 
+					netmask: "{{nuage.networks['data'].netmask}}", 
+					DNSAddress: "{{nuage.dns_server_list[0]}}" }] } ] } ] }
+          jobs:
+            - { command: "GET_ZFB_INFO",
+                parameters : { associatedEntityID : "ID:nsgateways.{{hostvars[item].inventory_hostname_short}}", associatedEntityType: "nsgateway", NSGType: "ANY", mediaType: "ISO" }
+              }
     with_items: "{{ groups['nsgs'] }}"
-       
+    register: jobs
+
+  - name: Collect ZFB iso mappings
+    set_fact:
+      nsg_2_iso: "{{ nsg_2_iso|default({}) | combine( { item.0 : item.1.job_results[ item.1.ids[ 'nsgateways.' + hostvars[item.0].inventory_hostname_short ] ] } ) }}"
+    with_together:
+      - "{{ groups['nsgs'] }}"
+      - "{{ jobs.results }}"
+  - debug: var=nsg_2_iso
+
   connection: local

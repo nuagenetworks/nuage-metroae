@@ -112,8 +112,13 @@ var rt_2_esi = {}
 // Pending createRecursive calls waiting on resolution, indexed by <setname>.<name>
 var to_resolve = {}
 
+// Mapping of NSG obj ID to ZFB request result
+var job_results = {}
+
+var templated_objects = { "nsgateways" : 1, "domains" : 1, "l2domains" : 1 }
+
 // Nuage object key fields, these are used in filter expressions
-var key_fields = [ "name", "priority", "type", "actualType", "value", "userName", "nextHopIp", "address", "minAddress" ];
+var key_fields = [ "name", "priority", "type", "actualType", "value", "userName", "nextHopIp", "role", "address", "minAddress" ];
 
 // Determines a unique key for the object. Most objects have 'name', but some are special ( VLANs, users, ACL entries, address ranges, static routes, DHCP options... )
 function getKey(obj) {
@@ -121,7 +126,7 @@ function getKey(obj) {
 		var key = obj[ key_fields[f] ]
 		if ( typeof key != "undefined" ) return key;
 	}
-	console.log( "Warning: No key defined for object: " + JSON.stringify(obj) )
+	msg += ( "Warning: No key defined for object: " + JSON.stringify(obj) )
 	return undefined		// could use 'externalId' and generate a hash
 }
 
@@ -129,7 +134,7 @@ function finishResolution(rs) {
   for ( var i=0; i<rs.waiting.length; ++i ) {
 	var c = rs.waiting[i];
 	// c.dont_postpone = true;		// avoid infinite loop? Can have more than 1 ID to resolve, sequentially
-	console.log( "Finish resolving context=" + JSON.stringify(c) );
+	msg += ( "Finish resolving context=" + JSON.stringify(c) );
 	if ( c.callback ) {
 		c.callback();
 	} else {
@@ -140,8 +145,8 @@ function finishResolution(rs) {
   delete to_resolve[ rs.key ]
 }
 
-// Postpone instantiation of domains and l2domains, and VM creation
-var domains, l2domains, vms;
+// Postpone instantiation of domains and l2domains, and Job creation
+var domains, l2domains, jobs;
 
 // Also postpone NSGateways and NSGRedundancyGroups, else VLAN conflict may arise
 var nsgateways, nsgredundancygroups;
@@ -149,6 +154,9 @@ var nsgateways, nsgredundancygroups;
 var enterprise_id;
 
 function doExit() {
+
+  msg += "doExit nsgateways="+(nsgateways!=null)+" jobs="+(jobs!=null);
+
   // Check for pending failed resolutions, can point to config errors
   var exit = true;
   
@@ -182,10 +190,16 @@ function doExit() {
 			createRecursive( createContext(enterprise_id,"l2domains",l2[t]) );
 		}
 	 }
-  } else if ( vms ) {
-	 var v = vms;
-	 vms = null;
-	 createVMs( v );
+  } else if (jobs) {
+     var js = jobs;
+	 jobs = null;
+	 // Need to wait before all uplinks have been created, XXX ugly!
+	 // setTimeout( function() {
+	 for ( var j in js ) {
+	    // Dont try to seach for existing jobs, always create new
+		createMulti( createContext(enterprise_id,"jobs",js[j]), 1 );
+	 }
+	 // }, 5000 );
   } else {
 		var exitCode = apiErrors ? 100 : 0;	// exit with error in case of API error responses
 		for ( r in to_resolve ) {
@@ -203,7 +217,8 @@ function doExit() {
 			failed:  apiErrors>0,
 			rc: exitCode,
 			debug: msg,
-			ids: name_2_id
+			ids: name_2_id,
+			job_results: job_results
 		}
 		console.log(JSON.stringify(result));
   }
@@ -271,7 +286,7 @@ function createArrays(context,id)
 				  count : context.count	// Value of '#count' passed down to children
 				  // rs : incRef(context.rs)
 			    }
-				console.info( "createArrays: calling createRecursive root="+root );
+				msg += ( "createArrays: calling createRecursive root="+root );
 		        createRecursive( subContext )
 		      }
 			}
@@ -284,21 +299,23 @@ function onResponse( context, obj ) {
 	var key = getKey(obj)
 	var template = context.template
 	var vlanMapped = false
-	console.log( "onResponse -> Object created/obtained in set "+context.set+" key='"+key+"' ID=" + id )
+	msg += ( "onResponse -> Object created/obtained in set "+context.set+" key='"+key+"' ID=" + id )
 
 	if (typeof key != "undefined") {
 		name_2_id[ context.set + "." + key ] = id;
-		console.log( "Added mapping '" + context.set + "." + key + "' => " + id );
+		msg += ( "Added mapping '" + context.set + "." + key + "' => " + id );
 		
 		// For VLANs, also add mapping for user mnemonic ( VLAN ID not unique for different ports )
 		if ( obj.userMnemonic ) {
-			console.log( "Adding mapping for VLAN using mnemonic: " + obj.userMnemonic )
+			msg += ( "Adding mapping for VLAN using mnemonic: " + obj.userMnemonic )
 			name_2_id[ context.set + "." + obj.userMnemonic ] = id;
 			incRef( to_resolve[ context.set + "." + obj.userMnemonic ] );
 			vlanMapped = true;
 		} else if ( context.set=="vlans" ) {
 			console.error( "Unable to map VLAN userMnemonic: " + JSON.stringify(obj) );
 		}
+	} else if ( context.set=="jobs" ) {
+		job_results[ obj.parameters.associatedEntityID ] = obj.result;
 	}
 	
 	// Check if any pending calls are now resolvable
@@ -307,21 +324,6 @@ function onResponse( context, obj ) {
 	// incRef( context.rs )
 	
 	createArrays( context, id );
-	
-	// For L3 domains or L2 domains, import subnets into Openstack
-	if ( useOS ) {
-		if (context.set == "domains") {
-			// Add some delay, as VSD takes time to instantiate the subnets, especially shared subnets
-			++nesting;
-			console.log( "Starting delayed creation of Openstack networks...nesting=" + nesting );
-			setTimeout( function() { 
-				createOpenstackSubnets( id, obj.name );
-				if ( --nesting==0 ) doExit();
-			}, params.delay ? params.delay : 3000 );
-		} else if ( context.set == "l2domains" ) {
-			createOpenstackSubnetForL2domain( id, obj.name );
-		}
-	}
 	
 	// After recursing, check if any pending createRecursive calls can now be resolved
 	// decRef( context.rs )
@@ -367,7 +369,7 @@ function resolveStr( val, context, callback )
 		  console.error( "Parameter in string '" + val + "' undefined: " + m )
 		  process.exit(1)
 	   }
-	   console.log( "Resolved: " + m + " => " + v );
+	   msg += ( "Resolved: " + m + " => " + v );
 	   return v;
 	})
 
@@ -398,7 +400,7 @@ function resolveStr( val, context, callback )
   var obj = p_set + "." + p_name
   var resolved = mapping[ obj ];
   if ( resolved ) { 
-	  console.log( "Resolved " + val + " to " + resolved )
+	  msg += ( "Resolved " + val + " to " + resolved )
   } else if (!context.dont_postpone) {
    
 	  // Put this here to distinguish redundancygroups versus single gateways
@@ -421,9 +423,9 @@ function resolveStr( val, context, callback )
 		if ( --nesting==0 ) doExit();
 	  }, onError );
 	  
-	  console.log( "Resolution postponed for " + val )
+	  msg += ( "Resolution postponed for " + val )
   } else {
-      console.warn( "Unable to resolve: " + obj + " but dont_postpone flag set!" );
+      msg += ( "Unable to resolve: " + obj + " but dont_postpone flag set!" );
   }
   return resolved	// resolved ID or null if postponed
 }
@@ -437,20 +439,25 @@ function resolveVars( context, callback ) {
  for ( var p in context.template ) {
     var t = context.template[p]
     if ( (t instanceof Array) && (typeof(t[0])==="string") ) {
-	   console.warn( "Resolving array of strings ( vPorttags or user IDs )" )
+	   msg += ( "Resolving array of strings ( vPorttags or user IDs )" )
 	   var vals = []
 	   for ( var i = 0; i < t.length; ++i ) {
 	      var resolved = resolveStr( t[i], context, callback ) 
 		  if (!resolved) return null
 		  vals.push( resolved )
 	   }
-	   console.info( "Resolved array: " + JSON.stringify(vals) )
+	   msg += ( "Resolved array: " + JSON.stringify(vals) )
 	   instance[p] = vals
 	} else if ( typeof(t) === "string" && (t.length > 1) ) {
 	   var resolved = resolveStr( t, context, callback )
 	   if (!resolved) return null	// postpone, restart from scratch next time
 	   instance[p] = resolved
 	} else if (p[0]!="#") {
+	    if ( typeof(t) === "object" ) {
+			// Pass original callback
+			t = resolveVars( { template: t }, callback );
+			if (!t) return;
+		}
 		instance[p] = t		// copy unmodified, excluding '#' properties like '#count'
 	}
  }
@@ -469,15 +476,13 @@ function onError(err) {
 	if ( --nesting==0 ) doExit()
 }
 
-function createMulti( context, count ) {
-	var instance = resolveVars( context, function() { createMulti(context,count) } );
+function createMulti( context, count, callback ) {
+	var instance = resolveVars( context, function() { createMulti(context,count,callback) } );
 	if (!instance) {
 		// More variables to resolve
 		return;
 	}
 
-	console.log( "createMulti COUNT="+count+" context="+JSON.stringify(context) )
-	
 	++nesting
 	if (context.basename && context.template.name) {
 		instance.name = context.basename + count // zeropad(count,4)
@@ -485,7 +490,7 @@ function createMulti( context, count ) {
 	api.post( context.root + '/' + context.set, instance, function (body) {
 		  if (body.length>0) {
 			var id = body[0].ID
-			console.info( "POST: Object created in " + context.set + " ID=" + id )
+			msg += ( "POST: Object created in " + context.set + " ID=" + id + " body=" + JSON.stringify(body[0]) )
 			// instance["#count"] = count
 			var resultContext = {
 				root : context.root,
@@ -494,6 +499,9 @@ function createMulti( context, count ) {
 				count: context.count
 			}
 			onResponse( resultContext, body[0] )
+			
+			// For templated objects, use callback to lookup resulting object
+			if (callback) callback();
 		  } else {
 			console.error( "Empty response for create object at " + context.root + "/" + context.set + ":" + JSON.stringify(context.template) )
 		  }
@@ -510,7 +518,7 @@ function createMulti( context, count ) {
 				basename 	: context.basename,
 				count		: count-1
 			}
-			createMulti( nextContext, count-1 )
+			createMulti( nextContext, count-1, null )	// no callback, or callback with new context?
 		  }
 		  if ( --nesting==0 ) doExit()
 	 }, onError )
@@ -553,7 +561,7 @@ function createRecursive( context ) {
   if ( context.template.depends ) {
 	 var r = resolveStr( context.template.depends, context, function() { createRecursive( context ) } );
 	 if (!r) {
-		console.log( "Postponing object creation due to dependency: " + context.template.depends );
+		msg += ( "Postponing object creation due to dependency: " + context.template.depends );
 		return;
 	}
   }
@@ -565,9 +573,9 @@ function createRecursive( context ) {
 
 		if (count>5000) {
 			count = 5000
-			console.log( "Limiting #count to #5000" )
+			msg += ( "Limiting #count to #5000" )
 		} else {
-			console.log( "Auto-count value: " + count );
+			msg += ( "Auto-count value: " + count );
 		}
 		context.count = count	// override any current count
 		
@@ -592,12 +600,14 @@ function createRecursive( context ) {
 		var nhIP = resolveStr( template.nextHopIp, context, function() { createRecursive(context) } );
 		if (!nhIP) return;
 		filter = "nextHopIp == '"+nhIP+"' and address == '" + template.address +"'"
+	 } else if ( template.role ) {	// uplinkconfig
+		filter = "role == '"+template.role+"'"
 	 } else if ( template.address ) {	// ??
 		filter = "address == '"+template.address+"'"
 	 } else if ( template.minAddress ) {	// address ranges
 		filter = "minAddress == '"+template.minAddress+"'"
 	 } else {
-		console.log( "Warning: Unable to filter object: " + JSON.stringify(template) )
+		msg += ( "Warning: Unable to filter object: " + JSON.stringify(template) )
 		filter = ""
 	 }
 	 
@@ -613,14 +623,14 @@ function createRecursive( context ) {
   api.get( context.root + '/' + context.set, filter, function (objs) {
 	  if ( objs && (objs.length>0) ) {
 		
-		console.info( "RESULT: " + JSON.stringify(objs) );
+		msg += ( "RESULT: " + JSON.stringify(objs) );
 
 		// If there are multiple, add all their IDs to the name mapping
 		if ( count>1 ) {
 		
 			// Check that all objects are created, in case '#count' changes between runs
 			if ( count != objs.length ) {
-				console.log( "Detected mismatch between #count and number of objects: " + count + "!=" + objs.length )
+				msg += ( "Detected mismatch between #count and number of objects: " + count + "!=" + objs.length )
 				
 				// If some are missing, recreate them ( starting from highest count )
 				if ( count > objs.length ) {
@@ -677,7 +687,7 @@ function createRecursive( context ) {
 		
 	  } else if (!doDelete) {
 	  
-		 console.log( "No match found for " + context.root + '/' + context.set + " with filter '" + filter + "'" )
+		 msg += ( "No match found for " + context.root + '/' + context.set + " with filter '" + filter + "'" )
 	  
 		 if ( context.set == "gateways" ) {
 			console.error( "Gateway not found: " + filter + " or no permissions to use it - please check the gateway name in your script, and make sure this organization has access" );
@@ -685,7 +695,12 @@ function createRecursive( context ) {
 		 } else {
 			 // Doesn't exist yet - create it
 			 context.basename = basename
-			 createMulti( context, count )
+			 
+			 //
+			 // When creating a templated object like an NSG, we need to lookup the inherited properties ( like VLANs )
+			 // and then continue processing
+			 //
+			 createMulti( context, count, (context.set in templated_objects) ? function() { createRecursive(context) } : null )
 		 }
 	  }
 	  if ( --nesting==0 ) doExit()
@@ -697,166 +712,6 @@ function addOffset( addr, offset ) {
 	return addr.substring(0,prefix+1) + (parseInt( addr.substring(prefix+1) ) + offset);
 }
 
-function createOSNet( subnet, address_ranges, domainName /* not set for L2 domains */ )
-{
-	console.log( "createOSNet domain="+domainName+" subnet=" + JSON.stringify(subnet) + " ranges=" + JSON.stringify(address_ranges) );
-	
-	// Support JSON parameters in description
-	var json = ( subnet.description && subnet.description[0]=='{' ) ? JSON.parse( subnet.description ) : {}
-	
-	// Support VLAN-aware SRIOV VMs
-	var sriov = "";
-	
-    if ( json.skip_Openstack ) {
-	   console.log( "Openstack import skipped for subnet " + subnet.name );
-	   return;
-	}
-	
-	// Expected: Name of physical network, create the parent network. TODO: VLAN networks, which CIDR to use?
-	if ( json.sriov && json.vlan ) {
-		sriov = "--segments type=dict list=true provider:physical_network='"+json.sriov+"',provider:network type=flat provider:physical_network='',provider:network_type=vxlan"
-	}
-	
-	var name = domainName ? domainName + " - " + subnet.name : subnet.name;  // must be unique
-	var Netmask = require('netmask').Netmask
-	
-	// For unmanaged L2 Neutron requires a dummy CIDR
-	var cidr = new Netmask( subnet.address ? subnet.address+"/"+subnet.netmask : "101.101.101.0/24" );
-	var gw = domainName && subnet.gateway ? " --gateway " + subnet.gateway : ""
-	
-	// Prior to 3.2R4 DHCP had to be disabled for Shared Subnets. Still need to specify the correct CIDR though
-	if ( subnet.associatedSharedNetworkResourceID || (subnet.address == null) ) {
-		gw += " --enable_dhcp False";
-	}
-
-	var exec = require('child_process').exec, child
-	++nesting
-	var pools = ""
-	if ( address_ranges ) {
-		for ( var a in address_ranges ) {
-			var range = address_ranges[a];
-			// Provide a way to provision non-overlapping ranges for Openstack
-			var extId = range['externalID'];
-			if ( extId && extId.indexOf("openstack:") == 0 ) {
-				var offset = parseInt( extId.substring(10) );	// skip 'openstack:' prefix
-				console.log( "Adding Openstack address offset: " + offset );
-				range.minAddress = addOffset( range.minAddress, offset );
-				range.maxAddress = addOffset( range.maxAddress, offset );
-			}
-			pools += " --allocation-pool start="+range.minAddress+",end="+range.maxAddress;
-		}
-	}
-	var neutron_cmd = '(neutron net-list -F name --format csv | grep -q \'"' + name + '"\' || neutron net-create "' + name + '" ' + sriov + ') && '
-		  + 'neutron subnet-create "' + name + '" ' + cidr + ' --name "' + subnet.name + '"'
-		  + gw + pools + ' --nuagenet ' + subnet.ID + ' --net-partition "' + enterprise + '"';
-		  
-	console.info( "About to execute Neutron command: '" + neutron_cmd + "'" );
-		
-	child = exec( neutron_cmd, { 'env' : process.env },
-		function (error, stdout, stderr) {
-			console.log('createOSNet stdout: ' + stdout);
-			console.log('createOSNet stderr: ' + stderr);
-			if (error !== null) {
-			  console.log('exec error: ' + error);
-			}
-			
-			// For dual-stack subnets, also create IPv6 subnet
-			if ( subnet.IPType == "DUALSTACK" && subnet.IPv6Address && subnet.IPv6Gateway ) {
-				neutron_cmd = 'neutron subnet-create "' + name + '" ' + subnet.IPv6Address + ' --name "' + subnet.name + '-v6" --gateway '
-							  + subnet.IPv6Gateway + ' --ip-version 6 --disable-dhcp --nuagenet ' + subnet.ID + ' --net-partition "' + enterprise + '"';
-				
-				++nesting
-				child = exec( neutron_cmd, { 'env' : process.env },
-					function (error, stdout, stderr) {
-						console.log('createOSNetv6 stdout: ' + stdout);
-						console.log('createOSNetv6 stderr: ' + stderr);
-						if (error !== null) {
-						  console.log('exec error: ' + error);
-						}
-						if ( --nesting==0 ) doExit()
-					}
-				);
-			}
-			
-			// TODO: For SRIOV networks with VLANs, create a network+subnet for each vlan			
-			
-			if ( --nesting==0 ) doExit()
-		}
-	)	
-}
-
-/**
- * Import subnets for a given domain into OpenStack
- */
-function createOpenstackSubnets( domainId, domainName ) {
-	// This lists all subnets globally, filter for enterprise / domain instances
-	++nesting
-	api.get( "/domains/" + domainId + "/subnets", "", function(body) {
-	    if (body.length>0) {
-		  console.info( "Creating Openstack subnets: count=" + body.length );
-		  for ( var subnet = 0; subnet < body.length; ++subnet ) {
-			// Need to capture body[subnet] as a function param, else callbacks will all use last value in for loop!
-			createOpenstackSubnet( body[subnet], domainName );
-		  }
-		} else {
-		  console.log( "No subnets found in domain: " + domainName );
-		}
-		if ( --nesting==0 ) doExit()
-	}, onError )
-}
-
-function createOpenstackSubnet( subnet, domainName ) {
-	++nesting;
-	
-	// For shared subnets, address ranges are under /sharednetworkresources
-	var adrPath = subnet.associatedSharedNetworkResourceID
-				? "/sharednetworkresources/" + subnet.associatedSharedNetworkResourceID
-				: "/subnets/" + subnet.ID;
-	
-	api.get( adrPath + "/addressranges", "", function (adrRange) {
-				
-			// For shared networks, subnet.address = null but we need to specify the correct CIDR...
-			// BUG workaround: For shared networks, lookup the 'address','netmask' and 'gateway' properties!
-			if ( subnet.associatedSharedNetworkResourceID && (!subnet.address)) {
-				++nesting;
-				api.get( "/sharednetworkresources/" + subnet.associatedSharedNetworkResourceID, "", function (shared_subnets) {
-					var shared_subnet = shared_subnets[0];
-					console.log( "Adding missing address/netmask: " + shared_subnet.address + "/" + shared_subnet.netmask );
-					subnet.address = shared_subnet.address;
-					subnet.netmask = shared_subnet.netmask;
-					console.log( "Adding missing gateway: " + shared_subnet.gateway );
-					subnet.gateway = shared_subnet.gateway;
-						
-					createOSNet( subnet, adrRange, domainName );
-					
-					if ( --nesting==0 ) doExit()
-				});
-			} else {
-				createOSNet( subnet, adrRange, domainName );
-			}
-			if ( --nesting==0 ) doExit()
-	}, onError )
-}
-
-/**
- * Import subnet for a given L2 domain into OpenStack
- */
-function createOpenstackSubnetForL2domain( domainId, domainName ) {
-	// This lists all subnets globally, filter for enterprise / domain instances
-	++nesting
-	api.get( "/l2domains/" + domainId, "", function(l2doms) {
-		  if ( l2doms[0] ) {
-		    // console.info( JSON.stringify(res.body[0]) )
-			++nesting;
-			api.get( "/l2domains/" + domainId + "/addressranges", "", function (adrRanges) {
-				createOSNet( l2doms[0], adrRanges )
-				if ( --nesting==0 ) doExit()
-			}, onError )
-		  }
-		  if ( --nesting==0 ) doExit()
-	}, onError )
-}
-
 /**
  * Very similar to per-enterprise objects update, but this also does PUT to modify an existing object
  */
@@ -865,7 +720,7 @@ function updateGlobals( set, values ) {
 }
 	
 function updateGlobal( set, r ) {
-	console.error( "updateGlobal set="+set+" r="+JSON.stringify(r) );
+	msg += ( "updateGlobal set="+set+" r="+JSON.stringify(r) );
 	var u = resolveVars( { template: r }, function() { updateGlobal(set,r) } );
 	if (!u) return;	// resolution pending
 
@@ -934,109 +789,6 @@ function createContext(enterprise_id,set,template) {
 	}
 }
 
-function createVMImages( images ) {
-  for ( var i in images ) {
-     var img = images[i];
-	 
-	 var exec = require('child_process').exec, child;
-
-	 // May already exist
-	 var format = img.url.indexOf(".iso") > 0 ? "iso" : "qcow2";
-	 var cmd = 'glance image-show "'+img.name+'" || glance image-create --name "'+img.name+'" --disk-format '+format+' --container-format bare --is-public True --copy-from ' + img.url + ' ';
-	 if ( img.args ) cmd += img.args;
-	 
-	 console.log( "Importing Glance image: " + cmd );
-	 
-	 ++nesting;
-	 child = exec( cmd, { 'env' : process.env },
-	  function (error, stdout, stderr) {
-		console.info( "createVMImage: " + error + stdout + stderr );
-		if ( --nesting==0 ) doExit()
-	  }
-	 );
-   }
-}
-
-function createFlavors( flavors ) {
-  for ( var i in flavors ) {
-     var fl = flavors[i];
-	 
-	 var exec = require('child_process').exec, child;
-
-	 // May already exist
-	 var cmd = 'nova flavor-show "'+fl.name+'" || nova flavor-create "'+fl.name+'" auto ' + fl.memory + ' ' + fl.disk + ' ' + fl.vcpus;
-	 
-	 console.log( "Creating Flavor: " + cmd );
-	 
-	 ++nesting;
-	 child = exec( cmd, { 'env' : process.env },
-	  function (error, stdout, stderr) {
-		console.info( "createFlavor: " + error + stdout + stderr );
-		if ( --nesting==0 ) doExit()
-	  }
-	 );
-   }
-}
-
-function createVMs( vms ) {
-	 var vm_in = vms.shift();
-	 var vm = resolveVars( { template: vm_in } );
-	 var exec = require('child_process').exec, child;
-
-	 var cmd = ""
-	 var ports = ""
-	 for ( var j in vm.vnics ) {
-	    var n = vm.vnics[j];
-		if (( !n.domain || !n.subnet ) && !n.l2domain ) {
-			console.error( "Either 'domain' and 'subnet' or 'l2domain' need to be specified for each VM vNIC. Check " + vm.name );
-			continue;
-		}
-		var os_net_name = (n.l2domain ? n.l2domain : n.domain + ' - ' + n.subnet );
-		
-		// Need to use Neutron to specify a specific MAC, else use Nova to make it easier to delete VMs
-		if ( n.mac || n.policy_groups || n.redirect_targets ) {
-		    // Set the device owner such that it can be auto-deleted? --device-owner network:dhcp
-			var neutron_create_port = "neutron port-create -c id -f value --name '" + vm.name + "-nic" + j + "'"
-			if (n.ip) neutron_create_port += " --fixed-ip ip_address=" + n.ip
-			if (n.ipv6) neutron_create_port += " --fixed-ip ip_address=" + n.ipv6
-			if (n.mac && n.mac.length==17) neutron_create_port += " --mac-address " + n.mac;
-			
-			neutron_create_port += ' "' + os_net_name + '" | tail -n1' // Skip "Created a new port"
-			ports += "nic"+j+"=$("+neutron_create_port+");"
-			cmd += ' --nic port-id=$nic' + j
-
-			if (n.policy_groups) {
-				ports += 'neutron port-update $nic'+j+' --nuage-policy-groups list=true ' + n.policy_groups + ';';
-			}
-			if (n.redirect_targets) {
-				ports += 'neutron port-update $nic'+j+' --nuage-redirect-targets ' + n.redirect_targets + ';';
-			}
-			
-		} else {
-			cmd += ' --nic net-id=`neutron net-show "'+os_net_name+'" -F id -f value`'
-			if ( n.ip ) cmd += ',v4-fixed-ip=' + n.ip;
-		}
-	 }
-	 if (vm.zone) cmd += ' --availability-zone "' + vm.zone + '"';
-	 if (vm["user-data"]) cmd += ' --config-drive true --user-data `echo "' + vm["user-data"] + '" > ${tmpfile:=$(mktemp)}; echo $tmpfile`';
-	 cmd += ' "' + vm.name + '"';
-	 
-	 // May already exist
-	 cmd = 'nova show "'+vm.name+'" || ' + ports + ' nova boot --image "'+vm.image+'" --flavor "'+vm.flavor+'" ' + cmd;
-	 console.log( "Launching new VM: " + cmd );
-	 
-	 ++nesting;
-	 child = exec( cmd, { 'env' : process.env },
-	  function (error, stdout, stderr) {
-		console.info( "createVM: " + error + stdout + stderr );
-		
-		// Recurse
-		if ( vms.length>0 ) createVMs( vms );
-		
-		if ( --nesting==0 ) doExit();
-	  }
-	 );
-}
 
 function processTemplate(template) {
  ++nesting;
@@ -1059,21 +811,10 @@ function processTemplate(template) {
 			if ( res ) params[p] = res;
 	  }
 	  break
-	  
-   case "images":
-      if (useOS) createVMImages( template[set] );
-	  else console.warn( "'images' defined but no Openstack parameters" );
-	  continue;
-	  
-   case "flavors":
-      if (useOS) createFlavors( template[set] );
-	  else console.warn( "'flavors' defined but no Openstack parameters" );
-	  continue;
 
-   case "vms":
-      if (useOS) vms = template[set];	// postpone until networks are created
-	  else console.warn( "'vms' defined but no Openstack parameters" );
-	  continue;
+   case "jobs":
+     jobs = template[set];
+	 break;
 	  
    case "sharednetworkresources": 
    case "sites":
@@ -1378,7 +1119,7 @@ api.get = function( path, filter, onSuccess, onError, no_log ) {
  * @param {Function} onError [optional] callback to call upon errors (err)
  */
 api.post = function( path, body, onSuccess, onError ) {
-   if (_verbose) console.error( "POST: path = " + path + " body = " + JSON.stringify(body) )
+   if (_verbose) msg += ( "POST: path = " + path + " body = " + JSON.stringify(body) )
    makeRESTcall( superagent.post( _url + path + "?responseChoice=1" ), body, "", onSuccess, onError )
 }
 
@@ -1391,7 +1132,7 @@ api.post = function( path, body, onSuccess, onError ) {
  * @param {Function} onError [optional] callback to call upon errors (err)
  */
 api.proxy_post = function( proxyUser, path, body, onSuccess, onError ) {
-   if (_verbose) console.error( "POST with proxy user: proxyUser="+proxyUser+" path = " + path + " body = " + JSON.stringify(body) )
+   if (_verbose) msg += ( "POST with proxy user: proxyUser="+proxyUser+" path = " + path + " body = " + JSON.stringify(body) )
    makeRESTcall( superagent.post( _url + path ).set( 'X-Nuage-ProxyUser', proxyUser ), body, "", onSuccess, onError )
 }
 
@@ -1414,7 +1155,7 @@ api.put = function( path, body, onSuccess, onError ) {
  * @param {Function} onError [optional] callback to call upon errors (err)
  */
 api.del = function( path, onSuccess, onError ) {
-   if (_verbose) console.info( "DELETE: path = " + path )
+   if (_verbose) msg += ( "DELETE: path = " + path )
    makeRESTcall( superagent.del( _url + path + "?responseChoice=1" ), "", "", onSuccess, onError )	// can use filter expression?
 }
 
