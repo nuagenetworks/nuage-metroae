@@ -1,0 +1,42 @@
+---
+- name: Yum erase unnecessary packages
+  yum: 
+    name: "{{ item }}"
+    state: absent
+  with_items: 
+    - openvswitch.x86_64
+    - python-openvswitch.noarch
+    - openstack-neutron.noarch
+
+- name: Install Nuage OpenVSwitch
+  yum:
+    name: nuage-openvswitch-5.1.1-9.el7.x86_64.rpm
+    state: present
+
+- name: Add vconfig repository
+  yum_repository:
+    name: vconfig 
+    description: EPEL vconfig repo
+    baseurl: https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
+
+- name: Install vconfig
+  yum:
+    name: vconfig
+    state: present
+
+- name: Add network uplink config
+  replace:
+    path: /etc/default/openvswitch
+    regexp: "^NETWORK_UPLINK_INTF="
+    replace: "NETWORK_UPLINK_INTF={{ uplink_intf }}"
+
+- name: Restart OpenVSwitch service
+  service:
+    name: openvswitch
+    state: restarted
+ 
+- name: Delete the default bridges
+  shell: ovs-vsctl --timeout=5 -- --if-exists del-br br-tun && ovs-vsctl --timeout=5 -- --if-exists del-br br-int
+
+    
+
