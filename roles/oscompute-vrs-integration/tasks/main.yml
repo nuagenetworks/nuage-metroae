@@ -1,0 +1,19 @@
+---
+- name: Add alubr0 to nova config
+  lineinfile:
+    dest: /etc/nova/nova.conf
+    regexp: ovs_bridge=
+    line: ovs_bridge=alubr0
+  remote_user: "{{ target_server_username }}"
+
+- name: Restart OpenStack compute
+  service:
+    name: openstack-nova-compute   
+    state: restarted
+  remote_user: "{{ target_server_username }}"
+
+- name: Restart OVS
+  service: 
+    name: openvswitch
+    state: restarted
+  remote_user: "{{ target_server_username }}"
