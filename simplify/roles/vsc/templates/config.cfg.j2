@@ -37,8 +37,8 @@ echo "Router (Network Side) Configuration"
 #--------------------------------------------------
     router
         interface "control"
-        {% if vm.control_ip is defined and nuage.networks['data'].netmask is defined %}
-            address {{ ( vm.control_ip + '/' + nuage.networks['data'].netmask ) | ipaddr() }}
+        {% if nuage.networks['data'].netmask is defined %}
+            address {{ ( control_ip + '/' + nuage.networks['data'].netmask ) | ipaddr() }}
             no shutdown
         {% endif %}
         exit
@@ -52,7 +52,7 @@ echo "Router (Network Side) Configuration"
         exit
         autonomous-system {{ as_number }}
         
-        router-id {{ vm.system_ip | default(vm.control_ip) }}
+        router-id {{ vm.system_ip | default(control_ip) }}
 #--------------------------------------------------
 ##echo "Static Route Configuration"
 ###--------------------------------------------------
@@ -74,7 +74,7 @@ echo "Router (Network Side) Configuration"
                 type internal
                 {% for vsc_item in groups['vscs'] %}
                   {% if vsc_item != inventory_hostname %}
-                neighbor {{ hostvars[vsc_item].vm.control_ip }}
+                neighbor {{ hostvars[vsc_item].control_ip }}
                 exit
                   {% endif %}
                 {% endfor %}

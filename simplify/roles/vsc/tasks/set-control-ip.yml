@@ -1,0 +1,11 @@
+---
+
+- name: Calculate data prefix
+  set_fact:
+    data_prefix: "{{ ( '0.0.0.0/' + nuage.networks['data'].netmask ) | ipaddr('prefix') }}"
+
+- name: Determine VSC control IP
+  set_fact:
+    control_ip: "{{ vm.control_ip | default( (nuage.networks['data'].gateway | ipsubnet( data_prefix )) | 
+                ipv4( nuage.networks['data'].ip_start + 7 + index ) | ipv4('address') ) }}"
+  

@@ -14,6 +14,7 @@
   - name: Store default VMWare Datastore
     set_fact:
       vmware_ds: "{{ ( nuage.vcenter is defined ) | ternary( nuage.vcenter.datastore | default(''), '' ) }}"
+
   tags: always
 
 - name: Process VSD hosts
@@ -22,6 +23,7 @@
     vms: "{{ nuage.vsds }}"
     vm_hostname: "{{ (nuage.vsds | length == 3) | ternary( 'vsd%1d', 'vsd' ) }}"
     group: "vsds"
+    ip_start: 0
   tags: always
   
 - name: Process VSC hosts
@@ -31,6 +33,7 @@
     vm_hostname: 'vsc%02d'
     ansible_user: "admin"
     group: "vscs"
+    ip_start: 7
   tags: vsc
 
 - name: Process ES hosts (optional)
@@ -39,6 +42,7 @@
     vms: "{{ nuage.stats }}"
     vm_hostname: 'es%1d'
     group: "ess"
+    ip_start: 3
   tags: es
   when: nuage.stats is defined
 
@@ -52,13 +56,13 @@
     loop_var: vrs_group
   when: nuage.vrs is defined
 
-  
 - name: Process Proxy VM host (optional)
   include_tasks: add-hosts.yml
   vars:
     vms: "[ {{ nuage.proxy }} ]"
     vm_hostname: 'proxy'
     group: "proxy"
+    ip_start: 6
   tags: proxy
   when: nuage.proxy is defined
 
@@ -70,5 +74,6 @@
     ansible_user: "nuage"
     ansible_port: 893
     group: "nsgs"
+    ip_start: "{{ 7 + nuage.vscs | length }}"
   tags: nsg
   when: nuage.nsgs is defined

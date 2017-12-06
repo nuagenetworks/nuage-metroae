@@ -3,7 +3,7 @@
 - block:
   - name: Provision VSD
     nuage-import:
-       vsd: "{{ nuage.vsds[0].mgmt_ip }}"
+       vsd: "{{ hostvars[ groups['vsds'][0] ].ip }}"
        organization: csp
        config:
           infrastructurevscprofiles:
@@ -12,6 +12,9 @@
             - { name: "VSC1+2", firstController: "{{ nuage.vscs[0].control_ip }}", secondController: "{{ nuage.vscs[1].control_ip }}" }
           infrastructuregatewayprofiles:
             - { name: "Infra", proxyDNSName: "proxy.{{ nuage.domain }}" }
+          infrastructureaccessprofiles:
+            - { name: "SSH Login", userName: "nuage", password: "Alcateldc", SSHAuthMode: "PASSWORD_AND_KEY_BASED",
+                sshkeys: [ { name: "Proxy", keyType: "RSA", publicKey: "{{ hostvars[groups['proxy'][0]].ssh_key }}" } ] }
           nsgatewaytemplates:
             - { name: "NSG-V", 
                 infrastructureProfileID: "ID:infrastructuregatewayprofiles.Infra",
@@ -26,18 +29,18 @@
   - debug: var=output
   - name: Provision NSGs and create ZFB .iso file for each
     nuage-import:
-       vsd: "{{ nuage.vsds[0].mgmt_ip }}"
+       vsd: "{{ hostvars[ groups['vsds'][0] ].ip }}"
        organization: Test
        config:
           nsgateways:
             - { name : "{{hostvars[item].inventory_hostname_short}}", templateID : "{{ output.ids['nsgatewaytemplates.NSG-V'] }}",
                 nsports: [ { name: "WAN", vlans: [ { value: 0, uplinkconnections: [{ 
-					role: "PRIMARY", 
-					mode: "Static", 
-					address: "{{hostvars[item].ip}}",
+                    role: "PRIMARY", 
+                    mode: "Static", 
+                    address: "{{hostvars[item].ip}}",
                     gateway: "{{nuage.networks['data'].gateway}}", 
-					netmask: "{{nuage.networks['data'].netmask}}", 
-					DNSAddress: "{{nuage.dns_server_list[0]}}" }] } ] } ] }
+                    netmask: "{{nuage.networks['data'].netmask}}", 
+                    DNSAddress: "{{nuage.dns_server_list[0]}}" }] } ] } ] }
           jobs:
             - { command: "GET_ZFB_INFO",
                 parameters : { associatedEntityID : "ID:nsgateways.{{hostvars[item].inventory_hostname_short}}", associatedEntityType: "nsgateway", NSGType: "ANY", mediaType: "ISO" }
@@ -51,6 +54,9 @@
     with_together:
       - "{{ groups['nsgs'] }}"
       - "{{ jobs.results }}"
+    delegate_to: localhost
+    delegate_facts: true
+
   - debug: var=nsg_2_iso
 
   connection: local

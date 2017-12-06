@@ -78,18 +78,34 @@
   when: nuage.networks.mgmt.bridge not in ansible_interfaces and ansible_default_ipv4.address == inventory_hostname
       
 # Assume data bridge has no IP
-- name: Create data network bridge if not existing
-  copy:
-    dest: "/etc/sysconfig/network-scripts/ifcfg-{{nuage.networks.data.bridge}}"
-    content: |
-      DEVICE={{nuage.networks.data.bridge}}
-      NAME={{nuage.networks.data.bridge}}
-      TYPE=Bridge
-      HOTPLUG=no
-      ONBOOT=yes
-      NM_CONTROLLED=no
-      BOOTPROTO=none
-      IPV6INIT=no
+- block:
+  - name: Create data network bridge if not existing
+    copy:
+      dest: "/etc/sysconfig/network-scripts/ifcfg-{{nuage.networks.data.bridge}}"
+      content: |
+        DEVICE={{nuage.networks.data.bridge}}
+        NAME={{nuage.networks.data.bridge}}
+        TYPE=Bridge
+        HOTPLUG=no
+        ONBOOT=yes
+        NM_CONTROLLED=no
+        BOOTPROTO=none
+        IPV6INIT=no
+  - name: Move data interface to bridge
+    copy:
+      dest: "/etc/sysconfig/network-scripts/ifcfg-{{nuage.networks.data.nic}}"
+      backup: yes
+      content: |
+        DEVICE={{nuage.networks.data.nic}}
+        NAME={{nuage.networks.data.nic}}
+        TYPE=Ethernet
+        HOTPLUG=no
+        ONBOOT=yes
+        NM_CONTROLLED=no
+        BOOTPROTO=none
+        BRIDGE="{{nuage.networks.data.bridge}}"
+        MTU={{nuage.networks.data.mtu | default(9000) }}
+    when: nuage.networks.data.nic is defined
   when: nuage.networks.data.bridge not in ansible_interfaces
   
 - name: Restart networking if something changed

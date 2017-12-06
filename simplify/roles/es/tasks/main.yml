@@ -73,8 +73,8 @@
       shell: |
         ipset flush &&
         ipset -exist create vsd hash:ip &&
-        {% for vsd in nuage.vsds %}
-        ipset add vsd {{ vsd.mgmt_ip }} &&
+        {% for vsd in group['vsds'] %}
+        ipset add vsd {{ hostvars[ vsd ].ip }} &&
         {% endfor %}
         ipset save -f /etc/sysconfig/ipset &&
         iptables -R INPUT 5 -m set --match-set vsd src -p tcp --dport 9200 -j ACCEPT &&

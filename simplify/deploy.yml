@@ -11,6 +11,23 @@
   roles:
     - { role: vm-host, tags: [ 'vsd', 'predeploy', 'vsc' ] }
 
+# Deploy proxy first, set it up as DNS/DHCP server
+- hosts: proxy
+  gather_facts: no
+  tags: [ 'proxy', 'predeploy' ]
+  tasks:
+    - name: Create Proxy Linux VM for {{ inventory_hostname }}
+      include_role:
+        name: vm
+        tasks_from: create-kvm
+      vars:
+        vm_role: "vns/utils"
+        hosts:  "{{ nuage.proxy.host }}"
+        vcpus:  "{{ proxy_vcpus }}"
+        ram_gb: "{{ proxy_ram_gb }}"
+        data_nic: true
+      when: not on_vmware
+
 - hosts: vsds
   gather_facts: no
   tags: [ 'vsd', 'predeploy' ]
@@ -36,6 +53,10 @@
   gather_facts: no
   tags: [ 'vsc', 'predeploy' ]
   tasks:
+    - name: Select control IPs
+      include_role:
+        name: vsc
+        tasks_from: set-control-ip
     - name: Create and configure VSC Linux VM for {{ inventory_hostname }}
       include_role:
         name: vsc
@@ -72,22 +93,6 @@
   gather_facts: yes
   roles:
     - { role: vrs, tags: [ 'vrs', 'install' ] }
-
-- hosts: proxy
-  gather_facts: no
-  tags: [ 'proxy', 'predeploy' ]
-  tasks:
-    - name: Create Proxy Linux VM for {{ inventory_hostname }}
-      include_role:
-        name: vm
-        tasks_from: create-kvm
-      vars:
-        vm_role: "vns/utils"
-        hosts:  "{{ nuage.proxy.host }}"
-        vcpus:  "{{ proxy_vcpus }}"
-        ram_gb: "{{ proxy_ram_gb }}"
-        data_nic: true
-      when: not on_vmware
 
 - hosts: nsgs
   gather_facts: no

@@ -1,28 +1,30 @@
 ---
 
-- name: List VMs running on VMWare
+- name: Determine mgmt prefix
   set_fact:
-     vmware_vms: "{{ vms | selectattr('host', 'equalto', nuage.vcenter.ip | default('') ) | list }}"
+     mgmt_prefix: "{{ ( '0.0.0.0/' + nuage.networks['mgmt'].netmask ) | ipaddr('prefix') }}"
   
 - name: Iterate over Linux hosts, add to 'servers'
   add_host: 
-    name: "{{ item.host }}"
-    groups: servers
+    name: "{{ item.host | default( nuage.hosts[ item.host_index ] ) }}"
+    groups: "{{ ((item.host | default( nuage.hosts[ item.host_index ] )) == nuage.vcenter.ip) | ternary( 'vcenter', 'servers' ) }}"
     ansible_user: "{{ nuage.ansible_user | default('root') }}"
     nuage: "{{ nuage }}"
-  with_items: "{{ vms | difference( vmware_vms ) }}"
+  with_items: "{{ vms }}"
   
 - name: Create inventory hosts representing VMs
   add_host:
     name: "{{ ((vm_hostname | format(item.0+1)) if ('%' in vm_hostname) else vm_hostname ) + '.' + nuage.domain }}"
-    ip: "{{ item.1.mgmt_ip }}"
+    ip: "{{ item.1.mgmt_ip | default( (nuage.networks['mgmt'].gateway | ipsubnet( mgmt_prefix )) | 
+            ipv4( nuage.networks['mgmt'].ip_start + ip_start + item.0 ) | ipv4('address') ) }}"
     groups: "{{ group }}"
     ansible_user: "{{ ansible_user | default('root') }}"
     ansible_port: "{{ ansible_port | default(22) }}"
     nuage: "{{ nuage }}"
     vm: "{{ item.1 }}"
-    host: "{{ item.1.host }}"
-    on_vmware: "{{ nuage.vcenter is defined and nuage.vcenter.ip == item.1.host }}"
+    index: "{{ item.0 }}"
+    host: "{{ item.1.host | default( nuage.hosts[ item.1.host_index ] ) }}"
+    on_vmware: "{{ nuage.vcenter is defined and nuage.vcenter.ip == ( item.1.host | default( nuage.hosts[ item.1.host_index ] ) ) }}"
     mgmt_bridge: "{{ item.1.mgmt_bridge | default( nuage.networks['mgmt'].bridge ) }}"
     data_bridge: "{{ item.1.data_bridge | default( nuage.networks['data'].bridge ) }}"
   with_indexed_items: "{{ vms }}"
