@@ -3,6 +3,26 @@
   remote_user: "{{ target_server_username }}"
   action: setup
 
+- name: Remove OVS packages on RHEL/CentOS machines if present
+  yum:
+    name: "{{ item }}"
+    state: absent
+  with_items:
+    - openvswitch.x86_64
+    - openstack-neutron*
+    - python-openvswitch.noarch 
+  remote_user: "{{ target_server_username }}"
+  when: ansible_os_family == "RedHat"
+
+- name: Remove OVS packages on Debian machines if present
+  apt:
+    name: "{{ item }}"
+    state: absent
+  with_items:
+    - openvswitch-switch
+  remote_user: "{{ target_server_username }}"
+  when: ansible_os_family == "Debian"
+
 - name: Enable optional rpms to install twisted core package on RedHat OS family distors
   blockinfile:
     dest: "/etc/yum.repos.d/redhat.repo"
