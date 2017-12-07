@@ -46,6 +46,10 @@
   - name: Set fact to capture guestfish command
     set_fact: guestfish_cmd="guestfish --rw -a {{ nuage.images_path }}/{{ vm_name }}/{{ qcow_name }} -m {{ guestfish_mount }}"
 
+  - name: Remove cloud-init files to stop it from overwriting our network config
+    command: "{{guestfish_cmd}} glob rm-rf /etc/systemd/system/multi-user.target.wants/cloud-*.service
+    ignore_errors: true
+
   - name: Create a temporary copy of the network script for eth0
     template: src=ifcfg-eth0.j2 backup=no dest={{ nuage.images_path }}/{{ vm_name }}/ifcfg-eth0
 
