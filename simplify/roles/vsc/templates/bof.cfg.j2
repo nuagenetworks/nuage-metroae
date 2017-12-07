@@ -6,8 +6,8 @@ speed                100
 wait                 3
 persist              off
 console-speed        115200
-{% set ip = vm.mgmt_ip + '/' + nuage.networks['mgmt'].netmask %}
-address          {{ ip | ipaddr() }}
+{% set my_ip = ip + '/' + nuage.networks['mgmt'].netmask %}
+address          {{ my_ip | ipaddr() }}
 primary-dns      {{ nuage.dns_server_list[0] }}
 {% if nuage.dns_server_list[1] is defined %}
 secondary-dns    {{ nuage.dns_server_list[1] }}
@@ -16,8 +16,8 @@ secondary-dns    {{ nuage.dns_server_list[1] }}
 tertiary-dns     {{ nuage.dns_server_list[2] }}
 {% endif %}
 dns-domain       {{ nuage.domain }}
-{% if vm.mgmt_static_route_list is defined %}
-{% for static_route in vm.mgmt_static_route_list %}
+{% if nuage.networks['mgmt'].routes is defined %}
+{% for static_route in nuage.networks['mgmt'].routes %}
 static-route {{ static_route }} next-hop {{ nuage.networks['mgmt'].gateway }}
 {% endfor %}
 {% endif %}
