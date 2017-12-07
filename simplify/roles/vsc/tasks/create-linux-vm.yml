@@ -1,5 +1,18 @@
 ---
 
+- name: Calculate data prefix
+  set_fact:
+    data_prefix: "{{ ( '0.0.0.0/' + nuage.networks['data'].netmask ) | ipaddr('prefix') }}"
+
+- name: Determine VSC control IP
+  set_fact:
+    control_ip: "{{ hostvars[item].vm.control_ip | default( (nuage.networks['data'].gateway | ipsubnet( data_prefix )) | 
+                ipv4( nuage.networks['data'].ip_start | default(2) + 7 + hostvars[item].index | int ) | ipv4('address') ) }}"
+  with_items: "{{ groups['vscs'] }}"
+  delegate_to: "{{item}}"
+  delegate_facts: true
+  run_once: true
+
 - name: Include OS specific variables
   include_vars: "../../vm-host/vars/{{ hostvars[host].ansible_os_family }}.yml"
   

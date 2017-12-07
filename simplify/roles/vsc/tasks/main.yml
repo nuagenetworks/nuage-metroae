@@ -1,25 +1,37 @@
 ---
 
+- name: Wait for VSC ssh to be ready
+  local_action:
+    module: wait_for
+    port: "22"
+    host: "{{ ip }}"
+    search_regex: OpenSSH
+    delay: 1
+
 - block:
-  - name: Revoke old VSC cert, if any
-    command: "/opt/vsd/ejbca/deploy/certMgmt.sh -a revoke -u {{ inventory_hostname_short }}"
+  - name: Revoke old VSC certs, if any
+    command: "/opt/vsd/ejbca/deploy/certMgmt.sh -a revoke -u {{ hostvars[item].inventory_hostname_short }}"
     ignore_errors: yes
+    with_items: "{{ groups['vscs'] }}"
 
   - name: Create and transfer certs from VSD for VSC ( requires pexpect )
     expect:
       timeout: 120
-      command: "/opt/vsd/ejbca/deploy/certMgmt.sh -a generate -u {{ inventory_hostname_short }} -c {{ inventory_hostname_short }} 
-             -d {{ inventory_hostname }} -f pem -t server -s {{ vsc_creds.username }}@{{inventory_hostname}}:/ -o csp"
+      command: "/opt/vsd/ejbca/deploy/certMgmt.sh -a generate -u {{  hostvars[item].inventory_hostname_short }} -c {{  hostvars[item].inventory_hostname_short }} 
+             -d {{  hostvars[item].inventory_hostname }} -f pem -t server -s {{ vsc_creds.username }}@{{ hostvars[item].ip }}:/ -o csp"
       responses:
         (?i)password: "{{ vsc_creds.password }}"
+    with_items: "{{ groups['vscs'] }}"
   delegate_to: "{{ groups['vsds'][0] }}"
   remote_user: "root"
+  run_once: true
 
 - block:
   - name: Patch bug in sros_config module
     shell: |
       sed -i 's/{,3}(/{,3}>?(/g' /usr/lib/python2.7/site-packages/ansible/plugins/terminal/sros.py
       rm -f /usr/lib/python2.7/site-packages/ansible/plugins/terminal/sros.pyc
+    run_once: true
 
   - name: Configure VSC for VNS
     sros_config:

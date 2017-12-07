@@ -22,7 +22,7 @@
         tasks_from: create-kvm
       vars:
         vm_role: "vns/utils"
-        hosts:  "{{ nuage.proxy.host }}"
+        hosts:  "{{ nuage.hosts[ nuage.proxy.host_index ] }}"
         vcpus:  "{{ proxy_vcpus }}"
         ram_gb: "{{ proxy_ram_gb }}"
         data_nic: true
@@ -53,10 +53,6 @@
   gather_facts: no
   tags: [ 'vsc', 'predeploy' ]
   tasks:
-    - name: Select control IPs
-      include_role:
-        name: vsc
-        tasks_from: set-control-ip
     - name: Create and configure VSC Linux VM for {{ inventory_hostname }}
       include_role:
         name: vsc
@@ -81,7 +77,7 @@
         tasks_from: create-kvm
       vars:
         vm_role: "vstat"
-        hosts:  "{{ nuage.stats | map(attribute='host') | list | unique }}"
+        hosts:  "{{ nuage.stats | map(attribute='host_index') | list | map('extract',nuage.hosts) | list | unique }}"
         vcpus:  "{{ es_vcpus }}"
         ram_gb: "{{ es_ram_gb }}"
       when: not on_vmware
