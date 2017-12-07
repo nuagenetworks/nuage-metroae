@@ -29,15 +29,15 @@
     register: mgmt_ip_ping_result
     delegate_to: localhost
 
-  - name: Assert no response to ping of hostname
+  - name: Assert reachability of hostname is the same as management IP
     assert:
       that: "host_ping_result.rc != 0 or mgmt_ip_ping_result.rc == 0"
-      msg:  "Response received from management IP {{ mgmt_ip }} but not from hostname {{ hostname }} Quitting."
+      msg:  "Response received from hostname {{ hostname }} but not from management IP {{ mgmt_ip }}. Quitting."
 
-  - name: Assert no response to ping of IP address
+  - name: Assert reachability of management IP is the same as hostname
     assert:
       that: "host_ping_result.rc == 0 or mgmt_ip_ping_result.rc != 0"
-      msg:  "Response received from hostname {{ hostname }} but not from management IP {{ mgmt_ip }}. Quitting."
+      msg:  "Response received from management IP {{ mgmt_ip }} but not from hostname {{ hostname }} Quitting."
 
   when: not target_server_type | match("heat") or not dhcp
 
