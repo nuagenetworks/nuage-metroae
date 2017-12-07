@@ -32,7 +32,16 @@
 
 - block:
 
-  - name: Deploy Stats OVA on vCenter
+  - name: Configure vCenter path
+    set_fact:
+      vcenter_path: "vi://'{{ vcenter.username | urlencode }}':'{{ vcenter.password | urlencode }}'@{{ target_server }}/{{ vcenter.datacenter }}/host/{{ vcenter.cluster }}"
+
+  - name: Update vCenter path if resource pool is configured
+    set_fact:
+      vcenter_path: "vi://'{{ vcenter.username | urlencode }}':'{{ vcenter.password | urlencode }}'@{{ target_server }}/{{ vcenter.datacenter }}/host/{{ vcenter.cluster }}/Resources/{{ vcenter.resource_pool | urlencode }}"
+    when: vcenter.resource_pool != 'NONE'
+
+  - name: Deploy Stats image on vCenter
     connection: local
     command: >
       {{ vcenter.ovftool }}
@@ -45,67 +54,20 @@
       -n={{ vm_name }}
       --net:"Management={{ mgmt_bridge }}"
       "{{ vstat_ova_or_ovf_path }}/{{ vstat_ova_or_ovf_file_name }}"
-      vi://'{{ vcenter.username | urlencode }}':'{{ vcenter.password | urlencode }}'@{{ target_server }}/{{ vcenter.datacenter }}/host/{{ vcenter.cluster }}
-    when: "'.ova' in vstat_ova_or_ovf_file_name"
+      {{ vcenter_path }}
 
-  - name: Deploy Stats OVF on vCenter
+  - name: Waiting until VMware tools becomes available
     connection: local
-    command: >
-      {{ vcenter.ovftool }}
-      --acceptAllEulas
-      --noSSLVerify
-      --powerOn
-      --machineOutput
-      -dm=thin
-      -ds={{ vcenter.datastore }}
-      -n={{ vm_name }}
-      --net:"OVS DataPath={{ mgmt_bridge }}"
-      "{{ vstat_ova_or_ovf_path }}/{{ vstat_ova_or_ovf_file_name }}"
-      vi://'{{ vcenter.username | urlencode }}':'{{ vcenter.password | urlencode }}'@{{ target_server }}/{{ vcenter.datacenter }}/host/{{ vcenter.cluster }}
-    when: "'.ovf' in vstat_ova_or_ovf_file_name"
+    vmware_guest_tools_wait:
+      hostname: "{{ target_server }}"
+      username: "{{ vcenter.username }}"
+      password: "{{ vcenter.password }}"
+      name: "{{ vm_name }}"
+      datacenter: "{{ vcenter.datacenter }}"
+      validate_certs: no
+    register: vstat_vm_facts
 
-  - block:
-    - name: Waiting until VMware tools becomes available
-      connection: local
-      vmware_guest_tools_wait:
-        hostname: "{{ target_server }}"
-        username: "{{ vcenter.username }}"
-        password: "{{ vcenter.password }}"
-        name: "{{ vm_name }}"
-        datacenter: "{{ vcenter.datacenter }}"
-        validate_certs: no
-      register: vstat_vm_facts
-
-    - debug: var=vstat_vm_facts verbosity=1
-    when: ansible_version.full | version_compare('2.3', '>=')
-
-  - block:
-    - name: Waiting 120 seconds to make sure the VSTAT is up
-      pause:
-        seconds: 120
-
-    - name: Gathering info on VM
-      connection: local
-      vmware_guest:
-        hostname: "{{ target_server }}"
-        username: "{{ vcenter.username }}"
-        password: "{{ vcenter.password }}"
-        name: "{{ vm_name }}"
-        datacenter: "{{ vcenter.datacenter }}"
-        state: gatherfacts
-        validate_certs: no
-      register: vstat_vm_facts
-
-    - debug: var=vstat_vm_facts verbosity=1
-
-    - name: Verify the Stats VM came up correctly
-      assert:
-        that:
-          - "vstat_vm_facts.instance.hw_guest_id is defined"
-          - "not vstat_vm_facts.instance.hw_guest_id is none"
-          - "not vstat_vm_facts.instance.hw_guest_id == ''"
-        msg: "Stats VM {{ inventory_hostname }} did not come up after two minutes"
-    when: ansible_version.full | version_compare('2.3', '<')
+  - debug: var=vstat_vm_facts verbosity=1
 
   - name: Writing eth0 network script file to the Stats VM
     connection: local
@@ -116,7 +78,7 @@
       datacenter: "{{ vcenter.datacenter }}"
       cluster: "{{ vcenter.cluster }}"
       validate_certs: no
-      vm_id: "{{ vmid }}"
+      vm_id: "{{ vm_name }}"
       vm_username: "{{ vmuser }}"
       vm_password: "{{ vmpass }}"
       vm_shell: "/usr/bin/echo"
@@ -131,7 +93,7 @@
       datacenter: "{{ vcenter.datacenter }}"
       cluster: "{{ vcenter.cluster }}"
       validate_certs: no
-      vm_id: "{{ vmid }}"
+      vm_id: "{{ vm_name }}"
       vm_username: "{{ vmuser }}"
       vm_password: "{{ vmpass }}"
       vm_shell: "/usr/bin/chown"
@@ -146,7 +108,7 @@
       datacenter: "{{ vcenter.datacenter }}"
       cluster: "{{ vcenter.cluster }}"
       validate_certs: no
-      vm_id: "{{ vmid }}"
+      vm_id: "{{ vm_name }}"
       vm_username: "{{ vmuser }}"
       vm_password: "{{ vmpass }}"
       vm_shell: "/usr/bin/echo"
@@ -161,7 +123,7 @@
       datacenter: "{{ vcenter.datacenter }}"
       cluster: "{{ vcenter.cluster }}"
       validate_certs: no
-      vm_id: "{{ vmid }}"
+      vm_id: "{{ vm_name }}"
       vm_username: "{{ vmuser }}"
       vm_password: "{{ vmpass }}"
       vm_shell: "/usr/bin/chown"
@@ -176,7 +138,7 @@
       datacenter: "{{ vcenter.datacenter }}"
       cluster: "{{ vcenter.cluster }}"
       validate_certs: no
-      vm_id: "{{ vmid }}"
+      vm_id: "{{ vm_name }}"
       vm_username: "{{ vmuser }}"
       vm_password: "{{ vmpass }}"
       vm_shell: "/usr/bin/mkdir"
@@ -191,7 +153,7 @@
       datacenter: "{{ vcenter.datacenter }}"
       cluster: "{{ vcenter.cluster }}"
       validate_certs: no
-      vm_id: "{{ vmid }}"
+      vm_id: "{{ vm_name }}"
       vm_username: "{{ vmuser }}"
       vm_password: "{{ vmpass }}"
       vm_shell: "/usr/bin/chown"
@@ -210,7 +172,7 @@
       datacenter: "{{ vcenter.datacenter }}"
       cluster: "{{ vcenter.cluster }}"
       validate_certs: no
-      vm_id: "{{ vmid }}"
+      vm_id: "{{ vm_name }}"
       vm_username: "{{ vmuser }}"
       vm_password: "{{ vmpass }}"
       vm_shell: "/usr/bin/echo"
@@ -225,7 +187,7 @@
       datacenter: "{{ vcenter.datacenter }}"
       cluster: "{{ vcenter.cluster }}"
       validate_certs: no
-      vm_id: "{{ vmid }}"
+      vm_id: "{{ vm_name }}"
       vm_username: "{{ vmuser }}"
       vm_password: "{{ vmpass }}"
       vm_shell: "/usr/bin/chmod"
@@ -240,7 +202,7 @@
       datacenter: "{{ vcenter.datacenter }}"
       cluster: "{{ vcenter.cluster }}"
       validate_certs: no
-      vm_id: "{{ vmid }}"
+      vm_id: "{{ vm_name }}"
       vm_username: "{{ vmuser }}"
       vm_password: "{{ vmpass }}"
       vm_shell: "/usr/sbin/reboot"
