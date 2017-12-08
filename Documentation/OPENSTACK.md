@@ -41,6 +41,17 @@ The user may be depoying the OpenStack plugin from a tar-gz archive. The archive
 
 `os-compute-predeploy` and `os-compute-deploy` roles are used in deploying compute vms that will be managed by OSC. `os-compute-postdeploy` role will replace the ovs packages in thesecompute vms with Nuage VRS packages. The user requirements are same as OSC.
 
+### VRS and OpenStack Compute nodes integration
+
+Inegrating VRS with OpenStack Compute nodes requires user to provide information (ip addresses) of compute nodes. VRS will be deployed onto these nodes, by replacing OVS packages. A sample yml file can be found in [examples](../examples/build_vars.yml.VRSOnly). Following are the steps to be followed in the same order for successful integration
+
+1. Edit build_vars.yml according to [examples](../examples/build_vars.yml.VRSOnly)
+2. Run ./metro-ansible nuage_unzip.yml -vvv
+3. Run ./metro-ansible build.yml -vvv
+4. Run ./metro-ansible vrs_predeploy.yml -vvv
+5. Run ./metro-ansible vrs_deploy.yml -vvv
+6. Finally run ./metro-ansible vrs_oscompute_integration.yml -vvv
+
 ### VSD-OSC intergration
 
 `vsd-osc-integration` role helps to integrate OpenStackController(OSC) with VSD by making necessary changes to horizon, nova and neutron plugin files on OSC. This role can be run individually provided, OSC and VSD are installed by user. Prior to running this role/playbook, user needs to provide information related to e.g. openstack release, nuage openstack plugins dir, etc. A sample yml file can be found in [examples](../examples/build_vars.yml.vsd_osc_integration). A sample workflow for vsd-osc integration is defined below.
