@@ -23,5 +23,39 @@
         {{ hostvars[host].ansible_host }}    {{ host }} {{ (nuage.vsds | length == 3) | ternary( 'xmpp.' + nuage.domain, '' ) }}
         {% endfor %}
         {% for host in groups['vscs']  %}
-        {{ hostvars[host].ip }}    {{ host }}
+        {{ hostvars[host].ansible_host }}    {{ host }}
         {% endfor %}
+
+  - name: Configure yum proxy
+    lineinfile:
+      dest: /etc/yum.conf
+      regexp: "^proxy="
+      line: "proxy={{ nuage.http_proxy }}"
+    when: nuage.http_proxy is defined
+
+  - name: Configure ntpd and ntpdate and local time zone
+    include_role:
+      name: common
+      tasks_from: linux-ntp
+
+  - name: Install dnsmasq package
+    yum: name=dnsmasq state=present
+
+  - name: Update /etc/dnsmasq.conf
+    blockinfile:
+      dest: /etc/dnsmasq.conf
+      block: |
+      #
+      # Stop PTR queries from being passed upstream, speeds up ssh login
+      #
+      local=/in-addr.arpa/
+
+      {% for host in groups['vsds']  %}
+      srv-host=_xmpp-client._tcp.xmpp.{{nuage.domain}},{{host}},5222
+      {% endfor }
+
+  - name: Start dnsmasq
+    service:
+      name: dnsmasq
+      enabled: true
+      state: started

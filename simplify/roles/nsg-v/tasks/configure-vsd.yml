@@ -1,29 +1,35 @@
 ---
 
+- name: Set proxy management IP
+  set_fact:
+    proxy_ip: "{{ hostvars[ groups['proxy'][0] ].ansible_host }}"
+    vsc1_ip:  "{{ hostvars[groups['vscs'][0]].control_ip }}"
+    vsc2_ip:  "{{ (groups['vscs']|length > 1) | ternary( hostvars[groups['vscs'][1]].control_ip, '0.0.0.0') }}"
+
 - name: Get generated SSH keys
   command: cat /root/.ssh/id_rsa.pub
   register: ssh_key
-  delegate_to: "{{ groups['proxy'][0] }}"
+  delegate_to: "{{ proxy_ip }}"
 
 - block:
   - name: Provision VSD
     nuage-import:
-       vsd: "{{ hostvars[ groups['vsds'][0] ].ip }}"
+       vsd: "{{ hostvars[ groups['vsds'][0] ].ansible_host }}"
        organization: csp
        config:
           infrastructurevscprofiles:
-            - { name: "VSC1", firstController: "{{ hostvars[groups['vscs'][0]].control_ip }}" }
-            - { name: "VSC2", firstController: "{{ hostvars[groups['vscs'][1]].control_ip | default('0.0.0.0') }}" }
-            - { name: "VSC1+2", firstController: "{{ hostvars[groups['vscs'][0]].control_ip }}", 
-                                secondController: "{{ hostvars[groups['vscs'][1]].control_ip | default('0.0.0.0') }}" }
+            - { name: "VSC1", firstController: "{{ vsc1_ip }}" }
+            - { name: "VSC2", firstController: "{{ vsc2_ip }}" }
+            - { name: "VSC1+2", firstController: "{{ vsc1_ip }}", secondController: "{{ vsc2_ip }}" }
           infrastructuregatewayprofiles:
             - { name: "Infra", proxyDNSName: "proxy.{{ nuage.domain }}" }
           infrastructureaccessprofiles:
             - { name: "SSH Login", userName: "nuage", password: "Alcateldc", SSHAuthMode: "PASSWORD_AND_KEY_BASED",
-                sshkeys: [ { name: "Proxy", keyType: "RSA", publicKey: "{{ ssh_key }}" } ] }
+                sshkeys: [ { name: "Proxy", keyType: "RSA", publicKey: "{{ ssh_key.stdout }}" } ] }
           nsgatewaytemplates:
             - { name: "NSG-V", 
                 infrastructureProfileID: "ID:infrastructuregatewayprofiles.Infra",
+                infrastructureAccessProfileID: "ID:infrastructureaccessprofiles.SSH Login",
                 nsporttemplates: [ 
                   { name : "WAN", userMnemonic : "uplink1", physicalName : "port1", portType : "NETWORK", VLANRange : "0",
                     vlantemplates : [ { value : 0, description : "untagged", associatedVSCProfileID : "ID:infrastructurevscprofiles.VSC1+2" } ] },
@@ -31,11 +37,16 @@
                     vlantemplates : [ { value : 0, description : "untagged" } ] }
                 ]
               }
+          enterpriseprofiles:
+            - { name: "VNS features", allowGatewayManagement: true, BGPEnabled: true, enableApplicationPerformanceManagement: true, 
+                VNFManagementEnabled: true, encryptionManagementMode : "MANAGED", allowedForwardingClasses: ["A","B","C","D","E","F","G","H"] }
+          enterprises:
+            - { name: "Test", localAS: 65101, enterpriseProfileID: "ID:enterpriseprofiles.VNS features", allowedForwardingClasses: ["A","B","C","D","E","F","G","H"] }
     register: output
   - debug: var=output
   - name: Provision NSGs and create ZFB .iso file for each
     nuage-import:
-       vsd: "{{ hostvars[ groups['vsds'][0] ].ip }}"
+       vsd: "{{ hostvars[ groups['vsds'][0] ].ansible_host }}"
        organization: Test
        config:
           nsgateways:
@@ -43,7 +54,7 @@
                 nsports: [ { name: "WAN", vlans: [ { value: 0, uplinkconnections: [{ 
                     role: "PRIMARY", 
                     mode: "Static", 
-                    address: "{{hostvars[item].ip}}",
+                    address: "{{hostvars[item].ansible_host}}",
                     gateway: "{{nuage.networks['data'].gateway}}", 
                     netmask: "{{nuage.networks['data'].netmask}}", 
                     DNSAddress: "{{nuage.dns_server_list[0]}}" }] } ] } ] }

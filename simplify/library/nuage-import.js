@@ -15,6 +15,11 @@ function parseJSON(str){
     }
 }
 
+function isStringArray(a) {
+  var isa = ( a instanceof Array );
+  return ( isa || (typeof(a)=="object" && a['0'])) && (typeof(a[ isa ? 0 : '0' ]) == "string")
+}
+
 function readArguments() {
     return new Promise((resolve, reject) => {
         fs.readFile(process.argv[2], (err, data) => {
@@ -115,7 +120,7 @@ var to_resolve = {}
 // Mapping of NSG obj ID to ZFB request result
 var job_results = {}
 
-var templated_objects = { "nsgateways" : 1, "domains" : 1, "l2domains" : 1 }
+// var templated_objects = { "nsgateways" : 1, "domains" : 1, "l2domains" : 1 }
 
 // Nuage object key fields, these are used in filter expressions
 var key_fields = [ "name", "priority", "type", "actualType", "value", "userName", "nextHopIp", "role", "address", "minAddress" ];
@@ -253,6 +258,8 @@ function putIDs( context, root, ids ) {
 		 if ( context.dont_postpone ) process.exit(-7)
 		 return;
 	  }
+	  // if 'ids' is a mapped JSON array, convert it to a real array
+	  if ( typeof(t) == "string" ) t = parseInt(t);
 	  ids[t] = resolved;
    }
 
@@ -263,17 +270,23 @@ function putIDs( context, root, ids ) {
    }, onError )
 }
 
+var embeddedArrays = {
+  "allowedForwardingClasses" : true,
+  "actualValues" : true
+}
+
 function createArrays(context,id)
 {
 	var template = context.template;
 	for ( var p in template ) {
 		var t = template[p]
 	  
-		if ( (t instanceof Array) ) {
+	    // Ansible passes arrays as JSON Objects with '0', '1' etc. as attributes
+		if ( (t instanceof Array) || (typeof(t)=="object" && t['0'])) {
 			// Samples of Arrays of strings: User IDs, vport tags, hub domains, ...
 			var root = '/' + context.set + '/' + id;
-			if ( typeof(t[0]) == "string" ) {
-				if ( p != "actualValues" ) {	// skip DHCP option values
+			if ( isStringArray(t) ) {
+				if ( !(p in embeddedArrays) ) {	// skip DHCP option values, enterprise forwarding classes
 					putIDs( context, root + '/' + p, t );
 				}
 			} else {
@@ -286,7 +299,6 @@ function createArrays(context,id)
 				  count : context.count	// Value of '#count' passed down to children
 				  // rs : incRef(context.rs)
 			    }
-				msg += ( "createArrays: calling createRecursive root="+root );
 		        createRecursive( subContext )
 		      }
 			}
@@ -438,10 +450,10 @@ function resolveVars( context, callback ) {
  var instance = {}
  for ( var p in context.template ) {
     var t = context.template[p]
-    if ( (t instanceof Array) && (typeof(t[0])==="string") ) {
+    if ( isStringArray(t) ) {
 	   msg += ( "Resolving array of strings ( vPorttags or user IDs )" )
 	   var vals = []
-	   for ( var i = 0; i < t.length; ++i ) {
+	   for ( var i in t ) {
 	      var resolved = resolveStr( t[i], context, callback ) 
 		  if (!resolved) return null
 		  vals.push( resolved )
@@ -471,13 +483,15 @@ function zeropad(num, size) {
 }
 
 function onError(err) {
-	msg += ( "Error response from API call: " + JSON.stringify(err) );
-	++apiErrors;
+	msg += ( "Error response from API call: " + JSON.stringify(err.response.text) );
+	
+	// Dont count 'unable to update' errors
+	if ( JSON.parse(err.response.text).internalErrorCode != 3308 ) ++apiErrors;
 	if ( --nesting==0 ) doExit()
 }
 
-function createMulti( context, count, callback ) {
-	var instance = resolveVars( context, function() { createMulti(context,count,callback) } );
+function createMulti( context, count ) {
+	var instance = resolveVars( context, function() { createMulti(context,count) } );
 	if (!instance) {
 		// More variables to resolve
 		return;
@@ -500,8 +514,8 @@ function createMulti( context, count, callback ) {
 			}
 			onResponse( resultContext, body[0] )
 			
-			// For templated objects, use callback to lookup resulting object
-			if (callback) callback();
+			// For templated objects, could use callback to lookup resulting object
+			// if (callback) callback();
 		  } else {
 			console.error( "Empty response for create object at " + context.root + "/" + context.set + ":" + JSON.stringify(context.template) )
 		  }
@@ -518,7 +532,7 @@ function createMulti( context, count, callback ) {
 				basename 	: context.basename,
 				count		: count-1
 			}
-			createMulti( nextContext, count-1, null )	// no callback, or callback with new context?
+			createMulti( nextContext, count-1 )	// no callback, or callback with new context?
 		  }
 		  if ( --nesting==0 ) doExit()
 	 }, onError )
@@ -663,11 +677,11 @@ function createRecursive( context ) {
 			// New: For redirection targets, save the name-2-ESI mapping
 			if ( obj.ESI ) {
 			    console.log( "Saving ESI for Redirection Target " + obj.name + ":" + obj.ESI )
-				rt_2_esi[ "redirectiontargets." + obj.name ]  = obj.ESI
+			    rt_2_esi[ "redirectiontargets." + obj.name ]  = obj.ESI
 			}
 			
 			// PUT to update minor changes to a single object, some of the vCenter APIs only accept PUT, not POST
-			updateObject( context, id );
+			if (!obj.readonly) updateObject( context, id );
 		}
 
 		var is_leaf = onResponse( context, objs[count-1] )	// Pass the last object
@@ -698,9 +712,9 @@ function createRecursive( context ) {
 			 
 			 //
 			 // When creating a templated object like an NSG, we need to lookup the inherited properties ( like VLANs )
-			 // and then continue processing
+			 // and then continue processing?
 			 //
-			 createMulti( context, count, (context.set in templated_objects) ? function() { createRecursive(context) } : null )
+			 createMulti( context, count )
 		 }
 	  }
 	  if ( --nesting==0 ) doExit()
