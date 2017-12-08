@@ -43,7 +43,7 @@ The user may be depoying the OpenStack plugin from a tar-gz archive. The archive
 
 ### VRS and OpenStack Compute nodes integration
 
-Inegrating VRS with OpenStack Compute nodes requires user to provide information (ip addresses) of compute nodes. VRS will be deployed onto these nodes, by replacing OVS packages. A sample yml file can be found in [examples](../examples/build_vars.yml.VRSOnly). Following are the steps to be followed in the same order for successful integration
+Integrating VRS with OpenStack Compute nodes requires user to provide information (ip addresses) of compute nodes. VRS will be deployed onto these nodes, by replacing OVS packages. A sample yml file can be found in [examples](../examples/build_vars.yml.VRSOnly). Following are the steps to be followed in the same order for successful integration
 
 1. Edit build_vars.yml according to [examples](../examples/build_vars.yml.VRSOnly)
 2. Run ./metro-ansible nuage_unzip.yml -vvv
