@@ -11,13 +11,14 @@
     ansible_user: "{{ nuage.ansible_user | default('root') }}"
     nuage: "{{ nuage }}"
   with_items: "{{ vms }}"
-  
+
 - name: Create inventory hosts representing VMs
   add_host:
     name: "{{ ((vm_hostname | format(item.0+1)) if ('%' in vm_hostname) else vm_hostname ) + '.' + nuage.domain }}"
-    ip: "{{ item.1.mgmt_ip | default( (nuage.networks['mgmt'].gateway | ipsubnet( mgmt_prefix )) | 
-            ipv4( nuage.networks['mgmt'].ip_start + ip_start | int + item.0 ) | ipv4('address') ) }}"
     groups: "{{ group }}"
+    # use 'ansible_host' as IP address, such that we don't need DNS to contact servers
+    ansible_host: "{{ item.1.mgmt_ip | default( (nuage.networks['mgmt'].gateway | ipsubnet( mgmt_prefix )) | 
+                   ipv4( nuage.networks['mgmt'].ip_start + ip_start | int + item.0 ) | ipv4('address') ) }}"
     ansible_user: "{{ ansible_user | default('root') }}"
     ansible_port: "{{ ansible_port | default(22) }}"
     nuage: "{{ nuage }}"

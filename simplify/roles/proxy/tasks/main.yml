@@ -4,7 +4,7 @@
   local_action:
     module: wait_for
     port: "22"
-    host: "{{ ip }}"
+    host: "{{ ansible_host }}"
     search_regex: OpenSSH
     delay: 1
 
@@ -14,17 +14,13 @@
     args:
       creates: "/root/.ssh/id_rsa"
 
-  - name: Get generated SSH keys
-    command: cat /root/.ssh/id_rsa.pub
-    register: ssh_key
-
   - name: Update /etc/hosts file for dnsmasq
     blockinfile:
       dest: /etc/hosts
       block: |
-        {{ ip }}	{{ ansible_hostname }}
+        {{ ansible_host }}	{{ inventory_hostname }}
         {% for host in groups['vsds']  %}
-        {{ hostvars[host].ip }}    {{ host }} {{ (nuage.vsds | length == 3) | ternary( 'xmpp.' + nuage.domain, '' ) }}
+        {{ hostvars[host].ansible_host }}    {{ host }} {{ (nuage.vsds | length == 3) | ternary( 'xmpp.' + nuage.domain, '' ) }}
         {% endfor %}
         {% for host in groups['vscs']  %}
         {{ hostvars[host].ip }}    {{ host }}

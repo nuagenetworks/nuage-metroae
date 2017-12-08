@@ -1,5 +1,10 @@
 ---
 
+- name: Get generated SSH keys
+  command: cat /root/.ssh/id_rsa.pub
+  register: ssh_key
+  delegate_to: "{{ groups['proxy'][0] }}"
+
 - block:
   - name: Provision VSD
     nuage-import:
@@ -7,14 +12,15 @@
        organization: csp
        config:
           infrastructurevscprofiles:
-            - { name: "VSC1", firstController: "{{ nuage.vscs[0].control_ip }}" }
-            - { name: "VSC2", firstController: "{{ nuage.vscs[1].control_ip }}" }
-            - { name: "VSC1+2", firstController: "{{ nuage.vscs[0].control_ip }}", secondController: "{{ nuage.vscs[1].control_ip }}" }
+            - { name: "VSC1", firstController: "{{ hostvars[groups['vscs'][0]].control_ip }}" }
+            - { name: "VSC2", firstController: "{{ hostvars[groups['vscs'][1]].control_ip | default('0.0.0.0') }}" }
+            - { name: "VSC1+2", firstController: "{{ hostvars[groups['vscs'][0]].control_ip }}", 
+                                secondController: "{{ hostvars[groups['vscs'][1]].control_ip | default('0.0.0.0') }}" }
           infrastructuregatewayprofiles:
             - { name: "Infra", proxyDNSName: "proxy.{{ nuage.domain }}" }
           infrastructureaccessprofiles:
             - { name: "SSH Login", userName: "nuage", password: "Alcateldc", SSHAuthMode: "PASSWORD_AND_KEY_BASED",
-                sshkeys: [ { name: "Proxy", keyType: "RSA", publicKey: "{{ hostvars[groups['proxy'][0]].ssh_key }}" } ] }
+                sshkeys: [ { name: "Proxy", keyType: "RSA", publicKey: "{{ ssh_key }}" } ] }
           nsgatewaytemplates:
             - { name: "NSG-V", 
                 infrastructureProfileID: "ID:infrastructuregatewayprofiles.Infra",
