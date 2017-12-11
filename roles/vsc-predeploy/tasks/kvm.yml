@@ -1,8 +1,15 @@
 ---
-- name: Pull facts on target_server {{ target_server }}
+- name: Set local variable with vmname
+  set_fact:
+    vm_name: "{{ vmname }}"
+
+- name: Query Target Server facts
   action: setup
   remote_user: "{{ target_server_username }}"
   delegate_to: "{{ target_server }}"
+
+- name: Include OS-specific variables.
+  include_vars: "{{ ansible_os_family }}.yml"
 
 - name: Check target for supported OS
   fail: msg="Unsupported OS family ({{ ansible_os_family }})"
@@ -21,15 +28,15 @@
   when: (mgmt_bridge not in ansible_interfaces) or
         (data_bridge not in ansible_interfaces)
 
-- name: Check if required OS packages are installed
-  command: rpm -q qemu-kvm libvirt bridge-utils libguestfs-tools libvirt-python
-  when: ansible_os_family | match("RedHat")
-  delegate_to: "{{ target_server }}"
-  remote_user: "{{ target_server_username }}"
-  register: rpm_check
-  ignore_errors: True
-
 - block:
+  - name: Check if required OS packages are installed
+    command: rpm -q qemu-kvm libvirt bridge-utils libguestfs-tools libvirt-python
+    register: rpm_check
+    ignore_errors: True
+
+  - name: Print rpm_check when verbosity >= 1
+    debug: var=rpm_check verbosity=1
+
   - name: If RedHat, install packages for RedHat OS family distros
     yum: name={{ item }} state=present
     with_items:
@@ -38,6 +45,7 @@
      - bridge-utils
      - libguestfs-tools
      - libvirt-python
+    when: rpm_check.rc == 1
 
   - name: Make sure libvirtd has started
     service:
@@ -45,35 +53,13 @@
       enabled: yes
       state: started
 
-  when: ansible_os_family | match("RedHat") and rpm_check.rc == 1
   delegate_to: "{{ target_server }}"
   remote_user: "{{ target_server_username }}"
-
-- name: Install packages for Debian OS family distros
-  remote_user: "{{ target_server_username }}"
-  delegate_to: "{{ target_server }}"
-  apt: name={{ item }} state=present
-  with_items:
-   - qemu-kvm
-   - libvirt-bin
-   - bridge-utils
-   - libguestfs-tools
-   - python-libvirt
-  when: ansible_os_family | match("Debian")
-
-- name: Pull facts on target_server
-  action: setup
-  delegate_to: "{{ target_server }}"
-  remote_user: "{{ target_server_username }}"
-
-- name: Set local variable with vmname
-  set_fact:
-    vm_name: "{{ vmname }}"
 
 - include_role:
     name: check-node-running
 
-- name: Display if skipping VSC predeploy
+- name: Display if skipping predeploy
   debug:
     msg:
       - "****************************************************"
@@ -83,16 +69,17 @@
 
 - block:
 
-  - name: Include OS-specific variables.
-    include_vars: "{{ ansible_os_family }}.yml"
+    - name: Create libvirt image directory
+      file: path={{ images_path }}/{{ vmname }}
+            state=directory
+            owner={{ libvirt.user }}
+            group={{ libvirt.group }}
 
-  - block:
-
-    - name: Create VSC directory
-      file: path={{ images_path }}/{{ vmname }} state=directory owner={{ libvirt.user }} group={{ libvirt.group }}
-
-    - name: Copy VSC qcow2 image to {{ target_server }}
-      copy: src={{ vsc_qcow2_path }}/{{ vsc_qcow2_file_name }} dest={{ images_path }}/{{ vmname }}/{{ inventory_hostname }}.qcow2 owner={{ libvirt.user }} group={{ libvirt.group }}
+    - name: Copy the VSC qcow2 image to virt images diectory
+      copy: src={{ vsc_qcow2_path }}/{{ vsc_qcow2_file_name }}
+            dest={{ images_path }}/{{ vmname }}/{{ inventory_hostname }}.qcow2
+            owner={{ libvirt.user }}
+            group={{ libvirt.group }}
 
     - name: Setup VSC temporary configuration files
       template: src={{ item }}.j2 backup=no dest={{ images_path }}/{{ vmname }}/{{ item }}
@@ -112,7 +99,7 @@
         - bof.cfg
         - config.cfg
 
-    - name: Define VSC guest VM
+    - name: Define new VSC VM
       virt: name={{ vmname }}
             command=define
             xml="{{ lookup('template', 'vsc.xml.j2') }}"
@@ -124,21 +111,7 @@
             autostart=True
             uri=qemu:///system
 
-    - name: Get updated VM information from {{ target_server }}
-      virt: command=info
-      register: virt_info
-
-    - name: Verify that VSC VM is running
-      assert: { that: "virt_info['{{ vmname }}']['state'] == 'running'" }
-
-    delegate_to: "{{ target_server }}"
-    remote_user: "{{ target_server_username }}"
-
-  - name: Wait for VSC ssh to be ready
-    include_role:
-      name: common
-      tasks_from: wait-for-ssh
-    vars:
-      ssh_host: "{{ mgmt_ip }}"
-
   when: not vsc_present
+  delegate_to: "{{ target_server }}"
+  remote_user: "{{ target_server_username }}"
+
