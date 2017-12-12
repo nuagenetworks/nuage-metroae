@@ -36,6 +36,8 @@
   nuage_append: filename="{{ report_path }}" text="{{ net_conf.info | to_nice_json}}\n"
   delegate_to: localhost
 
+- include: monit_status.yml
+
 - name: Execute list_p1db command on VSD(s)
   command: "{{ p1db_cmd }}"
   register: list_p1db_output
@@ -97,7 +99,5 @@
       that: "user_list.stdout|search('keyserver@{{ vsd_fqdn }}')"
       msg: "keyserver@{{ vsd_fqdn }} could not be found in '/opt/ejabberd/bin/ejabberdctl connected_users'"
   when: vsd_sa_or_ha|match('ha')
-
-- include: monit_status.yml
 
 - include: report_footer.yml
