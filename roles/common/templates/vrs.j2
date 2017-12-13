@@ -7,6 +7,10 @@ vrs_arch: {{ vrs_arch }}
 node_ip_addr: {{ item.1 }}
 active_controller_addr: {{ item.0.active_controller_ip }}
 standby_controller_addr: {{ item.0.standby_controller_ip }}
+dkms_install: {{ item.0.dkms_install | default(False) }}
+{% if item.0.uplink_interface is defined %}
+uplink_interface: {{ item.0.uplink_interface }}
+{% endif %}
 
 {% if vrs_arch|string() == "el6" %}
 vrs_package_path: {{ el6_vrs_package_path }}
@@ -18,6 +22,18 @@ vrs_package_file_name_list:
 {% endfor %}
 {% else %}
   - "el6_vrs_package_file_name_list not defined"
+{% endif %}
+{% if item.0.dkms_install %}
+dkms_package_path: {{ el6_dkms_package_path }}
+dkms_package_file_name_list:
+
+{% if el6_dkms_package_file_name_list is defined %}
+{% for el6_dkms_file_name in el6_dkms_package_file_name_list %}
+  - {{ el6_dkms_file_name }}
+{% endfor %}
+{% else %}
+  - "el6_dkms_package_file_name_list not defined"
+{% endif %}
 {% endif %}
 
 {% elif vrs_arch|string() == "el7" %}
@@ -31,6 +47,19 @@ vrs_package_file_name_list:
 {% endfor %}
 {% else %}
   - "el7_vrs_package_file_name_list not defined"
+{% endif %}
+
+{% if item.0.dkms_install %}
+dkms_package_path: {{ el7_dkms_package_path }}
+dkms_package_file_name_list:
+
+{% if el7_dkms_package_file_name_list is defined %}
+{% for el7_dkms_file_name in el7_dkms_package_file_name_list %}
+  - {{ el7_dkms_file_name }}
+{% endfor %}
+{% else %}
+  - "el7_dkms_package_file_name_list not defined"
+{% endif %}
 {% endif %}
 
 {% if selinux_package_file_name_list is defined %}
@@ -51,6 +80,18 @@ vrs_package_file_name_list:
 {% endfor %}
 {% else %}
   - "u14_04_vrs_package_file_name_list not defined"
+{% endif %}
+{% if item.0.dkms_install %}
+dkms_package_path: {{ u14_dkms_package_path }}
+dkms_package_file_name_list:
+
+{% if u14_04_dkms_package_file_name_list is defined %}
+{% for u14_04_dkms_file_name in u14_04_dkms_package_file_name_list %}
+  - {{ u14_04_dkms_file_name }}
+{% endfor %}
+{% else %}
+  - "u14_04_dkms_package_file_name_list not defined"
+{% endif %}
 {% endif %}
 
 {% elif vrs_arch|string() == "u16.04" %}

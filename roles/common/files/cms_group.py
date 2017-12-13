@@ -28,16 +28,17 @@ if __name__ == '__main__':
 
     # Get VSD related parameters
     try:
-        with open(args.playbook_dir + '/roles/vsd-osc-config/vars/main.yml',
-                  'r') as fh:
+        playbook_dir = args.playbook_dir.strip('playbooks')
+        with open(playbook_dir + 'group_vars/all', 'r') as fh:
             vsd_params = yaml.load(fh)
     except Exception as e:
         print("ERROR: Failure reading file: %s" % e)
 
     # Create a session as csp user
     try:
-        vsd_params['csp']['api_url'] = 'https://' + args.vsd_ip_addr + ':8443'
-        session = NUVSDSession(**vsd_params['csp'])
+        vsd_params['vsd_auth']['api_url'] = 'https://' +\
+            args.vsd_ip_addr + ':8443'
+        session = NUVSDSession(**vsd_params['vsd_auth'])
         session.start()
         csproot = session.user
     except Exception as e:

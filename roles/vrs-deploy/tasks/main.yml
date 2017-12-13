@@ -54,7 +54,7 @@
     remote_user: "{{ target_server_username }}"
     file: path={{ temp_dir }}/{{ inventory_hostname }} state=directory
 
-  - name: Copy VRS packages to temporary directory for Redhat OS Family Distros
+  - name: Copy VRS packages to temporary directory
     remote_user: "{{ target_server_username }}"
     copy: src={{ vrs_package_path }}/{{ item }} dest={{ temp_dir }}/{{ inventory_hostname }}/{{ item }}
     with_items: "{{ vrs_package_file_name_list }}"
@@ -88,6 +88,29 @@
       - ansible_os_family == "RedHat"
       - ansible_distribution_major_version == '7'
       - selinux_package_path is defined and selinux_package_path != 'None'
+
+  - block:
+    - name: Copy DKMS packages to temporary directory for RHEL and Ubuntu14
+      remote_user: "{{ target_server_username }}"
+      copy: src={{ dkms_package_path }}/{{ item }} dest={{ temp_dir }}/{{ inventory_hostname }}/{{ item }}
+      with_items: "{{ dkms_package_file_name_list }}"
+  
+    - name: Install Nuage DKMS packages on Debian OS family distros
+      remote_user: "{{ target_server_username }}"
+      apt: deb={{ temp_dir }}/{{ inventory_hostname }}/{{ item }} state=present
+      with_items:
+       - "{{ dkms_package_file_name_list }}"
+      when: 
+        - ansible_os_family == "Debian"
+        - vrs_arch == "u14.04"
+
+    - name: Install Nuage DKMS packages on RedHat OS family distros
+      remote_user: "{{ target_server_username }}"
+      yum: name={{ temp_dir }}/{{ inventory_hostname }}/{{ item }} state=present
+      with_items:
+       - "{{ dkms_package_file_name_list }}"
+      when: ansible_os_family == "RedHat"
+    when: dkms_install
 
   - name: Remove temporary directory
     remote_user: "{{ target_server_username }}"
