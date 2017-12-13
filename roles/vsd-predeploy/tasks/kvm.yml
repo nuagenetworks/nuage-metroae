@@ -29,15 +29,15 @@
 
 - name: Check target for supported OS
   fail: msg="Unsupported OS family ({{ ansible_os_family }})"
-  when: ansible_os_family not in vsd_target_server_os_family_list
+  when: ansible_os_family not in supported_target_server_os_family_list
 
 - name: Check target memory
   fail: msg="Not enough memory ({{ ansible_memtotal_mb }})"
-  when: ansible_memtotal_mb < vsd_target_server_memory_mb_min
+  when: ansible_memtotal_mb < target_server_memory_mb_min
 
 - name: Check target cores
   fail: msg="Not enough cores ({{ ansible_processor_vcpus }})"
-  when: ansible_processor_vcpus < vsd_target_server_vcpus_min
+  when: ansible_processor_vcpus < target_server_vcpus_min
 
 - name: Check target bridges
   fail: msg="Required network bridges not found"
@@ -80,7 +80,7 @@
       - "****************************************************"
       - "Skipping VSD predeploy because it is already present"
       - "****************************************************"
-  when: vsd_present
+  when: node_present
 
 - block:
 
@@ -178,18 +178,18 @@
     shell: "fallocate -l {{ vsd_fallocate_size_gb }}G {{ images_path }}/{{ vm_name }}/{{ vsd_qcow2_file_name }}"
     when: vsd_fallocate_size_gb > 0
 
-  - name: "Define new VSD VM"
-    virt: name="{{ vm_name }}"
+  - name: Define new VM
+    virt: name={{ vm_name }}
           command=define
           xml="{{ lookup('template', 'vsd.xml.j2') }}"
           uri=qemu:///system
 
-  - name: "Run VSD VM"
-    virt: name="{{ vm_name }}"
+  - name: Run VM with autostart
+    virt: name={{ vm_name }}
           state=running
           autostart=True
           uri=qemu:///system
 
-  when: not vsd_present
+  when: not node_present
   delegate_to: "{{ target_server }}"
   remote_user: "{{ target_server_username }}"

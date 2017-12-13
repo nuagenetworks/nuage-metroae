@@ -13,15 +13,15 @@
 
 - name: Check target for supported OS
   fail: msg="Unsupported OS family ({{ ansible_os_family }})"
-  when: ansible_os_family not in vsc_target_server_os_family_list
+  when: ansible_os_family not in supported_target_server_os_family_list
 
 - name: Check target memory
   fail: msg="Not enough memory ({{ ansible_memtotal_mb }})"
-  when: ansible_memtotal_mb < vsc_target_server_memory_mb_min
+  when: ansible_memtotal_mb < target_server_memory_mb_min
 
 - name: Check target cores
   fail: msg="Not enough cores ({{ ansible_processor_vcpus }})"
-  when: ansible_processor_vcpus < vsc_target_server_vcpus_min
+  when: ansible_processor_vcpus < target_server_vcpus_min
 
 - name: Check target bridges
   fail: msg="Required network bridges not found"
@@ -65,53 +65,53 @@
       - "****************************************************"
       - "Skipping VSC predeploy because it is already present"
       - "****************************************************"
-  when: vsc_present
+  when: node_present
 
 - block:
 
     - name: Create libvirt image directory
-      file: path={{ images_path }}/{{ vmname }}
+      file: path={{ images_path }}/{{ vm_name }}
             state=directory
             owner={{ libvirt.user }}
             group={{ libvirt.group }}
 
     - name: Copy the VSC qcow2 image to virt images diectory
       copy: src={{ vsc_qcow2_path }}/{{ vsc_qcow2_file_name }}
-            dest={{ images_path }}/{{ vmname }}/{{ inventory_hostname }}.qcow2
+            dest={{ images_path }}/{{ vm_name }}/{{ inventory_hostname }}.qcow2
             owner={{ libvirt.user }}
             group={{ libvirt.group }}
 
     - name: Setup VSC temporary configuration files
-      template: src={{ item }}.j2 backup=no dest={{ images_path }}/{{ vmname }}/{{ item }}
+      template: src={{ item }}.j2 backup=no dest={{ images_path }}/{{ vm_name }}/{{ item }}
       with_items:
         - bof.cfg
         - config.cfg
 
     - name: Copy temporary configuration files to the VSC image
-      command: guestfish --rw -a {{ images_path }}/{{ vmname }}/{{ inventory_hostname }}.qcow2 -m {{ vsc_partition }} copy-in {{ images_path }}/{{ vmname }}/{{ item }} /
+      command: guestfish --rw -a {{ images_path }}/{{ vm_name }}/{{ inventory_hostname }}.qcow2 -m {{ vsc_partition }} copy-in {{ images_path }}/{{ vm_name }}/{{ item }} /
       with_items:
         - bof.cfg
         - config.cfg
 
     - name: Remove temporary configuration files
-      file: path={{ images_path }}/{{ vmname }}/{{ item }} state=absent
+      file: path={{ images_path }}/{{ vm_name }}/{{ item }} state=absent
       with_items:
         - bof.cfg
         - config.cfg
 
-    - name: Define new VSC VM
-      virt: name={{ vmname }}
+    - name: Define new VM
+      virt: name={{ vm_name }}
             command=define
             xml="{{ lookup('template', 'vsc.xml.j2') }}"
             uri=qemu:///system
 
-    - name: Mark VSC as autostart
-      virt: name={{ vmname }}
+    - name: Run VM with autostart
+      virt: name={{ vm_name }}
             state=running
             autostart=True
             uri=qemu:///system
 
-  when: not vsc_present
+  when: not node_present
   delegate_to: "{{ target_server }}"
   remote_user: "{{ target_server_username }}"
 
