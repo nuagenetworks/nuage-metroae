@@ -4,6 +4,7 @@
     assert:
       that: "upgrade_vmname is defined"
       msg: "upgrade_vmname is required for upgrade"
+
   - name: Set local variable with upgrade_vmname
     set_fact:
       vm_name: "{{ upgrade_vmname }}"
@@ -14,6 +15,7 @@
     assert:
       that: "vmname is defined"
       msg: "vmname is required for vsd_predeploy"
+
   - name: Set local variable with vmname
     set_fact:
       vm_name: "{{ vmname }}"
@@ -25,9 +27,9 @@
 - name: Display if skipping VSTAT predeploy
   debug:
     msg:
-      - "******************************************************"
+      - "****************************************************"
       - "Skipping VSTAT predeploy because it is already present"
-      - "******************************************************"
+      - "****************************************************"
   when: vstat_present
 
 - block:
@@ -41,7 +43,7 @@
       vcenter_path: "vi://'{{ vcenter.username | urlencode }}':'{{ vcenter.password | urlencode }}'@{{ target_server }}/{{ vcenter.datacenter }}/host/{{ vcenter.cluster }}/Resources/{{ vcenter.resource_pool | urlencode }}"
     when: vcenter.resource_pool != 'NONE'
 
-  - name: Deploy Stats image on vCenter
+  - name: Deploy VM image on vCenter
     connection: local
     command: >
       {{ vcenter.ovftool }}
@@ -65,11 +67,11 @@
       name: "{{ vm_name }}"
       datacenter: "{{ vcenter.datacenter }}"
       validate_certs: no
-    register: vstat_vm_facts
+    register: vm_facts
 
-  - debug: var=vstat_vm_facts verbosity=1
+  - debug: var=vm_facts verbosity=1
 
-  - name: Writing eth0 network script file to the Stats VM
+  - name: Writing eth0 network script file to the VM
     connection: local
     vmware_vm_shell:
       hostname: "{{ target_server }}"
@@ -84,7 +86,7 @@
       vm_shell: "/usr/bin/echo"
       vm_shell_args: " '{{ lookup('template', 'ifcfg-eth0.j2') }}' > /etc/sysconfig/network-scripts/ifcfg-eth0"
 
-  - name: Set the owner and group on the eth0 network script file in the Stats VM
+  - name: Set the owner and group on the eth0 network script file in the VM
     connection: local
     vmware_vm_shell:
       hostname: "{{ target_server }}"
@@ -99,7 +101,7 @@
       vm_shell: "/usr/bin/chown"
       vm_shell_args: " 0 0 /etc/sysconfig/network-scripts/ifcfg-eth0"
 
-  - name: Writing network file to the Stats VM
+  - name: Writing network file to the VM
     connection: local
     vmware_vm_shell:
       hostname: "{{ target_server }}"
@@ -114,7 +116,7 @@
       vm_shell: "/usr/bin/echo"
       vm_shell_args: " '{{ lookup('template', 'network.j2') }}' > /etc/sysconfig/network"
 
-  - name: Set the owner and group on the network file in the Stats VM
+  - name: Set the owner and group on the network file in the VM
     connection: local
     vmware_vm_shell:
       hostname: "{{ target_server }}"
@@ -129,7 +131,7 @@
       vm_shell: "/usr/bin/chown"
       vm_shell_args: " 0 0 /etc/sysconfig/network"
 
-  - name: Create the directory /root/.ssh for authorized_keys on the Stats VM
+  - name: Create the directory /root/.ssh for authorized_keys on the VM
     connection: local
     vmware_vm_shell:
       hostname: "{{ target_server }}"
@@ -144,7 +146,7 @@
       vm_shell: "/usr/bin/mkdir"
       vm_shell_args: " -p /root/.ssh"
 
-  - name: Set the owner and group for the /root/.ssh directory in the Stats VM
+  - name: Set the owner and group for the /root/.ssh directory in the VM
     connection: local
     vmware_vm_shell:
       hostname: "{{ target_server }}"
@@ -163,7 +165,7 @@
     local_action: command cat "{{ user_ssh_pub_key }}"
     register: current_user_ssh_key
 
-  - name: Writing authorized_keys to the Stats VM
+  - name: Writing authorized_keys to the VM
     connection: local
     vmware_vm_shell:
       hostname: "{{ target_server }}"
@@ -178,7 +180,7 @@
       vm_shell: "/usr/bin/echo"
       vm_shell_args: " '{{ lookup('template', 'authorized_keys.j2') }}' > /root/.ssh/authorized_keys"
 
-  - name: Set the mode on the authorized_keys file in the Stats VM
+  - name: Set the mode on the authorized_keys file in the VM
     connection: local
     vmware_vm_shell:
       hostname: "{{ target_server }}"
@@ -193,7 +195,7 @@
       vm_shell: "/usr/bin/chmod"
       vm_shell_args: " 0640 /root/.ssh/authorized_keys"
 
-  - name: Reboot Stats VM
+  - name: Reboot VM
     connection: local
     vmware_vm_shell:
       hostname: "{{ target_server }}"
