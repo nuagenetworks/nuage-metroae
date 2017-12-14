@@ -35,9 +35,17 @@
 - name: Write network config to json file
   nuage_append: filename="{{ report_path }}" text="{{ net_conf.info | to_nice_json}}\n"
   delegate_to: localhost
+  
+- name: Get monit summary for all stats process on VSD
+  vsd_monit:
+    group: check
+  register: chk
+  remote_user: "root"
 
-- include: monit_status.yml
-
+- name: Check for monit status only if vstat service is running 
+  include: monit_status.yml
+  when: chk['state']['stats-collector-status']|match("status ok") and chk['state']['elasticsearch-status']|match("status ok") and chk['state']['tca-daemon-status']|match("status ok")
+    
 - name: Execute list_p1db command on VSD(s)
   command: "{{ p1db_cmd }}"
   register: list_p1db_output
