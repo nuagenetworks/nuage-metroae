@@ -231,6 +231,7 @@ function main() {
   pip_install "pexpect"
   pip_install "vspk"
   pip_install "pyvmomi"
+  pip_install "pysphere"
 
   # Check for any failures and print appropriate message
   if [[ $FAILED -ne 0 ]]
