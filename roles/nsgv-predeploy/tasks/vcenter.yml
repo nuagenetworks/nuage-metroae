@@ -3,12 +3,12 @@
   set_fact:
     vm_name: "{{ vmname }}"
 
-- name: Display if skipping NSG-V predeploy
+- name: Display if skipping predeploy
   debug:
     msg:
-      - "******************************************************"
+      - "****************************************************"
       - "Skipping NSG-V predeploy because it is already present"
-      - "******************************************************"
+      - "****************************************************"
   when: node_running
 
 - block:
@@ -58,15 +58,15 @@
       vcenter_path: "vi://'{{ vcenter.username | urlencode }}':'{{ vcenter.password | urlencode }}'@{{ target_server }}/{{ vcenter.datacenter }}/host/{{ vcenter.cluster }}/Resources/{{ vcenter.resource_pool | urlencode }}"
     when: vcenter.resource_pool != 'NONE'
 
-  - name: Deploy NSGV OVA on vCenter
+  - name: Deploy VM image on vCenter
     connection: local
     command: >
       {{ vcenter.ovftool }}
       --acceptAllEulas
       --noSSLVerify
+      --powerOn
       --machineOutput
       -dm=thin
-      --powerOn
       -ds={{ vcenter.datastore }}
       -n={{ vm_name }}
       --net:"OVS Management={{ mgmt_bridge }}"
@@ -118,8 +118,8 @@
       name: "{{ vm_name }}"
       datacenter: "{{ vcenter.datacenter }}"
       validate_certs: no
-    register: nsgv_vm_facts
+    register: vm_facts
 
-  - debug: var=nsgv_vm_facts verbosity=1
+  - debug: var=vm_facts verbosity=1
 
   when: not node_running

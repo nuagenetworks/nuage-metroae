@@ -24,13 +24,13 @@
 - include_role:
     name: check-node-running
 
-- name: Display if skipping VSD predeploy
+- name: Display if skipping predeploy
   debug:
     msg:
       - "****************************************************"
       - "Skipping VSD predeploy because it is already present"
       - "****************************************************"
-  when: vsd_present
+  when: node_present
 
 - block:
 
@@ -43,7 +43,7 @@
       vcenter_path: "vi://'{{ vcenter.username | urlencode }}':'{{ vcenter.password | urlencode }}'@{{ target_server }}/{{ vcenter.datacenter }}/host/{{ vcenter.cluster }}/Resources/{{ vcenter.resource_pool | urlencode }}"
     when: vcenter.resource_pool != 'NONE'
 
-  - name: Deploy VSD Image on vCenter
+  - name: Deploy VM image on vCenter
     connection: local
     command: >
       {{ vcenter.ovftool }}
@@ -67,11 +67,11 @@
       name: "{{ vm_name }}"
       datacenter: "{{ vcenter.datacenter }}"
       validate_certs: no
-    register: vsd_vm_facts
+    register: vm_facts
 
-  - debug: var=vsd_vm_facts verbosity=1
+  - debug: var=vm_facts verbosity=1
 
-  - name: Writing eth0 network script file to the VSD VM
+  - name: Writing eth0 network script file to the VM
     connection: local
     vmware_vm_shell:
       hostname: "{{ target_server }}"
@@ -81,12 +81,12 @@
       cluster: "{{ vcenter.cluster }}"
       validate_certs: no
       vm_id: "{{ vm_name }}"
-      vm_username: "root"
-      vm_password: "Alcateldc"
+      vm_username: "{{ vmuser }}"
+      vm_password: "{{ vmpass }}"
       vm_shell: "/usr/bin/echo"
       vm_shell_args: " '{{ lookup('template', 'ifcfg-eth0.j2') }}' > /etc/sysconfig/network-scripts/ifcfg-eth0"
 
-  - name: Set the owner and group on the eth0 network script file in the VSD VM
+  - name: Set the owner and group on the eth0 network script file in the VM
     connection: local
     vmware_vm_shell:
       hostname: "{{ target_server }}"
@@ -96,12 +96,12 @@
       cluster: "{{ vcenter.cluster }}"
       validate_certs: no
       vm_id: "{{ vm_name }}"
-      vm_username: "root"
-      vm_password: "Alcateldc"
+      vm_username: "{{ vmuser }}"
+      vm_password: "{{ vmpass }}"
       vm_shell: "/usr/bin/chown"
       vm_shell_args: " 0 0 /etc/sysconfig/network-scripts/ifcfg-eth0"
 
-  - name: Writing network file to the VSD VM
+  - name: Writing network file to the VM
     connection: local
     vmware_vm_shell:
       hostname: "{{ target_server }}"
@@ -111,12 +111,12 @@
       cluster: "{{ vcenter.cluster }}"
       validate_certs: no
       vm_id: "{{ vm_name }}"
-      vm_username: "root"
-      vm_password: "Alcateldc"
+      vm_username: "{{ vmuser }}"
+      vm_password: "{{ vmpass }}"
       vm_shell: "/usr/bin/echo"
       vm_shell_args: " '{{ lookup('template', 'network.j2') }}' > /etc/sysconfig/network"
 
-  - name: Set the owner and group on the network file in the VSD VM
+  - name: Set the owner and group on the network file in the VM
     connection: local
     vmware_vm_shell:
       hostname: "{{ target_server }}"
@@ -126,12 +126,12 @@
       cluster: "{{ vcenter.cluster }}"
       validate_certs: no
       vm_id: "{{ vm_name }}"
-      vm_username: "root"
-      vm_password: "Alcateldc"
+      vm_username: "{{ vmuser }}"
+      vm_password: "{{ vmpass }}"
       vm_shell: "/usr/bin/chown"
       vm_shell_args: " 0 0 /etc/sysconfig/network"
 
-  - name: Writing hostname file to the VSD VM
+  - name: Writing hostname file to the VM
     connection: local
     vmware_vm_shell:
       hostname: "{{ target_server }}"
@@ -141,12 +141,12 @@
       cluster: "{{ vcenter.cluster }}"
       validate_certs: no
       vm_id: "{{ vm_name }}"
-      vm_username: "root"
-      vm_password: "Alcateldc"
+      vm_username: "{{ vmuser }}"
+      vm_password: "{{ vmpass }}"
       vm_shell: "/usr/bin/echo"
       vm_shell_args: " '{{ lookup('template', 'hostname.j2') }}' > /etc/hostname"
 
-  - name: Set the owner and group on the hostname file in the VSD VM
+  - name: Set the owner and group on the hostname file in the VM
     connection: local
     vmware_vm_shell:
       hostname: "{{ target_server }}"
@@ -156,12 +156,12 @@
       cluster: "{{ vcenter.cluster }}"
       validate_certs: no
       vm_id: "{{ vm_name }}"
-      vm_username: "root"
-      vm_password: "Alcateldc"
+      vm_username: "{{ vmuser }}"
+      vm_password: "{{ vmpass }}"
       vm_shell: "/usr/bin/chown"
       vm_shell_args: " 0 0 /etc/hostname"
 
-  - name: Create the directory /root/.ssh for authorized_keys on the VSD VM
+  - name: Create the directory /root/.ssh for authorized_keys on the VM
     connection: local
     vmware_vm_shell:
       hostname: "{{ target_server }}"
@@ -171,12 +171,12 @@
       cluster: "{{ vcenter.cluster }}"
       validate_certs: no
       vm_id: "{{ vm_name }}"
-      vm_username: "root"
-      vm_password: "Alcateldc"
+      vm_username: "{{ vmuser }}"
+      vm_password: "{{ vmpass }}"
       vm_shell: "/usr/bin/mkdir"
       vm_shell_args: " -p /root/.ssh"
 
-  - name: Set the owner and group for the /root/.ssh directory in the VSD VM
+  - name: Set the owner and group for the /root/.ssh directory in the VM
     connection: local
     vmware_vm_shell:
       hostname: "{{ target_server }}"
@@ -186,8 +186,8 @@
       cluster: "{{ vcenter.cluster }}"
       validate_certs: no
       vm_id: "{{ vm_name }}"
-      vm_username: "root"
-      vm_password: "Alcateldc"
+      vm_username: "{{ vmuser }}"
+      vm_password: "{{ vmpass }}"
       vm_shell: "/usr/bin/chown"
       vm_shell_args: " 0 0 /root/.ssh"
 
@@ -195,7 +195,7 @@
     local_action: command cat "{{ user_ssh_pub_key }}"
     register: current_user_ssh_key
 
-  - name: Writing authorized_keys to the VSD VM
+  - name: Writing authorized_keys to the VM
     connection: local
     vmware_vm_shell:
       hostname: "{{ target_server }}"
@@ -205,12 +205,12 @@
       cluster: "{{ vcenter.cluster }}"
       validate_certs: no
       vm_id: "{{ vm_name }}"
-      vm_username: "root"
-      vm_password: "Alcateldc"
+      vm_username: "{{ vmuser }}"
+      vm_password: "{{ vmpass }}"
       vm_shell: "/usr/bin/echo"
       vm_shell_args: " '{{ lookup('template', 'authorized_keys.j2') }}' > /root/.ssh/authorized_keys"
 
-  - name: Set the mode on the authorized_keys file in the VSD VM
+  - name: Set the mode on the authorized_keys file in the VM
     connection: local
     vmware_vm_shell:
       hostname: "{{ target_server }}"
@@ -220,12 +220,12 @@
       cluster: "{{ vcenter.cluster }}"
       validate_certs: no
       vm_id: "{{ vm_name }}"
-      vm_username: "root"
-      vm_password: "Alcateldc"
+      vm_username: "{{ vmuser }}"
+      vm_password: "{{ vmpass }}"
       vm_shell: "/usr/bin/chmod"
       vm_shell_args: " 0640 /root/.ssh/authorized_keys"
 
-  - name: Reboot VSD VM
+  - name: Reboot VM
     connection: local
     vmware_vm_shell:
       hostname: "{{ target_server }}"
@@ -235,8 +235,8 @@
       cluster: "{{ vcenter.cluster }}"
       validate_certs: no
       vm_id: "{{ vm_name }}"
-      vm_username: "root"
-      vm_password: "Alcateldc"
+      vm_username: "{{ vmuser }}"
+      vm_password: "{{ vmpass }}"
       vm_shell: "/usr/sbin/reboot"
 
-  when: not vsd_present
+  when: not node_present

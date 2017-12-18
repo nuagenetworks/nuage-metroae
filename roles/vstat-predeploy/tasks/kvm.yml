@@ -1,4 +1,8 @@
 ---
+- name: Set local variable with upgrade status
+  set_fact:
+    upgrade: "{{ nuage_upgrade|default('False') }}"
+
 - block:
   - name: Verify that upgrade_vmname is defined if this is an upgrade
     assert:
@@ -7,47 +11,47 @@
   - name: Set local variable with upgrade_vmname
     set_fact:
       vm_name: "{{ upgrade_vmname }}"
-  when: nuage_upgrade | default( False )
+  when: upgrade
 
 - block:
   - name: Set local variable with vmname
     set_fact:
       vm_name: "{{ vmname }}"
-  when: not nuage_upgrade | default( False )
+  when: not upgrade
 
-- name: Query {{ target_server }} facts
+- name: Query Target Server facts
   action: setup
-  delegate_to: "{{ target_server }}"
   remote_user: "{{ target_server_username }}"
+  delegate_to: "{{ target_server }}"
 
 - name: Include OS-specific variables.
   include_vars: "{{ ansible_os_family }}.yml"
 
 - name: Check target for supported OS
   fail: msg="Unsupported OS family ({{ ansible_os_family }})"
-  when: ansible_os_family not in vstat_target_server_os_family_list
+  when: ansible_os_family not in supported_target_server_os_family_list
 
 - name: Check target memory
   fail: msg="Not enough memory ({{ ansible_memtotal_mb }})"
-  when: ansible_memtotal_mb < vstat_target_server_memory_mb_min
+  when: ansible_memtotal_mb < target_server_memory_mb_min
 
 - name: Check target cores
   fail: msg="Not enough cores ({{ ansible_processor_vcpus }})"
-  when: ansible_processor_vcpus < vstat_target_server_vcpus_min
+  when: ansible_processor_vcpus < target_server_vcpus_min
 
 - name: Check target bridges
-  fail: msg="Required network bridge not found"
+  fail: msg="Required network bridges not found"
   when: mgmt_bridge not in ansible_interfaces
 
-- name: Check if required OS packages are installed
-  command: rpm -q qemu-kvm libvirt bridge-utils libguestfs-tools libvirt-python
-  when: ansible_os_family | match("RedHat")
-  delegate_to: "{{ target_server }}"
-  remote_user: "{{ target_server_username }}"
-  register: rpm_check
-  ignore_errors: True
-
 - block:
+  - name: Check if required OS packages are installed
+    command: rpm -q qemu-kvm libvirt bridge-utils libguestfs-tools libvirt-python
+    register: rpm_check
+    ignore_errors: True
+
+  - name: Print rpm_check when verbosity >= 1
+    debug: var=rpm_check verbosity=1
+
   - name: If RedHat, install packages for RedHat OS family distros
     yum: name={{ item }} state=present
     with_items:
@@ -56,6 +60,7 @@
      - bridge-utils
      - libguestfs-tools
      - libvirt-python
+    when: rpm_check.rc == 1
 
   - name: Make sure libvirtd has started
     service:
@@ -63,32 +68,19 @@
       enabled: yes
       state: started
 
-  when: ansible_os_family | match("RedHat") and rpm_check.rc == 1
-  delegate_to: "{{ target_server }}"
-  remote_user: "{{ target_server_username }}"
-
-- name: If Debian, install packages for Debian OS family distros
-  apt: name={{ item }} state=present
-  with_items:
-   - qemu-kvm
-   - libvirt-bin
-   - bridge-utils
-   - libguestfs-tools
-   - python-libvirt
-  when: ansible_os_family | match("Debian")
   delegate_to: "{{ target_server }}"
   remote_user: "{{ target_server_username }}"
 
 - include_role:
     name: check-node-running
 
-- name: Display if skipping VSTAT predeploy
+- name: Display if skipping predeploy
   debug:
     msg:
-      - "******************************************************"
+      - "****************************************************"
       - "Skipping VSTAT predeploy because it is already present"
-      - "******************************************************"
-  when: vstat_present
+      - "****************************************************"
+  when: node_present
 
 - block:
 
@@ -98,11 +90,15 @@
           owner={{ libvirt.user }}
           group={{ libvirt.group }}
 
-  - name: Copy the VSTAT qcow image to virt images directory
+  - name: Copy the VM qcow image to virt images directory
     copy: src={{ vstat_qcow2_path }}/{{ vstat_qcow2_file_name }}
           dest={{ images_path }}/{{ vm_name }}
           owner={{ libvirt.user }}
           group={{ libvirt.group }}
+
+  - name: Get the public key for the current user
+    local_action: command cat "{{ user_ssh_pub_key }}"
+    register: current_user_ssh_key
 
   - name: Get list of partitions
     shell: "guestfish -r -a {{ images_path }}/{{ vm_name }}/{{ vstat_qcow2_file_name }} run : list-filesystems | grep -Ev '(unknown|swap)'"
@@ -124,64 +120,60 @@
   - name: Create a temporary copy of the network script for eth0
     template: src=ifcfg-eth0.j2 backup=no dest={{ images_path }}/{{ vm_name }}/ifcfg-eth0
 
-  - name: Copy eth0 network script file to the VSTAT image
+  - name: Copy eth0 network script file to the VM image
     command: guestfish --rw -a {{ images_path }}/{{ vm_name }}/{{ vstat_qcow2_file_name }} -m {{ guestfish_mount }} copy-in {{ images_path }}/{{ vm_name }}/ifcfg-eth0 /etc/sysconfig/network-scripts/
 
   - name: Remove temporary copy of eth0 network script
     file: path={{ images_path }}/{{ vm_name }}/ifcfg-eth0 state=absent
 
-  - name: Set the owner and group on the eth0 network script file in the VSTAT image
+  - name: Set the owner and group on the eth0 network script file in the VM image
     command: guestfish --rw -a {{ images_path }}/{{ vm_name }}/{{ vstat_qcow2_file_name }} -m {{ guestfish_mount }} chown 0 0 /etc/sysconfig/network-scripts/ifcfg-eth0
 
   - name: Create a temporary copy of the syscfg network file
     template: src=network.j2 backup=no dest={{ images_path }}/{{ vm_name }}/network
 
-  - name: Copy network file to the VSTAT image
+  - name: Copy network file to the VM image
     command: guestfish --rw -a {{ images_path }}/{{ vm_name }}/{{ vstat_qcow2_file_name }} -m {{ guestfish_mount }} copy-in {{ images_path }}/{{ vm_name }}/network /etc/sysconfig/
 
   - name: Remove temporary copy of network file
     file: path={{ images_path }}/{{ vm_name }}/network state=absent
 
-  - name: Set the owner and group for the network hostname file on the VSTAT image
+  - name: Set the owner and group for the network hostname file on the VM image
     command: guestfish --rw -a {{ images_path }}/{{ vm_name }}/{{ vstat_qcow2_file_name }} -m {{ guestfish_mount }} chown 0 0 /etc/sysconfig/network
 
   - name: Create the directory /root/.ssh for authorized_keys
     command: guestfish --rw -a {{ images_path }}/{{ vm_name }}/{{ vstat_qcow2_file_name }} -m {{ guestfish_mount }} mkdir-mode /root/.ssh 0700
 
-  - name: Set the owner and group for the /root/.ssh directory on the VSTAT image
+  - name: Set the owner and group for the /root/.ssh directory on the VM image
     command: guestfish --rw -a {{ images_path }}/{{ vm_name }}/{{ vstat_qcow2_file_name }} -m {{ guestfish_mount }} chown 0 0 /root/.ssh
-
-  - name: Get the public key for the current user
-    local_action: command cat "{{ user_ssh_pub_key }}"
-    register: current_user_ssh_key
 
   - name: Create a temporary copy of the authorized_keys file
     template: src=authorized_keys.j2 backup=no dest={{ images_path }}/{{ vm_name }}/authorized_keys
 
-  - name: Copy authorized_keys file to the VSTAT image
+  - name: Copy authorized_keys file to the VM image
     command: guestfish --rw -a {{ images_path }}/{{ vm_name }}/{{ vstat_qcow2_file_name }} -m {{ guestfish_mount }} copy-in {{ images_path }}/{{ vm_name }}/authorized_keys /root/.ssh/
 
   - name: Remove temporary copy of authorized_keys file
     file: path={{ images_path }}/{{ vm_name }}/authorized_keys state=absent
 
-  - name: Set the owner and group for the authorized_keys file on the VSTAT image
+  - name: Set the owner and group for the authorized_keys file on the VM image
     command: guestfish --rw -a {{ images_path }}/{{ vm_name }}/{{ vstat_qcow2_file_name }} -m {{ guestfish_mount }} chown 0 0 /root/.ssh/authorized_keys
 
-  - name: Set the mode for the authorized_keys file on the VSTAT image
+  - name: Set the mode for the authorized_keys file on the VM image
     command: guestfish --rw -a {{ images_path }}/{{ vm_name }}/{{ vstat_qcow2_file_name }} -m {{ guestfish_mount }} chmod 0640 /root/.ssh/authorized_keys
 
-  - name: "Define new VSTAT VM"
-    virt: name="{{ vm_name }}"
+  - name: Define new VM
+    virt: name={{ vm_name }}
           command=define
           xml="{{ lookup('template', 'vstat.xml.j2') }}"
           uri=qemu:///system
 
-  - name: "Run VSTAT VM"
-    virt: name="{{ vm_name }}"
+  - name: Run VM with autostart
+    virt: name={{ vm_name }}
           state=running
           autostart=True
           uri=qemu:///system
 
+  when: not node_present
   delegate_to: "{{ target_server }}"
   remote_user: "{{ target_server_username }}"
-  when: not vstat_present
