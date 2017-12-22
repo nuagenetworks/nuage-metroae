@@ -36,7 +36,7 @@
     that: "{{ expected_xmpp_server_state == xmpp_server_state }}",
     msg: "Invalid xmpp-server state ({{ xmpp_server_state }}) detected. Expected {{ expected_xmpp_server_state }}. Check 'show vswitch-controller xmpp-server details'."
 }
-- name: define variable to match vsd strings in sh vswitch vsd details
+- name: define variable to match vsd strings in show vswitch vsd details
   set_fact:
     vsd1_s: "cna@{{ vsd_fqdn }}"
 
@@ -54,6 +54,16 @@
 - name: Print 'show vswitch-controller vsd' when verbosity >= 1
   debug: var=vsd_detail verbosity=1
 
+- name: Get VSD deployment mode
+  include_role:
+    name: common
+    tasks_from: vsd-node-info.yml
+  vars:
+    vsd_hostname: "{{ vsd_fqdn }}"
+
+- name: Print vsd deployment mode when verbosity >= 1
+  debug: var="vsd_sa_or_ha"
+
 - name: Verify VSD FQDN is found in vsd_detail
   assert:
     that: "'cna@{{ vsd_fqdn }}' in vsd_detail.stdout[0]"
@@ -62,13 +72,13 @@
 
 - name: Verify VSD Node1 is found in vsd_detail
   assert:
-    that: "'cna@{{ vsd_fqdn }}/{{ groups['vsds'][0].split('.')[0:1] | join('.') }}' in vsd_detail.stdout[0]"
+    that: "'cna@{{ vsd_fqdn }}/{{ vsd_hostname_list[0].split('.')[0:1] | join('.') }}' in vsd_detail.stdout[0]"
     msg: "VSD Node1 could not be found in 'show vswitch-controller vsd detail'"
   when: vsd_sa_or_ha | match('ha')
 
 - name: Verify VSD Node2 is found in vsd_detail
   assert:
-    that: "'cna@{{ vsd_fqdn }}/{{ groups['vsds'][1].split('.')[0:1] | join('.') }}' in vsd_detail.stdout[0]"
+    that: "'cna@{{ vsd_fqdn }}/{{ vsd_hostname_list[1].split('.')[0:1] | join('.') }}' in vsd_detail.stdout[0]"
     msg: "VSD Node2 could not be found in 'show vswitch-controller vsd detail'"
   when: vsd_sa_or_ha | match('ha')
 
