@@ -6,6 +6,13 @@
   vars:
     ssh_host: "{{ mgmt_ip }}"
 
+- name: Get vsd node(s) information
+  import_role:
+    name: common
+    tasks_from: vsd-node-info.yml
+  vars:
+    vsd_hostname: "{{ vsd_fqdn }}"
+
 - name: Update /etc/hosts file
   blockinfile:
     dest: /etc/hosts
@@ -24,7 +31,8 @@
       {{ hostvars[host]['mgmt_ip'] }}    {{ host }}
       {% endfor %}
   delegate_to: "{{ item }}"
-  with_items: "{{ groups['vsds'] }}"
+  #with_items: "{{ groups['vsds'] }}"
+  with_items: "{{ vsd_hostname_list }}"
   remote_user: "root"
 
 - block:
@@ -55,22 +63,14 @@
     run_once: true
   when: vstat_sa_or_ha | match('ha')
 
-- block:
-  - name: Resolve "{{vsd_fqdn}}"  to ip addr
-    shell: host "{{vsd_fqdn}}" | awk '{print $3,$4}'
-    register: ip_addr
-    remote_user: "root"
-
-  - name: Check for ip addr in the registered var
-    fail: msg="Could not resolve ip addr of "{{vsd_fqdn}}" "
-    when: ip_addr.stdout | match("not found:")
-  when: vsd_sa_or_ha | match('sa')
-
 - name: check for iptables
   shell: "service iptables status"
   register: _svc_iptables
   ignore_errors: True
   remote_user: "root"
+
+- name: Print vsd deployment mode when verbosity >= 1
+  debug: var="vsd_sa_or_ha"
 
 - block:
   - name: Start iptables
@@ -248,13 +248,12 @@
     environment:
       SSHPASS: "{{ vstat_password }}"
     run_once: true
-    when:
-      - vstat_sa_or_ha | match('ha')
-      - vsd_sa_or_ha | match('sa') or vsd_sa_or_ha | match('ha')
+    when: vstat_sa_or_ha | match('ha')
 
   - name: Enable stats collection on standalone vsd when vstat is standalone
     command: /opt/vsd/vsd-stats.sh -e {{ inventory_hostname }}
-    delegate_to: "{{vsd_fqdn}}"
+    delegate_to: "{{ item }}"
+    with_items: "{{ vsd_hostname_list }}"
     remote_user: "root"
     run_once: true
     when:
@@ -266,7 +265,8 @@
     delegate_to: "{{ item }}"
     remote_user: "root"
     run_once: true
-    with_items: "{{ groups['vsds'] }}"
+    #with_items: "{{ groups['vsds'] }}"
+    with_items: "{{ vsd_hostname_list }}"
     when:
       - vsd_sa_or_ha | match('ha')
       - vstat_sa_or_ha | match('sa')
@@ -275,7 +275,8 @@
     command: /opt/vsd/vsd-stats.sh -e {{ groups['vstats'][0] }},{{ groups['vstats'][1] }},{{ groups['vstats'][2] }}
     delegate_to: "{{ item }}"
     remote_user: root
-    with_items: "{{ groups['vsds'] }}"
+    #with_items: "{{ groups['vsds'] }}"
+    with_items: "{{ vsd_hostname_list }}"
     run_once: true
     when:
       - vstat_sa_or_ha | match('ha')

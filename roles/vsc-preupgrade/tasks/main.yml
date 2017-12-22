@@ -67,6 +67,16 @@
 - name: Print bof config in json  when verbosity >= 1
   debug: var=bof_json verbosity=1
 
+- name: Get VSD deployment mode
+  include_role:
+    name: common
+    tasks_from: vsd-node-info.yml
+  vars:
+    vsd_hostname: "{{ vsd_fqdn }}"
+
+- name: Print vsd deployment mode when verbosity >= 1
+  debug: var="vsd_sa_or_ha"
+
 - block:
   - name: Get output of 'show system connections port 5222'
     sros_command:
@@ -89,7 +99,7 @@
   - name: Block access to decoupled VSD node2 from VSC1
     command: "iptables -I INPUT -s {{ vsc_sys_conn_json['local_ip'] }} -j DROP"
     remote_user: root
-    delegate_to: "{{ groups['vsds'][1] }}"
+    delegate_to: "{{ vsd_hostname_list[1] }}"
 
   - name: check xmpp connectivity after iptables on vsd2
     sros_command:
