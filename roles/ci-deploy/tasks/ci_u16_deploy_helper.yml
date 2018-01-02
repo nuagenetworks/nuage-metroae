@@ -9,18 +9,18 @@
 
 - block:
   # Temp task to get around policy issue
-  - name: Set the network names
+  - name: Set the network name variables for OpenStack VM interfaces
     set_fact:
       net_name1: "{{ ci_server['ansible_facts']['openstack_servers'][0]['networks'].keys()[0] }}"
       net_name2: "{{ ci_server['ansible_facts']['openstack_servers'][0]['networks'].keys()[1] }}"
 
-  - name: Set the Ubuntu 16.04 VRS compute IP
+  - name: Set the compute IP to net_name2 when net_name1 is the front end interface
     set_fact:
       vrs_u16_target_server: "{{ ci_server['ansible_facts']['openstack_servers'][0]['networks'][net_name2][0]}}"
       net_name_temp: "{{ net_name2 }}"
     when: net_name1 == 'OC_JEN_FrontEnd'
 
-  - name: Set the Ubuntu 16.04 VRS compute IP
+  - name: Set the compute IP to net_name1 when net_name2 is the front end interface
     set_fact:
       vrs_u16_target_server: "{{ ci_server['ansible_facts']['openstack_servers'][0]['networks'][net_name1][0]}}"
       net_name_temp: "{{ net_name1 }}"
@@ -38,15 +38,6 @@
         content: "{{ inventory_hostname }}"
         dest: "/tmp/{{ net_name_temp }}_vrs_name_u16"
 
-    - debug: var=vrs_u16_target_server verbosity=1
-
-    - name: Set fact about ubuntu16.04 slave VRS on ansible host for later use
-      set_fact:
-        vrs_u16_target_server: "{{ vrs_u16_target_server}}"
-
-    - name: set facts for host file entries
-      set_fact: target_server=vrs_u16_target_server
-
     - name: Extract network part from the compute ip
       set_fact:
         network_address: "{{ vrs_u16_target_server.split('.')[0:3] | join('.') }}"
@@ -57,11 +48,6 @@
         dest: "{{ role_path }}/../../zfb_vars.yml"
 
     delegate_to: localhost
-
-  # Temp task to get around policy issue
-  - name: Set front end ip added to static route
-    set_fact:
-      frontend_ip: "{{ ci_server['ansible_facts']['openstack_servers'][0]['networks']['OC_JEN_FrontEnd'][0]}}"
 
   - block:
 
@@ -78,11 +64,6 @@
     - name: Add static route to reach
       command: "route add {{ vrs_u16_target_server }}/32 gw {{ frontend_ip }} "
 
-    - name: Update group vars file with ubuntu 16.04 VRS IP
-      lineinfile:
-        dest: "{{ role_path }}/vars/main.yml"
-        line: "vrs_u16_target_server: {{ vrs_u16_target_server }}"
-
     delegate_to: "{{ ansible_deployment_host }}"
     remote_user: "{{ ansible_sudo_username }}"
 
@@ -92,7 +73,7 @@
       tasks_from: wait-for-ssh
     vars:
       ssh_host: "{{ inventory_hostname }}"
-      ssh_delay_seconds: 60
+      ssh_delay_seconds: 50
 
   - block:
 
