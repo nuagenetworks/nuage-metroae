@@ -51,11 +51,16 @@
 
   - block:
 
-    - name: Update /etc/hosts file for VSP devices and Centos7 VRS
+    - name: Update /etc/hosts file for VSP devices
       lineinfile:
         dest: /etc/hosts
         line: "{{ item }}"
       with_items: "{{ vsp_ips }}"
+
+    - name: Update /etc/hosts file with Centos7 VRS
+      lineinfile:
+        dest: /etc/hosts
+        line: "{{ vrs_c7_target_server }}    {{inventory_hostname }}"
 
     # Temp task to get around policy issue
     - name: Set front end ip added to static route
@@ -86,11 +91,16 @@
       action: setup
       delegate_to: "{{ vrs_c7_target_server }}"
 
-    - name: Update /etc/hosts file
+    - name: Update /etc/hosts file with VSP IPs
       lineinfile:
         dest: /etc/hosts
         line: "{{ item }}"
-      with_items: "{{vsp_ips}}"
+      with_items: "{{ vsp_ips }}"
+
+    - name: Update /etc/hosts file with Centos7 VRS
+      lineinfile:
+        dest: /etc/hosts
+        line: "{{ vrs_c7_target_server }}    {{inventory_hostname }}"
 
       # Temp task to get around policy issue
     - name: Add iptables rule to allow vsd to reach internet route to reach
