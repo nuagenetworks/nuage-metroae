@@ -75,6 +75,10 @@
     delegate_to: "{{ target_server }}"
     remote_user: "{{ target_server_username }}"
 
+  - name: Set local variable with vsd guestfish destination
+    set_fact:
+      guestfish_dest: "{{ images_path }}/{{ vm_name }}/{{ qcow2_file_name }}"
+
   - name: Copy the vnsutil qcow image to virt images directory
     copy: src={{ vnsutil_qcow2_path }}/{{ vnsutil_qcow2_file_name }}
           dest={{ images_path }}/{{ vmname }}
@@ -89,13 +93,13 @@
     remote_user: "{{ target_server_username }}"
 
   - name: Get list of partitions
-    shell: "guestfish -r -a {{ images_path }}/{{ vmname }}/{{ vnsutil_qcow2_file_name }} run : list-filesystems | grep -Ev '(unknown|swap)'"
+    shell: "guestfish -r -a {{ guestfish_dest }} run : list-filesystems | grep -Ev '(unknown|swap)'"
     delegate_to: "{{ target_server }}"
     remote_user: "{{ target_server_username }}"
     register: partitions_list
 
   - name: Check partition content
-    shell: "guestfish -r -a {{ images_path }}/{{ vmname }}/{{ vnsutil_qcow2_file_name }} run : mount {{ item.split(':')[0] }} / : ls /"
+    shell: "guestfish -r -a {{ guestfish_dest }} run : mount {{ item.split(':')[0] }} / : ls /"
     delegate_to: "{{ target_server }}"
     register: partitions
     with_items: "{{ partitions_list.stdout_lines }}"
@@ -110,7 +114,7 @@
   - debug: var=guestfish_mount verbosity=1
 
   - name: Copy eth0 network script file to the vnsutil image
-    command: guestfish --rw -a {{ images_path }}/{{ vmname }}/{{ vnsutil_qcow2_file_name }} -m {{ guestfish_mount }} copy-in {{ images_path }}/{{ vmname }}/ifcfg-eth0 /etc/sysconfig/network-scripts/
+    command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} copy-in {{ images_path }}/{{ vmname }}/ifcfg-eth0 /etc/sysconfig/network-scripts/
     delegate_to: "{{ target_server }}"
     remote_user: "{{ target_server_username }}"
 
@@ -120,12 +124,12 @@
     remote_user: "{{ target_server_username }}"
 
   - name: Set the owner and group on the eth0 network script file in the vnsutil image
-    command: guestfish --rw -a {{ images_path }}/{{ vmname }}/{{ vnsutil_qcow2_file_name }} -m {{ guestfish_mount }} chown 0 0 /etc/sysconfig/network-scripts/ifcfg-eth0
+    command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} chown 0 0 /etc/sysconfig/network-scripts/ifcfg-eth0
     delegate_to: "{{ target_server }}"
     remote_user: "{{ target_server_username }}"
 
   - name: Remove cloud-init files to stop it from overwriting our network config
-    command: guestfish --rw -a {{ images_path }}/{{ vmname }}/{{ vnsutil_qcow2_file_name }} -m {{ guestfish_mount }} glob rm-rf /etc/systemd/system/multi-user.target.wants/cloud-*.service
+    command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} glob rm-rf /etc/systemd/system/multi-user.target.wants/cloud-*.service
     delegate_to: "{{ target_server }}"
     remote_user: "{{ target_server_username }}"
     ignore_errors: true
@@ -137,7 +141,7 @@
       remote_user: "{{ target_server_username }}"
 
     - name: Copy eth1 network script file to the vnsutil image
-      command: guestfish --rw -a {{ images_path }}/{{ vmname }}/{{ vnsutil_qcow2_file_name }} -m {{ guestfish_mount }} copy-in {{ images_path }}/{{ vmname }}/ifcfg-eth1 /etc/sysconfig/network-scripts/
+      command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} copy-in {{ images_path }}/{{ vmname }}/ifcfg-eth1 /etc/sysconfig/network-scripts/
       delegate_to: "{{ target_server }}"
       remote_user: "{{ target_server_username }}"
 
@@ -147,7 +151,7 @@
       remote_user: "{{ target_server_username }}"
 
     - name: Set the owner and group on the eth1 network script file in the vnsutil image
-      command: guestfish --rw -a {{ images_path }}/{{ vmname }}/{{ vnsutil_qcow2_file_name }} -m {{ guestfish_mount }} chown 0 0 /etc/sysconfig/network-scripts/ifcfg-eth1
+      command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} chown 0 0 /etc/sysconfig/network-scripts/ifcfg-eth1
       delegate_to: "{{ target_server }}"
       remote_user: "{{ target_server_username }}"
     when: data_ip is defined or data_subnet is defined or data_netmask is defined
@@ -158,7 +162,7 @@
     remote_user: "{{ target_server_username }}"
 
   - name: Copy network file to the vnsutil image
-    command: guestfish --rw -a {{ images_path }}/{{ vmname }}/{{ vnsutil_qcow2_file_name }} -m {{ guestfish_mount }} copy-in {{ images_path }}/{{ vmname }}/network /etc/sysconfig/
+    command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} copy-in {{ images_path }}/{{ vmname }}/network /etc/sysconfig/
     delegate_to: "{{ target_server }}"
     remote_user: "{{ target_server_username }}"
 
@@ -168,17 +172,17 @@
     remote_user: "{{ target_server_username }}"
 
   - name: Set the owner and group for the network hostname file on the vnsutil image
-    command: guestfish --rw -a {{ images_path }}/{{ vmname }}/{{ vnsutil_qcow2_file_name }} -m {{ guestfish_mount }} chown 0 0 /etc/sysconfig/network
+    command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} chown 0 0 /etc/sysconfig/network
     delegate_to: "{{ target_server }}"
     remote_user: "{{ target_server_username }}"
 
   - name: Create the directory /root/.ssh for authorized_keys
-    command: guestfish --rw -a {{ images_path }}/{{ vmname }}/{{ vnsutil_qcow2_file_name }} -m {{ guestfish_mount }} mkdir-mode /root/.ssh 0700
+    command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} mkdir-mode /root/.ssh 0700
     delegate_to: "{{ target_server }}"
     remote_user: "{{ target_server_username }}"
 
   - name: Set the owner and group for the /root/.ssh directory on the vnsutil image
-    command: guestfish --rw -a {{ images_path }}/{{ vmname }}/{{ vnsutil_qcow2_file_name }} -m {{ guestfish_mount }} chown 0 0 /root/.ssh
+    command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} chown 0 0 /root/.ssh
     delegate_to: "{{ target_server }}"
     remote_user: "{{ target_server_username }}"
 
@@ -192,7 +196,7 @@
     remote_user: "{{ target_server_username }}"
 
   - name: Copy authorized_keys file to the vnsutil image
-    command: guestfish --rw -a {{ images_path }}/{{ vmname }}/{{ vnsutil_qcow2_file_name }} -m {{ guestfish_mount }} copy-in {{ images_path }}/{{ vmname }}/authorized_keys /root/.ssh/
+    command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} copy-in {{ images_path }}/{{ vmname }}/authorized_keys /root/.ssh/
     delegate_to: "{{ target_server }}"
     remote_user: "{{ target_server_username }}"
 
@@ -202,12 +206,12 @@
     remote_user: "{{ target_server_username }}"
 
   - name: Set the owner and group for the authorized_keys file on the vnsutil image
-    command: guestfish --rw -a {{ images_path }}/{{ vmname }}/{{ vnsutil_qcow2_file_name }} -m {{ guestfish_mount }} chown 0 0 /root/.ssh/authorized_keys
+    command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} chown 0 0 /root/.ssh/authorized_keys
     delegate_to: "{{ target_server }}"
     remote_user: "{{ target_server_username }}"
 
   - name: Set the mode for the authorized_keys file on the vnsutil image
-    command: guestfish --rw -a {{ images_path }}/{{ vmname }}/{{ vnsutil_qcow2_file_name }} -m {{ guestfish_mount }} chmod 0640 /root/.ssh/authorized_keys
+    command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} chmod 0640 /root/.ssh/authorized_keys
     delegate_to: "{{ target_server }}"
     remote_user: "{{ target_server_username }}"
 
