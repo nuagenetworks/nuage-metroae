@@ -1,32 +1,28 @@
-- name: get current date and time
-  set_fact:
-    var_time: "Date: {{lookup('pipe', 'date \"+%Y-%m-%d %H:%M:%S\"')}}"
+---
+- block:
 
-- name: Create report folder on ansible deployment host
-  file:
-    path: "{{ metro_reports_dir}}"
-    state: directory
-  delegate_to: localhost
-  run_once: true
+  - name: get current date and time
+    set_fact:
+      var_time: "Date: {{lookup('pipe', 'date \"+%Y-%m-%d %H:%M:%S\"')}}"
 
-- name: Clean up tmp files from previous runs
-  file:
-    path: "{{ report_path }}"
-    state: absent
-  delegate_to: localhost
-  run_once: true
+  - name: Create report folder on ansible deployment host
+    file:
+      path: "{{ metro_reports_dir}}"
+      state: directory
 
-- name: Write title to report file
-  nuage_append: filename="{{ report_path }}" text="VSC Health Report Start\n"
-  delegate_to: localhost
-  run_once: true
+  - name: Clean up tmp files from previous runs
+    file:
+      path: "{{ report_path }}"
+      state: absent
 
-- name: Write date to report file
-  nuage_append: filename="{{ report_path }}" text="{{ var_time }}\n"
-  delegate_to: localhost
-  run_once: true
+  - name: Write title to report file
+    nuage_append: filename="{{ report_path }}" text="VSC Health Report Start\n"
 
-- name: Write seperator to report file
-  nuage_append: filename="{{ report_path }}" text="================================================================================\n"
+  - name: Write date to report file
+    nuage_append: filename="{{ report_path }}" text="{{ var_time }}\n"
+
+  - name: Write seperator to report file
+    nuage_append: filename="{{ report_path }}" text="================================================================================\n"
+
   delegate_to: localhost
   run_once: true
