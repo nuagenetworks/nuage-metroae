@@ -1,4 +1,8 @@
 ---
+- name: Set VSD image location
+  include_tasks: 
+    vsd-find-image.yml
+
 - name: Set myvcins_check
   set_fact: myvcins_check={{myvcins is defined}}
 
@@ -6,7 +10,16 @@
   set_fact: myvcins= default([])
   when: not myvcins_check
 
-- name: Create host_vars files for vcin
-  template: src=vsd.j2 backup=no dest={{ playbook_dir }}/host_vars/{{ item.hostname }}
-  with_items: "{{ myvcins }}"
+- block:
+  - name: Disabling HA deployment for VCIN
+    set_fact:
+      disable_vcin_ha: True
+
+  - name: Create host_vars files for vcin
+    template: src=vsd.j2 backup=no dest={{ playbook_dir }}/host_vars/{{ item.hostname }}
+    with_items: "{{ myvcins }}"
+
+  - name: Re-enabling HA testing based on VSD count
+    set_fact:
+      disable_vcin_ha: False
   when: myvcins_check

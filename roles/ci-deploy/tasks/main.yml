@@ -106,12 +106,6 @@
 
 - block:
 
-  - name: Update /etc/hosts file
-    lineinfile:
-      dest: /etc/hosts
-      line: "{{ item }}"
-    with_items: "{{vsp_ips}}"
-
   - name: Update /etc/hosts file with xmpp entires
     lineinfile:
       dest: /etc/hosts
@@ -155,13 +149,10 @@
 
   - block:
 
-    - name: Stop the ntpd service if running
-      command: service ntpd stop
-
-    - name: Stop the ntpd service if running
+    - name: Stop the ntp service if running
       command: service ntp stop
 
-    - name: Start ntpd
+    - name: Start ntp
       command: service ntp start
 
     - name: Run the equivalent of "apt-get update"
@@ -172,7 +163,7 @@
       shell: ntpq -p | grep '*' | awk 'NR==1{print $1}'
       register: sync_status
       until: sync_status.stdout != ""
-      retries: 4
+      retries: 20
       delay: 5
       ignore_errors: yes
 
@@ -184,13 +175,16 @@
         shell: ntpq -p | grep '*' | awk 'NR==1{print $1}'
         register: retry_sync_status
         until: retry_sync_status.stdout != ""
-        retries: 4
+        retries: 40
         delay: 5
       when: sync_status.stdout == ""
 
     when: ansible_os_family == 'Debian'
 
   - block:
+
+    - name: Stop the ntpd service if running
+      command: service ntpd stop
 
     - name: Manually sync time with ntp server
       command: ntpdate -u "{{ ntp_server_list[0] }}"
@@ -202,7 +196,7 @@
       shell: ntpstat | awk 'NR==1{print $1}'
       register: sync_status
       until: sync_status.stdout == "synchronised"
-      retries: 4
+      retries: 20
       delay: 5
       ignore_errors: yes
 
@@ -215,7 +209,7 @@
         shell: ntpstat | awk 'NR==1{print $1}'
         register: retry_sync_status
         until: retry_sync_status.stdout == "synchronised"
-        retries: 4
+        retries: 40
         delay: 5
 
       when: sync_status.stdout != "synchronized"

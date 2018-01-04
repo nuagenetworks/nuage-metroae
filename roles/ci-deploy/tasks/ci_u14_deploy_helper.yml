@@ -9,18 +9,18 @@
 
 - block:
   # Temp task to get around policy issue
-  - name: Set the network names
+  - name: Set the network name variables for OpenStack VM interfaces
     set_fact:
       net_name1: "{{ ci_server['ansible_facts']['openstack_servers'][0]['networks'].keys()[0] }}"
       net_name2: "{{ ci_server['ansible_facts']['openstack_servers'][0]['networks'].keys()[1] }}"
 
-  - name: Set the compute IP
+  - name: Set the compute IP to net_name2 when net_name1 is the front end interface
     set_fact:
       vrs_u14_target_server: "{{ ci_server['ansible_facts']['openstack_servers'][0]['networks'][net_name2][0]}}"
       net_name_temp: "{{ net_name2 }}"
     when: net_name1 == 'OC_JEN_FrontEnd'
 
-  - name: Set the compute IP
+  - name: Set the compute IP to net_name1 when net_name2 is the front end interface
     set_fact:
       vrs_u14_target_server: "{{ ci_server['ansible_facts']['openstack_servers'][0]['networks'][net_name1][0]}}"
       net_name_temp: "{{ net_name1 }}"
@@ -48,11 +48,6 @@
         dest: "{{ role_path }}/../../zfb_vars.yml"
 
     delegate_to: localhost
-
-  # Temp task to get around policy issue
-  - name: Set front end ip added to static route
-    set_fact:
-      frontend_ip: "{{ ci_server['ansible_facts']['openstack_servers'][0]['networks']['OC_JEN_FrontEnd'][0]}}"
 
   - block:
 
@@ -84,10 +79,10 @@
 
     - name: Query facts
       action: setup
-      delegate_to: "{{ target_server }}"
+      delegate_to: "{{ vrs_u14_target_server }}"
 
       # Temp task to get around policy issue
-    - name: Add iptables rule to allow vsd to reach internet
+    - name: Add iptables rule to allow vsd to reach internet route to reach
       command: "iptables -t nat -A POSTROUTING -s {{ network_address }}.211 -j SNAT --to-source {{ vrs_u14_target_server }} "
 
     # Temp task to get around policy issue
@@ -100,4 +95,4 @@
 
     remote_user: root
 
-  when: ci_image == 'jen-ubuntu14'
+  when: ci_image|search('ubuntu14')

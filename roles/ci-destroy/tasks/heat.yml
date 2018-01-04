@@ -29,6 +29,7 @@
       when: subnet_name1 == 'OC_JEN_FrontEnd'
 
     - block:
+
       - name: Set the compute IP
         set_fact:
           target_server: "{{ ci_server['ansible_facts']['openstack_servers'][0]['networks'][subnet_name1][0]}}"
@@ -39,6 +40,14 @@
           subnet_name_temp: "{{ subnet_name1 }}"
 
       when: subnet_name2 == 'OC_JEN_FrontEnd'
+
+    - name: get the c7 vrs temp file contents
+      command: cat "/tmp/{{ subnet_name_temp }}_vrs_ip_centos7"
+      register: c7_vrs_ip
+
+    - name: register c7 vrs target_server
+      set_fact :
+        vrs_c7_target_server: "{{ c7_vrs_ip.stdout }}"
 
     - name: get the u14 vrs temp file contents
       command: cat "/tmp/{{ subnet_name_temp }}_vrs_ip_u14"
@@ -126,9 +135,15 @@
         dest: /etc/hosts
         line: "{{ vsp_item }}"
         state: absent
-      with_items: "{{vsp_ips}}"
+      with_items: "{{ vsp_ips }}"
       loop_control:
         loop_var: vsp_item
+
+    - name: Delete c7 VRS from /etc/hosts file
+      lineinfile:
+        dest: /etc/hosts
+        line: "{{ vrs_c7_target_server }}    {{inventory_hostname }}"
+        state: absent
 
     - name: Delete ubuntu 14 VRS ips from /etc/hosts file
       lineinfile:
