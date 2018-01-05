@@ -346,7 +346,7 @@ At this point, the new vsd node is up and running, but it has not yet been confi
 ./metro-ansible vsd_sa_upgrade_deploy.yml -vvvv
 ```
 
-At this point, VSD node is upgraded. You are ready to move on to the VSC node. If you experience a failure before the VSD install script runs, retry playbook vsd_sa_upgrade_deploy.yml. If that fails again or the failure comes after the VSD install script runs, destroy the VMs manually or use vsd_destroy.yml, then retry starting at step 5.
+At this point, VSD node is upgraded. If you experience a failure before the VSD install script runs, retry playbook vsd_sa_upgrade_deploy.yml. If that fails again or the failure comes after the VSD install script runs, destroy the VMs manually or use vsd_destroy.yml, then retry starting at step 5.
 
 7. Set the VSD upgrade complete flag
 
