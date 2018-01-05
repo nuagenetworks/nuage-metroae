@@ -198,7 +198,7 @@ At this point, the new vsd_node1 and vsd_node2 are up and running, but they have
 ./metro-ansible vsd_ha_upgrade_deploy_1_and_2.yml -vvvv
 ```
 
-At this point, two VSD nodes have been upgraded. You are ready to move on to the first VSC. If you experience a failure before the VSD install script runs, retry playbook vsd_ha_upgrade_deploy_1_and_2.yml. If that fails again or the failure comes after the VSD install script runs, destroy the VMs manually or use vsd_ha_upgrade_destroy_1_and_2.yml, then retry starting at step 5.
+At this point, two VSD nodes have been upgraded. If you experience a failure before the VSD install script runs, retry playbook vsd_ha_upgrade_deploy_1_and_2.yml. If that fails again or the failure comes after the VSD install script runs, destroy the VMs manually or use vsd_ha_upgrade_destroy_1_and_2.yml, then retry starting at step 5.
 
 7. Power off vsd_node3
 
