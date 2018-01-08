@@ -1,6 +1,4 @@
 ---
-- include: get_paths.yml
-
 - name: Clear host_vars directory
   file: path={{ playbook_dir }}/host_vars/ state=absent
   tags:
@@ -46,21 +44,26 @@
     name: common
     tasks_from: vrs-process-vars
 
+- name: Update VSR variables
+  include_role:
+    name: common
+    tasks_from: vsr-process-vars
+
+- name: Update DNS variables
+  include_role:
+    name: common
+    tasks_from: dns-process-vars
+
+- name: Update Nuage OpenStack Plugin variables
+  include_role:
+    name: common
+    tasks_from: nuage-openstack-plugin-vars
+
 - include: infra_build_helper.yml
 
 - include: ci_build_helper.yml
 
-- include: dns_build_helper.yml
-
 - include: gvm_build_helper.yml
-
-- include: osc_build_helper.yml
-
-- include: os_compute_build_helper.yml
-
-- include: vsr_build_helper.yml
-  tags:
-    - vsr
 
 - name: Create hosts file
   template: src=hosts.j2 dest="{{ playbook_dir }}/hosts" backup=no
