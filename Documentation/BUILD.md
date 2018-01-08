@@ -75,7 +75,7 @@ Both `nuage-unzip.yml` and `build.yml` support passing the location of this file
 
 ```
 ./metro-ansible nuage_unzip.yml -e build_vars_file="/path/to/your/build_vars.yml"
-./metro-ansible build.yml -e build_vars_file="/path/to/your/build_vars.yml" -e user_creds_file="/path/to/your/user_creds.yml"
+./metro-ansible build.yml -e build_vars_file="/path/to/your/build_vars.yml" -e "user_creds_file=/path/to/your/user_creds.yml"
 ```
 ## Having Issues? Reset your environment
 If you have issues with running the build, you can reset to factory settings and start over.
