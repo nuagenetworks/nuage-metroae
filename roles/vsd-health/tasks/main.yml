@@ -1,14 +1,15 @@
 ---
 - name: Wait for VM to be ready
-  local_action:
-    module: wait_for
-    port: "22"
-    host: "{{ mgmt_ip }}"
-    search_regex: OpenSSH
-    delay: 1
+  include_role:
+    name: common
+    tasks_from: wait-for-ssh
+  vars:
+    ssh_host: "{{ mgmt_ip }}"
 
 - name: Clean known_hosts
-  command: ssh-keygen -R "{{ mgmt_ip }}"
+  known_hosts:
+    name: "{{ mgmt_ip }}"
+    state: absent
   delegate_to: localhost
 
 - include: report_header.yml
@@ -20,8 +21,7 @@
 
 - name: Write VSD version to json file
   nuage_append: filename="{{ report_path }}" text="{{ vsd_version.stdout | to_nice_json}}\n"
-  delegate_to: "{{ ansible_deployment_host }}"
-  remote_user: "{{ ansible_sudo_username }}"
+  delegate_to: localhost
 
 - name: Get current network config of all VSD nodes
   network_info:
@@ -34,8 +34,9 @@
 
 - name: Write network config to json file
   nuage_append: filename="{{ report_path }}" text="{{ net_conf.info | to_nice_json}}\n"
-  delegate_to: "{{ ansible_deployment_host }}"
-  remote_user: "{{ ansible_sudo_username }}"
+  delegate_to: localhost
+
+- include: monit_status.yml
 
 - name: Execute list_p1db command on VSD(s)
   command: "{{ p1db_cmd }}"
@@ -50,58 +51,53 @@
 
 - name: Write p1bd JSON to file
   nuage_append: filename="{{ report_path }}" text="{{ inventory_hostname }} {{ ejabberd_p1db_json|to_nice_json }}\n"
-  remote_user: "{{ ansible_sudo_username }}"
-  delegate_to: "{{ ansible_deployment_host }}"
+  delegate_to: localhost
 
 - name: Execute list_cluster command on VSD(s)
   command: "{{ ejabber_cluster_list_command }}"
   register: list_cluster_output
   remote_user: root
 
-- name: Print ejabberd list_cluster output when verbosity >= 1
+- name: Print ejabberd list_cluster_output when verbosity >= 1
   debug: var=list_cluster_output verbosity=1
-
-- block:
-  - name: Verify cna user is found in connected_users of ejabberd in vsds
-    assert:
-      that: "list_cluster_output.stdout|search('cna@{{ vsd_fqdn }}')"
-      msg: "cna@{{ vsd_fqdn }} could not be found in '/opt/ejabberd/bin/ejabberdctl connected_users'"
-
-  - name: Verify push user is found in connected_users of ejabberd in vsds
-    assert:
-      that: "list_cluster_output.stdout|search('push@{{ vsd_fqdn }}')"
-      msg: "push@{{ vsd_fqdn }} could not be found in '/opt/ejabberd/bin/ejabberdctl connected_users'"
-
-  - name: Verify keyserver user is found in connected_users of ejabberd in vsds
-    assert:
-      that: "list_cluster_output.stdout|search('keyserver@{{ vsd_fqdn }}')"
-      msg: "keyserver@{{ vsd_fqdn }} could not be found in '/opt/ejabberd/bin/ejabberdctl connected_users'"
-  when: (vsd_sa_or_ha == 'ha') or (vsd_sa_or_ha == 'HA')
 
 - name: Create local variable with ejabberd cluster output to json
   set_fact: ejabberd_cluster_json="{{ list_cluster_output.stdout|ejabberd_cluster_to_json }}"
 
 - name: Write cluster JSON to file
   nuage_append: filename="{{ report_path }}" text="{{ inventory_hostname }} {{ ejabberd_cluster_json|to_nice_json }}\n"
-  remote_user: "{{ ansible_sudo_username }}"
-  delegate_to: "{{ ansible_deployment_host }}"
+  delegate_to: localhost
 
 - name: Excute ejabberd_connected_users_command command on VSD(s)
   command: "{{ ejabberd_connected_users_command }}"
-  register: client_list
+  register: user_list
   remote_user: root
 
 - name: Print ejabberd connected_users output when verbosity >= 1
-  debug: var=client_list verbosity=1
+  debug: var=user_list verbosity=1
 
-- name: Create local variable with ejabberd connected clients to json
-  set_fact: ejabberd_clients_json="{{ client_list.stdout|ejabberd_clients_to_json }}"
+- name: Create local variable with ejabberd connected users to json
+  set_fact: ejabberd_users_json="{{ user_list.stdout|ejabberd_clients_to_json }}"
 
-- name: Write clients JSON to file
-  nuage_append: filename="{{ report_path }}" text="{{ inventory_hostname }} {{ ejabberd_clients_json|to_nice_json }}\n"
-  remote_user: "{{ ansible_sudo_username }}"
-  delegate_to: "{{ ansible_deployment_host }}"
+- name: Write users JSON to file
+  nuage_append: filename="{{ report_path }}" text="{{ inventory_hostname }} {{ ejabberd_users_json|to_nice_json }}\n"
+  delegate_to: localhost
 
-- include: monit_status.yml
+- block:
+  - name: Verify cna user is found in connected_users of ejabberd in vsds
+    assert:
+      that: "user_list.stdout|search('cna@{{ vsd_fqdn }}')"
+      msg: "cna@{{ vsd_fqdn }} could not be found in '/opt/ejabberd/bin/ejabberdctl connected_users'"
+
+  - name: Verify push user is found in connected_users of ejabberd in vsds
+    assert:
+      that: "user_list.stdout|search('push@{{ vsd_fqdn }}')"
+      msg: "push@{{ vsd_fqdn }} could not be found in '/opt/ejabberd/bin/ejabberdctl connected_users'"
+
+  - name: Verify keyserver user is found in connected_users of ejabberd in vsds
+    assert:
+      that: "user_list.stdout|search('keyserver@{{ vsd_fqdn }}')"
+      msg: "keyserver@{{ vsd_fqdn }} could not be found in '/opt/ejabberd/bin/ejabberdctl connected_users'"
+  when: vsd_sa_or_ha|match('ha')
 
 - include: report_footer.yml

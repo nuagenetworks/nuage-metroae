@@ -46,16 +46,14 @@
 
 - name: Clean known_hosts of OSC's
   command: ssh-keygen -R "{{ osc_mgmt_ip }}"
-  delegate_to: "{{ ansible_deployment_host }}"
-  remote_user: "{{ ansible_sudo_username }}"
+  delegate_to: localhost
 
 - name: Wait for OSC ssh to be ready
-  local_action:
-    module: wait_for
-    port: "22"
-    host: "{{ osc_mgmt_ip }}"
-    search_regex: OpenSSH
-    delay: 1
+  include_role:
+    name: common
+    tasks_from: wait-for-ssh
+  vars:
+    ssh_host: "{{ osc_mgmt_ip }}"
 
 - name: Pause for ssh port to be active
   pause:
@@ -129,7 +127,7 @@
     enabled: yes
   remote_user: "root"
 
-- name: Start netowrk
+- name: Start network
   service:
     name: network
     state: started
@@ -146,66 +144,10 @@
     state: latest
   remote_user: "root"
 
-- name: Delete the localtime file
-  file:
-    path: /etc/localtime
-    state: absent
-  remote_user: "root"
-
-- name: Create the localtime symlink
-  file:
-    src: /usr/share/zoneinfo/US/Pacific
-    dest: /etc/localtime
-    state: link
-  remote_user: "root"
-
-- name: Remove old NTP servers
-  lineinfile:
-    dest: /etc/ntp.conf
-    regexp: "^server"
-    state: absent
-  remote_user: "root"
-
-- name: Configure NTP servers
-  lineinfile:
-    dest: /etc/ntp.conf
-    line: "server {{ item }} iburst"
-  with_items: "{{ ntp_server_list }}"
-  remote_user: "root"
-
-- name: Stop the ntpd service if running
-  command: service ntpd stop
-  remote_user: "root"
-
-- name: Manually sync time with ntp server
-  command: ntpdate -u "{{ntp_server_list[0]}}"
-  remote_user: "root"
-
-- name: Start ntpd
-  command: service ntpd start
-  remote_user: "root"
-
-- name: check ntp sync state
-  shell: ntpstat | awk 'NR==1{print $1}'
-  register: sync_status
-  until: sync_status.stdout == "synchronised"
-  retries: 4
-  delay: 5
-  ignore_errors: yes
-  remote_user: "root"
-
-- block:
-  - name: restart ntp if it hasn't synced yet
-    command: service ntpd restart
-    remote_user: "root"
-  - name: check ntp sync state
-    shell: ntpstat | awk 'NR==1{print $1}'
-    register: retry_sync_status
-    until: retry_sync_status.stdout == "synchronised"
-    retries: 4
-    delay: 5
-    remote_user: "root"
-  when: sync_status.stdout != "synchronized"
+- name: Configure ntpd and ntpdate and local time zone
+  include_role:
+    name: common
+    tasks_from: linux-ntp-sync
 
 - name: Load correspoing software repos for OpenStack Centos7
   yum:
@@ -218,7 +160,7 @@
 
 - name: Copy Redhat repo file for RedHat images
   template:
-    src={{ playbook_dir }}/roles/osc-deploy/templates/redhat.repo.j2
+    src={{ role_path }}/templates/redhat.repo.j2
     dest=/etc/yum.repos.d/rhel.repo
   remote_user: "root"
   when:
@@ -242,7 +184,7 @@
 
 - name: Copy Mysql compute query file to controller
   copy:
-    src={{ playbook_dir }}/roles/osc-deploy/files/del_compute.txt
+    src={{ role_path }}/files/del_compute.txt
     dest=/root/
   remote_user: "root"
 
@@ -264,7 +206,7 @@
 
 - name: Copy Mysql netowrk query file to controller
   copy:
-    src={{ playbook_dir }}/roles/osc-deploy/files/del_network.txt
+    src={{ role_path }}/files/del_network.txt
     dest=/root/
   remote_user: "root"
 

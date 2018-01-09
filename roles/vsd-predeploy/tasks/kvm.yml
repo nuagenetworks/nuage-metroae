@@ -1,4 +1,8 @@
 ---
+- name: Set local variable with upgrade status
+  set_fact:
+    upgrade: "{{ nuage_upgrade|default('False') }}"
+
 - block:
   - name: Verify that upgrade_vmname is defined if this is an upgrade
     assert:
@@ -7,15 +11,15 @@
   - name: Set local variable with upgrade_vmname
     set_fact:
       vm_name: "{{ upgrade_vmname }}"
-  when: nuage_upgrade | default( False )
+  when: upgrade
 
 - block:
   - name: Set local variable with vmname
     set_fact:
       vm_name: "{{ vmname }}"
-  when: not nuage_upgrade | default( False )
+  when: not upgrade
 
-- name: Query {{ target_server }} facts
+- name: Query Target Server facts
   action: setup
   remote_user: "{{ target_server_username }}"
   delegate_to: "{{ target_server }}"
@@ -25,15 +29,15 @@
 
 - name: Check target for supported OS
   fail: msg="Unsupported OS family ({{ ansible_os_family }})"
-  when: ansible_os_family not in vsd_target_server_os_family_list
+  when: ansible_os_family not in supported_target_server_os_family_list
 
 - name: Check target memory
   fail: msg="Not enough memory ({{ ansible_memtotal_mb }})"
-  when: ansible_memtotal_mb < vsd_target_server_memory_mb_min
+  when: ansible_memtotal_mb < target_server_memory_mb_min
 
 - name: Check target cores
   fail: msg="Not enough cores ({{ ansible_processor_vcpus }})"
-  when: ansible_processor_vcpus < vsd_target_server_vcpus_min
+  when: ansible_processor_vcpus < target_server_vcpus_min
 
 - name: Check target bridges
   fail: msg="Required network bridges not found"
@@ -64,197 +68,137 @@
       enabled: yes
       state: started
 
-  when: ansible_os_family|match("RedHat")
   delegate_to: "{{ target_server }}"
   remote_user: "{{ target_server_username }}"
 
-- name: If Debian, install packages for Debian OS family distros
-  apt: name={{ item }} state=present
-  with_items:
-   - qemu-kvm
-   - libvirt-bin
-   - bridge-utils
-   - libguestfs-tools
-   - python-libvirt
-  when: ansible_os_family | match("Debian")
-  delegate_to: "{{ target_server }}"
-  remote_user: "{{ target_server_username }}"
+- include_role:
+    name: check-node-running
 
-- name: List the Virtual Machines running
-  virt: command=list_vms
-  register: virt_vms
-  delegate_to: "{{ target_server }}"
-  remote_user: "{{ target_server_username }}"
-
-- name: Verify that the VM is not already running
-  assert:
-    that: "vm_name not in virt_vms.list_vms"
-    msg: "{{ vm_name }} is already running on {{ target_server }}"
-
-- name: Create libvirt image directory
-  file: path={{ images_path }}/{{ vm_name }}
-        state=directory
-        owner={{ libvirt.user }}
-        group={{ libvirt.group }}
-  delegate_to: "{{ target_server }}"
-  remote_user: "{{ target_server_username }}"
-
-- name: Copy the VSD qcow image to virt images directory
-  copy: src={{ vsd_qcow2_path }}/{{ vsd_qcow2_file_name }}
-        dest={{ images_path }}/{{ vm_name }}
-        owner={{ libvirt.user }}
-        group={{ libvirt.group }}
-  delegate_to: "{{ target_server }}"
-  remote_user: "{{ target_server_username }}"
-
-- name: Get list of partitions
-  shell: "guestfish -r -a {{ images_path }}/{{ vm_name }}/{{ vsd_qcow2_file_name }} run : list-filesystems | grep -Ev '(unknown|swap)'"
-  delegate_to: "{{ target_server }}"
-  remote_user: "{{ target_server_username }}"
-  register: partitions_list
-
-- name: Check partition content
-  shell: "guestfish -r -a {{ images_path }}/{{ vm_name }}/{{ vsd_qcow2_file_name }} run : mount {{ item.split(':')[0] }} / : ls /"
-  delegate_to: "{{ target_server }}"
-  register: partitions
-  with_items: "{{ partitions_list.stdout_lines }}"
-  remote_user: "{{ target_server_username }}"
-
-- name: Find root partition
-  set_fact:
-    guestfish_mount: "{{ item.item.split(':')[0]}}"
-  with_items: "{{ partitions.results }}"
-  when: '"proc" in item.stdout'
-
-- debug: var=guestfish_mount verbosity=1
-
-- name: Create a temporary copy of the network script for eth0
-  template: src=ifcfg-eth0.j2 backup=no dest={{ images_path }}/{{ vm_name }}/ifcfg-eth0
-  delegate_to: "{{ target_server }}"
-  remote_user: "{{ target_server_username }}"
-
-- name: Copy eth0 network script file to the VSD image
-  command: guestfish --rw -a {{ images_path }}/{{ vm_name }}/{{ vsd_qcow2_file_name }} -m {{ guestfish_mount }} copy-in {{ images_path }}/{{ vm_name }}/ifcfg-eth0 /etc/sysconfig/network-scripts/
-  delegate_to: "{{ target_server }}"
-  remote_user: "{{ target_server_username }}"
-
-- name: Remove temporary copy of eth0 network script
-  file: path={{ images_path }}/{{ vm_name }}/ifcfg-eth0 state=absent
-  delegate_to: "{{ target_server }}"
-  remote_user: "{{ target_server_username }}"
-
-- name: Set the owner and group on the eth0 network script file in the VSD image
-  command: guestfish --rw -a {{ images_path }}/{{ vm_name }}/{{ vsd_qcow2_file_name }} -m {{ guestfish_mount }} chown 0 0 /etc/sysconfig/network-scripts/ifcfg-eth0
-  delegate_to: "{{ target_server }}"
-  remote_user: "{{ target_server_username }}"
-
-- name: Create a temporary copy of the syscfg network file
-  template: src=network.j2 backup=no dest={{ images_path }}/{{ vm_name }}/network
-  delegate_to: "{{ target_server }}"
-  remote_user: "{{ target_server_username }}"
-
-- name: Copy network file to the VSD image
-  command: guestfish --rw -a {{ images_path }}/{{ vm_name }}/{{ vsd_qcow2_file_name }} -m {{ guestfish_mount }} copy-in {{ images_path }}/{{ vm_name }}/network /etc/sysconfig/
-  delegate_to: "{{ target_server }}"
-  remote_user: "{{ target_server_username }}"
-
-- name: Remove temporary copy of network file
-  file: path={{ images_path }}/{{ vm_name }}/network state=absent
-  delegate_to: "{{ target_server }}"
-  remote_user: "{{ target_server_username }}"
-
-- name: Set the owner and group for the network hostname file on the VSD image
-  command: guestfish --rw -a {{ images_path }}/{{ vm_name }}/{{ vsd_qcow2_file_name }} -m {{ guestfish_mount }} chown 0 0 /etc/sysconfig/network
-  delegate_to: "{{ target_server }}"
-  remote_user: "{{ target_server_username }}"
-
-- name: Create a temporary copy of the hostname file (for VSD version 4.0.R7 and on)
-  template: src=hostname.j2 backup=no dest={{ images_path }}/{{ vm_name }}/hostname
-  delegate_to: "{{ target_server }}"
-  remote_user: "{{ target_server_username }}"
-
-- name: Copy hostname file to the VSD image
-  command: guestfish --rw -a {{ images_path }}/{{ vm_name }}/{{ vsd_qcow2_file_name }} -m {{ guestfish_mount }} copy-in {{ images_path }}/{{ vm_name }}/hostname /etc/
-  delegate_to: "{{ target_server }}"
-  remote_user: "{{ target_server_username }}"
-
-- name: Remove temporary copy of hostname file
-  file: path={{ images_path }}/{{ vm_name }}/hostname state=absent
-  delegate_to: "{{ target_server }}"
-  remote_user: "{{ target_server_username }}"
-
-- name: Set the owner and group for the hostname file on the VSD image
-  command: guestfish --rw -a {{ images_path }}/{{ vm_name }}/{{ vsd_qcow2_file_name }} -m {{ guestfish_mount }} chown 0 0 /etc/hostname
-  delegate_to: "{{ target_server }}"
-  remote_user: "{{ target_server_username }}"
-
-- name: Create the directory /root/.ssh for authorized_keys
-  command: guestfish --rw -a {{ images_path }}/{{ vm_name }}/{{ vsd_qcow2_file_name }} -m {{ guestfish_mount }} mkdir-mode /root/.ssh 0700
-  delegate_to: "{{ target_server }}"
-  remote_user: "{{ target_server_username }}"
-
-- name: Set the owner and group for the /root/.ssh directory on the VSD image
-  command: guestfish --rw -a {{ images_path }}/{{ vm_name }}/{{ vsd_qcow2_file_name }} -m {{ guestfish_mount }} chown 0 0 /root/.ssh
-  delegate_to: "{{ target_server }}"
-  remote_user: "{{ target_server_username }}"
-
-- name: Get the public key for the current user
-  local_action: command cat "{{ user_ssh_pub_key }}"
-  register: current_user_ssh_key
-
-- name: Create a temporary copy of the authorized_keys file
-  template: src=authorized_keys.j2 backup=no dest={{ images_path }}/{{ vm_name }}/authorized_keys
-  delegate_to: "{{ target_server }}"
-  remote_user: "{{ target_server_username }}"
-
-- name: Copy authorized_keys file to the VSD image
-  command: guestfish --rw -a {{ images_path }}/{{ vm_name }}/{{ vsd_qcow2_file_name }} -m {{ guestfish_mount }} copy-in {{ images_path }}/{{ vm_name }}/authorized_keys /root/.ssh/
-  delegate_to: "{{ target_server }}"
-  remote_user: "{{ target_server_username }}"
-
-- name: Remove temporary copy of authorized_keys file
-  file: path={{ images_path }}/{{ vm_name }}/authorized_keys state=absent
-  delegate_to: "{{ target_server }}"
-  remote_user: "{{ target_server_username }}"
-
-- name: Set the owner and group for the authorized_keys file on the VSD image
-  command: guestfish --rw -a {{ images_path }}/{{ vm_name }}/{{ vsd_qcow2_file_name }} -m {{ guestfish_mount }} chown 0 0 /root/.ssh/authorized_keys
-  delegate_to: "{{ target_server }}"
-  remote_user: "{{ target_server_username }}"
-
-- name: Set the mode for the authorized_keys file on the VSD image
-  command: guestfish --rw -a {{ images_path }}/{{ vm_name }}/{{ vsd_qcow2_file_name }} -m {{ guestfish_mount }} chmod 0640 /root/.ssh/authorized_keys
-  delegate_to: "{{ target_server }}"
-  remote_user: "{{ target_server_username }}"
-
-- name: "Define new VSD VM"
-  virt: name="{{ vm_name }}"
-        command=define
-        xml="{{ lookup('template', 'vsd.xml.j2') }}"
-        uri=qemu:///system
-  delegate_to: "{{ target_server }}"
-  remote_user: "{{ target_server_username }}"
-
-- name: "Run VSD VM"
-  virt: name="{{ vm_name }}"
-        state=running
-        autostart=True
-        uri=qemu:///system
-  delegate_to: "{{ target_server }}"
-  remote_user: "{{ target_server_username }}"
-  when: ansible_version.full | version_compare('2.3', '>=')
+- name: Display if skipping predeploy
+  debug:
+    msg:
+      - "****************************************************"
+      - "Skipping VSD predeploy because it is already present"
+      - "****************************************************"
+  when: node_present
 
 - block:
-  - name: "Configure VM to autostart"
-    command: virsh autostart {{ vm_name }}
-    delegate_to: "{{ target_server }}"
-    remote_user: "{{ target_server_username }}"
 
-  - name: "Run VSD VM"
-    virt: name="{{ vm_name }}"
+  - name: Create libvirt image directory
+    file: path={{ images_path }}/{{ vm_name }}
+          state=directory
+          owner={{ libvirt.user }}
+          group={{ libvirt.group }}
+
+  - name: Copy the VSD qcow image to virt images directory
+    copy: src={{ qcow2_path }}/{{ qcow2_file_name }}
+          dest={{ images_path }}/{{ vm_name }}
+          owner={{ libvirt.user }}
+          group={{ libvirt.group }}
+
+  - name: Set local variable with vsd guestfish destination
+    set_fact:
+      guestfish_dest: "{{ images_path }}/{{ vm_name }}/{{ qcow2_file_name }}"
+
+  - name: Get the public key for the current user
+    local_action: command cat "{{ user_ssh_pub_key }}"
+    register: current_user_ssh_key
+
+  - name: Get list of partitions
+    shell: "guestfish -r -a {{ guestfish_dest }} run : list-filesystems | grep -Ev '(unknown|swap)'"
+    register: partitions_list
+
+  - name: Check partition content
+    shell: "guestfish -r -a {{ guestfish_dest }} run : mount {{ item.split(':')[0] }} / : ls /"
+    register: partitions
+    with_items: "{{ partitions_list.stdout_lines }}"
+
+  - name: Find root partition
+    set_fact:
+      guestfish_mount: "{{ item.item.split(':')[0]}}"
+    with_items: "{{ partitions.results }}"
+    when: '"proc" in item.stdout'
+
+  - debug: var=guestfish_mount verbosity=1
+
+  - name: Create a temporary copy of the network script for eth0
+    template: src=ifcfg-eth0.j2 backup=no dest={{ images_path }}/{{ vm_name }}/ifcfg-eth0
+
+  - name: Copy eth0 network script file to the VSD image
+    command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} copy-in {{ images_path }}/{{ vm_name }}/ifcfg-eth0 /etc/sysconfig/network-scripts/
+
+  - name: Remove temporary copy of eth0 network script
+    file: path={{ images_path }}/{{ vm_name }}/ifcfg-eth0 state=absent
+
+  - name: Set the owner and group on the eth0 network script file in the VSD image
+    command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} chown 0 0 /etc/sysconfig/network-scripts/ifcfg-eth0
+
+  - name: Create a temporary copy of the syscfg network file
+    template: src=network.j2 backup=no dest={{ images_path }}/{{ vm_name }}/network
+
+  - name: Copy network file to the VSD image
+    command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} copy-in {{ images_path }}/{{ vm_name }}/network /etc/sysconfig/
+
+  - name: Remove temporary copy of network file
+    file: path={{ images_path }}/{{ vm_name }}/network state=absent
+
+  - name: Set the owner and group for the network hostname file on the VSD image
+    command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} chown 0 0 /etc/sysconfig/network
+
+  - name: Create a temporary copy of the hostname file (for VSD version 4.0.R7 and on)
+    template: src=hostname.j2 backup=no dest={{ images_path }}/{{ vm_name }}/hostname
+
+  - name: Copy hostname file to the VSD image
+    command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} copy-in {{ images_path }}/{{ vm_name }}/hostname /etc/
+
+  - name: Remove temporary copy of hostname file
+    file: path={{ images_path }}/{{ vm_name }}/hostname state=absent
+
+  - name: Set the owner and group for the hostname file on the VSD image
+    command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} chown 0 0 /etc/hostname
+
+  - name: Create the directory /root/.ssh for authorized_keys
+    command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} mkdir-mode /root/.ssh 0700
+
+  - name: Set the owner and group for the /root/.ssh directory on the VSD image
+    command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} chown 0 0 /root/.ssh
+
+  - name: Create a temporary copy of the authorized_keys file
+    template: src=authorized_keys.j2 backup=no dest={{ images_path }}/{{ vm_name }}/authorized_keys
+
+  - name: Copy authorized_keys file to the VSD image
+    command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} copy-in {{ images_path }}/{{ vm_name }}/authorized_keys /root/.ssh/
+
+  - name: Remove temporary copy of authorized_keys file
+    file: path={{ images_path }}/{{ vm_name }}/authorized_keys state=absent
+
+  - name: Set the owner and group for the authorized_keys file on the VSD image
+    command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} chown 0 0 /root/.ssh/authorized_keys
+
+  - name: Set the mode for the authorized_keys file on the VSD image
+    command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} chmod 0640 /root/.ssh/authorized_keys
+
+  - name: Preallocate most of VSD disk space to avoid pausing the VM, this also checks disk space
+    shell: "fallocate -l {{ vsd_fallocate_size_gb }}G {{ guestfish_dest }}"
+    when: vsd_fallocate_size_gb > 0
+
+  - name: Define VM
+    virt: name={{ vm_name }}
+          command=define
+          xml="{{ lookup('template', 'vsd.xml.j2') }}"
+          uri=qemu:///system
+
+  - name: Autostart
+    virt: name={{ vm_name }}
+          command=status
+          autostart=True
+          uri=qemu:///system
+
+  - name: Run VM
+    virt: name={{ vm_name }}
           state=running
           uri=qemu:///system
-    delegate_to: "{{ target_server }}"
-    remote_user: "{{ target_server_username }}"
-  when: ansible_version.full | version_compare('2.3', '<')
 
+  when: not node_present
+  delegate_to: "{{ target_server }}"
+  remote_user: "{{ target_server_username }}"

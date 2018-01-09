@@ -1,14 +1,19 @@
 - name: Query facts on ansible_deployment_host
   action: setup
+  delegate_to: localhost
 
 - name: Clean known_hosts of VSC's
-  command: ssh-keygen -R "{{ mgmt_ip }}"
+  known_hosts:
+    name: "{{ mgmt_ip }}"
+    state: absent
+  delegate_to: localhost
 
 - name: Get output of 'show bof'
   sros_command:
     commands:
       - show bof
     provider: "{{ vsc_creds }}"
+  delegate_to: localhost
   register: bof_config
 
 - name: Print 'show bof' when verbosity >= 1
@@ -21,12 +26,23 @@
 - name: Print bof config in json  when verbosity >= 1
   debug: var=bof_json
 
+- name: Get VSD deployment mode
+  include_role:
+    name: common
+    tasks_from: vsd-node-info.yml
+  vars:
+    vsd_hostname: "{{ vsd_fqdn }}"
+
+- name: Print vsd deployment mode when verbosity >= 1
+  debug: var="vsd_sa_or_ha"
+
 - block:
   - name: Get output of 'show system connections port 5222'
     sros_command:
       commands:
         - show system connections port 5222
       provider: "{{ vsc_creds }}"
+    delegate_to: localhost
     register: vsc_sys_conn
 
   - name: Print 'show system connections port 5222' when verbosity >= 1
@@ -38,13 +54,14 @@
 
   - name: Print vsc system connection in json  when verbosity >= 1
     debug: var=vsc_sys_conn_json verbosity=1
-  when: vsd_sa_or_ha == 'ha'
+  when: vsd_sa_or_ha|match('ha')
 
 - name: Get output of 'show vswitch-controller xmpp-server detail'
   sros_command:
     commands:
       - show vswitch-controller xmpp-server detail
     provider: "{{ vsc_creds }}"
+  delegate_to: localhost
   register: xmpp_detail
 
 - name: Print 'show vswitch-controller xmpp-server detail' when verbosity >= 1
@@ -67,6 +84,7 @@
     that: "{{ expected_xmpp_server_state == xmpp_server_state }}",
     msg: "Invalid xmpp-server state ({{ xmpp_server_state }}) detected. Expected {{ expected_xmpp_server_state }}. Check 'show vswitch-controller xmpp-server details'."
 }
+  when: vsd_sa_or_ha|match('ha')
 
 - name: Save existing configuration on VSC
   sros_command:
@@ -74,6 +92,7 @@
       - bof save
       - admin save
     provider: "{{ vsc_creds }}"
+  delegate_to: localhost
   register: conf_save
 
 - name: Print 'bof save' when verbosity >= 1

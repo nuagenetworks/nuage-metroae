@@ -1,11 +1,17 @@
 ---
 - name: Wait for VSTAT ssh to be ready
-  local_action:
-    module: wait_for
-    port: "22"
-    host: "{{ mgmt_ip }}"
-    search_regex: OpenSSH
-    delay: 1
+  include_role:
+    name: common
+    tasks_from: wait-for-ssh
+  vars:
+    ssh_host: "{{ mgmt_ip }}"
+
+- name: Get vsd node(s) information
+  import_role:
+    name: common
+    tasks_from: vsd-node-info.yml
+  vars:
+    vsd_hostname: "{{ vsd_fqdn }}"
 
 - name: Update /etc/hosts file
   blockinfile:
@@ -19,12 +25,14 @@
 - name: Update /etc/hosts file on VSD(s)
   blockinfile:
     dest: /etc/hosts
+    marker: "# {mark} Ansible created entries for stats nodes"
     block: |
       {% for host in groups['vstats']  %}
       {{ hostvars[host]['mgmt_ip'] }}    {{ host }}
       {% endfor %}
   delegate_to: "{{ item }}"
-  with_items: "{{ groups['vsds'] }}"
+  #with_items: "{{ groups['vsds'] }}"
+  with_items: "{{ vsd_hostname_list }}"
   remote_user: "root"
 
 - block:
@@ -55,167 +63,221 @@
     run_once: true
   when: vstat_sa_or_ha | match('ha')
 
-- name: Delete the localtime file
-  file:
-    path: /etc/localtime
-    state: absent
+- name: check for iptables
+  shell: "service iptables status"
+  register: _svc_iptables
+  ignore_errors: True
   remote_user: "root"
 
-- name: Create the localtime symlink
-  file:
-    src: /usr/share/zoneinfo/{{ timezone }}
-    dest: /etc/localtime
-    state: link
-  remote_user: "root"
+- name: Print vsd deployment mode when verbosity >= 1
+  debug: var="vsd_sa_or_ha"
 
-- name: Remove old NTP servers
-  lineinfile:
-    dest: /etc/ntp.conf
-    regexp: "^server"
-    state: absent
-  remote_user: "root"
+- block:
+  - name: Start iptables
+    systemd:
+      name: iptables
+      state: started
+    remote_user: "root"
 
-- name: Configure NTP servers
-  lineinfile:
-    dest: /etc/ntp.conf
-    line: "server {{ item }} iburst"
-  with_items: "{{ ntp_server_list }}"
-  remote_user: "root"
+  - name: Enable iptables on boot
+    systemd:
+      name: iptables
+      enabled: yes
+    remote_user: "root"
 
-- name: Stop the ntpd service if running
-  systemd:
-    name: ntpd
-    state: stopped
-  remote_user: "root"
+  - name: Check if iptables is already setup for VSD rules
+    shell: iptables -L INPUT | grep 'match-set vsd src'
+    remote_user: "{{ target_server_username }}"
+    register: vstat_iptables_result
+    ignore_errors: True
 
-- name: Manually sync time with ntp server
-  command: ntpdate -u "{{ntp_server_list[0]}}"
-  remote_user: "root"
+  - name: Set if skipping VSTAT deploy
+    set_fact: skip_vstat_deploy="{{ vstat_iptables_result is defined and vstat_iptables_result.rc == 0 }}"
 
-- name: Start ntpd
-  systemd:
-    name: ntpd
-    state: started
-  remote_user: "root"
+  - name: Display if skipping VSTAT deploy
+    debug:
+      msg:
+        - "***************************************************"
+        - "Skipping VSTAT deploy because it is already running"
+        - "***************************************************"
+    when: skip_vstat_deploy
 
-- name: Enable ntpd on boot
-  systemd:
-    name: ntpd
-    enabled: yes
-  remote_user: "root"
+  - block:
 
-- name: check ntp sync state
-  shell: ntpstat | awk 'NR==1{print $1}'
-  register: sync_status
-  until: sync_status.stdout == "synchronised"
-  retries: 4
-  delay: 5
-  ignore_errors: yes
+    - name: Create iptables vars file on ansible host
+      template: src="{{ role_path }}/templates/iptables.j2" dest="/tmp/main.yml" backup=no mode=0755
+      delegate_to: "{{ ansible_deployment_host }}"
+      remote_user: "{{ ansible_sudo_username }}"
+
+    - name: Include variable file.
+      include_vars: /tmp/main.yml
+      delegate_to: "{{ ansible_deployment_host }}"
+      remote_user: "{{ ansible_sudo_username }}"
+
+    - block:
+
+      - name: Config iptables on VSTAT vm to accept conn on ports 9200,9300 from vsd(s)
+        shell: "{{ item }}"
+        with_items:
+          - "{{ iptables_std_commands }}"
+        remote_user: "root"
+        register: iptables_results
+        ignore_errors: True
+
+      - name: Verify iptables rules installation
+        assert:
+          that: "{{ item.rc }} == 0 or
+                 {{ item.stderr | search('already exists') }} or
+                 {{ item.stderr | search('already added') }}"
+          msg: "iptables rule was not installed"
+        with_items:
+          - "{{ iptables_results.results }}"
+
+      when: vsd_sa_or_ha | match('sa')
+
+    - block:
+
+      - name: Config iptables on VSTAT vm to accept conn on ports 9200, 9300 from vsd(s) in cluster setup
+        shell: "{{ item }}"
+        with_items:
+          - "{{ iptables_cluster_commands }}"
+        remote_user: "root"
+        register: iptables_results
+        ignore_errors: True
+
+      - name: Verify iptables rules installation
+        assert:
+          that: "{{ item.rc }} == 0 or
+                 {{ item.stderr | search('already exists') }} or
+                 {{ item.stderr | search('already added') }}"
+          msg: "iptables rule was not installed"
+        with_items:
+          - "{{ iptables_results.results }}"
+
+      when: vsd_sa_or_ha | match('ha')
+
+    when: not skip_vstat_deploy
+
+  when: "_svc_iptables.rc == 0"
+
+- name: check for firewalld
+  shell: "service firewalld status"
+  register: _svc_firewalld
+  ignore_errors: True
   remote_user: "root"
 
 - block:
-  - name: restart ntp if it hasn't synced yet
+  - name: Start firewalld
     systemd:
-      name: ntpd
+      name: firewalld
+      state: started
+    remote_user: "root"
+
+  - name: Enable firewalld on boot
+    systemd:
+      name: firewalld
+      enabled: yes
+    remote_user: "root"
+
+  - name: Check if firewalld is already setup for VSD rules
+    shell: firewall-cmd --list-all | grep 9200 | grep accept
+    remote_user: "{{ target_server_username }}"
+    register: vstat_firewalld_result
+    ignore_errors: True
+
+  - name: Set if skipping VSTAT deploy
+    set_fact: skip_vstat_deploy="{{ vstat_firewalld_result is defined and vstat_firewalld_result.rc == 0 }}"
+
+  - name: Display if skipping VSTAT deploy
+    debug:
+      msg:
+        - "***************************************************"
+        - "Skipping VSTAT deploy because it is already running"
+        - "***************************************************"
+    when: skip_vstat_deploy
+
+  - block:
+
+    - name: Create firewall vars file on ansible host
+      template: src="{{ role_path }}/templates/firewall.j2" dest="/tmp/main.yml" backup=no mode=0755
+      delegate_to: "{{ ansible_deployment_host }}"
+      remote_user: "{{ ansible_sudo_username }}"
+
+    - name: Include variable file.
+      include_vars: /tmp/main.yml
+      delegate_to: "{{ ansible_deployment_host }}"
+      remote_user: "{{ ansible_sudo_username }}"
+
+    - name: Config firewall on VSTAT vm to accept conn on ports 9200,9300 from vsd(s)
+      shell: "{{ item }}"
+      with_items:
+        - "{{ firewall_std_commands }}"
+      remote_user: "root"
+      when: vsd_sa_or_ha | match('sa')
+
+    - name: Config firewall on VSTAT vm to accept conn on ports 9200, 9300 from vsd(s) in cluster setup
+      shell: "{{ item }}"
+      with_items:
+        - "{{ firewall_cluster_commands }}"
+      when: vsd_sa_or_ha | match('ha')
+      remote_user: "root"
+
+    when: not skip_vstat_deploy
+
+  when:
+    - "_svc_firewalld.rc == 0"
+    - "_svc_iptables.rc != 0"
+
+- block:
+
+  - name: Configure ntpd and ntpdate and local time zone
+    include_role:
+      name: common
+      tasks_from: linux-ntp-sync
+
+  - name: Restart elastic search
+    systemd:
+      name: elasticsearch
       state: restarted
     remote_user: "root"
-  - name: check ntp sync state
-    shell: ntpstat | awk 'NR==1{print $1}'
-    register: retry_sync_status
-    until: retry_sync_status.stdout == "synchronised"
-    retries: 4
-    delay: 5
+
+  - name: Execute VSTAT cluster script on standalone or clustered vsds
+    command: /opt/vsd/vsd-es-cluster-config.sh -e {{ groups['vstats'][0] }},{{ groups['vstats'][1] }},{{ groups['vstats'][2] }}
+    delegate_to: "{{ vsd_fqdn }}"
+    remote_user: root
+    environment:
+      SSHPASS: "{{ vstat_password }}"
+    run_once: true
+    when: vstat_sa_or_ha | match('ha')
+
+  - name: Enable stats collection on standalone vsd when vstat is standalone
+    command: /opt/vsd/vsd-stats.sh -e {{ inventory_hostname }}
+    delegate_to: "{{ item }}"
+    with_items: "{{ vsd_hostname_list }}"
     remote_user: "root"
-  when: not sync_status.stdout | match("synchronized")
+    run_once: true
+    when:
+      - vsd_sa_or_ha | match('sa')
+      - vstat_sa_or_ha | match('sa')
 
-- block:
-  - name: Resolve "{{vsd_fqdn}}"  to ip addr
-    shell: host "{{vsd_fqdn}}" | awk '{print $3,$4}'
-    register: ip_addr
+  - name: Enable stats collection on the cluster vsds when vstat is standalone
+    command: /opt/vsd/vsd-stats.sh -e {{ inventory_hostname }}
+    delegate_to: "{{ item }}"
     remote_user: "root"
+    run_once: true
+    with_items: "{{ vsd_hostname_list }}"
+    when:
+      - vsd_sa_or_ha | match('ha')
+      - vstat_sa_or_ha | match('sa')
 
-  - name: Check for ip addr in the registered var
-    fail: msg="Could not resolve ip addr of "{{vsd_fqdn}}" "
-    when: ip_addr.stdout | match("not found:")
-  when: vsd_sa_or_ha | match('sa')
+  - name: Enable stats collection on the  vsd(s) when vstat is clustered
+    command: /opt/vsd/vsd-stats.sh -e {{ groups['vstats'][0] }},{{ groups['vstats'][1] }},{{ groups['vstats'][2] }}
+    delegate_to: "{{ item }}"
+    remote_user: root
+    with_items: "{{ vsd_hostname_list }}"
+    run_once: true
+    when:
+      - vstat_sa_or_ha | match('ha')
+      - vsd_sa_or_ha | match('sa') or vsd_sa_or_ha | match('ha')
 
-- name: Start firewalld
-  systemd:
-    name: firewalld
-    state: started
-  remote_user: "root"
-
-- name: Enable firewalld on boot
-  systemd:
-    name: firewalld
-    enabled: yes
-  remote_user: "root"
-
-- name: Create firewall vars file on ansible host
-  template: src="{{ playbook_dir }}/roles/vstat-deploy/templates/firewall.j2" dest="/tmp/metro_stats_firewall_rules.yml" backup=no mode=0755
-  delegate_to: "{{ ansible_deployment_host }}"
-  remote_user: "{{ ansible_sudo_username }}"
-
-- name: Include variable file.
-  include_vars: /tmp/metro_stats_firewall_rules.yml
-  remote_user: "root"
-
-- name: Config firewall on VSTAT vm to accept conn on ports 9200,9300 from vsd(s)
-  shell: "{{ item }}"
-  with_items:
-    - "{{ firewall_std_commands }}"
-  remote_user: "root"
-  when: vsd_sa_or_ha | match('sa')
-
-- name: Config firewall on VSTAT vm to accept conn on ports 9200, 9300 from vsd(s) in cluster setup
-  shell: "{{ item }}"
-  with_items:
-    - "{{ firewall_cluster_commands }}"
-  when: vsd_sa_or_ha | match('ha')
-  remote_user: "root"
-
-- name: Restart elastic search
-  systemd:
-    name: elasticsearch
-    state: restarted
-  remote_user: "root"
-
-- name: Execute VSTAT cluster script on standalone or clustered vsds
-  command: /opt/vsd/vsd-es-cluster-config.sh -e {{ groups['vstats'][0] }},{{ groups['vstats'][1] }},{{ groups['vstats'][2] }}
-  delegate_to: "{{ vsd_fqdn }}"
-  remote_user: root
-  environment:
-    SSHPASS: "{{lookup('env','SSHPASS')}}"
-  run_once: true
-  when: 
-    - vstat_sa_or_ha | match('ha')
-    - vsd_sa_or_ha | match('sa') or vsd_sa_or_ha | match('ha')
-
-- name: Enable stats collection on standalone vsd when vstat is standalone
-  command: /opt/vsd/vsd-stats.sh -e {{ inventory_hostname }}
-  delegate_to: "{{vsd_fqdn}}"
-  remote_user: "root"
-  run_once: true
-  when: 
-    - vsd_sa_or_ha | match('sa')
-    - vstat_sa_or_ha | match('sa')
-
-- name: Enable stats collection on the cluster vsds when vstat is standalone
-  command: /opt/vsd/vsd-stats.sh -e {{ inventory_hostname }}
-  delegate_to: "{{ item }}"
-  remote_user: "root"
-  run_once: true
-  with_items: "{{ groups['vsds'] }}"
-  when:
-    - vsd_sa_or_ha | match('ha')
-    - vstat_sa_or_ha | match('sa')
- 
-- name: Enable stats collection on the  vsd(s) when vstat is clustered
-  command: /opt/vsd/vsd-stats.sh -e {{ groups['vstats'][0] }},{{ groups['vstats'][1] }},{{ groups['vstats'][2] }}
-  delegate_to: "{{ item }}"
-  remote_user: root
-  with_items: "{{ groups['vsds'] }}"
-  run_once: true
-  when: 
-    - vstat_sa_or_ha | match('ha')
-    - vsd_sa_or_ha | match('sa') or vsd_sa_or_ha | match('ha')
+  when: not skip_vstat_deploy

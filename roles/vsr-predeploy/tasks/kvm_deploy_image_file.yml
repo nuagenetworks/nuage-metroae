@@ -1,0 +1,18 @@
+- block:
+
+  - name: Copy VSR qcow2 image to {{ target_server }}
+    copy:
+      src:   '{{ qcow2_path }}/{{ qcow2_file_name }}'
+      dest:  '{{ vsr_target_qcow2_file_path }}'
+      owner: '{{ libvirt.user }}'
+      group: '{{ libvirt.group }}'
+
+  - name: Copy license file to VSR qcow2 image file
+    command:
+      guestfish --rw \
+      -a {{ vsr_target_qcow2_file_path }} \
+      -m {{ vsr_partition }} \
+      copy-in {{ images_path }}/{{ vmname }}/license.txt /
+
+  delegate_to: "{{ target_server }}"
+  remote_user: "{{ target_server_username }}"

@@ -9,29 +9,157 @@
 # or 'upgrade'.
 nuage_zipped_files_dir: "/home/caso/nfs-data/4.0.R7/nuage-packed"
 nuage_unzipped_files_dir: "/home/caso/nfs-data/4.0.R7/nuage-unpacked"
+
+
 ###
-# Path to a public key file to be injected in to VSD,VNS Util, VCIN and VSTAT vms
-# during deployment and corresponding private file to be used to connect to the
-# components during deployment
+# Path to a public key file to be injected in to VSD,VNS Util, VCIN and VSTAT
+# vms during deployment and corresponding private file to be used to connect to
+# the components during deployment
 user_ssh_pub_key: ~/.ssh/id_rsa.pub
 user_ssh_priv_key: ~/.ssh/id_rsa
+
+
 ###
 # Usernames
 # remote_user names for ansible to execute as on the target server (hypervisor)
-# and Ansible host. target_server_username is the remote_user for all hypervisors.
+# and Ansible host. target_server_username is the remote_user for all
+# hypervisors.
 # ansible_sudo_username is the sudo user for local actions.
 target_server_username: "root"
 ansible_sudo_username: "root"
 
+
+###
+# The IP addr or hostname of the Ansible host
+ansible_deployment_host: 135.227.181.233
+
+### 
+# Location for health reports
+
+metro_reports_dir: "{{ playbook_dir }}/reports"
+
+###
+# Hypervisor network bridges
+# Network bridges required on the target server (hypervisor) for VM deployment.
+# On KVM, the bridges must exist as specified. The VSD needs mgmt_bridge. The
+# VSC needs mgmt_bridge and data_bridge. nsgv requires the access_bridge. On
+# vcenter, mgmt_bridge specifies the portgroup in vCenter to which the
+# management interfaces need to be connected to, and data_bridge specifies the
+# portgroup in vCenter to which the data interfaces need to be connected to.
+# In vCenter/ESXi, you have virtual switches and portgroups. A virtual switch
+# is similar to a normal switch, a network separation object. VMs on different
+# vSwitches can not communicate directly with each other, they have to leave
+# the host through the physical uplinks of the vSwitch, up to the physical
+# network, to connect to each other (if the physical network is configured
+# correctly). A portgroup is a sub section of a vSwitch that groups ports, this
+# group of ports have the same configuration (for instance, the same VLAN, same
+# security settings, …). A port can only be part of one portgroup, a VM can of
+# course have multiple interfaces on multiple portgroups (and a vm can have
+# interfaces on portgroups that are on different vSwitches as well).
+# Note that these are global network settings. Depending on the usecase, these
+# variables can be defined in the specific components (myvsds, myvscs etc). If
+# defined, they will overwrite the global settings.
+mgmt_bridge: "virbr0"
+data_bridge: "virbr1"
+access_bridge: "access"
+
+
+###
+# Hypervisor VM image file location
+# Location to create VM images on KVM target servers
+images_path: "/var/lib/libvirt/images/"
+
+
+###
+# NTP configuration
+# Note: Must be in dotted-decimal format
+ntp_server_list:
+  - 135.227.181.232
+  - 128.138.141.172
+
+# DNS configuration
+dns_server_list:
+  - 192.168.122.1
+  - 128.251.10.145
+
+dns_domain: example.com
+
+
+###
+# Misc. param
+timezone: US/Pacific
+yum_proxy: "NONE"
+yum_update: yes
+yum_pin: yes
+
+
+###
+# Vcenter params
+#
+# Used *only* when deploying on a Vmware environment. Can be ignored when
+# deploying on KVM hypervisors.
+#
+# username
+# The vCenter user with proper permissions to deploy an OVA on the specified
+# cluster (at least: create VM, configure VM, boot VM, Allocate disk space,
+# connect networks. There might be other permissions required)
+#
+# password
+# The password with which to connect to vCenter, matching the user specified in
+# the username field
+#
+# datacenter
+# The vCenter datacenter in which the cluster is located, a Datacenter is the
+# first level of objects beneath the root vCenter object
+#
+# cluster
+# The vCenter cluster where the VMs need to be deployed in. A cluster is a
+# grouping of ESXi hosts with more or less the same purpose. In a typical
+# datacenter deployment, you will see a management cluster, a grouping of ESXi
+# hosts where all management components run (for instance vCenter, Active
+# Directory, DNS/NTP servers, …); and one or more compute or customer clusters,
+# a grouping of ESXi hosts with the purpose of handling non-management VMs
+# (compute nodes)
+#
+# datastore
+# The vCenter datastore where the VMs need to be located. A datastore is a set
+# of disks (local storage), an NFS server or an iSCSI/FiberChannel  LUN which is
+# exposed to one or more ESXi hosts. In case a datastore is specified to which
+# only one ESXi host is connected (for instance in case of local storage), the
+# VM that is being deployed, will only be able to run on that specific ESXi
+# host. If the datastore is available on multiple ESXi hosts in the specified
+# cluster (in case of shared storage like NFS, iSCSI or FC), when the VM is
+# booted, vCenter will pick a host to boot the VM on (random, or based on the
+# load of the cluster, depending on the cluster configuration). Datastores can
+# be renamed… by default, if a local datastore is created on an ESXi host of
+# the local disks, it get the name 'datastore', in case multiple ESXi hosts are
+# added to vCenter and each has a local datastore called 'datastore', they will
+# get a follow number ('datastore (1)', 'datastore (2)', …). It is recommended
+# that you rename the local datastore from the default to the same name as the
+# host it is from, that clearly identifies the local datastore of a specific
+# ESXi host.  In case a datastore is shared (NFS, iSCSI, FC) on multiple hosts,
+# it will only show up once in vCenter, but the hosts tab will show it is
+# available on multiple hosts (view in the screenshot below)
+#
+# ovftool
+# Binary location of the ovftool
+vcenter:
+  username: administrator@vsphere.local
+  password: Alcateldc
+  datacenter: Datacenter
+  cluster: Management
+  datastore: datastore
+  ovftool: /usr/bin/ovftool
+
 ###
 # VSD params
-# vsd_sa_or_ha = ha for cluster, sa for standalone deployment
-vsd_sa_or_ha: sa
+
 ###
 # VSD FQDN
 # Use xmpp fqdn for clustered VSDs and the vsd fqdn for stand alone
 # This variable must be populated for all the components except VRS deployment
 vsd_fqdn_global: "vsd1.{{ dns_domain }}"
+
 # vsd_operations_list = A list of the operations you intend for the VSD. The
 # list could include 1 or more of the following:
 # - install
@@ -39,23 +167,25 @@ vsd_fqdn_global: "vsd1.{{ dns_domain }}"
 # - health
 vsd_operations_list:
   - install
+
 # myvsds is a variable that represents one or more collections of parameters for
 # VSDs. One set of parameters is required for each VSD. The paramters are as
 # follows:
 # hostname
 # Required always: The FQDN or IP address of the VSD management port
 # vmname
-# Optional for predeploy, defaults to hostname: VM name to use during the vsd-predepoy step. If undefined,
-# Ansible will use the hostname as the vmname.
+# Optional for predeploy, defaults to hostname: VM name to use during the
+# vsd-predepoy step. If undefined, Ansible will use the hostname as the vmname.
 # upgrade_vmname
-# Required for upgrade, ignored otherwise: VM name to use during the vsd_predeploy
-# step of an upgrade. An upgrade VM name is required on upgrade so that the previous
-# version VM can be preserved for possible rollback.
+# Required for upgrade, ignored otherwise: VM name to use during the
+# vsd_predeploy step of an upgrade. An upgrade VM name is required on upgrade
+# so that the previous version VM can be preserved for possible rollback.
 # target_server_type
 # Required: The type of hypervisor the VSD will be deployed on. Supported values
 # are kvm, vcenter, and heat.
 # target_server
-# Required: The hostname or IP address of the hyervisor where this VSD will be instantiated.
+# Required: The hostname or IP address of the hyervisor where this VSD will be
+# instantiated.
 # mgmt_ip
 # The IP address of the VSDs management port.
 # mgmt_gateway
@@ -66,12 +196,16 @@ vsd_operations_list:
 myvsds:
   - { hostname: "vsd1.{{ dns_domain }}",
       # vmname is used to identify vm on the hypervisor/vcenter
-      # This is optional. If vmname is not defined, it defaults to the name set in hostname.
+      # This is optional. If vmname is not defined, it defaults to the name set
+      # in hostname.
       vmname: vsd1-3.2.R10-dc1,
       # upgrade_vmname needed only when performing an upgrade
       upgrade_vmname: vsd1-4.0.R10-dc1,
       target_server_type: "kvm",
       target_server: 135.227.181.233,
+      # mgmt_bridge is an optional bridge to override the global mgmt_bridge
+      # setting. Omit mgmt_bridge here to use the global mgmt_bridge setting.
+      mgmt_bridge: br0,
       mgmt_ip: 192.168.122.201,
       mgmt_gateway: 192.168.122.1,
       mgmt_netmask: 255.255.255.0 }
@@ -85,57 +219,86 @@ myvsds:
 # - health
 vsc_operations_list:
   - install
+
 # myvscs is a collection of parameters for VSCs.
 # One set of parameters is required for each VSC.
 # Do not update {{ vsd_fqdn_global }} here as it reads from previous section
 myvscs:
   - { hostname: "vsc1.{{ dns_domain }}",
-      # vmname is optional. If not defined, it defaults to the name set in hostname.
+      # vmname is optional. If not defined, it defaults to the name set in
+      # hostname.
       vmname: vsc1-dc1,
       target_server_type: "kvm",
       target_server: 135.227.181.233,
+      # mgmt_bridge is an optional bridge to override the global mgmt_bridge
+      # setting. Omit mgmt_bridge here to use the global mgmt_bridge setting.
+      mgmt_bridge: br1,
       mgmt_ip: 192.168.122.202,
       mgmt_gateway: 192.168.122.1,
       mgmt_netmask_prefix: 24,
       ctrl_ip: 192.168.100.202,
       ctrl_netmask_prefix: 24,
       vsd_fqdn: "{{ vsd_fqdn_global }}",
-      # system_ip is optional, only required when IGP or BGP routing will be configured
+      # system_ip is optional, only required when IGP or BGP routing will be
+      # configured
       system_ip: 1.1.1.2,
+      # VSC 'expected' parameters
+      # The following 'expected' parameters are optional. If they are omitted or
+      # set to '0' they will be skipped. If they are set to non-zero values, their
+      # values will be used in postdeploy and health playbooks to verify VSC
+      # operation. 
+      expected_num_bgp_peers: 0 ,
+      expected_num_vswitches: 0 ,
+      expected_num_host_vports: 0,
+      expected_num_vm_vports: 0,
+      expected_num_gateway_ports: 0,
+      # end of VSC 'expected' parameters
       xmpp_username: vsc1,
-      vsc_static_route_list: [ 0.0.0.0/1, 128.0.0.1/1 ] }
+      vsc_mgmt_static_route_list: [ 0.0.0.0/1, 128.0.0.1/1 ] }
   - { hostname: "vsc2.{{ dns_domain }}",
-      # vmname is optional. If not defined, it defaults to the name set in hostname.
       vmname: vsc2-dc1,
       target_server_type: "kvm",
       target_server: 135.227.181.233,
+      # mgmt_bridge is an optional bridge to override the global mgmt_bridge
+      # setting. Omit mgmt_bridge here to use the global mgmt_bridge setting.
+      mgmt_bridge: br1,
       mgmt_ip: 192.168.122.203,
       mgmt_gateway: 192.168.122.1,
       mgmt_netmask_prefix: 24,
       ctrl_ip: 192.168.100.203,
       ctrl_netmask_prefix: 24,
       vsd_fqdn: "{{ vsd_fqdn_global }}",
-      # system_ip is optional, only required when IGP or BGP routing will be configured
       system_ip: 1.1.1.3,
+      # VSC 'expected' parameters
+      # The following 'expected' parameters are optional. If they are omitted or
+      # set to '0' they will be skipped. If they are set to non-zero values, their
+      # values will be used in postdeploy and health playbooks to verify VSC
+      # operation. 
+      expected_num_bgp_peers: 0 ,
+      expected_num_vswitches: 0 ,
+      expected_num_host_vports: 0,
+      expected_num_vm_vports: 0,
+      expected_num_gateway_ports: 0,
+      # end of VSC 'expected' parameters
       xmpp_username: vsc2,
-      vsc_static_route_list: [ 0.0.0.0/1, 128.0.0.1/1 ] }
+      vsc_mgmt_static_route_list: [ 0.0.0.0/1, 128.0.0.1/1 ] }
 
 # vsc-health params
-# The following varaibles are used when vsc-health is run. They may be omitted when
-# not running vsc-health or doing an upgrade.
+# The following varaibles are used when vsc-health is run. They may be omitted
+# when not running vsc-health or doing an upgrade.
 #
 vsc_health_expected_bgp_admin_state: Up
 vsc_health_expected_bgp_oper_state: Up
 vsc_health_expected_xmpp_server_state: Functional
-vsc_health_expected_num_host_vports: 0
-vsc_health_expected_num_vm_vports: 0
-vsc_health_expected_num_gateway_ports: 0
+
 
 ###
-#LIBNETWORK
-#'scope: local' means that connectivity between containers is limited to within the local host.
-#'scope: global' means that connectivity between containers may span across hosts in the cluster.
-#cluster_store_url must point to the key-value store used for the cluster
+# LIBNETWORK
+# 'scope: local' means that connectivity between containers is limited to within
+# the local host.
+# 'scope: global' means that connectivity between containers may span across
+# hosts in the cluster.
+# cluster_store_url must point to the key-value store used for the cluster
 ###
 libnetwork:
   scope: local
@@ -150,12 +313,15 @@ libnetwork:
 # - health
 vrs_operations_list:
   - install
-# myvrss is a collection of parameters for the targets where VRS is to be deployed.
-# One set of parameters is required for each set or group of VRS targets.
+
+# myvrss is a collection of parameters for the targets where VRS is to be
+# deployed. One set of parameters is required for each set or group of VRS
+# targets.
 myvrss:
   - { vrs_set_name: vrs_set_uswest1,
       vrs_os_type: u14.04,
       libnetwork_install: False,
+      dkms_install: False,
       active_controller_ip: 192.168.122.202,
       standby_controller_ip: 192.168.122.203,
       vrs_ip_list: [
@@ -163,6 +329,7 @@ myvrss:
   - { vrs_set_name: vrs_set_usewest2,
       vrs_os_type: el7,
       libnetwork_install: False,
+      dkms_install: False,
       active_controller_ip: 192.168.122.202,
       standby_controller_ip: 192.168.122.203,
       vrs_ip_list: [
@@ -171,6 +338,7 @@ myvrss:
   - { vrs_set_name: vrs_set_uswest3,
       vrs_os_type: u16.04,
       libnetwork_install: False,
+      dkms_install: False,
       active_controller_ip: 192.168.122.202,
       standby_controller_ip: 192.168.122.203,
       vrs_ip_list: [
@@ -178,26 +346,32 @@ myvrss:
 
 ###
 # Stats VM (ElasticSearch) params
-# vstat_operations_list = A list of the operations you intend for the ES node. The
-# list could include 1 or more of the following:
+
+# vstat_sa_or_ha = ha for cluster, sa for standalone deployment
+vstat_sa_or_ha: sa
+
+# vstat_operations_list = A list of the operations you intend for the ES node.
+# The list could include 1 or more of the following:
 # - install
 # - upgrade
 # - health
 # - dns (specified when deploying the VSTAT image as a DNS server)
 vstat_operations_list:
   - install
+
 # myvstats is a collection of parameters for the VSTAT.
 # One set of parameters is required for each VSTAT.
 # Do not update {{ vsd_fqdn_global }} here as it reads from previous section
 myvstats:
   - { hostname: "vstat1.{{ dns_domain }}",
-      # vmname is used to identify vm on the hypervisor/vcenter
-      # This is optional. If vmname is not defined, it defaults to the name set in hostname.
       vmname: vstat1-dc1,
       # upgrade_vmname needed only when performing an upgrade
       upgrade_vmname: vstat1-4.0.R10-dc1,
       target_server_type: "kvm",
       target_server: 135.227.181.233,
+      # mgmt_bridge is an optional bridge to override the global mgmt_bridge
+      # setting. Omit mgmt_bridge here to use the global mgmt_bridge setting.
+      mgmt_bridge: bridge1,
       mgmt_ip: 192.168.122.204,
       mgmt_gateway: 192.168.122.1,
       mgmt_netmask: 255.255.255.0,
@@ -212,16 +386,18 @@ myvstats:
 # - health
 vns_operations_list:
   - install
+
 # myvnsutils is a collection of parameters for the VNSUTIL.
 # One set of parameters is required for each VNSUTIL.
 # Do not update {{ vsd_fqdn_global }} here as it reads from previous section
 myvnsutils:
   - { hostname: "vnsutil1.{{ dns_domain }}",
-      # vmname is used to identify vm on the hypervisor/vcenter
-      # This is optional. If vmname is not defined, it defaults to the name set in hostname.
       vmname: vnsutil-dc1,
       target_server_type: "kvm",
       target_server: 135.227.181.233,
+      # mgmt_bridge is an optional bridge to override the global mgmt_bridge
+      # setting. Omit mgmt_bridge here to use the global mgmt_bridge setting.
+      mgmt_bridge: bridge2,
       mgmt_ip: 192.168.122.205,
       mgmt_gateway: 192.168.122.1,
       mgmt_netmask: 255.255.255.0,
@@ -229,12 +405,13 @@ myvnsutils:
       data_ip: 192.168.100.205,
       data_netmask: 255.255.255.0,
       ## BEGIN DHCP BOOTSTRAP CONFIG
-      # Metro supports deploying one or more NSGVs. As a special case, Metro supports automatically
-      # bootstrapping (ZFB) a single NSGV at time of deployment of the VNS UTIL VM. To enable this
-      # special case, the variables in this section must be uncommented and defined so that Metro
-      # can configure the DHCP server on the VNS UTIL VM to participate in this process. If you are
-      # *not* going to use Metro's automatic bootstrap of a single NSGV, the variables in this section
-      # must not be defined.
+      # Metro supports deploying one or more NSGVs. As a special case, Metro
+      # supports automatically bootstrapping (ZFB) a single NSGV at time of
+      # deployment of the VNS UTIL VM. To enable this special case, the
+      # variables in this section must be uncommented and defined so that Metro
+      # can configure the DHCP server on the VNS UTIL VM to participate in this
+      # process. If you are *not* going to use Metro's automatic bootstrap of
+      # a single NSGV, the variables in this section must not be defined.
       #
       # Uncomment for DHCP bootstrap support:
       # data_subnet: 192.168.100.0,
@@ -248,13 +425,14 @@ myvnsutils:
 # mynsgvs is a collection of parameters for the NSGV.
 # One set of parameters is required for each NSGV.
 # bootstrap_method = A list of options
-# - zfb_metro (ZFB process supported by metro, needs zfb.yml updated by user)
-# - zfb_external (ZFB process taken care by third party iso file. Needs two additional vars iso_path, iso_file)
+# - zfb_metro
+#     ZFB process supported by metro, needs zfb_vars.yml updated by user
+# - zfb_external
+#     ZFB process taken care by third party iso file. Needs two additional vars
+#     iso_path, iso_file)
 # - none (nsgv is deployed without any bootstrapping)
 mynsgvs:
   - { hostname: "nsgv1.{{ dns_domain }}",
-      # vmname is used to identify vm on the hypervisor/vcenter
-      # This is optional. If vmname is not defined, it defaults to the name set in hostname.
       vmname: nsgv-dc1,
       target_server_type: "kvm",
       target_server: 135.227.181.233,
@@ -277,6 +455,7 @@ mynsgvs:
 # - install
 dns_operations_list:
   - install
+
 # mydnss is a collection of parameters for the DNS.
 # One set of parameters is required for each DNS.
 # data_static_route list of eth1 static routes to the data networks
@@ -345,55 +524,7 @@ mygvms:
       target_server: 135.227.181.233,
       gvm_xml_file: "/home/caso/images/jenkinsgvm1.{{ dns_domain }}/gvm.xml" }
 
-###
-# Ansible
-# The IP addr or hostname of the Ansible host
-ansible_deployment_host: 135.227.181.233
 
-###
-# Hypervisor network bridges
-# Network bridges required on the target server (hypervisor) for VM deployment.
-# On KVM, the bridges must exist as specified. The VSD needs mgmt_bridge. The VSC
-# needs mgmt_bridge and data_bridge. nsgv requires the access_bridge. On vcenter,
-# mgmt_bridge specifies the portgroup in vCenter to which the management interfaces
-# need to be connected to, and data_bridge specifies the portgroup in vCenter to
-# which the data interfaces need to be connected to. In vCenter/ESXi, you have
-# virtual switches and portgroups. A virtual switch is similar to a normal switch,
-# a network separation object. VMs on different vSwitches can not communicate
-# directly with each other, they have to leave the host through the physical
-# uplinks of the vSwitch, up to the physical network, to connect to each other
-# (if the physical network is configured correctly). A portgroup is a sub section
-# of a vSwitch that groups ports, this group of ports have the same configuration
-# (for instance, the same VLAN, same security settings, …). A port can only be
-# part of one portgroup, a VM can of course have multiple interfaces on multiple
-# portgroups (and a vm can have interfaces on portgroups that are on different
-# vSwitches as well).
-mgmt_bridge: "virbr0"
-data_bridge: "virbr1"
-access_bridge: "access"
-###
-# Hypervisor VM image file location
-# Location to create VM images on KVM target servers
-images_path: "/var/lib/libvirt/images/"
-###
-# Common Nuage params
-# NTP configuration
-# Note: Must be in dotted-decimal format
-ntp_server_list:
-  - 135.227.181.232
-  - 128.138.141.172
-# DNS configuration
-dns_server_list:
-  - 192.168.122.1
-  - 128.251.10.145
-dns_domain: example.com
-###
-# Misc. param
-timezone: US/Pacific
-yum_proxy: "NONE"
-yum_update: yes
-yum_pin: yes
-###
 # VCIN params
 # vcin_operations_list = A list of the operations you intend for the VCIN. The
 # list could include 1 or more of the following:
@@ -416,54 +547,33 @@ myvcins:
         cluster: Management,
         datastore: esxi02 }
       }
+
 ###
-# Vcenter params
-# username
-# The vCenter user with proper permissions to deploy an OVA on the specified cluster
-# (at least: create VM, configure VM, boot VM, Allocate disk space, connect networks
-# (there might be other permissions required)
-#
-# password
-# The password with which to connect to vCenter, matching the user specified in the
-# username field
-#
-# datacenter
-# The vCenter datacenter in which the cluster is located, a Datacenter is the first
-# level of objects beneath the root vCenter object
-#
-# cluster
-# The vCenter cluster where the VMs need to be deployed in. A cluster is a grouping
-# of ESXi hosts with more or less the same purpose. In a typical datacenter deployment,
-# you will see a management cluster, a grouping of ESXi hosts where all management
-# components run (for instance vCenter, Active Directory, DNS/NTP servers, …);
-# and one or more compute or customer clusters, a grouping of ESXi hosts with the
-# purpose of handling non-management VMs (compute nodes)
-#
-# datastore
-# The vCenter datastore where the VMs need to be located. A datastore is a set
-# of disks (local storage), an NFS server or an iSCSI/FiberChannel  LUN which is
-# exposed to one or more ESXi hosts. In case a datastore is specified to which only
-# one ESXi host is connected (for instance in case of local storage), the VM that
-# is being deployed, will only be able to run on that specific ESXi host. If the
-# datastore is available on multiple ESXi hosts in the specified cluster (in case
-# of shared storage like NFS, iSCSI or FC), when the VM is booted, vCenter will
-# pick a host to boot the VM on (random, or based on the load of the cluster,
-# depending on the cluster configuration). Datastores can be renamed… by default,
-# if a local datastore is created on an ESXi host of the local disks, it get the
-# name 'datastore', in case multiple ESXi hosts are added to vCenter and each has
-# a local datastore called 'datastore', they will get a follow number ('datastore (1)',
-# 'datastore (2)', …). It is recommended that you rename the local datastore from
-# the default to the same name as the host it is from, that clearly identifies the
-# local datastore of a specific ESXi host.  In case a datastore is shared (NFS,
-# iSCSI, FC) on multiple hosts, it will only show up once in vCenter, but the hosts
-# tab will show it is available on multiple hosts (view in the screenshot below)
-#
-# ovftool
-# Binary location of the ovftool
-vcenter:
-  username: administrator@vsphere.local
-  password: Alcateldc
-  datacenter: Datacenter
-  cluster: Management
-  datastore: datastore
-  ovftool: /usr/bin/ovftool
+# VSR params
+# vsr_operations_list = A list of the operations you intend for the VSR. The
+# list could include 1 or more of the following:
+# - install
+vsr_operations_list:
+  - install
+# myvsrs is a collection of parameters for the targets where VSR is to be
+# deployed. One set of parameters is required for each set or group of VSR
+# targets.
+# mgmt_* - configuration of VSR bof interface
+# ports - a list of VSR traffic ports (1/1/1, 1/1/2 and etc)
+# license_file - absolute path to license file. Support zip and txt license
+#   file.
+# deploy_cfg_file - absolute path to file with configuration for vsr-deploy
+#   role.
+myvsrs:
+  - { hostname: "vsr1.{{ dns_domain }}",
+      vmname: "vsr1",
+      target_server_type: "kvm",
+      target_server: 10.167.28.4,
+      mgmt_ip: 10.167.28.91,
+      mgmt_gateway: 10.167.28.1,
+      mgmt_netmask_prefix: 24,
+      mgmt_static_route_list: [ 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16 ],
+      mgmt_to_hv_bridge: 'br0',
+      ports_to_hv_bridges: ['br0', 'br1','br0','br1'],
+      license_file: '/path/on/ansible/deployment/host/license.zip',
+      deploy_cfg_file: '/path/on/ansible/deployment/host/config_flat.txt'}

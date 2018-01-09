@@ -2,8 +2,15 @@
 # TODO:
 # Check for existing stack or vms
 
+- name: Print working directory
+  local_action: command pwd
+  register: directory
+
+- name: Set Top-Level-Directory
+  set_fact: tld="{{ role_path }}/../../"
+
 - name: Create subnet in VSD
-  local_action: command python {{playbook_dir}}/scripts/create_subnet.py {{playbook_dir}}
+  local_action: command python {{ role_path }}/files/create_subnet.py {{ tld }}/
   register: vsd_subnet_id
   run_once: true
 
@@ -19,12 +26,12 @@
   register: create_stack
   os_stack:
     name: "{{ inventory_hostname }}"
-    template: "roles/ci-predeploy/files/ci_slave.yml"
+    template: "{{ role_path }}/files/ci_slave.yml"
     auth:
       "{{ os_auth }}"
     parameters:
       vm_name: "{{ inventory_hostname }}"
-      ci_image: "{{ ci_image }}" 
+      ci_image: "{{ ci_image }}"
       ci_flavor: "{{ ci_flavor }}"
       ssh_key: "{{ current_user_ssh_key.stdout }}"
       subnet_name: "{{ (vsd_subnet_id.stdout|from_json).subnet_name }}"
@@ -38,11 +45,22 @@
 - debug: var=create_stack['stack']['outputs'][0]['output_value']
   when: '"jen-centos" in ci_image'
 
+- name: Stat the heat template
+  stat:
+    path: "{{ role_path }}/files/ci_slave_ubuntu.yml"
+  delegate_to: localhost
+  register: heat_template
+
+- name: Verify that the heat template exists
+  assert:
+    that: "heat_template.stat.exists"
+    msg:  "Heat teamplate not found. Quitting..."
+
 - name: Create CI slave VMs in OpenStack for Ubuntu VRSs
   register: create_stack
   os_stack:
     name: "{{ inventory_hostname }}"
-    template: "roles/ci-predeploy/files/ci_slave_ubuntu.yml"
+    template: "{{ role_path }}/files/ci_slave_ubuntu.yml"
     auth:
       "{{ os_auth }}"
     parameters:

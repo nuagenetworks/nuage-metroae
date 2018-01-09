@@ -1,4 +1,5 @@
 ---
+
 - name: Set unzip user value
   set_fact:
     unzip_user: "{{ unzip_user|default('root') }}"
@@ -19,6 +20,35 @@
     that: tar_gz.stat.isdir is defined and tar_gz.stat.isdir,
     msg: "{{ nuage_zipped_files_dir }} is not a valid directory"
   }
+
+##########################
+# Install Prerequisites
+##########################
+- name: Pull facts of localhost
+  connection: local
+  action: setup
+
+- block:
+  - name: Check if required OS packages are installed
+    command: rpm -q unzip
+    connection: local
+    register: rpm_check
+    ignore_errors: True
+
+  - name: Install packages for RedHat OS family distros
+    yum: name=unzip state=present
+    connection: local
+    environment:
+      http_proxy: "{{ yum_proxy | default('') }}"
+      https_proxy: "{{ yum_proxy | default('') }}"
+    when: rpm_check.rc == 1
+  when: ansible_os_family | match("RedHat")
+
+- name: Install unzip on Debian OS family distribution
+  apt: name=unzip state=present
+  connection: local
+  when: ansible_os_family | match("Debian")
+
 
 #################
 # VSD
@@ -133,8 +163,25 @@
       unpack_pattern:        "Nuage-VRS*-vmware*"
       unpack_target_folder:  "vrs/vmware"
       unpack_register_var:   "rc_vrs_vmware_archive_files"
+
   tags:
     - vrs
+
+
+################
+# Selinux
+#################
+- block:
+  - name: Find and unzip selinux package
+    include: unpack_actions.yml
+    vars:
+      unpack_pattern:        "Nuage-selinux-*"
+      unpack_target_folder:  "selinux"
+      unpack_register_var:   "rc_selinux_archive_files"
+
+  tags:
+    - vrs
+
 
 ################
 # Libnetwork
@@ -227,3 +274,16 @@
       unpack_register_var:   "rc_nuage_os_archive_files"
   tags:
     - nuage_os
+
+##########################
+## Nokia VSR
+##########################
+- block:
+  - name: Find and unzip the Nokia VSR Archive
+    include: unpack_actions_vsr.yml
+    vars:
+      unpack_pattern:        "Nokia-VSR-VM*"
+      unpack_target_folder:  "vsr"
+      unpack_register_var:   "rc_nokia_vsr_archive"
+  tags:
+    - vsr

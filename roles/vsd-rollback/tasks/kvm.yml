@@ -23,13 +23,20 @@
   delegate_to: "{{ target_server }}"
   remote_user: "{{ target_server_username }}"
 
+
 - name: Wait for VSD ssh to be ready
-  local_action:
-    module: wait_for
-    port: "22"
-    host: "{{ mgmt_ip }}"
-    search_regex: OpenSSH
-    delay: 1
+  include_role:
+    name: common
+    tasks_from: wait-for-ssh
+  vars:
+    ssh_host: "{{ mgmt_ip }}"
+
+# Since VSD VM might have been down for a while, it is good to force NTP sync
+
+- name: Configure ntpd and ntpdate and local time zone, sync ntp
+  include_role:
+    name: common
+    tasks_from: linux-ntp-sync
 
 - block:
   - name: Get monit summary for all process on VSD
@@ -71,9 +78,8 @@
     debug: var=mode_status verbosity=1
 
   - name: Clean known_hosts of VSCs on "{{ target_server }}"
-    command: ssh-keygen -R "{{  item }}"
-    delegate_to: "{{ ansible_deployment_host }}"
-    remote_user: "{{ ansible_sudo_username }}"
+    command: ssh-keygen -R "{{ item }}"
+    delegate_to: localhost
     with_items: "{{ groups['vscs'] }}"
 
   - name: shut/noshut vswitch controller on VSCs after disabling VSD maintenance mode
@@ -85,11 +91,8 @@
         host: "{{ item }}"
         username: "{{ vsc_user|default('admin') }}"
         password: "{{ vsc_password|default('admin') }}"
-        transport: cli
+    delegate_to: localhost
     register: vsc_command_status
-    #connection: local
-    delegate_to: "{{ ansible_deployment_host }}"
-    remote_user: "{{ ansible_sudo_username }}"
     with_items: "{{ groups['vscs'] }}"
 
   - debug: var=vsc_command_status verbosity=1

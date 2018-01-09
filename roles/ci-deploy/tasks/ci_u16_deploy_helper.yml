@@ -5,118 +5,95 @@
       "{{ os_auth }}"
     server: "{{ inventory_hostname }}"
   register: ci_server
-  delegate_to: 127.0.0.1
+  delegate_to: localhost
 
 - block:
   # Temp task to get around policy issue
-  - name: Set the network names
+  - name: Set the network name variables for OpenStack VM interfaces
     set_fact:
       net_name1: "{{ ci_server['ansible_facts']['openstack_servers'][0]['networks'].keys()[0] }}"
       net_name2: "{{ ci_server['ansible_facts']['openstack_servers'][0]['networks'].keys()[1] }}"
 
-  - block:
-    - name: Set the Ubuntu 16.04 VRS compute IP
-      set_fact:
-        vrs_u16_target_server: "{{ ci_server['ansible_facts']['openstack_servers'][0]['networks'][net_name2][0]}}"
-        net_name_temp: "{{ net_name2 }}"
+  - name: Set the compute IP to net_name2 when net_name1 is the front end interface
+    set_fact:
+      vrs_u16_target_server: "{{ ci_server['ansible_facts']['openstack_servers'][0]['networks'][net_name2][0]}}"
+      net_name_temp: "{{ net_name2 }}"
     when: net_name1 == 'OC_JEN_FrontEnd'
 
-  - block:
-    - name: Set the Ubuntu 16.04 VRS compute IP
-      set_fact:
-        vrs_u16_target_server: "{{ ci_server['ansible_facts']['openstack_servers'][0]['networks'][net_name1][0]}}"
-        net_name_temp: "{{ net_name1 }}"
+  - name: Set the compute IP to net_name1 when net_name2 is the front end interface
+    set_fact:
+      vrs_u16_target_server: "{{ ci_server['ansible_facts']['openstack_servers'][0]['networks'][net_name1][0]}}"
+      net_name_temp: "{{ net_name1 }}"
     when: net_name2 == 'OC_JEN_FrontEnd'
 
-  - name: Create a temp file with VRS ip address on ansible host for later use
-    copy:
-      content: "{{ vrs_u16_target_server }}"
-      dest: "/tmp/{{ net_name_temp }}_vrs_ip_u16"
-    delegate_to: "{{ ansible_deployment_host }}"
-    remote_user: "{{ ansible_sudo_username }}"
+  - block:
 
-  - name: Create a temp file with VRS hostname on ansible host for later use
-    copy:
-      content: "{{ inventory_hostname }}"
-      dest: "/tmp/{{ net_name_temp }}_vrs_name_u16"
-    delegate_to: "{{ ansible_deployment_host }}"
-    remote_user: "{{ ansible_sudo_username }}"
+    - name: Create a temp file with VRS ip address on ansible host for later use
+      copy:
+        content: "{{ vrs_u16_target_server }}"
+        dest: "/tmp/{{ net_name_temp }}_vrs_ip_u16"
 
-  - debug: var=vrs_u16_target_server verbosity=1
+    - name: Create a temp file with VRS hostname on ansible host for later use
+      copy:
+        content: "{{ inventory_hostname }}"
+        dest: "/tmp/{{ net_name_temp }}_vrs_name_u16"
 
-  - name: Set fact about ubuntu16.04 slave VRS on ansible host for later use
-    set_fact:
-      vrs_u16_target_server: "{{ vrs_u16_target_server}}"
-    delegate_to: "{{ ansible_deployment_host }}"
+    - name: Extract network part from the compute ip
+      set_fact:
+        network_address: "{{ vrs_u16_target_server.split('.')[0:3] | join('.') }}"
 
-  - name: set facts for host file entries
-    set_fact: target_server=vrs_u16_target_server
+    - name: Update and copy zfb_vars.yml file with vsd ip
+      template:
+        src: "{{ role_path }}/files/zfb_vars.yml.j2"
+        dest: "{{ role_path }}/../../zfb_vars.yml"
 
-  - name: Extract network part from the compute ip
-    set_fact:
-      network_address: "{{ vrs_u16_target_server.split('.')[0:3] | join('.') }}"
+    delegate_to: localhost
 
-  - name: Update and copy zfb.yml file with vsd ip
-    template:
-      src: "{{ playbook_dir }}/test/files/zfb.yml.j2"
-      dest: "{{ playbook_dir }}/zfb.yml"
-    delegate_to: 127.0.0.1
+  - block:
 
-  # Temp task to get around policy issue
-  - name: Set front end ip added to static route
-    set_fact:
-      frontend_ip: "{{ ci_server['ansible_facts']['openstack_servers'][0]['networks']['OC_JEN_FrontEnd'][0]}}"
+    - name: Update /etc/hosts file with ubuntu 16.04 VRS
+      lineinfile:
+        dest: /etc/hosts
+        line: "{{ vrs_u16_target_server }}    {{inventory_hostname }}"
 
-  - name: Update /etc/hosts file with ubuntu 16.04 VRS
-    lineinfile:
-      dest: /etc/hosts
-      line: "{{ vrs_u16_target_server }}    {{inventory_hostname }}"
-    delegate_to: "{{ ansible_deployment_host }}"
-    remote_user: "{{ ansible_sudo_username }}"
-  # Temp task to get around policy issue
-  - name: Set front end ip added to static route
-    set_fact:
-      frontend_ip: "{{ ci_server['ansible_facts']['openstack_servers'][0]['networks']['OC_JEN_FrontEnd'][0]}}"
+    # Temp task to get around policy issue
+    - name: Set front end ip added to static route
+      set_fact:
+        frontend_ip: "{{ ci_server['ansible_facts']['openstack_servers'][0]['networks']['OC_JEN_FrontEnd'][0]}}"
 
-  # Temp task to get around policy issue
-  - name: Add static route to reach
-    command: "route add {{ vrs_u16_target_server }}/32 gw {{ frontend_ip }} "
-    delegate_to: "{{ ansible_deployment_host }}"
-    remote_user: "{{ ansible_sudo_username }}"
+    # Temp task to get around policy issue
+    - name: Add static route to reach
+      command: "route add {{ vrs_u16_target_server }}/32 gw {{ frontend_ip }} "
 
-  - name: Update group vars file with ubuntu 16.04 VRS IP
-    lineinfile:
-      dest: "{{ playbook_dir }}/roles/ci-deploy/vars/main.yml"
-      line: "vrs_u16_target_server: {{ vrs_u16_target_server }}"
     delegate_to: "{{ ansible_deployment_host }}"
     remote_user: "{{ ansible_sudo_username }}"
 
   - name: Wait for ssh to be ready
-    local_action:
-      module: wait_for
-      port: "22"
-      host: "{{ inventory_hostname }}"
-      search_regex: OpenSSH
-      delay: 60
+    include_role:
+      name: common
+      tasks_from: wait-for-ssh
+    vars:
+      ssh_host: "{{ inventory_hostname }}"
+      ssh_delay_seconds: 50
 
-  - name: Query facts
-    action: setup
+  - block:
+
+    - name: Query facts
+      action: setup
+      delegate_to: "{{ vrs_u16_target_server }}"
+
+    # Temp task to get around policy issue
+    - name: Add iptables rule to allow vsd to reach internet route to reach
+      command: "iptables -t nat -A POSTROUTING -s {{ network_address }}.211 -j SNAT --to-source {{ vrs_u16_target_server }} "
+
+    # Temp task to get around policy issue
+    - name: Add iptables rule to allow vnsutil to reach internet route to reach
+      command: "iptables -t nat -A POSTROUTING -s {{ network_address }}.215 -j SNAT --to-source {{ vrs_u16_target_server }} "
+
+    # Temp task to get around policy issue
+    - name: Save iptables
+      command: "iptables-save"
+
     remote_user: root
-    delegate_to: "{{ vrs_u16_target_server }}"
 
-   # Temp task to get around policy issue
-  - name: Add iptables rule to allow vsd to reach internet route to reach
-    command: "iptables -t nat -A POSTROUTING -s {{ network_address }}.211 -j SNAT --to-source {{ vrs_u16_target_server }} "
-    remote_user: root
-
-  # Temp task to get around policy issue
-  - name: Add iptables rule to allow vnsutil to reach internet route to reach
-    command: "iptables -t nat -A POSTROUTING -s {{ network_address }}.215 -j SNAT --to-source {{ vrs_u16_target_server }} "
-    remote_user: root
-
-  # Temp task to get around policy issue
-  - name: Save iptables
-    command: "iptables-save"
-    remote_user: root
-
-  when: ci_image == 'jen-ubuntu16'
+  when: ci_image|search('ubuntu16')

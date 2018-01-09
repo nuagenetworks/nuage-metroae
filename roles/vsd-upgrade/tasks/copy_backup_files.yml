@@ -1,8 +1,7 @@
 - block:
   - name: Clean known_hosts of VSD's
     command: ssh-keygen -R "{{ mgmt_ip }}"
-    delegate_to: "{{ ansible_deployment_host }}"
-    remote_user: "{{ ansible_sudo_username }}"
+    delegate_to: localhost
 
   - name: Inject ssh key of ansible_deployment_host to VSD if cloud-init did not work
     expect:
@@ -26,7 +25,7 @@
       src: "{{ item }}"
       dest: "/opt/vsd/data/"
     with_fileglob:
-      - "/tmp/backup-{{ inventory_hostname }}-latest/*.tar.gz"
+      - "{{metro_backup_root}}/backup-{{ inventory_hostname }}-latest/*.tar.gz"
     remote_user: root
 
   - name: Delete log files from /opt/vsd/data/ directory

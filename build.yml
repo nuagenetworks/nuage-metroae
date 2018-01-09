@@ -1,21 +1,34 @@
 ---
 - hosts: localhost
   pre_tasks:
-    - name: Check for Ansible version >= 2.2
+    - name: Check for Ansible version
       assert:
-        that: "ansible_version.major == 2 and ansible_version.minor >= 2"
-        msg:  "Only Ansible version >= 2.2 is supported, you are using {{ansible_version.full}}"    
+        that: "ansible_version.full | version_compare('2.4', '>=')"
+        msg:  "Ansible version 2.4 and above are required. Found Ansible version {{ansible_version.full}}"
+
     - name: Set build_vars variable
-      set_fact: 
+      set_fact:
         build_vars: "{{ build_vars_file | default ('build_vars.yml') }}"
+      tags:
+        - always
+
     - name: Check YAML syntax
-      yaml_checker: 
+      yaml_checker:
         path: "{{ build_vars }}"
+
     - name: Check build_vars.yml
-      build_vars_checker: 
+      build_vars_checker:
         path: "{{ build_vars }}"
+
     - name: Include build variable files
       include_vars: "{{ build_vars }}"
+      tags:
+        - always
+
+    - name: Include user credential file
+      include_vars: "{{ user_creds_file | default('user_creds.yml') }}"
+      tags: always
+
   roles:
     - validate-build-vars
     - build
@@ -31,4 +44,3 @@
       run_once: True
   roles:
     - { role: check_vrs_prereqs, when: inventory_hostname in rel_vrss.meta }
-

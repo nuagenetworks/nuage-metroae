@@ -1,12 +1,16 @@
 ---
 - name: Clean known_hosts of VSC's on "{{ target_server }}"
-  command: ssh-keygen -R "{{ mgmt_ip }}"
+  known_hosts:
+    name: "{{ mgmt_ip }}"
+    state: absent
+  delegate_to: localhost
 
 - name: Get output of 'show vswitch-controller xmpp-server detail'
   sros_command:
     commands:
       - show vswitch-controller xmpp-server detail
     provider: "{{ vsc_creds }}"
+  delegate_to: localhost
   register: xmpp_detail
   until: xmpp_detail.stdout[0].find('Functional') != -1
   retries: 5
@@ -32,7 +36,7 @@
     that: "{{ expected_xmpp_server_state == xmpp_server_state }}",
     msg: "Invalid xmpp-server state ({{ xmpp_server_state }}) detected. Expected {{ expected_xmpp_server_state }}. Check 'show vswitch-controller xmpp-server details'."
 }
-- name: define variable to match vsd strings in sh vswitch vsd details
+- name: define variable to match vsd strings in show vswitch vsd details
   set_fact:
     vsd1_s: "cna@{{ vsd_fqdn }}"
 
@@ -41,6 +45,7 @@
     commands:
       - show vswitch-controller vsd detail
     provider: "{{ vsc_creds }}"
+  delegate_to: localhost
   register: vsd_detail
   until: vsd_detail.stdout[0].find(vsd1_s) != -1
   retries: 5
@@ -48,6 +53,16 @@
 
 - name: Print 'show vswitch-controller vsd' when verbosity >= 1
   debug: var=vsd_detail verbosity=1
+
+- name: Get VSD deployment mode
+  include_role:
+    name: common
+    tasks_from: vsd-node-info.yml
+  vars:
+    vsd_hostname: "{{ vsd_fqdn }}"
+
+- name: Print vsd deployment mode when verbosity >= 1
+  debug: var="vsd_sa_or_ha"
 
 - name: Verify VSD FQDN is found in vsd_detail
   assert:
@@ -57,13 +72,13 @@
 
 - name: Verify VSD Node1 is found in vsd_detail
   assert:
-    that: "'cna@{{ vsd_fqdn }}/{{ groups['vsds'][0].split('.')[0:1] | join('.') }}' in vsd_detail.stdout[0]"
+    that: "'cna@{{ vsd_fqdn }}/{{ vsd_hostname_list[0].split('.')[0:1] | join('.') }}' in vsd_detail.stdout[0]"
     msg: "VSD Node1 could not be found in 'show vswitch-controller vsd detail'"
   when: vsd_sa_or_ha | match('ha')
 
 - name: Verify VSD Node2 is found in vsd_detail
   assert:
-    that: "'cna@{{ vsd_fqdn }}/{{ groups['vsds'][1].split('.')[0:1] | join('.') }}' in vsd_detail.stdout[0]"
+    that: "'cna@{{ vsd_fqdn }}/{{ vsd_hostname_list[1].split('.')[0:1] | join('.') }}' in vsd_detail.stdout[0]"
     msg: "VSD Node2 could not be found in 'show vswitch-controller vsd detail'"
   when: vsd_sa_or_ha | match('ha')
 
@@ -76,6 +91,7 @@
     sros_command:
       commands: admin display-config
       provider: "{{ vsc_creds }}"
+    delegate_to: localhost
     register: pbr_config_ha_node2
 
   - name: Print 'admin display-config' when verbosity >= 1
@@ -88,8 +104,7 @@
         - configure router bgp evpn-pre-rfc no non-compliant
         - admin save
       provider: "{{ vsc_creds }}"
-    delegate_to: "{{ ansible_deployment_host }}"
-    remote_user: "{{ ansible_sudo_username }}"
+    delegate_to: localhost
     when: pbr_config_ha_node2.stdout[0].find('evpn-pre-rfc') != -1
 
   - name: Set mgmt_ip to first vsc node
@@ -100,6 +115,7 @@
     sros_command:
       commands: admin display-config
       provider: "{{ vsc_creds }}"
+    delegate_to: localhost
     register: pbr_config_ha_node1
 
   - name: Print 'admin display-config' when verbosity >= 1
@@ -112,6 +128,7 @@
         - configure router bgp evpn-pre-rfc no non-compliant
         - admin save
       provider: "{{ vsc_creds }}"
+    delegate_to: localhost
     when: pbr_config_ha_node1.stdout[0].find('evpn-pre-rfc') != -1
   when:
     - groups['vscs'] is defined and groups['vscs'][1] is defined

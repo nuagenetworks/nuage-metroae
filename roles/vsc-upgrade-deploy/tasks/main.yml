@@ -1,11 +1,15 @@
 - name: Clean known_hosts of VSC's
-  command: ssh-keygen -R "{{ mgmt_ip }}"
+  known_hosts:
+    name: "{{ mgmt_ip }}"
+    state: absent
+  delegate_to: localhost
 
 - name: Get output of 'show bof'
   sros_command:
     commands:
       - show bof
     provider: "{{ vsc_creds }}"
+  delegate_to: localhost
   register: bof_config
 
 - name: Print 'show bof' when verbosity >= 1
@@ -23,6 +27,7 @@
     commands:
       - file version "{{ bof_json['primary_image'] }}"
     provider: "{{ vsc_creds }}"
+  delegate_to: localhost
   register: image
 
 - name: Print image version when verbosity >= 1
@@ -41,13 +46,14 @@
     responses:
       (?i)yes: "yes"
       (?i)password: "{{ vsc_password|default('admin') }}"
-    timeout: "{{ vsc_scp_timeout }}"
+    timeout: "{{ vsc_scp_timeout_seconds }}"
 
 - name: Reboot VSC VM
   sros_command:
     commands:
       - admin reboot now
     provider: "{{ vsc_creds }}"
+  delegate_to: localhost
   ignore_errors: true
   when: target_server_type | match('kvm') or target_server_type | match('vcenter')
 
@@ -61,9 +67,8 @@
   when: target_server_type | match('heat')
 
 - name: Wait for VSC ssh to be ready
-  local_action:
-    module: wait_for
-    port: "22"
-    host: "{{ mgmt_ip }}"
-    search_regex: OpenSSH
-    delay: 1
+  include_role:
+    name: common
+    tasks_from: wait-for-ssh
+  vars:
+    ssh_host: "{{ mgmt_ip }}"
