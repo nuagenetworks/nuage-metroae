@@ -79,7 +79,7 @@ VSPK Python module | `pip install vspk`
 
 Package | Command  
  -----| ------  
- pysphere and pyvmomi | `pip install pyshpere pyvmomi`  
+ pyvmomi | `pip install pyvmomi`  
 
 
 3. For **OpenStack Only**, install the following module:
