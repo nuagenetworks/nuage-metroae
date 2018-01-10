@@ -249,6 +249,24 @@
     - vstat_sa_or_ha | match('ha')
     - vsd_sa_or_ha | match('sa') or vsd_sa_or_ha | match('ha')
 
+- block:
+
+  - name: Stat the standalone script
+    stat: path=/opt/vsd/vsd-es-standalone.sh
+    register: es_sa_script
+
+  - name: Execute VSTAT standalne script on standalone or clustered vsds
+    command: /opt/vsd/vsd-es-standalone.sh -e {{ inventory_hostname }}
+    environment:
+      SSHPASS: "{{ vstat_password }}"
+    run_once: true
+    when:
+      - es_sa_script.stat.exists
+
+  when: vstat_sa_or_ha | match('sa')
+  delegate_to: "{{ vsd_fqdn }}"
+  remote_user: root
+
 - name: Enable stats collection on standalone vsd when vstat is standalone
   command: /opt/vsd/vsd-stats.sh -e {{ inventory_hostname }}
   delegate_to: "{{vsd_fqdn}}"
