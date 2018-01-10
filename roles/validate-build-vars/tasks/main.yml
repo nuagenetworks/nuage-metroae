@@ -1,36 +1,33 @@
 ---
 - block:
-  - name: Check if required OS packages are installed
-    command: rpm -q python-netaddr
-    delegate_to: "{{ ansible_deployment_host }}"
-    remote_user: "{{ ansible_sudo_username }}"
-    register: rpm_check
-    ignore_errors: True
 
   - block:
+
+    - name: Check if required OS packages are installed
+      command: rpm -q python-netaddr
+      register: rpm_check
+      ignore_errors: True
+
     - name: Install packages for RedHat OS family distros
       yum: name=python-netaddr state=present
-      delegate_to: "{{ ansible_deployment_host }}"
-      remote_user: "{{ ansible_sudo_username }}"
       environment:
         http_proxy: "{{ yum_proxy }}"
         https_proxy: "{{ yum_proxy }}"
-    when: yum_proxy|default('NONE') != 'NONE' and rpm_check.rc == 1
+      when: yum_proxy|default('NONE') != 'NONE' and rpm_check.rc == 1
 
-  - block:
     - name: Install packages for RedHat OS family distros
       yum: name=python-netaddr state=present
-      delegate_to: "{{ ansible_deployment_host }}"
-      remote_user: "{{ ansible_sudo_username }}"
-    when: yum_proxy|default('NONE') == 'NONE' and rpm_check.rc == 1
-  when: ansible_os_family | match("RedHat")
-  
-- name: Install python-netaddr package for Debian OS family distros
-  apt: name=python-netaddr state=present
-  when: ansible_os_family == "Debian"
+      when: yum_proxy|default('NONE') == 'NONE' and rpm_check.rc == 1
+
+    when: ansible_os_family | match("RedHat")
+
+  - name: Install python-netaddr package for Debian OS family distros
+    apt: name=python-netaddr state=present
+    when: ansible_os_family == "Debian"
+
   delegate_to: "{{ ansible_deployment_host }}"
   remote_user: "{{ ansible_sudo_username }}"
-
+  
 - name: Verify that the ntp servers are dotted decimal notation
   assert:
     that: "'{{ item }}'|ipaddr"
@@ -38,12 +35,25 @@
   with_items: "{{ ntp_server_list }}"
   when: ntp_server_list is defined
 
-- name: Verify that the VSC hostnames are not longer than 32 characters
+- name: Verify that the VSC system name is not longer than 32 characters
   assert:
-    that: "'{{item.hostname}}'|length <= 32"
-    msg: "{{item.hostname}} is too long to be a valid VSC name, quitting"
+    that: "'{{item.system_name|default(item.hostname)}}'|length <= 32"
+    msg: "'{{item.system_name|default(item.hostname)}}' is too long to be a valid VSC system name, 
+          please define a 'system_name' with up to 32 chars for {{ item.hostname }}"
   with_items: "{{ myvscs }}"
   when: myvscs is defined
+
+- name: Verify exactly 1 or 3 vsds are defined
+  assert: 
+    that:  "myvsds|length == 1 or myvsds|length == 3" 
+    msg: "Please define either 1 or 3 vsds"
+  when: myvsds is defined
+
+- name: Verify exactly 1 or 3 vstats(elastic search) are defined
+  assert:
+    that:  "myvstats|length == 1 or myvstats|length == 3"
+    msg: "Please define either 1 or 3 vstats"
+  when: myvstats is defined
 
 # TODO:
 # Use the floowing block to disable the feature for now. We need to update our

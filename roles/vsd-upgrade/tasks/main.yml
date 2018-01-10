@@ -37,12 +37,11 @@
     name: vsd-predeploy
 
 - name: Wait for VSD ssh to be ready
-  local_action:
-    module: wait_for
-    port: "22"
-    host: "{{ mgmt_ip }}"
-    search_regex: OpenSSH
-    delay: 1
+  include_role:
+    name: common
+    tasks_from: wait-for-ssh
+  vars:
+    ssh_host: "{{ mgmt_ip }}"
 
 - include: copy_backup_files.yml
 
@@ -114,7 +113,7 @@
 
   - block:
     - name: read saved vsd purge time before upgrade
-      command: cat "/tmp/backup-{{ groups['vsd_node2'][0] }}-latest/purge_time"
+      command: cat "{{metro_backup_root}}/backup-{{ groups['vsd_node2'][0] }}-latest/purge_time"
       register: purge_time_saved
       delegate_to: 127.0.0.1
 
@@ -132,7 +131,7 @@
 
   - block:
     - name: read saved vsd purge time before upgrade
-      command: cat "/tmp/backup-{{ groups['vsds'][0] }}-latest/purge_time"
+      command: cat "{{metro_backup_root}}/backup-{{ groups['vsds'][0] }}-latest/purge_time"
       register: purge_time_saved
       delegate_to: 127.0.0.1
 

@@ -57,6 +57,7 @@ cp /files/id_rsa* ~/.ssh/ && chmod 600 ~/.ssh/id_rsa*
 # Run Ansible playbooks
 export ANSIBLE_HOST_KEY_CHECKING=False
 export PARAMIKO_HOST_KEY_AUTO_ADD=True
+
 cp /files/build_vars.yml /files/nuage-metro/
 
 if [ "$1" == "health" ]; then
