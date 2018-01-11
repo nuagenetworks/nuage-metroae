@@ -7,8 +7,9 @@
 # Both are required to run the nuage_unzip role. nuage_unzipped_files_dir
 # is required when one or more operation lists, below, are set to 'install'
 # or 'upgrade'.
-nuage_zipped_files_dir: "/home/caso/nfs-data/4.0.R7/nuage-packed"
-nuage_unzipped_files_dir: "/home/caso/nfs-data/4.0.R7/nuage-unpacked"
+nuage_zipped_files_dir: "/root/SharedNFS/ISOs-and-Software/Nuage_Software/5.2.1"
+
+nuage_unzipped_files_dir: "/root/5.2.1"
 
 
 ###
@@ -31,7 +32,7 @@ ansible_sudo_username: "root"
 
 ###
 # The IP addr or hostname of the Ansible host
-ansible_deployment_host: 135.227.181.233
+ansible_deployment_host: 10.167.45.3
 
 ### 
 # Location for health reports
@@ -59,35 +60,32 @@ metro_reports_dir: "{{ playbook_dir }}/reports"
 # Note that these are global network settings. Depending on the usecase, these
 # variables can be defined in the specific components (myvsds, myvscs etc). If
 # defined, they will overwrite the global settings.
-mgmt_bridge: "virbr0"
-data_bridge: "virbr1"
+mgmt_bridge: "management"
+data_bridge: "data"
 access_bridge: "access"
-
 
 ###
 # Hypervisor VM image file location
 # Location to create VM images on KVM target servers
-images_path: "/var/lib/libvirt/images/"
+#images_path: "/var/lib/libvirt/images/"
 
 
 ###
-# NTP configuration
-# Note: Must be in dotted-decimal format
 ntp_server_list:
-  - 135.227.181.232
-  - 128.138.141.172
+  - 10.167.45.2
+  - 10.167.45.2
+
 
 # DNS configuration
 dns_server_list:
-  - 192.168.122.1
-  - 128.251.10.145
+  - 10.167.45.2
+  - 8.8.8.8
 
-dns_domain: example.com
-
+dns_domain: mgmt.training.net
 
 ###
 # Misc. param
-timezone: US/Pacific
+timezone: UTC
 yum_proxy: "NONE"
 yum_update: yes
 yum_pin: yes
@@ -144,21 +142,22 @@ yum_pin: yes
 # ovftool
 # Binary location of the ovftool
 vcenter:
-  username: administrator@vsphere.local
-  password: Alcateldc
-  datacenter: Datacenter
-  cluster: Management
-  datastore: datastore
+  username: Administrator@pod61.cats
+  password: Alcatel!dc1
+  datacenter: POD45
+  cluster: BT_Test
+  datastore: datastore4
   ovftool: /usr/bin/ovftool
-
 ###
 # VSD params
+# vsd_sa_or_ha = ha for cluster, sa for standalone deployment
+vsd_sa_or_ha: ha
 
 ###
 # VSD FQDN
 # Use xmpp fqdn for clustered VSDs and the vsd fqdn for stand alone
 # This variable must be populated for all the components except VRS deployment
-vsd_fqdn_global: "vsd1.{{ dns_domain }}"
+vsd_fqdn_global: "xmppr511.{{ dns_domain }}"
 
 # vsd_operations_list = A list of the operations you intend for the VSD. The
 # list could include 1 or more of the following:
@@ -193,22 +192,40 @@ vsd_operations_list:
 # mgmt_netmask
 # The netmask for the management port.
 
-myvsds:
-  - { hostname: "vsd1.{{ dns_domain }}",
+myvsds:  
+  - { hostname: "g2vsd1.{{ dns_domain }}",
       # vmname is used to identify vm on the hypervisor/vcenter
-      # This is optional. If vmname is not defined, it defaults to the name set
-      # in hostname.
-      vmname: vsd1-3.2.R10-dc1,
+      # This is optional. If vmname is not defined, it defaults to the name set in hostname.
+      vmname: g2vsd1.mgmt.training.net,
       # upgrade_vmname needed only when performing an upgrade
-      upgrade_vmname: vsd1-4.0.R10-dc1,
-      target_server_type: "kvm",
-      target_server: 135.227.181.233,
-      # mgmt_bridge is an optional bridge to override the global mgmt_bridge
-      # setting. Omit mgmt_bridge here to use the global mgmt_bridge setting.
-      mgmt_bridge: br0,
-      mgmt_ip: 192.168.122.201,
-      mgmt_gateway: 192.168.122.1,
-      mgmt_netmask: 255.255.255.0 }
+      upgrade_vmname: g2vsd1u.mgmt.training.net,
+      target_server_type: "vcenter",
+      target_server: 10.167.61.48,
+      mgmt_ip: 10.167.45.50,
+      mgmt_gateway: 10.167.45.1,
+      mgmt_netmask: 255.255.255.128 }
+  - { hostname: "g2vsd2.{{ dns_domain }}",
+      # vmname is used to identify vm on the hypervisor/vcenter
+      # This is optional. If vmname is not defined, it defaults to the name set in hostname.
+      vmname: g2vsd2.mgmt.training.net,
+      # upgrade_vmname needed only when performing an upgrade
+      upgrade_vmname: g2vsd2u.mgmt.training.net,
+      target_server_type: "vcenter",
+      target_server: 10.167.61.48,
+      mgmt_ip: 10.167.45.51,
+      mgmt_gateway: 10.167.45.1,
+      mgmt_netmask: 255.255.255.128 }
+  - { hostname: "g2vsd3.{{ dns_domain }}",
+      # vmname is used to identify vm on the hypervisor/vcenter
+      # This is optional. If vmname is not defined, it defaults to the name set in hostname.
+      vmname: g2vsd3.mgmt.training.net,
+      # upgrade_vmname needed only when performing an upgrade
+      upgrade_vmname: g2vsd3u.mgmt.training.net,
+      target_server_type: "vcenter",
+      target_server: 10.167.61.48,
+      mgmt_ip: 10.167.45.52,
+      mgmt_gateway: 10.167.45.1,
+      mgmt_netmask: 255.255.255.128 }
 
 ###
 # VSC params
@@ -224,24 +241,23 @@ vsc_operations_list:
 # One set of parameters is required for each VSC.
 # Do not update {{ vsd_fqdn_global }} here as it reads from previous section
 myvscs:
-  - { hostname: "vsc1.{{ dns_domain }}",
-      # vmname is optional. If not defined, it defaults to the name set in
-      # hostname.
-      vmname: vsc1-dc1,
-      target_server_type: "kvm",
-      target_server: 135.227.181.233,
+  - { hostname: "g2vsc1.{{ dns_domain }}",
+      # vmname is optional. If not defined, it defaults to the name set in hostname.
+      vmname: g2vsc1.mgmt.training.net,
+      target_server_type: "vcenter",
+      target_server: 10.167.61.48,
       # mgmt_bridge is an optional bridge to override the global mgmt_bridge
       # setting. Omit mgmt_bridge here to use the global mgmt_bridge setting.
-      mgmt_bridge: br1,
-      mgmt_ip: 192.168.122.202,
-      mgmt_gateway: 192.168.122.1,
-      mgmt_netmask_prefix: 24,
-      ctrl_ip: 192.168.100.202,
+      mgmt_bridge: management,
+      mgmt_ip: 10.167.45.55,
+      mgmt_gateway: 10.167.45.1,
+      mgmt_netmask_prefix: 25,
+      ctrl_ip: 10.166.45.55,
       ctrl_netmask_prefix: 24,
-      vsd_fqdn: "{{ vsd_fqdn_global }}",
+      vsd_fqdn: "{{ vsd_fqdn_global }}",      
       # system_ip is optional, only required when IGP or BGP routing will be
       # configured
-      system_ip: 1.1.1.2,
+      system_ip: 17.100.45.45,
       # VSC 'expected' parameters
       # The following 'expected' parameters are optional. If they are omitted or
       # set to '0' they will be skipped. If they are set to non-zero values, their
@@ -255,20 +271,21 @@ myvscs:
       # end of VSC 'expected' parameters
       xmpp_username: vsc1,
       vsc_mgmt_static_route_list: [ 0.0.0.0/1, 128.0.0.1/1 ] }
-  - { hostname: "vsc2.{{ dns_domain }}",
-      vmname: vsc2-dc1,
-      target_server_type: "kvm",
-      target_server: 135.227.181.233,
+  - { hostname: "g2vsc2.{{ dns_domain }}",
+      # vmname is optional. If not defined, it defaults to the name set in hostname.
+      vmname: g2vsc2.mgmt.training.net,
+      target_server_type: "vcenter",
+      target_server: 10.167.61.48,      
       # mgmt_bridge is an optional bridge to override the global mgmt_bridge
       # setting. Omit mgmt_bridge here to use the global mgmt_bridge setting.
-      mgmt_bridge: br1,
-      mgmt_ip: 192.168.122.203,
-      mgmt_gateway: 192.168.122.1,
-      mgmt_netmask_prefix: 24,
-      ctrl_ip: 192.168.100.203,
+      mgmt_bridge: management,
+      mgmt_ip: 10.167.45.56,
+      mgmt_gateway: 10.167.45.1,
+      mgmt_netmask_prefix: 25,
+      ctrl_ip: 10.166.45.56,
       ctrl_netmask_prefix: 24,
       vsd_fqdn: "{{ vsd_fqdn_global }}",
-      system_ip: 1.1.1.3,
+      system_ip: 17.100.45.46,
       # VSC 'expected' parameters
       # The following 'expected' parameters are optional. If they are omitted or
       # set to '0' they will be skipped. If they are set to non-zero values, their
@@ -300,9 +317,9 @@ vsc_health_expected_xmpp_server_state: Functional
 # hosts in the cluster.
 # cluster_store_url must point to the key-value store used for the cluster
 ###
-libnetwork:
-  scope: local
-  cluster_store_url: consul://192.168.122.1:8500
+#libnetwork:
+#  scope: local
+#  cluster_store_url: consul://192.168.122.1:8500
 
 ###
 # VRS params
@@ -311,45 +328,38 @@ libnetwork:
 # - install
 # - upgrade
 # - health
-vrs_operations_list:
-  - install
+#vrs_operations_list:
+#  - install
 
 # myvrss is a collection of parameters for the targets where VRS is to be
 # deployed. One set of parameters is required for each set or group of VRS
 # targets.
-myvrss:
-  - { vrs_set_name: vrs_set_uswest1,
-      vrs_os_type: u14.04,
-      libnetwork_install: False,
-      dkms_install: False,
-      active_controller_ip: 192.168.122.202,
-      standby_controller_ip: 192.168.122.203,
-      vrs_ip_list: [
-       192.168.122.101] }
-  - { vrs_set_name: vrs_set_usewest2,
-      vrs_os_type: el7,
-      libnetwork_install: False,
-      dkms_install: False,
-      active_controller_ip: 192.168.122.202,
-      standby_controller_ip: 192.168.122.203,
-      vrs_ip_list: [
-       192.168.122.83,
-       192.168.122.238 ] }
-  - { vrs_set_name: vrs_set_uswest3,
-      vrs_os_type: u16.04,
-      libnetwork_install: False,
-      dkms_install: False,
-      active_controller_ip: 192.168.122.202,
-      standby_controller_ip: 192.168.122.203,
-      vrs_ip_list: [
-       192.168.122.215 ] }
-
+#myvrss:
+#  - { vrs_set_name: vrs_set_uswest1,
+#      vrs_os_type: u14.04,
+#      libnetwork_install: False,
+#      active_controller_ip: 192.168.122.202,
+#      standby_controller_ip: 192.168.122.203,
+#      vrs_ip_list: [
+#       192.168.122.101] }
+#  - { vrs_set_name: vrs_set_usewest2,
+#      vrs_os_type: el7,
+#      libnetwork_install: False,
+#      active_controller_ip: 192.168.122.202,
+#      standby_controller_ip: 192.168.122.203,
+#      vrs_ip_list: [
+#       192.168.122.83,
+#       192.168.122.238 ] }
+#  - { vrs_set_name: vrs_set_uswest3,
+#      vrs_os_type: u16.04,
+#      libnetwork_install: False,
+#      active_controller_ip: 192.168.122.202,
+#      standby_controller_ip: 192.168.122.203,
+#      vrs_ip_list: [
+#       192.168.122.215 ] }
+#
 ###
 # Stats VM (ElasticSearch) params
-
-# vstat_sa_or_ha = ha for cluster, sa for standalone deployment
-vstat_sa_or_ha: sa
-
 # vstat_operations_list = A list of the operations you intend for the ES node.
 # The list could include 1 or more of the following:
 # - install
@@ -363,20 +373,21 @@ vstat_operations_list:
 # One set of parameters is required for each VSTAT.
 # Do not update {{ vsd_fqdn_global }} here as it reads from previous section
 myvstats:
-  - { hostname: "vstat1.{{ dns_domain }}",
-      vmname: vstat1-dc1,
+  - { hostname: "g2es.{{ dns_domain }}",
+      # vmname is used to identify vm on the hypervisor/vcenter
+      # This is optional. If vmname is not defined, it defaults to the name set in hostname.
+      vmname: g2es.mgmt.training.net,
       # upgrade_vmname needed only when performing an upgrade
-      upgrade_vmname: vstat1-4.0.R10-dc1,
-      target_server_type: "kvm",
-      target_server: 135.227.181.233,
+      upgrade_vmname: g2esu.mgmt.training.net,
+      target_server_type: "vcenter",
+      target_server: 10.167.61.48,      
       # mgmt_bridge is an optional bridge to override the global mgmt_bridge
       # setting. Omit mgmt_bridge here to use the global mgmt_bridge setting.
-      mgmt_bridge: bridge1,
-      mgmt_ip: 192.168.122.204,
-      mgmt_gateway: 192.168.122.1,
-      mgmt_netmask: 255.255.255.0,
+      mgmt_bridge:  management,
+      mgmt_ip: 10.167.45.53,
+      mgmt_gateway: 10.167.45.1,
+      mgmt_netmask: 255.255.255.128,
       vsd_fqdn: "{{ vsd_fqdn_global }}" }
-
 ###
 # VNS params
 # vns_operations_list = A list of the operations you intend for the VNS. The
@@ -385,24 +396,26 @@ myvstats:
 # - upgrade
 # - health
 vns_operations_list:
-  - install
+  - upgrade
 
 # myvnsutils is a collection of parameters for the VNSUTIL.
 # One set of parameters is required for each VNSUTIL.
 # Do not update {{ vsd_fqdn_global }} here as it reads from previous section
 myvnsutils:
-  - { hostname: "vnsutil1.{{ dns_domain }}",
-      vmname: vnsutil-dc1,
-      target_server_type: "kvm",
-      target_server: 135.227.181.233,
+  - { hostname: "g2util.{{ dns_domain }}",
+      # vmname is used to identify vm on the hypervisor/vcenter
+      # This is optional. If vmname is not defined, it defaults to the name set in hostname.
+      vmname: g2util.mgmt.training.net,
+      target_server_type: "vcenter",
+      target_server: 10.167.61.48,
       # mgmt_bridge is an optional bridge to override the global mgmt_bridge
       # setting. Omit mgmt_bridge here to use the global mgmt_bridge setting.
-      mgmt_bridge: bridge2,
-      mgmt_ip: 192.168.122.205,
-      mgmt_gateway: 192.168.122.1,
-      mgmt_netmask: 255.255.255.0,
-      data_fqdn: "vnsutil1.data.{{ dns_domain }}",
-      data_ip: 192.168.100.205,
+      mgmt_bridge: management,
+      mgmt_ip: 10.167.45.54,
+      mgmt_gateway: 10.167.45.1,
+      mgmt_netmask: 255.255.255.128,
+      data_fqdn: "g2util.data.{{ dns_domain }}",
+      data_ip: 10.166.45.54,
       data_netmask: 255.255.255.0,
       ## BEGIN DHCP BOOTSTRAP CONFIG
       # Metro supports deploying one or more NSGVs. As a special case, Metro
@@ -431,18 +444,18 @@ myvnsutils:
 #     ZFB process taken care by third party iso file. Needs two additional vars
 #     iso_path, iso_file)
 # - none (nsgv is deployed without any bootstrapping)
-mynsgvs:
-  - { hostname: "nsgv1.{{ dns_domain }}",
-      vmname: nsgv-dc1,
-      target_server_type: "kvm",
-      target_server: 135.227.181.233,
-      bootstrap_method: zfb_metro,
+#mynsgvs:
+#  - { hostname: "nsgv1.{{ dns_domain }}",
+#      vmname: nsgv-dc1,
+#      target_server_type: "kvm",
+#      target_server: 135.227.181.233,
+#      bootstrap_method: zfb_metro,
+#      # Needed only when bootstrap_method: zfb_external
+#      iso_path: '/tmp/iso',
       # Needed only when bootstrap_method: zfb_external
-      iso_path: '/tmp/iso',
-      # Needed only when bootstrap_method: zfb_external
-      iso_file: 'user_img.iso',
+#      iso_file: 'user_img.iso',
       # Needed only when bootstrap_method: zfb_metro
-      nsgv_mac: '52:54:00:88:85:12' }
+#      nsgv_mac: '52:54:00:88:85:12' }
 
 ###
 # Utility VMs
@@ -453,8 +466,8 @@ mynsgvs:
 # dns_operations_list = A list of the operations you intend for the DNS. The
 # list could include 1 or more of the following:
 # - install
-dns_operations_list:
-  - install
+#dns_operations_list:
+#  - install
 
 # mydnss is a collection of parameters for the DNS.
 # One set of parameters is required for each DNS.
@@ -465,96 +478,96 @@ dns_operations_list:
 # dns_data name server of data network
 # dns_server dns server of this server
 
-mydnss:
-  - { hostname: g5dns.mgmt.training.net,
-      target_server_type: "kvm",
-      target_server: 10.167.53.5,
-      mgmt_ip: 10.167.53.3,
-      mgmt_gateway: 10.167.53.254,
-      mgmt_netmask: 255.255.255.0,
-      data_ip: 10.167.54.3,
-      data_subnet: 10.167.54.0,
-      data_netmask: 255.255.255.0,
-      data_static_route: [ 10.165.53.0/24, 10.165.54.0/24, 10.165.55.0/24 ],
-      dns_server: 8.8.8.8,
-      dns_mgmt: g5dns.mgmt.training.net.,
-      dns_data: g5dns.data.training.net.,
-      dns_mgmt_lookup: {g5dns.mgmt.training.net.: 10.166.53.3,
-        ns1.mgmt.training.net.: 10.166.53.2,
-        ns2.mgmt.training.net.: 10.166.53.2,
-        server1.mgmt.training.net.: 10.166.53.5,
-        server2.mgmt.training.net.: 10.166.53.6,
-        g1vsd.mgmt.training.net.: 10.166.53.11,
-        g1es.mgmt.training.net.: 10.166.53.12,
-        g1util.mgmt.training.net.: 10.166.53.13,
-        g1vsc1.mgmt.training.net.: 10.166.53.14,
-        g1vsc2.mgmt.training.net.: 10.166.53.15,
-        g1pe.mgmt.training.net.: 10.166.53.16,
-        g1ppsvm.mgmt.training.net.: 10.166.53.17,
-        g1ubuntu.mgmt.training.net.: 10.166.53.18,
-        g1cpe.mgmt.training.net.: 10.166.53.19,
-        g1utilinternet.mgmt.training.net.: 10.166.53.20,
-        g1uitlnokianet.mgmt.training.net.: 10.166.53.21},
-        dns_data_lookup: {g1utilnokianet.data.training.net.: 10.167.53.21,
-        g1utilinternet.data.training.net.: 10.167.54.20,
-        g1pe.data.training.net.: 10.167.54.16,
-        g1vsc2.data.training.net.: 10.167.54.15,
-        g1vsc1.data.training.net.: 10.167.54.14,
-        g1util.data.training.net.: 10.167.54.13,
-        g5dns.data.training.net.: 10.167.54.3,
-        server2.data.training.net.: 10.167.54.6,
-        server1.data.training.net.: 10.167.54.5,
-        ns1.data.training.net.: 10.167.54.3,
-        ns2.data.training.net.: 10.167.54.3}}
-
+#mydnss:
+#  - { hostname: g5dns.mgmt.training.net,
+#      target_server_type: "kvm",
+#      target_server: 10.167.53.5,
+#      mgmt_ip: 10.167.53.3,
+#      mgmt_gateway: 10.167.53.254,
+#      mgmt_netmask: 255.255.255.0,
+#      data_ip: 10.167.54.3,
+#      data_subnet: 10.167.54.0,
+#      data_netmask: 255.255.255.0,
+#      data_static_route: [ 10.165.53.0/24, 10.165.54.0/24, 10.165.55.0/24 ],
+#      dns_server: 8.8.8.8,
+#      dns_mgmt: g5dns.mgmt.training.net.,
+#      dns_data: g5dns.data.training.net.,
+#      dns_mgmt_lookup: {g5dns.mgmt.training.net.: 10.166.53.3,
+#        ns1.mgmt.training.net.: 10.166.53.2,
+#        ns2.mgmt.training.net.: 10.166.53.2,
+#        server1.mgmt.training.net.: 10.166.53.5,
+#        server2.mgmt.training.net.: 10.166.53.6,
+#        g1vsd.mgmt.training.net.: 10.166.53.11,
+#        g2es.mgmt.training.net.: 10.166.53.12,
+#        g2util.mgmt.training.net.: 10.166.53.13,
+#        g2vsc1.mgmt.training.net.: 10.166.53.14,
+#        g2vsc2.mgmt.training.net.: 10.166.53.15,
+#        g1pe.mgmt.training.net.: 10.166.53.16,
+#        g1ppsvm.mgmt.training.net.: 10.166.53.17,
+#        g1ubuntu.mgmt.training.net.: 10.166.53.18,
+#        g1cpe.mgmt.training.net.: 10.166.53.19,
+#        g2utilinternet.mgmt.training.net.: 10.166.53.20,
+#        g1uitlnokianet.mgmt.training.net.: 10.166.53.21},
+#        dns_data_lookup: {g2utilnokianet.data.training.net.: 10.167.53.21,
+#        g2utilinternet.data.training.net.: 10.167.54.20,
+#        g1pe.data.training.net.: 10.167.54.16,
+#        g2vsc2.data.training.net.: 10.167.54.15,
+#        g2vsc1.data.training.net.: 10.167.54.14,
+#        g2util.data.training.net.: 10.167.54.13,
+#        g5dns.data.training.net.: 10.167.54.3,
+#        server2.data.training.net.: 10.167.54.6,
+#        server1.data.training.net.: 10.167.54.5,
+#        ns1.data.training.net.: 10.167.54.3,
+#        ns2.data.training.net.: 10.167.54.3}}
+#
 ###
 # Generic VM params
 # gvm_operations_list = A list of the operations you intend for the vms. The
 # list could include 1 or more of the following:
 # - install
-gvm_operations_list:
-  - install
+#gvm_operations_list:
+#  - install
 # mygvms is a collection of parameters for the generic vms.
 # One set of parameters is required for each generic VM.
 #
 # gvm_xml_file is the full path to the XML file that defines the VM.
-mygvms:
-  - { hostname: "gvm1.{{ dns_domain }}",
-      target_server_type: "kvm",
-      target_server: 135.227.181.233,
-      gvm_xml_file: "/home/caso/images/jenkinsgvm1.{{ dns_domain }}/gvm.xml" }
-
+#mygvms:
+#  - { hostname: "gvm1.{{ dns_domain }}",
+#      target_server_type: "kvm",
+#      target_server: 135.227.181.233,
+#      gvm_xml_file: "/home/caso/images/jenkinsgvm1.{{ dns_domain }}/gvm.xml" }
+#
 
 # VCIN params
 # vcin_operations_list = A list of the operations you intend for the VCIN. The
 # list could include 1 or more of the following:
 # - install
 # - upgrade
-vcin_operations_list:
-  - install
+#vcin_operations_list:
+#  - install
 # myvcins is a collection of parameters for VCINs.
 # One set of parameters is required for each VCIN.
-myvcins:
-    - { hostname: vcin-metro.phd.eu.nuagedemo.net,
-      target_server_type: "vcenter",
-      target_server: vc01.phd.eu.nuagedemo.net,
-      mgmt_ip: 10.189.1.246,
-      mgmt_gateway: 10.0.0.1,
-      mgmt_netmask: 255.0.0.0,
-      vcenter: { username: administrator@vsphere.local,
-        password: Alcateldc,
-        datacenter: Antwerp,
-        cluster: Management,
-        datastore: esxi02 }
-      }
+#myvcins:
+#    - { hostname: vcin-metro.phd.eu.nuagedemo.net,
+#      target_server_type: "vcenter",
+#      target_server: vc01.phd.eu.nuagedemo.net,
+#      mgmt_ip: 10.189.1.246,
+#      mgmt_gateway: 10.0.0.1,
+#      mgmt_netmask: 255.0.0.0,
+#      vcenter: { username: administrator@vsphere.local,
+#        password: Alcateldc,
+#        datacenter: Antwerp,
+#        cluster: Management,
+#        datastore: esxi02 }
+#      }
 
 ###
 # VSR params
 # vsr_operations_list = A list of the operations you intend for the VSR. The
 # list could include 1 or more of the following:
 # - install
-vsr_operations_list:
-  - install
+#vsr_operations_list:
+#  - install
 # myvsrs is a collection of parameters for the targets where VSR is to be
 # deployed. One set of parameters is required for each set or group of VSR
 # targets.
@@ -564,16 +577,16 @@ vsr_operations_list:
 #   file.
 # deploy_cfg_file - absolute path to file with configuration for vsr-deploy
 #   role.
-myvsrs:
-  - { hostname: "vsr1.{{ dns_domain }}",
-      vmname: "vsr1",
-      target_server_type: "kvm",
-      target_server: 10.167.28.4,
-      mgmt_ip: 10.167.28.91,
-      mgmt_gateway: 10.167.28.1,
-      mgmt_netmask_prefix: 24,
-      mgmt_static_route_list: [ 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16 ],
-      mgmt_to_hv_bridge: 'br0',
-      ports_to_hv_bridges: ['br0', 'br1','br0','br1'],
-      license_file: '/path/on/ansible/deployment/host/license.zip',
-      deploy_cfg_file: '/path/on/ansible/deployment/host/config_flat.txt'}
+#myvsrs:
+#  - { hostname: "vsr1.{{ dns_domain }}",
+#      vmname: "vsr1",
+#      target_server_type: "kvm",
+#      target_server: 10.167.28.4,
+#      mgmt_ip: 10.167.28.91,
+#      mgmt_gateway: 10.167.28.1,
+#      mgmt_netmask_prefix: 24,
+#      mgmt_static_route_list: [ 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16 ],
+#      mgmt_to_hv_bridge: 'br0',
+#      ports_to_hv_bridges: ['br0', 'br1','br0','br1'],
+#      license_file: '/path/on/ansible/deployment/host/license.zip',
+#      deploy_cfg_file: '/path/on/ansible/deployment/host/config_flat.txt'}

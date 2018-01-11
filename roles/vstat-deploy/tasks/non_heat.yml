@@ -241,6 +241,23 @@
       state: restarted
     remote_user: "root"
 
+  - name: Stat the standalone script
+    stat: path=/opt/vsd/vsd-es-standalone.sh
+    register: es_sa_script
+    delegate_to: "{{ vsd_fqdn }}"
+    remote_user: root
+
+  - name: Execute VSTAT standalne script on standalone or clustered vsds
+    command: /opt/vsd/vsd-es-standalone.sh -e {{ inventory_hostname }}
+    delegate_to: "{{ vsd_fqdn }}"
+    remote_user: root
+    environment:
+      SSHPASS: "{{ vstat_password }}"
+    run_once: true
+    when:
+      - vstat_sa_or_ha | match('sa')
+      - es_sa_script.stat.exists
+
   - name: Execute VSTAT cluster script on standalone or clustered vsds
     command: /opt/vsd/vsd-es-cluster-config.sh -e {{ groups['vstats'][0] }},{{ groups['vstats'][1] }},{{ groups['vstats'][2] }}
     delegate_to: "{{ vsd_fqdn }}"
