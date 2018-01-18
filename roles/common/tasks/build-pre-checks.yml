@@ -1,0 +1,75 @@
+---
+- name: Set build files path
+  set_fact:
+    build_files_path: "{{ inventory_dir }}"
+
+- name: Set build_vars variable
+  set_fact:
+    build_vars: "{{ build_vars_file | default (build_files_path+'/build_vars.yml') }}"
+
+- name: Include build variable files
+  include_vars: "{{ build_vars }}"
+
+- name: Include user credential file
+  include_vars: "{{ user_creds_file | default (build_files_path+'/user_creds.yml') }}"
+
+- name: Check yaml syntax in build vars file
+  include_role:
+    name: common
+    tasks_from: check-build-vars-syntax.yml
+
+- name: Validate build variables
+  include_role:
+    name: common
+    tasks_from: validate-build-vars.yml
+    
+- name: Find md5 file for build_vars
+  find: path="{{ inventory_dir }}" pattern="*.md5"
+  register: md5_file
+
+- name: Get md5 value for build vars file
+  stat:
+    path: "{{ inventory_dir }}/build_vars.yml"
+    get_md5: yes
+  register: md5_for_build_vars
+
+- block: 
+  - name: Verify md5 file was found
+    assert:
+      that: "{{ md5_file.matched }} > 0"
+      msg: "Unable to find md5 file for build_vars file. Generating md5 file"
+  rescue:
+
+    - name: Store md5 value to file
+      copy:
+        content: "{{ md5_for_build_vars.stat.md5 }}"
+        dest: "{{ inventory_dir }}/build_vars.md5"
+
+- name: Update md5 value in the file
+  copy:
+    content: "{{ md5_for_build_vars.stat.md5 }}"
+    dest: "{{ inventory_dir }}/build_vars.md5"
+  when: md5_file.matched == 1
+
+- name: Get stored md5 value from file
+  command: cat {{ inventory_dir }}/build_vars.md5
+  register: stored_md5
+
+- name: Get current md5 value
+  stat:
+    path: "{{ inventory_dir }}/build_vars.yml"
+    get_md5: yes
+  register: current_md5
+
+- name: Find host_vars dir
+  stat:
+    path: "{{ inventory_dir }}/host_vars"
+  register: host_vars_dir
+
+- block:
+  - include_role:
+      name: build
+
+  - name: Reload inventory
+    meta: refresh_inventory
+  when: stored_md5.stdout != current_md5.stat.md5 or host_vars_dir.stat.isdir is not defined
