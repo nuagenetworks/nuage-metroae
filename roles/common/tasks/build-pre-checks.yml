@@ -45,12 +45,6 @@
         content: "{{ md5_for_build_vars.stat.md5 }}"
         dest: "{{ inventory_dir }}/build_vars.md5"
 
-- name: Update md5 value in the file
-  copy:
-    content: "{{ md5_for_build_vars.stat.md5 }}"
-    dest: "{{ inventory_dir }}/build_vars.md5"
-  when: md5_file.matched == 1
-
 - name: Get stored md5 value from file
   command: cat {{ inventory_dir }}/build_vars.md5
   register: stored_md5
@@ -73,3 +67,9 @@
   - name: Reload inventory
     meta: refresh_inventory
   when: stored_md5.stdout != current_md5.stat.md5 or host_vars_dir.stat.isdir is not defined
+
+- name: Update md5 value in the file
+  copy:
+    content: "{{ md5_for_build_vars.stat.md5 }}"
+    dest: "{{ inventory_dir }}/build_vars.md5"
+  when: md5_file.matched == 1
