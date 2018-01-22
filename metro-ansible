@@ -8,8 +8,14 @@ shift
 
 # Add .yml extension if needed
 EXTENSION="${PLAYBOOK##*.}"
+TAG="$(echo $PLAYBOOK | cut -d'_' -f 1)"
 if [ "$EXTENSION" != "yml" ]; then
   PLAYBOOK=${PLAYBOOK}.yml
+fi
+
+if [ "$TAG" != "reset" ]; then
+  echo "Populating $TAG variables"
+  ansible-playbook -i hosts handle_vars.yml -e tag=$TAG --tags $TAG -vvv
 fi
 
 if [[ -a $PLAYBOOK  ]]; then

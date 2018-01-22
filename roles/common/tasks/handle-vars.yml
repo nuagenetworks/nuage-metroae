@@ -1,0 +1,78 @@
+---
+- block:
+  - name: Set build files path
+    set_fact:
+      build_files_path: "{{ inventory_dir }}"
+  
+  - name: Set build_vars variable
+    set_fact:
+      build_vars: "{{ build_vars_file | default (build_files_path+'/build_vars.yml') }}"
+  
+  - name: Include build variable files
+    include_vars: "{{ build_vars }}"
+  
+  - name: Include user credential file
+    include_vars: "{{ user_creds_file | default (build_files_path+'/user_creds.yml') }}"
+  
+  - name: Find session info file
+    find: path="{{ inventory_dir }}" pattern="*.json"
+    register: session_file
+  
+  - name: Get md5 value for build vars file
+    stat:
+      path: "{{ inventory_dir }}/build_vars.yml"
+      get_md5: yes
+    register: md5_for_build_vars
+
+  - name: Set local variable with md5 value of build_vars file
+    set_fact:
+      current_md5: "{{ md5_for_build_vars.stat.md5 }}"
+  
+  - name: Store md5 value to file
+    template: src=session_info.j2 backup=no dest={{ inventory_dir }}/session_info.json
+    when: session_file.matched == 0
+
+  - name: Get json session file
+    set_fact:
+      json_session_file: "{{ lookup('file','{{ inventory_dir }}/session_info.json') | from_json }}"
+  
+  - name: Get stored md5 value
+    set_fact:
+      stored_md5: "{{ json_session_file.md5 }}"
+
+  - name: Get stored playbook tag
+    set_fact:
+      stored_tag: "{{ json_session_file.playbook_tag }}"
+  
+  - name: Find host_vars dir
+    stat:
+      path: "{{ inventory_dir }}/host_vars"
+    register: host_vars_dir
+  tags: always
+
+- block:
+  - name: Check yaml syntax in build vars file
+    include_role:
+      name: common
+      tasks_from: check-build-vars-syntax.yml
+
+  - name: Validate build variables
+    include_role:
+      name: common
+      tasks_from: validate-build-vars.yml
+  when: stored_md5 != current_md5 or
+        host_vars_dir.stat.isdir is not defined or
+        tag != stored_tag
+  tags: always
+
+- include_role:
+    name: build
+  when: stored_md5 != current_md5 or 
+        host_vars_dir.stat.isdir is not defined or
+        tag != stored_tag 
+        
+- name: Update md5 and playbook tag in session_info file
+  template: src=session_info.j2 backup=no dest={{ inventory_dir }}/session_info.json
+  when: (session_file.matched == 1) and
+        (stored_md5 != current_md5 or tag != stored_tag)
+  tags: always
