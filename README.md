@@ -83,7 +83,7 @@ File name | Description
 [DESTROY.md](Documentation/DESTROY.md) | Remove existing deployment(s) and start over.
 [UPGRADE.md](Documentation/UPGRADE.md) | Upgrade component(s) from one release to the next.
 [ROLLBACK.md](Documentation/ROLLBACK.md) | Restore VSP components to their previous version if an upgrade fails.
-[CONTRIBUTING.md](Documentation/CONTRIBUTING.md) | Submit your code and become a contributor to Nuage MetroAG.
+[CONTRIBUTING.md](CONTRIBUTING.md) | Submit your code and become a contributor to Nuage MetroAG.
 [OPENSTACK.md](Documentation/OPENSTACK.md) | Deploy VSP components in OpenStack (limited support).
 
 
@@ -94,7 +94,7 @@ Ask questions and get support via email.
 
 Report bugs you find and suggest new features and enhancements via the [GitHub Issues](https://github.com/nuagenetworks/nuage-metro/issues "nuage-metro issues") feature.
 
-You may also [contribute](CONTRIBUTING.MD) to Nuage MetroAG by submitting your own code to the project.
+You may also [contribute](CONTRIBUTING.md) to Nuage MetroAG by submitting your own code to the project.
 
 ## License
 Apache License 2.0
