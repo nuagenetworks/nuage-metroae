@@ -1,6 +1,6 @@
 # Readying the MetroAG Environment for Deploying
 ## Prerequisites / Requirements
-To confirm that the intended deployment is supported by MetroAG, see [README.md](README.md).
+To confirm that the intended deployment is supported by MetroAG, see [README.md](../README.md).
 
 If you have not previously set up your MetroAG Ansible environment, see [SETUP.md](SETUP.md) before proceeding.
 
@@ -26,7 +26,7 @@ If this is your first time deploying with MetroAG, and you intend on automatical
 ```
 
 ### `zfb_vars.yml`
-If you intend on deploying VNS with zero factor bootstrapping, you must customize the variables in this additional file. See [ZFB.md](ZFB.MD) for more information.
+If you intend on deploying VNS with zero factor bootstrapping, you must customize the variables in this additional file. See [ZFB.md](ZFB.md) for more information.
 
 ## 2. Unzip Nuage Files
 
@@ -103,4 +103,4 @@ Ask questions and get support via email.
 
 Report bugs you find and suggest new features and enhancements via the [GitHub Issues](https://github.com/nuagenetworks/nuage-metro/issues "nuage-metro issues") feature.
 
-You may also [contribute](CONTRIBUTING.MD) to Nuage MetroAG by submitting your own code to the project.
+You may also [contribute](../CONTRIBUTING.md) to Nuage MetroAG by submitting your own code to the project.
