@@ -79,7 +79,7 @@ VSPK Python module | `pip install vspk`
 
 Package | Command  
  -----| ------  
- pysphere and pyvmomi | `pip install pyshpere pyvmomi`  
+ pyvmomi | `pip install pyvmomi`  
 
 
 3. For **OpenStack Only**, install the following module:
@@ -118,4 +118,4 @@ Ask questions and get support via email.
 
 Report bugs you find and suggest new features and enhancements via the [GitHub Issues](https://github.com/nuagenetworks/nuage-metro/issues "nuage-metro issues") feature.
 
-You may also [contribute](CONTRIBUTING.MD) to Nuage MetroAG by submitting your own code to the project.
+You may also [contribute](../CONTRIBUTING.md) to Nuage MetroAG by submitting your own code to the project.

@@ -1,6 +1,6 @@
 # Readying the MetroAG Environment for Upgrading
 ## Prerequisites / Requirements
-To confirm that the intended upgrade is supported by MetroAG, see [README.md](README.md).
+To confirm that the intended upgrade is supported by MetroAG, see [README.md](../README.md).
 
 If you have not previously set up your MetroAG Ansible environment, see [SETUP.md](SETUP.md) before proceeding.
 
@@ -10,7 +10,7 @@ If you have not previously set up your MetroAG Ansible environment, see [SETUP.m
 [3. Execute `build_upgrade.yml` playbook](#3-build_upgradeyml-playbook)  
 
 ## 1. Customize Variables
-Setting variables correctly ensures that when you subsequently execute the upgrade playbooks they configure components as intended. Precise syntax is crucial for success. See the [examples directory](examples) for references. Three variable files are used to build the upgrade environment: `user_creds.yml`, `build_vars.yml`, and `upgrade_vars.yml`.
+Setting variables correctly ensures that when you subsequently execute the upgrade playbooks they configure components as intended. Precise syntax is crucial for success. See the [examples directory](../examples) for references. Three variable files are used to build the upgrade environment: `user_creds.yml`, `build_vars.yml`, and `upgrade_vars.yml`.
 ### `user_creds.yml`
 `user_creds.yml` contains user credentials for VSD, VCIN and VSC. Default values are specified; you can modify them as necessary.
 
@@ -131,4 +131,4 @@ Ask questions and get support via email.
 
 Report bugs you find and suggest new features and enhancements via the [GitHub Issues](https://github.com/nuagenetworks/nuage-metro/issues "nuage-metro issues") feature.
 
-You may also [contribute](CONTRIBUTING.MD) to Nuage MetroAG by submitting your own code to the project.
+You may also [contribute](../CONTRIBUTING.md) to Nuage MetroAG by submitting your own code to the project.
