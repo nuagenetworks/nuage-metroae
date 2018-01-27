@@ -52,8 +52,7 @@
     path: "{{ vsdbackup_dir }}"
     state: directory
     mode: 0755
-  remote_user: "{{ ansible_sudo_username }}"
-  delegate_to: "{{ ansible_deployment_host }}"
+  delegate_to: localhost
   run_once: true
 
 - block:
@@ -64,7 +63,7 @@
       state: enabled
       api_version: "{{ vsd_version.stdout }}"
     register: mode_status
-    delegate_to: 127.0.0.1
+    delegate_to: localhost
 
   - name: Print vsd maintainance mode output when verbosity >= 1
     debug: var=mode_status verbosity=1
@@ -109,8 +108,7 @@
     copy:
       content: "{{ update_time_status.result }}"
       dest: "{{ vsdbackup_dir }}/{{ inventory_hostname }}_purge_time"
-    remote_user: "{{ ansible_sudo_username }}"
-    delegate_to: "{{ ansible_deployment_host }}"
+    delegate_to: localhost
 
   #TODO move updating gateway purge timer from vsd-dbbackup
   - name: Update gateway purge timer
@@ -195,14 +193,13 @@
     msg: "Could not find file {{ item.item }}"
   with_items: "{{ lst_files.results }}"
 
-- name: Create backup dir on ansible_deployment_host
+- name: Create backup dir
   file:
     dest: "{{ vsdbackup_dir }}"
     state: directory
     owner: "{{ username_on_the_host.stdout }}"
     group: "{{ username_on_the_host.stdout }}"
-  remote_user: "{{ ansible_sudo_username }}"
-  delegate_to: "{{ ansible_deployment_host }}"
+  delegate_to: localhost
 
 - name: Fetch files from vsd and copy them to backup folder on backup_machine
   fetch:
@@ -214,5 +211,4 @@
 
 - name: Create symbolic link to backup location
   file: dest="{{metro_backup_root}}/backup-{{ inventory_hostname }}-latest" src="{{  vsdbackup_dir }}"  state=link
-  remote_user: "{{ ansible_sudo_username }}"
-  delegate_to: "{{ ansible_deployment_host }}"
+  delegate_to: localhost
