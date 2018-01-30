@@ -17,9 +17,9 @@
   set_fact:
     force: "{{ force_build | default(False) }}"
 
-- name: Find session info file
-  find: path="{{ inventory_dir }}" pattern="*.json"
-  register: session_file
+- name: Find build_vars.md5 file
+  find: path="{{ inventory_dir }}" pattern="build_vars.md5"
+  register: md5_file
 
 - name: Get md5 value for build vars file
   stat:
@@ -27,44 +27,25 @@
     get_md5: yes
   register: md5_for_build_vars
 
-- name: Set local variable with md5 value of build_vars file
+- name: Set local variable with current md5 value
   set_fact:
     current_md5: "{{ md5_for_build_vars.stat.md5 }}"
 
-- name: Store md5 value to file
-  template: src=session_info.j2 backup=no dest={{ inventory_dir }}/session_info.json
-  when: session_file.matched == 0
-
-- name: Get json session file
-  set_fact:
-    json_session_file: "{{ lookup('file','{{ inventory_dir }}/session_info.json') | from_json }}"
-
 - name: Get stored md5 value
+  command: "cat {{ md5_file.files[0].path }}"
+  register: stored_md5_string
+  when: md5_file.matched == 1
+
+- name: Set local variable with stored md5 value when md5 file exists
   set_fact:
-    stored_md5: "{{ json_session_file.md5 }}"
+    stored_md5: "{{ stored_md5_string.stdout }}"
+  when: md5_file.matched == 1
 
-- name: Find host_vars dir
-  stat:
-    path: "{{ inventory_dir }}/host_vars"
-  register: host_vars_dir
+- name: Set stored_md5 value to current_md5 when md5 file does not exists
+  set_fact:
+    stored_md5: "{{ current_md5 }}"
+  when: md5_file.matched == 0
 
-- name: Find files inside host_vars dir
-  find:
-    path: "{{ inventory_dir }}/host_vars/"
-  register: host_vars_files
-  when: host_vars_dir is defined
-
-- name: Find group_vars dir
-  stat:
-    path: "{{ inventory_dir }}/group_vars"
-  register: group_vars_dir
-
-- name: Find files inside group_vars dir
-  find:
-    path: "{{ inventory_dir }}/group_vars/"
-  register: group_vars_files
-  when: group_vars_dir is defined
-   
 - block:
   - name: Check yaml syntax in build vars file
     include_role:
@@ -79,12 +60,9 @@
   - include_role:
       name: build
   when: stored_md5 != current_md5 or
-        host_vars_dir.stat.isdir is not defined or
-        host_vars_files.matched == 0 or
-        group_vars_dir.stat.isdir is not defined or
-        group_vars_files.matched == 0 or
+        md5_file.matched == 0 or
         force
+    
 
-- name: Update md5 value in session_info file
-  template: src=session_info.j2 backup=no dest={{ inventory_dir }}/session_info.json
-  when: (session_file.matched == 1) and (stored_md5 != current_md5)
+- name: Update md5 value
+  template: src=build_vars_md5.j2 backup=no dest={{ inventory_dir }}/build_vars.md5
