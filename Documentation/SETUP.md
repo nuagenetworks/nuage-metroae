@@ -28,7 +28,7 @@ git clone https://github.com/nuagenetworks/nuage-metro
 Prior to running MetroAG, use one of the two methods below to install the required packages onto the Ansible Host.
 
 ### Set Up Ansible Host Automatically (recommended)
-*metro-setup.sh* is a script provided with the MetroAG code, which installs the packages and modules required for MetroAG. If any of the packages or modules are already present, the script does not upgrade or overwrite them. The script can also be run multiple times without affecting the system.
+*metro-setup.sh* is a script provided with the MetroAG code, which installs the packages and modules required for MetroAG. If any of the packages or modules are already present, the script does not upgrade or overwrite them. The script can also be run multiple times without affecting the system. The sample below is an example and may not reflect the most recent software.
 ```
 [JohnDoe@metroag-host ~]$ sudo ./metro-setup.sh
 [sudo] password for JohnDoe:
@@ -45,7 +45,7 @@ Installing openssl-devel... [ OK ]
 Installing @Development tools... [ OK ]
 Installing sshpass... [ OK ]
 Installing git... [ OK ]
-Installing ansible==2.2.1... [ OK ]
+Installing ansible==2.4.0... [ OK ]
 Installing netmiko... [ OK ]
 Installing netaddr... [ OK ]
 Installing ipaddr... [ OK ]
