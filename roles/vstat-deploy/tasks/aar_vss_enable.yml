@@ -1,11 +1,4 @@
 ---
-#- hosts: localhost
-#  vars:
-#    elastic_hostname: stat1.geekysnippets.com
-#    vsd_ip: 10.31.134.241
-#    create_certs: "/opt/vsd/ejbca/deploy/certMgmt.sh -a generate -u elastic -c elastic -o csp -f pem -t server -d {{ elastic_hostname }}"
-#    scp_certs: "scp /opt/vsd/ejbca/p12/pem/elastic*.pem root@{{ elastic_hostname }}:/etc/nginx/ssl"
-
 - block:
   - name: Download pip installer on VSD
     command: curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
@@ -28,7 +21,6 @@
 
 - name: Create SSL directory on the Stats node
   file: path=/etc/nginx/ssl state=directory owner=root group=root mode=600
-#  delegate_to: "{{ elastic_hostname }}"
 
 - block:
   - name: Revoke old stats cert, if any
@@ -38,12 +30,10 @@
   - name: Generate SSL certificates on VSD for the Stats node (requires pexpect)
     expect:
       command: "/opt/vsd/ejbca/deploy/certMgmt.sh -a generate -u elastic -c elastic -o csp -f pem -t server -d {{ mgmt_ip }}"
-#      command: "/opt/vsd/ejbca/deploy/certMgmt.sh -a generate -u elastic -c elastic -o csp -f pem -t server -d {{ groups['vstats'] }}"
       responses:
         (?i)password: "Alcateldc"
     register: sslresult
     delegate_to: "{{ groups['vsds'][0] }}"
-#    delegate_to: "{{ vsd_ip }}"
 
 - name: Create temp folder to host the ssl certificates
   file: path=/tmp/ssl state=directory owner=root group=root mode=755
@@ -56,8 +46,6 @@
   - elastic-Key.pem
   - elastic.pem 
   delegate_to: "{{ groups['vsds'][0] }}"
-#  delegate_to: "{{ vsd_ip }}"
-#  remote_user: "root"
 
 - name: Transfer SSL certificates from localhost to Stats node
   copy: src=/tmp/ssl/{{ item }} dest=/etc/nginx/ssl
@@ -66,17 +54,12 @@
   - elasticCert.pem
   - elastic-Key.pem
   - elastic.pem
-#  delegate_to: "{{ elastic_hostname }}"
-#  remote_user: "root"
 
 - name: Delete temp folder from localhost
   local_action: file path=/tmp/ssl state=absent
-#  register: sslresult
 
 - name: Restart nginx process on Stats node
   systemd:
     name: nginx
     state: restarted
-#delegate_to: "{{ elastic_hostname }}"
-#  when: sslresult
 
