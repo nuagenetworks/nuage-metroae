@@ -222,6 +222,7 @@ function main() {
   yum_install "@Development tools"
   yum_install "sshpass"
   yum_install "git"
+  yum_install "python-netaddr"
 
   # pip modules
   pip_install "ansible==2.4.0"

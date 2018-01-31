@@ -1,32 +1,10 @@
 ---
-- block:
-
-  - block:
-
-    - name: Check if required OS packages are installed
-      command: rpm -q python-netaddr
-      register: rpm_check
-      ignore_errors: True
-
-    - name: Install packages for RedHat OS family distros
-      yum: name=python-netaddr state=present
-      environment:
-        http_proxy: "{{ yum_proxy }}"
-        https_proxy: "{{ yum_proxy }}"
-      when: yum_proxy|default('NONE') != 'NONE' and rpm_check.rc == 1
-
-    - name: Install packages for RedHat OS family distros
-      yum: name=python-netaddr state=present
-      when: yum_proxy|default('NONE') == 'NONE' and rpm_check.rc == 1
-
-    when: ansible_os_family | match("RedHat")
-
-  - name: Install python-netaddr package for Debian OS family distros
-    apt: name=python-netaddr state=present
-    when: ansible_os_family == "Debian"
-
-  delegate_to: "{{ ansible_deployment_host }}"
-  remote_user: "{{ ansible_sudo_username }}"
+- name: Check if python-netaddr is installed
+  include_role:
+    name: common
+    tasks_from: check-for-package
+  vars:
+    package_name: python-netaddr
   
 - name: Verify that the ntp servers are dotted decimal notation
   assert:

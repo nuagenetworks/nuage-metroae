@@ -12,17 +12,13 @@
 
 - debug: var=username_on_the_host
 
-- name: Install pip on RedHat OS family distribution
-  yum: name="python-pip" state="present"
-  remote_user: "{{ ansible_sudo_username }}"
-  delegate_to: "{{ ansible_deployment_host }}"
-  when: ansible_os_family == "RedHat"
-
-- name: Install pip on Debian OS family distribution
-  apt: name="python-pip" state="present"
-  remote_user: "{{ ansible_sudo_username }}"
-  delegate_to: "{{ ansible_deployment_host }}"
-  when: ansible_os_family == "Debian"
+- name: Check if python-pip is installed
+  include_role:
+    name: common
+    tasks_from: check-for-package
+  vars:
+    package_name: python-pip
+  delegate_to: localhost
 
 - name: Get current version of VSD software
   command: echo $VSD_VERSION
@@ -31,18 +27,6 @@
 
 - name: Print vsd_version output when verbosity >= 1
   debug: var=vsd_version verbosity=1
-
-- name: Install latest Nuage Python VSPK
-  pip: name=vspk state=latest
-  remote_user: "{{ ansible_sudo_username }}"
-  delegate_to: "{{ ansible_deployment_host }}"
-  when: vsd_version.stdout[0] != '3'
-
-- name: Install 3.2-compatible Nuage Python VSPK
-  pip: name=vspk version=4.0.9
-  remote_user: "{{ ansible_sudo_username }}"
-  delegate_to: "{{ ansible_deployment_host }}"
-  when: vsd_version.stdout[0] == '3'
 
 - name: Set name of backup directory
   set_fact: vsdbackup_dir="{{metro_backup_root}}/backup-{{ inventory_hostname }}-{{ ansible_date_time.iso8601_basic_short }}/"
