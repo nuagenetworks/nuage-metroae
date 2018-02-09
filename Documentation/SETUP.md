@@ -1,4 +1,5 @@
 # Setting Up the Nuage MetroAG Ansible Environment
+(4 minute read)  
 ## Prerequisites / Requirements
 Before you begin working with MetroAG, please take these requirements and restrictions into account. Also, review [README.md](/README.md) for a list of supported VCS/VNS components, as well as supported target server types.
 * The *Ansible Host* must run el7 Linux host, e.g. CentOS 7.\* or RHEL 7.\*.
@@ -73,6 +74,7 @@ Netaddr and its dependencies | `pip install netaddr`
 IPaddress and its dependencies | `pip install ipaddress`  
 Python pexpect module | `pip install pexpect`  
 VSPK Python module | `pip install vspk`  
+Paramiko | `pip install paramiko==2.2.1`
 
 2. **For ESXi / vCenter Only**, install the following package:  
  Note: vCenter deployments are supported for Nuage software version 4.0R7 and greater.  
