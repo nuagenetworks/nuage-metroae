@@ -94,7 +94,7 @@ To enable passwordless SSH access, public/private SSH keys must be created and d
    Execute the command: `ssh-keygen`.  
 3. Follow the prompts. It is normal to accept all defaults.  
 4. Copy the SSH public key to the MetroAG User's authorized keys file.  
-   Execute the command: `ssh-copy-id localhost`  
+   Execute the command: `ssh-copy-id localhost`.  
 #### For Root User  
 1. Login to the Ansible Host as the Root User.  
 2. Generate SSH keys.  
