@@ -1,34 +1,30 @@
 # Setting Up the Nuage MetroAG Ansible Environment
 (4 minute read)  
-## Prerequisites / Requirements
-Before you begin working with MetroAG, please take these requirements and restrictions into account. Also, review [README.md](/README.md) for a list of supported VCS/VNS components, as well as supported target server types.
-* The *Ansible Host* must run el7 Linux host, e.g. CentOS 7.\* or RHEL 7.\*.
-* The *MetroAG User* setting up the environment must be the root user or have *sudo* privileges.
-* Password-less SSH access from the *Ansible Host* to the *Target Server* must be configured.  
 
-### Nomenclature
-**Ansible Host**: Host on which MetroAG is run. Ansible and the required packages are installed on this host. MetroAG is designed to run on CentOS 7.x and RHEL 7.x systems.  
-**MetroAG User**: The user running MetroAG to deploy and upgrade Nuage VSP components. The MetroAG User is either the root user on the *Ansible Host* or a user who has sudo privileges.  
-**Target Server**: Hypervisor on which one or more VSP components (VSD, VSC etc.) are installed as VMs. MetroAG supports all Target Server types supported by the VSP platform: KVM and VMware hypervisors. Each deployment may contain more than one Target Server.
+## Prerequisites / Requirements  
+Before working with MetroAG, please read [README.md](/README.md) for a list of supported VCS/VNS components, supported target server types, and other requirements. 
 
-The main steps for setting up your Nuage MetroAG environment are:  
+## Main steps for setting up the environment  
 [1. Clone Nuage MetroAG repository](#1-clone-nuage-metroag-repository)  
 [2. Set up Ansible host](#2-set-up-ansible-host)  
-[3. Generate SSH keys](#3-generate-ssh-keys)  
+[3. Enable SSH Access](#3-enable-ssh-access)  
 [4. Install ovftool (for VMware only)](#4-install-ovftool-for-vmware-only)  
 
-## 1. Clone Nuage MetroAG Repository
-Install a copy of the Nuage MetroAG repository onto the Ansible Host. Nuage MetroAG is available on [GitHub.com](https://github.com/nuagenetworks/nuage-metro). From the website, you can download a zip of the archive.
+### 1. Clone Nuage MetroAG Repository
+The Ansible Host must run el7 Linux host (CentOS 7.* or RHEL 7.*). Using one of the following two methods install a copy of the Nuage MetroAG repository onto the Ansible Host. 
+#### Method One  
+Download a zip of the Nuage MetroAG archive from [GitHub.com](https://github.com/nuagenetworks/nuage-metro), and install it onto the Ansible Host.
 
-Alternatively on your Ansible deployment host, you can execute
+#### Method Two  
+On the Ansible Host, execute the following commands:  
 ```
 yum install -y git
 git clone https://github.com/nuagenetworks/nuage-metro
 ```
-## 2. Set Up Ansible Host
+### 2. Set Up Ansible Host
 Prior to running MetroAG, use one of the two methods below to install the required packages onto the Ansible Host.
 
-### Set Up Ansible Host Automatically (recommended)
+#### Method One: Set Up Ansible Host Automatically (recommended)
 *metro-setup.sh* is a script provided with the MetroAG code, which installs the packages and modules required for MetroAG. If any of the packages or modules are already present, the script does not upgrade or overwrite them. The script can also be run multiple times without affecting the system. The sample below is an example and may not reflect the most recent software.
 ```
 [JohnDoe@metroag-host ~]$ sudo ./metro-setup.sh
@@ -58,7 +54,7 @@ Setup complete!
 ```
 The script writes a detailed log into *metro-setup.log*.
 
-### Set Up Ansible Host Manually
+#### Method Two: Set Up Ansible Host Manually
 1. Install the following packages and modules for all setups:
 
 Package or Module | Command   
@@ -90,19 +86,28 @@ Module | Command
  -----| ------  
  shade python | `pip install shade`
 
-## 3. Generate SSH Keys
- To enable passwordless SSH access, public/private SSH keys must be created and distributed for the MetroAG and root users. This can be done as follows:
- 1. Login to the Ansible Host as the MetroAG User.
- 2. Execute the command: `ssh-keygen`
- 3. Follow the prompts. It is normal to accept all defaults.
- 4. Copy the SSH public key to the MetroAG User's authorized keys file.
- Repeat steps 1 through 4 for the root user.
- 5. Execute the command: `ssh-copy-id root@localhost` to set passwordless SSH for Ansible Host root user on the Ansible Host
- 6. Execute the command: `ssh-copy-id localhost` to set passwordless ssh for the MetroAg User on the Ansible Host
- 7. Execute the command: `ssh-copy-id root@<target_server>` to set up passwordless SSH to target_server. Repeat for every target server.
- 8. Enter the MetroAG User's password, if prompted.
-
-## 4. Install ovftool (for VMware only)
+### 3. Enable SSH Access  
+To enable passwordless SSH access, public/private SSH keys must be created and distributed for the MetroAG User and root users. The MetroAG User must be the root user or have *sudo* privileges.  
+#### For MetroAG User
+1. Login to the Ansible Host as the MetroAG User.  
+2. Generate SSH keys.  
+   Execute the command: `ssh-keygen`.  
+3. Follow the prompts. It is normal to accept all defaults.  
+4. Copy the SSH public key to the MetroAG User's authorized keys file.  
+   Execute the command: `ssh-copy-id localhost`  
+#### For Root User  
+1. Login to the Ansible Host as the Root User.  
+2. Generate SSH keys.  
+   Execute the command: `ssh-keygen`.  
+3. Follow the prompts. It is normal to accept all defaults.  
+4. Copy the SSH public key to the Root User's authorized keys file.  
+   Execute the command: `ssh-copy-id root@localhost`.   
+#### For Target Servers
+1. Copy the SSH public key to the Target Server's authorized keys file.   
+   Execute the command: `ssh-copy-id root@<target_server>`. Replace `<target_server>` with the actual IP address.  
+2. Repeat for every target server.
+   
+### 4. Install ovftool (for VMware only)
  If you are installing VSP components in a VMware environment (ESXi/vCenter) you will also need to download and install the [ovftool](https://www.vmware.com/support/developer/ovf/) from VMware. MetroAG uses ovftool for OVA operations.
 
 ## Next Steps
