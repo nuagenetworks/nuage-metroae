@@ -13,32 +13,46 @@ nuage_upgrade: false
 target_server_username: {{ target_server_username | default('root') }}
 ansible_sudo_username: {{ ansible_sudo_username | default('root') }}
 user_ssh_pub_key: {{ user_ssh_pub_key | default('~/.ssh/id_rsa.pub') }}
+
 vsd_fqdn: {{ vsd_fqdn_global | default('NONE') }}
+{% if myvsds is defined and myvsds %}
+{% if myvsds|length == 3 %}
+vsd_sa_or_ha: ha
+{% else %}
+vsd_sa_or_ha: sa
+{% endif %}
+{% endif %}
+
 mgmt_bridge: {{ mgmt_bridge | default('NONE') }}
 data_bridge: {{ data_bridge | default('NONE') }}
 access_bridge: {{ access_bridge | default('NONE') }}
 images_path: {{ images_path | default('NONE') }}
 ansible_deployment_host: {{ ansible_deployment_host|default('127.0.0.1') }}
 vsdbackup_dir: {{ vsdbackup_path|default('/tmp/vdsbackup') }}
+
+vsc_command_timeout_seconds: "{{ vsc_command_timeout_seconds|default(180) }}"
+vsc_scp_timeout_seconds: "{{ vsc_scp_timeout_seconds|default(720) }}"
+
+{% if ntp_server_list  is defined %}
 ntp_server_list:
 {% for server in ntp_server_list %}
   - {{ server }}
 {% endfor %}
+{% endif %}
+
+{% if dns_server_list  is defined %}
 dns_server_list:
 {% for server in dns_server_list %}
   - {{ server }}
 {% endfor %}
-dns_domain: {{ dns_domain }}
+{% endif %}
+
+dns_domain: {{ dns_domain | default('localdomain') }}
 timezone: {{ timezone | default('US/Pacific') }}
 yum_proxy: "{{ yum_proxy | default('NONE') }}"
 yum_update: {{ yum_update | default(True) }}
 yum_pin: {{ yum_pin | default(True) }}
 
-{% if vsd_sa_or_ha is defined %}
-vsd_sa_or_ha: {{ vsd_sa_or_ha }}
-{% else %}
-vsd_sa_or_ha: ha
-{% endif %}
 upgrade_major_or_minor: {{ upgrade_major_or_minor }}
 upgrade_from_version: {{ upgrade_from_version }}
 
@@ -73,11 +87,9 @@ vcenter:
   datacenter: {{ vcenter.datacenter | default('NONE') }}
   cluster: {{ vcenter.cluster | default('NONE') }}
   datastore: {{ vcenter.datastore | default('NONE') }}
+  resource_pool: {{ vcenter.resource_pool | default('NONE') }}
   ovftool: {{ vcenter.ovftool | default('NONE') }}
 {% endif %}
-
-vsc_command_timeout_seconds: "{{ vsc_command_timeout_seconds|default(180) }}"
-vsc_scp_timeout_seconds: "{{ vsc_scp_timeout_seconds|default(180) }}"
 
 metro_reports_dir: {{ metro_reports_dir | default(playbook_dir + "/reports") }}
 failure_report_path: {{ playbook_dir  + "/failure_report.log" }}
