@@ -43,17 +43,17 @@ def check_buildvars(filepath):
     config = yaml.load(fil)
     if 'myvsds' in config:
         num_vsds = len(config['myvsds'])
-        if (num_vsds != 3) or (num_vsds != 1):
+        if (num_vsds != 3) and (num_vsds != 1):
             module.fail_json(
                 msg="FAIL: You must define exactly 1 or exactly 3 vsds")
     if 'myvscs' in config:
         num_vscs = len(config['myvscs'])
-        if (num_vscs != 3) or (num_vscs != 1):
+        if (num_vscs != 2) and (num_vscs != 1):
             module.fail_json(
                 msg="FAIL: You must define exactly 1 or exactly 2 vscs")
     if 'myvstats' in config:
         num_vstats = len(config['myvstats'])
-        if (num_vstats != 3) or (num_vstats != 1):
+        if (num_vstats != 3) and (num_vstats != 1):
             module.fail_json(
                 msg="FAIL: You must define exactly 1 or exactly 3 vstats")
     hostnames = []
