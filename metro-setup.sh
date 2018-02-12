@@ -111,7 +111,7 @@ function printn() {
 # Check if an executable exists
 # param: executable
 ###############################################################################
-function exists() { 
+function exists() {
   printn "Checking if $1 exists... ";
   which "*" &> $LOG;
   check_retcode $?;
@@ -217,10 +217,12 @@ function main() {
   yum_install "epel-release"
   yum_install "python2-pip"
   yum_install "python-devel.x86_64"
+  yum_install "python-jmespath"
   yum_install "openssl-devel"
   yum_install "@Development tools"
   yum_install "sshpass"
   yum_install "git"
+  yum_install "python-netaddr"
 
   # pip modules
   pip_install "ansible==2.4.0"

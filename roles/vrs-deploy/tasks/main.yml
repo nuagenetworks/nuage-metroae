@@ -3,73 +3,143 @@
   remote_user: "{{ target_server_username }}"
   action: setup
 
-- name: Create temporary directory
-  remote_user: "{{ target_server_username }}"
-  file: path={{ temp_dir }}/{{ inventory_hostname }} state=directory
+- name: Set openvswitch file on RedHat OS family distros
+  set_fact:
+    openvswitch_file: "/etc/default/openvswitch"
+  when: ansible_os_family == "RedHat"
 
-- name: Copy VRS packages to temporary directory for Redhat OS Family Distros
-  remote_user: "{{ target_server_username }}"
-  copy: src={{ vrs_package_path }}/{{ item }} dest={{ temp_dir }}/{{ inventory_hostname }}/{{ item }}
-  with_items: "{{ vrs_package_file_name_list }}"
+- name: Set openvswitch file on Debian OS family distros
+  set_fact:
+    openvswitch_file: "/etc/default/openvswitch-switch"
+  when: ansible_os_family == "Debian"
 
-- name: Install Nuage OpenVSwitch packages on Debian OS family distros
+- name: Check whether active controller address is already configured
+  command: grep -Fq "ACTIVE_CONTROLLER={{ active_controller_addr }}" {{ openvswitch_file }}
   remote_user: "{{ target_server_username }}"
-  apt: deb={{ temp_dir }}/{{ inventory_hostname }}/{{ item }} state=present
+  register: active_address_result
+  ignore_errors: True
+
+- name: Check whether standby controller address is already configured
+  command: grep -Fq "STANDBY_CONTROLLER={{ standby_controller_addr }}" {{ openvswitch_file }}
+  remote_user: "{{ target_server_username }}"
+  register: standby_address_result
+  ignore_errors: True
+
+- name: Get controller connection info
+  shell: "ovs-vsctl show | grep -Pzl '(?s)Controller \"ctrl(1|2)\"\\n *target: \"tcp:({{ item }}):6633\"\\n *role: (master|slave)\\n *is_connected: true'"
   with_items:
-   - "{{ vrs_package_file_name_list }}"
-  when: ansible_os_family == "Debian" 
-
-- name: Install Nuage OpenVSwitch packages on RedHat OS family distros
+    - "{{ active_controller_addr }}"
+    - "{{ standby_controller_addr }}"
+  register: command_result
   remote_user: "{{ target_server_username }}"
-  yum: name={{ temp_dir }}/{{ inventory_hostname }}/{{ item }} state=present
-  with_items:
-   - "{{ vrs_package_file_name_list }}"
-  when: ansible_os_family == "RedHat"
+  ignore_errors: yes
+  changed_when: false
 
-- name: Remove temporary directory
-  remote_user: "{{ target_server_username }}"
-  file: path={{ temp_dir }}/{{ inventory_hostname }} state=absent
+- name: Set if skipping VRS deploy
+  set_fact: skip_vrs_deploy="{{ command_result is defined and command_result.results[0].rc == 0 and
+                                active_address_result is defined and active_address_result.rc == 0 and
+                                standby_address_result is defined and standby_address_result.rc == 0 }}"
 
-- name: Update active controller in /etc/default/openvswitch file on RedHat OS family distros
-  remote_user: "{{ target_server_username }}"
-  lineinfile:
-    dest: /etc/default/openvswitch
-    regexp: "^ACTIVE_CONTROLLER="
-    line: "ACTIVE_CONTROLLER={{ active_controller_addr }}"
-  when: ansible_os_family == "RedHat"
+- name: Display if skipping VRS deploy
+  debug:
+    msg:
+      - "*************************************************"
+      - "Skipping VRS deploy because it is already running"
+      - "*************************************************"
+  when: skip_vrs_deploy
 
-- name: Update active controller in /etc/default/openvswitch-switch file on Debian OS family distros
-  remote_user: "{{ target_server_username }}"
-  lineinfile:
-    dest: /etc/default/openvswitch-switch
-    regexp: "^ACTIVE_CONTROLLER="
-    line: "ACTIVE_CONTROLLER={{ active_controller_addr }}"
-  when: ansible_os_family == "Debian"
+- block:
 
-- name: Update standby controller in /etc/default/openvswitch file on RedHat OS family distros
-  remote_user: "{{ target_server_username }}"
-  lineinfile:
-    dest: /etc/default/openvswitch
-    regexp: "^STANDBY_CONTROLLER="
-    line: "STANDBY_CONTROLLER={{ standby_controller_addr }}"
-  when: ansible_os_family == "RedHat"
+  - name: Create temporary directory
+    remote_user: "{{ target_server_username }}"
+    file: path={{ temp_dir }}/{{ inventory_hostname }} state=directory
 
-- name: Update standby controller in /etc/default/openvswitch-switch file on Debian OS family distros
-  remote_user: "{{ target_server_username }}"
-  lineinfile:
-    dest: /etc/default/openvswitch-switch
-    regexp: "^STANDBY_CONTROLLER="
-    line: "STANDBY_CONTROLLER={{ standby_controller_addr }}"
-  when: ansible_os_family == "Debian"
+  - name: Copy VRS packages to temporary directory
+    remote_user: "{{ target_server_username }}"
+    copy: src={{ vrs_package_path }}/{{ item }} dest={{ temp_dir }}/{{ inventory_hostname }}/{{ item }}
+    with_items: "{{ vrs_package_file_name_list }}"
 
-- name: Restart OpenVSwitch Service on RedHat OS family distros
-  remote_user: "{{ target_server_username }}"
-  service: name=openvswitch state=restarted
-  when: ansible_os_family == "RedHat"
+  - name: Copy Selinux packages to temporary directory for RHEL7 and Centos7
+    remote_user: "{{ target_server_username }}"
+    copy: src={{ selinux_package_path }}/{{ item }} dest={{ temp_dir }}/{{ inventory_hostname }}/{{ item }}
+    with_items: "{{ selinux_package_file_name_list }}"
+    when: selinux_package_path is defined and selinux_package_path != 'None'
 
-- name: Restart OpenVSwitch Service on Debian OS family distros
-  remote_user: "{{ target_server_username }}"
-  service: name=nuage-openvswitch-switch state=restarted
-  when: ansible_os_family == "Debian"
+  - name: Install Nuage OpenVSwitch packages on Debian OS family distros
+    remote_user: "{{ target_server_username }}"
+    apt: deb={{ temp_dir }}/{{ inventory_hostname }}/{{ item }} state=present
+    with_items:
+     - "{{ vrs_package_file_name_list }}"
+    when: ansible_os_family == "Debian"
 
-- pause: seconds=20
+  - name: Install Nuage OpenVSwitch packages on RedHat OS family distros
+    remote_user: "{{ target_server_username }}"
+    yum: name={{ temp_dir }}/{{ inventory_hostname }}/{{ item }} state=present
+    with_items:
+     - "{{ vrs_package_file_name_list }}"
+    when: ansible_os_family == "RedHat"
+
+  - name: Install Selinux package for RHEL7 and Centos7
+    remote_user: "{{ target_server_username }}"
+    yum: name={{ temp_dir }}/{{ inventory_hostname }}/{{ item }} state=present
+    with_items:
+     - "{{ selinux_package_file_name_list }}"
+    when:
+      - ansible_os_family == "RedHat"
+      - ansible_distribution_major_version == '7'
+      - selinux_package_path is defined and selinux_package_path != 'None'
+
+  - block:
+    - name: Copy DKMS packages to temporary directory for RHEL and Ubuntu14
+      remote_user: "{{ target_server_username }}"
+      copy: src={{ dkms_package_path }}/{{ item }} dest={{ temp_dir }}/{{ inventory_hostname }}/{{ item }}
+      with_items: "{{ dkms_package_file_name_list }}"
+  
+    - name: Install Nuage DKMS packages on Debian OS family distros
+      remote_user: "{{ target_server_username }}"
+      apt: deb={{ temp_dir }}/{{ inventory_hostname }}/{{ item }} state=present
+      with_items:
+       - "{{ dkms_package_file_name_list }}"
+      when: 
+        - ansible_os_family == "Debian"
+        - vrs_arch == "u14.04"
+
+    - name: Install Nuage DKMS packages on RedHat OS family distros
+      remote_user: "{{ target_server_username }}"
+      yum: name={{ temp_dir }}/{{ inventory_hostname }}/{{ item }} state=present
+      with_items:
+       - "{{ dkms_package_file_name_list }}"
+      when: ansible_os_family == "RedHat"
+    when: dkms_install
+
+  - name: Remove temporary directory
+    remote_user: "{{ target_server_username }}"
+    file: path={{ temp_dir }}/{{ inventory_hostname }} state=absent
+
+  - name: Update active controller in {{ openvswitch_file }} file
+    remote_user: "{{ target_server_username }}"
+    lineinfile:
+      dest: "{{ openvswitch_file }}"
+      regexp: "^ACTIVE_CONTROLLER="
+      line: "ACTIVE_CONTROLLER={{ active_controller_addr }}"
+
+  - name: Update standby controller in {{ openvswitch_file }} file
+    remote_user: "{{ target_server_username }}"
+    lineinfile:
+      dest: "{{ openvswitch_file }}"
+      regexp: "^STANDBY_CONTROLLER="
+      line: "STANDBY_CONTROLLER={{ standby_controller_addr }}"
+
+  - name: Restart OpenVSwitch Service on RedHat OS family distros
+    remote_user: "{{ target_server_username }}"
+    service: name=openvswitch state=restarted
+    when: ansible_os_family == "RedHat"
+
+  - name: Restart OpenVSwitch Service on Debian OS family distros
+    remote_user: "{{ target_server_username }}"
+    service: name=nuage-openvswitch-switch state=restarted
+    when: ansible_os_family == "Debian"
+
+  - pause: seconds=20
+
+  when: not skip_vrs_deploy
