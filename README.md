@@ -1,20 +1,21 @@
 # Nuage Networks MetroAG Automation EnGine (AG)
-## Overview
-MetroAG is an automation engine used for deploying and upgrading Nuage Networks components.
-After specifying the individual details for your target platform, MetroAG (leveraging Ansible playbooks and roles) sets up the environment as specified. Alternatively, the environment could be upgraded, rolled-back, health-checked, etc.
+(4 minute read)  
 
-## Supported Nuage VSP Components for Deployment
-The following Nuage VSP components are supported for deployment using MetroAG. These are all deployed as VMs on a given _target server_.
+MetroAG is an automation engine that deploys and upgrades Nuage Networks components.
+After you specify the individual details of your target platform, MetroAG (leveraging Ansible playbooks and roles) sets up the environment as specified. MetroAG can also upgrade, roll-back, and health-check the environment.
+
+## Supported Components for Deployment
+MetroAG supports deployment of the following components as VMs on the target server. The same target server types are supported as the VSP platform.
 
 Component | KVM (el7)<br>Stand-alone (SA) | KVM (el7)<br>Clustered (HA) | ESXi<br>Stand-alone (SA) | ESXi<br>Clustered (HA)
 ------- | :---: | :---: | :----: | :---:
 VSD (Virtualized Services Directory) | X | X | X | X
 VSTAT (Elastic Backend for statistics) | X | X | X | X
 VSC (Virtualized Services Controller) | X | X | X | X
-VCIN (vCenter Integration Node | X |  | X |
+VCIN (vCenter Integration Node) | X |  | X |
 VNSUTIL<br>(Virtualized Network Services-Utility) | X |  | X |
 
-Dataplane components are as follows (installed as package/agent):
+#### Supported Dataplane components (installed as package/agent):
 
 Component |  KVM <br>(el6, el7,ubuntu 14.04/16.04) | ESXi
 --------- | :----: | -------
@@ -22,13 +23,13 @@ VRS (Virtual Routing & Switching) | X | (upgrade only)
 Libnetwork on VRS nodes  | X |
 NSG-V (Network Services Gateway-Virtual) |  X |
 
-Auxiliary services are also provided:
+#### Provided Auxiliary Services
 * DNS/NTP
 
 ![topology](topology.png)
 
-## Supported Nuage VSP Components for Upgrade
-The following Nuage VSP components are supported for upgrade using MetroAG.
+## Supported Components for Upgrade
+MetroAG supports upgrade of the following Nuage VSP components.
 
 Component | KVM (el7)<br> SA | KVM (el7)<br> HA | ESXi<br>SA | ESXi<br>HA
 ------- | :---: | :---: | :----: | :---:
@@ -57,15 +58,18 @@ Destroy | removes component(s) from the infrastructure |
 Upgrade | upgrades component(s) from one release to another |
 Rollback | restores component(s) to their previous version (if an upgrade fails) |
 
-## Getting Started
+## Nomenclature  
+**Ansible Host**: The host where MetroAG runs. Ansible and the required packages are installed on this host. The Ansible Host must run el7 Linux host, e.g. Cent)S 7.* or RHEL 7.*.  
+**MetroAG User**: The user who runs MetroAG to deploy and upgrade components.  
+**Target Server**: The hypervisor on which one or more VSP components are installed as VMs. Each deployment may contain more than one Target Server.  
 
-To get started, you would typically go through these steps:
+## Main Steps for Using MetroAG
 
-1. [Setup](Documentation/SETUP.md) your Nuage MetroAG Ansible environment on the host on which MetroAG is to be run.
+1. [Setup](Documentation/SETUP.md) the Ansible Host.
 
-2. [Customize](Documentation/BUILD.md) variable files so they match your network topology and describe your NuageNetworks deployment specifics.
+2. [Customize](Documentation/BUILD.md) variable files to match your network topology, and describe your NuageNetworks deployment specifics.
 
-3. [Deploy](Documentation/DEPLOY.md) the various components (if they have not previously been deployed), perform an [upgrade](Documentation/UPGRADE.md), or run a health check on your system.
+3. [Deploy](Documentation/DEPLOY.md) the new components, [upgrade](Documentation/UPGRADE.md) existing components, or run a health check on your system.
 
 4. If things did not work out as expected, [destroy](Documentation/DESTROY.md) or [rollback](Documentation/ROLLBACK.md) your environment.
 
