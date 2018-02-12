@@ -1,13 +1,10 @@
 ---
 - name: Wait for DNS Utility VM ssh to be ready
-  local_action:
-    module: wait_for
-    port: "22"
-    host: "{{ mgmt_ip }}"
-    search_regex: OpenSSH
-    delay: 1
-  delegate_to: "{{ target_server }}"
-  remote_user: "{{ target_server_username }}"
+  include_role:
+    name: common
+    tasks_from: wait-for-ssh
+  vars:
+    ssh_host: "{{ mgmt_ip }}"
 
 - name: stop and flush firewall
   service: name=firewalld state=stopped
@@ -35,18 +32,14 @@
       {% endfor %}
   remote_user: "{{ target_server_username }}"
 
-- name: Delete the localtime file
-  file:
-    path: /etc/localtime
-    state: absent
+- name: Install ntp client on {{ target_server }}
+  yum: name=ntp state=latest
   remote_user: "{{ target_server_username }}"
 
-- name: Create the localtime symlink
-  file:
-    src: /usr/share/zoneinfo/{{ timezone }}
-    dest: /etc/localtime
-    state: link
-  remote_user: "{{ target_server_username }}"
+- name: Configure ntpd and ntpdate and local time zone
+  include_role:
+    name: common
+    tasks_from: linux-ntp-sync
 
 - name: restart network service
   service: name=network state=restarted
@@ -108,43 +101,6 @@
 
 - name: Create /var/named/{{ mgmt_reverse }}.in-addr.arpa on {{ target_server }}
   template: src=mgmt.in-addr.arpa.j2 backup=no dest=/var/named/{{ mgmt_reverse }}.in-addr.arpa owner=root group=named mode=0640
-  remote_user: "{{ target_server_username }}"
-
-- name: Install ntp client on {{ target_server }}
-  yum: name=ntp state=latest
-  remote_user: "{{ target_server_username }}"
-
-- name: Stop the ntpd service if running
-  service: name=ntpd state=stopped
-  remote_user: "{{ target_server_username }}"
-
-- name: Manually sync time with ntp server
-  command: ntpdate -u pool.ntp.org
-  remote_user: "{{ target_server_username }}"
-
-- name: enable ntp server for automatic start
-  service: name=ntpd enabled=on
-  remote_user: "{{ target_server_username }}"
-
-- name: start ntp
-  service: name=ntpd state=restarted
-  remote_user: "{{ target_server_username }}"
-
-- name: check ntp sync state
-  shell: ntpstat | awk 'NR==1{print $1}'
-  register: sync_status
-  until: sync_status.stdout == "synchronised"
-  retries: 9
-  delay: 10
-  remote_user: "{{ target_server_username }}"
-- debug: var=sync_status
-
-- name: enable named server
-  service: name=named enabled=on
-  remote_user: "{{ target_server_username }}"
-
-- name: start named server
-  service: name=named state=restarted
   remote_user: "{{ target_server_username }}"
 
 - name: start named server

@@ -11,14 +11,27 @@ import argparse
 
 def install_license(csp_user, vsd_license):
     csproot = csp_user
-    # Clear any existing license
-    installed_licenses = csproot.licenses.get()
-    for lic in installed_licenses:
-        lic.delete()
 
     # Push the license
     test_license = NULicense(license=vsd_license)
     csproot.create_child(test_license)
+
+
+def is_license_already_installed(csp_user, vsd_license):
+    csproot = csp_user
+    license_unique_id = get_license_unique_id(vsd_license)
+
+    installed_licenses = csproot.licenses.get()
+    for lic in installed_licenses:
+        if lic.unique_license_identifier == license_unique_id:
+            return True
+
+    return False
+
+
+def get_license_unique_id(vsd_license):
+    stripped = vsd_license.strip()
+    return unicode(stripped[0:16] + stripped[-16:])
 
 
 def create_proxy_user(session):
@@ -42,10 +55,25 @@ def create_proxy_user(session):
         csprootgroup.assign([proxy_user, csprootuser], NUUser)
 
 
+def get_nsg_gateway_template(csp_user):
+    csproot = csp_user
+    vns_nsg = zfb_params['vns_nsg']
+    temp_name = vns_nsg.get('nsg_template_name')
+    nsg_temp = csproot.ns_gateway_templates.get_first(
+        "name is '%s'" % temp_name)
+    infra_profile = csproot.infrastructure_gateway_profiles.get_first(
+        "name is '%s'" % vns_nsg.get('name'))
+    if (nsg_temp is None or
+            infra_profile is None or
+            nsg_temp.infrastructure_profile_id != infra_profile.id):
+        nsg_temp = None
+    return nsg_temp
+
+
 def create_nsg_gateway_template(csp_user):
     csproot = csp_user
     vns_nsg = zfb_params['vns_nsg']
-    temp_name = vns_nsg.pop('nsg_template_name')
+    temp_name = vns_nsg.get('nsg_template_name')
     nsg_temp = NUNSGatewayTemplate(name=temp_name)
 
     # Fetch current infra profiles
@@ -170,14 +198,22 @@ if __name__ == '__main__':
         session.start()
         csproot = session.user
     except Exception as e:
-        print("ERROR: Could not establish connection to VSD API using %s" % zfb_params['csp'])
+        print("ERROR: Could not establish connection to VSD API using %s" %
+              zfb_params['csp'])
         print("ERROR: Exception: %s" % e)
         sys.exit(1)
+
     # Create nsg templates and iso file
-    install_license(csproot, vsd_license)
+    if (not is_license_already_installed(csproot, vsd_license)):
+        install_license(csproot, vsd_license)
     create_proxy_user(session)
-    nsg_temp = create_nsg_gateway_template(csproot)
-    vsc_temp = create_vsc_template(csproot)
-    create_nsgv_ports(nsg_temp, vsc_temp)
-    create_nsg_device(csproot, nsg_temp)
+    nsg_temp = get_nsg_gateway_template(csproot)
+    if (nsg_temp is None):
+        nsg_temp = create_nsg_gateway_template(csproot)
+        vsc_temp = create_vsc_template(csproot)
+        create_nsgv_ports(nsg_temp, vsc_temp)
+        create_nsg_device(csproot, nsg_temp)
+    else:
+        print("NSG ALREADY CONFIGURED")
+
     create_iso_file(csproot, nsg_temp, nsgv_path)
