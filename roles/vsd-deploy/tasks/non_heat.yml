@@ -24,7 +24,6 @@
   - name: Read the VSD version
     shell: echo $VSD_VERSION | cut -d . -f 1
     register: vsd_version
-    remote_user: root
 
   - debug: var=vsd_version.stdout verbosity=1
 
@@ -33,18 +32,14 @@
       shell: ssh-keygen -b 2048 -t rsa -f /root/.ssh/id_rsa -q -N ""
       args:
         creates: /root/.ssh/id_rsa
-      remote_user: root
       delegate_to: "{{ item }}"
       with_items: "{{ groups['vsds'] }}"
-      run_once: true
 
     - name: Get generated SSH keys
       shell: cat ~/.ssh/id_rsa.pub
       register: ssh_key_lst
-      remote_user: root
       delegate_to: "{{ item }}"
       with_items: "{{ groups['vsds'] }}"
-      run_once: true
 
     - name: Add SSH keys to authorized_keys file
       shell: "echo {{ item[1].stdout }} >> /root/.ssh/authorized_keys"
@@ -52,26 +47,20 @@
       with_nested:
         - "{{ groups['vsds'] }}"
         - "{{ ssh_key_lst.results }}"
-      run_once: true
-      remote_user: root
     when: vsd_version.stdout | int < 5
   - block:
     - name: Generate SSH keys
       shell: sudo -u vsd ssh-keygen -b 2048 -t rsa -f /home/vsd/.ssh/id_rsa -q -N ""
       args:
         creates: /home/vsd/.ssh/id_rsa
-      remote_user: root
       delegate_to: "{{ item }}"
       with_items: "{{ groups['vsds'] }}"
-      run_once: true
 
     - name: Get generated SSH keys
       shell: cat /home/vsd/.ssh/id_rsa.pub
       register: ssh_key_lst
-      remote_user: root
       delegate_to: "{{ item }}"
       with_items: "{{ groups['vsds'] }}"
-      run_once: true
 
     - name: Add SSH keys to authorized_keys file
       shell: "echo {{ item[1].stdout }} >> /home/vsd/.ssh/authorized_keys"
@@ -79,8 +68,6 @@
       with_nested:
         - "{{ groups['vsds'] }}"
         - "{{ ssh_key_lst.results }}"
-      run_once: true
-      remote_user: root
 
     - name: Change owner and permissions of VSD authorized keys
       file:
@@ -88,12 +75,11 @@
         owner: vsd
         group: hadoopusers
         mode: 0640
-      remote_user: root
       delegate_to: "{{ item }}"
       with_items: "{{ groups['vsds'] }}"
-      run_once: true
     when: vsd_version.stdout | int >= 5
-  when: vsd_sa_or_ha | match('ha')
+  remote_user: root
+  when: vsd_sa_or_ha | match('ha') and inventory_hostname == groups['vsds'][0]
 
 - name: Delete the localtime file
   file:
@@ -225,22 +211,19 @@
   - name: Install VSD software on HA node1 {{groups['vsds'][0]}}
     command: "{{ vsd_node1_install_cmd }}"
     when: inventory_hostname == groups['vsds'][0]
-    remote_user: "root"
 
   - name: Install VSD software on HA node2 {{groups['vsds'][1]}}
     command: "{{ vsd_node2_install_cmd }}"
     when: inventory_hostname == groups['vsds'][1] and not rollback
-    remote_user: "root"
 
   - name: Install VSD software on HA node2 {{groups['vsds'][1]}}
     command: "{{ vsd_node1_rollback }}"
     when: inventory_hostname == groups['vsds'][1] and rollback
-    remote_user: "root"
 
   - name: Install VSD software on HA node3 {{groups['vsds'][2]}}
     command: "{{ vsd_node3_install_cmd }}"
     when: inventory_hostname == groups['vsds'][2]
-    remote_user: "root"
+  remote_user: "root"
   when: vsd_sa_or_ha | match('ha')
 
 - name: Set XMPP connection to allow both clear and TLS

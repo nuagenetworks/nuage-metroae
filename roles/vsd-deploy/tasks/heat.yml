@@ -155,18 +155,14 @@
       shell: ssh-keygen -b 2048 -t rsa -f /root/.ssh/id_rsa -q -N ""
       args:
         creates: /root/.ssh/id_rsa
-      remote_user: root
       delegate_to: "{{ item }}"
       with_items: "{{ groups['vsds'] }}"
-      run_once: true
 
     - name: Get generated SSH keys
       shell: cat ~/.ssh/id_rsa.pub
       register: ssh_key_lst
-      remote_user: root
       delegate_to: "{{ item }}"
       with_items: "{{ groups['vsds'] }}"
-      run_once: true
 
     - name: Add SSH keys to authorized_keys file
       shell: "echo {{ item[1].stdout }} >> /root/.ssh/authorized_keys"
@@ -174,27 +170,23 @@
       with_nested:
         - "{{ groups['vsds'] }}"
         - "{{ ssh_key_lst.results }}"
-      remote_user: root
-      run_once: true
-    when: vsd_version.stdout | int < 5
+
+    remote_user: root
+    when: vsd_version.stdout | int < 5 and inventory_hostname == groups['vsds'][0]
 
   - block:
     - name: Generate SSH keys
       shell: sudo -u vsd ssh-keygen -b 2048 -t rsa -f /home/vsd/.ssh/id_rsa -q -N ""
       args:
         creates: /home/vsd/.ssh/id_rsa
-      remote_user: root
       delegate_to: "{{ item }}"
       with_items: "{{ groups['vsds'] }}"
-      run_once: true
 
     - name: Get generated SSH keys
       shell: cat /home/vsd/.ssh/id_rsa.pub
       register: ssh_key_lst
-      remote_user: root
       delegate_to: "{{ item }}"
       with_items: "{{ groups['vsds'] }}"
-      run_once: true
 
     - name: Add SSH keys to authorized_keys file
       shell: "echo {{ item[1].stdout }} >> /home/vsd/.ssh/authorized_keys"
@@ -202,8 +194,6 @@
       with_nested:
         - "{{ groups['vsds'] }}"
         - "{{ ssh_key_lst.results }}"
-      remote_user: root
-      run_once: true
 
     - name: Change owner and permissions of VSD authorized keys
       file:
@@ -211,12 +201,11 @@
         owner: vsd
         group: hadoopusers
         mode: 0640
-      remote_user: root
       delegate_to: "{{ item }}"
       with_items: "{{ groups['vsds'] }}"
-      run_once: true
     when: vsd_version.stdout | int >= 5
-  when: vsd_sa_or_ha | match('ha')
+  remote_user: root
+  when: vsd_sa_or_ha | match('ha') and inventory_hostname == groups['vsds'][0]
 
 - name: Delete the localtime file
   file:
