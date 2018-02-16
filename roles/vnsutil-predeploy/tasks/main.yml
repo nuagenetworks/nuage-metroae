@@ -1,25 +1,20 @@
 ---
-- name: Ping VNSUTIL hostname
-  command: ping -c 1 {{ hostname }}
-  ignore_errors: yes
-  register: ping_result
-  delegate_to: localhost
+- include_role:
+    name: check-node-reachability
 
-- name: Assert no response to ping of VNSUTIL hostname
-  assert:
-    that: "ping_result.rc > 0"
-    msg:  "Someone responded to ping of VNSUTIL hostname. Quitting."
+- name: Get VNSUTIL directory stat
+  stat:
+    path: /opt/nuage
+  remote_user: root
+  register: vnsutil_dir
+  when: node_reachable
 
-- name: Ping VNSUTIL IP address
-  command: ping -c 1 {{ mgmt_ip }}
-  ignore_errors: yes
-  register: ping_result
-  delegate_to: localhost
-
-- name: Assert no response to ping of VNSUTIL IP address
-  assert:
-    that: "ping_result.rc > 0"
-    msg:  "Someone responded to ping of VNSUTIL IP address. Quitting."
+- name: Set fact for VNSUTIL present
+  set_fact:
+    vnsutil_present: "{{ vnsutil_dir is defined and
+                         vnsutil_dir.stat is defined and
+                         vnsutil_dir.stat.isdir is defined and
+                         vnsutil_dir.stat.isdir }}"
 
 - include: kvm.yml
   when: target_server_type | match("kvm")
@@ -31,5 +26,5 @@
   when: target_server_type | match("vcenter")
   static: no
   tags:
-    - nsgv
-    - nsgv-predeploy
+    - vnsutil
+    - vnsutil-predeploy

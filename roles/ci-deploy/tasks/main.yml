@@ -11,328 +11,260 @@
   register: ci_server
   delegate_to: localhost
 
-- name: Set the network names
-  set_fact:
-    net_name1: "{{ ci_server['ansible_facts']['openstack_servers'][0]['networks'].keys()[0] }}"
-    net_name2: "{{ ci_server['ansible_facts']['openstack_servers'][0]['networks'].keys()[1] }}"
-  run_once: true
-
 - block:
-    - name: Set the network name to find out correct CI slave temp file
-      set_fact:
-        net_name_temp: "{{ net_name2 }}"
-  when: net_name1 == 'OC_JEN_FrontEnd'
-  run_once: true
 
-- block:
+  - name: Set the network names
+    set_fact:
+      net_name1: "{{ ci_server['ansible_facts']['openstack_servers'][0]['networks'].keys()[0] }}"
+      net_name2: "{{ ci_server['ansible_facts']['openstack_servers'][0]['networks'].keys()[1] }}"
+
+  - name: Set the network name to find out correct CI slave temp file
+    set_fact:
+      net_name_temp: "{{ net_name2 }}"
+    when: net_name1 == 'OC_JEN_FrontEnd'
+
   - name: Set the network name to find out correct CI slave temp file
     set_fact:
       net_name_temp: "{{ net_name1 }}"
-  when: net_name2 == 'OC_JEN_FrontEnd'
-  run_once: true
+    when: net_name2 == 'OC_JEN_FrontEnd'
+
+  - name: get the centos 7 vrs ip temp file contents
+    command: cat "/tmp/{{ net_name_temp }}_vrs_ip_centos7"
+    register: centos7_vrs_ip
+
+  - name: register target_server
+    set_fact :
+      target_server: "{{ centos7_vrs_ip.stdout }}"
+
+  - name: get the u14 vrs ip temp file contents
+    command: cat "/tmp/{{ net_name_temp }}_vrs_ip_u14"
+    register: u14_vrs_ip
+
+  - name: register u14 vrs target_server
+    set_fact :
+      vrs_u14_target_server: "{{ u14_vrs_ip.stdout }}"
 
 
-- name: get the centos 7 vrs ip temp file contents
-  command: cat "/tmp/{{ net_name_temp }}_vrs_ip_centos7"
-  register: centos7_vrs_ip
-  run_once: true
-  delegate_to: localhost
+  - name: get the centos 7 vrs name temp file contents
+    command: cat "/tmp/{{ net_name_temp }}_vrs_name_centos7"
+    register: centos7_vrs_name
 
-- name: register target_server
-  set_fact :
-    target_server: "{{ centos7_vrs_ip.stdout }}"
-  run_once: true
-  delegate_to: localhost
+  - name: register centos 7 vrs host name
+    set_fact :
+      target_server_name: "{{ centos7_vrs_name.stdout }}"
 
+  - name: get the u14 vrs name temp file contents
+    command: cat "/tmp/{{ net_name_temp }}_vrs_name_u14"
+    register: u14_vrs_name
 
-- name: get the u14 vrs ip temp file contents
-  command: cat "/tmp/{{ net_name_temp }}_vrs_ip_u14"
-  register: u14_vrs_ip
-  run_once: true
-  delegate_to: localhost
+  - name: register u14 vrs target_server name
+    set_fact :
+      vrs_u14_target_server_name: "{{ u14_vrs_name.stdout }}"
 
-- name: register u14 vrs target_server
-  set_fact :
-    vrs_u14_target_server: "{{ u14_vrs_ip.stdout }}"
-  run_once: true
-  delegate_to: localhost
-
-
-- name: get the centos 7 vrs name temp file contents
-  command: cat "/tmp/{{ net_name_temp }}_vrs_name_centos7"
-  register: centos7_vrs_name
-  run_once: true
-  delegate_to: localhost
-
-- name: register centos 7 vrs host name
-  set_fact :
-    target_server_name: "{{ centos7_vrs_name.stdout }}"
-  run_once: true
-  delegate_to: localhost
-
-- name: get the u14 vrs name temp file contents
-  command: cat "/tmp/{{ net_name_temp }}_vrs_name_u14"
-  register: u14_vrs_name
-  run_once: true
-  delegate_to: localhost
-
-- name: register u14 vrs target_server name
-  set_fact :
-    vrs_u14_target_server_name: "{{ u14_vrs_name.stdout }}"
-  run_once: true
-  delegate_to: localhost
-
-- name: get the u16 vrs ip temp file contents
-  command: cat /tmp/{{ net_name_temp }}_vrs_ip_u16
-  register: u16_vrs_ip
-  run_once: true
-  delegate_to: localhost
-  ignore_errors: yes
-
-- name: register u16 vrs target_server
-  set_fact :
-    vrs_u16_target_server: "{{ u16_vrs_ip.stdout }}"
-  run_once: true
-  delegate_to: localhost
-  ignore_errors: yes
-
-- name: get the u16 vrs name temp file contents
-  command: cat "/tmp/{{ net_name_temp }}_vrs_name_u16"
-  register: u16_vrs_name
-  run_once: true
-  delegate_to: localhost
-  ignore_errors: yes
-
-- name: register u16 vrs target_server name
-  set_fact :
-    vrs_u16_target_server_name: "{{ u16_vrs_name.stdout }}"
-  run_once: true
-  delegate_to: localhost
-  ignore_errors: yes
-
-- debug: var=target_server verbosity=1
-  delegate_to: localhost
-  run_once: true
-
-- debug: var=vrs_u14_target_server verbosity=1
-  delegate_to: localhost
-  run_once: true
-
-- debug: var=vrs_u16_target_server verbosity=1
-  delegate_to: localhost
-  run_once: true
-  ignore_errors: yes
-
-- name: Update test files
-  template:
-    src: "{{ role_path }}/files/{{ item.src }}"
-    dest: "{{ role_path }}/../../playbooks/test/files/{{ item.dest }}"
-  delegate_to: localhost
-  run_once: true
-  with_items:
-    - { src: build_vars.yml.all.j2, dest: build_vars_all.yml }
-    - { src: build_vars.yml.SAUPGRADE.j2, dest: build_vars_sa_upgrade.yml }
-    - { src: build_vars.yml.VSDOnly.j2, dest: build_vars_vsdonly.yml }
-    - { src: build_vars.yml.VSCOnly.j2, dest: build_vars_vsconly.yml }
-    - { src: build_vars.yml.VSTATOnly.j2, dest: build_vars_vstatonly.yml }
-    - { src: build_vars.yml.VRSOnly.j2, dest: build_vars_vrsonly.yml }
-    - { src: build_vars.yml.VNSOnly.j2,dest: build_vars_vnsonly.yml }
-    - { src: build_vars.yml.VNSOnlyWithVSC.j2, dest: build_vars_vnsonlywithvsc.yml }
-
-- name: Update /etc/hosts file
-  lineinfile:
-    dest: /etc/hosts
-    line: "{{ item }}"
-  with_items: "{{vsp_ips}}"
-  run_once: true
-  remote_user: "root"
-
-- name: Update /etc/hosts file with xmpp entires
-  lineinfile:
-    dest: /etc/hosts
-    line: "{{ item }}"
-  with_items: "{{ xmpp_entries }}"
-  remote_user: "root"
-  when: deployment_mode == 'ha'
-
-- name: Configure dnsmasq
-  copy:
-    src: "dnsmasq.conf"
-    dest: "/etc/dnsmasq.conf"
-  remote_user: "root"
-  when: deployment_mode == 'sa'
-
-- name: Configure dnsmasq
-  template:
-    src: "dnsmasq.conf.j2"
-    dest: "/etc/dnsmasq.conf"
-  remote_user: "root"
-  when: deployment_mode == 'ha'
-
-# Could not get over interface booting order issue in Ubuntu cloud image
-# This is a temp task
-- block:
-  - name: Change default route on Debian images
-    command: "route del -net 0.0.0.0/0"
-    remote_user: "root"
-
-  - name: Add mgmt bridge as default route
-    command: "route add -net 0.0.0.0/0 gw {{ network_address }}.1"
-    remote_user: "root"
-  when: ansible_os_family == 'Debian'
-
-- name: Enable dnsmasq
-  command: chkconfig dnsmasq on
-  remote_user: "root"
-  when: ansible_os_family == 'RedHat'
-
-- name: Start dnsmasq
-  command: service dnsmasq restart
-  remote_user: "root"
-
-- name: Copy ntp conf
-  template:
-    src: "ntp.conf.j2"
-    dest: "/etc/ntp.conf"
-  remote_user: "root"
-
-- name: Stop the ntpd service if running
-  command: service ntpd stop
-  remote_user: "root"
-  when: ansible_os_family == 'RedHat'
-
-- name: Stop the ntpd service if running
-  command: service ntp stop
-  remote_user: "root"
-  when: ansible_os_family == 'Debian'
-
-- name: Manually sync time with ntp server
-  command: ntpdate -u "{{ ntp_server_list[0] }}"
-  remote_user: "root"
-  when: ansible_os_family == 'RedHat'
-
-- name: Start ntpd
-  command: service ntpd start
-  remote_user: "root"
-  when: ansible_os_family == 'RedHat'
-
-- name: Start ntpd
-  command: service ntp start
-  remote_user: "root"
-  when: ansible_os_family == 'Debian'
-
-- block:
-  - name: check ntp sync state
-    shell: ntpstat | awk 'NR==1{print $1}'
-    register: sync_status
-    until: sync_status.stdout == "synchronised"
-    retries: 4
-    delay: 5
+  - name: get the u16 vrs ip temp file contents
+    command: cat /tmp/{{ net_name_temp }}_vrs_ip_u16
+    register: u16_vrs_ip
     ignore_errors: yes
-    remote_user: "root"
 
-  - block:
-    - name: restart ntp if it hasn't synced yet
-      command: service ntpd restart
-      remote_user: "root"
-    - name: check ntp sync state
-      shell: ntpstat | awk 'NR==1{print $1}'
-      register: retry_sync_status
-      until: retry_sync_status.stdout == "synchronised"
-      retries: 4
-      delay: 5
-      remote_user: "root"
-    when: sync_status.stdout != "synchronized"
+  - name: register u16 vrs target_server
+    set_fact :
+      vrs_u16_target_server: "{{ u16_vrs_ip.stdout }}"
+    ignore_errors: yes
 
-  - name: Disable gpgcheck in /etc/yum.conf
+  - name: get the u16 vrs name temp file contents
+    command: cat "/tmp/{{ net_name_temp }}_vrs_name_u16"
+    register: u16_vrs_name
+    ignore_errors: yes
+
+  - name: register u16 vrs target_server name
+    set_fact :
+      vrs_u16_target_server_name: "{{ u16_vrs_name.stdout }}"
+    ignore_errors: yes
+
+  - debug: var=target_server verbosity=1
+
+  - debug: var=vrs_u14_target_server verbosity=1
+
+  - debug: var=vrs_u16_target_server verbosity=1
+
+  - name: Update test files
+    template:
+      src: "{{ role_path }}/files/{{ item.src }}"
+      dest: "{{ role_path }}/../../playbooks/test/files/{{ item.dest }}"
+    with_items:
+      - { src: build_vars.yml.all.j2, dest: build_vars_all.yml }
+      - { src: build_vars.yml.SAUPGRADE.j2, dest: build_vars_sa_upgrade.yml }
+      - { src: build_vars.yml.VSDOnly.j2, dest: build_vars_vsdonly.yml }
+      - { src: build_vars.yml.VSCOnly.j2, dest: build_vars_vsconly.yml }
+      - { src: build_vars.yml.VSTATOnly.j2, dest: build_vars_vstatonly.yml }
+      - { src: build_vars.yml.VRSOnly.j2, dest: build_vars_vrsonly.yml }
+      - { src: build_vars.yml.VNSOnly.j2,dest: build_vars_vnsonly.yml }
+      - { src: build_vars.yml.VNSOnlyWithVSC.j2, dest: build_vars_vnsonlywithvsc.yml }
+
+  run_once: true
+  delegate_to: localhost
+
+- block:
+
+  - name: Update /etc/hosts file with xmpp entires
     lineinfile:
-      dest: "/etc/yum.conf"
-      regexp: "gpgcheck=1"
-      line: "gpgcheck=0"
-    remote_user: root
+      dest: /etc/hosts
+      line: "{{ item }}"
+    with_items: "{{ xmpp_entries }}"
+    when: deployment_mode == 'ha'
 
-  - name: Clean yum cache
-    command: "rm -fr /var/cache/yum/*"
-    remote_user: "root"
+  - name: Configure dnsmasq
+    copy:
+      src: "dnsmasq.conf"
+      dest: "/etc/dnsmasq.conf"
+    when: deployment_mode == 'sa'
 
-  - name: Clean yum
-    command: "yum clean all"
-    remote_user: "root"
+  - name: Configure dnsmasq
+    template:
+      src: "dnsmasq.conf.j2"
+      dest: "/etc/dnsmasq.conf"
+    when: deployment_mode == 'ha'
 
-  - name: Update yum
-    yum:
-      name: '*'
-      state: latest
-    remote_user: root
-  when: ansible_os_family == 'RedHat'
+  # Could not get over interface booting order issue in Ubuntu cloud image
+  # This is a temp task
+  - block:
+    - name: Change default route on Debian images
+      command: "route del -net 0.0.0.0/0"
 
+    - name: Add mgmt bridge as default route
+      command: "route add -net 0.0.0.0/0 gw {{ network_address }}.1"
+    when: ansible_os_family == 'Debian'
 
-- block:
-  - name: Run the equivalent of "apt-get update"
-    apt:
-      update_cache: yes
-    remote_user: "{{ target_server_username }}"
+  - name: Enable dnsmasq
+    command: chkconfig dnsmasq on
+    when: ansible_os_family == 'RedHat'
 
-  - name: check ntp sync state
-    shell: ntpq -p | grep '*' | awk 'NR==1{print $1}'
-    register: sync_status
-    until: sync_status.stdout != ""
-    retries: 4
-    delay: 5
-    ignore_errors: yes
-    remote_user: "root"
+  - name: Start dnsmasq
+    command: service dnsmasq restart
+
+  - name: Copy ntp conf
+    template:
+      src: "ntp.conf.j2"
+      dest: "/etc/ntp.conf"
 
   - block:
-    - name: restart ntp if it hasn't synced yet
-      command: service ntp restart
-      remote_user: "root"
+
+    - name: Stop the ntp service if running
+      command: service ntp stop
+
+    - name: Start ntp
+      command: service ntp start
+
+    - name: Run the equivalent of "apt-get update"
+      apt:
+        update_cache: yes
+
     - name: check ntp sync state
       shell: ntpq -p | grep '*' | awk 'NR==1{print $1}'
-      register: retry_sync_status
-      until: retry_sync_status.stdout != ""
-      retries: 4
+      register: sync_status
+      until: sync_status.stdout != ""
+      retries: 20
       delay: 5
-      remote_user: "root"
-    when: sync_status.stdout == ""
-  when: ansible_os_family == 'Debian'
+      ignore_errors: yes
 
+    - block:
+      - name: restart ntp if it hasn't synced yet
+        command: service ntp restart
+        remote_user: "root"
+      - name: check ntp sync state
+        shell: ntpq -p | grep '*' | awk 'NR==1{print $1}'
+        register: retry_sync_status
+        until: retry_sync_status.stdout != ""
+        retries: 40
+        delay: 5
+      when: sync_status.stdout == ""
 
-- name: Update the vsd ram
-  lineinfile:
-    dest: "{{ role_path }}/../vsd-predeploy/vars/main.yml"
-    regexp: 'vsd_ram:'
-    line: 'vsd_ram: 8147483'
-  delegate_to: "{{ ansible_deployment_host }}"
-  remote_user: "{{ ansible_sudo_username }}"
+    when: ansible_os_family == 'Debian'
 
-- name: Update the vsc ram
-  lineinfile:
-    dest: "{{ role_path }}/../vsc-predeploy/vars/main.yml"
-    regexp: 'vsc_ram:'
-    line: 'vsc_ram: 1147483'
-  delegate_to: "{{ ansible_deployment_host }}"
-  remote_user: "{{ ansible_sudo_username }}"
+  - block:
 
-- name: Update the vstat ram
-  lineinfile:
-    dest: "{{ role_path }}/../vstat-predeploy/vars/main.yml"
-    regexp: 'vstat_ram:'
-    line: 'vstat_ram: 2147483'
-  delegate_to: "{{ ansible_deployment_host }}"
-  remote_user: "{{ ansible_sudo_username }}"
+    - name: Stop the ntpd service if running
+      command: service ntpd stop
 
-- name: Update the vnsutil ram
-  lineinfile:
-    dest: "{{ role_path }}/../vnsutil-predeploy/vars/main.yml"
-    regexp: 'vnsutil_ram:'
-    line: 'vnsutil_ram: 1147483'
-  delegate_to: "{{ ansible_deployment_host }}"
-  remote_user: "{{ ansible_sudo_username }}"
+    - name: Manually sync time with ntp server
+      command: ntpdate -u "{{ ntp_server_list[0] }}"
 
-- name: Update the nsgv ram
-  lineinfile:
-    dest: "{{ role_path }}/../nsgv-predeploy/vars/main.yml"
-    regexp: 'nsgv_ram:'
-    line: 'nsgv_ram: 1147483'
-  delegate_to: "{{ ansible_deployment_host }}"
-  remote_user: "{{ ansible_sudo_username }}"
+    - name: Start ntpd
+      command: service ntpd start
+
+    - name: check ntp sync state
+      shell: ntpstat | awk 'NR==1{print $1}'
+      register: sync_status
+      until: sync_status.stdout == "synchronised"
+      retries: 20
+      delay: 5
+      ignore_errors: yes
+
+    - block:
+
+      - name: restart ntp if it hasn't synced yet
+        command: service ntpd restart
+
+      - name: check ntp sync state
+        shell: ntpstat | awk 'NR==1{print $1}'
+        register: retry_sync_status
+        until: retry_sync_status.stdout == "synchronised"
+        retries: 40
+        delay: 5
+
+      when: sync_status.stdout != "synchronized"
+
+    - name: Disable gpgcheck in /etc/yum.conf
+      lineinfile:
+        dest: "/etc/yum.conf"
+        regexp: "gpgcheck=1"
+        line: "gpgcheck=0"
+
+    - name: Clean yum cache
+      command: "rm -fr /var/cache/yum/*"
+
+    - name: Clean yum
+      command: "yum clean all"
+
+    - name: Update yum
+      yum:
+        name: '*'
+        state: latest
+
+    when: ansible_os_family == 'RedHat'
+
+  remote_user: "root"
+
+- block:
+
+  - name: Update the vsd ram
+    lineinfile:
+      dest: "{{ role_path }}/../vsd-predeploy/vars/main.yml"
+      regexp: 'vsd_ram:'
+      line: 'vsd_ram: 8147483'
+
+  - name: Update the vsc ram
+    lineinfile:
+      dest: "{{ role_path }}/../vsc-predeploy/vars/main.yml"
+      regexp: 'vsc_ram:'
+      line: 'vsc_ram: 1147483'
+
+  - name: Update the vstat ram
+    lineinfile:
+      dest: "{{ role_path }}/../vstat-predeploy/vars/main.yml"
+      regexp: 'vstat_ram:'
+      line: 'vstat_ram: 2147483'
+
+  - name: Update the vnsutil ram
+    lineinfile:
+      dest: "{{ role_path }}/../vnsutil-predeploy/vars/main.yml"
+      regexp: 'vnsutil_ram:'
+      line: 'vnsutil_ram: 1147483'
+
+  - name: Update the nsgv ram
+    lineinfile:
+      dest: "{{ role_path }}/../nsgv-predeploy/vars/main.yml"
+      regexp: 'nsgv_ram:'
+      line: 'nsgv_ram: 1147483'
+
+  delegate_to: localhost

@@ -1,25 +1,28 @@
 ---
-- name: Ping VSC hostname
-  command: ping -c 1 {{ hostname }}
-  ignore_errors: yes
-  register: ping_result
-  delegate_to: localhost
 
-- name: Assert no response to ping of VSC hostname
-  assert:
-    that: "ping_result.rc != 0"
-    msg:  "Someone responded to ping of VSC hostname. Quitting."
+- include_role:
+    name: check-node-reachability
 
-- name: Ping VSC IP address
-  command: ping -c 1 {{ mgmt_ip }}
-  ignore_errors: yes
-  register: ping_result
-  delegate_to: localhost
+- block:
+  - debug: var=vsc_creds
 
-- name: Assert no response to ping of VSC IP address
-  assert:
-    that: "ping_result.rc != 0"
-    msg:  "Someone responded to ping of VSC IP address. Quitting."
+  - name: Get output of 'show version'
+    sros_command:
+      commands:
+        - show version
+      provider: "{{ vsc_creds }}"
+    ignore_errors: yes
+    delegate_to: localhost
+    register: sh_version
+
+  when: node_reachable
+
+# TODO
+# Check sh_version against image version
+
+- name: Set fact for VSC present
+  set_fact:
+    node_present: "{{ node_reachable and sh_version is defined }}"
 
 - include: kvm.yml
   when: target_server_type | match("kvm")

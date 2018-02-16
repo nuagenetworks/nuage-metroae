@@ -69,12 +69,16 @@
   remote_user: "{{ target_server_username }}"
 
 - name: Copy the DNS qcow image to virt images directory on {{ target_server }}
-  copy: src={{ dns_qcow2_path }}/{{ dns_qcow2_file_name }}
+  copy: src={{ qcow2_path }}/{{ qcow2_file_name }}
         dest={{ images_path }}/{{ inventory_hostname }}
         owner={{ libvirt.user }}
         group={{ libvirt.group }}
   delegate_to: "{{ target_server }}"
   remote_user: "{{ target_server_username }}"
+
+- name: Set local variable with vsd guestfish destination
+  set_fact:
+    guestfish_dest: "{{ images_path }}/{{ vm_name }}/{{ qcow2_file_name }}"
 
 - name: Create a temporary copy of the network script for eth0 on {{ target_server }}
   template: src=ifcfg-eth0.j2 backup=no dest={{ images_path }}/{{ inventory_hostname }}/ifcfg-eth0
@@ -82,13 +86,13 @@
   remote_user: "{{ target_server_username }}"
 
 - name: Get list of partitions
-  shell: "guestfish -r -a {{ images_path }}/{{ inventory_hostname }}/{{ dns_qcow2_file_name }} run : list-filesystems | grep -Ev '(unknown|swap)'"
+  shell: "guestfish -r -a {{ guestfish_dest }} run : list-filesystems | grep -Ev '(unknown|swap)'"
   delegate_to: "{{ target_server }}"
   remote_user: "{{ target_server_username }}"
   register: partitions_list
 
 - name: Check partition content
-  shell: "guestfish -r -a {{ images_path }}/{{ inventory_hostname }}/{{ dns_qcow2_file_name }} run : mount {{ item.split(':')[0] }} / : ls /"
+  shell: "guestfish -r -a {{ guestfish_dest }} run : mount {{ item.split(':')[0] }} / : ls /"
   delegate_to: "{{ target_server }}"
   register: partitions
   with_items: "{{ partitions_list.stdout_lines }}"
@@ -103,7 +107,7 @@
 - debug: var=guestfish_mount verbosity=1
 
 - name: Copy eth0 network script file to the DNS image on {{ target_server }}
-  command: guestfish --rw -a {{ images_path }}/{{ inventory_hostname }}/{{ dns_qcow2_file_name }} -m {{ guestfish_mount }} copy-in {{ images_path }}/{{ inventory_hostname }}/ifcfg-eth0 /etc/sysconfig/network-scripts/
+  command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} copy-in {{ images_path }}/{{ inventory_hostname }}/ifcfg-eth0 /etc/sysconfig/network-scripts/
   delegate_to: "{{ target_server }}"
   remote_user: "{{ target_server_username }}"
 
@@ -113,7 +117,7 @@
   remote_user: "{{ target_server_username }}"
 
 - name: Set the owner and group on the eth0 network script file in the DNS image
-  command: guestfish --rw -a {{ images_path }}/{{ inventory_hostname }}/{{ dns_qcow2_file_name }} -m {{ guestfish_mount }} chown 0 0 /etc/sysconfig/network-scripts/ifcfg-eth0
+  command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} chown 0 0 /etc/sysconfig/network-scripts/ifcfg-eth0
   delegate_to: "{{ target_server }}"
   remote_user: "{{ target_server_username }}"
 
@@ -123,7 +127,7 @@
   remote_user: "{{ target_server_username }}"
 
 - name: Copy eth1 network script file to the DNS image on {{ target_server }}
-  command: guestfish --rw -a {{ images_path }}/{{ inventory_hostname }}/{{ dns_qcow2_file_name }} -m {{ guestfish_mount }} copy-in {{ images_path }}/{{ inventory_hostname }}/ifcfg-eth1 /etc/sysconfig/network-scripts/
+  command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} copy-in {{ images_path }}/{{ inventory_hostname }}/ifcfg-eth1 /etc/sysconfig/network-scripts/
   delegate_to: "{{ target_server }}"
   remote_user: "{{ target_server_username }}"
 
@@ -133,7 +137,7 @@
   remote_user: "{{ target_server_username }}"
 
 - name: Set the owner and group on the eth1 network script file in the DNS image
-  command: guestfish --rw -a {{ images_path }}/{{ inventory_hostname }}/{{ dns_qcow2_file_name }} -m {{ guestfish_mount }} chown 0 0 /etc/sysconfig/network-scripts/ifcfg-eth1
+  command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} chown 0 0 /etc/sysconfig/network-scripts/ifcfg-eth1
   delegate_to: "{{ target_server }}"
   remote_user: "{{ target_server_username }}"
 
@@ -143,7 +147,7 @@
   remote_user: "{{ target_server_username }}"
 
 - name: Copy network file to the DNS image
-  command: guestfish --rw -a {{ images_path }}/{{ inventory_hostname }}/{{ dns_qcow2_file_name }} -m {{ guestfish_mount }} copy-in {{ images_path }}/{{ inventory_hostname }}/network /etc/sysconfig/
+  command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} copy-in {{ images_path }}/{{ inventory_hostname }}/network /etc/sysconfig/
   delegate_to: "{{ target_server }}"
   remote_user: "{{ target_server_username }}"
 
@@ -158,7 +162,7 @@
   remote_user: "{{ target_server_username }}"
 
 - name: Copy route-eth1 network script file to the DNS image on {{ target_server }}
-  command: guestfish --rw -a {{ images_path }}/{{ inventory_hostname }}/{{ dns_qcow2_file_name }} -m {{ guestfish_mount }} copy-in {{ images_path }}/{{ inventory_hostname }}/route-eth1 /etc/sysconfig/network-scripts/
+  command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} copy-in {{ images_path }}/{{ inventory_hostname }}/route-eth1 /etc/sysconfig/network-scripts/
   delegate_to: "{{ target_server }}"
   remote_user: "{{ target_server_username }}"
 
@@ -168,23 +172,23 @@
   remote_user: "{{ target_server_username }}"
 
 - name: Set the owner and group on the route-eth1 network script file in the DNS image
-  command: guestfish --rw -a {{ images_path }}/{{ inventory_hostname }}/{{ dns_qcow2_file_name }} -m {{ guestfish_mount }} chown 0 0 /etc/sysconfig/network-scripts/route-eth1
+  command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} chown 0 0 /etc/sysconfig/network-scripts/route-eth1
   delegate_to: "{{ target_server }}"
   remote_user: "{{ target_server_username }}"
 
 - name: Set the owner and group for the network hostname file on the DNS image
-  command: guestfish --rw -a {{ images_path }}/{{ inventory_hostname }}/{{ dns_qcow2_file_name }} -m {{ guestfish_mount }} chown 0 0 /etc/sysconfig/network
+  command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} chown 0 0 /etc/sysconfig/network
   delegate_to: "{{ target_server }}"
   remote_user: "{{ target_server_username }}"
 
 - name: Create the directory /root/.ssh for authorized_keys
-  command: guestfish --rw -a {{ images_path }}/{{ inventory_hostname }}/{{ dns_qcow2_file_name }} -m {{ guestfish_mount }} mkdir-mode /root/.ssh 0700
+  command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} mkdir-mode /root/.ssh 0700
   delegate_to: "{{ target_server }}"
   remote_user: "{{ target_server_username }}"
   ignore_errors: yes
 
 - name: Set the owner and group for the /root/.ssh directory on the DNS image
-  command: guestfish --rw -a {{ images_path }}/{{ inventory_hostname }}/{{ dns_qcow2_file_name }} -m {{ guestfish_mount }} chown 0 0 /root/.ssh
+  command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} chown 0 0 /root/.ssh
   delegate_to: "{{ target_server }}"
   remote_user: "{{ target_server_username }}"
 
@@ -198,7 +202,7 @@
   remote_user: "{{ target_server_username }}"
 
 - name: Copy authorized_keys file to the DNS image
-  command: guestfish --rw -a {{ images_path }}/{{ inventory_hostname }}/{{ dns_qcow2_file_name }} -m {{ guestfish_mount }} copy-in {{ images_path }}/{{ inventory_hostname }}/authorized_keys /root/.ssh/
+  command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} copy-in {{ images_path }}/{{ inventory_hostname }}/authorized_keys /root/.ssh/
   delegate_to: "{{ target_server }}"
   remote_user: "{{ target_server_username }}"
 
@@ -208,12 +212,12 @@
   remote_user: "{{ target_server_username }}"
 
 - name: Set the owner and group for the authorized_keys file on the DNS image
-  command: guestfish --rw -a {{ images_path }}/{{ inventory_hostname }}/{{ dns_qcow2_file_name }} -m {{ guestfish_mount }} chown 0 0 /root/.ssh/authorized_keys
+  command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} chown 0 0 /root/.ssh/authorized_keys
   delegate_to: "{{ target_server }}"
   remote_user: "{{ target_server_username }}"
 
 - name: Set the mode for the authorized_keys file on the DNS image
-  command: guestfish --rw -a {{ images_path }}/{{ inventory_hostname }}/{{ dns_qcow2_file_name }} -m {{ guestfish_mount }} chmod 0640 /root/.ssh/authorized_keys
+  command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} chmod 0640 /root/.ssh/authorized_keys
   delegate_to: "{{ target_server }}"
   remote_user: "{{ target_server_username }}"
 
