@@ -1,4 +1,6 @@
-# Readying the MetroAG Environment for Upgrading
+# Readying the MetroAG Environment for Upgrading  
+(4 minute read)  
+
 ## Prerequisites / Requirements
 To confirm that the intended upgrade is supported by MetroAG, see [README.md](../README.md).
 
@@ -7,7 +9,7 @@ If you have not previously set up your MetroAG Ansible environment, see [SETUP.m
 ## Main Steps
 [1. Customize variables](#1-customize-variables)  
 [2. Unzip Nuage files](#2-unzip-nuage-files)  
-[3. Execute `build_upgrade.yml` playbook](#3-build_upgradeyml-playbook)  
+[3. Execute `build_upgrade.yml` playbook](#3-execute-build_upgradeyml-playbook)  
 
 ## 1. Customize Variables
 Setting variables correctly ensures that when you subsequently execute the upgrade playbooks they configure components as intended. Precise syntax is crucial for success. See the [examples directory](../examples) for references. Three variable files are used to build the upgrade environment: `user_creds.yml`, `build_vars.yml`, and `upgrade_vars.yml`.
@@ -49,12 +51,7 @@ When you upgrade VSC, `upgrade_vmname` is *not* required. The existing VM is not
 * **VSTAT (myvstats:)**
 When you deployed VSTAT, you may have defined a value for `vmname`. (The hostname is used as a default.) When you upgrade, you must define a value for `upgrade_vmname`. During upgrade, `vmname` is powered down; it is not deleted. It is retained in case a rollback is required. Therefore, the two names must be different.
 ### `upgrade_vars.yml`
-Notable `upgrade_vars.yml` parameters are described below.
-* **Required Nuage Files**
-If you intend on automatically unzipping the required Nuage software files as described in step 2 below, ensure that you have specified the following target directory in `upgrade_vars.yml`.
-```
-nuage_upgrade_unzipped_files_dir: "<your_path_for_unzipped_software>"
-```
+Notable `upgrade_vars.yml` parameters are described below.  
 * **VSC**
 Make sure that the <.tim> file is present in the VSC path /vsc/.
 
@@ -63,7 +60,7 @@ Every VSTAT node that is to be upgraded (or rolled back) requires a value for `v
 
 Example: `vstat_nfs_server_with_folder: 135.227.181.233:/tmp/vstat/`
 
-## 2. Unzip Nuage File
+## 2. Unzip Nuage Files
 Make the required unzipped Nuage software files (QCOW2, OVA, and Linux Package files) available for the components being upgraded by using one of the two methods below.
 
 ### Automatically
