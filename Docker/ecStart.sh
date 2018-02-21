@@ -22,7 +22,7 @@ function show_usage() {
 function copy_upgrade_vars() {
   if [ ! -e /files/upgrade_vars.yml ]; then
      cp nuage-metro/upgrade_vars.yml /files
-     sed -i 's|nuage_upgrade_unzipped_files_dir=.*|nuage_upgrade_unzipped_files_dir=/files/nuage-unpacked|g' /files/upgrade_vars.yml
+     sed -i 's|nuage_unzipped_files_dir=.*|nuage_unzipped_files_dir=/files/nuage-unpacked|g' /files/upgrade_vars.yml
      sed -i 's|user_ssh_pub_key=.*|user_ssh_pub_key=/files/id_rsa.pub|g' /files/upgrade_vars.yml
      sed -i 's|user_ssh_priv_key=.*|user_ssh_priv_key=/files/id_rsa|g' /files/upgrade_vars.yml
      echo "Please edit the sample 'upgrade_vars.yml' and try again"
