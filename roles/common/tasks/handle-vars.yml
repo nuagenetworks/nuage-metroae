@@ -1,52 +1,68 @@
 ---
-- name: Set build files path
+- name: Set data file variables
   set_fact:
-    build_files_path: "{{ inventory_dir }}"
-
-- name: Set build_vars variable
-  set_fact:
-    build_vars: "{{ build_vars_file | default (build_files_path+'/build_vars.yml') }}"
+    build_vars: "{{ build_vars_file | default (inventory_dir+'/build_vars.yml') }}"
+    upgrade_vars: "{{ upgrade_vars_file | default (inventory_dir+'/upgrade_vars.yml') }}"
+    user_creds: "{{ user_creds_file | default (inventory_dir+'/user_creds.yml') }}"
+    do_build: "{{ force_build | default(False) }}"
+    data_file_name_list:
+      build_vars
+      upgrade_vars
+      user_creds      
 
 - name: Include build variable files
   include_vars: "{{ build_vars }}"
 
 - name: Include user credential file
-  include_vars: "{{ user_creds_file | default (build_files_path+'/user_creds.yml') }}"
-
-- name: Set local variable to force build
-  set_fact:
-    force: "{{ force_build | default(False) }}"
-
-- name: Find build_vars.md5 file
-  find: path="{{ inventory_dir }}" pattern="build_vars.md5"
-  register: md5_file
-
-- name: Get md5 value for build vars file
-  stat:
-    path: "{{ build_vars }}"
-    get_md5: yes
-  register: md5_for_build_vars
-
-- name: Set local variable with current md5 value
-  set_fact:
-    current_md5: "{{ md5_for_build_vars.stat.md5 }}"
-
-- name: Get stored md5 value
-  command: "cat {{ md5_file.files[0].path }}"
-  register: stored_md5_string
-  when: md5_file.matched == 1
-
-- name: Set local variable with stored md5 value when md5 file exists
-  set_fact:
-    stored_md5: "{{ stored_md5_string.stdout }}"
-  when: md5_file.matched == 1
-
-- name: Set stored_md5 value to current_md5 when md5 file does not exists
-  set_fact:
-    stored_md5: "{{ current_md5 }}"
-  when: md5_file.matched == 0
+  include_vars: "{{ user_creds_file }}"
 
 - block:
+
+  - block:
+
+    - name: Find md5 file
+      find: path="{{ inventory_dir }}" pattern="{{ item }}.md5"
+      register: md5_file
+
+    - name: Set variable to do build if md5 not found
+      set_fact:
+        do_build: True
+      when: md5_file.matched == 0
+
+    - block:
+
+      - name: Get the md5 value in the file we found
+        command: "cat {{ md5_file.files[0].path }}"
+        register: old_md5_string
+
+      - name: Stat the data file
+        stat:
+          path: "{{ item }}"
+          get_md5: yes
+        register: data_file
+
+      - block:
+
+        - name: Set variable to do build if md5s don't match
+          set_fact:
+            do_build: True
+
+        - name: Write temp md5 file to disk
+          copy: 
+            content: "{{ data_file.stat.md5 }}"
+            dest: "{{ inventory_dir }}/{{ item }}.md5.tmp"
+
+        when: data_file.stat.md5 != old_md5_string.stdout
+
+      when: md5_file.matched > 0
+
+    with_items:
+      data_file_name_list
+
+  when: not do_build
+
+- block:
+
   - name: Check yaml syntax in build vars file
     include_role:
       name: common
@@ -59,10 +75,10 @@
 
   - include_role:
       name: build
-  when: stored_md5 != current_md5 or
-        md5_file.matched == 0 or
-        force
-    
 
-- name: Update md5 value
-  template: src=build_vars_md5.j2 backup=no dest={{ inventory_dir }}/build_vars.md5
+  - name: Move the new md5 file over the old one
+    command: "mv {{ inventory_dir }}/{{ item }}.md5.tmp {{ inventory_dir }}/{{ item }}.md5"
+    with_items:
+      data_file_name_list 
+
+  when: do_build
