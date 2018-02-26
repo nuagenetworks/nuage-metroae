@@ -1,0 +1,84 @@
+---
+- name: Set data file variables
+  set_fact:
+    build_vars: "{{ build_vars_file | default (inventory_dir+'/build_vars.yml') }}"
+    upgrade_vars: "{{ upgrade_vars_file | default (inventory_dir+'/upgrade_vars.yml') }}"
+    user_creds: "{{ user_creds_file | default (inventory_dir+'/user_creds.yml') }}"
+    do_build: "{{ force_build | default(False) }}"
+    data_file_name_list:
+      build_vars
+      upgrade_vars
+      user_creds      
+
+- name: Include build variable files
+  include_vars: "{{ build_vars }}"
+
+- name: Include user credential file
+  include_vars: "{{ user_creds_file }}"
+
+- block:
+
+  - block:
+
+    - name: Find md5 file
+      find: path="{{ inventory_dir }}" pattern="{{ item }}.md5"
+      register: md5_file
+
+    - name: Set variable to do build if md5 not found
+      set_fact:
+        do_build: True
+      when: md5_file.matched == 0
+
+    - block:
+
+      - name: Get the md5 value in the file we found
+        command: "cat {{ md5_file.files[0].path }}"
+        register: old_md5_string
+
+      - name: Stat the data file
+        stat:
+          path: "{{ item }}"
+          get_md5: yes
+        register: data_file
+
+      - block:
+
+        - name: Set variable to do build if md5s don't match
+          set_fact:
+            do_build: True
+
+        - name: Write temp md5 file to disk
+          copy: 
+            content: "{{ data_file.stat.md5 }}"
+            dest: "{{ inventory_dir }}/{{ item }}.md5.tmp"
+
+        when: data_file.stat.md5 != old_md5_string.stdout
+
+      when: md5_file.matched > 0
+
+    with_items:
+      data_file_name_list
+
+  when: not do_build
+
+- block:
+
+  - name: Check yaml syntax in build vars file
+    include_role:
+      name: common
+      tasks_from: check-build-vars-syntax.yml
+
+  - name: Validate build variables
+    include_role:
+      name: common
+      tasks_from: validate-build-vars.yml
+
+  - include_role:
+      name: build
+
+  - name: Move the new md5 file over the old one
+    command: "mv {{ inventory_dir }}/{{ item }}.md5.tmp {{ inventory_dir }}/{{ item }}.md5"
+    with_items:
+      data_file_name_list 
+
+  when: do_build
