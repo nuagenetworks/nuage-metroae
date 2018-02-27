@@ -1,36 +1,40 @@
+---
 - block:
-  - name: Get vsd_upgrade_complete flag value for minor upgrade
-    command: "{{ mysql_cmd }}"
-    register: upgrade_complete
-    remote_user: root
 
-  - name: Print upgrade_complete output when verbosity >= 1 
-    debug: var=upgrade_complete verbosity=1
- 
-  - name: Set upgrade complete flag to 1 for minor upgrade on vsd
-    shell: "{{ minor_upgrade }}"
-    remote_user: root
-    when: upgrade_complete.stdout == '0'
+  - block:
 
-  - name: Restart Jboss on VSD Node1
-    shell: "monit restart jboss"
-    remote_user: root
+    - name: Get vsd_upgrade_complete flag value for minor upgrade
+      command: "{{ mysql_cmd }}"
+      register: upgrade_complete
+
+    - name: Print upgrade_complete output when verbosity >= 1 
+      debug: var=upgrade_complete verbosity=1
   
-  - include: check_monit_status.yml
-  when: upgrade_major_or_minor == 'minor'
+    - name: Set upgrade complete flag to 1 for minor upgrade on vsd
+      shell: "{{ minor_upgrade }}"
+      when: upgrade_complete.stdout == '0'
 
-- block:
-  - name: Get current version of VSD software
-    command: echo $VSD_VERSION
-    register: vsd_version
-    remote_user: "root"
+    - name: Restart Jboss on VSD Node1
+      shell: "monit restart jboss"
+    
+    - include: check_monit_status.yml
 
-  - name: Print vsd_version output when verbosity >= 1
-    debug: var=vsd_version verbosity=1
+    when: upgrade_major_or_minor == 'minor'
 
-  - name: Turn on API on vsd's for major upgrade
-    shell: "{{ major_upgrade }}"
-    remote_user: root
+  - block:
 
-  - include: check_monit_status.yml
-  when: upgrade_major_or_minor == 'major'
+    - name: Get current version of VSD software
+      command: echo $VSD_VERSION
+      register: vsd_version
+
+    - name: Print vsd_version output when verbosity >= 1
+      debug: var=vsd_version verbosity=1
+
+    - name: Turn on API on vsd's for major upgrade
+      shell: "{{ major_upgrade }}"
+
+    - include: check_monit_status.yml
+
+    when: upgrade_major_or_minor == 'major'
+
+  remote_user: "{{ vsd_username }}"
