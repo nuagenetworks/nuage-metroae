@@ -21,10 +21,22 @@
 
 - block:
   - name: Read the VSD version
-    shell: echo $VSD_VERSION | cut -d . -f 1
-    register: vsd_version
+    shell: echo $VSD_VERSION
+    register: vsd_full_version
 
-  - debug: var=vsd_version.stdout verbosity=1
+  - name: Setting Major, Minor and Patch VSD version
+    set_fact:
+        vsd_major_version: "{{ vsd_full_version.stdout.split('.')[0] }}"
+        vsd_minor_version: "{{ vsd_full_version.stdout.split('.')[1] }}"
+        vsd_patch_version: "{{ vsd_full_version.stdout.split('.')[2].split('U')[0] }}"
+
+  - debug: var=vsd_full_version.stdout verbosity=1
+
+  - debug: var=vsd_major_version verbosity=1
+
+  - debug: var=vsd_minor_version verbosity=1
+
+  - debug: var=vsd_patch_version verbosity=1
 
   - block:
     - name: Generate SSH keys
@@ -46,7 +58,7 @@
       with_nested:
         - "{{ groups['vsds'] }}"
         - "{{ ssh_key_lst.results }}"
-    when: vsd_version.stdout | int < 5
+    when: vsd_major_version | int < 5
   - block:
     - name: Generate SSH keys
       shell: sudo -u vsd ssh-keygen -b 2048 -t rsa -f /home/vsd/.ssh/id_rsa -q -N ""
@@ -76,7 +88,7 @@
         mode: 0640
       delegate_to: "{{ item }}"
       with_items: "{{ groups['vsds'] }}"
-    when: vsd_version.stdout | int >= 5
+    when: vsd_major_version | int >= 5
   remote_user: root
   when: vsd_sa_or_ha | match('ha') and inventory_hostname == groups['vsds'][0]
 
@@ -124,7 +136,22 @@
 
 - name: Install VSD software on standalone node
   command: /opt/vsd/vsd-install.sh -t s -y
-  when: vsd_sa_or_ha | match('sa')
+  when: 
+    - vsd_sa_or_ha | match('sa') 
+    - vcin_mode is not defined or 
+      not vcin_mode or
+      not (vsd_major_version | int >= 5 and vsd_minor_version | int >= 2 and vsd_patch_version | int >= 2)
+  remote_user: "root"
+
+- name: Install VCIN software on VCIN node
+  command: /opt/vsd/vsd-install.sh -t v -y
+  when: 
+    - vsd_sa_or_ha | match ('sa')
+    - vcin_mode is defined
+    - vcin_mode
+    - vsd_major_version | int >= 5
+    - vsd_minor_version | int >= 2
+    - vsd_patch_version | int >= 2
   remote_user: "root"
 
 - block:
