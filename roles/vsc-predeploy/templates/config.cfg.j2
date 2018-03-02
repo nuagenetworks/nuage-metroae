@@ -68,9 +68,57 @@ echo "Router (Network Side) Configuration"
             {% endif %}
           {% endif %}
         {% endfor %}
+    exit
+
+        {% if vlan_id is defined %}
+
+#--------------------------------------------------
+echo "Service Configuration"
+#--------------------------------------------------
+
+    service
+        vprn {{ vlan_id }} customer 1 create
+            interface "control-to-NSGs" create
+            exit
+        exit
+        vprn {{ vlan_id }} customer 1 create
+            route-distinguisher {{ as_number }}:{{ vlan_id }}
+            interface "MPLS-FxWAN" create
+                {% if control_ip_vprn is defined %}
+                address {{ control_ip_vprn }}/{{ control_netmask_prefix }}
+                {% else %}
+                address {{ control_ip }}/{{ control_netmask_prefix }}
+                {% endif %}
+                sap A/2:{{ vlan_id }} create
+                exit
+            exit
+        
+        {% if control_ip_vprn is defined %}
+        static-route 0.0.0.0/0 next-hop {{ control_ip_vprn.split('.')[0] }}.{{ control_ip_vprn.split('.')[1] }}.{{ control_ip_vprn.split('.')[2] }}.1
+        {% else %}
+        static-route 0.0.0.0/0 next-hop {{ control_ip.split('.')[0] }}.{{ control_ip.split('.')[1] }}.{{ control_ip.split('.')[2] }}.1
+        {% endif %}
+
+            sgt-qos
+                application bgp dscp nc2
+                application ntp dscp nc2
+                application openflow dscp nc2
+                application json-rpc dscp nc2
+                application dtls-vxlan dscp nc2
+                application dtls-ipsec dscp nc2
+            exit
+            ntp
+                no shutdown
+            exit
+            no shutdown
+        exit
+    exit
+        {% endif %}
+
 #--------------------------------------------------
 ##echo "BGP Configuration"
 ###--------------------------------------------------
+    router
         bgp
             connect-retry 2
             min-route-advertisement 1
