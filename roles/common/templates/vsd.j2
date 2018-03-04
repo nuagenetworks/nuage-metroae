@@ -5,7 +5,7 @@
 target_server_type: {{ item.target_server_type }}
 hostname: {{ item.hostname }}
 
-{% if disable_vcin_ha %}
+{% if disable_vcin_ha is defined and disable_vcin_ha %}
 vcin_mode: true
 vsd_sa_or_ha: sa
 {% endif %}
@@ -39,14 +39,18 @@ vsd_migration_iso_file_name: {{ vsd_migration_iso_file_name|default('vsd_migrati
 
 ova_path: {{ ova_path|default('ova_path not defined') }}
 ova_file_name: {{ ova_file_name|default('ova_file_name not defined') }}
+{% if item.vcenter is defined -%}
+    {% set item_vcenter = item.vcenter %}
+{% else -%}
+    {% set item_vcenter = vcenter %}
+{% endif -%}
 vcenter:
-  username: {{ item.vcenter.username | default( vcenter.username | default('NONE')) }}
-  password: {{ item.vcenter.password | default( vcenter.password | default('NONE')) }}
-  datacenter: {{ item.vcenter.datacenter | default( vcenter.datacenter | default('NONE')) }}
-  cluster: {{ item.vcenter.cluster | default( vcenter.cluster| default('NONE')) }}
-  datastore: {{ item.vcenter.datastore | default( vcenter.datastore |default('NONE')) }}
-  resource_pool: {{ item.vcenter.resource_pool | default('NONE') }}
-
+  username: {{ item_vcenter.username | default('NONE') }}
+  password: {{ item_vcenter.password | default('NONE') }}
+  datacenter: {{ item_vcenter.datacenter | default('NONE') }}
+  cluster: {{ item_vcenter.cluster | default('NONE') }}
+  datastore: {{ item_vcenter.datastore | default('NONE') }}
+  resource_pool: {{ item_vcenter.resource_pool | default('NONE') }}
 {% endif %}
 
 {% endif %}
