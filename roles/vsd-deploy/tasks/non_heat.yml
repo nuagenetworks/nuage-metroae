@@ -19,24 +19,26 @@
       {% endfor %}
   remote_user: "root"
 
+- name: Read the VSD version
+  shell: echo $VSD_VERSION
+  register: vsd_full_version
+  remote_user: "root"
+
+- name: Setting Major, Minor and Patch VSD version
+  set_fact:
+      vsd_major_version: "{{ vsd_full_version.stdout.split('.')[0] }}"
+      vsd_minor_version: "{{ vsd_full_version.stdout.split('.')[1] }}"
+      vsd_patch_version: "{{ vsd_full_version.stdout.split('.')[2].split('U')[0] }}"
+
+- debug: var=vsd_full_version.stdout verbosity=1
+
+- debug: var=vsd_major_version verbosity=1
+
+- debug: var=vsd_minor_version verbosity=1
+
+- debug: var=vsd_patch_version verbosity=1
+
 - block:
-  - name: Read the VSD version
-    shell: echo $VSD_VERSION
-    register: vsd_full_version
-
-  - name: Setting Major, Minor and Patch VSD version
-    set_fact:
-        vsd_major_version: "{{ vsd_full_version.stdout.split('.')[0] }}"
-        vsd_minor_version: "{{ vsd_full_version.stdout.split('.')[1] }}"
-        vsd_patch_version: "{{ vsd_full_version.stdout.split('.')[2].split('U')[0] }}"
-
-  - debug: var=vsd_full_version.stdout verbosity=1
-
-  - debug: var=vsd_major_version verbosity=1
-
-  - debug: var=vsd_minor_version verbosity=1
-
-  - debug: var=vsd_patch_version verbosity=1
 
   - block:
     - name: Generate SSH keys
@@ -134,24 +136,30 @@
     name: common
     tasks_from: linux-ntp-sync
 
-- name: Install VSD software on standalone node
-  command: /opt/vsd/vsd-install.sh -t s -y
-  when: 
-    - vsd_sa_or_ha | match('sa') 
-    - vcin_mode is not defined or 
-      not vcin_mode or
-      not (vsd_major_version | int >= 5 and vsd_minor_version | int >= 2 and vsd_patch_version | int >= 2)
-  remote_user: "root"
+- block:
+  - name: Configure to deploy standalone VSD
+    set_fact:
+      deploy_vcin: false
 
-- name: Install VCIN software on VCIN node
-  command: /opt/vsd/vsd-install.sh -t v -y
-  when: 
-    - vsd_sa_or_ha | match ('sa')
-    - vcin_mode is defined
-    - vcin_mode
-    - vsd_major_version | int >= 5
-    - vsd_minor_version | int >= 2
-    - vsd_patch_version | int >= 2
+  - name: Determine if this is a VCIN install
+    set_fact:
+      deploy_vcin: true
+    when:
+      - vcin_mode is defined 
+      - vcin_mode
+      - (vsd_major_version|int >= 5 and vsd_minor_version|int >= 2 and vsd_patch_version|int >= 2) or
+        (vsd_major_version|int >= 5 and vsd_minor_version|int > 2) or
+        (vsd_major_version|int > 5)
+
+  - name: Install VSD software on standalone node
+    command: /opt/vsd/vsd-install.sh -t s -y
+    when: not deploy_vcin
+
+  - name: Install VCIN software on VCIN node
+    command: /opt/vsd/vsd-install.sh -t v -y
+    when: deploy_vcin
+
+  when: vsd_sa_or_ha | match ('sa')
   remote_user: "root"
 
 - block:
@@ -181,3 +189,4 @@
 - name: Set XMPP connection to allow both clear and TLS
   command: /opt/vsd/bin/ejmode allow -y
   remote_user: "root"
+  when: deploy_vcin is not defined or not deploy_vcin
