@@ -1,5 +1,30 @@
 ---
 - block:
+  - name: Determine if vstat upgrade needs to be in-place
+    include_role:
+      name: common
+      tasks_from: set-major-minor-versions.yml
+
+  - name: Set in-place upgrade to false
+    set_fact:
+      in_place_upgrade: true
+    when: 
+      - to_major_version == 4 
+      - to_patch_version <= 11
+
+  - name: Set in-place upgrade
+    set_fact:
+      in_place_upgrade: false
+    when:
+      - to_major_version >= 5
+      - to_minor_version >= 2
+      - to_patch_version >= 1
+   
+  when: 
+    - myvstats is defined
+    - "'upgrade' in vstat_operations_list|default(['None'])"
+
+- block:
 
   - block:
 
@@ -46,8 +71,8 @@
 
   when:
     - myvstats is defined
-    - "'install' in vstat_operations_list|default(['None']) or
-      'upgrade' in vstat_operations_list|default(['None'])"
+    - ('install' in vstat_operations_list|default(['None'])) or
+      ('upgrade' in vstat_operations_list|default(['None']) and not in_place_upgrade)
   tags:
     - vstat
 
@@ -72,6 +97,7 @@
   when:
     - myvstats is defined
     - "'upgrade' in vstat_operations_list|default(['None'])"
+    - not in_place_upgrade
   tags:
     - vstat
 
