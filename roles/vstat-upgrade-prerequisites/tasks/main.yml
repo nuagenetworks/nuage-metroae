@@ -1,65 +1,10 @@
-- name: Get elasticsearch version
-  command: "curl localhost:9200"
-  register: es_version
+- include: in_place_upgrade.yml
+  remote_user: root
+  when: in_place_upgrade
 
-- name: Convert es_version output to json
-  set_fact:
-    es_version_json: "{{ es_version.stdout | from_json }}"
-
-- name: Write current es version to file on vstat node(s)
-  shell: echo "{{ es_version_json.version.number }}" >> /root/current_es_version.log
-
-- name: Get vsd node(s) information
-  import_role:
-    name: common
-    tasks_from: vsd-node-info.yml
+- name: Backup elasticsearch data
+  inlcude_role:
+    name: vstat-data-backup
   vars:
-    vsd_hostname: "{{ vsd_fqdn }}"
-  run_once: true
-
-- name: Disable stats collection on all VSD nodes
-  commad: /opt/vsd/vsd-stats -d
-  delegate_to: "{{ item }}"
-  with_items: "{{ vsd_hostname_list }}"
-  run_once: true
-
-- name: Generate ssh key on vsd for vstat upgrade
-  shell: ssh-keygen -b 2048 -t rsa -f /root/.ssh/vstat_rsa -q -N ""
-  args:
-    creates: /root/.ssh/vstat_rsa
-  delegate_to: "{{ vsd_hostname_list }}[0]"
-  run_once: true
-
-- name: Get generated SSH keys
-  shell: cat ~/.ssh/vstat_rsa.pub
-  register: ssh_key
-  run_once: true
-  delegate_to: "{{ vsd_hostname_list }}[0]"
-
-- name: Copy ssh key from vsd to vstat node(s)
-  shell: "echo {{ ssh_key.stdout }} >> /root/.ssh/authorized_keys"
-
-- block:
-  - name: Generate SSH keys
-    shell: ssh-keygen -b 2048 -t rsa -f /root/.ssh/vstat_rsa -q -N ""
-    args:
-      creates: /root/.ssh/vstat_rsa
-    delegate_to: "{{ item }}"
-    with_items: "{{ groups['vstats'] }}"
-    run_once: true
-
-  - name: Get generated SSH keys
-    shell: cat ~/.ssh/vstat_rsa.pub
-    register: ssh_key_lst
-    delegate_to: "{{ item }}"
-    with_items: "{{ groups['vstats'] }}"
-    run_once: true
-
-  - name: Add SSH keys to authorized_keys file
-    shell: "echo {{ item[1].stdout }} >> /root/.ssh/authorized_keys"
-    delegate_to: "{{ item[0] }}"
-    with_nested:
-      - "{{ groups['vstats'] }}"
-      - "{{ ssh_key_lst.results }}"
-    run_once: true
-  when: vstat_sa_or_ha | match('ha')
+    nuage_upgrade: true
+  when: not_in_place_upgrade
