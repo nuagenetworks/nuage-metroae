@@ -27,16 +27,14 @@ After all [Prerequisites](#prerequisites) are met, run the following set of play
 15. ./metro-ansible vsc_ha_upgrade_deploy_2.yml -vvvv
 16. ./metro-ansible vsc_ha_upgrade_postdeploy_2.yml -vvvv
 17. ./metro-ansible vstat_health.yml -e report_filename=vstat_preupgrade_health.txt -vvvv
-18. ./metro-ansible vstat_upgrade_data_backup.yml -vvvv
-19. ./metro-ansible vstat_destroy.yml -vvvv
-20. ./metro-ansible vstat_predeploy.yml -vvvv
-21. ./metro-ansible vstat_deploy.yml -vvvv
-22. ./metro-ansible vstat_upgrade_data_migrate.yml -vvvv
+18. ./metro-ansible vstat_upgrade_prerequisites -vvvv
+19. ./metro-ansible vstat_upgrade.yml -vvvv
+20. ./metro-ansible vstat_upgrade_wrapup.yml -vvvv
 
 ** FINALIZE UPGRADE **
 
-23. ./metro-ansible vsp_upgrade_postdeploy.yml -vvvv
-24. ./metro-ansible vsp_postupgrade_health.yml -vvvv
+21. ./metro-ansible vsp_upgrade_postdeploy.yml -vvvv
+22. ./metro-ansible vsp_postupgrade_health.yml -vvvv
 
 
 ## VSD, VSC, & VSTAT (elasticsearch ) SA/Standalone upgrade at a glance
@@ -58,16 +56,14 @@ After all [Prerequisites](#prerequisites) are met, run the following set of play
 ** DO NOT PROCEED UNTILL VRS(s) ARE UPGRADED **
 
 11. ./metro-ansible vstat_health.yml -e report_filename=vstat_preupgrade_health.txt -vvvv
-12. ./metro-ansible vstat_upgrade_data_backup.yml -vvvv
-13. ./metro-ansible vstat_destroy.yml -vvvv
-14. ./metro-ansible vstat_predeploy.yml -vvvv
-15. ./metro-ansible vstat_deploy.yml -vvvv
-16. ./metro-ansible vstat_upgrade_data_migrate.yml -vvvv
+12. ./metro-ansible vstat_upgrade_prerequisites -vvvv
+13. ./metro-ansible vstat_upgrade.yml -vvvv
+14. ./metro-ansible vstat_upgrade_wrapup.yml -vvvv
 
 ** FINALIZE UPGRADE **
 
-17 ./metro-ansible vsp_upgrade_postdeploy.yml -vvvv
-18 ./metro-ansible vsp_postupgrade_health.yml -vvvv
+15 ./metro-ansible vsp_upgrade_postdeploy.yml -vvvv
+16 ./metro-ansible vsp_postupgrade_health.yml -vvvv
 
 
 ## Sample HA Metro workflow for an upgrade
