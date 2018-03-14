@@ -1,10 +1,25 @@
+- name: Get vsd node(s) information
+  import_role:
+    name: common
+    tasks_from: vsd-node-info.yml
+  vars:
+    vsd_hostname: "{{ vsd_fqdn }}"
+  run_once: true
+
 - name: Disable shard allocation
-  command: "{{ disable_shard }}"
+  uri:
+    url: "{{ disable_shard_url }}"
+    method: PUT
+    headers:
+      Content-Type: "application/json"
+    body: "{{ lookup('file', 'disable_shard.json') | to_json }}"
   run_once: true
   when: vstat_sa_or_ha | match('ha')
 
 - name: Perform sync flush
-  commad: "{{ sync_flush }}"
+  uri:
+    url: "{{ sync_flush_url }}"
+    method: POST
   run_once: true
   when: vstat_sa_or_ha | match('ha')
 
@@ -19,65 +34,35 @@
           mode=0700
 
 - name: Execute upgrade script
-  shell: "./root/{{ vstat_upgrade_scripts_file }}"
+  shell: "/root/{{ vstat_upgrade_scripts_file }}"
 
 - block:
   - name: Execute VSTAT standalone script
     command: /opt/vsd/vsd-es-standalone.sh -e {{ inventory_hostname }}
-    delegate_to: "{{ vsd_hostname_list }}[0]"
+    delegate_to: "{{ vsd_hostname_list[0] }}"
     register: upgrade_status
     environment:
       SSHPASS: "{{ vstat_password }}"
     run_once: true
 
   rescue:
-    - name: Check the status of shards being processed
-      command: "{{ check_shards_health }}"
-      register: es_health
-      until: es_health.unassigned_shards == 0
-      retries: 5
-      delay: 60
-      run_once: true
+    - include: get_health_status.yml
   when: vstat_sa_or_ha | match('sa')
 
 - block:
   - name: Execute VSTAT clustered script
     command: /opt/vsd/vsd-es-cluster-config.sh -e {{ groups['vstats'][0] }},{{ groups['vstats'][1] }},{{ groups['vstats'][2] }}
-    delegate_to: "{{ vsd_hostname_list }}[0]"
+    delegate_to: "{{ vsd_hostname_list[0] }}"
     register: upgrade_status
     environment:
       SSHPASS: "{{ vstat_password }}"
     run_once: true
 
   rescue:
-    - name: Check the status of shards being processed
-      command: "{{ check_shards_health }}"
-      register: es_health
-      until: es_health.unassigned_shards == 0
-      retries: 5
-      delay: 60
-      run_once: true
+    - include: get_health_status.yml
   when: vstat_sa_or_ha | match('ha')
 
 - name: Restart Elasticsearch service
   service:
     name: elasticsearch
     state: restarted
-
-- include: vstat_post_upgrade_checks.yml
-  remote_user: root
-
-- name: Execute some script
-  command: "/root/nuage_elasticsearch/scripts/cluster_nuage_index_setting.sh"
-  when: vstat_sa_or_ha | match('ha')
-  run_once: true
-
-- name: Delete watcher
-  command: "/root/nuage_elasticsearch/scripts/delete_watcher.py"
-  run_once: true
-
-- name: Enable stats
-  include_role:
-    name: common
-    tasks_from: vstat-enable-stats
-  run_once: true
