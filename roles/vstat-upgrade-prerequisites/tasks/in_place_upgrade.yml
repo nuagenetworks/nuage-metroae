@@ -6,8 +6,13 @@
   set_fact:
     es_version_json: "{{ es_version.stdout | from_json }}"
 
+- name: Stat the currestn es version log file
+  stat: path=/root/current_es_version.log
+  register: es_version
+
 - name: Write current es version to file on vstat node(s)
   shell: echo "{{ es_version_json.version.number }}" >> /root/current_es_version.log
+  when: not es_version.stat.exists
 
 - name: Get vsd node(s) information
   import_role:
