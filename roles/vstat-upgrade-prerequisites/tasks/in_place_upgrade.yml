@@ -18,7 +18,7 @@
   run_once: true
 
 - name: Disable stats collection on all VSD nodes
-  commad: /opt/vsd/vsd-stats -d
+  command: /opt/vsd/vsd-stats.sh -d
   delegate_to: "{{ item }}"
   with_items: "{{ vsd_hostname_list }}"
   run_once: true
@@ -27,14 +27,14 @@
   shell: ssh-keygen -b 2048 -t rsa -f /root/.ssh/vstat_rsa -q -N ""
   args:
     creates: /root/.ssh/vstat_rsa
-  delegate_to: "{{ vsd_hostname_list }}[0]"
+  delegate_to: "{{ vsd_hostname_list[0] }}"
   run_once: true
 
 - name: Get generated SSH keys
   shell: cat ~/.ssh/vstat_rsa.pub
   register: ssh_key
   run_once: true
-  delegate_to: "{{ vsd_hostname_list }}[0]"
+  delegate_to: "{{ vsd_hostname_list[0] }}"
 
 - name: Copy ssh key from vsd to vstat node(s)
   shell: "echo {{ ssh_key.stdout }} >> /root/.ssh/authorized_keys"
