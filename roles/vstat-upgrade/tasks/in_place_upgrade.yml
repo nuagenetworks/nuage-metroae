@@ -38,28 +38,50 @@
 
 - block:
   - name: Execute VSTAT standalone script
-    command: /opt/vsd/vsd-es-standalone.sh -e {{ inventory_hostname }}
-    delegate_to: "{{ vsd_hostname_list[0] }}"
-    register: upgrade_status
-    environment:
-      SSHPASS: "{{ vstat_password }}"
+    include: execute_sa_script.yml
+    failed_when: 'Done setting sending rest call to set' not in upgrade_status.stdout and
+                 'Elasticsearch not up after 1 mins' not in upgrade_status.stdout
     run_once: true
 
-  rescue:
-    - include: get_health_status.yml
+  - block:
+    - name: Wait for shard count go down to zero and status to turn green
+      include: get_health_status.yml
+      run_once" true
+
+    - fail:
+        msg: Elasticsearch upgrade failed
+      when: es_status.json.status == 'red'
+
+    - name: Execute VSTAT standalone script after status turns green
+      include: execute_sa_script.yml
+      when: es_status.json.status == 'green' and es_status.json.unassigned_shards == 0
+      run_once: true
+    when: 'Elasticsearch not up after 1 mins' in upgrade_status.stdout
+
   when: vstat_sa_or_ha | match('sa')
 
 - block:
   - name: Execute VSTAT clustered script
-    command: /opt/vsd/vsd-es-cluster-config.sh -e {{ groups['vstats'][0] }},{{ groups['vstats'][1] }},{{ groups['vstats'][2] }}
-    delegate_to: "{{ vsd_hostname_list[0] }}"
-    register: upgrade_status
-    environment:
-      SSHPASS: "{{ vstat_password }}"
+    include: execute_ha_script.yml
+    failed_when: 'Done setting sending rest call to set' not in upgrade_status.stdout and
+                 'Elasticsearch not up after 1 mins' not in upgrade_status.stdout
     run_once: true
 
-  rescue:
-    - include: get_health_status.yml
+  - block:
+    - name: Wait for shard count go down to zero and status to turn green
+      include: get_health_status.yml
+      run_once" true
+
+    - fail:
+        msg: Elasticsearch upgrade failed
+      when: es_status.json.status == 'red'
+
+    - name: Execute VSTAT clustered script after status turns green
+      include: execute_ha_script.yml
+      when: es_status.json.status == 'green' and es_status.json.unassigned_shards == 0
+      run_once: true
+    when: 'Elasticsearch not up after 1 mins' in upgrade_status.stdout
+
   when: vstat_sa_or_ha | match('ha')
 
 - name: Restart Elasticsearch service
