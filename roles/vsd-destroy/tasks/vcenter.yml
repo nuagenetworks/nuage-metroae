@@ -14,7 +14,7 @@
   - name: Set local variable with vmname
     set_fact:
       vm_name: "{{ vmname }}"
-  when: not destroy_upgrade_vm | default( False )
+  when: not (destroy_upgrade_vm | default( False ))
 
 - name: Finding VM folder
   connection: local
@@ -23,7 +23,7 @@
     username: "{{ vcenter.username }}"
     password: "{{ vcenter.password }}"
     datacenter: "{{ vcenter.datacenter }}"
-    name: "{{ vmname }}"
+    name: "{{ vm_name }}"
     validate_certs: no
   register: vsd_vm_folder
   ignore_errors: on
@@ -36,7 +36,7 @@
     password: "{{ vcenter.password }}"
     datacenter: "{{ vcenter.datacenter }}"
     folder: "/{{ vcenter.datacenter }}{{ vsd_vm_folder['folders'][0] }}"
-    name: "{{ vmname }}"
+    name: "{{ vm_name }}"
     validate_certs: no
   register: vsd_vm_facts
   ignore_errors: on
@@ -57,7 +57,7 @@
       validate_certs: no
       datacenter: "{{ vcenter.datacenter }}"
       folder: "/{{ vcenter.datacenter }}{{ vsd_vm_folder['folders'][0] }}"
-      name: "{{ vmname }}"
+      name: "{{ vm_name }}"
       state: "poweredoff"
     when: vsd_vm_facts['instance']['hw_power_status'] == 'poweredOn'
   
@@ -70,6 +70,6 @@
       validate_certs: no
       datacenter: "{{ vcenter.datacenter }}"
       folder: "/{{ vcenter.datacenter }}{{ vsd_vm_folder['folders'][0] }}"
-      name: "{{ vmname }}"
+      name: "{{ vm_name }}"
       state: "absent"
   when: vsd_vm_folder|succeeded and vsd_vm_facts|succeeded
