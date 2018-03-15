@@ -1,42 +1,45 @@
 ---
-- block:
-  - name: Download pip installer on VSD
-    command: curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
-    remote_user: "root"
-    delegate_to: "{{ item }}"
-    with_items: "{{ groups['vsds'] }}"
+- name: Download pip installer on VSD
+  command: curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
+  remote_user: "root"
+  delegate_to: "{{ item }}"
+  with_items: "{{ groups['vsds'] }}"
 
-  - name: Execute pip installer on VSD
-    command: python get-pip.py
-    remote_user: "root"
-    delegate_to: "{{ item }}"
-    with_items: "{{ groups['vsds'] }}"
+- name: Execute pip installer on VSD
+  command: python get-pip.py
+  remote_user: "root"
+  delegate_to: "{{ item }}"
+  with_items: "{{ groups['vsds'] }}"
 
-  - name: Install pexpect on VSD
-    pip:
-      name: pexpect
-    remote_user: "root"
-    delegate_to: "{{ item }}"
-    with_items: "{{ groups['vsds'] }}"
-
-- name: Create SSL directory on the Stats node
-  file: path=/etc/nginx/ssl state=directory owner=root group=root mode=600
+- name: Install pexpect on VSD
+  pip:
+    name: pexpect
+  remote_user: "root"
+  delegate_to: "{{ item }}"
+  with_items: "{{ groups['vsds'] }}"
 
 - block:
+
+  - name: Create SSL directory on the Stats node
+    file: path=/etc/nginx/ssl state=directory owner=root group=root mode=600
+
   - name: Revoke old stats cert, if any
     command: "/opt/vsd/ejbca/deploy/certMgmt.sh -a revoke -u elastic"
     ignore_errors: yes
 
-  - name: Generate SSL certificates on VSD for the Stats node (requires pexpect)
-    expect:
-      command: "/opt/vsd/ejbca/deploy/certMgmt.sh -a generate -u elastic -c elastic -o csp -f pem -t server -d {{ mgmt_ip }}"
-      responses:
-        (?i)password: "Alcateldc"
-    register: sslresult
-    delegate_to: "{{ groups['vsds'][0] }}"
+  remote_user: "root"
+
+- name: Generate SSL certificates on VSD for the Stats node (requires pexpect)
+  expect:
+    command: "/opt/vsd/ejbca/deploy/certMgmt.sh -a generate -u elastic -c elastic -o csp -f pem -t server -d {{ mgmt_ip }}"
+    responses:
+      (?i)password: "Alcateldc"
+  register: sslresult
+  delegate_to: "{{ groups['vsds'][0] }}"
 
 - name: Create temp folder to host the ssl certificates
   file: path=/tmp/ssl state=directory owner=root group=root mode=755
+  remote_user: "root"
 
 - name: Transfer SSL certificates from VSD to localhost
   fetch: src=/opt/vsd/ejbca/p12/pem/{{ item }} dest=/tmp/ssl/ flat=yes
@@ -62,6 +65,7 @@
   systemd:
     name: nginx
     state: restarted
+  remote_user: "root"
 
 - name: Uninstall pexpect on VSD
   pip:
