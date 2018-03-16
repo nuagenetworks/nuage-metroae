@@ -46,6 +46,8 @@ def validate_against_schema(path, schema):
             print msg
             module.fail_json(msg=msg)
 
+    if parsed_yaml is None:
+        parsed_yaml = dict()
     try:
         validate(parsed_yaml, parsed_schema)
         module.exit_json(changed=False)
