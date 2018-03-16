@@ -1,0 +1,45 @@
+---
+
+- name: Set inventory cache directory
+  set_fact:
+    inventory_cache_dir: "{{ inventory_dir }}/cache"
+
+- name: Clear inventory cache
+  file:
+    state: absent
+    path: "{{ inventory_cache_dir }}/"
+
+- name: Create the inventory cache directory
+  file: path={{ inventory_cache_dir }} state=directory
+
+- name: Create VSD inventory cache
+  template: src=vsd.j2 backup=no dest={{ inventory_cache_dir }}/{{ item.hostname }}.yml
+  with_items: "{{ vsds }}"
+
+- name: Create group_vars cache
+  template: src=group_vars.all.j2 dest="{{ inventory_cache_dir }}/group_vars.yml" backup=no
+
+- name: Create hosts file
+  template: src=hosts.j2 dest="{{ inventory_cache_dir }}/hosts.txt" backup=no
+
+- name: Gather inventory cache file stats
+  stat:
+    path: "{{ item }}"
+    get_md5: yes
+  register: inventory_cache_stats
+  with_fileglob: "{{ inventory_cache_dir }}/*"
+
+- debug: var=inventory_cache_stats verbosity=1
+
+- name: Generate md5 checksum list for inventory cache files
+  set_fact:
+    inventory_cache_md5_list: "{{ inventory_cache_stats.results | map(attribute='stat.md5') | list | sort }}"
+
+- name: Clean up inventory cache
+  file:
+    state: absent
+    path: "{{ inventory_cache_dir }}/"
+- name: Clear inventory cache
+  file:
+    state: absent
+    path: "{{ inventory_cache_dir }}/"

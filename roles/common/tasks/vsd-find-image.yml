@@ -20,10 +20,10 @@
         qcow2_path: "{{ rc_vsd_file.files[0].path | dirname }}"
         qcow2_file_name: "{{ rc_vsd_file.files[0].path | basename }}"
 
-    when: ( myvsds is defined and
-          ( myvsds | map(attribute='target_server_type') | list | issuperset(["kvm"]) ) ) or
-          ( myvcins is defined and
-          ( myvcins | map(attribute='target_server_type') | list | issuperset(["kvm"]) ) )
+    when: ( vsds is defined and
+          ( vsds | map(attribute='target_server_type') | list | issuperset(["kvm"]) ) ) or
+          ( vcins is defined and
+          ( vcins | map(attribute='target_server_type') | list | issuperset(["kvm"]) ) )
 
   - block: # OVA
 
@@ -44,10 +44,10 @@
         ova_path: "{{ rc_vsd_file.files[0].path | dirname }}"
         ova_file_name: "{{ rc_vsd_file.files[0].path | basename }}"
 
-    when: ( myvsds is defined and
-          myvsds | map(attribute='target_server_type') | list | issuperset(["vcenter"]) ) or
-          ( myvcins is defined and
-          myvcins | map(attribute='target_server_type') | list | issuperset(["vcenter"]) )
+    when: ( vsds is defined and
+          vsds | map(attribute='target_server_type') | list | issuperset(["vcenter"]) ) or
+          ( vcins is defined and
+          vcins | map(attribute='target_server_type') | list | issuperset(["vcenter"]) )
 
   when: "'upgrade' in vsd_operations_list|default(['None']) or
         'install' in vsd_operations_list|default(['None']) or
@@ -75,8 +75,8 @@
       vsd_migration_iso_path: "{{ rc_vsd_migration_file.files[0].path | dirname }}"
       vsd_migration_iso_file_name: "{{ rc_vsd_migration_file.files[0].path | basename }}"
 
-  when: 
-    - myvsds is defined or myvcins is defined
+  when:
+    - vsds is defined or vcins is defined
     - "'upgrade' in vsd_operations_list|default(['None']) or
        'upgrade' in vcin_operations_list|default(['None'])"
   tags:

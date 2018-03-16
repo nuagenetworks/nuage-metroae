@@ -9,11 +9,12 @@
 
     - debug: var=rc_vsc_file verbosity=1
 
-    - name: Verify that a VSC QCOW2 file was found
-      assert: {
-        that: "{{ rc_vsc_file.matched }} > 0",
-        msg: "Unable to find VSC VM QCOW2 image file"
-        }
+    # TODO: temporarily remove for testing
+    # - name: Verify that a VSC QCOW2 file was found
+    #   assert: {
+    #     that: "{{ rc_vsc_file.matched }} > 0",
+    #     msg: "Unable to find VSC VM QCOW2 image file"
+    #     }
 
     - name: Register VSC QCOW2 variables with proper path and image locations for use in other playbooks
       set_fact:
@@ -21,7 +22,7 @@
         qcow2_file_name: "{{ rc_vsc_file.files[0].path | basename }}"
       when: rc_vsc_file.matched > 0
 
-    when: myvscs | map(attribute='target_server_type') | list | issuperset(["kvm"])
+    when: vscs | map(attribute='target_server_type') | list | issuperset(["kvm"])
 
   - block:
 
@@ -43,10 +44,10 @@
         ova_file_name: "{{ rc_vsc_file.files[0].path | basename }}"
       when: rc_vsc_file.matched > 0
 
-    when: myvscs | map(attribute='target_server_type') | list | issuperset(["vcenter"])
+    when: vscs | map(attribute='target_server_type') | list | issuperset(["vcenter"])
 
   when:
-    - myvscs is defined
+    - vscs is defined
     - "'install' in vsc_operations_list|default(['None'])"
   tags:
     - vsc
@@ -71,20 +72,20 @@
       vsc_tim_file_name: "{{ rc_vsc_tim_file.files[0].path | basename }}"
     when: rc_vsc_tim_file.matched > 0
 
-  when: 
-    - myvscs is defined
+  when:
+    - vscs is defined
     - "'upgrade' in vsc_operations_list|default(['None'])"
   tags:
     - vsc
 
-- name: Set myvscs_check
-  set_fact: myvscs_check={{myvscs is defined}}
+- name: Set vscs_check
+  set_fact: vscs_check={{vscs is defined}}
 
-- name: Assign empty list to myvscs if it is undefined
-  set_fact: myvscs= default([])
-  when: not myvscs_check
+- name: Assign empty list to vscs if it is undefined
+  set_fact: vscs= default([])
+  when: not vscs_check
 
 - name: Create host_vars files for vsc
   template: src=vsc.j2 backup=no dest={{ inventory_dir }}/host_vars/{{ item.hostname }}
-  with_items: "{{ myvscs }}"
-  when: myvscs_check
+  with_indexed_items: "{{ vscs }}"
+  when: vscs_check

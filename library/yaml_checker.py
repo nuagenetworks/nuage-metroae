@@ -21,10 +21,32 @@ EXAMPLES = '''
 '''
 
 
+def no_duplicates_constructor(loader, node, deep=False):
+    """Check for duplicate keys."""
+    mapping = {}
+    for key_node, value_node in node.value:
+        key = loader.construct_object(key_node, deep=deep)
+        value = loader.construct_object(value_node, deep=deep)
+        if key in mapping:
+            module.fail_json(msg="Duplicate Variable Found - %s" % key)
+
+        mapping[key] = value
+
+    return loader.construct_mapping(node, deep)
+
+
+# yaml.add_constructor(
+#     yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG,
+#     no_duplicates_constructor)
+
+
 def check_yaml(filepath):
     fil = open(filepath, 'r')
     try:
-        yaml.load(fil, yaml.SafeLoader)
+        yaml.add_constructor(
+            yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG,
+            no_duplicates_constructor)
+        yaml.load(fil)
         module.exit_json(changed=False)
     except yaml.YAMLError as exc:
         print("Error while parsing YAML file:")
