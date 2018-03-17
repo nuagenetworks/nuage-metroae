@@ -11,6 +11,7 @@
 * Eliminate check for exactly 3 XMPP users
 * Allow NSGV MAC address to be set
 * Support limit on VSC system name length without limiting hostname length
+* Fixed vnsutil-postdeploy to run the install script with the data_fqdn
 ## Release 2.3.1
 ### Resolved Issues
 * Under certain conditions, VSTAT upgrade would fail because we didn't use the _upgrade_ VM name for the new VM.
