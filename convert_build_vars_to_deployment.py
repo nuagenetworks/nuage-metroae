@@ -26,6 +26,8 @@ def read_build_vars(build_vars_file):
     with open(build_vars_file, "r") as file:
         var_dict = yaml.safe_load(file.read())
 
+    var_dict["generator_script"] = "conversion from " + build_vars_file
+
     return var_dict
 
 
