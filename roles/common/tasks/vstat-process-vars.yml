@@ -32,6 +32,13 @@
     - myvstats is defined
     - ('upgrade' in vstat_operations_list|default(['None']) and in_place_upgrade)
 
+- name:  Set qcow2 or ova vars
+  set_fact:
+    skip_qcow2_or_ova_vars: false
+  when:
+    - myvstats is defined
+    - ('upgrade' in vstat_operations_list|default(['None']) and not in_place_upgrade)
+
 - block:
 
   - block:
@@ -77,7 +84,7 @@
 
     when: myvstats | map(attribute='target_server_type') | list | issuperset(["vcenter"])
 
-  when: skip_qcow2_or_ova_vars is defined or ('install' in vstat_operations_list|default(['None']))
+  when: not skip_qcow2_or_ova_vars or ('install' in vstat_operations_list|default(['None']))
   tags:
     - vstat
 

@@ -27,7 +27,7 @@ After all [Prerequisites](#prerequisites) are met, run the following set of play
 15. ./metro-ansible vsc_ha_upgrade_deploy_2.yml -vvvv
 16. ./metro-ansible vsc_ha_upgrade_postdeploy_2.yml -vvvv
 17. ./metro-ansible vstat_health.yml -e report_filename=vstat_preupgrade_health.txt -vvvv
-18. ./metro-ansible vstat_upgrade_prerequisites -vvvv
+18. ./metro-ansible vstat_upgrade_check_prerequisites -vvvv
 19. ./metro-ansible vstat_upgrade.yml -vvvv
 20. ./metro-ansible vstat_upgrade_wrapup.yml -vvvv
 
@@ -56,7 +56,7 @@ After all [Prerequisites](#prerequisites) are met, run the following set of play
 ** DO NOT PROCEED UNTILL VRS(s) ARE UPGRADED **
 
 11. ./metro-ansible vstat_health.yml -e report_filename=vstat_preupgrade_health.txt -vvvv
-12. ./metro-ansible vstat_upgrade_prerequisites -vvvv
+12. ./metro-ansible vstat_upgrade_check_prerequisites -vvvv
 13. ./metro-ansible vstat_upgrade.yml -vvvv
 14. ./metro-ansible vstat_upgrade_wrapup.yml -vvvv
 
