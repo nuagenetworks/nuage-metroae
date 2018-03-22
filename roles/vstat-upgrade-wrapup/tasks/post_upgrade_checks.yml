@@ -1,0 +1,39 @@
+- name: Get vsd node(s) information
+  import_role:
+    name: common
+    tasks_from: vsd-node-info.yml
+  vars:
+    vsd_hostname: "{{ vsd_fqdn }}"
+  run_once: true
+
+- name: Get the es version after upgrade
+  command: "curl localhost:9200"
+  register: upgraded_version
+
+- name: Convert version to json format
+  set_fact:
+    upgraded_version_json: "{{ upgraded_version.stdout | from_json }}"
+
+- name: Get es version saved on vstat node(s)
+  command: "cat /root/current_es_version.log"
+  register: old_es_version
+
+- name: Compare es versions before and after upgrade
+  assert:
+    that: old_es_version.stdout != upgraded_version_json.version.number
+    msg: "Elastisearch upgrade failed"
+
+- name: Execute nuage index script
+  command: "/root/nuage_elasticsearch/scripts/cluster_nuage_index_setting.sh"
+  when: vstat_sa_or_ha | match('ha')
+  run_once: true
+
+- name: Delete watcher
+  command: "/root/nuage_elasticsearch/scripts/delete_watcher.py"
+  run_once: true
+
+- name: Enable stats
+  include_role:
+    name: common
+    tasks_from: vstat-enable-stats
+  run_once: true
