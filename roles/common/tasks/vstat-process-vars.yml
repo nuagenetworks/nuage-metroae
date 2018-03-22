@@ -7,14 +7,14 @@
 
   - name: Do not set in-place upgrade flag
     set_fact:
-      in_place_upgrade: false
+      vstat_in_place_upgrade: false
     when: 
       - to_major_version|int == 4 
       - to_patch_version|int <= 11
 
   - name: Set in-place upgrade flag
     set_fact:
-      in_place_upgrade: true
+      vstat_in_place_upgrade: true
     when:
       - to_major_version|int >= 5
       - to_minor_version|int >= 2
@@ -30,14 +30,7 @@
     skip_qcow2_or_ova_vars: true
   when:
     - myvstats is defined
-    - ('upgrade' in vstat_operations_list|default(['None']) and in_place_upgrade)
-
-- name:  Set qcow2 or ova vars
-  set_fact:
-    skip_qcow2_or_ova_vars: false
-  when:
-    - myvstats is defined
-    - ('upgrade' in vstat_operations_list|default(['None']) and not in_place_upgrade)
+    - ('upgrade' in vstat_operations_list|default(['None']) and vstat_in_place_upgrade)
 
 - block:
 
@@ -84,7 +77,7 @@
 
     when: myvstats | map(attribute='target_server_type') | list | issuperset(["vcenter"])
 
-  when: not skip_qcow2_or_ova_vars or ('install' in vstat_operations_list|default(['None']))
+  when: not skip_qcow2_or_ova_vars|default(False) or ('install' in vstat_operations_list|default(['None']))
   tags:
     - vstat
 
@@ -110,7 +103,7 @@
   when:
     - myvstats is defined
     - "'upgrade' in vstat_operations_list|default(['None'])"
-    - not in_place_upgrade
+    - not vstat_in_place_upgrade
   tags:
     - vstat
 
@@ -135,7 +128,7 @@
   when:
     - myvstats is defined
     - "'upgrade' in vstat_operations_list|default(['None'])"
-    - in_place_upgrade
+    - vstat_in_place_upgrade
   tags:
     - vstat
 
