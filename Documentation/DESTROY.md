@@ -1,6 +1,8 @@
 # Removing Nuage Networks Components with MetroAG
 The main steps for removing a deployment are:
+
 [1. Check existing deployment](#1-check-existing-deployment)
+
 [2. Remove components](#2-remove-components)
 
 ## Prerequisites / Requirements

@@ -8,7 +8,7 @@ Before deploying any components, you must have previously [set up your Nuage Met
 
 Make sure you have unzipped the Nuage Networks *.tar.gz files into their proper locations in the directory structure, so MetroAG can find the path of the Nuage components automatically. You should have done this in the customization phase. See [CUSTOMIZATION.md](CUSTOMIZATION.md) for details.
 ## Deploy All Components
-MetroAG workflows operate on components as you have defined them in `common.yml`. If you run a workflow for a component not specified in `common.yml`, the workflow skips all tasks associated with that component and runs to completion without error. Thus, if you run the `install_everything` workflow when only VRS appears in `common.yml`, the workflow deploys VRS successfully while ignoring the tasks for the other components not specified. Deploy all specified components with one command as follows:
+MetroAG workflows operate on components as you have defined them in your deployment. If you run a workflow for a component not specified, the workflow skips all tasks associated with that component and runs to completion without error. Thus, if you run the `install_everything` workflow when only VRS configuration is present, the workflow deploys VRS successfully while ignoring the tasks for the other components not specified. Deploy all specified components with one command as follows:
 ```
 ./metroag install_everything
 ```

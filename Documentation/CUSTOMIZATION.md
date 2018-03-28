@@ -17,7 +17,9 @@ To confirm that the intended deployment is supported by MetroAG, see [README.md]
 If you have not previously set up your MetroAG Ansible environment, see [SETUP.md](SETUP.md) before proceeding.
 
 ## Main Steps
+
 [1. Customize Deployment](#1-customize-deployment)
+
 [2. Unzip Nuage files](#2-unzip-nuage-files)
 
 ## 1. Customize Deployment
@@ -64,27 +66,27 @@ After completion, the <unzip_directory> should be specified in the common.yml de
 Alternatively, you can create the directories under the <nuage_unzipped_files_dir> directory and manually copy the appropriate files to those locations as shown in the example below.
 
   ```
-  <nuage_unzipped_files_dir/vsd/qcow2/
-  <nuage_unzipped_files_dir/vsd/ova/ (for VMware)
-  <nuage_unzipped_files_dir/vsc/
-  <nuage_unzipped_files_dir/vrs/el7/
-  <nuage_unzipped_files_dir/vrs/u14_04/
-  <nuage_unzipped_files_dir/vrs/ul16_04/
-  <nuage_unzipped_files_dir/vrs/vmware/
-  <nuage_unzipped_files_dir/vrs/hyperv/
-  <nuage_unzipped_files_dir/vstat/
-  <nuage_unzipped_files_dir/vns/nsg/
-  <nuage_unzipped_files_dir/vns/util/
+  <nuage_unzipped_files_dir>/vsd/qcow2/
+  <nuage_unzipped_files_dir>/vsd/ova/ (for VMware)
+  <nuage_unzipped_files_dir>/vsc/
+  <nuage_unzipped_files_dir>/vrs/el7/
+  <nuage_unzipped_files_dir>/vrs/u14_04/
+  <nuage_unzipped_files_dir>/vrs/ul16_04/
+  <nuage_unzipped_files_dir>/vrs/vmware/
+  <nuage_unzipped_files_dir>/vrs/hyperv/
+  <nuage_unzipped_files_dir>/vstat/
+  <nuage_unzipped_files_dir>/vns/nsg/
+  <nuage_unzipped_files_dir>/vns/util/
   ```
 
-After completion, the <unzip_directory> should be specified in the common.yml deployment configuration as the nuage_unzipped_files_dir parameter.
+After completion, the <nuage_unzipped_files_dir> should be specified in the common.yml deployment configuration as the nuage_unzipped_files_dir parameter.
 
 ## Hosting your deployment files outside of the repo
 
 When you are contributing code, or pulling new versions of Metro quite often, it may make sense to host your variable files in a separate directory outside of `nuage-metro/deployments/`.  A deployment directory in any location can be specified instead of a deployment name when issuing the metroag command.
 
 ## Generating example deployment configuration files
-A sample of the deployment configuration files are provided in the deployments/default/ directory and also in examples/.  If these are overwritten or deleted, or if a "no frills" version of the files with only the minimum required parameters are desired, they can be generated with the following command:
+A sample of the deployment configuration files are provided in the deployments/default/ directory and also in examples/.  If these are overwritten or deleted or if a "no frills" version of the files with only the minimum required parameters are desired, they can be generated with the following command:
 
 ```
 ./generate_example_from_schema.py <schema_filename> [--no-comments]

@@ -6,8 +6,11 @@ Before working with MetroAG, please read [README.md](/README.md) for a list of s
 
 ## Main steps for setting up the environment
 [1. Clone Nuage MetroAG repository](#1-clone-nuage-metroag-repository)
+
 [2. Set up Ansible host](#2-set-up-ansible-host)
+
 [3. Enable SSH Access](#3-enable-ssh-access)
+
 [4. Install ovftool (for VMware only)](#4-install-ovftool-for-vmware-only)
 
 ### 1. Clone Nuage MetroAG Repository
