@@ -6,6 +6,15 @@ Version: 3.0
 MetroAG is an automation engine that deploys and upgrades Nuage Networks components.
 After you specify the individual details of your deployment, MetroAG (leveraging Ansible playbooks and roles) sets up the environment as specified. MetroAG can also upgrade, roll-back, and health-check the environment.
 
+## New procedures in version 3.0
+If you have used previous versions of MetroAG, the usage of the tool has been greatly improved for usability.  Please note the following changes in your workflow:
+
+* **Deprecation of build_vars.yml.**  There is no longer a single monolithic configuration file for MetroAG.  Configuration is specified through "deployments".  A tool is provided to convert an obsolute build_vars.yml file.  See [Customization](Documentation/CUSTOMIZATION.md) for details.
+* **Deprecation of `build`.**  The user no longer needs to issue the `build` playbook.  This will be handled automatically and seamlessly by the MetroAG tool.  MetroAG also tracks changes and will skip steps not required if configuration is unmodified.
+* **Schema validation of deployment data.**  All configuration specified in a deployment is automatically validated against json-schema.org schemas.  This ensures that all required fields are set and every field has the correct syntax.  Any error will be found as early as possible and a specific error message will call out the exact problem.
+* **Workflows instead of playbooks.**  In order to simplify usage, the concept of `playbook` is being replaced by a `workflow`.  The .yml extension is no longer required.  Thus issue `vsd_deploy` instead of `vsd_deploy.yml`.  The MetroAG tool is renamed from `metro-ansible` to `metroag`.  The MetroAG tool now supports different arguments, including `--list` which displays all supported workflows.
+* **Cleanup of repo.**  The MetroAG repository has been cleaned.  Only tools useful for users are present in the root directory.  The internal workings of the tool have been moved to sub-directories like src/.
+
 ## Supported Components for Deployment
 MetroAG supports deployment of the following components as VMs on the target server. The same target server types are supported as the VSP platform.
 
@@ -28,7 +37,7 @@ NSG-V (Network Services Gateway-Virtual) |  X |
 #### Provided Auxiliary Services
 * DNS/NTP
 
-![topology](topology.png)
+![topology](Documentation/topology.png)
 
 ## Supported Components for Upgrade
 MetroAG supports upgrade of the following Nuage VSP components.
@@ -42,7 +51,7 @@ VCIN | X |  | X |
 
 ## Main Steps for Using MetroAG
 
-1. [Setup](Documentation/SETUP.md) the Ansible Host.
+1. [Setup](Documentation/SETUP.md) the MetroAG Host.
 
 2. [Customize](Documentation/CUSTOMIZATION.md) your deployment to match your network topology, and describe your Nuage Networks specifics.
 
@@ -51,9 +60,10 @@ VCIN | X |  | X |
 4. If things did not work out as expected, [destroy](Documentation/DESTROY.md) or [rollback](Documentation/ROLLBACK.md) your environment.
 
 ## Setup
+[Setup](Documentation/SETUP.md) is required to prepare the host for running MetroAG.  This includes retrieving the repository installing prerequisite packages and setting up SSH access.
 
 ## Deployment Specification
-The settings required by MetroAG are specified in a set of configuration files called a deployment.  These are yaml files stored under a subdirectory of deployments/ under the MetroAG base directory.  Each deployment can describe a different set of components and are selected by the directory name.  A deployment named "default" comes pre-packaged with MetroAG with a starter blueprint.  See [Customization](Documentation/CUSTOMIZATION.md) for details.
+The settings required by MetroAG are specified in a set of configuration files called a deployment.  These are yaml files stored under a subdirectory of deployments/ under the MetroAG base directory.  Each deployment can describe a different set of components.  During the execution of a workflow the deployment is selected by the directory name.  A deployment named "default" comes pre-packaged with MetroAG with a starter blueprint.  See [Customization](Documentation/CUSTOMIZATION.md) for details.
 
 ## MetroAG Workflows
 MetroAG workflows are the operations that can be performed against a specified deployment.  All supported workflows can be listed via:
@@ -85,7 +95,7 @@ After [setup](Documentation/SETUP.md) and specification of a [deployment](Docume
 
 * workflow: Name of the workflow to perform.  Can be listed with --list option.
 * deployment: Name of the deployment directory containing configuration files.  See [customization](Documentation/CUSTOMIZATION.md)
-* options: Other options for the tool.  These can be shown using --help.  Also, any options not directly for the metroag tool are passed to Ansible.
+* options: Other options for the tool.  These can be shown using --help.  Also, any options not directed to the metroag tool are passed to Ansible.
 
 The following are some examples:
 
@@ -95,14 +105,16 @@ Installs all components described in deployments/default/.
 
     ./metroag vsd_destroy east_network -vvv
 
-Takes down only the VSD components described by deployments/east_network/vsds.yml.  Additional output will be display with 3 levels of verbosity.
+Takes down only the VSD components described by deployments/east_network/vsds.yml.  Additional output will be displayed with 3 levels of verbosity.
 
 ## Ansible
 MetroAG is based off of the Python-based Ansible operations tool.  The following sections provide more detail of how Ansible is utilized to perform workflows.
 
 ### Nomenclature
-**Ansible Host**: The host where MetroAG runs. Ansible and the required packages are installed on this host. The Ansible Host must run el7 Linux host, e.g. Cent)S 7.* or RHEL 7.*.
+**Ansible Host**: The host where MetroAG runs. Ansible and the required packages are installed on this host. The Ansible Host must run el7 Linux host, e.g. Cent)S 7.* or RHEL 7.*
+
 **MetroAG User**: The user who runs MetroAG to deploy and upgrade components.
+
 **Target Server**: The hypervisor on which one or more VSP components are installed as VMs. Each deployment may contain more than one Target Server.
 
 ### Use of Ansible Playbooks and Roles
@@ -127,7 +139,6 @@ File name | Description
 [ROLLBACK.md](Documentation/ROLLBACK.md) | Restore VSP components to their previous version if an upgrade fails.
 [CONTRIBUTING.md](CONTRIBUTING.md) | Submit your code and become a contributor to Nuage MetroAG.
 [OPENSTACK.md](Documentation/OPENSTACK.md) | Deploy VSP components in OpenStack (limited support).
-
 
 ## Questions, Feedback, and Contributing
 Ask questions and get support via email.
