@@ -21,7 +21,7 @@
         qcow2_file_name: "{{ rc_vnsutil_file.files[0].path | basename }}"
       when: rc_vnsutil_file.matched > 0
 
-    when: myvnsutils | map(attribute='target_server_type') | list | issuperset(["kvm"])
+    when: vnsutils | map(attribute='target_server_type') | list | issuperset(["kvm"])
 
   - block: #OVA
 
@@ -43,22 +43,22 @@
         ova_file_name: "{{ rc_vnsutil_file.files[0].path | basename }}"
       when: rc_vnsutil_file.matched > 0
 
-    when: myvnsutils | map(attribute='target_server_type') | list | issuperset(["vcenter"])
+    when: vnsutils | map(attribute='target_server_type') | list | issuperset(["vcenter"])
 
   when:
-    - myvnsutils is defined
+    - vnsutils is defined
     - "'install' in vns_operations_list|default(['None'])"
   tags:
     - vns
 
-- name: Set myvnsutil_check
-  set_fact: myvnsutil_check={{myvnsutils is defined}}
+- name: Set vnsutil_check
+  set_fact: vnsutil_check={{vnsutils is defined}}
 
 - name: Assign empty list to myvnsutils if it is undefined
-  set_fact: myvnsutils= default([])
-  when: not myvnsutil_check
+  set_fact: vnsutils= default([])
+  when: not vnsutil_check
 
 - name: Create host_vars files for vnsutil
   template: src=vnsutil.j2 backup=no dest={{ inventory_dir }}/host_vars/{{ item.hostname }}
-  with_items: "{{ myvnsutils }}"
-  when: myvnsutil_check
+  with_items: "{{ vnsutils }}"
+  when: vnsutil_check
