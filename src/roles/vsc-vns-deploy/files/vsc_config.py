@@ -52,7 +52,7 @@ def get_vsdlines(fp):
 # Returns the list of VSC hosts
 def get_vschosts(working_dir):
     fp = ''
-    hosts_file = working_dir + '/hosts'
+    hosts_file = working_dir + '/inventory/hosts'
 
     if (not os.path.exists(hosts_file)):
         print ("ERROR! Hosts file not found.")
@@ -73,7 +73,7 @@ def get_vschosts(working_dir):
 # Returns the list of VSD hosts
 def get_vsdhosts(working_dir):
     fp = ''
-    hosts_file = working_dir + '/hosts'
+    hosts_file = working_dir + '/inventory/hosts'
 
     if (not os.path.exists(hosts_file)):
         print ("ERROR! Hosts file not found.")
@@ -99,7 +99,7 @@ def get_vscinfo(working_dir):
     vsc_host_vars = {}
 
     for vscs in vsc_hosts:
-        host_vars_path = working_dir + "/host_vars/" + vscs
+        host_vars_path = working_dir + "/inventory/host_vars/" + vscs
         if (not os.path.exists(host_vars_path)):
             print ("ERROR! Host_vars file not found for host: {0}."
                    .format(host_vars_path))
@@ -124,7 +124,7 @@ def get_vsdinfo(working_dir):
     vsd_host_vars = {}
 
     for vsds in vsd_hosts:
-        host_vars_path = working_dir + "/host_vars/" + vsds
+        host_vars_path = working_dir + "/inventory/host_vars/" + vsds
         if (not os.path.exists(host_vars_path)):
             print ("ERROR! Host_vars file not found for host: {0}."
                    .format(host_vars_path))
