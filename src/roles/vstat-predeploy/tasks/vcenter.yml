@@ -195,4 +195,35 @@
       vm_shell: "/usr/bin/chmod"
       vm_shell_args: " 0640 /root/.ssh/authorized_keys"
 
+  - name: Restart Network services in the VM
+    connection: local
+    vmware_vm_shell:
+      hostname: "{{ target_server }}"
+      username: "{{ vcenter.username }}"
+      password: "{{ vcenter.password }}"
+      datacenter: "{{ vcenter.datacenter }}"
+      cluster: "{{ vcenter.cluster }}"
+      validate_certs: no
+      vm_id: "{{ vm_name }}"
+      vm_username: "{{ vmuser }}"
+      vm_password: "{{ vmpass }}"
+      vm_shell: "/sbin/service"
+      vm_shell_args: " network restart"
+
+  - name: Disable cloud-init on the VM
+    connection: local
+    vmware_vm_shell:
+      hostname: "{{ target_server }}"
+      username: "{{ vcenter.username }}"
+      password: "{{ vcenter.password }}"
+      datacenter: "{{ vcenter.datacenter }}"
+      cluster: "{{ vcenter.cluster }}"
+      validate_certs: no
+      vm_id: "{{ vm_name }}"
+      vm_username: "{{ vmuser }}"
+      vm_password: "{{ vmpass }}"
+      vm_shell: "/bin/touch"
+      vm_shell_args: " /etc/cloud/cloud-init.disabled"
+
+
   when: not node_present

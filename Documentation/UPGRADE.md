@@ -23,6 +23,7 @@ After all [Prerequisites](#prerequisites) are met, run the following set of play
 
 ** DO NOT PROCEED UNTILL VRS(s) ARE UPGRADED **
 
+<<<<<<< HEAD
 14. ./metroag vsc_ha_upgrade_backup_and_prep_2 -vvvv
 15. ./metroag vsc_ha_upgrade_deploy_2 -vvvv
 16. ./metroag vsc_ha_upgrade_postdeploy_2 -vvvv
@@ -37,6 +38,20 @@ After all [Prerequisites](#prerequisites) are met, run the following set of play
 
 23. ./metroag vsp_upgrade_postdeploy -vvvv
 24. ./metroag vsp_postupgrade_health -vvvv
+=======
+14. ./metro-ansible vsc_ha_upgrade_backup_and_prep_2.yml -vvvv
+15. ./metro-ansible vsc_ha_upgrade_deploy_2.yml -vvvv
+16. ./metro-ansible vsc_ha_upgrade_postdeploy_2.yml -vvvv
+17. ./metro-ansible vstat_health.yml -e report_filename=vstat_preupgrade_health.txt -vvvv
+18. ./metro-ansible vstat_upgrade_check_prerequisites -vvvv
+19. ./metro-ansible vstat_upgrade.yml -vvvv
+20. ./metro-ansible vstat_upgrade_wrapup.yml -vvvv
+
+** FINALIZE UPGRADE **
+
+21. ./metro-ansible vsp_upgrade_postdeploy.yml -vvvv
+22. ./metro-ansible vsp_postupgrade_health.yml -vvvv
+>>>>>>> elim_build_upgrade
 
 
 ## VSD, VSC, & VSTAT (elasticsearch ) SA/Standalone upgrade at a glance
@@ -57,6 +72,7 @@ After all [Prerequisites](#prerequisites) are met, run the following set of play
 
 ** DO NOT PROCEED UNTILL VRS(s) ARE UPGRADED **
 
+<<<<<<< HEAD
 11. ./metroag vstat_health -e report_filename=vstat_preupgrade_health.txt -vvvv
 12. ./metroag vstat_upgrade_data_backup -vvvv
 13. ./metroag vstat_destroy -vvvv
@@ -68,6 +84,17 @@ After all [Prerequisites](#prerequisites) are met, run the following set of play
 
 17 ./metroag vsp_upgrade_postdeploy -vvvv
 18 ./metroag vsp_postupgrade_health -vvvv
+=======
+11. ./metro-ansible vstat_health.yml -e report_filename=vstat_preupgrade_health.txt -vvvv
+12. ./metro-ansible vstat_upgrade_check_prerequisites -vvvv
+13. ./metro-ansible vstat_upgrade.yml -vvvv
+14. ./metro-ansible vstat_upgrade_wrapup.yml -vvvv
+
+** FINALIZE UPGRADE **
+
+15 ./metro-ansible vsp_upgrade_postdeploy.yml -vvvv
+16 ./metro-ansible vsp_postupgrade_health.yml -vvvv
+>>>>>>> elim_build_upgrade
 
 
 ## Sample HA Metro workflow for an upgrade

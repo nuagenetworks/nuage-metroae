@@ -11,7 +11,14 @@
   set_fact: vsds= default([])
   when: not vsds_check
 
-- name: Create host_vars files for vsd
-  template: src=vsd.j2 backup=no dest={{ inventory_dir }}/host_vars/{{ item.hostname }}
-  with_items: "{{ vsds }}"
+- block:
+  - name: Verify that vsd_fqdn_global is defined
+    assert:
+      that:
+        - "vsd_fqdn_global is defined"
+      msg: "vsd_fqdn_global must be defined. See common.yml."
+
+  - name: Create host_vars files for vsd
+    template: src=vsd.j2 backup=no dest={{ inventory_dir }}/host_vars/{{ item.hostname }}
+    with_items: "{{ vsds }}"
   when: vsds_check

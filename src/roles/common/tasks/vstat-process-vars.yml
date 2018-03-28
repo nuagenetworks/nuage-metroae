@@ -1,5 +1,38 @@
 ---
 - block:
+  - name: Determine if vstat upgrade needs to be in-place
+    include_role:
+      name: common
+      tasks_from: set-major-minor-versions.yml
+
+  - name: Do not set in-place upgrade flag
+    set_fact:
+      vstat_in_place_upgrade: false
+    when:
+      - to_major_version|int == 4
+      - to_patch_version|int <= 11
+
+  - name: Set in-place upgrade flag
+    set_fact:
+      vstat_in_place_upgrade: true
+    when:
+      - to_major_version|int >= 5
+      - to_minor_version|int >= 2
+      - to_patch_version|int >= 1
+
+  when:
+    - myvstats is defined
+    - "'upgrade' in vstat_operations_list|default(['None'])"
+  tags: vstat
+
+- name: Skip setting qcow2 or ova vars
+  set_fact:
+    skip_qcow2_or_ova_vars: true
+  when:
+    - myvstats is defined
+    - ('upgrade' in vstat_operations_list|default(['None']) and vstat_in_place_upgrade)
+
+- block:
 
   - block:
 
@@ -44,10 +77,10 @@
 
     when: vstats | map(attribute='target_server_type') | list | issuperset(["vcenter"])
 
-  when:
-    - vstats is defined
+  when: not skip_qcow2_or_ova_vars|default(False) or ('install' in vstat_operations_list|default(['None']))
   tags:
     - vstat
+
 
 - block:
 
@@ -70,6 +103,32 @@
   when:
     - vstats is defined
     - "'upgrade' in vstat_operations_list|default(['None'])"
+    - not vstat_in_place_upgrade
+  tags:
+    - vstat
+
+- block:
+
+  - name: Find name of VSTAT upgrade Package Files (EL7 architecture)
+    find: path="{{ nuage_unzipped_files_dir }}/vstat"  pattern="*.bin" recurse=yes
+    register: rc_vstat_upgrade_scripts
+
+  - debug: var=rc_vstat_upgrade_scripts verbosity=1
+
+  - name: Verify that VSTAT upgrade scripts are found
+    assert: {
+      that: "{{ rc_vstat_upgrade_scripts.matched }} > 0",
+      msg: "Unable to find VSTAT upgrade scripts"
+      }
+
+  - name: Register VSTAT upgrade script variables with proper path and script locations for use in other playbooks
+    set_fact:
+      vstat_upgrade_scripts_path: "{{ rc_vstat_upgrade_scripts.files[0].path | dirname }}/"
+      vstat_upgrade_scripts_file: "{{ rc_vstat_upgrade_scripts.files[0].path | basename }}"
+  when:
+    - myvstats is defined
+    - "'upgrade' in vstat_operations_list|default(['None'])"
+    - vstat_in_place_upgrade
   tags:
     - vstat
 
