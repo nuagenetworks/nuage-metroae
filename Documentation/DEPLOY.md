@@ -7,6 +7,27 @@ You can execute MetroAG playbooks to perform the following installations:
 Before deploying any components, you must have previously [set up your Nuage MetroAG Ansible environment](SETUP.md "link to SETUP documentation") and [customized the environment for your target platform](CUSTOMIZATION.md "link to deployment documentation").
 
 Make sure you have unzipped the Nuage Networks *.tar.gz files into their proper locations in the directory structure, so MetroAG can find the path of the Nuage components automatically. You should have done this in the customization phase. See [CUSTOMIZATION.md](CUSTOMIZATION.md) for details.
+
+
+## Use of MetroAG Tool
+MetroAG can perform a workflow using the command-line tool as follows:
+
+    ./metroag <workflow> [deployment] [options]
+
+* `workflow`: Name of the workflow to perform.  Supported workflows can be listed with --list option.
+* `deployment`: Name of the deployment directory containing configuration files.  See [customization](Documentation/CUSTOMIZATION.md)
+* `options`: Other options for the tool.  These can be shown using --help.  Also, any options not directed to the metroag tool are passed to Ansible.
+
+The following are some examples:
+
+    ./metroag install_everything
+
+Installs all components described in deployments/default/.
+
+    ./metroag vsd_destroy east_network -vvv
+
+Takes down only the VSD components described by deployments/east_network/vsds.yml.  Additional output will be displayed with 3 levels of verbosity.
+
 ## Deploy All Components
 MetroAG workflows operate on components as you have defined them in your deployment. If you run a workflow for a component not specified, the workflow skips all tasks associated with that component and runs to completion without error. Thus, if you run the `install_everything` workflow when only VRS configuration is present, the workflow deploys VRS successfully while ignoring the tasks for the other components not specified. Deploy all specified components with one command as follows:
 ```

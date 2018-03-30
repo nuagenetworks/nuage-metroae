@@ -1,11 +1,7 @@
 # Customizing the Components for a Deployment
 
-The configuration files required to perform workflows are defined under a sub-directory of the deployments/ directory in MetroAG.  A default/ deployment is provided with MetroAG and can be edited.  Alternatively, new deployments can be created as sub-directories under the deployments/ directory.  When a MetroAG workflow is executed, it uses the default deployment unless a different deployment sub-directory name is specified.  In this way, many deployments (different configurations) can be suppored in parallel and switched between by deployment name.
-
-Setting configuration files correctly ensures that when you subsequently execute the workflow they configure components as intended.  Precise syntax is crucial for success. See the [examples directory](/examples/) for references.  Each configuration file under a deployment is validated against a data schema at the start of workflow execution.  This ensures all required fields are present and in the correct syntax early in the process.  The schemas are accessible in the schemas/ directory and follow the json-schema.org standard.
-
-## For users of MetroAG before version 3.0
-Users before version 3.0 used the deprecated build_vars.yml configuration.  In the current version, this is replaced with "deployments" as described in this document.  An obsolete build_vars.yml file can be converted to a deployment using the following tool:
+## Note for users of MetroAG before version 3.0
+MetroAG before version 3.0 used the deprecated build_vars.yml configuration.  In the current version, this is replaced with "deployments" as described in this document.  An obsolete build_vars.yml file can be converted to a deployment using the following tool:
 
 ```
 ./convert_build_vars_to_deployment.py <build_vars_file> <deployment_name>
@@ -23,6 +19,10 @@ If you have not previously set up your MetroAG Ansible environment, see [SETUP.m
 [2. Unzip Nuage files](#2-unzip-nuage-files)
 
 ## 1. Customize Deployment
+The configuration files required to perform workflows are defined under a sub-directory of the deployments/ directory in MetroAG.  A default/ deployment is provided with MetroAG and can be edited.  Alternatively, new deployments can be created as sub-directories under the deployments/ directory.  When a MetroAG workflow is executed, it uses the default deployment unless a different deployment sub-directory name is specified.  In this way, many deployments (different configurations) can be suppored in parallel and switched between by deployment name.
+
+Setting configuration files correctly ensures that when you subsequently execute the workflow they configure components as intended.  Precise syntax is crucial for success. See the [examples directory](/examples/) for references.  Each configuration file under a deployment is validated against a data schema at the start of workflow execution.  This ensures all required fields are present and in the correct syntax early in the process.  The schemas are accessible in the schemas/ directory and follow the json-schema.org standard.
+
 The following are the supported configuration files that can be specified in a deployments sub-directory:
 
 ### `common.yml`
@@ -60,7 +60,7 @@ Execute the command:
 ./nuage-unzip <zipped_directory> <unzip_directory>
 ```
 
-After completion, the <unzip_directory> should be specified in the common.yml deployment configuration as the nuage_unzipped_files_dir parameter.
+After completion, the <unzip_directory> needs to be configured in the common.yml deployment configuration as the nuage_unzipped_files_dir parameter.
 
 ### Manually
 Alternatively, you can create the directories under the <nuage_unzipped_files_dir> directory and manually copy the appropriate files to those locations as shown in the example below.
@@ -79,10 +79,9 @@ Alternatively, you can create the directories under the <nuage_unzipped_files_di
   <nuage_unzipped_files_dir>/vns/util/
   ```
 
-After completion, the <nuage_unzipped_files_dir> should be specified in the common.yml deployment configuration as the nuage_unzipped_files_dir parameter.
+After completion, the <nuage_unzipped_files_dir> needs to be configured in the common.yml deployment configuration as the nuage_unzipped_files_dir parameter.
 
 ## Hosting your deployment files outside of the repo
-
 When you are contributing code, or pulling new versions of Metro quite often, it may make sense to host your variable files in a separate directory outside of `nuage-metro/deployments/`.  A deployment directory in any location can be specified instead of a deployment name when issuing the metroag command.
 
 ## Generating example deployment configuration files
