@@ -21,7 +21,7 @@ Installs all components described in deployments/default/.
 
 Takes down only the VSD components described by deployments/east_network/vsds.yml.  Additional output will be displayed with 3 levels of verbosity.
 
-## VSD, VSC, & VSTAT (elasticsearch ) HA/Cluster upgrade at a glance
+## VSD, VSC, & VSTAT (elasticsearch) HA/Cluster upgrade at a glance
 
 A sample workflow for 5.0.2 to 5.1.1 upgrade. For more detailed workflow refer [Sample HA Metro workflow for an upgrade](#sample-ha-metro-workflow-for-an-upgrade)
 

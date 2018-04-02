@@ -21,7 +21,7 @@ If you have not previously set up your MetroAG Ansible environment, see [SETUP.m
 ## 1. Customize Deployment
 Based on your network topology and the specific components you plan on deploying, you will configure several files. Setting configuration files correctly ensures that when you subsequently execute workflows they configure components as intended. Precise syntax is crucial.
 
-When a workflow is executed, each configuration file is validated against a data schema which ensures that all required fields are present and in the correct syntax. These schemas are located in the schemas/ directory. They follow the json-schema.org standard.
+When a workflow is executed, each configuration file is validated against a data schema which ensures that all required fields are present and in the correct syntax. These schemas are located in the [schemas/](/schemas/) directory. They follow the json-schema.org standard.
 
 You have the option of configuring the default files provided in the deployments/default/ sub-directory, or creating your own sub-directories under the deployments/ directory. You can find examples of configuration files for different deployments in the [examples/](/examples/) directory. Unless a different deployment sub-directory name is specified, the default deployment is used when a workflow is executed. This method allows MetroAG to support many deployments (different configurations) in parallel and the ability to switch between them as required. See below for the supported configuration files that you can specify in a deployments sub-directory.
 
@@ -60,7 +60,7 @@ Execute the command:
 ./nuage-unzip <zipped_directory> <unzip_directory>
 ```
 
-After executing the command, specify the <unzip_directory> in the common.yml deployment configuration as the nuage_unzipped_files_dir parameter.
+After executing the command, specify the <unzip_directory> in the `common.yml` deployment configuration as the nuage_unzipped_files_dir parameter.
 
 ### Manually
 Alternatively, you can create the directories under the <nuage_unzipped_files_dir> directory and manually copy the appropriate files to those locations as shown in the example below.
@@ -79,19 +79,19 @@ Alternatively, you can create the directories under the <nuage_unzipped_files_di
   <nuage_unzipped_files_dir>/vns/util/
   ```
 
-After executing the command, specify the <nuage_unzipped_files_dir> in the common.yml deployment configuration as the nuage_unzipped_files_dir parameter.
+After executing the command, specify the <nuage_unzipped_files_dir> in the `common.yml` deployment configuration as the nuage_unzipped_files_dir parameter.
 
 ## Hosting your deployment files outside of the repo
-When you are contributing code, or pulling new versions of Metro quite often, it may make sense to host your variable files in a separate directory outside of `nuage-metro/deployments/`.  A deployment directory in any location can be specified instead of a deployment name when issuing the metroag command.
+When you are contributing code, or pulling new versions of Metro quite often, it may make sense to host your variable files in a separate directory outside of `nuage-metro/deployments/`.  A deployment directory in any location can be specified instead of a deployment name when issuing the `./metroag` command.
 
 ## Generating example deployment configuration files
-A sample of the deployment configuration files are provided in the deployments/default/ directory and also in examples/.  If these are overwritten or deleted or if a "no frills" version of the files with only the minimum required parameters are desired, they can be generated with the following command:
+A sample of the deployment configuration files are provided in the deployments/default/ directory and also in [examples/](/examples/).  If these are overwritten or deleted or if a "no frills" version of the files with only the minimum required parameters are desired, they can be generated with the following command:
 
 ```
 ./generate_example_from_schema.py <schema_filename> [--no-comments]
 ```
 
-This will print an example of the deployment file specified by <schema_filename> under the schemas/ diretory to the screen.  The optional --no-comments will print the minimum required parameters (with no documentation).
+This will print an example of the deployment file specified by <schema_filename> under the [schemas/](/schemas/) diretory to the screen.  The optional `--no-comments` will print the minimum required parameters (with no documentation).
 
 Example:
 
