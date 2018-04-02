@@ -43,8 +43,8 @@ If you intend on deploying VNS with zero factor bootstrapping, you must customiz
 ### `vsds.yml`
 `vsds.yml` contains the definition of the VSDs to be operated on in this deployment.  This file is of yaml list type and must contain either 0, 1 or 3 VSD definitions.  If not provided or empty, then no VSDs will be operated on during workflows.
 
-### `vsdc.yml`
-`vsdc.yml` contains the definition of the VSCs to be operated on in this deployment.  This file is of yaml list type and must contain either 0, 1 or 2 VSC definitions.  If not provided or empty, then no VSCs will be operated on during workflows.
+### `vscs.yml`
+`vscs.yml` contains the definition of the VSCs to be operated on in this deployment.  This file is of yaml list type and must contain either 0, 1 or 2 VSC definitions.  If not provided or empty, then no VSCs will be operated on during workflows.
 
 ### `vstats.yml`
 `vstats.yml` contains the definition of the VSTATs (VSD Statistics) to be operated on in this deployment.  This file is of yaml list type and must contain either 0, 1 or 3 VSTAT definitions.  If not provided or empty, then no VSTATs will be operated on during workflows.
