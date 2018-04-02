@@ -19,11 +19,11 @@ If you have not previously set up your MetroAG Ansible environment, see [SETUP.m
 [2. Unzip Nuage files](#2-unzip-nuage-files)
 
 ## 1. Customize Deployment
-The configuration files required to perform workflows are defined under a sub-directory of the deployments/ directory in MetroAG.  A default/ deployment is provided with MetroAG and can be edited.  Alternatively, new deployments can be created as sub-directories under the deployments/ directory.  When a MetroAG workflow is executed, it uses the default deployment unless a different deployment sub-directory name is specified.  In this way, many deployments (different configurations) can be suppored in parallel and switched between by deployment name.
+Based on your network topology and the specific components you plan on deploying, you will configure several files. Setting configuration files correctly ensures that when you subsequently execute workflows they configure components as intended. Precise syntax is crucial.
 
-Setting configuration files correctly ensures that when you subsequently execute the workflow they configure components as intended.  Precise syntax is crucial for success. See the [examples directory](/examples/) for references.  Each configuration file under a deployment is validated against a data schema at the start of workflow execution.  This ensures all required fields are present and in the correct syntax early in the process.  The schemas are accessible in the schemas/ directory and follow the json-schema.org standard.
+When a workflow is executed, each configuration file is validated against a data schema which ensures that all required fields are present and in the correct syntax. These schemas are located in the schemas/ directory. They follow the json-schema.org standard.
 
-The following are the supported configuration files that can be specified in a deployments sub-directory:
+You have the option of configuring the default files provided in the deployments/default/ sub-directory, or creating your own sub-directories under the deployments/ directory. You can find examples of configuration files for different deployments in the [examples/](/examples/) directory. Unless a different deployment sub-directory name is specified, the default deployment is used when a workflow is executed. This method allows MetroAG to support many deployments (different configurations) in parallel and the ability to switch between them as required. See below for the supported configuration files that you can specify in a deployments sub-directory.
 
 ### `common.yml`
 `common.yml` contains the common configuration parameters for the deployment for all components and workflows.  This file is always required for any workflow.
@@ -60,7 +60,7 @@ Execute the command:
 ./nuage-unzip <zipped_directory> <unzip_directory>
 ```
 
-After completion, the <unzip_directory> needs to be configured in the common.yml deployment configuration as the nuage_unzipped_files_dir parameter.
+After executing the command, specify the <unzip_directory> in the common.yml deployment configuration as the nuage_unzipped_files_dir parameter.
 
 ### Manually
 Alternatively, you can create the directories under the <nuage_unzipped_files_dir> directory and manually copy the appropriate files to those locations as shown in the example below.
@@ -79,7 +79,7 @@ Alternatively, you can create the directories under the <nuage_unzipped_files_di
   <nuage_unzipped_files_dir>/vns/util/
   ```
 
-After completion, the <nuage_unzipped_files_dir> needs to be configured in the common.yml deployment configuration as the nuage_unzipped_files_dir parameter.
+After executing the command, specify the <nuage_unzipped_files_dir> in the common.yml deployment configuration as the nuage_unzipped_files_dir parameter.
 
 ## Hosting your deployment files outside of the repo
 When you are contributing code, or pulling new versions of Metro quite often, it may make sense to host your variable files in a separate directory outside of `nuage-metro/deployments/`.  A deployment directory in any location can be specified instead of a deployment name when issuing the metroag command.
