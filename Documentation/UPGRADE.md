@@ -2,7 +2,26 @@
 ## Prerequisites / Requirements
 Before upgrading any components, you must have previously [set up your Nuage MetroAG Ansible environment](SETUP.md) and [customized the upgrade environment for your target platform](BUILD_UPGRADE.md).
 
-## VSD, VSC, & VSTAT (elasticsearch ) HA/Cluster upgrade at a glance
+## Use of MetroAG Tool
+MetroAG can perform a workflow using the command-line tool as follows:
+
+    ./metroag <workflow> [deployment] [options]
+
+* `workflow`: Name of the workflow to perform.  Supported workflows can be listed with --list option.
+* `deployment`: Name of the deployment directory containing configuration files.  See [customization](Documentation/CUSTOMIZATION.md)
+* `options`: Other options for the tool.  These can be shown using --help.  Also, any options not directed to the metroag tool are passed to Ansible.
+
+The following are some examples:
+
+    ./metroag install_everything
+
+Installs all components described in deployments/default/.
+
+    ./metroag vsd_destroy east_network -vvv
+
+Takes down only the VSD components described by deployments/east_network/vsds.yml.  Additional output will be displayed with 3 levels of verbosity.
+
+## VSD, VSC, & VSTAT (elasticsearch) HA/Cluster upgrade at a glance
 
 A sample workflow for 5.0.2 to 5.1.1 upgrade. For more detailed workflow refer [Sample HA Metro workflow for an upgrade](#sample-ha-metro-workflow-for-an-upgrade)
 
