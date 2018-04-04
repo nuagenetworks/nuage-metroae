@@ -5,22 +5,11 @@
       name: common
       tasks_from: set-major-minor-versions.yml
 
-  - name: Do not set in-place upgrade flag
-    set_fact:
-      vstat_in_place_upgrade: false
-    when: 
-      - to_major_version|int == 4 
-      - to_patch_version|int <= 11
-
   - name: Set in-place upgrade flag
     set_fact:
-      vstat_in_place_upgrade: true
-    when:
-      - to_major_version|int >= 5
-      - to_minor_version|int >= 2
-      - to_patch_version|int >= 1
-   
-  when: 
+      vstat_in_place_upgrade: "{{ [to_major_version, to_minor_version, to_patch_version] | join('.') | version_compare('5.2.1', '>=') }}"
+
+  when:
     - myvstats is defined
     - "'upgrade' in vstat_operations_list|default(['None'])"
   tags: vstat
