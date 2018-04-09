@@ -4,7 +4,7 @@ Before upgrading any components, you must have previously [set up your Nuage Met
 
 ## VSD, VSC, & VSTAT (elasticsearch ) HA/Cluster upgrade at a glance
 
-A sample workflow for 5.0.2 to 5.1.1 upgrade. For more detailed workflow refer [Sample HA Metro workflow for an upgrade](#sample-ha-metro-workflow-for-an-upgrade)
+A sample workflow for 5.1.2 to 5.2.2 upgrade. For more detailed workflow refer [Sample HA Metro workflow for an upgrade](#sample-ha-metro-workflow-for-an-upgrade)
 
 After all [Prerequisites](#prerequisites) are met, run the following set of playbooks in the order specified to upgrade vsd,vsc,vstat deployed in HA/Cluster mode.
 1. ./metro-ansible vsp_preupgrade_health.yml -vvvv
@@ -16,30 +16,28 @@ After all [Prerequisites](#prerequisites) are met, run the following set of play
 7. ./metro-ansible vsd_ha_upgrade_predeploy_3.yml -vvvv
 8. ./metro-ansible vsd_ha_upgrade_deploy_3.yml -vvvv
 9. ./metro-ansible vsd_upgrade_complete_flag.yml -vvv
-10. ./metro-ansible vsc_health.yml -e report_filename=vsc_preupgrade_health.txt -vvvv
-11. ./metro-ansible vsc_ha_upgrade_backup_and_prep_1.yml -vvvv
-12. ./metro-ansible vsc_ha_upgrade_deploy_1.yml -vvvv
-13. ./metro-ansible vsc_ha_upgrade_postdeploy_1.yml -vvvv
+10. ./metro-ansible vsc_ha_upgrade_backup_and_prep_1.yml -vvvv
+11. ./metro-ansible vsc_ha_upgrade_deploy_1.yml -vvvv
+12. ./metro-ansible vsc_ha_upgrade_postdeploy_1.yml -vvvv
 
-** DO NOT PROCEED UNTILL VRS(s) ARE UPGRADED **
+** DO NOT PROCEED UNTIL VRS(s) ARE UPGRADED **
 
-14. ./metro-ansible vsc_ha_upgrade_backup_and_prep_2.yml -vvvv
-15. ./metro-ansible vsc_ha_upgrade_deploy_2.yml -vvvv
-16. ./metro-ansible vsc_ha_upgrade_postdeploy_2.yml -vvvv
-17. ./metro-ansible vstat_health.yml -e report_filename=vstat_preupgrade_health.txt -vvvv
-18. ./metro-ansible vstat_upgrade_check_prerequisites -vvvv
-19. ./metro-ansible vstat_upgrade.yml -vvvv
-20. ./metro-ansible vstat_upgrade_wrapup.yml -vvvv
+13. ./metro-ansible vsc_ha_upgrade_backup_and_prep_2.yml -vvvv
+14. ./metro-ansible vsc_ha_upgrade_deploy_2.yml -vvvv
+15. ./metro-ansible vsc_ha_upgrade_postdeploy_2.yml -vvvv
+16. ./metro-ansible vstat_upgrade_backup_and_prep -vvvv
+17. ./metro-ansible vstat_upgrade.yml -vvvv
+18. ./metro-ansible vstat_upgrade_wrapup.yml -vvvv
 
 ** FINALIZE UPGRADE **
 
-21. ./metro-ansible vsp_upgrade_postdeploy.yml -vvvv
-22. ./metro-ansible vsp_postupgrade_health.yml -vvvv
+19. ./metro-ansible vsp_upgrade_postdeploy.yml -vvvv
+20. ./metro-ansible vsp_postupgrade_health.yml -vvvv
 
 
 ## VSD, VSC, & VSTAT (elasticsearch ) SA/Standalone upgrade at a glance
 
-A sample workflow for 5.0.2 to 5.1.1 upgrade. For detailed workflow refer [Sample Metro workflow for standalone upgrade](#sample-metro-workflow-for-standalone-upgrade)
+A sample workflow for 5.1.2 to 5.2.2 upgrade. For detailed workflow refer [Sample Metro workflow for standalone upgrade](#sample-metro-workflow-for-standalone-upgrade)
 
 After all [Prerequisites](#prerequisites) are met, run the following set of playbooks in the order specified to upgrade vsd,vsc,vstat deployed in SA/Standalone mode.
 1. ./metro-ansible vsp_preupgrade_health.yml -vvvv
@@ -48,22 +46,20 @@ After all [Prerequisites](#prerequisites) are met, run the following set of play
 4. ./metro-ansible vsd_predeploy.yml -vvvv
 5. ./metro-ansible vsd_sa_upgrade_deploy.yml -vvvv
 6. ./metro-ansible vsd_upgrade_complete_flag.yml -vvvv
-7. ./metro-ansible vsc_health.yml -e report_filename=vsc_preupgrade_health.txt -vvvv
-8. ./metro-ansible vsc_sa_upgrade_backup_and_prep.yml -vvvv
-9. ./metro-ansible vsc_sa_upgrade_deploy.yml -vvvv
-10. ./metro-ansible vsc_sa_upgrade_postdeploy.yml -vvvv
+7. ./metro-ansible vsc_upgrade_backup_and_prep.yml -vvvv
+8. ./metro-ansible vsc_sa_upgrade_deploy.yml -vvvv
+9. ./metro-ansible vsc_sa_upgrade_postdeploy.yml -vvvv
 
-** DO NOT PROCEED UNTILL VRS(s) ARE UPGRADED **
+** DO NOT PROCEED UNTIL VRS(s) ARE UPGRADED **
 
-11. ./metro-ansible vstat_health.yml -e report_filename=vstat_preupgrade_health.txt -vvvv
-12. ./metro-ansible vstat_upgrade_backup_and_prep -vvvv
-13. ./metro-ansible vstat_upgrade.yml -vvvv
-14. ./metro-ansible vstat_upgrade_wrapup.yml -vvvv
+10. ./metro-ansible vstat_upgrade_backup_and_prep -vvvv
+11. ./metro-ansible vstat_upgrade.yml -vvvv
+12. ./metro-ansible vstat_upgrade_wrapup.yml -vvvv
 
 ** FINALIZE UPGRADE **
 
-15 ./metro-ansible vsp_upgrade_postdeploy.yml -vvvv
-16 ./metro-ansible vsp_postupgrade_health.yml -vvvv
+13 ./metro-ansible vsp_upgrade_postdeploy.yml -vvvv
+14 ./metro-ansible vsp_postupgrade_health.yml -vvvv
 
 
 ## Sample HA Metro workflow for an upgrade
