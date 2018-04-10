@@ -104,17 +104,12 @@
     tasks_from: linux-ntp-sync
 
 - name: Resolve "{{ vsd_fqdn }}"  to ip addr
-  shell: host "{{ vsd_fqdn }}" | awk '{print $3,$4}'
+  shell: "getent hosts {{ vsd_fqdn }} | awk '{print $1}'"
   register: ip_addr
   remote_user: "root"
 
-- name: Check for ip addr in the registered var
-  fail: msg="Could not resolve ip addr of "{{ vsd_fqdn }}" "
-  when: ip_addr.stdout | match("not found:")
-  remote_user: "root"
-
 - name: Config firewall on VSTAT vm to accept conn on ports 9200,9300 from vsd(s)
-  script: firewall.sh "{{ ip_addr.stdout.split()[1] }}"
+  script: firewall.sh "{{ ip_addr.stdout }}"
   remote_user: "root"
 
 - name: Restart elastic search {{ inventory_hostname }}
