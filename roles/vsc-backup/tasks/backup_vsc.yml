@@ -18,39 +18,35 @@
   set_fact:
     backup_folder: "backup-{{inventory_hostname}}-{{ ansible_date_time.iso8601_basic_short }}"
 
-- name: Create a backup folder on VSC
-  sros_command:
-    commands:
-      - file md "{{ backup_folder }}"
-    provider: "{{ vsc_creds }}"
-  delegate_to: localhost
-  register: dir_status
-
-- name: Verify backup folder is created on VSC
-  assert:
-    that: "dir_status.stdout[0] == ''"
-    msg: "Could not create backup folder on VSC"
-
-- name: Copy bof and existing config files to backup folder on VSC
-  sros_command:
-    commands:
-      - file copy *.cfg "{{ backup_folder }}"
-      - file copy "{{ bof_json['primary_image'] }}" "{{ backup_folder }}"
-    provider: "{{ vsc_creds }}"
-  delegate_to: localhost
-  register: copy_status
-
-- name: Print 'file copy *.cfg backup' when verbosity >= 1
-  debug: var=copy_status verbosity=1
-
-- name: Create dir to hold backup files
+- name: Create backup dir to hold backup files
   file:
     path: "{{metro_backup_root}}/{{ backup_folder }}"
     state: directory
 
-- name: Transfer backup folder from VSC to backup_machine
+- name: Create temporary dir to hold backup files
+  file:
+    path: "/tmp/{{ backup_folder }}"
+    state: directory
+
+- name: Transfer bof.cfg from VSC to backup_machine
   expect:
-    command: "{{ vsc_scp_backup_folder }}"
+    command: "{{ vsc_scp_backup_bof }}"
+    responses:
+      (?i)yes: "yes"
+      (?i)password: "{{ vsc_password|default('admin') }}"
+    timeout: "{{ vsc_scp_timeout_seconds }}"
+
+- name: Transfer config.cfg from VSC to backup_machine
+  expect:
+    command: "{{ vsc_scp_backup_config }}"
+    responses:
+      (?i)yes: "yes"
+      (?i)password: "{{ vsc_password|default('admin') }}"
+    timeout: "{{ vsc_scp_timeout_seconds }}"
+
+- name: Transfer primary image from VSC to backup_machine
+  expect:
+    command: "{{ vsc_scp_backup_primary_image }}"
     responses:
       (?i)yes: "yes"
       (?i)password: "{{ vsc_password|default('admin') }}"

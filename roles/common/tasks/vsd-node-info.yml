@@ -1,11 +1,7 @@
 - name: Resolve "{{ vsd_hostname }}"  to ip addr
-  shell: host "{{ vsd_hostname }}" | awk '{print $3,$4}'
+  shell: "getent hosts {{ vsd_hostname }} | awk '{print $1}'"
   register: ip_addr
-  remote_user: "root"
-
-- name: Check for ip addr in the registered var
-  fail: msg="Could not resolve ip addr of "{{ vsd_hostname }}" "
-  when: ip_addr.stdout | match("not found:")
+  delegate_to: localhost
 
 - name: Get the vsd node info
   command: /opt/vsd/sysmon/showStatus.py
