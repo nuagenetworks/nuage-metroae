@@ -1,8 +1,9 @@
+---
 - name: Get monit summary for all process on VSD
   vsd_monit:
     group: all
   register: proc_list
-  remote_user: "root"
+  remote_user: "{{ vsd_username }}"
 
 - name: wait for VSD common , core and stats services to become running
   monit_waitfor_service:
@@ -11,5 +12,5 @@
     test_interval_seconds: 30
   when: item not in ['vsd-stats-status', 'stats-collector-status']
   with_items: "{{ proc_list['state'].keys() }}"
-  remote_user: "root"
+  remote_user: "{{ vsd_username }}"
 
