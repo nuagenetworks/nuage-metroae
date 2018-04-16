@@ -15,11 +15,21 @@
   connection: local
   when: ansible_os_family == "Debian"
 
+- name: Install boto3-module on RedHat OS family distribution
+  yum: name=python-boto3
+  connection: local
+  when: ansible_os_family == "RedHat"
+
+- name: Install boto3-module on Debian OS family distribution
+  apt: name=python-boto3
+  connection: local
+  when: ansible_os_family == "Debian"
+
 - block:
   - name: Deploy Sample Network Structure if desired
     delegate_to: localhost
     cloudformation:
-      stack_name: "VPC-{{inventory_hostname}}"
+      stack_name: "VPC-{{inventory_hostname | replace('.', '-') }}"
       state: "present"
       region: "{{ aws_region }}"
       template: "{{ role_path }}/files/cfn-template-sample-vpc-structure.json"
