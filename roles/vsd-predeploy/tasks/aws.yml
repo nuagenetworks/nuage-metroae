@@ -63,18 +63,16 @@
     when: (rc_aws_nsg_lan_eni_facts.interfaces|length > 0 )
   when: use_vpc is defined
 
-
-
-- name: Generate CloudFormation Template
+- name: Generate CloudFormation template
   delegate_to: localhost
   template:
     src: "cfn-template-vsd-aws-with-eni.json.j2"
     dest: "/tmp/cfn-template-vsd-aws-with-eni-{{ inventory_hostname }}.json"
 
-- name: Deploy NSG-AWS Stack
+- name: Deploy VSD AWS Stack
   delegate_to: localhost
   cloudformation:
-    stack_name: "{{ inventory_hostname }}"
+    stack_name: "{{ inventory_hostname | replace('.', '-') }}"
     state: "present"
     region: "{{ aws_region }}"
     template: "/tmp/cfn-template-vsd-aws-with-eni-{{ inventory_hostname }}.json"
