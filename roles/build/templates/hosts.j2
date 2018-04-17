@@ -100,11 +100,35 @@ vsc_node2
 {% endif %}
 
 {% if myvstats is defined and myvstats %}
-[vstats]
-{% for vstat in myvstats %}
-{{ vstat.hostname }} {% if 'mgmt_bridge' in vstat %} mgmt_bridge={{ vstat.mgmt_bridge }}{% endif %}
-{% endfor %}
+
+{% if myvstats|length == 1 %}
+
+[vstat_node1]
+{{ myvstats[0].hostname }} {% if 'mgmt_bridge' in myvstats[0] %} mgmt_bridge={{ myvstats[0].mgmt_bridge }}{% endif %}
+
+[vstats:children]
+vstat_node1
+
+{% else %}
+
+[vstat_node1]
+{{ myvstats[0].hostname }} {% if 'mgmt_bridge' in myvstats[0] %} mgmt_bridge={{ myvstats[0].mgmt_bridge }}{% endif %}
+
+[vsd_node2]
+{{ myvstats[1].hostname }} {% if 'mgmt_bridge' in myvstats[1] %} mgmt_bridge={{ myvstats[1].mgmt_bridge }}{% endif %}
+
+[vsd_node3] 
+{{ myvstats[2].hostname }} {% if 'mgmt_bridge' in myvstats[2] %} mgmt_bridge={{ myvstats[2].mgmt_bridge }}{% endif %}
+
+[vstats:children]
+vstat_node1
+vstat_node2
+vstat_node3
+
 {% endif %}
+
+{% endif %}
+
 
 {% if myvrss is defined and myvrss %}
 [vrss]
