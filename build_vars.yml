@@ -2,37 +2,69 @@
 ###
 # See BUILD.md for details
 ###
-# Paths
-# Paths to find zipped (tar.gz) files and unzipped files (e.g. qcow2)
-# Both are required to run the nuage_unzip role. nuage_unzipped_files_dir
-# is required when one or more operation lists, below, are set to 'install'
-# or 'upgrade'.
-nuage_zipped_files_dir: "/home/caso/nfs-data/4.0.R7/nuage-packed"
-nuage_unzipped_files_dir: "/home/caso/nfs-data/4.0.R7/nuage-unpacked"
-
 
 ###
-# Path to a public key file to be injected in to VSD,VNS Util, VCIN and VSTAT
-# vms during deployment and corresponding private file to be used to connect to
-# the components during deployment
-user_ssh_pub_key: ~/.ssh/id_rsa.pub
-user_ssh_priv_key: ~/.ssh/id_rsa
+## Binary file locations
+###
+## Parameter to specify the location of the tar.gz files to be unzipped.
+## REQUIRED when executing the unzip operation. There is no default.
+## Uncomment and set to the appropriate value before running unzip.
+# nuage_zipped_files_dir: "/home/caso/nfs-data/5.2.2/nuage-packed"
 
+## Parameter to specify the location of the unzipped binary files,
+## e.g. *.qcow2, *.ova, *.rpm, etc. This path is used both as the
+## destination for the unzip operation and as the location of binary
+## files for the rest of the operations. It is a required parameter
+## for all operations.
+nuage_unzipped_files_dir: "/home/caso/nfs-data/5.2.2/nuage-unpacked"
 
 ###
-# Usernames
-# remote_user names for ansible to execute as on the target server (hypervisor)
-# and Ansible host. target_server_username is the remote_user for all
-# hypervisors.
-# ansible_sudo_username is the sudo user for local actions.
-target_server_username: "root"
-ansible_sudo_username: "root"
+## upgrade parameters
+###
+## Parameter to signal that the data in this file is for upgrade. By default, 
+## the value is set to False to indicate that the data in this file is for
+## install. Uncomment and set to True if this is an upgrade.
+# nuage_upgrade: False
 
+
+## VSTAT UPGRADE ONLY!
+## Parameter to specify the pre-upgrade version of VSD software. The
+## default value is 'NONE'. This is only required for VSTAT upgrade.
+## Uncomment and set to the existing version if VSTAT is being upgraded.
+# upgrade_from_version: '4.0.11'
+# upgrade_to_version: '5.2.1'
+
+## VSTAT UPGRADE ONLY! 
+# Required only when upgarding to 4.0.11 versions and below
+## NFS export that will be mounted on the VSTAT for backup and restore.
+## Includes the server ip with the folder path. The default is 'NONE'
+## Uncomment and provide an NFS export to mount if VSTAT upgrade.
+# vstat_nfs_server_with_folder: 0.0.0.0:/tmp/vstat/
+
+###
+## SSH Public Key file
+###
+## Path to the public key file to be injected into the VMs being
+## installed to enable passwordless SSH access. The default value is the
+## default public key file for the current user. Uncomment and
+## modify to specify a different value.
+# user_ssh_pub_key: '~/.ssh/id_rsa.pub'
+
+###
+## Usernames
+###
+## remote_user name for ansible to execute as on the target server (hypervisor).
+## target_server_username is the remote_user for all hypervisors. 
+## The default value is 'root'. Uncomment and modify as needed.
+# target_server_username: "root"
 
 ### 
-# Location for health reports
-
-metro_reports_dir: "{{ playbook_dir }}/reports"
+## Location for health reports
+###
+## Path to the location where health reports are to be written.
+## Default value is 'reports' under the playbook directory.
+## Unccomment and modify if a different location is required.
+# metro_reports_dir: "{{ playbook_dir }}/reports"
 
 ###
 # Hypervisor network bridges
@@ -338,9 +370,6 @@ myvrss:
 
 ###
 # Stats VM (ElasticSearch) params
-
-# vstat_sa_or_ha = ha for cluster, sa for standalone deployment
-vstat_sa_or_ha: sa
 
 # vstat_operations_list = A list of the operations you intend for the ES node.
 # The list could include 1 or more of the following:

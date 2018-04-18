@@ -5,6 +5,7 @@
       name: "{{ mgmt_ip }}"
       state: absent
     delegate_to: localhost
+    no_log: True
 
   - name: Change XMPP connection to TLS on VSD
     command: /opt/vsd/bin/ejmode allow -y
@@ -107,21 +108,15 @@
     remote_user: "root"
     when: "'4.0.4' not in vsd_version.stdout"
 
-  - name: Set Top-Level-Directory
-    set_fact: tld="{{ role_path }}/../../"
-
-  - name: Create TLS profile
-    local_action: command python {{ role_path }}/files/vsc_config.py {{ tld }} {{ xmpp.username }}
-    register: output
-    # TODO: Replace by vsc_command, or sros_command module calls
-
-  - name: Verification Result Failure Status
-    fail: msg={{ output.stdout }}
-    when: output.stdout | search("(?i)MINOR")
-    ignore_errors: yes
-
-  - name: Verification Result Success Status
-    debug: var=output.stdout verbosity=1
+  - name: Configure VSC
+    sros_config:
+      lines:
+          - configure system security tls-profile vns-tls-profile no shutdown
+          - configure vswitch-controller open-flow tls-profile vns-tls-profile
+          - configure vswitch-controller xmpp tls-profile vns-tls-profile
+          - configure system time ntp ntp-server
+      provider: "{{ vsc_creds }}"
+    delegate_to: localhost
 
   - name: check xmpp connectivity between VSC and VSD after enabling TLS
     sros_command:

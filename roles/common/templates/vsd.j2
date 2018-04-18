@@ -5,11 +5,6 @@
 target_server_type: {{ item.target_server_type }}
 hostname: {{ item.hostname }}
 
-{% if disable_vcin_ha is defined and disable_vcin_ha %}
-vcin_mode: true
-vsd_sa_or_ha: sa
-{% endif %}
-
 {% if item.target_server_type | match("kvm") or item.target_server_type | match("vcenter")%}
 
 target_server: {{ item.target_server }}
@@ -18,6 +13,21 @@ target_server: {{ item.target_server }}
 vmname: {{ item.vmname }}
 {% else %}
 vmname: {{ item.hostname }}
+{% endif %}
+
+{% if disable_vcin_ha is defined and disable_vcin_ha %}
+
+vcin_mode: true
+vsd_sa_or_ha: sa
+
+{% else %}
+
+{% if myvsds|length == 1%}
+vsd_sa_or_ha: sa
+{% else %}
+vsd_sa_or_ha: ha
+{% endif %}
+
 {% endif %}
 
 mgmt_ip: {{ item.mgmt_ip }}

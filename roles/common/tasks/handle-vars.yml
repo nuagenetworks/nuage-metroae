@@ -1,52 +1,34 @@
 ---
-- name: Set build files path
+- name: Set data file variables
   set_fact:
-    build_files_path: "{{ inventory_dir }}"
-
-- name: Set build_vars variable
-  set_fact:
-    build_vars: "{{ build_vars_file | default (build_files_path+'/build_vars.yml') }}"
+    build_vars: "{{ build_vars_file | default (inventory_dir+'/build_vars.yml') }}"
+    user_creds: "{{ user_creds_file | default (inventory_dir+'/user_creds.yml') }}"
+    do_build: "{{ force_build | default(False) }}"
+    data_file_name_list:
+      - build_vars.yml
+      - user_creds.yml
 
 - name: Include build variable files
   include_vars: "{{ build_vars }}"
 
 - name: Include user credential file
-  include_vars: "{{ user_creds_file | default (build_files_path+'/user_creds.yml') }}"
-
-- name: Set local variable to force build
-  set_fact:
-    force: "{{ force_build | default(False) }}"
-
-- name: Find build_vars.md5 file
-  find: path="{{ inventory_dir }}" pattern="build_vars.md5"
-  register: md5_file
-
-- name: Get md5 value for build vars file
-  stat:
-    path: "{{ build_vars }}"
-    get_md5: yes
-  register: md5_for_build_vars
-
-- name: Set local variable with current md5 value
-  set_fact:
-    current_md5: "{{ md5_for_build_vars.stat.md5 }}"
-
-- name: Get stored md5 value
-  command: "cat {{ md5_file.files[0].path }}"
-  register: stored_md5_string
-  when: md5_file.matched == 1
-
-- name: Set local variable with stored md5 value when md5 file exists
-  set_fact:
-    stored_md5: "{{ stored_md5_string.stdout }}"
-  when: md5_file.matched == 1
-
-- name: Set stored_md5 value to current_md5 when md5 file does not exists
-  set_fact:
-    stored_md5: "{{ current_md5 }}"
-  when: md5_file.matched == 0
+  include_vars: "{{ user_creds }}"
 
 - block:
+
+  - name: Check if build is required
+    include_role:
+      name: common
+      tasks_from: check-md5
+    with_items:
+      "{{ data_file_name_list }}"
+    loop_control:
+      loop_var: file_name
+
+  when: not do_build
+
+- block:
+
   - name: Check yaml syntax in build vars file
     include_role:
       name: common
@@ -59,10 +41,14 @@
 
   - include_role:
       name: build
-  when: stored_md5 != current_md5 or
-        md5_file.matched == 0 or
-        force
-    
 
-- name: Update md5 value
-  template: src=build_vars_md5.j2 backup=no dest={{ inventory_dir }}/build_vars.md5
+  - name: Wrap-up build
+    include_role:
+      name: common
+      tasks_from: set-md5
+    with_items:
+      "{{ data_file_name_list }}"
+    loop_control:
+      loop_var: file_name
+
+  when: do_build
