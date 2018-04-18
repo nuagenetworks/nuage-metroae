@@ -10,3 +10,16 @@
 
 - debug: var=rc_aws_cfn_nsgami
 
+- block:
+  - name: Destroy Virtual Private Cloud
+    delegate_to: localhost
+    cloudformation:
+      stack_name: "VPC-{{inventory_hostname | replace('.', '-') }}"
+      state: "absent"
+      region: "{{ aws_region }}"
+    register: rc_aws_cfn_nuagevpc
+
+  - debug: var=rc_aws_cfn_nuagevpc
+
+  when: provision_vpc is defined
+
