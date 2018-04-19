@@ -48,23 +48,28 @@ echo "BGP Configuration"
                 cluster 1.1.1.1
 {% for dcgw_item in groups['vsrs'] %}
    {%- if dcgw_item != inventory_hostname %}
-      {%- if  hostvars[dcgw_item].system_ip is defined %}
-                neighbor {{ hostvars[dcgw_item].system_ip }}
+      {%- if  hostvars[dcgw_item].router.system_ip is defined %}
+                neighbor {{ hostvars[dcgw_item].router.system_ip | ipaddr('address') }}
+                  no shutdown
+                  exit
                 exit
       {% endif %}
    {% endif %}
 {% endfor %}
             exit
+{% if nuage_integration %}
             group "nuage_controllers"
                 family evpn
                 type internal
 {% for vsc_item in groups['vscs'] %}
-   {%- if hostvars[vsc_item].system_ip is defined %}
-                neighbor {{ hostvars[vsc_item].system_ip }}
+     {%- if hostvars[vsc_item].system_ip is defined %}
+                neighbor {{ hostvars[vsc_item].system_ip | ipaddr('address') }}
+                  no shutdown
+                  exit
                 exit
-   {% endif %}
+  {% endif %}
 {% endfor %}
-
+{% endif %}
             exit
             no shutdown
         exit
