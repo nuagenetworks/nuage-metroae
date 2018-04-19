@@ -24,30 +24,6 @@
       - "bof save"
     provider: "{{ provider_creds }}"
 
-- name: Create directories used for rollback and python scripts
-  local_action:
-    module: sros_command
-    commands:
-      - "file md {{ rollbackdir }}"
-      - "file md {{ scriptdir }}"
-
-- name: Get list of Python scripts
-  local_action:
-    module: find
-    path: "{{ role_path }}/files"
-    pattern: "*.py"
-  register: rc_pythonscripts
-
-- debug: var=rc_pythonscripts verbosity=1
-
-# name: Copy Python-scripts
-  
-- name: Set pythonscripts
-  set_fact: pythonscripts="{{ rc_pythonscripts.files | map(attribute='path') | list | map('basename') | list | map('splitext') | list | map('first') | list }}"
-  when: rc_pythonscripts.matched > 0
- 
-- debug: var=pythonscripts verbosity=1
-
 - name: Create rollback point
   local_action:
     module: sros_config
@@ -61,53 +37,36 @@
     state: directory
     path: "{{ buildpath }}/{{ inventory_hostname }}"
 
+
+- name: Set configuration fragments
+  set_fact: 
+    config_items:
+     - { file: "system.cfg", prio: "10" }
+     - { file: "ports.cfg", prio: "20" }
+     - { file: "router.cfg", prio: "30" }
+ 
 - name: Generate configuration fragments
   local_action:
     module: template
     src: "{{ item.file }}.j2"
     dest: "{{ buildpath }}/{{ inventory_hostname }}/{{ item.prio }}-{{ item.file}}"
-  with_items:
-    - { file: "system.cfg", prio: "10" }
-    - { file: "ports.cfg", prio: "20" }
-    - { file: "router.cfg", prio: "30" }
-    - { file: "vsd_integration.cfg", prio: "80" }
-
-
-
-- name: Create temporary file to use as assembled config file 
-  local_action:
-    module: tempfile
-    state: file
-  register: vsr_configfile 
-
-
-
-- name: Assemble config file from fragments
-  local_action:
-    module: assemble
-    src: "{{ buildpath }}/{{ inventory_hostname }}"
-    dest: "{{ vsr_configfile.path }}"
+  with_items: "{{ config_items }}"
 
 - name: Show rootified commands that will be sent to VSR
-  debug: msg="{{ lookup('file', '{{ vsr_configfile.path }}') | sros_rootify }}" verbosity=1
-
+  debug: msg='{{ lookup("template", "{{ item.file }}.j2" ) | sros_rootify }}' verbosity=1
+  with_items: "{{ config_items }}"
 
 - name: Configure additional configuration to integrate VSR with Nuage VSD
   local_action:
     module: sros_config
-    lines: '{{ lookup("file", "{{ vsr_configfile.path }}" ) | sros_rootify }}' 
+    lines: '{{ lookup("template", "{{ item.file }}.j2" ) | sros_rootify }}' 
     provider: "{{ provider_creds }}"
+  with_items: "{{ config_items }}"
+
 
 - name: Save VSR config
   local_action:
     module: sros_config
     save: yes
     provider: "{{ provider_creds }}"
-
-- name: Clean-up temp config file
-  local_action: 
-    module: file
-    path: "{{ vsr_configfile.path }}"
-    state: absent
-  when: false
 
