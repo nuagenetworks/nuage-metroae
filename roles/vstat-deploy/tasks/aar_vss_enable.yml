@@ -1,23 +1,4 @@
 ---
-- name: Download pip installer on VSD
-  command: curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
-  remote_user: "root"
-  delegate_to: "{{ item }}"
-  with_items: "{{ groups['vsds'] }}"
-
-- name: Execute pip installer on VSD
-  command: python get-pip.py
-  remote_user: "root"
-  delegate_to: "{{ item }}"
-  with_items: "{{ groups['vsds'] }}"
-
-- name: Install pexpect on VSD
-  pip:
-    name: pexpect
-  remote_user: "root"
-  delegate_to: "{{ item }}"
-  with_items: "{{ groups['vsds'] }}"
-
 - block:
 
   - name: Create SSL directory on the Stats node
@@ -27,16 +8,14 @@
     command: "/opt/vsd/ejbca/deploy/certMgmt.sh -a revoke -u elastic"
     ignore_errors: yes
 
-  remote_user: "root"
+  remote_user: "{{ vstat_username }}"
 
-- name: Generate SSL certificates on VSD for the Stats node (requires pexpect)
-  expect:
-    command: "/opt/vsd/ejbca/deploy/certMgmt.sh -a generate -u elastic -c elastic -o csp -f pem -t server -d {{ mgmt_ip }}"
-    responses:
-      (?i)password: "Alcateldc"
+- name: Generate SSL certificates on VSD for the Stats node
+  command: "/opt/vsd/ejbca/deploy/certMgmt.sh -a generate -u elastic -c elastic -o csp -f pem -t server -d {{ mgmt_ip }} -p {{ vsd_password }}"
   register: sslresult
-  remote_user: "root"
+  remote_user: "{{ vsd_username }}"
   delegate_to: "{{ groups['vsds'][0] }}"
+  run_once: True
 
 - name: Create temp folder to host the ssl certificates
   file: path=/tmp/ssl state=directory owner=root group=root mode=755
@@ -49,7 +28,7 @@
   - elasticCert.pem
   - elastic-Key.pem
   - elastic.pem 
-  remote_user: "root"
+  remote_user: "{{ vsd_username }}"
   delegate_to: "{{ groups['vsds'][0] }}"
 
 - name: Transfer SSL certificates from localhost to Stats node
@@ -59,7 +38,7 @@
   - elasticCert.pem
   - elastic-Key.pem
   - elastic.pem
-  remote_user: "root"
+  remote_user: "{{ vstat_username }}"
 
 - name: Delete temp folder from localhost
   local_action: file path=/tmp/ssl state=absent
@@ -68,12 +47,4 @@
   systemd:
     name: nginx
     state: restarted
-  remote_user: "root"
-
-- name: Uninstall pexpect on VSD
-  pip:
-    name: pexpect
-    state: absent
-  remote_user: "root"
-  delegate_to: "{{ item }}"
-  with_items: "{{ groups['vsds'] }}"
+  remote_user: "{{ vstat_username }}"
