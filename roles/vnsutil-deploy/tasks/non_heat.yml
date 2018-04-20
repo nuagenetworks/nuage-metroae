@@ -7,23 +7,6 @@
     ssh_host: "{{ mgmt_ip }}"
 
 - block:
-  - name: Update /etc/hosts file on {{ target_server }}
-    lineinfile:
-      dest: /etc/hosts
-      line: "{{ mgmt_ip }} {{ inventory_hostname }}"
-    delegate_to: "{{ target_server }}"
-    remote_user: "{{ target_server_username }}"
-  when: not target_server_type | match("vcenter")
-
-- block:
-
-  - name: Update /etc/hosts file
-    blockinfile:
-      dest: /etc/hosts
-      block: |
-        {% for host in groups['vnsutils']  %}
-        {{ hostvars[host]['mgmt_ip'] }}    {{ host }}
-        {% endfor %}
 
   - name: Configure yum proxy
     lineinfile:

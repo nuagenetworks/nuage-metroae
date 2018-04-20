@@ -16,20 +16,6 @@
       name:  "firewalld"
       enabled: no
 
-  - name: Update /etc/hosts file on {{ target_server }}
-    lineinfile:
-      dest: /etc/hosts
-      line: "{{ mgmt_ip }} {{ inventory_hostname }}"
-    delegate_to: "{{ target_server }}"
-
-  - name: Update /etc/hosts file
-    blockinfile:
-      dest: /etc/hosts
-      block: |
-        {% for host in groups['dnss']  %}
-        {{ hostvars[host]['mgmt_ip'] }}    {{ host }}
-        {% endfor %}
-
   - name: Install ntp client on {{ target_server }}
     yum: name=ntp state=latest
 

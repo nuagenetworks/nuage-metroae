@@ -31,32 +31,11 @@
     set_fact:
       infra_ip: "{{ infra_server['ansible_facts']['openstack_servers'][0]['private_v4'] }}"
 
-  - name: Update DNS entries
-    lineinfile:
-      line: "{{ vsd_mgmt_ip }}  {{ inventory_hostname }}"
-      dest: "/etc/hosts"
-    delegate_to: "{{ infra_ip }}"
-    remote_user: "root"
-
-  - name: Update XMPP DNS entries for VSD cluster deployments
-    lineinfile:
-      line: "{{ vsd_mgmt_ip }}  xmpp.{{ dns_domain }}"
-      dest: "/etc/hosts"
-    delegate_to: "{{ infra_ip }}"
-    remote_user: "root"
-    when: vsd_sa_or_ha | match('ha')
-
   - name: Restart DNS service
     shell: service dnsmasq restart
     delegate_to: "{{ infra_ip }}"
     remote_user: "root"
   when: infra_server_name is defined
-
-- name: Update /etc/hosts file on ansible host
-  lineinfile:
-    dest: /etc/hosts
-    line: "{{ vsd_mgmt_ip }}    {{ inventory_hostname }}"
-  delegate_to: 127.0.0.1
 
 - name: Wait for VSD-HA ssh to be ready
   include_role:
@@ -103,12 +82,6 @@
 
 - name: Resolve fqdn
   command: hostname "{{ inventory_hostname }}"
-  remote_user: "root"
-
-- name: Update /etc/hosts file
-  lineinfile:
-    dest: /etc/hosts
-    line: "{{ vsd_mgmt_ip }}  {{ inventory_hostname }}"
   remote_user: "root"
 
 - name: Configure yum proxy
