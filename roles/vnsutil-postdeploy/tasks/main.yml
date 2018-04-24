@@ -1,8 +1,8 @@
 ---
 ##TODO: Rewrite the vnsutil role to remove configuration from post deploy
 - block:
-  - name: Create dir to hold the keys 
-    file: 
+  - name: Create dir to hold the keys
+    file:
       path: "/opt/proxy/config/keys"
       state: directory
 
@@ -10,20 +10,14 @@
     shell: echo $VSD_VERSION
     register: vsd_version
     delegate_to: "{{ vsd_fqdn }}"
-  
+
   - name: Create and transfer certs for VSD 4.0.4
-    expect:
-      command: "{{ create_certs_404 }}"
-      responses:
-        (?i)password: "Alcateldc"
+    command: "{{ create_certs_404 }}"
     delegate_to: "{{ vsd_fqdn }}"
     when: "'4.0.4' in vsd_version.stdout"
 
   - name: Create and transfer certs
-    expect:
-      command: "{{ create_certs }}"
-      responses:
-        (?i)password: "Alcateldc"
+    command: "{{ create_certs }}"
     delegate_to: "{{ vsd_fqdn }}"
     when: "'4.0.4' not in vsd_version.stdout"
 
@@ -31,14 +25,14 @@
     command: "{{ install_cmd }}"
 
   - name: Start supervisord
-    service: 
+    service:
       name: supervisord
       state: restarted
       enabled: true
 
   - name: Trigger generation of CRL file
     command: /opt/proxy/bin/crlreloader.sh
-    
+
   - name: Wait for CRL file to be created, before starting HAProxy
     wait_for:
       path: /etc/haproxy/crl.pem
@@ -53,7 +47,7 @@
       enabled: true
 
   - name: Add firewall rules to accept dhcp and dns requests
-    lineinfile: 
+    lineinfile:
       insertafter: '<service name="ssh"/>'
       dest: /etc/firewalld/zones/public.xml
       line: "{{ item }}"
