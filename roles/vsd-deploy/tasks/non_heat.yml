@@ -5,7 +5,7 @@
     shell: echo $VSD_VERSION
     register: vsd_full_version
 
-  - name: Setting Major, Minor and Patch VSD version
+  - name: Set Major, Minor and Patch VSD version
     set_fact:
         vsd_major_version: "{{ vsd_full_version.stdout.split('.')[0] }}"
         vsd_minor_version: "{{ vsd_full_version.stdout.split('.')[1] }}"
@@ -18,6 +18,20 @@
   - debug: var=vsd_minor_version verbosity=1
 
   - debug: var=vsd_patch_version verbosity=1
+
+  - name: Set VSD numbering for install
+    set_fact:
+        vsd_cluster_node_1: "{{ groups['vsds'][0]] }}"
+        vsd_cluster_node_2: "{{ groups['vsds'][1] }}"
+        vsd_cluster_node_3: "{{ groups['vsds'][2] }}"
+    when: not nuage_upgrade
+
+  - name: Set VSD numbering for upgrade
+    set_fact:
+        vsd_cluster_node_1: "{{ groups['vsds'][1]] }}"
+        vsd_cluster_node_2: "{{ groups['vsds'][2] }}"
+        vsd_cluster_node_3: "{{ groups['vsds'][0] }}"
+    when: nuage_upgrade
 
   - block:
 
@@ -78,7 +92,7 @@
 
       when: vsd_major_version | int >= 5
 
-    when: vsd_sa_or_ha | match('ha') and inventory_hostname == groups['vsds'][0]
+    when: vsd_sa_or_ha | match('ha') and inventory_hostname == vsd_cluster_node_1
 
   - name: Configure yum proxy
     lineinfile:
@@ -138,17 +152,17 @@
 
   - block:
 
-    - name: Install VSD software on HA node1 {{groups['vsds'][0]}}
+    - name: Install VSD software on the first cluster node
       command: "{{ vsd_node1_install_cmd }}"
-      when: inventory_hostname == groups['vsds'][0]
+      when: inventory_hostname == vsd_cluster_node_1
 
-    - name: Install VSD software on HA node2 {{groups['vsds'][1]}}
+    - name: Install VSD software on the second cluster node
       command: "{{ vsd_node2_install_cmd }}"
-      when: inventory_hostname == groups['vsds'][1]
+      when: inventory_hostname == vsd_cluster_node_2
 
-    - name: Install VSD software on HA node3 {{groups['vsds'][2]}}
+    - name: Install VSD software on the third cluster node
       command: "{{ vsd_node3_install_cmd }}"
-      when: inventory_hostname == groups['vsds'][2]
+      when: inventory_hostname == vsd_cluster_node_3
 
     when: vsd_sa_or_ha | match('ha')
 
