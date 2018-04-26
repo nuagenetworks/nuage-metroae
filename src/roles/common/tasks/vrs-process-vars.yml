@@ -5,26 +5,26 @@
 
 # TODO: Optimize the looping through vrs arch types in case of large deployments
 - block:
-
+  
   - name: Create facts to be used with vrs deploy if vrs is Debian 14.04 based
     set_fact: vrs_u14_04="True"
     when: item.vrs_os_type == "u14.04"
-    with_items: "{{ myvrss }}"
+    with_items: "{{ vrss }}"
 
   - name: Create facts to be used with vrs deploy if vrs is Debian 16.04 based
     set_fact: vrs_u16_04="True"
     when: item.vrs_os_type == "u16.04"
-    with_items: "{{ myvrss }}"
+    with_items: "{{ vrss }}"
 
   - name: Create facts to be used with vrs deploy if vrs is Redhat el6 based
     set_fact: vrs_el6="True"
     when: item.vrs_os_type == "el6"
-    with_items: "{{ myvrss }}"
+    with_items: "{{ vrss }}"
 
   - name: Create facts to be used with vrs deploy if vrs is Redhat el7 based
     set_fact: vrs_el7="True"
-    when: item.vrs_os_type == "el7"
-    with_items: "{{ myvrss }}"
+    when: item.vrs_os_type == "el7" 
+    with_items: "{{ vrss }}"
 
   - name: initialize vrs_target_os_is_supported to be evaluated for vrs supported target os types
     set_fact: vrs_target_os_is_supported="True"
@@ -32,7 +32,7 @@
   - name: Set facts if vrs os type is set to a supported version
     set_fact: vrs_target_os_is_supported="False"
     when: item.vrs_os_type not in supported_vrs_target_os_types
-    with_items: "{{ myvrss }}"
+    with_items: "{{ vrss }}"
 
   - assert:
       that:
@@ -268,8 +268,8 @@
     when: vrs_u16_04|default(false)
 
   when:
-    - myvrss is defined
-    - "'install' in vrs_operations_list|default(['None'])"
+    - vrss is defined
+    
   tags:
     - vrs
 
@@ -282,9 +282,9 @@
   - name: Check if any of the VRSs have libnetwork_install set
     set_fact: libn = True
     when: item.libnetwork_install|default(False)
-    with_items: "{{ myvrss }}"
+    with_items: "{{ vrss }}"
 
-  when: myvrss is defined
+  when: vrss is defined
 
 - block:
 
@@ -366,18 +366,18 @@
   tags:
     - libnetwork
 
-- name: Set myvrss_check
-  set_fact: myvrss_check={{ myvrss is defined }}
+- name: Set vrss_check
+  set_fact: vrss_check={{ vrss is defined }}
 
-- name: Assign empty dict to myvrss if it is undefined
+- name: Assign empty dict to vrss if it is undefined
   set_fact:
-    myvrss: "{{ myvrss|default({}) }}"
-  when: not myvrss_check
+    vrss: "{{ vrss|default({}) }}"
+  when: not vrss_check
 
 - block:
   - name: Create host_vars files for vrs
     template: src=vrs.j2 backup=no dest={{ inventory_dir }}/host_vars/{{ item.1 }}
     with_subelements:
-        - "{{ myvrss }}"
+        - "{{ vrss }}"
         - vrs_ip_list
-  when: myvrss_check
+  when: vrss_check
