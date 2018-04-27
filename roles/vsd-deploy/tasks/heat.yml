@@ -175,7 +175,9 @@
       with_items: "{{ groups['vsds'] }}"
     when: vsd_version.stdout | int >= 5
   remote_user: root
-  when: vsd_sa_or_ha | match('ha') and inventory_hostname == vsd_cluster_node_1
+  when:
+    - vsd_sa_or_ha | match('ha')
+    - inventory_hostname == vsd_cluster_node_1 or (inventory_hostname == vsd_cluster_node_3 and nuage_upgrade)
 
 - name: Configure ntpd and ntpdate and local time zone
   include_role:
