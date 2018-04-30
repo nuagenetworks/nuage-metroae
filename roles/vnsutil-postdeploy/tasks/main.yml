@@ -6,27 +6,19 @@
       path: "/opt/proxy/config/keys"
       state: directory
 
-  - name: Get VSD version
-    shell: echo $VSD_VERSION
-    register: vsd_version
-    delegate_to: "{{ vsd_fqdn }}"
-  
-  - name: Create and transfer certs for VSD 4.0.4
-    expect:
-      command: "{{ create_certs_404 }}"
-      responses:
-        (?i)password: "Alcateldc"
-    delegate_to: "{{ vsd_fqdn }}"
-    when: "'4.0.4' in vsd_version.stdout"
-
   - name: Create and transfer certs
-    expect:
-      command: "{{ create_certs }}"
-      responses:
-        (?i)password: "Alcateldc"
-    delegate_to: "{{ vsd_fqdn }}"
-    when: "'4.0.4' not in vsd_version.stdout"
-
+    set_fact: 
+      certificate_password: {{ vnsutil_password }}
+      certificate_username: proxy
+      commonName: proxy
+      certificate_type: server
+      scp_user: {{ vnsutil_username }}
+      scp_location: /opt/proxy/config/keys
+      additional_parameters: ""
+    include_role: 
+      name: common
+      tasks_from: vsd-generate-transfer-certificates
+ 
   - name: Install supervisord and haproxy
     command: "{{ install_cmd }}"
 
