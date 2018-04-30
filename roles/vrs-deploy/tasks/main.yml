@@ -134,29 +134,28 @@
   - name: Generate TLS Certificates for VRS
     remote_user: "{{ vsd_username }}"
     delegate_to: "{{ vsd_fqdn }}"
-    shell:  "/opt/vsd/ejbca/deploy/certMgmt.sh -a generate -u vrs-{{inventory_hostname}} -c vrs-{{inventory_hostname}} -o csp -f pem -t vrs -s vrs-{{inventory_hostname}}@{{inventory_hostname}}:/etc/default/bootstrap/keys/ -v {{item}} "
-    with_items: "{{ vrs_ip_list }}"
+    shell:  "/opt/vsd/ejbca/deploy/certMgmt.sh -a generate -u vrs-{{ inventory_hostname }} -c vrs-{{ inventory_hostname }} -o csp -f pem -t vrs -s vrs-{{ inventory_hostname }}@{{ inventory_hostname }}:/etc/default/bootstrap/keys/ -v {{ inventory_name }} "
       
   - name: Update client key path in {{ openvswitch_file }} file
     remote_user: "{{ target_server_username }}"
     lineinfile:
       dest: "{{ openvswitch_file }}"
       regexp: "^CLIENT_KEY_PATH="
-      line: "CLIENT_KEY_PATH={{ client_keys_path }}/vrs-{{inventory_hostname}}-Key.pem"
+      line: "CLIENT_KEY_PATH={{ client_keys_path }}/vrs-{{ inventory_hostname }}-Key.pem"
 
   - name: Update client cert path in {{ openvswitch_file }} file
     remote_user: "{{ target_server_username }}"
     lineinfile:
       dest: "{{ openvswitch_file }}"
       regexp: "^CLIENT_CERT_PATH="
-      line: "CLIENT_CERT_PATH={{ client_keys_path }}/vrs-{{inventory_hostname}}.pem"
+      line: "CLIENT_CERT_PATH={{ client_keys_path }}/vrs-{{ inventory_hostname }}.pem"
 
   - name: Update CA cert path in {{ openvswitch_file }} file
     remote_user: "{{ target_server_username }}"
     lineinfile:
       dest: "{{ openvswitch_file }}"
       regexp: "^CA_CERT_PATH="
-      line: "CA_CERT_PATH={{ client_keys_path }}//vrs-{{inventory_hostname}}-CA.pem"
+      line: "CA_CERT_PATH={{ client_keys_path }}//vrs-{{ inventory_hostname }}-CA.pem"
 
   - name: Update connection type in {{ openvswitch_file }} file
     remote_user: "{{ target_server_username }}"
