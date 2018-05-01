@@ -44,14 +44,16 @@
       scp_user: "{{ vsc_username }}"
       scp_location: /
       additional_parameters: ""
+      
     
-  - name: Configure VSC
+  - name: Configure VSC for secure communication
     sros_config:
       lines:
-          - configure system security tls-profile vns-tls-profile no shutdown
-          - configure vswitch-controller open-flow tls-profile vns-tls-profile
-          - configure vswitch-controller xmpp tls-profile vns-tls-profile
+          - configure system security tls-profile vsc-tls-profile no shutdown
+          - configure vswitch-controller open-flow tls-profile vsc-tls-profile
+          - configure vswitch-controller xmpp tls-profile vsc-tls-profile
           - configure system time ntp ntp-server
+          - admin save
       provider: "{{ vsc_creds }}"
     delegate_to: localhost
 
@@ -68,5 +70,5 @@
     
   - name: Print output of 'show vswitch-controller xmpp-server' when verbosity >= 1
     debug: var=xmpp_status verbosity=1
-  when: secure_communication
+  when: "{{ secure_communication }}"
   
