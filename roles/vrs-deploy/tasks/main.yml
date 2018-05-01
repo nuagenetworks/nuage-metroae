@@ -133,7 +133,10 @@
       
   - block: 
     - name: Generate TLS Certificates for VRS
-      set_fact: 
+      include_role: 
+        name: common
+        tasks_from: vsd-generate-transfer-certificates
+      vars: 
         certificate_password: "{{ compute_password }}"
         certificate_username: vrs-"{{ inventory_hostname }}"
         commonName: vrs-"{{ inventory_hostname }}"
@@ -141,9 +144,6 @@
         scp_user: "{{ compute_user }}"
         scp_location: /etc/default/bootstrap/keys/
         additional_parameters:  -v "{{ inventory_hostname }}"
-      include_role: 
-        name: common
-        tasks_from: vsd-generate-transfer-certificates 
        
     - name: Update client key path in {{ openvswitch_file }} file
       remote_user: "{{ target_server_username }}"
