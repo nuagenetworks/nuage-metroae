@@ -1,8 +1,8 @@
 ---
 ##TODO: Rewrite the vnsutil role to remove configuration from post deploy
 - block:
-  - name: Create dir to hold the keys 
-    file: 
+  - name: Create dir to hold the keys
+    file:
       path: "/opt/proxy/config/keys"
       state: directory
 
@@ -23,14 +23,14 @@
     command: "{{ install_cmd }}"
 
   - name: Start supervisord
-    service: 
+    service:
       name: supervisord
       state: restarted
       enabled: true
 
   - name: Trigger generation of CRL file
     command: /opt/proxy/bin/crlreloader.sh
-    
+
   - name: Wait for CRL file to be created, before starting HAProxy
     wait_for:
       path: /etc/haproxy/crl.pem
@@ -45,7 +45,7 @@
       enabled: true
 
   - name: Add firewall rules to accept dhcp and dns requests
-    lineinfile: 
+    lineinfile:
       insertafter: '<service name="ssh"/>'
       dest: /etc/firewalld/zones/public.xml
       line: "{{ item }}"
