@@ -13,6 +13,10 @@
     set_fact:
       openvswitch_file: "/etc/default/openvswitch-switch"
     when: ansible_os_family == "Debian"
+
+  - name: set secure communication flog
+    set_fact:
+      secure_communication: "{{ secure_communication }}"
   
   - name: Set connection type 
     set_fact:
@@ -172,7 +176,7 @@
         dest: "{{ openvswitch_file }}"
         regexp: "^CONN_TYPE="
         line: "CONN_TYPE={{ conn_type }}"
-    when: "{{ secure_communication }}"
+    when: secure_communication
   
   - name: Restart OpenVSwitch Service on RedHat OS family distros
     service: name=openvswitch state=restarted
