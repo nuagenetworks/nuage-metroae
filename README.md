@@ -81,8 +81,6 @@ File name | Description
 --------- | --------
 [RELEASE_NOTES.md](Documentation/RELEASE_NOTES.md) | New features, resolved issues and known limitations and issues
 [SETUP.md](Documentation/SETUP.md) | Set up your environment by cloning the repo, installing packages and configuring access.
-[BUILD.md](Documentation/BUILD.md) | Populate variable files, unzip Nuage software, and build the environment for deploying
-[BUILD_UPGRADE.md](Documentation/BUILD_UPGRADE.md) | Populate variable files, unzip Nuage software, and build the environment for upgrading.
 [DEPLOY.md](Documentation/DEPLOY.md) | Deploy all VSP components or choose components individually.
 [DESTROY.md](Documentation/DESTROY.md) | Remove existing deployment(s) and start over.
 [UPGRADE.md](Documentation/UPGRADE.md) | Upgrade component(s) from one release to the next.
