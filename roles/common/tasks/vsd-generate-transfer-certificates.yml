@@ -7,7 +7,8 @@
   shell: "/bin/sshpass -p{{ certificate_password }} /opt/vsd/ejbca/deploy/certMgmt.sh -a generate -u {{ certificate_username }} -c {{ commonName }} -o csp -f pem -t {{ certificate_type }} -d {{ inventory_hostname }} -s {{ scp_user }}@{{ inventory_hostname }}:{{ scp_location }} {{ additional_parameters }} "
   remote_user: "{{ vsd_username }}"
   delegate_to: "{{ vsd_fqdn }}"
-  until: rc != 0
+  register: created
+  until: created.rc != 0
   retries: 10
   when: "'4.0.4' not in vsd_version "
 
@@ -15,7 +16,8 @@
   shell: "/bin/sshpass -p{{ certificate_password }} /opt/vsd/ejbca/deploy/certMgmt.sh -a generate -u {{ certificate_username }} -c {{ commonName }} -o csp -f pem -t {{ certificate_type }} -d {{ inventory_hostname }} -s {{ scp_user }}@{{ inventory_hostname }}:{{ scp_location }}   -n VSPCA {{ additional_parameters }} "
   remote_user: "{{ vsd_username }}"
   delegate_to: "{{ vsd_fqdn }}"
-  until: rc != 0
+  register: created
+  until: created.rc != 0
   retries: 10
   when: "'4.0.4' in vsd_version "
   
