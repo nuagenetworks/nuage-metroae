@@ -162,7 +162,7 @@ If this fails, retry.
 ./metro-ansible vsc_ha_upgrade_deploy_1 -vvvv
 ```
 
-If the step fails, you can retry. Backup plan is to manually copy a valid .tim file to the VSC to affect either the deployment (new version of tim file) or a rollback. (old version of tim file). If rollback fails, you will need to deploy a new VSC using the old version--or recover the VM from a backup. You can use Metro for the deployment (vsc_predeploy, vsc_deploy, vsc_postdeploy...).
+If the step fails, you can retry. Backup plan is to manually copy a valid .tim file to the VSC to affect either the deployment (new version of tim file). (old version of tim file). If that fails, you will need to deploy a new VSC using the old version--or recover the VM from a backup. You can use Metro for the deployment (vsc_predeploy, vsc_deploy, vsc_postdeploy...).
 
 13. Run VSC postdeploy on vsc_node1
 
@@ -190,7 +190,7 @@ If this fails, retry.
 ./metro-ansible vsc_ha_upgrade_deploy_2 -vvvv
 ```
 
-If the step fails, you can retry. Backup plan is to manually copy a valid .tim file to the VSC to affect either the deployment (new version of tim file) or a rollback. (old version of tim file). If rollback fails, you will need to deploy a new VSC using the old version--or recover the VM from a backup. You can use Metro for the deployment (vsc_predeploy, vsc_deploy, vsc_postdeploy...).
+If the step fails, you can retry. Backup plan is to manually copy a valid .tim file to the VSC to affect either the deployment. If that fails, you will need to deploy a new VSC using the old version--or recover the VM from a backup. You can use Metro for the deployment (vsc_predeploy, vsc_deploy, vsc_postdeploy...).
 
 16. Run VSC postdeploy on vsc_node2
 
@@ -346,7 +346,7 @@ This step is already done in step 2. You can skip it here if you wish. It is goo
 ./metro-ansible vsc_sa_upgrade_deploy -vvvv
 ```
 
-If the step fails, you can retry. Backup plan is to manually copy a valid .tim file to the VSC to affect either the deployment (new version of tim file) or a rollback. (old version of tim file). If rollback fails, you will need to deploy a new VSC using the old version--or recover the VM from a backup. You can use Metro for the deployment (vsc_predeploy, vsc_deploy, vsc_postdeploy...).
+If the step fails, you can retry. Backup plan is to manually copy a valid .tim file to the VSC to affect the deployment. If that fails, you will need to deploy a new VSC using the old version--or recover the VM from a backup. You can use Metro for the deployment (vsc_predeploy, vsc_deploy, vsc_postdeploy...).
 
 10. Run VSC postdeploy on vsc
 
