@@ -220,17 +220,25 @@
       state: restarted
     remote_user: "root"
 
+  - name: Get vsd node(s) information
+    import_role:
+      name: common
+      tasks_from: vsd-node-info.yml
+    vars:
+      vsd_hostname: "{{ vsd_fqdn }}"
+    run_once: true
+
   - name: Stat the standalone script
     stat: path=/opt/vsd/vsd-es-standalone.sh
     register: es_sa_script
-    delegate_to: "{{ vsd_fqdn }}"
+    delegate_to: "{{ vsd_hostname_list[0] }}"
     remote_user: root
     when:
       - vstat_sa_or_ha | match('sa')
 
   - name: Execute VSTAT standalone script on standalone or clustered vsds
     command: /opt/vsd/vsd-es-standalone.sh -e {{ inventory_hostname }}
-    delegate_to: "{{ vsd_fqdn }}"
+    delegate_to: "{{ vsd_hostname_list[0] }}"
     remote_user: root
     environment:
       SSHPASS: "{{ vstat_password }}"
@@ -241,7 +249,7 @@
 
   - name: Execute VSTAT cluster script on standalone or clustered vsds
     command: /opt/vsd/vsd-es-cluster-config.sh -e {{ groups['vstats'][0] }},{{ groups['vstats'][1] }},{{ groups['vstats'][2] }}
-    delegate_to: "{{ vsd_fqdn }}"
+    delegate_to: "{{ vsd_hostname_list[0] }}"
     remote_user: root
     environment:
       SSHPASS: "{{ vstat_password }}"

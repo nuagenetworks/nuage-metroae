@@ -18,8 +18,7 @@
       scp_user: "{{ vnsutil_username }}"
       scp_location: /opt/proxy/config/keys
       additional_parameters: ""
-    
- 
+     
   - name: Install supervisord and haproxy
     command: "{{ install_cmd }}"
 
@@ -57,10 +56,18 @@
       name: firewalld
       state: restarted
 
+  - name: Get vsd node(s) information
+    import_role:
+      name: common
+      tasks_from: vsd-node-info.yml
+    vars:
+      vsd_hostname: "{{ vsd_fqdn }}"
+    run_once: true
+
   - name: Verify if proxy user is connected to the VSD
     command: /opt/ejabberd/bin/ejabberdctl connected_users
     register: proxy_user
-    delegate_to: "{{ vsd_fqdn }}"
+    delegate_to: "{{ vsd_hostname_list[0] }}"
     until: proxy_user.stdout.find('proxy') != -1
     retries: 5
     delay: 30
