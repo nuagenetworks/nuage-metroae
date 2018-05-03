@@ -1,20 +1,9 @@
-- name: Get monit summary for all stats process on VSD
-  vsd_monit:
-    group: check
-  register: chk
-  remote_user: "root"
-
-- name: Verify elasticsearch-status program on VSD
-  assert:
-    that: chk['state']['elasticsearch-status']|match("status ok")
-    msg:  "elasticsearch-status not ok"
-
-- name: Verify tca-daemon-status program on VSD
-  assert:
-    that: chk['state']['tca-daemon-status']|match("status ok")
-    msg:  "tca-daemon-status not ok"
-
-- name: Verify stats-collector-status program on VSD
-  assert:
-    that: chk['state']['stats-collector-status']|match("status ok")
-    msg:  "stats-collector-status not ok"
+- name: Wait for ES VSD processes to become running
+  monit_waitfor_service:
+    name: "{{ item }}"
+    timeout_seconds: 600
+    test_interval_seconds: 30
+  with_items:
+    - elasticsearch-status
+    - tca-daemon-status
+    - stats-collector-status

@@ -1,16 +1,12 @@
 - name: Resolve "{{ vsd_hostname }}"  to ip addr
-  shell: host "{{ vsd_hostname }}" | awk '{print $3,$4}'
+  shell: "getent hosts {{ vsd_hostname }} | awk '{print $1}'"
   register: ip_addr
-  remote_user: "root"
-
-- name: Check for ip addr in the registered var
-  fail: msg="Could not resolve ip addr of "{{ vsd_hostname }}" "
-  when: ip_addr.stdout | match("not found:")
+  delegate_to: localhost
 
 - name: Get the vsd node info
   command: /opt/vsd/sysmon/showStatus.py
   register: vsd_info
-  remote_user: root
+  remote_user: "{{ vsd_username }}"
   delegate_to: "{{ vsd_hostname }}"
 
 - name: Set vsd deployment mode
@@ -22,6 +18,7 @@
   set_fact:
     vsd_sa_or_ha: "ha"
   when: "'Clustered' in vsd_info.stdout"
+  run_once: True
 
 - name: Extract vsd hostname when standalone
   set_fact:
@@ -32,3 +29,4 @@
   set_fact:
     vsd_hostname_list: "{{ vsd_info.stdout | regex_findall('VSD Server Node:\\s+(.*)')}}"
   when: vsd_sa_or_ha | match('ha')
+  run_once: True

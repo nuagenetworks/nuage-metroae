@@ -4,44 +4,40 @@ Before upgrading any components, you must have previously [set up your Nuage Met
 
 ## VSD, VSC, & VSTAT (elasticsearch ) HA/Cluster upgrade at a glance
 
-A sample workflow for 5.0.2 to 5.1.1 upgrade. For more detailed workflow refer [Sample HA Metro workflow for an upgrade](#sample-ha-metro-workflow-for-an-upgrade)
+A sample workflow for 5.1.2 to 5.2.2 upgrade. For more detailed workflow refer [Sample HA Metro workflow for an upgrade](#sample-ha-metro-workflow-for-an-upgrade)
 
 After all [Prerequisites](#prerequisites) are met, run the following set of playbooks in the order specified to upgrade vsd,vsc,vstat deployed in HA/Cluster mode.
 1. ./metro-ansible vsp_preupgrade_health.yml -vvvv
 2. ./metro-ansible vsd_ha_upgrade_database_backup_and_decouple.yml -vvvv
-3. ./metro-ansible vsd_ha_upgrade_shutdown_1_and_2.yml -vvvv
-4. ./metro-ansible vsd_ha_upgrade_predeploy_1_and_2.yml -vvvv
-5. ./metro-ansible vsd_ha_upgrade_deploy_1_and_2.yml -vvvv
-6. ./metro-ansible vsd_ha_upgrade_shutdown_3.yml -vvvv
-7. ./metro-ansible vsd_ha_upgrade_predeploy_3.yml -vvvv
-8. ./metro-ansible vsd_ha_upgrade_deploy_3.yml -vvvv
+3. ./metro-ansible vsd_ha_upgrade_shutdown_2_and_3.yml -vvvv
+4. ./metro-ansible vsd_ha_upgrade_predeploy_2_and_3.yml -vvvv
+5. ./metro-ansible vsd_ha_upgrade_deploy_2_and_3.yml -vvvv
+6. ./metro-ansible vsd_ha_upgrade_shutdown_1.yml -vvvv
+7. ./metro-ansible vsd_ha_upgrade_predeploy_1.yml -vvvv
+8. ./metro-ansible vsd_ha_upgrade_deploy_1.yml -vvvv
 9. ./metro-ansible vsd_upgrade_complete_flag.yml -vvv
-10. ./metro-ansible vsc_health.yml -e report_filename=vsc_preupgrade_health.txt -vvvv
-11. ./metro-ansible vsc_ha_upgrade_backup_and_prep_1.yml -vvvv
-12. ./metro-ansible vsc_ha_upgrade_deploy_1.yml -vvvv
-13. ./metro-ansible vsc_ha_upgrade_postdeploy_1.yml -vvvv
+10. ./metro-ansible vsc_ha_upgrade_backup_and_prep_1.yml -vvvv
+11. ./metro-ansible vsc_ha_upgrade_deploy_1.yml -vvvv
+12. ./metro-ansible vsc_ha_upgrade_postdeploy_1.yml -vvvv
 
-** DO NOT PROCEED UNTILL VRS(s) ARE UPGRADED **
+** DO NOT PROCEED UNTIL VRS(s) ARE UPGRADED **
 
-14. ./metro-ansible vsc_ha_upgrade_backup_and_prep_2.yml -vvvv
-15. ./metro-ansible vsc_ha_upgrade_deploy_2.yml -vvvv
-16. ./metro-ansible vsc_ha_upgrade_postdeploy_2.yml -vvvv
-17. ./metro-ansible vstat_health.yml -e report_filename=vstat_preupgrade_health.txt -vvvv
-18. ./metro-ansible vstat_upgrade_data_backup.yml -vvvv
-19. ./metro-ansible vstat_destroy.yml -vvvv
-20. ./metro-ansible vstat_predeploy.yml -vvvv
-21. ./metro-ansible vstat_deploy.yml -vvvv
-22. ./metro-ansible vstat_upgrade_data_migrate.yml -vvvv
+13. ./metro-ansible vsc_ha_upgrade_backup_and_prep_2.yml -vvvv
+14. ./metro-ansible vsc_ha_upgrade_deploy_2.yml -vvvv
+15. ./metro-ansible vsc_ha_upgrade_postdeploy_2.yml -vvvv
+16. ./metro-ansible vstat_upgrade_backup_and_prep -vvvv
+17. ./metro-ansible vstat_upgrade.yml -vvvv
+18. ./metro-ansible vstat_upgrade_wrapup.yml -vvvv
 
 ** FINALIZE UPGRADE **
 
-23. ./metro-ansible vsp_upgrade_postdeploy.yml -vvvv
-24. ./metro-ansible vsp_postupgrade_health.yml -vvvv
+19. ./metro-ansible vsp_upgrade_postdeploy.yml -vvvv
+20. ./metro-ansible vsp_postupgrade_health.yml -vvvv
 
 
 ## VSD, VSC, & VSTAT (elasticsearch ) SA/Standalone upgrade at a glance
 
-A sample workflow for 5.0.2 to 5.1.1 upgrade. For detailed workflow refer [Sample Metro workflow for standalone upgrade](#sample-metro-workflow-for-standalone-upgrade)
+A sample workflow for 5.1.2 to 5.2.2 upgrade. For detailed workflow refer [Sample Metro workflow for standalone upgrade](#sample-metro-workflow-for-standalone-upgrade)
 
 After all [Prerequisites](#prerequisites) are met, run the following set of playbooks in the order specified to upgrade vsd,vsc,vstat deployed in SA/Standalone mode.
 1. ./metro-ansible vsp_preupgrade_health.yml -vvvv
@@ -50,24 +46,20 @@ After all [Prerequisites](#prerequisites) are met, run the following set of play
 4. ./metro-ansible vsd_predeploy.yml -vvvv
 5. ./metro-ansible vsd_sa_upgrade_deploy.yml -vvvv
 6. ./metro-ansible vsd_upgrade_complete_flag.yml -vvvv
-7. ./metro-ansible vsc_health.yml -e report_filename=vsc_preupgrade_health.txt -vvvv
-8. ./metro-ansible vsc_sa_upgrade_backup_and_prep.yml -vvvv
-9. ./metro-ansible vsc_sa_upgrade_deploy.yml -vvvv
-10. ./metro-ansible vsc_sa_upgrade_postdeploy.yml -vvvv
+7. ./metro-ansible vsc_upgrade_backup_and_prep.yml -vvvv
+8. ./metro-ansible vsc_sa_upgrade_deploy.yml -vvvv
+9. ./metro-ansible vsc_sa_upgrade_postdeploy.yml -vvvv
 
-** DO NOT PROCEED UNTILL VRS(s) ARE UPGRADED **
+** DO NOT PROCEED UNTIL VRS(s) ARE UPGRADED **
 
-11. ./metro-ansible vstat_health.yml -e report_filename=vstat_preupgrade_health.txt -vvvv
-12. ./metro-ansible vstat_upgrade_data_backup.yml -vvvv
-13. ./metro-ansible vstat_destroy.yml -vvvv
-14. ./metro-ansible vstat_predeploy.yml -vvvv
-15. ./metro-ansible vstat_deploy.yml -vvvv
-16. ./metro-ansible vstat_upgrade_data_migrate.yml -vvvv
+10. ./metro-ansible vstat_upgrade_backup_and_prep -vvvv
+11. ./metro-ansible vstat_upgrade.yml -vvvv
+12. ./metro-ansible vstat_upgrade_wrapup.yml -vvvv
 
 ** FINALIZE UPGRADE **
 
-17 ./metro-ansible vsp_upgrade_postdeploy.yml -vvvv
-18 ./metro-ansible vsp_postupgrade_health.yml -vvvv
+13 ./metro-ansible vsp_upgrade_postdeploy.yml -vvvv
+14 ./metro-ansible vsp_postupgrade_health.yml -vvvv
 
 
 ## Sample HA Metro workflow for an upgrade
@@ -103,55 +95,55 @@ These health checks can be run at any time of the upgrade process.
 ./metro-ansible vsd_ha_upgrade_database_backup_and_decouple.yml -vvvv
 ```
 
-At this point, vsd_node3 has been decoupled from the cluster and is running in SA mode. If you experience a failure in the previous step, recovery depends on the state of vsd_node3. If it’s still in the cluster, you can simply retry. If not, you will need to redeploy vsd_node3 from a backup(user is expected to have the vm backup ready before the upgrade procedure) or otherwise recover.
+At this point, vsd_node1 has been decoupled from the cluster and is running in SA mode. If you experience a failure in the previous step, recovery depends on the state of vsd_node1. If it’s still in the cluster, you can simply retry. If not, you will need to redeploy vsd_node1 from a backup (user is expected to have the vm backup ready before the upgrade procedure) or otherwise recover.
 
-4. Power off vsd_node1 and vsd_node2
-
-```
-./metro-ansible vsd_ha_upgrade_shutdown_1_and_2.yml -vvvv
-```
-
-At this point, vsd_node1 and vsd_node2 are shut down, but not deleted. The new nodes will be brought up with new VM names. Note that this step may be done manually if the user chooses. If you experience a failure running the Metro playbook for this step, a retry is advised. Or you can power off the VMs manually.
-
-5. Predeploy new vsd_node1 and vsd_node2
+4. Power off vsd_node2 and vsd_node3
 
 ```
-./metro-ansible vsd_ha_upgrade_predeploy_1_and_2.yml -vvvv
+./metro-ansible vsd_ha_upgrade_shutdown_2_and_3.yml -vvvv
 ```
 
-At this point, the new vsd_node1 and vsd_node2 are up and running, but they have not yet been configured. If you experience a failure in this step, execute the playbook vsd_ha_upgrade_destroy_1_and_2.yml to delete the new nodes. Then retry the step.
+At this point, vsd_node2 and vsd_node3 are shut down, but not deleted. The new nodes will be brought up with new VM names. Note that this step may be done manually if the user chooses. If you experience a failure running the Metro playbook for this step, a retry is advised. Or you can power off the VMs manually.
 
-6. Deploy new vsd_node1 and vsd_node2
-
-```
-./metro-ansible vsd_ha_upgrade_deploy_1_and_2.yml -vvvv
-```
-
-At this point, two VSD nodes have been upgraded. If you experience a failure before the VSD install script runs, retry playbook vsd_ha_upgrade_deploy_1_and_2.yml. If that fails again or the failure comes after the VSD install script runs, destroy the VMs manually or use vsd_ha_upgrade_destroy_1_and_2.yml, then retry starting at step 5.
-
-7. Power off vsd_node3
+5. Predeploy new vsd_node2 and vsd_node3
 
 ```
-./metro-ansible vsd_ha_upgrade_shutdown_3.yml -vvvv
+./metro-ansible vsd_ha_upgrade_predeploy_2_and_3.yml -vvvv
 ```
 
-At this point, vsd_node3 is shut down, but not deleted. The new node will be brought up with a new VM name. Note that this step may be done manually if the user chooses. If you experience a failure running the Metro playbook for this step, a retry is advised. Or you can power off the VM manually.
+At this point, the new vsd_node2 and vsd_node3 are up and running, but they have not yet been configured. If you experience a failure in this step, execute the playbook vsd_ha_upgrade_destroy_2_and_3.yml to delete the new nodes. Then retry the step.
 
-8. Run predeploy on vsd_node3
-
-```
-./metro-ansible vsd_ha_upgrade_predeploy_3.yml -vvvv
-```
-
-At this point, the new vsd_node3 is up and running, but it has not yet been configured. If you experience a failure in this step, execute the playbook vsd_ha_upgrade_destroy_3.yml to delete the new node. Then retry the step.
-
-9. Run deploy on vsd_node3
+6. Deploy new vsd_node2 and vsd_node3
 
 ```
-./metro-ansible vsd_ha_upgrade_deploy_3.yml -vvvv
+./metro-ansible vsd_ha_upgrade_deploy_2_and_3.yml -vvvv
 ```
 
-At this point, all 3 VSD nodes have been upgraded. If you experience a failure before the VSD install script runs, retry playbook vsd_ha_upgrade_deploy_3.yml. If that fails again or the failure comes after the VSD install script runs, destroy the VMs manually or use vsd_ha_upgrade_destroy_3.yml, then retry starting at step 8.
+At this point, two VSD nodes have been upgraded. If you experience a failure before the VSD install script runs, retry playbook vsd_ha_upgrade_deploy_2_and_3.yml. If that fails again or the failure comes after the VSD install script runs, destroy the VMs manually or use vsd_ha_upgrade_destroy_2_and_3.yml, then retry starting at step 5.
+
+7. Power off vsd_node1
+
+```
+./metro-ansible vsd_ha_upgrade_shutdown_1.yml -vvvv
+```
+
+At this point, vsd_node1 is shut down, but not deleted. The new node will be brought up with a new VM name. Note that this step may be done manually if the user chooses. If you experience a failure running the Metro playbook for this step, a retry is advised. Or you can power off the VM manually.
+
+8. Run predeploy on vsd_node1
+
+```
+./metro-ansible vsd_ha_upgrade_predeploy_1.yml -vvvv
+```
+
+At this point, the new vsd_node1 is up and running, but it has not yet been configured. If you experience a failure in this step, execute the playbook vsd_ha_upgrade_destroy_1.yml to delete the new node. Then retry the step.
+
+9. Run deploy on vsd_node1
+
+```
+./metro-ansible vsd_ha_upgrade_deploy_1.yml -vvvv
+```
+
+At this point, all 3 VSD nodes have been upgraded. If you experience a failure before the VSD install script runs, retry playbook vsd_ha_upgrade_deploy_1.yml. If that fails again or the failure comes after the VSD install script runs, destroy the VMs manually or use vsd_ha_upgrade_destroy_1.yml, then retry starting at step 8.
 
 10. Set the VSD upgrade complete flag
 
