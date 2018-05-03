@@ -7,6 +7,10 @@
 # This looks like some duplicate code
 
 - block: 
+  - name: Set transport type
+    set_fact:  
+      transport_type: "{{ 'ssl' if ({{ secure_communication }}) else 'tcp' }}"
+      
   - name: Get controller connection info
     shell: "ovs-vsctl show | grep -Pzl '(?s)Controller \"ctrl(1|2)\"\\n *target: \"tcp:({{ item }}):6633\"\\n *role: (master|slave)\\n *is_connected: true'"
     with_items:
@@ -16,9 +20,7 @@
     remote_user: "{{ target_server_username }}"
     ignore_errors: yes
     changed_when: false
-    until: ("command_result.results[0].rc == 0") and ("command_result.results[1].rc == 0")
-    retries: 3
-    delay: 10
+
   
   - name: Check primary controller
     assert:
