@@ -9,12 +9,12 @@
 - name: Get VSD version
   shell: echo $VSD_VERSION
   register: vsd_version
-  delegate_to: "{{ vsd_fqdn }}"
+  delegate_to: "{{ vsd_hostname_list[0] }}"
   
 - name: Create and transfer certs from VSD
   shell: "/bin/sshpass -p{{ certificate_password }} /opt/vsd/ejbca/deploy/certMgmt.sh -a generate -u {{ certificate_username }} -c {{ commonName }} -o csp -f pem -t {{ certificate_type }} -s {{ scp_user }}@{{ inventory_hostname }}:{{ scp_location }} {{ additional_parameters }} "
   remote_user: "{{ vsd_username }}"
-  delegate_to: "{{ vsd_fqdn }}"
+  delegate_to: "{{ vsd_hostname_list[0] }}"
   register: created
   until: created.rc == 0
   retries: 10
@@ -24,7 +24,7 @@
 - name: Create and transfer certs from 4.0.4 VSD
   shell: "/bin/sshpass -p{{ certificate_password }} /opt/vsd/ejbca/deploy/certMgmt.sh -a generate -u {{ certificate_username }} -c {{ commonName }} -o csp -f pem -t {{ certificate_type }} -s {{ scp_user }}@{{ inventory_hostname }}:{{ scp_location }}   -n VSPCA {{ additional_parameters }} "
   remote_user: "{{ vsd_username }}"
-  delegate_to: "{{ vsd_fqdn }}"
+  delegate_to: "{{ vsd_hostname_list[0] }}"
   register: created
   until: created.rc == 0
   retries: 10
