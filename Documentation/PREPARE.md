@@ -1,14 +1,18 @@
 # Customizing for your Topology
+
 ## Prerequisites / Requirements
+
 To confirm that your components are supported by MetroAG, see [README.md](../README.md).
 
 If you have not previously set up your MetroAG Ansible environment, see [SETUP.md](SETUP.md) before proceeding.
 
 ## Main Steps
+
 [1. Customize variables](#1-customize-variables)  
 [2. Unzip Nuage files](#2-unzip-nuage-files)  
 
 ## 1. Customize Variables
+
 Setting variables correctly ensures that when playbooks run they configure components as intended. Precise syntax is crucial for success. See the [examples directory](/examples/) for references. *Up to* three variable files are used to build the environment: `user_creds.yml`, `build_vars.yml` and `zfb_vars.yml`.
 
 ### `user_creds.yml`
@@ -57,30 +61,37 @@ Alternatively, you can create the directories under the <nuage_unzipped_files_di
   <nuage_unzipped_files_dir/vns/util/
   ```
 
-
 ## Hosting your variable files outside of the repo
 
 When you are contributing code, or pulling new versions of Metro quite often, it may make sense to host your variable files in a separate directory outside of `nuage-metro/`.
-Both `nuage-unzip.yml` and `build.yml` support passing the location of this file explicitly as extra variable:
+The metro-ansible command supports passing the location of this file explicitly as extra variable:
 
 ```
-./metro-ansible nuage_unzip.yml -e build_vars_file="/path/to/your/build_vars.yml"
-./metro-ansible build.yml -e build_vars_file="/path/to/your/build_vars.yml" -e "user_creds_file=/path/to/your/user_creds.yml"
+./metro-ansible nuage_unzip -e build_vars_file="/path/to/your/build_vars.yml"
+./metro-ansible install_everything -e build_vars_file="/path/to/your/build_vars.yml" -e "user_creds_file=/path/to/your/user_creds.yml"
 ```
-## Reset your environment and Start Over
-If you have issues with populating `build_vars.yml` and would like to reset the file to the default settings and start over, execute the following command:
+
+## Having Issues? Reset your environment
+
+If you have issues with the contents of your user data files, you can reset to factory settings and start over.
+
+WARNING: **You may lose your work!** A timestamped backup copy, in the form of `<data_file_name>.yml.<date and time>~` is created (in case you change your mind.) Make sure you have enough storage for it.
+
+Execute the command:
 
 ```
-./metro-ansible reset_build.yml
+./metro-ansible reset_build
 ```
 
 ## Next Steps
+
 After you've set up your environment and customized for your topology, you have several options:
 * deploy new components. See [DEPLOY.md](DEPLOY.md) for guidance.
 * upgrade existing components to a newer version. See [UPGRADE.md](UPGRADE.md) for guidance.
 * remove previously deployed components(s). See [DESTROY.md](DESTROY.md) for guidance.
 
 ## Questions, Feedback, and Contributing
+
 Ask questions and get support via email.  
   Outside Nokia: [devops@nuagenetworks.net](mailto:deveops@nuagenetworks.net "send email to nuage-metro project")  
   Internal Nokia: [nuage-metro-interest@list.nokia.com](mailto:nuage-metro-interest@list.nokia.com "send email to nuage-metro project")  
