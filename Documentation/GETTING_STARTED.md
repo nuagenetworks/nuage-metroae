@@ -4,7 +4,7 @@
 
 1.1 [Readme](../README.md) for information on supported components  
 1.2 [Setup](SETUP.md) for setting up the MetroAG host and enabling SSH  
-1.3 [Prepare](PREPARE.md) for preparing user data and files
+1.3 [Customize](CUSTOMIZE.md) for customizing user data and files
 1.4 [Release Notes](RELEASE_NOTES.md) for information on the latest features   
 
 ## 2. Setup MetroAG Host
@@ -49,7 +49,7 @@ Download and install the [ovftool](https://www.vmware.com/support/developer/ovf/
 
 ## 5. Prepare your environment  
 
-5.1 Unzip Nuage files: `./metro-ansible nuage_unzip`. See [PREPARE](PREPARE.md) for details.  
+5.1 Unzip Nuage files: `./metro-ansible nuage_unzip`. See [CUSTOMIZE](CUSTOMIZE.md) for details.  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Be sure that Nuage packages (tar.gz) are available on localhost (MetroAG host),  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;either in a native directory or NFS-mounted.  
 

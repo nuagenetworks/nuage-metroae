@@ -2,7 +2,7 @@
 
 ## Prerequisites / Requirements
 
-Before working with MetroAG, please refer to [README.md](README.md), [SETUP.md](/SETUP.md), and [PREPARE.md](/PREPARE.md) for information about supported deployments and general guidelines.
+Before working with MetroAG, please refer to [README.md](README.md), [SETUP.md](/SETUP.md), and [CUSTOMIZE.md](/CUSTOMIZE.md) for information about supported deployments and general guidelines.
 
 ## A Sample of What MetroAG Can Do  
 

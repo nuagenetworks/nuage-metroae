@@ -2,7 +2,7 @@
 
 ## Prerequisites / Requirements
 
-Before upgrading any components, you must have previously [set up your Nuage MetroAG Ansible environment](SETUP.md) and [prepared the upgrade environment for your target platform](PREPARE.md).
+Before upgrading any components, you must have previously [set up your Nuage MetroAG Ansible environment](SETUP.md) and [customized the upgrade environment for your target platform](CUSTOMIZE.md).
 
 ## VSD, VSC, & VSTAT (elasticsearch ) HA/Cluster upgrade at a glance
 

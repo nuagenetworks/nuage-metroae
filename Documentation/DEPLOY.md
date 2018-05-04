@@ -8,7 +8,7 @@ You can execute MetroAG playbooks to perform the following installations:
 
 ## Prerequisites / Requirements
 
-Before deploying any components, you must have previously [set up your Nuage MetroAG Ansible environment](SETUP.md "link to SETUP documentation") and [prepared the environment for your target platform](PREPARE.md "link to PREPARE documentation").
+Before deploying any components, you must have previously [set up your Nuage MetroAG Ansible environment](SETUP.md "link to SETUP documentation") and [customized the environment for your target platform](CUSTOMIZE.md "link to CUSTOMIZE documentation").
 
 Make sure you have unzipped the Nuage Networks *.tar.gz files into their proper locations in the directory structure, so MetroAG can find the path of the Nuage components automatically when running commands.
 
@@ -72,7 +72,7 @@ Running individual playbooks is useful for debugging. For example, `vsd_predeplo
 
 If you would like to remove an entire deployment, or individual components, and start over, see [DESTROY.md](DESTROY.md "link to DESTROY documentation") for details.
 
-If you would like to reset your variables, see [PREPARE.md](PREPARE.md "link to PREPARE documentation") for details.
+If you would like to reset your variables, see [CUSTOMIZE.md](CUSTOMIZE.md "link to CUSTOMIZE documentation") for details.
 
 ## Next Steps
 
