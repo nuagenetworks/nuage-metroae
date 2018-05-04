@@ -79,12 +79,12 @@ The [Documentation](Documentation/) directory contains the following guides to a
 File name | Description
 --------- | --------
 [RELEASE_NOTES.md](Documentation/RELEASE_NOTES.md) | New features, resolved issues and known limitations and issues
+[GETTING_STARTED.md](Documentation/GETTING_STARTED.md) | MetroAG Quick Start Guide
 [SETUP.md](Documentation/SETUP.md) | Set up your environment by cloning the repo, installing packages and configuring access.
 [CUSTOMIZE.md](Documentation/CUSTOMIZE.md) | Customize user data files, unzip Nuage software
 [DEPLOY.md](Documentation/DEPLOY.md) | Deploy all VSP components or choose components individually.
 [DESTROY.md](Documentation/DESTROY.md) | Remove existing deployment(s) and start over.
 [UPGRADE.md](Documentation/UPGRADE.md) | Upgrade component(s) from one release to the next.
-[CONTRIBUTING.md](CONTRIBUTING.md) | Submit your code and become a contributor to Nuage MetroAG.
 [OPENSTACK.md](Documentation/OPENSTACK.md) | Deploy VSP components in OpenStack (limited support).
 
 
