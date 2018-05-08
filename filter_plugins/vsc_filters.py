@@ -444,7 +444,7 @@ def vsd_detail_to_json(string):
 
 def vsc_vswitch_controller_tls_profile_to_json(string):
     dict = {}
-    regex = re.compile("open-flow.+\s+\"\s+tls-profile\s+(?P<profile>(.+))")
+    regex = re.compile("open-flow\n\s+tls-profile\s+(?P<profile>(.+))")
     for tlsProfile in re.finditer(regex, string):
         dict["tls-profile"] = tlsProfile.group('profile') 
         dict["tls-enabled"] = True
