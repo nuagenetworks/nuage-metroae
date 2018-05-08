@@ -447,6 +447,12 @@ def vsc_vswitch_controller_tls_profile_to_json(string):
     regex = re.compile("open-flow.+\s+\"\s+tls-profile\s+(?P<profile>(.+))")
     for tlsProfile in re.finditer(regex, string):
         dict["tls-profile"] = tlsProfile.group('profile') 
+        dict["tls-enabled"] = True
+        
+    if len(dict) == 0:
+        dict["tls-enabled"] = False
+        
+    return json.dumps(dict)
 
 class FilterModule(object):
     ''' Query filter '''
