@@ -40,7 +40,7 @@ def setup_script(vsdParams):
       dyn.add_cli("""
         configure service
            vpls %(vplsSvc_id)s customer 1 create
-              allow-ip-int-bind
+              allow-ip-int-bind vxlan-ipv4-tep-ecmp
               exit
               description vpls%(vplsSvc_id)s
               bgp
