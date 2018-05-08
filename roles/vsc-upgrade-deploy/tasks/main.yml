@@ -40,7 +40,15 @@
 
 - name: Print image version in json  when verbosity >= 1
   debug: var=version_json verbosity=1
+  
+- name: Check for TLS on VSC
+  include_role: 
+    name: common
+    tasks_from: vsc-tls-upgrade-check
 
+- name: debug secure flag
+  debug: var=secure_communication verbosity=1
+  
 - name: Copy new VSC image to VSC nodes
   expect:
     command: "{{ vsc_image_copy }}"
@@ -68,14 +76,14 @@
   when: target_server_type | match('heat')
 
 - name: Wait for VSC ssh to be ready
-  include_role:
+  include_role: 
     name: common
     tasks_from: wait-for-ssh
   vars:
     ssh_host: "{{ mgmt_ip }}"
     
 - name: Check for TLS on VSC
-  inclue_role: 
+  include_role: 
     name: common
     tasks_from: vsc-tls-upgrade-check
     

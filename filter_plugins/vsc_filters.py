@@ -495,5 +495,6 @@ class FilterModule(object):
             'image_version_to_json': image_version_to_json,
             'show_version_to_json': show_version_to_json,
             'vsc_system_connections_to_json': vsc_system_connections_to_json,
-            'vsd_detail_to_json': vsd_detail_to_json
+            'vsd_detail_to_json': vsd_detail_to_json,
+            'vsc_vswitch_controller_to_json': vsc_vswitch_controller_to_json
         }
