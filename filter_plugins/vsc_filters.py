@@ -451,7 +451,6 @@ def vsc_vswitch_controller_tls_profile_to_json(string):
         
     if len(dict) == 0:
         dict["tls-enabled"] = False
-        
     return json.dumps(dict)
 
 class FilterModule(object):
