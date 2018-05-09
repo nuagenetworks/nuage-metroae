@@ -75,7 +75,7 @@
     stack_name: "{{ inventory_hostname | replace('.', '-') }}"
     state: "present"
     region: "{{ aws_region }}"
-    template: "aws-vsd.yml"
+    template: "{{ role_path }}/files/aws-vsd.yml"
     template_parameters:
       AmiId: "{{ aws_ami_id }}"
       InstanceName: "{{ inventory_hostname }}"
@@ -86,3 +86,13 @@
 
 - debug: var=rc_aws_vsd
 
+- name: Wait for VSD ssh to be ready
+  include_role:
+    name: common
+    tasks_from: wait-for-ssh
+  vars:
+    ssh_host: "{{ mgmt_ip }}"
+
+- name: Force DHCP update to configure DNS
+  shell: dhclient
+  remote_user: "root"
