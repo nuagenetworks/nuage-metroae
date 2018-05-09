@@ -1,29 +1,29 @@
 ---
 # Install Prerequisites
 #
-- name: Pull facts of localhost
-  connection: local
-  action: setup
+# - name: Pull facts of localhost
+#   connection: local
+#   action: setup
 
-- name: Install boto-module on RedHat OS family distribution
-  yum: name=python-boto
-  connection: local
-  when: ansible_os_family == "RedHat"
+# - name: Install boto-module on RedHat OS family distribution
+#   yum: name=python-boto
+#   connection: local
+#   when: ansible_os_family == "RedHat"
 
-- name: Install boto-module on Debian OS family distribution
-  apt: name=python-boto
-  connection: local
-  when: ansible_os_family == "Debian"
+# - name: Install boto-module on Debian OS family distribution
+#   apt: name=python-boto
+#   connection: local
+#   when: ansible_os_family == "Debian"
 
-- name: Install boto3-module on RedHat OS family distribution
-  yum: name=python-boto3
-  connection: local
-  when: ansible_os_family == "RedHat"
+# - name: Install boto3-module on RedHat OS family distribution
+#   yum: name=python-boto3
+#   connection: local
+#   when: ansible_os_family == "RedHat"
 
-- name: Install boto3-module on Debian OS family distribution
-  apt: name=python-boto3
-  connection: local
-  when: ansible_os_family == "Debian"
+# - name: Install boto3-module on Debian OS family distribution
+#   apt: name=python-boto3
+#   connection: local
+#   when: ansible_os_family == "Debian"
 
 - block:
   - name: Deploy new Virtual Private Cloud
@@ -57,17 +57,17 @@
   - name: Set Network variables
     set_fact: { "{{ item.key }}": "{{ item.value }}" }
     with_items:
-     - { key: "NSGLANENI", value: "{{ use_vpc.nsg_lan_eni }}" }
+     - { key: "VsdMgmtEniId", value: "{{ use_vpc.vsd_mgmt_eni }}" }
      - { key: "NSGWANENI", value: "{{ use_vpc.nsg_wan_eni }}" }
      - { key: "NSGLANENIIP", value: "{{ rc_aws_nsg_lan_eni_facts.interfaces[0].private_ip_address }}" }
     when: (rc_aws_nsg_lan_eni_facts.interfaces|length > 0 )
   when: use_vpc is defined
 
-- name: Generate CloudFormation template
-  delegate_to: localhost
-  template:
-    src: "cfn-template-vsd-aws-with-eni.json.j2"
-    dest: "/tmp/cfn-template-vsd-aws-with-eni-{{ inventory_hostname }}.json"
+# - name: Generate CloudFormation template
+#   delegate_to: localhost
+#   template:
+#     src: "cfn-template-vsd-aws-with-eni.json.j2"
+#     dest: "/tmp/cfn-template-vsd-aws-with-eni-{{ inventory_hostname }}.json"
 
 - name: Deploy VSD AWS Stack
   delegate_to: localhost
@@ -75,16 +75,14 @@
     stack_name: "{{ inventory_hostname | replace('.', '-') }}"
     state: "present"
     region: "{{ aws_region }}"
-    template: "/tmp/cfn-template-vsd-aws-with-eni-{{ inventory_hostname }}.json"
+    template: "aws-vsd.yml"
     template_parameters:
-      AMI: "{{ nsg_ami.id }}"
+      AmiId: "{{ aws_ami_id }}"
       InstanceName: "{{ inventory_hostname }}"
-      InstanceType: "{{ nsg_ami.type }}"
-      KeyName: "{{ nsg_ami.keyname }}"
-      NSGLANENI: "{{ NSGLANENI }}"
-      NSGWANENI: "{{ NSGWANENI }}"
-      NSGWANEIPAllocId: "{{ nsg_ami.eip_allocid | default('') }}"
-  register: rc_aws_cfn_nsgami
+      InstanceType: "{{ aws_instance_type }}"
+      KeyName: "{{ aws_key_name }}"
+      VsdMgmtEniId: "{{ aws_mgmt_eni }}"
+  register: rc_aws_vsd
 
-- debug: var=rc_aws_cfn_nsgami
+- debug: var=rc_aws_vsd
 
