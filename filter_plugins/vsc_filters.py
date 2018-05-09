@@ -442,17 +442,6 @@ def vsd_detail_to_json(string):
         dict["VSD-Info"].append(vsd_dict)
     return json.dumps(dict)
 
-def vsc_vswitch_controller_tls_profile_to_json(string):
-    dict = {}
-    regex = re.compile("open-flow\n\s+tls-profile\s+(?P<profile>(.+))")
-    for tlsProfile in re.finditer(regex, string):
-        dict["tls-profile"] = tlsProfile.group('profile') 
-        dict["tls-enabled"] = True
-        
-    if len(dict) == 0:
-        dict["tls-enabled"] = False
-    return json.dumps(dict)
-
 class FilterModule(object):
     ''' Query filter '''
 
@@ -468,6 +457,5 @@ class FilterModule(object):
             'image_version_to_json': image_version_to_json,
             'show_version_to_json': show_version_to_json,
             'vsc_system_connections_to_json': vsc_system_connections_to_json,
-            'vsd_detail_to_json': vsd_detail_to_json,
-            'vsc_vswitch_controller_tls_profile_to_json': vsc_vswitch_controller_tls_profile_to_json
+            'vsd_detail_to_json': vsd_detail_to_json
         }
