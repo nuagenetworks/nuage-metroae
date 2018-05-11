@@ -42,22 +42,6 @@ After all [Prerequisites](#prerequisites) are met, run the following set of play
 
 ** DO NOT PROCEED UNTILL VRS(s) ARE UPGRADED **
 
-<<<<<<< HEAD
-14. ./metroag vsc_ha_upgrade_backup_and_prep_2 -vvvv
-15. ./metroag vsc_ha_upgrade_deploy_2 -vvvv
-16. ./metroag vsc_ha_upgrade_postdeploy_2 -vvvv
-17. ./metroag vstat_health -e report_filename=vstat_preupgrade_health.txt -vvvv
-18. ./metroag vstat_upgrade_data_backup -vvvv
-19. ./metroag vstat_destroy -vvvv
-20. ./metroag vstat_predeploy -vvvv
-21. ./metroag vstat_deploy -vvvv
-22. ./metroag vstat_upgrade_data_migrate -vvvv
-
-** FINALIZE UPGRADE **
-
-23. ./metroag vsp_upgrade_postdeploy -vvvv
-24. ./metroag vsp_postupgrade_health -vvvv
-=======
 14. ./metro-ansible vsc_ha_upgrade_backup_and_prep_2.yml -vvvv
 15. ./metro-ansible vsc_ha_upgrade_deploy_2.yml -vvvv
 16. ./metro-ansible vsc_ha_upgrade_postdeploy_2.yml -vvvv
@@ -70,7 +54,6 @@ After all [Prerequisites](#prerequisites) are met, run the following set of play
 
 21. ./metro-ansible vsp_upgrade_postdeploy.yml -vvvv
 22. ./metro-ansible vsp_postupgrade_health.yml -vvvv
->>>>>>> elim_build_upgrade
 
 
 ## VSD, VSC, & VSTAT (elasticsearch ) SA/Standalone upgrade at a glance
