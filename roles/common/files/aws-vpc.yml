@@ -109,6 +109,42 @@ Resources:
           Value: !Ref 'AWS::StackName'
         - Key: Network
           Value: Management Subnet
+  VscMgmtEni:
+    Type: 'AWS::EC2::NetworkInterface'
+    Properties:
+      SubnetId: !Ref MgmtSubnet
+      Description: VSC Management network interface
+      SourceDestCheck: false
+      GroupSet:
+        - !Ref MgmtSecurityGroup
+      Tags:
+        - Key: Name
+          Value: !Join
+            - '-'
+            - - !Ref 'AWS::StackName'
+              - VSC Management ENI
+        - Key: Stack
+          Value: !Ref 'AWS::StackName'
+        - Key: Network
+          Value: Management Subnet
+  VscDataEni:
+    Type: 'AWS::EC2::NetworkInterface'
+    Properties:
+      SubnetId: !Ref DataSubnet
+      Description: VSC Data network interface
+      SourceDestCheck: false
+      GroupSet:
+        - !Ref DataSecurityGroup
+      Tags:
+        - Key: Name
+          Value: !Join
+            - '-'
+            - - !Ref 'AWS::StackName'
+              - VSC Data ENI
+        - Key: Stack
+          Value: !Ref 'AWS::StackName'
+        - Key: Network
+          Value: Data Subnet
   ProxyAccessEni:
     Type: 'AWS::EC2::NetworkInterface'
     Properties:
@@ -294,6 +330,23 @@ Resources:
             - '-'
             - - !Ref 'AWS::StackName'
               - Management-SG
+  DataSecurityGroup:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      VpcId: !Ref VPC
+      GroupDescription: Enable Data Ingress Ports
+      SecurityGroupIngress:
+        - IpProtocol: -1
+          CidrIp: 0.0.0.0/0
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: !Join
+            - '-'
+            - - !Ref 'AWS::StackName'
+              - Data-SG
   DNS:
     Type: "AWS::Route53::HostedZone"
     Properties:
@@ -314,6 +367,17 @@ Resources:
       - !GetAtt
         - VsdMgmtEni
         - PrimaryPrivateIpAddress
+  VscDNSRecord:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId: !Ref DNS
+      Name: vsc1.example.com.
+      Type: A
+      TTL: '900'
+      ResourceRecords:
+      - !GetAtt
+        - VscMgmtEni
+        - PrimaryPrivateIpAddress
 Outputs:
   VPCId:
     Description: VPCId of the newly created VPC
@@ -325,15 +389,31 @@ Outputs:
     Description: EC2 Network Interface Id to be used to attach the proxy Mgmt Interface to
     Value: !Ref ProxyMgmtEni
   VsdMgmtEniId:
-    Description: EC2 Network Interface Id to be used to attach the proxy Mgmt Interface to
+    Description: EC2 Network Interface Id to be used to attach the VSD Mgmt Interface to
     Value: !Ref VsdMgmtEni
+  VscMgmtEniId:
+    Description: EC2 Network Interface Id to be used to attach the VSC Mgmt Interface to
+    Value: !Ref VscMgmtEni
+  VscDataEniId:
+    Description: EC2 Network Interface Id to be used to attach the VSC Data Interface to
+    Value: !Ref VscDataEni
   ProxyMgmtEniIp:
     Description: IP address that will be associated with the proxy Mgmt Interface
     Value: !GetAtt
       - ProxyMgmtEni
       - PrimaryPrivateIpAddress
   VsdMgmtEniIp:
-    Description: IP address that will be associated with the proxy Mgmt Interface
+    Description: IP address that will be associated with the VSD Mgmt Interface
     Value: !GetAtt
       - VsdMgmtEni
+      - PrimaryPrivateIpAddress
+  VscMgmtEniIp:
+    Description: IP address that will be associated with the VSC Mgmt Interface
+    Value: !GetAtt
+      - VscMgmtEni
+      - PrimaryPrivateIpAddress
+  VscDataEniIp:
+    Description: IP address that will be associated with the VSC Data Interface
+    Value: !GetAtt
+      - VscDataEni
       - PrimaryPrivateIpAddress
