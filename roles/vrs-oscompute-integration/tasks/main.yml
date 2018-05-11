@@ -1,33 +1,32 @@
 ---
-- name: Delete existing network uplink
-  lineinfile:
-    dest: "/etc/default/openvswitch"
-    regexp: "^NETWORK_UPLINK_INTF="
-    state: absent
-  remote_user: "{{ target_server_username }}"
+- block:
 
-- name: Add network uplink config to vrs
-  lineinfile:
-    dest: "/etc/default/openvswitch"
-    insertafter: uplink interface of the host
-    line: "NETWORK_UPLINK_INTF={{ uplink_interface }}"
-  remote_user: "{{ target_server_username }}"
+  - name: Delete existing network uplink
+    lineinfile:
+      dest: "/etc/default/openvswitch"
+      regexp: "^NETWORK_UPLINK_INTF="
+      state: absent
 
-- name: Add alubr0 to nova config
-  lineinfile:
-    dest: /etc/nova/nova.conf
-    regexp: ovs_bridge=
-    line: ovs_bridge=alubr0
-  remote_user: "{{ target_server_username }}"
+  - name: Add network uplink config to vrs
+    lineinfile:
+      dest: "/etc/default/openvswitch"
+      insertafter: uplink interface of the host
+      line: "NETWORK_UPLINK_INTF={{ uplink_interface }}"
 
-- name: Restart OpenStack compute
-  service:
-    name: openstack-nova-compute   
-    state: restarted
-  remote_user: "{{ target_server_username }}"
+  - name: Add alubr0 to nova config
+    lineinfile:
+      dest: /etc/nova/nova.conf
+      regexp: ovs_bridge=
+      line: ovs_bridge=alubr0
 
-- name: Restart OVS
-  service: 
-    name: openvswitch
-    state: restarted
+  - name: Restart OpenStack compute
+    service:
+      name: openstack-nova-compute   
+      state: restarted
+
+  - name: Restart OVS
+    service: 
+      name: openvswitch
+      state: restarted
+
   remote_user: "{{ target_server_username }}"

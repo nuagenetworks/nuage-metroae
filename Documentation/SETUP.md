@@ -110,13 +110,8 @@ To enable passwordless SSH access, public/private SSH keys must be created and d
 ### 4. Install ovftool (for VMware only)
  If you are installing VSP components in a VMware environment (ESXi/vCenter) you will also need to download and install the [ovftool](https://www.vmware.com/support/developer/ovf/) from VMware. MetroAG uses ovftool for OVA operations.
 
-## Next Steps
-The next step is to customize the MetroAG environment. See the applicable documentation below.  
-
-Prepare for | Documentation  
----------------- | --------------
- Deploying | [BUILD.md](BUILD.md)  
- Upgrading | [BUILD_UPGRADE.md](BUILD_UPGRADE.md). 
+## Next Step
+After the MetroAG environment is set up, the next step is to customize it for your topology. See [CUSTOMIZE.md](CUSTOMIZE.md) for guidance. 
 
 ## Questions, Feedback, and Contributing
 Ask questions and get support via email.  

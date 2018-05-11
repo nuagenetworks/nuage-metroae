@@ -56,7 +56,6 @@ Postdeploy | performs integration checks, and some basic commissioning tests |
 Health | checks health for a running component without assuming it was deployed with MetroAG |
 Destroy | removes component(s) from the infrastructure |
 Upgrade | upgrades component(s) from one release to another |
-Rollback | restores component(s) to their previous version (if an upgrade fails) |
 
 ## Nomenclature  
 **Ansible Host**: The host where MetroAG runs. Ansible and the required packages are installed on this host. The Ansible Host must run el7 Linux host, e.g. Cent)S 7.* or RHEL 7.*.  
@@ -67,11 +66,11 @@ Rollback | restores component(s) to their previous version (if an upgrade fails)
 
 1. [Setup](Documentation/SETUP.md) the Ansible Host.
 
-2. [Customize](Documentation/BUILD.md) variable files to match your network topology, and describe your NuageNetworks deployment specifics.
+2. [Customize](Documentation/CUSTOMIZE.md) variable files to match your network topology, and describe your NuageNetworks deployment specifics.
 
 3. [Deploy](Documentation/DEPLOY.md) the new components, [upgrade](Documentation/UPGRADE.md) existing components, or run a health check on your system.
 
-4. If things did not work out as expected, [destroy](Documentation/DESTROY.md) or [rollback](Documentation/ROLLBACK.md) your environment.
+4. If things did not work out as expected, [destroy](Documentation/DESTROY.md) your environment.
 
 
 ## Documentation
@@ -80,14 +79,12 @@ The [Documentation](Documentation/) directory contains the following guides to a
 File name | Description
 --------- | --------
 [RELEASE_NOTES.md](Documentation/RELEASE_NOTES.md) | New features, resolved issues and known limitations and issues
+[GETTING_STARTED.md](Documentation/GETTING_STARTED.md) | MetroAG Quick Start Guide
 [SETUP.md](Documentation/SETUP.md) | Set up your environment by cloning the repo, installing packages and configuring access.
-[BUILD.md](Documentation/BUILD.md) | Populate variable files, unzip Nuage software, and build the environment for deploying
-[BUILD_UPGRADE.md](Documentation/BUILD_UPGRADE.md) | Populate variable files, unzip Nuage software, and build the environment for upgrading.
+[CUSTOMIZE.md](Documentation/CUSTOMIZE.md) | Customize user data files, unzip Nuage software
 [DEPLOY.md](Documentation/DEPLOY.md) | Deploy all VSP components or choose components individually.
 [DESTROY.md](Documentation/DESTROY.md) | Remove existing deployment(s) and start over.
 [UPGRADE.md](Documentation/UPGRADE.md) | Upgrade component(s) from one release to the next.
-[ROLLBACK.md](Documentation/ROLLBACK.md) | Restore VSP components to their previous version if an upgrade fails.
-[CONTRIBUTING.md](CONTRIBUTING.md) | Submit your code and become a contributor to Nuage MetroAG.
 [OPENSTACK.md](Documentation/OPENSTACK.md) | Deploy VSP components in OpenStack (limited support).
 
 

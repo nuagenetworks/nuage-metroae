@@ -16,6 +16,8 @@
     name: "{{ vstat_mgmt_ip }}"
     state: absent
   delegate_to: localhost
+  no_log: True
+  ignore_errors: True
 
 - block:
   - name: Get infra server details from OS server facts
@@ -103,17 +105,12 @@
     tasks_from: linux-ntp-sync
 
 - name: Resolve "{{ vsd_fqdn }}"  to ip addr
-  shell: host "{{ vsd_fqdn }}" | awk '{print $3,$4}'
+  shell: "getent hosts {{ vsd_fqdn }} | awk '{print $1}'"
   register: ip_addr
   remote_user: "root"
 
-- name: Check for ip addr in the registered var
-  fail: msg="Could not resolve ip addr of "{{ vsd_fqdn }}" "
-  when: ip_addr.stdout | match("not found:")
-  remote_user: "root"
-
 - name: Config firewall on VSTAT vm to accept conn on ports 9200,9300 from vsd(s)
-  script: firewall.sh "{{ ip_addr.stdout.split()[1] }}"
+  script: firewall.sh "{{ ip_addr.stdout }}"
   remote_user: "root"
 
 - name: Restart elastic search {{ inventory_hostname }}
@@ -122,7 +119,15 @@
     state: restarted
   remote_user: "root"
 
+- name: Get vsd node(s) information
+  import_role:
+    name: common
+    tasks_from: vsd-node-info.yml
+  vars:
+    vsd_hostname: "{{ vsd_fqdn }}"
+  run_once: true
+
 - name: Enable stats collection on the VSD VM
   command: /opt/vsd/vsd-stats.sh -e {{inventory_hostname}}
-  delegate_to: "{{ vsd_fqdn }}"
+  delegate_to: "{{ vsd_hostname_list[0] }}"
   remote_user: "root"

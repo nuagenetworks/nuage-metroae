@@ -342,6 +342,7 @@ def show_bof_to_json(string):
        "mgmt_ip": "10.0.0.13",
        "primary_config": "cf1:\\config.cfg",
        "primary_image": "cf1:\\timos\\cpm.tim"
+       "primary_image_unix": "/timos/cpm.tim"
     }
     '''
     dict = {}
@@ -356,7 +357,12 @@ def show_bof_to_json(string):
     config_path = re.search(config_re, string)
     ip_addr = re.search(addr_re, string)
 
-    dict["primary_image"] = img_path.group(1)
+    primary_image = img_path.group(1)
+    dict["primary_image"] = primary_image
+    primary_image_unix = primary_image
+    if ":" in primary_image:
+        primary_image_unix = primary_image.split(":")[1]
+    dict["primary_image_unix"] = primary_image_unix.replace("\\", "/")
     dict["primary_config"] = config_path.group(1)
     dict["mgmt_ip"] = ip_addr.group(1)
     dict["image_folder"] = img_folder.group(1)
@@ -430,7 +436,7 @@ def vsd_detail_to_json(string):
     vsd_re = re.compile(r'VSD User Name\s+:\s+(?P<vsduser>(.*))\s+Uptime.*\s+Status\s+:\s+(?P<status>(\w+))')
     vsd_details = re.finditer(vsd_re, string)
     for vsd in vsd_details:
-        vsd_dict = {"vsd_user": vsd.group('vsduser'),
+        vsd_dict = {"vsd_username": vsd.group('vsduser'),
                     "status": vsd.group('status')
                     }
         dict["VSD-Info"].append(vsd_dict)
