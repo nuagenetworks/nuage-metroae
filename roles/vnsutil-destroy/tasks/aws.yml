@@ -1,44 +1,10 @@
 ---
-- name: Pull facts of localhost
-  connection: local
-  action: setup
-
-- name: Install boto-module on RedHat OS family distribution
-  yum: name=python-boto
-  connection: local
-  when: ansible_os_family == "RedHat"
-
-- name: Install boto-module on Debian OS family distribution
-  apt: name=python-boto
-  connection: local
-  when: ansible_os_family == "Debian"
-
-- name: Install boto3-module on RedHat OS family distribution
-  yum: name=python-boto3
-  connection: local
-  when: ansible_os_family == "RedHat"
-
-- name: Install boto3-module on Debian OS family distribution
-  apt: name=python-boto3
-  connection: local
-  when: ansible_os_family == "Debian"
-
-- name: Destroy VNSUtil AWS Stack
+- name: Destroy VnsUtil AWS Stack
   delegate_to: localhost
   cloudformation:
-    stack_name: "{{ inventory_hostname | replace('.', '-') }}"
+    aws_access_key: "{{ aws_access_key | default(None) }}"
+    aws_secret_key: "{{ aws_secret_key | default(None) }}"
+    stack_name: "{{ vmname | replace('.', '-') }}"
     state: "absent"
     region: "{{ aws_region }}"
-  register: rc_aws_cfn_nsgami
-
-- block:
-  - name: Destroy Virtual Private Cloud
-    delegate_to: localhost
-    cloudformation:
-      stack_name: "VPC-{{inventory_hostname | replace('.', '-') }}"
-      state: "absent"
-      region: "{{ aws_region }}"
-    register: rc_aws_cfn_nuagevpc
-
-  when: provision_vpc is defined
-
+  register: rc_aws_vnsutil
