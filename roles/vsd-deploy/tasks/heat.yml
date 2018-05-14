@@ -44,6 +44,7 @@
       name: '*'
       state: latest
     when: yum_update
+
   remote_user: "{{ vsd_username }}"
 
 - include: set-vsd-version.yml
@@ -81,3 +82,12 @@
   - name: Set XMPP connection to allow both clear and TLS
     command: /opt/vsd/bin/ejmode allow -y
   remote_user: "{{ vsd_username }}"
+
+- name: Disable cloud-init on VSD, to avoid boot time delays
+  command: "{{ item }}"
+  with_items:
+    - systemctl disable cloud-init
+    - systemctl disable cloud-init-local
+    - systemctl disable cloud-config
+    - systemctl disable cloud-final
+  remote_user : "{{ vsd_username }}"

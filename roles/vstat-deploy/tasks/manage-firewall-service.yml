@@ -1,0 +1,62 @@
+- block:
+  - name: Start firewalld
+    systemd:
+      name: firewalld
+      state: started
+    remote_user: "{{ vstat_username }}"
+
+  - name: Enable firewalld on boot
+    systemd:
+      name: firewalld
+      enabled: yes
+    remote_user: "{{ vstat_username }}"
+
+  - name: Check if firewalld is already setup for VSD rules
+    shell: firewall-cmd --list-all | grep 9200 | grep accept
+    remote_user: "{{ vstat_username }}"
+    register: vstat_firewalld_result
+    ignore_errors: True
+
+  - name: Set if skipping VSTAT deploy
+    set_fact: skip_vstat_deploy="{{ vstat_firewalld_result is defined and vstat_firewalld_result.rc == 0 }}"
+
+  - name: Display if skipping VSTAT deploy
+    debug:
+      msg:
+        - "***************************************************"
+        - "Skipping VSTAT deploy because it is already running"
+        - "***************************************************"
+    when: skip_vstat_deploy
+
+  - block:
+    
+
+    - block:
+
+      - name: Create firewall vars file on ansible host
+        template: src="{{ role_path }}/templates/firewall.j2" dest="/tmp/main.yml" backup=no mode=0755
+
+      - name: Include variable file.
+        include_vars: /tmp/main.yml
+
+      delegate_to: localhost
+
+    - name: Config firewall on VSTAT vm to accept conn on ports 9200,9300 from vsd(s)
+      shell: "{{ item }}"
+      with_items:
+        - "{{ firewall_std_commands }}"
+      remote_user: "{{ vstat_username }}"
+      when: vsd_sa_or_ha | match('sa')
+
+    - name: Config firewall on VSTAT vm to accept conn on ports 9200, 9300 from vsd(s) in cluster setup
+      shell: "{{ item }}"
+      with_items:
+        - "{{ firewall_cluster_commands }}"
+      when: vsd_sa_or_ha | match('ha')
+      remote_user: "{{ vstat_username }}"
+
+    when: not skip_vstat_deploy
+
+  when:
+    - "_svc_firewalld.rc == 0"
+    - "_svc_iptables.rc != 0"
