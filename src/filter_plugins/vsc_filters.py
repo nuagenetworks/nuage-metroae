@@ -436,7 +436,7 @@ def vsd_detail_to_json(string):
     vsd_re = re.compile(r'VSD User Name\s+:\s+(?P<vsduser>(.*))\s+Uptime.*\s+Status\s+:\s+(?P<status>(\w+))')
     vsd_details = re.finditer(vsd_re, string)
     for vsd in vsd_details:
-        vsd_dict = {"vsd_user": vsd.group('vsduser'),
+        vsd_dict = {"vsd_username": vsd.group('vsduser'),
                     "status": vsd.group('status')
                     }
         dict["VSD-Info"].append(vsd_dict)

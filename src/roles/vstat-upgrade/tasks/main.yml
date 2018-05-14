@@ -1,6 +1,21 @@
-- include: vstat_in_place_upgrade.yml
-  remote_user: root
-  when: vstat_in_place_upgrade
+- name: Skip vstat upgrade for versions that do not require upgrade
+  include_role:
+    name: common
+    tasks_from: vstat-upgrade-check.yml
 
-- include: out_of_place_upgrade.yml
-  when: not vstat_in_place_upgrade
+- name: Display if skipping predeploy
+  debug:
+    msg:
+      - "****************************************************"
+      - "Skipping VSTAT upgrade because it is not needed"
+      - "****************************************************"
+  when: skip_vstat_upgrade
+
+- block:
+  - include: vstat_in_place_upgrade.yml
+    remote_user: root
+    when: vstat_in_place_upgrade
+
+  - include: vstat_out_of_place_upgrade.yml
+    when: not vstat_in_place_upgrade
+  when: not skip_vstat_upgrade

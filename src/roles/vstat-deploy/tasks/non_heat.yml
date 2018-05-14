@@ -14,27 +14,6 @@
   vars:
     vsd_hostname: "{{ vsd_fqdn }}"
 
-- name: Update /etc/hosts file
-  blockinfile:
-    dest: /etc/hosts
-    block: |
-      {% for host in groups['vstats']  %}
-      {{ hostvars[host]['mgmt_ip'] }}    {{ host }}
-      {% endfor %}
-  remote_user: "root"
-
-- name: Update /etc/hosts file on VSD(s)
-  blockinfile:
-    dest: /etc/hosts
-    marker: "# {mark} Ansible created entries for stats nodes"
-    block: |
-      {% for host in groups['vstats']  %}
-      {{ hostvars[host]['mgmt_ip'] }}    {{ host }}
-      {% endfor %}
-  delegate_to: "{{ item }}"
-  with_items: "{{ vsd_hostname_list }}"
-  remote_user: "root"
-
 - block:
   - name: Generate SSH keys
     shell: ssh-keygen -b 2048 -t rsa -f /root/.ssh/id_rsa -q -N ""

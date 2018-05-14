@@ -11,13 +11,14 @@
     name: "{{ mgmt_ip }}"
     state: absent
   delegate_to: localhost
+  no_log: True
 
 - include: report_header.yml
 
 - name: Get current version of VSD software
   command: echo $VSD_VERSION
   register: vsd_version
-  remote_user: "root"
+  remote_user: "{{ vsd_username }}"
 
 - name: Write VSD version to json file
   nuage_append: filename="{{ report_path }}" text="{{ vsd_version.stdout | to_nice_json}}\n"
@@ -27,7 +28,7 @@
   network_info:
     mac_addr: False
   register: net_conf
-  remote_user: root
+  remote_user: "{{ vsd_username }}"
 
 - name: Print network config when verbosity >= 1
   debug: var=net_conf.info verbosity=1
@@ -41,7 +42,7 @@
 - name: Execute list_p1db command on VSD(s)
   command: "{{ p1db_cmd }}"
   register: list_p1db_output
-  remote_user: root
+  remote_user: "{{ vsd_username }}"
 
 - name: Print ejabberd list_p1db output when verbosity >= 1
   debug: var=list_p1db_output verbosity=1
@@ -56,7 +57,7 @@
 - name: Execute list_cluster command on VSD(s)
   command: "{{ ejabber_cluster_list_command }}"
   register: list_cluster_output
-  remote_user: root
+  remote_user: "{{ vsd_username }}"
 
 - name: Print ejabberd list_cluster_output when verbosity >= 1
   debug: var=list_cluster_output verbosity=1
@@ -71,7 +72,7 @@
 - name: Excute ejabberd_connected_users_command command on VSD(s)
   command: "{{ ejabberd_connected_users_command }}"
   register: user_list
-  remote_user: root
+  remote_user: "{{ vsd_username }}"
 
 - name: Print ejabberd connected_users output when verbosity >= 1
   debug: var=user_list verbosity=1

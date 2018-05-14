@@ -10,15 +10,6 @@
   action: setup
   remote_user: "root"
 
-- name: Update /etc/hosts file
-  blockinfile:
-    dest: /etc/hosts
-    block: |
-      {% for host in groups['vsds']  %}
-      {{ hostvars[host]['mgmt_ip'] }}    {{ hostvars[host]['hostname'] }}
-      {% endfor %}
-  remote_user: "root"
-
 - name: Read the VSD version
   shell: echo $VSD_VERSION
   register: vsd_full_version
@@ -94,23 +85,6 @@
   remote_user: root
   when: vsd_sa_or_ha | match('ha') and inventory_hostname == groups['vsds'][0]
 
-- name: Copy files to pin OS version when CentOS 6.6 or 6.5
-  copy:
-    src: ./roles/vsd-deploy/files/c66/
-    dest: /etc/yum.repos.d/
-  remote_user: "root"
-  when:
-    - yum_pin
-    - ansible_distribution_version|match('6.6') or ansible_distribution_version|match('6.5')
-
-- name: Copy files to pin OS version when CentOS 6.8
-  copy:
-    src: ./roles/vsd-deploy/files/c68/
-    dest: /etc/yum.repos.d/
-  remote_user: "root"
-  when:
-    - yum_pin
-    - ansible_distribution_version|match('6.8')
 
 - name: Configure yum proxy
   lineinfile:
