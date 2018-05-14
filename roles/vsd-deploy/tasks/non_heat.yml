@@ -38,20 +38,6 @@
 
   - block:
 
-    - name: Configure to deploy standalone VSD
-      set_fact:
-        deploy_vcin: false
-
-    - name: Determine if this is a VCIN install
-      set_fact:
-        deploy_vcin: true
-      when:
-        - vcin_mode is defined 
-        - vcin_mode
-        - (vsd_major_version|int > 5) or
-          (vsd_major_version|int >= 5 and vsd_minor_version|int > 2) or
-          (vsd_major_version|int >= 5 and vsd_minor_version|int >= 2 and vsd_patch_version|int >= 2) 
-
     - name: Install VSD software on standalone node
       command: /opt/vsd/vsd-install.sh -t s -y
       when: not deploy_vcin
@@ -80,6 +66,6 @@
 
   - name: Set XMPP connection to allow both clear and TLS
     command: /opt/vsd/bin/ejmode allow -y
-    when: deploy_vcin is not defined or not deploy_vcin
+    when: not deploy_vcin
 
   remote_user: "{{ vsd_username }}"

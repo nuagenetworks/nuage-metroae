@@ -25,7 +25,7 @@
     ignore_errors: True
 
   - name: Get controller connection info
-    shell: "ovs-vsctl show | grep -Pzl '(?s)Controller \"ctrl(1|2)\"\\n *target: \"tcp:({{ item }}):6633\"\\n *role: (master|slave)\\n *is_connected: true'"
+    shell: "ovs-vsctl show | grep -Pzl '(?s)Controller \"ctrl(1|2)\"\\n *target: \"(tcp|ssl):({{ item }}):6633\"\\n *role: (master|slave)\\n *is_connected: true'"
     with_items:
       - "{{ active_controller_addr }}"
       - "{{ standby_controller_addr }}"
@@ -118,6 +118,13 @@
       regexp: "^STANDBY_CONTROLLER="
       line: "STANDBY_CONTROLLER={{ standby_controller_addr }}"
 
+  - name: Update connection type in {{ openvswitch_file }} file
+    remote_user: "{{ target_server_username }}"
+    lineinfile:
+      dest: "{{ openvswitch_file }}"
+      regexp: "^CONN_TYPE="
+      line: "CONN_TYPE=tcp"
+  
   - name: Restart OpenVSwitch Service on RedHat OS family distros
     service: name=openvswitch state=restarted
     when: ansible_os_family == "RedHat"
