@@ -75,7 +75,7 @@ def setup_script(vsdParams):
         exit
 
         configure service
-           vpls %(vplsSvc_id)s customer 1 create
+           vpls %(vplsSvc_id)s customer 1  name l3-backhaul-vpls%(vplsSvc_id)s create
               allow-ip-int-bind vxlan-ipv4-tep-ecmp
                  exit
               description vpls%(vplsSvc_id)s
@@ -92,7 +92,6 @@ def setup_script(vsdParams):
                      no shut
                      exit
                  exit
-              service-name vpls%(vplsSvc_id)s
               no shutdown
               exit
             exit

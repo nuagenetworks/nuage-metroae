@@ -31,34 +31,33 @@ def setup_script(vsdParams):
 		print ('servicetype, VPLS id, rt, vni, rd', servicetype, vplsSvc_id, rt, vni, rd)
 		dyn.add_cli("""
 		configure service
-		vpls %(vplsSvc_id)s customer 1 create
-		description vpls%(vplsSvc_id)s
-		proxy-arp
-		  dynamic-arp-populate
-		  no shutdown
-		exit
-		bgp
-			route-distinguisher %(rd)s
-			route-target %(rt)s
-			pw-template-binding 1 import-rt %(rt)s
-			exit
-		exit
-		vxlan vni %(vni)s create
-		exit
-		bgp-ad
-			vpls-id %(rd)s
-			no shut
-		exit
-		bgp-evpn
-			evi %(vplsSvc_id)s
-			vxlan
-				no shut
-			exit
-		exit
-		service-name vpls%(vplsSvc_id)s
-		no shutdown
-		exit
-		exit
+      vpls %(vplsSvc_id)s customer 1 name vpls%(vplsSvc_id)s create
+        description vpls%(vplsSvc_id)s
+        proxy-arp
+          dynamic-arp-populate
+          no shutdown
+        exit
+        bgp
+          route-distinguisher %(rd)s
+          route-target %(rt)s
+          pw-template-binding 1 import-rt %(rt)s
+          exit
+        exit
+        vxlan vni %(vni)s create
+        exit
+        bgp-ad
+          vpls-id %(rd)s
+          no shut
+        exit
+        bgp-evpn
+          evi %(vplsSvc_id)s
+          vxlan
+            no shut
+          exit
+        exit
+        no shutdown
+        exit
+      exit
 		exit		
 		""" % {'vplsSvc_id' : vplsSvc_id, 'vni' : vsdParams['vni'], 'rt' : rt, 'rd' : metadata['rd'], })
 # L2DOMAIN returns setupParams: vplsSvc_id, vprnSvc_id, servicetype, vni

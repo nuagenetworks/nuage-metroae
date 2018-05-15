@@ -38,7 +38,7 @@ def setup_script(vsdParams):
       print ('servicetype, VPLS id, rt, vni, rd, sap, opergroup:', servicetype, vplsSvc_id, rt, vni, rd, sap, opergroup)
       dyn.add_cli("""
         configure service
-           vpls %(vplsSvc_id)s customer 1 create
+           vpls %(vplsSvc_id)s customer 1 name  evi%(vplsSvc_id)s create
               description vpls%(vplsSvc_id)s
               proxy-arp
                  dynamic-arp-populate
@@ -56,7 +56,6 @@ def setup_script(vsdParams):
                       no shut
                   exit
               exit
-              service-name evi%(vplsSvc_id)s
               sap %(sap)s create
                   monitor-oper-group %(opergroup)s
                   no shutdown

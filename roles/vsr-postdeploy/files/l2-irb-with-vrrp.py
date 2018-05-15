@@ -39,7 +39,7 @@ def setup_script(vsdParams):
       print ('servicetype, VPLS id, rt, vni, VPRN id, vprn_RD, vprn_RT, irb_GW, vrrp_ID, vrrp_IP, vrrp_PRIO:', servicetype, vplsSvc_id, rt, vni, vprnSvc_id, vprn_RD, vprn_RT, irb_GW, vrrp_ID, vrrp_IP, vrrp_PRIO)
       dyn.add_cli("""
         configure service
-           vpls %(vplsSvc_id)s customer 1 create
+           vpls %(vplsSvc_id)s customer 1 name vpls%(vplsSvc_id)s create
               allow-ip-int-bind vxlan-ipv4-tep-ecmp
               exit
               description vpls%(vplsSvc_id)s
@@ -54,7 +54,6 @@ def setup_script(vsdParams):
                       no shut
                   exit
               exit
-              service-name vpls%(vplsSvc_id)s
               no shutdown
               exit
             exit
