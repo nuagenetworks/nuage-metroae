@@ -1,134 +1,158 @@
 ---
-- name: Wait for VSD ssh to be ready
-  include_role:
-    name: common
-    tasks_from: wait-for-ssh
-  vars:
-    ssh_host: "{{ mgmt_ip }}"
-
-- name: Query {{ target_server }} facts
-  action: setup
-  remote_user: "root"
-
-- block:
-  - name: Force DHCP update to configure DNS in AWS
-    command: dhclient
-    remote_user: root
-    ignore_errors: true
-
-  - name: Set hostname for AWS for current session
-    command: "hostname {{ hostname }}"
-    remote_user: root
-
-  - name: Set hostname for AWS permanently
-    shell: "echo {{ hostname }} > /etc/hostname"
-    remote_user: root
-
-  when: target_server_type | match("aws")
-
-- name: Update /etc/hosts file
-  blockinfile:
-    dest: /etc/hosts
-    block: |
-      {% for host in groups['vsds']  %}
-      {{ hostvars[host]['mgmt_ip'] }}    {{ hostvars[host]['hostname'] }}
-      {% endfor %}
-  remote_user: "root"
-
-- name: Read the VSD version
-  shell: echo $VSD_VERSION
-  register: vsd_full_version
-  remote_user: "root"
-
-- name: Setting Major, Minor and Patch VSD version
-  set_fact:
-      vsd_major_version: "{{ vsd_full_version.stdout.split('.')[0] }}"
-      vsd_minor_version: "{{ vsd_full_version.stdout.split('.')[1] }}"
-      vsd_patch_version: "{{ vsd_full_version.stdout.split('.')[2].split('U')[0] }}"
-
-- debug: var=vsd_full_version.stdout verbosity=1
-
-- debug: var=vsd_major_version verbosity=1
-
-- debug: var=vsd_minor_version verbosity=1
-
-- debug: var=vsd_patch_version verbosity=1
 
 - block:
 
   - block:
-    - name: Generate SSH keys
-      shell: ssh-keygen -b 2048 -t rsa -f /root/.ssh/id_rsa -q -N ""
-      args:
-        creates: /root/.ssh/id_rsa
-      delegate_to: "{{ item }}"
-      with_items: "{{ groups['vsds'] }}"
+    - name: Force DHCP update to configure DNS in AWS
+      command: dhclient
+      ignore_errors: true
 
-    - name: Get generated SSH keys
-      shell: cat ~/.ssh/id_rsa.pub
-      register: ssh_key_lst
-      delegate_to: "{{ item }}"
-      with_items: "{{ groups['vsds'] }}"
+    - name: Set hostname for AWS for current session
+      command: "hostname {{ hostname }}"
 
-    - name: Add SSH keys to authorized_keys file
-      shell: "echo {{ item[1].stdout }} >> /root/.ssh/authorized_keys"
-      delegate_to: "{{ item[0] }}"
-      with_nested:
-        - "{{ groups['vsds'] }}"
-        - "{{ ssh_key_lst.results }}"
-    when: vsd_major_version | int < 5
+    - name: Set hostname for AWS permanently
+      shell: "echo {{ hostname }} > /etc/hostname"
+
+    when: target_server_type | match("aws")
+
   - block:
-    - name: Generate SSH keys
-      shell: sudo -u vsd ssh-keygen -b 2048 -t rsa -f /home/vsd/.ssh/id_rsa -q -N ""
-      args:
-        creates: /home/vsd/.ssh/id_rsa
-      delegate_to: "{{ item }}"
-      with_items: "{{ groups['vsds'] }}"
 
-    - name: Get generated SSH keys
-      shell: cat /home/vsd/.ssh/id_rsa.pub
-      register: ssh_key_lst
-      delegate_to: "{{ item }}"
-      with_items: "{{ groups['vsds'] }}"
+    - name: Read the VSD version
+      shell: echo $VSD_VERSION
+      register: vsd_full_version
 
-    - name: Add SSH keys to authorized_keys file
-      shell: "echo {{ item[1].stdout }} >> /home/vsd/.ssh/authorized_keys"
-      delegate_to: "{{ item[0] }}"
-      with_nested:
-        - "{{ groups['vsds'] }}"
-        - "{{ ssh_key_lst.results }}"
+    - name: Set Major, Minor and Patch VSD version
+      set_fact:
+          vsd_major_version: "{{ vsd_full_version.stdout.split('.')[0] }}"
+          vsd_minor_version: "{{ vsd_full_version.stdout.split('.')[1] }}"
+          vsd_patch_version: "{{ vsd_full_version.stdout.split('.')[2].split('U')[0] }}"
 
-    - name: Change owner and permissions of VSD authorized keys
-      file:
-        path: /home/vsd/.ssh/authorized_keys
-        owner: vsd
-        group: hadoopusers
-        mode: 0640
-      delegate_to: "{{ item }}"
-      with_items: "{{ groups['vsds'] }}"
-    when: vsd_major_version | int >= 5
-  remote_user: root
-  when: vsd_sa_or_ha | match('ha') and inventory_hostname == groups['vsds'][0]
+    - debug: var=vsd_full_version.stdout verbosity=1
 
+    - debug: var=vsd_major_version verbosity=1
 
-- name: Configure yum proxy
-  lineinfile:
-    dest: /etc/yum.conf
-    regexp: "^proxy="
-    line: "proxy={{ yum_proxy }}"
-  remote_user: "root"
-  when: not yum_proxy | match('NONE')
+    - debug: var=vsd_minor_version verbosity=1
 
-- name: Execute a yum update
-  yum:
-    name: '*'
-    state: latest
-  remote_user: "root"
-  when: yum_update
+    - debug: var=vsd_patch_version verbosity=1
 
-- name: Disable cloud-init on VSD, to avoid boot time delays
-  command: chkconfig cloud-init off
-  remote_user: "root"
+    - block:
+
+      - name: Set VSD numbering for install
+        set_fact:
+            vsd_cluster_node_1: "{{ groups['vsds'][0] }}"
+            vsd_cluster_node_2: "{{ groups['vsds'][1] }}"
+            vsd_cluster_node_3: "{{ groups['vsds'][2] }}"
+        when: not nuage_upgrade
+
+      - name: Set VSD numbering for upgrade
+        set_fact:
+            vsd_cluster_node_1: "{{ groups['vsds'][1] }}"
+            vsd_cluster_node_2: "{{ groups['vsds'][2] }}"
+            vsd_cluster_node_3: "{{ groups['vsds'][0] }}"
+        when: nuage_upgrade
+
+      when: vsd_sa_or_ha | match ('ha')
+
+    - name: Set deploy_vcin to false (deploy vsd)
+      set_fact:
+        deploy_vcin: false
+
+    - name: Overwrite deploy_vcin to true (deploy vcin)
+      set_fact:
+        deploy_vcin: true
+      when:
+        - vcin_mode is defined
+        - vcin_mode
+
+    run_once: True
+
+  - block:
+
+    - block:
+
+      - block:
+
+        - name: Generate SSH keys
+          shell: ssh-keygen -b 2048 -t rsa -f /root/.ssh/id_rsa -q -N ""
+          args:
+            creates: /root/.ssh/id_rsa
+          delegate_to: "{{ item }}"
+          with_items: "{{ groups['vsds'] }}"
+
+        - name: Get generated SSH keys
+          shell: cat ~/.ssh/id_rsa.pub
+          register: ssh_key_lst
+          delegate_to: "{{ item }}"
+          with_items: "{{ groups['vsds'] }}"
+
+        - name: Add SSH keys to authorized_keys file
+          shell: "echo {{ item[1].stdout }} >> /root/.ssh/authorized_keys"
+          delegate_to: "{{ item[0] }}"
+          with_nested:
+            - "{{ groups['vsds'] }}"
+            - "{{ ssh_key_lst.results }}"
+
+        when: vsd_major_version | int < 5
+
+      - block:
+
+        - name: Generate SSH keys
+          shell: sudo -u vsd ssh-keygen -b 2048 -t rsa -f /home/vsd/.ssh/id_rsa -q -N ""
+          args:
+            creates: /home/vsd/.ssh/id_rsa
+          delegate_to: "{{ item }}"
+          with_items: "{{ groups['vsds'] }}"
+
+        - name: Get generated SSH keys
+          shell: cat /home/vsd/.ssh/id_rsa.pub
+          register: ssh_key_lst
+          delegate_to: "{{ item }}"
+          with_items: "{{ groups['vsds'] }}"
+
+        - name: Add SSH keys to authorized_keys file
+          shell: "echo {{ item[1].stdout }} >> /home/vsd/.ssh/authorized_keys"
+          delegate_to: "{{ item[0] }}"
+          with_nested:
+            - "{{ groups['vsds'] }}"
+            - "{{ ssh_key_lst.results }}"
+
+        - name: Change owner and permissions of VSD authorized keys
+          file:
+            path: /home/vsd/.ssh/authorized_keys
+            owner: vsd
+            group: hadoopusers
+            mode: 0640
+          delegate_to: "{{ item }}"
+          with_items: "{{ groups['vsds'] }}"
+
+        when: vsd_major_version | int >= 5
+
+      when: inventory_hostname == vsd_cluster_node_1 or (inventory_hostname == vsd_cluster_node_3 and nuage_upgrade)
+
+    when: vsd_sa_or_ha | match('ha')
+
+  - name: Configure yum proxy
+    lineinfile:
+      dest: /etc/yum.conf
+      regexp: "^proxy="
+      line: "proxy={{ yum_proxy }}"
+    when: not yum_proxy | match('NONE')
+
+  - name: Execute a yum update
+    yum:
+      name: '*'
+      state: latest
+    when: yum_update
+
+  - name: Disable cloud-init on VSD, to avoid boot time delays
+    command: "{{ item }}"
+    with_items:
+      - systemctl disable cloud-init
+      - systemctl disable cloud-init-local
+      - systemctl disable cloud-config
+      - systemctl disable cloud-final
+
+  remote_user: "{{ vsd_username }}"
 
 - name: Configure ntpd and ntpdate and local time zone
   include_role:
@@ -136,56 +160,37 @@
     tasks_from: linux-ntp-sync
 
 - block:
-  - name: Configure to deploy standalone VSD
-    set_fact:
-      deploy_vcin: false
 
-  - name: Determine if this is a VCIN install
-    set_fact:
-      deploy_vcin: true
-    when:
-      - vcin_mode is defined
-      - vcin_mode
-      - (vsd_major_version|int > 5) or
-        (vsd_major_version|int >= 5 and vsd_minor_version|int > 2) or
-        (vsd_major_version|int >= 5 and vsd_minor_version|int >= 2 and vsd_patch_version|int >= 2)
+  - block:
 
-  - name: Install VSD software on standalone node
-    command: /opt/vsd/vsd-install.sh -t s -y
+    - name: Install VSD software on standalone node
+      command: /opt/vsd/vsd-install.sh -t s -y
+      when: not deploy_vcin
+
+    - name: Install VCIN software on VCIN node
+      command: /opt/vsd/vsd-install.sh -t v -y
+      when: deploy_vcin
+
+    when: vsd_sa_or_ha | match ('sa')
+
+  - block:
+
+    - name: Install VSD software on the first cluster node
+      command: "{{ vsd_node1_install_cmd }}"
+      when: inventory_hostname == vsd_cluster_node_1
+
+    - name: Install VSD software on the second cluster node
+      command: "{{ vsd_node2_install_cmd }}"
+      when: inventory_hostname == vsd_cluster_node_2
+
+    - name: Install VSD software on the third cluster node
+      command: "{{ vsd_node3_install_cmd }}"
+      when: inventory_hostname == vsd_cluster_node_3
+
+    when: vsd_sa_or_ha | match('ha')
+
+  - name: Set XMPP connection to allow both clear and TLS
+    command: /opt/vsd/bin/ejmode allow -y
     when: not deploy_vcin
 
-  - name: Install VCIN software on VCIN node
-    command: /opt/vsd/vsd-install.sh -t v -y
-    when: deploy_vcin
-
-  when: vsd_sa_or_ha | match ('sa')
-  remote_user: "root"
-
-- block:
-
-  - name: Set if this is for a rollback
-    set_fact: rollback="{{ rollback|default('False') }}"
-
-  - name: Install VSD software on HA node1 {{groups['vsds'][0]}}
-    command: "{{ vsd_node1_install_cmd }}"
-    when: inventory_hostname == groups['vsds'][0]
-
-  - name: Install VSD software on HA node2 {{groups['vsds'][1]}}
-    command: "{{ vsd_node2_install_cmd }}"
-    when: inventory_hostname == groups['vsds'][1] and not rollback
-
-  - name: Install VSD software on HA node2 {{groups['vsds'][1]}}
-    command: "{{ vsd_node1_rollback }}"
-    when: inventory_hostname == groups['vsds'][1] and rollback
-
-  - name: Install VSD software on HA node3 {{groups['vsds'][2]}}
-    command: "{{ vsd_node3_install_cmd }}"
-    when: inventory_hostname == groups['vsds'][2]
-
-  when: vsd_sa_or_ha | match('ha')
-  remote_user: "root"
-
-- name: Set XMPP connection to allow both clear and TLS
-  command: /opt/vsd/bin/ejmode allow -y
-  remote_user: "root"
-  when: deploy_vcin is not defined or not deploy_vcin
+  remote_user: "{{ vsd_username }}"

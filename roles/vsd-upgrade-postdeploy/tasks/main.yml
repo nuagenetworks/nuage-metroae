@@ -33,7 +33,6 @@
 - name: Print vsd maintainance mode output when verbosity >= 1
   debug: var=mode_status verbosity=1
 
-# TODO: Determine if cleaning known_hosts of vscs is required here.
 - name: Clean known_hosts of VSC 1 on "{{ target_server }}"
   known_hosts:
     name: "{{ groups['vscs'][0] }}"
@@ -41,8 +40,9 @@
   delegate_to: localhost
   run_once: true
   when: groups['vscs'] is defined and groups['vscs'][0] is defined
+  no_log: True
+  ignore_errors: True
 
-# TODO: Determine if cleaning known_hosts of vscs is required here.
 - name: Clean known_hosts of VSC 2 on "{{ target_server }}"
   known_hosts:
     name: "{{ groups['vscs'][1] }}"
@@ -50,6 +50,8 @@
   delegate_to: localhost
   run_once: true
   when: groups['vscs'] is defined and groups['vscs'][1] is defined
+  no_log: True
+  ignore_errors: True
 
 - name: Shut/noshut vswitch controller on vsc1 after disabling VSD maintenance mode
   sros_config:
@@ -58,7 +60,7 @@
         - configure vswitch-controller no shutdown
     provider:
       host: "{{ groups['vscs'][0] }}"
-      username: "{{ vsc_user|default('admin') }}"
+      username: "{{ vsc_username|default('admin') }}"
       password: "{{ vsc_password|default('admin') }}"
   delegate_to: localhost
   register: vsc1_command_status
@@ -74,7 +76,7 @@
         - configure vswitch-controller no shutdown
     provider:
       host: "{{ groups['vscs'][1] }}"
-      username: "{{ vsc_user|default('admin') }}"
+      username: "{{ vsc_username|default('admin') }}"
       password: "{{ vsc_password|default('admin') }}"
   delegate_to: localhost
   run_once: true

@@ -1,0 +1,63 @@
+- name: Wait for VSTAT ssh to be ready after upgrade
+  include_role:
+    name: common
+    tasks_from: wait-for-ssh
+  vars:
+    ssh_host: "{{ mgmt_ip }}"
+    ssh_timeout_seconds: 300
+
+- name: Get vsd node(s) information
+  import_role:
+    name: common
+    tasks_from: vsd-node-info.yml
+  vars:
+    vsd_hostname: "{{ vsd_fqdn }}"
+  run_once: true
+
+- name: Get the es version after upgrade
+  command: "curl localhost:9200"
+  register: upgraded_version
+
+- name: Convert version to json format
+  set_fact:
+    upgraded_version_json: "{{ upgraded_version.stdout | from_json }}"
+
+- name: Get es version saved on vstat node(s)
+  command: "cat /root/current_es_version.log"
+  register: old_es_version
+
+- name: Compare es versions before and after upgrade
+  assert:
+    that: old_es_version.stdout != upgraded_version_json.version.number
+    msg: "Elastisearch upgrade failed"
+
+- name: Execute nuage index script
+  shell: "/root/nuage_elasticsearch/scripts/cluster_nuage_index_setting.sh"
+  when: vstat_sa_or_ha | match('ha')
+  run_once: true
+
+- name: stat 5.3.1 and on es_delete_watcher script
+  stat:
+    path: "/root/nuage_elasticsearch/scripts/es-delete-watcher.py"
+  register: es_delete_watcher
+
+- name: Delete watcher
+  command: "/root/nuage_elasticsearch/scripts/delete_watcher.py"
+  run_once: true
+  when: es_delete_watcher.stat.exists
+
+- name: stat pre-5.3.1 delete_watcher script
+  stat:
+    path: "/root/nuage_elasticsearch/scripts/delete_watcher.py"
+  register: delete_watcher
+
+- name: Delete watcher
+  command: "/root/nuage_elasticsearch/scripts/delete_watcher.py"
+  run_once: true
+  when: delete_watcher.stat.exists and not es_delete_watcher.stat.exists
+
+- name: Enable stats
+  include_role:
+    name: common
+    tasks_from: vstat-enable-stats
+  run_once: true
