@@ -14,12 +14,6 @@
 
     when: "'upgrade' in vstat_operations_list|default(['None'])"
 
-  - name: Skip setting qcow2 or ova vars
-    set_fact:
-      skip_qcow2_or_ova_vars: true
-    when:
-      - ('upgrade' in vstat_operations_list|default(['None']) and vstat_in_place_upgrade)
-
   - block:
 
     - name: Find name of Stats VM QCOW2 File
@@ -99,25 +93,17 @@
         msg: "Unable to find VSTAT upgrade scripts"
         }
 
-  - name: Register VSTAT upgrade script variables with proper path and script locations for use in other playbooks
-    set_fact:
-      vstat_upgrade_scripts_path: "{{ rc_vstat_upgrade_scripts.files[0].path | dirname }}/"
-      vstat_upgrade_scripts_file: "{{ rc_vstat_upgrade_scripts.files[0].path | basename }}"
+    - name: Register VSTAT upgrade script variables with proper path and script locations for use in other playbooks
+      set_fact:
+        vstat_upgrade_scripts_path: "{{ rc_vstat_upgrade_scripts.files[0].path | dirname }}/"
+        vstat_upgrade_scripts_file: "{{ rc_vstat_upgrade_scripts.files[0].path | basename }}"
+    when:
+      - "'upgrade' in vstat_operations_list|default(['None'])"
+      - vstat_in_place_upgrade
+
+  - name: Create host_vars files for vstat
+    template: src=vstat.j2 backup=no dest={{ inventory_dir }}/host_vars/{{ item.hostname }}
+    with_items: "{{ vstats }}"
+
   when:
     - vstats is defined
-    - "'upgrade' in vstat_operations_list|default(['None'])"
-    - vstat_in_place_upgrade
-  tags:
-    - vstat
-
-- name: Set vstat_check
-  set_fact: vstat_check={{vstats is defined}}
-
-- name: Assign empty list to vstats if it is undefined
-  set_fact: vstats= default([])
-  when: not vstat_check
-
-- name: Create host_vars files for vstat
-  template: src=vstat.j2 backup=no dest={{ inventory_dir }}/host_vars/{{ item.hostname }}
-  with_items: "{{ vstats }}"
-  when: vstat_check
