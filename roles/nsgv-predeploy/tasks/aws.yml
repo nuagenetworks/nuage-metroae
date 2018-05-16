@@ -1,64 +1,64 @@
 ---
 # Create NSGV in VSD
 #
-# - name: Finding Enterprise
-#   connection: local
-#   nuage_vspk:
-#     auth: "{{ vsd_auth }}"
-#     type: Enterprise
-#     command: find
-#     properties:
-#       name: "{{ enterprise }}"
-#   register: nuage_enterprise
+- name: Finding Enterprise
+  connection: local
+  nuage_vspk:
+    auth: "{{ vsd_auth }}"
+    type: Enterprise
+    command: find
+    properties:
+      name: "{{ enterprise }}"
+  register: nuage_enterprise
 
-# - name: Ensure NSG Gateway is provisioned in the enterprise
-#   connection: local
-#   nuage_vspk:
-#     auth: "{{ vsd_auth }}"
-#     type: NSGateway
-#     parent_id: "{{ nuage_enterprise.id }}"
-#     parent_type: Enterprise
-#     match_filter: "name == '{{ inventory_hostname }}'"
-#     state: present
-#     properties:
-#       name: "{{ inventory_hostname }}"
-#       template_id: "{{ nsg_template_id }}"
-#   register: nuage_nsg
+- name: Ensure NSG Gateway is provisioned in the enterprise
+  connection: local
+  nuage_vspk:
+    auth: "{{ vsd_auth }}"
+    type: NSGateway
+    parent_id: "{{ nuage_enterprise.id }}"
+    parent_type: Enterprise
+    match_filter: "name == '{{ inventory_hostname }}'"
+    state: present
+    properties:
+      name: "{{ inventory_hostname }}"
+      template_id: "{{ nsg_template_id }}"
+  register: nuage_nsg
 
-# - name: Find port1 of the NSG-AMI
-#   connection: local
-#   nuage_vspk:
-#     auth: "{{ vsd_auth }}"
-#     type: NSPort
-#     parent_type: NSGateway
-#     parent_id: "{{ nuage_nsg.id }}"
-#     command: find
-#     properties:
-#       name: "port1"
-#   register: nuage_nsg_port1
+- name: Find port1 of the NSG-AMI
+  connection: local
+  nuage_vspk:
+    auth: "{{ vsd_auth }}"
+    type: NSPort
+    parent_type: NSGateway
+    parent_id: "{{ nuage_nsg.id }}"
+    command: find
+    properties:
+      name: "port1"
+  register: nuage_nsg_port1
 
-# - name: Ensure 1:1 NAT is enabled on port1 of the NSG-AMI
-#   connection: local
-#   nuage_vspk:
-#     auth: "{{ vsd_auth }}"
-#     type: NSPort
-#     id: "{{ nuage_nsg_port1.id }}"
-#     state: present
-#     properties:
-#       nat_traversal: "ONE_TO_ONE_NAT"
+- name: Ensure 1:1 NAT is enabled on port1 of the NSG-AMI
+  connection: local
+  nuage_vspk:
+    auth: "{{ vsd_auth }}"
+    type: NSPort
+    id: "{{ nuage_nsg_port1.id }}"
+    state: present
+    properties:
+      nat_traversal: "ONE_TO_ONE_NAT"
 
-# - name: Create Job to download auto-bootstrap info
-#   connection: local
-#   nuage_vspk:
-#     auth: "{{ vsd_auth }}"
-#     type: Job
-#     parent_id: "{{ nuage_enterprise.id }}"
-#     parent_type: Enterprise
-#     state: present
-#     properties:
-#       command: GET_ZFB_INFO
-#       parameters: '{ "mediaType": "YAML", "NSGType": "NSG-AMI", "associatedEntityType": "nsgateway", "associatedEntityID": "{{ nuage_nsg.id }}" }'
-#   register: nuage_nsg_zfb
+- name: Create Job to download auto-bootstrap info
+  connection: local
+  nuage_vspk:
+    auth: "{{ vsd_auth }}"
+    type: Job
+    parent_id: "{{ nuage_enterprise.id }}"
+    parent_type: Enterprise
+    state: present
+    properties:
+      command: GET_ZFB_INFO
+      parameters: '{ "mediaType": "YAML", "NSGType": "NSG-AMI", "associatedEntityType": "nsgateway", "associatedEntityID": "{{ nuage_nsg.id }}" }'
+  register: nuage_nsg_zfb
 
 - block:
   - name: Deploy Sample Network Structure if desired
@@ -90,7 +90,7 @@
       aws_access_key: "{{ aws_access_key | default(None) }}"
       aws_secret_key: "{{ aws_secret_key | default(None) }}"
       filters:
-        network-interface-id: "{{ use_vpc.nsg_lan_eni }}"
+        network-interface-id: "{{ aws_data_eni }}"
       region:  "{{ aws_region }}"
     register: rc_aws_nsg_lan_eni_facts
 
@@ -101,9 +101,9 @@
     with_items:
      - { key: "NSGLANENI", value: "{{ aws_data_eni }}" }
      - { key: "NSGWANENI", value: "{{ aws_access_eni }}" }
-     - { key: "NSGLANENIIP", value: "{{ rc_aws_nsg_lan_eni_facts.interfaces[0].private_ip_address }}" }
+     - { key: "NSGLANENIIP", value: "{{ rc_aws_nsg_lan_eni_facts.network_interfaces[0].private_ip_address }}" }
      - { key: "nsg_ami_user_data", value: "{{ nuage_nsg_zfb.entities[0].result }}" }
-    when: (rc_aws_nsg_lan_eni_facts.interfaces|length > 0 ) and (nuage_nsg_zfb.entities[0].status == "SUCCESS")
+    when: (rc_aws_nsg_lan_eni_facts.network_interfaces|length > 0 ) and (nuage_nsg_zfb.entities[0].status == "SUCCESS")
   when: provision_vpc is not defined
 
 - name: Generate CloudFormation Template

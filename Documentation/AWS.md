@@ -54,4 +54,43 @@ NSGv | Access | Data
 
 ## Configure components in build_vars.yml
 
+Configuring components for AWS is very similar as other server types.  The
+target_server_type is "aws" and other fields are specified as normal.  AWS does
+require the following extra fields to be specified:
 
+- aws_region: The AWS region (i.e. us-east-1)
+- aws_ami_id: Identifier for the AMI image to be used for the component
+- aws_instance_type: The AWS instance type for the image (i.e. t2.medium)
+- aws_key_name: The name of the key pair used for access to the component
+- aws_mgmt_eni/aws_data_eni/aws_access_eni: The elastic network interface identifiers from the deployed VPC for each required subnet for the component.
+
+In addition the AWS access and secret keys can be specified as aws_access_key
+and aws_secret_key in user_creds.yml.  If not specified, they will be taken
+from the environment variables AWS_ACCESS_KEY and AWS_SECRET_KEY.
+
+## Deploy using MetroAG
+
+After satisfying all the prerequites and configuring components, MetroAG can
+be issued as normal.
+
+    ./metro-ansible install_everything
+
+Splitting up the tasks using predeploy, deploy and postdeploy also work.
+
+## NSGv only provision VPC
+
+For the NSGv component, a special workflow is provided that can deploy an AWS
+VPC for that component only.  The can be used when it is desired to install
+NSGv in AWS only without other components.  The following configuration can
+be specified for each NSGv in mynsgvs in build_vars.yml to provision the VPCs:
+
+    provision_vpc: {
+        cidr: "10.4.0.0/16",
+        nsg_wan_subnet: "10.4.10.0/24",
+        nsg_lan_subnet: "10.4.20.0/24",
+        private_subnet: "10.4.30.0/24" }
+
+The CIDRs for the VPC, WAN interface, LAN interface and private subnet are
+required to be specified.  When provisioning a VPC in this way, the elastic
+network interface identifiers aws_data_eni and aws_access_eni for the NSGv do
+not need to be specified as they are discovered from the created VPC.
