@@ -169,9 +169,14 @@ function check_os_version() {
 # param: packageName
 ###############################################################################
 yum_install() {
-  printn "Installing $1..."
-  xargs yum -y install < yum_requirements.txt  >> $LOG 2>&1
-  check_retcode $?
+  IFS=$'\n'
+  for i in $(cat yum_requirements.txt)
+  do
+    unset IFS
+    printn "Installing $i..."
+    yum -y install "$i" >> $LOG 2>&1
+    check_retcode $?
+  done
 }
 
 ###############################################################################

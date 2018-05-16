@@ -15,7 +15,6 @@ Postdeploy | For component-level sanity validation.
 Health | For system-level sanity validation and monitoring.
 Destroy | For tear down of components and connections. This is one of two hypervisor-dependent roles (predeploy is the other). If you find yourself adding conditional execution based on the hypervisor anywhere else, it's probably a mistake.
 Upgrade | For upgrading components from one release to another.
-Rollback | For restoring components to their previous version if an upgrade fails.
 ## 1. Develop Code on a Fork
 1. Before you start developing code, create your own fork from the upstream MetroAG repo. [https://github.com/nuagenetworks/nuage-metro/](https://github.com/nuagenetworks/nuage-metro/)
 2. Clone your own fork on your machine and switch to the _dev_ branch.  
@@ -28,8 +27,8 @@ git checkout dev
 3. Develop and test all proposed contributions on the appropriate hypervisors in the `metro-fork` directory. If you choose not to provide support for one or more supported hypervisors, you must provide graceful error handling for those types.
 
 4. If you require any new User Input Variables:
-    * Extend the MetroAG variable files with sensible example values:<br> `build_vars.yml`, `upgrade_vars.yml`, and `user_creds.yml`.
-    * Ensure that the copies of the variable files in `roles/reset-build/files/` are identical to<br>`build_vars.yml`, `upgrade_vars.yml`, and `user_creds.yml`.
+    * Extend the MetroAG variable files with sensible example values:<br> `build_vars.yml` and `user_creds.yml`.
+    * Ensure that the copies of the variable files in `roles/reset-build/files/` are identical to<br>`build_vars.yml` and `user_creds.yml`.
     * Include comments with the variable specifications that explain the variable's purpose and acceptable values.
     * Variables that are almost never modified may be included in standard Ansible variable locations, e.g. `roles/<rolename>/vars/main.yml`.
 
