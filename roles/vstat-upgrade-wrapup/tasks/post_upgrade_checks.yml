@@ -36,9 +36,25 @@
   when: vstat_sa_or_ha | match('ha')
   run_once: true
 
+- name: stat 5.3.1 and on es_delete_watcher script
+  stat:
+    path: "/root/nuage_elasticsearch/scripts/es-delete-watcher.py"
+  register: es_delete_watcher
+
 - name: Delete watcher
   command: "/root/nuage_elasticsearch/scripts/delete_watcher.py"
   run_once: true
+  when: es_delete_watcher.stat.exists
+
+- name: stat pre-5.3.1 delete_watcher script
+  stat:
+    path: "/root/nuage_elasticsearch/scripts/delete_watcher.py"
+  register: delete_watcher
+
+- name: Delete watcher
+  command: "/root/nuage_elasticsearch/scripts/delete_watcher.py"
+  run_once: true
+  when: delete_watcher.stat.exists and not es_delete_watcher.stat.exists
 
 - name: Enable stats
   include_role:
