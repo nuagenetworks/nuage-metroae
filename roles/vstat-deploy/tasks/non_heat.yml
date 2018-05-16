@@ -1,6 +1,6 @@
 ---
 - name: Wait for VSTAT ssh to be ready
-  include_role:
+  import_tasks_role:
     name: common
     tasks_from: wait-for-ssh
   vars:
@@ -89,7 +89,7 @@
         template: src="{{ role_path }}/templates/iptables.j2" dest="/tmp/main.yml" backup=no mode=0755
 
       - name: Include variable file.
-        include_vars: /tmp/main.yml
+        import_tasks_vars: /tmp/main.yml
 
       delegate_to: localhost
 
@@ -183,7 +183,7 @@
         template: src="{{ role_path }}/templates/firewall.j2" dest="/tmp/main.yml" backup=no mode=0755
 
       - name: Include variable file.
-        include_vars: /tmp/main.yml
+        import_tasks_vars: /tmp/main.yml
 
       delegate_to: localhost
 
@@ -210,7 +210,7 @@
 - block:
 
   - name: Configure ntpd and ntpdate and local time zone
-    include_role:
+    import_tasks_role:
       name: common
       tasks_from: linux-ntp-sync
 
@@ -230,7 +230,7 @@
         vsd_hostname: "{{ vsd_fqdn }}"
 
     - name: Make sure the first VSD node is ready before we proceed
-      include_role:
+      import_tasks_role:
         name: common
         tasks_from: wait-for-ssh
       vars:
@@ -266,11 +266,11 @@
     run_once: True
 
   - name: Enable stats
-    include_role:
+    import_tasks_role:
       name: common
       tasks_from: vstat-enable-stats.yml
 
   when: not skip_vstat_deploy
 
-- include: aar_vss_enable.yml
+- import_tasks: aar_vss_enable.yml
 

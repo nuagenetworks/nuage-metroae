@@ -10,9 +10,9 @@
     vsr_target_qcow2_file_path: '{{ images_path }}/{{ vmname }}/{{ inventory_hostname }}.qcow2'
     vsr_target_license_file: '{{ images_path }}/{{ vmname }}/license.txt'
 
-- include: kvm_check_hypervisor.yml
+- import_tasks: kvm_check_hypervisor.yml
 
-- include: kvm_check_resources.yml
+- import_tasks: kvm_check_resources.yml
 
 - name: List the Virtual Machines
   virt: command=list_vms
@@ -26,7 +26,7 @@
     msg: "{{ vmname }} is already running on {{ target_server }}"
 
 - name: Include OS-specific variables.
-  include_vars: "{{ ansible_os_family }}.yml"
+  import_tasks_vars: "{{ ansible_os_family }}.yml"
 
 - name: Create VSR directory
   file:
@@ -37,9 +37,9 @@
   delegate_to: "{{ target_server }}"
   remote_user: "{{ target_server_username }}"
 
-- include: kvm_upload_license_file.yml
+- import_tasks: kvm_upload_license_file.yml
 
-- include: kvm_deploy_image_file.yml
+- import_tasks: kvm_deploy_image_file.yml
 
 - name: Get license file content
   command: cat {{ vsr_target_license_file }}
@@ -59,10 +59,10 @@
 
 - debug: var=vsr_vm_uuid verbosity=1
 
-- include: kvm_define_vsr_vm.yml
+- import_tasks: kvm_define_vsr_vm.yml
 
 - name: Wait for VSR ssh to be ready
-  include_role:
+  import_tasks_role:
     name: common
     tasks_from: wait-for-ssh
   vars:
