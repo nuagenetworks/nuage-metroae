@@ -145,6 +145,114 @@ Resources:
           Value: !Ref 'AWS::StackName'
         - Key: Network
           Value: Data Subnet
+  VscTargetServerEni:
+    Type: 'AWS::EC2::NetworkInterface'
+    Properties:
+      SubnetId: !Ref MgmtSubnet
+      Description: VSC target server interface
+      SourceDestCheck: false
+      GroupSet:
+        - !Ref MgmtSecurityGroup
+      Tags:
+        - Key: Name
+          Value: !Join
+            - '-'
+            - - !Ref 'AWS::StackName'
+              - VSC target server ENI
+        - Key: Stack
+          Value: !Ref 'AWS::StackName'
+        - Key: Network
+          Value: Management Subnet
+  VstatMgmtEni:
+    Type: 'AWS::EC2::NetworkInterface'
+    Properties:
+      SubnetId: !Ref MgmtSubnet
+      Description: VSTAT Management network interface
+      SourceDestCheck: false
+      GroupSet:
+        - !Ref MgmtSecurityGroup
+      Tags:
+        - Key: Name
+          Value: !Join
+            - '-'
+            - - !Ref 'AWS::StackName'
+              - VSTAT Management ENI
+        - Key: Stack
+          Value: !Ref 'AWS::StackName'
+        - Key: Network
+          Value: Management Subnet
+  VnsUtilMgmtEni:
+    Type: 'AWS::EC2::NetworkInterface'
+    Properties:
+      SubnetId: !Ref MgmtSubnet
+      Description: VNSUtil Management network interface
+      SourceDestCheck: false
+      GroupSet:
+        - !Ref MgmtSecurityGroup
+      Tags:
+        - Key: Name
+          Value: !Join
+            - '-'
+            - - !Ref 'AWS::StackName'
+              - VNSUtil Management ENI
+        - Key: Stack
+          Value: !Ref 'AWS::StackName'
+        - Key: Network
+          Value: Management Subnet
+  VnsUtilDataEni:
+    Type: 'AWS::EC2::NetworkInterface'
+    Properties:
+      SubnetId: !Ref DataSubnet
+      Description: VNSUtil Data network interface
+      SourceDestCheck: false
+      GroupSet:
+        - !Ref DataSecurityGroup
+      Tags:
+        - Key: Name
+          Value: !Join
+            - '-'
+            - - !Ref 'AWS::StackName'
+              - VNSUtil Data ENI
+        - Key: Stack
+          Value: !Ref 'AWS::StackName'
+        - Key: Network
+          Value: Data Subnet
+  NsgAccessEni:
+    Type: 'AWS::EC2::NetworkInterface'
+    Properties:
+      SubnetId: !Ref AccessSubnet
+      Description: NSGv Access network interface
+      GroupSet:
+        - !Ref NsgSecurityGroup
+      SourceDestCheck: false
+      Tags:
+        - Key: Name
+          Value: !Join
+            - '-'
+            - - !Ref 'AWS::StackName'
+              - NSGv Access ENI
+        - Key: Stack
+          Value: !Ref 'AWS::StackName'
+        - Key: Network
+          Value: Access Network
+  NsgDataEni:
+    Type: 'AWS::EC2::NetworkInterface'
+    Properties:
+      SubnetId: !Ref DataSubnet
+      Description: NSGv Data network interface
+      SourceDestCheck: false
+      GroupSet:
+        - !Ref DataSecurityGroup
+      Tags:
+        - Key: Name
+          Value: !Join
+            - '-'
+            - - !Ref 'AWS::StackName'
+              - NSGv Data ENI
+        - Key: Stack
+          Value: !Ref 'AWS::StackName'
+        - Key: Network
+          Value: Data Subnet
   ProxyAccessEni:
     Type: 'AWS::EC2::NetworkInterface'
     Properties:
@@ -255,7 +363,7 @@ Resources:
     Type: 'AWS::EC2::SecurityGroup'
     Properties:
       VpcId: !Ref VPC
-      GroupDescription: Enable Access Ingress Ports for NSG
+      GroupDescription: Enable Access Ingress Ports for NSGv
       SecurityGroupIngress:
         - IpProtocol: tcp
           FromPort: 443
@@ -378,16 +486,54 @@ Resources:
       - !GetAtt
         - VscMgmtEni
         - PrimaryPrivateIpAddress
+  VstatDNSRecord:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId: !Ref DNS
+      Name: vstat1.example.com.
+      Type: A
+      TTL: '900'
+      ResourceRecords:
+      - !GetAtt
+        - VstatMgmtEni
+        - PrimaryPrivateIpAddress
+  VnsUtilDNSRecord:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId: !Ref DNS
+      Name: vnsutil1.example.com.
+      Type: A
+      TTL: '900'
+      ResourceRecords:
+      - !GetAtt
+        - VnsUtilMgmtEni
+        - PrimaryPrivateIpAddress
+  VnsUtilDataDNSRecord:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId: !Ref DNS
+      Name: vnsutil1.data.example.com.
+      Type: A
+      TTL: '900'
+      ResourceRecords:
+      - !GetAtt
+        - VnsUtilDataEni
+        - PrimaryPrivateIpAddress
+  NsgUtilDataDNSRecord:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId: !Ref DNS
+      Name: nsg1.data.example.com.
+      Type: A
+      TTL: '900'
+      ResourceRecords:
+      - !GetAtt
+        - NsgDataEni
+        - PrimaryPrivateIpAddress
 Outputs:
   VPCId:
     Description: VPCId of the newly created VPC
     Value: !Ref VPC
-  ProxyAccessEniId:
-    Description: EC2 Network Interface Id to be used to attach the proxy Access Interface to
-    Value: !Ref ProxyAccessEni
-  ProxyMgmtEniId:
-    Description: EC2 Network Interface Id to be used to attach the proxy Mgmt Interface to
-    Value: !Ref ProxyMgmtEni
   VsdMgmtEniId:
     Description: EC2 Network Interface Id to be used to attach the VSD Mgmt Interface to
     Value: !Ref VsdMgmtEni
@@ -397,11 +543,31 @@ Outputs:
   VscDataEniId:
     Description: EC2 Network Interface Id to be used to attach the VSC Data Interface to
     Value: !Ref VscDataEni
-  ProxyMgmtEniIp:
-    Description: IP address that will be associated with the proxy Mgmt Interface
-    Value: !GetAtt
-      - ProxyMgmtEni
-      - PrimaryPrivateIpAddress
+  VscTargetServerEniId:
+    Description: EC2 Network Interface Id to be used to attach the VSC Target server Interface to
+    Value: !Ref VscTargetServerEni
+  VstatMgmtEniId:
+    Description: EC2 Network Interface Id to be used to attach the VSTAT Mgmt Interface to
+    Value: !Ref VstatMgmtEni
+  VnsUtilMgmtEniId:
+    Description: EC2 Network Interface Id to be used to attach the VNSUtil Mgmt Interface to
+    Value: !Ref VnsUtilMgmtEni
+  VnsUtilDataEniId:
+    Description: EC2 Network Interface Id to be used to attach the VNSUtil Data Interface to
+    Value: !Ref VnsUtilDataEni
+  NsgAccessEniId:
+    Description: EC2 Network Interface Id to be used to attach the NSGv Access Interface to
+    Value: !Ref NsgAccessEni
+  NsgDataEniId:
+    Description: EC2 Network Interface Id to be used to attach the NSGv Data Interface to
+    Value: !Ref NsgDataEni
+  ProxyAccessEniId:
+    Description: EC2 Network Interface Id to be used to attach the proxy Access Interface to
+    Value: !Ref ProxyAccessEni
+  ProxyMgmtEniId:
+    Description: EC2 Network Interface Id to be used to attach the proxy Mgmt Interface to
+    Value: !Ref ProxyMgmtEni
+
   VsdMgmtEniIp:
     Description: IP address that will be associated with the VSD Mgmt Interface
     Value: !GetAtt
@@ -416,4 +582,34 @@ Outputs:
     Description: IP address that will be associated with the VSC Data Interface
     Value: !GetAtt
       - VscDataEni
+      - PrimaryPrivateIpAddress
+  VscTargetServerEniIp:
+    Description: IP address that will be associated with the VSC Target server Interface
+    Value: !GetAtt
+      - VscTargetServerEni
+      - PrimaryPrivateIpAddress
+  VstatMgmtEniIp:
+    Description: IP address that will be associated with the VSTAT Mgmt Interface
+    Value: !GetAtt
+      - VstatMgmtEni
+      - PrimaryPrivateIpAddress
+  VnsUtilMgmtEniIp:
+    Description: IP address that will be associated with the VNSUtil Mgmt Interface
+    Value: !GetAtt
+      - VnsUtilMgmtEni
+      - PrimaryPrivateIpAddress
+  VnsUtilDataEniIp:
+    Description: IP address that will be associated with the VNSUtil Data Interface
+    Value: !GetAtt
+      - VnsUtilDataEni
+      - PrimaryPrivateIpAddress
+  NsgDataEniIp:
+    Description: IP address that will be associated with the NSGv Data Interface
+    Value: !GetAtt
+      - NsgDataEni
+      - PrimaryPrivateIpAddress
+  ProxyMgmtEniIp:
+    Description: IP address that will be associated with the proxy Mgmt Interface
+    Value: !GetAtt
+      - ProxyMgmtEni
       - PrimaryPrivateIpAddress
