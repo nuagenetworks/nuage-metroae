@@ -38,3 +38,20 @@ OR
 
 ## Upload or import Nuage component AMI images
 
+AWS uses Amazon Machine Image (AMI) as the format to run instances in EC2.  An AMI for each Nuage component has to be uploaded or imported into AWS.  The AMI identifiers are provided to MetroAG for deployment.
+
+## Setup an AWS Virtual Private Cloud
+
+MetroAG requires a VPC to be defined and deployed in AWS before installing any Nuage components.  An example aws-example-vpc.yml is provided as a basic VPC in the examples directroy.  The VPC must define the network interfaces to be used by each component.  It should also provide connectivity between various components and Internet access (either directly or outgoing only through NAT).  It is strongly recommended to define security policies, IP addressing and DNS as well.  The following define the recommended subnets for each component.  Note that the Access subnet is expected to have direct Internet access and the management subnet has outgoing only access.
+
+Component | Subnet1 | Subnet2
+--------- | :---: | :---:
+VSD | Mgmt |
+VSC | Mgmt | Data
+VSTAT | Mgmt |
+VNS Util | Mgmt | Data
+NSGv | Access | Data
+
+## Configure components in build_vars.yml
+
+
