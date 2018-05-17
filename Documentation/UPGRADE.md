@@ -17,7 +17,7 @@ After all [Prerequisites](#prerequisites) are met, run the following set of comm
 6. ./metro-ansible vsd_ha_upgrade_shutdown_1 -vvvv
 7. ./metro-ansible vsd_ha_upgrade_predeploy_1 -vvvv
 8. ./metro-ansible vsd_ha_upgrade_deploy_1 -vvvv
-9. ./metro-ansible vsd_upgrade_complete_flag -vvv
+9. ./metro-ansible vsd_upgrade_complete -vvv
 10. ./metro-ansible vsc_ha_upgrade_backup_and_prep_1 -vvvv
 11. ./metro-ansible vsc_ha_upgrade_deploy_1 -vvvv
 12. ./metro-ansible vsc_ha_upgrade_postdeploy_1 -vvvv
@@ -47,7 +47,7 @@ After all [Prerequisites](#prerequisites) are met, run the following set of comm
 3. ./metro-ansible vsd_sa_upgrade_shutdown -vvvv
 4. ./metro-ansible vsd_predeploy -vvvv
 5. ./metro-ansible vsd_sa_upgrade_deploy -vvvv
-6. ./metro-ansible vsd_upgrade_complete_flag -vvvv
+6. ./metro-ansible vsd_upgrade_complete -vvvv
 7. ./metro-ansible vsc_upgrade_backup_and_prep -vvvv
 8. ./metro-ansible vsc_sa_upgrade_deploy -vvvv
 9. ./metro-ansible vsc_sa_upgrade_postdeploy -vvvv
@@ -135,7 +135,7 @@ At this point, all 3 VSD nodes have been upgraded. If you experience a failure b
 9. Set the VSD upgrade complete flag
 
 ```
-./metro-ansible vsd_upgrade_complete_flag -vvvv
+./metro-ansible vsd_upgrade_complete -vvvv
 ```
 
 After all the VSDs are upgraded, this step sets the upgrade flag to complete. It can be re-run in case of failure. It would be good time to login to VSD and verify the new version.
@@ -320,7 +320,7 @@ At this point, VSD node is upgraded. If you experience a failure before the VSD 
 6. Set the VSD upgrade complete flag
 
 ```
-./metro-ansible vsd_upgrade_complete_flag -vvvv
+./metro-ansible vsd_upgrade_complete -vvvv
 ```
 
 After all the VSDs are upgraded, this step sets the upgrade flag to complete. It can be re-run in case of failure. It would be good time to login to VSD and v
