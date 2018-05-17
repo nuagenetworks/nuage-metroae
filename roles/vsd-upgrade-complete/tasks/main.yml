@@ -7,22 +7,9 @@
 
   - block:
 
-    - name: Get vsd_upgrade_complete flag value for minor upgrade
-      command: "{{ mysql_cmd }}"
-      register: upgrade_complete
-
-    - name: Print upgrade_complete output when verbosity >= 1 
-      debug: var=upgrade_complete verbosity=1
-  
-    - name: Set upgrade complete flag to 1 for minor upgrade on vsd
-      shell: "{{ minor_upgrade }}"
-      when: upgrade_complete.stdout == '0'
-
     - name: Restart Jboss on VSD Node1
       shell: "monit restart jboss"
     
-    - include: check_monit_status.yml
-
     when: upgrade_major_or_minor == 'minor'
 
   - block:
@@ -34,11 +21,14 @@
     - name: Print vsd_version output when verbosity >= 1
       debug: var=vsd_version verbosity=1
 
-    - name: Turn on API on vsd's for major upgrade
-      shell: "{{ major_upgrade }}"
+    - name: Set upgrade complete flag
+      shell: "{{ upgrade_complete_flag_command }}"
 
-    - include: check_monit_status.yml
+    - name: Turn on API on vsd's for major upgrade
+      shell: "{{ turn_on_api_command }}"
 
     when: upgrade_major_or_minor == 'major'
+
+  - include: check_monit_status.yml
 
   remote_user: "{{ vsd_username }}"
