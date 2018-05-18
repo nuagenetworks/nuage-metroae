@@ -1,0 +1,29 @@
+# *** WARNING ***
+# This is a generated file. Manual changes to this file
+# will be lost if reset-build or build is run
+#
+{% if vsd_sa_or_ha == "sa" %}
+firewall_std_commands:
+  - "firewall-cmd --set-default-zone=public"
+  - "firewall-cmd --permanent --remove-port=9200/tcp"
+  - "firewall-cmd --permanent --remove-port=9300/tcp"
+  - "firewall-cmd --permanent --zone=public --add-rich-rule=\"rule family=\"ipv4\" source address=\"{{ ip_addr.stdout }}\" port protocol=\"tcp\" port=\"9200\" accept\""
+  - "firewall-cmd --permanent --zone=public --add-rich-rule=\"rule family=\"ipv4\" source address=\"{{ ip_addr.stdout }}\" port protocol=\"tcp\" port=\"9300\" accept\""
+{% endif %}
+{% if vsd_sa_or_ha == "ha" %}
+firewall_cluster_commands:
+  - "firewall-cmd --set-default-zone=public"
+  - "firewall-cmd --permanent --remove-port=9200/tcp"
+  - "firewall-cmd --permanent --remove-port=9300/tcp"
+{% for vsd in groups['vsds'] %}
+  - "firewall-cmd --permanent --zone=public --add-rich-rule=\"rule family=\"ipv4\" source address=\"{{ hostvars[vsd]['mgmt_ip'] }}\" port protocol=\"tcp\" port=\"9200\" accept\""
+  - "firewall-cmd --permanent --zone=public --add-rich-rule=\"rule family=\"ipv4\" source address=\"{{ hostvars[vsd]['mgmt_ip'] }}\" port protocol=\"tcp\" port=\"9300\" accept\""
+{% endfor %}
+{% endif %}
+{% if vstat_sa_or_ha == "ha" %}
+{% for vstat in groups['vstats'] %}
+  - "firewall-cmd --permanent --zone=public --add-rich-rule=\"rule family=\"ipv4\" source address=\"{{ hostvars[vstat]['mgmt_ip'] }}\" port protocol=\"tcp\" port=\"9200\" accept\""
+  - "firewall-cmd --permanent --zone=public --add-rich-rule=\"rule family=\"ipv4\" source address=\"{{ hostvars[vstat]['mgmt_ip'] }}\" port protocol=\"tcp\" port=\"9300\" accept\""
+{% endfor %}
+{% endif %}
+  - "firewall-cmd --reload"

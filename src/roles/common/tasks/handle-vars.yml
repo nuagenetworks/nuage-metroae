@@ -1,0 +1,54 @@
+---
+- name: Set data file variables
+  set_fact:
+    build_vars: "{{ build_vars_file | default (inventory_dir+'/build_vars.yml') }}"
+    user_creds: "{{ user_creds_file | default (inventory_dir+'/user_creds.yml') }}"
+    do_build: "{{ force_build | default(False) }}"
+    data_file_name_list:
+      - build_vars.yml
+      - user_creds.yml
+
+- name: Include build variable files
+  include_vars: "{{ build_vars }}"
+
+- name: Include user credential file
+  include_vars: "{{ user_creds }}"
+
+- block:
+
+  - name: Check if build is required
+    include_role:
+      name: common
+      tasks_from: check-md5
+    with_items:
+      "{{ data_file_name_list }}"
+    loop_control:
+      loop_var: file_name
+
+  when: not do_build
+
+- block:
+
+  - name: Check yaml syntax in build vars file
+    include_role:
+      name: common
+      tasks_from: check-build-vars-syntax.yml
+
+  - name: Validate build variables
+    include_role:
+      name: common
+      tasks_from: validate-build-vars.yml
+
+  - include_role:
+      name: build
+
+  - name: Wrap-up build
+    include_role:
+      name: common
+      tasks_from: set-md5
+    with_items:
+      "{{ data_file_name_list }}"
+    loop_control:
+      loop_var: file_name
+
+  when: do_build

@@ -48,9 +48,9 @@ def check_buildvars(filepath):
                 msg="FAIL: You must define exactly 1 or exactly 3 vsds")
     if 'myvscs' in config:
         num_vscs = len(config['myvscs'])
-        if (num_vscs != 2) and (num_vscs != 1):
+        if (num_vscs < 1):
             module.fail_json(
-                msg="FAIL: You must define exactly 1 or exactly 2 vscs")
+                msg="FAIL: You must define at least 1 vsc")
     if 'myvstats' in config:
         num_vstats = len(config['myvstats'])
         if (num_vstats != 3) and (num_vstats != 1):

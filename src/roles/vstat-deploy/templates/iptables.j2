@@ -1,0 +1,25 @@
+{% if vsd_sa_or_ha == "sa" %}
+iptables_std_commands:
+  - "ipset create vsd hash:ip"
+  - "ipset add vsd {{ ip_addr.stdout }}"
+  - "ipset save -f /etc/sysconfig/ipset"
+  - "iptables -R INPUT 5 -m set --match-set vsd src -p tcp --dport 9200 -j ACCEPT"
+  - "iptables -R INPUT 6 -m set --match-set vsd src -p tcp --dport 9300 -j ACCEPT"
+  - "service iptables save"
+{% endif %}
+{% if vsd_sa_or_ha == "ha" %}
+iptables_cluster_commands:
+  - "ipset create vsd hash:ip"
+{% for vsd in groups['vsds'] %}
+  - "ipset add vsd {{ hostvars[vsd]['mgmt_ip'] }}"
+{% endfor %}
+{% endif %}
+{% if vstat_sa_or_ha == "ha" %}
+{% for vstat in groups['vstats'] %}
+  - "ipset add vsd {{ hostvars[vstat]['mgmt_ip'] }}"
+{% endfor %}
+{% endif %}
+  - "ipset save -f /etc/sysconfig/ipset"
+  - "iptables -R INPUT 5 -m set --match-set vsd src -p tcp --dport 9200 -j ACCEPT"
+  - "iptables -R INPUT 6 -m set --match-set vsd src -p tcp --dport 9300 -j ACCEPT"
+  - "service iptables save"

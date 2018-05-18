@@ -1,0 +1,59 @@
+---
+- hosts: localhost
+  pre_tasks:
+    - name: Check for Ansible version
+      assert:
+        that: "ansible_version.full | version_compare('2.4', '>=')"
+        msg:  "Ansible version 2.4 and above are required. Found Ansible version {{ansible_version.full}}"
+
+    - name: Include user credential file
+      include_vars: "{{ inventory_dir }}/{{ user_creds_file | default('user_creds.yml') }}"
+      tags: always
+  tasks:
+    - name: Check if python-netaddr is installed
+      include_role:
+        name: common
+        tasks_from: check-for-package
+      vars:
+        package_name: python-netaddr
+
+    - include_role:
+        name: common
+        tasks_from: read-deployment
+
+    - include_role:
+        name: common
+        tasks_from: write-inventory-cache
+
+    - name: Gather last inventory cache MD5
+      stat:
+        path: "{{ inventory_dir }}/inventory-cache.md5.yml"
+      register: inventory_cache_md5_file_stat
+
+    - name: Read last inventory cache MD5
+      set_fact:
+        last_inventory_cache_md5_list: "{{ lookup('file', inventory_cache_md5_file_stat.stat.path) | from_yaml }}"
+      when: inventory_cache_md5_file_stat.stat.exists
+
+    - name: Set fact for changed deployment
+      set_fact:
+        is_deployment_changed: "{{ not inventory_cache_md5_file_stat.stat.exists or last_inventory_cache_md5_list != inventory_cache_md5_list }}"
+
+    - name: Display if skipping build
+      debug:
+        msg:
+          - "************************************************"
+          - "Skipping build because deployment did not change"
+          - "************************************************"
+      when: not is_deployment_changed
+
+    - block:
+
+      - include_role:
+          name: build
+
+      - name: Write inventory cache MD5 to file
+        copy: content="{{ inventory_cache_md5_list | to_nice_yaml }}" dest="{{ inventory_dir }}/inventory-cache.md5.yml"
+
+      when: is_deployment_changed
+

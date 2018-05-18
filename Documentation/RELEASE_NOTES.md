@@ -11,6 +11,7 @@
 * Eliminate check for exactly 3 XMPP users
 * Allow NSGV MAC address to be set
 * Support limit on VSC system name length without limiting hostname length
+* Fixed vnsutil-postdeploy to run the install script with the data_fqdn
 ## Release 2.3.1
 ### Resolved Issues
 * Under certain conditions, VSTAT upgrade would fail because we didn't use the _upgrade_ VM name for the new VM.
@@ -39,13 +40,14 @@ fatal: [vsc1-404.newport.npi -> localhost]: FAILED! => {
 ```
 This is a result of a bug in paramiko 2.3.1, the Python package that is installed with Ansible 2.4. Ansible uses paramiko to connect to SROS devices, e.g. VSC. We have a couple of workarounds to choose from.
 
-* Downgrade to paramiko==2.2.1.  
-`pip install paramiko==2.2.1`  
+* Downgrade to paramiko==2.2.1.
+`pip install paramiko==2.2.1`
 See also instructions for [debugging this error](http://docs.ansible.com/ansible/latest/network_debug_troubleshooting.html#unable-to-open-shell) and for [enabling network logging](http://docs.ansible.com/ansible/latest/network_debug_troubleshooting.html#enable-network-logging) in Ansible for guidance.
 
-* Remove the python-gssapi package.  
-`pip uninstall python-gssapi`  
+* Remove the python-gssapi package.
+`pip uninstall python-gssapi`
 The specific bug in paramiko that we are addressing is that it throws an exception loading the GSSAPI package. A possible alternative to downgrading paramiko to 2.2.1 is to remove the python-gssapi package. It isn’t needed, and removing it will not affect MetroAG operation.
+
 ## Release 2.3.0
 ### New Features and Enhancements
 *	Support Ansible 2.3/2.4 (Use Ansible==2.4)
@@ -126,3 +128,13 @@ The specific bug in paramiko that we are addressing is that it throws an excepti
 This is a result of a bug in Ansible 2.3.1. When making connections to network devices, such as a VSC, Ansible uses a “persistent connection” mode. That is, Ansible opens a socket to the network device and keeps it open for some time after the task that opened the connection completes. If another task wants to make a connection to the network device and the socket is still present, the new task reuses the socket, saving the overhead of creating a new socket. This was added for performance enhancement. Under some circumstances, notably when deploying the same VM over and over again, the socket file on disk that represents the connection isn’t properly cleaned up. When one of these stale files exists, it can sometimes cause the error, above.
 
 The work around is to manually delete the socket file. Ansible puts the persistent connection socket file in the directory `~/.ansble/pc/`. If you experience the error, above, try deleting the contents of `~/.ansible/pc/`, then re-running the playbook.
+
+## Release 3.0.0
+
+### New Procedures and Improvements
+
+* **Deprecation of build_vars.yml.**  There is no longer a single monolithic configuration file for MetroAG.  Configuration is specified through "deployments".  A tool is provided to convert an obsolute build_vars.yml file to a deployment.  See [Customization](Documentation/CUSTOMIZATION.md) for details on deployments.
+* **Deprecation of `build`.**  The user no longer needs to issue the `build` playbook.  This will be handled automatically and seamlessly by the MetroAG tool.  MetroAG also tracks changes and will skip steps not required if configuration is unmodified.
+* **Schema validation of deployment data.**  All configuration specified in a deployment is automatically validated against json-schema.org schemas.  This ensures that all required fields are set and every field has the correct syntax.  Any error will be found as early as possible and a specific error message will call out the exact problem.
+* **Workflows instead of playbooks.**  In order to simplify usage, the concept of `playbook` is being replaced by a `workflow`.  The .yml extension is no longer required.  Thus, issue `vsd_deploy` instead of `vsd_deploy.yml`.  The MetroAG tool is renamed from `metro-ansible` to `metroag`.  It now supports different arguments, including `--list` which displays all supported workflows.
+* **Cleanup of repo.**  The MetroAG repository has been cleaned.  Only tools useful for users are present in the root directory.  The internal workings of the tool have been moved to sub-directories like src/.
