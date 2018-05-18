@@ -56,7 +56,7 @@ Notable `upgrade_vars.yml` parameters are described below.
 Make sure that the <.tim> file is present in the VSC path /vsc/.
 
 * **VSTAT**
-Every VSTAT node that is to be upgraded uptil version 4.0.11 (or rolled back) requires a value for `vstat_nfs_server_with_folder`, which is used as a backup and restore location for ES files. The value defined here will be mounted on the VSTAT VM. Prior to upgrading, the server must export the folder. The only backup method supported by MetroAG is NFS. Use the following format: `host_or_ip:/nfs/exported/folder`.
+Every VSTAT node that is to be upgraded up to and including version 4.0.11 requires a value for `vstat_nfs_server_with_folder`, which is used as a backup and restore location for ES files. The value defined here will be mounted on the VSTAT VM. Prior to upgrading, the server must export the folder. The only backup method supported by MetroAG is NFS. Use the following format: `host_or_ip:/nfs/exported/folder`.
 
 Example: `vstat_nfs_server_with_folder: 135.227.181.233:/tmp/vstat/`
 
