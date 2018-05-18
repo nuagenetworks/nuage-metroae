@@ -1,0 +1,18 @@
+- block:
+  - name: Get VSD details from OpenStack
+    os_server_facts:
+      auth:
+        "{{ os_auth }}"
+      server: "{{ inventory_hostname }}"
+    register: vsd
+    delegate_to: "{{ ansible_deployment_host }}"
+
+  - name: Set vsd mgmt ip
+    set_fact:
+      vsd_mgmt_ip: "{{ vsd['ansible_facts']['openstack_servers'][0]['addresses'][mgmt_interface.network][0]['addr'] }}"
+  when: dhcp
+
+- name: Set vsd mgmt ip
+  set_fact:
+    vsd_mgmt_ip: "{{ mgmt_ip }}"
+  when: not dhcp

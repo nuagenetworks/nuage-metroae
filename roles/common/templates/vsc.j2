@@ -89,11 +89,23 @@ expected_num_gateway_ports : {{ item.expected_num_gateway_ports | default('0') }
 dhcp: {{ item.dhcp | default('True') }}
 
 {% if item.dhcp is defined and item.dhcp == False %}
-mgmt_ip: {{ item.mgmt_ip }}
+mgmt_interface:
+  ip: {{ item.mgmt_interface.mgmt_ip }}
+  {% if item.mgmt_interface.security_group is defined%} 
+  security_group: {{ item.mgmt_interface.security_group }}
+  {% endif %}
+  network: {{ item.mgmt_interface.network }}
+  subnet: {{ item.mgmt_interface.subnet }}
 {% endif %}
 
 {% if item.dhcp is defined and item.dhcp == False %}
-control_ip: {{ item.control_ip }}
+control_interface:
+  ip: {{ item.control_interface.mgmt_ip }}
+  {% if item.mgmt_interface.security_group is defined%} 
+  security_group: {{ item.control_interface.security_group }}
+  {% endif %}
+  network: {{ item.control_interface.network }}
+  subnet: {{ item.control_interface.subnet }}
 {% endif %}
 
 vsc_image: {{ item.vsc_image }}

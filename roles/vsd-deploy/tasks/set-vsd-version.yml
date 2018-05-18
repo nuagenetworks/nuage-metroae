@@ -1,0 +1,35 @@
+- name: Read the VSD version
+  shell: echo $VSD_VERSION
+  register: vsd_full_version
+
+- name: Set Major, Minor and Patch VSD version
+  set_fact:
+      vsd_major_version: "{{ vsd_full_version.stdout.split('.')[0] }}"
+      vsd_minor_version: "{{ vsd_full_version.stdout.split('.')[1] }}"
+      vsd_patch_version: "{{ vsd_full_version.stdout.split('.')[2].split('U')[0] }}"
+
+- debug: var=vsd_full_version.stdout verbosity=1
+
+- debug: var=vsd_major_version verbosity=1
+
+- debug: var=vsd_minor_version verbosity=1
+
+- debug: var=vsd_patch_version verbosity=1
+
+- block:
+
+  - name: Set VSD numbering for install
+    set_fact:
+        vsd_cluster_node_1: "{{ groups['vsds'][0] }}"
+        vsd_cluster_node_2: "{{ groups['vsds'][1] }}"
+        vsd_cluster_node_3: "{{ groups['vsds'][2] }}"
+    when: not nuage_upgrade
+
+  - name: Set VSD numbering for upgrade
+    set_fact:
+        vsd_cluster_node_1: "{{ groups['vsds'][1] }}"
+        vsd_cluster_node_2: "{{ groups['vsds'][2] }}"
+        vsd_cluster_node_3: "{{ groups['vsds'][0] }}"
+    when: nuage_upgrade
+
+  when: vsd_sa_or_ha | match ('ha')
