@@ -1,6 +1,7 @@
 ---
 
 - block:
+
   - name: Find location of CloudMgmt rpm
     find: path="/opt/vsd/Packages/"  pattern="CloudMgmt-vmware*rpm" recurse=yes
     register: rc_cloudmgmt_rpm
@@ -16,6 +17,10 @@
         -p {{ vcenter.password }} -r {{ vcenter.cluster }} --provider-vdc-id 1 --url https://{{ target_server }}/sdk
     args:    
       chdir: /opt/vsd/CloudMgmt-vmware
-  remote_user: "{{ vsd_username }}"
-  when: vcenter.create_dvs is defined and vcenter.create_dvs | bool
+
+  remote_user: "{{ vcin_username }}"
+  when:
+    - target_server_type == vcenter
+    - vcenter.create_dvs is defined
+    - vcenter.create_dvs | bool
   
