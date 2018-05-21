@@ -1,62 +1,62 @@
 # Deploying Nuage Networks Components in Amazon Web Services (AWS) with MetroAG (limited support)
 
-## Support
+## Supported Components
+MetroAG supports deployment of the following components in AWS.
+* VSD
+* VSTAT (ElasticSearch)
+* VNS Utils
+* NSGv
 
-The following components are supported for deployment on AWS:
+### Note
+As of this release, VSC deployment on AWS is not supported. Because it uses VxWorks as its operating system, the VSC image cannot be converted to an AMI. Likewise, deploying the VSC as a KVM image on a hypervisor in an AWS EC2 Instance has not been successful since using "nested virtualization" (deploying a VM inside a VM) is not supported by AWS. AWS may soon release a "bare metal" service that would allow VSC to be deployed on it, but it has not been tested, and it is not officially supported.
 
-- VSD
-- VSTAT (elastic search)
-- VNS Utils
-- NSGv
+## Main Steps for Deploying in AWS
+[1. Install Libraries](#1-install-libraries)
+[2. Upload or Import AMIs](#2-upload-or-import-amis)
+[3. Setup Virtual Private Cloud](#3-setup-virtual-private-cloud)
+[4. Configure Components](#4-configure-components)
+[5. Deploy Components](#5-deploy-components)
 
-The VSC is not currently supported for deployment in AWS.  The VSC image cannot be converted to an AMI due to the use of VxWorks as its operating system.  Using "nested virtualization" (deploying a VM inside a VM) is also not supported by AWS.  Thus, deploying the VSC as a KVM image on a hypervisor in an AWS EC2 instance has not been successful.  The VSC may be able to be deployed on the "bare metal" service soon to be released by AWS.  However, this has not yet been attempted by the MetroAG team and is not officially supported.
+## 1. Install Libraries
+MetroAG uses the [cloudformation](https://docs.ansible.com/ansible/latest/modules/cloudformation_module.html) Ansible module for deploying components in AWS. This module requires the python-boto and python-boto3 python libraries. Use one of the following three methods to install these required libraries on the MetroAG host.
 
-## Installation Steps
-
-1. Install prerequisites
-2. Upload or import Nuage AMI images
-3. Setup AWS Virtual Private Cloud (VPC)
-4. Configure components in build_vars.yml
-5. Deploy using MetroAG
-
-## Prerequisite installation
-
-MetroAG uses the cloudformation Ansible module for deploying to AWS.  This module requires the python-boto and python-boto3 python libraries.  These should be installed on the MetroAG host using pip, yum or apt.
+#### Method 1: pip
 
     pip install boto
     pip install boto3
 
-OR
+#### Method 2: yum
 
     yum install python-boto
     yum install python-boto3
 
-OR
+#### Method 3: apt
 
     apt-get install python-boto
     apt-get install python-boto3
 
-## Upload or import Nuage component AMI images
+## 2. Upload or Import AMIs
+Amazon Machine Images (AMIs) are used to run instances in EC2. For each Nuage Networks component that you want to deploy, you'll need to upload or import an AMI to AWS. The AMI identifiers are provided to MetroAG for deployment.
 
-AWS uses Amazon Machine Image (AMI) as the format to run instances in EC2.  An AMI for each Nuage component has to be uploaded or imported into AWS.  The AMI identifiers are provided to MetroAG for deployment.
-
-## Setup an AWS Virtual Private Cloud
-
-MetroAG requires a VPC to be defined and deployed in AWS before installing any Nuage components.  An example aws-example-vpc.yml is provided as a basic VPC in the examples directroy.  The VPC must define the network interfaces to be used by each component.  It should also provide connectivity between various components and Internet access (either directly or outgoing only through NAT).  It is strongly recommended to define security policies, IP addressing and DNS as well.  The following define the recommended subnets for each component.  Note that the Access subnet is expected to have direct Internet access and the management subnet has outgoing only access.
+## 3. Setup Virtual Private Cloud
+Before installing Nuage Networks components, you must define and deploy a virtual private cloud (VPC) in AWS. An example file ([aws-example-vpc.yml](../examples/aws-example-vpc.yml)) of a basic VPC is provided in the [examples directory](../examples/). This VPC must define the network interfaces that will be used by each component. The VPC should also provide connectivity between various components and Internet access (either directly or outgoing only through NAT). We strongly recommend that you define security policies, IP addressing and DNS. The recommended subnets for each component are defined below. Note that the access subnet is expected to have direct Internet access and the management subnet to have outgoing only access.
 
 Component | Subnet1 | Subnet2
 --------- | :---: | :---:
 VSD | Mgmt |
-VSC | Mgmt | Data
 VSTAT | Mgmt |
 VNS Util | Mgmt | Data
 NSGv | Access | Data
 
-## Configure components in build_vars.yml
+## 4. Configure Components
+Configuring components for AWS is similar to configuring for other server types. See [CUSTOMIZE.md](CUSTOMIZE.md) for details on standard deployments. The configuration files for AWS deployments require a few additional specifications.
+### user_creds.yml
+AWS access can be specified as `aws_access_key` and secret keys can be specified as `aws_secret_key`. If AWS access is not specified, values will be taken from the environment variables `AWS_ACCESS_KEY` and `AWS_SECRET_KEY`.
 
-Configuring components for AWS is very similar as other server types.  The
-target_server_type is "aws" and other fields are specified as normal.  AWS does
-require the following extra fields to be specified:
+### build_vars.yml
+Set `target_server_type` to "aws".
+
+AWS requires that the following fields be specified.
 
 - aws_region: The AWS region (i.e. us-east-1)
 - aws_ami_id: Identifier for the AMI image to be used for the component
@@ -64,25 +64,8 @@ require the following extra fields to be specified:
 - aws_key_name: The name of the key pair used for access to the component
 - aws_mgmt_eni/aws_data_eni/aws_access_eni: The elastic network interface identifiers from the deployed VPC for each required subnet for the component.
 
-In addition the AWS access and secret keys can be specified as aws_access_key
-and aws_secret_key in user_creds.yml.  If not specified, they will be taken
-from the environment variables AWS_ACCESS_KEY and AWS_SECRET_KEY.
-
-## Deploy using MetroAG
-
-After satisfying all the prerequites and configuring components, MetroAG can
-be issued as normal.
-
-    ./metro-ansible install_everything
-
-Splitting up the tasks using predeploy, deploy and postdeploy also work.
-
-## NSGv only provision VPC
-
-For the NSGv component, a special workflow is provided that can deploy an AWS
-VPC for that component only.  The can be used when it is desired to install
-NSGv in AWS only without other components.  The following configuration can
-be specified for each NSGv in mynsgvs in build_vars.yml to provision the VPCs:
+#### Alternative Specification for NSGv Only Deployments
+If you'd like to deploy only NSGv (no other components), then MetroAG can optionally provision a suitable VPC.  Add the following configuration to the mynsgvs section of build_vars.yml for each NSGv:
 
     provision_vpc: {
         cidr: "10.4.0.0/16",
@@ -90,7 +73,11 @@ be specified for each NSGv in mynsgvs in build_vars.yml to provision the VPCs:
         nsg_lan_subnet: "10.4.20.0/24",
         private_subnet: "10.4.30.0/24" }
 
-The CIDRs for the VPC, WAN interface, LAN interface and private subnet are
-required to be specified.  When provisioning a VPC in this way, the elastic
-network interface identifiers aws_data_eni and aws_access_eni for the NSGv do
-not need to be specified as they are discovered from the created VPC.
+The CIDRs for the VPC, WAN interface, LAN interface and private subnet must be specified. When provisioning a VPC in this way, the elastic network interface identifiers `aws_data_eni` and `aws_access_eni` for the NSGv do not need to be specified as they are discovered from the created VPC.
+
+## 5. Deploy Components
+After you have set up the environment and configured your components, you can use MetroAG to deploy your components with a single command.
+
+    ./metro-ansible install_everything
+
+Alternatively, you can deploy individual components or perform individual tasks such as predeploy, deploy and postdeploy. See [DEPLOY.md](DEPLOY.md) for details.
