@@ -4,6 +4,20 @@
 #
 target_server_type: {{ item.target_server_type | default('kvm') }}
 hostname: {{ item.hostname }}
+vsd_fqdn: {{ item.vsd_fqdn }}
+
+{% if item.vsc_mgmt_static_route_list is defined %}
+
+vsc_mgmt_static_route_list:
+
+{% for route in item.vsc_mgmt_static_route_list %}
+  - {{ route }}
+{% endfor %}
+
+{% else %}
+vsc_mgmt_static_route_list: [ 0.0.0.0/1, 128.0.0.1/1 ]
+{% endif %}
+
 
 {% if item.system_name is defined %}
 system_name: {{ item.system_name }}
@@ -32,18 +46,6 @@ control_ip_vprn: {{ item.ctrl_ip_vprn }}
 {% endif %}
 control_netmask_prefix: {{ item.ctrl_netmask_prefix }}
 
-{% if item.vsc_mgmt_static_route_list is defined %}
-
-vsc_mgmt_static_route_list:
-
-{% for route in item.vsc_mgmt_static_route_list %}
-  - {{ route }}
-{% endfor %}
-
-{% else %}
-vsc_mgmt_static_route_list: [ 0.0.0.0/1, 128.0.0.1/1 ]
-{% endif %}
-
 {% if 'install' in vsc_operations_list %}
 {% if item.target_server_type | match("kvm") %}
 qcow2_path: {{ qcow2_path|default('qcow2_path not defined') }}
@@ -70,7 +72,6 @@ vcenter:
 
 {% endif %}
 
-vsd_fqdn: {{ item.vsd_fqdn }}
 
 {% if item.system_ip is defined %}
 system_ip: {{ item.system_ip }}
@@ -90,37 +91,22 @@ dhcp: {{ item.dhcp | default('True') }}
 
 {% if item.dhcp is defined and item.dhcp == False %}
 mgmt_interface:
-  ip: {{ item.mgmt_interface.mgmt_ip }}
-  {% if item.mgmt_interface.security_group is defined%} 
-  security_group: {{ item.mgmt_interface.security_group }}
-  {% endif %}
+  ip: {{ item.mgmt_interface.ip }}
   network: {{ item.mgmt_interface.network }}
   subnet: {{ item.mgmt_interface.subnet }}
-{% endif %}
+mgmt_ip: {{ item.mgmt_interface.ip }}
 
-{% if item.dhcp is defined and item.dhcp == False %}
 control_interface:
-  ip: {{ item.control_interface.mgmt_ip }}
-  {% if item.mgmt_interface.security_group is defined%} 
-  security_group: {{ item.control_interface.security_group }}
-  {% endif %}
+  ip: {{ item.control_interface.ip }}
   network: {{ item.control_interface.network }}
   subnet: {{ item.control_interface.subnet }}
+control_ip: {{ item.control_interface.ip }}
+control_netmask_prefix: {{ item.control_interface.prefix }}
 {% endif %}
+
 
 vsc_image: {{ item.vsc_image }}
 vsc_flavor: {{ item.vsc_flavor }}
-vsc_mgmt_network: {{ item.vsc_mgmt_network }}
-
-{% if item.dhcp is defined and item.dhcp == False %}
-vsc_mgmt_subnet: {{ item.vsc_mgmt_subnet }}
-{% endif %}
-
-vsc_control_network: {{ item.vsc_control_network }}
-
-{% if item.dhcp is defined and item.dhcp == False %}
-vsc_control_subnet: {{ item.vsc_control_subnet }}
-{% endif %}
 
 {% if item.infra_server_name is defined %}
 infra_server_name: {{ item.infra_server_name }}
@@ -128,8 +114,6 @@ infra_server_name: {{ item.infra_server_name }}
 
 {% endif %}
 
-vsc_username: {{ vsc_username|default('admin') }}
-vsc_password: {{ vsc_password|default('admin') }}
 
 {% if 'upgrade' in vsc_operations_list %}
 vsc_tim_path: {{ vsc_tim_path|default('vsc_tim_path not defined') }}

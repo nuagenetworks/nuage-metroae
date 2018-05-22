@@ -11,6 +11,20 @@
     infra_ip: "{{ infra_server['ansible_facts']['openstack_servers'][0]['private_v4'] }}"
 
 - block:
+
+  - name: Update DNS entries
+    lineinfile:
+      line: "{{ vsd_mgmt_ip }}  {{ inventory_hostname }}"
+      dest: "/etc/hosts"
+    delegate_to: "{{ infra_ip }}"
+  
+  - name: Update XMPP DNS entries for VSD cluster deployments
+    lineinfile:
+      line: "{{ vsd_mgmt_ip }}  xmpp.{{ dns_domain }}"
+      dest: "/etc/hosts"
+    delegate_to: "{{ infra_ip }}"
+    when: vsd_sa_or_ha | match('ha')
+
   - name: Restart DNS service
     shell: service dnsmasq restart
     delegate_to: "{{ infra_ip }}"
@@ -23,4 +37,5 @@
 
   - name: Add nameserver
     command: echo "{{ infra_ip }}" >> /etc/resolv.conf
+
   remote_user: "root"
