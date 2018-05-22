@@ -12,8 +12,8 @@
 
   - name: Check if resolved IP is equal to management IP
     assert:
-      that: resolved_ip_result.stdout == vsd_mgmt_ip
-      msg: "Resolved {{ resolved_ip_result.stdout }} address is not equal to management IP {{ vsd_mgmt_ip }} for {{ hostname }}"
+      that: resolved_ip_result.stdout == mgmt_ip
+      msg: "Resolved {{ resolved_ip_result.stdout }} address is not equal to management IP {{ mgmt_ip }} for {{ hostname }}"
   when: not target_server_type | match("heat") or not dhcp
 
 - name: Ping hostname
@@ -24,7 +24,7 @@
 
 - block:
   - name: Ping IP address
-    command: ping -c 1 {{ vsd_mgmt_ip }}
+    command: ping -c 1 {{ mgmt_ip }}
     ignore_errors: yes
     register: mgmt_ip_ping_result
     delegate_to: localhost
@@ -32,12 +32,12 @@
   - name: Assert reachability of hostname is the same as management IP
     assert:
       that: "host_ping_result.rc != 0 or mgmt_ip_ping_result.rc == 0"
-      msg:  "Response received from hostname {{ hostname }} but not from management IP {{ vsd_mgmt_ip }}. Quitting."
+      msg:  "Response received from hostname {{ hostname }} but not from management IP {{ mgmt_ip }}. Quitting."
 
   - name: Assert reachability of management IP is the same as hostname
     assert:
       that: "host_ping_result.rc == 0 or mgmt_ip_ping_result.rc != 0"
-      msg:  "Response received from management IP {{ vsd_mgmt_ip }} but not from hostname {{ hostname }} Quitting."
+      msg:  "Response received from management IP {{ mgmt_ip }} but not from hostname {{ hostname }} Quitting."
 
   when: not target_server_type | match("heat") or not dhcp
 
