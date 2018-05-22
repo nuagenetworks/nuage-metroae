@@ -67,7 +67,7 @@ if [ "$1" == "upgrade-vsd" ]; then
   ansible-playbook -i hosts --key-file=/files/id_rsa playbooks/vsd_ha_upgrade_shutdown_3.yml $@
   ansible-playbook -i hosts --key-file=/files/id_rsa playbooks/vsd_ha_upgrade_predeploy_3.yml $@
   ansible-playbook -i hosts --key-file=/files/id_rsa playbooks/vsd_ha_upgrade_deploy_3.yml $@
-  ansible-playbook -i hosts --key-file=/files/id_rsa playbooks/vsd_upgrade_complete_flag.yml $@
+  ansible-playbook -i hosts --key-file=/files/id_rsa playbooks/vsd_upgrade_complete.yml $@
   exit $?
 fi
 if [ "$1" == "upgrade-vsc" ]; then
