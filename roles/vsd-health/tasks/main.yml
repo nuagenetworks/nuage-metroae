@@ -1,48 +1,49 @@
 ---
 - name: Wait for VM to be ready
-  local_action:
-    module: wait_for
-    port: "22"
-    host: "{{ mgmt_ip }}"
-    search_regex: OpenSSH
-    delay: 1
+  include_role:
+    name: common
+    tasks_from: wait-for-ssh
+  vars:
+    ssh_host: "{{ mgmt_ip }}"
 
 - name: Clean known_hosts
   known_hosts:
     name: "{{ mgmt_ip }}"
     state: absent
   delegate_to: localhost
+  no_log: True
+  ignore_errors: True
 
 - include: report_header.yml
 
 - name: Get current version of VSD software
   command: echo $VSD_VERSION
   register: vsd_version
-  remote_user: "root"
+  remote_user: "{{ vsd_username }}"
 
 - name: Write VSD version to json file
   nuage_append: filename="{{ report_path }}" text="{{ vsd_version.stdout | to_nice_json}}\n"
-  delegate_to: "{{ ansible_deployment_host }}"
-  remote_user: "{{ ansible_sudo_username }}"
+  delegate_to: localhost
 
 - name: Get current network config of all VSD nodes
   network_info:
     mac_addr: False
   register: net_conf
-  remote_user: root
+  remote_user: "{{ vsd_username }}"
 
 - name: Print network config when verbosity >= 1
   debug: var=net_conf.info verbosity=1
 
 - name: Write network config to json file
   nuage_append: filename="{{ report_path }}" text="{{ net_conf.info | to_nice_json}}\n"
-  delegate_to: "{{ ansible_deployment_host }}"
-  remote_user: "{{ ansible_sudo_username }}"
+  delegate_to: localhost
+
+- include: monit_status.yml
 
 - name: Execute list_p1db command on VSD(s)
   command: "{{ p1db_cmd }}"
   register: list_p1db_output
-  remote_user: root
+  remote_user: "{{ vsd_username }}"
 
 - name: Print ejabberd list_p1db output when verbosity >= 1
   debug: var=list_p1db_output verbosity=1
@@ -52,13 +53,12 @@
 
 - name: Write p1bd JSON to file
   nuage_append: filename="{{ report_path }}" text="{{ inventory_hostname }} {{ ejabberd_p1db_json|to_nice_json }}\n"
-  remote_user: "{{ ansible_sudo_username }}"
-  delegate_to: "{{ ansible_deployment_host }}"
+  delegate_to: localhost
 
 - name: Execute list_cluster command on VSD(s)
   command: "{{ ejabber_cluster_list_command }}"
   register: list_cluster_output
-  remote_user: root
+  remote_user: "{{ vsd_username }}"
 
 - name: Print ejabberd list_cluster_output when verbosity >= 1
   debug: var=list_cluster_output verbosity=1
@@ -68,13 +68,12 @@
 
 - name: Write cluster JSON to file
   nuage_append: filename="{{ report_path }}" text="{{ inventory_hostname }} {{ ejabberd_cluster_json|to_nice_json }}\n"
-  remote_user: "{{ ansible_sudo_username }}"
-  delegate_to: "{{ ansible_deployment_host }}"
+  delegate_to: localhost
 
 - name: Excute ejabberd_connected_users_command command on VSD(s)
   command: "{{ ejabberd_connected_users_command }}"
   register: user_list
-  remote_user: root
+  remote_user: "{{ vsd_username }}"
 
 - name: Print ejabberd connected_users output when verbosity >= 1
   debug: var=user_list verbosity=1
@@ -84,8 +83,15 @@
 
 - name: Write users JSON to file
   nuage_append: filename="{{ report_path }}" text="{{ inventory_hostname }} {{ ejabberd_users_json|to_nice_json }}\n"
-  remote_user: "{{ ansible_sudo_username }}"
-  delegate_to: "{{ ansible_deployment_host }}"
+  delegate_to: localhost
+
+- name: Get VSD deployment mode
+  include_role:
+    name: common
+    tasks_from: vsd-node-info.yml
+  vars:
+    vsd_hostname: "{{ vsd_fqdn }}"
+  run_once: true
 
 - block:
   - name: Verify cna user is found in connected_users of ejabberd in vsds
@@ -102,8 +108,6 @@
     assert:
       that: "user_list.stdout|search('keyserver@{{ vsd_fqdn }}')"
       msg: "keyserver@{{ vsd_fqdn }} could not be found in '/opt/ejabberd/bin/ejabberdctl connected_users'"
-  when: (vsd_sa_or_ha == 'ha') or (vsd_sa_or_ha == 'HA')
-
-- include: monit_status.yml
+  when: vsd_sa_or_ha|match('ha')
 
 - include: report_footer.yml

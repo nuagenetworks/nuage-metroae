@@ -1,9 +1,4 @@
 ---
-
-- name: Set unzip user value
-  set_fact:
-    unzip_user: "{{ unzip_user|default('root') }}"
-
 - name: Verify that the tar.gz directory is specified
   assert: {
     that: nuage_zipped_files_dir is defined,
@@ -17,7 +12,7 @@
 
 - name: Verify that the tar.gz directory exists
   assert: {
-    that: tar_gz.stat.isdir is defined and tar_gz.stat.isdir,
+    that: tar_gz.stat.isdir is defined and tar_gz.stat.isdir or tar_gz.stat.islnk is defined and tar_gz.stat.islnk,
     msg: "{{ nuage_zipped_files_dir }} is not a valid directory"
   }
 
@@ -84,15 +79,23 @@
 ###################
 
 - block:
-  - name: Find and unzip VSD Stats Archive
+  - name: Find and unzip VSTAT Stats Archive
     include: unpack_actions.yml
     vars:
       unpack_pattern:        "Nuage-elastic-[0-9].*"
       unpack_pattern_regexp:  True
       unpack_target_folder:  "vstat"
       unpack_register_var:   "rc_vstat_archive_files"
+  
+  - name: Find and unzip VSTAT Stats upgrade Archive
+    include: unpack_actions.yml
+    vars:
+      unpack_pattern:        "Nuage-elastic-upgrade-[0-9].*"
+      unpack_pattern_regexp:  True
+      unpack_target_folder:  "vstat"
+      unpack_register_var:   "rc_vstat_upgrade_archive_files"
 
-  - name: Find and unzip VSD Stats backup Archive
+  - name: Find and unzip VSTAT Stats backup Archive
     include: unpack_actions.yml
     vars:
       unpack_pattern:        "Nuage-elastic-backup-[0-9].*"
@@ -163,8 +166,25 @@
       unpack_pattern:        "Nuage-VRS*-vmware*"
       unpack_target_folder:  "vrs/vmware"
       unpack_register_var:   "rc_vrs_vmware_archive_files"
+
   tags:
     - vrs
+
+
+################
+# Selinux
+#################
+- block:
+  - name: Find and unzip selinux package
+    include: unpack_actions.yml
+    vars:
+      unpack_pattern:        "Nuage-selinux-*"
+      unpack_target_folder:  "selinux"
+      unpack_register_var:   "rc_selinux_archive_files"
+
+  tags:
+    - vrs
+
 
 ################
 # Libnetwork
@@ -190,7 +210,6 @@
     file:
       name:  "{{ nuage_unzipped_files_dir }}/vns"
       state: absent
-    remote_user: "{{ unzip_user }}"
 
   # for releases before 4.0.R9 when all VNS packages were archived to one file
   - name: Find and unzip VNS Archive for releases before 4.0.R9

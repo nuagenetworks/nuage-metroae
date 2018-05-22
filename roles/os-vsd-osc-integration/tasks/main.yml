@@ -1,0 +1,37 @@
+---
+- name: Get OSC IP from OS facts
+  os_server_facts:
+    auth:
+      "{{ os_auth }}"
+    server: "{{ inventory_hostname }}"
+  register: osc_server
+  delegate_to: 127.0.0.1
+
+- name: Set OSC ip
+  set_fact:
+    osc_mgmt_ip: "{{ osc_server['ansible_facts']['openstack_servers'][0]['private_v4'] }}"
+
+- name: Set vsd mgmt ip
+  set_fact:
+    vsd_ip: "{{ vsd_ip }}"
+  when: vsd_ip is defined
+
+- block:
+  - name: Get vsd mgmt IP
+    os_server_facts:
+      auth:
+        "{{ os_auth }}"
+      server: "{{ vsd_server_name }}"
+    register: vsc_server
+    delegate_to: 127.0.0.1
+
+  - name: Set vsd mgmt ip
+    set_fact:
+      vsd_ip: "{{ vsc_server['ansible_facts']['openstack_servers'][0]['private_v4'] }}"
+  when: vsd_server_name is defined
+
+- name: Include common role for vsd-osc intergration
+  import_role:
+    name: common
+    tasks_from: os-vsd-osc-integration
+    vars_from: os-vsd-osc-integration

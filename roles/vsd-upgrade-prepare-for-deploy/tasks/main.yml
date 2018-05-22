@@ -1,13 +1,12 @@
 - name: Wait for VSD ssh to be ready
-  local_action:
-    module: wait_for
-    port: "22"
-    host: "{{ mgmt_ip }}"
-    search_regex: OpenSSH
-    delay: 1
+  include_role:
+    name: common
+    tasks_from: wait-for-ssh
+  vars:
+    ssh_host: "{{ mgmt_ip }}"
 
 - name: Create the directory on VSD to store backup files in
-  file:  
+  file:
     path: "/opt/vsd/data"
     state: directory
   remote_user: root
@@ -17,7 +16,7 @@
     src: "{{ item }}"
     dest: "/opt/vsd/data/"
   with_fileglob:
-    - "{{metro_backup_root}}/backup-{{ inventory_hostname }}-latest/*.tar.gz"
+    - "{{metro_backup_root}}/backup-{{ groups['vsds'][0] }}-latest/*.tar.gz"
   remote_user: root
 
 - name: Delete log files from /opt/vsd/data/ directory
@@ -35,3 +34,8 @@
   assert:
     that: "lst_files.examined == 3"
     msg: "/opt/vsd/data does not contain exactly 3 files"
+
+- name: Reset keystore password to default, if changed
+  include_role:
+    name: common
+    tasks_from: vsd-reset-keystorepass

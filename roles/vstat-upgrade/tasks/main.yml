@@ -1,22 +1,21 @@
-- name: Shutdown/Destroy Current vstat node(s)
-  include_role: 
-    name: vstat-destroy
-  vars:
-    preserve_vstat: True
-    rollback: False
-
-- name: Deploy VSTAT nodes with new version
+- name: Skip vstat upgrade for versions that do not require upgrade
   include_role:
-    name: vstat-predeploy
+    name: common
+    tasks_from: vstat-upgrade-check.yml
 
-- name: Wait for VSTAT ssh to be ready
-  local_action:
-    module: wait_for
-    port: "22"
-    host: "{{ mgmt_ip }}"
-    search_regex: OpenSSH
-    delay: 1
+- name: Display if skipping predeploy
+  debug:
+    msg:
+      - "****************************************************"
+      - "Skipping VSTAT upgrade because it is not needed"
+      - "****************************************************"
+  when: skip_vstat_upgrade
 
-- name: Bring up new VSTAT node(s)
-  include_role:
-    name: vstat-deploy
+- block:
+  - include: vstat_in_place_upgrade.yml
+    remote_user: root
+    when: vstat_in_place_upgrade
+
+  - include: vstat_out_of_place_upgrade.yml
+    when: not vstat_in_place_upgrade
+  when: not skip_vstat_upgrade

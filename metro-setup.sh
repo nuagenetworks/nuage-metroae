@@ -111,7 +111,7 @@ function printn() {
 # Check if an executable exists
 # param: executable
 ###############################################################################
-function exists() { 
+function exists() {
   printn "Checking if $1 exists... ";
   which "*" &> $LOG;
   check_retcode $?;
@@ -169,9 +169,14 @@ function check_os_version() {
 # param: packageName
 ###############################################################################
 yum_install() {
-  printn "Installing $1... "
-  yum install -y $1 >> $LOG 2>&1
-  check_retcode $?
+  IFS=$'\n'
+  for i in $(cat yum_requirements.txt)
+  do
+    unset IFS
+    printn "Installing $i..."
+    yum -y install "$i" >> $LOG 2>&1
+    check_retcode $?
+  done
 }
 
 ###############################################################################
@@ -179,8 +184,8 @@ yum_install() {
 # param: module
 ###############################################################################
 pip_install() {
-  printn "Installing $1... "
-  pip install $1 >> $LOG 2>&1
+  printn "Installing pip packages"
+  pip install -r pip_requirements.txt $1 >> $LOG 2>&1
   check_retcode $?
 }
 
@@ -214,22 +219,10 @@ function main() {
   check_os_version;
 
   # yum packages
-  yum_install "epel-release"
-  yum_install "python2-pip"
-  yum_install "python-devel.x86_64"
-  yum_install "openssl-devel"
-  yum_install "@Development tools"
-  yum_install "sshpass"
-  yum_install "git"
+  yum_install
 
-  # pip modules
-  pip_install "ansible==2.4.0"
-  pip_install "netmiko"
-  pip_install "netaddr"
-  pip_install "ipaddr"
-  pip_install "pexpect"
-  pip_install "vspk"
-  pip_install "pyvmomi"
+  #Install pip packages through modules specified in text file and exit gracefully
+  pip_install
 
   # Check for any failures and print appropriate message
   if [[ $FAILED -ne 0 ]]

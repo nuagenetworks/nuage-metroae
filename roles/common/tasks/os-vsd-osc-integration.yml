@@ -1,0 +1,247 @@
+- name: Add CSP root to CMS users group
+  local_action: command python {{ role_path }}/files/cms_group.py {{ playbook_dir }} {{ vsd_ip }}
+  register: output
+  # TOOD: replace with call to nuage_vspk module
+
+- name: Find the upgrade tar file
+  find:
+    paths: "{{ plugin_dir }}/{{ inventory_hostname }}/"
+    patterns: "nuage-openstack-upgrade-*.tar.gz"
+  register: tar_file
+
+- block:
+
+  - name: Create temporary directory to hold nuage openstack plugins
+    file: path={{ plugin_dir }}/{{ inventory_hostname }} state=directory
+
+  - name: Create temporary directory to hold upgrade scripts
+    file: path={{ plugin_dir }}/{{ inventory_hostname }}/upgrade state=directory
+
+  - name: Copy Nuage OS plugins to temporary directory
+    copy:
+      src: "{{ nuage_os_package_path }}/{{ nuage_os_release }}/{{ nuage_target_architecture }}/{{ item }}"
+      dest: "{{ plugin_dir }}/{{ inventory_hostname }}/{{ item }}"
+    with_items: 
+      - "{{ nuage_os_package_file_name_list }}"
+
+  remote_user: "{{ target_server_username }}"
+
+- name: Find Nuage upgrade tar file
+  find:
+    paths: "{{ nuage_os_package_path }}/"
+    patterns: "nuage-openstack-upgrade-*.tar.gz"
+  register: tar_file
+  delegate_to: 127.0.0.1
+
+- block:
+
+  - name: Copy Nuage upgrade tar file to temporary directory
+    copy: src={{ tar_file.files[0].path }} dest={{ plugin_dir }}/{{ inventory_hostname }}/
+
+  # BEGIN Horizon changes
+  - name: Delete customization line if present from previous run
+    lineinfile:
+      dest: "{{ horizon_dashboard }}"
+      line: "    'customization_module': 'nuage_horizon.customization',"
+      state: absent
+
+  - name: Add nuage customization line to horizon dashboard settings
+    lineinfile:
+      dest: "{{ horizon_dashboard }}"
+      insertafter: UNAUTHORIZED},
+      line: "    'customization_module': 'nuage_horizon.customization',"
+
+  - name: Delete horizon extension for CentOS machines from previous run
+    blockinfile:
+      path: "{{ centos_horizon_vhost }}"
+      content: |
+        {{ nuage_content }}
+      state: absent
+    when:
+      - ansible_distribution == 'CentOS'
+
+  - name: Configure horizon extension for CentOS machines
+    blockinfile:
+      path: "{{ centos_horizon_vhost }}"
+      insertafter: "## Alias declarations for resources outside the DocumentRoot"
+      content: |
+        {{ nuage_content }}
+    when:
+      - ansible_distribution == 'CentOS'
+
+  - name: Delete horizon extension for RedHat machines from previous run
+    blockinfile:
+      path: "{{ redhat_horizon_vhost }}"
+      content: |
+        {{ nuage_content }}
+      state: absent
+    when:
+      - ansible_distribution == 'RedHat'
+
+  - name: Configure horizon extension for RHEL machines
+    blockinfile:
+      path: "{{ redhat_horizon_vhost }}"
+      insertafter: "## Alias declarations for resources outside the DocumentRoot"
+      content: |
+        {{ nuage_content }}
+    when:
+      - ansible_distribution == 'RedHat'
+
+  - name: Delete nuage css part in horizon settings from previous run
+    lineinfile:
+      dest: "{{ nuage_css_file }}"
+      line: "{{ nuage_css_line }}"
+      state: absent
+
+  - name: Add nuage css part in horizon settings
+    lineinfile:
+      dest: "{{ nuage_css_file }}"
+      line: "#{{ nuage_css_line }}"
+      state: present
+  # END Horizon changes 
+
+  - name: Restart httpd
+    service:
+      name: httpd
+      state: restarted
+
+  # BEGIN Nova changes
+  - name: Configure nova to use neutron
+    blockinfile:
+      dest: "{{ nova_conf_file }}"
+      insertafter: "password_length"
+      content: |
+        use_neutron = True
+
+  - name: Delete ovs bridge in nova
+    lineinfile:
+      dest: "{{ nova_conf_file }}"
+      regexp: 'ovs_bridge.*'
+      state: absent
+
+  - name: Set ovs bridge to alubr0 in nova
+    lineinfile:
+      dest: "{{ nova_conf_file }}"
+      insertbefore: "Specifies the name of an integration bridge interface used by OpenvSwitch"
+      line: 'ovs_bridge = alubr0'
+  # END Nova changes
+
+  # BEGIN Neutron changes
+  - name: Create dir for nuage plugin in neutron folder
+    file:
+      path: "{{ neutron_nuage_plugin_folder }}"
+      state: directory
+
+  - name: Copy ini contents to created file
+    template:
+      src=nuage_plugin.ini.j2
+      dest=/etc/neutron/plugins/nuage/nuage_plugin.ini
+
+  - name: Remove neutron plugin file
+    file:
+      path: "/etc/neutron/plugin.ini"
+      state: absent
+
+  - name: Create symbolic link
+    file:
+      src: /etc/neutron/plugins/nuage/nuage_plugin.ini
+      dest: /etc/neutron/plugin.ini
+      state: link
+
+  - name: Delete core plugin in neutron
+    lineinfile:
+      dest: "{{ neutron_conf_file }}"
+      regexp: 'core_plugin.*'
+      state: absent
+
+  - name: Set core plugin in neutron to nuage
+    lineinfile:
+      dest: "{{ neutron_conf_file }}"
+      insertafter: "The core plugin Neutron will use"
+      line: 'core_plugin = ml2'
+
+  - name: Delete service plugin in neutron
+    lineinfile:
+      dest: "{{ neutron_conf_file }}"
+      regexp: 'service_plugins.*'
+      state: absent
+
+  - name: Set service plugin in neutron to nuage
+    lineinfile:
+      dest: "{{ neutron_conf_file }}"
+      insertafter: "The service plugins Neutron will use"
+      line: 'service_plugins = NuageL3, NuageAPI, NuagePortAttributes'
+
+  - name: Delete other mechanism drivers in ml2 plugin
+    lineinfile:
+      dest: "{{ ml2_conf_file }}"
+      regexp: "mechanism_drivers\\s+="
+      state: absent
+
+  - name: Delete other extension drivers in ml2 plugin
+    lineinfile:
+      dest: "{{ ml2_conf_file }}"
+      regexp: "extension_drivers\\s+="
+      state: absent
+
+  - name: Add nuage mechanism driver to ml2 plugin
+    lineinfile:
+      dest: "{{ ml2_conf_file }}"
+      insertafter: "the neutron.ml2.mechanism_drivers namespace"
+      line: 'mechanism_drivers = nuage'
+
+  - name: Add nuage extesnion driver to ml2 plugin
+    lineinfile:
+      dest: "{{ ml2_conf_file }}"
+      insertafter: "port_security,qos"
+      line: 'extension_drivers = nuage_subnet, nuage_port, port_security'
+
+  - name: Delete the exec line in neutron-server service file
+    lineinfile:
+      dest: "{{ neutron_service_file }}"
+      regexp: "^ExecStart=/usr/bin/neutron-server"
+      state: absent
+
+  - name: Add the exec line in neutron-server service file 
+    lineinfile:
+      dest: "{{ neutron_service_file }}"
+      insertafter: "User=neutron"
+      line: "{{ neutron_service_exec }}"
+      state: present
+
+  - name: Run the DB migration script
+    shell: "{{ upgrade_db_cmd }}"
+  # END Neutron Changes
+
+  - name: Stop OS neutron services
+    service:
+      name: "{{ item }}"
+      state: stopped
+    with_items: "{{ neutron_services }}"
+
+  - name: Disable OS neutron services
+    service:
+      name: "{{ item }}"
+      enabled: no
+    with_items: "{{ neutron_services }}"
+
+  - name: Find the upgrade tar file
+    find:
+      paths: "{{ plugin_dir }}/{{ inventory_hostname }}/"
+      patterns: "nuage-openstack-upgrade-*.tar.gz"
+    register: tar_file
+
+  - name: Extract upgrade scripts to folder
+    shell: "tar xvfz {{ tar_file.files[0].path }} -C {{ plugin_dir }}/{{ inventory_hostname }}/upgrade"
+
+  - name: Integrate OSC with VSD
+    command: "{{ generate_cms_id }}"
+    args:
+      chdir: "{{ plugin_dir }}/{{ inventory_hostname }}/upgrade"
+
+  - name: Restart neutron service
+    service:
+      name: neutron-server
+      state: restarted
+
+  remote_user: "{{ target_server_username }}"

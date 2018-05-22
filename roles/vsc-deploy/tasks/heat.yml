@@ -19,7 +19,7 @@
   set_fact:
     heat_vsc_creds:
       host: "{{ vsc_mgmt_ip }}"
-      username: "{{ vsc_user|default('admin') }}"
+      username: "{{ vsc_username|default('admin') }}"
       password: "{{ vsc_password|default('admin') }}"
 
 - name: Clean known_hosts of VSC's
@@ -27,6 +27,8 @@
     name: "{{ vsc_mgmt_ip }}"
     state: absent
   delegate_to: localhost
+  no_log: True
+  ignore_errors: True
 
 - block:
   - name: Get infra server details from OpenStack
@@ -41,32 +43,18 @@
     set_fact:
       infra_ip: "{{ infra_server['ansible_facts']['openstack_servers'][0]['private_v4'] }}"
 
-  - name: Update DNS entries
-    lineinfile:
-      line: "{{ vsc_mgmt_ip }}  {{ inventory_hostname }}"
-      dest: /etc/hosts
-    delegate_to: "{{ infra_ip }}"
-    remote_user: "root"
-
   - name: Restart DNS service
     shell: service dnsmasq restart
     delegate_to: "{{ infra_ip }}"
     remote_user: "root"
   when: infra_server_name is defined
 
-- name: Update /etc/hosts file on ansible host
-  lineinfile:
-    dest: /etc/hosts
-    line: "{{ vsc_mgmt_ip }}    {{ inventory_hostname }}"
-  delegate_to: 127.0.0.1
-
 - name: Wait for VSC ssh to be ready
-  local_action:
-    module: wait_for
-    port: "22"
-    host: "{{ vsc_mgmt_ip }}"
-    search_regex: OpenSSH
-    delay: 1
+  include_role:
+    name: common
+    tasks_from: wait-for-ssh
+  vars:
+    ssh_host: "{{ vsc_mgmt_ip }}"
   tags:
     - vsc
     - vsc-deploy
