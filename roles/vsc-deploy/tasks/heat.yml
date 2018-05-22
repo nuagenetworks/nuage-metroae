@@ -4,16 +4,16 @@
     auth:
       "{{ os_auth }}"
     server: "{{ inventory_hostname }}"
-  register: vsc_server
+  register: vsc
   delegate_to: 127.0.0.1
 
 - name: Set vsc mgmt ip
   set_fact:
-    vsc_mgmt_ip: "{{ vsc_server['ansible_facts']['openstack_servers'][0]['networks'][vsc_mgmt_network][0] }}"
+    vsc_mgmt_ip: "{{ vsc['ansible_facts']['openstack_servers'][0]['addresses'][mgmt_interface.network][0]['addr'] }}"
 
 - name: Set vsc control ip
   set_fact:
-    vsc_control_ip: "{{ vsc_server['ansible_facts']['openstack_servers'][0]['networks'][vsc_control_network][0] }}"
+    vsc_control_ip: "{{ vsc['ansible_facts']['openstack_servers'][0]['addresses'][control_interface.network][0]['addr'] }}"
 
 - name: Set VSC creds
   set_fact:
@@ -30,23 +30,7 @@
   no_log: True
   ignore_errors: True
 
-- block:
-  - name: Get infra server details from OpenStack
-    os_server_facts:
-      auth:
-        "{{ os_auth }}"
-      server: "{{ infra_server_name }}"
-    register: infra_server
-    delegate_to: 127.0.0.1
-
-  - name: Set infra ip
-    set_fact:
-      infra_ip: "{{ infra_server['ansible_facts']['openstack_servers'][0]['private_v4'] }}"
-
-  - name: Restart DNS service
-    shell: service dnsmasq restart
-    delegate_to: "{{ infra_ip }}"
-    remote_user: "root"
+- include: manage-infra-server.yml
   when: infra_server_name is defined
 
 - name: Wait for VSC ssh to be ready
@@ -59,29 +43,38 @@
     - vsc
     - vsc-deploy
 
-- name: Loading system config
-  sros_config:
-    src: config.cfg.j2
-    provider: "{{ heat_vsc_creds }}"
-    save: yes
-  delegate_to: localhost
+- name: Load base configuration
+  set_fact:
+    config_lines: "{{ lookup('template', 'base-config.j2', wantlist=True) }}"
 
-- name: Loading BOF config
-  sros_config:
-    lines:
-      - bof address "{{ vsc_mgmt_ip }}/24"
-      - bof primary-dns "{{ infra_ip | default(dns_server_list[0]) }}"
-      - bof dns-domain "{{ dns_domain }}"
-      - bof save "cf1:"
-      - admin save
-    provider: "{{ heat_vsc_creds }}"
-  delegate_to: localhost
+- block:
+  - name: Configure VSC with base config
+    sros_config:
+      lines: "{{ config_lines }}"
+      provider: "{{ heat_vsc_creds }}"
+      save: yes
 
-- name: Reboot VSC VM
-  os_server_actions:
-    auth:
-      "{{ os_auth }}"
-    server: "{{ inventory_hostname }}"
-    action: reboot
-    wait: no
-  delegate_to: 127.0.0.1
+  - name: Configure Primary DNS
+    sros_config:
+      lines:
+        - bof primary-dns "{{ dns_server_list[0] }}"
+        - bof dns-domain "{{ dns_domain }}"
+        - bof save "cf1:"
+        - admin save
+      provider: "{{ heat_vsc_creds }}"
+    when:
+      - dns_server_list 
+      - dns_server_list[0] is defined
+
+  - name: Configure Secondary DNS
+    sros_config:
+      lines:
+        - bof secondary-dns "{{ dns_server_list[1] }}"
+        - bof dns-domain "{{ dns_domain }}"
+        - bof save "cf1:"
+        - admin save
+      provider: "{{ heat_vsc_creds }}"
+    when:
+      - dns_Server_list 
+      - dns_server_list[1] is defined
+  delegate_to: localhost
