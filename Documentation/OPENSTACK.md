@@ -7,10 +7,11 @@ To deploy VSD in OpenStack you must upload VSD qcow2 image to glance. You must a
 To deploy VSC in OpenStack you must upload VSC qcow2 image to glance. You must also create mgmt, control networks and a flavor that is inline with VSC resource requirements. (refer to VSP Install Guide).
 ### Deploy VSTAT (Standalone or Cluster)
 To deploy VSTAT (Elastic Search VM) you must upload VSTAT qcow2 image to glance. You must also create network and a flavor that is inline with VSTAT resource requirements (refer to VSP Install Guide).
+### Customizing build_vars.yml
+Please refer to an [example](../examples/build_vars_openstack_static_ip.yml) build_vars.yml for OpenStack environment.
 ### Running playbooks
 Refer to [README.md](/README.md) for the organization of playbooks.
 All the above roles/components can be run individually with `./metro-ansible <playbook>.yml` command.
-Please refer to an [example](../examples/build_vars_openstack_static_ip.yml) build_vars.yml for OpenStack environment.
 ## Questions, Feedback, and Contributing
 Ask questions and get support via email.
   Outside Nokia: [devops@nuagenetworks.net](mailto:deveops@nuagenetworks.net "send email to nuage-metro project")
