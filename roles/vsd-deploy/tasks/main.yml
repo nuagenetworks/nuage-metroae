@@ -6,10 +6,15 @@
   vars:
     ssh_host: "{{ hostname }}"
 
-- name: Ping 
-  ping: 
-  remote_user: root
-  
+- name: Wait until the ssh private key is installed on system 
+  local_action: 
+    module: command ssh -oStrictHostKeyChecking=no {{ hostname }} exit
+  register: ssh_output
+  until: ssh_output.rc == 0
+  retries: 20
+  delay: 10
+  when: target_server_type | match("aws")
+
 - name: "Check if monit is already configured"
   command: monit summary
   ignore_errors: yes
