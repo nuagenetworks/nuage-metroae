@@ -1,0 +1,61 @@
+{#
+  Note: the following warning is for the generated file
+  only, not this source file.
+#}
+# *** WARNING ***
+# This is a generated file. Manual changes to this file
+# will be lost if reset-build or build is run
+#
+target_server_type: {{ item.target_server_type }}
+hostname: {{ item.hostname }}
+{% if item.vmname is defined %}
+vm_name: {{ item.vm_name }}
+{% else %}
+vm_name: {{ item.hostname }}
+{% endif %}
+
+{% if item.target_server_type | match("kvm") %}
+target_server: {{ item.target_server }}
+
+{% if item.ram is defined %}
+vrs_vm_ram: {{ item.ram }}
+{% endif %}
+
+{% if item.vcpu is defined %}
+vrs_vm_vcpu: {{ item.vcpu }}
+{% endif %}
+
+{% if item.mgmt_ip is defined and item.mgmt_gateway is defined%}
+mgmt_ip: {{ item.mgmt_ip }}
+mgmt_bridge: {{ item.mgmt_bridge }}
+mgmt_gateway: {{ item.mgmt_gateway }}
+
+{% if item.mgmt_prefix is defined %}
+mgmt_prefix: {{ item.mgmt_prefix }}
+{% else %}
+mgmt_netmask: {{ item.mgmt_netmask }}
+{% endif %}
+{% endif %}
+
+{% if item.data_ip is defined %}
+{% if item.data_ip != '' %}
+data_ip: {{ item.data_ip }}
+data_bridge: {{ item.data_bridge }}
+{% if item.data_prefix is defined %}
+data_prefix: {{ item.data_prefix }}
+{% else %}
+data_netmask: {{ item.data_netmask }}
+{% endif %}
+
+{% endif %}
+{% endif %}
+
+{% if item.data_static_route is defined and item.data_gateway is defined %}
+data_gateway: {{ item.data_gateway }}
+data_static_route: {{ item.data_static_route|to_yaml }}
+{% endif %}
+
+vrs_vm_qcow2_path: {{ item.vrs_vm_qcow2_path | dirname }}
+vrs_vm_qcow2_file_name: {{ item.vrs_vm_qcow2_path | basename }}
+
+{% endif %}
