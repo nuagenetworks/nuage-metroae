@@ -197,7 +197,7 @@ function main() {
   rm -f $LOG
 
   echo ""
-  print "Setting up Nuage Metro Automation enGine"
+  print "Setting up Nuage Metro Automation engine"
   echo ""
 
   # Make sure script is being run as root or with sudo
