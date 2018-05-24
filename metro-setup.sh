@@ -185,7 +185,8 @@ yum_install() {
 ###############################################################################
 pip_install() {
   printn "Installing pip packages"
-  pip install -r pip_requirements.txt $1 >> $LOG 2>&1
+  pip install -r pip_requirements.txt
+  # $1 >> $LOG 2>&1
   check_retcode $?
 }
 
