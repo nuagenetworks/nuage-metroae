@@ -1,0 +1,381 @@
+---
+###
+# See BUILD.md for details
+###
+
+###
+## NTP configuration
+###
+## IP addresses of up to 3 NTP servers to sync all components with. There is no default.
+## The values must be specified in dotted-decimal format
+ntp_server_list:
+  - 135.227.181.232
+  - 128.138.141.172
+###
+## timezone for NTP configuration on all devices. Default is 'US/Pacific'. Uncomment
+## and modify if a different setting is required.
+# timezone: US/Pacific
+
+###
+## DNS configuration
+###
+## IP addresses of up to 3 DNS servers to configure all components with. There is no default.
+## Required The values must be specified in dotted-decimal format
+dns_server_list:
+  - 192.168.122.1
+  - 128.251.10.145
+###
+## The name of the domain for all components. There is no default. Required.
+dns_domain: example.com
+
+###
+## Misc. params
+###
+## yum_proxy is set to the address of your internal yum proxy server if you don't
+## have internet access. The default value is 'NONE' which means it won't be used.
+## if you have  yum proxy, iunncomment and update the value to the address of 
+## the server.
+# yum_proxy: "NONE"
+## yum_update is used to determine if a yum update should be done on several components
+## as part of the installation. By default, it is set to 'True', the recommended value.
+## Uncomment and set to 'False' if you want to skip the yum update--acceptable only in
+## lab environments.
+# yum_update: True
+
+
+###
+## Global OpenStack Credentials
+##
+## These are global openstack credentials that are used *only* when deploying 
+## on a openstack based heat environment. They can be ignored when deploying on other hypervisors,
+## e.g. KVM. Uncomment and update the values if you are using openstack.
+##
+##
+## There are no default values for openstack credentials. Uncomment and update
+## when running in a vcenter environment.
+# os_auth:
+#   username: admin
+#   password: admin
+#   project_name: demo
+#   auth_url: 'http://10.0.0.4:5000/v2.0'
+
+###
+## VSD params
+###
+## vsd_fqdn_global is required when this file includes myvsds. It is not required
+## if you aren't operating on VSDs--it will be ignored when 'myvsds' is not defined.
+## There is no default.
+## Use xmpp fqdn for clustered VSDs or the vsd fqdn for stand alone
+vsd_fqdn_global: "vsd1.nuage.met"
+###
+## vsd_operations_list is required when this file includes myvsds. It is not required
+## if you aren't operating on VSDs--it will be ignored when 'myvsds' is not defined.
+## This list must include exactly 1 of the following:
+## - install
+## - health
+## There is no default value.
+vsd_operations_list:
+  - install
+###
+## myvsds is required when you are operating on VSDs. It is not required if you aren't
+## operating on VSDs--it will be ignored if not defined. Each element in the list
+## is a dictionary of parameters specific to a single VSD. You are required to define
+## 0, 1, or 3 VSDs in the list. No other number of VSDs is supported.
+##
+## hostname
+## Required always: The FQDN or IP address of the VSD management port
+##
+## vmname
+## Optional for install, required for upgrade and health. For install,
+## vmname defaults to the hostname. Uncomment and set if doing an
+## upgrade or you want a VM name other than hostname.
+##
+## target_server_type
+## Required: The type of hypervisor the VSD will be deployed on. Supported values
+## are kvm, vcenter, and heat. 
+##
+## vsd_image
+## Required: The glance image name of VSD
+##
+## vsd_flavor
+## Required: The flavor name in openstack that satisfies VSD resource requirements
+##
+## vm_key_name
+## Required: The name of the public key uploaded to openstack project.
+## This public key should be taken from the ssh-key pair on the ansible deployment host,
+## where MetroAG will be installed.
+##
+## dhcp
+## Optional: Set to true if not defined. 
+## Should be set to false, when deploying VSD with fixed/static IP
+##
+## mgmt_interface
+## Optional. Required when dhcp is set to false.
+## A dictionary of values defining management ip information of VSD. The dictionary contains
+## ip, network and subnet information. network and subnet should already exist in the corresponding 
+## openstack project
+##
+##
+## The example, below, is for a 3-VSD cluster. If deploying stand-alone,
+## only one VSD defintion is required.
+myvsds:
+  - { hostname: vsd1.example.com,
+      target_server_type: heat,
+      vsd_image: vsd-5.3.1,
+      vsd_flavor: vsd-lite,
+      vm_key_name: vsd-public-key,
+      dhcp: false,
+      mgmt_interface: {
+        ip: 10.104.0.200,
+        network: FrontEnd,
+        subnet: FrontEnd
+      },
+    }
+  - { hostname: vsd2.example.com,
+      target_server_type: heat,
+      vsd_image: vsd-5.3.1,
+      vsd_flavor: vsd-lite,
+      vm_key_name: vsd-public-key,
+      dhcp: false,
+      mgmt_interface: {
+        ip: 10.104.0.201,
+        network: FrontEnd,
+        subnet: FrontEnd
+      },
+    }
+  - { hostname: vsd3.example.com,
+      target_server_type: heat,
+      vsd_image: vsd-5.3.1,
+      vsd_flavor: vsd-lite,
+      vm_key_name: vsd-public-key,
+      dhcp: false,
+      mgmt_interface: {
+        ip: 10.104.0.202,
+        network: OC_MET_FrontEnd,
+        subnet: OC_MET_FrontEnd
+      },
+    }
+
+###
+## VSC params
+###
+## vsc_operations_list is required when this file includes myvscs. It is not required
+## if you aren't operating on VSCs--it will be ignored when 'myvscs' is not defined.
+## This list must include exactly 1 of the following:
+## - install
+## - health
+vsc_operations_list:
+  - install
+###
+## myvscs is required when you are operating on VSCs. It is not required if you aren't
+## operating on VSCs--it will be ignored if not defined. Each element in the list
+## is a dictionary of parameters specific to a single VSC. You are required to define
+## 0, 1, or more VSCs in the list.
+##
+## hostname
+## Required always: The FQDN or IP address of the VSC management port
+##
+## vmname
+## Optional for install, required for upgrade and health. For install,
+## vmname defaults to the hostname. Uncomment and set if doing an
+## upgrade or you want a VM name other than hostname.
+##
+## target_server_type
+## Required: The type of hypervisor the VSC will be deployed on. Supported values
+## are kvm, vcenter, and heat.
+##
+## dhcp
+## Optional: Set to true if not defined. 
+## Should be set to false, when deploying VSD with fixed/static IP
+##
+## mgmt_interface
+## Optional. Required when dhcp is set to false.
+## A dictionary of values defining management ip information of VSC. The dictionary contains
+## ip, network and subnet information. network and subnet should already exist in the corresponding 
+## openstack project
+##
+## 
+## control_interface
+## Optional. Required when dhcp is set to false.
+## A dictionary of values defining control ip information of VSC. The dictionary contains
+## ip, network, subnet and controle network prefix information. network and subnet should already exist in the corresponding 
+## openstack project
+#
+##
+## vsd_fqdn
+## Required: The FQDN of the VSD or VSD cluster this VSC will
+## connect to. Use the XMPP server name for a cluster, the
+## VSD name for stand-alone VSD.
+##
+## system_ip
+## Required: The IP address to use for the system port
+##
+## expected_num_bgp_peers
+## expected_num_vswitches
+## expected_num_host_vports
+## expected_num_vm_vports
+## expected_num_gateway_ports
+## Optional: Values to use for this VSC when running a health test. All values are
+## set to 0 by default, which means they will be ignored. To use them, uncomment
+## and set to the expected values.
+##
+## vsc_mgmt_static_route_list
+## Optional: The static routes to create for the mgmt port. They will use the values
+## '[ 0.0.0.0/1, 128.0.0.1/1 ]' by default. To use a different set of routes, uncomment
+## and modify to suit.
+##
+## xmpp_username
+## Required: The username to establish for the XMPP connection to VSD.
+##
+## The example, below, is for a single VSC pair.
+myvscs:
+  - { hostname: vsc1.example.com,
+      target_server_type: heat,
+      vsc_image: vsc-5.3.1,
+      vsc_flavor: vsc,
+      dhcp: false,
+      xmpp_username: vsc1,
+      vsd_fqdn: "{{ vsd_fqdn_global }}",
+      mgmt_interface: {
+        ip: 10.104.0.203,
+        network: FrontEnd,
+        subnet: FrontEnd
+      },
+      control_interface: {
+        ip: 10.104.1.203,
+        network: BackEnd,
+        subnet: BackEnd,
+        prefix: 24
+      },
+      system_ip: 1.1.1.2,
+#      expected_num_bgp_peers: 0 ,
+#      expected_num_vswitches: 0 ,
+#      expected_num_host_vports: 0,
+#      expected_num_vm_vports: 0,
+#      expected_num_gateway_ports: 0,
+#      vsc_mgmt_static_route_list: [ 0.0.0.0/1, 128.0.0.1/1 ]
+    }
+  - { hostname: vsc2.example.com,
+      target_server_type: heat,
+      vsc_image: vsc-5.3.1,
+      vsc_flavor: vsc,
+      dhcp: false,
+      xmpp_username: vsc2,
+      vsd_fqdn: "{{ vsd_fqdn_global }}",
+      mgmt_interface: {
+        ip: 10.104.0.204,
+        network: FrontEnd,
+        subnet: FrontEnd
+      },
+      control_interface: {
+        ip: 10.104.1.204,
+        network: BackEnd,
+        subnet: BackEnd,
+        prefix: 24
+      },
+      system_ip: 1.1.1.3,
+#      expected_num_bgp_peers: 0 ,
+#      expected_num_vswitches: 0 ,
+#      expected_num_host_vports: 0,
+#      expected_num_vm_vports: 0,
+#      expected_num_gateway_ports: 0,
+#      vsc_mgmt_static_route_list: [ 0.0.0.0/1, 128.0.0.1/1 ]
+    }
+
+###
+## Stats VM (ElasticSearch) params
+###
+## vstat_operations_list is required when this file includes myvstats or mydnss. It is not required
+## if you aren't operating on VSTATSs or DNSs--it will be ignored when 'myvstats' and 'mydnss' are not defined.
+## This list must include exactly 1 of the following:
+## - install
+## - upgrade
+## - health
+## - dns (specified when deploying the VSTAT image as a DNS server)
+vstat_operations_list:
+  - install
+###
+## myvstats is required when you are operating on VSTATs(Elasticsearch nodes). It is not required if you aren't
+## operating on VSTATs--it will be ignored if not defined. Each element in the list
+## is a dictionary of parameters specific to a single VSTAT. You are required to define
+## 0, 1, or 3 VSTATs in the list. No other number of VSTATs is supported.
+##
+## hostname
+## Required always: The FQDN or IP address of the VSTAT management port
+##
+## vmname
+## Optional for install, required for upgrade and health. For install,
+## vmname defaults to the hostname. Uncomment and set if doing an
+## upgrade or you want a VM name other than hostname.
+##
+## target_server_type
+## Required: The type of hypervisor the VSTAT will be deployed on. Supported values
+## are kvm, vcenter, and heat. 
+##
+## vstat_image
+## Required: The glance image name of VSTAT
+##
+## vstat_flavor
+## Required: The flavor name in openstack that satisfies VSTAT resource requirements
+##
+## vm_key_name
+## Required: The name of the public key uploaded to openstack project.
+## This public key should be taken from the ssh-key pair on the ansible deployment host,
+## where MetroAG will be installed.
+##
+## dhcp
+## Optional: Set to true if not defined. 
+## Should be set to false, when deploying VSTAT with fixed/static IP
+##
+## mgmt_interface
+## Optional. Required when dhcp is set to false.
+## A dictionary of values defining management ip information of VSTAT. The dictionary contains
+## ip, network and subnet information. network and subnet should already exist in the corresponding 
+## openstack project
+##
+## vsd_fqdn
+## Required: The FQDN of the VSD or VSD cluster this VSTAT will
+## connect to. Use first VSD server name.
+##
+## The example, below, is for a 3-VSTAT cluster. If deploying stand-alone,
+## only one VSTAT defintion is required.
+myvstats:
+  - { hostname: vstat1.example.com,
+      target_server_type: heat,
+      vstat_image: vstat-5.3.1,
+      vstat_flavor: vstat-lite,
+      vm_key_name: vstat-public-key,
+      dhcp: false,
+      vsd_fqdn: "vsd1.example.com",
+      mgmt_interface: {
+        ip: 10.104.0.200,
+        network: FrontEnd,
+        subnet: FrontEnd
+      },
+    }
+  - { hostname: vstat2.example.com,
+      target_server_type: heat,
+      vstat_image: vstat-5.3.1,
+      vstat_flavor: vstat-lite,
+      vm_key_name: vstat-public-key,
+      dhcp: false,
+      vsd_fqdn: "vsd1.example.com",
+      mgmt_interface: {
+        ip: 10.104.0.201,
+        network: FrontEnd,
+        subnet: FrontEnd
+      },
+    }
+  - { hostname: vsd3.example.com,
+      target_server_type: heat,
+      vstat_image: vstat-5.3.1,
+      vstat_flavor: vstat-lite,
+      vm_key_name: vstat-public-key,
+      dhcp: false,
+      vsd_fqdn: "vsd1.example.com",
+      mgmt_interface: {
+        ip: 10.104.0.202,
+        network: OC_MET_FrontEnd,
+        subnet: OC_MET_FrontEnd
+      },
+    }
