@@ -7,6 +7,18 @@
     ssh_host: "{{ mgmt_ip }}"
 
 - block:
+  - name: Configure yum proxy
+    lineinfile:
+      dest: /etc/yum.conf
+      regexp: "^proxy="
+      line: "proxy={{ yum_proxy }}"
+    when: not yum_proxy | match('NONE')
+
+  - name: Execute a yum update
+    yum:
+      name: '*'
+      state: latest
+    when: yum_update
 
   - name: stop and flush firewall
     service: name=firewalld state=stopped
