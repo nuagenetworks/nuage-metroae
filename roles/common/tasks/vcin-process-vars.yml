@@ -1,8 +1,8 @@
 ---
-- name: Set VCIN image location
-  include_role: 
-    name: common
-    tasks_from: vsd-find-image.yml
+#- name: Set VCIN image location
+#  include_role: 
+#    name: common
+#    tasks_from: vsd-find-image.yml
 
 - name: Set myvcins_check
   set_fact: myvcins_check={{myvcins is defined}}
@@ -12,6 +12,13 @@
   when: not myvcins_check
 
 - block:
+
+  - name: Verifying VCIN Active/Standby variables
+    include_role:
+      name: common
+      tasks_from: vcin-validate-as-vars
+    with_items: "{{ myvcins | json_query('[?master_vcin].master_vcin') }}"
+       
   - name: Disable HA deployment for VCIN
     set_fact:
       disable_vcin_ha: True
