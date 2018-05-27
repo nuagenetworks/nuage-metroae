@@ -36,12 +36,25 @@ vsd_node3
 {% endif %}
 
 {% if myvcins is defined and myvcins %}
-
-[vcins]
+[vcin_masters]
 {% for vcin in myvcins %}
+{% if 'master_vcin' not in vcin %}
 {{ vcin.hostname }} {% if 'mgmt_bridge' in vcin %} mgmt_bridge={{ vcin.mgmt_bridge }}{% endif %}
+
+{% endif %}
 {% endfor %}
 
+[vcin_slaves]
+{% for vcin in myvcins %}
+{% if 'master_vcin' in vcin %}
+{{ vcin.hostname }} {% if 'mgmt_bridge' in vcin %} mgmt_bridge={{ vcin.mgmt_bridge }}{% endif %}
+
+{% endif %}
+{% endfor %}
+
+[vcins:children]
+vcin_masters
+vcin_slaves
 {% endif %}
 
 {% if myvscs is defined and myvscs %}
