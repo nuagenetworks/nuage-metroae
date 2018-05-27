@@ -1,5 +1,20 @@
 # Using a VMware vCenter environment to deploy Nuage using MetroAG
 
+## Table of Content
+
+- [Supported versions](#supported-versions)
+  - [Nuage supported versions and components](#nuage-supported-versions-and-components)
+  - [vSphere supported versions](#vsphere-supported-versions)
+- [Prerequisites / Requirements](#prerequisites---requirements)
+  - [Required packages](#required-packages)
+  - [vCenter user requirements](#vcenter-user-requirements)
+- [Configuration](#configuration)
+  - [Specifying the vCenter host to use](#specifying-the-vcenter-host-to-use)
+  - [Overwriting settings for specific components](#overwriting-settings-for-specific-components)
+- [Deploying vCenter Integration Nodes](#deploying-vcenter-integration-nodes)
+  - [VCIN deployment](#vcin-deployment)
+  - [VCIN Active/Standby deployment](#vcin-active-standby-deployment)
+
 ## Supported versions
 
 ### Nuage supported versions and components
