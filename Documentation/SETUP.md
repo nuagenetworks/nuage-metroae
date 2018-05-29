@@ -57,33 +57,34 @@ The script writes a detailed log into *metro-setup.log*.
 #### Method Two: Set Up Ansible Host Manually
 1. Install the following packages and modules for all setups:
 
-Package or Module | Command   
-------- | --------  
-Epel-release | `yum install -y epel-release`  
-Python-devel | `yum install -y python-devel.x86_64`  
-Openssl-devel | `yum install -y openssl-devel`  
-Python pip | `yum install -y python2-pip `  
-Development Tools | `yum install -y "@Development tools"`  
+Package or Module              | Command   
+------------------------------ | --------  
+Epel-release                   | `yum install -y epel-release`  
+Python-devel                   | `yum install -y python-devel.x86_64`  
+Openssl-devel                  | `yum install -y openssl-devel`  
+Python pip                     | `yum install -y python2-pip`  
+Development Tools              | `yum install -y "@Development tools"`  
 Ansible 2.4 (for full support) | `pip install ansible==2.4`  
-Netmiko and its dependencies | `pip install netmiko`  
-Netaddr and its dependencies | `pip install netaddr`  
+Netmiko and its dependencies   | `pip install netmiko`  
+Netaddr and its dependencies   | `pip install netaddr`  
 IPaddress and its dependencies | `pip install ipaddress`  
-Python pexpect module | `pip install pexpect`  
-VSPK Python module | `pip install vspk`  
-Paramiko | `pip install paramiko==2.2.1`
+Python pexpect module          | `pip install pexpect`  
+VSPK Python module             | `pip install vspk`  
+Paramiko                       | `pip install paramiko==2.2.1`
 
 2. **For ESXi / vCenter Only**, install the following package:  
  Note: vCenter deployments are supported for Nuage software version 4.0R7 and greater.  
 
-Package | Command  
- -----| ------  
- pyvmomi | `pip install pyvmomi`  
+ Package  | Command  
+ -------- | -------  
+ pyvmomi  | `pip install pyvmomi`  
+ jmespath | `pip install jmespath`
 
 
 3. For **OpenStack Only**, install the following module:
 
-Module | Command  
- -----| ------  
+ Module       | Command  
+ ------------ | -------  
  shade python | `pip install shade`
 
 ### 3. Enable SSH Access  
