@@ -1,6 +1,6 @@
 ---
 ###
-# See BUILD.md for details
+# See the documentation for details
 ###
 
 ###
@@ -185,6 +185,15 @@ dns_domain: example.com
 ## it will only show up once in vCenter, but the hosts tab will show it is
 ## available on multiple hosts (view in the screenshot below)
 ##
+## resource_pool
+## The vCenter resource pool where the VMs need to be located. A resource pool
+## is a logical abstraction of resources. Different resource pools can be 
+## configured to have different priorities in case of resource contention and 
+## can have different resource reservations and limitations.
+## In a typical deployment, you will see a resource pool with a high number of
+## shares (higher priority) which will be used for the important components of
+## Nuage, like the VSD and VSC's.
+##
 ## ovftool
 ## Binary location of the ovftool
 ##
@@ -195,7 +204,8 @@ dns_domain: example.com
 #   password: Alcateldc
 #   datacenter: Datacenter
 #   cluster: Management
-#   datastore: datastore
+#   datastore: Datastore
+#   resource_pool: Resourece Pool 
 #   ovftool: /usr/bin/ovftool
 
 ###
@@ -765,6 +775,15 @@ vcin_operations_list:
 ## hostname
 ## Required always: The FQDN or IP address of the VCIN management port
 ##
+## master_vcin
+## Optional: The FQDN or IP address of the Master VCIN in an Active/Standby
+## deployment. This must match the hostname of another VCIN in the list of
+## myvcins. 
+## Validation is in place to assure:
+## - Masters can not be their own slave
+## - A Master can only have one slave
+## - The Master must be present when configured on a slave
+##
 ## target_server_type
 ## Required: The type of hypervisor the VCIN will be deployed on. Supported values
 ## are kvm, vcenter, and heat.
@@ -789,7 +808,8 @@ vcin_operations_list:
 ## The example, below, is for a single VCIN. If deploying stand-alone,
 ## only one VSD defintion is required.
 myvcins:
-    - { hostname: vcin1.nuage.met,
+    - { hostname: vcin1.nuage.net,
+#      master_vcin: vcin2.nuage.net,
       target_server_type: "vcenter",
       target_server: 135.227.181.232,
 #      vcenter: { username: administrator@vsphere.local,
