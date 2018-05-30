@@ -6,7 +6,7 @@
 
   - name: Revoke old stats cert, if any
     command: "/opt/vsd/ejbca/deploy/certMgmt.sh -a revoke -u elastic"
-    remote_user: "{{ vsd_username }}"
+    remote_user: "san"
     delegate_to: "{{ groups['vsds'][0] }}"
     ignore_errors: yes
 
@@ -25,7 +25,7 @@
   - name: Generate SSL certificates on VSD for the Stats node
     command: "/bin/sshpass -p{{ vstat_password }} /opt/vsd/ejbca/deploy/certMgmt.sh -a generate -u elastic -c elastic -o csp -f pem -t server -d {{ mgmt_ip }}"
     register: sslresult
-    remote_user: "{{ vsd_username }}"
+    remote_user: "san"
     delegate_to: "{{ groups['vsds'][0] }}"
 
   - name: Create temp folder to host the ssl certificates
@@ -34,7 +34,7 @@
   - name: Transfer SSL certificates from VSD to localhost
     fetch: src=/opt/vsd/ejbca/p12/pem/{{ item }} dest={{ dest }} flat=yes
     with_items: "{{ pem_list }}"
-    remote_user: "{{ vsd_username }}"
+    remote_user: "san"
     delegate_to: "{{ groups['vsds'][0] }}"
 
   run_once: True
