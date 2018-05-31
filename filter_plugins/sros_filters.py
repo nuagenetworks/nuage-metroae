@@ -15,8 +15,8 @@
 #    under the License.
 
 
-import json
 import re
+
 
 def rm_insignificant_lines(in_cfg):
     """
@@ -51,14 +51,14 @@ def rootify(clean_cfg):
 
     for i, line in enumerate(clean_cfg):
         if line.strip().startswith('exit all'):
-           cfg_string =[]
-           ind_level=[-1]
-           continue
-        if line.strip()=='exit':
+            cfg_string = []
+            ind_level = [-1]
+            continue
+        if line.strip() == 'exit':
             cfg_string.pop()
             ind_level.pop()
             continue
-        
+
         # calc current indent
         prev_ind_level = ind_level[-1]
         cur_ind_level = len(line) - len(line.lstrip())
@@ -70,18 +70,18 @@ def rootify(clean_cfg):
         # we delete the prev. command and append the new one to the base string
         elif cur_ind_level == prev_ind_level:
             cfg_string.pop()
-            # removing (if any) `customer xxx create` or `create` at the end of the line
-            # since it was previously printed out
+            # removing (if any) `customer xxx create` or `create` at the end
+            # of the line since it was previously printed out
             cfg_string[-1] = re.sub('\scustomer\s\d+\screate$|\screate$',
                                     '', cfg_string[-1])
             cfg_string.append(line.strip())
 
-        ## if we have a next line go check it's indent value
+        # if we have a next line go check it's indent value
         if i < len(clean_cfg) - 1:
             next_ind_level = len(
                 clean_cfg[i + 1]) - len(clean_cfg[i + 1].lstrip())
-            # if a next ind level is deeper (>) then we can continue accumulation
-            # of the commands
+            # if a next ind level is deeper (>) then we can continue
+            # accumulation of the commands
             if next_ind_level > cur_ind_level:
                 continue
             # if the next level is the same or lower, we must save a line
@@ -94,14 +94,13 @@ def rootify(clean_cfg):
     return rootified_cfg
 
 
-
 def sros_rootify(input_cfg_file):
     ''' Given a string representation of the output of
     '''
 
     clean_cfg = rm_insignificant_lines(input_cfg_file)
     return rootify(clean_cfg)
- 
+
 
 class FilterModule(object):
     ''' Query filter '''

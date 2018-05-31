@@ -1,10 +1,14 @@
 from alc import dyn
 
 # example of metadata to be added in VSD WAN Service on PE1: "vprnRD=65000:1,vprnRT=target:65000:100,irbGW=10.2.2.1/24,vrrpID=1,vrrpIP=10.2.2.254,vrrpPRIO=150"
-# example of metadata to be added in VSD WAN Service on PE2: "vprnRD=65000:2,vprnRT=target:65000:100,irbGW=10.2.2.2/24,vrrpID=1,vrrpIP=10.2.2.254,vrrpPRIO=100"
+# example of metadata to be added in VSD WAN Service on PE2:
+# "vprnRD=65000:2,vprnRT=target:65000:100,irbGW=10.2.2.2/24,vrrpID=1,vrrpIP=10.2.2.254,vrrpPRIO=100"
 
 # example of tools cli to test this script: tools perform service vsd evaluate-script domain-name "l2domIRB1-red" type l2-domain-irb action setup policy "py-l2-irb-red" vni 1234 rt-i target:2:2 rt-e target:2:2 metadata "vprnRD=65000:1,vprnRT=target:65000:100,irbGW=10.2.2.1/24,vrrpID=1,vrrpIP=10.2.2.254,vrrpPRIO=150"
-# teardown example cli: tools perform service vsd evaluate-script domain-name "l2domIRB1-red" type l2-domain-irb action teardown policy "py-l2-irb-red" vni 1234 rt-i target:2:2  rt-e target:2:2
+# teardown example cli: tools perform service vsd evaluate-script
+# domain-name "l2domIRB1-red" type l2-domain-irb action teardown policy
+# "py-l2-irb-red" vni 1234 rt-i target:2:2  rt-e target:2:2
+
 
 def setup_script(vsdParams):
 
@@ -13,9 +17,10 @@ def setup_script(vsdParams):
     vni = vsdParams.get('vni')
     rt = vsdParams.get('rt')
 
-# add "target:" if provisioned by VSD (VSD uses x:x format whereas tools command uses target:x:x format)
-    if not rt.startswith ('target'):
-       rt = "target:"+rt
+# add "target:" if provisioned by VSD (VSD uses x:x format whereas tools
+# command uses target:x:x format)
+    if not rt.startswith('target'):
+        rt = "target:" + rt
 
     metadata = vsdParams['metadata']
 
@@ -27,17 +32,30 @@ def setup_script(vsdParams):
     print ("Modified metadata" + str(metadata))
     vplsSvc_id = dyn.select_free_id("service-id")
     vprnSvc_id = dyn.select_free_id("service-id")
-    print ("this are the free svc ids picked up by the system: VPLS:" + vplsSvc_id + " + VPRN:" + vprnSvc_id)
+    print ("this are the free svc ids picked up by the system: VPLS:" +
+           vplsSvc_id + " + VPRN:" + vprnSvc_id)
 
     if servicetype == "L2DOMAIN-IRB":
-      vprn_RD = metadata ['vprnRD']
-      vprn_RT = metadata ['vprnRT']
-      irb_GW = metadata ['irbGW']
-      vrrp_ID = metadata ['vrrpID']
-      vrrp_IP = metadata ['vrrpIP']
-      vrrp_PRIO = metadata ['vrrpPRIO']
-      print ('servicetype, VPLS id, rt, vni, VPRN id, vprn_RD, vprn_RT, irb_GW, vrrp_ID, vrrp_IP, vrrp_PRIO:', servicetype, vplsSvc_id, rt, vni, vprnSvc_id, vprn_RD, vprn_RT, irb_GW, vrrp_ID, vrrp_IP, vrrp_PRIO)
-      dyn.add_cli("""
+        vprn_RD = metadata['vprnRD']
+        vprn_RT = metadata['vprnRT']
+        irb_GW = metadata['irbGW']
+        vrrp_ID = metadata['vrrpID']
+        vrrp_IP = metadata['vrrpIP']
+        vrrp_PRIO = metadata['vrrpPRIO']
+        print (
+            'servicetype, VPLS id, rt, vni, VPRN id, vprn_RD, vprn_RT, irb_GW, vrrp_ID, vrrp_IP, vrrp_PRIO:',
+            servicetype,
+            vplsSvc_id,
+            rt,
+            vni,
+            vprnSvc_id,
+            vprn_RD,
+            vprn_RT,
+            irb_GW,
+            vrrp_ID,
+            vrrp_IP,
+            vrrp_PRIO)
+        dyn.add_cli("""
         configure service
            vpls %(vplsSvc_id)s customer 1 name vpls%(vplsSvc_id)s create
               allow-ip-int-bind vxlan-ipv4-tep-ecmp
@@ -77,17 +95,30 @@ def setup_script(vsdParams):
            exit
         exit
 
-      """ % {'vplsSvc_id' : vplsSvc_id, 'vprnSvc_id' : vprnSvc_id, 'vni' : vsdParams['vni'], 'rt' : rt, 'vprn_RD' : vprn_RD, 'vprn_RT' : vprn_RT, 'irb_GW' : irb_GW, 'vrrp_ID' : vrrp_ID, 'vrrp_IP' : vrrp_IP, 'vrrp_PRIO' : vrrp_PRIO})
-      # L2DOMAIN-IRB returns setupParams: vplsSvc_id, vprnSvc_id, servicetype, vni, vprn_RD, vprn_RT, irb_GW, vrrp_ID, vrrp_IP, vrrp_PRIO
-      return {'vplsSvc_id' : vplsSvc_id, 'vprnSvc_id' : vprnSvc_id, 'servicetype' : servicetype, 'vni' : vni, 'vprn_RD' : vprn_RD, 'vprn_RT' : vprn_RT, 'irb_GW': irb_GW, 'vrrp_ID' : vrrp_ID, 'vrrp_IP' : vrrp_IP, 'vrrp_PRIO' : vrrp_PRIO}
+      """ % {'vplsSvc_id': vplsSvc_id, 'vprnSvc_id': vprnSvc_id, 'vni': vsdParams['vni'], 'rt': rt, 'vprn_RD': vprn_RD, 'vprn_RT': vprn_RT, 'irb_GW': irb_GW, 'vrrp_ID': vrrp_ID, 'vrrp_IP': vrrp_IP, 'vrrp_PRIO': vrrp_PRIO})
+        # L2DOMAIN-IRB returns setupParams: vplsSvc_id, vprnSvc_id,
+        # servicetype, vni, vprn_RD, vprn_RT, irb_GW, vrrp_ID, vrrp_IP,
+        # vrrp_PRIO
+        return {
+            'vplsSvc_id': vplsSvc_id,
+            'vprnSvc_id': vprnSvc_id,
+            'servicetype': servicetype,
+            'vni': vni,
+            'vprn_RD': vprn_RD,
+            'vprn_RT': vprn_RT,
+            'irb_GW': irb_GW,
+            'vrrp_ID': vrrp_ID,
+            'vrrp_IP': vrrp_IP,
+            'vrrp_PRIO': vrrp_PRIO}
 
-#------------------------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------------------------
+
 
 def teardown_script(setupParams):
     print ("These are the teardown_script setupParams: " + str(setupParams))
     servicetype = setupParams.get('servicetype')
     if servicetype == "L2DOMAIN-IRB":
-      dyn.add_cli("""
+        dyn.add_cli("""
         configure service
             vpls %(vplsSvc_id)s
                no description
@@ -120,9 +151,10 @@ def teardown_script(setupParams):
         no vprn %(vprnSvc_id)s
         exit
 
-      """ % {'vplsSvc_id' : setupParams['vplsSvc_id'], 'vprnSvc_id' : setupParams['vprnSvc_id'], 'vni' : setupParams['vni'], 'vrrp_ID' : setupParams['vrrp_ID']})
-      return setupParams
+      """ % {'vplsSvc_id': setupParams['vplsSvc_id'], 'vprnSvc_id': setupParams['vprnSvc_id'], 'vni': setupParams['vni'], 'vrrp_ID': setupParams['vrrp_ID']})
+        return setupParams
 
-d = {"script" : (setup_script, None, None, teardown_script)}
+
+d = {"script": (setup_script, None, None, teardown_script)}
 
 dyn.action(d)
