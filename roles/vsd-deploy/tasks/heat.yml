@@ -35,6 +35,7 @@
   - name: Restart DNS service
     shell: service dnsmasq restart
     delegate_to: "{{ infra_ip }}"
+    remote_user: "san"
   when: infra_server_name is defined
 
 - name: Wait for VSD-HA ssh to be ready
@@ -46,10 +47,11 @@
 
 - name: Inject ssh key to VSD if cloud-init did not work
   expect:
-    command: "ssh-copy-id -i root@{{ vsd_mgmt_ip }}"
+    command: "ssh-copy-id -i san@{{ vsd_mgmt_ip }}"
     responses:
       (?i)yes: "yes"
-      (?i)password: "Alcateldc"
+      (?i)password: "caso"
+  remote_user: "san"
   delegate_to: localhost
 
 - name: Pause for ssh port to be active
@@ -72,24 +74,29 @@
 
 - name: Add nameserver
   command: echo "{{ infra_ip }}" >> /etc/resolv.conf
+  remote_user: "san"
   when: infra_server_name is defined
 
 - name: Restart networking
   command: /etc/init.d/network restart
+  remote_user: "san"
 
 - name: Resolve fqdn
   command: hostname "{{ inventory_hostname }}"
+  remote_user: "san"
 
 - name: Configure yum proxy
   lineinfile:
     dest: /etc/yum.conf
     line: "proxy={{ yum_proxy }}"
+  remote_user: "san"
   when: not yum_proxy | match('NONE')
 
 - name: Execute a yum update
   yum:
     name: '*'
     state: latest
+  remote_user: "san"
   when: yum_update
 
 - block:
@@ -117,6 +124,7 @@
     - name: Read the VSD version
       shell: echo $VSD_VERSION | cut -d . -f 1
       register: vsd_version
+      remote_user: san
 
     - debug: var=vsd_version.stdout verbosity=1
 
@@ -140,6 +148,7 @@
         with_nested:
           - "{{ groups['vsds'] }}"
           - "{{ ssh_key_lst.results }}"
+      remote_user: san
       when: vsd_version.stdout | int < 5 and inventory_hostname == vsd_cluster_node_1
 
     - block:
@@ -174,7 +183,7 @@
       when: vsd_version.stdout | int >= 5
 
     when: inventory_hostname == vsd_cluster_node_1 or (inventory_hostname == vsd_cluster_node_3 and nuage_upgrade)
-
+  remote_user: san
   when: vsd_sa_or_ha | match('ha')
 
 - name: Configure ntpd and ntpdate and local time zone
@@ -184,6 +193,7 @@
 
 - name: Install VSD software on standalone node
   command: /opt/vsd/vsd-install.sh -t s -y
+  remote_user: san
   when: vsd_sa_or_ha | match('sa')
 
 - block:
@@ -191,16 +201,20 @@
   - name: Install VSD software on the first cluster node
     command: "{{ vsd_node1_install_cmd }}"
     when: inventory_hostname == vsd_cluster_node_1
+    remote_user: san
 
   - name: Install VSD software on the second cluster node
     command: "{{ vsd_node2_install_cmd }}"
     when: inventory_hostname == vsd_cluster_node_2
+    remote_user: san
 
   - name: Install VSD software on the third cluster node
     command: "{{ vsd_node3_install_cmd }}"
-    when: inventory_hostname == vsd_cluster_node_3 
+    when: inventory_hostname == vsd_cluster_node_3
+    remote_user: san
 
   when: vsd_sa_or_ha | match('ha')
 
 - name: Set XMPP connection to allow both clear and TLS
-  command: /opt/vsd/bin/ejmode allow -y 
+  command: /opt/vsd/bin/ejmode allow -y
+  remote_user: san
