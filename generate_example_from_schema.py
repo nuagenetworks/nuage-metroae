@@ -142,11 +142,14 @@ class ExampleFileGenerator(object):
             self.example_lines.append("")
 
     def get_example_value(self, name, field, is_list):
+        field_type = "string"
+        if "type" in field:
+            field_type = field["type"]
         if self.as_template:
-            return self.get_example_template_value(name, field["type"],
+            return self.get_example_template_value(name, field_type,
                                                    is_list)
         else:
-            return self.get_example_placeholder_value(field["type"])
+            return self.get_example_placeholder_value(field_type)
 
     def get_example_template_value(self, name, field_type, is_list):
         item_name = ""
