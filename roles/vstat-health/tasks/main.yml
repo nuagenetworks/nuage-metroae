@@ -17,13 +17,17 @@
     
   - name: check web interface of vstat
     uri:
-      url: https://inventory_hostname:9200
+      url: http://{{ inventory_hostname }}:9200
       method: GET
       user: csproot
       password: csproot
       status_code: 200
       validate_certs: False
       register: webresult
+    ignore_error: yes   
+  
+  - name: write web interface result
+    nuage_append: filename="{{ report_path }}" text="{{ webresult | to_nice_json}}\n" 
       
   when: inventory_hostname in groups['vstats']
 
