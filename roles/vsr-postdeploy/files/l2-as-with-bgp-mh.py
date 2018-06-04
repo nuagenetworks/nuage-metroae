@@ -99,8 +99,6 @@ def modify_script(vsdParams, setup_result):
         "The updated params from metadata and return from the setup result: " +
         str(params))
 
-    svc_mtu = params['svc-mtu']
-
     dyn.add_cli("""
       configure service
           vpls %(vplsSvc_id)s
