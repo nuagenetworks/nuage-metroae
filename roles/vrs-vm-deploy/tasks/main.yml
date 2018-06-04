@@ -6,3 +6,25 @@
     search_regex: OpenSSH
     delay: 1
   when: mgmt_ip is defined
+  
+- block:
+  - name: Add epel repository on RedHat OS family distros
+    yum_repository:
+      name: epel
+      description: EPEL YUM repo
+      baseurl: http://download.fedoraproject.org/pub/epel/$releasever/$basearch/
+    when: ansible_os_family == "RedHat"
+
+  - name: Execute a yum update
+    yum:
+      name: '*'
+      state: latest
+    when: yum_update
+
+  - name: Install requried yum packages
+  yum: name={{ item }} state=present
+  with_items:
+   - net-tools
+   - libguestfs-tools
+  remote_user: "{{ target_server_username }}"
+  delegate_to: "{{ mgmt_ip }}"
