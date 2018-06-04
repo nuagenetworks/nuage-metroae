@@ -48,7 +48,7 @@ After all [Prerequisites](#prerequisites) are met, run the following set of comm
 4. ./metro-ansible vsd_predeploy -vvvv
 5. ./metro-ansible vsd_sa_upgrade_deploy -vvvv
 6. ./metro-ansible vsd_upgrade_complete -vvvv
-7. ./metro-ansible vsc_upgrade_backup_and_prep -vvvv
+7. ./metro-ansible vsc_sa_upgrade_backup_and_prep -vvvv
 8. ./metro-ansible vsc_sa_upgrade_deploy -vvvv
 9. ./metro-ansible vsc_sa_upgrade_postdeploy -vvvv
 
