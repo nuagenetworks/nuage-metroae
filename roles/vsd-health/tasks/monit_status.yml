@@ -2,7 +2,7 @@
   vsd_monit:
     group: all
   register: vsd_proc_pre
-  remote_user: root
+  remote_user: "{{ vsd_username }}"
 
 - name: wait for VSD common, core and stats services to become running
   monit_waitfor_service:
@@ -10,13 +10,13 @@
     timeout_seconds: 1200
     test_interval_seconds: 30
   with_items: "{{ vsd_proc_pre['state'].keys() }}"
-  remote_user: "root"
+  remote_user: "{{ vsd_username }}"
 
 - name: Get monit summary for vsd processes
   vsd_monit:
     group: all
   register: vsd_proc
-  remote_user: root
+  remote_user: "{{ vsd_username }}"
 
 - name: Print monit status when verbosity >= 1
   debug: var=vsd_proc verbosity=1
