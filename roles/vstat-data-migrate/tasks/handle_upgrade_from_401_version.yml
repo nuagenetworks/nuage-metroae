@@ -1,7 +1,8 @@
+---
 - name: Get current VSD version
   command: echo $VSD_VERSION
   delegate_to: "{{ groups['vsds'][0] }}"
-  remote_user: root
+  remote_user: "{{ vsd_username }}"
   run_once: true
   register: vsd_version
 
@@ -13,16 +14,15 @@
   debug: var=vsd_version verbosity=1
   run_once: true
 
-- block:      
+- block:
+
   - name: Stop vsd-stats group on VSD(s)
     command: monit stop -g vsd-stats
-    remote_user: root
 
   - name: Get monit state for stat processes
     vsd_monit:
       group: vsd-stats
     register: stats_state
-    remote_user: root
 
   - name: Verify stats processes are stopped
     assert: 
@@ -32,17 +32,14 @@
 
   - name: Migrate current date data to new schema version
     command: "{{ migrate_current_data }}"
-    remote_user: root
     when: migrate_current_day_data
 
   - name: Migrate previous day data to new schema version
     command: "{{ migrate_previous_data }}"
-    remote_user: root
     when: not migrate_current_day_data
 
   - name: Start vsd-stats processess
     command: "monit start -g vsd-stats"
-    remote_user: root
 
   - name: Fetch stats processess current state
     command: "monit -g vsd-stats summary"
@@ -54,19 +51,19 @@
     retries: 10
     delay: 30
     register: stats_temp_state
-    remote_user: root
 
   - name: Get monit state for stat processes
     vsd_monit:
       group: vsd-stats
     register: stats_current_state
-    remote_user: root
 
   - name: Verify stats processes are started/running
     assert:
       that: stats_current_state['state']['{{ item }}'] == 'running' or stats_current_state['state']['{{ item }}'] == 'status ok'
       msg: item  is still running
     with_items: "{{ stats_current_state.state.keys() }}"
+
+  remote_user: "{{ vsd_username }}"
   when: 
     - vsd_version.stdout in supported_vsd_versions
     - upgrade_from_version == '4.0.1'

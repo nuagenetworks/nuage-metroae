@@ -36,12 +36,25 @@ vsd_node3
 {% endif %}
 
 {% if myvcins is defined and myvcins %}
-
-[vcins]
+[vcin_masters]
 {% for vcin in myvcins %}
+{% if 'master_vcin' not in vcin %}
 {{ vcin.hostname }} {% if 'mgmt_bridge' in vcin %} mgmt_bridge={{ vcin.mgmt_bridge }}{% endif %}
+
+{% endif %}
 {% endfor %}
 
+[vcin_slaves]
+{% for vcin in myvcins %}
+{% if 'master_vcin' in vcin %}
+{{ vcin.hostname }} {% if 'mgmt_bridge' in vcin %} mgmt_bridge={{ vcin.mgmt_bridge }}{% endif %}
+
+{% endif %}
+{% endfor %}
+
+[vcins:children]
+vcin_masters
+vcin_slaves
 {% endif %}
 
 {% if myvscs is defined and myvscs %}
@@ -89,6 +102,13 @@ vsc_node2
 [gvms]
 {% for gvm in mygvms %}
 {{ gvm.hostname }}
+{% endfor %}
+{% endif %}
+
+{% if myvrs_vms is defined and myvrs_vms %}
+[vrs_vms]
+{% for vrs_vm in myvrs_vms %}
+{{ vrs_vm.hostname }}
 {% endfor %}
 {% endif %}
 
