@@ -1,6 +1,6 @@
 ---
 ###
-# See BUILD.md for details
+# See the documentation for details
 ###
 
 ###
@@ -115,7 +115,7 @@ dns_server_list:
   - 128.251.10.145
 ###
 ## The name of the domain for all components. There is no default. Required.
-dns_domain: nuage.met
+dns_domain: example.com
 
 ###
 ## Misc. params
@@ -185,6 +185,15 @@ dns_domain: nuage.met
 ## it will only show up once in vCenter, but the hosts tab will show it is
 ## available on multiple hosts (view in the screenshot below)
 ##
+## resource_pool
+## The vCenter resource pool where the VMs need to be located. A resource pool
+## is a logical abstraction of resources. Different resource pools can be 
+## configured to have different priorities in case of resource contention and 
+## can have different resource reservations and limitations.
+## In a typical deployment, you will see a resource pool with a high number of
+## shares (higher priority) which will be used for the important components of
+## Nuage, like the VSD and VSC's.
+##
 ## ovftool
 ## Binary location of the ovftool
 ##
@@ -195,7 +204,8 @@ dns_domain: nuage.met
 #   password: Alcateldc
 #   datacenter: Datacenter
 #   cluster: Management
-#   datastore: datastore
+#   datastore: Datastore
+#   resource_pool: Resourece Pool 
 #   ovftool: /usr/bin/ovftool
 
 ###
@@ -269,24 +279,24 @@ myvsds:
       mgmt_ip: 192.168.122.201,
       mgmt_gateway: 192.168.122.1,
       mgmt_netmask: 255.255.255.0 }
-#   - { hostname: "vsd2.nuage.met",
-# #      vmname: vsd2,
-# #      upgrade_vmname: vsd2-new,
-#       target_server_type: "kvm",
-#       target_server: 135.227.181.233,
-# #      mgmt_bridge: br1,
-#       mgmt_ip: 192.168.122.202,
-#       mgmt_gateway: 192.168.122.1,
-#       mgmt_netmask: 255.255.255.0 }
-#   - { hostname: "vsd3.nuage.met",
-# #      vmname: vsd3,
-# #      upgrade_vmname: vsd3-new,
-#       target_server_type: "kvm",
-#       target_server: 135.227.181.233,
-# #      mgmt_bridge: br2,
-#       mgmt_ip: 192.168.122.203,
-#       mgmt_gateway: 192.168.122.1,
-#       mgmt_netmask: 255.255.255.0 }
+  - { hostname: "vsd2.nuage.met",
+#      vmname: vsd2,
+#      upgrade_vmname: vsd2-new,
+      target_server_type: "kvm",
+      target_server: 135.227.181.233,
+#      mgmt_bridge: br1,
+      mgmt_ip: 192.168.122.202,
+      mgmt_gateway: 192.168.122.1,
+      mgmt_netmask: 255.255.255.0 }
+  - { hostname: "vsd3.nuage.met",
+#      vmname: vsd3,
+#      upgrade_vmname: vsd3-new,
+      target_server_type: "kvm",
+      target_server: 135.227.181.233,
+#      mgmt_bridge: br2,
+      mgmt_ip: 192.168.122.203,
+      mgmt_gateway: 192.168.122.1,
+      mgmt_netmask: 255.255.255.0 }
 
 ###
 ## VSC params
@@ -304,6 +314,12 @@ vsc_operations_list:
 ## operating on VSCs--it will be ignored if not defined. Each element in the list
 ## is a dictionary of parameters specific to a single VSC. You are required to define
 ## 0, 1, or more VSCs in the list.
+##
+## Note: Upgrade only supports 1 or 2 VSCs. If you have more than 2 VSCs, you must
+## create multiple build_vars.yml files, one for each single VSC or each pair of
+## VSCs, and upgrade them as single instances or in pairs. In other words, for an intall,
+## you can specify as many VSCs in build_vars.yml as you want, but for upgrade to work
+## you are limited to upgrading one or two at a time.
 ##
 ## hostname
 ## Required always: The FQDN or IP address of the VSC management port
@@ -392,7 +408,7 @@ myvscs:
 #      expected_num_gateway_ports: 0,
 #      vsc_mgmt_static_route_list: [ 0.0.0.0/1, 128.0.0.1/1 ],
       xmpp_username: vsc1 }
-  - { hostname: "vsc2.nuage.met",
+  - { hostname: "vsc1.nuage.met",
 #      vmname: vsc1,
       target_server_type: "kvm",
       target_server: 135.227.181.233,
@@ -566,26 +582,26 @@ myvstats:
       mgmt_gateway: 192.168.122.1,
       mgmt_netmask: 255.255.255.0,
       vsd_fqdn: "vsd1.nuage.met" }
-#   - { hostname: "vstat2.nuage.met",
-# #      vmname: vstat1,
-# #      upgrade_vmname: vstat1-4.0.R10-dc1,
-#       target_server_type: "kvm",
-#       target_server: 135.227.181.233,
-# #      mgmt_bridge: bridge2,
-#       mgmt_ip: 192.168.122.207,
-#       mgmt_gateway: 192.168.122.1,
-#       mgmt_netmask: 255.255.255.0,
-#       vsd_fqdn: "vsd1.nuage.met" }
-#   - { hostname: "vstat3.nuage.met",
-# #      vmname: vstat3,
-# #      upgrade_vmname: vstat3-new,
-#       target_server_type: "kvm",
-#       target_server: 135.227.181.233,
-# #      mgmt_bridge: bridge3,
-#       mgmt_ip: 192.168.122.208,
-#       mgmt_gateway: 192.168.122.1,
-#       mgmt_netmask: 255.255.255.0,
-#       vsd_fqdn: "vsd1.nuage.met" }
+  - { hostname: "vstat1.nuage.met",
+#      vmname: vstat1,
+#      upgrade_vmname: vstat1-4.0.R10-dc1,
+      target_server_type: "kvm",
+      target_server: 135.227.181.233,
+#      mgmt_bridge: bridge2,
+      mgmt_ip: 192.168.122.207,
+      mgmt_gateway: 192.168.122.1,
+      mgmt_netmask: 255.255.255.0,
+      vsd_fqdn: "vsd1.nuage.met" }
+  - { hostname: "vstat3.nuage.met",
+#      vmname: vstat3,
+#      upgrade_vmname: vstat3-new,
+      target_server_type: "kvm",
+      target_server: 135.227.181.233,
+#      mgmt_bridge: bridge3,
+      mgmt_ip: 192.168.122.208,
+      mgmt_gateway: 192.168.122.1,
+      mgmt_netmask: 255.255.255.0,
+      vsd_fqdn: "vsd1.nuage.met" }
 
 ###
 ## VNS params
@@ -642,6 +658,12 @@ vns_operations_list:
 ## data_netmask
 ## Required: The netmask for the data port network.
 ##
+## data_static_route
+## Optional: list of eth1 static routes to the data networks
+##
+## data_gateway 
+## Optional: will be used as next-hop for the data_static_routes
+##
 ## DHCP Bootstrap support
 ## Optional: MetroAG supports a special case, automatically bootstrapping
 ## (ZFB) a single NSGV at time of deployment of the VNS UTIL VM. To enable 
@@ -675,6 +697,8 @@ myvnsutils:
       data_fqdn: "vnsutil1.data.nuage.met",
       data_ip: 192.168.100.205,
       data_netmask: 255.255.255.0,
+#      data_gateway: 192.168.100.1,
+#      data_static_route: [ 192.168.99.0/24, 192.168.98.0/24, 1192.168.97.0/24 ],
 #      data_subnet: 192.168.100.0,
 #      nsgv_ip: 192.168.100.206,
 #      nsgv_mac: '52:54:00:88:85:12',
@@ -724,15 +748,15 @@ myvnsutils:
 ## - none (nsgv is deployed without any bootstrapping)
 ##
 ## The example, below, is for a single NSGV that uses no bootstrapping.
-# mynsgvs:
-#   - { hostname: "nsgv1.nuage.met",
-# #      vmname: nsgv1,
-#       target_server_type: "kvm",
-# #      iso_path: '/tmp/iso',
-# #      iso_file: 'user_img.iso',
-# #      nsgv_mac: '52:54:00:88:85:12',
-# #      bootstrap_method: none,
-#       target_server: 135.227.181.233 }
+mynsgvs:
+  - { hostname: "nsgv1.nuage.met",
+#      vmname: nsgv1,
+      target_server_type: "kvm",
+#      iso_path: '/tmp/iso',
+#      iso_file: 'user_img.iso',
+#      nsgv_mac: '52:54:00:88:85:12',
+#      bootstrap_method: none,
+      target_server: 135.227.181.233 }
 ###
 ## VCIN params
 ###
@@ -750,6 +774,15 @@ vcin_operations_list:
 ##
 ## hostname
 ## Required always: The FQDN or IP address of the VCIN management port
+##
+## master_vcin
+## Optional: The FQDN or IP address of the Master VCIN in an Active/Standby
+## deployment. This must match the hostname of another VCIN in the list of
+## myvcins. 
+## Validation is in place to assure:
+## - Masters can not be their own slave
+## - A Master can only have one slave
+## - The Master must be present when configured on a slave
 ##
 ## target_server_type
 ## Required: The type of hypervisor the VCIN will be deployed on. Supported values
@@ -774,18 +807,19 @@ vcin_operations_list:
 ##
 ## The example, below, is for a single VCIN. If deploying stand-alone,
 ## only one VSD defintion is required.
-# myvcins:
-#     - { hostname: vcin1.nuage.met,
-#       target_server_type: "vcenter",
-#       target_server: 135.227.181.232,
-# #      vcenter: { username: administrator@vsphere.local,
-# #        password: Alcateldc,
-# #        datacenter: Antwerp,
-# #        cluster: Management,
-# #        datastore: esxi02 },
-#       mgmt_ip: 10.189.1.246,
-#       mgmt_gateway: 10.0.0.1,
-#       mgmt_netmask: 255.0.0.0 }
+myvcins:
+    - { hostname: vcin1.nuage.net,
+#      master_vcin: vcin2.nuage.net,
+      target_server_type: "vcenter",
+      target_server: 135.227.181.232,
+#      vcenter: { username: administrator@vsphere.local,
+#        password: Alcateldc,
+#        datacenter: Antwerp,
+#        cluster: Management,
+#        datastore: esxi02 },
+      mgmt_ip: 10.189.1.246,
+      mgmt_gateway: 10.0.0.1,
+      mgmt_netmask: 255.0.0.0 }
 
 
 ###
@@ -805,6 +839,7 @@ vcin_operations_list:
 ## mydnss is a collection of parameters for the DNS.
 ## One set of parameters is required for each DNS.
 ## data_static_route list of eth1 static routes to the data networks
+## data_gateway will be used as next-hop for the data_static_routes
 ## dns_mgmt_lookup list of management dns lookup
 ## dns_data_lookup list of data dns lookup
 ## dns_mgmt name server of managment network
@@ -821,6 +856,7 @@ vcin_operations_list:
 #      data_ip: 10.167.54.3,
 #      data_subnet: 10.167.54.0,
 #      data_netmask: 255.255.255.0,
+#      data_gateway: 10.167.54.1,
 #      data_static_route: [ 10.165.53.0/24, 10.165.54.0/24, 10.165.55.0/24 ],
 #      dns_server: 8.8.8.8,
 #      dns_mgmt: g5dns.mgmt.training.net.,
@@ -897,3 +933,88 @@ vcin_operations_list:
 #      ports_to_hv_bridges: ['br0', 'br1','br0','br1'],
 #      license_file: '/path/on/ansible/deployment/host/license.zip',
 #      deploy_cfg_file: '/path/on/ansible/deployment/host/config_flat.txt'}
+
+## VRS-VM params
+## vrs_vm_operations_list = A list of the operations you intend for the VRS-VM.
+##The list could include 1 or more of the following:
+## - install
+## myvrs_vms is required when you are operating on VRS-VMs. It is not required if you aren't
+## operating on VRS-VMs. It will be ignored if not defined. Each element in the list
+## is a dictionary of parameters specific to a single VRS-VM. You can define as much
+## VRS-VM as you want
+##
+## hostname
+## Required always: The FQDN or IP address of the VRS-VM management port
+##
+## vmname
+## Optional, vmname defaults to the hostname. Uncomment and set if you want a 
+##VM name other than hostname.
+##
+## target_server_type
+## Optional: The default is 'kvm'. For now only KVM is supported.
+##
+## target_server
+## Required: The hostname or IP address of the hypervisor where this VRS-VM will be
+## instantiated.
+##
+## mgmt_bridge
+## Optional: The name of the bridge on the hypervisor to connect the mgmt port to.
+## By default, the mgmt port will be connected to the global mgmt_bridge that is
+## defined elsewhere in this file. Uncomment and update if you want to use a
+## different bridge for this component.
+##
+## mgmt_ip
+## Required: The IP address of the VRS-VM's management port.
+##
+## mgmt_gateway
+## Required: The IP address for the default gateway.
+##
+## mgmt_netmask
+## Required: The netmask for the management port.
+## 
+## data_ip
+## Required: The IP address of the data plane.
+##
+## data_netmask
+## Required: The netmask for the data plane network.
+##
+## data_bridge
+## Optional: The name of the bridge on the hypervisor to connect the data port to.
+## By default, the data port will be connected to the global data_bridge that is
+## defined elsewhere in this file. Uncomment and update if you want to use a
+## different bridge for this component.
+##
+## data_gateway
+## Required: The IP address that will be used as a next-hop address of the 
+## data_static_route.
+##
+## data_static_route: list of eth1 static routes to the data networks
+##
+## ram (Gib)
+## Optional: Ram amount that will be used for the VRS-VM. By default it is 4 (GB)
+##
+## vcpu
+## Optional: VCPU count that will be used for the VRS-VM. By default it is 2
+##
+## vrs_vm_qcow2_path
+## Required: source qcow path of the VRS-VM
+#vrs_vm_operations_list:
+#  - install
+#
+#myvrs_vms:
+#  - { hostname: vrs_vm1,
+#      #vmname: vrs_vm1,
+#      target_server_type: kvm, 
+#      target_server: 10.10.13.5,
+#      ram: 12, 
+#      vcpu: 4, 
+#      mgmt_bridge: br0, 
+#      mgmt_ip: 10.10.13.11,
+#      mgmt_gateway: 10.10.13.1,
+#      mgmt_netmask: 255.255.255.0, 
+#      data_bridge: br1, 
+#      data_ip: 10.9.13.11,
+#      data_netmask: 255.255.255.0,
+#      vrs_vm_qcow2_path: /tmp/images/centos7.qcow2,
+#      data_gateway: 10.9.13.1,
+#      data_static_route: [ 10.13.60.0/24, 10.12.60.0/24, 10.11.60.0/24] }
