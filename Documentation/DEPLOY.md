@@ -31,7 +31,6 @@ Module | Command | Description
 VCS | `./metro-ansible install_vcs` | Installs components for Virtualized Cloud Services
 VNS | `./metro-ansible install_vns` | Installs VNS component on top of a VSP
 DNS<br>(experimental) | `./metro-ansible install_dns` | Installs a DNS server based on `named`, with a zone file containing all necessary entries for VSP
-OSC (experimental) | `./metro-ansible install_osc` | Installs an RDO OpenStack environment that is integrated against VSD
 
 ## Install a Particular Role or Host
 
