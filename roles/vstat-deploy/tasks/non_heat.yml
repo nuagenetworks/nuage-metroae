@@ -15,22 +15,19 @@
     vsd_hostname: "{{ vsd_fqdn }}"
 
 - block:
+
   - name: Generate SSH keys
     shell: ssh-keygen -b 2048 -t rsa -f /root/.ssh/id_rsa -q -N ""
     args:
       creates: /root/.ssh/id_rsa
-    remote_user: root
     delegate_to: "{{ item }}"
     with_items: "{{ groups['vstats'] }}"
-    run_once: true
 
   - name: Get generated SSH keys
     shell: cat ~/.ssh/id_rsa.pub
     register: ssh_key_lst
-    remote_user: root
     delegate_to: "{{ item }}"
     with_items: "{{ groups['vstats'] }}"
-    run_once: true
 
   - name: Add SSH keys to authorized_keys file
     shell: "echo {{ item[1].stdout }} >> /root/.ssh/authorized_keys"
@@ -38,35 +35,37 @@
     with_nested:
       - "{{ groups['vstats'] }}"
       - "{{ ssh_key_lst.results }}"
-    remote_user: root
-    run_once: true
+
+  remote_user: "{{ vstat_username }}"
+  run_once: true
   when: vstat_sa_or_ha | match('ha')
 
 - name: check for iptables
   shell: "service iptables status"
   register: _svc_iptables
   ignore_errors: True
-  remote_user: "root"
+  remote_user: "{{ vstat_username }}"
 
 - name: Print vsd deployment mode when verbosity >= 1
   debug: var="vsd_sa_or_ha"
 
 - block:
+
   - name: Start iptables
     systemd:
       name: iptables
       state: started
-    remote_user: "root"
+    remote_user: "{{ vstat_username }}"
 
   - name: Enable iptables on boot
     systemd:
       name: iptables
       enabled: yes
-    remote_user: "root"
+    remote_user: "{{ vstat_username }}"
 
   - name: Check if iptables is already setup for VSD rules
     shell: iptables -L INPUT | grep 'match-set vsd src'
-    remote_user: "{{ target_server_username }}"
+    remote_user: "{{ vstat_username }}"
     register: vstat_iptables_result
     ignore_errors: True
 
@@ -99,7 +98,7 @@
         shell: "{{ item }}"
         with_items:
           - "{{ iptables_std_commands }}"
-        remote_user: "root"
+        remote_user: "{{ vstat_username }}"
         register: iptables_results
         ignore_errors: True
 
@@ -120,7 +119,7 @@
         shell: "{{ item }}"
         with_items:
           - "{{ iptables_cluster_commands }}"
-        remote_user: "root"
+        remote_user: "{{ vstat_username }}"
         register: iptables_results
         ignore_errors: True
 
@@ -143,20 +142,21 @@
   shell: "service firewalld status"
   register: _svc_firewalld
   ignore_errors: True
-  remote_user: "root"
+  remote_user: "{{ vstat_username }}"
 
 - block:
+
   - name: Start firewalld
     systemd:
       name: firewalld
       state: started
-    remote_user: "root"
+    remote_user: "{{ vstat_username }}"
 
   - name: Enable firewalld on boot
     systemd:
       name: firewalld
       enabled: yes
-    remote_user: "root"
+    remote_user: "{{ vstat_username }}"
 
   - name: Check if firewalld is already setup for VSD rules
     shell: firewall-cmd --list-all | grep 9200 | grep accept
@@ -191,7 +191,7 @@
       shell: "{{ item }}"
       with_items:
         - "{{ firewall_std_commands }}"
-      remote_user: "root"
+      remote_user: "{{ vstat_username }}"
       when: vsd_sa_or_ha | match('sa')
 
     - name: Config firewall on VSTAT vm to accept conn on ports 9200, 9300 from vsd(s) in cluster setup
@@ -199,7 +199,7 @@
       with_items:
         - "{{ firewall_cluster_commands }}"
       when: vsd_sa_or_ha | match('ha')
-      remote_user: "root"
+      remote_user: "{{ vstat_username }}"
 
     when: not skip_vstat_deploy
 
@@ -218,7 +218,7 @@
     systemd:
       name: elasticsearch
       state: restarted
-    remote_user: "root"
+    remote_user: "{{ vstat_username }}"
 
   - block:
 
@@ -241,14 +241,14 @@
       stat: path=/opt/vsd/vsd-es-standalone.sh
       register: es_sa_script
       delegate_to: "{{ vsd_hostname_list[0] }}"
-      remote_user: root
+      remote_user: "{{ vsd_username }}"
       when:
         - vstat_sa_or_ha | match('sa')
 
     - name: Execute VSTAT standalone script on standalone or clustered vsds
       command: /opt/vsd/vsd-es-standalone.sh -e {{ inventory_hostname }}
       delegate_to: "{{ vsd_hostname_list[0] }}"
-      remote_user: root
+      remote_user: "{{ vsd_username }}"
       environment:
         SSHPASS: "{{ vstat_password }}"
       when:
@@ -258,7 +258,7 @@
     - name: Execute VSTAT cluster script on standalone or clustered vsds
       command: /opt/vsd/vsd-es-cluster-config.sh -e {{ groups['vstats'][0] }},{{ groups['vstats'][1] }},{{ groups['vstats'][2] }}
       delegate_to: "{{ vsd_hostname_list[0] }}"
-      remote_user: root
+      remote_user: "{{ vsd_username }}"
       environment:
         SSHPASS: "{{ vstat_password }}"
       when: vstat_sa_or_ha | match('ha')
@@ -272,5 +272,5 @@
 
   when: not skip_vstat_deploy
 
-- include: aar_vss_enable.yml
+- import_tasks: aar_vss_enable.yml
 

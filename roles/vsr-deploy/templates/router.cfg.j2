@@ -1,0 +1,81 @@
+#jinja2:lstrip_blocks: True
+#--------------------------------------------------
+echo "Router (Network Side) Configuration"
+#--------------------------------------------------
+    router Base
+{% if router.data_ip is defined %}
+        interface "data"
+            address {{ router.data_ip | ipaddr('host/prefix') }}
+            port 1/1/2 
+            no shutdown
+        exit
+{% endif %}
+        interface "system"
+            address {{ router.system_ip | ipaddr('address') }}/32
+            no shutdown
+        exit
+{% if as_number is defined %}
+        autonomous-system {{ as_number }}
+{% endif %}
+{% if router.system_ip is defined %}
+        router-id {{ router.system_ip | ipaddr('address') }}
+{% endif %}
+
+#--------------------------------------------------
+echo "OSPFv2 Configuration"
+#--------------------------------------------------
+        ospf 0
+            area 0.0.0.0
+                interface "system"
+                    no shutdown
+                exit
+{% if router.data_ip is defined %}
+                interface "data"
+                    no shutdown
+                    mtu 1500
+                exit
+{% endif %}
+            exit
+            no shutdown
+        exit
+#--------------------------------------------------
+echo "BGP Configuration"
+#--------------------------------------------------
+        bgp
+            connect-retry 2
+            min-route-advertisement 1
+            enable-peer-tracking
+            rapid-withdrawal
+            rapid-update evpn
+            group "vsr"
+                family evpn
+                type internal
+                cluster 1.1.1.1
+{% for dcgw_item in groups['vsrs'] %}
+   {%- if dcgw_item != inventory_hostname %}
+      {%- if  hostvars[dcgw_item].router.system_ip is defined %}
+                neighbor {{ hostvars[dcgw_item].router.system_ip | ipaddr('address') }}
+                    no shutdown
+                    exit
+                exit
+      {% endif %}
+   {% endif %}
+{% endfor %}
+            exit
+{% if nuage_integration %}
+            group "nuage_controllers"
+                family evpn
+                type internal
+{% for vsc_item in groups['vscs'] %}
+     {%- if hostvars[vsc_item].system_ip is defined %}
+                neighbor {{ hostvars[vsc_item].system_ip | ipaddr('address') }}
+                    no shutdown
+                    exit
+                exit
+  {% endif %}
+{% endfor %}
+{% endif %}
+            exit
+            no shutdown
+        exit
+    exit
