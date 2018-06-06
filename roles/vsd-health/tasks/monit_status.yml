@@ -2,7 +2,12 @@
   vsd_monit:
     group: all
   register: vsd_proc_pre
+  become: "{{ 'no' if vsd_username == 'root' else 'yes' }}"
   remote_user: "{{ vsd_username }}"
+  vars:
+    ansible_become_pass: "{{ vsd_password }}"
+  vars_files:
+    - "{{ user_creds_file | default (inventory_dir+'/user_creds.yml') }}"
 
 - name: wait for VSD common, core and stats services to become running
   monit_waitfor_service:
@@ -10,13 +15,24 @@
     timeout_seconds: 1200
     test_interval_seconds: 30
   with_items: "{{ vsd_proc_pre['state'].keys() }}"
+  become: "{{ 'no' if vsd_username == 'root' else 'yes' }}"
   remote_user: "{{ vsd_username }}"
+  vars:
+    ansible_become_pass: "{{ vsd_password }}"
+  vars_files:
+    - "{{ user_creds_file | default (inventory_dir+'/user_creds.yml') }}"
+
 
 - name: Get monit summary for vsd processes
   vsd_monit:
     group: all
   register: vsd_proc
+  become: "{{ 'no' if vsd_username == 'root' else 'yes' }}"
   remote_user: "{{ vsd_username }}"
+  vars:
+    ansible_become_pass: "{{ vsd_password }}"
+  vars_files:
+    - "{{ user_creds_file | default (inventory_dir+'/user_creds.yml') }}"
 
 - name: Print monit status when verbosity >= 1
   debug: var=vsd_proc verbosity=1
