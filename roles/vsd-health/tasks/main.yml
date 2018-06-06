@@ -110,4 +110,23 @@
       msg: "keyserver@{{ vsd_fqdn }} could not be found in '/opt/ejabberd/bin/ejabberdctl connected_users'"
   when: vsd_sa_or_ha|match('ha')
 
+- block:
+  - name: Verify that REST and JMS gateway is reachable
+    uri:
+      url: https://{{ vsd_fqdn }}:{{ item }}
+      method: GET
+      user: "{{ vsd_auth.username }}"
+      password: "{{ vsd_auth.password }}"
+      status_code: 200
+      validate_certs: False
+    register: webresult
+    ignore_error: yes
+    with_items:
+      - "8443/index.html"
+      - 61619
+    
+  - name: write web interface result
+    nuage_append: filename="{{ report_path }}" text="{{ webresult  | to_nice_json}}\n" 
+    delegate_to: localhost
+      
 - import_tasks: report_footer.yml

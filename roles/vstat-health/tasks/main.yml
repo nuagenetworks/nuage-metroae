@@ -14,6 +14,22 @@
   - name: Write network config to json file
     nuage_append: filename="{{ report_path }}" text="{{ net_conf.info | to_nice_json}}\n"
     delegate_to: localhost
+    
+  - name: check web interface of vstat
+    uri:
+      url: http://{{ inventory_hostname }}:9200
+      method: GET
+      user: "{{ vstat_username }}"
+      password: "{{ vstat_password }}"
+      status_code: 200
+      validate_certs: False
+    register: webresult
+    ignore_error: yes   
+  
+  - name: write web interface result
+    nuage_append: filename="{{ report_path }}" text="{{ webresult  | to_nice_json}}\n" 
+    delegate_to: localhost
+      
   when: inventory_hostname in groups['vstats']
 
 - import_tasks: monit_status.yml
