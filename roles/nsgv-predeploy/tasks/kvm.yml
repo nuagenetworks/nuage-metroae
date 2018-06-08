@@ -76,7 +76,7 @@
           dest={{ images_path }}/{{ vmname }}
           owner={{ libvirt.user }}
           group={{ libvirt.group }}
-    when: not {{ skipImages | default(False) }}
+    when: skipImages is undefined or not skipImages
     
   - block: 
     - name: Check to make sure there is an existing qcow image
@@ -89,7 +89,7 @@
         that: statResult.stat.exists == True
         msg: Missing qcow2 file in {{ images_path }}/{{ vm_name }}
         
-    when: skipImages
+    when: skipImages is defined and skipImages
     
   when: not node_running
   delegate_to: "{{ target_server }}"
