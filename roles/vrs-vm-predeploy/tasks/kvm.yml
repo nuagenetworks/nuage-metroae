@@ -57,7 +57,21 @@
           dest={{ images_path }}/{{ vm_name }}
           owner={{ libvirt.user }}
           group={{ libvirt.group }}
-
+    when: not skipImages
+    
+  - block: 
+    - name: Check to make sure there is an existing qcow image
+      stat: 
+        path: "{{ images_path }}/{{ vm_name }}"
+      register: statResult
+      
+    - name: check the result of image find command
+      assert:
+        that: statResult.stat.exists == True
+        msg: Missing qcow2 file in {{ images_path }}/{{ vm_name }}
+        
+    when: skipImages
+    
   - name: Get list of partitions
     shell: "guestfish -r -a {{ guestfish_dest }} run : list-filesystems | grep -Ev '(unknown|swap)'"
     register: partitions_list

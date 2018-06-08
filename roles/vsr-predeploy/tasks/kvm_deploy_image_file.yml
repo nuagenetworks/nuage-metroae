@@ -6,6 +6,20 @@
       dest:  '{{ vsr_target_qcow2_file_path }}'
       owner: '{{ libvirt.user }}'
       group: '{{ libvirt.group }}'
+    when: copyImages
+
+  - block: 
+    - name: Check to make sure there is an existing qcow image
+      stat: 
+        path: "{{ vsr_target_qcow2_file_path }}"
+      register: statResult
+      
+    - name: check the result of image find command
+      assert:
+        that: statResult.stat.exists == True
+        msg: Missing qcow2 file {{ vsr_target_qcow2_file_path }}
+        
+    when: skipImages
 
   - name: Copy license file to VSR qcow2 image file
     command:
