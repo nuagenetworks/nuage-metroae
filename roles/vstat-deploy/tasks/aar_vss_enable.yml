@@ -7,6 +7,11 @@
   - name: Revoke old stats cert, if any
     command: "/opt/vsd/ejbca/deploy/certMgmt.sh -a revoke -u elastic"
     remote_user: "{{ vsd_username }}"
+    become: "{{ 'no' if vsd_username == 'root' else 'yes' }}"
+    vars:
+      ansible_become_pass: "{{ vsd_password }}"
+    vars_files:
+      - "{{ user_creds_file | default (inventory_dir+'/user_creds.yml') }}"
     delegate_to: "{{ groups['vsds'][0] }}"
     ignore_errors: yes
 
