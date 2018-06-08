@@ -31,6 +31,11 @@
     command: "/bin/sshpass -p{{ vstat_password }} /opt/vsd/ejbca/deploy/certMgmt.sh -a generate -u elastic -c elastic -o csp -f pem -t server -d {{ mgmt_ip }}"
     register: sslresult
     remote_user: "{{ vsd_username }}"
+    become: "{{ 'no' if vsd_username == 'root' else 'yes' }}"
+    vars:
+      ansible_become_pass: "{{ vsd_password }}"
+    vars_files:
+      - "{{ user_creds_file | default (inventory_dir+'/user_creds.yml') }}"
     delegate_to: "{{ groups['vsds'][0] }}"
 
   - name: Create temp folder to host the ssl certificates
@@ -40,6 +45,11 @@
     fetch: src=/opt/vsd/ejbca/p12/pem/{{ item }} dest={{ dest }} flat=yes
     with_items: "{{ pem_list }}"
     remote_user: "{{ vsd_username }}"
+    become: "{{ 'no' if vsd_username == 'root' else 'yes' }}"
+    vars:
+      ansible_become_pass: "{{ vsd_password }}"
+    vars_files:
+      - "{{ user_creds_file | default (inventory_dir+'/user_creds.yml') }}"
     delegate_to: "{{ groups['vsds'][0] }}"
 
   run_once: True
