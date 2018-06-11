@@ -1,0 +1,23 @@
+---
+
+#### Add something to check if user exists and skip creating user
+- name: Check if user exists
+  command: id -u user3
+  register: user_exists
+
+- name: Create the user if not present
+  command: useradd -p $(openssl passwd -1 caso) user3
+  when: "'no such user' in user_exists"
+
+### Check if user is present in sudoers list
+- name: Check if user is present in sudoers list
+  command: sudo -l -U user3 | grep 'not allowed'
+  register: user_not_in_sudoers
+
+### If not add user to sudoers list
+- name: Add user to sudoers list
+  command: usermod -aG wheel user3
+  when: "'not allowed' in user_not_in_sudoers"
+
+### Todo: Disable root access
+
