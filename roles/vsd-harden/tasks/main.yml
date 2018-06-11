@@ -8,17 +8,18 @@
 
 - name: Create the user if not present
   command: useradd -p $(openssl passwd -1 caso) user3
-  when: "'no such user' in user_exists"
+  when: "'no such user' in user_exists.stdout"
 
 ### Check if user is present in sudoers list
 - name: Check if user is present in sudoers list
   command: sudo -l -U user3 | grep 'not allowed'
   register: user_not_in_sudoers
+  ignore_erros: yes
 
 ### If not add user to sudoers list
 - name: Add user to sudoers list
   command: usermod -aG wheel user3
-  when: "'not allowed' in user_not_in_sudoers"
+  when: "'not allowed' in user_not_in_sudoers.stdout"
 
 ### Todo: Disable root access
 
