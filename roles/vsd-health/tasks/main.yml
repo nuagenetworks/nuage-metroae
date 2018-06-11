@@ -85,6 +85,14 @@
   nuage_append: filename="{{ report_path }}" text="{{ inventory_hostname }} {{ ejabberd_users_json|to_nice_json }}\n"
   delegate_to: localhost
 
+- name: Verify connected VSCs
+  assert:
+    that: "user_list.stdout|search('{{ hostvars[item].xmpp.username }}')"
+    msg: "{{ hostvars[item].xmpp.username }} could not be found in '/opt/ejabberd/bin/ejabberdctl connected_users'"
+  remote_user: "{{ vsd_username }}"
+  with_items: "{{ groups['vscs'] }}"
+  when: groups['vscs'] is defined
+
 - name: Get VSD deployment mode
   include_role:
     name: common
