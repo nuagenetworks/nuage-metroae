@@ -1,4 +1,4 @@
-# MetroAG Release Notes
+# Metro Automation Engine Release Notes
 ## Release 2.4.1
 ### New Features and Enhancements
 * PR #649: Support for master/slave VCIN.

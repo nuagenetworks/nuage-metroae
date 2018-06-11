@@ -1,8 +1,8 @@
-# Upgrading Nuage Networks Components with MetroAG
+# Upgrading Nuage Networks Components with Metro Automation Engine
 
 ## Prerequisites / Requirements
 
-Before upgrading any components, you must have previously [set up your Nuage MetroAG Ansible environment](SETUP.md) and [customized the upgrade environment for your target platform](CUSTOMIZE.md).
+Before upgrading any components, you must have previously [set up your Nuage Metro Automation Engine Ansible environment](SETUP.md) and [customized the upgrade environment for your target platform](CUSTOMIZE.md).
 
 ## VSD, VSC, & VSTAT (elasticsearch ) HA/Cluster upgrade at a glance
 
