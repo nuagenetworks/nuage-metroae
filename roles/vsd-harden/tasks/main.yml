@@ -2,7 +2,7 @@
 
 #### Add something to check if user exists and skip creating user
 - name: Check if user exists
-  command: id -u user6
+  command: id -u username
   register: user_exists
   ignore_errors: yes
 
@@ -12,18 +12,18 @@
     register: openssl_pwd 
 
   - name: Create the user if not present
-    command: useradd -p openssl_pwd.stdout user6
+    command: useradd -p {{ openssl_pwd.stdout }} username
   when: "'no such user' in user_exists.stderr"
 
 ### Check if user is present in sudoers list
 - name: Check if user is present in sudoers list
-  command: sudo -l -U user6
+  command: sudo -l -U username
   register: user_not_in_sudoers
   ignore_erros: yes
 
 ### If not add user to sudoers list
 - name: Add user to sudoers list
-  command: usermod -aG wheel user6
+  command: usermod -aG wheel username
   when: "'not allowed' in user_not_in_sudoers.stdout"
 
 ### Todo: Disable root access
