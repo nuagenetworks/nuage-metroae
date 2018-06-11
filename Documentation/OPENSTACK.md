@@ -1,6 +1,6 @@
-# Deploying Nuage Networks Components in OpenStack with MetroAG (limited support)
+# Deploying Nuage Networks Components in OpenStack with Metro Automation Engine (limited support)
 ## Internal Lab Use Only. Not for Customer Use.
-The following components/roles are supported by MetroAG in OpenStack.
+The following components/roles are supported by Metro Automation Engine in OpenStack.
 ### Deploy Infra VM
 You can deploy an infra VM that acts as a private DNS server and NTP server for VSD and VSC.
 `vsd-deploy` role and `vsc-deploy` role automatically populate their respective DNS entries with the hostname and IP addr mappings.
@@ -303,4 +303,4 @@ Ask questions and get support via email.
 
 Report bugs you find and suggest new features and enhancements via the [GitHub Issues](https://github.com/nuagenetworks/nuage-metro/issues "nuage-metro issues") feature.
 
-You may also [contribute](../CONTRIBUTING.md) to Nuage MetroAG by submitting your own code to the project.
+You may also [contribute](../CONTRIBUTING.md) to Nuage Metro Automation Engine by submitting your own code to the project.
