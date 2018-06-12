@@ -66,21 +66,11 @@
 
 - block:
 
-  - name: Create libvirt image directory
-    file: path={{ images_path }}/{{ vmname }}
-          state=directory
-          owner={{ libvirt.user }}
-          group={{ libvirt.group }}
-
   - name: Set local variable with vnsutil guestfish destination
     set_fact:
       guestfish_dest: "{{ images_path }}/{{ vm_name }}/{{ qcow2_file_name }}"
 
-  - name: Copy the vnsutil qcow image to virt images directory
-    copy: src={{ qcow2_path }}/{{ qcow2_file_name }}
-          dest={{ images_path }}/{{ vmname }}
-          owner={{ libvirt.user }}
-          group={{ libvirt.group }}
+  - include_tasks: copy_qcow2.yml
     when: skipImages is undefined or not skipImages
     
   - block: 

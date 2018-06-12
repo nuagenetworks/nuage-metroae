@@ -54,17 +54,7 @@
     fail: msg="The VM is already defined on this target_server."
     when: inventory_hostname in virt_vms.list_vms
 
-  - name: Create libvirt image directory on {{ target_server }}
-    file: path={{ images_path }}/{{ inventory_hostname }}
-          state=directory
-          owner={{ libvirt.user }}
-          group={{ libvirt.group }}
-
-  - name: Copy the DNS qcow image to virt images directory on {{ target_server }}
-    copy: src={{ qcow2_path }}/{{ qcow2_file_name }}
-          dest={{ images_path }}/{{ inventory_hostname }}
-          owner={{ libvirt.user }}
-          group={{ libvirt.group }}
+  - include_tasks: copy_qcow2.yml
     when: skipImages is undefined or not skipImages
     
   - block: 

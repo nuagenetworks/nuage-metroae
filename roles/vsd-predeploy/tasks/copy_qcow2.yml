@@ -1,5 +1,21 @@
-- name: Copy the VSD qcow image to virt images directory
-  copy: src={{ qcow2_path }}/{{ qcow2_file_name }}
-        dest={{ images_path }}/{{ vm_name }}
-        owner={{ libvirt.user }}
-        group={{ libvirt.group }}
+- block:
+  - name: Query Target Server facts
+    action: setup
+  
+  - name: Include OS-specific variables.
+    include_vars: "{{ ansible_os_family }}.yml"
+ 
+  - name: Create libvirt image directory
+    file: path={{ images_path }}/{{ vmname }}
+          state=directory
+          owner={{ libvirt.user }}
+          group={{ libvirt.group }}
+
+  - name: Copy the VSD qcow image to virt images directory
+    copy: src={{ qcow2_path }}/{{ qcow2_file_name }}
+          dest={{ images_path }}/{{ vmname }}
+          owner={{ libvirt.user }}
+          group={{ libvirt.group }}
+
+  delegate_to: "{{ target_server }}"
+  remote_user: "{{ target_server_username }}"
