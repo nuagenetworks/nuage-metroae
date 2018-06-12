@@ -1,27 +1,30 @@
 ---
 
-#### Add something to check if user exists and skip creating user
-- name: Check if user exists
-  command: id -u {{ vsd_username }}
-  register: user_exists
-  ignore_errors: yes
+block:
+  #### Add something to check if user exists and skip creating user
+  - name: Check if user exists
+    command: id -u {{ vsd_username }}
+    register: user_exists
+    ignore_errors: yes
 
-- block:
-  - name: Create a SSH pass
-    command: openssl passwd -1 {{ vsd_pass }}
-    register: openssl_pwd 
+  - block:
+    - name: Create a SSH pass
+      command: openssl passwd -1 {{ vsd_pass }}
+      register: openssl_pwd 
 
-  - name: Create the user if not present
-    command: useradd -p {{ openssl_pwd.stdout }} {{ vsd_username}}
-  when: "'no such user' in user_exists.stderr"
+    - name: Create the user if not present
+      command: useradd -p {{ openssl_pwd.stdout }} {{ vsd_username}}
+    when: "'no such user' in user_exists.stderr"
 
-### Check if user is present in sudoers list
-- name: Check if user is present in sudoers list
-  command: sudo -l -U {{ vsd_username }}
-  register: user_not_in_sudoers
-  ignore_erros: yes
+  ### Check if user is present in sudoers list
+  - name: Check if user is present in sudoers list
+    command: sudo -l -U {{ vsd_username }}
+    register: user_not_in_sudoers
+    ignore_erros: yes
 
-### If not add user to sudoers list
-- name: Add user to sudoers list
-  command: usermod -aG wheel {{ vsd_username }}
-  when: "'not allowed' in user_not_in_sudoers.stdout"
+  ### If not add user to sudoers list
+  - name: Add user to sudoers list
+    command: usermod -aG wheel {{ vsd_username }}
+    when: "'not allowed' in user_not_in_sudoers.stdout"
+when: vsd_username != 'root'
+
