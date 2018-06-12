@@ -14,9 +14,11 @@ short_description: Adds CSP user to CMS Group
 options:
   vsd_auth:
     description:
-      - VSD credentials for user to be added to CMS Group
+      - VSD credentials of the administrator that will be used to connect to Nuage VSD
     required: true
     default: null
+  user_id:
+    description: Nuage User ID of user to add to CMS Group
   api_version:
     description:
       - VSD version
@@ -27,25 +29,30 @@ options:
 '''
 
 
-def add_cspto_cms(csproot):
+def add_user_to_cms(session, user_id):
     try:
 
         cspenterprise = VSPK.NUEnterprise()
-        cspenterprise.id = csproot.enterprise_id
+        cspenterprise.id = session.user.enterprise_id
+
         csp_users = cspenterprise.users.get()
-        lst_users = [usr.user_name for usr in csp_users]
+        if user_id not in [usr.id for usr in csp_users]:
+          module.fail_json(msg="Requested user is not part of CSP Enterprise")
+        
+        cms_group = cspenterprise.groups.get_first(filter="name == 'CMS Group'")
+        cms_users = cms_group.users.get()
 
-        csprootuser = VSPK.NUUser(id=csproot.id)
-        csprootuser.fetch()
-        # Add csproot user to CMS group
-        csprootgroup = cspenterprise.groups.get_first(filter="name ==\
-                                                      'CMS Group'")
-
-        csprootgroup.assign([csprootuser, csprootuser], VSPK.NUUser)
+        if user_id in [usr.id for usr in cms_users]:
+          module.exit_json(changed=False, msg="User (id=%s) is already part of CMS Group" % user_id)
+        else:
+          vspk_user = VSPK.NUUser(id=user_id)
+          vspk_user.fetch()
+          # Add user to CMS group
+          cms_group.assign(cms_users+[vspk_user], VSPK.NUUser)
+          module.exit_json(changed=True, msg="User (id=%s) has been added to CMS Group" % user_id)
 
     except Exception as e:
         module.fail_json(msg="Could not assign user to CMS Group: %s" % e)
-    module.exit_json(changed=True)
 
 def format_api_version(version):
     # Handle 3.2 seperately
@@ -67,25 +74,31 @@ def get_vsd_session(vsd_auth):
     try:
         session = VSPK.NUVSDSession(**vsd_auth)
         session.start()
-        csproot = session.user
-        return csproot
+        return session
     except Exception as e:
         module.fail_json(msg="Could not establish connection to VSD %s" % e)
 
 
 arg_spec = dict(
     vsd_auth=dict(required=True, type='dict'),
-    api_version=dict(required=True, type='str'))
+    api_version=dict(required=True, type='str'),
+    user_id=dict(default=None, required=False, type='str'))
 
-module = AnsibleModule(argument_spec=arg_spec, supports_check_mode=True)
+module = AnsibleModule(argument_spec=arg_spec, supports_check_mode=False)
 
 
 def main():
     vsd_auth = module.params['vsd_auth']
 
-    csproot = get_vsd_session(vsd_auth)
+    session = get_vsd_session(vsd_auth)
+    
+    if 'user_id' in module.params.keys() and module.params['user_id'] is not None:
+      user_id = module.params['user_id']
+    else:
+      user_id = session.user.id
 
-    add_cspto_cms(csproot)
+    add_user_to_cms(session, user_id)
+
 
 
 # Run the main
