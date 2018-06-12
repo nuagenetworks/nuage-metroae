@@ -58,19 +58,15 @@
 # the config prompt of ># cannot be detected and the config fails.  As a workaround,
 # we will build the required configuration via a .cfg file and execute it.
 #
-#   - name: Configure VSC
-#     sros_config:
-#       lines:
-#           - configure system security tls-profile vns-tls-profile
-#           - configure vswitch-controller open-flow tls-profile vns-tls-profile
-#           - configure vswitch-controller xmpp tls-profile vns-tls-profile
-#           - configure system time ntp ntp-server
-#           - configure system security tls-profile vns-tls-profile own-key cf1:\{{ xmpp.username }}-Key.pem
-#           - configure system security tls-profile vns-tls-profile own-certificate cf1:\{{ xmpp.username }}.pem
-#           - configure system security tls-profile vns-tls-profile ca-certificate cf1:\{{ xmpp.username }}-CA.pem
-#           - configure system security tls-profile vns-tls-profile no shutdown
-#       provider: "{{ vsc_creds }}"
-#     delegate_to: localhost
+# lines:
+#     - configure system security tls-profile vns-tls-profile
+#     - configure vswitch-controller open-flow tls-profile vns-tls-profile
+#     - configure vswitch-controller xmpp tls-profile vns-tls-profile
+#     - configure system time ntp ntp-server
+#     - configure system security tls-profile vns-tls-profile own-key cf1:\{{ xmpp.username }}-Key.pem
+#     - configure system security tls-profile vns-tls-profile own-certificate cf1:\{{ xmpp.username }}.pem
+#     - configure system security tls-profile vns-tls-profile ca-certificate cf1:\{{ xmpp.username }}-CA.pem
+#     - configure system security tls-profile vns-tls-profile no shutdown
 
   - name: Creating temp folder for VNS TLS config file
     connection: local
@@ -86,7 +82,7 @@
 
   - name: Copy VNS TLS VSC config file to VSC
     connection: local
-    command: "sshpass -p {{ vsc_password|default('admin') }} scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null /tmp/ansible-config-{{ inventory_hostname }}/vns_tls.cfg admin@{{ mgmt_ip }}:"
+    command: "sshpass -p {{ vsc_password|default('admin') }} scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null /tmp/ansible-config-{{ inventory_hostname }}/vns_tls.cfg {{ vsc_username|default('admin') }}@{{ mgmt_ip }}:"
 
   - name: Execute VNS TLS configuration on VSC
     sros_command:
