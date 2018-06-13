@@ -53,17 +53,41 @@
 
     remote_user: "{{ vsd_username }}"
 
-  - name: Configure VSC
-    sros_config:
-      lines:
-          - configure system security tls-profile vns-tls-profile
-          - configure vswitch-controller open-flow tls-profile vns-tls-profile
-          - configure vswitch-controller xmpp tls-profile vns-tls-profile
-          - configure system time ntp ntp-server
-          - configure system security tls-profile vns-tls-profile own-key cf1:\{{ xmpp.username }}-Key.pem
-          - configure system security tls-profile vns-tls-profile own-certificate cf1:\{{ xmpp.username }}.pem
-          - configure system security tls-profile vns-tls-profile ca-certificate cf1:\{{ xmpp.username }}-CA.pem
-          - configure system security tls-profile vns-tls-profile no shutdown
+# We would like to configure the following directly onto the VSD via sros_config.
+# However, due to a defect in ansible: https://github.com/ansible/ansible/pull/41382
+# the config prompt of ># cannot be detected and the config fails.  As a workaround,
+# we will build the required configuration via a .cfg file and execute it.
+#
+# lines:
+#     - configure system security tls-profile vns-tls-profile
+#     - configure vswitch-controller open-flow tls-profile vns-tls-profile
+#     - configure vswitch-controller xmpp tls-profile vns-tls-profile
+#     - configure system time ntp ntp-server
+#     - configure system security tls-profile vns-tls-profile own-key cf1:\{{ xmpp.username }}-Key.pem
+#     - configure system security tls-profile vns-tls-profile own-certificate cf1:\{{ xmpp.username }}.pem
+#     - configure system security tls-profile vns-tls-profile ca-certificate cf1:\{{ xmpp.username }}-CA.pem
+#     - configure system security tls-profile vns-tls-profile no shutdown
+
+  - name: Creating temp folder for VNS TLS config file
+    connection: local
+    file:
+      path: "/tmp/ansible-config-{{ inventory_hostname }}"
+      state: directory
+
+  - name: Creating VNS TLS VSC config file
+    connection: local
+    template:
+      src: vns_tls.cfg.j2
+      dest: "/tmp/ansible-config-{{ inventory_hostname }}/vns_tls.cfg"
+
+  - name: Copy VNS TLS VSC config file to VSC
+    connection: local
+    command: "sshpass -p {{ vsc_password|default('admin') }} scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null /tmp/ansible-config-{{ inventory_hostname }}/vns_tls.cfg {{ vsc_username|default('admin') }}@{{ mgmt_ip }}:"
+
+  - name: Execute VNS TLS configuration on VSC
+    sros_command:
+      commands:
+        - exec cf1:\vns_tls.cfg
       provider: "{{ vsc_creds }}"
     delegate_to: localhost
 
