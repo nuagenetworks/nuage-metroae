@@ -2,16 +2,16 @@
 
 ## Prerequisites / Requirements
 
-Before working with MetroAG, please refer to [README.md](README.md), [SETUP.md](/SETUP.md), and [CUSTOMIZE.md](/CUSTOMIZE.md) for information about supported deployments and general guidelines.
+Before working with Metro Automation Engine, please refer to [README.md](README.md), [SETUP.md](/SETUP.md), and [CUSTOMIZE.md](/CUSTOMIZE.md) for information about supported deployments and general guidelines.
 
-## A Sample of What MetroAG Can Do  
+## A Sample of What Metro Automation Engine Can Do  
 
 [1. Customize the Component Mix](#1-customize-the-component-list)   
 [2. Deploy VRS on Multiple Target Architecture](#2-deploy-vrs-on-multiple-target-architectures)  
 [3. Deploy NSG in AWS](#3-deploy-nsg-in-aws)   
 
 ## 1. Customize the Component Mix  
-MetroAG supports customizing the list of components the playbooks operate on. To operationalize two VSCs `build_vars.yml` would contain the following:  
+Metro Automation Engine supports customizing the list of components the playbooks operate on. To operationalize two VSCs `build_vars.yml` would contain the following:  
 ```
 myvscs:
   - { hostname: jenkinsvsc1.example.com,
@@ -41,7 +41,7 @@ myvscs:
 ```
 
 ### Example  
-You can use MetroAG to deploy a VSD cluster by itself. The basic pattern described here applies to deploying only VSD, VSD+VSC, VSD+VSC+VRS, VSC only, VSTAT only, and a number of other combination of list components.
+You can use Metro Automation Engine to deploy a VSD cluster by itself. The basic pattern described here applies to deploying only VSD, VSD+VSC, VSD+VSC+VRS, VSC only, VSTAT only, and a number of other combination of list components.
 
 For deploying a VSD cluster, you must define 3 VSD entries in the `myvsds` dictionary in `build_vars.yml`. You must also have the other required definitions in place. Here is an example of the `build_vars.yml` file that deploys a cluster of 3 VSDs:
 
@@ -84,7 +84,7 @@ For deploying a VSD cluster, you must define 3 VSD entries in the `myvsds` dicti
 
 Some customer environments use a mix of Debian- and RedHat-family Linux distributions in their compute nodes, where Debian == Ubuntu and Redhat == CentOS or RHEL.
 
-MetroAG supports deploying VRS onto two target architectures by supporting VRS groups in `build_vars.yml`. The following is an example of deloying VRSs on three target architectures using one 'build_vars.yml' file.
+Metro Automation Engine supports deploying VRS onto two target architectures by supporting VRS groups in `build_vars.yml`. The following is an example of deloying VRSs on three target architectures using one 'build_vars.yml' file.
 
 ### Example build_vars.yml file for three VRS target architectures
 
@@ -114,7 +114,7 @@ myvrss:
 
 ## 3. Deploy NSG in AWS  
 
-MetroAG supports the deployment of NSGs in AWS and configuring those as Network Gateways in a particular enterprise of a Nuage Networks installation.
+Metro Automation Engine supports the deployment of NSGs in AWS and configuring those as Network Gateways in a particular enterprise of a Nuage Networks installation.
 It assumes the necessary enterprise and NSG template has been preconfigured:
 
 It can either
@@ -223,4 +223,4 @@ Ask questions and get support via email.
 
 Report bugs you find and suggest new features and enhancements via the [GitHub Issues](https://github.com/nuagenetworks/nuage-metro/issues "nuage-metro issues") feature.
 
-You may also [contribute](../CONTRIBUTING.md) to Nuage MetroAG by submitting your own code to the project.
+You may also [contribute](../CONTRIBUTING.md) to Nuage Metro Automation Engine by submitting your own code to the project.
