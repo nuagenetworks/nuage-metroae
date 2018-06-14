@@ -5,31 +5,79 @@
     get_md5: yes
   register: data_file
 
-- name: 
-  assert:
-    that: "data_file.stat.exists"
-    msg:  "Required file {{ file_name }} not found"
-
-- name: Find md5 file
-  find: path="{{ inventory_dir }}" pattern="{{ file_name }}.md5"
-  register: md5_file
-
-- name: Set variable to do build if md5 not found
-  set_fact:
-    do_build: True
-  when: md5_file.matched == 0
-
 - block:
+  
+  - name: Stat the source if symlink
+    stat:
+      path: "{{ data_file.stat.lnk_source }}"
+      get_md5: yes
+    register: data_lnk_source
+  
+  - name: Write md5 file to disk
+    copy:
+      content: "{{ data_lnk_source.stat.md5 }}"
+      dest: "{{ inventory_dir }}/{{ file_name }}.md5"
+  
+  - name: 
+    assert:
+      that: "data_lnk_source.stat.exists"
+      msg:  "Required file {{ file_name }} not found"
 
-  - name: Get the md5 value in the file we found
-    command: "cat {{ md5_file.files[0].path }}"
-    register: old_md5_string
+  - name: Find md5 file
+    find: path="{{ inventory_dir }}" pattern="{{ file_name }}.md5"
+    register: md5_symlink_file
 
-  - debug: var=data_file.stat.md5 verbosity=1
-
-  - name: Set variable to do build if md5s don't match
+  - name: Set variable to do build if md5 not found
     set_fact:
       do_build: True
-    when: data_file.stat.md5 != old_md5_string.stdout
+    when: md5_symlink_file.matched == 0
 
-  when: md5_file.matched > 0 and not do_build
+  - block:
+
+    - name: Get the md5 value in the file we found
+      command: "cat {{ md5_symlink_file.files[0].path }}"
+      register: old_md5_symlink_string
+
+    - debug: var=data_lnk_source.stat.md5 verbosity=1
+
+    - name: Set variable to do build if md5s don't match
+      set_fact:
+        do_build: True
+      when: data_lnk_source.stat.md5 != old_md5_symlink_string.stdout
+
+    when: md5_symlink_file.matched > 0 and not do_build
+ 
+ when: data_file.stat.mimetype|match('inode/symlink')
+
+- block: 
+
+  - name: 
+    assert:
+      that: "data_file.stat.exists"
+      msg:  "Required file {{ file_name }} not found"
+
+  - name: Find md5 file
+    find: path="{{ inventory_dir }}" pattern="{{ file_name }}.md5"
+    register: md5_file
+
+  - name: Set variable to do build if md5 not found
+    set_fact:
+      do_build: True
+    when: md5_file.matched == 0
+
+  - block:
+
+    - name: Get the md5 value in the file we found
+      command: "cat {{ md5_file.files[0].path }}"
+      register: old_md5_string
+
+    - debug: var=data_file.stat.md5 verbosity=1
+
+    - name: Set variable to do build if md5s don't match
+      set_fact:
+        do_build: True
+      when: data_file.stat.md5 != old_md5_string.stdout
+
+   when: md5_file.matched > 0 and not do_build
+
+ when: not data_file.stat.mimetype|match('inode/symlink')
