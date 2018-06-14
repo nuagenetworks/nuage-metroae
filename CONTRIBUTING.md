@@ -24,7 +24,7 @@ git clone https://github.com/<your handle>/nuage-metro.git metro-fork/
 cd metro-fork/
 git checkout dev
 ```
-3. Develop and test all proposed contributions on the appropriate hypervisors in the `metro-fork` directory. If you choose not to provide support for one or more supported hypervisors, you must provide graceful error handling for those types.
+3. Develop and test all proposed contributions on the appropriate hypervisors in the `metro-fork` directory. If you choose not to provide support for one or more supported hypervisors, you must provide graceful error handling for those types. Note: All python files modified or submitted must successfully pass a 'flake8 --ignore=E501' test. 
 
 4. If you require any new User Input Variables:
     * Extend the MetroAG variable files with sensible example values:<br> `build_vars.yml` and `user_creds.yml`.
