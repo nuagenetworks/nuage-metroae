@@ -2,6 +2,19 @@
 
 - block:
 
+  - block:
+    - name: Force DHCP update to configure DNS in AWS
+      command: dhclient
+      ignore_errors: true
+
+    - name: Set hostname for AWS for current session
+      command: "hostname {{ hostname }}"
+
+    - name: Set hostname for AWS permanently
+      shell: "echo {{ hostname }} > /etc/hostname"
+
+    when: target_server_type | match("aws")
+
   - name: Read the VSD version
     shell: echo $VSD_VERSION
     register: vsd_full_version
