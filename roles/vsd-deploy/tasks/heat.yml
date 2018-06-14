@@ -47,10 +47,9 @@
 
 - name: Inject ssh key to VSD if cloud-init did not work
   expect:
-    command: "ssh-copy-id -i san@{{ vsd_mgmt_ip }}"
+    command: "ssh-copy-id -i {{ vsd_username }}@{{ vsd_mgmt_ip }}"
     responses:
       (?i)yes: "yes"
-      (?i)password: "caso"
   remote_user: "{{ vsd_username }}"
   delegate_to: localhost
 
@@ -129,6 +128,7 @@
     - debug: var=vsd_version.stdout verbosity=1
 
     - block:
+
       - name: Generate SSH keys
         shell: ssh-keygen -b 2048 -t rsa -f /root/.ssh/id_rsa -q -N ""
         args:
@@ -152,6 +152,7 @@
       when: vsd_version.stdout | int < 5 and inventory_hostname == vsd_cluster_node_1
 
     - block:
+
       - name: Generate SSH keys
         shell: sudo -u vsd ssh-keygen -b 2048 -t rsa -f /home/vsd/.ssh/id_rsa -q -N ""
         args:
@@ -183,6 +184,7 @@
       when: vsd_version.stdout | int >= 5
 
     when: inventory_hostname == vsd_cluster_node_1 or (inventory_hostname == vsd_cluster_node_3 and nuage_upgrade)
+
   remote_user: "{{ vsd_username }}"
   when: vsd_sa_or_ha | match('ha')
 
@@ -203,19 +205,17 @@
   - name: Install VSD software on the first cluster node
     command: "{{ vsd_node1_install_cmd }}"
     when: inventory_hostname == vsd_cluster_node_1
-    remote_user: "{{ vsd_username }}"
 
   - name: Install VSD software on the second cluster node
     command: "{{ vsd_node2_install_cmd }}"
     when: inventory_hostname == vsd_cluster_node_2
-    remote_user: "{{ vsd_username }}"
 
   - name: Install VSD software on the third cluster node
     command: "{{ vsd_node3_install_cmd }}"
     when: inventory_hostname == vsd_cluster_node_3
-    remote_user: "{{ vsd_username }}"
 
   when: vsd_sa_or_ha | match('ha')
+  remote_user: "{{ vsd_username }}"
 
 - name: Set XMPP connection to allow both clear and TLS
   command: /opt/vsd/bin/ejmode allow -y
