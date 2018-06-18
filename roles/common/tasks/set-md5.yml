@@ -5,24 +5,24 @@
     get_md5: yes
   register: data_file
 
-# - block:
+- block:
   
-#   - name: Stat the source if symlink
-#     stat:
-#       path: "{{ data_file.stat.lnk_source }}"
-#       get_md5: yes
-#     register: data_lnk_source
+  - name: Stat the source if symlink
+    stat:
+      path: "{{ data_file.stat.lnk_source }}"
+      get_md5: yes
+    register: data_lnk_source
   
-#   - name: Write md5 file to disk
-#     copy:
-#       content: "{{ data_lnk_source.stat.md5 }}"
-#       dest: "{{ inventory_dir }}/{{ file_name }}.md5"
+  - name: Write md5 file to disk
+    copy:
+      content: "{{ data_lnk_source.stat.md5 }}"
+      dest: "{{ inventory_dir }}/{{ file_name }}.md5"
 
-#   when: data_file.stat.mimetype|match('inode/symlink')
+  when: data_file.stat.mimetype|match('inode/symlink')
 
 - name: Write md5 file to disk
   copy: 
     content: "{{ data_file.stat.md5 }}"
     dest: "{{ inventory_dir }}/{{ file_name }}.md5"
-  # when: not data_file.stat.mimetype|match('inode/symlink')
+  when: not data_file.stat.mimetype|match('inode/symlink')
 
