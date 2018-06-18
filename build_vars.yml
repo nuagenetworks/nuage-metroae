@@ -135,7 +135,10 @@ dns_domain: example.com
 ## Uncomment and set to 'False' if you want to skip the yum update--acceptable only in
 ## lab environments.
 # yum_update: True
-
+## secure_communication is used to setup TLS on all the communication between the VSD, VSC, 
+## VRS and NSGV. By default, it is set to 'True', the recomemded value.
+## Uncomment and set to 'False' if you don't want to use TLS
+#secure_communication: True
 
 ###
 ## Global Vcenter params
@@ -381,7 +384,7 @@ vsc_operations_list:
 ## expected_num_vm_vports
 ## expected_num_gateway_ports
 ## Optional: Values to use for this VSC when running a health test. All values are
-## set to 0 by default, which means they will be ignored. To use them, uncomment
+## set to 0 by default, which means they will be ignored. To use them, uncomment 
 ## and set to the expected values.
 ##
 ## vsc_mgmt_static_route_list
@@ -412,7 +415,8 @@ myvscs:
 #      expected_num_vm_vports: 0,
 #      expected_num_gateway_ports: 0,
 #      vsc_mgmt_static_route_list: [ 0.0.0.0/1, 128.0.0.1/1 ],
-      xmpp_username: vsc1 }
+#      secure_communication: "{{ secure_communication }}",
+      xmpp_username: vsc1}
   - { hostname: "vsc1.nuage.met",
 #      vmname: vsc1,
       target_server_type: "kvm",
@@ -431,7 +435,8 @@ myvscs:
 #      expected_num_vm_vports: 0,
 #      expected_num_gateway_ports: 0,
 #      vsc_mgmt_static_route_list: [ 0.0.0.0/1, 128.0.0.1/1 ],
-      xmpp_username: vsc2 }
+#      secure_communication: "{{ secure_communication }}",
+      xmpp_username: vsc2}
 ###
 ## VRS params
 ###
@@ -495,8 +500,10 @@ myvrss:
   - { vrs_os_type: u14.04,
 #      libnetwork_install: False,
 #      dkms_install: False,
+      secure_openFlow: true,
       active_controller_ip: 192.168.122.204,
       standby_controller_ip: 192.168.122.205,
+#      secure_communication: "{{ secure_communication }}",
       vrs_ip_list: [
         192.168.122.101] }
   - { vrs_os_type: el7,
@@ -504,6 +511,7 @@ myvrss:
 #      dkms_install: False,
       active_controller_ip: 192.168.122.204,
       standby_controller_ip: 192.168.122.205,
+#      secure_communication: "{{ secure_communication }}",
       vrs_ip_list: [
         192.168.122.83,
         192.168.122.238 ] }
@@ -512,6 +520,7 @@ myvrss:
 #      dkms_install: False,
       active_controller_ip: 192.168.122.204,
       standby_controller_ip: 192.168.122.205,
+#      secure_communication: "{{ secure_communication }}",
       vrs_ip_list: [
         192.168.122.215 ] }
 ###
@@ -708,6 +717,7 @@ myvnsutils:
 #      nsgv_ip: 192.168.100.206,
 #      nsgv_mac: '52:54:00:88:85:12',
 #      nsgv_hostname: "nsgv1.{{ dns_domain }}",
+#      secure_communication: "{{ secure_communication }}",
       vsd_fqdn: "{{ vsd_fqdn_global }}"
     }
 ###
@@ -761,6 +771,7 @@ mynsgvs:
 #      iso_file: 'user_img.iso',
 #      nsgv_mac: '52:54:00:88:85:12',
 #      bootstrap_method: none,
+#      secure_communication: {{ secure_communication }},
       target_server: 135.227.181.233 }
 ###
 ## VCIN params
