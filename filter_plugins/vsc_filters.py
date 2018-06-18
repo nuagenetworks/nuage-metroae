@@ -442,6 +442,7 @@ def vsd_detail_to_json(string):
         dict["VSD-Info"].append(vsd_dict)
     return json.dumps(dict)
 
+
 class FilterModule(object):
     ''' Query filter '''
 
