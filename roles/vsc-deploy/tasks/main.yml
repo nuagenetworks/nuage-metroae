@@ -7,14 +7,11 @@
     - vsc-deploy
     
 - block:
-  - name: set secure communication flag 
-    set_fact: 
-      secure_communication: "{{ secure_communication }}"
-  
   - name: Change XMPP connection to TLS on VSD
     command: /opt/vsd/bin/ejmode allow -y
     delegate_to: "{{ item }}"
     with_items: "{{ groups['vsds'] }}"
+    when: secure_communication
 
   - name: wait for ejabberd-status to become running
     monit_waitfor_service:
