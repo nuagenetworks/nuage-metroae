@@ -1,0 +1,108 @@
+---
+- block:
+
+  - name: Clean known_hosts
+    known_hosts:
+      name: "{{ mgmt_ip }}"
+      state: absent
+    delegate_to: localhost
+    no_log: True
+    ignore_errors: True
+
+  - block:
+
+    - name: Change XMPP connection to TLS on VSD
+      command: /opt/vsd/bin/ejmode allow -y
+      delegate_to: "{{ item }}"
+      with_items: "{{ groups['vsds'] }}"
+
+    - name: wait for ejabberd-status to become running
+      monit_waitfor_service:
+        name: "ejabberd-status"
+        timeout_seconds: 600
+        test_interval_seconds: 30
+      delegate_to: "{{ item }}"
+      with_items: "{{ groups['vsds'] }}"
+
+    - name: wait for ejbca-status to become running
+      monit_waitfor_service:
+        name: "ejbca-status"
+        timeout_seconds: 600
+        test_interval_seconds: 30
+      delegate_to: "{{ item }}"
+      with_items: "{{ groups['vsds'] }}"
+
+    remote_user: "{{ vsd_username }}"
+
+  - block:
+
+    - name: Get VSD version
+      shell: echo $VSD_VERSION
+      register: vsd_version
+      delegate_to: "{{ groups['vsds'][0] }}"
+
+    - name: Create and transfer certs from 4.0.4 VSD
+      command: "{{ create_certs_404 }}"
+      delegate_to: "{{ groups['vsds'][0] }}"
+      when: "'4.0.4' in vsd_version.stdout"
+
+    - name: Create and transfer certs from VSD
+      command: "{{ create_certs }}"
+      delegate_to: "{{ groups['vsds'][0] }}"
+      when: "'4.0.4' not in vsd_version.stdout"
+
+    remote_user: "{{ vsd_username }}"
+
+# We would like to configure the following directly onto the VSD via sros_config.
+# However, due to a defect in ansible: https://github.com/ansible/ansible/pull/41382
+# the config prompt of ># cannot be detected and the config fails.  As a workaround,
+# we will build the required configuration via a .cfg file and execute it.
+#
+# lines:
+#     - configure system security tls-profile vns-tls-profile
+#     - configure vswitch-controller open-flow tls-profile vns-tls-profile
+#     - configure vswitch-controller xmpp tls-profile vns-tls-profile
+#     - configure system time ntp ntp-server
+#     - configure system security tls-profile vns-tls-profile own-key cf1:\{{ xmpp.username }}-Key.pem
+#     - configure system security tls-profile vns-tls-profile own-certificate cf1:\{{ xmpp.username }}.pem
+#     - configure system security tls-profile vns-tls-profile ca-certificate cf1:\{{ xmpp.username }}-CA.pem
+#     - configure system security tls-profile vns-tls-profile no shutdown
+
+  - name: Creating temp folder for VNS TLS config file
+    connection: local
+    file:
+      path: "/tmp/ansible-config-{{ inventory_hostname }}"
+      state: directory
+
+  - name: Creating VNS TLS VSC config file
+    connection: local
+    template:
+      src: vns_tls.cfg.j2
+      dest: "/tmp/ansible-config-{{ inventory_hostname }}/vns_tls.cfg"
+
+  - name: Copy VNS TLS VSC config file to VSC
+    connection: local
+    command: "sshpass -p {{ vsc_password|default('admin') }} scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null /tmp/ansible-config-{{ inventory_hostname }}/vns_tls.cfg {{ vsc_username|default('admin') }}@{{ mgmt_ip }}:"
+
+  - name: Execute VNS TLS configuration on VSC
+    sros_command:
+      commands:
+        - exec cf1:\vns_tls.cfg
+      provider: "{{ vsc_creds }}"
+    delegate_to: localhost
+
+  - name: check xmpp connectivity between VSC and VSD after enabling TLS
+    sros_command:
+      commands:
+        - show vswitch-controller xmpp-server | match Functional
+      provider: "{{ vsc_creds }}"
+    register: xmpp_status
+    until: xmpp_status.stdout[0].find('Functional') != -1
+    retries: 6
+    delay: 10
+    delegate_to: localhost
+
+  - name: Print output of 'show vswitch-controller xmpp-server' when verbosity >= 1
+    debug: var=xmpp_status verbosity=1
+
+  when: groups['vnsutils'] is defined
