@@ -30,33 +30,19 @@
 
 - block:
 
-  - name: If RedHat, install packages for RedHat OS family distros
+  - name: Install packages for KVM
     yum: name={{ item }} state=present
     with_items:
     - qemu-kvm
     - libvirt
     - libguestfs-tools
     - libvirt-python
-    when: ansible_os_family | match("RedHat")
-    become: true
-
-  - name: If Debian, install packages for Debian OS family distros
-    apt: name={{ item }} state=present
-    with_items:
-    - qemu-kvm
-    - libvirt-bin
-    - libguestfs-tools
-    - python-libvirt
-    when: ansible_os_family | match("Debian")
-    become: true
 
   - name: Start libvirtd on target server
     command: systemctl start libvirtd
-    become: true
 
   - name: Enable libvirtd on target server
     command: systemctl enable libvirtd
-    become: true
 
   - name: List the Virtual Machines running on {{ target_server }}
     virt: command=list_vms
@@ -68,3 +54,4 @@
 
   delegate_to: "{{ target_server }}"
   remote_user: "{{ target_server_username }}"
+  become: true
