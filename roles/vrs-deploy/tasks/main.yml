@@ -14,6 +14,26 @@
       openvswitch_file: "/etc/default/openvswitch-switch"
     when: ansible_os_family == "Debian"
 
+  - name: Set connection type 
+    set_fact:
+      conn_type: "ssl"
+    
+  - name: Set Client key path 
+    set_fact:
+      client_keys_path: "/etc/default/bootstrap/keys"
+      
+  - name: Create Key directory
+    file:
+      path: "{{ client_keys_path }}"
+      state: directory
+      mode: 777
+      recurse: yes
+
+  - name: Set openvswitch file on Debian OS family distros
+    set_fact:
+      openvswitch_file: "/etc/default/openvswitch-switch"
+    when: ansible_os_family == "Debian"
+
   - name: Check whether active controller address is already configured
     command: grep -Fq "ACTIVE_CONTROLLER={{ active_controller_addr }}" {{ openvswitch_file }}
     register: active_address_result
@@ -117,13 +137,56 @@
       dest: "{{ openvswitch_file }}"
       regexp: "^STANDBY_CONTROLLER="
       line: "STANDBY_CONTROLLER={{ standby_controller_addr }}"
-
+      
   - name: Update connection type in {{ openvswitch_file }} file
     remote_user: "{{ target_server_username }}"
     lineinfile:
       dest: "{{ openvswitch_file }}"
       regexp: "^CONN_TYPE="
       line: "CONN_TYPE=tcp"
+  
+  - block: 
+    - name: Generate TLS Certificates for VRS
+      include_role: 
+        name: common
+        tasks_from: vsd-generate-transfer-certificates
+      vars: 
+        certificate_password: "{{ compute_password }}"
+        certificate_username: vrs-{{ inventory_hostname }}
+        commonName: vrs-{{ inventory_hostname }}
+        certificate_type: vrs
+        scp_user: "{{ compute_username }}"
+        scp_location: "{{ client_keys_path }}"
+        additional_parameters:  -v {{ inventory_hostname }}
+       
+    - name: Update client key path in {{ openvswitch_file }} file
+      remote_user: "{{ target_server_username }}"
+      lineinfile:
+        dest: "{{ openvswitch_file }}"
+        regexp: "^CLIENT_KEY_PATH="
+        line: "CLIENT_KEY_PATH={{ client_keys_path }}/vrs-{{ inventory_hostname }}-Key.pem"
+  
+    - name: Update client cert path in {{ openvswitch_file }} file
+      remote_user: "{{ target_server_username }}"
+      lineinfile:
+        dest: "{{ openvswitch_file }}"
+        regexp: "^CLIENT_CERT_PATH="
+        line: "CLIENT_CERT_PATH={{ client_keys_path }}/vrs-{{ inventory_hostname }}.pem"
+  
+    - name: Update CA cert path in {{ openvswitch_file }} file
+      remote_user: "{{ target_server_username }}"
+      lineinfile:
+        dest: "{{ openvswitch_file }}"
+        regexp: "^CA_CERT_PATH="
+        line: "CA_CERT_PATH={{ client_keys_path }}/vrs-{{ inventory_hostname }}-CA.pem"
+  
+    - name: Update connection type in {{ openvswitch_file }} file
+      remote_user: "{{ target_server_username }}"
+      lineinfile:
+        dest: "{{ openvswitch_file }}"
+        regexp: "^CONN_TYPE="
+        line: "CONN_TYPE={{ conn_type }}"
+    when: secure_communication
   
   - name: Restart OpenVSwitch Service on RedHat OS family distros
     service: name=openvswitch state=restarted
