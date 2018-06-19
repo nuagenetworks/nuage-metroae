@@ -8,6 +8,9 @@ Parameters:
     Description: Name of an existing EC2 KeyPair to enable SSH access to the instance
     Type: 'AWS::EC2::KeyPair::KeyName'
     ConstraintDescription: must be the name of an existing EC2 KeyPair.
+  VscTargetServerEniId:
+    Description: NetworkInterface ID for VSC target server interface
+    Type: String
   VscDataEniId:
     Description: NetworkInterface ID for VSC Data interface
     Type: String
@@ -21,26 +24,9 @@ Parameters:
   InstanceType:
     Description: EC2 instance type
     Type: String
-    Default: t2.medium
+    Default: i3.metal
     AllowedValues:
-      - t2.small
-      - t2.medium
-      - m4.large
-      - c3.8xlarge
-      - c4.8xlarge
-      - g2.8xlarge
-      - r3.8xlarge
-      - i2.8xlarge
-      - d2.8xlarge
-      - hi1.4xlarge
-      - hs1.8xlarge
-      - cr1.8xlarge
-      - cc2.8xlarge
-      - m2.4xlarge
-      - m4.4xlarge
-      - cg1.4xlarge
-      - m4.xlarge
-      - m4.2xlarge
+      - i3.metal
     ConstraintDescription: must be a valid EC2 instance type.
   InstanceName:
     Description: Enter Name for Instance
@@ -55,8 +41,10 @@ Resources:
       ImageId: !Ref AmiId
       NetworkInterfaces:
         - DeviceIndex: '0'
-          NetworkInterfaceId: !Ref VscMgmtEniId
+          NetworkInterfaceId: !Ref VscTargetServerEniId
         - DeviceIndex: '1'
+          NetworkInterfaceId: !Ref VscMgmtEniId
+        - DeviceIndex: '2'
           NetworkInterfaceId: !Ref VscDataEniId
       UserData: ''
       Tags:
