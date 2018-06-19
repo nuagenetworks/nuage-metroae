@@ -1,21 +1,29 @@
 ---
 
-# - include_role:
-#     name: check-node-reachability
+- block:
 
-# - block:
-#   - debug: var=vsc_creds
+  - include_role:
+      name: check-node-reachability
 
-#   - name: Get output of 'show version'
-#     sros_command:
-#       commands:
-#         - show version
-#       provider: "{{ vsc_creds }}"
-#     ignore_errors: yes
-#     delegate_to: localhost
-#     register: sh_version
+  - block:
+    - debug: var=vsc_creds
 
-#   when: node_reachable
+    - name: Get output of 'show version'
+      sros_command:
+        commands:
+          - show version
+        provider: "{{ vsc_creds }}"
+      ignore_errors: yes
+      delegate_to: localhost
+      register: sh_version
+
+    when: node_reachable
+  when: not kvm_on_aws
+
+- name: Set fact for VSC reachable
+  set_fact:
+    node_reachable: false
+  when: kvm_on_aws
 
 # TODO
 # Check sh_version against image version
