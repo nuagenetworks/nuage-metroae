@@ -46,23 +46,18 @@
       guestfish_dest: "{{ images_path }}/{{ vm_name }}/{{ vrs_vm_qcow2_file_name }}"
 
 - block:
-  - name: Create libvirt image directory
-    file: path={{ images_path }}/{{ vm_name }}
-          state=directory
-          owner={{ libvirt.user }}
-          group={{ libvirt.group }}
-
-  - name: Copy the vrs_vm qcow image to virt images directory
-    copy: src={{ vrs_vm_qcow2_path }}/{{ vrs_vm_qcow2_file_name }}
-          dest={{ images_path }}/{{ vm_name }}
-          owner={{ libvirt.user }}
-          group={{ libvirt.group }}
+  - include_role:
+      name: common
+      task_from: copy_qcow2.yml
+    vars:
+      qcow2_path: "{{ vrs_vm_qcow2_path }}"
+      qcow2_file_name: "{{ vrs_vm_qcow2_file_name }}"
     when: skipImages is undefined or not skipImages
-    
+
   - block: 
     - name: Check to make sure there is an existing qcow image
       stat: 
-        path: "{{ images_path }}/{{ vm_name }}/{{ qcow2_file_name }}"
+        path: "{{ images_path }}/{{ vm_name }}/{{ vrs_vm_qcow2_file_name }}"
       register: statResult
       
     - name: check the result of image find command
