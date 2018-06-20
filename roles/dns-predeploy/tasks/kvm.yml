@@ -54,22 +54,18 @@
     fail: msg="The VM is already defined on this target_server."
     when: inventory_hostname in virt_vms.list_vms
 
-  - include_tasks: copy_qcow2.yml
-    when: skipImages is undefined or not skipImages
-    
-  - block: 
-    - name: Check to make sure there is an existing qcow image
-      stat: 
-        path: "{{ images_path }}/{{ inventory_hostname }}/{{ qcow2_file_name }}"
-      register: statResult
-      
-    - name: check the result of image find command
-      assert:
-        that: statResult.stat.exists == True
-        msg: Missing qcow2 file in {{ images_path }}/{{ inventory_hostname }}/{{ qcow2_file_name }}
-        
-    when: skipImages is defined and skipImages
+  - name: Create libvirt image directory on {{ target_server }}
+    file: path={{ images_path }}/{{ vm_name }}
+          state=directory
+          owner={{ libvirt.user }}
+          group={{ libvirt.group }}
 
+  - name: Copy the DNS qcow image to virt images directory on {{ target_server }}
+    copy: src={{ qcow2_path }}/{{ qcow2_file_name }}
+          dest={{ images_path }}/{{ vm_name }}
+          owner={{ libvirt.user }}
+          group={{ libvirt.group }}
+          
   - name: Set local variable with vsd guestfish destination
     set_fact:
       guestfish_dest: "{{ images_path }}/{{ inventory_hostname }}/{{ qcow2_file_name }}"
