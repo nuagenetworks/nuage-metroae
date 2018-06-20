@@ -1,0 +1,67 @@
+#-------------------------------------------------
+echo "System Configuration"
+#--------------------------------------------------
+    system
+        name "{{ inventory_hostname.split('.')[0] | lower }}"
+        snmp
+            packet-size 9216
+        exit
+        login-control
+            exponential-backoff
+        exit
+        time
+            ntp
+{% for ntp_server in ntp_server_list %}
+                server {{ ntp_server }}
+{% endfor %}
+                no shutdown
+            exit
+            sntp
+                shutdown
+            exit
+        exit
+        lldp
+            tx-interval 10
+            tx-hold-multiplier 3
+            reinit-delay 5
+            notification-interval 10
+        exit
+        rollback
+            rollback-location "cf3:/rollback/config.cfg"
+        exit
+        netconf
+            no shutdown
+        exit
+    exit
+#--------------------------------------------------
+echo "System Security Configuration"
+#--------------------------------------------------
+    system
+        security
+            user "netops"
+{# Password : Net0ps #}
+                password "$2y$10$TLBciWmGqy2Wa5HPQ2vRo.py.eUFOTm8v1dAL3hP8H0AjkTwUh5f." 
+                access console ftp snmp netconf
+                console
+                    cannot-change-password
+                    member "default"
+                    member "administrative"
+                exit
+            exit
+            snmp
+                community "uy29ENQixgHSYMeiPthuDk" hash2 rwa version both
+            exit
+            ssh
+                preserve-key
+            exit
+            profile "administrative"
+                netconf
+                    base-op-authorization
+                        lock
+                    exit
+                exit
+            exit
+        exit
+    exit
+
+

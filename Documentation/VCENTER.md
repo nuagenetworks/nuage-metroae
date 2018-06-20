@@ -1,4 +1,4 @@
-# Using a VMware vCenter environment to deploy Nuage using MetroAG
+# Using a VMware vCenter environment to deploy Nuage using Metro Automation Engine
 
 ## Table of Content
 
@@ -23,7 +23,7 @@ All versions starting from 4.0R11 and 5.0.1 are supported.
 
   **Note**: Support for VCIN Active/Standby deployment is only available for Nuage versions 5.2.2 and above.
 
-The following Nuage components can be deployed on a vSphere environment using MetroAG:
+The following Nuage components can be deployed on a vSphere environment using Metro Automation Engine:
 
 * VSD
 * VCIN (Active/Standby)
@@ -35,13 +35,13 @@ The following Nuage components can be deployed on a vSphere environment using Me
 
 ### vSphere supported versions
 
-The deployment of the Nuage components on a vSphere environment using MetroAG is supported on the same vSphere version as described in the Nuage Release Notes.
+The deployment of the Nuage components on a vSphere environment using Metro Automation Engine is supported on the same vSphere version as described in the Nuage Release Notes.
 
 ## Prerequisites / Requirements
 
 ### Required packages
 
-The following software and python packages are required to be installed on the MetroAG Host.
+The following software and python packages are required to be installed on the Metro Automation Engine Host.
 
  Package  | Command
  -------- | -------
@@ -82,15 +82,15 @@ vcenter:
 * **vcenter.password**
   This is the password that will be used to connect to the vSphere environment, for the user mentioned in `vcenter.username`.
 * **vcenter.datacenter**
-  This is the datacenter in vCenter in which the Nuage components will be deployed in by MetroAG. This name needs to exactly match with the name in vCenter for the Datacenter.
+  This is the datacenter in vCenter in which the Nuage components will be deployed in by Metro Automation Engine. This name needs to exactly match with the name in vCenter for the Datacenter.
 * **vcenter.cluster**
-  This is the cluster in vCenter, part of the datacenter configured in `vcenter.datacenter`. The Nuage components will be deployed in this cluster by MetroAG. If the cluster consists of multiple hosts, vCenter will make a decision on which host to use for running the VM, also depending on the `vcenter.datastore` configured.
+  This is the cluster in vCenter, part of the datacenter configured in `vcenter.datacenter`. The Nuage components will be deployed in this cluster by Metro Automation Engine. If the cluster consists of multiple hosts, vCenter will make a decision on which host to use for running the VM, also depending on the `vcenter.datastore` configured.
 * **vcenter.datastore**
-  This is the datastore in vCenter on which the Nuage components files will reside after deployment by MetroAG. This datastore will have to be connected to at least one ESXi host in the vCenter cluster configured in `vcenter.cluster` or deployment will fail because vCenter can not find a suitable host in the cluster to deploy the VMs in.
+  This is the datastore in vCenter on which the Nuage components files will reside after deployment by Metro Automation Engine. This datastore will have to be connected to at least one ESXi host in the vCenter cluster configured in `vcenter.cluster` or deployment will fail because vCenter can not find a suitable host in the cluster to deploy the VMs in.
 * **vcenter.resource_pool**
   This optional parameter is the vCenter resource pool in which to deploy the Nuage components. This resource pool needs to be part of the configure vCenter cluster in `vcenter.cluster`. If a resource pool is provided with limitations configured, it is important to make sure the resource pool has sufficient resources available for running all the Nuage components that will be deployed. Otherwise, vCenter will refuse the power on of the components.
 * **vcenter.ovftool**
-  This is the path on the MetroAG host for the ovftool binary. OVFTool is used to deploy the OVA and OVF images provided for each Nuage component.
+  This is the path on the Metro Automation Engine host for the ovftool binary. OVFTool is used to deploy the OVA and OVF images provided for each Nuage component.
 
   **Note**: Except for the vcenter.resource_pool, all values have to be configured as a general configuration. There are no default values.
 
@@ -169,7 +169,7 @@ myvcins:
 
 ### VCIN Active/Standby deployment
 
-The deployment of one or more VCIN Active/Standby pairs is supported through MetroAG. To achieve this, a new `master_vcin` configuration setting needs to be added in the definition of a VCIN. This `master_vcin` has to contain the `hostname` of another entry in the `myvcins` list.
+The deployment of one or more VCIN Active/Standby pairs is supported through Metro Automation Engine. To achieve this, a new `master_vcin` configuration setting needs to be added in the definition of a VCIN. This `master_vcin` has to contain the `hostname` of another entry in the `myvcins` list.
 
 The example below shows the deployment of an Active/Standby VCIN pair, where the slave VCIN is pointing to the master VCIN using the `master_vcin` configuration setting.
 
@@ -194,4 +194,4 @@ myvcins:
     }
 ```
 
-A combination of multiple Active/Standby VCIN pairs and standalone VCINs can be deployed in the same environment with a single MetroAG execution.
+A combination of multiple Active/Standby VCIN pairs and standalone VCINs can be deployed in the same environment with a single Metro Automation Engine execution.

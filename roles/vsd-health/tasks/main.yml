@@ -21,6 +21,16 @@
   register: vsd_version
   remote_user: "{{ vsd_username }}"
 
+- name: Get configured VSD Hostname
+  command: hostname -f
+  register: hostname_output
+  remote_user: "{{ vsd_username }}"
+
+- name: Verify configured VSD hostname
+  assert: 
+    that: "hostname_output.stdout|search('{{ inventory_hostname }}')"
+    msg: "Configured VSD hostname does not match expected VSD hostname" 
+
 - name: Write VSD version to json file
   nuage_append: filename="{{ report_path }}" text="{{ vsd_version.stdout | to_nice_json}}\n"
   delegate_to: localhost
@@ -85,6 +95,16 @@
   nuage_append: filename="{{ report_path }}" text="{{ inventory_hostname }} {{ ejabberd_users_json|to_nice_json }}\n"
   delegate_to: localhost
 
+- name: Verify connected VSCs
+  assert:
+    that: "user_list.stdout|search('{{ hostvars[item].xmpp.username }}')"
+    msg: "{{ hostvars[item].xmpp.username }} could not be found in '/opt/ejabberd/bin/ejabberdctl connected_users'"
+  remote_user: "{{ vsd_username }}"
+  with_items: "{{ groups['vscs'] }}"
+  when:
+    - groups['vscs'] is defined
+    - not skip_vsc | default('False')
+
 - name: Get VSD deployment mode
   include_role:
     name: common
@@ -120,7 +140,7 @@
       status_code: 200
       validate_certs: False
     register: webresult
-    ignore_error: yes
+    ignore_errors: yes
     with_items:
       - "8443/index.html"
       - 61619
