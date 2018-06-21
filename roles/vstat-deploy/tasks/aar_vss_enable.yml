@@ -12,18 +12,19 @@
   
   remote_user: "{{ vstat_username }}"
 
-- block:
+- name: Generate SSL certificates on VSD for the Stats node
+  include_role:
+    name: common
+    tasks_from: vsd-generate-transfer-certificates
+  vars:
+    certificate_password: "Alcateldc"
+    certificate_username: elastic
+    commonName: elastic
+    certificate_type: server
+    scp_user: "{{ vstat_username }}"
+    scp_location: ~
+    additional_parameters:  -d {{ inventory_hostname }}    
 
-  - name: Generate SSL certificates on VSD for the Stats node
-    include_role:
-      name: common
-      tasks_from: vsd-generate-transfer-certificates
-    vars:
-      certificate_password: "Alcateldc"
-      certificate_username: elastic
-      commonName: elastic
-      certificate_type: server
-      scp_user: "{{ vstat_username }}"
-      scp_location: ~
-      additional_parameters:  -d {{ inventory_hostname }}    
-
+- name: Move certs from temp location to intended location
+  shell: "mv /home/{{ vstat_username }}/*.pem /."
+  remote_user: "{{ vstat_username }}"
