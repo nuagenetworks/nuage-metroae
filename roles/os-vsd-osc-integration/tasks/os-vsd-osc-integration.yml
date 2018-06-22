@@ -4,18 +4,24 @@
   register: vsd_version
   delegate_to: "{{ vsd_ip }}"
   remote_user: "{{ vsd_username }}"
+  changed_when: false
 
 - debug: var=vsd_version verbosity=1
 
 - name: Add csproot user to CMS Group
-  vsd_addusertocmsgroup:
-    vsd_auth:
-      "{{ vsd_auth }}"
-    api_version: "{{ vsd_version.stdout }}"
+  vars:
+    nuage_auth:
+      api_username: "{{ vsd_auth.username }}"
+      api_password: "{{ vsd_auth.password }}"
+      api_enterprise: "{{ vsd_auth.enterprise }}"
+      api_version: "v{{ vsd_version.stdout.split('.')[0] }}_0"
+      api_url: "{{ vsd_auth.api_url }}"
+  import_role: 
+    name: common
+    tasks_from: "vsd-add-user-to-cmsgroup"
   delegate_to: localhost
 
 - block:
-
   - name: Check if there is a previous Nuage integration present
     yum: list="nuage-openstack-neutron"
     register: nuagepkg_yum_state

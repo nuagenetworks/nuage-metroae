@@ -13,10 +13,6 @@
       osc_mgmt_ip: "{{ osc_server['ansible_facts']['openstack_servers'][0]['private_v4'] }}"
   when: osc_mgmt_ip is not defined
 
-- name: Set vsd mgmt ip
-  set_fact:
-    vsd_ip: "{{ vsd_ip }}"
-  when: vsd_ip is defined
 
 - block:
   - name: Get vsd mgmt IP
@@ -30,10 +26,7 @@
   - name: Set vsd mgmt ip
     set_fact:
       vsd_ip: "{{ osc_server['ansible_facts']['openstack_servers'][0]['private_v4'] }}"
-  when: vsd_server_name is defined
+  when: vsd_server_name is defined and vsd_ip is not defined
 
 - name: Include common role for vsd-osc intergration
-  import_role:
-    name: common
-    tasks_from: os-vsd-osc-integration
-    vars_from: os-vsd-osc-integration
+  import_tasks: os-vsd-osc-integration.yml
