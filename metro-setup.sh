@@ -1,9 +1,9 @@
 #!/bin/bash
 ###############################################################################
-## Metro Automation enGine Setup
+## Metro Automation Engine Setup
 ##
-## Script to install packages required for Nuage MetroAG. Safe to execute
-## multiple times
+## Script to install packages required for Nuage Metro Automation Engine. Safe
+## to execute multiple times
 ###############################################################################
 
 ###############################################################################
@@ -197,7 +197,7 @@ function main() {
   rm -f $LOG
 
   echo ""
-  print "Setting up Nuage Metro Automation enGine"
+  print "Setting up Nuage Metro Automation Engine"
   echo ""
 
   # Make sure script is being run as root or with sudo

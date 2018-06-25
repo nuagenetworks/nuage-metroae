@@ -1,0 +1,54 @@
+#-----------------------------
+echo "VSD Integration"
+#----------------------------
+    system
+        vsd
+          system-id "{{ inventory_hostname.split('.')[0] | lower }}"
+        exit
+
+        xmpp
+          server "vsd" domain-name "{{ vsd_fqdn }}" router "management" create username "{{ inventory_hostname.split('.')[0] | lower }}"
+            no shutdown
+          exit
+        exit
+    exit
+
+# F-D XMPP provisioning requires a reserved range of Service-IDs that can be used
+# for dynamic data services. This configured range is no longer available for regular
+# services configured via CLI/SNMP:
+
+    service
+       vsd
+          service-range 64000 to 64999
+       exit
+    exit
+
+#  is possible to edit the dynamic VSD services configuration by entering the enablevsd-
+#  config mode. A passord is required to enter this mode.
+#  In this configuration, "Alcateldc" is configured as vsd-password
+    system 
+      security 
+        password
+          vsd-password "vVEv9OfVJMp3K6v33ScWVUcXbIoUY/JoMnsQBE2KtJU" hash2 
+        exit
+      exit
+    exit
+
+
+# Load Python scripts
+# The python script that will build the dynamic services based on the VSD parameters
+# obtained via XMPP can be stored locally on the CF or on a remote FTP server:
+
+    python
+{% for script in pythonscripts %}
+       python-script "{{ script }}" create
+          primary-url "{{ scriptdir }}/{{ script }}.py"
+          no shutdown
+       exit
+       python-policy "{{ script }}" create
+          vsd script "{{ script }}"
+       exit
+
+{% endfor %}
+    exit
+

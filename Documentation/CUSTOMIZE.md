@@ -2,9 +2,9 @@
 
 ## Prerequisites / Requirements
 
-To confirm that your components are supported by MetroAG, see [README.md](../README.md).
+To confirm that your components are supported by Metro Automation Engine, see [README.md](../README.md).
 
-If you have not previously set up your MetroAG Ansible environment, see [SETUP.md](SETUP.md) before proceeding.
+If you have not previously set up your Metro Automation Engine Ansible environment, see [SETUP.md](SETUP.md) before proceeding.
 
 ## Main Steps
 
@@ -19,9 +19,9 @@ Setting variables correctly ensures that when playbooks run they configure compo
 `user_creds.yml` contains user credentials for VSD, VCIN and VSC. Default values are specified; you can modify them as necessary.
 
 ### `build_vars.yml`
-`build_vars.yml` contains configuration parameters for each component. You determine which components MetroAG operates on, as well as *how* those components are operated on, by including them or excluding them in this file.
+`build_vars.yml` contains configuration parameters for each component. You determine which components Metro Automation Engine operates on, as well as *how* those components are operated on, by including them or excluding them in this file.
 
-If this is your first time deploying or upgrading with MetroAG, and you intend on automatically unzipping the required Nuage software files as described in step 2 below, ensure that you have specified the following source and target directories in `build_vars.yml`.
+If this is your first time deploying or upgrading with Metro Automation Engine, and you intend on automatically unzipping the required Nuage software files as described in step 2 below, ensure that you have specified the following source and target directories in `build_vars.yml`.
 
 ```
  nuage_zipped_files_dir: "<your_path_with_zipped_software>"
@@ -33,7 +33,7 @@ If you intend on deploying VNS with zero factor bootstrapping, you must customiz
 
 ## 2. Unzip Nuage Files
 
-Before executing with MetroAG *for the first time*, ensure that the required unzipped Nuage software files (QCOW2, OVA, and Linux Package files) are available for the components being installed. Use one of the two methods below.
+Before executing with Metro Automation Engine *for the first time*, ensure that the required unzipped Nuage software files (QCOW2, OVA, and Linux Package files) are available for the components being installed. Use one of the two methods below.
 ### Automatically
 Ensure that you have specified the directory paths for zipped and unzipped files in `build_vars.yml`. (See step 1 above.)
 
@@ -98,4 +98,4 @@ Ask questions and get support via email.
 
 Report bugs you find and suggest new features and enhancements via the [GitHub Issues](https://github.com/nuagenetworks/nuage-metro/issues "nuage-metro issues") feature.
 
-You may also [contribute](../CONTRIBUTING.md) to Nuage MetroAG by submitting your own code to the project.
+You may also [contribute](../CONTRIBUTING.md) to Nuage Metro Automation Engine by submitting your own code to the project.
