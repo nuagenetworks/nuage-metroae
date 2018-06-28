@@ -52,7 +52,7 @@
     vars:
       qcow2_path: "{{ vrs_vm_qcow2_path }}"
       qcow2_file_name: "{{ vrs_vm_qcow2_file_name }}"
-    when: skipCopyImages is undefined or not skipCopyImages
+    when: not skip_copy_images | default(False)
 
   - block: 
     - name: Check to make sure there is an existing qcow image
@@ -63,9 +63,9 @@
     - name: check the result of image find command
       assert:
         that: statResult.stat.exists == True
-        msg: Missing qcow2 file in {{ images_path }}/{{ vm_name }}/{{ qcow2_file_name }}
+        msg: Missing qcow2 file in {{ images_path }}/{{ vm_name }}/{{ vrs_vm_qcow2_file_name }}
         
-    when: skipCopyImages is defined and skipCopyImages
+    when: skip_copy_images is defined and skip_copy_images
     
   - name: Get list of partitions
     shell: "guestfish -r -a {{ guestfish_dest }} run : list-filesystems | grep -Ev '(unknown|swap)'"
