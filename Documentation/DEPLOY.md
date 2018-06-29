@@ -55,6 +55,21 @@ Metro Automation Engine can automatically bootstrap (ZFB) a NSGV when deploying 
 * Customize variables in [`zfb_vars.yml`](/zfb_vars.yml "link to zfb_vars.yml file")
 * Specify `bootstrap_method: zfb_metro,` in mynsgvs parameters in [`build_vars.yml`](/build_vars.yml "link to build_vars.yml file")
 
+## Copy QCOW2 Files before Deployment
+
+Metro Automation Engine has a playbook copy_qcow2_files that can be used to copy qcow2 files for all the components. This playbook gives give the ability to copy the required images files first and then run deployment later. An extra-vars 'skip_copy_qcow2' needs to be passed on the command line during the deployment phase to skip copying of the image files again. For example, to run copy of images files first run:
+
+```
+./metro-ansible copy_qcow2_files
+```
+
+Example for skiping the image copy during deployments
+
+```
+./metro-ansible install_everything.yml --extra-vars skip_copy_qcow2=True
+```
+
+
 ## Debugging
 
 By default, ansible.cfg tells ansible to log to ./ansible.log.

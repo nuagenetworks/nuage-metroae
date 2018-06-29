@@ -46,13 +46,18 @@
       guestfish_dest: "{{ images_path }}/{{ vm_name }}/{{ vrs_vm_qcow2_file_name }}"
 
 - block:
+  - name: set skip copy images to default
+    set_fact: 
+      skip_copy_images: False
+    when: skip_copy_images is undefined 
+    
   - include_role:
       name: common
       tasks_from: copy_qcow2.yml
     vars:
       qcow2_path: "{{ vrs_vm_qcow2_path }}"
       qcow2_file_name: "{{ vrs_vm_qcow2_file_name }}"
-    when: not skip_copy_images | default(False)
+    when: not skip_copy_images
 
   - block: 
     - name: Check to make sure there is an existing qcow image
@@ -65,7 +70,7 @@
         that: statResult.stat.exists == True
         msg: Missing qcow2 file in {{ images_path }}/{{ vm_name }}/{{ vrs_vm_qcow2_file_name }}
         
-    when: skip_copy_images | default(False)
+    when: skip_copy_images
     
   - name: Get list of partitions
     shell: "guestfish -r -a {{ guestfish_dest }} run : list-filesystems | grep -Ev '(unknown|swap)'"
