@@ -57,13 +57,15 @@ Metro Automation Engine can automatically bootstrap (ZFB) a NSGV when deploying 
 
 ## Copy QCOW2 Files before Deployment
 
-Metro Automation Engine has a playbook copy_qcow2_files that can be used to copy qcow2 files for all the components. This playbook gives give the ability to copy the required images files first and then run deployment later. An extra-vars 'skip_copy_qcow2' needs to be passed on the command line during the deployment phase to skip copying of the image files again. For example, to run copy of images files first run:
+When installing or upgrading in a KVM environment, the Metro Automation Engine will copy the QCOW2 image files to the target file server during the predeploy phase. As an option, the playbook copy_qcow2_files can be used to pre-position the qcow2 files for all the components. This playbook gives give the ability to copy the required images files first and then run install or upgrade later.
+
+When QCOW2 files are pre-posoitioned, you must add a command-line variable, 'skip_copy_qcow2', to indicate that copying QCOW2 files should be skipped. Otherwise, the QCOW2 files will be copied again. An extra-vars 'skip_copy_qcow2' needs to be passed on the command line during the deployment phase to skip copying of the image files again. For example, to pre-position the QCOW2 images, run:
 
 ```
 ./metro-ansible copy_qcow2_files
 ```
 
-Example for skiping the image copy during deployments
+Then, to skip the image copy during the install:
 
 ```
 ./metro-ansible install_everything.yml --extra-vars skip_copy_qcow2=True
