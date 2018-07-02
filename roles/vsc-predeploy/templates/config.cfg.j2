@@ -38,7 +38,11 @@ echo "Router (Network Side) Configuration"
     router
         interface "control"
         {% if control_ip is defined and control_netmask_prefix is defined %}
+            {% if internal_ctrl_ip is defined %}
+            address {{ internal_ctrl_ip }}/{{ control_netmask_prefix }}
+            {% else %}
             address {{ control_ip }}/{{ control_netmask_prefix }}
+            {% endif %}
             no shutdown
         {% endif %}
         exit
@@ -92,7 +96,7 @@ echo "Service Configuration"
                 sap A/2:{{ vlan_id }} create
                 exit
             exit
-        
+
         {% if control_ip_vprn is defined %}
         static-route 0.0.0.0/0 next-hop {{ control_ip_vprn.split('.')[0] }}.{{ control_ip_vprn.split('.')[1] }}.{{ control_ip_vprn.split('.')[2] }}.1
         {% else %}
