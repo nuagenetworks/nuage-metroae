@@ -1,10 +1,13 @@
 ---
 - name: Check if python-netaddr is installed
   yum: 
-    name: "{{ packages }}"
+    list=installed
+  register: yum_packages
+
+- debug: var=item
+  with_items: "{{yum_packages|json_query(jsonquery)}}"
   vars:
-    packages:
-      - python-netaddr
+    jsonquery: "results[?name=='python-netaddr']"
 #  include_role:
 #    name: common
 #    tasks_from: check-for-package
