@@ -3,19 +3,18 @@
 ## Supported Components
 MetroAG supports deployment of the following components in AWS.
 * VSD
+* VSC (as KVM running on an AWS bare-metal instance)
 * VSTAT (ElasticSearch)
 * VNS Utils
 * NSGv
-
-### Note
-As of this release, VSC deployment on AWS is not supported. Because it uses VxWorks as its operating system, the VSC image cannot be converted to an AMI. Likewise, deploying the VSC as a KVM image on a hypervisor in an AWS EC2 Instance has not been successful since using "nested virtualization" (deploying a VM inside a VM) is not supported by AWS. AWS may soon release a "bare metal" service that would allow VSC to be deployed on it, but it has not been tested, and it is not officially supported.
 
 ## Main Steps for Deploying in AWS
 [1. Install Libraries](#1-install-libraries)
 [2. Upload or Import AMIs](#2-upload-or-import-amis)
 [3. Setup Virtual Private Cloud](#3-setup-virtual-private-cloud)
-[4. Configure Components](#4-configure-components)
-[5. Deploy Components](#5-deploy-components)
+[4. Setup Bare Metal Host for VSC](#4-setup-bare-metal-host-for-vsc)
+[5. Configure Components](#5-configure-components)
+[6. Deploy Components](#6-deploy-components)
 
 ## 1. Install Libraries
 MetroAG uses the [cloudformation](https://docs.ansible.com/ansible/latest/modules/cloudformation_module.html) Ansible module for deploying components in AWS. This module requires the python-boto and python-boto3 python libraries. Use one of the following three methods to install these required libraries on the MetroAG host.
@@ -36,7 +35,7 @@ MetroAG uses the [cloudformation](https://docs.ansible.com/ansible/latest/module
     apt-get install python-boto3
 
 ## 2. Upload or Import AMIs
-Amazon Machine Images (AMIs) are used to run instances in EC2. For each Nuage Networks component that you want to deploy, you'll need to upload or import an AMI to AWS. The AMI identifiers are provided to MetroAG for deployment.
+Amazon Machine Images (AMIs) are used to run instances in EC2. For each Nuage Networks component that you want to deploy, you'll need to upload or import an AMI to AWS. The AMI identifiers are provided to MetroAG for deployment.  The VSC is not supported as an AMI. It must be deployed as KVM running on an AWS bare-metal instance.
 
 ## 3. Setup Virtual Private Cloud
 Before installing Nuage Networks components, you must define and deploy a virtual private cloud (VPC) in AWS. An example file ([aws-example-vpc.yml](../examples/aws-example-vpc.yml)) of a basic VPC is provided in the [examples directory](../examples/). This VPC must define the network interfaces that will be used by each component. The VPC should also provide connectivity between various components and Internet access (either directly or outgoing only through NAT). We strongly recommend that you define security policies, IP addressing and DNS. The recommended subnets for each component are defined below. Note that the access subnet is expected to have direct Internet access and the management subnet to have outgoing only access.
@@ -44,11 +43,15 @@ Before installing Nuage Networks components, you must define and deploy a virtua
 Component | Subnet1 | Subnet2
 --------- | :---: | :---:
 VSD | Mgmt |
+VSC | Mgmt | Data
 VSTAT | Mgmt |
 VNS Util | Mgmt | Data
 NSGv | Access | Data
 
-## 4. Configure Components
+## 4. Setup Bare Metal Host for VSC
+The VSC cannot be supported as a standard AWS component due to its reliance on the VxWorks operating system.  The deployment is possible by running the VSC as a KVM instance within an AWS bare-metal server.  Begin by installing a Linux AMI and the libvirt KVM libraries on the server and starting the libvirtd daemon.  Then, network connectivity to the VSC can be setup.  The AWS bare-metal server does not support bridge interfaces, PCI passthrough, or macvtap.  Connections can be made by using the routed network option.  The routed networks must be defined in libvirt on the host.  Multiple addresses can be supported on a single bare-metal interface by adding secondary IP addresses via the EC2 console and using SNAT and DNAT iptables rules.  Once the AWS host is properly setup for KVM and network connectivity, the VSC can be deployed by MetroAE as a KVM component.  More about this is discussed in the following section.
+
+## 5. Configure Components
 Configuring components for AWS is similar to configuring for other server types. See [CUSTOMIZE.md](CUSTOMIZE.md) for details on standard deployments. The configuration files for AWS deployments require a few additional specifications.
 ### user_creds.yml
 AWS access can be specified as `aws_access_key` and secret keys can be specified as `aws_secret_key`. If AWS access is not specified, values will be taken from the environment variables `AWS_ACCESS_KEY` and `AWS_SECRET_KEY`.
@@ -64,6 +67,11 @@ AWS requires that the following fields be specified.
 - aws_key_name: The name of the key pair used for access to the component
 - aws_mgmt_eni/aws_data_eni/aws_access_eni: The elastic network interface identifiers from the deployed VPC for each required subnet for the component.
 
+The VSC cannot be supported as a direct AWS component as discussed in the previous section.  It can be deployed by specifying the component in the myvscs section of build_vars.yml as a KVM instance.  None of the aws_* fields above apply for the VSC.  Instead, specify the component as target_server_type "kvm" with the addresses of the bare-metal host.  The following fields have been provided to support routed network connectivity.
+
+- mgmt/data_routed_network_name: The name of the libvirt routed network defined on the bare-metal host to support the mgmt/data interface of the VSC.
+- internal_mgmt/data_ip: The ip address to be assigned to the mgmt/data interfaces on the VSC itself.  This internal address can be NATed to the real address of the bare-metal host using iptables rules.
+
 #### Alternative Specification for NSGv Only Deployments
 If you'd like to deploy only NSGv (no other components), then MetroAG can optionally provision a suitable VPC.  Add the following configuration to the mynsgvs section of build_vars.yml for each NSGv:
 
@@ -75,7 +83,7 @@ If you'd like to deploy only NSGv (no other components), then MetroAG can option
 
 The CIDRs for the VPC, WAN interface, LAN interface and private subnet must be specified. When provisioning a VPC in this way, the elastic network interface identifiers `aws_data_eni` and `aws_access_eni` for the NSGv do not need to be specified as they are discovered from the created VPC.
 
-## 5. Deploy Components
+## 6. Deploy Components
 After you have set up the environment and configured your components, you can use MetroAG to deploy your components with a single command.
 
     ./metro-ansible install_everything
