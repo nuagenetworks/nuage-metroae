@@ -24,6 +24,7 @@ git clone https://github.com/<your handle>/nuage-metro.git metro-fork/
 cd metro-fork/
 git checkout dev
 ```
+
 3. Develop and test all proposed contributions on the appropriate hypervisors in the `metro-fork` directory. If you choose not to provide support for one or more supported hypervisors, you must provide graceful error handling for those types. Testing includes running the program `flake8` over all Python files. The only exception to the flake8 rules that we accept is E501, line length. For example: `flake8 --ignore=E501`.
 
 4. If you require any new User Input Variables:

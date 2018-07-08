@@ -8,7 +8,7 @@ Before upgrading any components, you must have previously [set up your Nuage Met
 
 A sample workflow for 5.1.2 to 5.2.2 upgrade. For more detailed workflow refer [Sample HA Metro workflow for an upgrade](#sample-ha-metro-workflow-for-an-upgrade)
 
-After all [Prerequisites](#prerequisites) are met, run the following set of commands in the order specified to upgrade vsd,vsc,vstat deployed in HA/Cluster mode.
+After all prerequisites are met, run the following set of commands in the order specified to upgrade vsd,vsc,vstat deployed in HA/Cluster mode.
 1. ./metro-ansible vsp_preupgrade_health -vvvv
 2. ./metro-ansible vsd_ha_upgrade_database_backup_and_decouple -vvvv
 3. ./metro-ansible vsd_ha_upgrade_shutdown_2_and_3 -vvvv
