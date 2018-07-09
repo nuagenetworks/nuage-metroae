@@ -7,7 +7,10 @@
 - name: Get the vsd node info
   command: /opt/vsd/sysmon/showStatus.py
   register: vsd_info
+  become: "{{ 'no' if vsd_username == 'root' else 'yes' }}"
   remote_user: "{{ vsd_username }}"
+  vars:
+    ansible_become_pass: "{{ vsd_password }}"
   delegate_to: "{{ ip_addr.stdout.split('\n')[0] }}"
 
 - name: Set vsd deployment mode
