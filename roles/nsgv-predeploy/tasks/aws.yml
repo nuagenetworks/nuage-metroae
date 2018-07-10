@@ -1,64 +1,67 @@
 ---
 # Create NSGV in VSD
-#
-- name: Finding Enterprise
-  connection: local
-  nuage_vspk:
-    auth: "{{ vsd_auth }}"
-    type: Enterprise
-    command: find
-    properties:
-      name: "{{ enterprise }}"
-  register: nuage_enterprise
 
-- name: Ensure NSG Gateway is provisioned in the enterprise
-  connection: local
-  nuage_vspk:
-    auth: "{{ vsd_auth }}"
-    type: NSGateway
-    parent_id: "{{ nuage_enterprise.id }}"
-    parent_type: Enterprise
-    match_filter: "name == '{{ inventory_hostname }}'"
-    state: present
-    properties:
-      name: "{{ inventory_hostname }}"
-      template_id: "{{ nsg_template_id }}"
-  register: nuage_nsg
+- block: 
+  - name: Finding Enterprise
+    connection: local
+    nuage_vspk:
+      auth: "{{ vsd_auth }}"
+      type: Enterprise
+      command: find
+      properties:
+        name: "{{ enterprise }}"
+    register: nuage_enterprise
 
-- name: Find port1 of the NSG-AMI
-  connection: local
-  nuage_vspk:
-    auth: "{{ vsd_auth }}"
-    type: NSPort
-    parent_type: NSGateway
-    parent_id: "{{ nuage_nsg.id }}"
-    command: find
-    properties:
-      name: "port1"
-  register: nuage_nsg_port1
+  - name: Ensure NSG Gateway is provisioned in the enterprise
+    connection: local
+    nuage_vspk:
+      auth: "{{ vsd_auth }}"
+      type: NSGateway
+      parent_id: "{{ nuage_enterprise.id }}"
+      parent_type: Enterprise
+      match_filter: "name == '{{ inventory_hostname }}'"
+      state: present
+      properties:
+        name: "{{ inventory_hostname }}"
+        template_id: "{{ nsg_template_id }}"
+    register: nuage_nsg
 
-- name: Ensure 1:1 NAT is enabled on port1 of the NSG-AMI
-  connection: local
-  nuage_vspk:
-    auth: "{{ vsd_auth }}"
-    type: NSPort
-    id: "{{ nuage_nsg_port1.id }}"
-    state: present
-    properties:
-      nat_traversal: "ONE_TO_ONE_NAT"
+  - name: Find port1 of the NSG-AMI
+    connection: local
+    nuage_vspk:
+      auth: "{{ vsd_auth }}"
+      type: NSPort
+      parent_type: NSGateway
+      parent_id: "{{ nuage_nsg.id }}"
+      command: find
+      properties:
+        name: "port1"
+    register: nuage_nsg_port1
 
-- name: Create Job to download auto-bootstrap info
-  connection: local
-  nuage_vspk:
-    auth: "{{ vsd_auth }}"
-    type: Job
-    parent_id: "{{ nuage_enterprise.id }}"
-    parent_type: Enterprise
-    state: present
-    properties:
-      command: GET_ZFB_INFO
-      parameters: '{ "mediaType": "YAML", "NSGType": "NSG-AMI", "associatedEntityType": "nsgateway", "associatedEntityID": "{{ nuage_nsg.id }}" }'
-  register: nuage_nsg_zfb
+  - name: Ensure 1:1 NAT is enabled on port1 of the NSG-AMI
+    connection: local
+    nuage_vspk:
+      auth: "{{ vsd_auth }}"
+      type: NSPort
+      id: "{{ nuage_nsg_port1.id }}"
+      state: present
+      properties:
+        nat_traversal: "ONE_TO_ONE_NAT"
+
+  - name: Create Job to download auto-bootstrap info
+    connection: local
+    nuage_vspk:
+      auth: "{{ vsd_auth }}"
+      type: Job
+      parent_id: "{{ nuage_enterprise.id }}"
+      parent_type: Enterprise
+      state: present
+      properties:
+        command: GET_ZFB_INFO
+        parameters: '{ "mediaType": "YAML", "NSGType": "NSG-AMI", "associatedEntityType": "nsgateway", "associatedEntityID": "{{ nuage_nsg.id }}" }'
+    register: nuage_nsg_zfb
+    
+  when: bootstrap_method|match('zfb_aws')
 
 - block:
   - name: Deploy Sample Network Structure if desired
