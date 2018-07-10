@@ -49,11 +49,12 @@ VNS Util | Mgmt | Data
 NSGv | Access | Data
 
 ## 4. Setup Bare Metal Host (for VSC Only)
-Deploying VSC as a standard AWS component is not supported. Because it relies on the VxWorks operating system, the VSC image cannot be converted to an AMI. Instead, you can run VSC as a KVM instance within an AWS bare-metal server. The AWS bare-metal server does not support bridge interfaces, PCI passthrough, or macvtap. Use the routed network option to make connections. The routed networks must be defined in libvirt on the host. Multiple addresses can be supported on a single bare-metal interface by adding secondary IP addresses via the EC2 console and using SNAT and DNAT iptables rules. Follow the steps below to setup the bare-metal host.  
+Deploying VSC as a standard AWS component is not supported. Because it relies on the VxWorks operating system, the VSC image cannot be converted to an AMI. Instead, you can run VSC as a KVM instance within an AWS bare-metal server. Follow the steps below to setup the bare-metal host.  
 #### 1. Install a Linux AMI on the server.  
 #### 2. Install the libvirt KVM libraries on the server.  
 #### 3. Start the libvirtd daemon.  
 #### 4. Setup network connectivity to the VSC.  
+The AWS bare-metal server does not support bridge interfaces, PCI passthrough, or macvtap. To make connections use the routed network option. The routed networks must be defined in libvirt on the host. Multiple addresses can be supported on a single bare-metal interface by adding secondary IP addresses via the EC2 console and using SNAT and DNAT iptables rules. 
 
 ## 5. Configure Components
 Configuring components for AWS is similar to configuring for other server types. See [CUSTOMIZE.md](CUSTOMIZE.md) for details on standard deployments. The configuration files for AWS deployments require a few additional specifications.
@@ -73,6 +74,8 @@ AWS requires that the following fields be specified for all components, except V
 - aws_mgmt_eni/aws_data_eni/aws_access_eni: The elastic network interface identifiers from the deployed VPC for each required subnet for the component.
 
 #### For VSC Only  
+VSC is not supported as a direct AWS component, but it can be deployed by specifying several fields in `build_vars.yml` as shown below.
+
 In the `myvscs` section, set `target_server_type` to "kvm" and `target_server` to the address(es) of the bare-metal host(s).  
 
 To support routed network connectivity, specify the following fields.  
