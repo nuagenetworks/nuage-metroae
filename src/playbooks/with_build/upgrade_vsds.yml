@@ -1,0 +1,31 @@
+---
+- hosts: vsds
+  gather_facts: no
+  tasks:
+    - name: Check if VSD prereq satisfied for predeploy
+      include_role:
+        name: common
+        tasks_from: check-predeploy-prereq
+
+- block:
+
+    - include: "vsd_ha_upgrade_database_backup_and_decouple.yml"
+    - include: "vsd_ha_upgrade_shutdown_2_and_3.yml"
+    - include: "vsd_ha_upgrade_predeploy_2_and_3.yml"
+    - include: "vsd_ha_upgrade_deploy_2_and_3.yml"
+    - include: "vsd_ha_upgrade_shutdown_1.yml"
+    - include: "vsd_ha_upgrade_predeploy_1.yml"
+    - include: "vsd_ha_upgrade_deploy_1.yml"
+    - include: "vsd_upgrade_complete.yml"
+
+  when: vsds | length == 3
+
+- block:
+
+    - include: "vsd_sa_upgrade_database_backup.yml"
+    - include: "vsd_sa_upgrade_shutdown.yml"
+    - include: "vsd_sa_upgrade_predeloy.yml"
+    - include: "vsd_sa_upgrade_deploy.yml"
+    - include: "vsd_upgrade_complete.yml"
+
+  when: vsds | length == 1

@@ -1,0 +1,24 @@
+---
+- hosts: vscs
+  gather_facts: no
+  tasks:
+    - name: Check if VSC prereq satisfied for predeploy
+      include_role:
+        name: common
+        tasks_from: check-predeploy-prereq
+
+- block:
+
+    - include: "vsc_ha_upgrade_backup_and_prep_1.yml"
+    - include: "vsc_ha_upgrade_deploy_1.yml"
+    - include: "vsc_ha_upgrade_postdeploy_1.yml"
+
+  when: vscs | length == 2
+
+- block:
+
+    - include: "vsc_sa_upgrade_backup_and_prep.yml"
+    - include: "vsc_sa_upgrade_deploy.yml"
+    - include: "vsc_sa_upgrade_postdeploy.yml"
+
+  when: vscs | length == 1
