@@ -64,6 +64,8 @@ AWS requires that the following fields be specified.
 - aws_key_name: The name of the key pair used for access to the component
 - aws_mgmt_eni/aws_data_eni/aws_access_eni: The elastic network interface identifiers from the deployed VPC for each required subnet for the component.
 
+##TODO: Need to mention zfb_aws
+
 #### Alternative Specification for NSGv Only Deployments
 If you'd like to deploy only NSGv (no other components), then MetroAG can optionally provision a suitable VPC.  Add the following configuration to the mynsgvs section of build_vars.yml for each NSGv:
 
