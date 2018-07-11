@@ -162,7 +162,7 @@ If this fails, retry.
 ./metro-ansible vsc_ha_upgrade_deploy_1 -vvvv
 ```
 
-If the step fails, you can retry. If a retry fails, rollback is accomplished by manually copying (via scp) the .tim file, bof.cfg, and config.cfg that were backed up in step 12 to the VSC. Then reboot the VSC.
+If the step fails, you can retry. If a retry fails, rollback is accomplished by manually copying (via scp) the .tim file, bof.cfg, and config.cfg that were backed up in step 11 to the VSC. Then reboot the VSC.
 
 13. Run VSC postdeploy on vsc_node1
 
@@ -172,7 +172,7 @@ If the step fails, you can retry. If a retry fails, rollback is accomplished by 
 
 At this point, you have one VSC running the old version, one running the new. It is time for you to leave this procedure to execute an upgrade of your VRSs, NSGs, and so on.
 
-If this step fails, the recovery is much like that of the previous step: Manually update the tim file or a complete deploy of the old VSC followed by a retry.
+If the step fails, you can retry. If a retry fails, rollback is accomplished by manually copying (via scp) the .tim file, bof.cfg, and config.cfg that were backed up in step 11 to the VSC. Then reboot the VSC.
 
 *Upgrade VRS here!*
 
@@ -190,7 +190,7 @@ If this fails, retry.
 ./metro-ansible vsc_ha_upgrade_deploy_2 -vvvv
 ```
 
-If the step fails, you can retry. Backup plan is to manually copy a valid .tim file to the VSC to affect either the deployment. If that fails, you will need to deploy a new VSC using the old version--or recover the VM from a backup. You can use Metro for the deployment (vsc_predeploy, vsc_deploy, vsc_postdeploy...).
+If the step fails, you can retry. If a retry fails, rollback is accomplished by manually copying (via scp) the .tim file, bof.cfg, and config.cfg that were backed up in step 14 to the VSC. Then reboot the VSC.
 
 16. Run VSC postdeploy on vsc_node2
 
@@ -200,7 +200,7 @@ If the step fails, you can retry. Backup plan is to manually copy a valid .tim f
 
 At this point, you have both VSCs running the new version. It is time for you to upgrade the final VSD.
 
-If this step fails, the recovery is much like that of the previous step: Manually update the tim file or a complete deploy of the old VSC followed by a retry.
+If the step fails, you can retry. If a retry fails, rollback is accomplished by manually copying (via scp) the .tim file, bof.cfg, and config.cfg that were backed up in step 14 to the VSC. Then reboot the VSC.
 
 
 *If VSTAT nodes exist upgrade them using following procedure, if not skip to step 23 to finalize VSP upgrade*
