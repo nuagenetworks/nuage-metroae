@@ -73,6 +73,17 @@ AWS requires that the following fields be specified for all components, except V
 - aws_key_name: The name of the key pair used for access to the component
 - aws_mgmt_eni/aws_data_eni/aws_access_eni: The elastic network interface identifiers from the deployed VPC for each required subnet for the component.
 
+#### For VSC Only  	
+VSC is not supported as a direct AWS component, but it can be deployed by specifying several fields in `build_vars.yml` as shown below.	
+	
+In the `myvscs` section, set `target_server_type` to "kvm" and `target_server` to the address(es) of the bare-metal host(s).  	
+	
+To support routed network connectivity, specify the following fields.  	
+	
+-- mgmt_routed_network_name: The name of the libvirt routed network defined on the bare-metal host to support the mgmt interface of the VSC.  	
+-- data_routed_network_name: The name of the libvirt routed network defined on the bare-metal host to support the data interface of the VSC.	
+-- internal_mgmt_ip: The ip address to be assigned to the mgmt interfaces on the VSC itself. This internal address can be NATed to the real address of the bare-metal host using iptables rules.  	
+-- internal_ctrl_ip: The ip address to be assigned to the data interfaces on the VSC itself. This internal address can be NATed to the real address of the bare-metal host using iptables rules.
 
 #### Alternative Specification for NSGv Only Deployments
 If you'd like to deploy only NSGv (no other components), then MetroAG can optionally provision a suitable VPC.  Add the following configuration to the mynsgvs section of build_vars.yml for each NSGv:
