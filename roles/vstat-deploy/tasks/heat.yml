@@ -79,23 +79,23 @@
     line: "DNS1={{ infra_ip | default(dns_server_list[0]) }}"
   when: infra_server_name is defined
 
-- name: Add nameserver
-  command: echo "{{ infra_ip }}" >> /etc/resolv.conf
-  remote_user: "{{ vstat_username }}"
-  when: infra_server_name is defined
+- block:
 
-- name: Restart networking
-  command: /etc/init.d/network restart
-  remote_user: "{{ vstat_username }}"
+  - name: Add nameserver
+    command: echo "{{ infra_ip }}" >> /etc/resolv.conf
+    when: infra_server_name is defined
 
-- name: Resolve fqdn
-  command: hostname "{{ inventory_hostname }}"
-  remote_user: "{{ vstat_username }}"
+  - name: Restart networking
+    command: /etc/init.d/network restart
 
-- name: Update /etc/hosts file
-  lineinfile:
-    dest: /etc/hosts
-    line: "{{ vstat_mgmt_ip }}  {{ inventory_hostname }}"
+  - name: Resolve fqdn
+    command: hostname "{{ inventory_hostname }}"
+
+  - name: Update /etc/hosts file
+    lineinfile:
+      dest: /etc/hosts
+      line: "{{ vstat_mgmt_ip }}  {{ inventory_hostname }}"
+  
   remote_user: "{{ vstat_username }}"
 
 - name: Configure ntpd and ntpdate and local time zone
@@ -105,19 +105,20 @@
   vars: 
     rem_user: "{{ vstat_username }}"
 
-- name: Resolve "{{ vsd_fqdn }}"  to ip addr
-  shell: "getent hosts {{ vsd_fqdn }} | awk '{print $1}'"
-  register: ip_addr
-  remote_user: "{{ vstat_username }}"
+- block:
 
-- name: Config firewall on VSTAT vm to accept conn on ports 9200,9300 from vsd(s)
-  script: firewall.sh "{{ ip_addr.stdout }}"
-  remote_user: "{{ vstat_username }}"
+  - name: Resolve "{{ vsd_fqdn }}"  to ip addr
+    shell: "getent hosts {{ vsd_fqdn }} | awk '{print $1}'"
+    register: ip_addr
 
-- name: Restart elastic search {{ inventory_hostname }}
-  systemd:
-    name: elasticsearch
-    state: restarted
+  - name: Config firewall on VSTAT vm to accept conn on ports 9200,9300 from vsd(s)
+    script: firewall.sh "{{ ip_addr.stdout }}"
+
+  - name: Restart elastic search {{ inventory_hostname }}
+    systemd:
+      name: elasticsearch
+      state: restarted
+
   remote_user: "{{ vstat_username }}"
 
 - name: Get vsd node(s) information

@@ -71,32 +71,31 @@
     line: "DNS1={{ infra_ip | default(dns_server_list[0]) }}"
   when: infra_server_name is defined
 
-- name: Add nameserver
-  command: echo "{{ infra_ip }}" >> /etc/resolv.conf
-  remote_user: "{{ vsd_username }}"
-  when: infra_server_name is defined
+- block:
 
-- name: Restart networking
-  command: /etc/init.d/network restart
-  remote_user: "{{ vsd_username }}"
+  - name: Add nameserver
+    command: echo "{{ infra_ip }}" >> /etc/resolv.conf
+    when: infra_server_name is defined
 
-- name: Resolve fqdn
-  command: hostname "{{ inventory_hostname }}"
-  remote_user: "{{ vsd_username }}"
+  - name: Restart networking
+    command: /etc/init.d/network restart
 
-- name: Configure yum proxy
-  lineinfile:
-    dest: /etc/yum.conf
-    line: "proxy={{ yum_proxy }}"
-  remote_user: "{{ vsd_username }}"
-  when: not yum_proxy | match('NONE')
+  - name: Resolve fqdn
+    command: hostname "{{ inventory_hostname }}"
 
-- name: Execute a yum update
-  yum:
-    name: '*'
-    state: latest
+  - name: Configure yum proxy
+    lineinfile:
+      dest: /etc/yum.conf
+      line: "proxy={{ yum_proxy }}"
+    when: not yum_proxy | match('NONE')
+
+  - name: Execute a yum update
+    yum:
+      name: '*'
+      state: latest
+    when: yum_update
+
   remote_user: "{{ vsd_username }}"
-  when: yum_update
 
 - block:
 
