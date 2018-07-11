@@ -6,7 +6,7 @@
       path: "/opt/proxy/config/keys"
       state: directory
 
-  - name: Create and transfer certs
+  - name: Create and transfer certs to temp location
     include_role: 
       name: common
       tasks_from: vsd-generate-transfer-certificates
@@ -16,8 +16,12 @@
       commonName: proxy
       certificate_type: server
       scp_user: "{{ vnsutil_username }}"
-      scp_location: /opt/proxy/config/keys
+      scp_location: ~
       additional_parameters: -d {{ inventory_hostname }}
+
+  - name: Move certs from temp location to intended location
+    shell: "mv ~/*.pem /opt/proxy/config/keys/."
+    remote_user: "{{ vnsutil_username }}"
      
   - name: Install supervisord and haproxy
     command: "{{ install_cmd }}"
