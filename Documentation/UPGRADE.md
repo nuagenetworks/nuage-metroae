@@ -162,7 +162,7 @@ If this fails, retry.
 ./metro-ansible vsc_ha_upgrade_deploy_1 -vvvv
 ```
 
-If the step fails, you can retry. Backup plan is to manually copy a valid .tim file to the VSC to affect either the deployment (new version of tim file). (old version of tim file). If that fails, you will need to deploy a new VSC using the old version--or recover the VM from a backup. You can use Metro for the deployment (vsc_predeploy, vsc_deploy, vsc_postdeploy...).
+If the step fails, you can retry. If a retry fails, rollback is accomplished by manually copying (via scp) the .tim file, bof.cfg, and config.cfg that were backed up in step 12 to the VSC. Then reboot the VSC.
 
 13. Run VSC postdeploy on vsc_node1
 
