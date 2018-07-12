@@ -25,7 +25,7 @@
     ignore_errors: True
 
   - name: Get controller connection info
-    shell: "ovs-vsctl show | grep -Pzl '(?s)Controller \"ctrl(1|2)\"\\n *target: \"tcp:({{ item }}):6633\"\\n *role: (master|slave)\\n *is_connected: true'"
+    shell: "ovs-vsctl show | grep -Pzl '(?s)Controller \"ctrl(1|2)\"\\n *target: \":({{ item }}):6633\"\\n *role: (master|slave)\\n *is_connected: true'"
     with_items:
       - "{{ active_controller_addr }}"
       - "{{ standby_controller_addr }}"
@@ -87,12 +87,12 @@
     - name: Copy DKMS packages to temporary directory for RHEL and Ubuntu14
       copy: src={{ dkms_package_path }}/{{ item }} dest={{ temp_dir }}/{{ inventory_hostname }}/{{ item }}
       with_items: "{{ dkms_package_file_name_list }}"
-  
+
     - name: Install Nuage DKMS packages on Debian OS family distros
       apt: deb={{ temp_dir }}/{{ inventory_hostname }}/{{ item }} state=present
       with_items:
        - "{{ dkms_package_file_name_list }}"
-      when: 
+      when:
         - ansible_os_family == "Debian"
         - vrs_arch == "u14.04"
 
