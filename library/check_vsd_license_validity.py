@@ -46,7 +46,7 @@ def get_licenses(csproot):
 
 
 def check_licenses_mode(licenses):
-    valid = True
+    valid = False
     for lic in licenses:
         if lic.additional_supported_versions == 0:
             valid = False
@@ -63,12 +63,13 @@ def check_licenses_expiration(licenses, required_days_left):
             seconds_left = license_expire_seconds - current_seconds
 
             if seconds_left < 0:
-                raise Exception("License has expired")
+                raise Exception("VSD License has expired")
 
             days_left = int(seconds_left / SECONDS_PER_DAY)
 
             if days_left < required_days_left:
-                raise Exception("License will expire in %d days" % days_left)
+                raise Exception("VSD License will expire in %d days" %
+                                days_left)
 
 
 def format_api_version(version):
@@ -123,7 +124,6 @@ def main():
         return
 
     module.exit_json(changed=False, result="%s" % valid)
-
 
 
 # Run the main
