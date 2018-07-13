@@ -75,7 +75,8 @@ class VmMgr(object):
       self.module.fail_json(msg="Unable to get list of vms",
                             cmd=cmd,
                             rc=rc,
-                            err=err)
+                            stdout=out,
+                            stderr=err)
     for line in out.split('\n'):
       if line.startswith('Vmid') or line == '':
         continue
