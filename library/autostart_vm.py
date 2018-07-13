@@ -70,7 +70,7 @@ class VmMgr(object):
   def load_vms(self):
     vms = dict()
     rc, out, err = self.module.run_command(self.commands['get_vms'])
-    if rc != 0
+    if rc != 0:
       self.module.fail_json(msg="Unable to get list of vms", rc=rc, err=err)
     for line in out.split('\n'):
       if line.startswith('Vmid') or line == '':
