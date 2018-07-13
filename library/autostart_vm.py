@@ -69,9 +69,13 @@ class VmMgr(object):
   
   def load_vms(self):
     vms = dict()
-    rc, out, err = self.module.run_command(self.commands['get_vms'])
+    cmd = self.commands['get_vms']
+    rc, out, err = self.module.run_command(cmd)
     if rc != 0:
-      self.module.fail_json(msg="Unable to get list of vms", rc=rc, err=err)
+      self.module.fail_json(msg="Unable to get list of vms",
+                            cmd=cmd,
+                            rc=rc,
+                            err=err)
     for line in out.split('\n'):
       if line.startswith('Vmid') or line == '':
         continue
