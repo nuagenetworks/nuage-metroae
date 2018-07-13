@@ -190,7 +190,9 @@ def main():
     arg_spec = dict(
       name = dict(aliases=['vm'], required=True),
       enabled = dict(aliases=['autostart'], required=False, type='bool', default=True),
-      skip = dict(required=False, type='bool', default=False)    
+      order = dict(required=False),
+      skip = dict(required=False, type='bool', default=False),
+      state = dict(required=False)    
     )
     module = AnsibleModule(argument_spec=arg_spec, supports_check_mode=True)
 
