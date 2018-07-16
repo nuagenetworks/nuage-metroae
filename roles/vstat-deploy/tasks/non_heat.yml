@@ -256,6 +256,15 @@
         when:
           - vstat_sa_or_ha | match('sa')
           - es_sa_script.stat.exists
+          - vstat_username == 'root'
+
+      - name: Execute VSTAT standalone script on standalone or clustered vsds
+        command: /opt/vsd/vsd-es-standalone.sh -e {{ inventory_hostname }}
+        delegate_to: "{{ vsd_hostname_list[0] }}"
+        when:
+          - vstat_sa_or_ha | match('sa')
+          - es_sa_script.stat.exists
+          - vstat_username != 'root'
 
       - name: Execute VSTAT cluster script on standalone or clustered vsds
         command: /opt/vsd/vsd-es-cluster-config.sh -e {{ groups['vstats'][0] }},{{ groups['vstats'][1] }},{{ groups['vstats'][2] }}
