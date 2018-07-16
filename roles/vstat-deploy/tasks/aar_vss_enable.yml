@@ -7,6 +7,9 @@
   - name: Revoke old stats cert, if any
     command: "/opt/vsd/ejbca/deploy/certMgmt.sh -a revoke -u elastic"
     remote_user: "{{ vsd_username }}"
+    become: "{{ 'no' if vsd_username == 'root' else 'yes' }}"
+    vars:
+      ansible_become_pass: "{{ vsd_password }}"
     delegate_to: "{{ vsd_fqdn }}"
     ignore_errors: yes
   
@@ -27,8 +30,8 @@
       name: common
       tasks_from: vsd-generate-transfer-certificates
     vars:
-      certificate_password: "Alcateldc"
-      certificate_username: elastic 
+      certificate_password: "{{ vstat_password }}"
+      certificate_username: elastic
       commonName: elastic
       certificate_type: server
       additional_parameters:  -d {{ mgmt_ip }}    
@@ -41,6 +44,9 @@
     with_items: "{{ pem_list }}"
     remote_user: "{{ vsd_username }}"
     delegate_to: "{{ groups['vsds'][0] }}"
+    become: "{{ 'no' if vsd_username == 'root' else 'yes' }}"
+    vars:
+      ansible_become_pass: "{{ vsd_password }}"
 
   run_once: True
 
