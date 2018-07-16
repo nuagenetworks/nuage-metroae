@@ -50,7 +50,7 @@ COMMAND_LIST = {
   'get_vms': 'vim-cmd vmsvc/getallvms',
   'get_autostart_seq': 'vim-cmd hostsvc/autostartmanager/get_autostartseq',
   'enable_start': 'vim-cmd hostsvc/autostartmanager/update_autostartentry ' +
-                  '{vim_id} "PowerOn" "10" "{order}" ' +
+                  '"{vim_id}" "PowerOn" "10" "{order}" ' +
                   '"guestShutdown" "systemDefault" "systemDefault"',
   'disable_start': 'vim-cmd hostsvc/autostartmanager/update_autostartentry -- ' +
                    '"{vim_id}" "PowerOff" "1" "-1" ' +
