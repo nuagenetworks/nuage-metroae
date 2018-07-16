@@ -113,7 +113,7 @@ class VmMgr(object):
   def update_vm(self):
     vm_name = self.params['name']
     new_start_rule = self.params['enabled']
-    new_order = self.params['order']
+    new_pos = self.params['order']
 
     if vm_name not in self.vmname_to_id:
       if self.params['skip']:
@@ -133,7 +133,7 @@ class VmMgr(object):
 
     if not new_start_rule:
       if vm_id in self.vm_startup_info:
-        prev_order = self.vm_startup_info[vm_id]['order']
+        prev_pos = self.vm_startup_info[vm_id]['order']
         prev_action = self.vm_startup_info[vm_id]['action']
         if prev_action != "PowerOff":
           changed = True
@@ -146,32 +146,32 @@ class VmMgr(object):
         ret_msg = "autostart already disabled"
     else:
       if vm_id in self.vm_startup_info:
-        prev_order = self.vm_startup_info[vm_id]['order']
+        prev_pos = self.vm_startup_info[vm_id]['order']
         prev_action = self.vm_startup_info[vm_id]['action']
-        if prev_action != "PowerOn" or prev_order == -1:
+        if prev_action != "PowerOn" or prev_pos == -1:
           changed = True
-          if new_order is None:
-            new_order = len([v for v in self.vm_startup_info.values() if v['order'] > 0]) + 1 
-          ret_msg = "autostart enabled at %d" % new_order
+          if new_pos is None:
+            new_pos = len([v for v in self.vm_startup_info.values() if v['order'] > 0]) + 1 
+          ret_msg = "autostart enabled at %d" % new_pos
           ret_params['prev_action'] = prev_action
-          ret_params['prev_pos'] = prev_order
-          ret_params['new_pos'] = new_order
-          command = enable_start_cmd.format(vm_id = vm_id, order = new_order)
-        if new_order is not None and new_order != prev_order and not changed:
+          ret_params['prev_pos'] = prev_pos
+          ret_params['new_pos'] = new_pos
+          command = enable_start_cmd.format(vm_id = vm_id, order = new_pos)
+        if new_pos is not None and new_pos != prev_pos and not changed:
           changed = True
-          command = enable_start_cmd.format(vm_id = vm_id, order = new_order)
-          ret_msg = "autostart enabled, VM moved from %d to %d" % (prev_order, new_order)
-          ret_params['prev_pos'] = prev_order
-          ret_params['new_pos'] = new_order
+          command = enable_start_cmd.format(vm_id = vm_id, order = new_pos)
+          ret_msg = "autostart enabled, VM moved from %d to %d" % (prev_pos, new_pos)
+          ret_params['prev_pos'] = prev_pos
+          ret_params['new_pos'] = new_pos
         if not changed:
-          ret_msg = "autostart already enabled for %s in position %d" % (vm_name, prev_order)
+          ret_msg = "autostart already enabled for %s in position %d" % (vm_name, prev_pos)
       else:
         changed = True
-        if new_order is None:
-          new_order = len([v for v in self.vm_startup_info.values() if v['order'] > 0]) + 1
-        command = enable_start_cmd.format(vm_id = vm_id, order = new_order)
-        ret_msg = "autostart enabled for %s at position %d" % (vm_name, new_order)
-        ret_params['new_pos'] = new_order
+        if new_pos is None:
+          new_pos = len([v for v in self.vm_startup_info.values() if v['order'] > 0]) + 1
+        command = enable_start_cmd.format(vm_id = vm_id, order = new_pos)
+        ret_msg = "autostart enabled for %s at position %d" % (vm_name, new_pos)
+        ret_params['new_pos'] = new_pos
     if command is not None:
         ret_params['command'] = command
         if not self.check_mode:
