@@ -1,17 +1,6 @@
 ---
-- name: Warning! About to overwrite build_vars.yml, delete hosts, and delete host_vars. Customizations to thos files will be lost.
-  pause:
-    seconds: "{{ reset_build_pause_secs }}"
-  when: not no_pause | default('False')
-
-- name: Create md5 file list
-  set_fact:
-    data_file_name_list:
-      - build_vars.yml
-      - user_creds.yml      
-
 - name: Destroy md5 files
-  file: path={{ inventory_dir }}/{{ item }}.md5 state=absent
+  file: path={{ inventory_dir }}/deployment.md5.yml state=absent
   with_items: "{{ data_file_name_list }}"
 
 - name: Destroy the host_vars directory and its contents
@@ -19,9 +8,6 @@
 
 - name: Destroy the group_vars directory and its contents
   file: path={{ inventory_dir }}/group_vars/ state=absent
-
-- name: Write out a clean build_vars.yml file to the playbook directory and backup previous
-  copy: src=build_vars.yml dest={{ inventory_dir }}/build_vars.yml backup=yes
 
 - name: Destroy hosts file in the playbook directory
   file: path={{ inventory_dir }}/hosts state=absent

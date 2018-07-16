@@ -2,6 +2,7 @@
 # This is a generated file. Manual changes to this file
 # will be lost if reset-build or build is run
 #
+component_type: vsd
 target_server_type: {{ item.target_server_type | default('kvm') }}
 hostname: {{ item.hostname }}
 
@@ -20,20 +21,32 @@ mgmt_prefix: {{ item.mgmt_ip_prefix }}
 mgmt_gateway: {{ item.mgmt_gateway }}
 
 {% if item.target_server_type | match("kvm") %}
-qcow2_path: {{ qcow2_path|default('qcow2_path not defined') }}
-qcow2_file_name: {{ qcow2_file_name|default('qcow2_file_name not defined') }}
+{% if qcow2_path is defined %}
+qcow2_path: {{ qcow2_path }}
+{% endif %}
+{% if qcow2_file_name is defined %}
+qcow2_file_name: {{ qcow2_file_name }}
+{% endif %}
 {% endif %}
 
-{% if vsd_operations_list is defined and 'upgrade' in vsd_operations_list %}
 upgrade_vmname: {{ item.upgrade_vmname is defined | ternary( item.upgrade_vmname, [ item.vmname | default(item.hostname), "new" ] | join('-') ) }}
-vsd_migration_iso_path:  {{ vsd_migration_iso_path|default('vsd_migration_iso_path not defined') }}
-vsd_migration_iso_file_name: {{ vsd_migration_iso_file_name|default('vsd_migration_iso_file_name not defined') }}
+
+{% if vsd_migration_iso_path is defined %}
+vsd_migration_iso_path:  {{ vsd_migration_iso_path }}
+{% endif %}
+{% if vsd_migration_iso_file_name is defined %}
+vsd_migration_iso_file_name: {{ vsd_migration_iso_file_name }}
 {% endif %}
 
 {% if item.target_server_type | match("vcenter") %}
 
-ova_path: {{ ova_path|default('ova_path not defined') }}
-ova_file_name: {{ ova_file_name|default('ova_file_name not defined') }}
+{% if ova_path is defined %}
+ova_path: {{ ova_path }}
+{% endif %}
+{% if ova_file_name is defined %}
+ova_file_name: {{ ova_file_name }}
+{% endif %}
+
 vcenter:
   username: {{ item.vcenter_username | default( vcenter_username ) }}
   password: {{ item.vcenter_password | default( vcenter_password ) }}
