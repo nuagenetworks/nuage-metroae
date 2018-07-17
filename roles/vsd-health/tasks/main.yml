@@ -27,9 +27,9 @@
   remote_user: "{{ vsd_username }}"
 
 - name: Verify configured VSD hostname
-  assert: 
+  assert:
     that: "hostname_output.stdout|search('{{ inventory_hostname }}')"
-    msg: "Configured VSD hostname does not match expected VSD hostname" 
+    msg: "Configured VSD hostname does not match expected VSD hostname"
 
 - name: Write VSD version to json file
   nuage_append: filename="{{ report_path }}" text="{{ vsd_version.stdout | to_nice_json}}\n"
@@ -144,9 +144,22 @@
     with_items:
       - "8443/index.html"
       - 61619
-    
+
   - name: write web interface result
-    nuage_append: filename="{{ report_path }}" text="{{ webresult  | to_nice_json}}\n" 
+    nuage_append: filename="{{ report_path }}" text="{{ webresult  | to_nice_json}}\n"
   delegate_to: localhost
-      
+
+- block:
+
+  - name: Verify VSD licenses valid
+    include_role:
+      name: common
+      tasks_from: check-vsd-license-validity.yml
+
+  - name: Write license valid result
+    nuage_append: filename="{{ report_path }}" text="{{ inventory_hostname }}  License  {{ license_valid | to_nice_json}}\n"
+    delegate_to: localhost
+
+  when: nuage_upgrade | default(False)
+
 - import_tasks: report_footer.yml
