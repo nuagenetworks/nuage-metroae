@@ -13,9 +13,20 @@
       find: path="{{ nuage_unzipped_files_dir }}/vstat"  pattern="*.qcow2" recurse=yes
       register: rc_vstat_file
 
+    - name: Verify that VSTAT VM QCOW2 file was found
+      assert: {
+        that: "{{ rc_vstat_file.matched }} > 0",
+        msg: "DNS image is taken from VSTAT, but we can't find the image path. Make sure myvstats is defined in build_vars.yml"
+        }
+
+    - name: Stat the dns qcow2 file
+      stat:
+        path: "{{ nuage_unzipped_files_dir }}/dns/dns.qcow2"
+      register: qcow_file
+
     - name: Copy vstat qcow2 image to dns directory
-      copy: src={{ rc_vstat_file.files[0].path | basename }} dest={{ nuage_unzipped_files_dir }}/dns/dns.qcow2 force=yes
-      when: "{{ rc_vstat_file.matched }} > 0"
+      copy: src={{ rc_vstat_file.files[0].path }} dest={{ nuage_unzipped_files_dir }}/dns/dns.qcow2 force=yes
+      when: not qcow_file.stat.exists
 
     - name: Find name of DNS VM QCOW2 File
       find: path="{{ nuage_unzipped_files_dir }}/dns"  pattern="*.qcow2" recurse=yes

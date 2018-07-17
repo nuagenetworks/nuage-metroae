@@ -37,11 +37,25 @@ vsd_ha_node3
 
 {% if vcins is defined and vcins %}
 
-[vcins]
+[vcin_masters]
 {% for vcin in vcins %}
+{% if 'master_vcin' not in vcin %}
 {{ vcin.hostname }} {% if 'mgmt_bridge' in vcin %} mgmt_bridge={{ vcin.mgmt_bridge }}{% endif %}
+
+{% endif %}
 {% endfor %}
 
+[vcin_slaves]
+{% for vcin in vcins %}
+{% if 'master_vcin' in vcin %}
+{{ vcin.hostname }} {% if 'mgmt_bridge' in vcin %} mgmt_bridge={{ vcin.mgmt_bridge }}{% endif %}
+
+{% endif %}
+{% endfor %}
+
+[vcins:children]
+vcin_masters
+vcin_slaves
 {% endif %}
 
 {% if vscs is defined and vscs %}
@@ -65,6 +79,14 @@ vsc_sa_node
 [vscs:children]
 vsc_ha_node1
 vsc_ha_node2
+
+{% else %}
+
+[vscs]
+{% for vsc in vscs %}
+{{ vsc.hostname }} {% if 'mgmt_bridge' in vsc %} mgmt_bridge={{ vsc.mgmt_bridge }}{% endif %}{% if 'data_bridge' in vsc %} data_bridge={{ vsc.data_bridge }}{% endif %}
+
+{% endfor %}
 
 {% endif %}
 
@@ -100,10 +122,33 @@ vsc_ha_node2
 {% endif %}
 
 {% if vstats is defined and vstats %}
-[vstats]
-{% for vstat in vstats %}
-{{ vstat.hostname }} {% if 'mgmt_bridge' in vstat %} mgmt_bridge={{ vstat.mgmt_bridge }}{% endif %}
-{% endfor %}
+
+{% if vstats|length == 1 %}
+
+[vstat_node1]
+{{ vstats[0].hostname }} {% if 'mgmt_bridge' in vstats[0] %} mgmt_bridge={{ vstats[0].mgmt_bridge }}{% endif %}
+
+[vstats:children]
+vstat_node1
+
+{% else %}
+
+[vstat_node1]
+{{ vstats[0].hostname }} {% if 'mgmt_bridge' in vstats[0] %} mgmt_bridge={{ vstats[0].mgmt_bridge }}{% endif %}
+
+[vstat_node2]
+{{ vstats[1].hostname }} {% if 'mgmt_bridge' in vstats[1] %} mgmt_bridge={{ vstats[1].mgmt_bridge }}{% endif %}
+
+[vstat_node3]
+{{ vstats[2].hostname }} {% if 'mgmt_bridge' in vstats[2] %} mgmt_bridge={{ vstats[2].mgmt_bridge }}{% endif %}
+
+[vstats:children]
+vstat_node1
+vstat_node2
+vstat_node3
+
+{% endif %}
+
 {% endif %}
 
 {% if vrss is defined and vrss %}
@@ -112,29 +157,6 @@ vsc_ha_node2
 {% for vrs_dict in vrs_dict_list['vrs_ip_list'] %}
 {{ vrs_dict }} avrs={{ 'avrs' in vrs_dict_list and vrs_dict_list['avrs'] }}
 {% endfor %}
-{% endfor %}
-{% endif %}
-
-{% if infras is defined and infras %}
-[infras]
-{% for infra in infras %}
-{{ infra.hostname }}
-{% endfor %}
-{% endif %}
-
-
-{% if oscs is defined and oscs %}
-[oscs]
-{% for osc in oscs %}
-{{ osc.hostname }} {% if 'mgmt_bridge' in osc %} mgmt_bridge={{ osc.mgmt_bridge }}{% endif %}
-
-{% endfor %}
-{% endif %}
-
-{% if oscomputes is defined and oscomputes %}
-[os_computes]
-{% for os_compute in oscomputes %}
-{{ os_compute.hostname }}
 {% endfor %}
 {% endif %}
 

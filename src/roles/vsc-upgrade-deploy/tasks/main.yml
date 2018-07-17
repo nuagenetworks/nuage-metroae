@@ -4,6 +4,7 @@
     state: absent
   delegate_to: localhost
   no_log: True
+  ignore_errors: True
 
 - name: Get output of 'show bof'
   sros_command:
@@ -40,7 +41,7 @@
 
 - name: Print image version in json  when verbosity >= 1
   debug: var=version_json verbosity=1
-
+  
 - name: Copy new VSC image to VSC nodes
   expect:
     command: "{{ vsc_image_copy }}"
@@ -68,8 +69,10 @@
   when: target_server_type | match('heat')
 
 - name: Wait for VSC ssh to be ready
-  include_role:
+  include_role: 
     name: common
     tasks_from: wait-for-ssh
   vars:
     ssh_host: "{{ mgmt_ip }}"
+
+  

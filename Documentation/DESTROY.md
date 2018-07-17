@@ -1,17 +1,19 @@
-# Removing Nuage Networks Components with MetroAG
+# Removing Nuage Networks Components with Metro Automation Engine
 The main steps for removing a deployment are:
 
 [1. Check existing deployment](#1-check-existing-deployment)
-
 [2. Remove components](#2-remove-components)
 
 ## Prerequisites / Requirements
+
 Use this procedure when you have previously deployed VSP components and would like to remove all or some of the components and start over.
 
 ## 1. Check Existing Deployment
+
 Ensure that all components you wish to be destroyed are specified under your deployment.  See [customization](Documentation/CUSTOMIZATION.md) about specifying components in a deployment.  If you have already used a deployment configuration to do an deploy or upgrade, the existing configuration does not need to be changed to destroy said deployment.
 
 ## 2. Remove Components
+
 You have the option of removing the entire deployment or only specified individual components.
 
 ### Remove All Components
@@ -38,4 +40,4 @@ Ask questions and get support via email.
 
 Report bugs you find and suggest new features and enhancements via the [GitHub Issues](https://github.com/nuagenetworks/nuage-metro/issues "nuage-metro issues") feature.
 
-You may also [contribute](../CONTRIBUTING.md) to Nuage MetroAG by submitting your own code to the project.
+You may also [contribute](../CONTRIBUTING.md) to Nuage Metro Automation Engine by submitting your own code to the project.

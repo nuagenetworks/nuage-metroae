@@ -1,8 +1,10 @@
-# Deploying Nuage Networks Components with MetroAG
+# Deploying Nuage Networks Components with Metro Automation Engine
+
 You can execute MetroAG playbooks to perform the following installations:
 * [Deploy All Components](#deploy-all-components)
 * [Deploy Individual Modules](#deploy-individual-modules)
 * [Install a Particular Role or Host](#install-a-particular-role-or-host)
+
 ## Prerequisites / Requirements
 Before deploying any components, you must have previously [set up your Nuage MetroAG Ansible environment](SETUP.md "link to SETUP documentation") and [customized the environment for your target platform](CUSTOMIZATION.md "link to deployment documentation").
 
@@ -30,12 +32,15 @@ Takes down only the VSD components described by deployments/east_network/vsds.ym
 
 ## Deploy All Components
 MetroAG workflows operate on components as you have defined them in your deployment. If you run a workflow for a component not specified, the workflow skips all tasks associated with that component and runs to completion without error. Thus, if you run the `install_everything` workflow when only VRS configuration is present, the workflow deploys VRS successfully while ignoring the tasks for the other components not specified. Deploy all specified components with one command as follows:
+
 ```
 ./metroag install_everything
 ```
 Note: `metroag` is a shell script that executes `ansible-playbook` with the proper includes and command line switches. Use `metroag` (instead of `ansible-playbook`) when running any of the workflows provided herein.
+
 ## Deploy Individual Modules
-MetroAG offers modular execution models in case you don't want to deploy all components together. See modules below.
+
+Metro Automation Engine offers modular execution models in case you don't want to deploy all components together. See modules below.
 
 Module | Command | Description
  ---|---|---
@@ -49,18 +54,24 @@ MetroAG has a complete library of [workflows](/src/playbooks "link to workflows 
 ```
 ./metroag vsd_predeploy
 ```
+
  To limit your deployment to a particular host, just add `--limit` parameter:
+
  ```
  ./metroag vsd_predeploy --limit "vsd1.example.com"
 ```
+
 ## Additional Steps for Specific Deployments
+
 ### NSGV and Bootstrapping
-MetroAG can automatically bootstrap (ZFB) a NSGV when deploying a VNS UTIL VM. To direct MetroAG to generate the ISO file needed for zero factor bootstrapping, perform the following tasks before deploying:
+
+Metro Automation Engine can automatically bootstrap (ZFB) a NSGV when deploying a VNS UTIL VM. To direct Metro Automation Engine to generate the ISO file needed for zero factor bootstrapping, perform the following tasks before deploying:
 
 * Customize variables in [`zfb_vars.yml`](deployments/default/zfb_vars.yml "link to zfb_vars.yml file")
 * Specify `bootstrap_method: zfb_metro,` in nsgvs parameters in [`nsgvs.yml`](deployments/default/nsgvs.yml "link to nsgvs.yml file")
 
 ## Debugging
+
 By default, ansible.cfg tells ansible to log to ./ansible.log.
 
 Ansible supports different levels of verbosity, specified with one of the following command line flags:
@@ -76,13 +87,15 @@ Running individual workflows is useful for debugging. For example, `vsd_predeplo
 If you would like to remove an entire deployment, or individual components, and start over, see [DESTROY.md](DESTROY.md "link to DESTROY documentation") for details.
 
 ## Next Steps
+
 After you have successfully deployed Nuage Networks VSP components, you may want to [upgrade](UPGRADE.md) to a newer version at some point in the future. See [UPGRADE.md](UPGRADE.md) for details.
 
 ## Questions, Feedback, and Contributing
+
 Ask questions and get support via email.
   Outside Nokia: [devops@nuagenetworks.net](mailto:deveops@nuagenetworks.net "send email to nuage-metro project")
   Internal Nokia: [nuage-metro-interest@list.nokia.com](mailto:nuage-metro-interest@list.nokia.com "send email to nuage-metro project")
 
 Report bugs you find and suggest new features and enhancements via the [GitHub Issues](https://github.com/nuagenetworks/nuage-metro/issues "nuage-metro issues") feature.
 
-You may also [contribute](../CONTRIBUTING.md) to Nuage MetroAG by submitting your own code to the project.
+You may also [contribute](../CONTRIBUTING.md) to Nuage Metro Automation Engine by submitting your own code to the project.

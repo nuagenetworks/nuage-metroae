@@ -17,6 +17,7 @@
     state: absent
   delegate_to: localhost
   no_log: True
+  ignore_errors: True
 
 - block:
   - name: Get infra server details from OS server facts
@@ -102,6 +103,8 @@
   include_role:
     name: common
     tasks_from: linux-ntp-sync
+  vars: 
+    rem_user: "{{ vstat_username }}"
 
 - name: Resolve "{{ vsd_fqdn }}"  to ip addr
   shell: "getent hosts {{ vsd_fqdn }} | awk '{print $1}'"
@@ -118,7 +121,15 @@
     state: restarted
   remote_user: "root"
 
+- name: Get vsd node(s) information
+  import_role:
+    name: common
+    tasks_from: vsd-node-info.yml
+  vars:
+    vsd_hostname: "{{ vsd_fqdn }}"
+  run_once: true
+
 - name: Enable stats collection on the VSD VM
   command: /opt/vsd/vsd-stats.sh -e {{inventory_hostname}}
-  delegate_to: "{{ vsd_fqdn }}"
+  delegate_to: "{{ vsd_hostname_list[0] }}"
   remote_user: "root"

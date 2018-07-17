@@ -20,20 +20,28 @@ vmname: {{ item.1.vmname }}
 vmname: {{ item.1.hostname }}
 {% endif %}
 
+{% if item.1.vlan_id is defined %}
+vlan_id: {{ item.1.vlan_id }}
+{% endif %}
+
 mgmt_ip: {{ item.1.mgmt_ip }}
 mgmt_netmask_prefix: {{ item.1.mgmt_ip_prefix }}
 mgmt_gateway: {{ item.1.mgmt_gateway }}
 control_ip: {{ item.1.ctrl_ip }}
+{% if item.1.ctrl_ip_vprn is defined %}
+control_ip_vprn: {{ item.1.ctrl_ip_vprn }}
+{% endif %}
 control_netmask_prefix: {{ item.1.ctrl_ip_prefix }}
 
-vsc_mgmt_static_route_list:
 {% if item.1.vsc_mgmt_static_route_list is defined %}
+
+vsc_mgmt_static_route_list:
 {% for route in item.1.vsc_mgmt_static_route_list %}
   - {{ route }}
 {% endfor %}
 {% else %}
   - 0.0.0.0/1
-  - 128.0.0.1/1
+  - 128.0.0.0/1
 {% endif %}
 
 {% if item.1.target_server_type | match("kvm") %}
@@ -64,6 +72,13 @@ vcenter:
 {% endif %}
 
 vsd_fqdn: {{ item.1.vsd_fqdn }}
+
+{% if item.1.secure_communication is defined %}
+{% set secure_communication = item.1.secure_communication %}
+{% else %}
+{% set secure_communication = True %}
+{% endif %}
+secure_communication: {{ secure_communication }}
 
 {% if item.1.system_ip is defined %}
 system_ip: {{ item.1.system_ip }}

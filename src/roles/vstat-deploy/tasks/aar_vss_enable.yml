@@ -6,8 +6,10 @@
 
   - name: Revoke old stats cert, if any
     command: "/opt/vsd/ejbca/deploy/certMgmt.sh -a revoke -u elastic"
+    remote_user: "{{ vsd_username }}"
+    delegate_to: "{{ vsd_fqdn }}"
     ignore_errors: yes
-
+  
   remote_user: "{{ vstat_username }}"
 
 - name: Set local variables
@@ -19,21 +21,28 @@
       - elastic-Key.pem
       - elastic.pem       
 
-- name: Generate SSL certificates on VSD for the Stats node
-  command: "/opt/vsd/ejbca/deploy/certMgmt.sh -a generate -u elastic -c elastic -o csp -f pem -t server -d {{ mgmt_ip }}"
-  register: sslresult
-  remote_user: "{{ vsd_username }}"
-  delegate_to: "{{ groups['vsds'][0] }}"
+- block:
+  - name: Generate SSL certificates on VSD for the Stats node
+    include_role:
+      name: common
+      tasks_from: vsd-generate-transfer-certificates
+    vars:
+      certificate_password: "Alcateldc"
+      certificate_username: elastic 
+      commonName: elastic
+      certificate_type: server
+      additional_parameters:  -d {{ mgmt_ip }}    
+
+  - name: Create temp folder to host the ssl certificates
+    local_action: file path={{ dest }} state=directory mode=755
+
+  - name: Transfer SSL certificates from VSD to localhost
+    fetch: src=/opt/vsd/ejbca/p12/pem/{{ item }} dest={{ dest }} flat=yes
+    with_items: "{{ pem_list }}"
+    remote_user: "{{ vsd_username }}"
+    delegate_to: "{{ groups['vsds'][0] }}"
+
   run_once: True
-
-- name: Create temp folder to host the ssl certificates
-  local_action: file path={{ dest }} state=directory mode=755
-
-- name: Transfer SSL certificates from VSD to localhost
-  fetch: src=/opt/vsd/ejbca/p12/pem/{{ item }} dest={{ dest }} flat=yes
-  with_items: "{{ pem_list }}"
-  remote_user: "{{ vsd_username }}"
-  delegate_to: "{{ groups['vsds'][0] }}"
 
 - name: Transfer SSL certificates from localhost to Stats node
   copy: src={{ dest }}{{ item }} dest=/etc/nginx/ssl
@@ -42,9 +51,11 @@
 
 - name: Delete temp folder from localhost
   local_action: file path={{ dest }} state=absent
-
+  run_once: True
+  
 - name: Restart nginx process on Stats node
   systemd:
     name: nginx
     state: restarted
   remote_user: "{{ vstat_username }}"
+  
