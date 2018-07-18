@@ -1,12 +1,10 @@
 ---
 - name: Set data file variables
   set_fact:
-    build_vars: "{{ build_vars_file | default (inventory_dir+'/build_vars.yml') }}"
-    user_creds: "{{ user_creds_file | default (inventory_dir+'/user_creds.yml') }}"
     do_build: "{{ force_build | default(False) }}"
-    data_file_name_list:
-      - "{{ build_vars_file | default ('build_vars.yml') }}"
-      - "{{ user_creds_file | default ('user_creds.yml') }}"
+    data_file_path_list:
+      - "{{ build_vars_file | default (inventory_dir+'/build_vars.yml') }}"
+      - "{{ user_creds_file | default (inventory_dir+'/user_creds.yml') }}"
 
 - name: Include build variable files
   include_vars: "{{ build_vars }}"
@@ -21,9 +19,9 @@
       name: common
       tasks_from: check-md5
     with_items:
-      "{{ data_file_name_list }}"
+      "{{ data_file_path_list }}"
     loop_control:
-      loop_var: file_name
+      loop_var: file_path
 
   when: not do_build
 
@@ -47,8 +45,8 @@
       name: common
       tasks_from: set-md5
     with_items:
-      "{{ data_file_name_list }}"
+      "{{ data_file_path_list }}"
     loop_control:
-      loop_var: file_name
+      loop_var: file_path
 
   when: do_build
