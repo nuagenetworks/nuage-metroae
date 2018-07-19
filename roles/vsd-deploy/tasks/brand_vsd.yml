@@ -1,0 +1,27 @@
+---
+- name: Set branding zip file to Nuage
+  set_fact:
+    branding_zip_file: "{{ role_path }}/files/nuage-branding.zip"
+  when: branding_zip_file == 'nuage'
+
+- name: Set branding zip file to MetroAE
+  set_fact:
+    branding_zip_file: "{{ role_path }}/files/metroae-branding.zip"
+  when: branding_zip_file == 'metroae'
+
+- name: Create branding directory on VSD
+  file:
+    path: /tmp/branding
+    state: directory
+
+- name: Copy branding zip file to VSD
+  copy:
+    src: "{{ branding_zip_file }}"
+    dest: /tmp/branding/branding.zip
+    force: yes
+
+- name: Install branding on VSD
+  shell: "/opt/vsd/install/brand-ui -b /tmp/branding/branding.zip -u  /opt/vsd/jboss/standalone/deployment/ui-*.war"
+
+- name: Restart jboss
+  command: monit restart jboss
