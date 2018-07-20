@@ -42,10 +42,6 @@
     set_fact:
       vcenter_path: "vi://'{{ vcenter.username | urlencode }}':'{{ vcenter.password | urlencode }}'@{{ target_server }}/{{ vcenter.datacenter }}/host/{{ vcenter.cluster }}/Resources/{{ vcenter.resource_pool | urlencode }}"
     when: vcenter.resource_pool != 'NONE'
-
-  - name: Autostart
-    autostart_vm: 
-      name: "{{ vm_name }}"
       
   - name: Deploy VM image on vCenter
     connection: local
@@ -75,6 +71,19 @@
 
   - debug: var=vm_facts verbosity=1
 
+  - name: Get host info for VM to configure Autostart
+    connection: local
+    command: ./get_vcenter_host.py
+    args:
+      chdir: ~/nuage-metro/library
+    register: esxi_host
+
+  - name: Configure autostart
+    connection: local
+    command: ./autostart_vcenter.py -ip esxi_host -u {{ vcenter.username }} -p {{ vcenter.password }} -t esxi_host
+    args:
+      chdir: ~/nuage-metro/library
+    
   - name: Writing eth0 network script file to the VM
     connection: local
     vmware_vm_shell:
