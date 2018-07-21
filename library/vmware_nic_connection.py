@@ -1,8 +1,6 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 #
-# This module is also sponsored by E.T.A.I. (www.etai.fr)
-#
 # This file is part of Ansible
 #
 # Ansible is free software: you can redistribute it and/or modify
