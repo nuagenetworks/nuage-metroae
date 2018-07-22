@@ -58,7 +58,7 @@ Destroy | removes component(s) from the infrastructure |
 Upgrade | upgrades component(s) from one release to another |
 
 ## Nomenclature  
-**Ansible Host**: The host where Metro Automation Engine runs. Ansible and the required packages are installed on this host. The Ansible Host must run el7 Linux host, e.g. Cent)S 7.* or RHEL 7.*.  
+**Ansible Host**: The host where Metro Automation Engine runs. Ansible and the required packages are installed on this host. The Ansible Host must run el7 Linux host, e.g. CentOS 7.* or RHEL 7.*.  
 **Metro Automation Engine User**: The user who runs Metro Automation Engine to deploy and upgrade components.  
 **Target Server**: The hypervisor on which one or more VSP components are installed as VMs. Each deployment may contain more than one Target Server.  
 
