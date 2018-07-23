@@ -5,7 +5,7 @@
       msg:  "Ansible version 2.4 and above are required. Found Ansible version {{ansible_version.full}}"
 
   - name: get the paramiko version
-    shell: pip show paramiko | grep Version
+    shell: pip show paramiko | grep ^Version
     register: paramiko_version
 
   - name: get the paramiko version
@@ -45,7 +45,7 @@
 
   - name : Check if all yum group packages are installed
     assert:
-      that: "yumgroupoutput.stdout|search('{{ item }}')"
+      that: "yumgroupoutput.stdout | lower | search('{{ item }}' | lower)"
       msg:  "Missing required group package {{ item }} . Please refer to metro-setup.sh"
     with_lines: cat ./yum_requirements.txt | grep "@" | sed 's/@//'
 
