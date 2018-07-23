@@ -7,7 +7,7 @@ def main():
     proc = subprocess.Popen(["sudo dmidecode|grep UUID|awk '{print $2}'"], 
                             stdout=subprocess.PIPE,
                             shell=True)
-    out, err proc.communicate()
+    out, err = proc.communicate()
     uuid = out[:-1]
 
     SI = None
