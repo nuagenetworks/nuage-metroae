@@ -2,6 +2,7 @@
 import subprocess
 import argparse
 from pyVmomi import vim
+from pyVim import connect
 from pyVim.connect import SmartConnect
 
 def main():
