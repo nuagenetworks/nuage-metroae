@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import subprocess
 import argparse
-from pyVim import connect
+from pyVmomi import vim
 from pyVim.connect import SmartConnect
 
 def main():
