@@ -19,12 +19,12 @@
 - name: Get current version of VSD software
   command: echo $VSD_VERSION
   register: vsd_version
-  remote_user: "{{ vsd_username }}"
+  remote_user: "{{ vsd_default_username }}"
 
 - name: Get configured VSD Hostname
   command: hostname -f
   register: hostname_output
-  remote_user: "{{ vsd_username }}"
+  remote_user: "{{ vsd_default_username }}"
 
 - name: Verify configured VSD hostname
   assert: 
@@ -39,7 +39,7 @@
   network_info:
     mac_addr: False
   register: net_conf
-  remote_user: "{{ vsd_username }}"
+  remote_user: "{{ vsd_default_username }}"
 
 - name: Print network config when verbosity >= 1
   debug: var=net_conf.info verbosity=1
@@ -53,10 +53,10 @@
 - name: Execute list_p1db command on VSD(s)
   command: "{{ p1db_cmd }}"
   register: list_p1db_output
-  become: "{{ 'no' if vsd_username == 'root' else 'yes' }}"
-  remote_user: "{{ vsd_username }}"
+  become: "{{ 'no' if vsd_default_username == 'root' else 'yes' }}"
+  remote_user: "{{ vsd_default_username }}"
   vars:
-    ansible_become_pass: "{{ vsd_password }}"
+    ansible_become_pass: "{{ vsd_default_password }}"
 
 - name: Print ejabberd list_p1db output when verbosity >= 1
   debug: var=list_p1db_output verbosity=1
@@ -71,7 +71,7 @@
 - name: Execute list_cluster command on VSD(s)
   command: "{{ ejabber_cluster_list_command }}"
   register: list_cluster_output
-  remote_user: "{{ vsd_username }}"
+  remote_user: "{{ vsd_default_username }}"
 
 - name: Print ejabberd list_cluster_output when verbosity >= 1
   debug: var=list_cluster_output verbosity=1
@@ -86,7 +86,7 @@
 - name: Excute ejabberd_connected_users_command command on VSD(s)
   command: "{{ ejabberd_connected_users_command }}"
   register: user_list
-  remote_user: "{{ vsd_username }}"
+  remote_user: "{{ vsd_default_username }}"
 
 - name: Print ejabberd connected_users output when verbosity >= 1
   debug: var=user_list verbosity=1
@@ -102,7 +102,7 @@
   assert:
     that: "user_list.stdout|search('{{ hostvars[item].xmpp.username }}')"
     msg: "{{ hostvars[item].xmpp.username }} could not be found in '/opt/ejabberd/bin/ejabberdctl connected_users'"
-  remote_user: "{{ vsd_username }}"
+  remote_user: "{{ vsd_default_username }}"
   with_items: "{{ groups['vscs'] }}"
   when:
     - groups['vscs'] is defined

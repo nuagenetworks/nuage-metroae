@@ -35,7 +35,7 @@
   - name: Restart DNS service
     shell: service dnsmasq restart
     delegate_to: "{{ infra_ip }}"
-    remote_user: "{{ vsd_username }}"
+    remote_user: "{{ vsd_default_username }}"
   when: infra_server_name is defined
 
 - name: Wait for VSD-HA ssh to be ready
@@ -47,10 +47,10 @@
 
 - name: Inject ssh key to VSD if cloud-init did not work
   expect:
-    command: "ssh-copy-id -i {{ vsd_username }}@{{ vsd_mgmt_ip }}"
+    command: "ssh-copy-id -i {{ vsd_default_username }}@{{ vsd_mgmt_ip }}"
     responses:
       (?i)yes: "yes"
-  remote_user: "{{ vsd_username }}"
+  remote_user: "{{ vsd_default_username }}"
   delegate_to: localhost
 
 - name: Pause for ssh port to be active
@@ -95,7 +95,7 @@
       state: latest
     when: yum_update
 
-  remote_user: "{{ vsd_username }}"
+  remote_user: "{{ vsd_default_username }}"
 
 - block:
 
@@ -122,7 +122,7 @@
     - name: Read the VSD version
       shell: echo $VSD_VERSION | cut -d . -f 1
       register: vsd_version
-      remote_user: "{{ vsd_username }}"
+      remote_user: "{{ vsd_default_username }}"
 
     - debug: var=vsd_version.stdout verbosity=1
 
@@ -147,7 +147,7 @@
         with_nested:
           - "{{ groups['vsds'] }}"
           - "{{ ssh_key_lst.results }}"
-      remote_user: "{{ vsd_username }}"
+      remote_user: "{{ vsd_default_username }}"
       when: vsd_version.stdout | int < 5 and inventory_hostname == vsd_cluster_node_1
 
     - block:
@@ -184,7 +184,7 @@
 
     when: inventory_hostname == vsd_cluster_node_1 or (inventory_hostname == vsd_cluster_node_3 and nuage_upgrade)
 
-  remote_user: "{{ vsd_username }}"
+  remote_user: "{{ vsd_default_username }}"
   when: vsd_sa_or_ha | match('ha')
 
 - name: Configure ntpd and ntpdate and local time zone
@@ -192,11 +192,11 @@
     name: common
     tasks_from: linux-ntp-sync
   vars:
-    rem_user: "{{ vsd_username }}"
+    rem_user: "{{ vsd_default_username }}"
 
 - name: Install VSD software on standalone node
   command: /opt/vsd/vsd-install.sh -t s -y
-  remote_user: "{{ vsd_username }}"
+  remote_user: "{{ vsd_default_username }}"
   when: vsd_sa_or_ha | match('sa')
 
 - block:
@@ -214,8 +214,8 @@
     when: inventory_hostname == vsd_cluster_node_3
 
   when: vsd_sa_or_ha | match('ha')
-  remote_user: "{{ vsd_username }}"
+  remote_user: "{{ vsd_default_username }}"
 
 - name: Set XMPP connection to allow both clear and TLS
   command: /opt/vsd/bin/ejmode allow -y
-  remote_user: "{{ vsd_username }}"
+  remote_user: "{{ vsd_default_username }}"
