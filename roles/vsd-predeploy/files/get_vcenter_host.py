@@ -2,6 +2,7 @@
 import subprocess
 import argparse
 from pyVim import connect
+from pyVim.connect import SmartConnect
 
 def main():
     parser = argparse.ArgumentParser(description='Process args to retrieve VMs')
@@ -21,15 +22,16 @@ def main():
     out, err = proc.communicate()
     uuid = out[:-1]
 
-    SI = None
-    SI = connect.SmartConnect(host=args.host,
-                          user=args.user,
-                          pwd=args.password,
-                          port=args.port)
-    vm = SI.content.searchIndex.FindbyUuid(None,
-                                        uuid,
-                                        True,
-                                        False)
+    si = None
+    si = connect.SmartConnect(host=args.host,
+                              user=args.user,
+                              pwd=args.password,
+                              port=args.port)
+
+    vm = si.content.searchIndex.FindbyUuid(None,
+                                           uuid,
+                                           True,
+                                           False)
     host = vm.runtime.host 
 
     return host
