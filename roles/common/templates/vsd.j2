@@ -5,9 +5,7 @@
 target_server_type: {{ item.target_server_type | default('kvm') }}
 hostname: {{ item.hostname }}
 
-{% if item.target_server_type | match("kvm") or item.target_server_type | match("vcenter")%}
-
-target_server: {{ item.target_server }}
+{% if item.target_server_type | match("kvm") or item.target_server_type | match("vcenter") or item.target_server_type | match("aws") %}
 
 {% if item.vmname is defined %}
 vmname: {{ item.vmname }}
@@ -34,8 +32,11 @@ vsd_sa_or_ha: ha
 {% endif %}
 
 mgmt_ip: {{ item.mgmt_ip }}
+{% if not item.target_server_type | match("aws") %}
+target_server: {{ item.target_server }}
 mgmt_gateway: {{ item.mgmt_gateway }}
 mgmt_netmask: {{ item.mgmt_netmask }}
+{% endif %}
 
 {% if item.target_server_type | match("kvm") %}
 qcow2_path: {{ qcow2_path|default('qcow2_path not defined') }}
@@ -64,6 +65,14 @@ vcenter:
   cluster: {{ item_vcenter.cluster | default('NONE') }}
   datastore: {{ item_vcenter.datastore | default('NONE') }}
   resource_pool: {{ item_vcenter.resource_pool | default('NONE') }}
+{% endif %}
+
+{% if item.target_server_type | match("aws") %}
+aws_region: "{{ item.aws_region }}"
+aws_ami_id: "{{ item.aws_ami_id }}"
+aws_instance_type: "{{ item.aws_instance_type | default('m4.large') }}"
+aws_key_name: "{{ item.aws_key_name }}"
+aws_mgmt_eni: "{{ item.aws_mgmt_eni }}"
 {% endif %}
 
 {% endif %}

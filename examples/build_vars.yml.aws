@@ -1,0 +1,118 @@
+---
+###
+# See BUILD.md for details
+###
+# Paths
+# Paths to find zipped (tar.gz) files and unzipped files (e.g. qcow2)
+# Both are required to run the nuage_unzip role. nuage_unzipped_files_dir
+# is required when one or more operation lists, below, are set to 'install'
+# or 'upgrade'.
+nuage_unzipped_files_dir: "~ec2-user/nuage-images"
+
+###
+# Usernames
+# remote_user names for ansible to execute as on the target server (hypervisor)
+# and Ansible host. target_server_username is the remote_user for all hypervisors.
+# ansible_sudo_username is the sudo user for local actions.
+target_server_username: "~ec2-user"
+ansible_sudo_username: "root"
+
+vsd_fqdn_global: "vsd1.example.com"
+
+ntp_server_list:
+  - 10.1.2.208
+
+dns_server_list:
+  - 10.1.0.2
+
+myvsds:
+  - {
+      # Name of the VSD, will also be used as the Ansible hostname
+      hostname: "vsd1.example.com",
+      vmname: "VSD1",
+      # target_server_type needs to be configured as "aws"
+      mgmt_ip: 10.1.2.246,
+      target_server_type: "aws",
+      aws_region: "us-east-1",
+      aws_ami_id: ami-c2d00ebd,
+      aws_instance_type: m4.large,
+      aws_key_name: NuageVPC1-KeyPair,
+      aws_mgmt_eni: eni-7ce1bce8
+      }
+
+mgmt_bridge: "eth0"
+data_bridge: "eth1"
+access_bridge: "eth0"
+
+images_path: "/var/lib/libvirt/images"
+
+vsc_operations_list:
+ - install
+
+myvscs:
+  - { hostname: vsc1.example.com,
+      vmname: VSC1,
+      target_server_type: "kvm",
+      target_server: 10.1.2.20,
+      mgmt_ip: 10.1.2.21,
+      internal_mgmt_ip: 192.168.1.2,
+      mgmt_gateway: 192.168.1.1,
+      mgmt_netmask_prefix: 24,
+      mgmt_routed_network_name: vsc-mgmt-routed-network,
+      data_routed_network_name: vsc-data-routed-network,
+      internal_ctrl_ip: 192.168.2.2,
+      ctrl_ip: 10.1.3.101,
+      ctrl_netmask_prefix: 24,
+      vsd_fqdn: vsd1.example.com,
+      system_ip: 1.1.1.2,
+      xmpp_username: vsc1,
+      vsc_mgmt_static_route_list: [ 10.1.0.0/16 ] }
+
+vstat_operations_list:
+  - install
+
+myvstats:
+  - { hostname: "vstat1.example.com",
+      vmname: VSTAT1,
+      target_server_type: "aws",
+      mgmt_ip: 10.1.2.84,
+      aws_region: "us-east-1",
+      aws_instance_type: t2.medium,
+      aws_ami_id: ami-8dc31df2,
+      aws_key_name: NuageVPC1-KeyPair,
+      aws_mgmt_eni: eni-73e1bce7,
+      vsd_fqdn: "vsd1.example.com" }
+
+vns_operations_list:
+  - install
+
+myvnsutils:
+  - { hostname: "vnsutil1.example.com",
+      vmname: VNSUTIL1,
+      target_server_type: "aws",
+      target_server: 10.1.2.117,
+      mgmt_ip: 10.1.2.117,
+      data_fqdn: "vnsutil1.data.example.com",
+      data_ip: 10.1.3.182,
+      data_netmask: 255.255.255.0,
+      aws_region: "us-east-1",
+      aws_ami_id: ami-00ef317f,
+      aws_instance_type: t2.medium,
+      aws_key_name: NuageVPC1-KeyPair,
+      aws_mgmt_eni: eni-ace4b938,
+      aws_data_eni: eni-8de0bd19,
+      vsd_fqdn: "vsd1.example.com"
+    }
+
+mynsgvs:
+  - { hostname: "nsg1.data.example.com",
+      vmname: NSG1,
+      target_server_type: "aws",
+      nsg_template_id: "7971ff5b-1ecd-4410-b8cb-b3ab5141d27a",
+      enterprise: "vns1",
+      aws_region: "us-east-1",
+      aws_instance_type: t2.medium,
+      aws_ami_id: ami-8a33eaf5,
+      aws_key_name: NuageVPC1-KeyPair,
+      aws_access_eni: eni-c6e6bb52,
+      aws_data_eni: eni-a1e1bc35}

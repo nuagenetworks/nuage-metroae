@@ -1,0 +1,615 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: AWS CloudFormation VPC example for Nuage VSP
+Parameters:
+  VpcCidr:
+    Type: String
+    Description: IP Address range for the VPN connected VPC
+    MinLength: 9
+    MaxLength: 18
+    Default: 10.1.0.0/16
+    AllowedPattern: '(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})/(\d{1,2})'
+    ConstraintDescription: must be a valid IP CIDR range of the form x.x.x.x/x.
+  AccessSubnetCidr:
+    Type: String
+    Description: CIDR for subnet in access network with internet access
+    MinLength: 9
+    MaxLength: 18
+    Default: 10.1.1.0/24
+    AllowedPattern: '(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})/(\d{1,2})'
+    ConstraintDescription: must be a valid IP CIDR range of the form x.x.x.x/x.
+  MgmtSubnetCidr:
+    Type: String
+    Description: CIDR for subnet in management network with outgoing internet (NAT) access
+    MinLength: 9
+    MaxLength: 18
+    Default: 10.1.2.0/24
+    AllowedPattern: '(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})/(\d{1,2})'
+    ConstraintDescription: must be a valid IP CIDR range of the form x.x.x.x/x.
+  DataSubnetCidr:
+    Type: String
+    Description: CIDR for subnet in private data network
+    MinLength: 9
+    MaxLength: 18
+    Default: 10.1.3.0/24
+    AllowedPattern: '(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})/(\d{1,2})'
+    ConstraintDescription: must be a valid IP CIDR range of the form x.x.x.x/x.
+Resources:
+  VPC:
+    Type: 'AWS::EC2::VPC'
+    Properties:
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      CidrBlock: !Ref VpcCidr
+      Tags:
+        - Key: Name
+          Value: !Ref 'AWS::StackName'
+  AccessSubnet:
+    Type: 'AWS::EC2::Subnet'
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: !Ref AccessSubnetCidr
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: !Join
+            - '-'
+            - - !Ref 'AWS::StackName'
+              - Access-Subnet
+        - Key: Description
+          Value: Subnet with internet access
+  MgmtSubnet:
+    Type: 'AWS::EC2::Subnet'
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: !Ref MgmtSubnetCidr
+      MapPublicIpOnLaunch: false
+      AvailabilityZone: !GetAtt
+        - AccessSubnet
+        - AvailabilityZone
+      Tags:
+        - Key: Name
+          Value: !Join
+            - '-'
+            - - !Ref 'AWS::StackName'
+              - Management-Subnet
+        - Key: Description
+          Value: Subnet with outgoing (NAT) internet access
+  DataSubnet:
+    Type: 'AWS::EC2::Subnet'
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: !Ref DataSubnetCidr
+      MapPublicIpOnLaunch: false
+      AvailabilityZone: !GetAtt
+        - AccessSubnet
+        - AvailabilityZone
+      Tags:
+        - Key: Name
+          Value: !Join
+            - '-'
+            - - !Ref 'AWS::StackName'
+              - Data-Subnet
+        - Key: Description
+          Value: Private subnet
+  VsdMgmtEni:
+    Type: 'AWS::EC2::NetworkInterface'
+    Properties:
+      SubnetId: !Ref MgmtSubnet
+      Description: VSD Management network interface
+      SourceDestCheck: false
+      GroupSet:
+        - !Ref MgmtSecurityGroup
+      Tags:
+        - Key: Name
+          Value: !Join
+            - '-'
+            - - !Ref 'AWS::StackName'
+              - VSD Management ENI
+        - Key: Stack
+          Value: !Ref 'AWS::StackName'
+        - Key: Network
+          Value: Management Subnet
+  VscMgmtEni:
+    Type: 'AWS::EC2::NetworkInterface'
+    Properties:
+      SubnetId: !Ref MgmtSubnet
+      Description: VSC Management network interface
+      SourceDestCheck: false
+      GroupSet:
+        - !Ref MgmtSecurityGroup
+      Tags:
+        - Key: Name
+          Value: !Join
+            - '-'
+            - - !Ref 'AWS::StackName'
+              - VSC Management ENI
+        - Key: Stack
+          Value: !Ref 'AWS::StackName'
+        - Key: Network
+          Value: Management Subnet
+  VscDataEni:
+    Type: 'AWS::EC2::NetworkInterface'
+    Properties:
+      SubnetId: !Ref DataSubnet
+      Description: VSC Data network interface
+      SourceDestCheck: false
+      GroupSet:
+        - !Ref DataSecurityGroup
+      Tags:
+        - Key: Name
+          Value: !Join
+            - '-'
+            - - !Ref 'AWS::StackName'
+              - VSC Data ENI
+        - Key: Stack
+          Value: !Ref 'AWS::StackName'
+        - Key: Network
+          Value: Data Subnet
+  VscTargetServerEni:
+    Type: 'AWS::EC2::NetworkInterface'
+    Properties:
+      SubnetId: !Ref MgmtSubnet
+      Description: VSC target server interface
+      SourceDestCheck: false
+      GroupSet:
+        - !Ref MgmtSecurityGroup
+      Tags:
+        - Key: Name
+          Value: !Join
+            - '-'
+            - - !Ref 'AWS::StackName'
+              - VSC target server ENI
+        - Key: Stack
+          Value: !Ref 'AWS::StackName'
+        - Key: Network
+          Value: Management Subnet
+  VstatMgmtEni:
+    Type: 'AWS::EC2::NetworkInterface'
+    Properties:
+      SubnetId: !Ref MgmtSubnet
+      Description: VSTAT Management network interface
+      SourceDestCheck: false
+      GroupSet:
+        - !Ref MgmtSecurityGroup
+      Tags:
+        - Key: Name
+          Value: !Join
+            - '-'
+            - - !Ref 'AWS::StackName'
+              - VSTAT Management ENI
+        - Key: Stack
+          Value: !Ref 'AWS::StackName'
+        - Key: Network
+          Value: Management Subnet
+  VnsUtilMgmtEni:
+    Type: 'AWS::EC2::NetworkInterface'
+    Properties:
+      SubnetId: !Ref MgmtSubnet
+      Description: VNSUtil Management network interface
+      SourceDestCheck: false
+      GroupSet:
+        - !Ref MgmtSecurityGroup
+      Tags:
+        - Key: Name
+          Value: !Join
+            - '-'
+            - - !Ref 'AWS::StackName'
+              - VNSUtil Management ENI
+        - Key: Stack
+          Value: !Ref 'AWS::StackName'
+        - Key: Network
+          Value: Management Subnet
+  VnsUtilDataEni:
+    Type: 'AWS::EC2::NetworkInterface'
+    Properties:
+      SubnetId: !Ref DataSubnet
+      Description: VNSUtil Data network interface
+      SourceDestCheck: false
+      GroupSet:
+        - !Ref DataSecurityGroup
+      Tags:
+        - Key: Name
+          Value: !Join
+            - '-'
+            - - !Ref 'AWS::StackName'
+              - VNSUtil Data ENI
+        - Key: Stack
+          Value: !Ref 'AWS::StackName'
+        - Key: Network
+          Value: Data Subnet
+  NsgAccessEni:
+    Type: 'AWS::EC2::NetworkInterface'
+    Properties:
+      SubnetId: !Ref AccessSubnet
+      Description: NSGv Access network interface
+      GroupSet:
+        - !Ref NsgSecurityGroup
+      SourceDestCheck: false
+      Tags:
+        - Key: Name
+          Value: !Join
+            - '-'
+            - - !Ref 'AWS::StackName'
+              - NSGv Access ENI
+        - Key: Stack
+          Value: !Ref 'AWS::StackName'
+        - Key: Network
+          Value: Access Network
+  NsgDataEni:
+    Type: 'AWS::EC2::NetworkInterface'
+    Properties:
+      SubnetId: !Ref DataSubnet
+      Description: NSGv Data network interface
+      SourceDestCheck: false
+      GroupSet:
+        - !Ref DataSecurityGroup
+      Tags:
+        - Key: Name
+          Value: !Join
+            - '-'
+            - - !Ref 'AWS::StackName'
+              - NSGv Data ENI
+        - Key: Stack
+          Value: !Ref 'AWS::StackName'
+        - Key: Network
+          Value: Data Subnet
+  ProxyAccessEni:
+    Type: 'AWS::EC2::NetworkInterface'
+    Properties:
+      SubnetId: !Ref AccessSubnet
+      Description: Proxy Access network interface
+      GroupSet:
+        - !Ref ProxySecurityGroup
+      SourceDestCheck: false
+      Tags:
+        - Key: Name
+          Value: !Join
+            - '-'
+            - - !Ref 'AWS::StackName'
+              - Proxy Access ENI
+        - Key: Stack
+          Value: !Ref 'AWS::StackName'
+        - Key: Network
+          Value: Access Network
+  ProxyMgmtEni:
+    Type: 'AWS::EC2::NetworkInterface'
+    Properties:
+      SubnetId: !Ref MgmtSubnet
+      Description: Proxy Management network interface
+      SourceDestCheck: false
+      GroupSet:
+        - !Ref MgmtSecurityGroup
+      Tags:
+        - Key: Name
+          Value: !Join
+            - '-'
+            - - !Ref 'AWS::StackName'
+              - Proxy Management ENI
+        - Key: Stack
+          Value: !Ref 'AWS::StackName'
+        - Key: Network
+          Value: Management Subnet
+  InternetGateway:
+    Type: 'AWS::EC2::InternetGateway'
+    Properties:
+      Tags:
+        - Key: Application
+          Value: !Ref 'AWS::StackId'
+  InternetGatewayAttachment:
+    Type: 'AWS::EC2::VPCGatewayAttachment'
+    Properties:
+      VpcId: !Ref VPC
+      InternetGatewayId: !Ref InternetGateway
+  AccessRouteTable:
+    Type: 'AWS::EC2::RouteTable'
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Application
+          Value: !Ref 'AWS::StackName'
+  AccessInternetRoute:
+    Type: 'AWS::EC2::Route'
+    DependsOn: InternetGatewayAttachment
+    Properties:
+      RouteTableId: !Ref AccessRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+  AccessSubnetRouteTableAssociation:
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+    Properties:
+      SubnetId: !Ref AccessSubnet
+      RouteTableId: !Ref AccessRouteTable
+  NatEIP:
+    Type: AWS::EC2::EIP
+    DependsOn: InternetGatewayAttachment
+    Properties:
+      Domain: vpc
+  NatGateway:
+    Type: 'AWS::EC2::NatGateway'
+    Properties:
+      AllocationId:
+        Fn::GetAtt:
+        - NatEIP
+        - AllocationId
+      SubnetId:
+        Ref: AccessSubnet
+      Tags:
+        - Key: Application
+          Value: !Ref 'AWS::StackId'
+  MgmtRouteTable:
+    Type: 'AWS::EC2::RouteTable'
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Application
+          Value: !Ref 'AWS::StackId'
+  MgmtNatRoute:
+    Type: 'AWS::EC2::Route'
+    Properties:
+      RouteTableId: !Ref MgmtRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref NatGateway
+  MgmtSubnetRouteTableAssociation:
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+    Properties:
+      SubnetId: !Ref MgmtSubnet
+      RouteTableId: !Ref MgmtRouteTable
+  DataSubnetRouteTableAssociation:
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+    Properties:
+      SubnetId: !Ref DataSubnet
+      RouteTableId: !Ref MgmtRouteTable
+  NsgSecurityGroup:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      VpcId: !Ref VPC
+      GroupDescription: Enable Access Ingress Ports for NSGv
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 893
+          ToPort: 893
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: udp
+          FromPort: 500
+          ToPort: 500
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: udp
+          FromPort: 4500
+          ToPort: 4500
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: udp
+          FromPort: 4789
+          ToPort: 4789
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: udp
+          FromPort: 5770
+          ToPort: 5770
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: 47
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: 50
+          CidrIp: 0.0.0.0/0
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: !Join
+            - '-'
+            - - !Ref 'AWS::StackName'
+              - NSG-SG
+  ProxySecurityGroup:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      VpcId: !Ref VPC
+      GroupDescription: Enable Access Ingress Ports for proxy
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: !Join
+            - '-'
+            - - !Ref 'AWS::StackName'
+              - Proxy-SG
+  MgmtSecurityGroup:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      VpcId: !Ref VPC
+      GroupDescription: Enable Management Ingress Ports
+      SecurityGroupIngress:
+        - IpProtocol: -1
+          CidrIp: 0.0.0.0/0
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: !Join
+            - '-'
+            - - !Ref 'AWS::StackName'
+              - Management-SG
+  DataSecurityGroup:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      VpcId: !Ref VPC
+      GroupDescription: Enable Data Ingress Ports
+      SecurityGroupIngress:
+        - IpProtocol: -1
+          CidrIp: 0.0.0.0/0
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: !Join
+            - '-'
+            - - !Ref 'AWS::StackName'
+              - Data-SG
+  DNS:
+    Type: "AWS::Route53::HostedZone"
+    Properties:
+      HostedZoneConfig:
+        Comment: "DNS private hosted zone"
+      Name: "example.com"
+      VPCs:
+        - VPCId: !Ref VPC
+          VPCRegion: !Ref 'AWS::Region'
+  VsdDNSRecord:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId: !Ref DNS
+      Name: vsd1.example.com.
+      Type: A
+      TTL: '900'
+      ResourceRecords:
+      - !GetAtt
+        - VsdMgmtEni
+        - PrimaryPrivateIpAddress
+  VscDNSRecord:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId: !Ref DNS
+      Name: vsc1.example.com.
+      Type: A
+      TTL: '900'
+      ResourceRecords:
+      - !GetAtt
+        - VscMgmtEni
+        - PrimaryPrivateIpAddress
+  VstatDNSRecord:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId: !Ref DNS
+      Name: vstat1.example.com.
+      Type: A
+      TTL: '900'
+      ResourceRecords:
+      - !GetAtt
+        - VstatMgmtEni
+        - PrimaryPrivateIpAddress
+  VnsUtilDNSRecord:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId: !Ref DNS
+      Name: vnsutil1.example.com.
+      Type: A
+      TTL: '900'
+      ResourceRecords:
+      - !GetAtt
+        - VnsUtilMgmtEni
+        - PrimaryPrivateIpAddress
+  VnsUtilDataDNSRecord:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId: !Ref DNS
+      Name: vnsutil1.data.example.com.
+      Type: A
+      TTL: '900'
+      ResourceRecords:
+      - !GetAtt
+        - VnsUtilDataEni
+        - PrimaryPrivateIpAddress
+  NsgUtilDataDNSRecord:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId: !Ref DNS
+      Name: nsg1.data.example.com.
+      Type: A
+      TTL: '900'
+      ResourceRecords:
+      - !GetAtt
+        - NsgDataEni
+        - PrimaryPrivateIpAddress
+Outputs:
+  VPCId:
+    Description: VPCId of the newly created VPC
+    Value: !Ref VPC
+  VsdMgmtEniId:
+    Description: EC2 Network Interface Id to be used to attach the VSD Mgmt Interface to
+    Value: !Ref VsdMgmtEni
+  VscMgmtEniId:
+    Description: EC2 Network Interface Id to be used to attach the VSC Mgmt Interface to
+    Value: !Ref VscMgmtEni
+  VscDataEniId:
+    Description: EC2 Network Interface Id to be used to attach the VSC Data Interface to
+    Value: !Ref VscDataEni
+  VscTargetServerEniId:
+    Description: EC2 Network Interface Id to be used to attach the VSC Target server Interface to
+    Value: !Ref VscTargetServerEni
+  VstatMgmtEniId:
+    Description: EC2 Network Interface Id to be used to attach the VSTAT Mgmt Interface to
+    Value: !Ref VstatMgmtEni
+  VnsUtilMgmtEniId:
+    Description: EC2 Network Interface Id to be used to attach the VNSUtil Mgmt Interface to
+    Value: !Ref VnsUtilMgmtEni
+  VnsUtilDataEniId:
+    Description: EC2 Network Interface Id to be used to attach the VNSUtil Data Interface to
+    Value: !Ref VnsUtilDataEni
+  NsgAccessEniId:
+    Description: EC2 Network Interface Id to be used to attach the NSGv Access Interface to
+    Value: !Ref NsgAccessEni
+  NsgDataEniId:
+    Description: EC2 Network Interface Id to be used to attach the NSGv Data Interface to
+    Value: !Ref NsgDataEni
+  ProxyAccessEniId:
+    Description: EC2 Network Interface Id to be used to attach the proxy Access Interface to
+    Value: !Ref ProxyAccessEni
+  ProxyMgmtEniId:
+    Description: EC2 Network Interface Id to be used to attach the proxy Mgmt Interface to
+    Value: !Ref ProxyMgmtEni
+
+  VsdMgmtEniIp:
+    Description: IP address that will be associated with the VSD Mgmt Interface
+    Value: !GetAtt
+      - VsdMgmtEni
+      - PrimaryPrivateIpAddress
+  VscMgmtEniIp:
+    Description: IP address that will be associated with the VSC Mgmt Interface
+    Value: !GetAtt
+      - VscMgmtEni
+      - PrimaryPrivateIpAddress
+  VscDataEniIp:
+    Description: IP address that will be associated with the VSC Data Interface
+    Value: !GetAtt
+      - VscDataEni
+      - PrimaryPrivateIpAddress
+  VscTargetServerEniIp:
+    Description: IP address that will be associated with the VSC Target server Interface
+    Value: !GetAtt
+      - VscTargetServerEni
+      - PrimaryPrivateIpAddress
+  VstatMgmtEniIp:
+    Description: IP address that will be associated with the VSTAT Mgmt Interface
+    Value: !GetAtt
+      - VstatMgmtEni
+      - PrimaryPrivateIpAddress
+  VnsUtilMgmtEniIp:
+    Description: IP address that will be associated with the VNSUtil Mgmt Interface
+    Value: !GetAtt
+      - VnsUtilMgmtEni
+      - PrimaryPrivateIpAddress
+  VnsUtilDataEniIp:
+    Description: IP address that will be associated with the VNSUtil Data Interface
+    Value: !GetAtt
+      - VnsUtilDataEni
+      - PrimaryPrivateIpAddress
+  NsgDataEniIp:
+    Description: IP address that will be associated with the NSGv Data Interface
+    Value: !GetAtt
+      - NsgDataEni
+      - PrimaryPrivateIpAddress
+  ProxyMgmtEniIp:
+    Description: IP address that will be associated with the proxy Mgmt Interface
+    Value: !GetAtt
+      - ProxyMgmtEni
+      - PrimaryPrivateIpAddress
