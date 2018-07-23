@@ -29,7 +29,7 @@ def main():
                               pwd=args.password,
                               port=args.port)
 
-    vm = si.content.searchIndex.FindbyUuid(None,
+    vm = si.content.searchIndex.FindByUuid(None,
                                            uuid,
                                            True,
                                            False)
