@@ -106,14 +106,14 @@
         vsd_cluster_node_1: "{{ groups['vsds'][0] }}"
         vsd_cluster_node_2: "{{ groups['vsds'][1] }}"
         vsd_cluster_node_3: "{{ groups['vsds'][2] }}"
-    when: not nuage_upgrade
+    when: not nuage_upgrade | default(False)
 
   - name: Set VSD numbering for upgrade
     set_fact:
         vsd_cluster_node_1: "{{ groups['vsds'][1] }}"
         vsd_cluster_node_2: "{{ groups['vsds'][2] }}"
         vsd_cluster_node_3: "{{ groups['vsds'][0] }}"
-    when: nuage_upgrade
+    when: nuage_upgrade | default(False)
 
   when: vsd_sa_or_ha | match('ha')
 
@@ -183,7 +183,7 @@
         with_items: "{{ groups['vsds'] }}"
       when: vsd_version.stdout | int >= 5
 
-    when: inventory_hostname == vsd_cluster_node_1 or (inventory_hostname == vsd_cluster_node_3 and nuage_upgrade)
+    when: inventory_hostname == vsd_cluster_node_1 or (inventory_hostname == vsd_cluster_node_3 and nuage_upgrade | default(False))
 
   remote_user: root
   when: vsd_sa_or_ha | match('ha')
