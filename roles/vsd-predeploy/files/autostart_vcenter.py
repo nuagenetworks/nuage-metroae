@@ -75,7 +75,7 @@ def enable_autostart(host, startDelay):
             host.configManager.AutoStartManager.ReconfigureAutostart(spec)
 
 def main():
-    parser = argpars.ArgumentParser()
+    parser = argparse.ArgumentParser()
     parser.add_argument('-ip', '--ipAddr',
                         required=True,
                         action='store',

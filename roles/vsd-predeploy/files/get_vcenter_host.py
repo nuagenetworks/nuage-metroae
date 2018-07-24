@@ -22,7 +22,7 @@ def main():
                             shell=True)
     out, err = proc.communicate()
     uuid = out[:-1]
-
+    print (uuid)
     si = None
     si = connect.SmartConnect(host=args.host,
                               user=args.user,
