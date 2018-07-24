@@ -33,7 +33,11 @@ def main():
                                            uuid,
                                            True,
                                            False)
-    host = vm.runtime.host 
+    if vm is not None:
+        host = vm.runtime.host 
+    else:
+        host = None
+        print "No vm found"
 
     return host
 
