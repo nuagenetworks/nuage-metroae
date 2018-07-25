@@ -16,8 +16,8 @@ def main():
     parser.add_argument('-p', '--password', required=False, action='store',
                          help='Password to use to connect to host')
     
-    parser.add_argument('-u', '--uuid', required=True, action='store',
-                        help='UUID of VM')
+    # parser.add_argument('-u', '--uuid', required=True, action='store',
+    #                     help='UUID of VM')
     args = parser.parse_args()
     proc = subprocess.Popen(["sudo dmidecode|grep UUID|awk '{print $2}'"], 
                              stdout=subprocess.PIPE,
