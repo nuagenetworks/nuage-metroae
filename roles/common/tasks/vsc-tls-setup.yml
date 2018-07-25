@@ -1,20 +1,21 @@
-- block: 
+- block:
   - name: Create and transfer certs
-    include_role: 
+    include_role:
       name: common
       tasks_from: vsd-generate-transfer-certificates
-    vars: 
+    vars:
       certificate_password: "{{ vsc_password }}"
       certificate_username: "{{ xmpp.username }}"
-      commonName: "{{ xmpp.username }}" 
+      commonName: "{{ xmpp.username }}"
       certificate_type: server
       scp_user: "{{ vsc_username }}"
       scp_location: /
       additional_parameters:  -d {{ inventory_hostname }}
-    
+
   - name: Configure VSC for secure communication
     sros_config:
       lines:
+          - configure system security tls-profile vsc-tls-profile create
           - configure system security tls-profile vsc-tls-profile own-key cf1:\{{ xmpp.username }}-Key.pem
           - configure system security tls-profile vsc-tls-profile own-certificate cf1:\{{ xmpp.username }}.pem
           - configure system security tls-profile vsc-tls-profile ca-certificate cf1:\{{ xmpp.username }}-CA.pem
@@ -36,8 +37,7 @@
     retries: 6
     delay: 10
     delegate_to: localhost
-    
+
   - name: Print output of 'show vswitch-controller xmpp-server' when verbosity >= 1
     debug: var=xmpp_status verbosity=1
   when: secure_communication
-
