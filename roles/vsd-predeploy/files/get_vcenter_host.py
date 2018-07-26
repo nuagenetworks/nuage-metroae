@@ -43,7 +43,7 @@ def main():
         host = None
         print "No vm found"
     
-    print "Host name : {}".format(host.name)
-    return host
+    host_ip = "Host name : {}".format(host.name)
+    return host_ip
 
 main()
