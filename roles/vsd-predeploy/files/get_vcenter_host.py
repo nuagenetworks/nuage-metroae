@@ -38,6 +38,7 @@ def main():
                                            False)
     if vm is not None:
         host = vm.runtime.host 
+        print (host)
     else:
         host = None
         print "No vm found"
