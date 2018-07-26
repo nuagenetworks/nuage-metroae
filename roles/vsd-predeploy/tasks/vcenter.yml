@@ -1,14 +1,14 @@
 ---
-# - block:
-#   - name: Verify that upgrade_vmname is defined if this is an upgrade
-#     assert:
-#       that: "upgrade_vmname is defined"
-#       msg: "upgrade_vmname is required for upgrade"
+- block:
+  - name: Verify that upgrade_vmname is defined if this is an upgrade
+    assert:
+      that: "upgrade_vmname is defined"
+      msg: "upgrade_vmname is required for upgrade"
 
-#   - name: Set local variable with upgrade_vmname
-#     set_fact:
-#       vm_name: "{{ upgrade_vmname }}"
-#   when: nuage_upgrade | default( False )
+  - name: Set local variable with upgrade_vmname
+    set_fact:
+      vm_name: "{{ upgrade_vmname }}"
+  when: nuage_upgrade | default( False )
 
 - block:
   - name: Verify that vmname is defined
@@ -21,59 +21,55 @@
       vm_name: "{{ vmname }}"
   when: not nuage_upgrade | default( False )
 
-# - include_role:
-#     name: check-node-running
+- include_role:
+    name: check-node-running
 
-# - name: Display if skipping predeploy
-#   debug:
-#     msg:
-#       - "****************************************************"
-#       - "Skipping VSD predeploy because it is already present"
-#       - "****************************************************"
-#   when: node_present
+- name: Display if skipping predeploy
+  debug:
+    msg:
+      - "****************************************************"
+      - "Skipping VSD predeploy because it is already present"
+      - "****************************************************"
+  when: node_present
 
 - block:
 
-#   - name: Configure vCenter path
-#     set_fact:
-#       vcenter_path: "vi://'{{ vcenter.username | urlencode }}':'{{ vcenter.password | urlencode }}'@{{ target_server }}/{{ vcenter.datacenter }}/host/{{ vcenter.cluster }}"
-
-#   - name: Update vCenter path if resource pool is configured
-#     set_fact:
-#       vcenter_path: "vi://'{{ vcenter.username | urlencode }}':'{{ vcenter.password | urlencode }}'@{{ target_server }}/{{ vcenter.datacenter }}/host/{{ vcenter.cluster }}/Resources/{{ vcenter.resource_pool | urlencode }}"
-#     when: vcenter.resource_pool != 'NONE'
-      
-#   - name: Deploy VM image on vCenter
-#     connection: local
-#     command: >
-#       {{ vcenter.ovftool }}
-#       --acceptAllEulas
-#       --noSSLVerify
-#       --powerOn
-#       --machineOutput
-#       -dm=thin
-#       -ds={{ vcenter.datastore }}
-#       -n={{ vm_name }}
-#       --net:"VM Network={{ mgmt_bridge }}"
-#       "{{ ova_path }}/{{ ova_file_name }}"
-#       {{ vcenter_path }}
-
-#   - name: Waiting until VMware tools becomes available
-#     connection: local
-#     vmware_guest_tools_wait:
-#       hostname: "{{ target_server }}"
-#       username: "{{ vcenter.username }}"
-#       password: "{{ vcenter.password }}"
-#       name: "{{ vm_name }}"
-#       datacenter: "{{ vcenter.datacenter }}"
-#       validate_certs: no
-#     register: vm_facts
-
-  # - debug: var=vm_facts verbosity=1
-  
-  - name: Set vm name for test
+  - name: Configure vCenter path
     set_fact:
-      vm_name: "vcenter"
+      vcenter_path: "vi://'{{ vcenter.username | urlencode }}':'{{ vcenter.password | urlencode }}'@{{ target_server }}/{{ vcenter.datacenter }}/host/{{ vcenter.cluster }}"
+
+  - name: Update vCenter path if resource pool is configured
+    set_fact:
+      vcenter_path: "vi://'{{ vcenter.username | urlencode }}':'{{ vcenter.password | urlencode }}'@{{ target_server }}/{{ vcenter.datacenter }}/host/{{ vcenter.cluster }}/Resources/{{ vcenter.resource_pool | urlencode }}"
+    when: vcenter.resource_pool != 'NONE'
+      
+  - name: Deploy VM image on vCenter
+    connection: local
+    command: >
+      {{ vcenter.ovftool }}
+      --acceptAllEulas
+      --noSSLVerify
+      --powerOn
+      --machineOutput
+      -dm=thin
+      -ds={{ vcenter.datastore }}
+      -n={{ vm_name }}
+      --net:"VM Network={{ mgmt_bridge }}"
+      "{{ ova_path }}/{{ ova_file_name }}"
+      {{ vcenter_path }}
+
+  - name: Waiting until VMware tools becomes available
+    connection: local
+    vmware_guest_tools_wait:
+      hostname: "{{ target_server }}"
+      username: "{{ vcenter.username }}"
+      password: "{{ vcenter.password }}"
+      name: "{{ vm_name }}"
+      datacenter: "{{ vcenter.datacenter }}"
+      validate_certs: no
+    register: vm_facts
+
+  - debug: var=vm_facts verbosity=1
 
   - name: Get UUID of VM
     vmware_vm_facts:
@@ -103,7 +99,9 @@
 
   - name: Set VM Name
     set_fact:
-      vm_cmd: "{{ vm_list.virtual_machines }}[{{ vm_name }}]['uuid']"
+      vm_cmd: "{{ vm_list.virtual_machines[vm_name]['uuid'] }}"
+  
+  - debug: var=vm_cmd
     
   - name: Get host info for VM to configure Autostart
     connection: local
