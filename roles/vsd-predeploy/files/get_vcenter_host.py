@@ -42,7 +42,8 @@ def main():
     else:
         host = None
         print "No vm found"
-
+    
+    print "Host name : {}".format(host.name)
     return host
 
 main()
