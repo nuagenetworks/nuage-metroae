@@ -71,33 +71,37 @@
 
   - debug: var=vm_facts verbosity=1
 
-  - name: Get UUID of VM
-    vmware_vm_facts:
-      hostname: "{{ target_server }}"
-      username: "{{ vcenter.username }}"
-      password: "{{ vcenter.password }}"
-    delegate_to: localhost
-    register: vm_list
+  - block:
 
-  - name: Set VM UUID
-    set_fact:
-      vm_cmd: "{{ vm_list.virtual_machines[vm_name]['uuid'] }}"
-  
-  - debug: var=vm_cmd
-    
-  - name: Get host info for VM to configure Autostart
-    connection: local
-    command: "{{ role_path }}/files/get_vcenter_host.py -s {{ target_server }} -u {{ vcenter.username }} -p {{ vcenter.password }} -d {{ vm_cmd }}" 
-    register: vcenter_host
-  
-  - name: Store ESXI host 
-    set_fact:
-      esxi_host: "{{ vcenter_host.stdout }}"
+    - name: Get UUID of VM
+      vmware_vm_facts:
+        hostname: "{{ target_server }}"
+        username: "{{ vcenter.username }}"
+        password: "{{ vcenter.password }}"
+      delegate_to: localhost
+      register: vm_list
 
-  - name: Configure autostart
-    connection: local
-    command: "{{ role_path }}/files/autostart_vcenter.py -ip {{ target_server }} -u {{ vcenter.username }} -p {{ vcenter.password }} -t {{ esxi_host}}"
+    - name: Set VM UUID
+      set_fact:
+        vm_cmd: "{{ vm_list.virtual_machines[vm_name]['uuid'] }}"
+  
+    - debug: var=vm_cmd
     
+    - name: Get host info for VM to configure Autostart
+      connection: local
+      command: "{{ role_path }}/files/get_vcenter_host.py -s {{ target_server }} -u {{ vcenter.username }} -p {{ vcenter.password }} -d {{ vm_cmd }}" 
+      register: vcenter_host
+  
+    - name: Store ESXI host 
+      set_fact:
+        esxi_host: "{{ vcenter_host.stdout }}"
+
+    - name: Configure autostart
+      connection: local
+      command: "{{ role_path }}/files/autostart_vcenter.py -ip {{ target_server }} -u {{ vcenter.username }} -p {{ vcenter.password }} -t {{ esxi_host}}"
+
+   when: not nuage_upgrade | default( False )  
+
   - name: Writing eth0 network script file to the VM
     connection: local
     vmware_vm_shell:
