@@ -10,16 +10,16 @@
 #       vm_name: "{{ upgrade_vmname }}"
 #   when: nuage_upgrade | default( False )
 
-# - block:
-#   - name: Verify that vmname is defined
-#     assert:
-#       that: "vmname is defined"
-#       msg: "vmname is required for vsd_predeploy"
+- block:
+  - name: Verify that vmname is defined
+    assert:
+      that: "vmname is defined"
+      msg: "vmname is required for vsd_predeploy"
 
-#   - name: Set local variable with vmname
-#     set_fact:
-#       vm_name: "{{ vmname }}"
-#   when: not nuage_upgrade | default( False )
+  - name: Set local variable with vmname
+    set_fact:
+      vm_name: "{{ vmname }}"
+  when: not nuage_upgrade | default( False )
 
 # - include_role:
 #     name: check-node-running
@@ -79,13 +79,13 @@
     delegate_to: localhost
     register: vm_list
   
-  - debug: var=vm_list.virtual_machines['vcenter']['uuid']
+  - debug: var=vm_list.virtual_machines["{{ vm_name }}"]['uuid']
 
   - name: Set VM Name
     set_fact:
-      vm_cmd: "{{ vm_list.virtual_machines }}['vcenter']['uuid']"
+      vm_cmd: "{{ vm_list.virtual_machines }}[{{ vm_name }}]['uuid']"
     
-  - debug: var={{ vmname }}
+  - debug: var={{ vm_name }}
 
   - name: Get host info for VM to configure Autostart
     connection: local
