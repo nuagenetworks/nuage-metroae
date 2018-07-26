@@ -45,7 +45,7 @@ def action_hosts(commaList, connection, startDelay):
 def enable_autostart(host, startDelay):
     print "Enabling autostart for %s" % host.name
     hostDefSettings = vim.host.AutoStartManager.SystemDefaults()
-    hostdefSettings.enabled = True 
+    hostDefSettings.enabled = True 
     hostDefSettings.startDelay = int(startDelay)
     order = 1
     for vhost in host.vm:
