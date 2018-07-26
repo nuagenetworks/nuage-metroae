@@ -44,6 +44,7 @@ def main():
         print "No vm found"
     
     host_ip = "Host name : {}".format(host.name)
+    print (host_ip)
     return host_ip
 
 main()
