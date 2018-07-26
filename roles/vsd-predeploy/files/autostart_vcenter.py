@@ -72,7 +72,7 @@ def enable_autostart(host, startDelay):
             spec.powerInfo = [auto_power_info]
             order = order + 1
             print "Applied settings to %s" % vhost
-            host.configManager.AutoStartManager.ReconfigureAutostart(spec)
+            host.configManager.autoStartManager.ReconfigureAutostart(spec)
 
 def main():
     parser = argparse.ArgumentParser()
