@@ -35,7 +35,7 @@ def main():
     vm = si.content.searchIndex.FindByUuid(None,
                                            uuid,
                                            True,
-                                           True)
+                                           False)
     if vm is not None:
         host = vm.runtime.host 
     else:
