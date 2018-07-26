@@ -16,6 +16,18 @@
 # You should have received a copy of the GNU General Public License
 # along with Ansible.  If not, see <http://www.gnu.org/licenses/>.
 
+import os
+from ansible.module_utils.basic import AnsibleModule
+from ansible.module_utils.vmware import connect_to_api, gather_vm_facts, wait_for_task
+
+HAS_PYVMOMI = False
+try:
+    from pyVmomi import vim
+
+    HAS_PYVMOMI = True
+except ImportError:
+    pass
+
 ANSIBLE_METADATA = {'metadata_version': '1.0',
                     'status': ['preview'],
                     'supported_by': 'community'}
@@ -59,7 +71,7 @@ options:
    nic_mac:
         description:
             - The MAC address of the nic to connect/disconnect
-   all_nics: 
+   all_nics:
         description:
             - If this is set to true, all nics states will be changed
         default: false
@@ -73,7 +85,7 @@ extends_documentation_fragment: vmware.documentation
 '''
 
 EXAMPLES = '''
-- name: Connect a nic 
+- name: Connect a nic
   vmware_nic_connection:
     hostname: 192.168.1.209
     username: administrator@vsphere.local
@@ -105,29 +117,6 @@ instance:
     type: dict
     sample: None
 """
-
-import os
-import time
-
-# import module snippets
-from ansible.module_utils.basic import AnsibleModule
-from ansible.module_utils.pycompat24 import get_exception
-from ansible.module_utils.six import iteritems
-from ansible.module_utils.vmware import connect_to_api, find_vm_by_id, gather_vm_facts, wait_for_task
-
-try:
-    import json
-except ImportError:
-    import simplejson as json
-
-HAS_PYVMOMI = False
-try:
-    import pyVmomi
-    from pyVmomi import vim
-
-    HAS_PYVMOMI = True
-except ImportError:
-    pass
 
 
 class VmwareNicManager(object):
@@ -174,7 +163,7 @@ class VmwareNicManager(object):
                     nics.append(dev)
                     break
         return nics
-    
+
     def ensure(self):
         results = dict(changed=False, instance=None)
         changes = []
@@ -199,7 +188,7 @@ class VmwareNicManager(object):
                     connectable.startConnected = False
                 nic_spec.device.connectable = connectable
                 changes.append(nic_spec)
-        if len(changes) > 0: 
+        if len(changes) > 0:
             spec = vim.vm.ConfigSpec()
             spec.deviceChange = changes
             task = vm.ReconfigVM_Task(spec=spec)
