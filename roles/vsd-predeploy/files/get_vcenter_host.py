@@ -25,7 +25,6 @@ def main():
     # print (out)
     # uuid = out[:-1]
     uuid = args.uuid
-    print (uuid)
     si = None
     si = connect.SmartConnect(host=args.host,
                               user=args.user,
@@ -38,12 +37,10 @@ def main():
                                            False)
     if vm is not None:
         host = vm.runtime.host 
-        print (host)
     else:
         host = None
-        print "No vm found"
     
-    host_ip = "Host name : {}".format(host.name)
+    host_ip = host.name
     print (host_ip)
     return host_ip
 
