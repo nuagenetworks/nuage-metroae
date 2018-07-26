@@ -49,7 +49,7 @@ def enable_autostart(host, startDelay):
     hostDefSettings.startDelay = int(startDelay)
     order = 1
     for vhost in host.vm:
-        spec = host.ConfigManager.autoStartManager.config
+        spec = host.configManager.autoStartManager.config
         spec.defaults = hostDefSettings
         auto_power_info = vim.host.AutoStartManager.AutoPowerInfo()
         auto_power_info.key = vhost
