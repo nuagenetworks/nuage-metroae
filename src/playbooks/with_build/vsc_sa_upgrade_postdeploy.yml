@@ -1,6 +1,9 @@
 ---
-- hosts: localhost
-  tasks:
+- hosts: vsc_sa_node
+  gather_facts: no
+  any_errors_fatal: true
+  connection: local
+  pre_tasks:
     - name: Set upgrade flag
       set_fact:
         nuage_upgrade: true
@@ -10,10 +13,9 @@
         name: common
         tasks_from: check-upgrade-prereq
 
-- hosts: vsc_sa_node
-  gather_facts: no
-  any_errors_fatal: true
-  connection: local
+    - name: Check if VSC prereq satisfied for predeploy
+      include_role:
+        name: common
+        tasks_from: check-predeploy-prereq
   roles:
     - vsc-upgrade-postdeploy
-
