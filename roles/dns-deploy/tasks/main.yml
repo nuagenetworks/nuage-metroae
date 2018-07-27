@@ -14,19 +14,27 @@
       line: "proxy={{ yum_proxy }}"
     when: not yum_proxy | match('NONE')
 
+  - name: Execute a yum update
+    yum:
+      name: '*'
+      state: latest
+    when: yum_update
+
   - name: Install ntp client on {{ target_server }}
     yum: name=ntp state=latest
 
   remote_user: "{{ target_server_username }}"
 
-- name: stop and flush firewall
-    service: name=firewalld state=stopped
+#- name: stop and flush firewall
+#  service : 
+#    name: "firewalld" 
+#    state: "stopped"
 
-- name: disable firewall services for automatic start
-    service:
-      name:  "firewalld"
-      enabled: no
-	
+#- name: disable firewall services for automatic start
+#  service :
+#    name:  "firewalld"
+#    enabled: no
+
 - name: Configure ntpd and ntpdate and local time zone
   include_role:
     name: common
