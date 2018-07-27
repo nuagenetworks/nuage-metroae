@@ -40,7 +40,7 @@ def action_hosts(commaList, connection, startDelay, vmname):
     
     for h in allhosts:
         if h.name in acthosts:
-            enable_autostart(h, startDelay, vm_name)
+            enable_autostart(h, startDelay, vmname)
 
 def enable_autostart(host, startDelay, vmname):
     print "Enabling autostart for %s" % host.name
