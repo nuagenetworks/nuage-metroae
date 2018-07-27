@@ -100,7 +100,7 @@ def main():
                         help='Default startup delay')
     parser.add_argument('-n', '--vmname',
                         required=True,
-                        action='store'
+                        action='store',
                         help='VM to configure')
     args = parser.parse_args()
     print "Connecting to vCenter"
