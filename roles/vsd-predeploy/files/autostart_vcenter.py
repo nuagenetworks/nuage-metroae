@@ -29,7 +29,7 @@ def get_hosts(conn):
     obj = [host for host in container.view]
     return obj
 
-def action_hosts(commaList, connection, startDelay):
+def action_hosts(commaList, connection, startDelay, vmname):
     print "Configuring provided hosts"
     acthosts = commaList.split(",")
     allhosts = get_hosts(connection)
@@ -40,39 +40,40 @@ def action_hosts(commaList, connection, startDelay):
     
     for h in allhosts:
         if h.name in acthosts:
-            enable_autostart(h, startDelay)
+            enable_autostart(h, startDelay, vm_name)
 
-def enable_autostart(host, startDelay):
+def enable_autostart(host, startDelay, vmname):
     print "Enabling autostart for %s" % host.name
     hostDefSettings = vim.host.AutoStartManager.SystemDefaults()
     hostDefSettings.enabled = True 
     hostDefSettings.startDelay = int(startDelay)
     order = 1
     for vhost in host.vm:
-        spec = host.configManager.autoStartManager.config
-        spec.defaults = hostDefSettings
-        auto_power_info = vim.host.AutoStartManager.AutoPowerInfo()
-        auto_power_info.key = vhost
-        print "VM %s is updated if on" % vhost.name
-        print "VM status is %s" % vhost.runtime.powerState
-        if vhost.runtime.powerState == "poweredOff":
-            auto_power_info.startAction = 'None'
-            auto_power_info.waitForHeartbeat = 'no'
-            auto_power_info.startDelay = -1
-            auto_power_info.startOrder = -1
-            auto_power_info.stopAction = 'None'
-            auto_power_info.stopDelay = -1
-        elif vhost.runtime.powerState == "poweredOn":
-            auto_power_info.startAction = 'powerOn'
-            auto_power_info.waitForHeartbeat = 'no'
-            auto_power_info.startDelay = -1
-            auto_power_info.startOrder = -1
-            auto_power_info.stopAction = 'None'
-            auto_power_info.stopDelay = -1
-            spec.powerInfo = [auto_power_info]
-            order = order + 1
-            print "Applied settings to %s" % vhost
-            host.configManager.autoStartManager.ReconfigureAutostart(spec)
+        if vhost.name == vmname:
+            spec = host.configManager.autoStartManager.config
+            spec.defaults = hostDefSettings
+            auto_power_info = vim.host.AutoStartManager.AutoPowerInfo()
+            auto_power_info.key = vhost
+            print "VM %s is updated if on" % vhost.name
+            print "VM status is %s" % vhost.runtime.powerState
+            if vhost.runtime.powerState == "poweredOff":
+                auto_power_info.startAction = 'None'
+                auto_power_info.waitForHeartbeat = 'no'
+                auto_power_info.startDelay = -1
+                auto_power_info.startOrder = -1
+                auto_power_info.stopAction = 'None'
+                auto_power_info.stopDelay = -1
+            elif vhost.runtime.powerState == "poweredOn":
+                auto_power_info.startAction = 'powerOn'
+                auto_power_info.waitForHeartbeat = 'no'
+                auto_power_info.startDelay = -1
+                auto_power_info.startOrder = -1
+                auto_power_info.stopAction = 'None'
+                auto_power_info.stopDelay = -1
+                spec.powerInfo = [auto_power_info]
+                order = order + 1
+                print "Applied settings to %s" % vhost
+                host.configManager.autoStartManager.ReconfigureAutostart(spec)
 
 def main():
     parser = argparse.ArgumentParser()
@@ -97,12 +98,16 @@ def main():
                         action='store',
                         default=10,
                         help='Default startup delay')
+    parser.add_argument('-n', '--vmname',
+                        required=True,
+                        action='store'
+                        help='VM to configure')
     args = parser.parse_args()
     print "Connecting to vCenter"
     connection = get_connection(args.ipAddr, args.user, args.password)
 
     if args.actionhosts is not None:
-        action_hosts(args.actionhosts, connection, args.startDelay)
+        action_hosts(args.actionhosts, connection, args.startDelay, args.vmname)
 
 main()
 
