@@ -29,7 +29,7 @@ def get_hosts(conn):
     obj = [host for host in container.view]
     return obj
 
-def action_hosts(commaList, connection, startDelay, vmname):
+def action_hosts(commaList, connection, startDelay, vmname, enable):
     print "Configuring provided hosts"
     acthosts = commaList.split(",")
     allhosts = get_hosts(connection)
@@ -40,9 +40,9 @@ def action_hosts(commaList, connection, startDelay, vmname):
     
     for h in allhosts:
         if h.name in acthosts:
-            enable_autostart(h, startDelay, vmname)
+            enable_autostart(h, startDelay, vmname, enable)
 
-def enable_autostart(host, startDelay, vmname):
+def enable_autostart(host, startDelay, vmname, enable):
     print "Enabling autostart for %s" % host.name
     hostDefSettings = vim.host.AutoStartManager.SystemDefaults()
     hostDefSettings.enabled = True 
@@ -64,7 +64,7 @@ def enable_autostart(host, startDelay, vmname):
                 auto_power_info.stopAction = 'None'
                 auto_power_info.stopDelay = -1
             elif vhost.runtime.powerState == "poweredOn":
-                auto_power_info.startAction = 'None'
+                auto_power_info.startAction = 'powerOn' if enable == 'true' else 'None'
                 auto_power_info.waitForHeartbeat = 'no'
                 auto_power_info.startDelay = -1
                 auto_power_info.startOrder = -1
@@ -74,6 +74,7 @@ def enable_autostart(host, startDelay, vmname):
                 order = order + 1
                 print "Applied settings to %s" % vhost
                 host.configManager.autoStartManager.ReconfigureAutostart(spec)
+
 
 def main():
     parser = argparse.ArgumentParser()
@@ -102,12 +103,17 @@ def main():
                         required=True,
                         action='store',
                         help='VM to configure')
+    parser.add_argument('-e', '--enable',
+                        required=False,
+                        action='store',
+                        default=true,
+                        help='Whether or not to enable autostart')
     args = parser.parse_args()
     print "Connecting to vCenter"
     connection = get_connection(args.ipAddr, args.user, args.password)
 
     if args.actionhosts is not None:
-        action_hosts(args.actionhosts, connection, args.startDelay, args.vmname)
+        action_hosts(args.actionhosts, connection, args.startDelay, args.vmname, args.enable)
 
 main()
 
