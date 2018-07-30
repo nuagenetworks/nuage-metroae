@@ -90,12 +90,16 @@ def action_hosts(commaList, connection, startDelay, vmname, conf):
     for a in acthosts:
         if a not in host_names:
             print "Host %s cannot be found" % a
+            desired_state = False
     
     for h in allhosts:
         if h.name in acthosts:
-            enable_autostart(h, startDelay, vmname, conf)
+            desired_state = enable_autostart(h, startDelay, vmname, conf)
+
+    return desired_state
 
 def enable_autostart(host, startDelay, vmname, conf):
+    desired_state=False
     print "Enabling autostart for %s" % host.name
     hostDefSettings = vim.host.AutoStartManager.SystemDefaults()
     hostDefSettings.enabled = True 
@@ -127,6 +131,8 @@ def enable_autostart(host, startDelay, vmname, conf):
                 order = order + 1
                 print "Applied settings to %s" % vhost
                 host.configManager.autoStartManager.ReconfigureAutostart(spec)
+                desired_state = True
+                return desired_state
 
 def main():
     arg_spec = dict(
@@ -147,11 +153,15 @@ def main():
     password = module.params['password']
     vm_name = module.params['name']
     conf = module.params['configuration']
-
+    desired_state = False
     connection = get_connection(ip_addr, username, password)
 
     if esxi_host is not None:
-        action_hosts(esxi_host, connection, start_delay, vm_name, conf)
-
+        desired_state = action_hosts(esxi_host, connection, start_delay, vm_name, conf)
+    
+    if desired_state:
+        module.exit_json(changed=True, msg="VM %s has been configured" % vm_name)
+    else:
+        module.fail_json(changed=False, msg="VM %s could not be configured" % vm_name)
 main()
   
