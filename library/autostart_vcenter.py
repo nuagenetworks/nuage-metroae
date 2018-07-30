@@ -1,6 +1,59 @@
 #!/usr/bin/env python
+
+from ansible.module_utils.basic import AnsibleModule
+
+DOCUMENTATION = '''
+---
+module: autostart_vcenter
+short_description: Configure autostart for vCenter VMs
+options:
+  name:
+    description:
+      - The name of the VM that needs to be configured
+    required: true
+    default: null
+  hostname: 
+    description
+      - The target server that the VM and its host run on
+      required: true
+  username:
+    description:
+      - The vCenter username
+    required: true
+  password:
+    description:
+      - The vCenter password
+    required: true
+  esxi_host:
+    description:
+      - The ESXI host for the VM that is being configured
+    required: true
+  configuration
+    description:
+      - Whether or not to enable autostart for the VM
+    required: false
+    default: enable
+    choices: ["enable", "disable"]
 '''
-Script to configure autostart for vCenter VMs
+
+EXAMPLES = '''
+# Example for enabling autostart for vm_1
+- autostart_vcenter:
+    name: vm_1
+    hostname: target_server_ip
+    username: vCenter_username
+    password: vCenter_password
+    esxi_host: esxi_ip
+    configuration: enable
+
+# Example for disabling or not enabling autostart for vm_1
+- autostart_vcenter:
+    name: vm_1
+    hostname: target_server_ip
+    username: vCenter_username
+    password: vCenter_password
+    esxi_host: esxi_ip
+    configuration: disable
 '''
 
 import argparse
@@ -29,7 +82,7 @@ def get_hosts(conn):
     obj = [host for host in container.view]
     return obj
 
-def action_hosts(commaList, connection, startDelay):
+def action_hosts(commaList, connection, startDelay, vmname, conf):
     print "Configuring provided hosts"
     acthosts = commaList.split(",")
     allhosts = get_hosts(connection)
@@ -40,70 +93,66 @@ def action_hosts(commaList, connection, startDelay):
     
     for h in allhosts:
         if h.name in acthosts:
-            enable_autostart(host, startDelay)
+            enable_autostart(h, startDelay, vmname, conf)
 
-def enable_autostart(host, startDelay):
+def enable_autostart(host, startDelay, vmname, conf):
     print "Enabling autostart for %s" % host.name
     hostDefSettings = vim.host.AutoStartManager.SystemDefaults()
-    hostdefSettings.enabled = True 
+    hostDefSettings.enabled = True 
     hostDefSettings.startDelay = int(startDelay)
     order = 1
     for vhost in host.vm:
-        spec = host.configManager.AutoStartManager.config
-        spec.defaults = hostDefSettings
-        auto_power_info = vim.host.AutoStartManager.AutoPowerInfo()
-        auto_power_info.key = vhost
-        print "VM %s is updated if on" % vhost.name
-        print "VM status is %s" % vhost.runtime.powerState
-        if vhost.runtime.powerState == "poweredOff":
-            auto_power_info.startAction = 'None'
-            auto_power_info.waitForHeartbeat = 'no'
-            auto_power_info.startDelay = -1
-            auto_power_info.startOrder = -1
-            auto_power_info.stopAction = 'None'
-            auto_power_info.stopDelay = -1
-        elif vhost.runtime.powerState == "poweredOn":
-            auto_power_info.startAction = 'powerOn'
-            auto_power_info.waitForHeartbeat = 'no'
-            auto_power_info.startDelay = -1
-            auto_power_info.startOrder = -1
-            auto_power_info.stopAction = 'None'
-            auto_power_info.stopDelay = -1
-            spec.powerInfo = [auto_power_info]
-            order = order + 1
-            print "Applied settings to %s" % vhost
-            host.configManager.AutoStartManager.ReconfigureAutostart(spec)
+        if vhost.name == vmname:
+            spec = host.configManager.autoStartManager.config
+            spec.defaults = hostDefSettings
+            auto_power_info = vim.host.AutoStartManager.AutoPowerInfo()
+            auto_power_info.key = vhost
+            print "VM %s is updated if on" % vhost.name
+            print "VM status is %s" % vhost.runtime.powerState
+            if vhost.runtime.powerState == "poweredOff":
+                auto_power_info.startAction = 'None'
+                auto_power_info.waitForHeartbeat = 'no'
+                auto_power_info.startDelay = -1
+                auto_power_info.startOrder = -1
+                auto_power_info.stopAction = 'None'
+                auto_power_info.stopDelay = -1
+            elif vhost.runtime.powerState == "poweredOn":
+                auto_power_info.startAction = 'powerOn' if  conf == 'enable' else 'None'
+                auto_power_info.waitForHeartbeat = 'no'
+                auto_power_info.startDelay = -1
+                auto_power_info.startOrder = -1
+                auto_power_info.stopAction = 'None'
+                auto_power_info.stopDelay = -1
+                spec.powerInfo = [auto_power_info]
+                order = order + 1
+                print "Applied settings to %s" % vhost
+                host.configManager.autoStartManager.ReconfigureAutostart(spec)
 
 def main():
-    parser = argpars.ArgumentParser()
-    parser.add_argument('-ip', '--ipAddr',
-                        required=True,
-                        action='store',
-                        help='vCenter ESXI ip address')
-    parser.add_argument('-u', '--user',
-                        required=True,
-                        action='store',
-                        help='vCenter ESXI username')
-    parser.add_argument('-p', '--password',
-                        required=False,
-                        action='store',
-                        help='vCenter ESXI password')
-    parser.add_argument('-t', '--actionhosts',
-                        required=False,
-                        action='store',
-                        help='Comma delimited list of hosts whose VMs need to be configured')
-    parser.add_argument('-d', '--startDelay',
-                        required=False,
-                        action='store',
-                        default=10,
-                        help='Default startup delay')
-    args = parser.parse_args()
-    print "Connecting to vCenter"
-    connection = get_connection(args.ipAddr, args.user, args.password)
+    arg_spec = dict(
+        name=dict(required=True, type='string'),
+        hostname=dict(required=True, type='string'),
+        username=dict(required=True, type='string'),
+        password=dict(required=True, type='string'),
+        esxi_host=dict(required=True, type='string'),
+        configuration=dict(required=False, type='string')
+    )
 
-    if args.actionhosts is not None:
-        action_hosts(args.actionhosts, connection, args.startDelay)
+    module = AnsibleModule(argument_spec=arg_spec, supports_check_mode=True)
+    
+    start_delay = 10
+    esxi_host = module.params['esxi_host']
+    ip_addr = module.params['hostname']
+    username = module.params['user']
+    password = module.params['password']
+    vm_name = module.params['name']
+    conf = module.params['configuration']
+
+    connection = get_connection(ip_addr, username, password)
+
+    if esxi_host is not None:
+        action_hosts(esxi_host, connection, start_delay, vm_name, conf)
+
 
 main()
-
-
+  
