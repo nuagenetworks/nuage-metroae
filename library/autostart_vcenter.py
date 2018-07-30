@@ -143,7 +143,7 @@ def main():
     start_delay = 10
     esxi_host = module.params['esxi_host']
     ip_addr = module.params['hostname']
-    username = module.params['user']
+    username = module.params['username']
     password = module.params['password']
     vm_name = module.params['name']
     conf = module.params['configuration']
