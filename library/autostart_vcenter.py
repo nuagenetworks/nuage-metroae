@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python
 
 from ansible.module_utils.basic import AnsibleModule
 
@@ -151,19 +151,7 @@ def main():
     connection = get_connection(ip_addr, username, password)
 
     if esxi_host is not None:
-        rc, out, err = action_hosts(esxi_host, connection, start_delay, vm_name, conf)
-    
-    if rc != 0:
-        module.fail_json(msg="command failed",
-                         rc=rc,
-                         stdout=out,
-                         stderr=err,
-                         changed=False)
-                         
-    for line in out.split('\n'):
-        parts = line.split()
-    
-    module.exit_json(changed=True)
+        action_hosts(esxi_host, connection, start_delay, vm_name, conf)
 
 main()
   
