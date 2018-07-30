@@ -64,7 +64,7 @@ def enable_autostart(host, startDelay, vmname):
                 auto_power_info.stopAction = 'None'
                 auto_power_info.stopDelay = -1
             elif vhost.runtime.powerState == "poweredOn":
-                auto_power_info.startAction = 'powerOn'
+                auto_power_info.startAction = 'None'
                 auto_power_info.waitForHeartbeat = 'no'
                 auto_power_info.startDelay = -1
                 auto_power_info.startOrder = -1
