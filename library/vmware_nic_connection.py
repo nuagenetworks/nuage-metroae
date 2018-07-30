@@ -1,8 +1,6 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 #
-# This module is also sponsored by E.T.A.I. (www.etai.fr)
-#
 # This file is part of Ansible
 #
 # Ansible is free software: you can redistribute it and/or modify
@@ -19,10 +17,8 @@
 # along with Ansible.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
-import time
 from ansible.module_utils.basic import AnsibleModule
-from ansible.module_utils.pycompat24 import get_exception
-from ansible.module_utils.vmware import connect_to_api, gather_vm_facts
+from ansible.module_utils.vmware import connect_to_api, gather_vm_facts, wait_for_task
 
 HAS_PYVMOMI = False
 try:
@@ -36,13 +32,12 @@ ANSIBLE_METADATA = {'metadata_version': '1.0',
                     'status': ['preview'],
                     'supported_by': 'community'}
 
-
 DOCUMENTATION = '''
 ---
-module: vmware_guest_tools_wait
-short_description: Wait for VMware tools to become available and return facts
+module: vmware_nic_connection
+short_description: Connect or disconnect a nic of a VM
 description:
-    - Wait for VMware tools to become available on the VM and return facts
+    - Connect or disconnect a nic of a VM
 version_added: 2.4
 author:
     - Philippe Dellaert <philippe@dellaert.org>
@@ -73,17 +68,44 @@ options:
         description:
             - Destination datacenter for the deploy operation
         required: True
+   nic_mac:
+        description:
+            - The MAC address of the nic to connect/disconnect
+   all_nics:
+        description:
+            - If this is set to true, all nics states will be changed
+        default: false
+        choices: [true, false]
+   state:
+        description:
+            - State of the nic, can be connected or disconnected
+        choices: ['connected', 'disconnected']
+        required: True
 extends_documentation_fragment: vmware.documentation
 '''
 
 EXAMPLES = '''
-- name: Wait for VMware tools to become available
-  vmware_guest_tools_wait:
+- name: Connect a nic
+  vmware_nic_connection:
     hostname: 192.168.1.209
     username: administrator@vsphere.local
     password: vmware
     validate_certs: no
     uuid: 421e4592-c069-924d-ce20-7e7533fab926
+    nic_mac: 00:50:56:a4:94:f1
+    state: connected
+  delegate_to: localhost
+  register: facts
+
+- name: Disconnect all nics
+  vmware_nic_connection:
+    hostname: 192.168.1.209
+    username: administrator@vsphere.local
+    password: vmware
+    validate_certs: no
+    uuid: 421e4592-c069-924d-ce20-7e7533fab926
+    all_nics: yes
+    state: disconnected
   delegate_to: localhost
   register: facts
 '''
@@ -97,26 +119,25 @@ instance:
 """
 
 
-class PyVmomiHelper(object):
+class VmwareNicManager(object):
     def __init__(self, module):
         if not HAS_PYVMOMI:
             module.fail_json(msg='pyvmomi module required')
 
         self.module = module
-        self.params = module.params
         self.content = connect_to_api(self.module)
 
-    def getvm(self, name=None, uuid=None, folder=None):
+    def getvm(self):
         si = self.content.searchIndex
         vm = None
 
-        if uuid:
-            vm = si.FindByUuid(instanceUuid=False, uuid=uuid, vmSearch=True)
-        elif folder:
+        if self.module.params.get('uuid'):
+            vm = si.FindByUuid(instanceUuid=False, uuid=self.module.params.get('uuid'), vmSearch=True)
+        elif self.module.params.get('folder'):
             # Build the absolute folder path to pass into the search method
-            if not self.params['folder'].startswith('/'):
-                self.module.fail_json(msg="Folder %(folder)s needs to be an absolute path, starting with '/'." % self.params)
-            searchpath = '%(datacenter)s%(folder)s' % self.params
+            if not self.module.params.get('folder').startswith('/'):
+                self.module.fail_json(msg="Folder %(folder)s needs to be an absolute path, starting with '/'." % self.module.params)
+            searchpath = '%(datacenter)s%(folder)s' % self.module.params
 
             # get all objects for this path ...
             f_obj = self.content.searchIndex.FindByInventoryPath(searchpath)
@@ -126,58 +147,56 @@ class PyVmomiHelper(object):
                 for c_obj in f_obj.childEntity:
                     if not isinstance(c_obj, vim.VirtualMachine):
                         continue
-                    if c_obj.name == name:
+                    if c_obj.name == self.module.params.get('name'):
                         vm = c_obj
-                        if self.params['name_match'] == 'first':
+                        if self.module.params.get('name_match') == 'first':
                             break
-
         return vm
 
-    def gather_facts(self, vm):
-        return gather_vm_facts(self.content, vm)
+    def find_nics(self, vm):
+        nics = list()
+        for dev in vm.config.hardware.device:
+            if isinstance(dev, vim.vm.device.VirtualEthernetCard):
+                if self.module.params.get('all_nics'):
+                    nics.append(dev)
+                elif dev.macAddress.lower() == self.module.params.get('nic_mac').lower():
+                    nics.append(dev)
+                    break
+        return nics
 
-    def wait_for_tools(self, vm, poll=100, sleep=5):
-        tools_running = False
-        vm_facts = {}
-        poll_num = 0
-        vm_uuid = vm.config.uuid
-        while not tools_running and poll_num <= poll:
-            newvm = self.getvm(uuid=vm_uuid)
-            vm_facts = self.gather_facts(newvm)
-            if vm_facts['guest_tools_status'] == 'guestToolsRunning':
-                tools_running = True
-            else:
-                time.sleep(sleep)
-                poll_num += 1
+    def ensure(self):
+        results = dict(changed=False, instance=None)
+        changes = []
+        state = self.module.params.get('state')
+        vm = self.getvm()
+        nics = self.find_nics(vm=vm)
+        for nic in nics:
+            if (state == 'connected' and not nic.connectable.connected) or (state == 'disconnected' and nic.connectable.connected):
+                nic_spec = vim.vm.device.VirtualDeviceSpec()
+                nic_spec.operation = vim.vm.device.VirtualDeviceSpec.Operation.edit
+                nic_spec.device = nic
+                nic_spec.device.key = nic.key
+                nic_spec.device.macAddress = nic.macAddress
+                nic_spec.device.backing = nic.backing
+                nic_spec.device.wakeOnLanEnabled = nic.wakeOnLanEnabled
+                connectable = vim.vm.device.VirtualDevice.ConnectInfo()
+                if state == 'connected':
+                    connectable.connected = True
+                    connectable.startConnected = True
+                elif state == 'disconnected':
+                    connectable.connected = False
+                    connectable.startConnected = False
+                nic_spec.device.connectable = connectable
+                changes.append(nic_spec)
+        if len(changes) > 0:
+            spec = vim.vm.ConfigSpec()
+            spec.deviceChange = changes
+            task = vm.ReconfigVM_Task(spec=spec)
 
-        if not tools_running:
-            return {'failed': True, 'msg': 'VMware tools either not present or not running after {0} seconds'.format((poll * sleep))}
-
-        changed = False
-        if poll_num > 0:
-            changed = True
-        return {'changed': changed, 'failed': False, 'instance': vm_facts}
-
-
-def get_obj(content, vimtype, name):
-    """
-    Return an object by name, if name is None the
-    first found object is returned
-    """
-    obj = None
-    container = content.viewManager.CreateContainerView(
-        content.rootFolder, vimtype, True)
-    for c in container.view:
-        if name:
-            if c.name == name:
-                obj = c
-                break
-        else:
-            obj = c
-            break
-
-    container.Destroy()
-    return obj
+            wait_for_task(task)
+            results['changed'] = True
+        results['instance'] = gather_vm_facts(self.content, vm)
+        self.module.exit_json(**results)
 
 
 def main():
@@ -201,6 +220,9 @@ def main():
             uuid=dict(required=False, type='str'),
             folder=dict(required=False, type='str', default='/vm'),
             datacenter=dict(required=True, type='str'),
+            nic_mac=dict(required=False, type=str),
+            all_nics=dict(required=False, type='bool', default=False),
+            state=dict(required=True, type='str', choices=['connected', 'disconnected'])
         ),
     )
 
@@ -209,25 +231,8 @@ def main():
         module.params['folder'] = '/vm%(folder)s' % module.params
     module.params['folder'] = module.params['folder'].rstrip('/')
 
-    pyv = PyVmomiHelper(module)
-    # Check if the VM exists before continuing
-    vm = pyv.getvm(name=module.params['name'],
-                   folder=module.params['folder'],
-                   uuid=module.params['uuid'])
-
-    # VM already exists
-    if vm:
-        try:
-            result = pyv.wait_for_tools(vm)
-            if result['failed']:
-                module.fail_json(**result)
-            else:
-                module.exit_json(**result)
-        except Exception:
-            e = get_exception()
-            module.fail_json(msg="Waiting for tools failed with exception: %s" % e)
-    else:
-        module.fail_json(msg="Unable to wait for tools for non-existing VM %(name)s" % module.params)
+    vmware_nic_manager = VmwareNicManager(module)
+    vmware_nic_manager.ensure()
 
 if __name__ == '__main__':
     main()

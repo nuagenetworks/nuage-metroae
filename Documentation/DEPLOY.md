@@ -8,9 +8,9 @@ You can execute Metro Automation Engine playbooks to perform the following insta
 
 ## Prerequisites / Requirements
 
-Before deploying any components, you must have previously [set up your Nuage Metro Automation Engine Ansible environment](SETUP.md "link to SETUP documentation") and [customized the environment for your target platform](CUSTOMIZE.md "link to CUSTOMIZE documentation").
+Before deploying any components, you must have previously [set up your Nuage Metro Automation Engine Ansible environment](SETUP.md "link to SETUP documentation") and [customized your environment](CUSTOMIZE.md "link to CUSTOMIZE documentation").
 
-Make sure you have unzipped the Nuage Networks *.tar.gz files into their proper locations in the directory structure, so Metro Automation Engine can find the path of the Nuage components automatically when running commands.
+Make sure you have unzipped copies of all the Nuage Networks files you are going to need for installation or upgrade. These are generally distributed as `*.tar.gz` files that are downloaded by you from Nokia OLCS. You can unzip these files by using the nuage_unzip playbook which will place the files in subdirectories under the path specified for the `nuage_unzipped_files_dir` variable in `build_vars.yml`. You can also unzip the files manually and copy them to their proper locations by hand. For details of this process, including the subdirectory layout that Metro Automation Engine expects, see [customizing your environment](CUSTOMIZE.md "link to CUSTOMIZE documentation").
 
 ## Deploy All Components
 
