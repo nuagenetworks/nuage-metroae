@@ -130,12 +130,12 @@ def enable_autostart(host, startDelay, vmname, conf):
 
 def main():
     arg_spec = dict(
-        name=dict(required=True, type='string'),
-        hostname=dict(required=True, type='string'),
-        username=dict(required=True, type='string'),
-        password=dict(required=True, type='string'),
-        esxi_host=dict(required=True, type='string'),
-        configuration=dict(required=False, type='string')
+        name=dict(required=True, type='str'),
+        hostname=dict(required=True, type='str'),
+        username=dict(required=True, type='str'),
+        password=dict(required=True, type='str'),
+        esxi_host=dict(required=True, type='str'),
+        configuration=dict(required=False, type='str')
     )
 
     module = AnsibleModule(argument_spec=arg_spec, supports_check_mode=True)
