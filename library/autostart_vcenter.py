@@ -165,7 +165,7 @@ def main():
         port=dict(required=False, type=int, default=443),
         username=dict(required=True, type='str', no_log=True),
         password=dict(required=True, type='str', no_log=True),
-        configuration=dict(required=False, type='str', default='yes')
+        configuration=dict(required=False, type='str', default='enable')
     )
 
     module = AnsibleModule(argument_spec=arg_spec, supports_check_mode=True)
