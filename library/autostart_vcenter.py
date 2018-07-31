@@ -94,7 +94,6 @@ def get_connection(ipAddr, user, password, port):
     return connection
 
 def get_hosts(conn):
-    print "Getting all host objects"
     content = conn.RetrieveContent()
     container = content.viewManager.CreateContainerView(
         content.rootFolder, [vim.HostSystem], True
@@ -103,13 +102,11 @@ def get_hosts(conn):
     return obj
 
 def action_hosts(commaList, connection, startDelay, vmname, conf):
-    print "Configuring provided hosts"
     acthosts = commaList.split(",")
     allhosts = get_hosts(connection)
     host_names = [h.name for h in allhosts]
     for a in acthosts:
         if a not in host_names:
-            print "Host %s cannot be found" % a
             desired_state = False
     
     for h in allhosts:
@@ -120,7 +117,6 @@ def action_hosts(commaList, connection, startDelay, vmname, conf):
 
 def enable_autostart(host, startDelay, vmname, conf):
     desired_state=False
-    print "Enabling autostart for %s" % host.name
     hostDefSettings = vim.host.AutoStartManager.SystemDefaults()
     hostDefSettings.enabled = True 
     hostDefSettings.startDelay = int(startDelay)
@@ -131,8 +127,6 @@ def enable_autostart(host, startDelay, vmname, conf):
             spec.defaults = hostDefSettings
             auto_power_info = vim.host.AutoStartManager.AutoPowerInfo()
             auto_power_info.key = vhost
-            print "VM %s is updated if on" % vhost.name
-            print "VM status is %s" % vhost.runtime.powerState
             if vhost.runtime.powerState == "poweredOff":
                 auto_power_info.startAction = 'None'
                 auto_power_info.waitForHeartbeat = 'no'
@@ -149,7 +143,6 @@ def enable_autostart(host, startDelay, vmname, conf):
                 auto_power_info.stopDelay = -1
                 spec.powerInfo = [auto_power_info]
                 order = order + 1
-                print "Applied settings to %s" % vhost
                 host.configManager.autoStartManager.ReconfigureAutostart(spec)
                 desired_state = True
                 return desired_state
@@ -185,7 +178,7 @@ def main():
         module.exit_json(changed=True, msg="VM %s has been configured" % vm_name)
     else:
         module.fail_json(changed=False, msg="VM %s could not be configured" % vm_name)
-        
+
 if __name__ == "__main__":        
     main()
   
