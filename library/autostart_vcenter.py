@@ -153,7 +153,7 @@ def main():
         uuid=dict(required=True, type='str'),
         hostname=dict(required=True, type='str'),
         port=dict(required=False, type=int, default=443),
-        username=dict(required=True, type='str'),
+        username=dict(required=True, type='str', no_log=True),
         password=dict(required=True, type='str', no_log=True),
         configuration=dict(required=False, type='str', default='None')
     )
