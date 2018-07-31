@@ -138,8 +138,8 @@ def main():
     arg_spec = dict(
         name=dict(required=True, type='str'),
         hostname=dict(required=True, type='str'),
-        username=dict(required=True, type='str'),
-        password=dict(required=True, type='str'),
+        username=dict(required=True, type='str', no_log=True),
+        password=dict(required=True, type='str', no_log=True),
         esxi_host=dict(required=True, type='str'),
         configuration=dict(required=False, type='str')
     )
