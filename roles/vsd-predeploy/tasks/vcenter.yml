@@ -83,27 +83,27 @@
 
     - name: Set VM UUID
       set_fact:
-        vm_cmd: "{{ vm_list.virtual_machines[vm_name]['uuid'] }}"
+        uuid: "{{ vm_list.virtual_machines[vm_name]['uuid'] }}"
   
-    - debug: var=vm_cmd
+    - debug: var=uuid
     
-    - name: Get host info for VM to configure Autostart
-      connection: local
-      command: "{{ role_path }}/files/get_vcenter_host.py -s {{ target_server }} -u {{ vcenter.username }} -p {{ vcenter.password }} -d {{ vm_cmd }}" 
-      register: vcenter_host
+    # - name: Get host info for VM to configure Autostart
+    #   connection: local
+    #   command: "{{ role_path }}/files/get_vcenter_host.py -s {{ target_server }} -u {{ vcenter.username }} -p {{ vcenter.password }} -d {{ vm_cmd }}" 
+    #   register: vcenter_host
   
-    - name: Store ESXI host 
-      set_fact:
-        esxi_host: "{{ vcenter_host.stdout }}"
+    # - name: Store ESXI host 
+    #   set_fact:
+    #     esxi_host: "{{ vcenter_host.stdout }}"
     
     - name: Configure autostart
       connection: local
       autostart_vcenter:
         name: "{{ vm_name }}"
+        uuid: "{{ uuid }}"
         hostname: "{{ target_server }}"
         username: "{{ vcenter.username }}"
         password: "{{ vcenter.password }}"
-        esxi_host: "{{ esxi_host }}"
         configuration: enable
 
     # - name: Configure autostart

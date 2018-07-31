@@ -12,10 +12,20 @@ options:
       - The name of the VM that needs to be configured
     required: true
     default: null
+  uuid:
+    description:
+      - The UUID of the VM to configure
+    required: true
+    default: null
   hostname: 
     description
       - The target server that the VM and its host run on
       required: true
+  port:
+    description:
+      - The port on which to connect
+    required: false
+    default: 443
   username:
     description:
       - The vCenter username
@@ -23,10 +33,6 @@ options:
   password:
     description:
       - The vCenter password
-    required: true
-  esxi_host:
-    description:
-      - The ESXI host for the VM that is being configured
     required: true
   configuration
     description:
@@ -43,7 +49,6 @@ EXAMPLES = '''
     hostname: target_server_ip
     username: vCenter_username
     password: vCenter_password
-    esxi_host: esxi_ip
     configuration: enable
 
 # Example for disabling or not enabling autostart for vm_1
@@ -52,16 +57,34 @@ EXAMPLES = '''
     hostname: target_server_ip
     username: vCenter_username
     password: vCenter_password
-    esxi_host: esxi_ip
     configuration: disable
 '''
 
+import subprocess
 import argparse
 import sys
 import atexit
 from pyVmomi import vim 
 from pyVim.connect import Disconnect, SmartConnect
 sys.dont_write_bytecode = True
+
+def get_esxi_host(hostname, port, username, password, id):
+    uuid = id
+    si = None
+    si = connect.SmartConnect(host=hostname,
+                              user=username,
+                              pwd=password,
+                              port=port)
+    vm = si.content.searchIndex.FindByUuid(None,
+                                           uuid,
+                                           True,
+                                           False)
+    if vm is not None:
+        host = vm.runtime.host
+    else:
+        host = None
+    host_ip = host.name
+    return host_ip
 
 def get_connection(ipAddr, user, password):
     try:
@@ -137,25 +160,27 @@ def enable_autostart(host, startDelay, vmname, conf):
 def main():
     arg_spec = dict(
         name=dict(required=True, type='str'),
+        uuid=dict(required=True, type='str'),
         hostname=dict(required=True, type='str'),
+        port=dict(required=False, type=int, default=443),
         username=dict(required=True, type='str', no_log=True),
         password=dict(required=True, type='str', no_log=True),
-        esxi_host=dict(required=True, type='str'),
-        configuration=dict(required=False, type='str')
+        configuration=dict(required=False, type='str', default='yes')
     )
 
     module = AnsibleModule(argument_spec=arg_spec, supports_check_mode=True)
     
     start_delay = 10
-    esxi_host = module.params['esxi_host']
     ip_addr = module.params['hostname']
     username = module.params['username']
     password = module.params['password']
     vm_name = module.params['name']
     conf = module.params['configuration']
+    uuid = module.params['uuid']
+    port = module.params['port']
     desired_state = False
     connection = get_connection(ip_addr, username, password)
-
+    esxi_host = get_esxi_host(hostname, port, username, password, uuid)
     if esxi_host is not None:
         desired_state = action_hosts(esxi_host, connection, start_delay, vm_name, conf)
     
