@@ -68,13 +68,10 @@ from pyVmomi import vim
 from pyVim.connect import Disconnect, SmartConnect
 sys.dont_write_bytecode = True
 
-def get_esxi_host(hostname, port, username, password, id):
+def get_esxi_host(ipAddr, port, username, password, id):
     uuid = id
     si = None
-    si = connect.SmartConnect(host=hostname,
-                              user=username,
-                              pwd=password,
-                              port=port)
+    si = get_connection(ipAddr, username, password, port)
     vm = si.content.searchIndex.FindByUuid(None,
                                            uuid,
                                            True,
@@ -86,10 +83,10 @@ def get_esxi_host(hostname, port, username, password, id):
     host_ip = host.name
     return host_ip
 
-def get_connection(ipAddr, user, password):
+def get_connection(ipAddr, user, password, port):
     try:
         connection = SmartConnect(
-            host=ipAddr, port=443, user=user, pwd=password
+            host=ipAddr, port=port, user=user, pwd=password
         )
     except Exception as e:
         print e
@@ -179,8 +176,8 @@ def main():
     uuid = module.params['uuid']
     port = module.params['port']
     desired_state = False
-    connection = get_connection(ip_addr, username, password)
-    esxi_host = get_esxi_host(hostname, port, username, password, uuid)
+    connection = get_connection(ip_addr, username, password, port)
+    esxi_host = get_esxi_host(ip_addr, port, username, password, uuid)
     if esxi_host is not None:
         desired_state = action_hosts(esxi_host, connection, start_delay, vm_name, conf)
     
