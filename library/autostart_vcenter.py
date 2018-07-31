@@ -38,7 +38,7 @@ options:
     description:
       - Whether or not to enable autostart for the VM
     required: false
-    default: enable
+    default: "None"
     choices: ["enable", "disable"]
 '''
 
@@ -160,9 +160,9 @@ def main():
         uuid=dict(required=True, type='str'),
         hostname=dict(required=True, type='str'),
         port=dict(required=False, type=int, default=443),
-        username=dict(required=True, type='str', no_log=True),
+        username=dict(required=True, type='str'),
         password=dict(required=True, type='str', no_log=True),
-        configuration=dict(required=False, type='str', default='enable')
+        configuration=dict(required=False, type='str', default='None')
     )
 
     module = AnsibleModule(argument_spec=arg_spec, supports_check_mode=True)
