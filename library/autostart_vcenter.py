@@ -64,7 +64,7 @@ import subprocess
 import argparse
 import sys
 import atexit
-from pyVmomi import vim 
+from pyVmomi import vim
 from pyVim.connect import Disconnect, SmartConnect
 sys.dont_write_bytecode = True
 
@@ -185,5 +185,7 @@ def main():
         module.exit_json(changed=True, msg="VM %s has been configured" % vm_name)
     else:
         module.fail_json(changed=False, msg="VM %s could not be configured" % vm_name)
-main()
+        
+if __name__ == "__main__":        
+    main()
   
