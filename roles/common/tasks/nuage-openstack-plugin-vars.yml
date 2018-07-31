@@ -23,6 +23,21 @@
       nuage_os_package_path: "{{ nuage_unzipped_files_dir }}/nuage_os/" 
       nuage_os_package_file_name_list: "{{ rc_nuage_os_file.files |  map(attribute='path') | list | map('basename') | list }}"
       nuage_os_release: "{{ nuage_os_release }}"
+
+  - name: Find name of Nuage OpenStack Upgrade package
+    find: path="{{ nuage_unzipped_files_dir }}/nuage_os/" pattern="nuage-openstack-upgrade*.tar.gz" 
+    register: rc_nuage_os_upgrade_pkg
+
+  - name: Verify that Nuage OpenStack files were found
+    assert: {
+      that: "{{ rc_nuage_os_file.matched }} > 0",
+      msg: "Unable to find Nuage OpenStack upgrade file"
+    }
+  
+  - name: Register Nuage OpenStack package variables with proper path and image locations for use in other playbooks (RH architecture)
+    set_fact:
+      nuage_os_upgrade_pkg_file_name: "{{ rc_nuage_os_upgrade_pkg.files |  map(attribute='path') | list | map('basename') | list | last }}" 
+
   when: "'integrate_with_vsd' in osc_operations_list|default(['None'])"
   tags:
     - nuage_os

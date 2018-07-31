@@ -1,5 +1,5 @@
-# Submitting Your Code and Becoming a Contributor to Nuage MetroAG
-Thank you for your interest! The main steps for submitting your code to Nuage Networks MetroAG are:  
+# Submitting Your Code and Becoming a Contributor to Nuage Metro Automation Engine
+Thank you for your interest! The main steps for submitting your code to Nuage Networks Metro Automation Engine are:  
 [1. Develop code on a fork](#1-develop-code-on-a-fork)  
 [2. Finalize code contribution](#2-finalize-code-contribution)  
 [3. Create pull request (PR)](#3-create-pull-request-pr)  
@@ -16,7 +16,7 @@ Health | For system-level sanity validation and monitoring.
 Destroy | For tear down of components and connections. This is one of two hypervisor-dependent roles (predeploy is the other). If you find yourself adding conditional execution based on the hypervisor anywhere else, it's probably a mistake.
 Upgrade | For upgrading components from one release to another.
 ## 1. Develop Code on a Fork
-1. Before you start developing code, create your own fork from the upstream MetroAG repo. [https://github.com/nuagenetworks/nuage-metro/](https://github.com/nuagenetworks/nuage-metro/)
+1. Before you start developing code, create your own fork from the upstream Metro Automation Engine repo. [https://github.com/nuagenetworks/nuage-metro/](https://github.com/nuagenetworks/nuage-metro/)
 2. Clone your own fork on your machine and switch to the _dev_ branch.  
 Note: By default the fork clones into `nuage-metro`. Consider creating a separate branch, other than dev, for feature development. Alternatively, you may provide a target dir for the clone, as shown below with `metro-fork`.
 ```
@@ -24,10 +24,11 @@ git clone https://github.com/<your handle>/nuage-metro.git metro-fork/
 cd metro-fork/
 git checkout dev
 ```
-3. Develop and test all proposed contributions on the appropriate hypervisors in the `metro-fork` directory. If you choose not to provide support for one or more supported hypervisors, you must provide graceful error handling for those types.
+
+3. Develop and test all proposed contributions on the appropriate hypervisors in the `metro-fork` directory. If you choose not to provide support for one or more supported hypervisors, you must provide graceful error handling for those types. Testing includes running the program `flake8` over all Python files. The only exception to the flake8 rules that we accept is E501, line length. For example: `flake8 --ignore=E501`.
 
 4. If you require any new User Input Variables:
-    * Extend the MetroAG variable files with sensible example values:<br> `build_vars.yml` and `user_creds.yml`.
+    * Extend the Metro Automation Engine variable files with sensible example values:<br> `build_vars.yml` and `user_creds.yml`.
     * Ensure that the copies of the variable files in `roles/reset-build/files/` are identical to<br>`build_vars.yml` and `user_creds.yml`.
     * Include comments with the variable specifications that explain the variable's purpose and acceptable values.
     * Variables that are almost never modified may be included in standard Ansible variable locations, e.g. `roles/<rolename>/vars/main.yml`.

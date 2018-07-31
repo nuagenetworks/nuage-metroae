@@ -1,6 +1,6 @@
 ---
 ###
-# See BUILD.md for details
+# See the documentation for details
 ###
 
 ###
@@ -18,10 +18,15 @@
 ## for all operations.
 nuage_unzipped_files_dir: "/home/caso/nfs-data/5.2.2/nuage-unpacked"
 
+## Parameter to specify the location for backups during upgrade.
+## The default value is nuage_unzipped_files_dir + "/backups".
+## Uncomment and set to desired value for backup.
+# metro_backup_root: "/home/caso/nfs-data/5.2.2/nuage-unpacked/backups"
+
 ###
 ## upgrade parameters
 ###
-## Parameter to signal that the data in this file is for upgrade. By default, 
+## Parameter to signal that the data in this file is for upgrade. By default,
 ## the value is set to False to indicate that the data in this file is for
 ## install. Uncomment and set to True if this is an upgrade.
 # nuage_upgrade: False
@@ -34,7 +39,7 @@ nuage_unzipped_files_dir: "/home/caso/nfs-data/5.2.2/nuage-unpacked"
 # upgrade_from_version: '4.0.11'
 # upgrade_to_version: '5.2.1'
 
-## VSTAT UPGRADE ONLY! 
+## VSTAT UPGRADE ONLY!
 # Required only when upgarding to 4.0.11 versions and below
 ## NFS export that will be mounted on the VSTAT for backup and restore.
 ## Includes the server ip with the folder path. The default is 'NONE'
@@ -50,7 +55,7 @@ nuage_unzipped_files_dir: "/home/caso/nfs-data/5.2.2/nuage-unpacked"
 ## modify to specify a different value.
 # user_ssh_pub_key: '~/.ssh/id_rsa.pub'
 
-### 
+###
 ## Location for health reports
 ###
 ## Path to the location where health reports are to be written.
@@ -122,7 +127,7 @@ dns_domain: example.com
 ###
 ## yum_proxy is set to the address of your internal yum proxy server if you don't
 ## have internet access. The default value is 'NONE' which means it won't be used.
-## if you have  yum proxy, iunncomment and update the value to the address of 
+## if you have  yum proxy, iunncomment and update the value to the address of
 ## the server.
 # yum_proxy: "NONE"
 ## yum_update is used to determine if a yum update should be done on several components
@@ -130,12 +135,15 @@ dns_domain: example.com
 ## Uncomment and set to 'False' if you want to skip the yum update--acceptable only in
 ## lab environments.
 # yum_update: True
-
+## secure_communication is used to setup TLS on all the communication between the VSD, VSC,
+## VRS and NSGV. By default, it is set to 'True', the recomemded value.
+## Uncomment and set to 'False' if you don't want to use TLS
+#secure_communication: True
 
 ###
 ## Global Vcenter params
 ##
-## These are global vcenter credentials that are used *only* when deploying 
+## These are global vcenter credentials that are used *only* when deploying
 ## on a Vmware environment. They be ignored when deploying on other hypervisors,
 ## e.g. KVM. Uncomment and update the values if you are using vcenter.
 ##
@@ -185,6 +193,15 @@ dns_domain: example.com
 ## it will only show up once in vCenter, but the hosts tab will show it is
 ## available on multiple hosts (view in the screenshot below)
 ##
+## resource_pool
+## The vCenter resource pool where the VMs need to be located. A resource pool
+## is a logical abstraction of resources. Different resource pools can be
+## configured to have different priorities in case of resource contention and
+## can have different resource reservations and limitations.
+## In a typical deployment, you will see a resource pool with a high number of
+## shares (higher priority) which will be used for the important components of
+## Nuage, like the VSD and VSC's.
+##
 ## ovftool
 ## Binary location of the ovftool
 ##
@@ -195,7 +212,8 @@ dns_domain: example.com
 #   password: Alcateldc
 #   datacenter: Datacenter
 #   cluster: Management
-#   datastore: datastore
+#   datastore: Datastore
+#   resource_pool: Resourece Pool
 #   ovftool: /usr/bin/ovftool
 
 ###
@@ -206,6 +224,43 @@ dns_domain: example.com
 ## There is no default.
 ## Use xmpp fqdn for clustered VSDs or the vsd fqdn for stand alone
 vsd_fqdn_global: "vsd1.nuage.met"
+
+###
+## vsd_license_required_days_left is an optional variable that is used to
+## raise a failure if the VSD licenses do not have at least the specified number
+## of days remaining before expiration. If undefined, no check of days remaining
+## before license expiration will be made. If you want to verify that the number of
+## days left before expiration is more than a certain number of days, uncomment
+## this varaible and set the value to the number of days.
+# vsd_license_required_days_left: 100
+
+###
+## branding_zip_file is an optional variable that enables you to install
+## custom branding for the VSD GUI. When branding_zip_file is not defined,
+## the default VSD branding, already present on the VSD itself, will be used.
+## If branding_zip_file is defined, its value
+## will be used to replace the default VSD branding with the contents of
+## a zip file on the Ansible host.  The files contained in
+## the zip file should conform to the specifications of the VNS install guide.
+##
+## For replacing the default branding on the VSD, branding_zip_file should be
+## set to one of the following values:
+##
+## - The path to a branding zip file on the Ansible host
+## - The special value "nuage" for adding a MetroAE tag to the default VSD branding.
+##   This value is provided as an example of a minimal modification of branding.
+## - The special value "metroae" to replace the default VSD branding with a
+##   complete MetroAE-themed brand. This value is provided as an example of a
+##   complete replacement of all branding components.
+##
+## Note that when branding_zip_file is defined the existing branding
+## will be backed up to the directory
+## specified by the metro_backup_root variable under (hostname)-branding/.
+## To rollback a branding change, copy the branding zip file out of the
+## backup directory, set the branding_zip_file variable to the path to the
+## copied backup file, and run the brand_vsd playbook, i.e. ./metro-ansible brand_vsd.
+# branding_zip_file: nuage
+
 ###
 ## vsd_operations_list is required when this file includes myvsds. It is not required
 ## if you aren't operating on VSDs--it will be ignored when 'myvsds' is not defined.
@@ -236,7 +291,7 @@ vsd_operations_list:
 ##
 ## target_server_type
 ## Required: The type of hypervisor the VSD will be deployed on. Supported values
-## are kvm, vcenter, and heat. 
+## are kvm, vcenter, and heat.
 ##
 ## target_server
 ## Required: The hostname or IP address of the hypervisor where this VSD will be
@@ -345,7 +400,7 @@ vsc_operations_list:
 ##
 ## mgmt_netmask_prefix
 ## Required: The netmask prefix for the management port network.
-## 
+##
 ## ctrl_ip
 ## Required: The IP address of the control port.
 ##
@@ -397,7 +452,8 @@ myvscs:
 #      expected_num_vm_vports: 0,
 #      expected_num_gateway_ports: 0,
 #      vsc_mgmt_static_route_list: [ 0.0.0.0/1, 128.0.0.1/1 ],
-      xmpp_username: vsc1 }
+#      secure_communication: "{{ secure_communication }}",
+      xmpp_username: vsc1}
   - { hostname: "vsc1.nuage.met",
 #      vmname: vsc1,
       target_server_type: "kvm",
@@ -416,7 +472,8 @@ myvscs:
 #      expected_num_vm_vports: 0,
 #      expected_num_gateway_ports: 0,
 #      vsc_mgmt_static_route_list: [ 0.0.0.0/1, 128.0.0.1/1 ],
-      xmpp_username: vsc2 }
+#      secure_communication: "{{ secure_communication }}",
+      xmpp_username: vsc2}
 ###
 ## VRS params
 ###
@@ -474,14 +531,16 @@ vrs_operations_list:
 ## The assumption is that VRS will be installed on every IP address listed here,
 ## and every compute node listed is running the OS listed in vrs_os_type, above.
 ##
-## The example, below, will install VRS on 5 compute nodes: 1 on Ubuntu 14.04, 
+## The example, below, will install VRS on 5 compute nodes: 1 on Ubuntu 14.04,
 ## 2 on el7, and 1 on Ubuntu 16.04
 myvrss:
   - { vrs_os_type: u14.04,
 #      libnetwork_install: False,
 #      dkms_install: False,
+      secure_openFlow: true,
       active_controller_ip: 192.168.122.204,
       standby_controller_ip: 192.168.122.205,
+#      secure_communication: "{{ secure_communication }}",
       vrs_ip_list: [
         192.168.122.101] }
   - { vrs_os_type: el7,
@@ -489,6 +548,7 @@ myvrss:
 #      dkms_install: False,
       active_controller_ip: 192.168.122.204,
       standby_controller_ip: 192.168.122.205,
+#      secure_communication: "{{ secure_communication }}",
       vrs_ip_list: [
         192.168.122.83,
         192.168.122.238 ] }
@@ -497,6 +557,7 @@ myvrss:
 #      dkms_install: False,
       active_controller_ip: 192.168.122.204,
       standby_controller_ip: 192.168.122.205,
+#      secure_communication: "{{ secure_communication }}",
       vrs_ip_list: [
         192.168.122.215 ] }
 ###
@@ -648,13 +709,19 @@ vns_operations_list:
 ## data_netmask
 ## Required: The netmask for the data port network.
 ##
+## data_static_route
+## Optional: list of eth1 static routes to the data networks
+##
+## data_gateway
+## Optional: will be used as next-hop for the data_static_routes
+##
 ## DHCP Bootstrap support
-## Optional: MetroAG supports a special case, automatically bootstrapping
-## (ZFB) a single NSGV at time of deployment of the VNS UTIL VM. To enable 
-## this special case, the variables in this section must be uncommented and 
-## defined so that MetroAG can configure the DHCP server on the VNS UTIL VM
-## to participate in this process. If you are *not* going to use MetroAG's
-## automatic bootstrap of a single NSGV, the variables in this section 
+## Optional: Metro Automation Engine supports a special case, automatically bootstrapping
+## (ZFB) a single NSGV at time of deployment of the VNS UTIL VM. To enable
+## this special case, the variables in this section must be uncommented and
+## defined so that Metro can configure the DHCP server on the VNS UTIL VM
+## to participate in this process. If you are *not* going to use Metro's
+## automatic bootstrap of a single NSGV, the variables in this section
 ## must not be defined.
 ##
 ## Uncomment in the myvnsutils section for DHCP bootstrap support:
@@ -681,10 +748,13 @@ myvnsutils:
       data_fqdn: "vnsutil1.data.nuage.met",
       data_ip: 192.168.100.205,
       data_netmask: 255.255.255.0,
+#      data_gateway: 192.168.100.1,
+#      data_static_route: [ 192.168.99.0/24, 192.168.98.0/24, 1192.168.97.0/24 ],
 #      data_subnet: 192.168.100.0,
 #      nsgv_ip: 192.168.100.206,
 #      nsgv_mac: '52:54:00:88:85:12',
 #      nsgv_hostname: "nsgv1.{{ dns_domain }}",
+#      secure_communication: "{{ secure_communication }}",
       vsd_fqdn: "{{ vsd_fqdn_global }}"
     }
 ###
@@ -738,6 +808,7 @@ mynsgvs:
 #      iso_file: 'user_img.iso',
 #      nsgv_mac: '52:54:00:88:85:12',
 #      bootstrap_method: none,
+#      secure_communication: {{ secure_communication }},
       target_server: 135.227.181.233 }
 ###
 ## VCIN params
@@ -757,6 +828,15 @@ vcin_operations_list:
 ## hostname
 ## Required always: The FQDN or IP address of the VCIN management port
 ##
+## master_vcin
+## Optional: The FQDN or IP address of the Master VCIN in an Active/Standby
+## deployment. This must match the hostname of another VCIN in the list of
+## myvcins.
+## Validation is in place to assure:
+## - Masters can not be their own slave
+## - A Master can only have one slave
+## - The Master must be present when configured on a slave
+##
 ## target_server_type
 ## Required: The type of hypervisor the VCIN will be deployed on. Supported values
 ## are kvm, vcenter, and heat.
@@ -766,7 +846,7 @@ vcin_operations_list:
 ## instantiated.
 ##
 ## vcenter
-## Optional: vcenter params to use of the global params, defined elsewhere in this 
+## Optional: vcenter params to use of the global params, defined elsewhere in this
 ## file, are not appropriate.
 ##
 ## mgmt_ip
@@ -781,7 +861,8 @@ vcin_operations_list:
 ## The example, below, is for a single VCIN. If deploying stand-alone,
 ## only one VSD defintion is required.
 myvcins:
-    - { hostname: vcin1.nuage.met,
+    - { hostname: vcin1.nuage.net,
+#      master_vcin: vcin2.nuage.net,
       target_server_type: "vcenter",
       target_server: 135.227.181.232,
 #      vcenter: { username: administrator@vsphere.local,
@@ -828,7 +909,7 @@ myvcins:
 #      data_ip: 10.167.54.3,
 #      data_subnet: 10.167.54.0,
 #      data_netmask: 255.255.255.0,
-#      data_gateway: 10.167.54.1
+#      data_gateway: 10.167.54.1,
 #      data_static_route: [ 10.165.53.0/24, 10.165.54.0/24, 10.165.55.0/24 ],
 #      dns_server: 8.8.8.8,
 #      dns_mgmt: g5dns.mgmt.training.net.,
@@ -905,3 +986,88 @@ myvcins:
 #      ports_to_hv_bridges: ['br0', 'br1','br0','br1'],
 #      license_file: '/path/on/ansible/deployment/host/license.zip',
 #      deploy_cfg_file: '/path/on/ansible/deployment/host/config_flat.txt'}
+
+## VRS-VM params
+## vrs_vm_operations_list = A list of the operations you intend for the VRS-VM.
+##The list could include 1 or more of the following:
+## - install
+## myvrs_vms is required when you are operating on VRS-VMs. It is not required if you aren't
+## operating on VRS-VMs. It will be ignored if not defined. Each element in the list
+## is a dictionary of parameters specific to a single VRS-VM. You can define as much
+## VRS-VM as you want
+##
+## hostname
+## Required always: The FQDN or IP address of the VRS-VM management port
+##
+## vmname
+## Optional, vmname defaults to the hostname. Uncomment and set if you want a
+##VM name other than hostname.
+##
+## target_server_type
+## Optional: The default is 'kvm'. For now only KVM is supported.
+##
+## target_server
+## Required: The hostname or IP address of the hypervisor where this VRS-VM will be
+## instantiated.
+##
+## mgmt_bridge
+## Optional: The name of the bridge on the hypervisor to connect the mgmt port to.
+## By default, the mgmt port will be connected to the global mgmt_bridge that is
+## defined elsewhere in this file. Uncomment and update if you want to use a
+## different bridge for this component.
+##
+## mgmt_ip
+## Required: The IP address of the VRS-VM's management port.
+##
+## mgmt_gateway
+## Required: The IP address for the default gateway.
+##
+## mgmt_netmask
+## Required: The netmask for the management port.
+##
+## data_ip
+## Required: The IP address of the data plane.
+##
+## data_netmask
+## Required: The netmask for the data plane network.
+##
+## data_bridge
+## Optional: The name of the bridge on the hypervisor to connect the data port to.
+## By default, the data port will be connected to the global data_bridge that is
+## defined elsewhere in this file. Uncomment and update if you want to use a
+## different bridge for this component.
+##
+## data_gateway
+## Required: The IP address that will be used as a next-hop address of the
+## data_static_route.
+##
+## data_static_route: list of eth1 static routes to the data networks
+##
+## ram (Gib)
+## Optional: Ram amount that will be used for the VRS-VM. By default it is 4 (GB)
+##
+## vcpu
+## Optional: VCPU count that will be used for the VRS-VM. By default it is 2
+##
+## vrs_vm_qcow2_path
+## Required: source qcow path of the VRS-VM
+#vrs_vm_operations_list:
+#  - install
+#
+#myvrs_vms:
+#  - { hostname: vrs_vm1,
+#      #vmname: vrs_vm1,
+#      target_server_type: kvm,
+#      target_server: 10.10.13.5,
+#      ram: 12,
+#      vcpu: 4,
+#      mgmt_bridge: br0,
+#      mgmt_ip: 10.10.13.11,
+#      mgmt_gateway: 10.10.13.1,
+#      mgmt_netmask: 255.255.255.0,
+#      data_bridge: br1,
+#      data_ip: 10.9.13.11,
+#      data_netmask: 255.255.255.0,
+#      vrs_vm_qcow2_path: /tmp/images/centos7.qcow2,
+#      data_gateway: 10.9.13.1,
+#      data_static_route: [ 10.13.60.0/24, 10.12.60.0/24, 10.11.60.0/24] }

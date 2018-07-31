@@ -5,30 +5,30 @@
   vars:
     ssh_host: "{{ mgmt_ip }}"
 
-- name: Create the directory on VSD to store backup files in
-  file:
-    path: "/opt/vsd/data"
-    state: directory
-  remote_user: root
+- block:
 
-- name: Copy backup files from backup_machine
-  copy:
-    src: "{{ item }}"
-    dest: "/opt/vsd/data/"
-  with_fileglob:
-    - "{{metro_backup_root}}/backup-{{ groups['vsds'][0] }}-latest/*.tar.gz"
-  remote_user: root
+  - name: Create the directory on VSD to store backup files in
+    file:
+      path: "/opt/vsd/data"
+      state: directory
 
-- name: Delete log files from /opt/vsd/data/ directory
-  shell: "rm -rf /opt/vsd/data/*.log"
-  remote_user: root
+  - name: Copy backup files from backup_machine
+    copy:
+      src: "{{ item }}"
+      dest: "/opt/vsd/data/"
+    with_fileglob:
+      - "{{metro_backup_root}}/backup-{{ groups['vsds'][0] }}-latest/*.tar.gz"
 
-- name: Get list of files in /opt/vsd/data/ directory
-  find:
-    path: "/opt/vsd/data/"
-    pattern: "*.tar.gz"
-  register: lst_files
-  remote_user: root
+  - name: Delete log files from /opt/vsd/data/ directory
+    shell: "rm -rf /opt/vsd/data/*.log"
+
+  - name: Get list of files in /opt/vsd/data/ directory
+    find:
+      path: "/opt/vsd/data/"
+      pattern: "*.tar.gz"
+    register: lst_files
+
+  remote_user: "{{ vsd_username }}"
 
 - name: Verify  /opt/vsd/data/ directory contains exactly 3 files
   assert:

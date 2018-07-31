@@ -6,7 +6,7 @@
 - name: Get VSD directory stat
   stat:
     path: /opt/vsd
-  remote_user: root
+  remote_user: "{{ vsd_username }}"
   register: vsd_dir
   when: node_reachable
 
@@ -17,21 +17,28 @@
                       vsd_dir.stat.isdir is defined and
                       vsd_dir.stat.isdir }}"
 
-- include: kvm.yml
+- import_tasks: kvm.yml
   when: target_server_type | match("kvm")
   tags:
     - vsd
     - vsd-predeploy
 
-- include: heat.yml
+- import_tasks: heat.yml
   when: target_server_type | match("heat")
   tags:
     - vsd
     - heat
     - vsd-predeploy
 
-- include: vcenter.yml
+- import_tasks: vcenter.yml
   when: target_server_type | match("vcenter")
   tags:
+    - vsd
+    - vsd-predeploy
+
+- import_tasks: nuagex.yml
+  when: target_server_type | match("nuagex")
+  tags:
+    - nuagex
     - vsd
     - vsd-predeploy
