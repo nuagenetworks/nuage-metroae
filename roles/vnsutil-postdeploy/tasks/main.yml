@@ -6,29 +6,19 @@
       path: "/opt/proxy/config/keys"
       state: directory
 
-  - name: Get vsd node(s) information
-    import_role:
-      name: common
-      tasks_from: vsd-node-info.yml
-    vars:
-      vsd_hostname: "{{ vsd_fqdn }}"
-    run_once: true
-
-  - name: Get VSD version
-    shell: echo $VSD_VERSION
-    register: vsd_version
-    delegate_to: "{{ vsd_hostname_list[0] }}"
-
-  - name: Create and transfer certs for VSD 4.0.4
-    command: "{{ create_certs_404 }}"
-    delegate_to: "{{ vsd_hostname_list[0] }}"
-    when: "'4.0.4' in vsd_version.stdout"
-
   - name: Create and transfer certs
-    command: "{{ create_certs }}"
-    delegate_to: "{{ vsd_hostname_list[0] }}"
-    when: "'4.0.4' not in vsd_version.stdout"
-
+    include_role: 
+      name: common
+      tasks_from: vsd-generate-transfer-certificates
+    vars: 
+      certificate_password: "{{ vnsutil_password }}"
+      certificate_username: proxy
+      commonName: proxy
+      certificate_type: server
+      scp_user: "{{ vnsutil_username }}"
+      scp_location: /opt/proxy/config/keys
+      additional_parameters: -d {{ inventory_hostname }}
+     
   - name: Install supervisord and haproxy
     command: "{{ install_cmd }}"
 
