@@ -94,6 +94,7 @@ def get_connection(ip_addr, user, password, port):
         connection = SmartConnect(
             host=ip_addr, port=port, user=user, pwd=password
         )
+        desired_state = 0
     except Exception:
         desired_state = -1
 
