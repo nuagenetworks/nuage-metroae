@@ -4,7 +4,7 @@ from ansible.module_utils.basic import AnsibleModule
 
 DOCUMENTATION = '''
 ---
-module: autostart_vcenter
+module: vmware_autostart
 short_description: Configure autostart for vCenter VMs
 options:
   name:
@@ -50,7 +50,7 @@ options:
 
 EXAMPLES = '''
 # Example for enabling autostart for vm_1
-- autostart_vcenter:
+- vmware_autostart:
     name: vm_1
     hostname: target_server_ip
     username: vCenter_username
@@ -58,7 +58,7 @@ EXAMPLES = '''
     state: enable
 
 # Example for disabling or not enabling autostart for vm_1
-- autostart_vcenter:
+- vmware_autostart:
     name: vm_1
     hostname: target_server_ip
     username: vCenter_username
