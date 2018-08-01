@@ -77,10 +77,7 @@ sys.dont_write_bytecode = True
 def get_esxi_host(ipAddr, port, username, password, id):
     uuid = id
     si = None
-    si = get_connection(ipAddr, username, password, port)
-    if si == -1:
-        desired_state = -1
-        return desired_state
+    si, desired_state = get_connection(ipAddr, username, password, port)
     vm = si.content.searchIndex.FindByUuid(None,
                                            uuid,
                                            True,
@@ -90,7 +87,7 @@ def get_esxi_host(ipAddr, port, username, password, id):
     else:
         host = None
     host_ip = host.name
-    return host_ip
+    return host_ip, desired_state
 
 def get_connection(ip_addr, user, password, port):
     try:
@@ -99,9 +96,8 @@ def get_connection(ip_addr, user, password, port):
         )
     except Exception:
         desired_state = -1
-        return desired_state
 
-    return connection
+    return connection, desired_state
 
 def get_hosts(conn):
     content = conn.RetrieveContent()
@@ -174,18 +170,17 @@ def main():
     uuid = module.params['uuid']
     port = module.params['port']
     start_delay = module.params['delay']
-    desired_state = -1
 
-    connection = get_connection(ip_addr, username, password, port)
+    connection, desired_state = get_connection(ip_addr, username, password, port)
 
-    if connection == -1:
+    if desired_state == -1:
         module.fail_json(changed=False, msg="Could not connect to %s" % ip_addr)
 
-    esxi_host = get_esxi_host(ip_addr, port, username, password, uuid)
+    esxi_host, desired_state = get_esxi_host(ip_addr, port, username, password, uuid)
 
-    if esxi_host != -1:
+    if desired_state != -1:
         desired_state = configure_hosts(esxi_host, connection, start_delay, vm_name, state)
-    elif esxi_host == -1:
+    elif desired_state == -1:
         module.fail_json(changed=False, msg="Could not get ESXi host for %s" % vm_name)
 
     if desired_state == 0:
