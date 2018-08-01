@@ -34,12 +34,18 @@ options:
     description:
       - The vCenter password
     required: true
-  configuration
+  state
     description:
       - Whether or not to enable autostart for the VM
     required: false
     default: "None"
     choices: ["enable", "disable"]
+  delay:
+    description:
+      - Time, in seconds, for delayed start of the VM
+    required: false
+    default: 10
+
 '''
 
 EXAMPLES = '''
@@ -49,7 +55,7 @@ EXAMPLES = '''
     hostname: target_server_ip
     username: vCenter_username
     password: vCenter_password
-    configuration: enable
+    state: enable
 
 # Example for disabling or not enabling autostart for vm_1
 - autostart_vcenter:
@@ -57,7 +63,7 @@ EXAMPLES = '''
     hostname: target_server_ip
     username: vCenter_username
     password: vCenter_password
-    configuration: disable
+    state: disable
 '''
 
 import subprocess
@@ -72,6 +78,9 @@ def get_esxi_host(ipAddr, port, username, password, id):
     uuid = id
     si = None
     si = get_connection(ipAddr, username, password, port)
+    if si == -1:
+        desired_state = -1
+        return desired_state
     vm = si.content.searchIndex.FindByUuid(None,
                                            uuid,
                                            True,
@@ -83,14 +92,15 @@ def get_esxi_host(ipAddr, port, username, password, id):
     host_ip = host.name
     return host_ip
 
-def get_connection(ipAddr, user, password, port):
+def get_connection(ip_addr, user, password, port):
     try:
         connection = SmartConnect(
-            host=ipAddr, port=port, user=user, pwd=password
+            host=ip_addr, port=port, user=user, pwd=password
         )
-    except Exception as e:
-        print e
-        raise SystemExit
+    except Exception:
+        desired_state = -1
+        return desired_state
+
     return connection
 
 def get_hosts(conn):
@@ -101,22 +111,22 @@ def get_hosts(conn):
     obj = [host for host in container.view]
     return obj
 
-def action_hosts(commaList, connection, startDelay, vmname, conf):
-    acthosts = commaList.split(",")
-    allhosts = get_hosts(connection)
-    host_names = [h.name for h in allhosts]
-    for a in acthosts:
+def configure_hosts(commaList, connection, startDelay, vmname, state):
+    config_hosts = commaList.split(",")
+    all_hosts = get_hosts(connection)
+    host_names = [h.name for h in all_hosts]
+    for a in config_hosts:
         if a not in host_names:
-            desired_state = False
+            desired_state = -1
     
-    for h in allhosts:
-        if h.name in acthosts:
-            desired_state = enable_autostart(h, startDelay, vmname, conf)
+    for h in all_hosts:
+        if h.name in config_hosts:
+            desired_state = configure_autostart(h, startDelay, vmname, state)
 
     return desired_state
 
-def enable_autostart(host, startDelay, vmname, conf):
-    desired_state=False
+def configure_autostart(host, startDelay, vmname, state):
+    desired_state = -1
     hostDefSettings = vim.host.AutoStartManager.SystemDefaults()
     hostDefSettings.enabled = True 
     hostDefSettings.startDelay = int(startDelay)
@@ -127,25 +137,20 @@ def enable_autostart(host, startDelay, vmname, conf):
             spec.defaults = hostDefSettings
             auto_power_info = vim.host.AutoStartManager.AutoPowerInfo()
             auto_power_info.key = vhost
+            auto_power_info.waitForHeartbeat = 'no'
+            auto_power_info.startDelay = -1
+            auto_power_info.startOrder = -1
+            auto_power_info.stopAction = 'None'
+            auto_power_info.stopDelay = -1
             if vhost.runtime.powerState == "poweredOff":
                 auto_power_info.startAction = 'None'
-                auto_power_info.waitForHeartbeat = 'no'
-                auto_power_info.startDelay = -1
-                auto_power_info.startOrder = -1
-                auto_power_info.stopAction = 'None'
-                auto_power_info.stopDelay = -1
             elif vhost.runtime.powerState == "poweredOn":
-                auto_power_info.startAction = 'powerOn' if  conf == 'enable' else 'None'
-                auto_power_info.waitForHeartbeat = 'no'
-                auto_power_info.startDelay = -1
-                auto_power_info.startOrder = -1
-                auto_power_info.stopAction = 'None'
-                auto_power_info.stopDelay = -1
+                auto_power_info.startAction = 'powerOn' if  state == 'enable' else 'None'
                 spec.powerInfo = [auto_power_info]
                 order = order + 1
                 host.configManager.autoStartManager.ReconfigureAutostart(spec)
-                desired_state = True
-                return desired_state
+                desired_state = 0
+    return desired_state
 
 def main():
     arg_spec = dict(
@@ -155,26 +160,35 @@ def main():
         port=dict(required=False, type=int, default=443),
         username=dict(required=True, type='str', no_log=True),
         password=dict(required=True, type='str', no_log=True),
-        configuration=dict(required=False, type='str', default='None')
+        state=dict(required=False, type='str', default='None'),
+        delay=dict(required=False, type=int, default=10)
     )
 
     module = AnsibleModule(argument_spec=arg_spec, supports_check_mode=True)
     
-    start_delay = 10
     ip_addr = module.params['hostname']
     username = module.params['username']
     password = module.params['password']
     vm_name = module.params['name']
-    conf = module.params['configuration']
+    state = module.params['state']
     uuid = module.params['uuid']
     port = module.params['port']
-    desired_state = False
+    start_delay = module.params['delay']
+    desired_state = -1
+
     connection = get_connection(ip_addr, username, password, port)
+
+    if connection == -1:
+        module.fail_json(changed=False, msg="Could not connect to %s" % ip_addr)
+
     esxi_host = get_esxi_host(ip_addr, port, username, password, uuid)
-    if esxi_host is not None:
-        desired_state = action_hosts(esxi_host, connection, start_delay, vm_name, conf)
-    
-    if desired_state:
+
+    if esxi_host != -1:
+        desired_state = configure_hosts(esxi_host, connection, start_delay, vm_name, state)
+    elif esxi_host == -1:
+        module.fail_json(changed=False, msg="Could not get ESXi host for %s" % vm_name)
+
+    if desired_state == 0:
         module.exit_json(changed=True, msg="VM %s has been configured" % vm_name)
     else:
         module.fail_json(changed=False, msg="VM %s could not be configured" % vm_name)
