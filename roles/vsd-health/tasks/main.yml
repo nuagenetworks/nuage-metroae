@@ -144,6 +144,36 @@
     with_items:
       - "8443/index.html"
       - 61619
+      
+  - name: Verify that REST is reachable
+    uri:
+      url: https://{{ mgmt_ip }}:8443/index.html
+      method: GET
+      user: "{{ vsd_auth.username }}"
+      password: "{{ vsd_auth.password }}"
+      status_code: 200
+      validate_certs: False
+    register: rest_result
+    ignore_errors: yes
+ 
+  - name: Check ActiveMQ Status
+    command: monit status activemq-status
+    register: jms_status
+  
+  - name: Check to see if JMS Master Node
+    set_fact: is_jms_master = True
+    when: "'This is Master Node' in jms_status.stdout"
+
+  - name: Verify that JMS gateway is reachable
+    uri:
+      url: https://{{ mgmt_ip }}:61619
+      method: GET
+      user: "{{ vsd_auth.username }}"
+      password: "{{ vsd_auth.password }}"
+      status_code: 200
+      validate_certs: False
+    register: webresult
+    when: is_jms_master | default( False )
 
   - name: write web interface result
     nuage_append: filename="{{ report_path }}" text="{{ webresult  | to_nice_json}}\n"
