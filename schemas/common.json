@@ -1,80 +1,91 @@
 {
     "$schema": "http://json-schema.org/draft-06/schema#",
     "$id": "urn:nuage-metroae:common",
-    "title": "Common items",
+    "title": "Common Configuration Settings",
     "description": "Nuage MetroAE common settings",
     "type": "object",
     "widget": "form",
     "properties": {
         "nuage_unzipped_files_dir": {
             "type": "string",
-            "title": "Unzipped file directory",
-            "description": "Paths to find unzipped image files (e.g. qcow2)",
+            "title": "Nuage Unzip Files Directory",
+            "description": "Absolute path to the directory on the Ansible Host where the Nuage Unzipped files can be found. E.g. qcow2 files.",
+            "required": true,
             "propertyOrder": 10
         },
         "user_ssh_pub_key": {
             "type": "string",
-            "title": "SSH public key",
+            "title": "SSH Public Key",
             "default": "~/.ssh/id_rsa.pub",
-            "description": "Path to a public key file to be injected in to VSD, VNS Util, VCIN and VSTAT vms during deployment and corresponding private file to be used to connect to the components during deployment",
+            "description": "Path to a public key file to be injected in to VSD, VNS Util, VCIN and VSTAT vms during deployment. This enables password-less connection from the Ansible Host to the components for configuration.",
+            "hv_type": "kvm",
             "propertyOrder": 20
         },
         "metro_reports_dir": {
             "type": "string",
-            "title": "Reports directory",
+            "title": "Reports Directory",
             "default": "./reports",
-            "description": "Location for health reports",
+            "description": "Location where the generated health reports are placed.",
             "propertyOrder": 30
         },
         "dns_domain": {
             "type": "string",
-            "format": "hostname",
-            "title": "DNS domain",
+            "format": "Hostname",
+            "title": "Domain Name",
+            "description": "The domain name for your deployment. E.g. company.net.",
+            "required": true,
             "propertyOrder": 40
         },
         "vsd_fqdn_global": {
             "type": "string",
             "title": "Global VSD FQDN",
             "format": "hostname",
-            "description": "Use xmpp FQDN for clustered VSDs and the VSD FQDN for stand-alone.",
+            "description": "Use xmpp FQDN for clustered VSDs and the VSD FQDN in the case of a stand-alone deployment.",
+            "required": true,
             "propertyOrder": 50
         },
         "mgmt_bridge": {
             "type": "string",
-            "title": "Management network bridge",
-            "description": "Hypervisor network bridges.",
+            "title": "Management Network Bridge",
+            "description": "Network Bridge used for the Management Interface of a component or the BOF interface on VSC. This will be a Distributed Virtual PortGroup (DVPG) when deploying on a vCenter environment or a Linux Network Bridge when deploying on a KVM environment. This field can be overridden by defining the Management Network Bridge separately in the component configuration",
+            "required": true,
             "propertyOrder": 60
         },
         "data_bridge": {
             "type": "string",
-            "title": "Data network bridge",
-            "description": "Hypervisor network bridges.",
+            "title": "Data Network Bridge",
+            "description": "Network Bridge used for the data path or the Control Interface on VSC. This will be a Distributed Virtual PortGroup when deploying on a vCenter environment or a Linux Network Bridge when deploying on a KVM environment. This field can be overridden by defining the Data Network Bridge separately in the component configuration",
+            "required": true,
             "propertyOrder": 70
         },
-        "access_bridge": {
-            "type": "string",
-            "title": "Access network bridge",
-            "description": "Hypervisor network bridges.",
-            "propertyOrder": 80
-        },
+# Should be in the NSGv section. Keeping it commented here since the NSGv json file isnt there yet
+#        "access_bridge": {
+#            "type": "string",
+#            "title": "Access Network Bridge",
+#            "description": "Required only when NSGv is being deployed. This is the access network for the NSGv. It can be a DVPG in the case of deployment in a vCenter environment",
+#            "propertyOrder": 80
+#        },
         "images_path": {
             "type": "string",
-            "title": "Images directory",
+            "title": "Images Directory",
             "default": "/var/lib/libvirt/images/",
             "description": "Location to create VM images on KVM target servers.",
+            "hv_type": "kvm",
             "propertyOrder": 90
         },
         "secure_communication": {
             "type": "string",
-            "title": "Secure Communication",
+            "title": "Ejabberd Secure Communication",
             "default": true,
-            "description": "TLS on all the communication between the VSD, VSC, VRS and NSGV. By default, it is set to 'True', the recomemded value.",
-            "propertyOrder": 100
+            "description": "This sets the Ejabberd TLS Mode to 'Allow' on VSD accepting both TLS and clear communication.",
+            "propertyOrder": 100,
+            "advanced": true
         },
         "ntp_server_list": {
             "type": "array",
-            "title": "NTP servers",
-            "description": "Must be in dotted-decimal format",
+            "title": "NTP Server IP(s)",
+            "description": "Must be in dotted-decimal format. Accepts IPv4 addresses only.",
+            "required": true,
             "propertyOrder": 110,
             "items": {
                 "type": "string",
@@ -83,7 +94,9 @@
         },
         "dns_server_list": {
             "type": "array",
-            "title": "DNS servers",
+            "title": "DNS server IP(s)",
+            "description": "List of DNS servers that can resolve the component domainnames. Must be in dotted-decimal format. Accepts IPv4 addresses only.",
+            "required": true,
             "propertyOrder": 120,
             "items": {
                 "type": "string",
@@ -96,55 +109,63 @@
             "default": "US/Pacific",
             "propertyOrder": 130
         },
-        "yum_proxy": {
-            "type": "string",
-            "title": "Proxy for yum",
-            "format": "hostname",
-            "default": "NONE",
-            "propertyOrder": 140
-        },
         "yum_update": {
             "type": "boolean",
             "title": "Yum update",
+            "description": "Perform a Yum update on VSD.",
             "default": true,
+            "propertyOrder": 140
+        },
+        "yum_proxy": {
+            "type": "string",
+            "title": "Proxy for Yum Updates",
+            "format": "hostname",
+            "description": "Proxy URL to be used if Yum repositories cannot be directly reached.",
+            "default": "NONE",
+            "advanced": true,
             "propertyOrder": 150
         },
         "vsd_fallocate_size_gb": {
             "type": "integer",
-            "title": "VSD disk space allocation",
-            "description": "Amount of VSD disk space to fallocate, in GB",
+            "title": "VSD Disk Size",
+            "description": "Amount of VSD disk space to allocate, in GB. Valid only for KVM deployments. Note: Changing is the default value is not a supported configuration.",
             "default": 285,
             "propertyOrder": 160,
+            "hv_type": "kvm",
             "advanced": true
         },
          "vsd_ram": {
             "type": "integer",
             "title": "VSD RAM",
-            "description": "Amount of VSD RAM",
+            "description": "Amount of VSD RAM to allocate. Valid only for KVM deployments. Note: Changing is the default value is not a supported configuration.",
             "default": 25165824,
             "propertyOrder": 170,
+            "hv_type": "kvm",
             "advanced": true
         },
         "vsc_ram": {
             "type": "integer",
             "title": "VSC RAM",
-            "description": "Amount of VSC RAM",
+            "description": "Amount of VSC RAM to allocate. Valid only for KVM deployments. Note: Changing is the default value is not a supported configuration.",
             "default": 4147483,
             "propertyOrder": 180,
+            "hv_type": "kvm",
             "advanced": true
         },
         "vstat_ram": {
             "type": "integer",
             "title": "VSTAT RAM",
-            "description": "Amount of VSTAT RAM",
+            "description": "Amount of VSTAT RAM to allocate. Valid only for KVM deployments. Note: Changing is the default value is not a supported configuration.",
             "default": 16777216,
             "propertyOrder": 190,
+            "hv_type": "kvm",
             "advanced": true
         },
         "libnetwork_scope": {
             "type": "string",
             "title": "Libnetwork scope",
             "default": "local",
+            "advanced": true,
             "enum": ["local", "global"],
             "description": "local: connectivity between containers is limited to within the local host. global: connectivity between containers may span across hosts in the cluster.",
             "propertyOrder": 200
@@ -154,6 +175,7 @@
             "type": "string",
             "title": "Libnetwork cluster store URL scheme",
             "default": "consul",
+            "advanced": true,
             "description": "Scheme of URL pointing to the key-value store used for the Libnetwork cluster.",
             "propertyOrder": 210
 
@@ -163,6 +185,7 @@
             "title": "Libnetwork cluster store URL host",
             "default": "NONE",
             "format": "hostname",
+            "advanced": true,
             "description": "Host of URL pointing to the key-value store used for the Libnetwork cluster.",
             "propertyOrder": 220
 
@@ -172,6 +195,7 @@
             "title": "Libnetwork cluster store URL port",
             "default": 8500,
             "description": "Port of URL pointing to the key-value store used for the Libnetwork cluster.",
+            "advanced": true,
             "propertyOrder": 230
 
         }
