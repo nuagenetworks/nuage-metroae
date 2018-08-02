@@ -258,6 +258,45 @@
     ignore_errors: "{{ not nuage_upgrade }}"
     when: expected_num_gateway_ports | default(0) > 0
 
+  - name: Get output of 'show router interface'
+    sros_command:
+      commands:
+        - show router interface
+      provider: "{{ vsc_creds }}"
+    register: show_router_interfaces
+    
+  - name: Print output of 'show router interface' when verbosity >= 1
+    debug: var=show_router_interfaces verbosity=1
+  
+  - name: Create local variable with show router interface output in json
+    set_fact: show_router_interfaces_json="{{ show_router_interfaces.stdout[0]|vsc_router_interfaces_to_json }}"
+  
+  - name: Print show router interface in json when verbosity >= 1
+    debug: var=show_router_interfaces_json verbosity=1
+  
+  - name: Write router interfaces to report
+    nuage_append: filename="{{ report_path }}" text="{{ inventory_hostname }} INTERFACES {{ show_router_interfaces_json|to_nice_json }}\n"
+  
+  - name: Check for expected control Adm Status
+    assert: {
+      that: "{{ expected_control_adm_status }} == {{ show_router_interfaces_json['control_adm'] }}",
+      msg: "Invalid Adm status for control interface. ({{ show_router_interfaces_json['control_adm'] }}) detected. Expected {{ expected_control_adm_status }}. CHeck 'show router interface'."
+    }
+  - name: Check for expected control Oprv4 Status
+    assert: {
+      that: "{{ expected_control_oprv4_status }} == {{ show_router_interfaces_json['control_Oprv4] }}",
+      msg: "Invalid Oprv4 status for control interface. ({{ show_router_interfaces_json['control_Oprv4'] }}) detected. Expected {{ expected_control_oprv4_status }}. CHeck 'show router interface'."
+    }
+  - name: Check for expected system Adm Status
+    assert: {
+      that: "{{ expected_system_adm_status }} == {{ show_router_interfaces_json['system_adm'] }}",
+      msg: "Invalid Adm status for system interface. ({{ show_router_interfaces_json['system_adm'] }}) detected. Expected {{ expected_system_adm_status }}. CHeck 'show router interface'."
+    }
+  - name: Check for expected systen Oprv4 Status
+    assert: {
+      that: "{{ expected_system_oprv4_status }} == {{ show_router_interfaces_json['system_Oprv4] }}",
+      msg: "Invalid Oprv4 status for system interface. ({{ show_router_interfaces_json['system_Oprv4'] }}) detected. Expected {{ expected_system_oprv4_status }}. CHeck 'show router interface'."
+    }
   - name: Get NTP status
     sros_command:
       commands:
@@ -277,7 +316,7 @@
 
   - name: Write NTP status to report
     nuage_append: filename="{{ report_path }}" text="{{ inventory_hostname }} NTP Status {{ ntp_status.stdout[0] }}\n"
-
+  
   - import_tasks: report_footer.yml
 
   delegate_to: localhost
