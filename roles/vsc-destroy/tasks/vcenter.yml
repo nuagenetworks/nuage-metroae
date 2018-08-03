@@ -28,6 +28,32 @@
 - debug: var=vsc_vm_facts verbosity=1
 
 - block:
+  
+  - name: Get Facts of VM
+    vmware_vm_facts:
+      hostname: "{{ target_server }}"
+      username: "{{ vcenter.username }}"
+      password: "{{ vcenter.password }}"
+    delegate_to: localhost
+    register: vm_list
+      
+    - name: Set VM UUID
+      set_fact:
+        uuid: "{{ vm_list.virtual_machines[vm_name]['uuid'] }}"
+      when: vm_name is defined
+  
+    - debug: var=uuid
+    
+    - name: Turn off autostart
+      connection: local
+      vmware_autostart:
+        name: "{{ vm_name }}"
+        uuid: "{{ uuid }}"
+        hostname: "{{ target_server }}"
+        username: "{{ vcenter.username }}"
+        password: "{{ vcenter.password }}"
+        state: disable
+
   - name: Power off the VSC VM
     connection: local
     vmware_guest:
