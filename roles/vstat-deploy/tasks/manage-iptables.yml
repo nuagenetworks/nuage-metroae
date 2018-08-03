@@ -1,0 +1,87 @@
+- block:
+
+  - name: Start iptables
+    systemd:
+      name: iptables
+      state: started
+    remote_user: "{{ vstat_username }}"
+
+  - name: Enable iptables on boot
+    systemd:
+      name: iptables
+      enabled: yes
+    remote_user: "{{ vstat_username }}"
+
+  - name: Check if iptables is already setup for VSD rules
+    shell: iptables -L INPUT | grep 'match-set vsd src'
+    register: vstat_iptables_result
+    ignore_errors: True
+
+  - name: Set if skipping VSTAT deploy
+    set_fact: skip_vstat_deploy="{{ vstat_iptables_result is defined and vstat_iptables_result.rc == 0 }}"
+
+  - name: Display if skipping VSTAT deploy
+    debug:
+      msg:
+        - "***************************************************"
+        - "Skipping VSTAT deploy because it is already running"
+        - "***************************************************"
+    when: skip_vstat_deploy
+
+  - block:
+
+    - block:
+
+      - name: Create iptables vars file on ansible host
+        template: src="{{ role_path }}/templates/iptables.j2" dest="/tmp/main.yml" backup=no mode=0755
+
+      - name: Include variable file.
+        include_vars: /tmp/main.yml
+
+      delegate_to: localhost
+
+    - block:
+
+      - name: Config iptables on VSTAT vm to accept conn on ports 9200,9300 from vsd(s)
+        shell: "{{ item }}"
+        with_items:
+          - "{{ iptables_std_commands }}"
+        remote_user: "{{ vstat_username }}"
+        register: iptables_results
+        ignore_errors: True
+
+      - name: Verify iptables rules installation
+        assert:
+          that: "{{ item.rc }} == 0 or
+                 {{ item.stderr | search('already exists') }} or
+                 {{ item.stderr | search('already added') }}"
+          msg: "iptables rule was not installed"
+        with_items:
+          - "{{ iptables_results.results }}"
+
+      when: vsd_sa_or_ha | match('sa')
+
+    - block:
+
+      - name: Config iptables on VSTAT vm to accept conn on ports 9200, 9300 from vsd(s) in cluster setup
+        shell: "{{ item }}"
+        with_items:
+          - "{{ iptables_cluster_commands }}"
+        remote_user: "{{ vstat_username }}"
+        register: iptables_results
+        ignore_errors: True
+
+      - name: Verify iptables rules installation
+        assert:
+          that: "{{ item.rc }} == 0 or
+                 {{ item.stderr | search('already exists') }} or
+                 {{ item.stderr | search('already added') }}"
+          msg: "iptables rule was not installed"
+        with_items:
+          - "{{ iptables_results.results }}"
+
+      when: vsd_sa_or_ha | match('ha')
+
+    when: not skip_vstat_deploy
+
+  when: "_svc_iptables.rc == 0"

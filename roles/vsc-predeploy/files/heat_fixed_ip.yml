@@ -1,0 +1,46 @@
+heat_template_version: '2014-10-16'
+parameters:
+  vm_name:
+    type: string
+  image:
+    type: string
+  flavor:
+    type: string
+  mgmt_interface:
+    type: json
+    description: Dictionary with VM management inteface parameters (defined in build_vars.yml)
+  control_interface:
+    type: json
+    description: Dictionary with Control inteface parameters (defined in build_vars.yml)
+
+resources:
+  mgmt_port:
+    type: OS::Neutron::Port
+    properties:
+      network_id: {get_param: [mgmt_interface, network]}
+      fixed_ips:
+        - ip_address: {get_param: [mgmt_interface, ip]}
+          subnet: {get_param: [mgmt_interface, subnet]}
+      security_groups: {get_param: [mgmt_interface, security_groups]}
+  control_port:
+    type: OS::Neutron::Port
+    properties:
+      network_id: {get_param: [control_interface, network]}
+      fixed_ips:
+        - ip_address: {get_param: [control_interface, ip]}
+          subnet: {get_param: [control_interface, subnet]}
+      security_groups: {get_param: [mgmt_interface, security_groups]}
+  mycompute:
+    type: OS::Nova::Server
+    properties:
+      name:     {get_param: vm_name}
+      flavor:   {get_param: flavor}
+      image:    {get_param: image}
+      networks:
+        - port: {get_resource: mgmt_port}
+        - port: {get_resource: control_port}
+
+outputs:
+  server_ip:
+    description: Management IP address assigned to VM
+    value: { get_attr: [mycompute, networks, {get_param: [mgmt_interface, network]}, 0]}

@@ -1,0 +1,51 @@
+---
+- name: Get vsd node(s) information
+  import_role:
+    name: common
+    tasks_from: vsd-node-info.yml
+  vars:
+    vsd_hostname: "{{ vsd_fqdn }}"
+  run_once: true
+
+- import_tasks: manage-ssh-keys.yml
+  when: vstat_sa_or_ha | match('ha')
+  remote_user: "{{ vstat_username }}"
+
+- name: check for iptables
+  shell: "service iptables status"
+  register: _svc_iptables
+  ignore_errors: True
+  remote_user: "{{ vstat_username }}"
+
+- import_tasks: manage-iptables.yml
+
+- name: check for firewalld
+  shell: "service firewalld status"
+  register: _svc_firewalld
+  ignore_errors: True
+  remote_user: "{{ vstat_username }}"
+
+- import_tasks: manage-firewall-service.yml
+
+- block:
+
+  - name: Configure ntpd and ntpdate and local time zone
+    include_role:
+      name: common
+      tasks_from: linux-ntp-sync
+
+  - name: Restart elastic search
+    systemd:
+      name: elasticsearch
+      state: restarted
+    remote_user: "{{ vstat_username }}"
+
+  - import_tasks: execute_vstat_scripts.yml
+    remote_user: "{{ vstat_username }}"
+
+  - name: Enable stats
+    include_role:
+      name: common
+      tasks_from: vstat-enable-stats.yml
+
+  when: not skip_vstat_deploy
