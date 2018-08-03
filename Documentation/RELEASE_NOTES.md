@@ -1,6 +1,7 @@
 # Metro Automation Engine Release Notes
 ## Release 2.4.X
 ### New Features and Enhancements
+* add support for NuageX deployment type
 * add support for branding the VSD GUI  
 * add NSG bootstrap via activation link  
 * add VSD license expiration check
@@ -9,6 +10,7 @@
 * add ability to customize passwords for VSD programs and services
 * add playbook to copy qcow2 files before predeploy step, add checks in predeploy step for qcow2 existence if skipCopyImages is set
 ### Resolved Issues  
+* update dns zones with values from build_vars.yml and solve the firewalld issue from dns-deploy/task/main.yaml file
 * support custom group setting on ansible.log file  
 * support doing MD5 checks of user input files in locations other than the current directory
 * removed redundant check for netaddr package
