@@ -454,7 +454,7 @@ def vsc_router_interfaces_to_json(string):
         vsc_interface_dict = {"control_Adm" : vsc.group('control_adm'),
                               "control_Oprv4" : vsc.group('control_oprv4'),
                               "system_Adm" : vsc.group("system_adm"),
-                              "system_Oprv4" : vsc.group("system_Oprv4")
+                              "system_Oprv4" : vsc.group("system_oprv4")
                               }
         dict["VSC-Interface-Info"].append(vsc_interface_dict)
     return json.dumps(dict)
