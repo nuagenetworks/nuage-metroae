@@ -73,14 +73,19 @@
 
   - block:
 
-    - name: Get UUID of VM
+    - name: Get Facts of VM
       vmware_vm_facts:
         hostname: "{{ target_server }}"
         username: "{{ vcenter.username }}"
         password: "{{ vcenter.password }}"
       delegate_to: localhost
       register: vm_list
-
+   
+    - name: Verify that vm_name exists
+      assert:
+        that: "{{ vm_name }} in {{ vm_list.virtual_machines }}"
+        msg: "Desired VM does not exist"
+        
     - name: Set VM UUID
       set_fact:
         uuid: "{{ vm_list.virtual_machines[vm_name]['uuid'] }}"

@@ -1,6 +1,14 @@
 #!/usr/bin/python
 
 from ansible.module_utils.basic import AnsibleModule
+import subprocess
+import argparse
+import sys
+import atexit
+from pyVmomi import vim
+from pyVim.connect import Disconnect, SmartConnect
+sys.dont_write_bytecode = True
+
 
 DOCUMENTATION = '''
 ---
@@ -37,12 +45,12 @@ options:
   state
     description:
       - Whether or not to enable autostart for the VM
-    required: false
-    default: "None"
+    required: true
     choices: ["enable", "disable"]
   delay:
     description:
-      - Time, in seconds, for delayed start of the VM
+      - Delay in seconds before continuing with the next
+        virtual machine in the order to be started
     required: false
     default: 10
 
@@ -52,6 +60,7 @@ EXAMPLES = '''
 # Example for enabling autostart for vm_1
 - vmware_autostart:
     name: vm_1
+    uuid: vm_1_uuid
     hostname: target_server_ip
     username: vCenter_username
     password: vCenter_password
@@ -60,94 +69,96 @@ EXAMPLES = '''
 # Example for disabling or not enabling autostart for vm_1
 - vmware_autostart:
     name: vm_1
+    uuid: vm_1_uuid
     hostname: target_server_ip
     username: vCenter_username
     password: vCenter_password
     state: disable
 '''
 
-import subprocess
-import argparse
-import sys
-import atexit
-from pyVmomi import vim
-from pyVim.connect import Disconnect, SmartConnect
-sys.dont_write_bytecode = True
 
 def get_esxi_host(ipAddr, port, username, password, id):
     uuid = id
-    si = None
-    si, desired_state = get_connection(ipAddr, username, password, port)
-    vm = si.content.searchIndex.FindByUuid(None,
-                                           uuid,
-                                           True,
-                                           False)
+    try:
+        si= get_connection(ipAddr, username, password, port)
+        vm = si.content.searchIndex.FindByUuid(None,
+                                               uuid,
+                                               True,
+                                               False)
+    except Exception:
+        return None
+
     if vm is not None:
         host = vm.runtime.host
-    else:
-        host = None
-    host_ip = host.name
-    return host_ip, desired_state
+        if host is not None:
+            return host.name
+
+    return None
 
 def get_connection(ip_addr, user, password, port):
     try:
         connection = SmartConnect(
             host=ip_addr, port=port, user=user, pwd=password
         )
-        desired_state = 0
+        return connection
     except Exception:
-        desired_state = -1
-
-    return connection, desired_state
+        return None
 
 def get_hosts(conn):
-    content = conn.RetrieveContent()
-    container = content.viewManager.CreateContainerView(
-        content.rootFolder, [vim.HostSystem], True
-    )
+    try:
+        content = conn.RetrieveContent()
+        container = content.viewManager.CreateContainerView(
+            content.rootFolder, [vim.HostSystem], True
+        )
+    except Exception:
+        return None
     obj = [host for host in container.view]
     return obj
 
 def configure_hosts(commaList, connection, startDelay, vmname, state):
-    config_hosts = commaList.split(",")
-    all_hosts = get_hosts(connection)
-    host_names = [h.name for h in all_hosts]
-    for a in config_hosts:
-        if a not in host_names:
-            desired_state = -1
+    try:
+        config_hosts = commaList.split(",")
+        all_hosts = get_hosts(connection)
+        host_names = [h.name for h in all_hosts]
+        for a in config_hosts:
+            if a not in host_names:
+                return None
     
-    for h in all_hosts:
-        if h.name in config_hosts:
-            desired_state = configure_autostart(h, startDelay, vmname, state)
+        for h in all_hosts:
+            if h.name in config_hosts:
+                return configure_autostart(h, startDelay, vmname, state)
+    except Exception:
+        return None
 
-    return desired_state
 
 def configure_autostart(host, startDelay, vmname, state):
-    desired_state = -1
     hostDefSettings = vim.host.AutoStartManager.SystemDefaults()
     hostDefSettings.enabled = True 
     hostDefSettings.startDelay = int(startDelay)
     order = 1
-    for vhost in host.vm:
-        if vhost.name == vmname:
-            spec = host.configManager.autoStartManager.config
-            spec.defaults = hostDefSettings
-            auto_power_info = vim.host.AutoStartManager.AutoPowerInfo()
-            auto_power_info.key = vhost
-            auto_power_info.waitForHeartbeat = 'no'
-            auto_power_info.startDelay = -1
-            auto_power_info.startOrder = -1
-            auto_power_info.stopAction = 'None'
-            auto_power_info.stopDelay = -1
-            if vhost.runtime.powerState == "poweredOff":
-                auto_power_info.startAction = 'None'
-            elif vhost.runtime.powerState == "poweredOn":
-                auto_power_info.startAction = 'powerOn' if  state == 'enable' else 'None'
-                spec.powerInfo = [auto_power_info]
-                order = order + 1
-                host.configManager.autoStartManager.ReconfigureAutostart(spec)
-                desired_state = 0
-    return desired_state
+    if host is not None:
+        try:
+            for vhost in host.vm:
+                if vhost.name == vmname:
+                    spec = host.configManager.autoStartManager.config
+                    spec.defaults = hostDefSettings
+                    auto_power_info = vim.host.AutoStartManager.AutoPowerInfo()
+                    auto_power_info.key = vhost
+                    auto_power_info.waitForHeartbeat = 'no'
+                    auto_power_info.startDelay = -1
+                    auto_power_info.startOrder = -1
+                    auto_power_info.stopAction = 'None'
+                    auto_power_info.stopDelay = -1
+                    if vhost.runtime.powerState == "poweredOff":
+                        auto_power_info.startAction = 'None'
+                    elif vhost.runtime.powerState == "poweredOn":
+                        auto_power_info.startAction = 'powerOn' if  state == 'enable' else 'None'
+                        spec.powerInfo = [auto_power_info]
+                        order = order + 1
+                        host.configManager.autoStartManager.ReconfigureAutostart(spec)
+                    return True
+        except Exception:
+            return False
 
 def main():
     arg_spec = dict(
@@ -157,7 +168,7 @@ def main():
         port=dict(required=False, type=int, default=443),
         username=dict(required=True, type='str', no_log=True),
         password=dict(required=True, type='str', no_log=True),
-        state=dict(required=False, type='str', default='None'),
+        state=dict(required=True, type='str'),
         delay=dict(required=False, type=int, default=10)
     )
 
@@ -172,19 +183,19 @@ def main():
     port = module.params['port']
     start_delay = module.params['delay']
 
-    connection, desired_state = get_connection(ip_addr, username, password, port)
+    connection = get_connection(ip_addr, username, password, port)
 
-    if desired_state == -1:
+    if connection is None:
         module.fail_json(changed=False, msg="Could not connect to %s" % ip_addr)
 
-    esxi_host, desired_state = get_esxi_host(ip_addr, port, username, password, uuid)
+    esxi_host = get_esxi_host(ip_addr, port, username, password, uuid)
 
-    if desired_state != -1:
-        desired_state = configure_hosts(esxi_host, connection, start_delay, vm_name, state)
-    elif desired_state == -1:
+    if esxi_host is not None:
+        configured = configure_hosts(esxi_host, connection, start_delay, vm_name, state)
+    else:
         module.fail_json(changed=False, msg="Could not get ESXi host for %s" % vm_name)
 
-    if desired_state == 0:
+    if configured:
         module.exit_json(changed=True, msg="VM %s has been configured" % vm_name)
     else:
         module.fail_json(changed=False, msg="VM %s could not be configured" % vm_name)
