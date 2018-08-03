@@ -20,18 +20,20 @@
       state: latest
     when: yum_update
 
-  - name: stop and flush firewall
-    service: name=firewalld state=stopped
-
-  - name: disable firewall services for automatic start
-    service:
-      name:  "firewalld"
-      enabled: no
-
   - name: Install ntp client on {{ target_server }}
     yum: name=ntp state=latest
 
-  remote_user: "{{ target_server_username }}"
+  remote_user: "{{ dns_username }}"
+
+#- name: stop and flush firewall
+#  service : 
+#    name: "firewalld" 
+#    state: "stopped"
+
+#- name: disable firewall services for automatic start
+#  service :
+#    name:  "firewalld"
+#    enabled: no
 
 - name: Configure ntpd and ntpdate and local time zone
   include_role:
@@ -59,21 +61,21 @@
   - name: Create /etc/named.conf on {{ target_server }}
     template: src=named.conf.j2 backup=no dest=/etc/named.conf owner=root group=named mode=0640
 
-  - name: Delete the /var/named/data.training.net.zone file
+  - name: Delete the /var/named/{{ dns_data_zone }}.zone file
     file:
-      path: /var/named/data.training.net.zone
+      path: /var/named/{{ dns_data_zone }}.zone
       state: absent
 
-  - name: Create /var/named/data.training.net.zone on {{ target_server }}
-    template: src=data.training.net.zone.j2 backup=no dest=/var/named/data.training.net.zone owner=root group=named mode=0640
+  - name: Create /var/named/{{ dns_data_zone }}.zone on {{ target_server }}
+    template: src=data.training.net.zone.j2 backup=no dest=/var/named/{{ dns_data_zone }}.zone owner=root group=named mode=0640
 
-  - name: Delete the /var/named/mgmt.training.net.zone file
+  - name: Delete the /var/named/{{ dns_mgmt_zone }}.zone file
     file:
-      path: /var/named/mgmt.training.net.zone
+      path: /var/named/{{ dns_mgmt }}.zone
       state: absent
 
-  - name: Create /var/named/mgmt.training.net.zone on {{ target_server }}
-    template: src=mgmt.training.net.zone.j2 backup=no dest=/var/named/mgmt.training.net.zone owner=root group=named mode=0640
+  - name: Create /var/named/{{ dns_mgmt }}.zone on {{ target_server }}
+    template: src=mgmt.training.net.zone.j2 backup=no dest=/var/named/{{ dns_mgmt_zone }}.zone owner=root group=named mode=0640
 
   - name: Delete the /var/named/{{ data_reverse }}.in-addr.arpa file
     file:
@@ -99,4 +101,4 @@
       name:  "named"
       enabled: yes
 
-  remote_user: "{{ target_server_username }}"
+  remote_user: "{{ dns_username }}"
