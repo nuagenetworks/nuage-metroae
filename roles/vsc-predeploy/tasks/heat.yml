@@ -11,13 +11,13 @@
 
   - name: Get heat stack for fixed ip deployments
     set_fact:
-      vsc_heat_template: "{{ role_path }}/files/heat_fixed_ip.yml"
-    when: not dhcp
+      vsc_heat_template: "{{ role_path }}/files/vsc_fixed.yml"
+    when: dhcp == False
 
   - name: Get heat stack for dhcp based deployments
     set_fact:
       vsc_heat_template: "{{ role_path }}/files/vsc.yml"
-    when: dhcp
+    when: dhcp == True
 
   - name: creating VSC stack
     register: create_stack
@@ -28,17 +28,15 @@
         "{{ os_auth }}"
       parameters:
         vm_name: "{{ inventory_hostname }}"
-        image: "{{ vsc_image }}"
-        flavor: "{{ vsc_flavor }}"
-        mgmt_interface: "{{ mgmt_interface }}"
-        control_interface: "{{ control_interface }}"
-    delegate_to: "{{ ansible_deployment_host }}"
+        vsc_image: "{{ vsc_image }}"
+        vsc_flavor: "{{ vsc_flavor }}"
+        vsc_management_network: "{{ vsc_mgmt_network }}"
+        vsc_management_subnet: "{{ vsc_mgmt_subnet | default('NONE') }}"
+        vsc_control_network: "{{ vsc_control_network }}"
+        vsc_control_subnet: "{{ vsc_control_subnet | default('NONE') }}"
+        mgmt_ip: "{{ mgmt_ip | default('NONE') }}"
+        control_ip: "{{ control_ip | default('NONE') }}"
+    delegate_to: 127.0.0.1
   - debug: var=create_stack['stack']['outputs'][0]['output_value']
-
-  - name: Update /etc/hosts file on ansible host
-    lineinfile:
-      dest: /etc/hosts
-      line: "{{ create_stack['stack']['outputs'][0]['output_value'] }}    {{ inventory_hostname }}"
-    delegate_to: "{{ ansible_deployment_host }}"
 
   when: not node_present
