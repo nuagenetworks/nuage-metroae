@@ -131,19 +131,19 @@
   when: vsd_sa_or_ha|match('ha')
 
 - block:
-  - name: Verify that REST and JMS gateway is reachable
-    uri:
-      url: https://{{ mgmt_ip }}:{{ item }}
-      method: GET
-      user: "{{ vsd_auth.username }}"
-      password: "{{ vsd_auth.password }}"
-      status_code: 200
-      validate_certs: False
-    register: webresult
-    ignore_errors: yes
-    with_items:
-      - "8443/index.html"
-      - 61619
+  # - name: Verify that REST and JMS gateway is reachable
+  #   uri:
+  #     url: https://{{ mgmt_ip }}:{{ item }}
+  #     method: GET
+  #     user: "{{ vsd_auth.username }}"
+  #     password: "{{ vsd_auth.password }}"
+  #     status_code: 200
+  #     validate_certs: False
+  #   register: webresult
+  #   ignore_errors: yes
+  #   with_items:
+  #     - "8443/index.html"
+  #     - 61619
       
   - name: Verify that REST is reachable
     uri:
@@ -159,7 +159,8 @@
   - name: Check ActiveMQ Status
     command: monit status activemq-status
     register: jms_status
-  
+    delegate_to: "{{ vsd_username }}"
+
   - name: Check to see if JMS Master Node
     set_fact: is_jms_master = True
     when: "'This is Master Node' in jms_status.stdout"
