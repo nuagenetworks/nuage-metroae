@@ -3,6 +3,9 @@
     path: "/var/lib/mysql/nuageDbUpgrade/"
   register: db_dir
   remote_user: "{{ vsd_username | default(vsd_default_username) }}"
+  become: "{{ 'no' if vsd_username | default(vsd_default_username) == 'root' else 'yes' }}"
+  vars:
+    ansible_become_pass: "{{ vsd_password | default(vsd_default_password) }}"
 
 - name: Verify that DB upgrade directory exists
   assert:
@@ -14,6 +17,9 @@
   shell: "mysql -e 'show databases;' | grep nuageDbUpgrade"
   register: db
   remote_user: "{{ vsd_username | default(vsd_default_username) }}"
+  become: "{{ 'no' if vsd_username | default(vsd_default_username) == 'root' else 'yes' }}"
+  vars:
+    ansible_become_pass: "{{ vsd_password | default(vsd_default_password) }}"
 
 - name: Verify the upgrade database name
   assert:
