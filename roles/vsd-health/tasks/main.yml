@@ -143,30 +143,68 @@
     register: rest_result
     delegate_to: localhost
     ignore_errors: yes
- 
-  - name: Check ActiveMQ Status
-    command: monit status activemq-status
-    register: jms_status
-    remote_user: "{{ vsd_username }}"
 
-  - name: Check to see if JMS Master Node
-    set_fact:
-      is_jms_master: True
-    when: "'This is Master node' in jms_status.stdout"
+  - block:
+
+    - block:
+
+      - name: Get ActiveMQ status of all VSDs
+        command: monit status activemq-status
+        register: jms_status
+        remote_user: "{{ vsd_username }}"
+        with_items: groups['vsds']
+
+      - name: Verify that JMS Master Node exists
+        assert:
+          that: "'This is Master node' in jms_status.stdout"
+          msg: "No node is Master"
+      
+      - name: Set JMS Master Node
+        set_fact:
+          master_node: "{{ groups['vsds'][item] }}"
+        when: "'This is Master Node' in item"
+        with_items: jms_status
   
-  - debug: var=is_jms_master
+      - block:
+
+        - name: Verify that JMS gateway is reachable on Master Node
+          uri:
+            url: https://{{ mgmt_ip }}:61619
+            method: GET
+            user: "{{ vsd_auth.username }}"
+            password: "{{ vsd_auth.password }}"
+            status_code: 200
+            validate_certs: False
+          register: webresult
+          delegate_to: localhost
+
+      delegate_to: "{{ master_node }}"
+
+  run_once: true    
+
+  # - name: Check ActiveMQ Status
+  #   command: monit status activemq-status
+  #   register: jms_status
+  #   remote_user: "{{ vsd_username }}"
+
+  # - name: Check to see if JMS Master Node
+  #   set_fact:
+  #     is_jms_master: True
+  #   when: "'This is Master node' in jms_status.stdout"
   
-  - name: Verify that JMS gateway is reachable on Master Node
-    uri:
-      url: https://{{ mgmt_ip }}:61619
-      method: GET
-      user: "{{ vsd_auth.username }}"
-      password: "{{ vsd_auth.password }}"
-      status_code: 200
-      validate_certs: False
-    register: webresult
-    delegate_to: localhost
-    when: is_jms_master | default( False )
+  # - debug: var=is_jms_master
+  
+  # - name: Verify that JMS gateway is reachable on Master Node
+  #   uri:
+  #     url: https://{{ mgmt_ip }}:61619
+  #     method: GET
+  #     user: "{{ vsd_auth.username }}"
+  #     password: "{{ vsd_auth.password }}"
+  #     status_code: 200
+  #     validate_certs: False
+  #   register: webresult
+  #   delegate_to: localhost
+  #   when: is_jms_master | default( False )
 
   - name: write web interface result
     nuage_append: filename="{{ report_path }}" text="{{ webresult  | to_nice_json}}\n"
