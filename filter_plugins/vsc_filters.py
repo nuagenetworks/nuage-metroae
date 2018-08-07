@@ -445,7 +445,7 @@ def vsd_detail_to_json(string):
 def vsc_router_interfaces_to_json(string):
     dict = {}
     dict["Command"] = "show router interface"
-    dict["VSC-Interface-Info"] = []
+    dict["VSC_Interface-_nfo"] = []
     vsc_re = re.compile(r'control\s*(?P<control_adm>(\w+))\s*(?P<control_oprv4>(\w+)).(?P<control_oprv6>(\w+))\s*(?P<control_mode>(\w+))\s*(?P<control_port>(\w*)).(?P<control_sapid>(\w.+))\s*(?P<control_ipaddr>(\w*.\w*.\w*.\w*))\s*(?P<control_pfxstate>(\w*.\w*))\s*\w*\s*(?P<system_adm>(\w*))\s*(?P<system_oprv4>(\w*)).(?P<system_oprv6>(\w*))\s*(?P<system_mode>(\w*))\s*(?P<system_port>(\w*)).(?P<system_sapid>(\w*.\w*))\s*(?P<system_ip>(\w*.\w*.\w*.\w*)).\w*\s*(?P<system_pfxstate>(\w*.\w*))')
     vsc_interface_info = re.finditer(vsc_re, string)
     interface_num = re.compile(r'Interfaces\s*.\s*(?P<num_interfaces>(\w*))')
@@ -456,7 +456,7 @@ def vsc_router_interfaces_to_json(string):
                               "system_Adm" : vsc.group("system_adm"),
                               "system_Oprv4" : vsc.group("system_oprv4")
                               }
-        dict["VSC-Interface-Info"].append(vsc_interface_dict)
+        dict["VSC_Interface_Info"].append(vsc_interface_dict)
     return json.dumps(dict)
 
 
