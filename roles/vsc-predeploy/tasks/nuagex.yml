@@ -1,0 +1,35 @@
+---
+- name: Set VSC creds
+  set_fact:
+    nuagex_vsc_creds:
+      host: "{{ mgmt_ip }}"
+      username: "{{ vsc_username|default('admin') }}"
+      password: "{{ vsc_password|default('admin') }}"
+
+- name: Creating VNS config file
+  connection: local
+  template:
+    src: config.cfg.j2
+    dest: "/tmp/ansible-nuagex-config-{{ inventory_hostname }}.cfg"
+
+- name: Copy VSC config file to the VSC
+  connection: local
+  command: "sshpass -p {{ vsc_password|default('admin') }} scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null /tmp/ansible-nuagex-config-{{ inventory_hostname }}.cfg {{ vsc_username|default('admin') }}@{{ mgmt_ip }}:"
+
+- name: Execute VNS TLS configuration on VSC
+  sros_command:
+    commands:
+      - exec cf1:\ansible-nuagex-config-{{ inventory_hostname }}.cfg
+      - admin save
+    provider: "{{ nuagex_vsc_creds }}"
+  delegate_to: localhost
+
+- name: Configure VSC BOF to reach Google NTP
+  sros_command:
+    commands:
+      # 216.239 routes are time.google.com servers
+      - bof static-route 216.239.35.0/32 next-hop 10.0.0.1
+      - bof static-route 216.239.35.4/32 next-hop 10.0.0.1
+      - bof save
+    provider: "{{ nuagex_vsc_creds }}"
+  delegate_to: localhost
