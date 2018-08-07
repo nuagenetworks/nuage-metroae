@@ -83,18 +83,26 @@
   when: node_present
 
 - block:
-
-  - name: Create libvirt image directory
-    file: path={{ images_path }}/{{ vm_name }}
-          state=directory
-          owner={{ libvirt.user }}
-          group={{ libvirt.group }}
-
-  - name: Copy the VSD qcow image to virt images directory
-    copy: src={{ qcow2_path }}/{{ qcow2_file_name }}
-          dest={{ images_path }}/{{ vm_name }}
-          owner={{ libvirt.user }}
-          group={{ libvirt.group }}
+  - name: set skip copy images to default
+    set_fact: 
+      skip_copy_images: False
+    when: skip_copy_images is undefined
+     
+  - include_tasks: copy_qcow2.yml
+    when: not skip_copy_images      
+    
+  - block: 
+    - name: Check to make sure there is an existing qcow image
+      stat: 
+        path: "{{ images_path }}/{{ vm_name }}/{{ qcow2_file_name }}"
+      register: statResult
+      
+    - name: check the result of image find command
+      assert:
+        that: statResult.stat.exists == True
+        msg: Missing qcow2 file {{ images_path }}/{{ vm_name }}/{{ qcow2_file_name }}
+        
+    when: skip_copy_images
 
   - name: Set local variable with vsd guestfish destination
     set_fact:
@@ -120,6 +128,12 @@
     when: '"proc" in item.stdout'
 
   - debug: var=guestfish_mount verbosity=1
+
+  - name: Create cloud-init disable file
+    command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} touch /etc/cloud/cloud-init.disabled
+
+  - name: Set the owner and group on the cloud-init disable file
+    command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} chown 0 0 /etc/cloud/cloud-init.disabled
 
   - name: Create a temporary copy of the network script for eth0
     template: src=ifcfg-eth0.j2 backup=no dest={{ images_path }}/{{ vm_name }}/ifcfg-eth0

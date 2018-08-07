@@ -1,14 +1,16 @@
-# MetroAG Release Notes
-## Release 2.4.1
+# Metro Automation Engine Release Notes
+## Release 2.4.X
 ### New Features and Enhancements
-* PR #649: Support for master/slave VCIN.
-* PR #648: Remove deprecated `include:` Ansible commands.
-* PR #645: Added yum_proxy support to dns.
-* PR #638: Added static route support for VNSUTIL.
-* PR #618: Added new roles for installation of VRS compute nodes, vrs-vm.
-
-### Resolved Issues
-* Issue #646: The handle_vars playbook did not take into account custom provided build_vars_files or user_creds_file and calculated/verified the MD5 sum of the wrong files (static build_vars.yml and user_creds.yml instead of the provided values.
-* PR #650: Add guestfish from the libguestfs-tools package as a prerequisite.
-* PR #643: vrs-vr image directory fix.
-* PR #640: Fix error on dns-predeploy when hostname and vmname are the same.
+* add support for NuageX deployment type
+* add support for branding the VSD GUI  
+* add NSG bootstrap via activation link  
+* add VSD license expiration check
+* update OpenStack Compute and Plugin integration, remove need to specify vsd_ip in myoscs, add handler to restart Neutron-server, reduce time to restart Neutron-server by adding tasks to Neutron-integration idempotent, make vsd-osc-integration equivalent to os-vsd-osc-integration, move stopping of Neutron services to the vrs-oscompute-integration role, change nuage_plugin.ini to be configured to use VSD FQDN
+* improve integration with OpenStack controller, primarily by speeding up lab-installs of Nuage and OpenStack
+* add ability to customize passwords for VSD programs and services
+* add playbook to copy qcow2 files before predeploy step, add checks in predeploy step for qcow2 existence if skipCopyImages is set
+### Resolved Issues  
+* update dns zones with values from build_vars.yml and solve the firewalld issue from dns-deploy/task/main.yaml file
+* support custom group setting on ansible.log file  
+* support doing MD5 checks of user input files in locations other than the current directory
+* removed redundant check for netaddr package
