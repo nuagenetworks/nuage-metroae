@@ -162,10 +162,15 @@
         with_items: "{{ jms_status.results }}"
 
       - name: Verify that JMS Master Node exists
-        assert:
-          that: "'This is Master node' in {{ item.stdout }}"
-          # msg: "No node is Master"
+        set_fact:
+          jms_master_exists: True
+        when: "'This is Master node' in item.stdout"
         with_items: "{{ jms_status.results }}"
+      
+      - name: Assert that JMS Master Node exists
+        assert:
+          that: "jms_master_exists == True"
+          msg: "No JMS Master Node found"
 
       - name: Set JMS Master Node
         set_fact:
