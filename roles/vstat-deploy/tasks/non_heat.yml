@@ -239,32 +239,42 @@
         ssh_host: "{{ vsd_hostname_list[0] }}"
         ssh_delay_seconds: 10
 
-    - name: Stat the standalone script
-      stat: path=/opt/vsd/vsd-es-standalone.sh
-      register: es_sa_script
-      delegate_to: "{{ vsd_hostname_list[0] }}"
-      remote_user: "{{ vsd_username }}"
-      when:
-        - vstat_sa_or_ha | match('sa')
+    - block:
 
-    - name: Execute VSTAT standalone script on standalone or clustered vsds
-      command: /opt/vsd/vsd-es-standalone.sh -e {{ inventory_hostname }}
-      delegate_to: "{{ vsd_hostname_list[0] }}"
-      remote_user: "{{ vsd_username }}"
-      environment:
-        SSHPASS: "{{ vstat_password }}"
-      when:
-        - vstat_sa_or_ha | match('sa')
-        - es_sa_script.stat.exists
+      - name: Stat the standalone script
+        stat: path=/opt/vsd/vsd-es-standalone.sh
+        register: es_sa_script
+        delegate_to: "{{ vsd_hostname_list[0] }}"
+        when:
+          - vstat_sa_or_ha | match('sa')
 
-    - name: Execute VSTAT cluster script on standalone or clustered vsds
-      command: /opt/vsd/vsd-es-cluster-config.sh -e {{ groups['vstats'][0] }},{{ groups['vstats'][1] }},{{ groups['vstats'][2] }}
-      delegate_to: "{{ vsd_hostname_list[0] }}"
-      remote_user: "{{ vsd_username }}"
-      environment:
-        SSHPASS: "{{ vstat_password }}"
-      when: vstat_sa_or_ha | match('ha')
+      - name: Execute VSTAT standalone script on standalone or clustered vsds
+        command: /opt/vsd/vsd-es-standalone.sh -e {{ inventory_hostname }}
+        delegate_to: "{{ vsd_hostname_list[0] }}"
+        environment:
+          SSHPASS: "{{ vstat_password }}"
+        when:
+          - vstat_sa_or_ha | match('sa')
+          - es_sa_script.stat.exists
+          - vstat_username == 'root'
 
+      - name: Execute VSTAT standalone script on standalone or clustered vsds
+        command: /opt/vsd/vsd-es-standalone.sh -e {{ inventory_hostname }}
+        delegate_to: "{{ vsd_hostname_list[0] }}"
+        when:
+          - vstat_sa_or_ha | match('sa')
+          - es_sa_script.stat.exists
+          - vstat_username != 'root'
+
+      - name: Execute VSTAT cluster script on standalone or clustered vsds
+        command: /opt/vsd/vsd-es-cluster-config.sh -e {{ groups['vstats'][0] }},{{ groups['vstats'][1] }},{{ groups['vstats'][2] }}
+        delegate_to: "{{ vsd_hostname_list[0] }}"
+        environment:
+          SSHPASS: "{{ vstat_password }}"
+        when: vstat_sa_or_ha | match('ha')
+    
+      remote_user: "{{ vsd_default_username }}"
+  
     run_once: True
 
   - name: Enable stats
