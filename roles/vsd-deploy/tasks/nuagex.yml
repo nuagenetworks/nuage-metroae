@@ -1,13 +1,8 @@
 ---
 - block:
-
   - name: Read the VSD version
     shell: echo $VSD_VERSION
     register: vsd_full_version
-    remote_user: "{{ vsd_default_username }}"
-    become: no
-
-  - debug: var=vsd_full_version.stdout verbosity=1
 
   - name: Set Major, Minor and Patch VSD version
     set_fact:
@@ -31,14 +26,13 @@
     set_fact:
       deploy_vcin: true
     when:
-      - vcin_mode is defined 
+      - vcin_mode is defined
       - vcin_mode
       - (vsd_major_version|int > 5) or
         (vsd_major_version|int >= 5 and vsd_minor_version|int > 2) or
         (vsd_major_version|int >= 5 and vsd_minor_version|int >= 2 and vsd_patch_version|int >= 2)
 
   - block:
-
     - name: Set VSD numbering for install
       set_fact:
           vsd_cluster_node_1: "{{ groups['vsds'][0] }}"
@@ -57,11 +51,10 @@
     run_once: True
 
   - block:
-
+    # Generating keys for VSD clustered setup one node1; or on node_3 when doing upgrade
     - block:
-
+      # Generating keys for vsd version < v5
       - block:
-
         - name: Generate SSH keys
           shell: ssh-keygen -b 2048 -t rsa -f /root/.ssh/id_rsa -q -N ""
           args:
@@ -84,8 +77,8 @@
 
         when: vsd_major_version | int < 5
 
+      # Generating keys for VSD version >= 5
       - block:
-
         - name: Generate SSH keys
           shell: sudo -u vsd ssh-keygen -b 2048 -t rsa -f /home/vsd/.ssh/id_rsa -q -N ""
           args:
@@ -120,9 +113,9 @@
       when: inventory_hostname == vsd_cluster_node_1 or (inventory_hostname == vsd_cluster_node_3 and nuage_upgrade)
 
     when: vsd_sa_or_ha | match('ha')
-  
-  - block:
 
+  # Generating keys for master_vcin
+  - block:
     - name: Generate SSH key on master VCIN
       delegate_to: "{{ master_vcin }}"
       user:
@@ -162,15 +155,13 @@
       state: latest
     when: yum_update
 
-  - name: Disable cloud-init on VSD, to avoid boot time delays
-    command: "{{ item }}"
-    with_items:
-      - systemctl disable cloud-init
-      - systemctl disable cloud-init-local
-      - systemctl disable cloud-config
-      - systemctl disable cloud-final
-
   remote_user: "{{ vsd_default_username }}"
+
+- name: Check ntp sync state
+  shell: ntpstat | awk 'NR==1{print $1}'
+  register: initial_sync_status
+  remote_user: "{{ vsd_default_username }}"
+
 
 - name: Configure ntpd and ntpdate and local time zone
   include_role:
@@ -178,11 +169,11 @@
     tasks_from: linux-ntp-sync
   vars:
     rem_user: "{{ vsd_default_username }}"
+  when: '"unsynchronised" in initial_sync_status.stdout'
 
 - block:
-
+  # Install VSD/VCIN software in standalone deployment
   - block:
-
     - name: Install VSD software on standalone node
       command: /opt/vsd/vsd-install.sh -t s -y
       when: not deploy_vcin
@@ -196,7 +187,6 @@
       - master_vcin is not defined
 
   - block:
-
     - name: Preparing the master
       delegate_to: "{{ master_vcin }}"
       command: /opt/vsd/bin/vsd-prepare-replication-master-cluster.sh
@@ -228,8 +218,8 @@
       - deploy_vcin
       - master_vcin is defined
 
+  # Install VSD software for HA deployment
   - block:
-
     - name: Install VSD software on the first cluster node
       command: "{{ vsd_node1_install_cmd }}"
       when: inventory_hostname == vsd_cluster_node_1
@@ -249,3 +239,13 @@
     when: not deploy_vcin
 
   remote_user: "{{ vsd_default_username }}"
+  when: "monit_result.rc != 0"
+
+# Install and configure nginx when vstat is defined
+- block:
+  - name: Install nginx
+    yum:
+      name: nginx
+      state: latest
+  remote_user: "{{ vsd_default_username }}"
+  when: myvstats is defined
