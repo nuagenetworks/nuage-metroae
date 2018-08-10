@@ -57,8 +57,13 @@ class ExampleFileGenerator(object):
         is_list = schema["type"] == "array"
 
         if is_list:
-            if self.as_template:
+            if "items" in schema and "title" in schema["items"]:
+                item_name = schema["items"]["title"]
+                list_name = schema["items"]["title"].lower() + "s"
+            else:
+                item_name = schema["title"][0:-1]
                 list_name = schema["title"].lower()
+            if self.as_template:
                 self.example_lines.append(
                     "{%% if %s is defined and %s %%}" % (list_name,
                                                          list_name))
@@ -69,7 +74,7 @@ class ExampleFileGenerator(object):
                 if self.as_template:
                     item_index = "{{ loop.index }}"
                 self.example_lines.append("#")
-                self.example_lines.append("# %s %s" % (schema["title"][0:-1],
+                self.example_lines.append("# %s %s" % (item_name,
                                                        item_index))
                 self.example_lines.append("#")
             self.example_lines.append("-")
