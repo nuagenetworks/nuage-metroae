@@ -162,11 +162,15 @@
       - name: Output ActiveMQ status
         debug: msg="{{ item.stdout }}"
         with_items: "{{ jms_status.results }}"
+      
+      - name: Debug JMS Master Node
+        debug: msg="{{ item.stdout|search('This is Master node') }}"
+        with_items: "{{ jms_status.results }}"
 
       - name: Verify that JMS Master Node exists
         set_fact:
           jms_master_hostname: "{{ item.item }}"
-        when: "'This is Master node' in item.stdout_lines"
+        when: "'This is Master node' in item.stdout"
         with_items: "{{ jms_status.results }}"
       
       - name: Assert that JMS Master Node exists
