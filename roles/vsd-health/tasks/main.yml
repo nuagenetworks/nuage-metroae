@@ -165,38 +165,35 @@
 
       - name: Verify that JMS Master Node exists
         set_fact:
-          jms_master_exists: "{{ 'True' if ('This is Master node' in jms_status.results) else 'False' }}"
-        #when: "'This is Master node' in item.stdout_lines"
-        #with_items: "{{ jms_status.results }}"
+          jms_master_hostname: "{{ item.item }}"
+        when: "'This is Master node' in item.stdout_lines"
+        with_items: "{{ jms_status.results }}"
       
       - name: Assert that JMS Master Node exists
         assert:
-          that: "jms_master_exists == True"
+          that: "jms_master_hostname is defined"
           msg: "No JMS Master Node found"
 
-      - name: Set JMS Master Node
-        set_fact:
-          # master_node: "{{ groups['vsds'][item.item] }}"
-          master_node: "Test when statement syntax"
-        when: "'This is Master Node' in item.stdout_lines"
-        with_items: "{{ jms_status.results }}"
+      # - name: Set JMS Master Node
+      #   set_fact:
+      #     # master_node: "{{ groups['vsds'][item.item] }}"
+      #     master_node: "Test when statement syntax"
+      #   when: "'This is Master Node' in item.stdout_lines"
+      #   with_items: "{{ jms_status.results }}"
 
-      - debug: var=master_node
-  
-      - block:
+      - debug: var=jms_master_hostname
 
-        - name: Verify that JMS gateway is reachable on Master Node
-          uri:
-            url: https://{{ mgmt_ip }}:61619
-            method: GET
-            user: "{{ vsd_auth.username }}"
-            password: "{{ vsd_auth.password }}"
-            status_code: 200
-            validate_certs: False
-          register: webresult
-          delegate_to: localhost
+      - name: Verify that JMS gateway is reachable on Master Node
+        uri:
+          url: https://{{ jms_master_hostname }}:61619
+          method: GET
+          user: "{{ vsd_auth.username }}"
+          password: "{{ vsd_auth.password }}"
+          status_code: 200
+          validate_certs: False
+        register: webresult
+        delegate_to: localhost
 
-        delegate_to: "{{ master_node }}"
 
     run_once: true   
 
