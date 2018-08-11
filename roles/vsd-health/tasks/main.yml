@@ -155,37 +155,16 @@
         remote_user: "{{ vsd_username }}"
         with_items: "{{ groups['vsds'] }}"
 
-      - debug: var=jms_status
-      
-      - debug: var=jms_status.results
-
-      - name: Output ActiveMQ status
-        debug: msg="{{ item.stdout }}"
-        with_items: "{{ jms_status.results }}"
-      
-      - name: Debug JMS Master Node
-        debug: msg="{{ item.stdout|search('This is Master node') }}"
-        with_items: "{{ jms_status.results }}"
-
-      - name: Verify that JMS Master Node exists
+      - name: Set JMS Master Node 
         set_fact:
           jms_master_hostname: "{{ item.item }}"
         when: "'This is Master node' in item.stdout"
         with_items: "{{ jms_status.results }}"
       
-      - name: Assert that JMS Master Node exists
+      - name: Verify that JMS Master Node exists
         assert:
           that: "jms_master_hostname is defined"
           msg: "No JMS Master Node found"
-
-      # - name: Set JMS Master Node
-      #   set_fact:
-      #     # master_node: "{{ groups['vsds'][item.item] }}"
-      #     master_node: "Test when statement syntax"
-      #   when: "'This is Master Node' in item.stdout_lines"
-      #   with_items: "{{ jms_status.results }}"
-
-      - debug: var=jms_master_hostname
 
       - name: Verify that JMS gateway is reachable on Master Node
         uri:
@@ -198,37 +177,12 @@
         register: webresult
         delegate_to: localhost
 
-
     run_once: true   
 
   - name: write web interface result
     nuage_append: filename="{{ report_path }}" text="{{ webresult  | to_nice_json}}\n"
     delegate_to: localhost
-  # - name: Check ActiveMQ Status
-  #   command: monit status activemq-status
-  #   register: jms_status
-  #   remote_user: "{{ vsd_username }}"
-
-  # - name: Check to see if JMS Master Node
-  #   set_fact:
-  #     is_jms_master: True
-  #   when: "'This is Master node' in jms_status.stdout"
   
-  # - debug: var=is_jms_master
-  
-  # - name: Verify that JMS gateway is reachable on Master Node
-  #   uri:
-  #     url: https://{{ mgmt_ip }}:61619
-  #     method: GET
-  #     user: "{{ vsd_auth.username }}"
-  #     password: "{{ vsd_auth.password }}"
-  #     status_code: 200
-  #     validate_certs: False
-  #   register: webresult
-  #   delegate_to: localhost
-  #   when: is_jms_master | default( False )
- 
-
 - block:
 
   - name: Verify VSD licenses valid
