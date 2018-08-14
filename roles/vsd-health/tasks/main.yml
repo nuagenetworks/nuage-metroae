@@ -173,12 +173,18 @@
         remote_user: "{{ vsd_username | default(vsd_default_username) }}"
         with_items: "{{ groups['vsds'] }}"
 
-      - name: Set JMS Master Node 
+      - name: Set JMS Master Node Hostname
         set_fact:
           jms_master_hostname: "{{ item.item }}"
-        when: "'This is Master node' in item.stdout"
+        when: "'This is Master node' in item.stdout and groups['vsds']|length > 1"
         with_items: "{{ jms_status.results }}"
-      
+
+      - name: Set JMS Master Node Hostname
+        set_fact:
+          jms_master_hostname: "{{ item.item }}"
+        when: "'PASS' in item.stdout and groups['vsds']|length == 1"
+        with_items: "{{ jms_status.results }}"
+
       - name: Verify that JMS Master Node exists
         assert:
           that: "jms_master_hostname is defined"
