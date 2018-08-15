@@ -29,13 +29,15 @@
 
 - block:
   
-  - name: Get Facts of VM
-    vmware_vm_facts:
-      hostname: "{{ target_server }}"
-      username: "{{ vcenter.username }}"
-      password: "{{ vcenter.password }}"
-    delegate_to: localhost
-    register: vm_list
+  - block:
+  
+    - name: Get Facts of VM
+      vmware_vm_facts:
+        hostname: "{{ target_server }}"
+        username: "{{ vcenter.username }}"
+        password: "{{ vcenter.password }}"
+      delegate_to: localhost
+      register: vm_list
       
     - name: Set VM UUID
       set_fact:
@@ -54,17 +56,18 @@
         password: "{{ vcenter.password }}"
         state: disable
 
-  - name: Power off the VSC VM
-    connection: local
-    vmware_guest:
-      hostname: "{{ target_server }}"
-      username: "{{ vcenter.username }}"
-      password: "{{ vcenter.password }}"
-      validate_certs: no
-      datacenter: "{{ vcenter.datacenter }}"
-      folder: "/{{ vcenter.datacenter }}{{ vsc_vm_folder['folders'][0] }}"
-      name: "{{ vmname }}"
-      state: "poweredoff"
+    - name: Power off the VSC VM
+      connection: local
+      vmware_guest:
+        hostname: "{{ target_server }}"
+        username: "{{ vcenter.username }}"
+        password: "{{ vcenter.password }}"
+        validate_certs: no
+        datacenter: "{{ vcenter.datacenter }}"
+        folder: "/{{ vcenter.datacenter }}{{ vsc_vm_folder['folders'][0] }}"
+        name: "{{ vmname }}"
+        state: "poweredoff"
+      
     when: vsc_vm_facts['instance']['hw_power_status'] == 'poweredOn'
 
   - name: Removing the VSC VM
@@ -78,4 +81,5 @@
       folder: "/{{ vcenter.datacenter }}{{ vsc_vm_folder['folders'][0] }}"
       name: "{{ vmname }}"
       state: "absent"
+      
   when: vsc_vm_folder|succeeded and vsc_vm_facts|succeeded
