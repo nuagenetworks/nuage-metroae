@@ -444,20 +444,27 @@ def vsd_detail_to_json(string):
 
 def vsc_router_interfaces_to_json(string):
     dict = {}
-    string = string.rstrip('\n')
-    row = string.split()
-    try:
-        target_index = row.index("control")
-    except ValueError, e:
-        target_index = None
-    
-    row = row[target_index:]
-    row = [item for item in row if "-" not in item]
-    row = [item for item in row if "=" not in item]
-    
-    dict["control_Adm"] = row[1]
-    control_Oprv4 = row[2].split('/')[0]
+    rows = string.split('\n')
+    for row in rows:
+        columns = row.split()
+        if columns[0] == 'control':
+            control_Adm = columns[1]
+            control_Opr = columns[2].split('/')
+            control_Oprv4 = control_Opr[0]
+            control_Oprv6 = control_Opr[1]
+        elif columns[0] == 'system':
+            system_Adm = columns[1]
+            system_Opr = columns[2].split('/')
+            system_Oprv4 = system_Opr[0]
+            system_Oprv6 = system_Opr[1]
+            
+    dict["control_Adm"] = control_Adm
     dict["control_Oprv4"] = control_Oprv4
+    dict["control_Oprv6"] = control_Oprv6
+    dict["system_Adm"] = system_Adm
+    dict["system_Oprv4"] = system_Oprv4
+    dict["system_Oprv6"] = system_Oprv6
+
     return json.dumps(dict)
 
 class FilterModule(object):
