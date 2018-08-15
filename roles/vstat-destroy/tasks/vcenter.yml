@@ -8,13 +8,13 @@
   - name: Set local variable with upgrade_vmname
     set_fact:
       vm_name: "{{ upgrade_vmname }}"
-  when: not preserve_vm | default( False )
+  when: destroy_upgrade_vm | default( False )
 
 - block:
   - name: Set local variable with vmname
     set_fact:
       vm_name: "{{ vmname }}"
-  when: preserve_vm | default( False ))
+  when: not destroy_upgrade_vm | default( False ))
 
 - name: Finding VM folder
   connection: local
@@ -73,4 +73,5 @@
       folder: "/{{ vcenter.datacenter }}{{ vstat_vm_folder['folders'][0] }}"
       name: "{{ vm_name }}"
       state: "absent"
+    when: (not nuage_upgrade | default( False )) or (destroy_upgrade_vm | default( False ))
   when: vstat_vm_folder|succeeded and vstat_vm_facts|succeeded
