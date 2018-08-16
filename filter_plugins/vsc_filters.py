@@ -443,6 +443,34 @@ def vsd_detail_to_json(string):
     return json.dumps(dict)
 
 def vsc_router_interfaces_to_json(string):
+    ''' Given a string representation of the output of "show router interface" command, return 
+    a JSON representation of the relevant statuses of the interfaces. 
+
+    Sample output from the command as a string: 
+    ===============================================================================
+    Interface Table (Router: Base)
+    ===============================================================================
+    Interface-Name                   Adm         Opr(v4/v6)  Mode    Port/SapId
+       IP-Address                                                    PfxState
+    -------------------------------------------------------------------------------
+    control                          Up          Up/Down     Network A/2:0
+       10.106.100.202/24                                            n/a
+    system                           Up          Up/Down     Network system
+       1.1.1.2/32                                                   n/a
+    -------------------------------------------------------------------------------
+    Interfaces : 2
+    ===============================================================================
+
+    Sample output after applying filter:
+    "show_router_interfaces_json": {
+        "control_Adm": "Up",
+        "control_Oprv4": "Up",
+        "control_Oprv6": "Down",
+        "system_Adm": "Up",
+        "system_Oprv4": "Up",
+        "system_Oprv6": "Down"
+    }
+    '''
     dict = {}
     rows = string.split('\n')
     for row in rows:
