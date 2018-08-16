@@ -6,7 +6,7 @@
 
   - name: Revoke old stats cert, if any
     command: "/opt/vsd/ejbca/deploy/certMgmt.sh -a revoke -u elastic"
-    remote_user: "{{ vsd_username }}"
+    remote_user: "{{ vsd_default_username }}"
     delegate_to: "{{ vsd_fqdn }}"
     ignore_errors: yes
   
@@ -27,8 +27,8 @@
       name: common
       tasks_from: vsd-generate-transfer-certificates
     vars:
-      certificate_password: "Alcateldc"
-      certificate_username: elastic 
+      certificate_password: "{{ vstat_password }}"
+      certificate_username: elastic
       commonName: elastic
       certificate_type: server
       additional_parameters:  -d {{ mgmt_ip }}    
@@ -39,7 +39,7 @@
   - name: Transfer SSL certificates from VSD to localhost
     fetch: src=/opt/vsd/ejbca/p12/pem/{{ item }} dest={{ dest }} flat=yes
     with_items: "{{ pem_list }}"
-    remote_user: "{{ vsd_username }}"
+    remote_user: "{{ vsd_default_username }}"
     delegate_to: "{{ groups['vsds'][0] }}"
 
   run_once: True

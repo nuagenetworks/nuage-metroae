@@ -71,6 +71,60 @@
 
   - debug: var=vm_facts verbosity=1
 
+  - name: Disabling cloud-init
+    connection: local
+    vmware_vm_shell:
+      hostname: "{{ target_server }}"
+      username: "{{ vcenter.username }}"
+      password: "{{ vcenter.password }}"
+      datacenter: "{{ vcenter.datacenter }}"
+      cluster: "{{ vcenter.cluster }}"
+      validate_certs: no
+      vm_id: "{{ vm_name }}"
+      vm_username: "{{ vsd_default_username }}"
+      vm_password: "{{ vsd_default_password }}"
+      vm_shell: "/bin/systemctl"
+      vm_shell_args: " {{ item }}"
+    with_items:
+      - "stop cloud-init"
+      - "disable cloud-init"
+      - "stop cloud-init-local"
+      - "disable cloud-init-local"
+      - "stop cloud-init-config"
+      - "disable cloud-config"
+      - "stop cloud-final"
+      - "disable cloud-final"
+
+  - name: Writing cloud-init disable file in the VM
+    connection: local
+    vmware_vm_shell:
+      hostname: "{{ target_server }}"
+      username: "{{ vcenter.username }}"
+      password: "{{ vcenter.password }}"
+      datacenter: "{{ vcenter.datacenter }}"
+      cluster: "{{ vcenter.cluster }}"
+      validate_certs: no
+      vm_id: "{{ vm_name }}"
+      vm_username: "{{ vsd_default_username }}"
+      vm_password: "{{ vsd_default_password }}"
+      vm_shell: "/bin/touch"
+      vm_shell_args: " /etc/cloud/cloud-init.disabled"
+
+  - name: Set the owner and group on the cloud-init disable file in the VM
+    connection: local
+    vmware_vm_shell:
+      hostname: "{{ target_server }}"
+      username: "{{ vcenter.username }}"
+      password: "{{ vcenter.password }}"
+      datacenter: "{{ vcenter.datacenter }}"
+      cluster: "{{ vcenter.cluster }}"
+      validate_certs: no
+      vm_id: "{{ vm_name }}"
+      vm_username: "{{ vsd_default_username }}"
+      vm_password: "{{ vsd_default_password }}"
+      vm_shell: "/usr/bin/chown"
+      vm_shell_args: " 0 0 /etc/cloud/cloud-init.disabled"
+
   - name: Writing eth0 network script file to the VM
     connection: local
     vmware_vm_shell:
@@ -81,8 +135,8 @@
       cluster: "{{ vcenter.cluster }}"
       validate_certs: no
       vm_id: "{{ vm_name }}"
-      vm_username: "{{ vsd_username }}"
-      vm_password: "{{ vsd_password }}"
+      vm_username: "{{ vsd_default_username }}"
+      vm_password: "{{ vsd_default_password }}"
       vm_shell: "/usr/bin/echo"
       vm_shell_args: " '{{ lookup('template', 'ifcfg-eth0.j2') }}' > /etc/sysconfig/network-scripts/ifcfg-eth0"
 
@@ -96,8 +150,8 @@
       cluster: "{{ vcenter.cluster }}"
       validate_certs: no
       vm_id: "{{ vm_name }}"
-      vm_username: "{{ vsd_username }}"
-      vm_password: "{{ vsd_password }}"
+      vm_username: "{{ vsd_default_username }}"
+      vm_password: "{{ vsd_default_password }}"
       vm_shell: "/usr/bin/chown"
       vm_shell_args: " 0 0 /etc/sysconfig/network-scripts/ifcfg-eth0"
 
@@ -111,8 +165,8 @@
       cluster: "{{ vcenter.cluster }}"
       validate_certs: no
       vm_id: "{{ vm_name }}"
-      vm_username: "{{ vsd_username }}"
-      vm_password: "{{ vsd_password }}"
+      vm_username: "{{ vsd_default_username }}"
+      vm_password: "{{ vsd_default_password }}"
       vm_shell: "/usr/bin/echo"
       vm_shell_args: " '{{ lookup('template', 'network.j2') }}' > /etc/sysconfig/network"
 
@@ -126,8 +180,8 @@
       cluster: "{{ vcenter.cluster }}"
       validate_certs: no
       vm_id: "{{ vm_name }}"
-      vm_username: "{{ vsd_username }}"
-      vm_password: "{{ vsd_password }}"
+      vm_username: "{{ vsd_default_username }}"
+      vm_password: "{{ vsd_default_password }}"
       vm_shell: "/usr/bin/chown"
       vm_shell_args: " 0 0 /etc/sysconfig/network"
 
@@ -141,8 +195,8 @@
       cluster: "{{ vcenter.cluster }}"
       validate_certs: no
       vm_id: "{{ vm_name }}"
-      vm_username: "{{ vsd_username }}"
-      vm_password: "{{ vsd_password }}"
+      vm_username: "{{ vsd_default_username }}"
+      vm_password: "{{ vsd_default_password }}"
       vm_shell: "/usr/bin/echo"
       vm_shell_args: " '{{ lookup('template', 'hostname.j2') }}' > /etc/hostname"
 
@@ -156,8 +210,8 @@
       cluster: "{{ vcenter.cluster }}"
       validate_certs: no
       vm_id: "{{ vm_name }}"
-      vm_username: "{{ vsd_username }}"
-      vm_password: "{{ vsd_password }}"
+      vm_username: "{{ vsd_default_username }}"
+      vm_password: "{{ vsd_default_password }}"
       vm_shell: "/usr/bin/chown"
       vm_shell_args: " 0 0 /etc/hostname"
 
@@ -171,8 +225,8 @@
       cluster: "{{ vcenter.cluster }}"
       validate_certs: no
       vm_id: "{{ vm_name }}"
-      vm_username: "{{ vsd_username }}"
-      vm_password: "{{ vsd_password }}"
+      vm_username: "{{ vsd_default_username }}"
+      vm_password: "{{ vsd_default_password }}"
       vm_shell: "/usr/bin/mkdir"
       vm_shell_args: " -p /root/.ssh"
 
@@ -186,8 +240,8 @@
       cluster: "{{ vcenter.cluster }}"
       validate_certs: no
       vm_id: "{{ vm_name }}"
-      vm_username: "{{ vsd_username }}"
-      vm_password: "{{ vsd_password }}"
+      vm_username: "{{ vsd_default_username }}"
+      vm_password: "{{ vsd_default_password }}"
       vm_shell: "/usr/bin/chown"
       vm_shell_args: " 0 0 /root/.ssh"
 
@@ -205,8 +259,8 @@
       cluster: "{{ vcenter.cluster }}"
       validate_certs: no
       vm_id: "{{ vm_name }}"
-      vm_username: "{{ vsd_username }}"
-      vm_password: "{{ vsd_password }}"
+      vm_username: "{{ vsd_default_username }}"
+      vm_password: "{{ vsd_default_password }}"
       vm_shell: "/usr/bin/echo"
       vm_shell_args: " '{{ lookup('template', 'authorized_keys.j2') }}' > /root/.ssh/authorized_keys"
 
@@ -220,8 +274,8 @@
       cluster: "{{ vcenter.cluster }}"
       validate_certs: no
       vm_id: "{{ vm_name }}"
-      vm_username: "{{ vsd_username }}"
-      vm_password: "{{ vsd_password }}"
+      vm_username: "{{ vsd_default_username }}"
+      vm_password: "{{ vsd_default_password }}"
       vm_shell: "/usr/bin/chmod"
       vm_shell_args: " 0640 /root/.ssh/authorized_keys"
 
@@ -235,8 +289,8 @@
       cluster: "{{ vcenter.cluster }}"
       validate_certs: no
       vm_id: "{{ vm_name }}"
-      vm_username: "{{ vsd_username }}"
-      vm_password: "{{ vsd_password }}"
+      vm_username: "{{ vsd_default_username }}"
+      vm_password: "{{ vsd_default_password }}"
       vm_shell: "/usr/sbin/reboot"
 
   when: not node_present
