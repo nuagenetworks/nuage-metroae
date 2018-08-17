@@ -1,22 +1,5 @@
 ---
 - block:
-  - name: Verify that upgrade_vmname is defined if this is an upgrade VM
-    assert:
-      that: "upgrade_vmname is defined"
-      msg: "For vsd-upgrade-destroy, upgrade_vmname must be defined in build_vars.yml"
-
-  - name: Set local variable with upgrade_vmname
-    set_fact:
-      vm_name: "{{ upgrade_vmname }}"
-  when: preserve_vm | default( False )
-
-- block:
-  - name: Set local variable with vmname
-    set_fact:
-      vm_name: "{{ vmname }}"
-  when: not preserve_vm | default( False )
-
-- block:
 
   - name: Pull facts on target_server
     setup: gather_subset=!all
@@ -42,7 +25,7 @@
   - name: Delete vsd libvirt image directory and contents
     file: path={{ images_path }}/{{ vm_name }}
           state=absent
-    when: not preserve_vm|default( False )
+    when: (not preserve_vm | default( False))
 
   delegate_to: "{{ target_server }}"
   remote_user: "{{ target_server_username }}"
