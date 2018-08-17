@@ -32,18 +32,45 @@
   when: vsd_vm_facts.exception is defined
 
 - block:
+    
+  - block:
 
-  - name: Power off the vsd VM
-    connection: local
-    vmware_guest:
-      hostname: "{{ target_server }}"
-      username: "{{ vcenter.username }}"
-      password: "{{ vcenter.password }}"
-      validate_certs: no
-      datacenter: "{{ vcenter.datacenter }}"
-      folder: "/{{ vcenter.datacenter }}{{ vsd_vm_folder['folders'][0] }}"
-      name: "{{ vm_name }}"
-      state: "poweredoff"
+    - name: Get Facts of VM
+      vmware_vm_fact
+        hostname: "{{ target_server }}"
+        username: "{{ vcenter.username }}"
+        password: "{{ vcenter.password }}"
+      delegate_to: localhost
+      register: vm_list
+      
+    - name: Set VM UUID
+      set_fact:
+        uuid: "{{ vm_list.virtual_machines[vm_name]['uuid'] }}"
+  
+    - debug: var=uuid
+    
+    - name: Turn off autostart
+      connection: local
+      vmware_autostart:
+        name: "{{ vm_name }}"
+        uuid: "{{ uuid }}"
+        hostname: "{{ target_server }}"
+        username: "{{ vcenter.username }}"
+        password: "{{ vcenter.password }}"
+        state: disable
+
+    - name: Power off the vsd VM
+      connection: local
+      vmware_guest:
+        hostname: "{{ target_server }}"
+        username: "{{ vcenter.username }}"
+        password: "{{ vcenter.password }}"
+        validate_certs: no
+        datacenter: "{{ vcenter.datacenter }}"
+        folder: "/{{ vcenter.datacenter }}{{ vsd_vm_folder['folders'][0] }}"
+        name: "{{ vm_name }}"
+        state: "poweredoff"
+
     when: vsd_vm_facts['instance']['hw_power_status'] == 'poweredOn'
 
   - name: Removing the vsd VM
