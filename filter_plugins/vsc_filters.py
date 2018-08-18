@@ -442,11 +442,12 @@ def vsd_detail_to_json(string):
         dict["VSD-Info"].append(vsd_dict)
     return json.dumps(dict)
 
-def vsc_router_interfaces_to_json(string):
-    ''' Given a string representation of the output of "show router interface" command, return 
-    a JSON representation of the relevant statuses of the interfaces. 
 
-    Sample output from the command as a string: 
+def vsc_router_interfaces_to_json(string):
+    ''' Given a string representation of the output of "show router interface" command, return
+    a JSON representation of the relevant statuses of the interfaces.
+
+    Sample output from the command as a string:
     ===============================================================================
     Interface Table (Router: Base)
     ===============================================================================
@@ -485,7 +486,7 @@ def vsc_router_interfaces_to_json(string):
             system_Opr = columns[2].split('/')
             system_Oprv4 = system_Opr[0]
             system_Oprv6 = system_Opr[1]
-            
+
     dict["control_Adm"] = control_Adm
     dict["control_Oprv4"] = control_Oprv4
     dict["control_Oprv6"] = control_Oprv6
@@ -494,6 +495,7 @@ def vsc_router_interfaces_to_json(string):
     dict["system_Oprv6"] = system_Oprv6
 
     return json.dumps(dict)
+
 
 class FilterModule(object):
     ''' Query filter '''

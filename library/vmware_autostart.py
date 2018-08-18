@@ -1,12 +1,9 @@
 #!/usr/bin/python
 
 from ansible.module_utils.basic import AnsibleModule
-import subprocess
-import argparse
 import sys
-import atexit
 from pyVmomi import vim
-from pyVim.connect import Disconnect, SmartConnect
+from pyVim.connect import SmartConnect
 sys.dont_write_bytecode = True
 
 
@@ -25,7 +22,7 @@ options:
       - The UUID of the VM to configure
     required: true
     default: null
-  hostname: 
+  hostname:
     description
       - The target server that the VM and its host run on
       required: true
@@ -80,7 +77,7 @@ EXAMPLES = '''
 def get_esxi_host(ipAddr, port, username, password, id):
     uuid = id
     try:
-        si= get_connection(ipAddr, username, password, port)
+        si = get_connection(ipAddr, username, password, port)
         vm = si.content.searchIndex.FindByUuid(None,
                                                uuid,
                                                True,
@@ -95,6 +92,7 @@ def get_esxi_host(ipAddr, port, username, password, id):
 
     return None
 
+
 def get_connection(ip_addr, user, password, port):
     try:
         connection = SmartConnect(
@@ -103,6 +101,7 @@ def get_connection(ip_addr, user, password, port):
         return connection
     except Exception:
         return None
+
 
 def get_hosts(conn):
     try:
@@ -115,6 +114,7 @@ def get_hosts(conn):
     obj = [host for host in container.view]
     return obj
 
+
 def configure_hosts(commaList, connection, startDelay, vmname, state):
     try:
         config_hosts = commaList.split(",")
@@ -123,7 +123,6 @@ def configure_hosts(commaList, connection, startDelay, vmname, state):
         for a in config_hosts:
             if a not in host_names:
                 return None
-    
         for h in all_hosts:
             if h.name in config_hosts:
                 return configure_autostart(h, startDelay, vmname, state)
@@ -133,7 +132,7 @@ def configure_hosts(commaList, connection, startDelay, vmname, state):
 
 def configure_autostart(host, startDelay, vmname, state):
     hostDefSettings = vim.host.AutoStartManager.SystemDefaults()
-    hostDefSettings.enabled = True 
+    hostDefSettings.enabled = True
     hostDefSettings.startDelay = int(startDelay)
     order = 1
     if host is not None:
@@ -152,13 +151,14 @@ def configure_autostart(host, startDelay, vmname, state):
                     if vhost.runtime.powerState == "poweredOff":
                         auto_power_info.startAction = 'None'
                     elif vhost.runtime.powerState == "poweredOn":
-                        auto_power_info.startAction = 'powerOn' if  state == 'enable' else 'None'
+                        auto_power_info.startAction = 'powerOn' if state == 'enable' else 'None'
                         spec.powerInfo = [auto_power_info]
                         order = order + 1
                         host.configManager.autoStartManager.ReconfigureAutostart(spec)
                     return True
         except Exception:
             return False
+
 
 def main():
     arg_spec = dict(
@@ -173,7 +173,7 @@ def main():
     )
 
     module = AnsibleModule(argument_spec=arg_spec, supports_check_mode=True)
-    
+
     ip_addr = module.params['hostname']
     username = module.params['username']
     password = module.params['password']
@@ -200,6 +200,5 @@ def main():
     else:
         module.fail_json(changed=False, msg="VM %s could not be configured" % vm_name)
 
-if __name__ == "__main__":        
+if __name__ == "__main__":
     main()
-  
