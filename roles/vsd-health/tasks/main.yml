@@ -151,7 +151,7 @@
   when: vsd_sa_or_ha|match('ha')
 
 - block:
-      
+
   - name: Verify that REST is reachable
     uri:
       url: https://{{ mgmt_ip }}:8443/index.html
@@ -165,6 +165,11 @@
     ignore_errors: yes
 
   - block:
+
+    - name: Get monit summary for vsd processes
+      vsd_monit:
+        group: all
+      register: vsd_proc
 
     - block:
 
@@ -206,12 +211,14 @@
         register: webresult
         delegate_to: localhost
 
-    run_once: true   
+      when: "'activemq-status' in vsd_proc.state"
+
+    run_once: true
 
   - name: write web interface result
     nuage_append: filename="{{ report_path }}" text="{{ webresult  | to_nice_json}}\n"
     delegate_to: localhost
-  
+
 - block:
 
   - name: Verify VSD licenses valid
@@ -244,7 +251,7 @@
   - name: Verify jrestore pass is set
     shell: "$JAVE_HOME/bin/keytool -keystore $JAVA_HOME/lib/security/cacerts -alias vspca -storepass {{ jreStorePwd }} -list"
     when: jreStorePwd is defined
-  
+
   - name: Verify cnauser pass is set
     command: "mysql -ucnauser -p{{ cnaPwd }} -e 'select 1'"
     when: cnaPwd is defined
