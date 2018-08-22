@@ -18,6 +18,20 @@
 # You should have received a copy of the GNU General Public License
 # along with Ansible.  If not, see <http://www.gnu.org/licenses/>.
 
+import os
+import time
+from ansible.module_utils.basic import AnsibleModule
+from ansible.module_utils.pycompat24 import get_exception
+from ansible.module_utils.vmware import connect_to_api, gather_vm_facts
+
+HAS_PYVMOMI = False
+try:
+    from pyVmomi import vim
+
+    HAS_PYVMOMI = True
+except ImportError:
+    pass
+
 ANSIBLE_METADATA = {'metadata_version': '1.0',
                     'status': ['preview'],
                     'supported_by': 'community'}
@@ -82,29 +96,6 @@ instance:
     sample: None
 """
 
-import os
-import time
-
-# import module snippets
-from ansible.module_utils.basic import AnsibleModule
-from ansible.module_utils.pycompat24 import get_exception
-from ansible.module_utils.six import iteritems
-from ansible.module_utils.vmware import connect_to_api, find_vm_by_id, gather_vm_facts
-
-try:
-    import json
-except ImportError:
-    import simplejson as json
-
-HAS_PYVMOMI = False
-try:
-    import pyVmomi
-    from pyVmomi import vim
-
-    HAS_PYVMOMI = True
-except ImportError:
-    pass
-
 
 class PyVmomiHelper(object):
     def __init__(self, module):
@@ -160,7 +151,7 @@ class PyVmomiHelper(object):
                 poll_num += 1
 
         if not tools_running:
-            return {'failed': True, 'msg': 'VMware tools either not present or not running after {0} seconds'.format((poll*sleep))}
+            return {'failed': True, 'msg': 'VMware tools either not present or not running after {0} seconds'.format((poll * sleep))}
 
         changed = False
         if poll_num > 0:

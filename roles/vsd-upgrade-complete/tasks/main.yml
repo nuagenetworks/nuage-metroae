@@ -5,11 +5,8 @@
 
 - block:
 
-  - block:
-
-    - name: Restart Jboss
-      shell: "monit restart jboss"
-    
+  - name: Restart Jboss
+    shell: "monit restart jboss"
     when: upgrade_major_or_minor == 'minor'
 
   - block:
@@ -29,19 +26,4 @@
 
   - include: check_monit_status.yml
 
-  - name: Get current version of VSD software
-    command: echo $VSD_VERSION
-    register: vsd_version
-
-  - name: Print vsd_version output when verbosity >= 1
-    debug: var=vsd_version verbosity=1
-
-  - name: Check VSD License
-    check_vsd_license_validity:
-      vsd_auth:
-        "{{ vsd_auth }}"
-      api_version: "{{ vsd_version.stdout }}"
-    register: license_valid
-    delegate_to: localhost
-
-  remote_user: "{{ vsd_username }}"
+  remote_user: "{{ vsd_default_username }}"

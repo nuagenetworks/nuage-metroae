@@ -23,7 +23,7 @@
       ignore_errors: yes
       when: list_stats_pids.stdout.strip()!= ""
 
-    when: groups['mystats'] is defined and groups['myvstats']
+    when: groups['myvstats'] is defined and groups['myvstats']
 
   - block:
 
@@ -67,6 +67,9 @@
       ignore_errors: yes
       when: list_common_pids.stdout.strip()!=""
   
-    remote_user: "{{ vsd_username }}"
+    remote_user: "{{ vsd_username | default(vsd_default_username) }}"
+    become: "{{ 'no' if vsd_username | default(vsd_default_username) == 'root' else 'yes' }}"
+    vars:
+      ansible_become_pass: "{{ vsd_password | default(vsd_default_password) }}"
 
   when: inventory_hostname == groups['vsds'][0] or inventory_hostname == groups['vsds'][1]

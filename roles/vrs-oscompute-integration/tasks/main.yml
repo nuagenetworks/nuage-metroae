@@ -1,23 +1,26 @@
 ---
 - block:
 
-  - name: Delete existing network uplink
-    lineinfile:
+  - name: Configure network uplink in Nuage configuration file
+    ini_file:
       dest: "/etc/default/openvswitch"
-      regexp: "^NETWORK_UPLINK_INTF="
-      state: absent
+      section: 
+      option: "NETWORK_UPLINK_INTF" 
+      value: "{{ uplink_interface | default('') }}"
 
-  - name: Add network uplink config to vrs
-    lineinfile:
-      dest: "/etc/default/openvswitch"
-      insertafter: uplink interface of the host
-      line: "NETWORK_UPLINK_INTF={{ uplink_interface }}"
+  - name: Configure nova config for virtual machines to use `alubr0`
+    ini_file:
+      dest: "/etc/nova/nova.conf"
+      section: "neutron" 
+      option: "ovs_bridge"
+      value: "alubr0"
 
-  - name: Add alubr0 to nova config
-    lineinfile:
-      dest: /etc/nova/nova.conf
-      regexp: ovs_bridge=
-      line: ovs_bridge=alubr0
+  - name: Stop and disable OS neutron dataplane services
+    service:
+      name: "{{ item }}"
+      state: stopped
+      enabled: no
+    with_items: "{{ neutron_services }}"
 
   - name: Restart OpenStack compute
     service:

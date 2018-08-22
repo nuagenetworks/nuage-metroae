@@ -6,16 +6,17 @@ target_server_type: {{ item.target_server_type | default('kvm') }}
 hostname: {{ item.hostname }}
 
 {% if item.target_server_type | match("kvm") or item.target_server_type | match("vcenter") %}
-
 target_server: {{ item.target_server }}
+{% endif %}
 
+{% if item.target_server_type | match("kvm") or item.target_server_type | match("vcenter") or item.target_server_type | match("nuagex") %}
 {% if item.vmname is defined %}
 vmname: {{ item.vmname }}
 {% else %}
 vmname: {{ item.hostname }}
 {% endif %}
 
-upgrade_vmname: {{ item.upgrade_vmname is defined | ternary( item.upgrade_vmname, [ item.vmname | default(item.hostname), "new" ] | join('-') ) }}
+
 mgmt_ip: {{ item.mgmt_ip }}
 mgmt_gateway: {{ item.mgmt_gateway }}
 mgmt_netmask: {{ item.mgmt_netmask }}
@@ -80,7 +81,7 @@ infra_server_name: {{ item.infra_server_name }}
 {% endif %}
 
 {% if 'upgrade' in vstat_operations_list %}
-
+upgrade_vmname: {{ item.upgrade_vmname is defined | ternary( item.upgrade_vmname, [ item.vmname | default(item.hostname), "new" ] | join('-') ) }}
 vstat_in_place_upgrade: {{ vstat_in_place_upgrade }}
 {% if vstat_in_place_upgrade == False %}
 vstat_nfs_server_with_folder: {{ vstat_nfs_server_with_folder | default('NONE') }}

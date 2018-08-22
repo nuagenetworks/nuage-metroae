@@ -68,18 +68,26 @@
   when: node_present
 
 - block:
+    - name: set skip copy images to default
+      set_fact: 
+        skip_copy_images: False
+      when: skip_copy_images is undefined 
 
-    - name: Create libvirt image directory
-      file: path={{ images_path }}/{{ vm_name }}
-            state=directory
-            owner={{ libvirt.user }}
-            group={{ libvirt.group }}
-
-    - name: Copy the VM qcow2 image to virt images diectory
-      copy: src={{ qcow2_path }}/{{ qcow2_file_name }}
-            dest={{ images_path }}/{{ vm_name }}/{{ inventory_hostname }}.qcow2
-            owner={{ libvirt.user }}
-            group={{ libvirt.group }}
+    - include_tasks: copy_qcow2.yml
+      when: not skip_copy_images      
+    
+    - block: 
+      - name: Check to make sure there is an existing qcow image
+        stat: 
+          path: "{{ images_path }}/{{ vm_name }}/{{ inventory_hostname }}.qcow2"
+        register: statResult
+        
+      - name: check the result of image find command
+        assert:
+          that: statResult.stat.exists == True
+          msg: Missing qcow2 file {{ images_path }}/{{ vm_name }}/{{ inventory_hostname }}.qcow2
+          
+      when: skip_copy_images
 
     - name: Setup VSC temporary configuration files
       template: src={{ item }}.j2 backup=no dest={{ images_path }}/{{ vm_name }}/{{ item }}
