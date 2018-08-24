@@ -1,12 +1,14 @@
-# Nuage Networks MetroAE Automation Engine (AE)
+# Nuage Networks Metro Automation Engine (MetroÆ)
 (4 minute read)
 
 Version: 3.0.0
 
-**Note:** The procedures have changed in version 3.0 to improve usability. If you have used previous versions of MetroAE, please see [RELEASE_NOTES.md](Documentation/RELEASE_NOTES.md) for details.
-
 Metro is an automation engine that deploys and upgrades Nuage Networks components.
 After you specify the individual details of your target platform, Metro Automation Engine (leveraging Ansible playbooks and roles) sets up the environment as specified. Metro Automation Engine can also upgrade, roll-back, and health-check the environment.
+
+## Important Note
+The procedures have changed substantially in version 3.0 to improve usability.
+If you have used previous versions of MetroAE, please see [RELEASE_NOTES.md](Documentation/RELEASE_NOTES.md) for details.
 
 ## Supported Components for Deployment
 Metro Automation Engine supports deployment of the following components as VMs on the target server. The same target server types are supported as the VSP platform.
