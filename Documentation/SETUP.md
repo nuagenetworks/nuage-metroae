@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # Setting Up the Nuage Metro Automation Engine Ansible Environment
 (4 minute read)
 
