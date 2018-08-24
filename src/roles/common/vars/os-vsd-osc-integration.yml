@@ -1,0 +1,33 @@
+nuage_target_architecture: "el7"
+plugin_dir: /tmp/plugins
+neutron_services:
+  - neutron-dhcp-agent.service
+  - neutron-l3-agent.service
+  - neutron-metadata-agent.service
+  - neutron-openvswitch-agent.service
+  - neutron-netns-cleanup.service
+  - neutron-ovs-cleanup.service
+upgrade_db_cmd: 'su -s /bin/sh -c "neutron-db-manage --config-file /etc/neutron/neutron.conf upgrade head" neutron'
+generate_cms_id: "python generate_cms_id.py --config-file /etc/neutron/plugin.ini"
+# horizon constants
+horizon_dashboard: "/usr/share/openstack-dashboard/openstack_dashboard/local/local_settings.py"
+centos_horizon_vhost: "/etc/httpd/conf.d/15-horizon_vhost.conf"
+redhat_horizon_vhost: "/etc/httpd/conf.d/10-horizon_vhost.conf"
+nuage_css_file: "/usr/lib/python2.7/site-packages/nuage_horizon/dashboards/project/dashboard.py"
+nuage_css_line: "horizon.Horizon._conf['scss_files'].append('nuage/css/nuage.scss')"
+nuage_content: |
+       # Nuage horizon config
+         Alias /dashboard/static/nuage "/usr/lib/python2.7/site-packages/nuage_horizon/static"
+         <Directory /usr/lib/python2.7/site-packages/nuage_horizon>
+            Options FollowSymLinks
+            AllowOverride None
+            Require all granted
+         </Directory>
+# nova constants
+nova_conf_file: "/etc/nova/nova.conf"
+# neutron constants
+neutron_nuage_plugin_folder: "/etc/neutron/plugins/nuage"
+neutron_conf_file: "/etc/neutron/neutron.conf"
+ml2_conf_file: "/etc/neutron/plugins/ml2/ml2_conf.ini"
+neutron_service_file: "/usr/lib/systemd/system/neutron-server.service"
+neutron_service_exec: "ExecStart=/usr/bin/neutron-server --config-file /etc/neutron/plugins/ml2/ml2_conf.ini --config-file /usr/share/neutron/neutron-dist.conf --config-dir /usr/share/neutron/server --config-file /etc/neutron/neutron.conf --config-file /etc/neutron/plugin.ini --config-dir /etc/neutron/conf.d/common --config-dir /etc/neutron/conf.d/neutron-server --log-file /var/log/neutron/server.log"

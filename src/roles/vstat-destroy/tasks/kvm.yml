@@ -1,0 +1,48 @@
+---
+- block:
+  - name: Verify that upgrade_vmname is defined if this is an upgrade VM
+    assert:
+      that: "upgrade_vmname is defined"
+      msg: "For vstat-upgrade-destroy, upgrade_vmname must be defined in build_vars.yml"
+
+  - name: Set local variable with upgrade_vmname
+    set_fact:
+      vm_name: "{{ upgrade_vmname }}"
+  when: destroy_upgrade_vm | default( False )
+
+- block:
+  - name: Set local variable with vmname
+    set_fact:
+      vm_name: "{{ vmname }}"
+  when: not (destroy_upgrade_vm | default( False ))
+
+- block:
+
+  - name: Pull facts on target_server
+    setup: gather_subset=!all
+
+  - name: List the Virtual Machines on target_server
+    virt: command=list_vms
+    register: virt_vms
+
+  - name: Destroy VSTAT VM
+    virt:
+      name: "{{ vm_name }}"
+      state: destroyed
+      uri: qemu:///system
+    when: vm_name in virt_vms.list_vms
+
+  - name: Undefine VSTAT VM
+    virt:
+      name: "{{ vm_name }}"
+      command: undefine
+      uri: qemu:///system
+    when: vm_name in virt_vms.list_vms and (not nuage_upgrade | default(False) or destroy_upgrade_vm | default( False ))
+
+  - name: Delete vstat libvirt image directory and contents
+    file: path={{ images_path }}/{{ vm_name }}
+          state=absent
+    when: (not nuage_upgrade|default( False )) or (destroy_upgrade_vm|default( False ))
+
+  delegate_to: "{{ target_server }}"
+  remote_user: "{{ target_server_username }}"
