@@ -1,21 +1,4 @@
 ---
-- block:
-  - name: Verify that upgrade_vmname is defined if this is an upgrade VM
-    assert:
-      that: "upgrade_vmname is defined"
-      msg: "For vsd-upgrade-destroy, upgrade_vmname must be defined in build_vars.yml"
-
-  - name: Set local variable with upgrade_vmname
-    set_fact:
-      vm_name: "{{ upgrade_vmname }}"
-  when: not preserve_vm | default( False )
-
-- block:
-  - name: Set local variable with vmname
-    set_fact:
-      vm_name: "{{ vmname }}"
-  when: preserve_vm | default( False )
-
 - name: Finding VM folder
   connection: local
   vmware_guest_find:
@@ -27,7 +10,7 @@
     validate_certs: no
   register: vsd_vm_folder
   ignore_errors: on
-  
+
 - name: Gathering info on VM
   connection: local
   vmware_guest_facts:
@@ -50,19 +33,46 @@
 
 - block:
 
-  - name: Power off the vsd VM
-    connection: local
-    vmware_guest:
-      hostname: "{{ target_server }}"
-      username: "{{ vcenter.username }}"
-      password: "{{ vcenter.password }}"
-      validate_certs: no
-      datacenter: "{{ vcenter.datacenter }}"
-      folder: "/{{ vcenter.datacenter }}{{ vsd_vm_folder['folders'][0] }}"
-      name: "{{ vm_name }}"
-      state: "poweredoff"
+  - block:
+
+    - name: Get Facts of VM
+      vmware_vm_facts:
+        hostname: "{{ target_server }}"
+        username: "{{ vcenter.username }}"
+        password: "{{ vcenter.password }}"
+      delegate_to: localhost
+      register: vm_list
+
+    - name: Set VM UUID
+      set_fact:
+        uuid: "{{ vm_list.virtual_machines[vm_name]['uuid'] }}"
+
+    - debug: var=uuid
+
+    - name: Turn off autostart
+      connection: local
+      vmware_autostart:
+        name: "{{ vm_name }}"
+        uuid: "{{ uuid }}"
+        hostname: "{{ target_server }}"
+        username: "{{ vcenter.username }}"
+        password: "{{ vcenter.password }}"
+        state: disable
+
+    - name: Power off the vsd VM
+      connection: local
+      vmware_guest:
+        hostname: "{{ target_server }}"
+        username: "{{ vcenter.username }}"
+        password: "{{ vcenter.password }}"
+        validate_certs: no
+        datacenter: "{{ vcenter.datacenter }}"
+        folder: "/{{ vcenter.datacenter }}{{ vsd_vm_folder['folders'][0] }}"
+        name: "{{ vm_name }}"
+        state: "poweredoff"
+
     when: vsd_vm_facts['instance']['hw_power_status'] == 'poweredOn'
-  
+
   - name: Removing the vsd VM
     connection: local
     vmware_guest:
@@ -74,6 +84,6 @@
       folder: "/{{ vcenter.datacenter }}{{ vsd_vm_folder['folders'][0] }}"
       name: "{{ vm_name }}"
       state: "absent"
-    when: (not preserve_vm | default( False )) or (not nuage_upgrade | default( False ))
+    when: (not preserve_vm | default( False ))
 
   when: vsd_vm_folder|succeeded and vsd_vm_facts|succeeded
