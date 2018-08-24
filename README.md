@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # Nuage Networks MetroAE Automation Engine (AE)
 (4 minute read)
 
@@ -78,11 +77,9 @@ The following workflows are examples that combine together several of the above 
 ## Ansible
 MetroAE is based off of the Python-based Ansible operations tool.  The following sections provide more detail of how Ansible is utilized to perform workflows.
 
-### Nomenclature
-**Ansible Host**: The host where MetroAE runs. Ansible and the required packages are installed on this host. The Ansible Host must run el7 Linux host, e.g. Cent)S 7.* or RHEL 7.*
-
-**MetroAE User**: The user who runs MetroAE to deploy and upgrade components.
-
+## Nomenclature
+**Ansible Host**: The host where Metro Automation Engine runs. Ansible and the required packages are installed on this host. The Ansible Host must run el7 Linux host, e.g. CentOS 7.* or RHEL 7.*.
+**Metro Automation Engine User**: The user who runs Metro Automation Engine to deploy and upgrade components.
 **Target Server**: The hypervisor on which one or more VSP components are installed as VMs. Each deployment may contain more than one Target Server.
 
 ### Use of Ansible Playbooks and Roles

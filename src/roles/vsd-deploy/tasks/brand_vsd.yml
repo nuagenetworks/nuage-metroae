@@ -1,0 +1,57 @@
+---
+- block:
+
+  - name: Set branding zip file to Nuage
+    set_fact:
+      branding_zip_file: "{{ role_path }}/files/nuage-branding.zip"
+    when: branding_zip_file == 'nuage'
+
+  - name: Set branding zip file to MetroAE
+    set_fact:
+      branding_zip_file: "{{ role_path }}/files/metroae-branding.zip"
+    when: branding_zip_file == 'metroae'
+
+  - name: Find war file on the VSD
+    find:
+      path: "/opt/vsd/jboss/standalone/deployments"
+      pattern: "ui-*.war"
+      recurse: no
+    register: rc_war_file
+
+  - name: Verify that a VSD war file was found
+    assert: {
+      that: "{{ rc_war_file.matched }} > 0",
+      msg: "Unable to find VSD war file"
+      }
+
+  - name: Create branding directory on VSD
+    file:
+      path: /tmp/branding
+      state: directory
+
+  - name: Copy branding zip file to VSD
+    copy:
+      src: "{{ branding_zip_file }}"
+      dest: /tmp/branding/branding.zip
+      force: yes
+
+  - name: Install branding on VSD
+    shell: "/opt/vsd/install/brand-ui -b /tmp/branding/branding.zip -u {{ rc_war_file.files[0].path }}"
+
+  - name: Restart jboss
+    command: monit restart jboss
+
+  remote_user: "{{ vsd_default_username }}"
+
+- name: Create backup directory for original branding
+  file:
+    path: "{{metro_backup_root}}/{{ hostname }}-branding"
+    state: directory
+  delegate_to: localhost
+
+- name: Backup original branding
+  fetch:
+    src: "/tmp/original-nuage-branding.zip"
+    dest: "{{metro_backup_root}}/{{ hostname }}-branding"
+    fail_on_missing: yes
+  remote_user: "{{ vsd_default_username }}"

@@ -1,29 +1,29 @@
-- name: Enable stats collection on standalone vsd when vstat is standalone
-  command: /opt/vsd/vsd-stats.sh -e {{ inventory_hostname }}
-  delegate_to: "{{ item }}"
-  with_items: "{{ vsd_hostname_list }}"
-  remote_user: "{{ vsd_username }}"
-  run_once: true
-  when:
-    - vsd_sa_or_ha | match('sa')
-    - vstat_sa_or_ha | match('sa')
+- block:
 
-- name: Enable stats collection on the cluster vsds when vstat is standalone
-  command: /opt/vsd/vsd-stats.sh -e {{ inventory_hostname }}
-  delegate_to: "{{ item }}"
-  remote_user: "{{ vsd_username }}"
-  run_once: true
-  with_items: "{{ vsd_hostname_list }}"
-  when:
-    - vsd_sa_or_ha | match('ha')
-    - vstat_sa_or_ha | match('sa')
+  - name: Enable stats collection on standalone vsd when vstat is standalone
+    command: /opt/vsd/vsd-stats.sh -e {{ inventory_hostname }}
+    delegate_to: "{{ item }}"
+    with_items: "{{ vsd_hostname_list }}"
+    run_once: true
+    when:
+      - vsd_sa_or_ha | match('sa')
+      - vstat_sa_or_ha | match('sa')
 
-- name: Enable stats collection on the vsd(s) when vstat is clustered
-  command: /opt/vsd/vsd-stats.sh -e {{ groups['vstats'][0] }},{{ groups['vstats'][1] }},{{ groups['vstats'][2] }}
-  delegate_to: "{{ item }}"
-  remote_user: "{{ vsd_username }}"
-  with_items: "{{ vsd_hostname_list }}"
-  run_once: true
-  when:
-    - vstat_sa_or_ha | match('ha')
-    - vsd_sa_or_ha | match('sa') or vsd_sa_or_ha | match('ha')
+  - name: Enable stats collection on the cluster vsds when vstat is standalone
+    command: /opt/vsd/vsd-stats.sh -e {{ inventory_hostname }}
+    delegate_to: "{{ item }}"
+    run_once: true
+    with_items: "{{ vsd_hostname_list }}"
+    when:
+      - vsd_sa_or_ha | match('ha')
+      - vstat_sa_or_ha | match('sa')
+
+  - name: Enable stats collection on the vsd(s) when vstat is clustered
+    command: /opt/vsd/vsd-stats.sh -e {{ groups['vstats'][0] }},{{ groups['vstats'][1] }},{{ groups['vstats'][2] }}
+    delegate_to: "{{ item }}"
+    with_items: "{{ vsd_hostname_list }}"
+    run_once: true
+    when:
+      - vstat_sa_or_ha | match('ha')
+
+  remote_user: "{{ vsd_default_username }}"

@@ -46,19 +46,19 @@ Execute the command:
 Alternatively, you can create the directories under the <nuage_unzipped_files_dir> directory and manually copy the appropriate files to those locations as shown in the example below.
 
   ```
-  <nuage_unzipped_files_dir/vsd/qcow2/
-  <nuage_unzipped_files_dir/vsd/ova/ (for VMware)
-  <nuage_unzipped_files_dir/vsd/migration/
-  <nuage_unzipped_files_dir/vsc/
-  <nuage_unzipped_files_dir/vrs/el7/
-  <nuage_unzipped_files_dir/vrs/u14_04/
-  <nuage_unzipped_files_dir/vrs/ul16_04/
-  <nuage_unzipped_files_dir/vrs/vmware/
-  <nuage_unzipped_files_dir/vrs/hyperv/
-  <nuage_unzipped_files_dir/vstat/
-  <nuage_unzipped_files_dir/vstat/backup/
-  <nuage_unzipped_files_dir/vns/nsg/
-  <nuage_unzipped_files_dir/vns/util/
+  <nuage_unzipped_files_dir>/vsd/qcow2/
+  <nuage_unzipped_files_dir>/vsd/ova/ (for VMware)
+  <nuage_unzipped_files_dir>/vsd/migration/
+  <nuage_unzipped_files_dir>/vsc/
+  <nuage_unzipped_files_dir>/vrs/el7/
+  <nuage_unzipped_files_dir>/vrs/u14_04/
+  <nuage_unzipped_files_dir>/vrs/ul16_04/
+  <nuage_unzipped_files_dir>/vrs/vmware/
+  <nuage_unzipped_files_dir>/vrs/hyperv/
+  <nuage_unzipped_files_dir>/vstat/
+  <nuage_unzipped_files_dir>/vstat/backup/
+  <nuage_unzipped_files_dir>/vns/nsg/
+  <nuage_unzipped_files_dir>/vns/util/
   ```
 
 ## Hosting your variable files outside of the repo

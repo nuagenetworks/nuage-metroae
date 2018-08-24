@@ -1,23 +1,19 @@
 ---
-- block:
+- import_tasks: kvm.yml
+  when: target_server_type | match("kvm")
+  tags:
+    - vstat
+    - vstat-destroy
 
-  - import_tasks: kvm.yml
-    when: target_server_type | match("kvm")
-    tags:
-      - vstat
-      - vstat-destroy
+- import_tasks: heat.yml
+  when: target_server_type | match("heat")
+  tags:
+    - vstat
+    - heat
+    - vstat-destroy
 
-  - import_tasks: heat.yml
-    when: target_server_type | match("heat")
-    tags:
-      - vstat
-      - heat
-      - vstat-destroy
-
-  - import_tasks: vcenter.yml
-    when: target_server_type | match("vcenter")
-    tags:
-      - vstat
-      - vstat-destroy
-
-  when: (not destroy_upgrade_vm | default( False )) or upgrade_vmname is defined
+- import_tasks: vcenter.yml
+  when: target_server_type | match("vcenter")
+  tags:
+    - vstat
+    - vstat-destroy
