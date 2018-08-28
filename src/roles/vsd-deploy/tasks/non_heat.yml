@@ -18,6 +18,10 @@
   - name: Read the VSD version
     shell: echo $VSD_VERSION
     register: vsd_full_version
+    remote_user: "{{ vsd_default_username }}"
+    become: no
+
+  - debug: var=vsd_full_version.stdout verbosity=1
 
   - name: Set Major, Minor and Patch VSD version
     set_fact:
@@ -136,26 +140,26 @@
     - name: Generate SSH key on master VCIN
       delegate_to: "{{ master_vcin }}"
       user:
-        name: "{{ vsd_username }}"
+        name: "{{ vsd_default_username }}"
         generate_ssh_key: yes
       register: master_vcin_ssh_key
 
     - name: Generate SSH key on slave VCIN
       user:
-        name: "{{ vsd_username }}"
+        name: "{{ vsd_default_username }}"
         generate_ssh_key: yes
       register: slave_vcin_ssh_key
 
     - name: Add master VCIN SSH key to slave VCIN
       authorized_key:
           key: "{{ master_vcin_ssh_key.ssh_public_key }}"
-          user: "{{ vsd_username }}"
+          user: "{{ vsd_default_username }}"
 
     - name: Add slave VCIN SSH key to master VCIN
       delegate_to: "{{ master_vcin }}"
       authorized_key:
           key: "{{ slave_vcin_ssh_key.ssh_public_key }}"
-          user: "{{ vsd_username }}"
+          user: "{{ vsd_default_username }}"
 
     when: master_vcin is defined
 
@@ -180,14 +184,14 @@
       - systemctl disable cloud-config
       - systemctl disable cloud-final
 
-  remote_user: "{{ vsd_username }}"
+  remote_user: "{{ vsd_default_username }}"
 
 - name: Configure ntpd and ntpdate and local time zone
   include_role:
     name: common
     tasks_from: linux-ntp-sync
   vars:
-    rem_user: "{{ vsd_username }}"
+    rem_user: "{{ vsd_default_username }}"
 
 - block:
 
@@ -258,4 +262,4 @@
     command: /opt/vsd/bin/ejmode allow -y
     when: not deploy_vcin
 
-  remote_user: "{{ vsd_username }}"
+  remote_user: "{{ vsd_default_username }}"

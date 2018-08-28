@@ -2,9 +2,9 @@
 - import_tasks: report_header.yml
 
 - name: Get current version of VSD software
-  command: echo $VSD_VERSION
+  shell: echo $VSD_VERSION
   register: vsd_version
-  remote_user: "{{ vsd_username }}"
+  remote_user: "{{ vsd_username | default(vsd_default_username) }}"
 
 - name: Write VSD version to json file
   nuage_append: filename="{{ report_path }}" text="{{ vsd_version.stdout | to_nice_json}}\n"
@@ -14,7 +14,7 @@
   network_info:
     mac_addr: False
   register: net_conf
-  remote_user: "{{ vsd_username }}"
+  remote_user: "{{ vsd_username | default(vsd_default_username) }}"
 
 - name: Print network config when verbosity >= 1
   debug: var=net_conf.info verbosity=1

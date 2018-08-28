@@ -37,12 +37,12 @@
       line: "{{ vstat_mgmt_ip }}  {{ inventory_hostname }}"
       dest: "/etc/hosts"
     delegate_to: "{{ infra_ip }}"
-    remote_user: "root"
+    remote_user: "{{ vstat_username }}"
 
   - name: Restart DNS service
     shell: service dnsmasq restart
     delegate_to: "{{ infra_ip }}"
-    remote_user: "root"
+    remote_user: "{{ vstat_username }}"
   when: infra_server_name is defined
 
 - name: Update /etc/hosts file on ansible host
@@ -61,11 +61,11 @@
 
 - name: Inject ssh key to VSD if cloud-init did not work
   expect:
-    command: "ssh-copy-id -i root@{{ vstat_mgmt_ip }}"
+    command: "ssh-copy-id -i {{ vstat_username }}@{{ vstat_mgmt_ip }}"
     responses:
       (?i)yes: "yes"
-      (?i)password: "Alcateldc"
-  remote_user: "root"
+      (?i)password: "{{ vstat_password }}"
+  remote_user: "{{ vstat_username }}"
   delegate_to: localhost
 
 - name: Pause for ssh port to be active
@@ -81,24 +81,24 @@
     line: "DNS1={{ infra_ip | default(dns_server_list[0]) }}"
   when: infra_server_name is defined
 
-- name: Add nameserver
-  command: echo "{{ infra_ip }}" >> /etc/resolv.conf
-  remote_user: "root"
-  when: infra_server_name is defined
+- block:
 
-- name: Restart networking
-  command: /etc/init.d/network restart
-  remote_user: "root"
+  - name: Add nameserver
+    command: echo "{{ infra_ip }}" >> /etc/resolv.conf
+    when: infra_server_name is defined
 
-- name: Resolve fqdn
-  command: hostname "{{ inventory_hostname }}"
-  remote_user: "root"
+  - name: Restart networking
+    command: /etc/init.d/network restart
 
-- name: Update /etc/hosts file
-  lineinfile:
-    dest: /etc/hosts
-    line: "{{ vstat_mgmt_ip }}  {{ inventory_hostname }}"
-  remote_user: "root"
+  - name: Resolve fqdn
+    command: hostname "{{ inventory_hostname }}"
+
+  - name: Update /etc/hosts file
+    lineinfile:
+      dest: /etc/hosts
+      line: "{{ vstat_mgmt_ip }}  {{ inventory_hostname }}"
+  
+  remote_user: "{{ vstat_username }}"
 
 - name: Configure ntpd and ntpdate and local time zone
   include_role:
@@ -107,20 +107,21 @@
   vars: 
     rem_user: "{{ vstat_username }}"
 
-- name: Resolve "{{ vsd_fqdn }}"  to ip addr
-  shell: "getent hosts {{ vsd_fqdn }} | awk '{print $1}'"
-  register: ip_addr
-  remote_user: "root"
+- block:
 
-- name: Config firewall on VSTAT vm to accept conn on ports 9200,9300 from vsd(s)
-  script: firewall.sh "{{ ip_addr.stdout }}"
-  remote_user: "root"
+  - name: Resolve "{{ vsd_fqdn }}"  to ip addr
+    shell: "getent hosts {{ vsd_fqdn }} | awk '{print $1}'"
+    register: ip_addr
 
-- name: Restart elastic search {{ inventory_hostname }}
-  systemd:
-    name: elasticsearch
-    state: restarted
-  remote_user: "root"
+  - name: Config firewall on VSTAT vm to accept conn on ports 9200,9300 from vsd(s)
+    script: firewall.sh "{{ ip_addr.stdout }}"
+
+  - name: Restart elastic search {{ inventory_hostname }}
+    systemd:
+      name: elasticsearch
+      state: restarted
+
+  remote_user: "{{ vstat_username }}"
 
 - name: Get vsd node(s) information
   import_role:
@@ -133,4 +134,4 @@
 - name: Enable stats collection on the VSD VM
   command: /opt/vsd/vsd-stats.sh -e {{inventory_hostname}}
   delegate_to: "{{ vsd_hostname_list[0] }}"
-  remote_user: "root"
+  remote_user: "{{ vstat_username }}"

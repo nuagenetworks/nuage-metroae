@@ -10,9 +10,9 @@
 - debug: var=username_on_the_host verbosity=1
 
 - name: Get current version of VSD software
-  command: echo $VSD_VERSION
+  shell: echo $VSD_VERSION
   register: vsd_version
-  remote_user: "{{ vsd_username }}"
+  remote_user: "{{ vsd_username | default(vsd_default_username) }}"
 
 - debug: var=vsd_version verbosity=1
 
@@ -133,7 +133,10 @@
       - "vsdbackup-*.log"
     register: lst_files
 
-  remote_user: "{{ vsd_username }}"
+  remote_user: "{{ vsd_username | default(vsd_default_username) }}"
+  become: "{{ 'no' if vsd_username | default(vsd_default_username) == 'root' else 'yes' }}"
+  vars:
+    ansible_become_pass: "{{ vsd_password | default(vsd_default_password) }}"
 
 - debug: var="lst_files"
 
@@ -159,7 +162,10 @@
     validate_checksum: false
   become: false
   with_items: "{{ lst_files.results }}"
-  remote_user: "{{ vsd_username }}"
+  remote_user: "{{ vsd_username | default(vsd_default_username) }}"
+  become: "{{ 'no' if vsd_username | default(vsd_default_username) == 'root' else 'yes' }}"
+  vars:
+    ansible_become_pass: "{{ vsd_password | default(vsd_default_password) }}"
 
 - name: Create symbolic link to backup location
   file: dest="{{metro_backup_root}}/backup-{{ groups['vsds'][0] }}-latest" src="{{  vsdbackup_dir }}"  state=link

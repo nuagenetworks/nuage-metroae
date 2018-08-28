@@ -22,7 +22,8 @@
       with_items: "{{ list_stats_pids.stdout_lines|default([]) }}"
       ignore_errors: yes
       when: list_stats_pids.stdout.strip()!= ""
-    when: groups['stats'] is defined and groups['vstats']
+
+    when: groups['myvstats'] is defined and groups['myvstats']
 
   - block:
 
@@ -65,7 +66,15 @@
       with_items: "{{ list_common_pids.stdout_lines|default([]) }}"
       ignore_errors: yes
       when: list_common_pids.stdout.strip()!=""
+<<<<<<< HEAD:src/roles/vsd-services-stop/tasks/main.yml
 
     remote_user: "{{ vsd_username }}"
+=======
+
+    remote_user: "{{ vsd_username | default(vsd_default_username) }}"
+    become: "{{ 'no' if vsd_username | default(vsd_default_username) == 'root' else 'yes' }}"
+    vars:
+      ansible_become_pass: "{{ vsd_password | default(vsd_default_password) }}"
+>>>>>>> dev:roles/vsd-services-stop/tasks/main.yml
 
   when: inventory_hostname == groups['vsds'][0] or inventory_hostname == groups['vsds'][1]
