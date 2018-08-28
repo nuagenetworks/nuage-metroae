@@ -1,13 +1,14 @@
-<<<<<<< HEAD
-# Nuage Networks MetroAE Automation Engine (AE)
+# Nuage Networks Metro Automation Engine (MetroÆ)
 (4 minute read)
 
 Version: 3.0.0
 
-**Note:** The procedures have changed in version 3.0 to improve usability. If you have used previous versions of MetroAE, please see [RELEASE_NOTES.md](Documentation/RELEASE_NOTES.md) for details.
-
 Metro is an automation engine that deploys and upgrades Nuage Networks components.
 After you specify the individual details of your target platform, Metro Automation Engine (leveraging Ansible playbooks and roles) sets up the environment as specified. Metro Automation Engine can also upgrade, roll-back, and health-check the environment.
+
+## Important Note
+The procedures have changed substantially in version 3.0 to improve usability.
+If you have used previous versions of MetroAE, please see [RELEASE_NOTES.md](Documentation/RELEASE_NOTES.md) for details.
 
 ## Supported Components for Deployment
 Metro Automation Engine supports deployment of the following components as VMs on the target server. The same target server types are supported as the VSP platform.
@@ -70,6 +71,9 @@ Destroy | removes component(s) from the infrastructure |
 Upgrade | upgrades component(s) from one release to another |
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> croxley_merge
 The following workflows are examples that combine together several of the above operations into simple to use groups:
 
 * install_everything - Deploys all components specified in a deployment.
@@ -78,17 +82,20 @@ The following workflows are examples that combine together several of the above 
 
 ## Ansible
 MetroAE is based off of the Python-based Ansible operations tool.  The following sections provide more detail of how Ansible is utilized to perform workflows.
+<<<<<<< HEAD
 =======
 ## Nomenclature  
 **Ansible Host**: The host where Metro Automation Engine runs. Ansible and the required packages are installed on this host. The Ansible Host must run el7 Linux host, e.g. CentOS 7.* or RHEL 7.*.  
 **Metro Automation Engine User**: The user who runs Metro Automation Engine to deploy and upgrade components.  
 **Target Server**: The hypervisor on which one or more VSP components are installed as VMs. Each deployment may contain more than one Target Server.  
 >>>>>>> dev
+=======
+>>>>>>> croxley_merge
 
-### Nomenclature
-**Ansible Host**: The host where MetroAE runs. Ansible and the required packages are installed on this host. The Ansible Host must run el7 Linux host, e.g. Cent)S 7.* or RHEL 7.*
+## Nomenclature
+**Ansible Host**: The host where Metro Automation Engine runs. Ansible and the required packages are installed on this host. The Ansible Host must run el7 Linux host, e.g. CentOS 7.* or RHEL 7.*.
 
-**MetroAE User**: The user who runs MetroAE to deploy and upgrade components.
+**Metro Automation Engine User**: The user who runs Metro Automation Engine to deploy and upgrade components.
 
 **Target Server**: The hypervisor on which one or more VSP components are installed as VMs. Each deployment may contain more than one Target Server.
 

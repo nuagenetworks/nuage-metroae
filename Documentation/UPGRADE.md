@@ -306,7 +306,6 @@ For the purpose of this sample, a Standalone deployment is one that consists exa
 ./metroag vsp_preupgrade_health -vvvv
 ```
 
->>>>>>> master
 The health reports and any reported error should carefully be checked before proceeding with the next steps.
 
 These health checks can be run at any time of the upgrade process.
