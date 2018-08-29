@@ -110,6 +110,11 @@
   nuage_append: filename="{{ report_path }}" text="{{ inventory_hostname }} {{ ejabberd_users_json|to_nice_json }}\n"
   delegate_to: localhost
 
+- debug: var=groups['vscs']
+- debug: var=groups['vscs']|length
+- debug: var=postdeploy_only
+- debug: var=skip_vsc
+
 - name: Verify connected VSCs
   assert:
     that: "user_list.stdout|search('{{ hostvars[item].xmpp.username }}')"
@@ -121,9 +126,9 @@
   with_items: "{{ groups['vscs'] }}"
   when:
     - groups['vscs'] is defined
-    - groups['vscs']
-    - not postdeploy_only | default('False')
-    - not skip_vsc | default('False')
+    - groups['vscs'] | length > 0
+    - not postdeploy_only | default( False )
+    - not skip_vsc | default( False )
 
 - name: Get VSD deployment mode
   include_role:
