@@ -180,6 +180,7 @@ myvsd:
     api_enterprise: csp
     api_url: https://PUBLIC-IP:8443
 ```
+`csproot` is only one example of supported users. Other supported users include the CMS user and those with administrative privileges across all enterprises.
 
 ### Example `build_vars.yml` file
 
