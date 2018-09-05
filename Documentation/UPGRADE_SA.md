@@ -54,7 +54,7 @@ For this example, our standalone (SA) deployment consists of:
 5. Log into the VSD and verify the new version.
 
 ## Upgrade VSC
-This example is for one VSC node. If your topology has more than one VSC node, proceed to the **Upgrade VSC Node One** section of  [UPGRADE_HA.md](Documentation/UPGRADE_HA.md) and follow those instructions through to the end.
+This example is for one VSC node. If your topology has more than one VSC node, proceed to the **Upgrade VSC Node One** section of  [UPGRADE_HA.md](UPGRADE_HA.md) and follow those instructions through to the end.
 
 1. Run VSC health check (optional).
 
