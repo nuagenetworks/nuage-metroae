@@ -84,6 +84,8 @@ This example is for one VSC node. If your topology has more than one VSC node, p
 Upgrade your VRS(s) and then continue with this procedure. Do not proceed without completing this step.
 
 ## Upgrade VSTAT
+Our example includes a VSTAT node. If your topology does not include one, proceed to *Finalize the Upgrade* below.
+
 1. Run VSTAT health check (optional).
 
      `./metro-ansible vstat_health -e report_filename=vstat_preupgrade_health.txt -vvvv`
