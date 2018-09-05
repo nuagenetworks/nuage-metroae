@@ -68,7 +68,7 @@ Upgrade | upgrades component(s) from one release to another |
 
 2. [Customize](Documentation/CUSTOMIZE.md) variable files to match your network topology, and describe your NuageNetworks deployment specifics.
 
-3. [Deploy](Documentation/DEPLOY.md) the new components, [upgrade](Documentation/UPGRADE.md) existing components, or run a health check on your system.
+3. [Deploy](Documentation/DEPLOY.md) the new components, upgrade existing components, or run a health check on your system.
 
 4. If things did not work out as expected, [destroy](Documentation/DESTROY.md) your environment.
 
@@ -84,7 +84,8 @@ File name | Description
 [CUSTOMIZE.md](Documentation/CUSTOMIZE.md) | Customize user data files, unzip Nuage software
 [DEPLOY.md](Documentation/DEPLOY.md) | Deploy all VSP components or choose components individually.
 [DESTROY.md](Documentation/DESTROY.md) | Remove existing deployment(s) and start over.
-[UPGRADE.md](Documentation/UPGRADE.md) | Upgrade component(s) from one release to the next.
+[UPGRADE_SA.md](Documentation/UPGRADE_SA.md) | Upgrade component(s) from one release to the next in a standalone environment.
+[UPGRADE_HA.md](Documentation/UPGRADE_HA.md) | Upgrade component(s) from one release to the next in a clustered environment.
 [OPENSTACK.md](Documentation/OPENSTACK.md) | Deploy VSP components in OpenStack (limited support).
 
 
