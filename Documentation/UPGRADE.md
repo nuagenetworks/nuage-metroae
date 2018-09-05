@@ -1,8 +1,10 @@
-# Upgrading Nuage Networks Components with Metro Automation Engine
+# Upgrading Nuage Networks Components with MetroÆ
 
-## Prerequisites / Requirements
+## Prerequisites / Requirements / Notes
 
-Before upgrading any components, you must have previously [set up your Nuage Metro Automation Engine Ansible environment](SETUP.md) and [customized the upgrade environment for your target platform](CUSTOMIZE.md).
+Before upgrading any components, you must have previously [set up your Nuage Metro Automation Engine Ansible environment](SETUP.md) and [customized the upgrade environment for your target platform](CUSTOMIZE.md). Ensure that you have specfied `upgrade_from_version` and `upgrade_to_version` in `build_vars.yml`. MetroÆ uses these values to determine whether it is to perform a major upgrade or a minor upgrade. Failure to populate these variables could cause a minor upgrade to be treated as a major upgrade which results in the task being stuck in turn-on-api (which should not be executed for minor upgrades).
+
+By default, the special enterprise called Shared Infrastructure is created on the VSD. When putting domains in maintenance mode prior to an upgrade, MetroÆ skips Shared Infrastructure domains because they cannot be modofied.
 
 ## VSD, VSC, & VSTAT (elasticsearch ) HA/Cluster upgrade at a glance
 
