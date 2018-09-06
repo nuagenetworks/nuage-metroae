@@ -87,7 +87,7 @@ Execute the command:
 
 After you've set up your environment and customized for your topology, you have several options:
 * deploy new components. See [DEPLOY.md](DEPLOY.md) for guidance.
-* upgrade existing components to a newer version. See [UPGRADE.md](UPGRADE.md) for guidance.
+* upgrade existing components to a newer version. See [UPGRADE_SA.md](UPGRADE_SA.md) for standalone deployments or [UPGRADE_HA.md](UPGRADE_HA.md) for clustered deployments.
 * remove previously deployed components(s). See [DESTROY.md](DESTROY.md) for guidance.
 
 ## Questions, Feedback, and Contributing
