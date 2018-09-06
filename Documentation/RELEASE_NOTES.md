@@ -1,6 +1,11 @@
 # Metro Automation Engine Release Notes
 ## Release 2.4.4
+### New Features and Enhancements
+* upgrade VSTAT and VSC operating with user other than root
+* Skip shared domain for maintenance mode
+* Updates to use a simpler path for the backup directory on the VSD, to rename some variables so that their use is more obvious, and to clean up the backup directory on the VSD after the backup has been transferred from the VSD to the localhost.
 ### Resolved Issues
+* Remove local connection from VSD decouple
 * add remote user to get monit summary process
 * add become privileges to monit_summary
 
