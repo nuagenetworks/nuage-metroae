@@ -1,25 +1,25 @@
 ---
 - name: Stat the file
   stat:
-    path: "{{ inventory_dir }}/{{ file_name }}"
+    path: "{{ file_path }}"
     get_md5: yes
   register: data_file
 
 - block:
-  
+
   - name: Stat the source if symlink
     stat:
       path: "{{ data_file.stat.lnk_source }}"
       get_md5: yes
     register: data_lnk_source
-  
-  - name: 
+
+  - name:
     assert:
       that: "data_lnk_source.stat.exists"
-      msg:  "Required file {{ file_name }} not found"
+      msg:  "Required file {{ file_path }} not found"
 
   - name: Find md5 file
-    find: path="{{ inventory_dir }}" pattern="{{ file_name }}.md5"
+    find: path="{{ inventory_dir }}" pattern="{{ file_path | basename }}.md5"
     register: md5_symlink_file
 
   - name: Set variable to do build if md5 not found
@@ -41,18 +41,18 @@
       when: data_lnk_source.stat.md5 != old_md5_symlink_string.stdout
 
     when: md5_symlink_file.matched > 0 and not do_build
- 
+
   when: data_file.stat.mimetype|match('inode/symlink')
 
-- block: 
+- block:
 
-  - name: 
+  - name:
     assert:
       that: "data_file.stat.exists"
-      msg:  "Required file {{ file_name }} not found"
+      msg:  "Required file {{ file_path }} not found"
 
   - name: Find md5 file
-    find: path="{{ inventory_dir }}" pattern="{{ file_name }}.md5"
+    find: path="{{ inventory_dir }}" pattern="{{ file_path | basename }}.md5"
     register: md5_file
 
   - name: Set variable to do build if md5 not found

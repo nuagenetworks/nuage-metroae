@@ -1,21 +1,4 @@
 ---
-- block:
-  - name: Verify that upgrade_vmname is defined if this is an upgrade VM
-    assert:
-      that: "upgrade_vmname is defined"
-      msg: "For vstat-upgrade-destroy, upgrade_vmname must be defined in build_vars.yml"
-
-  - name: Set local variable with upgrade_vmname
-    set_fact:
-      vm_name: "{{ upgrade_vmname }}"
-  when: destroy_upgrade_vm | default( False )
-
-- block:
-  - name: Set local variable with vmname
-    set_fact:
-      vm_name: "{{ vmname }}"
-  when: not (destroy_upgrade_vm | default( False ))
-
 - name: Finding VM folder
   connection: local
   vmware_guest_find:
@@ -49,6 +32,32 @@
   when: vstat_vm_facts.exception is defined
 
 - block:
+  
+  - name: Get Facts of VM
+    vmware_vm_facts:
+      hostname: "{{ target_server }}"
+      username: "{{ vcenter.username }}"
+      password: "{{ vcenter.password }}"
+      delegate_to: localhost
+      register: vm_list
+
+  - name: Set VM UUID
+    set_fact:
+      uuid: "{{ vm_list.virtual_machines[vm_name]['uuid'] }}"
+    when: vm_name in vm_list.virtual_machines
+    
+  - debug: var=uuid
+    
+  - name: Turn off autostart
+    connection: local
+    vmware_autostart:
+      name: "{{ vm_name }}"
+      uuid: "{{ uuid }}"
+      hostname: "{{ target_server }}"
+      username: "{{ vcenter.username }}"
+      password: "{{ vcenter.password }}"
+      state: disable
+      
   - name: Power off the Stats VM
     connection: local
     vmware_guest:
@@ -73,4 +82,6 @@
       folder: "/{{ vcenter.datacenter }}{{ vstat_vm_folder['folders'][0] }}"
       name: "{{ vm_name }}"
       state: "absent"
+    when: (not preserve_vm | default( False ))
+
   when: vstat_vm_folder|succeeded and vstat_vm_facts|succeeded

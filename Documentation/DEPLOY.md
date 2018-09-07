@@ -8,8 +8,7 @@ You can execute MetroAG playbooks to perform the following installations:
 ## Prerequisites / Requirements
 Before deploying any components, you must have previously [set up your Nuage MetroAG Ansible environment](SETUP.md "link to SETUP documentation") and [customized the environment for your target platform](CUSTOMIZATION.md "link to deployment documentation").
 
-Make sure you have unzipped the Nuage Networks *.tar.gz files into their proper locations in the directory structure, so MetroAG can find the path of the Nuage components automatically. You should have done this in the customization phase. See [CUSTOMIZATION.md](CUSTOMIZATION.md) for details.
-
+Make sure you have unzipped copies of all the Nuage Networks files you are going to need for installation or upgrade. These are generally distributed as `*.tar.gz` files that are downloaded by you from Nokia OLCS. You can unzip these files by using the nuage_unzip playbook which will place the files in subdirectories under the path specified for the `nuage_unzipped_files_dir` variable in `common.yml`. You can also unzip the files manually and copy them to their proper locations by hand. For details of this process, including the subdirectory layout that Metro Automation Engine expects.
 
 ## Use of MetroAG Tool
 MetroAG can perform a workflow using the command-line tool as follows:
@@ -70,6 +69,23 @@ Metro Automation Engine can automatically bootstrap (ZFB) a NSGV when deploying 
 * Customize variables in [`zfb_vars.yml`](deployments/default/zfb_vars.yml "link to zfb_vars.yml file")
 * Specify `bootstrap_method: zfb_metro,` in nsgvs parameters in [`nsgvs.yml`](deployments/default/nsgvs.yml "link to nsgvs.yml file")
 
+## Copy QCOW2 Files before Deployment
+
+When installing or upgrading in a KVM environment, the Metro Automation Engine will copy the QCOW2 image files to the target file server during the predeploy phase. As an option, the playbook copy_qcow2_files can be used to pre-position the qcow2 files for all the components. This playbook gives the ability to copy the required images files first and then run install or upgrade later.
+
+When QCOW2 files are pre-positioned, you must add a command-line variable, 'skip_copy_qcow2', to indicate that copying QCOW2 files should be skipped. Otherwise, the QCOW2 files will be copied again. An extra-vars 'skip_copy_qcow2' needs to be passed on the command line during the deployment phase to skip copying of the image files again. For example, to pre-position the QCOW2 images, run:
+
+```
+./metro-ansible copy_qcow2_files
+```
+
+Then, to skip the image copy during the install:
+
+```
+./metro-ansible install_everything.yml --extra-vars skip_copy_qcow2=True
+```
+
+
 ## Debugging
 
 By default, ansible.cfg tells ansible to log to ./ansible.log.
@@ -88,7 +104,7 @@ If you would like to remove an entire deployment, or individual components, and 
 
 ## Next Steps
 
-After you have successfully deployed Nuage Networks VSP components, you may want to [upgrade](UPGRADE.md) to a newer version at some point in the future. See [UPGRADE.md](UPGRADE.md) for details.
+After you have successfully deployed Nuage Networks VSP components, you may want to [upgrade](UPGRADE.md) to a newer version at some point in the future. See [UPGRADE_SA.md](UPGRADE_SA.md) for standalone deployments and [UPGRADE_HA.md](UPGRADE_HA.md) for clustered deployments.
 
 ## Questions, Feedback, and Contributing
 

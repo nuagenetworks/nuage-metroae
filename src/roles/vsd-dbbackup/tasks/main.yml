@@ -10,18 +10,18 @@
 - debug: var=username_on_the_host verbosity=1
 
 - name: Get current version of VSD software
-  command: echo $VSD_VERSION
+  shell: echo $VSD_VERSION
   register: vsd_version
-  remote_user: "{{ vsd_username }}"
+  remote_user: "{{ vsd_username | default(vsd_default_username) }}"
 
 - debug: var=vsd_version verbosity=1
 
 - name: Set name of backup directory
-  set_fact: vsdbackup_dir="{{metro_backup_root}}/backup-{{ inventory_hostname }}-{{ ansible_date_time.iso8601_basic_short }}/"
+  set_fact: vsd_localhost_backup_dir="{{metro_backup_root}}/backup-{{ inventory_hostname }}-{{ ansible_date_time.iso8601_basic_short }}/"
 
 - name: Create the backup directory
   file:
-    path: "{{ vsdbackup_dir }}"
+    path: "{{ vsd_localhost_backup_dir }}"
     state: directory
     mode: 0755
   delegate_to: localhost
@@ -41,7 +41,7 @@
     debug: var=mode_status verbosity=1
   when: inventory_hostname in groups['vsds']
 
-- name: Read status of the DB upgrade directory and verify it 
+- name: Read status of the DB upgrade directory and verify it
   include_role:
     name: common
     tasks_from: vsd-verify-db-status
@@ -62,7 +62,7 @@
   - name: Create a file with purge timer value to be restored after VSD upgrade
     copy:
       content: "{{ update_time_status.result }}"
-      dest: "{{ vsdbackup_dir }}/purge_time"
+      dest: "{{ vsd_localhost_backup_dir }}/purge_time"
     delegate_to: localhost
 
   #TODO move updating gateway purge timer from vsd-dbbackup
@@ -122,9 +122,9 @@
   - name: Umount the ISO
     shell: "umount /media/CDROM"
 
-  - name: Find files created in {{ vsdbackup_dir }}
+  - name: Find files created in {{ vsd_backup_dir }}
     find:
-      path: "{{ vsdbackup_dir }}"
+      path: "{{ vsd_backup_dir }}"
       patterns: "{{ item }}"
     with_items:
       - "myappconfiguration-*.gz"
@@ -133,11 +133,15 @@
       - "vsdbackup-*.log"
     register: lst_files
 
-  remote_user: "{{ vsd_username }}"
+  remote_user: "{{ vsd_username | default(vsd_default_username) }}"
+  become: "{{ 'no' if vsd_username | default(vsd_default_username) == 'root' else 'yes' }}"
+  vars:
+    ansible_become_pass: "{{ vsd_password | default(vsd_default_password) }}"
 
-- debug: var="lst_files"
+- name: Print out the list of files
+  debug: var="lst_files"
 
-- name: Verify files found in {{ vsdbackup_dir }}
+- name: Verify files found in {{ vsd_backup_dir }}
   assert:
     that: "{{ item.matched }} > 0"
     msg: "Could not find file {{ item.item }}"
@@ -145,7 +149,7 @@
 
 - name: Create backup dir
   file:
-    dest: "{{ vsdbackup_dir }}"
+    dest: "{{ vsd_localhost_backup_dir }}"
     state: directory
     owner: "{{ username_on_the_host.stdout }}"
     group: "{{ username_on_the_host.stdout }}"
@@ -154,13 +158,25 @@
 - name: Fetch files from vsd and copy them to backup folder on backup_machine
   fetch:
     src: "{{ item.files[0].path }}"
-    dest: "{{ vsdbackup_dir }}"
+    dest: "{{ vsd_localhost_backup_dir }}"
     flat: yes
     validate_checksum: false
-  become: false
   with_items: "{{ lst_files.results }}"
-  remote_user: "{{ vsd_username }}"
+  remote_user: "{{ vsd_username | default(vsd_default_username) }}"
+  become: "{{ 'no' if vsd_username | default(vsd_default_username) == 'root' else 'yes' }}"
+  vars:
+    ansible_become_pass: "{{ vsd_password | default(vsd_default_password) }}"
 
 - name: Create symbolic link to backup location
-  file: dest="{{metro_backup_root}}/backup-{{ groups['vsds'][0] }}-latest" src="{{  vsdbackup_dir }}"  state=link
+  file: dest="{{metro_backup_root}}/backup-{{ groups['vsds'][0] }}-latest" src="{{ vsd_localhost_backup_dir }}"  state=link
   delegate_to: localhost
+
+- name: Clean up {{ vsd_backup_dir }}
+  file:
+    path: "{{ vsd_backup_dir }}"
+    state: absent
+  ignore_errors: True
+  remote_user: "{{ vsd_username | default(vsd_default_username) }}"
+  become: "{{ 'no' if vsd_username | default(vsd_default_username) == 'root' else 'yes' }}"
+  vars:
+    ansible_become_pass: "{{ vsd_password | default(vsd_default_password) }}"
