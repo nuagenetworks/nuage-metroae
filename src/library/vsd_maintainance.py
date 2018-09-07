@@ -48,7 +48,8 @@ def set_maintainance_mode(csproot, state):
     try:
         lst_enterprises = csproot.enterprises.get()
         for enterprise in lst_enterprises:
-            lst_enterprise_ids.append(enterprise.id)
+            if enterprise.name != 'Shared Infrastructure':
+                lst_enterprise_ids.append(enterprise.id)
         lst_l3_domains = csproot.domains.get()
         if lst_l3_domains:
             for l3_domain in lst_l3_domains:
@@ -80,12 +81,14 @@ def set_maintainance_mode(csproot, state):
         else:
             result_str = result_str + ' No L2 domains found\
                          to %s maintainance mode' % state
-    except exceptions.BambouHTTPError as e:
-        if "There are no attribute changes" in e.message:
+        module.exit_json(changed=True, result="%s" % result_str)
+    except exceptions.BambouHTTPError as be:
+        if "There are no attribute changes" in be.message:
             module.exit_json(changed=True, result="Maintainance mode is already enabled")
+        else:
+            module.fail_json(msg="Could not set maintainance mode : %s" % be)
     except Exception as e:
         module.fail_json(msg="Could not set maintainance mode : %s" % e)
-    module.exit_json(changed=True, result="%s" % result_str)
 
 
 def format_api_version(version):

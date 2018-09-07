@@ -443,6 +443,60 @@ def vsd_detail_to_json(string):
     return json.dumps(dict)
 
 
+def vsc_router_interfaces_to_json(string):
+    ''' Given a string representation of the output of "show router interface" command, return
+    a JSON representation of the relevant statuses of the interfaces.
+
+    Sample output from the command as a string:
+    ===============================================================================
+    Interface Table (Router: Base)
+    ===============================================================================
+    Interface-Name                   Adm         Opr(v4/v6)  Mode    Port/SapId
+       IP-Address                                                    PfxState
+    -------------------------------------------------------------------------------
+    control                          Up          Up/Down     Network A/2:0
+       10.106.100.202/24                                            n/a
+    system                           Up          Up/Down     Network system
+       1.1.1.2/32                                                   n/a
+    -------------------------------------------------------------------------------
+    Interfaces : 2
+    ===============================================================================
+
+    Sample output after applying filter:
+    "show_router_interfaces_json": {
+        "control_Adm": "Up",
+        "control_Oprv4": "Up",
+        "control_Oprv6": "Down",
+        "system_Adm": "Up",
+        "system_Oprv4": "Up",
+        "system_Oprv6": "Down"
+    }
+    '''
+    dict = {}
+    rows = string.split('\n')
+    for row in rows:
+        columns = row.split()
+        if columns[0] == 'control':
+            control_Adm = columns[1]
+            control_Opr = columns[2].split('/')
+            control_Oprv4 = control_Opr[0]
+            control_Oprv6 = control_Opr[1]
+        elif columns[0] == 'system':
+            system_Adm = columns[1]
+            system_Opr = columns[2].split('/')
+            system_Oprv4 = system_Opr[0]
+            system_Oprv6 = system_Opr[1]
+
+    dict["control_Adm"] = control_Adm
+    dict["control_Oprv4"] = control_Oprv4
+    dict["control_Oprv6"] = control_Oprv6
+    dict["system_Adm"] = system_Adm
+    dict["system_Oprv4"] = system_Oprv4
+    dict["system_Oprv6"] = system_Oprv6
+
+    return json.dumps(dict)
+
+
 class FilterModule(object):
     ''' Query filter '''
 
@@ -458,5 +512,6 @@ class FilterModule(object):
             'image_version_to_json': image_version_to_json,
             'show_version_to_json': show_version_to_json,
             'vsc_system_connections_to_json': vsc_system_connections_to_json,
-            'vsd_detail_to_json': vsd_detail_to_json
+            'vsd_detail_to_json': vsd_detail_to_json,
+            'vsc_router_interfaces_to_json': vsc_router_interfaces_to_json
         }

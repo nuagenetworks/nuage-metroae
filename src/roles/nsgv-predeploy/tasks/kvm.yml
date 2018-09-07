@@ -64,19 +64,27 @@
     node_running: "{{ vmname in virt_vms.list_vms }}"
 
 - block:
+  - name: set skip copy images to default
+    set_fact: 
+      skip_copy_images: False
+    when: skip_copy_images is undefined 
 
-  - name: Create libvirt image directory
-    file: path={{ images_path }}/{{ vmname }}
-          state=directory
-          owner={{ libvirt.user }}
-          group={{ libvirt.group }}
-
-  - name: Copy the VM qcow image to virt images directory
-    copy: src={{ qcow2_path }}/{{ qcow2_file_name }}
-          dest={{ images_path }}/{{ vmname }}
-          owner={{ libvirt.user }}
-          group={{ libvirt.group }}
-
+  - include_tasks: copy_qcow2.yml
+    when: not skip_copy_images
+    
+  - block: 
+    - name: Check to make sure there is an existing qcow image
+      stat: 
+        path: "{{ images_path }}/{{ vmname }}/{{ qcow2_file_name }}"
+      register: statResult
+      
+    - name: check the result of image find command
+      assert:
+        that: statResult.stat.exists == True
+        msg: Missing qcow2 file in {{ images_path }}/{{ vmname }}/{{ qcow2_file_name }}
+        
+    when: skip_copy_images
+    
   when: not node_running
   delegate_to: "{{ target_server }}"
   remote_user: "{{ target_server_username }}"
