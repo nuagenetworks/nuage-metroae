@@ -1,0 +1,36 @@
+- name: Set major or minor upgrade flag
+  include_role:
+    name: common
+    tasks_from: set-major-minor-versions.yml
+
+- block:
+
+  - name: Clean known_hosts of VSD's on "{{ target_server }}"
+    command: ssh-keygen -R "{{ mgmt_ip }}"
+    delegate_to: localhost
+    ignore_errors: True
+
+  - name: Get current version of VSD software
+    command: echo $VSD_VERSION
+    register: vsd_version
+    remote_user: "{{ vsd_username }}"
+
+  - name: Print vsd_version output when verbosity >= 1
+    debug: var=vsd_version verbosity=1
+
+  - name: Check VSD License
+    check_vsd_license_validity:
+      vsd_auth:
+        "{{ vsd_auth }}"
+      api_version: "{{ vsd_version.stdout }}"
+    register: license_valid
+    delegate_to: localhost
+
+  - debug: var=license_valid verbosity=1
+
+  - block:
+    - pause:
+        prompt: "Make sure you have valid license file for the new VSP version as existing licenses will be invalid after the upgrade"
+    when: not license_valid
+
+  when: upgrade_major_or_minor | match('major')

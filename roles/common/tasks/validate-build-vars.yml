@@ -1,0 +1,49 @@
+---  
+- name: Verify that the ntp servers are dotted decimal notation
+  assert:
+    that: "'{{ item }}'|ipaddr"
+    msg: "{{ item }} is not a valid NTP server IP address, quiting"
+  with_items: "{{ ntp_server_list }}"
+  when: ntp_server_list is defined
+
+- name: Verify that the VSC system name is not longer than 32 characters
+  assert:
+    that: "'{{item.system_name|default(item.hostname)}}'|length <= 32"
+    msg: "'{{item.system_name|default(item.hostname)}}' is too long to be a valid VSC system name, 
+          please define a 'system_name' with up to 32 chars for {{ item.hostname }}"
+  with_items: "{{ myvscs }}"
+  when: myvscs is defined
+
+- name: Verify exactly 1 or 3 vsds are defined
+  assert: 
+    that:  "myvsds|length == 1 or myvsds|length == 3" 
+    msg: "Please define either 1 or 3 vsds"
+  when: myvsds is defined
+
+- name: Verify exactly 1 or 3 vstats(elastic search) are defined
+  assert:
+    that:  "myvstats|length == 1 or myvstats|length == 3"
+    msg: "Please define either 1 or 3 vstats"
+  when: myvstats is defined
+
+# TODO:
+# Use the following block to disable the feature for now. We need to update our
+# test infrastructure to accomodate.
+- block:
+
+  - name: Verify VSD DNS entries exist and hostnames map to their IPs
+    include_tasks: check-dns.yml
+    with_items: "{{ myvsds }}"
+    when: dns_server_list is defined and myvsds is defined
+
+  - name: Verify VStat DNS entries exist and hostnames map to their IPs
+    include_tasks: check-dns.yml
+    with_items: "{{ myvstats }}"
+    when: dns_server_list is defined and myvstats is defined
+
+  - name: Verify VNS Utils DNS entries exist and hostnames map to their IPs
+    include_tasks: check-dns.yml
+    with_items: "{{ myvnsutils }}"
+    when: dns_server_list is defined and myvnsutils is defined
+
+  when: false

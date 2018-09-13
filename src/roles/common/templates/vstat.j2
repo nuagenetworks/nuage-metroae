@@ -6,18 +6,22 @@ component_type: vstat
 target_server_type: {{ item.target_server_type | default('kvm') }}
 hostname: {{ item.hostname }}
 
-{% if item.target_server_type | match("kvm") or item.target_server_type | match("vcenter") %}
-target_server: {{ item.target_server }}
-{% endif %}
+{% if item.target_server_type | match("kvm") or item.target_server_type | match("vcenter") or item.target_server_type | match("aws") %}
 
-{% if item.target_server_type | match("kvm") or item.target_server_type | match("vcenter") or item.target_server_type | match("nuagex") %}
+{% if not item.target_server_type | match("aws") %}
+target_server: {{ item.target_server }}
+mgmt_gateway: {{ item.mgmt_gateway }}
+mgmt_netmask: {{ item.mgmt_netmask }}
+{% endif %}
+mgmt_ip: {{ item.mgmt_ip }}
+
 {% if item.vmname is defined %}
 vmname: {{ item.vmname }}
 {% else %}
 vmname: {{ item.hostname }}
 {% endif %}
 
-
+upgrade_vmname: {{ item.upgrade_vmname is defined | ternary( item.upgrade_vmname, [ item.vmname | default(item.hostname), "new" ] | join('-') ) }}
 mgmt_ip: {{ item.mgmt_ip }}
 mgmt_prefix: {{ item.mgmt_ip_prefix }}
 mgmt_gateway: {{ item.mgmt_gateway }}
@@ -62,6 +66,14 @@ vcenter:
   datastore: {{ item.vcenter_datastore | default( vcenter_datastore ) }}
   resource_pool: {{ item.vcenter_resource_pool | default(vcenter_resource_pool | default("NONE")) }}
 
+{% endif %}
+
+{% if item.target_server_type | match("aws") %}
+aws_region: "{{ item.aws_region }}"
+aws_ami_id: "{{ item.aws_ami_id }}"
+aws_instance_type: "{{ item.aws_instance_type | default('m4.large') }}"
+aws_key_name: "{{ item.aws_key_name }}"
+aws_mgmt_eni: "{{ item.aws_mgmt_eni }}"
 {% endif %}
 
 {% endif %}

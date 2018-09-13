@@ -1,0 +1,23 @@
+---
+- name: Destroy NSGv AWS Stack
+  delegate_to: localhost
+  cloudformation:
+    aws_access_key: "{{ aws_access_key | default(None) }}"
+    aws_secret_key: "{{ aws_secret_key | default(None) }}"
+    stack_name: "{{ vmname | replace('.', '-') }}"
+    state: "absent"
+    region: "{{ aws_region }}"
+  register: rc_aws_cfn_nsgami
+
+- block:
+  - name: Destroy Virtual Private Cloud
+    delegate_to: localhost
+    cloudformation:
+      aws_access_key: "{{ aws_access_key | default(None) }}"
+      aws_secret_key: "{{ aws_secret_key | default(None) }}"
+      stack_name: "VPC-{{ vmname | replace('.', '-') }}"
+      state: "absent"
+      region: "{{ aws_region }}"
+    register: rc_aws_cfn_nuagevpc
+
+  when: provision_vpc is defined

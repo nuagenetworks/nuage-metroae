@@ -36,6 +36,11 @@ vsd_sa_or_ha: ha
 {% endif %}
 
 mgmt_ip: {{ item.mgmt_ip }}
+{% if not item.target_server_type | match("aws") %}
+target_server: {{ item.target_server }}
+mgmt_gateway: {{ item.mgmt_gateway }}
+mgmt_netmask: {{ item.mgmt_netmask }}
+{% endif %}
 mgmt_prefix: {{ item.mgmt_ip_prefix }}
 mgmt_gateway: {{ item.mgmt_gateway }}
 
@@ -74,6 +79,15 @@ vcenter:
   datastore: {{ item.vcenter_datastore | default( vcenter_datastore ) }}
   resource_pool: {{ item.vcenter_resource_pool | default(vcenter_resource_pool | default('NONE')) }}
 
+{% endif %}
+
+{% if item.target_server_type | match("aws") %}
+aws_region: "{{ item.aws_region }}"
+aws_ami_id: "{{ item.aws_ami_id }}"
+aws_upgrade_ami_id: "{{ item.aws_upgrade_ami_id }}"
+aws_instance_type: "{{ item.aws_instance_type | default('m4.large') }}"
+aws_key_name: "{{ item.aws_key_name }}"
+aws_mgmt_eni: "{{ item.aws_mgmt_eni }}"
 {% endif %}
 
 {% endif %}

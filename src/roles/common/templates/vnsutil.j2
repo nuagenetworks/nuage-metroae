@@ -4,12 +4,15 @@
 #
 target_server_type: {{ item.target_server_type | default('kvm') }}
 hostname: {{ item.hostname }}
+{% if item.target_server_type | match("kvm") or item.target_server_type | match("vcenter") or item.target_server_type | match("aws") %}
 
-{% if item.target_server_type | match("kvm") or item.target_server_type | match("vcenter") %}
 target_server: {{ item.target_server }}
+{% if not item.target_server_type | match("aws") %}
+mgmt_gateway: {{ item.mgmt_gateway }}
+mgmt_netmask: {{ item.mgmt_netmask }}
 {% endif %}
+mgmt_ip: {{ item.mgmt_ip }}
 
-{% if item.target_server_type | match("kvm") or item.target_server_type | match("vcenter") or item.target_server_type | match("nuagex") %}
 {% if item.vmname is defined %}
 vmname: {{ item.vmname }}
 {% else %}
@@ -23,7 +26,7 @@ mgmt_gateway: {{ item.mgmt_gateway }}
 
 {% if item.data_fqdn is defined %}
 data_fqdn: {{ item.data_fqdn }}
-{% endif %}
+{% endif  %}
 {% if item.data_ip is defined %}
 data_ip: {{ item.data_ip }}
 data_netmask: {{ item.data_netmask }}
@@ -75,4 +78,13 @@ vcenter:
   resource_pool: {{ item.vcenter_resource_pool | default(vcenter_resource_pool | default("NONE")) }}
 {% endif %}
 
+{% endif %}
+
+{% if item.target_server_type | match("aws") %}
+aws_region: "{{ item.aws_region }}"
+aws_ami_id: "{{ item.aws_ami_id }}"
+aws_instance_type: "{{ item.aws_instance_type | default('t2.medium') }}"
+aws_key_name: "{{ item.aws_key_name }}"
+aws_mgmt_eni: "{{ item.aws_mgmt_eni }}"
+aws_data_eni: "{{ item.aws_data_eni }}"
 {% endif %}
