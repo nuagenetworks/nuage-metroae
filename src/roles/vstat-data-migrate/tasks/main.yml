@@ -88,7 +88,10 @@
         that: es_status.status.SubState == 'running'
         msg: "Elasticsearch process is not running after restart"
  
-    remote_user: "{{ vstat_username }}"
+    remote_user: "{{ vstat_username | default(vstat_default_username) }}"
+    become: "{{ vstat_should_become }}"
+    vars:
+      ansible_become_pass: "{{ vstat_password | default(vstat_default_password) }}"
 
   - name: Read the repo name to be recreated from the file
     command: "cat {{metro_backup_root}}/backup-{{ groups['vstats'][0] }}-latest/repo_snapshot_name"
@@ -96,15 +99,19 @@
     delegate_to: localhost
     run_once: true
     
-  - name: Create repo on the new vstat vm 
-    command: "python /tmp/{{ create_repo }}"
-    remote_user: "{{ vstat_username }}"
-    run_once: true
+  - block:
 
-  - name: Get the repo created by backup script 
-    command: "python /tmp/{{ show_repo }}"
-    register: repo_path
-    remote_user: "{{ vstat_username }}"
+    - name: Create repo on the new vstat vm 
+      command: "python /tmp/{{ create_repo }}"
+
+    - name: Get the repo created by backup script 
+      command: "python /tmp/{{ show_repo }}"
+      register: repo_path
+
+    remote_user: "{{ vstat_username | default(vstat_default_username) }}"
+    become: "{{ vstat_should_become }}"
+    vars:
+      ansible_become_pass: "{{ vstat_password | default(vstat_default_password) }}"
     run_once: true
 
   - name: Print contents of show_repo output when verbosity >= 1
@@ -127,22 +134,26 @@
     remote_user: "{{ username_on_the_host.stdout }}"
     delegate_to: localhost
     run_once: true
-   
-  - name: Set permissions after transferring the backup files
-    file:
-      dest: "{{ vstat_backup_dir }}"
-      owner: "elasticsearch"
-      group: "elasticsearch"
-      state: directory
-      recurse: yes
-      mode: 0777
-    remote_user: "{{ vstat_username }}"
-    run_once: true
- 
-  - name: Restore the snapshot on the new vstat VM
-    command: "python /tmp/{{ restore_snapshot }}"
-    register: restore_snap
-    remote_user: "{{ vstat_username }}"
+
+  - block:
+
+    - name: Set permissions after transferring the backup files
+      file:
+        dest: "{{ vstat_backup_dir }}"
+        owner: "elasticsearch"
+        group: "elasticsearch"
+        state: directory
+        recurse: yes
+        mode: 0777
+
+    - name: Restore the snapshot on the new vstat VM
+      command: "python /tmp/{{ restore_snapshot }}"
+      register: restore_snap
+
+    remote_user: "{{ vstat_username | default(vstat_default_username) }}"
+    become: "{{ vstat_should_become }}"
+    vars:
+      ansible_become_pass: "{{ vstat_password | default(vstat_default_password) }}"
     run_once: true
 
   - name: Print contents of restore_snapshot output when verbosity >= 1
@@ -152,7 +163,10 @@
   - name: Get the contents of created snapshot
     command: "python /tmp/{{ show_snapshot }}"
     register: snapshot_contents
-    remote_user: "{{ vstat_username }}"
+    remote_user: "{{ vstat_username | default(vstat_default_username) }}"
+    become: "{{ vstat_should_become }}"
+    vars:
+      ansible_become_pass: "{{ vstat_password | default(vstat_default_password) }}"
     run_once: true
 
   - name: Create local variable with snap_contents output to json
@@ -175,17 +189,19 @@
 
     - name: Get the list of all indices
       command: "python /tmp/{{ get_indices }}"
-      remote_user: "{{ vstat_username }}"
+      remote_user: "{{ vstat_username | default(vstat_default_username) }}"
+      become: "{{ vstat_should_become }}"
+      vars:
+        ansible_become_pass: "{{ vstat_password | default(vstat_default_password) }}"
       register: indices_output
-      run_once: true
 
     - name: Verify the contents of the snapshot created
       assert:
         that: '"{{ item }}" in indices_output.stdout'
         msg: "{{ item }} index was not found"
       with_items: "{{ snapshot_contents_json['indices'] }}"
-      run_once: true
-  
+
+    run_once: true
     when: list_of_indices is not defined
   
   when:
