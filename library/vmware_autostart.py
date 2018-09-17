@@ -50,6 +50,11 @@ options:
         virtual machine in the order to be started
     required: false
     default: 10
+  validate_certs:
+    description:
+      - Whether Ansible should validate ssh certificates
+    required: False
+    default: yes
 
 '''
 
@@ -62,6 +67,7 @@ EXAMPLES = '''
     username: vCenter_username
     password: vCenter_password
     state: enable
+    validate_certs: no
 
 # Example for disabling or not enabling autostart for vm_1
 - vmware_autostart:
@@ -161,18 +167,28 @@ def configure_autostart(host, startDelay, vmname, state):
 
 
 def main():
-    arg_spec = dict(
-        name=dict(required=True, type='str'),
-        uuid=dict(required=True, type='str'),
-        hostname=dict(required=True, type='str'),
-        port=dict(required=False, type=int, default=443),
-        username=dict(required=True, type='str', no_log=True),
-        password=dict(required=True, type='str', no_log=True),
-        state=dict(required=True, type='str'),
-        delay=dict(required=False, type=int, default=10)
+    module = AnsibleModule(
+        argument_spec=dict(
+            hostname=dict(
+                type='str',
+                default=os.environ.get('VMWARE_HOST')
+            ),
+            username=dict(
+                type='str',
+                default=os.environ.get('VMWARE_USER')
+            ),
+            password=dict(
+                type='str', no_log=True,
+                default=os.environ.get('VMWARE_PASSWORD')
+            ),
+            validate_certs=dict(required=False, type='bool', default=True),
+            name=dict(required=True, type='str'),
+            uuid=dict(required=False, type='str'),
+            port=dict(required=False, type=int, default=443),
+            delay=dict(required=False, type=int, default=10)
+            state=dict(required=True, type='str', choices=['enable', 'disable'])
+        ),
     )
-
-    module = AnsibleModule(argument_spec=arg_spec, supports_check_mode=True)
 
     ip_addr = module.params['hostname']
     username = module.params['username']
