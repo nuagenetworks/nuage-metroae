@@ -10,7 +10,7 @@
     validate_certs: no
   register: vsc_vm_folder
   ignore_errors: on
-  
+
 - name: Gathering info on VM
   connection: local
   vmware_guest_facts:
@@ -28,9 +28,9 @@
 - debug: var=vsc_vm_facts verbosity=1
 
 - block:
-  
+
   - block:
-  
+
     - name: Get Facts of VM
       vmware_vm_facts:
         hostname: "{{ target_server }}"
@@ -38,15 +38,15 @@
         password: "{{ vcenter.password }}"
       delegate_to: localhost
       register: vm_list
-      
+
     - name: Set VM UUID
       set_fact:
         uuid: "{{ vm_list.virtual_machines[vm_name]['uuid'] }}"
       when: vm_name in vm_list.virtual_machines
-  
+
     - debug: var=uuid
-    
-    - name: Turn off autostart
+
+    - name: Turn off autostart skip until support for vCenter 6.5+ is added
       connection: local
       vmware_autostart:
         name: "{{ vm_name }}"
@@ -55,6 +55,7 @@
         username: "{{ vcenter.username }}"
         password: "{{ vcenter.password }}"
         state: disable
+      when: False
 
     - name: Power off the VSC VM
       connection: local
@@ -67,7 +68,7 @@
         folder: "/{{ vcenter.datacenter }}{{ vsc_vm_folder['folders'][0] }}"
         name: "{{ vmname }}"
         state: "poweredoff"
-      
+
     when: vsc_vm_facts['instance']['hw_power_status'] == 'poweredOn'
 
   - name: Removing the VSC VM
@@ -81,5 +82,5 @@
       folder: "/{{ vcenter.datacenter }}{{ vsc_vm_folder['folders'][0] }}"
       name: "{{ vmname }}"
       state: "absent"
-      
+
   when: vsc_vm_folder|succeeded and vsc_vm_facts|succeeded

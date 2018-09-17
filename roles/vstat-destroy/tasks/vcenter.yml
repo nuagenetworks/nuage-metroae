@@ -32,7 +32,7 @@
   when: vstat_vm_facts.exception is defined
 
 - block:
-  
+
   - name: Get Facts of VM
     vmware_vm_facts:
       hostname: "{{ target_server }}"
@@ -45,10 +45,10 @@
     set_fact:
       uuid: "{{ vm_list.virtual_machines[vm_name]['uuid'] }}"
     when: vm_name in vm_list.virtual_machines
-    
+
   - debug: var=uuid
-    
-  - name: Turn off autostart
+
+  - name: Turn off autostart skip until support for vCenter 6.5+ is added
     connection: local
     vmware_autostart:
       name: "{{ vm_name }}"
@@ -57,7 +57,8 @@
       username: "{{ vcenter.username }}"
       password: "{{ vcenter.password }}"
       state: disable
-      
+    when: False
+
   - name: Power off the Stats VM
     connection: local
     vmware_guest:
