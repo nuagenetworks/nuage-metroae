@@ -50,6 +50,11 @@ options:
         virtual machine in the order to be started
     required: false
     default: 10
+  validate_certs:
+    description:
+      - Whether Ansible should validate ssh certificates
+    required: False
+    default: yes
 
 '''
 
@@ -62,6 +67,7 @@ EXAMPLES = '''
     username: vCenter_username
     password: vCenter_password
     state: enable
+    validate_certs: no
 
 # Example for disabling or not enabling autostart for vm_1
 - vmware_autostart:
