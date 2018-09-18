@@ -6,7 +6,7 @@ Thank you for your interest! To submit your code and become a contributor:
 [3. Create pull request (PR)](#3-create-pull-request-pr)  
 [4. Address comments and inquiries](#4-address-comments-and-inquiries)  
 ## Prerequisites / Requirements
-All contributions must be consistent with the design of the existing **schemas** and **templates**.
+All contributions must be consistent with the design of the existing workflows.
 ## 1. Develop Code on a Fork
 1. Before you start developing code, create your own fork from the upstream MetroÆ repo. [https://github.com/nuagenetworks/nuage-metro/](https://github.com/nuagenetworks/nuage-metro/)
 2. Clone your own fork on your machine and switch to the _dev_ branch.  
