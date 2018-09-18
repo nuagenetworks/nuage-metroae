@@ -1,5 +1,6 @@
 #!/usr/bin/python
 
+import os
 from ansible.module_utils.basic import AnsibleModule
 import sys
 from pyVmomi import vim
@@ -80,10 +81,10 @@ EXAMPLES = '''
 '''
 
 
-def get_esxi_host(ipAddr, port, username, password, id):
+def get_esxi_host(ip_addr, port, username, password, id):
     uuid = id
     try:
-        si = get_connection(ipAddr, username, password, port)
+        si = get_connection(ip_addr, username, password, port)
         vm = si.content.searchIndex.FindByUuid(None,
                                                uuid,
                                                True,
@@ -121,9 +122,9 @@ def get_hosts(conn):
     return obj
 
 
-def configure_hosts(commaList, connection, startDelay, vmname, state):
+def configure_hosts(comma_list, connection, start_delay, vmname, state):
     try:
-        config_hosts = commaList.split(",")
+        config_hosts = comma_list.split(",")
         all_hosts = get_hosts(connection)
         host_names = [h.name for h in all_hosts]
         for a in config_hosts:
@@ -131,22 +132,22 @@ def configure_hosts(commaList, connection, startDelay, vmname, state):
                 return None
         for h in all_hosts:
             if h.name in config_hosts:
-                return configure_autostart(h, startDelay, vmname, state)
+                return configure_autostart(h, start_delay, vmname, state)
     except Exception:
         return None
 
 
-def configure_autostart(host, startDelay, vmname, state):
-    hostDefSettings = vim.host.AutoStartManager.SystemDefaults()
-    hostDefSettings.enabled = True
-    hostDefSettings.startDelay = int(startDelay)
+def configure_autostart(host, start_delay, vmname, state):
+    host_def_settings = vim.host.AutoStartManager.SystemDefaults()
+    host_def_settings.enabled = True
+    host_def_settings.start_delay = int(start_delay)
     order = 1
     if host is not None:
         try:
             for vhost in host.vm:
                 if vhost.name == vmname:
                     spec = host.configManager.autoStartManager.config
-                    spec.defaults = hostDefSettings
+                    spec.defaults = host_def_settings
                     auto_power_info = vim.host.AutoStartManager.AutoPowerInfo()
                     auto_power_info.key = vhost
                     auto_power_info.waitForHeartbeat = 'no'
