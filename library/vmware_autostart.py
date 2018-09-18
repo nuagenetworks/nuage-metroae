@@ -126,7 +126,7 @@ def configure_autostart(host_name, connection, start_delay, vmname, state):
         return {'failed': True, 'msg': 'Could not find {0} in list of VMs'.format(vmname)}
     host_def_settings = vim.host.AutoStartManager.SystemDefaults()
     host_def_settings.enabled = True
-    host_def_settings.start_delay = int(start_delay)
+    host_def_settings.startDelay = int(start_delay)
     for vm in host_obj.vm:
         if vm.name == vmname:
             spec = host_obj.configManager.autoStartManager.config
