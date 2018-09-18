@@ -115,7 +115,7 @@ You may also contact us directly.
 
 Report bugs you find and suggest new features and enhancements via the [GitHub Issues](https://github.com/nuagenetworks/nuage-metro/issues "nuage-metro issues") feature.
 
-You may also [contribute](CONTRIBUTING.md) to Nuage Metro Automation Engine by submitting your own code to the project.
+You may also [contribute](CONTRIBUTING.md) to MetroÆ by submitting your own code to the project.
 
 ## License
 Apache License 2.0
