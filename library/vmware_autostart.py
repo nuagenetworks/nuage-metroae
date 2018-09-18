@@ -5,7 +5,6 @@ from ansible.module_utils.basic import AnsibleModule
 import sys
 from pyVmomi import vim
 from pyVim.connect import SmartConnect
-from ansible.module_utils.pycompat24 import get_exception
 sys.dont_write_bytecode = True
 
 
@@ -192,8 +191,8 @@ def main():
             module.fail_json(msg="Could not find ESXi host using uuid %s" % uuid)
 
         result = configure_autostart(esxi_host, connection, start_delay, vm_name, state)
-    except Exception:
-        e = get_exception()
+    except:
+        e = sys.exec_info()[0]
         module.fail_json(msg="Attempt to configure autostart failed with exception: %s" % e)
 
     if result['failed']:
