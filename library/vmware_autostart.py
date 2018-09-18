@@ -185,7 +185,7 @@ def main():
             name=dict(required=True, type='str'),
             uuid=dict(required=False, type='str'),
             port=dict(required=False, type=int, default=443),
-            delay=dict(required=False, type=int, default=10)
+            delay=dict(required=False, type=int, default=10),
             state=dict(required=True, type='str', choices=['enable', 'disable'])
         ),
     )
