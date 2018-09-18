@@ -1,22 +1,14 @@
-# Submitting Your Code and Becoming a Contributor to Nuage Metro Automation Engine
-Thank you for your interest! The main steps for submitting your code to Nuage Networks Metro Automation Engine are:  
+# Becoming a Contributor to MetroÆ
+Thank you for your interest! To submit your code and become a contributor:
+
 [1. Develop code on a fork](#1-develop-code-on-a-fork)  
 [2. Finalize code contribution](#2-finalize-code-contribution)  
 [3. Create pull request (PR)](#3-create-pull-request-pr)  
 [4. Address comments and inquiries](#4-address-comments-and-inquiries)  
 ## Prerequisites / Requirements
-All contributions must be consistent with the design of the existing **playbooks** and **roles**, which fall into the following categories:
-
-Playbook/Role | Description
----- | ----
-Predeploy | For prerequisites and getting VMs up and running. This is one of two hypervisor-dependent roles (destroy is the other). If you find yourself adding conditional execution based on the hypervisor anywhere else, it's probably a mistake.
-Deploy | For installing software, upgrading the OS, and configuring the system.
-Postdeploy | For component-level sanity validation.
-Health | For system-level sanity validation and monitoring.
-Destroy | For tear down of components and connections. This is one of two hypervisor-dependent roles (predeploy is the other). If you find yourself adding conditional execution based on the hypervisor anywhere else, it's probably a mistake.
-Upgrade | For upgrading components from one release to another.
+All contributions must be consistent with the design of the existing **schemas** and **templates**.
 ## 1. Develop Code on a Fork
-1. Before you start developing code, create your own fork from the upstream Metro Automation Engine repo. [https://github.com/nuagenetworks/nuage-metro/](https://github.com/nuagenetworks/nuage-metro/)
+1. Before you start developing code, create your own fork from the upstream MetroÆ repo. [https://github.com/nuagenetworks/nuage-metro/](https://github.com/nuagenetworks/nuage-metro/)
 2. Clone your own fork on your machine and switch to the _dev_ branch.  
 Note: By default the fork clones into `nuage-metro`. Consider creating a separate branch, other than dev, for feature development. Alternatively, you may provide a target dir for the clone, as shown below with `metro-fork`.
 ```
@@ -25,19 +17,11 @@ cd metro-fork/
 git checkout dev
 ```
 
-3. Develop and test all proposed contributions on the appropriate hypervisors in the `metro-fork` directory. If you choose not to provide support for one or more supported hypervisors, you must provide graceful error handling for those types. Testing includes running the program `flake8` over all Python files. The only exception to the flake8 rules that we accept is E501, line length. For example: `flake8 --ignore=E501`.
+3. Develop and test all proposed contributions on the appropriate hypervisors in the `metro-fork` directory. If you choose not to provide support for one or more supported hypervisors, you must provide graceful error handling for those types. Note: All python files modified or submitted must successfully pass a `flake8 --ignore=E501` test.
 
-4. If you require any new User Input Variables:
-    * Extend the Metro Automation Engine variable files with sensible example values:<br> `build_vars.yml` and `user_creds.yml`.
-    * Ensure that the copies of the variable files in `roles/reset-build/files/` are identical to<br>`build_vars.yml` and `user_creds.yml`.
-    * Include comments with the variable specifications that explain the variable's purpose and acceptable values.
-    * Variables that are almost never modified may be included in standard Ansible variable locations, e.g. `roles/<rolename>/vars/main.yml`.
+4. Add a brief description of your bug fix or enhancement to `RELEASE_NOTES.md`.
 
-5. If you are developing a new role, include a `README.md` at the base folder with a clear description, requirements, dependencies, and example playbook. See also [Ansible Galaxy](https://galaxy.ansible.com/intro) for further best practices.
-
-6. Add a brief description of your bug fix or enhancement to `RELEASE_NOTES.md`.
-
-7. Add your changes to git and do a local code commit:
+5. Add your changes to git and do a local code commit:
 ```
 git add .
 git commit -m "COMMIT WITH THIS MESSAGE"
@@ -70,7 +54,8 @@ It reduces reviewing time and it gives a gradual evolution of capabilities (inst
 ## 4. Address Comments and Inquiries
 The repo owner will test and review your contributions. After you have addressed any comments or inquiries from the repo owner or other contributors, the repo owner will merge your PR into the `dev` branch.
 ## Questions and Feedback
-Ask questions and get support via email.  
+Ask questions and get support via the [forums](https://devops.nuagenetworks.net/forums/) on the [MetroÆ site](https://devops.nuagenetworks.net/).  
+You may also contact us directly.  
   Outside Nokia: [devops@nuagenetworks.net](mailto:deveops@nuagenetworks.net "send email to nuage-metro project")  
   Internal Nokia: [nuage-metro-interest@list.nokia.com](mailto:nuage-metro-interest@list.nokia.com "send email to nuage-metro project")
 
