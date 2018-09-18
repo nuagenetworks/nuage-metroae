@@ -12,13 +12,17 @@
   when: skip_vstat_upgrade
 
 - block:
+
   - import_tasks: post_upgrade_checks.yml
-    remote_user: "{{ vstat_username }}"
+    remote_user: "{{ vstat_default_username }}"
     when: vstat_in_place_upgrade
 
   - name: Migrate elasticsearch data to new vstat vm(s)
     include_role:
       name: vstat-data-migrate
+    vars:
+      vstat_username: "{{ vstat_custom_username | default(vstat_default_username) }}"
+      vstat_password: "{{ vstat_custom_password | default(vstat_default_password) }}"
     when: not vstat_in_place_upgrade
-  when: not skip_vstat_upgrade
 
+  when: not skip_vstat_upgrade

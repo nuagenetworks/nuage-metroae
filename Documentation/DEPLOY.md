@@ -104,7 +104,7 @@ If you would like to remove an entire deployment, or individual components, and 
 
 ## Next Steps
 
-After you have successfully deployed Nuage Networks VSP components, you may want to [upgrade](UPGRADE.md) to a newer version at some point in the future. See [UPGRADE_SA.md](UPGRADE_SA.md) for standalone deployments and [UPGRADE_HA.md](UPGRADE_HA.md) for clustered deployments.
+After you have successfully deployed Nuage Networks VSP components, you may want to upgrade to a newer version at some point in the future. See [UPGRADE_SA.md](UPGRADE_SA.md) for standalone deployments and [UPGRADE_HA.md](UPGRADE_HA.md) for clustered deployments.
 
 ## Questions, Feedback, and Contributing
 
