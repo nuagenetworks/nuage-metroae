@@ -8,22 +8,16 @@ You can execute MetroÆ playbooks to perform the following installations:
 ## Prerequisites / Requirements
 Before deploying any components, you must have previously [set up your Nuage MetroÆ environment](SETUP.md "link to SETUP documentation") and [customized the environment for your target platform](CUSTOMIZATION.md "link to deployment documentation").
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
 Make sure you have unzipped the Nuage Networks *.tar.gz files into their proper locations in the directory structure, so MetroAG can find the path of the Nuage components automatically. You should have done this in the customization phase. See [CUSTOMIZATION.md](CUSTOMIZATION.md) for details.
 
-=======
 Before deploying any components, you must have previously [set up your Nuage Metro Automation Engine Ansible environment](SETUP.md "link to SETUP documentation") and [customized your environment](CUSTOMIZE.md "link to CUSTOMIZE documentation").
 
 Make sure you have unzipped copies of all the Nuage Networks files you are going to need for installation or upgrade. These are generally distributed as `*.tar.gz` files that are downloaded by you from Nokia OLCS. You can unzip these files by using the nuage_unzip playbook which will place the files in subdirectories under the path specified for the `nuage_unzipped_files_dir` variable in `build_vars.yml`. You can also unzip the files manually and copy them to their proper locations by hand. For details of this process, including the subdirectory layout that Metro Automation Engine expects, see [customizing your environment](CUSTOMIZE.md "link to CUSTOMIZE documentation").
->>>>>>> dev
-=======
+
 Make sure you have unzipped copies of all the Nuage Networks files you are going to need for installation or upgrade. These are generally distributed as `*.tar.gz` files that are downloaded by you from Nokia OLCS. You can unzip these files by using the nuage_unzip playbook which will place the files in subdirectories under the path specified for the `nuage_unzipped_files_dir` variable in `common.yml`. You can also unzip the files manually and copy them to their proper locations by hand. For details of this process, including the subdirectory layout that Metro Automation Engine expects.
->>>>>>> croxley_merge
-=======
+
 Make sure you have unzipped copies of all the Nuage Networks files you are going to need for installation or upgrade. These are generally distributed as `*.tar.gz` files that are downloaded by you from Nokia OLCS. You can unzip these files by using the nuage_unzip playbook which will place the files in subdirectories under the path specified for the `nuage_unzipped_files_dir` variable in `common.yml`. You can also unzip the files manually and copy them to their proper locations by hand. For details of this process, including the subdirectory layout that MetroÆ expects.
->>>>>>> croxley
+
 
 ## Use of MetroÆ Tool
 MetroÆ can perform a workflow using the command-line tool as follows:
@@ -124,9 +118,9 @@ If you would like to remove an entire deployment, or individual components, and 
 After you have successfully deployed Nuage Networks VSP components, you may want to upgrade to a newer version at some point in the future. See [UPGRADE_SA.md](UPGRADE_SA.md) for standalone deployments and [UPGRADE_HA.md](UPGRADE_HA.md) for clustered deployments.
 
 ## Questions, Feedback, and Contributing
-Ask questions and get support via the [forums](https://devops.nuagenetworks.net/forums/) on the [MetroÆ site](https://devops.nuagenetworks.net/).  
-You may also contact us directly.  
-  Outside Nokia: [devops@nuagenetworks.net](mailto:deveops@nuagenetworks.net "send email to nuage-metro project")  
+Ask questions and get support via the [forums](https://devops.nuagenetworks.net/forums/) on the [MetroÆ site](https://devops.nuagenetworks.net/).
+You may also contact us directly.
+  Outside Nokia: [devops@nuagenetworks.net](mailto:deveops@nuagenetworks.net "send email to nuage-metro project")
   Internal Nokia: [nuage-metro-interest@list.nokia.com](mailto:nuage-metro-interest@list.nokia.com "send email to nuage-metro project")
 
 Report bugs you find and suggest new features and enhancements via the [GitHub Issues](https://github.com/nuagenetworks/nuage-metro/issues "nuage-metro issues") feature.

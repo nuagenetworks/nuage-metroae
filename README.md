@@ -69,10 +69,6 @@ Health | checks health for a running component without assuming it was deployed 
 Destroy | removes component(s) from the infrastructure |
 Upgrade | upgrades component(s) from one release to another |
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> croxley_merge
 The following workflows are examples that combine together several of the above operations into simple to use groups:
 
 * install_everything - Deploys all components specified in a deployment.
@@ -80,20 +76,15 @@ The following workflows are examples that combine together several of the above 
 * nuage_health - Checks the health of all components specified in a deployment.
 
 ## Ansible
-<<<<<<< HEAD
 MetroAE is based off of the Python-based Ansible operations tool.  The following sections provide more detail of how Ansible is utilized to perform workflows.
-<<<<<<< HEAD
-=======
-## Nomenclature  
-**Ansible Host**: The host where Metro Automation Engine runs. Ansible and the required packages are installed on this host. The Ansible Host must run el7 Linux host, e.g. CentOS 7.* or RHEL 7.*.  
-**Metro Automation Engine User**: The user who runs Metro Automation Engine to deploy and upgrade components.  
-**Target Server**: The hypervisor on which one or more VSP components are installed as VMs. Each deployment may contain more than one Target Server.  
->>>>>>> dev
-=======
->>>>>>> croxley_merge
-=======
+
+## Nomenclature
+**Ansible Host**: The host where Metro Automation Engine runs. Ansible and the required packages are installed on this host. The Ansible Host must run el7 Linux host, e.g. CentOS 7.* or RHEL 7.*.
+**Metro Automation Engine User**: The user who runs Metro Automation Engine to deploy and upgrade components.
+**Target Server**: The hypervisor on which one or more VSP components are installed as VMs. Each deployment may contain more than one Target Server.
+
 MetroÆ is based off of the Python-based Ansible operations tool.  The following sections provide more detail of how Ansible is used to perform workflows.
->>>>>>> croxley
+
 
 ## Nomenclature
 **Ansible Host**: The host where MetroÆ runs. Ansible and the required packages are installed on this host. The Ansible Host must run el7 Linux host, e.g. CentOS 7.* or RHEL 7.*.
@@ -125,9 +116,9 @@ File name | Description
 [OPENSTACK.md](Documentation/OPENSTACK.md) | Deploy VSP components in OpenStack (limited support).
 
 ## Questions, Feedback, and Contributing
-Ask questions and get support via the [forums](https://devops.nuagenetworks.net/forums/) on the [MetroÆ site](https://devops.nuagenetworks.net/).  
-You may also contact us directly.  
-  Outside Nokia: [devops@nuagenetworks.net](mailto:deveops@nuagenetworks.net "send email to nuage-metro project")  
+Ask questions and get support via the [forums](https://devops.nuagenetworks.net/forums/) on the [MetroÆ site](https://devops.nuagenetworks.net/).
+You may also contact us directly.
+  Outside Nokia: [devops@nuagenetworks.net](mailto:deveops@nuagenetworks.net "send email to nuage-metro project")
   Internal Nokia: [nuage-metro-interest@list.nokia.com](mailto:nuage-metro-interest@list.nokia.com "send email to nuage-metro project")
 
 Report bugs you find and suggest new features and enhancements via the [GitHub Issues](https://github.com/nuagenetworks/nuage-metro/issues "nuage-metro issues") feature.
