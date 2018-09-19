@@ -37,12 +37,12 @@
       line: "{{ vstat_mgmt_ip }}  {{ inventory_hostname }}"
       dest: "/etc/hosts"
     delegate_to: "{{ infra_ip }}"
-    remote_user: "{{ vstat_username }}"
+    remote_user: "{{ vstat_default_username }}"
 
   - name: Restart DNS service
     shell: service dnsmasq restart
     delegate_to: "{{ infra_ip }}"
-    remote_user: "{{ vstat_username }}"
+    remote_user: "{{ vstat_default_username }}"
   when: infra_server_name is defined
 
 - name: Update /etc/hosts file on ansible host
@@ -61,11 +61,11 @@
 
 - name: Inject ssh key to VSD if cloud-init did not work
   expect:
-    command: "ssh-copy-id -i {{ vstat_username }}@{{ vstat_mgmt_ip }}"
+    command: "ssh-copy-id -i {{ vstat_default_username }}@{{ vstat_mgmt_ip }}"
     responses:
       (?i)yes: "yes"
-      (?i)password: "{{ vstat_password }}"
-  remote_user: "{{ vstat_username }}"
+      (?i)password: "{{ vstat_default_password }}"
+  remote_user: "{{ vstat_default_username }}"
   delegate_to: localhost
 
 - name: Pause for ssh port to be active
@@ -98,14 +98,14 @@
       dest: /etc/hosts
       line: "{{ vstat_mgmt_ip }}  {{ inventory_hostname }}"
   
-  remote_user: "{{ vstat_username }}"
+  remote_user: "{{ vstat_default_username }}"
 
 - name: Configure ntpd and ntpdate and local time zone
   include_role:
     name: common
     tasks_from: linux-ntp-sync
   vars: 
-    rem_user: "{{ vstat_username }}"
+    rem_user: "{{ vstat_default_username }}"
 
 - block:
 
@@ -121,7 +121,7 @@
       name: elasticsearch
       state: restarted
 
-  remote_user: "{{ vstat_username }}"
+  remote_user: "{{ vstat_default_username }}"
 
 - name: Get vsd node(s) information
   import_role:
@@ -134,4 +134,4 @@
 - name: Enable stats collection on the VSD VM
   command: /opt/vsd/vsd-stats.sh -e {{inventory_hostname}}
   delegate_to: "{{ vsd_hostname_list[0] }}"
-  remote_user: "{{ vstat_username }}"
+  remote_user: "{{ vstat_default_username }}"
