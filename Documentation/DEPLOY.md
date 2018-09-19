@@ -60,7 +60,7 @@ MetroÆ has a complete library of [workflows](/src/playbooks "link to workflows 
  ./metroag vsd_predeploy --limit "vsd1.example.com"
 ```
 
-Note: If you have an issue with a VM and would like to reinstall it, you must destroy it before you replace it. Otherwise, the install  will find the first one still running and skip the new install.
+Note: If you have an issue with a VM and would like to reinstall it, you must destroy it before you replace it. Otherwise, the install will find the first one still running and skip the new install.
 
 ## Additional Steps for Specific Deployments
 
