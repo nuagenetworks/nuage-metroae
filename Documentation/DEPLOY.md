@@ -1,6 +1,6 @@
 # Deploying Components with MetroÆ
 
-You can execute MetroÆ playbooks to perform the following installations:
+You can execute MetroÆ workflows to perform the following installations:
 * [Deploy All Components](#deploy-all-components)
 * [Deploy Individual Modules](#deploy-individual-modules)
 * [Install a Particular Role or Host](#install-a-particular-role-or-host)
@@ -59,6 +59,7 @@ MetroÆ has a complete library of [workflows](/src/playbooks "link to workflows 
  ```
  ./metroag vsd_predeploy --limit "vsd1.example.com"
 ```
+VSD predeploy can take a long time. If you are **vCenter user** you may want to monitor progress via the vCenter console.
 
 Note: If you have an issue with a VM and would like to reinstall it, you must destroy it before you replace it. Otherwise, the install will find the first one still running and skip the new install.
 
