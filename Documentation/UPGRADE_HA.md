@@ -36,7 +36,7 @@ For this example, our clustered (HA) deployment consists of:
 
      `./metro-ansible vsd_ha_upgrade_shutdown_2_and_3 -vvvv`
 
-     `vsd_node2` and `vsd_node3` are shut down; they are not deleted. (The new nodes are brought up with the upgrade vmnames you previously specified. You have the option of powering down VSDs manually instead. 
+     `vsd_node2` and `vsd_node3` are shut down; they are not deleted. The new nodes are brought up with the upgrade vmnames you previously specified. You have the option of powering down VSDs manually instead. 
      
      **Troubleshooting**: If you experience a failure you can re-execute the command or power off the VM manually.
 
