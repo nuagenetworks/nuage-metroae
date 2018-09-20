@@ -1,0 +1,78 @@
+# *** WARNING ***
+# This is a generated file. Manual changes to this file
+# will be lost if reset-build or build is run
+#
+target_server_type: {{ item.target_server_type | default('kvm') }}
+hostname: {{ item.hostname }}
+
+{% if item.target_server_type | match("kvm") or item.target_server_type | match("vcenter") %}
+target_server: {{ item.target_server }}
+{% endif %}
+
+{% if item.target_server_type | match("kvm") or item.target_server_type | match("vcenter") or item.target_server_type | match("nuagex") %}
+{% if item.vmname is defined %}
+vmname: {{ item.vmname }}
+{% else %}
+vmname: {{ item.hostname }}
+{% endif %}
+
+mgmt_ip: {{ item.mgmt_ip }}
+mgmt_prefix: {{ item.mgmt_ip_prefix }}
+mgmt_gateway: {{ item.mgmt_gateway }}
+
+
+{% if item.data_fqdn is defined %}
+data_fqdn: {{ item.data_fqdn }}
+{% endif %}
+{% if item.data_ip is defined %}
+data_ip: {{ item.data_ip }}
+data_netmask: {{ item.data_netmask }}
+{% if item.data_gateway is defined and item.data_static_route is defined %}
+data_gateway: {{ item.data_gateway }}
+data_static_route: {{ item.data_static_route|to_yaml }}
+{% endif %}
+{% endif %}
+{% if item.nsgv_ip is defined %}
+nsgv_ip: {{ item.nsgv_ip }}
+data_subnet: {{ item.data_subnet }}
+nsgv_mac: '{{ item.nsgv_mac }}'
+nsgv_host_name: {{ item.nsgv_hostname }}
+{% endif %}
+{% if item.nsgv_fqdn is defined %}
+nsgv_fqdn: {{ item.nsgv_fqdn }}
+{% endif %}
+
+{% if item.vsd_fqdn is defined %}
+vsd_fqdn: {{ item.vsd_fqdn }}
+{% else %}
+vsd_fqdn: {{ vsd_fqdn_global }}
+{% endif %}
+
+{% if item.target_server_type | match("kvm") %}
+{% if qcow2_path is defined %}
+qcow2_path: {{ qcow2_path }}
+{% endif %}
+{% if qcow2_file_name is defined %}
+qcow2_file_name: {{ qcow2_file_name }}
+{% endif %}
+{% endif %}
+
+{% if item.target_server_type | match("vcenter") %}
+
+{% if ova_path is defined %}
+ova_path: {{ ova_path }}
+{% endif %}
+{% if ova_file_name is defined %}
+ova_file_name: {{ ova_file_name }}
+{% endif %}
+
+vcenter:
+  username: {{ item.vcenter_username | default(vcenter_username) }}
+  password: {{ item.vcenter_password | default(vcenter_password) }}
+  datacenter: {{ item.vcenter_datacenter | default(vcenter_datacenter) }}
+  cluster: {{ item.vcenter_cluster | default(vcenter_cluster) }}
+  datastore: {{ item.vcenter_datastore | default(vcenter_datastore) }}
+  resource_pool: {{ item.vcenter_resource_pool | default(vcenter_resource_pool | default("NONE")) }}
+{% endif %}
+
+{% endif %}
