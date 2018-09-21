@@ -10,13 +10,14 @@ You can safeguard sensitive data in Metro&#198; by encrypting files with Ansible
 ### 3. Pass the vault password file option  
   While running Metro&#198; commands you can supply the vault password file as an option by running the following command:
 ```
-./metro-ansible the_name_of_the_playbook --vault-password-file myvault.txt
+metroae the_name_of_the_playbook --vault-password-file myvault.txt
 ```  
 ## Questions, Feedback, and Contributing
-Ask questions and get support via email.  
+Ask questions and get support via the [forums](https://devops.nuagenetworks.net/forums/) on the [MetroÆ site](https://devops.nuagenetworks.net/).  
+You may also contact us directly.  
   Outside Nokia: [devops@nuagenetworks.net](mailto:deveops@nuagenetworks.net "send email to nuage-metro project")  
   Internal Nokia: [nuage-metro-interest@list.nokia.com](mailto:nuage-metro-interest@list.nokia.com "send email to nuage-metro project")
 
 Report bugs you find and suggest new features and enhancements via the [GitHub Issues](https://github.com/nuagenetworks/nuage-metro/issues "nuage-metro issues") feature.
 
-You may also [contribute](CONTRIBUTING.MD) to Nuage Metro&#198; by submitting your own code to the project.
+You may also [contribute](CONTRIBUTING.md) to MetroÆ by submitting your own code to the project.
