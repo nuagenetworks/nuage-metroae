@@ -18,13 +18,13 @@ For this example, our clustered (HA) deployment consists of:
 ## Preupgrade Preparations
 1. Run health checks on VSD, VSC and VSTAT.
 
-     `./metro-ansible vsp_preupgrade_health -vvvv`
+     `metroae vsp_preupgrade_health -vvvv`
 
      Check the health reports carefully for any reported errors before proceeding. You can run health checks at any time during the upgrade process.
 
 2. Backup the database and decouple the VSD cluster.
 
-     `./metro-ansible vsd_ha_upgrade_database_backup_and_decouple -vvvv`
+     `metroae vsd_ha_upgrade_database_backup_and_decouple -vvvv`
 
     `vsd_node1` has been decoupled from the cluster and is running in standalone (SA) mode.
     
@@ -34,7 +34,7 @@ For this example, our clustered (HA) deployment consists of:
 
 1. Power off VSD nodes two and three.
 
-     `./metro-ansible vsd_ha_upgrade_shutdown_2_and_3 -vvvv`
+     `metroae vsd_ha_upgrade_shutdown_2_and_3 -vvvv`
 
      `vsd_node2` and `vsd_node3` are shut down; they are not deleted. The new nodes are brought up with the upgrade vmnames you previously specified. You have the option of powering down VSDs manually instead. 
      
@@ -42,23 +42,23 @@ For this example, our clustered (HA) deployment consists of:
 
 2. Predeploy new VSD nodes two and three.
 
-     `./metro-ansible vsd_ha_upgrade_predeploy_2_and_3 -vvvv`
+     `metroae vsd_ha_upgrade_predeploy_2_and_3 -vvvv`
 
      The new `vsd_node2` and `vsd_node3` are now up and running; they are not yet configured.
      
-     **Troubleshooting**: If you experience a failure, delete the newly-created nodes by executing the command `./metro-ansible vsd_ha_upgrade_destroy_2_and_3`, then re-execute the predeploy command. Do NOT run `vsd_destroy` as this command destroys the "old" VM which is not what we want to do here.
+     **Troubleshooting**: If you experience a failure, delete the newly-created nodes by executing the command `metroae vsd_ha_upgrade_destroy_2_and_3`, then re-execute the predeploy command. Do NOT run `vsd_destroy` as this command destroys the "old" VM which is not what we want to do here.
 
 3. Deploy new VSD nodes two and three.
 
-     `./metro-ansible vsd_ha_upgrade_deploy_2_and_3 -vvvv`
+     `metroae vsd_ha_upgrade_deploy_2_and_3 -vvvv`
 
      The VSD nodes have been upgraded.
      
-     **Troubleshooting**: If you experience a failure before the VSD install script runs, re-execute the command. If it fails a second time or if the failure occurs after the VSD install script runs, destroy the VMs (either manually or with the command `./metro-ansible vsd_ha_upgrade_destroy_2_and_3`) then re-execute the deploy command. Do NOT run `vsd_destroy` as this command destroys the "old" VM.
+     **Troubleshooting**: If you experience a failure before the VSD install script runs, re-execute the command. If it fails a second time or if the failure occurs after the VSD install script runs, destroy the VMs (either manually or with the command `metroae vsd_ha_upgrade_destroy_2_and_3`) then re-execute the deploy command. Do NOT run `vsd_destroy` as this command destroys the "old" VM.
      
 4. Power off VSD node one.
 
-     `./metro-ansible vsd_ha_upgrade_shutdown_1 -vvvv`
+     `metroae vsd_ha_upgrade_shutdown_1 -vvvv`
 
      `vsd_node1` shuts down; it is not deleted. The new node is brought up with the `upgrade_vmname` you previously specified. You have the option of powering down VSD manually instead.
      
@@ -66,23 +66,23 @@ For this example, our clustered (HA) deployment consists of:
 
 5. Predeploy the new VSD node one.
 
-     `./metro-ansible vsd_ha_upgrade_predeploy_1 -vvvv`
+     `metroae vsd_ha_upgrade_predeploy_1 -vvvv`
 
      The new VSD node one is now up and running; it is not yet configured.
      
-     **Troubleshotting**: If you experience a failure, delete the newly-created node by executing the command `./metro-ansible vsd_ha_upgrade_destroy_1`, then re-execute the predeploy command. Do NOT run `vsd_destroy` as this command destroys the "old" VM
+     **Troubleshotting**: If you experience a failure, delete the newly-created node by executing the command `metroae vsd_ha_upgrade_destroy_1`, then re-execute the predeploy command. Do NOT run `vsd_destroy` as this command destroys the "old" VM.
 
 6. Deploy the new VSD node one.
 
-     `./metro-ansible vsd_ha_upgrade_deploy_1 -vvvv`
+     `metroae vsd_ha_upgrade_deploy_1 -vvvv`
 
      All three VSD nodes are upgraded.
      
-     **Troubleshooting**: If you experience a failure before the VSD install script runs, re-execute the command. If it fails a second time or if the failure occurs after the VSD install script runs, destroy the VMs (either manually or with the command `./metro-ansible vsd_ha_upgrade_destroy_1`) then re-execute the deploy command. Do NOT run `vsd_destroy` as this command destroys the "old" VM.
+     **Troubleshooting**: If you experience a failure before the VSD install script runs, re-execute the command. If it fails a second time or if the failure occurs after the VSD install script runs, destroy the VMs (either manually or with the command `metroae vsd_ha_upgrade_destroy_1`) then re-execute the deploy command. Do NOT run `vsd_destroy` as this command destroys the "old" VM.
 
 7. Set the VSD upgrade complete flag.
 
-     `./metro-ansible vsd_upgrade_complete -vvvv`
+     `metroae vsd_upgrade_complete -vvvv`
 
      The upgrade flag is set to complete.
      
@@ -94,19 +94,19 @@ For this example, our clustered (HA) deployment consists of:
 
 1. Run VSC health check (optional).
 
-     `./metro-ansible vsc_health -e report_filename=vsc_preupgrade_health.txt -vvvv`
+     `metroae vsc_health -e report_filename=vsc_preupgrade_health.txt -vvvv`
 
      You performed health checks during preupgrade preparations, but it is good practice to run the check here as well to make sure the VSD upgrade has not caused any problems.
 
 2. Backup and prepare VSC node one.
 
-     `./metro-ansible vsc_ha_upgrade_backup_and_prep_1 -vvvv`
+     `metroae vsc_ha_upgrade_backup_and_prep_1 -vvvv`
      
      **Troubleshooting**: If you experience a failure, you can re-execute the command.
 
 3. Deploy VSC node one.
 
-     `./metro-ansible vsc_ha_upgrade_deploy_1 -vvvv`
+     `metroae vsc_ha_upgrade_deploy_1 -vvvv`
 
      VSC node one has been upgraded.
      
@@ -114,7 +114,7 @@ For this example, our clustered (HA) deployment consists of:
 
 4. Run postdeploy for VSC node one.
 
-     `./metro-ansible vsc_ha_upgrade_postdeploy_1 -vvvv`
+     `metroae vsc_ha_upgrade_postdeploy_1 -vvvv`
 
      One VSC is now running the **old** version, and one is running the **new** version.
      
@@ -127,13 +127,13 @@ Upgrade your VRS(s) and then continue with this procedure. Do not proceed withou
 
 1. Backup and prepare VSC node two.
 
-     `./metro-ansible vsc_ha_upgrade_backup_and_prep_2 -vvvv`
+     `metroae vsc_ha_upgrade_backup_and_prep_2 -vvvv`
      
      **Troubleshotting**: If you experience a failure, you can re-execute the command.
 
 2. Deploy VSC node two.
 
-     `./metro-ansible vsc_ha_upgrade_deploy_2 -vvvv`
+     `metroae vsc_ha_upgrade_deploy_2 -vvvv`
 
      VSC node two has been upgraded.
      
@@ -141,7 +141,7 @@ Upgrade your VRS(s) and then continue with this procedure. Do not proceed withou
 
 3. Run postdeploy for VSC node two.
 
-     `./metro-ansible vsc_ha_upgrade_postdeploy_2 -vvvv`
+     `metroae vsc_ha_upgrade_postdeploy_2 -vvvv`
 
      Both VSCs are now running the **new** version.
      
@@ -152,13 +152,13 @@ Our example includes a VSTAT node. If your topology does not include one, procee
 
 1. Run VSTAT health check (optional).
 
-     `./metro-ansible vstat_health -e report_filename=vstat_preupgrade_health.txt -vvvv`
+     `metroae vstat_health -e report_filename=vstat_preupgrade_health.txt -vvvv`
 
      You performed health checks during preupgrade preparations, but it is good practice to run the check here as well to make sure the VSD upgrade has not caused any problems.
 
 2. Backup the VSTAT node.
 
-     `./metro-ansible vstat_upgrade_data_backup -vvvv`
+     `metroae vstat_upgrade_data_backup -vvvv`
 
      Data from the VSTAT node is backed up in the NFS shared folder.
      
@@ -166,7 +166,7 @@ Our example includes a VSTAT node. If your topology does not include one, procee
 
 3. Power off the VSTAT node.
 
-     `./metro-ansible vstat_destroy -vvvv`
+     `metroae vstat_destroy -vvvv`
 
      VSTAT shuts down; it is not deleted. (The new node will be brought up with the new VM name.) You have the option of performing this step manually instead.
      
@@ -174,23 +174,23 @@ Our example includes a VSTAT node. If your topology does not include one, procee
 
 4. Predeploy the new VSTAT node.
 
-     `./metro-ansible vstat_predeploy`
+     `metroae vstat_predeploy`
 
      The new VSD node is now up and running; it is not yet configured.
      
-     **Troubleshooting**: If you experience a failure, delete the new node by executing the command `./metro-ansible vstat_upgrade_destroy` then re-execute the predeploy command. Do NOT run `vstat_destroy` for this step.
+     **Troubleshooting**: If you experience a failure, delete the new node by executing the command `metroae vstat_upgrade_destroy` then re-execute the predeploy command. Do NOT run `vstat_destroy` for this step.
 
 5. Deploy the new VSTAT node.
 
-     `./metro-ansible vstat_deploy -vvvv`
+     `metroae vstat_deploy -vvvv`
 
      The new VSTAT node has been deployed and configured to talk with the VSD node.
      
-     **Troubleshooting**: If you experience a failure, re-execute the command. If it fails a second time, destroy the VMs (either manually or with the command `./metro-ansible vstat_upgrade_destroy`) then proceed from the predeploy step above. Do NOT run `vstat_destroy` for this step.
+     **Troubleshooting**: If you experience a failure, re-execute the command. If it fails a second time, destroy the VMs (either manually or with the command `metroae vstat_upgrade_destroy`) then proceed from the predeploy step above. Do NOT run `vstat_destroy` for this step.
 
 6. Migrate data to new VSTAT node.
 
-     `./metro-ansible vstat_upgrade_data_migrate -vvvv`
+     `metroae vstat_upgrade_data_migrate -vvvv`
 
      The data from the old VSTAT node is migrated to the new VSTAT node from the NFS shared folder.
      
@@ -199,7 +199,7 @@ Our example includes a VSTAT node. If your topology does not include one, procee
 ## Finalize the Upgrade
 1. Finalize the settings
 
-     `./metro-ansible vsp_upgrade_postdeploy -vvvv`
+     `metroae vsp_upgrade_postdeploy -vvvv`
 
      The final steps for the upgrade are executed.
      
@@ -207,7 +207,7 @@ Our example includes a VSTAT node. If your topology does not include one, procee
 
 2. Run a health check.
 
-     `./metro-ansible vsp_postupgrade_health -vvvv`
+     `metroae vsp_postupgrade_health -vvvv`
 
      Health reports are created that can be compared with the ones produced during preupgrade preparations. Investigate carefully any errors or discrepancies.
 
