@@ -16,6 +16,8 @@ Here is a description of the contents of the `zfb_vars.yml` file, with comments:
 #      # Name of NSGV. This will be used to represent it in VSD architect
 #      nsg_name: NSG_US
 #    # CSP credentials are used to access the VSD API and create profile
+#    # csproot is only one example of supported users. Other supported users include
+#    # the CMS user and those with administrative privileges across all enterprises.
 #    csp:
 #      # CSP username
 #      username:  csproot

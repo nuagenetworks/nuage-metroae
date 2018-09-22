@@ -1,0 +1,49 @@
+---
+- hosts: localhost
+  pre_tasks:
+    - name: Check for Ansible version
+      assert:
+        that: "ansible_version.full | version_compare('2.4', '>=')"
+        msg:  "Ansible version 2.4 and above are required. Found Ansible version {{ansible_version.full}}"
+
+  tasks:
+
+    - include_role:
+        name: common
+        tasks_from: gen-deployment-md5
+
+    - name: Gather last deployment MD5
+      stat:
+        path: "{{ inventory_dir }}/deployment.md5.yml"
+      register: deployment_md5_file_stat
+
+    - name: Read last deployment MD5
+      set_fact:
+        last_deployment_md5_list: "{{ lookup('file', deployment_md5_file_stat.stat.path) | from_yaml }}"
+      when: deployment_md5_file_stat.stat.exists
+
+    - name: Set fact for changed deployment
+      set_fact:
+        is_deployment_changed: "{{ not deployment_md5_file_stat.stat.exists or last_deployment_md5_list != deployment_md5_list }}"
+
+    - name: Display if skipping build
+      debug:
+        msg:
+          - "************************************************"
+          - "Skipping build because deployment did not change"
+          - "************************************************"
+      when: not is_deployment_changed
+
+    - block:
+
+      - include_role:
+          name: common
+          tasks_from: read-deployment
+
+      - include_role:
+          name: build
+
+      - name: Write deployment MD5 to file
+        copy: content="{{ deployment_md5_list | to_nice_yaml }}" dest="{{ inventory_dir }}/deployment.md5.yml"
+
+      when: is_deployment_changed

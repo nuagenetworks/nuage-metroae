@@ -1,0 +1,265 @@
+- name: Backup VSC node1
+  any_errors_fatal: true
+  include_role:
+    name: vsc-backup
+  when: inventory_hostname in groups['vsc_ha_node1'] or inventory_hostname in groups['vsc_sa_node']
+
+- name: Prep VSC node1 for upgrade
+  any_errors_fatal: true
+  include_role:
+    name: vsc-preupgrade
+  when: inventory_hostname in groups['vsc_ha_node1'] or inventory_hostname in groups['vsc_sa_node']
+
+- block:
+  - name: Clean known_hosts of VSC's on "{{ target_server }}"
+    known_hosts:
+      name: "{{ mgmt_ip }}"
+      state: absent
+    delegate_to: localhost
+    no_log: True
+    ignore_errors: True
+
+  - name: Get output of 'show bof'
+    sros_command:
+      commands:
+        - show bof
+      provider: "{{ vsc_creds }}"
+    delegate_to: localhost
+    register: bof_config
+
+  - name: Print 'show bof' when verbosity >= 1
+    debug: var=bof_config.stdout[0] verbosity=1
+
+  - name: Create local variable with bof config in json
+    set_fact:
+      bof_json: "{{ bof_config.stdout[0]|show_bof_to_json }}"
+
+  - name: Print bof config in json  when verbosity >= 1
+    debug: var=bof_json verbosity=1
+
+  - name: Copy current tim file as a backup 
+    sros_command:
+      commands:
+        - file copy "{{ bof_json['image_folder'] }}/cpm.tim" "{{ bof_json['image_folder'] }}/cpm.tim.backup" force
+      provider: "{{ vsc_creds }}"
+    delegate_to: localhost
+    register: backup_image
+
+  - name: Get current file version of image on VSC
+    sros_command:
+      commands:
+        - file version "{{ bof_json['image_folder'] }}/cpm.tim"
+      provider: "{{ vsc_creds }}"
+    delegate_to: localhost
+    register: current_image
+
+  - name: Print current vsc image version when verbosity >= 1
+    debug: var=current_image.stdout[0] verbosity=1
+
+  - name: Create local variable with current vsc image version in json
+    set_fact:
+      current_version_json: "{{ current_image.stdout[0]|image_version_to_json }}"
+
+  - name: Print current vsc image version in json  when verbosity >= 1
+    debug: var=current_version_json verbosity=1
+
+  - name: Copy new VSC image to VSC nodes
+    expect:
+      command: "{{ vsc_image_copy }}"
+      responses:
+        (?i)password: "{{ vsc_password|default(vsc_default_password) }}"
+      timeout: "{{ vsc_scp_timeout_seconds }}"
+    delegate_to: localhost
+
+  - name: Get file version of new image on VSC
+    sros_command:
+      commands:
+        - file version "{{ bof_json['image_folder'] }}/cpm.tim"
+      provider: "{{ vsc_creds }}"
+    delegate_to: localhost
+    register: new_image
+
+  - name: Print new vsc image version when verbosity >= 1
+    debug: var=new_image.stdout[0] verbosity=1
+
+  - name: Create local variable with new vsc image version in json
+    set_fact:
+      new_version_json: "{{ new_image.stdout[0]|image_version_to_json }}"
+
+  - name: Print new vsc image version in json  when verbosity >= 1
+    debug: var=new_version_json verbosity=1
+
+  - name: Reboot VSC VM
+    sros_command:
+      commands:
+        - admin reboot now
+      provider: "{{ vsc_creds }}"
+    delegate_to: localhost
+    ignore_errors: true
+    when: target_server_type | match("kvm") or target_server_type | match("vcenter")
+
+  - name: Reboot VSC VM
+    os_server_actions:
+      auth:
+        "{{ os_auth }}"
+      server: "{{ inventory_hostname }}"
+      action: reboot
+      wait: no
+    delegate_to: localhost
+    when: target_server_type | match("heat")
+
+  - name: Wait for VSC ssh to be ready
+    include_role:
+      name: common
+      tasks_from: wait-for-ssh
+    vars:
+      ssh_host: "{{ mgmt_ip }}"
+
+  - name: Clean known_hosts of VSC's on "{{ target_server }}"
+    known_hosts:
+      name: "{{ mgmt_ip }}"
+      state: absent
+    delegate_to: localhost
+    no_log: True
+    ignore_errors: True
+
+  - name: Get output of 'show version'
+    sros_command:
+      commands:
+        - show version
+      provider: "{{ vsc_creds }}"
+    delegate_to: localhost
+    register: vsc_version
+
+  - name: Print 'show version' when verbosity >= 1
+    debug: var=vsc_version.stdout[0] verbosity=1
+
+  - name: Create local variable with show version in json
+    set_fact:
+      vsc_version_json: "{{ vsc_version.stdout[0]|show_version_to_json }}"
+
+  - name: Print show version in json  when verbosity >= 1
+    debug: var=vsc_version_json verbosity=1
+
+  - name: Verify VSC came up with new version
+    assert:
+      that: "{{ vsc_version_json['vsc_version'] == new_version_json['vsc_image_version'] }}"
+      msg: "VSC is still running old version - {{ vsc_version_json['vsc_version'] }}"
+
+  - name: Get output of 'show vswitch-controller xmpp-server detail'
+    sros_command:
+      commands:
+        - show vswitch-controller xmpp-server detail
+      provider: "{{ vsc_creds }}"
+    register: xmpp_detail
+    delegate_to: localhost
+    until: xmpp_detail.stdout[0].find('Functional') != -1
+    retries: 5
+    delay: 30
+
+  - name: Print 'show vswitch-controller xmpp-server detail' when verbosity >= 1
+    debug: var=xmpp_detail verbosity=1
+
+  - name: Create local variable with xmpp-server detail in json
+    set_fact: xmpp_detail_json="{{ xmpp_detail.stdout[0]|xmpp_server_detail_to_json }}"
+
+  - name: Print xmpp-server detail in json when verbosity >= 1
+    debug: var=xmpp_detail_json verbosity=1
+
+  - name: Create local variable for xmpp-server state
+    set_fact: xmpp_server_state="{{ xmpp_detail_json['State'] }}"
+
+  - name: Print xmpp-server state when verbosity >= 1
+    debug: var=xmpp_server_state verbosity=1
+
+  - name: Check for the expected xmpp-server state
+    assert: {
+      that: "{{ expected_xmpp_server_state == xmpp_server_state }}",
+      msg: "Invalid xmpp-server state ({{ xmpp_server_state }}) detected. Expected {{ expected_xmpp_server_state }}. Check 'show vswitch-controller xmpp-server details'."
+      }
+  - name: define variable to match vsd strings in sh vswitch vsd details
+    set_fact:
+      vsd1_s: "cna@{{ vsd_fqdn }}"
+
+  - name: Get output of 'show vswitch-controller vsd detail'
+    sros_command:
+      commands:
+        - show vswitch-controller vsd detail
+      provider: "{{ vsc_creds }}"
+    register: vsd_detail
+    delegate_to: localhost
+    until: vsd_detail.stdout[0].find(vsd1_s) != -1
+    retries: 5
+    delay: 30
+
+  - name: Print 'show vswitch-controller vsd' when verbosity >= 1
+    debug: var=vsd_detail verbosity=1
+
+  - name: Verify VSD Node1 is found in vsd_detail
+    assert:
+      that: "'cna@{{ vsd_fqdn }}/{{ groups['vsds'][0].split('.')[0:1] | join('.') }}' in vsd_detail.stdout[0]"
+      msg: "VSD Node1 could not be found in 'show vswitch-controller vsd detail'"
+    when: vsd_sa_or_ha|match('ha')
+
+  - name: Verify VSD Node1 is found in vsd_detail
+    assert:
+      that: "'cna@{{ vsd_fqdn }}' in vsd_detail.stdout[0]"
+      msg: "VSD Node1 could not be found in 'show vswitch-controller vsd detail'"
+    when: vsd_sa_or_ha|match('sa')
+
+  - name: Verify VSD Node3 is found in vsd_detail
+    assert:
+      that: "'cna@{{ vsd_fqdn }}/{{ groups['vsds'][2].split('.')[0:1] | join('.') }}' in vsd_detail.stdout[0]"
+      msg: "VSD Node3 could not be found in 'show vswitch-controller vsd detail'"
+    when: vsd_sa_or_ha|match('ha')
+
+  - block:
+    - name: Set mgmt_ip to second vsc node
+      set_fact:
+        mgmt_ip: "{{ hostvars[groups['vscs'][1]]['mgmt_ip'] }}"
+
+    - name: Check if vsc ha node2 is configured with PBR config
+      sros_command:
+        commands: admin display-config
+        provider: "{{ vsc_creds }}"
+      delegate_to: localhost
+      register: pbr_config_ha_node2
+
+    - name: Print 'admin display-config' when verbosity >= 1
+      debug: var=pbr_config_ha_node2.stdout[0] verbosity=1
+
+    - name: Delete PBR backward compatibility config on second VSC node
+      sros_config:
+        lines:
+          - configure router bgp evpn-pre-rfc no send-opaque-community
+          - configure router bgp evpn-pre-rfc no non-compliant
+          - admin save
+        provider: "{{ vsc_creds }}"
+      delegate_to: localhost
+      when: pbr_config_ha_node2.stdout[0].find('evpn-pre-rfc') != -1
+
+    - name: Set mgmt_ip to first vsc node
+      set_fact:
+        mgmt_ip: "{{ hostvars[groups['vscs'][0]]['mgmt_ip'] }}"
+
+    - name: Check if vsc ha node1 is configured with PBR config
+      sros_command:
+        commands: admin display-config
+        provider: "{{ vsc_creds }}"
+      delegate_to: localhost
+      register: pbr_config_ha_node1
+
+    - name: Print 'admin display-config' when verbosity >= 1
+      debug: var=pbr_config_ha_node1.stdout[0] verbosity=1
+
+    - name: Delete PBR backward compatibility config on first VSC node
+      sros_config:
+        lines:
+          - configure router bgp evpn-pre-rfc no send-opaque-community
+          - configure router bgp evpn-pre-rfc no non-compliant
+          - admin save
+        provider: "{{ vsc_creds }}"
+      delegate_to: localhost
+      when: pbr_config_ha_node1.stdout[0].find('evpn-pre-rfc') != -1
+    when: inventory_hostname in groups['vsc_ha_node2']
+  when: inventory_hostname in groups['vscs']

@@ -1,0 +1,124 @@
+# *** WARNING ***
+# This is a generated file. Manual changes to this file
+# will be lost if reset-build or build is run
+#
+component_type: nsgv
+target_server_type: {{ item.target_server_type | default('kvm') }}
+hostname: {{ item.hostname }}
+
+{% if item.vmname is defined %}
+vmname: {{ item.vmname }}
+{% else %}
+vmname: {{ item.hostname }}
+{% endif %}
+
+{% if item.nsg_template_id is defined %}
+nsg_template_id: "{{ item.nsg_template_id }}"
+{% endif %}
+
+{% if item.enterprise is defined %}
+enterprise: "{{ item.enterprise }}"
+{% endif %}
+
+{% if item.target_server_type | match("kvm") and item.userdisk_path is defined %}
+userdisk_path: "{{ item.userdisk_path }}"
+{% endif %}
+
+{% if item.target_server_type | match("kvm") or item.target_server_type | match("vcenter")%}
+
+target_server: {{ item.target_server }}
+
+{% if item.nsgv_mac is defined %}
+nsgv_mac: '{{ item.nsgv_mac }}'
+{% endif %}
+
+bootstrap_method: {{ item.bootstrap_method | default('none') }}
+
+{% if item.bootstrap_method == 'zfb_external' or item.bootstrap_method == 'activation_link' %}
+
+{% if item.bootstrap_method == 'zfb_external' %}
+
+iso_path: {{ item.iso_path }}
+iso_file: {{ item.iso_file }}
+
+{% endif %}
+
+{% if item.port1_bridge is defined %}
+port1_bridge: {{item.port1_bridge}}
+{% endif %}
+
+{% if item.port2_bridge is defined %}
+port2_bridge: {{item.port2_bridge}}
+{% endif %}
+
+{% if item.port3_bridge is defined %}
+port3_bridge: {{item.port3_bridge}}
+{% endif %}
+
+{% if item.port4_bridge is defined %}
+port4_bridge: {{item.port4_bridge}}
+{% endif %}
+
+{% if item.port5_bridge is defined %}
+port5_bridge: {{item.port5_bridge}}
+{% endif %}
+
+{% if item.port6_bridge is defined %}
+port6_bridge: {{item.port6_bridge}}
+{% endif %}
+
+{% endif %}
+
+{% if item.target_server_type | match("kvm") %}
+{% if qcow2_path is defined %}
+qcow2_path: {{ qcow2_path }}
+{% endif %}
+{% if qcow2_file_name is defined %}
+qcow2_file_name: {{ qcow2_file_name }}
+{% endif %}
+{% endif %}
+
+{% if item.target_server_type | match("vcenter") %}
+
+{% if ova_path is defined %}
+ova_path: {{ ova_path }}
+{% endif %}
+{% if ova_file_name is defined %}
+ova_file_name: {{ ova_file_name }}
+{% endif %}
+
+vcenter:
+  username: {{ item.vcenter_username | default(vcenter_username) }}
+  password: {{ item.vcenter_password | default(vcenter_password) }}
+  datacenter: {{ item.vcenter_datacenter | default(vcenter_datacenter) }}
+  cluster: {{ item.vcenter_cluster | default(vcenter_cluster) }}
+  datastore: {{ item.vcenter_datastore | default(vcenter_datastore) }}
+  resource_pool: {{ item.vcenter_resource_pool | default(vcenter_resource_pool | default("NONE")) }}
+{% endif %}
+
+{% elif item.target_server_type | match("aws") %}
+
+aws_region: "{{ item.aws_region }}"
+
+{% if item.provision_vpc is defined %}
+provision_vpc:
+  VPCCIDR: "{{ item.provision_vpc.cidr }}"
+  NSGWANSubnetCIDR: "{{ item.provision_vpc.nsg_wan_subnet }}"
+  NSGLANSubnetCIDR: "{{ item.provision_vpc.nsg_lan_subnet }}"
+  PrivateSubnetCIDR: "{{ item.provision_vpc.private_subnet }}"
+{% elif item.use_vpc is defined %}
+use_vpc:
+  nsg_lan_eni: "{{ item.use_vpc.nsg_lan_eni }}"
+  nsg_wan_eni: "{{ item.use_vpc.nsg_wan_eni }}"
+{% endif %}
+
+nsg_ami:
+  id: "{{ item.nsg_ami.id }}"
+  type: "{{ item.nsg_ami.type | default('t2.medium') }}"
+  keyname: "{{ item.nsg_ami.keyname }}"
+
+{% if item.nsg_ami.eip_allocid is defined %}
+  eip_allocid: "{{ item.nsg_ami.eip_allocid }}"
+{% endif %}
+
+{% endif %}
