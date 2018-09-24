@@ -34,7 +34,7 @@ class ExampleFileGenerator(object):
         with open(schema_filename, 'r') as file:
             schema = yaml.safe_load(file.read())
 
-        with open("exampledata.yml", 'r') as sampleyaml:
+        with open("src/examples/kvm_datacenter_install/common.yml", 'r') as sampleyaml:
             exampleYml = yaml.safe_load(sampleyaml.read())
 
         if self.has_comments:
