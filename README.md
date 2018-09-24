@@ -3,15 +3,14 @@
 
 Version: 3.0.0
 
-Metro is an automation engine that deploys and upgrades Nuage Networks components.
-After you specify the individual details of your target platform, Metro Automation Engine (leveraging Ansible playbooks and roles) sets up the environment as specified. Metro Automation Engine can also upgrade, roll-back, and health-check the environment.
+MetroÆ is an automation engine that deploys and upgrades Nuage Networks components. You specify the individual details of your target platform, then let MetroÆ install, upgrade, roll-back, or health-check the environment for you.
 
 ## Important Note
 The procedures have changed substantially in version 3.0 to improve usability.
-If you have used previous versions of MetroAE, please see [RELEASE_NOTES.md](Documentation/RELEASE_NOTES.md) for details.
+If you have used previous versions of MetroÆ, please see [RELEASE_NOTES.md](Documentation/RELEASE_NOTES.md) for details.
 
 ## Supported Components for Deployment
-Metro Automation Engine supports deployment of the following components as VMs on the target server. The same target server types are supported as the VSP platform.
+MetroÆ supports deployment of the following components as VMs on the target server. These are the same target server types that are supported on the VSP platform.
 
 Component | KVM (el7)<br>Stand-alone (SA) | KVM (el7)<br>Clustered (HA) | ESXi<br>Stand-alone (SA) | ESXi<br>Clustered (HA)
 ------- | :---: | :---: | :----: | :---:
@@ -35,7 +34,7 @@ NSG-V (Network Services Gateway-Virtual) |  X |
 ![topology](Documentation/topology.png)
 
 ## Supported Components for Upgrade
-Metro Automation Engine supports upgrade of the following Nuage VSP components.
+MetroÆ supports upgrade of the following Nuage VSP components.
 
 Component | KVM (el7)<br> SA | KVM (el7)<br> HA | ESXi<br>SA | ESXi<br>HA
 ------- | :---: | :---: | :----: | :---:
@@ -44,9 +43,9 @@ VSTAT | X | X | X | X
 VSC | X | X | X | X
 VCIN | X |  | X |
 
-## Main Steps for Using MetroAE
+## Main Steps for Using MetroÆ
 
-1. [Setup](Documentation/SETUP.md)  the MetroAE host. Setup prepares the host for running MetroAE, including retrieving the repository, installing prerequisite packages and setting up SSH access.
+1. [Setup](Documentation/SETUP.md)  the MetroÆ host. Setup prepares the host for running MetroÆ, including retrieving the repository, installing prerequisite packages and setting up SSH access.
 
 2. [Customize](Documentation/CUSTOMIZATION.md) your deployment to match your network topology, and describe your Nuage Networks specifics.
 
@@ -54,14 +53,14 @@ VCIN | X |  | X |
 
 4. If things did not work out as expected, [destroy](Documentation/DESTROY.md) or [rollback](Documentation/ROLLBACK.md) your environment.
 
-## MetroAE Workflows
-MetroAE workflows are the operations that can be performed against a specified deployment.  All supported workflows can be listed via:
+## MetroÆ Workflows
+MetroÆ workflows are the operations that can be performed against a specified deployment.  All supported workflows can be listed via:
 
-    ./metroae --list
+    metroae --list
 
 Workflows fall into the following categories:
 
-Workflow | Description |
+Workflow | Operation Description |
 ------------- | ----------- |
 Predeploy | prepares infrastructure with necessary packages and makes the component(s) reachable |
 Deploy | installs and configures component(s) |
@@ -77,17 +76,17 @@ The following workflows are examples that combine together several of the above 
 * nuage_health - Checks the health of all components specified in a deployment.
 
 ## Ansible
-MetroAE is based off of the Python-based Ansible operations tool.  The following sections provide more detail of how Ansible is utilized to perform workflows.
+MetroÆ is based off of the Python-based Ansible operations tool.  The following sections provide more detail of how Ansible is used to perform workflows.
 
 ## Nomenclature
-**Ansible Host**: The host where Metro Automation Engine runs. Ansible and the required packages are installed on this host. The Ansible Host must run el7 Linux host, e.g. CentOS 7.* or RHEL 7.*.
+**Ansible Host**: The host where MetroÆ runs. Ansible and the required packages are installed on this host. The Ansible Host must run el7 Linux host, e.g. CentOS 7.* or RHEL 7.*.
 
-**Metro Automation Engine User**: The user who runs Metro Automation Engine to deploy and upgrade components.
+**MetroÆ User**: The user who runs MetroÆ to deploy and upgrade components.
 
 **Target Server**: The hypervisor on which one or more VSP components are installed as VMs. Each deployment may contain more than one Target Server.
 
 ### Use of Ansible Playbooks and Roles
-**Ansible** provides a method to easily define one or more actions to be performed on one or more computers. These tasks can target the local system Ansible is running from, as well as other systems that Ansible can reach over the network. The Ansible engine has minimal installation requirements. Python, with a few additional libraries, is all that is needed for the core engine. MetroAE includes a few custom Python modules and scripts. Agent software is not required on the hosts to be managed. Communication with target hosts defaults to SSH. Ansible does not require the use of a persistent state engine. Every Ansible run determines state as it goes, and adjusts as necessary given the action requirements. Running Ansible requires only an inventory of potential targets, state directives, either expressed as an ad hoc action, or a series coded in a YAML file, and the credentials necessary to communicate with the target.
+**Ansible** provides a method to easily define one or more actions to be performed on one or more computers. These tasks can target the local system Ansible is running from, as well as other systems that Ansible can reach over the network. The Ansible engine has minimal installation requirements. Python, with a few additional libraries, is all that is needed for the core engine. MetroÆ includes a few custom Python modules and scripts. Agent software is not required on the hosts to be managed. Communication with target hosts defaults to SSH. Ansible does not require the use of a persistent state engine. Every Ansible run determines state as it goes, and adjusts as necessary given the action requirements. Running Ansible requires only an inventory of potential targets, state directives, either expressed as an ad hoc action, or a series coded in a YAML file, and the credentials necessary to communicate with the target.
 
 **Playbooks** are the language by which Ansible orchestrates, configures, administers and deploys systems. They are YAML-formatted files that collect one or more plays. Plays are one or more tasks linked to the hosts that they are to be executed on.
 
@@ -109,13 +108,14 @@ File name | Description
 [OPENSTACK.md](Documentation/OPENSTACK.md) | Deploy VSP components in OpenStack (limited support).
 
 ## Questions, Feedback, and Contributing
-Ask questions and get support via email.
-  Outside Nokia: [devops@nuagenetworks.net](mailto:deveops@nuagenetworks.net "send email to nuage-metro project")
+Ask questions and get support via the [forums](https://devops.nuagenetworks.net/forums/) on the [MetroÆ site](https://devops.nuagenetworks.net/).  
+You may also contact us directly.  
+  Outside Nokia: [devops@nuagenetworks.net](mailto:deveops@nuagenetworks.net "send email to nuage-metro project")  
   Internal Nokia: [nuage-metro-interest@list.nokia.com](mailto:nuage-metro-interest@list.nokia.com "send email to nuage-metro project")
 
 Report bugs you find and suggest new features and enhancements via the [GitHub Issues](https://github.com/nuagenetworks/nuage-metro/issues "nuage-metro issues") feature.
 
-You may also [contribute](CONTRIBUTING.md) to Nuage Metro Automation Engine by submitting your own code to the project.
+You may also [contribute](CONTRIBUTING.md) to MetroÆ by submitting your own code to the project.
 
 ## License
 Apache License 2.0

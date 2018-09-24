@@ -10,7 +10,7 @@
     delegate_to: "{{ vsd_fqdn }}"
     ignore_errors: yes
   
-  remote_user: "{{ vstat_username }}"
+  remote_user: "{{ vstat_default_username }}"
 
 - name: Set local variables
   set_fact:
@@ -27,7 +27,7 @@
       name: common
       tasks_from: vsd-generate-transfer-certificates
     vars:
-      certificate_password: "{{ vstat_password }}"
+      certificate_password: "{{ vstat_default_password }}"
       certificate_username: elastic
       commonName: elastic
       certificate_type: server
@@ -47,7 +47,7 @@
 - name: Transfer SSL certificates from localhost to Stats node
   copy: src={{ dest }}{{ item }} dest=/etc/nginx/ssl
   with_items: "{{ pem_list }}"
-  remote_user: "{{ vstat_username }}"
+  remote_user: "{{ vstat_default_username }}"
 
 - name: Delete temp folder from localhost
   local_action: file path={{ dest }} state=absent
@@ -57,5 +57,5 @@
   systemd:
     name: nginx
     state: restarted
-  remote_user: "{{ vstat_username }}"
+  remote_user: "{{ vstat_default_username }}"
   

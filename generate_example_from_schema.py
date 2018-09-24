@@ -56,6 +56,8 @@ class ExampleFileGenerator(object):
     def add_example_content(self, schema):
         is_list = schema["type"] == "array"
 
+        required = list()
+
         if is_list:
             if "items" in schema and "title" in schema["items"]:
                 item_name = schema["items"]["title"]
@@ -78,7 +80,11 @@ class ExampleFileGenerator(object):
                                                        item_index))
                 self.example_lines.append("#")
             self.example_lines.append("-")
-            self.add_example_fields(schema["items"]["properties"], is_list)
+            if "required" in schema["items"]:
+                required = schema["items"]["required"]
+
+            self.add_example_fields(schema["items"]["properties"], required,
+                                    is_list)
 
             if self.as_template:
                 self.example_lines.append("{% endfor %}")
@@ -87,14 +93,18 @@ class ExampleFileGenerator(object):
                 self.example_lines.append("{% endif %}")
 
         else:
-            self.add_example_fields(schema["properties"])
+            if "required" in schema:
+                required = schema["required"]
+            self.add_example_fields(schema["properties"], required)
 
-    def add_example_fields(self, field_dict, is_list=False):
+    def add_example_fields(self, field_dict, required, is_list=False):
         for name, field in sorted(field_dict.iteritems(),
                                   key=lambda (k, v): (v["propertyOrder"], k)):
-            self.add_example_field(name, field, is_list)
 
-    def add_example_field(self, name, field, is_list=False):
+            is_required = name in required
+            self.add_example_field(name, field, is_required, is_list)
+
+    def add_example_field(self, name, field, is_required, is_list=False):
         indent = ""
 
         if is_list:
@@ -115,7 +125,7 @@ class ExampleFileGenerator(object):
 
             self.example_lines.append("%s#" % indent)
 
-        if "default" in field:
+        if not is_required:
             if self.as_template:
                 item_name = ""
                 if is_list:
@@ -127,14 +137,18 @@ class ExampleFileGenerator(object):
                                                        name))
 
                 value = self.get_example_value(name, field, is_list)
-                self.example_lines.append("%s%s: %s" % (indent, name, value))
+                self.example_lines.append("%s%s: %s" % (indent, name,
+                                                        value))
                 if self.has_comments:
                     self.example_lines.append("%s{%%- else %%}" % indent)
 
             if self.has_comments:
+                default_value = '""'
+                if "default" in field:
+                    default_value = field["default"]
                 self.example_lines.append("%s# %s: %s" % (indent,
                                                           name,
-                                                          field["default"]))
+                                                          default_value))
 
             if self.as_template:
                 self.example_lines.append("%s{%%- endif %%}" % indent)
