@@ -3,6 +3,7 @@
 import os
 import sys
 import yaml
+import jinja2
 
 SCHEMA_DIRECTORY = "schemas"
 
@@ -15,28 +16,38 @@ def usage():
     print "    " + " ".join([sys.argv[0],
                              "<schema_filename>",
                              "[--no-comments]",
-                             "[--as-template]"])
+                             "[--as-template]",
+                             "[--as-example]"])
     print ""
     print "    no-comments: Generates without title/description comments"
     print "    as-template: Generates as a jinja2 template"
 
 
 class ExampleFileGenerator(object):
-    def __init__(self, no_comments=False, as_template=False):
+    def __init__(self, no_comments=False, as_template=False, as_example= False):
         self.has_comments = not no_comments
         self.as_template = as_template
+        self.as_example = as_example
 
     def generate_example_from_schema(self, schema_filename):
         self.example_lines = []
         with open(schema_filename, 'r') as file:
             schema = yaml.safe_load(file.read())
 
+        with open("exampledata.yml", 'r') as sampleyaml:
+            exampleYml = yaml.safe_load(sampleyaml.read())
+
         if self.has_comments:
             self.add_example_header(schema)
 
         self.add_example_content(schema)
 
-        return "\n".join(self.example_lines)
+        a = "\n".join(self.example_lines)
+        t = jinja2.Template(a)
+        output = t.render(**exampleYml)
+
+        return output
+        # return "\n".join(self.example_lines)
 
     def add_example_header(self, schema):
         self.example_lines.append("#" * 79)
@@ -206,17 +217,20 @@ def main():
 
     no_comments = "--no-comments" in sys.argv
     as_template = "--as-template" in sys.argv
+    as_example = "--as-example" in sys.argv
 
-    generator = ExampleFileGenerator(no_comments, as_template)
+    generator = ExampleFileGenerator(no_comments, as_template, as_example)
 
     if schema_filename.find(".") == -1:
         schema_filename = schema_filename + ".json"
 
     if os.path.isfile(schema_filename):
         print generator.generate_example_from_schema(schema_filename)
+        generator.generate_example_from_schema(schema_filename)
     else:
         schema_filename = os.path.join(SCHEMA_DIRECTORY, schema_filename)
         if os.path.isfile(schema_filename):
+            generator.generate_example_from_schema(schema_filename)
             print generator.generate_example_from_schema(schema_filename)
         else:
             raise Exception("Could not find schema file %s" % schema_filename)
