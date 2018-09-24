@@ -56,7 +56,7 @@ VCIN | X |  | X |
 ## MetroÆ Workflows
 MetroÆ workflows are the operations that can be performed against a specified deployment.  All supported workflows can be listed via:
 
-    ./metroae --list
+    metroae --list
 
 Workflows fall into the following categories:
 
