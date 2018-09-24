@@ -26,7 +26,7 @@ def usage():
 class ExampleFileGenerator(object):
     def __init__(self, no_comments=False, as_template=False, as_example= False):
         self.has_comments = not no_comments
-        self.as_template = as_template
+        self.as_template = as_template | as_example
         self.as_example = as_example
 
     def generate_example_from_schema(self, schema_filename):
@@ -42,12 +42,13 @@ class ExampleFileGenerator(object):
 
         self.add_example_content(schema)
 
-        a = "\n".join(self.example_lines)
-        t = jinja2.Template(a)
-        output = t.render(**exampleYml)
+        if self.as_example:
+            templateLines = "\n".join(self.example_lines)
+            template = jinja2.Template(templateLines)
+            generatedSample = template.render(**exampleYml)
+            return generatedSample
 
-        return output
-        # return "\n".join(self.example_lines)
+        return "\n".join(self.example_lines)
 
     def add_example_header(self, schema):
         self.example_lines.append("#" * 79)
