@@ -63,7 +63,7 @@ Before deploying with MetroÆ *for the first time*, ensure that the required unz
 Execute the command:
 
 ```
-./nuage-unzip <zipped_directory> <unzip_directory>
+./nuage-unzip.sh <zipped_directory> <unzip_directory>
 ```
 
 After executing the command, specify the <unzip_directory> in the `common.yml` deployment configuration as the nuage_unzipped_files_dir parameter.
