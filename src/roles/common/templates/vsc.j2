@@ -1,0 +1,138 @@
+# *** WARNING ***
+# This is a generated file. Manual changes to this file
+# will be lost if reset-build or build is run
+#
+component_type: vsc
+target_server_type: {{ item.1.target_server_type }}
+hostname: {{ item.1.hostname }}
+
+{% if item.1.system_name is defined %}
+system_name: {{ item.1.system_name }}
+{% endif %}
+
+{% if item.1.target_server_type | match("kvm") or item.1.target_server_type | match("vcenter") or item.1.target_server_type | match("nuagex") %}
+
+target_server: {{ item.1.target_server }}
+
+{% if item.1.vmname is defined %}
+vmname: {{ item.1.vmname }}
+{% else %}
+vmname: {{ item.1.hostname }}
+{% endif %}
+
+{% if item.1.vlan_id is defined %}
+vlan_id: {{ item.1.vlan_id }}
+{% endif %}
+
+mgmt_ip: {{ item.1.mgmt_ip }}
+mgmt_netmask_prefix: {{ item.1.mgmt_ip_prefix }}
+mgmt_gateway: {{ item.1.mgmt_gateway }}
+control_ip: {{ item.1.ctrl_ip }}
+{% if item.1.ctrl_ip_vprn is defined %}
+control_ip_vprn: {{ item.1.ctrl_ip_vprn }}
+{% endif %}
+control_netmask_prefix: {{ item.1.ctrl_ip_prefix }}
+
+vsc_mgmt_static_route_list:
+{% if item.1.vsc_mgmt_static_route_list is defined %}
+{% for route in item.1.vsc_mgmt_static_route_list %}
+  - {{ route }}
+{% endfor %}
+{% else %}
+  - 0.0.0.0/1
+  - 128.0.0.0/1
+{% endif %}
+
+{% if item.1.target_server_type | match("kvm") %}
+{% if qcow2_path is defined %}
+qcow2_path: {{ qcow2_path }}
+{% endif %}
+{% if qcow2_file_name is defined %}
+qcow2_file_name: {{ qcow2_file_name }}
+{% endif %}
+{% endif %}
+
+{% if item.1.target_server_type | match("vcenter") %}
+{% if ova_path is defined %}
+ova_path: {{ ova_path }}
+{% endif %}
+{% if ova_file_name is defined %}
+ova_file_name: {{ ova_file_name }}
+{% endif %}
+vcenter:
+  username: {{ item.1.vcenter_username | default( vcenter_username ) }}
+  password: {{ item.1.vcenter_password | default( vcenter_password ) }}
+  datacenter: {{ item.1.vcenter_datacenter | default( vcenter_datacenter ) }}
+  cluster: {{ item.1.vcenter_cluster | default( vcenter_cluster ) }}
+  datastore: {{ item.1.vcenter_datastore | default( vcenter_datastore ) }}
+  resource_pool: {{ item.1.vcenter_resource_pool | default(vcenter_resource_pool | default('NONE')) }}
+{% endif %}
+
+{% endif %}
+
+{% if item.1.vsd_fqdn is defined %}
+vsd_fqdn: {{ item.1.vsd_fqdn }}
+{% else %}
+vsd_fqdn: {{ vsd_fqdn_global }}
+{% endif %}
+
+{% if item.1.secure_communication is defined %}
+{% set secure_communication = item.1.secure_communication %}
+{% else %}
+{% set secure_communication = True %}
+{% endif %}
+secure_communication: {{ secure_communication }}
+
+{% if item.1.system_ip is defined %}
+system_ip: {{ item.1.system_ip }}
+{% endif %}
+
+xmpp:
+  username: {{ item.1.xmpp_username | default("vsc" + item.0 | string) }}
+
+expected_num_bgp_peers :  {{ item.1.expected_num_bgp_peers | default('0') }}
+expected_num_vswitches :  {{ item.1.expected_num_vswitches | default('0') }}
+expected_num_host_vports : {{ item.1.expected_num_host_vports | default('0') }}
+expected_num_vm_vports :   {{ item.1.expected_num_vm_vports | default('0') }}
+expected_num_gateway_ports : {{ item.1.expected_num_gateway_ports | default('0') }}
+
+{% if item.1.target_server_type | match("heat") %}
+dhcp: {{ item.1.dhcp | default('True') }}
+
+{% if item.1.dhcp is defined and item.1.dhcp == False %}
+mgmt_ip: {{ item.1.mgmt_ip }}
+{% endif %}
+
+{% if item.1.dhcp is defined and item.1.dhcp == False %}
+control_ip: {{ item.1.control_ip }}
+{% endif %}
+
+vsc_image: {{ item.1.vsc_image }}
+vsc_flavor: {{ item.1.vsc_flavor }}
+vsc_mgmt_network: {{ item.1.vsc_mgmt_network }}
+
+{% if item.1.dhcp is defined and item.1.dhcp == False %}
+vsc_mgmt_subnet: {{ item.1.vsc_mgmt_subnet }}
+{% endif %}
+
+vsc_control_network: {{ item.1.vsc_control_network }}
+
+{% if item.1.dhcp is defined and item.1.dhcp == False %}
+vsc_control_subnet: {{ item.1.vsc_control_subnet }}
+{% endif %}
+
+{% if item.1.infra_server_name is defined %}
+infra_server_name: {{ item.1.infra_server_name }}
+{% endif %}
+
+{% endif %}
+
+vsc_user: {{ vsc_user|default('admin') }}
+vsc_password: {{ vsc_password|default('admin') }}
+
+{% if vsc_tim_path is defined %}
+vsc_tim_path: {{ vsc_tim_path }}
+{% endif %}
+{% if vsc_tim_file_name is defined %}
+vsc_tim_file_name: {{ vsc_tim_file_name }}
+{% endif %}

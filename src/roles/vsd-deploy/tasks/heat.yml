@@ -1,0 +1,222 @@
+---
+- name: Get VSD details from OpenStack
+  os_server_facts:
+    auth:
+      "{{ os_auth }}"
+    server: "{{ inventory_hostname }}"
+  register: vsd_ip
+  delegate_to: 127.0.0.1
+
+- name: Set vsd mgmt ip
+  set_fact:
+    vsd_mgmt_ip: "{{ vsd_ip['ansible_facts']['openstack_servers'][0]['networks'][vsd_network][0] }}"
+
+- name: Clean known_hosts of VSD's
+  known_hosts:
+    name: "{{ vsd_mgmt_ip }}"
+    state: absent
+  delegate_to: localhost
+  no_log: True
+  ignore_errors: True
+
+- block:
+  - name: Get infra server details from OS server facts
+    os_server_facts:
+      auth:
+        "{{ os_auth }}"
+      server: "{{ infra_server_name }}"
+    register: infra_server
+    delegate_to: 127.0.0.1
+
+  - name: Set DNS/NTP server ip
+    set_fact:
+      infra_ip: "{{ infra_server['ansible_facts']['openstack_servers'][0]['private_v4'] }}"
+
+  - name: Restart DNS service
+    shell: service dnsmasq restart
+    delegate_to: "{{ infra_ip }}"
+    remote_user: "{{ vsd_default_username }}"
+  when: infra_server_name is defined
+
+- name: Wait for VSD-HA ssh to be ready
+  include_role:
+    name: common
+    tasks_from: wait-for-ssh
+  vars:
+    ssh_host: "{{ vsd_mgmt_ip }}"
+
+- name: Inject ssh key to VSD if cloud-init did not work
+  expect:
+    command: "ssh-copy-id -i {{ vsd_default_username }}@{{ vsd_mgmt_ip }}"
+    responses:
+      (?i)yes: "yes"
+      (?i)password: "{{ vsd_default_password }}"
+  remote_user: "{{ vsd_default_username }}"
+  delegate_to: localhost
+
+- name: Pause for ssh port to be active
+  pause:
+    seconds: 5
+
+- name: Query {{ target_server }} facts
+  action: setup
+  remote_user: "{{ target_server_username }}"
+
+- name: Update hostname
+  template: src=network.j2 backup=no dest=/etc/sysconfig/network
+
+- name: Add a DNS server to eth0
+  lineinfile:
+    dest: /etc/sysconfig/network-scripts/ifcfg-eth0
+    regexp: "DNS1="
+    line: "DNS1={{ infra_ip | default(dns_server_list[0]) }}"
+  when: infra_server_name is defined
+
+- block:
+
+  - name: Add nameserver
+    command: echo "{{ infra_ip }}" >> /etc/resolv.conf
+    when: infra_server_name is defined
+
+  - name: Restart networking
+    command: /etc/init.d/network restart
+
+  - name: Resolve fqdn
+    command: hostname "{{ inventory_hostname }}"
+
+  - name: Configure yum proxy
+    lineinfile:
+      dest: /etc/yum.conf
+      line: "proxy={{ yum_proxy }}"
+    when: not yum_proxy | match('NONE')
+
+  - name: Execute a yum update
+    yum:
+      name: '*'
+      state: latest
+    when: yum_update
+
+  remote_user: "{{ vsd_default_username }}"
+
+- block:
+
+  - name: Set VSD numbering for install
+    set_fact:
+        vsd_cluster_node_1: "{{ groups['vsds'][0] }}"
+        vsd_cluster_node_2: "{{ groups['vsds'][1] }}"
+        vsd_cluster_node_3: "{{ groups['vsds'][2] }}"
+    when: not nuage_upgrade | default(False)
+
+  - name: Set VSD numbering for upgrade
+    set_fact:
+        vsd_cluster_node_1: "{{ groups['vsds'][1] }}"
+        vsd_cluster_node_2: "{{ groups['vsds'][2] }}"
+        vsd_cluster_node_3: "{{ groups['vsds'][0] }}"
+    when: nuage_upgrade | default(False)
+
+  when: vsd_sa_or_ha | match('ha')
+
+- block:
+
+  - block:
+
+    - name: Read the VSD version
+      shell: echo $VSD_VERSION | cut -d . -f 1
+      register: vsd_version
+      remote_user: "{{ vsd_default_username }}"
+
+    - debug: var=vsd_version.stdout verbosity=1
+
+    - block:
+
+      - name: Generate SSH keys
+        shell: ssh-keygen -b 2048 -t rsa -f /root/.ssh/id_rsa -q -N ""
+        args:
+          creates: /root/.ssh/id_rsa
+        delegate_to: "{{ item }}"
+        with_items: "{{ groups['vsds'] }}"
+
+      - name: Get generated SSH keys
+        shell: cat ~/.ssh/id_rsa.pub
+        register: ssh_key_lst
+        delegate_to: "{{ item }}"
+        with_items: "{{ groups['vsds'] }}"
+
+      - name: Add SSH keys to authorized_keys file
+        shell: "echo {{ item[1].stdout }} >> /root/.ssh/authorized_keys"
+        delegate_to: "{{ item[0] }}"
+        with_nested:
+          - "{{ groups['vsds'] }}"
+          - "{{ ssh_key_lst.results }}"
+      remote_user: "{{ vsd_default_username }}"
+      when: vsd_version.stdout | int < 5 and inventory_hostname == vsd_cluster_node_1
+
+    - block:
+
+      - name: Generate SSH keys
+        shell: sudo -u vsd ssh-keygen -b 2048 -t rsa -f /home/vsd/.ssh/id_rsa -q -N ""
+        args:
+          creates: /home/vsd/.ssh/id_rsa
+        delegate_to: "{{ item }}"
+        with_items: "{{ groups['vsds'] }}"
+
+      - name: Get generated SSH keys
+        shell: cat /home/vsd/.ssh/id_rsa.pub
+        register: ssh_key_lst
+        delegate_to: "{{ item }}"
+        with_items: "{{ groups['vsds'] }}"
+
+      - name: Add SSH keys to authorized_keys file
+        shell: "echo {{ item[1].stdout }} >> /home/vsd/.ssh/authorized_keys"
+        delegate_to: "{{ item[0] }}"
+        with_nested:
+          - "{{ groups['vsds'] }}"
+          - "{{ ssh_key_lst.results }}"
+
+      - name: Change owner and permissions of VSD authorized keys
+        file:
+          path: /home/vsd/.ssh/authorized_keys
+          owner: vsd
+          group: hadoopusers
+          mode: 0640
+        delegate_to: "{{ item }}"
+        with_items: "{{ groups['vsds'] }}"
+      when: vsd_version.stdout | int >= 5
+
+    when: inventory_hostname == vsd_cluster_node_1 or (inventory_hostname == vsd_cluster_node_3 and nuage_upgrade | default(False))
+
+  remote_user: "{{ vsd_default_username }}"
+  when: vsd_sa_or_ha | match('ha')
+
+- name: Configure ntpd and ntpdate and local time zone
+  include_role:
+    name: common
+    tasks_from: linux-ntp-sync
+  vars:
+    rem_user: "{{ vsd_default_username }}"
+
+- name: Install VSD software on standalone node
+  command: /opt/vsd/vsd-install.sh -t s -y
+  remote_user: "{{ vsd_default_username }}"
+  when: vsd_sa_or_ha | match('sa')
+
+- block:
+
+  - name: Install VSD software on the first cluster node
+    command: "{{ vsd_node1_install_cmd }}"
+    when: inventory_hostname == vsd_cluster_node_1
+
+  - name: Install VSD software on the second cluster node
+    command: "{{ vsd_node2_install_cmd }}"
+    when: inventory_hostname == vsd_cluster_node_2
+
+  - name: Install VSD software on the third cluster node
+    command: "{{ vsd_node3_install_cmd }}"
+    when: inventory_hostname == vsd_cluster_node_3
+
+  when: vsd_sa_or_ha | match('ha')
+  remote_user: "{{ vsd_default_username }}"
+
+- name: Set XMPP connection to allow both clear and TLS
+  command: /opt/vsd/bin/ejmode allow -y
+  remote_user: "{{ vsd_default_username }}"

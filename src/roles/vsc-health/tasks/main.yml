@@ -1,0 +1,326 @@
+---
+- import_tasks: report_header.yml
+
+- block:
+
+  - name: Wait for VSC ssh to be ready
+    include_role:
+      name: common
+      tasks_from: wait-for-ssh
+    vars:
+      ssh_host: "{{ mgmt_ip }}"
+    tags:
+      - vsc
+      - vsc-health
+
+  - name: Clean known_hosts of VSC's
+    known_hosts:
+      name: "{{ mgmt_ip }}"
+      state: absent
+    no_log: True
+    ignore_errors: True
+
+  # Without this, the run creates a false positive as it finds the files
+  # from the previous run
+  - name: Remove older failure_report.log files
+    file:
+      path: "{{ failure_report_path }}"
+      state: absent
+
+  - name: Get output of 'show version'
+    sros_command:
+      commands:
+        - show version
+      provider: "{{ vsc_creds }}"
+    register: sh_version
+
+  - name: Print 'show version' when verbosity >= 1
+    debug: var=sh_version verbosity=1
+
+  - name: Write show version json to report
+    nuage_append: filename="{{ report_path }}" text="{{ inventory_hostname }} {{ sh_version|to_nice_json }}\n"
+
+  - name: Get output of 'show router bgp summary'
+    sros_command:
+      commands:
+        - show router bgp summary
+      provider: "{{ vsc_creds }}"
+    register: bgp_summary
+
+  - name: Print 'show router bgp summary' when verbosity >= 1
+    debug: var=bgp_summary verbosity=1
+
+  - name: Create local variable with BGP Summary in json
+    set_fact: bgp_summary_json="{{ bgp_summary.stdout[0]|bgp_summary_to_json }}"
+
+  - name: Print BGP Summary in json when verbosity >= 1
+    debug: var=bgp_summary_json verbosity=1
+
+  - name: Write BGP Admin State JSON to file
+    nuage_append: filename="{{ report_path }}" text="{{ inventory_hostname }} {{ bgp_summary_json|to_nice_json }}\n"
+
+  - name: Create local variable with BGP Admin State
+    set_fact: bgp_admin_state="{{ bgp_summary_json['BGP Admin State'] }}"
+
+  - name: Print BGP Admin State when verbosity >= 1
+    debug: var=bgp_admin_state verbosity=1
+
+  - name: Check for expected BGP Admin State
+    assert: {
+      that: "'{{ expected_bgp_admin_state }}' in bgp_admin_state",
+      msg: "Unexpected BGP Admin State - {{ bgp_admin_state }}. Expected '{{ expected_bgp_admin_state }}'. Check output of 'show router bgp summary'."
+    }
+    ignore_errors: "{{ not nuage_upgrade | default(False) }}"
+
+  - name: Create local variable for BGP Oper State
+    set_fact: bgp_oper_state="{{ bgp_summary_json['BGP Oper State'] }}"
+
+  - name: Print BGP Oper State when verbosity >= 1
+    debug: var=bgp_oper_state verbosity=1
+
+  - name: Check for expected BGP Oper State
+    assert: {
+      that: "'{{ expected_bgp_oper_state }}' in bgp_oper_state",
+      msg: "Unexpected BGP Oper State - {{ bgp_oper_state }}. Expected '{{ expected_bgp_oper_state }}'. Check output of 'show router bgp summary'."
+    }
+    ignore_errors: "{{ not nuage_upgrade | default(False) }}"
+
+  - name: Create local variable for BGP Peer Count
+    set_fact: bgp_peer_count="{{ bgp_summary_json['Total Peers'] }}"
+
+  - name: Print BGP Peer Count when verbosity >= 1
+    debug: var=bgp_peer_count verbosity=1
+
+  - name: Check for expected BGP Peer Count
+    assert: {
+      that: "{{ expected_num_bgp_peers }} == {{ bgp_peer_count }}",
+      msg: "Invalid BGP Peer count ({{ bgp_peer_count }}) detected. Expected '{{ expected_num_bgp_peers }}'. Check 'show router bgp summary'."
+    }
+    ignore_errors: "{{ not nuage_upgrade | default(False) }}"
+    when: expected_num_bgp_peers | default(0) > 0
+
+  - name: Get output of 'show vswitch-controller xmpp-server detail'
+    sros_command:
+      commands:
+        - show vswitch-controller xmpp-server detail
+      provider: "{{ vsc_creds }}"
+    register: xmpp_detail
+
+  - name: Print 'show vswitch-controller xmpp-server detail' when verbosity >= 1
+    debug: var=xmpp_detail verbosity=1
+
+  - name: Create local variable with xmpp-server detail in json
+    set_fact: xmpp_detail_json="{{ xmpp_detail.stdout[0]|xmpp_server_detail_to_json }}"
+
+  - name: Print xmpp-server detail in json when verbosity >= 1
+    debug: var=xmpp_detail_json verbosity=1
+
+  - name: Write xmpp-server detail json to report
+    nuage_append: filename="{{ report_path }}" text="{{ inventory_hostname }} {{ xmpp_detail_json|to_nice_json }}\n"
+
+  - name: Create local variable for xmpp-server state
+    set_fact: xmpp_server_state="{{ xmpp_detail_json['State'] }}"
+
+  - name: Print xmpp-server state when verbosity >= 1
+    debug: var=xmpp_server_state verbosity=1
+
+  - name: Check for the expected xmpp-server state
+    assert: {
+      that: "{{ expected_xmpp_server_state == xmpp_server_state }}",
+      msg: "Invalid xmpp-server state ({{ xmpp_server_state }}) detected. Expected {{ expected_xmpp_server_state }}. Check 'show vswitch-controller xmpp-server details'."
+    }
+    ignore_errors: "{{ not nuage_upgrade | default(False) }}"
+
+  - name: Get output of 'show vswitch-controller vsd detail'
+    sros_command:
+      commands:
+        - show vswitch-controller vsd detail
+      provider: "{{ vsc_creds }}"
+    register: vsd_detail
+
+  - name: Print 'show vswitch-controller vsd detail' when verbosity >= 1
+    debug: var=vsd_detail verbosity=1
+
+  - name: Create local variable with vsd detail in json
+    set_fact: vsd_detail_json="{{ vsd_detail.stdout[0]|vsd_detail_to_json }}"
+
+  - name: Print vsd detail in json when verbosity >= 1
+    debug: var=vsd_detail_json verbosity=1
+
+  - name: Write vsd detail json to report
+    nuage_append: filename="{{ report_path }}" text="{{ inventory_hostname }} {{ vsd_detail_json|to_nice_json }}\n"
+
+  - name: Get output of 'show vswitch-controller vswitches'
+    sros_command:
+      commands:
+        - show vswitch-controller vswitches
+      provider: "{{ vsc_creds }}"
+    register: show_vswitches
+
+  - name: Print output of 'show vswitch-controller vswitches' when verbosity >= 1
+    debug: var=show_vswitches verbosity=1
+
+  - name: Create local variable with show vswitches output in json
+    set_fact: show_vswitches_json="{{ show_vswitches.stdout[0]|show_vswitches_to_json }}"
+
+  - name: Print show vswitches in json when verbosity >= 1
+    debug: var=show_vswitches_json verbosity=1
+
+  - name: Write vswiches json to report
+    nuage_append: filename="{{ report_path }}" text="{{ inventory_hostname }} {{ show_vswitches_json|to_nice_json }}\n"
+
+  - name: Check for the expected number of vswitches
+    assert: {
+      that: "{{ expected_num_vswitches }} == {{ show_vswitches_json['No. of virtual switches'] }}",
+      msg: "Invalid vswitch count ({{ show_vswitches_json['No. of virtual switches'] }}) detected. Expected {{ expected_num_vswitches }}. Check 'show vswitch-controller vswitches'."
+    }
+    ignore_errors: "{{ not nuage_upgrade | default(False) }}"
+    when: expected_num_vswitches | default(0) > 0
+
+  - name: Get output of 'show vswitch-controller vports type host'
+    sros_command:
+      commands:
+        - show vswitch-controller vports type host
+      provider: "{{ vsc_creds }}"
+    register: show_host_vports
+
+  - name: Print output of 'show vswitch-controller vports type host' when verbosity >= 1
+    debug: var=show_host_vports verbosity=1
+
+  - name: Create local variable with show host vports output in json
+    set_fact: show_host_vports_json="{{ show_host_vports.stdout[0]|show_host_vports_to_json }}"
+
+  - name: Print show host vports in json when verbosity >= 1
+    debug: var=show_host_vports_json verbosity=1
+
+  - name: Write host vports json to report
+    nuage_append: filename="{{ report_path }}" text="{{ inventory_hostname }} HOST VPORTS {{ show_host_vports_json|to_nice_json }}\n"
+
+  - name: Check for the expected number of host vports
+    assert: {
+      that: "{{ expected_num_host_vports }} == {{ show_host_vports_json['No. of virtual ports'] }}",
+      msg: "Invalid host vport count ({{ show_host_vports_json['No. of virtual ports'] }}) detected. Expected {{ expected_num_host_vports }}. Check 'show vswitch-controller vports type host'."
+    }
+    ignore_errors: "{{ not nuage_upgrade | default(False) }}"
+    when: expected_num_host_vports | default(0) > 0
+
+  - name: Get output of 'show vswitch-controller vports type vm'
+    sros_command:
+      commands:
+        - show vswitch-controller vports type vm
+      provider: "{{ vsc_creds }}"
+    register: show_vm_vports
+
+  - name: Print output of 'show vswitch-controller vports type vm' when verbosity >= 1
+    debug: var=show_vm_vports verbosity=1
+
+  - name: Create local variable with show vm vports output in json
+    set_fact: show_vm_vports_json="{{ show_vm_vports.stdout[0]|show_vm_vports_to_json }}"
+
+  - name: Print show vm vports in json when verbosity >= 1
+    debug: var=show_vm_vports_json verbosity=1
+
+  - name: Write vm vports json to report
+    nuage_append: filename="{{ report_path }}" text="{{ inventory_hostname }} VM VPORTS {{ show_vm_vports_json|to_nice_json }}\n"
+
+  - name: Check for the expected number of vm vports
+    assert: {
+      that: "{{ expected_num_vm_vports }} == {{ show_vm_vports_json['No. of virtual ports'] }}",
+      msg: "Invalid vm vport count ({{ show_vm_vports_json['No. of virtual ports'] }}) detected. Expected {{ expected_num_vm_vports }}. Check 'show vswitch-controller vports type vm'."
+    }
+    ignore_errors: "{{ not nuage_upgrade | default(False) }}"
+    when: expected_num_vm_vports | default(0) > 0
+
+  - name: Get output of 'show vswitch-controller gateway ports'
+    sros_command:
+      commands:
+        - show vswitch-controller gateway ports
+      provider: "{{ vsc_creds }}"
+    register: show_gateway_ports
+
+  - name: Print output of 'show vswitch-controller gateway ports' when verbosity >= 1
+    debug: var=show_gateway_ports verbosity=1
+
+  - name: Create local variable with show gateway ports output in json
+    set_fact: show_gateway_ports_json="{{ show_gateway_ports.stdout[0]|show_gateway_ports_to_json }}"
+
+  - name: Print show gateway ports in json when verbosity >= 1
+    debug: var=show_gateway_ports_json verbosity=1
+
+  - name: Write gateway ports json to report
+    nuage_append: filename="{{ report_path }}" text="{{ inventory_hostname }} GATEWAY VPORTS {{ show_gateway_ports_json|to_nice_json }}\n"
+
+  - name: Check for the expected number of gateway ports
+    assert: {
+      that: "{{ expected_num_gateway_ports }} == {{ show_gateway_ports_json['No. of Ports'] }}",
+      msg: "Invalid gateway port count ({{ show_gateway_ports_json['No. of Ports'] }}) detected. Expected {{ expected_num_gateway_ports }}. Check 'show vswitch-controller gateway ports'."
+    }
+    ignore_errors: "{{ not nuage_upgrade | default(False) }}"
+    when: expected_num_gateway_ports | default(0) > 0
+
+  - name: Get output of 'show router interface'
+    sros_command:
+      commands:
+        - show router interface
+      provider: "{{ vsc_creds }}"
+    register: show_router_interfaces
+    
+  - name: Print output of 'show router interface' when verbosity >= 1
+    debug: var=show_router_interfaces verbosity=1
+  
+  - name: Create local variable with show router interface output in json
+    set_fact: show_router_interfaces_json="{{ show_router_interfaces.stdout[0]|vsc_router_interfaces_to_json }}"
+  
+  - name: Print show router interface in json when verbosity >= 1
+    debug: var=show_router_interfaces_json verbosity=1
+  
+  - name: Write router interfaces to report
+    nuage_append: filename="{{ report_path }}" text="{{ inventory_hostname }} INTERFACES {{ show_router_interfaces_json|to_nice_json }}\n"
+  
+  - name: Check for expected control Adm Status
+    assert: {
+      that: "{{ show_router_interfaces_json.control_Adm | match('Up') }}",
+      msg: "Invalid Adm status for control interface. ({{ show_router_interfaces_json.control_Adm }}) detected. Expected 'Up'. Check 'show router interface'."
+    }
+    
+  - name: Check for expected control Oprv4 Status
+    assert: {
+      that: "{{ show_router_interfaces_json.control_Oprv4 | match('Up') }}",
+      msg: "Invalid Oprv4 status for control interface. ({{ show_router_interfaces_json.control_Oprv4 }}) detected. Expected 'Up'. Check 'show router interface'."
+    }
+  
+  - name: Check for expected system Adm Status
+    assert: {
+      that: "{{ show_router_interfaces_json.system_Adm | match('Up') }}",
+      msg: "Invalid Adm status for system interface. ({{ show_router_interfaces_json.system_Adm }}) detected. Expected 'Up'. Check 'show router interface'."
+    }
+  
+  - name: Check for expected system Oprv4 Status
+    assert: {
+      that: "{{ show_router_interfaces_json.system_Oprv4 | match('Up') }}",
+      msg: "Invalid Oprv4 status for system interface. ({{ show_router_interfaces_json.system_Oprv4 }}) detected. Expected 'Up'. Check 'show router interface'."
+    }
+    
+  - name: Get NTP status
+    sros_command:
+      commands:
+        - show system ntp | match "Clock Source"
+      provider: "{{ vsc_creds }}"
+    register: ntp_status
+    until: not ntp_status.stdout[0]|search('none')
+    retries: "{{ ntp_sync_retries }}"
+    delay: "{{ ntp_sync_delay }}"
+    ignore_errors: "{{ not nuage_upgrade | default(False) }}"
+
+  - name: Verify NTP status
+    assert:
+      that: not ntp_status.stdout[0]|search('none')
+      msg: "NTP Status not okay: {{ ntp_status.stdout[0] }}. Quitting."
+    ignore_errors: "{{ not nuage_upgrade | default(False) }}"
+
+  - name: Write NTP status to report
+    nuage_append: filename="{{ report_path }}" text="{{ inventory_hostname }} NTP Status {{ ntp_status.stdout[0] }}\n"
+
+  - import_tasks: report_footer.yml
+
+  delegate_to: localhost

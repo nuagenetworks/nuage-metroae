@@ -1,0 +1,74 @@
+---
+- block:
+
+  - block:
+
+    - name: Stop vsd statistics services on node1 and node2
+      shell: "{{ stop_stats }}"
+
+    - name: Pause for proccesses to exit
+      pause:
+        seconds: 20
+
+    - name: Check for left over stats proccesses
+      shell: "{{ stats_pids }}"
+      register: list_stats_pids
+
+    - name: Print stats_pids output when verbosity >= 1
+      debug: var=list_stats_pids verbosity=1
+
+    - name: Kill the stats pids if they exists
+      shell: "kill -9 {{ item }}"
+      with_items: "{{ list_stats_pids.stdout_lines|default([]) }}"
+      ignore_errors: yes
+      when: list_stats_pids.stdout.strip()!= ""
+    when: groups['stats'] is defined and groups['vstats']
+
+  - block:
+
+    - name: Stop vsd core services
+      shell: "{{ stop_vsd_core }}"
+
+    - name: Pause for proccesses to exit
+      pause:
+        seconds: 20
+
+    - name: Check for left over vsd-core proccesses
+      shell: "{{ core_pids }}"
+      register: list_core_pids
+
+    - name: Print core_pids output when verbosity >= 1
+      debug: var=list_core_pids verbosity=1
+
+    - name: Kill the vsd-core pids if they exists
+      shell: "kill -9 {{ item }}"
+      with_items: "{{ list_core_pids.stdout_lines|default([]) }}"
+      ignore_errors: yes
+      when: list_core_pids.stdout.strip()!=""
+
+    - name: Stop vsd common services
+      shell: "{{ stop_vsd_common }}"
+
+    - name: Pause for proccesses to exit
+      pause:
+        seconds: 20
+
+    - name: Check for left over vsd common proccesses
+      shell: "{{ common_pids }}"
+      register: list_common_pids
+
+    - name: Print common_pids output when verbosity >= 1
+      debug: var=list_common_pids verbosity=1
+
+    - name: Kill the vsd-common pids if they exists
+      shell: "kill -9 {{ item }}"
+      with_items: "{{ list_common_pids.stdout_lines|default([]) }}"
+      ignore_errors: yes
+      when: list_common_pids.stdout.strip()!=""
+
+    remote_user: "{{ vsd_username | default(vsd_default_username) }}"
+    become: "{{ 'no' if vsd_username | default(vsd_default_username) == 'root' else 'yes' }}"
+    vars:
+      ansible_become_pass: "{{ vsd_password | default(vsd_default_password) }}"
+
+  when: inventory_hostname == groups['vsds'][0] or inventory_hostname == groups['vsds'][1]

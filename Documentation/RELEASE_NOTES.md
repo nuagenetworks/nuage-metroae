@@ -1,49 +1,11 @@
 # Metro Automation Engine Release Notes
-## Release 2.4.4
-### New Features and Enhancements
-* upgrade VSTAT and VSC operating with user other than root
-* Skip shared domain for maintenance mode
-* Updates to use a simpler path for the backup directory on the VSD, to rename some variables so that their use is more obvious, and to clean up the backup directory on the VSD after the backup has been transferred from the VSD to the localhost.
-### Resolved Issues
-* Remove local connection from VSD decouple
-* add remote user to get monit summary process
-* add become privileges to monit_summary
 
+## Release 3.0.0
 
-## Release 2.4.3
-### New Features and Enhancements
-* add 5.3.1 from version to VSTAT upgrade skip list
-* refactor logic behind destroy during install and upgrade, edit VSTAT list of versions to be skipped during upgrade.  
-* add vnc console access in VSD template  
-* add vault encryption procedure doc
-* check the 'show router interface' command to verify that states for Adm and Oprv4 are correct for control interface  
-* add support for new cloud-init version for 5.3.2
-* add support for upgrade to version 5.3.2
-* add suppport for non-root usernames for VSD upgrade
-* add support for NuageX deployment type
-* add support for branding the VSD GUI
-* add NSG bootstrap via activation link
-* add VSD license expiration check
-* update OpenStack Compute and Plugin integration, remove need to specify vsd_ip in myoscs, add handler to restart Neutron-server, reduce time to restart Neutron-server by adding tasks to Neutron-integration idempotent, make vsd-osc-integration equivalent to os-vsd-osc-integration, move stopping of Neutron services to the vrs-oscompute-integration role, change nuage_plugin.ini to be configured to use VSD FQDN
-* improve integration with OpenStack controller, primarily by speeding up lab-installs of Nuage and OpenStack
-* add ability to customize passwords for VSD programs and services
-* add playbook to copy qcow2 files before predeploy step, add checks in predeploy step for qcow2 existence if skipCopyImages is set
-### Resolved Issues
-* user-related fixes  
-   - vsd-predeploy role tries to use the password listed in user_creds.yml to authenticate in the vmware_vm_shell tasks, rather than root/Alcateldc, which it should be using for a freshly-deployed OVF.
-   - roles/vstat-vsd-health/tasks/main.yml: Needs remote_user: "{{ vstat_username }}" on the monit_waitfor_service task, otherwise it tries to SSH into vstat using the local username on the metro host, not the root user.
-   - roles/vstat-health/tasks/main.yml: Needs delegate to localhost.
-   - roles/vsc-backup/vars/main.yml: All the scp command lines refer to vsc_user - it should be vsc_username.
-* add become privilege to ActiveMQ status monitoring
-* Set and verify JMS Master Node SA
-* Add default VSD username for ActiveMQ status
-* Paramiko check and JMS Gateway Check Refactoring
-* add functionality to configure autostart for vCenter VMs. Turn off autostart for VMs that are shutdown during the upgrade process.
-* fix inconsistency in the way VMs were shutdown during upgrade
-* update dns zones with values from build_vars.yml and solve the firewalld issue from dns-deploy/task/main.yaml file
-* support custom group setting on ansible.log file
-* support doing MD5 checks of user input files in locations other than the current directory
-* removed redundant check for netaddr package
-* fix username for vmware-vm_shell commands in vsd-predeploy
-* fix username for executing monit_waitfor_service task in vstat-vsd-health
-* fix uri task in vstat-health to execute on localhost
+### New Procedures and Improvements
+
+* **Removal of build_vars.yml.**  There is no longer a single monolithic configuration file for MetroAG.  Configuration is specified through "deployments".  A tool is provided to convert an obsolute build_vars.yml file to a deployment.  See [Customization](Documentation/CUSTOMIZATION.md) for details on deployments.
+* **Removal of `build`.**  The user no longer needs to issue the `build` playbook.  This will be handled automatically and seamlessly by the MetroAG tool.  MetroAG also tracks changes and will skip steps not required if configuration is unmodified.
+* **Schema validation of deployment data.**  All configuration specified in a deployment is automatically validated against json-schema.org schemas.  This ensures that all required fields are set and every field has the correct syntax.  Any error will be found as early as possible and a specific error message will call out the exact problem.
+* **Workflows instead of playbooks.**  In order to simplify usage, the concept of `playbook` is being replaced by a `workflow`.  The .yml extension is no longer required.  Thus, issue `vsd_deploy` instead of `vsd_deploy.yml`.  The MetroAG tool is renamed from `metro-ansible` to `metroag`.  It now supports different arguments, including `--list` which displays all supported workflows.
+* **Cleanup of repo.**  The MetroAG repository has been cleaned.  Only tools useful for users are present in the root directory.  The internal workings of the tool have been moved to sub-directories like src/.
