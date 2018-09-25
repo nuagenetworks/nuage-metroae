@@ -1,46 +1,72 @@
-# Customizing for your Topology
+# Customizing Components for a Deployment
+
+## Note for users of MetroÆ before version 3.0
+MetroÆ before version 3.0 used the now deprecated build_vars.yml configuration.  In the current version, build_vars.yml is replaced with *deployments* as described in this document.  You can convert an obsolete build_vars.yml file to a deployment using the following tool:
+
+```
+./convert_build_vars_to_deployment.py <build_vars_file> <deployment_name>
+```
 
 ## Prerequisites / Requirements
+To confirm that the intended deployment is supported by MetroÆ, see [README.md](../README.md).
 
-To confirm that your components are supported by Metro Automation Engine, see [README.md](../README.md).
-
-If you have not previously set up your Metro Automation Engine Ansible environment, see [SETUP.md](SETUP.md) before proceeding.
+If you have not previously set up your MetroÆ Ansible environment, see [SETUP.md](SETUP.md) before proceeding.
 
 ## Main Steps
 
-[1. Customize variables](#1-customize-variables)  
-[2. Unzip Nuage files](#2-unzip-nuage-files)  
+[1. Customize Deployment](#1-customize-deployment)  
+[2. Unzip Nuage files](#2-unzip-nuage-files)
 
-## 1. Customize Variables
+## 1. Customize Deployment
+Based on your network topology and the specific components you plan on deploying, you will configure several files. Setting configuration files correctly ensures that when you subsequently execute workflows they configure components as intended. Precise syntax is crucial.
 
-Setting variables correctly ensures that when playbooks run they configure components as intended. Precise syntax is crucial for success. See the [examples directory](/examples/) for references. *Up to* three variable files are used to build the environment: `user_creds.yml`, `build_vars.yml` and `zfb_vars.yml`.
+When a workflow is executed, each configuration file is validated against a data schema which ensures that all required fields are present and in the correct syntax. These schemas are located in the [schemas/](/schemas/) directory. They follow the [json-schema.org standard](https://json-schema.org).
 
-### `user_creds.yml`
-`user_creds.yml` contains user credentials for VSD, VCIN and VSC. Default values are specified; you can modify them as necessary.
+You have the option of configuring the default files provided in the deployments/default/ sub-directory or creating your own sub-directories under the deployments/ directory. You can find examples of configuration files for different deployments in the [examples/](/examples/) directory. Unless you specify a different deployment sub-directory name, the default deployment is used when a workflow is executed. This method allows MetroÆ to support many deployments (different configurations) in parallel and the ability to switch between them as required. See below for the supported configuration files that you can specify in a deployments sub-directory.
 
-### `build_vars.yml`
-`build_vars.yml` contains configuration parameters for each component. You determine which components Metro Automation Engine operates on, as well as *how* those components are operated on, by including them or excluding them in this file.
+### `common.yml`
+`common.yml` contains the common configuration parameters for the deployment for all components and workflows.  This file is always required for any workflow. Specify the same NTP servers that the target servers use to ensure instantaneous synchronization.
 
-If this is your first time deploying or upgrading with Metro Automation Engine, and you intend on automatically unzipping the required Nuage software files as described in step 2 below, ensure that you have specified the following source and target directories in `build_vars.yml`.
+### `credentials.yml`
+`credentials.yml` contains user credentials for VSD, VCIN and VSC. Default values are specified; you can modify them as necessary.  This file is optional.
 
-```
- nuage_zipped_files_dir: "<your_path_with_zipped_software>"
- nuage_unzipped_files_dir: "<your_path_for_unzipped_software>"
-```
+### `nsgvs.yml`  
+`nsgvs.yml` contains the definition of the NSGvs to be operated on in this deployment. This file is of yaml list type and may contain as many NSGv definitions as required. If not provided or empty, then no NSGvs will be operated on during workflows.
 
-### `zfb_vars.yml`
+### `upgrade.yml`
+`upgrade.yml` contains the configuration parameters for an upgrade workflow.  This file is only required when performing an upgrade.
+
+### `vcins.yml`  
+`vcins.yml` contains the definition of the VCINs to be operated on in this deployment. This file is of yaml list type and may contain as many VCIN definitions as required. If not provided or empty, then no VCINs will be operated on during workflows.
+
+### `vnsutils.yml`
+`vnsutils.yml` contains the definition of the VNSUTILs to be operated on in this deployment. This file is of yaml list type and may contain as many VNSUTILs definitions as you require, though one is usually sufficient. If not provided or empty, then no VNSUTILs will be operated on during workflows.  
+
+### `vscs.yml`
+`vscs.yml` contains the definition of the VSCs to be operated on in this deployment.  This file is of yaml list type and must contain either 0, 1 or 2 VSC definitions.  If not provided or empty, then no VSCs will be operated on during workflows.  
+
+### `vsds.yml`
+`vsds.yml` contains the definition of the VSDs to be operated on in this deployment.  This file is of yaml list type and must contain either 0, 1 or 3 VSD definitions.  If not provided or empty, then no VSDs will be operated on during workflows.  
+
+
+### `vstats.yml`
+`vstats.yml` contains the definition of the VSTATs (VSD Statistics) to be operated on in this deployment.  This file is of yaml list type and must contain either 0, 1 or 3 VSTAT definitions.  If not provided or empty, then no VSTATs will be operated on during workflows.
+
+### `zfb.yml`
 If you intend on deploying VNS with zero factor bootstrapping, you must customize the variables in this additional file. See [ZFB.md](ZFB.md) for more information.
 
 ## 2. Unzip Nuage Files
 
-Before executing with Metro Automation Engine *for the first time*, ensure that the required unzipped Nuage software files (QCOW2, OVA, and Linux Package files) are available for the components being installed. Use one of the two methods below.
-### Automatically
-Ensure that you have specified the directory paths for zipped and unzipped files in `build_vars.yml`. (See step 1 above.)
+Before deploying with MetroÆ *for the first time*, ensure that the required unzipped Nuage software files (QCOW2, OVA, and Linux Package files) are available for the components being installed. Use one of the two methods below.
 
+### Automatically
 Execute the command:
+
 ```
-./metro-ansible nuage_unzip.yml
+./nuage-unzip.sh <zipped_directory> <unzip_directory>
 ```
+
+After executing the command, specify the <unzip_directory> in the `common.yml` deployment configuration as the nuage_unzipped_files_dir parameter.
 
 ### Manually
 Alternatively, you can create the directories under the <nuage_unzipped_files_dir> directory and manually copy the appropriate files to those locations as shown in the example below.
@@ -48,7 +74,6 @@ Alternatively, you can create the directories under the <nuage_unzipped_files_di
   ```
   <nuage_unzipped_files_dir>/vsd/qcow2/
   <nuage_unzipped_files_dir>/vsd/ova/ (for VMware)
-  <nuage_unzipped_files_dir>/vsd/migration/
   <nuage_unzipped_files_dir>/vsc/
   <nuage_unzipped_files_dir>/vrs/el7/
   <nuage_unzipped_files_dir>/vrs/u14_04/
@@ -56,46 +81,41 @@ Alternatively, you can create the directories under the <nuage_unzipped_files_di
   <nuage_unzipped_files_dir>/vrs/vmware/
   <nuage_unzipped_files_dir>/vrs/hyperv/
   <nuage_unzipped_files_dir>/vstat/
-  <nuage_unzipped_files_dir>/vstat/backup/
   <nuage_unzipped_files_dir>/vns/nsg/
   <nuage_unzipped_files_dir>/vns/util/
   ```
 
-## Hosting your variable files outside of the repo
+After executing the command, specify the <nuage_unzipped_files_dir> in the `common.yml` deployment configuration as the nuage_unzipped_files_dir parameter.
 
-When you are contributing code, or pulling new versions of Metro quite often, it may make sense to host your variable files in a separate directory outside of `nuage-metro/`.
-The metro-ansible command supports passing the location of this file explicitly as extra variable:
+## Hosting your deployment files outside of the repo
+When you are contributing code, or pulling new versions of MetroÆ quite often, it may make sense to host your variable files in a separate directory outside of `nuage-metro/deployments/`.  A deployment directory in any location can be specified instead of a deployment name when issuing the `./metroag` command.
 
-```
-./metro-ansible nuage_unzip -e build_vars_file="/path/to/your/build_vars.yml"
-./metro-ansible install_everything -e build_vars_file="/path/to/your/build_vars.yml" -e "user_creds_file=/path/to/your/user_creds.yml"
-```
-
-## Having Issues? Reset your environment
-
-If you have issues with the contents of your user data files, you can reset to factory settings and start over.
-
-WARNING: **You may lose your work!** A timestamped backup copy, in the form of `<data_file_name>.yml.<date and time>~` is created (in case you change your mind.) Make sure you have enough storage for it.
-
-Execute the command:
+## Generating example deployment configuration files
+A sample of the deployment configuration files are provided in the deployments/default/ directory and also in [examples/](/examples/).  If these are overwritten or deleted or if a "no frills" version of the files with only the minimum required parameters are desired, they can be generated with the following command:
 
 ```
-./metro-ansible reset_build
+./generate_example_from_schema.py <schema_filename> [--no-comments]
 ```
+
+This will print an example of the deployment file specified by <schema_filename> under the [schemas/](/schemas/) diretory to the screen.  The optional `--no-comments` will print the minimum required parameters (with no documentation).
+
+Example:
+
+```
+./generate_example_from_schema.py vsds > deployments/new/vsds.yml
+```
+
+Creates an example vsds configuration file under the "new" deployment.
 
 ## Next Steps
-
-After you've set up your environment and customized for your topology, you have several options:
-* deploy new components. See [DEPLOY.md](DEPLOY.md) for guidance.
-* upgrade existing components to a newer version. See [UPGRADE_SA.md](UPGRADE_SA.md) for standalone deployments or [UPGRADE_HA.md](UPGRADE_HA.md) for clustered deployments.
-* remove previously deployed components(s). See [DESTROY.md](DESTROY.md) for guidance.
+The next step is to deploy your components. See [DEPLOY.md](DEPLOY.md) for guidance.
 
 ## Questions, Feedback, and Contributing
-
-Ask questions and get support via email.  
+Ask questions and get support via the [forums](https://devops.nuagenetworks.net/forums/) on the [MetroÆ site](https://devops.nuagenetworks.net/).  
+You may also contact us directly.  
   Outside Nokia: [devops@nuagenetworks.net](mailto:deveops@nuagenetworks.net "send email to nuage-metro project")  
-  Internal Nokia: [nuage-metro-interest@list.nokia.com](mailto:nuage-metro-interest@list.nokia.com "send email to nuage-metro project")  
+  Internal Nokia: [nuage-metro-interest@list.nokia.com](mailto:nuage-metro-interest@list.nokia.com "send email to nuage-metro project")
 
 Report bugs you find and suggest new features and enhancements via the [GitHub Issues](https://github.com/nuagenetworks/nuage-metro/issues "nuage-metro issues") feature.
 
-You may also [contribute](../CONTRIBUTING.md) to Nuage Metro Automation Engine by submitting your own code to the project.
+You may also [contribute](CONTRIBUTING.md) to MetroÆ by submitting your own code to the project.
