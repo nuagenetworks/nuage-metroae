@@ -97,18 +97,29 @@
     file: name="/media/CDROM" state=directory mode=0775
     when: cdrom_dir.stat.exists == false
 
+  - name: Get VSD Mounts
+    include_role:
+      name: common
+      tasks_from: vsd_list_iso_mount
+    register: mount_file
+
+  - name: Check if ISO is mounted
+    set_fact:
+      is_mounted: true
+    when: "'iso' in mount_file.stdout"
+
   - name: mount ISO as loop back device
     shell: "mount -o loop /tmp/{{ vsd_migration_iso_file_name }} /media/CDROM/"
     register: mount_out
+    when: not is_mounted | default( False )
 
   - debug: var=mount_out verbosity=1
 
-  - name: List VSD-related mounts
-    shell: "mount | grep VSD | grep /media/CDROM"
+  - name: Get VSD Mounts
+    include_role:
+      name: common
+      tasks_from: vsd_list_iso_mount
     register: mount_file
-
-  - name: Print mount output when verbosity >= 1
-    debug: var=mount_file verbosity=1
 
   - name: Verify that the ISO is mounted
     assert:
