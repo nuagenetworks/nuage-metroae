@@ -9,8 +9,9 @@ import argparse
 
 SCHEMA_DIRECTORY = "schemas"
 
+
 class ExampleFileGenerator(object):
-    def __init__(self, no_comments=False, as_template=False, as_example= False, example_folder= None):
+    def __init__(self, no_comments=False, as_template=False, as_example=False, example_folder=None):
         self.has_comments = not no_comments
         self.as_template = as_template | as_example
         self.as_example = as_example
@@ -27,19 +28,18 @@ class ExampleFileGenerator(object):
         self.add_example_content(schema)
 
         if self.as_example:
-            schemaname = os.path.splitext(os.path.basename(schema_filename))[0]
-            return self.create_example_with_data(schemaname)
+            schema_name = os.path.splitext(os.path.basename(schema_filename))[0]
+            return self.create_example_with_data(schema_name)
 
         return "\n".join(self.example_lines)
 
-    def create_example_with_data(self, schemaname= ""):
-        with open(self.example_folder +"/"+ schemaname +".yml", 'r') as sampleyaml:
-            exampleYml = yaml.safe_load(sampleyaml.read())
+    def create_example_with_data(self, schema_name=""):
+        with open(self.example_folder + "/" + schema_name + ".yml", 'r') as example_filename:
+            example_yml = yaml.safe_load(example_filename.read())
 
-        templateLines = "\n".join(self.example_lines)
-        template = jinja2.Template(templateLines)
-        generatedSample = template.render(**exampleYml)
-        return generatedSample
+        template_lines = "\n".join(self.example_lines)
+        template = jinja2.Template(template_lines)
+        return template.render(**example_yml)
 
     def add_example_header(self, schema):
         self.example_lines.append("#" * 79)
@@ -202,10 +202,9 @@ class ExampleFileGenerator(object):
 
 def main():
 
-    
     parser = argparse.ArgumentParser(description='Generate example from schema')
     parser.add_argument("--schema", help="Schema file name")
-    parser.add_argument("--no-comments", dest="no_comments",action='store_true', default=False,
+    parser.add_argument("--no-comments", dest="no_comments", action='store_true', default=False,
                         help="Generates without title/usage description comments")
     parser.add_argument("--as-template", dest="as_template", action='store_true', default=False,
                         help="Generates as a jinja2 template")

@@ -6,7 +6,7 @@ DEFAULT_DEPLOY_DIRECTORY=deployments/default
 TEMPLATE_DIRECTORY=src/deployment_templates
 SKIPPED_SCHEMA_IN_DEPLOY_NAME=deployment
 EXAMPLE_DIR=examples
-EXAMPLE_DATA_DIR=src/examples
+EXAMPLE_DATA_DIR=src/raw_example_data
 
 if [[ -d schemas/  ]]; then
     BASE_DIRECTORY=.
