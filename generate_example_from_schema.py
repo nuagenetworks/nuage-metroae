@@ -1,6 +1,7 @@
 #!/usr/bin/python
 
 import os
+import os.path
 import sys
 import yaml
 import jinja2
@@ -26,12 +27,13 @@ class ExampleFileGenerator(object):
         self.add_example_content(schema)
 
         if self.as_example:
-            return self.create_example_with_data()
+            schemaname = os.path.splitext(os.path.basename(schema_filename))[0]
+            return self.create_example_with_data(schemaname)
 
         return "\n".join(self.example_lines)
 
-    def create_example_with_data(self):
-        with open(self.example_folder +"/common.yml", 'r') as sampleyaml:
+    def create_example_with_data(self, schemaname= ""):
+        with open(self.example_folder +"/"+ schemaname +".yml", 'r') as sampleyaml:
             exampleYml = yaml.safe_load(sampleyaml.read())
 
         templateLines = "\n".join(self.example_lines)
