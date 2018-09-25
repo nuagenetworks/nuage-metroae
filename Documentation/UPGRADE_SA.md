@@ -20,7 +20,7 @@ MetroÆ can perform all of the required steps for an upgrade using a single work
 
      `metroae upgrade_everything -vvv`
 
-     Issuing this workflow will detect if components are clustered (HA) or not and will upgrade all components that are defined in the deployment.  This option does not pause until completion to allow VRS(s) to be upgraded.  If VRS(s) need to be upgraded, the following option should be performed instead.
+Issuing this workflow will detect if components are clustered (HA) or not and will upgrade all components that are defined in the deployment.  This option does not pause until completion to allow VRS(s) to be upgraded.  If VRS(s) need to be upgraded, the following option should be performed instead.
 
 ### Upgrade All Components (with VRS)
 
@@ -30,7 +30,7 @@ MetroÆ can perform all of the required steps for an upgrade using a single work
 
      `metroae upgrade_after_vrs -vvv`
 
-     Issuing the above workflows will detect if components are clustered (HA) or not and will upgrade all components that are defined in the deployment.  This option allows the VRS(s) to be upgraded in-between other components.
+Issuing the above workflows will detect if components are clustered (HA) or not and will upgrade all components that are defined in the deployment.  This option allows the VRS(s) to be upgraded in-between other components.
 
 ### Upgrade Individual Components
 
@@ -50,7 +50,7 @@ MetroÆ can perform all of the required steps for an upgrade using a single work
 
      `metroae vsp_postupgrade_health -vvv`
 
-     Issuing the above workflows will detect if components are clustered (HA) or not and will upgrade all components that are defined in the deployment.  This option allows the VRS(s) to be upgraded in-between other components.  Performing individual workflows can allow specific components to be skipped or upgraded at different times.
+Issuing the above workflows will detect if components are clustered (HA) or not and will upgrade all components that are defined in the deployment.  This option allows the VRS(s) to be upgraded in-between other components.  Performing individual workflows can allow specific components to be skipped or upgraded at different times.
 
 ## Upgrading By Individual Steps
 The following workflows will upgrade each component in individual steps.  The steps listed below are only applicable for stand-alone (SA) deployments.  Performing an upgrade in this way allows full control of the timing of the upgrade process.
