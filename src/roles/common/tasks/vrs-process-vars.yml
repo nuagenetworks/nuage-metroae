@@ -141,6 +141,22 @@
 
   - block:
 
+    - name: Find name of libnetwork package Files (RH architecture)
+      find: path="{{ nuage_unzipped_files_dir }}/libnetwork"  pattern="*.rpm" recurse=yes
+      register: rc_libnetwork_file
+
+    - debug: var=rc_libnetwork_file verbosity=1
+
+    - name: Register libnetwork variables with proper path and image locations for use in other playbooks (RH architecture)
+      set_fact:
+        libnetwork_package_path: "{{ rc_libnetwork_file.files[0].path | dirname }}"
+        libnetwork_package_file_name: "{{ rc_libnetwork_file.files[0].path | basename }}"
+      when: rc_libnetwork_file.matched > 0
+
+    when: vrs_el7|default(false)
+
+  - block:
+
     - name: Set libnetwork target path based on version (Ubuntu 16.04  architecture)
       set_fact:
         libnetwork_findfile_path: "{{ nuage_unzipped_files_dir }}/libnetwork/ubuntu-16.04"
