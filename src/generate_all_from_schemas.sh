@@ -19,11 +19,11 @@ for fullpath in $SCHEMA_DIRECTORY/*.json; do
     echo "Generating resources for schema $filename"
 
     # Generate template
-    python generate_example_from_schema.py $filename --as-template > $TEMPLATE_DIRECTORY/$filename.j2
+    python generate_example_from_schema.py --schema $filename --as-template > $TEMPLATE_DIRECTORY/$filename.j2
 
     # Generate deployment file
     if [[ $filename != $SKIPPED_SCHEMA_IN_DEPLOY_NAME ]]; then
-        python generate_example_from_schema.py $filename > $DEFAULT_DEPLOY_DIRECTORY/$filename.yml
+        python generate_example_from_schema.py --schema $filename > $DEFAULT_DEPLOY_DIRECTORY/$filename.yml
     fi
 done
 
