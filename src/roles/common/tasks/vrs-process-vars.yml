@@ -6,19 +6,9 @@
 # TODO: Optimize the looping through vrs arch types in case of large deployments
 - block:
 
-  - name: Create facts to be used with vrs deploy if vrs is Debian 14.04 based
-    set_fact: vrs_u14_04="True"
-    when: item.vrs_os_type == "u14.04"
-    with_items: "{{ vrss }}"
-
   - name: Create facts to be used with vrs deploy if vrs is Debian 16.04 based
     set_fact: vrs_u16_04="True"
     when: item.vrs_os_type == "u16.04"
-    with_items: "{{ vrss }}"
-
-  - name: Create facts to be used with vrs deploy if vrs is Redhat el6 based
-    set_fact: vrs_el6="True"
-    when: item.vrs_os_type == "el6"
     with_items: "{{ vrss }}"
 
   - name: Create facts to be used with vrs deploy if vrs is Redhat el7 based
@@ -37,47 +27,13 @@
   - assert:
       that:
         - "vrs_target_os_is_supported == True"
-      msg: "unsupported OS type/typo in build.yml. Supported OS Types are el6,el7,u14.04,u16.04"
-
-  - debug: msg="vrs_u14_04 is set to "{{ vrs_u14_04 }}" " verbosity=1
-    when: vrs_u14_04 is defined
+      msg: "unsupported OS type/typo in build.yml. Supported OS Types are el7,u16.04"
 
   - debug: msg="vrs_u16_04 is set to "{{ vrs_u16_04 }}" " verbosity=1
     when: vrs_u16_04  is defined
 
-  - debug: msg="vrs_el6 is set to "{{ vrs_el6 }}" " verbosity=1
-    when: vrs_el6 is defined
-
   - debug: msg="vrs_el7 is set to "{{ vrs_el7 }}" " verbosity=1
     when: vrs_el7 is defined
-
-  - block:
-
-    - name: Find name of VRS Package Files (EL6 architecture)
-      find: path="{{ nuage_unzipped_files_dir }}/vrs/el6" use_regex=yes pattern="nuage-openvswitch-\d+.*" recurse=yes
-      register: rc_vrs_file_el6
-
-    - debug: var=rc_vrs_file_el6 verbosity=1
-
-    - name: Register VRS package variables with proper path and image locations for use in other playbooks (EL6 architecture)
-      set_fact:
-        el6_vrs_package_path: "{{ rc_vrs_file_el6.files[0].path | dirname }}/"
-        el6_vrs_package_file_name_list: "{{ rc_vrs_file_el6.files |  map(attribute='path') | list | map('basename') | list }}"
-      when: "{{ rc_vrs_file_el6.matched }} > 0"
-
-    - name: Find name of nuage DKMS Package Files (EL6 architecture)
-      find: path="{{ nuage_unzipped_files_dir }}/vrs/el6" pattern="nuage-openvswitch-dkms*.rpm" recurse=yes
-      register: rc_dkms_file_el6
-
-    - debug: var=rc_dkms_file_el6 verbosity=1
-
-    - name: Register DKMS package variables with proper path and image locations for use in other playbooks (EL6 architecture)
-      set_fact:
-        el6_dkms_package_path: "{{ rc_dkms_file_el6.files[0].path | dirname }}/"
-        el6_dkms_package_file_name_list: "{{ rc_dkms_file_el6.files |  map(attribute='path') | list | map('basename') | list }}"
-      when: "{{ rc_dkms_file_el6.matched }} > 0"
-
-    when: vrs_el6|default(false)
 
   - block:
 
@@ -122,57 +78,6 @@
       when: rc_selinux_file.matched
 
     when: vrs_el7|default(false)
-
-  - block:
-
-    # Debian requires 3 packages listed in a specific order of dependeny
-    - name: Find name of VRS python package file (Debian architecture)
-      find: path="{{ nuage_unzipped_files_dir }}/vrs/u14_04"  pattern="nuage-python-openvswitch*.deb" recurse=yes
-      register: rc_vrs_python_file_u14_04
-
-    - debug: var=rc_vrs_python_file_u14_04 verbosity=1
-
-    - name: Register VRS package path and VRS python package file name for use in other playbooks (Debian Architecture)
-      set_fact:
-        u14_04_vrs_package_path: "{{ rc_vrs_python_file_u14_04.files[0].path | dirname }}/"
-        u14_04_vrs_package_file_name_list: "{{ rc_vrs_python_file_u14_04.files |  map(attribute='path') | list | map('basename') | list }}"
-      when: "{{ rc_vrs_python_file_u14_04.matched }} > 0"
-
-    - name: Find name of VRS common package file (Debian architecture)
-      find: path="{{ nuage_unzipped_files_dir }}/vrs/u14_04"  pattern="nuage-openvswitch-common*.deb" recurse=yes
-      register: rc_vrs_common_file_u14_04
-
-    - debug: var=rc_vrs_common_file_u14_04 verbosity=1
-
-    - name: Register VRS common package file name for use in other playbooks (Debian Architecture)
-      set_fact:
-        u14_04_vrs_package_file_name_list: "{{ u14_04_vrs_package_file_name_list }} + {{ rc_vrs_common_file_u14_04.files |  map(attribute='path') | list | map('basename') | list }}"
-      when: "{{ rc_vrs_common_file_u14_04.matched }} > 0"
-
-    - name: Find name of VRS switch package file (Debian architecture)
-      find: path="{{ nuage_unzipped_files_dir }}/vrs/u14_04"  pattern="nuage-openvswitch-switch*.deb" recurse=yes
-      register: rc_vrs_switch_file_u14_04
-
-    - debug: var=rc_vrs_switch_file_u14_04 verbosity=1
-
-    - name: Register VRS switch package file name for use in other playbooks (Debian Architecture)
-      set_fact:
-        u14_04_vrs_package_file_name_list: "{{ u14_04_vrs_package_file_name_list }} + {{ rc_vrs_switch_file_u14_04.files |  map(attribute='path') | list | map('basename') | list }}"
-      when: "{{ rc_vrs_switch_file_u14_04.matched }} > 0"
-
-    - name: Find name of DKMS package file (Debian architecture)
-      find: path="{{ nuage_unzipped_files_dir }}/vrs/u14_04"  pattern="nuage-openvswitch-datapath-dkms*.deb" recurse=yes
-      register: rc_dkms_file_u14_04
-
-    - debug: var=rc_dkms_file_u14_04 verbosity=1
-
-    - name: Register DKMS package path and package file name for use in other playbooks (Debian Architecture)
-      set_fact:
-        u14_04_dkms_package_path: "{{ rc_dkms_file_u14_04.files[0].path | dirname }}/"
-        u14_04_dkms_package_file_name_list: "{{ rc_dkms_file_u14_04.files |  map(attribute='path') | list | map('basename') | list }}"
-      when: "{{ rc_dkms_file_u14_04.matched }} > 0"
-
-    when: vrs_u14_04|default(false)
 
   - block:
 
@@ -248,27 +153,7 @@
         libnetwork_package_file_name: "{{ rc_libnetwork_file.files[0].path | basename }}"
       when: rc_libnetwork_file.matched > 0
 
-    when: vrs_el6|default(false) or vrs_el7|default(false)
-
-  - block:
-
-    - name: Set libnetwork target path based on version (Ubuntu 14.04 architecture)
-      set_fact:
-        libnetwork_findfile_path: "{{ nuage_unzipped_files_dir }}/libnetwork/ubuntu-14.04"
-
-    - name: Find name of libnetwork package files (Debian architecture)
-      find: path="{{ libnetwork_findfile_path }}"  pattern="*.deb" recurse=yes
-      register: rc_libnetwork_file
-
-    - debug: var=rc_libnetwork_file verbosity=1
-
-    - name: Register libnetwork variables with proper path and image locations for use in other playbooks (Debian architecture)
-      set_fact:
-        u14_04_libnetwork_package_path: "{{ rc_libnetwork_file.files[0].path | dirname }}"
-        u14_04_libnetwork_package_file_name: "{{ rc_libnetwork_file.files[0].path | basename }}"
-      when: rc_libnetwork_file.matched > 0
-
-    when: vrs_u14_04|default(false) == True
+    when: vrs_el7|default(false)
 
   - block:
 
