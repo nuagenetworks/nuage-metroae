@@ -65,7 +65,7 @@ This example is for one VSC node. If your topology has more than one VSC node, p
 2. Backup and prepare the VSC node.
 
      `./metro-ansible vsc_sa_upgrade_backup_and_prep -vvvv`
-     
+
      If you experience failure, you can re-execute the command.
 
 3. Deploy VSC.
@@ -86,37 +86,31 @@ Upgrade your VRS(s) and then continue with this procedure. Do not proceed withou
 ## Upgrade VSTAT
 Our example includes a VSTAT node. If your topology does not include one, proceed to *Finalize the Upgrade* below.
 
-1. Run VSTAT health check (optional).
-
-     `./metro-ansible vstat_health -e report_filename=vstat_preupgrade_health.txt -vvvv`
-
-     You performed health checks during preupgrade preparations, but it is good practice to run the check here as well to make sure the VSD upgrade has not caused any problems.
-
-2. Backup the VSTAT node.
+1. Backup the VSTAT node.
 
      `./metro-ansible vstat_upgrade_data_backup -vvvv`
 
      Data from the VSTAT node is backed up in the NFS shared folder. If you experience a failure, you can re-execute the command.
 
-3. Power off the VSTAT node.
+2. Power off the VSTAT node.
 
      `./metro-ansible vstat_destroy -vvvv`
 
      VSTAT shuts down; it is not deleted. (The new node will be brought up with the new VM name.) You have the option of performing this step manually instead. If you experience a failure you can re-execute the command or power off the VM manually.
 
-4. Predeploy the new VSTAT node.
+3. Predeploy the new VSTAT node.
 
      `./metro-ansible vstat_predeploy`
 
-     The new VSD node is now up and running; it is not yet configured. If you experience a failure, delete the new node by executing the command then re-execute the predeploy command.  
+     The new VSD node is now up and running; it is not yet configured. If you experience a failure, delete the new node by executing the command then re-execute the predeploy command.
 
-5. Deploy the new VSTAT node.
+4. Deploy the new VSTAT node.
 
      `./metro-ansible vstat_deploy -vvvv`
 
      The new VSTAT node has been deployed and configured to talk with the VSD node. If you experience a failure, re-execute the command. If it fails a second time, destroy the VMs (either manually or with the command `./metro-ansible vstat_upgrade_destroy`) then proceed from the predeploy step above.
 
-6. Migrate data to new VSTAT node.
+5. Migrate data to new VSTAT node.
 
      `./metro-ansible vstat_upgrade_data_migrate -vvvv`
 
@@ -137,9 +131,9 @@ Our example includes a VSTAT node. If your topology does not include one, procee
 
 ## Questions, Feedback, and Contributing
 
-Ask questions and get support via email.  
-  Outside Nokia: [devops@nuagenetworks.net](mailto:deveops@nuagenetworks.net "send email to nuage-metro project")  
-  Internal Nokia: [nuage-metro-interest@list.nokia.com](mailto:nuage-metro-interest@list.nokia.com "send email to nuage-metro project")  
+Ask questions and get support via email.
+  Outside Nokia: [devops@nuagenetworks.net](mailto:deveops@nuagenetworks.net "send email to nuage-metro project")
+  Internal Nokia: [nuage-metro-interest@list.nokia.com](mailto:nuage-metro-interest@list.nokia.com "send email to nuage-metro project")
 
 Report bugs you find and suggest new features and enhancements via the [GitHub Issues](https://github.com/nuagenetworks/nuage-metro/issues "nuage-metro issues") feature.
 

@@ -10,7 +10,7 @@
   include_role:
     name: common
     tasks_from: vsd-reset-keystorepass
-  
+
 - import_tasks: report_header.yml
 
 - name: get the username running the deploy
@@ -55,6 +55,10 @@
         - "'iso' in mount_file.stdout"
       msg: "Did not find iso file in mount path"
 
+  - name: Pause to allow for mount delay
+    pause:
+      seconds: 5
+
   - name: Decouple VSD Node
     command: "/media/CDROM/decouple.sh -y"
 
@@ -65,7 +69,7 @@
   - name: Execute list_p1db command on node3
     command: "{{ p1db_cmd }}"
     register: list_p1db_output
-    
+
   remote_user: "{{ vsd_username | default(vsd_default_username) }}"
   become: "{{ 'no' if vsd_username | default(vsd_default_username) == 'root' else 'yes' }}"
   vars:

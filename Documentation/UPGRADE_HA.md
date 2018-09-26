@@ -45,7 +45,7 @@ For this example, our clustered (HA) deployment consists of:
      `./metro-ansible vsd_ha_upgrade_deploy_2_and_3 -vvvv`
 
      The VSD nodes have been upgraded. If you experience a failure before the VSD install script runs, re-execute the command. If it fails a second time or if the failure occurs after the VSD install script runs, destroy the VMs (either manually or with the command `./metro-ansible vsd_ha_upgrade_destroy_2_and_3`) then re-execute the deploy command.
-     
+
 4. Power off VSD node one.
 
      `./metro-ansible vsd_ha_upgrade_shutdown_1 -vvvv`
@@ -83,7 +83,7 @@ For this example, our clustered (HA) deployment consists of:
 2. Backup and prepare VSC node one.
 
      `./metro-ansible vsc_ha_upgrade_backup_and_prep_1 -vvvv`
-     
+
      Ir you experience a failure, you can re-execute the command.
 
 3. Deploy VSC node one.
@@ -106,7 +106,7 @@ Upgrade your VRS(s) and then continue with this procedure. Do not proceed withou
 1. Backup and prepare VSC node two.
 
      `./metro-ansible vsc_ha_upgrade_backup_and_prep_2 -vvvv`
-     
+
      If you experience a failure, you can re-execute the command.
 
 2. Deploy VSC node two.
@@ -124,37 +124,31 @@ Upgrade your VRS(s) and then continue with this procedure. Do not proceed withou
 ## Upgrade VSTAT
 Our example includes a VSTAT node. If your topology does not include one, proceed to *Finalize the Upgrade* below.
 
-1. Run VSTAT health check (optional).
-
-     `./metro-ansible vstat_health -e report_filename=vstat_preupgrade_health.txt -vvvv`
-
-     You performed health checks during preupgrade preparations, but it is good practice to run the check here as well to make sure the VSD upgrade has not caused any problems.
-
-2. Backup the VSTAT node.
+1. Backup the VSTAT node.
 
      `./metro-ansible vstat_upgrade_data_backup -vvvv`
 
      Data from the VSTAT node is backed up in the NFS shared folder. If you experience a failure, you can re-execute the command.
 
-3. Power off the VSTAT node.
+2. Power off the VSTAT node.
 
      `./metro-ansible vstat_destroy -vvvv`
 
      VSTAT shuts down; it is not deleted. (The new node will be brought up with the new VM name.) You have the option of performing this step manually instead. If you experience a failure you can re-execute the command or power off the VM manually.
 
-4. Predeploy the new VSTAT node.
+3. Predeploy the new VSTAT node.
 
      `./metro-ansible vstat_predeploy`
 
-     The new VSD node is now up and running; it is not yet configured. If you experience a failure, delete the new node by executing the command `./metro-ansible vstat_upgrade_destroy` then re-execute the predeploy command.  
+     The new VSD node is now up and running; it is not yet configured. If you experience a failure, delete the new node by executing the command `./metro-ansible vstat_upgrade_destroy` then re-execute the predeploy command.
 
-5. Deploy the new VSTAT node.
+4. Deploy the new VSTAT node.
 
      `./metro-ansible vstat_deploy -vvvv`
 
      The new VSTAT node has been deployed and configured to talk with the VSD node. If you experience a failure, re-execute the command. If it fails a second time, destroy the VMs (either manually or with the command `./metro-ansible vstat_upgrade_destroy`) then proceed from the predeploy step above.
 
-6. Migrate data to new VSTAT node.
+5. Migrate data to new VSTAT node.
 
      `./metro-ansible vstat_upgrade_data_migrate -vvvv`
 
@@ -175,9 +169,9 @@ Our example includes a VSTAT node. If your topology does not include one, procee
 
 ## Questions, Feedback, and Contributing
 
-Ask questions and get support via email.  
-  Outside Nokia: [devops@nuagenetworks.net](mailto:deveops@nuagenetworks.net "send email to nuage-metro project")  
-  Internal Nokia: [nuage-metro-interest@list.nokia.com](mailto:nuage-metro-interest@list.nokia.com "send email to nuage-metro project")  
+Ask questions and get support via email.
+  Outside Nokia: [devops@nuagenetworks.net](mailto:deveops@nuagenetworks.net "send email to nuage-metro project")
+  Internal Nokia: [nuage-metro-interest@list.nokia.com](mailto:nuage-metro-interest@list.nokia.com "send email to nuage-metro project")
 
 Report bugs you find and suggest new features and enhancements via the [GitHub Issues](https://github.com/nuagenetworks/nuage-metro/issues "nuage-metro issues") feature.
 
