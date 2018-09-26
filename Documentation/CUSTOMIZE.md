@@ -102,7 +102,7 @@ This will print an example of the deployment file specified by <schema_filename>
 Example:
 
 ```
-./generate_example_from_schema.py -- schema vsds > deployments/new/vsds.yml
+./generate_example_from_schema.py --schema vsds > deployments/new/vsds.yml
 ```
 
 Creates an example vsds configuration file under the "new" deployment.
