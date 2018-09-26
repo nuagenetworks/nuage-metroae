@@ -2,7 +2,6 @@
 ## Release 2.4.5
 ### Resolved Issues
 * Set validate_certs to no for VMware playbooks
-* Clean socket files to work around Ansible persistent connection bug
 * Fix vsc_health and vstat_health to support custom username and password
 * Remove vstat_health from UPGRADE procedures
 * Fix vstat-vsd-health role to only run when VSTATs are defined
