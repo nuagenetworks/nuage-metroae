@@ -1,4 +1,4 @@
-# Upgrading a Clustered Deployment with  Metro&#198;
+# Upgrading a Clustered Deployment with Metro&#198;
 ## Prerequisites / Requirements / Notes
 Before upgrading any components, you must have previously [set up your MetroÆ environment](SETUP.md) and [customized the upgrade environment for your target platform](CUSTOMIZE.md).
 
@@ -18,37 +18,37 @@ If your topology does not include VRS you can upgrade everything with one comman
 
 ### Upgrade All Components (without VRS)
 
-     `metroae upgrade_everything -vvv`
+     metroae upgrade_everything -vvv
 
 Issuing this workflow will detect if components are clustered (HA) or not and will upgrade all components that are defined in the deployment.  This option does not pause until completion to allow VRS(s) to be upgraded.  If VRS(s) need to be upgraded, the following option should be performed instead.
 
 ### Upgrade All Components (with VRS)
 
-     `metroae upgrade_before_vrs -vvv`
+     metroae upgrade_before_vrs -vvv
 
      ( Upgrade the VRS(s) )
 
-     `metroae upgrade_after_vrs -vvv`
+     metroae upgrade_after_vrs -vvv
 
 Issuing the above workflows will detect if components are clustered (HA) or not and will upgrade all components that are defined in the deployment.  This option allows the VRS(s) to be upgraded in-between other components.
 
 ### Upgrade Individual Components
 
-     `metroae vsp_preupgrade_health -vvv`
+     metroae vsp_preupgrade_health -vvv
 
-     `metroae upgrade_vsds -vvv`
+     metroae upgrade_vsds -vvv
 
-     `metroae upgrade_vscs_before_vrs -vvv`
+     metroae upgrade_vscs_before_vrs -vvv
 
      ( Upgrade the VRS(s) )
 
-     `metroae upgrade_vscs_after_vrs -vvv`
+     metroae upgrade_vscs_after_vrs -vvv
 
-     `metroae upgrade_vstats -vvv`
+     metroae upgrade_vstats -vvv
 
-     `metroae vsp_upgrade_postdeploy -vvv`
+     metroae vsp_upgrade_postdeploy -vvv
 
-     `metroae vsp_postupgrade_health -vvv`
+     metroae vsp_postupgrade_health -vvv
 
 Issuing the above workflows will detect if components are clustered (HA) or not and will upgrade all components that are defined in the deployment.  This option allows the VRS(s) to be upgraded in-between other components.  Performing individual workflows can allow specific components to be skipped or upgraded at different times.
 
@@ -254,7 +254,7 @@ Our example includes a VSTAT node. If your topology does not include one, procee
 ## Questions, Feedback, and Contributing
 Ask questions and get support via the [forums](https://devops.nuagenetworks.net/forums/) on the [MetroÆ site](https://devops.nuagenetworks.net/).  
 You may also contact us directly.  
-  Outside Nokia: [devops@nuagenetworks.net](mailto:deveops@nuagenetworks.net "send email to nuage-metro project")
+  Outside Nokia: [devops@nuagenetworks.net](mailto:deveops@nuagenetworks.net "send email to nuage-metro project")  
   Internal Nokia: [nuage-metro-interest@list.nokia.com](mailto:nuage-metro-interest@list.nokia.com "send email to nuage-metro project")
 
 Report bugs you find and suggest new features and enhancements via the [GitHub Issues](https://github.com/nuagenetworks/nuage-metro/issues "nuage-metro issues") feature.
