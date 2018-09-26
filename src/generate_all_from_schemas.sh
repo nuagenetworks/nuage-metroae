@@ -50,4 +50,10 @@ if [ ! -d "$EXAMPLE_DIR/blank_deployment" ]; then
 fi
 cp $DEFAULT_DEPLOY_DIRECTORY/* $EXAMPLE_DIR/blank_deployment/.
 
+# Remove VRSs, NSGv, VNSUTILs and VCINs from default deployment 
+remove_from_default_deployment="vrss nsgvs vnsutils vcins"
+for item in $remove_from_default_deployment; do
+    rm $DEFAULT_DEPLOY_DIRECTORY/$item*
+done
+
 popd
