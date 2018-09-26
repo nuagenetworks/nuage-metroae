@@ -1,16 +1,16 @@
 # Customizing the Components for a Deployment
 
-## Note for users of MetroAG before version 3.0
-MetroAG before version 3.0 used the deprecated build_vars.yml configuration.  In the current version, this is replaced with "deployments" as described in this document.  An obsolete build_vars.yml file can be converted to a deployment using the following tool:
+## Note for users of MetroAE before version 3.0
+MetroAE before version 3.0 used the deprecated build_vars.yml configuration.  In the current version, this is replaced with "deployments" as described in this document.  An obsolete build_vars.yml file can be converted to a deployment using the following tool:
 
 ```
 ./convert_build_vars_to_deployment.py <build_vars_file> <deployment_name>
 ```
 
 ## Prerequisites / Requirements
-To confirm that the intended deployment is supported by MetroAG, see [README.md](../README.md).
+To confirm that the intended deployment is supported by MetroAE, see [README.md](../README.md).
 
-If you have not previously set up your MetroAG Ansible environment, see [SETUP.md](SETUP.md) before proceeding.
+If you have not previously set up your MetroAE Ansible environment, see [SETUP.md](SETUP.md) before proceeding.
 
 ## Main Steps
 
@@ -23,7 +23,7 @@ Based on your network topology and the specific components you plan on deploying
 
 When a workflow is executed, each configuration file is validated against a data schema which ensures that all required fields are present and in the correct syntax. These schemas are located in the [schemas/](/schemas/) directory. They follow the json-schema.org standard.
 
-You have the option of configuring the default files provided in the deployments/default/ sub-directory, or creating your own sub-directories under the deployments/ directory. You can find examples of configuration files for different deployments in the [examples/](/examples/) directory. Unless a different deployment sub-directory name is specified, the default deployment is used when a workflow is executed. This method allows MetroAG to support many deployments (different configurations) in parallel and the ability to switch between them as required. See below for the supported configuration files that you can specify in a deployments sub-directory.
+You have the option of configuring the default files provided in the deployments/default/ sub-directory, or creating your own sub-directories under the deployments/ directory. You can find examples of configuration files for different deployments in the [examples/](/examples/) directory. Unless a different deployment sub-directory name is specified, the default deployment is used when a workflow is executed. This method allows MetroAE to support many deployments (different configurations) in parallel and the ability to switch between them as required. See below for the supported configuration files that you can specify in a deployments sub-directory.
 
 ### `common.yml`
 `common.yml` contains the common configuration parameters for the deployment for all components and workflows.  This file is always required for any workflow.
@@ -51,7 +51,7 @@ If you intend on deploying VNS with zero factor bootstrapping, you must customiz
 
 ## 2. Unzip Nuage Files
 
-Before deploying with MetroAG *for the first time*, ensure that the required unzipped Nuage software files (QCOW2, OVA, and Linux Package files) are available for the components being installed. Use one of the two methods below.
+Before deploying with MetroAE *for the first time*, ensure that the required unzipped Nuage software files (QCOW2, OVA, and Linux Package files) are available for the components being installed. Use one of the two methods below.
 
 ### Automatically
 Execute the command:
@@ -82,7 +82,7 @@ Alternatively, you can create the directories under the <nuage_unzipped_files_di
 After executing the command, specify the <nuage_unzipped_files_dir> in the `common.yml` deployment configuration as the nuage_unzipped_files_dir parameter.
 
 ## Hosting your deployment files outside of the repo
-When you are contributing code, or pulling new versions of Metro quite often, it may make sense to host your variable files in a separate directory outside of `nuage-metro/deployments/`.  A deployment directory in any location can be specified instead of a deployment name when issuing the `./metroag` command.
+When you are contributing code, or pulling new versions of Metro quite often, it may make sense to host your variable files in a separate directory outside of `nuage-metro/deployments/`.  A deployment directory in any location can be specified instead of a deployment name when issuing the `./metroae` command.
 
 ## Generating example deployment configuration files
 A sample of the deployment configuration files are provided in the deployments/default/ directory and also in [examples/](/examples/).  If these are overwritten or deleted or if a "no frills" version of the files with only the minimum required parameters are desired, they can be generated with the following command:
@@ -111,4 +111,4 @@ Ask questions and get support via email.
 
 Report bugs you find and suggest new features and enhancements via the [GitHub Issues](https://github.com/nuagenetworks/nuage-metro/issues "nuage-metro issues") feature.
 
-You may also [contribute](../CONTRIBUTING.md) to Nuage MetroAG by submitting your own code to the project.
+You may also [contribute](../CONTRIBUTING.md) to Nuage MetroAE by submitting your own code to the project.
