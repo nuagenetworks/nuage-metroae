@@ -10,7 +10,7 @@
   include_role:
     name: common
     tasks_from: vsd-reset-keystorepass
-  
+
 - import_tasks: report_header.yml
 
 - name: get the username running the deploy
@@ -42,12 +42,11 @@
       fstab: "/tmp/fstab"
       fstype: "iso9660"
 
-  - name: List VSD-related mounts
-    shell: "mount | grep VSD | grep /media/CDROM"
+  - name: Get VSD Mounts
+    include_role:
+      name: common
+      tasks_from: vsd_list_iso_mount
     register: mount_file
-
-  - name: Print mount output when verbosity >= 1
-    debug: var=mount_file verbosity=1
 
   - name: Verify that the ISO is mounted
     assert:
@@ -65,7 +64,7 @@
   - name: Execute list_p1db command on node3
     command: "{{ p1db_cmd }}"
     register: list_p1db_output
-    
+
   remote_user: "{{ vsd_username | default(vsd_default_username) }}"
   become: "{{ 'no' if vsd_username | default(vsd_default_username) == 'root' else 'yes' }}"
   vars:

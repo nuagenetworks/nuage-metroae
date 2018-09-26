@@ -88,7 +88,7 @@ When you are contributing code, or pulling new versions of Metro quite often, it
 A sample of the deployment configuration files are provided in the deployments/default/ directory and also in [examples/](/examples/).  If these are overwritten or deleted or if a "no frills" version of the files with only the minimum required parameters are desired, they can be generated with the following command:
 
 ```
-./generate_example_from_schema.py <schema_filename> [--no-comments]
+./generate_example_from_schema.py --schema <schema_filename> [--no-comments]
 ```
 
 This will print an example of the deployment file specified by <schema_filename> under the [schemas/](/schemas/) diretory to the screen.  The optional `--no-comments` will print the minimum required parameters (with no documentation).
@@ -96,7 +96,7 @@ This will print an example of the deployment file specified by <schema_filename>
 Example:
 
 ```
-./generate_example_from_schema.py vsds > deployments/new/vsds.yml
+./generate_example_from_schema.py --schema vsds > deployments/new/vsds.yml
 ```
 
 Creates an example vsds configuration file under the "new" deployment.

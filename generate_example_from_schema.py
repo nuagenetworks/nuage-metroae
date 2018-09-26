@@ -1,30 +1,21 @@
 #!/usr/bin/python
 
 import os
+import os.path
 import sys
 import yaml
+import jinja2
+import argparse
 
 SCHEMA_DIRECTORY = "schemas"
 
 
-def usage():
-    print "Prints an example yaml data file from a schema (i.e. in "
-    print SCHEMA_DIRECTORY + "/) to stdout.  Can be > redirected to a file."
-    print ""
-    print "Usage:"
-    print "    " + " ".join([sys.argv[0],
-                             "<schema_filename>",
-                             "[--no-comments]",
-                             "[--as-template]"])
-    print ""
-    print "    no-comments: Generates without title/description comments"
-    print "    as-template: Generates as a jinja2 template"
-
-
 class ExampleFileGenerator(object):
-    def __init__(self, no_comments=False, as_template=False):
+    def __init__(self, no_comments=False, as_template=False, as_example=False, example_folder=None):
         self.has_comments = not no_comments
-        self.as_template = as_template
+        self.as_template = as_template | as_example
+        self.as_example = as_example
+        self.example_folder = example_folder
 
     def generate_example_from_schema(self, schema_filename):
         self.example_lines = []
@@ -36,7 +27,19 @@ class ExampleFileGenerator(object):
 
         self.add_example_content(schema)
 
+        if self.as_example:
+            schema_name = os.path.splitext(os.path.basename(schema_filename))[0]
+            return self.create_example_with_data(schema_name)
+
         return "\n".join(self.example_lines)
+
+    def create_example_with_data(self, schema_name=""):
+        with open(self.example_folder + "/" + schema_name + ".yml", 'r') as example_filename:
+            example_yml = yaml.safe_load(example_filename.read())
+
+        template_lines = "\n".join(self.example_lines)
+        template = jinja2.Template(template_lines)
+        return template.render(**example_yml)
 
     def add_example_header(self, schema):
         self.example_lines.append("#" * 79)
@@ -198,25 +201,47 @@ class ExampleFileGenerator(object):
 
 
 def main():
-    if len(sys.argv) < 2 or "-h" in sys.argv or "--help" in sys.argv:
-        usage()
-        exit(1)
 
-    schema_filename = sys.argv[1]
+    parser = argparse.ArgumentParser(description='Generate example from schema')
+    parser.add_argument("--schema", help="Schema file name")
+    parser.add_argument("--no-comments", dest="no_comments", action='store_true', default=False,
+                        help="Generates without title/usage description comments")
+    parser.add_argument("--as-template", dest="as_template", action='store_true', default=False,
+                        help="Generates as a jinja2 template")
+    parser.add_argument("--as-example", dest="as_example", action='store_true', default=False,
+                        help="Generates a example schema using example data")
+    parser.add_argument("--example_data_folder", help="Location of example data folder")
+    args = parser.parse_args()
 
-    no_comments = "--no-comments" in sys.argv
-    as_template = "--as-template" in sys.argv
+    if not args.schema:
+        print "Missing schema name for creating example"
+        parser.print_help()
+        sys.exit()
 
-    generator = ExampleFileGenerator(no_comments, as_template)
+    if args.as_example and (args.example_data_folder is None):
+        print "Example data folder needed for creating example"
+        parser.print_help()
+        sys.exit()
+
+    schema_filename = args.schema
+
+    no_comments = args.no_comments
+    as_template = args.as_template
+    as_example = args.as_example
+    example_folder = args.example_data_folder
+
+    generator = ExampleFileGenerator(no_comments, as_template, as_example, example_folder)
 
     if schema_filename.find(".") == -1:
         schema_filename = schema_filename + ".json"
 
     if os.path.isfile(schema_filename):
         print generator.generate_example_from_schema(schema_filename)
+        generator.generate_example_from_schema(schema_filename)
     else:
         schema_filename = os.path.join(SCHEMA_DIRECTORY, schema_filename)
         if os.path.isfile(schema_filename):
+            generator.generate_example_from_schema(schema_filename)
             print generator.generate_example_from_schema(schema_filename)
         else:
             raise Exception("Could not find schema file %s" % schema_filename)
