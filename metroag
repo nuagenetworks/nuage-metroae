@@ -120,7 +120,7 @@ fi
 # [deployment] argument
 if [[ $# -gt 0 ]]; then
     if [[ $1 != -* ]]; then
-        DEPLOYMENT=$1
+        DEPLOYMENT="$1"
         shift
         if [[ -d $DEPLOYMENT ]]; then
             DEPLOYMENT_DIR=$DEPLOYMENT
@@ -135,10 +135,10 @@ fi
 
 # Run playbooks
 if [[ -a $PLAYBOOK_DIR/$WORKFLOW  ]]; then
-    $(which ansible-playbook) -e deployment_dir=$DEPLOYMENT_DIR -e schema_dir=$SCHEMA_DIR $PLAYBOOK_DIR/$WORKFLOW "$@" || exit $?
+    $(which ansible-playbook) -e deployment_dir="$DEPLOYMENT_DIR" -e schema_dir=$SCHEMA_DIR $PLAYBOOK_DIR/$WORKFLOW "$@" || exit $?
 elif [[ -a $PLAYBOOK_WITH_BUILD_DIR/$WORKFLOW ]]; then
     if [[ $SKIP_BUILD -ne 1 ]]; then
-        $(which ansible-playbook) -e deployment_dir=$DEPLOYMENT_DIR -e schema_dir=$SCHEMA_DIR $PLAYBOOK_DIR/build.yml "$@" || exit $?
+        $(which ansible-playbook) -e deployment_dir="$DEPLOYMENT_DIR" -e schema_dir=$SCHEMA_DIR $PLAYBOOK_DIR/build.yml "$@" || exit $?
     fi
     $(which ansible-playbook) $PLAYBOOK_WITH_BUILD_DIR/$WORKFLOW "$@" || exit $?
 else
