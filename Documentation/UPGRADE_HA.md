@@ -13,8 +13,8 @@ For this example, our clustered (HA) deployment consists of:
 * VRS instance(s)
 * one VSTAT (Elasticsearch) node
 
-## Automatic Upgrade
-MetroÆ can perform all of the required steps for an upgrade using a single workflow or optionally each step can be performed individually.  The following workflows provide the full automatic option.
+## Upgrading Automatically
+If your topology does not include VRS you can upgrade everything with one command. If it does includes VRS you can upgrade everything with two commands. MetroÆ also gives you the option of upgrading individual components with a single command for each. If you prefer to have more control over each step in the upgrade process proceed to [Upgrading By Individual Steps](#upgrading-by-individual-steps) for instructions.
 
 ### Upgrade All Components (without VRS)
 
@@ -252,8 +252,8 @@ Our example includes a VSTAT node. If your topology does not include one, procee
      Health reports are created that can be compared with the ones produced during preupgrade preparations. Investigate carefully any errors or discrepancies.
 
 ## Questions, Feedback, and Contributing
-Ask questions and get support via the [forums](https://devops.nuagenetworks.net/forums/) on the [MetroÆ site](https://devops.nuagenetworks.net/).
-You may also contact us directly.
+Ask questions and get support via the [forums](https://devops.nuagenetworks.net/forums/) on the [MetroÆ site](https://devops.nuagenetworks.net/).  
+You may also contact us directly.  
   Outside Nokia: [devops@nuagenetworks.net](mailto:deveops@nuagenetworks.net "send email to nuage-metro project")
   Internal Nokia: [nuage-metro-interest@list.nokia.com](mailto:nuage-metro-interest@list.nokia.com "send email to nuage-metro project")
 

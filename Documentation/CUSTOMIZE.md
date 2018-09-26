@@ -14,7 +14,7 @@ If you have not previously set up your MetroÆ Ansible environment, see [SETUP.m
 
 ## Main Steps
 
-[1. Customize Deployment](#1-customize-deployment)
+[1. Customize Deployment](#1-customize-deployment)  
 [2. Unzip Nuage files](#2-unzip-nuage-files)
 
 ## 1. Customize Deployment
@@ -110,8 +110,8 @@ Creates an example vsds configuration file under the "new" deployment.
 The next step is to deploy your components. See [DEPLOY.md](DEPLOY.md) for guidance.
 
 ## Questions, Feedback, and Contributing
-Ask questions and get support via the [forums](https://devops.nuagenetworks.net/forums/) on the [MetroÆ site](https://devops.nuagenetworks.net/).
-You may also contact us directly.
+Ask questions and get support via the [forums](https://devops.nuagenetworks.net/forums/) on the [MetroÆ site](https://devops.nuagenetworks.net/).  
+You may also contact us directly.  
   Outside Nokia: [devops@nuagenetworks.net](mailto:deveops@nuagenetworks.net "send email to nuage-metro project")
   Internal Nokia: [nuage-metro-interest@list.nokia.com](mailto:nuage-metro-interest@list.nokia.com "send email to nuage-metro project")
 
