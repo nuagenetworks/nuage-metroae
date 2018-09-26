@@ -44,5 +44,10 @@ for dir in $EXAMPLE_DATA_DIR/*/; do
         python generate_example_from_schema.py --schema $filename --as-example --example_data_folder $EXAMPLE_DATA_DIR/$example_name > "$EXAMPLE_DIR/$example_name/$filename.yml"
     done
 done
+# Copy empty deployment as example
+if [ ! -d "$EXAMPLE_DIR/blank_deployment" ]; then
+    mkdir $EXAMPLE_DIR/blank_deployment
+fi
+cp $DEFAULT_DEPLOY_DIRECTORY/* $EXAMPLE_DIR/blank_deployment/.
 
 popd
