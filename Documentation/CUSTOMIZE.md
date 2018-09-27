@@ -13,6 +13,7 @@ To confirm that the intended deployment is supported by MetroÆ, see [README.md]
 If you have not previously set up your MetroÆ Ansible environment, see [SETUP.md](SETUP.md) before proceeding.
 
 ## Main Steps
+The steps below apply when you choose to work via CLI. If you choose to work via the GUI you can access it from the port you specified during setup.  
 
 [1. Customize Deployment](#1-customize-deployment)  
 [2. Unzip Nuage files](#2-unzip-nuage-files)
@@ -25,7 +26,7 @@ When a workflow is executed, each configuration file is validated against a data
 You have the option of configuring the default files provided in the deployments/default/ sub-directory or creating your own sub-directories under the deployments/ directory. You can find examples of configuration files for different deployments in the [examples/](/examples/) directory. Unless you specify a different deployment sub-directory name, the default deployment is used when a workflow is executed. This method allows MetroÆ to support many deployments (different configurations) in parallel and the ability to switch between them as required. See below for the supported configuration files that you can specify in a deployments sub-directory.
 
 ### `common.yml`
-`common.yml` contains the common configuration parameters for the deployment for all components and workflows.  This file is always required for any workflow. Specify the same NTP servers that the target servers use to ensure instantaneous synchronization.
+`common.yml` contains the common configuration parameters for the deployment for all components and workflows.  This file is always required for any workflow. Use `/images_path/` as your prefix instead of the path you specified during setup. Specify the same NTP servers that the target servers use to ensure instantaneous synchronization.
 
 ### `credentials.yml`
 `credentials.yml` contains user credentials for VSD, VCIN and VSC. Default values are specified; you can modify them as necessary.  This file is optional.
@@ -51,12 +52,26 @@ You have the option of configuring the default files provided in the deployments
 ### `vsds.yml`
 `vsds.yml` contains the definition of the VSDs to be operated on in this deployment.  This file is of yaml list type and must contain either 0, 1 or 3 VSD definitions.  If not provided or empty, then no VSDs will be operated on during workflows.
 
-
 ### `vstats.yml`
 `vstats.yml` contains the definition of the VSTATs (VSD Statistics) to be operated on in this deployment.  This file is of yaml list type and must contain either 0, 1 or 3 VSTAT definitions.  If not provided or empty, then no VSTATs will be operated on during workflows.
 
-### `zfb.yml`
-If you intend on deploying VNS with zero factor bootstrapping, you must customize the variables in this additional file. See [ZFB.md](ZFB.md) for more information.
+### Unsupported Components/Operations
+The following components/operations are not supported in the beta release.
+* dns
+* gmv
+* mesos
+* nsgv bootstrap (install is supported)
+* stcv
+* vsr
+* vrs-vm
+* osc-integration
+
+### Adding Components to the Default Deployment
+To add components to the default directory, or replace ones you previously deleted:
+1. Create a new subdirectory under deployments.
+2. Copy the contents of deployments/default to the new subdirectory.
+3. Edit the files in the new subdirectory.
+4. If you'd like to add components that are not included, you can copy a *blank* file from the examples directory.
 
 ## 2. Unzip Nuage Files
 
