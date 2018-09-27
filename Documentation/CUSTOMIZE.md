@@ -31,7 +31,7 @@ You have the option of configuring the default files provided in the deployments
 `credentials.yml` contains user credentials for VSD, VCIN and VSC. Default values are specified; you can modify them as necessary.  This file is optional.
 
 ### `nsgvs.yml`
-`nsgvs.yml` contains the definition of the NSGvs to be operated on in this deployment. This file is of yaml list type and may contain as many NSGv definitions as required. If not provided or empty, then no NSGvs will be operated on during workflows.
+`nsgvs.yml` contains the definition of the NSGvs to be operated on in this deployment. This file is of yaml list type and may contain as many NSGv definitions as required. If not provided or empty, then no NSGvs will be operated on during workflows. ZFB support is included in the nsgv schema and supporting files.
 
 ### `upgrade.yml`
 `upgrade.yml` contains the configuration parameters for an upgrade workflow.  This file is only required when performing an upgrade.
@@ -41,6 +41,9 @@ You have the option of configuring the default files provided in the deployments
 
 ### `vnsutils.yml`
 `vnsutils.yml` contains the definition of the VNSUTILs to be operated on in this deployment. This file is of yaml list type and may contain as many VNSUTILs definitions as you require, though one is usually sufficient. If not provided or empty, then no VNSUTILs will be operated on during workflows.
+
+### `vrss.yml`
+`vrss.yml` contains the definition of the VRSs to be operated on in this deployment. This file is of yaml list type.
 
 ### `vscs.yml`
 `vscs.yml` contains the definition of the VSCs to be operated on in this deployment.  This file is of yaml list type and must contain either 0, 1 or 2 VSC definitions.  If not provided or empty, then no VSCs will be operated on during workflows.
