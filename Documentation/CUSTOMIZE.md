@@ -90,7 +90,7 @@ Alternatively, you can create the directories under the <nuage_unzipped_files_di
 After executing the command, specify the <nuage_unzipped_files_dir> in the `common.yml` deployment configuration as the nuage_unzipped_files_dir parameter.
 
 ## Hosting your deployment files outside of the repo
-When you are contributing code, or pulling new versions of MetroÆ quite often, it may make sense to host your variable files in a separate directory outside of `nuage-metro/deployments/`.  A deployment directory in any location can be specified instead of a deployment name when issuing the `./metroag` command.
+When you are contributing code, or pulling new versions of MetroÆ quite often, it may make sense to host your variable files in a separate directory outside of `nuage-metro/deployments/`.  A deployment directory in any location can be specified instead of a deployment name when issuing the `./metroae` command.
 
 ## Generating example deployment configuration files
 A sample of the deployment configuration files are provided in the deployments/default/ directory and also in [examples/](/examples/).  If these are overwritten or deleted or if a "no frills" version of the files with only the minimum required parameters are desired, they can be generated with the following command:
