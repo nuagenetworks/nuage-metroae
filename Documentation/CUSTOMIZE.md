@@ -31,7 +31,7 @@ You have the option of configuring the default files provided in the deployments
 `credentials.yml` contains user credentials for VSD, VCIN and VSC. Default values are specified; you can modify them as necessary.  This file is optional.
 
 ### `nsgvs.yml`
-`nsgvs.yml` contains the definition of the NSGvs to be operated on in this deployment. This file is of yaml list type and may contain as many NSGv definitions as required. If not provided or empty, then no NSGvs will be operated on during workflows.
+`nsgvs.yml` contains the definition of the NSGvs to be operated on in this deployment. This file is of yaml list type and may contain as many NSGv definitions as required. If not provided or empty, then no NSGvs will be operated on during workflows. ZFB support is included in the nsgv schema and supporting files.
 
 ### `upgrade.yml`
 `upgrade.yml` contains the configuration parameters for an upgrade workflow.  This file is only required when performing an upgrade.
@@ -41,6 +41,9 @@ You have the option of configuring the default files provided in the deployments
 
 ### `vnsutils.yml`
 `vnsutils.yml` contains the definition of the VNSUTILs to be operated on in this deployment. This file is of yaml list type and may contain as many VNSUTILs definitions as you require, though one is usually sufficient. If not provided or empty, then no VNSUTILs will be operated on during workflows.
+
+### `vrss.yml`
+`vrss.yml` contains the definition of the VRSs to be operated on in this deployment. This file is of yaml list type.
 
 ### `vscs.yml`
 `vscs.yml` contains the definition of the VSCs to be operated on in this deployment.  This file is of yaml list type and must contain either 0, 1 or 2 VSC definitions.  If not provided or empty, then no VSCs will be operated on during workflows.
@@ -87,7 +90,7 @@ Alternatively, you can create the directories under the <nuage_unzipped_files_di
 After executing the command, specify the <nuage_unzipped_files_dir> in the `common.yml` deployment configuration as the nuage_unzipped_files_dir parameter.
 
 ## Hosting your deployment files outside of the repo
-When you are contributing code, or pulling new versions of MetroÆ quite often, it may make sense to host your variable files in a separate directory outside of `nuage-metro/deployments/`.  A deployment directory in any location can be specified instead of a deployment name when issuing the `./metroag` command.
+When you are contributing code, or pulling new versions of MetroÆ quite often, it may make sense to host your variable files in a separate directory outside of `nuage-metro/deployments/`.  A deployment directory in any location can be specified instead of a deployment name when issuing the `./metroae` command.
 
 ## Generating example deployment configuration files
 A sample of the deployment configuration files are provided in the deployments/default/ directory and also in [examples/](/examples/).  If these are overwritten or deleted or if a "no frills" version of the files with only the minimum required parameters are desired, they can be generated with the following command:

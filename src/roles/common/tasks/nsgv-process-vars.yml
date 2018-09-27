@@ -1,13 +1,17 @@
----
-- block: #NSGV
+- name: Set nsgvs_check
+  set_fact: nsgvs_check={{nsgvs is defined}}
 
-  - block: #QCOW2
+- name: Assign empty list to nsgvs if it is undefined
+  set_fact: nsgvs= default([])
+  when: not nsgvs_check
+
+- block:
+
+  - block:
 
     - name: Find name of NSGV QCOW2 File
       find: path="{{ nuage_unzipped_files_dir }}/vns/nsg"  pattern="ncpe_centos7.qcow2" recurse=yes
       register: rc_nsgv_file
-
-    - debug: var=rc_nsgv_file verbosity=1
 
     - name: Register VNS UTIL QCOW2 variables with proper path and image locations for use in other playbooks
       set_fact:
@@ -15,36 +19,23 @@
         qcow2_file_name: "{{ rc_nsgv_file.files[0].path | basename }}"
       when: rc_nsgv_file.matched > 0
 
-    when: mynsgvs | map(attribute='target_server_type') | list | issuperset(["kvm"])
+    when: nsgvs | map(attribute='target_server_type') | list | issuperset(["kvm"])
 
-  - block: #OVA
+  - block:
 
     - name: Find name of NSGV OVF File
       find: path="{{ nuage_unzipped_files_dir }}/vns/nsg"  pattern="NSG-*.ovf" recurse=yes
       register: rc_nsgv_file
-
-    - debug: var=rc_nsgv_file verbosity=1
 
     - name: Register NSGV OVF variables with proper path and image locations for use in other playbooks
       set_fact:
         ovf_path: "{{ rc_nsgv_file.files[0].path | dirname }}"
         ovf_file_name: "{{ rc_nsgv_file.files[0].path | basename }}"
       when: rc_nsgv_file.matched > 0
-    when: mynsgvs | map(attribute='target_server_type') | list | issuperset(["vcenter"])
+    when: nsgvs | map(attribute='target_server_type') | list | issuperset(["vcenter"])
 
-  when:
-    - mynsgvs is defined
-  tags:
-    - vns
+  - name: Create host_vars files for nsgv
+    template: src=nsgv.j2 backup=no dest={{ inventory_dir }}/host_vars/{{ item.hostname }}
+    with_items: "{{ nsgvs }}"
 
-- name: Set mynsgvs_check
-  set_fact: mynsgvs_check={{mynsgvs is defined}}
-
-- name: Assign empty list to mynsgvs if it is undefined
-  set_fact: mynsgvs= default([])
-  when: not mynsgvs_check
-
-- name: Create host_vars files for nsgv
-  template: src=nsgv.j2 backup=no dest={{ inventory_dir }}/host_vars/{{ item.hostname }}
-  with_items: "{{ mynsgvs }}"
-  when: mynsgvs_check
+  when: nsgvs_check

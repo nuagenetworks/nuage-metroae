@@ -28,6 +28,11 @@ def read_build_vars(build_vars_file):
 
     var_dict["generator_script"] = "conversion from " + build_vars_file
 
+    if "dns_domain" not in var_dict:
+        dns_domain = var_dict["vsd_fqdn_global"].split(".")
+        dns_domain = ".".join(dns_domain[1:])
+        var_dict["dns_domain"] = dns_domain
+
     return var_dict
 
 
@@ -57,6 +62,38 @@ def resolve_missing_variables(var_dict):
         add_upgrade_vm_name(var_dict["vstats"])
     else:
         var_dict["vstats"] = list()
+
+    if "mynsgvs" in var_dict:
+        var_dict["nsgvs"] = var_dict["mynsgvs"]
+        flatten_vcenter(var_dict["nsgvs"])
+        convert_mask_to_length(var_dict["nsgvs"])
+        add_upgrade_vm_name(var_dict["nsgvs"])
+    else:
+        var_dict["nsgvs"] = list()
+
+    if "myvcins" in var_dict:
+        var_dict["vcins"] = var_dict["myvcins"]
+        flatten_vcenter(var_dict["vcins"])
+        convert_mask_to_length(var_dict["vcins"])
+        add_upgrade_vm_name(var_dict["vcins"])
+    else:
+        var_dict["vcins"] = list()
+
+    if "myvnsutils" in var_dict:
+        var_dict["vnsutils"] = var_dict["myvnsutils"]
+        flatten_vcenter(var_dict["vnsutils"])
+        convert_mask_to_length(var_dict["vnsutils"])
+        add_upgrade_vm_name(var_dict["vnsutils"])
+    else:
+        var_dict["vnsutils"] = list()
+
+    if "myvrss" in var_dict:
+        var_dict["vrss"] = var_dict["myvrss"]
+        flatten_vcenter(var_dict["vrss"])
+        convert_mask_to_length(var_dict["vrss"])
+        add_upgrade_vm_name(var_dict["vrss"])
+    else:
+        var_dict["vrss"] = list()
 
     if "vcenter" in var_dict:
         flatten_vcenter([var_dict])
@@ -99,7 +136,7 @@ def convert_mask_to_length(component_list):
 
 def add_upgrade_vm_name(component_list):
     for component in component_list:
-        if "upgrade_vmname" not in component:
+        if "upgrade_vmname" not in component and "vmname" in component:
             component["upgrade_vmname"] = "new-" + component["vmname"]
 
 
@@ -121,6 +158,18 @@ def write_deployment(var_dict, deployment_name):
     write_deployment_file(os.path.join(TEMPLATES_DIRECTORY, "vstats.j2"),
                           os.path.join(deployment_dir, "vstats.yml"),
                           var_dict)
+    write_deployment_file(os.path.join(TEMPLATES_DIRECTORY, "nsgvs.j2"),
+                          os.path.join(deployment_dir, "nsgvs.yml"),
+                          var_dict)
+    write_deployment_file(os.path.join(TEMPLATES_DIRECTORY, "vcins.j2"),
+                          os.path.join(deployment_dir, "vcins.yml"),
+                          var_dict)
+    write_deployment_file(os.path.join(TEMPLATES_DIRECTORY, "vnsutils.j2"),
+                          os.path.join(deployment_dir, "vnsutils.yml"),
+                          var_dict)
+    write_deployment_file(os.path.join(TEMPLATES_DIRECTORY, "vrss.j2"),
+                          os.path.join(deployment_dir, "vrss.yml"),
+                          var_dict)
 
     if "vcenter" in var_dict:
         write_deployment_file(os.path.join(TEMPLATES_DIRECTORY, "vcenter.j2"),
@@ -129,6 +178,8 @@ def write_deployment(var_dict, deployment_name):
 
 
 def write_deployment_file(template_file, to_file, var_dict):
+    print "Writing " + to_file
+
     with open(template_file, "r") as file:
         template_string = file.read()
 
