@@ -1,8 +1,6 @@
----
-# Create NSGV in VSD
+- block:
 
-- block: 
-  - name: Finding Enterprise
+  - name: Get Enterprise from VSD
     connection: local
     nuage_vspk:
       auth: "{{ vsd_auth }}"
@@ -60,11 +58,12 @@
         command: GET_ZFB_INFO
         parameters: '{ "mediaType": "YAML", "NSGType": "NSG-AMI", "associatedEntityType": "nsgateway", "associatedEntityID": "{{ nuage_nsg.id }}" }'
     register: nuage_nsg_zfb
-    
+
   when: bootstrap_method|default( "None" ) == 'zfb_aws'
 
 - block:
-  - name: Deploy Sample Network Structure if desired
+
+  - name: Deploy Sample Network Structure / VPC
     delegate_to: localhost
     cloudformation:
       aws_access_key: "{{ aws_access_key | default(None) }}"
@@ -76,25 +75,18 @@
       template_parameters: "{{ provision_vpc }}"
     register: rc_aws_cfn_nuagevpc
 
-  - block:
+  - name: Set Network variables from cloudformation results
+    set_fact: { "{{ item.key }}": "{{ item.value }}" }
+    with_items:
+     - { key: "NSGLANENI", value: "{{ rc_aws_cfn_nuagevpc.stack_outputs.NSGLANENIId }}" }
+     - { key: "NSGWANENI", value: "{{ rc_aws_cfn_nuagevpc.stack_outputs.NSGWANENIId }}" }
+     - { key: "NSGLANENIIP", value: "{{ rc_aws_cfn_nuagevpc.stack_outputs.NSGLANENIIP }}" }
+    when: (rc_aws_cfn_nuagevpc.failed is not defined)
 
-    - name: Set Network variables
-      set_fact: { "{{ item.key }}": "{{ item.value }}" }
-      with_items:
-       - { key: "NSGLANENI", value: "{{ rc_aws_cfn_nuagevpc.stack_outputs.NSGLANENIId }}" }
-       - { key: "NSGWANENI", value: "{{ rc_aws_cfn_nuagevpc.stack_outputs.NSGWANENIId }}" }
-       - { key: "NSGLANENIIP", value: "{{ rc_aws_cfn_nuagevpc.stack_outputs.NSGLANENIIP }}" }
-      when: (rc_aws_cfn_nuagevpc.failed is not defined)
-  
-    - name: Set user data Network variable
-      set_fact: { "{{ item.key }}": "{{ item.value }}" }
-      with_items:
-      - { key: "nsg_ami_user_data", value: "{{ nuage_nsg_zfb.entities[0].result }}" }
-      when: (nuage_nsg_zfb is defined) and (nuage_nsg_zfb.entities[0].status == "SUCCESS")
-  
-    when: provision_vpc is defined
+  when: provision_vpc is defined
 
 - block:
+
   - name: Get facts for LAN ENI
     delegate_to: localhost
     ec2_eni_facts:
@@ -105,24 +97,21 @@
       region:  "{{ aws_region }}"
     register: rc_aws_nsg_lan_eni_facts
 
-  - debug: var=rc_aws_nsg_lan_eni_facts
-  
-  - block:
+  - name: Set Network variables from user inputs
+    set_fact: { "{{ item.key }}": "{{ item.value }}" }
+    with_items:
+     - { key: "NSGLANENI", value: "{{ aws_data_eni }}" }
+     - { key: "NSGWANENI", value: "{{ aws_access_eni }}" }
+     - { key: "NSGLANENIIP", value: "{{ rc_aws_nsg_lan_eni_facts.network_interfaces[0].private_ip_address }}" }
+    when: (rc_aws_nsg_lan_eni_facts.network_interfaces|length > 0 )
 
-    - name: Set Network variables
-      set_fact: { "{{ item.key }}": "{{ item.value }}" }
-      with_items:
-       - { key: "NSGLANENI", value: "{{ aws_data_eni }}" }
-       - { key: "NSGWANENI", value: "{{ aws_access_eni }}" }
-       - { key: "NSGLANENIIP", value: "{{ rc_aws_nsg_lan_eni_facts.network_interfaces[0].private_ip_address }}" }
-      when: (rc_aws_nsg_lan_eni_facts.network_interfaces|length > 0 )
-    
-    - name: Set user data Natwork variable
-      set_fact: { "{{ item.key }}": "{{ item.value }}" }
-      with_items:
-      - { key: "nsg_ami_user_data", value: "{{ nuage_nsg_zfb.entities[0].result }}" }
-      when: (nuage_nsg_zfb is defined) and (nuage_nsg_zfb.entities[0].state == "SUCCESS")
-    when: provision_vpc is not defined
+  when: provision_vpc is not defined
+
+- name: Set user data Natwork variable
+  set_fact: { "{{ item.key }}": "{{ item.value }}" }
+  with_items:
+  - { key: "nsg_ami_user_data", value: "{{ nuage_nsg_zfb.entities[0].result }}" }
+  when: (nuage_nsg_zfb is defined) and (nuage_nsg_zfb.entities[0].state == "SUCCESS")
 
 - name: Generate CloudFormation Template
   delegate_to: localhost
