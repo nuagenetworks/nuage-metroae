@@ -48,12 +48,12 @@ done
 if [ ! -d "$EXAMPLE_DIR/blank_deployment" ]; then
     mkdir $EXAMPLE_DIR/blank_deployment
 fi
-cp $DEFAULT_DEPLOY_DIRECTORY/* $EXAMPLE_DIR/blank_deployment/.
+mv $DEFAULT_DEPLOY_DIRECTORY/* $EXAMPLE_DIR/blank_deployment/.
 
-# Remove VRSs, NSGv, VNSUTILs and VCINs from default deployment 
-remove_from_default_deployment="vrss nsgvs vnsutils vcins"
-for item in $remove_from_default_deployment; do
-    rm $DEFAULT_DEPLOY_DIRECTORY/$item*
+# Add specific files to default deployment 
+add_to_default_deployment="common credentials upgrade vscs vsds vstats"
+for item in $add_to_default_deployment; do
+    cp $EXAMPLE_DIR/blank_deployment/$item.yml $DEFAULT_DEPLOY_DIRECTORY/.
 done
 
 popd
