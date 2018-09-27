@@ -30,23 +30,23 @@ You have the option of configuring the default files provided in the deployments
 ### `credentials.yml`
 `credentials.yml` contains user credentials for VSD, VCIN and VSC. Default values are specified; you can modify them as necessary.  This file is optional.
 
-### `nsgvs.yml`  
+### `nsgvs.yml`
 `nsgvs.yml` contains the definition of the NSGvs to be operated on in this deployment. This file is of yaml list type and may contain as many NSGv definitions as required. If not provided or empty, then no NSGvs will be operated on during workflows.
 
 ### `upgrade.yml`
 `upgrade.yml` contains the configuration parameters for an upgrade workflow.  This file is only required when performing an upgrade.
 
-### `vcins.yml`  
+### `vcins.yml`
 `vcins.yml` contains the definition of the VCINs to be operated on in this deployment. This file is of yaml list type and may contain as many VCIN definitions as required. If not provided or empty, then no VCINs will be operated on during workflows.
 
 ### `vnsutils.yml`
-`vnsutils.yml` contains the definition of the VNSUTILs to be operated on in this deployment. This file is of yaml list type and may contain as many VNSUTILs definitions as you require, though one is usually sufficient. If not provided or empty, then no VNSUTILs will be operated on during workflows.  
+`vnsutils.yml` contains the definition of the VNSUTILs to be operated on in this deployment. This file is of yaml list type and may contain as many VNSUTILs definitions as you require, though one is usually sufficient. If not provided or empty, then no VNSUTILs will be operated on during workflows.
 
 ### `vscs.yml`
-`vscs.yml` contains the definition of the VSCs to be operated on in this deployment.  This file is of yaml list type and must contain either 0, 1 or 2 VSC definitions.  If not provided or empty, then no VSCs will be operated on during workflows.  
+`vscs.yml` contains the definition of the VSCs to be operated on in this deployment.  This file is of yaml list type and must contain either 0, 1 or 2 VSC definitions.  If not provided or empty, then no VSCs will be operated on during workflows.
 
 ### `vsds.yml`
-`vsds.yml` contains the definition of the VSDs to be operated on in this deployment.  This file is of yaml list type and must contain either 0, 1 or 3 VSD definitions.  If not provided or empty, then no VSDs will be operated on during workflows.  
+`vsds.yml` contains the definition of the VSDs to be operated on in this deployment.  This file is of yaml list type and must contain either 0, 1 or 3 VSD definitions.  If not provided or empty, then no VSDs will be operated on during workflows.
 
 
 ### `vstats.yml`
@@ -76,7 +76,6 @@ Alternatively, you can create the directories under the <nuage_unzipped_files_di
   <nuage_unzipped_files_dir>/vsd/ova/ (for VMware)
   <nuage_unzipped_files_dir>/vsc/
   <nuage_unzipped_files_dir>/vrs/el7/
-  <nuage_unzipped_files_dir>/vrs/u14_04/
   <nuage_unzipped_files_dir>/vrs/ul16_04/
   <nuage_unzipped_files_dir>/vrs/vmware/
   <nuage_unzipped_files_dir>/vrs/hyperv/
@@ -94,15 +93,15 @@ When you are contributing code, or pulling new versions of MetroÆ quite often, 
 A sample of the deployment configuration files are provided in the deployments/default/ directory and also in [examples/](/examples/).  If these are overwritten or deleted or if a "no frills" version of the files with only the minimum required parameters are desired, they can be generated with the following command:
 
 ```
-./generate_example_from_schema.py <schema_filename> [--no-comments]
+./generate_example_from_schema.py --schema <schema_filename> [--no-comments]
 ```
 
-This will print an example of the deployment file specified by <schema_filename> under the [schemas/](/schemas/) diretory to the screen.  The optional `--no-comments` will print the minimum required parameters (with no documentation).
+This will print an example of the deployment file specified by <schema_filename> under the [schemas/](/schemas/) directory to the screen.  The optional `--no-comments` will print the minimum required parameters (with no documentation).
 
 Example:
 
 ```
-./generate_example_from_schema.py vsds > deployments/new/vsds.yml
+./generate_example_from_schema.py --schema vsds > deployments/new/vsds.yml
 ```
 
 Creates an example vsds configuration file under the "new" deployment.
