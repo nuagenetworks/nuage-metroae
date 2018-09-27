@@ -4,7 +4,9 @@
 ## Prerequisites / Requirements  
 Before working with Metro Automation Engine, please see [README.md](/README.md) for a list of supported VCS/VNS components, supported target server types, and other requirements. 
 
-## To set up the environment:  
+If you'd like to set up the environment without a container proceed to the next section. If you'd like to set up the environment inside a container skip to the *To set up the environment inside a container* section.
+
+## To set up the environment without a container:  
 [1. Clone MetroÆ repository](#1-clone-metroÆ-repository)  
 [2. Set up Ansible Host](#2-set-up-ansible-host)  
 [3. Enable SSH Access](#3-enable-ssh-access)  
@@ -112,6 +114,26 @@ Note: Ensure that target servers are using NTP sync.
    
 ### 4. Install ovftool (for VMware only)
  If you are installing VSP components in a VMware environment (ESXi/vCenter) you will also need to download and install the [ovftool](https://www.vmware.com/support/developer/ovf/) from VMware. MetroÆ uses ovftool for OVA operations.
+
+## To set up the environment inside a container: 
+* Have a Docker Engine container installed and running on your MetroÆ server.
+* If you are using Linux SELinux enforcement must be turned off.
+* Have locally available image files for VCS or VNS deployments.
+* Have execution permission to the script.  
+
+From your MetroÆ server
+1. Execute the command 
+```
+./metroae setup
+```
+This command pulls the container and prompts you to enter paths to:  
+"Specify the full path to store data on the host system:"  
+"Specify the full path of image files on the host system:"  
+"Specify the UI access port:"  (if running on a Mac)  
+
+To access MetroÆ from the command line use `./metroae`
+
+To install a new container, the existing container must be destroyed `./metroae destroy`, then the new container can be pulled `./metroae pull`. You do not need to run setup a second time.
 
 ## Next Step
 After the MetroÆ environment is set up, the next step is to customize it for your topology. See [CUSTOMIZE.md](CUSTOMIZE.md) for guidance. 
