@@ -13,7 +13,7 @@ To confirm that the intended deployment is supported by MetroÆ, see [README.md]
 If you have not previously set up your MetroÆ Ansible environment, see [SETUP.md](SETUP.md) before proceeding.
 
 ## Main Steps
-The steps below apply when you choose to work via CLI. If you choose to work via the GUI you can access it from the port you specified during setup.  
+The steps below apply when you choose to work via CLI. A similar set of steps, facilitated by the GUI, is also available if you choose to deploy MetroÆ via Docker Container. If you choose to work via the GUI you can access it by pointing your browser at the address and port that was specified during the container setup. The default address is https://metroaehostname:5001.  
 
 [1. Customize Deployment](#1-customize-deployment)  
 [2. Unzip Nuage files](#2-unzip-nuage-files)
@@ -26,34 +26,41 @@ When a workflow is executed, each configuration file is validated against a data
 You have the option of configuring the default files provided in the deployments/default/ sub-directory or creating your own sub-directories under the deployments/ directory. You can find examples of configuration files for different deployments in the [examples/](/examples/) directory. Unless you specify a different deployment sub-directory name, the default deployment is used when a workflow is executed. This method allows MetroÆ to support many deployments (different configurations) in parallel and the ability to switch between them as required. See below for the supported configuration files that you can specify in a deployments sub-directory.
 
 ### `common.yml`
-`common.yml` contains the common configuration parameters for the deployment for all components and workflows.  This file is always required for any workflow. Use `/images_path/` as your prefix instead of the path you specified during setup. Specify the same NTP servers that the target servers use to ensure instantaneous synchronization.
+`common.yml` contains the common configuration parameters for the deployment that are used for all components and workflows.  This file is always required for any workflow. 
+
+#### Notes for `common.yml`
+- `nuage_unzipped_files_dir` is a required parameter that points to the location of the image and package files used for Install and Upgrade workflows. When running MetroÆ in a container, this parameter should *not* begin with a '/' and be set equal to the relative path from the images path you configured when you installed the container. For example, if you set the images path for the container to `/home/username/images` and you will unzip the files you are going to use into `/home/username/images/6.0.1`, set `nuage_unzipped_files_dir` to `6.0.1`. MetroÆ will concatenate the two paths to access your files. If, however, you are operating without the container and, instead, cloned the nuage-metro repo to your disk, set `nuage_unzipped_files_dir` to the full, absolute path to the images directory, `/home/username/images/6.0.1` in the example, above.
+- For best performance, `ntp_server_list` should include the same servers that the target servers will be using. This will help to ensure NTP synchronization.
 
 ### `credentials.yml`
-`credentials.yml` contains user credentials for VSD, VCIN and VSC. Default values are specified; you can modify them as necessary.  This file is optional.
+`credentials.yml` contains user credentials for command-line access to individual components, e.g. VSD, authentication parameters for HTTP and hypervisor access, and the passwords for internal VSD services. All of the credentials in this file are optional. MetroÆ will use default parameters when these are not specified. This file does not require modification if you are not using non-default credentials.
 
 ### `nsgvs.yml`
-`nsgvs.yml` contains the definition of the NSGvs to be operated on in this deployment. This file is of yaml list type and may contain as many NSGv definitions as required. If not provided or empty, then no NSGvs will be operated on during workflows. ZFB support is included in the nsgv schema and supporting files.
+`nsgvs.yml` contains the definition of the NSGvs to be operated on in this deployment. This file should be present in your deployment only if you are specifying NSGvs. If not provided, no NSGvs will be operated on. This file is of yaml list type and may contain as many NSGv definitions as required. 
+
+#### Notes for `nsgvs.yml`
+ZFB support is included in the nsgv schema and supporting files. In the beta release of MetroÆ 3, however, ZFB is not supported.
 
 ### `upgrade.yml`
-`upgrade.yml` contains the configuration parameters for an upgrade workflow.  This file is only required when performing an upgrade.
+`upgrade.yml` contains the configuration parameters for an upgrade workflow. This file is only required when performing an upgrade.
 
 ### `vcins.yml`
-`vcins.yml` contains the definition of the VCINs to be operated on in this deployment. This file is of yaml list type and may contain as many VCIN definitions as required. If not provided or empty, then no VCINs will be operated on during workflows.
+`vcins.yml` contains the definition of the VCINs to be operated on in this deployment. This file should be present in your deployment only if you are specifying VCINs. If not provided, no VCINs will be operated on. This file is of yaml list type and may contain as many VCIN definitions as required.
 
 ### `vnsutils.yml`
-`vnsutils.yml` contains the definition of the VNSUTILs to be operated on in this deployment. This file is of yaml list type and may contain as many VNSUTILs definitions as you require, though one is usually sufficient. If not provided or empty, then no VNSUTILs will be operated on during workflows.
+`vnsutils.yml` contains the definition of the VNSUTILs to be operated on in this deployment. This file should be present in your deployment only if you are specifying VNSUTILs. If not provided, no VNSUTILs will be operated on. This file is of yaml list type and may contain as many VNSUTILs definitions as you require, though one is usually sufficient.
 
 ### `vrss.yml`
-`vrss.yml` contains the definition of the VRSs to be operated on in this deployment. This file is of yaml list type.
+`vrss.yml` contains the definition of the VRSs to be operated on in this deployment. This file should be present in your deployment only if you are specifying VRSs. If not provided, no VRSs will be operated on. This file is of yaml list type and may contain as many VRS defintions as you require.
 
 ### `vscs.yml`
-`vscs.yml` contains the definition of the VSCs to be operated on in this deployment.  This file is of yaml list type and must contain either 0, 1 or 2 VSC definitions.  If not provided or empty, then no VSCs will be operated on during workflows.
+`vscs.yml` contains the definition of the VSCs to be operated on in this deployment. This file should be present in your deployment only if you are specifying VSCs. If not provided, no VSCs will be operated on. This file is of yaml list type and may contain as many VSC definitions as you require.
 
 ### `vsds.yml`
-`vsds.yml` contains the definition of the VSDs to be operated on in this deployment.  This file is of yaml list type and must contain either 0, 1 or 3 VSD definitions.  If not provided or empty, then no VSDs will be operated on during workflows.
+`vsds.yml` contains the definition of the VSDs to be operated on in this deployment. This file should be present in your deployment only if you are specifying VSDs. If not provided, no VSDs will be operated on. This file is of yaml list type and must contain either 0, 1 or 3 VSD definitions.
 
 ### `vstats.yml`
-`vstats.yml` contains the definition of the VSTATs (VSD Statistics) to be operated on in this deployment.  This file is of yaml list type and must contain either 0, 1 or 3 VSTAT definitions.  If not provided or empty, then no VSTATs will be operated on during workflows.
+`vstats.yml` contains the definition of the VSTATs (VSD Statistics) to be operated on in this deployment. This file should be present in your deployment only if you are specifying VSTATs. If not provided, no VSTATs will be operated on. This file is of yaml list type and must contain either 0, 1 or 3 VSTAT definitions.
 
 ### Unsupported Components/Operations
 The following components/operations are not supported in the beta release.
@@ -65,17 +72,24 @@ The following components/operations are not supported in the beta release.
 * vsr
 * vrs-vm
 * osc-integration
+* AWS-based VSTAT upgrade
 
-### Adding Components to the Default Deployment
-To add components to the default directory, or replace ones you previously deleted:
+### Operating using the Default Deployment
+The Default deployment is provided as a starting place for your workflows. It is located in a subdirectory named `Default` within the Deployments directory. You can operate MetroÆ by simply editing the contents of the Default deployment. Follow these steps:
+1. Edit the files for the components you will operate on that already exist in the Default subdirectory
+2. Remove the files for the components you will *not* operate on that already exist in the Default subdirectory
+3. To add components to the default directory, or replace ones you previously deleted, copy and then edit files found in the examples directory.
+
+### Adding a new Deployment
+To create a new deployment:
 1. Create a new subdirectory under deployments.
-2. Copy the contents of deployments/default to the new subdirectory.
+2. Copy the contents of an existing deployment subdirectory, e.g. deployments/default, to the new subdirectory.
 3. Edit the files in the new subdirectory.
 4. If you'd like to add components that are not included, you can copy a *blank* file from the examples directory.
 
 ## 2. Unzip Nuage Files
 
-Before deploying with MetroÆ *for the first time*, ensure that the required unzipped Nuage software files (QCOW2, OVA, and Linux Package files) are available for the components being installed. Use one of the two methods below.
+Before operating with MetroÆ *for the first time*, ensure that the required unzipped Nuage software files (QCOW2, OVA, and Linux Package files) are available for the components being installed. Use one of the two methods below.
 
 ### Automatically
 Execute the command:
