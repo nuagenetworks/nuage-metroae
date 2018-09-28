@@ -73,8 +73,6 @@ Download and install the [ovftool](https://www.vmware.com/support/developer/ovf/
 Refer to the list of documents in [README.md](../README.md) for guidance on deploying, upgrading, etc.
 
 ## Questions, Feedback, and Contributing
-
-## Questions, Feedback, and Contributing
 Ask questions and get support via the [forums](https://devops.nuagenetworks.net/forums/) on the [MetroÆ site](https://devops.nuagenetworks.net/).  
 You may also contact us directly.  
   Outside Nokia: [devops@nuagenetworks.net](mailto:deveops@nuagenetworks.net "send email to nuage-metro project")  
