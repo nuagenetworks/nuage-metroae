@@ -108,9 +108,9 @@ File name | Description
 [RELEASE_NOTES.md](Documentation/RELEASE_NOTES.md) | New features, resolved issues and known limitations and issues
 [GETTING_STARTED.md](Documentation/GETTING_STARTED.md) | MetroÆ Quick Start Guide
 [SETUP.md](Documentation/SETUP.md) | Set up your environment by cloning the repo, installing packages and configuring access.
-[CUSTOMIZE.md](Documentation/CUSTOMIZE.md) | Populate variable files for a deployment and unzip Nuage software.
-[DEPLOY.md](Documentation/DEPLOY.md) | Deploy all VSP components or choose components individually.
-[DESTROY.md](Documentation/DESTROY.md) | Remove existing deployment(s) and start over.
+[CUSTOMIZE.md](Documentation/CUSTOMIZE.md) | Populate variable files for a deployment and unzip Nuage software.  
+[DEPLOY.md](Documentation/DEPLOY.md) | Deploy all VSP components or choose components individually.  
+[DESTROY.md](Documentation/DESTROY.md) | Remove existing deployment(s) and start over.  
 [UPGRADE_SA.md](Documentation/UPGRADE_SA.md) | Upgrade component(s) from one release to the next in a standalone environment.
 [UPGRADE_HA.md](Documentation/UPGRADE_HA.md) | Upgrade component(s) from one release to the next in a clustered environment.
 [VAULT_ENCRYPT.md](Documentation/VAULT_ENCRYPT.md) | Safeguard sensitive data
