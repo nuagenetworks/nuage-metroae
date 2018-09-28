@@ -3,7 +3,7 @@
 
 Version: 3.0.0
 
-MetroÆ is an automation engine that deploys and upgrades Nuage Networks components. You specify the individual details of your target platform, then let MetroÆ install, upgrade, roll-back, or health-check the environment for you.
+MetroÆ is an automation engine that deploys and upgrades Nuage Networks components. You specify the individual details of your target platform, then let MetroÆ install, upgrade, destroy, or health-check the environment for you.
 
 ## Important Note
 The procedures have changed substantially in version 3.0 to improve usability.
