@@ -45,6 +45,7 @@
             "type": "string",
             "title": "NSGv Access Bridge",
             "description": "Network bridge used for the access network when installing an NSGv. This will be a Distributed Virtual PortGroup (DVPG) when deploying on vCenter or a Linux network bridge when installing on KVM",
+            "default": "",
             "component_type": "nsgv",
             "sectionEnd": "Network Bridges",
             "propertyOrder": 60
@@ -90,38 +91,38 @@
         },
         "vcenter_datacenter": {
             "type": "string",
-            "title": "Global vCenter Datacenter",
-            "description": "Global vCenter datacenter, only applicable for vcenter server type",
+            "title": "vCenter Datacenter",
+            "description": "vCenter datacenter to deploy Nuage components",
             "target_server_type": "vcenter",
             "sectionBegin": "vCenter Parameters",
             "propertyOrder": 110
         },
         "vcenter_cluster": {
             "type": "string",
-            "title": "Global vCenter Cluster",
-            "description": "Global vCenter cluster, only applicable for vcenter server type",
+            "title": "vCenter Cluster Name",
+            "description": "Name of the vCenter cluster on which to deploy Nuage components",
             "target_server_type": "vcenter",
             "propertyOrder": 120
         },
         "vcenter_datastore": {
             "type": "string",
-            "title": "Global vCenter Datastore",
-            "description": "Global vCenter datastore, only applicable for vcenter server type",
+            "title": "vCenter Datastore Name",
+            "description": "Name of the vCenter datastore on which to deploy the Nuage components",
             "target_server_type": "vcenter",
             "propertyOrder": 130
         },
         "vcenter_resource_pool": {
             "type": "string",
-            "title": "Global vCenter Resource Pool",
-            "description": "The vCenter resource pool where the VMs need to be located. A resource pool is a logical abstraction of resources. Different resource pools can be configured to have different priorities in case of resource contention and can have different resource reservations and limitations. Only applicable for vcenter server type",
+            "title": "vCenter Resource Pool",
+            "description": "The vCenter resource pool where the VMs need to be located. A resource pool is a logical abstraction of resources. Different resource pools can be configured to have different priorities in case of resource contention and can have different resource reservations and limitations.",
             "target_server_type": "vcenter",
             "propertyOrder": 140
         },
         "vcenter_ovftool": {
             "type": "string",
-            "title": "vCenter OVF tool location",
+            "title": "OVF tool location",
             "default": "/usr/bin/ovftool",
-            "description": "Global vCenter OVFtool location, only applicable for vcenter server type",
+            "description": "vCenter OVFtool location",
             "target_server_type": "vcenter",
             "sectionEnd": "vCenter Parameters",
             "propertyOrder": 150
@@ -154,7 +155,7 @@
         "vsd_license_required_days_left": {
             "type": "integer",
             "title": "VSD License Required Days Left",
-            "description": "Raise a failure if the VSD licenses do not have at least the specified number of days remaining before expiration. If undefined, no check of days remaining before license expiration will be made. If you want to verify that the number of days left before expiration is more than a certain number of days, uncomment this varaible and set the value to the number of days.",
+            "description": "Raise a failure if the VSD licenses do not have at least the specified number of days remaining before expiration. If undefined, no check of days remaining before license expiration will be made. If you want to verify that the number of days left before expiration is more than a certain number of days, uncomment this variable and set the value to the number of days.",
             "default": -1,
             "propertyOrder": 190,
             "advanced": true
@@ -164,6 +165,7 @@
             "title": "Branding Zip File",
             "description": "Enables custom branding for the VSD GUI. When not defined, the default VSD branding, already present on the VSD itself, will be used. If branding_zip_file is defined, its value will be used to replace the default VSD branding with the contents of a zip file on the Ansible host.  The files contained in the zip file should conform to the specifications of the VNS install guide. For replacing the default branding on the VSD, this value should be set to one of the following values: 1) The path to a branding zip file on the Ansible host 2) The special value 'nuage' for adding a MetroAE tag to the default VSD branding. This value is provided as an example of a minimal modification of branding. 3) The special value 'metroae' to replace the default VSD branding with a complete MetroAE-themed brand. This value is provided as an example of a complete replacement of all branding components. Note that when this is defined the existing branding will be backed up to the directory specified by the Metro Backup Root variable under (hostname)-branding/. To rollback a branding change, copy the branding zip file out of the backup directory, set this variable to the path to the copied backup file, and run the brand_vsd playbook, i.e. ./metroae brand_vsd.",
             "propertyOrder": 200,
+            "default": "",
             "advanced": true
         },
         "yum_update": {
@@ -180,6 +182,7 @@
             "title": "Proxy for Yum Updates",
             "format": "hostname",
             "description": "Proxy URL to be used if Yum repositories cannot be directly reached",
+            "default": "NONE",
             "advanced": true,
             "sectionEnd": "Yum",
             "propertyOrder": 220
@@ -241,40 +244,40 @@
             "target_server_type": "kvm",
             "advanced": true
         },
+        "vsd_auth_url": {
+            "type": "string",
+            "title": "VSD Architect URL",
+            "description": "VSD Architect URL. Required for tasks during Upgrade, Health Checks etc",
+            "default": "https://(vsd_fqdn):8443",
+            "advanced": true,
+            "sectionBegin": "VSD Authentication",
+            "propertyOrder": 280
+        },
         "vsd_auth_enterprise": {
             "type": "string",
             "title": "VSD Enterprise",
-            "description": "Enterprise to connect to for the VSD",
+            "description": "Enterprise name used for authentication with VSD Architect. Required for tasks during Upgrade, Health Checks etc",
             "default": "csp",
             "advanced": true,
-            "sectionBegin": "VSD HTTP Authentication",
-            "propertyOrder": 280
-        },
-        "vsd_auth_url": {
-            "type": "string",
-            "title": "VSD URL",
-            "description": "URL to connect to for the VSD",
-            "default": "https://(vsd_fqdn):8443",
-            "advanced": true,
-            "sectionEnd": "VSD HTTP Authentication",
+            "sectionEnd": "VSD Authentication",
             "propertyOrder": 290
+        },
+        "vcin_auth_url": {
+            "type": "string",
+            "title": "VCIN URL",
+            "description": "VCIN URL used for API interaction. Required for tasks like VRS-E upgrade (through VCIN)",
+            "default": "https://(vcin_ip_address):8443",
+            "sectionBegin": "VCIN Authentication",
+            "advanced": true,
+            "propertyOrder": 300
         },
         "vcin_auth_enterprise": {
             "type": "string",
             "title": "VCIN Enterprise",
-            "description": "Enterprise to connect to for the VCIN",
+            "description": "Enterprise name used for authentication with VCIN. Required for tasks like VRS-E upgrade (through VCIN)",
             "default": "csp",
             "advanced": true,
-            "sectionBegin": "VCIN HTTP Authentication",
-            "propertyOrder": 300
-        },
-        "vcin_auth_url": {
-            "type": "string",
-            "title": "VCIN HTTP URL",
-            "description": "URL to connect to for the VCIN",
-            "default": "https://(vcin_ip_address):8443",
-            "advanced": true,
-            "sectionEnd": "VCIN HTTP Authentication",
+            "sectionEnd": "VCIN Authentication",
             "propertyOrder": 310
         },
         "libnetwork_scope": {
@@ -298,6 +301,7 @@
         "libnetwork_cluster_store_host": {
             "type": "string",
             "title": "Libnetwork cluster store URL host",
+            "default": "NONE",
             "format": "hostname",
             "advanced": true,
             "description": "Host portion of the URL pointing to the key-value store used for the Libnetwork cluster",
