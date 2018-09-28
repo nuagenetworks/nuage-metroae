@@ -86,13 +86,12 @@ To support routed network connectivity, specify the following fields.
 - internal_ctrl_ip: The ip address to be assigned to the data interfaces on the VSC itself. This internal address can be NATed to the real address of the bare-metal host using iptables rules.
 
 #### Alternative Specification for NSGv Only Deployments
-If you'd like to deploy only NSGv (no other components), then MetroAE can optionally provision a suitable VPC.  Add the following configuration to the mynsgvs section of build_vars.yml for each NSGv:
+If you'd like to deploy only NSGv (no other components), then MetroÆ can optionally provision a suitable VPC.  You will need to configure the nsgvs.yml file in your deployments subdirectory. For the automatic creation of a test VPC on AWS to host your NSGv, the following parameters must be provided in nsgvs.yml for each NSGv:
 
-    provision_vpc: {
-        cidr: "10.4.0.0/16",
-        nsg_wan_subnet: "10.4.10.0/24",
-        nsg_lan_subnet: "10.4.20.0/24",
-        private_subnet: "10.4.30.0/24" }
+- provision_vpc_cidr
+- provision_vpc_nsg_wan_subnet_cidr
+- provision_vpc_nsg_lan_subnet_cidr
+- provision_vpc_private_subnet_cidr
 
 The CIDRs for the VPC, WAN interface, LAN interface and private subnet must be specified. When provisioning a VPC in this way, the elastic network interface identifiers `aws_data_eni` and `aws_access_eni` for the NSGv do not need to be specified as they are discovered from the created VPC. In order to bootstrap the NSGv, specify the bootstrap method as `zfb_aws`; this method assumes that a VSD is fully configured and also requires the NSGv template to be created, with the template id included in build_vars.yml
 
