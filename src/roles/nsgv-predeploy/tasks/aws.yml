@@ -59,6 +59,12 @@
         parameters: '{ "mediaType": "YAML", "NSGType": "NSG-AMI", "associatedEntityType": "nsgateway", "associatedEntityID": "{{ nuage_nsg.id }}" }'
     register: nuage_nsg_zfb
 
+  - name: Set user data Network variable
+    set_fact: { "{{ item.key }}": "{{ item.value }}" }
+    with_items:
+    - { key: "nsg_ami_user_data", value: "{{ nuage_nsg_zfb.entities[0].result }}" }
+    when: nuage_nsg_zfb.entities[0].state == "SUCCESS"
+
   when: bootstrap_method|default( "None" ) == 'zfb_aws'
 
 - block:
@@ -106,12 +112,6 @@
     when: (rc_aws_nsg_lan_eni_facts.network_interfaces|length > 0 )
 
   when: provision_vpc is not defined
-
-- name: Set user data Natwork variable
-  set_fact: { "{{ item.key }}": "{{ item.value }}" }
-  with_items:
-  - { key: "nsg_ami_user_data", value: "{{ nuage_nsg_zfb.entities[0].result }}" }
-  when: (nuage_nsg_zfb is defined) and (nuage_nsg_zfb.entities[0].state == "SUCCESS")
 
 - name: Generate CloudFormation Template
   delegate_to: localhost
