@@ -1,11 +1,11 @@
----
+
 - name: Pull facts of localhost
   action: setup
   connection: local
 
 - block:
 
-  - name: Install mount package 
+  - name: Install mount package
     yum: name={{ item }} state=present
     with_items:
       - libnfsidmap
@@ -21,10 +21,10 @@
       dest: "{{ vstat_backup_dir }}"
       state: directory
       mode: 0777
-      recurse: yes 
+      recurse: yes
       owner: elasticsearch
       group: elasticsearch
-  
+
   - name: Mount the nfs folder on to vstat vm
     mount:
       src: "{{ vstat_nfs_server_with_folder }}"
@@ -55,7 +55,7 @@
 
   - debug: var=username_on_the_host
     run_once: true
- 
+
   - name: Create backup dir
     file:
       dest: "{{ vstat_backup_dir }}"
@@ -75,12 +75,12 @@
 
     - name: Configure backup location in elasticseach.yml file
       lineinfile:
-        dest: "/etc/elasticsearch/elasticsearch.yml" 
+        dest: "/etc/elasticsearch/elasticsearch.yml"
         line: "path.repo: [{{ vstat_backup_dir }}]"
 
     - name: Add user permission to backup location
       file:
-        dest: "{{ vstat_backup_dir }}" 
+        dest: "{{ vstat_backup_dir }}"
         owner: "elasticsearch"
         group: "elasticsearch"
         recurse: yes
@@ -102,7 +102,7 @@
       register: es_status
 
     - name: Check elasticsearch status is active
-      assert: 
+      assert:
         that: es_status.status.ActiveState == 'active'
         msg: "Elasticserach process in not active after restart"
 
@@ -116,7 +116,7 @@
           dest=/tmp/
       with_items: "{{ vstat_backup_scripts_file_list }}"
       run_once: true
-    
+
     - name: Set the repo name to be created
       set_fact:
         repo_name: "{{ ansible_date_time.iso8601_basic_short }}"
