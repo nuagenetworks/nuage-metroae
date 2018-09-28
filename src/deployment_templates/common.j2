@@ -7,7 +7,7 @@
 #
 
 # < Nuage Unzip Files Directory >
-# Full path to the directory where the Nuage unzipped files for this deployment can be found. E.g. qcow2 files
+# Full path to the directory where the Nuage unzipped files for this deployment can be found  E.g. qcow2 files. When using docker container the path needs to be a relative path from the images path specified during setup.
 #
 nuage_unzipped_files_dir: "{{ nuage_unzipped_files_dir }}"
 
@@ -37,7 +37,7 @@ data_bridge: "{{ data_bridge }}"
 {%- if access_bridge is defined %}
 access_bridge: "{{ access_bridge }}"
 {%- else %}
-# access_bridge: ""
+# access_bridge: 
 {%- endif %}
 
 # < NTP Server IP(s) >
@@ -68,8 +68,8 @@ images_path: "{{ images_path }}"
 # images_path: /var/lib/libvirt/images/
 {%- endif %}
 
-# < Global vCenter Datacenter >
-# Global vCenter datacenter, only applicable for vcenter server type
+# < vCenter Datacenter >
+# vCenter datacenter to deploy Nuage components
 #
 {%- if vcenter_datacenter is defined %}
 vcenter_datacenter: "{{ vcenter_datacenter }}"
@@ -77,8 +77,8 @@ vcenter_datacenter: "{{ vcenter_datacenter }}"
 # vcenter_datacenter: ""
 {%- endif %}
 
-# < Global vCenter Cluster >
-# Global vCenter cluster, only applicable for vcenter server type
+# < vCenter Cluster Name >
+# Name of the vCenter cluster on which to deploy Nuage components
 #
 {%- if vcenter_cluster is defined %}
 vcenter_cluster: "{{ vcenter_cluster }}"
@@ -86,8 +86,8 @@ vcenter_cluster: "{{ vcenter_cluster }}"
 # vcenter_cluster: ""
 {%- endif %}
 
-# < Global vCenter Datastore >
-# Global vCenter datastore, only applicable for vcenter server type
+# < vCenter Datastore Name >
+# Name of the vCenter datastore on which to deploy the Nuage components
 #
 {%- if vcenter_datastore is defined %}
 vcenter_datastore: "{{ vcenter_datastore }}"
@@ -95,8 +95,8 @@ vcenter_datastore: "{{ vcenter_datastore }}"
 # vcenter_datastore: ""
 {%- endif %}
 
-# < Global vCenter Resource Pool >
-# The vCenter resource pool where the VMs need to be located. A resource pool is a logical abstraction of resources. Different resource pools can be configured to have different priorities in case of resource contention and can have different resource reservations and limitations. Only applicable for vcenter server type
+# < vCenter Resource Pool >
+# The vCenter resource pool where the VMs need to be located. A resource pool is a logical abstraction of resources. Different resource pools can be configured to have different priorities in case of resource contention and can have different resource reservations and limitations.
 #
 {%- if vcenter_resource_pool is defined %}
 vcenter_resource_pool: "{{ vcenter_resource_pool }}"
@@ -104,8 +104,8 @@ vcenter_resource_pool: "{{ vcenter_resource_pool }}"
 # vcenter_resource_pool: ""
 {%- endif %}
 
-# < vCenter OVF tool location >
-# Global vCenter OVFtool location, only applicable for vcenter server type
+# < OVF tool location >
+# vCenter OVFtool location
 #
 {%- if vcenter_ovftool is defined %}
 vcenter_ovftool: "{{ vcenter_ovftool }}"
@@ -141,7 +141,7 @@ secure_communication: "{{ secure_communication }}"
 {%- endif %}
 
 # < VSD License Required Days Left >
-# Raise a failure if the VSD licenses do not have at least the specified number of days remaining before expiration. If undefined, no check of days remaining before license expiration will be made. If you want to verify that the number of days left before expiration is more than a certain number of days, uncomment this varaible and set the value to the number of days.
+# Raise a failure if the VSD licenses do not have at least the specified number of days remaining before expiration. If undefined, no check of days remaining before license expiration will be made. If you want to verify that the number of days left before expiration is more than a certain number of days, uncomment this variable and set the value to the number of days.
 #
 {%- if vsd_license_required_days_left is defined %}
 vsd_license_required_days_left: {{ vsd_license_required_days_left }}
@@ -155,7 +155,7 @@ vsd_license_required_days_left: {{ vsd_license_required_days_left }}
 {%- if branding_zip_file is defined %}
 branding_zip_file: "{{ branding_zip_file }}"
 {%- else %}
-# branding_zip_file: ""
+# branding_zip_file: 
 {%- endif %}
 
 # < Yum update >
@@ -173,7 +173,7 @@ yum_update: {{ yum_update | lower }}
 {%- if yum_proxy is defined %}
 yum_proxy: "{{ yum_proxy }}"
 {%- else %}
-# yum_proxy: ""
+# yum_proxy: NONE
 {%- endif %}
 
 # < Nuage Software Version >
@@ -230,17 +230,8 @@ vstat_ram: {{ vstat_ram }}
 # vstat_ram: 16777216
 {%- endif %}
 
-# < VSD Enterprise >
-# Enterprise to connect to for the VSD
-#
-{%- if vsd_auth_enterprise is defined %}
-vsd_auth_enterprise: "{{ vsd_auth_enterprise }}"
-{%- else %}
-# vsd_auth_enterprise: csp
-{%- endif %}
-
-# < VSD URL >
-# URL to connect to for the VSD
+# < VSD Architect URL >
+# VSD Architect URL. Required for tasks during Upgrade, Health Checks etc
 #
 {%- if vsd_auth_url is defined %}
 vsd_auth_url: "{{ vsd_auth_url }}"
@@ -248,22 +239,31 @@ vsd_auth_url: "{{ vsd_auth_url }}"
 # vsd_auth_url: https://(vsd_fqdn):8443
 {%- endif %}
 
-# < VCIN Enterprise >
-# Enterprise to connect to for the VCIN
+# < VSD Enterprise >
+# Enterprise name used for authentication with VSD Architect. Required for tasks during Upgrade, Health Checks etc
 #
-{%- if vcin_auth_enterprise is defined %}
-vcin_auth_enterprise: "{{ vcin_auth_enterprise }}"
+{%- if vsd_auth_enterprise is defined %}
+vsd_auth_enterprise: "{{ vsd_auth_enterprise }}"
 {%- else %}
-# vcin_auth_enterprise: csp
+# vsd_auth_enterprise: csp
 {%- endif %}
 
-# < VCIN HTTP URL >
-# URL to connect to for the VCIN
+# < VCIN URL >
+# VCIN URL used for API interaction. Required for tasks like VRS-E upgrade (through VCIN)
 #
 {%- if vcin_auth_url is defined %}
 vcin_auth_url: "{{ vcin_auth_url }}"
 {%- else %}
 # vcin_auth_url: https://(vcin_ip_address):8443
+{%- endif %}
+
+# < VCIN Enterprise >
+# Enterprise name used for authentication with VCIN. Required for tasks like VRS-E upgrade (through VCIN)
+#
+{%- if vcin_auth_enterprise is defined %}
+vcin_auth_enterprise: "{{ vcin_auth_enterprise }}"
+{%- else %}
+# vcin_auth_enterprise: csp
 {%- endif %}
 
 # < Libnetwork scope >
@@ -291,7 +291,7 @@ libnetwork_cluster_store_scheme: "{{ libnetwork_cluster_store_scheme }}"
 {%- if libnetwork_cluster_store_host is defined %}
 libnetwork_cluster_store_host: "{{ libnetwork_cluster_store_host }}"
 {%- else %}
-# libnetwork_cluster_store_host: ""
+# libnetwork_cluster_store_host: NONE
 {%- endif %}
 
 # < Libnetwork cluster store URL port >
