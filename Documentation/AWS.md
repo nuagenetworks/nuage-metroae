@@ -58,10 +58,10 @@ The AWS bare-metal server does not support bridge interfaces, PCI passthrough, o
 
 ## 5. Configure Components
 Configuring components for AWS is similar to configuring for other server types. See [CUSTOMIZE.md](CUSTOMIZE.md) for details on standard deployments. The configuration files for AWS deployments require a few additional specifications.
-### user_creds.yml
+### credentials.yml
 AWS access can be specified as `aws_access_key` and secret keys can be specified as `aws_secret_key`. If AWS access is not specified, values will be taken from the environment variables `AWS_ACCESS_KEY` and `AWS_SECRET_KEY`.
 
-### build_vars.yml
+### deployment
 #### For Components Other than VSC
 Set `target_server_type` to "aws".
 
@@ -76,7 +76,7 @@ AWS requires that the following fields be specified for all components, except V
 #### For VSC Only
 VSC is not supported as a direct AWS component, but it can be deployed by specifying several fields in `build_vars.yml` as shown below.
 
-In the `myvscs` section, set `target_server_type` to "kvm" and `target_server` to the address(es) of the bare-metal host(s).
+In the `vscs.yml` file, set `target_server_type` to "kvm" and `target_server` to the address(es) of the bare-metal host(s).
 
 To support routed network connectivity, specify the following fields.
 
