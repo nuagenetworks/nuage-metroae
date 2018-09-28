@@ -51,7 +51,7 @@ VCIN | X |  | X |
 
 3. [Deploy](Documentation/DEPLOY.md) new components, [upgrade](Documentation/UPGRADE.md) existing components, or run a health check on your system.
 
-4. If things did not work out as expected, [destroy](Documentation/DESTROY.md) or [rollback](Documentation/ROLLBACK.md) your environment.
+4. If things did not work out as expected, [destroy](Documentation/DESTROY.md) your environment and redeploy.
 
 ## MetroÆ Workflows
 MetroÆ workflows are the operations that can be performed against a specified deployment.  All supported workflows can be listed via:
@@ -114,7 +114,6 @@ File name | Description
 [UPGRADE_SA.md](Documentation/UPGRADE_SA.md) | Upgrade component(s) from one release to the next in a standalone environment.
 [UPGRADE_HA.md](Documentation/UPGRADE_HA.md) | Upgrade component(s) from one release to the next in a clustered environment.
 [VAULT_ENCRYPT.md](Documentation/VAULT_ENCRYPT.md) | Safeguard sensitive data
-[OPENSTACK.md](Documentation/OPENSTACK.md) | Deploy VSP components in OpenStack (limited support).
 
 ## Questions, Feedback, and Contributing
 Ask questions and get support via the [forums](https://devops.nuagenetworks.net/forums/) on the [MetroÆ site](https://devops.nuagenetworks.net/).
