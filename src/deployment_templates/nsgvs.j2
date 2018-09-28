@@ -28,7 +28,7 @@
 
     # < Target Server type >
     # Type of environment into which the NSGv will be instantiated
-    # (kvm, vcenter, aws)
+    # (kvm, vcenter, aws) 
     #
     target_server_type: "{{ item.target_server_type }}"
 
@@ -38,8 +38,8 @@
     target_server: "{{ item.target_server }}"
 
     # < Bootstrap Method >
-    # Bootstrap method for the NSGv. The default is 'none' which means no bootstrap will be performed. 'zfb_metro' creates a boostrap ISO file based on the contents of the file zfb_vars.yml. 'zfb_external' is used when a 3rd-party ISO file is to be used. 'zfb_aws' is for deployment on AWS.
-    # (none, zfb_metro, zfb_external, zfb_aws)
+    # In the current MetroAE version, NSGv bootstrapping is not supported.  Bootstrap method for the NSGv. The default is 'none' which means no bootstrap will be performed. 'zfb_metro' creates a boostrap ISO file based on the contents of the file zfb_vars.yml. 'zfb_external' is used when a 3rd-party ISO file is to be used.
+    # (none) 
     #
     {%- if item.bootstrap_method is defined %}
     bootstrap_method: "{{ item.bootstrap_method }}"
@@ -101,13 +101,85 @@
     # vcenter_datastore: (global vCenter datastore)
     {%- endif %}
 
+    # < AWS Region >
+    # AWS Region
+    #
+    {%- if item.aws_region is defined %}
+    aws_region: "{{ item.aws_region }}"
+    {%- else %}
+    # aws_region: ""
+    {%- endif %}
+
+    # < AWS AMI ID >
+    # AMI ID for AWS instance
+    #
+    {%- if item.aws_ami_id is defined %}
+    aws_ami_id: "{{ item.aws_ami_id }}"
+    {%- else %}
+    # aws_ami_id: ""
+    {%- endif %}
+
+    # < AWS AMI ID for Upgrading Instance >
+    # AMI ID of the upgraded image
+    #
+    {%- if item.aws_upgrade_ami_id is defined %}
+    aws_upgrade_ami_id: "{{ item.aws_upgrade_ami_id }}"
+    {%- else %}
+    # aws_upgrade_ami_id: ""
+    {%- endif %}
+
+    # < AWS Instance Type >
+    # Instance Type of the AWS Instance
+    #
+    {%- if item.aws_instance_type is defined %}
+    aws_instance_type: "{{ item.aws_instance_type }}"
+    {%- else %}
+    # aws_instance_type: ""
+    {%- endif %}
+
+    # < AWS Keypair Name >
+    # Name of the Keypair used to connect to VPC
+    #
+    {%- if item.aws_key_name is defined %}
+    aws_key_name: "{{ item.aws_key_name }}"
+    {%- else %}
+    # aws_key_name: ""
+    {%- endif %}
+
+    # < AWS Access ENI >
+    # ENI for Access Subnetwork
+    #
+    {%- if item.aws_access_eni is defined %}
+    aws_access_eni: "{{ item.aws_access_eni }}"
+    {%- else %}
+    # aws_access_eni: ""
+    {%- endif %}
+
+    # < AWS Data ENI >
+    # ENI for Access Subnetwork
+    #
+    {%- if item.aws_data_eni is defined %}
+    aws_data_eni: "{{ item.aws_data_eni }}"
+    {%- else %}
+    # aws_data_eni: ""
+    {%- endif %}
+
+    # < AWS WAN EIP AllocID >
+    # AWS WAN EIP AllocID
+    #
+    {%- if item.aws_eip_allocid is defined %}
+    aws_eip_allocid: "{{ item.aws_eip_allocid }}"
+    {%- else %}
+    # aws_eip_allocid: ""
+    {%- endif %}
+
     # < AWS Provision VPC CIDR >
     # CIDR for provisioning a VPC for the NSGv on AWS
     #
     {%- if item.provision_vpc_cidr is defined %}
     provision_vpc_cidr: "{{ item.provision_vpc_cidr }}"
     {%- else %}
-    # provision_vpc_cidr:
+    # provision_vpc_cidr: 
     {%- endif %}
 
     # < AWS Provision VPC NSG WAN Subnet CIDR >
@@ -116,16 +188,7 @@
     {%- if item.provision_vpc_nsg_wan_subnet_cidr is defined %}
     provision_vpc_nsg_wan_subnet_cidr: "{{ item.provision_vpc_nsg_wan_subnet_cidr }}"
     {%- else %}
-    # provision_vpc_nsg_wan_subnet_cidr:
-    {%- endif %}
-
-    # < AWS Provision VPC Private Subnet CIDR >
-    # Private Subnet CIDR for provisioning a VPC for the NSGv on AWS
-    #
-    {%- if item.provision_vpc_private_subnet_cidr is defined %}
-    provision_vpc_private_subnet_cidr: "{{ item.provision_vpc_private_subnet_cidr }}"
-    {%- else %}
-    # provision_vpc_private_subnet_cidr:
+    # provision_vpc_nsg_wan_subnet_cidr: 
     {%- endif %}
 
     # < AWS Provision VPC NSG LAN Subnet CIDR >
@@ -134,24 +197,34 @@
     {%- if item.provision_vpc_nsg_lan_subnet_cidr is defined %}
     provision_vpc_nsg_lan_subnet_cidr: "{{ item.provision_vpc_nsg_lan_subnet_cidr }}"
     {%- else %}
-    # provision_vpc_nsg_lan_subnet_cidr:
+    # provision_vpc_nsg_lan_subnet_cidr: 
     {%- endif %}
+
+    # < AWS Provision VPC Private Subnet CIDR >
+    # Private Subnet CIDR for provisioning a VPC for the NSGv on AWS
+    #
+    {%- if item.provision_vpc_private_subnet_cidr is defined %}
+    provision_vpc_private_subnet_cidr: "{{ item.provision_vpc_private_subnet_cidr }}"
+    {%- else %}
+    # provision_vpc_private_subnet_cidr: 
+    {%- endif %}
+
     # < NSG License File >
     # Path to the VSD license file on the MetroAE host to associate with the NSG
     #
     {%- if item.vsd_license_file is defined %}
     vsd_license_file: "{{ item.vsd_license_file }}"
     {%- else %}
-    # vsd_license_file:
+    # vsd_license_file: 
     {%- endif %}
 
     # < NSG Organization >
-    # Organization on the VSD to associate with the NSG being bootstraped
+    # Organization on the VSD to associate with the NSG being bootstrapped
     #
     {%- if item.nsg_organization is defined %}
     nsg_organization: "{{ item.nsg_organization }}"
     {%- else %}
-    # nsg_organization:
+    # nsg_organization: 
     {%- endif %}
 
     # < NSG Name >
@@ -160,7 +233,7 @@
     {%- if item.nsg_name is defined %}
     nsg_name: "{{ item.nsg_name }}"
     {%- else %}
-    # nsg_name:
+    # nsg_name: 
     {%- endif %}
 
     # < NSG Proxy User's First Name >
@@ -169,7 +242,7 @@
     {%- if item.nsg_proxy_user_first_name is defined %}
     nsg_proxy_user_first_name: "{{ item.nsg_proxy_user_first_name }}"
     {%- else %}
-    # nsg_proxy_user_first_name:
+    # nsg_proxy_user_first_name: 
     {%- endif %}
 
     # < NSG Proxy User's Last Name >
@@ -178,7 +251,7 @@
     {%- if item.nsg_proxy_user_last_name is defined %}
     nsg_proxy_user_last_name: "{{ item.nsg_proxy_user_last_name }}"
     {%- else %}
-    # nsg_proxy_user_last_name:
+    # nsg_proxy_user_last_name: 
     {%- endif %}
 
     # < NSG Proxy User's Email Address >
@@ -187,7 +260,7 @@
     {%- if item.nsg_proxy_user_email is defined %}
     nsg_proxy_user_email: "{{ item.nsg_proxy_user_email }}"
     {%- else %}
-    # nsg_proxy_user_email:
+    # nsg_proxy_user_email: 
     {%- endif %}
 
     # < NSG Proxy User's Password >
@@ -196,7 +269,7 @@
     {%- if item.nsg_proxy_user_password is defined %}
     nsg_proxy_user_password: "{{ item.nsg_proxy_user_password }}"
     {%- else %}
-    # nsg_proxy_user_password:
+    # nsg_proxy_user_password: 
     {%- endif %}
 
     # < NSG Infra Profile Name >
@@ -205,7 +278,7 @@
     {%- if item.nsg_infra_profile_name is defined %}
     nsg_infra_profile_name: "{{ item.nsg_infra_profile_name }}"
     {%- else %}
-    # nsg_infra_profile_name:
+    # nsg_infra_profile_name: 
     {%- endif %}
 
     # < NSG Infra Profile Template Name >
@@ -214,7 +287,7 @@
     {%- if item.nsg_infra_profile_nsg_template_name is defined %}
     nsg_infra_profile_nsg_template_name: "{{ item.nsg_infra_profile_nsg_template_name }}"
     {%- else %}
-    # nsg_infra_profile_nsg_template_name:
+    # nsg_infra_profile_nsg_template_name: 
     {%- endif %}
 
     # < NSG Infra Profile Proxy DNS Name >
@@ -223,7 +296,7 @@
     {%- if item.nsg_infra_profile_proxy_dns_name is defined %}
     nsg_infra_profile_proxy_dns_name: "{{ item.nsg_infra_profile_proxy_dns_name }}"
     {%- else %}
-    # nsg_infra_profile_proxy_dns_name:
+    # nsg_infra_profile_proxy_dns_name: 
     {%- endif %}
 
     # < VSC Infra Profile Name >
@@ -232,7 +305,7 @@
     {%- if item.vsc_infra_profile_name is defined %}
     vsc_infra_profile_name: "{{ item.vsc_infra_profile_name }}"
     {%- else %}
-    # vsc_infra_profile_name:
+    # vsc_infra_profile_name: 
     {%- endif %}
 
     # < VSC Infra Profile First Controller >
@@ -241,7 +314,7 @@
     {%- if item.vsc_infra_profile_first_controller is defined %}
     vsc_infra_profile_first_controller: "{{ item.vsc_infra_profile_first_controller }}"
     {%- else %}
-    # vsc_infra_profile_first_controller:
+    # vsc_infra_profile_first_controller: 
     {%- endif %}
 
     # < VSC Infra Profile Second Controller >
@@ -250,7 +323,7 @@
     {%- if item.vsc_infra_profile_second_controller is defined %}
     vsc_infra_profile_second_controller: "{{ item.vsc_infra_profile_second_controller }}"
     {%- else %}
-    # vsc_infra_profile_second_controller:
+    # vsc_infra_profile_second_controller: 
     {%- endif %}
 
     # < NSG Network Port Name >
@@ -259,7 +332,7 @@
     {%- if item.nsg_network_port_name is defined %}
     nsg_network_port_name: "{{ item.nsg_network_port_name }}"
     {%- else %}
-    # nsg_network_port_name:
+    # nsg_network_port_name: 
     {%- endif %}
 
     # < NSG Network Port Physical Name >
@@ -268,7 +341,7 @@
     {%- if item.nsg_network_port_physical_name is defined %}
     nsg_network_port_physical_name: "{{ item.nsg_network_port_physical_name }}"
     {%- else %}
-    # nsg_network_port_physical_name:
+    # nsg_network_port_physical_name: 
     {%- endif %}
 
     # < NSG Access Port Name >
@@ -277,7 +350,7 @@
     {%- if item.nsg_access_port_name is defined %}
     nsg_access_port_name: "{{ item.nsg_access_port_name }}"
     {%- else %}
-    # nsg_access_port_name:
+    # nsg_access_port_name: 
     {%- endif %}
 
     # < NSG Access Port Physical Name >
@@ -286,7 +359,7 @@
     {%- if item.nsg_access_port_physical_name is defined %}
     nsg_access_port_physical_name: "{{ item.nsg_access_port_physical_name }}"
     {%- else %}
-    # nsg_access_port_physical_name:
+    # nsg_access_port_physical_name: 
     {%- endif %}
 
     # < NSG Access Port VLAN Range >
@@ -295,7 +368,7 @@
     {%- if item.nsg_access_port_vlan_range is defined %}
     nsg_access_port_vlan_range: "{{ item.nsg_access_port_vlan_range }}"
     {%- else %}
-    # nsg_access_port_vlan_range:
+    # nsg_access_port_vlan_range: 
     {%- endif %}
 
     # < NSG Access Port VLAN Number >
@@ -304,7 +377,7 @@
     {%- if item.nsg_access_port_vlan_number is defined %}
     nsg_access_port_vlan_number: "{{ item.nsg_access_port_vlan_number }}"
     {%- else %}
-    # nsg_access_port_vlan_number:
+    # nsg_access_port_vlan_number: 
     {%- endif %}
 
 {% endfor %}
