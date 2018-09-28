@@ -21,3 +21,4 @@ The following components/operations are not supported in the beta release.
 * vrs-vm
 * osc-integration
 * AWS-based VSTAT upgrade
+* upgrade of VRS through VCIN

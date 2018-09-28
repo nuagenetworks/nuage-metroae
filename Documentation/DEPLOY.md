@@ -64,15 +64,6 @@ VSD predeploy can take a long time. If you are **vCenter user** you may want to 
 
 Note: If you have an issue with a VM and would like to reinstall it, you must destroy it before you replace it. Otherwise, the install will find the first one still running and skip the new install.
 
-## Additional Steps for Specific Deployments
-
-### NSGV and Bootstrapping
-
-MetroÆ can automatically bootstrap (ZFB) a NSGV when deploying a VNS UTIL VM. To direct MetroÆ to generate the ISO file needed for zero factor bootstrapping, perform the following tasks before deploying:
-
-* Customize variables in [`zfb_vars.yml`](deployments/default/zfb_vars.yml "link to zfb_vars.yml file")
-* Specify `bootstrap_method: zfb_metro,` in nsgvs parameters in [`nsgvs.yml`](deployments/default/nsgvs.yml "link to nsgvs.yml file")
-
 ## Copy QCOW2 Files before Deployment
 
 When installing or upgrading in a KVM environment, MetroÆ copies the QCOW2 image files to the target file server during the predeploy phase. As an option, you can pre-position the qcow2 files for all the components by running copy_qcow2_files. This gives the ability to copy the required images files first and then run install or upgrade later.
