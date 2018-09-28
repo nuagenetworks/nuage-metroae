@@ -11,9 +11,13 @@
       - "****************************************************"
   when: skip_vstat_upgrade
 
-- block:       
+- block:
+
   - import_tasks: prep_vstat_in_place_upgrade.yml
     remote_user: "{{ vstat_username | default(vstat_default_username) }}"
+    become: "{{ 'no' if vstat_username | default(vstat_default_username) == 'root' else 'yes' }}"
+    vars:
+      ansible_become_pass: "{{ vstat_password | default(vstat_default_password) }}"
     when: vstat_in_place_upgrade
 
   - name: Backup elasticsearch data
@@ -22,4 +26,5 @@
     vars:
       nuage_upgrade: true
     when: not vstat_in_place_upgrade
+
   when: not skip_vstat_upgrade

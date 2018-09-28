@@ -1,0 +1,42 @@
+---
+- name: Set local variable with upgrade status
+  set_fact:
+    upgrade: "{{ nuage_upgrade|default('False') }}"
+
+- name: Deploy VSTAT AWS Stack
+  delegate_to: localhost
+  cloudformation:
+    aws_access_key: "{{ aws_access_key | default(None) }}"
+    aws_secret_key: "{{ aws_secret_key | default(None) }}"
+    stack_name: "{{ vmname | replace('.', '-') }}"
+    state: "present"
+    region: "{{ aws_region }}"
+    template: "{{ role_path }}/files/aws-vstat.yml"
+    template_parameters:
+      AmiId: "{{ aws_ami_id }}"
+      InstanceName: "{{ vmname | replace('.', '-') }}"
+      InstanceType: "{{ aws_instance_type }}"
+      KeyName: "{{ aws_key_name }}"
+      VstatMgmtEniId: "{{ aws_mgmt_eni }}"
+  register: rc_aws_vstat
+  when: not upgrade
+
+- name: Deploy VSTAT AWS Stack for upgrade
+  delegate_to: localhost
+  cloudformation:
+    aws_access_key: "{{ aws_access_key | default(None) }}"
+    aws_secret_key: "{{ aws_secret_key | default(None) }}"
+    stack_name: "{{ vmname | replace('.', '-') }}"
+    state: "present"
+    region: "{{ aws_region }}"
+    template: "{{ role_path }}/files/aws-vstat.yml"
+    template_parameters:
+      AmiId: "{{ aws_upgrade_ami_id }}"
+      InstanceName: "{{ vmname | replace('.', '-') }}"
+      InstanceType: "{{ aws_instance_type }}"
+      KeyName: "{{ aws_key_name }}"
+      VstatMgmtEniId: "{{ aws_mgmt_eni }}"
+  register: rc_aws_vstat
+  when: upgrade
+
+- debug: var=rc_aws_vstat

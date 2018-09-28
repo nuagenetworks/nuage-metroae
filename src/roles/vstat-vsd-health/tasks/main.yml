@@ -1,19 +1,23 @@
-- name: Wait for ES VSD processes to become running
-  monit_waitfor_service:
-    name: "{{ item }}"
-    timeout_seconds: 600
-    test_interval_seconds: 30
-  with_items:
-    - elasticsearch-status
-    - tca-daemon-status
-    - stats-collector-status
-  remote_user: "{{ vsd_username | default(vsd_default_username) }}"
-  become: "{{ 'no' if vsd_username | default(vsd_default_username) == 'root' else 'yes' }}"
-  vars:
-    ansible_become_pass: "{{ vsd_password | default(vsd_default_password) }}"
+- block:
 
-- name: Read the status of the DB upgrade directory and verify it exists
-  include_role:
-    name: common
-    tasks_from: vsd-verify-db-status
-  tags: vsd
+  - name: Wait for ES VSD processes to become running
+    monit_waitfor_service:
+      name: "{{ item }}"
+      timeout_seconds: 600
+      test_interval_seconds: 30
+    with_items:
+      - elasticsearch-status
+      - tca-daemon-status
+      - stats-collector-status
+    remote_user: "{{ vsd_username | default(vsd_default_username) }}"
+    become: "{{ 'no' if vsd_username | default(vsd_default_username) == 'root' else 'yes' }}"
+    vars:
+      ansible_become_pass: "{{ vsd_password | default(vsd_default_password) }}"
+
+  - name: Read the status of the DB upgrade directory and verify it exists
+    include_role:
+      name: common
+      tasks_from: vsd-verify-db-status
+    tags: vsd
+
+  when: "groups['vstats'] is defined and groups['vstats']"

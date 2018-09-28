@@ -5,7 +5,22 @@
     tasks_from: wait-for-ssh
   vars:
     ssh_host: "{{ mgmt_ip }}"
+    host_username: "{{ vstat_default_username }}"
     ssh_timeout_seconds: 900
+
+- block:
+  - name: Force DHCP update to configure DNS in AWS
+    command: dhclient
+    ignore_errors: true
+
+  - name: Set hostname for AWS for current session
+    command: "hostname {{ hostname }}"
+
+  - name: Set hostname for AWS permanently
+    shell: "echo {{ hostname }} > /etc/hostname"
+
+  when: target_server_type | match("aws")
+  remote_user: "{{ vstat_default_username }}"
 
 - name: Get vsd node(s) information
   import_role:
@@ -237,6 +252,7 @@
         tasks_from: wait-for-ssh
       vars:
         ssh_host: "{{ vsd_hostname_list[0] }}"
+        host_username: "{{ vsd_username }}"
         ssh_delay_seconds: 10
 
     - block:
@@ -272,9 +288,9 @@
         environment:
           SSHPASS: "{{ vstat_default_password }}"
         when: vstat_sa_or_ha | match('ha')
-    
+
       remote_user: "{{ vsd_default_username }}"
-  
+
     run_once: True
 
   - name: Enable stats

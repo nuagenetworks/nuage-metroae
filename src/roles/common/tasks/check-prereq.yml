@@ -14,34 +14,34 @@
       msg: "paramiko version 2.2.1 or 2.4.1 is required"
 
   - name: Check for supported host OS on Ansible host
-    assert: 
+    assert:
       that: "{{ ansible_os_family | match('RedHat') }}"
       msg:  "Metro only supports RHEL/CentOS as an Ansible host"
-      
+
   - name : Output installed packages yum
     shell: yum list installed
     register: yumoutput
-    
+
   - name : Output installed packages pip
     shell: pip list installed
-    register: pipoutput  
-    
-  - name : Output installed group packages 
+    register: pipoutput
+
+  - name : Output installed group packages
     shell: yum grouplist installed
-    register: yumgroupoutput  
+    register: yumgroupoutput
 
   - name : Check if all pip packages are installed
     assert:
       that: "pipoutput.stdout|search('{{ item }}')"
-      msg:  "Missing required package {{ item }} . Please refer to metro-setup.sh"   
+      msg:  "Missing required package {{ item }} . Please refer to metro-setup.sh"
     with_lines:  sed 's/==.*//' pip_requirements.txt
 
   - name : Check if all yum packages are installed
     assert:
       that: "yumoutput.stdout|search('{{ item }}')"
-      msg:  "Missing required package {{ item }} . Please refer to metro-setup.sh"   
+      msg:  "Missing required package {{ item }} . Please refer to metro-setup.sh"
     with_lines: cat ./yum_requirements.txt
-    when: not item|search('@') 
+    when: not item|search('@')
 
   - name : Check if all yum group packages are installed
     assert:
