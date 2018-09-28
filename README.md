@@ -26,11 +26,11 @@ Component |  KVM <br>(el6, el7,ubuntu 14.04/16.04) | ESXi
 --------- | :----: | -------
 VRS (Virtual Routing & Switching) | X | (upgrade only)
 Libnetwork on VRS nodes  | X |
-NSG-V (Network Services Gateway-Virtual) |  X |
 
-#### Provided Auxiliary Services
+#### Required Auxiliary Services
 * DNS/NTP
 
+## Typical Nuage Topology
 ![topology](Documentation/topology.png)
 
 ## Supported Components for Upgrade
@@ -45,13 +45,13 @@ VCIN | X |  | X |
 
 ## Main Steps for Using MetroÆ
 
-1. [Setup](Documentation/SETUP.md)  the MetroÆ host. Setup prepares the host for running MetroÆ, including retrieving the repository, installing prerequisite packages and setting up SSH access.
+1. [Setup](Documentation/SETUP.md) the MetroÆ host. Setup prepares the host for running MetroÆ, including retrieving the repository, installing prerequisite packages and setting up SSH access. You also have the option of installing MetroÆ in a container, and then working with it via CLI or the GUI.
 
 2. [Customize](Documentation/CUSTOMIZATION.md) your deployment to match your network topology, and describe your Nuage Networks specifics.
 
 3. [Deploy](Documentation/DEPLOY.md) new components, [upgrade](Documentation/UPGRADE.md) existing components, or run a health check on your system.
 
-4. If things did not work out as expected, [destroy](Documentation/DESTROY.md) or [rollback](Documentation/ROLLBACK.md) your environment.
+4. If things did not work out as expected, [destroy](Documentation/DESTROY.md) your environment and redeploy.
 
 ## MetroÆ Workflows
 MetroÆ workflows are the operations that can be performed against a specified deployment.  All supported workflows can be listed via:
@@ -65,7 +65,7 @@ Workflow | Operation Description |
 Predeploy | prepares infrastructure with necessary packages and makes the component(s) reachable |
 Deploy | installs and configures component(s) |
 Postdeploy | performs integration checks, and some basic commissioning tests |
-Health | checks health for a running component without assuming it was deployed with Metro Automation Engine |
+Health | checks health for a running component without assuming it was deployed with MetroÆ |
 Destroy | removes component(s) from the infrastructure |
 Upgrade | upgrades component(s) from one release to another |
 
@@ -93,19 +93,19 @@ MetroÆ is based off of the Python-based Ansible operations tool.  The following
 **Roles** build on the idea of include files and combine them to form clean, reusable abstractions. Roles are ways of automatically loading certain vars files, tasks, and handlers based on a known file structure.
 
 ## Documentation
-The [Documentation](Documentation/) directory contains the following guides to assist you in successfully working with Metro Automation Engine.
+The [Documentation](Documentation/) directory contains the following guides to assist you in successfully working with MetroÆ. The current documentation covers using MetroÆ CLI only.
 
 File name | Description
 --------- | --------
 [RELEASE_NOTES.md](Documentation/RELEASE_NOTES.md) | New features, resolved issues and known limitations and issues
-[GETTING_STARTED.md](Documentation/GETTING_STARTED.md) | Metro Automation Engine Quick Start Guide
+[GETTING_STARTED.md](Documentation/GETTING_STARTED.md) | MetroÆ Quick Start Guide
 [SETUP.md](Documentation/SETUP.md) | Set up your environment by cloning the repo, installing packages and configuring access.
-[CUSTOMIZATION.md](Documentation/CUSTOMIZATION.md) | Populate variable files for a deployment and unzip Nuage software.
+[CUSTOMIZE.md](Documentation/CUSTOMIZE.md) | Populate variable files for a deployment and unzip Nuage software.
 [DEPLOY.md](Documentation/DEPLOY.md) | Deploy all VSP components or choose components individually.
 [DESTROY.md](Documentation/DESTROY.md) | Remove existing deployment(s) and start over.
 [UPGRADE_SA.md](Documentation/UPGRADE_SA.md) | Upgrade component(s) from one release to the next in a standalone environment.
 [UPGRADE_HA.md](Documentation/UPGRADE_HA.md) | Upgrade component(s) from one release to the next in a clustered environment.
-[OPENSTACK.md](Documentation/OPENSTACK.md) | Deploy VSP components in OpenStack (limited support).
+[VAULT_ENCRYPT.md](Documentation/VAULT_ENCRYPT.md) | Safeguard sensitive data
 
 ## Questions, Feedback, and Contributing
 Ask questions and get support via the [forums](https://devops.nuagenetworks.net/forums/) on the [MetroÆ site](https://devops.nuagenetworks.net/).  

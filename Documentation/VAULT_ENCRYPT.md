@@ -1,11 +1,11 @@
 # Encrypting Sensitive Data with Ansible Vault  
-You can safeguard sensitive data in Metro&#198; by encrypting files with Ansible's vault feature. See the steps below for instructions on how to encrypt `user_creds.yml`. More details about the vault feature can be found in [documentation](https://docs.ansible.com/ansible/2.4/vault.html) provided by Ansible.  
+You can safeguard sensitive data in Metro&#198; by encrypting files with Ansible's vault feature. See the steps below for instructions on how to encrypt `credentials.yml`. More details about the vault feature can be found in [documentation](https://docs.ansible.com/ansible/2.4/vault.html) provided by Ansible.  
 ### 1. Create a vault encryption passcode file  
  Create a file containing a master passcode (example file name: myvault.txt). This passcode can be used to encode and decode all other user data files. It's generally a good idea to keep this file outside of the source code.  
-### 2. Encrypt `user_creds.yml`  
-  To encrypt `user_creds.yml` with the passcode file that you created in step one above, run the following command:  
+### 2. Encrypt `credentials.yml`  
+  To encrypt `credentials.yml` with the passcode file that you created in step one above, run the following command:  
   ```
-  ansible-vault encrypt user_creds.yml --vault-password-file myvault.txt
+  ansible-vault encrypt credentials.yml --vault-password-file myvault.txt
   ```     
 ### 3. Pass the vault password file option  
   While running Metro&#198; commands you can supply the vault password file as an option by running the following command:
