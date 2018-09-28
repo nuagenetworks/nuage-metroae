@@ -1,16 +1,16 @@
----
+
 - block:
   # Check proper resolution of VM VPorts (if any exist) on VRS
   - name: get list of vms
     virt: command=list_vms state=running
     register: virt_vms
-    
+
   - name: Get VM interfaces that are attached to alubr0
     shell: "virsh domiflist {{ item }} | awk '/alubr0/ { print $1 }'"
     with_items: "{{ virt_vms.list_vms }}"
     register: tapinterfaces
     changed_when: false
-  
+
   - name: Check if corresponding Interface and Port exist on OVS
     shell: |
       vnics="{{item}}"

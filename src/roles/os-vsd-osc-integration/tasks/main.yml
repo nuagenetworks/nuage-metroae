@@ -1,4 +1,4 @@
----
+
 - name: Get current version of VSD software
   shell: echo $VSD_VERSION
   register: vsd_version
@@ -16,7 +16,7 @@
       api_enterprise: "{{ vsd_auth.enterprise }}"
       api_version: "v{{ vsd_version.stdout.split('.')[0] }}_0"
       api_url: "{{ vsd_auth.api_url }}"
-  import_role: 
+  import_role:
     name: common
     tasks_from: "vsd-add-user-to-cmsgroup"
   delegate_to: localhost
@@ -27,9 +27,9 @@
     register: nuagepkg_yum_state
 
   - name: Set variable to define if upgrade is required
-    set_fact: 
+    set_fact:
       nuage_plugin_existing: '{{ (nuagepkg_yum_state.results | selectattr("yumstate", "match", "installed") | list | length != 0) |
-        ternary(nuagepkg_yum_state.results[0].release, False) }}' 
+        ternary(nuagepkg_yum_state.results[0].release, False) }}'
 
   - name: Create temporary directory to hold nuage openstack plugins
     file: path={{ plugin_dir }}/{{ inventory_hostname }} state=directory
@@ -38,7 +38,7 @@
     copy:
       src: "{{ nuage_os_package_path }}/{{ nuage_os_release }}/{{ nuage_target_architecture }}/{{ item }}"
       dest: "{{ plugin_dir }}/{{ inventory_hostname }}/{{ item }}"
-    with_items: 
+    with_items:
       - "{{ nuage_os_package_file_name_list }}"
 
   - name: Install Nuage packages on OS Controller
@@ -90,7 +90,7 @@
       dest: "{{ nuage_css_file }}"
       line: "{{ nuage_css_line }}"
       state: absent
- 
+
   - name: Add nuage customization line to horizon dashboard settings
     lineinfile:
       dest: "{{ horizon_dashboard }}"
@@ -122,7 +122,7 @@
       line: "{{ nuage_css_line }}"
       state: present
 
-  # END Horizon changes 
+  # END Horizon changes
 
   # BEGIN Nova changes
   - name: Configure nova to use neutron
@@ -147,7 +147,7 @@
   - name: Find out if an existing Nuage plugin ini file exists
     stat: path="/etc/neutron/plugins/nuage/nuage_plugin.ini"
     register: plugin_file_stat
-    
+
   - name: Copy ini contents to created file
     template:
       src: "nuage_plugin.ini.j2"
@@ -167,7 +167,7 @@
   - name: Configure main neutron configuration file
     ini_file:
       dest: "{{ neutron_conf_file }}"
-      section: "{{ item.section }}" 
+      section: "{{ item.section }}"
       option: "{{ item.option }}"
       value: "{{ item.value }}"
       backup: yes
@@ -183,7 +183,7 @@
   - name: Configure ML2 configuration file
     ini_file:
       dest: "{{ ml2_conf_file }}"
-      section: "{{ item.section }}" 
+      section: "{{ item.section }}"
       option: "{{ item.option }}"
       value: "{{ item.value }}"
       backup: yes
