@@ -17,7 +17,7 @@
 
 2.1 Clone the master branch of the repo onto the **MetroÆe Host**. Read [Setup](SETUP.md) for details.  
 ```
-git clone https://github.com.com/nuagenetworks/nuage-metro.git
+git clone https://github.com/nuagenetworks/nuage-metro.git
 ```
 2.2 Install the required packages. Run as root or sudo. Read [Setup](SETUP.md) for details.  
 ```
@@ -49,7 +49,7 @@ Download and install the [ovftool](https://www.vmware.com/support/developer/ovf/
 
 ## 5. Prepare your environment  
 
-5.1 Unzip Nuage files: `metroae nuage-unzip.sh`. See [CUSTOMIZE.md](CUSTOMIZE.md) for details.  
+5.1 Unzip Nuage files: `./nuage-unzip.sh <zipped_directory> <unzip_directory>`. See [CUSTOMIZE.md](CUSTOMIZE.md) for details.  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Be sure that Nuage packages (tar.gz) are available on localhost (MetroÆ host),  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;either in a native directory or NFS-mounted.  
 

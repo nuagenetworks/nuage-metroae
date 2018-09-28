@@ -3,7 +3,7 @@
 
 Version: 3.0.0
 
-MetroÆ is an automation engine that deploys and upgrades Nuage Networks components. You specify the individual details of your target platform, then let MetroÆ install, upgrade, roll-back, or health-check the environment for you.
+MetroÆ is an automation engine that deploys and upgrades Nuage Networks components. You specify the individual details of your target platform, then let MetroÆ install, upgrade, destroy, or health-check the environment for you.
 
 ## Important Note
 The procedures have changed substantially in version 3.0 to improve usability.
@@ -42,6 +42,19 @@ VSD | X | X | X | X
 VSTAT | X | X | X | X
 VSC | X | X | X | X
 VCIN | X |  | X |
+
+## Unsupported Components/Operations
+The following components/operations are not supported in the beta release.
+* dns
+* gmv
+* mesos
+* nsgv bootstrap (install is supported)
+* stcv
+* vsr
+* vrs-vm
+* osc-integration
+* AWS-based VSTAT upgrade
+* upgrade of VRS through VCIN
 
 ## Main Steps for Using MetroÆ
 
