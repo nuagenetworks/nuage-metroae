@@ -1,6 +1,6 @@
 AWSTemplateFormatVersion: 2010-09-09
 Description: >-
-  AWS CloudFormation Template to deploy a VNSUtil for access to VPC. **WARNING**
+  AWS CloudFormation Template to deploy a VSTAT for access to VPC. **WARNING**
   This template creates an Amazon EC2 instance and ElasticIP. You will be billed
   for these AWS resources used if you create a stack from this template.
 Parameters:
@@ -8,11 +8,11 @@ Parameters:
     Description: Name of an existing EC2 KeyPair to enable SSH access to the instance
     Type: 'AWS::EC2::KeyPair::KeyName'
     ConstraintDescription: must be the name of an existing EC2 KeyPair.
-  VnsUtilDataEniId:
-    Description: NetworkInterface ID for VNSUtil Data interface
+  VstatDataEniId:
+    Description: NetworkInterface ID for VSTAT Data interface
     Type: String
-  VnsUtilMgmtEniId:
-    Description: NetworkInterface ID for VNSUtil Management interface
+  VstatMgmtEniId:
+    Description: NetworkInterface ID for VSTAT Management interface
     Type: String
   AmiId:
     Description: AMI-ID for Instance
@@ -47,7 +47,7 @@ Parameters:
     ConstraintDescription: Instance Name
     Type: String
 Resources:
-  VnsUtilInstance:
+  VstatInstance:
     Type: 'AWS::EC2::Instance'
     Properties:
       InstanceType: !Ref InstanceType
@@ -55,9 +55,9 @@ Resources:
       ImageId: !Ref AmiId
       NetworkInterfaces:
         - DeviceIndex: '0'
-          NetworkInterfaceId: !Ref VnsUtilDataEniId
+          NetworkInterfaceId: !Ref VstatDataEniId
         - DeviceIndex: '1'
-          NetworkInterfaceId: !Ref VnsUtilMgmtEniId
+          NetworkInterfaceId: !Ref VstatMgmtEniId
       UserData: ''
       Tags:
         - Key: Name
@@ -69,14 +69,14 @@ Resources:
 Outputs:
   InstanceId:
     Description: InstanceId of the newly created EC2 instance
-    Value: !Ref VnsUtilInstance
+    Value: !Ref VstatInstance
   AZ:
     Description: Availability Zone of the newly created EC2 instance
     Value: !GetAtt
-      - VnsUtilInstance
+      - VstatInstance
       - AvailabilityZone
   PublicDNS:
     Description: Public DNSName of the newly created EC2 instance
     Value: !GetAtt
-      - VnsUtilInstance
+      - VstatInstance
       - PublicDnsName
