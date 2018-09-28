@@ -43,6 +43,19 @@ VSTAT | X | X | X | X
 VSC | X | X | X | X
 VCIN | X |  | X |
 
+## Unsupported Components/Operations
+The following components/operations are not supported in the beta release.
+* dns
+* gmv
+* mesos
+* nsgv bootstrap (install is supported)
+* stcv
+* vsr
+* vrs-vm
+* osc-integration
+* AWS-based VSTAT upgrade
+* upgrade of VRS through VCIN
+
 ## Main Steps for Using MetroÆ
 
 1. [Setup](Documentation/SETUP.md) the MetroÆ host. Setup prepares the host for running MetroÆ, including retrieving the repository, installing prerequisite packages and setting up SSH access. You also have the option of installing MetroÆ in a container, and then working with it via CLI or the GUI.
