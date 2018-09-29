@@ -15,6 +15,8 @@
 # You should have received a copy of the GNU General Public License
 # along with Ansible.  If not, see <http://www.gnu.org/licenses/>.
 
+from ansible.module_utils.basic import AnsibleModule
+
 ANSIBLE_METADATA = {'status': ['preview'],
                     'supported_by': 'community',
                     'version': '1.0'}
@@ -330,14 +332,13 @@ entities:
 
 try:
     from vspk import v4_0 as vsdk
-    from vspk.v4_0 import fetchers
     from bambou.exceptions import BambouHTTPError
-
     HASVSPK = True
 except ImportError:
     HASVSPK = False
 
 SUPPORTED_COMMANDS = ['find', 'change_password']
+
 
 class NuageEntityManager(object):
     """
@@ -741,9 +742,6 @@ class NuageEntityManager(object):
             self.module.fail_json(msg='Unable to delete entity: {0}'.format(e))
         self.result['id'] = None
         self.result['changed'] = True
-
-
-from ansible.module_utils.basic import AnsibleModule
 
 
 def main():
