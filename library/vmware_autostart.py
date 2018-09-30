@@ -5,6 +5,7 @@ from ansible.module_utils.basic import AnsibleModule
 import sys
 from pyVmomi import vim
 from pyVim.connect import SmartConnect
+from pyVim.connect import SmartConnectNoSSL
 sys.dont_write_bytecode = True
 
 
@@ -81,9 +82,9 @@ EXAMPLES = '''
 '''
 
 
-def get_esxi_host(ip_addr, port, username, password, id):
+def get_esxi_host(ip_addr, port, username, password, id, validate_certs):
     uuid = id
-    si = get_connection(ip_addr, username, password, port)
+    si = get_connection(ip_addr, username, password, port, validate_certs)
     vm = si.content.searchIndex.FindByUuid(None,
                                            uuid,
                                            True,
@@ -96,10 +97,13 @@ def get_esxi_host(ip_addr, port, username, password, id):
     return None
 
 
-def get_connection(ip_addr, user, password, port):
-    connection = SmartConnect(
-        host=ip_addr, port=port, user=user, pwd=password
-    )
+def get_connection(ip_addr, user, password, port, validate_certs):
+    if validate_certs == 'no':
+        connection = SmartConnectNoSSL(
+            host=ip_addr, port=port, user=user, pwd=password)
+    else:
+        connection = SmartConnect(
+            host=ip_addr, port=port, user=user, pwd=password)
     return connection
 
 
@@ -178,14 +182,15 @@ def main():
     uuid = module.params['uuid']
     port = module.params['port']
     start_delay = module.params['delay']
+    validate_certs = module.params['validate_certs']
 
     try:
-        connection = get_connection(ip_addr, username, password, port)
+        connection = get_connection(ip_addr, username, password, port, validate_certs)
 
         if connection is None:
             module.fail_json(msg="Establishing connection to %s failed" % ip_addr)
 
-        esxi_host = get_esxi_host(ip_addr, port, username, password, uuid)
+        esxi_host = get_esxi_host(ip_addr, port, username, password, uuid, validate_certs)
 
         if esxi_host is None:
             module.fail_json(msg="Could not find ESXi host using uuid %s" % uuid)
