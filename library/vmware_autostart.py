@@ -56,7 +56,7 @@ options:
     description:
       - Whether Ansible should validate ssh certificates
     required: False
-    default: yes
+    default: True
 
 '''
 
@@ -69,7 +69,7 @@ EXAMPLES = '''
     username: vCenter_username
     password: vCenter_password
     state: enable
-    validate_certs: no
+    validate_certs: False
 
 # Example for disabling or not enabling autostart for vm_1
 - vmware_autostart:
@@ -98,11 +98,11 @@ def get_esxi_host(ip_addr, port, username, password, id, validate_certs):
 
 
 def get_connection(ip_addr, user, password, port, validate_certs):
-    if validate_certs == 'no':
-        connection = SmartConnectNoSSL(
+    if validate_certs:
+        connection = SmartConnect(
             host=ip_addr, port=port, user=user, pwd=password)
     else:
-        connection = SmartConnect(
+        connection = SmartConnectNoSSL(
             host=ip_addr, port=port, user=user, pwd=password)
     return connection
 
