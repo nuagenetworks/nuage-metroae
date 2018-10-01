@@ -1,4 +1,9 @@
 # Metro Automation Engine Release Notes
+## Release 2.4.6
+### Resolved Issues
+* Update vmware_autostart for vCenter 6.5+
+* Assert when VCIN is older than 5.2.2 on install
+
 ## Release 2.4.5
 ### Resolved Issues
 * Set validate_certs to no for VMware playbooks
