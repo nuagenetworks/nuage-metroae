@@ -1,6 +1,6 @@
 # Metro Automation Engine Release Notes
 
-## Release 3.0.0
+## Release 3.0.0b1
 
 ### New Procedures and Improvements
 
