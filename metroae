@@ -12,10 +12,11 @@ PLAYBOOK_WITH_BUILD_DIR=$CURRENT_DIR/src/playbooks/with_build
 SCHEMA_DIR=$CURRENT_DIR/schemas
 DEPLOYMENTS_BASE_DIR=$CURRENT_DIR/deployments
 DEPLOYMENT_DIR=$DEPLOYMENTS_BASE_DIR/default
+INVENTORY_DIR=$CURRENT_DIR/src/inventory
 
 function usage {
     echo ""
-    echo "Nuage Networks MetroAE Automation EnGine (AG)"
+    echo "Nuage Networks Metro Automation Engine (AE)"
     echo ""
     echo "Version:" $METROAE_VERSION
     echo ""
@@ -28,7 +29,7 @@ function usage {
     echo "See README.md for more information"
     echo ""
     echo "Usage:"
-    echo "    " $0 "<workflow>" "[deployment]" "[options]"
+    echo "    " "metroae" "<workflow>" "[deployment]" "[options]"
     echo ""
     echo "    <workflow>:     Name of the MetroAE workflow to run."
     echo "    [deployment]:   The name of a deployment containing the required"
@@ -89,6 +90,13 @@ case $key in
     list_workflows
     exit 1
     ;;
+    --set-group)
+    GROUP="$2"
+    touch ansible.log
+    chgrp $GROUP ansible.log
+    shift # past argument
+    shift # past value
+    ;;
     --skip-build)
     SKIP_BUILD=1
     shift # past argument
@@ -139,6 +147,7 @@ if [[ -a $PLAYBOOK_DIR/$WORKFLOW  ]]; then
 elif [[ -a $PLAYBOOK_WITH_BUILD_DIR/$WORKFLOW ]]; then
     if [[ $SKIP_BUILD -ne 1 ]]; then
         $(which ansible-playbook) -e deployment_dir=\'"$DEPLOYMENT_DIR"\' -e schema_dir=$SCHEMA_DIR $PLAYBOOK_DIR/build.yml "$@" || exit $?
+        if [[ $GROUP ]]; then chgrp -R $GROUP $INVENTORY_DIR; fi
     fi
     $(which ansible-playbook) $PLAYBOOK_WITH_BUILD_DIR/$WORKFLOW "$@" || exit $?
 else
