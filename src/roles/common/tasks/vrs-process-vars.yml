@@ -1,389 +1,196 @@
-################
 
+################
 # VRS
-
 ################
-
-
 
 # TODO: Optimize the looping through vrs arch types in case of large deployments
-
 - block:
 
-
-
   - name: Create facts to be used with vrs deploy if vrs is Debian 16.04 based
-
     set_fact: vrs_u16_04="True"
-
     when: item.vrs_os_type == "u16.04"
-
     with_items: "{{ vrss }}"
-
-
 
   - name: Create facts to be used with vrs deploy if vrs is Redhat el7 based
-
     set_fact: vrs_el7="True"
-
     when: item.vrs_os_type == "el7"
-
     with_items: "{{ vrss }}"
-
-
 
   - name: initialize vrs_target_os_is_supported to be evaluated for vrs supported target os types
-
     set_fact: vrs_target_os_is_supported="True"
 
-
-
   - name: Set facts if vrs os type is set to a supported version
-
     set_fact: vrs_target_os_is_supported="False"
-
     when: item.vrs_os_type not in supported_vrs_target_os_types
-
     with_items: "{{ vrss }}"
 
-
-
   - assert:
-
       that:
-
         - "vrs_target_os_is_supported == True"
-
       msg: "unsupported OS type/typo in build.yml. Supported OS Types are el7,u16.04"
 
-
-
   - debug: msg="vrs_u16_04 is set to "{{ vrs_u16_04 }}" " verbosity=1
-
     when: vrs_u16_04  is defined
 
-
-
   - debug: msg="vrs_el7 is set to "{{ vrs_el7 }}" " verbosity=1
-
     when: vrs_el7 is defined
-
-
 
   - block:
 
-
-
     - name: Find name of VRS Package Files (EL7 architecture)
-
       find: path="{{ nuage_unzipped_files_dir }}/vrs/el7" use_regex=yes pattern="nuage-openvswitch-\d+.*" recurse=yes
-
       register: rc_vrs_file_el7
-
-
 
     - debug: var=rc_vrs_file_el7 verbosity=1
 
-
-
     - name: Register VRS package variables with proper path and image locations for use in other playbooks (EL7 architecture)
-
       set_fact:
-
         el7_vrs_package_path: "{{ rc_vrs_file_el7.files[0].path | dirname }}/"
-
         el7_vrs_package_file_name_list: "{{ rc_vrs_file_el7.files |  map(attribute='path') | list | map('basename') | list }}"
-
       when: "{{ rc_vrs_file_el7.matched }} > 0"
 
-
-
     - name: Find name of nuage DKMS Package Files (EL7 architecture)
-
       find: path="{{ nuage_unzipped_files_dir }}/vrs/el7" pattern="nuage-openvswitch-dkms*.rpm" recurse=yes
-
       register: rc_dkms_file_el7
-
-
 
     - debug: var=rc_dkms_file_el7 verbosity=1
 
-
-
     - name: Register DKMS package variables with proper path and image locations for use in other playbooks (EL7 architecture)
-
       set_fact:
-
         el7_dkms_package_path: "{{ rc_dkms_file_el7.files[0].path | dirname }}/"
-
         el7_dkms_package_file_name_list: "{{ rc_dkms_file_el7.files |  map(attribute='path') | list | map('basename') | list }}"
-
       when: "{{ rc_dkms_file_el7.matched }} > 0"
-
-
 
     when: vrs_el7|default(false)
 
-
-
   - block:
 
-
-
     - name: Find name of Selinux Package Files (EL7 architecture)
-
       find: path="{{ nuage_unzipped_files_dir }}/selinux"  pattern="selinux-policy-nuage-[0-9]*.rpm" recurse=yes
-
       register: rc_selinux_file
-
-
 
     - debug: var=rc_selinux_file verbosity=1
 
-
-
     - name: Register Selinux package variables with proper path and image locations for use in other playbooks (EL7 architecture)
-
       set_fact:
-
         selinux_package_path: "{{ rc_selinux_file.files[0].path | dirname }}/"
-
         selinux_package_file_name_list: "{{ rc_selinux_file.files |  map(attribute='path') | list | map('basename') | list }}"
-
       when: rc_selinux_file.matched
-
-
 
     when: vrs_el7|default(false)
 
-
-
   - block:
 
-
-
      # Debian requires 3 packages listed in a specific order of dependeny
-
       - name: Find name of VRS python package file (Debian architecture)
-
         find: path="{{ nuage_unzipped_files_dir }}/vrs/u16_04"  pattern="nuage-python-openvswitch*.deb" recurse=yes
-
         register: rc_vrs_python_file_u16_04
-
-
 
       - debug: var=rc_vrs_python_file_u16_04 verbosity=1
 
-
-
       - name: Register VRS package path and VRS python package file name for use in other playbooks (Debian Architecture)
-
         set_fact:
-
           u16_04_vrs_package_path: "{{ rc_vrs_python_file_u16_04.files[0].path | dirname }}/"
-
           u16_04_vrs_package_file_name_list: "{{ rc_vrs_python_file_u16_04.files |  map(attribute='path') | list | map('basename') | list }}"
-
         when: "{{ rc_vrs_python_file_u16_04.matched }} > 0"
 
-
-
       - name: Find name of VRS common package file (Debian architecture)
-
         find: path="{{ nuage_unzipped_files_dir }}/vrs/u16_04"  pattern="nuage-openvswitch-common*.deb" recurse=yes
-
         register: rc_vrs_common_file_u16_04
-
-
 
       - debug: var=rc_vrs_common_file_u16_04 verbosity=1
 
-
-
       - name: Register VRS common package file name for use in other playbooks (Debian Architecture)
-
         set_fact:
-
           u16_04_vrs_package_file_name_list: "{{ u16_04_vrs_package_file_name_list }} + {{ rc_vrs_common_file_u16_04.files |  map(attribute='path') | list | map('basename') | list }}"
-
         when: "{{ rc_vrs_common_file_u16_04.matched }} > 0"
 
-
-
       - name: Find name of VRS switch package file (Debian architecture)
-
         find: path="{{ nuage_unzipped_files_dir }}/vrs/u16_04"  pattern="nuage-openvswitch-switch*.deb" recurse=yes
-
         register: rc_vrs_switch_file_u16_04
-
-
 
       - debug: var=rc_vrs_switch_file_u16_04 verbosity=1
 
-
-
       - name: Register VRS switch package file name for use in other playbooks (Debian Architecture)
-
         set_fact:
-
           u16_04_vrs_package_file_name_list: "{{ u16_04_vrs_package_file_name_list }} + {{ rc_vrs_switch_file_u16_04.files |  map(attribute='path') | list | map('basename') | list }}"
-
         when: "{{ rc_vrs_switch_file_u16_04.matched }} > 0"
-
-
 
     when: vrs_u16_04|default(false)
 
-
-
   when:
-
     - vrss is defined
 
-
-
   tags:
-
     - vrs
 
-
-
 ################
-
 # Libnetwork
-
 #################
-
-
 
 - block:
 
-
-
   - name: Check if any of the VRSs have libnetwork_install set
-
     set_fact: libn = True
-
     when: item.libnetwork_install|default(False)
-
     with_items: "{{ vrss }}"
-
-
 
   when: vrss is defined
 
-
-
 - block:
-
-
 
   - block:
 
-
-
     - name: Find name of libnetwork package Files (RH architecture)
-
       find: path="{{ nuage_unzipped_files_dir }}/libnetwork"  pattern="*.rpm" recurse=yes
-
       register: rc_libnetwork_file
-
-
 
     - debug: var=rc_libnetwork_file verbosity=1
 
-
-
     - name: Register libnetwork variables with proper path and image locations for use in other playbooks (RH architecture)
-
       set_fact:
-
         libnetwork_package_path: "{{ rc_libnetwork_file.files[0].path | dirname }}"
-
         libnetwork_package_file_name: "{{ rc_libnetwork_file.files[0].path | basename }}"
-
       when: rc_libnetwork_file.matched > 0
-
-
 
     when: vrs_el7|default(false)
 
-
-
   - block:
 
-
-
     - name: Set libnetwork target path based on version (Ubuntu 16.04  architecture)
-
       set_fact:
-
         libnetwork_findfile_path: "{{ nuage_unzipped_files_dir }}/libnetwork/ubuntu-16.04"
 
-
-
     - name: Find name of libnetwork package files (Debian architecture)
-
       find: path="{{ libnetwork_findfile_path }}"  pattern="*.deb" recurse=yes
-
       #find: path="{{ libnetwork_findfile_path  }}/libnetwork/"  pattern="*.deb" recurse=yes
-
       register: rc_libnetwork_file
-
-
 
     - debug: var=rc_libnetwork_file verbosity=1
 
-
-
     - name: Register libnetwork variables with proper path and image locations for use in other playbooks (Debian architecture)
-
       set_fact:
-
         u16_04_libnetwork_package_path: "{{ rc_libnetwork_file.files[0].path | dirname }}"
-
       when: rc_libnetwork_file.matched > 0
-
-
 
     when: vrs_u16_04|default(false) == True
 
-
-
   when: libn | default(false)
-
   tags:
-
     - libnetwork
 
-
-
 - name: Set vrss_check
-
   set_fact: vrss_check={{ vrss is defined }}
 
-
-
 - name: Assign empty dict to vrss if it is undefined
-
   set_fact:
-
     vrss: "{{ vrss|default({}) }}"
-
   when: not vrss_check
 
-
-
 - block:
-
   - name: Create host_vars files for vrs
-
     template: src=vrs.j2 backup=no dest={{ inventory_dir }}/host_vars/{{ item.1 }}
-
     with_subelements:
-
         - "{{ vrss }}"
-
         - vrs_ip_list
-
   when: vrss_check

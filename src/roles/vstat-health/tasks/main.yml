@@ -1,79 +1,41 @@
+
 - import_tasks: report_header.yml
-
-
 
 - block:
 
-
-
   - name: Get current network config of all VSTAT nodes
-
     network_info:
-
       mac_addr: False
-
     register: net_conf
-
     remote_user: "{{ vstat_username | default(vstat_default_username) }}"
 
-
-
   - name: Print network config when verbosity >= 1
-
     debug: var=net_conf.info verbosity=1
-
-
 
   - block:
 
-
-
     - name: Write network config to json file
-
       nuage_append: filename="{{ report_path }}" text="{{ net_conf.info | to_nice_json}}\n"
 
-
-
     - name: check web interface of vstat
-
       uri:
-
         url: http://{{ inventory_hostname }}:9200
-
         method: GET
-
         user: "{{ vstat_username | default(vstat_default_username) }}"
-
         password: "{{ vstat_password | default(vstat_default_password) }}"
-
         status_code: 200
-
         validate_certs: False
-
       register: webresult
-
       ignore_errors: yes
 
-
-
     - name: write web interface result
-
       nuage_append: filename="{{ report_path }}" text="{{ webresult  | to_nice_json}}\n"
-
-
 
     delegate_to: localhost
 
-
-
   when: inventory_hostname in groups['vstats']
 
-
-
 - import_tasks: monit_status.yml
-
   when: inventory_hostname in groups['vsds']
-
-
 
 - import_tasks: report_footer.yml

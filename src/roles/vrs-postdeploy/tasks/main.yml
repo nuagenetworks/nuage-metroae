@@ -1,111 +1,57 @@
+
 - name: Pull facts on VRS target {{ inventory_hostname }}
-
   remote_user: "{{ target_server_username }}"
-
   action: setup
 
-
-
 # TODO: Evalue use of include_role: vrs_health.
-
 # This looks like some duplicate code
 
-
-
 - block:
-
   - name: Set transport type
-
     set_fact:
-
       transport_type:  "{{ \"{{secure_communication}}\" | ternary ('ssl', 'tcp') }}"
 
-
-
   - name: Get controller connection info
-
     shell: "ovs-vsctl show | grep -Pzl '(?s)Controller \"ctrl(1|2)\"\\n *target: \"{{ transport_type }}:({{ item }}):6633\"\\n *role: (master|slave)\\n *is_connected: true'"
-
     with_items:
-
       - "{{ active_controller_addr }}"
-
       - "{{ standby_controller_addr }}"
-
     register: command_result
-
     remote_user: "{{ target_server_username }}"
-
     ignore_errors: yes
-
     changed_when: false
 
 
-
-
-
   - name: Check primary controller
-
     assert:
-
       that: "command_result.results[0].rc == 0"
-
       msg: "Switch not connected to primary controller"
 
-
-
   - name: Check secondary controller
-
     assert:
-
       that: "command_result.results[1].rc == 0"
-
       msg: "Switch not connected to secondary controller"
 
-
-
 - block:
-
   - name: Ceate a local temp directory
-
     # TODO: Use tempfile module in Ansible 2.3+
-
     local_action:
-
       module: command mktemp -d "{{ lookup('env', 'TMPDIR') | default('/tmp/',true) }}ansible.XXXX"
-
     register: mktemp_output
 
-
-
   - name: Copy ovs-vsctl show output to a temporary file
-
     local_action: copy content={{ command_result.results }} dest={{ mktemp_output.stdout }}/{{ inventory_hostname }}.tmp
 
-
-
   - name: Run verification script for OVS show command
-
     local_action: command python {{ role_path }}/files/ovs_result_verify.py {{ node_ip_addr }} {{ mktemp_output.stdout }}/{{ inventory_hostname }}.tmp
-
     register: ovs_show_result
 
-
-
   always:
-
   - name: Delete the temporary directory
-
     local_action: file path={{ mktemp_output.stdout }}  state=absent
 
-
-
 - name: Verify registration on Active and Standby Controller
-
   include_tasks: check_vsc_registration.yml controller_addr="{{item}}"
-
   with_items:
-
    - "{{ active_controller_addr }}"
-
    - "{{ standby_controller_addr }}"

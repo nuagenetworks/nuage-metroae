@@ -1,171 +1,87 @@
+
 - name: Get VSC details from OpenStack
-
   os_server_facts:
-
     auth:
-
       "{{ os_auth }}"
-
     server: "{{ inventory_hostname }}"
-
   register: vsc_server
-
   delegate_to: 127.0.0.1
 
-
-
 - name: Set vsc mgmt ip
-
   set_fact:
-
     vsc_mgmt_ip: "{{ vsc_server['ansible_facts']['openstack_servers'][0]['networks'][vsc_mgmt_network][0] }}"
 
-
-
 - name: Set vsc control ip
-
   set_fact:
-
     vsc_control_ip: "{{ vsc_server['ansible_facts']['openstack_servers'][0]['networks'][vsc_control_network][0] }}"
 
-
-
 - name: Set VSC creds
-
   set_fact:
-
     heat_vsc_creds:
-
       host: "{{ vsc_mgmt_ip }}"
-
       username: "{{ vsc_default_username|default('admin') }}"
-
       password: "{{ vsc_default_password|default('admin') }}"
 
-
-
 - name: Clean known_hosts of VSC's
-
   known_hosts:
-
     name: "{{ vsc_mgmt_ip }}"
-
     state: absent
-
   delegate_to: localhost
-
   no_log: True
-
   ignore_errors: True
 
-
-
 - block:
-
   - name: Get infra server details from OpenStack
-
     os_server_facts:
-
       auth:
-
         "{{ os_auth }}"
-
       server: "{{ infra_server_name }}"
-
     register: infra_server
-
     delegate_to: 127.0.0.1
 
-
-
   - name: Set infra ip
-
     set_fact:
-
       infra_ip: "{{ infra_server['ansible_facts']['openstack_servers'][0]['private_v4'] }}"
 
-
-
   - name: Restart DNS service
-
     shell: service dnsmasq restart
-
     delegate_to: "{{ infra_ip }}"
-
     remote_user: "root"
-
   when: infra_server_name is defined
 
-
-
 - name: Wait for VSC ssh to be ready
-
   include_role:
-
     name: common
-
     tasks_from: wait-for-ssh
-
   vars:
-
     ssh_host: "{{ vsc_mgmt_ip }}"
-
   tags:
-
     - vsc
-
     - vsc-deploy
 
-
-
 - name: Loading system config
-
   sros_config:
-
     src: config.cfg.j2
-
     provider: "{{ heat_vsc_creds }}"
-
     save: yes
-
   delegate_to: localhost
-
-
 
 - name: Loading BOF config
-
   sros_config:
-
     lines:
-
       - bof address "{{ vsc_mgmt_ip }}/24"
-
       - bof primary-dns "{{ infra_ip | default(dns_server_list[0]) }}"
-
       - bof dns-domain "{{ dns_domain }}"
-
       - bof save "cf1:"
-
       - admin save
-
     provider: "{{ heat_vsc_creds }}"
-
   delegate_to: localhost
 
-
-
 - name: Reboot VSC VM
-
   os_server_actions:
-
     auth:
-
       "{{ os_auth }}"
-
     server: "{{ inventory_hostname }}"
-
     action: reboot
-
     wait: no
-
   delegate_to: 127.0.0.1

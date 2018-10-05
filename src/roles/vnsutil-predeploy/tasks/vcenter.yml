@@ -1,387 +1,195 @@
+
 - name: Set local variable with vmname
-
   set_fact:
-
     vm_name: "{{ vmname }}"
 
-
-
 - include_role:
-
     name: check-node-running
 
-
-
 - name: Display if skipping VNSUTIL predeploy
-
   debug:
-
     msg:
-
       - "********************************************************"
-
       - "Skipping VNSUTIL predeploy because it is already present"
-
       - "********************************************************"
-
   when: vnsutil_present
-
-
 
 - block:
 
-
-
   - name: Configure vCenter path
-
     set_fact:
-
       vcenter_path: "vi://'{{ vcenter.username | urlencode }}':'{{ vcenter.password | urlencode }}'@{{ target_server }}/{{ vcenter.datacenter }}/host/{{ vcenter.cluster }}"
 
-
-
   - name: Update vCenter path if resource pool is configured
-
     set_fact:
-
       vcenter_path: "vi://'{{ vcenter.username | urlencode }}':'{{ vcenter.password | urlencode }}'@{{ target_server }}/{{ vcenter.datacenter }}/host/{{ vcenter.cluster }}/Resources/{{ vcenter.resource_pool | urlencode }}"
-
     when: vcenter.resource_pool != 'NONE'
 
-
-
   - name: Deploy VNSUTIL Image on vCenter
-
     connection: local
-
     command: >
-
       {{ vcenter.ovftool }}
-
       --acceptAllEulas
-
       --noSSLVerify
-
       --powerOn
-
       --machineOutput
-
       -dm=thin
-
       -ds={{ vcenter.datastore }}
-
       -n={{ vm_name }}
-
       --net:"Management={{ mgmt_bridge }}"
-
       "{{ ova_path }}/{{ ova_file_name }}"
-
       {{ vcenter_path }}
 
 
-
-
-
   - name: Waiting until VMware tools becomes available
-
     connection: local
-
     vmware_guest_tools_wait:
-
       hostname: "{{ target_server }}"
-
       username: "{{ vcenter.username }}"
-
       password: "{{ vcenter.password }}"
-
       name: "{{ vm_name }}"
-
       datacenter: "{{ vcenter.datacenter }}"
-
       validate_certs: no
-
     register: vnsutil_vm_facts
-
-
 
   - debug: var=vnsutil_vm_facts verbosity=1
 
-
-
   - name: Writing eth0 network script file to the VNSUTIL VM
-
     connection: local
-
     vmware_vm_shell:
-
       hostname: "{{ target_server }}"
-
       username: "{{ vcenter.username }}"
-
       password: "{{ vcenter.password }}"
-
       datacenter: "{{ vcenter.datacenter }}"
-
       cluster: "{{ vcenter.cluster }}"
-
       validate_certs: no
-
       vm_id: "{{ vm_name }}"
-
       vm_username: "{{ vnsutil_default_username }}"
-
       vm_password: "{{ vnsutil_default_password }}"
-
       vm_shell: "/usr/bin/echo"
-
       vm_shell_args: " '{{ lookup('template', 'ifcfg-eth0.j2') }}' > /etc/sysconfig/network-scripts/ifcfg-eth0"
 
-
-
   - name: Set the owner and group on the eth0 network script file in the VNSUTIL VM
-
     connection: local
-
     vmware_vm_shell:
-
       hostname: "{{ target_server }}"
-
       username: "{{ vcenter.username }}"
-
       password: "{{ vcenter.password }}"
-
       datacenter: "{{ vcenter.datacenter }}"
-
       cluster: "{{ vcenter.cluster }}"
-
       validate_certs: no
-
       vm_id: "{{ vm_name }}"
-
       vm_username: "{{ vnsutil_default_username }}"
-
       vm_password: "{{ vnsutil_default_password }}"
-
       vm_shell: "/usr/bin/chown"
-
       vm_shell_args: " 0 0 /etc/sysconfig/network-scripts/ifcfg-eth0"
 
-
-
   - name: Writing network file to the VNSUTIL VM
-
     connection: local
-
     vmware_vm_shell:
-
       hostname: "{{ target_server }}"
-
       username: "{{ vcenter.username }}"
-
       password: "{{ vcenter.password }}"
-
       datacenter: "{{ vcenter.datacenter }}"
-
       cluster: "{{ vcenter.cluster }}"
-
       validate_certs: no
-
       vm_id: "{{ vm_name }}"
-
       vm_username: "{{ vnsutil_default_username }}"
-
       vm_password: "{{ vnsutil_default_password }}"
-
       vm_shell: "/usr/bin/echo"
-
       vm_shell_args: " '{{ lookup('template', 'network.j2') }}' > /etc/sysconfig/network"
 
-
-
   - name: Set the owner and group on the network file in the VNSUTIL VM
-
     connection: local
-
     vmware_vm_shell:
-
       hostname: "{{ target_server }}"
-
       username: "{{ vcenter.username }}"
-
       password: "{{ vcenter.password }}"
-
       datacenter: "{{ vcenter.datacenter }}"
-
       cluster: "{{ vcenter.cluster }}"
-
       validate_certs: no
-
       vm_id: "{{ vm_name }}"
-
       vm_username: "{{ vnsutil_default_username }}"
-
       vm_password: "{{ vnsutil_default_password }}"
-
       vm_shell: "/usr/bin/chown"
-
       vm_shell_args: " 0 0 /etc/sysconfig/network"
 
-
-
   - name: Create the directory /root/.ssh for authorized_keys on the VNSUTIL VM
-
     connection: local
-
     vmware_vm_shell:
-
       hostname: "{{ target_server }}"
-
       username: "{{ vcenter.username }}"
-
       password: "{{ vcenter.password }}"
-
       datacenter: "{{ vcenter.datacenter }}"
-
       cluster: "{{ vcenter.cluster }}"
-
       validate_certs: no
-
       vm_id: "{{ vm_name }}"
-
       vm_username: "{{ vnsutil_default_username }}"
-
       vm_password: "{{ vnsutil_default_password }}"
-
       vm_shell: "/usr/bin/mkdir"
-
       vm_shell_args: " -p /root/.ssh"
 
-
-
   - name: Set the owner and group for the /root/.ssh directory in the VNSUTIL VM
-
     connection: local
-
     vmware_vm_shell:
-
       hostname: "{{ target_server }}"
-
       username: "{{ vcenter.username }}"
-
       password: "{{ vcenter.password }}"
-
       datacenter: "{{ vcenter.datacenter }}"
-
       cluster: "{{ vcenter.cluster }}"
-
       validate_certs: no
-
       vm_id: "{{ vm_name }}"
-
       vm_username: "{{ vnsutil_default_username }}"
-
       vm_password: "{{ vnsutil_default_password }}"
-
       vm_shell: "/usr/bin/chown"
-
       vm_shell_args: " 0 0 /root/.ssh"
 
-
-
   - name: Get the public key for the current user
-
     local_action: command cat "{{ user_ssh_pub_key }}"
-
     register: current_user_ssh_key
 
-
-
   - name: Writing authorized_keys to the VNSUTIL VM
-
     connection: local
-
     vmware_vm_shell:
-
       hostname: "{{ target_server }}"
-
       username: "{{ vcenter.username }}"
-
       password: "{{ vcenter.password }}"
-
       datacenter: "{{ vcenter.datacenter }}"
-
       cluster: "{{ vcenter.cluster }}"
-
       validate_certs: no
-
       vm_id: "{{ vm_name }}"
-
       vm_username: "{{ vnsutil_default_username }}"
-
       vm_password: "{{ vnsutil_default_password }}"
-
       vm_shell: "/usr/bin/echo"
-
       vm_shell_args: " '{{ lookup('template', 'authorized_keys.j2') }}' > /root/.ssh/authorized_keys"
 
-
-
   - name: Set the mode on the authorized_keys file in the VNSUTIL VM
-
     connection: local
-
     vmware_vm_shell:
-
       hostname: "{{ target_server }}"
-
       username: "{{ vcenter.username }}"
-
       password: "{{ vcenter.password }}"
-
       datacenter: "{{ vcenter.datacenter }}"
-
       cluster: "{{ vcenter.cluster }}"
-
       validate_certs: no
-
       vm_id: "{{ vm_name }}"
-
       vm_username: "{{ vnsutil_default_username }}"
-
       vm_password: "{{ vnsutil_default_password }}"
-
       vm_shell: "/usr/bin/chmod"
-
       vm_shell_args: " 0640 /root/.ssh/authorized_keys"
 
-
-
   - name: Reboot VSD VM
-
     connection: local
-
     vmware_vm_shell:
-
       hostname: "{{ target_server }}"
-
       username: "{{ vcenter.username }}"
-
       password: "{{ vcenter.password }}"
-
       datacenter: "{{ vcenter.datacenter }}"
-
       cluster: "{{ vcenter.cluster }}"
-
       validate_certs: no
-
       vm_id: "{{ vm_name }}"
-
       vm_username: "{{ vnsutil_default_username }}"
-
       vm_password: "{{ vnsutil_default_password }}"
-
       vm_shell: "/usr/sbin/reboot"
-
-
 
   when: not vnsutil_present

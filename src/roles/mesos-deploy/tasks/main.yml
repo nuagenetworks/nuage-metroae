@@ -1,89 +1,46 @@
+
 - name: Add apt-key for mesos on Debian family distros
-
   apt_key:
-
     name: docker
-
     state: present
-
   when: ansible_os_family == Debian
-
-
 
 - name: Add mesos yum repository for RedHat family distros
-
   remote_user: "{{ target_server_username }}"
-
   yum_repository:
-
     name: mesos
-
     description: mesos yum repository
-
     baseurl: http://repos.mesosphere.com/el/7/noarch/RPMS/mesosphere-el-repo-7-1.noarch.rpm
-
   when: ansible_os_family == RedHat
-
-
 
 - name: Restart docker service
-
   remote_user: "{{ target_server_username }}"
-
   service:
-
     name: docker
-
     state: restarted
 
-
-
 - name: Execute a yum update for RedHat OS family distros
-
   remote_user: "{{ target_server_username }}"
-
   yum:
-
     name: "*"
-
     state: latest
-
   when: ansible_os_family == RedHat
 
-
-
 - name: Execute an apt-get update for Debian OS family distros
-
   remote_user: "{{ target_server_username }}"
-
   apt:
-
     upgrade: dist
-
   when: ansible_os_family == Debian
 
-
-
 - name: Download pip installer
-
   remote_user: "{{ target_server_username }}"
-
   command: curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
 
-
-
 - name: Execute pip installer
-
   remote_user: "{{ target_server_username }}"
-
   command: python get-pip.py
 
-
-
 - name: Intall docker-py
-
   remote_user: "{{ target_server_username }}"
-
   pip:
-
     name: docker-py

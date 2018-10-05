@@ -1,289 +1,146 @@
+
 # Install Prerequisites
-
 #
-
 - name: Pull facts of localhost
-
   connection: local
-
   action: setup
 
-
-
 - name: Install boto-module on RedHat OS family distribution
-
   yum: name=python-boto
-
   connection: local
-
   when: ansible_os_family == "RedHat"
 
-
-
 - name: Install boto-module on Debian OS family distribution
-
   apt: name=python-boto
-
   connection: local
-
   when: ansible_os_family == "Debian"
 
-
-
 - name: Install Nuage Python VSPK
-
   pip: name=vspk state=latest
-
   connection: local
-
-
 
 # Create NSGV in VSD
-
 #
-
 - name: Finding Enterprise
-
   connection: local
-
   nuage_vspk:
-
     auth: "{{ vsd_auth }}"
-
     type: Enterprise
-
     command: find
-
     properties:
-
       name: "{{ enterprise }}"
-
   register: nuage_enterprise
 
-
-
 - name: Ensure NSG Gateway is provisioned in the enterprise
-
   connection: local
-
   nuage_vspk:
-
     auth: "{{ vsd_auth }}"
-
     type: NSGateway
-
     parent_id: "{{ nuage_enterprise.id }}"
-
     parent_type: Enterprise
-
     match_filter: "name == '{{ inventory_hostname }}'"
-
     state: present
-
     properties:
-
       name: "{{ inventory_hostname }}"
-
       template_id: "{{ nsg_template_id }}"
-
   register: nuage_nsg
 
-
-
 - name: Find port1 of the NSG-AMI
-
   connection: local
-
   nuage_vspk:
-
     auth: "{{ vsd_auth }}"
-
     type: NSPort
-
     parent_type: NSGateway
-
     parent_id: "{{ nuage_nsg.id }}"
-
     command: find
-
     properties:
-
       name: "port1"
-
   register: nuage_nsg_port1
 
-
-
 - name: Ensure 1:1 NAT is enabled on port1 of the NSG-AMI
-
   connection: local
-
   nuage_vspk:
-
     auth: "{{ vsd_auth }}"
-
     type: NSPort
-
     id: "{{ nuage_nsg_port1.id }}"
-
     state: present
-
     properties:
-
       nat_traversal: "ONE_TO_ONE_NAT"
 
-
-
 - name: Create Job to download auto-bootstrap info
-
   connection: local
-
   nuage_vspk:
-
     auth: "{{ vsd_auth }}"
-
     type: Job
-
     parent_id: "{{ nuage_enterprise.id }}"
-
     parent_type: Enterprise
-
     state: present
-
     properties:
-
       command: GET_ZFB_INFO
-
       parameters: '{ "mediaType": "YAML", "NSGType": "NSG-AMI", "associatedEntityType": "nsgateway", "associatedEntityID": "{{ nuage_nsg.id }}" }'
-
   register: nuage_nsg_zfb
 
-
-
 - block:
-
   - name: Deploy Sample Network Structure if desired
-
     delegate_to: localhost
-
     cloudformation:
-
       stack_name: "VPC-{{inventory_hostname}}"
-
       state: "present"
-
       region: "{{ aws_region }}"
-
       template: "{{ role_path }}/files/cfn-template-sample-vpc-structure.json"
-
       template_parameters: "{{ provision_vpc }}"
-
     register: rc_aws_cfn_nuagevpc
 
-
-
   - name: Set Network variables
-
     set_fact: { "{{ item.key }}": "{{ item.value }}" }
-
     with_items:
-
      - { key: "NSGLANENI", value: "{{ rc_aws_cfn_nuagevpc.stack_outputs.NSGLANENIId }}" }
-
      - { key: "NSGWANENI", value: "{{ rc_aws_cfn_nuagevpc.stack_outputs.NSGWANENIId }}" }
-
      - { key: "NSGLANENIIP", value: "{{ rc_aws_cfn_nuagevpc.stack_outputs.NSGLANENIIP }}" }
-
      - { key: "nsg_ami_user_data", value: "{{ nuage_nsg_zfb.entities[0].result }}" }
-
     when: (rc_aws_cfn_nuagevpc.failed is not defined) and (nsg_zfb.entities[0].status == "SUCCESS")
-
   when: provision_vpc is defined
 
-
-
 - block:
-
   - name: Get facts for LAN ENI
-
     delegate_to: localhost
-
     ec2_eni_facts:
-
       filters:
-
         network-interface-id: "{{ use_vpc.nsg_lan_eni }}"
-
       region:  "{{ aws_region }}"
-
     register: rc_aws_nsg_lan_eni_facts
-
   - debug: var=rc_aws_nsg_lan_eni_facts
-
   - name: Set Network variables
-
     set_fact: { "{{ item.key }}": "{{ item.value }}" }
-
     with_items:
-
      - { key: "NSGLANENI", value: "{{ use_vpc.nsg_lan_eni }}" }
-
      - { key: "NSGWANENI", value: "{{ use_vpc.nsg_wan_eni }}" }
-
      - { key: "NSGLANENIIP", value: "{{ rc_aws_nsg_lan_eni_facts.interfaces[0].private_ip_address }}" }
-
      - { key: "nsg_ami_user_data", value: "{{ nuage_nsg_zfb.entities[0].result }}" }
-
     when: (rc_aws_nsg_lan_eni_facts.interfaces|length > 0 ) and (nuage_nsg_zfb.entities[0].status == "SUCCESS")
-
   when: use_vpc is defined
 
 
 
-
-
-
-
 - name: Generate CloudFormation Template
-
   delegate_to: localhost
-
   template:
-
     src: "cfn-template-nsg-aws-with-eni.json.j2"
-
     dest: "/tmp/cfn-template-nsg-aws-with-eni-{{ inventory_hostname }}.json"
 
-
-
 - name: Deploy NSG-AWS Stack
-
   delegate_to: localhost
-
   cloudformation:
-
     stack_name: "{{ inventory_hostname }}"
-
     state: "present"
-
     region: "{{ aws_region }}"
-
     template: "/tmp/cfn-template-nsg-aws-with-eni-{{ inventory_hostname }}.json"
-
     template_parameters:
-
       AMI: "{{ nsg_ami.id }}"
-
       InstanceName: "{{ inventory_hostname }}"
-
       InstanceType: "{{ nsg_ami.type }}"
-
       KeyName: "{{ nsg_ami.keyname }}"
-
       NSGLANENI: "{{ NSGLANENI }}"
-
       NSGWANENI: "{{ NSGWANENI }}"
-
       NSGWANEIPAllocId: "{{ nsg_ami.eip_allocid | default('') }}"
-
   register: rc_aws_cfn_nsgami

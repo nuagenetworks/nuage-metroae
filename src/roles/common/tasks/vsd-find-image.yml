@@ -1,121 +1,63 @@
+
+
 - block: # QCOW2
 
-
-
   - name: Find name of VSD QCOW2 File
-
     find: path="{{ nuage_unzipped_files_dir }}/vsd/qcow2" pattern="*.qcow2" recurse=yes
-
     register: rc_vsd_file
-
-
 
   - debug: var=rc_vsd_file verbosity=1
 
-
-
   - name: Register VSD QCOW2 variables with proper path and image locations for use in other playbooks
-
     set_fact:
-
       qcow2_path: "{{ rc_vsd_file.files[0].path | dirname }}"
-
       qcow2_file_name: "{{ rc_vsd_file.files[0].path | basename }}"
-
     when: "{{ rc_vsd_file.matched }} > 0"
 
-
-
   when: ( vsds is defined and
-
         ( vsds | map(attribute='target_server_type') | list | issuperset(["kvm"]) ) ) or
-
         ( vcins is defined and
-
         ( vcins | map(attribute='target_server_type') | list | issuperset(["kvm"]) ) )
-
-
 
 - block: # OVA
 
-
-
   - name: Find name of VSD OVA File
-
     find: path="{{ nuage_unzipped_files_dir }}/vsd/ova"  pattern="*.ova" recurse=yes
-
     register: rc_vsd_file
-
-
 
   - debug: var=rc_vsd_file verbosity=1
 
-
-
   - name: Register VSD OVA variables with proper path and image locations for use in other playbooks
-
     set_fact:
-
       ova_path: "{{ rc_vsd_file.files[0].path | dirname }}"
-
       ova_file_name: "{{ rc_vsd_file.files[0].path | basename }}"
-
     when: "{{ rc_vsd_file.matched }} > 0"
 
-
-
   when: ( vsds is defined and
-
         vsds | map(attribute='target_server_type') | list | issuperset(["vcenter"]) ) or
-
         ( vcins is defined and
-
         vcins | map(attribute='target_server_type') | list | issuperset(["vcenter"]) )
 
-
-
   tags:
-
     - vsd
-
-
-
 
 
 - block: # ISO
 
-
-
   - name: Find name of VSD Migration ISO File
-
     find: path="{{ nuage_unzipped_files_dir }}/vsd/migration"  pattern="*.iso" recurse=yes
-
     register: rc_vsd_migration_file
-
-
 
   - debug: var=rc_vsd_migration_file verbosity=1
 
-
-
   - name: Register VSD Migration ISO variables with proper path and image locations for use in other playbooks
-
     set_fact:
-
       vsd_migration_iso_path: "{{ rc_vsd_migration_file.files[0].path | dirname }}"
-
       vsd_migration_iso_file_name: "{{ rc_vsd_migration_file.files[0].path | basename }}"
-
     when: rc_vsd_migration_file.matched > 0
 
-
-
   when:
-
     - vsds is defined or vcins is defined
 
-
-
   tags:
-
     - vsd

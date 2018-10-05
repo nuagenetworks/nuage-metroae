@@ -1,435 +1,219 @@
+
 - name: Pull facts of localhost
-
   action: setup
-
   connection: local
 
-
-
 - block:
-
-
 
   - name: Install mount package
-
     yum: name={{ item }} state=present
-
     with_items:
-
       - libnfsidmap
-
       - nfs-utils
 
-
-
   - name: Set name of vstat data backup dir
-
     set_fact:
-
       vstat_backup_dir: "{{metro_backup_root}}/backup-{{ inventory_hostname }}-{{ ansible_date_time.iso8601_basic_short }}/"
-
     run_once: true
 
-
-
   - name: Create vstat data backup dir on vstat node(s)
-
     file:
-
       dest: "{{ vstat_backup_dir }}"
-
       state: directory
-
       mode: 0777
-
       recurse: yes
-
       owner: elasticsearch
-
       group: elasticsearch
 
-
-
   - name: Mount the nfs folder on to vstat vm
-
     mount:
-
       src: "{{ vstat_nfs_server_with_folder }}"
-
       name: "{{ vstat_backup_dir }}"
-
       state: mounted
-
       fstype: nfs4
 
-
-
   - name: Get the nfs shared folder details
-
     shell: "mount | grep nfs"
-
     register: nfs_folder
 
-
-
   remote_user: "{{ vstat_username | default(vstat_default_username) }}"
-
   become: "{{ vstat_should_become }}"
-
   vars:
-
     ansible_become_pass: "{{ vstat_password | default(vstat_default_password) }}"
 
-
-
 - name: Verify backup folder path is nfs shared
-
   assert:
-
     that: vstat_backup_dir[:-1] in nfs_folder.stdout
-
     msg:  "{{ vstat_backup_dir }} is not nfs shared"
-
-
 
 - block:
 
-
-
   - name: Get the username running the playbooks
-
     local_action: command whoami
-
     register: username_on_the_host
-
     run_once: true
-
-
 
   - debug: var=username_on_the_host
-
     run_once: true
-
-
 
   - name: Create backup dir
-
     file:
-
       dest: "{{ vstat_backup_dir }}"
-
       state: directory
-
       owner: "{{ username_on_the_host.stdout }}"
-
       group: "{{ username_on_the_host.stdout }}"
-
     delegate_to: localhost
-
     run_once: true
-
-
 
   - block:
 
-
-
     - name: Cleanup backup dir in elasticseach.yml file
-
       lineinfile:
-
         dest: "/etc/elasticsearch/elasticsearch.yml"
-
         regexp: "path.repo"
-
         state: absent
 
-
-
     - name: Configure backup location in elasticseach.yml file
-
       lineinfile:
-
         dest: "/etc/elasticsearch/elasticsearch.yml"
-
         line: "path.repo: [{{ vstat_backup_dir }}]"
 
-
-
     - name: Add user permission to backup location
-
       file:
-
         dest: "{{ vstat_backup_dir }}"
-
         owner: "elasticsearch"
-
         group: "elasticsearch"
-
         recurse: yes
-
         mode: 0777
 
-
-
     - name: Restart elasticsearch process
-
       systemd:
-
         name: elasticsearch
-
         state: restarted
 
-
-
     - name: Wait for elasticsearch process to come up
-
       pause:
-
         seconds: 20
 
-
-
     - name: Get elasticsearch current status
-
       systemd:
-
         name: elasticsearch
-
         state: started
-
       register: es_status
 
-
-
     - name: Check elasticsearch status is active
-
       assert:
-
         that: es_status.status.ActiveState == 'active'
-
         msg: "Elasticserach process in not active after restart"
 
-
-
     - name: Check elasticsearch process is running
-
       assert:
-
         that: es_status.status.SubState == 'running'
-
         msg: "Elasticsearch process is not running after restart"
 
-
-
     - name: Copy elasticsearch backup scritps
-
       copy: src={{ vstat_backup_scripts_path }}/{{ item }}
-
           dest=/tmp/
-
       with_items: "{{ vstat_backup_scripts_file_list }}"
-
       run_once: true
-
-
 
     - name: Set the repo name to be created
-
       set_fact:
-
         repo_name: "{{ ansible_date_time.iso8601_basic_short }}"
-
       run_once: true
-
-
 
     - name: Create a repository to backup ES data
-
       command: "python /tmp/{{ create_repo }}"
-
       run_once: true
-
-
 
     - name: Get the repo created by backup script
-
       command: "python /tmp/{{ show_repo }}"
-
       register: repo_path
-
       run_once: true
-
-
 
     - name: Print contents of show_repo output when verbosity >= 1
-
       debug: var=repo_path verbosity=1
-
       run_once: true
-
-
 
     - name: Verify repo is created
-
       assert:
-
         that: '"Error in getting repo" not in repo_path.stdout'
-
         msg: Failed to verify the repo created
-
       run_once: true
-
-
 
     - name: Set the snapshot name to be created
-
       set_fact:
-
         snap_name: "{{ ansible_date_time.iso8601_basic_short }}"
-
       run_once: true
-
-
 
     - name: Create snapshot with all indicies
-
       command: "python /tmp/{{ create_snapshot }}"
-
       register: snapshot
-
       run_once: true
-
-
 
     - name: Print contents of create_snapshot output when verbosity >= 1
-
       debug: var=snapshot verbosity=1
-
       run_once: true
-
-
 
     - name: Get the contents of created snapshot
-
       command: "python /tmp/{{ show_snapshot }}"
-
       register: snapshot_contents
-
       run_once: true
-
-
 
     - name: Create local variable with snap_contents output to json
-
       set_fact: snapshot_contents_json="{{ snapshot_contents.stdout|snapshot_list_indices_to_json }}"
-
       run_once: true
-
-
 
     - name: Print contents of snapshot_contents output when verbosity >= 1
-
       debug: var=snapshot_contents verbosity=1
-
       run_once: true
 
-
-
     - block:
-
       - name: Verify the contents of the snapshot created
-
         assert:
-
           that: '"{{ item }}" in list_of_indices'
-
           msg: "{{ item }} index was not found"
-
         with_items: "{{ snapshot_contents_json['indices'] }}"
-
       when: list_of_indices is defined
-
       run_once: true
 
-
-
     - block:
-
-
 
       - name: Get the list of all indices
-
         command: "python /tmp/{{ get_indices }}"
-
         register: indices_output
-
         run_once: true
-
-
 
       - name: Verify the contents of the snapshot created
-
         assert:
-
           that: '"{{ item }}" in indices_output.stdout'
-
           msg: "{{ item }} index was not found"
-
         with_items: "{{ snapshot_contents_json['indices'] }}"
-
         run_once: true
-
-
 
       when: list_of_indices is not defined
 
-
-
     remote_user: "{{ vsd_username | default(vsd_default_username) }}"
-
     become: "{{ 'no' if vsd_username | default(vsd_default_username) == 'root' else 'yes' }}"
-
     vars:
-
       ansible_become_pass: "{{ vsd_password | default(vsd_default_password) }}"
-
-
 
   - block:
 
-
-
     - name: Copy the elasticsearch backup folder to localhost
-
       command: "{{ transfer_backup }}"
-
       run_once: true
-
-
 
     - name: Create symbolic link to backup location
-
       file: dest="{{metro_backup_root}}/backup-{{ groups['vstats'][0] }}-latest" src="{{ vstat_backup_dir }}"  state=link
-
       run_once: true
-
-
 
     - name: Create file to store repo and snapshot names to use them in migrate role
-
       copy:
-
         content: "repo-{{ repo_name | lower }}\nsnap-{{ snap_name | lower }}"
-
         dest: "{{metro_backup_root}}/backup-{{ groups['vstats'][0] }}-latest/repo_snapshot_name"
-
       run_once: true
 
-
-
     delegate_to: localhost
-
-
 
   when: not vstat_in_place_upgrade

@@ -1,303 +1,153 @@
+
 - name: Query Target Server facts
-
   action: setup
-
   remote_user: "{{ target_server_username }}"
-
   delegate_to: "{{ target_server }}"
-
-
 
 - name: Include OS-specific variables.
-
   include_vars: "{{ ansible_os_family }}.yml"
 
-
-
 - name: Check target for supported OS
-
   fail: msg="Unsupported OS family ({{ ansible_os_family }})"
-
   when: ansible_os_family not in supported_target_server_os_family_list
 
-
-
 - name: Check target memory
-
   fail: msg="Not enough memory ({{ ansible_memtotal_mb }})"
-
   when: ansible_memtotal_mb < target_server_memory_mb_min
 
-
-
 - name: Check target cores
-
   fail: msg="Not enough cores ({{ ansible_processor_vcpus }})"
-
   when: ansible_processor_vcpus < target_server_vcpus_min
 
-
-
 - name: Check target bridges
-
   fail: msg="Required network bridges not found"
-
   when: (mgmt_bridge not in ansible_interfaces) or
-
         (data_bridge not in ansible_interfaces) or
-
         (access_bridge not in ansible_interfaces)
 
-
-
 - block:
-
   - name: Check if required OS packages are installed
-
     command: rpm -q qemu-kvm libvirt bridge-utils libguestfs-tools libvirt-python
-
     register: rpm_check
-
     ignore_errors: True
 
-
-
   - name: Print rpm_check when verbosity >= 1
-
     debug: var=rpm_check verbosity=1
 
-
-
   - name: If RedHat, install packages for RedHat OS family distros
-
     yum: name={{ item }} state=present
-
     with_items:
-
     - qemu-kvm
-
     - libvirt
-
     - bridge-utils
-
     - libguestfs-tools
-
     - libvirt-python
-
     when: rpm_check.rc == 1
 
-
-
   - name: Make sure libvirtd has started
-
     service:
-
       name: libvirtd
-
       enabled: yes
-
       state: started
 
-
-
   delegate_to: "{{ target_server }}"
-
   remote_user: "{{ target_server_username }}"
-
-
 
 - name: List the Virtual Machines running
-
   virt: command=list_vms
-
   register: virt_vms
-
   delegate_to: "{{ target_server }}"
-
   remote_user: "{{ target_server_username }}"
 
-
-
 - name: Set fact for VM already running
-
   set_fact:
-
     node_running: "{{ vmname in virt_vms.list_vms }}"
 
-
-
 - block:
-
   - name: set skip copy images to default
-
     set_fact:
-
       skip_copy_images: False
-
     when: skip_copy_images is undefined
 
-
-
   - include_tasks: copy_qcow2.yml
-
     when: not skip_copy_images
 
-
-
   - block:
-
     - name: Check to make sure there is an existing qcow image
-
       stat:
-
         path: "{{ images_path }}/{{ vmname }}/{{ qcow2_file_name }}"
-
       register: statResult
 
-
-
     - name: check the result of image find command
-
       assert:
-
         that: statResult.stat.exists == True
-
         msg: Missing qcow2 file in {{ images_path }}/{{ vmname }}/{{ qcow2_file_name }}
-
-
 
     when: skip_copy_images
 
-
-
   when: not node_running
-
   delegate_to: "{{ target_server }}"
-
   remote_user: "{{ target_server_username }}"
 
-
-
 - block:
-
-
 
   - name: Create local temp directory
-
     local_action: command mktemp -d "{{ lookup('env', 'TMPDIR') | default('/tmp/', true) }}ansible.XXXX"
-
     register: mktemp_output
 
-
-
   - name: Set Top-Level-Directory
-
     set_fact: tld="{{ role_path }}/../../"
 
-
-
   - name: Generate ISO file
-
     local_action: command python {{ role_path }}/files/create_zfb_profile.py {{ tld }} {{ mktemp_output.stdout }}
-
     register: output
 
-
-
   - name: Search for errors in the output of ZFB script
-
     assert:
-
       that: "not output.stdout | search('(?i)ERROR')"
-
       msg: "{{ output.stdout }}"
 
-
-
   - name: Ensure NSGV has the correct configuration
-
     assert:
-
       that: "not node_running or output.stdout | search('NSG ALREADY CONFIGURED')"
-
       msg: "NSGV is already running, but there was no corresponding configuration for it."
 
-
-
   - name: Copy the ISO image to virt images directory
-
     copy: src="{{ mktemp_output.stdout }}/user_image.iso"
-
           dest={{ images_path }}/{{ vmname }}
-
           owner={{ libvirt.user }}
-
           group={{ libvirt.group }}
-
     delegate_to: "{{ target_server }}"
-
     remote_user: "{{ target_server_username }}"
-
   when: bootstrap_method | match('zfb_metro')
 
-
-
 - name: Display if skipping NSGV predeploy
-
   debug:
-
     msg:
-
       - "*****************************************************"
-
       - "Skipping NSGV predeploy because it is already present"
-
       - "*****************************************************"
-
   when: node_running
-
-
 
 - block:
 
-
-
   - name: Define VM
-
     virt: name={{ vmname }}
-
           command=define
-
           xml="{{ lookup('template', 'nsgv.xml.j2') }}"
-
           uri=qemu:///system
-
-
 
   - name: Autostart
-
     virt: name={{ vmname }}
-
           command=status
-
           autostart=True
-
           uri=qemu:///system
-
-
 
   - name: Run VM
-
     virt: name={{ vmname }}
-
           state=running
-
           uri=qemu:///system
 
-
-
   when: not node_running
-
   delegate_to: "{{ target_server }}"
-
   remote_user: "{{ target_server_username }}"

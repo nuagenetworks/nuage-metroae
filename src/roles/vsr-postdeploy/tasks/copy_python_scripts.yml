@@ -1,123 +1,62 @@
 # Install Pre-Requisites
-
 - name: Pull facts of localhost
-
   local_action:
-
     module: setup
 
-
-
 - name: Install pip on RedHat OS family distribution
-
   local_action:
-
     module: yum
-
     name: "python-pip" 
-
     state: "present"
-
   when: ansible_os_family == "RedHat"
 
-
-
 - name: Install pip on Debian OS family distribution
-
   local_action:
-
     module: apt
-
     name: "python-pip" 
-
     state: "present"
-
   when: ansible_os_family == "Debian"
 
-
-
 - name: Install pexpect module via pip
-
   local_action: 
-
     module: pip 
-
     name: pexpect 
-
     state: "present"
 
-
-
 # Create directory on SR to store  python policy scripts
-
 - name: Create directory used for storing python policy scripts
-
   sros_command: 
-
     commands: 
-
       - 'file md {{ scriptdir }}'
-
     provider: "{{ provider_creds }}" 
-
   delegate_to: localhost
 
 
-
-
-
 - name: Set local path of python policy scripts
-
   set_fact: local_scripts_path="{{ role_path }}/files"
 
-
-
 - name: Get list of Python scripts
-
   local_action:
-
     module: find
-
     path: "{{ local_scripts_path }}"
-
     pattern: "*.py"
-
   register: rc_pythonscripts
-
-
 
 - debug: var=rc_pythonscripts verbosity=1
 
-
-
 - name: Copy Python-scripts
-
   local_action:
-
     module: expect
-
     command: "{{ vsr_scp_python_scripts }}"
-
     responses:
-
 #      (?i)yes: "yes"
-
       (?i)password: "{{ vsr_password|default('admin') }}"
-
     timeout: "{{ vsr_scp_timeout_seconds }}"
-
   with_items: "{{ rc_pythonscripts.files | map(attribute='path') | list }}"
 
 
-
-
-
 - name: Set pythonscripts variable
-
   set_fact: pythonscripts="{{ rc_pythonscripts.files | map(attribute='path') | list | map('basename') | list | map('splitext') | list | map('first') | list }}"
-
   when: rc_pythonscripts.matched > 0
-
-
 
 - debug: var=pythonscripts verbosity=1

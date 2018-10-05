@@ -1,111 +1,56 @@
 - block:
-
   - name: Copy license file to {{ target_server }}
-
     copy:
-
       src:  '{{ license_file }}'
-
       dest: '{{ images_path }}/{{ vmname }}/license.txt'
-
       owner: '{{ libvirt.user }}'
-
       group: '{{ libvirt.group }}'
-
     when: license_file.endswith('txt')
 
-
-
   - block:
-
     - name: Unarchive license file to {{ target_server }}
-
       unarchive:
-
         src: '{{ license_file }}'
-
         dest: '{{ images_path }}/{{ vmname }}'
-
         owner: '{{ libvirt.user }}'
-
         group: '{{ libvirt.group }}'
 
-
-
     - name: Find name of VSR license file
-
       find:
-
         path:    '{{ images_path }}/{{ vmname }}'
-
         pattern: '*.txt'
-
       register: rc_vsr_license_file
 
-
-
     - debug: var=rc_vsr_license_file verbosity=1
-
     - debug: msg='{{rc_vsr_license_file.files[0].path}}' verbosity=1
-
-
 
     - block:
 
-
-
       - name: Copy license file with standard name out of .zip file
-
         copy:
-
           src:  '{{ rc_vsr_license_file.files[0].path }}'
-
           dest: '{{ vsr_target_license_file }}'
-
           remote_src: yes
 
-
-
       - name: Delete original license file
-
         file:
-
           name:  '{{ rc_vsr_license_file.files[0].path }}'
-
           state: absent
-
-
 
       when: rc_vsr_license_file.matched
 
-
-
     when: license_file.endswith('zip')
 
-
-
   - name: Get license file information
-
     stat:
-
       path: '{{ vsr_target_license_file }}'
-
     register: rc_vsr_target_license
-
-
 
   - debug: var=rc_vsr_target_license verbosity=1
 
-
-
   - name: Check for failed upload of license file
-
     fail: msg="There is no license file 'license.txt' in VSR VM folder"
-
     when: not rc_vsr_target_license.stat.exists
 
-
-
   delegate_to: "{{ target_server }}"
-
   remote_user: "{{ target_server_username }}"

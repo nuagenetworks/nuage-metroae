@@ -1,85 +1,44 @@
+
 # Check registration of VRS on Controller
 
-
-
 - name: Set JSON Query to retrieve MgmtIP for VSC({{ controller_addr }})
-
   set_fact:
-
     ctrl_query: "*|[?control_ip=='{{controller_addr}}'].{host: mgmt_ip, username: vsc_default_username, password: vsc_default_password }"
 
-
-
 - name: Query host variables for VSC Controller({{ controller_addr }})
-
   set_fact:
-
    vsc_creds: '{{ hostvars|json_query(ctrl_query) }}'
 
-
-
 - block:
-
   - name: Clean known_hosts of VSC Controller
-
     known_hosts:
-
       name: "{{ vsc_creds[0].host }}"
-
       state: absent
-
     delegate_to: localhost
-
     no_log: True
-
     ignore_errors: True
 
-
-
   - name: Set sed-expression variable
-
     set_fact:
-
      sed_expr: "s/^.*src \\([0-9]\\{1,3\\}\\.[0-9]\\{1,3\\}\\.[0-9]\\{1,3\\}\\.[0-9]\\{1,3\\}\\).*/\\1/"
 
 
-
-
-
   - name: Get VTEP IP address of compute server
-
     shell: "ip -o route get {{ controller_addr }} | sed '{{ sed_expr }}'"
-
     register: ovs_vtep_ip
-
-
 
   - debug: var=ovs_vtep_ip verbosity=1
 
-
-
   - name: Get output of 'show vswitch-controller information' on VSC ({{ controller_addr }})
-
     sros_command:
-
       commands:
-
         - show vswitch-controller vswitches vs-ip {{ ovs_vtep_ip.stdout }} detail
-
       provider: "{{ vsc_creds[0] }}"
-
     delegate_to: localhost
-
     register: vsc_vsw_info
 
-
-
   - name: Assert that VRS has been registered properly
-
     assert:
-
       that: "'Cntrl. Conn. state         : ready' in vsc_vsw_info.stdout[0]"
-
-
 
   when: vsc_creds | length == 1

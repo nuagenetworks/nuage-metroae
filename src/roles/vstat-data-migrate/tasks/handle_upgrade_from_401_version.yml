@@ -1,137 +1,70 @@
+
 - name: Get current VSD version
-
   command: echo $VSD_VERSION
-
   delegate_to: "{{ groups['vsds'][0] }}"
-
   remote_user: "{{ vsd_default_username }}"
-
   run_once: true
-
   register: vsd_version
 
-
-
 - name: Print vstat upgrade from version when verbosity >= 1
-
   debug: var=upgrade_from_version verbosity=1
-
   run_once: true
-
-
 
 - name: Print vsd version when verbosity >= 1
-
   debug: var=vsd_version verbosity=1
-
   run_once: true
-
-
 
 - block:
 
-
-
   - name: Stop vsd-stats group on VSD(s)
-
     command: monit stop -g vsd-stats
 
-
-
   - name: Get monit state for stat processes
-
     vsd_monit:
-
       group: vsd-stats
-
     register: stats_state
 
-
-
   - name: Verify stats processes are stopped
-
     assert:
-
       that: stats_state['state']['{{ item }}'] == 'not monitored'
-
       msg: item   is still running
-
     with_items: "{{ stats_state.state.keys() }}"
 
-
-
   - name: Migrate current date data to new schema version
-
     command: "{{ migrate_current_data }}"
-
     when: migrate_current_day_data
 
-
-
   - name: Migrate previous day data to new schema version
-
     command: "{{ migrate_previous_data }}"
-
     when: not migrate_current_day_data
 
-
-
   - name: Start vsd-stats processess
-
     command: "monit start -g vsd-stats"
 
-
-
   - name: Fetch stats processess current state
-
     command: "monit -g vsd-stats summary"
-
     until: stats_temp_state.stdout.find("Running") != -1 and
-
            stats_temp_state.stdout.find("Status ok") != -1 and
-
            "Not monitored" not in stats_temp_state.stdout and
-
            "Initializing" not in stats_temp_state.stdout and
-
            "Status failed" not in stats_temp_state.stdout
-
     retries: 10
-
     delay: 30
-
     register: stats_temp_state
 
-
-
   - name: Get monit state for stat processes
-
     vsd_monit:
-
       group: vsd-stats
-
     register: stats_current_state
 
-
-
   - name: Verify stats processes are started/running
-
     assert:
-
       that: stats_current_state['state']['{{ item }}'] == 'running' or stats_current_state['state']['{{ item }}'] == 'status ok'
-
       msg: item  is still running
-
     with_items: "{{ stats_current_state.state.keys() }}"
 
-
-
   remote_user: "{{ vsd_default_username }}"
-
   when:
-
     - vsd_version.stdout in supported_vsd_versions
-
     - upgrade_from_version == '4.0.1'
-
     - inventory_hostname in groups['vsds']

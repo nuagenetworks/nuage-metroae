@@ -1,171 +1,87 @@
+
 - name: Finding VM folder
-
   connection: local
-
   vmware_guest_find:
-
     hostname: "{{ target_server }}"
-
     username: "{{ vcenter.username }}"
-
     password: "{{ vcenter.password }}"
-
     datacenter: "{{ vcenter.datacenter }}"
-
     name: "{{ vm_name }}"
-
     validate_certs: no
-
   register: vstat_vm_folder
-
   ignore_errors: yes
-
-
 
 - name: Gathering info on VM
-
   connection: local
-
   vmware_guest_facts:
-
     hostname: "{{ target_server }}"
-
     username: "{{ vcenter.username }}"
-
     password: "{{ vcenter.password }}"
-
     datacenter: "{{ vcenter.datacenter }}"
-
     folder: "/{{ vcenter.datacenter }}{{ vstat_vm_folder['folders'][0] }}"
-
     name: "{{ vm_name }}"
-
     validate_certs: no
-
   register: vstat_vm_facts
-
   ignore_errors: yes
-
   when: vstat_vm_folder|succeeded
-
-
 
 - debug: var=vstat_vm_facts verbosity=1
 
-
-
 - name: Check for exceptions in VSTAT Vm facts
-
   fail: msg="Exception found {{ vstat_vm_facts.exception }}"
-
   when: vstat_vm_facts.exception is defined
-
-
 
 - block:
 
-
-
   - name: Get Facts of VM
-
     vmware_vm_facts:
-
       hostname: "{{ target_server }}"
-
       username: "{{ vcenter.username }}"
-
       password: "{{ vcenter.password }}"
-
       delegate_to: localhost
-
       register: vm_list
 
-
-
   - name: Set VM UUID
-
     set_fact:
-
       uuid: "{{ vm_list.virtual_machines[vm_name]['uuid'] }}"
-
     when: vm_name in vm_list.virtual_machines
-
-
 
   - debug: var=uuid
 
-
-
   - name: Turn off autostart
-
     connection: local
-
     vmware_autostart:
-
       name: "{{ vm_name }}"
-
       uuid: "{{ uuid }}"
-
       hostname: "{{ target_server }}"
-
       username: "{{ vcenter.username }}"
-
       password: "{{ vcenter.password }}"
-
       state: disable
 
-
-
   - name: Power off the Stats VM
-
     connection: local
-
     vmware_guest:
-
       hostname: "{{ target_server }}"
-
       username: "{{ vcenter.username }}"
-
       password: "{{ vcenter.password }}"
-
       validate_certs: no
-
       datacenter: "{{ vcenter.datacenter }}"
-
       folder: "/{{ vcenter.datacenter }}{{ vstat_vm_folder['folders'][0] }}"
-
       name: "{{ vm_name }}"
-
       state: "poweredoff"
-
     when: vstat_vm_facts['instance']['hw_power_status'] == 'poweredOn'
 
-
-
   - name: Removing the Stats VM
-
     connection: local
-
     vmware_guest:
-
       hostname: "{{ target_server }}"
-
       username: "{{ vcenter.username }}"
-
       password: "{{ vcenter.password }}"
-
       validate_certs: no
-
       datacenter: "{{ vcenter.datacenter }}"
-
       folder: "/{{ vcenter.datacenter }}{{ vstat_vm_folder['folders'][0] }}"
-
       name: "{{ vm_name }}"
-
       state: "absent"
-
     when: (not preserve_vm | default( False ))
-
-
 
   when: vstat_vm_folder|succeeded and vstat_vm_facts|succeeded

@@ -1,83 +1,44 @@
-- include_role:
 
+
+- include_role:
     name: check-node-reachability
 
-
-
 - name: Get VSD directory stat
-
   stat:
-
     path: /opt/vsd
-
   remote_user: "{{ vsd_default_username }}"
-
   register: vsd_dir
-
   when: node_reachable
 
-
-
 - name: Set fact for VSD present
-
   set_fact:
-
     node_present: "{{ vsd_dir is defined and
-
                       vsd_dir.stat is defined and
-
                       vsd_dir.stat.isdir is defined and
-
                       vsd_dir.stat.isdir }}"
 
-
-
 - import_tasks: kvm.yml
-
   when: target_server_type | match("kvm")
-
   tags:
-
     - vsd
-
     - vsd-predeploy
-
-
 
 - import_tasks: heat.yml
-
   when: target_server_type | match("heat")
-
   tags:
-
     - vsd
-
     - heat
-
     - vsd-predeploy
-
-
 
 - import_tasks: vcenter.yml
-
   when: target_server_type | match("vcenter")
-
   tags:
-
     - vsd
-
     - vsd-predeploy
 
-
-
 - import_tasks: nuagex.yml
-
   when: target_server_type | match("nuagex")
-
   tags:
-
     - nuagex
-
     - vsd
-
     - vsd-predeploy

@@ -1,65 +1,34 @@
-- include_role:
 
+- include_role:
     name: check-node-reachability
 
-
-
 - name: Get VSTAT directory stat
-
   stat:
-
     path: /etc/profile.d/nuage-elastic-banner.sh
-
   remote_user: "{{ vstat_default_username }}"
-
   register: vstat_file
-
   when: node_reachable
 
-
-
 - name: Set fact for VSTAT present
-
   set_fact:
-
     node_present: "{{ vstat_file is defined and
-
                       vstat_file.stat is defined and
-
                       vstat_file.stat.exists is defined and
-
                       vstat_file.stat.exists }}"
 
-
-
 - name: Verify that the myvsd section is defined
-
   assert:
-
     that: "groups['vsds'] is defined"
-
     msg: "vstat-deploy requires VSD information. Please add VSD information to build_vars.yml, re-run the build, then re-run the vstat-deploy. See examples for details."
 
-
-
 - import_tasks: kvm.yml
-
   when: target_server_type | match("kvm")
-
   tags:
-
     - vstat
-
     - vstat-predeploy
 
-
-
 - import_tasks: vcenter.yml
-
   when: target_server_type | match("vcenter")
-
   tags:
-
     - vstat
-
     - vstat-predeploy

@@ -1,39 +1,21 @@
+
 - name: Retrieve Host IP
-
   shell: "getent hosts {{ item.hostname }} | awk '{print $1}'"
-
   register: hostip
 
-
-
 - name: Ensure that the hostname maps to the proper mgmt IP
-
   assert:
-
     that: "'{{ hostip.stdout }}' ==  '{{ item.mgmt_ip }}'"
-
     msg: "IPv4 address for {{item.hostname}} != {{item.mgmt_ip}}"
-
-
 
 - block:
 
-
-
     - shell: "getent hosts {{ item.data_fqdn }} | awk '{print $1}'"
-
       register: data_fqdn_ip
 
-
-
     - name: Ensure that the data FQDN maps to the proper data IP
-
       assert:
-
         that: "'{{ data_fqdn_ip.stdout }}' ==  '{{ item.data_ip }}'"
-
         msg: "IPv4 address for {{item.data_fqdn}} != {{item.data_ip}}"
-
-
 
   when: vnsutils is defined

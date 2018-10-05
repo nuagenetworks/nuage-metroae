@@ -1,41 +1,23 @@
+
+
 - name: List the Virtual Machines running
-
   virt: command=list_vms
-
   register: virt_vms
-
   delegate_to: "{{ target_server }}"
-
   remote_user: "{{ target_server_username }}"
 
-
-
 - block:
-
   - name: Verify that the VM is not running if not reachable
-
     assert:
-
       that: "not (vm_name in virt_vms.list_vms and not node_reachable)"
-
       msg: "{{ vm_name }} is running on {{ target_server }} but is not reachable. Quitting."
 
-
-
   - name: Verify that the VM is running if reachable
-
     assert:
-
       that: "not (vm_name not in virt_vms.list_vms and node_reachable)"
-
       msg: "{{ vm_name }} is not running on {{ target_server }} but the address is reachable. Quitting."
-
   when: do_reachability_checks | default('True')
 
-
-
 - name: Set fact for node running
-
   set_fact:
-
     node_running: "{{ vm_name in virt_vms.list_vms }}"

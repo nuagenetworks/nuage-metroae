@@ -1,71 +1,36 @@
 - name: Resolve "{{ vsd_hostname }}"  to ip addr
-
   shell: "getent hosts {{ vsd_hostname }} | awk '{print $1}'"
-
   register: ip_addr
-
   delegate_to: localhost
-
   become: no
 
-
-
 - name: Get the vsd node info
-
   command: /opt/vsd/sysmon/showStatus.py
-
   register: vsd_info
-
   become: "{{ 'no' if vsd_username | default(vsd_default_username) == 'root' else 'yes' }}"
-
   remote_user: "{{ vsd_username | default(vsd_default_username) }}"
-
   vars:
-
     ansible_become_pass: "{{ vsd_password | default(vsd_default_password) }}"
-
   delegate_to: "{{ ip_addr.stdout.split('\n')[0] }}"
 
-
-
 - name: Set vsd deployment mode
-
   set_fact:
-
     vsd_sa_or_ha: "sa"
-
   when: "'Standalone' in vsd_info.stdout"
 
-
-
 - name: Set vsd deployment mode
-
   set_fact:
-
     vsd_sa_or_ha: "ha"
-
   when: "'Clustered' in vsd_info.stdout"
-
   run_once: True
 
-
-
 - name: Extract vsd hostname when standalone
-
   set_fact:
-
     vsd_hostname_list: "{{ vsd_info.stdout | regex_findall('Host Name:\\s+(.*)')}}"
-
   when: vsd_sa_or_ha | match('sa')
 
-
-
 - name: Extract vsd hostname when clustered
-
   set_fact:
-
     vsd_hostname_list: "{{ vsd_info.stdout | regex_findall('VSD Server Node:\\s+(.*)')}}"
-
   when: vsd_sa_or_ha | match('ha')
-
   run_once: True

@@ -1,563 +1,283 @@
+
 - name: Wait for VM to be ready
-
   include_role:
-
     name: common
-
     tasks_from: wait-for-ssh
-
   vars:
-
     ssh_host: "{{ mgmt_ip }}"
 
-
-
 - name: Clean known_hosts
-
   known_hosts:
-
     name: "{{ mgmt_ip }}"
-
     state: absent
-
   delegate_to: localhost
-
   no_log: True
-
   ignore_errors: True
-
-
 
 - import_tasks: report_header.yml
 
-
-
 - name: Get current version of VSD software
-
   shell: echo $VSD_VERSION
-
   register: vsd_version
-
   remote_user: "{{ vsd_username | default(vsd_default_username) }}"
-
-
 
 - name: Get configured VSD Hostname
-
   command: hostname -f
-
   register: hostname_output
-
   remote_user: "{{ vsd_username | default(vsd_default_username) }}"
-
   become: "{{ 'no' if vsd_username | default(vsd_default_username) == 'root' else 'yes' }}"
-
   vars:
-
     ansible_become_pass: "{{ vsd_password | default(vsd_default_password) }}"
-
-
 
 - name: Verify configured VSD hostname
-
   assert:
-
     that: "hostname_output.stdout|search('{{ inventory_hostname }}')"
-
     msg: "Configured VSD hostname does not match expected VSD hostname"
 
-
-
 - name: Write VSD version to json file
-
   nuage_append: filename="{{ report_path }}" text="{{ vsd_version.stdout | to_nice_json}}\n"
-
   delegate_to: localhost
-
-
 
 - name: Get current network config of all VSD nodes
-
   network_info:
-
     mac_addr: False
-
   register: net_conf
-
   remote_user: "{{ vsd_username | default(vsd_default_username) }}"
-
   become: "{{ 'no' if vsd_username | default(vsd_default_username) == 'root' else 'yes' }}"
-
   vars:
-
     ansible_become_pass: "{{ vsd_password | default(vsd_default_password) }}"
 
-
-
 - name: Print network config when verbosity >= 1
-
   debug: var=net_conf.info verbosity=1
 
-
-
 - name: Write network config to json file
-
   nuage_append: filename="{{ report_path }}" text="{{ net_conf.info | to_nice_json}}\n"
-
   delegate_to: localhost
-
-
 
 - import_tasks: monit_status.yml
 
-
-
 - name: Execute list_p1db command on VSD(s)
-
   command: "{{ p1db_cmd }}"
-
   register: list_p1db_output
-
   remote_user: "{{ vsd_username | default(vsd_default_username) }}"
-
   become: "{{ 'no' if vsd_username | default(vsd_default_username) == 'root' else 'yes' }}"
-
   vars:
-
     ansible_become_pass: "{{ vsd_password | default(vsd_default_password) }}"
-
-
 
 - name: Print ejabberd list_p1db output when verbosity >= 1
-
   debug: var=list_p1db_output verbosity=1
 
-
-
 - name: Create local variable with p1db output to json
-
   set_fact: ejabberd_p1db_json="{{ list_p1db_output.stdout|ejabberd_p1db_to_json }}"
 
-
-
 - name: Write p1bd JSON to file
-
   nuage_append: filename="{{ report_path }}" text="{{ inventory_hostname }} {{ ejabberd_p1db_json|to_nice_json }}\n"
-
   delegate_to: localhost
-
-
 
 - name: Execute list_cluster command on VSD(s)
-
   command: "{{ ejabber_cluster_list_command }}"
-
   register: list_cluster_output
-
   remote_user: "{{ vsd_username | default(vsd_default_username) }}"
-
   become: "{{ 'no' if vsd_username | default(vsd_default_username) == 'root' else 'yes' }}"
-
   vars:
-
     ansible_become_pass: "{{ vsd_password | default(vsd_default_password) }}"
-
-
 
 - name: Print ejabberd list_cluster_output when verbosity >= 1
-
   debug: var=list_cluster_output verbosity=1
 
-
-
 - name: Create local variable with ejabberd cluster output to json
-
   set_fact: ejabberd_cluster_json="{{ list_cluster_output.stdout|ejabberd_cluster_to_json }}"
 
-
-
 - name: Write cluster JSON to file
-
   nuage_append: filename="{{ report_path }}" text="{{ inventory_hostname }} {{ ejabberd_cluster_json|to_nice_json }}\n"
-
   delegate_to: localhost
-
-
 
 - name: Excute ejabberd_connected_users_command command on VSD(s)
-
   command: "{{ ejabberd_connected_users_command }}"
-
   register: user_list
-
   remote_user: "{{ vsd_username | default(vsd_default_username) }}"
-
   become: "{{ 'no' if vsd_username | default(vsd_default_username) == 'root' else 'yes' }}"
-
   vars:
-
     ansible_become_pass: "{{ vsd_password | default(vsd_default_password) }}"
-
-
 
 - name: Print ejabberd connected_users output when verbosity >= 1
-
   debug: var=user_list verbosity=1
 
-
-
 - name: Create local variable with ejabberd connected users to json
-
   set_fact: ejabberd_users_json="{{ user_list.stdout|ejabberd_clients_to_json }}"
 
-
-
 - name: Write users JSON to file
-
   nuage_append: filename="{{ report_path }}" text="{{ inventory_hostname }} {{ ejabberd_users_json|to_nice_json }}\n"
-
   delegate_to: localhost
 
-
-
 - name: Verify connected VSCs
-
   assert:
-
     that: "user_list.stdout|search('{{ hostvars[item].xmpp.username }}')"
-
     msg: "{{ hostvars[item].xmpp.username }} could not be found in '/opt/ejabberd/bin/ejabberdctl connected_users'"
-
   remote_user: "{{ vsd_username | default(vsd_default_username) }}"
-
   become: "{{ 'no' if vsd_username | default(vsd_default_username) == 'root' else 'yes' }}"
-
   vars:
-
     ansible_become_pass: "{{ vsd_password | default(vsd_default_password) }}"
-
   with_items: "{{ groups['vscs'] }}"
-
   when:
-
     - groups['vscs'] is defined
-
     - groups['vscs']
-
     - not postdeploy_only | default('False')
-
     - not skip_vsc | default('False')
 
-
-
 - name: Get VSD deployment mode
-
   include_role:
-
     name: common
-
     tasks_from: vsd-node-info.yml
-
   vars:
-
     vsd_hostname: "{{ vsd_fqdn }}"
-
   run_once: true
 
-
-
 - block:
-
   - name: Verify cna user is found in connected_users of ejabberd in vsds
-
     assert:
-
       that: "user_list.stdout|search('cna@{{ vsd_fqdn }}')"
-
       msg: "cna@{{ vsd_fqdn }} could not be found in '/opt/ejabberd/bin/ejabberdctl connected_users'"
 
-
-
   - name: Verify push user is found in connected_users of ejabberd in vsds
-
     assert:
-
       that: "user_list.stdout|search('push@{{ vsd_fqdn }}')"
-
       msg: "push@{{ vsd_fqdn }} could not be found in '/opt/ejabberd/bin/ejabberdctl connected_users'"
 
-
-
   - name: Verify keyserver user is found in connected_users of ejabberd in vsds
-
     assert:
-
       that: "user_list.stdout|search('keyserver@{{ vsd_fqdn }}')"
-
       msg: "keyserver@{{ vsd_fqdn }} could not be found in '/opt/ejabberd/bin/ejabberdctl connected_users'"
-
   when: vsd_sa_or_ha|match('ha')
-
-
 
 - block:
 
-
-
   - name: Verify that REST is reachable
-
     uri:
-
       url: https://{{ mgmt_ip }}:8443/index.html
-
       method: GET
-
       user: "{{ vsd_auth.username }}"
-
       password: "{{ vsd_auth.password }}"
-
       status_code: 200
-
       validate_certs: False
-
     register: rest_result
-
     delegate_to: localhost
-
     ignore_errors: yes
-
-
 
   - block:
 
-
-
     - name: Get monit summary for vsd processes
-
       vsd_monit:
-
         group: all
-
       register: vsd_proc
-
       remote_user: "{{ vsd_username | default(vsd_default_username) }}"
-
       become: "{{ 'no' if vsd_username | default(vsd_default_username) == 'root' else 'yes' }}"
-
       vars:
-
         ansible_become_pass: "{{ vsd_password | default(vsd_default_password) }}"
-
-
 
     - block:
 
-
-
       - name: Get ActiveMQ status of all VSDs
-
         command: monit status activemq-status
-
         register: jms_status
-
         delegate_to: "{{ item }}"
-
         remote_user: "{{ vsd_username | default(vsd_default_username) }}"
-
         become: "{{ 'no' if vsd_username | default(vsd_default_username) == 'root' else 'yes' }}"
-
         vars:
-
           ansible_become_pass: "{{ vsd_password | default(vsd_default_password) }}"
-
         with_items: "{{ groups['vsds'] }}"
 
-
-
       - name: Set JMS Master Node Hostname
-
         set_fact:
-
           jms_master_hostname: "{{ item.item }}"
-
         when: "'This is Master node' in item.stdout and groups['vsds']|length > 1"
-
         with_items: "{{ jms_status.results }}"
-
-
 
       - name: Set JMS Master Node Hostname
-
         set_fact:
-
           jms_master_hostname: "{{ item.item }}"
-
         when: "'PASS' in item.stdout and groups['vsds']|length == 1"
-
         with_items: "{{ jms_status.results }}"
-
-
 
       - name: Verify that JMS Master Node exists
-
         assert:
-
           that: "jms_master_hostname is defined"
-
           msg: "No JMS Master Node found"
 
-
-
       - name: Verify that JMS gateway is reachable on Master Node
-
         uri:
-
           url: https://{{ jms_master_hostname }}:61619
-
           method: GET
-
           user: "{{ vsd_auth.username }}"
-
           password: "{{ vsd_auth.password }}"
-
           status_code: 200
-
           validate_certs: False
-
         register: webresult
-
         delegate_to: localhost
-
-
 
       when: "'activemq-status' in vsd_proc.state"
 
-
-
     run_once: true
 
-
-
   - name: write web interface result
-
     nuage_append: filename="{{ report_path }}" text="{{ webresult  | to_nice_json}}\n"
-
     delegate_to: localhost
-
-
 
 - block:
 
-
-
   - name: Verify VSD licenses valid
-
     include_role:
-
       name: common
-
       tasks_from: check-vsd-license-validity.yml
 
-
-
   - name: Write license valid result
-
     nuage_append: filename="{{ report_path }}" text="{{ inventory_hostname }}  License  {{ license_valid | to_nice_json}}\n"
-
     delegate_to: localhost
-
-
 
   when: nuage_upgrade | default(False)
 
-
-
 - import_tasks: report_footer.yml
-
-
 
 - block:
 
-
-
   - name: Verify keystore pass is set
-
     shell: "$JAVE_HOME/bin/keytool -keystore /opt/vsd/jboss/standalone/configuration/vsd.keystore -storepass {{ keyStorePwd }} -list"
-
     when: keyStorePwd is defined
 
-
-
   - name: Verify truststore pass is set
-
     shell: "$JAVE_HOME/bin/keytool -keystore /opt/vsd/jboss/standalone/configuration/vsd.truststore -storepass {{ trustStorePwd }} -list"
-
     when: trustStorePwd is defined
 
-
-
   - name: Verify keyserver pass is set
-
     shell: "$JAVE_HOME/bin/keytool -keystore /opt/vsd/jboss/standalone/configuration/keyserver.jks -storepass {{ keyServerStorePwd }} -list"
-
     when: keyServerStorePwd is defined
 
-
-
   - name: Verify jrestore pass is set
-
     shell: "$JAVE_HOME/bin/keytool -keystore $JAVA_HOME/lib/security/cacerts -alias vspca -storepass {{ jreStorePwd }} -list"
-
     when: jreStorePwd is defined
 
-
-
   - name: Verify cnauser pass is set
-
     command: "mysql -ucnauser -p{{ cnaPwd }} -e 'select 1'"
-
     when: cnaPwd is defined
 
-
-
   - name: Verify ejbcauser pass is set
-
     command: "mysql -uejbcauser -p{{ ejbcaPwd }} -e 'select 1'"
-
     when: ejbcaPwd is defined
 
-
-
   - name: Verify amquser pass is set
-
     command: "mysql -uamquser -p{{ ampPwd }} -e 'select 1'"
-
     when: ampPwd is defined
 
-
-
   - name: Verify adminuser pass is set
-
     command: "mysql -udbadmin -p{{ adminPwd }} -e 'select 1'"
-
     when: adminPwd is defined
 
-
-
   - name: Verify monituser pass is set
-
     command: "mysql -umonituser -p{{ monitPwd }} -e 'select 1'"
-
     when: monitPwd is defined
 
 
-
-
-
   remote_user: "{{ vsd_username | default(vsd_default_username) }}"
-
   become: "{{ 'no' if vsd_username | default(vsd_default_username) == 'root' else 'yes' }}"
-
   vars:
-
     ansible_become_pass: "{{ vsd_password | default(vsd_default_password) }}"

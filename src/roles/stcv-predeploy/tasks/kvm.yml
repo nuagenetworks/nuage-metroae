@@ -1,163 +1,83 @@
+
 - block:
 
-
-
   - name: Query {{ target_server }} facts
-
     action: setup
 
-
-
   - name: Include OS-specific variables.
-
     include_vars: "{{ ansible_os_family }}.yml"
 
-
-
   - name: Check target for supported OS
-
     fail: msg="Unsupported OS family ({{ ansible_os_family }})"
-
     when: ansible_os_family not in kvm_target_server_os_family_list
 
-
-
   - name: Check hypervisor target mgmt bridges
-
     fail: msg="Required mgmt bridge not found"
-
     when: mgmt_bridge not in ansible_interfaces
 
-
-
   - name: Check hypervisor target data bridge1
-
     fail: msg="Required data bridge1 not found"
-
     when: data_bridge1 not in ansible_interfaces
 
-
-
   - name: Check hypervisor target data bridge2
-
     fail: msg="Required data bridge2 not found"
-
     when: data_bridge2 not in ansible_interfaces
 
-
-
   - name: List the Virtual Machines running on {{ target_server }}
-
     virt: command=list_vms
-
     register: virt_vms
 
-
-
   - block:
-
     - name: Create libvirt image directory on {{ target_server }}
-
       file: path={{ images_path }}/{{ vm_hostname }}
-
             state=directory
-
             owner={{ libvirt.user }}
-
             group={{ libvirt.group }}
-
-
 
     - name: Copy the KVM image to virt images directory on {{ target_server }}
-
       copy: src={{ stcv_image_path }}/{{ stcv_image_filename }}
-
             dest={{ images_path }}/{{ vm_hostname }}
-
             owner={{ libvirt.user }}
-
             group={{ libvirt.group }}
 
-
-
     - name: Get list of partitions
-
       shell: "guestfish -r -a {{ images_path }}/{{ vm_hostname }}/{{ stcv_image_filename }} run : list-filesystems | grep -Ev '(unknown|swap)'"
-
       register: partitions_list
 
-
-
     - name: Check partition content
-
       shell: "guestfish -r -a {{ images_path }}/{{ vm_hostname }}/{{ stcv_image_filename }} run : mount {{ item.split(':')[0] }} / : ls /"
-
       register: partitions
-
       with_items: "{{ partitions_list.stdout_lines }}"
 
-
-
     - name: Find root partition
-
       set_fact:
-
         guestfish_mount: "{{ item.item.split(':')[0]}}"
-
       with_items: "{{ partitions.results }}"
-
       when: '"boot" in item.stdout'
-
-
 
     - debug: var=guestfish_mount verbosity=1
 
-
-
     - name: Create a temporary copy of the STC admin.conf
-
       template: src=admin.conf.j2 backup=no dest={{ images_path }}/{{ vm_hostname }}/admin.conf
 
-
-
     - name: Copy admin.conf file to the KVM image on {{ target_server }}
-
       command: guestfish --rw -a {{ images_path }}/{{ vm_hostname }}/{{ stcv_image_filename }} -m {{ guestfish_mount }} copy-in {{ images_path }}/{{ vm_hostname }}/admin.conf /chassis/conf/
 
-
-
     - name: Remove temporary copy of admin.conf script
-
       file: path={{ images_path }}/{{ vm_hostname }}/admin.conf state=absent
 
-
-
     - name: "Define new KVM VM"
-
       virt: name="{{ vm_hostname }}"
-
             command=define
-
             xml="{{ lookup('template', 'vSTC.xml.j2') }}"
-
             uri=qemu:///system
-
     when: vm_hostname not in virt_vms.list_vms
 
-
-
   - name: "Run KVM VM"
-
     virt: name="{{ vm_hostname }}"
-
           state=running
-
           uri=qemu:///system
 
-
-
   delegate_to: "{{ target_server }}"
-
   remote_user: "{{ target_server_username }}"
-
 

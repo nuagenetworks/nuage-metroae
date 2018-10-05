@@ -1,167 +1,85 @@
+
 - block:
 
-
-
   - name: Delete the localtime file
-
     file:
-
       path: /etc/localtime
-
       state: absent
-
-
 
   - name: Create the localtime symlink
-
     file:
-
       src: /usr/share/zoneinfo/{{ timezone }}
-
       dest: /etc/localtime
-
       state: link
 
-
-
   - name: Remove old NTP servers
-
     lineinfile:
-
       dest: /etc/ntp.conf
-
       regexp: "^server"
-
       state: absent
-
-
 
   - name: Configure NTP servers
-
     lineinfile:
-
       dest: /etc/ntp.conf
-
       line: "server {{ item }} iburst"
-
     with_items: "{{ ntp_server_list }}"
-
-
 
   - name: Stop the ntpd and ntpdate services if running
-
     service:
-
       name:  "{{ item }}"
-
       state: stopped
-
     with_items:
-
        - "ntpd"
-
        - "ntpdate"
 
-
-
   - name: Manually sync time with ntp server
-
     command: ntpdate -u "{{ntp_server_list[0]}}"
 
-
-
   - name: Delete the default steptickers file
-
     file:
-
       path: /etc/ntp/step-tickers
-
       state: absent
 
-
-
   - name: Configure NTP servers for ntpdate
-
     lineinfile:
-
       dest: /etc/ntp/step-tickers
-
       line: "{{ item }}"
-
       create: yes
-
     with_items: "{{ ntp_server_list }}"
 
-
-
   - name: Enable ntpdate
-
     service:
-
       name: ntpdate
-
       enabled: yes
-
       state: started
 
-
-
   - name: Enable and start ntpd
-
     service:
-
       name: ntpd
-
       enabled: yes
-
       state: restarted
 
-
-
   - name: check ntp sync state
-
     shell: ntpstat | awk 'NR==1{print $1}'
-
     register: sync_status
-
     until: sync_status.stdout | search('synchronised')
-
     retries: "{{ ntp_sync_retries }}"
-
     delay: "{{ ntp_sync_delay }}"
-
     ignore_errors: yes
 
-
-
   - block:
-
     - name: Restart ntpd if not synced yet
-
       service:
-
         name: ntpd
-
         state: restarted
-
     - name: check ntp sync state
-
       shell: ntpstat | awk 'NR==1{print $1}'
-
       register: retry_sync_status
-
       until: retry_sync_status.stdout == "synchronised"
-
       retries: "{{ ntp_sync_retries }}"
-
       delay: "{{ ntp_sync_delay }}"
-
     when: not sync_status.stdout | search("synchronized")
 
-
-
 # block level parameters
-
   remote_user: "{{ rem_user }}"
-
   tags: ntp

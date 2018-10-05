@@ -1,15 +1,8 @@
 transfer_vstat_scripts: "scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null {{ vstat_backup_scripts_path }}/{{ item }} root@{{ mgmt_ip }}:/tmp/"
-
 transfer_backup: "scp -r -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null root@{{ mgmt_ip }}:{{ vstat_backup_dir }}/* {{ vstat_backup_dir }}" 
-
 create_repo: "vsd_elasticctl.py -a {{ mgmt_ip }}  create_repository  backup-{{ repo_name }} -t fs -l {{ vstat_backup_dir }}"
-
 show_repo: "vsd_elasticctl.py -a {{ mgmt_ip }}  show_repository backup-{{ repo_name }}"
-
 get_indices: "vsd_elasticctl.py -a {{ mgmt_ip }} list_indices"
-
 create_snapshot: "vsd_elasticctl.py -a {{ mgmt_ip }} create_snapshot snap-{{ snap_name | lower}} -r backup-{{ repo_name }} -i {{ list_of_indices | default('all') }}"
-
 show_snapshot: "vsd_elasticctl.py -a {{ mgmt_ip }} show_snapshot snap-{{ snap_name | lower}} -r backup-{{ repo_name }}"
-
 vstat_should_become: "{{ 'no' if vstat_username | default(vstat_default_username) == 'root' else 'yes' }}"
