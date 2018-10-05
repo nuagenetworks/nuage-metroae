@@ -1,189 +1,375 @@
-
 - name: Set local variable with vmname
+
   set_fact:
+
     vm_name: "{{ vmname }}"
 
+
+
 - include_role:
+
     name: check-node-running
 
+
+
 - name: Display if skipping VSC predeploy
+
   debug:
+
     msg:
+
       - "****************************************************"
+
       - "Skipping VSC predeploy because it is already present"
+
       - "****************************************************"
+
   when: node_present
+
+
 
 - block:
 
+
+
   - name: Configure vCenter path
+
     set_fact:
+
       vcenter_path: "vi://'{{ vcenter.username | urlencode }}':'{{ vcenter.password | urlencode }}'@{{ target_server }}/{{ vcenter.datacenter }}/host/{{ vcenter.cluster }}"
 
+
+
   - name: Update vCenter path if resource pool is configured
+
     set_fact:
+
       vcenter_path: "vi://'{{ vcenter.username | urlencode }}':'{{ vcenter.password | urlencode }}'@{{ target_server }}/{{ vcenter.datacenter }}/host/{{ vcenter.cluster }}/Resources/{{ vcenter.resource_pool | urlencode }}"
+
     when: vcenter.resource_pool != 'NONE'
 
+
+
   - name: Deploy VSC Image on vCenter
+
     connection: local
+
     command: >
+
       {{ vcenter.ovftool }}
+
       --acceptAllEulas
+
       --noSSLVerify
+
       --powerOn
+
       --machineOutput
+
       -dm=thin
+
       -ds={{ vcenter.datastore }}
+
       -n={{ vmname }}
+
       --net:"Management Network={{ mgmt_bridge }}"
+
       --net:"Datapath Network={{ data_bridge }}"
+
       --prop:"DHCP=False"
+
       --prop:"Management_IP={{ mgmt_ip }}/{{ mgmt_netmask_prefix }}"
+
       {% if vsc_mgmt_static_route_list[0] is defined %}
+
       --prop:"Static_Routes={% for sr in vsc_mgmt_static_route_list %}{{ sr }} {{ mgmt_gateway }}{% if not loop.last %};{% endif %}{% endfor %}"
+
       {% else %}
+
       --prop:"Static_Routes="
+
       {% endif %}
+
       --prop:"DNS_Server_1={{ dns_server_list[0] }}"
+
       {% if dns_server_list[1] is defined %}
+
       --prop:"DNS_Server_2={{ dns_server_list[1] }}"
+
       {% else %}
+
       --prop:"DNS_Server_2=0.0.0.0"
+
       {% endif %}
+
       {% if dns_server_list[2] is defined %}
+
       --prop:"DNS_Server_3={{ dns_server_list[2] }}"
+
       {% else %}
+
       --prop:"DNS_Server_3=0.0.0.0"
+
       {% endif %}
+
       --prop:"DNS_Search_Domain={{ dns_domain }}"
+
       --prop:"VSC_name={{ inventory_hostname }}"
+
       --prop:"XMPP_Server={{ vsd_fqdn }}"
+
       {% if ntp_server_list[0] is defined %}
+
       --prop:"SNTP_Server={{ ntp_server_list[0] }}"
+
       {% else %}
+
       --prop:"SNTP_Server=0.0.0.0"
+
       {% endif %}
+
       {% if control_ip is defined and control_netmask_prefix is defined %}
+
       --prop:"Datapath_IP={{ control_ip }}/{{ control_netmask_prefix }}"
+
       {% else %}
+
       --prop:"Datapath_IP=0.0.0.0/32"
+
       {% endif %}
+
       --prop:"Datapath_DFGW=0.0.0.0"
+
       {% if system_ip is defined %}
+
       --prop:"System_IP={{ system_ip }}"
+
       {% else %}
+
       --prop:"System_IP=0.0.0.0"
+
       {% endif %}
+
       --prop:"BGP_Peer_1=0.0.0.0"
+
       --prop:"BGP_Peer_2=0.0.0.0"
+
       --prop:"Autonomous_System=64000"
+
       --prop:"BGP_Group=internal"
+
       "{{ ova_path }}/{{ ova_file_name }}"
+
       {{ vcenter_path }}
 
+
+
   - name: Finding VM folder
+
     connection: local
+
     vmware_guest_find:
+
       hostname: "{{ target_server }}"
+
       username: "{{ vcenter.username }}"
+
       password: "{{ vcenter.password }}"
+
       datacenter: "{{ vcenter.datacenter }}"
+
       name: "{{ vmname }}"
+
       validate_certs: no
+
     register: vsc_vm_folder
+
     ignore_errors: on
 
+
+
   - name: Gathering info on VM
+
     connection: local
+
     vmware_guest_facts:
+
       hostname: "{{ target_server }}"
+
       username: "{{ vcenter.username }}"
+
       password: "{{ vcenter.password }}"
+
       datacenter: "{{ vcenter.datacenter }}"
+
       folder: "/{{ vcenter.datacenter }}{{ vsc_vm_folder['folders'][0] }}"
+
       name: "{{ vmname }}"
+
       validate_certs: no
+
     register: vsc_vm_facts
+
     ignore_errors: on
+
     when: vsc_vm_folder|succeeded
+
+
 
   - debug: var=vsc_vm_facts verbosity=1
 
+
+
   - name: Get Facts of VM
+
     vmware_vm_facts:
+
       hostname: "{{ target_server }}"
+
       username: "{{ vcenter.username }}"
+
       password: "{{ vcenter.password }}"
+
     delegate_to: localhost
+
     register: vm_list
 
+
+
   - name: Verify VM exists on Host
+
     assert:
+
       that: "vm_name in vm_list.virtual_machines"
+
       msg: "Desired VM does not exist"
 
+
+
   - name: Set VM UUID
+
     set_fact:
+
       uuid: "{{ vm_list.virtual_machines[vm_name]['uuid'] }}"
+
+
 
   - debug: var=uuid
 
+
+
   - name: Turn on autostart
+
     connection: local
+
     vmware_autostart:
+
       name: "{{ vm_name }}"
+
       uuid: "{{ uuid }}"
+
       hostname: "{{ target_server }}"
+
       username: "{{ vcenter.username }}"
+
       password: "{{ vcenter.password }}"
+
       state: enable
 
+
+
   - name: Verify VM is running
+
     assert:
+
       that: "vsc_vm_folder|succeeded and vsc_vm_facts|succeeded"
+
       msg: "VSC VM {{ vmname }} is not created"
 
+
+
   - name: Wait for VSC ssh to be ready
+
     connection: local
+
     wait_for:
+
       port: "22"
+
       host: "{{ mgmt_ip }}"
+
       search_regex: OpenSSH
+
       delay: 1
 
+
+
   - name: Creating temp folder for config file
+
     connection: local
+
     file:
+
       path: "/tmp/ansible-config-{{ inventory_hostname }}"
+
       state: directory
 
+
+
   - name: Creating VSC config file
+
     connection: local
+
     template:
+
       src: config.cfg.j2
+
       dest: "/tmp/ansible-config-{{ inventory_hostname }}/config.cfg"
 
+
+
   - name: Copy VSC config file to VSC
+
     connection: local
+
     command: "sshpass -p admin scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null /tmp/ansible-config-{{ inventory_hostname }}/config.cfg admin@{{ mgmt_ip }}:"
 
+
+
   - name: Reboot VSC VM
+
     connection: local
+
     vmware_guest:
+
       hostname: "{{ target_server }}"
+
       username: "{{ vcenter.username }}"
+
       password: "{{ vcenter.password }}"
+
       validate_certs: no
+
       datacenter: "{{ vcenter.datacenter }}"
+
       folder: "/{{ vcenter.datacenter }}{{ vsc_vm_folder['folders'][0] }}"
+
       name: "{{ vmname }}"
+
       state: "restarted"
 
+
+
   - name: Removing temp folder
+
     connection: local
+
     file:
+
       path: "/tmp/ansible-config-{{ inventory_hostname }}"
+
       state: absent
+
+
 
   when: not node_present

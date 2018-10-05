@@ -1,48 +1,95 @@
 # Install Pre-Requisites
+
 - name: Pull facts of localhost
+
   setup:
+
   delegate_to: localhost
 
+
+
 - name: Install pexpect module via pip
+
   pip: name=pexpect state="present"
 
+
+
 - name: Set name for backup folder
+
   set_fact:
+
     backup_folder: "backup-{{inventory_hostname}}-{{ ansible_date_time.iso8601_basic_short }}"
 
+
+
 - name: Create backup dir to hold backup files
+
   file:
+
     path: "{{metro_backup_root}}/{{ backup_folder }}"
+
     state: directory
+
+
 
 - name: Create temporary dir to hold backup files
+
   file:
+
     path: "/tmp/{{ backup_folder }}"
+
     state: directory
 
+
+
 - name: Transfer bof.cfg from VSC to backup_machine
+
   expect:
+
     command: "{{ vsc_scp_backup_bof }}"
+
     responses:
+
       (?i)yes: "yes"
+
       (?i)password: "{{ vsc_password|default(vsc_default_password) }}"
+
     timeout: "{{ vsc_scp_timeout_seconds }}"
+
+
 
 - name: Transfer config.cfg from VSC to backup_machine
+
   expect:
+
     command: "{{ vsc_scp_backup_config }}"
+
     responses:
+
       (?i)yes: "yes"
+
       (?i)password: "{{ vsc_password|default(vsc_default_password) }}"
+
     timeout: "{{ vsc_scp_timeout_seconds }}"
+
+
 
 - name: Transfer primary image from VSC to backup_machine
+
   expect:
+
     command: "{{ vsc_scp_backup_primary_image }}"
+
     responses:
+
       (?i)yes: "yes"
+
       (?i)password: "{{ vsc_password|default(vsc_default_password)}}"
+
     timeout: "{{ vsc_scp_timeout_seconds }}"
 
+
+
 - name: Create symbolic link to backup location
+
   file: dest="{{metro_backup_root}}/backup-{{ groups['vscs'][0] }}-latest" src="/tmp/{{  backup_folder }}"  state=link

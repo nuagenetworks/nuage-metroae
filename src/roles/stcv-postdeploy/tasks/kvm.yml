@@ -1,25 +1,49 @@
 - name: "Get KVM VM domain info"
+
   command: virsh dominfo "{{ vm_hostname}}"
+
   delegate_to: "{{ target_server }}"
+
   remote_user: "{{ target_server_username }}"
+
   register: nodeinfo
+
+
 
 - debug: var=nodeinfo.stdout_lines 
 
+
+
 - name: "Get KVM VM status"
+
   virt: 
+
     name: "{{ vm_hostname }}"
+
     command: status
+
     uri: "qemu:///system"
+
   delegate_to: "{{ target_server }}"
+
   remote_user: "{{ target_server_username }}"
+
   register: virt_info
 
+
+
 - name: Verify that STCV VM is running on {{ target_server }}
+
   assert: { that: "virt_info['status'] == 'running'" }
+
   delegate_to: "{{ target_server }}"
+
   remote_user: "{{ target_server_username }}"
 
+
+
 - name: verify reachability to the stcv from the deployment host with pings
+
   command: "ping -c 5 {{ vm_mgmt_ip }}"
+
   delegate_to: localhost 

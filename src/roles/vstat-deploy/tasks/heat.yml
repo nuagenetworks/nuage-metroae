@@ -1,136 +1,269 @@
-
 - name: Get VSTAT details from OpenStack
+
   os_server_facts:
+
     auth:
+
       "{{ os_auth }}"
+
     server: "{{ inventory_hostname }}"
+
   register: vstat_ip
+
   delegate_to: 127.0.0.1
+
+
 
 - name: Set vstat mgmt ip
+
   set_fact:
+
     vstat_mgmt_ip: "{{ vstat_ip['ansible_facts']['openstack_servers'][0]['networks'][vstat_network][0] }}"
 
+
+
 - name: Clean known_hosts of VSTAT's
+
   known_hosts:
+
     name: "{{ vstat_mgmt_ip }}"
+
     state: absent
+
   delegate_to: localhost
+
   no_log: True
+
   ignore_errors: True
 
+
+
 - block:
+
   - name: Get infra server details from OS server facts
+
     os_server_facts:
+
       auth:
+
         "{{ os_auth }}"
+
       server: "{{ infra_server_name }}"
+
     register: infra_server
+
     delegate_to: 127.0.0.1
 
+
+
   - name: Set DNS/NTP server ip
+
     set_fact:
+
       infra_ip: "{{ infra_server['ansible_facts']['openstack_servers'][0]['private_v4'] }}"
 
+
+
   - name: Update DNS entries
+
     lineinfile:
+
       line: "{{ vstat_mgmt_ip }}  {{ inventory_hostname }}"
+
       dest: "/etc/hosts"
+
     delegate_to: "{{ infra_ip }}"
+
     remote_user: "{{ vstat_default_username }}"
+
+
 
   - name: Restart DNS service
+
     shell: service dnsmasq restart
+
     delegate_to: "{{ infra_ip }}"
+
     remote_user: "{{ vstat_default_username }}"
+
   when: infra_server_name is defined
+
+
 
 - name: Update /etc/hosts file on ansible host
+
   lineinfile:
+
     dest: /etc/hosts
+
     line: "{{ vstat_mgmt_ip }}    {{ inventory_hostname }}"
+
   delegate_to: 127.0.0.1
 
+
+
 - name: Wait for VSD-HA ssh to be ready
+
   include_role:
+
     name: common
+
     tasks_from: wait-for-ssh
+
   vars:
+
     ssh_host: "{{ vstat_mgmt_ip }}"
 
+
+
 - name: Inject ssh key to VSD if cloud-init did not work
+
   expect:
+
     command: "ssh-copy-id -i {{ vstat_default_username }}@{{ vstat_mgmt_ip }}"
+
     responses:
+
       (?i)yes: "yes"
+
       (?i)password: "{{ vstat_default_password }}"
+
   remote_user: "{{ vstat_default_username }}"
+
   delegate_to: localhost
 
+
+
 - name: Pause for ssh port to be active
+
   pause:
+
     seconds: 5
 
+
+
 - name: Update hostname
+
   template: src=network.j2 backup=no dest=/etc/sysconfig/network
 
+
+
 - name: Add a DNS server to eth0
+
   lineinfile:
+
     dest: /etc/sysconfig/network-scripts/ifcfg-eth0
+
     line: "DNS1={{ infra_ip | default(dns_server_list[0]) }}"
+
   when: infra_server_name is defined
 
+
+
 - block:
+
+
 
   - name: Add nameserver
+
     command: echo "{{ infra_ip }}" >> /etc/resolv.conf
+
     when: infra_server_name is defined
 
+
+
   - name: Restart networking
+
     command: /etc/init.d/network restart
 
+
+
   - name: Resolve fqdn
+
     command: hostname "{{ inventory_hostname }}"
 
+
+
   - name: Update /etc/hosts file
+
     lineinfile:
+
       dest: /etc/hosts
+
       line: "{{ vstat_mgmt_ip }}  {{ inventory_hostname }}"
+
+
 
   remote_user: "{{ vstat_default_username }}"
 
+
+
 - name: Configure ntpd and ntpdate and local time zone
+
   include_role:
+
     name: common
+
     tasks_from: linux-ntp-sync
+
   vars:
+
     rem_user: "{{ vstat_default_username }}"
+
+
 
 - block:
 
+
+
   - name: Resolve "{{ vsd_fqdn }}"  to ip addr
+
     shell: "getent hosts {{ vsd_fqdn }} | awk '{print $1}'"
+
     register: ip_addr
 
+
+
   - name: Config firewall on VSTAT vm to accept conn on ports 9200,9300 from vsd(s)
+
     script: firewall.sh "{{ ip_addr.stdout }}"
 
+
+
   - name: Restart elastic search {{ inventory_hostname }}
+
     systemd:
+
       name: elasticsearch
+
       state: restarted
+
+
 
   remote_user: "{{ vstat_default_username }}"
 
+
+
 - name: Get vsd node(s) information
+
   import_role:
+
     name: common
+
     tasks_from: vsd-node-info.yml
+
   vars:
+
     vsd_hostname: "{{ vsd_fqdn }}"
+
   run_once: true
 
+
+
 - name: Enable stats collection on the VSD VM
+
   command: /opt/vsd/vsd-stats.sh -e {{inventory_hostname}}
+
   delegate_to: "{{ vsd_hostname_list[0] }}"
+
   remote_user: "{{ vstat_default_username }}"

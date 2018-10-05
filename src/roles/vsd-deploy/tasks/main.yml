@@ -1,62 +1,121 @@
-
 - name: Wait for VSD ssh to be ready
+
   include_role:
+
     name: common
+
     tasks_from: wait-for-ssh
+
   vars:
+
     ssh_host: "{{ hostname }}"
 
+
+
 - name: "Check if monit is already configured"
+
   command: monit summary
+
   ignore_errors: yes
+
   register: monit_result
+
   remote_user: "{{ vsd_default_username }}"
+
+
 
 - name: Read the VSD version
+
   shell: echo $VSD_VERSION
+
   register: vsd_version
+
   remote_user: "{{ vsd_default_username }}"
 
+
+
 - name: Set if VSD versions match qcow2
+
   set_fact: vsd_versions_match="{{ vsd_version.stdout == qcow2_file_name | regex_search('([0-9]+\\.[0-9]+\\.[0-9A-Za-z]+)') }}"
+
   when: qcow2_file_name is defined
 
+
+
 - name: Set if VSD versions match ova
+
   set_fact: vsd_versions_match="{{ vsd_version.stdout == ova_file_name | regex_search('([0-9]+\\.[0-9]+\\.[0-9A-Za-z]+)') }}"
+
   when: ova_file_name is defined
 
+
+
 - name: Set if skipping VSD deploy
+
   set_fact: skip_vsd_deploy="{{ vsd_versions_match is defined and vsd_versions_match and monit_result.rc == 0 }}"
 
+
+
 - name: Display if skipping VSD deploy
+
   debug:
+
     msg:
+
       - "*************************************************"
+
       - "Skipping VSD deploy because it is already running"
+
       - "*************************************************"
+
   when: skip_vsd_deploy
 
+
+
 - import_tasks: set_vsd_creds.yml
+
   when: not skip_vsd_deploy
 
+
+
 - import_tasks: non_heat.yml
+
   when: not skip_vsd_deploy and not target_server_type | match("heat|nuagex")
+
   tags:
+
     - vsd
+
     - vsd-deploy
+
+
 
 - import_tasks: heat.yml
+
   when: not skip_vsd_deploy and target_server_type | match("heat")
+
   tags:
+
     - vsd
+
     - heat
+
     - vsd-deploy
 
+
+
 - import_tasks: brand_vsd.yml
+
   when: not skip_vsd_deploy and branding_zip_file is defined and component_type == "vsd"
 
+
+
 - import_tasks: nuagex.yml
+
   when: not skip_vsd_deploy and target_server_type | match("nuagex")
+
   tags:
+
     - nuagex
+
     - vsd-deploy

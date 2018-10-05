@@ -1,38 +1,73 @@
-
 - block:
 
+
+
   - name: Configure UtilityVM management interface
+
     template: src=ifcfg-eth0.j2 backup=no dest=/etc/sysconfig/network-scripts/ifcfg-eth0
 
+
+
   - block:
+
     - name: Configure UtilityVM data interface
+
       template: src=ifcfg-eth1.j2 backup=no dest=/etc/sysconfig/network-scripts/ifcfg-eth1
 
+
+
     - name: Configure routes for UtilityVM data interface
+
       template: src=route-eth1.j2 backup=no dest=/etc/sysconfig/network-scripts/route-eth1
+
     when: data_ip is defined
 
+
+
   - name: Update /etc/sysconfig/network on Utility
+
     template: src=network.j2 backup=no dest=/etc/sysconfig/network
 
+
+
   - name: Restart Utility network service
+
     service:
+
       name: network
+
       enabled: yes
+
       state: restarted
 
+
+
   - name: Check that UtilityVM can ping the gateway on management network
+
     command: ping -c 1 {{ mgmt_gateway }}
+
     ignore_errors: yes
+
     register: mgmt_ip_ping_result
 
+
+
   - debug:
+
       msg: "Ping results {{ mgmt_ip_ping_result }} and rc {{ mgmt_ip_ping_result.rc }}"
+
       verbosity: 1
 
+
+
   - name: Assert reachability of management IP is the same as hostname
+
     assert:
+
       that: "mgmt_ip_ping_result.rc == 0"
+
       msg: "Network configuration of the VSD seems to be incorrect. Ping to {{ mgmt_gateway }} failed. Quitting."
+
+
 
   remote_user: "{{ target_server_username }}"

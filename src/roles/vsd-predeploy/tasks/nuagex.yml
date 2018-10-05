@@ -1,47 +1,91 @@
-
 - block:
+
   - name: Query VSD facts
+
     action: setup
 
+
+
   - name: Configure VSD management interface
+
     template: src=ifcfg-eth0.j2 backup=no dest=/etc/sysconfig/network-scripts/ifcfg-eth0
 
+
+
   - name: Update /etc/sysconfig/network on VSD
+
     template: src=network.j2 backup=no dest=/etc/sysconfig/network
 
+
+
   - name: Update /etc/hostname on VSD
+
     template: src=hostname.j2 backup=no dest=/etc/hostname
 
+
+
   - name: Update /etc/hosts file on VSD
+
     lineinfile:
+
       dest: /etc/hosts
+
       line: "{{ mgmt_ip }}    {{ inventory_hostname }}"
 
+
+
   - name: Restart VSD network service
+
     service:
+
       name: network
+
       enabled: yes
+
       state: restarted
 
+
+
   - name: Ping the gateway
+
     command: ping -c 1 {{ mgmt_gateway }}
+
     ignore_errors: yes
+
     register: mgmt_ip_ping_result
 
+
+
   - debug:
+
       msg: "Ping results {{ mgmt_ip_ping_result }} and rc {{ mgmt_ip_ping_result.rc }}"
 
+
+
   - name: Assert reachability of management IP is the same as hostname
+
     assert:
+
       that: "mgmt_ip_ping_result.rc == 0"
+
       msg: "Network configuration of the VSD seems to be incorrect. Ping to {{ mgmt_gateway }} failed. Quitting."
 
+
+
   - name: Reboot the VSD
+
     shell: nohup bash -c "sleep 2s && shutdown -r now" &
 
+
+
   - name: Wait for VSD to come back
+
     wait_for_connection:
+
       timeout: 240
+
       delay: 20
+
+
 
   remote_user: "{{ vsd_default_username }}"

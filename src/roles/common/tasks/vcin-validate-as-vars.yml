@@ -1,21 +1,39 @@
-
 - name: Getting the slave and master count
+
   set_fact:
+
     slave_count: "{{ vcins | json_query(\"[?master_vcin=='\"+ item + \"']\") | length }}"
+
     master_count: "{{ vcins | json_query(\"[?hostname=='\"+ item + \"']\") | length }}"
+
     master_slave_count: "{{ vcins | json_query(\"[?hostname=='\"+ item + \"'] | [?master_vcin=='\"+ item +\"']\") | length }}"
 
+
+
 - name: Verifying the master exists
+
   assert:
+
     that: master_count|int == 1
+
     msg: "{{ item }} does not exist as a master"
 
+
+
 - name: Verifying the the master is not the same as the slave
+
   assert:
+
     that: master_slave_count|int == 0
+
     msg: "{{ item }} can not be configured as its own slave"
 
+
+
 - name: Verifying there is only one slave
+
   assert:
+
     that: slave_count|int == 1
+
     msg: "{{ item }} has more than one slave, only one slave is allowed per master"

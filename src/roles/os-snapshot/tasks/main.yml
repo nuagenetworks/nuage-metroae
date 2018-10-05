@@ -1,69 +1,135 @@
-
 - block:
+
   - name: Get facts
+
     os_server_facts:
+
       auth:
+
         "{{ os_auth }}"
+
     register: all_vms
 
+
+
   - name: Collect vm names/ids
+
     set_fact:
+
       vms: "{{ vms|default([]) + [ {'vm_name': item['name'], 'vm_id': item['id']} ] }}"
+
     with_items: "{{ all_vms['ansible_facts']['openstack_servers'] }}"
 
+
+
   - name: Create the snapshot
+
     create_snapshot:
+
       auth:
+
         "{{ os_auth }}"
+
       name: "{{ item.vm_name }}-snapshot"
+
       vm_id: "{{ item.vm_id }}"
+
     with_items: "{{ vms[5:6] }}"
+
     register: lst_snapshots
 
+
+
   - name: Download snapshots to project dir
+
     file:
+
       path: "{{ download_path }}{{ os_auth['project_name'] }}"
+
       state: directory
+
     remote_user: "root"
 
+
+
   - name: Download the snapshot
+
     download_image:
+
       auth:
+
         "{{ os_auth }}"
+
       image_name_id: "{{ item['image']['id'] }}"
+
       path: "{{ download_path }}{{ os_auth['project_name'] }}/{{ item['image']['name']}}"
+
     with_items: "{{ lst_snapshots.results }}"
+
   when: project_snapshot
 
+
+
 - block:
+
   - name: Get facts
+
     os_server_facts:
+
       auth:
+
         "{{ os_auth }}"
+
       server: "{{ item }}*"
+
     register: vms
+
     with_items: "{{vm_list}}"
 
+
+
   - name: Snapshot the VM
+
     create_snapshot:
+
       auth:
+
         "{{ os_auth }}"
+
       name: "{{ item.ansible_facts.openstack_servers[0].name }}-snapshot"
+
       vm_id: "{{ item.ansible_facts.openstack_servers[0].id }}"
+
     register: lst_snapshots
+
     with_items: "{{ vms.results }}"
 
+
+
   - name: Download snapshots to project dir
+
     file:
+
       path: "{{ download_path }}{{ os_auth['project_name'] }}"
+
       state: directory
+
     remote_user: "root"
 
+
+
   - name: Download the snapshot
+
     download_image:
+
       auth:
+
         "{{ os_auth }}"
+
       image_name_id: "{{ item['image']['id'] }}"
+
       path: "{{ download_path }}{{ os_auth['project_name'] }}/{{ item['image']['name']}}"
+
     with_items: "{{ lst_snapshots.results }}"
+
   when: project_snapshot != True

@@ -1,26 +1,47 @@
-
-
 - block:
 
+
+
   - name: Find location of CloudMgmt rpm
+
     find: path="/opt/vsd/Packages/"  pattern="CloudMgmt-vmware*rpm" recurse=yes
+
     register: rc_cloudmgmt_rpm
 
+
+
   - name: install CloudMgmt rpm for create dvSwitch script
+
     yum:
+
       name: "{{ rc_cloudmgmt_rpm.files[0].path }}"
+
       state: present
 
+
+
   - name: Create dvSwitch if specified
+
     command: >
+
       /opt/vsd/CloudMgmt-vmware/cli.bash create_dvswitch --num-portgroup-ports 128 --num-portgroups 1 -u {{ vcenter.username }}
+
         -p {{ vcenter.password }} -r {{ vcenter.cluster }} --provider-vdc-id 1 --url https://{{ target_server }}/sdk
+
     args:
+
       chdir: /opt/vsd/CloudMgmt-vmware
 
+
+
   remote_user: "{{ vcin_default_username }}"
+
   when:
+
     - target_server_type | match("vcenter")
+
     - vcenter.create_dvs is defined
+
     - vcenter.create_dvs | bool
+
 

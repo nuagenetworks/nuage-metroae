@@ -1,80 +1,157 @@
-
 - name: Finding VM folder
+
   connection: local
+
   vmware_guest_find:
+
     hostname: "{{ target_server }}"
+
     username: "{{ vcenter.username }}"
+
     password: "{{ vcenter.password }}"
+
     datacenter: "{{ vcenter.datacenter }}"
+
     name: "{{ vm_hostname }}"
+
     validate_certs: no
+
   register: stcv_vm_folder
+
   ignore_errors: on
+
+
 
 - name: Gathering info on VM
+
   connection: local
+
   vmware_guest_facts:
+
     hostname: "{{ target_server }}"
+
     username: "{{ vcenter.username }}"
+
     password: "{{ vcenter.password }}"
+
     datacenter: "{{ vcenter.datacenter }}"
+
     folder: "/{{ vcenter.datacenter }}{{ stcv_vm_folder['folders'][0] }}"
+
     name: "{{ vm_hostname }}"
+
     validate_certs: no
+
   register: stcv_vm_facts
+
   ignore_errors: on
+
   when: stcv_vm_folder|succeeded
 
+
+
 - debug: var=stcv_vm_facts verbosity=1
+
+
 
 - name: Verify the STCv VM does not exist
+
   assert:
+
     that: "stcv_vm_facts.failed"
+
     msg: "VM {{ vm_hostname }} already exists, quiting"
 
+
+
 - name: Configure vCenter path
+
   set_fact:
+
     vcenter_path: "vi://'{{ vcenter.username | urlencode }}':'{{ vcenter.password | urlencode }}'@{{ target_server }}/{{ vcenter.datacenter }}/host/{{ vcenter.cluster }}"
 
+
+
 - name: Update vCenter path if resource pool is configured
+
   set_fact:
+
     vcenter_path: "vi://'{{ vcenter.username | urlencode }}':'{{ vcenter.password | urlencode }}'@{{ target_server }}/{{ vcenter.datacenter }}/host/{{ vcenter.cluster }}/Resources/{{ vcenter.resource_pool | urlencode }}"
+
   when: vcenter.resource_pool != 'NONE'
 
+
+
 - name: Deploy STCv Image on vCenter
+
   connection: local
+
   command: >
+
     {{ vcenter.ovftool }}
+
     --acceptAllEulas
+
     --noSSLVerify
+
     --powerOn
+
     --machineOutput
+
     -dm=thin
+
     -ds={{ vcenter.datastore }}
+
     -n={{ vm_hostname }}
+
     --net:"ManagementNet={{ mgmt_bridge }}"
+
     --net:"TestNet1={{ data_bridge1 }}"
+
     {% if data_bridge2 is defined %}
+
     --net:"TestNet2={{ data_bridge2 }}"
+
     {% endif %}
+
     --prop:"ipaddress={{ vm_mgmt_ip }}"
+
     --prop:"netmask={{ vm_mgmt_netmask }}"
+
     --prop:"gwaddress={{ vm_mgmt_gateway }}"
+
     --prop:"telnetd=off"
+
     --prop:"ntp={{dns_server_list[0]}}"
+
     "{{ stcv_image_path }}/{{ stcv_image_filename }}"
+
     {{ vcenter_path }}
 
+
+
 - name: Waiting until VMware tools becomes available
+
   connection: local
+
   vmware_guest_tools_wait:
+
     hostname: "{{ target_server }}"
+
     username: "{{ vcenter.username }}"
+
     password: "{{ vcenter.password }}"
+
     name: "{{ vm_hostname }}"
+
     datacenter: "{{ vcenter.datacenter }}"
+
     validate_certs: no
+
   register: stcv_vm_facts
 
+
+
 - debug: var=stcv_vm_facts verbosity=1
+
 

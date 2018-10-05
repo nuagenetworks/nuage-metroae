@@ -1,226 +1,451 @@
 - name: Set major and minor version vars
+
   include_role: 
+
     name: common
+
     tasks_from: set-major-minor-versions.yml
+
   run_once: true
+
   
+
 - block:
+
+
 
   - name: Pull facts of localhost
+
     action: setup
+
     connection: local
 
+
+
   - name: Set name of vstat data backup dir
+
     set_fact:
+
       vstat_backup_dir: "{{metro_backup_root}}/backup-{{ inventory_hostname }}-{{ ansible_date_time.iso8601_basic_short }}/"
+
     run_once: true
 
+
+
   - block:
+
+
 
     - name: Install mount packages
+
       yum: name={{ item }} state=present
+
       with_items:
+
         - libnfsidmap
+
         - nfs-utils
 
+
+
     - name: Create dir with vstat data backup path
+
       file:
+
         dest: "{{ vstat_backup_dir }}"
+
         state: directory
+
         mode: 0777
+
         recurse: yes
+
+
 
     - name: Mount the nfs folder on to vstat vm
+
       mount:
+
         src: "{{ vstat_nfs_server_with_folder }}"
+
         name: "{{ vstat_backup_dir }}"
+
         state: mounted
+
         fstype: nfs4
 
+
+
     - name: Get the nfs shared folder details
+
       shell: "mount | grep nfs"
+
       register: nfs_folder
 
+
+
     - name: Verify backup folder path is nfs shared
+
       assert:
+
         that: vstat_backup_dir[:-1] in nfs_folder.stdout
+
         msg:  "{{ vstat_backup_dir }} is not nfs shared"
 
+
+
     - name: Copy elasticsearch backup scritps
+
       copy: src={{ vstat_backup_scripts_path }}/{{ item }}
+
           dest=/tmp/
+
       with_items: "{{ vstat_backup_scripts_file_list }}"
+
       run_once: true
 
+
+
     - name: Cleanup backup dir in elasticseach.yml file
+
       lineinfile:
+
         dest: "/etc/elasticsearch/elasticsearch.yml"
+
         regexp: "path.repo"
+
         state: absent
 
+
+
     - name: Configure backup dir in elasticseach.yml file
+
       lineinfile:
+
         dest: "/etc/elasticsearch/elasticsearch.yml"
+
         line: "path.repo: [{{ vstat_backup_dir }}]"
+
   
+
     - name: Restart elasticsearch process
+
       systemd:
+
         name: elasticsearch
+
         state: restarted
 
+
+
     - name: Wait for elasticsearch process to come up
+
       pause:
+
         seconds: 20
+
   
+
     - name: Get elasticsearch current status
+
       systemd:
+
         name: elasticsearch
+
         state: started
+
       register: es_status
+
   
+
     - name: Check elasticsearch status is active
+
       assert:
+
         that: es_status.status.ActiveState == 'active'
+
         msg: "Elasticserach process in not active after restart"
+
   
+
     - name: Check elasticsearch process is running
+
       assert:
+
         that: es_status.status.SubState == 'running'
+
         msg: "Elasticsearch process is not running after restart"
+
  
+
     remote_user: "{{ vstat_username | default(vstat_default_username) }}"
+
     become: "{{ vstat_should_become }}"
+
     vars:
+
       ansible_become_pass: "{{ vstat_password | default(vstat_default_password) }}"
+
+
 
   - name: Read the repo name to be recreated from the file
+
     command: "cat {{metro_backup_root}}/backup-{{ groups['vstats'][0] }}-latest/repo_snapshot_name"
+
     register: names
+
     delegate_to: localhost
+
     run_once: true
+
     
+
   - block:
+
+
 
     - name: Create repo on the new vstat vm 
+
       command: "python /tmp/{{ create_repo }}"
 
+
+
     - name: Get the repo created by backup script 
+
       command: "python /tmp/{{ show_repo }}"
+
       register: repo_path
 
+
+
     remote_user: "{{ vstat_username | default(vstat_default_username) }}"
+
     become: "{{ vstat_should_become }}"
+
     vars:
+
       ansible_become_pass: "{{ vstat_password | default(vstat_default_password) }}"
+
     run_once: true
+
+
 
   - name: Print contents of show_repo output when verbosity >= 1
+
     debug: var=repo_path verbosity=1
+
     run_once: true
+
+
 
   - name: Verify repo is created
+
     assert:
+
       that: '"Error in getting repo" not in repo_path.stdout'
+
       msg: Failed to verify the repo created
-    run_once: true
-  
-  - name: Get the username running the playbooks
-    local_action: command whoami
-    register: username_on_the_host
-    run_once: true
-  
-  - name: Transfer the backup folder to vstat node
-    shell: "{{ transfer_backup_folder }}"
-    remote_user: "{{ username_on_the_host.stdout }}"
-    delegate_to: localhost
+
     run_once: true
 
+  
+
+  - name: Get the username running the playbooks
+
+    local_action: command whoami
+
+    register: username_on_the_host
+
+    run_once: true
+
+  
+
+  - name: Transfer the backup folder to vstat node
+
+    shell: "{{ transfer_backup_folder }}"
+
+    remote_user: "{{ username_on_the_host.stdout }}"
+
+    delegate_to: localhost
+
+    run_once: true
+
+
+
   - block:
+
+
 
     - name: Set permissions after transferring the backup files
+
       file:
+
         dest: "{{ vstat_backup_dir }}"
+
         owner: "elasticsearch"
+
         group: "elasticsearch"
+
         state: directory
+
         recurse: yes
+
         mode: 0777
 
+
+
     - name: Restore the snapshot on the new vstat VM
+
       command: "python /tmp/{{ restore_snapshot }}"
+
       register: restore_snap
 
+
+
     remote_user: "{{ vstat_username | default(vstat_default_username) }}"
+
     become: "{{ vstat_should_become }}"
+
     vars:
+
       ansible_become_pass: "{{ vstat_password | default(vstat_default_password) }}"
+
     run_once: true
+
+
 
   - name: Print contents of restore_snapshot output when verbosity >= 1
+
     debug: var=restore_snapshot verbosity=1
+
     run_once: true
+
+
 
   - name: Get the contents of created snapshot
+
     command: "python /tmp/{{ show_snapshot }}"
+
     register: snapshot_contents
+
     remote_user: "{{ vstat_username | default(vstat_default_username) }}"
+
     become: "{{ vstat_should_become }}"
+
     vars:
+
       ansible_become_pass: "{{ vstat_password | default(vstat_default_password) }}"
+
     run_once: true
+
+
 
   - name: Create local variable with snap_contents output to json
+
     set_fact: snapshot_contents_json="{{ snapshot_contents.stdout|snapshot_list_indices_to_json }}"
+
     run_once: true
+
+
 
   - name: Print contents of snapshot_contents output when verbosity >= 1
+
     debug: var=snapshot_contents verbosity=1
+
     run_once: true
 
+
+
   - name: Verify the contents of the snapshot created
+
     assert:
+
       that: '"{{ item }}" in list_of_indices'
+
       msg: "{{ item }} index was not found"
+
     with_items: "{{ snapshot_contents_json['indices'] }}"
+
     run_once: true
+
     when: list_of_indices is defined
+
+
 
   - block:
 
+
+
     - name: Get the list of all indices
+
       command: "python /tmp/{{ get_indices }}"
+
       remote_user: "{{ vstat_username | default(vstat_default_username) }}"
+
       become: "{{ vstat_should_become }}"
+
       vars:
+
         ansible_become_pass: "{{ vstat_password | default(vstat_default_password) }}"
+
       register: indices_output
 
+
+
     - name: Verify the contents of the snapshot created
+
       assert:
+
         that: '"{{ item }}" in indices_output.stdout'
+
         msg: "{{ item }} index was not found"
+
       with_items: "{{ snapshot_contents_json['indices'] }}"
 
+
+
     run_once: true
+
     when: list_of_indices is not defined
+
   
+
   when:
+
     - not vstat_in_place_upgrade
+
     - from_major_version == 4
+
     - from_patch_version > 1 
 
+
+
 - block:
+
   - name: Get VSD hosts information
+
     include_role:
+
       name: common
+
       tasks_from: vsd-node-info.yml
+
     vars:
+
       vsd_hostname: "{{ vsd_fqdn }}"
+
     run_once: true
 
+
+
   - include_tasks: handle_upgrade_from_401_version.yml
+
     delegate_to: "{{ item }}"
+
     with_items: "{{ vsd_hostname_list }}"
+
   when: 
+
     - upgrade_from_version == '4.0.1'
+
     - not vstat_in_place_upgrade

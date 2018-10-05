@@ -1,32 +1,63 @@
 - debug: msg='{{ lookup("template", "vsr_xml.j2") }}' verbosity=1
 
+
+
 - block:
 
+
+
   - name: Define VSR guest VM
+
     virt:
+
       name: '{{ vmname }}'
+
       command: define
+
       xml: '{{ lookup("template", "vsr_xml.j2") }}'
+
       uri: qemu:///system
+
+
 
   - name: Autostart
+
     virt: name={{ vmname }}
+
           command=status
+
           autostart=True
+
           uri=qemu:///system
 
+
+
   - name: Start VSR
+
     virt:
+
       name: '{{ vmname }}'
+
       state: running
+
       uri: qemu:///system
 
+
+
   - name: Get updated VM information from {{ target_server }}
+
     virt: command=info
+
     register: virt_info
 
+
+
   - name: Verify that VSR VM is running
+
     assert: { that: "virt_info['{{ vmname }}']['state'] == 'running'" }
 
+
+
   delegate_to: "{{ target_server }}"
+
   remote_user: "{{ target_server_username }}"

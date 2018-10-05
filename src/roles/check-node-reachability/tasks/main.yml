@@ -1,46 +1,89 @@
-
 - block:
+
   - name: Resolve hostname DNS IP
+
     shell: "getent hosts {{ hostname }} | awk '{print $1}'"
+
     register: resolved_ip_result
+
     delegate_to: localhost
+
+
 
   - name: Check DNS response
+
     assert:
+
       that: (target_server_type | match("heat") and dhcp) or resolved_ip_result.stdout | ipaddr
+
       msg: "{{ hostname }} cannot be resolved"
 
+
+
   - name: Check if resolved IP is equal to management IP
+
     assert:
+
       that: resolved_ip_result.stdout == mgmt_ip
+
       msg: "Resolved {{ resolved_ip_result.stdout }} address is not equal to management IP {{ mgmt_ip }} for {{ hostname }}"
+
   when: not target_server_type | match("heat") or not dhcp
+
+
 
 - name: Ping hostname
+
   command: ping -c 1 {{ hostname }}
+
   ignore_errors: yes
+
   register: host_ping_result
+
   delegate_to: localhost
 
+
+
 - block:
+
   - name: Ping IP address
+
     command: ping -c 1 {{ mgmt_ip }}
+
     ignore_errors: yes
+
     register: mgmt_ip_ping_result
+
     delegate_to: localhost
 
+
+
   - name: Assert reachability of hostname is the same as management IP
+
     assert:
+
       that: "host_ping_result.rc != 0 or mgmt_ip_ping_result.rc == 0"
+
       msg:  "Response received from hostname {{ hostname }} but not from management IP {{ mgmt_ip }}. Quitting."
 
+
+
   - name: Assert reachability of management IP is the same as hostname
+
     assert:
+
       that: "host_ping_result.rc == 0 or mgmt_ip_ping_result.rc != 0"
+
       msg:  "Response received from management IP {{ mgmt_ip }} but not from hostname {{ hostname }} Quitting."
+
+
 
   when: not target_server_type | match("heat") or not dhcp
 
+
+
 - name: Set fact for node reachability
+
   set_fact:
+
     node_reachable: "{{ host_ping_result.rc == 0 }}"

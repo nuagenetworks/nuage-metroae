@@ -1,41 +1,79 @@
-
 - name: Finding VM folder
+
   connection: local
+
   vmware_guest_find:
+
     hostname: "{{ target_server }}"
+
     username: "{{ vcenter.username }}"
+
     password: "{{ vcenter.password }}"
+
     datacenter: "{{ vcenter.datacenter }}"
+
     name: "{{ vmname }}"
+
     validate_certs: no
+
   register: stcv_vm_folder
+
   ignore_errors: on
+
+
 
 - name: Gathering info on VM
+
   connection: local
+
   vmware_guest_facts:
+
     hostname: "{{ target_server }}"
+
     username: "{{ vcenter.username }}"
+
     password: "{{ vcenter.password }}"
+
     datacenter: "{{ vcenter.datacenter }}"
+
     folder: "/{{ vcenter.datacenter }}{{ stcv_vm_folder['folders'][0] }}"
+
     name: "{{ vmname }}"
+
     validate_certs: no
+
   register: stcv_vm_facts
+
   ignore_errors: on
+
   when: stcv_vm_folder|succeeded
+
+
 
 - debug: var=stcv_vm_facts verbosity=1
 
+
+
 - name: Verify the STCv VM came up correctly
+
   assert:
+
     that:
+
       - "stcv_vm_facts.instance.hw_product_uuid is defined"
+
       - "not stcv_vm_facts.instance.hw_product_uuid is none"
+
       - "not stcv_vm_facts.instance.hw_product_uuid == ''"
+
     msg: "STVc VM {{ vm_hostname }} did not come up after two minutes"
 
+
+
 - name: verify reachability to the stcv from the deployment host with pings
+
   command: "ping -c 5 {{ vm_mgmt_ip }}"
+
   delegate_to: localhost
+
 

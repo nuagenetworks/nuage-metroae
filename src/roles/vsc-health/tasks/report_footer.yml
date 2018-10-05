@@ -1,27 +1,51 @@
-
 - block:
 
+
+
   - name: Write seperator to report file
+
     nuage_append: filename="{{ report_path }}" text="================================================================================\n"
 
+
+
   - name: Write title to report file
+
     nuage_append: filename="{{ report_path }}" text="VSC Health Report End\n"
 
+
+
   - name: Lookup the error report file
+
     stat:
+
       path: "{{ failure_report_path }}"
+
     register: report
 
+
+
   - name : Print out all the vsc health failures
+
     debug: msg="The following errors were detected when executing vsc_health
+
                 {{ lookup('file',  failure_report_path ) }} "
+
     when:  report.stat.exists
 
+
+
   - name: Check for failures
+
     assert: {
+
       that: "not report.stat.exists",
+
       msg: "Failures detected. Check {{ failure_report_path }} ."
+
       }
 
+
+
     delegate_to: localhost
+
     run_once: true

@@ -1,83 +1,167 @@
 - name: Copy VRS-VM Agent files to HTTP Server
+
   copy: src="{{ vmware_vrs_ovf_path }}" dest="{{ webserver_vrs_local_path }}"
+
   delegate_to: "{{ webserver }}"
 
+
+
 - name: Set HTTP URL for VRS OVF
+
   set_fact: ovf_url="{{ webserver_vrs_public_path }}{{ vmware_vrs_ovf_file_name }}"
 
+
+
 - name: Set vcin_auth variable for authentication to VCIN
+
   set_fact: 
+
     vcin_auth:
+
       api_url: "https://{{ inventory_hostname }}:8443"
 
+
+
 - name: Get VCenters registered in VCIN
+
   nuage_vspk:
+
       auth: "{{ vcin_auth }}"
+
       type: VCenter
+
       command: find
+
   register: vcin_vcenter
+
       
+
 - name: Get Datacenters for each VCenter
+
   nuage_vspk:
+
       auth: "{{ vcin_auth }}"
+
       type: VCenterDataCenter
+
       command: find
+
       parent_type: VCenter
+
       parent_id: "{{ item }}"
+
   with_items: "{{ vcin_vcenter.entities | map(attribute='ID') | list }}"
+
   when: vcin_vcenter.entities is defined
+
   register: vcin_datacenters
 
+
+
 # Flatten array of entities within array of results into single array, and extract ID from each
+
 - name: Set Variable for list of Datacenters
+
   set_fact: vcin_datacenter_ids="{{ vcin_datacenters.results | sum(attribute='entities', start=[]) | list | map(attribute='ID') | list }}" 
 
 
+
+
+
 - name: Get Clusters within each Datacenter
+
   nuage_vspk:
+
       auth: "{{ vcin_auth }}"
+
       type: VCenterCluster
+
       parent_type: VCenterDataCenter
+
       parent_id: "{{ item }}"
+
       command: find
+
   with_items: "{{ vcin_datacenter_ids }}"
+
   register: vcin_clusters
 
+
+
 # Flatten array of entities within array of results into single array, and extract ID from each
+
 - name: Set Variable for list of Clusters
+
   set_fact: vcin_cluster_ids="{{ vcin_clusters.results | sum(attribute='entities', start=[]) | list | map(attribute='ID') | list }}"
 
 
+
+
+
 - name: Update OVF Link of each cluster
+
   nuage_vspk:
+
       auth: "{{ vcin_auth }}"
+
       type: VCenterCluster
+
       state: present
+
       id: "{{ item }}"
+
       properties:
+
         ovf_url: "{{ ovf_url }}"
+
   with_items: "{{ vcin_cluster_ids }}"  
 
+
+
 # name: Run a Job to upgrade all VRS in the Cluster
+
 - name: Submit Job to upgrade VRS in each cluster
+
   nuage_vspk:
+
       auth: "{{ vcin_auth }}"
+
       type: "Job"
+
       state: present
+
       parent_type: "VCenterCluster"
+
       parent_id: "{{ item }}"
+
       properties:
+
         command: "VCENTER_UPGRADE_VRS"
+
   with_items: "{{ vcin_cluster_ids }}"
+
   register: job_results
 
+
+
 # Flatten array entities within array of results into single array, and extract status from each
+
 - name: Set Variable for list of results
+
   set_fact: job_statuses="{{ job_results.results | sum(attribute='entities', start=[]) | list | map(attribute='status') | list }}"
 
+
+
 - name: Assert that all jobs were ran successful
+
   assert: that="'{{ job_statuses[item[0]] }}'  == 'SUCCESS'"
+
   with_indexed_items: "{{ vcin_cluster_ids }}"
+
+
+
+
+
 
 
 

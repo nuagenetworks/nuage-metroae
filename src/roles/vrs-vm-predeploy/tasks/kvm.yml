@@ -1,203 +1,403 @@
-
 - name: Query {{ target_server }} facts
+
   action: setup
+
   remote_user: "{{ target_server_username }}"
+
   delegate_to: "{{ target_server }}"
+
+
 
 - name: Check target for supported OS
+
   fail: msg="Unsupported OS family ({{ ansible_os_family }})"
+
   when: ansible_os_family not in vrs_vm_target_server_os_family_list
 
+
+
 - name: Include OS-specific variables.
+
   include_vars: "{{ ansible_os_family }}.yml"
 
+
+
 - block:
+
   - name: If RedHat, install packages for RedHat OS family distros
+
     yum: name={{ item }} state=present
+
     with_items:
+
     - qemu-kvm
+
     - libvirt
+
     - bridge-utils
+
     - libvirt-python
+
     when: ansible_os_family == "RedHat"
 
+
+
   - name: If Debian, install packages for Debian OS family distros
+
     apt: name={{ item }} state=present
+
     with_items:
+
     - qemu-kvm
+
     - libvirt-bin
+
     - bridge-utils
+
     - python-libvirt
+
     when: ansible_os_family == "Debian"
 
+
+
   - name: List the Virtual Machines running
+
     virt: command=list_vms
+
     register: virt_vms
+
   delegate_to: "{{ target_server }}"
+
   remote_user: "{{ target_server_username }}"
 
+
+
 - name: Verify that the VM is not already running
+
   assert:
+
     that: "vm_name not in virt_vms.list_vms"
+
     msg: "{{ vm_name }} is already running on {{ target_server }}"
 
+
+
 - name: Set local variable with vrs_vm guestfish destination
+
   set_fact:
+
       guestfish_dest: "{{ images_path }}/{{ vm_name }}/{{ vrs_vm_qcow2_file_name }}"
 
+
+
 - block:
+
   - name: set skip copy images to default
+
     set_fact:
+
       skip_copy_images: False
+
     when: skip_copy_images is undefined
 
+
+
   - include_role:
+
       name: common
+
       tasks_from: copy_qcow2.yml
+
     vars:
+
       qcow2_path: "{{ vrs_vm_qcow2_path }}"
+
       qcow2_file_name: "{{ vrs_vm_qcow2_file_name }}"
+
     when: not skip_copy_images
 
+
+
   - block:
+
     - name: Check to make sure there is an existing qcow image
+
       stat:
+
         path: "{{ images_path }}/{{ vm_name }}/{{ vrs_vm_qcow2_file_name }}"
+
       register: statResult
 
+
+
     - name: check the result of image find command
+
       assert:
+
         that: statResult.stat.exists == True
+
         msg: Missing qcow2 file in {{ images_path }}/{{ vm_name }}/{{ vrs_vm_qcow2_file_name }}
+
+
 
     when: skip_copy_images
 
+
+
   - name: Get list of partitions
+
     shell: "guestfish -r -a {{ guestfish_dest }} run : list-filesystems | grep -Ev '(unknown|swap)'"
+
     register: partitions_list
 
+
+
   - name: Check partition content
+
     shell: "guestfish -r -a {{ guestfish_dest }} run : mount {{ item.split(':')[0] }} / : ls /"
+
     register: partitions
+
     with_items: "{{ partitions_list.stdout_lines }}"
+
   remote_user: "{{ target_server_username }}"
+
   delegate_to: "{{ target_server }}"
 
+
+
 - name: Find root partition
+
   set_fact:
+
     guestfish_mount: "{{ item.item.split(':')[0]}}"
+
   with_items: "{{ partitions.results }}"
+
   when: '"proc" in item.stdout'
+
+
 
 - debug: var=guestfish_mount verbosity=1
 
+
+
 - block:
+
   - name: Create a temporary copy of the network script for eth0
+
     template: src=ifcfg-eth0.j2 backup=no dest={{ images_path }}/{{ vm_name }}/ifcfg-eth0
 
+
+
   - name: Copy eth0 network script file to the vrs_vm image
+
     command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} copy-in {{ images_path }}/{{ vm_name }}/ifcfg-eth0 /etc/sysconfig/network-scripts/
 
+
+
   - name: Remove temporary copy of eth0 network script
+
     file: path={{ images_path }}/{{ vm_name }}/ifcfg-eth0 state=absent
 
+
+
   - name: Set the owner and group on the eth0 network script file in the vrs_vm image
+
     command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} chown 0 0 /etc/sysconfig/network-scripts/ifcfg-eth0
+
   delegate_to: "{{ target_server }}"
+
   remote_user: "{{ target_server_username }}"
 
+
+
 - block:
+
   - name: Create a temporary copy of the network script for eth1
+
     template: src=ifcfg-eth1.j2 backup=no dest={{ images_path }}/{{ vm_name }}/ifcfg-eth1
 
+
+
   - name: Copy eth1 network script file to the vrs_vm image
+
     command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} copy-in {{ images_path }}/{{ vm_name }}/ifcfg-eth1 /etc/sysconfig/network-scripts/
 
+
+
   - name: Remove temporary copy of eth1 network script
+
     file: path={{ images_path }}/{{ vm_name }}/ifcfg-eth1 state=absent
 
+
+
   - name: Set the owner and group on the eth1 network script file in the vrs_vm image
+
     command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} chown 0 0 /etc/sysconfig/network-scripts/ifcfg-eth1
+
   delegate_to: "{{ target_server }}"
+
   remote_user: "{{ target_server_username }}"
+
   when: data_ip is defined or data_netmask is defined
 
+
+
 - block:
+
   - name: Create the directory /root/.ssh for authorized_keys
+
     command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} mkdir-p /root/.ssh
 
+
+
   - name: Set the mode for the .ssh folder on the vrs_vm image
+
     command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} chmod 0700 /root/.ssh
 
+
+
   - name: Set the owner and group for the /root/.ssh directory on the vrs_vm image
+
     command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} chown 0 0 /root/.ssh
+
   delegate_to: "{{ target_server }}"
+
   remote_user: "{{ target_server_username }}"
 
+
+
 - name: Get the public key for the current user
+
   local_action: command cat "{{ user_ssh_pub_key }}"
+
   register: current_user_ssh_key
 
+
+
 - block:
+
   - name: Create a temporary copy of the authorized_keys file
+
     template: src=authorized_keys.j2 backup=no dest={{ images_path }}/{{ vm_name }}/authorized_keys
 
+
+
   - name: Copy authorized_keys file to the vrs_vm image
+
     command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} copy-in {{ images_path }}/{{ vm_name }}/authorized_keys /root/.ssh/
 
+
+
   - name: Remove temporary copy of authorized_keys file
+
     file: path={{ images_path }}/{{ vm_name }}/authorized_keys state=absent
 
+
+
   - name: Set the owner and group for the authorized_keys file on the vrs_vm image
+
     command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} chown 0 0 /root/.ssh/authorized_keys
 
+
+
   - name: Set the mode for the authorized_keys file on the vrs_vm image
+
     command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} chmod 0640 /root/.ssh/authorized_keys
 
+
+
   - name: Create a temporary copy of the network script for route-br1 on {{ target_server }}
+
     template: src=route-br1.j2 backup=no dest={{ images_path }}/{{ vm_name }}/route-br1
 
+
+
   - name: Copy route-br1 network script file to the VRS VM image on {{ target_server }}
+
     command: guestfish --rw -a {{ images_path }}/{{ vm_name }}/{{ vrs_vm_qcow2_file_name }} -m {{ guestfish_mount }} copy-in {{ images_path }}/{{ vm_name }}/route-br1 /etc/sysconfig/network-scripts/
 
+
+
   - name: Remove temporary copy of route-br1 network script
+
     file: path={{ images_path }}/{{ vm_name }}/route-br1 state=absent
 
+
+
   - name: Set the owner and group on the route-br1 network script file in the VRS VM image
+
     command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} chown 0 0 /etc/sysconfig/network-scripts/route-br1
 
+
+
   - name: Create a temporary copy of the network script for ifcfg-br0 on {{ target_server }}
+
     template: src=ifcfg-br0.j2 backup=no dest={{ images_path }}/{{ vm_name }}/ifcfg-br0
 
+
+
   - name: Copy ifcfg-br0 network script file to the VRS VM image on {{ target_server }}
+
     command: guestfish --rw -a {{ images_path }}/{{ vm_name }}/{{ vrs_vm_qcow2_file_name }} -m {{ guestfish_mount }} copy-in {{ images_path }}/{{ vm_name }}/ifcfg-br0 /etc/sysconfig/network-scripts/
 
+
+
   - name: Remove temporary copy of ifcfg-br0 network script
+
     file: path={{ images_path }}/{{ vm_name }}/ifcfg-br0 state=absent
 
+
+
   - name: Set the owner and group on the ifcfg-br0 network script file in the VRS VM image
+
     command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} chown 0 0 /etc/sysconfig/network-scripts/ifcfg-br0
 
+
+
   - name: Create a temporary copy of the network script for ifcfg-br1 on {{ target_server }}
+
     template: src=ifcfg-br1.j2 backup=no dest={{ images_path }}/{{ vm_name }}/ifcfg-br1
 
+
+
   - name: Copy ifcfg-br1 network script file to the VRS VM image on {{ target_server }}
+
     command: guestfish --rw -a {{ images_path }}/{{ vm_name }}/{{ vrs_vm_qcow2_file_name }} -m {{ guestfish_mount }} copy-in {{ images_path }}/{{ vm_name }}/ifcfg-br1 /etc/sysconfig/network-scripts/
 
+
+
   - name: Remove temporary copy of ifcfg-br1 network script
+
     file: path={{ images_path }}/{{ vm_name }}/ifcfg-br1 state=absent
 
+
+
   - name: Set the owner and group on the ifcfg-br1 network script file in the VRS VM image
+
     command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} chown 0 0 /etc/sysconfig/network-scripts/ifcfg-br1
 
+
+
   - name: "Define new VM"
+
     virt: name="{{ vm_name }}"
+
           command=define
+
           xml="{{ lookup('template', 'vrs_vm.xml.j2') }}"
 
+
+
   - name: "Run VRS VM"
+
     virt: name="{{ vm_name }}"
+
           state=running
+
           uri=qemu:///system
+
   delegate_to: "{{ target_server }}"
+
   remote_user: "{{ target_server_username }}"

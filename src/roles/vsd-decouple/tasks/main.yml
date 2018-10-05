@@ -1,133 +1,263 @@
-
 - name: Pull facts of VSD
+
   action: setup
+
   remote_user: "{{ vsd_username | default(vsd_default_username) }}"
+
   become: "{{ 'no' if vsd_username | default(vsd_default_username) == 'root' else 'yes' }}"
+
   vars:
+
     ansible_become_pass: "{{ vsd_password | default(vsd_default_password) }}"
 
+
+
 - name: Reset keystore password to default, if changed
+
   include_role:
+
     name: common
+
     tasks_from: vsd-reset-keystorepass
+
+
 
 - import_tasks: report_header.yml
 
+
+
 - name: get the username running the deploy
+
   local_action: command whoami
+
   register: username_on_the_host
+
+
 
 - debug: var=username_on_the_host
 
+
+
 - block:
 
+
+
   - name: Copy the VSD migration script ISO to VSD's temp directory
+
     copy: src={{ vsd_migration_iso_path }}/{{ vsd_migration_iso_file_name }}
+
         dest=/tmp/
 
+
+
   - name: Register target directory status
+
     stat: path="/media/CDROM"
+
     register: cdrom_dir
 
+
+
   - name: Create target directory to mount ISO if necessary
+
     file: name="/media/CDROM" state=directory mode=0775
+
     when: cdrom_dir.stat.exists == false
 
+
+
   - name: mount ISO as loop back device
+
     mount:
+
       src: "/tmp/{{ vsd_migration_iso_file_name }}"
+
       path: "/media/CDROM/"
+
       state: mounted
+
       opts: "loop"
+
       fstab: "/tmp/fstab"
+
       fstype: "iso9660"
 
+
+
   - name: Get VSD Mounts
+
     include_role:
+
       name: common
+
       tasks_from: vsd_list_iso_mount
+
     register: mount_file
 
+
+
   - name: Verify that the ISO is mounted
+
     assert:
+
       that:
+
         - "'iso' in mount_file.stdout"
+
       msg: "Did not find iso file in mount path"
 
+
+
   - name: Decouple VSD Node
+
     command: "/media/CDROM/decouple.sh -y"
 
+
+
   - name: Pause for decoulping to finish
+
     pause:
+
       seconds: 10
 
+
+
   - name: Execute list_p1db command on node3
+
     command: "{{ p1db_cmd }}"
+
     register: list_p1db_output
 
+
+
   remote_user: "{{ vsd_username | default(vsd_default_username) }}"
+
   become: "{{ 'no' if vsd_username | default(vsd_default_username) == 'root' else 'yes' }}"
+
   vars:
+
     ansible_become_pass: "{{ vsd_password | default(vsd_default_password) }}"
 
+
+
 - name: Print ejabberd list_p1db output when verbosity >= 1
+
   debug: var=list_p1db_output verbosity=1
 
+
+
 - name: Create local variable with p1db output to json
+
   set_fact: ejabberd_p1db_json="{{ list_p1db_output.stdout|ejabberd_p1db_to_json }}"
 
+
+
 - name: Write p1bd JSON to file
+
   nuage_append: filename="{{ report_path }}" text="{{ inventory_hostname }} {{ ejabberd_p1db_json|to_nice_json }}\n"
+
   delegate_to: localhost
+
+
+
 
 
 - name: Verify the ejabbered p1db output is empty string
+
   assert:
+
     that: "not ejabberd_p1db_json['p1db_users']"
+
     msg: "Ejabbered is not decoupled"
 
+
+
 - name: Execute list_cluster command on node3
+
   command: "{{ ejabber_cluster_list_command }}"
+
   register: list_cluster_output
+
   remote_user: "{{ vsd_username | default(vsd_default_username) }}"
+
   become: "{{ 'no' if vsd_username | default(vsd_default_username) == 'root' else 'yes' }}"
+
   vars:
+
     ansible_become_pass: "{{ vsd_password | default(vsd_default_password) }}"
+
+
 
 - name: Print ejabberd list_cluster output when verbosity >= 1
+
   debug: var=list_cluster_output verbosity=1
 
+
+
 - name: Create local variable with ejabberd cluster output to json
+
   set_fact: ejabberd_cluster_json="{{ list_cluster_output.stdout|ejabberd_cluster_to_json }}"
 
+
+
 - name: Write cluster JSON to file
+
   nuage_append: filename="{{ report_path }}" text="{{ inventory_hostname }} {{ ejabberd_cluster_json|to_nice_json }}\n"
+
   delegate_to: localhost
 
+
+
 - name: Veriy cluster output lists only itself
+
   assert:
+
     that:
+
       - "'ejabberd@{{ inventory_hostname }}' == ejabberd_cluster_json['cluster_users'][0]"
+
       - "ejabberd_cluster_json['cluster_users'] | length == 1"
+
     msg: "Ejabberd is not decoupled successfully"
 
+
+
 - name: Excute ejabberd_connected_users_command command on node3
+
   command: "{{ ejabberd_connected_users_command }}"
+
   register: client_list
+
   until: client_list.stdout.find("cna") != -1
+
   retries: 10
+
   delay: 20
+
   remote_user: "{{ vsd_username | default(vsd_default_username) }}"
+
   become: "{{ 'no' if vsd_username | default(vsd_default_username) == 'root' else 'yes' }}"
+
   vars:
+
     ansible_become_pass: "{{ vsd_password | default(vsd_default_password) }}"
 
+
+
 - name: Print ejabberd connected_users output when verbosity >= 1
+
   debug: var=client_list verbosity=1
 
+
+
 - name: Create local variable with ejabberd connected clients to json
+
   set_fact: ejabberd_clients_json="{{ client_list.stdout|ejabberd_clients_to_json }}"
 
+
+
 - name: Write clients JSON to file
+
   nuage_append: filename="{{ report_path }}" text="{{ inventory_hostname }} {{ ejabberd_clients_json|to_nice_json }}\n"
+
   delegate_to: localhost

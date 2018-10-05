@@ -1,72 +1,143 @@
 - name: run show version on remote devices
+
   local_action:
+
     module: sros_command
+
     commands: show system license
+
     wait_for: result[0] contains sros
+
     provider: "{{ provider_creds }}"
+
   register: vsr_license_info
+
   remote_user: "{{ target_server_username }}"
+
   delegate_to: "{{ target_server }}"
+
+
 
 - debug: var=vsr_license_info verbosity=1
 
+
+
 - name: Check if license is valid
+
   fail: msg='VSR reports about "missing license record". Try redeploy with valid license file.'
+
   when: '"License status : card reboot pending, missing license record" == vsr_license_info.stdout_lines[0][3]'
 
 
+
+
+
 - name: Configure DNS in BOF
+
   local_action:
+
     module: sros_command
+
     commands:
+
       - "bof dns-domain {{ dns_domain }}"
+
       - "bof primary-dns {{ dns_server_list[0] }}"
+
       - "bof save"
+
     provider: "{{ provider_creds }}"
 
+
+
 - name: Create rollback point
+
   local_action:
+
     module: sros_config
+
     lines:
+
       - "admin rollback save comment \"Before Metro-Config {{ lookup('pipe', 'date -u +%Y-%m-%d-%H:%M:%s') }}\""
+
     provider: "{{ provider_creds }}"
+
   
+
 - name: Ensure build directory exits to store config fragments in
+
   local_action:
+
     module: file
+
     state: directory
+
     path: "{{ buildpath }}/{{ inventory_hostname }}"
 
 
+
+
+
 - name: Set configuration fragments
+
   set_fact: 
+
     config_items:
+
      - { file: "system.cfg", prio: "10" }
+
      - { file: "ports.cfg", prio: "20" }
+
      - { file: "router.cfg", prio: "30" }
+
  
+
 - name: Generate configuration fragments
+
   local_action:
+
     module: template
+
     src: "{{ item.file }}.j2"
+
     dest: "{{ buildpath }}/{{ inventory_hostname }}/{{ item.prio }}-{{ item.file}}"
+
   with_items: "{{ config_items }}"
+
+
 
 - name: Show rootified commands that will be sent to VSR
+
   debug: msg='{{ lookup("template", "{{ item.file }}.j2" ) | sros_rootify }}' verbosity=1
+
   with_items: "{{ config_items }}"
 
+
+
 - name: Configure additional configuration to integrate VSR with Nuage VSD
+
   local_action:
+
     module: sros_config
+
     lines: '{{ lookup("template", "{{ item.file }}.j2" ) | sros_rootify }}' 
+
     provider: "{{ provider_creds }}"
+
   with_items: "{{ config_items }}"
+
+
+
 
 
 - name: Save VSR config
+
   local_action:
+
     module: sros_config
+
     save: yes
+
     provider: "{{ provider_creds }}"
+
 

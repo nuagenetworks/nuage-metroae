@@ -1,51 +1,97 @@
-
-
 - include_role:
+
     name: check-node-reachability
 
+
+
 - block:
+
   - debug: var=vsc_creds
 
+
+
   - name: Get output of 'show version'
+
     sros_command:
+
       commands:
+
         - show version
+
       provider: "{{ vsc_creds }}"
+
     ignore_errors: yes
+
     delegate_to: localhost
+
     register: sh_version
+
+
 
   when: node_reachable
 
+
+
 # TODO
+
 # Check sh_version against image version
 
+
+
 - name: Set fact for VSC present
+
   set_fact:
+
     node_present: "{{ node_reachable and sh_version is defined }}"
 
+
+
 - import_tasks: kvm.yml
+
   when: target_server_type | match("kvm")
+
   tags:
+
     - vsc
+
     - vsc-predeploy
+
+
 
 - import_tasks: heat.yml
+
   when: target_server_type | match("heat")
+
   tags:
+
     - vsc
+
     - heat
+
     - vsc-predeploy
+
+
 
 - import_tasks: vcenter.yml
+
   when: target_server_type | match("vcenter")
+
   tags:
+
     - vsc
+
     - vsc-predeploy
 
+
+
 - import_tasks: nuagex.yml
+
   when: target_server_type | match("nuagex")
+
   tags:
+
     - nuagex
+
     - vsc
+
     - vsc-predeploy

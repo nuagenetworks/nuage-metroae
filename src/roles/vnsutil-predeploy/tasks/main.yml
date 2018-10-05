@@ -1,38 +1,73 @@
-
 - include_role:
+
     name: check-node-reachability
 
+
+
 - name: Get VNSUTIL directory stat
+
   stat:
+
     path: /opt/nuage
+
   remote_user: "{{ vnsutil_default_username }}"
+
   register: vnsutil_dir
+
   when: node_reachable
 
+
+
 - name: Set fact for VNSUTIL present
+
   set_fact:
+
     vnsutil_present: "{{ vnsutil_dir is defined and
+
                          vnsutil_dir.stat is defined and
+
                          vnsutil_dir.stat.isdir is defined and
+
                          vnsutil_dir.stat.isdir }}"
 
+
+
 - import_tasks: kvm.yml
+
   when: target_server_type | match("kvm")
+
   tags:
+
     - vnsutil
+
     - vnsutil-predeploy
+
+
 
 - import_tasks: vcenter.yml
+
   when: target_server_type | match("vcenter")
+
   static: no
+
   tags:
+
     - vnsutil
+
     - vnsutil-predeploy
 
+
+
 - import_tasks: nuagex.yml
+
   when: target_server_type | match("nuagex")
+
   static: no
+
   tags:
+
     - nuagex
+
     - vnsutil
+
     - vnsutil-predeploy

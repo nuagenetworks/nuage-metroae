@@ -1,78 +1,155 @@
 - name: Clean known_hosts of VSC's
+
   known_hosts:
+
     name: "{{ mgmt_ip }}"
+
     state: absent
+
   delegate_to: localhost
+
   no_log: True
+
   ignore_errors: True
 
+
+
 - name: Get output of 'show bof'
+
   sros_command:
+
     commands:
+
       - show bof
+
     provider: "{{ vsc_creds }}"
+
   delegate_to: localhost
+
   register: bof_config
 
+
+
 - name: Print 'show bof' when verbosity >= 1
+
   debug: var=bof_config.stdout[0] verbosity=1
 
+
+
 - name: Create local variable with bof config in json
+
   set_fact:
+
     bof_json: "{{ bof_config.stdout[0]|show_bof_to_json }}"
 
+
+
 - name: Print bof config in json  when verbosity >= 1
+
   debug: var=bof_json verbosity=1
 
+
+
 - name: Get current file version of image on VSC
+
   sros_command:
+
     commands:
+
       - file version "{{ bof_json['primary_image'] }}"
+
     provider: "{{ vsc_creds }}"
+
   delegate_to: localhost
+
   register: image
 
+
+
 - name: Print image version when verbosity >= 1
+
   debug: var=image.stdout[0] verbosity=1
 
+
+
 - name: Create local variable with image version in json
+
   set_fact:
+
     version_json: "{{ image.stdout[0]|image_version_to_json }}"
 
+
+
 - name: Print image version in json  when verbosity >= 1
+
   debug: var=version_json verbosity=1
+
   
+
 - name: Copy new VSC image to VSC nodes
+
   expect:
+
     command: "{{ vsc_image_copy }}"
+
     responses:
+
       (?i)yes: "yes"
+
       (?i)password: "{{ vsc_password|default(vsc_default_password) }}"
+
     timeout: "{{ vsc_scp_timeout_seconds }}"
 
+
+
 - name: Reboot VSC VM
+
   sros_command:
+
     commands:
+
       - admin reboot now
+
     provider: "{{ vsc_creds }}"
+
   delegate_to: localhost
+
   ignore_errors: true
+
   when: target_server_type | match('kvm') or target_server_type | match('vcenter')
 
+
+
 - name: Reboot VSC VM
+
   os_server_actions:
+
     auth:
+
       "{{ os_auth }}"
+
     server: "{{ inventory_hostname }}"
+
     action: reboot
+
     wait: no
+
   when: target_server_type | match('heat')
 
+
+
 - name: Wait for VSC ssh to be ready
+
   include_role: 
+
     name: common
+
     tasks_from: wait-for-ssh
+
   vars:
+
     ssh_host: "{{ mgmt_ip }}"
+
+
 
   

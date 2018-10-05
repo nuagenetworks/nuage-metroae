@@ -1,81 +1,161 @@
 - name: Wait for VSTAT ssh to be ready after upgrade
+
   include_role:
+
     name: common
+
     tasks_from: wait-for-ssh
+
   vars:
+
     ssh_host: "{{ mgmt_ip }}"
+
     ssh_timeout_seconds: 300
 
+
+
 - name: Get vsd node(s) information
+
   import_role:
+
     name: common
+
     tasks_from: vsd-node-info.yml
+
   vars:
+
     vsd_hostname: "{{ vsd_fqdn }}"
+
   run_once: true
 
+
+
 - name: Get the es version after upgrade
+
   command: "curl localhost:9200"
+
   register: upgraded_version
 
+
+
 - name: Convert version to json format
+
   set_fact:
+
     upgraded_version_json: "{{ upgraded_version.stdout | from_json }}"
 
+
+
 - name: Get es version saved on vstat node(s)
+
   command: "cat /root/current_es_version.log"
+
   register: old_es_version
 
+
+
 - name: Compare es versions before and after upgrade
+
   assert:
+
     that: old_es_version.stdout != upgraded_version_json.version.number
+
     msg: "Elastisearch upgrade failed"
+
+
 
 - block:
 
+
+
   - name: stat es-cluster-nuage-index-setting.sh
+
     stat:
+
       path: "/root/nuage_elasticsearch/scripts/es-cluster-nuage-index-setting.sh"
+
     register: es_cluster_nuage_index_setting
 
+
+
   - name: Execute es-cluster-nuage-index-setting.sh
+
     shell: "/root/nuage_elasticsearch/scripts/es-cluster-nuage-index-setting.sh"
+
     when: es_cluster_nuage_index_setting.stat.exists
 
+
+
   - name: stat cluster_nuage_index_setting.sh 
+
     stat:
+
       path: "/root/nuage_elasticsearch/scripts/cluster_nuage_index_setting.sh"
+
     register: cluster_nuage_index_setting
 
+
+
   - name: Execute cluster_nuage_index_setting.sh
+
     shell: "/root/nuage_elasticsearch/scripts/cluster_nuage_index_setting.sh"
+
     when: cluster_nuage_index_setting.stat.exists and not es_cluster_nuage_index_setting.stat.exists
 
+
+
   when: vstat_sa_or_ha | match('ha')
+
   run_once: true
+
+
 
 - name: stat es-delete-watcher.py script
+
   stat:
+
     path: "/root/nuage_elasticsearch/scripts/es-delete-watcher.py"
+
   register: es_delete_watcher
 
+
+
 - name: Execute es-delete-watcher.py
+
   command: "/root/nuage_elasticsearch/scripts/es-delete-watcher.py"
+
   run_once: true
+
   when: es_delete_watcher.stat.exists
 
+
+
 - name: stat delete_watcher.py
+
   stat:
+
     path: "/root/nuage_elasticsearch/scripts/delete_watcher.py"
+
   register: delete_watcher
 
+
+
 - name: Execute delete_watcher.py
+
   command: "/root/nuage_elasticsearch/scripts/delete_watcher.py"
+
   run_once: true
+
   when: delete_watcher.stat.exists and not es_delete_watcher.stat.exists
 
+
+
 - name: Enable stats
+
   include_role:
+
     name: common
+
     tasks_from: vstat-enable-stats
+
   run_once: true

@@ -1,111 +1,219 @@
-
 - name: Set local variable with vmname
+
   set_fact:
+
     vm_name: "{{ vmname }}"
 
+
+
 - name: Display if skipping predeploy
+
   debug:
+
     msg:
+
       - "****************************************************"
+
       - "Skipping NSG-V predeploy because it is already present"
+
       - "****************************************************"
+
   when: node_running
+
+
 
 - block:
 
+
+
   - block:
+
     - name: Create local temp directory
+
       local_action: command mktemp -d "{{ lookup('env', 'TMPDIR') | default('/tmp/', true) }}ansible.XXXX"
+
       register: mktemp_output
 
+
+
     - name: Set Top-Level-Directory
+
       set_fact: tld="{{ role_path }}/../../"
 
+
+
     - name: Generate ISO file
+
       local_action: command python {{ role_path }}/files/create_zfb_profile.py {{ tld }} {{ mktemp_output.stdout }}
+
       register: output
 
+
+
     - name: Search for errors in the output of ZFB script
+
       assert:
+
         that: "not output.stdout | search('(?i)ERROR')"
+
         msg: "{{ output.stdout }}"
 
+
+
     - name: Ensure NSGV has the correct configuration
+
       assert:
+
         that: "not node_running or output.stdout | search('NSG ALREADY CONFIGURED')"
+
         msg: "NSGV is already running, but there was no corresponding configuration for it."
 
+
+
     - name: Copy the ISO image to vcenter datastore
+
       vsphere_copy:
+
             src: "{{ mktemp_output.stdout }}/user_image.iso"
+
             path: "{{ vmname }}/user_image.iso"
+
             host: "{{ target_server }}"
+
             login: "{{ vcenter.username }}"
+
             password: "{{ vcenter.password }}"
+
             datacenter: "{{ vcenter.datacenter }}"
+
             datastore: "{{ vcenter.datastore }}"
+
             validate_certs: no
+
       delegate_to: localhost
+
     when: bootstrap_method == 'zfb_metro'
+
+
 
   - name: Configure vCenter path
+
     set_fact:
+
       vcenter_path: "vi://'{{ vcenter.username | urlencode }}':'{{ vcenter.password | urlencode }}'@{{ target_server }}/{{ vcenter.datacenter }}/host/{{ vcenter.cluster }}"
 
+
+
   - name: Update vCenter path if resource pool is configured
+
     set_fact:
+
       vcenter_path: "vi://'{{ vcenter.username | urlencode }}':'{{ vcenter.password | urlencode }}'@{{ target_server }}/{{ vcenter.datacenter }}/host/{{ vcenter.cluster }}/Resources/{{ vcenter.resource_pool | urlencode }}"
+
     when: vcenter.resource_pool != 'NONE'
 
+
+
   - name: Deploy VM image on vCenter
+
     connection: local
+
     command: >
+
       {{ vcenter.ovftool }}
+
       --acceptAllEulas
+
       --noSSLVerify
+
       --powerOn
+
       --machineOutput
+
       -dm=thin
+
       -ds={{ vcenter.datastore }}
+
       -n={{ vm_name }}
+
       --net:"OVS Management={{ mgmt_bridge }}"
+
       --net:"OVS DataPath={{ data_bridge }}"
+
       --net:"port_vmnic={{ access_bridge }}"
+
       "{{ ovf_path }}/{{ ovf_file_name }}"
+
       {{ vcenter_path }}
 
+
+
   - block:
+
     - name: Mount ISO when ZFB method is metro
+
       vsphere_guest:
+
         vcenter_hostname: "{{ target_server }}"
+
         username: "{{ vcenter.username }}"
+
         password: "{{ vcenter.password }}"
+
         guest: "{{ vm_name }}"
+
         validate_certs: no
+
         state: reconfigured
+
         vm_hardware:
+
           vm_cdrom:
+
             type: "iso"
+
             iso_path: "{{ vcenter.datastore }}/{{ inventory_hostname }}/user_image.iso"
+
       delegate_to: localhost
+
     when: bootstrap_method == 'zfb_metro'
 
+
+
   - block:
+
     - name: Mount ISO when ZFB method is external
+
       vsphere_guest:
+
         vcenter_hostname: "{{ target_server }}"
+
         username: "{{ vcenter.username }}"
+
         password: "{{ vcenter.password }}"
+
         guest: "{{ vm_name }}"
+
         validate_certs: no
+
         state: reconfigured
+
         vm_hardware:
+
           vm_cdrom:
+
             type: "iso"
+
             iso_path: "{{ iso_path}}/{{ iso_file }}"
+
       delegate_to: localhost
+
     when: bootstrap_method == 'zfb_external'
 
+
+
   - debug: var=vm_facts verbosity=1
+
+
 
   when: not node_running

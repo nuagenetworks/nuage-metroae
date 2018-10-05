@@ -1,27 +1,51 @@
-
 - block:
+
   - name: List the Virtual Machine
+
     virt: command=list_vms
+
     register: virt_vms
 
+
+
   - name: Destroy VSC VM
+
     virt:
+
       name: "{{ vmname }}"
+
       state: destroyed
+
       uri: qemu:///system
+
     when: vmname in virt_vms.list_vms
+
+
 
   - name: Undefine VSC VM
+
     virt:
+
       name: "{{ vmname }}"
+
       command: undefine
+
       uri: qemu:///system
+
     when: vmname in virt_vms.list_vms
 
+
+
   - name: Destroy the images directory
+
     file:
+
       path: "{{ images_path }}/{{ inventory_hostname }}"
+
       state: absent
 
+
+
   remote_user: "{{ target_server_username }}"
+
   delegate_to: "{{ target_server }}"

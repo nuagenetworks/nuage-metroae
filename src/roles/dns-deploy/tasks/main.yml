@@ -1,104 +1,205 @@
-
 - name: Wait for DNS Utility VM ssh to be ready
+
   include_role:
+
     name: common
+
     tasks_from: wait-for-ssh
+
   vars:
+
     ssh_host: "{{ mgmt_ip }}"
 
+
+
 - block:
+
   - name: Configure yum proxy
+
     lineinfile:
+
       dest: /etc/yum.conf
+
       regexp: "^proxy="
+
       line: "proxy={{ yum_proxy }}"
+
     when: not yum_proxy | match('NONE')
 
+
+
   - name: Execute a yum update
+
     yum:
+
       name: '*'
+
       state: latest
+
     when: yum_update
 
+
+
   - name: Install ntp client on {{ target_server }}
+
     yum: name=ntp state=latest
+
+
 
   remote_user: "{{ dns_username }}"
 
+
+
 #- name: stop and flush firewall
+
 #  service :
+
 #    name: "firewalld"
+
 #    state: "stopped"
 
+
+
 #- name: disable firewall services for automatic start
+
 #  service :
+
 #    name:  "firewalld"
+
 #    enabled: no
 
+
+
 - name: Configure ntpd and ntpdate and local time zone
+
   include_role:
+
     name: common
+
     tasks_from: linux-ntp-sync
+
   vars:
+
     rem_user: "{{ dns_username }}"
+
+
 
 - block:
 
+
+
   - name: restart network service
+
     service: name=network state=restarted
 
+
+
   - name: Install bind on {{ target_server }}
+
     yum: name=bind state=latest
 
+
+
   - name: Install bind-utils on {{ target_server }}
+
     yum: name=bind-utils state=latest
 
+
+
   - name: Delete the /etc/named.conf file
+
     file:
+
       path: /etc/named.conf
+
       state: absent
+
+
 
   - name: Create /etc/named.conf on {{ target_server }}
+
     template: src=named.conf.j2 backup=no dest=/etc/named.conf owner=root group=named mode=0640
 
+
+
   - name: Delete the /var/named/{{ dns_data_zone }}.zone file
+
     file:
+
       path: /var/named/{{ dns_data_zone }}.zone
+
       state: absent
+
+
 
   - name: Create /var/named/{{ dns_data_zone }}.zone on {{ target_server }}
+
     template: src=data.training.net.zone.j2 backup=no dest=/var/named/{{ dns_data_zone }}.zone owner=root group=named mode=0640
 
+
+
   - name: Delete the /var/named/{{ dns_mgmt_zone }}.zone file
+
     file:
+
       path: /var/named/{{ dns_mgmt }}.zone
+
       state: absent
+
+
 
   - name: Create /var/named/{{ dns_mgmt }}.zone on {{ target_server }}
+
     template: src=mgmt.training.net.zone.j2 backup=no dest=/var/named/{{ dns_mgmt_zone }}.zone owner=root group=named mode=0640
 
+
+
   - name: Delete the /var/named/{{ data_reverse }}.in-addr.arpa file
+
     file:
+
       path: /var/named/{{ data_reverse }}.in-addr.arpa
+
       state: absent
+
+
 
   - name: Create /var/named/{{ data_reverse }}.in-addr.arpa on {{ target_server }}
+
     template: src=data.in-addr.arpa.j2 backup=no dest=/var/named/{{ data_reverse }}.in-addr.arpa owner=root group=named mode=0640
 
+
+
   - name: Delete the /var/named/{{ mgmt_reverse }}.in-addr.arpa file
+
     file:
+
       path: /var/named/{{ mgmt_reverse }}.in-addr.arpa
+
       state: absent
 
+
+
   - name: Create /var/named/{{ mgmt_reverse }}.in-addr.arpa on {{ target_server }}
+
     template: src=mgmt.in-addr.arpa.j2 backup=no dest=/var/named/{{ mgmt_reverse }}.in-addr.arpa owner=root group=named mode=0640
 
+
+
   - name: start named server
+
     service: name=named state=restarted
 
+
+
   - name: enable named services for automatic start
+
     service:
+
       name:  "named"
+
       enabled: yes
+
+
 
   remote_user: "{{ dns_username }}"

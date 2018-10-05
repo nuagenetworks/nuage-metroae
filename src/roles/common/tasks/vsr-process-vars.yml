@@ -1,50 +1,99 @@
 - block:
 
+
+
   - block:
 
+
+
     - name: Find name of VSR QCOW2 File
+
       find: path="{{ nuage_unzipped_files_dir }}/vsr"  pattern="sros-vm.qcow2" recurse=yes
+
       register: rc_vsr_file
+
+
 
     - debug: var=rc_vsr_file verbosity=1
 
+
+
     - name: Register VSR QCOW2 variables with proper path and image locations for use in other playbooks
+
       set_fact:
+
         qcow2_path: "{{ rc_vsr_file.files[0].path | dirname }}"
+
         qcow2_file_name: "{{ rc_vsr_file.files[0].path | basename }}"
+
       when: rc_vsr_file.matched > 0
+
+
 
     when: myvsrs | map(attribute='target_server_type') | list | issuperset(["kvm"])
 
+
+
   - block:
 
+
+
     - name: Find name of VSR OVA File
+
       find: path="{{ nuage_unzipped_files_dir }}/vsr"  pattern="sros-vm.ova" recurse=yes
+
       register: rc_vsr_file
+
+
 
     - debug: var=rc_vsr_file verbosity=1
 
+
+
     - name: Register VSR OVA variables with proper path and image locations for use in other playbooks
+
       set_fact:
+
         ova_path: "{{ rc_vsr_file.files[0].path | dirname }}"
+
         ova_file_name: "{{ rc_vsr_file.files[0].path | basename }}"
+
       when: rc_vsr_file.matched > 0
+
+
 
     when: myvsrs | map(attribute='target_server_type') | list | issuperset(["vcenter"])
 
+
+
   when:
+
     - myvsrs is defined
+
   tags:
+
     - vsr
 
+
+
 - name: Set myvsrs_check
+
   set_fact: myvsrs_check={{myvsrs is defined}}
 
+
+
 - name: Assign empty list to myvsrs if it is undefined
+
   set_fact: myvsrs= default([])
+
   when: not myvsrs_check
 
+
+
 - name: Create host_vars files for vsr
+
   template: src=vsr.j2 backup=no dest={{ inventory_dir }}/host_vars/{{ item.hostname }}
+
   with_items: "{{ myvsrs }}"
+
   when: myvsrs_check
