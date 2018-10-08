@@ -17,7 +17,7 @@
 
 2.1 Clone the master branch of the repo onto the **Metro Automation Engine Host**. Read [Setup](SETUP.md) for details.  
 ```
-git clone https://github.com.com/nuagenetworks/nuage-metro.git
+git clone https://github.com/nuagenetworks/nuage-metro.git
 ```
 2.2 Install the required packages. Run as root or sudo. Read [Setup](SETUP.md) for details.  
 ```
