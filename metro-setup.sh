@@ -170,7 +170,7 @@ function check_os_version() {
 ###############################################################################
 yum_install() {
   printn "Installing $1..."
-  xargs yum -y install < yum_requirements.txt  >> $LOG 2>&1
+  xargs --delimiter=\\n yum -y install < yum_requirements.txt  >> $LOG 2>&1
   check_retcode $?
 }
 
