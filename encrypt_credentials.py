@@ -1,14 +1,17 @@
-import argparse
 import sys
 import yaml
 import json
+import getpass
 from ansible.parsing.vault import VaultEditor, VaultSecret, is_encrypted
 
-class VaultYaml(unicode): 
+
+class VaultYaml(unicode):
     pass
+
 
 def vault_constructor(loader, node):
     return node.value
+
 
 def literal_unicode_representer(dumper, data):
     return dumper.represent_scalar("!vault", data, style='|')
@@ -17,16 +20,16 @@ def literal_unicode_representer(dumper, data):
 def encrypt_credentials_file(passcode):
     yaml.add_representer(VaultYaml, literal_unicode_representer)
     yaml.add_constructor(u'!vault', vault_constructor)
-    #todo: what happens for non-default
+    # todo: what happens for non-default
     credentials_file = 'deployments/default/credentials.yml'
     with open(credentials_file, 'r') as file:
         credentials = yaml.load(file.read())
 
-    with open('schemas/credentials.json') as credentials_schema:    
+    with open('schemas/credentials.json') as credentials_schema:
         data = yaml.load(credentials_schema)
     props = data['properties']
     encryt_credentials_list = []
-    for k,v in props.items():
+    for k, v in props.items():
         if ('encrypt' not in v) or v['encrypt']:
             encryt_credentials_list.append(k)
 
@@ -45,17 +48,14 @@ def encrypt_credentials_file(passcode):
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description='Encrypt user credentials file')
-    parser.add_argument("--passcode", help="Passcode to vault encrypt credentials file")
-    args = parser.parse_args()
-
-    if not args.passcode:
-        print "Missing passcode for encryption"
-        parser.print_help()
+    try:
+        print "This file will ecrypt user credentials for MetroAE"
+        print "All user comments in the user credentials file might be lost"
+        passcode = getpass.getpass()
+    except:
+        print "Error in getting passcode from command line"
         sys.exit()
-
-    encrypt_credentials_file(args.passcode)
+    encrypt_credentials_file(passcode)
 
 
 if __name__ == '__main__':
