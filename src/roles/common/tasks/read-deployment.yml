@@ -31,11 +31,24 @@
 
 - name: Read deployment global files
   include_vars: "{{ item.1.stat.path }}"
-  when: item.1.stat.exists and not item.0.is_list
+  when: item.1.stat.exists and not item.0.is_list and not item.0.encrypted
   with_together:
     - "{{ deployment_files }}"
     - "{{ deployment_file_stat.results }}"
-  no_log: True
+
+- name: Create empty encryption dict
+  set_fact:
+    encrypted: {}
+
+- name: Read deployment encrypted files
+  read_yaml_with_vault:
+    path: "{{ item.1.stat.path }}"
+    fact_name: encrypted
+  when: item.1.stat.exists and not item.0.is_list and item.0.encrypted
+  with_together:
+    - "{{ deployment_files }}"
+    - "{{ deployment_file_stat.results }}"
+  no_log: true
 
 - name: Default deployment list files to empty
   set_fact:
