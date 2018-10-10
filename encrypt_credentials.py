@@ -11,15 +11,13 @@ class VaultYaml(unicode):
 def literal_unicode_representer(dumper, data):
     return dumper.represent_scalar("!vault", data, style='|')
 
-yaml.add_representer(VaultYaml, literal_unicode_representer)
 
 def encrypt_credentials_file(passcode):
+    yaml.add_representer(VaultYaml, literal_unicode_representer)
     #todo: what happens for non-default
     credentials_file = 'deployments/default/credentials.yml'
     with open(credentials_file, 'r') as file:
         credentials = yaml.safe_load(file.read())
-
-    print credentials
 
     with open('schemas/credentials.json') as credentials_schema:    
         data = yaml.safe_load(json.dumps(json.load(credentials_schema)))
@@ -28,20 +26,14 @@ def encrypt_credentials_file(passcode):
     for k,v in props.items():
         if ('encrypt' not in v) or v['encrypt']:
             encryt_credentials_list.append(k)
-    print  encryt_credentials_list
 
     if credentials is not None:
-        # Get the credentials list from schema
-
         for cred in encryt_credentials_list:
             if cred in credentials:
                 secret = VaultSecret(passcode)
                 editor = VaultEditor()
-                enc = editor.encrypt_bytes("hello", secret)
-                print str(enc)
-                encodedYaml = VaultYaml(enc)
-                credentials[cred] = encodedYaml
-        print credentials
+                vaultCode = editor.encrypt_bytes(credentials[cred], secret)
+                credentials[cred] = VaultYaml(vaultCode)
         with open(credentials_file, 'w') as file:
             yaml.dump(credentials, file, default_flow_style=False)
 
