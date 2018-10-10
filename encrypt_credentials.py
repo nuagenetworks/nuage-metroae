@@ -2,11 +2,13 @@ import argparse
 import sys
 import yaml
 import json
-from ansible.parsing.vault import VaultEditor, VaultSecret
+from ansible.parsing.vault import VaultEditor, VaultSecret, is_encrypted
 
 class VaultYaml(unicode): 
     pass
 
+def vault_constructor(loader, node):
+    return node.value
 
 def literal_unicode_representer(dumper, data):
     return dumper.represent_scalar("!vault", data, style='|')
@@ -14,13 +16,14 @@ def literal_unicode_representer(dumper, data):
 
 def encrypt_credentials_file(passcode):
     yaml.add_representer(VaultYaml, literal_unicode_representer)
+    yaml.add_constructor(u'!vault', vault_constructor)
     #todo: what happens for non-default
     credentials_file = 'deployments/default/credentials.yml'
     with open(credentials_file, 'r') as file:
-        credentials = yaml.safe_load(file.read())
+        credentials = yaml.load(file.read())
 
     with open('schemas/credentials.json') as credentials_schema:    
-        data = yaml.safe_load(json.dumps(json.load(credentials_schema)))
+        data = yaml.load(credentials_schema)
     props = data['properties']
     encryt_credentials_list = []
     for k,v in props.items():
@@ -32,7 +35,10 @@ def encrypt_credentials_file(passcode):
             if cred in credentials:
                 secret = VaultSecret(passcode)
                 editor = VaultEditor()
-                vaultCode = editor.encrypt_bytes(credentials[cred], secret)
+                if not is_encrypted(credentials[cred]):
+                    vaultCode = editor.encrypt_bytes(credentials[cred], secret)
+                else:
+                    vaultCode = credentials[cred]
                 credentials[cred] = VaultYaml(vaultCode)
         with open(credentials_file, 'w') as file:
             yaml.dump(credentials, file, default_flow_style=False)
