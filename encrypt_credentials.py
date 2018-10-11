@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 import sys
 import yaml
-import json
 import getpass
 import argparse
 import jinja2
