@@ -20,7 +20,6 @@ def literal_unicode_representer(dumper, data):
 
 
 def encrypt_credentials_file(passcode, deployment_name):
-    yaml.add_representer(VaultYaml, literal_unicode_representer)
     yaml.add_constructor(u'!vault', vault_constructor)
     credentials_file = 'deployments/' + deployment_name + '/credentials.yml'
     with open(credentials_file, 'r') as file:
@@ -43,13 +42,14 @@ def encrypt_credentials_file(passcode, deployment_name):
                     vaultCode = editor.encrypt_bytes(credentials[cred], secret)
                 else:
                     vaultCode = credentials[cred]
-                credentials[cred] = VaultYaml(vaultCode)
+                credentials[cred] = '!vault |\n' + (vaultCode)
+
         gen_example = ExampleFileGenerator(False, True)
         example_lines = gen_example.generate_example_from_schema('schemas/credentials.json')
         template = jinja2.Template(example_lines)
         credentials = template.render(**credentials)
         with open(credentials_file, 'w') as file:
-            yaml.dump(credentials, file, default_flow_style=False)
+            file.write(credentials)
 
 def main():
     parser = argparse.ArgumentParser(
