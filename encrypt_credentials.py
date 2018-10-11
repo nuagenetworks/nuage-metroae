@@ -7,6 +7,7 @@ import jinja2
 from ansible.parsing.vault import VaultEditor, VaultSecret, is_encrypted
 from generate_example_from_schema import ExampleFileGenerator
 
+
 class VaultYaml(unicode):
     pass
 
@@ -45,11 +46,13 @@ def encrypt_credentials_file(passcode, deployment_name):
                 credentials[cred] = '!vault |\n' + (vaultCode)
 
         gen_example = ExampleFileGenerator(False, True)
-        example_lines = gen_example.generate_example_from_schema('schemas/credentials.json')
+        example_lines = gen_example.generate_example_from_schema(
+            'schemas/credentials.json')
         template = jinja2.Template(example_lines)
         credentials = template.render(**credentials)
         with open(credentials_file, 'w') as file:
             file.write(credentials)
+
 
 def main():
     parser = argparse.ArgumentParser(
