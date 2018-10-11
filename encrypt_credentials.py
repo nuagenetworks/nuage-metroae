@@ -39,8 +39,8 @@ def encrypt_credentials_file(passcode, deployment_name):
             do_not_encrypt_list.append(k)
 
     if credentials is not None:
-        for cred in props.keys():
-            if cred in credentials and (cred not in do_not_encrypt_list):
+        for cred in credentials.keys():
+            if cred not in do_not_encrypt_list:
                 secret = VaultSecret(passcode)
                 editor = VaultEditor()
                 if not is_encrypted(credentials[cred]):
@@ -70,13 +70,13 @@ def main():
 
     try:
         print "This file will encrypt user credentials for MetroAE"
-        print "All user comments in the user credentials file will be lost"
+        print "All user comments and unsupported fields in the credentials file will be lost"
         print "Press Ctrl-C to cancel"
         while True:
             passcode = getpass.getpass()
             confirm_passcode = getpass.getpass("Confirm passcode:")
             if passcode != confirm_passcode:
-                print "Passcode and confirm passcode not matching. Retry."
+                print "Passcodes do not match. Please reenter"
             else:
                 break
     except:
