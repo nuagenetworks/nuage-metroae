@@ -1,11 +1,14 @@
+#!/usr/bin/env python
 import sys
 import yaml
 import json
 import getpass
 import argparse
 import jinja2
+import os.path
 from ansible.parsing.vault import VaultEditor, VaultSecret, is_encrypted
 from generate_example_from_schema import ExampleFileGenerator
+DEPLOYMENT_DIR = 'deployments'
 
 
 class VaultYaml(unicode):
@@ -22,21 +25,22 @@ def literal_unicode_representer(dumper, data):
 
 def encrypt_credentials_file(passcode, deployment_name):
     yaml.add_constructor(u'!vault', vault_constructor)
-    credentials_file = 'deployments/' + deployment_name + '/credentials.yml'
+    credentials_file = os.path.join(
+        DEPLOYMENT_DIR, deployment_name, 'credentials.yml')
     with open(credentials_file, 'r') as file:
         credentials = yaml.load(file.read())
 
     with open('schemas/credentials.json') as credentials_schema:
         data = yaml.load(credentials_schema)
     props = data['properties']
-    encryt_credentials_list = []
+    do_not_encrypt_list = []
     for k, v in props.items():
-        if ('encrypt' not in v) or v['encrypt']:
-            encryt_credentials_list.append(k)
+        if ('encrypt' in v) and (not v['encrypt']):
+            do_not_encrypt_list.append(k)
 
     if credentials is not None:
-        for cred in encryt_credentials_list:
-            if cred in credentials:
+        for cred in props.keys():
+            if cred in credentials and (cred not in do_not_encrypt_list):
                 secret = VaultSecret(passcode)
                 editor = VaultEditor()
                 if not is_encrypted(credentials[cred]):
@@ -58,22 +62,27 @@ def main():
     parser = argparse.ArgumentParser(
         description='Encrypt user credentials file')
     parser.add_argument(
-        "--deployment",
+        "deployment",
+        nargs='?',
         help="Optional deployment name - will default to 'default' deployment",
         default="default")
     args = parser.parse_args()
 
     try:
-        print "This file will ecrypt user credentials for MetroAE"
-        print "All user comments in the user credentials file might be lost"
-        passcode = getpass.getpass()
-        confirm_passcode = getpass.getpass("Confirm passcode:")
+        print "This file will encrypt user credentials for MetroAE"
+        print "All user comments in the user credentials file will be lost"
+        print "Press Ctrl-C to cancel"
+        while True:
+            passcode = getpass.getpass()
+            confirm_passcode = getpass.getpass("Confirm passcode:")
+            if passcode != confirm_passcode:
+                print "Passcode and confirm passcode not matching. Retry."
+            else:
+                break
     except:
         print "Error in getting passcode from command line"
         sys.exit()
-    if passcode != confirm_passcode:
-        print "Passcode and confirm passcode not matching. Quitting."
-        sys.exit()
+
     encrypt_credentials_file(passcode, args.deployment)
 
 
