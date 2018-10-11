@@ -67,8 +67,12 @@ def main():
         print "This file will ecrypt user credentials for MetroAE"
         print "All user comments in the user credentials file might be lost"
         passcode = getpass.getpass()
+        confirm_passcode = getpass.getpass("Confirm passcode:")
     except:
         print "Error in getting passcode from command line"
+        sys.exit()
+    if passcode != confirm_passcode:
+        print "Passcode and confirm passcode not matching. Quitting."
         sys.exit()
     encrypt_credentials_file(passcode, args.deployment)
 
