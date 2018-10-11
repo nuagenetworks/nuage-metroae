@@ -35,9 +35,8 @@ def no_duplicates_constructor(loader, node, deep=False):
     return loader.construct_mapping(node, deep)
 
 
-# yaml.add_constructor(
-#     yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG,
-#     no_duplicates_constructor)
+def vault_constructor(loader, node):
+    return node.value
 
 
 def check_yaml(filepath):
@@ -46,6 +45,7 @@ def check_yaml(filepath):
         yaml.add_constructor(
             yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG,
             no_duplicates_constructor)
+        yaml.add_constructor(u'!vault', vault_constructor)
         yaml.load(fil)
         module.exit_json(changed=False)
     except yaml.YAMLError as exc:

@@ -180,12 +180,16 @@ class ExampleFileGenerator(object):
         if "type" in field:
             field_type = field["type"]
         if self.as_template:
+            is_encrypted = False
+            if "encrypt" in field and field["encrypt"] is True:
+                is_encrypted = True
             return self.get_example_template_value(name, field_type,
-                                                   is_list)
+                                                   is_list, is_encrypted)
         else:
             return self.get_example_placeholder_value(field_type)
 
-    def get_example_template_value(self, name, field_type, is_list):
+    def get_example_template_value(self, name, field_type, is_list,
+                                   is_encrypted):
         item_name = ""
         if is_list:
             item_name = "item."
@@ -196,6 +200,8 @@ class ExampleFileGenerator(object):
         elif field_type == "array":
             return ('[ {%% for i in %s%s | default([]) %%}"{{ i }}", '
                     '{%% endfor %%}]' % (item_name, name))
+        elif is_encrypted:
+            return "{{ %s%s | indent(8, False) }}" % (item_name, name)
         else:
             return '"{{ %s%s }}"' % (item_name, name)
 
