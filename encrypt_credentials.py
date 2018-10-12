@@ -7,6 +7,7 @@ import jinja2
 import os
 from ansible.parsing.vault import VaultEditor, VaultSecret, is_encrypted
 from generate_example_from_schema import ExampleFileGenerator
+
 DEPLOYMENT_DIR = 'deployments'
 
 
@@ -24,8 +25,14 @@ def literal_unicode_representer(dumper, data):
 
 def encrypt_credentials_file(passcode, deployment_name):
     yaml.add_constructor(u'!vault', vault_constructor)
-    credentials_file = os.path.join(
-        DEPLOYMENT_DIR, deployment_name, 'credentials.yml')
+    if os.path.isfile(deployment_name):
+        credentials_file = deployment_name
+    elif os.path.isdir(deployment_name):
+        credentials_file = os.path.join(
+            deployment_name, 'credentials.yml')
+    else:
+        credentials_file = os.path.join(
+            DEPLOYMENT_DIR, deployment_name, 'credentials.yml')
     with open(credentials_file, 'r') as file:
         credentials = yaml.load(file.read())
 
