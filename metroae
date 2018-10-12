@@ -13,6 +13,9 @@ SCHEMA_DIR=$CURRENT_DIR/schemas
 DEPLOYMENTS_BASE_DIR=$CURRENT_DIR/deployments
 DEPLOYMENT_DIR=$DEPLOYMENTS_BASE_DIR/default
 INVENTORY_DIR=$CURRENT_DIR/src/inventory
+VAULT_ENV_FILE=$CURRENT_DIR/src/vault-env
+ENCRYPTED_DEPLOYMENT_FILE=credentials.yml
+ENCRYPTED_TOKEN=\$ANSIBLE_VAULT
 
 function usage {
     echo ""
@@ -41,6 +44,8 @@ function usage {
     echo "    --ansible-help:        Displays help for ansible arguments."
     echo "    -v, -vv, -vvv, -vvvv:  Runs with increasing levels of verbosity."
     echo "    --list:                Shows a list of all supported workflows"
+    echo "    --skip-password:       Do not ask for a password.  Password can be"
+    echo "                           provided via the environment variable METROAE_PASSWORD"
     echo "    --skip-build:          Runs workflow without performing build."
     echo "                           This will prevent changes in the deployment from"
     echo "                           taking effect, but it will be faster."
@@ -68,10 +73,34 @@ function list_workflows {
     done
 }
 
+function check_password_needed {
+    deployment_dir=$1
+
+    if [[ -z $METROAE_PASSWORD ]]; then
+        fail=0
+        grep $ENCRYPTED_TOKEN $deployment_dir/$ENCRYPTED_DEPLOYMENT_FILE > /dev/null || fail=1
+        if [[ $fail -ne 0 ]]; then
+            SKIP_PASSWORD=1
+        fi
+    else
+        SKIP_PASSWORD=1
+    fi
+}
+
+function ask_password {
+    if [[ $SKIP_PASSWORD -ne 1 ]]; then
+        echo "Deployment contains encrypted content, password required."
+        echo "Password can alternatively be provided via the environment variable METROAE_PASSWORD"
+        read -s -p "Enter password: " METROAE_PASSWORD
+        export METROAE_PASSWORD
+    fi
+}
+
 #
 # Parse arguments
 #
 SKIP_BUILD=0
+SKIP_PASSWORD=0
 POSITIONAL=()
 while [[ $# -gt 0 ]]
 do
@@ -99,6 +128,10 @@ case $key in
     ;;
     --skip-build)
     SKIP_BUILD=1
+    shift # past argument
+    ;;
+    --skip-password)
+    SKIP_PASSWORD=1
     shift # past argument
     ;;
     *)    # unknown option
@@ -139,6 +172,13 @@ if [[ $# -gt 0 ]]; then
           exit 1
         fi
     fi
+fi
+
+# Get password if needed
+check_password_needed $DEPLOYMENT_DIR
+ask_password
+if [[ ! -z $METROAE_PASSWORD ]]; then
+    export ANSIBLE_VAULT_PASSWORD_FILE=$VAULT_ENV_FILE
 fi
 
 # Run playbooks
