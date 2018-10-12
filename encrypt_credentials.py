@@ -4,7 +4,7 @@ import yaml
 import getpass
 import argparse
 import jinja2
-import os.path
+import os
 from ansible.parsing.vault import VaultEditor, VaultSecret, is_encrypted
 from generate_example_from_schema import ExampleFileGenerator
 DEPLOYMENT_DIR = 'deployments'
@@ -67,20 +67,24 @@ def main():
         default="default")
     args = parser.parse_args()
 
-    try:
-        print "This file will encrypt user credentials for MetroAE"
-        print "All user comments and unsupported fields in the credentials file will be lost"
-        print "Press Ctrl-C to cancel"
-        while True:
-            passcode = getpass.getpass()
-            confirm_passcode = getpass.getpass("Confirm passcode:")
-            if passcode != confirm_passcode:
-                print "Passcodes do not match. Please reenter"
-            else:
-                break
-    except:
-        print "Error in getting passcode from command line"
-        sys.exit()
+    if "METROAE_PASSWORD" in os.environ:
+        passcode = os.environ["METROAE_PASSWORD"]
+    else:
+        try:
+            print "This file will encrypt user credentials for MetroAE"
+            print ("All user comments and unsupported fields in the "
+                   "credentials file will be lost")
+            print "Press Ctrl-C to cancel"
+            while True:
+                passcode = getpass.getpass()
+                confirm_passcode = getpass.getpass("Confirm passcode:")
+                if passcode != confirm_passcode:
+                    print "Passcodes do not match. Please reenter"
+                else:
+                    break
+        except Exception:
+            print "Error in getting passcode from command line"
+            sys.exit()
 
     encrypt_credentials_file(passcode, args.deployment)
 
