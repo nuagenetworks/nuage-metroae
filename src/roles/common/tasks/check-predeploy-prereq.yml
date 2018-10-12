@@ -1,16 +1,20 @@
 ---
 
-- name: Check that QCOW2 files were found
-  assert:
-    that: "qcow2_path is defined and qcow2_file_name is defined"
-    msg: "Missing QCOW2 files for {{ hostname }} under the unzipped file directory, please unzip them and issue reset_build"
-  when: target_server_type | match("kvm")
+- block:
 
-- name: Check that OVA files were found
-  assert:
-    that: "ova_path is defined and ova_file_name is defined"
-    msg: "Missing OVA files for {{ hostname }} under the unzipped file directory, please unzip them and issue reset_build"
-  when: target_server_type | match("vcenter")
+  - name: Check that QCOW2 files were found
+    assert:
+      that: "qcow2_path is defined and qcow2_file_name is defined"
+      msg: "Missing QCOW2 files for {{ hostname }} under the unzipped file directory, please unzip them and issue reset_build"
+    when: target_server_type | match("kvm")
+
+  - name: Check that OVA files were found
+    assert:
+      that: "ova_path is defined and ova_file_name is defined"
+      msg: "Missing OVA files for {{ hostname }} under the unzipped file directory, please unzip them and issue reset_build"
+    when: target_server_type | match("vcenter")
+
+  when: component_type | default("NONE") != 'vrs'
 
 - name: Check that TIM file was found
   assert:
@@ -29,7 +33,7 @@
     assert:
       that: "libnetwork_package_path is defined and libnetwork_package_file_name is defined"
       msg: "Missing VRS libnetwork files under the unzipped file directory, please unzip it and issue reset_build"
-    when: libnetwork_install is True
+    when: libnetwork_install | default(False) is True
 
   - name: Check that DKMS files were found
     assert:
