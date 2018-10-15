@@ -74,12 +74,17 @@ function list_workflows {
 }
 
 function check_password_needed {
-    deployment_dir=$1
+    deployment_dir="$1"
 
     if [[ -z $METROAE_PASSWORD ]]; then
-        fail=0
-        grep $ENCRYPTED_TOKEN $deployment_dir/$ENCRYPTED_DEPLOYMENT_FILE > /dev/null || fail=1
-        if [[ $fail -ne 0 ]]; then
+        if [[ -a $deployment_dir/$ENCRYPTED_DEPLOYMENT_FILE ]]; then
+            fail=0
+            echo "$deployment_dir/$ENCRYPTED_DEPLOYMENT_FILE"
+            grep $ENCRYPTED_TOKEN "$deployment_dir/$ENCRYPTED_DEPLOYMENT_FILE" > /dev/null || fail=1
+            if [[ $fail -ne 0 ]]; then
+                SKIP_PASSWORD=1
+            fi
+        else
             SKIP_PASSWORD=1
         fi
     else
@@ -91,6 +96,7 @@ function ask_password {
     if [[ $SKIP_PASSWORD -ne 1 ]]; then
         echo "Deployment contains encrypted content, password required."
         echo "Password can alternatively be provided via the environment variable METROAE_PASSWORD"
+        echo ""
         read -s -p "Enter password: " METROAE_PASSWORD
         export METROAE_PASSWORD
     fi
@@ -175,7 +181,7 @@ if [[ $# -gt 0 ]]; then
 fi
 
 # Get password if needed
-check_password_needed $DEPLOYMENT_DIR
+check_password_needed "$DEPLOYMENT_DIR"
 ask_password
 if [[ ! -z $METROAE_PASSWORD ]]; then
     export ANSIBLE_VAULT_PASSWORD_FILE=$VAULT_ENV_FILE
