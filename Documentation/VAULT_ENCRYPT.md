@@ -1,17 +1,22 @@
-# Encrypting Sensitive Data with Ansible Vault  
-You can safeguard sensitive data in Metro&#198; by encrypting files with Ansible's vault feature. See the steps below for instructions on how to encrypt `credentials.yml`. More details about the vault feature can be found in [documentation](https://docs.ansible.com/ansible/2.4/vault.html) provided by Ansible.  
-### 1. Create a vault encryption passcode file  
- Create a file containing a master passcode (example file name: myvault.txt). This passcode can be used to encode and decode all other user data files. It's generally a good idea to keep this file outside of the source code.  
+# Encrypting Sensitive Data in Nuage Metro 
+You can safeguard sensitive data in Metro&#198; by encrypting files with Metro&#198;'s encryption tool. See the steps below for instructions on how to encrypt `credentials.yml`. It uses Ansible's vault encoding in the background. More details about the vault feature can be found in [documentation](https://docs.ansible.com/ansible/2.4/vault.html) provided by Ansible.  
+### 1. Create the credentials file to be encrypted
+  In your Metro deployment folder, create or edit the `credentials.yml` to store credentials required for various Nuage component. This file will be encrypted.  
 ### 2. Encrypt `credentials.yml`  
-  To encrypt `credentials.yml` with the passcode file that you created in step one above, run the following command:  
+  To encrypt `credentials.yml`, run the following command:  
   ```
-  ansible-vault encrypt credentials.yml --vault-password-file myvault.txt
-  ```     
-### 3. Pass the vault password file option  
-  While running Metro&#198; commands you can supply the vault password file as an option by running the following command:
-```
-metroae the_name_of_the_playbook --vault-password-file myvault.txt
-```  
+  python encrypt_credentials.py <deployment_name>
+  ```
+  Default deployment name is `default` if not specified. This command will prompt for master passcode to encrypt the file and will also prompt for confirming passcode.
+
+### 3. Running Metro&#198; with encrypted credentials
+  While running Metro&#198; commands you can supply the vault password via prompt or by setting an environment variable
+  ```
+  metroae the_name_of_the_playbook
+  ```
+  This will prompt you to enter the master passcode that you used to encrypt the credentials file. 
+  Alternatively, if you have the environment variable METROAE_PASSWORD set to the right passcode, Metro&#198; will not prompt for the passcode.
+
 ## Questions, Feedback, and Contributing
 Ask questions and get support via the [forums](https://devops.nuagenetworks.net/forums/) on the [MetroÆ site](https://devops.nuagenetworks.net/).  
 You may also contact us directly.  
