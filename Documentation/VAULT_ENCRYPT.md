@@ -10,7 +10,7 @@ You can safeguard sensitive data in Metro&#198; by encrypting files with Metro&#
   Default deployment name is `default` if not specified. This command will prompt for master passcode to encrypt the file and will also prompt for confirming passcode.
 
 ### 3. Running Metro&#198; with encrypted credentials
-  While running Metro&#198; commands you can supply the vault password via prompt or by setting an environment variable
+  While running Metro&#198; commands you can supply the Metro&#198; passcode via prompt or by setting an environment variable
   ```
   metroae the_name_of_the_playbook
   ```
