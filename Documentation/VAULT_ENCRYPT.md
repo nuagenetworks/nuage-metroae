@@ -1,7 +1,7 @@
 # Encrypting Sensitive Data in Metro&#198;
 You can safeguard sensitive data in Metro&#198; by encrypting files with Metro&#198;'s encryption tool. See the steps below for instructions on how to encrypt `credentials.yml`. It uses Ansible's vault encoding in the background. More details about the vault feature can be found in [documentation](https://docs.ansible.com/ansible/2.4/vault.html) provided by Ansible.  
 ### 1. Create the credentials file to be encrypted
-  In your Metro deployment folder, create or edit the `credentials.yml` to store credentials required for various Nuage components. This file will be encrypted.  
+  In your MetroÆ deployment folder, create or edit the `credentials.yml` to store credentials required for various Nuage components. This file will be encrypted.  
 ### 2. Encrypt `credentials.yml`  
   To encrypt `credentials.yml`, run the following command:  
   ```
@@ -15,8 +15,8 @@ You can safeguard sensitive data in Metro&#198; by encrypting files with Metro&#
   ```
   metroae the_name_of_the_playbook
   ```
-  This will prompt you to enter the master passcode that you used to encrypt the credentials file. 
-  Alternatively, if you have the environment variable METROAE_PASSWORD set to the right passcode, Metro&#198; will not prompt for the passcode.
+  This command prompts you to enter the master passcode that you used to encrypt the credentials file. 
+  Alternatively, if you have the environment variable METROAE_PASSWORD set to the right passcode, Metro&#198; does not prompt for the passcode.
 
 ## Questions, Feedback, and Contributing
 Ask questions and get support via the [forums](https://devops.nuagenetworks.net/forums/) on the [MetroÆ site](https://devops.nuagenetworks.net/).  
