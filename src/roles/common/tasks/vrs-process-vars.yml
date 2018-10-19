@@ -182,6 +182,13 @@
 - name: Set vrss_check
   set_fact: vrss_check={{ vrss is defined }}
 
+- name: Assert target server password is defined when VRS present and secure_communication is true
+  assert: {
+    that: "{{ encrypted.target_server_password is defined }}",
+    msg: "Target server password need to provided in the credentials for TLS secure communication with VRS"
+  }
+  when: vrss_check and (secure_communication | default(True))
+
 - name: Assign empty dict to vrss if it is undefined
   set_fact:
     vrss: "{{ vrss|default({}) }}"

@@ -1,5 +1,19 @@
 ---
+
 - block:
+
+  - block:
+    - name: Force DHCP update to configure DNS in AWS
+      command: dhclient
+      ignore_errors: true
+
+    - name: Set hostname for AWS for current session
+      command: "hostname {{ hostname }}"
+
+    - name: Set hostname for AWS permanently
+      shell: "echo {{ hostname }} > /etc/hostname"
+
+    when: target_server_type | match("aws")
 
   - name: Read the VSD version
     shell: echo $VSD_VERSION
@@ -36,6 +50,11 @@
       - (vsd_major_version|int > 5) or
         (vsd_major_version|int >= 5 and vsd_minor_version|int > 2) or
         (vsd_major_version|int >= 5 and vsd_minor_version|int >= 2 and vsd_patch_version|int >= 2)
+
+  - name: Assert that vcin_mode is not true if version less than 5.2.2
+    assert:
+      that: deploy_vcin or not (vcin_mode|default(False))
+      msg:  "MetroAE does not support the installation of VCIN for versions less than 5.2.2. Quitting"
 
   - block:
 
@@ -229,7 +248,7 @@
       - master_vcin is defined
 
   - block:
-
+      
     - name: Install VSD software on the first cluster node
       command: "{{ vsd_node1_install_cmd }}"
       when: inventory_hostname == vsd_cluster_node_1

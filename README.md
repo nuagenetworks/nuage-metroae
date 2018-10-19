@@ -3,7 +3,7 @@
 
 Version: 3.0.0
 
-MetroÆ is an automation engine that deploys and upgrades Nuage Networks components. You specify the individual details of your target platform, then let MetroÆ install, upgrade, roll-back, or health-check the environment for you.
+MetroÆ is an automation engine that deploys and upgrades Nuage Networks components. You specify the individual details of your target platform, then let MetroÆ install, upgrade, destroy, or health-check the environment for you.
 
 ## Important Note
 The procedures have changed substantially in version 3.0 to improve usability.
@@ -43,6 +43,19 @@ VSTAT | X | X | X | X
 VSC | X | X | X | X
 VCIN | X |  | X |
 
+## Unsupported Components/Operations
+The following components/operations are not supported in the beta release.
+* dns
+* gmv
+* mesos
+* nsgv bootstrap (install is supported)
+* stcv
+* vsr
+* vrs-vm
+* osc-integration
+* AWS-based VSTAT upgrade
+* upgrade of VRS through VCIN
+
 ## Main Steps for Using MetroÆ
 
 1. [Setup](Documentation/SETUP.md) the MetroÆ host. Setup prepares the host for running MetroÆ, including retrieving the repository, installing prerequisite packages and setting up SSH access. You also have the option of installing MetroÆ in a container, and then working with it via CLI or the GUI.
@@ -76,7 +89,15 @@ The following workflows are examples that combine together several of the above 
 * nuage_health - Checks the health of all components specified in a deployment.
 
 ## Ansible
+MetroAE is based off of the Python-based Ansible operations tool.  The following sections provide more detail of how Ansible is utilized to perform workflows.
+
+## Nomenclature
+**Ansible Host**: The host where Metro Automation Engine runs. Ansible and the required packages are installed on this host. The Ansible Host must run el7 Linux host, e.g. CentOS 7.* or RHEL 7.*.
+**Metro Automation Engine User**: The user who runs Metro Automation Engine to deploy and upgrade components.
+**Target Server**: The hypervisor on which one or more VSP components are installed as VMs. Each deployment may contain more than one Target Server.
+
 MetroÆ is based off of the Python-based Ansible operations tool.  The following sections provide more detail of how Ansible is used to perform workflows.
+
 
 ## Nomenclature
 **Ansible Host**: The host where MetroÆ runs. Ansible and the required packages are installed on this host. The Ansible Host must run el7 Linux host, e.g. CentOS 7.* or RHEL 7.*.
@@ -100,17 +121,17 @@ File name | Description
 [RELEASE_NOTES.md](Documentation/RELEASE_NOTES.md) | New features, resolved issues and known limitations and issues
 [GETTING_STARTED.md](Documentation/GETTING_STARTED.md) | MetroÆ Quick Start Guide
 [SETUP.md](Documentation/SETUP.md) | Set up your environment by cloning the repo, installing packages and configuring access.
-[CUSTOMIZE.md](Documentation/CUSTOMIZE.md) | Populate variable files for a deployment and unzip Nuage software.
-[DEPLOY.md](Documentation/DEPLOY.md) | Deploy all VSP components or choose components individually.
-[DESTROY.md](Documentation/DESTROY.md) | Remove existing deployment(s) and start over.
+[CUSTOMIZE.md](Documentation/CUSTOMIZE.md) | Populate variable files for a deployment and unzip Nuage software.  
+[DEPLOY.md](Documentation/DEPLOY.md) | Deploy all VSP components or choose components individually.  
+[DESTROY.md](Documentation/DESTROY.md) | Remove existing deployment(s) and start over.  
 [UPGRADE_SA.md](Documentation/UPGRADE_SA.md) | Upgrade component(s) from one release to the next in a standalone environment.
 [UPGRADE_HA.md](Documentation/UPGRADE_HA.md) | Upgrade component(s) from one release to the next in a clustered environment.
 [VAULT_ENCRYPT.md](Documentation/VAULT_ENCRYPT.md) | Safeguard sensitive data
 
 ## Questions, Feedback, and Contributing
-Ask questions and get support via the [forums](https://devops.nuagenetworks.net/forums/) on the [MetroÆ site](https://devops.nuagenetworks.net/).  
-You may also contact us directly.  
-  Outside Nokia: [devops@nuagenetworks.net](mailto:deveops@nuagenetworks.net "send email to nuage-metro project")  
+Ask questions and get support via the [forums](https://devops.nuagenetworks.net/forums/) on the [MetroÆ site](https://devops.nuagenetworks.net/).
+You may also contact us directly.
+  Outside Nokia: [devops@nuagenetworks.net](mailto:deveops@nuagenetworks.net "send email to nuage-metro project")
   Internal Nokia: [nuage-metro-interest@list.nokia.com](mailto:nuage-metro-interest@list.nokia.com "send email to nuage-metro project")
 
 Report bugs you find and suggest new features and enhancements via the [GitHub Issues](https://github.com/nuagenetworks/nuage-metro/issues "nuage-metro issues") feature.

@@ -1,6 +1,6 @@
 # Metro Automation Engine Release Notes
 
-## Release 3.0.0
+## Release 3.0.0b1
 
 ### New Procedures and Improvements
 
@@ -21,3 +21,4 @@ The following components/operations are not supported in the beta release.
 * vrs-vm
 * osc-integration
 * AWS-based VSTAT upgrade
+* upgrade of VRS through VCIN

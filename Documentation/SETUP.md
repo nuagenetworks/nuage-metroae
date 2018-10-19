@@ -21,7 +21,7 @@ Download a zip of the MetroÆ archive from [GitHub.com](https://github.com/nuage
 On the Ansible Host, execute the following commands:  
 ```
 yum install -y git
-git clone https://github.com/nuagenetworks/nuage-metro
+git clone https://github.com/nuagenetworks/nuage-metro.git
 ```
 ### 2. Set Up Ansible Host
 Prior to running MetroÆ, use one of the two methods below to install the required packages onto the Ansible Host.

@@ -30,6 +30,12 @@ schemas:
   vnsutils:
     file: vnsutils.json
     title: VNSUtils
+  nsgvs:
+    file: nsgvs.json
+    title: NSGvs
+  vcins:
+    file: vcins.json
+    title: VCINs
   credentials:
     file: credentials.json
     title: Credentials
@@ -46,6 +52,7 @@ schemas:
 workflows:
   - name: Install
     steps:
+      - build
       - install_vsds
       - install_vscs
       - install_vrss
@@ -73,11 +80,18 @@ workflows:
       - template: vnsutils.j2
         filename: vnsutils.yml
         schemas: ['vnsutils']
+      - template: nsgvs.j2
+        filename: nsgvs.yml
+        schemas: ['nsgvs']
+      - template: vcins.j2
+        filename: vcins.yml
+        schemas: ['vcins']
       - template: credentials.j2
         filename: credentials.yml
         schemas: ['credentials']
   - name: Upgrade
     steps:
+      - build
       - vsp_preupgrade_health
       - upgrade_vsds
       - upgrade_vscs
@@ -105,6 +119,7 @@ workflows:
         schemas: ['credentials']
   - name: Destroy
     steps:
+      - build
       - vsc_destroy
       - vsd_destroy
       - vsd_sa_upgrade_destroy
@@ -135,6 +150,42 @@ workflows:
       - template: vnsutils.j2
         filename: vnsutils.yml
         schemas: ['vnsutils']
+      - template: nsgvs.j2
+        filename: nsgvs.yml
+        schemas: ['nsgvs']
+      - template: vcins.j2
+        filename: vcins.yml
+        schemas: ['vcins']
+      - template: credentials.j2
+        filename: credentials.yml
+        schemas: ['credentials']
+  - name: Health
+    steps:
+      - build
+      - vsd_health
+      - vcin_health
+      - vstat_health
+      - vsc_health
+      - vrs_health
+    var_files:
+      - template: common.j2
+        filename: common.yml
+        schemas: ['deployment', 'common']
+      - template: vsds.j2
+        filename: vsds.yml
+        schemas: ['vsds']
+      - template: vscs.j2
+        filename: vscs.yml
+        schemas: ['vscs']
+      - template: vstats.j2
+        filename: vstats.yml
+        schemas: ['vstats']
+      - template: vrss.j2
+        filename: vrss.yml
+        schemas: ['vrss']
+      - template: vcins.j2
+        filename: vcins.yml
+        schemas: ['vcins']
       - template: credentials.j2
         filename: credentials.yml
         schemas: ['credentials']

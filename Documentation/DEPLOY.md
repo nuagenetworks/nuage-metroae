@@ -10,6 +10,7 @@ Before deploying any components, you must have previously [set up your Nuage Met
 
 Make sure you have unzipped copies of all the Nuage Networks files you are going to need for installation or upgrade. These are generally distributed as `*.tar.gz` files that are downloaded by you from Nokia OLCS. You can unzip these files by using the nuage_unzip shell script `nuage-unzip.sh` which will place the files in subdirectories under the path specified for the `nuage_unzipped_files_dir` variable in `common.yml`. You can also unzip the files manually and copy them to their proper locations by hand. For details of this process, including the subdirectory layout that MetroÆ expects, see [CUSTOMIZE.md](Documentation/CUSTOMIZE.md).
 
+
 ## Use of MetroÆ Tool
 MetroÆ can perform a workflow using the command-line tool as follows:
 
@@ -63,15 +64,6 @@ VSD predeploy can take a long time. If you are **vCenter user** you may want to 
 
 Note: If you have an issue with a VM and would like to reinstall it, you must destroy it before you replace it. Otherwise, the install will find the first one still running and skip the new install.
 
-## Additional Steps for Specific Deployments
-
-### NSGV and Bootstrapping
-
-MetroÆ can automatically bootstrap (ZFB) a NSGV when deploying a VNS UTIL VM. To direct MetroÆ to generate the ISO file needed for zero factor bootstrapping, perform the following tasks before deploying:
-
-* Customize variables in [`zfb_vars.yml`](deployments/default/zfb_vars.yml "link to zfb_vars.yml file")
-* Specify `bootstrap_method: zfb_metro,` in nsgvs parameters in [`nsgvs.yml`](deployments/default/nsgvs.yml "link to nsgvs.yml file")
-
 ## Copy QCOW2 Files before Deployment
 
 When installing or upgrading in a KVM environment, MetroÆ copies the QCOW2 image files to the target file server during the predeploy phase. As an option, you can pre-position the qcow2 files for all the components by running copy_qcow2_files. This gives the ability to copy the required images files first and then run install or upgrade later.
@@ -109,7 +101,7 @@ If you would like to remove an entire deployment, or individual components, and 
 
 After you have successfully deployed Nuage Networks VSP components, you may want to upgrade to a newer version at some point in the future. See [UPGRADE_SA.md](UPGRADE_SA.md) for standalone deployments and [UPGRADE_HA.md](UPGRADE_HA.md) for clustered deployments.
 
-## Questions, Feedback, and Contributing
+## Questions, Feedback, and Contributing  
 Ask questions and get support via the [forums](https://devops.nuagenetworks.net/forums/) on the [MetroÆ site](https://devops.nuagenetworks.net/).  
 You may also contact us directly.  
   Outside Nokia: [devops@nuagenetworks.net](mailto:deveops@nuagenetworks.net "send email to nuage-metro project")  

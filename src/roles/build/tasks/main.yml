@@ -8,7 +8,12 @@
   file: path={{ inventory_dir }}/host_vars/ state=directory
   tags:
     - always
-
+    
+- name: Set nuage unzipped directory to start with images if not absolute path
+  set_fact:
+    nuage_unzipped_files_dir: /images/{{ nuage_unzipped_files_dir }}
+  when:  not nuage_unzipped_files_dir | match('^/')
+  
 - name: Update VSD variables
   include_role:
     name: common
@@ -89,12 +94,6 @@
     name: common
     tasks_from: gvm-process-vars
   tags: gvm
-
-- name: Update User Credentials variables
-  include_role:
-    name: common
-    tasks_from: user-creds-process-vars
-  tags: always
 
 - name: Update hosts variables
   include_role:

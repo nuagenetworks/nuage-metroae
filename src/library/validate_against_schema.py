@@ -29,6 +29,10 @@ EXAMPLES = '''
 '''
 
 
+def vault_constructor(loader, node):
+    return node.value
+
+
 def validate_against_schema(path, schema):
     with open(schema, 'r') as file:
         try:
@@ -40,7 +44,8 @@ def validate_against_schema(path, schema):
 
     with open(path, 'r') as file:
         try:
-            parsed_yaml = yaml.safe_load(file.read())
+            yaml.add_constructor(u'!vault', vault_constructor)
+            parsed_yaml = yaml.load(file.read())
         except Exception as e:
             msg = "Could not load yaml file %s: %s" % (path, str(e))
             print msg

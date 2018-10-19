@@ -2,7 +2,7 @@
     "$schema": "http://json-schema.org/draft-06/schema#",
     "$id": "urn:nuage-metroae:vsds",
     "title": "Virtualized Services Directory",
-    "description": "Specify configuration for Nuage MetroAE VSDs.",
+    "description": "Specify configuration for Nuage VSDs.",
     "type": "array",
     "widget": "form",
     "items": {
@@ -14,18 +14,21 @@
                 "type": "string",
                 "format": "hostname",
                 "title": "Hostname",
+                "description": "VSD Hostname",
                 "sectionBegin": "Management Interface",
                 "propertyOrder": 10
             },
             "mgmt_ip": {
                 "type": "string",
                 "format": "ipv4",
-                "title": "Management IP address",
+                "title": "Management IP Address",
+                "description": "Management IP of VSD",
                 "propertyOrder": 20
             },
             "mgmt_ip_prefix": {
                 "type": "integer",
-                "title": "Management IP prefix length",
+                "title": "Management Network Prefix Length",
+                "description": "Management network prefix length for VSD",
                 "minimum": 0,
                 "maximum": 32,
                 "propertyOrder": 30
@@ -33,7 +36,8 @@
             "mgmt_gateway": {
                 "type": "string",
                 "format": "ipv4",
-                "title": "Management IP gateway",
+                "title": "Management Network Gateway",
+                "description": "Management network gateway for VSD",
                 "sectionEnd": "Management Interface",
                 "propertyOrder": 40
             },
@@ -42,19 +46,21 @@
                 "format": "hostname",
                 "title": "VM name",
                 "default": "(Hostname)",
-                "description": "Used to identify VM on the hypervisor/vcenter.",
+                "description": "Name of the Virtual Machine on the Hypervisor",
                 "propertyOrder": 50
             },
             "upgrade_vmname": {
                 "type": "string",
                 "format": "hostname",
-                "title": "Upgrade VM name",
+                "title": "Upgrade VM Name",
+                "description": "Virtual Machine name of the new VSD. Used during Upgrade only",
                 "workflow": "Upgrade",
                 "propertyOrder": 60
             },
             "target_server_type": {
                 "type": "string",
-                "title": "Target Server type",
+                "title": "Target Server Type",
+                "description": "Type of hypervisor environment into which the instance will be created",
                 "propertyOrder": 70,
                 "sectionBegin": "Target Server",
                 "enum": ["kvm", "vcenter", "heat", "aws"]
@@ -62,22 +68,24 @@
             "target_server": {
                 "type": "string",
                 "format": "hostname",
-                "title": "Target Server hostname",
+                "title": "Target Server IP or FQDN",
+                "description": "Hostname or IP address of the hypervisor where VM  will be instantiated. In the case of deployment in a vCenter environment, this will be the FQDN of the vCenter Server",
                 "sectionEnd": "Target Server",
                 "propertyOrder": 80
             },
             "mgmt_bridge": {
                 "type": "string",
                 "default": "(global Bridge interface)",
-                "title": "Management Bridge interface",
+                "title": "Management Network Bridge",
+                "description": "Network Bridge used for the management interface of a component or the BOF interface on VSC. This will be a Distributed Virtual PortGroup (DVPG) when deploying on vCenter or a Linux network bridge when deploying on KVM. This field can be overridden by defining the management network bridge separately in the component configuration. Defaults to the global setting",
                 "advanced": true,
                 "propertyOrder": 90
             },
             "vcenter_datacenter": {
                 "type": "string",
-                "title": "vCenter Datacenter",
-                "description": "Only applicable for vcenter server type and defaults to global settings",
-                "default": "(global vCenter datacenter)",
+                "title": "vCenter Datacenter Name",
+                "description": "Name of the vCenter Datacenter on which the VSD VM will be deployed. Defaults to the common vCenter Datacenter Name if not defined here.",
+                "default": "(global vCenter Datacenter Name)",
                 "target_server_type": "vcenter",
                 "advanced": true,
                 "sectionBegin": "vCenter Parameters",
@@ -85,18 +93,18 @@
             },
             "vcenter_cluster": {
                 "type": "string",
-                "title": "vCenter Cluster",
-                "description": "Only applicable for vcenter server type and defaults to global settings",
-                "default": "(global vCenter cluster)",
+                "title": "vCenter Cluster Name",
+                "description": "Name of the vCenter Cluster on which the VSD VM will be deployed. Defaults to the common vCenter Cluster Name if not defined here.",
+                "default": "(global vCenter Cluster Name)",
                 "target_server_type": "vcenter",
                 "advanced": true,
                 "propertyOrder": 110
             },
             "vcenter_datastore": {
                 "type": "string",
-                "title": "vCenter Datastore",
-                "description": "Only applicable for vcenter server type and defaults to global settings",
-                "default": "(global vCenter datastore)",
+                "title": "vCenter Datastore Name",
+                "description": "Name of the vCenter Datastore on which the VSD VM will be deployed. Defaults to the common vCenter Datastore Name if not defined here.",
+                "default": "(global vCenter Datastore Name)",
                 "target_server_type": "vcenter",
                 "advanced": true,
                 "sectionEnd": "vCenter Parameters",
@@ -107,37 +115,44 @@
                 "title": "AWS Region",
                 "description": "Only applicable for AWS deployments",
                 "sectionBegin": "AWS Parameters",
+                "target_server_type": "aws",
                 "propertyOrder": 130
             },
             "aws_ami_id": {
                 "type": "string",
-                "title": "AWS AMI ID",
+                "title": "AWS VSD AMI ID",
                 "description": "AMI ID for AWS instance",
+                "target_server_type": "aws",
                 "propertyOrder": 140
             },
             "aws_upgrade_ami_id": {
                 "type": "string",
-                "title": "AWS AMI ID for Upgrading Instance",
-                "description": "AMI ID of the upgraded image",
+                "title": "Upgrade AWS VSD AMI ID",
+                "description": "AMI VSD ID of the latest VSD release. Used only during an upgrade",
+                "target_server_type": "aws",
+                "workflow": "upgrade",
                 "propertyOrder": 150
             },
             "aws_instance_type": {
                 "type": "string",
                 "title": "AWS Instance Type",
-                "description": "Instance Type of the AWS Instance",
+                "description": "Instance Type to be used for a VSD instance",
+                "target_server_type": "aws",
                 "propertyOrder": 160
             },
             "aws_key_name": {
                 "type": "string",
                 "title": "AWS Keypair Name",
-                "description": "Name of the Keypair used to connect to VPC",
+                "target_server_type": "aws",
+                "description": "Name of the Keypair used to connect to AWS instances",
                 "propertyOrder": 170
             },
             "aws_mgmt_eni": {
                 "type": "string",
                 "format": "ipv4",
                 "title": "AWS Management ENI ID",
-                "description": "ENI ID for VSD Instance on Management Subnetwork",
+                "description": "ENI ID for VSD Instance on Management Subnet",
+                "target_server_type": "aws",
                 "sectionEnd": "AWS Parameters",
                 "propertyOrder": 180
             }

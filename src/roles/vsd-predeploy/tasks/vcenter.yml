@@ -46,7 +46,7 @@
   - name: Deploy VM image on vCenter
     connection: local
     command: >
-      {{ vcenter.ovftool }}
+      {{ vcenter_global.ovftool }}
       --acceptAllEulas
       --noSSLVerify
       --powerOn
@@ -76,6 +76,7 @@
       hostname: "{{ target_server }}"
       username: "{{ vcenter.username }}"
       password: "{{ vcenter.password }}"
+      validate_certs: no
     delegate_to: localhost
     register: vm_list
 
@@ -83,13 +84,13 @@
     assert:
       that: "vm_name in vm_list.virtual_machines"
       msg: "Desired VM does not exist"
-        
+
   - name: Set VM UUID
     set_fact:
       uuid: "{{ vm_list.virtual_machines[vm_name]['uuid'] }}"
-  
+
   - debug: var=uuid
-    
+
   - name: Turn on autostart
     connection: local
     vmware_autostart:
@@ -99,7 +100,8 @@
       username: "{{ vcenter.username }}"
       password: "{{ vcenter.password }}"
       state: enable
-           
+      validate_certs: no
+
   - name: Disabling cloud-init
     connection: local
     vmware_vm_shell:

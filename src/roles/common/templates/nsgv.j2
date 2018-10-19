@@ -88,37 +88,35 @@ ova_file_name: {{ ova_file_name }}
 {% endif %}
 
 vcenter:
-  username: {{ item.vcenter_username | default(vcenter_username) }}
-  password: {{ item.vcenter_password | default(vcenter_password) }}
-  datacenter: {{ item.vcenter_datacenter | default(vcenter_datacenter) }}
-  cluster: {{ item.vcenter_cluster | default(vcenter_cluster) }}
-  datastore: {{ item.vcenter_datastore | default(vcenter_datastore) }}
-  resource_pool: {{ item.vcenter_resource_pool | default(vcenter_resource_pool | default("NONE")) }}
+  username: "{{ "{{" }} vcenter_global.username {{ "}}" }}"
+  password: "{{ "{{" }} vcenter_global.password {{ "}}" }}"
+  datacenter: {{ item.vcenter_datacenter | default( '"{{ vcenter_global.datacenter }}"' ) }}
+  cluster: {{ item.vcenter_cluster | default( '"{{ vcenter_global.cluster }}"' ) }}
+  datastore: {{ item.vcenter_datastore | default( '"{{ vcenter_global.datastore }}"' ) }}
+  resource_pool: {{ item.vcenter_resource_pool | default('"{{ vcenter_global.resource_pool }}"' | default('NONE')) }}
+
 {% endif %}
 
 {% elif item.target_server_type | match("aws") %}
 
 aws_region: "{{ item.aws_region }}"
+aws_ami_id: "{{ item.aws_ami_id }}"
+aws_instance_type: "{{ item.aws_instance_type | default('t2.medium') }}"
+aws_key_name: "{{ item.aws_key_name }}"
 
-{% if item.provision_vpc is defined %}
+{% if item.provision_vpc_cidr is defined %}
 provision_vpc:
-  VPCCIDR: "{{ item.provision_vpc.cidr }}"
-  NSGWANSubnetCIDR: "{{ item.provision_vpc.nsg_wan_subnet }}"
-  NSGLANSubnetCIDR: "{{ item.provision_vpc.nsg_lan_subnet }}"
-  PrivateSubnetCIDR: "{{ item.provision_vpc.private_subnet }}"
-{% elif item.use_vpc is defined %}
-use_vpc:
-  nsg_lan_eni: "{{ item.use_vpc.nsg_lan_eni }}"
-  nsg_wan_eni: "{{ item.use_vpc.nsg_wan_eni }}"
+  VPCCIDR: "{{ item.provision_vpc_cidr }}"
+  NSGWANSubnetCIDR: "{{ item.provision_vpc_nsg_wan_subnet_cidr }}"
+  NSGLANSubnetCIDR: "{{ item.provision_vpc_nsg_lan_subnet_cidr }}"
+  PrivateSubnetCIDR: "{{ item.provision_vpc_private_subnet_cidr }}"
+{% else %}
+aws_access_eni: {{ item.aws_access_eni }}
+aws_data_eni: {{ item.aws_data_eni }}
 {% endif %}
 
-nsg_ami:
-  id: "{{ item.nsg_ami.id }}"
-  type: "{{ item.nsg_ami.type | default('t2.medium') }}"
-  keyname: "{{ item.nsg_ami.keyname }}"
-
-{% if item.nsg_ami.eip_allocid is defined %}
-  eip_allocid: "{{ item.nsg_ami.eip_allocid }}"
+{% if item.aws_eip_allocid is defined %}
+aws_eip_allocid: "{{ item.aws_eip_allocid }}"
 {% endif %}
 
 {% endif %}
