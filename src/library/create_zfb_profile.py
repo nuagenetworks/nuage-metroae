@@ -244,9 +244,8 @@ def main():
         csproot = session.user
     except Exception as e:
         module.fail_json(
-            msg="ERROR: Could not establish connection to VSD API using %s" %
-            vsd_auth)
-        module.fail_json(msg="ERROR: Exception: %s" % e)
+            msg="ERROR: Could not establish connection to VSD API "
+                "using %s: %s" % (vsd_auth, str(e)))
         sys.exit(1)
 
     nsg_already_configured = False
