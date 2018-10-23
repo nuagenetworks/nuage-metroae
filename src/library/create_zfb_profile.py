@@ -226,6 +226,7 @@ def main():
     nsgv_path = module.params['nsgv_path']
     fact_name = module.params['fact_name']
     zfb_params = module.params['zfb_params']
+    vsd_auth = module.params['vsd_auth']
 
     # Get VSD license
     vsd_license = ""
@@ -238,13 +239,13 @@ def main():
 
     # Create a session as csp user
     try:
-        session = NUVSDSession(**zfb_params['csp'])
+        session = NUVSDSession(**vsd_auth)
         session.start()
         csproot = session.user
     except Exception as e:
         module.fail_json(
             msg="ERROR: Could not establish connection to VSD API using %s" %
-            zfb_params['csp'])
+            vsd_auth)
         module.fail_json(msg="ERROR: Exception: %s" % e)
         sys.exit(1)
 
