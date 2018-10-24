@@ -165,7 +165,7 @@ EXAMPLES = '''
   register: nuage_enterprise
 
 # Checking if an Enterprise with the new name already exists
-- name: Check if an Enterprise exists with the new name
+- name: Check if an Enterprise exists with the new name (ignoring errors)
   connection: local
   nuage_vspk:
     auth: "{{ nuage_auth }}"
@@ -207,7 +207,7 @@ EXAMPLES = '''
   register: nuage_user
 
 # Updating password for User
-- name: Update admin password
+- name: Update admin password (ignoring errors)
   connection: local
   nuage_vspk:
     auth: "{{ nuage_auth }}"

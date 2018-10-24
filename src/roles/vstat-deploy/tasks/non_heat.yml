@@ -9,7 +9,7 @@
     ssh_timeout_seconds: 900
 
 - block:
-  - name: Force DHCP update to configure DNS in AWS
+  - name: Force DHCP update to configure DNS in AWS (ignoring errors)
     command: dhclient
     ignore_errors: true
 
@@ -55,7 +55,7 @@
   run_once: true
   when: vstat_sa_or_ha | match('ha')
 
-- name: check for iptables
+- name: check for iptables (ignoring errors)
   shell: "service iptables status"
   register: _svc_iptables
   ignore_errors: True
@@ -78,7 +78,7 @@
       enabled: yes
     remote_user: "{{ vstat_default_username }}"
 
-  - name: Check if iptables is already setup for VSD rules
+  - name: Check if iptables is already setup for VSD rules (ignoring errors)
     shell: iptables -L INPUT | grep 'match-set vsd src'
     remote_user: "{{ vstat_default_username }}"
     register: vstat_iptables_result
@@ -109,7 +109,7 @@
 
     - block:
 
-      - name: Config iptables on VSTAT vm to accept conn on ports 9200,9300 from vsd(s)
+      - name: Config iptables on VSTAT vm to accept conn on ports 9200,9300 from vsd(s) (ignoring errors)
         shell: "{{ item }}"
         with_items:
           - "{{ iptables_std_commands }}"
@@ -130,7 +130,7 @@
 
     - block:
 
-      - name: Config iptables on VSTAT vm to accept conn on ports 9200, 9300 from vsd(s) in cluster setup
+      - name: Config iptables on VSTAT vm to accept conn on ports 9200, 9300 from vsd(s) in cluster setup (ignoring errors)
         shell: "{{ item }}"
         with_items:
           - "{{ iptables_cluster_commands }}"
@@ -153,7 +153,7 @@
 
   when: "_svc_iptables.rc == 0"
 
-- name: check for firewalld
+- name: check for firewalld (ignoring errors)
   shell: "service firewalld status"
   register: _svc_firewalld
   ignore_errors: True
@@ -173,7 +173,7 @@
       enabled: yes
     remote_user: "{{ vstat_default_username }}"
 
-  - name: Check if firewalld is already setup for VSD rules
+  - name: Check if firewalld is already setup for VSD rules (ignoring errors)
     shell: firewall-cmd --list-all | grep 9200 | grep accept
     remote_user: "{{ target_server_username }}"
     register: vstat_firewalld_result
