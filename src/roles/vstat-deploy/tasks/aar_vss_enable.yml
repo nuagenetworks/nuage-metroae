@@ -4,12 +4,12 @@
   - name: Create SSL directory on the Stats node
     file: path=/etc/nginx/ssl state=directory owner=root group=root mode=600
 
-  - name: Revoke old stats cert, if any
+  - name: Revoke old stats cert, if any (ignoring errors)
     command: "/opt/vsd/ejbca/deploy/certMgmt.sh -a revoke -u elastic"
     remote_user: "{{ vsd_default_username }}"
     delegate_to: "{{ vsd_fqdn }}"
     ignore_errors: yes
-  
+
   remote_user: "{{ vstat_default_username }}"
 
 - name: Set local variables
@@ -19,7 +19,7 @@
       - elastic-CA.pem
       - elasticCert.pem
       - elastic-Key.pem
-      - elastic.pem       
+      - elastic.pem
 
 - block:
   - name: Generate SSL certificates on VSD for the Stats node
@@ -31,7 +31,7 @@
       certificate_username: elastic
       commonName: elastic
       certificate_type: server
-      additional_parameters:  -d {{ mgmt_ip }}    
+      additional_parameters:  -d {{ mgmt_ip }}
 
   - name: Create temp folder to host the ssl certificates
     local_action: file path={{ dest }} state=directory mode=755
@@ -52,10 +52,10 @@
 - name: Delete temp folder from localhost
   local_action: file path={{ dest }} state=absent
   run_once: True
-  
+
 - name: Restart nginx process on Stats node
   systemd:
     name: nginx
     state: restarted
   remote_user: "{{ vstat_default_username }}"
-  
+
