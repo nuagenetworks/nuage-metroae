@@ -3,7 +3,7 @@
 from vspk.v4_0 import NULicense, NUEnterprise, NUUser, NUNSPortTemplate
 from vspk.v4_0 import NUInfrastructureGatewayProfile, NUNSGatewayTemplate
 from vspk.v4_0 import NUInfrastructureVscProfile, NUVLANTemplate, NUJob
-from vspk.v4_0 import NUNSGateway, NUVSDSession
+from vspk.v4_0 import NUNSGateway, NUVSDSession, NUUplinkConnection
 import subprocess
 import sys
 from time import sleep
@@ -176,6 +176,11 @@ def create_nsgv_ports(nsg_temp, vsc_temp):
         vlan_temp.associated_vsc_profile_id = vsc_temp.id
         port_temp.create_child(vlan_temp)
 
+        uplink = NUUplinkConnection()
+        uplink.mode = "Dynamic"
+        uplink.role = "PRIMARY"
+        vlan_temp.create_child(uplink)
+
     # Create access port
     if access_port['name'] not in lst_port_name:
         vlan_id = access_port.pop('vlan_value')
@@ -201,18 +206,18 @@ def create_nsg_device(csp_user, nsg_temp):
     nsg_dev = NUNSGateway(name=organization['nsg_name'])
     nsg_dev.template_id = nsg_temp.id
     metro_org.create_child(nsg_dev)
+    return metro_org
 
 
-def create_iso_file(csp_user, nsg_temp, nsgv_path):
+def create_iso_file(metro_org, nsg_temp, nsgv_path):
     zfb_constants = module.params['zfb_constants']
 
-    csproot = csp_user
     # Create an ISO file that's attached to nsgv vm
     job = NUJob()
     job.command = "GET_ZFB_INFO"
     zfb_constants['iso_params']['associatedEntityID'] = nsg_temp.id
     job.parameters = zfb_constants['iso_params']
-    csproot.create_child(job)
+    metro_org.create_child(job)
     subprocess.call("echo %s | base64 -d > %s/user_image.iso.gz"
                     % (job.result, nsgv_path), shell=True)
     sleep(1)
@@ -259,11 +264,12 @@ def main():
         nsg_temp = create_nsg_gateway_template(csproot)
         vsc_temp = create_vsc_template(csproot)
         create_nsgv_ports(nsg_temp, vsc_temp)
-        create_nsg_device(csproot, nsg_temp)
+        metro_org = create_nsg_device(csproot, nsg_temp)
     else:
         nsg_already_configured = True
+        metro_org = csproot
 
-    create_iso_file(csproot, nsg_temp, nsgv_path)
+    create_iso_file(metro_org, nsg_temp, nsgv_path)
 
     module.exit_json(changed=True,
                      ansible_facts={fact_name: nsg_already_configured})
