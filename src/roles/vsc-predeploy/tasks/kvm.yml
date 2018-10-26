@@ -29,7 +29,7 @@
         (data_bridge not in ansible_interfaces)
 
 - block:
-  - name: Check if required OS packages are installed
+  - name: Check if required OS packages are installed (ignoring errors)
     command: rpm -q qemu-kvm libvirt bridge-utils libguestfs-tools libvirt-python
     register: rpm_check
     ignore_errors: True
@@ -69,24 +69,24 @@
 
 - block:
     - name: set skip copy images to default
-      set_fact: 
+      set_fact:
         skip_copy_images: False
-      when: skip_copy_images is undefined 
+      when: skip_copy_images is undefined
 
     - include_tasks: copy_qcow2.yml
-      when: not skip_copy_images      
-    
-    - block: 
+      when: not skip_copy_images
+
+    - block:
       - name: Check to make sure there is an existing qcow image
-        stat: 
+        stat:
           path: "{{ images_path }}/{{ vm_name }}/{{ inventory_hostname }}.qcow2"
         register: statResult
-        
+
       - name: check the result of image find command
         assert:
           that: statResult.stat.exists == True
           msg: Missing qcow2 file {{ images_path }}/{{ vm_name }}/{{ inventory_hostname }}.qcow2
-          
+
       when: skip_copy_images
 
     - name: Setup VSC temporary configuration files

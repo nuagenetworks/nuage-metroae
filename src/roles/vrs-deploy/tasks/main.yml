@@ -34,17 +34,17 @@
       openvswitch_file: "/etc/default/openvswitch-switch"
     when: ansible_os_family == "Debian"
 
-  - name: Check whether active controller address is already configured
+  - name: Check whether active controller address is already configured (ignoring errors)
     command: grep -Fq "ACTIVE_CONTROLLER={{ active_controller_addr }}" {{ openvswitch_file }}
     register: active_address_result
     ignore_errors: True
 
-  - name: Check whether standby controller address is already configured
+  - name: Check whether standby controller address is already configured (ignoring errors)
     command: grep -Fq "STANDBY_CONTROLLER={{ standby_controller_addr }}" {{ openvswitch_file }}
     register: standby_address_result
     ignore_errors: True
 
-  - name: Get controller connection info
+  - name: Get controller connection info (ignoring errors)
     shell: "ovs-vsctl show | grep -Pzl '(?s)Controller \"ctrl(1|2)\"\\n *target: \"(tcp|ssl):({{ item }}):6633\"\\n *role: (master|slave)\\n *is_connected: true'"
     with_items:
       - "{{ active_controller_addr }}"
