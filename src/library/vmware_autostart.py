@@ -196,9 +196,8 @@ def main():
             module.fail_json(msg="Could not find ESXi host using uuid %s" % uuid)
 
         result = configure_autostart(esxi_host, connection, start_delay, vm_name, state)
-    except:
-        e = sys.exec_info()[0]
-        module.fail_json(msg="Attempt to configure autostart failed with exception: %s" % e)
+    except Exception as e:
+        module.fail_json(msg="Attempt to configure autostart failed with exception: %s" % str(e))
 
     if result['failed']:
         module.fail_json(**result)

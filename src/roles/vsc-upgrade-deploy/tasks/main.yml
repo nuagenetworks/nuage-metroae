@@ -1,4 +1,4 @@
-- name: Clean known_hosts of VSC's
+- name: Clean known_hosts of VSC's (ignoring errors)
   known_hosts:
     name: "{{ mgmt_ip }}"
     state: absent
@@ -41,7 +41,7 @@
 
 - name: Print image version in json  when verbosity >= 1
   debug: var=version_json verbosity=1
-  
+
 - name: Copy new VSC image to VSC nodes
   expect:
     command: "{{ vsc_image_copy }}"
@@ -50,7 +50,7 @@
       (?i)password: "{{ vsc_password|default(vsc_default_password) }}"
     timeout: "{{ vsc_scp_timeout_seconds }}"
 
-- name: Reboot VSC VM
+- name: Reboot VSC VM (ignoring errors)
   sros_command:
     commands:
       - admin reboot now
@@ -69,11 +69,11 @@
   when: target_server_type | match('heat')
 
 - name: Wait for VSC ssh to be ready
-  include_role: 
+  include_role:
     name: common
     tasks_from: wait-for-ssh-port
   vars:
     ssh_host: "{{ mgmt_ip }}"
-   
 
-  
+
+
