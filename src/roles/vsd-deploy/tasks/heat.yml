@@ -104,16 +104,16 @@
 
   - name: Set VSD numbering for install
     set_fact:
-        vsd_cluster_node_1: "{{ groups['vsds'][0] }}"
-        vsd_cluster_node_2: "{{ groups['vsds'][1] }}"
-        vsd_cluster_node_3: "{{ groups['vsds'][2] }}"
+        first_cluster_node_to_install: "{{ groups['vsds'][0] }}"
+        second_cluster_node_to_install: "{{ groups['vsds'][1] }}"
+        third_cluster_node_to_install: "{{ groups['vsds'][2] }}"
     when: not nuage_upgrade | default(False)
 
   - name: Set VSD numbering for upgrade
     set_fact:
-        vsd_cluster_node_1: "{{ groups['vsds'][1] }}"
-        vsd_cluster_node_2: "{{ groups['vsds'][2] }}"
-        vsd_cluster_node_3: "{{ groups['vsds'][0] }}"
+        first_cluster_node_to_install: "{{ groups['vsds'][1] }}"
+        second_cluster_node_to_install: "{{ groups['vsds'][2] }}"
+        third_cluster_node_to_install: "{{ groups['vsds'][0] }}"
     when: nuage_upgrade | default(False)
 
   when: vsd_sa_or_ha | match('ha')
@@ -151,7 +151,7 @@
           - "{{ groups['vsds'] }}"
           - "{{ ssh_key_lst.results }}"
       remote_user: "{{ vsd_default_username }}"
-      when: vsd_version.stdout | int < 5 and inventory_hostname == vsd_cluster_node_1
+      when: vsd_version.stdout | int < 5 and inventory_hostname == first_cluster_node_to_install
 
     - block:
 
@@ -185,7 +185,7 @@
         with_items: "{{ groups['vsds'] }}"
       when: vsd_version.stdout | int >= 5
 
-    when: inventory_hostname == vsd_cluster_node_1 or (inventory_hostname == vsd_cluster_node_3 and nuage_upgrade | default(False))
+    when: inventory_hostname == first_cluster_node_to_install or (inventory_hostname == third_cluster_node_to_install and nuage_upgrade | default(False))
 
   remote_user: "{{ vsd_default_username }}"
   when: vsd_sa_or_ha | match('ha')
@@ -205,16 +205,16 @@
 - block:
 
   - name: Install VSD software on the first cluster node
-    command: "{{ vsd_node1_install_cmd }}"
-    when: inventory_hostname == vsd_cluster_node_1
+    command: "/opt/vsd/vsd-install.sh -t 1 -a {{ first_cluster_node_to_install }} -b {{ second_cluster_node_to_install }} -c {{third_cluster_node_to_install}} -x {{vsd_fqdn}} -y"
+    when: inventory_hostname == first_cluster_node_to_install
 
   - name: Install VSD software on the second cluster node
-    command: "{{ vsd_node2_install_cmd }}"
-    when: inventory_hostname == vsd_cluster_node_2
+    command: "/opt/vsd/vsd-install.sh -1 {{ first_cluster_node_to_install }} -t 2 -x {{ vsd_fqdn }} -y"
+    when: inventory_hostname == second_cluster_node_to_install
 
   - name: Install VSD software on the third cluster node
-    command: "{{ vsd_node3_install_cmd }}"
-    when: inventory_hostname == vsd_cluster_node_3
+    command: "/opt/vsd/vsd-install.sh -1 {{ first_cluster_node_to_install }} -t 3 -x {{ vsd_fqdn }} -y"
+    when: inventory_hostname == third_cluster_node_to_install
 
   when: vsd_sa_or_ha | match('ha')
   remote_user: "{{ vsd_default_username }}"
