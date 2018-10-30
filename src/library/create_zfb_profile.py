@@ -203,8 +203,11 @@ def create_nsg_device(csp_user, nsg_temp):
     csproot.create_child(metro_org)
 
     # Create NSG device under an organization
-    nsg_dev = NUNSGateway(name=organization['nsg_name'])
-    nsg_dev.template_id = nsg_temp.id
+    nsg_params = {"name": organization['nsg_name'],
+                  "templateID": nsg_temp.id,
+                  "ZFBMatchAttribute": organization['match_type'],
+                  "ZFBMatchValue": organization['match_value']}
+    nsg_dev = NUNSGateway(data=nsg_params)
     metro_org.create_child(nsg_dev)
     return metro_org
 
