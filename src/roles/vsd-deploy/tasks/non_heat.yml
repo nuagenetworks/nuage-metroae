@@ -58,24 +58,6 @@
 
   - block:
 
-    - name: Set VSD numbering for install
-      set_fact:
-          vsd_cluster_node_1: "{{ groups['vsds'][0] }}"
-          vsd_cluster_node_2: "{{ groups['vsds'][1] }}"
-          vsd_cluster_node_3: "{{ groups['vsds'][2] }}"
-      when: not nuage_upgrade | default(False)
-
-    - name: Set VSD numbering for upgrade
-      set_fact:
-          vsd_cluster_node_1: "{{ groups['vsds'][1] }}"
-          vsd_cluster_node_2: "{{ groups['vsds'][2] }}"
-          vsd_cluster_node_3: "{{ groups['vsds'][0] }}"
-      when: nuage_upgrade | default(False)
-
-    when: vsd_sa_or_ha | match ('ha')
-
-  - block:
-
     - block:
 
       - name: Generate SSH keys
@@ -108,7 +90,7 @@
         with_items: "{{ groups['vsds'] }}"
 
       when:
-        - inventory_hostname == groups['vsd_cluster_node_1'][0]
+        - inventory_hostname == vsd_ha_node1
         - not nuage_upgrade | default(False)
 
     - block:
@@ -119,16 +101,16 @@
           creates: /home/vsd/.ssh/id_rsa
         delegate_to: "{{ item }}"
         with_items:
-          - groups['vsd_cluster_node_2'][0]
-          - groups['vsd_cluster_node_3'][0]
+          - vsd_ha_node2
+          - vsd_ha_node3
 
       - name: Get generated SSH keys
         shell: cat /home/vsd/.ssh/id_rsa.pub
         register: ssh_key_lst
         delegate_to: "{{ item }}"
         with_items:
-          - groups['vsd_cluster_node_2'][0]
-          - groups['vsd_cluster_node_3'][0]
+          - vsd_ha_node2
+          - vsd_ha_node3
 
       - name: Add node 2's SSH key to authorized_keys file
         shell: "echo {{ ssh_key_list[0].stdout }} >> /home/vsd/.ssh/authorized_keys"
@@ -152,10 +134,10 @@
             group: hadoopusers
             mode: 0640
 
-        delegate_to: groups['vsd_cluster_node_2'][0]
+        delegate_to: vsd_ha_node2
 
       when:
-        - inventory_hostname == groups['vsd_cluster_node_3'][0]
+        - inventory_hostname == vsd_ha_node3
         - nuage_upgrade | default(False)
 
     - block:
@@ -170,9 +152,9 @@
         register: ssh_key_lst
         delegate_to: "{{ item }}"
         with_items:
-          - groups['vsd_cluster_node_1'][0]
-          - groups['vsd_cluster_node_2'][0]
-          - groups['vsd_cluster_node_3'][0]
+          - vsd_ha_node1
+          - vsd_ha_node2
+          - vsd_ha_node3
 
       - name: Add node 2's SSH key to authorized_keys file
         shell: "echo {{ ssh_key_list[1].stdout }} >> /home/vsd/.ssh/authorized_keys"
@@ -189,14 +171,14 @@
 
       - name: Add node 1's SSH key to authorized_keys file on node 2
         shell: "echo {{ ssh_key_list[0].stdout }} >> /home/vsd/.ssh/authorized_keys"
-        delegate_to: groups['vsd_cluster_node_2'][0]
+        delegate_to: vsd_ha_node2
 
       - name: Add node 1's SSH key to authorized_keys file on node 3
         shell: "echo {{ ssh_key_list[0].stdout }} >> /home/vsd/.ssh/authorized_keys"
-        delegate_to: groups['vsd_cluster_node_3'][0]
+        delegate_to: vsd_ha_node3
 
       when:
-        - inventory_hostname == groups['vsd_cluster_node_1'][0]
+        - inventory_hostname == vsd_ha_node1
         - nuage_upgrade | default(False)
 
     when: vsd_sa_or_ha | match('ha')
@@ -312,15 +294,15 @@
 
     - name: Install VSD software on the first cluster node
       command: "{{ vsd_node1_install_cmd }}"
-      when: inventory_hostname == vsd_cluster_node_1
+      when: inventory_hostname == vsd_ha_node1
 
     - name: Install VSD software on the second cluster node
       command: "{{ vsd_node2_install_cmd }}"
-      when: inventory_hostname == vsd_cluster_node_2
+      when: inventory_hostname == vsd_ha_node2
 
     - name: Install VSD software on the third cluster node
       command: "{{ vsd_node3_install_cmd }}"
-      when: inventory_hostname == vsd_cluster_node_3
+      when: inventory_hostname == vsd_ha_node3
 
     when: vsd_sa_or_ha | match('ha')
 
