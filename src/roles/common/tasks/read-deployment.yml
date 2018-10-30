@@ -36,24 +36,30 @@
     - "{{ deployment_files }}"
     - "{{ deployment_file_stat.results }}"
 
-- name: Create empty encryption dict
+- name: Create empty encryption set
   set_fact:
     encrypted: {}
 
 - name: Read deployment encrypted files
   read_yaml_with_vault:
     path: "{{ item.1.stat.path }}"
-    fact_name: encrypted
-  when: item.1.stat.exists and not item.0.is_list and item.0.encrypted
+    fact_name: credentials
+  when: item.1.stat.exists and item.0.encrypted
   with_together:
     - "{{ deployment_files }}"
     - "{{ deployment_file_stat.results }}"
   no_log: true
 
+- name: Use first credentials set if defined
+  set_fact:
+    encrypted: "{{ credentials[0] }}"
+  when: credentials is defined and credentials | length > 0
+  no_log: true
+
 - name: Default deployment list files to empty
   set_fact:
     "{{ item.0.name }}": []
-  when: not item.1.stat.exists and item.0.is_list
+  when: not item.1.stat.exists and item.0.is_list and not item.0.encrypted
   with_together:
     - "{{ deployment_files }}"
     - "{{ deployment_file_stat.results }}"
@@ -61,7 +67,7 @@
 - name: Read deployment list files
   set_fact:
     "{{ item.0.name }}": "{{ lookup('file', item.1.stat.path) | from_yaml }}"
-  when: item.1.stat.exists and item.0.is_list
+  when: item.1.stat.exists and item.0.is_list and not item.0.encrypted
   with_together:
     - "{{ deployment_files }}"
     - "{{ deployment_file_stat.results }}"
