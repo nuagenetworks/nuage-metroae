@@ -41,6 +41,11 @@ SETCOLOR_SUCCESS="echo -en \\033[1;32m"
 SETCOLOR_FAILURE="echo -en \\033[1;31m"
 
 #
+# Command to set color to SKIPPED (Cyan)
+#
+SETCOLOR_SKIPPED="echo -en \\033[1;36m"
+
+#
 # Command to set the color back to normal
 #
 SETCOLOR_NORMAL="echo -en \\033[0;39m"
@@ -74,6 +79,21 @@ function echo_failure() {
   echo " [ FAILED ]" >> $LOG
   FAILED=1
   return 1
+}
+
+###############################################################################
+# PrettyPrint Cyan [ SKIPPED ] message
+###############################################################################
+function echo_skipped() {
+  $MOVE_TO_COL
+  echo -n "["
+  $SETCOLOR_SKIPPED
+  echo -n $"SKIPPED"
+  $SETCOLOR_NORMAL
+  echo -n "]"
+  echo -ne "\r"
+  echo " [ SKIPPED ]" >> $LOG
+  return 0
 }
 
 ###############################################################################
@@ -165,6 +185,24 @@ function check_os_version() {
 }
 
 ###############################################################################
+# Export HTTPS_PROXY for yum updates if set in /etc/yum.conf
+###############################################################################
+set_https_proxy() {
+  printn "Setting HTTP_PROXY from /etc/yum.conf... "
+  # The ^proxy is to skip any commened proxy config line
+  grep_out=`grep ^proxy /etc/yum.conf`
+  if [ -z $grep_out ]
+  then
+    echo_skipped
+  else
+    https_proxy=`grep ^proxy /etc/yum.conf | cut -d= -f2`
+    export HTTP_PROXY=$https_proxy
+    print "($https_proxy)"
+    echo_success
+  fi
+}
+
+###############################################################################
 # Install the yum package. Exists gracefully if package already exists
 # param: packageName
 ###############################################################################
@@ -217,6 +255,9 @@ function main() {
   # Metro supports only RHEL/CentOS 7.x
   check_os_type;
   check_os_version;
+
+  # set HTTP_PROXY
+  set_https_proxy
 
   # yum packages
   yum_install
