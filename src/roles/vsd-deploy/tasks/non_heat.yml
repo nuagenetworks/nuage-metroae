@@ -72,40 +72,38 @@
           third_cluster_node_to_install: "{{ groups['vsds'][0] }}"
       when: nuage_upgrade | default(False)
 
-    when: vsd_sa_or_ha | match ('ha')
-
-  - block:
-
     - block:
 
-      - name: Generate SSH keys for all nodes
+      - name: Generate SSH keys for nodes 2 and 3
         shell: sudo -u vsd ssh-keygen -b 2048 -t rsa -f /home/vsd/.ssh/id_rsa -q -N ""
         args:
           creates: /home/vsd/.ssh/id_rsa
         delegate_to: "{{ item }}"
-        with_items: "{{ groups['vsds'] }}"
+        with_items:
+          - second_cluster_node_to_install
+          - third_cluster_node_to_install
 
       - name: Get generated SSH keys
         shell: cat /home/vsd/.ssh/id_rsa.pub
-        register: ssh_key_lst
+        register: ssh_key_list
         delegate_to: "{{ item }}"
-        with_items: "{{ groups['vsds'] }}"
+        with_items:
+          - second_cluster_node_to_install
+          - third_cluster_node_to_install
 
-      - name: Add SSH keys to authorized_keys file on all nodes
-        shell: "echo {{ item[1].stdout }} >> /home/vsd/.ssh/authorized_keys"
-        delegate_to: "{{ item[0] }}"
-        with_nested:
-          - "{{ groups['vsds'] }}"
-          - "{{ ssh_key_lst.results }}"
+      - name: Add SSH keys to authorized_keys file on this node
+        shell: "echo {{ item.stdout }} >> /home/vsd/.ssh/authorized_keys"
+        delegate_to: "{{ first_cluster_node_to_install }}"
+        with_items:
+          - "{{ ssh_key_list }}"
 
-      - name: Change owner and permissions of VSD authorized keys file on all nodes
+      - name: Change owner and permissions of VSD authorized keys file on node 1
         file:
           path: /home/vsd/.ssh/authorized_keys
           owner: vsd
           group: hadoopusers
           mode: 0640
-        delegate_to: "{{ item }}"
-        with_items: "{{ groups['vsds'] }}"
+        delegate_to: "{{ first_cluster_node_to_install }}"
 
       when:
         - inventory_hostname == first_cluster_node_to_install
@@ -113,25 +111,19 @@
 
     - block:
 
-      - name: Generate SSH keys for the first 2 nodes
+      - name: Generate SSH keys for the second node
         shell: sudo -u vsd ssh-keygen -b 2048 -t rsa -f /home/vsd/.ssh/id_rsa -q -N ""
         args:
           creates: /home/vsd/.ssh/id_rsa
-        delegate_to: "{{ item }}"
-        with_items:
-          - first_cluster_node_to_install
-          - second_cluster_node_to_install
+        delegate_to: "{{ second_cluster_node_to_install }}"
 
-      - name: Get generated SSH keys
+      - name: Get generated SSH key
         shell: cat /home/vsd/.ssh/id_rsa.pub
-        register: ssh_key_lst
-        delegate_to: "{{ item }}"
-        with_items:
-          - first_cluster_node_to_install
-          - second_cluster_node_to_install
+        register: ssh_key
+        delegate_to: "{{ second_cluster_node_to_install }}"
 
-      - name: Add the other node's SSH key to this node's authorized_keys file
-        shell: "echo {{ ssh_key_list[0].stdout }} >> /home/vsd/.ssh/authorized_keys"
+      - name: Add the second node's SSH key to this node's authorized_keys file
+        shell: "echo {{ ssh_key.stdout }} >> /home/vsd/.ssh/authorized_keys"
 
       - name: Change owner and permissions of VSD authorized keys file
         file:
@@ -139,20 +131,6 @@
           owner: vsd
           group: hadoopusers
           mode: 0640
-
-      - block:
-
-        - name: Add this node's SSH key to the other node's authorized_keys file
-          shell: "echo {{ ssh_key_list[1].stdout }} >> /home/vsd/.ssh/authorized_keys"
-
-        - name: Change owner and permissions of VSD authorized keys file
-          file:
-            path: /home/vsd/.ssh/authorized_keys
-            owner: vsd
-            group: hadoopusers
-            mode: 0640
-
-        delegate_to: "{{ second_cluster_node_to_install }}"
 
       when:
         - inventory_hostname == first_cluster_node_to_install
@@ -165,20 +143,13 @@
         args:
           creates: /home/vsd/.ssh/id_rsa
 
-      - name: Get generated SSH keys for all nodes
+      - name: Get generated SSH keys for this node
         shell: cat /home/vsd/.ssh/id_rsa.pub
-        register: ssh_key_lst
-        delegate_to: "{{ item }}"
-        with_items:
-          - first_cluster_node_to_install
-          - second_cluster_node_to_install
-          - third_cluster_node_to_install
+        register: ssh_key
 
-      - name: Add first node's SSH key to authorized_keys file
-        shell: "echo {{ ssh_key_list[0].stdout }} >> /home/vsd/.ssh/authorized_keys"
-
-      - name: Add second node's SSH key to authorized_keys file
-        shell: "echo {{ ssh_key_list[1].stdout }} >> /home/vsd/.ssh/authorized_keys"
+      - name: Add this node's SSH key to authorized_keys file on first node
+        shell: "echo {{ ssh_key.stdout }} >> /home/vsd/.ssh/authorized_keys"
+        delegate_to: "{{ first_cluster_node_to_install }}"
 
       - name: Change owner and permissions of VSD authorized keys file
         file:
@@ -186,14 +157,7 @@
           owner: vsd
           group: hadoopusers
           mode: 0640
-
-      - name: Add this node's SSH key to authorized_keys file on first node
-        shell: "echo {{ ssh_key_list[2].stdout }} >> /home/vsd/.ssh/authorized_keys"
-        delegate_to: "{{ second_cluster_node_to_install }}"
-
-      - name: Add this node's SSH key to authorized_keys file on second node
-        shell: "echo {{ ssh_key_list[2].stdout }} >> /home/vsd/.ssh/authorized_keys"
-        delegate_to: "{{ third_cluster_node_to_install }}"
+        delegate_to: "{{ first_cluster_node_to_install }}"
 
       when:
         - inventory_hostname == third_cluster_node_to_install
