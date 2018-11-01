@@ -1,5 +1,38 @@
 # Metro Automation Engine Release Notes
 
+## Release 3.0.0
+
+### New Features and Enhancements
+
+* Add check for SSH connectivity to KVM target servers
+* Change VCIN RAM u/m from KB to GB. Add warning about changing ssh public key default path.
+* Change nsgv RAM to GB. Refactor vmWare autostart exception handling
+* Change VRS deploy certificate management
+* Add AWS credentials to inventory
+* Allow creation of two VSTATs in SA mode
+* Add vCenter parameters
+* Add absolute file and directory support to encrypt tool
+* Add METROAE_PASSWORD environment variable support to encrypt tool
+* Improve encryption support
+* Add script to vault new encrypt credentials file
+* Add support for vault-encrypted passwords
+* Fix the ability to parse vault-encrypted variables
+* Fix Python executable strings to be portable
+* Add encrypt property to credentials schema
+* Disable logs for commands that display sensitive information
+* Add GUI workflow for health check
+* Change RAM from KB to GB
+
+### Resolved Issues
+
+* Use target_server_user instead of compute username for VRS deploy
+* Change metroae script to handle deployment passwords with spaces and missing credentials file
+* Fix VRS predeploy prerequisite step
+* Fix VM name variable name
+* Disable logs that display credentials
+* Fix deployment names with spaces
+* Fix VSTAT nfs server
+
 ## Release 3.0.0b1
 
 ### New Procedures and Improvements
