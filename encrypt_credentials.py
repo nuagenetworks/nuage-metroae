@@ -38,28 +38,30 @@ def encrypt_credentials_file(passcode, deployment_name):
 
     with open('schemas/credentials.json') as credentials_schema:
         data = yaml.load(credentials_schema)
-    props = data['properties']
+    props = data['items']['properties']
     do_not_encrypt_list = []
     for k, v in props.items():
         if ('encrypt' in v) and (not v['encrypt']):
             do_not_encrypt_list.append(k)
 
     if credentials is not None:
-        for cred in credentials.keys():
-            if cred not in do_not_encrypt_list:
-                secret = VaultSecret(passcode)
-                editor = VaultEditor()
-                if not is_encrypted(credentials[cred]):
-                    vaultCode = editor.encrypt_bytes(credentials[cred], secret)
-                else:
-                    vaultCode = credentials[cred]
-                credentials[cred] = '!vault |\n' + (vaultCode)
+        for cred_set in credentials:
+            for cred in cred_set.keys():
+                if cred not in do_not_encrypt_list:
+                    secret = VaultSecret(passcode)
+                    editor = VaultEditor()
+                    if not is_encrypted(cred_set[cred]):
+                        vaultCode = editor.encrypt_bytes(cred_set[cred],
+                                                         secret)
+                    else:
+                        vaultCode = cred_set[cred]
+                    cred_set[cred] = '!vault |\n' + (vaultCode)
 
         gen_example = ExampleFileGenerator(False, True)
         example_lines = gen_example.generate_example_from_schema(
             'schemas/credentials.json')
         template = jinja2.Template(example_lines)
-        credentials = template.render(**credentials)
+        credentials = template.render(credentials=credentials)
         with open(credentials_file, 'w') as file:
             file.write(credentials)
 
