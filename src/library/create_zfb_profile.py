@@ -207,8 +207,10 @@ def create_nsg_device(csp_user, nsg_temp):
                 "templateID": nsg_temp.id,
                 "ZFBMatchAttribute": nsg['match_type'],
                 "ZFBMatchValue": nsg['match_value'],
-                "SSHService": nsg['ssh_service'],
                 "personality": "NSG"}
+    if zfb_params["vns_nsg"]["instanceSSHOverride"] == "ALLOWED":
+        nsg_data["SSHService"] = nsg['ssh_service']
+
     nsg_dev = NUNSGateway(data=nsg_data)
     metro_org.create_child(nsg_dev)
     return metro_org
