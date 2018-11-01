@@ -1,9 +1,9 @@
 #!/usr/bin/python
 
-from vspk.v4_0 import NULicense, NUEnterprise, NUUser, NUNSPortTemplate
-from vspk.v4_0 import NUInfrastructureGatewayProfile, NUNSGatewayTemplate
-from vspk.v4_0 import NUInfrastructureVscProfile, NUVLANTemplate, NUJob
-from vspk.v4_0 import NUNSGateway, NUVSDSession, NUUplinkConnection
+from vspk.v5_0 import NULicense, NUEnterprise, NUUser, NUNSPortTemplate
+from vspk.v5_0 import NUInfrastructureGatewayProfile, NUNSGatewayTemplate
+from vspk.v5_0 import NUInfrastructureVscProfile, NUVLANTemplate, NUJob
+from vspk.v5_0 import NUNSGateway, NUVSDSession, NUUplinkConnection
 import subprocess
 import sys
 from time import sleep
@@ -197,17 +197,19 @@ def create_nsg_device(csp_user, nsg_temp):
     zfb_params = module.params['zfb_params']
 
     csproot = csp_user
-    organization = zfb_params['organization']
+    nsg = zfb_params['nsg']
     # Create an ORG/Enterprise
-    metro_org = NUEnterprise(name=organization['name'])
+    metro_org = NUEnterprise(name=nsg['org_name'])
     csproot.create_child(metro_org)
 
-    # Create NSG device under an organization
-    nsg_params = {"name": organization['nsg_name'],
-                  "templateID": nsg_temp.id,
-                  "ZFBMatchAttribute": organization['match_type'],
-                  "ZFBMatchValue": organization['match_value']}
-    nsg_dev = NUNSGateway(data=nsg_params)
+    # Create NSG device under an nsg
+    nsg_data = {"name": nsg['nsg_name'],
+                "templateID": nsg_temp.id,
+                "ZFBMatchAttribute": nsg['match_type'],
+                "ZFBMatchValue": nsg['match_value'],
+                "SSHService": nsg['ssh_service'],
+                "personality": "NSG"}
+    nsg_dev = NUNSGateway(data=nsg_data)
     metro_org.create_child(nsg_dev)
     return metro_org
 

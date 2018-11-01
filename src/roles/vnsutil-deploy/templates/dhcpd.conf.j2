@@ -14,6 +14,9 @@ shared-network "{{ dns_domain }}" {
   subnet {{ data_subnet }} netmask {{ data_netmask }} {
     authoritative;
     option routers {{ data_ip }};
-    host {{ inventory_hostname }} {hardware ethernet {{ nsgv_mac }}; fixed-address {{ nsgv_ip }}; option domain-name "{{ dns_domain }}";}
+
+    {% for nsgv in dhcpd_nsgvs %}
+    host {{ nsgv.hostname }} {hardware ethernet {{ nsgv.nsgv_mac }}; fixed-address {{ nsgv.nsgv_ip }}; option domain-name "{{ dns_domain }}";}
+    {% endfor %}
   }
 }
