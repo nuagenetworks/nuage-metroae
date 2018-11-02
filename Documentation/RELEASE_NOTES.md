@@ -4,6 +4,7 @@
 
 ### New Features and Enhancements
 
+* Add yum proxy support
 * Add check for SSH connectivity to KVM target servers
 * Change VCIN RAM u/m from KB to GB. Add warning about changing ssh public key default path.
 * Change nsgv RAM to GB. Refactor vmWare autostart exception handling
