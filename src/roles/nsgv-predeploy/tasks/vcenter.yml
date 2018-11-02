@@ -18,21 +18,19 @@
       local_action: command mktemp -d "{{ lookup('env', 'TMPDIR') | default('/tmp/', true) }}ansible.XXXX"
       register: mktemp_output
 
-    - name: Set Top-Level-Directory
-      set_fact: tld="{{ role_path }}/../../"
-
     - name: Generate ISO file
-      local_action: command python {{ role_path }}/files/create_zfb_profile.py {{ tld }} {{ mktemp_output.stdout }}
-      register: output
-
-    - name: Search for errors in the output of ZFB script
-      assert:
-        that: "not output.stdout | search('(?i)ERROR')"
-        msg: "{{ output.stdout }}"
+      create_zfb_profile:
+        nsgv_path: "{{ mktemp_output.stdout }}"
+        fact_name: nsgv_already_configured
+        vsd_auth: "{{ vsd_auth }}"
+        zfb_constants: "{{ zfb_constants }}"
+        zfb_params: "{{ zfb_params }}"
+      delegate_to: localhost
+      no_log: True
 
     - name: Ensure NSGV has the correct configuration
       assert:
-        that: "not node_running or output.stdout | search('NSG ALREADY CONFIGURED')"
+        that: "not node_running or nsgv_already_configured"
         msg: "NSGV is already running, but there was no corresponding configuration for it."
 
     - name: Copy the ISO image to vcenter datastore
@@ -46,6 +44,7 @@
             datastore: "{{ vcenter.datastore }}"
             validate_certs: no
       delegate_to: localhost
+
     when: bootstrap_method == 'zfb_metro'
 
   - name: Configure vCenter path

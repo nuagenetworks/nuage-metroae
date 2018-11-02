@@ -44,8 +44,8 @@
     ##### Bootstrap Parameters
 
     # < Bootstrap Method >
-    # In the current MetroAE version, NSGv bootstrapping is not supported.  Bootstrap method for the NSGv. The default is 'none' which means no bootstrap will be performed. 'zfb_metro' creates a boostrap ISO file based on the contents of the file zfb_vars.yml. 'zfb_external' is used when a 3rd-party ISO file is to be used.
-    # (none) 
+    # Bootstrap method for the NSGv. The default is 'none' which means no bootstrap will be performed. 'zfb_metro' creates a boostrap ISO file based on the contents of the file nsgv_bootstrap.yml. 'zfb_external' is used when a 3rd-party ISO file is to be used.
+    # (none, zfb_metro, zfb_external) 
     #
     {%- if item.bootstrap_method is defined %}
     bootstrap_method: "{{ item.bootstrap_method }}"
@@ -69,6 +69,14 @@
     iso_file: "{{ item.iso_file }}"
     {%- else %}
     # iso_file: ""
+    {%- endif %}
+
+    # < IP Address to assign to NSGv by VNSUtil >
+    #
+    {%- if item.nsgv_ip is defined %}
+    nsgv_ip: "{{ item.nsgv_ip }}"
+    {%- else %}
+    # nsgv_ip: ""
     {%- endif %}
 
     # < NSGV MAC Address >
@@ -231,19 +239,10 @@
 
     ########################
 
-    ##### NSG Zero-Factor Bootstrap Parameters for type zfb_metro
-
-    # < NSG License File >
-    # Path to the VSD license file on the MetroAE host to associate with the NSG
-    #
-    {%- if item.vsd_license_file is defined %}
-    vsd_license_file: "{{ item.vsd_license_file }}"
-    {%- else %}
-    # vsd_license_file: ""
-    {%- endif %}
+    ##### NSGv Zero-Factor Bootstrap
 
     # < NSG Organization >
-    # Organization on the VSD to associate with the NSG being bootstrapped
+    # Organization on the VSD to associate with the NSG being bootstrapped, overrides global setting.
     #
     {%- if item.nsg_organization is defined %}
     nsg_organization: "{{ item.nsg_organization }}"
@@ -260,40 +259,32 @@
     # nsg_name: ""
     {%- endif %}
 
-    # < NSG Proxy User's First Name >
-    # First name of the user to bootstrap the NSG
+    # < Activation Matching Type >
+    # Field type to match against for NSGv activation.
+    # (none, hostname, ip_address, mac_address, nsgateway_id, serial_number, uuid) 
     #
-    {%- if item.nsg_proxy_user_first_name is defined %}
-    nsg_proxy_user_first_name: "{{ item.nsg_proxy_user_first_name }}"
+    {%- if item.match_type is defined %}
+    match_type: "{{ item.match_type }}"
     {%- else %}
-    # nsg_proxy_user_first_name: ""
+    # match_type: none
     {%- endif %}
 
-    # < NSG Proxy User's Last Name >
-    # Last name of the user to bootstrap the NSG
+    # < Activation Matching Value >
+    # Value to match against for NSGv activation.
     #
-    {%- if item.nsg_proxy_user_last_name is defined %}
-    nsg_proxy_user_last_name: "{{ item.nsg_proxy_user_last_name }}"
+    {%- if item.match_value is defined %}
+    match_value: "{{ item.match_value }}"
     {%- else %}
-    # nsg_proxy_user_last_name: ""
+    # match_value: ""
     {%- endif %}
 
-    # < NSG Proxy User's Email Address >
-    # Email address of the user to bootstrap the NSG
+    # < Enable SSH on NSGv >
+    # Enables SSH on NSGv when set.
     #
-    {%- if item.nsg_proxy_user_email is defined %}
-    nsg_proxy_user_email: "{{ item.nsg_proxy_user_email }}"
+    {%- if item.ssh_service is defined %}
+    ssh_service: {{ item.ssh_service | lower }}
     {%- else %}
-    # nsg_proxy_user_email: ""
-    {%- endif %}
-
-    # < NSG Proxy User's Password >
-    # Password of the user to bootstrap the NSG
-    #
-    {%- if item.nsg_proxy_user_password is defined %}
-    nsg_proxy_user_password: "{{ item.nsg_proxy_user_password }}"
-    {%- else %}
-    # nsg_proxy_user_password: ""
+    # ssh_service: False
     {%- endif %}
 
     # < NSG Infra Profile Name >
@@ -308,19 +299,28 @@
     # < NSG Infra Profile Template Name >
     # Name of the NSG infra profile template on the VSD
     #
-    {%- if item.nsg_infra_profile_nsg_template_name is defined %}
-    nsg_infra_profile_nsg_template_name: "{{ item.nsg_infra_profile_nsg_template_name }}"
+    {%- if item.nsg_template_name is defined %}
+    nsg_template_name: "{{ item.nsg_template_name }}"
     {%- else %}
-    # nsg_infra_profile_nsg_template_name: ""
+    # nsg_template_name: ""
     {%- endif %}
 
     # < NSG Infra Profile Proxy DNS Name >
     # Name of the NSG infra profile proxy DNS on the VSD
     #
-    {%- if item.nsg_infra_profile_proxy_dns_name is defined %}
-    nsg_infra_profile_proxy_dns_name: "{{ item.nsg_infra_profile_proxy_dns_name }}"
+    {%- if item.proxy_dns_name is defined %}
+    proxy_dns_name: "{{ item.proxy_dns_name }}"
     {%- else %}
-    # nsg_infra_profile_proxy_dns_name: ""
+    # proxy_dns_name: ""
+    {%- endif %}
+
+    # < Allow SSH Access Override >
+    # Allows NSGs using this profile to override SSH access.
+    #
+    {%- if item.ssh_override is defined %}
+    ssh_override: {{ item.ssh_override | lower }}
+    {%- else %}
+    # ssh_override: False
     {%- endif %}
 
     # < VSC Infra Profile Name >
@@ -335,76 +335,76 @@
     # < VSC Infra Profile First Controller >
     # Host name or IP address of the VSC infra profile first controller for the NSG
     #
-    {%- if item.vsc_infra_profile_first_controller is defined %}
-    vsc_infra_profile_first_controller: "{{ item.vsc_infra_profile_first_controller }}"
+    {%- if item.first_controller_address is defined %}
+    first_controller_address: "{{ item.first_controller_address }}"
     {%- else %}
-    # vsc_infra_profile_first_controller: ""
+    # first_controller_address: ""
     {%- endif %}
 
     # < VSC Infra Profile Second Controller >
     # Host name or IP address of the VSC infra profile second controller for the NSG
     #
-    {%- if item.vsc_infra_profile_second_controller is defined %}
-    vsc_infra_profile_second_controller: "{{ item.vsc_infra_profile_second_controller }}"
+    {%- if item.second_controller_address is defined %}
+    second_controller_address: "{{ item.second_controller_address }}"
     {%- else %}
-    # vsc_infra_profile_second_controller: ""
+    # second_controller_address: ""
     {%- endif %}
 
     # < NSG Network Port Name >
     # Name of the network port for the NSG
     #
-    {%- if item.nsg_network_port_name is defined %}
-    nsg_network_port_name: "{{ item.nsg_network_port_name }}"
+    {%- if item.network_port_name is defined %}
+    network_port_name: "{{ item.network_port_name }}"
     {%- else %}
-    # nsg_network_port_name: ""
+    # network_port_name: ""
     {%- endif %}
 
     # < NSG Network Port Physical Name >
     # Physical name of the network port for the NSG
     #
-    {%- if item.nsg_network_port_physical_name is defined %}
-    nsg_network_port_physical_name: "{{ item.nsg_network_port_physical_name }}"
+    {%- if item.network_port_physical_name is defined %}
+    network_port_physical_name: "{{ item.network_port_physical_name }}"
     {%- else %}
-    # nsg_network_port_physical_name: ""
+    # network_port_physical_name: port1
     {%- endif %}
 
     # < NSG Access Port Name >
     # Name of the access port for the NSG
     #
-    {%- if item.nsg_access_port_name is defined %}
-    nsg_access_port_name: "{{ item.nsg_access_port_name }}"
+    {%- if item.access_port_name is defined %}
+    access_port_name: "{{ item.access_port_name }}"
     {%- else %}
-    # nsg_access_port_name: ""
+    # access_port_name: ""
     {%- endif %}
 
     # < NSG Access Port Physical Name >
     # Physical name of the access port for the NSG
     #
-    {%- if item.nsg_access_port_physical_name is defined %}
-    nsg_access_port_physical_name: "{{ item.nsg_access_port_physical_name }}"
+    {%- if item.access_port_physical_name is defined %}
+    access_port_physical_name: "{{ item.access_port_physical_name }}"
     {%- else %}
-    # nsg_access_port_physical_name: ""
+    # access_port_physical_name: port2
     {%- endif %}
 
     # < NSG Access Port VLAN Range >
     # VLAN range of the access port for the NSG
     #
-    {%- if item.nsg_access_port_vlan_range is defined %}
-    nsg_access_port_vlan_range: "{{ item.nsg_access_port_vlan_range }}"
+    {%- if item.access_port_vlan_range is defined %}
+    access_port_vlan_range: "{{ item.access_port_vlan_range }}"
     {%- else %}
-    # nsg_access_port_vlan_range: ""
+    # access_port_vlan_range: ""
     {%- endif %}
 
     # < NSG Access Port VLAN Number >
     # VLAN number of the NSG access port for the NSG
     #
-    {%- if item.nsg_access_port_vlan_number is defined %}
-    nsg_access_port_vlan_number: "{{ item.nsg_access_port_vlan_number }}"
+    {%- if item.access_port_vlan_number is defined %}
+    access_port_vlan_number: {{ item.access_port_vlan_number }}
     {%- else %}
-    # nsg_access_port_vlan_number: ""
+    # access_port_vlan_number: 0
     {%- endif %}
 
-    ##############################################################
+    ################################
 
 {% endfor %}
 {% else %}
