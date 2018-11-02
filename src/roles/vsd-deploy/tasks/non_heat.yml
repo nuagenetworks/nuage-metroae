@@ -74,17 +74,10 @@
 
     - block:
 
-      - name: Generate SSH keys for nodes 2 and 3
-        shell: sudo -u vsd ssh-keygen -b 2048 -t rsa -f /home/vsd/.ssh/id_rsa -q -N ""
-        args:
-          creates: /home/vsd/.ssh/id_rsa
-        delegate_to: "{{ item }}"
-        with_items:
-          - "{{ second_cluster_node_to_install }}"
-          - "{{ third_cluster_node_to_install }}"
-
-      - name: Get generated SSH keys
-        shell: cat /home/vsd/.ssh/id_rsa.pub
+      - name: Generate SSH keys for nodes 2 and 3, install case
+        user:
+          name: "vsd"
+          generate_ssh_key: yes
         register: ssh_key_list
         delegate_to: "{{ item }}"
         with_items:
@@ -92,8 +85,9 @@
           - "{{ third_cluster_node_to_install }}"
 
       - name: Add SSH keys to authorized_keys file on this node
-        shell: "echo {{ item.stdout }} >> /home/vsd/.ssh/authorized_keys"
-        delegate_to: "{{ first_cluster_node_to_install }}"
+        authorized_key:
+            key: "{{ item.ssh_public_key }}"
+            user: "vsd"
         with_items:
           - "{{ ssh_key_list }}"
 
@@ -103,7 +97,6 @@
           owner: vsd
           group: hadoopusers
           mode: 0640
-        delegate_to: "{{ first_cluster_node_to_install }}"
 
       when:
         - inventory_hostname == first_cluster_node_to_install
@@ -111,19 +104,17 @@
 
     - block:
 
-      - name: Generate SSH keys for the second node
-        shell: sudo -u vsd ssh-keygen -b 2048 -t rsa -f /home/vsd/.ssh/id_rsa -q -N ""
-        args:
-          creates: /home/vsd/.ssh/id_rsa
-        delegate_to: "{{ second_cluster_node_to_install }}"
-
-      - name: Get generated SSH key
-        shell: cat /home/vsd/.ssh/id_rsa.pub
+      - name: Generate SSH keys for the second node, upgrade case
+        user:
+          name: "vsd"
+          generate_ssh_key: yes
         register: ssh_key
         delegate_to: "{{ second_cluster_node_to_install }}"
 
-      - name: Add the second node's SSH key to this node's authorized_keys file
-        shell: "echo {{ ssh_key.stdout }} >> /home/vsd/.ssh/authorized_keys"
+      - name: Add SSH keys to authorized_keys file on this node
+        authorized_key:
+            key: "{{ ssh_key.ssh_public_key }}"
+            user: "vsd"
 
       - name: Change owner and permissions of VSD authorized keys file
         file:
@@ -139,16 +130,15 @@
     - block:
 
       - name: Generate SSH key for this node
-        shell: sudo -u vsd ssh-keygen -b 2048 -t rsa -f /home/vsd/.ssh/id_rsa -q -N ""
-        args:
-          creates: /home/vsd/.ssh/id_rsa
-
-      - name: Get generated SSH keys for this node
-        shell: cat /home/vsd/.ssh/id_rsa.pub
+        user:
+          name: "vsd"
+          generate_ssh_key: yes
         register: ssh_key
 
       - name: Add this node's SSH key to authorized_keys file on first node
-        shell: "echo {{ ssh_key.stdout }} >> /home/vsd/.ssh/authorized_keys"
+        authorized_key:
+            key: "{{ ssh_key.ssh_public_key }}"
+            user: "vsd"
         delegate_to: "{{ first_cluster_node_to_install }}"
 
       - name: Change owner and permissions of VSD authorized keys file
@@ -168,11 +158,11 @@
   - block:
 
     - name: Generate SSH key on master VCIN
-      delegate_to: "{{ master_vcin }}"
       user:
         name: "{{ vsd_default_username }}"
         generate_ssh_key: yes
       register: master_vcin_ssh_key
+      delegate_to: "{{ master_vcin }}"
 
     - name: Generate SSH key on slave VCIN
       user:
@@ -186,10 +176,10 @@
           user: "{{ vsd_default_username }}"
 
     - name: Add slave VCIN SSH key to master VCIN
-      delegate_to: "{{ master_vcin }}"
       authorized_key:
           key: "{{ slave_vcin_ssh_key.ssh_public_key }}"
           user: "{{ vsd_default_username }}"
+      delegate_to: "{{ master_vcin }}"
 
     when: master_vcin is defined
 
