@@ -64,6 +64,7 @@
           second_cluster_node_to_install: "{{ groups['vsds'][1] }}"
           third_cluster_node_to_install: "{{ groups['vsds'][2] }}"
       when: not nuage_upgrade | default(False)
+      run_once: True
 
     - name: Set VSD numbering for upgrade
       set_fact:
@@ -71,91 +72,10 @@
           second_cluster_node_to_install: "{{ groups['vsds'][2] }}"
           third_cluster_node_to_install: "{{ groups['vsds'][0] }}"
       when: nuage_upgrade | default(False)
+      run_once: True
 
-    - block:
-
-      - name: Generate SSH keys for nodes 2 and 3, install case
-        user:
-          name: "vsd"
-          generate_ssh_key: yes
-        register: ssh_key_list
-        delegate_to: "{{ item }}"
-        with_items:
-          - "{{ second_cluster_node_to_install }}"
-          - "{{ third_cluster_node_to_install }}"
-
-      - debug: var=ssh_key_list
-
-      - name: Add SSH keys to authorized_keys file on this node
-        authorized_key:
-            key: "{{ item.ssh_public_key }}"
-            user: "vsd"
-        with_items:
-          - "{{ ssh_key_list.results }}"
-
-      - name: Change owner and permissions of VSD authorized keys file on node 1
-        file:
-          path: /home/vsd/.ssh/authorized_keys
-          owner: vsd
-          group: hadoopusers
-          mode: 0640
-
-      when:
-        - inventory_hostname == first_cluster_node_to_install
-        - not nuage_upgrade | default(False)
-
-    - block:
-
-      - name: Generate SSH keys for the second node, upgrade case
-        user:
-          name: "vsd"
-          generate_ssh_key: yes
-        register: ssh_key
-        delegate_to: "{{ second_cluster_node_to_install }}"
-
-      - debug: var=ssh_key
-
-      - name: Add SSH keys to authorized_keys file on this node
-        authorized_key:
-            key: "{{ ssh_key.ssh_public_key }}"
-            user: "vsd"
-
-      - name: Change owner and permissions of VSD authorized keys file
-        file:
-          path: /home/vsd/.ssh/authorized_keys
-          owner: vsd
-          group: hadoopusers
-          mode: 0640
-
-      when:
-        - inventory_hostname == first_cluster_node_to_install
-        - nuage_upgrade | default(False)
-
-    - block:
-
-      - name: Generate SSH key for this node
-        user:
-          name: "vsd"
-          generate_ssh_key: yes
-        register: ssh_key
-
-      - name: Add this node's SSH key to authorized_keys file on first node
-        authorized_key:
-            key: "{{ ssh_key.ssh_public_key }}"
-            user: "vsd"
-        delegate_to: "{{ first_cluster_node_to_install }}"
-
-      - name: Change owner and permissions of VSD authorized keys file
-        file:
-          path: /home/vsd/.ssh/authorized_keys
-          owner: vsd
-          group: hadoopusers
-          mode: 0640
-        delegate_to: "{{ first_cluster_node_to_install }}"
-
-      when:
-        - inventory_hostname == third_cluster_node_to_install
-        - nuage_upgrade | default(False)
+    - name: Handle ssh key generation and copying for vsd user
+      import_tasks: cluster_ssh_keys.yml
 
     when: vsd_sa_or_ha | match('ha')
 
@@ -274,7 +194,7 @@
 
     - name: Install VSD software on the second cluster node
       command: "/opt/vsd/vsd-install.sh -1 {{ first_cluster_node_to_install }} -t 2 -x {{ vsd_fqdn }} -y"
-      when: inventory_hostname == third_cluster_node_to_install
+      when: inventory_hostname == second_cluster_node_to_install
 
     - name: Install VSD software on the third cluster node
       command: "/opt/vsd/vsd-install.sh -1 {{ first_cluster_node_to_install }} -t 3 -x {{ vsd_fqdn }} -y"
