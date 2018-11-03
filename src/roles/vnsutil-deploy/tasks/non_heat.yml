@@ -30,10 +30,26 @@
 
 - block:
 
+  - name: Gather all NSGvs
+    set_fact:
+      all_nsgvs: "{% for nsgv_name in groups['nsgvs'] %}{{ nsgv_objs.append(hostvars[nsgv_name]) }}{% endfor %}{{ nsgv_objs }}"
+    vars:
+      nsgv_objs: []
+    no_log: true
+
+  - name: Filter NSGvs that have IP addresses
+    set_fact:
+      dhcpd_nsgvs: "{{ all_nsgvs | selectattr('nsgv_ip', 'defined') | list }}"
+    no_log: true
+
+  when: '"nsgvs" in groups'
+
+- block:
+
   - name: Install dhcp package
     yum: name=dhcp state=present
 
-  - name: Copy dhcp config
+  - name: Write dhcp config
     template: src=dhcpd.conf.j2 backup=no dest=/etc/dhcp/dhcpd.conf
 
   - name: Restart dhcp service
@@ -59,4 +75,4 @@
     command: chkconfig dnsmasq on
 
   remote_user: "{{ vnsutil_default_username }}"
-  when: nsgv_ip is defined or nsgv_mac is defined or nsgv_host_name is defined
+  when: dhcpd_nsgvs is defined and dhcpd_nsgvs | length > 0

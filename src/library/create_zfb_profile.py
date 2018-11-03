@@ -1,12 +1,52 @@
-from vspk.v4_0 import NULicense, NUEnterprise, NUUser, NUNSPortTemplate
-from vspk.v4_0 import NUInfrastructureGatewayProfile, NUNSGatewayTemplate
-from vspk.v4_0 import NUInfrastructureVscProfile, NUVLANTemplate, NUJob
-from vspk.v4_0 import NUNSGateway, NUVSDSession
+#!/usr/bin/python
+
+from vspk.v5_0 import NULicense, NUEnterprise, NUUser, NUNSPortTemplate
+from vspk.v5_0 import NUInfrastructureGatewayProfile, NUNSGatewayTemplate
+from vspk.v5_0 import NUInfrastructureVscProfile, NUVLANTemplate, NUJob
+from vspk.v5_0 import NUNSGateway, NUVSDSession, NUUplinkConnection
 import subprocess
-import yaml
 import sys
 from time import sleep
-import argparse
+
+from ansible.module_utils.basic import AnsibleModule
+
+DOCUMENTATION = '''
+
+---
+module: create_zfb_profile
+short_description: Creates a zero-factor bootstrap profile for NSGvs
+options:
+  nsgv_path:
+    description:
+      - Set path to NSGV ISO output directory.
+    required:True
+  fact_name:
+    description:
+      - Name of fact variable to state if NSGv is already configured
+    required:True
+  vsd_auth:
+    description:
+      - Authorization parameters dictionary for VSD API
+    required:True
+  zfb_constants:
+    description:
+      - Constants required for ZFB
+    required:True
+  zfb_params:
+    description:
+      - Parameters required for ZFB
+    required:True
+
+'''
+
+EXAMPLES = '''
+- create_zfb_profile:
+    nsgv_path: /tmp/ansible.1234
+    fact_name: nsgv_already_configured,
+    vsd_auth: "{{ vsd_auth }}"
+    zfb_constants: "{{ zfb_constants }}"
+    zfb_params: "{{ zfb_params }}"
+'''
 
 
 def install_license(csp_user, vsd_license):
@@ -35,6 +75,9 @@ def get_license_unique_id(vsd_license):
 
 
 def create_proxy_user(session):
+    zfb_params = module.params['zfb_params']
+    zfb_constants = module.params['zfb_constants']
+
     # Create proxy user if not present
     cspenterprise = NUEnterprise()
     cspenterprise.id = session.me.enterprise_id
@@ -56,6 +99,8 @@ def create_proxy_user(session):
 
 
 def get_nsg_gateway_template(csp_user):
+    zfb_params = module.params['zfb_params']
+
     csproot = csp_user
     vns_nsg = zfb_params['vns_nsg']
     temp_name = vns_nsg.get('nsg_template_name')
@@ -71,6 +116,9 @@ def get_nsg_gateway_template(csp_user):
 
 
 def create_nsg_gateway_template(csp_user):
+    zfb_params = module.params['zfb_params']
+    zfb_constants = module.params['zfb_constants']
+
     csproot = csp_user
     vns_nsg = zfb_params['vns_nsg']
     temp_name = vns_nsg.get('nsg_template_name')
@@ -95,6 +143,8 @@ def create_nsg_gateway_template(csp_user):
 
 
 def create_vsc_template(csp_user):
+    zfb_params = module.params['zfb_params']
+
     csproot = csp_user
     vns_vsc = zfb_params['vns_vsc']
     # Fetch current infra vsc profile
@@ -108,6 +158,9 @@ def create_vsc_template(csp_user):
 
 
 def create_nsgv_ports(nsg_temp, vsc_temp):
+    zfb_params = module.params['zfb_params']
+    zfb_constants = module.params['zfb_constants']
+
     # Create network port
     network_port = zfb_params['nsg_ports']['network_port']
     access_port = zfb_params['nsg_ports']['access_port']
@@ -123,6 +176,11 @@ def create_nsgv_ports(nsg_temp, vsc_temp):
         vlan_temp.associated_vsc_profile_id = vsc_temp.id
         port_temp.create_child(vlan_temp)
 
+        uplink = NUUplinkConnection()
+        uplink.mode = "Dynamic"
+        uplink.role = "PRIMARY"
+        vlan_temp.create_child(uplink)
+
     # Create access port
     if access_port['name'] not in lst_port_name:
         vlan_id = access_port.pop('vlan_value')
@@ -136,26 +194,37 @@ def create_nsgv_ports(nsg_temp, vsc_temp):
 
 
 def create_nsg_device(csp_user, nsg_temp):
+    zfb_params = module.params['zfb_params']
+
     csproot = csp_user
-    organization = zfb_params['organization']
+    nsg = zfb_params['nsg']
     # Create an ORG/Enterprise
-    metro_org = NUEnterprise(name=organization['name'])
+    metro_org = NUEnterprise(name=nsg['org_name'])
     csproot.create_child(metro_org)
 
-    # Create NSG device under an organization
-    nsg_dev = NUNSGateway(name=organization['nsg_name'])
-    nsg_dev.template_id = nsg_temp.id
+    # Create NSG device under an nsg
+    nsg_data = {"name": nsg['nsg_name'],
+                "templateID": nsg_temp.id,
+                "ZFBMatchAttribute": nsg['match_type'],
+                "ZFBMatchValue": nsg['match_value'],
+                "personality": "NSG"}
+    if zfb_params["vns_nsg"]["instanceSSHOverride"] == "ALLOWED":
+        nsg_data["SSHService"] = nsg['ssh_service']
+
+    nsg_dev = NUNSGateway(data=nsg_data)
     metro_org.create_child(nsg_dev)
+    return metro_org
 
 
-def create_iso_file(csp_user, nsg_temp, nsgv_path):
-    csproot = csp_user
+def create_iso_file(metro_org, nsg_temp, nsgv_path):
+    zfb_constants = module.params['zfb_constants']
+
     # Create an ISO file that's attached to nsgv vm
     job = NUJob()
     job.command = "GET_ZFB_INFO"
     zfb_constants['iso_params']['associatedEntityID'] = nsg_temp.id
     job.parameters = zfb_constants['iso_params']
-    csproot.create_child(job)
+    metro_org.create_child(job)
     subprocess.call("echo %s | base64 -d > %s/user_image.iso.gz"
                     % (job.result, nsgv_path), shell=True)
     sleep(1)
@@ -163,26 +232,13 @@ def create_iso_file(csp_user, nsg_temp, nsgv_path):
     subprocess.call("gzip -f -d %s/user_image.iso.gz" % nsgv_path, shell=True)
 
 
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-    parser.add_argument("working_dir", type=str,
-                        help="Set path to working directory.")
-    parser.add_argument("nsgv_path", type=str, help="Set path to NSGV ISO\
-                        output directory")
-    args = parser.parse_args()
-
+def main():
     # Nsgv_path
-    nsgv_path = args.nsgv_path
 
-    # Get ZFB related parameters
-    try:
-        with open(args.working_dir + '/zfb_vars.yml', 'r') as fh:
-            zfb_params = yaml.load(fh)
-        vars_file = '/roles/nsgv-predeploy/vars/main.yml'
-        with open(args.working_dir + vars_file, 'r') as fo:
-            zfb_constants = yaml.load(fo)
-    except Exception as e:
-        print("ERROR: Failure reading file: %s" % e)
+    nsgv_path = module.params['nsgv_path']
+    fact_name = module.params['fact_name']
+    zfb_params = module.params['zfb_params']
+    vsd_auth = module.params['vsd_auth']
 
     # Get VSD license
     vsd_license = ""
@@ -190,18 +246,21 @@ if __name__ == '__main__':
         with open(zfb_params['vsd_license_file'], 'r') as lf:
             vsd_license = lf.read()
     except Exception as e:
-        print("ERROR: Failure reading file: %s" % e)
+        module.fail_json(msg="ERROR: Failure reading file: %s" % e)
+        sys.exit(1)
 
     # Create a session as csp user
     try:
-        session = NUVSDSession(**zfb_params['csp'])
+        session = NUVSDSession(**vsd_auth)
         session.start()
         csproot = session.user
     except Exception as e:
-        print("ERROR: Could not establish connection to VSD API using %s" %
-              zfb_params['csp'])
-        print("ERROR: Exception: %s" % e)
+        module.fail_json(
+            msg="ERROR: Could not establish connection to VSD API "
+                "using %s: %s" % (vsd_auth, str(e)))
         sys.exit(1)
+
+    nsg_already_configured = False
 
     # Create nsg templates and iso file
     if (not is_license_already_installed(csproot, vsd_license)):
@@ -212,8 +271,35 @@ if __name__ == '__main__':
         nsg_temp = create_nsg_gateway_template(csproot)
         vsc_temp = create_vsc_template(csproot)
         create_nsgv_ports(nsg_temp, vsc_temp)
-        create_nsg_device(csproot, nsg_temp)
+        metro_org = create_nsg_device(csproot, nsg_temp)
     else:
-        print("NSG ALREADY CONFIGURED")
+        nsg_already_configured = True
+        metro_org = csproot
 
-    create_iso_file(csproot, nsg_temp, nsgv_path)
+    create_iso_file(metro_org, nsg_temp, nsgv_path)
+
+    module.exit_json(changed=True,
+                     ansible_facts={fact_name: nsg_already_configured})
+
+
+arg_spec = dict(
+    nsgv_path=dict(
+        required=True,
+        type='str'),
+    fact_name=dict(
+        required=True,
+        type='str'),
+    vsd_auth=dict(
+        required=True,
+        type='dict'),
+    zfb_constants=dict(
+        required=True,
+        type='dict'),
+    zfb_params=dict(
+        required=True,
+        type='dict'))
+
+module = AnsibleModule(argument_spec=arg_spec, supports_check_mode=True)
+
+if __name__ == '__main__':
+    main()
