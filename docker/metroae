@@ -145,7 +145,7 @@ run() {
 			else
 				networkArgs=" -p $UI_PORT:5001"
 			fi
-			docker run -d $networkArgs -v $METROAE_MOUNT_POINT:/data -v $IMAGES_MOUNT_POINT:/images --name metroae $metroAEImage:$maxContainerVersion 
+			docker run -d $networkArgs -v $METROAE_MOUNT_POINT:/data:Z -v $IMAGES_MOUNT_POINT:/images:Z --name metroae $metroAEImage:$maxContainerVersion 
 		else 
 			docker start $containerID
 		fi
@@ -302,6 +302,14 @@ getUserPathInput() {
 		then
 			echo "Invalid path provided"
 		fi
+		
+		# check to see if the path ends with passed in directory
+		if [[ "$path" != *"$2" ]]
+		then
+			path=$path/$2
+			mkdir -p $path
+		fi
+		
 	done
 }
 
@@ -347,7 +355,7 @@ setup() {
 	
 	if [ -z $1 ]
 	then
-		getUserPathInput "Specify the full path to store data on the host system: "
+		getUserPathInput "Specify the full path to store data on the host system, metroae_data directory will be created after the provided path. If the path ends with metroae_data we are going to use the path as is: " metroae_data
 		data_path=$path
 	else 
 		data_path=$1
@@ -355,7 +363,7 @@ setup() {
 	
 	if [ -z $2 ]
 	then
-		getUserPathInput "Specify the full path of image files on the host system: "
+		getUserPathInput "Specify the full path of image files on the host system, metroae_images directory will be created after the provided path. If the path ends with metroae_images we are going to use the path as is: " metroae_images
 		images_path=$path
 	else 
 		images_path=$2
@@ -567,7 +575,7 @@ checkDocker
 
 if [ $# -eq 0 ] 
 then
-	help
+	help 0
 	exit 0
 fi
 
