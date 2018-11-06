@@ -82,21 +82,6 @@ getImageID() {
 	imageID=`docker images | grep $metroAEImage | grep $maxContainerVersion | awk '{ print $3}'`
 }
 
-checkSelinuxEnforceStatus() { 
-	getHostOperatingSystem 
-	if [ $osRelease -eq $NON_LINUX ]
-	then
-		return 0
-	fi
-	
-	enforcement=`getenforce`
-	
-	if [[ $enforcement == "Enforcing" ]]
-	then
-		echo "Selinux enforcing has to be turned off for MetroAE container to work properly"
-		return 1
-	fi
-}
 
 stop() {
 	getRunningContainerID
@@ -145,7 +130,7 @@ run() {
 			else
 				networkArgs=" -p $UI_PORT:5001"
 			fi
-			docker run -d $networkArgs -v $METROAE_MOUNT_POINT:/data -v $IMAGES_MOUNT_POINT:/images --name metroae $metroAEImage:$maxContainerVersion 
+			docker run -d $networkArgs -v $METROAE_MOUNT_POINT:/data:Z -v $IMAGES_MOUNT_POINT:/images:Z --name metroae $metroAEImage:$maxContainerVersion 
 		else 
 			docker start $containerID
 		fi
@@ -259,7 +244,7 @@ pull() {
 		maxContainerVersion=$1
 	fi
 	
-	ping -c 5 registry.mv.nuagenetworks.net:5000 >> ./metroae.log 2>> ./metroae.log
+	ping -c 5 $registryHost >> ./metroae.log 2>> ./metroae.log
 	
 	if [ $? -ne 0 ]
 	then
@@ -302,6 +287,14 @@ getUserPathInput() {
 		then
 			echo "Invalid path provided"
 		fi
+		
+		# check to see if the path ends with passed in directory
+		if [[ "$path" != *"$2" ]]
+		then
+			path=$path/$2
+			mkdir -p $path
+		fi
+		
 	done
 }
 
@@ -347,7 +340,7 @@ setup() {
 	
 	if [ -z $1 ]
 	then
-		getUserPathInput "Specify the full path to store data on the host system: "
+		getUserPathInput "Specify the full path to store data on the host system, metroae_data directory will be created after the provided path. If the path ends with metroae_data we are going to use the path as is: " metroae_data
 		data_path=$path
 	else 
 		data_path=$1
@@ -355,7 +348,7 @@ setup() {
 	
 	if [ -z $2 ]
 	then
-		getUserPathInput "Specify the full path of image files on the host system: "
+		getUserPathInput "Specify the full path of image files on the host system, metroae_images directory will be created after the provided path. If the path ends with metroae_images we are going to use the path as is: " metroae_images
 		images_path=$path
 	else 
 		images_path=$2
@@ -433,7 +426,7 @@ runContainerIfNotRunning() {
 dockerExec() { 
 	runContainerIfNotRunning 
 	
-	environment='-e "ANSIBLE_FORCE_COLOR=true"'
+	environment='-e ANSIBLE_FORCE_COLOR=true'
 	for env in `env`
 	do
 		filtered=0
@@ -567,11 +560,10 @@ checkDocker
 
 if [ $# -eq 0 ] 
 then
-	help
+	help 0
 	exit 0
 fi
 
-checkSelinuxEnforceStatus 
 
 shopt -s extglob
 
