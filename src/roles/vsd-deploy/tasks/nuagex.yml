@@ -1,5 +1,5 @@
----
 - block:
+
   - name: Read the VSD version
     shell: echo $VSD_VERSION
     register: vsd_full_version
@@ -9,14 +9,6 @@
         vsd_major_version: "{{ vsd_full_version.stdout.split('.')[0] }}"
         vsd_minor_version: "{{ vsd_full_version.stdout.split('.')[1] }}"
         vsd_patch_version: "{{ vsd_full_version.stdout.split('.')[2].split('U')[0] }}"
-
-  - debug: var=vsd_full_version.stdout verbosity=1
-
-  - debug: var=vsd_major_version verbosity=1
-
-  - debug: var=vsd_minor_version verbosity=1
-
-  - debug: var=vsd_patch_version verbosity=1
 
   - name: Set deploy_vcin to false (deploy vsd)
     set_fact:
@@ -54,8 +46,13 @@
       when: nuage_upgrade
       run_once: True
 
+    - name: Handle ssh key generation and copying for root user
+      import_tasks: legacy_cluster_ssh_keys.yml
+      when: vsd_major_version | int < 5
+
     - name: Handle ssh key generation and copying for vsd user
       import_tasks: cluster_ssh_keys.yml
+      when: vsd_major_version | int >= 5
 
     when: vsd_sa_or_ha | match('ha')
 
