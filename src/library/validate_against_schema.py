@@ -57,7 +57,11 @@ def validate_against_schema(path, schema):
         validate(parsed_yaml, parsed_schema)
         module.exit_json(changed=False)
     except ValidationError as e:
-        msg = "Invalid data in %s: %s" % (path, e.message)
+
+        field = ""
+        if "title" in e.schema:
+            field = " for " + e.schema["title"]
+        msg = "Invalid data in %s%s: %s" % (path, field, e.message)
         print msg
         module.fail_json(msg=msg)
 
