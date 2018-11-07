@@ -1,8 +1,7 @@
----
-
 - block:
 
   - block:
+
     - name: Force DHCP update to configure DNS in AWS (ignoring errors)
       command: dhclient
       ignore_errors: true
@@ -26,14 +25,6 @@
         vsd_major_version: "{{ vsd_full_version.stdout.split('.')[0] }}"
         vsd_minor_version: "{{ vsd_full_version.stdout.split('.')[1] }}"
         vsd_patch_version: "{{ vsd_full_version.stdout.split('.')[2].split('U')[0] }}"
-
-  - debug: var=vsd_full_version.stdout verbosity=1
-
-  - debug: var=vsd_major_version verbosity=1
-
-  - debug: var=vsd_minor_version verbosity=1
-
-  - debug: var=vsd_patch_version verbosity=1
 
   - name: Set deploy_vcin to false (deploy vsd)
     set_fact:
@@ -74,6 +65,7 @@
 
     - name: Handle ssh key generation and copying for root user
       import_tasks: legacy_cluster_ssh_keys.yml
+      run_once: True
       when: vsd_major_version | int < 5
 
     - name: Handle ssh key generation and copying for vsd user
