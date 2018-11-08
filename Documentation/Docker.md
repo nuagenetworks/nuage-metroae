@@ -125,24 +125,19 @@ To access MetroÆ from the command line you just need to run ./metroae playbook
 
 * Unable to access user files 
 
-    Data mount point specified during setup is mounted as /data in the container. When defining paths in the container make sure the mount point path is replaced with /data
+    * Data mount point specified during setup is mounted as /data in the container. When defining paths in the container make sure the mount point path is replaced with /data
 
-    example: 
+        * For example, if my mount that I specified during setup is /opt, container mounts /opt as /data internally so anything that is inside the /opt directory is accessible from the container as /data
 
-        If my mount that I specified during setup is /opt, container mounts /opt as /data internally so anything that is inside the /opt directory is accessible from the container as /data
-
-    Image mount specified during setup is mounted as /images in the container. When defining paths in the deployments make sure the mount point path is replaced with /images
+    * Image mount specified during setup is mounted as /images in the container. When defining paths in the deployments make sure the mount point path is replaced with /images
     
-    example: 
+        * For example, if my mount that I specified during setup is /opt, container mounts /opt as /images internally so if I have my Nuage Networks images file the container can access them from /images 
 
-```
-        If my mount that I specified during setup is /opt, container mounts /opt as /images internally so if I have my Nuage Networks images file the container can access them from /images 
-```
 * Check the metroae.log to see if there are an error logged 
 
-# Manually Use the container without the script
+# Manually use the container without the script
 
-    These steps are currently supported for Nokia internal only
+These steps are currently supported for Nokia internal only
 
 * Pulling the container 
 
