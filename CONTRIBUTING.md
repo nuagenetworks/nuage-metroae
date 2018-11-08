@@ -38,13 +38,14 @@ git checkout dev
     Adding a new component or feature is a bit more involved. For example, if you are adding support for the installation of a new component, the following elements would be expected unless otherwise agreed upon by the repo owners:
 
     1. A new user-input schema for the component must be created. See the exitsing files in the `schemas` directory.
-    2. A new deployment template must to be created. See the existing files in the `src/deployment_templates` directory.
+    2. A new deployment template must be created. See the existing files in the `src/deployment_templates` directory.
     3. Add to the example data. All deployment templates and examples are auto-generated. The data in `src/raw_example_data` is used by the automatic generation to populate the examples properly. Also see the examples that have been auto-generated in the `examples/` directory.
     4. Add your component and associated file references to `src/workflows.yml`.
-    5. Execute  `src/generate_all_from_schemas.sh` to create all the required files for your component.
-    6. Create the proper roles. The following roles are required unless otherwise agreed to by the repo owners: _newcomponent-predeploy_, _newcomponent-deploy_, _newcomponent-postdeploy_, _newcomponent-health_, and _newcomponent-destroy_ should be created under `src/roles/`
-    7. Create the proper playbooks to execute the roles: _newcomponent_predeploy.yml_, _newcomponent_deploy.yml_, _newcomponent_postdeploy.yml_, _newcomponent_health.yml_, and _newcomponent_destroy.yml_ should be created under `src/playbooks/with_build`
-    8. Test, modify, and retest until your code is working perfectly.
+    5. Add your schema to `src/roles/common/vars/main.yml`.
+    6. Execute  `src/generate_all_from_schemas.sh` to create all the required files for your component.
+    7. Create the proper roles. The following roles are required unless otherwise agreed to by the repo owners: _newcomponent-predeploy_, _newcomponent-deploy_, _newcomponent-postdeploy_, _newcomponent-health_, and _newcomponent-destroy_ should be created under `src/roles/`
+    8. Create the proper playbooks to execute the roles: _newcomponent_predeploy.yml_, _newcomponent_deploy.yml_, _newcomponent_postdeploy.yml_, _newcomponent_health.yml_, and _newcomponent_destroy.yml_ should be created under `src/playbooks/with_build`
+    9. Test, modify, and retest until your code is working perfectly.
 
 4. Test all proposed contributions on the appropriate hypervisors in the `metro-fork` directory. If you choose not to provide support for one or more supported hypervisors, you must provide graceful error handling for those types.
 
