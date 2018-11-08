@@ -2,7 +2,6 @@
 
 ## Prerequisites / Requirements
 * Docker must be installed on the system and running 
-* If using linux selinux enforcement must be turned off
 * Locally available image files for VCS or VNS deployments
  
 ## Supported Commands
