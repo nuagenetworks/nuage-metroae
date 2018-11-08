@@ -130,9 +130,11 @@ run() {
 			else
 				networkArgs=" -p $UI_PORT:5001"
 			fi
-			uid=`id -u`
-			gid=`id -g`
-			docker run -u $uid:$gid -d $networkArgs -v $METROAE_MOUNT_POINT:/data:Z -v $IMAGES_MOUNT_POINT:/images:Z --name metroae $metroAEImage:$maxContainerVersion 
+			
+			userName=`whoami`
+			groupName=`id -g -n`
+			
+			docker run -e USER_NAME=$userName -e GROUP_NAME=$groupName -d $networkArgs -v $METROAE_MOUNT_POINT:/data:Z -v $IMAGES_MOUNT_POINT:/images:Z --name metroae $metroAEImage:$maxContainerVersion 
 		else 
 			docker start $containerID
 		fi
@@ -238,6 +240,16 @@ getFromS3()
     -H "Authorization: AWS ${S3KEY}:$signature" \
     "https://$bucket.s3.amazonaws.com$aws_path$file" > $temp$file | tee -a ./metroae.log 2>> ./metroae.log
    
+}
+
+copySSHId() {
+	if [ -z $1 ]
+	then
+		echo "please provide the user and host to copy the key to. e.g. caso@localhost\n"
+		exit 1
+	fi 
+	
+	dockerExec ssh-copy-id -i /source/id_rsa.pub $1
 }
 
 pull() { 
@@ -543,7 +555,7 @@ help() {
 	echo "Usage:"
 	echo ""
 	echo "	./metroae [actions] | <workflow> [deployment] [options]"
-	echo "	[actions]:	supported actions are help, pull, setup, start, stop, status, destroy, upgrade-engine, stop-ui, start-ui, status-ui, unzip-files, convert-build-vars-to-deployments, generate-example-from-schema, encrypt-credentials, enable-ui-encryption, disable-ui-encryption "
+	echo "	[actions]:	supported actions are help, pull, setup, start, stop, status, destroy, upgrade-engine, stop-ui, start-ui, status-ui, unzip-files, convert-build-vars-to-deployments, generate-example-from-schema, encrypt-credentials, enable-ui-encryption, disable-ui-encryption, copy-ssh-id "
 	echo "additionally supports commands that can be executed in the docker container" 
 	
 	getRunningContainerID 
@@ -670,6 +682,11 @@ do
 		shift
 		genExampleFromSchema "$@"
 		exit 0
+		;;
+		copy-ssh-id)
+		copySSHId "$2"
+		shift
+		shift
 		;;
 		*)
 		POSITIONAL+=("$1")
