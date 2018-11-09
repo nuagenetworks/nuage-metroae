@@ -5,9 +5,17 @@ Version: 3.0.0
 
 MetroÆ is an automation engine that deploys and upgrades Nuage Networks components. You specify the individual details of your target platform, then let MetroÆ install, upgrade, destroy, or health-check the environment for you.
 
-## Important Note
+## Important Notes
+
 The procedures have changed substantially in version 3.0 to improve usability.
 If you have used previous versions of MetroÆ, please see [RELEASE_NOTES.md](Documentation/RELEASE_NOTES.md) for details.
+
+One of the changes to make note of is the use of the `metroae` command to do all MetroÆ operations, including Docker container management. To that end, there are two `metroae` scripts to make note of:
+
+1. `./metroae` at the root of the repo is used for interacting directly with MetroÆ on the command line via a git workspace, e.g. clone.
+1. `./docker/metroae` is used for both managing the Docker container and interacting with MetroÆ from outside of the container.
+
+You can use either command with exactly the same syntax to launch MetroÆ workflows, e.g. `./metroae install_everything`. The Docker container version comes with the additional container-management controls that are described in [DOCKER.md](Documentation/DOCKER.md).
 
 ## Supported Components for Deployment
 MetroÆ supports deployment of the following components as VMs on the target server. These are the same target server types that are supported on the VSP platform.
@@ -118,6 +126,7 @@ File name | Description
 [UPGRADE_SA.md](Documentation/UPGRADE_SA.md) | Upgrade component(s) from one release to the next in a standalone environment.
 [UPGRADE_HA.md](Documentation/UPGRADE_HA.md) | Upgrade component(s) from one release to the next in a clustered environment.
 [VAULT_ENCRYPT.md](Documentation/VAULT_ENCRYPT.md) | Safeguard sensitive data
+[DOCKER.md](Documentation/DOCKER.md) | Installing and using MetroÆ Docker container
 
 ## Questions, Feedback, and Contributing
 Ask questions and get support via the [forums](https://devops.nuagenetworks.net/forums/) on the [MetroÆ site](https://devops.nuagenetworks.net/).  
