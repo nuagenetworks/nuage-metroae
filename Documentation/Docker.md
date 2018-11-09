@@ -91,6 +91,14 @@ The following command options are supported by the metroae command:
 
     Copies the container's public key into the ssh authorized_keys file on the specified server. This is required for passwordless ssh access to all target servers. Usage: `metroae copy-ssh-id user@host_or_ip`
 
+* --list
+
+    Lists the workflows that are supported by MetroÆ
+    
+* --ansible-help
+
+    Shows the help options for the underlying Ansible engine.
+    
 ## metroae Workflow Command Options
 
 The MetroÆ container is designed so that you run MetroÆ workflows, e.g. install, from the command line using the metroae command. The format of the command line is:
