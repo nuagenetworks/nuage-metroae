@@ -1,153 +1,118 @@
 # Deploying Components with the MetroÆ Docker Container
 
-In addition to being able to access MetroÆ via github clone, MetroÆ is now optionally available for distribution via Docker container. The Docker container version of MetroÆ as all the capabilities of the github clone, plus it delivers the following:
+In addition to being able to access MetroÆ via github clone, MetroÆ is now also available for distribution via Docker container. The Docker container version of MetroÆ has all the capabilities of the github clone, plus it delivers the following:
 
-* All MetroÆ prerequisites are satisifed by the container. Your only requirement is that you need to run Docker.
+* All MetroÆ prerequisites are satisifed by the container. Your only requirement is to run Docker.
 * CLI access is provided through the `metroae` command. 
 * Your data is located in the file system of the host where you are running Docker. You don't need to get inside the container.
-* The Container has the option of running an API/UI server. This allows you to access MetroÆ functionality via REST API and a front-end GUI.
+* The Container has the option of running an API/UI server, allowing you to access MetroÆ functionality via REST API and a front-end GUI.
 
-# Prerequisites / Requirements
-* Docker must be installed on the system and running 
-* Locally available image files for VCS or VNS deployments
+## Prerequisites / Requirements
+* Docker must be installed on the system and running.  
+* Image files for VCS or VNS deployments must be available locally.
 
-# The metroae Command
+## The metroae Command
+The metroae command is at the heart of interacting with the MetroÆ container. It is delivered from the github repo. It is used both to manage the container and to execute MetroÆ inside the container. You can access all of the command options via `./metroae <action | workflow> [deployment] [options]`.
 
-The heart of operating using the MetroÆ container is the metroae command. It is delivered from the github repo. It is used both to manage the container and to execute MetroÆ inside the container. You can access all of the command options via `./metroae command <options>`.
-
-## metroae Container Management Command Options
+### metroae Container Management Command Options
 
 The following command options are supported by the metroae command:
 
-* help 
+**help** -displays the help text for the command 
 
-    Displays the help text for the command 
-
-* pull 
-
-    Pulls the latest container from the docker registry
+**pull** - pulls the MetroÆ container from the registry. By default, the latest container is pulled. You can also specify a valid container tag to pull another version, e.g. `./metroae pull 1.0.0`.
 	
-* setup 
-
-    Setup will complete the steps necessary to get the MetroÆ container up and running. You will be prompted for the full paths to data and image directories that the container will use on your local disk. On Mac OS, you will also be prompted for the port the API/UI will be listening on. By default, the API/UI will be listening on port 5001. You can access the API/GUI via URL, `https://host_name_or_ip:5001`, where `host_name_or_ip` is the host name or ip address of the machine on which the container is running. This can often be just, `https://localhost:5001`. Note: Running setup multiple times will not remove your data, but it will replace the existing container.
+**setup** - setup completes the steps necessary to get the MetroÆ container up and running. It prompts you for the full paths to data and image directories that the container uses on your local disk. On Mac OS, you will also be prompted for the port that the API/UI will be listening on. By default, the API/UI listens on port 5001. You can access the API/GUI via URL, `https://host_name_or_ip:5001`, where `host_name_or_ip` is the host name or ip address of the machine on which the container is running. This host name can often be just, `https://localhost:5001`. Note: Running setup multiple times replaces the existing container, but it does not remove the data on your local disk.
 	
-* start 
+**start** - starts the container using the settings from setup
 
-    Starts the container using the settings from setup
+**stop** - stops the running container
 
-* stop 
+**status** - displays the container status along with container settings
 
-    Stops the running container
+**destroy** - stops and removes the metroae container along with the container image. Use this command when you want to replace an existing container with a new one, no need to run setup again afterwards.
 
-* status 
+**upgrade-engine** - upgrades the container to the latest available release image. You don't need to run setup again after an upgrade.
 
-    Displays the container status along with container settings
+**stop-ui** - stops the UI server running in the container
 
-* destroy 
+**start-ui** - starts the API/UI server in the container. It prompts you for UI settings, such as whether you want to configure a certificate and whether a password will be used to encrypt passwords. The default port used by the API/UI server is 5000, as in `https://localhost:5001`.
 
-    Stops and removes metroae container along with the container image
+**status-ui** - displays the status of the API/UI server in the container
 
-* upgrade-engine 
+**unzip-files** - unzips Nuage Networks tar.gz files into the images directory specified during the setup operation. Use of this command requires that the tar.gz files be placed in either the data or images directory that you specified during setup. 
+See the current values of the data and images directories by executing the status command.
 
-    Upgrades the container to the latest available release image. You don't need to run setup again after an upgrade.
+**convert-build-vars-to-deployments** - converts a legacy MetroÆ 2 build_vars.yml file into a MetroÆ 3 deployment. Use of this command requires that the build_vars.yml file be present in either the data or images directory that you specified during setup. You can get the current values of the data and images directories by executing the status command.
 
-* stop-ui 
+**generate-example-from-schema** - generates an example for the specified schema and puts it in the examples directory under the data directory that you specified during setup. You can get the current values of the data and images directories by executing the status command.
 
-    Stops the UI server running in the container
+**encrypt-credentials** - sets the encryption credentials for encrypting secure user data, e.g. passwords
 
-* start-ui 
+**enable-ui-encryption** - sets up a TLS certificate for the UI access
 
-    Starts the API/UI server in the container. You will be prompted for UI settings such as whether you want to configure a certificate and whether a password will be used to encrypt passwords. The default port used by the API/UI server is 5000, as in `https://localhost:5001`.
+**disable-ui-encryption** - disables TLS on the UI
 
-* status-ui 
+**copy-ssh-id** - copies the container's public key into the ssh authorized_keys file on the specified server. This key is required for passwordless ssh access to all target servers. Usage: `metroae copy-ssh-id user@host_or_ip`
 
-    Displays the status of the API/UI server in the container
-
-* unzip-files 
-
-    Unzip Nuage Networks tar.gz files into the images directory specified during the setup operation. Use of this command requires that the tar.gz files be placed in either the data or images directory that you specified during setup. You can get the current values of the data and images directories by executing the status command.
-
-* convert-build-vars-to-deployments 
-
-    Converts a legacy MetroÆ 2 build_vars.yml file into a MetroÆ 3 deployment. Use of this command requires that the build_vars.yml file be present in either the data or images directory that you specified during setup. You can get the current values of the data and images directories by executing the status command.
-
-* generate-example-from-schema 
-
-    Generates an example for the specified schema and puts it in the examples directory under the data directory that you specified during setup. You can get the current values of the data and images directories by executing the status command.
-
-* encrypt-credentials 
-
-    Sets the encryption credentials for encrypting secure user data, e.g. passwords
-
-* enable-ui-encryption 
-
-    Sets up a TLS certificate for the UI access
-
-* disable-ui-encryption  
-
-    Disables TLS on the UI
-
-* copy-ssh-id 
-
-    Copies the container's public key into the ssh authorized_keys file on the specified server. This is required for passwordless ssh access to all target servers. Usage: `metroae copy-ssh-id user@host_or_ip`
-
-* --list
-
-    Lists the workflows that are supported by MetroÆ
+**--list** - lists the workflows that are supported by MetroÆ
     
-* --ansible-help
-
-    Shows the help options for the underlying Ansible engine.
+**--ansible-help** - shows the help options for the underlying Ansible engine
     
-## metroae Workflow Command Options
+### metroae Workflow Command Options
 
 The MetroÆ container is designed so that you run MetroÆ workflows, e.g. install, from the command line using the metroae command. The format of the command line is:
 
     `metroae <workflow> [deployment] [options]`
 
-# Troubleshooting
+## Troubleshooting
 
-* SSH connection problems 
+### SSH connection problems
+If MetroÆ is unable to authenticate with your target server, chances are that passwordless ssh has not been configured properly. The public key of the container must be copied to the authorized_keys file on the target server. Use the `copy-ssh-id` command option, e.g. `./metroae copy-ssh-id user@host_name_or_ip`.
 
-    If MetroÆ complains that it is unable to authenticate with your target server, chances are that passwordless ssh has not been configured properly. The public key of the container must be copied to the authorized_keys file on the target server. This can be accomplished using the `copy-ssh-id` command option, e.g. `./metroae copy-ssh-id user@host_name_or_ip`.
+### Where are my data and image directories or what are my API/UI settings? 
+Determine the current setup by either searching for a file named .metroae in the user's home directory or by executing the status command option, e.g. `./metroae status`.
 
-* Can't find the location of the data and image directories or the API/UI settings 
+### General errors
+metroae.log and ansible.log are located in the data directory you specified during setup.
 
-    There are two options for determining the current setup. One is to look for a file named .metroae in the user's home directory. Or you can execute the status command option, e.g. `./metroae status`.
-
-* General errors
-
-    In the data directory that you specified at setup, you will find metroae.log and ansible.log.
-
-# Manually use the container without the script
-
-These steps are currently supported for Nokia internal only
-
-* Pulling the container 
+## Manually use the container without the script (Nokia internal support only)
+### Pull the container 
 
     docker pull registry.mv.nuagenetworks.net:5000/metroae:1.0
 
-* Running the container 
-
-    docker run -e USER_NAME='user name for the container' -e GROUP_NAME='group name for the container' -d $networkArgs -v 'path to the data mount point':/data:Z -v 'path to images mount point':/images:Z --name metroae registry.mv.nuagenetworks.net:5000/metroae:1.0
-
+### Run the container 
+docker run -e USER_NAME='user name for the container' -e GROUP_NAME='group name for the container' -d $networkArgs -v 'path to the data mount point':/data:Z -v 'path to images mount point':/images:Z --name metroae registry.mv.nuagenetworks.net:5001/metroae:1.0
+#### For Linux host
 ```
-        networkArgs is '--network host' for Linux host 
-        networkArgs is '-p "UI Port":5001' for Mac host
+networkArgs is '--network host'
 ```
-
-* Executing MetroAE Commands 
+#### For Mac host
+```
+networkArgs is '-p "UI Port":5001'
+```
+### Execute MetroÆ Commands 
 
     docker exec 'running container id' /source/nuage-metro/metroae playbook deployment
 
-* Stopping the container 
+### Stop the container 
 
     docker stop 'running container id'
 
-* Removing the container 
+### Remove the container 
 
     docker rm 'container id'
 
-* Remove MetroAE image 
+### Remove MetroÆ image 
 
     docker rmi 'image id'
+
+## Questions, Feedback, and Contributing
+Ask questions and get support via the [forums](https://devops.nuagenetworks.net/forums/) on the [MetroÆ site](https://devops.nuagenetworks.net/).  
+You may also contact us directly.  
+  Outside Nokia: [devops@nuagenetworks.net](mailto:deveops@nuagenetworks.net "send email to nuage-metro project")  
+  Internal Nokia: [nuage-metro-interest@list.nokia.com](mailto:nuage-metro-interest@list.nokia.com "send email to nuage-metro project")
+
+Report bugs you find and suggest new features and enhancements via the [GitHub Issues](https://github.com/nuagenetworks/nuage-metro/issues "nuage-metro issues") feature.
+
+You may also [contribute](CONTRIBUTING.md) to MetroÆ by submitting your own code to the project.
