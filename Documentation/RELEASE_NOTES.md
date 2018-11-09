@@ -3,7 +3,12 @@
 ## Release 3.0.0
 
 ### New Features and Enhancements
-
+* Add Docker usage documentation
+* Add copy ssh id action
+* Increase retries for VSTAT bringup
+* Improve error message for schema validation
+* Remove restriction for SELinux operation
+* Add NSGv bootstrap support in Croxley
 * Add yum proxy support
 * Add check for SSH connectivity to KVM target servers
 * Change VCIN RAM u/m from KB to GB. Add warning about changing ssh public key default path.
@@ -25,7 +30,7 @@
 * Change RAM from KB to GB
 
 ### Resolved Issues
-
+* Fix the key generation and copying to only do what is required
 * Use target_server_user instead of compute username for VRS deploy
 * Change metroae script to handle deployment passwords with spaces and missing credentials file
 * Fix VRS predeploy prerequisite step
