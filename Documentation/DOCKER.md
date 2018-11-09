@@ -71,7 +71,7 @@ The MetroÆ container is designed so that you run MetroÆ workflows, e.g. instal
 If MetroÆ is unable to authenticate with your target server, chances are that passwordless ssh has not been configured properly. The public key of the container must be copied to the authorized_keys file on the target server. Use the `copy-ssh-id` command option, e.g. `./metroae copy-ssh-id user@host_name_or_ip`.
 
 ### Where are my data and image directories or what are my API/UI settings? 
-Determine the current setup by either searching for a file named .metroae in the user's home directory, or by executing the status command option, e.g. `./metroae status`.
+Determine the current setup by either searching for a file named .metroae in the user's home directory or by executing the status command option, e.g. `./metroae status`.
 
 ### General errors
 metroae.log and ansible.log are located in the data directory you specified during setup.
@@ -82,7 +82,7 @@ metroae.log and ansible.log are located in the data directory you specified duri
     docker pull registry.mv.nuagenetworks.net:5000/metroae:1.0
 
 ### Run the container 
-docker run -e USER_NAME='user name for the container' -e GROUP_NAME='group name for the container' -d $networkArgs -v 'path to the data mount point':/data:Z -v 'path to images mount point':/images:Z --name metroae registry.mv.nuagenetworks.net:5000/metroae:1.0
+docker run -e USER_NAME='user name for the container' -e GROUP_NAME='group name for the container' -d $networkArgs -v 'path to the data mount point':/data:Z -v 'path to images mount point':/images:Z --name metroae registry.mv.nuagenetworks.net:5001/metroae:1.0
 #### For Linux host
 ```
 networkArgs is '--network host'
