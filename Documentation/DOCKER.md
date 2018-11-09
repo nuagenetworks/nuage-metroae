@@ -12,7 +12,7 @@ In addition to being able to access MetroÆ via github clone, MetroÆ is now als
 * Image files for VCS or VNS deployments must be available locally.
 
 ## The metroae Command
-The metroae command is at the heart of interacting with the MetroÆ container. It is delivered from the github repo. It is used both to manage the container and to execute MetroÆ inside the container. You can access all of the command options via `./metroae command <options>`.
+The metroae command is at the heart of interacting with the MetroÆ container. It is delivered from the github repo. It is used both to manage the container and to execute MetroÆ inside the container. You can access all of the command options via `./metroae <action | workflow> [deployment] [options]`.
 
 ### metroae Container Management Command Options
 
