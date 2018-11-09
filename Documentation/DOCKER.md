@@ -20,7 +20,7 @@ The following command options are supported by the metroae command:
 
 **help** -displays the help text for the command 
 
-**pull** - pulls the latest container from the docker registry
+**pull** - pulls the MetroÆ container from the registry. By default, the latest container is pulled. You can also specify a valid container tag to pull another version, e.g. `./metroae pull 1.0.0`.
 	
 **setup** - setup completes the steps necessary to get the MetroÆ container up and running. It prompts you for the full paths to data and image directories that the container uses on your local disk. On Mac OS, you will also be prompted for the port that the API/UI will be listening on. By default, the API/UI listens on port 5001. You can access the API/GUI via URL, `https://host_name_or_ip:5001`, where `host_name_or_ip` is the host name or ip address of the machine on which the container is running. This host name can often be just, `https://localhost:5001`. Note: Running setup multiple times replaces the existing container, but it does not remove the data on your local disk.
 	
