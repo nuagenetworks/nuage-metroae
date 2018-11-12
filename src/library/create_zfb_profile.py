@@ -144,16 +144,13 @@ EXAMPLES = '''
 '''
 
 
-def install_license(csp_user, vsd_license):
-    csproot = csp_user
-
+def install_license(csproot, vsd_license):
     # Push the license
     test_license = NULicense(license=vsd_license)
     csproot.create_child(test_license)
 
 
-def is_license_already_installed(csp_user, vsd_license):
-    csproot = csp_user
+def is_license_already_installed(csproot, vsd_license):
     license_unique_id = get_license_unique_id(vsd_license)
 
     installed_licenses = csproot.licenses.get()
@@ -295,7 +292,7 @@ def create_nsg_device(csproot, nsg_temp):
     # Create an ORG/Enterprise
     metro_org = create_enterprise(csproot, nsg_params['nsg_organization'])
 
-    nsg_dev = metro_org.nsgateways.get_first(
+    nsg_dev = metro_org.ns_gateways.get_first(
         "name is '%s'" % nsg_params['nsg_name'])
 
     if nsg_dev is None:
@@ -312,6 +309,21 @@ def create_nsg_device(csproot, nsg_temp):
         metro_org.create_child(nsg_dev)
 
     return metro_org
+
+
+def has_nsg_configuration(csproot):
+    nsg_params = module.params['zfb_nsg']
+
+    enterprise = csproot.enterprises.get_first(
+        "name is '%s'" % nsg_params['nsg_organization'])
+
+    if enterprise is not None:
+        nsg_dev = enterprise.ns_gateways.get_first(
+            "name is '%s'" % nsg_params['nsg_name'])
+
+        return nsg_dev is not None
+
+    return False
 
 
 def create_iso_file(metro_org, nsg_temp, nsgv_path):
@@ -363,15 +375,19 @@ def main():
     # Create nsg templates and iso file
     if (not is_license_already_installed(csproot, vsd_license)):
         install_license(csproot, vsd_license)
-    create_proxy_user(session)
 
-    nsg_infra = create_nsg_infra_profile(csproot)
-    nsg_temp = create_nsg_gateway_template(csproot, nsg_infra)
-    vsc_infra = create_vsc_infra_profile(csproot)
-    create_nsgv_ports(nsg_temp, vsc_infra)
-    metro_org = create_nsg_device(csproot, nsg_temp)
+    if has_nsg_configuration(csproot):
+        nsg_already_configured = True
+    else:
+        create_proxy_user(session)
 
-    create_iso_file(metro_org, nsg_temp, nsgv_path)
+        nsg_infra = create_nsg_infra_profile(csproot)
+        nsg_temp = create_nsg_gateway_template(csproot, nsg_infra)
+        vsc_infra = create_vsc_infra_profile(csproot)
+        create_nsgv_ports(nsg_temp, vsc_infra)
+        metro_org = create_nsg_device(csproot, nsg_temp)
+
+        create_iso_file(metro_org, nsg_temp, nsgv_path)
 
     module.exit_json(changed=True,
                      ansible_facts={fact_name: nsg_already_configured})
