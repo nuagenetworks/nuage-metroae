@@ -36,7 +36,7 @@ The following command options are supported by the metroae command:
 
 **stop-ui** - stops the UI server running in the container
 
-**start-ui** - starts the API/UI server in the container. It prompts you for UI settings, such as whether you want to configure a certificate and whether a password will be used to encrypt passwords. The default port used by the API/UI server is 5000, as in `https://localhost:5001`.
+**start-ui** - starts the API/UI server in the container. It prompts you for UI settings, such as whether you want to configure a certificate and whether a password will be used to encrypt passwords. The default port used by the API/UI server is 5001, as in `https://localhost:5001`.
 
 **status-ui** - displays the status of the API/UI server in the container
 
