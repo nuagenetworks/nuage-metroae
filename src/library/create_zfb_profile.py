@@ -378,16 +378,16 @@ def main():
 
     if has_nsg_configuration(csproot):
         nsg_already_configured = True
-    else:
-        create_proxy_user(session)
 
-        nsg_infra = create_nsg_infra_profile(csproot)
-        nsg_temp = create_nsg_gateway_template(csproot, nsg_infra)
-        vsc_infra = create_vsc_infra_profile(csproot)
-        create_nsgv_ports(nsg_temp, vsc_infra)
-        metro_org = create_nsg_device(csproot, nsg_temp)
+    create_proxy_user(session)
 
-        create_iso_file(metro_org, nsg_temp, nsgv_path)
+    nsg_infra = create_nsg_infra_profile(csproot)
+    nsg_temp = create_nsg_gateway_template(csproot, nsg_infra)
+    vsc_infra = create_vsc_infra_profile(csproot)
+    create_nsgv_ports(nsg_temp, vsc_infra)
+    metro_org = create_nsg_device(csproot, nsg_temp)
+
+    create_iso_file(metro_org, nsg_temp, nsgv_path)
 
     module.exit_json(changed=True,
                      ansible_facts={fact_name: nsg_already_configured})
