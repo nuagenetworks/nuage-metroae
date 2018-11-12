@@ -79,7 +79,7 @@ metroae.log and ansible.log are located in the data directory you specified duri
 ## Manually use the container without the script (Nokia internal support only)
 ### Pull the container 
 
-    docker pull registry.mv.nuagenetworks.net:5000/metroae:1.0
+    docker pull registry.mv.nuagenetworks.net:5001/metroae:1.0
 
 ### Run the container 
 docker run -e USER_NAME='user name for the container' -e GROUP_NAME='group name for the container' -d $networkArgs -v 'path to the data mount point':/data:Z -v 'path to images mount point':/images:Z --name metroae registry.mv.nuagenetworks.net:5001/metroae:1.0
