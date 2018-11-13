@@ -2,7 +2,7 @@
 
 In addition to being able to access MetroÆ via github clone, MetroÆ is now also available for distribution via Docker container. The Docker container version of MetroÆ has all the capabilities of the github clone, plus it delivers the following:
 
-* All MetroÆ prerequisites are satisifed by the container. Your only requirement is to run Docker.
+* All MetroÆ prerequisites are satisified by the container. Your only requirement is to run Docker.
 * CLI access is provided through the `metroae` command. 
 * Your data is located in the file system of the host where you are running Docker. You don't need to get inside the container.
 * The Container has the option of running an API/UI server, allowing you to access MetroÆ functionality via REST API and a front-end GUI.
