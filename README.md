@@ -10,7 +10,7 @@ MetroÆ is an automation engine that deploys and upgrades Nuage Networks compone
 The procedures have changed substantially in version 3.0 to improve usability.
 If you have used previous versions of MetroÆ, please see [RELEASE_NOTES.md](Documentation/RELEASE_NOTES.md) for details.
 
-One of the changes to make note of is the use of the `metroae` command to do all MetroÆ operations, including Docker container management.
+All MetroÆ operations, including Docker container management, use the command `metroae`.
 
 ## Supported Components for Deployment
 MetroÆ supports deployment of the following components as VMs on the target server. These are the same target server types that are supported on the VSP platform.
