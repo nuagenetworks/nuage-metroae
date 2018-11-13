@@ -279,7 +279,7 @@ def create_enterprise(csproot, name):
         "name is '%s'" % name)
 
     if enterprise is None:
-        enterprise = NUEnterprise(name)
+        enterprise = NUEnterprise(name=name)
         csproot.create_child(enterprise)
 
     return enterprise
