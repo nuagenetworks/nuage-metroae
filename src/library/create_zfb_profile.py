@@ -123,7 +123,7 @@ EXAMPLES = '''
         nsg_template_name: nsg_template
         match_type: ip_address
         match_value: 192.168.1.1
-        ssh_service: false
+        ssh_service: DISABLED
     zfb_ports:
         network_port:
             name: port1_network
@@ -136,7 +136,7 @@ EXAMPLES = '''
     zfb_nsg_infra:
         name: nsg_infra
         proxyDNSName: vnsutil1.example.com
-        instanceSSHOverride: true
+        instanceSSHOverride: ALLOWED
     zfb_vsc_infra:
         name: vsc_infra
         firstController: 192.168.1.100
