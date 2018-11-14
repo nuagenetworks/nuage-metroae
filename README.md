@@ -18,7 +18,7 @@ MetroÆ supports deployment of the following components as VMs on the target ser
 Component | KVM (el7)<br>Stand-alone (SA) | KVM (el7)<br>Clustered (HA) | ESXi<br>Stand-alone (SA) | ESXi<br>Clustered (HA)
 ------- | :---: | :---: | :----: | :---:
 VSD (Virtualized Services Directory) | X | X | X | X
-VSTAT (Elastic Backend for statistics) | X | X | X | X
+VSTAT (Elasticsearch stats-in) | X | X | X | X
 VSC (Virtualized Services Controller) | X | X | X | X
 VCIN (vCenter Integration Node) | X |  | X |
 VNSUTIL<br>(Virtualized Network Services-Utility) | X |  | X |
@@ -42,7 +42,7 @@ MetroÆ supports upgrade of the following Nuage VSP components.
 Component | KVM (el7)<br> SA | KVM (el7)<br> HA | ESXi<br>SA | ESXi<br>HA
 ------- | :---: | :---: | :----: | :---:
 VSD | X | X | X | X
-VSTAT | X | X | X | X
+VSTAT (stats-in) | X | X | X | X
 VSC | X | X | X | X
 VCIN | X |  | X |
 
