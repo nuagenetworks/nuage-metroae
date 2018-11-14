@@ -24,7 +24,7 @@ def usage():
 
 def read_build_vars(build_vars_file):
     with open(build_vars_file, "r") as file:
-        build_var_contents = file.read()
+        build_var_contents = file.read().decode("utf-8")
 
     substitutions = yaml.safe_load(build_var_contents)
 
