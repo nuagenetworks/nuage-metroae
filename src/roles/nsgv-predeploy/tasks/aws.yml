@@ -12,12 +12,20 @@
       zfb_nsg_infra: "{{ zfb_nsg_infra }}"
       zfb_vsc_infra: "{{ zfb_vsc_infra }}"
     delegate_to: localhost
+
+  - name: Format VSD auth for VSPK module
+    set_fact:
+      vspk_auth:
+        api_username: "{{ vsd_auth.username }}"
+        api_password: "{{ vsd_auth.password }}"
+        api_enterprise: "{{ vsd_auth.enterprise }}"
+        api_url: "{{ vsd_auth.api_url }}"
     no_log: True
 
   - name: Get Enterprise from VSD
     connection: local
     nuage_vspk:
-      auth: "{{ vsd_auth }}"
+      auth: "{{ vspk_auth }}"
       type: Enterprise
       command: find
       properties:
@@ -27,7 +35,7 @@
   - name: Get NSG Gateway from VSD
     connection: local
     nuage_vspk:
-      auth: "{{ vsd_auth }}"
+      auth: "{{ vspk_auth }}"
       type: NSGateway
       parent_id: "{{ nuage_enterprise.id }}"
       parent_type: Enterprise
@@ -39,7 +47,7 @@
   - name: Find port1 of the NSG-AMI
     connection: local
     nuage_vspk:
-      auth: "{{ vsd_auth }}"
+      auth: "{{ vspk_auth }}"
       type: NSPort
       parent_type: NSGateway
       parent_id: "{{ nuage_nsg.id }}"
@@ -51,7 +59,7 @@
   - name: Ensure 1:1 NAT is enabled on port1 of the NSG-AMI
     connection: local
     nuage_vspk:
-      auth: "{{ vsd_auth }}"
+      auth: "{{ vspk_auth }}"
       type: NSPort
       id: "{{ nuage_nsg_port1.id }}"
       state: present
@@ -61,7 +69,7 @@
   - name: Create Job to download auto-bootstrap info
     connection: local
     nuage_vspk:
-      auth: "{{ vsd_auth }}"
+      auth: "{{ vspk_auth }}"
       type: Job
       parent_id: "{{ nuage_enterprise.id }}"
       parent_type: Enterprise
