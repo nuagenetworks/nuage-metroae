@@ -43,9 +43,16 @@
   debug: var=version_json verbosity=1
 
 - name: Find name of VSC TIM File
-  find: path="{{ nuage_unzipped_files_dir }}/vsc/single_disk"  pattern="cpm.tim" recurse=yes
+  find: path="{{ qcow2_path }}"  pattern="cpm.tim" recurse=yes
   register: rc_vsc_tim_file
   delegate_to: localhost
+  when: target_server_type | match("kvm")
+
+- name: Find name of VSC TIM File
+  find: path="{{ ova_path }}"  pattern="cpm.tim" recurse=yes
+  register: rc_vsc_tim_file
+  delegate_to: localhost
+  when: target_server_type | match("vcenter")
 
 - name: Register VSC TIM variables with proper path and image locations for use in other playbooks
   set_fact:
@@ -57,7 +64,6 @@
   assert:
     that: "vsc_tim_path is defined and vsc_tim_file_name is defined"
     msg: "Missing VSC TIM image file for {{ hostname }} under the unzipped file directory, please unzip it and issue reset_build"
-  when: component_type | default("NONE") == 'vsc'
 
 - name: Copy new VSC image to VSC nodes
   expect:
