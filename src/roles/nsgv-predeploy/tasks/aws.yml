@@ -1,5 +1,19 @@
 - block:
 
+  - name: Configure NSGv on VSD
+    create_zfb_profile:
+      skip_iso_create: True
+      vsd_license_file: "{{ vsd_license_file }}"
+      vsd_auth: "{{ vsd_auth }}"
+      zfb_constants: "{{ zfb_constants }}"
+      zfb_proxy_user: "{{ zfb_proxy_user }}"
+      zfb_nsg: "{{ zfb_nsg }}"
+      zfb_ports: "{{ zfb_ports }}"
+      zfb_nsg_infra: "{{ zfb_nsg_infra }}"
+      zfb_vsc_infra: "{{ zfb_vsc_infra }}"
+    delegate_to: localhost
+    no_log: True
+
   - name: Get Enterprise from VSD
     connection: local
     nuage_vspk:
@@ -7,21 +21,19 @@
       type: Enterprise
       command: find
       properties:
-        name: "{{ enterprise }}"
+        name: "{{ zfb_nsg.nsg_organization }}"
     register: nuage_enterprise
 
-  - name: Ensure NSG Gateway is provisioned in the enterprise
+  - name: Get NSG Gateway from VSD
     connection: local
     nuage_vspk:
       auth: "{{ vsd_auth }}"
       type: NSGateway
       parent_id: "{{ nuage_enterprise.id }}"
       parent_type: Enterprise
-      match_filter: "name == '{{ inventory_hostname }}'"
-      state: present
+      command: find
       properties:
-        name: "{{ inventory_hostname }}"
-        template_id: "{{ nsg_template_id }}"
+        name: "{{ zfb_nsg.nsg_name }}"
     register: nuage_nsg
 
   - name: Find port1 of the NSG-AMI
@@ -33,7 +45,7 @@
       parent_id: "{{ nuage_nsg.id }}"
       command: find
       properties:
-        name: "port1"
+        name: "{{ zfb_ports.network_port.name }}"
     register: nuage_nsg_port1
 
   - name: Ensure 1:1 NAT is enabled on port1 of the NSG-AMI
@@ -65,7 +77,7 @@
     - { key: "nsg_ami_user_data", value: "{{ nuage_nsg_zfb.entities[0].result }}" }
     when: nuage_nsg_zfb.entities[0].state == "SUCCESS"
 
-  when: bootstrap_method|default( "None" ) == 'zfb_aws'
+  when: bootstrap_method|default( "None" ) == 'zfb_metro'
 
 - block:
 
