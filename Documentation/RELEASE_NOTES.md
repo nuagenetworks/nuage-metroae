@@ -1,5 +1,10 @@
 # Metro Automation Engine Release Notes
 
+## Release 3.0.1
+
+### Resolved Issues
+* Fix build_vars.yml conversion script
+
 ## Release 3.0.0
 
 ### New Features and Enhancements
