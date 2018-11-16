@@ -4,6 +4,7 @@
 
 ### Resolved Issues
 * Fix build_vars.yml conversion script
+* Require VSC TIM file only for upgrade, not install
 
 ## Release 3.0.0
 
