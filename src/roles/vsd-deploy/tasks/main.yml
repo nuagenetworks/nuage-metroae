@@ -1,4 +1,12 @@
 ---
+- name: Clean known_hosts of VSD's (ignoring errors)
+  known_hosts:
+    name: "{{ vsd_mgmt_ip }}"
+    state: absent
+  delegate_to: localhost
+  no_log: True
+  ignore_errors: True
+
 - name: Wait for VSD ssh to be ready
   include_role:
     name: common
@@ -45,12 +53,66 @@
   import_tasks: set_vsd_creds.yml
   when: not skip_vsd_deploy
 
-- name: Execute tasks for the deploy
-  import_tasks: non_heat.yml
-  when: not skip_vsd_deploy and not target_server_type | match("heat|nuagex")
-  tags:
-    - vsd
-    - vsd-deploy
+- block:
+
+  - block:
+
+    - name: Force DHCP update to configure DNS in AWS (ignoring errors)
+      command: dhclient
+      ignore_errors: true
+
+    - name: Set hostname for AWS for current session
+      command: "hostname {{ hostname }}"
+
+    - name: Set hostname for AWS permanently
+      shell: "echo {{ hostname }} > /etc/hostname"
+
+    when: target_server_type | match("aws")
+
+  - name: Set Major, Minor and Patch VSD version
+    set_fact:
+        vsd_major_version: "{{ vsd_full_version.stdout.split('.')[0] }}"
+        vsd_minor_version: "{{ vsd_full_version.stdout.split('.')[1] }}"
+        vsd_patch_version: "{{ vsd_full_version.stdout.split('.')[2].split('U')[0] }}"
+
+  - block:
+
+    - name: Set VSD numbering for cluster install
+      set_fact:
+          first_cluster_node_to_install: "{{ groups['vsds'][0] }}"
+          second_cluster_node_to_install: "{{ groups['vsds'][1] }}"
+          third_cluster_node_to_install: "{{ groups['vsds'][2] }}"
+      when: not nuage_upgrade | default(False)
+
+    - name: Set VSD numbering for cluster upgrade
+      set_fact:
+          first_cluster_node_to_install: "{{ groups['vsds'][1] }}"
+          second_cluster_node_to_install: "{{ groups['vsds'][2] }}"
+          third_cluster_node_to_install: "{{ groups['vsds'][0] }}"
+      when: nuage_upgrade | default(False)
+
+    when: vsd_sa_or_ha | match('ha')
+
+  - name: Set deploy_vcin to false (deploy vsd)
+    set_fact:
+      deploy_vcin: false
+
+  - name: Overwrite deploy_vcin to true (deploy vcin)
+    set_fact:
+      deploy_vcin: true
+    when:
+      - vcin_mode is defined
+      - vcin_mode
+      - (vsd_major_version|int > 5) or
+        (vsd_major_version|int >= 5 and vsd_minor_version|int > 2) or
+        (vsd_major_version|int >= 5 and vsd_minor_version|int >= 2 and vsd_patch_version|int >= 2)
+
+  - name: Assert that vcin_mode is not true if version less than 5.2.2
+    assert:
+      that: deploy_vcin or not (vcin_mode|default(False))
+      msg:  "MetroAE does not support the installation of VCIN for versions less than 5.2.2. Quitting"
+
+  remote_user: "{{ vsd_default_username }}"
 
 - name: Execute Heat tasks for the deploy
   import_tasks: heat.yml
@@ -60,11 +122,158 @@
     - heat
     - vsd-deploy
 
-- import_tasks: brand_vsd.yml
-  when: not skip_vsd_deploy and branding_zip_file is defined and component_type == "vsd"
+- block:
 
-- import_tasks: nuagex.yml
-  when: not skip_vsd_deploy and target_server_type | match("nuagex")
-  tags:
-    - nuagex
-    - vsd-deploy
+  - block:
+
+    - name: Handle ssh key generation and copying for root user
+      import_tasks: legacy_cluster_ssh_keys.yml
+      run_once: True
+      when: vsd_major_version | int < 5
+
+    - name: Handle ssh key generation and copying for vsd user
+      import_tasks: cluster_ssh_keys.yml
+      when: vsd_major_version | int >= 5
+
+    when: vsd_sa_or_ha | match('ha')
+
+  - block:
+
+    - name: Generate SSH key on master VCIN
+      user:
+        name: "{{ vsd_default_username }}"
+        generate_ssh_key: yes
+      register: master_vcin_ssh_key
+      delegate_to: "{{ master_vcin }}"
+
+    - name: Generate SSH key on slave VCIN
+      user:
+        name: "{{ vsd_default_username }}"
+        generate_ssh_key: yes
+      register: slave_vcin_ssh_key
+
+    - name: Add master VCIN SSH key to slave VCIN
+      authorized_key:
+          key: "{{ master_vcin_ssh_key.ssh_public_key }}"
+          user: "{{ vsd_default_username }}"
+
+    - name: Add slave VCIN SSH key to master VCIN
+      authorized_key:
+          key: "{{ slave_vcin_ssh_key.ssh_public_key }}"
+          user: "{{ vsd_default_username }}"
+      delegate_to: "{{ master_vcin }}"
+
+    when: master_vcin is defined
+
+  - name: Configure yum proxy
+    lineinfile:
+      dest: /etc/yum.conf
+      regexp: "^proxy="
+      line: "proxy={{ yum_proxy }}"
+    when: not yum_proxy | match('NONE')
+
+  - name: Execute a yum update (Can take 20 minutes)
+    yum:
+      name: '*'
+      state: latest
+    when: yum_update
+
+  - name: Disable cloud-init on VSD, to avoid boot time delays
+    command: "{{ item }}"
+    with_items:
+      - systemctl disable cloud-init
+      - systemctl disable cloud-init-local
+      - systemctl disable cloud-config
+      - systemctl disable cloud-final
+
+  - name: Configure ntpd and ntpdate and local time zone
+    include_role:
+      name: common
+      tasks_from: linux-ntp-sync
+    vars:
+      rem_user: "{{ vsd_default_username }}"
+
+  - block:
+
+    - name: Install VSD software on standalone node (Can take 20 minutes)
+      command: /opt/vsd/vsd-install.sh -t s -y
+      when: not deploy_vcin
+
+    - name: Install VCIN software on VCIN node (Can take 20 minutes)
+      command: /opt/vsd/vsd-install.sh -t v -y
+      when: deploy_vcin
+
+    when:
+      - vsd_sa_or_ha | match ('sa')
+      - master_vcin is not defined
+
+  - block:
+
+    - name: Preparing the master
+      delegate_to: "{{ master_vcin }}"
+      command: /opt/vsd/bin/vsd-prepare-replication-master-cluster.sh
+
+    - name: Preparing replication on the master
+      delegate_to: "{{ master_vcin }}"
+      command: "/opt/vsd/bin/vsd-prepare-replication-master.sh -a {{ inventory_hostname }}"
+
+    - name: Creating the data folder on the slave
+      file:
+        path: /opt/vsd/data/
+        state: directory
+
+    - name: Syncing the backup from the master to the local system
+      delegate_to: "{{ master_vcin }}"
+      synchronize:
+          dest: /opt/vsd/data/
+          src: /tmp/backup/
+          mode: push
+
+    - name: Install VCIN software on slave VCIN node
+      command: /opt/vsd/vsd-install.sh -t v -y
+
+    - name: Start the replication
+      command: "/opt/vsd/bin/vsd-start-replication-slave -m {{ master_vcin }}"
+
+    when:
+      - vsd_sa_or_ha | match ('sa')
+      - deploy_vcin
+      - master_vcin is defined
+
+  - block:
+
+    - name: Install VSD software on the first cluster node (Can take 20 minutes)
+      command: "/opt/vsd/vsd-install.sh -t 1 -a {{ first_cluster_node_to_install }} -b {{ second_cluster_node_to_install }} -c {{third_cluster_node_to_install}} -x {{vsd_fqdn}} -y"
+      when: inventory_hostname == first_cluster_node_to_install
+
+    - name: Install VSD software on the second cluster node (Can take 20 minutes)
+      command: "/opt/vsd/vsd-install.sh -1 {{ first_cluster_node_to_install }} -t 2 -x {{ vsd_fqdn }} -y"
+      when: inventory_hostname == second_cluster_node_to_install
+
+    - name: Install VSD software on the third cluster node (Can take 20 minutes)
+      command: "/opt/vsd/vsd-install.sh -1 {{ first_cluster_node_to_install }} -t 3 -x {{ vsd_fqdn }} -y"
+      when: inventory_hostname == third_cluster_node_to_install
+
+    when: vsd_sa_or_ha | match('ha')
+
+  - name: Set XMPP connection to allow both clear and TLS
+    command: /opt/vsd/bin/ejmode allow -y
+    when: not deploy_vcin
+
+  remote_user: "{{ vsd_default_username }}"
+
+- import_tasks: brand_vsd.yml
+  when:
+    - not skip_vsd_deploy
+    - branding_zip_file is defined
+    - component_type == "vsd"
+
+- name: Install nginx
+  yum:
+    name: nginx
+    state: latest
+  remote_user: "{{ vsd_default_username }}"
+  when:
+    - vstats is defined
+    - not skip_vsd_deploy
+    - target_server_type | match("nuagex")
