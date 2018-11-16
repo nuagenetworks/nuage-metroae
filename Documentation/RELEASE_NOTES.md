@@ -3,8 +3,12 @@
 ## Release 3.0.1
 
 ### Resolved Issues
-* Fix build_vars.yml conversion script
+* Add double jinja2 substitution to build_vars.yml conversion script
+* Support unicode characters when converting from build_vars.yml
 * Require VSC TIM file only for upgrade, not install
+* Add license
+* Remove verbosity from documentation examples
+* Remove 'install_everything' error message when running `./metroae help`
 
 ## Release 3.0.0
 
