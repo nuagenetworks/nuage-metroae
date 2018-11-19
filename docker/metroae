@@ -253,7 +253,7 @@ copySSHId() {
 	fi
 	runContainerIfNotRunning
 
-	docker exec -i $runningContainerID ssh-copy-id -i /source/id_rsa.pub $1
+	docker exec -it $runningContainerID ssh-copy-id -i /source/id_rsa.pub $1
 }
 
 pull() {
@@ -488,7 +488,7 @@ stopUI() {
 
 startUI() {
 	runContainerIfNotRunning
-	docker exec -i $runningContainerID /source/UI.sh start $1
+	docker exec -it $runningContainerID /source/UI.sh start $1
 }
 
 UIstatus() {
@@ -515,12 +515,12 @@ loadCertificates() {
 	
 	getRunningContainerID
 
-	docker exec -i $runningContainerID /source/UI.sh loadCertificates $certificate $keyfile $3
+	docker exec -it $runningContainerID /source/UI.sh loadCertificates $certificate $keyfile $3
 }
 
 interactive() {
 	runContainerIfNotRunning
-	docker exec -i $runningContainerID /bin/bash
+	docker exec -it $runningContainerID /bin/bash
 
 }
 
@@ -563,7 +563,27 @@ status() {
 
 vaultPassword() {
 	runContainerIfNotRunning
-	docker exec -i $runningContainerID /usr/bin/python /source/nuage-metro/encrypt_credentials.py
+	
+	environment='-e ANSIBLE_FORCE_COLOR=true'
+	for env in `env`
+	do
+		filtered=0
+		for filter in ${environmentFilters[@]}
+		do
+			if [[ "$env" =~ ^$filter ]]
+			then
+				filtered=1
+
+			fi
+		done
+
+		if [ $filtered -eq 0 ]
+		then
+			environment="$environment -e $env"
+		fi
+	done
+	
+	docker exec -it -e $environment $runningContainerID /usr/bin/python /source/nuage-metro/encrypt_credentials.py
 }
 
 disableEncryption() {
