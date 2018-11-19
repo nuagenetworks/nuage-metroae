@@ -28,11 +28,26 @@ def read_build_vars(build_vars_file):
 
     substitutions = yaml.safe_load(build_var_contents)
 
-    build_vars_template = jinja2.Template(build_var_contents,
-                                          autoescape=False,
-                                          undefined=jinja2.StrictUndefined)
+    try:
+        build_vars_template = jinja2.Template(build_var_contents,
+                                              autoescape=False,
+                                              undefined=jinja2.StrictUndefined)
 
-    resolved_yaml = build_vars_template.render(substitutions)
+        resolved_yaml = build_vars_template.render(substitutions)
+
+        substitutions = yaml.safe_load(resolved_yaml)
+
+        # Do template resolution a second time to resolve nested substitution
+        build_vars_template = jinja2.Template(resolved_yaml,
+                                              autoescape=False,
+                                              undefined=jinja2.StrictUndefined)
+
+        resolved_yaml = build_vars_template.render(substitutions)
+    except jinja2.exceptions.UndefinedError as e:
+        print str(e)
+        print ("The above variable is missing from build_vars, please define "
+               "it in the build_vars file.")
+        exit(1)
 
     var_dict = yaml.safe_load(resolved_yaml)
 
