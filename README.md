@@ -1,7 +1,7 @@
 # Nuage Networks Metro Automation Engine (MetroÆ)
 (4 minute read)
 
-Version: 3.0.0
+Version: 3.0.1
 
 MetroÆ is an automation engine that deploys and upgrades Nuage Networks components. You specify the individual details of your target platform, then let MetroÆ install, upgrade, destroy, or health-check the environment for you.
 
@@ -10,12 +10,7 @@ MetroÆ is an automation engine that deploys and upgrades Nuage Networks compone
 The procedures have changed substantially in version 3.0 to improve usability.
 If you have used previous versions of MetroÆ, please see [RELEASE_NOTES.md](Documentation/RELEASE_NOTES.md) for details.
 
-One of the changes to make note of is the use of the `metroae` command to do all MetroÆ operations, including Docker container management. To that end, there are two `metroae` scripts to make note of:
-
-1. `./metroae` at the root of the repo is used for interacting directly with MetroÆ on the command line via a git workspace, e.g. clone.
-1. `./docker/metroae` is used for both managing the Docker container and interacting with MetroÆ from outside of the container.
-
-You can use either command with exactly the same syntax to launch MetroÆ workflows, e.g. `./metroae install_everything`. The Docker container version comes with the additional container-management controls that are described in [DOCKER.md](Documentation/DOCKER.md).
+All MetroÆ operations, including Docker container management, use the command `metroae`.
 
 ## Supported Components for Deployment
 MetroÆ supports deployment of the following components as VMs on the target server. These are the same target server types that are supported on the VSP platform.
@@ -23,7 +18,7 @@ MetroÆ supports deployment of the following components as VMs on the target ser
 Component | KVM (el7)<br>Stand-alone (SA) | KVM (el7)<br>Clustered (HA) | ESXi<br>Stand-alone (SA) | ESXi<br>Clustered (HA)
 ------- | :---: | :---: | :----: | :---:
 VSD (Virtualized Services Directory) | X | X | X | X
-VSTAT (Elastic Backend for statistics) | X | X | X | X
+VSTAT (Elasticsearch stats-in) | X | X | X | X
 VSC (Virtualized Services Controller) | X | X | X | X
 VCIN (vCenter Integration Node) | X |  | X |
 VNSUTIL<br>(Virtualized Network Services-Utility) | X |  | X |
@@ -47,7 +42,7 @@ MetroÆ supports upgrade of the following Nuage VSP components.
 Component | KVM (el7)<br> SA | KVM (el7)<br> HA | ESXi<br>SA | ESXi<br>HA
 ------- | :---: | :---: | :----: | :---:
 VSD | X | X | X | X
-VSTAT | X | X | X | X
+VSTAT (stats-in) | X | X | X | X
 VSC | X | X | X | X
 VCIN | X |  | X |
 
@@ -97,7 +92,7 @@ The following workflows are examples that combine together several of the above 
 * nuage_health - Checks the health of all components specified in a deployment.
 
 ## Python-based Ansible Operations Tool
-MetroÆ is based off of the Python-based Ansible operations tool.  
+MetroÆ is based off of the Python-based Ansible operations tool.
 
 **Ansible** provides a method to easily define one or more actions to be performed on one or more computers. These tasks can target the local system Ansible is running from, as well as other systems that Ansible can reach over the network. The Ansible engine has minimal installation requirements. Python, with a few additional libraries, is all that is needed for the core engine. MetroÆ includes a few custom Python modules and scripts. Agent software is not required on the hosts to be managed. Communication with target hosts defaults to SSH. Ansible does not require the use of a persistent state engine. Every Ansible run determines state as it goes, and adjusts as necessary given the action requirements. Running Ansible requires only an inventory of potential targets, state directives, either expressed as an ad hoc action, or a series coded in a YAML file, and the credentials necessary to communicate with the target.
 
@@ -120,18 +115,18 @@ File name | Description
 [RELEASE_NOTES.md](Documentation/RELEASE_NOTES.md) | New features, resolved issues and known limitations and issues
 [GETTING_STARTED.md](Documentation/GETTING_STARTED.md) | MetroÆ Quick Start Guide
 [SETUP.md](Documentation/SETUP.md) | Set up your environment by cloning the repo, installing packages and configuring access.
-[CUSTOMIZE.md](Documentation/CUSTOMIZE.md) | Populate variable files for a deployment and unzip Nuage software.  
-[DEPLOY.md](Documentation/DEPLOY.md) | Deploy all VSP components or choose components individually.  
-[DESTROY.md](Documentation/DESTROY.md) | Remove existing deployment(s) and start over.  
+[CUSTOMIZE.md](Documentation/CUSTOMIZE.md) | Populate variable files for a deployment and unzip Nuage software.
+[DEPLOY.md](Documentation/DEPLOY.md) | Deploy all VSP components or choose components individually.
+[DESTROY.md](Documentation/DESTROY.md) | Remove existing deployment(s) and start over.
 [UPGRADE_SA.md](Documentation/UPGRADE_SA.md) | Upgrade component(s) from one release to the next in a standalone environment.
 [UPGRADE_HA.md](Documentation/UPGRADE_HA.md) | Upgrade component(s) from one release to the next in a clustered environment.
 [VAULT_ENCRYPT.md](Documentation/VAULT_ENCRYPT.md) | Safeguard sensitive data
 [DOCKER.md](Documentation/DOCKER.md) | Installing and using MetroÆ Docker container
 
 ## Questions, Feedback, and Contributing
-Ask questions and get support via the [forums](https://devops.nuagenetworks.net/forums/) on the [MetroÆ site](https://devops.nuagenetworks.net/).  
-You may also contact us directly.  
-  Outside Nokia: [devops@nuagenetworks.net](mailto:deveops@nuagenetworks.net "send email to nuage-metro project")  
+Ask questions and get support via the [forums](https://devops.nuagenetworks.net/forums/) on the [MetroÆ site](https://devops.nuagenetworks.net/).
+You may also contact us directly.
+  Outside Nokia: [devops@nuagenetworks.net](mailto:deveops@nuagenetworks.net "send email to nuage-metro project")
   Internal Nokia: [nuage-metro-interest@list.nokia.com](mailto:nuage-metro-interest@list.nokia.com "send email to nuage-metro project")
 
 Report bugs you find and suggest new features and enhancements via the [GitHub Issues](https://github.com/nuagenetworks/nuage-metro/issues "nuage-metro issues") feature.
@@ -139,4 +134,4 @@ Report bugs you find and suggest new features and enhancements via the [GitHub I
 You may also [contribute](CONTRIBUTING.md) to MetroÆ by submitting your own code to the project.
 
 ## License
-Apache License 2.0
+[LICENSE.md](LICENSE.md)

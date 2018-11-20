@@ -26,7 +26,7 @@ The following are some examples:
 
 Installs all components described in deployments/default/.
 
-    metroae vsd_destroy east_network -vvv
+    metroae vsd_destroy east_network
 
 Takes down only the VSD components described by deployments/east_network/vsds.yml.  Additional output will be displayed with 3 levels of verbosity.
 
@@ -91,9 +91,9 @@ Ansible supports different levels of verbosity, specified with one of the follow
 -vvv
 -vvvv
 
-More letters means more verbose. The highest level, -vvvv, provides SSH connectivity information.
+More letters means more verbose, usually for debugging. The highest level, -vvvv, provides SSH connectivity information.
 
-Running individual workflows is useful for debugging. For example, `vsd_predeploy`, `vsd_deploy`, and `vsd_postdeploy`.
+Running individual workflows is also useful for debugging. For example, `vsd_predeploy`, `vsd_deploy`, and `vsd_postdeploy`.
 
 If you would like to remove an entire deployment, or individual components, and start over, see [DESTROY.md](DESTROY.md "link to DESTROY documentation") for details.
 
