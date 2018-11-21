@@ -76,3 +76,62 @@
 
   remote_user: "{{ vnsutil_default_username }}"
   when: dhcpd_nsgvs is defined and dhcpd_nsgvs | length > 0
+
+- block:
+  - name: Create dir to hold the keys
+    file:
+      path: "/opt/proxy/config/keys"
+      state: directory
+
+  - name: Create and transfer certs
+    include_role:
+      name: common
+      tasks_from: vsd-generate-transfer-certificates
+    vars:
+      certificate_password: "{{ vnsutil_default_password }}"
+      certificate_username: proxy
+      commonName: proxy
+      certificate_type: server
+      scp_user: "{{ vnsutil_default_username }}"
+      scp_location: /opt/proxy/config/keys
+      additional_parameters: -d {{ inventory_hostname }}
+
+  - name: Install supervisord and haproxy
+    command: "{{ install_cmd }}"
+
+  - name: Start supervisord
+    service:
+      name: supervisord
+      state: restarted
+      enabled: true
+
+  - name: Trigger generation of CRL file
+    command: /opt/proxy/bin/crlreloader.sh
+
+  - name: Wait for CRL file to be created, before starting HAProxy
+    wait_for:
+      path: /etc/haproxy/crl.pem
+      state: present
+      timeout: 60
+      msg: Timeout waiting for CRL file to be created
+
+  - name: Start haproxy
+    service:
+      name: haproxy
+      state: started
+      enabled: true
+
+  - name: Add firewall rules to accept dhcp and dns requests
+    lineinfile:
+      insertafter: '<service name="ssh"/>'
+      dest: /etc/firewalld/zones/public.xml
+      line: "{{ item }}"
+    with_items: "{{ firewall_rules }}"
+
+  - name: Restart firewalld
+    service:
+      name: firewalld
+      state: restarted
+
+  # block properties
+  remote_user: "{{ vnsutil_default_username }}"
