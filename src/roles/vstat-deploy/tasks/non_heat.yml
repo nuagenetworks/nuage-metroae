@@ -224,6 +224,13 @@
 
 - block:
 
+  - name: Update /etc/hosts file on VSTAT
+    lineinfile:
+      dest: /etc/hosts
+      line: "{{ hostvars[item]['mgmt_ip'] }}    {{ hostvars[item]['hostname'] }}"
+    with_items: "{{ groups['vstats'] }}"
+    when: vsd_sa_or_ha | match('ha')
+
   - name: Configure ntpd and ntpdate and local time zone
     include_role:
       name: common
