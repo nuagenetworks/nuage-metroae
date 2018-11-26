@@ -34,11 +34,6 @@
       when: rc_nsgv_file.matched > 0
     when: nsgvs | map(attribute='target_server_type') | list | issuperset(["vcenter"])
 
-  - name: Check for only a single NSGv metro bootstrap
-    assert:
-      that: '{{ nsgvs | selectattr("bootstrap_method", "equalto", "zfb_metro") | list | length }} <= 1'
-      msg: "In the current metroAE version, only a single NSGv can be zero factor bootstrapped."
-
   - name: Create host_vars files for nsgv
     template: src=nsgv.j2 backup=no dest={{ inventory_dir }}/host_vars/{{ item.hostname }}
     with_items: "{{ nsgvs }}"
