@@ -1,6 +1,6 @@
 # Metro Automation Engine Release Notes
 
-## Release 3.0.1
+## Release 3.0.1/3.0.2
 
 ### Resolved Issues
 * Add double jinja2 substitution to build_vars.yml conversion script
