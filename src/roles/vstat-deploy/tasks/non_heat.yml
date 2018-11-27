@@ -100,10 +100,10 @@
     - block:
 
       - name: Create iptables vars file on ansible host
-        template: src="{{ role_path }}/templates/iptables.j2" dest="/tmp/main.yml" backup=no mode=0755
+        template: src="{{ role_path }}/templates/iptables.j2" dest="{{ role_path }}/vars/iptables.yml" backup=no mode=0755
 
       - name: Include variable file.
-        include_vars: /tmp/main.yml
+        include_vars: "{{ role_path }}/vars/iptables.yml"
 
       delegate_to: localhost
 
@@ -223,6 +223,14 @@
     - "_svc_iptables.rc != 0"
 
 - block:
+
+  - name: Update /etc/hosts file on VSTAT
+    lineinfile:
+      dest: /etc/hosts
+      line: "{{ hostvars[item]['mgmt_ip'] }}    {{ hostvars[item]['hostname'] }}"
+    with_items: "{{ groups['vstats'] }}"
+    when: vsd_sa_or_ha | match('ha')
+    remote_user: "{{ vstat_default_username }}"
 
   - name: Configure ntpd and ntpdate and local time zone
     include_role:
