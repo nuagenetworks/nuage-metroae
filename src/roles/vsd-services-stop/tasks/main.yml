@@ -26,45 +26,68 @@
 
   - block:
 
-    - name: Stop vsd core services
-      shell: "{{ stop_vsd_core }}"
-
-    - name: Pause for proccesses to exit
-      pause:
-        seconds: 20
-
-    - name: Check for left over vsd-core proccesses
-      shell: "{{ core_pids }}"
-      register: list_core_pids
-
-    - name: Print core_pids output when verbosity >= 1
-      debug: var=list_core_pids verbosity=1
-
-    - name: Kill the vsd-core pids if they exists (ignoring errors)
-      shell: "kill -9 {{ item }}"
-      with_items: "{{ list_core_pids.stdout_lines|default([]) }}"
+    - name: Check that vsd is up (ignoring errors)
+      command: ping -c 1 {{ inventory_hostname }}
       ignore_errors: yes
-      when: list_core_pids.stdout.strip()!=""
+      register: vsd_running
+      delegate_to: localhost
 
-    - name: Stop vsd common services
-      shell: "{{ stop_vsd_common }}"
+    - block:
 
-    - name: Pause for proccesses to exit
-      pause:
-        seconds: 20
+      - name: Check monit status (ignoring errors)
+        command: monit summary
+        register: monit_status
+        ignore_errors: yes
 
-    - name: Check for left over vsd common proccesses
-      shell: "{{ common_pids }}"
-      register: list_common_pids
+      - block:
 
-    - name: Print common_pids output when verbosity >= 1
-      debug: var=list_common_pids verbosity=1
+        - name: Stop vsd core services
+          shell: "{{ stop_vsd_core }}"
 
-    - name: Kill the vsd-common pids if they exists (ignoring errors)
-      shell: "kill -9 {{ item }}"
-      with_items: "{{ list_common_pids.stdout_lines|default([]) }}"
-      ignore_errors: yes
-      when: list_common_pids.stdout.strip()!=""
+        - name: Pause for proccesses to exit
+          pause:
+            seconds: 20
+
+        when: monit_status.rc == 0
+
+      - name: Check for left over vsd-core proccesses
+        shell: "{{ core_pids }}"
+        register: list_core_pids
+
+      - name: Print core_pids output when verbosity >= 1
+        debug: var=list_core_pids verbosity=1
+
+      - name: Kill the vsd-core pids if they exists (ignoring errors)
+        shell: "kill -9 {{ item }}"
+        with_items: "{{ list_core_pids.stdout_lines|default([]) }}"
+        ignore_errors: yes
+        when: list_core_pids.stdout.strip()!=""
+
+      - block:
+
+        - name: Stop vsd common services
+          shell: "{{ stop_vsd_common }}"
+
+        - name: Pause for proccesses to exit
+          pause:
+            seconds: 20
+
+        when: monit_status.rc == 0
+
+      - name: Check for left over vsd common proccesses
+        shell: "{{ common_pids }}"
+        register: list_common_pids
+
+      - name: Print common_pids output when verbosity >= 1
+        debug: var=list_common_pids verbosity=1
+
+      - name: Kill the vsd-common pids if they exists (ignoring errors)
+        shell: "kill -9 {{ item }}"
+        with_items: "{{ list_common_pids.stdout_lines|default([]) }}"
+        ignore_errors: yes
+        when: list_common_pids.stdout.strip()!=""
+
+      when: vsd_running.rc == 0
 
     remote_user: "{{ vsd_username | default(vsd_default_username) }}"
     become: "{{ 'no' if vsd_username | default(vsd_default_username) == 'root' else 'yes' }}"
