@@ -2,7 +2,7 @@
 
 In addition to being able to access MetroÆ via github clone, MetroÆ is now also available for distribution via Docker container. The Docker container version of MetroÆ has all the capabilities of the github clone, plus it delivers the following:
 
-* All MetroÆ prerequisites are satisifed by the container. Your only requirement is to run Docker.
+* All MetroÆ prerequisites are satisfied by the container. Your only requirement is to run Docker.
 * CLI access is provided through the `metroae` command. 
 * Your data is located in the file system of the host where you are running Docker. You don't need to get inside the container.
 * The Container has the option of running an API/UI server, allowing you to access MetroÆ functionality via REST API and a front-end GUI.
@@ -36,7 +36,7 @@ The following command options are supported by the metroae command:
 
 **stop-ui** - stops the UI server running in the container
 
-**start-ui** - starts the API/UI server in the container. It prompts you for UI settings, such as whether you want to configure a certificate and whether a password will be used to encrypt passwords. The default port used by the API/UI server is 5000, as in `https://localhost:5001`.
+**start-ui** - starts the API/UI server in the container. It prompts you for UI settings, such as whether you want to configure a certificate and whether a password will be used to encrypt passwords. The default port used by the API/UI server is 5001, as in `https://localhost:5001`.
 
 **status-ui** - displays the status of the API/UI server in the container
 
@@ -79,7 +79,7 @@ metroae.log and ansible.log are located in the data directory you specified duri
 ## Manually use the container without the script (Nokia internal support only)
 ### Pull the container 
 
-    docker pull registry.mv.nuagenetworks.net:5000/metroae:1.0
+    docker pull registry.mv.nuagenetworks.net:5001/metroae:1.0
 
 ### Run the container 
 docker run -e USER_NAME='user name for the container' -e GROUP_NAME='group name for the container' -d $networkArgs -v 'path to the data mount point':/data:Z -v 'path to images mount point':/images:Z --name metroae registry.mv.nuagenetworks.net:5001/metroae:1.0

@@ -64,8 +64,20 @@
   set_fact: vscs= default([])
   when: not vscs_check
 
+- block:
 
-- name: Create host_vars files for vsc
-  template: src=vsc.j2 backup=no dest={{ inventory_dir }}/host_vars/{{ item.1.hostname }}
-  with_indexed_items: "{{ vscs }}"
+  - name: Verify VSC management gateway is in correct IP range
+    include_role:
+      name: common
+      tasks_from: check-ip-in-range.yml
+    vars:
+      ip_address: "{{ item.mgmt_gateway }}"
+      netaddr: "{{ item.mgmt_ip }}"
+      netmask: "{{ item.mgmt_ip_prefix }}"
+    with_items: "{{ vscs }}"
+
+  - name: Create host_vars files for vsc
+    template: src=vsc.j2 backup=no dest={{ inventory_dir }}/host_vars/{{ item.1.hostname }}
+    with_indexed_items: "{{ vscs }}"
+
   when: vscs_check

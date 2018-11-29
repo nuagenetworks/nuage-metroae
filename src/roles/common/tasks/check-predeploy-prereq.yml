@@ -1,12 +1,21 @@
----
+- block:
 
-- name: Check SSH Connectivity
-  include_role:
-    name: common
-    tasks_from: wait-for-ssh
-  vars:
-    ssh_host: "{{ target_server }}"
-    host_username: "{{ target_server_username }}"
+  - name: Check SSH Connectivity to target server (ignoring errors)
+    include_role:
+      name: common
+      tasks_from: wait-for-ssh
+    vars:
+      ssh_host: "{{ target_server }}"
+      host_username: "{{ target_server_username }}"
+      retries: 5
+      delay: 5
+    ignore_errors: True
+
+  - name: Check output of SSH test
+    assert:
+      that: "not {{ wait_for_ssh_output.failed }}"
+      msg: "Failed to connect to target_server {{ target_server }}. Is passwordless SSH set up?"
+
   when: target_server_type | match("kvm")
 
 - block:
@@ -24,12 +33,6 @@
     when: target_server_type | match("vcenter")
 
   when: component_type | default("NONE") != 'vrs'
-
-- name: Check that TIM file was found
-  assert:
-    that: "vsc_tim_path is defined and vsc_tim_file_name is defined"
-    msg: "Missing VSC TIM image file for {{ hostname }} under the unzipped file directory, please unzip it and issue reset_build"
-  when: component_type | default("NONE") == 'vsc'
 
 - block:
 
