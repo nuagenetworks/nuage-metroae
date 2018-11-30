@@ -260,19 +260,47 @@
       command: "/opt/vsd/vsd-install.sh -1 {{ first_cluster_node_to_install }} -t 3 -x {{ vsd_fqdn }} -y"
       when: inventory_hostname == third_cluster_node_to_install
 
-    - block:
-
-      - name: Run vsd-prepare-replication-master-cluster
-        command: "/opt/vsd/bin/vsd-prepare-replication-master-cluster.sh"
-        when: primary_cluster
-
-      - name: Run vsd-prepare-replication-master on first cluster
-        command: "/opt/vsd/bin/vsd-prepare-replication-master.sh -a {{ first_standby_cluster_node }} -b {{ second_standy_cluster_node }} -c {{ third_standby_cluster_node }}"
-        when: inventory_hostname == first_cluster_node_to_install
-
-      when: vsd_cluster
-
     when: vsd_sa_or_ha | match('ha')
+
+  - block:
+
+    - name: Run vsd-prepare-replication-master-cluster
+      command: "/opt/vsd/bin/vsd-prepare-replication-master-cluster.sh"
+      when: primary_cluster
+
+    - name: Run vsd-prepare-replication-master on first cluster
+      command: "/opt/vsd/bin/vsd-prepare-replication-master.sh -a {{ first_standby_cluster_node }} -b {{ second_standy_cluster_node }} -c {{ third_standby_cluster_node }}"
+      when: inventory_hostname == first_cluster_node_to_install
+
+    - name: Create data directory on first vm of standby
+      command: "mkdir /opt/vsd/data"
+      when: inventory_hostname == first_standby_cluster_node
+
+    - name: Transfer data from /tmp/backup/ to data folder
+      command: "scp /tmp/backup/* root@{{vsd-4-fqdn}}:/opt/vsd/data/"
+      when: inventory_hostname == first_cluster_node_to_install
+
+    when: vsd_cluster
+
+  - block:
+
+    - name: Install VSD software on the first backup cluster node (Can take 20 minutes)
+      command: "/opt/vsd/vsd-install.sh -t 1 -a {{ first_standby_cluster_node }} -b {{ first_standby_cluster_node }} -c {{first_standby_cluster_node}} -x {{vsd_fqdn}} -y"
+      when: inventory_hostname == first_standby_cluster_node
+
+    - name: Install VSD software on the second backup cluster node (Can take 20 minutes)
+      command: "/opt/vsd/vsd-install.sh -1 {{ first_standby_cluster_node }} -t 2 -x {{ vsd_fqdn }} -y"
+      when: inventory_hostname == second_standby_cluster_node
+
+    - name: Install VSD software on the third backup cluster node (Can take 20 minutes)
+      command: "/opt/vsd/vsd-install.sh -1 {{ first_standby_cluster_node }} -t 3 -x {{ vsd_fqdn }} -y"
+      when: inventory_hostname == third_standby_cluster_node
+
+    when: vsd_cluster
+
+  - name: Run the replication script
+    command: /opt/vsd/bin/vsd-start-replication-slave -m vsd1.nuage.com
+    when: vsd_cluster and inventory_hostname == first_standby_cluster_node
 
   - name: Set XMPP connection to allow both clear and TLS
     command: /opt/vsd/bin/ejmode allow -y
