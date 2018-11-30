@@ -1,19 +1,14 @@
-- block:
+- name: Get list of partitions
+  shell: "guestfish -r -a {{ qcow2_path }} run : list-filesystems | grep -Ev '(unknown|swap)'"
+  register: partitions_list
 
-  - name: Get list of partitions
-    shell: "guestfish -r -a {{ guestfish_dest }} run : list-filesystems | grep -Ev '(unknown|swap)'"
-    register: partitions_list
+- name: Check partition content
+  shell: "guestfish -r -a {{ qcow2_path }} run : mount {{ item.split(':')[0] }} / : ls /"
+  register: partitions
+  with_items: "{{ partitions_list.stdout_lines }}"
 
-  - name: Check partition content
-    shell: "guestfish -r -a {{ guestfish_dest }} run : mount {{ item.split(':')[0] }} / : ls /"
-    register: partitions
-    with_items: "{{ partitions_list.stdout_lines }}"
-
-  - name: Find root partition
-    set_fact:
-      guestfish_mount: "{{ item.item.split(':')[0]}}"
-    with_items: "{{ partitions.results }}"
-    when: '"proc" in item.stdout'
-
-  delegate_to: "{{ target_server }}"
-  remote_user: "{{ target_server_username }}"
+- name: Find root partition
+  set_fact:
+    guestfish_mount: "{{ item.item.split(':')[0]}}"
+  with_items: "{{ partitions.results }}"
+  when: '"proc" in item.stdout'
