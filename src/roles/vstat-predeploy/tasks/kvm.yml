@@ -4,6 +4,7 @@
     upgrade: "{{ nuage_upgrade|default('False') }}"
 
 - block:
+
   - name: Verify that upgrade_vmname is defined if this is an upgrade
     assert:
       that: "upgrade_vmname is defined"
@@ -11,39 +12,38 @@
   - name: Set local variable with upgrade_vmname
     set_fact:
       vm_name: "{{ upgrade_vmname }}"
+
   when: upgrade
 
-- block:
-  - name: Set local variable with vmname
-    set_fact:
-      vm_name: "{{ vmname }}"
+- name: Set local variable with vmname
+  set_fact:
+    vm_name: "{{ vmname }}"
   when: not upgrade
 
-- name: Query Target Server facts
-  action: setup
-  remote_user: "{{ target_server_username }}"
-  delegate_to: "{{ target_server }}"
-
-- name: Include OS-specific variables.
-  include_vars: "{{ ansible_os_family }}.yml"
-
-- name: Check target for supported OS
-  fail: msg="Unsupported OS family ({{ ansible_os_family }})"
-  when: ansible_os_family not in supported_target_server_os_family_list
-
-- name: Check target memory
-  fail: msg="Not enough memory ({{ ansible_memtotal_mb }})"
-  when: ansible_memtotal_mb < target_server_memory_mb_min
-
-- name: Check target cores
-  fail: msg="Not enough cores ({{ ansible_processor_vcpus }})"
-  when: ansible_processor_vcpus < target_server_vcpus_min
-
-- name: Check target bridges
-  fail: msg="Required network bridges not found"
-  when: mgmt_bridge not in ansible_interfaces
-
 - block:
+
+  - name: Query Target Server facts
+    action: setup
+
+  - name: Include OS-specific variables.
+    include_vars: "{{ ansible_os_family }}.yml"
+
+  - name: Check target for supported OS
+    fail: msg="Unsupported OS family ({{ ansible_os_family }})"
+    when: ansible_os_family not in supported_target_server_os_family_list
+
+  - name: Check target memory
+    fail: msg="Not enough memory ({{ ansible_memtotal_mb }})"
+    when: ansible_memtotal_mb < target_server_memory_mb_min
+
+  - name: Check target cores
+    fail: msg="Not enough cores ({{ ansible_processor_vcpus }})"
+    when: ansible_processor_vcpus < target_server_vcpus_min
+
+  - name: Check target bridges
+    fail: msg="Required network bridges not found"
+    when: mgmt_bridge not in ansible_interfaces
+
   - name: Check if required OS packages are installed (ignoring errors)
     command: rpm -q qemu-kvm libvirt bridge-utils libguestfs-tools libvirt-python
     register: rpm_check
@@ -70,6 +70,7 @@
 
   delegate_to: "{{ target_server }}"
   remote_user: "{{ target_server_username }}"
+  become: "{{ 'no' if target_server_username == 'root' else 'yes' }}"
 
 - include_role:
     name: check-node-running
@@ -83,6 +84,7 @@
   when: node_present
 
 - block:
+
   - name: set skip copy images to default
     set_fact:
       skip_copy_images: False
@@ -194,3 +196,4 @@
   when: not node_present
   delegate_to: "{{ target_server }}"
   remote_user: "{{ target_server_username }}"
+  become: "{{ 'no' if target_server_username == 'root' else 'yes' }}"

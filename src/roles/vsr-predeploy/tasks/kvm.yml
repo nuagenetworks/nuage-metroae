@@ -14,45 +14,49 @@
 
 - import_tasks: kvm_check_resources.yml
 
-- name: List the Virtual Machines
-  virt: command=list_vms
-  register: virt_vms
+- block:
+
+  - name: List the Virtual Machines
+    virt: command=list_vms
+    register: virt_vms
+
+  - name: Verify that the VM is not already running
+    assert:
+      that: "vmname not in virt_vms.list_vms"
+      msg: "{{ vmname }} is already running on {{ target_server }}"
+
+  - name: Include OS-specific variables.
+    include_vars: "{{ ansible_os_family }}.yml"
+
+  - name: Create VSR directory
+    file:
+      path:  '{{ images_path }}/{{ vmname }}'
+      state: directory
+      owner: '{{ libvirt.user }}'
+      group: '{{ libvirt.group }}'
+
   delegate_to: "{{ target_server }}"
   remote_user: "{{ target_server_username }}"
-
-- name: Verify that the VM is not already running
-  assert:
-    that: "vmname not in virt_vms.list_vms"
-    msg: "{{ vmname }} is already running on {{ target_server }}"
-
-- name: Include OS-specific variables.
-  include_vars: "{{ ansible_os_family }}.yml"
-
-- name: Create VSR directory
-  file:
-    path:  '{{ images_path }}/{{ vmname }}'
-    state: directory
-    owner: '{{ libvirt.user }}'
-    group: '{{ libvirt.group }}'
-  delegate_to: "{{ target_server }}"
-  remote_user: "{{ target_server_username }}"
+  become: "{{ 'no' if target_server_username == 'root' else 'yes' }}"
 
 - import_tasks: kvm_upload_license_file.yml
 
 - import_tasks: kvm_deploy_image_file.yml
 
-- name: Get license file content
-  command: cat {{ vsr_target_license_file }}
-  register: rc_vsr_license_content
-  delegate_to: "{{ target_server }}"
-  remote_user: "{{ target_server_username }}"
+- block:
 
-- name: Delete license file
-  file:
-    path: '{{ vsr_target_license_file }}'
-    state: absent
+  - name: Get license file content
+    command: cat {{ vsr_target_license_file }}
+    register: rc_vsr_license_content
+
+  - name: Delete license file
+    file:
+      path: '{{ vsr_target_license_file }}'
+      state: absent
+
   delegate_to: "{{ target_server }}"
   remote_user: "{{ target_server_username }}"
+  become: "{{ 'no' if target_server_username == 'root' else 'yes' }}"
 
 - set_fact:
     vsr_vm_uuid: '{{ rc_vsr_license_content.stdout.split(" ")[0]}}'

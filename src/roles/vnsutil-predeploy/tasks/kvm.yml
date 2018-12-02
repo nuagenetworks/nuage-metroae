@@ -48,6 +48,7 @@
 
   remote_user: "{{ target_server_username }}"
   delegate_to: "{{ target_server }}"
+  become: "{{ 'no' if target_server_username == 'root' else 'yes' }}"
 
 - name: Set local variable with vmname
   set_fact:
@@ -151,6 +152,7 @@
     command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} chown 0 0 /etc/sysconfig/network
 
   - block:
+
     - name: Create a temporary copy of the network script for route-eth1
       template: src=route-eth1.j2 backup=no dest={{ images_path }}/{{ vmname }}/route-eth1
 
@@ -162,6 +164,7 @@
 
     - name: Set the owner and group on the route-eth1 network script file in the vnsutil image
       command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} chown 0 0 /etc/sysconfig/network-scripts/route-eth1
+
     when: data_gateway is defined and data_static_route is defined
 
   - name: Create the directory /root/.ssh for authorized_keys
@@ -202,4 +205,5 @@
 
   delegate_to: "{{ target_server }}"
   remote_user: "{{ target_server_username }}"
+  become: "{{ 'no' if target_server_username == 'root' else 'yes' }}"
   when: not vnsutil_present
