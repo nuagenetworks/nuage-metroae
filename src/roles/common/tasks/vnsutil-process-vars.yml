@@ -45,7 +45,20 @@
   set_fact: vnsutils= default([])
   when: not vnsutil_check
 
-- name: Create host_vars files for vnsutil
-  template: src=vnsutil.j2 backup=no dest={{ inventory_dir }}/host_vars/{{ item.hostname }}
-  with_items: "{{ vnsutils }}"
+- block:
+
+  - name: Verify VNSUTIL management gateway is in correct IP range
+    include_role:
+      name: common
+      tasks_from: check-ip-in-range.yml
+    vars:
+      ip_address: "{{ item.mgmt_gateway }}"
+      netaddr: "{{ item.mgmt_ip }}"
+      netmask: "{{ item.mgmt_ip_prefix }}"
+    with_items: "{{ vnsutils }}"
+
+  - name: Create host_vars files for vnsutil
+    template: src=vnsutil.j2 backup=no dest={{ inventory_dir }}/host_vars/{{ item.hostname }}
+    with_items: "{{ vnsutils }}"
+
   when: vnsutil_check

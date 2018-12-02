@@ -18,7 +18,18 @@
         - "vsd_fqdn_global is defined"
       msg: "vsd_fqdn_global must be defined. See common.yml."
 
+  - name: Verify VSD management gateway is in correct IP range
+    include_role:
+      name: common
+      tasks_from: check-ip-in-range.yml
+    vars:
+      ip_address: "{{ item.mgmt_gateway }}"
+      netaddr: "{{ item.mgmt_ip }}"
+      netmask: "{{ item.mgmt_ip_prefix }}"
+    with_items: "{{ vsds }}"
+
   - name: Create host_vars files for vsd
     template: src=vsd.j2 backup=no dest={{ inventory_dir }}/host_vars/{{ item.hostname }}
     with_items: "{{ vsds }}"
+
   when: vsds_check
