@@ -273,7 +273,7 @@
 
     - name: Run vsd-prepare-replication-master-cluster
       command: "/opt/vsd/bin/vsd-prepare-replication-master-cluster.sh"
-      when: primary_cluster
+      when: inventory_hostname == first_cluster_node_to_install or inventory_hostname == second_cluster_node_to_install or inventory_hostname == third_cluster_node_to_install
 
     - name: Run vsd-prepare-replication-master on first cluster
       command: "/opt/vsd/bin/vsd-prepare-replication-master.sh -a {{ first_standby_cluster_node }} -b {{ second_standy_cluster_node }} -c {{ third_standby_cluster_node }}"
@@ -296,17 +296,17 @@
       when: inventory_hostname == first_standby_cluster_node
 
     - name: Install VSD software on the second backup cluster node (Can take 20 minutes)
-      command: "/opt/vsd/vsd-install.sh -1 {{ first_standby_cluster_node }} -t 2 -x {{ vsd_fqdn }} -y"
+      command: "/opt/vsd/vsd-install.sh -1 {{ first_standby_cluster_node }} -t 2 -x {{ inventory_hostname }} -y"
       when: inventory_hostname == second_standby_cluster_node
 
     - name: Install VSD software on the third backup cluster node (Can take 20 minutes)
-      command: "/opt/vsd/vsd-install.sh -1 {{ first_standby_cluster_node }} -t 3 -x {{ vsd_fqdn }} -y"
+      command: "/opt/vsd/vsd-install.sh -1 {{ first_standby_cluster_node }} -t 3 -x {{ inventory_hostname }} -y"
       when: inventory_hostname == third_standby_cluster_node
 
     when: vsd_cluster
 
   - name: Run the replication script
-    command: /opt/vsd/bin/vsd-start-replication-slave -m vsd1.nuage.com
+    command: "/opt/vsd/bin/vsd-start-replication-slave -m {{ groups['vsds'][0].hostname }}"
     when: vsd_cluster and inventory_hostname == first_standby_cluster_node
 
   - name: Set XMPP connection to allow both clear and TLS
