@@ -116,22 +116,17 @@
     local_action: command cat "{{ user_ssh_pub_key }}"
     register: current_user_ssh_key
 
-  - name: Get list of partitions
-    shell: "guestfish -r -a {{ guestfish_dest }} run : list-filesystems | grep -Ev '(unknown|swap)'"
-    register: partitions_list
+  - name: Get guestfish mount for qcow2
+    include_role:
+      name: common
+      tasks_from: get-guestfish-mount
+    vars:
+      guestfish_qcow2_path: "{{ guestfish_dest }}"
 
-  - name: Check partition content
-    shell: "guestfish -r -a {{ guestfish_dest }} run : mount {{ item.split(':')[0] }} / : ls /"
-    register: partitions
-    with_items: "{{ partitions_list.stdout_lines }}"
-
-  - name: Find root partition
-    set_fact:
-      guestfish_mount: "{{ item.item.split(':')[0]}}"
-    with_items: "{{ partitions.results }}"
-    when: '"proc" in item.stdout'
-
-  - debug: var=guestfish_mount verbosity=1
+  - name: Verify that mount was found
+    assert:
+      that: "guestfish_mount is defined"
+      msg: "guestfish mount point was not found. Are you using the correct qcow2 file?"
 
   - name: Create cloud-init disable file
     command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} touch /etc/cloud/cloud-init.disabled
