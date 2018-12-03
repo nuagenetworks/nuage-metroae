@@ -1,4 +1,7 @@
 ---
+- include_role:
+    name: check-node-reachability
+
 - block:
 
   - block:
@@ -22,7 +25,7 @@
       with_items: "{{ list_stats_pids.stdout_lines|default([]) }}"
       ignore_errors: yes
       when: list_stats_pids.stdout.strip()!= ""
-    when: groups['stats'] is defined and groups['vstats']
+    when: groups['vstats'] is defined and groups['vstats']
 
   - block:
 
@@ -32,66 +35,53 @@
       register: vsd_running
       delegate_to: localhost
 
-    - block:
+    - name: Stop vsd core services
+      shell: "{{ stop_vsd_core }}"
+      ignore_errors: yes
 
-      - name: Check monit status (ignoring errors)
-        command: monit summary
-        register: monit_status
-        ignore_errors: yes
+    - name: Pause for proccesses to exit
+      pause:
+        seconds: 20
 
-      - block:
+    - name: Check for left over vsd-core proccesses
+      shell: "{{ core_pids }}"
+      register: list_core_pids
 
-        - name: Stop vsd core services
-          shell: "{{ stop_vsd_core }}"
+    - name: Print core_pids output when verbosity >= 1
+      debug: var=list_core_pids verbosity=1
 
-        - name: Pause for proccesses to exit
-          pause:
-            seconds: 20
+    - name: Kill the vsd-core pids if they exists (ignoring errors)
+      shell: "kill -9 {{ item }}"
+      with_items: "{{ list_core_pids.stdout_lines|default([]) }}"
+      ignore_errors: yes
+      when: list_core_pids.stdout.strip()!=""
 
-        when: monit_status.rc == 0
+    - name: Stop vsd common services
+      shell: "{{ stop_vsd_common }}"
+      ignore_errors: yes
 
-      - name: Check for left over vsd-core proccesses
-        shell: "{{ core_pids }}"
-        register: list_core_pids
+    - name: Pause for proccesses to exit
+      pause:
+        seconds: 20
 
-      - name: Print core_pids output when verbosity >= 1
-        debug: var=list_core_pids verbosity=1
+    - name: Check for left over vsd common proccesses
+      shell: "{{ common_pids }}"
+      register: list_common_pids
 
-      - name: Kill the vsd-core pids if they exists (ignoring errors)
-        shell: "kill -9 {{ item }}"
-        with_items: "{{ list_core_pids.stdout_lines|default([]) }}"
-        ignore_errors: yes
-        when: list_core_pids.stdout.strip()!=""
+    - name: Print common_pids output when verbosity >= 1
+      debug: var=list_common_pids verbosity=1
 
-      - block:
-
-        - name: Stop vsd common services
-          shell: "{{ stop_vsd_common }}"
-
-        - name: Pause for proccesses to exit
-          pause:
-            seconds: 20
-
-        when: monit_status.rc == 0
-
-      - name: Check for left over vsd common proccesses
-        shell: "{{ common_pids }}"
-        register: list_common_pids
-
-      - name: Print common_pids output when verbosity >= 1
-        debug: var=list_common_pids verbosity=1
-
-      - name: Kill the vsd-common pids if they exists (ignoring errors)
-        shell: "kill -9 {{ item }}"
-        with_items: "{{ list_common_pids.stdout_lines|default([]) }}"
-        ignore_errors: yes
-        when: list_common_pids.stdout.strip()!=""
-
-      when: vsd_running.rc == 0
+    - name: Kill the vsd-common pids if they exists (ignoring errors)
+      shell: "kill -9 {{ item }}"
+      with_items: "{{ list_common_pids.stdout_lines|default([]) }}"
+      ignore_errors: yes
+      when: list_common_pids.stdout.strip()!=""
 
     remote_user: "{{ vsd_username | default(vsd_default_username) }}"
     become: "{{ 'no' if vsd_username | default(vsd_default_username) == 'root' else 'yes' }}"
     vars:
       ansible_become_pass: "{{ vsd_password | default(vsd_default_password) }}"
 
-  when: inventory_hostname == groups['vsds'][0] or inventory_hostname == groups['vsds'][1]
+  when:
+    - inventory_hostname == groups['vsds'][0] or inventory_hostname == groups['vsds'][1]
+    - node_reachable
