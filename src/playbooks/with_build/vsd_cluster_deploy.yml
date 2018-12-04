@@ -15,55 +15,56 @@
       when: vsd_cluster | default(false)
 
 - hosts: primary_cluster
+  become: yes
+  remote_user: "{{ vsd_default_username }}"
   tasks:
     - name: Run vsd-prepare-replication-master-cluster
       command: "/opt/vsd/bin/vsd-prepare-replication-master-cluster.sh"
-      remote_user: "{{ vsd_default_username }}"
       when: vsd_cluster | default(false)
 
     - name: Run vsd-prepare-replication-master on first cluster
       command: "/opt/vsd/bin/vsd-prepare-replication-master.sh -a {{ first_standby_cluster_node }} -b {{ second_standy_cluster_node }} -c {{ third_standby_cluster_node }}"
-      remote_user: "{{ vsd_default_username }}"
       when:
         - vsd_cluster | default(false)
         - inventory_hostname == first_cluster_node_to_install
 
 - hosts: standby_cluster
+  become: yes
+  remote_user: "{{ vsd_default_username }}"
   tasks:
     - name: Create data directory on first vm of standby
       command: "mkdir /opt/vsd/data"
-      remote_user: "{{ vsd_default_username }}"
       when:
         - vsd_cluster | default(false)
         - inventory_hostname == first_standby_cluster_node
 
 - hosts: primary_cluster
+  become: yes
+  remote_user: "{{ vsd_default_username }}"
   tasks:
     - name: Transfer data from /tmp/backup/ to data folder
       command: "scp /tmp/backup/* root@{{groups['vsds'][3].hostname}}:/opt/vsd/data/"
-      remote_user: "{{ vsd_default_username }}"
       when:
         - vsd_cluster | default(false)
         - inventory_hostname == first_cluster_node_to_install
 
 - hosts: standby_cluster
+  become: yes
+  remote_user: "{{ vsd_default_username }}"
   tasks:
     - name: Install VSD software on the first backup cluster node (Can take 20 minutes)
       command: "/opt/vsd/vsd-install.sh -t 1 -a {{ first_standby_cluster_node }} -b {{ first_standby_cluster_node }} -c {{first_standby_cluster_node}} -x {{vsd_fqdn}} -y"
-      remote_user: "{{ vsd_default_username }}"
       when:
         - vsd_cluster | default(false)
         - inventory_hostname == first_standby_cluster_node
 
     - name: Install VSD software on the second backup cluster node (Can take 20 minutes)
       command: "/opt/vsd/vsd-install.sh -1 {{ first_standby_cluster_node }} -t 2 -x {{ vsd_fqdn }} -y"
-      remote_user: "{{ vsd_default_username }}"
       when:
         - vsd_cluster | default(false)
         - inventory_hostname == second_standby_cluster_node
 
     - name: Install VSD software on the third backup cluster node (Can take 20 minutes)
-      remote_user: "{{ vsd_default_username }}"
       command: "/opt/vsd/vsd-install.sh -1 {{ first_standby_cluster_node }} -t 3 -x {{ vsd_fqdn }} -y"
       when:
         - vsd_cluster | default(false)
@@ -71,7 +72,6 @@
 
     - name: Run the replication script
       command: "/opt/vsd/bin/vsd-start-replication-slave -m {{ groups['vsds'][0].hostname }}"
-      remote_user: "{{ vsd_default_username }}"
       when:
         - vsd_cluster | default(false) 
         - inventory_hostname == first_standby_cluster_node
