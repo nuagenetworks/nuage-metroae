@@ -487,6 +487,33 @@ dockerExec() {
     docker exec $environment $runningContainerID "$@"
 }
 
+dockerExecInteractive() {
+    environment='-e ANSIBLE_FORCE_COLOR=true'
+    for env in `env`
+    do
+        filtered=0
+        for filter in ${environmentFilters[@]}
+        do
+            if [[ "$env" =~ ^$filter ]]
+            then
+                filtered=1
+            fi
+        done
+
+        if [ $filtered -eq 0 ]
+        then
+            environment="$environment -e $env"
+        fi
+    done
+    
+    if [ ! -z $NOT_INTERACTIVE ]
+    then
+       docker exec  $environment $runningContainerID "$@"
+    else
+       docker exec -it  $environment $runningContainerID "$@"
+    fi
+}
+
 dockerMetroAEExec() {
     dockerExec /source/nuage-metro/metroae "$@"
 }
@@ -499,12 +526,8 @@ stopUI() {
 startUI() {
     runContainerIfNotRunning
 	
-    if [ ! -z $NOT_INTERACTIVE ]
-    then
-       docker exec $runningContainerID /source/UI.sh start $1
-    else
-       docker exec -it $runningContainerID /source/UI.sh start $1
-    fi
+    dockerExecInteractive /source/UI.sh start $1
+    
 }
 
 UIstatus() {
@@ -531,22 +554,12 @@ loadCertificates() {
 	
     getRunningContainerID
 
-    if [ ! -z $NOT_INTERACTIVE ]
-    then
-       docker exec $runningContainerID /source/UI.sh loadCertificates $certificate $keyfile $3
-    else
-       docker exec -it $runningContainerID /source/UI.sh loadCertificates $certificate $keyfile $3
-    fi
+    dockerExecInteractive $runningContainerID /source/UI.sh loadCertificates $certificate $keyfile $3
 }
 
 interactive() {
     runContainerIfNotRunning
-    if [ ! -z $NOT_INTERACTIVE ]
-    then
-        docker exec $runningContainerID /bin/bash
-    else
-        docker exec -it $runningContainerID /bin/bash
-    fi
+    dockerExecInteractive $runningContainerID /bin/bash
 }
 
 unzip-files() {
@@ -588,30 +601,8 @@ status() {
 
 vaultPassword() {
     runContainerIfNotRunning
-	
-    environment='-e ANSIBLE_FORCE_COLOR=true'
-    for env in `env`
-    do
-        filtered=0
-        for filter in ${environmentFilters[@]}
-        do
-            if [[ "$env" =~ ^$filter ]]
-            then
-                filtered=1
-            fi
-        done
 
-        if [ $filtered -eq 0 ]
-        then
-            environment="$environment -e $env"
-        fi
-    done
-    if [ ! -z $NOT_INTERACTIVE ]
-    then
-       docker exec $environment $runningContainerID /usr/bin/python /source/nuage-metro/encrypt_credentials.py
-    else
-       docker exec -it $environment $runningContainerID /usr/bin/python /source/nuage-metro/encrypt_credentials.py
-    fi
+    dockerExecInteractive $runningContainerID /usr/bin/python /source/nuage-metro/encrypt_credentials.py
 }
 
 disableEncryption() {
