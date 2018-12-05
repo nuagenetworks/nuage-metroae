@@ -1,5 +1,7 @@
 ---
-- hosts: localhost
+- hosts: primary_cluster
+  become: yes
+  remote_user: "{{ vsd_default_username }}"
   tasks:
     - name: Set VSD numbering for cluster install
       set_fact:
@@ -7,23 +9,17 @@
         second_cluster_node_to_install: "{{ groups['vsds'][1] }}"
         third_cluster_node_to_install: "{{ groups['vsds'][2] }}"
       when: vsd_cluster | default(false)
+
+- hosts: vsds
+  become: yes
+  remote_user: "{{ vsd_default_username }}"
+  tasks:
     - name: Set VSD numbering for standby install
       set_fact:
         first_standby_cluster_node: "{{ groups['vsds'][3] }}"
         second_standby_cluster_node: "{{ groups['vsds'][4] }}"
         third_standby_cluster_node: "{{ groups['vsds'][5] }}"
       when: vsd_cluster | default(false)
-
-- hosts: localhost
-  tasks:
-    - name: Set VSDs length
-      set_fact: 
-        vsd_length: "{{ vsds|length }}"
-
-- hosts: localhost
-  tasks:
-    - name: Debug VSD length
-      debug: var=vsd_length verbosity=1
 
 - hosts: primary_cluster
   become: yes
@@ -64,7 +60,7 @@
   remote_user: "{{ vsd_default_username }}"
   tasks:
     - name: Install VSD software on the first backup cluster node (Can take 20 minutes)
-      command: "/opt/vsd/vsd-install.sh -t 1 -a {{ first_standby_cluster_node }} -b {{ first_standby_cluster_node }} -c {{first_standby_cluster_node}} -x {{vsd_fqdn}} -y"
+      command: "/opt/vsd/vsd-install.sh -t 1 -a {{ first_standby_cluster_node }} -b {{ second_standby_cluster_node }} -c {{ third_standby_cluster_node}} -x {{vsd_fqdn}} -y"
       when:
         - vsd_cluster | default(false)
         - inventory_hostname == first_standby_cluster_node
