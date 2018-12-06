@@ -47,25 +47,29 @@ getHostOperatingSystem() {
 }
 
 getMaxContainerVersion() {
-    if [ ! -z 
-    versions=`docker images | grep $metroAEImage | awk '{ print $2}'`
-    maxContainerVersion=''
-    for version in $versions
-    do
+    if [ ! -z $IMAGE_TAG ]
+    then
+        maxContainerVersion=$IMAGE_TAG
+    else
+        versions=`docker images | grep $metroAEImage | awk '{ print $2}'`
+        maxContainerVersion=''
+        for version in $versions
+        do
+            if [ -z $maxContainerVersion ]
+            then
+                    maxContainerVersion=$version
+            fi
+    
+            if [ $maxContainerVersion \< $version ]
+            then
+                    maxContainerVersion=$version
+            fi
+        done
+    
         if [ -z $maxContainerVersion ]
         then
-                maxContainerVersion=$version
+            maxContainerVersion='current'
         fi
-
-        if [ $maxContainerVersion \< $version ]
-        then
-                maxContainerVersion=$version
-        fi
-    done
-
-    if [ -z $maxContainerVersion ]
-    then
-        maxContainerVersion='current'
     fi
 
     echo "Max Container version detected $maxContainerVersion" >> ./metroae.log
