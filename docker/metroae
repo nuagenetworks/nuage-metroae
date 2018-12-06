@@ -493,29 +493,11 @@ dockerExec() {
 }
 
 dockerExecInteractive() {
-    environment='-e ANSIBLE_FORCE_COLOR=true'
-    for env in `env`
-    do
-        filtered=0
-        for filter in ${environmentFilters[@]}
-        do
-            if [[ "$env" =~ ^$filter ]]
-            then
-                filtered=1
-            fi
-        done
-
-        if [ $filtered -eq 0 ]
-        then
-            environment="$environment -e $env"
-        fi
-    done
-    
     if [ ! -z $NOT_INTERACTIVE ]
     then
-       docker exec  $environment $runningContainerID "$@"
+       docker exec $runningContainerID "$@"
     else
-       docker exec -it  $environment $runningContainerID "$@"
+       docker exec $runningContainerID "$@"
     fi
 }
 
