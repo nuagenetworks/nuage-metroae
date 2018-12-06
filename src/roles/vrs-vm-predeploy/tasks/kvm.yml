@@ -1,17 +1,15 @@
----
-- name: Query {{ target_server }} facts
-  action: setup
-  remote_user: "{{ target_server_username }}"
-  delegate_to: "{{ target_server }}"
-
-- name: Check target for supported OS
-  fail: msg="Unsupported OS family ({{ ansible_os_family }})"
-  when: ansible_os_family not in vrs_vm_target_server_os_family_list
-
-- name: Include OS-specific variables.
-  include_vars: "{{ ansible_os_family }}.yml"
-
 - block:
+
+  - name: Query {{ target_server }} facts
+    action: setup
+
+  - name: Check target for supported OS
+    fail: msg="Unsupported OS family ({{ ansible_os_family }})"
+    when: ansible_os_family not in vrs_vm_target_server_os_family_list
+
+  - name: Include OS-specific variables.
+    include_vars: "{{ ansible_os_family }}.yml"
+
   - name: If RedHat, install packages for RedHat OS family distros
     yum: name={{ item }} state=present
     with_items:
@@ -33,19 +31,15 @@
   - name: List the Virtual Machines running
     virt: command=list_vms
     register: virt_vms
-  delegate_to: "{{ target_server }}"
-  remote_user: "{{ target_server_username }}"
 
-- name: Verify that the VM is not already running
-  assert:
-    that: "vm_name not in virt_vms.list_vms"
-    msg: "{{ vm_name }} is already running on {{ target_server }}"
+  - name: Verify that the VM is not already running
+    assert:
+      that: "vm_name not in virt_vms.list_vms"
+      msg: "{{ vm_name }} is already running on {{ target_server }}"
 
-- name: Set local variable with vrs_vm guestfish destination
-  set_fact:
-      guestfish_dest: "{{ images_path }}/{{ vm_name }}/{{ vrs_vm_qcow2_file_name }}"
-
-- block:
+  - name: Set local variable with vrs_vm guestfish destination
+    set_fact:
+        guestfish_dest: "{{ images_path }}/{{ vm_name }}/{{ vrs_vm_qcow2_file_name }}"
 
   - name: set skip copy images to default
     set_fact:
@@ -61,6 +55,7 @@
     when: not skip_copy_images
 
   - block:
+
     - name: Check to make sure there is an existing qcow image
       stat:
         path: "{{ images_path }}/{{ vm_name }}/{{ vrs_vm_qcow2_file_name }}"
@@ -133,6 +128,7 @@
 
   delegate_to: "{{ target_server }}"
   remote_user: "{{ target_server_username }}"
+  become: "{{ 'no' if target_server_username == 'root' else 'yes' }}"
 
 - name: Get the public key for the current user
   local_action: command cat "{{ user_ssh_pub_key }}"
@@ -203,3 +199,4 @@
 
   delegate_to: "{{ target_server }}"
   remote_user: "{{ target_server_username }}"
+  become: "{{ 'no' if target_server_username == 'root' else 'yes' }}"
