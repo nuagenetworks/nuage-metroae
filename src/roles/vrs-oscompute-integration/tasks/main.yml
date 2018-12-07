@@ -4,14 +4,14 @@
   - name: Configure network uplink in Nuage configuration file
     ini_file:
       dest: "/etc/default/openvswitch"
-      section: 
-      option: "NETWORK_UPLINK_INTF" 
+      section:
+      option: "NETWORK_UPLINK_INTF"
       value: "{{ uplink_interface | default('') }}"
 
   - name: Configure nova config for virtual machines to use `alubr0`
     ini_file:
       dest: "/etc/nova/nova.conf"
-      section: "neutron" 
+      section: "neutron"
       option: "ovs_bridge"
       value: "alubr0"
 
@@ -24,12 +24,13 @@
 
   - name: Restart OpenStack compute
     service:
-      name: openstack-nova-compute   
+      name: openstack-nova-compute
       state: restarted
 
   - name: Restart OVS
-    service: 
+    service:
       name: openvswitch
       state: restarted
 
   remote_user: "{{ target_server_username }}"
+  become: "{{ 'no' if target_server_username == 'root' else 'yes' }}"
