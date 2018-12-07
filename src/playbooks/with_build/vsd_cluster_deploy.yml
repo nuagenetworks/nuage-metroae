@@ -12,7 +12,7 @@
   remote_user: "{{ vsd_default_username }}"
   tasks:
     - name: Run vsd-prepare-replication-master on first cluster
-      command: "/opt/vsd/bin/vsd-prepare-replication-master.sh -a {{ groups['vsd_ha_standby1'] }} -b {{ groups['vsd_ha_standby2'] }} -c {{ groups['vsd_ha_standby2'] }}"
+      command: "/opt/vsd/bin/vsd-prepare-replication-master.sh -a {{ groups['vsd_ha_standby1'][0] }} -b {{ groups['vsd_ha_standby2'][0] }} -c {{ groups['vsd_ha_standby2'][0] }}"
       when:
         - vsd_cluster | default(false)
 
@@ -30,7 +30,7 @@
   remote_user: "{{ vsd_default_username }}"
   tasks:
     - name: Transfer data from /tmp/backup/ to data folder
-      command: "scp /tmp/backup/* root@{{ groups['vsd_ha_standby1'] }}:/opt/vsd/data/"
+      command: "scp /tmp/backup/* root@{{ groups['vsd_ha_standby1'][0] }}:/opt/vsd/data/"
       when:
         - vsd_cluster | default(false)
 
@@ -48,6 +48,6 @@
   remote_user: "{{ vsd_default_username }}"
   tasks:
     - name: Run the replication script
-      command: "/opt/vsd/bin/vsd-start-replication-slave -m {{ groups['vsd_ha_node1'] }}"
+      command: "/opt/vsd/bin/vsd-start-replication-slave -m {{ groups['vsd_ha_node1'][0] }}"
       when:
         - vsd_cluster | default(false)
