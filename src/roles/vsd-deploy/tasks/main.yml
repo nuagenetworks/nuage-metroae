@@ -82,7 +82,17 @@
           first_cluster_node_to_install: "{{ groups['vsds'][0] }}"
           second_cluster_node_to_install: "{{ groups['vsds'][1] }}"
           third_cluster_node_to_install: "{{ groups['vsds'][2] }}"
-      when: not nuage_upgrade | default(False)
+      when: 
+        - not nuage_upgrade | default(False)
+        - not install_cluster | default(False)
+
+    - name: Set VSD numbering for standby cluster install
+      set_fact:
+          first_cluster_node_to_install: "{{ groups['vsds'][3] }}"
+          second_cluster_node_to_install: "{{ groups['vsds'][4] }}"
+          third_cluster_node_to_install: "{{ groups['vsds'][5] }}"
+      when: 
+        - install_cluster | default(False)
 
     - name: Set VSD numbering for cluster upgrade
       set_fact:
@@ -283,4 +293,3 @@
     - vstats is defined
     - not skip_vsd_deploy
     - target_server_type | match("nuagex")
-    - (inventory_hostname == first_cluster_node_to_install) or (inventory_hostname == second_cluster_node_to_install) or (inventory_hostname == third_cluster_node_to_install)
