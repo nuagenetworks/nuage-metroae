@@ -1,12 +1,3 @@
-- name: Set nsgvs_check
-  set_fact:
-    nsgvs_check: "{{ nsgvs is defined and nsgvs }}"
-
-- name: Assign empty list to nsgvs if it is undefined
-  set_fact:
-    nsgvs: default([])
-  when: not nsgvs_check
-
 - block:
 
   - name: Verify that OpenFlow is set to use TLS (required for NSGv)
@@ -26,7 +17,7 @@
         qcow2_file_name: "{{ rc_nsgv_file.files[0].path | basename }}"
       when: rc_nsgv_file.matched > 0
 
-    when: nsgvs | map(attribute='target_server_type') | list | issuperset(["kvm"])
+    when: map(attribute='target_server_type') | list | issuperset(["kvm"])
 
   - block:
 
@@ -39,10 +30,10 @@
         ovf_path: "{{ rc_nsgv_file.files[0].path | dirname }}"
         ovf_file_name: "{{ rc_nsgv_file.files[0].path | basename }}"
       when: rc_nsgv_file.matched > 0
-    when: nsgvs | map(attribute='target_server_type') | list | issuperset(["vcenter"])
+    when: map(attribute='target_server_type') | list | issuperset(["vcenter"])
 
   - name: Create host_vars files for nsgv
     template: src=nsgv.j2 backup=no dest={{ inventory_dir }}/host_vars/{{ item.hostname }}
     with_items: "{{ nsgvs }}"
 
-  when: nsgvs_check
+  when: nsgvs is defined and nsgvs
