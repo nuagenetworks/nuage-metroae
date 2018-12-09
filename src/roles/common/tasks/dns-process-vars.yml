@@ -40,21 +40,13 @@
         qcow2_file_name: "{{ rc_dns_file.files[0].path | basename }}"
       when: rc_dns_file.matched > 0
 
-    when: mydnss | map(attribute='target_server_type') | list | issuperset(["kvm"]) or mydnss | map(attribute='target_server_type') | list | issuperset(["heat"])
+    when: map(attribute='target_server_type') | list | issuperset(["kvm"]) or mydnss | map(attribute='target_server_type') | list | issuperset(["heat"])
+
+  - name: Create host_vars files for dns
+    template: src=dns.j2 backup=no dest={{ inventory_dir }}/host_vars/{{ item.hostname }}
+    with_items: "{{ mydnss }}"
 
   when:
-    - mydnss is defined
+    - mydnss is defined and mydnss
   tags:
     - dns
-
-- name: Set mydns_check
-  set_fact: mydns_check={{mydnss is defined}}
-
-- name: Assign empty list to mydnss if it is undefined
-  set_fact: mydnss= default([])
-  when: not mydns_check
-
-- name: Create host_vars files for dns
-  template: src=dns.j2 backup=no dest={{ inventory_dir }}/host_vars/{{ item.hostname }}
-  with_items: "{{ mydnss }}"
-  when: mydns_check

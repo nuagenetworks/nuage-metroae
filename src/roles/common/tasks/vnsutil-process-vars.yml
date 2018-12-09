@@ -15,7 +15,7 @@
         qcow2_file_name: "{{ rc_vnsutil_file.files[0].path | basename }}"
       when: rc_vnsutil_file.matched > 0
 
-    when: vnsutils | map(attribute='target_server_type') | list | issuperset(["kvm"])
+    when: map(attribute='target_server_type') | list | issuperset(["kvm"])
 
   - block: #OVA
 
@@ -31,21 +31,7 @@
         ova_file_name: "{{ rc_vnsutil_file.files[0].path | basename }}"
       when: rc_vnsutil_file.matched > 0
 
-    when: vnsutils | map(attribute='target_server_type') | list | issuperset(["vcenter"])
-
-  when:
-    - vnsutils is defined
-  tags:
-    - vns
-
-- name: Set vnsutil_check
-  set_fact: vnsutil_check={{vnsutils is defined}}
-
-- name: Assign empty list to myvnsutils if it is undefined
-  set_fact: vnsutils= default([])
-  when: not vnsutil_check
-
-- block:
+    when: map(attribute='target_server_type') | list | issuperset(["vcenter"])
 
   - name: Verify VNSUTIL management gateway is in correct IP range
     include_role:
@@ -61,4 +47,7 @@
     template: src=vnsutil.j2 backup=no dest={{ inventory_dir }}/host_vars/{{ item.hostname }}
     with_items: "{{ vnsutils }}"
 
-  when: vnsutil_check
+  when:
+    - vnsutils is defined and vnsutils
+  tags:
+    - vns

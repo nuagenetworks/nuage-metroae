@@ -15,7 +15,7 @@
         qcow2_file_name: "{{ rc_vsc_file.files[0].path | basename }}"
       when: rc_vsc_file.matched > 0
 
-    when: vscs | map(attribute='target_server_type') | list | issuperset(["kvm"])
+    when: map(attribute='target_server_type') | list | issuperset(["kvm"])
 
   - block:
 
@@ -31,14 +31,7 @@
         ova_file_name: "{{ rc_vsc_file.files[0].path | basename }}"
       when: rc_vsc_file.matched > 0
 
-    when: vscs | map(attribute='target_server_type') | list | issuperset(["vcenter"])
-
-  when:
-    - vscs is defined
-  tags:
-    - vsc
-
-- block:
+    when: map(attribute='target_server_type') | list | issuperset(["vcenter"])
 
   - name: Find name of VSC TIM File
     find: path="{{ nuage_unzipped_files_dir }}/vsc/single_disk"  pattern="cpm.tim" recurse=yes
@@ -51,20 +44,6 @@
       vsc_tim_path: "{{ rc_vsc_tim_file.files[0].path | dirname }}"
       vsc_tim_file_name: "{{ rc_vsc_tim_file.files[0].path | basename }}"
     when: rc_vsc_tim_file.matched > 0
-
-  when:
-    - vscs is defined
-  tags:
-    - vsc
-
-- name: Set vscs_check
-  set_fact: vscs_check={{vscs is defined}}
-
-- name: Assign empty list to vscs if it is undefined
-  set_fact: vscs= default([])
-  when: not vscs_check
-
-- block:
 
   - name: Verify VSC management gateway is in correct IP range
     include_role:
@@ -80,4 +59,7 @@
     template: src=vsc.j2 backup=no dest={{ inventory_dir }}/host_vars/{{ item.1.hostname }}
     with_indexed_items: "{{ vscs }}"
 
-  when: vscs_check
+  when:
+    - vscs is defined and vscs
+  tags:
+    - vsc
