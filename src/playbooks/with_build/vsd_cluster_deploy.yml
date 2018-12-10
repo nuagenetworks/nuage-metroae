@@ -31,12 +31,14 @@
   tasks:
 
     - name: Transfer data from /tmp/backup/ to data folder
-      command: "scp /tmp/backup/* root@{{ groups['vsd_ha_standby1'][0] }}:/opt/vsd/data/"
+      expect:
+        command: "scp /tmp/backup/* root@{{ groups['vsd_ha_standby1'][0] }}:/opt/vsd/data/"
+        responses:
+          (?i)yes: "yes"
+          (?i)password: "{{ vsd_default_password }}"
+        timeout: "1200"
       when:
         - vsd_cluster | default(false)
-      responses:
-        (?i)yes: "yes"
-        (?i)password: "{{ vsd_default_password }}"
 
 - hosts: standby_cluster
   gather_facts: no
