@@ -29,23 +29,14 @@
   become: yes
   remote_user: "{{ vsd_default_username }}"
   tasks:
-    - name: Generate SSH keys
-      shell: ssh-keygen -b 2048 -t rsa -f /root/.ssh/id_rsa -q -N ""
-      args:
-        creates: /root/.ssh/id_rsa
-
-    - name: Inject ssh key to backup vsd
-      expect:
-        command: "ssh-copy-id -i {{ vsd_default_username }}@{{ groups['vsd_ha_standby1'][0] }}"
-        responses:
-          (?i)yes: "yes"
-          (?i)password: "{{ vsd_default_password }}"
-      no_log: True
 
     - name: Transfer data from /tmp/backup/ to data folder
       command: "scp /tmp/backup/* root@{{ groups['vsd_ha_standby1'][0] }}:/opt/vsd/data/"
       when:
         - vsd_cluster | default(false)
+      responses:
+        (?i)yes: "yes"
+        (?i)password: "{{ vsd_default_password }}"
 
 - hosts: standby_cluster
   gather_facts: no
