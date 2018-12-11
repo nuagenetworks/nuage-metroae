@@ -1,36 +1,36 @@
 ---
 - name: Pull facts on VRS target {{ inventory_hostname }}
-  remote_user: "{{ target_server_username }}"
   action: setup
+  remote_user: "{{ target_server_username }}"
+  become: "{{ 'no' if target_server_username == 'root' else 'yes' }}"
 
 # TODO: Evalue use of include_role: vrs_health.
 # This looks like some duplicate code
 
-- block:
-  - name: Set transport type
-    set_fact:
-      transport_type:  "{{ \"{{secure_communication}}\" | ternary ('ssl', 'tcp') }}"
+- name: Set transport type
+  set_fact:
+    transport_type:  "{{ openflow_tls | ternary ('ssl', 'tcp') }}"
 
-  - name: Get controller connection info (ignoring errors)
-    shell: "ovs-vsctl show | grep -Pzl '(?s)Controller \"ctrl(1|2)\"\\n *target: \"{{ transport_type }}:({{ item }}):6633\"\\n *role: (master|slave)\\n *is_connected: true'"
-    with_items:
-      - "{{ active_controller_addr }}"
-      - "{{ standby_controller_addr }}"
-    register: command_result
-    remote_user: "{{ target_server_username }}"
-    ignore_errors: yes
-    changed_when: false
+- name: Get controller connection info (ignoring errors)
+  shell: "ovs-vsctl show | grep -Pzl '(?s)Controller \"ctrl(1|2)\"\\n *target: \"{{ transport_type }}:({{ item }}):6633\"\\n *role: (master|slave)\\n *is_connected: true'"
+  with_items:
+    - "{{ active_controller_addr }}"
+    - "{{ standby_controller_addr }}"
+  register: command_result
+  remote_user: "{{ target_server_username }}"
+  become: "{{ 'no' if target_server_username == 'root' else 'yes' }}"
+  ignore_errors: yes
+  changed_when: false
 
+- name: Check primary controller
+  assert:
+    that: "command_result.results[0].rc == 0"
+    msg: "Switch not connected to primary controller"
 
-  - name: Check primary controller
-    assert:
-      that: "command_result.results[0].rc == 0"
-      msg: "Switch not connected to primary controller"
-
-  - name: Check secondary controller
-    assert:
-      that: "command_result.results[1].rc == 0"
-      msg: "Switch not connected to secondary controller"
+- name: Check secondary controller
+  assert:
+    that: "command_result.results[1].rc == 0"
+    msg: "Switch not connected to secondary controller"
 
 - block:
   - name: Ceate a local temp directory

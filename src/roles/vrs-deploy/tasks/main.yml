@@ -67,6 +67,7 @@
     when: skip_vrs_deploy
 
   remote_user: "{{ target_server_username }}"
+  become: "{{ 'no' if target_server_username == 'root' else 'yes' }}"
 
 - block:
 
@@ -104,6 +105,7 @@
       - selinux_package_path is defined and selinux_package_path != 'None'
 
   - block:
+
     - name: Copy DKMS packages to temporary directory for RHEL and Ubuntu14
       copy: src={{ dkms_package_path }}/{{ item }} dest={{ temp_dir }}/{{ inventory_hostname }}/{{ item }}
       with_items: "{{ dkms_package_file_name_list }}"
@@ -113,6 +115,7 @@
       with_items:
        - "{{ dkms_package_file_name_list }}"
       when: ansible_os_family == "RedHat"
+
     when: dkms_install
 
   - name: Remove temporary directory
@@ -131,14 +134,14 @@
       line: "STANDBY_CONTROLLER={{ standby_controller_addr }}"
 
   - name: Update connection type in {{ openvswitch_file }} file
-    remote_user: "{{ target_server_username }}"
     lineinfile:
       dest: "{{ openvswitch_file }}"
       regexp: "^CONN_TYPE="
       line: "CONN_TYPE=tcp"
-    when: not secure_communication | default(False)
+    when: not openflow_tls
 
   - block:
+
     - name: Generate TLS Certificates for VRS
       include_role:
         name: common
@@ -153,33 +156,30 @@
         additional_parameters:  -v {{ inventory_hostname }}
 
     - name: Update client key path in {{ openvswitch_file }} file
-      remote_user: "{{ target_server_username }}"
       lineinfile:
         dest: "{{ openvswitch_file }}"
         regexp: "^CLIENT_KEY_PATH="
         line: "CLIENT_KEY_PATH={{ client_keys_path }}/vrs-{{ inventory_hostname }}-Key.pem"
 
     - name: Update client cert path in {{ openvswitch_file }} file
-      remote_user: "{{ target_server_username }}"
       lineinfile:
         dest: "{{ openvswitch_file }}"
         regexp: "^CLIENT_CERT_PATH="
         line: "CLIENT_CERT_PATH={{ client_keys_path }}/vrs-{{ inventory_hostname }}.pem"
 
     - name: Update CA cert path in {{ openvswitch_file }} file
-      remote_user: "{{ target_server_username }}"
       lineinfile:
         dest: "{{ openvswitch_file }}"
         regexp: "^CA_CERT_PATH="
         line: "CA_CERT_PATH={{ client_keys_path }}/vrs-{{ inventory_hostname }}-CA.pem"
 
     - name: Update connection type in {{ openvswitch_file }} file
-      remote_user: "{{ target_server_username }}"
       lineinfile:
         dest: "{{ openvswitch_file }}"
         regexp: "^CONN_TYPE="
         line: "CONN_TYPE={{ conn_type }}"
-    when: secure_communication
+
+    when: openflow_tls
 
   - name: Restart OpenVSwitch Service on RedHat OS family distros
     service: name=openvswitch state=restarted
@@ -192,4 +192,5 @@
   - pause: seconds=20
 
   remote_user: "{{ target_server_username }}"
+  become: "{{ 'no' if target_server_username == 'root' else 'yes' }}"
   when: not skip_vrs_deploy

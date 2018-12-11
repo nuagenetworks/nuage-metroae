@@ -1,17 +1,15 @@
----
-- name: Query {{ target_server }} facts
-  action: setup
-  remote_user: "{{ target_server_username }}"
-  delegate_to: "{{ target_server }}"
-
-- name: Check target for supported OS
-  fail: msg="Unsupported OS family ({{ ansible_os_family }})"
-  when: ansible_os_family not in vrs_vm_target_server_os_family_list
-
-- name: Include OS-specific variables.
-  include_vars: "{{ ansible_os_family }}.yml"
-
 - block:
+
+  - name: Query {{ target_server }} facts
+    action: setup
+
+  - name: Check target for supported OS
+    fail: msg="Unsupported OS family ({{ ansible_os_family }})"
+    when: ansible_os_family not in vrs_vm_target_server_os_family_list
+
+  - name: Include OS-specific variables.
+    include_vars: "{{ ansible_os_family }}.yml"
+
   - name: If RedHat, install packages for RedHat OS family distros
     yum: name={{ item }} state=present
     with_items:
@@ -33,24 +31,21 @@
   - name: List the Virtual Machines running
     virt: command=list_vms
     register: virt_vms
-  delegate_to: "{{ target_server }}"
-  remote_user: "{{ target_server_username }}"
 
-- name: Verify that the VM is not already running
-  assert:
-    that: "vm_name not in virt_vms.list_vms"
-    msg: "{{ vm_name }} is already running on {{ target_server }}"
+  - name: Verify that the VM is not already running
+    assert:
+      that: "vm_name not in virt_vms.list_vms"
+      msg: "{{ vm_name }} is already running on {{ target_server }}"
 
-- name: Set local variable with vrs_vm guestfish destination
-  set_fact:
-      guestfish_dest: "{{ images_path }}/{{ vm_name }}/{{ vrs_vm_qcow2_file_name }}"
+  - name: Set local variable with vrs_vm guestfish destination
+    set_fact:
+        guestfish_dest: "{{ images_path }}/{{ vm_name }}/{{ vrs_vm_qcow2_file_name }}"
 
-- block:
   - name: set skip copy images to default
-    set_fact: 
+    set_fact:
       skip_copy_images: False
-    when: skip_copy_images is undefined 
-    
+    when: skip_copy_images is undefined
+
   - include_role:
       name: common
       tasks_from: copy_qcow2.yml
@@ -59,19 +54,20 @@
       qcow2_file_name: "{{ vrs_vm_qcow2_file_name }}"
     when: not skip_copy_images
 
-  - block: 
+  - block:
+
     - name: Check to make sure there is an existing qcow image
-      stat: 
+      stat:
         path: "{{ images_path }}/{{ vm_name }}/{{ vrs_vm_qcow2_file_name }}"
       register: statResult
-      
+
     - name: check the result of image find command
       assert:
         that: statResult.stat.exists == True
         msg: Missing qcow2 file in {{ images_path }}/{{ vm_name }}/{{ vrs_vm_qcow2_file_name }}
-        
+
     when: skip_copy_images
-    
+
   - name: Get list of partitions
     shell: "guestfish -r -a {{ guestfish_dest }} run : list-filesystems | grep -Ev '(unknown|swap)'"
     register: partitions_list
@@ -80,18 +76,19 @@
     shell: "guestfish -r -a {{ guestfish_dest }} run : mount {{ item.split(':')[0] }} / : ls /"
     register: partitions
     with_items: "{{ partitions_list.stdout_lines }}"
-  remote_user: "{{ target_server_username }}"
-  delegate_to: "{{ target_server }}"
 
-- name: Find root partition
-  set_fact:
-    guestfish_mount: "{{ item.item.split(':')[0]}}"
-  with_items: "{{ partitions.results }}"
-  when: '"proc" in item.stdout'
+  - name: Get guestfish mount for qcow2
+    include_role:
+      name: common
+      tasks_from: get-guestfish-mount
+    vars:
+      guestfish_qcow2_path: "{{ guestfish_dest }}"
 
-- debug: var=guestfish_mount verbosity=1
+  - name: Verify that mount was found
+    assert:
+      that: "guestfish_mount is defined"
+      msg: "guestfish mount point was not found. Are you using the correct qcow2 file?"
 
-- block:
   - name: Create a temporary copy of the network script for eth0
     template: src=ifcfg-eth0.j2 backup=no dest={{ images_path }}/{{ vm_name }}/ifcfg-eth0
 
@@ -103,26 +100,23 @@
 
   - name: Set the owner and group on the eth0 network script file in the vrs_vm image
     command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} chown 0 0 /etc/sysconfig/network-scripts/ifcfg-eth0
-  delegate_to: "{{ target_server }}"
-  remote_user: "{{ target_server_username }}"
 
-- block:
-  - name: Create a temporary copy of the network script for eth1
-    template: src=ifcfg-eth1.j2 backup=no dest={{ images_path }}/{{ vm_name }}/ifcfg-eth1
+  - block:
 
-  - name: Copy eth1 network script file to the vrs_vm image
-    command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} copy-in {{ images_path }}/{{ vm_name }}/ifcfg-eth1 /etc/sysconfig/network-scripts/
+    - name: Create a temporary copy of the network script for eth1
+      template: src=ifcfg-eth1.j2 backup=no dest={{ images_path }}/{{ vm_name }}/ifcfg-eth1
 
-  - name: Remove temporary copy of eth1 network script
-    file: path={{ images_path }}/{{ vm_name }}/ifcfg-eth1 state=absent
+    - name: Copy eth1 network script file to the vrs_vm image
+      command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} copy-in {{ images_path }}/{{ vm_name }}/ifcfg-eth1 /etc/sysconfig/network-scripts/
 
-  - name: Set the owner and group on the eth1 network script file in the vrs_vm image
-    command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} chown 0 0 /etc/sysconfig/network-scripts/ifcfg-eth1
-  delegate_to: "{{ target_server }}"
-  remote_user: "{{ target_server_username }}"
-  when: data_ip is defined or data_netmask is defined
+    - name: Remove temporary copy of eth1 network script
+      file: path={{ images_path }}/{{ vm_name }}/ifcfg-eth1 state=absent
 
-- block:
+    - name: Set the owner and group on the eth1 network script file in the vrs_vm image
+      command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} chown 0 0 /etc/sysconfig/network-scripts/ifcfg-eth1
+
+    when: data_ip is defined or data_netmask is defined
+
   - name: Create the directory /root/.ssh for authorized_keys
     command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} mkdir-p /root/.ssh
 
@@ -131,14 +125,17 @@
 
   - name: Set the owner and group for the /root/.ssh directory on the vrs_vm image
     command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} chown 0 0 /root/.ssh
+
   delegate_to: "{{ target_server }}"
   remote_user: "{{ target_server_username }}"
+  become: "{{ 'no' if target_server_username == 'root' else 'yes' }}"
 
 - name: Get the public key for the current user
   local_action: command cat "{{ user_ssh_pub_key }}"
   register: current_user_ssh_key
 
 - block:
+
   - name: Create a temporary copy of the authorized_keys file
     template: src=authorized_keys.j2 backup=no dest={{ images_path }}/{{ vm_name }}/authorized_keys
 
@@ -199,5 +196,7 @@
     virt: name="{{ vm_name }}"
           state=running
           uri=qemu:///system
+
   delegate_to: "{{ target_server }}"
   remote_user: "{{ target_server_username }}"
+  become: "{{ 'no' if target_server_username == 'root' else 'yes' }}"

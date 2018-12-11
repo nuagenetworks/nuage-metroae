@@ -1,4 +1,7 @@
 ---
+- include_role:
+    name: check-node-reachability
+
 - block:
 
   - block:
@@ -22,12 +25,13 @@
       with_items: "{{ list_stats_pids.stdout_lines|default([]) }}"
       ignore_errors: yes
       when: list_stats_pids.stdout.strip()!= ""
-    when: groups['stats'] is defined and groups['vstats']
+    when: groups['vstats'] is defined and groups['vstats']
 
   - block:
 
-    - name: Stop vsd core services
+    - name: Stop vsd core services (ignoring errors)
       shell: "{{ stop_vsd_core }}"
+      ignore_errors: yes
 
     - name: Pause for proccesses to exit
       pause:
@@ -46,8 +50,9 @@
       ignore_errors: yes
       when: list_core_pids.stdout.strip()!=""
 
-    - name: Stop vsd common services
+    - name: Stop vsd common services (ignoring errors)
       shell: "{{ stop_vsd_common }}"
+      ignore_errors: yes
 
     - name: Pause for proccesses to exit
       pause:
@@ -66,9 +71,10 @@
       ignore_errors: yes
       when: list_common_pids.stdout.strip()!=""
 
-    remote_user: "{{ vsd_username | default(vsd_default_username) }}"
-    become: "{{ 'no' if vsd_username | default(vsd_default_username) == 'root' else 'yes' }}"
-    vars:
-      ansible_become_pass: "{{ vsd_password | default(vsd_default_password) }}"
-
-  when: inventory_hostname == groups['vsds'][0] or inventory_hostname == groups['vsds'][1]
+  remote_user: "{{ vsd_username | default(vsd_default_username) }}"
+  become: "{{ 'no' if vsd_username | default(vsd_default_username) == 'root' else 'yes' }}"
+  vars:
+    ansible_become_pass: "{{ vsd_password | default(vsd_default_password) }}"
+  when:
+    - inventory_hostname == groups['vsds'][0] or inventory_hostname == groups['vsds'][1]
+    - node_reachable

@@ -1,7 +1,19 @@
 ---
-- name: Block access to VSD1 and VSD2 from VSD3
-  command: "{{ item }}"
-  with_items: "{{ iptable_entries }}"
+- block:
+
+  - name: Get iptables status (ignoring errors)
+    command: "{{ item }}"
+    register: iptables_out
+    with_items: "{{ iptable_entries | replace('-I','-C') }}"
+    ignore_errors: True
+
+  - name: Block access to VSD1 and VSD2 from VSD3 if not already blocked
+    command: "{{ item.1 }}"
+    when: item.0.rc != 0
+    with_together:
+      - "{{ iptables_out.results }}"
+      - "{{ iptable_entries }}"
+
   remote_user: "{{ vsd_username | default(vsd_default_username) }}"
   become: "{{ 'no' if vsd_username | default(vsd_default_username) == 'root' else 'yes' }}"
   vars:

@@ -131,6 +131,11 @@ def resolve_missing_variables(var_dict):
     var_dict["name"] = "default"
     var_dict["credentials"] = [var_dict]
 
+    if 'secure_communication' in var_dict:
+        var_dict['xmpp_tls'] = var_dict['secure_communication']
+        var_dict['openflow_tls'] = var_dict['secure_communication']
+        del var_dict['secure_communication']
+
 
 def flatten_vcenter(component_list):
     for component in component_list:
