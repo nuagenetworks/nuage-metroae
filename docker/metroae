@@ -493,11 +493,17 @@ dockerExec() {
 }
 
 dockerExecInteractive() {
+    environment=""
+    if [ ! -z $METROAE_PASSWORD ] 
+    then
+        environment=" -e METROAE_PASSWORD=$METROAE_PASSWORD"
+    fi
+
     if [ ! -z $NOT_INTERACTIVE ]
     then
-       docker exec $runningContainerID "$@"
+       docker exec $environment $runningContainerID "$@"
     else
-       docker exec -it $runningContainerID "$@"
+       docker exec -it $environment $runningContainerID "$@"
     fi
 }
 
@@ -589,7 +595,7 @@ status() {
 vaultPassword() {
     runContainerIfNotRunning
 
-    dockerExecInteractive /usr/bin/python /source/nuage-metro/encrypt_credentials.py
+    dockerExecInteractive /usr/bin/python /source/nuage-metro/encrypt_credentials.py  $1
 }
 
 disableEncryption() {
