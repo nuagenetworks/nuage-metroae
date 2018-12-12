@@ -13,30 +13,30 @@
 
   - debug: var=rc_nuage_os_file verbosity=1
   - name: Verify that Nuage OpenStack files were found
-    assert: { 
+    assert: {
       that: "{{ rc_nuage_os_file.matched }} > 0",
       msg: "Unable to find Nuage OpenStack files"
-    }
+      }
   - name: Register Nuage OpenStack package variables with proper path and image locations for use in other playbooks (RH architecture)
     set_fact:
       # Note: Do not change the below var to match 'dirname'.
-      nuage_os_package_path: "{{ nuage_unzipped_files_dir }}/nuage_os/" 
+      nuage_os_package_path: "{{ nuage_unzipped_files_dir }}/nuage_os/"
       nuage_os_package_file_name_list: "{{ rc_nuage_os_file.files |  map(attribute='path') | list | map('basename') | list }}"
       nuage_os_release: "{{ nuage_os_release }}"
 
   - name: Find name of Nuage OpenStack Upgrade package
-    find: path="{{ nuage_unzipped_files_dir }}/nuage_os/" pattern="nuage-openstack-upgrade*.tar.gz" 
+    find: path="{{ nuage_unzipped_files_dir }}/nuage_os/" pattern="nuage-openstack-upgrade*.tar.gz"
     register: rc_nuage_os_upgrade_pkg
 
   - name: Verify that Nuage OpenStack files were found
     assert: {
       that: "{{ rc_nuage_os_file.matched }} > 0",
       msg: "Unable to find Nuage OpenStack upgrade file"
-    }
-  
+      }
+
   - name: Register Nuage OpenStack package variables with proper path and image locations for use in other playbooks (RH architecture)
     set_fact:
-      nuage_os_upgrade_pkg_file_name: "{{ rc_nuage_os_upgrade_pkg.files |  map(attribute='path') | list | map('basename') | list | last }}" 
+      nuage_os_upgrade_pkg_file_name: "{{ rc_nuage_os_upgrade_pkg.files |  map(attribute='path') | list | map('basename') | list | last }}"
 
   when: "'integrate_with_vsd' in osc_operations_list|default(['None'])"
   tags:
@@ -48,26 +48,12 @@
     nuage_os_file_name_list: "None"
   when: nuage_os_package_path is not defined
 
-- name: Set myoscs_check
-  set_fact: myoscs_check={{myoscs is defined}}
-
-- name: Assign empty list to myoscs if it is undefined
-  set_fact: myoscs= default([])
-  when: not myoscs_check
-
 - name: Create host_vars files for osc server
   template: src=osc.j2 backup=no dest={{ playbook_dir }}/host_vars/{{ item.hostname }}
   with_items: "{{ myoscs }}"
-  when: myoscs_check
-
-- name: Set myoscomputes_check
-  set_fact: myoscomputes_check={{myoscomputes is defined}}
-
-- name: Assign empty list to myoscomputes if it is undefined
-  set_fact: myoscomputes= default([])
-  when: not myoscomputes_check
+  when: myoscs is defined and myoscs
 
 - name: Create host_vars files for os-compute server
   template: src=os_compute.j2 backup=no dest={{ playbook_dir }}/host_vars/{{ item.hostname }}
   with_items: "{{ myoscomputes }}"
-  when: myoscomputes_check
+  when: myoscomputes is defined and myoscomputes
