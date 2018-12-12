@@ -25,22 +25,30 @@
       when:
         - vsd_cluster | default(false)
 
+- hosts: localhost
+  tasks:
+    - name: Create data directory on first vm of standby
+      command: "mkdir /tmp/vsdback"
+
 - hosts: vsd_ha_node1
   become: yes
   remote_user: "{{ vsd_default_username }}"
   tasks:
-    - name: Install pexpect module via pip
-      pip: name=pexpect state="present"
+    - name: Transfer data from /tmp/backup/ to host
+      synchronize:
+        src: /opt/vsd/data/
+        dest: /tmp/vsdback
+        mode: pull
 
-    - name: Transfer data from /tmp/backup/ to data folder
-      expect:
-        command: "scp -r /tmp/backup/ root@{{ groups['vsd_ha_standby1'][0] }}:/opt/vsd/data/"
-        responses:
-          (?i)yes: "yes"
-          (?i)password: "{{ vsd_default_password }}"
-        timeout: "1200"
-      when:
-        - vsd_cluster | default(false)
+- hosts: vsd_ha_standby1
+  become: yes
+  remote_user: "{{ vsd_default_username }}"
+  tasks:
+    - name: Transfer data from /tmp/backup/ to host
+      synchronize:
+        dest: /opt/vsd/data/
+        src: /tmp/vsdback/
+        mode: push
 
 - hosts: standby_cluster
   gather_facts: no
