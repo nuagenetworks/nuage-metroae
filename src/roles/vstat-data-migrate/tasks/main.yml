@@ -1,9 +1,9 @@
 - name: Set major and minor version vars
-  include_role: 
+  include_role:
     name: common
     tasks_from: set-major-minor-versions.yml
   run_once: true
-  
+
 - block:
 
   - name: Pull facts of localhost
@@ -27,7 +27,6 @@
       file:
         dest: "{{ vstat_backup_dir }}"
         state: directory
-        mode: 0777
         recurse: yes
 
     - name: Mount the nfs folder on to vstat vm
@@ -62,7 +61,7 @@
       lineinfile:
         dest: "/etc/elasticsearch/elasticsearch.yml"
         line: "path.repo: [{{ vstat_backup_dir }}]"
-  
+
     - name: Restart elasticsearch process
       systemd:
         name: elasticsearch
@@ -71,23 +70,23 @@
     - name: Wait for elasticsearch process to come up
       pause:
         seconds: 20
-  
+
     - name: Get elasticsearch current status
       systemd:
         name: elasticsearch
         state: started
       register: es_status
-  
+
     - name: Check elasticsearch status is active
       assert:
         that: es_status.status.ActiveState == 'active'
         msg: "Elasticserach process in not active after restart"
-  
+
     - name: Check elasticsearch process is running
       assert:
         that: es_status.status.SubState == 'running'
         msg: "Elasticsearch process is not running after restart"
- 
+
     remote_user: "{{ vstat_username | default(vstat_default_username) }}"
     become: "{{ vstat_should_become }}"
     vars:
@@ -98,13 +97,13 @@
     register: names
     delegate_to: localhost
     run_once: true
-    
+
   - block:
 
-    - name: Create repo on the new vstat vm 
+    - name: Create repo on the new vstat vm
       command: "python /tmp/{{ create_repo }}"
 
-    - name: Get the repo created by backup script 
+    - name: Get the repo created by backup script
       command: "python /tmp/{{ show_repo }}"
       register: repo_path
 
@@ -123,12 +122,12 @@
       that: '"Error in getting repo" not in repo_path.stdout'
       msg: Failed to verify the repo created
     run_once: true
-  
+
   - name: Get the username running the playbooks
     local_action: command whoami
     register: username_on_the_host
     run_once: true
-  
+
   - name: Transfer the backup folder to vstat node
     shell: "{{ transfer_backup_folder }}"
     remote_user: "{{ username_on_the_host.stdout }}"
@@ -144,7 +143,6 @@
         group: "elasticsearch"
         state: directory
         recurse: yes
-        mode: 0777
 
     - name: Restore the snapshot on the new vstat VM
       command: "python /tmp/{{ restore_snapshot }}"
@@ -203,11 +201,11 @@
 
     run_once: true
     when: list_of_indices is not defined
-  
+
   when:
     - not vstat_in_place_upgrade
     - from_major_version == 4
-    - from_patch_version > 1 
+    - from_patch_version > 1
 
 - block:
   - name: Get VSD hosts information
@@ -221,6 +219,6 @@
   - include_tasks: handle_upgrade_from_401_version.yml
     delegate_to: "{{ item }}"
     with_items: "{{ vsd_hostname_list }}"
-  when: 
+  when:
     - upgrade_from_version == '4.0.1'
     - not vstat_in_place_upgrade
