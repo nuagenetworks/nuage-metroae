@@ -37,10 +37,11 @@ class ExampleFileGenerator(object):
         return "\n".join(self.example_lines)
 
     def create_example_with_data(self, schema_name=""):
+        print("Schema name: " + schema_name)
         with open(self.example_folder +
                   "/" + schema_name + ".yml", 'r') as example_filename:
             example_yml = yaml.safe_load(example_filename.read())
-
+        print(example_yml)
         template_lines = "\n".join(self.example_lines)
         template = jinja2.Template(template_lines)
         return template.render(**example_yml)
