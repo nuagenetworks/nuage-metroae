@@ -186,18 +186,18 @@
         become: "{{ 'no' if vsd_username | default(vsd_default_username) == 'root' else 'yes' }}"
         vars:
           ansible_become_pass: "{{ vsd_password | default(vsd_default_password) }}"
-        with_items: "{{ groups['vsds'] }}"
+        with_items: "{{ groups['primary_cluster'] }}"
 
       - name: Set JMS Master Node Hostname
         set_fact:
           jms_master_hostname: "{{ item.item }}"
-        when: "'This is Master node' in item.stdout and groups['vsds']|length > 1"
+        when: "'This is Master node' in item.stdout and groups['primary_cluster']|length > 1"
         with_items: "{{ jms_status.results }}"
 
       - name: Set JMS Master Node Hostname
         set_fact:
           jms_master_hostname: "{{ item.item }}"
-        when: "'PASS' in item.stdout and groups['vsds']|length == 1"
+        when: "'PASS' in item.stdout and groups['primary_cluster']|length == 1"
         with_items: "{{ jms_status.results }}"
 
       - name: Verify that JMS Master Node exists
