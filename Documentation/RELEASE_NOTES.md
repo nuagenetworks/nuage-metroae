@@ -1,6 +1,10 @@
 # Metro Automation Engine Release Notes
 ## Release 3.x.x
 ### New Features and Enhancements
+* Remove unnecessary mode 777 settings for vstat backup
+* Support non-default TLS
+* Support VSD license check any time except postdeploy
+* Support NSG bootstrap in AWS
 * Add note about upgrade and health requiring passwordless ssh
 * Add v5.3.3 to VSTAT version checks
 * Consolidate common code from five places into one
