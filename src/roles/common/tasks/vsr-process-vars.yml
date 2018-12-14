@@ -32,19 +32,11 @@
 
     when: myvsrs | map(attribute='target_server_type') | list | issuperset(["vcenter"])
 
+  - name: Create host_vars files for vsr
+    template: src=vsr.j2 backup=no dest={{ inventory_dir }}/host_vars/{{ item.hostname }}
+    with_items: "{{ myvsrs }}"
+
   when:
-    - myvsrs is defined
+    - myvsrs is defined and myvsrs
   tags:
     - vsr
-
-- name: Set myvsrs_check
-  set_fact: myvsrs_check={{myvsrs is defined}}
-
-- name: Assign empty list to myvsrs if it is undefined
-  set_fact: myvsrs= default([])
-  when: not myvsrs_check
-
-- name: Create host_vars files for vsr
-  template: src=vsr.j2 backup=no dest={{ inventory_dir }}/host_vars/{{ item.hostname }}
-  with_items: "{{ myvsrs }}"
-  when: myvsrs_check
