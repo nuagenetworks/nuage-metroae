@@ -65,7 +65,7 @@ The following components/operations are not supported in the beta release.
 
 2. [Customize](Documentation/CUSTOMIZE.md) your deployment to match your network topology, and describe your Nuage Networks specifics.
 
-3. [Deploy](Documentation/DEPLOY.md) new components, [upgrade](Documentation/UPGRADE.md) existing components, or run a health check on your system.
+3. [Deploy](Documentation/DEPLOY.md) new components, upgrade a [standalone](Documentation/UPGRADE_SA.md) or [clustered](Documentation/UPGRADE_HA.md) deployment, or run a health check on your system.
 
 4. If things did not work out as expected, [destroy](Documentation/DESTROY.md) your environment and redeploy.
 
