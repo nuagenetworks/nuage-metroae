@@ -18,16 +18,11 @@
 
   - name: Configure vCenter path
     set_fact:
-      vcenter_path: "vi://'{{ vcenter.username | urlencode }}':'{{ vcenter.password | urlencode }}'@{{ target_server }}/{{ vcenter.datacenter }}/host/{{ vcenter.cluster }}"
-
-  - name: Update vCenter path if resource pool is configured
-    set_fact:
-      vcenter_path: "vi://'{{ vcenter.username | urlencode }}':'{{ vcenter.password | urlencode }}'@{{ target_server }}/{{ vcenter.datacenter }}/host/{{ vcenter.cluster }}/Resources/{{ vcenter.resource_pool | urlencode }}"
-    when: vcenter.resource_pool != 'NONE'
+      vcenter_path: "{{ target_server }}/{{ vcenter.datacenter }}/host/{{ vcenter.cluster }}{{ (vcenter.resource_pool != 'NONE') | ternary ('/Resources/{{ vcenter.resource_pool | urlencode }}', '') }}"
 
   - name: Deploy VSC Image on vCenter
     connection: local
-    command: >
+    shell: >
       {{ vcenter_global.ovftool }}
       --acceptAllEulas
       --noSSLVerify
@@ -80,7 +75,10 @@
       --prop:"Autonomous_System=64000"
       --prop:"BGP_Group=internal"
       "{{ ova_path }}/{{ ova_file_name }}"
-      {{ vcenter_path }}
+      "vi://$USERNAME:$PASSWD@{{ vcenter_path }}"
+    environment:
+      USERNAME: "{{ vcenter.username | urlencode }}"
+      PASSWD: "{{ vcenter.password | urlencode }}"
 
   - name: Finding VM folder (ignoring errors)
     connection: local
