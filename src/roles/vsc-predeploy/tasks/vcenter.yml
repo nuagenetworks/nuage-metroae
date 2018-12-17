@@ -20,9 +20,9 @@
     set_fact:
       vcenter_path: "{{ target_server }}/{{ vcenter.datacenter }}/host/{{ vcenter.cluster }}{{ (vcenter.resource_pool != 'NONE') | ternary ('/Resources/{{ vcenter.resource_pool | urlencode }}', '') }}"
 
-  - name: Deploy VSC Image on vCenter
-    connection: local
-    shell: >
+  - name: Configure ovftool command
+    set_fact:
+      ovftool_command: >
       {{ vcenter_global.ovftool }}
       --acceptAllEulas
       --noSSLVerify
@@ -76,6 +76,16 @@
       --prop:"BGP_Group=internal"
       "{{ ova_path }}/{{ ova_file_name }}"
       "vi://$USERNAME:$PASSWD@{{ vcenter_path }}"
+
+  - name: Print the ovftool command when verbosty 1
+    debug:
+      msg: "{{ ovftool_command }}"
+      verbosity: 1
+
+  - name: Deploy VSC Image on vCenter
+    connection: local
+    no_log: true
+    shell: "{{ ovftool_command }}"
     environment:
       USERNAME: "{{ vcenter.username | urlencode }}"
       PASSWD: "{{ vcenter.password | urlencode }}"
