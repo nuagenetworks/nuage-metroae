@@ -237,9 +237,7 @@
     nuage_append: filename="{{ report_path }}" text="{{ inventory_hostname }}  License  {{ license_valid | to_nice_json}}\n"
     delegate_to: localhost
 
-  when: nuage_upgrade | default(False)
-
-- import_tasks: report_footer.yml
+  when: check_vsd_license | default(False)
 
 - block:
 
@@ -279,9 +277,10 @@
     command: "mysql -umonituser -p{{ monitPwd }} -e 'select 1'"
     when: monitPwd is defined
 
-
   remote_user: "{{ vsd_username | default(vsd_default_username) }}"
   no_log: True
   become: "{{ 'no' if vsd_username | default(vsd_default_username) == 'root' else 'yes' }}"
   vars:
     ansible_become_pass: "{{ vsd_password | default(vsd_default_password) }}"
+
+- import_tasks: report_footer.yml

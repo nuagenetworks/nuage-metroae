@@ -102,7 +102,7 @@
     that: "'{{ item }}'|ipaddr"
     msg: "{{ item }} is not a valid NTP server IP address, quiting"
   with_items: "{{ ntp_server_list }}"
-  when: ntp_server_list is defined
+  when: ntp_server_list is defined and ntp_server_list
 
 - name: Verify that the VSC system name is not longer than 32 characters
   assert:
@@ -116,19 +116,23 @@
 # test infrastructure to accommodate.
 - block:
 
-  - name: Verify VSD DNS entries exist at server {{ dns_server_list[0] }}, and hostnames map to their m
-    include_tasks: check_dns.yml
-    with_items: "{{ vsds }}"
-    when: dns_server_list is defined and vsds is defined
+  - block:
 
-  - name: Verify VStat DNS entries exist at server {{ dns_server_list[0] }}, and hostnames map to their management IPs
-    include_tasks: check_dns.yml
-    with_items: "{{ vstats }}"
-    when: dns_server_list is defined and vstats is defined
+    - name: Verify VSD DNS entries exist at server {{ dns_server_list[0] }}, and hostnames map to their m
+      include_tasks: check_dns.yml
+      with_items: "{{ vsds }}"
+      when: vsds is defined and vsds
 
-  - name: Verify VNS Utils DNS entries exist at server {{ dns_server_list[0] }}, and hostnames map to their IPs
-    include_tasks: check_dns.yml
-    with_items: "{{ vnsutils }}"
-    when: dns_server_list is defined and vnsutils is defined
+    - name: Verify VStat DNS entries exist at server {{ dns_server_list[0] }}, and hostnames map to their management IPs
+      include_tasks: check_dns.yml
+      with_items: "{{ vstats }}"
+      when: vstats is defined and vstats
+
+    - name: Verify VNS Utils DNS entries exist at server {{ dns_server_list[0] }}, and hostnames map to their IPs
+      include_tasks: check_dns.yml
+      with_items: "{{ vnsutils }}"
+      when: vnsutils is defined and vnsutils
+
+    when: dns_server_list is defined and dns_server_list
 
   when: false

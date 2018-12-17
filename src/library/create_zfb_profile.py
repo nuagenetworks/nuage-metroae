@@ -19,11 +19,15 @@ options:
   nsgv_path:
     description:
       - Set path to NSGV ISO output directory.
-    required:True
+    required:False
+  skip_iso_create:
+    description:
+      - If set to True, does not actually create the ISO.
+    required:False
   fact_name:
     description:
       - Name of fact variable to state if NSGv is already configured.
-    required:True
+    required:False
   vsd_license_file:
     description:
       - Set path to VSD license file.
@@ -326,8 +330,9 @@ def has_nsg_configuration(csproot):
     return False
 
 
-def create_iso_file(metro_org, nsg_temp, nsgv_path):
+def create_iso_file(metro_org, nsg_temp):
     zfb_constants = module.params['zfb_constants']
+    nsgv_path = module.params['nsgv_path']
 
     # Create an ISO file that's attached to nsgv vm
     job = NUJob()
@@ -347,8 +352,10 @@ def main():
 
     vsd_license_file = module.params['vsd_license_file']
     vsd_auth = module.params['vsd_auth']
-    nsgv_path = module.params['nsgv_path']
-    fact_name = module.params['fact_name']
+    if "fact_name" in module.params:
+        fact_name = module.params['fact_name']
+    else:
+        fact_name = "nsg_already_configured"
 
     # Get VSD license
     vsd_license = ""
@@ -387,7 +394,9 @@ def main():
     create_nsgv_ports(nsg_temp, vsc_infra)
     metro_org = create_nsg_device(csproot, nsg_temp)
 
-    create_iso_file(metro_org, nsg_temp, nsgv_path)
+    if ("skip_iso_create" not in module.params or
+            module.params["skip_iso_create"] is not True):
+        create_iso_file(metro_org, nsg_temp)
 
     module.exit_json(changed=True,
                      ansible_facts={fact_name: nsg_already_configured})
@@ -395,22 +404,27 @@ def main():
 
 arg_spec = dict(
     nsgv_path=dict(
-        required=True,
+        required=False,
         type='str'),
+    skip_iso_create=dict(
+        required=False,
+        type='bool'),
     fact_name=dict(
-        required=True,
+        required=False,
         type='str'),
     vsd_license_file=dict(
         required=True,
         type='str'),
     vsd_auth=dict(
         required=True,
+        no_log=True,
         type='dict'),
     zfb_constants=dict(
         required=True,
         type='dict'),
     zfb_proxy_user=dict(
         required=True,
+        no_log=True,
         type='dict'),
     zfb_nsg=dict(
         required=True,

@@ -1,15 +1,30 @@
 # Metro Automation Engine Release Notes
 ## Release 3.x.x
 ### New Features and Enhancements
+* Remove unnecessary mode 777 settings for vstat backup
+* Support non-default TLS
+* Support VSD license check any time except postdeploy
+* Support NSG bootstrap in AWS
+* Add note about upgrade and health requiring passwordless ssh
+* Add v5.3.3 to VSTAT version checks
+* Consolidate common code from five places into one
+* Do not error stopping of VSD services when they are already stopped
 * Clarify error message when target server ssh fails
 * Reduce code duplication by consolidating common vsd-deploy code from nuagex.yml, heat.yml and non_heat.yml into main.yml
 * Remove configuration from vnsutil-postdeploy, add it to vnsutil-deploy
 * Validate if gateway address is in correct range
 ### Resolved Issues
+* Correct target server type options in schemas
+* Enhance support for custom usernames for target servers
+* make failure to find the root partition with guestfish an error  
 * Check if iptable entry exists before adding one
 * Add /etc/hosts setting on each VSD/VSTAT when they are clustered, allowing each VSD to reach the other, even in the event of a DNS failure.
 * In main.yml use data_fqdn instead of mgmt fqdn when creating vnsutil certificates
 * Add ability to bootstrap multiple NSGs
+## Release 3.0.3
+
+### Resolved Issues
+* remove hostname format restriction on yum_proxy in common.yml
 ## Release 3.0.1/3.0.2
 ### Resolved Issues
 * Add double jinja2 substitution to build_vars.yml conversion script

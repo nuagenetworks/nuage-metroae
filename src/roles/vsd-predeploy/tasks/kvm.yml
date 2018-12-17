@@ -1,49 +1,50 @@
----
-- name: Set local variable with upgrade status
-  set_fact:
-    upgrade: "{{ nuage_upgrade|default('False') }}"
-
 - block:
-  - name: Verify that upgrade_vmname is defined if this is an upgrade
-    assert:
-      that: "upgrade_vmname is defined"
-      msg: "upgrade_vmname is required for upgrade"
-  - name: Set local variable with upgrade_vmname
+
+  - name: Set local variable with upgrade status
     set_fact:
-      vm_name: "{{ upgrade_vmname }}"
-  when: upgrade
+      upgrade: "{{ nuage_upgrade|default('False') }}"
 
-- block:
-  - name: Set local variable with vmname
-    set_fact:
-      vm_name: "{{ vmname }}"
-  when: not upgrade
+  - block:
+    - name: Verify that upgrade_vmname is defined if this is an upgrade
+      assert:
+        that: "upgrade_vmname is defined"
+        msg: "upgrade_vmname is required for upgrade"
+    - name: Set local variable with upgrade_vmname
+      set_fact:
+        vm_name: "{{ upgrade_vmname }}"
+    when: upgrade
 
-- name: Query Target Server facts
-  action: setup
-  remote_user: "{{ target_server_username }}"
-  delegate_to: "{{ target_server }}"
+  - block:
+    - name: Set local variable with vmname
+      set_fact:
+        vm_name: "{{ vmname }}"
+    when: not upgrade
 
-- name: Include OS-specific variables.
-  include_vars: "{{ ansible_os_family }}.yml"
+  - name: Query Target Server facts
+    action: setup
+    remote_user: "{{ target_server_username }}"
+    delegate_to: "{{ target_server }}"
+    become: "{{ 'no' if target_server_username == 'root' else 'yes' }}"
 
-- name: Check target for supported OS
-  fail: msg="Unsupported OS family ({{ ansible_os_family }})"
-  when: ansible_os_family not in supported_target_server_os_family_list
+  - name: Include OS-specific variables.
+    include_vars: "{{ ansible_os_family }}.yml"
 
-- name: Check target memory
-  fail: msg="Not enough memory ({{ ansible_memtotal_mb }})"
-  when: ansible_memtotal_mb < target_server_memory_mb_min
+  - name: Check target for supported OS
+    fail: msg="Unsupported OS family ({{ ansible_os_family }})"
+    when: ansible_os_family not in supported_target_server_os_family_list
 
-- name: Check target cores
-  fail: msg="Not enough cores ({{ ansible_processor_vcpus }})"
-  when: ansible_processor_vcpus < target_server_vcpus_min
+  - name: Check target memory
+    fail: msg="Not enough memory ({{ ansible_memtotal_mb }})"
+    when: ansible_memtotal_mb < target_server_memory_mb_min
 
-- name: Check target bridges
-  fail: msg="Required network bridges not found"
-  when: mgmt_bridge not in ansible_interfaces
+  - name: Check target cores
+    fail: msg="Not enough cores ({{ ansible_processor_vcpus }})"
+    when: ansible_processor_vcpus < target_server_vcpus_min
 
-- block:
+  - name: Check target bridges
+    fail: msg="Required network bridges not found"
+    when: mgmt_bridge not in ansible_interfaces
+
   - name: Check if required OS packages are installed (ignoring errors)
     command: rpm -q qemu-kvm libvirt bridge-utils libguestfs-tools libvirt-python
     register: rpm_check
@@ -70,6 +71,7 @@
 
   delegate_to: "{{ target_server }}"
   remote_user: "{{ target_server_username }}"
+  become: "{{ 'no' if target_server_username == 'root' else 'yes' }}"
 
 - include_role:
     name: check-node-running
@@ -83,6 +85,7 @@
   when: node_present
 
 - block:
+
   - name: set skip copy images to default
     set_fact:
       skip_copy_images: False
@@ -92,6 +95,7 @@
     when: not skip_copy_images
 
   - block:
+
     - name: Check to make sure there is an existing qcow image
       stat:
         path: "{{ images_path }}/{{ vm_name }}/{{ qcow2_file_name }}"
@@ -112,22 +116,17 @@
     local_action: command cat "{{ user_ssh_pub_key }}"
     register: current_user_ssh_key
 
-  - name: Get list of partitions
-    shell: "guestfish -r -a {{ guestfish_dest }} run : list-filesystems | grep -Ev '(unknown|swap)'"
-    register: partitions_list
+  - name: Get guestfish mount for qcow2
+    include_role:
+      name: common
+      tasks_from: get-guestfish-mount
+    vars:
+      guestfish_qcow2_path: "{{ guestfish_dest }}"
 
-  - name: Check partition content
-    shell: "guestfish -r -a {{ guestfish_dest }} run : mount {{ item.split(':')[0] }} / : ls /"
-    register: partitions
-    with_items: "{{ partitions_list.stdout_lines }}"
-
-  - name: Find root partition
-    set_fact:
-      guestfish_mount: "{{ item.item.split(':')[0]}}"
-    with_items: "{{ partitions.results }}"
-    when: '"proc" in item.stdout'
-
-  - debug: var=guestfish_mount verbosity=1
+  - name: Verify that mount was found
+    assert:
+      that: "guestfish_mount is defined"
+      msg: "guestfish mount point was not found. Are you using the correct qcow2 file?"
 
   - name: Create cloud-init disable file
     command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} touch /etc/cloud/cloud-init.disabled
@@ -216,3 +215,4 @@
   when: not node_present
   delegate_to: "{{ target_server }}"
   remote_user: "{{ target_server_username }}"
+  become: "{{ 'no' if target_server_username == 'root' else 'yes' }}"
