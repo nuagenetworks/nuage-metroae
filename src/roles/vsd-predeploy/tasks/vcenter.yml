@@ -36,27 +36,35 @@
 
   - name: Configure vCenter path
     set_fact:
-      vcenter_path: "vi://'{{ vcenter.username | urlencode }}':'{{ vcenter.password | urlencode }}'@{{ target_server }}/{{ vcenter.datacenter }}/host/{{ vcenter.cluster }}"
+      vcenter_path: "{{ target_server }}/{{ vcenter.datacenter }}/host/{{ vcenter.cluster }}{{ (vcenter.resource_pool != 'NONE') | ternary ('/Resources/{{ vcenter.resource_pool | urlencode }}', '') }}"
 
-  - name: Update vCenter path if resource pool is configured
+  - name: Configure ovftool command
     set_fact:
-      vcenter_path: "vi://'{{ vcenter.username | urlencode }}':'{{ vcenter.password | urlencode }}'@{{ target_server }}/{{ vcenter.datacenter }}/host/{{ vcenter.cluster }}/Resources/{{ vcenter.resource_pool | urlencode }}"
-    when: vcenter.resource_pool != 'NONE'
+      ovftool_command: >-
+        {{ vcenter_global.ovftool }}
+        --acceptAllEulas
+        --noSSLVerify
+        --powerOn
+        --machineOutput
+        -dm=thin
+        -ds={{ vcenter.datastore }}
+        -n={{ vm_name }}
+        --net:"VM Network={{ mgmt_bridge }}"
+        "{{ ova_path }}/{{ ova_file_name }}"
+        "vi://$USERNAME:$PASSWD@{{ vcenter_path }}"
 
-  - name: Deploy VM image on vCenter
+  - name: Print the ovftool command when verbosity >=1
+    debug:
+      msg: "{{ ovftool_command }}"
+      verbosity: 1
+
+  - name: Deploy VSD image on vCenter
     connection: local
-    command: >
-      {{ vcenter_global.ovftool }}
-      --acceptAllEulas
-      --noSSLVerify
-      --powerOn
-      --machineOutput
-      -dm=thin
-      -ds={{ vcenter.datastore }}
-      -n={{ vm_name }}
-      --net:"VM Network={{ mgmt_bridge }}"
-      "{{ ova_path }}/{{ ova_file_name }}"
-      {{ vcenter_path }}
+    no_log: true
+    shell: "{{ ovftool_command }}"
+    environment:
+      USERNAME: "{{ vcenter.username | urlencode }}"
+      PASSWD: "{{ vcenter.password | urlencode }}"
 
   - name: Waiting until VMware tools becomes available
     connection: local
