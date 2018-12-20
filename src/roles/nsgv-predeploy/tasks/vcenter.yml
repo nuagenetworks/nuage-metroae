@@ -51,25 +51,13 @@
 
     when: bootstrap_method == 'zfb_metro'
 
-  - name: Configure vCenter path
-    set_fact:
-      vcenter_path: "{{ target_server }}/{{ vcenter.datacenter }}/host/{{ vcenter.cluster }}{{ (vcenter.resource_pool != 'NONE') | ternary ('/Resources/{{ vcenter.resource_pool | urlencode }}', '') }}"
-  - name: Configure ovftool command
-    set_fact:
-      ovftool_command: >-
-        {{ vcenter_global.ovftool }}
-        --acceptAllEulas
-        --noSSLVerify
-        --powerOn
-        --machineOutput
-        -dm=thin
-        -ds={{ vcenter.datastore }}
-        -n={{ vm_name }}
-        --net:"OVS Management={{ mgmt_bridge }}"
-        --net:"OVS DataPath={{ data_bridge }}"
-        --net:"port_vmnic={{ access_bridge }}"
-        "{{ ovf_path }}/{{ ovf_file_name }}"
-        "vi://$USERNAME:$PASSWD@{{ vcenter_path }}"
+  - name: Configure vCenter path and ovftool command
+    include_role:
+      nsme: common
+      tasks_from: configure-ovftool
+    vars:
+      vm_name: "{{ vm_name }}"
+      mgmt_name: "OVS Management"
 
   - name: Print the ovftool command when verbosity >=1
     debug:

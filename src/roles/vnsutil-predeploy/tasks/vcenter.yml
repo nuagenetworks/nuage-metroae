@@ -16,24 +16,18 @@
 
 - block:
 
-  - name: Configure vCenter path
-    set_fact:
-      vcenter_path: "{{ target_server }}/{{ vcenter.datacenter }}/host/{{ vcenter.cluster }}{{ (vcenter.resource_pool != 'NONE') | ternary ('/Resources/{{ vcenter.resource_pool | urlencode }}', '') }}"
+  - name: Configure vCenter path and ovftool command
+    include_role:
+      nsme: common
+      tasks_from: configure-ovftool
+    vars:
+      vm_name: "{{ vm_name }}"
+      mgmt_name: "Management"
 
-  - name: Configure ovftool command
-    set_fact:
-      ovftool_command: >-
-        {{ vcenter_global.ovftool }}
-        --acceptAllEulas
-        --noSSLVerify
-        --powerOn
-        --machineOutput
-        -dm=thin
-        -ds={{ vcenter.datastore }}
-        -n={{ vm_name }}
-        --net:"Management={{ mgmt_bridge }}"
-        "{{ ova_path }}/{{ ova_file_name }}"
-        "vi://$USERNAME:$PASSWD@{{ vcenter_path }}"
+  - name: Print the ovftool command when verbosity >=1
+    debug:
+      msg: "{{ ovftool_command }}"
+      verbosity: 1
 
   - name: Deploy VNSUTIL Image on vCenter
     connection: local
