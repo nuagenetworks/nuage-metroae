@@ -75,7 +75,6 @@
         --prop:"Autonomous_System=64000"
         --prop:"BGP_Group=internal"
         "{{ ova_path }}/{{ ova_file_name }}"
-        "vi://$USERNAME:$PASSWD@{{ vcenter_path }}"
 
   - name: Print the ovftool command when verbosity >=1
     debug:
@@ -85,10 +84,9 @@
   - name: Deploy VSC Image on vCenter
     connection: local
     no_log: true
-    shell: "{{ ovftool_command }}"
-    environment:
-      USERNAME: "{{ vcenter.username | urlencode }}"
-      PASSWD: "{{ vcenter.password | urlencode }}"
+    shell: >-
+      {{ ovftool_command }}
+      "vi://{{ vcenter.username | urlencode }}:{{ vcenter.password | urlencode }}@{{ vcenter_path }}"
 
   - name: Finding VM folder (ignoring errors)
     connection: local
