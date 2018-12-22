@@ -204,12 +204,33 @@ vstat_node3
 {% endif %}
 
 {% if portals is defined and portals %}
-[portals]
-{% for portal in portals %}
-{{ portal.hostname }} {% if 'hostname' in portal %} hostname={{ portal.hostname }}{% endif %}
-{% endfor %}
+
+{% if portals|length == 1 %}
+[portal_sa_node]
+{{ portals[0].hostname }} {% if 'mgmt_bridge' in portals[0] %} mgmt_bridge={{ portals[0].mgmt_bridge }}{% endif %}
+
+[vsds:children]
+portal_sa_node
+
+{% else %}
+
+[portal_ha_node1]
+{{ portals[0].hostname }} {% if 'mgmt_bridge' in portals[0] %} mgmt_bridge={{ portals[0].mgmt_bridge }}{% endif %}
+
+[portal_ha_node2]
+{{ portals[1].hostname }} {% if 'mgmt_bridge' in portals[1] %} mgmt_bridge={{ portals[1].mgmt_bridge }}{% endif %}
+
+[portal_ha_node3]
+{{ portals[2].hostname }} {% if 'mgmt_bridge' in portals[2] %} mgmt_bridge={{ portals[2].mgmt_bridge }}{% endif %}
+
+[portals:children]
+portal_ha_node1
+portal_ha_node2
+portal_ha_node3
+
 {% endif %}
 
+{% endif %}
 
 [ansible_deployment_host]
 {{ ansible_deployment_host|default('127.0.0.1') }}

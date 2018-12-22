@@ -1,4 +1,12 @@
 ---
+- name: Wait for PORTAL VM ssh to be ready
+  include_role:
+    name: common
+    tasks_from: wait-for-ssh
+  vars:
+    ssh_host: "{{ mgmt_ip }}"
+    host_username: "{{ portal_default_username }}"
+
 - name: remove the old Docker packages
   yum:
     name: 
@@ -82,3 +90,8 @@
 
 - name: Bootstrap the Portal
   command: docker run --rm --env-file /opt/environment.properties -v /var/run/docker.sock:/docker.sock -v /opt:/mnt:z -v /etc:/hostetc:z nuage/vnsportal-bootstrap:{{ portal_version }}
+
+- name: Configure High Availability
+  include: ha.yml
+  when: portal_sa_or_ha | match('ha')
+
