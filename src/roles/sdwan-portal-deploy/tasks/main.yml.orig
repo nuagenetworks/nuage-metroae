@@ -1,5 +1,4 @@
 ---
-<<<<<<< HEAD
 - name: Wait for PORTAL VM ssh to be ready
   include_role:
     name: common
@@ -7,6 +6,18 @@
   vars:
     ssh_host: "{{ mgmt_ip }}"
     host_username: "{{ portal_default_username }}"
+<<<<<<< HEAD
+=======
+
+- name: remove the old Docker packages
+  yum:
+    name: 
+      - docker 
+      - docker-common 
+      - docker-selinux 
+      - docker-engine
+    state: absent
+>>>>>>> HA Portal install and VM deployment
 
 - name: Check if Docker is installed
   command: rpm -q docker-ce
@@ -69,91 +80,16 @@
       - "*************************************************"
   when: tomcat_running
 
+<<<<<<< HEAD
 - name: Execute tasks for Portal deploy
   import_tasks: deploy.yml
   when: not tomcat_running
 =======
-- name: remove the old Docker packages
-  yum:
-    name: 
-      - docker 
-      - docker-common 
-      - docker-selinux 
-      - docker-engine
-    state: absent
-
-- name: Configure yum proxy
-  lineinfile:
-    dest: /etc/yum.conf
-    regexp: "^proxy="
-    line: "proxy={{ yum_proxy }}"
-  when: not yum_proxy | match('NONE')
-
-- name: Install the packages for Docker
-  yum:
-    name: 
-      - yum-utils 
-      - device-mapper-persistent-data 
-      - lvm2 
-      - wget
-    state: latest
-
-- name: Add Docker repository
-  yum_repository:
-    name: docker-ce
-    description: Docker YUM repo
-    enabled: yes
-    baseurl: https://download.docker.com/linux/centos/7/$basearch/stable
-    gpgcheck: 1
-    gpgkey: https://download.docker.com/linux/centos/gpg
-
-- name: Install the latest version of Docker
-  yum:
-    name: docker-ce
-    state: latest
-
-- name: Enable and start Docker
-  service:
-    name: docker
-    state: started
-    enabled: yes
-
-- name: Get the latest tag for Docker-compose 
-  uri:
-    url: https://api.github.com/repos/docker/compose/releases/latest
-    return_content: yes
-  register: json_response
-  environment:
-    http_proxy: "{{ yum_proxy | default('') }}"
-    https_proxy: "{{ yum_proxy | default('') }}"
-
-- name: Download Docker-Compose
-  get_url:
-    url: "{{ json_response.json.assets[2].browser_download_url }}"
-    dest: /usr/bin/docker-compose
-    mode: 0755
-    use_proxy: yes
-  environment:
-    http_proxy: "{{ yum_proxy | default('') }}"
-    https_proxy: "{{ yum_proxy | default('') }}"
-
-- name: Copy image to Portal host
-  copy:
-    src: "{{ portal_path }}/{{ portal_file_name }}"
-    dest: /opt/
-    owner: root
-    group: root
-
-- name: Save the Portal version
-  set_fact:
-    portal_version: "{{ portal_file_name | regex_replace('^.*nuage-portal-container-(.*).tar.gz$','\\1') }}"
-
-- name: Load Portal Docker containers
-  command: docker load -i /opt/{{ portal_file_name }}
-
-- name: Generate Portal environment.properties file
-  template: src=environment.properties.j2 backup=no dest=/opt/environment.properties
-
 - name: Bootstrap the Portal
   command: docker run --rm --env-file /opt/environment.properties -v /var/run/docker.sock:/docker.sock -v /opt:/mnt:z -v /etc:/hostetc:z nuage/vnsportal-bootstrap:{{ portal_version }}
->>>>>>> Standalone portal install working
+
+- name: Configure High Availability
+  include: ha.yml
+  when: portal_sa_or_ha | match('ha')
+
+>>>>>>> HA Portal install and VM deployment

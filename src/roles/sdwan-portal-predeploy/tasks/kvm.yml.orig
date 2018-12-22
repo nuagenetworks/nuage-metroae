@@ -1,4 +1,5 @@
 ---
+<<<<<<< HEAD
 - name: Set local variable with vmname
   set_fact:
     vm_name: "{{ vmname }}"
@@ -42,12 +43,56 @@
     fail: msg="Required network bridges not found"
     when: mgmt_bridge not in ansible_interfaces
 
+=======
+- debug: var=vmname
+
+- block:
+  - name: Set local variable with vmname
+    set_fact:
+      vm_name: "{{ vmname }}"
+#  when: not upgrade
+
+- name: Query Target Server facts
+  action: setup
+  remote_user: "{{ target_server_username }}"
+  delegate_to: "{{ target_server }}"
+
+- name: Include OS-specific variables.
+  include_vars: "{{ ansible_os_family }}.yml"
+
+- name: Check target for supported OS
+  fail: msg="Unsupported OS family ({{ ansible_os_family }})"
+  when: ansible_os_family not in supported_target_server_os_family_list
+
+- name: Check target memory
+  fail: msg="Not enough memory ({{ ansible_memtotal_mb }})"
+  when: ansible_memtotal_mb < target_server_memory_mb_min
+
+- name: Check target cores
+  fail: msg="Not enough cores ({{ ansible_processor_vcpus }})"
+  when: ansible_processor_vcpus < target_server_vcpus_min
+
+- debug: var=mgmt_bridge
+
+- name: Check target bridges
+  fail: msg="Required network bridges not found"
+  when: mgmt_bridge not in ansible_interfaces
+
+- block:
+>>>>>>> HA Portal install and VM deployment
   - name: Check if required OS packages are installed (ignoring errors)
     command: rpm -q qemu-kvm libvirt bridge-utils libguestfs-tools libvirt-python
     register: rpm_check
     ignore_errors: True
 
+<<<<<<< HEAD
   - name: Check packages for CentOS
+=======
+  - name: Print rpm_check when verbosity >= 1
+    debug: var=rpm_check verbosity=1
+
+  - name: If RedHat, install packages for RedHat OS family distros
+>>>>>>> HA Portal install and VM deployment
     yum: name={{ item }} state=present
     with_items:
      - qemu-kvm
@@ -63,23 +108,7 @@
       enabled: yes
       state: started
 
-  delegate_to: "{{ target_server }}"
-  remote_user: "{{ target_server_username }}"
-
-- include_role:
-    name: check-node-running
-
-- name: Display if skipping predeploy
-  debug:
-    msg:
-      - "****************************************************"
-      - "Skipping Portal predeploy because it is already present"
-      - "****************************************************"
-  when: node_present
-
-- debug: var=guestfish_dest
-
-- block:
+<<<<<<< HEAD
   - name: set skip copy images to default
     set_fact:
       image_present: False
@@ -110,6 +139,47 @@
 
 - block:
   - name: Set local variable with portal guestfish destination
+=======
+  delegate_to: "{{ target_server }}"
+  remote_user: "{{ target_server_username }}"
+
+- include_role:
+    name: check-node-running
+
+- name: Display if skipping predeploy
+  debug:
+    msg:
+      - "****************************************************"
+      - "Skipping Portal predeploy because it is already present"
+      - "****************************************************"
+  when: node_present
+
+- debug: var=guestfish_dest
+
+- block:
+  - name: set skip copy images to default
+    set_fact:
+      skip_copy_images: False
+    when: skip_copy_images is undefined
+
+  - import_tasks: copy_qcow2.yml
+    when: not skip_copy_images
+
+  - block:
+    - name: Check to make sure there is an existing qcow image
+      stat:
+        path: "{{ images_path }}/{{ vm_name }}/{{ qcow2_file_name }}"
+      register: statResult
+
+    - name: check the result of image find command
+      assert:
+        that: statResult.stat.exists == True
+        msg: Missing qcow2 file {{ images_path }}/{{ vm_name }}/{{ qcow2_file_name }}
+
+    when: skip_copy_images
+
+  - name: Set local variable with vsd guestfish destination
+>>>>>>> HA Portal install and VM deployment
     set_fact:
       guestfish_dest: "{{ images_path }}/{{ vm_name }}/{{ qcow2_file_name }}"
 
@@ -132,6 +202,11 @@
     with_items: "{{ partitions.results }}"
     when: '"proc" in item.stdout'
 
+<<<<<<< HEAD
+=======
+  - debug: var=guestfish_mount verbosity=1
+
+>>>>>>> HA Portal install and VM deployment
   - name: Create cloud-init disable file
     command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} touch /etc/cloud/cloud-init.disabled
 
@@ -215,6 +290,10 @@
           state=running
           uri=qemu:///system
 
+<<<<<<< HEAD
   when: not node_running
+=======
+  when: not node_present
+>>>>>>> HA Portal install and VM deployment
   delegate_to: "{{ target_server }}"
   remote_user: "{{ target_server_username }}"
