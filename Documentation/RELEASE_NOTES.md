@@ -1,6 +1,8 @@
 # Metro Automation Engine Release Notes
 ## Release 3.x.x
 ### New Features and Enhancements
+* Refactor VM Deploy using ovftool with nolog
+* Add known_hosts cleanup
 * Remove unnecessary mode 777 settings for vstat backup
 * Support non-default TLS
 * Support VSD license check any time except postdeploy
