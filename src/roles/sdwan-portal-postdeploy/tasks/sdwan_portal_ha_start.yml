@@ -1,13 +1,23 @@
-- name: SD-WAN Portal Cluster bootstrap
+- name: SD-WAN Portal 1 bootstrap
   command: /opt/vnsportal/cluster_bootstrap.sh
   when: inventory_hostname == first_cluster_node_to_install
 
-- name: SD-WAN Portal 2 and 3 start up
-  command: /opt/vnsportal/start.sh
-  register: result
+- name: Wait for Portal 1 bootstrap to complete
+  wait_for: timeout=120
+  delegate_to: localhost
 
-- debug: var=result
+- name: SD-WAN Portal 2 start up
+  command: /opt/vnsportal/start.sh
+  when: inventory_hostname == second_cluster_node_to_install
+
+- name: SD-WAN Portal 3 start up
+  command: /opt/vnsportal/start.sh
+  when: inventory_hostname == third_cluster_node_to_install
+
+- name: Wait for Portal 2 and 3 to come up
+  wait_for: timeout=120
+  delegate_to: localhost
 
 - name: SD-WAN Portal 1 start up
   command: /opt/vnsportal/start.sh
-  when: result is succeeded 
+  when: inventory_hostname == first_cluster_node_to_install
