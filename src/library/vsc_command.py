@@ -41,7 +41,7 @@ EXAMPLES = '''
 
   - name: check xmpp connectivity in a loop until 'Functional'
     vsc_command:
-      command: show vswitch-controller xmpp-server | match Functional
+      command: show vswitch-controller xmpp-server is match Functional
       mgmt_ip: 192.168.122.123
       username: admin
       password: admin
