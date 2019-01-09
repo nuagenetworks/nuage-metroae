@@ -11,7 +11,8 @@ If you'd like to set up the environment in a container see [DOCKER.md](DOCKER.md
 [1. Clone MetroÆ repository](#1-clone-metroÆ-repository)  
 [2. Set up Ansible Host](#2-set-up-ansible-host)  
 [3. Enable SSH Access](#3-enable-ssh-access)  
-[4. Install ovftool (for VMware only)](#4-install-ovftool-for-vmware-only)  
+[4. Configure NTP sync](#4-configure-ntp-sync)  
+[5. Install ovftool (for VMware only)](#5-install-ovftool-for-vmware-only)  
 
 ### 1. Clone MetroÆ Repository
 The Ansible Host must run el7 Linux host (CentOS 7.* or RHEL 7.*). Using one of the following two methods install a copy of the MetroÆ repository onto the Ansible Host. 
@@ -91,29 +92,28 @@ Paramiko                       | `pip install paramiko==2.2.1`
  shade python | `pip install shade`
 
 ### 3. Enable SSH Access  
-To enable passwordless SSH access, public/private SSH keys must be created and distributed for the MetroÆ User and root users. The MetroÆ User must be the root user or have *sudo* privileges.  
-#### For MetroÆe User
-1. Login to the Ansible Host as the MetroÆ User.  
-2. Generate SSH keys.  
-   Execute the command: `ssh-keygen`.  
-3. Follow the prompts. It is normal to accept all defaults.  
-4. Copy the SSH public key to the MetroÆ User's authorized keys file.  
-   Execute the command: `ssh-copy-id localhost`.  
-#### For Root User  
-1. Login to the Ansible Host as the Root User.  
-2. Generate SSH keys.  
-   Execute the command: `ssh-keygen`.  
-3. Follow the prompts. It is normal to accept all defaults.  
-4. Copy the SSH public key to the Root User's authorized keys file.  
-   Execute the command: `ssh-copy-id root@localhost`.   
-#### For Target Servers
-1. Copy the SSH public key to the Target Server's authorized keys file.   
-   Execute the command: `ssh-copy-id root@<target_server>`. Replace `<target_server>` with the actual IP address.  
-2. Repeat for every target server.  
+
+Passwordless SSH must be configured between the MetroÆ host and all target servers, a.k.a. hypervisors. This is accomplished by generating SSH keys for the MetroÆ user, then copying those keys to the authorized_keys files for the `target_server_username` on every `target_server`. The following steps should be executed on the MetroÆ server as the MetroÆ user.
+
+#### 3.1 Generate keys for the MetroÆ user
+
+3.1.1 As MetroÆ User on the MetroÆ server, generate SSH keys: `ssh-keygen`
+
+#### 3.2 Copy public key to each `target_server`
+
+##### 3.2.1 When you are going to run as 'root' on each `target_server`
+
+As MetroÆ User on the MetroÆ server, copy SSH public key: `ssh-copy-id root@<target_server>`  
+
+##### 3.2.2 When you are going to run as `target_server_username` on each `target_server`
+
+As MetroÆ User on the MetroÆ server, copy SSH public key: `ssh-copy-id <target_server_username>@<target_server>`.  
+
+### 4. Configure NTP sync
+
+Nuage components require NTP synchronization for proper operation. It is best practice that the target servers the Nuage VMs are deployed on also be NTP synchronized, preferrably to the same NTP server as used by the components themselves.
    
-Note: Ensure that target servers are using NTP sync.
-   
-### 4. Install ovftool (for VMware only)
+### 5. Install ovftool (for VMware only)
  If you are installing VSP components in a VMware environment (ESXi/vCenter) you will also need to download and install the [ovftool](https://www.vmware.com/support/developer/ovf/) from VMware. MetroÆ uses ovftool for OVA operations.
 
 ## Next Step
