@@ -1,6 +1,7 @@
 # Metro Automation Engine Release Notes
 ## Release 3.x.x
 ### New Features and Enhancements
+* Add support for VSC to talk to the data interface on AWS
 * Refactor VM Deploy using ovftool with nolog
 * Add known_hosts cleanup
 * Remove unnecessary mode 777 settings for vstat backup
