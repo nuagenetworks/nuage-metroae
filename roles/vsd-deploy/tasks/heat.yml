@@ -71,6 +71,13 @@
   - name: Restart networking
     command: /etc/init.d/network restart
 
+  - name: "Wait for DNS change"
+    set_fact:
+      dig_result: "{{ lookup('dig', inventory_hostname) }}"
+    until: 'dig_result == "{{ vsd_mgmt_ip }}"'
+    retries: 60
+    delay: 10
+
   - name: Resolve fqdn
     command: hostname "{{ inventory_hostname }}"
 
