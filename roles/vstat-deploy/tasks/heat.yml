@@ -9,7 +9,7 @@
 
 - name: Set vstat mgmt ip
   set_fact:
-    vstat_mgmt_ip: "{{ vstat_ip['ansible_facts']['openstack_servers'][0]['networks'][vstat_network][0] }}"
+    vstat_mgmt_ip: "{{ vstat_ip['ansible_facts']['openstack_servers'][0]['addresses'][vstat_network][0]['addr'] }}"
 
 - name: Clean known_hosts of VSTAT's
   known_hosts:
@@ -96,14 +96,14 @@
     lineinfile:
       dest: /etc/hosts
       line: "{{ vstat_mgmt_ip }}  {{ inventory_hostname }}"
-  
+
   remote_user: "{{ vstat_default_username }}"
 
 - name: Configure ntpd and ntpdate and local time zone
   include_role:
     name: common
     tasks_from: linux-ntp-sync
-  vars: 
+  vars:
     rem_user: "{{ vstat_default_username }}"
 
 - block:
