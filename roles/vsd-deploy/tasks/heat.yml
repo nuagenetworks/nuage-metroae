@@ -72,9 +72,9 @@
     command: /etc/init.d/network restart
 
   - name: "Wait for DNS change"
-    set_fact:
-      dig_result: "{{ lookup('dig', inventory_hostname) }}"
-    until: 'dig_result == "{{ vsd_mgmt_ip }}"'
+    command: "dig {{ inventory_hostname }}"
+    register: dig_result
+    until: 'dig_result.rc == 0'
     retries: 60
     delay: 10
 
