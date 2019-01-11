@@ -51,28 +51,23 @@
     responses:
       (?i)yes: "yes"
       (?i)password: "{{ vsd_default_password }}"
-  remote_user: "{{ vsd_default_username }}"
   delegate_to: localhost
 
 - name: Pause for ssh port to be active
   pause:
     seconds: 5
 
-- name: Query {{ target_server }} facts
-  action: setup
-  remote_user: "{{ target_server_username }}"
-
-- name: Update hostname
-  template: src=network.j2 backup=no dest=/etc/sysconfig/network
-
-- name: Add a DNS server to eth0
-  lineinfile:
-    dest: /etc/sysconfig/network-scripts/ifcfg-eth0
-    regexp: "DNS1="
-    line: "DNS1={{ infra_ip | default(dns_server_list[0]) }}"
-  when: infra_server_name is defined
-
 - block:
+
+  - name: Update hostname
+    template: src=network.j2 backup=no dest=/etc/sysconfig/network
+
+  - name: Add a DNS server to eth0
+    lineinfile:
+      dest: /etc/sysconfig/network-scripts/ifcfg-eth0
+      regexp: "DNS1="
+      line: "DNS1={{ infra_ip | default(dns_server_list[0]) }}"
+    when: infra_server_name is defined
 
   - name: Add nameserver
     command: echo "{{ infra_ip }}" >> /etc/resolv.conf
