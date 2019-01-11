@@ -12,12 +12,15 @@ In addition to being able to access MetroÆ via github clone, MetroÆ is now als
 * Image files for VCS or VNS deployments must be available locally.
 
 ## Installation
-* Install MetroÆ rpm in the github repo using the rpm command 
+
+The MetroÆ container is installed and managed using the `metroae` command. You install this command on your local system by installing the MetroÆ rpm that is available at the root of this repo.
+
+* Install MetroÆ rpm using the rpm command 
     `rpm -i  MetroAE-[release]-[build].noarch.rpm`
-* RPM installs `metroae` command in /usr/local/bin directory. Additionally creates a directory in /opt by name metroae to store `metroae` command logs and container setup information 
+* The `metroae` command will then be available in the /usr/local/bin directory. The installation also creates the directory `/opt/metroae` where command metadata, command logs, and container setup information are stored. Once the rpm has been installed, you are ready to run the `metroae` command. 
 
 ## The metroae Command
-The metroae command is at the heart of interacting with the MetroÆ container. It is delivered from the github repo. It is used both to manage the container and to execute MetroÆ inside the container. You can access all of the command options via `./metroae <action | workflow> [deployment] [options]`.
+The metroae command is at the heart of interacting with the MetroÆ container. It is used both to manage the container and to execute MetroÆ inside the container. You can access all of the command options via `./metroae <action | workflow> [deployment] [options]`.
 
 ### metroae Container Management Command Options
 
