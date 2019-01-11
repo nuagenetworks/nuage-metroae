@@ -95,8 +95,6 @@
 
   remote_user: "{{ vsd_default_username }}"
 
-- debug: var=vsd_sa_or_ha
-
 - block:
 
   - name: Set VSD numbering for install
@@ -113,7 +111,7 @@
         vsd_cluster_node_3: "{{ groups['vsds'][0] }}"
     when: nuage_upgrade
 
-  when: vsd_sa_or_ha | match('ha')
+  when: ansible_play_hosts | length == 3
 
 - block:
 
@@ -185,7 +183,7 @@
     when: inventory_hostname == vsd_cluster_node_1 or (inventory_hostname == vsd_cluster_node_3 and nuage_upgrade)
 
   remote_user: "{{ vsd_default_username }}"
-  when: vsd_sa_or_ha | match('ha')
+  when: ansible_play_hosts | length == 3
 
 - name: Configure ntpd and ntpdate and local time zone
   include_role:
@@ -197,7 +195,7 @@
 - name: Install VSD software on standalone node
   command: /opt/vsd/vsd-install.sh -t s -y
   remote_user: "{{ vsd_default_username }}"
-  when: vsd_sa_or_ha | match('sa')
+  when: ansible_play_hosts | length != 3
 
 - block:
 
@@ -213,7 +211,7 @@
     command: "{{ vsd_node3_install_cmd }}"
     when: inventory_hostname == vsd_cluster_node_3
 
-  when: vsd_sa_or_ha | match('ha')
+  when: ansible_play_hosts | length == 3
   remote_user: "{{ vsd_default_username }}"
 
 - name: Set XMPP connection to allow both clear and TLS
