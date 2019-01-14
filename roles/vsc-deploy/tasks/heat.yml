@@ -53,11 +53,14 @@
       src: config.cfg.j2
       dest: "{{ temp_dir }}/config.cfg"
 
-  - name: Loading system config
-    sros_config:
-      src: "{{ temp_dir }}/config.cfg"
+  - name: Copy config file to VSC
+    command: "sshpass -p {{ vsc_default_password|default('admin') }} scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null {{ temp_dir }}/config.cfg {{ vsc_default_username|default('admin') }}@{{ vsc_mgmt_ip }}:"
+
+  - name: Execute configuration on VSC
+    sros_command:
+      commands:
+        - exec cf1:\config.cfg
       provider: "{{ heat_vsc_creds }}"
-      save: yes
 
   - name: Remove local temp folder
     file:
@@ -74,12 +77,24 @@
         - admin save
       provider: "{{ heat_vsc_creds }}"
 
-  - name: Reboot VSC VM
-    os_server_actions:
-      auth:
-        "{{ os_auth }}"
-      server: "{{ inventory_hostname }}"
-      action: reboot
-      wait: no
+  # Remove this if reboot is not necessary
+  #
+  # - name: Reboot VSC VM
+  #   os_server_actions:
+  #     auth:
+  #       "{{ os_auth }}"
+  #     server: "{{ inventory_hostname }}"
+  #     action: reboot
+  #     wait: no
+
+  # - name: Wait for VSC ssh to be ready
+  #   include_role:
+  #     name: common
+  #     tasks_from: wait-for-ssh
+  #   vars:
+  #     ssh_host: "{{ vsc_mgmt_ip }}"
+  #   tags:
+  #     - vsc
+  #     - vsc-deploy
 
   delegate_to: localhost
