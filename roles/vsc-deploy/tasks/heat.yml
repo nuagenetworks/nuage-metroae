@@ -77,24 +77,21 @@
         - admin save
       provider: "{{ heat_vsc_creds }}"
 
-  # Remove this if reboot is not necessary
-  #
-  # - name: Reboot VSC VM
-  #   os_server_actions:
-  #     auth:
-  #       "{{ os_auth }}"
-  #     server: "{{ inventory_hostname }}"
-  #     action: reboot
-  #     wait: no
+  - name: Reboot VSC
+    sros_command:
+      commands:
+        - admin reboot now
+      provider: "{{ heat_vsc_creds }}"
+    ignore_errors: true
 
-  # - name: Wait for VSC ssh to be ready
-  #   include_role:
-  #     name: common
-  #     tasks_from: wait-for-ssh
-  #   vars:
-  #     ssh_host: "{{ vsc_mgmt_ip }}"
-  #   tags:
-  #     - vsc
-  #     - vsc-deploy
+  - name: Wait for VSC ssh to be ready
+    include_role:
+      name: common
+      tasks_from: wait-for-ssh
+    vars:
+      ssh_host: "{{ vsc_mgmt_ip }}"
+    tags:
+      - vsc
+      - vsc-deploy
 
   delegate_to: localhost
