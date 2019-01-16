@@ -1,0 +1,26 @@
+- block:
+
+  - name: Create a temporary copy of the syscfg network file
+    template: src=network.j2 backup=no dest={{ inventory_dir }}/network
+
+  - name: Copy the etc/sysconfig/network file to the VM
+    copy: src={{ inventory_dir }}/network
+          dest=/etc/sysconfig/network
+          owner=0
+          group=0
+
+  - name: Remove temporary copy of network file
+    file: path={{ inventory_dir }}/network state=absent
+
+  - name: Update /etc/hosts file
+    lineinfile:
+      dest: /etc/hosts
+      line: "{{ remote_ip }}    {{ remote_hostname }}"
+
+  - name: Set hostname for the current session
+    command: "hostname {{ remote_hostname }}"
+
+  - name: Set hostname permanently
+    shell: "echo {{ remote_hostname }} > /etc/hostname"
+
+  remote_user: "{{ remote_username }}"

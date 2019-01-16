@@ -55,19 +55,19 @@
 
 - block:
 
-  - block:
-
-    - name: Force DHCP update to configure DNS in AWS (ignoring errors)
-      command: dhclient
-      ignore_errors: true
-
-    - name: Set hostname for AWS for current session
-      command: "hostname {{ hostname }}"
-
-    - name: Set hostname for AWS permanently
-      shell: "echo {{ hostname }} > /etc/hostname"
-
+  - name: Force DHCP update to configure DNS in AWS (ignoring errors)
+    command: dhclient
+    ignore_errors: true
     when: target_server_type | match("aws")
+
+  - name: Set hostname for VSD
+    include_role:
+      name: common
+      tasks_from: set-hostname
+    vars:
+      remote_hostname: "{{ inventory_hostname }}"
+      remote_ip: "{{ mgmt_ip }}"
+      remote_username: "{{ vsd_default_username }}"
 
   - name: Set Major, Minor and Patch VSD version
     set_fact:

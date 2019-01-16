@@ -8,32 +8,20 @@
     host_username: "{{ vstat_default_username }}"
     retries: 90
 
-- block:
-
-  - name: Force DHCP update to configure DNS in AWS (ignoring errors)
-    command: dhclient
-    ignore_errors: true
-    when: target_server_type | match("aws")
-
-  - name: Create a temporary copy of the syscfg network file
-    template: src=network.j2 backup=no dest=./network
-
-  - name: Copy the etc/sysconfig/network file to the VM
-    copy: src=./network
-          dest=/etc/sysconfig/network
-          owner=0
-          group=0
-
-  - name: Remove temporary copy of network file
-    file: path=./network state=absent
-
-  - name: Set hostname for the current session
-    command: "hostname {{ hostname }}"
-
-  - name: Set hostname permanently
-    shell: "echo {{ hostname }} > /etc/hostname"
-
+- name: Force DHCP update to configure DNS in AWS (ignoring errors)
+  command: dhclient
+  ignore_errors: true
+  when: target_server_type | match("aws")
   remote_user: "{{ vstat_default_username }}"
+
+- name: Set hostname for VSTAT
+  include_role:
+    name: common
+    tasks_from: set-hostname
+  vars:
+    remote_hostname: "{{ inventory_hostname }}"
+    remote_ip: "{{ mgmt_ip }}"
+    remote_username: "{{ vstat_default_username }}"
 
 - name: Get vsd node(s) information
   import_role:
