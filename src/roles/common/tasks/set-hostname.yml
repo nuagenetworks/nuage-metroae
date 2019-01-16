@@ -1,16 +1,19 @@
+- name: Create a temporary copy of the syscfg network file
+  template: src=network.j2 backup=no dest={{ inventory_dir }}/network
+  delegate_to: localhost
+
+- name: Copy the etc/sysconfig/network file to the VM
+  copy: src={{ inventory_dir }}/network
+        dest=/etc/sysconfig/network
+        owner=0
+        group=0
+  remote_user: "{{ remote_username }}"
+
+- name: Remove temporary copy of network file
+  file: path={{ inventory_dir }}/network state=absent
+  delegate_to: localhost
+
 - block:
-
-  - name: Create a temporary copy of the syscfg network file
-    template: src=network.j2 backup=no dest={{ inventory_dir }}/network
-
-  - name: Copy the etc/sysconfig/network file to the VM
-    copy: src={{ inventory_dir }}/network
-          dest=/etc/sysconfig/network
-          owner=0
-          group=0
-
-  - name: Remove temporary copy of network file
-    file: path={{ inventory_dir }}/network state=absent
 
   - name: Update /etc/hosts file
     lineinfile:
