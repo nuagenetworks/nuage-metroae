@@ -18,36 +18,25 @@
 
   - name: Get heat stack for fixed ip deployments
     set_fact:
-      vstat_heat_template: "{{ role_path }}/files/vstat_fixed.yml"
-    when: dhcp == False
+      vstat_heat_template: "{{ role_path }}/files/openstack.yml"
 
-  - name: Get heat stack for dhcp based deployments
-    set_fact:
-      vstat_heat_template: "{{ role_path }}/files/vstat.yml"
-    when: dhcp == True
-
-  - name: Creating VSD stack
+  - name: Creating VSTAT stack
     register: create_stack
     os_stack:
       name: "{{ stack_name | default(inventory_hostname) }}"
       template: "{{ vstat_heat_template }}"
       auth:
-        "{{ os_auth }}"
+        "{{ openstack_auth }}"
       parameters:
-        vm_name: "{{inventory_hostname}}"
-        vstat_image: "{{ vstat_image }}"
-        vstat_flavor: "{{ vstat_flavor }}"
-        vstat_network: "{{ vstat_network }}"
-        vstat_subnet: "{{ vstat_subnet | default('NONE') }}"
+        vm_name: "{{ inventory_hostname }}"
+        vstat_image: "{{ openstack_image }}"
+        vstat_flavor: "{{ openstack_flavor }}"
+        vstat_network: "{{ openstack_network }}"
+        vstat_subnet: "{{ openstack_subnet | default('NONE') }}"
         mgmt_ip: "{{ mgmt_ip | default('NONE') }}"
         ssh_key: "{{ current_user_ssh_key.stdout }}"
     delegate_to: 127.0.0.1
-  - debug: var=create_stack['stack']['outputs'][0]['output_value']
 
-  - name: Update /etc/hosts file on ansible host
-    lineinfile:
-      dest: /etc/hosts
-      line: "{{ create_stack['stack']['outputs'][0]['output_value'] }}    {{ inventory_hostname }}"
-    delegate_to: 127.0.0.1
+  - debug: var=create_stack['stack']['outputs'][0]['output_value']
 
   when: not node_present

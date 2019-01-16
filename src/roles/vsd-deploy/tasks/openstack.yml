@@ -1,0 +1,58 @@
+---
+- name: Get VSD details from OpenStack
+  os_server_facts:
+    auth:
+      "{{ openstack_auth }}"
+    server: "{{ inventory_hostname }}"
+  register: vsd_ip
+  delegate_to: 127.0.0.1
+
+- name: Set vsd mgmt ip
+  set_fact:
+    vsd_mgmt_ip: "{{ vsd_ip['ansible_facts']['openstack_servers'][0]['addresses'][vsd_network][0]['addr'] }}"
+
+- name: Wait for VSD-HA ssh to be ready
+  include_role:
+    name: common
+    tasks_from: wait-for-ssh
+  vars:
+    ssh_host: "{{ vsd_mgmt_ip }}"
+
+- name: Inject ssh key to VSD if cloud-init did not work
+  expect:
+    command: "ssh-copy-id -i {{ vsd_default_username }}@{{ vsd_mgmt_ip }}"
+    responses:
+      (?i)yes: "yes"
+      (?i)password: "{{ vsd_default_password }}"
+  delegate_to: localhost
+
+- name: Pause for ssh port to be active
+  pause:
+    seconds: 5
+
+- block:
+
+  - name: Update hostname
+    template: src=network.j2 backup=no dest=/etc/sysconfig/network
+
+  - name: Add a DNS server to eth0
+    lineinfile:
+      dest: /etc/sysconfig/network-scripts/ifcfg-eth0
+      regexp: "DNS1="
+      line: "DNS1={{ infra_ip | default(dns_server_list[0]) }}"
+
+  - name: Restart networking
+    command: /etc/init.d/network restart
+
+  - name: "Wait for DNS change"
+    command: "dig {{ inventory_hostname }}"
+    register: dig_result
+    until: 'dig_result.rc == 0'
+    retries: 60
+    delay: 10
+
+  - name: Update hostname
+    command: hostname "{{ inventory_hostname }}"
+
+  remote_user: "{{ vsd_default_username }}"
+

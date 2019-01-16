@@ -11,32 +11,27 @@
 
   - name: Get heat stack for fixed ip deployments
     set_fact:
-      vsc_heat_template: "{{ role_path }}/files/vsc_fixed.yml"
-    when: dhcp == False
+      vsc_heat_template: "{{ role_path }}/files/openstack.yml"
 
-  - name: Get heat stack for dhcp based deployments
-    set_fact:
-      vsc_heat_template: "{{ role_path }}/files/vsc.yml"
-    when: dhcp == True
-
-  - name: creating VSC stack
+  - name: Creating VSC stack
     register: create_stack
     os_stack:
       name: "{{ stack_name | default(inventory_hostname) }}"
       template: "{{ vsc_heat_template }}"
       auth:
-        "{{ os_auth }}"
+        "{{ openstack_auth }}"
       parameters:
         vm_name: "{{ inventory_hostname }}"
-        vsc_image: "{{ vsc_image }}"
-        vsc_flavor: "{{ vsc_flavor }}"
-        vsc_management_network: "{{ vsc_mgmt_network }}"
-        vsc_management_subnet: "{{ vsc_mgmt_subnet | default('NONE') }}"
-        vsc_control_network: "{{ vsc_control_network }}"
-        vsc_control_subnet: "{{ vsc_control_subnet | default('NONE') }}"
+        vsc_image: "{{ openstack_image }}"
+        vsc_flavor: "{{ openstack_flavor }}"
+        vsc_management_network: "{{ openstack_mgmt_network }}"
+        vsc_management_subnet: "{{ openstack_mgmt_subnet | default('NONE') }}"
+        vsc_control_network: "{{ openstack_control_network }}"
+        vsc_control_subnet: "{{ openstack_control_subnet | default('NONE') }}"
         mgmt_ip: "{{ mgmt_ip | default('NONE') }}"
         control_ip: "{{ control_ip | default('NONE') }}"
     delegate_to: 127.0.0.1
+
   - debug: var=create_stack['stack']['outputs'][0]['output_value']
 
   when: not node_present

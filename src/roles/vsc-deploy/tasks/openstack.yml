@@ -1,0 +1,90 @@
+- block:
+
+  - name: Get VSC details from OpenStack
+    os_server_facts:
+      auth:
+        "{{ openstack_auth }}"
+      server: "{{ inventory_hostname }}"
+    register: vsc_server
+
+  - name: Set vsc mgmt ip
+    set_fact:
+      vsc_mgmt_ip: "{{ vsc_server['ansible_facts']['openstack_servers'][0]['addresses'][vsc_mgmt_network][0]['addr'] }}"
+
+  - name: Set vsc control ip
+    set_fact:
+      control_ip: "{{ vsc_server['ansible_facts']['openstack_servers'][0]['addresses'][vsc_control_network][0]['addr'] }}"
+
+  - name: Set VSC creds
+    set_fact:
+      heat_vsc_creds:
+        host: "{{ vsc_mgmt_ip }}"
+        username: "{{ vsc_default_username | default('admin') }}"
+        password: "{{ vsc_default_password | default('admin') }}"
+
+  - name: Wait for VSC ssh to be ready
+    include_role:
+      name: common
+      tasks_from: wait-for-ssh
+    vars:
+      ssh_host: "{{ vsc_mgmt_ip }}"
+    tags:
+      - vsc
+      - vsc-deploy
+
+  - name: Set local temp directory name
+    set_fact:
+      temp_dir: "./ansible-config-{{ inventory_hostname }}"
+
+  - name: Create local temp directory
+    file:
+      path: "{{ temp_dir }}"
+      state: directory
+
+  - name: create VSC config file
+    template:
+      src: config.cfg.j2
+      dest: "{{ temp_dir }}/config.cfg"
+
+  - name: Copy config file to VSC
+    command: "sshpass -p {{ vsc_default_password|default('admin') }} scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null {{ temp_dir }}/config.cfg {{ vsc_default_username|default('admin') }}@{{ vsc_mgmt_ip }}:"
+
+  - name: Execute configuration on VSC
+    sros_command:
+      commands:
+        - exec cf1:\config.cfg
+      provider: "{{ heat_vsc_creds }}"
+
+  - name: Remove local temp folder
+    file:
+      path: "{{ temp_dir }}"
+      state: absent
+
+  - name: Loading BOF config
+    sros_config:
+      lines:
+        - bof address "{{ vsc_mgmt_ip }}/24"
+        - bof primary-dns "{{ infra_ip | default(dns_server_list[0]) }}"
+        - bof dns-domain "{{ dns_domain }}"
+        - bof save "cf1:"
+        - admin save
+      provider: "{{ heat_vsc_creds }}"
+
+  - name: Reboot VSC (ignoring errors)
+    sros_command:
+      commands:
+        - admin reboot now
+      provider: "{{ heat_vsc_creds }}"
+    ignore_errors: true
+
+  - name: Wait for VSC ssh to be ready
+    include_role:
+      name: common
+      tasks_from: wait-for-ssh
+    vars:
+      ssh_host: "{{ vsc_mgmt_ip }}"
+    tags:
+      - vsc
+      - vsc-deploy
+
+  delegate_to: localhost
