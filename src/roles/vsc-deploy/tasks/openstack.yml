@@ -44,15 +44,16 @@
   - name: create VSC config file
     template:
       src: config.cfg.j2
-      dest: "{{ temp_dir }}/config.cfg"
+      dest: "{{ temp_dir }}/openstack-config.cfg"
 
   - name: Copy config file to VSC
-    command: "sshpass -p {{ vsc_default_password|default('admin') }} scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null {{ temp_dir }}/config.cfg {{ vsc_default_username|default('admin') }}@{{ vsc_mgmt_ip }}:"
+    command: "sshpass -p {{ vsc_default_password|default('admin') }} scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null {{ temp_dir }}/openstack-config.cfg {{ vsc_default_username|default('admin') }}@{{ vsc_mgmt_ip }}:"
 
   - name: Execute configuration on VSC
     sros_command:
       commands:
-        - exec cf1:\config.cfg
+        - exec cf1:\openstack-config.cfg
+        - admin save
       provider: "{{ heat_vsc_creds }}"
 
   - name: Remove local temp folder
