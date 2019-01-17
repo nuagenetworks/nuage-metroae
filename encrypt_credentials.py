@@ -59,7 +59,7 @@ def encrypt_credentials_file(passcode, deployment_name):
 
         gen_example = ExampleFileGenerator(False, True)
         example_lines = gen_example.generate_example_from_schema(
-            'schemas/credentials.json')
+            'schemas/credentials.json').encode('utf-8')
         template = jinja2.Template(example_lines)
         credentials = template.render(credentials=credentials)
         with open(credentials_file, 'w') as file:

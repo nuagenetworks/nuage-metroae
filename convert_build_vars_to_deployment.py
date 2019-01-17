@@ -215,7 +215,7 @@ def write_deployment_file(template_file, to_file, var_dict):
     print "Writing " + to_file
 
     with open(template_file, "r") as file:
-        template_string = file.read()
+        template_string = file.read().decode("utf-8")
 
     template = jinja2.Template(template_string,
                                autoescape=False,
@@ -224,7 +224,7 @@ def write_deployment_file(template_file, to_file, var_dict):
     var_file_contents = template.render(var_dict)
 
     with open(to_file, "w") as file:
-        file.write(var_file_contents)
+        file.write(var_file_contents.encode("utf-8"))
 
 
 def main():
