@@ -78,12 +78,14 @@
         - admin save
       provider: "{{ heat_vsc_creds }}"
 
-  - name: Reboot VSC
-    sros_command:
-      commands:
-        - admin reboot now
-      provider: "{{ heat_vsc_creds }}"
-    ignore_errors: true
+  - name: Reboot VSC VM
+    os_server_actions:
+      auth:
+        "{{ os_auth }}"
+      server: "{{ inventory_hostname }}"
+      action: reboot
+      wait: no
+    delegate_to: 127.0.0.1
 
   - name: Wait for VSC ssh to be ready
     include_role:
