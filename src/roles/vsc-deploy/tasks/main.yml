@@ -37,7 +37,8 @@
     delegate_to: "{{ item }}"
     with_items: "{{ groups['vsds'] }}"
 
-  remote_user: "{{ vsd_default_username }}"
+  become: "{{ 'no' if vsd_username | default(vsd_default_username) == 'root' else 'yes' }}"
+  remote_user: "{{ vsd_username | default(vsd_default_username) }}"
 
 - name: Optionally setup XMPP TLS
   include_role:
