@@ -1,4 +1,8 @@
 # Metro Automation Engine Release Notes
+## Release 2.4.7
+### Resolved Issues
+* Fixed a few bugs for deploying to OpenStack via heat template
+
 ## Release 2.4.6
 ### Resolved Issues
 * Update vmware_autostart for vCenter 6.5+
