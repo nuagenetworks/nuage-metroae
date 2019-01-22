@@ -1,7 +1,7 @@
 # Nuage Networks Metro Automation Engine
 (4 minute read)  
 
-Version 2.4.7
+Version 2.4.8
 
 Metro is an automation engine that deploys and upgrades Nuage Networks components.
 After you specify the individual details of your target platform, Metro Automation Engine (leveraging Ansible playbooks and roles) sets up the environment as specified. Metro Automation Engine can also upgrade, roll-back, and health-check the environment.
