@@ -1,7 +1,11 @@
 # Metro Automation Engine Release Notes
+## Release 2.4.8
+### Resolved Issues
+* Fixed a few bugs relaed to deploying on OpenStack via heat templates
+
 ## Release 2.4.7
 ### Resolved Issues
-* Fixed a few bugs for deploying to OpenStack via heat template
+* Moved MetroÆ v2 to branch metroae2
 
 ## Release 2.4.6
 ### Resolved Issues
