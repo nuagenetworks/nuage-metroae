@@ -8,7 +8,6 @@ echo "System Configuration"
         name {{ system_name | default(inventory_hostname) }}
         time
             ntp
-                ntp-server
             {% for ntp_server in ntp_server_list %}
                 server {{ ntp_server }}
             {% endfor %}
@@ -37,13 +36,13 @@ echo "Virtual Switch Controller Configuration"
 echo "Router (Network Side) Configuration"
 #--------------------------------------------------
     router
-        interface control
-        {% if vsc_control_ip is defined %}
-            address {{ vsc_control_ip }}/24
+        interface "control"
+        {% if control_ip is defined and control_netmask_prefix is defined %}
+            address {{ control_ip }}/{{ control_netmask_prefix }}
             no shutdown
         {% endif %}
         exit
-        interface system
+        interface "system"
         {% if system_ip is defined %}
             address {{ system_ip }}/32
             no shutdown
@@ -54,24 +53,64 @@ echo "Router (Network Side) Configuration"
         {% if as_number %}
         autonomous-system {{ as_number }}
         {% endif %}
-        {% if router_id is defined or system_ip is defined or vsc_control_ip is defined %}
-        router-id {{ router_id | default( system_ip | default(vsc_control_ip)) }}
+        {% if system_ip is defined %}
+        router-id {{ system_ip }}
         {% endif %}
 #--------------------------------------------------
-#echo "Static Route Configuration"
-##--------------------------------------------------
+##echo "Static Route Configuration"
+###--------------------------------------------------
         {% for vsc_item in groups['vscs'] %}
           {% if vsc_item != inventory_hostname %}
             {% if hostvars[vsc_item].system_ip is defined %}
-              {% if hostvars[vsc_item].system_ip != system_ip %}
-        static-route {{ hostvars[vsc_item].system_ip }}/32 next-hop {{ vsc_control_ip }}
+              {% if hostvars[vsc_item].system_ip != system_ip | default('') %}
+        static-route {{ hostvars[vsc_item].system_ip }}/32 next-hop {{ hostvars[vsc_item].control_ip }}
               {% endif %}
             {% endif %}
           {% endif %}
         {% endfor %}
+    exit
+
+        {% if vlan_id is defined %}
+
 #--------------------------------------------------
-#echo "BGP Configuration"
-##--------------------------------------------------
+echo "Service Configuration"
+#--------------------------------------------------
+
+    service
+        vprn {{ vlan_id }} customer 1 create
+            interface "control" create
+            exit
+        exit
+        vprn {{ vlan_id }} customer 1 create
+            route-distinguisher {{ as_number }}:{{ vlan_id }}
+            interface "control" create
+                {% if control_ip_vprn is defined %}
+                address {{ control_ip_vprn }}/{{ control_netmask_prefix }}
+                {% else %}
+                address {{ control_ip }}/{{ control_netmask_prefix }}
+                {% endif %}
+                sap A/2:{{ vlan_id }} create
+                exit
+            exit
+        
+        {% if control_ip_vprn is defined %}
+        static-route 0.0.0.0/0 next-hop {{ control_ip_vprn.split('.')[0] }}.{{ control_ip_vprn.split('.')[1] }}.{{ control_ip_vprn.split('.')[2] }}.1
+        {% else %}
+        static-route 0.0.0.0/0 next-hop {{ control_ip.split('.')[0] }}.{{ control_ip.split('.')[1] }}.{{ control_ip.split('.')[2] }}.1
+        {% endif %}
+
+            ntp
+                no shutdown
+            exit
+            no shutdown
+        exit
+    exit
+        {% endif %}
+
+#--------------------------------------------------
+##echo "BGP Configuration"
+###--------------------------------------------------
+    router
         bgp
             connect-retry 2
             min-route-advertisement 1
@@ -80,14 +119,16 @@ echo "Router (Network Side) Configuration"
                     send-orf
                 exit
             exit
-            rapid-withdrawal
-            rapid-update evpn
-            group internal
+            group "internal"
                 type internal
                 {% for vsc_item in groups['vscs'] %}
                   {% if vsc_item != inventory_hostname %}
-                neighbor {{ hostvars[vsc_item].system_ip | default( hostvars[vsc_item].vsc_control_ip ) }}
+                    {% if hostvars[vsc_item].system_ip is defined %}
+                      {% if hostvars[vsc_item].system_ip != system_ip %}
+                neighbor {{ hostvars[vsc_item].system_ip }}
                 exit
+                      {% endif %}
+                    {% endif %}
                   {% endif %}
                 {% endfor %}
                 family evpn

@@ -9,7 +9,7 @@
 
 - name: Set vsd mgmt ip
   set_fact:
-    vsd_mgmt_ip: "{{ vsd_ip['ansible_facts']['openstack_servers'][0]['networks'][vsd_network][0] }}"
+    vsd_mgmt_ip: "{{ vsd_ip['ansible_facts']['openstack_servers'][0]['addresses'][vsd_network][0]['addr'] }}"
 
 - name: Clean known_hosts of VSD's
   known_hosts:
@@ -51,35 +51,32 @@
     responses:
       (?i)yes: "yes"
       (?i)password: "{{ vsd_default_password }}"
-  remote_user: "{{ vsd_default_username }}"
   delegate_to: localhost
 
 - name: Pause for ssh port to be active
   pause:
     seconds: 5
 
-- name: Query {{ target_server }} facts
-  action: setup
-  remote_user: "{{ target_server_username }}"
-
-- name: Update hostname
-  template: src=network.j2 backup=no dest=/etc/sysconfig/network
-
-- name: Add a DNS server to eth0
-  lineinfile:
-    dest: /etc/sysconfig/network-scripts/ifcfg-eth0
-    regexp: "DNS1="
-    line: "DNS1={{ infra_ip | default(dns_server_list[0]) }}"
-  when: infra_server_name is defined
-
 - block:
 
-  - name: Add nameserver
-    command: echo "{{ infra_ip }}" >> /etc/resolv.conf
-    when: infra_server_name is defined
+  - name: Update hostname
+    template: src=network.j2 backup=no dest=/etc/sysconfig/network
+
+  - name: Add a DNS server to eth0
+    lineinfile:
+      dest: /etc/sysconfig/network-scripts/ifcfg-eth0
+      regexp: "DNS1="
+      line: "DNS1={{ infra_ip | default(dns_server_list[0]) }}"
 
   - name: Restart networking
     command: /etc/init.d/network restart
+
+  - name: "Wait for DNS change"
+    command: "dig {{ inventory_hostname }}"
+    register: dig_result
+    until: 'dig_result.rc == 0'
+    retries: 60
+    delay: 10
 
   - name: Resolve fqdn
     command: hostname "{{ inventory_hostname }}"
@@ -114,7 +111,7 @@
         vsd_cluster_node_3: "{{ groups['vsds'][0] }}"
     when: nuage_upgrade
 
-  when: vsd_sa_or_ha | match('ha')
+  when: ansible_play_hosts | length == 3
 
 - block:
 
@@ -186,7 +183,7 @@
     when: inventory_hostname == vsd_cluster_node_1 or (inventory_hostname == vsd_cluster_node_3 and nuage_upgrade)
 
   remote_user: "{{ vsd_default_username }}"
-  when: vsd_sa_or_ha | match('ha')
+  when: ansible_play_hosts | length == 3
 
 - name: Configure ntpd and ntpdate and local time zone
   include_role:
@@ -198,7 +195,7 @@
 - name: Install VSD software on standalone node
   command: /opt/vsd/vsd-install.sh -t s -y
   remote_user: "{{ vsd_default_username }}"
-  when: vsd_sa_or_ha | match('sa')
+  when: ansible_play_hosts | length != 3
 
 - block:
 
@@ -214,7 +211,7 @@
     command: "{{ vsd_node3_install_cmd }}"
     when: inventory_hostname == vsd_cluster_node_3
 
-  when: vsd_sa_or_ha | match('ha')
+  when: ansible_play_hosts | length == 3
   remote_user: "{{ vsd_default_username }}"
 
 - name: Set XMPP connection to allow both clear and TLS
