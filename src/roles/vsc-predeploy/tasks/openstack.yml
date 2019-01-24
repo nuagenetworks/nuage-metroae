@@ -9,9 +9,23 @@
 
 - block:
 
-  - name: Get heat stack for fixed ip deployments
+  - name: Set local temp directory name
     set_fact:
-      vsc_heat_template: "{{ role_path }}/files/openstack.yml"
+      temp_dir: "./ansible-heat-{{ inventory_hostname }}"
+
+  - name: Create local temp directory
+    file:
+      path: "{{ temp_dir }}"
+      state: directory
+
+  - name: Create heat template
+    template:
+      src: openstack.j2
+      dest: "{{ temp_dir }}/openstack.yml"
+
+  - name: Set heat template location
+    set_fact:
+      vsc_heat_template: "{{ temp_dir }}/openstack.yml"
 
   - name: Creating VSC stack
     register: create_stack
@@ -33,5 +47,10 @@
     delegate_to: 127.0.0.1
 
   - debug: var=create_stack['stack']['outputs'][0]['output_value']
+
+  - name: Remove local temp folder
+    file:
+      path: "{{ temp_dir }}"
+      state: absent
 
   when: not node_present
