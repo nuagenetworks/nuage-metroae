@@ -267,13 +267,13 @@ def main():
         schema_filename = schema_filename + ".json"
 
     if os.path.isfile(schema_filename):
-        print generator.generate_example_from_schema(schema_filename)
-        generator.generate_example_from_schema(schema_filename)
+        print generator.generate_example_from_schema(schema_filename).encode('utf-8')
+        generator.generate_example_from_schema(schema_filename).encode('utf-8')
     else:
         schema_filename = os.path.join(SCHEMA_DIRECTORY, schema_filename)
         if os.path.isfile(schema_filename):
-            generator.generate_example_from_schema(schema_filename)
-            print generator.generate_example_from_schema(schema_filename)
+            generator.generate_example_from_schema(schema_filename).encode('utf-8')
+            print (generator.generate_example_from_schema(schema_filename)).encode('utf-8')
         else:
             raise Exception("Could not find schema file %s" % schema_filename)
 
