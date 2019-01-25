@@ -1,4 +1,13 @@
 # Metro Automation Engine Release Notes
+## Release 3.x
+### New Features and Enhancements
+* OpenStack support for MetroÆ
+### Resolved Issues
+* Add task to disable network manager on vnsutil
+* Remove unwanted rpms and add docker directory to git ignore
+* Remove utf-8 encoding from encrypt credentials
+* Add encode and decode to encrypt credentials script
+* Fix issue with convert buildvars unicode script
 ## Release 3.1.0
 ### New Features and Enhancements
 * Add system_name to vscs.json to allow optional customization
