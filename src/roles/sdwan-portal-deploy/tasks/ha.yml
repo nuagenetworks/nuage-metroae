@@ -47,8 +47,6 @@
   template: src=haproxy_portal_node1.j2 backup=no dest=/opt/vnsportal/haproxy-0/haproxy.cfg
   when: inventory_hostname == first_cluster_node_to_install
 
-- debug: var=second_cluster_node_to_install
-
 - name: Update haproxy.cfg on Portal 2
   template: src=haproxy_portal_node2.j2 backup=no dest=/opt/vnsportal/haproxy-0/haproxy.cfg
   when: inventory_hostname == second_cluster_node_to_install
@@ -69,7 +67,7 @@
     line: "export OWNADDRESS={{ portal2_ip }}"
   when: inventory_hostname == second_cluster_node_to_install
 
-- name: Updating dr.sh on Portal 1
+- name: Updating dr.sh on Portal 3
   lineinfile:
     path: /opt/vnsportal/dr.sh
     line: "export OWNADDRESS={{ portal3_ip }}"
@@ -85,5 +83,8 @@
   template: src=my.j2 backup=no dest=/opt/vnsportal/db-db1/conf/my.cnf
 
 - name: Create MySQL directories on Portal 2 and 3
-  command: mkdir -p /opt/vnsportal/db-db1/db/mysql
+  file: 
+    path: /opt/vnsportal/db-db1/db/mysql
+    state: directory
+    mode: 0755
   when: inventory_hostname == second_cluster_node_to_install or inventory_hostname == third_cluster_node_to_install

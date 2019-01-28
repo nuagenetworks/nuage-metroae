@@ -1,0 +1,57 @@
+# inlcude docker compose in files
+#- name: Get the latest tag for Docker-compose
+#  uri:
+#    url: https://api.github.com/repos/docker/compose/releases/latest
+#    return_content: yes
+#  register: json_response
+#  environment:
+#    http_proxy: "{{ yum_proxy | default('') }}"
+#    https_proxy: "{{ yum_proxy | default('') }}"
+
+#- name: Download Docker-Compose
+#  get_url:
+#    url: "{{ json_response.json.assets[2].browser_download_url }}"
+#    dest: /usr/bin/docker-compose
+#    mode: 0755
+#    use_proxy: yes
+#  environment:
+#    http_proxy: "{{ yum_proxy | default('') }}"
+#    https_proxy: "{{ yum_proxy | default('') }}"
+
+- block:
+  - name: Copy image to Portal host
+    copy:
+      src: "{{ portal_path }}/{{ portal_file_name }}"
+      dest: /opt/
+      owner: root
+      group: root
+# Add dockerhub
+
+  - name: Load Portal Docker containers
+    command: docker load -i /opt/{{ portal_file_name }}
+  
+  when: not tomcat_loaded
+
+- block:
+  - name: Generate Portal environment.properties file
+    template: src=environment.properties.j2 backup=no dest=/opt/environment.properties
+
+  - name: Bootstrap the Portal
+    command: docker run --rm --env-file /opt/environment.properties -v /var/run/docker.sock:/docker.sock -v /opt:/mnt:z -v /etc:/hostetc:z nuage/vnsportal-bootstrap:{{ portal_version }}
+
+  - name: Configure High Availability
+    include: ha.yml
+    when: portal_sa_or_ha | match('ha')
+
+  - name: Apply the SD-WAN Portal license
+    import_tasks: sdwan_portal_license.yml
+    when: portal_license_file is defined
+
+  - name: Start the Portal Cluster
+    import_tasks: sdwan_portal_ha_start.yml
+    when: portal_sa_or_ha | match('ha')
+
+  - name: Start the standalone Portal instance
+    import_tasks: sdwan_portal_sa_start.yml
+    when: portal_sa_or_ha | match('sa')
+  when: not tomcat_running

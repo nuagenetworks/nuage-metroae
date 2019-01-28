@@ -7,91 +7,67 @@
     ssh_host: "{{ mgmt_ip }}"
     host_username: "{{ portal_default_username }}"
 
-- name: remove the old Docker packages
-  yum:
-    name: 
-      - docker 
-      - docker-common 
-      - docker-selinux 
-      - docker-engine
-    state: absent
+- name: Check if Docker is installed
+  command: rpm -q docker-ce
+  register: docker_installed
+  ignore_errors: yes
 
-- name: Configure yum proxy
-  lineinfile:
-    dest: /etc/yum.conf
-    regexp: "^proxy="
-    line: "proxy={{ yum_proxy }}"
-  when: not yum_proxy | match('NONE')
+- name: Execute tasks for Docker deploy
+  import_tasks: docker.yml
+  when: docker_installed.rc == 1
 
-- name: Install the packages for Docker
-  yum:
-    name: 
-      - yum-utils 
-      - device-mapper-persistent-data 
-      - lvm2 
-      - wget
-    state: latest
-
-- name: Add Docker repository
-  yum_repository:
-    name: docker-ce
-    description: Docker YUM repo
-    enabled: yes
-    baseurl: https://download.docker.com/linux/centos/7/$basearch/stable
-    gpgcheck: 1
-    gpgkey: https://download.docker.com/linux/centos/gpg
-
-- name: Install the latest version of Docker
-  yum:
-    name: docker-ce
-    state: latest
-
-- name: Enable and start Docker
-  service:
-    name: docker
-    state: started
-    enabled: yes
-
-- name: Get the latest tag for Docker-compose 
-  uri:
-    url: https://api.github.com/repos/docker/compose/releases/latest
-    return_content: yes
-  register: json_response
-  environment:
-    http_proxy: "{{ yum_proxy | default('') }}"
-    https_proxy: "{{ yum_proxy | default('') }}"
-
-- name: Download Docker-Compose
-  get_url:
-    url: "{{ json_response.json.assets[2].browser_download_url }}"
-    dest: /usr/bin/docker-compose
-    mode: 0755
-    use_proxy: yes
-  environment:
-    http_proxy: "{{ yum_proxy | default('') }}"
-    https_proxy: "{{ yum_proxy | default('') }}"
-
-- name: Copy image to Portal host
-  copy:
-    src: "{{ portal_path }}/{{ portal_file_name }}"
-    dest: /opt/
-    owner: root
-    group: root
+- name: Display if skipping Docker install
+  debug:
+    msg:
+      - "*************************************************"
+      - "Skipping Docker install because it is already installed"
+      - "*************************************************"
+  when: docker_installed.rc == 0
 
 - name: Save the Portal version
   set_fact:
     portal_version: "{{ portal_file_name | regex_replace('^.*nuage-portal-container-(.*).tar.gz$','\\1') }}"
 
-- name: Load Portal Docker containers
-  command: docker load -i /opt/{{ portal_file_name }}
+- name: Check if Portal images are loaded
+  shell: "docker images | grep vnsportal-tomcat | awk '{print $2}'"
+  register: tomcat_imported_image
 
-- name: Generate Portal environment.properties file
-  template: src=environment.properties.j2 backup=no dest=/opt/environment.properties
+- name: Check if Portal containers are running
+  shell: "docker ps -a | grep vnsportal-tomcat | egrep -o '[0-9]\\.[0-9]\\.[0-9]-[0-9]*'"
+  register: tomcat_running_image
+  ignore_errors: yes
 
-- name: Bootstrap the Portal
-  command: docker run --rm --env-file /opt/environment.properties -v /var/run/docker.sock:/docker.sock -v /opt:/mnt:z -v /etc:/hostetc:z nuage/vnsportal-bootstrap:{{ portal_version }}
+- name: Set the defaults
+  set_fact:
+    tomcat_loaded: False
+    tomcat_running: False
 
-- name: Configure High Availability
-  include: ha.yml
-  when: portal_sa_or_ha | match('ha')
+- name: Loaded Tomcat image version matches the Portal version
+  set_fact:
+    tomcat_loaded: True
+  when: tomcat_imported_image.stdout == portal_version
 
+- name: Display if skipping image load
+  debug:
+    msg:
+      - "*************************************************"
+      - "Skipping images are already loaded"
+      - "*************************************************"
+  when: tomcat_loaded
+
+- name: Running Tomcat image version matches the Portal version
+  set_fact:
+    tomcat_running: True
+  when: tomcat_running_image.stdout == portal_version
+
+- name: Display if skipping Portal deployment
+  debug:
+    msg:
+      - "*************************************************"
+      - "Skipping, Portal is already running"
+      - "*************************************************"
+  when: tomcat_running
+
+- name: Execute tasks for Portal deploy
+  import_tasks: deploy.yml
+  when: not tomcat_running

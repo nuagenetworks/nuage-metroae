@@ -1,0 +1,49 @@
+- name: Configure yum proxy
+  lineinfile:
+    dest: /etc/yum.conf
+    regexp: "^proxy="
+    line: "proxy={{ yum_proxy }}"
+  when: not yum_proxy | match('NONE')
+
+- name: Check if required OS packages are installed (ignoring errors)
+  command: rpm -q yum-utils device-mapper-persistent-data lvm2 wget
+  register: rpm_check
+  ignore_errors: True
+
+- name: Install the packages for Portal
+  yum:
+    name:
+      - yum-utils
+      - device-mapper-persistent-data
+      - lvm2
+      - wget
+    state: latest
+  when: rpm_check.rc == 1
+
+- name: Add Docker repository
+  yum_repository:
+    name: docker-ce
+    description: Docker YUM repo
+    enabled: yes
+    baseurl: https://download.docker.com/linux/centos/7/$basearch/stable
+    gpgcheck: 1
+    gpgkey: https://download.docker.com/linux/centos/gpg
+
+- name: Install Docker
+  yum:
+    name: "3:docker-ce-18.09.0-3.el7.x86_64"
+    state: present
+
+- name: Enable and start Docker
+  service:
+    name: docker
+    state: started
+    enabled: yes
+
+- name: Copy Docker-Compose to Portal host
+  copy:
+   src: docker-compose
+   dest: /usr/bin/docker-compose
+   mode: 0755
+   owner: root
+   group: root
