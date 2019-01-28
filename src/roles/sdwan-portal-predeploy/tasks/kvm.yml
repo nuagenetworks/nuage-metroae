@@ -63,23 +63,6 @@
       enabled: yes
       state: started
 
-  delegate_to: "{{ target_server }}"
-  remote_user: "{{ target_server_username }}"
-
-- include_role:
-    name: check-node-running
-
-- name: Display if skipping predeploy
-  debug:
-    msg:
-      - "****************************************************"
-      - "Skipping Portal predeploy because it is already present"
-      - "****************************************************"
-  when: node_present
-
-- debug: var=guestfish_dest
-
-- block:
   - name: set skip copy images to default
     set_fact:
       image_present: False
@@ -111,7 +94,7 @@
 - block:
   - name: Set local variable with portal guestfish destination
     set_fact:
-      guestfish_dest: "{{ images_path }}/{{ vm_name }}/{{ qcow2_file_name }}"
+      guestfish_dest: "{{ images_path }}{{ vm_name }}/{{ qcow2_file_name }}"
 
   - name: Get the public key for the current user
     local_action: command cat "{{ user_ssh_pub_key }}"
