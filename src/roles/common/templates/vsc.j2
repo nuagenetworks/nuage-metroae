@@ -10,9 +10,9 @@ hostname: {{ item.1.hostname }}
 system_name: {{ item.1.system_name }}
 {% endif %}
 
-{% if item.1.target_server_type | match("kvm") or item.1.target_server_type | match("vcenter") or item.1.target_server_type | match("nuagex") %}
-
+{% if item.1.target_server_type | match("kvm") or item.1.target_server_type | match("vcenter") %}
 target_server: {{ item.1.target_server }}
+{% endif %}
 
 {% if item.1.vmname is defined %}
 vmname: {{ item.1.vmname }}
@@ -27,6 +27,7 @@ vlan_id: {{ item.1.vlan_id }}
 mgmt_ip: {{ item.1.mgmt_ip }}
 mgmt_netmask_prefix: {{ item.1.mgmt_ip_prefix }}
 mgmt_gateway: {{ item.1.mgmt_gateway }}
+
 {% if item.1.internal_mgmt_ip is defined %}
 internal_mgmt_ip: {{ item.1.internal_mgmt_ip }}
 {% endif %}
@@ -60,15 +61,18 @@ vsc_mgmt_static_route_list:
 {% endif %}
 
 {% if item.1.target_server_type | match("kvm") %}
+
 {% if qcow2_path is defined %}
 qcow2_path: {{ qcow2_path }}
 {% endif %}
 {% if qcow2_file_name is defined %}
 qcow2_file_name: {{ qcow2_file_name }}
 {% endif %}
+
 {% endif %}
 
 {% if item.1.target_server_type | match("vcenter") %}
+
 {% if ova_path is defined %}
 ova_path: {{ ova_path }}
 {% endif %}
@@ -84,8 +88,6 @@ vcenter:
   datastore: {{ item.1.vcenter_datastore | default( '"{{ vcenter_global.datastore }}"' ) }}
   resource_pool: {{ item.1.vcenter_resource_pool | default('"{{ vcenter_global.resource_pool }}"' | default('NONE')) }}
   host_reference: {{ item.1.vcenter_host_reference | default('"{{ vcenter_global.host_reference }}"' | default('NONE')) }}
-
-{% endif %}
 
 {% endif %}
 
@@ -108,33 +110,34 @@ expected_num_host_vports : {{ item.1.expected_num_host_vports | default('0') }}
 expected_num_vm_vports :   {{ item.1.expected_num_vm_vports | default('0') }}
 expected_num_gateway_ports : {{ item.1.expected_num_gateway_ports | default('0') }}
 
-{% if item.1.target_server_type | match("heat") %}
-dhcp: {{ item.1.dhcp | default('True') }}
+{% if item.1.target_server_type | match("openstack") %}
 
-{% if item.1.dhcp is defined and item.1.dhcp == False %}
-mgmt_ip: {{ item.1.mgmt_ip }}
+openstack_image: {{ item.1.openstack_image }}
+openstack_flavor: {{ item.1.openstack_flavor }}
+openstack_mgmt_network: {{ item.1.openstack_mgmt_network }}
+openstack_mgmt_subnet: {{ item.1.openstack_mgmt_subnet }}
+openstack_control_network: {{ item.1.openstack_control_network }}
+openstack_control_subnet: {{ item.1.openstack_control_subnet }}
+
+{% if item.1.openstack_mgmt_port_name is defined %}
+openstack_mgmt_port_name: {{ item.1.openstack_mgmt_port_name }}
+{% endif %}
+{% if item.1.openstack_mgmt_port_security_groups is defined %}
+openstack_mgmt_port_security_groups:
+{% for group in item.1.openstack_mgmt_port_security_groups %}
+  - {{ group }}
+{% endfor %}
 {% endif %}
 
-{% if item.1.dhcp is defined and item.1.dhcp == False %}
-control_ip: {{ item.1.control_ip }}
+
+{% if item.1.openstack_control_port_name is defined %}
+openstack_control_port_name: {{ item.1.openstack_control_port_name }}
 {% endif %}
-
-vsc_image: {{ item.1.vsc_image }}
-vsc_flavor: {{ item.1.vsc_flavor }}
-vsc_mgmt_network: {{ item.1.vsc_mgmt_network }}
-
-{% if item.1.dhcp is defined and item.1.dhcp == False %}
-vsc_mgmt_subnet: {{ item.1.vsc_mgmt_subnet }}
-{% endif %}
-
-vsc_control_network: {{ item.1.vsc_control_network }}
-
-{% if item.1.dhcp is defined and item.1.dhcp == False %}
-vsc_control_subnet: {{ item.1.vsc_control_subnet }}
-{% endif %}
-
-{% if item.1.infra_server_name is defined %}
-infra_server_name: {{ item.1.infra_server_name }}
+{% if item.1.openstack_control_port_security_groups is defined %}
+openstack_control_port_security_groups:
+{% for group in item.1.openstack_control_port_security_groups %}
+  - {{ group }}
+{% endfor %}
 {% endif %}
 
 {% endif %}
