@@ -15,15 +15,25 @@
     local_action: command cat "{{ user_ssh_pub_key }}"
     register: current_user_ssh_key
 
-  - name: Get heat stack for fixed ip deployments
+  - name: Set local temp directory name
     set_fact:
-      vsd_heat_template: "{{ role_path }}/files/vsd_fixed.yml"
-    when: dhcp == False
+      temp_dir: "./ansible-heat-{{ inventory_hostname }}"
 
-  - name: Get heat stack for dhcp based deployments
+  - name: Create local temp directory
+    file:
+      path: "{{ temp_dir }}"
+      state: directory
+    delegate_to: localhost
+
+  - name: Create heat template
+    template:
+      src: openstack.j2
+      dest: "{{ temp_dir }}/openstack.yml"
+    delegate_to: localhost
+
+  - name: Set heat template location
     set_fact:
-      vsd_heat_template: "{{ role_path }}/files/vsd.yml"
-    when: dhcp == True
+      vsd_heat_template: "{{ temp_dir }}/openstack.yml"
 
   - name: Creating VSD stack
     register: create_stack
@@ -31,22 +41,23 @@
       name: "{{ stack_name | default(inventory_hostname) }}"
       template: "{{ vsd_heat_template }}"
       auth:
-        "{{ os_auth }}"
+        "{{ openstack_auth }}"
       parameters:
-        vm_name: "{{inventory_hostname}}"
-        vsd_image: "{{ vsd_image }}"
-        vsd_flavor: "{{ vsd_flavor }}"
-        vsd_network: "{{ vsd_network }}"
-        vsd_subnet: "{{ vsd_subnet | default('NONE') }}"
+        vm_name: "{{ inventory_hostname }}"
+        vsd_image: "{{ openstack_image }}"
+        vsd_flavor: "{{ openstack_flavor }}"
+        vsd_network: "{{ openstack_network }}"
+        vsd_subnet: "{{ openstack_subnet | default('NONE') }}"
         mgmt_ip: "{{ mgmt_ip | default('NONE') }}"
         ssh_key: "{{ current_user_ssh_key.stdout }}"
     delegate_to: 127.0.0.1
+
   - debug: var=create_stack['stack']['outputs'][0]['output_value']
 
-  - name: Update /etc/hosts file on ansible host
-    lineinfile:
-      dest: /etc/hosts
-      line: "{{ create_stack['stack']['outputs'][0]['output_value'] }}    {{ inventory_hostname }}"
-    delegate_to: 127.0.0.1
+  - name: Remove local temp folder
+    file:
+      path: "{{ temp_dir }}"
+      state: absent
+    delegate_to: localhost
 
   when: not node_present
