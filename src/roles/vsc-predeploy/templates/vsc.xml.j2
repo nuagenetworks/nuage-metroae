@@ -4,11 +4,15 @@
   <memory unit='GiB'>{{ vsc_ram }}</memory>
   <currentMemory unit='GiB'>{{ vsc_ram }}</currentMemory>
   <vcpu current='4'>4</vcpu>
-  {% if vsc_cpu_pinning is undefined %}
+  {% if cpuset is undefined %}
+  <vcpu placement='static'>4</vcpu>
+  {% else if %}
   <cputune>
-  {% for vcpu in vcpus %}
-    <vcpupin vcpu='{{ vcpu.cpu }}' cpuset='{{ vcpu.cpuset }}'/>
-  {% endfor %}
+      {% set vcpu = 1 %}
+      {% for cpu in cpuset %}
+        <vcpupin vcpu='{{ vcpu }}' cpuset='{{ cpu }}'/>
+      {% set vcpu = vcpu + 1 %}
+      {% endfor %}
   </cputune>
   {% endif %}
   <os>
