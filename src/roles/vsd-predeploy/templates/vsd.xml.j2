@@ -7,7 +7,15 @@
   <memory unit='GiB'>{{ vsd_ram }}</memory>
   <currentMemory unit='GiB'>{{ vsd_ram }}</currentMemory>
 {% endif %}
-  <vcpu placement='static'>6</vcpu>
+{% if cpuset is defined %}
+  <cputune>
+      {% for cpu in cpuset %}
+        <vcpupin vcpu='{{ loop.index0 }}' cpuset='{{ cpu }}'/>
+      {% endfor %}
+  </cputune>
+{% else%}
+    <vcpu placement='static'>6</vcpu>
+{% endif %}
   <resource>
     <partition>/machine</partition>
   </resource>
