@@ -10,11 +10,9 @@ component_type: vsd
 target_server_type: {{ item.target_server_type | default('kvm') }}
 hostname: {{ item.hostname }}
 
-{% if item.target_server_type | match("kvm") or item.target_server_type | match("vcenter")%}
+{% if item.target_server_type | match("kvm") or item.target_server_type | match("vcenter") %}
 target_server: {{ item.target_server }}
 {% endif %}
-
-{% if item.target_server_type | match("kvm") or item.target_server_type | match("vcenter") or item.target_server_type | match("nuagex") or item.target_server_type | match("aws") %}
 
 {% if item.vmname is defined %}
 vmname: {{ item.vmname }}
@@ -85,38 +83,36 @@ vcenter:
   cluster: {{ item.vcenter_cluster | default( '"{{ vcenter_global.cluster }}"' ) }}
   datastore: {{ item.vcenter_datastore | default( '"{{ vcenter_global.datastore }}"' ) }}
   resource_pool: {{ item.vcenter_resource_pool | default('"{{ vcenter_global.resource_pool }}"' | default('NONE')) }}
+  host_reference: {{ item.vcenter_host_reference | default('"{{ vcenter_global.host_reference }}"' | default('NONE')) }}
 
 {% endif %}
 
 {% if item.target_server_type | match("aws") %}
+
 aws_region: "{{ item.aws_region }}"
 aws_ami_id: "{{ item.aws_ami_id }}"
 aws_upgrade_ami_id: "{{ item.aws_upgrade_ami_id }}"
 aws_instance_type: "{{ item.aws_instance_type | default('m4.large') }}"
 aws_key_name: "{{ item.aws_key_name }}"
 aws_mgmt_eni: "{{ item.aws_mgmt_eni }}"
-{% endif %}
 
 {% endif %}
 
-{% if item.target_server_type | match("heat") %}
 
-dhcp: {{ item.dhcp | default('True') }}
+{% if item.target_server_type | match("openstack") %}
 
-{% if item.dhcp is defined and item.dhcp == False %}
-mgmt_ip: {{ item.mgmt_ip }}
+openstack_image: {{ item.openstack_image }}
+openstack_flavor: {{ item.openstack_flavor }}
+openstack_network: {{ item.openstack_network }}
+openstack_subnet: {{ item.openstack_subnet }}
+{% if item.openstack_port_name is defined %}
+openstack_port_name: {{ item.openstack_port_name }}
 {% endif %}
-
-vsd_image: {{ item.vsd_image }}
-vsd_flavor: {{ item.vsd_flavor }}
-vsd_network: {{ item.vsd_network }}
-
-{% if item.dhcp is defined and item.dhcp == False %}
-vsd_subnet: {{ item.vsd_subnet }}
-{% endif %}
-
-{% if item.infra_server_name is defined %}
-infra_server_name: {{ item.infra_server_name }}
+{% if item.openstack_port_security_groups is defined %}
+openstack_port_security_groups:
+{% for group in item.openstack_port_security_groups %}
+  - {{ group }}
+{% endfor %}
 {% endif %}
 
 {% endif %}

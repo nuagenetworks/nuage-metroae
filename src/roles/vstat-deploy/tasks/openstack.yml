@@ -1,0 +1,44 @@
+- name: Get VSTAT details from OpenStack
+  os_server_facts:
+    auth:
+      "{{ openstack_auth }}"
+    server: "{{ inventory_hostname }}"
+  register: vstat_ip
+  delegate_to: 127.0.0.1
+
+- name: Set vstat mgmt ip
+  set_fact:
+    vstat_mgmt_ip: "{{ vstat_ip['ansible_facts']['openstack_servers'][0]['addresses'][openstack_network][0]['addr'] }}"
+
+- name: Inject ssh key to VSD if cloud-init did not work
+  expect:
+    command: "ssh-copy-id -i {{ vstat_default_username }}@{{ vstat_mgmt_ip }}"
+    responses:
+      (?i)yes: "yes"
+      (?i)password: "{{ vstat_default_password }}"
+  delegate_to: localhost
+
+- name: Pause for ssh port to be active
+  pause:
+    seconds: 5
+
+- block:
+
+  - name: Update hostname
+    template:
+      src: "{{ role_path }}/../common/templates/network.j2"
+      dest: /etc/sysconfig/network
+      backup: no
+
+  - name: Add a DNS server to eth0
+    lineinfile:
+      dest: /etc/sysconfig/network-scripts/ifcfg-eth0
+      line: "DNS1={{ dns_server_list[0] }}"
+
+  - name: Restart networking
+    command: /etc/init.d/network restart
+
+  - name: Resolve fqdn
+    command: hostname "{{ inventory_hostname }}"
+
+  remote_user: "{{ vstat_default_username }}"
