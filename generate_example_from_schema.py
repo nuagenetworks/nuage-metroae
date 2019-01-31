@@ -197,7 +197,8 @@ class ExampleFileGenerator(object):
                 if "type" in field["items"]:
                     arrayType = field["items"]["type"]
             return self.get_example_template_value(name, field_type,
-                                                   is_list, is_encrypted, arrayType)
+                                                   is_list, is_encrypted,
+                                                   arrayType)
         else:
             return self.get_example_placeholder_value(field_type)
 
@@ -213,7 +214,7 @@ class ExampleFileGenerator(object):
         elif field_type == "array":
             if arrayType == "string":
                 return ('[ {%% for i in %s%s | default([]) %%}"{{ i }}", '
-                    '{%% endfor %%}]' % (item_name, name))
+                        '{%% endfor %%}]' % (item_name, name))
             else:
                 return ('[ {%% for i in %s%s | default([]) %%}{{ i }}, '
                         '{%% endfor %%}]' % (item_name, name))
@@ -278,13 +279,16 @@ def main():
         schema_filename = schema_filename + ".json"
 
     if os.path.isfile(schema_filename):
-        print generator.generate_example_from_schema(schema_filename).encode('utf-8')
+        print generator.generate_example_from_schema(
+            schema_filename).encode('utf-8')
         generator.generate_example_from_schema(schema_filename).encode('utf-8')
     else:
         schema_filename = os.path.join(SCHEMA_DIRECTORY, schema_filename)
         if os.path.isfile(schema_filename):
-            generator.generate_example_from_schema(schema_filename).encode('utf-8')
-            print (generator.generate_example_from_schema(schema_filename)).encode('utf-8')
+            generator.generate_example_from_schema(
+                schema_filename).encode('utf-8')
+            print (generator.generate_example_from_schema(
+                schema_filename)).encode('utf-8')
         else:
             raise Exception("Could not find schema file %s" % schema_filename)
 
