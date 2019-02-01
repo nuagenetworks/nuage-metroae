@@ -1,0 +1,16 @@
+- block:
+
+  - name: Get output of 'show vswitch-controller vswitches detail'
+    sros_command:
+      commands:
+        - "show vswitch-controller vswitches vs-ip {{ nsgv_ip }} detail"
+      provider: "{{ vsc_creds }}"
+    delegate_to: localhost
+    register: nsg_detail
+    until: nsg_detail.stdout[0].find(': Up') != -1
+    retries: 20
+    delay: 30
+
+
+
+  when: bootstrap_method != 'none'
