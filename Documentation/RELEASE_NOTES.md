@@ -1,8 +1,13 @@
 # Metro Automation Engine Release Notes
 ## Release 3.x
 ### New Features and Enhancements
+* Optimize vCenter parameters
+* Add CPU pinning
+* Add host reference to vCenter
+* Support VSP deploy on OpenStack
 * OpenStack support for MetroÆ
 ### Resolved Issues
+* Remove upgrade check for NTP sync
 * Add task to disable network manager on vnsutil
 * Remove unwanted rpms and add docker directory to git ignore
 * Remove utf-8 encoding from encrypt credentials
