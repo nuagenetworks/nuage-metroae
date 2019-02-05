@@ -112,7 +112,7 @@ The following workflows will upgrade each component in individual steps.  The st
 
      The new VSD node one is now up and running; it is not yet configured.
 
-     **Troubleshotting**: If you experience a failure, delete the newly-created node by executing the command `metroae vsd_ha_upgrade_destroy_1`, then re-execute the predeploy command. Do NOT run `vsd_destroy` as this command destroys the "old" VM.
+     **Troubleshooting**: If you experience a failure, delete the newly-created node by executing the command `metroae vsd_ha_upgrade_destroy_1`, then re-execute the predeploy command. Do NOT run `vsd_destroy` as this command destroys the "old" VM.
 
 6. Deploy the new VSD node one.
 
@@ -171,7 +171,7 @@ Upgrade your VRS(s) and then continue with this procedure. Do not proceed withou
 
      `metroae vsc_ha_upgrade_backup_and_prep_2`
 
-     **Troubleshotting**: If you experience a failure, you can re-execute the command.
+     **Troubleshooting**: If you experience a failure, you can re-execute the command.
 
 2. Deploy VSC node two.
 
