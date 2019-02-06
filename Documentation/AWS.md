@@ -83,6 +83,7 @@ To support routed network connectivity, specify the following fields.
 - `mgmt_routed_network_name`: The name of the libvirt routed network defined on the bare-metal host to support the management interface of the VSC.
 - `data_routed_network_name`: The name of the libvirt routed network defined on the bare-metal host to support the data interface of the VSC.
 - `internal_ctrl_ip`: The ip address to be assigned to the data interfaces on the VSC itself. This internal address can be NATed to the real address of the bare-metal host using iptables rules.
+- `internal_data_gateway_ip`: The ip address of the data network gateway for the VSC. This ip address is used for VSC to connect to NSG and other components via static route addition on VSC
 
 #### Alternative Specification for NSGv Only Deployments
 If you'd like to deploy only NSGv (no other components), then MetroÆ can optionally provision a suitable VPC.  You will need to configure the nsgvs.yml file in your deployments subdirectory. For the automatic creation of a test VPC on AWS to host your NSGv, the following parameters must be provided in nsgvs.yml for each NSGv:

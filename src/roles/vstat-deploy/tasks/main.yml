@@ -6,6 +6,7 @@
   no_log: True
   ignore_errors: True
 
+<<<<<<< HEAD
 - import_tasks: non_heat.yml
   when: not target_server_type is match("heat")
   tags:
@@ -14,7 +15,323 @@
 
 - import_tasks: heat.yml
   when: target_server_type is match("heat")
+=======
+- name: Wait for VSTAT ssh to be ready
+  include_role:
+    name: common
+    tasks_from: wait-for-ssh
+  vars:
+    ssh_host: "{{ mgmt_ip }}"
+    host_username: "{{ vstat_default_username }}"
+    retries: 90
+
+- import_tasks: openstack.yml
+  when: target_server_type | match("openstack")
+>>>>>>> dev
   tags:
     - vstat
-    - heat
+    - openstack
     - vstat-deploy
+
+- block:
+  - name: Force DHCP update to configure DNS in AWS (ignoring errors)
+    command: dhclient
+    ignore_errors: true
+
+  - name: Set hostname for AWS for current session
+    command: "hostname {{ hostname }}"
+
+  - name: Set hostname for AWS permanently
+    shell: "echo {{ hostname }} > /etc/hostname"
+
+  when: target_server_type | match("aws")
+  remote_user: "{{ vstat_default_username }}"
+
+- name: Get vsd node(s) information
+  import_role:
+    name: common
+    tasks_from: vsd-node-info.yml
+  vars:
+    vsd_hostname: "{{ vsd_fqdn }}"
+
+- block:
+
+  - name: Generate SSH keys
+    shell: ssh-keygen -b 2048 -t rsa -f /root/.ssh/id_rsa -q -N ""
+    args:
+      creates: /root/.ssh/id_rsa
+    delegate_to: "{{ item }}"
+    with_items: "{{ groups['vstats'] }}"
+
+  - name: Get generated SSH keys
+    shell: cat ~/.ssh/id_rsa.pub
+    register: ssh_key_lst
+    delegate_to: "{{ item }}"
+    with_items: "{{ groups['vstats'] }}"
+
+  - name: Add SSH keys to authorized_keys file
+    shell: "echo {{ item[1].stdout }} >> /root/.ssh/authorized_keys"
+    delegate_to: "{{ item[0] }}"
+    with_nested:
+      - "{{ groups['vstats'] }}"
+      - "{{ ssh_key_lst.results }}"
+
+  remote_user: "{{ vstat_default_username }}"
+  run_once: true
+  when: vstat_sa_or_ha | match('ha')
+
+- name: check for iptables (ignoring errors)
+  shell: "service iptables status"
+  register: _svc_iptables
+  ignore_errors: True
+  remote_user: "{{ vstat_default_username }}"
+
+- name: Print vsd deployment mode when verbosity >= 1
+  debug: var="vsd_sa_or_ha"
+
+- block:
+
+  - name: Start iptables
+    systemd:
+      name: iptables
+      state: started
+    remote_user: "{{ vstat_default_username }}"
+
+  - name: Enable iptables on boot
+    systemd:
+      name: iptables
+      enabled: yes
+    remote_user: "{{ vstat_default_username }}"
+
+  - name: Check if iptables is already setup for VSD rules (ignoring errors)
+    shell: iptables -L INPUT | grep 'match-set vsd src'
+    remote_user: "{{ vstat_default_username }}"
+    register: vstat_iptables_result
+    ignore_errors: True
+
+  - name: Set if skipping VSTAT deploy
+    set_fact: skip_vstat_deploy="{{ vstat_iptables_result is defined and vstat_iptables_result.rc == 0 }}"
+
+  - name: Display if skipping VSTAT deploy
+    debug:
+      msg:
+        - "***************************************************"
+        - "Skipping VSTAT deploy because it is already running"
+        - "***************************************************"
+    when: skip_vstat_deploy
+
+  - block:
+
+    - block:
+
+      - name: Create iptables vars file on ansible host
+        template: src="{{ role_path }}/templates/iptables.j2" dest="{{ role_path }}/vars/iptables.yml" backup=no mode=0755
+
+      - name: Include variable file.
+        include_vars: "{{ role_path }}/vars/iptables.yml"
+
+      delegate_to: localhost
+
+    - block:
+
+      - name: Config iptables on VSTAT vm to accept conn on ports 9200,9300 from vsd(s) (ignoring errors)
+        shell: "{{ item }}"
+        with_items:
+          - "{{ iptables_std_commands }}"
+        remote_user: "{{ vstat_default_username }}"
+        register: iptables_results
+        ignore_errors: True
+
+      - name: Verify iptables rules installation
+        assert:
+          that: "{{ item.rc }} == 0 or
+                 {{ item.stderr | search('already exists') }} or
+                 {{ item.stderr | search('already added') }}"
+          msg: "iptables rule was not installed"
+        with_items:
+          - "{{ iptables_results.results }}"
+
+      when: vsd_sa_or_ha | match('sa')
+
+    - block:
+
+      - name: Config iptables on VSTAT vm to accept conn on ports 9200, 9300 from vsd(s) in cluster setup (ignoring errors)
+        shell: "{{ item }}"
+        with_items:
+          - "{{ iptables_cluster_commands }}"
+        remote_user: "{{ vstat_default_username }}"
+        register: iptables_results
+        ignore_errors: True
+
+      - name: Verify iptables rules installation
+        assert:
+          that: "{{ item.rc }} == 0 or
+                 {{ item.stderr | search('already exists') }} or
+                 {{ item.stderr | search('already added') }}"
+          msg: "iptables rule was not installed"
+        with_items:
+          - "{{ iptables_results.results }}"
+
+      when: vsd_sa_or_ha | match('ha')
+
+    when: not skip_vstat_deploy
+
+  when: "_svc_iptables.rc == 0"
+
+- name: check for firewalld (ignoring errors)
+  shell: "service firewalld status"
+  register: _svc_firewalld
+  ignore_errors: True
+  remote_user: "{{ vstat_default_username }}"
+
+- block:
+
+  - name: Start firewalld
+    systemd:
+      name: firewalld
+      state: started
+    remote_user: "{{ vstat_default_username }}"
+
+  - name: Enable firewalld on boot
+    systemd:
+      name: firewalld
+      enabled: yes
+    remote_user: "{{ vstat_default_username }}"
+
+  - name: Check if firewalld is already setup for VSD rules (ignoring errors)
+    shell: firewall-cmd --list-all | grep 9200 | grep accept
+    remote_user: "{{ target_server_username }}"
+    become: "{{ 'no' if target_server_username == 'root' else 'yes' }}"
+    register: vstat_firewalld_result
+    ignore_errors: True
+
+  - name: Set if skipping VSTAT deploy
+    set_fact: skip_vstat_deploy="{{ vstat_firewalld_result is defined and vstat_firewalld_result.rc == 0 }}"
+
+  - name: Display if skipping VSTAT deploy
+    debug:
+      msg:
+        - "***************************************************"
+        - "Skipping VSTAT deploy because it is already running"
+        - "***************************************************"
+    when: skip_vstat_deploy
+
+  - block:
+
+    - block:
+
+      - name: Create firewall vars file on ansible host
+        template: src="{{ role_path }}/templates/firewall.j2" dest="/tmp/main.yml" backup=no mode=0755
+
+      - name: Include variable file.
+        include_vars: /tmp/main.yml
+
+      delegate_to: localhost
+
+    - name: Config firewall on VSTAT vm to accept conn on ports 9200,9300 from vsd(s)
+      shell: "{{ item }}"
+      with_items:
+        - "{{ firewall_std_commands }}"
+      remote_user: "{{ vstat_default_username }}"
+      when: vsd_sa_or_ha | match('sa')
+
+    - name: Config firewall on VSTAT vm to accept conn on ports 9200, 9300 from vsd(s) in cluster setup
+      shell: "{{ item }}"
+      with_items:
+        - "{{ firewall_cluster_commands }}"
+      when: vsd_sa_or_ha | match('ha')
+      remote_user: "{{ vstat_default_username }}"
+
+    when: not skip_vstat_deploy
+
+  when:
+    - "_svc_firewalld.rc == 0"
+    - "_svc_iptables.rc != 0"
+
+- block:
+
+  - name: Update /etc/hosts file on VSTAT
+    lineinfile:
+      dest: /etc/hosts
+      line: "{{ hostvars[item]['mgmt_ip'] }}    {{ hostvars[item]['hostname'] }}"
+    with_items: "{{ groups['vstats'] }}"
+    when: vsd_sa_or_ha | match('ha')
+    remote_user: "{{ vstat_default_username }}"
+
+  - name: Configure ntpd and ntpdate and local time zone
+    include_role:
+      name: common
+      tasks_from: linux-ntp-sync
+    vars:
+      rem_user: "{{ vstat_default_username }}"
+
+  - name: Restart elastic search
+    systemd:
+      name: elasticsearch
+      state: restarted
+    remote_user: "{{ vstat_default_username }}"
+
+  - block:
+
+    - name: Get vsd node(s) information
+      import_role:
+        name: common
+        tasks_from: vsd-node-info.yml
+      vars:
+        vsd_hostname: "{{ vsd_fqdn }}"
+
+    - name: Make sure the first VSD node is ready before we proceed
+      include_role:
+        name: common
+        tasks_from: wait-for-ssh
+      vars:
+        ssh_host: "{{ vsd_hostname_list[0] }}"
+        host_username: "{{ vsd_default_username }}"
+
+    - block:
+
+      - name: Stat the standalone script
+        stat: path=/opt/vsd/vsd-es-standalone.sh
+        register: es_sa_script
+        delegate_to: "{{ vsd_hostname_list[0] }}"
+        when:
+          - vstat_sa_or_ha | match('sa')
+
+      - name: Execute VSTAT standalone script on standalone or clustered vsds
+        command: /opt/vsd/vsd-es-standalone.sh -e {{ inventory_hostname }}
+        no_log: True
+        delegate_to: "{{ vsd_hostname_list[0] }}"
+        environment:
+          SSHPASS: "{{ vstat_default_password }}"
+        when:
+          - vstat_sa_or_ha | match('sa')
+          - es_sa_script.stat.exists
+          - vstat_default_username == 'root'
+
+      - name: Execute VSTAT standalone script on standalone or clustered vsds
+        command: /opt/vsd/vsd-es-standalone.sh -e {{ inventory_hostname }}
+        delegate_to: "{{ vsd_hostname_list[0] }}"
+        no_log: True
+        when:
+          - vstat_sa_or_ha | match('sa')
+          - es_sa_script.stat.exists
+          - vstat_default_username != 'root'
+
+      - name: Execute VSTAT cluster script on standalone or clustered vsds
+        command: /opt/vsd/vsd-es-cluster-config.sh -e {{ groups['vstats'][0] }},{{ groups['vstats'][1] }},{{ groups['vstats'][2] }}
+        delegate_to: "{{ vsd_hostname_list[0] }}"
+        environment:
+          SSHPASS: "{{ vstat_default_password }}"
+        no_log: True
+        when: vstat_sa_or_ha | match('ha')
+
+      remote_user: "{{ vsd_default_username }}"
+
+    run_once: True
+
+  - name: Enable stats
+    include_role:
+      name: common
+      tasks_from: vstat-enable-stats.yml
+
+  when: not skip_vstat_deploy
