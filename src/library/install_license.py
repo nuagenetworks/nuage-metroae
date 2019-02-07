@@ -1,9 +1,7 @@
 #!/usr/bin//python
 
-from vspk.v5_0 import NULicense, NUEnterprise, NUUser, NUNSPortTemplate
-import subprocess
+from vspk.v5_0 import NULicense, NUVSDSession
 import sys
-from time import sleep
 
 from ansible.module_utils.basic import AnsibleModule
 
@@ -14,6 +12,7 @@ DOCUMENTATION = '''
 
 
 '''
+
 
 def install_license(csproot, vsd_license):
     # Push the license
@@ -35,7 +34,6 @@ def is_license_already_installed(csproot, vsd_license):
 def get_license_unique_id(vsd_license):
     stripped = vsd_license.strip()
     return unicode(stripped[0:16] + stripped[-16:])
-
 
 
 def main():
