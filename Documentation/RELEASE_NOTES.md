@@ -2,9 +2,9 @@
 ## Release 3.x
 ### New Features and Enhancements
 * Optimize vCenter parameters
-* Add CPU pinning
+* Add CPU pinning (METROAE-586)
 * Add host reference to vCenter (METROAE-812)
-* Support VSP deploy on OpenStack
+* Support VSP deploy on OpenStack (METROAE-842)
 * OpenStack support for MetroÆ
 ### Resolved Issues
 * Remove upgrade check for NTP sync
@@ -12,7 +12,7 @@
 * Remove unwanted rpms and add docker directory to git ignore
 * Remove utf-8 encoding from encrypt credentials
 * Add encode and decode to encrypt credentials script
-* Fix issue with convert buildvars unicode script
+* Fix issue with convert buildvars unicode script (METROAE-898)
 ## Release 3.1.0
 ### New Features and Enhancements
 * Add system_name to vscs.json to allow optional customization
