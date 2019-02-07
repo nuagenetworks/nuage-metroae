@@ -3,7 +3,7 @@
 ### New Features and Enhancements
 * Optimize vCenter parameters
 * Add CPU pinning
-* Add host reference to vCenter
+* Add host reference to vCenter (METROAE-812)
 * Support VSP deploy on OpenStack
 * OpenStack support for MetroÆ
 ### Resolved Issues
@@ -19,7 +19,7 @@
 * Add support for VSC to talk to the data interface on AWS
 * Refactor VM Deploy using ovftool with nolog
 * Add known_hosts cleanup
-* Remove unnecessary mode 777 settings for vstat backup
+* Remove unnecessary mode 777 settings for vstat backup (METROAE-863)
 * Support non-default TLS
 * Support VSD license check any time except postdeploy
 * Support NSG bootstrap in AWS
