@@ -63,6 +63,8 @@ def main():
     if (not is_license_already_installed(csproot, vsd_license)):
         install_license(csproot, vsd_license)
 
+    module.exit_json(changed=True)
+
 arg_spec = dict(
     vsd_license_file=dict(
         required=True,
