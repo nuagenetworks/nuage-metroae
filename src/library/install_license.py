@@ -62,7 +62,7 @@ def main():
     try:
         if (not is_license_already_installed(csproot, vsd_license)):
             install_license(csproot, vsd_license)
-    except: Exception as e:
+    except Exception as e:
         module.fail_json(
             msg="ERROR: Could not install license/could not verify if license is already insalled: %s" % (str(e)))
         sys.exit(1)
