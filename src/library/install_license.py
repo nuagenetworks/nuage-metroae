@@ -1,4 +1,4 @@
-#!/usr/bin//python
+#!/usr/bin/python
 
 from vspk.v5_0 import NULicense, NUVSDSession
 import sys
