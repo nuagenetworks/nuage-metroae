@@ -171,18 +171,20 @@ function check_os_version() {
 # Export HTTPS_PROXY for yum updates if set in /etc/yum.conf
 ###############################################################################
 set_https_proxy() {
-  printn "Setting HTTP_PROXY from /etc/yum.conf... "
-  # The ^proxy is to skip any commened proxy config line
-  grep_out=`grep ^proxy /etc/yum.conf`
-  if [ -z $grep_out ]
-  then
-    echo_skipped
-  else
-    https_proxy=`grep ^proxy /etc/yum.conf | cut -d= -f2`
-    export HTTP_PROXY=$https_proxy
-    print "($https_proxy)"
-    echo_success
-  fi
+    if hash yum 2>/dev/null; then
+        printn "Setting HTTP_PROXY from /etc/yum.conf... "
+        # The ^proxy is to skip any commened proxy config line
+        grep_out=`grep ^proxy /etc/yum.conf`
+        if [ -z $grep_out ]
+        then
+          echo_skipped
+        else
+          https_proxy=`grep ^proxy /etc/yum.conf | cut -d= -f2`
+          export HTTP_PROXY=$https_proxy
+          print "($https_proxy)"
+          echo_success
+        fi
+    fi
 }
 
 ###############################################################################
@@ -255,8 +257,6 @@ function main() {
     echo ""
     exit 1
   fi
-
-  check_os_version;
 
   # set HTTP_PROXY
   set_https_proxy
