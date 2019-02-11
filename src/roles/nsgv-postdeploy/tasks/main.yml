@@ -8,7 +8,7 @@
       password: "{{ vsc_password | default(vsc_default_password) }}"
   delegate_to: localhost
   register: nsg_detail
-  until: "nsg_detail.stdout[0].find('JSON Conn. State           : Up') != -1"
+  until: "nsg_detail.stdout[0] | regex_search('JSON Conn. State\\s+: Up') and nsg_detail.stdout[0] | regex_search('Uptime\\s+: [0-9]+d [0-9][0-9]:[0-9][0-9]:[1-9]')"
   retries: 40
   delay: 30
   when: bootstrap_method != 'none'
