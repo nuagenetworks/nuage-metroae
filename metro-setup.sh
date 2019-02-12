@@ -278,10 +278,12 @@ function main() {
     print "There appears to be some errors. Please check $LOG for details"
     echo ""
     echo ""
+    exit 1
   else
     echo ""
     print "Setup complete!"
     echo ""
+    exit 0
   fi
 }
 
