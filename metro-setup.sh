@@ -228,9 +228,14 @@ apt_install() {
 # Exits gracefully if module already exists
 ###############################################################################
 pip_install() {
-  printn "Installing pip packages"
-  pip install -r pip_requirements.txt $1 >> $LOG 2>&1
-  check_retcode $?
+    IFS=$'\n'
+    for i in $(cat pip_requirements.txt)
+    do
+        unset IFS
+        printn "Installing $i..."
+        pip install "$i" >> $LOG 2>&1
+        check_retcode $?
+    done
 }
 
 ###############################################################################
