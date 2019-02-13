@@ -6,7 +6,7 @@ METRO_DIRECTORY = './nuage-metro/'
 
 @when_not('metroae.installed')
 def install_metroae():
-    run_shell("virtualenv -p /usr/bin/python2.7 metroae")
+    run_shell("sudo virtualenv -p python2.7 metroae")
     #run_shell("./metro-setup.sh")
     set_flag("metroae.installed")
 
