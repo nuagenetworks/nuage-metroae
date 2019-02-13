@@ -9,9 +9,16 @@ METRO_DIRECTORY = os.path.join(CHARM_DIR, 'nuage-metro')
 
 @when_not('metroae.installed')
 def install_metroae():
-    run_shell("virtualenv -p python2.7 metroae")
-    #run_shell("./metro-setup.sh")
+    run_shell("virtualenv -p python2.7 .metroaenv")
+    run_shell("source .metroaenv/bin/activate && ./metro-setup.sh")
     set_flag("metroae.installed")
+
+
+@when_not('vsc.installed')
+@when('metroae.installed')
+def install_vsc():
+    run_shell("source .metroaenv/bin/activate && ./metroae -vvv")
+    set_flag("vsc.installed")
 
 
 def run_shell(cmd):
