@@ -14,11 +14,12 @@ def install_metroae():
     set_flag("metroae.installed")
 
 
-@when_not('vsc.installed')
+@when_not('vsc.deployed')
 @when('metroae.installed')
-def install_vsc():
-    run_shell("source .metroaenv/bin/activate && ./metroae -vvv")
-    set_flag("vsc.installed")
+def deploy_vsc():
+    run_shell("source .metroaenv/bin/activate && "
+              "./metroae build -vvv -e ansible_python_interpreter=python2.7")
+    set_flag("vsc.deployed")
 
 
 def run_shell(cmd):
