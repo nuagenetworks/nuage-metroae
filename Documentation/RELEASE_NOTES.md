@@ -2,41 +2,16 @@
 ## Release 3.x
 ### New Features and Enhancements
 * Optimize vCenter parameters
-* Add CPU pinning
-* Add host reference to vCenter
-* Support VSP deploy on OpenStack
-* OpenStack support for MetroÆ
+* Add CPU pinning (METROAE-586)
+* Add host reference to vCenter (METROAE-812)
+* Add support for VSP deploy on OpenStack (METROAE-842)
+* Add OpenStack support for MetroÆ
 ### Resolved Issues
-* Remove upgrade check for NTP sync
+* Deploy VSC without vsds.yml (METROAE-759)
+* Add '0' to exit for 5.4.1 (METROAE-909)
+* Remove upgrade check for NTP sync (METROAE-586)
 * Add task to disable network manager on vnsutil
 * Remove unwanted rpms and add docker directory to git ignore
 * Remove utf-8 encoding from encrypt credentials
 * Add encode and decode to encrypt credentials script
-* Fix issue with convert buildvars unicode script
-## Release 3.1.0
-### New Features and Enhancements
-* Add system_name to vscs.json to allow optional customization
-* Add support for VSC to talk to the data interface on AWS
-* Refactor VM Deploy using ovftool with nolog
-* Add known_hosts cleanup
-* Remove unnecessary mode 777 settings for vstat backup
-* Support non-default TLS
-* Support VSD license check any time except postdeploy
-* Support NSG bootstrap in AWS
-* Add note about upgrade and health requiring passwordless ssh
-* Add v5.3.3 to VSTAT version checks
-* Consolidate common code from five places into one
-* Do not error stopping of VSD services when they are already stopped
-* Clarify error message when target server ssh fails
-* Reduce code duplication by consolidating common vsd-deploy code from nuagex.yml, heat.yml and non_heat.yml into main.yml
-* Remove configuration from vnsutil-postdeploy, add it to vnsutil-deploy
-* Validate if gateway address is in correct range
-### Resolved Issues
-* Wait for VCIN to be ready before replicating
-* Correct target server type options in schemas
-* Enhance support for custom usernames for target servers
-* make failure to find the root partition with guestfish an error  
-* Check if iptable entry exists before adding one
-* Add /etc/hosts setting on each VSD/VSTAT when they are clustered, allowing each VSD to reach the other, even in the event of a DNS failure.
-* In main.yml use data_fqdn instead of mgmt fqdn when creating vnsutil certificates
-* Add ability to bootstrap multiple NSGs
+* Fix issue with convert buildvars unicode script (METROAE-898)
