@@ -40,7 +40,8 @@ def pull_images():
 
 def unpack_images():
     run_shell("/bin/gunzip " + IMAGE_FULL_PATH)
-    run_shell("/bin/tar -xf " + IMAGE_FULL_PATH.rstrip(".gz"))
+    run_shell("/bin/tar -xf %s -C %s" % (IMAGE_FULL_PATH.rstrip(".gz"),
+                                         IMAGE_DIR))
     os.rename(os.path.join(IMAGE_DIR, "vsc.qcow2"),
               os.path.join(IMAGE_DIR, "vsc_singledisk.qcow2"))
 
