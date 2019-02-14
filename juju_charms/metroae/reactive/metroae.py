@@ -50,7 +50,7 @@ def unpack_images():
 @when('images.installed')
 def deploy_vsc():
     run_shell("source .metroaenv/bin/activate && "
-              "./metroae build -vvv -e ansible_python_interpreter=python2.7")
+              "HOME=/home/root ./metroae build -vvv -e ansible_python_interpreter=python2.7")
     set_flag("vsc.deployed")
 
 
