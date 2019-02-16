@@ -52,7 +52,11 @@ def pull_images():
     run_shell("wget %s -O %s" % (DEPLOYMENT_URL, DEPLOYMENT_FILE))
 
     run_shell("wget %s -O %s" % (KEY_URL, KEY_FILE))
+<<<<<<< HEAD
     os.chmod(KEY_FILE, 0o400)
+=======
+    os.chmod(KEY_FILE, 0400)
+>>>>>>> 8973e941ed5c50f5e61f7e9b4b07e5a8647951e9
 
 
 def create_deployment():
