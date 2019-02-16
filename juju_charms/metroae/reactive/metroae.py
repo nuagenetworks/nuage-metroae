@@ -9,7 +9,9 @@ VSD_IMAGE_URL = "http://135.227.146.142/packages/juju/VSD-5.3.3_99.qcow2"
 VSC_IMAGE_URL = "http://135.227.146.142/packages/juju/vsc_singledisk.qcow2"
 KEY_URL = "http://135.227.146.142/packages/juju/id_rsa"
 VSD_IMAGE_DIR = os.path.join(CHARM_DIR, 'images/vsd/qcow2/')
+VSD_IMAGE_FILE = os.path.join(VSD_IMAGE_DIR, 'VSD-5.3.3_99.qcow2')
 VSC_IMAGE_DIR = os.path.join(CHARM_DIR, 'images/vsc/single_disk/')
+VSC_IMAGE_FILE = os.path.join(VSC_IMAGE_DIR, 'vsc_singledisk.qcow2')
 KEY_FILE = "/root/.ssh/id_rsa"
 
 
@@ -38,12 +40,12 @@ def pull_images():
     if not os.path.exists(VSD_IMAGE_DIR):
         os.makedirs(VSD_IMAGE_DIR)
 
-    run_shell("wget %s -O %s" % (VSD_IMAGE_URL, VSD_IMAGE_DIR))
+    run_shell("wget %s -O %s" % (VSD_IMAGE_URL, VSD_IMAGE_FILE))
 
     if not os.path.exists(VSC_IMAGE_DIR):
         os.makedirs(VSC_IMAGE_DIR)
 
-    run_shell("wget %s -O %s" % (VSC_IMAGE_URL, VSC_IMAGE_DIR))
+    run_shell("wget %s -O %s" % (VSC_IMAGE_URL, VSC_IMAGE_FILE))
 
     run_shell("wget %s -O %s" % (KEY_URL, KEY_FILE))
     os.chmod(KEY_FILE, 400)
