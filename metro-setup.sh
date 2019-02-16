@@ -23,7 +23,7 @@ FAILED=0
 #
 # Column number to place the status message
 #
-RES_COL=60
+RES_COL=72
 
 #
 # Command to move out to the configured column number
@@ -57,7 +57,7 @@ function echo_success() {
   $MOVE_TO_COL
   echo -n "["
   $SETCOLOR_SUCCESS
-  echo -n $"  OK  "
+  echo -n $" OK  "
   $SETCOLOR_NORMAL
   echo -n "]"
   echo -ne "\r"
@@ -72,7 +72,7 @@ function echo_failure() {
   $MOVE_TO_COL
   echo -n "["
   $SETCOLOR_FAILURE
-  echo -n $"FAILED"
+  echo -n $" ERR "
   $SETCOLOR_NORMAL
   echo -n "]"
   echo -ne "\r"
@@ -88,7 +88,7 @@ function echo_skipped() {
   $MOVE_TO_COL
   echo -n "["
   $SETCOLOR_SKIPPED
-  echo -n $"SKIPPED"
+  echo -n $" SKIP"
   $SETCOLOR_NORMAL
   echo -n "]"
   echo -ne "\r"
