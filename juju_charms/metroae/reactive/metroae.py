@@ -7,11 +7,13 @@ CHARM_DIR = os.environ['CHARM_DIR']
 METRO_DIR = os.path.join(CHARM_DIR, 'nuage-metro')
 VSD_IMAGE_URL = "http://135.227.146.142/packages/juju/VSD-5.3.3_99.qcow2"
 VSC_IMAGE_URL = "http://135.227.146.142/packages/juju/vsc_singledisk.qcow2"
+DEPLOYMENT_URL = "http://135.227.146.142/packages/juju/deployment.tar.gz"
 KEY_URL = "http://135.227.146.142/packages/juju/id_rsa"
 VSD_IMAGE_DIR = os.path.join(CHARM_DIR, 'images/vsd/qcow2/')
 VSD_IMAGE_FILE = os.path.join(VSD_IMAGE_DIR, 'VSD-5.3.3_99.qcow2')
 VSC_IMAGE_DIR = os.path.join(CHARM_DIR, 'images/vsc/single_disk/')
 VSC_IMAGE_FILE = os.path.join(VSC_IMAGE_DIR, 'vsc_singledisk.qcow2')
+DEPLOYMENT_FILE = os.path.join(CHARM_DIR, 'deployment.tar.gz')
 KEY_FILE = "/root/.ssh/id_rsa"
 
 
@@ -47,11 +49,16 @@ def pull_images():
 
     run_shell("wget %s -O %s" % (VSC_IMAGE_URL, VSC_IMAGE_FILE))
 
+    run_shell("wget %s -O %s" % (DEPLOYMENT_URL, DEPLOYMENT_FILE))
+
     run_shell("wget %s -O %s" % (KEY_URL, KEY_FILE))
-    os.chmod(KEY_FILE, 400)
+    os.chmod(KEY_FILE, 0o400)
 
 
 def create_deployment():
+    run_shell("gunzip " + DEPLOYMENT_FILE)
+    run_shell("tar -xvf " + os.path.join(CHARM_DIR, "deployment.tar"))
+    run_shell("rm -rf " + os.path.join(METRO_DIR, "deployments/default"))
     run_shell("rm -rf " + os.path.join(METRO_DIR, "deployments/default"))
     os.rename(os.path.join(CHARM_DIR, "deployment"),
               os.path.join(METRO_DIR, "deployments/default"))
