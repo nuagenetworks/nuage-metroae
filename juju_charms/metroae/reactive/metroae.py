@@ -48,7 +48,7 @@ def pull_images():
     run_shell("wget %s -O %s" % (VSC_IMAGE_URL, VSC_IMAGE_FILE))
 
     run_shell("wget %s -O %s" % (KEY_URL, KEY_FILE))
-    os.chmod(KEY_FILE, 400)
+    os.chmod(KEY_FILE, 0400)
 
 
 def create_deployment():
