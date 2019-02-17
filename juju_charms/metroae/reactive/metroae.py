@@ -1,24 +1,26 @@
 from charms.reactive import when, when_not, set_flag
 import subprocess
 import os
+from charmhelpers.core.hookenv import log
 
 
 CHARM_DIR = os.environ['CHARM_DIR']
 METRO_DIR = os.path.join(CHARM_DIR, 'nuage-metro')
 VSD_IMAGE_URL = "http://135.227.146.142/packages/juju/VSD-5.3.3_99.qcow2"
 VSC_IMAGE_URL = "http://135.227.146.142/packages/juju/vsc_singledisk.qcow2"
-DEPLOYMENT_URL = "http://135.227.146.142/packages/juju/deployment.tar.gz"
 KEY_URL = "http://135.227.146.142/packages/juju/id_rsa"
+PUBILC_KEY_URL = "http://135.227.146.142/packages/juju/id_rsa.pub"
 VSD_IMAGE_DIR = os.path.join(CHARM_DIR, 'images/vsd/qcow2/')
 VSD_IMAGE_FILE = os.path.join(VSD_IMAGE_DIR, 'VSD-5.3.3_99.qcow2')
 VSC_IMAGE_DIR = os.path.join(CHARM_DIR, 'images/vsc/single_disk/')
 VSC_IMAGE_FILE = os.path.join(VSC_IMAGE_DIR, 'vsc_singledisk.qcow2')
-DEPLOYMENT_FILE = os.path.join(CHARM_DIR, 'deployment.tar.gz')
 KEY_FILE = "/root/.ssh/id_rsa"
+PUBLIC_KEY_FILE = "/root/.ssh/id_rsa.pub"
 
 
 @when_not('metroae.installed')
 def install_metroae():
+    log("Install metroae")
     run_shell("virtualenv -p python2.7 .metroaenv")
     run_shell("source .metroaenv/bin/activate && ./metro-setup.sh")
     set_flag("metroae.installed")
@@ -27,6 +29,7 @@ def install_metroae():
 @when_not('images.installed')
 @when('metroae.installed')
 def install_images():
+    log("Install images")
     install_packages()
     pull_images()
     create_deployment()
@@ -35,10 +38,12 @@ def install_images():
 
 
 def install_packages():
+    log("Install packages")
     run_shell("apt-get install -y git wget")
 
 
 def pull_images():
+    log("Pull images")
     if not os.path.exists(VSD_IMAGE_DIR):
         os.makedirs(VSD_IMAGE_DIR)
 
@@ -49,28 +54,22 @@ def pull_images():
 
     run_shell("wget %s -O %s" % (VSC_IMAGE_URL, VSC_IMAGE_FILE))
 
-    run_shell("wget %s -O %s" % (DEPLOYMENT_URL, DEPLOYMENT_FILE))
-
     run_shell("wget %s -O %s" % (KEY_URL, KEY_FILE))
-<<<<<<< HEAD
     os.chmod(KEY_FILE, 0o400)
-=======
-    os.chmod(KEY_FILE, 0400)
->>>>>>> 8973e941ed5c50f5e61f7e9b4b07e5a8647951e9
+
+    run_shell("wget %s -O %s" % (PUBLIC_KEY_URL, PUBLIC_KEY_FILE))
 
 
 def create_deployment():
-    run_shell("gunzip " + DEPLOYMENT_FILE)
-    run_shell("tar -xvf " + os.path.join(CHARM_DIR, "deployment.tar"))
-    run_shell("rm -rf " + os.path.join(METRO_DIR, "deployments/default"))
-    run_shell("rm -rf " + os.path.join(METRO_DIR, "deployments/default"))
-    os.rename(os.path.join(CHARM_DIR, "deployment"),
+    log("Create deployment")
+    os.rename(os.path.join(METRO_DIR, "deployment"),
               os.path.join(METRO_DIR, "deployments/default"))
 
 
 @when_not('vsd.deployed')
 @when('images.installed')
 def deploy_vsd():
+    log("Deploy VSD")
     run_shell("source .metroaenv/bin/activate && "
               "HOME=/home/root ./metroae install_vsds "
               "-vvv -e ansible_python_interpreter=python2.7")
@@ -80,6 +79,7 @@ def deploy_vsd():
 @when_not('vsc.deployed')
 @when('vsd.deployed')
 def deploy_vsc():
+    log("Deploy VSC")
     run_shell("source .metroaenv/bin/activate && "
               "HOME=/home/root ./metroae install_vscs "
               "-vvv -e ansible_python_interpreter=python2.7")
