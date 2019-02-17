@@ -62,7 +62,8 @@ def pull_images():
 
 def create_deployment():
     log("Create deployment")
-    os.rename(os.path.join(METRO_DIR, "deployment"),
+    run_shell("rm -rf " + os.path.join(METRO_DIR, "deployments/default"))
+    os.rename(os.path.join(METRO_DIR, "../deployment"),
               os.path.join(METRO_DIR, "deployments/default"))
 
 
