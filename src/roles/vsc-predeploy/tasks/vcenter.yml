@@ -18,69 +18,70 @@
 
   - name: Configure vCenter path
     set_fact:
-      vcenter_path: "vi://'{{ vcenter.username | urlencode }}':'{{ vcenter.password | urlencode }}'@{{ target_server }}/{{ vcenter.datacenter }}/host/{{ vcenter.cluster }}"
+      vcenter_path: "{{ target_server }}/{{ vcenter.datacenter }}/host/{{ vcenter.cluster }}{{ (vcenter.host_reference != 'NONE') | ternary ('/{{ vcenter.host_reference | urlencode }}', '') }}{{ (vcenter.resource_pool != 'NONE') | ternary ('/Resources/{{ vcenter.resource_pool | urlencode }}', '') }}"
 
-  - name: Update vCenter path if resource pool is configured
+  - name: Configure ovftool command
     set_fact:
-      vcenter_path: "vi://'{{ vcenter.username | urlencode }}':'{{ vcenter.password | urlencode }}'@{{ target_server }}/{{ vcenter.datacenter }}/host/{{ vcenter.cluster }}/Resources/{{ vcenter.resource_pool | urlencode }}"
-    when: vcenter.resource_pool != 'NONE'
+      ovftool_command: >-
+        {{ vcenter_global.ovftool }}
+        --acceptAllEulas
+        --noSSLVerify
+        --powerOn
+        --machineOutput
+        -dm=thin
+        -ds={{ vcenter.datastore }}
+        -n={{ vmname }}
+        --net:"Management Network={{ mgmt_bridge }}"
+        --net:"Datapath Network={{ data_bridge }}"
+        --prop:"DHCP=False"
+        --prop:"Management_IP={{ mgmt_ip }}/{{ mgmt_netmask_prefix }}"
+        {% if vsc_mgmt_static_route_list[0] is defined %}
+        --prop:"Static_Routes={% for sr in vsc_mgmt_static_route_list %}{{ sr }} {{ mgmt_gateway }}{% if not loop.last %};{% endif %}{% endfor %}"
+        {% else %}
+        --prop:"Static_Routes="
+        {% endif %}
+        --prop:"DNS_Server_1={{ dns_server_list[0] }}"
+        {% if dns_server_list[1] is defined %}
+        --prop:"DNS_Server_2={{ dns_server_list[1] }}"
+        {% else %}
+        --prop:"DNS_Server_2=0.0.0.0"
+        {% endif %}
+        {% if dns_server_list[2] is defined %}
+        --prop:"DNS_Server_3={{ dns_server_list[2] }}"
+        {% else %}
+        --prop:"DNS_Server_3=0.0.0.0"
+        {% endif %}
+        --prop:"DNS_Search_Domain={{ dns_domain }}"
+        --prop:"VSC_name={{ inventory_hostname }}"
+        --prop:"XMPP_Server={{ vsd_fqdn }}"
+        {% if ntp_server_list[0] is defined %}
+        --prop:"SNTP_Server={{ ntp_server_list[0] }}"
+        {% else %}
+        --prop:"SNTP_Server=0.0.0.0"
+        {% endif %}
+        {% if control_ip is defined and control_netmask_prefix is defined %}
+        --prop:"Datapath_IP={{ control_ip }}/{{ control_netmask_prefix }}"
+        {% else %}
+        --prop:"Datapath_IP=0.0.0.0/32"
+        {% endif %}
+        --prop:"Datapath_DFGW=0.0.0.0"
+        {% if system_ip is defined %}
+        --prop:"System_IP={{ system_ip }}"
+        {% else %}
+        --prop:"System_IP=0.0.0.0"
+        {% endif %}
+        --prop:"BGP_Peer_1=0.0.0.0"
+        --prop:"BGP_Peer_2=0.0.0.0"
+        --prop:"Autonomous_System=64000"
+        --prop:"BGP_Group=internal"
+        "{{ ova_path }}/{{ ova_file_name }}"
 
-  - name: Deploy VSC Image on vCenter
+  - name: Deploy VSC image on vCenter (Can take several minutes)
     connection: local
-    command: >
-      {{ vcenter_global.ovftool }}
-      --acceptAllEulas
-      --noSSLVerify
-      --powerOn
-      --machineOutput
-      -dm=thin
-      -ds={{ vcenter.datastore }}
-      -n={{ vmname }}
-      --net:"Management Network={{ mgmt_bridge }}"
-      --net:"Datapath Network={{ data_bridge }}"
-      --prop:"DHCP=False"
-      --prop:"Management_IP={{ mgmt_ip }}/{{ mgmt_netmask_prefix }}"
-      {% if vsc_mgmt_static_route_list[0] is defined %}
-      --prop:"Static_Routes={% for sr in vsc_mgmt_static_route_list %}{{ sr }} {{ mgmt_gateway }}{% if not loop.last %};{% endif %}{% endfor %}"
-      {% else %}
-      --prop:"Static_Routes="
-      {% endif %}
-      --prop:"DNS_Server_1={{ dns_server_list[0] }}"
-      {% if dns_server_list[1] is defined %}
-      --prop:"DNS_Server_2={{ dns_server_list[1] }}"
-      {% else %}
-      --prop:"DNS_Server_2=0.0.0.0"
-      {% endif %}
-      {% if dns_server_list[2] is defined %}
-      --prop:"DNS_Server_3={{ dns_server_list[2] }}"
-      {% else %}
-      --prop:"DNS_Server_3=0.0.0.0"
-      {% endif %}
-      --prop:"DNS_Search_Domain={{ dns_domain }}"
-      --prop:"VSC_name={{ inventory_hostname }}"
-      --prop:"XMPP_Server={{ vsd_fqdn }}"
-      {% if ntp_server_list[0] is defined %}
-      --prop:"SNTP_Server={{ ntp_server_list[0] }}"
-      {% else %}
-      --prop:"SNTP_Server=0.0.0.0"
-      {% endif %}
-      {% if control_ip is defined and control_netmask_prefix is defined %}
-      --prop:"Datapath_IP={{ control_ip }}/{{ control_netmask_prefix }}"
-      {% else %}
-      --prop:"Datapath_IP=0.0.0.0/32"
-      {% endif %}
-      --prop:"Datapath_DFGW=0.0.0.0"
-      {% if system_ip is defined %}
-      --prop:"System_IP={{ system_ip }}"
-      {% else %}
-      --prop:"System_IP=0.0.0.0"
-      {% endif %}
-      --prop:"BGP_Peer_1=0.0.0.0"
-      --prop:"BGP_Peer_2=0.0.0.0"
-      --prop:"Autonomous_System=64000"
-      --prop:"BGP_Group=internal"
-      "{{ ova_path }}/{{ ova_file_name }}"
-      {{ vcenter_path }}
+    no_log: true
+    shell: >-
+      {{ ovftool_command }}
+      "vi://{{ vcenter.username | urlencode }}:{{ vcenter.password | urlencode }}@{{ vcenter_path }}"
 
   - name: Finding VM folder (ignoring errors)
     connection: local

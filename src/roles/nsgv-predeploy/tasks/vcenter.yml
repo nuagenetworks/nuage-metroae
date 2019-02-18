@@ -51,31 +51,19 @@
 
     when: bootstrap_method == 'zfb_metro'
 
-  - name: Configure vCenter path
-    set_fact:
-      vcenter_path: "vi://'{{ vcenter.username | urlencode }}':'{{ vcenter.password | urlencode }}'@{{ target_server }}/{{ vcenter.datacenter }}/host/{{ vcenter.cluster }}"
+  - name: Configure vCenter path and ovftool command
+    include_role:
+      name: common
+      tasks_from: configure-ovftool
+    vars:
+      management_network: "OVS Management"
 
-  - name: Update vCenter path if resource pool is configured
-    set_fact:
-      vcenter_path: "vi://'{{ vcenter.username | urlencode }}':'{{ vcenter.password | urlencode }}'@{{ target_server }}/{{ vcenter.datacenter }}/host/{{ vcenter.cluster }}/Resources/{{ vcenter.resource_pool | urlencode }}"
-    when: vcenter.resource_pool != 'NONE'
-
-  - name: Deploy VM image on vCenter
+  - name: Deploy NSGV image on vCenter (Can take several minutes)
     connection: local
-    command: >
-      {{ vcenter_global.ovftool }}
-      --acceptAllEulas
-      --noSSLVerify
-      --powerOn
-      --machineOutput
-      -dm=thin
-      -ds={{ vcenter.datastore }}
-      -n={{ vm_name }}
-      --net:"OVS Management={{ mgmt_bridge }}"
-      --net:"OVS DataPath={{ data_bridge }}"
-      --net:"port_vmnic={{ access_bridge }}"
-      "{{ ovf_path }}/{{ ovf_file_name }}"
-      {{ vcenter_path }}
+    no_log: true
+    shell: >-
+      {{ ovftool_command }}
+      "vi://{{ vcenter.username | urlencode }}:{{ vcenter.password | urlencode }}@{{ vcenter_path }}"
 
   - block:
     - name: Mount ISO when ZFB method is metro

@@ -34,29 +34,19 @@
 
 - block:
 
-  - name: Configure vCenter path
-    set_fact:
-      vcenter_path: "vi://'{{ vcenter.username | urlencode }}':'{{ vcenter.password | urlencode }}'@{{ target_server }}/{{ vcenter.datacenter }}/host/{{ vcenter.cluster }}"
+  - name: Configure vCenter path and ovftool command
+    include_role:
+      name: common
+      tasks_from: configure-ovftool
+    vars:
+      management_network: "Management"
 
-  - name: Update vCenter path if resource pool is configured
-    set_fact:
-      vcenter_path: "vi://'{{ vcenter.username | urlencode }}':'{{ vcenter.password | urlencode }}'@{{ target_server }}/{{ vcenter.datacenter }}/host/{{ vcenter.cluster }}/Resources/{{ vcenter.resource_pool | urlencode }}"
-    when: vcenter.resource_pool != 'NONE'
-
-  - name: Deploy VM image on vCenter
+  - name: Deploy VSTAT image on vCenter (Can take several minutes)
     connection: local
-    command: >
-      {{ vcenter_global.ovftool }}
-      --acceptAllEulas
-      --noSSLVerify
-      --powerOn
-      --machineOutput
-      -dm=thin
-      -ds={{ vcenter.datastore }}
-      -n={{ vm_name }}
-      --net:"Management={{ mgmt_bridge }}"
-      "{{ ova_path }}/{{ ova_file_name }}"
-      {{ vcenter_path }}
+    no_log: true
+    shell: >-
+      {{ ovftool_command }}
+      "vi://{{ vcenter.username | urlencode }}:{{ vcenter.password | urlencode }}@{{ vcenter_path }}"
 
   - name: Waiting until VMware tools becomes available
     connection: local
@@ -145,7 +135,7 @@
       vm_username: "{{ vstat_default_username }}"
       vm_password: "{{ vstat_default_password }}"
       vm_shell: "/usr/bin/echo"
-      vm_shell_args: " '{{ lookup('template', 'network.j2') }}' > /etc/sysconfig/network"
+      vm_shell_args: " '{{ lookup('template', role_path + '/../common/templates/network.j2') }}' > /etc/sysconfig/network"
 
   - name: Set the owner and group on the network file in the VM
     connection: local
