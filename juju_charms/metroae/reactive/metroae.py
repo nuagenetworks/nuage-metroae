@@ -62,9 +62,11 @@ def pull_images():
 
 def create_deployment():
     log("Create deployment")
-    run_shell("rm -rf " + os.path.join(METRO_DIR, "deployments/default"))
-    os.rename(os.path.join(METRO_DIR, "../deployment"),
-              os.path.join(METRO_DIR, "deployments/default"))
+    SOURCE_DIR = os.path.join(METRO_DIR, "../deployment")
+    TARGET_DIR = os.path.join(METRO_DIR, "deployments/default")
+    run_shell("rm -rf " + TARGET_DIR)
+    run_shell("mkdir " + TARGET_DIR)
+    run_shell("cp " + SOURCE_DIR + "/* " + TARGET_DIR)
 
 
 @when_not('vsd.deployed')
