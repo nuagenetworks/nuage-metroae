@@ -1,19 +1,26 @@
-from charms.reactive import when, when_not, set_flag
-import subprocess
 import os
-from charmhelpers.core.hookenv import log
+import subprocess
 
+from charmhelpers.core.hookenv import config, log
+from charms.reactive import when, when_not, set_flag
+from charms.templating.jinja2 import render
+
+options = config()
 
 CHARM_DIR = os.environ['CHARM_DIR']
 METRO_DIR = os.path.join(CHARM_DIR, 'nuage-metro')
 VSD_IMAGE_URL = "http://135.227.146.142/packages/juju/VSD-5.3.3_99.qcow2"
-VSC_IMAGE_URL = "http://135.227.146.142/packages/juju/vsc_singledisk.qcow2"
+VSC_IMAGE_URL = options.get('image_url')
+# VSC_IMAGE_URL = "http://135.227.146.142/packages/juju/vsc_singledisk.qcow2"
 KEY_URL = "http://135.227.146.142/packages/juju/id_rsa"
 PUBLIC_KEY_URL = "http://135.227.146.142/packages/juju/id_rsa.pub"
-VSD_IMAGE_DIR = os.path.join(CHARM_DIR, 'images/vsd/qcow2/')
+IMAGE_DIR = os.path.join(CHARM_DIR, 'images')
+VSD_IMAGE_DIR = os.path.join(IMAGE_DIR, 'vsd/qcow2/')
 VSD_IMAGE_FILE = os.path.join(VSD_IMAGE_DIR, 'VSD-5.3.3_99.qcow2')
-VSC_IMAGE_DIR = os.path.join(CHARM_DIR, 'images/vsc/single_disk/')
+VSC_IMAGE_DIR = os.path.join(IMAGE_DIR, 'vsc/single_disk/')
 VSC_IMAGE_FILE = os.path.join(VSC_IMAGE_DIR, 'vsc_singledisk.qcow2')
+DEPLOYMENT_DIR = os.path.join(METRO_DIR, "deployments/default")
+TEMPLATE_DIR = os.path.join(METRO_DIR, "src/deployment_templates")
 KEY_FILE = "/root/.ssh/id_rsa"
 PUBLIC_KEY_FILE = "/root/.ssh/id_rsa.pub"
 
@@ -62,11 +69,85 @@ def pull_images():
 
 def create_deployment():
     log("Create deployment")
-    SOURCE_DIR = os.path.join(METRO_DIR, "../deployment")
-    TARGET_DIR = os.path.join(METRO_DIR, "deployments/default")
-    run_shell("rm -rf " + TARGET_DIR)
-    run_shell("mkdir " + TARGET_DIR)
-    run_shell("cp " + SOURCE_DIR + "/* " + TARGET_DIR)
+
+    run_shell("rm -f " + os.path.join(DEPLOYMENT_DIR, "*"))
+
+    SOURCE_DIR = os.path.join(CHARM_DIR, "deployment")
+
+    run_shell("cp %s %s" % (os.path.join(SOURCE_DIR, "vsds.yml"),
+                            DEPLOYMENT_DIR))
+    # run_shell("cp %s %s" % (os.path.join(SOURCE_DIR, "vscs.yml"),
+    #                         DEPLOYMENT_DIR))
+
+    render(os.path.join(TEMPLATE_DIR, 'common.j2'),
+           os.path.join(DEPLOYMENT_DIR, 'common.yml'),
+           {
+               'nuage_unzipped_files_dir':
+                   IMAGE_DIR,
+               'user_ssh_pub_key':
+                   PUBLIC_KEY_FILE,
+               'vsd_fallocate_size_gb': 10,
+               'vsd_ram': 8,
+               'dns_domain':
+                   options.get('dns_domain'),
+               'vsd_fqdn_global':
+                   options.get('vsd_fqdn_global'),
+               'mgmt_bridge':
+                   options.get('mgmt_bridge'),
+               'data_bridge':
+                   options.get('data_bridge'),
+               'ntp_server_list':
+                   options.get('ntp_server_list').split(","),
+               'dns_server_list':
+                   options.get('dns_server_list').split(",")})
+
+    render(os.path.join(TEMPLATE_DIR, 'vscs.j2'),
+           os.path.join(DEPLOYMENT_DIR, 'vscs.yml'),
+           {
+               'nuage_unzipped_files_dir':
+                   IMAGE_DIR,
+               'user_ssh_pub_key':
+                   PUBLIC_KEY_FILE,
+               'vscs': [
+                   # VSC 1
+                   {
+                       'target_server_type': "kvm",
+                       'hostname':
+                           options.get('vsc1_hostname'),
+                       'mgmt_ip':
+                           options.get('vsc1_mgmt_ip'),
+                       'mgmt_ip_prefix':
+                           options.get('vsc1_mgmt_ip_prefix'),
+                       'mgmt_gateway':
+                           options.get('vsc1_mgmt_gateway'),
+                       'ctrl_ip':
+                           options.get('vsc1_ctrl_ip'),
+                       'ctrl_ip_prefix':
+                           options.get('vsc1_ctrl_ip_prefix'),
+                       'system_ip':
+                           options.get('vsc1_system_ip'),
+                       'target_server':
+                           options.get('vsc1_target_server')
+                   },
+                   # VSC 2
+                   {
+                       'target_server_type': "kvm",
+                       'hostname':
+                           options.get('vsc2_hostname'),
+                       'mgmt_ip':
+                           options.get('vsc2_mgmt_ip'),
+                       'mgmt_ip_prefix':
+                           options.get('vsc2_mgmt_ip_prefix'),
+                       'mgmt_gateway':
+                           options.get('vsc2_mgmt_gateway'),
+                       'ctrl_ip':
+                           options.get('vsc2_ctrl_ip'),
+                       'ctrl_ip_prefix':
+                           options.get('vsc2_ctrl_ip_prefix'),
+                       'system_ip':
+                           options.get('vsc2_system_ip'),
+                       'target_server':
+                           options.get('vsc2_target_server')}]})
 
 
 @when_not('vsd.deployed')
