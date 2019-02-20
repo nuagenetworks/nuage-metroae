@@ -1,7 +1,14 @@
 import os
 import subprocess
 
-from charmhelpers.core.hookenv import config, log
+from charmhelpers.core.hookenv import (
+    config,
+    log,
+    related_units,
+    relation_get,
+    relation_ids,
+    status_set)
+
 from charms.reactive import when, when_not, set_flag
 from charms.templating.jinja2 import render
 
@@ -23,14 +30,20 @@ DEPLOYMENT_DIR = os.path.join(METRO_DIR, "deployments/default")
 TEMPLATE_DIR = os.path.join(METRO_DIR, "src/deployment_templates")
 KEY_FILE = "/root/.ssh/id_rsa"
 PUBLIC_KEY_FILE = "/root/.ssh/id_rsa.pub"
+RELATION_NAME = "container"
 
 
 @when_not('metroae.installed')
 def install_metroae():
+    e = 'Installing metroae'
     log("Install metroae")
-    run_shell("virtualenv -p python2.7 .metroaenv")
-    run_shell("source .metroaenv/bin/activate && ./metro-setup.sh")
-    set_flag("metroae.installed")
+    #run_shell("virtualenv -p python2.7 .metroaenv")
+    #run_shell("source .metroaenv/bin/activate && ./metro-setup.sh")
+    #set_flag("metroae.installed")
+    target_server = get_target_server()
+    log(target_server)
+
+    status_set('active', e)
 
 
 @when_not('images.installed')
@@ -127,7 +140,7 @@ def create_deployment():
                        'system_ip':
                            options.get('vsc1_system_ip'),
                        'target_server':
-                           options.get('vsc1_target_server')
+                           get_target_server()
                    },
                    # VSC 2
                    {
@@ -147,7 +160,17 @@ def create_deployment():
                        'system_ip':
                            options.get('vsc2_system_ip'),
                        'target_server':
-                           options.get('vsc2_target_server')}]})
+                           get_target_server()}]})
+
+
+def get_target_server():
+    rel_ids = relation_ids(RELATION_NAME)
+    rel_id = rel_ids[0]
+    units = related_units(rel_id)
+    unit = units[0]
+    return relation_get(attribute="private-address",
+                        unit=unit,
+                        rid=rel_id)
 
 
 @when_not('vsd.deployed')
