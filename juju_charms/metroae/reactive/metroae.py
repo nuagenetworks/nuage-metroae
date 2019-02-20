@@ -21,9 +21,9 @@ PUBLIC_KEY_FILE = "/root/.ssh/id_rsa.pub"
 @when_not('metroae.installed')
 def install_metroae():
     log("Install metroae")
-    run_shell("virtualenv -p python2.7 .metroaenv")
-    run_shell("source .metroaenv/bin/activate && ./metro-setup.sh")
-    set_flag("metroae.installed")
+    #run_shell("virtualenv -p python2.7 .metroaenv")
+    #run_shell("source .metroaenv/bin/activate && ./metro-setup.sh")
+    #set_flag("metroae.installed")
 
 
 @when_not('images.installed')
