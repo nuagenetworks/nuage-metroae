@@ -10,7 +10,7 @@ from charmhelpers.core.hookenv import (
     status_set)
 
 from charms.reactive import when, when_not, set_flag
-from charms.templating.jinja2 import render
+from charmhelpers.core.templating import render
 
 options = config()
 
