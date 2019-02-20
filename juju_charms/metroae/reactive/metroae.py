@@ -2,6 +2,7 @@ from charms.reactive import when, when_not, set_flag
 import subprocess
 import os
 from charmhelpers.core.hookenv import log
+from charmhelpers.core.hookenv import status_set
 
 
 CHARM_DIR = os.environ['CHARM_DIR']
@@ -20,10 +21,12 @@ PUBLIC_KEY_FILE = "/root/.ssh/id_rsa.pub"
 
 @when_not('metroae.installed')
 def install_metroae():
+    e = 'Installing metroae'
     log("Install metroae")
     #run_shell("virtualenv -p python2.7 .metroaenv")
     #run_shell("source .metroaenv/bin/activate && ./metro-setup.sh")
     #set_flag("metroae.installed")
+    status_set('active', e)
 
 
 @when_not('images.installed')
