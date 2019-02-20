@@ -40,8 +40,6 @@ def install_metroae():
     #run_shell("virtualenv -p python2.7 .metroaenv")
     #run_shell("source .metroaenv/bin/activate && ./metro-setup.sh")
     #set_flag("metroae.installed")
-    target_server = get_target_server()
-    log(target_server)
 
     status_set('active', e)
 
@@ -52,7 +50,7 @@ def install_images():
     log("Install images")
     install_packages()
     pull_images()
-    create_deployment()
+    # create_deployment()
 
     set_flag("images.installed")
 
@@ -80,8 +78,14 @@ def pull_images():
     run_shell("wget %s -O %s" % (PUBLIC_KEY_URL, PUBLIC_KEY_FILE))
 
 
+@when('config.changed')
 def create_deployment():
     log("Create deployment")
+
+    target_server = get_target_server()
+    log(target_server)
+
+    return
 
     run_shell("rm -f " + os.path.join(DEPLOYMENT_DIR, "*"))
 
@@ -174,7 +178,7 @@ def get_target_server():
 
 
 @when_not('vsd.deployed')
-@when('images.installed')
+@when('start')
 def deploy_vsd():
     log("Deploy VSD")
     run_shell("source .metroaenv/bin/activate && "
