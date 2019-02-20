@@ -1,8 +1,12 @@
 from charms.reactive import when, when_not, set_flag
 import subprocess
 import os
-from charmhelpers.core.hookenv import log
-from charmhelpers.core.hookenv import status_set
+from charmhelpers.core.hookenv import (
+    log,
+    related_units,
+    relation_get,
+    relation_ids,
+    status_set )
 
 
 CHARM_DIR = os.environ['CHARM_DIR']
