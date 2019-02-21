@@ -79,7 +79,7 @@ def pull_images():
 
 
 @when_not('config.complete')
-@when('config.changed')
+@when('container.connected')
 def create_deployment():
     log("Create deployment")
 
