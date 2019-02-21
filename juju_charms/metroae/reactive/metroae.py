@@ -37,15 +37,15 @@ RELATION_NAME = "container"
 def install_metroae():
     e = 'Installing metroae'
     log("Install metroae")
-    #run_shell("virtualenv -p python2.7 .metroaenv")
-    #run_shell("source .metroaenv/bin/activate && ./metro-setup.sh")
+    run_shell("virtualenv -p python2.7 .metroaenv")
+    run_shell("source .metroaenv/bin/activate && ./metro-setup.sh")
 
     set_flag("metroae.installed")
     status_set('active', e)
 
 
-# @when_not('images.installed')
-# @when('metroae.installed')
+@when_not('images.installed')
+@when('metroae.installed')
 def install_images():
     log("Install images")
     install_packages()
@@ -89,9 +89,9 @@ def create_deployment():
     #     exit(0)
 
     # log(target_server)
-    set_flag("config.complete")
+    # set_flag("config.complete")
 
-    return
+    # return
 
     run_shell("rm -f " + os.path.join(DEPLOYMENT_DIR, "*"))
 
@@ -102,7 +102,11 @@ def create_deployment():
     # run_shell("cp %s %s" % (os.path.join(SOURCE_DIR, "vscs.yml"),
     #                         DEPLOYMENT_DIR))
 
-    render(os.path.join(TEMPLATE_DIR, 'common.j2'),
+    with open(os.path.join(TEMPLATE_DIR, 'common.j2'), "r",
+              encoding='utf-8') as f:
+        template = f.read()
+
+    render("",
            os.path.join(DEPLOYMENT_DIR, 'common.yml'),
            {
                'nuage_unzipped_files_dir':
@@ -122,9 +126,14 @@ def create_deployment():
                'ntp_server_list':
                    options.get('ntp_server_list').split(","),
                'dns_server_list':
-                   options.get('dns_server_list').split(",")})
+                   options.get('dns_server_list').split(",")},
+           config_template=template)
 
-    render(os.path.join(TEMPLATE_DIR, 'vscs.j2'),
+    with open(os.path.join(TEMPLATE_DIR, 'vscs.j2'), "r",
+              encoding='utf-8') as f:
+        template = f.read()
+
+    render("",
            os.path.join(DEPLOYMENT_DIR, 'vscs.yml'),
            {
                'nuage_unzipped_files_dir':
@@ -150,7 +159,7 @@ def create_deployment():
                        'system_ip':
                            options.get('vsc1_system_ip'),
                        'target_server':
-                           get_target_server()
+                           options.get('vsc1_target_server')
                    },
                    # VSC 2
                    {
@@ -170,7 +179,8 @@ def create_deployment():
                        'system_ip':
                            options.get('vsc2_system_ip'),
                        'target_server':
-                           get_target_server()}]})
+                           options.get('vsc2_target_server')}]},
+           config_template=template)
 
     set_flag("config.complete")
 
@@ -188,18 +198,19 @@ def get_target_server():
                         rid=rel_id)
 
 
-@when_not('vsd.deployed')
-@when('start')
-def deploy_vsd():
-    log("Deploy VSD")
-    run_shell("source .metroaenv/bin/activate && "
-              "HOME=/home/root ./metroae install_vsds "
-              "-vvv -e ansible_python_interpreter=python2.7")
-    set_flag("vsd.deployed")
+# @when_not('vsd.deployed')
+# @when('start')
+# def deploy_vsd():
+#     log("Deploy VSD")
+#     run_shell("source .metroaenv/bin/activate && "
+#               "HOME=/home/root ./metroae install_vsds "
+#               "-vvv -e ansible_python_interpreter=python2.7")
+#     set_flag("vsd.deployed")
 
 
 @when_not('vsc.deployed')
-@when('vsd.deployed')
+# @when('vsd.deployed')
+@when('start')
 def deploy_vsc():
     log("Deploy VSC")
     run_shell("source .metroaenv/bin/activate && "
