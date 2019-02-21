@@ -13,6 +13,10 @@
   tasks:
     - name: Run vsd-prepare-replication-master on first cluster
       command: "/opt/vsd/bin/vsd-prepare-replication-master.sh -a {{ groups['vsd_ha_standby1'][0] }} -b {{ groups['vsd_ha_standby2'][0] }} -c {{ groups['vsd_ha_standby3'][0] }}"
+      retries: 3
+      delay: 3
+      register: result
+      until: result.rc == 0
       when:
         - vsd_cluster | default(false)
 
