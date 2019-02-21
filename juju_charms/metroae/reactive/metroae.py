@@ -79,15 +79,16 @@ def pull_images():
 
 
 @when_not('config.complete')
-@when('container.connected')
+# @when('container.connected')
+@when('config.changed')
 def create_deployment():
     log("Create deployment")
 
-    target_server = get_target_server()
-    if target_server is None:
-        exit(0)
+    # target_server = get_target_server()
+    # if target_server is None:
+    #     exit(0)
 
-    log(target_server)
+    # log(target_server)
     set_flag("config.complete")
 
     return
@@ -170,6 +171,8 @@ def create_deployment():
                            options.get('vsc2_system_ip'),
                        'target_server':
                            get_target_server()}]})
+
+    set_flag("config.complete")
 
 
 def get_target_server():
