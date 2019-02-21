@@ -1,12 +1,14 @@
 # Metro Automation Engine Release Notes
 ## Release 3.x
 ### New Features and Enhancements
+* Add NSGv postdeploy health check to ensure NSGvs are bootstrapped (METROAE-912)
 * Optimize vCenter parameters
 * Add CPU pinning (METROAE-586)
 * Add host reference to vCenter (METROAE-812)
 * Add support for VSP deploy on OpenStack (METROAE-842)
 * Add OpenStack support for MetroÆ
 ### Resolved Issues
+* Add VSC after hardening VSD (METROAE-882)
 * Deploy VSC without vsds.yml (METROAE-759)
 * Add '0' to exit for 5.4.1 (METROAE-909)
 * Remove upgrade check for NTP sync (METROAE-586)
