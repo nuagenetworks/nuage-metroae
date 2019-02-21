@@ -39,13 +39,13 @@ def install_metroae():
     log("Install metroae")
     #run_shell("virtualenv -p python2.7 .metroaenv")
     #run_shell("source .metroaenv/bin/activate && ./metro-setup.sh")
-    #set_flag("metroae.installed")
 
+    set_flag("metroae.installed")
     status_set('active', e)
 
 
-@when_not('images.installed')
-@when('metroae.installed')
+# @when_not('images.installed')
+# @when('metroae.installed')
 def install_images():
     log("Install images")
     install_packages()
@@ -78,12 +78,17 @@ def pull_images():
     run_shell("wget %s -O %s" % (PUBLIC_KEY_URL, PUBLIC_KEY_FILE))
 
 
+@when_not('config.complete')
 @when('config.changed')
 def create_deployment():
     log("Create deployment")
 
     target_server = get_target_server()
+    if target_server is None:
+        exit(0)
+
     log(target_server)
+    set_flag("config.complete")
 
     return
 
@@ -169,6 +174,9 @@ def create_deployment():
 
 def get_target_server():
     rel_ids = relation_ids(RELATION_NAME)
+    if len(rel_ids) == 0:
+        log("Relation not created yet")
+        return None
     rel_id = rel_ids[0]
     units = related_units(rel_id)
     unit = units[0]
