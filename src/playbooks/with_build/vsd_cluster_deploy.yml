@@ -13,7 +13,7 @@
   tasks:
     - name: Run vsd-prepare-replication-master on first cluster
       command: "/opt/vsd/bin/vsd-prepare-replication-master.sh -a {{ groups['vsd_ha_standby1'][0] }} -b {{ groups['vsd_ha_standby2'][0] }} -c {{ groups['vsd_ha_standby3'][0] }}"
-      retries: 100
+      retries: 15
       delay: 10
       register: result
       until: result.rc == 0
@@ -24,14 +24,14 @@
   become: yes
   remote_user: "{{ vsd_default_username }}"
   tasks:
-    - name: Create data directory on first vm of standby
+    - name: Create data directory on first standby vm
       command: "mkdir /opt/vsd/data"
       when:
         - vsd_cluster | default(false)
 
 - hosts: localhost
   tasks:
-    - name: Create data directory on first vm of standby
+    - name: Create vsd backup directory for localhost
       file:
         path: /tmp/vsdback
         state: directory
@@ -40,7 +40,7 @@
   become: yes
   remote_user: "{{ vsd_default_username }}"
   tasks:
-    - name: Transfer data from /tmp/backup/ to host
+    - name: Transfer data from first VSD to host machine
       synchronize:
         src: /tmp/backup/
         dest: /tmp/vsdback
@@ -50,7 +50,7 @@
   become: yes
   remote_user: "{{ vsd_default_username }}"
   tasks:
-    - name: Transfer data from /tmp/backup/ to host
+    - name: Transfer data from host machine to first standby vm
       synchronize:
         dest: /opt/vsd/data/
         src: /tmp/vsdback/
@@ -69,7 +69,7 @@
   become: yes
   remote_user: "{{ vsd_default_username }}"
   tasks:
-    - name: Run the replication script
+    - name: Run the replication script on first standby cluster
       command: "/opt/vsd/bin/vsd-start-replication-slave -m {{ groups['vsd_ha_node1'][0] }}"
       when:
         - vsd_cluster | default(false)
