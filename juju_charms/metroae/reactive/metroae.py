@@ -37,6 +37,7 @@ RELATION_NAME = "container"
 def install_metroae():
     e = 'Installing metroae'
     log("Install metroae")
+    install_packages()
     run_shell("virtualenv -p python2.7 .metroaenv")
     run_shell("source .metroaenv/bin/activate && ./metro-setup.sh")
 
@@ -48,7 +49,6 @@ def install_metroae():
 @when('metroae.installed')
 def install_images():
     log("Install images")
-    install_packages()
     pull_images()
     # create_deployment()
 
@@ -57,7 +57,7 @@ def install_images():
 
 def install_packages():
     log("Install packages")
-    run_shell("apt-get install -y git wget")
+    run_shell("apt-get install -y git wget virtualenv")
 
 
 def pull_images():
