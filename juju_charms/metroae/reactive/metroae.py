@@ -19,8 +19,8 @@ METRO_DIR = os.path.join(CHARM_DIR, 'nuage-metro')
 VSD_IMAGE_URL = "http://135.227.146.142/packages/juju/VSD-5.3.3_99.qcow2"
 VSC_IMAGE_URL = options.get('image_url')
 # VSC_IMAGE_URL = "http://135.227.146.142/packages/juju/vsc_singledisk.qcow2"
-KEY_URL = "http://135.227.146.142/packages/juju/id_rsa"
-PUBLIC_KEY_URL = "http://135.227.146.142/packages/juju/id_rsa.pub"
+KEY_URL = "http://135.227.146.142/packages/juju/juju_id_rsa"
+# PUBLIC_KEY_URL = "http://135.227.146.142/packages/juju/id_rsa.pub"
 IMAGE_DIR = os.path.join(CHARM_DIR, 'images')
 VSD_IMAGE_DIR = os.path.join(IMAGE_DIR, 'vsd/qcow2/')
 VSD_IMAGE_FILE = os.path.join(VSD_IMAGE_DIR, 'VSD-5.3.3_99.qcow2')
@@ -29,7 +29,7 @@ VSC_IMAGE_FILE = os.path.join(VSC_IMAGE_DIR, 'vsc_singledisk.qcow2')
 DEPLOYMENT_DIR = os.path.join(METRO_DIR, "deployments/default")
 TEMPLATE_DIR = os.path.join(METRO_DIR, "src/deployment_templates")
 KEY_FILE = "/root/.ssh/id_rsa"
-PUBLIC_KEY_FILE = "/root/.ssh/id_rsa.pub"
+# PUBLIC_KEY_FILE = "/root/.ssh/id_rsa.pub"
 RELATION_NAME = "container"
 
 
@@ -75,7 +75,7 @@ def pull_images():
     run_shell("wget %s -O %s" % (KEY_URL, KEY_FILE))
     os.chmod(KEY_FILE, 0o400)
 
-    run_shell("wget %s -O %s" % (PUBLIC_KEY_URL, PUBLIC_KEY_FILE))
+    # run_shell("wget %s -O %s" % (PUBLIC_KEY_URL, PUBLIC_KEY_FILE))
 
 
 @when_not('config.complete')
