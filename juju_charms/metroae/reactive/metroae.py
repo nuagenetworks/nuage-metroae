@@ -178,6 +178,22 @@ def create_deployment():
                            options.get('vsc2_target_server')}]},
            config_template=template)
 
+    with open(os.path.join(TEMPLATE_DIR, 'credentials.j2'), "r",
+              encoding='utf-8') as f:
+        template = f.read()
+
+    render("",
+           os.path.join(DEPLOYMENT_DIR, 'credentials.yml'),
+           {
+               'credentials': [
+                   {
+                       'name': "default",
+                       'target_server_username':
+                           options.get('target_server_username')
+                   }],
+           },
+           config_template=template)
+
     set_flag("config.complete")
 
 
