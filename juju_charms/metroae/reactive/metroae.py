@@ -210,7 +210,7 @@ def get_target_server():
 
 @when_not('vsc.deployed')
 # @when('vsd.deployed')
-@when('start')
+@when('config.complete')
 def deploy_vsc():
     log("Deploy VSC")
     run_shell("source .metroaenv/bin/activate && "
