@@ -65,7 +65,7 @@ def pull_images():
     if not os.path.exists(VSD_IMAGE_DIR):
         os.makedirs(VSD_IMAGE_DIR)
 
-    run_shell("wget %s -O %s" % (VSD_IMAGE_URL, VSD_IMAGE_FILE))
+    # run_shell("wget %s -O %s" % (VSD_IMAGE_URL, VSD_IMAGE_FILE))
 
     if not os.path.exists(VSC_IMAGE_DIR):
         os.makedirs(VSC_IMAGE_DIR)
