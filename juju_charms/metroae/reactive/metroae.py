@@ -29,7 +29,7 @@ VSC_IMAGE_FILE = os.path.join(VSC_IMAGE_DIR, 'vsc_singledisk.qcow2')
 DEPLOYMENT_DIR = os.path.join(METRO_DIR, "deployments/default")
 TEMPLATE_DIR = os.path.join(METRO_DIR, "src/deployment_templates")
 KEY_FILE = "/root/.ssh/id_rsa"
-# PUBLIC_KEY_FILE = "/root/.ssh/id_rsa.pub"
+PUBLIC_KEY_FILE = "/root/.ssh/id_rsa.pub"
 RELATION_NAME = "container"
 
 
@@ -136,10 +136,6 @@ def create_deployment():
     render("",
            os.path.join(DEPLOYMENT_DIR, 'vscs.yml'),
            {
-               'nuage_unzipped_files_dir':
-                   IMAGE_DIR,
-               'user_ssh_pub_key':
-                   PUBLIC_KEY_FILE,
                'vscs': [
                    # VSC 1
                    {
