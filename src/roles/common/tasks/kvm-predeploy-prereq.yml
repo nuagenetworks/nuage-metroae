@@ -19,11 +19,6 @@
   fail: msg="Not enough cores ({{ ansible_processor_vcpus }})"
   when: ansible_processor_vcpus < target_server_vcpus_min
 
-- name: Check target bridges
-  fail: msg="Required network bridges not found"
-  when: (mgmt_bridge not in ansible_interfaces) or
-        (data_bridge not in ansible_interfaces)
-
 - block:
 
   - block:
@@ -69,6 +64,14 @@
       name: libvirtd
       enabled: yes
       state: started
+
+  - name: Get updated Target Server facts
+    action: setup
+
+  - name: Check target bridges
+    fail: msg="Required network bridges not found"
+    when: (mgmt_bridge not in ansible_interfaces) or
+          (data_bridge not in ansible_interfaces)
 
   delegate_to: "{{ target_server }}"
   remote_user: "{{ target_server_username }}"
