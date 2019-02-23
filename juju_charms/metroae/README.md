@@ -17,6 +17,13 @@ NOTE: this charm relies on binaries that are distributed to customers of Nuage N
 - The tagged MaaS bare-metal instance must be configured to use the same DNS server as provided as input to the VSC
 - The desired VSC IP addresses and other configuration information as required in config.yaml
 
+## Limitations
+
+This beta version of the charm has the following limitations
+
+- XMPP TLS between the VSC and the VSD is not enabled
+- OpenFlow TLS between the VSC and the VRS is not enabled
+
 ## Usage
 
 This charm is deployed via bundle file. The VSC service is a subordinate charm that must be bundled with a non-subordinate OS charm, e.g. ubuntu. It is suggested that the bundle file have the following general format:

@@ -17,7 +17,7 @@ options = config()
 CHARM_DIR = os.environ['CHARM_DIR']
 METRO_DIR = os.path.join(CHARM_DIR, 'nuage-metro')
 VSC_IMAGE_URL = options.get('image_url')
-KEY_URL = options.get('ssh_key_url')
+TARGET_SERVER_SSH_KEY_URL = options.get('target_server_ssh_key_url')
 IMAGE_DIR = os.path.join(CHARM_DIR, 'images')
 VSD_IMAGE_DIR = os.path.join(IMAGE_DIR, 'vsd/qcow2/')
 VSD_IMAGE_FILE = os.path.join(VSD_IMAGE_DIR, 'VSD-5.3.3_99.qcow2')
@@ -25,7 +25,7 @@ VSC_IMAGE_DIR = os.path.join(IMAGE_DIR, 'vsc/single_disk/')
 VSC_IMAGE_FILE = os.path.join(VSC_IMAGE_DIR, 'vsc_singledisk.qcow2')
 DEPLOYMENT_DIR = os.path.join(METRO_DIR, "deployments/default")
 TEMPLATE_DIR = os.path.join(METRO_DIR, "src/deployment_templates")
-KEY_FILE = "/root/.ssh/id_rsa"
+PRIVATE_KEY_FILE = "/root/.ssh/id_rsa"
 PUBLIC_KEY_FILE = "/root/.ssh/id_rsa.pub"
 RELATION_NAME = "container"
 
@@ -69,10 +69,8 @@ def pull_images():
 
     run_shell("wget %s -O %s" % (VSC_IMAGE_URL, VSC_IMAGE_FILE))
 
-    run_shell("wget %s -O %s" % (KEY_URL, KEY_FILE))
-    os.chmod(KEY_FILE, 0o400)
-
-    # run_shell("wget %s -O %s" % (PUBLIC_KEY_URL, PUBLIC_KEY_FILE))
+    run_shell("wget %s -O %s" % (TARGET_SERVER_SSH_KEY_URL, PRIVATE_KEY_FILE))
+    os.chmod(PRIVATE_KEY_FILE, 0o400)
 
 
 @when_not('config.complete')
@@ -110,8 +108,8 @@ def create_deployment():
                    IMAGE_DIR,
                'user_ssh_pub_key':
                    PUBLIC_KEY_FILE,
-               'vsd_fallocate_size_gb': 10,
-               'vsd_ram': 8,
+               'xmpp_tls': "False",
+               'openflow_tls': "False",
                'dns_domain':
                    options.get('dns_domain'),
                'vsd_fqdn_global':
