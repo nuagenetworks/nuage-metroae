@@ -16,11 +16,8 @@ options = config()
 
 CHARM_DIR = os.environ['CHARM_DIR']
 METRO_DIR = os.path.join(CHARM_DIR, 'nuage-metro')
-VSD_IMAGE_URL = "http://135.227.146.142/packages/juju/VSD-5.3.3_99.qcow2"
 VSC_IMAGE_URL = options.get('image_url')
-# VSC_IMAGE_URL = "http://135.227.146.142/packages/juju/vsc_singledisk.qcow2"
-KEY_URL = "http://135.227.146.142/packages/juju/juju_id_rsa"
-# PUBLIC_KEY_URL = "http://135.227.146.142/packages/juju/id_rsa.pub"
+KEY_URL = options"http://135.227.146.142/packages/juju/juju_id_rsa"
 IMAGE_DIR = os.path.join(CHARM_DIR, 'images')
 VSD_IMAGE_DIR = os.path.join(IMAGE_DIR, 'vsd/qcow2/')
 VSD_IMAGE_FILE = os.path.join(VSD_IMAGE_DIR, 'VSD-5.3.3_99.qcow2')
@@ -141,41 +138,22 @@ def create_deployment():
                    {
                        'target_server_type': "kvm",
                        'hostname':
-                           options.get('vsc1_hostname'),
+                           options.get('vsc_mgmt_ip'),
                        'mgmt_ip':
-                           options.get('vsc1_mgmt_ip'),
+                           options.get('vsc_mgmt_ip'),
                        'mgmt_ip_prefix':
-                           options.get('vsc1_mgmt_ip_prefix'),
+                           options.get('vsc_mgmt_ip_prefix'),
                        'mgmt_gateway':
-                           options.get('vsc1_mgmt_gateway'),
+                           options.get('vsc_mgmt_gateway'),
                        'ctrl_ip':
-                           options.get('vsc1_ctrl_ip'),
+                           options.get('vsc_ctrl_ip'),
                        'ctrl_ip_prefix':
-                           options.get('vsc1_ctrl_ip_prefix'),
+                           options.get('vsc_ctrl_ip_prefix'),
                        'system_ip':
-                           options.get('vsc1_system_ip'),
+                           options.get('vsc_system_ip'),
                        'target_server':
-                           options.get('vsc1_target_server')
-                   },
-                   # VSC 2
-                   {
-                       'target_server_type': "kvm",
-                       'hostname':
-                           options.get('vsc2_hostname'),
-                       'mgmt_ip':
-                           options.get('vsc2_mgmt_ip'),
-                       'mgmt_ip_prefix':
-                           options.get('vsc2_mgmt_ip_prefix'),
-                       'mgmt_gateway':
-                           options.get('vsc2_mgmt_gateway'),
-                       'ctrl_ip':
-                           options.get('vsc2_ctrl_ip'),
-                       'ctrl_ip_prefix':
-                           options.get('vsc2_ctrl_ip_prefix'),
-                       'system_ip':
-                           options.get('vsc2_system_ip'),
-                       'target_server':
-                           options.get('vsc2_target_server')}]},
+                           options.get('vsc_target_server')
+                   }]},
            config_template=template)
 
     with open(os.path.join(TEMPLATE_DIR, 'credentials.j2'), "r",
@@ -189,7 +167,7 @@ def create_deployment():
                    {
                        'name': "default",
                        'target_server_username':
-                           options.get('target_server_username')
+                           options.get('vsc_target_server_username')
                    }],
            },
            config_template=template)

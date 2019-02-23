@@ -3,7 +3,7 @@
 
 ## Overview
 
-The Nuage MetroÆ charm in its beta form is designed to deploy two (2) Nuage VSC VMs, one on each of two (2) bare-metal servers. In principle, those servers can be any general-purpose Linux servers running KVM in a MaaS environment. The target environment for this beta, however, is for each VSC to be deployed on a Canonical OpenStack server running Ubuntu 18.04.
+The Nuage MetroÆ charm in its beta form is designed to deploy one Nuage VSC VM on a KVM server. In principle, those servers can be any general-purpose Linux servers running KVM in a MaaS environment. The target environment for this beta, however, is for each VSC to be deployed on a Canonical OpenStack server running Ubuntu 18.04.
 
 This charm should be used with other principle charms to configure and control the data-path service units configured using the Nuage VRS Charms
 
