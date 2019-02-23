@@ -3,6 +3,7 @@ import subprocess
 
 from charmhelpers.core.hookenv import (
     config,
+    Hooks,
     log,
     related_units,
     relation_get,
@@ -12,6 +13,8 @@ from charmhelpers.core.hookenv import (
 
 from charms.reactive import when, when_not, set_flag
 from charmhelpers.core.templating import render
+
+hooks = Hooks()
 
 options = config()
 
@@ -190,11 +193,29 @@ def deploy_vsc():
     set_flag("vsc.deployed")
 
 
-@when('vsc.deployed')
-@when('vrs-controller-service.connected')
+@hooks.hook('vrs-controller-service-relation-broken')
+def vrs_controller_service_broken(rid=None):
+    log("vrs_controller_service_broken")
+    log(rid)
+
+
+@hooks.hook('vrs-controller-service-relation-changed')
+def vrs_controller_service_changed(rid=None):
+    log("vrs_controller_service_changed")
+    log(rid)
+
+
+@hooks.hook('vrs-controller-service-relation-departed')
+def vrs_controller_service_departed(rid=None):
+    log("vrs_controller_service_departed")
+    log(rid)
+
+
+@hooks.hook('vrs-controller-service-relation-joined')
 def vrs_controller_joined(rid=None):
     global vsc_mgmt_ip
-    log("vrs-controller-service.connected")
+    log("vrs_controller_joined")
+    log(rid)
     vsc_mgmt_ip = options.get('vsc_mgmt_ip')
     settings = {
         'vsc-ip-address': vm_ip_address
@@ -202,17 +223,36 @@ def vrs_controller_joined(rid=None):
     relation_set(relation_id=rid, **settings)
 
 
-@when('vsc.deployed')
-@when('container.connected')
+@hooks.hook('container-relation-broken')
+def container_broken(rid=None):
+    log("container_broken")
+    log(rid)
+
+
+@hooks.hook('container-relation-changed')
+def container_changed(rid=None):
+    log("container_changed")
+    log(rid)
+
+
+@hooks.hook('container-relation-departed')
+def container_departed(rid=None):
+    log("container_departed")
+    log(rid)
+
+
+@hooks.hook('container-relation-joined')
 def container_joined(rid=None):
     global hypervisor_ip
-    log("container.connected")
+    log("container_joined")
+    log(rid)
     units = related_units(rid)
     unit = units[0]
     hypervisor_ip = relation_get(attribute="private-address",
                                  unit=unit,
                                  rid=rid)
-    log("Found ip: %s" % hypervisor_ip)
+    log("Found ip")
+    log(hypervisor_ip)
 
 
 def run_shell(cmd):
