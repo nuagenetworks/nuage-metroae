@@ -7,6 +7,7 @@ from charmhelpers.core.hookenv import (
     related_units,
     relation_get,
     relation_ids,
+    relation_set,
     status_set)
 
 from charms.reactive import when, when_not, set_flag
@@ -179,18 +180,7 @@ def get_target_server():
                         rid=rel_id)
 
 
-# @when_not('vsd.deployed')
-# @when('start')
-# def deploy_vsd():
-#     log("Deploy VSD")
-#     run_shell("source .metroaenv/bin/activate && "
-#               "HOME=/home/root ./metroae install_vsds "
-#               "-vvv -e ansible_python_interpreter=python2.7")
-#     set_flag("vsd.deployed")
-
-
 @when_not('vsc.deployed')
-# @when('vsd.deployed')
 @when('config.complete')
 def deploy_vsc():
     log("Deploy VSC")
@@ -198,6 +188,31 @@ def deploy_vsc():
               "HOME=/home/root ./metroae install_vscs "
               "-vvv -e ansible_python_interpreter=python2.7")
     set_flag("vsc.deployed")
+
+
+@when('vsc.deployed')
+@when('vrs-controller-service.connected')
+def vrs_controller_joined(rid=None):
+    global vsc_mgmt_ip
+    log("vrs-controller-service.connected")
+    vsc_mgmt_ip = options.get('vsc_mgmt_ip')
+    settings = {
+        'vsc-ip-address': vm_ip_address
+    }
+    relation_set(relation_id=rid, **settings)
+
+
+@when('vsc.deployed')
+@when('container.connected')
+def container_joined(rid=None):
+    global hypervisor_ip
+    log("container.connected")
+    units = related_units(rid)
+    unit = units[0]
+    hypervisor_ip = relation_get(attribute="private-address",
+                                 unit=unit,
+                                 rid=rid)
+    log("Found ip: %s" % hypervisor_ip)
 
 
 def run_shell(cmd):
