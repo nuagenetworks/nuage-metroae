@@ -90,13 +90,6 @@ def create_deployment():
 
     run_shell("rm -f " + os.path.join(DEPLOYMENT_DIR, "*"))
 
-    SOURCE_DIR = os.path.join(CHARM_DIR, "deployment")
-
-    run_shell("cp %s %s" % (os.path.join(SOURCE_DIR, "vsds.yml"),
-                            DEPLOYMENT_DIR))
-    # run_shell("cp %s %s" % (os.path.join(SOURCE_DIR, "vscs.yml"),
-    #                         DEPLOYMENT_DIR))
-
     with open(os.path.join(TEMPLATE_DIR, 'common.j2'), "r",
               encoding='utf-8') as f:
         template = f.read()
