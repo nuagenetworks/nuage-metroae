@@ -12,17 +12,19 @@ NOTE: this charm relies on binaries that are distributed to customers of Nuage N
 
 - VSC qcow2 image available via http URL (repository) in your environment
 - Private key file for ssh to the target server (KVM hypervisor) available via http URL (repository)
-- Properly configured MaaS server with tagged bare-metal instances
-- The tagged MaaS bare-metal instance must be configured to be given a known, static IPv4 address
-- The tagged MaaS bare-metal instance must be configured to use the same DNS server as provided as input to the VSC
-- The desired VSC IP addresses and other configuration information as required in config.yaml
+- Properly configured MaaS server with a tagged bare-metal instance specifically for this VSC
+- Bare-metal instance must be configured with a minimum of 4 GB of memory and 4 CPU cores.
+- Bare-metal instance must be configured to be given a known, static IPv4 address
+- Bare-metal instance must be configured to use a DNS server that can resolve the VSD FQDN
 
 ## Limitations
 
 This beta version of the charm has the following limitations
 
-- XMPP TLS between the VSC and the VSD is not enabled
-- OpenFlow TLS between the VSC and the VRS is not enabled
+- TLS is not enabled on the XMPP channel between the VSC and the VSD
+- TLS is not enabled on the OpenFlow channel between the VSC and the VRS
+- The IP address of the hypervisor on the bare-metal MaaS instance must be provided as input
+- DNS for the MaaS instance must be configured to resolve the VSD FQDN that is provided as input  
 
 ## Usage
 
@@ -47,9 +49,13 @@ services:
       <insert options here...>
 ```
 
+Notice that the machine declaration includes a tag. This tag must be set to the bare-metal MaaS intance that this VSC will be deployed to.
+
 To Deploy:
 
 `juju deploy <bundle_file.yaml>`
+
+There are one or more sample bundle files in the charm's `bundles` directory.
 
 # VSC VM (KVM) Configuration
 The VSC service VM is required to have a minimum of 4GB of memory and a minimum of 4 cores.
