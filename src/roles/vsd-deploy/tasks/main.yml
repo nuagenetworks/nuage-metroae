@@ -288,6 +288,27 @@
     - branding_zip_file is defined
     - component_type == "vsd"
 
+- block:
+
+  - name: Configure XMPP connection to TLS on VSD
+    command: /opt/vsd/bin/ejmode allow -y
+
+  - name: wait for ejabberd-status to become running
+    monit_waitfor_service:
+      name: "ejabberd-status"
+      timeout_seconds: 600
+      test_interval_seconds: 30
+
+  - name: wait for ejbca-status to become running
+    monit_waitfor_service:
+      name: "ejbca-status"
+      timeout_seconds: 600
+      test_interval_seconds: 30
+
+  when:
+    - xmpp_tls
+    - not skip_vsd_deploy
+
 - name: Install nginx
   yum:
     name: nginx
