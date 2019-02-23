@@ -1,35 +1,48 @@
-# Nuage Metro Automation Engine (MetroÆ) Charm Beta
--------------------------------------------------
+# Nuage Networks Metro Automation Engine (MetroÆ) Charm Beta
 
 ## Overview
 
-The Nuage MetroÆ charm in its beta form is designed to deploy one Nuage VSC VM on a KVM server. In principle, those servers can be any general-purpose Linux servers running KVM in a MaaS environment. The target environment for this beta, however, is for each VSC to be deployed on a Canonical OpenStack server running Ubuntu 18.04.
+The Nuage MetroÆ charm in its beta form is designed to deploy one Nuage VSC VM on a KVM server. In principle, this server can be any general-purpose Linux server running KVM in a MaaS environment. The target environment for this beta, however, is the VSC to be deployed on a Canonical OpenStack server running Ubuntu 18.04.
 
-This charm should be used with other principle charms to configure and control the data-path service units configured using the Nuage VRS Charms
+This charm should be used with other charms to configure and control the data-path service units configured using other Nuage Networks charms
 
 NOTE: this charm relies on binaries that are distributed to customers of Nuage Networks VSP solution.
 
 ## Prerequisites
 
 - VSC qcow2 image available via http URL (repository) in your environment
+- Private key file for ssh to the target server (KVM hypervisor) available via http URL (repository)
 - Properly configured MaaS server with tagged bare-metal instances
-- Properly installed and configured OpenStack controller nodes
-- The IP addresses and other configuration information required for the environment; See config.yaml.
+- The tagged MaaS bare-metal instance must be configured to be given a known, static IPv4 address
+- The tagged MaaS bare-metal instance must be configured to use the same DNS server as provided as input to the VSC
+- The desired VSC IP addresses and other configuration information as required in config.yaml
 
 ## Usage
 
-This charm is deployed via bundle file. The VSC service is deployed as a KVM virtual machine.
-The VSC repository: The VSC VM (.qcow) image and its VM definition file are provided either as a payload or as an URL to customers to download and deploy on Juju machines.
+This charm is deployed via bundle file. The VSC service is a subordinate charm that must be bundled with a non-subordinate OS charm, e.g. ubuntu. It is suggested that the bundle file have the following general format:
 
-This VSC VM image must be placed either in the 'payload' folder within the charm or as part of a valid repository URL prior
-to deployment.  The charm expects to find the image; if they are missing the install hook will error out.
-
-The charm will use the VSC image and VM definition xml specified and deploy it on a kvm.
+```
+machines:
+  "1":
+    series: bionic
+    constraints: "tags=metro"
+series: bionic
+services:
+  ubuntu:
+    charm: cs:bionic/ubuntu
+    num_units: 1
+    to:
+      - 1
+  metroae:
+    charm: ./metroae
+    num_units: 0
+    options:
+      <insert options here...>
+```
 
 To Deploy:
 
-    juju deploy nuage-vsc
-	juju add-relation nuage-vsc nuage-vsd
+`juju deploy <bundle_file.yaml>`
 
 # VSC VM (KVM) Configuration
 The VSC service VM is required to have a minimum of 4GB of memory and a minimum of 4 cores.
