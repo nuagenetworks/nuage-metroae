@@ -231,8 +231,16 @@ def container_broken(rid=None):
 
 @hooks.hook('container-relation-changed')
 def container_changed(rid=None):
+    global hypervisor_ip
     log("container_changed")
     log(rid)
+    units = related_units(rid)
+    unit = units[0]
+    hypervisor_ip = relation_get(attribute="private-address",
+                                 unit=unit,
+                                 rid=rid)
+    log("Found ip")
+    log(hypervisor_ip)
 
 
 @hooks.hook('container-relation-departed')
