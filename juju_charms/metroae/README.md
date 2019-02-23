@@ -49,7 +49,7 @@ services:
       <insert options here...>
 ```
 
-Notice that the machine declaration includes a tag. This tag must be set to the bare-metal MaaS intance that this VSC will be deployed to.
+Notice that the machine declaration includes a tag. This tag must be set to the bare-metal MaaS instance that this VSC will be deployed to.
 
 To Deploy:
 
@@ -57,28 +57,11 @@ To Deploy:
 
 There are one or more sample bundle files in the charm's `bundles` directory.
 
-# VSC VM (KVM) Configuration
-The VSC service VM is required to have a minimum of 4GB of memory and a minimum of 4 cores.
-
-The VSC VM management IP address is a static IP address and is a configuration parameter of the VSC charm.
-In a MaaS deployment this IP address must be obtained from the IP range defined for the MaaS DHCP configuration.
-
-The following nuage-vsc charm configuration parameters are required:
-  vsc-vm-ip-address: "IP Address of the VSC VM"
-  vsc-vm-default-gw: "Gateway that your VSC-VM will use to talk to other services in juju env like nauge-vsd
-  vsc-vm-dns-server: "DNS Server which will be used to reslove the DNS for VSD-VM IP."
-  vsc-vm-subnet-mask-length: "Length of the subnet mask for the VM IP"
-  vsc-repository-url: "URL to get the Nuage VSC image. Basically this tar file contains three files: vsc.xml,vsc.qcow2 and bof.cfg"
-
-
-## Known Limitations and Issues
-MaaS 1.7 API does not yet support the API to obtain an IP address from the IP range defined for the MaaS DHCP configuration.
-
 ## Restrictions
-This charm only support deployment with OpenStack Icehouse or better.
+This charm has only been tested using Ubuntu 18.04 hypervisors in a MaaS environment.
 
 # Contact Information
 Nuage Networks
 755 Ravendale Drive                                  
 Mountain View CA 94043
-info@nuagenetworks.net
+devops@nuagenetworks.net
