@@ -14,7 +14,6 @@ NOTE: this charm relies on binaries that are distributed to customers of Nuage N
 - Private key file for ssh to the target server (KVM hypervisor) available via http URL (repository)
 - Properly configured MaaS server with a tagged bare-metal instance specifically for this VSC
 - Bare-metal instance must be configured with a minimum of 4 GB of memory and 4 CPU cores.
-- Bare-metal instance must be configured to be given a known, static IPv4 address
 - Bare-metal instance must be configured to use a DNS server that can resolve the VSD FQDN
 
 ## Limitations
@@ -23,7 +22,7 @@ This beta version of the charm has the following limitations
 
 - TLS is not enabled on the XMPP channel between the VSC and the VSD
 - TLS is not enabled on the OpenFlow channel between the VSC and the VRS
-- The IP address of the hypervisor on the bare-metal MaaS instance must be provided as input
+- The network interface on the hypervisor that can be used to determine the IP address of the hypervisor on the bare-metal MaaS instance must be provided as input
 - DNS for the MaaS instance must be configured to resolve the VSD FQDN that is provided as input  
 
 ## Usage

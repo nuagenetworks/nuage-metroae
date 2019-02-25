@@ -1,4 +1,7 @@
+import fcntl
 import os
+import socket
+import struct
 import subprocess
 
 from charmhelpers.core.hookenv import (
@@ -147,7 +150,7 @@ def create_deployment():
                        'system_ip':
                            options.get('vsc_system_ip'),
                        'target_server':
-                           options.get('vsc_target_server')
+                           get_ip_address(options.get('vsc_target_server_interface'))
                    }]},
            config_template=template)
 
@@ -261,6 +264,15 @@ def container_joined(rid=None):
                                  rid=rid)
     log("Found ip")
     log(hypervisor_ip)
+
+
+def get_ip_address(ifname):
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    return socket.inet_ntoa(fcntl.ioctl(
+        s.fileno(),
+        0x8915,  # SIOCGIFADDR
+        struct.pack('256s', ifname[:15])
+    )[20:24])
 
 
 def run_shell(cmd):
