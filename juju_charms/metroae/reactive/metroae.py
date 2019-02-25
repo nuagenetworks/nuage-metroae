@@ -14,7 +14,7 @@ from charmhelpers.core.hookenv import (
     relation_set,
     status_set)
 
-from charms.reactive import when, when_not, set_flag
+from charms.reactive import when, when_any, when_not, set_flag
 from charmhelpers.core.templating import render
 
 hooks = Hooks()
@@ -175,6 +175,13 @@ def create_deployment():
     set_flag("config.complete")
 
 
+@when_any('host-system.available', 'host-system.connected')
+def host_system_avail():
+    log("Host system avail")
+
+    log(str(get_target_server()))
+
+
 def get_target_server():
     rel_ids = relation_ids(RELATION_NAME)
     if len(rel_ids) == 0:
@@ -228,13 +235,13 @@ def vrs_controller_joined(rid=None):
     relation_set(relation_id=rid, **settings)
 
 
-@hooks.hook('container-relation-broken')
+@hooks.hook('host-system-relation-broken')
 def container_broken(rid=None):
     log("container_broken")
     log(rid)
 
 
-@hooks.hook('container-relation-changed')
+@hooks.hook('host-system-relation-changed')
 def container_changed(rid=None):
     global hypervisor_ip
     log("container_changed")
@@ -248,13 +255,13 @@ def container_changed(rid=None):
     log(hypervisor_ip)
 
 
-@hooks.hook('container-relation-departed')
+@hooks.hook('host-system-relation-departed')
 def container_departed(rid=None):
     log("container_departed")
     log(rid)
 
 
-@hooks.hook('container-relation-joined')
+@hooks.hook('host-system-relation-joined')
 def container_joined(rid=None):
     global hypervisor_ip
     log("container_joined")
