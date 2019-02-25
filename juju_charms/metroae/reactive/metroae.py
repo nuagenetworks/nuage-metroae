@@ -86,6 +86,8 @@ def pull_images():
 def create_deployment():
     log("Create deployment")
 
+    log(str(get_target_server()))
+
     # target_server = get_target_server()
     # if target_server is None:
     #     exit(0)
@@ -186,8 +188,8 @@ def get_target_server():
                         rid=rel_id)
 
 
-@when_not('vsc.deployed')
-@when('config.complete')
+# @when_not('vsc.deployed')
+# @when('config.complete')
 def deploy_vsc():
     log("Deploy VSC")
     run_shell("source .metroaenv/bin/activate && "
