@@ -175,11 +175,16 @@ def create_deployment():
     set_flag("config.complete")
 
 
-@when_any('host-system.available', 'host-system.connected')
-def host_system_avail():
+@when('host-system.available')
+def host_system_avail(juju_info_client):
     log("Host system avail")
 
-    log(str(get_target_server()))
+    remote_address = ""
+
+    for conv in juju_info_client.conversations():
+        remote_address = conv.get_remote("private-address")
+
+    log(remote_address)
 
 
 def get_target_server():
