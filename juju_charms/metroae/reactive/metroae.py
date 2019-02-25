@@ -80,10 +80,10 @@ def pull_images():
     os.chmod(PRIVATE_KEY_FILE, 0o400)
 
 
-@when_not('config.complete')
+# @when_not('config.complete')
 # @when('container.connected')
-@when('config.changed')
-def create_deployment():
+# @when('config.changed')
+def create_deployment(target_server_address):
     log("Create deployment")
 
     log(str(get_target_server()))
@@ -152,7 +152,8 @@ def create_deployment():
                        'system_ip':
                            options.get('vsc_system_ip'),
                        'target_server':
-                           get_ip_address(options.get('vsc_target_server_interface'))
+                           target_server_address
+                           # get_ip_address(options.get('vsc_target_server_interface'))
                    }]},
            config_template=template)
 
@@ -172,9 +173,8 @@ def create_deployment():
            },
            config_template=template)
 
-    set_flag("config.complete")
 
-
+@when_not('config.complete')
 @when('host-system.available')
 def host_system_avail(juju_info_client):
     log("Host system avail")
@@ -185,6 +185,10 @@ def host_system_avail(juju_info_client):
         remote_address = conv.get_remote("private-address")
 
     log(remote_address)
+
+    create_deployment(remote_address)
+
+    set_flag("config.complete")
 
 
 def get_target_server():
@@ -200,8 +204,8 @@ def get_target_server():
                         rid=rel_id)
 
 
-# @when_not('vsc.deployed')
-# @when('config.complete')
+@when_not('vsc.deployed')
+@when('images.installed', 'config.complete')
 def deploy_vsc():
     log("Deploy VSC")
     run_shell("source .metroaenv/bin/activate && "
