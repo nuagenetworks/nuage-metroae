@@ -22,7 +22,6 @@ This beta version of the charm has the following limitations
 
 - TLS is not enabled on the XMPP channel between the VSC and the VSD
 - TLS is not enabled on the OpenFlow channel between the VSC and the VRS
-- The network interface on the hypervisor that can be used to determine the IP address of the hypervisor on the bare-metal MaaS instance must be provided as input
 - DNS for the MaaS instance must be configured to resolve the VSD FQDN that is provided as input  
 
 ## Usage
