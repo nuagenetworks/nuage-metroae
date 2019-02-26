@@ -1,23 +1,13 @@
-import fcntl
 import os
-import socket
-import struct
 import subprocess
 
 from charmhelpers.core.hookenv import (
     config,
-    Hooks,
     log,
-    related_units,
-    relation_get,
-    relation_ids,
-    relation_set,
     status_set)
 
-from charms.reactive import when, when_any, when_not, set_flag
+from charms.reactive import when, when_not, set_flag
 from charmhelpers.core.templating import render
-
-hooks = Hooks()
 
 options = config()
 
@@ -54,7 +44,6 @@ def install_metroae():
 def install_images():
     log("Install images")
     pull_images()
-    # create_deployment()
 
     set_flag("images.installed")
 
@@ -69,8 +58,6 @@ def pull_images():
     if not os.path.exists(VSD_IMAGE_DIR):
         os.makedirs(VSD_IMAGE_DIR)
 
-    # run_shell("wget %s -O %s" % (VSD_IMAGE_URL, VSD_IMAGE_FILE))
-
     if not os.path.exists(VSC_IMAGE_DIR):
         os.makedirs(VSC_IMAGE_DIR)
 
@@ -80,22 +67,25 @@ def pull_images():
     os.chmod(PRIVATE_KEY_FILE, 0o400)
 
 
-# @when_not('config.complete')
-# @when('container.connected')
-# @when('config.changed')
+@when_not('config.complete')
+@when('host-system.available')
+def host_system_avail(juju_info_client):
+    log("Host system avail")
+
+    remote_address = ""
+
+    for conv in juju_info_client.conversations():
+        remote_address = conv.get_remote("private-address")
+
+    log(remote_address)
+
+    create_deployment(remote_address)
+
+    set_flag("config.complete")
+
+
 def create_deployment(target_server_address):
     log("Create deployment")
-
-    log(str(get_target_server()))
-
-    # target_server = get_target_server()
-    # if target_server is None:
-    #     exit(0)
-
-    # log(target_server)
-    # set_flag("config.complete")
-
-    # return
 
     run_shell("rm -f " + os.path.join(DEPLOYMENT_DIR, "*"))
 
@@ -153,7 +143,6 @@ def create_deployment(target_server_address):
                            options.get('vsc_system_ip'),
                        'target_server':
                            target_server_address
-                           # get_ip_address(options.get('vsc_target_server_interface'))
                    }]},
            config_template=template)
 
@@ -174,123 +163,16 @@ def create_deployment(target_server_address):
            config_template=template)
 
 
-@when_not('config.complete')
-@when('host-system.available')
-def host_system_avail(juju_info_client):
-    log("Host system avail")
-
-    remote_address = ""
-
-    for conv in juju_info_client.conversations():
-        remote_address = conv.get_remote("private-address")
-
-    log(remote_address)
-
-    create_deployment(remote_address)
-
-    set_flag("config.complete")
-
-
-def get_target_server():
-    rel_ids = relation_ids(RELATION_NAME)
-    if len(rel_ids) == 0:
-        log("Relation not created yet")
-        return None
-    rel_id = rel_ids[0]
-    units = related_units(rel_id)
-    unit = units[0]
-    return relation_get(attribute="private-address",
-                        unit=unit,
-                        rid=rel_id)
-
-
 @when_not('vsc.deployed')
 @when('images.installed', 'config.complete')
 def deploy_vsc():
     log("Deploy VSC")
+
     run_shell("source .metroaenv/bin/activate && "
               "HOME=/home/root ./metroae install_vscs "
               "-vvv -e ansible_python_interpreter=python2.7")
+
     set_flag("vsc.deployed")
-
-
-@hooks.hook('vrs-controller-service-relation-broken')
-def vrs_controller_service_broken(rid=None):
-    log("vrs_controller_service_broken")
-    log(rid)
-
-
-@hooks.hook('vrs-controller-service-relation-changed')
-def vrs_controller_service_changed(rid=None):
-    log("vrs_controller_service_changed")
-    log(rid)
-
-
-@hooks.hook('vrs-controller-service-relation-departed')
-def vrs_controller_service_departed(rid=None):
-    log("vrs_controller_service_departed")
-    log(rid)
-
-
-@hooks.hook('vrs-controller-service-relation-joined')
-def vrs_controller_joined(rid=None):
-    global vsc_mgmt_ip
-    log("vrs_controller_joined")
-    log(rid)
-    vsc_mgmt_ip = options.get('vsc_mgmt_ip')
-    settings = {
-        'vsc-ip-address': vm_ip_address
-    }
-    relation_set(relation_id=rid, **settings)
-
-
-@hooks.hook('host-system-relation-broken')
-def container_broken(rid=None):
-    log("container_broken")
-    log(rid)
-
-
-@hooks.hook('host-system-relation-changed')
-def container_changed(rid=None):
-    global hypervisor_ip
-    log("container_changed")
-    log(rid)
-    units = related_units(rid)
-    unit = units[0]
-    hypervisor_ip = relation_get(attribute="private-address",
-                                 unit=unit,
-                                 rid=rid)
-    log("Found ip")
-    log(hypervisor_ip)
-
-
-@hooks.hook('host-system-relation-departed')
-def container_departed(rid=None):
-    log("container_departed")
-    log(rid)
-
-
-@hooks.hook('host-system-relation-joined')
-def container_joined(rid=None):
-    global hypervisor_ip
-    log("container_joined")
-    log(rid)
-    units = related_units(rid)
-    unit = units[0]
-    hypervisor_ip = relation_get(attribute="private-address",
-                                 unit=unit,
-                                 rid=rid)
-    log("Found ip")
-    log(hypervisor_ip)
-
-
-def get_ip_address(ifname):
-    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    return socket.inet_ntoa(fcntl.ioctl(
-        s.fileno(),
-        0x8915,  # SIOCGIFADDR
-        struct.pack('256s', ifname[:15].encode('utf-8'))
-    )[20:24])
 
 
 def run_shell(cmd):
