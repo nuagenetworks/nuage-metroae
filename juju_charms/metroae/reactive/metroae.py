@@ -30,19 +30,21 @@ RELATION_NAME = "container"
 @when_not('metroae.installed')
 def install_metroae():
     e = 'Installing metroae'
-    log("Install metroae")
+    status_set('active', e)
+    log(e)
     install_packages()
     run_shell("virtualenv -p python2.7 .metroaenv")
     run_shell("source .metroaenv/bin/activate && ./metro-setup.sh")
 
     set_flag("metroae.installed")
-    status_set('active', e)
 
 
 @when_not('images.installed')
 @when('metroae.installed')
 def install_images():
-    log("Install images")
+    e = 'Getting VSC resources'
+    status_set('active', e)
+    log(e)
     pull_images()
 
     set_flag("images.installed")
@@ -70,7 +72,9 @@ def pull_images():
 @when_not('config.complete')
 @when('host-system.available')
 def host_system_avail(juju_info_client):
-    log("Host system avail")
+    e = 'Creating VSC deployment'
+    status_set('active', e)
+    log(e)
 
     remote_address = ""
 
@@ -166,14 +170,18 @@ def create_deployment(target_server_address):
 @when_not('vsc.deployed')
 @when('images.installed', 'config.complete')
 def deploy_vsc():
-    log("Deploy VSC")
+    e = 'Installing VSC'
+    status_set('active', e)
+    log(e)
 
     run_shell("source .metroaenv/bin/activate && "
               "HOME=/home/root ./metroae install_vscs "
               "-vvv -e ansible_python_interpreter=python2.7")
 
     set_flag("vsc.deployed")
-    status_set('active', 'ready')
+    e = 'ready'
+    status_set('active', e)
+    log(e)
 
 
 def run_shell(cmd):
