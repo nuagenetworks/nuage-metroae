@@ -152,21 +152,6 @@
       vm_shell: "/usr/bin/chown"
       vm_shell_args: " 0 0 /etc/sysconfig/network"
 
-  - name: Writing hostname file to the VM
-    connection: local
-    vmware_vm_shell:
-      hostname: "{{ target_server }}"
-      username: "{{ vcenter.username }}"
-      password: "{{ vcenter.password }}"
-      datacenter: "{{ vcenter.datacenter }}"
-      cluster: "{{ vcenter.cluster }}"
-      validate_certs: no
-      vm_id: "{{ vm_name }}"
-      vm_username: "{{ vsd_default_username }}"
-      vm_password: "{{ vsd_default_password }}"
-      vm_shell: "/usr/bin/echo"
-      vm_shell_args: " '{{ lookup('template', 'hostname.j2') }}' > /etc/hostname"
-
   - name: Set the owner and group on the hostname file in the VM
     connection: local
     vmware_vm_shell:
@@ -177,10 +162,40 @@
       cluster: "{{ vcenter.cluster }}"
       validate_certs: no
       vm_id: "{{ vm_name }}"
-      vm_username: "{{ vsd_default_username }}"
-      vm_password: "{{ vsd_default_password }}"
+      vm_username: "{{ vstat_default_username }}"
+      vm_password: "{{ vstat_default_password }}"
       vm_shell: "/usr/bin/chown"
       vm_shell_args: " 0 0 /etc/hostname"
+  
+  - name: Set hostname for VCenter for current session
+    connection: local
+    vmware_vm_shell:
+      hostname: "{{ target_server }}"
+      username: "{{ vcenter.username }}"
+      password: "{{ vcenter.password }}"
+      datacenter: "{{ vcenter.datacenter }}"
+      cluster: "{{ vcenter.cluster }}"
+      validate_certs: no
+      vm_id: "{{ vm_name }}"
+      vm_username: "{{ vstat_default_username }}"
+      vm_password: "{{ vstat_default_password }}"
+      vm_shell: "/usr/bin/hostname"
+      vm_shell_args: " '{{ inventory_hostname }}'"
+  
+  - name: Set hostname for VCenter permanently
+    connection: local
+    vmware_vm_shell:
+      hostname: "{{ target_server }}"
+      username: "{{ vcenter.username }}"
+      password: "{{ vcenter.password }}"
+      datacenter: "{{ vcenter.datacenter }}"
+      cluster: "{{ vcenter.cluster }}"
+      validate_certs: no
+      vm_id: "{{ vm_name }}"
+      vm_username: "{{ vstat_default_username }}"
+      vm_password: "{{ vstat_default_password }}"
+      vm_shell: "/usr/bin/echo"
+      vm_shell_args: " '{{ lookup('template', 'hostname.j2') }}' > /etc/hostname"
 
   - name: Create the directory /root/.ssh for authorized_keys on the VM
     connection: local
