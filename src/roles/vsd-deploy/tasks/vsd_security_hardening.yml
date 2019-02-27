@@ -1,12 +1,13 @@
+- name: Clean known_hosts of VSDs (ignoring errors)
+  known_hosts:
+    name: "{{ mgmt_ip }}"
+    state: absent
+  delegate_to: localhost
+  no_log: True
+  ignore_errors: True
+  
 - block:
-  - name: Clean known_hosts of VSDs (ignoring errors)
-    known_hosts:
-      name: "{{ mgmt_ip }}"
-      state: absent
-    delegate_to: localhost
-    no_log: True
-    ignore_errors: True
-    
+
   - block:
     - name: Add and set custom user password
       user: 
@@ -102,6 +103,54 @@
       regexp: '<access-log prefix="access.log" pattern="%a %t %H %p %r %s %D">'
       line: '<access-log prefix="access.log" pattern="%a %t %H %p %r %s %D %{CUSTOM}i %{X-Nuage-Request-ID}o">'
     when: adavanced_api_access_logging is defined
-
+      
   remote_user: "{{ vsd_username }}"
-  
+    
+  - block:
+    - name: Copy Root CA to VSD
+      expect:
+        command: 'scp {{ root_cert_path }} {{ vsd_username }}@{{ mgmt_ip }}:/tmp/ca.cert.pem'
+        responses:
+          (?i)yes: "yes"
+          (?i)password: "{{ vsd_custom_password|default(vsd_default_password) }}"
+        timeout: 720
+      delegate_to: localhost
+
+    - name: Copy and Intermediate Cert file to VSD
+      expect:
+        command: 'scp {{ intermediate_cert_path }} {{ vsd_username }}@{{ mgmt_ip }}:/tmp/intermediate.cert.pem'
+        responses:
+          (?i)yes: "yes"
+          (?i)password: "{{ vsd_custom_password|default(vsd_default_password) }}"
+        timeout: 720
+      delegate_to: localhost
+        
+    - name: Import Intermediate Cert Pem file
+      shell: '/usr/java/latest/bin/keytool -importcert  -file /tmp/intermediate.cert.pem -keystore /usr/java/latest/lib/security/cacerts -storepass changeit -alias myintermediateCA -noprompt'
+      remote_user: "{{ vsd_username }}"
+
+    - name: Import Root CA Pem file
+      shell: /usr/java/latest/bin/keytool -importcert -file /tmp/ca.cert.pem -keystore /usr/java/latest/lib/security/cacerts -storepass changeit -alias myRootCA -noprompt'
+      remote_user: "{{ vsd_username }}"
+      
+    - name: Stop vsd-core
+      shell: monit -g vsd-core stop
+
+    - name: Stop ejabberd 
+      shell: monit stop ejabberd
+
+    - name: Start ejabberd
+      shell: monit start ejabberd
+
+    - name: Wait for Ejabberd to start
+      monit_wait_for_service:
+        name: ejabberd
+        timeout_seconds: 600
+        test_interval_seconds: 30
+
+    - name: Start vsd-core
+      shell: monit -g vsd-core start        
+    
+    when:
+      - root_cert_path is defined
+      - intermediate_cert_path is defined
