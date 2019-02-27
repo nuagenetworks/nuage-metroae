@@ -20,10 +20,34 @@
         path: /etc/ssh/sshd_config
         regexp: '#PermitRootLogin yes'
         line: 'PermitRootLogin no'
+    
+    - name: Create .ssh directory for vsd custom user
+      shell: 'mkdir -p /home/{{ vsd_custom_user }}/.ssh/'
+      remote_user: "{{ vsd_custom_username }}"
         
+    - block:
+      - name: Create a temporary copy of the authorized_keys file
+        template: src=authorized_keys.j2 backup=no dest=/tmp/authorized_keys_temp
+  
+      - name: Copy authorized file to vsd custom user home directory
+        expect:
+          command: 'scp /tmp/authorized_keys_temp {{ vsd_custom_username }}@{{ mgmt_ip }}:/home/{{ vsd_custom_username }}/.ssh/authorized_keys'
+          responses:
+            (?i)yes: "yes"
+            (?i)password: "{{ vsd_custom_password }}"
+          timeout: 720
+
+      - name: Remove temporary copy of authorized_keys file
+        file: path={{ images_path }}/{{ vm_name }}/authorized_keys state=absent      
+      delegate_to: localhost
+      
+    - name: Set permission on the authorized file to 644
+      shell: 'chmod 644 /home/{{ vsd_custom_username }}/.ssh/authorized_keys'
+      remote_user: " {{ vsd_custom_username }}"
+    
     - name: Restart ssh server
       shell: /bin/systemctl restart  sshd.service
-        
+  
     - name: Set vsd user to custom user 
       set_fact:
         vsd_username: "{{ vsd_custom_username }}"
