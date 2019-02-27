@@ -173,6 +173,7 @@ def deploy_vsc():
               "-vvv -e ansible_python_interpreter=python2.7")
 
     set_flag("vsc.deployed")
+    status_set('active', 'ready')
 
 
 def run_shell(cmd):
