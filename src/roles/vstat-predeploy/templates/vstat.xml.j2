@@ -2,7 +2,16 @@
   <name>{{ vm_name }}</name>
   <memory unit='GiB'>{{ vstat_ram }}</memory>
   <currentMemory unit='GiB'>{{ vstat_ram }}</currentMemory>
-  <vcpu placement='static'>6</vcpu>
+  <vcpu current='6'>6</vcpu>
+{% if cpuset is defined %}
+  <cputune>
+      {% for cpu in cpuset %}
+        <vcpupin vcpu='{{ loop.index0 }}' cpuset='{{ cpu }}'/>
+      {% endfor %}
+  </cputune>
+{% else %}
+    <vcpu placement='static'>6</vcpu>
+{% endif %}
   <resource>
     <partition>/machine</partition>
   </resource>
