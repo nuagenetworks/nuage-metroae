@@ -1,5 +1,19 @@
 - block:
-
+  - block:
+    - name: Copy external certificates
+      expect:
+        command: 'scp {{ item }} {{ vsc_default_username }}@{{ mgmt_ip }}:'
+        responses:
+          (?i)yes: "yes"
+          (?i)password: "{{ vsd_custom_password|default(vsd_default_password) }}"
+        timeout: 720
+        with_items:
+          - "{{ private_key }}"
+          - "{{ certificate }}"
+          - "{{ ca-certificate }}"
+          
+      delegate_to: localhost
+       
   - name: Create and transfer certs
     include_role:
       name: common

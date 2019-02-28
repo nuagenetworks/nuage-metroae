@@ -11,6 +11,7 @@
     - name: Add and set custom user password
       user: 
         name: "{{ vsd_custom_username }}"
+        groups: {{ vsd_custom_username}}, wheel
   
     - name: Set the password for the custom user
       shell: echo {{ vsd_custom_password }} | passwd --stdin {{ vsd_custom_username }}
@@ -22,10 +23,16 @@
         line: 'PermitRootLogin no'
     
     - name: Create .ssh directory for vsd custom user
-      shell: 'mkdir -p /home/{{ vsd_custom_user }}/.ssh/'
-      remote_user: "{{ vsd_custom_username }}"
-        
+      shell: 'mkdir -p /home/{{ vsd_custom_username }}/.ssh/'
+      
+    - name: Change ownership of .ssh directory
+      shell: 'chown {{ vsd_custom_username }}:{{ vsd_custom_username }} /home/{{ vsd_custom_username }}/.ssh'
+      
     - block:
+      - name: Get the public key for the current user
+        local_action: command cat "{{ user_ssh_pub_key }}"
+        register: current_user_ssh_key
+        
       - name: Create a temporary copy of the authorized_keys file
         template: src=authorized_keys.j2 backup=no dest=/tmp/authorized_keys_temp
   
@@ -38,7 +45,7 @@
           timeout: 720
 
       - name: Remove temporary copy of authorized_keys file
-        file: path={{ images_path }}/{{ vm_name }}/authorized_keys state=absent      
+        file: path=tmp/authorized_keys_temp state=absent      
       delegate_to: localhost
       
     - name: Set permission on the authorized file to 644
@@ -127,12 +134,16 @@
       line: '<access-log prefix="access.log" pattern="%a %t %H %p %r %s %D %{CUSTOM}i %{X-Nuage-Request-ID}o">'
     when: adavanced_api_access_logging is defined
       
-  remote_user: "{{ vsd_username }}"
+  remote_user: "{{ vsd_username | default(vsd_default_username) }}"
+  become: "{{ 'no' if vsd_username | default(vsd_default_username) == 'root' else 'yes' }}"
+  vars:
+    ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"
+  
 
 - block:
   - name: Copy Root CA to VSD
     expect:
-      command: 'scp {{ root_cert_path }} {{ vsd_username }}@{{ mgmt_ip }}:/tmp/ca.cert.pem'
+      command: 'scp {{ root_cert_path }} {{ vsd_custom_username }}@{{ mgmt_ip }}:/tmp/ca.cert.pem'
       responses:
         (?i)yes: "yes"
         (?i)password: "{{ vsd_custom_password|default(vsd_default_password) }}"
@@ -141,39 +152,43 @@
 
   - name: Copy and Intermediate Cert file to VSD
     expect:
-      command: 'scp {{ intermediate_cert_path }} {{ vsd_username }}@{{ mgmt_ip }}:/tmp/intermediate.cert.pem'
+      command: 'scp {{ intermediate_cert_path }} {{ vsd_custom_username }}@{{ mgmt_ip }}:/tmp/intermediate.cert.pem'
       responses:
         (?i)yes: "yes"
         (?i)password: "{{ vsd_custom_password|default(vsd_default_password) }}"
       timeout: 720
     delegate_to: localhost
-        
-  - name: Import Intermediate Cert Pem file
-    shell: '/usr/java/latest/bin/keytool -importcert  -file /tmp/intermediate.cert.pem -keystore /usr/java/latest/lib/security/cacerts -storepass changeit -alias myintermediateCA -noprompt'
-    remote_user: "{{ vsd_username }}"
+  
+  - block:       
+    - name: Import Intermediate Cert Pem file
+      shell: '/usr/java/latest/bin/keytool -importcert  -file /tmp/intermediate.cert.pem -keystore /usr/java/latest/lib/security/cacerts -storepass changeit -alias myintermediateCA -noprompt'
 
-  - name: Import Root CA Pem file
-    shell: '/usr/java/latest/bin/keytool -importcert -file /tmp/ca.cert.pem -keystore /usr/java/latest/lib/security/cacerts -storepass changeit -alias myRootCA -noprompt'
-    remote_user: "{{ vsd_username }}"
+    - name: Import Root CA Pem file
+      shell: '/usr/java/latest/bin/keytool -importcert -file /tmp/ca.cert.pem -keystore /usr/java/latest/lib/security/cacerts -storepass changeit -alias myRootCA -noprompt'
+  
+    - name: Stop vsd-core
+      shell: monit -g vsd-core stop
+  
+    - name: Stop ejabberd 
+      shell: monit stop ejabberd
+  
+    - name: Start ejabberd
+      shell: monit start ejabberd
+  
+    - name: Wait for Ejabberd to start
+      monit_waitfor_service:
+        name: ejabberd
+        timeout_seconds: 600
+        test_interval_seconds: 30
+  
+    - name: Start vsd-core
+      shell: monit -g vsd-core start        
+
+    remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
+    become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
+    vars:
+      ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"
       
-  - name: Stop vsd-core
-    shell: monit -g vsd-core stop
-
-  - name: Stop ejabberd 
-    shell: monit stop ejabberd
-
-  - name: Start ejabberd
-    shell: monit start ejabberd
-
-  - name: Wait for Ejabberd to start
-    monit_waitfor_service:
-      name: ejabberd
-      timeout_seconds: 600
-      test_interval_seconds: 30
-
-  - name: Start vsd-core
-    shell: monit -g vsd-core start        
-    
   when:
     - root_cert_path is defined
     - intermediate_cert_path is defined

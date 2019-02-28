@@ -12,7 +12,7 @@
     tasks_from: wait-for-ssh
   vars:
     ssh_host: "{{ mgmt_ip }}"
-    host_username: "{{ vsd_username | default(vsd_default_username) }}"
+    host_username: "{{ vsd_custom_username | default(vsd_default_username) }}"
 
 - name: Clean known_hosts (ignoring errors)
   known_hosts:
@@ -27,15 +27,15 @@
 - name: Get current version of VSD software
   shell: echo $VSD_VERSION
   register: vsd_version
-  remote_user: "{{ vsd_username | default(vsd_default_username) }}"
+  remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
 
 - name: Get configured VSD Hostname
   command: hostname -f
   register: hostname_output
-  remote_user: "{{ vsd_username | default(vsd_default_username) }}"
-  become: "{{ 'no' if vsd_username | default(vsd_default_username) == 'root' else 'yes' }}"
+  remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
+  become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
   vars:
-    ansible_become_pass: "{{ vsd_password | default(vsd_default_password) }}"
+    ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"
 
 - name: Verify configured VSD hostname
   assert:
@@ -50,10 +50,10 @@
   network_info:
     mac_addr: False
   register: net_conf
-  remote_user: "{{ vsd_username | default(vsd_default_username) }}"
-  become: "{{ 'no' if vsd_username | default(vsd_default_username) == 'root' else 'yes' }}"
+  remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
+  become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
   vars:
-    ansible_become_pass: "{{ vsd_password | default(vsd_default_password) }}"
+    ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"
 
 - name: Print network config when verbosity >= 1
   debug: var=net_conf.info verbosity=1
@@ -67,10 +67,10 @@
 - name: Execute list_p1db command on VSD(s)
   command: "{{ p1db_cmd }}"
   register: list_p1db_output
-  remote_user: "{{ vsd_username | default(vsd_default_username) }}"
-  become: "{{ 'no' if vsd_username | default(vsd_default_username) == 'root' else 'yes' }}"
+  remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
+  become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
   vars:
-    ansible_become_pass: "{{ vsd_password | default(vsd_default_password) }}"
+    ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"
 
 - name: Print ejabberd list_p1db output when verbosity >= 1
   debug: var=list_p1db_output verbosity=1
@@ -85,10 +85,10 @@
 - name: Execute list_cluster command on VSD(s)
   command: "{{ ejabber_cluster_list_command }}"
   register: list_cluster_output
-  remote_user: "{{ vsd_username | default(vsd_default_username) }}"
-  become: "{{ 'no' if vsd_username | default(vsd_default_username) == 'root' else 'yes' }}"
+  remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
+  become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
   vars:
-    ansible_become_pass: "{{ vsd_password | default(vsd_default_password) }}"
+    ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"
 
 - name: Print ejabberd list_cluster_output when verbosity >= 1
   debug: var=list_cluster_output verbosity=1
@@ -103,10 +103,10 @@
 - name: Execute ejabberd_connected_users_command command on VSD(s)
   command: "{{ ejabberd_connected_users_command }}"
   register: user_list
-  remote_user: "{{ vsd_username | default(vsd_default_username) }}"
-  become: "{{ 'no' if vsd_username | default(vsd_default_username) == 'root' else 'yes' }}"
+  remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
+  become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
   vars:
-    ansible_become_pass: "{{ vsd_password | default(vsd_default_password) }}"
+    ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"
 
 - name: Print ejabberd connected_users output when verbosity >= 1
   debug: var=user_list verbosity=1
@@ -122,10 +122,10 @@
   assert:
     that: "user_list.stdout|search('{{ hostvars[item].xmpp.username }}')"
     msg: "{{ hostvars[item].xmpp.username }} could not be found in '/opt/ejabberd/bin/ejabberdctl connected_users'"
-  remote_user: "{{ vsd_username | default(vsd_default_username) }}"
-  become: "{{ 'no' if vsd_username | default(vsd_default_username) == 'root' else 'yes' }}"
+  remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
+  become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
   vars:
-    ansible_become_pass: "{{ vsd_password | default(vsd_default_password) }}"
+    ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"
   with_items: "{{ groups['vscs'] }}"
   when:
     - groups['vscs'] is defined
@@ -178,10 +178,10 @@
       vsd_monit:
         group: all
       register: vsd_proc
-      remote_user: "{{ vsd_username | default(vsd_default_username) }}"
-      become: "{{ 'no' if vsd_username | default(vsd_default_username) == 'root' else 'yes' }}"
+      remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
+      become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
       vars:
-        ansible_become_pass: "{{ vsd_password | default(vsd_default_password) }}"
+        ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"
 
     - block:
 
@@ -189,10 +189,10 @@
         command: monit status activemq-status
         register: jms_status
         delegate_to: "{{ item }}"
-        remote_user: "{{ vsd_username | default(vsd_default_username) }}"
-        become: "{{ 'no' if vsd_username | default(vsd_default_username) == 'root' else 'yes' }}"
+        remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
+        become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
         vars:
-          ansible_become_pass: "{{ vsd_password | default(vsd_default_password) }}"
+          ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"
         with_items: "{{ groups['vsds'] }}"
 
       - name: Set JMS Master Node Hostname
@@ -282,10 +282,10 @@
     command: "mysql -umonituser -p{{ monitPwd }} -e 'select 1'"
     when: monitPwd is defined
 
-  remote_user: "{{ vsd_username | default(vsd_default_username) }}"
+  remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
   no_log: True
-  become: "{{ 'no' if vsd_username | default(vsd_default_username) == 'root' else 'yes' }}"
+  become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
   vars:
-    ansible_become_pass: "{{ vsd_password | default(vsd_default_password) }}"
+    ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"
 
 - import_tasks: report_footer.yml

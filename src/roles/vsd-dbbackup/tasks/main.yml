@@ -12,7 +12,7 @@
 - name: Get current version of VSD software
   shell: echo $VSD_VERSION
   register: vsd_version
-  remote_user: "{{ vsd_username | default(vsd_default_username) }}"
+  remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
 
 - debug: var=vsd_version verbosity=1
 
@@ -147,10 +147,10 @@
       - "vsdbackup-*.log"
     register: lst_files
 
-  remote_user: "{{ vsd_username | default(vsd_default_username) }}"
-  become: "{{ 'no' if vsd_username | default(vsd_default_username) == 'root' else 'yes' }}"
+  remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
+  become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
   vars:
-    ansible_become_pass: "{{ vsd_password | default(vsd_default_password) }}"
+    ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"
 
 - name: Print out the list of files
   debug: var="lst_files"
@@ -176,10 +176,10 @@
     flat: yes
     validate_checksum: false
   with_items: "{{ lst_files.results }}"
-  remote_user: "{{ vsd_username | default(vsd_default_username) }}"
-  become: "{{ 'no' if vsd_username | default(vsd_default_username) == 'root' else 'yes' }}"
+  remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
+  become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
   vars:
-    ansible_become_pass: "{{ vsd_password | default(vsd_default_password) }}"
+    ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"
 
 - name: Create symbolic link to backup location
   file: dest="{{metro_backup_root}}/backup-{{ groups['vsds'][0] }}-latest" src="{{ vsd_localhost_backup_dir }}"  state=link
@@ -189,8 +189,8 @@
   file:
     path: "{{ vsd_backup_dir }}"
     state: absent
-  remote_user: "{{ vsd_username | default(vsd_default_username) }}"
-  become: "{{ 'no' if vsd_username | default(vsd_default_username) == 'root' else 'yes' }}"
+  remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
+  become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
   vars:
-    ansible_become_pass: "{{ vsd_password | default(vsd_default_password) }}"
+    ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"
   ignore_errors: True
