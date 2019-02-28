@@ -48,7 +48,31 @@ timezone: {{ timezone | default('US/Pacific') }}
 yum_proxy: "{{ yum_proxy | default('NONE') }}"
 yum_update: {{ yum_update | default(True) }}
 
+{% if os_auth is defined %}
+os_auth:
+  username: {{ os_auth.username | default('NONE') }}
+  password: {{ os_auth.password | default('NONE') }}
+  project_name: {{ os_auth.project_name | default('NONE') }}
+  auth_url: "{{ os_auth.auth_url | default('NONE') }}"
+{% endif %}
+
 vcenter_global:
+{% if encrypted.vcenter_username is defined %}
+  username: {{ encrypted.vcenter_username | indent(8, False) }}
+{% endif %}
+{% if encrypted.vcenter_password is defined %}
+  password: {{ encrypted.vcenter_password | indent(8, False) }}
+{% endif %}
+{% if vcenter_datacenter is defined %}
+  datacenter: {{ vcenter_datacenter }}
+{% endif %}
+{% if vcenter_cluster is defined %}
+  cluster: {{ vcenter_cluster }}
+{% endif %}
+{% if vcenter_datastore is defined %}
+  datastore: {{ vcenter_datastore }}
+{% endif %}
+  resource_pool: {{ vcenter_resource_pool | default('NONE') }}
   ovftool: {{ vcenter_ovftool | default('/usr/bin/ovftool') }}
 
 {% if nuage_software_version is defined %}
@@ -173,14 +197,6 @@ aws_access_key: {{ encrypted.aws_access_key | indent(8, False) }}
 {% endif %}
 {% if encrypted.aws_secret_key is defined %}
 aws_secret_key: {{ encrypted.aws_secret_key | indent(8, False) }}
-{% endif %}
-
-{% if encrypted.openstack_username is defined %}
-openstack_auth:
-  username: {{ encrypted.openstack_username | indent(8, False) }}
-  password: {{ encrypted.openstack_password | indent(8, False) }}
-  project_name: {{ openstack_project_name }}
-  auth_url: {{ openstack_auth_url }}
 {% endif %}
 
 {% set zfb_nsg_list = nsgvs | selectattr("bootstrap_method", "equalto", "zfb_metro") | list %}

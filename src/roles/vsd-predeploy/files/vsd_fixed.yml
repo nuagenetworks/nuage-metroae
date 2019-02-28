@@ -1,0 +1,44 @@
+heat_template_version: '2014-10-16'
+parameters:
+  vm_name:
+    type: string
+  ssh_key:
+    type: string
+  vsd_image:
+    type: string
+  vsd_network:
+    type: string
+  vsd_subnet:
+    type: string
+  vsd_flavor:
+    type: string
+  mgmt_ip:
+    type: string
+ 
+resources:
+  mgmt_port:
+    type: OS::Neutron::Port
+    properties:
+      network_id: {get_param: vsd_network}
+      fixed_ips: [{"subnet": {get_param: vsd_subnet}, "ip_address": {get_param: mgmt_ip}}]
+  mycompute:
+    type: OS::Nova::Server
+    properties:
+      name: {get_param: vm_name}
+      flavor: {get_param: vsd_flavor}
+      image: {get_param: vsd_image}
+      networks:
+        - port: {get_resource: mgmt_port}
+      user_data_format: RAW
+      user_data: 
+        str_replace:
+          template: |
+            #!/bin/bash
+            mkdir /root/.ssh/
+            echo usr >> /root/.ssh/authorized_keys
+          params:
+            usr: {get_param: ssh_key} 
+outputs:
+  server_ip:
+    description: mgmt ip assigned to vsd
+    value: { get_attr: [mycompute, networks, {get_param: vsd_network}, 0]}

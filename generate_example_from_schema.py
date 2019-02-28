@@ -11,7 +11,6 @@ SCHEMA_DIRECTORY = "schemas"
 
 
 class ExampleFileGenerator(object):
-
     def __init__(self, no_comments=False, as_template=False, as_example=False,
                  example_folder=None):
         self.has_comments = not no_comments
@@ -162,8 +161,6 @@ class ExampleFileGenerator(object):
 
             if self.has_comments:
                 default_value = '""'
-                if "type" in field and field["type"] == "array":
-                    default_value = '[]'
                 if "default" in field and field["default"] != "":
                     default_value = field["default"]
                 self.example_lines.append("%s# %s: %s" % (indent,
@@ -192,18 +189,13 @@ class ExampleFileGenerator(object):
             is_encrypted = False
             if "encrypt" in field and field["encrypt"] is True:
                 is_encrypted = True
-            arrayType = "integer"
-            if "items" in field:
-                if "type" in field["items"]:
-                    arrayType = field["items"]["type"]
             return self.get_example_template_value(name, field_type,
-                                                   is_list, is_encrypted,
-                                                   arrayType)
+                                                   is_list, is_encrypted)
         else:
             return self.get_example_placeholder_value(field_type)
 
     def get_example_template_value(self, name, field_type, is_list,
-                                   is_encrypted, arrayType):
+                                   is_encrypted):
         item_name = ""
         if is_list:
             item_name = "item."
@@ -212,12 +204,8 @@ class ExampleFileGenerator(object):
         elif field_type == "boolean":
             return "{{ %s%s | lower }}" % (item_name, name)
         elif field_type == "array":
-            if arrayType == "string":
-                return ('[ {%% for i in %s%s | default([]) %%}"{{ i }}", '
-                        '{%% endfor %%}]' % (item_name, name))
-            else:
-                return ('[ {%% for i in %s%s | default([]) %%}{{ i }}, '
-                        '{%% endfor %%}]' % (item_name, name))
+            return ('[ {%% for i in %s%s | default([]) %%}"{{ i }}", '
+                    '{%% endfor %%}]' % (item_name, name))
         elif is_encrypted:
             return "{{ %s%s | indent(8, False) }}" % (item_name, name)
         else:
@@ -279,16 +267,13 @@ def main():
         schema_filename = schema_filename + ".json"
 
     if os.path.isfile(schema_filename):
-        print generator.generate_example_from_schema(
-            schema_filename).encode('utf-8')
-        generator.generate_example_from_schema(schema_filename).encode('utf-8')
+        print generator.generate_example_from_schema(schema_filename)
+        generator.generate_example_from_schema(schema_filename)
     else:
         schema_filename = os.path.join(SCHEMA_DIRECTORY, schema_filename)
         if os.path.isfile(schema_filename):
-            generator.generate_example_from_schema(
-                schema_filename).encode('utf-8')
-            print (generator.generate_example_from_schema(
-                schema_filename)).encode('utf-8')
+            generator.generate_example_from_schema(schema_filename)
+            print generator.generate_example_from_schema(schema_filename)
         else:
             raise Exception("Could not find schema file %s" % schema_filename)
 
