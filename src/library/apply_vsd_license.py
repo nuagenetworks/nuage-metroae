@@ -14,7 +14,7 @@ options:
   vsd_license_file:
     description:
       - Set path to VSD license file
-    required:True 
+    required:True
   vsd_auth:
     description:
       - Credentials for accessing VSD.  Attributes:
@@ -28,7 +28,7 @@ options:
 
 EXAMPLES = '''
 - apply_vsd_license:
-    vsd_license_file: /tmp/vsd_license.lic
+    vsd_license_file: /data/vsd_license.txt
     vsd_auth:
       username: csproot
       password: csproot
