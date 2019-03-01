@@ -7,12 +7,34 @@ from ansible.module_utils.basic import AnsibleModule
 
 DOCUMENTATION = '''
 
-
 ---
-
+module: apply_vsd_license
+short_description: Applies the VSD license after installing VSD software
+options:
+  vsd_license_file:
+    description:
+      - Set path to VSD license file
+    required:True 
+  vsd_auth:
+    description:
+      - Credentials for accessing VSD.  Attributes:
+      - username
+      - password
+      - enterprise
+      - api_url
+    required:True
 
 '''
 
+EXAMPLES = '''
+- apply_vsd_license:
+    vsd_license_file: /tmp/vsd_license.lic
+    vsd_auth:
+      username: csproot
+      password: csproot
+      enterprise: csp
+      api_url: https://localhost:8443
+'''
 
 def install_license(csproot, vsd_license):
     # Push the license
