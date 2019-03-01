@@ -36,6 +36,7 @@ EXAMPLES = '''
       api_url: https://localhost:8443
 '''
 
+
 def install_license(csproot, vsd_license):
     # Push the license
     test_license = NULicense(license=vsd_license)
