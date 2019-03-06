@@ -24,7 +24,7 @@
     delegate_to: "{{ vsd_hostname_list[0] }}"
     register: created
     until: "created.rc == 0 or (created.stdout is search('fail adding entity'))"
-    retries: 5
+    retries: 10
     delay: 30
     no_log: True
     environment:
@@ -36,7 +36,7 @@
     delegate_to: "{{ vsd_hostname_list[0] }}"
     register: created
     until: "created.rc == 0 or (created.stdout is search('fail adding entity'))"
-    retries: 5
+    retries: 10
     delay: 30
     no_log: True
     environment:
@@ -48,7 +48,7 @@
     delegate_to: "{{ vsd_hostname_list[0] }}"
     register: created
     until: "created.rc == 0 or (created.stdout is search('fail adding entity'))"
-    retries: 5
+    retries: 10
     delay: 30
     no_log: True
     environment:
@@ -60,11 +60,14 @@
     delegate_to: "{{ vsd_hostname_list[0] }}"
     register: created
     until: "created.rc == 0 or (created.stdout is search('fail adding entity'))"
-    retries: 5
+    retries: 10
     delay: 30
     no_log: True
     environment:
       CERT_PASSWORD: "{{ certificate_password }}"
     when: "'4.0.4' in vsd_version and userExistsOutput.rc != 0 and scp_user is defined and scp_location is defined"
 
-  remote_user: "{{ vsd_default_username }}"
+  remote_user: "{{ vsd_username | default(vsd_default_username) }}"
+  become: "{{ 'no' if vsd_username | default(vsd_default_username) == 'root' else 'yes' }}"
+  vars:
+    ansible_become_pass: "{{ vsd_password | default(vsd_default_password) }}"
