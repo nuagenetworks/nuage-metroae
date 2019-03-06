@@ -1,5 +1,5 @@
 # Setting Up the Environment
-You can set up the MetroÆ host environment either [with a Docker container](method-one-set-up-host-environment-using-docker-container) or [with a GitHub clone](method-two-set-up-host-environment-using-github-clone). 
+You can set up the MetroÆ host environment either [with a Docker container](#method-one-set-up-host-environment-using-docker-container) or [with a GitHub clone](#method-two-set-up-host-environment-using-github-clone). 
 
 ## Method One: Set up Host Environment Using Docker Container
 Using a Docker container results in a similar setup as a GitHub clone, plus it delivers the following features:  
