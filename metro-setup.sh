@@ -197,6 +197,7 @@ set_https_proxy() {
   else
     https_proxy=`grep ^proxy /etc/yum.conf | cut -d= -f2`
     export HTTP_PROXY=$https_proxy
+    export HTTPS_PROXY=$https_proxy
     print "($https_proxy)"
     echo_success
   fi
