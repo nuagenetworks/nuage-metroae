@@ -40,6 +40,16 @@
     - name: Find name of VRS Package Files (EL7 architecture)
       find: path="{{ nuage_unzipped_files_dir }}/vrs/el7" use_regex=yes pattern="nuage-openvswitch-\d+.*" recurse=yes
       register: rc_vrs_file_el7
+      
+    - name: Find old name of VRS Package Files (EL7 architecture)
+      find: path="{{ nuage_unzipped_files_dir }}/vrs/el7" use_regex=yes pattern="nuage-openvswitch-\d+.*" recurse=yes
+      register: rc_old_vrs_file_el7
+      when: "{{ rc_vrs_file_el7.matched < 0 }}"
+      
+    - name: Set old VRS package names to vrs file names
+      set_fact:
+        rc_vrs_file_el7: "{{ rc_old_vrs_file_el7 }}"
+      when: rc_old vrs_file is defined 
 
     - debug: var=rc_vrs_file_el7 verbosity=1
 
