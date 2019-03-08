@@ -326,6 +326,8 @@ case $key in
     GROUP="$2"
     touch ansible.log
     chgrp $GROUP ansible.log
+    touch audit.log
+    chgrp $GROUP audit.log
     chgrp -R $GROUP $INVENTORY_DIR
     shift # past argument
     shift # past value
