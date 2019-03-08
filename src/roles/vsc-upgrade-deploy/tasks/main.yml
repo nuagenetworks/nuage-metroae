@@ -50,23 +50,35 @@
       (?i)password: "{{ vsc_password|default(vsc_default_password) }}"
     timeout: "{{ vsc_scp_timeout_seconds }}"
 
+- name: Register uptime before reboot
+  sros_command:
+    commands:
+      - show uptime
+  delegate_to: localhost
+  register: uptime_before_reboot
+  when: target_server_type | match('kvm') or target_server_type | match('vcenter')
+
 - name: Reboot VSC VM (ignoring errors)
   sros_command:
     commands:
       - admin reboot now
     provider: "{{ vsc_creds }}"
   delegate_to: localhost
-  async: 1
-  poll: 0
-  #ignore_errors: true
+  ignore_errors: true
   when: target_server_type | match('kvm') or target_server_type | match('vcenter')
 
-- name: Wait for VSC to come back
-  wait_for_connection:
-    connect_timeout: 10
-    sleep: 5
-    delay: 5
-    timeout: 300
+- name: Register uptime after reboot
+  sros_command:
+    commands:
+      show uptime
+  delegate_to: localhost
+  register: uptime_after_reboot
+  when: target_server_type | match('kvm') or target_server_type | match('vcenter')
+
+- name: Verify reboot happened successfully
+  assert:
+    that: "uptime_after_reboot < uptime_before_reboot"
+    fail_msg: "System uptime after reboot step is not less than system uptime prior to reboot step. Check log for errors."
 
 - name: Reboot VSC VM
   os_server_actions:
