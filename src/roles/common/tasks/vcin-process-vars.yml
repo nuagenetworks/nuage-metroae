@@ -1,17 +1,9 @@
----
-- name: Set VCIN image location
-  include_role:
-    name: common
-    tasks_from: vsd-find-image.yml
-
-- name: Set vcins_check
-  set_fact: vcins_check={{vcins is defined}}
-
-- name: Assign empty list to vcins if it is undefined
-  set_fact: vcins= default([])
-  when: not vcins_check
-
 - block:
+
+  - name: Set VCIN image location
+    include_role:
+      name: common
+      tasks_from: vsd-find-image.yml
 
   - name: Verifying VCIN Active/Standby variables
     include_role:
@@ -23,6 +15,16 @@
     set_fact:
       disable_vcin_ha: True
 
+  - name: Verify VCIN management gateway is in correct IP range
+    include_role:
+      name: common
+      tasks_from: check-ip-in-range.yml
+    vars:
+      ip_address: "{{ item.mgmt_gateway }}"
+      netaddr: "{{ item.mgmt_ip }}"
+      netmask: "{{ item.mgmt_ip_prefix }}"
+    with_items: "{{ vcins }}"
+
   - name: Create host_vars files for vcin
     template: src=vsd.j2 backup=no dest={{ inventory_dir }}/host_vars/{{ item.hostname }}
     vars:
@@ -32,4 +34,5 @@
   - name: Re-enabling HA testing based on VSD count
     set_fact:
       disable_vcin_ha: False
-  when: vcins_check
+
+  when: vcins is defined and vcins

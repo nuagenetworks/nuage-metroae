@@ -1,13 +1,16 @@
 # Nuage Networks Metro Automation Engine (MetroÆ)
 (4 minute read)
 
-Version: 3.0.0
+Version: 3.2.0
 
-MetroÆ is an automation engine that deploys and upgrades Nuage Networks components. You specify the individual details of your target platform, then let MetroÆ install, upgrade, roll-back, or health-check the environment for you.
+MetroÆ is an automation engine that deploys and upgrades Nuage Networks components. You specify the individual details of your target platform, then let MetroÆ install, upgrade, destroy, or health-check the environment for you.
 
-## Important Note
+## Important Notes
+
 The procedures have changed substantially in version 3.0 to improve usability.
 If you have used previous versions of MetroÆ, please see [RELEASE_NOTES.md](Documentation/RELEASE_NOTES.md) for details.
+
+All MetroÆ operations, including Docker container management, use a command `metroae` for consistent usage and syntax. Please see [DOCKER.md](Documentation/DOCKER.md) for details on configuration and use of the container version of MetroÆ.
 
 ## Supported Components for Deployment
 MetroÆ supports deployment of the following components as VMs on the target server. These are the same target server types that are supported on the VSP platform.
@@ -15,7 +18,7 @@ MetroÆ supports deployment of the following components as VMs on the target ser
 Component | KVM (el7)<br>Stand-alone (SA) | KVM (el7)<br>Clustered (HA) | ESXi<br>Stand-alone (SA) | ESXi<br>Clustered (HA)
 ------- | :---: | :---: | :----: | :---:
 VSD (Virtualized Services Directory) | X | X | X | X
-VSTAT (Elastic Backend for statistics) | X | X | X | X
+VSTAT (Elasticsearch stats-in) | X | X | X | X
 VSC (Virtualized Services Controller) | X | X | X | X
 VCIN (vCenter Integration Node) | X |  | X |
 VNSUTIL<br>(Virtualized Network Services-Utility) | X |  | X |
@@ -39,19 +42,32 @@ MetroÆ supports upgrade of the following Nuage VSP components.
 Component | KVM (el7)<br> SA | KVM (el7)<br> HA | ESXi<br>SA | ESXi<br>HA
 ------- | :---: | :---: | :----: | :---:
 VSD | X | X | X | X
-VSTAT | X | X | X | X
+VSTAT (stats-in) | X | X | X | X
 VSC | X | X | X | X
 VCIN | X |  | X |
+
+## Unsupported Components/Operations
+The following components/operations are not supported in the beta release.
+* dns
+* gmv
+* mesos
+* nsgv bootstrap (install is supported)
+* stcv
+* vsr
+* vrs-vm
+* osc-integration
+* AWS-based VSTAT upgrade
+* upgrade of VRS through VCIN
 
 ## Main Steps for Using MetroÆ
 
 1. [Setup](Documentation/SETUP.md) the MetroÆ host. Setup prepares the host for running MetroÆ, including retrieving the repository, installing prerequisite packages and setting up SSH access. You also have the option of installing MetroÆ in a container, and then working with it via CLI or the GUI.
 
-2. [Customize](Documentation/CUSTOMIZATION.md) your deployment to match your network topology, and describe your Nuage Networks specifics.
+2. [Customize](Documentation/CUSTOMIZE.md) your deployment to match your network topology, and describe your Nuage Networks specifics.
 
-3. [Deploy](Documentation/DEPLOY.md) new components, [upgrade](Documentation/UPGRADE.md) existing components, or run a health check on your system.
+3. [Deploy](Documentation/DEPLOY.md) new components, upgrade a [standalone](Documentation/UPGRADE_SA.md) or [clustered](Documentation/UPGRADE_HA.md) deployment, or run a health check on your system.
 
-4. If things did not work out as expected, [destroy](Documentation/DESTROY.md) or [rollback](Documentation/ROLLBACK.md) your environment.
+4. If things did not work out as expected, [destroy](Documentation/DESTROY.md) your environment and redeploy.
 
 ## MetroÆ Workflows
 MetroÆ workflows are the operations that can be performed against a specified deployment.  All supported workflows can be listed via:
@@ -75,8 +91,14 @@ The following workflows are examples that combine together several of the above 
 * destroy_everything - Destroys all components specified in a deployment.
 * nuage_health - Checks the health of all components specified in a deployment.
 
-## Ansible
-MetroÆ is based off of the Python-based Ansible operations tool.  The following sections provide more detail of how Ansible is used to perform workflows.
+## Python-based Ansible Operations Tool
+MetroÆ is based off of the Python-based Ansible operations tool.
+
+**Ansible** provides a method to easily define one or more actions to be performed on one or more computers. These tasks can target the local system Ansible is running from, as well as other systems that Ansible can reach over the network. The Ansible engine has minimal installation requirements. Python, with a few additional libraries, is all that is needed for the core engine. MetroÆ includes a few custom Python modules and scripts. Agent software is not required on the hosts to be managed. Communication with target hosts defaults to SSH. Ansible does not require the use of a persistent state engine. Every Ansible run determines state as it goes, and adjusts as necessary given the action requirements. Running Ansible requires only an inventory of potential targets, state directives, either expressed as an ad hoc action, or a series coded in a YAML file, and the credentials necessary to communicate with the target.
+
+**Playbooks** are the language by which Ansible orchestrates, configures, administers and deploys systems. They are YAML-formatted files that collect one or more plays. Plays are one or more tasks linked to the hosts that they are to be executed on.
+
+**Roles** build on the idea of include files and combine them to form clean, reusable abstractions. Roles are ways of automatically loading certain vars files, tasks, and handlers based on a known file structure.
 
 ## Nomenclature
 **Ansible Host**: The host where MetroÆ runs. Ansible and the required packages are installed on this host. The Ansible Host must run el7 Linux host, e.g. CentOS 7.* or RHEL 7.*.
@@ -84,13 +106,6 @@ MetroÆ is based off of the Python-based Ansible operations tool.  The following
 **MetroÆ User**: The user who runs MetroÆ to deploy and upgrade components.
 
 **Target Server**: The hypervisor on which one or more VSP components are installed as VMs. Each deployment may contain more than one Target Server.
-
-### Use of Ansible Playbooks and Roles
-**Ansible** provides a method to easily define one or more actions to be performed on one or more computers. These tasks can target the local system Ansible is running from, as well as other systems that Ansible can reach over the network. The Ansible engine has minimal installation requirements. Python, with a few additional libraries, is all that is needed for the core engine. MetroÆ includes a few custom Python modules and scripts. Agent software is not required on the hosts to be managed. Communication with target hosts defaults to SSH. Ansible does not require the use of a persistent state engine. Every Ansible run determines state as it goes, and adjusts as necessary given the action requirements. Running Ansible requires only an inventory of potential targets, state directives, either expressed as an ad hoc action, or a series coded in a YAML file, and the credentials necessary to communicate with the target.
-
-**Playbooks** are the language by which Ansible orchestrates, configures, administers and deploys systems. They are YAML-formatted files that collect one or more plays. Plays are one or more tasks linked to the hosts that they are to be executed on.
-
-**Roles** build on the idea of include files and combine them to form clean, reusable abstractions. Roles are ways of automatically loading certain vars files, tasks, and handlers based on a known file structure.
 
 ## Documentation
 The [Documentation](Documentation/) directory contains the following guides to assist you in successfully working with MetroÆ. The current documentation covers using MetroÆ CLI only.
@@ -106,12 +121,12 @@ File name | Description
 [UPGRADE_SA.md](Documentation/UPGRADE_SA.md) | Upgrade component(s) from one release to the next in a standalone environment.
 [UPGRADE_HA.md](Documentation/UPGRADE_HA.md) | Upgrade component(s) from one release to the next in a clustered environment.
 [VAULT_ENCRYPT.md](Documentation/VAULT_ENCRYPT.md) | Safeguard sensitive data
-[OPENSTACK.md](Documentation/OPENSTACK.md) | Deploy VSP components in OpenStack (limited support).
+[DOCKER.md](Documentation/DOCKER.md) | Installing and using MetroÆ Docker container
 
 ## Questions, Feedback, and Contributing
-Ask questions and get support via the [forums](https://devops.nuagenetworks.net/forums/) on the [MetroÆ site](https://devops.nuagenetworks.net/).  
-You may also contact us directly.  
-  Outside Nokia: [devops@nuagenetworks.net](mailto:deveops@nuagenetworks.net "send email to nuage-metro project")  
+Ask questions and get support via the [forums](https://devops.nuagenetworks.net/forums/) on the [MetroÆ site](https://devops.nuagenetworks.net/).
+You may also contact us directly.
+  Outside Nokia: [devops@nuagenetworks.net](mailto:deveops@nuagenetworks.net "send email to nuage-metro project")
   Internal Nokia: [nuage-metro-interest@list.nokia.com](mailto:nuage-metro-interest@list.nokia.com "send email to nuage-metro project")
 
 Report bugs you find and suggest new features and enhancements via the [GitHub Issues](https://github.com/nuagenetworks/nuage-metro/issues "nuage-metro issues") feature.
@@ -119,4 +134,4 @@ Report bugs you find and suggest new features and enhancements via the [GitHub I
 You may also [contribute](CONTRIBUTING.md) to MetroÆ by submitting your own code to the project.
 
 ## License
-Apache License 2.0
+[LICENSE.md](LICENSE.md)

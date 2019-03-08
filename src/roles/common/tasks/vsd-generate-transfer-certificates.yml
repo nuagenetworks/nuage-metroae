@@ -11,48 +11,63 @@
   - name: Get VSD version
     shell: echo $VSD_VERSION
     register: vsd_version
-    delegate_to: "{{ vsd_hostname_list[0] }}"   
+    delegate_to: "{{ vsd_hostname_list[0] }}"
 
-  - name: Check if the user is already present
+  - name: Check if the user is already present (ignoring errors)
     shell: '/opt/vsd/ejbca/bin/ejbca.sh ra listendentities -S 40 | grep "End Entity: {{ certificate_username }}"'
     register: userExistsOutput
     delegate_to: "{{ vsd_hostname_list[0] }}"
     ignore_errors: yes
 
   - name: Create and transfer certs from VSD
-    shell: "/bin/sshpass -p{{ certificate_password }} /opt/vsd/ejbca/deploy/certMgmt.sh -a generate -u {{ certificate_username }} -c {{ commonName }} -o csp -f pem -t {{ certificate_type }} {{ additional_parameters }} "
+    shell: "/bin/sshpass -p$CERT_PASSWORD /opt/vsd/ejbca/deploy/certMgmt.sh -a generate -u {{ certificate_username }} -c {{ commonName }} -o csp -f pem -t {{ certificate_type }} {{ additional_parameters }} "
     delegate_to: "{{ vsd_hostname_list[0] }}"
     register: created
     until: "created.rc == 0 or (created.stdout is search('fail adding entity'))"
-    retries: 5
+    retries: 10
     delay: 30
+    no_log: True
+    environment:
+      CERT_PASSWORD: "{{ certificate_password }}"
     when: "'4.0.4' not in vsd_version and userExistsOutput.rc != 0 and scp_user is not defined and scp_location is not defined"
 
   - name: Create and transfer certs from VSD
-    shell: "/bin/sshpass -p{{ certificate_password }} /opt/vsd/ejbca/deploy/certMgmt.sh -a generate -u {{ certificate_username }} -c {{ commonName }} -o csp -f pem -t {{ certificate_type }} -s {{ scp_user }}@{{ inventory_hostname }}:{{ scp_location }} {{ additional_parameters }} "
+    shell: "/bin/sshpass -p$CERT_PASSWORD /opt/vsd/ejbca/deploy/certMgmt.sh -a generate -u {{ certificate_username }} -c {{ commonName }} -o csp -f pem -t {{ certificate_type }} -s {{ scp_user }}@{{ inventory_hostname }}:{{ scp_location }} {{ additional_parameters }} "
     delegate_to: "{{ vsd_hostname_list[0] }}"
     register: created
     until: "created.rc == 0 or (created.stdout is search('fail adding entity'))"
-    retries: 5
+    retries: 10
     delay: 30
+    no_log: True
+    environment:
+      CERT_PASSWORD: "{{ certificate_password }}"
     when: "'4.0.4' not in vsd_version and userExistsOutput.rc != 0 and scp_user is defined and scp_location is defined"
 
   - name: Create and transfer certs from 4.0.4 VSD
-    shell: "/bin/sshpass -p{{ certificate_password }} /opt/vsd/ejbca/deploy/certMgmt.sh -a generate -u {{ certificate_username }} -c {{ commonName }} -o csp -f pem -t {{ certificate_type }}  -n VSPCA {{ additional_parameters }} "
+    shell: "/bin/sshpass -p$CERT_PASSWORD /opt/vsd/ejbca/deploy/certMgmt.sh -a generate -u {{ certificate_username }} -c {{ commonName }} -o csp -f pem -t {{ certificate_type }}  -n VSPCA {{ additional_parameters }} "
     delegate_to: "{{ vsd_hostname_list[0] }}"
     register: created
     until: "created.rc == 0 or (created.stdout is search('fail adding entity'))"
-    retries: 5
+    retries: 10
     delay: 30
+    no_log: True
+    environment:
+      CERT_PASSWORD: "{{ certificate_password }}"
     when: "'4.0.4' in vsd_version and userExistsOutput.rc != 0 and scp_user is not defined and scp_location is not defined"
 
   - name: Create and transfer certs from 4.0.4 VSD
-    shell: "/bin/sshpass -p{{ certificate_password }} /opt/vsd/ejbca/deploy/certMgmt.sh -a generate -u {{ certificate_username }} -c {{ commonName }} -o csp -f pem -t {{ certificate_type }} -s {{ scp_user }}@{{ inventory_hostname }}:{{ scp_location }}   -n VSPCA {{ additional_parameters }} "
+    shell: "/bin/sshpass -p$CERT_PASSWORD /opt/vsd/ejbca/deploy/certMgmt.sh -a generate -u {{ certificate_username }} -c {{ commonName }} -o csp -f pem -t {{ certificate_type }} -s {{ scp_user }}@{{ inventory_hostname }}:{{ scp_location }}   -n VSPCA {{ additional_parameters }} "
     delegate_to: "{{ vsd_hostname_list[0] }}"
     register: created
     until: "created.rc == 0 or (created.stdout is search('fail adding entity'))"
-    retries: 5
+    retries: 10
     delay: 30
+    no_log: True
+    environment:
+      CERT_PASSWORD: "{{ certificate_password }}"
     when: "'4.0.4' in vsd_version and userExistsOutput.rc != 0 and scp_user is defined and scp_location is defined"
 
-  remote_user: "{{ vsd_default_username }}"
+  remote_user: "{{ vsd_username | default(vsd_default_username) }}"
+  become: "{{ 'no' if vsd_username | default(vsd_default_username) == 'root' else 'yes' }}"
+  vars:
+    ansible_become_pass: "{{ vsd_password | default(vsd_default_password) }}"

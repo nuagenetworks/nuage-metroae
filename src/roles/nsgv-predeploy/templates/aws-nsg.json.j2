@@ -1,0 +1,127 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "AWS CloudFormation Template to deploy a 2-port Nuage Networks NSG AMI Image. **WARNING** This template creates an Amazon EC2 instance and ElasticIP. You will be billed for these AWS resources used if you create a stack from this template.",
+  "Parameters": {
+    "KeyName": {
+      "Description": "Name of an existing EC2 KeyPair to enable SSH access to the instance",
+      "Type": "AWS::EC2::KeyPair::KeyName",
+      "ConstraintDescription": "must be the name of an existing EC2 KeyPair."
+    },
+    "NSGLANENI": {
+      "Description": "NetworkInterface ID for NSG-LAN interface",
+      "Type": "String"
+    },
+    "NSGWANENI": {
+      "Description": "NetworkInterface ID for NSG-WAN interface",
+      "Type": "String"
+    },
+    "NSGWANEIPAllocId": {
+      "Description": "NetworkInterface ID for NSG-WAN interface",
+      "Type": "String",
+      "Default": ""
+    },
+    "AMI": {
+      "Description": "AMI-ID for Instance",
+      "Type": "AWS::EC2::Image::Id",
+      "ConstraintDescription": "AMI must already be available in this Region"
+    },
+    "InstanceType": {
+      "Description": "NSG EC2 instance type",
+      "Type": "String",
+      "Default": "t2.medium",
+      "AllowedValues": [
+        "t2.small",
+        "t2.medium",
+        "m4.large",
+        "c3.8xlarge",
+        "c4.8xlarge",
+        "g2.8xlarge",
+        "r3.8xlarge",
+        "i2.8xlarge",
+        "d2.8xlarge",
+        "hi1.4xlarge",
+        "hs1.8xlarge",
+        "cr1.8xlarge",
+        "cc2.8xlarge",
+        "m2.4xlarge",
+        "m4.4xlarge",
+        "cg1.4xlarge"
+      ],
+      "ConstraintDescription": "must be a valid EC2 instance type."
+    },
+    "InstanceName": {
+      "Description": "Enter Name for Instance",
+      "ConstraintDescription": "Instance Name",
+      "Type": "String"
+    }
+  },
+  "Conditions": {
+    "CreateEIP": {"Fn::Equals" : [{"Ref" : "NSGWANEIPAllocId"}, ""]}
+  },
+  "Resources": {
+    "NSGAMI": {
+      "Type": "AWS::EC2::Instance",
+      "DependsOn": "EIPAssociation",
+      "Properties": {
+        "InstanceType": { "Ref": "InstanceType" },
+        "KeyName": { "Ref": "KeyName" },
+        "ImageId": { "Ref": "AMI" },
+        "NetworkInterfaces": [
+          { "DeviceIndex": "1", "NetworkInterfaceId": { "Ref": "NSGWANENI" } },
+          { "DeviceIndex": "0", "NetworkInterfaceId": { "Ref": "NSGLANENI" } }
+        ],
+        "UserData": "{{ nsg_ami_user_data|default("") | b64encode }}",
+        "BlockDeviceMappings": [
+          {"DeviceName": "/dev/sda1",
+           "Ebs": {"DeleteOnTermination": true}}
+        ],
+        "Tags": [
+          { "Key": "Name", "Value": { "Ref": "InstanceName" } }
+        ]
+      }
+    },
+
+    "EIP": {
+      "Type": "AWS::EC2::EIP",
+      "Condition": "CreateEIP",
+      "Properties": {
+        "Domain": "vpc"
+      }
+    },
+    "EIPAssociation": {
+      "Type": "AWS::EC2::EIPAssociation",
+      "Properties": {
+        "AllocationId": {"Fn::If": ["CreateEIP", { "Fn::GetAtt":[ "EIP", "AllocationId" ] }, { "Ref": "NSGWANEIPAllocId" }] },
+        "NetworkInterfaceId": { "Ref": "NSGWANENI" }
+      }
+    }
+
+  },
+  "Outputs": {
+    "InstanceId": {
+      "Description": "InstanceId of the newly created EC2 instance",
+      "Value": {
+        "Ref": "NSGAMI"
+      }
+    },
+    "AZ": {
+      "Description": "Availability Zone of the newly created EC2 instance",
+      "Value": {
+        "Fn::GetAtt": [
+          "NSGAMI",
+          "AvailabilityZone"
+        ]
+      }
+    },
+    "PublicDNS": {
+      "Description": "Public DNSName of the newly created EC2 instance",
+      "Value": {
+        "Fn::GetAtt": [
+          "NSGAMI",
+          "PublicDnsName"
+        ]
+      }
+    }
+  }
+}
+

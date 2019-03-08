@@ -1,5 +1,5 @@
 ---
-- name: Finding VM folder
+- name: Finding VM folder (ignoring errors)
   connection: local
   vmware_guest_find:
     hostname: "{{ target_server }}"
@@ -11,7 +11,7 @@
   register: vstat_vm_folder
   ignore_errors: yes
 
-- name: Gathering info on VM
+- name: Gathering info on VM (ignoring errors)
   connection: local
   vmware_guest_facts:
     hostname: "{{ target_server }}"
@@ -32,22 +32,23 @@
   when: vstat_vm_facts.exception is defined
 
 - block:
-  
+
   - name: Get Facts of VM
     vmware_vm_facts:
       hostname: "{{ target_server }}"
       username: "{{ vcenter.username }}"
       password: "{{ vcenter.password }}"
-      delegate_to: localhost
-      register: vm_list
+      validate_certs: no
+    delegate_to: localhost
+    register: vm_list
 
   - name: Set VM UUID
     set_fact:
       uuid: "{{ vm_list.virtual_machines[vm_name]['uuid'] }}"
     when: vm_name in vm_list.virtual_machines
-    
+
   - debug: var=uuid
-    
+
   - name: Turn off autostart
     connection: local
     vmware_autostart:
@@ -57,7 +58,8 @@
       username: "{{ vcenter.username }}"
       password: "{{ vcenter.password }}"
       state: disable
-      
+      validate_certs: no
+
   - name: Power off the Stats VM
     connection: local
     vmware_guest:

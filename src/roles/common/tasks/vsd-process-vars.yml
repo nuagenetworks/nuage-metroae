@@ -1,24 +1,28 @@
----
 - name: Set VSD image location
   include_role:
     name: common
     tasks_from: vsd-find-image.yml
 
-- name: Set vsds_check
-  set_fact: vsds_check={{vsds is defined}}
-
-- name: Assign empty list to vsds if it is undefined
-  set_fact: vsds= default([])
-  when: not vsds_check
-
 - block:
+
   - name: Verify that vsd_fqdn_global is defined
     assert:
       that:
         - "vsd_fqdn_global is defined"
       msg: "vsd_fqdn_global must be defined. See common.yml."
 
+  - name: Verify VSD management gateway is in correct IP range
+    include_role:
+      name: common
+      tasks_from: check-ip-in-range.yml
+    vars:
+      ip_address: "{{ item.mgmt_gateway }}"
+      netaddr: "{{ item.mgmt_ip }}"
+      netmask: "{{ item.mgmt_ip_prefix }}"
+    with_items: "{{ vsds }}"
+
   - name: Create host_vars files for vsd
     template: src=vsd.j2 backup=no dest={{ inventory_dir }}/host_vars/{{ item.hostname }}
     with_items: "{{ vsds }}"
-  when: vsds_check
+
+  when: vsds is defined and vsds

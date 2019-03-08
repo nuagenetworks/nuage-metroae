@@ -4,7 +4,8 @@
     tasks_from: wait-for-ssh
   vars:
     ssh_host: "{{ mgmt_ip }}"
-    ssh_timeout_seconds: 300
+    host_username: "{{ vstat_username | default(vstat_default_username) }}"
+    retries: 90
 
 - name: Get vsd node(s) information
   import_role:
@@ -17,6 +18,9 @@
 - name: Get the es version after upgrade
   command: "curl localhost:9200"
   register: upgraded_version
+  until: upgraded_version.rc == 0
+  retries: 5
+  delay: 30
 
 - name: Convert version to json format
   set_fact:
@@ -42,7 +46,7 @@
     shell: "/root/nuage_elasticsearch/scripts/es-cluster-nuage-index-setting.sh"
     when: es_cluster_nuage_index_setting.stat.exists
 
-  - name: stat cluster_nuage_index_setting.sh 
+  - name: stat cluster_nuage_index_setting.sh
     stat:
       path: "/root/nuage_elasticsearch/scripts/cluster_nuage_index_setting.sh"
     register: cluster_nuage_index_setting

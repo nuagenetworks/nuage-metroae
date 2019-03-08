@@ -34,29 +34,20 @@
 
 - block:
 
-  - name: Configure vCenter path
-    set_fact:
-      vcenter_path: "vi://'{{ vcenter.username | urlencode }}':'{{ vcenter.password | urlencode }}'@{{ target_server }}/{{ vcenter.datacenter }}/host/{{ vcenter.cluster }}"
+  - name: Configure vCenter path and ovftool command
+    include_role:
+      name: common
+      tasks_from: configure-ovftool
+    vars:
+      management_network: "VM Network"
 
-  - name: Update vCenter path if resource pool is configured
-    set_fact:
-      vcenter_path: "vi://'{{ vcenter.username | urlencode }}':'{{ vcenter.password | urlencode }}'@{{ target_server }}/{{ vcenter.datacenter }}/host/{{ vcenter.cluster }}/Resources/{{ vcenter.resource_pool | urlencode }}"
-    when: vcenter.resource_pool != 'NONE'
-
-  - name: Deploy VM image on vCenter
+  - name: Deploy VSD image on vCenter (Can take several minutes)
     connection: local
-    command: >
-      {{ vcenter.ovftool }}
-      --acceptAllEulas
-      --noSSLVerify
-      --powerOn
-      --machineOutput
-      -dm=thin
-      -ds={{ vcenter.datastore }}
-      -n={{ vm_name }}
-      --net:"VM Network={{ mgmt_bridge }}"
-      "{{ ova_path }}/{{ ova_file_name }}"
-      {{ vcenter_path }}
+    no_log: true
+    shell: >-
+      {{ ovftool_command }}
+      "vi://{{ vcenter.username | urlencode }}:{{ vcenter.password | urlencode }}@{{ vcenter_path }}"
+
 
   - name: Waiting until VMware tools becomes available
     connection: local
@@ -76,6 +67,7 @@
       hostname: "{{ target_server }}"
       username: "{{ vcenter.username }}"
       password: "{{ vcenter.password }}"
+      validate_certs: no
     delegate_to: localhost
     register: vm_list
 
@@ -83,13 +75,13 @@
     assert:
       that: "vm_name in vm_list.virtual_machines"
       msg: "Desired VM does not exist"
-        
+
   - name: Set VM UUID
     set_fact:
       uuid: "{{ vm_list.virtual_machines[vm_name]['uuid'] }}"
-  
+
   - debug: var=uuid
-    
+
   - name: Turn on autostart
     connection: local
     vmware_autostart:
@@ -99,7 +91,8 @@
       username: "{{ vcenter.username }}"
       password: "{{ vcenter.password }}"
       state: enable
-           
+      validate_certs: no
+
   - name: Disabling cloud-init
     connection: local
     vmware_vm_shell:
@@ -197,7 +190,7 @@
       vm_username: "{{ vsd_default_username }}"
       vm_password: "{{ vsd_default_password }}"
       vm_shell: "/usr/bin/echo"
-      vm_shell_args: " '{{ lookup('template', 'network.j2') }}' > /etc/sysconfig/network"
+      vm_shell_args: " '{{ lookup('template', role_path + '/../common/templates/network.j2') }}' > /etc/sysconfig/network"
 
   - name: Set the owner and group on the network file in the VM
     connection: local

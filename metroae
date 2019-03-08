@@ -4,7 +4,7 @@ set -e
 # Wrapper around ansible-playbook for the installation of Nuage components
 #
 
-METROAG_VERSION="3.0"
+METROAE_VERSION="v3.2.0"
 
 CURRENT_DIR=`pwd`
 PLAYBOOK_DIR=$CURRENT_DIR/src/playbooks
@@ -12,39 +12,44 @@ PLAYBOOK_WITH_BUILD_DIR=$CURRENT_DIR/src/playbooks/with_build
 SCHEMA_DIR=$CURRENT_DIR/schemas
 DEPLOYMENTS_BASE_DIR=$CURRENT_DIR/deployments
 DEPLOYMENT_DIR=$DEPLOYMENTS_BASE_DIR/default
+INVENTORY_DIR=$CURRENT_DIR/src/inventory
+VAULT_ENV_FILE=$CURRENT_DIR/src/vault-env
+ENCRYPTED_DEPLOYMENT_FILE=credentials.yml
+ENCRYPTED_TOKEN=\$ANSIBLE_VAULT
 
 function usage {
     echo ""
-    echo "Nuage Networks MetroAE Automation EnGine (AG)"
+    echo "Nuage Networks Metro Automation Engine (MetroÆ) CLI"
     echo ""
-    echo "Version:" $METROAG_VERSION
+    echo "MetroÆ Version:" $METROAE_VERSION
     echo ""
-    echo "MetroAE is an automation engine that deploys and upgrades Nuage"
+    echo "MetroÆ is an automation engine that installs and upgrades Nuage"
     echo "Networks components.  After you specify the individual details"
-    echo "of your deployment, MetroAE (leveraging Ansible playbooks and"
-    echo "roles) sets up the environment as specified. MetroAE can also"
-    echo "upgrade, roll-back, and health-check the environment."
+    echo "of your deployment, MetroÆ sets up the environment and executes"
+    echo "the install or upgrade on your behalf."
     echo ""
     echo "See README.md for more information"
     echo ""
     echo "Usage:"
-    echo "    " $0 "<workflow>" "[deployment]" "[options]"
+    echo "    metroae <workflow> [deployment] [options]"
     echo ""
-    echo "    <workflow>:     Name of the MetroAE workflow to run."
-    echo "    [deployment]:   The name of a deployment containing the required"
-    echo "                    configuration files.  The deployments are stored"
-    echo "                    as directories under" $DEPLOYMENTS_BASE_DIR
+    echo "    workflow:     Name of the MetroÆ workflow to run, e.g. 'install_everything'."
+    echo "    deployment:   The name of a deployment containing the required configuration"
+    echo "                  files.  The deployments are stored as directories under"
+    echo "                  " $DEPLOYMENTS_BASE_DIR
     echo ""
     echo "Options:"
     echo "    -h, --help:            Displays this help."
     echo "    --ansible-help:        Displays help for ansible arguments."
     echo "    -v, -vv, -vvv, -vvvv:  Runs with increasing levels of verbosity."
     echo "    --list:                Shows a list of all supported workflows"
+    echo "    --skip-password:       Do not ask for a password.  Password can be"
+    echo "                           provided via the environment variable METROAE_PASSWORD"
     echo "    --skip-build:          Runs workflow without performing build."
     echo "                           This will prevent changes in the deployment from"
     echo "                           taking effect, but it will be faster."
     echo ""
-    echo "Remaining [options] are passed to Ansible"
+    echo "Any additional [options] are passed to the internal Ansible engine for processing"
     echo ""
 }
 
@@ -67,10 +72,39 @@ function list_workflows {
     done
 }
 
+function check_password_needed {
+    deployment_dir="$1"
+
+    if [[ -z $METROAE_PASSWORD ]]; then
+        if [[ -a $deployment_dir/$ENCRYPTED_DEPLOYMENT_FILE ]]; then
+            fail=0
+            grep $ENCRYPTED_TOKEN "$deployment_dir/$ENCRYPTED_DEPLOYMENT_FILE" > /dev/null || fail=1
+            if [[ $fail -ne 0 ]]; then
+                SKIP_PASSWORD=1
+            fi
+        else
+            SKIP_PASSWORD=1
+        fi
+    else
+        SKIP_PASSWORD=1
+    fi
+}
+
+function ask_password {
+    if [[ $SKIP_PASSWORD -ne 1 ]]; then
+        echo "Deployment contains encrypted content, password required."
+        echo "Password can alternatively be provided via the environment variable METROAE_PASSWORD"
+        echo ""
+        read -s -p "Enter password: " METROAE_PASSWORD
+        export METROAE_PASSWORD
+    fi
+}
+
 #
 # Parse arguments
 #
 SKIP_BUILD=0
+SKIP_PASSWORD=0
 POSITIONAL=()
 while [[ $# -gt 0 ]]
 do
@@ -79,18 +113,29 @@ key="$1"
 case $key in
     -h|--help)
     usage
-    exit 1
+    exit 0
     ;;
     --ansible-help)
     $(which ansible-playbook) --help
-    exit 1
+    exit 0
     ;;
     --list)
     list_workflows
-    exit 1
+    exit 0
+    ;;
+    --set-group)
+    GROUP="$2"
+    touch ansible.log
+    chgrp $GROUP ansible.log
+    shift # past argument
+    shift # past value
     ;;
     --skip-build)
     SKIP_BUILD=1
+    shift # past argument
+    ;;
+    --skip-password)
+    SKIP_PASSWORD=1
     shift # past argument
     ;;
     *)    # unknown option
@@ -127,21 +172,29 @@ if [[ $# -gt 0 ]]; then
         elif [[ -d $DEPLOYMENTS_BASE_DIR/$DEPLOYMENT ]]; then
             DEPLOYMENT_DIR=$DEPLOYMENTS_BASE_DIR/$DEPLOYMENT
         else
-          echo "Could not find deployment under" $DEPLOYMENTS_BASE_DIR
+          echo "Could not find deployment '$DEPLOYMENT' under" $DEPLOYMENTS_BASE_DIR
           exit 1
         fi
     fi
 fi
 
+# Get password if needed
+check_password_needed "$DEPLOYMENT_DIR"
+ask_password
+if [[ ! -z $METROAE_PASSWORD ]]; then
+    export ANSIBLE_VAULT_PASSWORD_FILE=$VAULT_ENV_FILE
+fi
+
 # Run playbooks
 if [[ -a $PLAYBOOK_DIR/$WORKFLOW  ]]; then
-    $(which ansible-playbook) -e deployment_dir="$DEPLOYMENT_DIR" -e schema_dir=$SCHEMA_DIR $PLAYBOOK_DIR/$WORKFLOW "$@" || exit $?
+    $(which ansible-playbook) -e deployment_dir=\'"$DEPLOYMENT_DIR"\' -e schema_dir=$SCHEMA_DIR $PLAYBOOK_DIR/$WORKFLOW "$@" || exit $?
 elif [[ -a $PLAYBOOK_WITH_BUILD_DIR/$WORKFLOW ]]; then
     if [[ $SKIP_BUILD -ne 1 ]]; then
-        $(which ansible-playbook) -e deployment_dir="$DEPLOYMENT_DIR" -e schema_dir=$SCHEMA_DIR $PLAYBOOK_DIR/build.yml "$@" || exit $?
+        $(which ansible-playbook) -e deployment_dir=\'"$DEPLOYMENT_DIR"\' -e schema_dir=$SCHEMA_DIR $PLAYBOOK_DIR/build.yml "$@" || exit $?
+        if [[ $GROUP ]]; then chgrp -R $GROUP $INVENTORY_DIR; fi
     fi
     $(which ansible-playbook) $PLAYBOOK_WITH_BUILD_DIR/$WORKFLOW "$@" || exit $?
 else
-  echo "Requested MetroAE workflow could not be found"
+  echo "Requested MetroÆ workflow could not be found"
   exit 1
 fi

@@ -73,22 +73,17 @@
   - name: Create a temporary copy of the network script for eth0 on {{ target_server }}
     template: src=ifcfg-eth0.j2 backup=no dest={{ images_path }}/{{ vm_name }}/ifcfg-eth0
 
-  - name: Get list of partitions
-    shell: "guestfish -r -a {{ guestfish_dest }} run : list-filesystems | grep -Ev '(unknown|swap)'"
-    register: partitions_list
+  - name: Get guestfish mount for qcow2
+    include_role:
+      name: common
+      tasks_from: get-guestfish-mount
+    vars:
+      guestfish_qcow2_path: "{{ guestfish_dest }}"
 
-  - name: Check partition content
-    shell: "guestfish -r -a {{ guestfish_dest }} run : mount {{ item.split(':')[0] }} / : ls /"
-    register: partitions
-    with_items: "{{ partitions_list.stdout_lines }}"
-
-  - name: Find root partition
-    set_fact:
-      guestfish_mount: "{{ item.item.split(':')[0]}}"
-    with_items: "{{ partitions.results }}"
-    when: '"proc" in item.stdout'
-
-  - debug: var=guestfish_mount verbosity=1
+  - name: Verify that mount was found
+    assert:
+      that: "guestfish_mount is defined"
+      msg: "guestfish mount point was not found. Are you using the correct qcow2 file?"
 
   - name: Copy eth0 network script file to the DNS image on {{ target_server }}
     command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} copy-in {{ images_path }}/{{ vm_name }}/ifcfg-eth0 /etc/sysconfig/network-scripts/
@@ -112,7 +107,10 @@
     command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} chown 0 0 /etc/sysconfig/network-scripts/ifcfg-eth1
 
   - name: Create a temporary copy of the syscfg network file on {{ target_server }}
-    template: src=network.j2 backup=no dest={{ images_path }}/{{ vm_name }}/network
+    template:
+      src: "{{ role_path }}/../common/templates/network.j2"
+      dest: "{{ images_path }}/{{ vm_name }}/network"
+      backup: no
 
   - name: Copy network file to the DNS image
     command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} copy-in {{ images_path }}/{{ vm_name }}/network /etc/sysconfig/
@@ -137,7 +135,7 @@
   - name: Set the owner and group for the network hostname file on the DNS image
     command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} chown 0 0 /etc/sysconfig/network
 
-  - name: Create the directory /root/.ssh for authorized_keys
+  - name: Create the directory /root/.ssh for authorized_keys (ignoring errors)
     command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} mkdir-mode /root/.ssh 0700
     ignore_errors: yes
 
@@ -176,3 +174,4 @@
 
   delegate_to: "{{ target_server }}"
   remote_user: "{{ target_server_username }}"
+  become: "{{ 'no' if target_server_username == 'root' else 'yes' }}"

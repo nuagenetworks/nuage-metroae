@@ -1,4 +1,4 @@
-- name: Clean known_hosts of VSC's
+- name: Clean known_hosts of VSC's (ignoring errors)
   known_hosts:
     name: "{{ mgmt_ip }}"
     state: absent
@@ -50,7 +50,7 @@
       (?i)password: "{{ vsc_password|default(vsc_default_password) }}"
     timeout: "{{ vsc_scp_timeout_seconds }}"
 
-- name: Reboot VSC VM
+- name: Reboot VSC VM (ignoring errors)
   sros_command:
     commands:
       - admin reboot now
@@ -71,7 +71,7 @@
 - name: Reboot VSC VM
   os_server_actions:
     auth:
-      "{{ os_auth }}"
+      "{{ openstack_auth }}"
     server: "{{ inventory_hostname }}"
     action: reboot
     wait: no
@@ -80,8 +80,6 @@
 - name: Wait for VSC ssh to be ready
   include_role:
     name: common
-    tasks_from: wait-for-ssh
+    tasks_from: wait-for-ssh-port
   vars:
     ssh_host: "{{ mgmt_ip }}"
-
-

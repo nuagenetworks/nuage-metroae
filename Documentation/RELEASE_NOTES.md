@@ -1,11 +1,27 @@
 # Metro Automation Engine Release Notes
-
-## Release 3.0.0
-
-### New Procedures and Improvements
-
-* **Removal of build_vars.yml.**  There is no longer a single monolithic configuration file for MetroAE.  Configuration is specified through "deployments".  A tool is provided to convert an obsolute build_vars.yml file to a deployment.  See [Customization](Documentation/CUSTOMIZATION.md) for details on deployments.
-* **Removal of `build`.**  The user no longer needs to issue the `build` playbook.  This will be handled automatically and seamlessly by the MetroAE tool.  MetroAE also tracks changes and will skip steps not required if configuration is unmodified.
-* **Schema validation of deployment data.**  All configuration specified in a deployment is automatically validated against json-schema.org schemas.  This ensures that all required fields are set and every field has the correct syntax.  Any error will be found as early as possible and a specific error message will call out the exact problem.
-* **Workflows instead of playbooks.**  In order to simplify usage, the concept of `playbook` is being replaced by a `workflow`.  The .yml extension is no longer required.  Thus, issue `vsd_deploy` instead of `vsd_deploy.yml`.  The MetroAE tool is renamed from `metro-ansible` to `metroae`.  It now supports different arguments, including `--list` which displays all supported workflows.
-* **Cleanup of repo.**  The MetroAE repository has been cleaned.  Only tools useful for users are present in the root directory.  The internal workings of the tool have been moved to sub-directories like src/.
+## Release 3.2.0
+### New Features and Enhancements
+* Optimize vCenter parameters
+* Add CPU pinning (METROAE-586)
+* Deliver container version of MetroAE via RPM (METROAE-739)
+* Warn that deploying an image can take a long time (METROAE-775)
+* Add host reference to vCenter (METROAE-812)
+* Add support for VSP deploy on OpenStack (METROAE-842)
+* Add support for NSGv bootstrap on AWS (METROAE-877)
+* Add 'security_groups', 'port_name', and 'port_description' to OpenStack (METROAE-902)
+* Make VSD deploy fail all when one fails (METROAE-907)
+* For 5.4.1, return 'exit 0' when checking ssh connectivity (METROAE-909)
+* Add NSGv postdeploy health check to ensure NSGvs are bootstrapped (METROAE-912)
+### Resolved Issues
+* Remove upgrade check for NTP sync (METROAE-586)
+* Deploy VSC without vsds.yml (METROAE-759)
+* NTP sync failure on VSC was not marked as failure (METROAE-777)
+* Fix issue where VSC could not be added to a hardened VSD (METROAE-882)
+* Fix metroae setup (container) syntax (METROAE-889 and 890)
+* Fix issue with convert buildvars unicode script (METROAE-898)
+* Fix issue that caused undefined variable when 'datastore' was not defined (METROAE-901)
+* Add '0' to exit for 5.4.1 (METROAE-909)
+* Add task to disable network manager on vnsutil
+* Remove unwanted rpms and add docker directory to git ignore
+* Remove utf-8 encoding from encrypt credentials
+* Add encode and decode to encrypt credentials script

@@ -1,8 +1,8 @@
 {
     "$schema": "http://json-schema.org/draft-06/schema#",
     "$id": "urn:nuage-metroae:vnsutils",
-    "title": "Virtualized Network Service utilities",
-    "description": "Specify configuration for Nuage MetroAE VNSutils.",
+    "title": "Virtualized Network Service Proxy VM",
+    "description": "Configuration for Nuage VNS Proxy VM.",
     "type": "array",
     "widget": "form",
     "items": {
@@ -14,6 +14,7 @@
                 "type": "string",
                 "format": "hostname",
                 "title": "Hostname",
+                "description": "Hostname of the Proxy/Util-VM instance",
                 "sectionBegin": "Management Interface",
                 "propertyOrder": 10
             },
@@ -21,11 +22,13 @@
                 "type": "string",
                 "format": "ipv4",
                 "title": "Management IP address",
+                "description": "IP address of the management interface",
                 "propertyOrder": 20
             },
             "mgmt_ip_prefix": {
                 "type": "integer",
-                "title": "Management IP prefix length",
+                "title": "Management IP Prefix Length",
+                "description": "IP Prefix length for the management network",
                 "minimum": 0,
                 "maximum": 32,
                 "propertyOrder": 30
@@ -33,7 +36,8 @@
             "mgmt_gateway": {
                 "type": "string",
                 "format": "ipv4",
-                "title": "Management IP gateway",
+                "title": "Management Gateway IP",
+                "description": "IP address of the gateway on the management network",
                 "sectionEnd": "Management Interface",
                 "propertyOrder": 40
             },
@@ -42,20 +46,22 @@
                 "format": "hostname",
                 "title": "VM name",
                 "default": "(Hostname)",
-                "description": "Used to identify VM on the hypervisor/vcenter.",
+                "description": "Name of the Virtual Machine on the Hypervisor",
                 "propertyOrder": 50
             },
             "target_server_type": {
                 "type": "string",
-                "title": "Target Server type",
+                "title": "Target Server Type",
+                "description": "Type of hypervisor environment into which the instance will be created",
                 "propertyOrder": 60,
                 "sectionBegin": "Target Server",
-                "enum": ["kvm", "vcenter", "heat", "aws"]
+                "enum": ["kvm", "vcenter", "aws"]
             },
             "target_server": {
                 "type": "string",
                 "format": "hostname",
-                "title": "Target Server hostname",
+                "title": "Target Server IP or FQDN",
+                "description": "Hostname or IP address of the hypervisor where VM  will be instantiated. In the case of deployment in a vCenter environment, this will be the FQDN of the vCenter Server",
                 "sectionEnd": "Target Server",
                 "propertyOrder": 70
             },
@@ -63,6 +69,8 @@
                 "type": "string",
                 "default": "(global Bridge interface)",
                 "title": "Management Bridge interface",
+            "description": "Network Bridge used for the management interface of a component or the BOF interface on the VM. This will be a Distributed Virtual PortGroup (DVPG) when deploying on vCenter or a Linux network bridge (ex: br0) when deploying on KVM. This field takes precedence over the value defined in the Commons section",
+                "advanced": true,
                 "propertyOrder": 80
             },
             "data_fqdn": {
@@ -78,12 +86,14 @@
                 "type": "string",
                 "format": "ipv4",
                 "title": "VNSUTIL Data IP address",
+                "default": "",
                 "target_server_type": "kvm",
                 "propertyOrder": 100
             },
             "data_netmask": {
                 "type": "string",
                 "title": "Data Netmask",
+                "default": "",
                 "target_server_type": "kvm",
                 "propertyOrder": 110
             },
@@ -91,94 +101,89 @@
                 "type": "string",
                 "title": "Data Subnet",
                 "description": "Only required for DHCP bootstrap support",
+                "default": "",
                 "target_server_type": "kvm",
                 "sectionEnd": "Data Interface",
                 "propertyOrder": 120
             },
-            "nsgv_ip": {
+            "nsgv_gateway": {
                 "type": "string",
-                "title": "NSGV IP Address",
                 "format": "ipv4",
+                "title": "Gateway address for NSGvs",
+                "description": "Gateway address to be provided by DHCP for NSGvs.",
+                "default": "",
                 "advanced": true,
-                "sectionBegin": "NSGv Parameters",
                 "propertyOrder": 130
-            },
-            "nsgv_mac": {
-                "type": "string",
-                "title": "NSGV MAC Address",
-                "pattern": "^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$",
-                "advanced": true,
-                "propertyOrder": 140
-            },
-            "nsgv_hostname": {
-                "type": "string",
-                "format": "hostname",
-                "default": "nsgv1.(DNS Domain)",
-                "title": "NSGV Hostname",
-                "advanced": true,
-                "sectionEnd": "NSGv Parameters",
-                "propertyOrder": 150
             },
             "vcenter_datacenter": {
                 "type": "string",
-                "title": "vCenter Datacenter",
-                "description": "Only applicable for vcenter server type and defaults to global settings",
-                "default": "(global vCenter datacenter)",
+                "title": "vCenter Datacenter Name",
+                "description": "Name of the vCenter Datacenter on which the Proxy/Util VM will be deployed. Defaults to the common vCenter Datacenter Name if not defined here.",
+                "default": "(global vCenter Datacenter Name)",
                 "target_server_type": "vcenter",
                 "advanced": true,
                 "sectionBegin": "vCenter Parameters",
-                "propertyOrder": 160
+                "propertyOrder": 140
             },
             "vcenter_cluster": {
                 "type": "string",
-                "title": "vCenter Cluster",
-                "description": "Only applicable for vcenter server type and defaults to global settings",
-                "default": "(global vCenter cluster)",
+                "title": "vCenter Cluster Name",
+                "description": "Name of the vCenter Cluster on which the Proxy/Util VM will be deployed. Defaults to the common vCenter Cluster Name if not defined here.",
+                "default": "(global vCenter Cluster Name)",
                 "target_server_type": "vcenter",
                 "advanced": true,
-                "propertyOrder": 170
+                "propertyOrder": 150
+            },
+            "vcenter_host_reference": {
+                "type": "string",
+                "title": "vCenter Host Reference",
+                "default": "(global vCenter Host Reference)",
+                "description": "Requires ovftool 4.3. Reference to the host on the vCenter cluster on which to deploy Nuage components",
+                "target_server_type": "vcenter",
+                "advanced": true,
+                "propertyOrder": 160
             },
             "vcenter_datastore": {
                 "type": "string",
-                "title": "vCenter Datastore",
-                "description": "Only applicable for vcenter server type and defaults to global settings",
-                "default": "(global vCenter datastore)",
+                "title": "vCenter Datastore Name",
+                "description": "Name of the vCenter Datastore on which the Proxy/Util VM will be deployed. Defaults to the common vCenter Datastore Name if not defined here.",
+                "default": "(global vCenter Datastore Name)",
                 "target_server_type": "vcenter",
                 "advanced": true,
                 "sectionEnd": "vCenter Parameters",
-                "propertyOrder": 180
+                "propertyOrder": 170
             },
             "aws_region": {
                 "type": "string",
                 "title": "AWS Region",
                 "description": "Only applicable for AWS deployments",
                 "sectionBegin": "AWS Parameters",
-                "propertyOrder": 190
+                "propertyOrder": 180
             },
             "aws_ami_id": {
                 "type": "string",
                 "title": "AWS AMI ID",
                 "description": "AMI ID for AWS instance",
-                "propertyOrder": 200
+                "propertyOrder": 190
             },
             "aws_instance_type": {
                 "type": "string",
                 "title": "AWS Instance Type",
                 "description": "Instance Type of the AWS Instance",
-                "propertyOrder": 210
+                "propertyOrder": 200
             },
             "aws_key_name": {
                 "type": "string",
                 "title": "AWS Keypair Name",
                 "description": "Name of the Keypair used to connect to VPC",
-                "propertyOrder": 220
+                "propertyOrder": 210
             },
             "aws_mgmt_eni": {
                 "type": "string",
                 "format": "ipv4",
                 "title": "AWS Management ENI ID",
                 "description": "ENI ID for VNSUTIL Instance on Management Subnetwork",
-                "propertyOrder": 230
+                "propertyOrder": 220
             },
             "aws_data_eni": {
                 "type": "string",
@@ -186,8 +191,19 @@
                 "title": "AWS Data ENI ID",
                 "description": "ENI ID for VNSUTIL on Data Interface",
                 "sectionEnd": "AWS Parameters",
-                "propertyOrder": 240
+                "propertyOrder": 230
+            },
+            "cpuset": {
+                "type": "array",
+                "title": "KVM cpuset information",
+                "description": "Cpuset information for cpu pinning on KVM. For example, VNSUTIL requires 2 cores and sample values will be of the form [ 0, 1 ]",
+                "propertyOrder": 240,
+                "advanced": true,
+                "items": {
+                    "type": "integer"
+                }
             }
+            
         },
         "required": ["hostname", "target_server_type", "target_server", "mgmt_ip", "mgmt_ip_prefix", "mgmt_gateway"]
     }

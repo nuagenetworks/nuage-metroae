@@ -1,12 +1,20 @@
----
+- name: Clean known_hosts of VSDs (ignoring errors)
+  known_hosts:
+    name: "{{ mgmt_ip }}"
+    state: absent
+  delegate_to: localhost
+  no_log: True
+  ignore_errors: True
+
 - name: Wait for VM to be ready
   include_role:
     name: common
     tasks_from: wait-for-ssh
   vars:
     ssh_host: "{{ mgmt_ip }}"
+    host_username: "{{ vsd_username | default(vsd_default_username) }}"
 
-- name: Clean known_hosts
+- name: Clean known_hosts (ignoring errors)
   known_hosts:
     name: "{{ mgmt_ip }}"
     state: absent
@@ -92,7 +100,7 @@
   nuage_append: filename="{{ report_path }}" text="{{ inventory_hostname }} {{ ejabberd_cluster_json|to_nice_json }}\n"
   delegate_to: localhost
 
-- name: Excute ejabberd_connected_users_command command on VSD(s)
+- name: Execute ejabberd_connected_users_command command on VSD(s)
   command: "{{ ejabberd_connected_users_command }}"
   register: user_list
   remote_user: "{{ vsd_username | default(vsd_default_username) }}"
@@ -152,7 +160,7 @@
 
 - block:
 
-  - name: Verify that REST is reachable
+  - name: Verify that REST is reachable (ignoring errors)
     uri:
       url: https://{{ mgmt_ip }}:8443/index.html
       method: GET
@@ -234,9 +242,7 @@
     nuage_append: filename="{{ report_path }}" text="{{ inventory_hostname }}  License  {{ license_valid | to_nice_json}}\n"
     delegate_to: localhost
 
-  when: nuage_upgrade | default(False)
-
-- import_tasks: report_footer.yml
+  when: check_vsd_license | default(False)
 
 - block:
 
@@ -276,8 +282,10 @@
     command: "mysql -umonituser -p{{ monitPwd }} -e 'select 1'"
     when: monitPwd is defined
 
-
   remote_user: "{{ vsd_username | default(vsd_default_username) }}"
+  no_log: True
   become: "{{ 'no' if vsd_username | default(vsd_default_username) == 'root' else 'yes' }}"
   vars:
     ansible_become_pass: "{{ vsd_password | default(vsd_default_password) }}"
+
+- import_tasks: report_footer.yml

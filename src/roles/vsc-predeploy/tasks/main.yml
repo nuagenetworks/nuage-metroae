@@ -1,12 +1,11 @@
 ---
-
 - include_role:
     name: check-node-reachability
 
 - block:
   - debug: var=vsc_creds
 
-  - name: Get output of 'show version'
+  - name: Get output of 'show version' (ignoring errors)
     sros_command:
       commands:
         - show version
@@ -22,7 +21,7 @@
 
 - name: Set fact for VSC present
   set_fact:
-    node_present: "{{ node_reachable and sh_version is defined }}"
+    node_present: "{{ node_reachable | default(False) and sh_version is defined }}"
 
 - import_tasks: kvm.yml
   when: target_server_type | match("kvm")
@@ -30,11 +29,11 @@
     - vsc
     - vsc-predeploy
 
-- import_tasks: heat.yml
-  when: target_server_type | match("heat")
+- import_tasks: openstack.yml
+  when: target_server_type | match("openstack")
   tags:
     - vsc
-    - heat
+    - openstack
     - vsc-predeploy
 
 - import_tasks: vcenter.yml

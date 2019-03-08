@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 
 import os
 import os.path
@@ -11,7 +11,9 @@ SCHEMA_DIRECTORY = "schemas"
 
 
 class ExampleFileGenerator(object):
-    def __init__(self, no_comments=False, as_template=False, as_example=False, example_folder=None):
+
+    def __init__(self, no_comments=False, as_template=False, as_example=False,
+                 example_folder=None):
         self.has_comments = not no_comments
         self.as_template = as_template | as_example
         self.as_example = as_example
@@ -28,13 +30,15 @@ class ExampleFileGenerator(object):
         self.add_example_content(schema)
 
         if self.as_example:
-            schema_name = os.path.splitext(os.path.basename(schema_filename))[0]
+            schema_name = os.path.splitext(os.path.basename(
+                schema_filename))[0]
             return self.create_example_with_data(schema_name)
 
         return "\n".join(self.example_lines)
 
     def create_example_with_data(self, schema_name=""):
-        with open(self.example_folder + "/" + schema_name + ".yml", 'r') as example_filename:
+        with open(self.example_folder +
+                  "/" + schema_name + ".yml", 'r') as example_filename:
             example_yml = yaml.safe_load(example_filename.read())
 
         template_lines = "\n".join(self.example_lines)
@@ -64,10 +68,16 @@ class ExampleFileGenerator(object):
         if is_list:
             if "items" in schema and "title" in schema["items"]:
                 item_name = schema["items"]["title"]
-                list_name = schema["items"]["title"].lower() + "s"
+                if "listName" in schema:
+                    list_name = schema["listName"]
+                else:
+                    list_name = schema["items"]["title"].lower() + "s"
             else:
                 item_name = schema["title"][0:-1]
-                list_name = schema["title"].lower()
+                if "listName" in schema:
+                    list_name = schema["listName"]
+                else:
+                    list_name = schema["title"].lower()
             if self.as_template:
                 self.example_lines.append(
                     "{%% if %s is defined and %s %%}" % (list_name,
@@ -114,6 +124,11 @@ class ExampleFileGenerator(object):
             indent = "    "
 
         if self.has_comments:
+            if "sectionBegin" in field:
+                self.example_lines.append("%s##### %s" % (
+                    indent, field["sectionBegin"]))
+                self.example_lines.append("")
+
             if "title" in field:
                 self.example_lines.append("%s# < %s >" % (indent,
                                                           field["title"]))
@@ -147,7 +162,9 @@ class ExampleFileGenerator(object):
 
             if self.has_comments:
                 default_value = '""'
-                if "default" in field:
+                if "type" in field and field["type"] == "array":
+                    default_value = '[]'
+                if "default" in field and field["default"] != "":
                     default_value = field["default"]
                 self.example_lines.append("%s# %s: %s" % (indent,
                                                           name,
@@ -162,18 +179,31 @@ class ExampleFileGenerator(object):
 
         if self.has_comments:
             self.example_lines.append("")
+            if "sectionEnd" in field:
+                self.example_lines.append(
+                    indent + ("#" * (len(field['sectionEnd']) + 6)))
+                self.example_lines.append("")
 
     def get_example_value(self, name, field, is_list):
         field_type = "string"
         if "type" in field:
             field_type = field["type"]
         if self.as_template:
+            is_encrypted = False
+            if "encrypt" in field and field["encrypt"] is True:
+                is_encrypted = True
+            arrayType = "integer"
+            if "items" in field:
+                if "type" in field["items"]:
+                    arrayType = field["items"]["type"]
             return self.get_example_template_value(name, field_type,
-                                                   is_list)
+                                                   is_list, is_encrypted,
+                                                   arrayType)
         else:
             return self.get_example_placeholder_value(field_type)
 
-    def get_example_template_value(self, name, field_type, is_list):
+    def get_example_template_value(self, name, field_type, is_list,
+                                   is_encrypted, arrayType):
         item_name = ""
         if is_list:
             item_name = "item."
@@ -182,8 +212,14 @@ class ExampleFileGenerator(object):
         elif field_type == "boolean":
             return "{{ %s%s | lower }}" % (item_name, name)
         elif field_type == "array":
-            return ('[ {%% for i in %s%s | default([]) %%}"{{ i }}", '
-                    '{%% endfor %%}]' % (item_name, name))
+            if arrayType == "string":
+                return ('[ {%% for i in %s%s | default([]) %%}"{{ i }}", '
+                        '{%% endfor %%}]' % (item_name, name))
+            else:
+                return ('[ {%% for i in %s%s | default([]) %%}{{ i }}, '
+                        '{%% endfor %%}]' % (item_name, name))
+        elif is_encrypted:
+            return "{{ %s%s | indent(8, False) }}" % (item_name, name)
         else:
             return '"{{ %s%s }}"' % (item_name, name)
 
@@ -202,15 +238,21 @@ class ExampleFileGenerator(object):
 
 def main():
 
-    parser = argparse.ArgumentParser(description='Generate example from schema')
+    parser = argparse.ArgumentParser(
+        description='Generate example from schema')
     parser.add_argument("--schema", help="Schema file name")
-    parser.add_argument("--no-comments", dest="no_comments", action='store_true', default=False,
-                        help="Generates without title/usage description comments")
-    parser.add_argument("--as-template", dest="as_template", action='store_true', default=False,
-                        help="Generates as a jinja2 template")
-    parser.add_argument("--as-example", dest="as_example", action='store_true', default=False,
-                        help="Generates a example schema using example data")
-    parser.add_argument("--example_data_folder", help="Location of example data folder")
+    parser.add_argument(
+        "--no-comments", dest="no_comments",
+        action='store_true', default=False,
+        help="Generates without title/usage description comments")
+    parser.add_argument(
+        "--as-template", dest="as_template", action='store_true',
+        default=False, help="Generates as a jinja2 template")
+    parser.add_argument(
+        "--as-example", dest="as_example", action='store_true', default=False,
+        help="Generates a example schema using example data")
+    parser.add_argument(
+        "--example_data_folder", help="Location of example data folder")
     args = parser.parse_args()
 
     if not args.schema:
@@ -230,19 +272,23 @@ def main():
     as_example = args.as_example
     example_folder = args.example_data_folder
 
-    generator = ExampleFileGenerator(no_comments, as_template, as_example, example_folder)
+    generator = ExampleFileGenerator(no_comments, as_template, as_example,
+                                     example_folder)
 
     if schema_filename.find(".") == -1:
         schema_filename = schema_filename + ".json"
 
     if os.path.isfile(schema_filename):
-        print generator.generate_example_from_schema(schema_filename)
-        generator.generate_example_from_schema(schema_filename)
+        print generator.generate_example_from_schema(
+            schema_filename).encode('utf-8')
+        generator.generate_example_from_schema(schema_filename).encode('utf-8')
     else:
         schema_filename = os.path.join(SCHEMA_DIRECTORY, schema_filename)
         if os.path.isfile(schema_filename):
-            generator.generate_example_from_schema(schema_filename)
-            print generator.generate_example_from_schema(schema_filename)
+            generator.generate_example_from_schema(
+                schema_filename).encode('utf-8')
+            print (generator.generate_example_from_schema(
+                schema_filename)).encode('utf-8')
         else:
             raise Exception("Could not find schema file %s" % schema_filename)
 

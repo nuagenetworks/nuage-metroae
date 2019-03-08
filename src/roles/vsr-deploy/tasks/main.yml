@@ -1,3 +1,11 @@
+- name: Clean known_hosts of VSRs (ignoring errors)
+  known_hosts:
+    name: "{{ mgmt_ip }}"
+    state: absent
+  delegate_to: localhost
+  no_log: True
+  ignore_errors: True
+
 - name: run show version on remote devices
   local_action:
     module: sros_command
@@ -6,6 +14,7 @@
     provider: "{{ provider_creds }}"
   register: vsr_license_info
   remote_user: "{{ target_server_username }}"
+  become: "{{ 'no' if target_server_username == 'root' else 'yes' }}"
   delegate_to: "{{ target_server }}"
 
 - debug: var=vsr_license_info verbosity=1
@@ -30,7 +39,7 @@
     lines:
       - "admin rollback save comment \"Before Metro-Config {{ lookup('pipe', 'date -u +%Y-%m-%d-%H:%M:%s') }}\""
     provider: "{{ provider_creds }}"
-  
+
 - name: Ensure build directory exits to store config fragments in
   local_action:
     module: file
@@ -39,12 +48,12 @@
 
 
 - name: Set configuration fragments
-  set_fact: 
+  set_fact:
     config_items:
      - { file: "system.cfg", prio: "10" }
      - { file: "ports.cfg", prio: "20" }
      - { file: "router.cfg", prio: "30" }
- 
+
 - name: Generate configuration fragments
   local_action:
     module: template
@@ -59,7 +68,7 @@
 - name: Configure additional configuration to integrate VSR with Nuage VSD
   local_action:
     module: sros_config
-    lines: '{{ lookup("template", "{{ item.file }}.j2" ) | sros_rootify }}' 
+    lines: '{{ lookup("template", "{{ item.file }}.j2" ) | sros_rootify }}'
     provider: "{{ provider_creds }}"
   with_items: "{{ config_items }}"
 
@@ -69,4 +78,3 @@
     module: sros_config
     save: yes
     provider: "{{ provider_creds }}"
-

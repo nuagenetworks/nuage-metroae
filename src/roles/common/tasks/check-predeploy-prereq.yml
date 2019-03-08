@@ -1,22 +1,38 @@
----
+- block:
 
-- name: Check that QCOW2 files were found
-  assert:
-    that: "qcow2_path is defined and qcow2_file_name is defined"
-    msg: "Missing QCOW2 files for {{ hostname }} under the unzipped file directory, please unzip them and issue reset_build"
+  - name: Check SSH Connectivity to target server (ignoring errors)
+    include_role:
+      name: common
+      tasks_from: wait-for-ssh
+    vars:
+      ssh_host: "{{ target_server }}"
+      host_username: "{{ target_server_username }}"
+      retries: 5
+      delay: 5
+    ignore_errors: True
+
+  - name: Check output of SSH test
+    assert:
+      that: "not {{ wait_for_ssh_output.failed }}"
+      msg: "Failed to connect to target_server {{ target_server }}. Is passwordless SSH set up?"
+
   when: target_server_type | match("kvm")
 
-- name: Check that OVA files were found
-  assert:
-    that: "ova_path is defined and ova_file_name is defined"
-    msg: "Missing OVA files for {{ hostname }} under the unzipped file directory, please unzip them and issue reset_build"
-  when: target_server_type | match("vcenter")
+- block:
 
-- name: Check that TIM file was found
-  assert:
-    that: "vsc_tim_path is defined and vsc_tim_file_name is defined"
-    msg: "Missing VSC TIM image file for {{ hostname }} under the unzipped file directory, please unzip it and issue reset_build"
-  when: component_type | default("NONE") == 'vsc'
+  - name: Check that QCOW2 files were found
+    assert:
+      that: "qcow2_path is defined and qcow2_file_name is defined"
+      msg: "Missing QCOW2 files for {{ hostname }} under the unzipped file directory, please unzip them and issue reset_build"
+    when: target_server_type | match("kvm")
+
+  - name: Check that OVA files were found
+    assert:
+      that: "ova_path is defined and ova_file_name is defined"
+      msg: "Missing OVA files for {{ hostname }} under the unzipped file directory, please unzip them and issue reset_build"
+    when: target_server_type | match("vcenter")
+
+  when: component_type | default("NONE") != 'vrs'
 
 - block:
 
@@ -29,12 +45,12 @@
     assert:
       that: "libnetwork_package_path is defined and libnetwork_package_file_name is defined"
       msg: "Missing VRS libnetwork files under the unzipped file directory, please unzip it and issue reset_build"
-    when: libnetwork_install is True
+    when: libnetwork_install | default(False)
 
   - name: Check that DKMS files were found
     assert:
       that: "dkms_package_path is defined and dkms_package_file_name_list is defined"
       msg: "Missing VRS DKMS files under the unzipped file directory, please unzip it and issue reset_build"
-    when: dkms_install is True
+    when: dkms_install
 
   when: component_type | default("NONE") == 'vrs'

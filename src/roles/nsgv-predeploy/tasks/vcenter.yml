@@ -18,21 +18,23 @@
       local_action: command mktemp -d "{{ lookup('env', 'TMPDIR') | default('/tmp/', true) }}ansible.XXXX"
       register: mktemp_output
 
-    - name: Set Top-Level-Directory
-      set_fact: tld="{{ role_path }}/../../"
-
     - name: Generate ISO file
-      local_action: command python {{ role_path }}/files/create_zfb_profile.py {{ tld }} {{ mktemp_output.stdout }}
-      register: output
-
-    - name: Search for errors in the output of ZFB script
-      assert:
-        that: "not output.stdout | search('(?i)ERROR')"
-        msg: "{{ output.stdout }}"
+      create_zfb_profile:
+      nsgv_path: "{{ mktemp_output.stdout }}"
+      fact_name: nsgv_already_configured
+      vsd_license_file: "{{ vsd_license_file }}"
+      vsd_auth: "{{ vsd_auth }}"
+      zfb_constants: "{{ zfb_constants }}"
+      zfb_proxy_user: "{{ zfb_proxy_user }}"
+      zfb_nsg: "{{ zfb_nsg }}"
+      zfb_ports: "{{ zfb_ports }}"
+      zfb_nsg_infra: "{{ zfb_nsg_infra }}"
+      zfb_vsc_infra: "{{ zfb_vsc_infra }}"
+      delegate_to: localhost
 
     - name: Ensure NSGV has the correct configuration
       assert:
-        that: "not node_running or output.stdout | search('NSG ALREADY CONFIGURED')"
+        that: "not node_running or nsgv_already_configured"
         msg: "NSGV is already running, but there was no corresponding configuration for it."
 
     - name: Copy the ISO image to vcenter datastore
@@ -46,33 +48,22 @@
             datastore: "{{ vcenter.datastore }}"
             validate_certs: no
       delegate_to: localhost
+
     when: bootstrap_method == 'zfb_metro'
 
-  - name: Configure vCenter path
-    set_fact:
-      vcenter_path: "vi://'{{ vcenter.username | urlencode }}':'{{ vcenter.password | urlencode }}'@{{ target_server }}/{{ vcenter.datacenter }}/host/{{ vcenter.cluster }}"
+  - name: Configure vCenter path and ovftool command
+    include_role:
+      name: common
+      tasks_from: configure-ovftool
+    vars:
+      management_network: "OVS Management"
 
-  - name: Update vCenter path if resource pool is configured
-    set_fact:
-      vcenter_path: "vi://'{{ vcenter.username | urlencode }}':'{{ vcenter.password | urlencode }}'@{{ target_server }}/{{ vcenter.datacenter }}/host/{{ vcenter.cluster }}/Resources/{{ vcenter.resource_pool | urlencode }}"
-    when: vcenter.resource_pool != 'NONE'
-
-  - name: Deploy VM image on vCenter
+  - name: Deploy NSGV image on vCenter (Can take several minutes)
     connection: local
-    command: >
-      {{ vcenter.ovftool }}
-      --acceptAllEulas
-      --noSSLVerify
-      --powerOn
-      --machineOutput
-      -dm=thin
-      -ds={{ vcenter.datastore }}
-      -n={{ vm_name }}
-      --net:"OVS Management={{ mgmt_bridge }}"
-      --net:"OVS DataPath={{ data_bridge }}"
-      --net:"port_vmnic={{ access_bridge }}"
-      "{{ ovf_path }}/{{ ovf_file_name }}"
-      {{ vcenter_path }}
+    no_log: true
+    shell: >-
+      {{ ovftool_command }}
+      "vi://{{ vcenter.username | urlencode }}:{{ vcenter.password | urlencode }}@{{ vcenter_path }}"
 
   - block:
     - name: Mount ISO when ZFB method is metro

@@ -17,29 +17,30 @@
 
 2.1 Clone the master branch of the repo onto the **MetroÆe Host**. Read [Setup](SETUP.md) for details.  
 ```
-git clone https://github.com.com/nuagenetworks/nuage-metro.git
+git clone https://github.com/nuagenetworks/nuage-metro.git
 ```
 2.2 Install the required packages. Run as root or sudo. Read [Setup](SETUP.md) for details.  
 ```
 $ sudo ./metro-setup.sh  
 ```
 
-## 3. Enable SSH Access  
+## 3. Enable SSH Access
 
-### 3.1 For MetroÆ User
+Passwordless SSH must be configured between the MetroÆ host and all target servers, a.k.a. hypervisors. This is accomplished by generating SSH keys for the MetroÆ user, then copying those keys to the authorized_keys files for the `target_server_username` on every `target_server`. The following steps should be executed on the MetroÆ server as the MetroÆ user.
 
-3.1.1 As MetroÆ User, generate SSH keys: `ssh-keygen`.  
-3.1.2 Copy SSH public key: `ssh-copy-id localhost`.  
+### 3.1 Generate keys for the MetroÆ user
 
-### 3.2 For Root User  
+3.1.1 As MetroÆ User on the MetroÆ server, generate SSH keys: `ssh-keygen`
 
-3.2.1 As root user, generate SSH keys: `ssh-keygen`.  
-3.2.2 Copy SSH public key: `ssh-copy-id localhost`.  
+### 3.2 Copy public key to each `target_server`
 
-### 3.3 For Every Target Server  
+#### 3.2.1 When you are going to run as 'root' on each `target_server`
 
-3.3.1 Copy SSH public key: `ssh-copy-id root@<target_server>`.  
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Replace `<target server>` with actual IP address of KVM hypervisor.  
+As MetroÆ User on the MetroÆ server, copy SSH public key: `ssh-copy-id root@<target_server>`  
+
+#### 3.2.2 When you are going to run as `target_server_username` on each `target_server`
+
+As MetroÆ User on the MetroÆ server, copy SSH public key: `ssh-copy-id <target_server_username>@<target_server>`.  
 
 See [Setup](SETUP.md) for more details about enabling SSH Access.   
 
@@ -49,7 +50,7 @@ Download and install the [ovftool](https://www.vmware.com/support/developer/ovf/
 
 ## 5. Prepare your environment  
 
-5.1 Unzip Nuage files: `metroae nuage-unzip.sh`. See [CUSTOMIZE.md](CUSTOMIZE.md) for details.  
+5.1 Unzip Nuage files: `./nuage-unzip.sh <zipped_directory> <unzip_directory>`. See [CUSTOMIZE.md](CUSTOMIZE.md) for details.  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Be sure that Nuage packages (tar.gz) are available on localhost (MetroÆ host),  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;either in a native directory or NFS-mounted.  
 
@@ -71,8 +72,6 @@ Download and install the [ovftool](https://www.vmware.com/support/developer/ovf/
 ## Next Steps
 
 Refer to the list of documents in [README.md](../README.md) for guidance on deploying, upgrading, etc.
-
-## Questions, Feedback, and Contributing
 
 ## Questions, Feedback, and Contributing
 Ask questions and get support via the [forums](https://devops.nuagenetworks.net/forums/) on the [MetroÆ site](https://devops.nuagenetworks.net/).  

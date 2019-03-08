@@ -1,0 +1,82 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: >-
+  AWS CloudFormation Template to deploy a VSTAT for access to VPC. **WARNING**
+  This template creates an Amazon EC2 instance and ElasticIP. You will be billed
+  for these AWS resources used if you create a stack from this template.
+Parameters:
+  KeyName:
+    Description: Name of an existing EC2 KeyPair to enable SSH access to the instance
+    Type: 'AWS::EC2::KeyPair::KeyName'
+    ConstraintDescription: must be the name of an existing EC2 KeyPair.
+  VstatDataEniId:
+    Description: NetworkInterface ID for VSTAT Data interface
+    Type: String
+  VstatMgmtEniId:
+    Description: NetworkInterface ID for VSTAT Management interface
+    Type: String
+  AmiId:
+    Description: AMI-ID for Instance
+    Type: 'AWS::EC2::Image::Id'
+    ConstraintDescription: AMI must already be available in this Region
+  InstanceType:
+    Description: EC2 instance type
+    Type: String
+    Default: t2.medium
+    AllowedValues:
+      - t2.small
+      - t2.medium
+      - m4.large
+      - c3.8xlarge
+      - c4.8xlarge
+      - g2.8xlarge
+      - r3.8xlarge
+      - i2.8xlarge
+      - d2.8xlarge
+      - hi1.4xlarge
+      - hs1.8xlarge
+      - cr1.8xlarge
+      - cc2.8xlarge
+      - m2.4xlarge
+      - m4.4xlarge
+      - cg1.4xlarge
+      - m4.xlarge
+      - m4.2xlarge
+    ConstraintDescription: must be a valid EC2 instance type.
+  InstanceName:
+    Description: Enter Name for Instance
+    ConstraintDescription: Instance Name
+    Type: String
+Resources:
+  VstatInstance:
+    Type: 'AWS::EC2::Instance'
+    Properties:
+      InstanceType: !Ref InstanceType
+      KeyName: !Ref KeyName
+      ImageId: !Ref AmiId
+      NetworkInterfaces:
+        - DeviceIndex: '0'
+          NetworkInterfaceId: !Ref VstatDataEniId
+        - DeviceIndex: '1'
+          NetworkInterfaceId: !Ref VstatMgmtEniId
+      UserData: ''
+      Tags:
+        - Key: Name
+          Value: !Ref InstanceName
+      BlockDeviceMappings:
+        - DeviceName: /dev/sda1
+          Ebs:
+            DeleteOnTermination: true
+Outputs:
+  InstanceId:
+    Description: InstanceId of the newly created EC2 instance
+    Value: !Ref VstatInstance
+  AZ:
+    Description: Availability Zone of the newly created EC2 instance
+    Value: !GetAtt
+      - VstatInstance
+      - AvailabilityZone
+  PublicDNS:
+    Description: Public DNSName of the newly created EC2 instance
+    Value: !GetAtt
+      - VstatInstance
+      - PublicDnsName

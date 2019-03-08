@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 
 import jinja2
 from netaddr import IPAddress
@@ -24,7 +24,32 @@ def usage():
 
 def read_build_vars(build_vars_file):
     with open(build_vars_file, "r") as file:
-        var_dict = yaml.safe_load(file.read())
+        build_var_contents = file.read().decode("utf-8")
+
+    substitutions = yaml.safe_load(build_var_contents)
+
+    try:
+        build_vars_template = jinja2.Template(build_var_contents,
+                                              autoescape=False,
+                                              undefined=jinja2.StrictUndefined)
+
+        resolved_yaml = build_vars_template.render(substitutions)
+
+        substitutions = yaml.safe_load(resolved_yaml)
+
+        # Do template resolution a second time to resolve nested substitution
+        build_vars_template = jinja2.Template(resolved_yaml,
+                                              autoescape=False,
+                                              undefined=jinja2.StrictUndefined)
+
+        resolved_yaml = build_vars_template.render(substitutions)
+    except jinja2.exceptions.UndefinedError as e:
+        print str(e)
+        print ("The above variable is missing from build_vars, please define "
+               "it in the build_vars file.")
+        exit(1)
+
+    var_dict = yaml.safe_load(resolved_yaml)
 
     var_dict["generator_script"] = "conversion from " + build_vars_file
 
@@ -99,6 +124,17 @@ def resolve_missing_variables(var_dict):
         flatten_vcenter([var_dict])
         if "ovftool" in var_dict["vcenter"]:
             var_dict["vcenter_ovftool"] = var_dict["vcenter"]["ovftool"]
+        if "resource_pool" in var_dict["vcenter"]:
+            var_dict["vcenter_resource_pool"] = (
+                var_dict["vcenter"]["resource_pool"])
+
+    var_dict["name"] = "default"
+    var_dict["credentials"] = [var_dict]
+
+    if 'secure_communication' in var_dict:
+        var_dict['xmpp_tls'] = var_dict['secure_communication']
+        var_dict['openflow_tls'] = var_dict['secure_communication']
+        del var_dict['secure_communication']
 
 
 def flatten_vcenter(component_list):
@@ -170,18 +206,16 @@ def write_deployment(var_dict, deployment_name):
     write_deployment_file(os.path.join(TEMPLATES_DIRECTORY, "vrss.j2"),
                           os.path.join(deployment_dir, "vrss.yml"),
                           var_dict)
-
-    if "vcenter" in var_dict:
-        write_deployment_file(os.path.join(TEMPLATES_DIRECTORY, "vcenter.j2"),
-                              os.path.join(deployment_dir, "vcenter.yml"),
-                              var_dict)
+    write_deployment_file(os.path.join(TEMPLATES_DIRECTORY, "credentials.j2"),
+                          os.path.join(deployment_dir, "credentials.yml"),
+                          var_dict)
 
 
 def write_deployment_file(template_file, to_file, var_dict):
     print "Writing " + to_file
 
     with open(template_file, "r") as file:
-        template_string = file.read()
+        template_string = file.read().decode("utf-8")
 
     template = jinja2.Template(template_string,
                                autoescape=False,
@@ -190,7 +224,7 @@ def write_deployment_file(template_file, to_file, var_dict):
     var_file_contents = template.render(var_dict)
 
     with open(to_file, "w") as file:
-        file.write(var_file_contents)
+        file.write(var_file_contents.encode("utf-8"))
 
 
 def main():
