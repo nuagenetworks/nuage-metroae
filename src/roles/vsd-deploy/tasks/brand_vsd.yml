@@ -14,9 +14,24 @@
   - name: Find war file on the VSD
     find:
       path: "/opt/vsd/jboss/standalone/deployments"
-      pattern: "ui-*.war"
+      pattern: "vsd-architect-*.war"
       recurse: no
     register: rc_war_file
+
+  - block:
+
+    - name: Find war file on the VSD on pre-5.4 release
+      find:
+        path: "/opt/vsd/jboss/standalone/deployments"
+        pattern: "ui-*.war"
+        recurse: no
+      register: rc_war_file_pre_5_4
+
+    - name: Set branding zip file to MetroAE
+      set_fact:
+        rc_war_file: "{{ rc_war_file_pre_5_4 }}"
+
+    when: rc_war_file.matched <= 0
 
   - name: Verify that a VSD war file was found
     assert: {
