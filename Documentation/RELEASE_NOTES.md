@@ -30,3 +30,4 @@
 * Fix bridge examples to be names not IP addresses (METROAE-930)
 * Update ES upgrade for 5.4.1 (METROAE-931)
 * Add support for setting VSTAT hostname (METROAE-891)
+* Destroy then re-add VSC fails to copy certs from VSD (METROAE-884)
