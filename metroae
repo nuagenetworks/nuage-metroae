@@ -4,7 +4,7 @@ set -e
 # Wrapper around ansible-playbook for the installation of Nuage components
 #
 
-METROAE_VERSION="v3.1.0"
+METROAE_VERSION="v3.2.0"
 
 CURRENT_DIR=`pwd`
 PLAYBOOK_DIR=$CURRENT_DIR/src/playbooks
@@ -16,6 +16,7 @@ INVENTORY_DIR=$CURRENT_DIR/src/inventory
 VAULT_ENV_FILE=$CURRENT_DIR/src/vault-env
 ENCRYPTED_DEPLOYMENT_FILE=credentials.yml
 ENCRYPTED_TOKEN=\$ANSIBLE_VAULT
+AUDIT_LOG=audit.log
 
 function usage {
     echo ""
@@ -48,6 +49,9 @@ function usage {
     echo "    --skip-build:          Runs workflow without performing build."
     echo "                           This will prevent changes in the deployment from"
     echo "                           taking effect, but it will be faster."
+    echo "    --set-group <group>:   Sets the ownership of inventory and logs to specified"
+    echo "                           group so that other users in the group can access"
+    echo "                           these files."
     echo ""
     echo "Any additional [options] are passed to the internal Ansible engine for processing"
     echo ""
@@ -100,6 +104,17 @@ function ask_password {
     fi
 }
 
+function write_audit_log_entry {
+    echo "`date` MetroÆ $METROAE_VERSION $ORIGINAL_ARGS" >> $AUDIT_LOG
+}
+
+function audit_log_and_exit {
+    echo "`date` MetroÆ $METROAE_VERSION exit code $1" >> $AUDIT_LOG
+    exit $1
+}
+
+ORIGINAL_ARGS="$*"
+
 #
 # Parse arguments
 #
@@ -127,6 +142,8 @@ case $key in
     GROUP="$2"
     touch ansible.log
     chgrp $GROUP ansible.log
+    touch $AUDIT_LOG
+    chgrp $GROUP $AUDIT_LOG
     shift # past argument
     shift # past value
     ;;
@@ -187,14 +204,18 @@ fi
 
 # Run playbooks
 if [[ -a $PLAYBOOK_DIR/$WORKFLOW  ]]; then
-    $(which ansible-playbook) -e deployment_dir=\'"$DEPLOYMENT_DIR"\' -e schema_dir=$SCHEMA_DIR $PLAYBOOK_DIR/$WORKFLOW "$@" || exit $?
+    write_audit_log_entry
+    $(which ansible-playbook) -e deployment_dir=\'"$DEPLOYMENT_DIR"\' -e schema_dir=$SCHEMA_DIR $PLAYBOOK_DIR/$WORKFLOW "$@" || audit_log_and_exit $?
 elif [[ -a $PLAYBOOK_WITH_BUILD_DIR/$WORKFLOW ]]; then
+    write_audit_log_entry
     if [[ $SKIP_BUILD -ne 1 ]]; then
-        $(which ansible-playbook) -e deployment_dir=\'"$DEPLOYMENT_DIR"\' -e schema_dir=$SCHEMA_DIR $PLAYBOOK_DIR/build.yml "$@" || exit $?
+        $(which ansible-playbook) -e deployment_dir=\'"$DEPLOYMENT_DIR"\' -e schema_dir=$SCHEMA_DIR $PLAYBOOK_DIR/build.yml "$@" || audit_log_and_exit $?
         if [[ $GROUP ]]; then chgrp -R $GROUP $INVENTORY_DIR; fi
     fi
-    $(which ansible-playbook) $PLAYBOOK_WITH_BUILD_DIR/$WORKFLOW "$@" || exit $?
+    $(which ansible-playbook) $PLAYBOOK_WITH_BUILD_DIR/$WORKFLOW "$@" || audit_log_and_exit $?
 else
   echo "Requested MetroÆ workflow could not be found"
   exit 1
 fi
+
+audit_log_and_exit 0
