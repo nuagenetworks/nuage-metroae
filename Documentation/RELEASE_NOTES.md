@@ -12,6 +12,7 @@
 * Make VSD deploy fail all when one fails (METROAE-907)
 * For 5.4.1, return 'exit 0' when checking ssh connectivity (METROAE-909)
 * Add NSGv postdeploy health check to ensure NSGvs are bootstrapped (METROAE-912)
+* Make VSC control interface params optional (METROAE-932)
 ### Resolved Issues
 * Remove upgrade check for NTP sync (METROAE-586)
 * Deploy VSC without vsds.yml (METROAE-759)
