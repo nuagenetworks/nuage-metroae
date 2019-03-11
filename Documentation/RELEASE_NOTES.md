@@ -1,7 +1,7 @@
 # Metro Automation Engine Release Notes
 ## Release 3.2.0
 ### New Features and Enhancements
-* Always update etx/hosts for 5.4.1 (METROAE-818)
+* Always update etc/hosts for 5.4.1 (METROAE-818)
 * Provide set-group capability to metro-setup script (METROAE-921)
 * Fix regex of VRS el7 not to pickup VMware
 * Add a log of all installs (audit.log) (METROAE-922)
