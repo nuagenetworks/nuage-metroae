@@ -50,6 +50,32 @@ SETCOLOR_SKIPPED="echo -en \\033[1;36m"
 #
 SETCOLOR_NORMAL="echo -en \\033[0;39m"
 
+#
+# Directories
+#
+CURRENT_DIR=`pwd`
+INVENTORY_DIR=$CURRENT_DIR/src/inventory
+
+###############################################################################
+# Command usage
+###############################################################################
+function usage {
+  echo ""
+  echo "Setup for Nuage Networks Metro Automation Engine (MetroÆ)"
+  echo ""
+  echo "Installs all required libraries for MetroÆ.  See README.md for"
+  echo "more information."
+  echo ""
+  echo "Usage:"
+  echo "    metro-setup.sh [options]"
+  echo ""
+  echo "Options:"
+  echo "    -h, --help:            Displays this help."
+  echo "    --set-group <group>:   Sets the ownership of inventory and logs to specified"
+  echo "                           group so that other users in the group can access"
+  echo "                           these files."
+}
+
 ###############################################################################
 # PrettyPrint green [ OK ] message
 ###############################################################################
@@ -171,20 +197,19 @@ function check_os_version() {
 # Export HTTPS_PROXY for yum updates if set in /etc/yum.conf
 ###############################################################################
 set_https_proxy() {
-    if hash yum 2>/dev/null; then
-        printn "Setting HTTP_PROXY from /etc/yum.conf... "
-        # The ^proxy is to skip any commened proxy config line
-        grep_out=`grep ^proxy /etc/yum.conf`
-        if [ -z $grep_out ]
-        then
-          echo_skipped
-        else
-          https_proxy=`grep ^proxy /etc/yum.conf | cut -d= -f2`
-          export HTTP_PROXY=$https_proxy
-          print "($https_proxy)"
-          echo_success
-        fi
-    fi
+  printn "Setting HTTP_PROXY from /etc/yum.conf... "
+  # The ^proxy is to skip any commened proxy config line
+  grep_out=`grep ^proxy /etc/yum.conf`
+  if [ -z $grep_out ]
+  then
+    echo_skipped
+  else
+    https_proxy=`grep ^proxy /etc/yum.conf | cut -d= -f2`
+    export HTTP_PROXY=$https_proxy
+    export HTTPS_PROXY=$https_proxy
+    print "($https_proxy)"
+    echo_success
+  fi
 }
 
 ###############################################################################
@@ -291,6 +316,37 @@ function main() {
     exit 0
   fi
 }
+
+#
+# Arg processing
+#
+POSITIONAL=()
+while [[ $# -gt 0 ]]
+do
+key="$1"
+
+case $key in
+    -h|--help)
+    usage
+    exit 0
+    ;;
+    --set-group)
+    GROUP="$2"
+    touch ansible.log
+    chgrp $GROUP ansible.log
+    touch audit.log
+    chgrp $GROUP audit.log
+    chgrp -R $GROUP $INVENTORY_DIR
+    shift # past argument
+    shift # past value
+    ;;
+    *)    # unknown option
+    POSITIONAL+=("$1") # save it in an array for later
+    shift # past argument
+    ;;
+esac
+done
+set -- "${POSITIONAL[@]}" # restore positional parameters
 
 # Entry
 main
