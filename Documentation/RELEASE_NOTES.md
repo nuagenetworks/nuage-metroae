@@ -1,6 +1,10 @@
 # Metro Automation Engine Release Notes
 ## Release 3.2.0
 ### New Features and Enhancements
+* Always update etx/hosts for 5.4.1 (METROAE-818)
+* Provide set-group capability to metro-setup script (METROAE-921)
+* Fix regex of VRS el7 not to pickup VMware
+* Add a log of all installs (audit.log) (METROAE-922)
 * Optimize vCenter parameters
 * Add CPU pinning (METROAE-586)
 * Deliver container version of MetroAE via RPM (METROAE-739)
@@ -15,6 +19,10 @@
 * Make data_fqdn required for VNSUTIL (METROAE-904)
 * Make VSC control interface params optional (METROAE-932)
 ### Resolved Issues
+* Lock netmiko version to 2.3.0 (METROAE-925)
+* Export HTTPS_PROXY also
+* Add ignore case to image names regex
+* Disable cloud init vnsutil
 * Remove upgrade check for NTP sync (METROAE-586)
 * Deploy VSC without vsds.yml (METROAE-759)
 * NTP sync failure on VSC was not marked as failure (METROAE-777)
