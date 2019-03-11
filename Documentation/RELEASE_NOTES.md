@@ -25,3 +25,6 @@
 * Remove unwanted rpms and add docker directory to git ignore
 * Remove utf-8 encoding from encrypt credentials
 * Add encode and decode to encrypt credentials script
+* Fix bridge examples to be names not IP addresses (METROAE-930)
+* Update ES upgrade for 5.4.1 (METROAE-931)
+* Add support for setting VSTAT hostname (METROAE-891)
