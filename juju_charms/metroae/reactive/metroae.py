@@ -145,6 +145,8 @@ def create_deployment(target_server_address):
                            options.get('vsc_ctrl_ip_prefix'),
                        'system_ip':
                            options.get('vsc_system_ip'),
+                       'evpn_neighbor_ip_list':
+                           options.get('evpn_neighbor_ip_list').split(","),
                        'target_server':
                            target_server_address
                    }]},
@@ -161,7 +163,7 @@ def create_deployment(target_server_address):
                    {
                        'name': "default",
                        'target_server_username':
-                           options.get('vsc_target_server_username')
+                           options.get('target_server_username')
                    }],
            },
            config_template=template)
