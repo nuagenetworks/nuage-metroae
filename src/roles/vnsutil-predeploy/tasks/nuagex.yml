@@ -17,12 +17,25 @@
       src: "{{ role_path }}/../common/templates/network.j2"
       dest: /etc/sysconfig/network
       backup: no
+  
+  - name: Disable cloud-init to enforce static interface config
+    command: "{{ item }}"
+    with_items:
+      - systemctl disable cloud-init
+      - systemctl disable cloud-init-local
+      - systemctl disable cloud-config
+      - systemctl disable cloud-final
 
-  - name: Restart Utility network service
-    service:
-      name: network
-      enabled: yes
-      state: restarted
+  - name: Set hostname
+    shell: hostnamectl set-hostname {{ hostname }} && ifup eth0
+
+  - name: Reboot the VNS Util
+    shell: nohup bash -c "sleep 2s && shutdown -r now" &
+
+  - name: Wait for VM to come back after reboot
+    wait_for_connection:
+      timeout: 240
+      delay: 20
 
   - name: Check that UtilityVM can ping the gateway on management network (ignoring errors)
     command: ping -c 1 {{ mgmt_gateway }}
