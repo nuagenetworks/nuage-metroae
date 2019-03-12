@@ -128,17 +128,25 @@ echo "Service Configuration"
             exit
             group "internal"
                 type internal
-                {% for vsc_item in groups['vscs'] %}
-                  {% if vsc_item != inventory_hostname %}
-                    {% if hostvars[vsc_item].system_ip is defined %}
-                      {% if hostvars[vsc_item].system_ip != system_ip %}
-                neighbor {{ hostvars[vsc_item].system_ip }}
+                {% if evpn_neighbor_ip_list is defined %}
+                  {% for neighbor_ip in evpn_neighbor_ip_list %}
+                neighbor {{ neighbor_ip }}
+                  family evpn
                 exit
+                  {% endfor %}
+                {% else %}
+                  {% for vsc_item in groups['vscs'] %}
+                    {% if vsc_item != inventory_hostname %}
+                      {% if hostvars[vsc_item].system_ip is defined %}
+                        {% if hostvars[vsc_item].system_ip != system_ip %}
+                neighbor {{ hostvars[vsc_item].system_ip }}
+                  family evpn
+                exit
+                        {% endif %}
                       {% endif %}
                     {% endif %}
-                  {% endif %}
-                {% endfor %}
-                family evpn
+                  {% endfor %}
+                {% endif %}
             exit
         exit
     exit
