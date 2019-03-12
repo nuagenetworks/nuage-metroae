@@ -146,7 +146,7 @@ def create_deployment(target_server_address):
                        'system_ip':
                            options.get('vsc_system_ip'),
                        'evpn_neighbor_ip_list':
-                           options.get('evpn_neighbor_ip_list').split(","),
+                           options.get('vsc_evpn_neighbor_ip_list').split(","),
                        'target_server':
                            target_server_address
                    }]},
