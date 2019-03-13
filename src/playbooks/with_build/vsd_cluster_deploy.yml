@@ -35,19 +35,13 @@
       file:
         path: /tmp/vsdback
         state: directory
-    
-    - pause:
-        seconds: 10
 
 - hosts: vsd_ha_node1
   become: yes
   remote_user: "{{ vsd_default_username }}"
   tasks:
     - name: Transfer data from first VSD to host machine
-      synchronize:
-        src: /tmp/backup/
-        dest: /tmp/vsdback
-        mode: pull
+      command: "/usr/bin/rsync --delay-updates -F --compress --archive --rsh=/usr/bin/ssh -S none -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null --rsync-path=sudo rsync --out-format=<<CHANGED>>%i %n%L root@{{ inventory_hostname }}:/tmp/backup/ /tmp/vsdback"
 
 - hosts: vsd_ha_standby1
   become: yes
