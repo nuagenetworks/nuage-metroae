@@ -16,7 +16,7 @@
     - name: Verify that VSTAT VM QCOW2 file was found
       assert: {
         that: "{{ rc_vstat_file.matched }} > 0",
-        msg: "DNS image is taken from VSTAT, but we can't find the image path. Make sure myvstats is defined in build_vars.yml"
+        msg: "DNS image is taken from VSTAT, but we can't find the image path. Make sure VSTATs are defined in your deployment vstats.yml"
         }
 
     - name: Stat the dns qcow2 file
@@ -40,13 +40,13 @@
         qcow2_file_name: "{{ rc_dns_file.files[0].path | basename }}"
       when: rc_dns_file.matched > 0
 
-    when: mydnss | map(attribute='target_server_type') | list | issuperset(["kvm"]) or mydnss | map(attribute='target_server_type') | list | issuperset(["heat"])
+    when: dnss | map(attribute='target_server_type') | list | issuperset(["kvm"]) or dnss | map(attribute='target_server_type') | list | issuperset(["heat"])
 
   - name: Create host_vars files for dns
     template: src=dns.j2 backup=no dest={{ inventory_dir }}/host_vars/{{ item.hostname }}
-    with_items: "{{ mydnss }}"
+    with_items: "{{ dnss }}"
 
   when:
-    - mydnss is defined and mydnss
+    - dnss is defined and dnss
   tags:
     - dns
