@@ -1,7 +1,7 @@
 # Setting Up the Environment
-You can set up the MetroÆ host environment either [with a Docker container](method-one-set-up-host-environment-using-a-docker-container) or [with a GitHub clone](method-two-set-up-hostenvironment-using-a-github-clone). 
+You can set up the MetroÆ host environment either [with a Docker container](#method-one-set-up-host-environment-using-docker-container) or [with a GitHub clone](#method-two-set-up-host-environment-using-github-clone). 
 
-## Method One: Set up the Host Environment Using Docker Container
+## Method One: Set up Host Environment Using Docker Container
 Using a Docker container results in a similar setup as a GitHub clone, plus it delivers the following features:  
 * All prerequisites are satisfied by the container. Your only requirement is to run Docker engine.  
 * Your data is located in the file system of the host where Docker is running. You don't need to get inside the container.  
@@ -13,7 +13,7 @@ Using a Docker container results in a similar setup as a GitHub clone, plus it d
 * Docker Engine 1.13.1 or greater installed and running
 * Container operations must be performed with elevated privileges (*root*, *sudo*)  
 ### Steps
-1. Download the MetroÆ RPM package from the [Docker](../Docker) folder of this repo.
+1. Download the MetroÆ RPM package from the [Docker](../docker) folder of this repo.
 2. Install the MetroÆ RPM package with the following command, replacing [release] and [build] with the appropriate details.
 ```
 rpm -i MetroAE-[release]-[build].noarch.rpm
@@ -21,7 +21,7 @@ rpm -i MetroAE-[release]-[build].noarch.rpm
 
 That's it! Command metadata, command logs, and container setup information are stored in the newly created `/opt/metroae` directory. The `metroae` command becomes available in the `/usr/local/bin` directory. See [DOCKER.md](DOCKER.md) for container management command options.
 
-## Method Two: Set up the Host Environment Using GitHub Clone
+## Method Two: Set up Host Environment Using GitHub Clone
 If you prefer not to use a Docker container you can set up your environment with a GitHub clone instead.
 ### System (and Other) Requirements  
 * Operating System: Enterprise Linux 7 (EL7) CentOS 7.4 or greater or RHEL 7.4 or greater 
@@ -144,7 +144,7 @@ After you've set up your environment you're ready to [customize](CUSTOMIZE.md) f
 [Deploying Components in AWS](AWS.md)
 
 ## Questions, Feedback, and Contributing
-Ask questions and get support via the [forums](https://devops.nuagenetworks.net/forums/) on the [MetroÆ site](https://devops.nuagenetworks.net/).  
+Ask questions and get support via the [forums](https://devops.nuagenetworks.net/forum/) on the [MetroÆ site](https://devops.nuagenetworks.net/).  
 You may also contact us directly.  
   Outside Nokia: [devops@nuagenetworks.net](mailto:deveops@nuagenetworks.net "send email to nuage-metro project")  
   Internal Nokia: [nuage-metro-interest@list.nokia.com](mailto:nuage-metro-interest@list.nokia.com "send email to nuage-metro project")
