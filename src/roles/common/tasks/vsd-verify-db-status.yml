@@ -13,6 +13,10 @@
       - db_dir.stat.exists == True
     msg: "nuageDbUpgrade dir does not exist"
     
+- name: Set msyql default check for nuageDbUpgrade
+  set_fact:
+    mysql_db_ugprade: "mysql -e 'show databases;' | grep nuageDbUpgrade"
+    
 - name: Set mysql check for nuageDbUpgrade
   set_fact: 
     mysql_db_ugprade: "mysql -p{{ vsd_mysql_password }} -e 'show databases;' | grep nuageDbUpgrade" 
@@ -20,7 +24,7 @@
   
 
 - name: Check that the database is properly identified by MySQL
-  shell: "{{ mysql_db_upgrade | default(mysql -e 'show databases;' | grep nuageDbUpgrade) }}" 
+  shell: "{{ mysql_db_upgrade }}" 
   register: db
   remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
   become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
