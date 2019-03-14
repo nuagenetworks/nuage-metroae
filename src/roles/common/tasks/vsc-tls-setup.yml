@@ -11,7 +11,7 @@
           - "{{ private_key }}"
           - "{{ certificate }}"
           - "{{ ca_certificate }}"
-          
+
       delegate_to: localhost
 
     - name: set tls profiles vars
@@ -19,12 +19,14 @@
         own_key: "{{ private_key | basename }}"
         own_certificate: " {{ certificate | basename }}"
         own_ca_certificate: " {{ ca-certificate | basename }}"
-     
+
     when:
       - private_key is defined
       - certificate is defined
       - ca_certificate is defined
-       
+      - ejabberd_id is defined
+      - ejabberd_id_password is defined
+
   - block:
     - name: Create and transfer certs
       include_role:
@@ -43,12 +45,12 @@
       set_fact:
         own_key: "{{ xmpp.username }}-Key.pem"
         own_certificate: "{{ xmpp.username }}.pem"
-        own_ca_certificate: "{{ xmpp.username }}-CA.pem"           
+        own_ca_certificate: "{{ xmpp.username }}-CA.pem"
     when:
       - private_key is undefined
       - certificate is undefined
       - ca_certificate is undefined
-      
+
   - name: Configure the security profile on the VSC
     sros_config:
       lines:
@@ -58,7 +60,7 @@
           - configure system security tls-profile vsc-tls-profile no shutdown
           - admin save
       provider: "{{ vsc_creds }}"
-    delegate_to: localhost    
+    delegate_to: localhost
   when: xmpp_tls or openflow_tls
 
 - block:
@@ -71,6 +73,36 @@
           - admin save
       provider: "{{ vsc_creds }}"
     delegate_to: localhost
+
+  - block:
+    - name: Configure XMPP server to the custom ejabberd id and password
+      sros_config:
+        lines:
+          - configure vswitch-controller xmpp-server {{ ejjaberd_id }}:{{ejabberd_id_password}}@{{ xmpp_domain }}
+
+    - name: Get vsd node(s) information
+      import_role:
+        name: common
+        tasks_from: vsd-node-info.yml
+      vars:
+        vsd_hostname: "{{ vsd_fqdn }}"
+      run_once: true
+
+    - name: Register custom certificate with vsd_default_password
+      shell: /opt/ejabberd/bin/ejabberdctl register {{ ejabberd_id }} {{ xmpp_domain }} {{ ejabberd_id_password }}
+      delegate_to: "{{ vsd_hostname_list[0] }}"
+      become: yes
+      remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
+      become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
+      vars:
+        ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"
+
+    when:
+      - private_key is defined
+      - certificate is defined
+      - ca_certificate is defined
+      - ejabberd_id is defined
+      - ejabberd_id_password is defined
 
   - name: check xmpp connectivity between VSC and VSD after enabling TLS
     sros_command:
