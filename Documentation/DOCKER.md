@@ -21,7 +21,7 @@ The MetroÆ container is installed and managed using the `metroae` command. You 
 * The `metroae` command will then be available in the /usr/local/bin directory. The installation also creates the directory `/opt/metroae` where command metadata, command logs, and container setup information are stored. Once the rpm has been installed, you are ready to run the `metroae` command.
 
 ## The metroae Command
-The metroae command is at the heart of interacting with the MetroÆ container. It is used both to manage the container and to execute MetroÆ inside the container. You can access all of the command options via `./metroae <action | workflow> [deployment] [options]`.
+The metroae command is at the heart of interacting with the MetroÆ container. It is used both to manage the container and to execute MetroÆ inside the container. You can access all of the command options via `metroae <action | workflow> [deployment] [options]`.
 
 ### metroae Container Management Command Options
 
@@ -29,7 +29,7 @@ The following command options are supported by the metroae command:
 
 **help** -displays the help text for the command
 
-**pull** - pulls the MetroÆ container from the registry. By default, the latest container is pulled. You can also specify a valid container tag to pull another version, e.g. `./metroae pull 1.0.0`.
+**pull** - pulls the MetroÆ container from the registry. By default, the latest container is pulled. You can also specify a valid container tag to pull another version, e.g. `metroae pull 1.0.0`.
 
 **setup** - setup completes the steps necessary to get the MetroÆ container up and running. It prompts you for the full paths to data and image directories that the container uses on your local disk. On Mac OS, you will also be prompted for the port that the API/UI will be listening on. By default, the API/UI listens on port 5001. You can access the API/GUI via URL, `https://host_name_or_ip:5001`, where `host_name_or_ip` is the host name or ip address of the machine on which the container is running. This host name can often be just, `https://localhost:5001`. Note: Running setup multiple times replaces the existing container, but it does not remove the data on your local disk.
 
@@ -77,10 +77,10 @@ The MetroÆ container is designed so that you run MetroÆ workflows, e.g. instal
 ## Troubleshooting
 
 ### SSH connection problems
-If MetroÆ is unable to authenticate with your target server, chances are that passwordless ssh has not been configured properly. The public key of the container must be copied to the authorized_keys file on the target server. Use the `copy-ssh-id` command option, e.g. `./metroae copy-ssh-id user@host_name_or_ip`.
+If MetroÆ is unable to authenticate with your target server, chances are that passwordless ssh has not been configured properly. The public key of the container must be copied to the authorized_keys file on the target server. Use the `copy-ssh-id` command option, e.g. `metroae copy-ssh-id user@host_name_or_ip`.
 
 ### Where are my data and image directories or what are my API/UI settings?
-Determine the current setup by either searching for a file named .metroae in the user's home directory or by executing the status command option, e.g. `./metroae status`.
+Determine the current setup by either searching for a file named .metroae in the user's home directory or by executing the status command option, e.g. `metroae status`.
 
 ### General errors
 metroae.log and ansible.log are located in the data directory you specified during setup.
