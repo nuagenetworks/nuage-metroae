@@ -40,10 +40,16 @@
   become: yes
   remote_user: "{{ vsd_default_username }}"
   tasks:
+    - name: Find all the files
+      find:
+        paths: /tmp/backup/
+      register: file_to_transfer
+
     - name: Transfer data from first VSD to host machine
       fetch:
-        src: /tmp/backup/
+        src: "{{ item.path }}"
         dest: /tmp/vsdback/
+      with_items: "{{ file_to_transfer.files }}"
 
 - hosts: vsd_ha_standby1
   become: yes
