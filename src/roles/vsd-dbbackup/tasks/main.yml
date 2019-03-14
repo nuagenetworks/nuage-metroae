@@ -135,13 +135,15 @@
         - "'.iso' in mount_file.stdout"
       msg: "Did not find iso file in mount path"
 
-  - name: Export the custom mysql password
-    environement:
-      ENV_MYSQL_ROOT_PWD: "{{ vsd_mysql_password }}"
-    when: vsd_mysql_password is defined
+  - name: Run backup script from mount location
+    shell: "{{ backup_cmd }}"
+    when: vsd_mysql_password is undefined
     
   - name: Run backup script from mount location
     shell: "{{ backup_cmd }}"
+    environement:
+      ENV_MYSQL_ROOT_PWD: "{{ vsd_mysql_password }}"
+    when: vsd_mysql_password is defined
 
   - name: Umount the ISO
     shell: "umount /media/CDROM"
