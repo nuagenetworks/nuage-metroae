@@ -151,24 +151,45 @@ Our example includes a VSTAT node. If your topology does not include one, procee
 
      You performed health checks during preupgrade preparations, but it is good practice to run the check here as well to make sure the VSD upgrade has not caused any problems.
 
-2. Prepare the VSTAT node for upgrade.
+2. Backup the VSTAT node.
 
-     `metroae vstat_upgrade_prep`
+     `metroae vstat_upgrade_data_backup`
 
-     Sets up SSH and disables stats collection.
+     Data from the VSTAT node is backed up in the NFS shared folder.
 
+     **Troubleshooting**: If you experience a failure, you can re-execute the command.
 
-3. Upgrade the VSTAT node.
+3. Power off the VSTAT node.
 
-     `metroae vstat_upgrade`
+     `metroae vstat_destroy`
 
-     Performs an in-place upgrade of the VSTAT.
+     VSTAT shuts down; it is not deleted. (The new node will be brought up with the new VM name.) You have the option of performing this step manually instead.
 
-4. Complete VSTAT upgrade and perform post-upgrade checks.
+     **Troubleshooting**:If you experience a failure you can re-execute the command or power off the VM manually.
 
-     `metroae vstat_upgrade_wrapup`
+4. Predeploy the new VSTAT node.
 
-     Completes the upgrade process, renables stats and performs a series of checks to ensure the VSTAT is healthy.
+     `metroae vstat_predeploy`
+
+     The new VSD node is now up and running; it is not yet configured.
+
+     **Troubleshooting**: If you experience a failure, delete the new node by executing the command `metroae vstat_upgrade_destroy` then re-execute the predeploy command. Do NOT run `vstat_destroy` for this step.
+
+5. Deploy the new VSTAT node.
+
+     `metroae vstat_deploy`
+
+     The new VSTAT node has been deployed and configured to talk with the VSD node.
+
+     **Troubleshooting**: If you experience a failure, re-execute the command. If it fails a second time, destroy the VMs (either manually or with the command `metroae vstat_upgrade_destroy`) then proceed from the predeploy step above. Do NOT run `vstat_destroy` for this step.
+
+6. Migrate data to new VSTAT node.
+
+     `metroae vstat_upgrade_data_migrate`
+
+     The data from the old VSTAT node is migrated to the new VSTAT node from the NFS shared folder.
+
+     **Troubleshooting**: If you experience a failure, you can re-execute the command.
 
 ### Finalize the Upgrade
 1. Finalize the settings.

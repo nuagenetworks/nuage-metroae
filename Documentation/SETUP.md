@@ -32,35 +32,53 @@ If you prefer not to use a Docker container you can set up your environment with
 [3. Configure Secure Channel](#3-configure-secure-channel)  
 [4. Configure NTP Sync](#4-configure-ntp-sync)  
 [5. Install ovftool (for VMware only)](#5-install-ovftool-for-vmware-only)  
-[6. Unzip Nuage Files](#6-unzip-nuage-files)
 
-### 1. Clone Repository
-Use one of the two methods below to install a copy of the repo onto the host. 
-#### Method One
-Download a ZIP file of the MetroÆ archive from [GitHub.com](https://github.com/nuagenetworks/nuage-metro) and install it onto the host. 
+### 1. Clone MetroÆ Repository
+The Ansible Host must run el7 Linux host (CentOS 7.* or RHEL 7.*). Using one of the following two methods install a copy of the MetroÆ repository onto the Ansible Host. 
+#### Method One  
+Download a zip of the MetroÆ archive from [GitHub.com](https://github.com/nuagenetworks/nuage-metro), and install it onto the Ansible Host.
 
 #### Method Two  
-1. If Git is not already installed on the host, install it with the following command.  
+On the Ansible Host, execute the following commands:  
 ```
 yum install -y git
-```
-2. Clone the repo with the following command.
-```
 git clone https://github.com/nuagenetworks/nuage-metro.git
 ```
-### 2. Install Packages
-Use one of the two methods below to install the required packages onto the host.
+### 2. Set Up Ansible Host
+Prior to running MetroÆ, use one of the two methods below to install the required packages onto the Ansible Host.
 
-#### Method One: Automatically (recommended)
-MetroÆ code includes a setup script which installs required packages and modules. If any of the packages or modules are already present, the script does not upgrade or overwrite them. You can run the script multiple times without affecting the system. To install the required packages and modules, run the following command. 
+#### Method One: Set Up Ansible Host Automatically (recommended)
+*metro-setup.sh* is a script provided with the MetroÆ code that installs the packages and modules required for MetroÆ. If any of the packages or modules are already present, the script does not upgrade or overwrite them. The script can also be run multiple times without affecting the system. The sample below is an example and may not reflect the most recent software.
 ```
 [JohnDoe@metro-host ~]$ sudo ./metro-setup.sh
 [sudo] password for JohnDoe:
-```
-The script writes a detailed log into *metro-setup.log* for your reference. A *Setup complete!* messages appears when the packages have been successfully installed.
 
-#### Method Two: Manually
-1. For all setups, install the following packages and modules by running the commands below.
+Setting up Nuage Metro Automation Engine
+
+Checking user privileges... [ OK ]
+Checking OS type... [ OK ]
+Checking OS version... [ OK ]
+Installing epel-release... [ OK ]
+Installing python2-pip... [ OK ]
+Installing python-devel.x86_64... [ OK ]
+Installing openssl-devel... [ OK ]
+Installing @Development tools... [ OK ]
+Installing sshpass... [ OK ]
+Installing git... [ OK ]
+Installing ansible==2.4.0... [ OK ]
+Installing netmiko... [ OK ]
+Installing netaddr... [ OK ]
+Installing ipaddr... [ OK ]
+Installing pexpect... [ OK ]
+Installing vspk... [ OK ]
+Installing pyvmomi... [ OK ]
+
+Setup complete!
+```
+The script writes a detailed log into *metro-setup.log*.
+
+#### Method Two: Set Up Ansible Host Manually
+1. Install the following packages and modules for all setups:
 
 Package or Module              | Command   
 ------------------------------ | --------  
@@ -77,7 +95,7 @@ Python pexpect module          | `pip install pexpect`
 VSPK Python module             | `pip install vspk`  
 Paramiko                       | `pip install paramiko==2.2.1`
 
-2. **For ESXi / vCenter Only**, install the following packages as well by running the commands below.  
+2. **For ESXi / vCenter Only**, install the following package:  
  Note: vCenter deployments are supported for Nuage software version 4.0R7 and greater.  
 
  Package  | Command  
@@ -86,62 +104,39 @@ Paramiko                       | `pip install paramiko==2.2.1`
  jmespath | `pip install jmespath`
 
 
-3. For **OpenStack Only**, install the following module as well by running the command below.
+3. For **OpenStack Only**, install the following module:
 
  Module       | Command  
  ------------ | -------  
  shade python | `pip install shade`
 
-### 3. Configure Secure Channel  
-Communication between the MetroÆ Host and the target servers (hypervisors) occurs via SSH. For every target server, run the following commands as the MetroÆ user on the MetroÆ server to establish a secure channel.
+### 3. Enable SSH Access  
 
-1. To generate SSH Keys run the following command.  
-`ssh-keygen`  
+Passwordless SSH must be configured between the MetroÆ host and all target servers, a.k.a. hypervisors. This is accomplished by generating SSH keys for the MetroÆ user, then copying those keys to the authorized_keys files for the `target_server_username` on every `target_server`. The following steps should be executed on the MetroÆ server as the MetroÆ user.
 
-2. To copy the public key to the authorized_keys file on each `target_server` run the applicable command below, replacing [target_server_username] and [target_server] with the appropriate details. 
-* When working as 'root': `ssh-copy-id root@[target_server]` 
-* When working as `target_server_username`: `ssh-copy-id [target_server_username]@[target_server]`  
+#### 3.1 Generate keys for the MetroÆ user
+
+3.1.1 As MetroÆ User on the MetroÆ server, generate SSH keys: `ssh-keygen`
+
+#### 3.2 Copy public key to each `target_server`
+
+##### 3.2.1 When you are going to run as 'root' on each `target_server`
+
+As MetroÆ User on the MetroÆ server, copy SSH public key: `ssh-copy-id root@<target_server>`  
+
+##### 3.2.2 When you are going to run as `target_server_username` on each `target_server`
+
+As MetroÆ User on the MetroÆ server, copy SSH public key: `ssh-copy-id <target_server_username>@<target_server>`.  
 
 ### 4. Configure NTP sync
-For proper operation Nuage components require clock synchronization with NTP. Best practice is to synchronize time on the target servers that Nuage VMs are deployed on, preferrably to the same NTP server as used by the components themselves.  
 
+Nuage components require NTP synchronization for proper operation. It is best practice that the target servers the Nuage VMs are deployed on also be NTP synchronized, preferrably to the same NTP server as used by the components themselves.
+   
 ### 5. Install ovftool (for VMware only)
- If you are installing VSP components in a VMware environment (ESXi/vCenter) download and install the [ovftool](https://www.vmware.com/support/developer/ovf/) from VMware. MetroÆ uses ovftool for OVA operations.  
- 
-### 6. Unzip Nuage Files
-Ensure that the required unzipped Nuage software files (QCOW2, OVA, and Linux Package files) are available for the components to be installed. Use one of the two methods below.
-
-#### Method One: Automatically
-Run the command below, replacing [zipped_directory] and [nuage_unzipped_files_dir] with the actual paths:
-
-```
-./nuage-unzip.sh [zipped_directory] [nuage_unzipped_files_dir]
-```
-Note: After completing setup you will customize for your deployment, and you'll need to add this unzipped files directory path to `common.yml`.  
-
-#### Method Two: Manually
-Alternatively, you can create the directories under the [nuage_unzipped_files_dir] directory and manually copy the appropriate files to those locations as shown in the example below.
-
-  ```
-  <nuage_unzipped_files_dir>/vsd/qcow2/
-  <nuage_unzipped_files_dir>/vsd/ova/ (for VMware)
-  <nuage_unzipped_files_dir>/vsc/
-  <nuage_unzipped_files_dir>/vrs/el7/
-  <nuage_unzipped_files_dir>/vrs/ul16_04/
-  <nuage_unzipped_files_dir>/vrs/vmware/
-  <nuage_unzipped_files_dir>/vrs/hyperv/
-  <nuage_unzipped_files_dir>/vstat/
-  <nuage_unzipped_files_dir>/vns/nsg/
-  <nuage_unzipped_files_dir>/vns/util/
-  ```
-Note: After completing setup you will customize for your deployment, and you'll need to add this unzipped files directory path to `common.yml`. 
+ If you are installing VSP components in a VMware environment (ESXi/vCenter) you will also need to download and install the [ovftool](https://www.vmware.com/support/developer/ovf/) from VMware. MetroÆ uses ovftool for OVA operations.
 
 ## Next Step
-After you've set up your environment you're ready to [customize](CUSTOMIZE.md) for your topology. 
-
-## You May Also Be Interested in
-[Encrypting Sensitive Data in MetroÆ](VAULT_ENCRYPT.md)  
-[Deploying Components in AWS](AWS.md)
+After the MetroÆ environment is set up, the next step is to customize it for your topology. See [CUSTOMIZE.md](CUSTOMIZE.md) for guidance. 
 
 ## Questions, Feedback, and Contributing
 Ask questions and get support via the [forums](https://devops.nuagenetworks.net/forum/) on the [MetroÆ site](https://devops.nuagenetworks.net/).  

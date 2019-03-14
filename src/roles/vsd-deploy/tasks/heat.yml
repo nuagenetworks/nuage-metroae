@@ -1,0 +1,84 @@
+---
+- name: Get VSD details from OpenStack
+  os_server_facts:
+    auth:
+      "{{ os_auth }}"
+    server: "{{ inventory_hostname }}"
+  register: vsd_ip
+  delegate_to: 127.0.0.1
+
+- name: Set vsd mgmt ip
+  set_fact:
+    vsd_mgmt_ip: "{{ vsd_ip['ansible_facts']['openstack_servers'][0]['networks'][vsd_network][0] }}"
+
+- block:
+
+  - name: Get infra server details from OS server facts
+    os_server_facts:
+      auth:
+        "{{ os_auth }}"
+      server: "{{ infra_server_name }}"
+    register: infra_server
+    delegate_to: 127.0.0.1
+
+  - name: Set DNS/NTP server ip
+    set_fact:
+      infra_ip: "{{ infra_server['ansible_facts']['openstack_servers'][0]['private_v4'] }}"
+
+  - name: Restart DNS service
+    shell: service dnsmasq restart
+    delegate_to: "{{ infra_ip }}"
+    remote_user: "{{ vsd_default_username }}"
+
+  when: infra_server_name is defined
+
+- name: Wait for VSD-HA ssh to be ready
+  include_role:
+    name: common
+    tasks_from: wait-for-ssh
+  vars:
+    ssh_host: "{{ vsd_mgmt_ip }}"
+    host_username: "{{ vsd_default_username }}"
+
+- name: Inject ssh key to VSD if cloud-init did not work
+  expect:
+    command: "ssh-copy-id -i {{ vsd_default_username }}@{{ vsd_mgmt_ip }}"
+    responses:
+      (?i)yes: "yes"
+      (?i)password: "{{ vsd_default_password }}"
+  remote_user: "{{ vsd_default_username }}"
+  delegate_to: localhost
+  no_log: True
+
+- name: Pause for ssh port to be active
+  pause:
+    seconds: 5
+
+- name: Query {{ target_server }} facts
+  action: setup
+  remote_user: "{{ target_server_username }}"
+  become: "{{ 'no' if target_server_username == 'root' else 'yes' }}"
+
+- name: Update hostname
+  template: src=network.j2 backup=no dest=/etc/sysconfig/network
+
+- name: Add a DNS server to eth0
+  lineinfile:
+    dest: /etc/sysconfig/network-scripts/ifcfg-eth0
+    regexp: "DNS1="
+    line: "DNS1={{ infra_ip | default(dns_server_list[0]) }}"
+  when: infra_server_name is defined
+
+- block:
+
+  - name: Add nameserver
+    command: echo "{{ infra_ip }}" >> /etc/resolv.conf
+    when: infra_server_name is defined
+
+  - name: Restart networking
+    command: /etc/init.d/network restart
+
+  - name: Resolve fqdn
+    command: hostname "{{ inventory_hostname }}"
+
+  remote_user: "{{ vsd_default_username }}"

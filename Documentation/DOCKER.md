@@ -1,5 +1,25 @@
 # Deploying Components with the MetroÆ Docker Container
 
+In addition to being able to access MetroÆ via github clone, MetroÆ is now also available for distribution via Docker container. The Docker container version of MetroÆ has all the capabilities of the github clone, plus it delivers the following:
+
+* All MetroÆ prerequisites are satisfied by the container. Your only requirement is to run Docker.
+* CLI access is provided through the `metroae` command.
+* Your data is located in the file system of the host where you are running Docker. You don't need to get inside the container.
+* The Container has the option of running an API/UI server, allowing you to access MetroÆ functionality via REST API and a front-end GUI.
+
+## Prerequisites / Requirements
+* Docker must be installed on the system and running.  
+* Image files for VCS or VNS deployments must be available locally.
+* All container operations must be done with elevated privledges, e.g. run as 'root' or 'sudo'.
+
+## Installation
+
+The MetroÆ container is installed and managed using the `metroae` command. You install this command on your local system by installing the MetroÆ rpm that is available in the Docker folder of this repo.
+
+* Install MetroÆ rpm using the rpm command
+    `rpm -i  MetroAE-[release]-[build].noarch.rpm`
+* The `metroae` command will then be available in the /usr/local/bin directory. The installation also creates the directory `/opt/metroae` where command metadata, command logs, and container setup information are stored. Once the rpm has been installed, you are ready to run the `metroae` command.
+
 ## The metroae Command
 The metroae command is at the heart of interacting with the MetroÆ container. It is used both to manage the container and to execute MetroÆ inside the container. You can access all of the command options via `./metroae <action | workflow> [deployment] [options]`.
 
