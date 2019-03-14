@@ -229,7 +229,7 @@ def write_deployment_file(template_file, to_file, var_dict):
 
 def main():
 
-    print """Deprecation Notice: The convert_build_vars_to_deployment tool is not actively  updated for new features and will be removed in MetroAE v3.4.0. Users of this tool should either edit deployment files directly or modify their process to take advantage of the jinja2 templates available in src/deployment_templates to auto-generate deployment files."""
+    print """Deprecation Notice: The convert_build_vars_to_deployment tool is not actively updated for new features and will be removed in MetroAE v3.4.0. Users of this tool should either edit deployment files directly or modify their process to take advantage of the jinja2 templates available in src/deployment_templates to auto-generate deployment files."""
 
     if len(sys.argv) != 3:
         usage()
