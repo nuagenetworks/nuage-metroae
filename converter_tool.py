@@ -37,7 +37,7 @@ def write_deployment(var_dict, deployment_name):
     if not os.path.exists(deployment_dir):
         os.makedirs(deployment_dir)
 
-    deployment_temps = os.listdir(DEPLOYMENTS_DIRECTORY)
+    deployment_temps = os.listdir(TEMPLATES_DIRECTORY)
 
     for deployment_temp in deployment_temps:
         tmp = deployment_temp.split(".", 1)[0]
