@@ -37,41 +37,13 @@ def write_deployment(var_dict, deployment_name):
     if not os.path.exists(deployment_dir):
         os.makedirs(deployment_dir)
 
-    deployment_temps = os.listdir(TEMPLATES_DIRECTORY)
+    deployment_template_files = os.listdir(TEMPLATES_DIRECTORY)
 
-    for deployment_temp in deployment_temps:
-        tmp = deployment_temp.split(".", 1)[0]
-        deployment_file = tmp + ".yml"
-        write_deployment_file(os.path.join(TEMPLATES_DIRECTORY, deployment_temp),
+    for deployment_template_file in deployment_template_files:
+        deployment_filename = deployment_template_file.split(".")[0]
+        deployment_file = deployment_filename + ".yml"
+        write_deployment_file(os.path.join(TEMPLATES_DIRECTORY, deployment_template_file),
                               os.path.join(deployment_dir, deployment_file), var_dict)
-
-    # write_deployment_file(os.path.join(TEMPLATES_DIRECTORY, "common.j2"),
-    #                       os.path.join(deployment_dir, "common.yml"),
-    #                       var_dict)
-    # write_deployment_file(os.path.join(TEMPLATES_DIRECTORY, "vsds.j2"),
-    #                       os.path.join(deployment_dir, "vsds.yml"),
-    #                       var_dict)
-    # write_deployment_file(os.path.join(TEMPLATES_DIRECTORY, "vscs.j2"),
-    #                       os.path.join(deployment_dir, "vscs.yml"),
-    #                       var_dict)
-    # write_deployment_file(os.path.join(TEMPLATES_DIRECTORY, "vstats.j2"),
-    #                       os.path.join(deployment_dir, "vstats.yml"),
-    #                       var_dict)
-    # write_deployment_file(os.path.join(TEMPLATES_DIRECTORY, "nsgvs.j2"),
-    #                       os.path.join(deployment_dir, "nsgvs.yml"),
-    #                       var_dict)
-    # write_deployment_file(os.path.join(TEMPLATES_DIRECTORY, "vcins.j2"),
-    #                       os.path.join(deployment_dir, "vcins.yml"),
-    #                       var_dict)
-    # write_deployment_file(os.path.join(TEMPLATES_DIRECTORY, "vnsutils.j2"),
-    #                       os.path.join(deployment_dir, "vnsutils.yml"),
-    #                       var_dict)
-    # write_deployment_file(os.path.join(TEMPLATES_DIRECTORY, "vrss.j2"),
-    #                       os.path.join(deployment_dir, "vrss.yml"),
-    #                       var_dict)
-    # write_deployment_file(os.path.join(TEMPLATES_DIRECTORY, "credentials.j2"),
-    #                       os.path.join(deployment_dir, "credentials.yml"),
-    #                       var_dict)
 
 
 def write_deployment_file(template_file, to_file, var_dict):
