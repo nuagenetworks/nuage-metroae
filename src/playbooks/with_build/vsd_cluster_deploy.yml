@@ -56,11 +56,16 @@
   become: yes
   remote_user: "{{ vsd_default_username }}"
   tasks:
+    - name: Find all the files to copy
+      find:
+        paths: /tmp/vsdback/
+      register: file_to_copy
+
     - name: Transfer data from host machine to first standby vm
-      synchronize:
-        dest: /opt/vsd/data/
+      copy:
         src: /tmp/vsdback/
-        mode: push
+        dest: /opt/vsd/data/{{ item.path | basename }}
+      with_items: "{{ file_to_copy.files }}"
 
 - hosts: standby_cluster
   gather_facts: no
