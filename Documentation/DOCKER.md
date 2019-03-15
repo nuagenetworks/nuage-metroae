@@ -32,7 +32,7 @@ The following command options are supported by the metroae command:
 **unzip-files** - unzips Nuage Networks tar.gz files into the images directory specified during the setup operation. Use of this command requires that the tar.gz files be placed in either the data or images directory that you specified during setup.
 See the current values of the data and images directories by executing the status command.
 
-**convert-build-vars-to-deployments** - converts a legacy MetroÆ 2 build_vars.yml file into a MetroÆ 3 deployment. Use of this command requires that the build_vars.yml file be present in either the data or images directory that you specified during setup. You can get the current values of the data and images directories by executing the status command.
+**convert-build-vars-to-deployments** - converts a legacy MetroÆ 2 build_vars.yml file into a MetroÆ 3 deployment. Use of this command requires that the build_vars.yml file be present in either the data or images directory that you specified during setup. You can get the current values of the data and images directories by executing the status command. Deprecation Notice: The convert_build_vars_to_deployment tool is not actively updated for new features and will be removed in MetroÆ v3.4.0. Users of this tool should either edit deployment files directly or modify their process to take advantage of the jinja2 templates available in src/deployment_templates to auto-generate deployment files.
 
 **generate-example-from-schema** - generates an example for the specified schema and puts it in the examples directory under the data directory that you specified during setup. You can get the current values of the data and images directories by executing the status command.
 
