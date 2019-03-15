@@ -1,10 +1,12 @@
-# header
+# Automatically Generating Deployment Files
 If you would like to automatically generate deployment files using a single input file, you can use the deployment templates found in src/deployment_templates.
 
 
 
 
-## Example code
+### Example code
+Below is example code that can be used to create deployment files from a single user input file.
+
 ```python
 def write_deployment(var_dict, deployment_name, jinja_template_file, deployment_file):
 
@@ -32,6 +34,7 @@ def write_deployment_file(template_file, to_file, var_dict):
 ```
 
 ### Example user data
+
 ```yaml
 nuage_unzipped_files_dir: "/my/unzipped/filedir"
 dns_domain: "company.com"
