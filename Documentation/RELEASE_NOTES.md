@@ -16,6 +16,7 @@
 * Add NSGv postdeploy health check to ensure NSGvs are bootstrapped (METROAE-912)
 * Make data_fqdn required for VNSUTIL (METROAE-904)
 * Make VSC control interface params optional (METROAE-932)
+* Deprecate convert_build_vars_to_deployment (METROAE-935)
 ### Resolved Issues
 * Fix VSD branding in 5.4.1 (METROAE-929)
 * Always update etc/hosts for 5.4.1 (METROAE-818)
