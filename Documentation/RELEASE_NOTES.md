@@ -17,8 +17,8 @@
 * Make data_fqdn required for VNSUTIL (METROAE-904)
 * Make VSC control interface params optional (METROAE-932)
 * Deprecate convert_build_vars_to_deployment (METROAE-935)
+* Add examples for deployments with minimum requirements (METROAE-936)
 ### Resolved Issues
-* Fix VSD branding in 5.4.1 (METROAE-929)
 * Always update etc/hosts for 5.4.1 (METROAE-818)
 * Lock netmiko version to 2.3.0 (METROAE-925)
 * Export HTTPS_PROXY also
@@ -40,3 +40,5 @@
 * Add support for setting VSTAT hostname (METROAE-891)
 * Destroy then re-add VSC fails to copy certs from VSD (METROAE-884)
 * Update VSD branding support for 5.4.1 (METROAE-929)
+* Set default target_server_type to avoid undefined variable error for VRS (METROAE-934)
+* Lock jsonschema library version to one that supports internal references (METROAE-933)
