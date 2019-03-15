@@ -84,6 +84,11 @@
 
 - block:
 
+  - name: Set Purge commands to purge commands with custom password
+    set_fact:
+      purge_cmd: "{{ purge_cmd_with_custom_pass }}"
+    when: vsd_mysql_password is defined
+
   - name: Purge the alarms and event history from database
     shell: "{{ item }}"
     with_items: "{{ purge_cmd }}"
@@ -132,6 +137,13 @@
 
   - name: Run backup script from mount location
     shell: "{{ backup_cmd }}"
+    when: vsd_mysql_password is undefined
+
+  - name: Run backup script from mount location
+    shell: "{{ backup_cmd }}"
+    environment:
+      ENV_MYSQL_ROOT_PWD: "{{ vsd_mysql_password }}"
+    when: vsd_mysql_password is defined
 
   - name: Umount the ISO
     shell: "umount /media/CDROM"
