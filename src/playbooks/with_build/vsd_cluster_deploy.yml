@@ -35,31 +35,26 @@
       file:
         path: /tmp/vsdback
         state: directory
-        mode: 01777
 
 - hosts: vsd_ha_node1
   become: yes
   remote_user: "{{ vsd_default_username }}"
   tasks:
-    - name: Find all the files
-      find:
-        paths: /tmp/backup/
-      register: file_to_transfer
-
     - name: Transfer data from first VSD to host machine
-      fetch:
-        src: "/tmp/backup/{{ item.path | basename }}"
-        dest: /tmp/vsdback/
-      with_items: "{{ file_to_transfer.files }}"
+      synchronize:
+        src: /tmp/backup/
+        dest: /tmp/vsdback
+        mode: pull
 
 - hosts: vsd_ha_standby1
   become: yes
   remote_user: "{{ vsd_default_username }}"
   tasks:
     - name: Transfer data from host machine to first standby vm
-      copy:
+      synchronize:
+        dest: /opt/vsd/data/
         src: /tmp/vsdback/
-        dest: /opt/vsd/data
+        mode: push
 
 - hosts: standby_cluster
   gather_facts: no
