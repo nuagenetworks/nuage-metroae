@@ -9,12 +9,12 @@ MetroÆ supports deployment of the following components in AWS.
 * NSGv
 
 ## Main Steps for Deploying in AWS
-[1. Install Libraries](#1-install-libraries)
-[2. Upload or Import AMIs](#2-upload-or-import-amis)
-[3. Setup Virtual Private Cloud](#3-setup-virtual-private-cloud)
-[4. Setup Bare Metal Host (for VSC Only)](#4-setup-bare-metal-host-for-vsc-only)
-[5. Configure Components](#5-configure-components)
-[6. Deploy Components](#6-deploy-components)
+[1. Install Libraries](#1-install-libraries)  
+[2. Upload or Import AMIs](#2-upload-or-import-amis)  
+[3. Setup Virtual Private Cloud](#3-setup-virtual-private-cloud)  
+[4. Setup Bare Metal Host (for VSC Only)](#4-setup-bare-metal-host-for-vsc-only)  
+[5. Configure Components](#5-configure-components)  
+[6. Deploy Components](#6-deploy-components)  
 
 ## 1. Install Libraries
 MetroÆ uses the [CloudFormation](https://docs.ansible.com/ansible/latest/modules/cloudformation_module.html) Ansible module for deploying components in AWS. This module requires the python-boto and python-boto3 python libraries. Use one of the following three methods to install these required libraries on the MetroÆ host.
@@ -80,7 +80,7 @@ VSC is not supported as a direct AWS component, but it can be deployed as a bare
 
 Set `target_server_type` to "kvm" and `target_server` to the address(es) of the bare-metal host(s).
 
-To support routed network connectivity, specify the following fields.
+To support routed network connectivity, specify the following fields.  
 - `internal_mgmt_ip`: The ip address to be assigned to the management interfaces on the VSC itself. This internal address can be NATed to the real address of the bare-metal host using iptables rules.
 - `mgmt_routed_network_name`: The name of the libvirt routed network defined on the bare-metal host to support the management interface of the VSC.
 - `data_routed_network_name`: The name of the libvirt routed network defined on the bare-metal host to support the data interface of the VSC.
@@ -103,10 +103,10 @@ After you have set up the environment and configured your components, you can us
     metroae install_everything
 
 Alternatively, you can deploy individual components or perform individual tasks such as predeploy, deploy and postdeploy. See [DEPLOY.md](DEPLOY.md) for details.
-## Questions, Feedback, and Contributing
-Ask questions and get support via the [forums](https://devops.nuagenetworks.net/forums/) on the [MetroÆ site](https://devops.nuagenetworks.net/).
-You may also contact us directly.
-  Outside Nokia: [devops@nuagenetworks.net](mailto:deveops@nuagenetworks.net "send email to nuage-metro project")
+## Questions, Feedback, and Contributing  
+Ask questions and get support via the [forums](https://devops.nuagenetworks.net/forums/) on the [MetroÆ site](https://devops.nuagenetworks.net/).  
+You may also contact us directly.  
+  Outside Nokia: [devops@nuagenetworks.net](mailto:deveops@nuagenetworks.net "send email to nuage-metro project")  
   Internal Nokia: [nuage-metro-interest@list.nokia.com](mailto:nuage-metro-interest@list.nokia.com "send email to nuage-metro project")
 
 Report bugs you find and suggest new features and enhancements via the [GitHub Issues](https://github.com/nuagenetworks/nuage-metro/issues "nuage-metro issues") feature.
