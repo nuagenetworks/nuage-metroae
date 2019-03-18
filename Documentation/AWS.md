@@ -60,6 +60,8 @@ The AWS bare-metal server does not support bridge interfaces, PCI passthrough, o
 Configuring components for AWS is similar to configuring for other server types. See [CUSTOMIZE.md](CUSTOMIZE.md) for details on standard deployments. The configuration files for AWS deployments require a few additional specifications.
 ### credentials.yml
 AWS access can be specified as `aws_access_key` and secret keys can be specified as `aws_secret_key`. If AWS access is not specified, values will be taken from the environment variables `AWS_ACCESS_KEY` and `AWS_SECRET_KEY`.
+### nsgv_bootstrap.yml
+Bootstrapping of NSGvs deployed to AWS is supported through the normal bootstrapping process.  See [NSGV_BOOTSTRAP.md](NSGV_BOOTSTRAP.md) for details.
 
 ### deployment
 #### For Components Other than VSC
@@ -93,7 +95,7 @@ If you'd like to deploy only NSGv (no other components), then MetroÆ can option
 - provision_vpc_nsg_lan_subnet_cidr
 - provision_vpc_private_subnet_cidr
 
-The CIDRs for the VPC, WAN interface, LAN interface and private subnet must be specified. When provisioning a VPC in this way, the elastic network interface identifiers `aws_data_eni` and `aws_access_eni` for the NSGv do not need to be specified as they are discovered from the created VPC. In order to bootstrap the NSGv, specify the bootstrap method as `zfb_aws`; this method assumes that a VSD is fully configured and also requires the NSGv template to be created, with the template id included in build_vars.yml
+The CIDRs for the VPC, WAN interface, LAN interface and private subnet must be specified. When provisioning a VPC in this way, the elastic network interface identifiers `aws_data_eni` and `aws_access_eni` for the NSGv do not need to be specified as they are discovered from the created VPC.
 
 ## 6. Deploy Components
 After you have set up the environment and configured your components, you can use MetroÆ to deploy your components with a single command.
