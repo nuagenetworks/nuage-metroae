@@ -1,5 +1,5 @@
 # Automatically Generating Deployment Files
-If you would like to automatically generate deployment files using a single input file, you can use the deployment templates found in src/deployment_templates. You can then use a Python script to convert the YAML input file into a deployment file.
+If you would like to automatically generate deployment files, MetroÆ provides jinja2 templates for this purpose. The templates are automatically generated from the schemas by the MetroÆ team. They are always up to date. You can find these jinja2 templates in the src/deployment_templates directory in your workspace. You can use one, monolithic YAML file as input to generate all deployment files. You can use multiple input files, one for each deployment file you wish to generate. Or some combination of the two. To generate the files, you can use a Python script to call jinja2 to convert the YAML input file into a deployment file.
 
 ### Example code
 Below is example code that can be used to create deployment files from a single user input file.
