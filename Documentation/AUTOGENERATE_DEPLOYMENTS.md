@@ -1,8 +1,5 @@
 # Automatically Generating Deployment Files
-If you would like to automatically generate deployment files using a single input file, you can use the deployment templates found in src/deployment_templates.
-
-
-
+If you would like to automatically generate deployment files using a single input file, you can use the deployment templates found in src/deployment_templates. You can then use a Python script to convert the YAML input file into a deployment file.
 
 ### Example code
 Below is example code that can be used to create deployment files from a single user input file.
