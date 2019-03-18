@@ -23,3 +23,27 @@
   assert:
     that: "es_status.stdout=='active'"
     msg: "Elasticsearch status is {{ es_status.stdout }}, quiting"
+
+- block:
+
+  - name: Get cluster status
+    uri:
+      url: "http://localhost:9200/_cluster/health?pretty=1"
+    register: cluster_status
+
+  - name: Check cluster_name
+    assert:
+      that: "cluster_status.json.cluster_name == 'nuage_elasticsearch'"
+      msg: "Incorrect cluster_name {{ cluster_status.json.cluster_name }}. Quitting."
+
+  - name: Check number_of_nodes
+    assert:
+      that: "cluster_status.json.number_of_nodes == 3"
+      msg: "Incorrect number_of_nodes {{ cluster_status.json.number_of_nodes }}. Quitting."
+
+  - name: Check status
+    assert:
+      that: "cluster_status.json.status == 'green'"
+      msg: "Incorrect status {{ cluster_status.json.status }}. Quitting."
+
+  when: vstat_sa_or_ha | match('ha')
