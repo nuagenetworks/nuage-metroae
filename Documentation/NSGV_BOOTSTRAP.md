@@ -14,10 +14,10 @@ To use MetroÆ bootstrapping, specify the `bootstrap_method` parameter to be `zf
 ## External ISO
 An NSGv may be bootstrapped using a provided 3rd-party ISO file.  In this mode, MetroÆ assumes any required VSD configuration is already in place.  In the `nsgvs.yml` deployment file, specify the `bootstrap_method` parameter to be `zfb_external` for each NSGv using this mode.  The parameters `iso_path` and `iso_file` are required to provide the path and filename of the ISO file on the MetroÆ host.  During the predeploy phase of the NSGv, the provided ISO will be used for bootstrapping.
 
-## Questions, Feedback, and Contributing
-Ask questions and get support via the [forums](https://devops.nuagenetworks.net/forums/) on the [MetroÆ site](https://devops.nuagenetworks.net/).
-You may also contact us directly.
-  Outside Nokia: [devops@nuagenetworks.net](mailto:deveops@nuagenetworks.net "send email to nuage-metro project")
+## Questions, Feedback, and Contributing  
+Ask questions and get support via the [forums](https://devops.nuagenetworks.net/forums/) on the [MetroÆ site](https://devops.nuagenetworks.net/).  
+You may also contact us directly.  
+  Outside Nokia: [devops@nuagenetworks.net](mailto:deveops@nuagenetworks.net "send email to nuage-metro project")  
   Internal Nokia: [nuage-metro-interest@list.nokia.com](mailto:nuage-metro-interest@list.nokia.com "send email to nuage-metro project")
 
 Report bugs you find and suggest new features and enhancements via the [GitHub Issues](https://github.com/nuagenetworks/nuage-metro/issues "nuage-metro issues") feature.
