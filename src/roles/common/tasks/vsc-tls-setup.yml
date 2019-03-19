@@ -2,15 +2,15 @@
   - block:
     - name: Copy external certificates
       expect:
-        command: 'scp {{ item }} {{ vsc_default_username }}@{{ mgmt_ip }}:'
+        command: "scp {{ item }} {{ vsc_default_username }}@{{ mgmt_ip }}:/ {{ item | basename }}"
         responses:
           (?i)yes: "yes"
           (?i)password: "{{ vsc_custom_password|default(vsc_default_password) }}"
         timeout: 720
-        with_items:
-          - "{{ private_key }}"
-          - "{{ certificate }}"
-          - "{{ ca_certificate }}"
+      with_items:
+        - "{{ private_key }}"
+        - "{{ certificate }}"
+        - "{{ ca_certificate }}"
 
       delegate_to: localhost
 
@@ -18,7 +18,7 @@
       set_fact:
         own_key: "{{ private_key | basename }}"
         own_certificate: " {{ certificate | basename }}"
-        own_ca_certificate: " {{ ca-certificate | basename }}"
+        own_ca_certificate: " {{ ca_certificate | basename }}"
 
     when:
       - private_key is defined
@@ -46,6 +46,7 @@
         own_key: "{{ xmpp.username }}-Key.pem"
         own_certificate: "{{ xmpp.username }}.pem"
         own_ca_certificate: "{{ xmpp.username }}-CA.pem"
+
     when:
       - private_key is undefined
       - certificate is undefined
