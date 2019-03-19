@@ -6,22 +6,21 @@
     vsd_hostname: "{{ vsd_fqdn }}"
   run_once: true
 
-- name: Disable shard allocation
-  uri:
-    url: "{{ disable_shard_url }}"
-    method: PUT
-    headers:
-      Content-Type: "application/json"
-    body: "{{ lookup('file', 'disable_shard.json') }}"
-    body_format: json
-    timeout: 300
-  run_once: true
-  when: vstat_sa_or_ha | match('ha')
+- block:
 
-- name: Perform sync flush
-  uri:
-    url: "{{ sync_flush_url }}"
-    method: POST
+  - name: Disable shard allocation
+    uri:
+      url: "{{ disable_shard_url }}"
+      method: PUT
+      headers:
+        Content-Type: "application/json"
+      body: "{{ lookup('file', 'disable_shard.json') }}"
+      body_format: json
+      timeout: 300
+
+  - name: Perform sync flush
+    command: "curl -XPOST 'localhost:9200/_flush/synced?pretty'"
+
   run_once: true
   when: vstat_sa_or_ha | match('ha')
 
