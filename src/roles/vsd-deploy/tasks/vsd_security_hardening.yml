@@ -155,76 +155,61 @@
 
 - block:
   - name: Copy Root CA to VSD
-    expect:
-      command: 'scp {{ root_cert_path }} {{ vsd_custom_username }}@{{ mgmt_ip }}:/opt/vsd/ejbca/p12/ca.cert.pem'
-      responses:
-        (?i)yes: "yes"
-        (?i)password: "{{ vsd_custom_password|default(vsd_default_password) }}"
-      timeout: 720
-    delegate_to: localhost
+    copy:
+      src: "{{ root_cert_path }}"
+      dest: "opt/vsd/ejbca/p12/ca.cert.pem"
+      owner: ejabberd
+      group: hadoopusers
+      mode: 0640
     when: cert_path is defined
 
   - name: Copy and Intermediate Cert file to VSD
-    expect:
-      command: 'scp {{ intermediate_cert_path }} {{ vsd_custom_username }}@{{ mgmt_ip }}:/opt/vsd/ejbca/p12/intermediate.cert.pem'
-      responses:
-        (?i)yes: "yes"
-        (?i)password: "{{ vsd_custom_password|default(vsd_default_password) }}"
-      timeout: 720
-    delegate_to: localhost
+    copy:
+      src: "{{ intermediate_cert_path }}"
+      dest: "opt/vsd/ejbca/p12/intermediate.cert.pem"
+      owner: ejabberd
+      group: hadoopusers
+      mode: 0640
     when: intermediate_cert_path is defined
 
   - name: Copy VSD certificate
-    expect:
-      command: 'scp {{ cert_path }} {{ vsd_custom_username }}@{{ mgmt_ip }}:/opt/vsd/ejbca/p12/{{ cert_path | basename }}'
-      responses:
-        (?i)yes: "yes"
-        (?i)password: "{{ vsd_custom_password|default(vsd_default_password) }}"
-      timeout: 720
-    delegate_to: localhost
+    copy:
+      src: "{{ cert_path }}"
+      dest: "opt/vsd/ejbca/p12/{{ cert_path | basename }}"
+      owner: ejabberd
+      group: hadoopusers
+      mode: 0640
 
-  - block:
-    - name: Set certificate file permission
-      file:
-        path: "{{ item }}"
-        mode: 01640
-        owner: ejabberd
-        group: hadoopusers
-      with_items:
-        - /opt/vsd/ejbca/p12/ca.cert.pem
-        - /opt/vsd/ejbca/p12/intermediate.cert.pem
-        - /opt/vsd/ejbca/p12/{{ cert_path | basename }}
+  - name: Import Intermediate Cert Pem file
+    shell: '/usr/java/latest/bin/keytool -importcert  -file /opt/vsd/ejbca/p12/intermediate.cert.pem -keystore /usr/java/latest/lib/security/cacerts -storepass changeit -alias myintermediateCA -noprompt'
+    when: intermediate_cert_path is defined
 
-    - name: Import Intermediate Cert Pem file
-      shell: '/usr/java/latest/bin/keytool -importcert  -file /opt/vsd/ejbca/p12/intermediate.cert.pem -keystore /usr/java/latest/lib/security/cacerts -storepass changeit -alias myintermediateCA -noprompt'
-      when: intermediate_cert_path is defined
+  - name: Import Root CA Pem file
+    shell: '/usr/java/latest/bin/keytool -importcert -file /opt/vsd/ejbca/p12/ca.cert.pem -keystore /usr/java/latest/lib/security/cacerts -storepass changeit -alias myRootCA -noprompt'
+    when: root_cert_path is defined
 
-    - name: Import Root CA Pem file
-      shell: '/usr/java/latest/bin/keytool -importcert -file /opt/vsd/ejbca/p12/ca.cert.pem -keystore /usr/java/latest/lib/security/cacerts -storepass changeit -alias myRootCA -noprompt'
-      when: root_cert_path is defined
+  - name: Stop vsd-core
+    shell: monit -g vsd-core stop
 
-    - name: Stop vsd-core
-      shell: monit -g vsd-core stop
+  - name: Stop ejabberd
+    shell: monit stop ejabberd
 
-    - name: Stop ejabberd
-      shell: monit stop ejabberd
+  - name: Start ejabberd
+    shell: monit start ejabberd
 
-    - name: Start ejabberd
-      shell: monit start ejabberd
+  - name: Wait for Ejabberd to start
+    monit_waitfor_service:
+      name: ejabberd
+      timeout_seconds: 600
+      test_interval_seconds: 30
 
-    - name: Wait for Ejabberd to start
-      monit_waitfor_service:
-        name: ejabberd
-        timeout_seconds: 600
-        test_interval_seconds: 30
+  - name: Start vsd-core
+    shell: monit -g vsd-core start
 
-    - name: Start vsd-core
-      shell: monit -g vsd-core start
-
-    remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
-    become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
-    vars:
-      ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"
+  remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
+  become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
+  vars:
+    ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"
 
   when:
     - root_cert_path is defined
