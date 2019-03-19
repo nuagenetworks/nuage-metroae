@@ -65,7 +65,7 @@ Download and install the [ovftool](https://www.vmware.com/support/developer/ovf/
 
 ### vCenter  
 
-- [ ] User specified in build_vars.yml has required permissions to create and configure a VM.  
+- [ ] User specified has required permissions to create and configure a VM.  
 - [ ] ovftool has been downloaded from VMware onto the MetroÆ Host.  
 - [ ] pyvmomi has been installed on MetroÆ Host: `pip install pyvmomi`.
 
