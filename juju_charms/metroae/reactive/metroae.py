@@ -147,6 +147,8 @@ def create_deployment(target_server_address):
                            options.get('vsc_system_ip'),
                        'evpn_neighbor_ip_list':
                            options.get('vsc_evpn_neighbor_ip_list').split(","),
+                       'xmpp_username':
+                           options.get('vsc_xmpp_username'),
                        'target_server':
                            target_server_address
                    }]},
