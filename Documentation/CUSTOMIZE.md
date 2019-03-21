@@ -7,6 +7,8 @@ MetroÆ before version 3.0 used the now deprecated build_vars.yml configuration.
 ./convert_build_vars_to_deployment.py <build_vars_file> <deployment_name>
 ```
 
+Deprecation Notice: The convert_build_vars_to_deployment tool is not actively updated for new features and will be removed in MetroÆ v3.4.0. Users of this tool should either edit deployment files directly or modify their process to take advantage of the jinja2 templates available in src/deployment_templates to auto-generate deployment files. 
+
 ## Prerequisites / Requirements
 If you have not already set up your MetroÆ Host environment, see [SETUP.md](SETUP.md) before proceeding.  
 
@@ -18,7 +20,7 @@ When a workflow is executed, each configuration file is validated against a data
 You have the option of configuring the default files provided in the deployments/default/ sub-directory or creating your own sub-directories under the deployments/ directory. You can find examples of configuration files for different deployments in the [examples/](/examples/) directory. Unless you specify a different deployment sub-directory name, the default deployment is used when a workflow is executed. This method allows MetroÆ to support many deployments (different configurations) in parallel and the ability to switch between them as required. See below for the supported configuration files that you can specify in a deployments sub-directory.
 
 ### `common.yml`
-`common.yml` contains the common configuration parameters for the deployment that are used for all components and workflows.  This file is always required for any workflow. 
+`common.yml` contains the common configuration parameters for the deployment that are used for all components and workflows.  This file is always required for any workflow.
 
 #### Notes for `common.yml`
 - `nuage_unzipped_files_dir` is a required parameter that points to the location of the image and package files used for Install and Upgrade workflows. When running MetroÆ in a container, this parameter should *not* begin with a '/' and be set equal to the relative path from the images path you configured when you installed the container. For example, if you set the images path for the container to `/home/username/images` and you will unzip the files you are going to use into `/home/username/images/6.0.1`, set `nuage_unzipped_files_dir` to `6.0.1`. MetroÆ will concatenate the two paths to access your files. If, however, you are operating without the container and, instead, cloned the nuage-metro repo to your disk, set `nuage_unzipped_files_dir` to the full, absolute path to the images directory, `/home/username/images/6.0.1` in the example, above.
@@ -28,7 +30,7 @@ You have the option of configuring the default files provided in the deployments
 `credentials.yml` contains user credentials for command-line access to individual components, e.g. VSD, authentication parameters for HTTP and hypervisor access, and the passwords for internal VSD services. All of the credentials in this file are optional. MetroÆ will use default parameters when these are not specified. This file does not require modification if you are not using non-default credentials.
 
 ### `nsgvs.yml`
-`nsgvs.yml` contains the definition of the NSGvs to be operated on in this deployment. This file should be present in your deployment only if you are specifying NSGvs. If not provided, no NSGvs will be operated on. This file is of yaml list type and may contain as many NSGv definitions as required. 
+`nsgvs.yml` contains the definition of the NSGvs to be operated on in this deployment. This file should be present in your deployment only if you are specifying NSGvs. If not provided, no NSGvs will be operated on. This file is of yaml list type and may contain as many NSGv definitions as required.
 
 #### Notes for `nsgvs.yml`
 ZFB support is included in the nsgv schema and supporting files. In the beta release of MetroÆ 3, however, ZFB is not supported.
@@ -81,7 +83,7 @@ To create a new deployment:
 4. If you'd like to add components that are not included, you can copy a *blank* file from the examples directory.
 
 ## Hosting your deployment files outside of the repo
-When you are contributing code, or pulling new versions of MetroÆ quite often, it may make sense to host your variable files in a separate directory outside of `nuage-metro/deployments/`.  A deployment directory in any location can be specified instead of a deployment name when issuing the `./metroae` command.
+When you are contributing code, or pulling new versions of MetroÆ quite often, it may make sense to host your variable files in a separate directory outside of `nuage-metro/deployments/`.  A deployment directory in any location can be specified instead of a deployment name when issuing the `metroae` command.
 
 ## Generating example deployment configuration files
 A sample of the deployment configuration files are provided in the deployments/default/ directory and also in [examples/](/examples/).  If these are overwritten or deleted or if a "no frills" version of the files with only the minimum required parameters are desired, they can be generated with the following command:
@@ -111,4 +113,4 @@ You may also contact us directly.
 
 Report bugs you find and suggest new features and enhancements via the [GitHub Issues](https://github.com/nuagenetworks/nuage-metro/issues "nuage-metro issues") feature.
 
-You may also [contribute](CONTRIBUTING.md) to MetroÆ by submitting your own code to the project.
+You may also [contribute](../CONTRIBUTING.md) to MetroÆ by submitting your own code to the project.
