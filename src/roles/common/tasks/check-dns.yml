@@ -8,6 +8,26 @@
     that: "'{{ hostip.stdout }}' ==  '{{ item.mgmt_ip }}'"
     msg: "IPv4 address for {{item.hostname}} != {{item.mgmt_ip}}"
 
+- name: Set hostname for dns lookup
+  set_fact:
+    hostname: "{{item.hostname}}"
+
+- name: Set hostname for dns lookup
+  set_fact:
+    management_ip: "{{item.mgmt_ip}}"
+
+- name: Ensure FQDNs are correct in the DNS server list
+  command: "dig +short {{hostname}} @{{item}}"
+  with_items: 
+    dns_server_list
+  register: dns_resolved_addresses
+
+- name: Assert ip address found by DNS is correct
+  assert:
+    that: "'{{ item.stdout }}' ==  '{{ management_ip }}'"
+    msg: "IPv4 address found by DNS {{item.stdout}} != {{management_ip}}"
+  with_items: "{{dns_resolved_addresses.results}}"
+
 - block:
 
     - shell: "getent hosts {{ item.data_fqdn }} | awk '{print $1}'"
