@@ -12,7 +12,7 @@
   set_fact:
     hostname: "{{item.hostname}}"
 
-- name: Set hostname for dns lookup
+- name: Set management ip for dns lookup
   set_fact:
     management_ip: "{{item.mgmt_ip}}"
 
@@ -23,10 +23,10 @@
   loop_control:
     loop_var: dns_server
 
-- name: Assert ip address found by DNS is correct
+- name: Assert ip address found by DNS matches the management ip
   assert:
     that: "'{{ dns_addr.stdout }}' ==  '{{ management_ip }}'"
-    msg: "IPv4 address found by DNS {{dns_addr.stdout}} != {{management_ip}}"
+    msg: "IPv4 address found by DNS does not match management ip {{dns_addr.stdout}} != {{management_ip}}"
   with_items: "{{dns_resolved_addresses.results}}"
   loop_control:
     loop_var: dns_addr
