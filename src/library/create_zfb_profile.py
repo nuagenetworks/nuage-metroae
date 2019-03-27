@@ -28,7 +28,7 @@ options:
     description:
       - Name of fact variable to state if NSGv is already configured.
     required:False
-  vsd_license_file:
+  vsd_standard_license_file:
     description:
       - Set path to VSD license file.
     required:True
@@ -99,7 +99,7 @@ EXAMPLES = '''
 - create_zfb_profile:
     nsgv_path: /tmp/ansible.1234
     fact_name: nsgv_already_configured,
-    vsd_license_file: /data/vsd_license.txt
+    vsd_standard_license_file: /data/vsd_license.txt
     vsd_auth:
         username: csproot
         password: csproot
@@ -350,7 +350,7 @@ def create_iso_file(metro_org, nsg_temp):
 def main():
     # Nsgv_path
 
-    vsd_license_file = module.params['vsd_license_file']
+    vsd_standard_license_file = module.params['vsd_standard_license_file']
     vsd_auth = module.params['vsd_auth']
     if "fact_name" in module.params:
         fact_name = module.params['fact_name']
@@ -360,7 +360,7 @@ def main():
     # Get VSD license
     vsd_license = ""
     try:
-        with open(vsd_license_file, 'r') as lf:
+        with open(vsd_standard_license_file, 'r') as lf:
             vsd_license = lf.read()
     except Exception as e:
         module.fail_json(msg="ERROR: Failure reading file: %s" % e)
@@ -412,7 +412,7 @@ arg_spec = dict(
     fact_name=dict(
         required=False,
         type='str'),
-    vsd_license_file=dict(
+    vsd_standard_license_file=dict(
         required=True,
         type='str'),
     vsd_auth=dict(
