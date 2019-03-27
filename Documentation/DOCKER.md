@@ -1,27 +1,7 @@
 # Deploying Components with the MetroÆ Docker Container
 
-In addition to being able to access MetroÆ via github clone, MetroÆ is now also available for distribution via Docker container. The Docker container version of MetroÆ has all the capabilities of the github clone, plus it delivers the following:
-
-* All MetroÆ prerequisites are satisfied by the container. Your only requirement is to run Docker.
-* CLI access is provided through the `metroae` command.
-* Your data is located in the file system of the host where you are running Docker. You don't need to get inside the container.
-* The Container has the option of running an API/UI server, allowing you to access MetroÆ functionality via REST API and a front-end GUI.
-
-## Prerequisites / Requirements
-* Docker must be installed on the system and running.  
-* Image files for VCS or VNS deployments must be available locally.
-* All container operations must be done with elevated privledges, e.g. run as 'root' or 'sudo'.
-
-## Installation
-
-The MetroÆ container is installed and managed using the `metroae` command. You install this command on your local system by installing the MetroÆ rpm that is available in the Docker folder of this repo.
-
-* Install MetroÆ rpm using the rpm command
-    `rpm -i  MetroAE-[release]-[build].noarch.rpm`
-* The `metroae` command will then be available in the /usr/local/bin directory. The installation also creates the directory `/opt/metroae` where command metadata, command logs, and container setup information are stored. Once the rpm has been installed, you are ready to run the `metroae` command.
-
 ## The metroae Command
-The metroae command is at the heart of interacting with the MetroÆ container. It is used both to manage the container and to execute MetroÆ inside the container. You can access all of the command options via `./metroae <action | workflow> [deployment] [options]`.
+The metroae command is at the heart of interacting with the MetroÆ container. It is used both to manage the container and to execute MetroÆ inside the container. You can access all of the command options via `metroae <action | workflow> [deployment] [options]`.
 
 ### metroae Container Management Command Options
 
@@ -29,7 +9,7 @@ The following command options are supported by the metroae command:
 
 **help** -displays the help text for the command
 
-**pull** - pulls the MetroÆ container from the registry. By default, the latest container is pulled. You can also specify a valid container tag to pull another version, e.g. `./metroae pull 1.0.0`.
+**pull** - pulls the MetroÆ container from the registry. By default, the latest container is pulled. You can also specify a valid container tag to pull another version, e.g. `metroae pull 1.0.0`.
 
 **setup** - setup completes the steps necessary to get the MetroÆ container up and running. It prompts you for the full paths to data and image directories that the container uses on your local disk. On Mac OS, you will also be prompted for the port that the API/UI will be listening on. By default, the API/UI listens on port 5001. You can access the API/GUI via URL, `https://host_name_or_ip:5001`, where `host_name_or_ip` is the host name or ip address of the machine on which the container is running. This host name can often be just, `https://localhost:5001`. Note: Running setup multiple times replaces the existing container, but it does not remove the data on your local disk.
 
@@ -52,7 +32,7 @@ The following command options are supported by the metroae command:
 **unzip-files** - unzips Nuage Networks tar.gz files into the images directory specified during the setup operation. Use of this command requires that the tar.gz files be placed in either the data or images directory that you specified during setup.
 See the current values of the data and images directories by executing the status command.
 
-**convert-build-vars-to-deployments** - converts a legacy MetroÆ 2 build_vars.yml file into a MetroÆ 3 deployment. Use of this command requires that the build_vars.yml file be present in either the data or images directory that you specified during setup. You can get the current values of the data and images directories by executing the status command.
+**convert-build-vars-to-deployments** - converts a legacy MetroÆ 2 build_vars.yml file into a MetroÆ 3 deployment. Use of this command requires that the build_vars.yml file be present in either the data or images directory that you specified during setup. You can get the current values of the data and images directories by executing the status command. Deprecation Notice: The convert_build_vars_to_deployment tool is not actively updated for new features and will be removed in MetroÆ v3.4.0. Users of this tool should either edit deployment files directly or modify their process to take advantage of the jinja2 templates available in src/deployment_templates to auto-generate deployment files.
 
 **generate-example-from-schema** - generates an example for the specified schema and puts it in the examples directory under the data directory that you specified during setup. You can get the current values of the data and images directories by executing the status command.
 
@@ -77,10 +57,10 @@ The MetroÆ container is designed so that you run MetroÆ workflows, e.g. instal
 ## Troubleshooting
 
 ### SSH connection problems
-If MetroÆ is unable to authenticate with your target server, chances are that passwordless ssh has not been configured properly. The public key of the container must be copied to the authorized_keys file on the target server. Use the `copy-ssh-id` command option, e.g. `./metroae copy-ssh-id user@host_name_or_ip`.
+If MetroÆ is unable to authenticate with your target server, chances are that passwordless ssh has not been configured properly. The public key of the container must be copied to the authorized_keys file on the target server. Use the `copy-ssh-id` command option, e.g. `metroae copy-ssh-id user@host_name_or_ip`.
 
 ### Where are my data and image directories or what are my API/UI settings?
-Determine the current setup by either searching for a file named .metroae in the user's home directory or by executing the status command option, e.g. `./metroae status`.
+Determine the current setup by either searching for a file named .metroae in the user's home directory or by executing the status command option, e.g. `metroae status`.
 
 ### General errors
 metroae.log and ansible.log are located in the data directory you specified during setup.
@@ -124,4 +104,4 @@ You may also contact us directly.
 
 Report bugs you find and suggest new features and enhancements via the [GitHub Issues](https://github.com/nuagenetworks/nuage-metro/issues "nuage-metro issues") feature.
 
-You may also [contribute](CONTRIBUTING.md) to MetroÆ by submitting your own code to the project.
+You may also [contribute](../CONTRIBUTING.md) to MetroÆ by submitting your own code to the project.
