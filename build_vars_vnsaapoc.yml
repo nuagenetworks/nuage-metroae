@@ -1,0 +1,627 @@
+---
+###
+# See BUILD.md for details
+###
+# Paths
+# Paths to find zipped (tar.gz) files and unzipped files (e.g. qcow2)
+# Both are required to run the nuage_unzip role. nuage_unzipped_files_dir
+# is required when one or more operation lists, below, are set to 'install'
+# or 'upgrade'.
+nuage_zipped_files_dir: "/SharedNFS/ISOs-and-Software/Nuage_Software/5.3.3/"
+nuage_unzipped_files_dir: "/SharedNFS/ISOs-and-Software/Nuage_Software/5.3.3//unzip"
+
+###
+# Path to a public key file to be injected in to VSD,VNS Util, VCIN and VSTAT
+# vms during deployment and corresponding private file to be used to connect to
+# the components during deployment
+user_ssh_pub_key: ~/.ssh/id_rsa.pub
+user_ssh_priv_key: ~/.ssh/id_rsa
+
+###
+# Usernames
+# remote_user names for ansible to execute as on the target server (hypervisor)
+# and Ansible host. target_server_username is the remote_user for all
+# hypervisors.
+# ansible_sudo_username is the sudo user for local actions.
+target_server_username: "root"
+ansible_sudo_username: "root"
+
+###
+# The IP addr or hostname of the Ansible host
+ansible_deployment_host: 10.197.62.2
+
+###
+# Location for health reports
+
+metro_reports_dir: "{{ playbook_dir }}/reports"
+
+###
+# Hypervisor network bridges
+# Network bridges required on the target server (hypervisor) for VM deployment.
+# On KVM, the bridges must exist as specified. The VSD needs mgmt_bridge. The
+# VSC needs mgmt_bridge and data_bridge. nsgv requires the access_bridge. On
+# vcenter, mgmt_bridge specifies the portgroup in vCenter to which the
+# management interfaces need to be connected to, and data_bridge specifies the
+# portgroup in vCenter to which the data interfaces need to be connected to.
+# In vCenter/ESXi, you have virtual switches and portgroups. A virtual switch
+# is similar to a normal switch, a network separation object. VMs on different
+# vSwitches can not communicate directly with each other, they have to leave
+# the host through the physical uplinks of the vSwitch, up to the physical
+# network, to connect to each other (if the physical network is configured
+# correctly). A portgroup is a sub section of a vSwitch that groups ports, this
+# group of ports have the same configuration (for instance, the same VLAN, same
+# security settings, …). A port can only be part of one portgroup, a VM can of
+# course have multiple interfaces on multiple portgroups (and a vm can have
+# interfaces on portgroups that are on different vSwitches as well).
+# Note that these are global network settings. Depending on the usecase, these
+# variables can be defined in the specific components (myvsds, myvscs etc). If
+# defined, they will overwrite the global settings.
+mgmt_bridge: "br0"
+data_bridge: "brControl"
+#access_bridge: "brx"
+
+###
+# Hypervisor VM image file location
+# Location to create VM images on KVM target servers
+images_path: "/var/lib/libvirt/images/vnspoc/"
+
+###
+# NTP configuration
+# Note: Must be in dotted-decimal format
+ntp_server_list:
+  - 10.197.62.2
+
+# DNS configuration
+dns_server_list:
+  - 10.197.62.120
+
+dns_domain: test.net
+
+###
+# Misc. param
+timezone: Europe/Brussels
+yum_proxy: NONE
+yum_update: yes
+yum_pin: yes
+
+###
+# VSD params
+# vsd_sa_or_ha = ha for cluster, sa for standalone deployment
+vsd_sa_or_ha: ha
+
+###
+# VSD FQDN
+# Use xmpp fqdn for clustered VSDs and the vsd fqdn for stand alone
+# This variable must be populated for all the components except VRS deployment
+vsd_fqdn_global: "xmpp.mgmt.test.net"
+
+###
+# VSD image disk allocation size
+vsd_fallocate_size_gb: 100
+
+# vsd_operations_list = A list of the operations you intend for the VSD. The
+# list could include 1 or more of the following:
+# - install
+# - upgrade
+# - health
+vsd_operations_list:
+  - install
+
+# myvsds is a variable that represents one or more collections of parameters for
+# VSDs. One set of parameters is required for each VSD. The paramters are as
+# follows:
+# hostname
+# Required always: The FQDN or IP address of the VSD management port
+# vmname
+# Optional for predeploy, defaults to hostname: VM name to use during the
+# vsd-predepoy step. If undefined, Ansible will use the hostname as the vmname.
+# upgrade_vmname
+# Required for upgrade, ignored otherwise: VM name to use during the
+# vsd_predeploy step of an upgrade. An upgrade VM name is required on upgrade
+# so that the previous version VM can be preserved for possible rollback.
+# target_server_type
+# Required: The type of hypervisor the VSD will be deployed on. Supported values
+# are kvm, vcenter, and heat.
+# target_server
+# Required: The hostname or IP address of the hyervisor where this VSD will be
+# instantiated.
+# mgmt_ip
+# The IP address of the VSDs management port.
+# mgmt_gateway
+# The IP address for the default gateway.
+# mgmt_netmask
+# The netmask for the management port.
+
+myvsds: 
+  - { hostname: "vsd1.mgmt.test.net",
+      # vmname is used to identify vm on the hypervisor/vcenter
+      # This is optional. If vmname is not defined, it defaults to the name set
+      # in hostname.
+      vmname: vsd1.vnstest,
+      # upgrade_vmname needed only when performing an upgrade
+      #upgrade_vmname: vsd1-4.0.R10-dc1,
+      target_server_type: "kvm",
+      target_server: 10.197.62.2,
+      # mgmt_bridge is an optional bridge to override the global mgmt_bridge
+      # setting. Omit mgmt_bridge here to use the global mgmt_bridge setting.
+      mgmt_bridge: br0,
+      mgmt_ip: 10.197.62.101,
+      mgmt_gateway: 10.197.62.1,
+      mgmt_netmask:  }
+  - { hostname: "vsd2.mgmt.test.net",
+      # vmname is used to identify vm on the hypervisor/vcenter
+      # This is optional. If vmname is not defined, it defaults to the name set
+      # in hostname.
+      vmname: vsd2.vnstest,
+      # upgrade_vmname needed only when performing an upgrade
+      #upgrade_vmname: vsd1-4.0.R10-dc1,
+      target_server_type: "kvm",
+      target_server: 10.197.62.2,
+      # mgmt_bridge is an optional bridge to override the global mgmt_bridge
+      # setting. Omit mgmt_bridge here to use the global mgmt_bridge setting.
+      mgmt_bridge: br0,
+      mgmt_ip: 10.197.62.102,
+      mgmt_gateway: 10.197.62.1,
+      mgmt_netmask:  }
+  - { hostname: "vsd3.mgmt.test.net",
+      # vmname is used to identify vm on the hypervisor/vcenter
+      # This is optional. If vmname is not defined, it defaults to the name set
+      # in hostname.
+      vmname: vsd3.vnstest,
+      # upgrade_vmname needed only when performing an upgrade
+      #upgrade_vmname: vsd1-4.0.R10-dc1,
+      target_server_type: "kvm",
+      target_server: 10.197.62.2,
+      # mgmt_bridge is an optional bridge to override the global mgmt_bridge
+      # setting. Omit mgmt_bridge here to use the global mgmt_bridge setting.
+      mgmt_bridge: br0,
+      mgmt_ip: 10.197.62.103
+10.197.62.102,
+      mgmt_gateway: 10.197.62.1,
+      mgmt_netmask:  }
+
+###
+# VSC params
+# vsc_operations_list = A list of the operations you intend for the VSC. The
+# list could include 1 or more of the following:
+# - install
+# - upgrade
+# - health
+vsc_operations_list:
+  - install
+
+# myvscs is a collection of parameters for VSCs.
+# One set of parameters is required for each VSC.
+# Do not update  here as it reads from previous section
+myvscs: 
+  - { hostname: "vsc1.mgmt.test.net",
+      # vmname is optional. If not defined, it defaults to the name set in
+      # hostname.
+      vmname: vsc1.vnstest,
+      target_server_type: "kvm",
+      target_server: 10.197.62.2,
+      # mgmt_bridge is an optional bridge to override the global mgmt_bridge
+      # setting. Omit mgmt_bridge here to use the global mgmt_bridge setting.
+      mgmt_bridge: br0,
+      data_bridge: brControl,
+      mgmt_ip: 10.197.62.111,
+      mgmt_gateway: 10.197.62.1,
+      mgmt_netmask_prefix: ,
+      ctrl_ip: 10.164.62.111,
+      ctrl_ip_vprn: 10.164.62.111,
+      ctrl_netmask_prefix: 24,
+      vsd_fqdn: "xmpp.mgmt.test.net",
+      # system_ip is optional, only required when IGP or BGP routing will be
+      # configured
+      system_ip: 1.1.1.2,
+      vlan_id: 111,
+      # VSC 'expected' parameters
+      # The following 'expected' parameters are optional. If they are omitted or
+      # set to '0' they will be skipped. If they are set to non-zero values, their
+      # values will be used in postdeploy and health playbooks to verify VSC
+      # operation.
+      # epected_num_bgp_peers: 0 ,
+      # expected_num_vswitches: 0 ,
+      # expected_num_host_vports: 0,
+      # expected_num_vm_vports: 0,
+      # expected_num_gateway_ports: 0,
+      # end of VSC 'expected' parameters
+      xmpp_username: vsc1,
+      vsc_mgmt_static_route_list: [ 0.0.0.0/1, 128.0.0.1/1 ] }
+  - { hostname: "vsc2.mgmt.test.net",
+      # vmname is optional. If not defined, it defaults to the name set in
+      # hostname.
+      vmname: vsc2.vnstest,
+      target_server_type: "kvm",
+      target_server: 10.197.62.2,
+      # mgmt_bridge is an optional bridge to override the global mgmt_bridge
+      # setting. Omit mgmt_bridge here to use the global mgmt_bridge setting.
+      mgmt_bridge: br0,
+      data_bridge: brControl,
+      mgmt_ip: 10.197.62.112,
+      mgmt_gateway: 10.197.62.1,
+      mgmt_netmask_prefix: ,
+      ctrl_ip: 10.164.62.112,
+      ctrl_ip_vprn: 10.164.62.112,
+      ctrl_netmask_prefix: 24,
+      vsd_fqdn: "xmpp.mgmt.test.net",
+      # system_ip is optional, only required when IGP or BGP routing will be
+      # configured
+      system_ip: 1.1.1.3,
+      vlan_id: 111,
+      # VSC 'expected' parameters
+      # The following 'expected' parameters are optional. If they are omitted or
+      # set to '0' they will be skipped. If they are set to non-zero values, their
+      # values will be used in postdeploy and health playbooks to verify VSC
+      # operation.
+      # epected_num_bgp_peers: 0 ,
+      # expected_num_vswitches: 0 ,
+      # expected_num_host_vports: 0,
+      # expected_num_vm_vports: 0,
+      # expected_num_gateway_ports: 0,
+      # end of VSC 'expected' parameters
+      xmpp_username: vsc2,
+      vsc_mgmt_static_route_list: [ 0.0.0.0/1, 128.0.0.1/1 ] }
+  - { hostname: "vsc5.mgmt.test.net",
+      # vmname is optional. If not defined, it defaults to the name set in
+      # hostname.
+      vmname: vsc5.vnstest,
+      target_server_type: "kvm",
+      target_server: 10.197.62.2,
+      # mgmt_bridge is an optional bridge to override the global mgmt_bridge
+      # setting. Omit mgmt_bridge here to use the global mgmt_bridge setting.
+      mgmt_bridge: br0,
+      data_bridge: brControl,
+      mgmt_ip: 10.197.62.115,
+      mgmt_gateway: 10.197.62.1,
+      mgmt_netmask_prefix: ,
+      ctrl_ip: 10.164.62.115,
+      ctrl_ip_vprn: 10.163.62.115,
+      ctrl_netmask_prefix: 24,
+      vsd_fqdn: "xmpp.mgmt.test.net",
+      # system_ip is optional, only required when IGP or BGP routing will be
+      # configured
+      system_ip: 1.1.1.6,
+      vlan_id: 113,
+      # VSC 'expected' parameters
+      # The following 'expected' parameters are optional. If they are omitted or
+      # set to '0' they will be skipped. If they are set to non-zero values, their
+      # values will be used in postdeploy and health playbooks to verify VSC
+      # operation.
+      # epected_num_bgp_peers: 0 ,
+      # expected_num_vswitches: 0 ,
+      # expected_num_host_vports: 0,
+      # expected_num_vm_vports: 0,
+      # expected_num_gateway_ports: 0,
+      # end of VSC 'expected' parameters
+      xmpp_username: vsc5,
+      vsc_mgmt_static_route_list: [ 0.0.0.0/1, 128.0.0.1/1 ] }
+  - { hostname: "vsc6.mgmt.test.net",
+      # vmname is optional. If not defined, it defaults to the name set in
+      # hostname.
+      vmname: vsc6.vnstest,
+      target_server_type: "kvm",
+      target_server: 10.197.62.2,
+      # mgmt_bridge is an optional bridge to override the global mgmt_bridge
+      # setting. Omit mgmt_bridge here to use the global mgmt_bridge setting.
+      mgmt_bridge: br0,
+      data_bridge: brControl,
+      mgmt_ip: 10.197.62.116,
+      mgmt_gateway: 10.197.62.1,
+      mgmt_netmask_prefix: ,
+      ctrl_ip: 10.164.62.116,
+      ctrl_ip_vprn: 10.163.62.116,
+      ctrl_netmask_prefix: 24,
+      vsd_fqdn: "xmpp.mgmt.test.net",
+      # system_ip is optional, only required when IGP or BGP routing will be
+      # configured
+      system_ip: 1.1.1.7,
+      vlan_id: 113,
+      # VSC 'expected' parameters
+      # The following 'expected' parameters are optional. If they are omitted or
+      # set to '0' they will be skipped. If they are set to non-zero values, their
+      # values will be used in postdeploy and health playbooks to verify VSC
+      # operation.
+      # epected_num_bgp_peers: 0 ,
+      # expected_num_vswitches: 0 ,
+      # expected_num_host_vports: 0,
+      # expected_num_vm_vports: 0,
+      # expected_num_gateway_ports: 0,
+      # end of VSC 'expected' parameters
+      xmpp_username: vsc6,
+      vsc_mgmt_static_route_list: [ 0.0.0.0/1, 128.0.0.1/1 ] }
+  - { hostname: "vsc3.mgmt.test.net",
+      # vmname is optional. If not defined, it defaults to the name set in
+      # hostname.
+      vmname: vsc3.vnstest,
+      target_server_type: "kvm",
+      target_server: 10.197.62.2,
+      # mgmt_bridge is an optional bridge to override the global mgmt_bridge
+      # setting. Omit mgmt_bridge here to use the global mgmt_bridge setting.
+      mgmt_bridge: br0,
+      data_bridge: brControl,
+      mgmt_ip: 10.197.62.113,
+      mgmt_gateway: 10.197.62.1,
+      mgmt_netmask_prefix: ,
+      ctrl_ip: 10.164.62.113,
+      ctrl_ip_vprn: 10.164.62.113,
+      ctrl_netmask_prefix: 24,
+      vsd_fqdn: "xmpp.mgmt.test.net",
+      # system_ip is optional, only required when IGP or BGP routing will be
+      # configured
+      system_ip: 1.1.1.4,
+      vlan_id: 111,
+      # VSC 'expected' parameters
+      # The following 'expected' parameters are optional. If they are omitted or
+      # set to '0' they will be skipped. If they are set to non-zero values, their
+      # values will be used in postdeploy and health playbooks to verify VSC
+      # operation.
+      # epected_num_bgp_peers: 0 ,
+      # expected_num_vswitches: 0 ,
+      # expected_num_host_vports: 0,
+      # expected_num_vm_vports: 0,
+      # expected_num_gateway_ports: 0,
+      # end of VSC 'expected' parameters
+      xmpp_username: vsc3,
+      vsc_mgmt_static_route_list: [ 0.0.0.0/1, 128.0.0.1/1 ] }
+  - { hostname: "vsc4.mgmt.test.net",
+      # vmname is optional. If not defined, it defaults to the name set in
+      # hostname.
+      vmname: vsc4.vnstest,
+      target_server_type: "kvm",
+      target_server: 10.197.62.2,
+      # mgmt_bridge is an optional bridge to override the global mgmt_bridge
+      # setting. Omit mgmt_bridge here to use the global mgmt_bridge setting.
+      mgmt_bridge: br0,
+      data_bridge: brControl,
+      mgmt_ip: 10.197.62.114,
+      mgmt_gateway: 10.197.62.1,
+      mgmt_netmask_prefix: ,
+      ctrl_ip: 10.164.62.114,
+      ctrl_ip_vprn: 10.164.62.114,
+      ctrl_netmask_prefix: 24,
+      vsd_fqdn: "xmpp.mgmt.test.net",
+      # system_ip is optional, only required when IGP or BGP routing will be
+      # configured
+      system_ip: 1.1.1.5,
+      vlan_id: 111,
+      # VSC 'expected' parameters
+      # The following 'expected' parameters are optional. If they are omitted or
+      # set to '0' they will be skipped. If they are set to non-zero values, their
+      # values will be used in postdeploy and health playbooks to verify VSC
+      # operation.
+      # epected_num_bgp_peers: 0 ,
+      # expected_num_vswitches: 0 ,
+      # expected_num_host_vports: 0,
+      # expected_num_vm_vports: 0,
+      # expected_num_gateway_ports: 0,
+      # end of VSC 'expected' parameters
+      xmpp_username: vsc4,
+      vsc_mgmt_static_route_list: [ 0.0.0.0/1, 128.0.0.1/1 ] }
+  - { hostname: "vsc7.mgmt.test.net",
+      # vmname is optional. If not defined, it defaults to the name set in
+      # hostname.
+      vmname: vsc7.vnstest,
+      target_server_type: "kvm",
+      target_server: 10.197.62.2,
+      # mgmt_bridge is an optional bridge to override the global mgmt_bridge
+      # setting. Omit mgmt_bridge here to use the global mgmt_bridge setting.
+      mgmt_bridge: br0,
+      data_bridge: brControl,
+      mgmt_ip: 10.197.62.117,
+      mgmt_gateway: 10.197.62.1,
+      mgmt_netmask_prefix: ,
+      ctrl_ip: 10.164.62.117,
+      ctrl_ip_vprn: 10.162.62.117,
+      ctrl_netmask_prefix: 24,
+      vsd_fqdn: "xmpp.mgmt.test.net",
+      # system_ip is optional, only required when IGP or BGP routing will be
+      # configured
+      system_ip: 1.1.1.8,
+      vlan_id: 115,
+      # VSC 'expected' parameters
+      # The following 'expected' parameters are optional. If they are omitted or
+      # set to '0' they will be skipped. If they are set to non-zero values, their
+      # values will be used in postdeploy and health playbooks to verify VSC
+      # operation.
+      # epected_num_bgp_peers: 0 ,
+      # expected_num_vswitches: 0 ,
+      # expected_num_host_vports: 0,
+      # expected_num_vm_vports: 0,
+      # expected_num_gateway_ports: 0,
+      # end of VSC 'expected' parameters
+      xmpp_username: vsc7,
+      vsc_mgmt_static_route_list: [ 0.0.0.0/1, 128.0.0.1/1 ] }
+  - { hostname: "vsc8.mgmt.test.net",
+      # vmname is optional. If not defined, it defaults to the name set in
+      # hostname.
+      vmname: vsc8.vnstest,
+      target_server_type: "kvm",
+      target_server: 10.197.62.2,
+      # mgmt_bridge is an optional bridge to override the global mgmt_bridge
+      # setting. Omit mgmt_bridge here to use the global mgmt_bridge setting.
+      mgmt_bridge: br0,
+      data_bridge: brControl,
+      mgmt_ip: 10.197.62.118
+10.197.62.112,
+      mgmt_gateway: 10.197.62.1,
+      mgmt_netmask_prefix: ,
+      ctrl_ip: 10.164.62.118
+10,
+      ctrl_ip_vprn: 10.162.62.118
+10,
+      ctrl_netmask_prefix: 24,
+      vsd_fqdn: "xmpp.mgmt.test.net",
+      # system_ip is optional, only required when IGP or BGP routing will be
+      # configured
+      system_ip: 1.1.1.9,
+      vlan_id: 115,
+      # VSC 'expected' parameters
+      # The following 'expected' parameters are optional. If they are omitted or
+      # set to '0' they will be skipped. If they are set to non-zero values, their
+      # values will be used in postdeploy and health playbooks to verify VSC
+      # operation.
+      # epected_num_bgp_peers: 0 ,
+      # expected_num_vswitches: 0 ,
+      # expected_num_host_vports: 0,
+      # expected_num_vm_vports: 0,
+      # expected_num_gateway_ports: 0,
+      # end of VSC 'expected' parameters
+      xmpp_username: vsc8,
+      vsc_mgmt_static_route_list: [ 0.0.0.0/1, 128.0.0.1/1 ] }
+
+# vsc-health params
+# The following variables are used when vsc-health is run. They may be omitted
+# when not running vsc-health or doing an upgrade.
+#
+vsc_health_expected_bgp_admin_state: Up
+vsc_health_expected_bgp_oper_state: Up
+vsc_health_expected_xmpp_server_state: Functional
+
+
+###
+# VRS params
+# vrs_operations_list = A list of the operations you intend for the VRS. The
+# list could include 1 or more of the following:
+# - install
+# - upgrade
+# - health
+#vrs_operations_list:
+#  - install
+
+# myvrss is a collection of parameters for the targets where VRS is to be
+# deployed. One set of parameters is required for each set or group of VRS
+# targets.
+#myvrss:
+#  - { vrs_set_name: VRS1.vnspoc,
+#      vrs_os_type: el7,
+#      libnetwork_install: False,
+#      active_controller_ip: 10.162.53.217,
+#      standby_controller_ip: 10.162.53.218,
+#      vrs_ip_list: [
+#        ] }
+#  - { vrs_set_name: VRS2.vnspoc,
+#      vrs_os_type: el7,
+#      libnetwork_install: False,
+#      active_controller_ip: ,
+#      standby_controller_ip: ,
+#      vrs_ip_list: [
+#        ] }
+
+
+vstat_sa_or_ha: sa
+###
+# Stats VM (ElasticSearch) params
+# vstat_operations_list = A list of the operations you intend for the ES node.
+# The list could include 1 or more of the following:
+# - install
+# - upgrade
+# - health
+# - dns (specified when deploying the VSTAT image as a DNS server)
+vstat_operations_list:
+  - install
+
+# myvstats is a collection of parameters for the VSTAT.
+# One set of parameters is required for each VSTAT.
+# Do not update  here as it reads from previous section
+myvstats: 
+  - { hostname: "vstat1.mgmt.test.net",
+      vmname: vstat1.vnstest,
+      # upgrade_vmname needed only when performing an upgrade
+      #upgrade_vmname: vstats1-4.0.R10-dc1,
+      target_server_type: "kvm",
+      target_server: 10.197.62.2,
+      # mgmt_bridge is an optional bridge to override the global mgmt_bridge
+      # setting. Omit mgmt_bridge here to use the global mgmt_bridge setting.
+      mgmt_bridge: br0,
+      mgmt_ip: 10.197.62.104,
+      mgmt_gateway: 10.197.62.1,
+      mgmt_netmask: 255.255.255.0,
+      vsd_fqdn: "xmpp.mgmt.test.net" }
+
+###
+# VNS params
+# vns_operations_list = A list of the operations you intend for the VNS. The
+# list could include 1 or more of the following:
+# - install
+# - upgrade
+# - health
+vns_operations_list:
+  - install
+
+# myvnsutils is a collection of parameters for the VNSUTIL.
+# One set of parameters is required for each VNSUTIL.
+# Do not update  here as it reads from previous section
+myvnsutils: 
+  - { hostname: "vnsutil1.mgmt.test.net",
+      vmname: vnsutil1.vnstest,
+      target_server_type: "kvm",
+      target_server: 10.197.62.2,
+      # mgmt_bridge is an optional bridge to override the global mgmt_bridge
+      # setting. Omit mgmt_bridge here to use the global mgmt_bridge setting.
+      mgmt_bridge: br0,
+      mgmt_ip: 10.197.62.110,
+      mgmt_gateway: 10.197.62.1,
+      mgmt_netmask: 255.255.255.0,
+      data_fqdn: "vnsutil1.data.test.net",
+      data_ip: 10.161.62.110,
+      data_netmask: 255.255.255.0,
+      data_gateway: 10.161.62.1,
+      data_static_route: [ 10.165.62.0/24, 10.164.62.0/24, 10.163.62.0/24, 10.162.62.0/24, 10.161.62.0/24, 10.160.62.0/24, 10.159.62.0/24, 10.158.62.0/24, 10.157.62.0/24, 10.156.62.0/24, 10.155.62.0/24 ],      
+      ## BEGIN DHCP BOOTSTRAP CONFIG
+      # Metro supports deploying one or more NSGVs. As a special case, Metro
+      # supports automatically bootstrapping (ZFB) a single NSGV at time of
+      # deployment of the VNS UTIL VM. To enable this special case, the
+      # variables in this section must be uncommented and defined so that Metro
+      # can configure the DHCP server on the VNS UTIL VM to participate in this
+      # process. If you are *not* going to use Metro's automatic bootstrap of
+      # a single NSGV, the variables in this section must not be defined.
+      #
+      # Uncomment for DHCP bootstrap support:
+      # data_subnet: 10.166.53.0,
+      # nsgv_ip: 10.166.53.206,
+      # nsgv_mac: '52:54:00:88:85:12',
+      # nsgv_hostname: "nsgv1.",
+      ## END DHCP BOOTSTRAP CONFIG
+      vsd_fqdn: "xmpp.mgmt.test.net" }
+
+
+###
+# DNS params
+# NOTE: This code assumes that the DNS image is the VSTAT/ElasticSearch image.
+# For this code to work, myvstats must also be defined.
+# dns_operations_list = A list of the operations you intend for the DNS. The
+# list could include 1 or more of the following:
+# - install
+dns_operations_list:
+  - install
+
+# mydnss is a collection of parameters for the DNS.
+# One set of parameters is required for each DNS.
+# data_static_route list of eth1 static routes to the data networks
+# dns_mgmt_lookup list of management dns lookup
+# dns_data_lookup list of data dns lookup
+# dns_mgmt name server of managment network
+# dns_data name server of data network
+# dns_server dns server of this server
+
+mydnss: 
+  - { hostname: "dns1.mgmt.test.net",
+      vmname: dns1.vnstest,
+      target_server_type: "kvm",
+      target_server: 10.197.62.2,
+      mgmt_ip: 10.197.62.120,
+      mgmt_gateway: 10.197.62.1,
+      mgmt_netmask: 255.255.255.0,
+      mgmt_bridge: br0,
+      data_bridge: brControl,
+      data_ip: 10.161.62.120,
+      data_gateway: 10.161.62.1,
+      data_subnet: 10.161.62.0,
+      data_netmask: 255.255.255.0,
+      data_static_route: [ 10.165.62.0/24, 10.164.62.0/24, 10.163.62.0/24, 10.162.62.0/24, 10.161.62.0/24, 10.160.62.0/24, 10.159.62.0/24, 10.158.62.0/24, 10.157.62.0/24, 10.156.62.0/24, 10.155.62.0/24 ],
+      dns_server: 8.8.8.8,
+      dns_mgmt: dns1.mgmt.test.net.,
+      dns_data: dns1.data.test.net.,
+      dns_mgmt_lookup: { dns1.mgmt.test.net.: 10.197.62.120 },
+      dns_data_lookup: { dns1.data.test.net.: 10.161.62.120 } }
