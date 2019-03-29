@@ -95,19 +95,19 @@
   - name: Check if ip6tables is already setup for VSD rules (ignoring errors)
     shell: ip6tables -L INPUT | grep 'match-set vsd src'
     remote_user: "{{ vstat_default_username }}"
-    register: vstat_iptables_result
+    register: vstat_ip6tables_result
     ignore_errors: True
     when: enable_ipv6 | default(False) == True
 
   - name: Check if iptables is already setup for VSD rules (ignoring errors)
     shell: iptables -L INPUT | grep 'match-set vsd src'
     remote_user: "{{ vstat_default_username }}"
-    register: vstat_ip6tables_result
+    register: vstat_iptables_result
     ignore_errors: True
     when: enable_ipv6 | default(False) != True
 
   - name: Set if skipping VSTAT deploy
-    set_fact: skip_vstat_deploy="{{ (vstat_iptables_result is defined and vstat_iptables_result.rc == 0) or (vstat_ip6tables_result is defined and vstat_ip6tables_result.rc == 0) }}"
+    set_fact: skip_vstat_deploy="{{ (vstat_iptables_result is defined and vstat_iptables_result.rc | default(1) == 0) or (vstat_ip6tables_result is defined and vstat_ip6tables_result.rc | default(1) == 0) }}"
 
   - name: Display if skipping VSTAT deploy
     debug:
