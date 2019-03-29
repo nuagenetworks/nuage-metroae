@@ -40,8 +40,19 @@ dns_data: {{ item.dns_data }}
 dns_mgmt_zone: {{ item.dns_mgmt.split('.')[1] }}.{{ item.dns_mgmt.split('.')[2] }}.{{ item.dns_mgmt.split('.')[3] }} 
 dns_data_zone: {{ item.dns_data.split('.')[1] }}.{{ item.dns_data.split('.')[2] }}.{{ item.dns_data.split('.')[3] }} 
 
-dns_data_lookup: {{ item.dns_data_lookup|to_yaml }}
-dns_mgmt_lookup: {{ item.dns_mgmt_lookup|to_yaml }}
+{% if item.dns_data_lookup is defined and item.dns_data_lookup | length > 0 %}
+dns_data_lookup:
+{% for entry in item.dns_data_lookup %}
+  {{ entry.split(":")[0] | trim }}: {{ entry.split(":")[1] | trim }}
+{% endfor %}
+{% endif %}
+
+{% if item.dns_mgmt_lookup is defined and item.dns_mgmt_lookup | length > 0 %}
+dns_mgmt_lookup:
+{% for entry in item.dns_mgmt_lookup %}
+  {{ entry.split(":")[0] | trim }}: {{ entry.split(":")[1] | trim }}
+{% endfor %}
+{% endif %}
 
 dns_server: {{ item.dns_server }}
 {% endif %}

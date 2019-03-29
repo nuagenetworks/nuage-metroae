@@ -1,4 +1,4 @@
-# Upgrading a Standalone Deployment with MetroÆ;
+# Upgrading a Standalone Deployment with MetroÆ
 ## Prerequisites / Requirements / Notes
 Before upgrading any components, you must have previously [set up your MetroÆ environment](SETUP.md) and [customized the upgrade environment for your target platform](CUSTOMIZE.md).
 

@@ -135,13 +135,13 @@
       import_tasks: cluster_ssh_keys.yml
       when: vsd_major_version | int >= 5
 
-    - name: Update /etc/hosts file on VSD
-      lineinfile:
-        dest: /etc/hosts
-        line: "{{ hostvars[item]['mgmt_ip'] }}    {{ hostvars[item]['hostname'] }}"
-      with_items: "{{ groups['vsds'] }}"
+    when: vsd_sa_or_ha | match('ha')
 
-    when: vsd_sa_or_ha is match('ha')
+  - name: Update /etc/hosts file on VSD
+    lineinfile:
+      dest: /etc/hosts
+      line: "{{ hostvars[item]['mgmt_ip'] }}    {{ hostvars[item]['hostname'] }}"
+    with_items: "{{ groups['vsds'] }}"
 
   - block:
 

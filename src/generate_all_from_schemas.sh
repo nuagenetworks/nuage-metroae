@@ -7,6 +7,7 @@ TEMPLATE_DIRECTORY=src/deployment_templates
 EXAMPLE_DIR=examples
 EXAMPLE_DATA_DIR=src/raw_example_data
 
+
 if [[ -d schemas/  ]]; then
     BASE_DIRECTORY=.
 fi
@@ -29,7 +30,12 @@ for fullpath in $SCHEMA_DIRECTORY/*.json; do
 
     # Generate deployment file
     python generate_example_from_schema.py --schema $filename > $EXAMPLE_DIR/blank_deployment/$filename.yml
-    
+
+    if [[ $filename != "upgrade" ]]; then
+        # Generate deployment file
+        python generate_example_from_schema.py --schema $filename --no-comments > $EXAMPLE_DIR/minimum_required_blank_deployment/$filename.yml
+    fi
+
 done
 
 echo "Generating examples from example data"
@@ -48,7 +54,7 @@ for dir in $EXAMPLE_DATA_DIR/*/; do
     done
 done
 
-# Add specific files to default deployment 
+# Add specific files to default deployment
 add_to_default_deployment="common credentials upgrade vscs vsds vstats"
 for item in $add_to_default_deployment; do
     cp $EXAMPLE_DIR/blank_deployment/$item.yml $DEFAULT_DEPLOY_DIRECTORY/.
