@@ -2,7 +2,7 @@
   - block:
     - name: Copy external certificates
       expect:
-        command: "scp {{ item }} {{ vsc_default_username }}@{{ mgmt_ip }}:/ {{ item | basename }}"
+        command: "scp {{ item }} {{ vsc_default_username }}@{{ mgmt_ip }}:/{{ item | basename }}"
         responses:
           (?i)yes: "yes"
           (?i)password: "{{ vsc_custom_password|default(vsc_default_password) }}"
@@ -16,9 +16,9 @@
 
     - name: set tls profiles vars
       set_fact:
-        own_key: "{{ private_key | basename | trim}}"
-        own_certificate: " {{ certificate | basename | trim}}"
-        own_ca_certificate: " {{ ca_certificate | basename | trim}}"
+        own_key: "{{ private_key | basename }}"
+        own_certificate: " {{ certificate | basename }}"
+        own_ca_certificate: " {{ ca_certificate | basename }}"
 
     when:
       - private_key is defined
@@ -55,9 +55,9 @@
   - name: Configure the security profile on the VSC
     sros_config:
       lines:
-          - configure system security tls-profile vsc-tls-profile own-key cf1:\{{ own_key | trim }}
-          - configure system security tls-profile vsc-tls-profile own-certificate cf1:\{{ own_certificate | trim }}
-          - configure system security tls-profile vsc-tls-profile ca-certificate cf1:\{{ own_ca_certificate | trim }}
+          - configure system security tls-profile vsc-tls-profile own-key cf1:\{{ own_key }}
+          - configure system security tls-profile vsc-tls-profile own-certificate cf1:\{{ own_certificate }}
+          - configure system security tls-profile vsc-tls-profile ca-certificate cf1:\{{ own_ca_certificate }}
           - configure system security tls-profile vsc-tls-profile no shutdown
           - admin save
       provider: "{{ vsc_creds }}"
