@@ -22,14 +22,15 @@
   register: dns_resolved_addresses
   loop_control:
     loop_var: dns_server
+  ignore_errors: True
+
+- name: Set resolved address list
+  set_fact:
+    resolved_address_list: "{{ dns_resolved_addresses.results | map(attribute='stdout') | list | join (',')}}"
 
 - name: Assert ip address found by DNS matches the management ip
   assert:
-    that: "'{{ dns_addr.stdout }}' ==  '{{ management_ip }}'"
-    msg: "IPv4 address found by DNS does not match management ip {{dns_addr.stdout}} != {{management_ip}}"
-  with_items: "{{dns_resolved_addresses.results}}"
-  loop_control:
-    loop_var: dns_addr
+    that: "{{ resolved_address_list | match(management_ip) }}"
 
 - block:
 
