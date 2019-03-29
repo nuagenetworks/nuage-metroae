@@ -92,14 +92,22 @@
       enabled: yes
     remote_user: "{{ vstat_default_username }}"
 
-  - name: Check if iptables is already setup for VSD rules (ignoring errors)
-    shell: iptables -L INPUT | grep 'match-set vsd src'
+  - name: Check if ip6tables is already setup for VSD rules (ignoring errors)
+    shell: ip6tables -L INPUT | grep 'match-set vsd src'
     remote_user: "{{ vstat_default_username }}"
     register: vstat_iptables_result
     ignore_errors: True
+    when: enable_ipv6 | default(False) == True
+
+  - name: Check if iptables is already setup for VSD rules (ignoring errors)
+    shell: iptables -L INPUT | grep 'match-set vsd src'
+    remote_user: "{{ vstat_default_username }}"
+    register: vstat_ip6tables_result
+    ignore_errors: True
+    when: enable_ipv6 | default(False) != True
 
   - name: Set if skipping VSTAT deploy
-    set_fact: skip_vstat_deploy="{{ vstat_iptables_result is defined and vstat_iptables_result.rc == 0 }}"
+    set_fact: skip_vstat_deploy="{{ (vstat_iptables_result is defined and vstat_iptables_result.rc == 0) or (vstat_ip6tables_result is defined and vstat_ip6tables_result.rc == 0) }}"
 
   - name: Display if skipping VSTAT deploy
     debug:
@@ -288,7 +296,7 @@
 
       - name: Execute VSTAT standalone script on standalone or clustered vsds
         command: /opt/vsd/vsd-es-standalone.sh -e {{ inventory_hostname }}
-        no_log: True
+        no_log: False
         delegate_to: "{{ vsd_hostname_list[0] }}"
         environment:
           SSHPASS: "{{ vstat_default_password }}"
@@ -300,7 +308,7 @@
       - name: Execute VSTAT standalone script on standalone or clustered vsds
         command: /opt/vsd/vsd-es-standalone.sh -e {{ inventory_hostname }}
         delegate_to: "{{ vsd_hostname_list[0] }}"
-        no_log: True
+        no_log: False
         when:
           - vstat_sa_or_ha | match('sa')
           - es_sa_script.stat.exists
