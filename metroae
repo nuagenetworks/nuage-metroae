@@ -1,61 +1,570 @@
 #!/usr/bin/env bash
 set -e
-#
-# Wrapper around ansible-playbook for the installation of Nuage components
-#
 
-METROAE_VERSION="v3.2.0"
+#################################################################################
+#                              DEPLOYMENT COMMANDS                                 #
+#################################################################################
+DEPLOYMENT_MENU+=(',install'                   'Install all components'   'playbook'    'install_everything')
+DEPLOYMENT_MENU+=(',install,vsds'              'Install VSDs'             'playbook'    'install_vsd')
+DEPLOYMENT_MENU+=(',install,vsds,predeploy'    'Pre-deploy VSDs'          'playbook'    'vsd_predeploy')
+DEPLOYMENT_MENU+=(',install,vsds,deploy'       'Deploy VSDs deploy'       'playbook'    'vsd_deploy')
+DEPLOYMENT_MENU+=(',install,vsds,postdeploy'   'Post-deploy VSDs '        'playbook'    'vsd_postdeploy')
+DEPLOYMENT_MENU+=(',install,vscs'              'Install VSCs'             'playbook'    'install_vscs')
+DEPLOYMENT_MENU+=(',install,vscs,predeploy'    'Pre-deploy VSCs'          'playbook'    'vsc_predeploy')
+DEPLOYMENT_MENU+=(',install,vscs,deploy'       'Deploy VSCs deploy'       'playbook'    'vsc_deploy')
+DEPLOYMENT_MENU+=(',install,vscs,postdeploy'   'Post-deploy VSCs '        'playbook'    'vsc_postdeploy')
+DEPLOYMENT_MENU+=(',install,vstats'            'Install VSTATs'           'playbook'    'install_vstats')
+DEPLOYMENT_MENU+=(',install,vstats,predeploy'  'Pre-deploy VSTATs'        'playbook'    'vstat_predeploy')
+DEPLOYMENT_MENU+=(',install,vstats,deploy'     'Deploy VSTATs deploy'     'playbook'    'vstat_deploy')
+DEPLOYMENT_MENU+=(',install,vstats,postdeploy' 'Post-deploy VSTATs '      'playbook'    'vstat_postdeploy')
+DEPLOYMENT_MENU+=(',upgrade'                   'Upgrade all components'   'playbook'    'upgrade_everything')
+DEPLOYMENT_MENU+=(',upgrade,vsds'              'Upgrade VSDs'             'playbook'    'vsds_upgrade')
+DEPLOYMENT_MENU+=(',upgrade,vscs'              'Upgrade VSCs'             'playbook'    'vscs_upgrade')
+DEPLOYMENT_MENU+=(',upgrade,vstats'            'Upgrade VSTATs'           'playbook'    'vstats_upgrade')
+DEPLOYMENT_MENU+=(',config'                    'Configure VSD'            'config'      '')
+DEPLOYMENT_MENU+=(',container'                 'Run the Docker'           'container'   '')
 
-CURRENT_DIR=`pwd`
-PLAYBOOK_DIR=$CURRENT_DIR/src/playbooks
-PLAYBOOK_WITH_BUILD_DIR=$CURRENT_DIR/src/playbooks/with_build
-SCHEMA_DIR=$CURRENT_DIR/schemas
-DEPLOYMENTS_BASE_DIR=$CURRENT_DIR/deployments
-DEPLOYMENT_DIR=$DEPLOYMENTS_BASE_DIR/default
-INVENTORY_DIR=$CURRENT_DIR/src/inventory
-VAULT_ENV_FILE=$CURRENT_DIR/src/vault-env
-ENCRYPTED_DEPLOYMENT_FILE=credentials.yml
-ENCRYPTED_TOKEN=\$ANSIBLE_VAULT
-AUDIT_LOG=audit.log
+#################################################################################
+#                              CONFIG COMMANDS                                  #
+#################################################################################
 
-function usage {
-    echo ""
-    echo "Nuage Networks Metro Automation Engine (MetroÆ) CLI"
-    echo ""
-    echo "MetroÆ Version:" $METROAE_VERSION
-    echo ""
-    echo "MetroÆ is an automation engine that installs and upgrades Nuage"
-    echo "Networks components.  After you specify the individual details"
-    echo "of your deployment, MetroÆ sets up the environment and executes"
-    echo "the install or upgrade on your behalf."
-    echo ""
-    echo "See README.md for more information"
-    echo ""
-    echo "Usage:"
-    echo "    metroae <workflow> [deployment] [options]"
-    echo ""
-    echo "    workflow:     Name of the MetroÆ workflow to run, e.g. 'install_everything'."
-    echo "    deployment:   The name of a deployment containing the required configuration"
-    echo "                  files.  The deployments are stored as directories under"
-    echo "                  " $DEPLOYMENTS_BASE_DIR
-    echo ""
-    echo "Options:"
-    echo "    -h, --help:            Displays this help."
-    echo "    --ansible-help:        Displays help for ansible arguments."
-    echo "    -v, -vv, -vvv, -vvvv:  Runs with increasing levels of verbosity."
-    echo "    --list:                Shows a list of all supported workflows"
-    echo "    --skip-password:       Do not ask for a password.  Password can be"
-    echo "                           provided via the environment variable METROAE_PASSWORD"
-    echo "    --skip-build:          Runs workflow without performing build."
-    echo "                           This will prevent changes in the deployment from"
-    echo "                           taking effect, but it will be faster."
-    echo "    --set-group <group>:   Sets the ownership of inventory and logs to specified"
-    echo "                           group so that other users in the group can access"
-    echo "                           these files."
-    echo ""
-    echo "Any additional [options] are passed to the internal Ansible engine for processing"
+CONFIG_MENU+=(',help'              'Displays the help text'                                                                'help'           '')
+CONFIG_MENU+=(',version'           'Displays the version of the current running Levistate container'                       'version'        '')
+CONFIG_MENU+=(',pull'              'Download the latest available version of the Levistate container'                      'pull'           '')
+CONFIG_MENU+=(',setup'             'Locally setup the Levistate container'                                                 'setup'          '')
+CONFIG_MENU+=(',stop'              'Stop the current running container'                                                    'stop'           '')
+CONFIG_MENU+=(',destroy'           'Stop and delete the current running container, additionally removes the docker image'  'destroy'        '')
+CONFIG_MENU+=(',upgrade-engine'    'Upgrade the currently installed Levistate container to the latest available version'   'upgrade-engine' '')
+
+#################################################################################
+#                             CONTAINER COMMANDS                                #
+#################################################################################
+
+CONTAINER_MENU+=(',setup',                                 'setup',                                 'setup',                                 'setup')
+CONTAINER_MENU+=(',start',                                 'start',                                 'start',                                 'start')
+CONTAINER_MENU+=(',stop',                                  'stop',                                  'stop',                                  'stop')
+CONTAINER_MENU+=(',status',                                'status',                                'status',                                'status')
+CONTAINER_MENU+=(',destroy',                               'destroy',                               'destroy',                               'destroy')
+CONTAINER_MENU+=(',upgrade-engine',                        'upgrade-engine',                        'upgrade-engine',                        'upgrade-engine')
+CONTAINER_MENU+=(',stop-ui',                               'stop-ui',                               'stop-ui',                               'stop-ui')
+CONTAINER_MENU+=(',start-ui',                              'start-ui',                              'start-ui',                              'start-ui')
+CONTAINER_MENU+=(',status-ui',                             'status-ui',                             'status-ui',                             'status-ui')
+CONTAINER_MENU+=(',unzip-files',                           'unzip-files',                           'unzip-files',                           'unzip-files')
+CONTAINER_MENU+=(',convert-build-vars-to-deployments',     'convert-build-vars-to-deployments',     'convert-build-vars-to-deployments',     'convert-build-vars-to-deployments')            
+CONTAINER_MENU+=(',generate-example-from-schema',          'generate-example-from-schema',          'generate-example-from-schema',          'generate-example-from-schema')      
+CONTAINER_MENU+=(',encrypt-credentials',                   'encrypt-credentials',                   'encrypt-credentials',                   'encrypt-credentials')
+CONTAINER_MENU+=(',enable-ui-encryption',                  'enable-ui-encryption',                  'enable-ui-encryption',                  'enable-ui-encryption')
+CONTAINER_MENU+=(',disable-ui-encryption',                 'disable-ui-encryption',                 'disable-ui-encryption',                 'disable-ui-encryption')
+CONTAINER_MENU+=(',copy-ssh-id',                           'copy-ssh-id',                           'copy-ssh-id',                           'copy-ssh-id')
+CONTAINER_MENU+=(',--list',                                '--list',                                '--list',                                '--list')
+CONTAINER_MENU+=(',--ansible-help',                        '--ansible-help',                        '--ansible-help',                        '--ansible-help')
+
+#################################################################################
+#                                  VARIABLES                                    #
+#################################################################################
+
+# Switch
+SHOULD_RUN_WITH_CONTAINER=$false
+
+# Menu
+MENU_STRIDE=4                                                          # Menu steps
+MENU_KEY=""
+SUB_MENU=""
+MATCH_MENU=""
+EXTRA_ARGS=()
+
+# Common
+LINUX=0
+NON_LINUX=1
+CONTAINER_ID=''
+RUNNING_CONTAINER_ID=''
+IMAGE_ID=''
+MAX_CONTAINER_VERSION='current'
+REGISTRY_HOST='registry.mv.nuagenetworks.net'
+METRO_AE_IMAGE="$REGISTRY_HOST:5000/metroae"
+if [ ! -z $IMAGE_NAME ]
+then
+    METRO_AE_IMAGE="$REGISTRY_HOST:5000/$IMAGE_NAME"
+fi
+ON_RELEASE=$LINUX
+PATH_ARG=""
+ENVIRONMENT_FILTERS=(PWD PATH HOME USER SHELL MAIL SSH_CONNECTION LOGNAME OLDPWD LESSOPEN _ XDG_RUNTIME_DIR HISTCONTROL)
+CONTAINER_VERSION=1.0.4
+
+S3_KEY="AKIAJOPWRLAXPCUXZX3A"
+S3_SECRET="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"
+CONTAINER_TAR_FILE=metroaecontainer.tar
+S3_BUCKET="nuage-devops"
+TEMPORARY_DIRECTORY=/tmp/
+
+if [ -z $SCRIPT_LOG_FILE ]
+then
+    SCRIPT_LOG_FILE=/opt/metroae/metroae.log
+fi
+
+if [ -z $SETUP_FILE ]
+then
+    SETUP_FILE=/opt/metroae/.metroae
+fi
+
+
+# Deployment variables
+METROAE_VERSION="v3.2.0"                                               # Version of MetroAE
+CURRENT_DIR=`pwd`                                                      # Working directory
+PLAYBOOK_DIR=$CURRENT_DIR/src/playbooks                                # Playbook directory
+PLAYBOOK_WITH_BUILD_DIR=$CURRENT_DIR/src/playbooks/with_build          # Playbook with build directory
+SCHEMA_DIR=$CURRENT_DIR/schemas                                        # Schemas directory
+DEPLOYMENTS_BASE_DIR=$CURRENT_DIR/deployments                          # Deployment base directory
+DEPLOYMENT_DIR=$DEPLOYMENTS_BASE_DIR/default                           # Deployment directory
+INVENTORY_DIR=$CURRENT_DIR/src/inventory                               # Inventory directory
+VAULT_ENV_FILE=$CURRENT_DIR/src/vault-env                              # vault env file
+ENCRYPTED_DEPLOYMENT_FILE=credentials.yml                              # encrypted deployment file
+ENCRYPTED_TOKEN=\$ANSIBLE_VAULT                                        # encrypted token
+AUDIT_LOG=audit.log                                                    # audit logs
+ORIGINAL_ARGS=""                                                       # Original arguments
+SKIP_BUILD=0                                                           # Skip build process
+SKIP_PASSWORD=0                                                        # Skip password
+POSITIONAL=()                                                          # positional
+
+# Config variables
+
+# export SCRIPT_LOG_FILE=/opt/metroae/levistate.log
+# export SETUP_FILE=/opt/metroae/.metroae
+
+
+# Container variables
+
+# export SCRIPT_LOG_FILE=/opt/metroae/metroae.log
+# export SETUP_FILE=/opt/metroae/.metroae
+
+
+#################################################################################
+#                                   SWITCH                                      #
+#################################################################################
+
+function check_run_with_container {
+    SHOULD_RUN_WITH_CONTAINER=false
+}
+
+#################################################################################
+#                                   COMMON                                      #
+#################################################################################
+
+check_docker() {
+    set +e
+
+    echo "checking docker version" >> $SCRIPT_LOG_FILE
+    docker --version >> $SCRIPT_LOG_FILE 2>> $SCRIPT_LOG_FILE
+
+    if [ $? -ne 0 ]
+    then
+        echo "Docker engine must be installed in order to run MetroÆ.  See https://docs.docker.com for details"
+        exit 1
+    fi
+    set -e
+}
+
+check_for_setup_file() {
+    set +e
+    echo "checking for metroae setup file" >> $SCRIPT_LOG_FILE
+
+    stat /opt/metroae/.metroae >> $SCRIPT_LOG_FILE 2>> $SCRIPT_LOG_FILE
+
+    if [ $? -ne 0 ]
+    then
+        echo "Container has not been setup. Running Setup"
+        echo "Setup file not detected" >> $SCRIPT_LOG_FILE
+        setup
+    fi
+    set -e
+}
+
+get_host_operating_system() {
+    echo "checking os type" >> $SCRIPT_LOG_FILE
+    set +e
+    stat /etc/os-release >> $SCRIPT_LOG_FILE 2>> $SCRIPT_LOG_FILE
+    if [ $? -ne 0 ]
+    then
+        OS_RELEASE=$NON_LINUX
+    fi
+    set -e
+}
+
+get_max_container_version() {
+    if [ ! -z $IMAGE_TAG ]
+    then
+        MAX_CONTAINER_VERSION=$IMAGE_TAG
+    else
+        versions=`docker images | grep $METRO_AE_IMAGE | awk '{ print $2}'`
+        MAX_CONTAINER_VERSION=''
+        for version in $versions
+        do
+            if [ -z $MAX_CONTAINER_VERSION ]
+            then
+                    MAX_CONTAINER_VERSION=$version
+            fi
+
+            if [ $MAX_CONTAINER_VERSION < $version ]
+            then
+                    MAX_CONTAINER_VERSION=$version
+            fi
+        done
+
+        if [ -z $MAX_CONTAINER_VERSION ]
+        then
+            MAX_CONTAINER_VERSION='current'
+        fi
+    fi
+
+    echo "Max Container version detected $MAX_CONTAINER_VERSION" >> $SCRIPT_LOG_FILE
+
+}
+
+get_container_id() {
+    get_max_container_version
+    CONTAINER_ID=`docker ps -a | grep $METRO_AE_IMAGE | grep $MAX_CONTAINER_VERSION | awk '{ print $1}'`
+}
+
+get_running_container_id() {
+    get_max_container_version
+    RUNNING_CONTAINER_ID=`docker ps | grep $METRO_AE_IMAGE | grep $MAX_CONTAINER_VERSION | awk '{ print $1}'`
+}
+
+get_image_id() {
+    get_max_container_version
+    IMAGE_ID=`docker images | grep $METRO_AE_IMAGE | grep $MAX_CONTAINER_VERSION | awk '{ print $3}'`
+}
+
+
+stop() {
+    get_running_container_id
+
+    if [ -z $RUNNING_CONTAINER_ID  ]
+    then
+        echo "No Container to stop"
+        return 0
+    fi
+
+    set +e
+    docker stop $RUNNING_CONTAINER_ID
+    status=$?
+    if [ $status -ne 0 ]
+    then
+        echo "Stopping container failed"
+    else
+        echo "Container successfully stopped"
+    fi
+    set -e
+
+    return $status
+}
+
+delete_container_id() {
+    get_container_id
+    if [ -z $CONTAINER_ID ]
+    then
+        echo "No container to remove"
+        return 0
+    fi
+
+    echo "Removing container with id $CONTAINER_ID" >> $SCRIPT_LOG_FILE
+
+    set +e
+    docker rm $container_id 2>> $SCRIPT_LOG_FILE
+
+    if [ $? -ne 0 ]
+    then
+        echo "Removal of MetroÆ container failed"
+        return 1
+    fi
+    set -e
+
+    echo "MetroÆ container removed successfully"
+}
+
+destroy() {
+    if [ -z $1 ]
+    then
+        confirmation="init"
+    else
+        confirmation=$1
+    fi
+
+    while [[ $confirmation != "yes" ]] && [[ $confirmation  != "no" ]] && [[ $confirmation  != "y" ]] && [[ $confirmation != "n" ]]
+    do
+        read -p "Do you really want to destroy the container (yes/no): " confirmation
+    done
+
+
+    if [[ $confirmation != "yes" ]] && [[ $confirmation != "y" ]]
+    then
+        echo "Destroy canceled by user"
+        return 1
+    fi
+
+    set +e
+    stop
+    if [ $? -ne 0 ]
+    then
+        return 1
+    fi
+
+    delete_container_id
+    if [ $? -ne 0 ]
+    then
+        return 1
+    fi
+    set -e
+
+    get_image_id
+    if [ -z $IMAGE_ID ]
+    then
+        echo "No Image to remove"
+        return 0
+    fi
+
+    echo "Destroying MetroAE container..." | tee -a $SCRIPT_LOG_FILE
+
+    set +e
+    docker rmi $IMAGE_ID 2 >> $SCRIPT_LOG_FILE
+
+    if [ $? -ne 0 ]
+    then
+        echo "Removal of MetroÆ image failed"
+        return 1
+    fi
+    set -e
+
+    return 0
+}
+
+get_from_s3() {
+    CONTAINER_TAR_FILE=metroaecontainer.tar
+    aws_path=/images/
+    S3_BUCKET='nuage-devops'
+    date=$(date +"%a, %d %b %Y %T %z")
+    content_type='application/x-compressed-tar'
+    string="GET\n\n$content_type\n$date\n/$S3_BUCKET$aws_path$CONTAINER_TAR_FILE"
+    signature=$(echo -en "${string}" | openssl sha1 -hmac "${S3_SECRET}" -binary | base64)
+    curl -X GET\
+        -H "Host: $S3_BUCKET.s3.amazonaws.com" \
+        -H "Date: $date" \
+        -H "Content-Type: $content_type" \
+        -H "Authorization: AWS ${S3_KEY}:$signature" \
+        "https://$S3_BUCKET.s3.amazonaws.com$aws_path$CONTAINER_TAR_FILE" > $TEMPORARY_DIRECTORY$CONTAINER_TAR_FILE | tee -a $SCRIPT_LOG_FILE 2>> $SCRIPT_LOG_FILE
+}
+
+pull() {
+    if [ ! -z $1 ]
+    then
+        MAX_CONTAINER_VERSION=$1
+    fi
+
+    repo="Docker registry"
+
+    ping -c 5 $REGISTRY_HOST >> $SCRIPT_LOG_FILE 2>> $SCRIPT_LOG_FILE
+
+    set +e
+    if [[ $? -ne 0 || ( ! -z $1 && "$1" = "S3" ) ]]
+    then
+        echo "Could not ping the local registry to download container" | tee -a $SCRIPT_LOG_FILE
+        echo "Retrieving the container from Amazon S3" | tee -a $SCRIPT_LOG_FILE
+        get_from_s3
+
+        if [ $? -ne 0 ]
+        then
+            echo "Unable to pull MetroÆ container. Exiting" | tee -a $SCRIPT_LOG_FILE
+            exit 1
+        fi
+
+        docker load -i $TEMPORARY_DIRECTORY$CONTAINER_TAR_FILE
+        repo="Amazon S3"
+    else
+        echo "Retrieving MetroÆ container..." | tee -a $SCRIPT_LOG_FILE
+        docker pull $METRO_AE_IMAGE:$MAX_CONTAINER_VERSION | tee -a $SCRIPT_LOG_FILE
+    fi
+
+    status=$?
+    if [ $status -ne 0 ]
+    then
+        echo "Unable to pull the $MAX_CONTAINER_VERSION MetroÆ image" | tee -a $SCRIPT_LOG_FILE
+    else
+        echo "Successfully Pulled the container from $repo" | tee -a $SCRIPT_LOG_FILE
+    fi
+    set -e
+
+    return $status
+}
+
+get_user_path_input() {
+    valid_path=1
+    PATH_ARG=""
+
+    set +e
+
+    while [ $valid_path -ne 0 ]
+    do
+        echo ""
+        echo $1
+        echo ""
+        read -p "$2" PATH_ARG
+        echo "checking path for $1" >> $SCRIPT_LOG_FILE
+        stat $PATH_ARG >> $SCRIPT_LOG_FILE 2>> $SCRIPT_LOG_FILE
+
+        valid_path=$?
+        if [ $valid_path -ne 0 ]
+        then
+            echo "Invalid path provided"
+        fi
+
+        # check to see if the path ends with passed in directory
+        if [[ "$PATH_ARG" != *"$3" ]]
+        then
+            PATH_ARG=$PATH_ARG/$3
+            mkdir -p $PATH_ARG
+        fi
+
+    done
+    set -e
+
+}
+
+upgrade_docker() {
+    set +e
+    destroy
+    if [ $? -ne 0 ]
+    then
+        return 1
+    fi
+    set -e
+
+    pull
+    run
+}
+
+run_container_if_not_running() {
+    get_running_container_id
+
+    if [ -z $RUNNING_CONTAINER_ID ]
+    then
+        run
+        get_running_container_id
+    fi
+}
+
+docker_exec() {
+    run_container_if_not_running
+
+    if [[ $1 == "env" ]]
+    then
+        shift
+        environment='-e ANSIBLE_FORCE_COLOR=true'
+        for env in `env`
+        do
+            filtered=0
+            for filter in ${ENVIRONMENT_FILTERS[@]}
+            do
+                if [[ "$env" =~ ^$filter ]]
+                then
+                    filtered=1
+                fi
+            done
+
+        if [ $filtered -eq 0 ]
+            then
+                environment="$environment -e $env"
+        fi
+        done
+
+        if [ ! -z $USER_DATA_PATH ]
+        then
+            environment="$environment -e USER_DATA_PATH=$USER_DATA_PATH"
+        fi
+
+        docker exec $environment $RUNNING_CONTAINER_ID "$@"
+    else
+        docker exec $RUNNING_CONTAINER_ID "$@"
+    fi
+}
+
+docker_exec_interactive() {
+    environment=""
+    if [ ! -z $METROAE_PASSWORD ]
+    then
+        environment=" -e METROAE_PASSWORD=$METROAE_PASSWORD"
+    fi
+
+    if [ ! -z $NOT_INTERACTIVE ]
+    then
+       docker exec $environment $RUNNING_CONTAINER_ID "$@"
+    else
+       docker exec -it $environment $RUNNING_CONTAINER_ID "$@"
+    fi
+}
+
+interactive() {
+    run_container_if_not_running
+    docker_exec_interactive /bin/bash
+}
+
+docker_status() {
+    echo "Script version: $CONTAINER_VERSION"
+    get_running_container_id
+    if [ ! -z $RUNNING_CONTAINER_ID ]
+    then
+        header=`docker ps -a | grep "IMAGE"`
+        echo $header
+        container_status=`docker ps -a | grep "$METRO_AE_IMAGE"`
+        echo $container_status
+        docker exec $RUNNING_CONTAINER_ID cat /source/version
+    else
+        echo "No running container found"
+    fi
     echo ""
 }
+
+check_for_user_group() {
+    #skip this if the effective user is 0
+    uid=`id -u`
+
+    if [ $uid -eq 0 ]
+    then
+        #Don't need to check group docker for root user
+        return 0
+    fi
+
+    docker_part_of_groups=`groups | grep docker`
+
+    if [ ! -z $1 ]
+    then
+        input=$1
+    fi
+    if [ -z "$docker_part_of_groups" ]
+    then
+        while [[ $input != "yes" ]] && [[ $input  != "no" ]] && [[ $input  != "y" ]] && [[ $input != "n" ]]
+        do
+            read -p "User needs to be part of the docker group, Do you want the user to be added to the group: (yes/no) " input
+        done
+
+        if [[ $input != "Yes" ]] && [[ $input != "y" ]] && [[ $input != "yes" ]] && [[ $input != "Y" ]]
+        then
+            echo "Please add the user to the group docker."
+            exit 0
+        fi
+
+        echo "Executing privileged commands to add user to docker group"
+        sudo usermod -aG docker `whoami`
+        if [ -z $NOT_INTERACTIVE ]
+        then
+            newgrp - docker
+        fi
+    fi
+
+}
+
+#################################################################################
+#                                 DEPLOYMENT                                    #
+#################################################################################
 
 function list_workflows {
     for file in $PLAYBOOK_DIR/*.yml
@@ -113,109 +622,1024 @@ function audit_log_and_exit {
     exit $1
 }
 
-ORIGINAL_ARGS="$*"
+function deployment_help {
+    echo ""
+    echo "Nuage Networks Metro Automation Engine (MetroÆ) CLI"
+    echo ""
+    echo "MetroÆ Version:" $METROAE_VERSION
+    echo ""
+    echo "MetroÆ is an automation engine that installs and upgrades Nuage"
+    echo "Networks components.  After you specify the individual details"
+    echo "of your deployment, MetroÆ sets up the environment and executes"
+    echo "the install or upgrade on your behalf."
+    echo ""
+    echo "See README.md for more information"
+    echo ""
+    echo "Usage:"
+    echo ""
+    print_menu_help "DEPLOYMENT" "metroae%-30s %-1s\n" $1
+    echo ""
+    echo "Options:"
+    echo "    -h, --help:            Displays this help."
+    echo "    --ansible-help:        Displays help for ansible arguments."
+    echo "    -v, -vv, -vvv, -vvvv:  Runs with increasing levels of verbosity."
+    echo "    --list:                Shows a list of all supported workflows"
+    echo "    --skip-password:       Do not ask for a password.  Password can be"
+    echo "                           provided via the environment variable METROAE_PASSWORD"
+    echo "    --skip-build:          Runs workflow without performing build."
+    echo "                           This will prevent changes in the deployment from"
+    echo "                           taking effect, but it will be faster."
+    echo "    --set-group <group>:   Sets the ownership of inventory and logs to specified"
+    echo "                           group so that other users in the group can access"
+    echo "                           these files."
+    echo ""
+    echo "Any additional [options] are passed to the internal Ansible engine for processing"
+    echo ""
+}
 
-#
-# Parse arguments
-#
-SKIP_BUILD=0
-SKIP_PASSWORD=0
-POSITIONAL=()
-while [[ $# -gt 0 ]]
-do
-key="$1"
+# We just use the old version to parse the options
+function deployment_start {
 
-case $key in
-    -h|--help)
-    usage
-    exit 0
-    ;;
-    --ansible-help)
-    $(which ansible-playbook) --help
-    exit 0
-    ;;
-    --list)
-    list_workflows
-    exit 0
-    ;;
-    --set-group)
-    GROUP="$2"
-    touch ansible.log
-    chgrp $GROUP ansible.log
-    touch $AUDIT_LOG
-    chgrp $GROUP $AUDIT_LOG
-    shift # past argument
-    shift # past value
-    ;;
-    --skip-build)
-    SKIP_BUILD=1
-    shift # past argument
-    ;;
-    --skip-password)
-    SKIP_PASSWORD=1
-    shift # past argument
-    ;;
-    *)    # unknown option
-    POSITIONAL+=("$1") # save it in an array for later
-    shift # past argument
-    ;;
-esac
-done
-set -- "${POSITIONAL[@]}" # restore positional parameters
+    set +e
 
-# Missing workflow, show usage
-if [[ $# -eq 0 ]] || [[ $1 == -* ]]; then
-    usage
-    exit 1
-fi
+    check_run_with_container
 
-# <workflow> argument
-WORKFLOW=$1
-shift
+    if [[ $SHOULD_RUN_WITH_CONTAINER == true ]]; then
+        echo "Out of the container"
+        exit 0
+    fi
 
-# Add .yml extension if needed
-EXTENSION="${WORKFLOW##*.}"
-if [ "$EXTENSION" != "yml" ]; then
-    WORKFLOW=${WORKFLOW}.yml
-fi
+    ORIGINAL_ARGS="$*"
 
-# [deployment] argument
-if [[ $# -gt 0 ]]; then
-    if [[ $1 != -* ]]; then
-        DEPLOYMENT="$1"
-        shift
-        if [[ -d $DEPLOYMENT ]]; then
-            DEPLOYMENT_DIR=$DEPLOYMENT
-        elif [[ -d $DEPLOYMENTS_BASE_DIR/$DEPLOYMENT ]]; then
-            DEPLOYMENT_DIR=$DEPLOYMENTS_BASE_DIR/$DEPLOYMENT
-        else
-          echo "Could not find deployment '$DEPLOYMENT' under" $DEPLOYMENTS_BASE_DIR
-          exit 1
+    #
+    # Parse arguments
+    #
+    SKIP_BUILD=0
+    SKIP_PASSWORD=0
+    POSITIONAL=()
+    while [[ $# -gt 0 ]]
+    do
+    key="$1"
+
+    case $key in
+        -h|--help)
+        deployment_help
+        exit 0
+        ;;
+        --ansible-help)
+        $(which ansible-playbook) --help
+        exit 0
+        ;;
+        --list)
+        list_workflows
+        exit 0
+        ;;
+        --set-group)
+        GROUP="$2"
+        touch ansible.log
+        chgrp $GROUP ansible.log
+        touch $AUDIT_LOG
+        chgrp $GROUP $AUDIT_LOG
+        shift # past argument
+        shift # past value
+        ;;
+        --skip-build)
+        SKIP_BUILD=1
+        shift # past argument
+        ;;
+        --skip-password)
+        SKIP_PASSWORD=1
+        shift # past argument
+        ;;
+        *)    # unknown option
+        POSITIONAL+=("$1") # save it in an array for later
+        shift # past argument
+        ;;
+    esac
+    done
+    set -- "${POSITIONAL[@]}" # restore positional parameters
+
+    # Missing workflow, show usage
+    if [[ $# -eq 0 ]] || [[ $1 == -* ]]; then
+        deployment_help
+        exit 1
+    fi
+
+    # <workflow> argument
+    WORKFLOW=$1
+    shift
+
+    # Add .yml extension if needed
+    EXTENSION="${WORKFLOW##*.}"
+    if [ "$EXTENSION" != "yml" ]; then
+        WORKFLOW=${WORKFLOW}.yml
+    fi
+
+    # [deployment] argument
+    if [[ $# -gt 0 ]]; then
+        if [[ $1 != -* ]]; then
+            DEPLOYMENT="$1"
+            shift
+            if [[ -d $DEPLOYMENT ]]; then
+                DEPLOYMENT_DIR=$DEPLOYMENT
+            elif [[ -d $DEPLOYMENTS_BASE_DIR/$DEPLOYMENT ]]; then
+                DEPLOYMENT_DIR=$DEPLOYMENTS_BASE_DIR/$DEPLOYMENT
+            else
+            echo "Could not find deployment '$DEPLOYMENT' under" $DEPLOYMENTS_BASE_DIR
+            exit 1
+            fi
         fi
     fi
-fi
 
-# Get password if needed
-check_password_needed "$DEPLOYMENT_DIR"
-ask_password
-if [[ ! -z $METROAE_PASSWORD ]]; then
-    export ANSIBLE_VAULT_PASSWORD_FILE=$VAULT_ENV_FILE
-fi
-
-# Run playbooks
-if [[ -a $PLAYBOOK_DIR/$WORKFLOW  ]]; then
-    write_audit_log_entry
-    $(which ansible-playbook) -e deployment_dir=\'"$DEPLOYMENT_DIR"\' -e schema_dir=$SCHEMA_DIR $PLAYBOOK_DIR/$WORKFLOW "$@" || audit_log_and_exit $?
-elif [[ -a $PLAYBOOK_WITH_BUILD_DIR/$WORKFLOW ]]; then
-    write_audit_log_entry
-    if [[ $SKIP_BUILD -ne 1 ]]; then
-        $(which ansible-playbook) -e deployment_dir=\'"$DEPLOYMENT_DIR"\' -e schema_dir=$SCHEMA_DIR $PLAYBOOK_DIR/build.yml "$@" || audit_log_and_exit $?
-        if [[ $GROUP ]]; then chgrp -R $GROUP $INVENTORY_DIR; fi
+    # Get password if needed
+    check_password_needed "$DEPLOYMENT_DIR"
+    ask_password
+    if [[ ! -z $METROAE_PASSWORD ]]; then
+        export ANSIBLE_VAULT_PASSWORD_FILE=$VAULT_ENV_FILE
     fi
-    $(which ansible-playbook) $PLAYBOOK_WITH_BUILD_DIR/$WORKFLOW "$@" || audit_log_and_exit $?
-else
-  echo "Requested MetroÆ workflow could not be found"
-  exit 1
-fi
 
-audit_log_and_exit 0
+    # Run playbooks
+    if [[ -a $PLAYBOOK_DIR/$WORKFLOW  ]]; then
+        write_audit_log_entry
+        $(which ansible-playbook) -e deployment_dir=\'"$DEPLOYMENT_DIR"\' -e schema_dir=$SCHEMA_DIR $PLAYBOOK_DIR/$WORKFLOW "$@" || audit_log_and_exit $?
+    elif [[ -a $PLAYBOOK_WITH_BUILD_DIR/$WORKFLOW ]]; then
+        write_audit_log_entry
+        if [[ $SKIP_BUILD -ne 1 ]]; then
+            $(which ansible-playbook) -e deployment_dir=\'"$DEPLOYMENT_DIR"\' -e schema_dir=$SCHEMA_DIR $PLAYBOOK_DIR/build.yml "$@" || audit_log_and_exit $?
+            if [[ $GROUP ]]; then chgrp -R $GROUP $INVENTORY_DIR; fi
+        fi
+        $(which ansible-playbook) $PLAYBOOK_WITH_BUILD_DIR/$WORKFLOW "$@" || audit_log_and_exit $?
+    else
+    echo "Requested MetroÆ workflow could not be found"
+    exit 1
+    fi
+
+    audit_log_and_exit 0
+
+    set -e
+
+}
+
+#################################################################################
+#                                      UI                                       #
+#################################################################################
+
+
+
+
+#################################################################################
+#                                    Config                                     #
+#################################################################################
+
+config_run() {
+
+    set +e
+    get_image_id
+
+    if [ -z $IMAGE_ID ]
+    then
+        setup
+        status=$?
+        if [ $status -ne 0 ]
+        then
+            echo "Unable to setup MetroÆ container"
+            return $status
+        fi
+    else
+        get_container_id
+
+        if [ -z $container_id ]
+        then
+            while read -r line; do declare $line; done < $SETUP_FILE
+            docker run -e LEVISTATE_CONTAINER=true -t -d --network host -v $LEVISTATE_MOUNT_POINT:/data:Z --name levistate $METRO_AE_IMAGE:$MAX_CONTAINER_VERSION 2> /dev/null
+        else
+            docker start $container_id
+        fi
+
+	    status=$?
+        if [ $status -ne 0 ]
+        then
+            echo "Unable to run the latest MetroÆ container"
+        else
+            echo "Succesfully started the MetroÆ container"
+        fi
+
+        return $status
+    fi
+    set -e
+
+    return 0
+}
+
+config_setup() {
+    echo "Setup MetroÆ container..."
+    set +e
+
+    get_container_id
+    get_running_container_id
+
+    if [ ! -z $container_id ] || [ ! -z $RUNNING_CONTAINER_ID ]
+    then
+        echo "You already have the MetroÆ container set up. Running setup will destroy the"
+        echo "existing container and create a new one. Your data on disk will be preserved."
+        echo "If you continue, create the new container, and use the same data"
+        echo "mount point, no changes are required. If you change the mount points, however"
+        echo "you will need to copy your existing data to the new mount points."
+
+        confirmation="init"
+        while [[ $confirmation != "yes" ]] && [[ $confirmation  != "no" ]] && [[ $confirmation  != "y" ]] && [[ $confirmation != "n" ]]
+        do
+            read -p "Do you want to continue with setup (yes/no): " confirmation
+        done
+
+
+        if [[ $confirmation != "yes" ]] && [[ $confirmation != "y" ]]
+        then
+            echo "Setup canceled by user"
+            return 1
+        fi
+    fi
+
+    get_image_id
+
+    if [ -z $IMAGE_ID ]
+    then
+        pull
+    fi
+
+    if [ $? -ne 0 ]
+    then
+        return 1
+    fi
+
+    if [ -z $1 ]
+    then
+        get_user_path_input "Specify the full path to the directory where your user data will be stored on the host system. Setup will create a subdirectory, called levistate_data, in the directory you specify. If the path you specify ends with levistate_data, we will use that sub-directory and not create one." "Data directory path: " levistate_data
+        data_path=$PATH_ARG
+    else
+        echo "setting data path to passed in parameter $1"
+        data_path=$1
+    fi
+
+    echo LEVISTATE_MOUNT_POINT=$data_path >> $SETUP_FILE
+
+    #stop and remove existing container if any
+    get_running_container_id
+    if [ ! -z $RUNNING_CONTAINER_ID ]
+    then
+        stop
+    fi
+
+    get_container_id
+    if [ ! -z $container_id ] 
+    then
+        delete_container_id
+    fi
+
+    run
+
+    status=0
+    if [ $? -ne 0 ]
+    then
+        return 1
+    else
+
+        #download the templates and sample user data
+        docker_exec_levistate templates update
+        status=$?
+    fi
+    set -e
+
+    return $status
+}
+
+docker_exec_levistate() {
+    docker_exec env /usr/bin/python /source/levistate/levistate.py "$@"
+}
+
+
+config_status() {
+    docker_status
+    if [ -f $SETUP_FILE ] 
+    then
+        echo "Current settings..."
+        while read -r line; do declare $line; done < $SETUP_FILE
+        echo levistate_mount_point=$LEVISTATE_MOUNT_POINT
+    else
+        echo "Container has not been setup"
+    fi
+}
+
+# TODO: replace help with the new one
+config_help() {
+    echo "Nuage Networks Levistate container management help"
+    
+    if [ -z $1 ]
+    then
+        echo "Usage:"
+    fi
+    echo ""
+    
+    echo "./levistate [actions] [options]"
+    echo "[actions]: supported actions are help, version, pull, setup, stop, destroy, upgrade-engine "
+    echo "help              Displays the help text"
+    echo "version           Displays the version of the current running Levistate container"
+    echo "pull              Download the latest available version of the Levistate container"
+    echo "setup             Locally setup the Levistate container"
+    echo "stop              Stop the current running container"
+    echo "destroy           Stop and delete the current running container, additionally removes the docker image"
+    echo "upgrade-engine    Upgrade the currently installed Levistate container to the latest available version"
+    echo ""
+    
+    get_running_container_id 
+    
+    if [ -z $RUNNING_CONTAINER_ID ]
+    then
+        exit
+    fi
+
+}
+
+function config_start {
+
+    # Preset the environment variables
+    export SCRIPT_LOG_FILE=/opt/metroae/levistate.log
+    export SETUP_FILE=/opt/metroae/.metroae
+
+    check_docker
+
+    check_for_user_group
+
+    if [ $# -eq 0 ]
+    then
+        config_help
+    fi
+
+    shopt -s extglob
+    POSITIONAL=()
+    exec=false
+    usage_last=false
+    no_arguments=$#
+    while [ $# -gt 0 ]
+    do
+        key=$1
+        case "$key" in
+            help|--h|-h|--help|-help)
+            
+            get_running_container_id
+            if [ -z $RUNNING_CONTAINER_ID ]
+            then
+                config_help
+            else
+                if [ $no_arguments -lt 2 ]
+                then   
+                    usage_last=true
+                fi 
+            fi    
+            POSITIONAL+=("$1")
+            exec=true
+            shift
+            ;;
+            pull)
+            if [ -z $2 ] 
+            then
+                pull
+            else
+                pull $2
+                shift
+            fi
+            shift
+            ;;
+            setup)
+            if [ -z $2 ]
+            then
+                config_setup
+            else
+                config_setup $2
+                shift
+            fi
+            shift
+            ;;
+            start)
+            config_run
+            shift
+            ;;
+            stop)
+            stop
+            shift
+            ;;
+            destroy)
+            if [ -z $2 ]
+            then
+                destroy
+            else
+                destroy $2
+                shift
+            fi
+            shift
+            ;;
+            upgrade-engine)
+            upgrade_docker
+            shift
+            ;;
+            interactive)
+            interactive
+            shift
+            ;;
+            status)
+            config_status
+            shift
+            ;;
+            *)
+            POSITIONAL+=("$1")
+            exec=true
+            shift
+            ;;
+        esac
+    done
+
+    if ($exec == true)
+    then
+        docker_exec_levistate "${POSITIONAL[@]}"
+    fi
+
+    if ($usage_last == true)
+    then
+        help print_usage
+    fi
+
+}
+
+#################################################################################
+#                                  Container                                    #
+#################################################################################
+
+container_run() {
+
+    set +e
+
+    check_for_setup_file
+    
+    get_image_id
+
+    if [ -z $IMAGE_ID ]
+    then
+        setup
+        status=$?
+        if [ $status -ne 0 ]
+        then
+            echo "Unable to setup MetroÆ container"
+            return $status
+        fi
+    else
+        get_container_id
+
+        if [ -z $container_id ]
+        then
+            while read -r line; do declare $line; done < $SETUP_FILE
+            network_args=""
+            get_host_operating_system
+            if [ $OS_RELEASE  -eq $LINUX ]
+            then
+                network_args=" --network host"
+            else
+                network_args=" -p $UI_PORT:5001"
+            fi
+            
+            user_name=`whoami`
+            group_name=`id -g -n`
+
+            docker run -e USER_NAME=$user_name -e GROUP_NAME=$group_name -d $network_args -v $METROAE_MOUNT_POINT:/data:Z -v $IMAGES_MOUNT_POINT:/images:Z --name metroae $METRO_AE_IMAGE:$MAX_CONTAINER_VERSION
+        else
+            docker start $CONTAINER_ID
+        fi
+
+	    status=$?
+        if [ $status -ne 0 ]
+        then
+            echo "Unable to run the latest MetroÆ container"
+        else
+            echo "Succesfully started the MetroÆ container"
+        fi
+	
+        return $status
+    fi
+    set -e
+
+    return 0
+}
+
+copy_ssh_id() {
+    if [ -z $1 ]
+    then
+        echo "Please provide the user and host to copy the key to. e.g. user@localhost\n"
+        exit 1
+    fi
+    run_container_if_not_running
+	
+    sshpass=" "
+    if [ ! -z $SSHPASS_PASSWORD ]
+    then
+       sshpass="sshpass -p$SSHPASS_PASSWORD"
+    fi
+    
+    if [ ! -z $NOT_INTERACTIVE ]
+    then
+       docker exec $RUNNING_CONTAINER_ID $sshpass ssh-copy-id -i /source/id_rsa.pub -o StrictHostKeyChecking=no $1
+    else
+       docker exec -it $RUNNING_CONTAINER_ID $sshpass ssh-copy-id -i /source/id_rsa.pub -o StrictHostKeyChecking=no $1
+    fi
+}
+
+container_setup() {
+    echo "Setup MetroÆ container..."
+
+    set +e
+
+    get_container_id
+    get_running_container_id
+
+    if [ ! -z $CONTAINER_ID ] || [ ! -z $RUNNING_CONTAINER_ID ]
+    then
+        echo "You already have the MetroÆ container set up. Running setup will destroy the"
+        echo "existing container and create a new one. Your data on disk will be preserved."
+        echo "If you continue, create the new container, and use the same data and image"
+        echo "mount points, no changes are required. If you change the mount points, however"
+        echo "you will need to copy your existing data to the new mount points."
+
+        confirmation="init"
+        while [[ $confirmation != "yes" ]] && [[ $confirmation  != "no" ]] && [[ $confirmation  != "y" ]] && [[ $confirmation != "n" ]]
+        do
+            read -p "Do you want to continue with setup (yes/no): " confirmation
+        done
+
+        if [[ $confirmation != "yes" ]] && [[ $confirmation != "y" ]]
+        then
+            echo "Setup canceled by user"
+            return 1
+        fi
+    fi
+
+    get_image_id
+
+    if [ -z $IMAGE_ID ]
+    then
+        pull
+    fi
+
+    if [ $? -ne 0 ]
+    then
+        return 1
+    fi
+
+    if [ -z $1 ]
+    then
+        get_user_path_input "Specify the full path to the directory where your user data will be stored on the host system. Setup will create a subdirectory, called metroae_data, in the directory you specify. If the path you specify ends with metroae_data, we will use that subdirectory and not create one."  "Data directory path: " metroae_data
+        data_path=$PATH_ARG
+    else
+        echo "setting data path to passed in parameter $1" | tee -a $SCRIPT_LOG_FILE
+        data_path=$1
+    fi
+
+    if [ -z $2 ]
+    then
+        get_user_path_input "Specify the full path to the directory where your Nuage Networks image files will be stored on the host system. Setup will create a subdirectory, called metroae_images, in the directory you specify. If the path you specify ends with metroae_images, we will use that subdirectory and not create one." "Image directory path: " metroae_images
+        images_path=$PATH_ARG
+    else
+        echo "setting image path to passed in parameter $2" | tee -a $SCRIPT_LOG_FILE
+        images_path=$2
+    fi
+
+    get_host_operating_system
+    if [ $OS_RELEASE -eq $NON_LINUX ]
+    then
+        if [ -z $3 ]
+        then
+            echo ""
+            read -p "Specify the REST API/UI access port for the container: " port
+        else
+            echo "setting UI port to passed in parameter $3" | tee -a $SCRIPT_LOG_FILE
+            port=$3
+        fi
+        echo UI_PORT=$port >> $SETUP_FILE
+    fi
+
+    echo IMAGES_MOUNT_POINT=$images_path >> $SETUP_FILE
+    echo METROAE_MOUNT_POINT=$data_path >> $SETUP_FILE
+
+    #stop and remove existing container if any
+    get_running_container_id
+    if [ ! -z $RUNNING_CONTAINER_ID ]
+    then
+        stop
+    fi
+
+    get_container_id
+    if [ ! -z $CONTAINER_ID ]
+    then
+        delete_container_id
+    fi
+
+    #Ask if TLS needs to be setup
+    if [ $OS_RELEASE -eq $NON_LINUX ]
+    then
+        if [ ! -z $4 ] 
+        then
+            confirmation=$4
+        else
+            confirmation="init"
+        fi
+    else 
+        if [ ! -z $3 ] 
+        then
+            confirmation=$3
+        else
+            confirmation="init"
+        fi
+    fi
+
+    while [[ $confirmation != "yes" ]] && [[ $confirmation  != "no" ]] && [[ $confirmation  != "y" ]] && [[ $confirmation != "n" ]]
+    do
+        read -p "Do you want to set a certificate and start the UI (yes/no): " confirmation
+    done
+
+    if [[ $confirmation == "yes" ]] && [[ $confirmation == "y" ]]
+    then
+        load_certificates
+        return 0
+    fi
+
+    container_run
+    set -e
+    return $?
+}
+
+docker_metro_ae_exec() {
+    docker_exec env /source/nuage-metro/metroae "$@"
+}
+
+stop_ui() {
+    run_container_if_not_running
+    docker exec $RUNNING_CONTAINER_ID /source/UI.sh stop
+}
+
+start_ui() {
+    run_container_if_not_running
+	
+    docker_exec_interactive /source/UI.sh start $1
+    
+}
+
+ui_status() {
+    run_container_if_not_running
+    docker exec $RUNNING_CONTAINER_ID /source/UI.sh status
+}
+
+load_certificates() {
+    certificate=''
+    if [ -z $1 ]
+    then
+        read -p "Enter the path to certificate file: " certificate
+    else
+        certificate=$1
+    fi
+
+    keyfile=''
+    if [ -z $2 ]
+    then
+        read -p "Enter the path to key file: " keyfile
+    else
+        keyfile=$2
+    fi
+	
+    get_running_container_id
+
+    docker_exec_interactive /source/UI.sh load_certificates $certificate $keyfile $3
+}
+
+unzip_files() {
+    if [ $# -gt 1 ]
+    then
+        docker_exec /source/nuage-metro/nuage-unzip.sh "$@"
+    else
+        docker_exec /source/nuage-metro/nuage-unzip.sh "$@" /images/
+    fi
+}
+
+con_build_vars_to_deployments() {
+    docker_exec /usr/bin/python /source/nuage-metro/convert_build_vars_to_deployment.py "$@"
+}
+
+gen_example_from_schema() {
+    docker_exec /usr/bin/python /source/nuage-metro/generate_example_from_schema.py "$@"
+}
+
+container_status() {
+    docker_status
+    if [ -f $SETUP_FILE ] 
+    then
+        echo "Current settings..."
+        while read -r line; do declare $line; done < $SETUP_FILE
+        echo "images_mount: $IMAGES_MOUNT_POINT"
+        echo "metroae_mount: $METROAE_MOUNT_POINT"	
+        get_host_operating_system
+    
+        if [ $OS_RELEASE -eq $LINUX ]
+        then
+            echo "ui_port: 5001"
+    	else
+            echo "ui_port: $UI_PORT"
+        fi
+    else
+        echo "Container has not been setup"
+    fi
+}
+
+vault_password() {
+    run_container_if_not_running
+
+    docker_exec_interactive /usr/bin/python /source/nuage-metro/encrypt_credentials.py  $1
+}
+
+disable_encryption() {
+    run_container_if_not_running
+    docker exec $RUNNING_CONTAINER_ID /source/UI.sh disable-encryption
+}
+
+container_help() {
+    echo "Nuage Networks Metro Automation Engine (MetroÆ) Container CLI"
+    echo "Usage:"
+    echo ""
+    echo "  ./metroae <action | workflow> [deployment] [options]"
+    echo "  action:     Supported container actions are help, pull,"
+    echo "              setup, start, stop, status, destroy, upgrade-engine,"
+    echo "              stop-ui, start-ui, status-ui, unzip-files,"
+    echo "              convert-build-vars-to-deployments,"
+    echo "              generate-example-from-schema, encrypt-credentials,"
+    echo "              enable-ui-encryption, disable-ui-encryption, copy-ssh-id,"
+    echo "              --list, --ansible-help"
+    echo "  workflow:   One of the many workflows supported by MetroÆ, e.g."
+    echo "              install_everything, upgrade_vsd, etc. You can see a"
+    echo "              list of possible workflows by executing the --list"
+    echo "              action."
+    echo "  deployment: The name of the deployment subdirectory that holds"
+    echo "              the user input data for the workflow. If no"
+    echo "              deployment is specified, default will be used."
+    echo "  options:    Other options that will be passed to MetroÆ. This includes"
+    echo "              Ansible options."
+    echo ""
+    echo "See MetroÆ documentation for details on the list of _actions_."
+    echo ""
+
+    get_running_container_id
+	
+    if [ -z $RUNNING_CONTAINER_ID ]
+    then
+        exit
+    fi
+}
+
+function container_start {
+
+    # Preset the environment variables
+    export SCRIPT_LOG_FILE=/opt/metroae/metroae.log
+    export SETUP_FILE=/opt/metroae/.metroae
+
+    if [ ! -z $GROUP_CHECK ]
+    then
+        check_for_user_group $1
+        shift
+        exit 0
+    else
+        check_for_user_group
+    fi
+
+    # check docker
+    check_docker
+
+    # main functionality
+
+    if [ $# -eq 0 ]
+    then
+        help
+        exit 0
+    fi
+
+    shopt -s extglob
+
+    POSITIONAL=()
+    exec=false
+    while [ $# -gt 0 ]
+    do
+        key=$1
+        case $key in
+            help|--h|-h|--help|-help)
+            container_help
+            POSITIONAL+=("$1")
+            exec=true
+            shift
+            ;;
+            pull)
+            if [ -z $2 ]
+            then
+                pull
+            else
+                pull $2
+                shift
+            fi
+            shift
+            ;;
+            start)
+            container_run
+            shift
+            ;;
+            setup)
+            if [ $# -gt 0 ]
+            then
+                shift
+                container_setup "$@"
+                shift
+                shift
+                shift
+                get_host_operating_system
+                if [ $OS_RELEASE -eq $NON_LINUX ]
+                then
+                    shift
+                fi
+            else
+                container_setup
+                shift 
+            fi
+            ;;
+            stop)
+            stop
+            shift
+            ;;
+            destroy)
+            if [ -z $2 ]
+            then
+                destroy
+            else
+                destroy $2
+            shift
+            fi
+            shift
+            ;;
+            upgrade-engine)
+            upgrade_docker
+            shift
+            ;;
+            stop-ui)
+            stop_ui
+            shift
+            ;;
+            start-ui)
+            if [ -z $2 ]
+            then
+                start_ui
+            else
+                start_ui $2
+                shift
+            fi
+            shift
+            ;;
+            status-ui)
+            ui_status
+            shift
+            ;;
+            status)
+            container_status
+            shift
+            ;;
+            encrypt-credentials)
+            if [ -z $2 ]
+            then
+                vault_password
+            else
+                vault_password $2
+                shift
+            fi
+            shift
+            ;;
+            enable-ui-encryption)
+            load_certificates $2 $3 $4
+            shift
+            shift
+            shift
+            shift
+            ;;
+            disable-ui-encryption)
+            disable_encryption
+            shift
+            ;;
+            interactive)
+            interactive
+            shift
+            ;;
+            unzip-files)
+            shift
+            unzip_files "$@"
+            exit 0
+            ;;
+            convert-build-vars-to-deployments)
+            shift
+            con_build_vars_to_deployments "$@"
+            exit 0
+            ;;
+            generate-example-from-schema)
+            shift
+            gen_example_from_schema "$@"
+            exit 0
+            ;;
+            copy-ssh-id)
+            copy_ssh_id "$2"
+            shift
+            shift
+            ;;
+            *)
+            POSITIONAL+=("$1")
+            exec=true
+            shift
+            ;;
+        esac
+    done
+
+    if ($exec == true)
+    then
+        docker_metro_ae_exec "${POSITIONAL[@]}"
+    fi
+
+}
+
+#################################################################################
+#                                     Menu                                      #
+#################################################################################
+function get_sub_menu {
+    declare -n menu=$1_MENU
+    shift
+    SUB_MENU=""
+    for (( i=0; i<=${#menu[@]}; i+=$MENU_STRIDE )); do
+        if [[ ${menu[@]:$i:1} == $1 ]]; then
+            SUB_MENU=("${menu[@]:$i:$MENU_STRIDE}")
+        fi
+    done
+}
+
+function print_menu_help {
+    declare -n menu=$1_MENU
+    for (( i=0; i<=${#menu[@]} - 1; i+=$MENU_STRIDE )); do
+        local menu_key=${menu[@]:$i:1}
+        if [[ $menu_key == $3* ]]; then
+            printf "${2}" "${menu_key//,/ }" "${menu[@]:($i + 1):1}"
+        fi
+    done
+}
+
+function parse_menu_args {
+    local section=$1 # get the current running subsection, default to be metroae
+    help_func=${1,,}_help # help function should be like ${section}_help, for example, deployment_help or container_help
+    shift;
+    MENU_KEY=""
+    MATCH_MENU=""
+    EXTRA_ARGS=()
+    while [[ $# -gt 0 ]]; do
+        if [[ $1 == "help" ]] || [[ $1 == "?" ]] || [[ $1 == "-h" ]] || [[ $1 == "--help" ]]; then
+            MATCH_MENU=(",help" "help" "help" "")
+            $help_func $MENU_KEY
+        else
+            MENU_KEY=$MENU_KEY","$1
+            get_sub_menu $section $MENU_KEY
+            if [[ -z $SUB_MENU ]]; then
+                EXTRA_ARGS+=("$1")
+            else
+                MATCH_MENU=("${SUB_MENU[@]}")
+            fi
+        fi
+        shift
+    done
+}
+
+#################################################################################
+#                                     Main                                      #
+#################################################################################
+
+parse_menu_args "DEPLOYMENT" "$@"
+
+case ${MATCH_MENU[2]} in
+    config)
+    config_start ${EXTRA_ARGS[@]}
+    exit 0
+    ;;
+    playbook)
+    deployment_start ${MATCH_MENU[3]} ${EXTRA_ARGS[@]}
+    exit 0
+    ;;
+    container)
+    container_start ${EXTRA_ARGS[@]}
+    exit 0
+    ;;
+    *)
+    deployment_start $@
+    exit 0
+    ;;
+esac
