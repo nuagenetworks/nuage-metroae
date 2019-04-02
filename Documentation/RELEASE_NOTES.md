@@ -3,3 +3,4 @@
 ### New Features and Enhancements
 ### Resolved Issues
 * Fix static routes so they are applied to VSC (METROAE-953)
+* Handle spaces in the yum.conf proxy setting in metro-setup.sh
