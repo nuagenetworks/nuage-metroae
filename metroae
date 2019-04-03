@@ -40,30 +40,31 @@ CONFIG_MENU+=(',upgrade-engine'    'Upgrade the currently installed Levistate co
 #                             CONTAINER COMMANDS                                #
 #################################################################################
 
-CONTAINER_MENU+=(',setup',                                 'setup',                                 'setup',                                 'setup')
-CONTAINER_MENU+=(',start',                                 'start',                                 'start',                                 'start')
-CONTAINER_MENU+=(',stop',                                  'stop',                                  'stop',                                  'stop')
-CONTAINER_MENU+=(',status',                                'status',                                'status',                                'status')
-CONTAINER_MENU+=(',destroy',                               'destroy',                               'destroy',                               'destroy')
-CONTAINER_MENU+=(',upgrade-engine',                        'upgrade-engine',                        'upgrade-engine',                        'upgrade-engine')
-CONTAINER_MENU+=(',stop-ui',                               'stop-ui',                               'stop-ui',                               'stop-ui')
-CONTAINER_MENU+=(',start-ui',                              'start-ui',                              'start-ui',                              'start-ui')
-CONTAINER_MENU+=(',status-ui',                             'status-ui',                             'status-ui',                             'status-ui')
-CONTAINER_MENU+=(',unzip-files',                           'unzip-files',                           'unzip-files',                           'unzip-files')
-CONTAINER_MENU+=(',convert-build-vars-to-deployments',     'convert-build-vars-to-deployments',     'convert-build-vars-to-deployments',     'convert-build-vars-to-deployments')            
-CONTAINER_MENU+=(',generate-example-from-schema',          'generate-example-from-schema',          'generate-example-from-schema',          'generate-example-from-schema')      
-CONTAINER_MENU+=(',encrypt-credentials',                   'encrypt-credentials',                   'encrypt-credentials',                   'encrypt-credentials')
-CONTAINER_MENU+=(',enable-ui-encryption',                  'enable-ui-encryption',                  'enable-ui-encryption',                  'enable-ui-encryption')
-CONTAINER_MENU+=(',disable-ui-encryption',                 'disable-ui-encryption',                 'disable-ui-encryption',                 'disable-ui-encryption')
-CONTAINER_MENU+=(',copy-ssh-id',                           'copy-ssh-id',                           'copy-ssh-id',                           'copy-ssh-id')
-CONTAINER_MENU+=(',--list',                                '--list',                                '--list',                                '--list')
-CONTAINER_MENU+=(',--ansible-help',                        '--ansible-help',                        '--ansible-help',                        '--ansible-help')
+CONTAINER_MENU+=(',setup',                                 'setup',                                 'setup',                                 '')
+CONTAINER_MENU+=(',start',                                 'start',                                 'start',                                 '')
+CONTAINER_MENU+=(',stop',                                  'stop',                                  'stop',                                  '')
+CONTAINER_MENU+=(',status',                                'status',                                'status',                                '')
+CONTAINER_MENU+=(',destroy',                               'destroy',                               'destroy',                               '')
+CONTAINER_MENU+=(',upgrade-engine',                        'upgrade-engine',                        'upgrade-engine',                        '')
+CONTAINER_MENU+=(',stop-ui',                               'stop-ui',                               'stop-ui',                               '')
+CONTAINER_MENU+=(',start-ui',                              'start-ui',                              'start-ui',                              '')
+CONTAINER_MENU+=(',status-ui',                             'status-ui',                             'status-ui',                             '')
+CONTAINER_MENU+=(',unzip-files',                           'unzip-files',                           'unzip-files',                           '')
+CONTAINER_MENU+=(',convert-build-vars-to-deployments',     'convert-build-vars-to-deployments',     'convert-build-vars-to-deployments',     '')            
+CONTAINER_MENU+=(',generate-example-from-schema',          'generate-example-from-schema',          'generate-example-from-schema',          '')      
+CONTAINER_MENU+=(',encrypt-credentials',                   'encrypt-credentials',                   'encrypt-credentials',                   '')
+CONTAINER_MENU+=(',enable-ui-encryption',                  'enable-ui-encryption',                  'enable-ui-encryption',                  '')
+CONTAINER_MENU+=(',disable-ui-encryption',                 'disable-ui-encryption',                 'disable-ui-encryption',                 '')
+CONTAINER_MENU+=(',copy-ssh-id',                           'copy-ssh-id',                           'copy-ssh-id',                           '')
+CONTAINER_MENU+=(',--list',                                '--list',                                '--list',                                '')
+CONTAINER_MENU+=(',--ansible-help',                        '--ansible-help',                        '--ansible-help',                        '')
 
 #################################################################################
 #                                  VARIABLES                                    #
 #################################################################################
 
 # Switch
+ANSIBLE_CONFIG_FILE="ansible.cfg"
 SHOULD_RUN_WITH_CONTAINER=$false
 
 # Menu
@@ -126,24 +127,28 @@ SKIP_BUILD=0                                                           # Skip bu
 SKIP_PASSWORD=0                                                        # Skip password
 POSITIONAL=()                                                          # positional
 
-# Config variables
-
-# export SCRIPT_LOG_FILE=/opt/metroae/levistate.log
-# export SETUP_FILE=/opt/metroae/.metroae
-
-
-# Container variables
-
-# export SCRIPT_LOG_FILE=/opt/metroae/metroae.log
-# export SETUP_FILE=/opt/metroae/.metroae
-
 
 #################################################################################
 #                                   SWITCH                                      #
 #################################################################################
 
 function check_run_with_container {
-    SHOULD_RUN_WITH_CONTAINER=false
+    if [[ -f $ANSIBLE_CONFIG_FILE ]]; then
+        SHOULD_RUN_WITH_CONTAINER=false
+    elif [[ -f $SETUP_FILE ]]; then
+        SHOULD_RUN_WITH_CONTAINER=true
+    else
+        confirmation="init"
+        while [[ $confirmation != "yes" ]] && [[ $confirmation  != "no" ]] && [[ $confirmation  != "y" ]] && [[ $confirmation != "n" ]]
+        do
+            read -p "MetroÆ source is not found. Do you want to setup a container (yes/no): " confirmation
+        done
+
+        if [[ $confirmation != "yes" ]] && [[ $confirmation != "y" ]]
+        then
+            SHOULD_RUN_WITH_CONTAINER=true
+        fi
+    fi
 }
 
 #################################################################################
@@ -160,21 +165,6 @@ check_docker() {
     then
         echo "Docker engine must be installed in order to run MetroÆ.  See https://docs.docker.com for details"
         exit 1
-    fi
-    set -e
-}
-
-check_for_setup_file() {
-    set +e
-    echo "checking for metroae setup file" >> $SCRIPT_LOG_FILE
-
-    stat /opt/metroae/.metroae >> $SCRIPT_LOG_FILE 2>> $SCRIPT_LOG_FILE
-
-    if [ $? -ne 0 ]
-    then
-        echo "Container has not been setup. Running Setup"
-        echo "Setup file not detected" >> $SCRIPT_LOG_FILE
-        setup
     fi
     set -e
 }
@@ -204,7 +194,7 @@ get_max_container_version() {
                     MAX_CONTAINER_VERSION=$version
             fi
 
-            if [ $MAX_CONTAINER_VERSION < $version ]
+            if [ $MAX_CONTAINER_VERSION \< $version ]
             then
                     MAX_CONTAINER_VERSION=$version
             fi
@@ -270,7 +260,7 @@ delete_container_id() {
     echo "Removing container with id $CONTAINER_ID" >> $SCRIPT_LOG_FILE
 
     set +e
-    docker rm $container_id 2>> $SCRIPT_LOG_FILE
+    docker rm $CONTAINER_ID 2>> $SCRIPT_LOG_FILE
 
     if [ $? -ne 0 ]
     then
@@ -443,17 +433,21 @@ upgrade_docker() {
 }
 
 run_container_if_not_running() {
+    run_func=$1_run
+
     get_running_container_id
 
     if [ -z $RUNNING_CONTAINER_ID ]
     then
-        run
+        $run_func
         get_running_container_id
     fi
 }
 
 docker_exec() {
-    run_container_if_not_running
+    run_container_if_not_running $1
+
+    shift
 
     if [[ $1 == "env" ]]
     then
@@ -503,7 +497,7 @@ docker_exec_interactive() {
 }
 
 interactive() {
-    run_container_if_not_running
+    run_container_if_not_running $1
     docker_exec_interactive /bin/bash
 }
 
@@ -526,15 +520,17 @@ docker_status() {
 check_for_user_group() {
     #skip this if the effective user is 0
     uid=`id -u`
+    get_host_operating_system
 
-    if [ $uid -eq 0 ]
+    if [ $uid -eq 0 ] || [ $OS_RELEASE -eq $NON_LINUX ]
     then
         #Don't need to check group docker for root user
         return 0
     fi
 
+    set +e
     docker_part_of_groups=`groups | grep docker`
-
+    set -e
     if [ ! -z $1 ]
     then
         input=$1
@@ -798,7 +794,7 @@ config_run() {
 
     if [ -z $IMAGE_ID ]
     then
-        setup
+        config_setup
         status=$?
         if [ $status -ne 0 ]
         then
@@ -808,12 +804,12 @@ config_run() {
     else
         get_container_id
 
-        if [ -z $container_id ]
+        if [ -z $CONTAINER_ID ]
         then
             while read -r line; do declare $line; done < $SETUP_FILE
             docker run -e LEVISTATE_CONTAINER=true -t -d --network host -v $LEVISTATE_MOUNT_POINT:/data:Z --name levistate $METRO_AE_IMAGE:$MAX_CONTAINER_VERSION 2> /dev/null
         else
-            docker start $container_id
+            docker start $CONTAINER_ID
         fi
 
 	    status=$?
@@ -838,7 +834,7 @@ config_setup() {
     get_container_id
     get_running_container_id
 
-    if [ ! -z $container_id ] || [ ! -z $RUNNING_CONTAINER_ID ]
+    if [ ! -z $CONTAINER_ID ] || [ ! -z $RUNNING_CONTAINER_ID ]
     then
         echo "You already have the MetroÆ container set up. Running setup will destroy the"
         echo "existing container and create a new one. Your data on disk will be preserved."
@@ -891,12 +887,12 @@ config_setup() {
     fi
 
     get_container_id
-    if [ ! -z $container_id ] 
+    if [ ! -z $CONTAINER_ID ] 
     then
         delete_container_id
     fi
 
-    run
+    config_run
 
     status=0
     if [ $? -ne 0 ]
@@ -914,7 +910,7 @@ config_setup() {
 }
 
 docker_exec_levistate() {
-    docker_exec env /usr/bin/python /source/levistate/levistate.py "$@"
+    docker_exec "config" env /usr/bin/python /source/levistate/levistate.py "$@"
 }
 
 
@@ -961,10 +957,6 @@ config_help() {
 }
 
 function config_start {
-
-    # Preset the environment variables
-    export SCRIPT_LOG_FILE=/opt/metroae/levistate.log
-    export SETUP_FILE=/opt/metroae/.metroae
 
     check_docker
 
@@ -1043,7 +1035,7 @@ function config_start {
             shift
             ;;
             interactive)
-            interactive
+            interactive "config"
             shift
             ;;
             status)
@@ -1074,6 +1066,21 @@ function config_start {
 #                                  Container                                    #
 #################################################################################
 
+check_for_setup_file() {
+    set +e
+    echo "checking for metroae setup file" >> $SCRIPT_LOG_FILE
+
+    stat $SETUP_FILE >> $SCRIPT_LOG_FILE 2>> $SCRIPT_LOG_FILE
+
+    if [ $? -ne 0 ]
+    then
+        echo "Container has not been setup. Running Setup"
+        echo "Setup file not detected" >> $SCRIPT_LOG_FILE
+        container_setup
+    fi
+    set -e
+}
+
 container_run() {
 
     set +e
@@ -1084,7 +1091,7 @@ container_run() {
 
     if [ -z $IMAGE_ID ]
     then
-        setup
+        container_setup
         status=$?
         if [ $status -ne 0 ]
         then
@@ -1094,7 +1101,7 @@ container_run() {
     else
         get_container_id
 
-        if [ -z $container_id ]
+        if [ -z $CONTAINER_ID ]
         then
             while read -r line; do declare $line; done < $SETUP_FILE
             network_args=""
@@ -1135,7 +1142,7 @@ copy_ssh_id() {
         echo "Please provide the user and host to copy the key to. e.g. user@localhost\n"
         exit 1
     fi
-    run_container_if_not_running
+    run_container_if_not_running "container"
 	
     sshpass=" "
     if [ ! -z $SSHPASS_PASSWORD ]
@@ -1275,23 +1282,23 @@ container_setup() {
 }
 
 docker_metro_ae_exec() {
-    docker_exec env /source/nuage-metro/metroae "$@"
+    docker_exec "container" env /source/nuage-metro/metroae "$@"
 }
 
 stop_ui() {
-    run_container_if_not_running
+    run_container_if_not_running "container"
     docker exec $RUNNING_CONTAINER_ID /source/UI.sh stop
 }
 
 start_ui() {
-    run_container_if_not_running
+    run_container_if_not_running "container"
 	
     docker_exec_interactive /source/UI.sh start $1
     
 }
 
 ui_status() {
-    run_container_if_not_running
+    run_container_if_not_running "container"
     docker exec $RUNNING_CONTAINER_ID /source/UI.sh status
 }
 
@@ -1320,18 +1327,18 @@ load_certificates() {
 unzip_files() {
     if [ $# -gt 1 ]
     then
-        docker_exec /source/nuage-metro/nuage-unzip.sh "$@"
+        docker_exec "container" /source/nuage-metro/nuage-unzip.sh "$@"
     else
-        docker_exec /source/nuage-metro/nuage-unzip.sh "$@" /images/
+        docker_exec "container" /source/nuage-metro/nuage-unzip.sh "$@" /images/
     fi
 }
 
 con_build_vars_to_deployments() {
-    docker_exec /usr/bin/python /source/nuage-metro/convert_build_vars_to_deployment.py "$@"
+    docker_exec "container" /usr/bin/python /source/nuage-metro/convert_build_vars_to_deployment.py "$@"
 }
 
 gen_example_from_schema() {
-    docker_exec /usr/bin/python /source/nuage-metro/generate_example_from_schema.py "$@"
+    docker_exec "container" /usr/bin/python /source/nuage-metro/generate_example_from_schema.py "$@"
 }
 
 container_status() {
@@ -1356,13 +1363,13 @@ container_status() {
 }
 
 vault_password() {
-    run_container_if_not_running
+    run_container_if_not_running "container"
 
     docker_exec_interactive /usr/bin/python /source/nuage-metro/encrypt_credentials.py  $1
 }
 
 disable_encryption() {
-    run_container_if_not_running
+    run_container_if_not_running "container"
     docker exec $RUNNING_CONTAINER_ID /source/UI.sh disable-encryption
 }
 
@@ -1402,8 +1409,6 @@ container_help() {
 function container_start {
 
     # Preset the environment variables
-    export SCRIPT_LOG_FILE=/opt/metroae/metroae.log
-    export SETUP_FILE=/opt/metroae/.metroae
 
     if [ ! -z $GROUP_CHECK ]
     then
@@ -1533,7 +1538,7 @@ function container_start {
             shift
             ;;
             interactive)
-            interactive
+            interactive "container"
             shift
             ;;
             unzip-files)
