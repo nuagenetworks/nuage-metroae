@@ -42,6 +42,7 @@ def write_deployments(var_dict, deployment_name):
     for deployment_template_file in deployment_template_files:
         deployment_filename = deployment_template_file.split(".")[0]
         deployment_file = deployment_filename + ".yml"
+<<<<<<< HEAD
 	print "Generating " + deployment_filename
         write_deployment_file(os.path.join(TEMPLATES_DIRECTORY, deployment_template_file),
                               os.path.join(deployment_dir, deployment_file), var_dict)
@@ -49,6 +50,15 @@ def write_deployments(var_dict, deployment_name):
     #write_deployment_file(os.path.join(TEMPLATES_DIRECTORY, "stcvs.j2"),
     #                           os.path.join(deployment_dir, "stcvs.yml"),
     #                           var_dict)
+=======
+        print "Generating " + deployment_filename
+        write_deployment_file(os.path.join(TEMPLATES_DIRECTORY, deployment_template_file),
+                              os.path.join(deployment_dir, deployment_file), var_dict)
+    # To write a single deployment file, use this syntax:
+    #write_deployment_file(os.path.join(TEMPLATES_DIRECTORY, "dnss.j2"),
+    #                       os.path.join(deployment_dir, "dnss.yml"),
+    #                       var_dict)
+>>>>>>> ca4b6a6b9cde3f0b88ea16164f01e9ac794d91ef
 
 
 def write_deployment_file(template_file, to_file, var_dict):
@@ -82,3 +92,7 @@ def main():
 
 if __name__ == '__main__':
     main()
+<<<<<<< HEAD
+=======
+
+>>>>>>> ca4b6a6b9cde3f0b88ea16164f01e9ac794d91ef
