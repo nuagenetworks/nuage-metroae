@@ -3,9 +3,9 @@
 # will be lost if reset-build or build is run
 #
 
-component_type: stcv
+component_type: proxy
 
-# STCv hypervisor definition
+# Proxy VM hypervisor definition
 target_server_type: {{ item.target_server_type | default('kvm') }}
 
 {% if item.kvm_target_server_os_family_list is defined %}
@@ -29,16 +29,12 @@ vmname: {{ item.hostname }}
 mgmt_bridge: {{ item.mgmt_bridge }}
 {% endif %}
 
-{% if item.data_bridge1 is defined %}
-data_bridge1: {{ item.data_bridge1 }}
+{% if item.proxy_vm_qcow2_path is defined %}
+proxy_vm_qcow2_path: {{ item.proxy_vm_qcow2_path }}
 {% endif %}
 
-{% if item.data_bridge2 is defined %}
-data_bridge2: {{ item.data_bridge2 }}
-{% endif %}
-
-{% if item.stcv_destination_image_path is defined %}
-stcv_destination_image_path: {{ item.stcv_destination_image_path }}
+{% if item.proxy_vm_qcow2_file_name is defined %}
+proxy_vm_qcow2_file_name: {{ item.proxy_vm_qcow2_file_name }}
 {% endif %}
 
 {% if item.vcpus is defined %}
@@ -51,17 +47,17 @@ ram: {{ item.ram }}
 
 hostname: {{ item.hostname }}
 mgmt_ip: {{ item.mgmt_ip }}
-mgmt_netmask: {{ ('0.0.0.0/' + item.mgmt_ip_prefix | string ) | ipaddr('netmask') }}
+mgmt_netmask: {{ item.mgmt_netmask }}
 mgmt_gateway: {{ item.mgmt_gateway }}
 
-{% if item.target_server_type | match("vcenter") %}
+{% if item.vsd1_fqdn is defined %}
+vsd1_fqdn: {{ item.vsd1_fqdn }}
+{% endif %}
 
-vcenter:
-  username: {{ encrypted.vcenter_username | indent(8, False) }}
-  password: {{ encrypted.vcenter_password | indent(8, False) }}
-  datacenter: {{ item.vcenter_datacenter | default( vcenter_datacenter ) }}
-  cluster: {{ item.vcenter_cluster | default( vcenter_cluster ) }}
-  datastore: {{ item.vcenter_datastore | default( vcenter_datastore ) }}
-  ovftool: {{ item.vcenter_ovftool | default(vcenter_ovftool | default(vcenter_ovftool)) }}
+{% if item.vsd2_fqdn is defined %}
+vsd2_fqdn: {{ item.vsd2_fqdn }}
+{% endif %}
 
+{% if item.vsd3_fqdn is defined %}
+vsd3_fqdn: {{ item.vsd3_fqdn }}
 {% endif %}
