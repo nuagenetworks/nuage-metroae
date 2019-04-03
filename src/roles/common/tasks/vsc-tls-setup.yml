@@ -79,7 +79,7 @@
     - name: Configure XMPP server to the custom ejabberd id and password
       sros_config:
         lines:
-          - configure vswitch-controller xmpp-server {{ ejabberd_id }}:{{ejabberd_id_password}}@{{ xmpp_domain }}
+          - configure vswitch-controller xmpp-server {{ ejabberd_id }}@{{ xmpp_domain }}
         provider: "{{ vsc_creds }}"
       delegate_to: localhost
 
@@ -90,15 +90,6 @@
       vars:
         vsd_hostname: "{{ vsd_fqdn }}"
       run_once: true
-
-    - name: Register custom certificate with vsd_default_password
-      shell: /opt/ejabberd/bin/ejabberdctl register {{ ejabberd_id }} {{ xmpp_domain }} {{ ejabberd_id_password }}
-      delegate_to: "{{ vsd_hostname_list[0] }}"
-      become: yes
-      remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
-      become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
-      vars:
-        ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"
 
     when:
       - private_key is defined
