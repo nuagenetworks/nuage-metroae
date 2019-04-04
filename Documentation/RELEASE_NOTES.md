@@ -43,3 +43,4 @@
 * Update VSD branding support for 5.4.1 (METROAE-929)
 * Set default target_server_type to avoid undefined variable error for VRS (METROAE-934)
 * Lock jsonschema library version to one that supports internal references (METROAE-933)
+* Fix VSD Upgrade procedure to check for accurate ejabberd connected user list (METROAE-958)
