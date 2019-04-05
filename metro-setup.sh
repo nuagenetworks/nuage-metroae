@@ -23,7 +23,7 @@ FAILED=0
 #
 # Column number to place the status message
 #
-RES_COL=60
+RES_COL=72
 
 #
 # Command to move out to the configured column number
@@ -83,7 +83,7 @@ function echo_success() {
   $MOVE_TO_COL
   echo -n "["
   $SETCOLOR_SUCCESS
-  echo -n $"  OK  "
+  echo -n $" OK  "
   $SETCOLOR_NORMAL
   echo -n "]"
   echo -ne "\r"
@@ -98,7 +98,7 @@ function echo_failure() {
   $MOVE_TO_COL
   echo -n "["
   $SETCOLOR_FAILURE
-  echo -n $"FAILED"
+  echo -n $" ERR "
   $SETCOLOR_NORMAL
   echo -n "]"
   echo -ne "\r"
@@ -114,7 +114,7 @@ function echo_skipped() {
   $MOVE_TO_COL
   echo -n "["
   $SETCOLOR_SKIPPED
-  echo -n $"SKIPPED"
+  echo -n $" SKIP"
   $SETCOLOR_NORMAL
   echo -n "]"
   echo -ne "\r"
@@ -178,23 +178,6 @@ function check_user_privilege() {
 }
 
 ###############################################################################
-# Check if OS is CentOS or RHEL
-###############################################################################
-function check_os_type() {
-  # Get the version and convert to lowercase
-  ver=`rpm -q --whatprovides /etc/redhat-release | tr "[:upper:]" "[:lower:]"`
-  printn "Checking OS type... "
-  echo "DBG: ver=$ver" >> $LOG
-  if [[ $ver == *"centos"* || $ver == *"redhat"* ]]
-  then
-    echo_success
-  else
-    echo_failure
-  fi
-  echo
-}
-
-###############################################################################
 # Check if OS is release 7.x
 ###############################################################################
 function check_os_version() {
@@ -230,28 +213,54 @@ set_https_proxy() {
 }
 
 ###############################################################################
-# Install the yum package. Exists gracefully if package already exists
-# param: packageName
+# Install the yum packages defined in yum_requirements.txt when 'yum'
+# is available on the OS.
+# Exits gracefully if package already exists
 ###############################################################################
 yum_install() {
-  IFS=$'\n'
-  for i in $(cat yum_requirements.txt)
-  do
-    unset IFS
-    printn "Installing $i..."
-    yum -y install "$i" >> $LOG 2>&1
-    check_retcode $?
-  done
+    if hash yum 2>/dev/null; then
+        IFS=$'\n'
+        for i in $(cat yum_requirements.txt)
+        do
+            unset IFS
+            printn "Installing $i..."
+            yum -y install "$i" >> $LOG 2>&1
+            check_retcode $?
+        done
+    fi
 }
 
 ###############################################################################
-# Install a pip module. Will exit gracefully if module already exists
-# param: module
+# Install the apt packages defined in apt_requirements.txt when 'apt'
+# is available on the OS.
+# Exits gracefully if package already exists
+###############################################################################
+apt_install() {
+    if hash apt 2>/dev/null; then
+        IFS=$'\n'
+        for i in $(cat apt_requirements.txt)
+        do
+            unset IFS
+            printn "Installing $i..."
+            apt -y install "$i" >> $LOG 2>&1
+            check_retcode $?
+        done
+    fi
+}
+
+###############################################################################
+# Install the pip modules defined in pip_requirements.txt.
+# Exits gracefully if module already exists
 ###############################################################################
 pip_install() {
-  printn "Installing pip packages"
-  pip install -r pip_requirements.txt $1 >> $LOG 2>&1
-  check_retcode $?
+    IFS=$'\n'
+    for i in $(cat pip_requirements.txt)
+    do
+        unset IFS
+        printn "Installing $i..."
+        pip install "$i" >> $LOG 2>&1
+        check_retcode $?
+    done
 }
 
 ###############################################################################
@@ -279,17 +288,16 @@ function main() {
     exit 1
   fi
 
-  # Metro supports only RHEL/CentOS 7.x
-  check_os_type;
-  check_os_version;
-
   # set HTTP_PROXY
   set_https_proxy
 
   # yum packages
   yum_install
 
-  #Install pip packages through modules specified in text file and exit gracefully
+  # apt packages
+  apt_install
+
+  # pip packages
   pip_install
 
   # Check for any failures and print appropriate message
