@@ -217,7 +217,7 @@ set_https_proxy() {
   printn "Setting HTTP_PROXY from /etc/yum.conf... "
   # The ^proxy is to skip any commened proxy config line
   grep_out=`grep ^proxy /etc/yum.conf`
-  if [ -z $grep_out ]
+  if [ -z "$grep_out" ]
   then
     echo_skipped
   else
