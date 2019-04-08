@@ -59,11 +59,10 @@ The AWS bare-metal server does not support bridge interfaces, PCI passthrough, o
 ## 5. Configure Components
 Configuring components for AWS is similar to configuring for other server types. See [CUSTOMIZE.md](CUSTOMIZE.md) for details on standard deployments. The configuration files for AWS deployments require a few additional specifications.
 ### credentials.yml
-AWS access can be specified as `aws_access_key` and secret keys can be specified as `aws_secret_key`. If AWS access is not specified, values will be taken from the environment variables `AWS_ACCESS_KEY` and `AWS_SECRET_KEY`.
+AWS access can be specified as `aws_access_key` and secret keys can be specified as `aws_secret_key`. If AWS access is not specified, values are taken from the environment variables `AWS_ACCESS_KEY` and `AWS_SECRET_KEY`.
 
-### deployment
-#### For Components Other than VSC
-Set `target_server_type` to "aws".
+### vsds.yml and vstats.yml
+For components other than VSC, set `target_server_type` to "aws".
 
 AWS requires that the following fields be specified for all components, except VSC.
 
@@ -73,36 +72,36 @@ AWS requires that the following fields be specified for all components, except V
 - aws_key_name: The name of the key pair used for access to the component
 - aws_mgmt_eni/aws_data_eni/aws_access_eni: The elastic network interface identifiers from the deployed VPC for each required subnet for the component.
 
-#### For VSC Only
+### vscs.yml
 VSC is not supported as a direct AWS component, but it can be deployed as a bare-metal server by specifying several fields in `vscs.yml` as shown below.
 
 Set `target_server_type` to "kvm" and `target_server` to the address(es) of the bare-metal host(s).
 
 To support routed network connectivity, specify the following fields.  
 - `internal_mgmt_ip`: The ip address to be assigned to the management interfaces on the VSC itself. This internal address can be NATed to the real address of the bare-metal host using iptables rules.
-- `mgmt_routed_network_name`: The name of the libvirt routed network defined on the bare-metal host to support the management interface of the VSC.
-- `data_routed_network_name`: The name of the libvirt routed network defined on the bare-metal host to support the data interface of the VSC.
 - `internal_ctrl_ip`: The ip address to be assigned to the data interfaces on the VSC itself. This internal address can be NATed to the real address of the bare-metal host using iptables rules.
-- `internal_data_gateway_ip`: The ip address of the data network gateway for the VSC. This ip address is used for VSC to connect to NSG and other components via static route addition on VSC
+- `internal_data_gateway_ip`: The ip address of the data network gateway for the VSC. This ip address is used for VSC to connect to NSG and other components via static route addition on VSC  
+### nsgv_bootstrap.yml
+Bootstrapping of NSGvs deployed to AWS is supported through the normal bootstrapping process.  See [NSGV_BOOTSTRAP.md](NSGV_BOOTSTRAP.md) for details.
 
-#### Alternative Specification for NSGv Only Deployments
-If you'd like to deploy only NSGv (no other components), then MetroÆ can optionally provision a suitable VPC.  You will need to configure the nsgvs.yml file in your deployments subdirectory. For the automatic creation of a test VPC on AWS to host your NSGv, the following parameters must be provided in nsgvs.yml for each NSGv:
+### Alternative Specification for NSGv Only Deployments
+If you'd like to deploy only NSGv (no other components), then MetroÆ can optionally provision a suitable VPC.  You will need to configure `nsgvs.yml` in your deployments subdirectory. For the automatic creation of a test VPC on AWS to host your NSGv, the following parameters must be provided in `nsgvs.yml` for each NSGv:
 
 - provision_vpc_cidr
 - provision_vpc_nsg_wan_subnet_cidr
 - provision_vpc_nsg_lan_subnet_cidr
 - provision_vpc_private_subnet_cidr
 
-The CIDRs for the VPC, WAN interface, LAN interface and private subnet must be specified. When provisioning a VPC in this way, the elastic network interface identifiers `aws_data_eni` and `aws_access_eni` for the NSGv do not need to be specified as they are discovered from the created VPC. In order to bootstrap the NSGv, specify the bootstrap method as `zfb_aws`; this method assumes that a VSD is fully configured and also requires the NSGv template to be created, with the template id included in build_vars.yml
+The CIDRs for the VPC, WAN interface, LAN interface and private subnet must be specified. When provisioning a VPC in this way, the elastic network interface identifiers `aws_data_eni` and `aws_access_eni` for the NSGv do not need to be specified as they are discovered from the created VPC.
 
 ## 6. Deploy Components
 After you have set up the environment and configured your components, you can use MetroÆ to deploy your components with a single command.
 
-    ./metroae install_everything
+    metroae install_everything
 
 Alternatively, you can deploy individual components or perform individual tasks such as predeploy, deploy and postdeploy. See [DEPLOY.md](DEPLOY.md) for details.
 ## Questions, Feedback, and Contributing  
-Ask questions and get support via the [forums](https://devops.nuagenetworks.net/forums/) on the [MetroÆ site](https://devops.nuagenetworks.net/).  
+Ask questions and get support via the [forum](https://devops.nuagenetworks.net/forums/) on the [MetroÆ site](https://devops.nuagenetworks.net/).  
 You may also contact us directly.  
   Outside Nokia: [devops@nuagenetworks.net](mailto:deveops@nuagenetworks.net "send email to nuage-metro project")  
   Internal Nokia: [nuage-metro-interest@list.nokia.com](mailto:nuage-metro-interest@list.nokia.com "send email to nuage-metro project")

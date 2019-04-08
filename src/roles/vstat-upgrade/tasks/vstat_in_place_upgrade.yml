@@ -6,22 +6,21 @@
     vsd_hostname: "{{ vsd_fqdn }}"
   run_once: true
 
-- name: Disable shard allocation
-  uri:
-    url: "{{ disable_shard_url }}"
-    method: PUT
-    headers:
-      Content-Type: "application/json"
-    body: "{{ lookup('file', 'disable_shard.json') }}"
-    body_format: json
-    timeout: 300
-  run_once: true
-  when: vstat_sa_or_ha | match('ha')
+- block:
 
-- name: Perform sync flush
-  uri:
-    url: "{{ sync_flush_url }}"
-    method: POST
+  - name: Disable shard allocation
+    uri:
+      url: "{{ disable_shard_url }}"
+      method: PUT
+      headers:
+        Content-Type: "application/json"
+      body: "{{ lookup('file', 'disable_shard.json') }}"
+      body_format: json
+      timeout: 300
+
+  - name: Perform sync flush
+    command: "curl -XPOST 'localhost:9200/_flush/synced?pretty'"
+
   run_once: true
   when: vstat_sa_or_ha | match('ha')
 
@@ -49,14 +48,15 @@
       run_once: true
 
     - name: Check ES Status
-      fail: msg="Elasticsearch upgrade failed"
-      when: es_status.json.status == 'red'
+      fail: msg="Elasticsearch upgrade failed, status is not green"
+      when: es_status.json.status != 'green'
+
+    - name: Check ES Unassigned Shards
+      fail: msg="Elasticsearch upgrade failed, unassigned_shards != 0"
+      when: es_status.json.status != 'green'
 
     - name: Execute VSTAT standalone script after status turns green
       import_tasks: execute_sa_script.yml
-      when:
-        - es_status.json.status == 'green'
-        - es_status.json.unassigned_shards == 0
       run_once: true
 
   when: vstat_sa_or_ha | match('sa')
