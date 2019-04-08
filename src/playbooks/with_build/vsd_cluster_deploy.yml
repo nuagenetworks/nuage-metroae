@@ -35,6 +35,8 @@
       file:
         path: /tmp/vsdback
         state: directory
+      when:
+        - vsd_cluster | default(false)
 
 - hosts: vsd_ha_node1
   become: yes
@@ -47,6 +49,8 @@
         mode: pull
         rsync_opts:
           - "--omit-dir-times"
+      when:
+        - vsd_cluster | default(false)
 
 - hosts: vsd_ha_standby1
   become: yes
@@ -57,6 +61,8 @@
         dest: /opt/vsd/data/
         src: /tmp/vsdback/
         mode: push
+      when:
+        - vsd_cluster | default(false)
 
 - hosts: standby_cluster
   gather_facts: no
@@ -64,6 +70,8 @@
     - name: Set cluster flag
       set_fact:
         install_cluster: true
+      when:
+        - vsd_cluster | default(false)
   roles:
     - vsd-deploy
 
