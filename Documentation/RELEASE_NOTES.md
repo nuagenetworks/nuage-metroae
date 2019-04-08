@@ -7,3 +7,4 @@
 * Move internal IP fields out of AWS section of VSC schema (METROAE-961)
 * Force VSD upgrade ordering (METROAE-966)
 * Fix encrypt credentials encoding error (METROAE-963)
+* Fix fact that VMware error is masked by ignore_errors in vsd-destroy (METROAE-813)
