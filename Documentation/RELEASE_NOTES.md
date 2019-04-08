@@ -5,3 +5,4 @@
 * Fix static routes so they are applied to VSC (METROAE-953)
 * Handle spaces in the yum.conf proxy setting in metro-setup.sh
 * Fix nsgv-postdeploy to check proper bootsttrap status (METROAE-959)
+* Fix encrypt credentials encoding error (METROAE-963)
