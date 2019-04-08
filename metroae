@@ -95,7 +95,7 @@ S3_SECRET="S3X7R9tmSAF5tCU2Ha8uxkthBxg4rBAjx/2DyTn7"
 CONTAINER_TAR_FILE=metroaecontainer.tar
 S3_BUCKET="nuage-devops"
 TEMPORARY_DIRECTORY=/tmp/
-
+INSTALL_FOLDER=/opt/metroae
 if [ -z $SCRIPT_LOG_FILE ]
 then
     SCRIPT_LOG_FILE=/opt/metroae/metroae.log
@@ -652,7 +652,7 @@ function deployment_help {
 }
 
 # We just use the old version to parse the options
-function deployment_start {
+function deployment_main {
 
     set +e
 
@@ -827,9 +827,28 @@ config_run() {
 
 config_setup() {
     echo "Setup MetroÆ container..."
-    set +e
 
-    groupadd docker
+    if [[ ! -d $INSTALL_FOLDER ]]; then
+        mkdir -p $INSTALL_FOLDER
+    fi
+    if [[ ! -f $SETUP_FILE ]]; then
+        touch $SETUP_FILE
+        chmod 0774 root:root $SETUP_FILE
+    fi
+    if [[ ! -f $SCRIPT_LOG_FILE ]]; then
+        touch $SCRIPT_LOG_FILE
+        chmod 0774 root:root $SCRIPT_LOG_FILE
+    fi
+
+
+    docker_group=`getent group docker`
+    if [ -z $docker_group ]
+    then
+        groupadd docker
+    fi
+    chown -R root:docker $INSTALL_FOLDER
+
+    set +e
 
     get_container_id
     get_running_container_id
@@ -956,7 +975,11 @@ config_help() {
 }
 
 # TODO: replace start with the menu
-function config_start {
+function config_main {
+
+    if [[ -f $SETUP_FILE ]]; then
+        config_setup
+    fi
 
     check_docker
 
@@ -1161,9 +1184,27 @@ copy_ssh_id() {
 container_setup() {
     echo "Setup MetroÆ container..."
 
-    set +e
+    if [[ ! -d $INSTALL_FOLDER ]]; then
+        mkdir -p $INSTALL_FOLDER
+    fi
+    if [[ ! -f $SETUP_FILE ]]; then
+        touch $SETUP_FILE
+        chmod 0774 root:root $SETUP_FILE
+    fi
+    if [[ ! -f $SCRIPT_LOG_FILE ]]; then
+        touch $SCRIPT_LOG_FILE
+        chmod 0774 root:root $SCRIPT_LOG_FILE
+    fi
 
-    groupadd docker
+
+    docker_group=`getent group docker`
+    if [ -z $docker_group ]
+    then
+        groupadd docker
+    fi
+    chown -R root:docker $INSTALL_FOLDER
+
+    set +e
 
     get_container_id
     get_running_container_id
@@ -1409,7 +1450,12 @@ container_help() {
 }
 
 # TODO: replace start with the menu
-function container_start {
+function container_main {
+
+
+    if [[ -f $SETUP_FILE ]]; then
+        container_setup
+    fi
 
     # Preset the environment variables
 
@@ -1629,19 +1675,19 @@ parse_menu_args "$@"
 
 case ${MATCH_MENU[2]} in
     config)
-    config_start ${MATCH_MENU[3]} "${EXTRA_ARGS[@]}"
+    config_main ${MATCH_MENU[3]} "${EXTRA_ARGS[@]}"
     exit 0
     ;;
     playbook)
-    deployment_start ${MATCH_MENU[3]} "${EXTRA_ARGS[@]}"
+    deployment_main ${MATCH_MENU[3]} "${EXTRA_ARGS[@]}"
     exit 0
     ;;
     container)
-    container_start ${MATCH_MENU[3]} "${EXTRA_ARGS[@]}"
+    container_main ${MATCH_MENU[3]} "${EXTRA_ARGS[@]}"
     exit 0
     ;;
     *)
-    deployment_start "$@"
+    deployment_main "$@"
     exit 0
     ;;
 esac
