@@ -124,43 +124,15 @@ vsc_ha_node2
 
 {% if vstats is defined and vstats %}
 
-{% if vstats|length == 1 %}
+{% for vstat in vstats %}
+[vstat_node{{ loop.index }}]
+{{ vstat.hostname }} {% if 'mgmt_bridge' in vstat %} mgmt_bridge={{ vstat.mgmt_bridge }}{% endif %}
+{%endfor%}
 
-[vstat_node1]
-{{ vstats[0].hostname }} {% if 'mgmt_bridge' in vstats[0] %} mgmt_bridge={{ vstats[0].mgmt_bridge }}{% endif %}
-
+{% for vstat in vstats %}
 [vstats:children]
-vstat_node1
-
-{% elif vstats|length == 2 %}
-
-[vstat_node1]
-{{ vstats[0].hostname }} {% if 'mgmt_bridge' in vstats[0] %} mgmt_bridge={{ vstats[0].mgmt_bridge }}{% endif %}
-
-[vstat_node2]
-{{ vstats[1].hostname }} {% if 'mgmt_bridge' in vstats[1] %} mgmt_bridge={{ vstats[1].mgmt_bridge }}{% endif %}
-
-[vstats:children]
-vstat_node1
-vstat_node2
-
-{% else %}
-
-[vstat_node1]
-{{ vstats[0].hostname }} {% if 'mgmt_bridge' in vstats[0] %} mgmt_bridge={{ vstats[0].mgmt_bridge }}{% endif %}
-
-[vstat_node2]
-{{ vstats[1].hostname }} {% if 'mgmt_bridge' in vstats[1] %} mgmt_bridge={{ vstats[1].mgmt_bridge }}{% endif %}
-
-[vstat_node3]
-{{ vstats[2].hostname }} {% if 'mgmt_bridge' in vstats[2] %} mgmt_bridge={{ vstats[2].mgmt_bridge }}{% endif %}
-
-[vstats:children]
-vstat_node1
-vstat_node2
-vstat_node3
-
-{% endif %}
+vstats_node{{ loop.index }}
+{%endfor%}
 
 {% endif %}
 
@@ -186,7 +158,7 @@ vstat_node3
 {{ ci.hostname }}
 {% endfor %}
 {% endif %}
- 
+
 {% if stcvs is defined and stcvs %}
 [stcvs]
 {% for stcv in stcvs %}
