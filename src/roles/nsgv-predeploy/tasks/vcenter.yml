@@ -51,12 +51,24 @@
 
     when: bootstrap_method == 'zfb_metro'
 
-  - name: Configure vCenter path and ovftool command
-    include_role:
-      name: common
-      tasks_from: configure-ovftool
-    vars:
-      management_network: "OVS Management"
+  - name: Configure vCenter path
+    set_fact:
+      vcenter_path: "{{ target_server }}/{{ vcenter.datacenter }}/host/{{ vcenter.cluster }}{{ (vcenter.host_reference != 'NONE') | ternary ('/{{ vcenter.host_reference | urlencode }}', '') }}{{ (vcenter.resource_pool != 'NONE') | ternary ('/Resources/{{ vcenter.resource_pool | urlencode }}', '') }}"
+
+  - name: Configure ovftool command
+    set_fact:
+      ovftool_command: >-
+        {{ vcenter_global.ovftool }}
+        --acceptAllEulas
+        --noSSLVerify
+        --powerOn
+        --machineOutput
+        -dm=thin
+        -ds={{ vcenter.datastore }}
+        -n={{ vm_name }}
+        --net:"OVS Management={{ access_bridge }}"
+        --net:"OVS DataPath={{ data_bridge }}"
+        "{{ ova_path }}/{{ ova_file_name }}"
 
   - name: Deploy NSGV image on vCenter (Can take several minutes)
     connection: local
