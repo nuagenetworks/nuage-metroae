@@ -10,7 +10,7 @@ Use this procedure when you have previously deployed VSP components and would li
 
 ## 1. Check Existing Deployment
 
-Ensure that all components you wish to be destroyed are specified under your deployment.  See [CUSTOMIZE.md](Documentation/CUSTOMIZE.md) for details about specifying components in a deployment.  If you have already used a deployment configuration to do a deploy or upgrade, the existing configuration does not need to be changed to destroy said deployment.
+Ensure that all components you wish to be destroyed are specified under your deployment.  See [CUSTOMIZE.md](CUSTOMIZE.md) for details about specifying components in a deployment.  If you have already used a deployment configuration to do a deploy or upgrade, the existing configuration does not need to be changed to destroy said deployment.
 
 ## 2. Remove Components
 
