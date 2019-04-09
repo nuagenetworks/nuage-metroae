@@ -516,6 +516,29 @@ docker_status() {
 }
 
 check_for_user_group() {
+    set +e
+    docker_group=`getent group docker`
+    set -e
+    if [ -z $docker_group ]
+    then
+        echo "Adding docker group requires sudo access"
+        sudo groupadd docker
+        sudo chown -R root:docker $INSTALL_FOLDER
+
+        if [[ ! -d $INSTALL_FOLDER ]]; then
+            sudo mkdir -p $INSTALL_FOLDER
+        fi
+        if [[ ! -f $SETUP_FILE ]]; then
+            sudo touch $SETUP_FILE
+            sudo chmod 0774 $SETUP_FILE
+        fi
+        if [[ ! -f $SCRIPT_LOG_FILE ]]; then
+            sudo touch $SCRIPT_LOG_FILE
+            sudo chmod 0774 $SCRIPT_LOG_FILE
+        fi
+    fi
+
+
     #skip this if the effective user is 0
     uid=`id -u`
     get_host_operating_system
@@ -827,36 +850,9 @@ config_run() {
 
 config_setup() {
 
-    user_name=`whoami`
-    if [[ $user_name != root ]]; then
-        echo "You need to run this script as root!"
-        exit 0
-    fi
-
     echo "Setup MetroÆ container..."
 
-    if [[ ! -d $INSTALL_FOLDER ]]; then
-        mkdir -p $INSTALL_FOLDER
-    fi
-    if [[ ! -f $SETUP_FILE ]]; then
-        touch $SETUP_FILE
-        chmod 0774 $SETUP_FILE
-    fi
-    if [[ ! -f $SCRIPT_LOG_FILE ]]; then
-        touch $SCRIPT_LOG_FILE
-        chmod 0774 $SCRIPT_LOG_FILE
-    fi
-
-
     set +e
-
-    docker_group=`getent group docker`
-    if [ -z $docker_group ]
-    then
-        groupadd docker
-    fi
-    chown -R root:docker $INSTALL_FOLDER
-
 
     get_container_id
     get_running_container_id
@@ -1122,7 +1118,7 @@ container_run() {
 
     if [ -z $IMAGE_ID ]
     then
-        container_setup
+        pull
         status=$?
         if [ $status -ne 0 ]
         then
@@ -1190,36 +1186,9 @@ copy_ssh_id() {
 }
 
 container_setup() {
-    user_name=`whoami`
-    if [[ $user_name != root ]]; then
-        echo "You need to run this script as root!"
-        exit 0
-    fi
-
     echo "Setup MetroÆ container..."
 
-    if [[ ! -d $INSTALL_FOLDER ]]; then
-        mkdir $INSTALL_FOLDER
-        chmod 0774 $INSTALL_FOLDER
-    fi
-    if [[ ! -f $SETUP_FILE ]]; then
-        touch $SETUP_FILE
-        chmod 0774 $SETUP_FILE
-    fi
-    if [[ ! -f $SCRIPT_LOG_FILE ]]; then
-        touch $SCRIPT_LOG_FILE
-        chmod 0774 $SCRIPT_LOG_FILE
-    fi
-
     set +e
-
-    docker_group=`getent group docker`
-    if [ -z $docker_group ]
-    then
-        groupadd docker
-    fi
-    chown -R root:docker $INSTALL_FOLDER
-
 
     get_container_id
     get_running_container_id
@@ -1467,13 +1436,6 @@ container_help() {
 # TODO: replace start with the menu
 function container_main {
 
-
-    if [[ ! -f $SETUP_FILE ]]; then
-        container_setup
-    fi
-
-    # Preset the environment variables
-
     if [ ! -z $GROUP_CHECK ]
     then
         check_for_user_group $1
@@ -1481,6 +1443,10 @@ function container_main {
         exit 0
     else
         check_for_user_group
+    fi
+
+    if [[ ! -f $SETUP_FILE ]]; then
+        container_setup
     fi
 
     # check docker
