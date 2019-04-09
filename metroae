@@ -168,9 +168,8 @@ check_docker() {
 }
 
 get_host_operating_system() {
-    echo "checking os type" >> $SCRIPT_LOG_FILE
     set +e
-    stat /etc/os-release >> $SCRIPT_LOG_FILE 2>> $SCRIPT_LOG_FILE
+    stat /etc/os-release >> /dev/null 2>> /dev/null
     if [ $? -ne 0 ]
     then
         OS_RELEASE=$NON_LINUX
@@ -523,7 +522,6 @@ check_for_user_group() {
     then
         echo "Adding docker group requires sudo access"
         sudo groupadd docker
-        sudo chown -R root:docker $INSTALL_FOLDER
 
         if [[ ! -d $INSTALL_FOLDER ]]; then
             sudo mkdir -p $INSTALL_FOLDER
@@ -535,6 +533,7 @@ check_for_user_group() {
         if [[ ! -f $SCRIPT_LOG_FILE ]]; then
             sudo touch $SCRIPT_LOG_FILE
             sudo chmod 0774 $SCRIPT_LOG_FILE
+        sudo chown -R root:docker $INSTALL_FOLDER
         fi
     fi
 
