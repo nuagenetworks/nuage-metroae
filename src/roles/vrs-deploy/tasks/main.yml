@@ -66,7 +66,7 @@
     when: skip_vrs_deploy
 
   remote_user: "{{ computer_username | default(target_server_username) }}"
-  become: "{{ 'no' if target_server_username == 'root' else 'yes' }}"
+  become: "{{ 'no' if remote_user == 'root' else 'yes' }}"
   vars:
     ansible_become_pass: "{{ compute_password | default(target_server_password) }}"
 
@@ -164,10 +164,10 @@
 
       when:
         - private_key is defined
-        - certificate is defined 
+        - certificate is defined
         - ca_certificate is defined
 
-    - block:    
+    - block:
       - name: Generate TLS Certificates for VRS
         include_role:
           name: common
@@ -189,7 +189,7 @@
 
       when:
         - private_key is undefined
-        - certificate is undefined 
+        - certificate is undefined
         - ca_certificate is undefined
 
     - name: Update client key path in {{ openvswitch_file }} file
@@ -229,7 +229,7 @@
   - pause: seconds=20
 
   remote_user: "{{ compute_username | default(target_server_username) }}"
-  become: "{{ 'no' if target_server_username == 'root' else 'yes' }}"
+  become: "{{ 'no' if remote_user == 'root' else 'yes' }}"
   vars:
     ansible_become_pass: "{{ compute_password | default(target_server_password) }}"
   when: not skip_vrs_deploy
