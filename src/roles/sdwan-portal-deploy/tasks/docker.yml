@@ -40,6 +40,26 @@
     state: started
     enabled: yes
 
+- name: Create Docker env variables directory
+  file: path=/etc/systemd/system/docker.service.d state=directory
+  when: not yum_proxy | match('NONE')
+
+- name: Configure Docker proxy
+  template:
+    src: http-proxy.j2
+    backup: no
+    dest: /etc/systemd/system/docker.service.d/http-proxy.conf
+    owner: root
+    group: root
+  when: not yum_proxy | match('NONE')
+
+- name: Reload Docker daemon
+  systemd:
+    daemon_reload: yes
+    state: restarted
+    name: docker
+  when: not yum_proxy | match('NONE')
+
 - name: Copy Docker-Compose to Portal host
   copy:
    src: docker-compose

@@ -12,6 +12,16 @@ backend backend_web
         option httpchk HEAD /vnsportal/health
         balance roundrobin
         cookie SERVERID insert indirect nocache
+{% if inventory_hostname == first_cluster_node_to_install %}
         server s0 app_instance1:80 check cookie s0
         server s1 {{ portal2_ip }}:8080 check cookie s1
         server s2 {{ portal3_ip }}:8080 check cookie s2
+{% elif inventory_hostname == second_cluster_node_to_install %}
+        server s0 {{ portal1_ip }}:8080 check cookie s0
+        server s1 app_instance1:80 check cookie s1
+        server s2 {{ portal3_ip }}:8080 check cookie s2
+{% else %}
+        server s0 {{ portal1_ip }}:8080 check cookie s0
+        server s1 {{ portal2_ip }}:8080 check cookie s1
+        server s2 app_instance1:80 check cookie s2
+{% endif %}

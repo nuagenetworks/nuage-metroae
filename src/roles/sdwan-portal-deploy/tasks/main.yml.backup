@@ -24,17 +24,16 @@
         - "Skipping Docker install because it is already installed"
         - "*************************************************"
     when: docker_installed.rc == 0
-  remote_user: "{{ portal_default_username }}"
-
-- name: Save the Portal version
-  set_fact:
-    portal_version: "{{ portal_file_name | regex_replace('^.*nuage-portal-container-(.*).tar.gz$','\\1') }}"
-  when: portal_file_name is defined
-
-- block: 
+  
+  - name: Save the Portal version
+    set_fact:
+      portal_version: "{{ portal_file_name | regex_replace('^.*nuage-portal-container-(.*).tar.gz$','\\1') }}"
+    when: portal_file_name is defined
+  
   - name: Check if Portal images are loaded
     shell: "docker images | grep vnsportal-tomcat | awk '{print $2}'"
     register: tomcat_imported_image
+    ignore_errors: yes
   
   - name: Check if Portal containers are running
     shell: "docker ps -a | grep vnsportal-tomcat | egrep -o '[0-9]\\.[0-9]\\.[0-9]-[0-9]*'"
@@ -71,46 +70,8 @@
         - "Skipping, Portal is already running"
         - "*************************************************"
     when: tomcat_running
-  remote_user: "{{ portal_default_username }}"
-  
-- block:
-   - name: Display if installing from Docker hub
-     debug:
-       msg:
-         - "***********************************************************"
-         - "Installing Portal using Docker hub. Start up takes a while."
-         - "***********************************************************"
-   
-   - name: Execute tasks for Portal deploy
-     import_tasks: deploy.yml
-     when: not tomcat_running
-   
-  when: portal_file_name is not defined
-  remote_user: "{{ portal_default_username }}"
-
-- block:  
-  - name: Display if installing from a tarball
-    debug:
-      msg:
-        - "*************************************************"
-        - "Installing Portal using tar.gz package"
-        - "*************************************************"
-
-  - name: Copy image to Portal host
-    copy:
-      src: "{{ portal_path }}/{{ portal_file_name }}"
-      dest: /opt/
-      owner: root
-      group: root
-    when: not tomcat_loaded
-
-  - name: Load Portal Docker containers
-    command: docker load -i /opt/{{ portal_file_name }}
-    when: not tomcat_loaded
   
   - name: Execute tasks for Portal deploy
     import_tasks: deploy.yml
-    when: not tomcat_running
-
-  when: portal_file_name is defined
+    when: not tomcat_running and tomcat_loaded
   remote_user: "{{ portal_default_username }}"

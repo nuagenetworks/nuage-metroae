@@ -5,15 +5,19 @@
 component_type: portal
 target_server_type: {{ item.target_server_type | default('kvm') }}
 hostname: {{ item.hostname }}
-
 target_server: {{ item.target_server }}
 
+{% if item.vmname is defined %}
 vmname: {{ item.vmname }}
+{% else %}
+vmname: {{ item.hostname }}
+{% endif %}
 
 {% if item.target_server_type | match("kvm") %}
 {% if qcow2_path is defined %}
 qcow2_path: {{ qcow2_path }}
 {% endif %}
+
 {% if qcow2_file_name is defined %}
 qcow2_file_name: {{ qcow2_file_name }}
 {% endif %}
@@ -29,22 +33,25 @@ mgmt_ip: {{ item.mgmt_ip }}
 mgmt_prefix: {{ item.mgmt_ip_prefix }}
 mgmt_gateway: {{ item.mgmt_gateway }}
 
-{% if item.sdwan_portal_fqdn is defined %}
-sdwan_portal_fqdn: {{ item.sdwan_portal_fqdn }}
+vsd_fqdn: {{ vsd_fqdn_global }}
+
+vstat_fqdn: {{ vstat_fqdn_global }}
+
+{% if item.cpuset is defined %}
+cpuset:
+{% for cpus in item.cpuset %}
+  - {{ cpus }}
+{% endfor %}
 {% endif %}
 
-vsd_auth_username: {{ encrypted.vsd_auth_username }}
-vsd_auth_password: {{ encrypted.vsd_auth_password }}
-vstats_ip: {{ item.vstats_ip }}
-vsd_auth_enterprise: {{ vsd_auth_enterprise | default("csp") }}
 password_reset_email: {{ item.password_reset_email }}
 new_account_email: {{ item.new_account_email }}
 forgot_password_email: {{ item.forgot_password_email }}
 smtp_fqdn: {{ item.smtp_fqdn }}
 smtp_port: {{ item.smtp_port }}
 smtp_secure: {{ item.smtp_secure | default("") }}
-smtp_user: {{ item.smtp_auth_username | default("") }}
-smtp_password: {{ item.smtp_auth_password | default("") }}
+smtp_user: {{ encrypted.smtp_auth_username | default("") }}
+smtp_password: {{ encrypted.smtp_auth_password | default("") }}
 sdwan_portal_secure: {{ item.sdwan_portal_secure | default("false") }}
 
 {% if portal_path is defined %}
@@ -52,4 +59,7 @@ portal_path: {{ portal_path }}
 {% endif %}
 {% if portal_file_name is defined %}
 portal_file_name: {{ portal_file_name }}
+{% endif %}
+{% if item.portal_version is defined %}
+portal_version: {{ item.portal_version }}
 {% endif %}

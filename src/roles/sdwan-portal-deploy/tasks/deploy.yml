@@ -1,18 +1,4 @@
 - block:
-  - name: Copy image to Portal host
-    copy:
-      src: "{{ portal_path }}/{{ portal_file_name }}"
-      dest: /opt/
-      owner: root
-      group: root
-# Add dockerhub
-
-  - name: Load Portal Docker containers
-    command: docker load -i /opt/{{ portal_file_name }}
-  
-  when: not tomcat_loaded
-
-- block:
   - name: Generate Portal environment.properties file
     template: src=environment.properties.j2 backup=no dest=/opt/environment.properties
 
@@ -34,4 +20,3 @@
   - name: Start the standalone Portal instance
     import_tasks: sdwan_portal_sa_start.yml
     when: portal_sa_or_ha | match('sa')
-  when: not tomcat_running
