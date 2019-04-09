@@ -146,10 +146,10 @@
     - block:
       - name: Copy External PKI Certificates
         expect:
-          command: 'scp {{ item }} {{ target_server_username }}@{{ mgmt_ip }}:'
+          command: 'scp {{ item }} {{ compute_username | default(target_server_username) }}@{{ mgmt_ip }}:'
           responses:
             (?i)yes: "yes"
-            (?i)password: "{{ target_server_password }}"
+            (?i)password: "{{ compute_password | default(target_server_password) }}"
           timeout: 720
           with_items:
             - "{{ private_key }}"
@@ -173,11 +173,11 @@
           name: common
           tasks_from: vsd-generate-transfer-certificates
         vars:
-          certificate_password: "{{ target_server_password }}"
+          certificate_password: "{{ compute_password | default(target_server_password) }}"
           certificate_username: vrs-{{ inventory_hostname }}
           commonName: vrs-{{ inventory_hostname }}
           certificate_type: vrs
-          scp_user: "{{ target_server_username }}"
+          scp_user: "{{ compute_username | default(target_server_username) }}"
           scp_location: "{{ client_keys_path }}"
           additional_parameters:  -v {{ inventory_hostname }}
 
