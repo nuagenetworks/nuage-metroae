@@ -65,8 +65,10 @@
         - "*************************************************"
     when: skip_vrs_deploy
 
-  remote_user: "{{ target_server_username }}"
+  remote_user: "{{ computer_username | default(target_server_username) }}"
   become: "{{ 'no' if target_server_username == 'root' else 'yes' }}"
+  vars:
+    ansible_become_pass: "{{ compute_password | default(target_server_password) }}"
 
 - block:
 
@@ -190,6 +192,8 @@
 
   - pause: seconds=20
 
-  remote_user: "{{ target_server_username }}"
+  remote_user: "{{ compute_username | default(target_server_username) }}"
   become: "{{ 'no' if target_server_username == 'root' else 'yes' }}"
+  vars:
+    ansible_become_pass: "{{ compute_password | default(target_server_password) }}"
   when: not skip_vrs_deploy
