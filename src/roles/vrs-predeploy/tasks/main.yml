@@ -1,5 +1,20 @@
 ---
 - block:
+  - name: Clean known_hosts of compute nodes (ignoring errors)
+    known_hosts:
+      name: "{{ mgmt_ip }}"
+      state: absent
+    delegate_to: localhost
+    no_log: True
+    ignore_errors: True
+
+  - name: Wait for Compute Node VM ssh to be ready
+    include_role:
+      name: common
+      tasks_from: wait-for-ssh
+    vars:
+      ssh_host: "{{ mgmt_ip }}"
+      host_username: "{{ compute_username | default(target_server_username) }}"
 
   - name: Pull facts on vrs target {{ inventory_hostname }}
     action: setup
