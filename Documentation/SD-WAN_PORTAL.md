@@ -1,5 +1,5 @@
 # SD-WAN Portal deployment using Metro&#198;
-Metro&#198; now supports the deployment of SD-WAN Portal for Nuage VNS. For more information about SD-WAN Portal and the deployment requirements, please consult the [product documentation](https://nokia.sharepoint.com/sites/vnsportal])
+Metro&#198; now supports the deployment of SD-WAN Portal for Nuage VNS. For more information about SD-WAN Portal and the deployment requirements, please consult the [product documentation](https://nokia.sharepoint.com/sites/vnsportal)
 
 SD-WAN Portal deployment requires a RHEL7/CentOS 7 [image](https://cloud.centos.org/centos/7/images/CentOS-7-x86_64-GenericCloud-1901.qcow2) as well as docker images with the product [software](http://nuage-ps-delivery.lab.llama2.cloud/delivery/nuage-portal/)
 
