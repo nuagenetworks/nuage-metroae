@@ -1,0 +1,62 @@
+heat_template_version: '2014-10-16'
+parameters:
+  vm_name:
+    type: string
+  vsc_image:
+    type: string
+  vsc_flavor:
+    type: string
+  vsc_management_network:
+    type: string
+  vsc_management_subnet:
+    type: string
+  vsc_control_network:
+    type: string
+  vsc_control_subnet:
+    type: string
+  mgmt_ip:
+    type: string
+  control_ip:
+    type: string
+resources:
+  mgmt_port:
+    type: OS::Neutron::Port
+    properties:
+      network_id: {get_param: vsc_management_network}
+      fixed_ips: [{"subnet": {get_param: vsc_management_subnet}, "ip_address": {get_param: mgmt_ip}}]
+{% if openstack_mgmt_port_name is defined %}
+      name: {{ openstack_mgmt_port_name }}
+{% endif %}
+{% if openstack_mgmt_port_security_groups is defined %}
+      security_groups: ["{{ openstack_mgmt_port_security_groups | join('", "') }}"]
+{% endif %}
+
+  control_port:
+    type: OS::Neutron::Port
+    properties:
+      network_id: {get_param: vsc_control_network}
+      fixed_ips: [{"subnet": {get_param: vsc_control_subnet}, "ip_address": {get_param: control_ip}}]
+{% if openstack_control_port_name is defined %}
+      name: {{ openstack_control_port_name }}
+{% endif %}
+{% if openstack_control_port_security_groups is defined %}
+      security_groups: ["{{ openstack_control_port_security_groups | join('", "') }}"]
+{% endif %}
+
+  mycompute:
+    type: OS::Nova::Server
+    properties:
+      name: {get_param: vm_name}
+      flavor: {get_param: vsc_flavor }
+      image: {get_param: vsc_image}
+      networks:
+        - port: {get_resource: mgmt_port}
+        - port: {get_resource: control_port}
+
+outputs:
+  vsc_mgmt_ip:
+    description: mgmt ip assigned to the vsc
+    value: { get_attr: [mycompute, networks, {get_param: vsc_management_network}, 0]}
+  control_ip:
+    description: control ip assigned to the vsc
+    value: { get_attr: [mycompute, networks, {get_param: vsc_control_network}, 0]}

@@ -1,0 +1,17 @@
+- name: Configure vCenter path
+  set_fact:
+    vcenter_path: "{{ target_server }}/{{ vcenter.datacenter }}/host/{{ vcenter.cluster }}{{ (vcenter.host_reference != 'NONE') | ternary ('/{{ vcenter.host_reference | urlencode }}', '') }}{{ (vcenter.resource_pool != 'NONE') | ternary ('/Resources/{{ vcenter.resource_pool | urlencode }}', '') }}"
+
+- name: Configure ovftool command
+  set_fact:
+    ovftool_command: >-
+      {{ vcenter_global.ovftool }}
+      --acceptAllEulas
+      --noSSLVerify
+      --powerOn
+      --machineOutput
+      -dm=thin
+      -ds={{ vcenter.datastore }}
+      -n={{ vm_name }}
+      --net:"{{ management_network }}={{ mgmt_bridge }}"
+      "{{ ova_path }}/{{ ova_file_name }}"

@@ -1,11 +1,9 @@
-- name: Set nsgvs_check
-  set_fact: nsgvs_check={{nsgvs is defined}}
-
-- name: Assign empty list to nsgvs if it is undefined
-  set_fact: nsgvs= default([])
-  when: not nsgvs_check
-
 - block:
+
+  - name: Verify that OpenFlow is set to use TLS (required for NSGv)
+    assert:
+      that: openflow_tls | default(true)
+      msg: "openflow_tls is False. It must be undefined (default) or set to True in common.yml to support NSGv. Quitting."
 
   - block:
 
@@ -38,4 +36,4 @@
     template: src=nsgv.j2 backup=no dest={{ inventory_dir }}/host_vars/{{ item.hostname }}
     with_items: "{{ nsgvs }}"
 
-  when: nsgvs_check
+  when: nsgvs is defined and nsgvs

@@ -1,7 +1,7 @@
 # Nuage Networks Metro Automation Engine (MetroÆ)
 (4 minute read)
 
-Version: 3.0.1
+Version: 3.2.0
 
 MetroÆ is an automation engine that deploys and upgrades Nuage Networks components. You specify the individual details of your target platform, then let MetroÆ install, upgrade, destroy, or health-check the environment for you.
 
@@ -10,7 +10,7 @@ MetroÆ is an automation engine that deploys and upgrades Nuage Networks compone
 The procedures have changed substantially in version 3.0 to improve usability.
 If you have used previous versions of MetroÆ, please see [RELEASE_NOTES.md](Documentation/RELEASE_NOTES.md) for details.
 
-All MetroÆ operations, including Docker container management, use the command `metroae`.
+All MetroÆ operations, including Docker container management, use a command `metroae` for consistent usage and syntax. Please see [DOCKER.md](Documentation/DOCKER.md) for details on configuration and use of the container version of MetroÆ.
 
 ## Supported Components for Deployment
 MetroÆ supports deployment of the following components as VMs on the target server. These are the same target server types that are supported on the VSP platform.
@@ -46,26 +46,13 @@ VSTAT (stats-in) | X | X | X | X
 VSC | X | X | X | X
 VCIN | X |  | X |
 
-## Unsupported Components/Operations
-The following components/operations are not supported in the beta release.
-* dns
-* gmv
-* mesos
-* nsgv bootstrap (install is supported)
-* stcv
-* vsr
-* vrs-vm
-* osc-integration
-* AWS-based VSTAT upgrade
-* upgrade of VRS through VCIN
-
 ## Main Steps for Using MetroÆ
 
 1. [Setup](Documentation/SETUP.md) the MetroÆ host. Setup prepares the host for running MetroÆ, including retrieving the repository, installing prerequisite packages and setting up SSH access. You also have the option of installing MetroÆ in a container, and then working with it via CLI or the GUI.
 
-2. [Customize](Documentation/CUSTOMIZATION.md) your deployment to match your network topology, and describe your Nuage Networks specifics.
+2. [Customize](Documentation/CUSTOMIZE.md) your deployment to match your network topology, and describe your Nuage Networks specifics.
 
-3. [Deploy](Documentation/DEPLOY.md) new components, [upgrade](Documentation/UPGRADE.md) existing components, or run a health check on your system.
+3. [Deploy](Documentation/DEPLOY.md) new components, upgrade a [standalone](Documentation/UPGRADE_SA.md) or [clustered](Documentation/UPGRADE_HA.md) deployment, or run a health check on your system.
 
 4. If things did not work out as expected, [destroy](Documentation/DESTROY.md) your environment and redeploy.
 

@@ -6,7 +6,11 @@
 
 user_ssh_pub_key: {{ user_ssh_pub_key | default('~/.ssh/id_rsa.pub') }}
 
+xmpp_tls: {{ xmpp_tls | default(True) }}
+openflow_tls: {{ openflow_tls | default(True) }}
+
 vsd_fallocate_size_gb: {{ vsd_fallocate_size_gb | default(285) }}
+vsc_fallocate_size_gb: {{ vsc_fallocate_size_gb | default(0) }}
 vsd_ram: "{{ vsd_ram | default(24) }}"
 vsc_ram: "{{ vsc_ram | default(4) }}"
 vstat_ram: "{{ vstat_ram | default(16) }}"
@@ -44,31 +48,7 @@ timezone: {{ timezone | default('US/Pacific') }}
 yum_proxy: "{{ yum_proxy | default('NONE') }}"
 yum_update: {{ yum_update | default(True) }}
 
-{% if os_auth is defined %}
-os_auth:
-  username: {{ os_auth.username | default('NONE') }}
-  password: {{ os_auth.password | default('NONE') }}
-  project_name: {{ os_auth.project_name | default('NONE') }}
-  auth_url: "{{ os_auth.auth_url | default('NONE') }}"
-{% endif %}
-
 vcenter_global:
-{% if encrypted.vcenter_username is defined %}
-  username: {{ encrypted.vcenter_username | indent(8, False) }}
-{% endif %}
-{% if encrypted.vcenter_password is defined %}
-  password: {{ encrypted.vcenter_password | indent(8, False) }}
-{% endif %}
-{% if vcenter_datacenter is defined %}
-  datacenter: {{ vcenter_datacenter }}
-{% endif %}
-{% if vcenter_cluster is defined %}
-  cluster: {{ vcenter_cluster }}
-{% endif %}
-{% if vcenter_datastore is defined %}
-  datastore: {{ vcenter_datastore }}
-{% endif %}
-  resource_pool: {{ vcenter_resource_pool | default('NONE') }}
   ovftool: {{ vcenter_ovftool | default('/usr/bin/ovftool') }}
 
 {% if nuage_software_version is defined %}
@@ -195,6 +175,14 @@ aws_access_key: {{ encrypted.aws_access_key | indent(8, False) }}
 aws_secret_key: {{ encrypted.aws_secret_key | indent(8, False) }}
 {% endif %}
 
+{% if encrypted.openstack_username is defined %}
+openstack_auth:
+  username: {{ encrypted.openstack_username | indent(8, False) }}
+  password: {{ encrypted.openstack_password | indent(8, False) }}
+  project_name: {{ openstack_project_name }}
+  auth_url: {{ openstack_auth_url }}
+{% endif %}
+
 {% set zfb_nsg_list = nsgvs | selectattr("bootstrap_method", "equalto", "zfb_metro") | list %}
 
 {% if zfb_nsg_list | length > 0 %}
@@ -207,4 +195,10 @@ zfb_proxy_user:
     email: {{ proxy_user_email }}
     password: {{ encrypted.proxy_user_password | indent(8, False) }}
 
+{% endif %}
+
+{% if stcvs is defined and stcvs | length > 0 %}
+stcv_image_path: {{ stcv_image_path }}
+stcv_image_filename: {{ stcv_image_filename }}
+spirent_license_server: {{ spirent_license_server }}
 {% endif %}

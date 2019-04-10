@@ -1,25 +1,36 @@
-- block: 
+- block:
+
   - name: Create and transfer certs
-    include_role: 
+    include_role:
       name: common
       tasks_from: vsd-generate-transfer-certificates
-    vars: 
+    vars:
       certificate_password: "{{ vsc_default_password }}"
       certificate_username: "{{ xmpp.username }}"
-      commonName: "{{ xmpp.username }}" 
+      commonName: "{{ xmpp.username }}"
       certificate_type: server
       scp_user: "{{ vsc_default_username }}"
       scp_location: /
       additional_parameters:  -d {{ inventory_hostname }}
-    
-  - name: Configure VSC for secure communication
+
+  - name: Configure the security profile on the VSC
     sros_config:
       lines:
           - configure system security tls-profile vsc-tls-profile own-key cf1:\{{ xmpp.username }}-Key.pem
           - configure system security tls-profile vsc-tls-profile own-certificate cf1:\{{ xmpp.username }}.pem
           - configure system security tls-profile vsc-tls-profile ca-certificate cf1:\{{ xmpp.username }}-CA.pem
           - configure system security tls-profile vsc-tls-profile no shutdown
-          - configure vswitch-controller open-flow tls-profile vsc-tls-profile
+          - admin save
+      provider: "{{ vsc_creds }}"
+    delegate_to: localhost
+
+  when: xmpp_tls or openflow_tls
+
+- block:
+
+  - name: Configure XMPP to use the security profile
+    sros_config:
+      lines:
           - configure vswitch-controller xmpp tls-profile vsc-tls-profile
           - configure system time ntp ntp-server
           - admin save
@@ -33,11 +44,21 @@
       provider: "{{ vsc_creds }}"
     register: xmpp_status
     until: xmpp_status.stdout[0].find('Functional') != -1
-    retries: 6
+    retries: 30
     delay: 10
     delegate_to: localhost
-    
+
   - name: Print output of 'show vswitch-controller xmpp-server' when verbosity >= 1
     debug: var=xmpp_status verbosity=1
-  when: secure_communication
 
+  when: xmpp_tls
+
+- name: Configure OpenFlow to use the security profile
+  sros_config:
+    lines:
+        - configure vswitch-controller open-flow tls-profile vsc-tls-profile
+        - configure system time ntp ntp-server
+        - admin save
+    provider: "{{ vsc_creds }}"
+  delegate_to: localhost
+  when: openflow_tls

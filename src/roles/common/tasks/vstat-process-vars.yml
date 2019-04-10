@@ -3,19 +3,6 @@
 
   - block:
 
-    - name: Determine if vstat upgrade needs to be in-place
-      include_role:
-        name: common
-        tasks_from: set-major-minor-versions.yml
-
-    - name: Set in-place upgrade flag
-      set_fact:
-        vstat_in_place_upgrade: "{{ [to_major_version, to_minor_version, to_patch_version] | join('.') | version_compare('5.2.1', '>=') }}"
-
-    when: "upgrade_from_version is defined and upgrade_to_version is defined"
-
-  - block:
-
     - name: Find name of Stats VM QCOW2 File
       find: path="{{ nuage_unzipped_files_dir }}/vstat"  pattern="*.qcow2" recurse=yes
       register: rc_vstat_file
@@ -31,6 +18,7 @@
     when: vstats | map(attribute='target_server_type') | list | issuperset(["kvm"])
 
   - block:
+
     - name: Find name of Stats VM OVF/OVA File
       find: path="{{ nuage_unzipped_files_dir }}/vstat"  patterns="*.ova,*.ovf" recurse=yes
       register: rc_vstat_file
@@ -45,41 +33,17 @@
 
     when: vstats | map(attribute='target_server_type') | list | issuperset(["vcenter"])
 
-  - block:
+  - name: Find name of VSTAT upgrade Package Files (EL7 architecture)
+    find: path="{{ nuage_unzipped_files_dir }}/vstat"  pattern="*.bin" recurse=yes
+    register: rc_vstat_upgrade_scripts
 
-    - name: Find name of VSTAT backup Package Files (EL7 architecture)
-      find: path="{{ nuage_unzipped_files_dir }}/vstat/backup"  pattern="*.py" recurse=yes
-      register: rc_vstat_backup_scripts
+  - debug: var=rc_vstat_upgrade_scripts verbosity=1
 
-    - debug: var=rc_vstat_backup_scripts verbosity=1
-
-    - name: Register VSTAT backup script variables with proper path and script locations for use in other playbooks
-      set_fact:
-        vstat_backup_scripts_path: "{{ rc_vstat_backup_scripts.files[0].path | dirname }}/"
-        vstat_backup_scripts_file_list: "{{ rc_vstat_backup_scripts.files |  map(attribute='path') | list | map('basename') | list | to_yaml }}"
-      when: rc_vstat_backup_scripts.matched > 0
-
-    when:
-      - vstat_in_place_upgrade is defined
-      - not vstat_in_place_upgrade
-
-  - block:
-
-    - name: Find name of VSTAT upgrade Package Files (EL7 architecture)
-      find: path="{{ nuage_unzipped_files_dir }}/vstat"  pattern="*.bin" recurse=yes
-      register: rc_vstat_upgrade_scripts
-
-    - debug: var=rc_vstat_upgrade_scripts verbosity=1
-
-    - name: Register VSTAT upgrade script variables with proper path and script locations for use in other playbooks
-      set_fact:
-        vstat_upgrade_scripts_path: "{{ rc_vstat_upgrade_scripts.files[0].path | dirname }}/"
-        vstat_upgrade_scripts_file: "{{ rc_vstat_upgrade_scripts.files[0].path | basename }}"
-      when: rc_vstat_upgrade_scripts.matched > 0
-
-    when:
-      - vstat_in_place_upgrade is defined
-      - vstat_in_place_upgrade
+  - name: Register VSTAT upgrade script variables with proper path and script locations for use in other playbooks
+    set_fact:
+      vstat_upgrade_scripts_path: "{{ rc_vstat_upgrade_scripts.files[0].path | dirname }}/"
+      vstat_upgrade_scripts_file: "{{ rc_vstat_upgrade_scripts.files[0].path | basename }}"
+    when: rc_vstat_upgrade_scripts.matched > 0
 
   - name: Verify VSTAT management gateway is in correct IP range
     include_role:
@@ -96,4 +60,4 @@
     with_items: "{{ vstats }}"
 
   when:
-    - vstats is defined
+    - vstats is defined and vstats

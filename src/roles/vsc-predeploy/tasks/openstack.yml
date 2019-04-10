@@ -1,0 +1,59 @@
+---
+- name: Display if skipping VSC predeploy
+  debug:
+    msg:
+      - "****************************************************"
+      - "Skipping VSC predeploy because it is already present"
+      - "****************************************************"
+  when: node_present
+
+- block:
+
+  - name: Set local temp directory name
+    set_fact:
+      temp_dir: "./ansible-heat-{{ inventory_hostname }}"
+
+  - name: Create local temp directory
+    file:
+      path: "{{ temp_dir }}"
+      state: directory
+    delegate_to: localhost
+
+  - name: Create heat template
+    template:
+      src: openstack.j2
+      dest: "{{ temp_dir }}/openstack.yml"
+    delegate_to: localhost
+
+  - name: Set heat template location
+    set_fact:
+      vsc_heat_template: "{{ temp_dir }}/openstack.yml"
+
+  - name: Creating VSC stack
+    register: create_stack
+    os_stack:
+      name: "{{ stack_name | default(inventory_hostname) }}"
+      template: "{{ vsc_heat_template }}"
+      auth:
+        "{{ openstack_auth }}"
+      parameters:
+        vm_name: "{{ inventory_hostname }}"
+        vsc_image: "{{ openstack_image }}"
+        vsc_flavor: "{{ openstack_flavor }}"
+        vsc_management_network: "{{ openstack_mgmt_network }}"
+        vsc_management_subnet: "{{ openstack_mgmt_subnet | default('NONE') }}"
+        vsc_control_network: "{{ openstack_control_network }}"
+        vsc_control_subnet: "{{ openstack_control_subnet | default('NONE') }}"
+        mgmt_ip: "{{ mgmt_ip | default('NONE') }}"
+        control_ip: "{{ control_ip | default('NONE') }}"
+    delegate_to: 127.0.0.1
+
+  - debug: var=create_stack['stack']['outputs'][0]['output_value']
+
+  - name: Remove local temp folder
+    file:
+      path: "{{ temp_dir }}"
+      state: absent
+    delegate_to: localhost
+
+  when: not node_present

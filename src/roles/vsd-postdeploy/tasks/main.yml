@@ -1,9 +1,17 @@
----
+- name: Clean known_hosts of VSDs (ignoring errors)
+  known_hosts:
+    name: "{{ mgmt_ip }}"
+    state: absent
+  delegate_to: localhost
+  no_log: True
+  ignore_errors: True
+
 - name: Check VSD Health after deployment
   include_role: name="vsd-health"
   vars:
     report_filename: vsd-postdeploy-health.yml
     postdeploy_only: True
     skip_vsc: True
+    check_vsd_license: False
     vsd_username: "{{ vsd_custom_username | default(vsd_default_username) }}"
     vsd_password: "{{ vsd_custom_password | default(vsd_default_password) }}"

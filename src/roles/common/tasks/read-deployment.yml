@@ -102,7 +102,7 @@
     that: "'{{ item }}'|ipaddr"
     msg: "{{ item }} is not a valid NTP server IP address, quiting"
   with_items: "{{ ntp_server_list }}"
-  when: ntp_server_list is defined
+  when: ntp_server_list is defined and ntp_server_list
 
 - name: Verify that the VSC system name is not longer than 32 characters
   assert:
@@ -110,25 +110,64 @@
     msg: "'{{item.system_name|default(item.hostname)}}' is too long to be a valid VSC system name,
           please define a 'system_name' with up to 32 chars for {{ item.hostname }}"
   with_items: "{{ vscs }}"
+  
+- name: Verify that the VSC has the correct number of cpuset defined
+  assert:
+    that: "'{{ item.cpuset | length }}' != 4"
+    msg: "Incorrect number of cores specified in cpuset for {{ item.hostname }}. Cpuset must have 4 elements."
+  when: item.cpuset is defined
+  with_items: "{{ vscs }}"
+
+- name: Verify that the VSD has the correct number of cpuset defined
+  assert:
+    that: "'{{ item.cpuset | length }}' != 6"
+    msg: "Incorrect number of cores specified in cpuset for {{ item.hostname }}. Cpuset must have 6 elements."
+  when: item.cpuset is defined
+  with_items: "{{ vsds }}"
+
+- name: Verify that the VSTAT has the correct number of cpuset defined
+  assert:
+    that: "'{{ item.cpuset | length }}' != 6"
+    msg: "Incorrect number of cores specified in cpuset for {{ item.hostname }}. Cpuset must have 6 elements."
+  when: item.cpuset is defined
+  with_items: "{{ vstats }}"
+
+- name: Verify that the VCIN has the correct number of cpuset defined
+  assert:
+    that: "'{{ item.cpuset | length }}' != 6"
+    msg: "Incorrect number of cores specified in cpuset for {{ item.hostname }}. Cpuset must have 6 elements."
+  when: item.cpuset is defined
+  with_items: "{{ vcins }}"
+
+- name: Verify that the VNSUTIL has the correct number of cpuset defined
+  assert:
+    that: "'{{ item.cpuset | length }}' != 2"
+    msg: "Incorrect number of cores specified in cpuset for {{ item.hostname }}. Cpuset must have 2 elements."
+  when: item.cpuset is defined
+  with_items: "{{ vnsutils }}"
 
 # TODO:
 # Use the following block to disable the feature for now. We need to update our
 # test infrastructure to accommodate.
 - block:
 
-  - name: Verify VSD DNS entries exist at server {{ dns_server_list[0] }}, and hostnames map to their m
-    include_tasks: check_dns.yml
-    with_items: "{{ vsds }}"
-    when: dns_server_list is defined and vsds is defined
+  - block:
 
-  - name: Verify VStat DNS entries exist at server {{ dns_server_list[0] }}, and hostnames map to their management IPs
-    include_tasks: check_dns.yml
-    with_items: "{{ vstats }}"
-    when: dns_server_list is defined and vstats is defined
+    - name: Verify VSD DNS entries exist at server {{ dns_server_list[0] }}, and hostnames map to their m
+      include_tasks: check_dns.yml
+      with_items: "{{ vsds }}"
+      when: vsds is defined and vsds
 
-  - name: Verify VNS Utils DNS entries exist at server {{ dns_server_list[0] }}, and hostnames map to their IPs
-    include_tasks: check_dns.yml
-    with_items: "{{ vnsutils }}"
-    when: dns_server_list is defined and vnsutils is defined
+    - name: Verify VStat DNS entries exist at server {{ dns_server_list[0] }}, and hostnames map to their management IPs
+      include_tasks: check_dns.yml
+      with_items: "{{ vstats }}"
+      when: vstats is defined and vstats
+
+    - name: Verify VNS Utils DNS entries exist at server {{ dns_server_list[0] }}, and hostnames map to their IPs
+      include_tasks: check_dns.yml
+      with_items: "{{ vnsutils }}"
+      when: vnsutils is defined and vnsutils
+
+    when: dns_server_list is defined and dns_server_list
 
   when: false

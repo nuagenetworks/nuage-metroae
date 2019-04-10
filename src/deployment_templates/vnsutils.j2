@@ -49,7 +49,7 @@
 
     # < Target Server Type >
     # Type of hypervisor environment into which the instance will be created
-    # (kvm, vcenter, heat, aws) 
+    # (kvm, vcenter, aws) 
     #
     target_server_type: "{{ item.target_server_type }}"
 
@@ -73,11 +73,7 @@
 
     # < VNSUTIL Data FQDN >
     #
-    {%- if item.data_fqdn is defined %}
     data_fqdn: "{{ item.data_fqdn }}"
-    {%- else %}
-    # data_fqdn: vnsutil1.data.(DNS Domain)
-    {%- endif %}
 
     # < VNSUTIL Data IP address >
     #
@@ -133,6 +129,15 @@
     vcenter_cluster: "{{ item.vcenter_cluster }}"
     {%- else %}
     # vcenter_cluster: (global vCenter Cluster Name)
+    {%- endif %}
+
+    # < vCenter Host Reference >
+    # Requires ovftool 4.3. Reference to the host on the vCenter cluster on which to deploy Nuage components
+    #
+    {%- if item.vcenter_host_reference is defined %}
+    vcenter_host_reference: "{{ item.vcenter_host_reference }}"
+    {%- else %}
+    # vcenter_host_reference: (global vCenter Host Reference)
     {%- endif %}
 
     # < vCenter Datastore Name >
@@ -203,6 +208,15 @@
     {%- endif %}
 
     ####################
+
+    # < KVM cpuset information >
+    # Cpuset information for cpu pinning on KVM. For example, VNSUTIL requires 2 cores and sample values will be of the form [ 0, 1 ]
+    #
+    {%- if item.cpuset is defined %}
+    cpuset: [ {% for i in item.cpuset | default([]) %}{{ i }}, {% endfor %}]
+    {%- else %}
+    # cpuset: []
+    {%- endif %}
 
 {% endfor %}
 {% else %}

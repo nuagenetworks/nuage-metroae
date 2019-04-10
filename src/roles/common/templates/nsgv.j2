@@ -24,10 +24,6 @@ enterprise: "{{ item.enterprise }}"
 userdisk_path: "{{ item.userdisk_path }}"
 {% endif %}
 
-{% if item.target_server_type | match("kvm") or item.target_server_type | match("vcenter")%}
-
-target_server: {{ item.target_server }}
-
 {% if item.nsgv_ip is defined %}
 nsgv_ip: "{{ item.nsgv_ip }}"
 {% endif %}
@@ -37,6 +33,10 @@ nsgv_mac: "{{ item.nsgv_mac }}"
 {% endif %}
 
 bootstrap_method: {{ item.bootstrap_method | default('none') }}
+
+{% if item.target_server_type | match("kvm") or item.target_server_type | match("vcenter") %}
+
+target_server: {{ item.target_server }}
 
 {% if item.bootstrap_method == 'zfb_external' or item.bootstrap_method == 'activation_link' %}
 
@@ -92,12 +92,13 @@ ova_file_name: {{ ova_file_name }}
 {% endif %}
 
 vcenter:
-  username: "{{ "{{" }} vcenter_global.username {{ "}}" }}"
-  password: "{{ "{{" }} vcenter_global.password {{ "}}" }}"
-  datacenter: {{ item.vcenter_datacenter | default( '"{{ vcenter_global.datacenter }}"' ) }}
-  cluster: {{ item.vcenter_cluster | default( '"{{ vcenter_global.cluster }}"' ) }}
-  datastore: {{ item.vcenter_datastore | default( '"{{ vcenter_global.datastore }}"' ) }}
-  resource_pool: {{ item.vcenter_resource_pool | default('"{{ vcenter_global.resource_pool }}"' | default('NONE')) }}
+  username: {{ encrypted.vcenter_username | indent(8, False) }}
+  password: {{ encrypted.vcenter_password | indent(8, False) }}
+  datacenter: {{ item.vcenter_datacenter | default( vcenter_datacenter ) }}
+  cluster: {{ item.vcenter_cluster | default( vcenter_cluster ) }}
+  datastore: {{ item.vcenter_datastore | default( vcenter_datastore ) }}
+  resource_pool: {{ item.vcenter_resource_pool | default(vcenter_resource_pool | default('NONE')) }}
+  host_reference: {{ item.vcenter_host_reference | default(vcenter_host_reference | default('NONE')) }}
 
 {% endif %}
 

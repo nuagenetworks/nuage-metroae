@@ -104,19 +104,26 @@
             "target_server_type": "vcenter",
             "propertyOrder": 120
         },
+        "vcenter_host_reference": {
+            "type": "string",
+            "title": "vCenter Host Reference",
+            "description": "Requires ovftool 4.3. Reference to the host on the vCenter cluster on which to deploy Nuage components",
+            "target_server_type": "vcenter",
+            "propertyOrder": 130
+        },
         "vcenter_datastore": {
             "type": "string",
             "title": "vCenter Datastore Name",
             "description": "Name of the vCenter datastore on which to deploy the Nuage components",
             "target_server_type": "vcenter",
-            "propertyOrder": 130
+            "propertyOrder": 140
         },
         "vcenter_resource_pool": {
             "type": "string",
             "title": "vCenter Resource Pool",
             "description": "The vCenter resource pool where the VMs need to be located. A resource pool is a logical abstraction of resources. Different resource pools can be configured to have different priorities in case of resource contention and can have different resource reservations and limitations.",
             "target_server_type": "vcenter",
-            "propertyOrder": 140
+            "propertyOrder": 150
         },
         "vcenter_ovftool": {
             "type": "string",
@@ -125,7 +132,25 @@
             "description": "vCenter OVFtool location",
             "target_server_type": "vcenter",
             "sectionEnd": "vCenter Parameters",
-            "propertyOrder": 150
+            "propertyOrder": 160
+        },
+        "openstack_project_name": {
+            "type": "string",
+            "title": "OpenStack Project Name",
+            "description": "Project name for OpenStack",
+            "default": "",
+            "sectionBegin": "OpenStack Parameters",
+            "target_server_type": "openstack",
+            "propertyOrder": 170
+        },
+        "openstack_auth_url": {
+            "type": "string",
+            "title": "OpenStack Keystone URL",
+            "description": "Keystone URL for OpenStack",
+            "default": "",
+            "target_server_type": "openstack",
+            "sectionEnd": "OpenStack Parameters",
+            "propertyOrder": 180
         },
         "user_ssh_pub_key": {
             "type": "string",
@@ -133,7 +158,23 @@
             "default": "~/.ssh/id_rsa.pub",
             "description": "Full path to the public key file to be injected into Nuage components to enable passwordless connectivity for configuration. When using docker container changing the path from default can cause connectivity issues",
             "target_server_type": "kvm",
-            "propertyOrder": 160,
+            "propertyOrder": 190,
+            "advanced": true
+        },
+        "xmpp_tls": {
+            "type": "boolean",
+            "title": "XMPP TLS",
+            "default": true,
+            "description": "Flag to indicate when secure communications via TLS will be used between VSCs and VSDs",
+            "propertyOrder": 200,
+            "advanced": true
+        },
+        "openflow_tls": {
+            "type": "boolean",
+            "title": "OpenFlow TLS",
+            "default": true,
+            "description": "Flag to indicate when secure communications via TLS will be used between VSCs and data plane components, e.g. VRS or NSGv; If VRS is defined, target_server_password must be defined in credentials.yml",
+            "propertyOrder": 210,
             "advanced": true
         },
         "metro_reports_dir": {
@@ -141,15 +182,7 @@
             "title": "Reports Directory",
             "default": "./reports",
             "description": "Full path to the directory where the generated health reports for this deployment will be placed",
-            "propertyOrder": 170,
-            "advanced": true
-        },
-        "secure_communication": {
-            "type": "boolean",
-            "title": "Secure Communication",
-            "default": true,
-            "description": "Flag to indicate when secure communications via TLS will be used between components; default is True. If VRS is defined, target_server_password needs to be defined in credentials file",
-            "propertyOrder": 180,
+            "propertyOrder": 220,
             "advanced": true
         },
         "vsd_license_required_days_left": {
@@ -157,7 +190,7 @@
             "title": "VSD License Required Days Left",
             "description": "Raise a failure if the VSD licenses do not have at least the specified number of days remaining before expiration. If undefined, no check of days remaining before license expiration will be made. If you want to verify that the number of days left before expiration is more than a certain number of days, uncomment this variable and set the value to the number of days.",
             "default": -1,
-            "propertyOrder": 190,
+            "propertyOrder": 230,
             "advanced": true
         },
         "vsd_license_file": {
@@ -165,14 +198,14 @@
             "title": "VSD License Filename",
             "default": "",
             "description": "Filename for the license file for the VSD.  Currently only used for NSGv Bootstrapping",
-            "propertyOrder": 200,
+            "propertyOrder": 240,
             "advanced": true
         },
         "branding_zip_file": {
             "type": "string",
             "title": "Branding Zip File",
-            "description": "Enables custom branding for the VSD GUI. When not defined, the default VSD branding, already present on the VSD itself, will be used. If branding_zip_file is defined, its value will be used to replace the default VSD branding with the contents of a zip file on the Ansible host.  The files contained in the zip file should conform to the specifications of the VNS install guide. For replacing the default branding on the VSD, this value should be set to one of the following values: 1) The path to a branding zip file on the Ansible host 2) The special value 'nuage' for adding a MetroAE tag to the default VSD branding. This value is provided as an example of a minimal modification of branding. 3) The special value 'metroae' to replace the default VSD branding with a complete MetroAE-themed brand. This value is provided as an example of a complete replacement of all branding components. Note that when this is defined the existing branding will be backed up to the directory specified by the Metro Backup Root variable under (hostname)-branding/. To rollback a branding change, copy the branding zip file out of the backup directory, set this variable to the path to the copied backup file, and run the brand_vsd playbook, i.e. ./metroae brand_vsd.",
-            "propertyOrder": 210,
+            "description": "Enables custom branding for the VSD GUI. When not defined, the default VSD branding, already present on the VSD itself, will be used. If branding_zip_file is defined, its value will be used to replace the default VSD branding with the contents of a zip file on the Ansible host.  The files contained in the zip file should conform to the specifications of the VNS install guide. For replacing the default branding on the VSD, this value should be set to one of the following values: 1) The path to a branding zip file on the Ansible host 2) The special value 'nuage' for adding a MetroÆ tag to the default VSD branding. This value is provided as an example of a minimal modification of branding. 3) The special value 'metroae' to replace the default VSD branding with a complete MetroÆ-themed brand. This value is provided as an example of a complete replacement of all branding components. Note that when this is defined the existing branding will be backed up to the directory specified by the Metro Backup Root variable under (hostname)-branding/. To rollback a branding change, copy the branding zip file out of the backup directory, set this variable to the path to the copied backup file, and run the brand_vsd playbook, i.e. metroae brand_vsd.",
+            "propertyOrder": 250,
             "default": "",
             "advanced": true
         },
@@ -183,7 +216,7 @@
             "default": true,
             "advanced": true,
             "sectionBegin": "Yum",
-            "propertyOrder": 220
+            "propertyOrder": 260
         },
         "yum_proxy": {
             "type": "string",
@@ -192,7 +225,7 @@
             "default": "NONE",
             "advanced": true,
             "sectionEnd": "Yum",
-            "propertyOrder": 230
+            "propertyOrder": 270
         },
         "nuage_software_version": {
             "type": "string",
@@ -201,16 +234,16 @@
             "default": "",
             "target_server_type": "aws",
             "advanced": true,
-            "propertyOrder": 240
+            "propertyOrder": 280
         },
         "vsd_fallocate_size_gb": {
             "type": "integer",
             "title": "VSD Disk Size",
-            "description": "Amount of VSD disk space to allocate, in GB. Valid only for KVM deployments. Note: Changing the default value is not a supported configuration.",
-            "warning": "Changing the default value is not a supported configuration",
+            "description": "Amount of VSD disk space to allocate, in GB. Valid only for KVM deployments. Note: Values smaller than the default are for lab and PoC only. Production deployments must use a value greater than or equal to the default.",
+            "warning": "Values smaller than the default are for lab and PoC only. Production deployments must use a value greater than or equal to the default.",
             "default": 285,
             "minimum": 0,
-            "propertyOrder": 250,
+            "propertyOrder": 290,
             "target_server_type": "kvm",
             "sectionBegin": "PoC Parameters",
             "advanced": true
@@ -218,33 +251,33 @@
          "vsd_ram": {
             "type": "integer",
             "title": "VSD RAM",
-            "description": "Amount of VSD RAM to allocate, in GB. Valid only for KVM deployments. Note: Changing the default value is not a supported configuration.",
-            "warning": "Changing the default value is not a supported configuration",
+            "description": "Amount of VSD RAM to allocate, in GB. Valid only for KVM deployments. Note: Values smaller than the default are for lab and PoC only. Production deployments must use a value greater than or equal to the default.",
+            "warning": "Values smaller than the default are for lab and PoC only. Production deployments must use a value greater than or equal to the default.",
             "default": 24,
             "minimum": 0,
-            "propertyOrder": 260,
+            "propertyOrder": 300,
             "target_server_type": "kvm",
             "advanced": true
         },
         "vsc_ram": {
             "type": "integer",
             "title": "VSC RAM",
-            "description": "Amount of VSC RAM to allocate, in GB. Valid only for KVM deployments. Note: Changing the default value is not a supported configuration.",
-            "warning": "Changing the default value is not a supported configuration",
+            "description": "Amount of VSC RAM to allocate, in GB. Valid only for KVM deployments. Note: Values smaller than the default are for lab and PoC only. Production deployments must use a value greater than or equal to the default.",
+            "warning": "Values smaller than the default are for lab and PoC only. Production deployments must use a value greater than or equal to the default.",
             "default": 4,
             "minimum": 0,
-            "propertyOrder": 270,
+            "propertyOrder": 310,
             "target_server_type": "kvm",
             "advanced": true
         },
         "vstat_ram": {
             "type": "integer",
             "title": "VSTAT RAM",
-            "description": "Amount of VSTAT RAM to allocate, in GB. Valid only for KVM deployments. Note: Changing the default value is not a supported configuration.",
-            "warning": "Changing the default value is not a supported configuration",
+            "description": "Amount of VSTAT RAM to allocate, in GB. Valid only for KVM deployments. Note: Values smaller than the default are for lab and PoC only. Production deployments must use a value greater than or equal to the default.",
+            "warning": "Values smaller than the default are for lab and PoC only. Production deployments must use a value greater than or equal to the default.",
             "default": 16,
             "minimum": 0,
-            "propertyOrder": 280,
+            "propertyOrder": 320,
             "target_server_type": "kvm",
             "sectionEnd": "PoC Parameters",
             "advanced": true
@@ -252,11 +285,11 @@
          "vcin_ram": {
             "type": "integer",
             "title": "VCIN RAM",
-            "description": "Amount of VCIN RAM to allocate, in GB. Valid only for KVM deployments. Note: Changing the default value is not a supported configuration.",
-            "warning": "Changing the default value is not a supported configuration",
+            "description": "Amount of VCIN RAM to allocate, in GB. Valid only for KVM deployments. Note: Values smaller than the default are for lab and PoC only. Production deployments must use a value greater than or equal to the default.",
+            "warning": "Values smaller than the default are for lab and PoC only. Production deployments must use a value greater than or equal to the default.",
             "default": 24,
             "minimum": 0,
-            "propertyOrder": 290,
+            "propertyOrder": 330,
             "target_server_type": "kvm",
             "advanced": true
         },
@@ -267,7 +300,7 @@
             "default": "https://(vsd_fqdn):8443",
             "advanced": true,
             "sectionBegin": "VSD Authentication",
-            "propertyOrder": 300
+            "propertyOrder": 340
         },
         "vsd_auth_enterprise": {
             "type": "string",
@@ -276,7 +309,7 @@
             "default": "csp",
             "advanced": true,
             "sectionEnd": "VSD Authentication",
-            "propertyOrder": 310
+            "propertyOrder": 350
         },
         "vcin_auth_url": {
             "type": "string",
@@ -285,7 +318,7 @@
             "default": "https://(vcin_ip_address):8443",
             "sectionBegin": "VCIN Authentication",
             "advanced": true,
-            "propertyOrder": 320
+            "propertyOrder": 360
         },
         "vcin_auth_enterprise": {
             "type": "string",
@@ -294,7 +327,7 @@
             "default": "csp",
             "advanced": true,
             "sectionEnd": "VCIN Authentication",
-            "propertyOrder": 330
+            "propertyOrder": 370
         },
         "libnetwork_scope": {
             "type": "string",
@@ -304,7 +337,7 @@
             "enum": ["local", "global"],
             "description": "Scope of libnetworking support; local: connectivity between containers is limited to within the local host; global: connectivity between containers may span across hosts in the cluster",
             "sectionBegin": "Libnetwork",
-            "propertyOrder": 340
+            "propertyOrder": 380
         },
         "libnetwork_cluster_store_scheme": {
             "type": "string",
@@ -312,7 +345,7 @@
             "default": "consul",
             "advanced": true,
             "description": "Scheme portion of the URL pointing to the key-value store used for the Libnetwork cluster",
-            "propertyOrder": 350
+            "propertyOrder": 390
         },
         "libnetwork_cluster_store_host": {
             "type": "string",
@@ -321,7 +354,7 @@
             "format": "hostname",
             "advanced": true,
             "description": "Host portion of the URL pointing to the key-value store used for the Libnetwork cluster",
-            "propertyOrder": 360
+            "propertyOrder": 400
         },
         "libnetwork_cluster_store_port": {
             "type": "integer",
@@ -330,7 +363,7 @@
             "description": "Port portion of the URL pointing to the key-value store used for the Libnetwork cluster",
             "advanced": true,
             "sectionEnd": "Libnetwork",
-            "propertyOrder": 370
+            "propertyOrder": 410
         }
     },
     "required": ["nuage_unzipped_files_dir", "dns_domain", "vsd_fqdn_global", "mgmt_bridge", "data_bridge", "ntp_server_list", "dns_server_list"]

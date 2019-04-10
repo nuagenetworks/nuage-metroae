@@ -131,6 +131,11 @@ def resolve_missing_variables(var_dict):
     var_dict["name"] = "default"
     var_dict["credentials"] = [var_dict]
 
+    if 'secure_communication' in var_dict:
+        var_dict['xmpp_tls'] = var_dict['secure_communication']
+        var_dict['openflow_tls'] = var_dict['secure_communication']
+        del var_dict['secure_communication']
+
 
 def flatten_vcenter(component_list):
     for component in component_list:
@@ -210,7 +215,7 @@ def write_deployment_file(template_file, to_file, var_dict):
     print "Writing " + to_file
 
     with open(template_file, "r") as file:
-        template_string = file.read()
+        template_string = file.read().decode("utf-8")
 
     template = jinja2.Template(template_string,
                                autoescape=False,
@@ -219,10 +224,20 @@ def write_deployment_file(template_file, to_file, var_dict):
     var_file_contents = template.render(var_dict)
 
     with open(to_file, "w") as file:
-        file.write(var_file_contents)
+        file.write(var_file_contents.encode("utf-8"))
 
 
 def main():
+
+    print """
+Deprecation Notice: The convert_build_vars_to_deployment tool is
+not actively updated for new features and will be removed in MetroAE
+v3.4.0. Users of this tool should either edit deployment files directly or
+modify their process to take advantage of the jinja2 templates available in
+src/deployment_templates to auto-generate deployment files.
+
+"""
+
     if len(sys.argv) != 3:
         usage()
         exit(1)

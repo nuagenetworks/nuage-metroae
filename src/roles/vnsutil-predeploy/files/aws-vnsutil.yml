@@ -1,6 +1,6 @@
 AWSTemplateFormatVersion: 2010-09-09
 Description: >-
-  AWS CloudFormation Template to deploy a VSTAT for access to VPC. **WARNING**
+  AWS CloudFormation Template to deploy a VNSUtil for access to VPC. **WARNING**
   This template creates an Amazon EC2 instance and ElasticIP. You will be billed
   for these AWS resources used if you create a stack from this template.
 Parameters:
@@ -8,13 +8,16 @@ Parameters:
     Description: Name of an existing EC2 KeyPair to enable SSH access to the instance
     Type: 'AWS::EC2::KeyPair::KeyName'
     ConstraintDescription: must be the name of an existing EC2 KeyPair.
-  VstatMgmtEniId:
-    Description: NetworkInterface ID for VSTAT Management interface
+  VnsUtilMgmtEniId:
+    Description: NetworkInterface ID for VNSUtil Management interface
+    Type: String
+  VnsUtilDataEniId:
+    Description: NetworkInterface ID for VNSUtil Data interface
     Type: String
   AmiId:
     Description: AMI-ID for Instance
     Type: 'AWS::EC2::Image::Id'
-    ConstraintDescription: AMI must already be availabe in this Region
+    ConstraintDescription: AMI must already be available in this Region
   InstanceType:
     Description: EC2 instance type
     Type: String
@@ -44,15 +47,17 @@ Parameters:
     ConstraintDescription: Instance Name
     Type: String
 Resources:
-  VstatInstance:
+  VnsUtilInstance:
     Type: 'AWS::EC2::Instance'
     Properties:
       InstanceType: !Ref InstanceType
       KeyName: !Ref KeyName
       ImageId: !Ref AmiId
       NetworkInterfaces:
+        - DeviceIndex: '1'
+          NetworkInterfaceId: !Ref VnsUtilMgmtEniId
         - DeviceIndex: '0'
-          NetworkInterfaceId: !Ref VstatMgmtEniId
+          NetworkInterfaceId: !Ref VnsUtilDataEniId
       UserData: ''
       Tags:
         - Key: Name
@@ -64,9 +69,9 @@ Resources:
 Outputs:
   InstanceId:
     Description: InstanceId of the newly created EC2 instance
-    Value: !Ref VstatInstance
+    Value: !Ref VnsUtilInstance
   AZ:
     Description: Availability Zone of the newly created EC2 instance
     Value: !GetAtt
-      - VstatInstance
+      - VnsUtilInstance
       - AvailabilityZone

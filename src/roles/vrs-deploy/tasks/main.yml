@@ -26,7 +26,6 @@
     file:
       path: "{{ client_keys_path }}"
       state: directory
-      mode: 777
       recurse: yes
 
   - name: Set openvswitch file on Debian OS family distros
@@ -138,7 +137,7 @@
       dest: "{{ openvswitch_file }}"
       regexp: "^CONN_TYPE="
       line: "CONN_TYPE=tcp"
-    when: not secure_communication | default(False)
+    when: not openflow_tls
 
   - block:
 
@@ -179,7 +178,7 @@
         regexp: "^CONN_TYPE="
         line: "CONN_TYPE={{ conn_type }}"
 
-    when: secure_communication
+    when: openflow_tls
 
   - name: Restart OpenVSwitch Service on RedHat OS family distros
     service: name=openvswitch state=restarted

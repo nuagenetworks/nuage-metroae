@@ -58,7 +58,7 @@
 
     # < Target Server type >
     # Type of hypervisor environment into which the instance will be created
-    # (kvm, vcenter, heat, aws) 
+    # (kvm, vcenter, aws, openstack) 
     #
     target_server_type: "{{ item.target_server_type }}"
 
@@ -105,6 +105,15 @@
     vcenter_cluster: "{{ item.vcenter_cluster }}"
     {%- else %}
     # vcenter_cluster: (global vCenter Cluster Name)
+    {%- endif %}
+
+    # < vCenter Host Reference >
+    # Requires ovftool 4.3. Reference to the host on the vCenter cluster on which to deploy Nuage components
+    #
+    {%- if item.vcenter_host_reference is defined %}
+    vcenter_host_reference: "{{ item.vcenter_host_reference }}"
+    {%- else %}
+    # vcenter_host_reference: (global vCenter Host Reference)
     {%- endif %}
 
     ##### vCenter Parameters
@@ -166,6 +175,73 @@
     {%- endif %}
 
     ####################
+
+    ##### OpenStack Parameters
+
+    # < OpenStack Image >
+    # Name of image installed on OpenStack for VSTAT
+    #
+    {%- if item.openstack_image is defined %}
+    openstack_image: "{{ item.openstack_image }}"
+    {%- else %}
+    # openstack_image: ""
+    {%- endif %}
+
+    # < OpenStack Flavor >
+    # Name of instance flavor installed on OpenStack for VSTAT
+    #
+    {%- if item.openstack_flavor is defined %}
+    openstack_flavor: "{{ item.openstack_flavor }}"
+    {%- else %}
+    # openstack_flavor: ""
+    {%- endif %}
+
+    # < OpenStack Network >
+    # Name of network on OpenStack for VSTAT
+    #
+    {%- if item.openstack_network is defined %}
+    openstack_network: "{{ item.openstack_network }}"
+    {%- else %}
+    # openstack_network: ""
+    {%- endif %}
+
+    # < OpenStack Subnet >
+    # Name of subnet on OpenStack for VSTAT
+    #
+    {%- if item.openstack_subnet is defined %}
+    openstack_subnet: "{{ item.openstack_subnet }}"
+    {%- else %}
+    # openstack_subnet: ""
+    {%- endif %}
+
+    # < OpenStack Port Name >
+    # Name for Mgmt interface
+    #
+    {%- if item.openstack_port_name is defined %}
+    openstack_port_name: "{{ item.openstack_port_name }}"
+    {%- else %}
+    # openstack_port_name: ""
+    {%- endif %}
+
+    # < OpenStack Port Security Groups >
+    # Set of security groups to associate with Mgmt interface
+    #
+    {%- if item.openstack_port_security_groups is defined %}
+    openstack_port_security_groups: [ {% for i in item.openstack_port_security_groups | default([]) %}"{{ i }}", {% endfor %}]
+    {%- else %}
+    # openstack_port_security_groups: []
+    {%- endif %}
+
+    ##########################
+
+    # < KVM cpuset information >
+    # Cpuset information for cpu pinning on KVM. For example, VSTAT requires 6 cores and sample values will be of the form [ 0, 1, 2, 3, 4, 5 ]
+    #
+    {%- if item.cpuset is defined %}
+    cpuset: [ {% for i in item.cpuset | default([]) %}{{ i }}, {% endfor %}]
+    {%- else %}
+    # cpuset: []
+    {%- endif %}
 
 {% endfor %}
 {% else %}

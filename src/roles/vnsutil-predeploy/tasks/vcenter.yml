@@ -16,30 +16,19 @@
 
 - block:
 
-  - name: Configure vCenter path
-    set_fact:
-      vcenter_path: "vi://'{{ vcenter.username | urlencode }}':'{{ vcenter.password | urlencode }}'@{{ target_server }}/{{ vcenter.datacenter }}/host/{{ vcenter.cluster }}"
+  - name: Configure vCenter path and ovftool command
+    include_role:
+      name: common
+      tasks_from: configure-ovftool
+    vars:
+      management_network: "Management"
 
-  - name: Update vCenter path if resource pool is configured
-    set_fact:
-      vcenter_path: "vi://'{{ vcenter.username | urlencode }}':'{{ vcenter.password | urlencode }}'@{{ target_server }}/{{ vcenter.datacenter }}/host/{{ vcenter.cluster }}/Resources/{{ vcenter.resource_pool | urlencode }}"
-    when: vcenter.resource_pool != 'NONE'
-
-  - name: Deploy VNSUTIL Image on vCenter
+  - name: Deploy VNSUTIL image on vCenter (Can take several minutes)
     connection: local
-    command: >
-      {{ vcenter_global.ovftool }}
-      --acceptAllEulas
-      --noSSLVerify
-      --powerOn
-      --machineOutput
-      -dm=thin
-      -ds={{ vcenter.datastore }}
-      -n={{ vm_name }}
-      --net:"Management={{ mgmt_bridge }}"
-      "{{ ova_path }}/{{ ova_file_name }}"
-      {{ vcenter_path }}
-
+    no_log: true
+    shell: >-
+      {{ ovftool_command }}
+      "vi://{{ vcenter.username | urlencode }}:{{ vcenter.password | urlencode }}@{{ vcenter_path }}"
 
   - name: Waiting until VMware tools becomes available
     connection: local
@@ -53,6 +42,60 @@
     register: vnsutil_vm_facts
 
   - debug: var=vnsutil_vm_facts verbosity=1
+
+  - name: Disabling cloud-init
+    connection: local
+    vmware_vm_shell:
+      hostname: "{{ target_server }}"
+      username: "{{ vcenter.username }}"
+      password: "{{ vcenter.password }}"
+      datacenter: "{{ vcenter.datacenter }}"
+      cluster: "{{ vcenter.cluster }}"
+      validate_certs: no
+      vm_id: "{{ vm_name }}"
+      vm_username: "{{ vnsutil_default_username }}"
+      vm_password: "{{ vnsutil_default_password }}"
+      vm_shell: "/bin/systemctl"
+      vm_shell_args: " {{ item }}"
+    with_items:
+      - "stop cloud-init"
+      - "disable cloud-init"
+      - "stop cloud-init-local"
+      - "disable cloud-init-local"
+      - "stop cloud-init-config"
+      - "disable cloud-config"
+      - "stop cloud-final"
+      - "disable cloud-final"
+
+  - name: Writing cloud-init disable file in the VM
+    connection: local
+    vmware_vm_shell:
+      hostname: "{{ target_server }}"
+      username: "{{ vcenter.username }}"
+      password: "{{ vcenter.password }}"
+      datacenter: "{{ vcenter.datacenter }}"
+      cluster: "{{ vcenter.cluster }}"
+      validate_certs: no
+      vm_id: "{{ vm_name }}"
+      vm_username: "{{ vnsutil_default_username }}"
+      vm_password: "{{ vnsutil_default_password }}"
+      vm_shell: "/bin/touch"
+      vm_shell_args: " /etc/cloud/cloud-init.disabled"
+
+  - name: Set the owner and group on the cloud-init disable file in the VM
+    connection: local
+    vmware_vm_shell:
+      hostname: "{{ target_server }}"
+      username: "{{ vcenter.username }}"
+      password: "{{ vcenter.password }}"
+      datacenter: "{{ vcenter.datacenter }}"
+      cluster: "{{ vcenter.cluster }}"
+      validate_certs: no
+      vm_id: "{{ vm_name }}"
+      vm_username: "{{ vnsutil_default_username }}"
+      vm_password: "{{ vnsutil_default_password }}"
+      vm_shell: "/usr/bin/chown"
+      vm_shell_args: " 0 0 /etc/cloud/cloud-init.disabled"
 
   - name: Writing eth0 network script file to the VNSUTIL VM
     connection: local
@@ -97,7 +140,7 @@
       vm_username: "{{ vnsutil_default_username }}"
       vm_password: "{{ vnsutil_default_password }}"
       vm_shell: "/usr/bin/echo"
-      vm_shell_args: " '{{ lookup('template', 'network.j2') }}' > /etc/sysconfig/network"
+      vm_shell_args: " '{{ lookup('template', role_path + '/../common/templates/network.j2') }}' > /etc/sysconfig/network"
 
   - name: Set the owner and group on the network file in the VNSUTIL VM
     connection: local
@@ -178,7 +221,22 @@
       vm_shell: "/usr/bin/chmod"
       vm_shell_args: " 0640 /root/.ssh/authorized_keys"
 
-  - name: Reboot VSD VM
+  - name: Disable NetworkManager
+    connection: local
+    vmware_vm_shell:
+      hostname: "{{ target_server }}"
+      username: "{{ vcenter.username }}"
+      password: "{{ vcenter.password }}"
+      datacenter: "{{ vcenter.datacenter }}"
+      cluster: "{{ vcenter.cluster }}"
+      validate_certs: no
+      vm_id: "{{ vm_name }}"
+      vm_username: "{{ vnsutil_default_username }}"
+      vm_password: "{{ vnsutil_default_password }}"
+      vm_shell: "/bin/systemctl"
+      vm_shell_args: " disable NetworkManager"
+
+  - name: Reboot VNSUTIL VM
     connection: local
     vmware_vm_shell:
       hostname: "{{ target_server }}"

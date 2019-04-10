@@ -100,6 +100,15 @@ vcenter_cluster: "{{ vcenter_cluster }}"
 # vcenter_cluster: ""
 {%- endif %}
 
+# < vCenter Host Reference >
+# Requires ovftool 4.3. Reference to the host on the vCenter cluster on which to deploy Nuage components
+#
+{%- if vcenter_host_reference is defined %}
+vcenter_host_reference: "{{ vcenter_host_reference }}"
+{%- else %}
+# vcenter_host_reference: ""
+{%- endif %}
+
 # < vCenter Datastore Name >
 # Name of the vCenter datastore on which to deploy the Nuage components
 #
@@ -129,6 +138,28 @@ vcenter_ovftool: "{{ vcenter_ovftool }}"
 
 ########################
 
+##### OpenStack Parameters
+
+# < OpenStack Project Name >
+# Project name for OpenStack
+#
+{%- if openstack_project_name is defined %}
+openstack_project_name: "{{ openstack_project_name }}"
+{%- else %}
+# openstack_project_name: ""
+{%- endif %}
+
+# < OpenStack Keystone URL >
+# Keystone URL for OpenStack
+#
+{%- if openstack_auth_url is defined %}
+openstack_auth_url: "{{ openstack_auth_url }}"
+{%- else %}
+# openstack_auth_url: ""
+{%- endif %}
+
+##########################
+
 # < SSH Public Key >
 # Full path to the public key file to be injected into Nuage components to enable passwordless connectivity for configuration. When using docker container changing the path from default can cause connectivity issues
 #
@@ -138,6 +169,24 @@ user_ssh_pub_key: "{{ user_ssh_pub_key }}"
 # user_ssh_pub_key: ~/.ssh/id_rsa.pub
 {%- endif %}
 
+# < XMPP TLS >
+# Flag to indicate when secure communications via TLS will be used between VSCs and VSDs
+#
+{%- if xmpp_tls is defined %}
+xmpp_tls: {{ xmpp_tls | lower }}
+{%- else %}
+# xmpp_tls: True
+{%- endif %}
+
+# < OpenFlow TLS >
+# Flag to indicate when secure communications via TLS will be used between VSCs and data plane components, e.g. VRS or NSGv; If VRS is defined, target_server_password must be defined in credentials.yml
+#
+{%- if openflow_tls is defined %}
+openflow_tls: {{ openflow_tls | lower }}
+{%- else %}
+# openflow_tls: True
+{%- endif %}
+
 # < Reports Directory >
 # Full path to the directory where the generated health reports for this deployment will be placed
 #
@@ -145,15 +194,6 @@ user_ssh_pub_key: "{{ user_ssh_pub_key }}"
 metro_reports_dir: "{{ metro_reports_dir }}"
 {%- else %}
 # metro_reports_dir: ./reports
-{%- endif %}
-
-# < Secure Communication >
-# Flag to indicate when secure communications via TLS will be used between components; default is True. If VRS is defined, target_server_password needs to be defined in credentials file
-#
-{%- if secure_communication is defined %}
-secure_communication: {{ secure_communication | lower }}
-{%- else %}
-# secure_communication: True
 {%- endif %}
 
 # < VSD License Required Days Left >
@@ -175,7 +215,7 @@ vsd_license_file: "{{ vsd_license_file }}"
 {%- endif %}
 
 # < Branding Zip File >
-# Enables custom branding for the VSD GUI. When not defined, the default VSD branding, already present on the VSD itself, will be used. If branding_zip_file is defined, its value will be used to replace the default VSD branding with the contents of a zip file on the Ansible host.  The files contained in the zip file should conform to the specifications of the VNS install guide. For replacing the default branding on the VSD, this value should be set to one of the following values: 1) The path to a branding zip file on the Ansible host 2) The special value 'nuage' for adding a MetroAE tag to the default VSD branding. This value is provided as an example of a minimal modification of branding. 3) The special value 'metroae' to replace the default VSD branding with a complete MetroAE-themed brand. This value is provided as an example of a complete replacement of all branding components. Note that when this is defined the existing branding will be backed up to the directory specified by the Metro Backup Root variable under (hostname)-branding/. To rollback a branding change, copy the branding zip file out of the backup directory, set this variable to the path to the copied backup file, and run the brand_vsd playbook, i.e. ./metroae brand_vsd.
+# Enables custom branding for the VSD GUI. When not defined, the default VSD branding, already present on the VSD itself, will be used. If branding_zip_file is defined, its value will be used to replace the default VSD branding with the contents of a zip file on the Ansible host.  The files contained in the zip file should conform to the specifications of the VNS install guide. For replacing the default branding on the VSD, this value should be set to one of the following values: 1) The path to a branding zip file on the Ansible host 2) The special value 'nuage' for adding a MetroÆ tag to the default VSD branding. This value is provided as an example of a minimal modification of branding. 3) The special value 'metroae' to replace the default VSD branding with a complete MetroÆ-themed brand. This value is provided as an example of a complete replacement of all branding components. Note that when this is defined the existing branding will be backed up to the directory specified by the Metro Backup Root variable under (hostname)-branding/. To rollback a branding change, copy the branding zip file out of the backup directory, set this variable to the path to the copied backup file, and run the brand_vsd playbook, i.e. metroae brand_vsd.
 #
 {%- if branding_zip_file is defined %}
 branding_zip_file: "{{ branding_zip_file }}"
@@ -217,7 +257,7 @@ nuage_software_version: "{{ nuage_software_version }}"
 ##### PoC Parameters
 
 # < VSD Disk Size >
-# Amount of VSD disk space to allocate, in GB. Valid only for KVM deployments. Note: Changing the default value is not a supported configuration.
+# Amount of VSD disk space to allocate, in GB. Valid only for KVM deployments. Note: Values smaller than the default are for lab and PoC only. Production deployments must use a value greater than or equal to the default.
 #
 {%- if vsd_fallocate_size_gb is defined %}
 vsd_fallocate_size_gb: {{ vsd_fallocate_size_gb }}
@@ -226,7 +266,7 @@ vsd_fallocate_size_gb: {{ vsd_fallocate_size_gb }}
 {%- endif %}
 
 # < VSD RAM >
-# Amount of VSD RAM to allocate, in GB. Valid only for KVM deployments. Note: Changing the default value is not a supported configuration.
+# Amount of VSD RAM to allocate, in GB. Valid only for KVM deployments. Note: Values smaller than the default are for lab and PoC only. Production deployments must use a value greater than or equal to the default.
 #
 {%- if vsd_ram is defined %}
 vsd_ram: {{ vsd_ram }}
@@ -235,7 +275,7 @@ vsd_ram: {{ vsd_ram }}
 {%- endif %}
 
 # < VSC RAM >
-# Amount of VSC RAM to allocate, in GB. Valid only for KVM deployments. Note: Changing the default value is not a supported configuration.
+# Amount of VSC RAM to allocate, in GB. Valid only for KVM deployments. Note: Values smaller than the default are for lab and PoC only. Production deployments must use a value greater than or equal to the default.
 #
 {%- if vsc_ram is defined %}
 vsc_ram: {{ vsc_ram }}
@@ -244,7 +284,7 @@ vsc_ram: {{ vsc_ram }}
 {%- endif %}
 
 # < VSTAT RAM >
-# Amount of VSTAT RAM to allocate, in GB. Valid only for KVM deployments. Note: Changing the default value is not a supported configuration.
+# Amount of VSTAT RAM to allocate, in GB. Valid only for KVM deployments. Note: Values smaller than the default are for lab and PoC only. Production deployments must use a value greater than or equal to the default.
 #
 {%- if vstat_ram is defined %}
 vstat_ram: {{ vstat_ram }}
@@ -255,7 +295,7 @@ vstat_ram: {{ vstat_ram }}
 ####################
 
 # < VCIN RAM >
-# Amount of VCIN RAM to allocate, in GB. Valid only for KVM deployments. Note: Changing the default value is not a supported configuration.
+# Amount of VCIN RAM to allocate, in GB. Valid only for KVM deployments. Note: Values smaller than the default are for lab and PoC only. Production deployments must use a value greater than or equal to the default.
 #
 {%- if vcin_ram is defined %}
 vcin_ram: {{ vcin_ram }}

@@ -11,6 +11,10 @@
   register: vsd_vm_folder
   ignore_errors: on
 
+- name: Check for exception in VSD VM Folder
+  fail: msg="Exception found {{ vsd_vm_folder.exception }}"
+  when: vsd_vm_folder.exception is defined
+
 - name: Gathering info on VM (ignoring errors)
   connection: local
   vmware_guest_facts:
@@ -25,8 +29,6 @@
   ignore_errors: on
   when: vsd_vm_folder|succeeded
 
-- debug: var=vsd_vm_facts verbosity=1
-
 - name: Check for exception in VSD VM facts
   fail: msg="Exception found {{ vsd_vm_facts.exception }}"
   when: vsd_vm_facts.exception is defined
@@ -40,7 +42,7 @@
         hostname: "{{ target_server }}"
         username: "{{ vcenter.username }}"
         password: "{{ vcenter.password }}"
-      validate_certs: no
+        validate_certs: no
       delegate_to: localhost
       register: vm_list
 

@@ -6,7 +6,7 @@
     username: "{{ vcenter.username }}"
     password: "{{ vcenter.password }}"
     datacenter: "{{ vcenter.datacenter }}"
-    name: "{{ vm_hostname }}"
+    name: "{{ hostname }}"
     validate_certs: no
   register: stcv_vm_folder
   ignore_errors: on
@@ -19,7 +19,7 @@
     password: "{{ vcenter.password }}"
     datacenter: "{{ vcenter.datacenter }}"
     folder: "/{{ vcenter.datacenter }}{{ stcv_vm_folder['folders'][0] }}"
-    name: "{{ vm_hostname }}"
+    name: "{{ hostname }}"
     validate_certs: no
   register: stcv_vm_facts
   ignore_errors: on
@@ -30,7 +30,7 @@
 - name: Verify the STCv VM does not exist
   assert:
     that: "stcv_vm_facts.failed"
-    msg: "VM {{ vm_hostname }} already exists, quiting"
+    msg: "VM {{ hostname }} already exists, quiting"
 
 - name: Configure vCenter path
   set_fact:
@@ -41,7 +41,7 @@
     vcenter_path: "vi://'{{ vcenter.username | urlencode }}':'{{ vcenter.password | urlencode }}'@{{ target_server }}/{{ vcenter.datacenter }}/host/{{ vcenter.cluster }}/Resources/{{ vcenter.resource_pool | urlencode }}"
   when: vcenter.resource_pool != 'NONE'
 
-- name: Deploy STCv Image on vCenter
+- name: Deploy STCv image on vCenter (Can take several minutes)
   connection: local
   command: >
     {{ vcenter_global.ovftool }}
@@ -51,15 +51,15 @@
     --machineOutput
     -dm=thin
     -ds={{ vcenter.datastore }}
-    -n={{ vm_hostname }}
+    -n={{ hostname }}
     --net:"ManagementNet={{ mgmt_bridge }}"
     --net:"TestNet1={{ data_bridge1 }}"
     {% if data_bridge2 is defined %}
     --net:"TestNet2={{ data_bridge2 }}"
     {% endif %}
-    --prop:"ipaddress={{ vm_mgmt_ip }}"
-    --prop:"netmask={{ vm_mgmt_netmask }}"
-    --prop:"gwaddress={{ vm_mgmt_gateway }}"
+    --prop:"ipaddress={{ mgmt_ip }}"
+    --prop:"netmask={{ mgmt_netmask }}"
+    --prop:"gwaddress={{ mgmt_gateway }}"
     --prop:"telnetd=off"
     --prop:"ntp={{dns_server_list[0]}}"
     "{{ stcv_image_path }}/{{ stcv_image_filename }}"
@@ -71,7 +71,7 @@
     hostname: "{{ target_server }}"
     username: "{{ vcenter.username }}"
     password: "{{ vcenter.password }}"
-    name: "{{ vm_hostname }}"
+    name: "{{ hostname }}"
     datacenter: "{{ vcenter.datacenter }}"
     validate_certs: no
   register: stcv_vm_facts
