@@ -133,7 +133,7 @@ function check_run_with_container {
 #                                   COMMON                                      #
 #################################################################################
 
-function check_docker() {
+function check_docker {
     set +e
 
     echo "checking docker version" >> $SCRIPT_LOG_FILE
@@ -147,7 +147,7 @@ function check_docker() {
     set -e
 }
 
-function get_host_operating_system() {
+function get_host_operating_system {
     set +e
     stat /etc/os-release >> /dev/null 2>> /dev/null
     if [ $? -ne 0 ]
@@ -157,7 +157,7 @@ function get_host_operating_system() {
     set -e
 }
 
-function get_max_container_version() {
+function get_max_container_version {
     if [ ! -z $IMAGE_TAG ]
     then
         MAX_CONTAINER_VERSION=$IMAGE_TAG
@@ -187,23 +187,23 @@ function get_max_container_version() {
 
 }
 
-function get_container_id() {
+function get_container_id {
     get_max_container_version
     CONTAINER_ID=`docker ps -a | grep $METRO_AE_IMAGE | grep $MAX_CONTAINER_VERSION | awk '{ print $1}'`
 }
 
-function get_running_container_id() {
+function get_running_container_id {
     get_max_container_version
     RUNNING_CONTAINER_ID=`docker ps | grep $METRO_AE_IMAGE | grep $MAX_CONTAINER_VERSION | awk '{ print $1}'`
 }
 
-function get_image_id() {
+function get_image_id {
     get_max_container_version
     IMAGE_ID=`docker images | grep $METRO_AE_IMAGE | grep $MAX_CONTAINER_VERSION | awk '{ print $3}'`
 }
 
 
-function stop() {
+function stop {
     get_running_container_id
 
     if [ -z $RUNNING_CONTAINER_ID  ]
@@ -226,7 +226,7 @@ function stop() {
     return $status
 }
 
-function delete_container_id() {
+function delete_container_id {
     get_container_id
     if [ -z $CONTAINER_ID ]
     then
@@ -249,7 +249,7 @@ function delete_container_id() {
     echo "MetroÆ container removed successfully"
 }
 
-function destroy() {
+function destroy {
     if [ -z $1 ]
     then
         confirmation="init"
@@ -305,7 +305,7 @@ function destroy() {
     return 0
 }
 
-function get_from_s3() {
+function get_from_s3 {
     CONTAINER_TAR_FILE=metroaecontainer.tar
     aws_path=/images/
     S3_BUCKET='nuage-devops'
@@ -321,7 +321,7 @@ function get_from_s3() {
         "https://$S3_BUCKET.s3.amazonaws.com$aws_path$CONTAINER_TAR_FILE" > $TEMPORARY_DIRECTORY$CONTAINER_TAR_FILE | tee -a $SCRIPT_LOG_FILE 2>> $SCRIPT_LOG_FILE
 }
 
-function pull() {
+function pull {
     if [ ! -z $1 ]
     then
         MAX_CONTAINER_VERSION=$1
@@ -363,7 +363,7 @@ function pull() {
     return $status
 }
 
-function get_user_path_input() {
+function get_user_path_input {
     valid_path=1
     PATH_ARG=""
 
@@ -396,7 +396,7 @@ function get_user_path_input() {
 
 }
 
-function upgrade_docker() {
+function upgrade_docker {
     set +e
     destroy
     if [ $? -ne 0 ]
@@ -409,7 +409,7 @@ function upgrade_docker() {
     run
 }
 
-function run_container_if_not_running() {
+function run_container_if_not_running {
     run_func=$1_run
 
     get_running_container_id
@@ -421,7 +421,7 @@ function run_container_if_not_running() {
     fi
 }
 
-function docker_exec() {
+function docker_exec {
     run_container_if_not_running $1
 
     shift
@@ -458,7 +458,7 @@ function docker_exec() {
     fi
 }
 
-function docker_exec_interactive() {
+function docker_exec_interactive {
     environment=""
     if [ ! -z $METROAE_PASSWORD ]
     then
@@ -473,12 +473,12 @@ function docker_exec_interactive() {
     fi
 }
 
-function interactive() {
+function interactive {
     run_container_if_not_running $1
     docker_exec_interactive /bin/bash
 }
 
-function docker_status() {
+function docker_status {
     echo "Script version: $CONTAINER_VERSION"
     get_running_container_id
     if [ ! -z $RUNNING_CONTAINER_ID ]
@@ -494,7 +494,7 @@ function docker_status() {
     echo ""
 }
 
-function check_for_user_group() {
+function check_for_user_group {
     set +e
     docker_group=`getent group docker`
     set -e
@@ -788,7 +788,7 @@ function deployment_main {
 #                                    Config                                     #
 #################################################################################
 
-function config_run() {
+function config_run {
 
     set +e
     get_image_id
@@ -828,7 +828,7 @@ function config_run() {
     return 0
 }
 
-function config_setup() {
+function config_setup {
 
     echo "Setup MetroÆ container..."
 
@@ -912,12 +912,12 @@ function config_setup() {
     return $status
 }
 
-function docker_exec_levistate() {
+function docker_exec_levistate {
     docker_exec "config" env /usr/bin/python /source/levistate/levistate.py "$@"
 }
 
 
-function config_status() {
+function config_status {
     docker_status
     if [ -f $SETUP_FILE ] 
     then
@@ -929,7 +929,7 @@ function config_status() {
     fi
 }
 
-function config_help() {
+function config_help {
     echo "Nuage Networks Levistate container management help"
     
     if [ -z $1 ]
@@ -1072,7 +1072,7 @@ function config_main {
 #                                  Container                                    #
 #################################################################################
 
-function check_for_setup_file() {
+function check_for_setup_file {
     set +e
     echo "checking for metroae setup file" >> $SCRIPT_LOG_FILE
 
@@ -1087,7 +1087,7 @@ function check_for_setup_file() {
     set -e
 }
 
-function container_run() {
+function container_run {
 
     set +e
 
@@ -1142,7 +1142,7 @@ function container_run() {
     return 0
 }
 
-function copy_ssh_id() {
+function copy_ssh_id {
     if [ -z $1 ]
     then
         echo "Please provide the user and host to copy the key to. e.g. user@localhost\n"
@@ -1164,7 +1164,7 @@ function copy_ssh_id() {
     fi
 }
 
-function container_setup() {
+function container_setup {
     echo "Setup MetroÆ container..."
 
     set +e
@@ -1287,28 +1287,28 @@ function container_setup() {
     return $?
 }
 
-function docker_metro_ae_exec() {
+function docker_metro_ae_exec {
     docker_exec "container" env /source/nuage-metro/metroae "$@"
 }
 
-function stop_ui() {
+function stop_ui {
     run_container_if_not_running "container"
     docker exec $RUNNING_CONTAINER_ID /source/UI.sh stop
 }
 
-function start_ui() {
+function start_ui {
     run_container_if_not_running "container"
 	
     docker_exec_interactive /source/UI.sh start $1
     
 }
 
-function ui_status() {
+function ui_status {
     run_container_if_not_running "container"
     docker exec $RUNNING_CONTAINER_ID /source/UI.sh status
 }
 
-function load_certificates() {
+function load_certificates {
     certificate=''
     if [ -z $1 ]
     then
@@ -1330,7 +1330,7 @@ function load_certificates() {
     docker_exec_interactive /source/UI.sh loadCertificates $certificate $keyfile $3
 }
 
-function unzip_files() {
+function unzip_files {
     if [ $# -gt 1 ]
     then
         docker_exec "container" /source/nuage-metro/nuage-unzip.sh "$@"
@@ -1339,15 +1339,15 @@ function unzip_files() {
     fi
 }
 
-function con_build_vars_to_deployments() {
+function con_build_vars_to_deployments {
     docker_exec "container" /usr/bin/python /source/nuage-metro/convert_build_vars_to_deployment.py "$@"
 }
 
-function gen_example_from_schema() {
+function gen_example_from_schema {
     docker_exec "container" /usr/bin/python /source/nuage-metro/generate_example_from_schema.py "$@"
 }
 
-function container_status() {
+function container_status {
     docker_status
     if [ -f $SETUP_FILE ] 
     then
@@ -1368,18 +1368,18 @@ function container_status() {
     fi
 }
 
-function vault_password() {
+function vault_password {
     run_container_if_not_running "container"
 
     docker_exec_interactive /usr/bin/python /source/nuage-metro/encrypt_credentials.py  $1
 }
 
-function disable_encryption() {
+function disable_encryption {
     run_container_if_not_running "container"
     docker exec $RUNNING_CONTAINER_ID /source/UI.sh disable-encryption
 }
 
-function container_help() {
+function container_help {
     echo "Nuage Networks Metro Automation Engine (MetroÆ) Container CLI"
     echo "Usage:"
     echo ""
@@ -1632,12 +1632,15 @@ function parse_menu_args {
 #################################################################################
 #                                     Main                                      #
 #################################################################################
+
 if [[ -f $ANSIBLE_CONFIG_FILE ]]; then
     if [[ -f $PLAYBOOK_MENU ]]; then
         source $PLAYBOOK_MENU
     else
         echo "It seems that the menu file is missing."
     fi
+elif [[ -f $METROAE_MOUNT_POINT/menu ]]; then
+    source $METROAE_MOUNT_POINT/menu
 fi
 
 
