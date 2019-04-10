@@ -13,18 +13,18 @@
     - name: Run switch replication script on secondary nodes with VSTAT
       command: "/opt/vsd/bin/vsd-switch-replication-cluster-role --role active -e hostvars[groups['vstats'][0]]['hostname'],hostvars[groups['vstats'][1]]['hostname'],hostvars[groups['vstats'][2]]['hostname']"
       when:
-        - vstats is defined and vstats 
-        - vstat_sa_or_ha | match('ha')
+        - groups['vstats'] is defined
+        - groups['vstats']| length == 3
 
     - name: Run switch replication script on secondary nodes with VSTAT
       command: "/opt/vsd/bin/vsd-switch-replication-cluster-role --role active -e hostvars[groups['vstats'][0]]['hostname']"
       when:
-        - vstats is defined and vstats 
-        - vstat_sa_or_ha | match('sa')
+        - groups['vstats'] is defined
+        - groups['vstats']| length == 1
 
     - name: Run switch replication script on secondary nodes
       command: "/opt/vsd/bin/vsd-switch-replication-cluster-role --role active"
-      when: vstats is not defined or (vstats is defined and not vstats)
+      when: groups['vstats'] is not defined or (groups['vstats'] is defined and groups['vstats']| length == 0)
 
 - hosts: standby_cluster
   become: yes
