@@ -1,0 +1,120 @@
+---
+- hosts: primary_cluster
+  become: yes
+  remote_user: "{{ vsd_default_username }}"
+  tasks:
+    - name: Deactivate replication master on primary nodes
+      command: /opt/vsd/bin/vsd-deactivate-replication-master-cluster.sh
+
+- hosts: standby_cluster
+  become: yes
+  remote_user: "{{ vsd_default_username }}"
+  tasks:
+    - name: Run switch replication script on secondary nodes with VSTAT
+      command: "/opt/vsd/bin/vsd-switch-replication-cluster-role --role active -e hostvars[groups['vstats'][0]]['hostname'],hostvars[groups['vstats'][1]]['hostname'],hostvars[groups['vstats'][2]]['hostname']"
+      when:
+        - vstats is defined and vstats 
+        - vstat_sa_or_ha | match('ha')
+
+    - name: Run switch replication script on secondary nodes with VSTAT
+      command: "/opt/vsd/bin/vsd-switch-replication-cluster-role --role active -e hostvars[groups['vstats'][0]]['hostname']"
+      when:
+        - vstats is defined and vstats 
+        - vstat_sa_or_ha | match('sa')
+
+    - name: Run switch replication script on secondary nodes
+      command: "/opt/vsd/bin/vsd-switch-replication-cluster-role --role active"
+      when: vstats is not defined or (vstats is defined and not vstats)
+
+- hosts: standby_cluster
+  become: yes
+  remote_user: "{{ vsd_default_username }}"
+  tasks:
+    - name: Get monit summary for all process on VSD
+      vsd_monit:
+        group: all
+      register: proc_list
+
+    - name: wait for VSD common and core to become running
+      monit_waitfor_service:
+        name: "{{ item }}"
+        timeout_seconds: 1200
+        test_interval_seconds: 30
+      when: item not in ['elasticsearch-status', 'stats-collector-status', 'tca-daemon-status']
+      with_items: "{{ proc_list['state'].keys() }}"
+
+- hosts: vsd_ha_standby1
+  become: yes
+  remote_user: "{{ vsd_default_username }}"
+  tasks:
+    - name: Run replication preparation script on the new active node
+      shell: /opt/vsd/bin/vsd-prepare-replication-master.sh -m | grep -m 1 "/tmp.*gz"
+      register: replication_master_output
+    - debug: var=replication_master_output
+    - set_fact:
+        replication_db: "{{ replication_master_output.stdout | regex_search('/tmp.*gz') }}"
+    - debug: var=replication_db
+
+- hosts: vsd_ha_standby1
+  become: yes
+  remote_user: "{{ vsd_default_username }}"
+  tasks:
+    - name: Transfer data from standby VSD to host machine
+      fetch:
+        src: "{{ replication_db }}"
+        dest: "/tmp/vsdbackup/"
+        flat: yes
+
+- hosts: primary_cluster
+  become: yes
+  remote_user: "{{ vsd_default_username }}"
+  tasks:
+    - set_fact:
+        replication_db: "{{ hostvars[groups['vsd_ha_standby1'][0]]['replication_db'] }}"
+    - name: Transfer data from host machine to primary cluster
+      copy:
+        dest: "/tmp/"
+        src: /tmp/vsdbackup/{{ replication_db | basename }}
+
+- hosts: vsd_ha_node1
+  become: yes
+  remote_user: "{{ vsd_default_username }}"
+  tasks:
+    - name: Run prepare slave cluster script
+      command: "/opt/vsd/bin/vsd-prepare-replication-slave-cluster.sh -m /tmp/{{ replication_db | basename }}"
+
+- hosts: vsd_ha_node2, vsd_ha_node3
+  become: yes
+  remote_user: "{{ vsd_default_username }}"
+  tasks:
+    - name: Run prepare slave cluster script on other 2 nodes
+      command: "/opt/vsd/bin/vsd-prepare-replication-slave-cluster.sh -m /tmp/{{ replication_db | basename }}"
+
+- hosts: vsd_ha_node1
+  become: yes
+  remote_user: "{{ vsd_default_username }}"
+  tasks:
+    - include_role: 
+        name: vsd-health
+        tasks_from: monit_status
+      vars:
+        no_report: "True"
+
+- hosts: vsd_ha_node2, vsd_ha_node3
+  become: yes
+  remote_user: "{{ vsd_default_username }}"
+  tasks:
+    - include_role: 
+        name: vsd-health
+        tasks_from: monit_status
+      vars:
+        no_report: "True"
+
+- hosts: vsd_ha_node1
+  become: yes
+  remote_user: "{{ vsd_default_username }}"
+  tasks:
+    - name: Run the replication script on first standby cluster
+      command: "/opt/vsd/bin/vsd-start-replication-slave -m {{ groups['vsd_ha_standby1'][0] }}"
+      when:
+        - vsd_cluster | default(false)
