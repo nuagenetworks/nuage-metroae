@@ -8,3 +8,4 @@
 * Force VSD upgrade ordering (METROAE-966)
 * Fix encrypt credentials encoding error (METROAE-963)
 * Fix fact that VMware error is masked by ignore_errors in vsd-destroy (METROAE-813)
+* Fix jsonschema version in container (METROAE-969)
