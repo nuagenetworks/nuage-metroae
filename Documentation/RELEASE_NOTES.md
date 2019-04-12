@@ -10,3 +10,4 @@
 * Fix fact that VMware error is masked by ignore_errors in vsd-destroy (METROAE-813)
 * Add support for deploying more than 1 vstat in standalone mode (METROAE-964)
 * Fix jsonschema version in container (METROAE-969)
+* Add Support for VSD Post install hardening (METROAE-841)
