@@ -1,0 +1,36 @@
+---
+- name: Check monit summary before upgrade
+  include_role: 
+    name: vsd-health
+    tasks_from: monit_status
+  vars:
+    no_report: "True"
+
+- name: Run the backup script on VSD
+  command: /opt/vsd/install/vsd-backup.sh -a -m -c
+  when: run_backup | default('True') == 'True'
+
+- name: Copy backup to remote storage
+  when: run_backup | default('True') == 'True'
+
+- name: Download VSD-migration-scripts-xxx.iso
+  command: Check for vsd_migration_dir in tests
+
+- name: Create mount point on /media/CDROM
+  command: mkdir -p /media/CDROM
+
+- name: Mount VSD-migration-scripts-xxx.iso on /media/CDROM
+  command: mount -o loop ./VSD-migration-scripts-xxx.iso/media/CDROM
+
+- name: Check and print what needs to be patched on VSD
+  command: /media/CDROM/vsd-patch.sh -c
+
+- name: Run the patch
+  command: /media/CDROM/vsd-patch.sh
+
+- name: Check monit summary after upgrade
+  include_role: 
+    name: vsd-health
+    tasks_from: monit_status
+  vars:
+    no_report: "True"
