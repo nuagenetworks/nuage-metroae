@@ -146,7 +146,7 @@
     - block:
       - name: Copy External PKI Certificates
         expect:
-          command: 'scp {{ item }} {{ compute_username | default(target_server_username) }}@{{ mgmt_ip }}:'
+          command: 'scp {{ item }} {{ compute_username | default(target_server_username) }}@{{ inventory_hostname }}:/etc/default/bootstrap/keys/'
           responses:
             (?i)yes: "yes"
             (?i)password: "{{ compute_password | default(target_server_password) }}"
@@ -155,12 +155,13 @@
           - "{{ private_key }}"
           - "{{ certificate }}"
           - "{{ ca_certificate }}"
+        delegate_to: localhost
 
       - name: set tls profiles vars
         set_fact:
           own_key: "{{ private_key | basename }}"
           own_certificate: "{{ certificate | basename }}"
-          own_ca_certificate: "{{ ca-certificate | basename }}"
+          own_ca_certificate: "{{ ca_certificate | basename }}"
 
       when:
         - private_key is defined
