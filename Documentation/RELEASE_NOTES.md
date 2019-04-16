@@ -2,4 +2,5 @@
 ## Release 3.3.0
 ### Feature Enhancements
 ### Resolved Issues
-Fix VSD Upgrade procedure to check for accurate ejabberd connected user list (METROAE-958)
+* Fix VSD Upgrade procedure to check for accurate ejabberd connected user list (METROAE-958)
+* Health playbooks don't support custom usernames (METROAE-968)
