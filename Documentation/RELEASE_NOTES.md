@@ -1,9 +1,6 @@
 # Metro Automation Engine Release Notes
-## Release 3.2.1
+## Release 3.3.0
+### Feature Enhancements
 ### Resolved Issues
-* Fix static routes so they are applied to VSC (METROAE-953)
-* Handle spaces in the yum.conf proxy setting in metro-setup.sh
-* Fix nsgv-postdeploy to check proper bootstrap status (METROAE-959)
-* Move internal IP fields out of AWS section of VSC schema (METROAE-961)
-* Force VSD upgrade ordering (METROAE-966)
-* Fix encrypt credentials encoding error (METROAE-963)
+* Fix VSD Upgrade procedure to check for accurate ejabberd connected user list (METROAE-958)
+* Health playbooks don't support custom usernames (METROAE-968)
