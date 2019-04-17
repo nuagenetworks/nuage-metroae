@@ -33,7 +33,7 @@
   - name: Set hostname for AWS permanently
     shell: "echo {{ hostname }} > /etc/hostname"
 
-  when: target_server_type | match("aws")
+  when: target_server_type is match("aws")
   remote_user: "{{ vstat_default_username }}"
 
 - name: Get vsd node(s) information
@@ -67,7 +67,7 @@
 
   remote_user: "{{ vstat_default_username }}"
   run_once: true
-  when: vstat_sa_or_ha | match('ha')
+  when: vstat_sa_or_ha is match('ha')
 
 - name: check for iptables (ignoring errors)
   shell: "service iptables status"
@@ -140,7 +140,7 @@
         with_items:
           - "{{ iptables_results.results }}"
 
-      when: vsd_sa_or_ha | match('sa')
+      when: vsd_sa_or_ha is match('sa')
 
     - block:
 
@@ -161,7 +161,7 @@
         with_items:
           - "{{ iptables_results.results }}"
 
-      when: vsd_sa_or_ha | match('ha')
+      when: vsd_sa_or_ha is match('ha')
 
     when: not skip_vstat_deploy
 
@@ -222,13 +222,13 @@
       with_items:
         - "{{ firewall_std_commands }}"
       remote_user: "{{ vstat_default_username }}"
-      when: vsd_sa_or_ha | match('sa')
+      when: vsd_sa_or_ha is match('sa')
 
     - name: Config firewall on VSTAT vm to accept conn on ports 9200, 9300 from vsd(s) in cluster setup
       shell: "{{ item }}"
       with_items:
         - "{{ firewall_cluster_commands }}"
-      when: vsd_sa_or_ha | match('ha')
+      when: vsd_sa_or_ha is match('ha')
       remote_user: "{{ vstat_default_username }}"
 
     when: not skip_vstat_deploy
@@ -244,7 +244,7 @@
       dest: /etc/hosts
       line: "{{ hostvars[item]['mgmt_ip'] }}    {{ hostvars[item]['hostname'] }}"
     with_items: "{{ groups['vstats'] }}"
-    when: vsd_sa_or_ha | match('ha')
+    when: vsd_sa_or_ha is match('ha')
     remote_user: "{{ vstat_default_username }}"
 
   - name: Configure ntpd and ntpdate and local time zone
@@ -284,7 +284,7 @@
         register: es_sa_script
         delegate_to: "{{ vsd_hostname_list[0] }}"
         when:
-          - vstat_sa_or_ha | match('sa')
+          - vstat_sa_or_ha is match('sa')
 
       - name: Execute VSTAT standalone script on standalone or clustered vsds
         command: /opt/vsd/vsd-es-standalone.sh -e {{ inventory_hostname }}
@@ -293,7 +293,7 @@
         environment:
           SSHPASS: "{{ vstat_default_password }}"
         when:
-          - vstat_sa_or_ha | match('sa')
+          - vstat_sa_or_ha is match('sa')
           - es_sa_script.stat.exists
           - vstat_default_username == 'root'
 
@@ -302,7 +302,7 @@
         delegate_to: "{{ vsd_hostname_list[0] }}"
         no_log: True
         when:
-          - vstat_sa_or_ha | match('sa')
+          - vstat_sa_or_ha is match('sa')
           - es_sa_script.stat.exists
           - vstat_default_username != 'root'
 
@@ -313,7 +313,7 @@
           environment:
             SSHPASS: "{{ vstat_default_password }}"
           no_log: True
-          when: vstat_sa_or_ha | match('ha')
+          when: vstat_sa_or_ha is match('ha')
 
         run_once: True
 
