@@ -495,6 +495,13 @@ function docker_status {
 }
 
 function check_for_user_group {
+    if [ $uid -eq 0 ] || [ $OS_RELEASE -eq $NON_LINUX ]
+    then
+        echo "non linux"
+        #Don't need to check group docker for root user
+        return 0
+    fi
+
     set +e
     docker_group=`getent group docker`
     set -e
@@ -522,12 +529,6 @@ function check_for_user_group {
     #skip this if the effective user is 0
     uid=`id -u`
     get_host_operating_system
-
-    if [ $uid -eq 0 ] || [ $OS_RELEASE -eq $NON_LINUX ]
-    then
-        #Don't need to check group docker for root user
-        return 0
-    fi
 
     set +e
     docker_part_of_groups=`groups | grep docker`
@@ -619,41 +620,6 @@ function audit_log_and_exit {
     exit $1
 }
 
-function deployment_help {
-    echo ""
-    echo "Nuage Networks Metro Automation Engine (MetroÆ) CLI"
-    echo ""
-    echo "MetroÆ Version:" $METROAE_VERSION
-    echo ""
-    echo "MetroÆ is an automation engine that installs and upgrades Nuage"
-    echo "Networks components.  After you specify the individual details"
-    echo "of your deployment, MetroÆ sets up the environment and executes"
-    echo "the install or upgrade on your behalf."
-    echo ""
-    echo "See README.md for more information"
-    echo ""
-    echo "Usage:"
-    echo ""
-    print_menu_help "metroae%-50s %-1s\n" $1
-    echo ""
-    echo "Options:"
-    echo "    -h, --help:            Displays this help."
-    echo "    --ansible-help:        Displays help for ansible arguments."
-    echo "    -v, -vv, -vvv, -vvvv:  Runs with increasing levels of verbosity."
-    echo "    --list:                Shows a list of all supported workflows"
-    echo "    --skip-password:       Do not ask for a password.  Password can be"
-    echo "                           provided via the environment variable METROAE_PASSWORD"
-    echo "    --skip-build:          Runs workflow without performing build."
-    echo "                           This will prevent changes in the deployment from"
-    echo "                           taking effect, but it will be faster."
-    echo "    --set-group <group>:   Sets the ownership of inventory and logs to specified"
-    echo "                           group so that other users in the group can access"
-    echo "                           these files."
-    echo ""
-    echo "Any additional [options] are passed to the internal Ansible engine for processing"
-    echo ""
-}
-
 # We just use the old version to parse the options
 function deployment_main {
 
@@ -680,7 +646,7 @@ function deployment_main {
 
     case $key in
         -h|--help)
-        deployment_help
+        main_help
         exit 0
         ;;
         --ansible-help)
@@ -718,7 +684,7 @@ function deployment_main {
 
     # Missing workflow, show usage
     if [[ $# -eq 0 ]] || [[ $1 == -* ]]; then
-        deployment_help
+        main_help
         exit 1
     fi
 
@@ -927,35 +893,6 @@ function config_status {
     else
         echo "Container has not been setup"
     fi
-}
-
-function config_help {
-    echo "Nuage Networks Levistate container management help"
-    
-    if [ -z $1 ]
-    then
-        echo "Usage:"
-    fi
-    echo ""
-    
-    echo "./levistate [actions] [options]"
-    echo "[actions]: supported actions are help, version, pull, setup, stop, destroy, upgrade-engine "
-    echo "help              Displays the help text"
-    echo "version           Displays the version of the current running Levistate container"
-    echo "pull              Download the latest available version of the Levistate container"
-    echo "setup             Locally setup the Levistate container"
-    echo "stop              Stop the current running container"
-    echo "destroy           Stop and delete the current running container, additionally removes the docker image"
-    echo "upgrade-engine    Upgrade the currently installed Levistate container to the latest available version"
-    echo ""
-    
-    get_running_container_id 
-    
-    if [ -z $RUNNING_CONTAINER_ID ]
-    then
-        exit
-    fi
-
 }
 
 function config_main {
@@ -1379,39 +1316,6 @@ function disable_encryption {
     docker exec $RUNNING_CONTAINER_ID /source/UI.sh disable-encryption
 }
 
-function container_help {
-    echo "Nuage Networks Metro Automation Engine (MetroÆ) Container CLI"
-    echo "Usage:"
-    echo ""
-    echo "  ./metroae <action | workflow> [deployment] [options]"
-    echo "  action:     Supported container actions are help, pull,"
-    echo "              setup, start, stop, status, destroy, upgrade-engine,"
-    echo "              stop-ui, start-ui, status-ui, unzip-files,"
-    echo "              convert-build-vars-to-deployments,"
-    echo "              generate-example-from-schema, encrypt-credentials,"
-    echo "              enable-ui-encryption, disable-ui-encryption, copy-ssh-id,"
-    echo "              --list, --ansible-help"
-    echo "  workflow:   One of the many workflows supported by MetroÆ, e.g."
-    echo "              install_everything, upgrade_vsd, etc. You can see a"
-    echo "              list of possible workflows by executing the --list"
-    echo "              action."
-    echo "  deployment: The name of the deployment subdirectory that holds"
-    echo "              the user input data for the workflow. If no"
-    echo "              deployment is specified, default will be used."
-    echo "  options:    Other options that will be passed to MetroÆ. This includes"
-    echo "              Ansible options."
-    echo ""
-    echo "See MetroÆ documentation for details on the list of _actions_."
-    echo ""
-
-    get_running_container_id
-	
-    if [ -z $RUNNING_CONTAINER_ID ]
-    then
-        exit
-    fi
-}
-
 function container_main {
 
     if [ ! -z $GROUP_CHECK ]
@@ -1585,8 +1489,140 @@ function container_main {
 }
 
 #################################################################################
+#                                     Help                                      #
+#################################################################################
+
+function main_help {
+    echo "I am calling main help, yay! 🎉"
+    echo "Nuage Networks Metro Automation Engine (MetroÆ) CLI"
+    echo ""
+    echo "MetroÆ Version:" $METROAE_VERSION
+    echo ""
+    echo "MetroÆ is an automation engine that installs and upgrades Nuage"
+    echo "Networks components.  After you specify the individual details"
+    echo "of your deployment, MetroÆ sets up the environment and executes"
+    echo "the install or upgrade on your behalf."
+    echo ""
+    echo "See README.md for more information"
+    echo ""
+    echo "Usage:"
+    echo ""
+    print_menu_help "metroae%-50s %-1s\n" $1
+    echo ""
+    echo "Options:"
+    echo "    -h, --help:            Displays this help."
+    echo "    --ansible-help:        Displays help for ansible arguments."
+    echo "    -v, -vv, -vvv, -vvvv:  Runs with increasing levels of verbosity."
+    echo "    --list:                Shows a list of all supported workflows"
+    echo "    --skip-password:       Do not ask for a password.  Password can be"
+    echo "                           provided via the environment variable METROAE_PASSWORD"
+    echo "    --skip-build:          Runs workflow without performing build."
+    echo "                           This will prevent changes in the deployment from"
+    echo "                           taking effect, but it will be faster."
+    echo "    --set-group <group>:   Sets the ownership of inventory and logs to specified"
+    echo "                           group so that other users in the group can access"
+    echo "                           these files."
+    echo ""
+    echo "Any additional [options] are passed to the internal Ansible engine for processing"
+    echo ""
+}
+
+function container_help {
+    echo "I am calling container help, yay! 🎉"
+    # echo "Nuage Networks Metro Automation Engine (MetroÆ) Container CLI"
+    # echo "Usage:"
+    # echo ""
+    # echo "  ./metroae <action | workflow> [deployment] [options]"
+    # echo "  action:     Supported container actions are help, pull,"
+    # echo "              setup, start, stop, status, destroy, upgrade-engine,"
+    # echo "              stop-ui, start-ui, status-ui, unzip-files,"
+    # echo "              convert-build-vars-to-deployments,"
+    # echo "              generate-example-from-schema, encrypt-credentials,"
+    # echo "              enable-ui-encryption, disable-ui-encryption, copy-ssh-id,"
+    # echo "              --list, --ansible-help"
+    # echo "  workflow:   One of the many workflows supported by MetroÆ, e.g."
+    # echo "              install_everything, upgrade_vsd, etc. You can see a"
+    # echo "              list of possible workflows by executing the --list"
+    # echo "              action."
+    # echo "  deployment: The name of the deployment subdirectory that holds"
+    # echo "              the user input data for the workflow. If no"
+    # echo "              deployment is specified, default will be used."
+    # echo "  options:    Other options that will be passed to MetroÆ. This includes"
+    # echo "              Ansible options."
+    # echo ""
+    # echo "See MetroÆ documentation for details on the list of _actions_."
+    # echo ""
+
+    # get_running_container_id
+	
+    # if [ -z $RUNNING_CONTAINER_ID ]
+    # then
+    #     exit
+    # fi
+}
+
+function config_help {
+    echo "I am calling config help, yay! 🎉"
+    local help_key=$1
+    shift
+    shift
+
+    get_running_container_id
+    if [ -z $RUNNING_CONTAINER_ID ]
+    then
+        echo "container is not running 🤣"
+    else
+        docker_exec_levistate "$@"
+    fi    
+
+    # echo "Nuage Networks Levistate container management help"
+    
+    # if [ -z $1 ]
+    # then
+    #     echo "Usage:"
+    # fi
+    # echo ""
+    
+    # echo "./levistate [actions] [options]"
+    # echo "[actions]: supported actions are help, version, pull, setup, stop, destroy, upgrade-engine "
+    # echo "help              Displays the help text"
+    # echo "version           Displays the version of the current running Levistate container"
+    # echo "pull              Download the latest available version of the Levistate container"
+    # echo "setup             Locally setup the Levistate container"
+    # echo "stop              Stop the current running container"
+    # echo "destroy           Stop and delete the current running container, additionally removes the docker image"
+    # echo "upgrade-engine    Upgrade the currently installed Levistate container to the latest available version"
+    # echo ""
+    
+    # get_running_container_id 
+    
+    # if [ -z $RUNNING_CONTAINER_ID ]
+    # then
+    #     exit
+    # fi
+}
+
+#################################################################################
 #                                     Menu                                      #
 #################################################################################
+
+function switch_help {
+    case $1 in
+        ,config*)
+        config_help "$@"
+        exit 0
+        ;;
+        ,container*)
+        container_help "$@"
+        exit 0
+        ;;
+        *)
+        main_help "$@"
+        exit 0
+        ;;
+    esac
+}
+
 function get_sub_menu {
     SUB_MENU=""
     for (( i=0; i<=${#MENU[@]}; i+=$MENU_STRIDE )); do
@@ -1608,13 +1644,14 @@ function print_menu_help {
 }
 
 function parse_menu_args {
+    local args="$@"
     MENU_KEY=""
     MATCH_MENU=""
     EXTRA_ARGS=()
     while [[ $# -gt 0 ]]; do
-        if [[ $1 == "help" ]] || [[ $1 == "?" ]] || [[ $1 == "-h" ]] || [[ $1 == "--help" ]]; then
+        if [[ $1 == "help" ]] || [[ $1 == "?" ]] || [[ $1 == "-h" ]] || [[ $1 == "--h" ]] || [[ $1 == "-help" ]] || [[ $1 == "--help" ]]; then
             MATCH_MENU=(",help" "help" "help" "")
-            deployment_help $MENU_KEY
+            switch_help $MENU_KEY $args
             exit 0
         else
             MENU_KEY=$MENU_KEY","$1
