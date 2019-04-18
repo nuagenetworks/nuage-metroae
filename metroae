@@ -12,7 +12,18 @@ MENU+=(',config,pull'              'Download the latest available version of the
 MENU+=(',config,setup'             'Locally setup the Levistate container'                                                 'config'     'setup'           ',config')
 MENU+=(',config,stop'              'Stop the current running container'                                                    'config'     'stop'            ',config')
 MENU+=(',config,destroy'           'Stop and delete the current running container, additionally removes the docker image'  'config'     'destroy'         ',config')
-MENU+=(',config,upgrade-engine'    'Upgrade the currently installed Levistate container to the latest available version'   'config'     'upgrade-engine'  ',config')
+MENU+=(',config,engine,update'     'Upgrade the currently installed Levistate container to the latest available version'   'config'     'upgrade-engine'  ',config')
+
+#################################################################################
+#                                 UI COMMANDS                                   #
+#################################################################################
+
+MENU+=(',ui'                                    'UI menu options'                           'container'          'stop-ui'                              '')
+MENU+=(',ui,stop'                               'Stop the UI'                               'container'          'stop-ui'                              ',ui')
+MENU+=(',ui,start'                              'Start the UI'                              'container'          'start-ui'                             ',ui')
+MENU+=(',ui,status'                             'Provide the status of the UI'              'container'          'status-ui'                            ',ui')
+MENU+=(',ui,encryption,enable'                  'Enable UI encryption'                      'container'          'enable-ui-encryption'                 ',container')
+MENU+=(',ui,encryption,disable'                 'Disable UI encryption'                     'container'          'disable-ui-encryption'                ',container')
 
 #################################################################################
 #                             CONTAINER COMMANDS                                #
@@ -24,17 +35,9 @@ MENU+=(',container,start'                                 'start'               
 MENU+=(',container,stop'                                  'stop'                                  'container'          'stop'                                 ',container')
 MENU+=(',container,status'                                'status'                                'container'          'status'                               ',container')
 MENU+=(',container,destroy'                               'destroy'                               'container'          'destroy'                              ',container')
-MENU+=(',container,upgrade-engine'                        'upgrade-engine'                        'container'          'upgrade-engine'                       ',container')
-MENU+=(',container,stop-ui'                               'stop-ui'                               'container'          'stop-ui'                              ',container')
-MENU+=(',container,start-ui'                              'start-ui'                              'container'          'start-ui'                             ',container')
-MENU+=(',container,status-ui'                             'status-ui'                             'container'          'status-ui'                            ',container')
-MENU+=(',container,unzip-files'                           'unzip-files'                           'container'          'unzip-files'                          ',container')
-MENU+=(',container,convert-build-vars-to-deployments'     'convert-build-vars-to-deployments'     'container'          'convert-build-vars-to-deployments'    ',container')            
-MENU+=(',container,generate-example-from-schema'          'generate-example-from-schema'          'container'          'generate-example-from-schema'         ',container')      
-MENU+=(',container,encrypt-credentials'                   'encrypt-credentials'                   'container'          'encrypt-credentials'                  ',container')
-MENU+=(',container,enable-ui-encryption'                  'enable-ui-encryption'                  'container'          'enable-ui-encryption'                 ',container')
-MENU+=(',container,disable-ui-encryption'                 'disable-ui-encryption'                 'container'          'disable-ui-encryption'                ',container')
-MENU+=(',container,copy-ssh-id'                           'copy-ssh-id'                           'container'          'copy-ssh-id'                          ',container')
+MENU+=(',container,update'                                'update engine'                         'container'          'upgrade-engine'                       ',container')
+MENU+=(',container,ssh,copyid'                            'Copy container ssh public key'         'container'          'copy-ssh-id'                          ',container')
+
 
 #################################################################################
 #                                  VARIABLES                                    #
@@ -742,13 +745,6 @@ function deployment_main {
     set -e
 
 }
-
-#################################################################################
-#                                      UI                                       #
-#################################################################################
-
-
-
 
 #################################################################################
 #                                    Config                                     #
@@ -1489,6 +1485,63 @@ function container_main {
 }
 
 #################################################################################
+#                                    Tools                                      #
+#################################################################################
+
+function tools_main {
+    POSITIONAL=()
+    local command_to_run=""
+    local all_args="$@"
+    while [ $# -gt 0 ]
+    do
+        key=$1
+        case $key in
+            help|--h|-h|--help|-help)
+            tools_help ",tools"
+            exit 0
+            ;;
+            unzip-files)
+            command_to_run="./nuage-unzip.sh"
+            shift
+            ;;
+            convert-build-vars-to-deployments)
+            command_to_run="python convert_build_vars_to_deployment.py"
+            shift
+            ;;
+            generate-example-from-schema)
+            command_to_run="python generate_example_from_schema.py"
+            shift
+            ;;
+            encrypt-credentials)
+            command_to_run="python encrypt_credentials.py"
+            shift
+            ;;
+            *)
+            POSITIONAL+=("$1")
+            shift
+            ;;
+        esac
+    done
+    
+    if [[ $command_to_run == "" ]]; then
+        tools_help ",tools"
+        exit 1
+    fi
+
+    get_running_container_id
+    if [ -z $RUNNING_CONTAINER_ID ]
+    then
+        echo "container is not running 🤣"
+        echo "try to run the local version"
+        eval $command_to_run ${POSITIONAL[@]}
+    else
+        echo "try to run in the container with the following options"
+        echo "tools $all_args"
+        docker_metro_ae_exec "tools $all_args"
+    fi   
+}
+
+#################################################################################
 #                                     Help                                      #
 #################################################################################
 
@@ -1508,6 +1561,10 @@ function main_help {
     echo "Usage:"
     echo ""
     print_menu_help "metroae%-50s %-1s\n" $1
+    echo ""
+    echo "    deployment:   The name of a deployment containing the required configuration"
+    echo "                  files.  The deployments are stored as directories under"
+    echo "                  " $DEPLOYMENTS_BASE_DIR
     echo ""
     echo "Options:"
     echo "    -h, --help:            Displays this help."
@@ -1602,6 +1659,12 @@ function config_help {
     # fi
 }
 
+function tools_help {
+    local help_key=$1
+    echo $help_key
+    echo "I am calling tools help, yay! 🎉"
+}
+
 #################################################################################
 #                                     Menu                                      #
 #################################################################################
@@ -1637,8 +1700,13 @@ function print_menu_help {
     for (( i=0; i<=${#MENU[@]} - 1; i+=$MENU_STRIDE )); do
         local menu_key=${MENU[@]:$i:1}
         local help_key=${MENU[@]:$i+4:1}
+        local command_key=${MENU[@]:$i+2:1}
         if [[ $help_key == $2 ]]; then
-            printf "${1}" "${menu_key//,/ }" "${MENU[@]:($i + 1):1}"
+            if [[ $command_key == "playbook" ]]; then
+                printf "${1}" "${menu_key//,/ } [deployment] [options]" "${MENU[@]:($i + 1):1}"
+            else
+                printf "${1}" "${menu_key//,/ }" "${MENU[@]:($i + 1):1}"
+            fi
         fi
     done
 }
@@ -1659,6 +1727,10 @@ function parse_menu_args {
             if [[ -z $SUB_MENU ]]; then
                 EXTRA_ARGS+=("$1")
             else
+                # if we match with different menu, we just clear the extra args
+                if [[ "${MATCH_MENU[@]}" != "('${SUB_MENU[@]}')" ]]; then
+                    EXTRA_ARGS=()
+                fi
                 MATCH_MENU=("${SUB_MENU[@]}")
             fi
         fi
@@ -1683,7 +1755,13 @@ fi
 
 parse_menu_args "$@"
 
+echo "${EXTRA_ARGS[@]}"
+
 case ${MATCH_MENU[2]} in
+    tools)
+    tools_main ${MATCH_MENU[3]} "${EXTRA_ARGS[@]}"
+    exit 0
+    ;;
     config)
     config_main ${MATCH_MENU[3]} "${EXTRA_ARGS[@]}"
     exit 0
