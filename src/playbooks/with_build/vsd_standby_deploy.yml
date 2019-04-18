@@ -1,33 +1,33 @@
 ---
-- hosts: primary_cluster
+- hosts: primary_vsds
   become: yes
   remote_user: "{{ vsd_default_username }}"
   tasks:
     - name: Run vsd-prepare-replication-master-cluster
       command: "/opt/vsd/bin/vsd-prepare-replication-master-cluster.sh"
-      when: vsd_cluster | default(false)
+      when: vsd_standby | default(false)
 
 - hosts: vsd_ha_node1
   become: yes
   remote_user: "{{ vsd_default_username }}"
   tasks:
     - name: Run vsd-prepare-replication-master on first cluster
-      command: "/opt/vsd/bin/vsd-prepare-replication-master.sh -a {{ groups['vsd_ha_standby1'][0] }} -b {{ groups['vsd_ha_standby2'][0] }} -c {{ groups['vsd_ha_standby3'][0] }}"
+      command: "/opt/vsd/bin/vsd-prepare-replication-master.sh -a {{ groups['vsd_standby_node1'][0] }} -b {{ groups['vsd_standby_node2'][0] }} -c {{ groups['vsd_standby_node3'][0] }}"
       retries: 15
       delay: 10
       register: result
       until: result.rc == 0
       when:
-        - vsd_cluster | default(false)
+        - vsd_standby | default(false)
 
-- hosts: vsd_ha_standby1
+- hosts: vsd_standby_node1
   become: yes
   remote_user: "{{ vsd_default_username }}"
   tasks:
     - name: Create data directory on first standby vm
       command: "mkdir /opt/vsd/data"
       when:
-        - vsd_cluster | default(false)
+        - vsd_standby | default(false)
 
 - hosts: localhost
   tasks:
@@ -36,7 +36,7 @@
         path: /tmp/vsdback
         state: directory
       when:
-        - vsd_cluster | default(false)
+        - vsd_standby | default(false)
 
 - hosts: vsd_ha_node1
   become: yes
@@ -50,9 +50,9 @@
         rsync_opts:
           - "--omit-dir-times"
       when:
-        - vsd_cluster | default(false)
+        - vsd_standby | default(false)
 
-- hosts: vsd_ha_standby1
+- hosts: vsd_standby_node1
   become: yes
   remote_user: "{{ vsd_default_username }}"
   tasks:
@@ -62,24 +62,24 @@
         src: /tmp/vsdback/
         mode: push
       when:
-        - vsd_cluster | default(false)
+        - vsd_standby | default(false)
 
-- hosts: standby_cluster
+- hosts: standby_vsds
   gather_facts: no
   pre_tasks:
     - name: Set cluster flag
       set_fact:
-        install_cluster: true
+        vsd_standby_cluster: true
       when:
-        - vsd_cluster | default(false)
+        - vsd_standby | default(false)
   roles:
     - vsd-deploy
 
-- hosts: vsd_ha_standby1
+- hosts: vsd_standby_node1
   become: yes
   remote_user: "{{ vsd_default_username }}"
   tasks:
     - name: Run the replication script on first standby cluster
       command: "/opt/vsd/bin/vsd-start-replication-slave -m {{ groups['vsd_ha_node1'][0] }}"
       when:
-        - vsd_cluster | default(false)
+        - vsd_standby | default(false)

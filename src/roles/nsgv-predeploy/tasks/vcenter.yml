@@ -20,16 +20,16 @@
 
     - name: Generate ISO file
       create_zfb_profile:
-      nsgv_path: "{{ mktemp_output.stdout }}"
-      fact_name: nsgv_already_configured
-      vsd_license_file: "{{ vsd_license_file }}"
-      vsd_auth: "{{ vsd_auth }}"
-      zfb_constants: "{{ zfb_constants }}"
-      zfb_proxy_user: "{{ zfb_proxy_user }}"
-      zfb_nsg: "{{ zfb_nsg }}"
-      zfb_ports: "{{ zfb_ports }}"
-      zfb_nsg_infra: "{{ zfb_nsg_infra }}"
-      zfb_vsc_infra: "{{ zfb_vsc_infra }}"
+        nsgv_path: "{{ mktemp_output.stdout }}"
+        fact_name: nsgv_already_configured
+        vsd_license_file: "{{ vsd_license_file }}"
+        vsd_auth: "{{ vsd_auth }}"
+        zfb_constants: "{{ zfb_constants }}"
+        zfb_proxy_user: "{{ zfb_proxy_user }}"
+        zfb_nsg: "{{ zfb_nsg }}"
+        zfb_ports: "{{ zfb_ports }}"
+        zfb_nsg_infra: "{{ zfb_nsg_infra }}"
+        zfb_vsc_infra: "{{ zfb_vsc_infra }}"
       delegate_to: localhost
 
     - name: Ensure NSGV has the correct configuration
@@ -51,19 +51,35 @@
 
     when: bootstrap_method == 'zfb_metro'
 
-  - name: Configure vCenter path and ovftool command
-    include_role:
-      name: common
-      tasks_from: configure-ovftool
-    vars:
-      management_network: "OVS Management"
+  - name: Configure vCenter path
+    set_fact:
+      vcenter_path: "{{ target_server }}/{{ vcenter.datacenter }}/host/{{ vcenter.cluster }}{{ (vcenter.host_reference != 'NONE') | ternary ('/{{ vcenter.host_reference | urlencode }}', '') }}{{ (vcenter.resource_pool != 'NONE') | ternary ('/Resources/{{ vcenter.resource_pool | urlencode }}', '') }}"
+
+  - name: Configure ovftool command
+    set_fact:
+      ovftool_command: >-
+        {{ vcenter_global.ovftool }}
+        --acceptAllEulas
+        --noSSLVerify
+        --powerOn
+        --machineOutput
+        -dm=thin
+        -ds={{ vcenter.datastore }}
+        -n={{ vm_name }}
+        --net:"OVS DataPath={{ data_bridge }}"
+        --net:"OVS Management={{ access_bridge }}"
+        "{{ vcenter_image_path }}/{{ vcenter_image_file_name }}"
 
   - name: Deploy NSGV image on vCenter (Can take several minutes)
     connection: local
-    no_log: true
+#    no_log: true
     shell: >-
       {{ ovftool_command }}
       "vi://{{ vcenter.username | urlencode }}:{{ vcenter.password | urlencode }}@{{ vcenter_path }}"
+    register: deploy_output
+
+  - name: Print deploy_output
+    debug: var=deploy_output
 
   - block:
     - name: Mount ISO when ZFB method is metro
