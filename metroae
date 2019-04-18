@@ -8,10 +8,6 @@ set -e
 MENU+=(',config'                   'Configure VSD'                                                                         'config'     ''                '')
 MENU+=(',config,help'              'Displays the help text'                                                                'config'     'help'            ',config')
 MENU+=(',config,version'           'Displays the version of the current running Levistate container'                       'config'     'version'         ',config')
-MENU+=(',config,pull'              'Download the latest available version of the Levistate container'                      'config'     'pull'            ',config')
-MENU+=(',config,setup'             'Locally setup the Levistate container'                                                 'config'     'setup'           ',config')
-MENU+=(',config,stop'              'Stop the current running container'                                                    'config'     'stop'            ',config')
-MENU+=(',config,destroy'           'Stop and delete the current running container, additionally removes the docker image'  'config'     'destroy'         ',config')
 MENU+=(',config,engine,update'     'Upgrade the currently installed Levistate container to the latest available version'   'config'     'upgrade-engine'  ',config')
 
 #################################################################################
@@ -29,14 +25,15 @@ MENU+=(',ui,encryption,disable'                 'Disable UI encryption'         
 #                             CONTAINER COMMANDS                                #
 #################################################################################
 
-MENU+=(',container'                                       'Run the Docker'                        'container'          ''                                     '')
-MENU+=(',container,setup'                                 'setup'                                 'container'          'setup'                                ',container')
-MENU+=(',container,start'                                 'start'                                 'container'          'start'                                ',container')
-MENU+=(',container,stop'                                  'stop'                                  'container'          'stop'                                 ',container')
-MENU+=(',container,status'                                'status'                                'container'          'status'                               ',container')
-MENU+=(',container,destroy'                               'destroy'                               'container'          'destroy'                              ',container')
-MENU+=(',container,update'                                'update engine'                         'container'          'upgrade-engine'                       ',container')
-MENU+=(',container,ssh,copyid'                            'Copy container ssh public key'         'container'          'copy-ssh-id'                          ',container')
+MENU+=(',container'                                       'Run the Docker'                                                        'container'          ''                                     '')
+MENU+=(',container,pull'                                  'Download the latest available version of the container'                'container'          'pull'                                 ',container')
+MENU+=(',container,setup'                                 'setup'                                                                 'container'          'setup'                                ',container')
+MENU+=(',container,stop'                                  'stop'                                                                  'container'          'stop'                                 ',container')
+MENU+=(',container,destroy'                               'destroy'                                                               'container'          'destroy'                              ',container')
+MENU+=(',container,start'                                 'start'                                                                 'container'          'start'                                ',container')
+MENU+=(',container,status'                                'status'                                                                'container'          'status'                               ',container')
+MENU+=(',container,update'                                'update engine'                                                         'container'          'upgrade-engine'                       ',container')
+MENU+=(',container,ssh,copyid'                            'Copy container ssh public key'                                         'container'          'copy-ssh-id'                          ',container')
 
 #################################################################################
 #                                  VARIABLES                                    #
@@ -361,6 +358,90 @@ function pull {
         echo "Successfully Pulled the container from $repo" | tee -a $SCRIPT_LOG_FILE
     fi
     set -e
+
+    return $status
+}
+
+function setup {
+
+    echo "Setup MetroÆ container..."
+
+    get_container_id
+    get_running_container_id
+
+    if [ ! -z $CONTAINER_ID ] || [ ! -z $RUNNING_CONTAINER_ID ]
+    then
+        echo "You already have the MetroÆ container set up. Running setup will destroy the"
+        echo "existing container and create a new one. Your data on disk will be preserved."
+        echo "If you continue, create the new container, and use the same data"
+        echo "mount point, no changes are required. If you change the mount points, however"
+        echo "you will need to copy your existing data to the new mount points."
+
+        confirmation="init"
+        while [[ $confirmation != "yes" ]] && [[ $confirmation  != "no" ]] && [[ $confirmation  != "y" ]] && [[ $confirmation != "n" ]]
+        do
+            read -p "Do you want to continue with setup (yes/no): " confirmation
+        done
+
+
+        if [[ $confirmation != "yes" ]] && [[ $confirmation != "y" ]]
+        then
+            echo "Setup canceled by user"
+            return 1
+        fi
+    fi
+
+    set +e
+
+    get_image_id
+
+    if [ -z $IMAGE_ID ]
+    then
+        pull
+    fi
+
+    if [ $? -ne 0 ]
+    then
+        return 1
+    fi
+    set -e
+
+    if [ -z $1 ]
+    then
+        get_user_path_input "Specify the full path to the directory where your user data will be stored on the host system. Setup will create a subdirectory, called levistate_data, in the directory you specify. If the path you specify ends with levistate_data, we will use that sub-directory and not create one." "Data directory path: " levistate_data
+        data_path=$PATH_ARG
+    else
+        echo "setting data path to passed in parameter $1"
+        data_path=$1
+    fi
+
+    echo LEVISTATE_MOUNT_POINT=$data_path >> $SETUP_FILE
+
+    #stop and remove existing container if any
+    get_running_container_id
+    if [ ! -z $RUNNING_CONTAINER_ID ]
+    then
+        stop
+    fi
+
+    get_container_id
+    if [ ! -z $CONTAINER_ID ]
+    then
+        delete_container_id
+    fi
+
+    config_run
+
+    status=0
+    if [ $? -ne 0 ]
+    then
+        return 1
+    else
+
+        #download the templates and sample user data
+        docker_exec_levistate templates update
+        status=$?
+    fi
 
     return $status
 }
