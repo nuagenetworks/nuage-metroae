@@ -13,14 +13,20 @@
 - name: Copy backup to remote storage
   when: run_backup | default('True') == 'True'
 
-- name: Download VSD-migration-scripts-xxx.iso
-  command: Check for vsd_migration_dir in tests
+- name: Find name of VSD-migration-scripts File
+  find: path="{{ nuage_unzipped_files_dir }}/vsd/migration"  pattern="VSD-migration-scripts-*.iso"
+  register: vsd_migration_script_filename
+  delegate_to: localhost
+
+- name: Copy VSD-migration-scripts-xxx.iso
+  copy: src="{{ nuage_unzipped_files_dir }}/vsd/migration/{{ vsd_migration_script_filename }}"
+      dest=/tmp/
 
 - name: Create mount point on /media/CDROM
   command: mkdir -p /media/CDROM
 
 - name: Mount VSD-migration-scripts-xxx.iso on /media/CDROM
-  command: mount -o loop ./VSD-migration-scripts-xxx.iso/media/CDROM
+  shell: "mount -o loop /tmp/{{ vsd_migration_script_filename }} /media/CDROM"
 
 - name: Check and print what needs to be patched on VSD
   command: /media/CDROM/vsd-patch.sh -c
