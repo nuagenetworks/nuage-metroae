@@ -29,8 +29,8 @@ MENU+=(',container,stop-ui'                               'stop-ui'             
 MENU+=(',container,start-ui'                              'start-ui'                              'container'          'start-ui'                             ',container')
 MENU+=(',container,status-ui'                             'status-ui'                             'container'          'status-ui'                            ',container')
 MENU+=(',container,unzip-files'                           'unzip-files'                           'container'          'unzip-files'                          ',container')
-MENU+=(',container,convert-build-vars-to-deployments'     'convert-build-vars-to-deployments'     'container'          'convert-build-vars-to-deployments'    ',container')            
-MENU+=(',container,generate-example-from-schema'          'generate-example-from-schema'          'container'          'generate-example-from-schema'         ',container')      
+MENU+=(',container,convert-build-vars-to-deployments'     'convert-build-vars-to-deployments'     'container'          'convert-build-vars-to-deployments'    ',container')
+MENU+=(',container,generate-example-from-schema'          'generate-example-from-schema'          'container'          'generate-example-from-schema'         ',container')
 MENU+=(',container,encrypt-credentials'                   'encrypt-credentials'                   'container'          'encrypt-credentials'                  ',container')
 MENU+=(',container,enable-ui-encryption'                  'enable-ui-encryption'                  'container'          'enable-ui-encryption'                 ',container')
 MENU+=(',container,disable-ui-encryption'                 'disable-ui-encryption'                 'container'          'disable-ui-encryption'                ',container')
@@ -489,7 +489,7 @@ function docker_status {
         echo $container_status
         docker exec $RUNNING_CONTAINER_ID cat /source/version
     else
-        echo "No running container found"
+        echo "The MetroÆ container is not running. Quitting."
     fi
     echo ""
 }
@@ -856,7 +856,7 @@ function config_setup {
     fi
 
     get_container_id
-    if [ ! -z $CONTAINER_ID ] 
+    if [ ! -z $CONTAINER_ID ]
     then
         delete_container_id
     fi
@@ -885,7 +885,7 @@ function docker_exec_levistate {
 
 function config_status {
     docker_status
-    if [ -f $SETUP_FILE ] 
+    if [ -f $SETUP_FILE ]
     then
         echo "Current settings..."
         while read -r line; do declare $line; done < $SETUP_FILE
@@ -920,23 +920,23 @@ function config_main {
         key=$1
         case "$key" in
             help|--h|-h|--help|-help)
-            
+
             get_running_container_id
             if [ -z $RUNNING_CONTAINER_ID ]
             then
                 config_help
             else
                 if [ $no_arguments -lt 2 ]
-                then   
+                then
                     usage_last=true
-                fi 
-            fi    
+                fi
+            fi
             POSITIONAL+=("$1")
             exec=true
             shift
             ;;
             pull)
-            if [ -z $2 ] 
+            if [ -z $2 ]
             then
                 pull
             else
@@ -1029,7 +1029,7 @@ function container_run {
     set +e
 
     check_for_setup_file
-    
+
     get_image_id
 
     if [ -z $IMAGE_ID ]
@@ -1055,7 +1055,7 @@ function container_run {
             else
                 network_args=" -p $UI_PORT:5001"
             fi
-            
+
             user_name=`whoami`
             group_name=`id -g -n`
 
@@ -1071,7 +1071,7 @@ function container_run {
         else
             echo "Succesfully started the MetroÆ container"
         fi
-	
+
         return $status
     fi
     set -e
@@ -1086,13 +1086,13 @@ function copy_ssh_id {
         exit 1
     fi
     run_container_if_not_running "container"
-	
+
     sshpass=" "
     if [ ! -z $SSHPASS_PASSWORD ]
     then
        sshpass="sshpass -p$SSHPASS_PASSWORD"
     fi
-    
+
     if [ ! -z $NOT_INTERACTIVE ]
     then
        docker exec $RUNNING_CONTAINER_ID $sshpass ssh-copy-id -i /source/id_rsa.pub -o StrictHostKeyChecking=no $1
@@ -1193,14 +1193,14 @@ function container_setup {
     #Ask if TLS needs to be setup
     if [ $OS_RELEASE -eq $NON_LINUX ]
     then
-        if [ ! -z $4 ] 
+        if [ ! -z $4 ]
         then
             confirmation=$4
         else
             confirmation="init"
         fi
-    else 
-        if [ ! -z $3 ] 
+    else
+        if [ ! -z $3 ]
         then
             confirmation=$3
         else
@@ -1235,9 +1235,9 @@ function stop_ui {
 
 function start_ui {
     run_container_if_not_running "container"
-	
+
     docker_exec_interactive /source/UI.sh start $1
-    
+
 }
 
 function ui_status {
@@ -1261,7 +1261,7 @@ function load_certificates {
     else
         keyfile=$2
     fi
-	
+
     get_running_container_id
 
     docker_exec_interactive /source/UI.sh loadCertificates $certificate $keyfile $3
@@ -1286,14 +1286,14 @@ function gen_example_from_schema {
 
 function container_status {
     docker_status
-    if [ -f $SETUP_FILE ] 
+    if [ -f $SETUP_FILE ]
     then
         echo "Current settings..."
         while read -r line; do declare $line; done < $SETUP_FILE
         echo "images_mount: $IMAGES_MOUNT_POINT"
-        echo "metroae_mount: $METROAE_MOUNT_POINT"	
+        echo "metroae_mount: $METROAE_MOUNT_POINT"
         get_host_operating_system
-    
+
         if [ $OS_RELEASE -eq $LINUX ]
         then
             echo "ui_port: 5001"
@@ -1385,7 +1385,7 @@ function container_main {
                 fi
             else
                 container_setup
-                shift 
+                shift
             fi
             ;;
             stop)
@@ -1554,7 +1554,7 @@ function container_help {
     # echo ""
 
     # get_running_container_id
-	
+
     # if [ -z $RUNNING_CONTAINER_ID ]
     # then
     #     exit
@@ -1573,16 +1573,16 @@ function config_help {
         echo "container is not running 🤣"
     else
         docker_exec_levistate "$@"
-    fi    
+    fi
 
     # echo "Nuage Networks Levistate container management help"
-    
+
     # if [ -z $1 ]
     # then
     #     echo "Usage:"
     # fi
     # echo ""
-    
+
     # echo "./levistate [actions] [options]"
     # echo "[actions]: supported actions are help, version, pull, setup, stop, destroy, upgrade-engine "
     # echo "help              Displays the help text"
@@ -1593,9 +1593,9 @@ function config_help {
     # echo "destroy           Stop and delete the current running container, additionally removes the docker image"
     # echo "upgrade-engine    Upgrade the currently installed Levistate container to the latest available version"
     # echo ""
-    
-    # get_running_container_id 
-    
+
+    # get_running_container_id
+
     # if [ -z $RUNNING_CONTAINER_ID ]
     # then
     #     exit
