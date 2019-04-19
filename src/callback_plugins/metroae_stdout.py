@@ -133,6 +133,9 @@ class CallbackModule(Default):
         if 'stdout' in abridged_result and 'stdout_lines' in abridged_result:
             abridged_result['stdout_lines'] = '<omitted>'
 
+        if 'msg' in abridged_result:
+            abridged_result['msg'] = '""' + abridged_result['msg'] + '""'
+
         if abridged_result:
             dumped += '\n'
             dumped += to_text(yaml.dump(abridged_result, allow_unicode=True, width=1000, Dumper=AnsibleDumper, default_flow_style=False))
