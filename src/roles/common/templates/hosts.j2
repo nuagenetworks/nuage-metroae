@@ -12,9 +12,6 @@ localhost ansible_connection=local
 [vsd_sa_node]
 {{ vsds[0].hostname }}
 
-[vsds:children]
-vsd_sa_node
-
 {% else %}
 
 [vsd_ha_node1]
@@ -39,35 +36,35 @@ vsd_sa_node
 
 {% endif %}
 
-[vsds:children]
+
+{% endif %}
+
+[primary_vsds:children]
+{% if vsds|length == 1 %}
+vsd_sa_node
+{% else %}
 vsd_ha_node1
 vsd_ha_node2
 vsd_ha_node3
+{% endif %}
+
 {% if vsds|length == 6 %}
+[standby_vsds:children]
 vsd_standby_node1
 vsd_standby_node2
 vsd_standby_node3
 {% endif %}
 
-
-{% endif %}
-
-{% endif %}
-
-
-[primary_vsds]
-{% for vsd in vsds %}
-{% if loop.index < 4 %} 
-{{ vsd.hostname }}
-{% endif %}
-{% endfor %}
-
+[vsds:children]
+primary_vsds
 {% if vsds|length == 6 %}
-[standby_vsds]
-{{ vsds[3].hostname }}
-{{ vsds[4].hostname }}
-{{ vsds[5].hostname }}
+standby_vsds
 {% endif %}
+
+
+{% endif %}
+
+
 {% if vcins is defined and vcins %}
 
 [vcin_masters]
