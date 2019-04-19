@@ -5,6 +5,7 @@
 * Add telnet_port to NSGv and support MetroÆ on Ubuntu (METROAE-962)
 * Enhanced support for nuagex deployments
 * Verify that VSC reboot was successful (METROAE-648)
+* Support deployment of SDWAN Portal
 ### Resolved Issues
 * Fix VSD Upgrade procedure to check for accurate ejabberd connected user list (METROAE-958)
 * Health playbooks don't support custom usernames (METROAE-968)
