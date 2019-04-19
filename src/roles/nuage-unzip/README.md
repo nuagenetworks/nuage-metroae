@@ -19,11 +19,6 @@ Example Playbook
   gather_facts: yes
   vars:
     unzip_user: root
-  pre_tasks:
-    - name: Include build variable files
-      include_vars: "{{ build_vars_file | default ('build_vars.yml') }}"
-      tags:
-        - always
   roles:
     - nuage-unzip
 ```
