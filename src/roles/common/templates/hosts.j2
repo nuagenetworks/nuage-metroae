@@ -199,5 +199,43 @@ vstat_node{{ loop.index }}
 {% endfor %}
 {% endif %}
 
+{% if vrss is defined and vrss %}
+[vrss]
+{% for vrs_dict_list in vrss %}
+{% for vrs_dict in vrs_dict_list['vrs_ip_list'] %}
+{{ vrs_dict }} avrs={{ 'avrs' in vrs_dict_list and vrs_dict_list['avrs'] }}
+{% endfor %}
+{% endfor %}
+{% endif %}
+
+{% if portals is defined and portals %}
+
+{% if portals|length == 1 %}
+[portal_sa_node]
+{{ portals[0].hostname }} {% if 'mgmt_bridge' in portals[0] %} mgmt_bridge={{ portals[0].mgmt_bridge }}{% endif %}
+
+[portals:children]
+portal_sa_node
+
+{% else %}
+
+[portal_ha_node1]
+{{ portals[0].hostname }} {% if 'mgmt_bridge' in portals[0] %} mgmt_bridge={{ portals[0].mgmt_bridge }}{% endif %}
+
+[portal_ha_node2]
+{{ portals[1].hostname }} {% if 'mgmt_bridge' in portals[1] %} mgmt_bridge={{ portals[1].mgmt_bridge }}{% endif %}
+
+[portal_ha_node3]
+{{ portals[2].hostname }} {% if 'mgmt_bridge' in portals[2] %} mgmt_bridge={{ portals[2].mgmt_bridge }}{% endif %}
+
+[portals:children]
+portal_ha_node1
+portal_ha_node2
+portal_ha_node3
+
+{% endif %}
+
+{% endif %}
+
 [ansible_deployment_host]
 {{ ansible_deployment_host|default('127.0.0.1') }}
