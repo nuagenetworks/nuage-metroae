@@ -72,4 +72,4 @@ shift
 UNZIP_DIR=$1
 shift
 
-$(which ansible-playbook) $PLAYBOOK_DIR/nuage_unzip.yml -e nuage_zipped_files_dir=$ZIPPED_DIR -e nuage_unzipped_files_dir=$UNZIP_DIR "${EXTRA_VARS[@]}"
+$(which ansible-playbook) $PLAYBOOK_DIR/nuage_unzip.yml -e nuage_zipped_files_dir=$ZIPPED_DIR -e nuage_unzipped_files_dir=$UNZIP_DIR "${EXTRA_VARS[@]}" "${POSITIONAL[@]}"
