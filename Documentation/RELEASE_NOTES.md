@@ -11,3 +11,4 @@
 * Fix VSD Upgrade procedure to check for accurate ejabberd connected user list (METROAE-958)
 * Health playbooks don't support custom usernames (METROAE-968)
 * Remove obsolete document reference to build_vars.yml
+* Fix undefined variable eror during copy portal step in unzip task (METROAE-983)
