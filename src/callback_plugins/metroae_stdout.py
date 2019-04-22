@@ -5,6 +5,16 @@
 from __future__ import (absolute_import, division, print_function)
 __metaclass__ = type
 
+import yaml
+import json
+import re
+import string
+
+from ansible.module_utils._text import to_text
+from ansible.parsing.yaml.dumper import AnsibleDumper
+from ansible.plugins.callback import strip_internal_keys
+from ansible.plugins.callback.default import CallbackModule as Default
+
 DOCUMENTATION = '''
     callback: metroae_stdout
     type: stdout
@@ -18,18 +28,6 @@ DOCUMENTATION = '''
     requirements:
       - set as stdout in configuration
 '''
-
-import yaml
-import json
-import re
-import string
-import sys
-
-from ansible.module_utils._text import to_bytes, to_text
-from ansible.module_utils.six import string_types
-from ansible.parsing.yaml.dumper import AnsibleDumper
-from ansible.plugins.callback import CallbackBase, strip_internal_keys
-from ansible.plugins.callback.default import CallbackModule as Default
 
 
 # from http://stackoverflow.com/a/15423007/115478
@@ -98,7 +96,6 @@ class CallbackModule(Default):
 
             # Display the task banner immediately if we're not doing any filtering based on task result
             self._print_task_banner(task)
-
 
     def _dump_results(self, result, indent=None, sort_keys=True, keep_invocation=False):
         if result.get('_ansible_no_log', False):
