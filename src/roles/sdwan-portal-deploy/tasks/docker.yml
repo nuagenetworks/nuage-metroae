@@ -60,10 +60,12 @@
     name: docker
   when: not yum_proxy | match('NONE')
 
-- name: Copy Docker-Compose to Portal host
-  copy:
-   src: docker-compose
-   dest: /usr/bin/docker-compose
-   mode: 0755
-   owner: root
-   group: root
+- name: Download Docker-Compose
+  get_url:
+    url: "https://github.com/docker/compose/releases/download/1.23.2/docker-compose-Linux-x86_64"
+    dest: /usr/bin/docker-compose
+    mode: 0755
+    use_proxy: yes
+  environment:
+    http_proxy: "{{ yum_proxy | default('') }}"
+    https_proxy: "{{ yum_proxy | default('') }}"
