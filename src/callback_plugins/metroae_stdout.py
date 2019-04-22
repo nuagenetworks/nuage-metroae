@@ -3,7 +3,6 @@
 
 # Make coding more python3-ish
 from __future__ import (absolute_import, division, print_function)
-__metaclass__ = type
 
 import yaml
 import json
@@ -15,6 +14,7 @@ from ansible.parsing.yaml.dumper import AnsibleDumper
 from ansible.plugins.callback import strip_internal_keys
 from ansible.plugins.callback.default import CallbackModule as Default
 
+__metaclass__ = type
 DOCUMENTATION = '''
     callback: metroae_stdout
     type: stdout
