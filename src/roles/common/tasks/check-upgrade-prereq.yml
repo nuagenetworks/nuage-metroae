@@ -12,15 +12,15 @@
 - block:
 
   - name: Get the version from OVA file
-    shell: 'ovftool --hideEula "{{ ova_path }}/{{ ova_file_name }}" | grep ^Name: | cut -d- -f2'
+    shell: 'ovftool --hideEula "{{ vcenter_image_path }}/{{ vcenter_image_file_name }}" | grep ^Name: | cut -d- -f2'
     register: vsd_version_from_ova
     delegate_to: localhost
 
   - name: Check that to version in OVA agrees with what has been set
     assert:
-      that: "vsd_version_from_ova.stdout|search(upgrade_to_version)"
+      that: "vsd_version_from_ova.stdout is search(upgrade_to_version)"
       msg: >
-        "VSD version mismatch between {{ ova_path }}/{{ ova_file_name }} "
+        "VSD version mismatch between {{ vcenter_image_path }}/{{ vcenter_image_file_name }} "
         "({{ vsd_version_from_ova.stdout }}) and upgrade_to_version "
         "({{ upgrade_to_version }}). Quitting."
 
