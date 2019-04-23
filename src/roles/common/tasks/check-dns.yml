@@ -8,14 +8,26 @@
     that: "'{{ hostip.stdout }}' ==  '{{ item.mgmt_ip }}'"
     msg: "IPv4 address for {{item.hostname}} != {{item.mgmt_ip}}"
 
-- block:
+- name: Set hostname for dns lookup
+  set_fact:
+    hostname: "{{item.hostname}}"
 
-    - shell: "getent hosts {{ item.data_fqdn }} | awk '{print $1}'"
-      register: data_fqdn_ip
+- name: Set management ip for dns lookup
+  set_fact:
+    management_ip: "{{item.mgmt_ip}}"
 
-    - name: Ensure that the data FQDN maps to the proper data IP
-      assert:
-        that: "'{{ data_fqdn_ip.stdout }}' ==  '{{ item.data_ip }}'"
-        msg: "IPv4 address for {{item.data_fqdn}} != {{item.data_ip}}"
+- name: Ensure FQDNs are correct in the DNS server list
+  command: "dig +short {{hostname}} @{{dns_server}}"
+  with_items: "{{dns_server_list}}"
+  register: dns_resolved_addresses
+  loop_control:
+    loop_var: dns_server
+  ignore_errors: True
 
-  when: vnsutils is defined and vnsutils
+- name: Set resolved address list
+  set_fact:
+    resolved_address_list: "{{ dns_resolved_addresses.results | map(attribute='stdout') | list | join (',')}}"
+
+- name: Assert ip address found by DNS matches the management ip
+  assert:
+    that: "{{ resolved_address_list | match(management_ip) }}"
