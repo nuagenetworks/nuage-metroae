@@ -1,0 +1,14 @@
+- name: Find source file based on pattern
+  find:
+    path: "{{ unpack_zipped_files_dir | default(nuage_zipped_files_dir) }}"
+    pattern: "{{ unpack_pattern }}"
+    use_regex: "{{ unpack_pattern_regexp | default(False) }}"
+    follow: yes
+  register: unpack_src_file
+
+- name: Copy Portal SW package
+  copy:
+    src: "{{ unpack_src_file.files[0].path }}"
+    dest: "{{ nuage_unzipped_files_dir }}/{{ unpack_target_folder }}"
+    mode: 0755
+  when: unpack_src_file.files is defined and unpack_src_file.files|length>0

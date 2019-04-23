@@ -11,19 +11,37 @@
 #
 nuage_unzipped_files_dir: "{{ nuage_unzipped_files_dir }}"
 
-##### Management Interface
-
 # < Domain Name >
 # Domain name for this deployment. E.g. company.net.
 #
 dns_domain: "{{ dns_domain }}"
+
+##### Management FQDNs
 
 # < Global VSD FQDN >
 # For clustered VSD, the XMPP FQDN for the cluster; For standalone VSD, the FQDN of the single VSD
 #
 vsd_fqdn_global: "{{ vsd_fqdn_global }}"
 
-##########################
+# < Global SD-WAN Portal FQDN >
+# For HA PORTAL, the FQDN for the Proxy/LB endpoint; For standalone PORTAL, the FQDN of the single PORTAL
+#
+{%- if portal_fqdn_global is defined %}
+portal_fqdn_global: "{{ portal_fqdn_global }}"
+{%- else %}
+# portal_fqdn_global: ""
+{%- endif %}
+
+# < Global VSTAT FQDN >
+# For clustered VSTAT, the FQDN for the VSTAT cluster; For standalone VSTAT, the FQDN of the single VSTAT
+#
+{%- if vstat_fqdn_global is defined %}
+vstat_fqdn_global: "{{ vstat_fqdn_global }}"
+{%- else %}
+# vstat_fqdn_global: ""
+{%- endif %}
+
+######################
 
 ##### Network Bridges
 
@@ -51,12 +69,12 @@ access_bridge: "{{ access_bridge }}"
 ##### Network Services
 
 # < NTP Server IP(s) >
-# List of one or more NTP server IPv4 addresses that must be in dotted-decimal format
+# List of one or more NTP server addresses that must be in dotted-decimal (IPv4) or hexidecimal (IPv6) format
 #
 ntp_server_list: [ {% for i in ntp_server_list | default([]) %}"{{ i }}", {% endfor %}]
 
 # < DNS server IP(s) >
-# List of one or more DNS server IPv4 addresses for resolving component domain names. Must be in dotted-decimal format.
+# List of one or more DNS server addresses for resolving component domain names. Must be in dotted-decimal (IPv4) or hexidecimal (IPv6) format.
 #
 dns_server_list: [ {% for i in dns_server_list | default([]) %}"{{ i }}", {% endfor %}]
 
@@ -214,6 +232,15 @@ vsd_license_file: "{{ vsd_license_file }}"
 # vsd_license_file: ""
 {%- endif %}
 
+# < SD-WAN Portal License Filename >
+# Filename for the license file for the SD-WAN Portal.
+#
+{%- if portal_license_file is defined %}
+portal_license_file: "{{ portal_license_file }}"
+{%- else %}
+# portal_license_file: ""
+{%- endif %}
+
 # < Branding Zip File >
 # Enables custom branding for the VSD GUI. When not defined, the default VSD branding, already present on the VSD itself, will be used. If branding_zip_file is defined, its value will be used to replace the default VSD branding with the contents of a zip file on the Ansible host.  The files contained in the zip file should conform to the specifications of the VNS install guide. For replacing the default branding on the VSD, this value should be set to one of the following values: 1) The path to a branding zip file on the Ansible host 2) The special value 'nuage' for adding a MetroÆ tag to the default VSD branding. This value is provided as an example of a minimal modification of branding. 3) The special value 'metroae' to replace the default VSD branding with a complete MetroÆ-themed brand. This value is provided as an example of a complete replacement of all branding components. Note that when this is defined the existing branding will be backed up to the directory specified by the Metro Backup Root variable under (hostname)-branding/. To rollback a branding change, copy the branding zip file out of the backup directory, set this variable to the path to the copied backup file, and run the brand_vsd playbook, i.e. metroae brand_vsd.
 #
@@ -301,6 +328,15 @@ vstat_ram: {{ vstat_ram }}
 vcin_ram: {{ vcin_ram }}
 {%- else %}
 # vcin_ram: 24
+{%- endif %}
+
+# < Portal RAM >
+# Amount of Portal RAM to allocate, in GB. Valid only for KVM deployments. Note: Values smaller than the default are for lab and PoC only. Production deployments must use a value greater than or equal to the default.
+#
+{%- if portal_ram is defined %}
+portal_ram: {{ portal_ram }}
+{%- else %}
+# portal_ram: 24
 {%- endif %}
 
 ##### VSD Authentication
