@@ -4,7 +4,7 @@ This procedure is used to convert a GEO-redundant active VSD cluster to standby 
 
 In the deployments, create a deployment with 6 VSDS. First 3 belong to the current primary cluster and the next 3 belong to current standby cluster. Once this is in place, use the following command to convert active cluster to standby and vice versa.
 ```
-./metroae vsd_active_standby_failover_recovery [deployment_name]
+metroae vsd_active_standby_failover_recovery [deployment_name]
 ```
 
 ## Questions, Feedback, and Contributing
