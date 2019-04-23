@@ -6,26 +6,29 @@
   vars:
     no_report: "True"
 
-- name: Find name of VSD-migration-scripts File
-  find: path="{{ nuage_unzipped_files_dir }}/vsd/migration"  pattern="VSD-migration-scripts-*.iso"
-  register: vsd_migration_script_filename
-  delegate_to: localhost
 
-- name: Copy VSD-migration-scripts-xxx.iso
-  copy: src="{{ nuage_unzipped_files_dir }}/vsd/migration/{{ vsd_migration_script_filename }}"
-      dest=/tmp/
+- block:
 
-- name: Create mount point on /media/CDROM
-  command: mkdir -p /media/CDROM
+  - name: Copy VSD-migration-scripts-xxx.iso
+    copy: src="{{ vsd_migration_iso_path }}/{{ vsd_migration_iso_file_name }}"
+        dest=/tmp/
 
-- name: Mount VSD-migration-scripts-xxx.iso on /media/CDROM
-  shell: "mount -o loop /tmp/{{ vsd_migration_script_filename }} /media/CDROM"
+  - name: Create mount point on /media/CDROM
+    command: mkdir -p /media/CDROM
 
-- name: Check and print what needs to be patched on VSD
-  command: /media/CDROM/vsd-patch.sh -c
+  - name: Mount VSD-migration-scripts-xxx.iso on /media/CDROM
+    shell: "mount -o loop /tmp/{{ vsd_migration_iso_file_name }} /media/CDROM"
 
-- name: Run the patch
-  command: /media/CDROM/vsd-patch.sh
+  - name: Check and print what needs to be patched on VSD
+    command: /media/CDROM/vsd-patch.sh -c
+
+  - name: Run the patch
+    command: /media/CDROM/vsd-patch.sh
+
+  remote_user: "{{ vsd_username | default(vsd_default_username) }}"
+  become: "{{ 'no' if vsd_username | default(vsd_default_username) == 'root' else 'yes' }}"
+  vars:
+    ansible_become_pass: "{{ vsd_password | default(vsd_default_password) }}"
 
 - name: Check monit summary after upgrade
   include_role:
