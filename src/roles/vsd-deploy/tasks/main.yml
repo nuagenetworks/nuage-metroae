@@ -82,7 +82,17 @@
           first_cluster_node_to_install: "{{ groups['vsd_ha_node1'][0] }}"
           second_cluster_node_to_install: "{{ groups['vsd_ha_node2'][0] }}"
           third_cluster_node_to_install: "{{ groups['vsd_ha_node3'][0] }}"
-      when: not nuage_upgrade | default(False)
+      when: 
+        - not nuage_upgrade | default(False)
+        - not vsd_standby_cluster | default(False)
+
+    - name: Set VSD numbering for standby cluster install
+      set_fact:
+          first_cluster_node_to_install: "{{ groups['vsd_standby_node1'][0] }}"
+          second_cluster_node_to_install: "{{ groups['vsd_standby_node2'][0] }}"
+          third_cluster_node_to_install: "{{ groups['vsd_standby_node3'][0] }}"
+      when: 
+        - vsd_standby_cluster | default(False)
 
     - name: Set VSD numbering for cluster upgrade
       set_fact:
@@ -199,14 +209,18 @@
     vars:
       rem_user: "{{ vsd_default_username }}"
 
+  - name: Enable IPv6 on VSD
+    command: /opt/vsd/bin/vsd-switch-ipv6.sh
+    when: enable_ipv6 | default(False) == True
+
   - block:
 
     - name: Install VSD software on standalone node (Can take 20 minutes)
-      command: /opt/vsd/vsd-install.sh -t s -y
+      command: "/opt/vsd/vsd-install.sh -t s -y {{ (enable_ipv6 | default(False) == True) | ternary('-6', '') }}"
       when: not deploy_vcin
 
     - name: Install VCIN software on VCIN node (Can take 20 minutes)
-      command: /opt/vsd/vsd-install.sh -t v -y
+      command: "/opt/vsd/vsd-install.sh -t v -y {{ (enable_ipv6 | default(False) == True) | ternary('-6', '') }}"
       when: deploy_vcin
 
     when:
@@ -250,7 +264,7 @@
           mode: push
 
     - name: Install VCIN software on slave VCIN node
-      command: /opt/vsd/vsd-install.sh -t v -y
+      command: "/opt/vsd/vsd-install.sh -t v -y {{ (enable_ipv6 | default(False) == True) | ternary('-6', '') }}"
 
     - name: Start the replication
       command: "/opt/vsd/bin/vsd-start-replication-slave -m {{ master_vcin }}"
@@ -263,15 +277,15 @@
   - block:
 
     - name: Install VSD software on the first cluster node (Can take 20 minutes)
-      command: "/opt/vsd/vsd-install.sh -t 1 -a {{ first_cluster_node_to_install }} -b {{ second_cluster_node_to_install }} -c {{third_cluster_node_to_install}} -x {{vsd_fqdn}} -y"
+      command: "/opt/vsd/vsd-install.sh -t 1 -a {{ first_cluster_node_to_install }} -b {{ second_cluster_node_to_install }} -c {{third_cluster_node_to_install}} -x {{vsd_fqdn}} -y {{ (enable_ipv6 | default(False) == True) | ternary('-6', '') }}"
       when: inventory_hostname == first_cluster_node_to_install
 
     - name: Install VSD software on the second cluster node (Can take 20 minutes)
-      command: "/opt/vsd/vsd-install.sh -1 {{ first_cluster_node_to_install }} -t 2 -x {{ vsd_fqdn }} -y"
+      command: "/opt/vsd/vsd-install.sh -1 {{ first_cluster_node_to_install }} -t 2 -x {{ vsd_fqdn }} -y {{ (enable_ipv6 | default(False) == True) | ternary('-6', '') }}"
       when: inventory_hostname == second_cluster_node_to_install
 
     - name: Install VSD software on the third cluster node (Can take 20 minutes)
-      command: "/opt/vsd/vsd-install.sh -1 {{ first_cluster_node_to_install }} -t 3 -x {{ vsd_fqdn }} -y"
+      command: "/opt/vsd/vsd-install.sh -1 {{ first_cluster_node_to_install }} -t 3 -x {{ vsd_fqdn }} -y {{ (enable_ipv6 | default(False) == True) | ternary('-6', '') }}"
       when: inventory_hostname == third_cluster_node_to_install
 
     when: vsd_sa_or_ha is match('ha')
@@ -287,6 +301,7 @@
     - not skip_vsd_deploy
     - branding_zip_file is defined
     - component_type == "vsd"
+    - not vsd_standby_cluster | default(False)
 
 - name: Install nginx
   yum:

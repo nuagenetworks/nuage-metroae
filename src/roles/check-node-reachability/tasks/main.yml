@@ -16,31 +16,71 @@
       msg: "Resolved {{ resolved_ip_result.stdout }} address is not equal to management IP {{ mgmt_ip }} for {{ hostname }}"
   when: target_server_type is not match("heat") or not dhcp
 
-- name: Ping hostname (ignoring errors)
-  command: ping -c 1 {{ hostname }}
-  ignore_errors: yes
-  register: host_ping_result
-  delegate_to: localhost
-
 - block:
-  - name: Ping IP address (ignoring errors)
-    command: ping -c 1 {{ mgmt_ip }}
+
+  - name: Ping hostname IPv6 (ignoring errors)
+    command: ping6 -c 1 {{ hostname }}
     ignore_errors: yes
-    register: mgmt_ip_ping_result
+    register: host_ping6_result
     delegate_to: localhost
 
-  - name: Assert reachability of hostname is the same as management IP
-    assert:
-      that: "host_ping_result.rc != 0 or mgmt_ip_ping_result.rc == 0"
-      msg:  "Response received from hostname {{ hostname }} but not from management IP {{ mgmt_ip }}. Quitting."
+  - block:
 
-  - name: Assert reachability of management IP is the same as hostname
-    assert:
-      that: "host_ping_result.rc == 0 or mgmt_ip_ping_result.rc != 0"
-      msg:  "Response received from management IP {{ mgmt_ip }} but not from hostname {{ hostname }} Quitting."
+    - name: Ping IP address IPv6 (ignoring errors)
+      command: ping6 -c 1 {{ mgmt_ip }}
+      ignore_errors: yes
+      register: mgmt_ip_ping6_result
+      delegate_to: localhost
 
-  when: target_server_type is not match("heat") or not dhcp
+    - name: Assert reachability of hostname is the same as management IP
+      assert:
+        that: "host_ping6_result.rc != 0 or mgmt_ip_ping6_result.rc == 0"
+        msg:  "Response received from hostname {{ hostname }} but not from management IP {{ mgmt_ip }}. Quitting."
 
-- name: Set fact for node reachability
-  set_fact:
-    node_reachable: "{{ host_ping_result.rc == 0 }}"
+    - name: Assert reachability of management IP is the same as hostname
+      assert:
+        that: "host_ping6_result.rc == 0 or mgmt_ip_ping6_result.rc != 0"
+        msg:  "Response received from management IP {{ mgmt_ip }} but not from hostname {{ hostname }} Quitting."
+
+    when: target_server_type is not match("heat") or not dhcp
+
+  - name: Set fact for node reachability
+    set_fact:
+      node_reachable: "{{ host_ping6_result.rc == 0 }}"
+
+  when: enable_ipv6 | default(False) == True
+
+- block:
+
+  - name: Ping hostname (ignoring errors)
+    command: ping -c 1 {{ hostname }}
+    ignore_errors: yes
+    register: host_ping_result
+    delegate_to: localhost
+
+  - block:
+
+    - name: Ping IP address (ignoring errors)
+      command: ping -c 1 {{ mgmt_ip }}
+      ignore_errors: yes
+      register: mgmt_ip_ping_result
+      delegate_to: localhost
+      when: enable_ipv6 | default(False) != True
+
+    - name: Assert reachability of hostname is the same as management IP
+      assert:
+        that: "host_ping_result.rc != 0 or mgmt_ip_ping_result.rc == 0"
+        msg:  "Response received from hostname {{ hostname }} but not from management IP {{ mgmt_ip }}. Quitting."
+
+    - name: Assert reachability of management IP is the same as hostname
+      assert:
+        that: "host_ping_result.rc == 0 or mgmt_ip_ping_result.rc != 0"
+        msg:  "Response received from management IP {{ mgmt_ip }} but not from hostname {{ hostname }} Quitting."
+
+    when: target_server_type is not match("heat") or not dhcp
+
+  - name: Set fact for node reachability
+    set_fact:
+      node_reachable: "{{ host_ping_result.rc == 0 }}"
+
+  when: enable_ipv6 | default(False) != True
