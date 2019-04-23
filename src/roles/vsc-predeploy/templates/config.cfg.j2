@@ -40,6 +40,8 @@ echo "Router (Network Side) Configuration"
         interface "control"
             {% if internal_ctrl_ip is defined %}
             address {{ internal_ctrl_ip }}/{{ control_netmask_prefix }}
+            {% elif enable_ipv6_control | default(False) == True %}
+            ipv6 address {{ control_ip }}/{{ control_netmask_prefix }}
             {% else %}
             address {{ control_ip }}/{{ control_netmask_prefix }}
             {% endif %}
@@ -48,7 +50,11 @@ echo "Router (Network Side) Configuration"
         {% endif %}
         interface "system"
         {% if system_ip is defined %}
+            {% if enable_ipv6_system | default(False) == True %}
+            ipv6 address {{ system_ip }}/128
+            {% else %}
             address {{ system_ip }}/32
+            {% endif %}
             no shutdown
         {% else %}
             shutdown
