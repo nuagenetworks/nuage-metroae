@@ -12,3 +12,4 @@
 * Health playbooks don't support custom usernames (METROAE-968)
 * Remove obsolete document reference to build_vars.yml
 * Fix undefined variable eror during copy portal step in unzip task (METROAE-983)
+* Check data fqdn only for VNSUTIL component
