@@ -6,6 +6,7 @@
 * Enhanced support for nuagex deployments
 * Verify that VSC reboot was successful (METROAE-648)
 * Support deployment of SDWAN Portal
+* Support GEO redundant VSD cluster install (METROAE-695)
 * Use DNS server to verify full FQDN (METROAE-897)
 ### Resolved Issues
 * Fix VSD Upgrade procedure to check for accurate ejabberd connected user list (METROAE-958)
