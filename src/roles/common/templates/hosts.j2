@@ -10,37 +10,67 @@ localhost ansible_connection=local
 {% if vsds|length == 1 %}
 
 [vsd_sa_node]
-{{ vsds[0].hostname }} {% if 'mgmt_bridge' in vsds[0] %} mgmt_bridge={{ vsds[0].mgmt_bridge }}{% endif %}
-
-[vsds:children]
-vsd_sa_node
+{{ vsds[0].hostname }}
 
 {% else %}
 
 [vsd_ha_node1]
-{{ vsds[0].hostname }} {% if 'mgmt_bridge' in vsds[0] %} mgmt_bridge={{ vsds[0].mgmt_bridge }}{% endif %}
+{{ vsds[0].hostname }}
 
 [vsd_ha_node2]
-{{ vsds[1].hostname }} {% if 'mgmt_bridge' in vsds[1] %} mgmt_bridge={{ vsds[1].mgmt_bridge }}{% endif %}
+{{ vsds[1].hostname }}
 
 [vsd_ha_node3]
-{{ vsds[2].hostname }} {% if 'mgmt_bridge' in vsds[2] %} mgmt_bridge={{ vsds[2].mgmt_bridge }}{% endif %}
+{{ vsds[2].hostname }}
 
-[vsds:children]
+{% if vsds|length == 6 %}
+
+[vsd_standby_node1]
+{{ vsds[3].hostname }}
+
+[vsd_standby_node2]
+{{ vsds[4].hostname }}
+
+[vsd_standby_node3]
+{{ vsds[5].hostname }}
+
+{% endif %}
+
+
+{% endif %}
+
+[primary_vsds:children]
+{% if vsds|length == 1 %}
+vsd_sa_node
+{% else %}
 vsd_ha_node1
 vsd_ha_node2
 vsd_ha_node3
+{% endif %}
+
+{% if vsds|length == 6 %}
+[standby_vsds:children]
+vsd_standby_node1
+vsd_standby_node2
+vsd_standby_node3
+{% endif %}
+
+[vsds:children]
+primary_vsds
+{% if vsds|length == 6 %}
+standby_vsds
+{% endif %}
+
 
 {% endif %}
 
-{% endif %}
 
 {% if vcins is defined and vcins %}
 
 [vcin_masters]
 {% for vcin in vcins %}
 {% if 'master_vcin' not in vcin %}
-{{ vcin.hostname }} {% if 'mgmt_bridge' in vcin %} mgmt_bridge={{ vcin.mgmt_bridge }}{% endif %}
+{{ vcin.hostname }}
 
 {% endif %}
 {% endfor %}
@@ -48,7 +78,7 @@ vsd_ha_node3
 [vcin_slaves]
 {% for vcin in vcins %}
 {% if 'master_vcin' in vcin %}
-{{ vcin.hostname }} {% if 'mgmt_bridge' in vcin %} mgmt_bridge={{ vcin.mgmt_bridge }}{% endif %}
+{{ vcin.hostname }}
 
 {% endif %}
 {% endfor %}
@@ -64,7 +94,7 @@ vcin_slaves
 {% if vscs|length == 1 %}
 
 [vsc_sa_node]
-{{ vscs[0].hostname }} {% if 'mgmt_bridge' in vscs[0] %} mgmt_bridge={{ vscs[0].mgmt_bridge }}{% endif %}{% if 'data_bridge' in vscs[0] %} data_bridge={{ vscs[0].data_bridge }}{% endif %}
+{{ vscs[0].hostname }}
 
 [vscs:children]
 vsc_sa_node
@@ -72,10 +102,10 @@ vsc_sa_node
 {% elif vscs|length == 2 %}
 
 [vsc_ha_node1]
-{{ vscs[0].hostname }} {% if 'mgmt_bridge' in vscs[0] %} mgmt_bridge={{ vscs[0].mgmt_bridge }}{% endif %}{% if 'data_bridge' in vscs[0] %} data_bridge={{ vscs[0].data_bridge }}{% endif %}
+{{ vscs[0].hostname }}
 
 [vsc_ha_node2]
-{{ vscs[1].hostname }} {% if 'mgmt_bridge' in vscs[1] %} mgmt_bridge={{ vscs[1].mgmt_bridge }}{% endif %}{% if 'data_bridge' in vscs[1] %} data_bridge={{ vscs[1].data_bridge }}{% endif %}
+{{ vscs[1].hostname }}
 
 [vscs:children]
 vsc_ha_node1
@@ -85,7 +115,7 @@ vsc_ha_node2
 
 [vscs]
 {% for vsc in vscs %}
-{{ vsc.hostname }} {% if 'mgmt_bridge' in vsc %} mgmt_bridge={{ vsc.mgmt_bridge }}{% endif %}{% if 'data_bridge' in vsc %} data_bridge={{ vsc.data_bridge }}{% endif %}
+{{ vsc.hostname }}
 
 {% endfor %}
 
@@ -110,7 +140,7 @@ vsc_ha_node2
 {% if vnsutils is defined and vnsutils %}
 [vnsutils]
 {% for vnsutil in vnsutils %}
-{{ vnsutil.hostname }} {% if 'mgmt_bridge' in vnsutil %} mgmt_bridge={{ vnsutil.mgmt_bridge }}{% endif %}
+{{ vnsutil.hostname }}
 
 {% endfor %}
 {% endif %}
@@ -118,49 +148,21 @@ vsc_ha_node2
 {% if nsgvs is defined and nsgvs %}
 [nsgvs]
 {% for nsgv in nsgvs %}
-{{ nsgv.hostname }}
+{{ nsgv.vmname }}
 {% endfor %}
 {% endif %}
 
 {% if vstats is defined and vstats %}
 
-{% if vstats|length == 1 %}
-
-[vstat_node1]
-{{ vstats[0].hostname }} {% if 'mgmt_bridge' in vstats[0] %} mgmt_bridge={{ vstats[0].mgmt_bridge }}{% endif %}
-
-[vstats:children]
-vstat_node1
-
-{% elif vstats|length == 2 %}
-
-[vstat_node1]
-{{ vstats[0].hostname }} {% if 'mgmt_bridge' in vstats[0] %} mgmt_bridge={{ vstats[0].mgmt_bridge }}{% endif %}
-
-[vstat_node2]
-{{ vstats[1].hostname }} {% if 'mgmt_bridge' in vstats[1] %} mgmt_bridge={{ vstats[1].mgmt_bridge }}{% endif %}
+{% for vstat in vstats %}
+[vstat_node{{ loop.index }}]
+{{ vstat.hostname }}
+{% endfor %}
 
 [vstats:children]
-vstat_node1
-vstat_node2
-
-{% else %}
-
-[vstat_node1]
-{{ vstats[0].hostname }} {% if 'mgmt_bridge' in vstats[0] %} mgmt_bridge={{ vstats[0].mgmt_bridge }}{% endif %}
-
-[vstat_node2]
-{{ vstats[1].hostname }} {% if 'mgmt_bridge' in vstats[1] %} mgmt_bridge={{ vstats[1].mgmt_bridge }}{% endif %}
-
-[vstat_node3]
-{{ vstats[2].hostname }} {% if 'mgmt_bridge' in vstats[2] %} mgmt_bridge={{ vstats[2].mgmt_bridge }}{% endif %}
-
-[vstats:children]
-vstat_node1
-vstat_node2
-vstat_node3
-
-{% endif %}
+{% for vstat in vstats %}
+vstat_node{{ loop.index }}
+{% endfor %}
 
 {% endif %}
 
@@ -176,7 +178,7 @@ vstat_node3
 {% if vsrs is defined and vsrs %}
 [vsrs]
 {% for vsr in vsrs %}
-{{ vsr.hostname }} {% if 'mgmt_bridge' in vsr %} mgmt_bridge={{ vsr.mgmt_bridge }}{% endif %}
+{{ vsr.hostname }}
 {% endfor %}
 {% endif %}
 
@@ -186,12 +188,50 @@ vstat_node3
 {{ ci.hostname }}
 {% endfor %}
 {% endif %}
- 
+
 {% if stcvs is defined and stcvs %}
 [stcvs]
 {% for stcv in stcvs %}
 {{ stcv.hostname }}
 {% endfor %}
+{% endif %}
+
+{% if vrss is defined and vrss %}
+[vrss]
+{% for vrs_dict_list in vrss %}
+{% for vrs_dict in vrs_dict_list['vrs_ip_list'] %}
+{{ vrs_dict }} avrs={{ 'avrs' in vrs_dict_list and vrs_dict_list['avrs'] }}
+{% endfor %}
+{% endfor %}
+{% endif %}
+
+{% if portals is defined and portals %}
+
+{% if portals|length == 1 %}
+[portal_sa_node]
+{{ portals[0].hostname }} {% if 'mgmt_bridge' in portals[0] %} mgmt_bridge={{ portals[0].mgmt_bridge }}{% endif %}
+
+[portals:children]
+portal_sa_node
+
+{% else %}
+
+[portal_ha_node1]
+{{ portals[0].hostname }} {% if 'mgmt_bridge' in portals[0] %} mgmt_bridge={{ portals[0].mgmt_bridge }}{% endif %}
+
+[portal_ha_node2]
+{{ portals[1].hostname }} {% if 'mgmt_bridge' in portals[1] %} mgmt_bridge={{ portals[1].mgmt_bridge }}{% endif %}
+
+[portal_ha_node3]
+{{ portals[2].hostname }} {% if 'mgmt_bridge' in portals[2] %} mgmt_bridge={{ portals[2].mgmt_bridge }}{% endif %}
+
+[portals:children]
+portal_ha_node1
+portal_ha_node2
+portal_ha_node3
+
+{% endif %}
+
 {% endif %}
 
 [ansible_deployment_host]

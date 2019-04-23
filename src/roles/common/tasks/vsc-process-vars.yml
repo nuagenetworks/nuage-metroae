@@ -27,8 +27,8 @@
 
     - name: Register VSC OVA variables with proper path and image locations for use in other playbooks
       set_fact:
-        ova_path: "{{ rc_vsc_file.files[0].path | dirname }}"
-        ova_file_name: "{{ rc_vsc_file.files[0].path | basename }}"
+        vcenter_image_path: "{{ rc_vsc_file.files[0].path | dirname }}"
+        vcenter_image_file_name: "{{ rc_vsc_file.files[0].path | basename }}"
       when: rc_vsc_file.matched > 0
 
     when: vscs | map(attribute='target_server_type') | list | issuperset(["vcenter"])
@@ -59,6 +59,11 @@
   - name: Create host_vars files for vsc
     template: src=vsc.j2 backup=no dest={{ inventory_dir }}/host_vars/{{ item.1.hostname }}
     with_indexed_items: "{{ vscs }}"
+
+  - name: Verify VSC DNS entries exist at server {{ dns_server_list[0] }}, and hostnames map to their IPs
+    include_tasks: check-dns.yml
+    with_items: "{{ vscs }}"
+    when: dns_server_list
 
   when:
     - vscs is defined and vscs

@@ -27,8 +27,8 @@
 
     - name: Register VSTAT OVF/OVA variables with proper path and image locations for use in other playbooks
       set_fact:
-        ova_path: "{{ rc_vstat_file.files[0].path | dirname }}"
-        ova_file_name: "{{ rc_vstat_file.files[0].path | basename }}"
+        vcenter_image_path: "{{ rc_vstat_file.files[0].path | dirname }}"
+        vcenter_image_file_name: "{{ rc_vstat_file.files[0].path | basename }}"
       when: rc_vstat_file.matched > 0
 
     when: vstats | map(attribute='target_server_type') | list | issuperset(["vcenter"])
@@ -58,6 +58,11 @@
   - name: Create host_vars files for vstat
     template: src=vstat.j2 backup=no dest={{ inventory_dir }}/host_vars/{{ item.hostname }}
     with_items: "{{ vstats }}"
+
+  - name: Verify VStat DNS entries exist at server {{ dns_server_list[0] }}, and hostnames map to their management IPs
+    include_tasks: check-dns.yml
+    with_items: "{{ vstats }}"
+    when: dns_server_list
 
   when:
     - vstats is defined and vstats

@@ -314,17 +314,18 @@
           - es_sa_script.stat.exists
           - vstat_default_username != 'root'
 
-      - name: Execute VSTAT cluster script on standalone or clustered vsds
-        command: /opt/vsd/vsd-es-cluster-config.sh -e {{ groups['vstats'][0] }},{{ groups['vstats'][1] }},{{ groups['vstats'][2] }}
-        delegate_to: "{{ vsd_hostname_list[0] }}"
-        environment:
-          SSHPASS: "{{ vstat_default_password }}"
-        no_log: True
-        when: vstat_sa_or_ha | match('ha')
+      - block:
+        - name: Execute VSTAT cluster script on standalone or clustered vsds
+          command: /opt/vsd/vsd-es-cluster-config.sh -e {{ groups['vstats'][0] }},{{ groups['vstats'][1] }},{{ groups['vstats'][2] }}
+          delegate_to: "{{ vsd_hostname_list[0] }}"
+          environment:
+            SSHPASS: "{{ vstat_default_password }}"
+          no_log: True
+          when: vstat_sa_or_ha | match('ha')
+
+        run_once: True
 
       remote_user: "{{ vsd_default_username }}"
-
-    run_once: True
 
   - name: Enable stats
     include_role:
