@@ -16,3 +16,4 @@
 * Remove obsolete document reference to build_vars.yml
 * Fix undefined variable eror during copy portal step in unzip task (METROAE-983)
 * Check data fqdn only for VNSUTIL component (METROAE-984)
+* Fix VSTAT descirption in CUSTOMIZE.md (METROAE-974)
