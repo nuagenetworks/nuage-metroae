@@ -9,6 +9,18 @@
         tasks_from: monit_status
       vars:
         no_report: "True"
+      when: not skip_health_check | default(false)
+
+- name: Find all reachable Primary VSDs to deactivate
+  hosts: primary_vsds
+  gather_facts: no
+  tasks:
+    - command: ping -c1 {{ inventory_hostname }}
+      delegate_to: localhost
+      register: ping_result
+      ignore_errors: yes
+    - set_fact:
+      is_reachable: ping_result|success
 
 - hosts: primary_vsds
   become: yes
@@ -16,6 +28,7 @@
   tasks:
     - name: Deactivate replication master on primary nodes
       command: /opt/vsd/bin/vsd-deactivate-replication-master-cluster.sh
+      when: is_reachable | default(false)
 
 - hosts: standby_vsds
   become: yes
