@@ -54,7 +54,7 @@
       when: item not in ['elasticsearch-status', 'stats-collector-status', 'tca-daemon-status']
       with_items: "{{ proc_list['state'].keys() }}"
 
-- hosts: vsd_ha_standby1
+- hosts: vsd_standby_node1
   become: yes
   remote_user: "{{ vsd_default_username }}"
   tasks:
@@ -66,7 +66,7 @@
         replication_db: "{{ replication_master_output.stdout | regex_search('/tmp.*gz') }}"
     - debug: var=replication_db
 
-- hosts: vsd_ha_standby1
+- hosts: vsd_standby_node1
   become: yes
   remote_user: "{{ vsd_default_username }}"
   tasks:
@@ -81,7 +81,7 @@
   remote_user: "{{ vsd_default_username }}"
   tasks:
     - set_fact:
-        replication_db: "{{ hostvars[groups['vsd_ha_standby1'][0]]['replication_db'] }}"
+        replication_db: "{{ hostvars[groups['vsd_standby_node1'][0]]['replication_db'] }}"
     - name: Transfer data from host machine to primary cluster
       copy:
         dest: "/tmp/"
@@ -126,6 +126,6 @@
   remote_user: "{{ vsd_default_username }}"
   tasks:
     - name: Run the replication script on first standby cluster
-      command: "/opt/vsd/bin/vsd-start-replication-slave -m {{ groups['vsd_ha_standby1'][0] }}"
+      command: "/opt/vsd/bin/vsd-start-replication-slave -m {{ groups['vsd_standby_node1'][0] }}"
       when:
         - vsd_cluster | default(false)
