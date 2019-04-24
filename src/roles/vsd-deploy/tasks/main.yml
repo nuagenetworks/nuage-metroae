@@ -82,7 +82,7 @@
           first_cluster_node_to_install: "{{ groups['vsd_ha_node1'][0] }}"
           second_cluster_node_to_install: "{{ groups['vsd_ha_node2'][0] }}"
           third_cluster_node_to_install: "{{ groups['vsd_ha_node3'][0] }}"
-      when: 
+      when:
         - not nuage_upgrade | default(False)
         - not vsd_standby_cluster | default(False)
 
@@ -91,7 +91,7 @@
           first_cluster_node_to_install: "{{ groups['vsd_standby_node1'][0] }}"
           second_cluster_node_to_install: "{{ groups['vsd_standby_node2'][0] }}"
           third_cluster_node_to_install: "{{ groups['vsd_standby_node3'][0] }}"
-      when: 
+      when:
         - vsd_standby_cluster | default(False)
 
     - name: Set VSD numbering for cluster upgrade
@@ -296,19 +296,21 @@
 
   - block:
 
+    - debug: var=nuage_upgrade
+
     - name: Apply VSD standard license
       apply_vsd_license:
         vsd_license_file: "{{ vsd_standard_license_file }}"
         vsd_auth: "{{ vsd_auth }}"
       delegate_to: localhost
-      when: vsd_standard_license_file is defined
+      when: vsd_standard_license_file is defined and nuage_upgrade == False
 
     - name: Apply VSD cluster license
       apply_vsd_license:
         vsd_license_file: "{{ vsd_cluster_license_file }}"
         vsd_auth: "{{ vsd_auth }}"
       delegate_to: localhost
-      when: vsd_cluster_license_file is defined
+      when: vsd_cluster_license_file is defined and nuage_upgrade == False
 
     run_once: true
 
