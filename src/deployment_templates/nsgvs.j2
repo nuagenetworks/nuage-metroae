@@ -12,19 +12,10 @@
 # NSGv {{ loop.index }}
 #
 -
-    # < Hostname >
-    # Hostname of the NSGv instance
-    #
-    hostname: "{{ item.hostname }}"
-
     # < VM name >
     # Name of the NSGv VM on the hypervisor/vcenter
     #
-    {%- if item.vmname is defined %}
     vmname: "{{ item.vmname }}"
-    {%- else %}
-    # vmname: (Hostname)
-    {%- endif %}
 
     ##### Target Server
 
@@ -89,6 +80,24 @@
     {%- endif %}
 
     ##########################
+
+    # < Data Network Bridge >
+    # Network Bridge used for the data path of this component. This will be a Distributed Virtual PortGroup (DVPG) when deploying on vCenter or a Linux network bridge when deploying on KVM.
+    #
+    {%- if item.data_bridge is defined %}
+    data_bridge: "{{ item.data_bridge }}"
+    {%- else %}
+    # data_bridge: (global Bridge interface)
+    {%- endif %}
+
+    # < NSGv Access Bridge >
+    # Network bridge used for the access network when installing an NSGv. This will be a Distributed Virtual PortGroup (DVPG) when deploying on vCenter or a Linux network bridge when installing on KVM
+    #
+    {%- if item.access_bridge is defined %}
+    access_bridge: "{{ item.access_bridge }}"
+    {%- else %}
+    # access_bridge: (global Bridge interface)
+    {%- endif %}
 
     ##### vCenter Parameters
 
@@ -176,8 +185,6 @@
     {%- else %}
     # aws_key_name: ""
     {%- endif %}
-
-    ####################
 
     # < AWS Access ENI >
     # ENI for Access Subnetwork
@@ -395,15 +402,6 @@
     # access_port_physical_name: port2
     {%- endif %}
 
-    # < NSG Access Port VLAN Range >
-    # VLAN range of the access port for the NSG
-    #
-    {%- if item.access_port_vlan_range is defined %}
-    access_port_vlan_range: "{{ item.access_port_vlan_range }}"
-    {%- else %}
-    # access_port_vlan_range: ""
-    {%- endif %}
-
     # < NSG Access Port VLAN Number >
     # VLAN number of the NSG access port for the NSG
     #
@@ -414,6 +412,24 @@
     {%- endif %}
 
     ################################
+
+    # < NSG Access Port VLAN Range >
+    # VLAN range of the access port for the NSG
+    #
+    {%- if item.access_port_vlan_range is defined %}
+    access_port_vlan_range: "{{ item.access_port_vlan_range }}"
+    {%- else %}
+    # access_port_vlan_range: ""
+    {%- endif %}
+
+    # < Telnet port for console >
+    # The port for telnet to HV host to access NSGv serial or console terminal
+    #
+    {%- if item.telnet_port is defined %}
+    telnet_port: {{ item.telnet_port }}
+    {%- else %}
+    # telnet_port: 2300
+    {%- endif %}
 
 {% endfor %}
 {% else %}

@@ -116,6 +116,10 @@
     local_action: command cat "{{ user_ssh_pub_key }}"
     register: current_user_ssh_key
 
+  - name: Enable IPv6 in qcow image
+    command: virt-edit -a {{ guestfish_dest }} /etc/sysctl.conf -e s/net.ipv6.conf.all.disable_ipv6=1/net.ipv6.conf.all.disable_ipv6=0/
+    when: enable_ipv6 | default(False)
+
   - name: Get guestfish mount for qcow2
     include_role:
       name: common

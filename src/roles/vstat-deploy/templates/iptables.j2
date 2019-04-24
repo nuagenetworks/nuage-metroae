@@ -1,15 +1,29 @@
 {% if vsd_sa_or_ha == "sa" %}
 iptables_std_commands:
+{% if enable_ipv6 | default(False) %}
+  - "ipset create vsd hash:ip family inet6"
+{% else %}
   - "ipset create vsd hash:ip"
+{% endif %}
   - "ipset add vsd {{ ip_addr.stdout }}"
   - "ipset save -f /etc/sysconfig/ipset"
+{% if enable_ipv6 | default(False) %}
+  - "ip6tables -I INPUT -p tcp --dport 22 -j ACCEPT"
+  - "ip6tables -R INPUT 5 -m set --match-set vsd src -p tcp --dport 9200 -j ACCEPT"
+  - "ip6tables -R INPUT 6 -m set --match-set vsd src -p tcp --dport 9300 -j ACCEPT"
+{% else %}
   - "iptables -R INPUT 5 -m set --match-set vsd src -p tcp --dport 9200 -j ACCEPT"
   - "iptables -R INPUT 6 -m set --match-set vsd src -p tcp --dport 9300 -j ACCEPT"
+{% endif %}
   - "service iptables save"
 {% endif %}
 {% if vsd_sa_or_ha == "ha" %}
 iptables_cluster_commands:
+{% if enable_ipv6 | default(False) %}
+  - "ipset create vsd hash:ip family inet6"
+{% else %}
   - "ipset create vsd hash:ip"
+{% endif %}
 {% for vsd in groups['vsds'] %}
   - "ipset add vsd {{ hostvars[vsd]['mgmt_ip'] }}"
 {% endfor %}
@@ -20,6 +34,12 @@ iptables_cluster_commands:
 {% endfor %}
 {% endif %}
   - "ipset save -f /etc/sysconfig/ipset"
+{% if enable_ipv6 | default(False) %}
+  - "ip6tables -I INPUT -p tcp --dport 22 -j ACCEPT"
+  - "ip6tables -R INPUT 5 -m set --match-set vsd src -p tcp --dport 9200 -j ACCEPT"
+  - "ip6tables -R INPUT 6 -m set --match-set vsd src -p tcp --dport 9300 -j ACCEPT"
+{% else %}
   - "iptables -R INPUT 5 -m set --match-set vsd src -p tcp --dport 9200 -j ACCEPT"
   - "iptables -R INPUT 6 -m set --match-set vsd src -p tcp --dport 9300 -j ACCEPT"
+{% endif %}
   - "service iptables save"

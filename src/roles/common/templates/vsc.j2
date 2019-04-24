@@ -10,7 +10,7 @@ hostname: {{ item.1.hostname }}
 system_name: {{ item.1.system_name }}
 {% endif %}
 
-{% if item.1.target_server_type | match("kvm") or item.1.target_server_type | match("vcenter") %}
+{% if item.1.target_server_type | match("kvm") or item.1.target_server_type | match("vcenter") or item.1.target_server_type | match("nuagex") %}
 target_server: {{ item.1.target_server }}
 {% endif %}
 
@@ -27,6 +27,22 @@ vlan_id: {{ item.1.vlan_id }}
 mgmt_ip: {{ item.1.mgmt_ip }}
 mgmt_netmask_prefix: {{ item.1.mgmt_ip_prefix }}
 mgmt_gateway: {{ item.1.mgmt_gateway }}
+
+{% if item.1.mgmt_bridge is defined %}
+mgmt_bridge: {{ item.1.mgmt_bridge }}
+{% endif %}
+
+{% if item.1.data_bridge is defined %}
+data_bridge: {{ item.1.data_bridge }}
+{% endif %}
+
+{% if item.1.mgmt_ip | ipv6 != False %}
+enable_ipv6: true
+{% endif %}
+
+{% if item.1.ctrl_ip is defined and item.1.ctrl_ip | ipv6 != False %}
+enable_ipv6_control: true
+{% endif %}
 
 {% if item.1.internal_mgmt_ip is defined %}
 internal_mgmt_ip: {{ item.1.internal_mgmt_ip }}
@@ -47,16 +63,9 @@ internal_ctrl_ip: {{ item.1.internal_ctrl_ip }}
 internal_data_gateway_ip: {{ item.1.internal_data_gateway_ip }}
 {% endif %}
 
-{% if item.1.mgmt_routed_network_name is defined %}
-mgmt_routed_network_name: {{ item.1.mgmt_routed_network_name }}
-{% endif %}
-{% if item.1.data_routed_network_name is defined %}
-data_routed_network_name: {{ item.1.data_routed_network_name }}
-{% endif %}
-
-vsc_mgmt_static_route_list:
-{% if item.1.vsc_mgmt_static_route_list is defined %}
-{% for route in item.1.vsc_mgmt_static_route_list %}
+mgmt_static_route_list:
+{% if item.1.mgmt_static_route_list is defined %}
+{% for route in item.1.mgmt_static_route_list %}
   - {{ route }}
 {% endfor %}
 {% else %}
@@ -84,11 +93,11 @@ qcow2_file_name: {{ qcow2_file_name }}
 
 {% if item.1.target_server_type | match("vcenter") %}
 
-{% if ova_path is defined %}
-ova_path: {{ ova_path }}
+{% if vcenter_image_path is defined %}
+vcenter_image_path: {{ vcenter_image_path }}
 {% endif %}
-{% if ova_file_name is defined %}
-ova_file_name: {{ ova_file_name }}
+{% if vcenter_image_file_name is defined %}
+vcenter_image_file_name: {{ vcenter_image_file_name }}
 {% endif %}
 
 vcenter:
@@ -110,6 +119,10 @@ vsd_fqdn: {{ vsd_fqdn_global }}
 
 {% if item.1.system_ip is defined %}
 system_ip: {{ item.1.system_ip }}
+{% endif %}
+
+{% if item.1.system_ip is defined and item.1.system_ip | ipv6 != False %}
+enable_ipv6_system: true
 {% endif %}
 
 xmpp:
