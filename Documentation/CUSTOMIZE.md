@@ -64,13 +64,13 @@ ZFB support is included in the nsgv schema and supporting files. In the beta rel
 - `failed_login_attempts` is an optional parameter to set the number of failed login attempts.
 - `failed_login_lockout_time` is an optional parameter that set the lockout time after reaching the max number of failed login attempts.
 - `adavanced_api_access_logging` is an optional parameter to enable adding custom header to access log.
-- `tls_version` is an optional parameter to set the minimum tls version to use.
+- `tls_version` is an optional parameter to set the minimum TLS version to use.
 
 ### `vscs.yml`
 - `ca_certificate_path` is an optional parameter that points to the location of the certificate of the signing authority.
 - `certificate_path` is an optional parameter that points to the location of the certificate pem file for the vsc.
 - `private_key_path` is an optional parameter that points to the location of the certificate private key pem file for the vsc.
-- `ejjaberd_id` is an optional parameter that defines the ejjaberd id used to when creating the certificate.
+- `ejjaberd_id` is an optional parameter that defines the ejjaberd username used to when creating the certificate.
 
 ### `vrss.yml`
 - `ca_certificate_path` is an optional parameter that points to the location of the certificate of the signing authority.
