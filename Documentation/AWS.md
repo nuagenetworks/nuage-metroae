@@ -79,8 +79,6 @@ Set `target_server_type` to "kvm" and `target_server` to the address(es) of the 
 
 To support routed network connectivity, specify the following fields.  
 - `internal_mgmt_ip`: The ip address to be assigned to the management interfaces on the VSC itself. This internal address can be NATed to the real address of the bare-metal host using iptables rules.
-- `mgmt_routed_network_name`: The name of the libvirt routed network defined on the bare-metal host to support the management interface of the VSC.
-- `data_routed_network_name`: The name of the libvirt routed network defined on the bare-metal host to support the data interface of the VSC.
 - `internal_ctrl_ip`: The ip address to be assigned to the data interfaces on the VSC itself. This internal address can be NATed to the real address of the bare-metal host using iptables rules.
 - `internal_data_gateway_ip`: The ip address of the data network gateway for the VSC. This ip address is used for VSC to connect to NSG and other components via static route addition on VSC  
 ### nsgv_bootstrap.yml
