@@ -9,21 +9,21 @@
         timeout: 720
       with_items:
         - "{{ private_key_path }}"
-        - "{{ certificate }}"
-        - "{{ ca_certificate }}"
+        - "{{ certificate_path }}"
+        - "{{ ca_certificate_path }}"
 
       delegate_to: localhost
 
     - name: set tls profiles vars
       set_fact:
         own_key: "{{ private_key_path | basename }}"
-        own_certificate: "{{ certificate | basename }}"
-        own_ca_certificate: "{{ ca_certificate | basename }}"
+        own_certificate: "{{ certificate_path | basename }}"
+        own_ca_certificate: "{{ ca_certificate_path | basename }}"
 
     when:
       - private_key_path is defined
-      - certificate is defined
-      - ca_certificate is defined
+      - certificate_path is defined
+      - ca_certificate_path is defined
 
   - block:
     - name: Create and transfer certs
@@ -47,8 +47,8 @@
 
     when:
       - private_key_path is undefined
-      - certificate is undefined
-      - ca_certificate is undefined
+      - certificate_path is undefined
+      - ca_certificate_path is undefined
 
   - name: Configure the security profile on the VSC
     sros_config:
@@ -91,8 +91,8 @@
 
     when:
       - private_key_path is defined
-      - certificate is defined
-      - ca_certificate is defined
+      - certificate_path is defined
+      - ca_certificate_path is defined
       - ejabberd_id is defined
 
   - name: check xmpp connectivity between VSC and VSD after enabling TLS

@@ -156,37 +156,38 @@
 - block:
   - name: Copy Root CA to VSD
     copy:
-      src: "{{ root_cert_path }}"
+      src: "{{ ca_certificate_path }}"
       dest: "/opt/vsd/ejbca/p12/ca.cert.pem"
       owner: ejabberd
       group: hadoopusers
       mode: 0640
-    when: cert_path is defined
+    when: ca_certificate_path is defined
 
   - name: Copy and Intermediate Cert file to VSD
     copy:
-      src: "{{ intermediate_cert_path }}"
+      src: "{{ intermediate_certificate_path }}"
       dest: "/opt/vsd/ejbca/p12/intermediate.cert.pem"
       owner: ejabberd
       group: hadoopusers
       mode: 0640
-    when: intermediate_cert_path is defined
+    when: intermediate_certificate_path is defined
 
   - name: Copy VSD certificate
     copy:
-      src: "{{ cert_path }}"
+      src: "{{ certificate_path }}"
       dest: "/opt/vsd/ejbca/p12/{{ cert_path | basename }}"
       owner: ejabberd
       group: hadoopusers
       mode: 0640
+    when: certificate_path is defined
 
   - name: Import Intermediate Cert Pem file
     shell: '/usr/java/latest/bin/keytool -importcert  -file /opt/vsd/ejbca/p12/intermediate.cert.pem -keystore /usr/java/latest/lib/security/cacerts -storepass changeit -alias myintermediateCA -noprompt'
-    when: intermediate_cert_path is defined
+    when: intermediate_certificate_path is defined
 
   - name: Import Root CA Pem file
     shell: '/usr/java/latest/bin/keytool -importcert -file /opt/vsd/ejbca/p12/ca.cert.pem -keystore /usr/java/latest/lib/security/cacerts -storepass changeit -alias myRootCA -noprompt'
-    when: root_cert_path is defined
+    when: ca_certificate_path is defined
 
   - name: Stop vsd-core
     shell: monit -g vsd-core stop
@@ -212,5 +213,5 @@
     ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"
 
   when:
-    - root_cert_path is defined
+    - ca_certificate_path is defined
     - cert_path is defined
