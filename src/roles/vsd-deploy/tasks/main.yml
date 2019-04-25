@@ -26,13 +26,9 @@
   register: vsd_version
   remote_user: "{{ vsd_default_username }}"
 
-- name: Set if VSD versions match qcow2
-  set_fact: vsd_versions_match="{{ vsd_version.stdout == qcow2_file_name | regex_search('([0-9]+\\.[0-9]+\\.[0-9A-Za-z]+)') }}"
-  when: qcow2_file_name is defined
-
-- name: Set if VSD versions match ova
-  set_fact: vsd_versions_match="{{ vsd_version.stdout == vcenter_image_file_name | regex_search('([0-9]+\\.[0-9]+\\.[0-9A-Za-z]+)') }}"
-  when: vcenter_image_file_name is defined
+- name: Set if VSD versions match image file
+  set_fact: vsd_versions_match="{{ vsd_version.stdout == image_file_name | regex_search('([0-9]+\\.[0-9]+\\.[0-9A-Za-z]+)') }}"
+  when: image_file_name is defined
 
 - name: Set if VSD versions match optional input version
   set_fact: vsd_versions_match="{{ vsd_version.stdout == nuage_software_version }}"
@@ -82,7 +78,7 @@
           first_cluster_node_to_install: "{{ groups['vsd_ha_node1'][0] }}"
           second_cluster_node_to_install: "{{ groups['vsd_ha_node2'][0] }}"
           third_cluster_node_to_install: "{{ groups['vsd_ha_node3'][0] }}"
-      when: 
+      when:
         - not nuage_upgrade | default(False)
         - not vsd_standby_cluster | default(False)
 
@@ -91,7 +87,7 @@
           first_cluster_node_to_install: "{{ groups['vsd_standby_node1'][0] }}"
           second_cluster_node_to_install: "{{ groups['vsd_standby_node2'][0] }}"
           third_cluster_node_to_install: "{{ groups['vsd_standby_node3'][0] }}"
-      when: 
+      when:
         - vsd_standby_cluster | default(False)
 
     - name: Set VSD numbering for cluster upgrade
