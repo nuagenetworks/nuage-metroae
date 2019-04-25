@@ -9,6 +9,8 @@
 * Support GEO redundant VSD cluster install (METROAE-695)
 * Use DNS server to verify full FQDN (METROAE-897)
 * IPv6 address support on mgmt_ip and data_ip for VSD, VSC and VSTAT. (METROAE-960)
+* Ansible 2.7 support (METROAE-876)
+* Ansible output now in YAML format (METROAE-978)
 ### Resolved Issues
 * Fix VSD Upgrade procedure to check for accurate ejabberd connected user list (METROAE-958)
 * Health playbooks don't support custom usernames (METROAE-968)
