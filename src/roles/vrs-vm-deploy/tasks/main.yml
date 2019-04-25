@@ -21,7 +21,7 @@
       dest: /etc/yum.conf
       regexp: "^proxy="
       line: "proxy={{ yum_proxy }}"
-    when: not yum_proxy | match('NONE')
+    when: yum_proxy is not match('NONE')
 
   - name: Add epel repository on RedHat OS family distros
     yum_repository:
@@ -37,10 +37,11 @@
     when: yum_update
 
   - name: Install requried yum packages
-    yum: name={{ item }} state=present
-    with_items:
-     - net-tools
-     - libguestfs-tools
+    yum:
+      name:
+       - net-tools
+       - libguestfs-tools
+      state: present
   remote_user: "{{ target_server_username }}"
   become: "{{ 'no' if target_server_username == 'root' else 'yes' }}"
   delegate_to: "{{ mgmt_ip }}"

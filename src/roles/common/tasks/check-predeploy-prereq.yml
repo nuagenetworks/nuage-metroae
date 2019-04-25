@@ -16,7 +16,7 @@
       that: "not {{ wait_for_ssh_output.failed }}"
       msg: "Failed to connect to target_server {{ target_server }}. Is passwordless SSH set up?"
 
-  when: target_server_type | default('NONE') | match("kvm")
+  when: target_server_type | default('NONE') is match("kvm")
 
 - block:
 
@@ -24,13 +24,13 @@
     assert:
       that: "qcow2_path is defined and qcow2_file_name is defined"
       msg: "Missing QCOW2 files for {{ hostname | default(vmname) }} under the unzipped file directory, please unzip them and issue reset_build"
-    when: target_server_type | match("kvm")
+    when: target_server_type is match("kvm")
 
   - name: Check that OVA files were found
     assert:
       that: "vcenter_image_path is defined and vcenter_image_file_name is defined"
       msg: "Missing vCenter image files for {{ hostname | default(vmname) }} under the unzipped file directory, please unzip them and issue reset_build"
-    when: target_server_type | match("vcenter")
+    when: target_server_type is match("vcenter")
 
   when: component_type | default("NONE") != 'vrs'
 

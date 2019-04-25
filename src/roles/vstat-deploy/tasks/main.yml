@@ -16,7 +16,7 @@
     retries: 90
 
 - import_tasks: openstack.yml
-  when: target_server_type | match("openstack")
+  when: target_server_type is match("openstack")
   tags:
     - vstat
     - openstack
@@ -33,7 +33,7 @@
   - name: Set hostname for AWS permanently
     shell: "echo {{ hostname }} > /etc/hostname"
 
-  when: target_server_type | match("aws")
+  when: target_server_type is match("aws")
   remote_user: "{{ vstat_default_username }}"
 
 - name: Get vsd node(s) information
@@ -67,10 +67,12 @@
 
   remote_user: "{{ vstat_default_username }}"
   run_once: true
-  when: vstat_sa_or_ha | match('ha')
+  when: vstat_sa_or_ha is match('ha')
 
 - name: check for iptables (ignoring errors)
-  shell: "service iptables status"
+  shell:
+    cmd: "service iptables status"
+    warn: false
   register: _svc_iptables
   ignore_errors: True
   remote_user: "{{ vstat_default_username }}"
@@ -142,18 +144,20 @@
       - name: Verify iptables rules installation
         assert:
           that: "{{ item.rc }} == 0 or
-                 {{ item.stderr | search('already exists') }} or
-                 {{ item.stderr | search('already added') }}"
+                 {{ item.stderr is search('already exists') }} or
+                 {{ item.stderr is search('already added') }}"
           msg: "iptables rule was not installed"
         with_items:
           - "{{ iptables_results.results }}"
 
-      when: vsd_sa_or_ha | match('sa')
+      when: vsd_sa_or_ha is match('sa')
 
     - block:
 
       - name: Config iptables on VSTAT vm to accept conn on ports 9200, 9300 from vsd(s) in cluster setup (ignoring errors)
-        shell: "{{ item }}"
+        shell:
+          cmd: "{{ item }}"
+          warn: false
         with_items:
           - "{{ iptables_cluster_commands }}"
         remote_user: "{{ vstat_default_username }}"
@@ -163,20 +167,22 @@
       - name: Verify iptables rules installation
         assert:
           that: "{{ item.rc }} == 0 or
-                 {{ item.stderr | search('already exists') }} or
-                 {{ item.stderr | search('already added') }}"
+                 {{ item.stderr is search('already exists') }} or
+                 {{ item.stderr is search('already added') }}"
           msg: "iptables rule was not installed"
         with_items:
           - "{{ iptables_results.results }}"
 
-      when: vsd_sa_or_ha | match('ha')
+      when: vsd_sa_or_ha is match('ha')
 
     when: not skip_vstat_deploy
 
   when: "_svc_iptables.rc == 0"
 
 - name: check for firewalld (ignoring errors)
-  shell: "service firewalld status"
+  shell:
+    cmd: "service firewalld status"
+    warn: false
   register: _svc_firewalld
   ignore_errors: True
   remote_user: "{{ vstat_default_username }}"
@@ -230,13 +236,13 @@
       with_items:
         - "{{ firewall_std_commands }}"
       remote_user: "{{ vstat_default_username }}"
-      when: vsd_sa_or_ha | match('sa')
+      when: vsd_sa_or_ha is match('sa')
 
     - name: Config firewall on VSTAT vm to accept conn on ports 9200, 9300 from vsd(s) in cluster setup
       shell: "{{ item }}"
       with_items:
         - "{{ firewall_cluster_commands }}"
-      when: vsd_sa_or_ha | match('ha')
+      when: vsd_sa_or_ha is match('ha')
       remote_user: "{{ vstat_default_username }}"
 
     when: not skip_vstat_deploy
@@ -252,7 +258,7 @@
       dest: /etc/hosts
       line: "{{ hostvars[item]['mgmt_ip'] }}    {{ hostvars[item]['hostname'] }}"
     with_items: "{{ groups['vstats'] }}"
-    when: vsd_sa_or_ha | match('ha')
+    when: vsd_sa_or_ha is match('ha')
     remote_user: "{{ vstat_default_username }}"
 
   - name: Configure ntpd and ntpdate and local time zone
@@ -292,7 +298,7 @@
         register: es_sa_script
         delegate_to: "{{ vsd_hostname_list[0] }}"
         when:
-          - vstat_sa_or_ha | match('sa')
+          - vstat_sa_or_ha is match('sa')
 
       - name: Execute VSTAT standalone script on standalone or clustered vsds
         command: /opt/vsd/vsd-es-standalone.sh -e {{ inventory_hostname }}
@@ -301,7 +307,7 @@
         environment:
           SSHPASS: "{{ vstat_default_password }}"
         when:
-          - vstat_sa_or_ha | match('sa')
+          - vstat_sa_or_ha is match('sa')
           - es_sa_script.stat.exists
           - vstat_default_username == 'root'
 
@@ -310,7 +316,7 @@
         delegate_to: "{{ vsd_hostname_list[0] }}"
         no_log: True
         when:
-          - vstat_sa_or_ha | match('sa')
+          - vstat_sa_or_ha is match('sa')
           - es_sa_script.stat.exists
           - vstat_default_username != 'root'
 
@@ -321,7 +327,7 @@
           environment:
             SSHPASS: "{{ vstat_default_password }}"
           no_log: True
-          when: vstat_sa_or_ha | match('ha')
+          when: vstat_sa_or_ha is match('ha')
 
         run_once: True
 
