@@ -7,7 +7,7 @@ MetroÆ before version 3.0 used the now deprecated build_vars.yml configuration.
 ./convert_build_vars_to_deployment.py <build_vars_file> <deployment_name>
 ```
 
-Deprecation Notice: The convert_build_vars_to_deployment tool is not actively updated for new features and will be removed in MetroÆ v3.4.0. Users of this tool should either edit deployment files directly or modify their process to take advantage of the jinja2 templates available in src/deployment_templates to auto-generate deployment files. 
+Deprecation Notice: The convert_build_vars_to_deployment tool is not actively updated for new features and will be removed in MetroÆ v3.4.0. Users of this tool should either edit deployment files directly or modify their process to take advantage of the jinja2 templates available in src/deployment_templates to auto-generate deployment files.
 
 ## Prerequisites / Requirements
 If you have not already set up your MetroÆ Host environment, see [SETUP.md](SETUP.md) before proceeding.  
@@ -55,6 +55,28 @@ ZFB support is included in the nsgv schema and supporting files. In the beta rel
 
 ### `vstats.yml`
 `vstats.yml` contains the definition of the VSTATs (VSD Statistics) to be operated on in this deployment. This file should be present in your deployment only if you are specifying VSTATs. If not provided, no VSTATs will be operated on. This file is of yaml list type and must contain either 0, 1 or 3 VSTAT definitions.
+
+#### Notes for VSD security enhancements
+### `vsds.yml`
+- `ca_certificate_path` is an optional parameter that points to the location of the certificate of the signing authority.
+- `certificate_path` is an optional parameter that points to the location of the certificate pem file for the vsd.
+- `intermediate_certificate_path` is an optional parameter that points to the location of the chain certificate.
+- `failed_login_attempts` is an optional parameter to set the number of failed login attempts.
+- `failed_login_lockout_time` is an optional parameter that set the lockout time after reaching the max number of failed login attempts.
+- `adavanced_api_access_logging` is an optional parameter to enable adding custom header to access log.
+- `tls_version` is an optional parameter to set the minimum tls version to use.
+
+### `vscs.yml`
+- `ca_certificate_path` is an optional parameter that points to the location of the certificate of the signing authority.
+- `certificate_path` is an optional parameter that points to the location of the certificate pem file for the vsc.
+- `private_key_path` is an optional parameter that points to the location of the certificate private key pem file for the vsc.
+- `ejjaberd_id` is an optional parameter that defines the ejjaberd id used to when creating the certificate.
+
+### `vrss.yml`
+- `ca_certificate_path` is an optional parameter that points to the location of the certificate of the signing authority.
+- `certificate_path` is an optional parameter that points to the location of the certificate pem file for the vrs.
+- `private_key_path` is an optional parameter that points to the location of the certificate private key pem file for the vrs.
+
 
 ### Unsupported Components/Operations
 The following components/operations are not supported in the beta release.
