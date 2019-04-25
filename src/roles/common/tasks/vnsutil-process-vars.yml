@@ -27,8 +27,8 @@
 
     - name: Register VNS UTIL OVA variables with proper path and image locations for use in other playbooks
       set_fact:
-        ova_path: "{{ rc_vnsutil_file.files[0].path | dirname }}"
-        ova_file_name: "{{ rc_vnsutil_file.files[0].path | basename }}"
+        vcenter_image_path: "{{ rc_vnsutil_file.files[0].path | dirname }}"
+        vcenter_image_file_name: "{{ rc_vnsutil_file.files[0].path | basename }}"
       when: rc_vnsutil_file.matched > 0
 
     when: vnsutils | map(attribute='target_server_type') | list | issuperset(["vcenter"])
@@ -45,6 +45,15 @@
 
   - name: Create host_vars files for vnsutil
     template: src=vnsutil.j2 backup=no dest={{ inventory_dir }}/host_vars/{{ item.hostname }}
+    with_items: "{{ vnsutils }}"
+
+  - name: Verify VNS Utils DNS entries exist at server {{ dns_server_list[0] }}, and hostnames map to their IPs
+    include_tasks: check-dns.yml
+    with_items: "{{ vnsutils }}"
+    when: dns_server_list
+
+  - name: Verify if VNS Utils data FQDN maps to the proper data IP
+    include_tasks: check-dns-data.yml
     with_items: "{{ vnsutils }}"
 
   when:

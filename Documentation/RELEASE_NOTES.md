@@ -1,12 +1,21 @@
 # Metro Automation Engine Release Notes
-## Release 3.2.1
+## Release 3.3.0
+### Feature Enhancements
+* Use ovftool probe mode to validate VSD version in OVA (METROAE-1099)
+* Add telnet_port to NSGv and support MetroÆ on Ubuntu (METROAE-962)
+* Enhanced support for nuagex deployments
+* Verify that VSC reboot was successful (METROAE-648)
+* Support deployment of SDWAN Portal
+* Support GEO redundant VSD cluster install (METROAE-695)
+* Use DNS server to verify full FQDN (METROAE-897)
+* IPv6 address support on mgmt_ip and data_ip for VSD, VSC and VSTAT (METROAE-960)
+* Remove "local_host" group from hosts to avoid name conflicts (METROAE-985)
+* Rename 'audit.log' to 'metroae.log' (METROAE-975)
 ### Resolved Issues
-* Fix static routes so they are applied to VSC (METROAE-953)
-* Handle spaces in the yum.conf proxy setting in metro-setup.sh
-* Fix nsgv-postdeploy to check proper bootstrap status (METROAE-959)
-* Move internal IP fields out of AWS section of VSC schema (METROAE-961)
-* Force VSD upgrade ordering (METROAE-966)
-* Fix encrypt credentials encoding error (METROAE-963)
-* Fix fact that VMware error is masked by ignore_errors in vsd-destroy (METROAE-813)
-* Add support for deploying more than 1 vstat in standalone mode (METROAE-964)
-* Fix jsonschema version in container (METROAE-969)
+* Fix VSD Upgrade procedure to check for accurate ejabberd connected user list (METROAE-958)
+* Health playbooks don't support custom usernames (METROAE-968)
+* Remove obsolete document reference to build_vars.yml
+* Fix undefined variable error during copy portal step in unzip task (METROAE-983)
+* Check data fqdn only for VNSUTIL component (METROAE-984)
+* Fix VSTAT descirption in CUSTOMIZE.md (METROAE-974)
+* vnsutil-destroy unable to retrieve file because of include of non-existent openstack.yml (METROAE-986)
