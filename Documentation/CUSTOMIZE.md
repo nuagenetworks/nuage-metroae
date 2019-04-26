@@ -59,15 +59,8 @@ ZFB support is included in the nsgv schema and supporting files. In the beta rel
 ### Unsupported Components/Operations
 The following components/operations are not supported in the beta release.
 * dns
-* gmv
-* mesos
-* nsgv bootstrap (install is supported)
 * stcv
 * vsr
-* vrs-vm
-* osc-integration
-* AWS-based VSTAT upgrade
-* upgrade of VRS through VCIN
 
 ### Operating using the Default Deployment
 The Default deployment is provided as a starting place for your workflows. It is located in a subdirectory named `Default` within the Deployments directory. You can operate MetroÆ by simply editing the contents of the Default deployment. Follow these steps:
