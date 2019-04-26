@@ -6,6 +6,15 @@ In the deployments, create a deployment with 6 VSDS. First 3 belong to the curre
 ```
 metroae vsd_cluster_failover [deployment_name]
 ```
+If you want to skip the health check of secondary cluster use following option 
+```
+metroae vsd_cluster_failover [deployment_name] -e skip_health_check=true
+```
+
+If you want Metro&#198; to continue running even if deactivating the primary cluster fails, use following option
+```
+metroae vsd_cluster_failover [deployment_name] -e ignore_vsd_deactivation_error=yes
+```
 
 ## Questions, Feedback, and Contributing
 Ask questions and get support via the [forums](https://devops.nuagenetworks.net/forums/) on the [MetroÆ site](https://devops.nuagenetworks.net/).  
