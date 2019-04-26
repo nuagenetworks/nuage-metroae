@@ -383,19 +383,8 @@ function run {
             user_name=`whoami`
             group_name=`id -g -n`
 
-            if [[ $1 == "config" ]]; then
-                echo "config docker run"
-                docker run -e LEVISTATE_CONTAINER=true -t -d --network host -v $LEVISTATE_MOUNT_POINT:/data:Z --name metroae $METRO_AE_IMAGE:$MAX_CONTAINER_VERSION 2> /dev/null
-            elif [[ $1 == "ui" ]]; then
-                echo "ui docker run"
-                docker run -e USER_NAME=$user_name -e GROUP_NAME=$group_name -t -d $network_args -v $METROAE_MOUNT_POINT:/data:Z -v $IMAGES_MOUNT_POINT:/images:Z --name metroae $METRO_AE_IMAGE:$MAX_CONTAINER_VERSION
-            elif [[ $1 == "both" ]]; then
-                echo "both docker run"
-                docker run -e USER_NAME=$user_name -e GROUP_NAME=$group_name -e LEVISTATE_CONTAINER=true -t -d $network_args -v $METROAE_MOUNT_POINT:/data:Z -v $IMAGES_MOUNT_POINT:/images:Z --name metroae $METRO_AE_IMAGE:$MAX_CONTAINER_VERSION
-            else
-                echo "none docker run"
-                docker run -e USER_NAME=$user_name -e GROUP_NAME=$group_name -t -d $network_args -v $METROAE_MOUNT_POINT:/data:Z -v $IMAGES_MOUNT_POINT:/images:Z --name metroae $METRO_AE_IMAGE:$MAX_CONTAINER_VERSION
-            fi
+            docker run -e USER_NAME=$user_name -e GROUP_NAME=$group_name -t -d $network_args -v $METROAE_MOUNT_POINT:/data:Z -v $IMAGES_MOUNT_POINT:/images:Z --name metroae $METRO_AE_IMAGE:$MAX_CONTAINER_VERSION
+
         else
             docker start $CONTAINER_ID
         fi
@@ -479,7 +468,11 @@ function setup {
     echo IMAGES_MOUNT_POINT=$images_path >> $SETUP_FILE
 
     # ui
-    confirmation="init"
+    if [[ ! -z $3 ]]; then
+        confirmation="$3"
+    else
+        confirmation="init"
+    fi
     while [[ $confirmation != "yes" ]] && [[ $confirmation  != "no" ]] && [[ $confirmation  != "y" ]] && [[ $confirmation != "n" ]]
     do
         read -p "Do you want to setup the ui (yes/no): " confirmation
@@ -490,37 +483,26 @@ function setup {
 
         get_host_operating_system
         if [[ $OS_RELEASE -eq $NON_LINUX ]]; then
-            if [ -z $3 ]
-            then
+            if [[ -z $4 ]]; then
                 echo ""
                 read -p "Specify the REST API/GUI access port for the metroae container: " port
             else
-                echo "Setting REST API/GUI access port to $3" | tee -a $SCRIPT_LOG_FILE
-                port=$3
+                echo "Setting REST API/GUI access port to $4" | tee -a $SCRIPT_LOG_FILE
+                port=$4
             fi
             echo UI_PORT=$port >> $SETUP_FILE
         fi
         # Ask if TLS needs to be setup
-        if [[ $OS_RELEASE -eq $NON_LINUX ]]; then
-            if [[ ! -z $4 ]]; then
-                confirmation=$4
-            else
-                confirmation="init"
-            fi
+        if [[ ! -z $5 ]]; then
+            confirmation=$5
         else
-            if [[ ! -z $3 ]]; then
-                confirmation=$3
-            else
-                confirmation="init"
-            fi
+            confirmation="init"
         fi
-
         while [[ $confirmation != "yes" ]] && [[ $confirmation  != "no" ]] && [[ $confirmation  != "y" ]] && [[ $confirmation != "n" ]]
         do
             read -p "Do you want to set a security certificate for the metroae container GUI (yes/no): " confirmation
         done
 
-        # TODO: Why load_certificates will return 0
         if [[ $confirmation == "yes" ]] && [[ $confirmation == "y" ]]; then
             load_certificates
             return 0
@@ -530,7 +512,11 @@ function setup {
     fi
 
     # config
-    confirmation="init"
+    if [[ ! -z $6 ]]; then
+        confirmation=$6
+    else
+        confirmation="init"
+    fi
     while [[ $confirmation != "yes" ]] && [[ $confirmation  != "no" ]] && [[ $confirmation  != "y" ]] && [[ $confirmation != "n" ]]
     do
         read -p "Do you want to setup the config (yes/no): " confirmation
@@ -557,23 +543,22 @@ function setup {
         delete_container_id
     fi
 
-    if [[ $is_config_run == true ]] && [[ $is_ui_run ==  true ]]; then
-        run "both"
-    elif [[ $is_config_run == true ]]; then
-        run "config"
-    else
-        run "ui"
+    # First we start the container
+    run
+
+    if [[ $is_ui_run == true ]]; then
+        start_ui $7
     fi
 
     status=0
     if [[ $? -ne 0 ]]; then
         return 1
-    elif [[ is_config_run == true ]]; then
+    elif [[ $is_config_run == true ]]; then
         #download the templates and sample user data
         docker_exec_levistate templates update
         status=$?
     fi
-
+    
     return $status
 }
 
@@ -583,7 +568,7 @@ function get_user_path_input {
 
     set +e
 
-    while [ $valid_path -ne 0 ]
+    while [[ $valid_path -ne 0 ]]
     do
         echo ""
         echo $1
@@ -593,14 +578,12 @@ function get_user_path_input {
         stat $PATH_ARG >> $SCRIPT_LOG_FILE 2>> $SCRIPT_LOG_FILE
 
         valid_path=$?
-        if [ $valid_path -ne 0 ]
-        then
+        if [[ $valid_path -ne 0 ]]; then
             echo "Could not validate path. Please try again."
         fi
 
         # check to see if the path ends with passed in directory
-        if [[ "$PATH_ARG" != *"$3" ]]
-        then
+        if [[ "$PATH_ARG" != *"$3" ]]; then
             PATH_ARG=$PATH_ARG/$3
             mkdir -p $PATH_ARG
         fi
@@ -745,16 +728,14 @@ function check_for_user_group {
             read -p "Current user must belong to the docker group to proceed. Do you want the current user to be added to the docker group: (yes/no) " input
         done
 
-        if [[ $input != "Yes" ]] && [[ $input != "y" ]] && [[ $input != "yes" ]] && [[ $input != "Y" ]]
-        then
+        if [[ $input != "Yes" ]] && [[ $input != "y" ]] && [[ $input != "yes" ]] && [[ $input != "Y" ]]; then
             echo "Please add the current user to the docker group and retry."
             exit 0
         fi
 
         echo "Executing privileged commands to add the current user to docker group"
         sudo usermod -aG docker `whoami`
-        if [ -z $NOT_INTERACTIVE ]
-        then
+        if [[ -z $NOT_INTERACTIVE ]]; then
             newgrp - docker
         fi
     fi
@@ -823,7 +804,6 @@ function audit_log_and_exit {
 
 # We just use the old version to parse the options
 function deployment_main {
-
     set +e
 
     check_run_with_container
@@ -948,121 +928,6 @@ function deployment_main {
 #                                    Config                                     #
 #################################################################################
 
-function config_run {
-
-    set +e
-    get_image_id
-
-    if [[ -z $IMAGE_ID ]]; then
-        config_setup
-        status=$?
-        if [[ $status -ne 0 ]]; then
-            echo "Attempt to setup the metroae container failed. Quitting."
-            return $status
-        fi
-    else
-        get_container_id
-
-        if [[ -z $CONTAINER_ID ]]; then
-            while read -r line; do declare $line; done < $SETUP_FILE
-            docker run -e LEVISTATE_CONTAINER=true -t -d --network host -v $LEVISTATE_MOUNT_POINT:/data:Z --name levistate $METRO_AE_IMAGE:$MAX_CONTAINER_VERSION 2> /dev/null
-        else
-            docker start $CONTAINER_ID
-        fi
-
-	    status=$?
-        if [[ $status -ne 0 ]]; then
-            echo "Attempt to run the metroae container failed. Quitting."
-        else
-            echo "Succesfully started the metroae container"
-        fi
-
-        return $status
-    fi
-    set -e
-
-    return 0
-}
-
-function config_setup {
-
-    echo "Setup metroae container..."
-
-    set +e
-
-    get_container_id
-    get_running_container_id
-
-    if [[ ! -z $CONTAINER_ID ]] || [[ ! -z $RUNNING_CONTAINER_ID ]]; then
-        echo "A metroae container is currently setup and running. Running setup"
-        echo "again will destroy the existing container and create a new one."
-        echo "Your metroae config data on disk will be preserved. To reuse your"
-        echo "existing metroae config data on disk, continue setup and be sure"
-        echo "to specify the same metroae config data path as currently used. If you"
-        echo "change the metroae data path, however, you will need to copy your"
-        echo "existing metroae config data to the new mount points to reuse."
-
-        confirmation="init"
-        while [[ $confirmation != "yes" ]] && [[ $confirmation  != "no" ]] && [[ $confirmation  != "y" ]] && [[ $confirmation != "n" ]]
-        do
-            read -p "Do you want to continue with setup of a new metroae config container (yes/no): " confirmation
-        done
-
-
-        if [[ $confirmation != "yes" ]] && [[ $confirmation != "y" ]]
-        then
-            echo "metroae config container setup canceled by user"
-            return 1
-        fi
-    fi
-
-    get_image_id
-
-    if [[ -z $IMAGE_ID ]]; then
-        pull
-    fi
-
-    if [[ $? -ne 0 ]]; then
-        return 1
-    fi
-
-    if [[ -z $1 ]]; then
-        get_user_path_input "Specify the full path to the directory on the Docker host where the metroae container can access your metroae config data. Setup will create a subdirectory, called metroae_config_data, in the directory you specify. If the path you specify ends with metroae_config_data, we will use that sub-directory and not create one." "metroae config data directory path: " levistate_data
-        data_path=$PATH_ARG
-    else
-        echo "Setting metroae container data path to $1"
-        data_path=$1
-    fi
-
-    echo LEVISTATE_MOUNT_POINT=$data_path >> $SETUP_FILE
-
-    #stop and remove existing container if any
-    get_running_container_id
-    if [[ ! -z $RUNNING_CONTAINER_ID ]]; then
-        stop
-    fi
-
-    get_container_id
-    if [[ ! -z $CONTAINER_ID ]]; then
-        delete_container_id
-    fi
-
-    config_run
-
-    status=0
-    if [[ $? -ne 0 ]]; then
-        return 1
-    else
-
-        #download the templates and sample user data
-        docker_exec_levistate templates update
-        status=$?
-    fi
-    set -e
-
-    return $status
-}
-
 function docker_exec_levistate {
     docker_exec "config" env /usr/bin/python /source/levistate/levistate.py "$@"
 }
@@ -1082,7 +947,7 @@ function config_status {
 function config_main {
 
     if [[ ! -f $SETUP_FILE ]]; then
-        config_setup
+        setup
     fi
 
     check_docker
@@ -1127,15 +992,15 @@ function config_main {
             ;;
             setup)
             if [[ -z $2 ]]; then
-                config_setup
+                setup
             else
-                config_setup $2
+                setup $2
                 shift
             fi
             shift
             ;;
             start)
-            config_run
+            run
             shift
             ;;
             stop)
@@ -1171,13 +1036,12 @@ function config_main {
         esac
     done
 
-    if ($exec == true)
-    then
+    if [[ $exec == true ]]; then
         docker_exec_levistate "${POSITIONAL[@]}"
     fi
 
-    if ($usage_last == true)
-    then
+    # TODO: What is this?
+    if [[ $usage_last == true ]]; then
         help print_usage
     fi
 
