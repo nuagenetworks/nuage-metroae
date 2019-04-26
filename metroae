@@ -585,7 +585,7 @@ function get_user_path_input {
         # check to see if the path ends with passed in directory
         if [[ "$PATH_ARG" != *"$3" ]]; then
             PATH_ARG=$PATH_ARG/$3
-            PATH_ARG=`dirname $PATH_ARG`/`basename $PATH_ARG`
+            PATH_ARG=`dirname $PATH_ARG`/`basename $PATH_ARGs`
             mkdir -p $PATH_ARG
         fi
 
@@ -1061,59 +1061,9 @@ function check_for_setup_file {
     if [[ $? -ne 0 ]]; then
         echo "metroae container setup file not found. Running metroae container setup"
         echo "metroae container setup file not found" >> $SCRIPT_LOG_FILE
-        container_setup
+        setup
     fi
     set -e
-}
-
-function container_run {
-
-    set +e
-
-    check_for_setup_file
-
-    get_image_id
-
-    if [[ -z $IMAGE_ID ]]; then
-        pull
-        status=$?
-        if [[ $status -ne 0 ]]; then
-            echo "Attempt to setup the metroae container failed. Quitting."
-            return $status
-        fi
-    else
-        get_container_id
-
-        if [[ -z $CONTAINER_ID ]]; then
-            while read -r line; do declare $line; done < $SETUP_FILE
-            network_args=""
-            get_host_operating_system
-            if [[ $OS_RELEASE  -eq $LINUX ]]; then
-                network_args=" --network host"
-            else
-                network_args=" -p $UI_PORT:5001"
-            fi
-
-            user_name=`whoami`
-            group_name=`id -g -n`
-
-            docker run -e USER_NAME=$user_name -e GROUP_NAME=$group_name -d $network_args -v $METROAE_MOUNT_POINT:/data:Z -v $IMAGES_MOUNT_POINT:/images:Z --name metroae $METRO_AE_IMAGE:$MAX_CONTAINER_VERSION
-        else
-            docker start $CONTAINER_ID
-        fi
-
-	    status=$?
-        if [[ $status -ne 0 ]]; then
-            echo "Attempt to run the metroae container failed. Quitting."
-        else
-            echo "Succesfully started the metroae container"
-        fi
-
-        return $status
-    fi
-    set -e
-
-    return 0
 }
 
 function copy_ssh_id {
@@ -1133,117 +1083,6 @@ function copy_ssh_id {
     else
        docker exec -it $RUNNING_CONTAINER_ID $sshpass ssh-copy-id -i /source/id_rsa.pub -o StrictHostKeyChecking=no $1
     fi
-}
-
-function container_setup {
-    echo "Setup MetroÆ container..."
-
-    set +e
-
-    get_container_id
-    get_running_container_id
-
-    if [[ ! -z $CONTAINER_ID ]] || [[ ! -z $RUNNING_CONTAINER_ID ]]; then
-        echo "A metroae container is currently setup and running. Running setup"
-        echo "again will destroy the existing container and create a new one."
-        echo "Your metroae data on disk will be preserved. To reuse your"
-        echo "existing metroae data on disk, continue setup and be sure"
-        echo "to specify the same metroae data path as currently used. If you"
-        echo "change the metroae data path, however, you will need to copy your"
-        echo "existing metroae data to the new mount points to reuse."
-
-        confirmation="init"
-        while [[ $confirmation != "yes" ]] && [[ $confirmation  != "no" ]] && [[ $confirmation  != "y" ]] && [[ $confirmation != "n" ]]
-        do
-            read -p "Do you want to continue with metroae container setup (yes/no): " confirmation
-        done
-
-        if [[ $confirmation != "yes" ]] && [[ $confirmation != "y" ]]; then
-            echo "metroae container setup canceled"
-            return 1
-        fi
-    fi
-
-    get_image_id
-
-    if [[ -z $IMAGE_ID ]]; then
-        pull
-    fi
-
-    if [[ $? -ne 0 ]]; then
-        return 1
-    fi
-
-    if [[ -z $1 ]]; then
-        get_user_path_input "Specify the full path to the directory on the Docker host where the metroae container can access your user data. Setup will create a subdirectory, called metroae_data, in the directory you specify. If the path you specify ends with metroae_data, we will use that subdirectory and not create one."  "metroae container data directory path: " metroae_data
-        data_path=$PATH_ARG
-    else
-        echo "setting data path to passed in parameter $1" | tee -a $SCRIPT_LOG_FILE
-        data_path=$1
-    fi
-
-    if [[ -z $2 ]]; then
-        get_user_path_input "Specify the full path to the directory on the Docker host where the metroae container can access your Nuage Networks image files. Setup will create a subdirectory, called metroae_images, in the directory you specify. If the path you specify ends with metroae_images, we will use that subdirectory and not create one." "metroae container image directory path: " metroae_images
-        images_path=$PATH_ARG
-    else
-        echo "Setting metroae container image path to $2" | tee -a $SCRIPT_LOG_FILE
-        images_path=$2
-    fi
-
-    get_host_operating_system
-    if [[ $OS_RELEASE -eq $NON_LINUX ]]; then
-        if [[ -z $3 ]]; then
-            echo ""
-            read -p "Specify the REST API/GUI access port for the metroae container: " port
-        else
-            echo "Setting REST API/GUI access port to $3" | tee -a $SCRIPT_LOG_FILE
-            port=$3
-        fi
-        echo UI_PORT=$port >> $SETUP_FILE
-    fi
-
-    echo IMAGES_MOUNT_POINT=$images_path >> $SETUP_FILE
-    echo METROAE_MOUNT_POINT=$data_path >> $SETUP_FILE
-
-    #stop and remove existing container if any
-    get_running_container_id
-    if [[ ! -z $RUNNING_CONTAINER_ID ]]; then
-        stop
-    fi
-
-    get_container_id
-    if [[ ! -z $CONTAINER_ID ]]; then
-        delete_container_id
-    fi
-
-    #Ask if TLS needs to be setup
-    if [[ $OS_RELEASE -eq $NON_LINUX ]]; then
-        if [[ ! -z $4 ]]; then
-            confirmation=$4
-        else
-            confirmation="init"
-        fi
-    else
-        if [[ ! -z $3 ]]; then
-            confirmation=$3
-        else
-            confirmation="init"
-        fi
-    fi
-
-    while [[ $confirmation != "yes" ]] && [[ $confirmation  != "no" ]] && [[ $confirmation  != "y" ]] && [[ $confirmation != "n" ]]
-    do
-        read -p "Do you want to set a security certificate for the metroae container GUI (yes/no): " confirmation
-    done
-
-    if [[ $confirmation == "yes" ]] && [[ $confirmation == "y" ]]; then
-        load_certificates
-        return 0
-    fi
-
-    container_run
-    set -e
-    return $?
 }
 
 function docker_metro_ae_exec {
@@ -1344,7 +1183,7 @@ function container_main {
     fi
 
     if [[ ! -f $SETUP_FILE ]]; then
-        container_setup
+        setup
     fi
 
     # check docker
@@ -1381,7 +1220,7 @@ function container_main {
             shift
             ;;
             start)
-            container_run
+            run
             shift
             ;;
             setup)
@@ -1391,10 +1230,10 @@ function container_main {
                 shift
                 shift
                 shift
-                get_host_operating_system
-                if [[ $OS_RELEASE -eq $NON_LINUX ]]; then
-                    shift
-                fi
+                shift
+                shift
+                shift
+                shift
             else
                 setup
                 shift
@@ -1490,8 +1329,7 @@ function container_main {
         esac
     done
 
-    if ($exec == true)
-    then
+    if [[ $exec == true ]]; then
         docker_metro_ae_exec "${POSITIONAL[@]}"
     fi
 
