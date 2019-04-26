@@ -77,7 +77,6 @@ ZFB support is included in the nsgv schema and supporting files. In the beta rel
 - `certificate_path` is an optional parameter that points to the location of the certificate pem file for the vrs.
 - `private_key_path` is an optional parameter that points to the location of the certificate private key pem file for the vrs.
 
-
 ### Unsupported Components/Operations
 The following components/operations are not supported in the beta release.
 * dns
