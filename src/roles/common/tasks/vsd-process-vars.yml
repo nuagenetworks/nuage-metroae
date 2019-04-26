@@ -1,9 +1,38 @@
-- name: Set VSD image location
-  include_role:
-    name: common
-    tasks_from: vsd-find-image.yml
 
 - block:
+
+  - name: Set VSD KVM image location
+    include_role:
+      name: common
+      tasks_from: find-image.yml
+    vars:
+      pattern: VSD-*.qcow2
+    when: vsds | map(attribute='target_server_type') | list | issuperset(["kvm"]
+
+  - name: Set VSD vCenter image location
+    include_role:
+      name: common
+      tasks_from: find-image.yml
+    vars:
+      pattern: VSD-*.ova
+    when: vsds | map(attribute='target_server_type') | list | issuperset(["vcenter"]
+
+  - name: Find name of VSD Migration ISO File
+    include_role:
+      name: common
+      tasks_from: find-file.yml
+    vars:
+      pattern: "VSD-migration-scripts-*.iso"
+
+  - name: Register VSD migration iso file with proper path and script locations for use in other playbooks
+    set_fact:
+      vsd_migration_iso_path: "{{ file_path }}"
+      vsd_migration_iso_file_name: "{{ file_name }}"
+
+  - name: Register that upgrade files are missing
+    set_fact:
+      missing_image_file: true
+    when: missing_file | default(True)
 
   - name: Verify that vsd_fqdn_global is defined
     assert:

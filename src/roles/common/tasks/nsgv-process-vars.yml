@@ -32,6 +32,22 @@
       when: rc_nsgv_file.matched > 0
     when: nsgvs | map(attribute='target_server_type') | list | issuperset(["vcenter"])
 
+  - name: Set NSGV KVM image location
+    include_role:
+      name: common
+      tasks_from: find-image.yml
+    vars:
+      pattern: ncpe_centos7.qcow2
+    when: nsgvs | map(attribute='target_server_type') | list | issuperset(["kvm"]
+
+  - name: Set NSGV vCenter image location
+    include_role:
+      name: common
+      tasks_from: find-image.yml
+    vars:
+      pattern: NSG-*.ovf
+    when: nsgvs | map(attribute='target_server_type') | list | issuperset(["vcenter"]
+
   - name: Create host_vars files for nsgv
     template: src=nsgv.j2 backup=no dest={{ inventory_dir }}/host_vars/{{ item.vmname }}
     with_items: "{{ nsgvs }}"

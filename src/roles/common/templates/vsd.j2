@@ -61,14 +61,8 @@ enable_ipv6: true
 mgmt_bridge: {{ item.mgmt_bridge }}
 {% endif %}
 
-{% if item.target_server_type | match("kvm") %}
-{% if image_path is defined %}
-image_path: {{ image_path }}
-{% endif %}
-{% if image_file_name is defined %}
-image_file_name: {{ image_file_name }}
-{% endif %}
-{% endif %}
+image_path: {{ image_path | default("MISSING") }}
+image_file_name: {{ image_file_name | default("MISSING") }}
 
 upgrade_vmname: {{ item.upgrade_vmname is defined | ternary( item.upgrade_vmname, [ item.vmname | default(item.hostname), "new" ] | join('-') ) }}
 
@@ -80,13 +74,6 @@ vsd_migration_iso_file_name: {{ vsd_migration_iso_file_name }}
 {% endif %}
 
 {% if item.target_server_type | match("vcenter") %}
-
-{% if image_path is defined %}
-image_path: {{ image_path }}
-{% endif %}
-{% if image_file_name is defined %}
-image_file_name: {{ image_file_name }}
-{% endif %}
 
 vcenter:
   username: {{ encrypted.vcenter_username | indent(8, False) }}
