@@ -27,13 +27,18 @@
 
   - name: Set single disk directory
     set_fact:
+      tim_path: "{% for file in rc_single_disk.files %}{% if 'el7' not in file.path %}{{ file.path }}{% endif %}{% endfor %}"
+    when: rc_single_disk.matched > 1
+
+  - name: Set single disk directory
+    set_fact:
       tim_path: "{{ rc_single_disk.files[0].path }}"
     when: rc_single_disk.matched == 1
 
   - name: Set single disk directory
     set_fact:
       tim_path: "{{ nuage_unzipped_files_dir }}"
-    when: rc_single_disk.matched != 1
+    when: rc_single_disk.matched < 1
 
   - name: Find name of VSD Migration ISO File
     include_role:
