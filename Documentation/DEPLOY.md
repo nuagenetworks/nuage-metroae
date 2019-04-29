@@ -8,7 +8,7 @@ You can execute MetroÆ workflows to perform the following installations:
 ## Prerequisites / Requirements
 Before deploying any components, you must have previously [set up your Nuage MetroÆ environment](SETUP.md "link to SETUP documentation") and [customized the environment for your target platform](CUSTOMIZE.md "link to deployment documentation").
 
-Make sure you have unzipped copies of all the Nuage Networks files you are going to need for installation or upgrade. These are generally distributed as `*.tar.gz` files that are downloaded by you from Nokia OLCS. You can unzip these files by using the nuage_unzip shell script `nuage-unzip.sh` which will place the files in subdirectories under the path specified for the `nuage_unzipped_files_dir` variable in `common.yml`. You can also unzip the files manually and copy them to their proper locations by hand. For details of this process, including the subdirectory layout that MetroÆ expects, see [CUSTOMIZE.md](CUSTOMIZE.md).
+Make sure you have unzipped copies of all the Nuage Networks files you are going to need for installation or upgrade. These are generally distributed as `*.tar.gz` files that are downloaded by you from Nokia OLCS. You can unzip these files by using the nuage_unzip shell script `nuage-unzip.sh` which will place the files in subdirectories under the path specified for the `nuage_unzipped_files_dir` variable in `common.yml`. You can also unzip the files manually and copy them to their proper locations by hand. For details of this process, including the subdirectory layout that MetroÆ expects, see [SETUP.md](SETUP.md).
 
 
 ## Use of MetroÆ Tool
