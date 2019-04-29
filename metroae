@@ -606,20 +606,16 @@ function upgrade_docker {
 }
 
 function run_container_if_not_running {
-    run_func=$1_run
-
     get_running_container_id
 
     if [[ -z $RUNNING_CONTAINER_ID ]]; then
-        $run_func
+        run
         get_running_container_id
     fi
 }
 
 function docker_exec {
-    run_container_if_not_running $1
-
-    shift
+    run_container_if_not_running
 
     if [[ $1 == "env" ]]; then
         shift
@@ -664,7 +660,7 @@ function docker_exec_interactive {
 }
 
 function interactive {
-    run_container_if_not_running $1
+    run_container_if_not_running
     docker_exec_interactive /bin/bash
 }
 
@@ -1023,7 +1019,7 @@ function config_main {
             shift
             ;;
             interactive)
-            interactive "config"
+            interactive
             shift
             ;;
             status)
@@ -1072,7 +1068,7 @@ function copy_ssh_id {
         echo "Usage: metroae tools ssh copyid <user@hostname>"
         exit 1
     fi
-    run_container_if_not_running "container"
+    run_container_if_not_running
 
     sshpass=" "
     if [[ ! -z $SSHPASS_PASSWORD ]]; then
@@ -1087,23 +1083,23 @@ function copy_ssh_id {
 }
 
 function docker_metro_ae_exec {
-    docker_exec "container" env /source/nuage-metro/metroae "$@"
+    docker_exec env /source/nuage-metro/metroae "$@"
 }
 
 function stop_ui {
-    run_container_if_not_running "container"
+    run_container_if_not_running
     docker exec $RUNNING_CONTAINER_ID /source/UI.sh stop
 }
 
 function start_ui {
-    run_container_if_not_running "container"
+    run_container_if_not_running
 
     docker_exec_interactive /source/UI.sh start $1
 
 }
 
 function ui_status {
-    run_container_if_not_running "container"
+    run_container_if_not_running
     docker exec $RUNNING_CONTAINER_ID /source/UI.sh status
 }
 
@@ -1129,18 +1125,18 @@ function load_certificates {
 
 function unzip_files {
     if [[ $# -gt 1 ]]; then
-        docker_exec "container" /source/nuage-metro/nuage-unzip.sh "$@"
+        docker_exec /source/nuage-metro/nuage-unzip.sh "$@"
     else
-        docker_exec "container" /source/nuage-metro/nuage-unzip.sh "$@" /images/
+        docker_exec /source/nuage-metro/nuage-unzip.sh "$@" /images/
     fi
 }
 
 function con_build_vars_to_deployments {
-    docker_exec "container" /usr/bin/python /source/nuage-metro/convert_build_vars_to_deployment.py "$@"
+    docker_exec /usr/bin/python /source/nuage-metro/convert_build_vars_to_deployment.py "$@"
 }
 
 function gen_example_from_schema {
-    docker_exec "container" /usr/bin/python /source/nuage-metro/generate_example_from_schema.py "$@"
+    docker_exec /usr/bin/python /source/nuage-metro/generate_example_from_schema.py "$@"
 }
 
 function container_status {
@@ -1163,13 +1159,13 @@ function container_status {
 }
 
 function vault_password {
-    run_container_if_not_running "container"
+    run_container_if_not_running
 
     docker_exec_interactive /usr/bin/python /source/nuage-metro/encrypt_credentials.py  $1
 }
 
 function disable_encryption {
-    run_container_if_not_running "container"
+    run_container_if_not_running
     docker exec $RUNNING_CONTAINER_ID /source/UI.sh disable-encryption
 }
 
@@ -1297,7 +1293,7 @@ function container_main {
             shift
             ;;
             interactive)
-            interactive "container"
+            interactive
             shift
             ;;
             unzip-files)
