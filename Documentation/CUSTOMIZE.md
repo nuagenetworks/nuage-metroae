@@ -56,7 +56,8 @@ ZFB support is included in the nsgv schema and supporting files. In the beta rel
 ### `vstats.yml`
 `vstats.yml` contains the definition of the VSTATs (VSD Statistics) to be operated on in this deployment. This file should be present in your deployment only if you are specifying VSTATs. If not provided, no VSTATs will be operated on. This file is of yaml list type and must contain either 0, 1 or 3 VSTAT definitions.
 
-#### Notes for VSD security enhancements
+#### Notes for enabling post-installation security features
+You can use MetroÆ to enable optional post-installation security features to 'harden' the installation. Your deployment contains a number of optional variables that can be used to accomplish this. These variables are described, below. For more detail, please see the Nuage VSP Install Guide. 
 ### `vsds.yml`
 - `ca_certificate_path` is an optional parameter that points to the location of the certificate of the signing authority.
 - `certificate_path` is an optional parameter that points to the location of the certificate pem file for the vsd.
@@ -76,19 +77,6 @@ ZFB support is included in the nsgv schema and supporting files. In the beta rel
 - `ca_certificate_path` is an optional parameter that points to the location of the certificate of the signing authority.
 - `certificate_path` is an optional parameter that points to the location of the certificate pem file for the vrs.
 - `private_key_path` is an optional parameter that points to the location of the certificate private key pem file for the vrs.
-
-### Unsupported Components/Operations
-The following components/operations are not supported in the beta release.
-* dns
-* gmv
-* mesos
-* nsgv bootstrap (install is supported)
-* stcv
-* vsr
-* vrs-vm
-* osc-integration
-* AWS-based VSTAT upgrade
-* upgrade of VRS through VCIN
 
 ### Operating using the Default Deployment
 The Default deployment is provided as a starting place for your workflows. It is located in a subdirectory named `Default` within the Deployments directory. You can operate MetroÆ by simply editing the contents of the Default deployment. Follow these steps:
