@@ -6,7 +6,7 @@
 - include_role:
     name: check-node-running
 
-- name: Display if skipping predeploy 
+- name: Display if skipping predeploy
   debug:
     msg:
       - "****************************************************"
@@ -68,10 +68,10 @@
     set_fact:
       image_present: False
     when: image_present is undefined
-  
+
   - name: Check to make sure there is an existing qcow image
     stat:
-      path: "{{ images_path }}/{{ vm_name }}/{{ qcow2_file_name }}"
+      path: "{{ images_path }}/{{ vm_name }}/{{ image_file_name }}"
     register: statResult
 
   - name: Check the result of image find command
@@ -87,7 +87,7 @@
 
   - include_tasks: copy_qcow2.yml
     when: not image_present
-  
+
   when: not node_running
   delegate_to: "{{ target_server }}"
   remote_user: "{{ target_server_username }}"
@@ -96,7 +96,7 @@
 - block:
   - name: Set local variable with portal guestfish destination
     set_fact:
-      guestfish_dest: "{{ images_path }}/{{ vm_name }}/{{ qcow2_file_name }}"
+      guestfish_dest: "{{ images_path }}/{{ vm_name }}/{{ image_file_name }}"
 
   - name: Get the public key for the current user
     local_action: command cat "{{ user_ssh_pub_key }}"
@@ -179,7 +179,7 @@
 
   - name: Set the mode for the authorized_keys file on the Portal image
     command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} chmod 0640 /root/.ssh/authorized_keys
-  
+
   - name: Set the SSH not to use DNS
     command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} echo "UseDNS no" >> /etc/ssh/sshd_config
 

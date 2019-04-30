@@ -38,35 +38,64 @@
   - block:
 
     - name: Find name of VRS Package Files (EL7 architecture)
-      find: path="{{ nuage_unzipped_files_dir }}/vrs/el7" use_regex=yes pattern="nuage-openvswitch-\d+.*" recurse=yes
+      find:
+        path: "{{ nuage_unzipped_files_dir }}"
+        use_regex: yes
+        pattern: "nuage-openvswitch-\d+.*"
+        recurse: yes
       register: rc_vrs_file_el7
 
     - debug: var=rc_vrs_file_el7 verbosity=1
 
     - name: Register VRS package variables with proper path and image locations for use in other playbooks (EL7 architecture)
       set_fact:
-        el7_vrs_package_path: "{{ rc_vrs_file_el7.files[0].path | dirname }}/"
-        el7_vrs_package_file_name_list: "{{ rc_vrs_file_el7.files |  map(attribute='path') | list | map('basename') | list }}"
-      when: "{{ rc_vrs_file_el7.matched }} > 0"
+        vrs_package_path: "{{ rc_vrs_file_el7.files[0].path | dirname }}/"
+        vrs_package_file_name_list: "{{ rc_vrs_file_el7.files |  map(attribute='path') | list | map('basename') | list }}"
+      when: rc_vrs_file_el7.matched > 0
 
-    - name: Find name of nuage DKMS Package Files (EL7 architecture)
-      find: path="{{ nuage_unzipped_files_dir }}/vrs/el7" pattern="nuage-openvswitch-dkms*.rpm" recurse=yes
-      register: rc_dkms_file_el7
-
-    - debug: var=rc_dkms_file_el7 verbosity=1
-
-    - name: Register DKMS package variables with proper path and image locations for use in other playbooks (EL7 architecture)
+    - name: Register that vrs_package_path is missing
       set_fact:
-        el7_dkms_package_path: "{{ rc_dkms_file_el7.files[0].path | dirname }}/"
-        el7_dkms_package_file_name_list: "{{ rc_dkms_file_el7.files |  map(attribute='path') | list | map('basename') | list }}"
-      when: "{{ rc_dkms_file_el7.matched }} > 0"
+        vrs_package_path: "MISSING"
+        vrs_package_file_name_list: ["MISSING"]
+        missing_image_file: true
+      when: rc_vrs_file_el7.matched <= 0
 
-    when: vrs_el7|default(false)
+    - name: Check if any of the VRSs have dkms_install set
+      set_fact: dkms_install = True
+      when: item.dkms_install|default(False)
+      with_items: "{{ vrss }}"
 
-  - block:
+    - block:
+
+      - name: Find name of nuage DKMS Package Files (EL7 architecture)
+        find:
+          path: "{{ nuage_unzipped_files_dir }}"
+          pattern: "nuage-openvswitch-dkms*.rpm"
+          recurse: yes
+        register: rc_dkms_file_el7
+
+      - debug: var=rc_dkms_file_el7 verbosity=1
+
+      - name: Register DKMS package variables with proper path and image locations for use in other playbooks (EL7 architecture)
+        set_fact:
+          el7_dkms_package_path: "{{ rc_dkms_file_el7.files[0].path | dirname }}/"
+          el7_dkms_package_file_name_list: "{{ rc_dkms_file_el7.files |  map(attribute='path') | list | map('basename') | list }}"
+        when: "rc_dkms_file_el7.matched > 0"
+
+      - name: Register DKMS package variables with proper path and image locations for use in other playbooks (EL7 architecture)
+        set_fact:
+          el7_dkms_package_path: "MISSING"
+          el7_dkms_package_file_name_list: ["MISSING"]
+          missing_image_file: true
+        when: "rc_dkms_file_el7.matched <= 0"
+
+      when: dkms_install | default(False)
 
     - name: Find name of Selinux Package Files (EL7 architecture)
-      find: path="{{ nuage_unzipped_files_dir }}/selinux"  pattern="selinux-policy-nuage-[0-9]*.rpm" recurse=yes
+      find:
+        path: "{{ nuage_unzipped_files_dir }}"
+        pattern: "selinux-policy-nuage-[0-9]*.rpm"
+        recurse: yes
       register: rc_selinux_file
 
     - debug: var=rc_selinux_file verbosity=1
@@ -82,39 +111,30 @@
   - block:
 
      # Debian requires 3 packages listed in a specific order of dependeny
-      - name: Find name of VRS python package file (Debian architecture)
-        find: path="{{ nuage_unzipped_files_dir }}/vrs/u16_04"  pattern="nuage-python-openvswitch*.deb" recurse=yes
-        register: rc_vrs_python_file_u16_04
+      - name: Find name of VRS package files (Debian architecture)
+        find:
+          path: "{{ nuage_unzipped_files_dir }}"
+          patterns:
+            - "nuage-python-openvswitch*.deb"
+            - "nuage-openvswitch-common*.deb"
+            - "nuage-openvswitch-switch*.deb"
+          recurse: yes
+        register: rc_vrs_package_file_u16_04
 
-      - debug: var=rc_vrs_python_file_u16_04 verbosity=1
+      - debug: var=rc_vrs_package_file_u16_04 verbosity=1
 
-      - name: Register VRS package path and VRS python package file name for use in other playbooks (Debian Architecture)
+      - name: Register VRS package path and VRS package file name for use in other playbooks (Debian Architecture)
         set_fact:
-          u16_04_vrs_package_path: "{{ rc_vrs_python_file_u16_04.files[0].path | dirname }}/"
-          u16_04_vrs_package_file_name_list: "{{ rc_vrs_python_file_u16_04.files |  map(attribute='path') | list | map('basename') | list }}"
-        when: "{{ rc_vrs_python_file_u16_04.matched }} > 0"
+          vrs_package_path: "{{ rc_vrs_package_file_u16_04.files[0].path | dirname }}/"
+          vrs_package_file_name_list: "{{ rc_vrs_package_file_u16_04.files |  map(attribute='path') | list | map('basename') | list }}"
+        when: "rc_vrs_package_file_u16_04.matched > 0"
 
-      - name: Find name of VRS common package file (Debian architecture)
-        find: path="{{ nuage_unzipped_files_dir }}/vrs/u16_04"  pattern="nuage-openvswitch-common*.deb" recurse=yes
-        register: rc_vrs_common_file_u16_04
-
-      - debug: var=rc_vrs_common_file_u16_04 verbosity=1
-
-      - name: Register VRS common package file name for use in other playbooks (Debian Architecture)
+      - name: Register that vrs_package_path is missing
         set_fact:
-          u16_04_vrs_package_file_name_list: "{{ u16_04_vrs_package_file_name_list }} + {{ rc_vrs_common_file_u16_04.files |  map(attribute='path') | list | map('basename') | list }}"
-        when: "{{ rc_vrs_common_file_u16_04.matched }} > 0"
-
-      - name: Find name of VRS switch package file (Debian architecture)
-        find: path="{{ nuage_unzipped_files_dir }}/vrs/u16_04"  pattern="nuage-openvswitch-switch*.deb" recurse=yes
-        register: rc_vrs_switch_file_u16_04
-
-      - debug: var=rc_vrs_switch_file_u16_04 verbosity=1
-
-      - name: Register VRS switch package file name for use in other playbooks (Debian Architecture)
-        set_fact:
-          u16_04_vrs_package_file_name_list: "{{ u16_04_vrs_package_file_name_list }} + {{ rc_vrs_switch_file_u16_04.files |  map(attribute='path') | list | map('basename') | list }}"
-        when: "{{ rc_vrs_switch_file_u16_04.matched }} > 0"
+          vrs_package_path: "MISSING"
+          vrs_package_file_name_list: ["MISSING"]
+          missing_image_file: true
+        when: "rc_vrs_package_file_u16_04.matched <= 0"
 
     when: vrs_u16_04|default(false)
 
@@ -142,36 +162,42 @@
   - block:
 
     - name: Find name of libnetwork package Files (RH architecture)
-      find: path="{{ nuage_unzipped_files_dir }}/libnetwork"  pattern="*.rpm" recurse=yes
-      register: rc_libnetwork_file
+      include_role:
+        name: common
+        tasks_from: find-file.yml
+      vars:
+        pattern: "nuage-libnetwork*.rpm"
 
-    - debug: var=rc_libnetwork_file verbosity=1
-
-    - name: Register libnetwork variables with proper path and image locations for use in other playbooks (RH architecture)
+    - name: Register VSC TIM variables with proper path and image locations for use in other playbooks
       set_fact:
-        libnetwork_package_path: "{{ rc_libnetwork_file.files[0].path | dirname }}"
-        libnetwork_package_file_name: "{{ rc_libnetwork_file.files[0].path | basename }}"
-      when: rc_libnetwork_file.matched > 0
+        libnetwork_package_path: "{{ file_path }}"
+        libnetwork_package_file_name: "{{ file_name }}"
+
+    - name: Register that libnetwork file is missing
+      set_fact:
+        missing_image_file: true
+      when: missing_file | default(True)
 
     when: vrs_el7|default(false)
 
   - block:
 
-    - name: Set libnetwork target path based on version (Ubuntu 16.04  architecture)
+    - name: Find name of libnetwork package Files (Ubuntu 16.04 architecture)
+      include_role:
+        name: common
+        tasks_from: find-file.yml
+      vars:
+        pattern: "nuage-libnetwork*.deb"
+
+    - name: Register VSC TIM variables with proper path and image locations for use in other playbooks
       set_fact:
-        libnetwork_findfile_path: "{{ nuage_unzipped_files_dir }}/libnetwork/ubuntu-16.04"
+        libnetwork_package_path: "{{ file_path }}"
+        libnetwork_package_file_name: "{{ file_name }}"
 
-    - name: Find name of libnetwork package files (Debian architecture)
-      find: path="{{ libnetwork_findfile_path }}"  pattern="*.deb" recurse=yes
-      #find: path="{{ libnetwork_findfile_path  }}/libnetwork/"  pattern="*.deb" recurse=yes
-      register: rc_libnetwork_file
-
-    - debug: var=rc_libnetwork_file verbosity=1
-
-    - name: Register libnetwork variables with proper path and image locations for use in other playbooks (Debian architecture)
+    - name: Register that libnetwork file is missing
       set_fact:
-        u16_04_libnetwork_package_path: "{{ rc_libnetwork_file.files[0].path | dirname }}"
-      when: rc_libnetwork_file.matched > 0
+        missing_image_file: true
+      when: missing_file | default(True)
 
     when: vrs_u16_04|default(false) == True
 
