@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 
 from vspk.v5_0 import NULicense, NUEnterprise, NUUser, NUNSPortTemplate
 from vspk.v5_0 import NUInfrastructureGatewayProfile, NUNSGatewayTemplate
