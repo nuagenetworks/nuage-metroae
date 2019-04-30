@@ -1,7 +1,9 @@
 ---
 - hosts: standby_vsds
-  become: yes
-  remote_user: "{{ vsd_default_username }}"
+  remote_user: "{{ vsd_username | default(vsd_default_username) }}"
+  become: "{{ 'no' if vsd_username | default(vsd_default_username) == 'root' else 'yes' }}"
+  vars:
+    ansible_become_pass: "{{ vsd_password | default(vsd_default_password) }}"
   tasks:
     - name: Check reachability of standby vsds
       include_role:
@@ -28,8 +30,10 @@
         is_reachable: "{{ ping_result|success }}"
 
 - hosts: primary_vsds
-  become: yes
-  remote_user: "{{ vsd_default_username }}"
+  remote_user: "{{ vsd_username | default(vsd_default_username) }}"
+  become: "{{ 'no' if vsd_username | default(vsd_default_username) == 'root' else 'yes' }}"
+  vars:
+    ansible_become_pass: "{{ vsd_password | default(vsd_default_password) }}"
   tasks:
     - name: Deactivate replication master on primary nodes
       command: /opt/vsd/bin/vsd-deactivate-replication-master-cluster.sh
@@ -37,8 +41,10 @@
       when: is_reachable | default(false)
 
 - hosts: standby_vsds
-  become: yes
-  remote_user: "{{ vsd_default_username }}"
+  remote_user: "{{ vsd_username | default(vsd_default_username) }}"
+  become: "{{ 'no' if vsd_username | default(vsd_default_username) == 'root' else 'yes' }}"
+  vars:
+    ansible_become_pass: "{{ vsd_password | default(vsd_default_password) }}"
   tasks:
     - name: Run switch replication script on secondary nodes with VSTAT
       command: "/opt/vsd/bin/vsd-switch-replication-cluster-role --role active -e hostvars[groups['vstats'][0]]['hostname'],hostvars[groups['vstats'][1]]['hostname'],hostvars[groups['vstats'][2]]['hostname']"
@@ -57,8 +63,10 @@
       when: groups['vstats'] is not defined or (groups['vstats'] is defined and groups['vstats']| length == 0)
 
 - hosts: standby_vsds
-  become: yes
-  remote_user: "{{ vsd_default_username }}"
+  remote_user: "{{ vsd_username | default(vsd_default_username) }}"
+  become: "{{ 'no' if vsd_username | default(vsd_default_username) == 'root' else 'yes' }}"
+  vars:
+    ansible_become_pass: "{{ vsd_password | default(vsd_default_password) }}"
   tasks:
     - name: Get monit summary for all process on VSD
       vsd_monit:
@@ -74,8 +82,10 @@
       with_items: "{{ proc_list['state'].keys() }}"
 
 - hosts: vsd_standby_node1
-  become: yes
-  remote_user: "{{ vsd_default_username }}"
+  remote_user: "{{ vsd_username | default(vsd_default_username) }}"
+  become: "{{ 'no' if vsd_username | default(vsd_default_username) == 'root' else 'yes' }}"
+  vars:
+    ansible_become_pass: "{{ vsd_password | default(vsd_default_password) }}"
   tasks:
     - name: Run replication preparation script on the new active node
       shell: /opt/vsd/bin/vsd-prepare-replication-master.sh -m | grep -m 1 "/tmp.*gz"
@@ -86,8 +96,10 @@
     - debug: var=replication_db
 
 - hosts: vsd_standby_node1
-  become: yes
-  remote_user: "{{ vsd_default_username }}"
+  remote_user: "{{ vsd_username | default(vsd_default_username) }}"
+  become: "{{ 'no' if vsd_username | default(vsd_default_username) == 'root' else 'yes' }}"
+  vars:
+    ansible_become_pass: "{{ vsd_password | default(vsd_default_password) }}"
   tasks:
     - name: Transfer data from standby VSD to host machine
       fetch:
@@ -96,8 +108,10 @@
         flat: yes
 
 - hosts: primary_vsds
-  become: yes
-  remote_user: "{{ vsd_default_username }}"
+  remote_user: "{{ vsd_username | default(vsd_default_username) }}"
+  become: "{{ 'no' if vsd_username | default(vsd_default_username) == 'root' else 'yes' }}"
+  vars:
+    ansible_become_pass: "{{ vsd_password | default(vsd_default_password) }}"
   tasks:
     - set_fact:
         replication_db: "{{ hostvars[groups['vsd_standby_node1'][0]]['replication_db'] }}"
@@ -107,22 +121,28 @@
         src: /tmp/vsdbackup/{{ replication_db | basename }}
 
 - hosts: vsd_ha_node1
-  become: yes
-  remote_user: "{{ vsd_default_username }}"
+  remote_user: "{{ vsd_username | default(vsd_default_username) }}"
+  become: "{{ 'no' if vsd_username | default(vsd_default_username) == 'root' else 'yes' }}"
+  vars:
+    ansible_become_pass: "{{ vsd_password | default(vsd_default_password) }}"
   tasks:
     - name: Run prepare slave cluster script
       command: "/opt/vsd/bin/vsd-prepare-replication-slave-cluster.sh -m /tmp/{{ replication_db | basename }}"
 
 - hosts: vsd_ha_node2, vsd_ha_node3
-  become: yes
-  remote_user: "{{ vsd_default_username }}"
+  remote_user: "{{ vsd_username | default(vsd_default_username) }}"
+  become: "{{ 'no' if vsd_username | default(vsd_default_username) == 'root' else 'yes' }}"
+  vars:
+    ansible_become_pass: "{{ vsd_password | default(vsd_default_password) }}"
   tasks:
     - name: Run prepare slave cluster script on other 2 nodes
       command: "/opt/vsd/bin/vsd-prepare-replication-slave-cluster.sh -m /tmp/{{ replication_db | basename }}"
 
 - hosts: vsd_ha_node1
-  become: yes
-  remote_user: "{{ vsd_default_username }}"
+  remote_user: "{{ vsd_username | default(vsd_default_username) }}"
+  become: "{{ 'no' if vsd_username | default(vsd_default_username) == 'root' else 'yes' }}"
+  vars:
+    ansible_become_pass: "{{ vsd_password | default(vsd_default_password) }}"
   tasks:
     - include_role: 
         name: vsd-health
@@ -131,8 +151,10 @@
         no_report: "True"
 
 - hosts: vsd_ha_node2, vsd_ha_node3
-  become: yes
-  remote_user: "{{ vsd_default_username }}"
+  remote_user: "{{ vsd_username | default(vsd_default_username) }}"
+  become: "{{ 'no' if vsd_username | default(vsd_default_username) == 'root' else 'yes' }}"
+  vars:
+    ansible_become_pass: "{{ vsd_password | default(vsd_default_password) }}"
   tasks:
     - include_role: 
         name: vsd-health
@@ -141,8 +163,10 @@
         no_report: "True"
 
 - hosts: vsd_ha_node1
-  become: yes
-  remote_user: "{{ vsd_default_username }}"
+  remote_user: "{{ vsd_username | default(vsd_default_username) }}"
+  become: "{{ 'no' if vsd_username | default(vsd_default_username) == 'root' else 'yes' }}"
+  vars:
+    ansible_become_pass: "{{ vsd_password | default(vsd_default_password) }}"
   tasks:
     - name: Run the replication script on first standby cluster
       command: "/opt/vsd/bin/vsd-start-replication-slave -m {{ groups['vsd_standby_node1'][0] }}"
