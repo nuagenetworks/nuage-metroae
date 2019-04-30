@@ -16,6 +16,7 @@
 * Improve usability of unzipped directory specification (METROAE-876)
 * Add support for activation_link NSGv bootstrap type
 * Minor DNS enhancements
+* Support in-place, u-release upgrade of VSDs (METROAE-971)
 ### Resolved Issues
 * Fix VSD Upgrade procedure to check for accurate ejabberd connected user list (METROAE-958)
 * Health playbooks don't support custom usernames (METROAE-968)
