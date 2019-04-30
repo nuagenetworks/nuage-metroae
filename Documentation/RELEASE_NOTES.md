@@ -8,7 +8,7 @@
 * Support deployment of SDWAN Portal
 * Support GEO redundant VSD cluster install (METROAE-695)
 * Use DNS server to verify full FQDN (METROAE-897)
-* IPv6 address support on mgmt_ip and data_ip for VSD, VSC and VSTAT. (METROAE-960)
+* IPv6 address support on mgmt_ip and data_ip for VSD, VSC and VSTAT (METROAE-960)
 * Remove "local_host" group from hosts to avoid name conflicts (METROAE-985)
 * Rename 'audit.log' to 'metroae.log' (METROAE-975)
 * Ansible 2.7 support (METROAE-819)
