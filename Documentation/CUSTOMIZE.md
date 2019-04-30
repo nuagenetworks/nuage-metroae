@@ -54,10 +54,10 @@ ZFB support is included in the nsgv schema and supporting files. In the beta rel
 `vsds.yml` contains the definition of the VSDs to be operated on in this deployment. This file should be present in your deployment only if you are specifying VSDs. If not provided, no VSDs will be operated on. This file is of yaml list type and must contain either 0, 1 or 3 VSD definitions.
 
 ### `vstats.yml`
-`vstats.yml` contains the definition of the VSTATs (VSD Statistics) to be operated on in this deployment. This file should be present in your deployment only if you are specifying VSTATs. If not provided, no VSTATs will be operated on. This file is of yaml list type and must contain either 0, 1 or 3 VSTAT definitions.
+`vstats.yml` contains the definition of the VSTATs (VSD Statistics) to be operated on in this deployment. This file should be present in your deployment only if you are specifying VSTATs. If not provided, no VSTATs will be operated on. This file is of yaml list type. If it contains exactly 3 VSTAT definitions, a cluster installation or upgrade will be executed. Any other number of VSTAT definitions will result in 1 or more stand-alone VSTATs being installed or upgraded.
 
 #### Notes for enabling post-installation security features
-You can use MetroÆ to enable optional post-installation security features to 'harden' the installation. Your deployment contains a number of optional variables that can be used to accomplish this. These variables are described, below. For more detail, please see the Nuage VSP Install Guide. 
+You can use MetroÆ to enable optional post-installation security features to 'harden' the installation. Your deployment contains a number of optional variables that can be used to accomplish this. These variables are described, below. For more detail, please see the Nuage VSP Install Guide.
 ### `vsds.yml`
 - `ca_certificate_path` is an optional parameter that points to the location of the certificate of the signing authority.
 - `certificate_path` is an optional parameter that points to the location of the certificate pem file for the vsd.

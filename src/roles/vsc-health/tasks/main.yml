@@ -286,7 +286,7 @@
 
   - name: Check for expected control Adm Status
     assert: {
-      that: "{{ show_router_interfaces_json.control_Adm | match('Up') }}",
+      that: "{{ show_router_interfaces_json.control_Adm is match('Up') }}",
       msg: "Invalid Adm status for control interface. ({{ show_router_interfaces_json.control_Adm }}) detected. Expected 'Up'. Check 'show router interface'."
       }
 
@@ -299,14 +299,14 @@
 
   - name: Check for expected control Oprv4 Status
     assert: {
-      that: "{{ show_router_interfaces_json.control_Oprv4 | match('Up') }}",
+      that: "{{ show_router_interfaces_json.control_Oprv4 is match('Up') }}",
       msg: "Invalid Oprv4 status for control interface. ({{ show_router_interfaces_json.control_Oprv4 }}) detected. Expected 'Up'. Check 'show router interface'."
       }
     when: control_ip is defined and enable_ipv6_control | default(False) != True
 
   - name: Check for expected system Adm Status
     assert: {
-      that: "{{ show_router_interfaces_json.system_Adm | match('Up') }}",
+      that: "{{ show_router_interfaces_json.system_Adm is match('Up') }}",
       msg: "Invalid Adm status for system interface. ({{ show_router_interfaces_json.system_Adm }}) detected. Expected 'Up'. Check 'show router interface'."
       }
 
@@ -319,7 +319,7 @@
 
   - name: Check for expected system Oprv4 Status
     assert: {
-      that: "{{ show_router_interfaces_json.system_Oprv4 | match('Up') }}",
+      that: "{{ show_router_interfaces_json.system_Oprv4 is match('Up') }}",
       msg: "Invalid Oprv4 status for system interface. ({{ show_router_interfaces_json.system_Oprv4 }}) detected. Expected 'Up'. Check 'show router interface'."
       }
     when: system_ip is defined and enable_ipv6_system | default(False) != True
@@ -330,13 +330,13 @@
         - show system ntp | match "Clock Source"
       provider: "{{ vsc_creds }}"
     register: ntp_status
-    until: not ntp_status.stdout[0]|search('none')
+    until: not ntp_status.stdout[0] is search('none')
     retries: "{{ ntp_sync_retries }}"
     delay: "{{ ntp_sync_delay }}"
 
   - name: Verify NTP status
     assert:
-      that: not ntp_status.stdout[0]|search('none')
+      that: not ntp_status.stdout[0] is search('none')
       msg: "NTP Status not okay: {{ ntp_status.stdout[0] }}. Quitting."
 
   - name: Write NTP status to report

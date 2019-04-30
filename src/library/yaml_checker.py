@@ -46,7 +46,7 @@ def check_yaml(filepath):
             yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG,
             no_duplicates_constructor)
         yaml.add_constructor(u'!vault', vault_constructor)
-        yaml.load(fil)
+        yaml.load(fil, Loader=yaml.Loader)
         module.exit_json(changed=False)
     except yaml.YAMLError as exc:
         print("Error while parsing YAML file:")
