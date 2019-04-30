@@ -14,6 +14,8 @@
 * Ansible 2.7 support (METROAE-819)
 * Ansible output now in YAML format (METROAE-978)
 * Improve usability of unzipped directory specification (METROAE-876)
+* Add support for activation_link NSGv bootstrap type
+* Minor DNS enhancements
 ### Resolved Issues
 * Fix VSD Upgrade procedure to check for accurate ejabberd connected user list (METROAE-958)
 * Health playbooks don't support custom usernames (METROAE-968)
