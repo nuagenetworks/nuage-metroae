@@ -17,6 +17,7 @@
 * Add support for activation_link NSGv bootstrap type
 * Minor DNS enhancements
 * Add Support for post-installation security features, a.k.a. hardening (METROAE-841)
+* Support to setup VSTAT VSS UI (METROAE-952)
 ### Resolved Issues
 * Fix VSD Upgrade procedure to check for accurate ejabberd connected user list (METROAE-958)
 * Health playbooks don't support custom usernames (METROAE-968)
