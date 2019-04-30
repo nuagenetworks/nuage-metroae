@@ -21,23 +21,18 @@ dkms_install: {{ dkms_install }}
 uplink_interface: {{ item.0.uplink_interface }}
 {% endif %}
 
-{% if vrs_arch|string() == "el7" %}
-
-{% if el7_vrs_package_path is defined %}
-vrs_package_path: {{ el7_vrs_package_path }}
-{% endif %}
-
-{% if el7_vrs_package_file_name_list is defined %}
+vrs_package_path: {{ vrs_package_path | default("MISSING") }}
+{% if vrs_package_file_name_list is defined %}
 vrs_package_file_name_list:
-{% for el7_file_name in el7_vrs_package_file_name_list %}
-  - {{ el7_file_name }}
+{% for file_name in vrs_package_file_name_list %}
+  - {{ file_name }}
 {% endfor %}
 {% endif %}
 
+{% if vrs_arch|string() == "el7" %}
+
 {% if dkms_install %}
-{% if el7_dkms_package_path is defined %}
-dkms_package_path: {{ el7_dkms_package_path }}
-{% endif %}
+dkms_package_path: {{ el7_dkms_package_path | default("MISSING") }}
 
 {% if el7_dkms_package_file_name_list is defined %}
 dkms_package_file_name_list:
@@ -56,42 +51,28 @@ selinux_package_file_name_list:
 {% endfor %}
 {% endif %}
 
-{% elif vrs_arch|string() == "u16.04" %}
-
-{% if u16_04_vrs_package_path is defined %}
-vrs_package_path: {{ u16_04_vrs_package_path }}
-{% endif %}
-{% if u16_04_vrs_package_file_name_list is defined %}
-vrs_package_file_name_list:
-{% for u16_04_file_name in u16_04_vrs_package_file_name_list %}
-  - {{ u16_04_file_name }}
-{% endfor %}
-{% endif %}
-
 {% endif %}
 
 {% set libnetwork_install = item.0.libnetwork_install | default(false) %}
 libnetwork_install: {{ libnetwork_install }}
 
 {% if libnetwork_install %}
-
-{% if vrs_arch is match("el7") %}
-{% if libnetwork_package_path is defined %}
 libnetwork_package_path: {{ libnetwork_package_path }}
-{% endif %}
-{% if libnetwork_package_path is defined %}
 libnetwork_package_file_name: {{ libnetwork_package_file_name }}
-{% endif %}
-{% elif vrs_arch is match("u16.04")%}
-{% if u16_04_libnetwork_package_path is defined %}
-libnetwork_package_path: {{ u16_04_libnetwork_package_path }}
-{% endif %}
-{% if u16_04_libnetwork_package_file_name is defined %}
-libnetwork_package_file_name: {{ u16_04_libnetwork_package_file_name }}
-{% endif %}
 {% endif %}
 
 libnetwork_scope: {{ libnetwork.scope }}
 libnetwork_cluster_store_url: {{ libnetwork.cluster_store_url }}
 
+{% endif %}
+
+# Custom user generated certificates
+{% if item.0.private_key_path is defined %}
+private_key_path: {{ item.0.private_key_path }}
+{% endif %}
+{% if item.0.certificate_path is defined %}
+certificate_path: {{ item.0.certificate_path }}
+{% endif %}
+{% if item.0.ca_certificate_path is defined %}
+ca_certificate_path: {{ item.0.ca_certificate_path }}
 {% endif %}

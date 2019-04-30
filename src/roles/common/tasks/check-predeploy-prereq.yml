@@ -20,17 +20,11 @@
 
 - block:
 
-  - name: Check that QCOW2 files were found
+  - name: Check that image files were found
     assert:
-      that: "qcow2_path is defined and qcow2_file_name is defined"
-      msg: "Missing QCOW2 files for {{ hostname | default(vmname) }} under the unzipped file directory, please unzip them and issue reset_build"
-    when: target_server_type is match("kvm")
-
-  - name: Check that OVA files were found
-    assert:
-      that: "vcenter_image_path is defined and vcenter_image_file_name is defined"
-      msg: "Missing vCenter image files for {{ hostname | default(vmname) }} under the unzipped file directory, please unzip them and issue reset_build"
-    when: target_server_type is match("vcenter")
+      that: "image_path | default('MISSING') != 'MISSING' and image_file_name | default('MISSING') != 'MISSING'"
+      msg: "Missing image files for {{ hostname | default(vmname) }} under the unzipped file directory, please unzip them."
+    when: target_server_type is match("kvm") or target_server_type is match("vcenter")
 
   when: component_type | default("NONE") != 'vrs'
 
@@ -38,19 +32,19 @@
 
   - name: Check that VRS package files were found
     assert:
-      that: "vrs_package_path is defined and vrs_package_file_name_list is defined"
-      msg: "Missing VRS package files under the unzipped file directory, please unzip it and issue reset_build"
+      that: "vrs_package_path | default('MISSING') != 'MISSING'"
+      msg: "Missing VRS package files under the unzipped file directory, please unzip them."
 
   - name: Check that VRS libnetwork files were found
     assert:
-      that: "libnetwork_package_path is defined and libnetwork_package_file_name is defined"
-      msg: "Missing VRS libnetwork files under the unzipped file directory, please unzip it and issue reset_build"
+      that: "libnetwork_package_path | default('MISSING') != 'MISSING' and libnetwork_package_file_name | default('MISSING') != 'MISSING'"
+      msg: "Missing VRS libnetwork files under the unzipped file directory, please unzip it."
     when: libnetwork_install | default(False)
 
   - name: Check that DKMS files were found
     assert:
-      that: "dkms_package_path is defined and dkms_package_file_name_list is defined"
-      msg: "Missing VRS DKMS files under the unzipped file directory, please unzip it and issue reset_build"
+      that: "dkms_package_path | default('MISSING') != 'MISSING'"
+      msg: "Missing VRS DKMS files under the unzipped file directory, please unzip it."
     when: dkms_install
 
   when: component_type | default("NONE") == 'vrs'

@@ -65,8 +65,10 @@
         - "*************************************************"
     when: skip_vrs_deploy
 
-  remote_user: "{{ target_server_username }}"
-  become: "{{ 'no' if target_server_username == 'root' else 'yes' }}"
+  remote_user: "{{ compute_username | default(target_server_username) }}"
+  become: "{{ 'no' if compute_username == 'root' else 'yes' }}"
+  vars:
+    ansible_become_pass: "{{ compute_password | default(target_server_password) }}"
 
 - block:
 
@@ -141,36 +143,73 @@
 
   - block:
 
-    - name: Generate TLS Certificates for VRS
-      include_role:
-        name: common
-        tasks_from: vsd-generate-transfer-certificates
-      vars:
-        certificate_password: "{{ target_server_password }}"
-        certificate_username: vrs-{{ inventory_hostname }}
-        commonName: vrs-{{ inventory_hostname }}
-        certificate_type: vrs
-        scp_user: "{{ target_server_username }}"
-        scp_location: "{{ client_keys_path }}"
-        additional_parameters:  -v {{ inventory_hostname }}
+    - block:
+      - name: Copy External PKI Certificates
+        expect:
+          command: 'scp {{ item }} {{ compute_username | default(target_server_username) }}@{{ inventory_hostname }}:/etc/default/bootstrap/keys/'
+          responses:
+            (?i)yes: "yes"
+            (?i)password: "{{ compute_password | default(target_server_password) }}"
+          timeout: 720
+        with_items:
+          - "{{ private_key_path }}"
+          - "{{ certificate_path }}"
+          - "{{ ca_certificate_path }}"
+        delegate_to: localhost
+
+      - name: set tls profiles vars
+        set_fact:
+          own_key: "{{ private_key_path | basename }}"
+          own_certificate: "{{ certificate_path | basename }}"
+          own_ca_certificate: "{{ ca_certificate_path | basename }}"
+
+      when:
+        - private_key_path is defined
+        - certificate_path is defined
+        - ca_certificate_path is defined
+
+    - block:
+      - name: Generate TLS Certificates for VRS
+        include_role:
+          name: common
+          tasks_from: vsd-generate-transfer-certificates
+        vars:
+          certificate_password: "{{ compute_password | default(target_server_password) }}"
+          certificate_username: vrs-{{ inventory_hostname }}
+          commonName: vrs-{{ inventory_hostname }}
+          certificate_type: vrs
+          scp_user: "{{ compute_username | default(target_server_username) }}"
+          scp_location: "{{ client_keys_path }}"
+          additional_parameters:  -v {{ inventory_hostname }}
+
+      - name: set tls profiles vars
+        set_fact:
+          own_key: "vrs-{{ inventory_hostname }}-Key.pem"
+          own_certificate: "vrs-{{ inventory_hostname }}.pem"
+          own_ca_certificate: "vrs-{{ inventory_hostname }}-CA.pem"
+
+      when:
+        - private_key_path is undefined
+        - certificate_path is undefined
+        - ca_certificate_path is undefined
 
     - name: Update client key path in {{ openvswitch_file }} file
       lineinfile:
         dest: "{{ openvswitch_file }}"
         regexp: "^CLIENT_KEY_PATH="
-        line: "CLIENT_KEY_PATH={{ client_keys_path }}/vrs-{{ inventory_hostname }}-Key.pem"
+        line: "CLIENT_KEY_PATH={{ client_keys_path }}/{{ own_key }}"
 
     - name: Update client cert path in {{ openvswitch_file }} file
       lineinfile:
         dest: "{{ openvswitch_file }}"
         regexp: "^CLIENT_CERT_PATH="
-        line: "CLIENT_CERT_PATH={{ client_keys_path }}/vrs-{{ inventory_hostname }}.pem"
+        line: "CLIENT_CERT_PATH={{ client_keys_path }}/{{ own_certificate }}"
 
     - name: Update CA cert path in {{ openvswitch_file }} file
       lineinfile:
         dest: "{{ openvswitch_file }}"
         regexp: "^CA_CERT_PATH="
-        line: "CA_CERT_PATH={{ client_keys_path }}/vrs-{{ inventory_hostname }}-CA.pem"
+        line: "CA_CERT_PATH={{ client_keys_path }}/{{ own_ca_certificate }}"
 
     - name: Update connection type in {{ openvswitch_file }} file
       lineinfile:
@@ -190,6 +229,8 @@
 
   - pause: seconds=20
 
-  remote_user: "{{ target_server_username }}"
-  become: "{{ 'no' if target_server_username == 'root' else 'yes' }}"
+  remote_user: "{{ compute_username | default(target_server_username) }}"
+  become: "{{ 'no' if compute_username == 'root' else 'yes' }}"
+  vars:
+    ansible_become_pass: "{{ compute_password | default(target_server_password) }}"
   when: not skip_vrs_deploy
