@@ -2,7 +2,10 @@
   vsd_monit:
     group: vsd-stats
   register: stats_proc
-  remote_user: "{{ vsd_default_username }}"
+  remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
+  become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
+  vars:
+    ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"
 
 - name: Print monit status when verbosity >= 1
   debug: var=stats_proc verbosity=1

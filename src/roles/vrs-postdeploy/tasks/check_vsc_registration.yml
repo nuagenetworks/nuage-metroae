@@ -25,6 +25,8 @@
 
   - name: Get VTEP IP address of compute server
     shell: "ip -o route get {{ controller_addr }} | sed '{{ sed_expr }}'"
+    remote_user: "{{ compute_username | default(target_server_username) }}"
+    become: "{{ 'no' if compute_username == 'root' else 'yes' }}"
     register: ovs_vtep_ip
 
   - debug: var=ovs_vtep_ip verbosity=1

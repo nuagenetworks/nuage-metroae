@@ -283,7 +283,7 @@
         tasks_from: wait-for-ssh
       vars:
         ssh_host: "{{ vsd_hostname_list[0] }}"
-        host_username: "{{ vsd_default_username }}"
+        host_username: "{{ vsd_custom_username | default(vsd_default_username) }}"
 
     - block:
 
@@ -325,7 +325,10 @@
 
         run_once: True
 
-      remote_user: "{{ vsd_default_username }}"
+      remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
+      become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
+      vars:
+        ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"
 
   - name: Enable stats
     include_role:
