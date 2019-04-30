@@ -1336,7 +1336,7 @@ function container_main {
 function tools_main {
     POSITIONAL=()
     local command_to_run=""
-    local all_args="$@"
+    get_running_container_id
     while [[ $# -gt 0 ]]
     do
         key=$1
@@ -1346,19 +1346,35 @@ function tools_main {
             exit 0
             ;;
             unzip-files)
-            command_to_run="./nuage-unzip.sh"
+            if [[ -z $RUNNING_CONTAINER_ID ]]; then
+                command_to_run="./nuage-unzip.sh"
+            else
+                command_to_run='docker_exec env /source/nuage-metro/nuage-unzip.sh'
+            fi
             shift
             ;;
             convert-build-vars-to-deployments)
-            command_to_run="python convert_build_vars_to_deployment.py"
+            if [[ -z $RUNNING_CONTAINER_ID ]]; then
+                command_to_run="/usr/bin/python convert_build_vars_to_deployment.py"
+            else
+                command_to_run='docker_exec env /usr/bin/python convert_build_vars_to_deployment.py'
+            fi
             shift
             ;;
             generate-example-from-schema)
-            command_to_run="python generate_example_from_schema.py"
+            if [[ -z $RUNNING_CONTAINER_ID ]]; then
+                command_to_run="/usr/bin/python generate_example_from_schema.py"
+            else
+                command_to_run='docker_exec env /usr/bin/python generate_example_from_schema.py'
+            fi
             shift
             ;;
             encrypt-credentials)
-            command_to_run="python encrypt_credentials.py"
+            if [[ -z $RUNNING_CONTAINER_ID ]]; then
+                command_to_run="/usr/bin/python encrypt_credentials.py"
+            else
+                command_to_run='docker_exec env /usr/bin/python encrypt_credentials.py'
+            fi
             shift
             ;;
             *)
@@ -1373,16 +1389,9 @@ function tools_main {
         exit 1
     fi
 
-    get_running_container_id
-    if [[ -z $RUNNING_CONTAINER_ID ]]; then
-        echo "The metroae container is not running"
-        echo "Start the metroae container and try again"
-        eval $command_to_run ${POSITIONAL[@]}
-    else
-        echo "try to run in the container with the following options"
-        echo "tools $all_args"
-        docker_metro_ae_exec "tools $all_args"
-    fi
+    echo "$command_to_run"
+
+    eval $command_to_run ${POSITIONAL[@]}
 }
 
 #################################################################################
