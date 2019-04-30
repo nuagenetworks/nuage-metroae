@@ -45,7 +45,9 @@
     when: mgmt_bridge not in ansible_interfaces
 
   - name: Check if required OS packages are installed (ignoring errors)
-    command: rpm -q qemu-kvm libvirt bridge-utils libguestfs-tools libvirt-python
+    command:
+      cmd: rpm -q qemu-kvm libvirt bridge-utils libguestfs-tools libvirt-python
+      warn: false
     register: rpm_check
     ignore_errors: True
 
@@ -53,13 +55,14 @@
     debug: var=rpm_check verbosity=1
 
   - name: If RedHat, install packages for RedHat OS family distros
-    yum: name={{ item }} state=present
-    with_items:
-     - qemu-kvm
-     - libvirt
-     - bridge-utils
-     - libguestfs-tools
-     - libvirt-python
+    yum:
+      name:
+       - qemu-kvm
+       - libvirt
+       - bridge-utils
+       - libguestfs-tools
+       - libvirt-python
+      state: present
     when: rpm_check.rc == 1
 
   - name: Make sure libvirtd has started
@@ -96,19 +99,19 @@
   - block:
     - name: Check to make sure there is an existing qcow image
       stat:
-        path: "{{ images_path }}/{{ vm_name }}/{{ qcow2_file_name }}"
+        path: "{{ images_path }}/{{ vm_name }}/{{ image_file_name }}"
       register: statResult
 
     - name: check the result of image find command
       assert:
         that: statResult.stat.exists == True
-        msg: Missing qcow2 file {{ images_path }}/{{ vm_name }}/{{ qcow2_file_name }}
+        msg: Missing qcow2 file {{ images_path }}/{{ vm_name }}/{{ image_file_name }}
 
     when: skip_copy_images
 
   - name: Set local variable with vsd guestfish destination
     set_fact:
-      guestfish_dest: "{{ images_path }}/{{ vm_name }}/{{ qcow2_file_name }}"
+      guestfish_dest: "{{ images_path }}/{{ vm_name }}/{{ image_file_name }}"
 
   - name: Get the public key for the current user
     local_action: command cat "{{ user_ssh_pub_key }}"

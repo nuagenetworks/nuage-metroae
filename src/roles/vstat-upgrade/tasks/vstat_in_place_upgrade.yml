@@ -19,10 +19,12 @@
       timeout: 300
 
   - name: Perform sync flush
-    command: "curl -XPOST 'localhost:9200/_flush/synced?pretty'"
+    command:
+      cmd: "curl -XPOST 'localhost:9200/_flush/synced?pretty'"
+      warn: false
 
   run_once: true
-  when: vstat_sa_or_ha | match('ha')
+  when: vstat_sa_or_ha is match('ha')
 
 - name: Disable elasticsearch serivce
   service:
@@ -59,7 +61,7 @@
       import_tasks: execute_sa_script.yml
       run_once: true
 
-  when: vstat_sa_or_ha | match('sa')
+  when: vstat_sa_or_ha is match('sa')
 
 - block:
   - name: Execute VSTAT clustered script
@@ -83,7 +85,7 @@
         - es_status.json.unassigned_shards == 0
       run_once: true
 
-  when: vstat_sa_or_ha | match('ha')
+  when: vstat_sa_or_ha is match('ha')
 
 - name: Restart Elasticsearch service
   service:
