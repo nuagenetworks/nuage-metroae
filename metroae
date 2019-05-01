@@ -128,6 +128,24 @@ function check_run_with_container {
     fi
 }
 
+function check_for_menu {
+    if [[ -f $ANSIBLE_CONFIG_FILE ]]; then
+        if [[ -f $PLAYBOOK_MENU ]]; then
+            source $PLAYBOOK_MENU
+            return
+        fi
+    else
+        if [[ -f $SETUP_FILE ]]; then
+            while read -r line; do declare $line; done < $SETUP_FILE
+            if [[ -f $METROAE_MOUNT_POINT/menu ]]; then
+                source $METROAE_MOUNT_POINT/menu
+                return
+            fi            
+        fi 
+    fi
+    echo "It seems that the menu file is missing."
+}
+
 #################################################################################
 #                                   COMMON                                      #
 #################################################################################
@@ -1560,16 +1578,7 @@ function parse_menu_args {
 #                                     Main                                      #
 #################################################################################
 
-if [[ -f $ANSIBLE_CONFIG_FILE ]]; then
-    if [[ -f $PLAYBOOK_MENU ]]; then
-        source $PLAYBOOK_MENU
-    else
-        echo "It seems that the menu file is missing."
-    fi
-elif [[ -f $METROAE_MOUNT_POINT/menu ]]; then
-    source $METROAE_MOUNT_POINT/menu
-fi
-
+check_for_menu
 
 parse_menu_args "$@"
 
