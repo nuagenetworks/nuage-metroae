@@ -1,5 +1,7 @@
 # Deploying Components with the MetroÆ Docker Container
 
+This file describes many of the details of the commands used for managing MetroÆ distributed via container. For information on how to setup Docker and the MetroÆ Docker container, see [SETUP.md](SETUP.md).
+
 ## The metroae Command
 The metroae command is at the heart of interacting with the MetroÆ container. It is used both to manage the container and to execute MetroÆ inside the container. You can access all of the command options via `metroae <action | workflow> [deployment] [options]`.
 
