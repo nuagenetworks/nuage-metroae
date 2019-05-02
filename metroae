@@ -110,7 +110,7 @@ POSITIONAL=()                                                          # positio
 #################################################################################
 
 function check_run_with_container {
-    if [[ -f /source/nuage-metro/$ANSIBLE_CONFIG_FILE ]]; then
+    if [[ -f /source/nuage-metro/$ANSIBLE_CONFIG_FILE ]] || [[ -f $ANSIBLE_CONFIG_FILE ]]; then
         SHOULD_RUN_WITH_CONTAINER=false
     elif [[ -f $SETUP_FILE ]]; then
         SHOULD_RUN_WITH_CONTAINER=true
@@ -1348,9 +1348,19 @@ function container_main {
 #################################################################################
 
 function tools_main {
+    check_run_with_container
+    get_running_container_id
+    get_container_id
+    if [[ $SHOULD_RUN_WITH_CONTAINER == true ]] && [[ -z $RUNNING_CONTAINER_ID ]]; then
+        if [[ -z $CONTAINER_ID ]]; then
+            setup
+        else
+            docker start $CONTAINER_ID
+        fi
+    fi
+
     POSITIONAL=()
     local command_to_run=""
-    get_running_container_id
     while [[ $# -gt 0 ]]
     do
         key=$1
@@ -1360,34 +1370,34 @@ function tools_main {
             exit 0
             ;;
             unzip-files)
-            if [[ -z $RUNNING_CONTAINER_ID ]]; then
-                command_to_run="./nuage-unzip.sh"
-            else
+            if [[ $SHOULD_RUN_WITH_CONTAINER == true ]]; then
                 command_to_run='/source/nuage-metro/nuage-unzip.sh'
+            else
+                command_to_run="./nuage-unzip.sh"
             fi
             shift
             ;;
             convert-build-vars-to-deployments)
-            if [[ -z $RUNNING_CONTAINER_ID ]]; then
-                command_to_run="/usr/bin/python convert_build_vars_to_deployment.py"
-            else
+            if [[ $SHOULD_RUN_WITH_CONTAINER == true ]]; then
                 command_to_run='/usr/bin/python /source/nuage-metro/convert_build_vars_to_deployment.py'
+            else
+                command_to_run="/usr/bin/python convert_build_vars_to_deployment.py"
             fi
             shift
             ;;
             generate-example-from-schema)
-            if [[ -z $RUNNING_CONTAINER_ID ]]; then
-                command_to_run="/usr/bin/python generate_example_from_schema.py"
-            else
+            if [[ $SHOULD_RUN_WITH_CONTAINER == true ]]; then
                 command_to_run='/usr/bin/python /source/nuage-metro/generate_example_from_schema.py'
+            else
+                command_to_run="/usr/bin/python generate_example_from_schema.py"
             fi
             shift
             ;;
             encrypt-credentials)
-            if [[ -z $RUNNING_CONTAINER_ID ]]; then
-                command_to_run="/usr/bin/python encrypt_credentials.py"
-            else
+            if [[ $SHOULD_RUN_WITH_CONTAINER == true ]]; then
                 command_to_run='/usr/bin/python /source/nuage-metro/encrypt_credentials.py'
+            else
+                command_to_run="/usr/bin/python encrypt_credentials.py"
             fi
             shift
             ;;
@@ -1406,12 +1416,12 @@ function tools_main {
     echo "$command_to_run"
     echo "${POSITIONAL[@]}"
     echo "The RUNNING CONTAINER ID is: $RUNNING_CONTAINER_ID"
-    if [[ -z $RUNNING_CONTAINER_ID ]]; then
-        echo "run locally"
-        eval "$command_to_run ${POSITIONAL[@]}"
-    else
+    if [[ $SHOULD_RUN_WITH_CONTAINER == true ]]; then
         echo "run in the docker"
         docker_exec env $command_to_run ${POSITIONAL[@]}
+    else
+        echo "run locally"
+        eval "$command_to_run ${POSITIONAL[@]}"
     fi
 }
 
