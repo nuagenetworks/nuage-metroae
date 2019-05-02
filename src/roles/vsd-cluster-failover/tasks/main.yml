@@ -1,0 +1,140 @@
+---
+- block:
+
+  - block:
+
+    - name: Check reachability of standby vsds
+      include_role:
+        name: check-node-reachability
+
+    - name: Check health of standby cluster before deactivating primary cluster
+      include_role: 
+        name: vsd-health
+        tasks_from: monit_status
+      vars:
+        no_report: "True"
+      when: not skip_health_check | default(false)
+
+  delegate_to: "{{ item }}"
+  with_items: "{{ groups['standby_vsds'] }}"
+
+  - block:
+
+    - command: ping -c1 {{ item.hostname }}
+      delegate_to: localhost
+      register: ping_result
+      ignore_errors: yes
+
+    - set_fact:
+        is_reachable: "{{ ping_result|success }}"
+      delegate_to: "{{ item }}"
+
+    - name: Deactivate replication master on primary nodes
+      command: /opt/vsd/bin/vsd-deactivate-replication-master-cluster.sh
+      ignore_errors: "{{ ignore_vsd_deactivation_error | default(no) }} "
+      when: is_reachable | default(false)
+      delegate_to: "{{ item }}"
+
+    with_items: "{{ groups['primary_vsds'] }}"
+
+  - block:
+
+    - name: Run switch replication script on secondary nodes with VSTAT
+      command: "/opt/vsd/bin/vsd-switch-replication-cluster-role --role active -e hostvars[groups['vstats'][0]]['hostname'],hostvars[groups['vstats'][1]]['hostname'],hostvars[groups['vstats'][2]]['hostname']"
+      when:
+        - groups['vstats'] is defined
+        - groups['vstats']| length == 3
+
+    - name: Run switch replication script on secondary nodes with VSTAT
+      command: "/opt/vsd/bin/vsd-switch-replication-cluster-role --role active -e hostvars[groups['vstats'][0]]['hostname']"
+      when:
+        - groups['vstats'] is defined
+        - groups['vstats']| length == 1
+
+    - name: Run switch replication script on secondary nodes
+      command: "/opt/vsd/bin/vsd-switch-replication-cluster-role --role active"
+      when: groups['vstats'] is not defined or (groups['vstats'] is defined and groups['vstats']| length == 0)
+
+    - name: Get monit summary for all process on VSD
+      vsd_monit:
+        group: all
+      register: proc_list
+
+    - name: wait for VSD common and core to become running
+      monit_waitfor_service:
+        name: "{{ vsd_process }}"
+        timeout_seconds: 1200
+        test_interval_seconds: 30
+      when: vsd_process not in ['elasticsearch-status', 'stats-collector-status', 'tca-daemon-status']
+      with_items: "{{ proc_list['state'].keys() }}"
+      loop_control:
+        loop_var: vsd_process
+
+    delegate_to: "{{ item }}"
+    with_items: "{{ groups['standby_vsds'] }}"
+
+  - block:
+
+    - name: Run replication preparation script on the new active node
+      shell: /opt/vsd/bin/vsd-prepare-replication-master.sh -m | grep -m 1 "/tmp.*gz"
+      register: replication_master_output
+    - debug: var=replication_master_output
+    - set_fact:
+        replication_db: "{{ replication_master_output.stdout | regex_search('/tmp.*gz') }}"
+    - debug: var=replication_db
+    - name: Transfer data from standby VSD to host machine
+      fetch:
+        src: "{{ replication_db }}"
+        dest: "/tmp/vsdbackup/"
+        flat: yes
+
+    delegate_to: "{{ groups['vsd_standby_node1'][0] }}"
+
+  - block:
+
+    - set_fact:
+        replication_db: "{{ hostvars[groups['vsd_standby_node1'][0]]['replication_db'] }}"
+    - name: Transfer data from host machine to primary cluster
+      copy:
+        dest: "/tmp/"
+        src: /tmp/vsdbackup/{{ replication_db | basename }}
+
+    delegate_to: "{{ item }}"
+    with_items: "{{ groups['primary_vsds'] }}"
+
+  - name: Run prepare slave cluster script
+    command: "/opt/vsd/bin/vsd-prepare-replication-slave-cluster.sh -m /tmp/{{ replication_db | basename }}"
+    delegate_to: "{{ groups['vsd_ha_node1'][0] }}"
+
+  - name: Run prepare slave cluster script on other 2 nodes
+    command: "/opt/vsd/bin/vsd-prepare-replication-slave-cluster.sh -m /tmp/{{ replication_db | basename }}"
+    delegate_to: "{{ item }}"
+    with_items: 
+      - "{{ groups['vsd_ha_node2'][0] }}"
+      - "{{ groups['vsd_ha_node3'][0] }}"
+
+  - include_role: 
+      name: vsd-health
+      tasks_from: monit_status
+    vars:
+      no_report: "True"
+    delegate_to: "{{ groups['vsd_ha_node1'][0] }}"
+
+  - include_role: 
+      name: vsd-health
+      tasks_from: monit_status
+    vars:
+      no_report: "True"
+    delegate_to: "{{ item }}"
+    with_items: 
+      - "{{ groups['vsd_ha_node2'][0] }}"
+      - "{{ groups['vsd_ha_node3'][0] }}"
+
+  - name: Run the replication script on first standby cluster
+    command: "/opt/vsd/bin/vsd-start-replication-slave -m {{ groups['vsd_standby_node1'][0] }}"
+    delegate_to: "{{ groups['vsd_ha_node1'][0] }}"
+
+  remote_user: "{{ vsd_username | default(vsd_default_username) }}"
+  become: "{{ 'no' if vsd_username | default(vsd_default_username) == 'root' else 'yes' }}"
+  vars:
+    ansible_become_pass: "{{ vsd_password | default(vsd_default_password) }}"
