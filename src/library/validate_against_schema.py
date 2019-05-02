@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 
 from jsonschema import validate, ValidationError
 import yaml

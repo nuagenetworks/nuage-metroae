@@ -17,6 +17,8 @@
 * Add support for activation_link NSGv bootstrap type
 * Minor DNS enhancements
 * Support in-place, u-release upgrade of VSDs (METROAE-971)
+* Add Support for post-installation security features, a.k.a. hardening (METROAE-841)
+* Support to setup VSTAT VSS UI (METROAE-952)
 ### Resolved Issues
 * Fix VSD Upgrade procedure to check for accurate ejabberd connected user list (METROAE-958)
 * Health playbooks don't support custom usernames (METROAE-968)
@@ -26,3 +28,4 @@
 * Fix VSTAT description in CUSTOMIZE.md (METROAE-974)
 * vnsutil-destroy unable to retrieve file because of include of non-existent openstack.yml (METROAE-986)
 * Fix incorrect doc links to unzip directory structure instructions (METROAE-988)
+* Allow Python libraries to use interpreter installed in alternate locations via PATH env (METROAE-990)

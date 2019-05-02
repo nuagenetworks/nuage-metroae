@@ -13,6 +13,13 @@
     - openstack
     - vsc-deploy
 
+- name: Wait for VSC ssh to be ready
+  include_role:
+    name: common
+    tasks_from: wait-for-ssh-port
+  vars:
+    ssh_host: "{{ hostname }}"
+
 - block:
   - name: Get vsd node(s) information
     import_role:
@@ -44,10 +51,10 @@
     delegate_to: "{{ item }}"
     with_items: "{{ vsd_hostname_list }}"
 
-  remote_user: "{{ vsd_username | default(vsd_default_username) }}"
-  become: "{{ 'no' if vsd_username | default(vsd_default_username) == 'root' else 'yes' }}"
+  remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
+  become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
   vars:
-    ansible_become_pass: "{{ vsd_password | default(vsd_default_password) }}"
+    ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"
 
 - name: Optionally setup XMPP TLS
   include_role:

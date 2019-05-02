@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 # coding: utf-8 -*-
 
 # (c) 2016, Mathieu Bultel <mbultel@redhat.com>
