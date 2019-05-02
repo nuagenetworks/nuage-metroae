@@ -16,6 +16,7 @@
 * Improve usability of unzipped directory specification (METROAE-876)
 * Add support for activation_link NSGv bootstrap type
 * Minor DNS enhancements
+* Support in-place, u-release upgrade of VSDs (METROAE-971)
 * Add Support for post-installation security features, a.k.a. hardening (METROAE-841)
 * Support to setup VSTAT VSS UI (METROAE-952)
 ### Resolved Issues

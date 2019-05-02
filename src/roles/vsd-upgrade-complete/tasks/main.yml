@@ -7,7 +7,9 @@
 
   - name: Restart Jboss
     shell: "monit restart jboss"
-    when: upgrade_major_or_minor == 'minor'
+    when:
+     - upgrade_major_or_minor == 'minor'
+     - not inplace_upgrade | default(false)
 
   - block:
 
@@ -22,9 +24,12 @@
     - name: Turn on API on vsd's for major upgrade
       shell: "{{ turn_on_api_command }}"
 
-    when: upgrade_major_or_minor == 'major'
+    when:
+      - upgrade_major_or_minor == 'major'
+      - not inplace_upgrade | default(false)
 
   - import_tasks: check_monit_status.yml
+    when: not inplace_upgrade | default(false)
 
   remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
   become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
