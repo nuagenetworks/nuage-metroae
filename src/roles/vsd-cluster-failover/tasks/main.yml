@@ -64,16 +64,17 @@
     vsd_monit:
       group: all
     register: proc_list
-    delegate_to: "{{ item }}"
-    with_items: "{{ groups['standby_vsds'] }}"
+    delegate_facts: false
+    delegate_to: "{{ groups['vsd_standby_node1'][0] }}"
+
 
   - name: wait for VSD common and core to become running
     monit_waitfor_service:
       name: "{{ item[1] }}"
       timeout_seconds: 1200
       test_interval_seconds: 30
-    when: item[1] not in ['elasticsearch-status', 'stats-collector-status', 'tca-daemon-status']
     delegate_to: "{{ item[0] }}"
+    when: item[1] not in ['elasticsearch-status', 'stats-collector-status', 'tca-daemon-status']
     with_nested:
       - "{{ groups['standby_vsds'] }}"
       - "{{ proc_list['state'].keys() }}"
