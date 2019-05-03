@@ -14,11 +14,13 @@
     vars:
       no_report: "True"
     when: not skip_health_check | default(false)
-    delegate_to: "{{ item }}"
+    delegate_to: "{{ standby_vsd }}"
+    loop_control:
+      loop_var: standby_vsd
     with_items: "{{ groups['standby_vsds'] }}"
 
 
-  - command: ping -c1 {{ item.hostname }}
+  - command: ping -c1 {{ item }}
     delegate_to: localhost
     register: ping_result
     ignore_errors: yes
@@ -31,7 +33,7 @@
 
   - name: Deactivate replication master on primary nodes
     command: /opt/vsd/bin/vsd-deactivate-replication-master-cluster.sh
-    ignore_errors: "{{ ignore_vsd_deactivation_error | default(no) }} "
+    ignore_errors: "{{ ignore_vsd_deactivation_error | default(no) }}"
     when: is_reachable | default(false)
     delegate_to: "{{ item }}"
     with_items: "{{ groups['primary_vsds'] }}"
@@ -129,7 +131,9 @@
       tasks_from: monit_status
     vars:
       no_report: "True"
-    delegate_to: "{{ item }}"
+    delegate_to: "{{ vsd_ha_node }}"
+    loop_control:
+      loop_var: vsd_ha_node
     with_items: 
       - "{{ groups['vsd_ha_node2'][0] }}"
       - "{{ groups['vsd_ha_node3'][0] }}"
