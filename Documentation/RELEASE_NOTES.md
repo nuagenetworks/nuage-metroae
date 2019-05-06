@@ -30,3 +30,4 @@
 * vnsutil-destroy unable to retrieve file because of include of non-existent openstack.yml (METROAE-986)
 * Fix incorrect doc links to unzip directory structure instructions (METROAE-988)
 * Allow Python libraries to use interpreter installed in alternate locations via PATH env (METROAE-990)
+* Make VSD destroy serial to prevent race condition
