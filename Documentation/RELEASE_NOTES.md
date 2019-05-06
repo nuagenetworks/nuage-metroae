@@ -8,6 +8,7 @@
 * Support deployment of SDWAN Portal
 * Support GEO redundant VSD cluster install (METROAE-695)
 * Use DNS server to verify full FQDN (METROAE-897)
+* Support for VSD GEO redundant cluster failover (METROAE-955)
 ### Resolved Issues
 * Fix VSD Upgrade procedure to check for accurate ejabberd connected user list (METROAE-958)
 * Health playbooks don't support custom usernames (METROAE-968)
