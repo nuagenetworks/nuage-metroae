@@ -42,6 +42,7 @@ MENU+=(',container,ssh,copyid'      'Copy the container ssh public key to a host
 # Switch
 ANSIBLE_CONFIG_FILE="ansible.cfg"
 SHOULD_RUN_WITH_CONTAINER=$false
+CLI_ARGS=""
 
 # Menu
 MENU_STRIDE=5                                                          # Menu steps
@@ -1463,7 +1464,7 @@ function config_help {
     if [[ -z $RUNNING_CONTAINER_ID ]]; then
         echo "The metroae container is not running. Can't access full help. Please start the container and try again."
     else
-        docker_exec_levistate "$@"
+        docker_exec_levistate "$CLI_ARGS"
     fi
 }
 
@@ -1490,23 +1491,23 @@ function ui_help {
 function switch_help {
     case $1 in
         ,config*)
-        config_help "$@"
+        config_help "$1"
         exit 0
         ;;
         ,container*)
-        container_help "$@"
+        container_help "$1"
         exit 0
         ;;
         ,tools*)
-        tools_help "$@"
+        tools_help "$1"
         exit 0
         ;;
         ,ui*)
-        ui_help "$@"
+        ui_help "$1"
         exit 0
         ;;
         *)
-        main_help "$@"
+        main_help "$1"
         exit 0
         ;;
     esac
@@ -1538,14 +1539,13 @@ function print_menu_help {
 }
 
 function parse_menu_args {
-    local args="$@"
     MENU_KEY=""
     MATCH_MENU=""
     EXTRA_ARGS=()
     while [[ $# -gt 0 ]]; do
         if [[ $1 == "help" ]] || [[ $1 == "?" ]] || [[ $1 == "-h" ]] || [[ $1 == "--h" ]] || [[ $1 == "-help" ]] || [[ $1 == "--help" ]]; then
             MATCH_MENU=(",help" "help" "help" "")
-            switch_help $MENU_KEY $args
+            switch_help $MENU_KEY
             exit 0
         else
             MENU_KEY=$MENU_KEY","$1
@@ -1567,6 +1567,8 @@ function parse_menu_args {
 #################################################################################
 #                                     Main                                      #
 #################################################################################
+
+CLI_ARGS="$@"
 
 check_for_menu
 
