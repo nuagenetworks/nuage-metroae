@@ -154,8 +154,13 @@ function check_for_menu {
 function check_docker {
     set +e
 
-    echo "checking docker version" >> $SCRIPT_LOG_FILE
-    docker --version >> $SCRIPT_LOG_FILE 2>> $SCRIPT_LOG_FILE
+    if [[ -f $SETUP_FILE ]]; then
+        echo "checking docker version"
+        docker --version
+    else
+        echo "checking docker version" >> $SCRIPT_LOG_FILE
+        docker --version >> $SCRIPT_LOG_FILE 2>> $SCRIPT_LOG_FILE
+    fi
 
     if [ $? -ne 0 ]
     then
@@ -201,7 +206,11 @@ function get_max_container_version {
         fi
     fi
 
-    echo "Newest metroae container version found is $MAX_CONTAINER_VERSION" >> $SCRIPT_LOG_FILE
+    if [[ -f $SETUP_FILE ]]; then
+        echo "Newest metroae container version found is $MAX_CONTAINER_VERSION"
+    else
+        echo "Newest metroae container version found is $MAX_CONTAINER_VERSION" >> $SCRIPT_LOG_FILE
+    fi
 
 }
 
@@ -426,6 +435,18 @@ function setup {
     local is_ui_run=false
 
     echo "Setup MetroÆ container..."
+
+    if [[ ! -d $INSTALL_FOLDER ]]; then
+        sudo mkdir -p $INSTALL_FOLDER
+    fi
+    if [[ ! -f $SETUP_FILE ]]; then
+        sudo touch $SETUP_FILE
+        sudo chmod 0774 $SETUP_FILE
+    fi
+    if [[ ! -f $SCRIPT_LOG_FILE ]]; then
+        sudo touch $SCRIPT_LOG_FILE
+        sudo chmod 0774 $SCRIPT_LOG_FILE
+    fi
 
     get_container_id
     get_running_container_id
@@ -713,18 +734,6 @@ function check_for_user_group {
         sudo groupadd docker
         echo "Restarting Docker..."
         sudo systemctl restart docker
-
-        if [[ ! -d $INSTALL_FOLDER ]]; then
-            sudo mkdir -p $INSTALL_FOLDER
-        fi
-        if [[ ! -f $SETUP_FILE ]]; then
-            sudo touch $SETUP_FILE
-            sudo chmod 0774 $SETUP_FILE
-        fi
-        if [[ ! -f $SCRIPT_LOG_FILE ]]; then
-            sudo touch $SCRIPT_LOG_FILE
-            sudo chmod 0774 $SCRIPT_LOG_FILE
-        fi
         sudo chown -R root:docker $INSTALL_FOLDER
     fi
 
