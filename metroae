@@ -61,8 +61,7 @@ IMAGE_ID=''
 MAX_CONTAINER_VERSION='current'
 REGISTRY_HOST='registry.mv.nuagenetworks.net'
 METRO_AE_IMAGE="$REGISTRY_HOST:5000/metroae"
-if [ ! -z $IMAGE_NAME ]
-then
+if [[ ! -z $IMAGE_NAME ]]; then
     METRO_AE_IMAGE="$REGISTRY_HOST:5000/$IMAGE_NAME"
 fi
 OS_RELEASE=$LINUX
@@ -76,13 +75,11 @@ CONTAINER_TAR_FILE=metroaecontainer.tar
 S3_BUCKET="nuage-devops"
 TEMPORARY_DIRECTORY=/tmp/
 INSTALL_FOLDER=/opt/metroae
-if [ -z $SCRIPT_LOG_FILE ]
-then
+if [[ -z $SCRIPT_LOG_FILE ]]; then
     SCRIPT_LOG_FILE=/opt/metroae/metroae.log
 fi
 
-if [ -z $SETUP_FILE ]
-then
+if [[ -z $SETUP_FILE ]]; then
     SETUP_FILE=/opt/metroae/.metroae
 fi
 
@@ -162,8 +159,7 @@ function check_docker {
         docker --version >> $SCRIPT_LOG_FILE 2>> $SCRIPT_LOG_FILE
     fi
 
-    if [ $? -ne 0 ]
-    then
+    if [[ $? -ne 0 ]]; then
         echo "Docker engine must be installed in order to run metroae. Quitting. Please install Docker and try again. See https://docs.docker.com for details"
         exit 1
     fi
@@ -181,27 +177,23 @@ function get_host_operating_system {
 }
 
 function get_max_container_version {
-    if [ ! -z $IMAGE_TAG ]
-    then
+    if [[ ! -z $IMAGE_TAG ]]; then
         MAX_CONTAINER_VERSION=$IMAGE_TAG
     else
         versions=`docker images | grep $METRO_AE_IMAGE | awk '{ print $2}'`
         MAX_CONTAINER_VERSION=''
         for version in $versions
         do
-            if [ -z $MAX_CONTAINER_VERSION ]
-            then
+            if [[ -z $MAX_CONTAINER_VERSION ]]; then
                     MAX_CONTAINER_VERSION=$version
             fi
 
-            if [ $MAX_CONTAINER_VERSION \< $version ]
-            then
+            if [[ $MAX_CONTAINER_VERSION < $version ]]; then
                     MAX_CONTAINER_VERSION=$version
             fi
         done
 
-        if [ -z $MAX_CONTAINER_VERSION ]
-        then
+        if [[ -z $MAX_CONTAINER_VERSION ]]; then
             MAX_CONTAINER_VERSION='current'
         fi
     fi
@@ -1198,6 +1190,7 @@ function disable_encryption {
 }
 
 function container_main {
+    echo $MAX_CONTAINER_VERSION
     if [[ ! -z $GROUP_CHECK ]]; then
         check_for_user_group $1
         shift
