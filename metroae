@@ -58,7 +58,9 @@ NON_LINUX=1
 CONTAINER_ID=''
 RUNNING_CONTAINER_ID=''
 IMAGE_ID=''
-MAX_CONTAINER_VERSION='current'
+if [[ -z $MAX_CONTAINER_VERSION ]]; then
+    MAX_CONTAINER_VERSION='current'
+fi
 REGISTRY_HOST='registry.mv.nuagenetworks.net'
 METRO_AE_IMAGE="$REGISTRY_HOST:5000/metroae"
 if [[ ! -z $IMAGE_NAME ]]; then
@@ -135,8 +137,8 @@ function check_for_menu {
     else
         if [[ -f $SETUP_FILE ]]; then
             while read -r line; do declare $line; done < $SETUP_FILE
-            if [[ -f $METROAE_MOUNT_POINT/menu ]]; then
-                source $METROAE_MOUNT_POINT/menu
+            if [[ -f $METROAE_MOUNT_POINT/$PLAYBOOK_MENU ]]; then
+                source $METROAE_MOUNT_POINT/$PLAYBOOK_MENU
                 return
             fi            
         fi 
@@ -1190,7 +1192,6 @@ function disable_encryption {
 }
 
 function container_main {
-    echo $MAX_CONTAINER_VERSION
     if [[ ! -z $GROUP_CHECK ]]; then
         check_for_user_group $1
         shift
@@ -1568,6 +1569,11 @@ function parse_menu_args {
 #################################################################################
 #                                     Main                                      #
 #################################################################################
+
+if [[ $# == 0 ]]; then
+    main_help
+    exit 0
+fi
 
 CLI_ARGS="$@"
 
