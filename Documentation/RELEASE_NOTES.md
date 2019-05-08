@@ -20,6 +20,8 @@
 * Add Support for post-installation security features, a.k.a. hardening (METROAE-841)
 * Support to setup VSTAT VSS UI (METROAE-952)
 * Do not run vsd-deploy if vsd-predeploy fails on any node (METROAE-982)
+* Upgrade support for OpenStack (METROAE-995)
+
 ### Resolved Issues
 * Fix VSD Upgrade procedure to check for accurate ejabberd connected user list (METROAE-958)
 * Health playbooks don't support custom usernames (METROAE-968)
