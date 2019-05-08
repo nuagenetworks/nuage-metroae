@@ -31,3 +31,4 @@
 * Fix incorrect doc links to unzip directory structure instructions (METROAE-988)
 * Allow Python libraries to use interpreter installed in alternate locations via PATH env (METROAE-990)
 * Make VSD destroy serial to prevent race condition
+* Fix health checks for VSD with custom username (METROAE-994)
