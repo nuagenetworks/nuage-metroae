@@ -61,27 +61,23 @@
       generate_ssh_key: yes
     register: ssh_key
 
-  - name: Add this node's SSH key to authorized_keys file on first node
-    authorized_key:
-        key: "{{ ssh_key.ssh_public_key }}"
-        user: "vsd"
-    delegate_to: "{{ first_cluster_node_to_install }}"
-    remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
-    become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
-    vars:
-      ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"
+  - block:
 
-  - name: Change owner and permissions of VSD authorized keys file
-    file:
-      path: /home/vsd/.ssh/authorized_keys
-      owner: vsd
-      group: hadoopusers
-      mode: 0640
-    delegate_to: "{{ first_cluster_node_to_install }}"
-    remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
-    become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
-    vars:
-      ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"
+    - name: Add this node's SSH key to authorized_keys file on first node
+      authorized_key:
+          key: "{{ ssh_key.ssh_public_key }}"
+          user: "vsd"
+      delegate_to: "{{ first_cluster_node_to_install }}"
+
+    - name: Change owner and permissions of VSD authorized keys file
+      file:
+        path: /home/vsd/.ssh/authorized_keys
+        owner: vsd
+        group: hadoopusers
+        mode: 0640
+      delegate_to: "{{ first_cluster_node_to_install }}"
+
+    delegate_to: localhost
 
   when:
     - inventory_hostname == third_cluster_node_to_install
