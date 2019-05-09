@@ -296,12 +296,16 @@
 
   - block:
 
+    - name: Set Node for VSD license application
+      set_fact:
+        node_for_license: "{{ (vsd_sa_or_ha | match('ha')) | (third_cluster_node_to_install, inventory_hostname) }}"
+
     - name: Apply VSD standard license
       apply_vsd_license:
         vsd_license_file: "{{ vsd_standard_license_file }}"
         vsd_auth: "{{ vsd_auth }}"
       delegate_to: localhost
-      when: vsd_standard_license_file is defined and inventory_hostname == third_cluster_node_to_install
+      when: vsd_standard_license_file is defined and inventory_hostname == node_for_license
 
     - name: Apply VSD cluster license
       apply_vsd_license:
