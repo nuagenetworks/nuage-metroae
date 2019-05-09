@@ -83,13 +83,16 @@
       delegate_to: localhost
 
     - name: change file permissions
-      expect:
-        command: "ssh {{ vsd_custom_username }}@{{ hostvars[groups['vsd_ha_node2'][0]]['mgmt_ip'] }}; chmod 0640 /home/{{ vsd_custom_username }}/.ssh/authorized_keys; chown vsd:hadoopusers /home/{{ vsd_custom_username }}/.ssh/authorized_keys"
-        responses:
-          (?i)password: "{{ vsd_custom_password }}"
+      shell: |
+        set timeout 100
+        spawn ssh {{ vsd_custom_username }}@{{ hostvars[groups['vsd_ha_node2'][0]]['mgmt_ip'] }}
+        expect "password:"
+        send "{{ vsd_custom_password }}\n"
+        chmod 0640 /home/{{ vsd_custom_username }}/.ssh/authorized_keys
+        chown vsd:hadoopusers /home/{{ vsd_custom_username }}/.ssh/authorized_keys
+        exit 0
+        when: vsd_custom_username is defined
       delegate_to: localhost
-
-    when: vsd_custom_username is defined
 
   - block:
 
