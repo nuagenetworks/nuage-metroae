@@ -21,6 +21,7 @@
 * Support to setup VSTAT VSS UI (METROAE-952)
 * Do not run vsd-deploy if vsd-predeploy fails on any node (METROAE-982)
 * Upgrade support for OpenStack (METROAE-995)
+* Make any_errors_fatal a global config item
 
 ### Resolved Issues
 * Fix VSD Upgrade procedure to check for accurate ejabberd connected user list (METROAE-958)
