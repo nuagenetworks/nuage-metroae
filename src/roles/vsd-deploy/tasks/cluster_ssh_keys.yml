@@ -63,38 +63,18 @@
 
   - block:
 
-    - name: Install pexpect module via pip
-      pip: name=pexpect state="present"
+    - name: Handle ssh key generation and copying for vsd user
+      include_role:
+        name: common
+        tasks_from: copy-ssh-keys.yml
+      vars:
+        ssh_key: "{{ ssh_key }}"
+        username: "{{ vsd_custom_username }}"
+        password: "{{ vsd_custom_password }}"
+        ssh_host: "{{ hostvars[groups['vsd_ha_node2'][0]]['mgmt_ip'] }}"
 
-    - local_action: copy content={{ ssh_key.ssh_public_key }} dest=/tmp/authorized_keys_temp
-
-    - name: Copy authorized file to vsd custom user home directory
-      expect:
-        command: "scp /tmp/authorized_keys_temp {{ vsd_custom_username }}@{{ hostvars[groups['vsd_ha_node2'][0]]['mgmt_ip'] }}:/home/{{ vsd_custom_username }}/.ssh/authorized_keys"
-        responses:
-          (?i)yes: "yes"
-          (?i)password: "{{ vsd_custom_password }}"
-        timeout: 720
-      delegate_to: localhost
-      no_log: true
-
-    - name: Remove temporary copy of authorized_keys file
-      file: path=tmp/authorized_keys_temp state=absent
-      delegate_to: localhost
-
-    - name: change file permissions
-      shell: |
-        set timeout 100
-        spawn ssh {{ vsd_custom_username }}@{{ hostvars[groups['vsd_ha_node2'][0]]['mgmt_ip'] }}
-        expect "password:"
-        send "{{ vsd_custom_password }}\n"
-        chmod 0640 /home/{{ vsd_custom_username }}/.ssh/authorized_keys
-        chown vsd:hadoopusers /home/{{ vsd_custom_username }}/.ssh/authorized_keys
-        exit 0
-        delegate_to: localhost
 
     when: vsd_custom_username is defined
-  
 
   - block:
 
