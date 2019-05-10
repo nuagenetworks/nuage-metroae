@@ -6,12 +6,12 @@ localhost ansible_connection=local
 
 {% if vsds is defined and vsds %}
 
-{% if vsds|length == 1 %}
+{% if vsds|length == 1 and not inplace %}
 
 [vsd_sa_node]
 {{ vsds[0].hostname }}
 
-{% else %}
+{% elif not inplace %}
 
 [vsd_ha_node1]
 {{ vsds[0].hostname }}
@@ -35,19 +35,26 @@ localhost ansible_connection=local
 
 {% endif %}
 
+{% else %}
+[vsd_inplace_upgrade_nodes]
+{% for vsd in vsds %}
+{{ vsd.hostname }}
+{% endfor %}
 
 {% endif %}
 
 [primary_vsds:children]
-{% if vsds|length == 1 %}
+{% if vsds|length == 1 and not inplace %}
 vsd_sa_node
-{% else %}
+{% elif not inplace %}
 vsd_ha_node1
 vsd_ha_node2
 vsd_ha_node3
+{% else %}
+vsd_inplace_upgrade_nodes
 {% endif %}
 
-{% if vsds|length == 6 %}
+{% if vsds|length == 6 and not inplace %}
 [standby_vsds:children]
 vsd_standby_node1
 vsd_standby_node2
@@ -232,6 +239,3 @@ portal_ha_node3
 {% endif %}
 
 {% endif %}
-
-[ansible_deployment_host]
-{{ ansible_deployment_host|default('127.0.0.1') }}

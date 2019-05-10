@@ -26,13 +26,9 @@
   register: vsd_version
   remote_user: "{{ vsd_default_username }}"
 
-- name: Set if VSD versions match qcow2
-  set_fact: vsd_versions_match="{{ vsd_version.stdout == qcow2_file_name | regex_search('([0-9]+\\.[0-9]+\\.[0-9A-Za-z]+)') }}"
-  when: qcow2_file_name is defined
-
-- name: Set if VSD versions match ova
-  set_fact: vsd_versions_match="{{ vsd_version.stdout == vcenter_image_file_name | regex_search('([0-9]+\\.[0-9]+\\.[0-9A-Za-z]+)') }}"
-  when: vcenter_image_file_name is defined
+- name: Set if VSD versions match image file
+  set_fact: vsd_versions_match="{{ vsd_version.stdout == image_file_name | regex_search('([0-9]+\\.[0-9]+\\.[0-9A-Za-z]+)') }}"
+  when: image_file_name is defined
 
 - name: Set if VSD versions match optional input version
   set_fact: vsd_versions_match="{{ vsd_version.stdout == nuage_software_version }}"
@@ -67,7 +63,7 @@
     - name: Set hostname for AWS permanently
       shell: "echo {{ hostname }} > /etc/hostname"
 
-    when: target_server_type | match("aws")
+    when: target_server_type is match("aws")
 
   - name: Set Major, Minor and Patch VSD version
     set_fact:
@@ -101,7 +97,7 @@
           third_cluster_node_to_install: "{{ groups['vsd_ha_node1'][0] }}"
       when: nuage_upgrade | default(False)
 
-    when: vsd_sa_or_ha | match('ha')
+    when: vsd_sa_or_ha is match('ha')
 
   - name: Set deploy_vcin to false (deploy vsd)
     set_fact:
@@ -126,7 +122,7 @@
 
 - name: Execute OpenStack tasks for the deploy
   import_tasks: openstack.yml
-  when: not skip_vsd_deploy and target_server_type | match("openstack")
+  when: not skip_vsd_deploy and target_server_type is match("openstack")
   tags:
     - vsd
     - openstack
@@ -145,7 +141,7 @@
       import_tasks: cluster_ssh_keys.yml
       when: vsd_major_version | int >= 5
 
-    when: vsd_sa_or_ha | match('ha')
+    when: vsd_sa_or_ha is match('ha')
 
   - name: Update /etc/hosts file on VSD
     lineinfile:
@@ -186,7 +182,7 @@
       dest: /etc/yum.conf
       regexp: "^proxy="
       line: "proxy={{ yum_proxy }}"
-    when: not yum_proxy | match('NONE')
+    when: yum_proxy is not match('NONE')
 
   - name: Execute a yum update (Can take 20 minutes)
     yum:
@@ -224,7 +220,7 @@
       when: deploy_vcin
 
     when:
-      - vsd_sa_or_ha | match ('sa')
+      - vsd_sa_or_ha is match ('sa')
       - master_vcin is not defined
 
   - block:
@@ -270,7 +266,7 @@
       command: "/opt/vsd/bin/vsd-start-replication-slave -m {{ master_vcin }}"
 
     when:
-      - vsd_sa_or_ha | match ('sa')
+      - vsd_sa_or_ha is match ('sa')
       - deploy_vcin
       - master_vcin is defined
 
@@ -288,7 +284,7 @@
       command: "/opt/vsd/vsd-install.sh -1 {{ first_cluster_node_to_install }} -t 3 -x {{ vsd_fqdn }} -y {{ (enable_ipv6 | default(False) == True) | ternary('-6', '') }}"
       when: inventory_hostname == third_cluster_node_to_install
 
-    when: vsd_sa_or_ha | match('ha')
+    when: vsd_sa_or_ha is match('ha')
 
   - name: Set XMPP connection to allow both clear and TLS
     command: /opt/vsd/bin/ejmode allow -y
@@ -332,3 +328,5 @@
     - vstats is defined
     - not skip_vsd_deploy
     - target_server_type | match("nuagex")
+
+- import_tasks: vsd_security_hardening.yml
