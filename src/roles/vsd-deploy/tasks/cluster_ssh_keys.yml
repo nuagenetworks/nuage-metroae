@@ -55,13 +55,13 @@
 
 - block:
 
-  - block:
+  - name: Generate SSH key for this node
+    user:
+      name: "vsd"
+      generate_ssh_key: yes
+    register: ssh_key
 
-    - name: Generate SSH key for this node
-      user:
-        name: "vsd"
-        generate_ssh_key: yes
-      register: ssh_key
+  - block:
 
     - name: Install pexpect module via pip
       pip: name=pexpect state="present"
@@ -91,8 +91,10 @@
         chmod 0640 /home/{{ vsd_custom_username }}/.ssh/authorized_keys
         chown vsd:hadoopusers /home/{{ vsd_custom_username }}/.ssh/authorized_keys
         exit 0
-        when: vsd_custom_username is defined
-      delegate_to: localhost
+        delegate_to: localhost
+
+    when: vsd_custom_username is defined
+  
 
   - block:
 
