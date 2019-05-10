@@ -280,8 +280,49 @@
       command: "/opt/vsd/vsd-install.sh -1 {{ first_cluster_node_to_install }} -t 2 -x {{ vsd_fqdn }} -y {{ (enable_ipv6 | default(False) == True) | ternary('-6', '') }}"
       when: inventory_hostname == second_cluster_node_to_install
 
-    - name: Install VSD software on the third cluster node (Can take 20 minutes)
-      command: "/opt/vsd/vsd-install.sh -1 {{ first_cluster_node_to_install }} -t 3 -x {{ vsd_fqdn }} -y {{ (enable_ipv6 | default(False) == True) | ternary('-6', '') }}"
+    - block:
+
+      - name: Generate SSH keys for the second node, upgrade case
+        user:
+          name: "vsd"
+          generate_ssh_key: yes
+        register: ssh_key
+        delegate_to: "{{ second_cluster_node_to_install }}"
+
+      - name: Add SSH keys to authorized_keys file on this node
+        authorized_key:
+            key: "{{ ssh_key.ssh_public_key }}"
+            user: "vsd"
+
+      - name: Change owner and permissions of VSD authorized keys file
+        file:
+          path: /home/vsd/.ssh/authorized_keys
+          owner: vsd
+          group: hadoopusers
+          mode: 0640
+
+      - name: Generate SSH keys for the first node, upgrade case
+        user:
+          name: "vsd"
+          generate_ssh_key: yes
+        register: ssh_key
+        delegate_to: "{{ first_cluster_node_to_install }}"
+
+      - name: Add SSH keys to authorized_keys file on this node
+        authorized_key:
+            key: "{{ ssh_key.ssh_public_key }}"
+            user: "vsd"
+
+      - name: Change owner and permissions of VSD authorized keys file
+        file:
+          path: /home/vsd/.ssh/authorized_keys
+          owner: vsd
+          group: hadoopusers
+          mode: 0640
+
+      - name: Install VSD software on the third cluster node (Can take 20 minutes)
+        command: "/opt/vsd/vsd-install.sh -1 {{ first_cluster_node_to_install }} -t 3 -x {{ vsd_fqdn }} -y {{ (enable_ipv6 | default(False) == True) | ternary('-6', '') }}"
+
       when: inventory_hostname == third_cluster_node_to_install
 
     when: vsd_sa_or_ha is match('ha')
