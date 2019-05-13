@@ -17,7 +17,15 @@
     command: echo $VSD_VERSION
     register: vsd_version
 
-  remote_user: "{{ vsd_default_username }}"
+  remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
+  become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
+  vars:
+    ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"
+
+- name: Get current version of VSD software to use it in loading correct vspk version
+  command: echo $VSD_VERSION
+  register: vsd_version
+  remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
 
 - name: Print vsd_version output when verbosity >= 1
   debug: var=vsd_version verbosity=1

@@ -97,6 +97,12 @@ target_server_username: "{{ encrypted.target_server_username | default("root") |
 target_server_password: {{ encrypted.target_server_password | indent(8, False) }}
 {% endif %}
 
+compute_username: "{{ encrypted.compute_username | default(encrypted.target_server_username | default("root"))}}"
+{% if encrypted.compute_password is defined %}
+compute_password: {{ encrypted.compute_password | indent(8, False) }}
+{% endif %}
+
+
 vsd_auth:
   username: {{ encrypted.vsd_auth_username | default("csproot") | indent(8, False) }}
   password: {{ encrypted.vsd_auth_password | default("csproot") | indent(8, False) }}
@@ -110,6 +116,13 @@ vcin_auth:
   {% if vcin_api_url is defined %}
   api_url: {{ vcin_auth_url }}
   {% endif %}
+
+{% if encrypted.vsd_mysql_password is defined %}
+vsd_mysql_password: {{ encrypted.vsd_mysql_password | indent(8, False) }}
+{% endif %}
+{% if encrypted.ejabberd_id_password is defined %}
+ejabberd_id_password: {{ encrypted.ejabberd_id_password | indent(8, False) }}
+{% endif %}
 
 portal_auth:
   username: {{ encrypted.portal_username | default("csproot") | indent(8, False) }}
@@ -215,11 +228,11 @@ spirent_license_server: {{ spirent_license_server }}
 {% if portals is defined and portals %}
 
 {% if portals|length == 1 %}
-portal_ip: {{ portals[0].mgmt_ip }} 
+portal_ip: {{ portals[0].mgmt_ip }}
 
 {% else %}
 
-portal1_ip: {{ portals[0].mgmt_ip }} 
+portal1_ip: {{ portals[0].mgmt_ip }}
 
 portal2_ip: {{ portals[1].mgmt_ip }}
 

@@ -5,7 +5,6 @@
     hostname: "{{ target_server }}"
     username: "{{ vcenter.username }}"
     password: "{{ vcenter.password }}"
-    datacenter: "{{ vcenter.datacenter }}"
     name: "{{ vm_name }}"
     validate_certs: no
   register: vm_folder
@@ -23,20 +22,20 @@
     validate_certs: no
   register: vm_facts
   ignore_errors: yes
-  when: vm_folder|succeeded
+  when: vm_folder is succeeded
 
 - block:
   - name: Verify that the VM is not running if not reachable
     assert:
-      that: "not (vm_folder|succeeded and vm_facts|succeeded and not node_reachable)"
+      that: "not (vm_folder is succeeded and vm_facts is succeeded and not node_reachable)"
       msg: "{{ vm_name }} is running on {{ target_server }} but is not reachable. Quitting."
 
   - name: Verify that the VM is running if reachable
     assert:
-      that: "not (vm_folder|failed and node_reachable)"
+      that: "not (vm_folder is failed and node_reachable)"
       msg: "{{ vm_name }} is not running on {{ target_server }} but the address is reachable. Quitting."
   when: do_reachability_checks | default('True')
 
 - name: Set fact for node running
   set_fact:
-    node_running: "{{ vm_folder|succeeded and vm_facts|succeeded }}"
+    node_running: "{{ vm_folder is succeeded and vm_facts is succeeded }}"

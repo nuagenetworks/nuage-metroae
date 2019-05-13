@@ -7,7 +7,7 @@ MetroÆ before version 3.0 used the now deprecated build_vars.yml configuration.
 ./convert_build_vars_to_deployment.py <build_vars_file> <deployment_name>
 ```
 
-Deprecation Notice: The convert_build_vars_to_deployment tool is not actively updated for new features and will be removed in MetroÆ v3.4.0. Users of this tool should either edit deployment files directly or modify their process to take advantage of the jinja2 templates available in src/deployment_templates to auto-generate deployment files. 
+Deprecation Notice: The convert_build_vars_to_deployment tool is not actively updated for new features and will be removed in MetroÆ v3.4.0. Users of this tool should either edit deployment files directly or modify their process to take advantage of the jinja2 templates available in src/deployment_templates to auto-generate deployment files.
 
 ## Prerequisites / Requirements
 If you have not already set up your MetroÆ Host environment, see [SETUP.md](SETUP.md) before proceeding.  
@@ -54,20 +54,29 @@ ZFB support is included in the nsgv schema and supporting files. In the beta rel
 `vsds.yml` contains the definition of the VSDs to be operated on in this deployment. This file should be present in your deployment only if you are specifying VSDs. If not provided, no VSDs will be operated on. This file is of yaml list type and must contain either 0, 1 or 3 VSD definitions.
 
 ### `vstats.yml`
-`vstats.yml` contains the definition of the VSTATs (VSD Statistics) to be operated on in this deployment. This file should be present in your deployment only if you are specifying VSTATs. If not provided, no VSTATs will be operated on. This file is of yaml list type and must contain either 0, 1 or 3 VSTAT definitions.
+`vstats.yml` contains the definition of the VSTATs (VSD Statistics) to be operated on in this deployment. This file should be present in your deployment only if you are specifying VSTATs. If not provided, no VSTATs will be operated on. This file is of yaml list type. If it contains exactly 3 VSTAT definitions, a cluster installation or upgrade will be executed. Any other number of VSTAT definitions will result in 1 or more stand-alone VSTATs being installed or upgraded.
 
-### Unsupported Components/Operations
-The following components/operations are not supported in the beta release.
-* dns
-* gmv
-* mesos
-* nsgv bootstrap (install is supported)
-* stcv
-* vsr
-* vrs-vm
-* osc-integration
-* AWS-based VSTAT upgrade
-* upgrade of VRS through VCIN
+#### Notes for enabling post-installation security features
+You can use MetroÆ to enable optional post-installation security features to 'harden' the installation. Your deployment contains a number of optional variables that can be used to accomplish this. These variables are described, below. For more detail, please see the Nuage VSP Install Guide.
+### `vsds.yml`
+- `ca_certificate_path` is an optional parameter that points to the location of the certificate of the signing authority.
+- `certificate_path` is an optional parameter that points to the location of the certificate pem file for the vsd.
+- `intermediate_certificate_path` is an optional parameter that points to the location of the chain certificate.
+- `failed_login_attempts` is an optional parameter to set the number of failed login attempts.
+- `failed_login_lockout_time` is an optional parameter that set the lockout time after reaching the max number of failed login attempts.
+- `advanced_api_access_logging` is an optional parameter to enable adding custom header to access log.
+- `tls_version` is an optional parameter to set the minimum TLS version to use.
+
+### `vscs.yml`
+- `ca_certificate_path` is an optional parameter that points to the location of the certificate of the signing authority.
+- `certificate_path` is an optional parameter that points to the location of the certificate pem file for the vsc.
+- `private_key_path` is an optional parameter that points to the location of the certificate private key pem file for the vsc.
+- `ejabberd_id` is an optional parameter that defines the ejabberd username used to when creating the certificate.
+
+### `vrss.yml`
+- `ca_certificate_path` is an optional parameter that points to the location of the certificate of the signing authority.
+- `certificate_path` is an optional parameter that points to the location of the certificate pem file for the vrs.
+- `private_key_path` is an optional parameter that points to the location of the certificate private key pem file for the vrs.
 
 ### Operating using the Default Deployment
 The Default deployment is provided as a starting place for your workflows. It is located in a subdirectory named `Default` within the Deployments directory. You can operate MetroÆ by simply editing the contents of the Default deployment. Follow these steps:

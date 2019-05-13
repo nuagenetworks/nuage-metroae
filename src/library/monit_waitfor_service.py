@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 
 from ansible.module_utils.basic import AnsibleModule
 import time
@@ -57,7 +57,7 @@ def main():
             if len(parts) > 2:
                 if parts[0].lower() == 'program':
                     if parts[1] == "'%s'" % proc_name:
-                        return ' '.join(parts[3:]).lower()
+                        return ' '.join(parts[2:]).lower()
                 elif parts[0].lower() == 'process':
                     if parts[1] == "'%s'" % proc_name:
                         return ' '.join(parts[2:]).lower()
@@ -74,8 +74,11 @@ def main():
     for proc_name in vsd_stats_proc:
         proc_status = status(proc_name)
         while not desired_state and time_elapsed < timeout_seconds:
-            if proc_status == 'ok' or proc_status == 'running' or proc_status == 'accessible':
-                desired_state = True
+            if proc_status == 'status ok' or \
+               proc_status == 'running' or \
+               proc_status == 'accessible' or \
+               proc_status == 'not monitored':
+                    desired_state = True
             else:
                 if proc_status == 'failed' and not restarted:
                     restarted = True

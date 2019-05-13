@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 
 import re
 from ansible.module_utils.basic import AnsibleModule

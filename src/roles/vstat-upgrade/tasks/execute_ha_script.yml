@@ -1,6 +1,10 @@
 - name: Execute VSTAT clustered script
   command: /opt/vsd/vsd-es-cluster-config.sh -e {{ groups['vstats'][0] }},{{ groups['vstats'][1] }},{{ groups['vstats'][2] }}
   delegate_to: "{{ vsd_hostname_list[0] }}"
+  remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
+  become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
+  vars:
+    ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"
   register: upgrade_status
   environment:
     SSHPASS: "{{ vstat_default_password }}"

@@ -24,7 +24,7 @@
     - name: Write network config to json file
       nuage_append: filename="{{ report_path }}" text="{{ net_conf.info | to_nice_json}}\n"
 
-    - name: check web interface of vstat (ignoring errors)
+    - name: Check web interface of vstat (ignoring errors)
       uri:
         url: http://{{ inventory_hostname }}:9200
         method: GET
@@ -35,8 +35,23 @@
       register: webresult
       ignore_errors: yes
 
-    - name: write web interface result
+    - name: Write web interface result
       nuage_append: filename="{{ report_path }}" text="{{ webresult  | to_nice_json}}\n"
+
+    - block:
+
+      - name: Check VSS UI of vstat
+        uri:
+          url: https://{{ inventory_hostname }}:6200
+          method: GET
+          status_code: 200
+          validate_certs: False
+        register: vss_ui_result
+
+      - name: Write VSS UI result
+        nuage_append: filename="{{ report_path }}" text="{{ vss_ui_result | to_nice_json}}\n"
+
+      when: enable_vss_ui | default(False)
 
     delegate_to: localhost
 
