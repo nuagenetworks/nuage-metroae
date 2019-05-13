@@ -1,9 +1,29 @@
 ---
+- name: Set local variable with upgrade status
+  set_fact:
+    upgrade: "{{ nuage_upgrade|default('False') }}"
+
+- block:
+  - name: Verify that upgrade_vmname is defined if this is an upgrade
+    assert:
+      that: "upgrade_vmname is defined"
+      msg: "upgrade_vmname is required for upgrade"
+  - name: Set local variable with upgrade_vmname
+    set_fact:
+      vm_name: "{{ upgrade_vmname }}"
+  when: upgrade
+
+- block:
+  - name: Set local variable with vmname
+    set_fact:
+      vm_name: "{{ vmname }}"
+  when: not upgrade
+
 - name: Get VSD details from OpenStack
   os_server_facts:
     auth:
       "{{ openstack_auth }}"
-    server: "{{ inventory_hostname }}"
+    server: "{{ vm_name }}"
   register: vsd_ip
   delegate_to: 127.0.0.1
 
