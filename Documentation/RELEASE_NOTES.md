@@ -34,3 +34,4 @@
 * Allow Python libraries to use interpreter installed in alternate locations via PATH env (METROAE-990)
 * Make VSD destroy serial to prevent race condition
 * Fix health checks for VSD with custom username (METROAE-994)
+* Fix VSD HA upgrade for hardened VSDs(METROAE-998)
