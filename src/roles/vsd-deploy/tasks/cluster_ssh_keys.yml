@@ -61,38 +61,19 @@
       generate_ssh_key: yes
     register: ssh_key
 
-  - block:
+  - name: Add this node's SSH key to authorized_keys file on first node
+    authorized_key:
+        key: "{{ ssh_key.ssh_public_key }}"
+        user: "vsd"
+    delegate_to: "{{ first_cluster_node_to_install }}"
 
-    - name: Handle ssh key generation and copying for vsd user
-      include_role:
-        name: common
-        tasks_from: copy-ssh-keys.yml
-      vars:
-        ssh_copy_key: "{{ ssh_key }}"
-        username: "{{ vsd_custom_username }}"
-        password: "{{ vsd_custom_password }}"
-        ssh_host: "{{ hostvars[groups['vsd_ha_node2'][0]]['mgmt_ip'] }}"
-
-
-    when: vsd_custom_username is defined
-
-  - block:
-
-    - name: Add this node's SSH key to authorized_keys file on first node
-      authorized_key:
-          key: "{{ ssh_key.ssh_public_key }}"
-          user: "vsd"
-      delegate_to: "{{ first_cluster_node_to_install }}"
-
-    - name: Change owner and permissions of VSD authorized keys file
-      file:
-        path: /home/vsd/.ssh/authorized_keys
-        owner: vsd
-        group: hadoopusers
-        mode: 0640
-      delegate_to: "{{ first_cluster_node_to_install }}"
-
-    when: vsd_custom_username is not defined
+  - name: Change owner and permissions of VSD authorized keys file
+    file:
+      path: /home/vsd/.ssh/authorized_keys
+      owner: vsd
+      group: hadoopusers
+      mode: 0640
+    delegate_to: "{{ first_cluster_node_to_install }}"
 
   when:
     - inventory_hostname == third_cluster_node_to_install
