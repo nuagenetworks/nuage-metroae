@@ -30,22 +30,22 @@
     delegate_to: "{{ item }}"
     with_items: "{{ groups['primary_vsds'] }}"
 
-  - name: Deactivate replication master on primary nodes
+  - name: Deactivate replication on primary VSD cluster
     command: /opt/vsd/bin/vsd-deactivate-replication-master-cluster.sh
     ignore_errors: ignore_vsd_deactivation_error | default(no)
     when: is_reachable | default(false)
     delegate_to: "{{ item }}"
     with_items: "{{ groups['primary_vsds'] }}"
 
-  - name: Run switch replication script on secondary nodes with VSTAT
+  - name: Switch replication role of standby VSD cluster when using clustered VSTAT
     command: "/opt/vsd/bin/vsd-switch-replication-cluster-role --role active -e hostvars[groups['vstats'][0]]['hostname'],hostvars[groups['vstats'][1]]['hostname'],hostvars[groups['vstats'][2]]['hostname']"
     when:
       - groups['vstats'] is defined
-      - groups['vstats']| length == 3
+      - groups['vstats'] | length == 3
     delegate_to: "{{ item }}"
     with_items: "{{ groups['standby_vsds'] }}"
 
-  - name: Run switch replication script on secondary nodes with VSTAT
+  - name: Switch replication role of standby VSD cluster when using standalone VSTAT
     command: "/opt/vsd/bin/vsd-switch-replication-cluster-role --role active -e hostvars[groups['vstats'][0]]['hostname']"
     when:
       - groups['vstats'] is defined
@@ -53,9 +53,9 @@
     delegate_to: "{{ item }}"
     with_items: "{{ groups['standby_vsds'] }}"
 
-  - name: Run switch replication script on secondary nodes
+  - name: Switch replication role of standby VSD cluster when not using VSTAT
     command: "/opt/vsd/bin/vsd-switch-replication-cluster-role --role active"
-    when: groups['vstats'] is not defined or (groups['vstats'] is defined and groups['vstats']| length == 0)
+    when: groups['vstats'] is not defined or (groups['vstats'] is defined and groups['vstats'] | length == 0)
     delegate_to: "{{ item }}"
     with_items: "{{ groups['standby_vsds'] }}"
 
@@ -82,11 +82,11 @@
     - name: Run replication preparation script on the new active node
       shell: /opt/vsd/bin/vsd-prepare-replication-master.sh -m | grep -m 1 "/tmp.*gz"
       register: replication_master_output
-    - debug: var=replication_master_output
+
     - set_fact:
         replication_db: "{{ replication_master_output.stdout | regex_search('/tmp.*gz') }}"
-    - debug: var=replication_db
-    - name: Transfer data from standby VSD to host machine
+
+    - name: Transfer replication DB to MetroAE host
       fetch:
         src: "{{ replication_db }}"
         dest: "/tmp/vsdbackup/"
@@ -99,18 +99,18 @@
     delegate_to: "{{ item }}"
     with_items: "{{ groups['primary_vsds'] }}"
 
-  - name: Transfer data from host machine to primary cluster
+  - name: Transfer replication DB from MetroAE host to primary VSD cluster
     copy:
       dest: "/tmp/"
       src: /tmp/vsdbackup/{{ replication_db | basename }}
     delegate_to: "{{ item }}"
     with_items: "{{ groups['primary_vsds'] }}"
 
-  - name: Run prepare slave cluster script
+  - name: Start the replication operation on the new standby VSD
     command: "/opt/vsd/bin/vsd-prepare-replication-slave-cluster.sh -m /tmp/{{ replication_db | basename }}"
     delegate_to: "{{ groups['vsd_ha_node1'][0] }}"
 
-  - name: Run prepare slave cluster script on other 2 nodes
+  - name: Start the replication operation on the other 2 standby VSDs
     command: "/opt/vsd/bin/vsd-prepare-replication-slave-cluster.sh -m /tmp/{{ replication_db | basename }}"
     delegate_to: "{{ item }}"
     with_items: 
@@ -136,7 +136,7 @@
       - "{{ groups['vsd_ha_node2'][0] }}"
       - "{{ groups['vsd_ha_node3'][0] }}"
 
-  - name: Run the replication script on first standby cluster
+  - name: Start the replication operation on the new standby VSD
     command: "/opt/vsd/bin/vsd-start-replication-slave -m {{ groups['vsd_standby_node1'][0] }}"
     delegate_to: "{{ groups['vsd_ha_node1'][0] }}"
 
