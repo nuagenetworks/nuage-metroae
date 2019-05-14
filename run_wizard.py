@@ -52,6 +52,9 @@ STANDARD_FIELDS = ["step", "description"]
 class Wizard(object):
 
     def __init__(self, script=WIZARD_SCRIPT):
+        self.progress_display_count = 0
+        self.progress_display_rate = 1
+
         if "NON_INTERACTIVE" in os.environ:
             self.args = list(sys.argv)
         else:
@@ -96,6 +99,7 @@ class Wizard(object):
         missing = self._compare_libraries(required_libraries, output_lines)
 
         try:
+            self.progress_display_rate = 10
             rc, output_lines = self._run_shell("yum list")
             if rc != 0:
                 self._print("\n".join(output_lines))
@@ -145,8 +149,10 @@ class Wizard(object):
         print msg
 
     def _print_progress(self):
-        sys.stdout.write(".")
-        sys.stdout.flush()
+        if self.process_display_count % self.progress_display_rate == 0:
+            sys.stdout.write(".")
+            sys.stdout.flush()
+        self.progress_display_count += 1
 
     def _input(self, prompt=None, default=None, choices=None):
         input_prompt = self._get_input_prompt(prompt, default, choices)
@@ -328,6 +334,7 @@ class Wizard(object):
 
         output_lines = list()
         rc = self._capture_output(process, output_lines)
+        self.progress_display_rate = 1
         return rc, output_lines
 
     def _capture_output(self, process, output_lines):
