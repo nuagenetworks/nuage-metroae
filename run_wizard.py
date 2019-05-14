@@ -335,9 +335,9 @@ class Wizard(object):
 
             found = False
             for inst_lib in installed_libraries:
-                if inst_lib.startswith(req_lib_name):
+                if inst_lib.lower().startswith(req_lib_name.lower()):
                     found = True
-                    if not inst_lib.startswith(req_lib):
+                    if not inst_lib.lower().startswith(req_lib.lower()):
                         missing.append("Requires %s, installed %s" %
                                        (req_lib, inst_lib))
                     break
