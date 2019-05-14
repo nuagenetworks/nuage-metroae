@@ -149,7 +149,7 @@ class Wizard(object):
         print msg
 
     def _print_progress(self):
-        if self.process_display_count % self.progress_display_rate == 0:
+        if self.progress_display_count % self.progress_display_rate == 0:
             sys.stdout.write(".")
             sys.stdout.flush()
         self.progress_display_count += 1
