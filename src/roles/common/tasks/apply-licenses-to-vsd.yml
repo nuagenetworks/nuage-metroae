@@ -1,0 +1,17 @@
+- name: Set Node for VSD license application
+  set_fact:
+    node_for_license_install: "{{ (vsd_sa_or_ha is match('ha')) | ternary(third_cluster_node_to_install, inventory_hostname) }}"
+
+- name: Apply VSD standard license
+  apply_vsd_license:
+    vsd_license_file: "{{ vsd_license_file }}"
+    vsd_auth: "{{ vsd_auth }}"
+  delegate_to: localhost
+  when: vsd_license_file is defined and inventory_hostname == node_for_license_install
+
+- name: Apply VSD cluster license
+  apply_vsd_license:
+    vsd_license_file: "{{ vsd_cluster_license_file }}"
+    vsd_auth: "{{ vsd_auth }}"
+  delegate_to: localhost
+  when: vsd_cluster_license_file is defined and inventory_hostname == node_for_license_install
