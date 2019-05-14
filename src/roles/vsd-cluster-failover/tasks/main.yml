@@ -14,6 +14,7 @@
     vars:
       no_report: "True"
     when: not skip_health_check | default(false)
+    ignore_errors: vsd_force_cluster_failover | default(no)
     delegate_to: "{{ standby_vsd }}"
     loop_control:
       loop_var: standby_vsd
@@ -22,7 +23,7 @@
   - command: ping -c1 {{ item }}
     delegate_to: localhost
     register: ping_result
-    ignore_errors: yes
+    ignore_errors: vsd_force_cluster_failover | default(no)
     with_items: "{{ groups['primary_vsds'] }}"
 
   - set_fact:
@@ -123,6 +124,7 @@
     vars:
       no_report: "True"
     delegate_to: "{{ groups['vsd_ha_node1'][0] }}"
+    ignore_errors: vsd_force_cluster_failover | default(no)
 
   - include_role: 
       name: vsd-health
@@ -130,6 +132,7 @@
     vars:
       no_report: "True"
     delegate_to: "{{ vsd_ha_node }}"
+    ignore_errors: vsd_force_cluster_failover | default(no)
     loop_control:
       loop_var: vsd_ha_node
     with_items: 
