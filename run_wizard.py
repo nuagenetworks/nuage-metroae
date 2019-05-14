@@ -88,12 +88,30 @@ class Wizard(object):
                 required_libraries = f.read().split("\n")
 
         except Exception as e:
-            self._print("\nAn error occurred while reading libraries: " +
+            self._print("\nAn error occurred while reading pip libraries: " +
                         str(e))
             self._print("Please contact: " + METROAE_CONTACT)
             return
 
         missing = self._compare_libraries(required_libraries, output_lines)
+
+        try:
+            rc, output_lines = self._run_shell("yum list")
+            if rc != 0:
+                self._print("\n".join(output_lines))
+                raise Exception("yum list exit-code: %d" % rc)
+
+            with open("yum_requirements.txt", "r") as f:
+                required_libraries = f.read().split("\n")
+
+        except Exception as e:
+            self._print("\nAn error occurred while reading pip libraries: " +
+                        str(e))
+            self._print("Please contact: " + METROAE_CONTACT)
+            return
+
+        yum_missing = self._compare_libraries(required_libraries, output_lines)
+        missing.extend(yum_missing)
 
         if len(missing) == 0:
             self._print("\nMetroÆ Installation OK!")
@@ -331,6 +349,9 @@ class Wizard(object):
     def _compare_libraries(self, required_libraries, installed_libraries):
         missing = list()
         for req_lib in required_libraries:
+            if req_lib.startswith("@"):
+                continue
+
             req_lib_name = req_lib.split("=")[0]
 
             found = False
