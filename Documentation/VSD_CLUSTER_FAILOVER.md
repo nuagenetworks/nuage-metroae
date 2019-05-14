@@ -6,9 +6,9 @@ For failover to work properly, you must have a deployment configured for all 6 V
 ```
 metroae vsd_cluster_failover [deployment_name]
 ```
-Note that the first thing MetroÆ will do is check the health of the primary cluster before deactivating it. If the active cluster is unreachable or otherwise unhealthy, this check will fail and MetroÆ will quit. If you want to go ahead with the procedure anyway in order to promote the current standby cluster to active, you can tell MetroÆ to skip the health check of the active cluster using following command:
+Note that the first thing MetroÆ will do is check the health of the primary cluster before deactivating it. If the active cluster is unreachable or otherwise unhealthy, this check will fail and MetroÆ will quit. If you want to go ahead with the procedure anyway in order to promote the current standby cluster to active, you can tell MetroÆ to force the failover procedure using following command:
 ```
-metroae vsd_cluster_failover [deployment_name] -e ignore_vsd_deactivation_error=yes
+metroae vsd_cluster_failover [deployment_name] -e vsd_force_cluster_failover=yes
 ```
 
 MetroÆ will also execute a health check on the current standby cluster. If the health check fails on the standby cluster, MetroÆ will quit. To override and promote the standby cluster anyway, use the following command:
