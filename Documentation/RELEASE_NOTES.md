@@ -21,6 +21,9 @@
 * Support to setup VSTAT VSS UI (METROAE-952)
 * Do not run vsd-deploy if vsd-predeploy fails on any node (METROAE-982)
 * Upgrade support for OpenStack (METROAE-995)
+* Make any_errors_fatal a global config item
+* Support application of standard and cluster licenses on install and upgrade (METROAE-600)
+* Enhance error checking in vCenter VSD destroy (METROAE-980)
 
 ### Resolved Issues
 * Fix VSD Upgrade procedure to check for accurate ejabberd connected user list (METROAE-958)
@@ -34,4 +37,5 @@
 * Allow Python libraries to use interpreter installed in alternate locations via PATH env (METROAE-990)
 * Make VSD destroy serial to prevent race condition
 * Fix health checks for VSD with custom username (METROAE-994)
+* Skip monit status for processes and programs that are disabled by user
 * Fix VSD HA upgrade for hardened VSDs(METROAE-998)
