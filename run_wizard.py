@@ -19,9 +19,12 @@ WIZARD_SCRIPT = """
       This wizard will walk you through the setup process of MetroÆ
       step-by-step and ensure that all prerequisites are satisfied.
 
-      The following steps will be performed:
+      For assistance please contact: {contact}
 
 - list_steps: {}
+  description: |
+
+      The following steps will be performed:
 
 - step: Verify proper MetroÆ installation
   description: |
@@ -35,9 +38,18 @@ WIZARD_SCRIPT = """
       "sudo ./metro-setup.sh".  This requires sudo access and may ask for root
       password.
 
-- step: Create deployment
-  message:
-    text: Deployment OK!
+- step: Create/read deployment
+  description: |
+      This step will create a starter deployment or read an existing one and
+      begin filling it out.  A deployment is a configuration set for MetroÆ and
+      describes the properties of each component.  There is support for
+      multiple deployments each in their own directory.
+  create_deployment:
+    slash_msg: |
+        A deployment name cannot contain a slash as it will be a directory name
+    space_msg: |
+        A deployment name can contain a space, but it will always have to be
+        specified with quotes
 
 - message:
     text: |
@@ -52,11 +64,13 @@ STANDARD_FIELDS = ["step", "description"]
 class Wizard(object):
 
     def __init__(self, script=WIZARD_SCRIPT):
+        self.state = dict()
         self.progress_display_count = 0
         self.progress_display_rate = 1
 
         if "NON_INTERACTIVE" in os.environ:
             self.args = list(sys.argv)
+            self.args.pop(0)
         else:
             self.args = list()
 
@@ -71,7 +85,9 @@ class Wizard(object):
     #
 
     def message(self, action, data):
-        self._print(self._get_field(data, "text"))
+        raw_msg = self._get_field(data, "text")
+        format_msg = raw_msg.format(contact=METROAE_CONTACT)
+        self._print(format_msg)
 
     def list_steps(self, action, data):
         for step in self.script:
@@ -81,65 +97,53 @@ class Wizard(object):
     def verify_install(self, action, data):
         self._print("\nVerifying MetroÆ installation")
 
-        try:
-            rc, output_lines = self._run_shell("pip freeze")
-            if rc != 0:
-                self._print("\n".join(output_lines))
-                raise Exception("pip freeze exit-code: %d" % rc)
+        missing = self._verify_pip()
+        yum_missing = self._verify_yum()
 
-            with open("pip_requirements.txt", "r") as f:
-                required_libraries = f.read().split("\n")
-
-        except Exception as e:
-            self._print("\nAn error occurred while reading pip libraries: " +
-                        str(e))
-            self._print("Please contact: " + METROAE_CONTACT)
-            return
-
-        missing = self._compare_libraries(required_libraries, output_lines)
-
-        try:
-            self.progress_display_rate = 10
-            rc, output_lines = self._run_shell("yum list")
-            if rc != 0:
-                self._print("\n".join(output_lines))
-                raise Exception("yum list exit-code: %d" % rc)
-
-            with open("yum_requirements.txt", "r") as f:
-                required_libraries = f.read().split("\n")
-
-        except Exception as e:
-            self._print("\nAn error occurred while reading pip libraries: " +
-                        str(e))
-            self._print("Please contact: " + METROAE_CONTACT)
-            return
-
-        yum_missing = self._compare_libraries(required_libraries, output_lines)
         missing.extend(yum_missing)
 
         if len(missing) == 0:
             self._print("\nMetroÆ Installation OK!")
         else:
-            self._print("\nYour MetroÆ installation missing libraries:")
+            self._print("\nYour MetroÆ installation is missing libraries:")
             self._print("\n".join(missing))
             self._print(self._get_field(data, "missing_msg"))
             choice = self._input("Do you want to run setup now?", 0,
                                  ["(Y)es", "(n)o"])
 
             if choice != 1:
-                self._print("Running setup (may ask for sudo password)")
-                try:
-                    rc, output_lines = self._run_shell("sudo ./metro-setup.sh")
-                    if rc != 0:
-                        self._print("\n".join(output_lines))
-                        raise Exception("metro-setup.sh exit-code: %d" % rc)
+                self._run_setup()
 
-                    self._print("\nMetroÆ setup completed successfully!")
-                except Exception as e:
-                    self._print("\nAn error occurred while running setup: " +
-                                str(e))
-                    self._print("Please contact: " + METROAE_CONTACT)
-                    return
+    def create_deployment(self, action, data):
+        valid = False
+        while not valid:
+            deployment_name = self._input(
+                "Deployment name (will be a directory)", "default")
+            if "/" in deployment_name:
+                self._print("\n" + self._get_field(data, "slash_msg"))
+            elif " " in deployment_name:
+                self._print("\n" + self._get_field(data, "space_msg"))
+                choice = self._input("Do you want use it?", 0,
+                                     ["(Y)es", "(n)o"])
+                if choice != 1:
+                    valid = True
+            else:
+                valid = True
+
+        deployment_dir = os.path.join("deployments", deployment_name)
+        if os.path.exists(deployment_dir):
+            self._print("\nDeployment was found")
+        else:
+            self._print("")
+            choice = self._input('Create deployment: "%s"?' % deployment_name,
+                                 0, ["(Y)es", "(n)o"])
+            if choice == 1:
+                self._print("Skipping deployment creation.")
+                return
+
+        self._print("Deployment directory: " + deployment_dir)
+        self.state["deployment_name"] = deployment_name
+        self.state["deployment_dir"] = deployment_dir
 
     #
     # Private class internals
@@ -164,7 +168,10 @@ class Wizard(object):
                     "Out of args for non-interactive input for %s" %
                     input_prompt)
             user_value = self.args.pop(0)
-            value = self._validate_input(self, user_value, default,
+            if prompt is not None:
+                self._print(prompt)
+            self._print("From args: " + user_value)
+            value = self._validate_input(user_value, default,
                                          choices)
             if value is None:
                 raise Exception("Invalid non-interactive input for %s%s" %
@@ -294,7 +301,7 @@ class Wizard(object):
         self._print("")
 
         if "step" in action:
-            self._print("Step: " + action["step"] + "\n")
+            self._print("**** " + action["step"] + " ****\n")
 
         if "description" in action:
             self._print(action["description"])
@@ -353,6 +360,57 @@ class Wizard(object):
 
                 return retcode
 
+    def _verify_pip(self):
+        try:
+            rc, output_lines = self._run_shell("pip freeze")
+            if rc != 0:
+                self._print("\n".join(output_lines))
+                raise Exception("pip freeze exit-code: %d" % rc)
+
+            with open("pip_requirements.txt", "r") as f:
+                required_libraries = f.read().split("\n")
+
+        except Exception as e:
+            self._print("\nAn error occurred while reading pip libraries: " +
+                        str(e))
+            self._print("Please contact: " + METROAE_CONTACT)
+            return ["Could not deterimine pip libraries"]
+
+        return self._compare_libraries(required_libraries, output_lines)
+
+    def _verify_yum(self):
+        try:
+            self.progress_display_rate = 30
+            rc, output_lines = self._run_shell("yum list")
+            if rc != 0:
+                self._print("\n".join(output_lines))
+                raise Exception("yum list exit-code: %d" % rc)
+
+            with open("yum_requirements.txt", "r") as f:
+                required_libraries = f.read().split("\n")
+
+        except Exception as e:
+            self._print("\nAn error occurred while reading yum libraries: " +
+                        str(e))
+            self._print("Please contact: " + METROAE_CONTACT)
+            return ["Could not deterimine yum libraries"]
+
+        return self._compare_libraries(required_libraries, output_lines)
+
+    def _run_setup(self):
+        self._print("Running setup (may ask for sudo password)")
+        try:
+            rc, output_lines = self._run_shell("sudo ./metro-setup.sh")
+            if rc != 0:
+                self._print("\n".join(output_lines))
+                raise Exception("metro-setup.sh exit-code: %d" % rc)
+
+            self._print("\nMetroÆ setup completed successfully!")
+        except Exception as e:
+            self._print("\nAn error occurred while running setup: " +
+                        str(e))
+            self._print("Please contact: " + METROAE_CONTACT)
+
     def _compare_libraries(self, required_libraries, installed_libraries):
         missing = list()
         for req_lib in required_libraries:
@@ -371,7 +429,7 @@ class Wizard(object):
                     break
 
             if not found:
-                missing.append(req_lib)
+                missing.append("Requires " + req_lib)
 
         return missing
 
@@ -380,12 +438,6 @@ def main():
     try:
         wizard = Wizard()
         wizard()
-        # value = wizard._input("Enter VSD mode", 1, ["(S)tand-alone",
-        #                                             "(H)igh-availability",
-        #                                             "(N)one"])
-
-        # value = wizard._input("Enter IP address", None)
-        # print str(value)
     except Exception:
         traceback.print_exc()
         print "\nThere was an unexpected error running the wizard"
