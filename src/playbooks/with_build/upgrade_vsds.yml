@@ -7,6 +7,12 @@
         name: common
         tasks_from: check-predeploy-prereq
 
+- hosts: vsd_standby_node1
+  gather_facts: no
+  tasks:
+    - name: Stop replication process in the standby node
+      command: /opt/vsd/bin/vsd-deactivate-replication-slave
+
 - name: Run VSD inplace upgrade if eligible
   import_playbook: "upgrade_vsds_inplace.yml"
 
@@ -42,6 +48,20 @@
 
 - name: Run VSD SA Upgrade Deploy
   import_playbook: "vsd_sa_upgrade_deploy.yml"
+
+- hosts: standby_vsds
+  gather_facts: no
+  serial: 1
+  roles:
+    - vsd-destroy
+  vars:
+    vm_name: "{{ vmname }}"
+
+- name: Run VSD Predeploy
+  import_playbook: "vsd_predeploy.yml"
+
+- name: Run VSD Standby Deploy
+  import_playbook: "vsd_standby_deploy.yml"
 
 - name: Run VSD Upgrade Complete
   import_playbook: "vsd_upgrade_complete.yml"
