@@ -129,21 +129,55 @@ function check_run_with_container {
 }
 
 function check_for_menu {
+    get_running_container_id
     if [[ -f $ANSIBLE_CONFIG_FILE ]]; then
-        if [[ -f $PLAYBOOK_MENU ]]; then
-            source $PLAYBOOK_MENU
-            return
+        if [[ ! -f $PLAYBOOK_MENU ]]; then
+            echo "One or more metroae config files are missing. Please update your workspace and try again."
+            exit 1
         fi
-    else
-        if [[ -f $SETUP_FILE ]]; then
-            while read -r line; do declare $line; done < $SETUP_FILE
-            if [[ -f $METROAE_MOUNT_POINT/$PLAYBOOK_MENU ]]; then
-                source $METROAE_MOUNT_POINT/$PLAYBOOK_MENU
-                return
-            fi            
-        fi 
+        source $PLAYBOOK_MENU
+    elif [[ -f $SETUP_FILE ]]; then
+        while read -r line; do declare $line; done < $SETUP_FILE
+        if [[ ! -f $METROAE_MOUNT_POINT/$PLAYBOOK_MENU ]]; then
+            echo "It looks like you are trying to run the metroae container. One or more metroae config files are missing. Please run ‘metroae container update’ and try again."
+            exit 1
+        fi
+        source $METROAE_MOUNT_POINT/$PLAYBOOK_MENU
+    else 
+        if [[ ! -z $RUNNING_CONTAINER_ID ]]; then
+            echo "It looks like you are trying to run the metroae container. One or more config files are missing. Please run ‘metroae container setup’ and try again."
+        else
+            confirmation="init"
+            echo "The metroae container has not been setup. Do you want to set it up now? (Yes/no)"
+            while [[ $confirmation != "yes" ]] && [[ $confirmation  != "no" ]] && [[ $confirmation  != "y" ]] && [[ $confirmation != "n" ]]
+            do
+                read -p "metroae was run outside of a local clone of the nuage-metro repo and the metroae container is not running. Do you want to setup a container (yes/no): " confirmation
+            done
+
+            if [[ $confirmation == "yes" ]] || [[ $confirmation == "y" ]]
+            then
+                setup
+            fi
+            exit 0
+        fi
     fi
-    echo "It seems that the menu file is missing."
+}
+
+function print_version_and_exit {
+    get_max_container_version
+    if [[ $CONTAINER_MODE == false ]]; then
+        if [[ -f $ANSIBLE_CONFIG_FILE ]]; then
+            if [[ -f $SCRIPT_LOG_FILE ]]; then
+                echo "Run from MetroAE repo version $METROAE_VERSION"
+            fi
+        else
+            if [[ -f $SCRIPT_LOG_FILE ]]; then
+                echo "Run from MetroAE container version $MAX_CONTAINER_VERSION and MetroAE version $METROAE_VERSION"
+            fi
+        fi
+    fi
+
+    exit $1
 }
 
 #################################################################################
@@ -163,7 +197,7 @@ function check_docker {
 
     if [[ $? -ne 0 ]]; then
         echo "Docker engine must be installed in order to run metroae. Quitting. Please install Docker and try again. See https://docs.docker.com for details"
-        exit 1
+        print_version_and_exit 1
     fi
     set -e
 }
@@ -200,9 +234,7 @@ function get_max_container_version {
         fi
     fi
 
-    if [[ -f $SETUP_FILE ]]; then
-        echo "Newest metroae container version found is $MAX_CONTAINER_VERSION"
-    else
+    if [[ ! -f $SETUP_FILE ]]; then
         echo "Newest metroae container version found is $MAX_CONTAINER_VERSION" >> $SCRIPT_LOG_FILE
     fi
 
@@ -248,7 +280,7 @@ function stop {
 function delete_container_id {
     get_container_id
     if [[ -z $CONTAINER_ID ]]; then
-        echo "metroae container not found. Nothing to do."
+        echo "Metroae container not found. Nothing to do."
         return 0
     fi
 
@@ -275,7 +307,7 @@ function destroy {
 
     while [[ $confirmation != "yes" ]] && [[ $confirmation  != "no" ]] && [[ $confirmation  != "y" ]] && [[ $confirmation != "n" ]]
     do
-        read -p "Do you really want to destroy the metroae container (yes/no): " confirmation
+        read -p "Do you really want to destroy the metroae container? (yes/no): " confirmation
     done
 
 
@@ -299,14 +331,14 @@ function destroy {
 
     get_image_id
     if [[ -z $IMAGE_ID ]]; then
-        echo "metroae container image not found. Nothing to do."
+        echo "Metroae container image not found. Nothing to do."
         return 0
     fi
 
     echo "Destroying metroae container..." | tee -a $SCRIPT_LOG_FILE
 
     set +e
-    docker rmi $IMAGE_ID 2 >> $SCRIPT_LOG_FILE
+    docker rmi $IMAGE_ID 2>> $SCRIPT_LOG_FILE
 
     if [[ $? -ne 0 ]]; then
         echo "Attempt to remove the metroae image failed"
@@ -351,7 +383,7 @@ function pull {
 
         if [[ $? -ne 0 ]]; then
             echo "Attempt to pull the metroae container image failed. Quitting" | tee -a $SCRIPT_LOG_FILE
-            exit 1
+            print_version_and_exit 1
         fi
 
         docker load -i $TEMPORARY_DIRECTORY$CONTAINER_TAR_FILE
@@ -456,7 +488,7 @@ function setup {
         confirmation="init"
         while [[ $confirmation != "yes" ]] && [[ $confirmation  != "no" ]] && [[ $confirmation  != "y" ]] && [[ $confirmation != "n" ]]
         do
-            read -p "Do you want to continue with setup (yes/no): " confirmation
+            read -p "Do you want to continue with setup? (yes/no): " confirmation
         done
 
 
@@ -535,7 +567,7 @@ function setup {
         fi
         while [[ $confirmation != "yes" ]] && [[ $confirmation  != "no" ]] && [[ $confirmation  != "y" ]] && [[ $confirmation != "n" ]]
         do
-            read -p "Do you want to set a security certificate for the metroae container GUI (yes/no): " confirmation
+            read -p "Do you want to set a security certificate for HTTPS for the metroae container GUI? (yes/no): " confirmation
         done
 
         if [[ $confirmation == "yes" ]] && [[ $confirmation == "y" ]]; then
@@ -554,7 +586,7 @@ function setup {
     fi
     while [[ $confirmation != "yes" ]] && [[ $confirmation  != "no" ]] && [[ $confirmation  != "y" ]] && [[ $confirmation != "n" ]]
     do
-        read -p "Do you want to setup the config (yes/no): " confirmation
+        read -p "Do you want to setup VSD configuration support? (yes/no): " confirmation
     done
 
 
@@ -750,7 +782,7 @@ function check_for_user_group {
 
         if [[ $input != "Yes" ]] && [[ $input != "y" ]] && [[ $input != "yes" ]] && [[ $input != "Y" ]]; then
             echo "Please add the current user to the docker group and retry."
-            exit 0
+            print_version_and_exit 0
         fi
 
         echo "Executing privileged commands to add the current user to docker group"
@@ -819,7 +851,7 @@ function write_audit_log_entry {
 
 function audit_log_and_exit {
     echo "`date` MetroÆ $METROAE_VERSION exit code $1" >> $AUDIT_LOG
-    exit $1
+    print_version_and_exit $1
 }
 
 # We just use the old version to parse the options
@@ -848,15 +880,15 @@ function deployment_main {
     case $key in
         -h|--help)
         main_help
-        exit 0
+        print_version_and_exit 0
         ;;
         --ansible-help)
         $(which ansible-playbook) --help
-        exit 0
+        print_version_and_exit 0
         ;;
         --list)
         list_workflows
-        exit 0
+        print_version_and_exit 0
         ;;
         --set-group)
         GROUP="$2"
@@ -886,7 +918,7 @@ function deployment_main {
     # Missing workflow, show usage
     if [[ $# -eq 0 ]] || [[ $1 == -* ]]; then
         main_help
-        exit 1
+        print_version_and_exit 1
     fi
 
     # <workflow> argument
@@ -910,7 +942,7 @@ function deployment_main {
                 DEPLOYMENT_DIR=$DEPLOYMENTS_BASE_DIR/$DEPLOYMENT
             else
             echo "Could not find deployment '$DEPLOYMENT' under" $DEPLOYMENTS_BASE_DIR
-            exit 1
+            print_version_and_exit 1
             fi
         fi
     fi
@@ -935,7 +967,7 @@ function deployment_main {
         $(which ansible-playbook) $PLAYBOOK_WITH_BUILD_DIR/$WORKFLOW "$@" || audit_log_and_exit $?
     else
     echo "Requested metroae workflow could not be found"
-    exit 1
+    print_version_and_exit 1
     fi
 
     audit_log_and_exit 0
@@ -1088,7 +1120,7 @@ function check_for_setup_file {
 function copy_ssh_id {
     if [[ -z $1 ]]; then
         echo "Usage: metroae tools ssh copyid <user@hostname>"
-        exit 1
+        print_version_and_exit 1
     fi
     run_container_if_not_running
 
@@ -1195,7 +1227,7 @@ function container_main {
     if [[ ! -z $GROUP_CHECK ]]; then
         check_for_user_group $1
         shift
-        exit 0
+        print_version_and_exit 0
     else
         check_for_user_group
     fi
@@ -1317,17 +1349,17 @@ function container_main {
             unzip-files)
             shift
             unzip_files "$@"
-            exit 0
+            print_version_and_exit 0
             ;;
             convert-build-vars-to-deployments)
             shift
             con_build_vars_to_deployments "$@"
-            exit 0
+            print_version_and_exit 0
             ;;
             generate-example-from-schema)
             shift
             gen_example_from_schema "$@"
-            exit 0
+            print_version_and_exit 0
             ;;
             copy-ssh-id)
             copy_ssh_id "$2"
@@ -1377,7 +1409,7 @@ function tools_main {
         else
             ./nuage-unzip.sh ${EXTRA_ARGS[@]}
         fi
-        exit 0
+        print_version_and_exit 0
         ;;
         ,tools,convert,buildvars)
         if [[ $SHOULD_RUN_WITH_CONTAINER == true ]]; then
@@ -1385,7 +1417,7 @@ function tools_main {
         else
             /usr/bin/python convert_build_vars_to_deployment.py ${EXTRA_ARGS[@]}
         fi
-        exit 0
+        print_version_and_exit 0
         ;;
         ,tools,generate,example)
         if [[ $SHOULD_RUN_WITH_CONTAINER == true ]]; then
@@ -1393,7 +1425,7 @@ function tools_main {
         else
             /usr/bin/python generate_example_from_schema.py ${EXTRA_ARGS[@]}
         fi
-        exit 0
+        print_version_and_exit 0
         ;;
         ,tools,encrypt,credentials)
         if [[ $SHOULD_RUN_WITH_CONTAINER == true ]]; then
@@ -1401,11 +1433,11 @@ function tools_main {
         else
             /usr/bin/python encrypt_credentials.py ${EXTRA_ARGS[@]}
         fi
-        exit 0
+        print_version_and_exit 0
         ;;
         *)
         tools_help ",tools"
-        exit 0
+        print_version_and_exit 0
         ;;
     esac
 }
@@ -1495,23 +1527,23 @@ function switch_help {
     case $1 in
         ,config*)
         config_help "$1"
-        exit 0
+        print_version_and_exit 0
         ;;
         ,container*)
         container_help "$1"
-        exit 0
+        print_version_and_exit 0
         ;;
         ,tools*)
         tools_help "$1"
-        exit 0
+        print_version_and_exit 0
         ;;
         ,ui*)
         ui_help "$1"
-        exit 0
+        print_version_and_exit 0
         ;;
         *)
         main_help "$1"
-        exit 0
+        print_version_and_exit 0
         ;;
     esac
 }
@@ -1578,29 +1610,33 @@ fi
 
 CLI_ARGS=("$@")
 
-check_for_menu
-
 parse_menu_args "$@"
+
+if [[ ${MATCH_MENU[0]} != ",container,setup" ]] && [[ ${MATCH_MENU[0]} != ",container,pull" ]] && [[ ${MATCH_MENU[0]} != ",container,destroy" ]] && [[ ${MATCH_MENU[0]} != ",container,status" ]]; then
+    check_for_menu
+    # parse it again if we loaded the new menu
+    parse_menu_args "$@"
+fi
 
 case ${MATCH_MENU[2]} in
     tools)
     tools_main
-    exit 0
+    print_version_and_exit 0
     ;;
     config)
     config_main ${MATCH_MENU[3]} "${EXTRA_ARGS[@]}"
-    exit 0
+    print_version_and_exit 0
     ;;
     playbook)
     deployment_main ${MATCH_MENU[3]} "${EXTRA_ARGS[@]}"
-    exit 0
+    print_version_and_exit 0
     ;;
     container)
     container_main ${MATCH_MENU[3]} "${EXTRA_ARGS[@]}"
-    exit 0
+    print_version_and_exit 0
     ;;
     *)
     deployment_main "$@"
-    exit 0
+    print_version_and_exit 0
     ;;
 esac
