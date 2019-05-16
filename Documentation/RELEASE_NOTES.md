@@ -38,3 +38,4 @@
 * Make VSD destroy serial to prevent race condition
 * Fix health checks for VSD with custom username (METROAE-994)
 * Skip monit status for processes and programs that are disabled by user
+* Fix VSD HA upgrade for hardened VSDs(METROAE-998)
