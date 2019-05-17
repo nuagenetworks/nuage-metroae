@@ -51,3 +51,25 @@
     - nuagex
     - vstat
     - vstat-predeploy
+
+- block:
+  - name: Install NFS Utils
+    yum:
+      name: nfs-Utils
+      state: present
+
+  - name: Create Backup directory
+    file:
+      path: /mnt/nfs/backup
+      state: directory
+      user: elasticsearch
+      group: elasticsearch
+      mode: 0774
+      rescue: yes
+
+  - name: Mount NFS volume
+    mount:
+      path: /mnt/nfs/backup
+      src: {{ nfs_backup_location }}
+
+  when: nfs_backup_location is defined
