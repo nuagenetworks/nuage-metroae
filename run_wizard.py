@@ -44,12 +44,24 @@ WIZARD_SCRIPT = """
       begin filling it out.  A deployment is a configuration set for MetroÆ and
       describes the properties of each component.  There is support for
       multiple deployments each in their own directory.
-  create_deployment:
-    slash_msg: |
-        A deployment name cannot contain a slash as it will be a directory name
-    space_msg: |
-        A deployment name can contain a space, but it will always have to be
-        specified with quotes
+  create_deployment: {}
+
+- step: Common deployment file and DNS
+  description: |
+      This step will create or read an existing common.yml deployment file and
+      begin filling it out.  This file provides global parameters for the
+      deployment common to all components.  We will also setup DNS at this
+      step.
+  create_common:
+    dns_setup_msg: |
+
+      We will begin setting up DNS.  MetroÆ requires that most components have
+      hostname to ip address DNS mappings defined before running workflows.
+      Having DNS setup before continuing will allow this wizard to
+      auto-discover component IP addresses.
+    vsd_fqdn_msg: |
+      Please enter the Fully Qualified Domain Name (FQDN) for the VSD.  If
+      clustered, use the XMPP FQDN, for standalone use the FQDN of the VSD.
 
 - message:
     text: |
@@ -105,7 +117,7 @@ class Wizard(object):
         if len(missing) == 0:
             self._print("\nMetroÆ Installation OK!")
         else:
-            self._print("\nYour MetroÆ installation is missing libraries:")
+            self._print("\nYour MetroÆ installation is missing libraries:\n")
             self._print("\n".join(missing))
             self._print(self._get_field(data, "missing_msg"))
             choice = self._input("Do you want to run setup now?", 0,
@@ -120,9 +132,11 @@ class Wizard(object):
             deployment_name = self._input(
                 "Deployment name (will be a directory)", "default")
             if "/" in deployment_name:
-                self._print("\n" + self._get_field(data, "slash_msg"))
+                self._print("\nA deployment name cannot contain a slash "
+                            "as it will be a directory name")
             elif " " in deployment_name:
-                self._print("\n" + self._get_field(data, "space_msg"))
+                self._print("\nA deployment name can contain a space, but it "
+                            "will always have to be specified with quotes")
                 choice = self._input("Do you want use it?", 0,
                                      ["(Y)es", "(n)o"])
                 if choice != 1:
@@ -131,7 +145,7 @@ class Wizard(object):
                 valid = True
 
         deployment_dir = os.path.join("deployments", deployment_name)
-        if os.path.exists(deployment_dir):
+        if os.path.isdir(deployment_dir):
             self._print("\nDeployment was found")
         else:
             self._print("")
@@ -144,6 +158,22 @@ class Wizard(object):
         self._print("Deployment directory: " + deployment_dir)
         self.state["deployment_name"] = deployment_name
         self.state["deployment_dir"] = deployment_dir
+
+        os.mkdir(deployment_dir)
+
+    def create_common(self, action, data):
+        deployment_dir = self._get_deployment_dir()
+        if deployment_dir is None:
+            return
+
+        deployment_file = os.path.join(deployment_dir, "common.yml")
+        if os.path.isfile(deployment_file):
+            deployment = self._read_deployment_file(deployment_file)
+        else:
+            self._print(deployment_file + " not found. It will be created.")
+            deployment = dict()
+
+        self._setup_dns(deployment, data)
 
     #
     # Private class internals
@@ -424,7 +454,7 @@ class Wizard(object):
                 if inst_lib.lower().startswith(req_lib_name.lower()):
                     found = True
                     if not inst_lib.lower().startswith(req_lib.lower()):
-                        missing.append("Requires %s, installed %s" %
+                        missing.append("Requires %s, %s was found" %
                                        (req_lib, inst_lib))
                     break
 
@@ -432,6 +462,53 @@ class Wizard(object):
                 missing.append("Requires " + req_lib)
 
         return missing
+
+    def _get_deployment_dir(self):
+        if "deployment_dir" not in self.state:
+            self._print("Creating a deployment file requires a deployment to"
+                        " be specified.  This step will be skipped if not"
+                        " provided.")
+            choice = self._input("Do you want to specify a deployment now?", 0,
+                                 ["(Y)es", "(n)o"])
+            if choice != 1:
+                self.create_deployment(None, None)
+
+            if "deployment_dir" not in self.state:
+                self._print("No deployment specified, skipping step")
+                return None
+
+        return self.state["deployment_dir"]
+
+    def _read_deployment_file(self, deployment_file):
+        with open(deployment_file, "r") as f:
+            return yaml.save_load(f.read().decode("utf-8"))
+
+    def _setup_dns(self, deployment, data):
+        self._print(self._get_field(data, "dns_setup_msg"))
+
+        dns_domain_default = None
+        if "dns_domain" in deployment:
+            dns_domain_default = deployment["dns_domain"]
+
+        dns_domain = self._input("Top level DNS domain?", dns_domain_default)
+        deployment["dns_domain"] = dns_domain
+        self.state["dns_domain"] = dns_domain
+
+        vsd_fqdn_default = None
+        if "vsd_fqdn_global" in deployment:
+            vsd_fqdn_default = deployment["vsd_fqdn_global"]
+        else:
+            vsd_fqdn_default = "xmpp"
+
+        self._print(self._get_field(data, "vsd_fqdn_msg"))
+
+        vsd_fqdn = self._input("VSD FQDN (we'll add .%s)?" % dns_domain,
+                               vsd_fqdn_default)
+
+        if not vsd_fqdn.endswith(dns_domain):
+            vsd_fqdn = "." + dns_domain
+
+        deployment["vsd_fqdn_global"] = vsd_fqdn
 
 
 def main():
