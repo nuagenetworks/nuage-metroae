@@ -1,0 +1,54 @@
+- name: Update elasticsearch config file
+  lineinfile:
+    line: path.repo: ["/mnt/nfs/backups"]
+    path: /etc/elasticsearch/elasticsearch.yml
+
+- name: Add snaphost repo
+  uri:
+    url: http://localhost:9200/_snapshot/{{ repo_name }}
+    method: PUT
+    status_code: 200
+    data: '{
+              "type": "fs",
+              "settings": {
+                		"compress": true,
+                		"location": "{{ nfs_backup_location }}"
+              }
+          }'
+
+- block:
+  - name: Add repo name to curator config
+    lineinfile:
+      line: "repository: {{ repo_name }}"
+      regex: "repository"
+      path: {{ item }}
+    with_items:
+      - /root/curator/curator_snapshot.yml
+      - /root/curator/curator_delete.yml
+
+  - name: Add a cron job to trigger backups
+    cron:
+      name: "Job to take snapshot"
+      state: present
+      job: {{ active_curator }}
+      minute: {{ snaphost_interval }}
+
+  when: primary
+
+- block:
+  - name: Add repo name to curator config
+    lineinfile:
+      line: "repository: {{ repo_name }}"
+      regex: "repository"
+      path: {{ item }}
+    with_items:
+      - /root/curator/curator_restore.yml
+
+  - name: Add a cron job to restore backups
+    cron:
+      name: "Job to restore snapshot"
+      state: present
+      job: {{ standy_curator }}
+      minute: {{ restore_interval }}
+
+  when: not primary
