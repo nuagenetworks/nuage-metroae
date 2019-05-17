@@ -10,7 +10,25 @@ MetroÆ before version 3.0 used the now deprecated build_vars.yml configuration.
 Deprecation Notice: The convert_build_vars_to_deployment tool is not actively updated for new features and will be removed in MetroÆ v3.4.0. Users of this tool should either edit deployment files directly or modify their process to take advantage of the jinja2 templates available in src/deployment_templates to auto-generate deployment files.
 
 ## Prerequisites / Requirements
-If you have not already set up your MetroÆ Host environment, see [SETUP.md](SETUP.md) before proceeding.  
+If you have not already set up your MetroÆ Host environment, see [SETUP.md](SETUP.md) before proceeding.
+
+## What is a Deployment?
+
+Deployments are component configuration sets.  They are stored under the `nuage-metro/deployments/<deployment_name>/` directory and the files within describe all of the components to be installed/upgraded.
+
+If you issue:
+
+    ./metroae install_everything
+
+The files under nuage-metro/deployments/default will be used to do an install.
+
+If you issue:
+
+    ./metroae install_everything mydeployment
+
+The files under `nuage-metro/deployments/mydeployment` will be used to do an install.  This allows for different sets of component definitions for various projects.
+
+Each time you issue MetroaÆ, the inventory will be completely rebuilt from the deployment name specified.  This will overwrite any previous inventory, so it will reflect exactly what is configured in the deployment that was specified.
 
 ## Customize Deployment
 Based on your network topology and the specific components you plan on deploying, you will configure several files. Setting configuration files correctly ensures that when you subsequently execute workflows they configure components as intended. Precise syntax is crucial.
@@ -115,9 +133,9 @@ Creates an example vsds configuration file under the "new" deployment.
 The next step is to deploy your components. See [DEPLOY.md](DEPLOY.md) for guidance.
 
 ## Questions, Feedback, and Contributing
-Ask questions and get support via the [forums](https://devops.nuagenetworks.net/forums/) on the [MetroÆ site](https://devops.nuagenetworks.net/).  
-You may also contact us directly.  
-  Outside Nokia: [devops@nuagenetworks.net](mailto:deveops@nuagenetworks.net "send email to nuage-metro project")  
+Ask questions and get support via the [forums](https://devops.nuagenetworks.net/forums/) on the [MetroÆ site](https://devops.nuagenetworks.net/).
+You may also contact us directly.
+  Outside Nokia: [devops@nuagenetworks.net](mailto:deveops@nuagenetworks.net "send email to nuage-metro project")
   Internal Nokia: [nuage-metro-interest@list.nokia.com](mailto:nuage-metro-interest@list.nokia.com "send email to nuage-metro project")
 
 Report bugs you find and suggest new features and enhancements via the [GitHub Issues](https://github.com/nuagenetworks/nuage-metro/issues "nuage-metro issues") feature.
