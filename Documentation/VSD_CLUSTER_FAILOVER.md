@@ -1,19 +1,27 @@
 # VSD cluster failover using MetroÆ
 
-This procedure is used to execute a VSD cluster failover for an active/standby VSD cluster pair. When executed, the active VSD cluster will be 'deactivated' to standby and the standby VSD cluster will be promoted to active. This requires that an active/standby cluster pair to be already installed with one Active HA Cluster (3 VSDs) and one Standby HA Cluster (3 VSDs). Note that MetroÆ can be used to install the initial active/standby cluster pair, a.k.a. a geo-redundant cluster.
+You can use this procedure to make the current `standby` VSD cluster the `active` VSD cluster. You can promote the `standby` cluster to `active` when both the `active` and `standby` clusters are in good health. Using the `vsd_force_cluser_failover` flag (see below), you can promote the `standby` cluster even when the `primary` cluster is unhealthy or unreachable.
 
-For failover to work properly, you must have a deployment configured for all 6 VSDs, 3 for the active cluster and 3 for the standby cluster. This can be the same deployment that was used to have MetroÆ install the active/standby cluster pair. With this requirement satisfied, use the following command to deactivate the current active cluster and promote the standby cluster to active:
+When you use MetroAE to execute the failover procedure, the vsds.yml file in your deployment must be configured with data for 6 VSDs. The first 3 VSDs (VSDs 1-3 in the vsds.yml file) must correspond to the 3 VSDs that are currently `active` VSD cluster and the second 3 VSDs (VSDs 4-6 in the vsds.yml file) must correspond to the 3 VSDs that are currently `standby`. You can create a new deployment for the failover operation or you can re-use the same deployment that was used by MetroAE to install the active/standby cluster in the first place. It is not required that MetroAE be used to install the active/standby clusters in the first place.
+
+Note that the deployment must be configured for the *current* active/standby situation. You can use this procedure to switch back and forth (failover and failback) your clusters, but the order of VSDs in vsds.yml must be changed between runs *or* you can create separate deployments: One for deactivating the `active` cluster and promoting the `standby` cluster to `active` and one for reversing the operation. 
+
+When your deployment is correct, use the following command to deactivate the current `active` cluster and promote the `standby` cluster to `active`:
 ```
 metroae vsd_cluster_failover [deployment_name]
 ```
-Note that the first thing MetroÆ will do is check the health of the primary cluster before deactivating it. If the active cluster is unreachable or otherwise unhealthy, this check will fail and MetroÆ will quit. If you want to go ahead with the procedure anyway in order to promote the current standby cluster to active, you can tell MetroÆ to force the failover procedure using following command:
+If both clusters are in good shape, your failover will complete successfully. If the current `primary` cluster is in poor health or unreachable, MetroAE will print an error and quit. If you want to ignore these errors and force the current `standby` cluster to become `primary`, use following command:
 ```
 metroae vsd_cluster_failover [deployment_name] -e vsd_force_cluster_failover=yes
 ```
 
-MetroÆ will also execute a health check on the current standby cluster. If the health check fails on the standby cluster, MetroÆ will quit. To override and promote the standby cluster anyway, use the following command:
+MetroAE will also execute a health check on the current `standby` cluster. If the health check fails on the `standby` cluster, MetroAE will print an error and quit. If you want to ignore these errors and promote the `standby` cluster anyway, use the following command:
 ```
 metroae vsd_cluster_failover [deployment_name] -e skip_health_check=true
+```
+Note that you can use both `vsd_force_cluster_failover` and `skip_health_check` on one command:
+```
+metroae vsd_cluster_failover [deployment_name] -e vsd_force_cluster_failover=yes -e skip_health_check=true
 ```
 
 ## Questions, Feedback, and Contributing
