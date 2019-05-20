@@ -123,22 +123,22 @@
   - name: Start the replication operation on the new standby VSD
     command: "/opt/vsd/bin/vsd-prepare-replication-slave-cluster.sh -m /tmp/{{ replication_db | basename }}"
     when: is_primary_reachable | default(false)
-    delegate_to: "{{ groups['vsd_ha_node1'][0] }}"
+    delegate_to: "{{ groups['primary_vsds'][0] }}"
 
   - name: Start the replication operation on the other 2 standby VSDs
     command: "/opt/vsd/bin/vsd-prepare-replication-slave-cluster.sh -m /tmp/{{ replication_db | basename }}"
     delegate_to: "{{ item }}"
     when: is_primary_reachable | default(false)
     with_items: 
-      - "{{ groups['vsd_ha_node2'][0] }}"
-      - "{{ groups['vsd_ha_node3'][0] }}"
+      - "{{ groups['primary_vsds'][1] }}"
+      - "{{ groups['primary_vsds'][2] }}"
 
   - include_role: 
       name: vsd-health
       tasks_from: monit_status
     vars:
       no_report: "True"
-    delegate_to: "{{ groups['vsd_ha_node1'][0] }}"
+    delegate_to: "{{ groups['primary_vsds'][0] }}"
     when: is_primary_reachable | default(false)
     ignore_errors: vsd_force_cluster_failover | default(no)
 
@@ -153,13 +153,13 @@
     loop_control:
       loop_var: vsd_ha_node
     with_items: 
-      - "{{ groups['vsd_ha_node2'][0] }}"
-      - "{{ groups['vsd_ha_node3'][0] }}"
+      - "{{ groups['primary_vsds'][1] }}"
+      - "{{ groups['primary_vsds'][2] }}"
 
   - name: Start the replication operation on the new standby VSD
     command: "/opt/vsd/bin/vsd-start-replication-slave -m {{ groups['vsd_standby_node1'][0] }}"
     when: is_primary_reachable | default(false)
-    delegate_to: "{{ groups['vsd_ha_node1'][0] }}"
+    delegate_to: "{{ groups['primary_vsds'][0] }}"
 
   remote_user: "{{ vsd_username | default(vsd_default_username) }}"
   become: "{{ 'no' if vsd_username | default(vsd_default_username) == 'root' else 'yes' }}"
