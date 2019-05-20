@@ -28,22 +28,30 @@
 
   - name: Set the reachablility flag for primary vsds
     set_fact:
-      is_reachable: "{{ ping_result|success }}"
+      is_primary_reachable: "{{ ping_result|success }}"
     delegate_to: "{{ item }}"
     with_items: "{{ groups['primary_vsds'] }}"
 
   - name: Deactivate replication on primary VSD cluster
     command: /opt/vsd/bin/vsd-deactivate-replication-master-cluster.sh
     ignore_errors: vsd_force_cluster_failover | default(no)
-    when: is_reachable | default(false)
+    when: is_primary_reachable | default(false)
     delegate_to: "{{ item }}"
     with_items: "{{ groups['primary_vsds'] }}"
 
-  - name: Switch replication role of standby VSD cluster when using clustered VSTAT
+  - name: Switch replication role of standby VSD cluster when using clustered VSTATs
     command: "/opt/vsd/bin/vsd-switch-replication-cluster-role --role active -e hostvars[groups['vstats'][0]]['hostname'],hostvars[groups['vstats'][1]]['hostname'],hostvars[groups['vstats'][2]]['hostname']"
     when:
       - groups['vstats'] is defined
       - groups['vstats'] | length == 3
+    delegate_to: "{{ item }}"
+    with_items: "{{ groups['standby_vsds'] }}"
+
+  - name: Switch replication role of standby VSD cluster when using 2 stansalone VSTATs
+    command: "/opt/vsd/bin/vsd-switch-replication-cluster-role --role active -e hostvars[groups['vstats'][0]]['hostname'],hostvars[groups['vstats'][1]]['hostname']
+    when:
+      - groups['vstats'] is defined
+      - groups['vstats'] | length == 2
     delegate_to: "{{ item }}"
     with_items: "{{ groups['standby_vsds'] }}"
 
@@ -101,7 +109,7 @@
     set_fact:
       replication_db: "{{ hostvars[groups['vsd_standby_node1'][0]]['replication_db'] }}"
     delegate_to: "{{ item }}"
-    when: is_reachable | default(false)
+    when: is_primary_reachable | default(false)
     with_items: "{{ groups['primary_vsds'] }}"
 
   - name: Transfer replication DB from MetroAE host to primary VSD cluster
@@ -109,18 +117,18 @@
       dest: "/tmp/"
       src: /tmp/vsdbackup/{{ replication_db | basename }}
     delegate_to: "{{ item }}"
-    when: is_reachable | default(false)
+    when: is_primary_reachable | default(false)
     with_items: "{{ groups['primary_vsds'] }}"
 
   - name: Start the replication operation on the new standby VSD
     command: "/opt/vsd/bin/vsd-prepare-replication-slave-cluster.sh -m /tmp/{{ replication_db | basename }}"
-    when: is_reachable | default(false)
+    when: is_primary_reachable | default(false)
     delegate_to: "{{ groups['vsd_ha_node1'][0] }}"
 
   - name: Start the replication operation on the other 2 standby VSDs
     command: "/opt/vsd/bin/vsd-prepare-replication-slave-cluster.sh -m /tmp/{{ replication_db | basename }}"
     delegate_to: "{{ item }}"
-    when: is_reachable | default(false)
+    when: is_primary_reachable | default(false)
     with_items: 
       - "{{ groups['vsd_ha_node2'][0] }}"
       - "{{ groups['vsd_ha_node3'][0] }}"
@@ -131,7 +139,7 @@
     vars:
       no_report: "True"
     delegate_to: "{{ groups['vsd_ha_node1'][0] }}"
-    when: is_reachable | default(false)
+    when: is_primary_reachable | default(false)
     ignore_errors: vsd_force_cluster_failover | default(no)
 
   - include_role: 
@@ -139,7 +147,7 @@
       tasks_from: monit_status
     vars:
       no_report: "True"
-    when: is_reachable | default(false)
+    when: is_primary_reachable | default(false)
     delegate_to: "{{ vsd_ha_node }}"
     ignore_errors: vsd_force_cluster_failover | default(no)
     loop_control:
@@ -150,7 +158,7 @@
 
   - name: Start the replication operation on the new standby VSD
     command: "/opt/vsd/bin/vsd-start-replication-slave -m {{ groups['vsd_standby_node1'][0] }}"
-    when: is_reachable | default(false)
+    when: is_primary_reachable | default(false)
     delegate_to: "{{ groups['vsd_ha_node1'][0] }}"
 
   remote_user: "{{ vsd_username | default(vsd_default_username) }}"
