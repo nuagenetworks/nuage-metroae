@@ -117,7 +117,11 @@ function check_run_mode {
 }
 
 function try_get_menu {
-    if [[ $RUN_MODE == "REPO" ]] || [[ $RUN_MODE == "INSIDE" ]]; then
+    if [[ $RUN_MODE == "INSIDE" ]]; then
+        if [[ -f /source/nuage-metroae/$PLAYBOOK_MENU ]]; then
+            source /source/nuage-metroae/$PLAYBOOK_MENU
+        fi
+    elif [[ $RUN_MODE == "REPO" ]]; then
         if [[ -f $PLAYBOOK_MENU ]]; then
             source $PLAYBOOK_MENU
         fi
@@ -133,11 +137,11 @@ function try_get_menu {
 # Check the SETUP_FILE, SCRIPT_LOG_FILE and do the setup before we run the functions
 function check_for_prerequisite {
     if [[ $RUN_MODE == "INSIDE" ]]; then
-        if [[ ! -f $PLAYBOOK_MENU ]]; then
+        if [[ ! -f /source/nuage-metro/$PLAYBOOK_MENU ]]; then
             echo "One or more metroae config files are missing. Please update your workspace and try again."
             exit 1
         fi
-        source $PLAYBOOK_MENU
+        source /source/nuage-metro/$PLAYBOOK_MENU
     else
         get_container_id
         get_running_container_id
