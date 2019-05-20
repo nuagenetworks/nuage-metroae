@@ -132,42 +132,50 @@ function try_get_menu {
 
 # Check the SETUP_FILE, SCRIPT_LOG_FILE and do the setup before we run the functions
 function check_for_prerequisite {
-    get_container_id
-    get_running_container_id
-    if [[ $RUN_MODE == "REPO" ]] || [[ $RUN_MODE == "INSIDE" ]]; then
+    if [[ $RUN_MODE == "INSIDE" ]]; then
         if [[ ! -f $PLAYBOOK_MENU ]]; then
             echo "One or more metroae config files are missing. Please update your workspace and try again."
             exit 1
         fi
         source $PLAYBOOK_MENU
-    # RUN_MODE is CONTAINER
-    elif [[ -f $SETUP_FILE ]]; then
-        while read -r line; do declare $line; done < $SETUP_FILE
-        if [[ -z $RUNNING_CONTAINER_ID ]] && [[ ! -z $CONTAINER_ID ]]; then
-            echo "Try to start the suspend container"
-            docker start $CONTAINER_ID
-        fi
-        if [[ ! -f $METROAE_MOUNT_POINT/$PLAYBOOK_MENU ]]; then
-            echo "It looks like you are trying to run the metroae container. One or more metroae config files are missing. Please run ‘metroae container update’ and try again."
-            exit 1
-        fi
-        source $METROAE_MOUNT_POINT/$PLAYBOOK_MENU
-    else 
-        if [[ ! -z $RUNNING_CONTAINER_ID ]]; then
-            echo "It looks like you are trying to run the metroae container. One or more config files are missing. Please run ‘metroae container setup’ and try again."
-            exit 1
-        else
-            confirmation="init"
-            echo "The metroae container has not been setup. Do you want to set it up now? (Yes/no)"
-            while [[ $confirmation != "yes" ]] && [[ $confirmation  != "no" ]] && [[ $confirmation  != "y" ]] && [[ $confirmation != "n" ]]
-            do
-                read -p "metroae was run outside of a local clone of the nuage-metro repo and the metroae container is not running. Do you want to setup a container (yes/no): " confirmation
-            done
-
-            if [[ $confirmation == "yes" ]] || [[ $confirmation == "y" ]]; then
-                setup
+    else
+        get_container_id
+        get_running_container_id
+        if [[ $RUN_MODE == "REPO" ]]; then
+            if [[ ! -f $PLAYBOOK_MENU ]]; then
+                echo "One or more metroae config files are missing. Please update your workspace and try again."
+                exit 1
+            fi
+            source $PLAYBOOK_MENU
+        # RUN_MODE is CONTAINER
+        elif [[ -f $SETUP_FILE ]]; then
+            while read -r line; do declare $line; done < $SETUP_FILE
+            if [[ -z $RUNNING_CONTAINER_ID ]] && [[ ! -z $CONTAINER_ID ]]; then
+                echo "Try to start the suspend container"
+                docker start $CONTAINER_ID
+            fi
+            if [[ ! -f $METROAE_MOUNT_POINT/$PLAYBOOK_MENU ]]; then
+                echo "It looks like you are trying to run the metroae container. One or more metroae config files are missing. Please run ‘metroae container update’ and try again."
+                exit 1
+            fi
+            source $METROAE_MOUNT_POINT/$PLAYBOOK_MENU
+        else 
+            if [[ ! -z $RUNNING_CONTAINER_ID ]]; then
+                echo "It looks like you are trying to run the metroae container. One or more config files are missing. Please run ‘metroae container setup’ and try again."
+                exit 1
             else
-                exit 0
+                confirmation="init"
+                echo "The metroae container has not been setup. Do you want to set it up now? (Yes/no)"
+                while [[ $confirmation != "yes" ]] && [[ $confirmation  != "no" ]] && [[ $confirmation  != "y" ]] && [[ $confirmation != "n" ]]
+                do
+                    read -p "metroae was run outside of a local clone of the nuage-metro repo and the metroae container is not running. Do you want to setup a container (yes/no): " confirmation
+                done
+
+                if [[ $confirmation == "yes" ]] || [[ $confirmation == "y" ]]; then
+                    setup
+                else
+                    exit 0
+                fi
             fi
         fi
     fi
