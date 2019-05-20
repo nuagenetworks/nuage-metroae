@@ -43,7 +43,7 @@ WIZARD_SCRIPT = """
 - step: Unzip image files
   description: |
       This step will unzip the image files needed for the VSP components.  The
-      source zip file can be downloaded from Nokia OLCS:
+      source zip files can be downloaded from Nokia OLCS:
 
       https://support.alcatel-lucent.com/portal/web/support
 
@@ -141,25 +141,29 @@ class Wizard(object):
     def unzip_images(self, action, data):
         valid = False
         while not valid:
-            zip_file = self._input("Specify zipped image file from OLCS", "")
+            zip_dir = self._input("Specify the directory containing the zip "
+                                   "files from OLCS", "")
 
-            if zip_file == "" or not os.path.isfile(zip_file):
+            if zip_dir == "" or not os.path.exists(zip_dir):
                 choice = self._input(
-                    "File not found, would you like to skip unzipping",
+                    "Directory not found, would you like to skip unzipping",
                     0, ["(Y)es", "(n)o"])
                 if choice != 1:
                     self._print("Skipping unzip step...")
                     return
+            elif not os.path.isdir(zip_dir):
+                self._print("%s is not a directory, please enter the directory"
+                            " containing the zipped files" % zip_dir)
             else:
                 valid = True
 
         unzip_dir = self._input("Specify the directory to unzip to")
 
         choice = self._input(
-            "Unzip %s to %s" % (zip_file, unzip_dir),
+            "Unzip %s to %s" % (zip_dir, unzip_dir),
             0, ["(Y)es", "(n)o"])
         if choice == 0:
-            self._run_unzip(zip_file, unzip_dir)
+            self._run_unzip(zip_dir, unzip_dir)
         else:
             self._print("Skipping unzip step...")
 
@@ -507,10 +511,10 @@ class Wizard(object):
 
         return missing
 
-    def _run_unzip(self, zip_file, unzip_dir):
-        cmd = "./nuage-unzip.sh %s %s" % (zip_file, unzip_dir)
+    def _run_unzip(self, zip_dir, unzip_dir):
+        cmd = "./nuage-unzip.sh %s %s" % (zip_dir, unzip_dir)
         self._print("Command: " + cmd)
-        self._print("Unzipping %s to %s" % (zip_file, unzip_dir))
+        self._print("Unzipping %s to %s" % (zip_dir, unzip_dir))
         try:
             rc, output_lines = self._run_shell(cmd)
             if rc != 0:
