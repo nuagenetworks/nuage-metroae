@@ -58,12 +58,12 @@ WIZARD_SCRIPT = """
       multiple deployments each in their own directory.
   create_deployment: {}
 
-- step: Common deployment file and DNS
+- step: Common deployment file, DNS and NTP
   description: |
       This step will create or read an existing common.yml deployment file and
       begin filling it out.  This file provides global parameters for the
-      deployment common to all components.  We will also setup DNS at this
-      step.
+      deployment common to all components.  We will also setup DNS and NTP
+      during this step.
   create_common:
     dns_setup_msg: |
 
@@ -71,6 +71,10 @@ WIZARD_SCRIPT = """
       hostname to ip address DNS mappings defined before running workflows.
       Having DNS setup before continuing will allow this wizard to
       auto-discover component IP addresses.
+    ntp_setup_msg: |
+
+      We will now setup NTP.  An NTP server is required for the VSP components
+      being installed/upgraded to keep their times synchronized.
     vsd_fqdn_msg: |
       Please enter the Fully Qualified Domain Name (FQDN) for the VSD.  If
       clustered, use the XMPP FQDN, for standalone use the FQDN of the VSD.
@@ -220,6 +224,8 @@ class Wizard(object):
             deployment = dict()
 
         self._setup_dns(deployment, data)
+
+        self._setup_ntp(deployment, data)
 
         if "nuage_unzipped_files_dir" in self.state:
             if ("nuage_unzipped_files_dir" not in deployment or
@@ -580,6 +586,32 @@ class Wizard(object):
             vsd_fqdn += "." + dns_domain
 
         deployment["vsd_fqdn_global"] = vsd_fqdn
+
+        if "dns_server_list" in deployment:
+            dns_servers_default = ",".join(deployment["dns_server_list"])
+        else:
+            dns_servers_default = None
+
+        dns_server_list = self._input(
+            "Enter DNS server IPs in dotted decmial format (separate multiple "
+            "using commas)", dns_servers_default)
+
+        deployment["dns_server_list"] = dns_server_list.split(",")
+
+    def _setup_ntp(self, deployment, data):
+        self._print(self._get_field(data, "ntp_setup_msg"))
+
+        if "ntp_server_list" in deployment:
+            ntp_servers_default = ",".join(deployment["ntp_server_list"])
+        else:
+            ntp_servers_default = None
+
+        ntp_server_list = self._input(
+            "Enter NTP server IPs in dotted decmial format (separate multiple "
+            "using commas)", ntp_servers_default)
+
+        deployment["ntp_server_list"] = ntp_server_list.split(",")
+
 
     def _generate_deployment_file(self, schema, output_file, deployment):
         # Import here because setup may not have been run at the start
