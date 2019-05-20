@@ -181,11 +181,11 @@ function check_docker {
     set +e
 
     if [[ -f $SCRIPT_LOG_FILE ]]; then
-        echo "checking docker version"
-        docker --version
-    else
         echo "checking docker version" >> $SCRIPT_LOG_FILE
         docker --version >> $SCRIPT_LOG_FILE 2>> $SCRIPT_LOG_FILE
+    else
+        echo "checking docker version"
+        docker --version
     fi
 
     if [[ $? -ne 0 ]]; then
@@ -452,6 +452,7 @@ function run {
 function setup {
     local is_config_run=false
     local is_ui_run=false
+    get_host_operating_system
 
     echo "Setup MetroÆ container..."
 
@@ -460,11 +461,19 @@ function setup {
     fi
     if [[ ! -f $SETUP_FILE ]]; then
         sudo touch $SETUP_FILE
-        sudo chmod 0774 $SETUP_FILE
+        if [[ $OS_RELEASE -eq $NON_LINUX ]]; then
+            sudo chmod 777 $SETUP_FILE
+        else
+            sudo chmod 0774 $SETUP_FILE
+        fi
     fi
     if [[ ! -f $SCRIPT_LOG_FILE ]]; then
         sudo touch $SCRIPT_LOG_FILE
-        sudo chmod 0774 $SCRIPT_LOG_FILE
+        if [[ $OS_RELEASE -eq $NON_LINUX ]]; then
+            sudo chmod 777 $SCRIPT_LOG_FILE
+        else
+            sudo chmod 0774 $SCRIPT_LOG_FILE
+        fi
     fi
 
     get_container_id
