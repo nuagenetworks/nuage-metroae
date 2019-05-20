@@ -7,6 +7,8 @@ import sys
 import traceback
 import yaml
 
+from generate_example_from_schema import ExampleFileGenerator
+
 METROAE_CONTACT = "devops@nuagenetworks.net"
 
 WIZARD_SCRIPT = """
@@ -37,6 +39,16 @@ WIZARD_SCRIPT = """
       We would like to run setup to install these.  The command is
       "sudo ./metro-setup.sh".  This requires sudo access and may ask for root
       password.
+
+- step: Unzip image files
+  description: |
+      This step will unzip the image files needed for the VSP components.  The
+      source zip file can be downloaded from Nokia OLCS:
+
+      https://support.alcatel-lucent.com/portal/web/support
+
+      For upgrade: Specify the image file versions you are upgrading to.
+  unzip_images: {}
 
 - step: Create/read deployment
   description: |
@@ -126,6 +138,31 @@ class Wizard(object):
             if choice != 1:
                 self._run_setup()
 
+    def unzip_images(self, action, data):
+        valid = False
+        while not valid:
+            zip_file = self._input("Specify zipped image file from OLCS", "")
+
+            if zip_file == "" or not os.path.isfile(zip_file):
+                choice = self._input(
+                    "File not found, would you like to skip unzipping",
+                    0, ["(Y)es", "(n)o"])
+                if choice != 1:
+                    self._print("Skipping unzip step...")
+                    return
+            else:
+                valid = True
+
+        unzip_dir = self._input("Specify the directory to unzip to")
+
+        choice = self._input(
+            "Unzip %s to %s" % (zip_file, unzip_dir),
+            0, ["(Y)es", "(n)o"])
+        if choice == 0:
+            self._run_unzip(zip_file, unzip_dir)
+        else:
+            self._print("Skipping unzip step...")
+
     def create_deployment(self, action, data):
         valid = False
         while not valid:
@@ -144,9 +181,11 @@ class Wizard(object):
             else:
                 valid = True
 
+        found = False
         deployment_dir = os.path.join("deployments", deployment_name)
         if os.path.isdir(deployment_dir):
             self._print("\nDeployment was found")
+            found = True
         else:
             self._print("")
             choice = self._input('Create deployment: "%s"?' % deployment_name,
@@ -159,7 +198,8 @@ class Wizard(object):
         self.state["deployment_name"] = deployment_name
         self.state["deployment_dir"] = deployment_dir
 
-        os.mkdir(deployment_dir)
+        if not found:
+            os.mkdir(deployment_dir)
 
     def create_common(self, action, data):
         deployment_dir = self._get_deployment_dir()
@@ -174,6 +214,8 @@ class Wizard(object):
             deployment = dict()
 
         self._setup_dns(deployment, data)
+
+        self._generate_deployment_file("common", deployment_file, deployment)
 
     #
     # Private class internals
@@ -428,9 +470,11 @@ class Wizard(object):
         return self._compare_libraries(required_libraries, output_lines)
 
     def _run_setup(self):
+        cmd = "sudo ./metro-setup.sh"
+        self._print("Command: " + cmd)
         self._print("Running setup (may ask for sudo password)")
         try:
-            rc, output_lines = self._run_shell("sudo ./metro-setup.sh")
+            rc, output_lines = self._run_shell(cmd)
             if rc != 0:
                 self._print("\n".join(output_lines))
                 raise Exception("metro-setup.sh exit-code: %d" % rc)
@@ -463,6 +507,22 @@ class Wizard(object):
 
         return missing
 
+    def _run_unzip(self, zip_file, unzip_dir):
+        cmd = "./nuage-unzip.sh %s %s" % (zip_file, unzip_dir)
+        self._print("Command: " + cmd)
+        self._print("Unzipping %s to %s" % (zip_file, unzip_dir))
+        try:
+            rc, output_lines = self._run_shell(cmd)
+            if rc != 0:
+                self._print("\n".join(output_lines))
+                raise Exception("nuage-unzip.sh exit-code: %d" % rc)
+
+            self._print("\nMetroÆ unzipped successfully!")
+        except Exception as e:
+            self._print("\nAn error occurred while unzipping files: " +
+                        str(e))
+            self._print("Please contact: " + METROAE_CONTACT)
+
     def _get_deployment_dir(self):
         if "deployment_dir" not in self.state:
             self._print("Creating a deployment file requires a deployment to"
@@ -481,7 +541,7 @@ class Wizard(object):
 
     def _read_deployment_file(self, deployment_file):
         with open(deployment_file, "r") as f:
-            return yaml.save_load(f.read().decode("utf-8"))
+            return yaml.safe_load(f.read().decode("utf-8"))
 
     def _setup_dns(self, deployment, data):
         self._print(self._get_field(data, "dns_setup_msg"))
@@ -494,7 +554,6 @@ class Wizard(object):
         deployment["dns_domain"] = dns_domain
         self.state["dns_domain"] = dns_domain
 
-        vsd_fqdn_default = None
         if "vsd_fqdn_global" in deployment:
             vsd_fqdn_default = deployment["vsd_fqdn_global"]
         else:
@@ -506,9 +565,27 @@ class Wizard(object):
                                vsd_fqdn_default)
 
         if not vsd_fqdn.endswith(dns_domain):
-            vsd_fqdn = "." + dns_domain
+            vsd_fqdn += "." + dns_domain
 
         deployment["vsd_fqdn_global"] = vsd_fqdn
+
+    def _generate_deployment_file(self, schema, output_file, deployment):
+        # Import here because setup may not have been run at the start
+        # up of the wizard and the library may not be present
+        try:
+            import jinja2
+        except ImportError:
+            self._print(
+                "Cannot write deployment files because libraries are missing."
+                "  Please make sure metro-setup.sh has been run.")
+            return
+        gen_example = ExampleFileGenerator(False, True)
+        example_lines = gen_example.generate_example_from_schema(
+            os.path.join("schemas", schema + ".json"))
+        template = jinja2.Template(example_lines)
+        rendered = template.render(**deployment)
+        with open(output_file, 'w') as file:
+            file.write(rendered.encode("utf-8"))
 
 
 def main():
