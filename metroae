@@ -41,7 +41,6 @@ MENU+=(',container,ssh,copyid'      'Copy the container ssh public key to a host
 
 # Switch
 ANSIBLE_CONFIG_FILE="ansible.cfg"
-SHOULD_RUN_WITH_CONTAINER=$false
 CLI_ARGS=""
 
 # Menu
@@ -109,35 +108,31 @@ POSITIONAL=()                                                          # positio
 #                                   SWITCH                                      #
 #################################################################################
 
-function check_run_with_container {
-    if [[ -f /source/nuage-metro/$ANSIBLE_CONFIG_FILE ]] || [[ -f $ANSIBLE_CONFIG_FILE ]]; then
-        SHOULD_RUN_WITH_CONTAINER=false
-    elif [[ -f $SETUP_FILE ]]; then
-        SHOULD_RUN_WITH_CONTAINER=true
+function check_run_mode {
+    if [[ -f $ANSIBLE_CONFIG_FILE ]]; then
+        RUN_MODE="REPO"
     else
-        confirmation="init"
-        while [[ $confirmation != "yes" ]] && [[ $confirmation  != "no" ]] && [[ $confirmation  != "y" ]] && [[ $confirmation != "n" ]]
-        do
-            read -p "metroae was run outside of a local clone of the nuage-metro repo and the metroae container is not running. Do you want to setup a container (yes/no): " confirmation
-        done
-
-        if [[ $confirmation == "yes" ]] || [[ $confirmation == "y" ]]
-        then
-            SHOULD_RUN_WITH_CONTAINER=true
-        fi
+        RUN_MODE="CONTAINER"
     fi
 }
 
-function check_for_menu {
+# Check the SETUP_FILE, SCRIPT_LOG_FILE and do the setup before we run the functions
+function check_for_prerequisite {
+    get_container_id
     get_running_container_id
-    if [[ -f $ANSIBLE_CONFIG_FILE ]]; then
+    if [[ $RUN_MODE == "REPO" ]] || [[ $RUN_MODE == "INSIDE" ]]; then
         if [[ ! -f $PLAYBOOK_MENU ]]; then
             echo "One or more metroae config files are missing. Please update your workspace and try again."
             exit 1
         fi
         source $PLAYBOOK_MENU
+    # RUN_MODE is CONTAINER
     elif [[ -f $SETUP_FILE ]]; then
         while read -r line; do declare $line; done < $SETUP_FILE
+        if [[ -z $RUNNING_CONTAINER_ID ]] && [[ ! -z $CONTAINER_ID ]]; then
+            echo "Try to start the suspend container"
+            docker start $CONTAINER_ID
+        fi
         if [[ ! -f $METROAE_MOUNT_POINT/$PLAYBOOK_MENU ]]; then
             echo "It looks like you are trying to run the metroae container. One or more metroae config files are missing. Please run ‘metroae container update’ and try again."
             exit 1
@@ -146,6 +141,7 @@ function check_for_menu {
     else 
         if [[ ! -z $RUNNING_CONTAINER_ID ]]; then
             echo "It looks like you are trying to run the metroae container. One or more config files are missing. Please run ‘metroae container setup’ and try again."
+            exit 1
         else
             confirmation="init"
             echo "The metroae container has not been setup. Do you want to set it up now? (Yes/no)"
@@ -154,29 +150,26 @@ function check_for_menu {
                 read -p "metroae was run outside of a local clone of the nuage-metro repo and the metroae container is not running. Do you want to setup a container (yes/no): " confirmation
             done
 
-            if [[ $confirmation == "yes" ]] || [[ $confirmation == "y" ]]
-            then
+            if [[ $confirmation == "yes" ]] || [[ $confirmation == "y" ]]; then
                 setup
+            else
+                exit 0
             fi
-            exit 0
         fi
     fi
 }
 
 function print_version_and_exit {
-    get_max_container_version
-    if [[ $CONTAINER_MODE == false ]]; then
-        if [[ -f $ANSIBLE_CONFIG_FILE ]]; then
-            if [[ -f $SCRIPT_LOG_FILE ]]; then
-                echo "Run from MetroAE repo version $METROAE_VERSION"
-            fi
-        else
-            if [[ -f $SCRIPT_LOG_FILE ]]; then
-                echo "Run from MetroAE container version $MAX_CONTAINER_VERSION and MetroAE version $METROAE_VERSION"
-            fi
+    if [[ $RUN_MODE == "CONTAINER" ]]; then
+        get_max_container_version
+        if [[ -f $SCRIPT_LOG_FILE ]]; then
+            echo "Run from MetroAE container version $MAX_CONTAINER_VERSION and MetroAE version $METROAE_VERSION" | tee -a $SCRIPT_LOG_FILE
+        fi
+    elif [[ $RUN_MODE == "REPO" ]]; then
+        if [[ -f $SCRIPT_LOG_FILE ]]; then
+            echo "Run from MetroAE repo version $METROAE_VERSION" | tee -a $SCRIPT_LOG_FILE
         fi
     fi
-
     exit $1
 }
 
@@ -187,7 +180,7 @@ function print_version_and_exit {
 function check_docker {
     set +e
 
-    if [[ -f $SETUP_FILE ]]; then
+    if [[ -f $SCRIPT_LOG_FILE ]]; then
         echo "checking docker version"
         docker --version
     else
@@ -234,7 +227,7 @@ function get_max_container_version {
         fi
     fi
 
-    if [[ ! -f $SETUP_FILE ]]; then
+    if [[ ! -f $SCRIPT_LOG_FILE ]]; then
         echo "Newest metroae container version found is $MAX_CONTAINER_VERSION" >> $SCRIPT_LOG_FILE
     fi
 
@@ -437,7 +430,7 @@ function run {
             user_name=`whoami`
             group_name=`id -g -n`
 
-            docker run -e USER_NAME=$user_name -e GROUP_NAME=$group_name -t -d $network_args -v $METROAE_MOUNT_POINT:/metroae_data:Z -v $IMAGES_MOUNT_POINT:/metroae_images:Z --name metroae $METRO_AE_IMAGE:$MAX_CONTAINER_VERSION
+            docker run -e RUN_MODE="INSIDE" -e USER_NAME=$user_name -e GROUP_NAME=$group_name -t -d $network_args -v $METROAE_MOUNT_POINT:/metroae_data:Z -v $IMAGES_MOUNT_POINT:/metroae_images:Z --name metroae $METRO_AE_IMAGE:$MAX_CONTAINER_VERSION
 
         else
             docker start $CONTAINER_ID
@@ -858,13 +851,6 @@ function audit_log_and_exit {
 function deployment_main {
     set +e
 
-    check_run_with_container
-
-    if [[ $SHOULD_RUN_WITH_CONTAINER == true ]]; then
-        container_main "$@"
-        exit 0
-    fi
-
     ORIGINAL_ARGS="$*"
 
     #
@@ -997,10 +983,6 @@ function config_status {
 }
 
 function config_main {
-
-    if [[ ! -f $SETUP_FILE ]]; then
-        setup
-    fi
 
     check_docker
 
@@ -1389,10 +1371,9 @@ function tools_main {
         setup_args=("${EXTRA_ARGS[@]:0:7}")
         EXTRA_ARGS=("${EXTRA_ARGS[@]:7}")
     fi
-    check_run_with_container
     get_running_container_id
     get_container_id
-    if [[ $SHOULD_RUN_WITH_CONTAINER == true ]] && [[ -z $RUNNING_CONTAINER_ID ]]; then
+    if [[ $RUN_MODE == "CONTAINER" ]] && [[ -z $RUNNING_CONTAINER_ID ]]; then
         if [[ -z $CONTAINER_ID ]]; then
             setup "${setup_args[@]}"
         else
@@ -1404,7 +1385,7 @@ function tools_main {
     local command_to_run=""
     case ${MATCH_MENU[0]} in
         ,tools,unzip,images)
-        if [[ $SHOULD_RUN_WITH_CONTAINER == true ]]; then
+        if [[ $RUN_MODE == "CONTAINER" ]]; then
             docker_exec env /source/nuage-metro/nuage-unzip.sh ${EXTRA_ARGS[@]}
         else
             ./nuage-unzip.sh ${EXTRA_ARGS[@]}
@@ -1412,7 +1393,7 @@ function tools_main {
         print_version_and_exit 0
         ;;
         ,tools,convert,buildvars)
-        if [[ $SHOULD_RUN_WITH_CONTAINER == true ]]; then
+        if [[ $RUN_MODE == "CONTAINER" ]]; then
             docker_exec env /usr/bin/python /source/nuage-metro/convert_build_vars_to_deployment.py ${EXTRA_ARGS[@]}
         else
             /usr/bin/python convert_build_vars_to_deployment.py ${EXTRA_ARGS[@]}
@@ -1420,7 +1401,7 @@ function tools_main {
         print_version_and_exit 0
         ;;
         ,tools,generate,example)
-        if [[ $SHOULD_RUN_WITH_CONTAINER == true ]]; then
+        if [[ $RUN_MODE == "CONTAINER" ]]; then
             docker_exec env /usr/bin/python /source/nuage-metro/generate_example_from_schema.py ${EXTRA_ARGS[@]}
         else
             /usr/bin/python generate_example_from_schema.py ${EXTRA_ARGS[@]}
@@ -1428,7 +1409,7 @@ function tools_main {
         print_version_and_exit 0
         ;;
         ,tools,encrypt,credentials)
-        if [[ $SHOULD_RUN_WITH_CONTAINER == true ]]; then
+        if [[ $RUN_MODE == "CONTAINER" ]]; then
             docker_exec env /usr/bin/python /source/nuage-metro/encrypt_credentials.py ${EXTRA_ARGS[@]}
         else
             /usr/bin/python encrypt_credentials.py ${EXTRA_ARGS[@]}
@@ -1608,12 +1589,17 @@ if [[ $# == 0 ]]; then
     exit 0
 fi
 
+if [[ -z $RUN_MODE ]]; then
+    check_run_mode
+fi
+
 CLI_ARGS=("$@")
 
 parse_menu_args "$@"
 
+# Do the file check and setup before running the commands
 if [[ ${MATCH_MENU[0]} != ",container,setup" ]] && [[ ${MATCH_MENU[0]} != ",container,pull" ]] && [[ ${MATCH_MENU[0]} != ",container,destroy" ]] && [[ ${MATCH_MENU[0]} != ",container,status" ]]; then
-    check_for_menu
+    check_for_prerequisite
     # parse it again if we loaded the new menu
     parse_menu_args "$@"
 fi
@@ -1628,7 +1614,11 @@ case ${MATCH_MENU[2]} in
     print_version_and_exit 0
     ;;
     playbook)
-    deployment_main ${MATCH_MENU[3]} "${EXTRA_ARGS[@]}"
+    if [[ $RUN_MODE == "CONTAINER" ]]; then
+        container_main ${MATCH_MENU[3]} "${EXTRA_ARGS[@]}"
+    else
+        deployment_main ${MATCH_MENU[3]} "${EXTRA_ARGS[@]}"
+    fi
     print_version_and_exit 0
     ;;
     container)
@@ -1636,7 +1626,11 @@ case ${MATCH_MENU[2]} in
     print_version_and_exit 0
     ;;
     *)
-    deployment_main "$@"
+    if [[ $RUN_MODE == "CONTAINER" ]]; then
+        container_main "$@"
+    else
+        deployment_main "$@"
+    fi
     print_version_and_exit 0
     ;;
 esac
