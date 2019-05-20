@@ -192,8 +192,10 @@ function print_version_and_exit {
             echo "Run from MetroAE container version $MAX_CONTAINER_VERSION and MetroAE version $METROAE_VERSION" | tee -a $SCRIPT_LOG_FILE
         fi
     elif [[ $RUN_MODE == "REPO" ]]; then
-        if [[ -f $SCRIPT_LOG_FILE ]]; then
-            echo "Run from MetroAE repo version $METROAE_VERSION" | tee -a $SCRIPT_LOG_FILE
+        if [[ ! ${MATCH_MENU[0]} =~ ",container*" ]] && [[ ! ${MATCH_MENU[0]} =~ ",config*" ]] && [[ ! ${MATCH_MENU[0]} =~ ",ui*" ]]; then
+            if [[ -f $SCRIPT_LOG_FILE ]]; then
+                echo "Run from MetroAE repo version $METROAE_VERSION" | tee -a $SCRIPT_LOG_FILE
+            fi
         fi
     fi
     exit $1
@@ -481,6 +483,7 @@ function setup {
     get_host_operating_system
 
     echo "Setup MetroÆ container..."
+    echo "Root privilege might be required."
 
     if [[ ! -d $INSTALL_FOLDER ]]; then
         sudo mkdir -p $INSTALL_FOLDER
@@ -1506,6 +1509,13 @@ function main_help {
     echo ""
     echo "Additional menu help is available by adding 'help' to the command line,"
     echo "e.g. 'metroae container help'"
+    if [[ $RUN_MODE == "CONTAINER" ]]; then
+        get_running_container_id
+        get_container_id
+        if [[ -z $RUNNING_CONTAINER_ID ]] && [[ -z $CONTAINER_ID ]]; then
+            echo "Neither metroae repo nor container found, please run 'metroae container setup'"
+        fi
+    fi
 }
 
 function container_help {
