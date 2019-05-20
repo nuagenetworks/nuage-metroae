@@ -159,6 +159,8 @@ class Wizard(object):
 
         unzip_dir = self._input("Specify the directory to unzip to")
 
+        self.state["nuage_unzipped_files_dir"] = unzip_dir
+
         choice = self._input(
             "Unzip %s to %s" % (zip_dir, unzip_dir),
             0, ["(Y)es", "(n)o"])
@@ -218,6 +220,12 @@ class Wizard(object):
             deployment = dict()
 
         self._setup_dns(deployment, data)
+
+        if "nuage_unzipped_files_dir" in self.state:
+            if ("nuage_unzipped_files_dir" not in deployment or
+                    deployment["nuage_unzipped_files_dir"] == ""):
+                deployment["nuage_unzipped_files_dir"] = (
+                    self.state["nuage_unzipped_files_dir"])
 
         self._generate_deployment_file("common", deployment_file, deployment)
 
@@ -521,7 +529,7 @@ class Wizard(object):
                 self._print("\n".join(output_lines))
                 raise Exception("nuage-unzip.sh exit-code: %d" % rc)
 
-            self._print("\nMetroÆ unzipped successfully!")
+            self._print("\nFiles unzipped successfully!")
         except Exception as e:
             self._print("\nAn error occurred while unzipping files: " +
                         str(e))
