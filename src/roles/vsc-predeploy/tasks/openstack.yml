@@ -9,6 +9,10 @@
 
 - block:
 
+  - name: Set local variable with vmname
+    set_fact:
+      vm_name: "{{ vmname }}"
+
   - name: Set local temp directory name
     set_fact:
       temp_dir: "./ansible-heat-{{ inventory_hostname }}"
@@ -32,12 +36,12 @@
   - name: Creating VSC stack
     register: create_stack
     os_stack:
-      name: "{{ stack_name | default(inventory_hostname) }}"
+      name: "{{ vm_name }}"
       template: "{{ vsc_heat_template }}"
       auth:
         "{{ openstack_auth }}"
       parameters:
-        vm_name: "{{ inventory_hostname }}"
+        vm_name: "{{ vm_name }}"
         vsc_image: "{{ openstack_image }}"
         vsc_flavor: "{{ openstack_flavor }}"
         vsc_management_network: "{{ openstack_mgmt_network }}"

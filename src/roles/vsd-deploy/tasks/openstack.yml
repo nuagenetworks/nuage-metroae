@@ -1,9 +1,29 @@
 ---
+- name: Set local variable with upgrade status
+  set_fact:
+    upgrade: "{{ nuage_upgrade|default('False') }}"
+
+- block:
+  - name: Verify that upgrade_vmname is defined if this is an upgrade
+    assert:
+      that: "upgrade_vmname is defined"
+      msg: "upgrade_vmname is required for upgrade"
+  - name: Set local variable with upgrade_vmname
+    set_fact:
+      vm_name: "{{ upgrade_vmname }}"
+  when: upgrade
+
+- block:
+  - name: Set local variable with vmname
+    set_fact:
+      vm_name: "{{ vmname }}"
+  when: not upgrade
+
 - name: Get VSD details from OpenStack
   os_server_facts:
     auth:
       "{{ openstack_auth }}"
-    server: "{{ inventory_hostname }}"
+    server: "{{ vm_name }}"
   register: vsd_ip
   delegate_to: 127.0.0.1
 
@@ -11,25 +31,13 @@
   set_fact:
     vsd_mgmt_ip: "{{ vsd_ip['ansible_facts']['openstack_servers'][0]['addresses'][openstack_network][0]['addr'] }}"
 
-- name: Wait for VSD-HA ssh to be ready
+- name: Wait for VSD ssh to be ready
   include_role:
     name: common
     tasks_from: wait-for-ssh
   vars:
     ssh_host: "{{ vsd_mgmt_ip }}"
     host_username: "{{ vsd_default_username }}"
-
-- name: Inject ssh key to VSD if cloud-init did not work
-  expect:
-    command: "ssh-copy-id -i {{ vsd_default_username }}@{{ vsd_mgmt_ip }}"
-    responses:
-      (?i)yes: "yes"
-      (?i)password: "{{ vsd_default_password }}"
-  delegate_to: localhost
-
-- name: Pause for ssh port to be active
-  pause:
-    seconds: 5
 
 - block:
 
@@ -58,5 +66,8 @@
   - name: Update hostname
     command: hostname "{{ inventory_hostname }}"
 
-  remote_user: "{{ vsd_default_username }}"
+  remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
+  become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
+  vars:
+    ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"
 

@@ -7,11 +7,19 @@
   ignore_errors: True
 
 - import_tasks: openstack.yml
-  when: target_server_type | match("openstack")
+  when: target_server_type is match("openstack")
   tags:
     - vsc
     - openstack
     - vsc-deploy
+
+- name: Wait for VSC ssh to be ready
+  include_role:
+    name: common
+    tasks_from: wait-for-ssh-port
+  vars:
+    ssh_host: "{{ hostname }}"
+    ssh_timeout_seconds: 600
 
 - block:
   - name: Get vsd node(s) information
@@ -44,10 +52,10 @@
     delegate_to: "{{ item }}"
     with_items: "{{ vsd_hostname_list }}"
 
-  remote_user: "{{ vsd_username | default(vsd_default_username) }}"
-  become: "{{ 'no' if vsd_username | default(vsd_default_username) == 'root' else 'yes' }}"
+  remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
+  become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
   vars:
-    ansible_become_pass: "{{ vsd_password | default(vsd_default_password) }}"
+    ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"
 
 - name: Optionally setup XMPP TLS
   include_role:

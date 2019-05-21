@@ -58,7 +58,7 @@
 
     # < Target Server Type >
     # Type of hypervisor environment into which the instance will be created
-    # (kvm, vcenter, aws, openstack) 
+    # (kvm, vcenter, aws, openstack, nuagex) 
     #
     target_server_type: "{{ item.target_server_type }}"
 
@@ -70,7 +70,7 @@
     ###################
 
     # < Management Network Bridge >
-    # Network Bridge used for the management interface of a component or the BOF interface on VSC. This will be a Distributed Virtual PortGroup (DVPG) when deploying on vCenter or a Linux network bridge when deploying on KVM. This field can be overridden by defining the management network bridge separately in the component configuration. Defaults to the global setting
+    # Network Bridge used for the management interface of this component. This will be a Distributed Virtual PortGroup (DVPG) when deploying on vCenter or a Linux network bridge when deploying on KVM. Defaults to the global setting
     #
     {%- if item.mgmt_bridge is defined %}
     mgmt_bridge: "{{ item.mgmt_bridge }}"
@@ -241,6 +241,70 @@
     cpuset: [ {% for i in item.cpuset | default([]) %}{{ i }}, {% endfor %}]
     {%- else %}
     # cpuset: []
+    {%- endif %}
+
+    # < Failed login attempts >
+    # Lockout the user after reaching the number of failed login attempts
+    #
+    {%- if item.failed_login_attempts is defined %}
+    failed_login_attempts: {{ item.failed_login_attempts }}
+    {%- else %}
+    # failed_login_attempts: ""
+    {%- endif %}
+
+    # < Failed login lockout time >
+    # Lockout time after failed login attemps
+    #
+    {%- if item.failed_login_lockout_time is defined %}
+    failed_login_lockout_time: {{ item.failed_login_lockout_time }}
+    {%- else %}
+    # failed_login_lockout_time: ""
+    {%- endif %}
+
+    # < Advanced API Access Logging >
+    # Enables advance API access logging
+    #
+    {%- if item.advanced_api_access_logging is defined %}
+    advanced_api_access_logging: {{ item.advanced_api_access_logging | lower }}
+    {%- else %}
+    # advanced_api_access_logging: ""
+    {%- endif %}
+
+    # < TLS version >
+    # TLS version to use
+    # (1.0, 1.2) 
+    #
+    {%- if item.tls_version is defined %}
+    tls_version: "{{ item.tls_version }}"
+    {%- else %}
+    # tls_version: ""
+    {%- endif %}
+
+    # < Path to CA certificate pem file >
+    # Path to CA certificate pem file
+    #
+    {%- if item.ca_certificate_path is defined %}
+    ca_certificate_path: "{{ item.ca_certificate_path }}"
+    {%- else %}
+    # ca_certificate_path: ""
+    {%- endif %}
+
+    # < Path to intermediate certificate pem file >
+    # Path to intermediate certificate pem file
+    #
+    {%- if item.intermediate_certificate_path is defined %}
+    intermediate_certificate_path: "{{ item.intermediate_certificate_path }}"
+    {%- else %}
+    # intermediate_certificate_path: ""
+    {%- endif %}
+
+    # < Path to certificate pem file >
+    # Path to certificate pem file
+    #
+    {%- if item.certificate_path is defined %}
+    certificate_path: "{{ item.certificate_path }}"
+    {%- else %}
+    # certificate_path: ""
     {%- endif %}
 
 {% endfor %}

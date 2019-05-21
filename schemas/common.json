@@ -17,7 +17,6 @@
             "format": "hostname",
             "title": "Domain Name",
             "description": "Domain name for this deployment. E.g. company.net.",
-            "sectionBegin": "Management Interface",
             "propertyOrder": 20
         },
         "vsd_fqdn_global": {
@@ -25,21 +24,36 @@
             "title": "Global VSD FQDN",
             "format": "hostname",
             "description": "For clustered VSD, the XMPP FQDN for the cluster; For standalone VSD, the FQDN of the single VSD",
-            "sectionEnd": "Management Interface",
+            "sectionBegin": "Management FQDNs",
             "propertyOrder": 30
+        },
+        "portal_fqdn_global": {
+            "type": "string",
+            "title": "Global SD-WAN Portal FQDN",
+            "format": "hostname",
+            "description": "For HA PORTAL, the FQDN for the Proxy/LB endpoint; For standalone PORTAL, the FQDN of the single PORTAL",
+            "propertyOrder": 40
+        },
+        "vstat_fqdn_global": {
+            "type": "string",
+            "title": "Global VSTAT FQDN",
+            "format": "hostname",
+            "description": "For clustered VSTAT, the FQDN for the VSTAT cluster; For standalone VSTAT, the FQDN of the single VSTAT",
+            "sectionEnd": "Management FQDNs",
+            "propertyOrder": 50
         },
         "mgmt_bridge": {
             "type": "string",
             "title": "Management Network Bridge",
             "description": "Network Bridge used for the management interface of a component or the BOF interface on VSC. This will be a Distributed Virtual PortGroup (DVPG) when deploying on vCenter or a Linux network bridge when deploying on KVM. This field can be overridden by defining the management network bridge separately in the component configuration",
             "sectionBegin": "Network Bridges",
-            "propertyOrder": 40
+            "propertyOrder": 60
         },
         "data_bridge": {
             "type": "string",
             "title": "Data Network Bridge",
             "description": "Network Bridge used for the data path of a component or the Control interface on VSC. This will be a Distributed Virtual PortGroup (DVPG) when deploying on vCenter or a Linux network bridge when deploying on KVM. This field can be overridden by defining the Data network bridge separately in the component configuration",
-            "propertyOrder": 50
+            "propertyOrder": 70
         },
         "access_bridge": {
             "type": "string",
@@ -48,30 +62,39 @@
             "default": "",
             "component_type": "nsgv",
             "sectionEnd": "Network Bridges",
-            "propertyOrder": 60
+            "propertyOrder": 80
         },
         "ntp_server_list": {
             "type": "array",
             "title": "NTP Server IP(s)",
-            "description": "List of one or more NTP server IPv4 addresses that must be in dotted-decimal format",
+            "description": "List of one or more NTP server addresses that must be in dotted-decimal (IPv4) or hexidecimal (IPv6) format",
             "minItems": 1,
-            "propertyOrder": 70,
+            "propertyOrder": 90,
             "sectionBegin": "Network Services",
             "items": {
                 "type": "string",
-                "format": "ipv4"
+                "anyOf": [
+                    {"format": "ipv4"},
+                    {"format": "ipv6"}
+                ],
+
             }
         },
         "dns_server_list": {
             "type": "array",
             "title": "DNS server IP(s)",
-            "description": "List of one or more DNS server IPv4 addresses for resolving component domain names. Must be in dotted-decimal format.",
+            "description": "List of one or more DNS server addresses for resolving component domain names. Must be in dotted-decimal (IPv4) or hexidecimal (IPv6) format.",
             "minItems": 1,
-            "propertyOrder": 80,
+            "propertyOrder": 100,
             "sectionEnd": "Network Services",
             "items": {
                 "type": "string",
-                "format": "hostname"
+                "anyOf": [
+                    {"format": "hostname"},
+                    {"format": "ipv4"},
+                    {"format": "ipv6"}
+                ],
+
             }
         },
         "timezone": {
@@ -79,7 +102,7 @@
             "title": "Timezone",
             "description": "Timezone specification for the deployment",
             "default": "US/Pacific",
-            "propertyOrder": 90
+            "propertyOrder": 110
         },
         "images_path": {
             "type": "string",
@@ -87,7 +110,7 @@
             "default": "/var/lib/libvirt/images/",
             "description": "Full path to the directory on the KVM target server where qcow2 files will be copied",
             "target_server_type": "kvm",
-            "propertyOrder": 100
+            "propertyOrder": 120
         },
         "vcenter_datacenter": {
             "type": "string",
@@ -95,44 +118,44 @@
             "description": "vCenter datacenter to deploy Nuage components",
             "target_server_type": "vcenter",
             "sectionBegin": "vCenter Parameters",
-            "propertyOrder": 110
+            "propertyOrder": 130
         },
         "vcenter_cluster": {
             "type": "string",
             "title": "vCenter Cluster Name",
             "description": "Name of the vCenter cluster on which to deploy Nuage components",
             "target_server_type": "vcenter",
-            "propertyOrder": 120
+            "propertyOrder": 140
         },
         "vcenter_host_reference": {
             "type": "string",
             "title": "vCenter Host Reference",
             "description": "Requires ovftool 4.3. Reference to the host on the vCenter cluster on which to deploy Nuage components",
             "target_server_type": "vcenter",
-            "propertyOrder": 130
+            "propertyOrder": 150
         },
         "vcenter_datastore": {
             "type": "string",
             "title": "vCenter Datastore Name",
             "description": "Name of the vCenter datastore on which to deploy the Nuage components",
             "target_server_type": "vcenter",
-            "propertyOrder": 140
+            "propertyOrder": 160
         },
         "vcenter_resource_pool": {
             "type": "string",
             "title": "vCenter Resource Pool",
             "description": "The vCenter resource pool where the VMs need to be located. A resource pool is a logical abstraction of resources. Different resource pools can be configured to have different priorities in case of resource contention and can have different resource reservations and limitations.",
             "target_server_type": "vcenter",
-            "propertyOrder": 150
+            "propertyOrder": 170
         },
         "vcenter_ovftool": {
             "type": "string",
             "title": "OVF tool location",
             "default": "/usr/bin/ovftool",
-            "description": "vCenter OVFtool location",
+            "description": "This is the full path to the vCenter OVFtool executable. When running metroae from a clone of the nuage-metro repo, this should be set to the path to ovftool on the host, usually /usr/bin/ovftool. When running the metroae Docker container, the ovftool installation directory, /usr/lib/vmware-ovftool, must be copied to the metroae_data directory and this parameter must be set to the internal container path to the ovftool in that directory, /data/vmware-ovftool/ovftool.",
             "target_server_type": "vcenter",
             "sectionEnd": "vCenter Parameters",
-            "propertyOrder": 160
+            "propertyOrder": 180
         },
         "openstack_project_name": {
             "type": "string",
@@ -141,7 +164,7 @@
             "default": "",
             "sectionBegin": "OpenStack Parameters",
             "target_server_type": "openstack",
-            "propertyOrder": 170
+            "propertyOrder": 190
         },
         "openstack_auth_url": {
             "type": "string",
@@ -150,7 +173,7 @@
             "default": "",
             "target_server_type": "openstack",
             "sectionEnd": "OpenStack Parameters",
-            "propertyOrder": 180
+            "propertyOrder": 200
         },
         "user_ssh_pub_key": {
             "type": "string",
@@ -158,7 +181,7 @@
             "default": "~/.ssh/id_rsa.pub",
             "description": "Full path to the public key file to be injected into Nuage components to enable passwordless connectivity for configuration. When using docker container changing the path from default can cause connectivity issues",
             "target_server_type": "kvm",
-            "propertyOrder": 190,
+            "propertyOrder": 210,
             "advanced": true
         },
         "xmpp_tls": {
@@ -166,7 +189,7 @@
             "title": "XMPP TLS",
             "default": true,
             "description": "Flag to indicate when secure communications via TLS will be used between VSCs and VSDs",
-            "propertyOrder": 200,
+            "propertyOrder": 220,
             "advanced": true
         },
         "openflow_tls": {
@@ -174,7 +197,7 @@
             "title": "OpenFlow TLS",
             "default": true,
             "description": "Flag to indicate when secure communications via TLS will be used between VSCs and data plane components, e.g. VRS or NSGv; If VRS is defined, target_server_password must be defined in credentials.yml",
-            "propertyOrder": 210,
+            "propertyOrder": 230,
             "advanced": true
         },
         "metro_reports_dir": {
@@ -182,7 +205,7 @@
             "title": "Reports Directory",
             "default": "./reports",
             "description": "Full path to the directory where the generated health reports for this deployment will be placed",
-            "propertyOrder": 220,
+            "propertyOrder": 240,
             "advanced": true
         },
         "vsd_license_required_days_left": {
@@ -190,22 +213,38 @@
             "title": "VSD License Required Days Left",
             "description": "Raise a failure if the VSD licenses do not have at least the specified number of days remaining before expiration. If undefined, no check of days remaining before license expiration will be made. If you want to verify that the number of days left before expiration is more than a certain number of days, uncomment this variable and set the value to the number of days.",
             "default": -1,
-            "propertyOrder": 230,
+            "propertyOrder": 250,
             "advanced": true
         },
         "vsd_license_file": {
             "type": "string",
-            "title": "VSD License Filename",
+            "title": "VSD Standard License File",
             "default": "",
-            "description": "Filename for the license file for the VSD.  Currently only used for NSGv Bootstrapping",
-            "propertyOrder": 240,
+            "description": "Path to the standard license file for the VSD",
+            "propertyOrder": 260,
+            "advanced": true
+        },
+        "vsd_cluster_license_file": {
+            "type": "string",
+            "title": "VSD Cluster License File",
+            "default": "",
+            "description": "Path to the cluster license file for the VSD",
+            "propertyOrder": 270,
+            "advanced": true
+        },
+        "portal_license_file": {
+            "type": "string",
+            "title": "SD-WAN Portal License Filename",
+            "default": "",
+            "description": "Path to the license file for the SD-WAN Portal",
+            "propertyOrder": 280,
             "advanced": true
         },
         "branding_zip_file": {
             "type": "string",
             "title": "Branding Zip File",
             "description": "Enables custom branding for the VSD GUI. When not defined, the default VSD branding, already present on the VSD itself, will be used. If branding_zip_file is defined, its value will be used to replace the default VSD branding with the contents of a zip file on the Ansible host.  The files contained in the zip file should conform to the specifications of the VNS install guide. For replacing the default branding on the VSD, this value should be set to one of the following values: 1) The path to a branding zip file on the Ansible host 2) The special value 'nuage' for adding a MetroÆ tag to the default VSD branding. This value is provided as an example of a minimal modification of branding. 3) The special value 'metroae' to replace the default VSD branding with a complete MetroÆ-themed brand. This value is provided as an example of a complete replacement of all branding components. Note that when this is defined the existing branding will be backed up to the directory specified by the Metro Backup Root variable under (hostname)-branding/. To rollback a branding change, copy the branding zip file out of the backup directory, set this variable to the path to the copied backup file, and run the brand_vsd playbook, i.e. metroae brand_vsd.",
-            "propertyOrder": 250,
+            "propertyOrder": 290,
             "default": "",
             "advanced": true
         },
@@ -216,7 +255,7 @@
             "default": true,
             "advanced": true,
             "sectionBegin": "Yum",
-            "propertyOrder": 260
+            "propertyOrder": 300
         },
         "yum_proxy": {
             "type": "string",
@@ -225,7 +264,7 @@
             "default": "NONE",
             "advanced": true,
             "sectionEnd": "Yum",
-            "propertyOrder": 270
+            "propertyOrder": 310
         },
         "nuage_software_version": {
             "type": "string",
@@ -234,7 +273,7 @@
             "default": "",
             "target_server_type": "aws",
             "advanced": true,
-            "propertyOrder": 280
+            "propertyOrder": 320
         },
         "vsd_fallocate_size_gb": {
             "type": "integer",
@@ -243,7 +282,7 @@
             "warning": "Values smaller than the default are for lab and PoC only. Production deployments must use a value greater than or equal to the default.",
             "default": 285,
             "minimum": 0,
-            "propertyOrder": 290,
+            "propertyOrder": 330,
             "target_server_type": "kvm",
             "sectionBegin": "PoC Parameters",
             "advanced": true
@@ -255,7 +294,7 @@
             "warning": "Values smaller than the default are for lab and PoC only. Production deployments must use a value greater than or equal to the default.",
             "default": 24,
             "minimum": 0,
-            "propertyOrder": 300,
+            "propertyOrder": 340,
             "target_server_type": "kvm",
             "advanced": true
         },
@@ -266,7 +305,7 @@
             "warning": "Values smaller than the default are for lab and PoC only. Production deployments must use a value greater than or equal to the default.",
             "default": 4,
             "minimum": 0,
-            "propertyOrder": 310,
+            "propertyOrder": 350,
             "target_server_type": "kvm",
             "advanced": true
         },
@@ -277,7 +316,7 @@
             "warning": "Values smaller than the default are for lab and PoC only. Production deployments must use a value greater than or equal to the default.",
             "default": 16,
             "minimum": 0,
-            "propertyOrder": 320,
+            "propertyOrder": 360,
             "target_server_type": "kvm",
             "sectionEnd": "PoC Parameters",
             "advanced": true
@@ -289,7 +328,18 @@
             "warning": "Values smaller than the default are for lab and PoC only. Production deployments must use a value greater than or equal to the default.",
             "default": 24,
             "minimum": 0,
-            "propertyOrder": 330,
+            "propertyOrder": 370,
+            "target_server_type": "kvm",
+            "advanced": true
+        },
+        "portal_ram": {
+            "type": "integer",
+            "title": "Portal RAM",
+            "description": "Amount of Portal RAM to allocate, in GB. Valid only for KVM deployments. Note: Values smaller than the default are for lab and PoC only. Production deployments must use a value greater than or equal to the default.",
+            "warning": "Values smaller than the default are for lab and PoC only. Production deployments must use a value greater than or equal to the default.",
+            "default": 24,
+            "minimum": 0,
+            "propertyOrder": 380,
             "target_server_type": "kvm",
             "advanced": true
         },
@@ -300,7 +350,7 @@
             "default": "https://(vsd_fqdn):8443",
             "advanced": true,
             "sectionBegin": "VSD Authentication",
-            "propertyOrder": 340
+            "propertyOrder": 390
         },
         "vsd_auth_enterprise": {
             "type": "string",
@@ -309,7 +359,7 @@
             "default": "csp",
             "advanced": true,
             "sectionEnd": "VSD Authentication",
-            "propertyOrder": 350
+            "propertyOrder": 400
         },
         "vcin_auth_url": {
             "type": "string",
@@ -318,7 +368,7 @@
             "default": "https://(vcin_ip_address):8443",
             "sectionBegin": "VCIN Authentication",
             "advanced": true,
-            "propertyOrder": 360
+            "propertyOrder": 410
         },
         "vcin_auth_enterprise": {
             "type": "string",
@@ -327,7 +377,7 @@
             "default": "csp",
             "advanced": true,
             "sectionEnd": "VCIN Authentication",
-            "propertyOrder": 370
+            "propertyOrder": 420
         },
         "libnetwork_scope": {
             "type": "string",
@@ -337,7 +387,7 @@
             "enum": ["local", "global"],
             "description": "Scope of libnetworking support; local: connectivity between containers is limited to within the local host; global: connectivity between containers may span across hosts in the cluster",
             "sectionBegin": "Libnetwork",
-            "propertyOrder": 380
+            "propertyOrder": 430
         },
         "libnetwork_cluster_store_scheme": {
             "type": "string",
@@ -345,7 +395,7 @@
             "default": "consul",
             "advanced": true,
             "description": "Scheme portion of the URL pointing to the key-value store used for the Libnetwork cluster",
-            "propertyOrder": 390
+            "propertyOrder": 440
         },
         "libnetwork_cluster_store_host": {
             "type": "string",
@@ -354,7 +404,7 @@
             "format": "hostname",
             "advanced": true,
             "description": "Host portion of the URL pointing to the key-value store used for the Libnetwork cluster",
-            "propertyOrder": 400
+            "propertyOrder": 450
         },
         "libnetwork_cluster_store_port": {
             "type": "integer",
@@ -363,7 +413,7 @@
             "description": "Port portion of the URL pointing to the key-value store used for the Libnetwork cluster",
             "advanced": true,
             "sectionEnd": "Libnetwork",
-            "propertyOrder": 410
+            "propertyOrder": 460
         }
     },
     "required": ["nuage_unzipped_files_dir", "dns_domain", "vsd_fqdn_global", "mgmt_bridge", "data_bridge", "ntp_server_list", "dns_server_list"]

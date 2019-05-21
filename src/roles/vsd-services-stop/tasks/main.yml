@@ -6,7 +6,7 @@
 
   - block:
 
-    - name: Stop vsd statistics services on node1 and node2
+    - name: Stop vsd statistics services
       shell: "{{ stop_stats }}"
 
     - name: Pause for proccesses to exit
@@ -71,10 +71,10 @@
       ignore_errors: yes
       when: list_common_pids.stdout.strip()!=""
 
-  remote_user: "{{ vsd_username | default(vsd_default_username) }}"
-  become: "{{ 'no' if vsd_username | default(vsd_default_username) == 'root' else 'yes' }}"
+  remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
+  become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
   vars:
-    ansible_become_pass: "{{ vsd_password | default(vsd_default_password) }}"
+    ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"
   when:
     - inventory_hostname == groups['vsds'][0] or inventory_hostname == groups['vsds'][1]
     - node_reachable

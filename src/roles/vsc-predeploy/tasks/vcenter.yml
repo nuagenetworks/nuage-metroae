@@ -35,8 +35,8 @@
         --net:"Datapath Network={{ data_bridge }}"
         --prop:"DHCP=False"
         --prop:"Management_IP={{ mgmt_ip }}/{{ mgmt_netmask_prefix }}"
-        {% if vsc_mgmt_static_route_list[0] is defined %}
-        --prop:"Static_Routes={% for sr in vsc_mgmt_static_route_list %}{{ sr }} {{ mgmt_gateway }}{% if not loop.last %};{% endif %}{% endfor %}"
+        {% if mgmt_static_route_list[0] is defined %}
+        --prop:"Static_Routes={% for sr in mgmt_static_route_list %}{{ sr }} {{ mgmt_gateway }}{% if not loop.last %};{% endif %}{% endfor %}"
         {% else %}
         --prop:"Static_Routes="
         {% endif %}
@@ -74,7 +74,7 @@
         --prop:"BGP_Peer_2=0.0.0.0"
         --prop:"Autonomous_System=64000"
         --prop:"BGP_Group=internal"
-        "{{ ova_path }}/{{ ova_file_name }}"
+        "{{ image_path }}/{{ image_file_name }}"
 
   - name: Deploy VSC image on vCenter (Can take several minutes)
     connection: local
@@ -89,7 +89,6 @@
       hostname: "{{ target_server }}"
       username: "{{ vcenter.username }}"
       password: "{{ vcenter.password }}"
-      datacenter: "{{ vcenter.datacenter }}"
       name: "{{ vmname }}"
       validate_certs: no
     register: vsc_vm_folder
@@ -107,7 +106,7 @@
       validate_certs: no
     register: vsc_vm_facts
     ignore_errors: on
-    when: vsc_vm_folder|succeeded
+    when: vsc_vm_folder is succeeded
 
   - debug: var=vsc_vm_facts verbosity=1
 
@@ -144,7 +143,7 @@
 
   - name: Verify VM is running
     assert:
-      that: "vsc_vm_folder|succeeded and vsc_vm_facts|succeeded"
+      that: "vsc_vm_folder is succeeded and vsc_vm_facts is succeeded"
       msg: "VSC VM {{ vmname }} is not created"
 
   - name: Wait for VSC ssh to be ready

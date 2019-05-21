@@ -18,14 +18,15 @@
       group: all
     register: vsd_proc
 
-  remote_user: "{{ vsd_username | default(vsd_default_username) }}"
-  become: "{{ 'no' if vsd_username | default(vsd_default_username) == 'root' else 'yes' }}"
+  remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
+  become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
   vars:
-    ansible_become_pass: "{{ vsd_password | default(vsd_default_password) }}"
+    ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"
 
 - name: Print monit status when verbosity >= 1
   debug: var=vsd_proc verbosity=1
 
 - name: Write vsd monit status to json file
   nuage_append: filename="{{ report_path }}" text="{{ inventory_hostname }} {{ vsd_proc.state | to_nice_json}}\n"
-  delegate_to: localhost 
+  delegate_to: localhost
+  when: no_report is not defined

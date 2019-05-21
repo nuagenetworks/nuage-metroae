@@ -48,9 +48,11 @@ See [Setup](SETUP.md) for more details about enabling SSH Access.
 
 Download and install the [ovftool](https://www.vmware.com/support/developer/ovf/) from VMware. MetroÆ uses ovftool for OVA operations.
 
+Note that running the metroae Docker container for VMware installations and upgrades requires special handling of the location of the ovftool command. Please see [SETUP.md](SETUP.md) for details.
+
 ## 5. Prepare your environment  
 
-5.1 Unzip Nuage files: `./nuage-unzip.sh <zipped_directory> <unzip_directory>`. See [CUSTOMIZE.md](CUSTOMIZE.md) for details.  
+5.1 Unzip Nuage files: `./nuage-unzip.sh <zipped_directory> <unzip_directory>`. See [SETUP.md](SETUP.md) for details.  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Be sure that Nuage packages (tar.gz) are available on localhost (MetroÆ host),  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;either in a native directory or NFS-mounted.  
 

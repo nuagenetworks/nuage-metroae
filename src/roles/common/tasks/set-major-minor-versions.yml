@@ -1,21 +1,34 @@
-- name: Determine Major, Minor and Patch version from upgrade_from_version var
-  set_fact:
-    from_major_version: "{{ upgrade_from_version.split('.')[0] }}"
-    from_minor_version: "{{ upgrade_from_version.split('.')[1] }}"
-    from_patch_version: "{{ upgrade_from_version.split('.')[2].split('U')[0] }}"
+- block:
 
-- name: Determine Major, Minor and Patch version from upgrade_to_version var
-  set_fact:
-    to_major_version: "{{ upgrade_to_version.split('.')[0] }}"
-    to_minor_version: "{{ upgrade_to_version.split('.')[1] }}"
-    to_patch_version: "{{ upgrade_to_version.split('.')[2].split('U')[0] }}"
+  - name: Determine Major, Minor and Patch version from upgrade_from_version var
+    set_fact:
+      from_major_version: "{{ upgrade_from_version.split('.')[0] }}"
+      from_minor_version: "{{ upgrade_from_version.split('.')[1] }}"
+      from_patch_version: "{{ upgrade_from_version.split('.')[2].split('U')[0] }}"
 
-- name: Set minor upgrade path
-  set_fact:
-    upgrade_major_or_minor: "minor"
-  when: from_major_version == to_major_version
+  - name: Determine Major, Minor and Patch version from upgrade_to_version var
+    set_fact:
+      to_major_version: "{{ upgrade_to_version.split('.')[0] }}"
+      to_minor_version: "{{ upgrade_to_version.split('.')[1] }}"
+      to_patch_version: "{{ upgrade_to_version.split('.')[2].split('U')[0] }}"
 
-- name: Set major upgrade path
-  set_fact:
-    upgrade_major_or_minor: "major"
-  when: from_major_version < to_major_version 
+  - name: Set minor upgrade path
+    set_fact:
+      upgrade_major_or_minor: "minor"
+    when: from_major_version == to_major_version
+
+  - name: Set major upgrade path
+    set_fact:
+      upgrade_major_or_minor: "major"
+    when: from_major_version < to_major_version
+
+  - name: Set inplace upgrade
+    set_fact:
+      inplace_upgrade: true
+    when:
+      - from_major_version == to_major_version
+      - from_minor_version == to_minor_version
+      - from_patch_version == to_patch_version
+      - upgrade_from_version|version_compare('5.4.1', operator='ge', strict=True)
+
+  when: upgrade_from_version is defined and upgrade_to_version is defined

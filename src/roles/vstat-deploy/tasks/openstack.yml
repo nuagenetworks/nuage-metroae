@@ -1,8 +1,28 @@
+- name: Set local variable with upgrade status
+  set_fact:
+    upgrade: "{{ nuage_upgrade|default('False') }}"
+
+- block:
+  - name: Verify that upgrade_vmname is defined if this is an upgrade
+    assert:
+      that: "upgrade_vmname is defined"
+      msg: "upgrade_vmname is required for upgrade"
+  - name: Set local variable with upgrade_vmname
+    set_fact:
+      vm_name: "{{ upgrade_vmname }}"
+  when: upgrade
+
+- block:
+  - name: Set local variable with vmname
+    set_fact:
+      vm_name: "{{ vmname }}"
+  when: not upgrade
+
 - name: Get VSTAT details from OpenStack
   os_server_facts:
     auth:
       "{{ openstack_auth }}"
-    server: "{{ inventory_hostname }}"
+    server: "{{ vm_name }}"
   register: vstat_ip
   delegate_to: 127.0.0.1
 
@@ -10,17 +30,13 @@
   set_fact:
     vstat_mgmt_ip: "{{ vstat_ip['ansible_facts']['openstack_servers'][0]['addresses'][openstack_network][0]['addr'] }}"
 
-- name: Inject ssh key to VSD if cloud-init did not work
-  expect:
-    command: "ssh-copy-id -i {{ vstat_default_username }}@{{ vstat_mgmt_ip }}"
-    responses:
-      (?i)yes: "yes"
-      (?i)password: "{{ vstat_default_password }}"
-  delegate_to: localhost
-
-- name: Pause for ssh port to be active
-  pause:
-    seconds: 5
+- name: Wait for VSTAT ssh to be ready
+  include_role:
+    name: common
+    tasks_from: wait-for-ssh
+  vars:
+    ssh_host: "{{ vstat_mgmt_ip }}"
+    host_username: "{{ vstat_default_username }}"
 
 - block:
 

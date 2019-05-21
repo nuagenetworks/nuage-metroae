@@ -43,10 +43,10 @@
   - name: Copy ssh key from vsd to vstat node(s)
     shell: "echo {{ ssh_key.stdout }} >> /root/.ssh/authorized_keys"
 
-  remote_user: "{{ vsd_username | default(vsd_default_username) }}"
-  become: "{{ 'no' if vsd_username | default(vsd_default_username) == 'root' else 'yes' }}"
+  remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
+  become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
   vars:
-    ansible_become_pass: "{{ vsd_password | default(vsd_default_password) }}"
+    ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"
   run_once: true
 
 - block:
@@ -72,4 +72,4 @@
       - "{{ groups['vstats'] }}"
       - "{{ ssh_key_lst.results }}"
     run_once: true
-  when: vstat_sa_or_ha | match('ha')
+  when: vstat_sa_or_ha is match('ha')

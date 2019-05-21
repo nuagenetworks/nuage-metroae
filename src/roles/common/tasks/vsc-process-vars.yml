@@ -1,49 +1,62 @@
 ---
 - block:
 
-  - block:
+  - name: Set VSC KVM image location
+    include_role:
+      name: common
+      tasks_from: find-image.yml
+    vars:
+      pattern: vsc_singledisk.qcow2
+    when: vscs | map(attribute='target_server_type') | list is issuperset(["kvm"])
 
-    - name: Find name of VSC QCOW2 File
-      find: path="{{ nuage_unzipped_files_dir }}/vsc"  pattern="vsc_singledisk.qcow2" recurse=yes
-      register: rc_vsc_file
+  - name: Set VSC vCenter image location
+    include_role:
+      name: common
+      tasks_from: find-image.yml
+    vars:
+      pattern: vsc_singledisk.ova
+    when: vscs | map(attribute='target_server_type') | list is issuperset(["vcenter"])
 
-    - debug: var=rc_vsc_file verbosity=1
+  - name: Find VSC single_disk image directory
+    find:
+      path: "{{ nuage_unzipped_files_dir }}"
+      pattern: single_disk
+      file_type: directory
+      recurse: yes
+    register: rc_single_disk
 
-    - name: Register VSC QCOW2 variables with proper path and image locations for use in other playbooks
-      set_fact:
-        qcow2_path: "{{ rc_vsc_file.files[0].path | dirname }}"
-        qcow2_file_name: "{{ rc_vsc_file.files[0].path | basename }}"
-      when: rc_vsc_file.matched > 0
+  - name: Set single disk directory
+    set_fact:
+      tim_path: "{% for file in rc_single_disk.files %}{% if 'el7' not in file.path %}{{ file.path }}{% endif %}{% endfor %}"
+    when: rc_single_disk.matched > 1
 
-    when: vscs | map(attribute='target_server_type') | list | issuperset(["kvm"])
+  - name: Set single disk directory
+    set_fact:
+      tim_path: "{{ rc_single_disk.files[0].path }}"
+    when: rc_single_disk.matched == 1
 
-  - block:
+  - name: Set single disk directory
+    set_fact:
+      tim_path: "{{ nuage_unzipped_files_dir }}"
+    when: rc_single_disk.matched < 1
 
-    - name: Find name of VSC OVA File
-      find: path="{{ nuage_unzipped_files_dir }}/vsc"  pattern="vsc_singledisk.ova" recurse=yes
-      register: rc_vsc_file
-
-    - debug: var=rc_vsc_file verbosity=1
-
-    - name: Register VSC OVA variables with proper path and image locations for use in other playbooks
-      set_fact:
-        ova_path: "{{ rc_vsc_file.files[0].path | dirname }}"
-        ova_file_name: "{{ rc_vsc_file.files[0].path | basename }}"
-      when: rc_vsc_file.matched > 0
-
-    when: vscs | map(attribute='target_server_type') | list | issuperset(["vcenter"])
-
-  - name: Find name of VSC TIM File
-    find: path="{{ nuage_unzipped_files_dir }}/vsc/single_disk"  pattern="cpm.tim" recurse=yes
-    register: rc_vsc_tim_file
-
-  - debug: var=rc_vsc_tim_file verbosity=1
+  - name: Find name of VSD Migration ISO File
+    include_role:
+      name: common
+      tasks_from: find-file.yml
+    vars:
+      dir_name: "{{ tim_path }}"
+      pattern: "cpm.tim"
 
   - name: Register VSC TIM variables with proper path and image locations for use in other playbooks
     set_fact:
-      vsc_tim_path: "{{ rc_vsc_tim_file.files[0].path | dirname }}"
-      vsc_tim_file_name: "{{ rc_vsc_tim_file.files[0].path | basename }}"
-    when: rc_vsc_tim_file.matched > 0
+      vsc_tim_path: "{{ file_path }}"
+      vsc_tim_file_name: "{{ file_name }}"
+
+  - name: Register that cpm.tim file is missing
+    set_fact:
+      missing_image_file: true
+    when: missing_file | default(True)
 
   - name: Verify VSC management gateway is in correct IP range
     include_role:
@@ -59,6 +72,11 @@
   - name: Create host_vars files for vsc
     template: src=vsc.j2 backup=no dest={{ inventory_dir }}/host_vars/{{ item.1.hostname }}
     with_indexed_items: "{{ vscs }}"
+
+  - name: Verify VSC DNS entries exist at server {{ dns_server_list[0] }}, and hostnames map to their IPs
+    include_tasks: check-dns.yml
+    with_items: "{{ vscs }}"
+    when: dns_server_list
 
   when:
     - vscs is defined and vscs

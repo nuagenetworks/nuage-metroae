@@ -1,125 +1,130 @@
 # Setting Up the Environment
-You can set up the MetroÆ host environment either [with a Docker container](#method-one-set-up-host-environment-using-docker-container) or [with a GitHub clone](#method-two-set-up-host-environment-using-github-clone). 
+You can set up the MetroÆ host environment either [with a Docker container](#method-one-set-up-host-environment-using-docker-container) or [with a GitHub clone](#method-two-set-up-host-environment-using-github-clone).
 
-## Method One: Set up Host Environment Using Docker Container
+## Environment
+
+### Method One: Set up Host Environment Using Docker Container
 Using a Docker container results in a similar setup as a GitHub clone, plus it delivers the following features:  
 * All prerequisites are satisfied by the container. Your only requirement is to run Docker engine.  
 * Your data is located in the file system of the host where Docker is running. You don't need to get inside the container.  
 * You have the option of running an API/UI server allowing you to access MetroÆ functionality via REST API and a front-end GUI.  
 * A future release will include Day 0 Configuration capabilities.
-### System (and Other) Requirements  
+#### System (and Other) Requirements  
 * Operating System: Enterprise Linux 7 (EL7) CentOS 7.4 or greater or RHEL 7.4 or greater  
 * Locally available image files for VCS or VNS deployments
 * Docker Engine 1.13.1 or greater installed and running
-* Container operations must be performed with elevated privileges (*root*, *sudo*)  
-### Steps
-1. Download the MetroÆ RPM package from the [Docker](../docker) folder of this repo.
-2. Install the MetroÆ RPM package with the following command, replacing [release] and [build] with the appropriate details.
+* Container operations may need to be performed with elevated privileges (*root*, *sudo*)  
+#### Steps
+##### 1. Download the MetroÆ RPM package from the [Docker](../docker) folder of this repo.
+##### 2. Install the MetroÆ RPM package with the following command, replacing [release] and [build] with the appropriate details:
 ```
-rpm -i MetroAE-[release]-[build].noarch.rpm
+yum localinstall MetroAE-[release]-[build].noarch.rpm
 ```  
+##### 3. Pull the latest Docker container using the following command:
+```
+metroae pull
+```
+##### 4. Setup the Docker container using the following command:
+```
+metroae setup [path to data directory] [path to image directory]
+```
+You can optionally specify the data and image directory paths. If you don't specify them on the command line, you will be prompted to enter them. These paths are required for container operation. The data directory is the place where docs, examples, and your deployment files will be kept and edited. The image directory is the place where Nuage Networks image and package files will be pulled from.
+##### 5. Start the container using the following command:
+```
+metroae start
+```
+Note that this step is optional. Running *any* metroae command after startup will start the container for you if it is not already running.
+##### 6. Copy ssh keys using the following command:
+```
+metroae copy-ssh-id [target_server_username]@[target_server]
+```
+This command copies the container's public key into the ssh authorized_keys file on the specified target server. This key is required for passwordless ssh access from the container to the target servers. The command must be run once for every target server.
 
-That's it! Command metadata, command logs, and container setup information are stored in the newly created `/opt/metroae` directory. The `metroae` command becomes available in the `/usr/local/bin` directory. See [DOCKER.md](DOCKER.md) for container management command options.
+##### 7. **For ESXi / vCenter Only**, install ovftool and copy to metroae_data directory
 
-## Method Two: Set up Host Environment Using GitHub Clone
+When running the MetroÆ Docker container, the container will need to have access to the ovftool command installed on the Docker host. The following steps are suggested:
+
+###### 7.1. Install ovftool
+
+Download and install the [ovftool](https://www.vmware.com/support/developer/ovf/) from VMware.
+
+###### 7.2. Copy ovftool installation to metroae_data directory
+
+The ovftool command and supporting files are usually installed in the /usr/lib/vmware-ovftool on the host. In order to the metroae container to be able to access these files, you must copy the entire folder to the metroae_data directory on the host. For example, if you have configured the container to use /home/user/metroae_data on your host, you would copy /usr/lib/vmware-ovftool to /home/user/metroae_data/vmware-ovftool. Note: Docker does not support following symlinks. You must copy the files as instructed.
+
+###### 7.3. Configure the ovftool path in your deployment
+
+The path to the ovftool is configured in your deployment in the common.yml file. Uncomment and set the variable 'vcenter_ovftool' to the container-relative path to where you copied the /usr/lib/vmware-ovftool folder. This is required because metroae will attempt to execute ovftool from within the container. From inside the container, metroae can only access paths that have been mounted from the host. In this case, this is the metroae_data directory which is mounted inside the container as '/data'. For our example, in common.yml you would set 'vcenter_ovftool: /data/vmware-ovftool/ovftool'.
+
+##### 8. Optional: Start the UI using this command:
+```
+metroae start-ui
+```
+This command will ensure that the MetroÆ GUI server is running. When running, you an point your browser at `http://host:5001` to access the GUI. *THE GUI IS IN BETA!* You are free to use it, but you can expect to run into issues because it is not fully baked.
+##### 9. You can check the status of the container at any time using the following command:
+```
+metroae status
+```
+
+That's it! Command metadata, command logs, and container setup information are stored in the newly created `/opt/metroae` directory. The `metroae` command becomes available in the `/usr/local/bin` directory. See [DOCKER.md](DOCKER.md) for specfic details of each command and container management command options. Now you're ready to [customize](CUSTOMIZE.md) for your topology.
+
+### Method Two: Set up Host Environment Using GitHub Clone
 If you prefer not to use a Docker container you can set up your environment with a GitHub clone instead.
-### System (and Other) Requirements  
-* Operating System: Enterprise Linux 7 (EL7) CentOS 7.4 or greater or RHEL 7.4 or greater 
+#### System (and Other) Requirements  
+* Operating System: Enterprise Linux 7 (EL7) CentOS 7.4 or greater or RHEL 7.4 or greater
 * Locally available image files for VCS or VNS deployments  
-### Main Steps
-[1. Clone Repo](#1-clone-repository)  
-[2. Install Packages](#2-install-packages)  
-[3. Configure Secure Channel](#3-configure-secure-channel)  
-[4. Configure NTP Sync](#4-configure-ntp-sync)  
-[5. Install ovftool (for VMware only)](#5-install-ovftool-for-vmware-only)  
-[6. Unzip Nuage Files](#6-unzip-nuage-files)
 
-### 1. Clone Repository
-Use one of the two methods below to install a copy of the repo onto the host. 
-#### Method One
-Download a ZIP file of the MetroÆ archive from [GitHub.com](https://github.com/nuagenetworks/nuage-metro) and install it onto the host. 
-
-#### Method Two  
-1. If Git is not already installed on the host, install it with the following command.  
+#### Steps
+##### 1. Clone Repository
+If Git is not already installed on the host, install it with the following command.  
 ```
 yum install -y git
 ```
-2. Clone the repo with the following command.
+Clone the repo with the following command.
 ```
 git clone https://github.com/nuagenetworks/nuage-metro.git
 ```
-### 2. Install Packages
-Use one of the two methods below to install the required packages onto the host.
-
-#### Method One: Automatically (recommended)
-MetroÆ code includes a setup script which installs required packages and modules. If any of the packages or modules are already present, the script does not upgrade or overwrite them. You can run the script multiple times without affecting the system. To install the required packages and modules, run the following command. 
+##### 2. Install Packages
+MetroÆ code includes a setup script which installs required packages and modules. If any of the packages or modules are already present, the script does not upgrade or overwrite them. You can run the script multiple times without affecting the system. To install the required packages and modules, run the following command.
 ```
-[JohnDoe@metro-host ~]$ sudo ./metro-setup.sh
-[sudo] password for JohnDoe:
+sudo ./metro-setup.sh
 ```
 The script writes a detailed log into *metro-setup.log* for your reference. A *Setup complete!* messages appears when the packages have been successfully installed.
 
-#### Method Two: Manually
-1. For all setups, install the following packages and modules by running the commands below.
-
-Package or Module              | Command   
------------------------------- | --------  
-Epel-release                   | `yum install -y epel-release`  
-Python-devel                   | `yum install -y python-devel.x86_64`  
-Openssl-devel                  | `yum install -y openssl-devel`  
-Python pip                     | `yum install -y python2-pip`  
-Development Tools              | `yum install -y "@Development tools"`  
-Ansible 2.4 (for full support) | `pip install ansible==2.4`  
-Netmiko and its dependencies   | `pip install netmiko`  
-Netaddr and its dependencies   | `pip install netaddr`  
-IPaddress and its dependencies | `pip install ipaddress`  
-Python pexpect module          | `pip install pexpect`  
-VSPK Python module             | `pip install vspk`  
-Paramiko                       | `pip install paramiko==2.2.1`
-
-2. **For ESXi / vCenter Only**, install the following packages as well by running the commands below.  
- Note: vCenter deployments are supported for Nuage software version 4.0R7 and greater.  
+##### 3. **For ESXi / vCenter Only**, install additional packages  
 
  Package  | Command  
  -------- | -------  
  pyvmomi  | `pip install pyvmomi`  
  jmespath | `pip install jmespath`
 
+ If you are installing VSP components in a VMware environment (ESXi/vCenter) download and install the [ovftool](https://www.vmware.com/support/developer/ovf/) from VMware. MetroÆ uses ovftool for OVA operations.  
 
-3. For **OpenStack Only**, install the following module as well by running the command below.
+##### 4. **For OpenStack Only**, install additional packages
 
  Module       | Command  
  ------------ | -------  
  shade python | `pip install shade`
 
-### 3. Configure Secure Channel  
-Communication between the MetroÆ Host and the target servers (hypervisors) occurs via SSH. For every target server, run the following commands as the MetroÆ user on the MetroÆ server to establish a secure channel.
+##### 5. Copy ssh keys  
+Communication between the MetroÆ Host and the target servers (hypervisors) occurs via SSH. For every target server, run the following command to copy the current user's ssh key to the authorized_keys file on the target server:
+```
+ssh-copy-id [target_server_username]@[target_server]
+```  
 
-1. To generate SSH Keys run the following command.  
-`ssh-keygen`  
-
-2. To copy the public key to the authorized_keys file on each `target_server` run the applicable command below, replacing [target_server_username] and [target_server] with the appropriate details. 
-* When working as 'root': `ssh-copy-id root@[target_server]` 
-* When working as `target_server_username`: `ssh-copy-id [target_server_username]@[target_server]`  
-
-### 4. Configure NTP sync
+##### 6. Configure NTP sync
 For proper operation Nuage components require clock synchronization with NTP. Best practice is to synchronize time on the target servers that Nuage VMs are deployed on, preferrably to the same NTP server as used by the components themselves.  
 
-### 5. Install ovftool (for VMware only)
- If you are installing VSP components in a VMware environment (ESXi/vCenter) download and install the [ovftool](https://www.vmware.com/support/developer/ovf/) from VMware. MetroÆ uses ovftool for OVA operations.  
- 
-### 6. Unzip Nuage Files
+## Unzip Nuage Networks tar.gz files
 Ensure that the required unzipped Nuage software files (QCOW2, OVA, and Linux Package files) are available for the components to be installed. Use one of the two methods below.
-
-#### Method One: Automatically
+### Method One: Automatically
 Run the command below, replacing [zipped_directory] and [nuage_unzipped_files_dir] with the actual paths:
-
 ```
 ./nuage-unzip.sh [zipped_directory] [nuage_unzipped_files_dir]
 ```
-Note: After completing setup you will customize for your deployment, and you'll need to add this unzipped files directory path to `common.yml`.  
+Note: After completing setup you will [customize](CUSTOMIZE.md) for your deployment, and you'll need to add this unzipped files directory path to `common.yml`.  
 
-#### Method Two: Manually
+### Method Two: Manually
 Alternatively, you can create the directories under the [nuage_unzipped_files_dir] directory and manually copy the appropriate files to those locations as shown in the example below.
 
   ```
@@ -134,10 +139,10 @@ Alternatively, you can create the directories under the [nuage_unzipped_files_di
   <nuage_unzipped_files_dir>/vns/nsg/
   <nuage_unzipped_files_dir>/vns/util/
   ```
-Note: After completing setup you will customize for your deployment, and you'll need to add this unzipped files directory path to `common.yml`. 
+Note: After completing setup you will customize for your deployment, and you'll need to add this unzipped files directory path to `common.yml`.
 
 ## Next Step
-After you've set up your environment you're ready to [customize](CUSTOMIZE.md) for your topology. 
+After you've set up your environment you're ready to [customize](CUSTOMIZE.md) for your topology.
 
 ## You May Also Be Interested in
 [Encrypting Sensitive Data in MetroÆ](VAULT_ENCRYPT.md)  

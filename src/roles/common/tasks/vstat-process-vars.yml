@@ -1,49 +1,40 @@
 ---
 - block:
 
-  - block:
+  - name: Set VSTAT KVM image location
+    include_role:
+      name: common
+      tasks_from: find-image.yml
+    vars:
+      pattern: Nuage-elastic-*.qcow2
+    when: vstats | map(attribute='target_server_type') | list is issuperset(["kvm"])
 
-    - name: Find name of Stats VM QCOW2 File
-      find: path="{{ nuage_unzipped_files_dir }}/vstat"  pattern="*.qcow2" recurse=yes
-      register: rc_vstat_file
-
-    - debug: var=rc_vstat_file verbosity=1
-
-    - name: Register VSTAT QCOW2 variables with proper path and image locations for use in other playbooks
-      set_fact:
-        qcow2_path: "{{ rc_vstat_file.files[0].path | dirname }}"
-        qcow2_file_name: "{{ rc_vstat_file.files[0].path | basename }}"
-      when: rc_vstat_file.matched > 0
-
-    when: vstats | map(attribute='target_server_type') | list | issuperset(["kvm"])
-
-  - block:
-
-    - name: Find name of Stats VM OVF/OVA File
-      find: path="{{ nuage_unzipped_files_dir }}/vstat"  patterns="*.ova,*.ovf" recurse=yes
-      register: rc_vstat_file
-
-    - debug: var=rc_vstat_file verbosity=1
-
-    - name: Register VSTAT OVF/OVA variables with proper path and image locations for use in other playbooks
-      set_fact:
-        ova_path: "{{ rc_vstat_file.files[0].path | dirname }}"
-        ova_file_name: "{{ rc_vstat_file.files[0].path | basename }}"
-      when: rc_vstat_file.matched > 0
-
-    when: vstats | map(attribute='target_server_type') | list | issuperset(["vcenter"])
+  - name: Set VSTAT vCenter image location
+    include_role:
+      name: common
+      tasks_from: find-image.yml
+    vars:
+      pattern:
+        - Nuage-elastic-*.ova
+        - Nuage-elastic-*.ovf
+    when: vstats | map(attribute='target_server_type') | list is issuperset(["vcenter"])
 
   - name: Find name of VSTAT upgrade Package Files (EL7 architecture)
-    find: path="{{ nuage_unzipped_files_dir }}/vstat"  pattern="*.bin" recurse=yes
-    register: rc_vstat_upgrade_scripts
-
-  - debug: var=rc_vstat_upgrade_scripts verbosity=1
+    include_role:
+      name: common
+      tasks_from: find-file.yml
+    vars:
+      pattern: "Nuage-elastic-*-bundle.bin"
 
   - name: Register VSTAT upgrade script variables with proper path and script locations for use in other playbooks
     set_fact:
-      vstat_upgrade_scripts_path: "{{ rc_vstat_upgrade_scripts.files[0].path | dirname }}/"
-      vstat_upgrade_scripts_file: "{{ rc_vstat_upgrade_scripts.files[0].path | basename }}"
-    when: rc_vstat_upgrade_scripts.matched > 0
+      vstat_upgrade_scripts_path: "{{ file_path }}/"
+      vstat_upgrade_scripts_file: "{{ file_name }}"
+
+  - name: Register that image files are missing
+    set_fact:
+      missing_image_file: true
+    when: missing_file | default(True)
 
   - name: Verify VSTAT management gateway is in correct IP range
     include_role:
@@ -58,6 +49,11 @@
   - name: Create host_vars files for vstat
     template: src=vstat.j2 backup=no dest={{ inventory_dir }}/host_vars/{{ item.hostname }}
     with_items: "{{ vstats }}"
+
+  - name: Verify VStat DNS entries exist at server {{ dns_server_list[0] }}, and hostnames map to their management IPs
+    include_tasks: check-dns.yml
+    with_items: "{{ vstats }}"
+    when: dns_server_list
 
   when:
     - vstats is defined and vstats

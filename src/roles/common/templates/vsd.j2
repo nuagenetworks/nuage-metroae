@@ -10,7 +10,7 @@ component_type: vsd
 target_server_type: {{ item.target_server_type | default('kvm') }}
 hostname: {{ item.hostname }}
 
-{% if item.target_server_type | match("kvm") or item.target_server_type | match("vcenter") %}
+{% if item.target_server_type is match("kvm") or item.target_server_type is match("vcenter") %}
 target_server: {{ item.target_server }}
 {% endif %}
 
@@ -36,6 +36,10 @@ vsd_sa_or_ha: sa
 vsd_sa_or_ha: ha
 {% endif %}
 
+{% if vsds|length == 6%}
+vsd_standby: true
+{% endif %}
+
 {% endif %}
 
 {% if item.cpuset is defined %}
@@ -49,14 +53,16 @@ mgmt_ip: {{ item.mgmt_ip }}
 mgmt_prefix: {{ item.mgmt_ip_prefix }}
 mgmt_gateway: {{ item.mgmt_gateway }}
 
-{% if item.target_server_type | match("kvm") %}
-{% if qcow2_path is defined %}
-qcow2_path: {{ qcow2_path }}
+{% if item.mgmt_ip | ipv6 != False %}
+enable_ipv6: true
 {% endif %}
-{% if qcow2_file_name is defined %}
-qcow2_file_name: {{ qcow2_file_name }}
+
+{% if item.mgmt_bridge is defined %}
+mgmt_bridge: {{ item.mgmt_bridge }}
 {% endif %}
-{% endif %}
+
+image_path: {{ image_path | default("MISSING") }}
+image_file_name: {{ image_file_name | default("MISSING") }}
 
 upgrade_vmname: {{ item.upgrade_vmname is defined | ternary( item.upgrade_vmname, [ item.vmname | default(item.hostname), "new" ] | join('-') ) }}
 
@@ -67,14 +73,7 @@ vsd_migration_iso_path:  {{ vsd_migration_iso_path }}
 vsd_migration_iso_file_name: {{ vsd_migration_iso_file_name }}
 {% endif %}
 
-{% if item.target_server_type | match("vcenter") %}
-
-{% if ova_path is defined %}
-ova_path: {{ ova_path }}
-{% endif %}
-{% if ova_file_name is defined %}
-ova_file_name: {{ ova_file_name }}
-{% endif %}
+{% if item.target_server_type is match("vcenter") %}
 
 vcenter:
   username: {{ encrypted.vcenter_username | indent(8, False) }}
@@ -87,7 +86,7 @@ vcenter:
 
 {% endif %}
 
-{% if item.target_server_type | match("aws") %}
+{% if item.target_server_type is match("aws") %}
 
 aws_region: "{{ item.aws_region }}"
 aws_ami_id: "{{ item.aws_ami_id }}"
@@ -99,7 +98,7 @@ aws_mgmt_eni: "{{ item.aws_mgmt_eni }}"
 {% endif %}
 
 
-{% if item.target_server_type | match("openstack") %}
+{% if item.target_server_type is match("openstack") %}
 
 openstack_image: {{ item.openstack_image }}
 openstack_flavor: {{ item.openstack_flavor }}
@@ -115,4 +114,33 @@ openstack_port_security_groups:
 {% endfor %}
 {% endif %}
 
+{% endif %}
+
+# VSD Post install hardening
+{% if item.failed_login_attempts is defined %}
+failed_login_attempts: {{ item.failed_login_attempts }}
+{% endif %}
+
+{% if item.failed_login_lockout_time is defined %}
+failed_login_lockout_time: {{ item.failed_login_lockout_time }}
+{% endif %}
+
+{% if item.advanced_api_access_logging is defined %}
+advanced_api_access_logging: {{ item.advanced_api_access_logging }}
+{% endif %}
+
+{% if item.tls_version is defined %}
+tls_version: {{ item.tls_version }}
+{% endif %}
+
+{% if item.ca_certificate_path is defined %}
+ca_certificate_path: {{ item.ca_certificate_path }}
+{% endif %}
+
+{% if item.intermediate_certificate_path is defined %}
+intermediate_certificate_path: {{ item.intermediate_certificate_path }}
+{% endif %}
+
+{% if item.certificate_path is defined %}
+certificate_path: {{ item.certificate_path }}
 {% endif %}

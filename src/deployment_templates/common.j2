@@ -11,19 +11,37 @@
 #
 nuage_unzipped_files_dir: "{{ nuage_unzipped_files_dir }}"
 
-##### Management Interface
-
 # < Domain Name >
 # Domain name for this deployment. E.g. company.net.
 #
 dns_domain: "{{ dns_domain }}"
+
+##### Management FQDNs
 
 # < Global VSD FQDN >
 # For clustered VSD, the XMPP FQDN for the cluster; For standalone VSD, the FQDN of the single VSD
 #
 vsd_fqdn_global: "{{ vsd_fqdn_global }}"
 
-##########################
+# < Global SD-WAN Portal FQDN >
+# For HA PORTAL, the FQDN for the Proxy/LB endpoint; For standalone PORTAL, the FQDN of the single PORTAL
+#
+{%- if portal_fqdn_global is defined %}
+portal_fqdn_global: "{{ portal_fqdn_global }}"
+{%- else %}
+# portal_fqdn_global: ""
+{%- endif %}
+
+# < Global VSTAT FQDN >
+# For clustered VSTAT, the FQDN for the VSTAT cluster; For standalone VSTAT, the FQDN of the single VSTAT
+#
+{%- if vstat_fqdn_global is defined %}
+vstat_fqdn_global: "{{ vstat_fqdn_global }}"
+{%- else %}
+# vstat_fqdn_global: ""
+{%- endif %}
+
+######################
 
 ##### Network Bridges
 
@@ -51,12 +69,12 @@ access_bridge: "{{ access_bridge }}"
 ##### Network Services
 
 # < NTP Server IP(s) >
-# List of one or more NTP server IPv4 addresses that must be in dotted-decimal format
+# List of one or more NTP server addresses that must be in dotted-decimal (IPv4) or hexidecimal (IPv6) format
 #
 ntp_server_list: [ {% for i in ntp_server_list | default([]) %}"{{ i }}", {% endfor %}]
 
 # < DNS server IP(s) >
-# List of one or more DNS server IPv4 addresses for resolving component domain names. Must be in dotted-decimal format.
+# List of one or more DNS server addresses for resolving component domain names. Must be in dotted-decimal (IPv4) or hexidecimal (IPv6) format.
 #
 dns_server_list: [ {% for i in dns_server_list | default([]) %}"{{ i }}", {% endfor %}]
 
@@ -128,7 +146,7 @@ vcenter_resource_pool: "{{ vcenter_resource_pool }}"
 {%- endif %}
 
 # < OVF tool location >
-# vCenter OVFtool location
+# This is the full path to the vCenter OVFtool executable. When running metroae from a clone of the nuage-metro repo, this should be set to the path to ovftool on the host, usually /usr/bin/ovftool. When running the metroae Docker container, the ovftool installation directory, /usr/lib/vmware-ovftool, must be copied to the metroae_data directory and this parameter must be set to the internal container path to the ovftool in that directory, /data/vmware-ovftool/ovftool.
 #
 {%- if vcenter_ovftool is defined %}
 vcenter_ovftool: "{{ vcenter_ovftool }}"
@@ -205,13 +223,31 @@ vsd_license_required_days_left: {{ vsd_license_required_days_left }}
 # vsd_license_required_days_left: -1
 {%- endif %}
 
-# < VSD License Filename >
-# Filename for the license file for the VSD.  Currently only used for NSGv Bootstrapping
+# < VSD Standard License File >
+# Path to the standard license file for the VSD
 #
 {%- if vsd_license_file is defined %}
 vsd_license_file: "{{ vsd_license_file }}"
 {%- else %}
 # vsd_license_file: ""
+{%- endif %}
+
+# < VSD Cluster License File >
+# Path to the cluster license file for the VSD
+#
+{%- if vsd_cluster_license_file is defined %}
+vsd_cluster_license_file: "{{ vsd_cluster_license_file }}"
+{%- else %}
+# vsd_cluster_license_file: ""
+{%- endif %}
+
+# < SD-WAN Portal License Filename >
+# Path to the license file for the SD-WAN Portal
+#
+{%- if portal_license_file is defined %}
+portal_license_file: "{{ portal_license_file }}"
+{%- else %}
+# portal_license_file: ""
 {%- endif %}
 
 # < Branding Zip File >
@@ -301,6 +337,15 @@ vstat_ram: {{ vstat_ram }}
 vcin_ram: {{ vcin_ram }}
 {%- else %}
 # vcin_ram: 24
+{%- endif %}
+
+# < Portal RAM >
+# Amount of Portal RAM to allocate, in GB. Valid only for KVM deployments. Note: Values smaller than the default are for lab and PoC only. Production deployments must use a value greater than or equal to the default.
+#
+{%- if portal_ram is defined %}
+portal_ram: {{ portal_ram }}
+{%- else %}
+# portal_ram: 24
 {%- endif %}
 
 ##### VSD Authentication
