@@ -44,28 +44,30 @@
     vsd_hostname: "{{ vsd_fqdn }}"
 
 - block:
+  - name: Generate SSH keys
+    include_tasks: generate_ssh_keys.yml
+      vars:
+        group_vstats: "{{ groups['vstats'] }}"
+
+    remote_user: "{{ vstat_default_username }}"
+    when: "{{ group['vstats'] }}" is defined
 
   - name: Generate SSH keys
-    shell: ssh-keygen -b 2048 -t rsa -f /root/.ssh/id_rsa -q -N ""
-    args:
-      creates: /root/.ssh/id_rsa
-    delegate_to: "{{ item }}"
-    with_items: "{{ groups['vstats'] }}"
+    include_tasks: generate_ssh_keys.yml
+      vars:
+        group_vstats: "{{ groups['primary_vstats'] }}"
 
-  - name: Get generated SSH keys
-    shell: cat ~/.ssh/id_rsa.pub
-    register: ssh_key_lst
-    delegate_to: "{{ item }}"
-    with_items: "{{ groups['vstats'] }}"
+    remote_user: "{{ vstat_default_username }}"
+    when: "{{ group['primary_vstats'] }}" is defined
 
-  - name: Add SSH keys to authorized_keys file
-    shell: "echo {{ item[1].stdout }} >> /root/.ssh/authorized_keys"
-    delegate_to: "{{ item[0] }}"
-    with_nested:
-      - "{{ groups['vstats'] }}"
-      - "{{ ssh_key_lst.results }}"
+  - name: Generate SSH keys
+    include_tasks: generate_ssh_keys.yml
+      vars:
+        group_vstats: "{{ groups['backup_vstats'] }}"
 
-  remote_user: "{{ vstat_default_username }}"
+    remote_user: "{{ vstat_default_username }}"
+    when: "{{ group['backup_vstats'] }}" is defined
+
   run_once: true
   when: vstat_sa_or_ha is match('ha')
 
