@@ -46,27 +46,27 @@
 - block:
   - name: Generate SSH keys
     include_tasks: generate_ssh_keys.yml
-      vars:
-        group_vstats: "{{ groups['vstats'] }}"
+    vars:
+      group_vstats: "{{ groups['vstats'] }}"
 
     remote_user: "{{ vstat_default_username }}"
-    when: "{{ group['vstats'] }}" is defined
+    when: groups['vstats'] is defined
 
   - name: Generate SSH keys
     include_tasks: generate_ssh_keys.yml
-      vars:
-        group_vstats: "{{ groups['primary_vstats'] }}"
+    vars:
+      group_vstats: "{{ groups['primary_vstats'] }}"
 
     remote_user: "{{ vstat_default_username }}"
-    when: "{{ group['primary_vstats'] }}" is defined
+    when: groups['primary_vstats'] is defined and active
 
   - name: Generate SSH keys
     include_tasks: generate_ssh_keys.yml
-      vars:
-        group_vstats: "{{ groups['backup_vstats'] }}"
+    vars:
+      group_vstats: "{{ groups['backup_vstats'] }}"
 
     remote_user: "{{ vstat_default_username }}"
-    when: "{{ group['backup_vstats'] }}" is defined
+    when: groups['backup_vstats'] is defined and not active
 
   run_once: true
   when: vstat_sa_or_ha is match('ha')
@@ -259,7 +259,11 @@
     lineinfile:
       dest: /etc/hosts
       line: "{{ hostvars[item]['mgmt_ip'] }}    {{ hostvars[item]['hostname'] }}"
-    with_items: "{{ groups['vstats'] }}"
+    with_items:
+      - "{{ groups['vstats'] }}"
+      - "{{ groups['primary_vstats'] }}"
+      - "{{ groups['backup_vstats'] }}"
+
     when: vsd_sa_or_ha is match('ha')
     remote_user: "{{ vstat_default_username }}"
 
@@ -329,8 +333,25 @@
           environment:
             SSHPASS: "{{ vstat_default_password }}"
           no_log: True
-          when: vstat_sa_or_ha is match('ha')
+          when: group['vstats'] is defined
 
+        - name: Execute VSTAT cluster script on standalone or clustered vsds
+          command: /opt/vsd/vsd-es-cluster-config.sh -e {{ groups['primary_vstats'][0] }},{{ groups['primary_vstats'][1] }},{{ groups['primary_vstats'][2] }}
+          delegate_to: "{{ vsd_hostname_list[0] }}"
+          environment:
+            SSHPASS: "{{ vstat_default_password }}"
+          no_log: True
+          when: group['primary_vstats'] is defined and active
+
+        - name: Execute VSTAT cluster script on standalone or clustered vsds
+          command: /opt/vsd/vsd-es-cluster-config.sh -e {{ groups['backup_vstats'][0] }},{{ groups['backup_vstats'][1] }},{{ groups['backup_vstats'][2] }}
+          delegate_to: "{{ vsd_hostname_list[0] }}"
+          environment:
+            SSHPASS: "{{ vstat_default_password }}"
+          no_log: True
+          when: group['backup_vstats'] is defined and not active
+
+        when: vstat_sa_or_ha is match('ha')
         run_once: True
 
       remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
