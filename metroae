@@ -393,32 +393,57 @@ function pull {
     fi
 
     repo="Docker registry"
-
-    ping -c 5 $REGISTRY_HOST >> $SCRIPT_LOG_FILE 2>> $SCRIPT_LOG_FILE
+    if [[ -f $SCRIPT_LOG_FILE ]]; then
+        ping -c 5 $REGISTRY_HOST >> $SCRIPT_LOG_FILE 2>> $SCRIPT_LOG_FILE
+    else
+        ping -c 5 $REGISTRY_HOST
+    fi
 
     set +e
     if [[ $? -ne 0 || ( ! -z $1 && "$1" = "S3" ) ]]; then
-        echo "Could not connect to the Nokia registry to download the metroae container image" | tee -a $SCRIPT_LOG_FILE
-        echo "Retrieving the metroae container image from Amazon S3 instead" | tee -a $SCRIPT_LOG_FILE
+        if [[ -f $SCRIPT_LOG_FILE ]]; then
+            echo "Could not connect to the Nokia registry to download the metroae container image" | tee -a $SCRIPT_LOG_FILE
+            echo "Retrieving the metroae container image from Amazon S3 instead" | tee -a $SCRIPT_LOG_FILE
+        else
+            echo "Could not connect to the Nokia registry to download the metroae container image"
+            echo "Retrieving the metroae container image from Amazon S3 instead"
+        fi
         get_from_s3
 
         if [[ $? -ne 0 ]]; then
-            echo "Attempt to pull the metroae container image failed. Quitting" | tee -a $SCRIPT_LOG_FILE
+            if [[ -f $SCRIPT_LOG_FILE ]]; then
+                echo "Attempt to pull the metroae container image failed. Quitting" | tee -a $SCRIPT_LOG_FILE
+            else
+                echo "Attempt to pull the metroae container image failed. Quitting"
+            fi
             print_version_and_exit 1
         fi
 
         docker load -i $TEMPORARY_DIRECTORY$CONTAINER_TAR_FILE
         repo="Amazon S3"
     else
-        echo "Pulling the metroae container image from Nokia registry..." | tee -a $SCRIPT_LOG_FILE
-        docker pull $METRO_AE_IMAGE:$MAX_CONTAINER_VERSION | tee -a $SCRIPT_LOG_FILE
+        if [[ -f $SCRIPT_LOG_FILE ]]; then
+            echo "Pulling the metroae container image from Nokia registry..." | tee -a $SCRIPT_LOG_FILE
+            docker pull $METRO_AE_IMAGE:$MAX_CONTAINER_VERSION | tee -a $SCRIPT_LOG_FILE
+        else
+            echo "Pulling the metroae container image from Nokia registry..."
+            docker pull $METRO_AE_IMAGE:$MAX_CONTAINER_VERSION
+        fi
     fi
 
     status=$?
     if [[ $status -ne 0 ]]; then
-        echo "Attempt to pull the $MAX_CONTAINER_VERSION metroae container image failed. Quitting." | tee -a $SCRIPT_LOG_FILE
+        if [[ -f $SCRIPT_LOG_FILE ]]; then
+            echo "Attempt to pull the $MAX_CONTAINER_VERSION metroae container image failed. Quitting." | tee -a $SCRIPT_LOG_FILE
+        else
+            echo "Attempt to pull the $MAX_CONTAINER_VERSION metroae container image failed. Quitting."
+        fi
     else
-        echo "Successfully Pulled the metroae container image from $repo" | tee -a $SCRIPT_LOG_FILE
+        if [[ -f $SCRIPT_LOG_FILE ]]; then
+            echo "Successfully Pulled the metroae container image from $repo" | tee -a $SCRIPT_LOG_FILE
+        else
+            echo "Successfully Pulled the metroae container image from $repo"
+        fi
     fi
     set -e
 
