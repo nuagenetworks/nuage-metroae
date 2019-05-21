@@ -58,7 +58,7 @@ WIZARD_SCRIPT = """
       multiple deployments each in their own directory.
   create_deployment: {}
 
-- step: Common deployment file, DNS and NTP
+- step: Common deployment file, DNS, NTP and network bridges
   description: |
       This step will create or read an existing common.yml deployment file and
       begin filling it out.  This file provides global parameters for the
@@ -71,13 +71,24 @@ WIZARD_SCRIPT = """
       hostname to ip address DNS mappings defined before running workflows.
       Having DNS setup before continuing will allow this wizard to
       auto-discover component IP addresses.
+    vsd_fqdn_msg: |
+      Please enter the Fully Qualified Domain Name (FQDN) for the VSD.  If
+      clustered, use the XMPP FQDN, for standalone use the FQDN of the VSD.
     ntp_setup_msg: |
 
       We will now setup NTP.  An NTP server is required for the VSP components
       being installed/upgraded to keep their times synchronized.
-    vsd_fqdn_msg: |
-      Please enter the Fully Qualified Domain Name (FQDN) for the VSD.  If
-      clustered, use the XMPP FQDN, for standalone use the FQDN of the VSD.
+    bridge_setup_msg: |
+
+      We will now configure network bridges.  Network bridges are required on
+      the target server hypervisors for each of the VSP components to
+      communicate with each other and to the outside. MetroÆ will not create
+      these so they will need to be defined before-hand.  There are up to three
+      bridges that can be defined:
+
+      mgmt_bridge: Management network.
+      data_bridge: Internal data network.
+      access_bridge: External network.
 
 - message:
     text: |
@@ -146,7 +157,7 @@ class Wizard(object):
         valid = False
         while not valid:
             zip_dir = self._input("Specify the directory containing the zip "
-                                   "files from OLCS", "")
+                                  "files from OLCS", "")
 
             if zip_dir == "" or not os.path.exists(zip_dir):
                 choice = self._input(
@@ -226,6 +237,8 @@ class Wizard(object):
         self._setup_dns(deployment, data)
 
         self._setup_ntp(deployment, data)
+
+        self._setup_bridges(deployment, data)
 
         if "nuage_unzipped_files_dir" in self.state:
             if ("nuage_unzipped_files_dir" not in deployment or
@@ -588,7 +601,7 @@ class Wizard(object):
         deployment["vsd_fqdn_global"] = vsd_fqdn
 
         if "dns_server_list" in deployment:
-            dns_servers_default = ",".join(deployment["dns_server_list"])
+            dns_servers_default = ", ".join(deployment["dns_server_list"])
         else:
             dns_servers_default = None
 
@@ -596,13 +609,13 @@ class Wizard(object):
             "Enter DNS server IPs in dotted decmial format (separate multiple "
             "using commas)", dns_servers_default)
 
-        deployment["dns_server_list"] = dns_server_list.split(",")
+        deployment["dns_server_list"] = self._format_ip_list(dns_server_list)
 
     def _setup_ntp(self, deployment, data):
         self._print(self._get_field(data, "ntp_setup_msg"))
 
         if "ntp_server_list" in deployment:
-            ntp_servers_default = ",".join(deployment["ntp_server_list"])
+            ntp_servers_default = ", ".join(deployment["ntp_server_list"])
         else:
             ntp_servers_default = None
 
@@ -610,8 +623,49 @@ class Wizard(object):
             "Enter NTP server IPs in dotted decmial format (separate multiple "
             "using commas)", ntp_servers_default)
 
-        deployment["ntp_server_list"] = ntp_server_list.split(",")
+        deployment["ntp_server_list"] = self._format_ip_list(ntp_server_list)
 
+    def _format_ip_list(self, ip_str):
+        return [x.strip() for x in ip_str.split(",")]
+
+    def _setup_bridges(self, deployment, data):
+        self._print(self._get_field(data, "bridge_setup_msg"))
+
+        if "mgmt_bridge" in deployment:
+            mgmt_bridge_default = deployment["mgmt_bridge"]
+        else:
+            mgmt_bridge_default = ""
+
+        mgmt_bridge = self._input("Management bridge name",
+                                  mgmt_bridge_default)
+
+        deployment["mgmt_bridge"] = mgmt_bridge
+        if mgmt_bridge != "":
+            self.state["mgmt_bridge"] = mgmt_bridge
+
+        if "data_bridge" in deployment:
+            data_bridge_default = deployment["data_bridge"]
+        else:
+            data_bridge_default = ""
+
+        data_bridge = self._input("Data bridge name",
+                                  data_bridge_default)
+
+        deployment["data_bridge"] = data_bridge
+        if data_bridge != "":
+            self.state["data_bridge"] = data_bridge
+
+        if "access_bridge" in deployment:
+            access_bridge_default = deployment["access_bridge"]
+        else:
+            access_bridge_default = ""
+
+        access_bridge = self._input("Access bridge name",
+                                    access_bridge_default)
+
+        if access_bridge != "":
+            deployment["access_bridge"] = access_bridge
+            self.state["access_bridge"] = access_bridge
 
     def _generate_deployment_file(self, schema, output_file, deployment):
         # Import here because setup may not have been run at the start
@@ -623,6 +677,7 @@ class Wizard(object):
                 "Cannot write deployment files because libraries are missing."
                 "  Please make sure metro-setup.sh has been run.")
             return
+        deployment["generator_script"] = "Wizard"
         gen_example = ExampleFileGenerator(False, True)
         example_lines = gen_example.generate_example_from_schema(
             os.path.join("schemas", schema + ".json"))
@@ -630,6 +685,8 @@ class Wizard(object):
         rendered = template.render(**deployment)
         with open(output_file, 'w') as file:
             file.write(rendered.encode("utf-8"))
+
+        self._print("\nWrote deployment file: " + output_file)
 
 
 def main():
