@@ -120,7 +120,15 @@ WIZARD_SCRIPT = """
     ha_amount: 3
     item_name: VSTAT
 
-- message:
+- step: Setup SSH on target servers
+  description: |
+      This step will setup password-less SSH access to the target servers
+      (hypervisors).  MetroÆ must have password-less access to the target
+      servers to configure them.
+  setup_target_servers: {}
+
+- step: Complete the wizard
+  message:
     text: |
 
       The wizard is complete!
@@ -324,6 +332,39 @@ class Wizard(object):
                 os.remove(deployment_file)
         else:
             self._generate_deployment_file(schema, deployment_file, deployment)
+
+    def setup_target_servers(self, action, data):
+
+        if "all_target_servers" in self.state:
+            servers = self.state["all_target_servers"]
+        else:
+            servers_str = self._input(
+                "Enter target server (hypervisor) addresses (separate multiple"
+                " using commas)")
+            servers = self._format_ip_list(servers_str)
+            self.state["all_target_servers"] = servers
+
+        if "target_server_username" in self.state:
+            default = self.state["target_server_username"]
+        else:
+            default = "root"
+
+        username = self._input(
+            "Enter the username for the target servers (hypervisors)", default)
+        self.state["target_server_username"] = username
+
+        self._print("\nWe will now configure SSH access to the target servers"
+                    " (hypervisors).  This will likely require the SSH"
+                    " password for each system would need to be entered.")
+
+        choice = self._input("Setup SSH now?", 0, ["(Y)es", "(N)o"])
+
+        if choice == 1:
+            self._print("Skipping step...")
+            return
+
+        for server in servers:
+            self._setup_ssh(self, username, server)
 
     #
     # Private class internals
@@ -930,6 +971,27 @@ class Wizard(object):
         default = "new-" + vmname
         upgrade_vmname = self._input("Upgrade VM name", default)
         component["upgrade_vmname"] = upgrade_vmname
+
+    def _setup_ssh(self, username, hostname):
+        self._print("Adding SSH keys for %s@%s, may ask for password" % (
+            username, hostname))
+        try:
+            rc, output_lines = self._run_shell(
+                "ssh-copy-id %s@%s" % (username, hostname))
+            if rc == 0:
+                self._print("Successfully setup SSH on host")
+                return True
+            else:
+                self._print("\n".join(output_lines))
+                self._print(
+                    "\nCould not add SSH keys for %s@%s, this is required"
+                    " for MetroÆ to operate." % (username, hostname))
+        except Exception as e:
+            self._print("\nAn error occurred while setting up SSH: " +
+                        str(e))
+            self._print("Please contact: " + METROAE_CONTACT)
+
+        return False
 
 
 def main():
