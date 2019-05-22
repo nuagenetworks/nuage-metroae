@@ -364,7 +364,7 @@ class Wizard(object):
             return
 
         for server in servers:
-            self._setup_ssh(self, username, server)
+            self._setup_ssh(username, server)
 
     #
     # Private class internals
@@ -979,7 +979,7 @@ class Wizard(object):
             rc, output_lines = self._run_shell(
                 "ssh-copy-id %s@%s" % (username, hostname))
             if rc == 0:
-                self._print("Successfully setup SSH on host")
+                self._print("\nSuccessfully setup SSH on host")
                 return True
             else:
                 self._print("\n".join(output_lines))
