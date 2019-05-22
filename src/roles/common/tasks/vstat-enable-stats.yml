@@ -25,6 +25,25 @@
     run_once: true
     when:
       - vstat_sa_or_ha is match('ha')
+      - groups['vstats'] is defined
+
+  - name: Enable stats collection on the vsd(s) when vstat is clustered
+    command: /opt/vsd/vsd-stats.sh -e {{ groups['primary_vstats'][0] }},{{ groups['primary_vstats'][1] }},{{ groups['primary_vstats'][2] }}
+    delegate_to: "{{ item }}"
+    with_items: "{{ vsd_hostname_list }}"
+    run_once: true
+    when:
+      - vstat_sa_or_ha is match('ha')
+      - groups['primary_vstats'] is defined and active
+
+  - name: Enable stats collection on the vsd(s) when vstat is clustered
+    command: /opt/vsd/vsd-stats.sh -e {{ groups['backup_vstats'][0] }},{{ groups['backup_vstats'][1] }},{{ groups['backup_vstats'][2] }}
+    delegate_to: "{{ item }}"
+    with_items: "{{ vsd_hostname_list }}"
+    run_once: true
+    when:
+      - vstat_sa_or_ha is match('ha')
+      - groups['backup_vstats'] is defined and not active
 
   remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
   become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
