@@ -336,21 +336,21 @@
           environment:
             SSHPASS: "{{ vstat_default_password }}"
           no_log: True
-          when: group['vstats'] is defined
+          when: groups['vstats'] is defined
 
         - name: Execute VSTAT cluster script on standalone or clustered vsds
           command: /opt/vsd/vsd-es-cluster-config.sh -e {{ groups['primary_vstats'][0] }},{{ groups['primary_vstats'][1] }},{{ groups['primary_vstats'][2] }}
           delegate_to: "{{ vsd_hostname_list[0] }}"
           environment:
             SSHPASS: "{{ vstat_default_password }}"
-          when: group['primary_vstats'] is defined and active
+          when: groups['primary_vstats'] is defined and active
 
         - name: Execute VSTAT cluster script on standalone or clustered vsds
           command: /opt/vsd/vsd-es-cluster-config.sh -e {{ groups['backup_vstats'][0] }},{{ groups['backup_vstats'][1] }},{{ groups['backup_vstats'][2] }}
           delegate_to: "{{ vsd_hostname_list[0] }}"
           environment:
             SSHPASS: "{{ vstat_default_password }}"
-          when: group['backup_vstats'] is defined and not active
+          when: groups['backup_vstats'] is defined and not active
 
         when: vstat_sa_or_ha is match('ha')
         run_once: True
