@@ -58,7 +58,7 @@ WIZARD_SCRIPT = """
       multiple deployments each in their own directory.
   create_deployment: {}
 
-- step: Common deployment file, DNS, NTP and network bridges
+- step: Common deployment file, DNS and NTP
   description: |
       This step will create or read an existing common.yml deployment file and
       begin filling it out.  This file provides global parameters for the
@@ -90,6 +90,36 @@ WIZARD_SCRIPT = """
       data_bridge: Internal data network.
       access_bridge: External network.
 
+- step: VSD deployment file
+  description: |
+      This step will create or read an existing vsds.yml deployment file and
+      begin filling it out.  This file provides parameters for the Virtualized
+      Services Directories (VSDs)
+  create_component:
+    schema: vsds
+    ha_amount: 3
+    item_name: VSD
+
+- step: VSC deployment file
+  description: |
+      This step will create or read an existing vscs.yml deployment file and
+      begin filling it out.  This file provides parameters for the Virtualized
+      Services Controllers (VSCs)
+  create_component:
+    schema: vscs
+    ha_amount: 2
+    item_name: VSC
+
+- step: VSTAT deployment file
+  description: |
+      This step will create or read an existing vstats.yml deployment file and
+      begin filling it out.  This file provides parameters for the VSD
+      Statistics (Elasticsearch) components.
+  create_component:
+    schema: vstats
+    ha_amount: 3
+    item_name: VSTAT
+
 - message:
     text: |
 
@@ -98,6 +128,8 @@ WIZARD_SCRIPT = """
 """
 
 STANDARD_FIELDS = ["step", "description"]
+TARGET_SERVER_TYPE_LABELS = ["(K)vm", "(v)center", "(o)penstack", "(a)ws"]
+TARGET_SERVER_TYPE_VALUES = ["kvm", "vcenter", "openstack", "aws"]
 
 
 class Wizard(object):
@@ -234,11 +266,13 @@ class Wizard(object):
             self._print(deployment_file + " not found. It will be created.")
             deployment = dict()
 
+        self._setup_target_server_type()
+
+        self._setup_bridges(deployment, data)
+
         self._setup_dns(deployment, data)
 
         self._setup_ntp(deployment, data)
-
-        self._setup_bridges(deployment, data)
 
         if "nuage_unzipped_files_dir" in self.state:
             if ("nuage_unzipped_files_dir" not in deployment or
@@ -247,6 +281,49 @@ class Wizard(object):
                     self.state["nuage_unzipped_files_dir"])
 
         self._generate_deployment_file("common", deployment_file, deployment)
+
+    def create_component(self, action, data):
+        schema = self._get_field(data, "schema")
+        item_name = self._get_field(data, "item_name")
+
+        deployment_dir = self._get_deployment_dir()
+        if deployment_dir is None:
+            return
+
+        deployment_file = os.path.join(deployment_dir, schema + ".yml")
+        if os.path.isfile(deployment_file):
+            deployment = self._read_deployment_file(deployment_file)
+        else:
+            self._print(deployment_file + " not found. It will be created.")
+            deployment = list()
+
+        self._setup_target_server_type()
+
+        amount = self._get_number_components(deployment, data)
+        deployment = deployment[0:amount]
+
+        self._print("\nIf DNS is configured properly, IP addresses can be "
+                    "auto-discovered.")
+
+        for i in range(amount):
+            self._print("\n%s %d\n" % (item_name, i + 1))
+            if len(deployment) == i:
+                deployment.append(dict())
+
+            deployment[i]["target_server_type"] = (
+                self.state["target_server_type"])
+
+            hostname = self._setup_hostname(deployment, i, item_name)
+
+            self._setup_vmname(deployment, i, hostname)
+
+            self._setup_ip_addresses(deployment, i, hostname)
+
+        if amount == 0:
+            if os.path.isfile(deployment_file):
+                os.remove(deployment_file)
+        else:
+            self._generate_deployment_file(schema, deployment_file, deployment)
 
     #
     # Private class internals
@@ -592,7 +669,7 @@ class Wizard(object):
 
         self._print(self._get_field(data, "vsd_fqdn_msg"))
 
-        vsd_fqdn = self._input("VSD FQDN (we'll add .%s)?" % dns_domain,
+        vsd_fqdn = self._input("VSD FQDN (we'll add .%s)" % dns_domain,
                                vsd_fqdn_default)
 
         if not vsd_fqdn.endswith(dns_domain):
@@ -667,6 +744,16 @@ class Wizard(object):
             deployment["access_bridge"] = access_bridge
             self.state["access_bridge"] = access_bridge
 
+    def _setup_target_server_type(self):
+        if "target_server_type" in self.state:
+            return
+
+        server_type = self._input("Hypervisor server type", 0,
+                                  TARGET_SERVER_TYPE_LABELS)
+
+        self.state["target_server_type"] = TARGET_SERVER_TYPE_VALUES[
+            server_type]
+
     def _generate_deployment_file(self, schema, output_file, deployment):
         # Import here because setup may not have been run at the start
         # up of the wizard and the library may not be present
@@ -677,7 +764,12 @@ class Wizard(object):
                 "Cannot write deployment files because libraries are missing."
                 "  Please make sure metro-setup.sh has been run.")
             return
+        if type(deployment) == list:
+            deployment = {schema: deployment}
         deployment["generator_script"] = "Wizard"
+        if "target_server_type" in self.state:
+            deployment["show_target_server_type"] = (
+                self.state["target_server_type"])
         gen_example = ExampleFileGenerator(False, True)
         example_lines = gen_example.generate_example_from_schema(
             os.path.join("schemas", schema + ".json"))
@@ -687,6 +779,157 @@ class Wizard(object):
             file.write(rendered.encode("utf-8"))
 
         self._print("\nWrote deployment file: " + output_file)
+
+    def _get_number_components(self, deployment, data):
+        ha_amount = self._get_field(data, "ha_amount")
+        deploy_amount = len(deployment)
+
+        default = 0
+        if deploy_amount == 1:
+            default = 1
+
+        choice = self._input("Deployment type", default, [
+            "(h)igh-availability cluster",
+            "(s)tand-alone",
+            "(n)one"])
+
+        if choice == 0:
+            return ha_amount
+        elif choice == 1:
+            return 1
+        else:
+            return 0
+
+    def _setup_hostname(self, deployment, i, item_name):
+
+        dns_domain = None
+        dns_message = ""
+        if "dns_domain" in self.state:
+            dns_domain = self.state["dns_domain"]
+            dns_message = " (we'll add .%s)" % dns_domain
+
+        default = None
+        component = deployment[i]
+        if "hostname" in component:
+            default = component["hostname"]
+        else:
+            default = item_name.lower() + str(i + 1)
+
+        hostname = self._input("Hostname%s" % dns_message, default)
+
+        if dns_domain is not None and not hostname.endswith(dns_domain):
+            hostname += "." + dns_domain
+
+        component["hostname"] = hostname
+        return hostname
+
+    def _setup_ip_addresses(self, deployment, i, hostname):
+        component = deployment[i]
+
+        mgmt_ip = self._setup_mgmt_address(component, hostname)
+        self._setup_mgmt_prefix(component)
+        self._setup_mgmt_gateway(component, mgmt_ip)
+        self._setup_target_server(component)
+
+    def _setup_mgmt_address(self, component, hostname):
+
+        default = self._resolve_hostname(hostname)
+        if (default is None and "mgmt_ip" in component and
+                component["mgmt_ip"] != ""):
+            default = component["mgmt_ip"]
+
+        mgmt_ip = self._input("Management IP address", default)
+        component["mgmt_ip"] = mgmt_ip
+        return mgmt_ip
+
+    def _setup_mgmt_prefix(self, component):
+
+        default = "24"
+        if "mgmt_ip_prefix" in component:
+            default = str(component["mgmt_ip_prefix"])
+
+        mgmt_ip_prefix = self._input("Management IP address prefix length",
+                                     default)
+        component["mgmt_ip_prefix"] = mgmt_ip_prefix
+        return mgmt_ip_prefix
+
+    def _setup_mgmt_gateway(self, component, mgmt_ip):
+
+        if "mgmt_gateway" in self.state:
+            default = self.state["mgmt_gateway"]
+        elif "mgmt_gateway" in component and component["mgmt_gateway"] != "":
+            default = component["mgmt_gateway"]
+        else:
+            octets = mgmt_ip.split(".")
+            octets.pop()
+            octets.append("1")
+            default = ".".join(octets)
+
+        mgmt_gateway = self._input("Management IP gateway", default)
+        component["mgmt_gateway"] = mgmt_gateway
+        self.state["mgmt_gateway"] = mgmt_gateway
+        return mgmt_gateway
+
+    def _setup_target_server(self, component):
+
+        if "target_server" in self.state:
+            default = self.state["target_server"]
+        elif "target_server" in component and component["target_server"] != "":
+            default = component["target_server"]
+        else:
+            default = None
+
+        target_server = self._input("Target server (hypervisor) IP", default)
+        component["target_server"] = target_server
+        self.state["target_server"] = target_server
+
+        if "all_target_servers" not in self.state:
+            self.state["all_target_servers"] = list()
+
+        if target_server not in self.state["all_target_servers"]:
+            self.state["all_target_servers"].append(target_server)
+
+        return target_server
+
+    def _resolve_hostname(self, hostname):
+        try:
+            rc, output_lines = self._run_shell(
+                "getent hosts %s" % hostname)
+            if rc == 0:
+                self._print("")
+                return output_lines[0].split(" ")[0]
+            else:
+                self._print(
+                    "\nCould not resolve %s to an IP address, this is required"
+                    " for MetroÆ to operate.  Is the hostname defined in "
+                    "DNS?" % hostname)
+        except Exception as e:
+            self._print("\nAn error occurred while resolving hostname: " +
+                        str(e))
+            self._print("Please contact: " + METROAE_CONTACT)
+
+        return None
+
+    def _setup_vmname(self, deployment, i, hostname):
+        component = deployment[i]
+
+        dns_domain = None
+        if "dns_domain" in self.state:
+            dns_domain = self.state["dns_domain"]
+
+        if "vmname" in component:
+            default = component["vmname"]
+        elif dns_domain is not None and hostname.endswith(dns_domain):
+            default = hostname[0:-len(dns_domain) - 1]
+        else:
+            default = hostname
+
+        vmname = self._input("VM name", default)
+        component["vmname"] = vmname
+
+        default = "new-" + vmname
+        upgrade_vmname = self._input("Upgrade VM name", default)
+        component["upgrade_vmname"] = upgrade_vmname
 
 
 def main():
