@@ -12,32 +12,46 @@
       api_version: v5_0
   no_log: True
 
-- name: Adding basic license
-  connection: local
-  nuage_vspk:
-    auth: "{{ vspk_auth }}"
-    state: present
-    type: License
-    properties:
-      license: "{{ lookup('file', vsd_license_file) }}"
-  ignore_errors: yes
-  register: vsd_license_output
+- block:
+
+  - name: Adding basic license
+    connection: local
+    nuage_vspk:
+      auth: "{{ vspk_auth }}"
+      state: present
+      type: License
+      properties:
+        license: "{{ lookup('file', vsd_license_file) }}"
+    ignore_errors: yes
+    register: vsd_license_output
+
+  - debug: var=vsd_license_output
+
+  - name: Assert that failure was due to license already present
+    assert:
+    that: "vsd_license_output.failed == 'false' or vsd_license_output.msg | search('The license already exists in the system')"
+    msg: "Failure in adding basic license to VSD"
+
   when: vsd_license_file is defined and inventory_hostname == node_for_license_install
 
-- debug: var=vsd_license_output
+- block:
 
-- name: Assert that failure was due to license already present
-  assert:
-   that: "vsd_license_output.msg | search('The license already exists in the system')"
-   message: "Failure in adding basic license to VSD"
+  - name: Adding cluster license
+    connection: local
+    nuage_vspk:
+      auth: "{{ vspk_auth }}"
+      type: License
+      state: present
+      properties:
+        license: "{{ lookup('file', vsd_cluster_license_file) }}"
+    ignore_errors: yes
+    register: vsd_cluster_license_output
 
-- name: Adding cluster license
-  connection: local
-  nuage_vspk:
-    auth: "{{ vspk_auth }}"
-    type: License
-    state: present
-    properties:
-      license: "{{ lookup('file', vsd_cluster_license_file) }}"
-  ignore_errors: yes
+  - debug: var=vsd_cluster_license_output
+
+  - name: Assert that failure was due to license already present
+    assert:
+    that: "vsd_cluster_license_output.failed == 'false' or vsd_cluster_license_output.msg | search('The license already exists in the system')"
+    msg: "Failure in adding basic license to VSD"
+
   when: vsd_cluster_license_file is defined and inventory_hostname == node_for_license_install
