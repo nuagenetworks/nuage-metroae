@@ -87,11 +87,14 @@ WIZARD_SCRIPT = """
       installed/upgraded can keep their times synchronized.
     bridge_setup_msg: |
 
-      We will now configure network bridges.  Network bridges are required on
-      the target server hypervisors for each of the VSP components to
-      communicate with each other and to the outside. MetroÆ will not create
-      these so they will need to be defined before-hand.  There are up to three
-      bridges that can be defined:
+      Network bridges are required on vCenter and KVM target server hypervisors.
+      A network bridge will be a Distributed Virtual PortGroup (DVPG) when
+      deploying on vCenter or a Linux network bridge when deploying on KVM. VSP
+      component interfaces will be connected to these bridges so that they can
+      communicate with each other and to the outside. MetroÆ will not create the
+      bridges for you. You must create and configure them ahead of time.
+      
+      There are up to three bridges that can be defined:
 
       mgmt_bridge: Management network.
       data_bridge: Internal data network.
@@ -99,9 +102,10 @@ WIZARD_SCRIPT = """
 
 - step: VSD deployment file
   description: |
-      This step will create or read an existing vsds.yml deployment file and
-      begin filling it out.  This file provides parameters for the Virtualized
-      Services Directories (VSDs)
+      This step will create or modify the vsds.yml file in your deployment. This
+      file provides parameters for the Virtualized Services Directories (VSDs)
+      in your deployment. This step is only required if you are working with
+      VSDs in your deployment.
   create_component:
     schema: vsds
     ha_amount: 3
@@ -109,9 +113,10 @@ WIZARD_SCRIPT = """
 
 - step: VSC deployment file
   description: |
-      This step will create or read an existing vscs.yml deployment file and
-      begin filling it out.  This file provides parameters for the Virtualized
-      Services Controllers (VSCs)
+      This step will create or modify the vscs.yml file in your deployment. This
+      file provides parameters for the Virtualized Services Controllers (VSCs)
+      in your deployment. This step is only required if you are working with
+      VSCs in your deployment.
   create_component:
     schema: vscs
     ha_amount: 2
@@ -119,9 +124,10 @@ WIZARD_SCRIPT = """
 
 - step: VSTAT deployment file
   description: |
-      This step will create or read an existing vstats.yml deployment file and
-      begin filling it out.  This file provides parameters for the VSD
-      Statistics (Elasticsearch) components.
+      This step will create or modify the vstats.yml file in your deployment. This
+      file provides parameters for the VSD Statistics (Elasticsearch) nodes
+      in your deployment. This step is only required if you are working with
+      VSD Statistics nodes in your deployment.
   create_component:
     schema: vstats
     ha_amount: 3
@@ -129,9 +135,10 @@ WIZARD_SCRIPT = """
 
 - step: Setup SSH on target servers
   description: |
-      This step will setup password-less SSH access to the target servers
-      (hypervisors).  MetroÆ must have password-less access to the target
-      servers to configure them.
+      This step will setup password-less SSH access to the KVM target servers
+      (hypervisors) used by your deployment.  MetroÆ must have password-less
+      access to all the KVM target servers you will be accessing using this
+      deployment. If you are not using KVM target servers you may skip this step.
   setup_target_servers: {}
 
 - step: Complete the wizard
