@@ -4,19 +4,25 @@
     lineinfile:
       line: 'path.repo: ["/mnt/nfs/backups"]'
       path: /etc/elasticsearch/elasticsearch.yml
+  - name: Restart elastic search
+    systemd:
+      name: elasticsearch
+      state: restarted
 
   - name: Add snaphost repo
     uri:
       url: http://localhost:9200/_snapshot/{{ repo_name }}
       method: PUT
       status_code: 200
-      data: '{
+      body_format: json
+      body: '{
                 "type": "fs",
                 "settings": {
                   		"compress": true,
-                  		"location": "{{ nfs_backup_location }}"
+                  		"location": "/mnt/nfs/backups"
                 }
             }'
+
 
   - block:
     - name: Add repo name to curator config
