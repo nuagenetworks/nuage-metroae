@@ -18,8 +18,11 @@ WIZARD_SCRIPT = """
 
       Thank you for using MetroÆ!
 
-      This wizard will walk you through the setup process of MetroÆ
-      step-by-step and ensure that all prerequisites are satisfied.
+      This wizard will walk you through the creation or modification
+      of a MetroÆ deployment. We will walk through the process
+      step-by-step. You will also have the option of doing things
+      such as verifying that all prerequisites are satisfied,
+      unzipping Nuage image files, and copying ssh keys to servers.
 
       For assistance please contact: {contact}
 
@@ -31,14 +34,14 @@ WIZARD_SCRIPT = """
 - step: Verify proper MetroÆ installation
   description: |
       This step will verify that the MetroÆ tool has been properly installed
-      with all required libraries present and with proper versions.
+      with all required libraries.
   verify_install:
     missing_msg: |
-
-      There are missing libraries that are required for MetroÆ to operate.
+    
       We would like to run setup to install these.  The command is
-      "sudo ./metro-setup.sh".  This requires sudo access and may ask for root
-      password.
+      "sudo ./metro-setup.sh" if you'd like to run it yourself.
+      Running this command requires sudo access. You may be asked
+      for the sudo password.
 
 - step: Unzip image files
   description: |
@@ -47,37 +50,41 @@ WIZARD_SCRIPT = """
 
       https://support.alcatel-lucent.com/portal/web/support
 
-      For upgrade: Specify the image file versions you are upgrading to.
+      For upgrade: Use the directory that contains the image files you are
+      upgrading to.
   unzip_images: {}
 
 - step: Create/read deployment
   description: |
-      This step will create a starter deployment or read an existing one and
-      begin filling it out.  A deployment is a configuration set for MetroÆ and
-      describes the properties of each component.  There is support for
-      multiple deployments each in their own directory.
+      This step will create a deployment or modify an existing one.
+      A deployment is a configuration set for MetroÆ. It is a collection of
+      files in a deployment directory. The name of the directory is the
+      name of the deployment. The files in the directory describe the
+      properties of each component being installed, upgraded, or configured.
+      MetroÆ supports multiple deployments, each in its own directory.
   create_deployment: {}
 
-- step: Common deployment file, DNS and NTP
+- step: Common deployment parameters
   description: |
-      This step will create or read an existing common.yml deployment file and
-      begin filling it out.  This file provides global parameters for the
-      deployment common to all components.  We will also setup DNS and NTP
-      during this step.
+      This step will create or modify the common.yml file in your deployment.
+      This file provides global parameters that are common to all components
+      in your deployment.
   create_common:
     dns_setup_msg: |
 
-      We will begin setting up DNS.  MetroÆ requires that most components have
-      hostname to ip address DNS mappings defined before running workflows.
-      Having DNS setup before continuing will allow this wizard to
-      auto-discover component IP addresses.
+      MetroÆ requires that most components have hostname-to-ip address DNS
+      mappings defined before running workflows. You can complete this
+      wizard without having DNS setup in your environment, but having DNS
+      setup before continuing will allow this wizard to auto-discover
+      component IP addresses.
     vsd_fqdn_msg: |
+
       Please enter the Fully Qualified Domain Name (FQDN) for the VSD.  If
-      clustered, use the XMPP FQDN, for standalone use the FQDN of the VSD.
+      clustered, use the XMPP FQDN. For standalone, use the FQDN of the VSD.
     ntp_setup_msg: |
 
-      We will now setup NTP.  An NTP server is required for the VSP components
-      being installed/upgraded to keep their times synchronized.
+      VSP components require the use of an NTP server so that components being
+      installed/upgraded can keep their times synchronized.
     bridge_setup_msg: |
 
       We will now configure network bridges.  Network bridges are required on
@@ -196,12 +203,12 @@ class Wizard(object):
     def unzip_images(self, action, data):
         valid = False
         while not valid:
-            zip_dir = self._input("Specify the directory containing the zip "
-                                  "files from OLCS", "")
+            zip_dir = self._input("Please enter the directory that contains your "
+                                  "zip files", "")
 
             if zip_dir == "" or not os.path.exists(zip_dir):
                 choice = self._input(
-                    "Directory not found, would you like to skip unzipping",
+                    "Directory not found. Would you like to skip unzipping",
                     0, ["(Y)es", "(n)o"])
                 if choice != 1:
                     self._print("Skipping unzip step...")
@@ -212,7 +219,7 @@ class Wizard(object):
             else:
                 valid = True
 
-        unzip_dir = self._input("Specify the directory to unzip to")
+        unzip_dir = self._input("Please enter the directory to unzip to")
 
         self.state["nuage_unzipped_files_dir"] = unzip_dir
 
@@ -228,10 +235,10 @@ class Wizard(object):
         valid = False
         while not valid:
             deployment_name = self._input(
-                "Deployment name (will be a directory)", "default")
+                "Please enter the name of the deployment (will be the directory name)", "default")
             if "/" in deployment_name:
                 self._print("\nA deployment name cannot contain a slash "
-                            "as it will be a directory name")
+                            "because it will be a directory name")
             elif " " in deployment_name:
                 self._print("\nA deployment name can contain a space, but it "
                             "will always have to be specified with quotes")
@@ -245,11 +252,11 @@ class Wizard(object):
         found = False
         deployment_dir = os.path.join("deployments", deployment_name)
         if os.path.isdir(deployment_dir):
-            self._print("\nDeployment was found")
+            self._print("\nThe deployment directory was found")
             found = True
         else:
             self._print("")
-            choice = self._input('Create deployment: "%s"?' % deployment_name,
+            choice = self._input('Create deployment directory: "%s"?' % deployment_name,
                                  0, ["(Y)es", "(n)o"])
             if choice == 1:
                 self._print("Skipping deployment creation.")
