@@ -21,7 +21,15 @@
     properties:
       license: "{{ lookup('file', vsd_license_file) }}"
   ignore_errors: yes
+  register: vsd_license_output
   when: vsd_license_file is defined and inventory_hostname == node_for_license_install
+
+- debug: var=vsd_license_output
+
+- name: Assert that failure was due to license already present
+  assert:
+   that: "vsd_license_output.msg | search('The license already exists in the system')"
+   message: "Failure in adding basic license to VSD"
 
 - name: Adding cluster license
   connection: local
