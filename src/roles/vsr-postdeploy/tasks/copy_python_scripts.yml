@@ -6,29 +6,39 @@
 - name: Install pip on RedHat OS family distribution
   local_action:
     module: yum
-    name: "python-pip" 
+    name: "python-pip"
     state: "present"
   when: ansible_os_family == "RedHat"
 
 - name: Install pip on Debian OS family distribution
   local_action:
     module: apt
-    name: "python-pip" 
+    name: "python-pip"
     state: "present"
   when: ansible_os_family == "Debian"
 
 - name: Install pexpect module via pip
-  local_action: 
-    module: pip 
-    name: pexpect 
+  local_action:
+    module: pip
+    name: pexpect
     state: "present"
+
+- name: Wait for VSC ssh to be ready
+  include_role:
+    name: common
+    tasks_from: wait-for-ssh-port
+  vars:
+    ssh_host: "{{ provider_creds.host }}"
+    ssh_password: "{{ provider_creds.password }}"
+    ssh_user: "{{ provider_creds.username }}"
+    check_login: True
 
 # Create directory on SR to store  python policy scripts
 - name: Create directory used for storing python policy scripts
-  sros_command: 
-    commands: 
+  sros_command:
+    commands:
       - 'file md {{ scriptdir }}'
-    provider: "{{ provider_creds }}" 
+    provider: "{{ provider_creds }}"
   delegate_to: localhost
 
 
