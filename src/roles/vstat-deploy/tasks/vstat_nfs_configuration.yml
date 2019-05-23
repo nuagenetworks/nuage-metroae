@@ -4,10 +4,19 @@
     lineinfile:
       line: 'path.repo: ["/mnt/nfs/backups"]'
       path: /etc/elasticsearch/elasticsearch.yml
+
   - name: Restart elastic search
-    systemd:
+    service:
       name: elasticsearch
       state: restarted
+
+
+  - name: Check to see if elasticsearch restarted
+    command: systemctl status elasticsearch
+    register: status
+    until: status.stdout.find("active (running)") != -1
+    retries: 5
+    delay: 10
 
   - name: Add snaphost repo
     uri:
