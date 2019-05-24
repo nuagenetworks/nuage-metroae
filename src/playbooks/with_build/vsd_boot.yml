@@ -1,0 +1,66 @@
+- block:
+
+  - name: Verify that upgrade_vmname is defined if this is an upgrade
+    assert:
+      that: "upgrade_vmname is defined"
+      msg: "upgrade_vmname is required for upgrade"
+
+  - name: Set local variable with upgrade_vmname
+    set_fact:
+      vm_name: "{{ upgrade_vmname }}"
+
+  when: nuage_upgrade | default( False )
+
+- block:
+
+  - name: Verify that vmname is defined
+    assert:
+      that: "vmname is defined"
+      msg: "vmname is required for vsd_predeploy"
+
+  - name: Set local variable with vmname
+    set_fact:
+      vm_name: "{{ vmname }}"
+
+  when: not nuage_upgrade | default( False )
+
+- include_role:
+    name: check-node-running
+
+- name: Display if skipping predeploy
+  debug:
+    msg:
+      - "****************************************************"
+      - "Skipping VSD predeploy because it is already present"
+      - "****************************************************"
+  when: node_present
+
+- block:
+
+  - name: Configure vCenter path and ovftool command
+    include_role:
+      name: common
+      tasks_from: configure-ovftool
+    vars:
+      management_network: "VM Network"
+
+  - name: Deploy VSD image on vCenter (Can take several minutes)
+    connection: local
+    no_log: true
+    shell: >-
+      {{ ovftool_command }}
+      "vi://{{ vcenter.username | urlencode }}:{{ vcenter.password | urlencode }}@{{ vcenter_path }}"
+
+
+  - name: Waiting until VMware tools becomes available
+    connection: local
+    vmware_guest_tools_wait:
+      hostname: "{{ target_server }}"
+      username: "{{ vcenter.username }}"
+      password: "{{ vcenter.password }}"
+      name: "{{ vm_name }}"
+      datacenter: "{{ vcenter.datacenter }}"
+      validate_certs: no
+    register: vm_facts
+
+  - debug: var=vm_facts verbosity=1
