@@ -2,7 +2,7 @@
   set_fact:
     node_for_license_install: "{{ (vsd_sa_or_ha is match('ha')) | ternary(third_cluster_node_to_install, inventory_hostname) }}"
 
-- name: Format VSD auth for VSPK module
+- name: Format VSPK auth for VSPK module
   set_fact:
     vspk_auth:
       api_username: "{{ vsd_auth.username }}"
@@ -26,8 +26,6 @@
     no_log: true
     register: vsd_license_output
 
-  - debug: var=vsd_license_output
-
   - name: Assert that failure was due to license already present
     assert:
       that: "vsd_license_output.failed == false or vsd_license_output.msg | search('The license already exists in the system')"
@@ -48,8 +46,6 @@
     ignore_errors: yes
     no_log: true
     register: vsd_cluster_license_output
-
-  - debug: var=vsd_cluster_license_output
 
   - name: Assert that failure was due to license already present
     assert:
