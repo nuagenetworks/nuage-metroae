@@ -26,7 +26,7 @@ MENU+=(',ui,encryption,disable'     'Disable HTTP encryption for the MetroÆ GUI
 #################################################################################
 
 MENU+=(',container'                 'Manage the MetroÆ container'                              'container'    ''                        '')
-MENU+=(',container,pull'            'Pull a new MetroÆ image from the repository'              'container'    'pull'                    ',container')
+MENU+=(',container,pull'            'Pull a new MetroÆ image from the registry'              'container'    'pull'                    ',container')
 MENU+=(',container,setup'           'Setup the mertroae container'                              'container'    'setup'                   ',container')
 MENU+=(',container,start'           'Start the mertroae container'                              'container'    'start'                   ',container')
 MENU+=(',container,stop'            'Stop the mertroae container'                               'container'    'stop'                    ',container')
@@ -169,7 +169,7 @@ function check_for_prerequisite {
                 echo "The MetroÆ container has not been setup. Do you want to set it up now? (Yes/no)"
                 while [[ $confirmation != "yes" ]] && [[ $confirmation  != "no" ]] && [[ $confirmation  != "y" ]] && [[ $confirmation != "n" ]]
                 do
-                    read -p "MetroÆ was run outside of a local clone of the nuage-metro repo and the MetroÆ container is not running. Do you want to setup a container (yes/no): " confirmation
+                    read -p "MetroÆ was run outside of a local copy of the nuage-metro repo and the MetroÆ container is not running. Do you want to setup a container (yes/no): " confirmation
                 done
 
                 if [[ $confirmation == "yes" ]] || [[ $confirmation == "y" ]]; then
@@ -191,7 +191,7 @@ function print_version_and_exit {
     elif [[ $RUN_MODE == "REPO" ]]; then
         if [[ ! ${MATCH_MENU[0]} =~ ",container*" ]] && [[ ! ${MATCH_MENU[0]} =~ ",config*" ]] && [[ ! ${MATCH_MENU[0]} =~ ",ui*" ]]; then
             if [[ -f $SCRIPT_LOG_FILE ]] && [[ -z $GROUP_CHECK ]]; then
-                echo "Run from MetroÆ repo version $METROAE_VERSION" | tee -a $SCRIPT_LOG_FILE
+                echo "Run from a local copy of the MetroÆ repo version $METROAE_VERSION" | tee -a $SCRIPT_LOG_FILE
             fi
         fi
     fi
@@ -1519,7 +1519,15 @@ function main_help {
         get_running_container_id
         get_container_id
         if [[ -z $RUNNING_CONTAINER_ID ]] && [[ -z $CONTAINER_ID ]]; then
-            echo "Neither MetroÆ repo nor container found, please run 'metroae container setup'"
+            echo ""
+            echo "It looks like you are trying to run the MetroÆ container because"
+            echo "this command was executed from a directory other than a local"
+            echo "copy of the MetroÆ repo. The MetroÆ container was not found. To"
+            echo "configure the MetroÆ continer, please run 'metroae container setup'."
+            echo "To run from a local copy of the MetroÆ repo, change directory to"
+            echo "the root of that local copy and try again. If you need to create"
+            echo "a local copy of the MetroÆ repo, check"
+            echo "https://github.com/nuagenetworks/nuage-metro for details."
         fi
     fi
 }
