@@ -290,25 +290,10 @@
     command: /opt/vsd/bin/ejmode allow -y
     when: not deploy_vcin
 
-  - block:
-
-    - name: Set Node for VSD license application
-      set_fact:
-        node_for_license_install: "{{ (vsd_sa_or_ha | match('ha')) | ternary(third_cluster_node_to_install, inventory_hostname) }}"
-
-    - name: Apply VSD standard license
-      apply_vsd_license:
-        vsd_license_file: "{{ vsd_standard_license_file }}"
-        vsd_auth: "{{ vsd_auth }}"
-      delegate_to: localhost
-      when: vsd_standard_license_file is defined and inventory_hostname == node_for_license_install
-
-    - name: Apply VSD cluster license
-      apply_vsd_license:
-        vsd_license_file: "{{ vsd_cluster_license_file }}"
-        vsd_auth: "{{ vsd_auth }}"
-      delegate_to: localhost
-      when: vsd_cluster_license_file is defined and inventory_hostname == node_for_license_install
+  - name: Apply licenses to VSD
+    include_role:
+      name: common
+      tasks_from: apply-licenses-to-vsd
 
   remote_user: "{{ vsd_default_username }}"
 
@@ -328,5 +313,3 @@
     - vstats is defined
     - not skip_vsd_deploy
     - target_server_type | match("nuagex")
-
-- import_tasks: vsd_security_hardening.yml
