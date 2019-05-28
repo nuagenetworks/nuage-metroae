@@ -1,7 +1,30 @@
 ---
 - hosts: vsds
   gather_facts: no
+
   tasks:
+    - name: Check if VSD prereq satisfied for predeploy
+      include_role:
+        name: common
+        tasks_from: check-predeploy-prereq
+
+    - include_role:
+        name: check-node-reachability
+
+    - name: Get VSD directory stat
+      stat:
+        path: /opt/vsd
+      remote_user: "{{ vsd_default_username }}"
+      register: vsd_dir
+      when: node_reachable
+
+    - name: Set fact for VSD present
+      set_fact:
+        node_present: "{{ vsd_dir is defined and
+                          vsd_dir.stat is defined and
+                          vsd_dir.stat.isdir is defined and
+                          vsd_dir.stat.isdir }}"
+
     - block:
 
       - name: Verify that upgrade_vmname is defined if this is an upgrade
