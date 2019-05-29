@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import glob
 import os
 import subprocess
 import sys
@@ -37,7 +38,7 @@ WIZARD_SCRIPT = """
       with all required libraries.
   verify_install:
     missing_msg: |
-    
+
       We would like to run setup to install these.  The command is
       "sudo ./metro-setup.sh" if you'd like to run it yourself.
       Running this command requires sudo access. You may be asked
@@ -87,63 +88,86 @@ WIZARD_SCRIPT = """
       installed/upgraded can keep their times synchronized.
     bridge_setup_msg: |
 
-      Network bridges are required on vCenter and KVM target server hypervisors.
-      A network bridge will be a Distributed Virtual PortGroup (DVPG) when
-      deploying on vCenter or a Linux network bridge when deploying on KVM. VSP
-      component interfaces will be connected to these bridges so that they can
-      communicate with each other and to the outside. MetroÆ will not create the
-      bridges for you. You must create and configure them ahead of time.
-      
+      Network bridges are required on vCenter and KVM target server
+      hypervisors. A network bridge will be a Distributed Virtual PortGroup
+      (DVPG) when deploying on vCenter or a Linux network bridge when deploying
+      on KVM. VSP component interfaces will be connected to these bridges so
+      that they can communicate with each other and to the outside. MetroÆ will
+      not create the bridges for you. You must create and configure them ahead
+      of time.
+
       There are up to three bridges that can be defined:
 
       mgmt_bridge: Management network.
       data_bridge: Internal data network.
       access_bridge: External network.
 
+- step: Setup upgrade parameters
+  description: |
+      This step will create or modify the upgrade.yml file in your deployment.
+      If you will not be doing an upgrade, this step can be skipped.
+  create_upgrade:
+    upgrade_msg: |
+
+      MetroÆ needs the version number that your deployment is currently
+      running and which version to upgrade to.
+
 - step: VSD deployment file
   description: |
-      This step will create or modify the vsds.yml file in your deployment. This
-      file provides parameters for the Virtualized Services Directories (VSDs)
-      in your deployment. This step is only required if you are working with
-      VSDs in your deployment.
+      This step will create or modify the vsds.yml file in your deployment.
+      This file provides parameters for the Virtualized Services Directories
+      (VSDs) in your deployment. This step is only required if you are working
+      with VSDs in your deployment.
   create_component:
     schema: vsds
     ha_amount: 3
     item_name: VSD
+    upgrade_vmname: true
 
 - step: VSC deployment file
   description: |
-      This step will create or modify the vscs.yml file in your deployment. This
-      file provides parameters for the Virtualized Services Controllers (VSCs)
-      in your deployment. This step is only required if you are working with
-      VSCs in your deployment.
+      This step will create or modify the vscs.yml file in your deployment.
+      This file provides parameters for the Virtualized Services Controllers
+      (VSCs) in your deployment. This step is only required if you are working
+      with VSCs in your deployment.
   create_component:
     schema: vscs
     ha_amount: 2
     item_name: VSC
+    upgrade_vmname: false
 
 - step: VSTAT deployment file
   description: |
-      This step will create or modify the vstats.yml file in your deployment. This
-      file provides parameters for the VSD Statistics (Elasticsearch) nodes
-      in your deployment. This step is only required if you are working with
-      VSD Statistics nodes in your deployment.
+      This step will create or modify the vstats.yml file in your deployment.
+      This file provides parameters for the VSD Statistics (Elasticsearch)
+      nodes in your deployment. This step is only required if you are working
+      with VSD Statistics nodes in your deployment.
   create_component:
     schema: vstats
     ha_amount: 3
     item_name: VSTAT
+    upgrade_vmname: true
 
 - step: Setup SSH on target servers
   description: |
       This step will setup password-less SSH access to the KVM target servers
       (hypervisors) used by your deployment.  MetroÆ must have password-less
       access to all the KVM target servers you will be accessing using this
-      deployment. If you are not using KVM target servers you may skip this step.
+      deployment. If you are not using KVM target servers you may skip this
+      step.
   setup_target_servers: {}
 
-- step: Complete the wizard
-  message:
-    text: |
+- complete_wizard:
+    problem_msg: |
+
+        The following problems have occurred during the wizard.  These may
+        cause MetroÆ to function incorrectly.  It is recommended that you
+        correct these and repeat any steps affected.
+    finish_msg: |
+
+        All steps of the wizard have been performed.  You can use (b)ack to
+        repeat previous steps or (Q)uit to exit the wizard.
+    complete_msg: |
 
       The wizard is complete!
 
@@ -158,6 +182,7 @@ class Wizard(object):
 
     def __init__(self, script=WIZARD_SCRIPT):
         self.state = dict()
+        self.current_action_idx = 0
         self.progress_display_count = 0
         self.progress_display_rate = 1
 
@@ -196,8 +221,12 @@ class Wizard(object):
         missing.extend(yum_missing)
 
         if len(missing) == 0:
+            self._unrecord_problem("install_libraries")
             self._print("\nMetroÆ Installation OK!")
         else:
+            self._record_problem(
+                "install_libraries",
+                "Your MetroÆ installation is missing libraries")
             self._print("\nYour MetroÆ installation is missing libraries:\n")
             self._print("\n".join(missing))
             self._print(self._get_field(data, "missing_msg"))
@@ -210,8 +239,8 @@ class Wizard(object):
     def unzip_images(self, action, data):
         valid = False
         while not valid:
-            zip_dir = self._input("Please enter the directory that contains your "
-                                  "zip files", "")
+            zip_dir = self._input("Please enter the directory that contains "
+                                  "your zip files", "")
 
             if zip_dir == "" or not os.path.exists(zip_dir):
                 choice = self._input(
@@ -242,7 +271,8 @@ class Wizard(object):
         valid = False
         while not valid:
             deployment_name = self._input(
-                "Please enter the name of the deployment (will be the directory name)", "default")
+                "Please enter the name of the deployment (will be the "
+                "directory name)", "default")
             if "/" in deployment_name:
                 self._print("\nA deployment name cannot contain a slash "
                             "because it will be a directory name")
@@ -263,7 +293,8 @@ class Wizard(object):
             found = True
         else:
             self._print("")
-            choice = self._input('Create deployment directory: "%s"?' % deployment_name,
+            choice = self._input('Create deployment directory: "%s"?' %
+                                 deployment_name,
                                  0, ["(Y)es", "(n)o"])
             if choice == 1:
                 self._print("Skipping deployment creation.")
@@ -304,6 +335,33 @@ class Wizard(object):
 
         self._generate_deployment_file("common", deployment_file, deployment)
 
+    def create_upgrade(self, action, data):
+        self._print("")
+        choice = self._input("Will you be performing an upgrade?", 0,
+                             ["(Y)es", "(N)o"])
+        if choice == 1:
+            if "upgrade" in self.state:
+                del self.state["upgrade"]
+            self._print("Skipping step...")
+            return
+
+        self.state["upgrade"] = True
+
+        deployment_dir = self._get_deployment_dir()
+        if deployment_dir is None:
+            return
+
+        deployment_file = os.path.join(deployment_dir, "upgrade.yml")
+        if os.path.isfile(deployment_file):
+            deployment = self._read_deployment_file(deployment_file)
+        else:
+            self._print(deployment_file + " not found. It will be created.")
+            deployment = dict()
+
+        self._setup_upgrade(deployment, data)
+
+        self._generate_deployment_file("upgrade", deployment_file, deployment)
+
     def create_component(self, action, data):
         schema = self._get_field(data, "schema")
         item_name = self._get_field(data, "item_name")
@@ -337,7 +395,9 @@ class Wizard(object):
 
             hostname = self._setup_hostname(deployment, i, item_name)
 
-            self._setup_vmname(deployment, i, hostname)
+            with_upgrade = (self._get_field(data, "upgrade_vmname") and
+                            "upgrade" in self.state)
+            self._setup_vmname(deployment, i, hostname, with_upgrade)
 
             self._setup_ip_addresses(deployment, i, hostname)
 
@@ -379,6 +439,21 @@ class Wizard(object):
 
         for server in servers:
             self._setup_ssh(username, server)
+
+    def complete_wizard(self, action, data):
+        if self._has_problems():
+            self._print(self._get_field(data, "problem_msg"))
+            self._list_problems()
+
+        self._print(self._get_field(data, "finish_msg"))
+        choice = self._input(None, None, ["(q)uit", "(b)ack"])
+
+        if choice == 1:
+            self.current_action_idx -= 2
+            return
+        else:
+            self._print(self._get_field(data, "complete_msg"))
+            exit(0)
 
     #
     # Private class internals
@@ -508,10 +583,10 @@ class Wizard(object):
             raise Exception("Invalid wizard script format - action not a dict")
 
     def _run_script(self):
-        current_action_idx = 0
+        self.current_action_idx = 0
 
-        while current_action_idx < len(self.script):
-            current_action = self.script[current_action_idx]
+        while self.current_action_idx < len(self.script):
+            current_action = self.script[self.current_action_idx]
             if "step" in current_action:
                 self._display_step(current_action)
                 choice = self._input(None, 0, ["(C)ontinue",
@@ -519,10 +594,10 @@ class Wizard(object):
                                                "(s)kip",
                                                "(q)uit"])
                 if choice == 1:
-                    current_action_idx -= 1
+                    self.current_action_idx -= 1
                     continue
                 if choice == 2:
-                    current_action_idx += 1
+                    self.current_action_idx += 1
                     continue
                 if choice == 3:
                     self._print("Exiting MetroÆ wizard. All progress made has"
@@ -530,7 +605,7 @@ class Wizard(object):
                     exit(0)
 
             self._run_action(current_action)
-            current_action_idx += 1
+            self.current_action_idx += 1
 
     def _display_step(self, action):
         self._print("")
@@ -594,6 +669,27 @@ class Wizard(object):
                     self._print_progress()
 
                 return retcode
+
+    def _record_problem(self, problem_name, problem_descr):
+        if "problems" not in self.state:
+            self.state["problems"] = dict()
+
+        self.state["problems"][problem_name] = problem_descr
+
+    def _unrecord_problem(self, problem_name):
+        if "problems" not in self.state:
+            return
+
+        if problem_name in self.state["problems"]:
+            del self.state["problems"][problem_name]
+
+    def _has_problems(self):
+        return "problems" in self.state and len(self.state["problems"]) != 0
+
+    def _list_problems(self):
+        if self._has_problems():
+            for descr in self.state["problems"].values():
+                self._print(" - " + descr)
 
     def _verify_pip(self):
         try:
@@ -673,15 +769,22 @@ class Wizard(object):
     def _run_unzip(self, zip_dir, unzip_dir):
         cmd = "./nuage-unzip.sh %s %s" % (zip_dir, unzip_dir)
         self._print("Command: " + cmd)
-        self._print("Unzipping %s to %s" % (zip_dir, unzip_dir))
+        self._print("Unzipping files from %s to %s" % (zip_dir, unzip_dir))
+        for f in glob.glob(os.path.join(zip_dir, "*.gz")):
+            self._print(f)
         try:
             rc, output_lines = self._run_shell(cmd)
             if rc != 0:
+                self._record_problem(
+                    "unzip_files", "Unable to unzip files")
                 self._print("\n".join(output_lines))
                 raise Exception("nuage-unzip.sh exit-code: %d" % rc)
 
+            self._unrecord_problem("unzip_files")
             self._print("\nFiles unzipped successfully!")
         except Exception as e:
+            self._record_problem(
+                "unzip_files", "Error occurred while unzipping files")
             self._print("\nAn error occurred while unzipping files: " +
                         str(e))
             self._print("Please contact: " + METROAE_CONTACT)
@@ -803,7 +906,10 @@ class Wizard(object):
         if "target_server_type" in self.state:
             return
 
-        server_type = self._input("Hypervisor server type", 0,
+        self._print("\nPlease choose a target server (hypervisor) type for "
+                    "your deployment.\n")
+
+        server_type = self._input("Target server type", 0,
                                   TARGET_SERVER_TYPE_LABELS)
 
         self.state["target_server_type"] = TARGET_SERVER_TYPE_VALUES[
@@ -815,6 +921,8 @@ class Wizard(object):
         try:
             import jinja2
         except ImportError:
+            self._record_problem(
+                "deployment_create", "Could not create a deployment file")
             self._print(
                 "Cannot write deployment files because libraries are missing."
                 "  Please make sure metro-setup.sh has been run.")
@@ -833,7 +941,31 @@ class Wizard(object):
         with open(output_file, 'w') as file:
             file.write(rendered.encode("utf-8"))
 
+        self._unrecord_problem("deployment_create")
         self._print("\nWrote deployment file: " + output_file)
+
+    def _setup_upgrade(self, deployment, data):
+        self._print(self._get_field(data, "upgrade_msg"))
+
+        if "upgrade_from_version" in deployment:
+            upgrade_from_version_default = deployment["upgrade_from_version"]
+        else:
+            upgrade_from_version_default = None
+
+        upgrade_from_version = self._input("Current running version?",
+                                           upgrade_from_version_default)
+
+        deployment["upgrade_from_version"] = upgrade_from_version
+
+        if "upgrade_to_version" in deployment:
+            upgrade_to_version_default = deployment["upgrade_to_version"]
+        else:
+            upgrade_to_version_default = None
+
+        upgrade_to_version = self._input("Upgrade to version?",
+                                         upgrade_to_version_default)
+
+        deployment["upgrade_to_version"] = upgrade_to_version
 
     def _get_number_components(self, deployment, data):
         ha_amount = self._get_field(data, "ha_amount")
@@ -951,21 +1083,27 @@ class Wizard(object):
             rc, output_lines = self._run_shell(
                 "getent hosts %s" % hostname)
             if rc == 0:
+                self._unrecord_problem("dns_resolve")
                 self._print("")
                 return output_lines[0].split(" ")[0]
             else:
+                self._record_problem(
+                    "dns_resolve", "Could not resolve hostnames with DNS")
+
                 self._print(
                     "\nCould not resolve %s to an IP address, this is required"
                     " for MetroÆ to operate.  Is the hostname defined in "
                     "DNS?" % hostname)
         except Exception as e:
+            self._record_problem(
+                "dns_resolve", "Error while resolving hostnames with DNS")
             self._print("\nAn error occurred while resolving hostname: " +
                         str(e))
             self._print("Please contact: " + METROAE_CONTACT)
 
         return None
 
-    def _setup_vmname(self, deployment, i, hostname):
+    def _setup_vmname(self, deployment, i, hostname, with_upgrade):
         component = deployment[i]
 
         dns_domain = None
@@ -982,9 +1120,10 @@ class Wizard(object):
         vmname = self._input("VM name", default)
         component["vmname"] = vmname
 
-        default = "new-" + vmname
-        upgrade_vmname = self._input("Upgrade VM name", default)
-        component["upgrade_vmname"] = upgrade_vmname
+        if with_upgrade:
+            default = "new-" + vmname
+            upgrade_vmname = self._input("Upgrade VM name", default)
+            component["upgrade_vmname"] = upgrade_vmname
 
     def _setup_ssh(self, username, hostname):
         self._print("Adding SSH keys for %s@%s, may ask for password" % (
@@ -993,14 +1132,19 @@ class Wizard(object):
             rc, output_lines = self._run_shell(
                 "ssh-copy-id %s@%s" % (username, hostname))
             if rc == 0:
+                self._unrecord_problem("ssh_keys")
                 self._print("\nSuccessfully setup SSH on host")
                 return True
             else:
+                self._record_problem(
+                    "ssh_keys", "Could not setup password-less SSH")
                 self._print("\n".join(output_lines))
                 self._print(
                     "\nCould not add SSH keys for %s@%s, this is required"
                     " for MetroÆ to operate." % (username, hostname))
         except Exception as e:
+            self._record_problem(
+                "ssh_keys", "Error while setting up password-less SSH")
             self._print("\nAn error occurred while setting up SSH: " +
                         str(e))
             self._print("Please contact: " + METROAE_CONTACT)
