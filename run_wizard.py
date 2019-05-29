@@ -445,6 +445,8 @@ class Wizard(object):
 
         self._setup_target_server_type()
 
+        self._print("\nPlease enter your %s deployment type\n" % item_name)
+
         amount = self._get_number_components(deployment, data)
         deployment = deployment[0:amount]
 
