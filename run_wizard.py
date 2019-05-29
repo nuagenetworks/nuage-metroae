@@ -58,7 +58,15 @@ WIZARD_SCRIPT = """
 
       For upgrade: Use the directory that contains the image files you are
       upgrading to.
-  unzip_images: {}
+  unzip_images:
+    container_msg: |
+
+      MetroÆ is running in a container.  The zipped image files must be placed
+      under the metroae_images directory mount point of the container.  The
+      mount directory was set during container setup and can be found using
+      the command "metroae container status".  Relative paths must be provided
+      for both the source and destination directories that are relative to the
+      metroae_images mount point.
 
 - step: Create/read deployment
   description: |
@@ -160,7 +168,13 @@ WIZARD_SCRIPT = """
       access to all the KVM target servers you will be accessing using this
       deployment. If you are not using KVM target servers you may skip this
       step.
-  setup_target_servers: {}
+  setup_target_servers:
+    container_msg: |
+
+      MetroÆ is running in a container.  The SSH key being copied to the
+      target servers is the key belonging to the container.  This is different
+      than the key on the Docker host.  The container SSH key can be found in
+      your metroae_data mount directory.
 
 - complete_wizard:
     problem_msg: |
@@ -186,6 +200,8 @@ TARGET_SERVER_TYPE_VALUES = ["kvm", "vcenter", "openstack", "aws"]
 class Wizard(object):
 
     def __init__(self, script=WIZARD_SCRIPT):
+        self._set_container()
+        self._set_directories()
         self.state = dict()
         self.current_action_idx = 0
         self.progress_display_count = 0
@@ -218,7 +234,12 @@ class Wizard(object):
                 self._print("  - " + step["step"])
 
     def verify_install(self, action, data):
-        self._print("\nVerifying MetroÆ installation")
+        self._print(u"\nVerifying MetroÆ installation")
+
+        if self.in_container:
+            self._print("\nWizard is being run inside a Docker container.  "
+                        "No need to verify installation.  Skipping step...")
+            return
 
         if not os.path.isfile("/etc/os-release"):
             self._record_problem("wrong_os", "Unsupported operating system")
@@ -238,12 +259,12 @@ class Wizard(object):
 
         if len(missing) == 0:
             self._unrecord_problem("install_libraries")
-            self._print("\nMetroÆ Installation OK!")
+            self._print(u"\nMetroÆ Installation OK!")
         else:
             self._record_problem(
                 "install_libraries",
-                "Your MetroÆ installation is missing libraries")
-            self._print("\nYour MetroÆ installation is missing libraries:\n")
+                u"Your MetroÆ installation is missing libraries")
+            self._print(u"\nYour MetroÆ installation is missing libraries:\n")
             self._print("\n".join(missing))
             self._print(self._get_field(data, "missing_msg"))
             choice = self._input("Do you want to run setup now?", 0,
@@ -255,23 +276,51 @@ class Wizard(object):
     def unzip_images(self, action, data):
         valid = False
         while not valid:
-            zip_dir = self._input("Please enter the directory that contains "
-                                  "your zip files", "")
+            if self.in_container:
+                self._print(self._get_field(data, "container_msg"))
+                zip_dir = self._input("Please enter the directory relative to "
+                                      "the metroae_images mount point that "
+                                      "contains your zip files", "")
 
-            if zip_dir == "" or not os.path.exists(zip_dir):
+                if zip_dir.startswith("/"):
+                    self._print("\nDirectory must be a relative path.")
+                    continue
+
+                full_zip_dir = os.path.join("/metroae_images", zip_dir)
+            else:
+                zip_dir = self._input("Please enter the directory that "
+                                      "contains your zip files", "")
+                full_zip_dir = zip_dir
+
+            if zip_dir == "" or not os.path.exists(full_zip_dir):
                 choice = self._input(
                     "Directory not found. Would you like to skip unzipping",
                     0, ["(Y)es", "(n)o"])
                 if choice != 1:
                     self._print("Skipping unzip step...")
                     return
-            elif not os.path.isdir(zip_dir):
+            elif not os.path.isdir(full_zip_dir):
                 self._print("%s is not a directory, please enter the directory"
                             " containing the zipped files" % zip_dir)
             else:
                 valid = True
 
-        unzip_dir = self._input("Please enter the directory to unzip to")
+        if self.in_container:
+            valid = False
+            while not valid:
+                unzip_dir = self._input("Please enter the directory relative "
+                                        "to the metroae_images mount point to "
+                                        "unzip to")
+
+                if unzip_dir.startswith("/"):
+                    self._print("\nDirectory must be a relative path.")
+                else:
+                    valid = True
+
+            full_unzip_dir = os.path.join("/metroae_images", unzip_dir)
+        else:
+            unzip_dir = self._input("Please enter the directory to unzip to")
+            full_zip_dir = unzip_dir
 
         self.state["nuage_unzipped_files_dir"] = unzip_dir
 
@@ -279,7 +328,7 @@ class Wizard(object):
             "Unzip %s to %s" % (zip_dir, unzip_dir),
             0, ["(Y)es", "(n)o"])
         if choice == 0:
-            self._run_unzip(zip_dir, unzip_dir)
+            self._run_unzip(full_zip_dir, full_unzip_dir)
         else:
             self._print("Skipping unzip step...")
 
@@ -303,7 +352,8 @@ class Wizard(object):
                 valid = True
 
         found = False
-        deployment_dir = os.path.join("deployments", deployment_name)
+        deployment_dir = os.path.join(self.base_deployment_path,
+                                      deployment_name)
         if os.path.isdir(deployment_dir):
             self._print("\nThe deployment directory was found")
             found = True
@@ -447,6 +497,9 @@ class Wizard(object):
                     " (hypervisors).  This will likely require the SSH"
                     " password for each system would need to be entered.")
 
+        if self.in_container:
+            self._print(self._get_field(data, "container_msg"))
+
         choice = self._input("Setup SSH now?", 0, ["(Y)es", "(N)o"])
 
         if choice == 1:
@@ -476,7 +529,7 @@ class Wizard(object):
     #
 
     def _print(self, msg):
-        print msg
+        print msg.encode("utf-8")
 
     def _print_progress(self):
         if self.progress_display_count % self.progress_display_rate == 0:
@@ -584,6 +637,22 @@ class Wizard(object):
 
         return None
 
+    def _set_container(self):
+        if "RUN_MODE" in os.environ:
+            self.in_container = (os.environ["RUN_MODE"] == "INSIDE")
+        else:
+            self.in_container = False
+
+    def _set_directories(self):
+        self.metro_path = os.path.dirname(os.path.abspath(__file__))
+        os.chdir(self.metro_path)
+        if self.in_container:
+            self.base_deployment_path = os.path.join("/metroae_data",
+                                                     "deployments")
+        else:
+            self.base_deployment_path = os.path.join(self.metro_path,
+                                                     "deployments")
+
     def _validate_actions(self):
         for action in self.script:
             self._validate_action(action)
@@ -616,8 +685,8 @@ class Wizard(object):
                     self.current_action_idx += 1
                     continue
                 if choice == 3:
-                    self._print("Exiting MetroÆ wizard. All progress made has"
-                                " been saved.")
+                    self._print(u"Exiting MetroÆ wizard. All progress made has"
+                                u" been saved.")
                     exit(0)
 
             self._run_action(current_action)
@@ -662,6 +731,7 @@ class Wizard(object):
     def _run_shell(self, cmd_str):
         process = subprocess.Popen(cmd_str,
                                    shell=True,
+                                   cwd=self.metro_path,
                                    stdout=subprocess.PIPE,
                                    stderr=subprocess.STDOUT)
 
@@ -760,7 +830,7 @@ class Wizard(object):
                 raise Exception("metro-setup.sh exit-code: %d" % rc)
 
             self._unrecord_problem("install_libraries")
-            self._print("\nMetroÆ setup completed successfully!")
+            self._print(u"\nMetroÆ setup completed successfully!")
         except Exception as e:
             self._print("\nAn error occurred while running setup: " +
                         str(e))
@@ -1113,9 +1183,9 @@ class Wizard(object):
                     "dns_resolve", "Could not resolve hostnames with DNS")
 
                 self._print(
-                    "\nCould not resolve %s to an IP address, this is required"
-                    " for MetroÆ to operate.  Is the hostname defined in "
-                    "DNS?" % hostname)
+                    u"\nCould not resolve %s to an IP address, this is "
+                    u"required for MetroÆ to operate.  Is the hostname defined"
+                    u" in DNS?" % hostname)
         except Exception as e:
             self._record_problem(
                 "dns_resolve", "Error while resolving hostnames with DNS")
@@ -1162,8 +1232,8 @@ class Wizard(object):
                     "ssh_keys", "Could not setup password-less SSH")
                 self._print("\n".join(output_lines))
                 self._print(
-                    "\nCould not add SSH keys for %s@%s, this is required"
-                    " for MetroÆ to operate." % (username, hostname))
+                    u"\nCould not add SSH keys for %s@%s, this is required"
+                    u" for MetroÆ to operate." % (username, hostname))
         except Exception as e:
             self._record_problem(
                 "ssh_keys", "Error while setting up password-less SSH")
