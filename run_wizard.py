@@ -43,6 +43,11 @@ WIZARD_SCRIPT = """
       "sudo ./metro-setup.sh" if you'd like to run it yourself.
       Running this command requires sudo access. You may be asked
       for the sudo password.
+    wrong_os_msg: |
+
+      The OS is not recognized.  MetroÆ requires a Linux based operating
+      system such as CentOS or Ubuntu.  A docker container version of MetroÆ is
+      available for other operating system types.
 
 - step: Unzip image files
   description: |
@@ -160,13 +165,13 @@ WIZARD_SCRIPT = """
 - complete_wizard:
     problem_msg: |
 
-        The following problems have occurred during the wizard.  These may
+        The following problems have occurred during the wizard.  It may
         cause MetroÆ to function incorrectly.  It is recommended that you
         correct these and repeat any steps affected.
     finish_msg: |
 
         All steps of the wizard have been performed.  You can use (b)ack to
-        repeat previous steps or (Q)uit to exit the wizard.
+        repeat previous steps or (q)uit to exit the wizard.
     complete_msg: |
 
       The wizard is complete!
@@ -214,6 +219,17 @@ class Wizard(object):
 
     def verify_install(self, action, data):
         self._print("\nVerifying MetroÆ installation")
+
+        if not os.path.isfile("/etc/os-release"):
+            self._record_problem("wrong_os", "Unsupported operating system")
+            self._print(self._get_field(data, "wrong_os_msg"))
+
+            choice = self._input("Do you wish to continue anyway?", 0,
+                                 ["(Y)es", "(n)o"])
+
+            if choice == 1:
+                self._print("Quitting wizard...")
+                exit(0)
 
         missing = self._verify_pip()
         yum_missing = self._verify_yum()
@@ -660,14 +676,19 @@ class Wizard(object):
             if retcode is None:
                 line = process.stdout.readline().rstrip("\n")
                 output_lines.append(line)
-                self._print_progress()
+                if "DEBUG_WIZARD" in os.environ:
+                    self._print(line)
+                else:
+                    self._print_progress()
             else:
                 # Flush stdout buffer
                 lines = process.stdout.read()
                 for line in lines.split("\n"):
                     output_lines.append(line)
-                    self._print_progress()
-
+                    if "DEBUG_WIZARD" in os.environ:
+                        self._print(line)
+                    else:
+                        self._print_progress()
                 return retcode
 
     def _record_problem(self, problem_name, problem_descr):
@@ -738,6 +759,7 @@ class Wizard(object):
                 self._print("\n".join(output_lines))
                 raise Exception("metro-setup.sh exit-code: %d" % rc)
 
+            self._unrecord_problem("install_libraries")
             self._print("\nMetroÆ setup completed successfully!")
         except Exception as e:
             self._print("\nAn error occurred while running setup: " +
