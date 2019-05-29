@@ -6,11 +6,10 @@ import os
 import subprocess
 import sys
 import traceback
-import yaml
-
-from generate_example_from_schema import ExampleFileGenerator
 
 METROAE_CONTACT = "devops@nuagenetworks.net"
+
+YAML_LIBRARY = "PyYAML==3.13"
 
 WIZARD_SCRIPT = """
 
@@ -213,6 +212,8 @@ class Wizard(object):
         else:
             self.args = list()
 
+        self._import_yaml()
+        import yaml
         self.script = yaml.safe_load(script)
         self._validate_actions()
 
@@ -639,6 +640,28 @@ class Wizard(object):
 
         return None
 
+    def _import_yaml(self):
+        try:
+            import yaml
+            yaml.safe_load("")
+        except ImportError:
+            self._install_yaml()
+
+    def _install_yaml(self):
+        self._print("This wizard requires PyYAML library to be installed\n")
+        choice = self._input("Install it now?", 0,
+                             ["(Y)es", "(n)o"])
+        if choice == 1:
+            self._print("Please install PyYAML and run the wizard again.")
+            exit(1)
+
+        rc, output_lines = self._run_shell("pip install " + YAML_LIBRARY)
+        if rc != 0:
+            self._print("\n".join(output_lines))
+            self._print("Could not install PyYAML, exit code: %d" % rc)
+            self._print("Please install PyYAML and run the wizard again.")
+            exit(1)
+
     def _set_container(self):
         if "RUN_MODE" in os.environ:
             self.in_container = (os.environ["RUN_MODE"] == "INSIDE")
@@ -901,6 +924,7 @@ class Wizard(object):
 
     def _read_deployment_file(self, deployment_file):
         with open(deployment_file, "r") as f:
+            import yaml
             return yaml.safe_load(f.read().decode("utf-8"))
 
     def _setup_dns(self, deployment, data):
@@ -1014,6 +1038,7 @@ class Wizard(object):
         # up of the wizard and the library may not be present
         try:
             import jinja2
+            from generate_example_from_schema import ExampleFileGenerator
         except ImportError:
             self._record_problem(
                 "deployment_create", "Could not create a deployment file")
