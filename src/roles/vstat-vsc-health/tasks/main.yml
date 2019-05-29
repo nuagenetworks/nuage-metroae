@@ -1,4 +1,14 @@
 ---
+- name: Wait for VSC ssh to be ready
+  include_role:
+    name: common
+    tasks_from: wait-for-ssh-port
+  vars:
+    ssh_host: "{{ vsc_creds.host }}"
+    ssh_password: "{{ vsc_creds.password }}"
+    ssh_user: "{{ vsc_creds.username }}"
+    check_login: True
+
 - name: Get output of 'show vswitch-controller information' on VSC
   sros_command:
     commands:
@@ -10,16 +20,15 @@
 
 - name: Create local variable with VSC system connetion in json
   set_fact:
-    vsc_info_out: "{{ vsc_info.stdout[0] }}" 
+    vsc_info_out: "{{ vsc_info.stdout[0] }}"
 
 
 - name: Check proper connectivity to VSTAT
-  assert: 
+  assert:
     that: "vsc_info_out | regex_search('Statistics Enabled *: True')"
 
-- name: Check if all VSDs are registered 
-  assert: 
+- name: Check if all VSDs are registered
+  assert:
    that:
     - "vsc_info_out  | regex_search('Stats Server [0-9] Address *: {{ hostvars[item].mgmt_ip }}')"
-  with_items: "{{ groups['primary_vsds'] }}" 
-
+  with_items: "{{ groups['primary_vsds'] }}"
