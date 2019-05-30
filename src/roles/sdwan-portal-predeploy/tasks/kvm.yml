@@ -102,6 +102,9 @@
     local_action: command cat "{{ user_ssh_pub_key }}"
     register: current_user_ssh_key
 
+  - name: Show current public key
+    debug: var=user_ssh_pub_key
+
   - name: Get list of partitions
     shell: "guestfish -r -a {{ guestfish_dest }} run : list-filesystems | grep -Ev '(unknown|swap)'"
     register: partitions_list
@@ -182,6 +185,9 @@
 
   - name: Set the SSH not to use DNS
     command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} echo "UseDNS no" >> /etc/ssh/sshd_config
+
+  - name: Disable SELinux 
+    command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} sh "sed -i 's/SELINUX\=enforcing/SELINUX\=permissive/g' /etc/selinux/config"
 
   - name: Define VM
     virt: name={{ vm_name }}
