@@ -648,14 +648,16 @@ class Wizard(object):
             self._install_yaml()
 
     def _install_yaml(self):
-        self._print("This wizard requires PyYAML library to be installed\n")
+        self._print("This wizard requires PyYAML library to be installed."
+                    "  Running this command requires sudo access.  You may be "
+                    "asked for the sudo password.\n")
         choice = self._input("Install it now?", 0,
                              ["(Y)es", "(n)o"])
         if choice == 1:
             self._print("Please install PyYAML and run the wizard again.")
             exit(1)
 
-        rc, output_lines = self._run_shell("pip install " + YAML_LIBRARY)
+        rc, output_lines = self._run_shell("sudo pip install " + YAML_LIBRARY)
         if rc != 0:
             self._print("\n".join(output_lines))
             self._print("Could not install PyYAML, exit code: %d" % rc)
