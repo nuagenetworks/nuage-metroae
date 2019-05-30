@@ -386,6 +386,8 @@ class Wizard(object):
             self._print(deployment_file + " not found. It will be created.")
             deployment = dict()
 
+        self._setup_unzip_dir(deployment)
+
         self._setup_target_server_type()
 
         self._setup_bridges(deployment, data)
@@ -393,12 +395,6 @@ class Wizard(object):
         self._setup_dns(deployment, data)
 
         self._setup_ntp(deployment, data)
-
-        if "nuage_unzipped_files_dir" in self.state:
-            if ("nuage_unzipped_files_dir" not in deployment or
-                    deployment["nuage_unzipped_files_dir"] == ""):
-                deployment["nuage_unzipped_files_dir"] = (
-                    self.state["nuage_unzipped_files_dir"])
 
         self._generate_deployment_file("common", deployment_file, deployment)
 
@@ -982,6 +978,22 @@ class Wizard(object):
 
     def _format_ip_list(self, ip_str):
         return [x.strip() for x in ip_str.split(",")]
+
+    def _setup_unzip_dir(self, deployment):
+        if "nuage_unzipped_files_dir" in self.state:
+            unzip_default = self.state["nuage_unzipped_files_dir"]
+        elif ("nuage_unzipped_files_dir" in deployment and
+              deployment["nuage_unzipped_files_dir"] != ""):
+            unzip_default = deployment["nuage_unzipped_files_dir"]
+        else:
+            unzip_default = None
+
+        unzip_dir = self._input(
+            "Please enter the directory containing unzipped images",
+            unzip_default)
+
+        self.state["nuage_unzipped_files_dir"] = unzip_dir
+        deployment["nuage_unzipped_files_dir"] = unzip_dir
 
     def _setup_bridges(self, deployment, data):
         self._print(self._get_field(data, "bridge_setup_msg"))
