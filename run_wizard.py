@@ -321,7 +321,7 @@ class Wizard(object):
             full_unzip_dir = os.path.join("/metroae_images", unzip_dir)
         else:
             unzip_dir = self._input("Please enter the directory to unzip to")
-            full_zip_dir = unzip_dir
+            full_unzip_dir = unzip_dir
 
         self.state["nuage_unzipped_files_dir"] = unzip_dir
 
