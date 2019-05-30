@@ -160,7 +160,7 @@ function check_for_prerequisite {
                 echo "It looks like you are trying to run the MetroÆ container. One or more MetroÆ config files are missing. Please run ‘metroae container update’ and try again."
                 exit 1
             fi
-        else 
+        else
             if [[ ! -z $RUNNING_CONTAINER_ID ]]; then
                 echo "It looks like you are trying to run the MetroÆ container. One or more config files are missing. Please run ‘metroae container setup’ and try again."
                 exit 1
@@ -298,22 +298,22 @@ function stop {
 function delete_container_id {
     get_container_id
     if [[ -z $CONTAINER_ID ]]; then
-        echo "Metroae container not found. Nothing to do."
+        echo "MetroÆ container not found. Nothing to do."
         return 0
     fi
 
-    echo "Removing MetroÆ container with id $CONTAINER_ID" >> $SCRIPT_LOG_FILE
+    echo "Execute 'docker rm' on the MetroÆ container with id $CONTAINER_ID" >> $SCRIPT_LOG_FILE
 
     set +e
     docker rm $CONTAINER_ID 2>> $SCRIPT_LOG_FILE
 
     if [[ $? -ne 0 ]]; then
-        echo "Attempt to remove the MetroÆ container failed"
+        echo "Attempt to execute 'docker rm' on the MetroÆ container failed"
         return 1
     fi
     set -e
 
-    echo "The MetroÆ container was removed"
+    echo "Execute of 'docker rm' on the MetroÆ container was successful"
 }
 
 function destroy {
@@ -453,18 +453,20 @@ function run {
 
     if [[ -z $IMAGE_ID ]];  then
         set +e
+        echo "We didn't find the MetroÆ container image. Pulling a new container from the repo."
         pull
         status=$?
         set -e
         if [ $status -ne 0 ]
         then
-            echo "Attempt to setup the MetroÆ container failed. Quitting."
+            echo "Attempt to pull the MetroÆ container failed. Quitting."
             return $status
         fi
     else
         get_container_id
 
         set +e
+        echo "Starting the MetroÆ container"
         if [[ -z $CONTAINER_ID ]]; then
             while read -r line; do declare $line; done < $SETUP_FILE
             network_args=""
@@ -488,7 +490,7 @@ function run {
         if [[ $status -ne 0 ]]; then
             echo "Attempt to run the MetroÆ container failed. Quitting."
         else
-            echo "Succesfully started the MetroÆ container"
+            echo "MetroÆ container started successfully"
         fi
         set -e
         return $status
@@ -503,7 +505,10 @@ function setup {
     get_host_operating_system
 
     echo "Setup MetroÆ container..."
-    echo "Root privileges are required and you may be prompted for the sudo password."
+    echo ""
+    echo "Elevated privileges are required for setup. During setup, we may prompt you"
+    echo "for the sudo password."
+    echo ""
 
     if [[ ! -d $INSTALL_FOLDER ]]; then
         sudo mkdir -p $INSTALL_FOLDER
@@ -530,11 +535,21 @@ function setup {
 
 
     if [[ ! -z $CONTAINER_ID ]] || [[ ! -z $RUNNING_CONTAINER_ID ]]; then
-        echo "You already have the MetroÆ container set up. Running setup will destroy the"
-        echo "existing container and create a new one. Your data on disk will be preserved."
-        echo "If you continue, create the new container, and use the same data"
-        echo "mount point, no changes are required. If you change the mount points, however"
-        echo "you will need to copy your existing data to the new mount points."
+        echo ""
+        echo "It looks like the MetroÆ container is already setup. If you want to update"
+        echo "to the latest MetroÆ container version, please quit setup and then run"
+        echo "'metroae container update' to get the latest container while keeping"
+        echo "your current setup and data. Your data on disk will be preserved."
+        echo ""
+        echo "If you want to run setup, the existing MetroÆ container will not be replaced."
+        echo "We will stop the MetroÆ container, reconfigure it according to your inputs,"
+        echo "and restart the existing MetroÆ container with the new configuration."
+        echo ""
+        echo "Note that if you want to re-use your existing deployments on disk after"
+        echo "running setup, you must either specify the same directories when prompted"
+        echo "for input or you must manually copy the files from the existing data locations"
+        echo "on disk to the new locations."
+        echo ""
 
         confirmation="init"
         while [[ $confirmation != "yes" ]] && [[ $confirmation  != "no" ]] && [[ $confirmation  != "y" ]] && [[ $confirmation != "n" ]]
@@ -544,7 +559,9 @@ function setup {
 
 
         if [[ $confirmation != "yes" ]] && [[ $confirmation != "y" ]]; then
-            echo "Setup canceled by user"
+            echo ""
+            echo "Setup canceled"
+            echo ""
             return 1
         fi
     fi
@@ -554,7 +571,9 @@ function setup {
     get_image_id
 
     if [[ -z $IMAGE_ID ]]; then
+        echo ""
         echo "Pulling the existing image"
+        echo ""
         pull
     fi
 
@@ -566,7 +585,8 @@ function setup {
     # Container
 
     if [[ -z $1 ]]; then
-        get_user_path_input "Specify the full path to the directory on the Docker host where the MetroÆ container can access your user data. Setup will create a subdirectory, called metroae_data, in the directory you specify. If the path you specify ends with metroae_data, we will use that subdirectory and not create one."  "MetroÆ container data directory path: " metroae_data
+        echo "Data directory configuration"
+        get_user_path_input "Specify the full path to the directory on the Docker host where the MetroÆ container can access your user data. Setup will create a subdirectory, called metroae_data, in the directory you specify. If the path you specify ends with metroae_data, we will use that subdirectory and not create one."  "Data directory path: " metroae_data
         data_path=$PATH_ARG
     else
         echo "setting data path to passed in parameter $1" | tee -a $SCRIPT_LOG_FILE
@@ -576,10 +596,11 @@ function setup {
     echo METROAE_MOUNT_POINT=$data_path >> $SETUP_FILE
 
     if [[ -z $2 ]]; then
-        get_user_path_input "Specify the full path to the directory on the Docker host where the MetroÆ container can access your Nuage Networks image files. Setup will create a subdirectory, called metroae_images, in the directory you specify. If the path you specify ends with metroae_images, we will use that subdirectory and not create one." "MetroÆ container image directory path: " metroae_images
+        echo "Image directory configuration"
+        get_user_path_input "Specify the full path to the directory on the Docker host where the MetroÆ container can access your Nuage Networks image files. Setup will create a subdirectory, called metroae_images, in the directory you specify. If the path you specify ends with metroae_images, we will use that subdirectory and not create one." "Image directory path: " metroae_images
         images_path=$PATH_ARG
     else
-        echo "Setting MetroÆ container image path to $2" | tee -a $SCRIPT_LOG_FILE
+        echo "Setting image path to $2" | tee -a $SCRIPT_LOG_FILE
         images_path=$2
     fi
 
@@ -591,9 +612,10 @@ function setup {
     else
         confirmation="init"
     fi
+    echo ""
     while [[ $confirmation != "yes" ]] && [[ $confirmation  != "no" ]] && [[ $confirmation  != "y" ]] && [[ $confirmation != "n" ]]
     do
-        read -p "Do you want to setup the ui (yes/no): " confirmation
+        read -p "Do you want to configure the container to run the beta version of the MetroÆ API and GUI? (yes/no): " confirmation
     done
 
 
@@ -625,7 +647,7 @@ function setup {
             load_certificates
             return 0
         fi
-        
+
         is_ui_run=true
     fi
 
@@ -635,15 +657,17 @@ function setup {
     else
         confirmation="init"
     fi
+    echo ""
     while [[ $confirmation != "yes" ]] && [[ $confirmation  != "no" ]] && [[ $confirmation  != "y" ]] && [[ $confirmation != "n" ]]
     do
-        read -p "Do you want to setup VSD configuration support? (yes/no): " confirmation
+        read -p "Do you want to setup the container to run MetroÆ Day-Zero VSD config? (yes/no): " confirmation
     done
 
 
     if [[ $confirmation == "yes" ]] || [[ $confirmation == "y" ]]; then
-        echo "We will use the same directory as MetroÆ data path: " $data_path
-        
+        echo ""
+        echo "MetroÆ Day-Zero VSD config data and docs will be found in the following directory: " $data_path
+
         echo LEVISTATE_MOUNT_POINT=$data_path >> $SETUP_FILE
         is_config_run=true
     fi
@@ -651,13 +675,13 @@ function setup {
     # stop and remove existing container if any
     get_running_container_id
     if [[ ! -z $RUNNING_CONTAINER_ID ]]; then
-        echo "Stopping the existing running container"
+        echo "Stopping the MetroÆ container"
         stop
     fi
 
     get_container_id
     if [[ ! -z $CONTAINER_ID ]]; then
-        echo "Delete the existing container"
+        echo "Running 'docker rm' on the MetroÆ container"
         delete_container_id
     fi
 
@@ -691,6 +715,7 @@ function get_user_path_input {
         echo $1
         echo ""
         read -p "$2" PATH_ARG
+        echo ""
         echo "Checking path for $1" >> $SCRIPT_LOG_FILE
         stat $PATH_ARG >> $SCRIPT_LOG_FILE 2>> $SCRIPT_LOG_FILE
 
