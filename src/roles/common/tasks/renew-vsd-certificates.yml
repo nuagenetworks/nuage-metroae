@@ -1,0 +1,36 @@
+---
+
+- block:
+
+  - name: Renew standalone VSD certificate
+    command: /opt/vsd/bin/vsd-renew-certs.sh
+
+  - name: Restart ejabberd
+    command: monit restart ejabberd
+    when: require or allow tls mode
+
+  when: standalone_vsd
+
+- block:
+
+  - name: Renew primary VSD cert
+    command: /opt/vsd/bin/vsd-renew-certs.sh
+    with_items: vsd1
+
+  - name: Renew other 2 VSD certs
+    command: /opt/vsd/bin/vsd-renew-certs.sh -1 vsd-1.mydomain.com
+    with_items: vsd2 and vsd3
+
+  when: clustered_vsd
+
+- block:
+
+  - name: Renew primary VSD cert
+    command: /opt/vsd/bin/vsd-renew-certs.sh
+    with_items: vsd4
+
+  - name: Renew other 2 VSD certs
+    command: /opt/vsd/bin/vsd-renew-certs.sh -1 vsd-4.mydomain.com
+    with_items: vsd5 and vsd6
+
+  when: standby_cluster
