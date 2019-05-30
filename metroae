@@ -504,11 +504,6 @@ function setup {
     local is_ui_run=false
     get_host_operating_system
 
-    echo "Setup MetroÆ container..."
-    echo ""
-    echo "Elevated privileges are required for setup. During setup, we may prompt you"
-    echo "for the sudo password."
-
     if [[ ! -d $INSTALL_FOLDER ]]; then
         sudo mkdir -p $INSTALL_FOLDER
     fi
@@ -565,6 +560,12 @@ function setup {
         fi
     fi
 
+    echo ""
+    echo "Setup MetroÆ container..."
+    echo ""
+    echo "Elevated privileges are required for setup. During setup, we may prompt you"
+    echo "for the sudo password."
+    
     set +e
 
     get_image_id
@@ -586,7 +587,12 @@ function setup {
     if [[ -z $1 ]]; then
         echo ""
         echo "Data directory configuration"
-        get_user_path_input "Specify the full path to the directory on the Docker host where the MetroÆ container can access your user data. Setup will create a subdirectory, called metroae_data, in the directory you specify. If the path you specify ends with metroae_data, we will use that subdirectory and not create one."  "Data directory path: " metroae_data
+        echo ""
+        echo "Specify the full path to the directory on the Docker host where the MetroÆ"
+        echo "container can access your user data. Setup will create a subdirectory, called"
+        echo "metroae_data, in the directory you specify. If the path you specify ends with"
+        echo "metroae_data, we will use that subdirectory and not create one."
+        get_user_path_input "Data directory path" metroae_data
         data_path=$PATH_ARG
     else
         echo "setting data path to passed in parameter $1" | tee -a $SCRIPT_LOG_FILE
@@ -597,7 +603,13 @@ function setup {
 
     if [[ -z $2 ]]; then
         echo "Image directory configuration"
-        get_user_path_input "Specify the full path to the directory on the Docker host where the MetroÆ container can access your Nuage Networks image files. Setup will create a subdirectory, called metroae_images, in the directory you specify. If the path you specify ends with metroae_images, we will use that subdirectory and not create one." "Image directory path: " metroae_images
+        echo ""
+        echo "Specify the full path to the directory on the Docker host where the MetroÆ"
+        echo "container can access your Nuage Networks image files. Setup will create a"
+        echo "subdirectory, called metroae_images, in the directory you specify. If the path"
+        echo "you specify ends with metroae_images, we will use that subdirectory and not"
+        echo "create one."
+        get_user_path_input "Image directory path" metroae_images
         images_path=$PATH_ARG
     else
         echo "Setting image path to $2" | tee -a $SCRIPT_LOG_FILE
@@ -661,7 +673,7 @@ function setup {
     do
         read -p "Do you want to setup the container to run MetroÆ Day-Zero VSD config? (yes/no): " confirmation
     done
-
+    echo ""
 
     if [[ $confirmation == "yes" ]] || [[ $confirmation == "y" ]]; then
         echo ""
@@ -711,27 +723,26 @@ function get_user_path_input {
     while [[ $valid_path -ne 0 ]]
     do
         echo ""
-        echo $1
+        read -p "$1: " PATH_ARG
         echo ""
-        read -p "$2" PATH_ARG
-        echo ""
-        echo "Checking path for $1" >> $SCRIPT_LOG_FILE
+        echo "Checking path: $1" >> $SCRIPT_LOG_FILE
         stat $PATH_ARG >> $SCRIPT_LOG_FILE 2>> $SCRIPT_LOG_FILE
 
         valid_path=$?
         if [[ $valid_path -ne 0 ]]; then
-            echo "Could not validate path. Please try again."
+            echo "We had a problem validating the path you entered: $PATH_ARG. Please try again."
         fi
 
         # check to see if the path ends with passed in directory
-        if [[ "$PATH_ARG" != *"$3" ]]; then
-            PATH_ARG=${PATH_ARG%/}/$3
+        if [[ "$PATH_ARG" != *"$2" ]]; then
+            PATH_ARG=${PATH_ARG%/}/$2
             mkdir -p $PATH_ARG
         fi
 
     done
+    echo "$1 set to: $PATH_ARG"
+    echo ""
     set -e
-
 }
 
 function upgrade_docker {
