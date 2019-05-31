@@ -153,7 +153,7 @@ function check_for_prerequisite {
         elif [[ -f $SETUP_FILE ]]; then
             while read -r line; do declare $line; done < $SETUP_FILE
             if [[ -z $RUNNING_CONTAINER_ID ]] && [[ ! -z $CONTAINER_ID ]]; then
-                echo "Starting the stopped container"
+                echo ">>> Starting the stopped container"
                 docker start $CONTAINER_ID
             fi
             if [[ ! -f $METROAE_MOUNT_POINT/$PLAYBOOK_MENU ]]; then
@@ -466,7 +466,7 @@ function run {
         get_container_id
 
         set +e
-        echo "Starting the MetroÆ container"
+        echo ">>> Starting the MetroÆ container"
         if [[ -z $CONTAINER_ID ]]; then
             while read -r line; do declare $line; done < $SETUP_FILE
             network_args=""
@@ -486,7 +486,7 @@ function run {
             docker start $CONTAINER_ID
         fi
 
-	    status=$?
+        status=$?
         if [[ $status -ne 0 ]]; then
             echo "Attempt to run the MetroÆ container failed. Quitting."
         else
@@ -500,7 +500,6 @@ function run {
 }
 
 function setup {
-    local is_config_run=false
     local is_ui_run=false
     get_host_operating_system
 
@@ -583,16 +582,42 @@ function setup {
     fi
     set -e
 
-    # Container
+    declare -l setup_type
+    setup_type="init"
+    while [[ $setup_type != "c" ]] && [[ $setup_type != "d" ]] && [[ $setup_type != "b" ]] && [[ $setup_type != "" ]]
+    do
+        echo ""
+        echo "Setup can configure the container to support MetroÆ (c)onfig, MetroÆ (d)eploy,"
+        echo "or (b)oth MetroÆ config and deploy. MetroÆ config is used for day-zero VSD"
+        echo "configuration tasks. MetroÆ deploy is used for installing, upgrading, and"
+        echo "health checking of Nuage VSP components in your environment."
+        echo ""
+        read -p "Do you want to setup MetroÆ config, deploy, or both? (c/d/B): " setup_type
+    done
+
+    if [[ $setup_type == "c" ]]; then
+        echo ""
+        echo ">>> Setup container for MetroÆ config only"
+    elif [[ $setup_type == "d" ]]; then
+        echo ""
+        echo ">>> Setup container for MetroÆ deploy only"
+    else
+        echo ""
+        echo ">>> Setup container for both MetroÆ config and deploy"
+    fi
 
     if [[ -z $1 ]]; then
         echo ""
         echo "Data directory configuration"
         echo ""
-        echo "Specify the full path to the directory on the Docker host where the MetroÆ"
-        echo "container can access your user data. Setup will create a subdirectory, called"
-        echo "metroae_data, in the directory you specify. If the path you specify ends with"
-        echo "metroae_data, we will use that subdirectory and not create one."
+        echo "The MetroÆ container needs access to your user data. It gets access by internally"
+        echo "mounting a directory from the host. We refer to this as the 'data directory'."
+        echo "The data directory is where you will have deployments, templates, documentation,"
+        echo "and other useful files."
+        echo ""
+        echo "Please specify the full path to the data directory on the Docker host. Setup will"
+        echo "make sure that the path ends with 'metroae_data'. If the path you specify does"
+        echo "not end with 'metroae_data', setup willl create it."
         get_user_path_input "Data directory path" metroae_data
         data_path=$PATH_ARG
     else
@@ -602,22 +627,56 @@ function setup {
 
     echo METROAE_MOUNT_POINT=$data_path >> $SETUP_FILE
 
-    if [[ -z $2 ]]; then
-        echo "Image directory configuration"
-        echo ""
-        echo "Specify the full path to the directory on the Docker host where the MetroÆ"
-        echo "container can access your Nuage Networks image files. Setup will create a"
-        echo "subdirectory, called metroae_images, in the directory you specify. If the path"
-        echo "you specify ends with metroae_images, we will use that subdirectory and not"
-        echo "create one."
-        get_user_path_input "Image directory path" metroae_images
-        images_path=$PATH_ARG
-    else
-        echo "Setting image path to $2" | tee -a $SCRIPT_LOG_FILE
-        images_path=$2
+    if [[ $setup_type != "c" ]]; then
+        if [[ -z $2 ]]; then
+            echo "Image directory configuration"
+            echo ""
+            echo "For deployments, the MetroÆ container needs access to the Nuage Networks component"
+            echo "image files, e.g. qcow2, ova, rpm, etc. It gets access by internally mounting"
+            echo "a directory from the host. We refer to this as the 'image directory'."
+            echo "The image directory is where you will copy your image files prior to deployment."
+            echo ""
+            echo "Please specify the full path to the image directory on the Docker host. Setup will"
+            echo "make sure that the path ends with 'metroae_images'. If the path you specify does"
+            echo "not end with 'metroae_images', setup willl create it."
+            get_user_path_input "Image directory path" metroae_images
+            images_path=$PATH_ARG
+        else
+            echo "Setting image path to $2" | tee -a $SCRIPT_LOG_FILE
+            images_path=$2
+        fi
+        echo IMAGES_MOUNT_POINT=$images_path >> $SETUP_FILE
     fi
 
-    echo IMAGES_MOUNT_POINT=$images_path >> $SETUP_FILE
+    # stop and remove existing container if any
+    get_running_container_id
+    if [[ ! -z $RUNNING_CONTAINER_ID ]]; then
+        echo ">>> Stopping the MetroÆ container"
+        stop
+    fi
+
+    get_container_id
+    if [[ ! -z $CONTAINER_ID ]]; then
+        echo ">>> Running 'docker rm' on the MetroÆ container"
+        delete_container_id
+    fi
+
+    # start the container
+    run
+
+    config_status=0
+    if [[ $setup_type != "d" ]]; then
+        #download the templates and sample user data
+        docker_exec_levistate templates update
+        config_status=$?
+    fi
+
+    if [[ $config_status -ne 0 ]]; then
+        echo ""
+        echo "Problem setting up MetroÆ config in the container. Return code: $config_status. Quitting."
+        echo ""
+        return 1
+    fi
 
     # ui
     declare -l gui_confirm
@@ -628,6 +687,7 @@ function setup {
     fi
     while [[ $gui_confirm  != "y" ]] && [[ $gui_confirm != "" ]]
     do
+        echo ""
         read -p "Do you want the container to run the beta of the MetroÆ REST API/GUI? (y/N): " gui_confirm
     done
 
@@ -664,69 +724,64 @@ function setup {
         if [[ $tls_confirm == "y" ]]; then
             echo ""
             echo ">>> Enabling TLS on the REST API/GUI"
-            load_certificates
+            certificate='none'
+            declare -i valid_cert_path
+            while [[ $certificate  == "none" ]]
+            do
+                echo ""
+                read -p "Enter the path to the security certificate file: " certificate
+                echo ""
+                stat $certificate
+                valid_cert_path=$?
+                if [[ $valid_cert_path -ne 0 ]]; then
+                    echo ""
+                    echo "We had a problem validating the path you entered: $PATH_ARG. Please try again."
+                    certificate='none'
+                fi
+            done
+            echo ">>> Using certificate file: $certificate"
+            cp $certificate $data_path/gui_cert
+
+            keyfile='none'
+            declare -i valid_keyfile_path
+            while [[ $keyfile  == "none" ]]
+            do
+                echo ""
+                read -p "Enter the path to the security key file: " keyfile
+                echo ""
+                stat $keyfile
+                valid_keyfile_path=$?
+                if [[ $valid_keyfile_path -ne 0 ]]; then
+                    echo ""
+                    echo "We had a problem validating the path you entered: $keyfile. Please try again."
+                    keyfile='none'
+                fi
+            done
+            echo ">>> Using key file: $keyfile"
+            cp $keyfile $data_path/gui_keyfile
+
+            load_certificates /data/gui_cert /data/gui_keyfile
             return 0
         else
             echo ""
             echo ">>> Not enabling TLS on the REST API/GUI"
         fi
 
-        is_ui_run=true
+        start_ui $7
+        gui_status=$?
+        if [[ $gui_status -ne 0 ]]; then
+            echo ""
+            echo "Problem starting the MetroÆ REST API/GUI in the container. Return code: $gui_status. Quitting."
+            echo ""
+            return 1
+        fi
     else
         echo ""
         echo ">>> MetroÆ REST API/GUI will not be configured"
     fi
-
-    # config
-    declare -l config_confirm
-    if [[ ! -z $6 ]]; then
-        config_confirm=$6
-    else
-        config_confirm="init"
-    fi
     echo ""
-    while [[ $config_confirm  != "y" ]] && [[ $config_confirm != "" ]]
-    do
-        read -p "Do you want to setup the container to run MetroÆ Day-Zero VSD config? (y/N): " config_confirm
-    done
+    echo "MetroÆ container setup complete. Execute 'metroae container status' for status."
     echo ""
-
-    if [[ $config_confirm == "y" ]]; then
-        echo ""
-        echo "MetroÆ Day-Zero VSD config data and docs will be found in the following directory: " $data_path
-        echo LEVISTATE_MOUNT_POINT=$data_path >> $SETUP_FILE
-        is_config_run=true
-    fi
-
-    # stop and remove existing container if any
-    get_running_container_id
-    if [[ ! -z $RUNNING_CONTAINER_ID ]]; then
-        echo "Stopping the MetroÆ container"
-        stop
-    fi
-
-    get_container_id
-    if [[ ! -z $CONTAINER_ID ]]; then
-        echo "Running 'docker rm' on the MetroÆ container"
-        delete_container_id
-    fi
-
-    # First we start the container
-    run
-
-    if [[ $is_ui_run == true ]]; then
-        start_ui $7
-    fi
-
-    status=0
-    if [[ $? -ne 0 ]]; then
-        return 1
-    elif [[ $is_config_run == true ]]; then
-        #download the templates and sample user data
-        docker_exec_levistate templates update
-        status=$?
-    fi
-    return $status
 }
 
 function get_user_path_input {
@@ -1242,29 +1297,9 @@ function ui_status {
 }
 
 function load_certificates {
-    certificate=''
-    if [[ -z $1 ]]; then
-        echo ""
-        read -p "Enter the path to security certificate file: " certificate
-        echo ""
-        echo ">>> Using certificate file: $certificate"
-    else
-        certificate=$1
-    fi
-
-    keyfile=''
-    if [[ -z $2 ]]; then
-        echo ""
-        read -p "Enter the path to the security key file: " keyfile
-        echo ""
-        echo ">>> Using security key file: $keyfile"
-    else
-        keyfile=$2
-    fi
-
     get_running_container_id
 
-    docker_exec_interactive /source/UI.sh loadCertificates $certificate $keyfile $3
+    docker_exec_interactive /source/UI.sh loadCertificates $1 $2 $3
 }
 
 function unzip_files {
