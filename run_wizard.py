@@ -135,6 +135,7 @@ WIZARD_SCRIPT = """
     ha_amount: 3
     item_name: VSD
     upgrade_vmname: true
+    system_ip: false
 
 - step: VSC deployment file
   description: |
@@ -147,6 +148,7 @@ WIZARD_SCRIPT = """
     ha_amount: 2
     item_name: VSC
     upgrade_vmname: false
+    system_ip: true
 
 - step: VSTAT deployment file
   description: |
@@ -159,6 +161,7 @@ WIZARD_SCRIPT = """
     ha_amount: 3
     item_name: VSTAT
     upgrade_vmname: true
+    system_ip: false
 
 - step: Setup SSH on target servers
   description: |
@@ -464,7 +467,8 @@ class Wizard(object):
                             "upgrade" in self.state)
             self._setup_vmname(deployment, i, hostname, with_upgrade)
 
-            self._setup_ip_addresses(deployment, i, hostname)
+            self._setup_ip_addresses(deployment, i, hostname,
+                                     self._get_field(data, "system_ip"))
 
         if amount == 0:
             if os.path.isfile(deployment_file):
@@ -1143,12 +1147,21 @@ class Wizard(object):
         component["hostname"] = hostname
         return hostname
 
-    def _setup_ip_addresses(self, deployment, i, hostname):
+    def _setup_ip_addresses(self, deployment, i, hostname, system_ip):
         component = deployment[i]
 
         mgmt_ip = self._setup_mgmt_address(component, hostname)
         self._setup_mgmt_prefix(component)
         self._setup_mgmt_gateway(component, mgmt_ip)
+        if system_ip:
+            if "system_ip" in component and component["system_ip"] != "":
+                default = component["system_ip"]
+            else:
+                default = None
+
+            system_ip = self._input("System IP address for routing", default)
+            component["system_ip"] = system_ip
+
         self._setup_target_server(component)
 
     def _setup_mgmt_address(self, component, hostname):
