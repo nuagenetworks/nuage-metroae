@@ -5,10 +5,11 @@ set -e
 #                              CONFIG COMMANDS                                  #
 #################################################################################
 
-MENU+=(',config'                   'Configure VSD'                                             'config'      ''                         '')
-MENU+=(',config,help'              'Displays the help text for MetroÆ config'                  'config'      'help'                     ',config')
-MENU+=(',config,version'           'Displays the current MetroÆ config version'                'config'      'version'                  ',config')
-MENU+=(',config,engine,update'     'Update the current MetroÆ container to a new version'      'config'      'upgrade-engine'           ',config')
+MENU+=(',config'                    'Configure VSD'                                            'config'      ''                         '')
+MENU+=(',config,help'               'Displays the help text for levistate'                     'config'      'help'                     ',config')
+MENU+=(',config,version'            'Displays the current levistate version'                   'config'      'version'                  ',config')
+MENU+=(',config,engine,update'      'Update levistate to the latest version'                   'config'      'upgrade-engine'           ',config')
+MENU+=(',config,<positional args>'  'Execute levistate inside the container'                   'config'      'help'                     ',config')
 
 #################################################################################
 #                                 UI COMMANDS                                   #
@@ -1650,6 +1651,17 @@ function container_help {
 function config_help {
     echo "Nuage Networks Metro Automation Engine (MetroÆ) CLI Version:" $METROAE_VERSION
     echo ""
+    echo "MetroÆ config is a tool that you can use to apply and manage day-zero configurations"
+    echo "to a Nuage Networks VSD. MetroÆ config is only available via the MetroÆ container."
+    echo "When invoked, 'metroae config' executes a command inside the container named"
+    echo "'levistate'. It passes everything after 'metroae config' directly to levistate"
+    echo "for processing by the command. levistate has its own execution environment and help"
+    echo "system inside the MetroÆ container. To access the main 'levistate' help, you can"
+    echo "execute 'metroae config help'. This will list the positional arguments that are"
+    echo "supported by levistate. To get additional help from levistate for each positional"
+    echo "argument, execute 'metroae config <positional arguement> -h', e.g."
+    echo "'metroae config create -h'."
+    echo ""
     echo "MetroÆ config usage:"
     echo ""
     print_menu_help "metroae%-50s %-1s\n" $1
@@ -1663,7 +1675,7 @@ function config_help {
     elif [[ $NUM_CLI_ARGS == 1 ]]; then
         docker_exec_levistate -h
     else
-        # Remove the first config
+        # Remove the string "config"
         docker_exec_levistate "${CLI_ARGS[@]:1}"
     fi
 }
