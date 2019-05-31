@@ -14,7 +14,7 @@ MENU+=(',config,engine,update'     'Update the current MetroÆ container to a ne
 #                                 UI COMMANDS                                   #
 #################################################################################
 
-MENU+=(',ui'                        'Manage MetroÆ GUI'                                        'container'   'stop-ui'                  '')
+MENU+=(',ui'                        'Manage MetroÆ GUI'                                        'container'   ''                         '')
 MENU+=(',ui,stop'                   'Stop the MetroÆ GUI'                                      'container'   'stop-ui'                  ',ui')
 MENU+=(',ui,start'                  'Start the MetroÆ GUI'                                     'container'   'start-ui'                 ',ui')
 MENU+=(',ui,status'                 'Get the status of the MetroÆ GUI'                         'container'   'status-ui'                ',ui')
@@ -138,7 +138,7 @@ function try_get_menu {
 function check_for_prerequisite {
     if [[ $RUN_MODE == "INSIDE" ]]; then
         if [[ ! -f /source/nuage-metro/src/$PLAYBOOK_MENU ]]; then
-            echo "One or more MetroÆ config files are missing. Please update your workspace and try again."
+            echo "One or more MetroÆ config files are missing or incomplete. Please update your workspace and try again."
             exit 1
         fi
     else
@@ -146,23 +146,25 @@ function check_for_prerequisite {
         get_running_container_id
         if [[ $RUN_MODE == "REPO" ]]; then
             if [[ ! -f src/$PLAYBOOK_MENU ]]; then
-                echo "One or more MetroÆ config files are missing. Please update your workspace and try again."
+                echo "One or more MetroÆ config files are missing or incomplete. Please update your workspace and try again."
                 exit 1
             fi
         # RUN_MODE is CONTAINER
         elif [[ -f $SETUP_FILE ]]; then
             while read -r line; do declare $line; done < $SETUP_FILE
             if [[ -z $RUNNING_CONTAINER_ID ]] && [[ ! -z $CONTAINER_ID ]]; then
+                echo ""
                 echo ">>> Starting the stopped container"
+                echo ""
                 docker start $CONTAINER_ID
             fi
             if [[ ! -f $METROAE_MOUNT_POINT/$PLAYBOOK_MENU ]]; then
-                echo "It looks like you are trying to run the MetroÆ container. One or more MetroÆ config files are missing. Please run ‘metroae container update’ and try again."
+                echo "It looks like you are trying to run the MetroÆ container. One or more MetroÆ config files are missing or incomplete. Please run ‘metroae container update’ and try again."
                 exit 1
             fi
         else
             if [[ ! -z $RUNNING_CONTAINER_ID ]]; then
-                echo "It looks like you are trying to run the MetroÆ container. One or more config files are missing. Please run ‘metroae container setup’ and try again."
+                echo "It looks like you are trying to run the MetroÆ container. One or more config files are missing or incomplete. Please run ‘metroae container setup’ and try again."
                 exit 1
             else
                 confirmation="init"
@@ -466,21 +468,30 @@ function run_container {
         get_container_id
 
         set +e
+        echo ""
         echo ">>> Starting the MetroÆ container"
+        echo ""
         if [[ -z $CONTAINER_ID ]]; then
             while read -r line; do declare $line; done < $SETUP_FILE
             network_args=""
             get_host_operating_system
             if [[ $OS_RELEASE  -eq $LINUX ]]; then
-                network_args=" --network host"
+                network_args="--network host"
             else
-                network_args=" -p $UI_PORT:5001"
+                network_args="-p $UI_PORT:5001"
+            fi
+            if [[ $SETUP_TYPE  -eq "c" ]]; then
+                mount_args="-v $METROAE_MOUNT_POINT:/metroae_data:Z"
+                levi_args="-e LEVISTATE_CONTAINER=1"
+            else
+                mount_args="-v $METROAE_MOUNT_POINT:/metroae_data:Z -v $IMAGES_MOUNT_POINT:/metroae_images:Z"
+                levi_args=""
             fi
 
             user_name=`whoami`
             group_name=`id -g -n`
 
-            docker run -e RUN_MODE="INSIDE" -e USER_NAME=$user_name -e GROUP_NAME=$group_name -t -d $network_args -v $METROAE_MOUNT_POINT:/metroae_data:Z -v $IMAGES_MOUNT_POINT:/metroae_images:Z --name metroae $METRO_AE_IMAGE:$MAX_CONTAINER_VERSION
+            docker run -e RUN_MODE="INSIDE" -e USER_NAME=$user_name -e GROUP_NAME=$group_name $levi_args -t -d $network_args $mount_args --name metroae $METRO_AE_IMAGE:$MAX_CONTAINER_VERSION
 
         else
             docker start $CONTAINER_ID
@@ -605,6 +616,7 @@ function setup {
         echo ""
         echo ">>> Setup container for both MetroÆ config and deploy"
     fi
+    echo METROAE_SETUP_TYPE=$setup_type > $SETUP_FILE
 
     if [[ -z $1 ]]; then
         echo ""
@@ -657,7 +669,9 @@ function setup {
 
     get_container_id
     if [[ ! -z $CONTAINER_ID ]]; then
+        echo ""
         echo ">>> Running 'docker rm' on the MetroÆ container"
+        echo ""
         delete_container_id
     fi
 
@@ -666,6 +680,9 @@ function setup {
 
     config_status=0
     if [[ $setup_type != "d" ]]; then
+        echo ""
+        echo ">>> Pulling the latest templates and files for MetroÆ config in the container"
+        echo ""
         docker_exec_levistate templates update
         config_status=$?
     fi
@@ -1154,7 +1171,7 @@ function config_main {
     check_for_user_group
 
     if [[ $# -eq 0 ]]; then
-        config_help
+        config_help ",config"
         exit 0
     fi
 
@@ -1171,7 +1188,7 @@ function config_main {
 
             get_running_container_id
             if [[ -z $RUNNING_CONTAINER_ID ]]; then
-                config_help
+                config_help ",config"
             else
                 if [[ $no_arguments -lt 2 ]]; then
                     usage_last=true
@@ -1246,7 +1263,7 @@ function config_main {
     fi
 
     if [[ $usage_last == true ]]; then
-        config_help
+        config_help ",config"
     fi
 
 }
@@ -1374,7 +1391,7 @@ function container_main {
         key=$1
         case $key in
             help|--h|-h|--help|-help)
-            container_help
+            container_help ",container"
             POSITIONAL+=("$1")
             exec=true
             shift
@@ -1639,7 +1656,12 @@ function config_help {
 
     get_running_container_id
     if [[ -z $RUNNING_CONTAINER_ID ]]; then
-        echo "The MetroÆ container is not running. Can't access full help. Please start the container and try again."
+        echo ""
+        echo "The MetroÆ container is not running. Full help text can only be accessed"
+        echo "when the container is running. Please execute 'metroae container start'"
+        echo "and try again."
+    elif [[ $NUM_CLI_ARGS == 1 ]]; then
+        docker_exec_levistate -h
     else
         # Remove the first config
         docker_exec_levistate "${CLI_ARGS[@]:1}"
@@ -1758,6 +1780,7 @@ if [[ $# == 0 ]]; then
 fi
 
 CLI_ARGS=("$@")
+NUM_CLI_ARGS=$#
 
 parse_menu_args "$@"
 
