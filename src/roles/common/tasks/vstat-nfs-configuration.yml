@@ -14,7 +14,6 @@
       name: elasticsearch
       state: restarted
 
-
   - name: Check to see if elasticsearch restarted
     command: systemctl status elasticsearch
     register: status
@@ -41,6 +40,16 @@
                 }
             }'
 
+  - block:
+    - name: Remove exisiting primary cron table entries
+      cron:
+        name: "Job to take snapshot"
+        state: absent
+
+    - name: Remove exisiting backup cron table entries
+      cron:
+        name: "Job to restore snapshot"
+        state: absent
 
   - block:
     - name: Add repo name to curator config
