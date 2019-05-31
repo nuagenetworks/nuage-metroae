@@ -545,23 +545,24 @@ function setup {
         echo "on disk to the new locations."
         echo ""
 
+        declare -l confirmation
         confirmation="init"
-        while [[ $confirmation != "yes" ]] && [[ $confirmation  != "no" ]] && [[ $confirmation  != "y" ]] && [[ $confirmation != "n" ]]
+        while [[ $confirmation != "y" ]] && [[ $confirmation != "n" ]] && [[ $confirmation != "" ]]
         do
-            read -p "Do you want to continue with setup? (yes/no): " confirmation
+            read -p "Do you want to continue with setup? (y/N): " confirmation
         done
 
 
-        if [[ $confirmation != "yes" ]] && [[ $confirmation != "y" ]]; then
+        if [[ $confirmation != "y" ]] ; then
             echo ""
-            echo "Setup canceled"
+            echo ">>> Setup canceled"
             echo ""
             return 1
         fi
     fi
 
     echo ""
-    echo "Setup MetroÆ container..."
+    echo ">>> Setup MetroÆ container"
     echo ""
     echo "Elevated privileges are required for setup. During setup, we may prompt you"
     echo "for the sudo password."
@@ -619,24 +620,28 @@ function setup {
     echo IMAGES_MOUNT_POINT=$images_path >> $SETUP_FILE
 
     # ui
+    declare -l gui_confirm
     if [[ ! -z $3 ]]; then
-        confirmation="$3"
+        gui_confirm="$3"
     else
-        confirmation="init"
+        gui_confirm="init"
     fi
-    while [[ $confirmation != "yes" ]] && [[ $confirmation  != "no" ]] && [[ $confirmation  != "y" ]] && [[ $confirmation != "n" ]]
+    while [[ $gui_confirm  != "y" ]] && [[ $gui_confirm != "" ]]
     do
-        read -p "Do you want to configure the container to run the beta version of the MetroÆ API and GUI? (yes/no): " confirmation
+        read -p "Do you want the container to run the beta of the MetroÆ REST API/GUI? (y/N): " gui_confirm
     done
 
-
-    if [[ $confirmation == "yes" ]] || [[ $confirmation == "y" ]]; then
-
+    if [[ $gui_confirm == "y" ]]; then
+        echo ""
+        echo ">>> Configuring MetroÆ REST API/GUI"
         get_host_operating_system
+        declare -i port
         if [[ $OS_RELEASE -eq $NON_LINUX ]]; then
             if [[ -z $4 ]]; then
                 echo ""
-                read -p "Specify the REST API/GUI access port for the MetroÆ container: " port
+                read -p "Specify the REST API/GUI HTTP port for the MetroÆ container: " port
+                echo ""
+                echo ">>> Configuring REST API/GUI to use port: $port"
             else
                 echo "Setting REST API/GUI access port to $4" | tee -a $SCRIPT_LOG_FILE
                 port=$4
@@ -644,41 +649,51 @@ function setup {
             echo UI_PORT=$port >> $SETUP_FILE
         fi
         # Ask if TLS needs to be setup
+        declare -l tls_confirm
         if [[ ! -z $5 ]]; then
-            confirmation=$5
+            tls_confirm=$5
         else
-            confirmation="init"
+            tls_confirm="init"
         fi
-        while [[ $confirmation != "yes" ]] && [[ $confirmation  != "no" ]] && [[ $confirmation  != "y" ]] && [[ $confirmation != "n" ]]
+        while [[ $tls_confirm  != "y" ]] && [[ $tls_confirm != "" ]]
         do
-            read -p "Do you want to set a security certificate for HTTPS for the MetroÆ container GUI? (yes/no): " confirmation
+            echo ""
+            read -p "Do you want to enable TLS with a security certificate the REST API/GUI? (y/N): " tls_confirm
         done
 
-        if [[ $confirmation == "yes" ]] && [[ $confirmation == "y" ]]; then
+        if [[ $tls_confirm == "y" ]]; then
+            echo ""
+            echo ">>> Enabling TLS on the REST API/GUI"
             load_certificates
             return 0
+        else
+            echo ""
+            echo ">>> Not enabling TLS on the REST API/GUI"
         fi
 
         is_ui_run=true
+    else
+        echo ""
+        echo ">>> MetroÆ REST API/GUI will not be configured"
     fi
 
     # config
+    declare -l config_confirm
     if [[ ! -z $6 ]]; then
-        confirmation=$6
+        config_confirm=$6
     else
-        confirmation="init"
+        config_confirm="init"
     fi
     echo ""
-    while [[ $confirmation != "yes" ]] && [[ $confirmation  != "no" ]] && [[ $confirmation  != "y" ]] && [[ $confirmation != "n" ]]
+    while [[ $config_confirm  != "y" ]] && [[ $config_confirm != "" ]]
     do
-        read -p "Do you want to setup the container to run MetroÆ Day-Zero VSD config? (yes/no): " confirmation
+        read -p "Do you want to setup the container to run MetroÆ Day-Zero VSD config? (y/N): " config_confirm
     done
     echo ""
 
-    if [[ $confirmation == "yes" ]] || [[ $confirmation == "y" ]]; then
+    if [[ $config_confirm == "y" ]]; then
         echo ""
         echo "MetroÆ Day-Zero VSD config data and docs will be found in the following directory: " $data_path
-
         echo LEVISTATE_MOUNT_POINT=$data_path >> $SETUP_FILE
         is_config_run=true
     fi
@@ -740,7 +755,7 @@ function get_user_path_input {
         fi
 
     done
-    echo "$1 set to: $PATH_ARG"
+    echo ">>> $1 set to: $PATH_ARG"
     echo ""
     set -e
 }
@@ -1229,14 +1244,20 @@ function ui_status {
 function load_certificates {
     certificate=''
     if [[ -z $1 ]]; then
+        echo ""
         read -p "Enter the path to security certificate file: " certificate
+        echo ""
+        echo ">>> Using certificate file: $certificate"
     else
         certificate=$1
     fi
 
     keyfile=''
     if [[ -z $2 ]]; then
+        echo ""
         read -p "Enter the path to the security key file: " keyfile
+        echo ""
+        echo ">>> Using security key file: $keyfile"
     else
         keyfile=$2
     fi
