@@ -7,3 +7,10 @@
     search_regex: OpenSSH
     delay: "{{ ssh_delay_seconds | default(5) }}"
     timeout: "{{ ssh_timeout_seconds | default(300) }}"
+
+- name: Check connectivity to the target
+  local_action: 'shell sshpass -p {{ ssh_password }} ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -tt  {{ssh_user}}@{{ssh_host}} '
+  register: ssh_result
+  no_log: True
+  failed_when: not ssh_result.rc == 0
+  when: check_login | default(False)
