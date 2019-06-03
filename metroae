@@ -15,19 +15,19 @@ MENU+=(',config,<positional args>'  'Execute levistate inside the container'    
 #                                 UI COMMANDS                                   #
 #################################################################################
 
-MENU+=(',ui'                        'Manage MetroÆ GUI'                                        'container'   ''                         '')
-MENU+=(',ui,stop'                   'Stop the MetroÆ GUI'                                      'container'   'stop-ui'                  ',ui')
-MENU+=(',ui,start'                  'Start the MetroÆ GUI'                                     'container'   'start-ui'                 ',ui')
-MENU+=(',ui,status'                 'Get the status of the MetroÆ GUI'                         'container'   'status-ui'                ',ui')
-MENU+=(',ui,encryption,enable'      'Enable HTTP encryption for the MetroÆ GUI'                'container'   'enable-ui-encryption'     ',ui')
-MENU+=(',ui,encryption,disable'     'Disable HTTP encryption for the MetroÆ GUI'               'container'   'disable-ui-encryption'    ',ui')
+MENU+=(',ui'                        'Manage MetroAE GUI'                                       'container'   ''                         '')
+MENU+=(',ui,stop'                   'Stop the MetroAE GUI'                                     'container'   'stop-ui'                  ',ui')
+MENU+=(',ui,start'                  'Start the MetroAE GUI'                                    'container'   'start-ui'                 ',ui')
+MENU+=(',ui,status'                 'Get the status of the MetroAE GUI'                        'container'   'status-ui'                ',ui')
+MENU+=(',ui,encryption,enable'      'Enable HTTP encryption for the MetroAE GUI'               'container'   'enable-ui-encryption'     ',ui')
+MENU+=(',ui,encryption,disable'     'Disable HTTP encryption for the MetroAE GUI'              'container'   'disable-ui-encryption'    ',ui')
 
 #################################################################################
 #                             CONTAINER COMMANDS                                #
 #################################################################################
 
-MENU+=(',container'                 'Manage the MetroÆ container'                              'container'    ''                        '')
-MENU+=(',container,pull'            'Pull a new MetroÆ image from the registry'                'container'    'pull'                    ',container')
+MENU+=(',container'                 'Manage the MetroAE container'                             'container'    ''                        '')
+MENU+=(',container,pull'            'Pull a new MetroAE image from the registry'               'container'    'pull'                    ',container')
 MENU+=(',container,setup'           'Setup the mertroae container'                             'container'    'setup'                   ',container')
 MENU+=(',container,start'           'Start the mertroae container'                             'container'    'start'                   ',container')
 MENU+=(',container,stop'            'Stop the mertroae container'                              'container'    'stop'                    ',container')
@@ -139,7 +139,7 @@ function try_get_menu {
 function check_for_prerequisite {
     if [[ $RUN_MODE == "INSIDE" ]]; then
         if [[ ! -f /source/nuage-metro/src/$PLAYBOOK_MENU ]]; then
-            echo "One or more MetroÆ config files are missing or incomplete. Please update your workspace and try again."
+            echo "One or more MetroAE config files are missing or incomplete. Please update your workspace and try again."
             exit 1
         fi
     else
@@ -147,7 +147,7 @@ function check_for_prerequisite {
         get_running_container_id
         if [[ $RUN_MODE == "REPO" ]]; then
             if [[ ! -f src/$PLAYBOOK_MENU ]]; then
-                echo "One or more MetroÆ config files are missing or incomplete. Please update your workspace and try again."
+                echo "One or more MetroAE config files are missing or incomplete. Please update your workspace and try again."
                 exit 1
             fi
         # RUN_MODE is CONTAINER
@@ -160,19 +160,19 @@ function check_for_prerequisite {
                 docker start $CONTAINER_ID
             fi
             if [[ ! -f $METROAE_MOUNT_POINT/$PLAYBOOK_MENU ]]; then
-                echo "It looks like you are trying to run the MetroÆ container. One or more MetroÆ config files are missing or incomplete. Please run ‘metroae container update’ and try again."
+                echo "It looks like you are trying to run the MetroAE container. One or more MetroAE config files are missing or incomplete. Please run ‘metroae container update’ and try again."
                 exit 1
             fi
         else
             if [[ ! -z $RUNNING_CONTAINER_ID ]]; then
-                echo "It looks like you are trying to run the MetroÆ container. One or more config files are missing or incomplete. Please run ‘metroae container setup’ and try again."
+                echo "It looks like you are trying to run the MetroAE container. One or more config files are missing or incomplete. Please run ‘metroae container setup’ and try again."
                 exit 1
             else
                 confirmation="init"
-                echo "The MetroÆ container has not been setup. Do you want to set it up now? (Yes/no)"
+                echo "The MetroAE container has not been setup. Do you want to set it up now? (Yes/no)"
                 while [[ $confirmation != "yes" ]] && [[ $confirmation  != "no" ]] && [[ $confirmation  != "y" ]] && [[ $confirmation != "n" ]]
                 do
-                    read -p "MetroÆ was run outside of a local copy of the nuage-metro repo and the MetroÆ container is not running. Do you want to setup a container (yes/no): " confirmation
+                    read -p "MetroAE was run outside of a local copy of the nuage-metro repo and the MetroAE container is not running. Do you want to setup a container (yes/no): " confirmation
                 done
 
                 if [[ $confirmation == "yes" ]] || [[ $confirmation == "y" ]]; then
@@ -189,12 +189,12 @@ function print_version_and_exit {
     if [[ $RUN_MODE == "CONTAINER" ]]; then
         get_max_container_version
         if [[ -f $SCRIPT_LOG_FILE ]] && [[ -z $GROUP_CHECK ]]; then
-            echo "MetroÆ container version $MAX_CONTAINER_VERSION and MetroÆ version $METROAE_VERSION" | tee -a $SCRIPT_LOG_FILE
+            echo "MetroAE container version $MAX_CONTAINER_VERSION and MetroAE version $METROAE_VERSION" | tee -a $SCRIPT_LOG_FILE
         fi
     elif [[ $RUN_MODE == "REPO" ]]; then
         if [[ ! ${MATCH_MENU[0]} =~ ",container*" ]] && [[ ! ${MATCH_MENU[0]} =~ ",config*" ]] && [[ ! ${MATCH_MENU[0]} =~ ",ui*" ]]; then
             if [[ -f $SCRIPT_LOG_FILE ]] && [[ -z $GROUP_CHECK ]]; then
-                echo "MetroÆ workspace version $METROAE_VERSION" | tee -a $SCRIPT_LOG_FILE
+                echo "MetroAE workspace version $METROAE_VERSION" | tee -a $SCRIPT_LOG_FILE
             fi
         fi
     fi
@@ -217,7 +217,7 @@ function check_docker {
     fi
 
     if [[ $? -ne 0 ]]; then
-        echo "Docker engine must be installed in order to run MetroÆ. Quitting. Please install Docker and try again. See https://docs.docker.com for details"
+        echo "Docker engine must be installed in order to run MetroAE. Quitting. Please install Docker and try again. See https://docs.docker.com for details"
         print_version_and_exit 1
     fi
     set -e
@@ -256,7 +256,7 @@ function get_max_container_version {
     fi
 
     if [[ -f $SCRIPT_LOG_FILE ]] && [[ -z $GROUP_CHECK ]]; then
-        echo "Newest MetroÆ container version found is $MAX_CONTAINER_VERSION" >> $SCRIPT_LOG_FILE
+        echo "Newest MetroAE container version found is $MAX_CONTAINER_VERSION" >> $SCRIPT_LOG_FILE
     fi
 
 }
@@ -281,7 +281,7 @@ function stop {
     get_running_container_id
 
     if [[ -z $RUNNING_CONTAINER_ID  ]]; then
-        echo "The MetroÆ container is not running. Nothing to do."
+        echo "The MetroAE container is not running. Nothing to do."
         return 0
     fi
 
@@ -289,9 +289,9 @@ function stop {
     docker stop $RUNNING_CONTAINER_ID
     status=$?
     if [[ $status -ne 0 ]]; then
-        echo "Attempt to stop MetroÆ container failed"
+        echo "Attempt to stop MetroAE container failed"
     else
-        echo "The MetroÆ container was stopped"
+        echo "The MetroAE container was stopped"
     fi
     set -e
 
@@ -301,22 +301,22 @@ function stop {
 function delete_container_id {
     get_container_id
     if [[ -z $CONTAINER_ID ]]; then
-        echo "MetroÆ container not found. Nothing to do."
+        echo "MetroAE container not found. Nothing to do."
         return 0
     fi
 
-    echo "Execute 'docker rm' on the MetroÆ container with id $CONTAINER_ID" >> $SCRIPT_LOG_FILE
+    echo "Execute 'docker rm' on the MetroAE container with id $CONTAINER_ID" >> $SCRIPT_LOG_FILE
 
     set +e
     docker rm $CONTAINER_ID 2>> $SCRIPT_LOG_FILE
 
     if [[ $? -ne 0 ]]; then
-        echo "Attempt to execute 'docker rm' on the MetroÆ container failed"
+        echo "Attempt to execute 'docker rm' on the MetroAE container failed"
         return 1
     fi
     set -e
 
-    echo "Execute of 'docker rm' on the MetroÆ container was successful"
+    echo "Execute of 'docker rm' on the MetroAE container was successful"
 }
 
 function destroy {
@@ -329,13 +329,13 @@ function destroy {
     while [[ $confirmation != "yes" ]] && [[ $confirmation  != "no" ]] && [[ $confirmation  != "y" ]] && [[ $confirmation != "n" ]]
     do
         echo ""
-        echo "It looks like you are about to destroy the MetroÆ container. If you proceed,"
-        echo "the MetroÆ container will be stopped, the MetroÆ container image will be"
+        echo "It looks like you are about to destroy the MetroAE container. If you proceed,"
+        echo "the MetroAE container will be stopped, the MetroAE container image will be"
         echo "removed from Docker, and your data on disk will be preserved. Your data will"
-        echo "not be destroyed. You will be able to use it again by pulling another MetroÆ"
+        echo "not be destroyed. You will be able to use it again by pulling another MetroAE"
         echo "container and running 'metroae container setup'."
         echo ""
-        read -p "Do you really want to destroy the MetroÆ container? (yes/no): " confirmation
+        read -p "Do you really want to destroy the MetroAE container? (yes/no): " confirmation
     done
 
 
@@ -363,18 +363,18 @@ function destroy {
         return 0
     fi
 
-    echo "Destroying MetroÆ container..." | tee -a $SCRIPT_LOG_FILE
+    echo "Destroying MetroAE container..." | tee -a $SCRIPT_LOG_FILE
 
     set +e
     docker rmi $IMAGE_ID 2>> $SCRIPT_LOG_FILE
 
     if [[ $? -ne 0 ]]; then
-        echo "Attempt to remove the MetroÆ image failed"
+        echo "Attempt to remove the MetroAE image failed"
         return 1
     fi
     set -e
 
-    echo "The MetroÆ container image was removed"
+    echo "The MetroAE container image was removed"
     return 0
 }
 
@@ -409,19 +409,19 @@ function pull {
     set +e
     if [[ $? -ne 0 || ( ! -z $1 && "$1" = "S3" ) ]]; then
         if [[ -f $SCRIPT_LOG_FILE ]]; then
-            echo "Could not connect to the Nokia registry to download the MetroÆ container image" | tee -a $SCRIPT_LOG_FILE
-            echo "Retrieving the MetroÆ container image from Amazon S3 instead" | tee -a $SCRIPT_LOG_FILE
+            echo "Could not connect to the Nokia registry to download the MetroAE container image" | tee -a $SCRIPT_LOG_FILE
+            echo "Retrieving the MetroAE container image from Amazon S3 instead" | tee -a $SCRIPT_LOG_FILE
         else
-            echo "Could not connect to the Nokia registry to download the MetroÆ container image"
-            echo "Retrieving the MetroÆ container image from Amazon S3 instead"
+            echo "Could not connect to the Nokia registry to download the MetroAE container image"
+            echo "Retrieving the MetroAE container image from Amazon S3 instead"
         fi
         get_from_s3
 
         if [[ $? -ne 0 ]]; then
             if [[ -f $SCRIPT_LOG_FILE ]]; then
-                echo "Attempt to pull the MetroÆ container image failed. Quitting" | tee -a $SCRIPT_LOG_FILE
+                echo "Attempt to pull the MetroAE container image failed. Quitting" | tee -a $SCRIPT_LOG_FILE
             else
-                echo "Attempt to pull the MetroÆ container image failed. Quitting"
+                echo "Attempt to pull the MetroAE container image failed. Quitting"
             fi
             print_version_and_exit 1
         fi
@@ -430,10 +430,10 @@ function pull {
         repo="Amazon S3"
     else
         if [[ -f $SCRIPT_LOG_FILE ]]; then
-            echo "Pulling the MetroÆ container image from Nokia registry..." | tee -a $SCRIPT_LOG_FILE
+            echo "Pulling the MetroAE container image from Nokia registry..." | tee -a $SCRIPT_LOG_FILE
             docker pull $METRO_AE_IMAGE:$MAX_CONTAINER_VERSION | tee -a $SCRIPT_LOG_FILE
         else
-            echo "Pulling the MetroÆ container image from Nokia registry..."
+            echo "Pulling the MetroAE container image from Nokia registry..."
             docker pull $METRO_AE_IMAGE:$MAX_CONTAINER_VERSION
         fi
     fi
@@ -441,15 +441,15 @@ function pull {
     status=$?
     if [[ $status -ne 0 ]]; then
         if [[ -f $SCRIPT_LOG_FILE ]]; then
-            echo "Attempt to pull the $MAX_CONTAINER_VERSION MetroÆ container image failed. Quitting." | tee -a $SCRIPT_LOG_FILE
+            echo "Attempt to pull the $MAX_CONTAINER_VERSION MetroAE container image failed. Quitting." | tee -a $SCRIPT_LOG_FILE
         else
-            echo "Attempt to pull the $MAX_CONTAINER_VERSION MetroÆ container image failed. Quitting."
+            echo "Attempt to pull the $MAX_CONTAINER_VERSION MetroAE container image failed. Quitting."
         fi
     else
         if [[ -f $SCRIPT_LOG_FILE ]]; then
-            echo "Successfully Pulled the MetroÆ container image from $repo" | tee -a $SCRIPT_LOG_FILE
+            echo "Successfully Pulled the MetroAE container image from $repo" | tee -a $SCRIPT_LOG_FILE
         else
-            echo "Successfully Pulled the MetroÆ container image from $repo"
+            echo "Successfully Pulled the MetroAE container image from $repo"
         fi
     fi
     set -e
@@ -463,13 +463,13 @@ function run_container {
 
     if [[ -z $IMAGE_ID ]];  then
         set +e
-        echo "We didn't find the MetroÆ container image. Pulling a new container from the repo."
+        echo "We didn't find the MetroAE container image. Pulling a new container from the repo."
         pull
         status=$?
         set -e
         if [ $status -ne 0 ]
         then
-            echo "Attempt to pull the MetroÆ container failed. Quitting."
+            echo "Attempt to pull the MetroAE container failed. Quitting."
             return $status
         fi
     else
@@ -477,7 +477,7 @@ function run_container {
 
         set +e
         echo ""
-        echo ">>> Starting the MetroÆ container"
+        echo ">>> Starting the MetroAE container"
         echo ""
         if [[ -z $CONTAINER_ID ]]; then
             while read -r line; do declare $line; done < $SETUP_FILE
@@ -507,9 +507,9 @@ function run_container {
 
         status=$?
         if [[ $status -ne 0 ]]; then
-            echo "Attempt to run the MetroÆ container failed. Quitting."
+            echo "Attempt to run the MetroAE container failed. Quitting."
         else
-            echo "MetroÆ container started successfully"
+            echo "MetroAE container started successfully"
         fi
         set -e
         return $status
@@ -548,14 +548,14 @@ function setup {
 
     if [[ ! -z $CONTAINER_ID ]] || [[ ! -z $RUNNING_CONTAINER_ID ]]; then
         echo ""
-        echo "It looks like the MetroÆ container is already setup. If you want to update"
-        echo "to the latest MetroÆ container version, please quit setup and then run"
+        echo "It looks like the MetroAE container is already setup. If you want to update"
+        echo "to the latest MetroAE container version, please quit setup and then run"
         echo "'metroae container update' to get the latest container while keeping"
         echo "your current setup and data. Your data on disk will be preserved."
         echo ""
-        echo "If you want to run setup, the existing MetroÆ container will not be replaced."
-        echo "We will stop the MetroÆ container, reconfigure it according to your inputs,"
-        echo "and restart the existing MetroÆ container with the new configuration."
+        echo "If you want to run setup, the existing MetroAE container will not be replaced."
+        echo "We will stop the MetroAE container, reconfigure it according to your inputs,"
+        echo "and restart the existing MetroAE container with the new configuration."
         echo ""
         echo "Note that if you want to re-use your existing deployments on disk after"
         echo "running setup, you must either specify the same directories when prompted"
@@ -580,7 +580,7 @@ function setup {
     fi
 
     echo ""
-    echo ">>> Setup MetroÆ container"
+    echo ">>> Setup MetroAE container"
     echo ""
     echo "Elevated privileges are required for setup. During setup, we may prompt you"
     echo "for the sudo password."
@@ -591,7 +591,7 @@ function setup {
 
     if [[ -z $IMAGE_ID ]]; then
         echo ""
-        echo ">>> Pulling the MetroÆ container image from the repository"
+        echo ">>> Pulling the MetroAE container image from the repository"
         echo ""
         pull
     fi
@@ -606,23 +606,23 @@ function setup {
     while [[ $setup_type != "c" ]] && [[ $setup_type != "d" ]] && [[ $setup_type != "b" ]] && [[ $setup_type != "" ]]
     do
         echo ""
-        echo "Setup can configure the container to support MetroÆ (c)onfig, MetroÆ (d)eploy,"
-        echo "or (b)oth MetroÆ config and deploy. MetroÆ config is used for day-zero VSD"
-        echo "configuration tasks. MetroÆ deploy is used for installing, upgrading, and"
+        echo "Setup can configure the container to support MetroAE (c)onfig, MetroAE (d)eploy,"
+        echo "or (b)oth MetroAE config and deploy. MetroAE config is used for day-zero VSD"
+        echo "configuration tasks. MetroAE deploy is used for installing, upgrading, and"
         echo "health checking of Nuage VSP components in your environment."
         echo ""
-        read -p "Do you want to setup MetroÆ config, deploy, or both? (c/d/B): " setup_type
+        read -p "Do you want to setup MetroAE config, deploy, or both? (c/d/B): " setup_type
     done
 
     if [[ $setup_type == "c" ]]; then
         echo ""
-        echo ">>> Setup container for MetroÆ config only"
+        echo ">>> Setup container for MetroAE config only"
     elif [[ $setup_type == "d" ]]; then
         echo ""
-        echo ">>> Setup container for MetroÆ deploy only"
+        echo ">>> Setup container for MetroAE deploy only"
     else
         echo ""
-        echo ">>> Setup container for both MetroÆ config and deploy"
+        echo ">>> Setup container for both MetroAE config and deploy"
     fi
     echo METROAE_SETUP_TYPE=$setup_type > $SETUP_FILE
 
@@ -630,7 +630,7 @@ function setup {
         echo ""
         echo "Data directory configuration"
         echo ""
-        echo "The MetroÆ container needs access to your user data. It gets access by internally"
+        echo "The MetroAE container needs access to your user data. It gets access by internally"
         echo "mounting a directory from the host. We refer to this as the 'data directory'."
         echo "The data directory is where you will have deployments, templates, documentation,"
         echo "and other useful files."
@@ -651,7 +651,7 @@ function setup {
         if [[ -z $2 ]]; then
             echo "Image directory configuration"
             echo ""
-            echo "For deployments, the MetroÆ container needs access to the Nuage Networks component"
+            echo "For deployments, the MetroAE container needs access to the Nuage Networks component"
             echo "image files, e.g. qcow2, ova, rpm, etc. It gets access by internally mounting"
             echo "a directory from the host. We refer to this as the 'image directory'."
             echo "The image directory is where you will copy your image files prior to deployment."
@@ -671,14 +671,14 @@ function setup {
     # stop and remove existing container if any
     get_running_container_id
     if [[ ! -z $RUNNING_CONTAINER_ID ]]; then
-        echo ">>> Stopping the MetroÆ container"
+        echo ">>> Stopping the MetroAE container"
         stop
     fi
 
     get_container_id
     if [[ ! -z $CONTAINER_ID ]]; then
         echo ""
-        echo ">>> Running 'docker rm' on the MetroÆ container"
+        echo ">>> Running 'docker rm' on the MetroAE container"
         echo ""
         delete_container_id
     fi
@@ -689,7 +689,7 @@ function setup {
     config_status=0
     if [[ $setup_type != "d" ]]; then
         echo ""
-        echo ">>> Pulling the latest templates and files for MetroÆ config in the container"
+        echo ">>> Pulling the latest templates and files for MetroAE config in the container"
         echo ""
         docker_exec_levistate templates update
         config_status=$?
@@ -697,7 +697,7 @@ function setup {
 
     if [[ $config_status -ne 0 ]]; then
         echo ""
-        echo "Problem setting up MetroÆ config in the container. Return code: $config_status. Quitting."
+        echo "Problem setting up MetroAE config in the container. Return code: $config_status. Quitting."
         echo ""
         return 1
     fi
@@ -712,18 +712,18 @@ function setup {
     while [[ $gui_confirm  != "y" ]] && [[ $gui_confirm != "" ]]
     do
         echo ""
-        read -p "Do you want the container to run the beta of the MetroÆ REST API/GUI? (y/N): " gui_confirm
+        read -p "Do you want the container to run the beta of the MetroAE REST API/GUI? (y/N): " gui_confirm
     done
 
     if [[ $gui_confirm == "y" ]]; then
         echo ""
-        echo ">>> Configuring MetroÆ REST API/GUI"
+        echo ">>> Configuring MetroAE REST API/GUI"
         get_host_operating_system
         declare -i port
         if [[ $OS_RELEASE -eq $NON_LINUX ]]; then
             if [[ -z $4 ]]; then
                 echo ""
-                read -p "Specify the REST API/GUI HTTP port for the MetroÆ container: " port
+                read -p "Specify the REST API/GUI HTTP port for the MetroAE container: " port
                 echo ""
                 echo ">>> Configuring REST API/GUI to use port: $port"
             else
@@ -795,16 +795,16 @@ function setup {
         gui_status=$?
         if [[ $gui_status -ne 0 ]]; then
             echo ""
-            echo "Problem starting the MetroÆ REST API/GUI in the container. Return code: $gui_status. Quitting."
+            echo "Problem starting the MetroAE REST API/GUI in the container. Return code: $gui_status. Quitting."
             echo ""
             return 1
         fi
     else
         echo ""
-        echo ">>> MetroÆ REST API/GUI will not be configured"
+        echo ">>> MetroAE REST API/GUI will not be configured"
     fi
     echo ""
-    echo "MetroÆ container setup complete. Execute 'metroae container status' for status."
+    echo "MetroAE container setup complete. Execute 'metroae container status' for status."
     echo ""
 }
 
@@ -923,7 +923,7 @@ function docker_status {
         echo $container_status
         docker exec $RUNNING_CONTAINER_ID cat /source/version
     else
-        echo "The MetroÆ container is not running. Quitting."
+        echo "The MetroAE container is not running. Quitting."
     fi
     echo ""
 }
@@ -1029,11 +1029,11 @@ function ask_password {
 }
 
 function write_audit_log_entry {
-    echo "`date` MetroÆ $METROAE_VERSION $ORIGINAL_ARGS" >> $AUDIT_LOG
+    echo "`date` MetroAE $METROAE_VERSION $ORIGINAL_ARGS" >> $AUDIT_LOG
 }
 
 function audit_log_and_exit {
-    echo "`date` MetroÆ $METROAE_VERSION exit code $1" >> $AUDIT_LOG
+    echo "`date` MetroAE $METROAE_VERSION exit code $1" >> $AUDIT_LOG
     print_version_and_exit $1
 }
 
@@ -1142,7 +1142,7 @@ function deployment_main {
         fi
         $(which ansible-playbook) $PLAYBOOK_WITH_BUILD_DIR/$WORKFLOW "$@" || audit_log_and_exit $?
     else
-    echo "Requested MetroÆ workflow could not be found"
+    echo "Requested MetroAE workflow could not be found"
     print_version_and_exit 1
     fi
 
@@ -1164,11 +1164,11 @@ function docker_exec_levistate {
 function config_status {
     docker_status
     if [[ -f $SETUP_FILE ]]; then
-        echo "Current MetroÆ container settings..."
+        echo "Current MetroAE container settings..."
         while read -r line; do declare $line; done < $SETUP_FILE
         echo levistate_mount_point=$LEVISTATE_MOUNT_POINT
     else
-        echo "MetroÆ container has not been setup. Quitting."
+        echo "MetroAE container has not been setup. Quitting."
     fi
 }
 
@@ -1347,17 +1347,17 @@ function container_status {
     if [[ -f $SETUP_FILE ]]; then
         echo "Current settings..."
         while read -r line; do declare $line; done < $SETUP_FILE
-        echo "MetroÆ container images path: $IMAGES_MOUNT_POINT"
-        echo "MetroÆ container data path: $METROAE_MOUNT_POINT"
+        echo "MetroAE container images path: $IMAGES_MOUNT_POINT"
+        echo "MetroAE container data path: $METROAE_MOUNT_POINT"
         get_host_operating_system
 
         if [[ $OS_RELEASE -eq $LINUX ]]; then
-            echo "MetroÆ container GUI port: 5001"
+            echo "MetroAE container GUI port: 5001"
     	else
-            echo "MetroÆ container GUI port: $UI_PORT"
+            echo "MetroAE container GUI port: $UI_PORT"
         fi
     else
-        echo "MetroÆ container setup file not found. Quitting."
+        echo "MetroAE container setup file not found. Quitting."
     fi
 }
 
@@ -1600,9 +1600,9 @@ function tools_main {
 #################################################################################
 
 function main_help {
-    echo "Nuage Networks Metro Automation Engine (MetroÆ) CLI Version:" $METROAE_VERSION
+    echo "Nuage Networks Metro Automation Engine (MetroAE) CLI Version:" $METROAE_VERSION
     echo ""
-    echo "MetroÆ usage:"
+    echo "MetroAE usage:"
     echo ""
     print_menu_help "metroae%-50s %-1s\n" $1
     echo ""
@@ -1635,48 +1635,45 @@ function main_help {
         get_container_id
         if [[ -z $RUNNING_CONTAINER_ID ]] && [[ -z $CONTAINER_ID ]]; then
             echo ""
-            echo "It looks like you are trying to run the MetroÆ container because"
+            echo "It looks like you are trying to run the MetroAE container because"
             echo "this command was executed from a directory other than a local"
-            echo "copy of the MetroÆ repo. The MetroÆ container was not found. To"
-            echo "configure the MetroÆ continer, please run 'metroae container setup'."
-            echo "To run from a local copy of the MetroÆ repo, change directory to"
+            echo "copy of the MetroAE repo. The MetroAE container was not found. To"
+            echo "configure the MetroAE continer, please run 'metroae container setup'."
+            echo "To run from a local copy of the MetroAE repo, change directory to"
             echo "the root of that local copy and try again. If you need to create"
-            echo "a local copy of the MetroÆ repo, check"
+            echo "a local copy of the MetroAE repo, check"
             echo "https://github.com/nuagenetworks/nuage-metro for details."
         fi
     fi
 }
 
 function container_help {
-    echo "Nuage Networks Metro Automation Engine (MetroÆ) CLI Version:" $METROAE_VERSION
+    echo "Nuage Networks Metro Automation Engine (MetroAE) CLI Version:" $METROAE_VERSION
     echo ""
-    echo "MetroÆ container usage:"
+    echo "MetroAE container usage:"
     echo ""
     print_menu_help "metroae%-50s %-1s\n" $1
 }
 
 function config_help {
-    echo "Nuage Networks Metro Automation Engine (MetroÆ) CLI Version:" $METROAE_VERSION
+    echo "Nuage Networks Metro Automation Engine (MetroAE) CLI Version:" $METROAE_VERSION
     echo ""
-    echo "MetroÆ config is a tool that you can use to apply and manage day-zero configurations"
-    echo "to a Nuage Networks VSD. MetroÆ config is only available via the MetroÆ container."
-    echo "When invoked, 'metroae config' executes a command inside the container named"
-    echo "'levistate'. It passes everything after 'metroae config' directly to levistate"
-    echo "for processing by the command. levistate has its own execution environment and help"
-    echo "system inside the MetroÆ container. To access the main 'levistate' help, you can"
-    echo "execute 'metroae config help'. This will list the positional arguments that are"
-    echo "supported by levistate. To get additional help from levistate for each positional"
-    echo "argument, execute 'metroae config <positional arguement> -h', e.g."
+    echo "MetroAE config is a tool that you can use to apply and manage day-zero configurations"
+    echo "for a Nuage Networks VSD. MetroAE config is only available via the MetroAE container."
+    echo "system inside the MetroAE container. To access metroae config help you can"
+    echo "execute 'metroae config -h'. This will list the positional arguments that are"
+    echo "supported by the tool. To get additional help for each positional argument,"
+    echo "execute 'metroae config <positional arguement> -h', e.g."
     echo "'metroae config create -h'."
     echo ""
-    echo "MetroÆ config usage:"
+    echo "MetroAE config usage:"
     echo ""
     print_menu_help "metroae%-50s %-1s\n" $1
 
     get_running_container_id
     if [[ -z $RUNNING_CONTAINER_ID ]]; then
         echo ""
-        echo "The MetroÆ container is not running. Full help text can only be accessed"
+        echo "The MetroAE container is not running. Full help text can only be accessed"
         echo "when the container is running. Please execute 'metroae container start'"
         echo "and try again."
     elif [[ $NUM_CLI_ARGS == 1 ]]; then
@@ -1688,17 +1685,17 @@ function config_help {
 }
 
 function tools_help {
-    echo "Nuage Networks Metro Automation Engine (MetroÆ) CLI Version:" $METROAE_VERSION
+    echo "Nuage Networks Metro Automation Engine (MetroAE) CLI Version:" $METROAE_VERSION
     echo ""
-    echo "MetroÆ tools usage:"
+    echo "MetroAE tools usage:"
     echo ""
     print_menu_help "metroae%-50s %-1s\n" $1
 }
 
 function ui_help {
-    echo "Nuage Networks Metro Automation Engine (MetroÆ) CLI Version:" $METROAE_VERSION
+    echo "Nuage Networks Metro Automation Engine (MetroAE) CLI Version:" $METROAE_VERSION
     echo ""
-    echo "MetroÆ ui usage:"
+    echo "MetroAE ui usage:"
     echo ""
     print_menu_help "metroae%-50s %-1s\n" $1
 }
