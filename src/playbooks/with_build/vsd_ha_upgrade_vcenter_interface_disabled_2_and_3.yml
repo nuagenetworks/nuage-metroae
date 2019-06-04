@@ -1,13 +1,16 @@
 ---
-- block:
+- hosts: vsd_ha_node2:vsd_ha_node3
+  gather_facts: no
+  pre_tasks:
 
-  - name: Set fact for predeploy VSD with interface disabled
-    set_fact:
-      node_disabled_interface: True
+    - name: End play if predeploy is NOT executed with interfaces disabled
+      meta: end_play
+      when: not (vcenter_start_with_interfaces_disabled | default(False))
 
-  - name: Predeploy new VSD 2 and 3 node before destroying
-    import_playbook: vsd_ha_upgrade_predeploy_2_and_3.yml
+    - name: Set upgrade flag and predeploy with interfaces disabled flag
+      set_fact:
+        nuage_upgrade: True
+        node_disabled_interface: True
 
-  when:
-    - vcenter_start_with_interfaces_disabled | default(False)
-    - target_server_type is match("vcenter")
+   roles:
+     - vsd-predeploy

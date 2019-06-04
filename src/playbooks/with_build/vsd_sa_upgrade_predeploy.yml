@@ -2,6 +2,18 @@
 - hosts: vsd_sa_node
   gather_facts: no
   pre_tasks:
+
+    - block:
+      - name: Set interfaces Up for the predeployed vsd
+        include_role:
+          name: vsd-predeploy
+          tasks_from: vcenter-enable-interface
+
+      - name: Skip the play since predeploy is already executed
+        meta: end_play
+
+      when: vcenter_start_with_interfaces_disabled | default (False)
+
     - name: Set upgrade flag
       set_fact:
         nuage_upgrade: true
@@ -15,5 +27,6 @@
       include_role:
         name: common
         tasks_from: check-predeploy-prereq
+        
   roles:
     - vsd-predeploy
