@@ -10,21 +10,33 @@
     when: require or allow tls mode
 
   - name: wait for ejabberd to come up
+    monit_waitfor_service:
+      name: ejabberd
+      timeout_seconds: 600
+      test_interval_seconds: 30
 
   - name: Stop VSD core service
     shell: monit stop -g vsd-core
 
-  - name: Wait for VSD core service to stop
+  - name: Pause for processes to exit
+    pause:
+      seconds: 20
 
   - name: Restart the VSD core service
     shell: monit start -g vsd-core
 
-  - name: Wait for monit to display everything as running
+  - name: Wait VSD core to start
+    monit_waitfor_service:
+      name: vsd-core
+      timeout_seconds: 600
+      test_interval_seconds: 30
 
   - name: Restart stats if enabled
     shell: monit restart -g vsd-stats
 
-  when: standalone_vsd
+  when:
+    - vsd_sa_or_ha is match ('sa')
+    - not vsd_standby_cluster | default(False)
 
 - block:
 
@@ -41,21 +53,33 @@
     when: require or allow tls mode
 
   - name: wait for ejabberd to come up
+    monit_waitfor_service:
+      name: ejabberd
+      timeout_seconds: 600
+      test_interval_seconds: 30
 
   - name: Stop VSD core service
     shell: monit stop -g vsd-core
 
-  - name: Wait for VSD core service to stop
+  - name: Pause for processes to exit
+    pause:
+      seconds: 20
 
   - name: Restart the VSD core service
     shell: monit start -g vsd-core
 
-  - name: Wait for monit to display everything as running
+  - name: Wait VSD core to start
+    monit_waitfor_service:
+      name: vsd-core
+      timeout_seconds: 600
+      test_interval_seconds: 30
 
   - name: Restart stats if enabled
     shell: monit restart -g vsd-stats
 
-  when: clustered_vsd
+  when:
+    - vsd_sa_or_ha is match ('ha')
+    - not vsd_standby_cluster | default(False)
 
 - block:
 
@@ -70,7 +94,13 @@
   - name: Restart ejabberd
     command: monit restart ejabberd
     when: require or allow tls mode
+    with_items: "{{ groups['standby_vsds'] }}"
 
   - name: wait for ejabberd to come up
+    monit_waitfor_service:
+      name: ejabberd
+      timeout_seconds: 600
+      test_interval_seconds: 30
+    with_items: "{{ groups['standby_vsds'] }}"
 
-  when: standby_cluster
+  when: vsd_standby_cluster | default(False)
