@@ -9,7 +9,7 @@ Note that a patch upgrade is applicable to the VSD cluster. A patch upgrade is a
 * Supported beginning in VSD version 5.4.1. 
 * `upgrade_fron_version` and `upgrade_to_version` variables must be set to 'u' versions of the same release, e.g. 5.4.1 and 5.4.1u1, 5.4.1u1 and 5.4.1u4, etc.
 
-Note that if your existing VSP components were not installed using MetroÆ or were installed using a different MetroÆ host, you can still use MetroÆ to do the upgrade. You must manually copy the MetroÆ host user's ssh public key to each of the VSP Linux-based components (VSD, VSTAT, VNSUTIL) and to any KVM-based hypervisors used for VSP component and where data-plane endpoints (VRS, NSGv) have been installed. This will allow passwordless ssh between the Ansible host and the Linux nodes in the deployment. Passwordless ssh to these nodes is a requirement for proper MetroÆ operation for health and upgrade.
+Note that if your existing VSP components were not installed using MetroÆ or were installed using a different MetroÆ host, you can still use MetroÆ to do the upgrade. You must manually copy the MetroÆ host user's ssh public key to each of the VSP Linux-based components (VSD, VSTAT, VNSUTIL) and to any KVM-based hypervisors used for VSP components and any KVM-based hypervisors where data-plane endpoints (VRS, NSGv) have been installed. This will allow passwordless ssh between the Ansible host and the Linux nodes in the deployment. Passwordless ssh to these nodes is a requirement for proper MetroÆ operation for health and upgrade.
 
 By default, the special enterprise called Shared Infrastructure is created on the VSD. When putting domains in maintenance mode prior to an upgrade, MetroÆ skips Shared Infrastructure domains because they cannot be modified.
 
