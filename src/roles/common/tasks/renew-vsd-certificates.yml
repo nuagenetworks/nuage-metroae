@@ -6,9 +6,13 @@
     - name: Renew standalone VSD certificate
       command: /opt/vsd/bin/vsd-renew-certs.sh
 
+    - name: Verify if VSD TLS mode is set to allow
+      command: /opt/vsd/bin/ejmode status
+      register: ejmode
+
     - name: Restart ejabberd
       command: monit restart ejabberd
-      when: require or allow tls mode
+      when: "'allow' in ejmode.stdout"
 
     - name: wait for ejabberd to come up
       monit_waitfor_service:
@@ -32,8 +36,14 @@
         timeout_seconds: 600
         test_interval_seconds: 30
 
+    - name: Get monit summary for all process on VSD
+      vsd_monit:
+        group: all
+      register: vsd_process_list
+
     - name: Restart stats if enabled
       shell: monit restart -g vsd-stats
+      when: vsd_process_list['state'].keys() is search("vsd-stats-status")
 
     when:
       - vsd_sa_or_ha is match ('sa')
@@ -53,9 +63,16 @@
         - "{{ groups['primary_vsds'][1] }}"
         - "{{ groups['primary_vsds'][2] }}"
 
+
+    - name: Verify if VSD TLS mode is set to allow
+      command: /opt/vsd/bin/ejmode status
+      register: ejmode
+      delegate_to: "{{ item }}"
+      with_items: "{{ groups['primary_vsds'] }}"
+
     - name: Restart ejabberd
       command: monit restart ejabberd
-      when: require or allow tls mode
+      when: "'allow' in ejmode.stdout"
       delegate_to: "{{ item }}"
       with_items: "{{ groups['primary_vsds'] }}"
 
@@ -89,9 +106,16 @@
       delegate_to: "{{ item }}"
       with_items: "{{ groups['primary_vsds'] }}"
 
+    - name: Get monit summary for all process on VSD
+      vsd_monit:
+        group: all
+      register: vsd_process_list
+      delegate_facts: True
+      with_items: "{{ groups['primary_vsds'] }}"
+
     - name: Restart stats if enabled
       shell: monit restart -g vsd-stats
-      delegate_to: "{{ item }}"
+      when: vsd_process_list['state'].keys() is search("vsd-stats-status")
       with_items: "{{ groups['primary_vsds'] }}"
 
     when:
@@ -112,9 +136,15 @@
         - "{{ groups['standby_vsds'][1] }}"
         - "{{ groups['standby_vsds'][2] }}"
 
+    - name: Verify if VSD TLS mode is set to allow
+      command: /opt/vsd/bin/ejmode status
+      register: ejmode
+      delegate_to: "{{ item }}"
+      with_items: "{{ groups['standby_vsds'] }}"
+
     - name: Restart ejabberd
       command: monit restart ejabberd
-      when: require or allow tls mode
+      when: "'allow' in ejmode.stdout"
       delegate_to: "{{ item }}"
       with_items: "{{ groups['standby_vsds'] }}"
 
