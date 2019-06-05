@@ -1,14 +1,15 @@
 # Nuage Networks Metro Automation Engine (MetroÆ)
 (4 minute read)
 
-Version: 3.2.1
+Version: 3.3.0
 
 MetroÆ is an automation engine that deploys and upgrades Nuage Networks components. You specify the individual details of your target platform, then let MetroÆ install, upgrade, destroy, or health-check the environment for you.
 
 ## Important Notes
 
-The procedures have changed substantially in version 3.0 to improve usability.
-If you have used previous versions of MetroÆ, please see [RELEASE_NOTES.md](Documentation/RELEASE_NOTES.md) for details.
+You can now run `python metroae_wizard.py` to let MetroÆ help you setup your server and create or edit a deployment. The wizard will ask you questions about what you'd like to do and then create the proper files on disk. metroae_wizard.py is most useful when you are working with a clone of the nuage-metro repo. It can be used to generate deployments that can be used with the Docker container version of MetroÆ, but thos edeployments would need to be copied manually from the nuage-metro repo clone to the container's metroae_data directory.
+
+Please see [RELEASE_NOTES.md](Documentation/RELEASE_NOTES.md) for all the details abotu what has changed or been added in this release.
 
 All MetroÆ operations, including Docker container management, use a command `metroae` for consistent usage and syntax. Please see [DOCKER.md](Documentation/DOCKER.md) for details on configuration and use of the container version of MetroÆ.
 
