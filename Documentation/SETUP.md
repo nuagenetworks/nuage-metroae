@@ -39,12 +39,29 @@ Note that this step is optional. Running *any* metroae command after startup wil
 metroae copy-ssh-id [target_server_username]@[target_server]
 ```
 This command copies the container's public key into the ssh authorized_keys file on the specified target server. This key is required for passwordless ssh access from the container to the target servers. The command must be run once for every target server.
-##### 7. Optional: Start the UI using this command:
+
+##### 7. **For ESXi / vCenter Only**, install ovftool and copy to metroae_data directory
+
+When running the MetroÆ Docker container, the container will need to have access to the ovftool command installed on the Docker host. The following steps are suggested:
+
+###### 7.1. Install ovftool
+
+Download and install the [ovftool](https://www.vmware.com/support/developer/ovf/) from VMware.
+
+###### 7.2. Copy ovftool installation to metroae_data directory
+
+The ovftool command and supporting files are usually installed in the /usr/lib/vmware-ovftool on the host. In order to the metroae container to be able to access these files, you must copy the entire folder to the metroae_data directory on the host. For example, if you have configured the container to use /home/user/metroae_data on your host, you would copy /usr/lib/vmware-ovftool to /home/user/metroae_data/vmware-ovftool. Note: Docker does not support following symlinks. You must copy the files as instructed.
+
+###### 7.3. Configure the ovftool path in your deployment
+
+The path to the ovftool is configured in your deployment in the common.yml file. Uncomment and set the variable 'vcenter_ovftool' to the container-relative path to where you copied the /usr/lib/vmware-ovftool folder. This is required because metroae will attempt to execute ovftool from within the container. From inside the container, metroae can only access paths that have been mounted from the host. In this case, this is the metroae_data directory which is mounted inside the container as '/data'. For our example, in common.yml you would set 'vcenter_ovftool: /data/vmware-ovftool/ovftool'.
+
+##### 8. Optional: Start the UI using this command:
 ```
 metroae start-ui
 ```
 This command will ensure that the MetroÆ GUI server is running. When running, you an point your browser at `http://host:5001` to access the GUI. *THE GUI IS IN BETA!* You are free to use it, but you can expect to run into issues because it is not fully baked.
-##### 8. You can check the status of the container at any time using the following command:
+##### 9. You can check the status of the container at any time using the following command:
 ```
 metroae status
 ```

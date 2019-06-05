@@ -1,10 +1,14 @@
 - block:
 
+  - name: Set local variable with vmname
+    set_fact:
+      vm_name: "{{ vmname }}"
+
   - name: Get VSC details from OpenStack
     os_server_facts:
       auth:
         "{{ openstack_auth }}"
-      server: "{{ inventory_hostname }}"
+      server: "{{ vm_name }}"
     register: vsc_server
 
   - name: Set vsc mgmt ip
@@ -28,6 +32,9 @@
       tasks_from: wait-for-ssh-port
     vars:
       ssh_host: "{{ vsc_mgmt_ip }}"
+      ssh_password: "{{ vsc_creds.password }}"
+      ssh_user: "{{ vsc_creds.username }}"
+      check_login: True
     tags:
       - vsc
       - vsc-deploy
@@ -75,7 +82,7 @@
     os_server_actions:
       auth:
         "{{ openstack_auth }}"
-      server: "{{ inventory_hostname }}"
+      server: "{{ vm_name }}"
       action: reboot
       wait: no
     delegate_to: 127.0.0.1

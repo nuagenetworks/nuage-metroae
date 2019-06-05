@@ -247,24 +247,24 @@
     nuage_append: filename="{{ report_path }}" text="{{ inventory_hostname }}  License  {{ license_valid | to_nice_json}}\n"
     delegate_to: localhost
 
-  when: check_vsd_license | default(False)
+  when: check_vsd_license | default(True)
 
 - block:
 
   - name: Verify keystore pass is set
-    shell: "$JAVE_HOME/bin/keytool -keystore /opt/vsd/jboss/standalone/configuration/vsd.keystore -storepass {{ keyStorePwd }} -list"
+    shell: "keytool -keystore /opt/vsd/jboss/standalone/configuration/vsd.keystore -storepass {{ keyStorePwd }} -list"
     when: keyStorePwd is defined
 
   - name: Verify truststore pass is set
-    shell: "$JAVE_HOME/bin/keytool -keystore /opt/vsd/jboss/standalone/configuration/vsd.truststore -storepass {{ trustStorePwd }} -list"
+    shell: "keytool -keystore /opt/vsd/jboss/standalone/configuration/vsd.truststore -storepass {{ trustStorePwd }} -list"
     when: trustStorePwd is defined
 
   - name: Verify keyserver pass is set
-    shell: "$JAVE_HOME/bin/keytool -keystore /opt/vsd/jboss/standalone/configuration/keyserver.jks -storepass {{ keyServerStorePwd }} -list"
+    shell: "keytool -keystore /opt/vsd/jboss/standalone/configuration/keyserver.jks -storepass {{ keyServerStorePwd }} -list"
     when: keyServerStorePwd is defined
 
   - name: Verify jrestore pass is set
-    shell: "$JAVE_HOME/bin/keytool -keystore $JAVA_HOME/lib/security/cacerts -alias vspca -storepass {{ jreStorePwd }} -list"
+    shell: "keytool -keystore /usr/java/latest/lib/security/cacerts -alias vspca -storepass {{ jreStorePwd }} -list"
     when: jreStorePwd is defined
 
   - name: Verify cnauser pass is set

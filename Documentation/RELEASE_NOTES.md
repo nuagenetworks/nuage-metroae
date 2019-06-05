@@ -23,6 +23,11 @@
 * Upgrade support for OpenStack (METROAE-995)
 * Make any_errors_fatal a global config item
 * Support for VSD active/standby cluster failover (METROAE-955)
+* Support application of standard and cluster licenses on install and upgrade (METROAE-600)
+* Enhance error checking in vCenter VSD destroy (METROAE-980)
+* Update instructions for using ovftool with the metroae container
+* Implement check of VSC authentication from Ansible host (METROAE-999)
+* Disable SELinux for Base CentOS image for SD-WAN portal
 
 ### Resolved Issues
 * Fix VSD Upgrade procedure to check for accurate ejabberd connected user list (METROAE-958)
@@ -37,3 +42,4 @@
 * Make VSD destroy serial to prevent race condition
 * Fix health checks for VSD with custom username (METROAE-994)
 * Skip monit status for processes and programs that are disabled by user
+* Unzip fixes for SD-WAN portal
