@@ -1,106 +1,141 @@
 ---
-
 - block:
 
-  - name: Renew standalone VSD certificate
-    command: /opt/vsd/bin/vsd-renew-certs.sh
+  - block:
 
-  - name: Restart ejabberd
-    command: monit restart ejabberd
-    when: require or allow tls mode
+    - name: Renew standalone VSD certificate
+      command: /opt/vsd/bin/vsd-renew-certs.sh
+      delegate_to: "{{ groups['primary_vsds'][0] }}"
 
-  - name: wait for ejabberd to come up
-    monit_waitfor_service:
-      name: ejabberd
-      timeout_seconds: 600
-      test_interval_seconds: 30
+    - name: Restart ejabberd
+      command: monit restart ejabberd
+      when: require or allow tls mode
+      delegate_to: "{{ groups['primary_vsds'][0] }}"
 
-  - name: Stop VSD core service
-    shell: monit stop -g vsd-core
+    - name: wait for ejabberd to come up
+      monit_waitfor_service:
+        name: ejabberd
+        timeout_seconds: 600
+        test_interval_seconds: 30
+      delegate_to: "{{ groups['primary_vsds'][0] }}"
 
-  - name: Pause for processes to exit
-    pause:
-      seconds: 20
+    - name: Stop VSD core service
+      shell: monit stop -g vsd-core
+      delegate_to: "{{ groups['primary_vsds'][0] }}"
 
-  - name: Restart the VSD core service
-    shell: monit start -g vsd-core
+    - name: Pause for processes to exit
+      pause:
+        seconds: 20
 
-  - name: Wait VSD core to start
-    monit_waitfor_service:
-      name: vsd-core
-      timeout_seconds: 600
-      test_interval_seconds: 30
+    - name: Restart the VSD core service
+      shell: monit start -g vsd-core
+      delegate_to: "{{ groups['primary_vsds'][0] }}"
 
-  - name: Restart stats if enabled
-    shell: monit restart -g vsd-stats
+    - name: Wait VSD core to start
+      monit_waitfor_service:
+        name: vsd-core
+        timeout_seconds: 600
+        test_interval_seconds: 30
+      delegate_to: "{{ groups['primary_vsds'][0] }}"
 
-  when:
-    - vsd_sa_or_ha is match ('sa')
-    - not vsd_standby_cluster | default(False)
+    - name: Restart stats if enabled
+      shell: monit restart -g vsd-stats
+      delegate_to: "{{ groups['primary_vsds'][0] }}"
 
-- block:
+    when:
+      - vsd_sa_or_ha is match ('sa')
+      - not vsd_standby_cluster | default(False)
 
-  - name: Renew primary VSD cert
-    command: /opt/vsd/bin/vsd-renew-certs.sh
-    with_items: vsd1
+  - block:
 
-  - name: Renew other 2 VSD certs
-    command: /opt/vsd/bin/vsd-renew-certs.sh -1 vsd-1.mydomain.com
-    with_items: vsd2 and vsd3
+    - name: Renew primary VSD cert
+      command: /opt/vsd/bin/vsd-renew-certs.sh
+      delegate_to: "{{ item }}"
+      with_items: "{{ groups['primary_vsds'][0] }}"
 
-  - name: Restart ejabberd
-    command: monit restart ejabberd
-    when: require or allow tls mode
+    - name: Renew other 2 VSD certs
+      command: /opt/vsd/bin/vsd-renew-certs.sh -1 vsd-1.mydomain.com
+      delegate_to: "{{ item }}"
+      with_items:
+        - "{{ groups['primary_vsds'][1] }}"
+        - "{{ groups['primary_vsds'][2] }}"
 
-  - name: wait for ejabberd to come up
-    monit_waitfor_service:
-      name: ejabberd
-      timeout_seconds: 600
-      test_interval_seconds: 30
+    - name: Restart ejabberd
+      command: monit restart ejabberd
+      when: require or allow tls mode
+      delegate_to: "{{ item }}"
+      with_items: "{{ groups['primary_vsds'] }}"
 
-  - name: Stop VSD core service
-    shell: monit stop -g vsd-core
+    - name: wait for ejabberd to come up
+      monit_waitfor_service:
+        name: ejabberd
+        timeout_seconds: 600
+        test_interval_seconds: 30
+      delegate_to: "{{ item }}"
+      with_items: "{{ groups['primary_vsds'] }}"
 
-  - name: Pause for processes to exit
-    pause:
-      seconds: 20
+    - name: Stop VSD core service
+      shell: monit stop -g vsd-core
+      delegate_to: "{{ item }}"
+      with_items: "{{ groups['primary_vsds'] }}"
 
-  - name: Restart the VSD core service
-    shell: monit start -g vsd-core
+    - name: Pause for processes to exit
+      pause:
+        seconds: 20
 
-  - name: Wait VSD core to start
-    monit_waitfor_service:
-      name: vsd-core
-      timeout_seconds: 600
-      test_interval_seconds: 30
+    - name: Restart the VSD core service
+      shell: monit start -g vsd-core
+      delegate_to: "{{ item }}"
+      with_items: "{{ groups['primary_vsds'] }}"
 
-  - name: Restart stats if enabled
-    shell: monit restart -g vsd-stats
+    - name: Wait VSD core to start
+      monit_waitfor_service:
+        name: vsd-core
+        timeout_seconds: 600
+        test_interval_seconds: 30
+      delegate_to: "{{ item }}"
+      with_items: "{{ groups['primary_vsds'] }}"
 
-  when:
-    - vsd_sa_or_ha is match ('ha')
-    - not vsd_standby_cluster | default(False)
+    - name: Restart stats if enabled
+      shell: monit restart -g vsd-stats
+      delegate_to: "{{ item }}"
+      with_items: "{{ groups['primary_vsds'] }}"
 
-- block:
+    when:
+      - vsd_sa_or_ha is match ('ha')
+      - not vsd_standby_cluster | default(False)
 
-  - name: Renew primary VSD cert
-    command: /opt/vsd/bin/vsd-renew-certs.sh
-    with_items: vsd4
+  - block:
 
-  - name: Renew other 2 VSD certs
-    command: /opt/vsd/bin/vsd-renew-certs.sh -1 vsd-4.mydomain.com
-    with_items: vsd5 and vsd6
+    - name: Renew primary VSD cert
+      command: /opt/vsd/bin/vsd-renew-certs.sh
+      delegate_to: "{{ item }}"
+      with_items: "{{ groups['standby_vsds'][0] }}"
 
-  - name: Restart ejabberd
-    command: monit restart ejabberd
-    when: require or allow tls mode
-    with_items: "{{ groups['standby_vsds'] }}"
+    - name: Renew other 2 VSD certs
+      command: /opt/vsd/bin/vsd-renew-certs.sh -1 vsd-4.mydomain.com
+      delegate_to: "{{ item }}"
+      with_items: 
+        - "{{ groups['standby_vsds'][1] }}"
+        - "{{ groups['standby_vsds'][2] }}"
 
-  - name: wait for ejabberd to come up
-    monit_waitfor_service:
-      name: ejabberd
-      timeout_seconds: 600
-      test_interval_seconds: 30
-    with_items: "{{ groups['standby_vsds'] }}"
+    - name: Restart ejabberd
+      command: monit restart ejabberd
+      when: require or allow tls mode
+      delegate_to: "{{ item }}"
+      with_items: "{{ groups['standby_vsds'] }}"
 
-  when: vsd_standby_cluster | default(False)
+    - name: wait for ejabberd to come up
+      monit_waitfor_service:
+        name: ejabberd
+        timeout_seconds: 600
+        test_interval_seconds: 30
+      delegate_to: "{{ item }}"
+      with_items: "{{ groups['standby_vsds'] }}"
+
+    when: vsd_standby_cluster | default(False)
+
+  remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
+  become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
+  vars:
+    ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"
