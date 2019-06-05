@@ -9,6 +9,8 @@
     command: monit restart ejabberd
     when: require or allow tls mode
 
+  - name: wait for ejabberd to come up
+
   - name: Stop VSD core service
     shell: monit stop -g vsd-core
 
@@ -34,6 +36,25 @@
     command: /opt/vsd/bin/vsd-renew-certs.sh -1 vsd-1.mydomain.com
     with_items: vsd2 and vsd3
 
+  - name: Restart ejabberd
+    command: monit restart ejabberd
+    when: require or allow tls mode
+
+  - name: wait for ejabberd to come up
+
+  - name: Stop VSD core service
+    shell: monit stop -g vsd-core
+
+  - name: Wait for VSD core service to stop
+
+  - name: Restart the VSD core service
+    shell: monit start -g vsd-core
+
+  - name: Wait for monit to display everything as running
+
+  - name: Restart stats if enabled
+    shell: monit restart -g vsd-stats
+
   when: clustered_vsd
 
 - block:
@@ -45,5 +66,11 @@
   - name: Renew other 2 VSD certs
     command: /opt/vsd/bin/vsd-renew-certs.sh -1 vsd-4.mydomain.com
     with_items: vsd5 and vsd6
+
+  - name: Restart ejabberd
+    command: monit restart ejabberd
+    when: require or allow tls mode
+
+  - name: wait for ejabberd to come up
 
   when: standby_cluster
