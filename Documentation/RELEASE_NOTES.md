@@ -22,6 +22,7 @@
 * Do not run vsd-deploy if vsd-predeploy fails on any node (METROAE-982)
 * Upgrade support for OpenStack (METROAE-995)
 * Make any_errors_fatal a global config item
+* Support for VSD active/standby cluster failover (METROAE-955)
 * Support application of standard and cluster licenses on install and upgrade (METROAE-600)
 * Enhance error checking in vCenter VSD destroy (METROAE-980)
 * Update instructions for using ovftool with the metroae container
