@@ -16,10 +16,10 @@ WIZARD_SCRIPT = """
 - message:
     text: |
 
-      Thank you for using MetroÆ!
+      Thank you for using MetroAE!
 
       This wizard will walk you through the creation or modification
-      of a MetroÆ deployment. We will walk through the process
+      of a MetroAE deployment. We will walk through the process
       step-by-step. You will also have the option of doing things
       such as verifying that all prerequisites are satisfied,
       unzipping Nuage image files, and copying ssh keys to servers.
@@ -31,9 +31,9 @@ WIZARD_SCRIPT = """
 
       The following steps will be performed:
 
-- step: Verify proper MetroÆ installation
+- step: Verify proper MetroAE installation
   description: |
-      This step will verify that the MetroÆ tool has been properly installed
+      This step will verify that the MetroAE tool has been properly installed
       with all required libraries.
   verify_install:
     missing_msg: |
@@ -44,8 +44,8 @@ WIZARD_SCRIPT = """
       for the sudo password.
     wrong_os_msg: |
 
-      The OS is not recognized.  MetroÆ requires a Linux based operating
-      system such as CentOS or Ubuntu.  A docker container version of MetroÆ is
+      The OS is not recognized.  MetroAE requires a Linux based operating
+      system such as CentOS or Ubuntu.  A docker container version of MetroAE is
       available for other operating system types.
 
 - step: Unzip image files
@@ -60,7 +60,7 @@ WIZARD_SCRIPT = """
   unzip_images:
     container_msg: |
 
-      MetroÆ is running in a container.  The zipped image files must be placed
+      MetroAE is running in a container.  The zipped image files must be placed
       under the metroae_images directory mount point of the container.  The
       mount directory was set during container setup and can be found using
       the command "metroae container status".  Relative paths must be provided
@@ -70,11 +70,11 @@ WIZARD_SCRIPT = """
 - step: Create/read deployment
   description: |
       This step will create a deployment or modify an existing one.
-      A deployment is a configuration set for MetroÆ. It is a collection of
+      A deployment is a configuration set for MetroAE. It is a collection of
       files in a deployment directory. The name of the directory is the
       name of the deployment. The files in the directory describe the
       properties of each component being installed, upgraded, or configured.
-      MetroÆ supports multiple deployments, each in its own directory.
+      MetroAE supports multiple deployments, each in its own directory.
   create_deployment: {}
 
 - step: Common deployment parameters
@@ -85,7 +85,7 @@ WIZARD_SCRIPT = """
   create_common:
     dns_setup_msg: |
 
-      MetroÆ requires that most components have hostname-to-ip address DNS
+      MetroAE requires that most components have hostname-to-ip address DNS
       mappings defined before running workflows. You can complete this
       wizard without having DNS setup in your environment, but having DNS
       setup before continuing will allow this wizard to auto-discover
@@ -104,7 +104,7 @@ WIZARD_SCRIPT = """
       hypervisors. A network bridge will be a Distributed Virtual PortGroup
       (DVPG) when deploying on vCenter or a Linux network bridge when deploying
       on KVM. VSP component interfaces will be connected to these bridges so
-      that they can communicate with each other and to the outside. MetroÆ will
+      that they can communicate with each other and to the outside. MetroAE will
       not create the bridges for you. You must create and configure them ahead
       of time.
 
@@ -121,7 +121,7 @@ WIZARD_SCRIPT = """
   create_upgrade:
     upgrade_msg: |
 
-      MetroÆ needs the version number that your deployment is currently
+      MetroAE needs the version number that your deployment is currently
       running and which version to upgrade to.
 
 - step: VSD deployment file
@@ -166,14 +166,14 @@ WIZARD_SCRIPT = """
 - step: Setup SSH on target servers
   description: |
       This step will setup password-less SSH access to the KVM target servers
-      (hypervisors) used by your deployment.  MetroÆ must have password-less
+      (hypervisors) used by your deployment.  MetroAE must have password-less
       access to all the KVM target servers you will be accessing using this
       deployment. If you are not using KVM target servers you may skip this
       step.
   setup_target_servers:
     container_msg: |
 
-      MetroÆ is running in a container.  The SSH key being copied to the
+      MetroAE is running in a container.  The SSH key being copied to the
       target servers is the key belonging to the container.  This is different
       than the key on the Docker host.  The container SSH key can be found in
       your metroae_data mount directory.
@@ -182,7 +182,7 @@ WIZARD_SCRIPT = """
     problem_msg: |
 
         The following problems have occurred during the wizard.  It may
-        cause MetroÆ to function incorrectly.  It is recommended that you
+        cause MetroAE to function incorrectly.  It is recommended that you
         correct these and repeat any steps affected.
     finish_msg: |
 
@@ -238,7 +238,7 @@ class Wizard(object):
                 self._print("  - " + step["step"])
 
     def verify_install(self, action, data):
-        self._print(u"\nVerifying MetroÆ installation")
+        self._print(u"\nVerifying MetroAE installation")
 
         if self.in_container:
             self._print("\nWizard is being run inside a Docker container.  "
@@ -263,12 +263,12 @@ class Wizard(object):
 
         if len(missing) == 0:
             self._unrecord_problem("install_libraries")
-            self._print(u"\nMetroÆ Installation OK!")
+            self._print(u"\nMetroAE Installation OK!")
         else:
             self._record_problem(
                 "install_libraries",
-                u"Your MetroÆ installation is missing libraries")
-            self._print(u"\nYour MetroÆ installation is missing libraries:\n")
+                u"Your MetroAE installation is missing libraries")
+            self._print(u"\nYour MetroAE installation is missing libraries:\n")
             self._print("\n".join(missing))
             self._print(self._get_field(data, "missing_msg"))
             choice = self._input("Do you want to run setup now?", 0,
@@ -712,7 +712,7 @@ class Wizard(object):
                     self.current_action_idx += 1
                     continue
                 if choice == 3:
-                    self._print(u"Exiting MetroÆ wizard. All progress made has"
+                    self._print(u"Exiting MetroAE wizard. All progress made has"
                                 u" been saved.")
                     exit(0)
 
@@ -857,7 +857,7 @@ class Wizard(object):
                 raise Exception("metro-setup.sh exit-code: %d" % rc)
 
             self._unrecord_problem("install_libraries")
-            self._print(u"\nMetroÆ setup completed successfully!")
+            self._print(u"\nMetroAE setup completed successfully!")
         except Exception as e:
             self._print("\nAn error occurred while running setup: " +
                         str(e))
@@ -1238,7 +1238,7 @@ class Wizard(object):
 
                 self._print(
                     u"\nCould not resolve %s to an IP address, this is "
-                    u"required for MetroÆ to operate.  Is the hostname defined"
+                    u"required for MetroAE to operate.  Is the hostname defined"
                     u" in DNS?" % hostname)
         except Exception as e:
             self._record_problem(
@@ -1287,7 +1287,7 @@ class Wizard(object):
                 self._print("\n".join(output_lines))
                 self._print(
                     u"\nCould not add SSH keys for %s@%s, this is required"
-                    u" for MetroÆ to operate." % (username, hostname))
+                    u" for MetroAE to operate." % (username, hostname))
         except Exception as e:
             self._record_problem(
                 "ssh_keys", "Error while setting up password-less SSH")
