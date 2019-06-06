@@ -603,16 +603,23 @@ function setup {
 
     declare -l setup_type
     setup_type="init"
-    while [[ $setup_type != "c" ]] && [[ $setup_type != "d" ]] && [[ $setup_type != "b" ]] && [[ $setup_type != "" ]]
-    do
+    if [[ -z $1 ]]; then
+        while [[ $setup_type != "c" ]] && [[ $setup_type != "d" ]] && [[ $setup_type != "b" ]] && [[ $setup_type != "" ]]
+        do
+            echo ""
+            echo "Setup can configure the container to support MetroAE (c)onfig, MetroAE (d)eploy,"
+            echo "or (b)oth MetroAE config and deploy. MetroAE config is used for day-zero VSD"
+            echo "configuration tasks. MetroAE deploy is used for installing, upgrading, and"
+            echo "health checking of Nuage VSP components in your environment."
+            echo ""
+            read -p "Do you want to setup MetroAE config, deploy, or both? (c/d/B): " setup_type
+        done
+    else
         echo ""
-        echo "Setup can configure the container to support MetroAE (c)onfig, MetroAE (d)eploy,"
-        echo "or (b)oth MetroAE config and deploy. MetroAE config is used for day-zero VSD"
-        echo "configuration tasks. MetroAE deploy is used for installing, upgrading, and"
-        echo "health checking of Nuage VSP components in your environment."
-        echo ""
-        read -p "Do you want to setup MetroAE config, deploy, or both? (c/d/B): " setup_type
-    done
+        echo ">>> Setting setup type to passed in parameter $1" | tee -a $SCRIPT_LOG_FILE
+        setup_type=$1
+        shift
+    fi
 
     if [[ $setup_type == "c" ]]; then
         echo ""
@@ -623,6 +630,7 @@ function setup {
     else
         echo ""
         echo ">>> Setup container for both MetroAE config and deploy"
+        setup_type="b"
     fi
     echo METROAE_SETUP_TYPE=$setup_type > $SETUP_FILE
 
@@ -641,14 +649,15 @@ function setup {
         get_user_path_input "Data directory path" metroae_data
         data_path=$PATH_ARG
     else
-        echo "setting data path to passed in parameter $1" | tee -a $SCRIPT_LOG_FILE
+        echo ""
+        echo ">>> Setting data path to passed in parameter $1" | tee -a $SCRIPT_LOG_FILE
         data_path=$1
+        shift
     fi
-
     echo METROAE_MOUNT_POINT=$data_path >> $SETUP_FILE
 
     if [[ $setup_type != "c" ]]; then
-        if [[ -z $2 ]]; then
+        if [[ -z $1 ]]; then
             echo "Image directory configuration"
             echo ""
             echo "For deployments, the MetroAE container needs access to the Nuage Networks component"
@@ -662,8 +671,10 @@ function setup {
             get_user_path_input "Image directory path" metroae_images
             images_path=$PATH_ARG
         else
-            echo "Setting image path to $2" | tee -a $SCRIPT_LOG_FILE
-            images_path=$2
+            echo ""
+            echo ">>> Setting image path to $3" | tee -a $SCRIPT_LOG_FILE
+            images_path=$1
+            shift
         fi
         echo IMAGES_MOUNT_POINT=$images_path >> $SETUP_FILE
     fi
@@ -704,8 +715,9 @@ function setup {
 
     # ui
     declare -l gui_confirm
-    if [[ ! -z $3 ]]; then
-        gui_confirm="$3"
+    if [[ ! -z $1 ]]; then
+        gui_confirm="$1"
+        shift
     else
         gui_confirm="init"
     fi
@@ -721,21 +733,24 @@ function setup {
         get_host_operating_system
         declare -i port
         if [[ $OS_RELEASE -eq $NON_LINUX ]]; then
-            if [[ -z $4 ]]; then
+            if [[ -z $1 ]]; then
                 echo ""
                 read -p "Specify the REST API/GUI HTTP port for the MetroAE container: " port
                 echo ""
                 echo ">>> Configuring REST API/GUI to use port: $port"
             else
-                echo "Setting REST API/GUI access port to $4" | tee -a $SCRIPT_LOG_FILE
-                port=$4
+                echo ""
+                echo ">>> Setting REST API/GUI access port to $1" | tee -a $SCRIPT_LOG_FILE
+                port=$1
+                shift
             fi
             echo UI_PORT=$port >> $SETUP_FILE
         fi
         # Ask if TLS needs to be setup
         declare -l tls_confirm
-        if [[ ! -z $5 ]]; then
-            tls_confirm=$5
+        if [[ ! -z $1 ]]; then
+            tls_confirm=$1
+            shift
         else
             tls_confirm="init"
         fi
@@ -781,6 +796,7 @@ function setup {
                     keyfile='none'
                 fi
             done
+            echo ""
             echo ">>> Using key file: $keyfile"
             cp $keyfile $data_path/gui_keyfile
 
@@ -791,8 +807,9 @@ function setup {
             echo ">>> Not enabling TLS on the REST API/GUI"
         fi
 
-        start_ui $7
+        start_ui $1
         gui_status=$?
+        shift
         if [[ $gui_status -ne 0 ]]; then
             echo ""
             echo "Problem starting the MetroAE REST API/GUI in the container. Return code: $gui_status. Quitting."
