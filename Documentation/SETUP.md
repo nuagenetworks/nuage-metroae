@@ -84,6 +84,11 @@ Clone the repo with the following command.
 ```
 git clone https://github.com/nuagenetworks/nuage-metro.git
 ```
+Once the nuage-metro repo is cloned, you can skip the rest of this procedure by running the MetroÆ wizard, metroae_wizard.py. You can use the wizard to automatically handle the rest of the steps described in this document plus the steps described in [customize](CUSTOMIZE.md).
+```
+python metroae_wizard.py
+```
+If you don't run the wizard, please continue with the rest of the steps in this document.
 ##### 2. Install Packages
 MetroÆ code includes a setup script which installs required packages and modules. If any of the packages or modules are already present, the script does not upgrade or overwrite them. You can run the script multiple times without affecting the system. To install the required packages and modules, run the following command.
 ```

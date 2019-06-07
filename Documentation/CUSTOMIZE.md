@@ -1,5 +1,4 @@
 # Customizing Components for a Deployment
-The steps below apply when you choose to work via CLI. A similar set of steps, facilitated by the GUI, is also available if you choose to deploy MetroÆ via Docker Container. If you choose to work via the GUI you can access it by pointing your browser at the address and port that was specified during the container setup. The default address is https://metroaehostname:5001.
 ## Note for users of MetroÆ before version 3.0
 MetroÆ before version 3.0 used the now deprecated build_vars.yml configuration.  In the current version, build_vars.yml is replaced with *deployments* as described in this document.  You can convert an obsolete build_vars.yml file to a deployment using the following tool:
 
@@ -31,11 +30,19 @@ The files under `nuage-metro/deployments/mydeployment` will be used to do an ins
 Each time you issue MetroaÆ, the inventory will be completely rebuilt from the deployment name specified.  This will overwrite any previous inventory, so it will reflect exactly what is configured in the deployment that was specified.
 
 ## Customize Deployment
-Based on your network topology and the specific components you plan on deploying, you will configure several files. Setting configuration files correctly ensures that when you subsequently execute workflows they configure components as intended. Precise syntax is crucial.
+Based on your network topology and the specific components you plan on deploying, you will configure several files. Setting deployment files correctly ensures that when you subsequently execute workflows they configure components as intended. Precise syntax is crucial.
 
-When a workflow is executed, each configuration file is validated against a data schema which ensures that all required fields are present and in the correct syntax. These schemas are located in the [schemas/](/schemas/) directory. They follow the [json-schema.org standard](https://json-schema.org).
+When a workflow is executed, each deployment file is validated against a data schema which ensures that all required fields are present and in the correct syntax. These schemas are located in the [schemas/](/schemas/) directory. They follow the [json-schema.org standard](https://json-schema.org).
 
-You have the option of configuring the default files provided in the deployments/default/ sub-directory or creating your own sub-directories under the deployments/ directory. You can find examples of configuration files for different deployments in the [examples/](/examples/) directory. Unless you specify a different deployment sub-directory name, the default deployment is used when a workflow is executed. This method allows MetroÆ to support many deployments (different configurations) in parallel and the ability to switch between them as required. See below for the supported configuration files that you can specify in a deployments sub-directory.
+You have the option of configuring the default deployment files provided in the deployments/default/ sub-directory or creating your own sub-directories under the deployments/ directory. You can find examples of deployment files for different deployments in the [examples/](/examples/) directory. Unless you specify a different deployment sub-directory name, the default deployment is used when a workflow is executed. This method allows MetroÆ to support many deployments (different configurations) in parallel and the ability to switch between them as required. See below for the supported deployment files that you can specify in a deployments sub-directory.
+
+Note that you can edit the deployment files manually at any time. As of v3.3.0, MetroÆ comes with its own wizard for automating the creation and editing of deployment files when you are working with a clone of the nuage-metro repo. To start the wizard:
+```
+python metroae_wizard.py
+```
+You can use the wizard to setup your MetroÆ environment, if you wish. Or you can skip the setup step and go directly to the creation and editing of your deployment.
+
+The deployment files that can be configured using the wizard or edited manually are listed, below.
 
 ### `common.yml`
 `common.yml` contains the common configuration parameters for the deployment that are used for all components and workflows.  This file is always required for any workflow.

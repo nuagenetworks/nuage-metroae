@@ -22,11 +22,13 @@
 * Do not run vsd-deploy if vsd-predeploy fails on any node (METROAE-982)
 * Upgrade support for OpenStack (METROAE-995)
 * Make any_errors_fatal a global config item
+* Support for VSD active/standby cluster failover (METROAE-955)
 * Support application of standard and cluster licenses on install and upgrade (METROAE-600)
 * Enhance error checking in vCenter VSD destroy (METROAE-980)
 * Update instructions for using ovftool with the metroae container
 * Implement check of VSC authentication from Ansible host (METROAE-999)
 * Disable SELinux for Base CentOS image for SD-WAN portal
+* Added metroae_wizard.py to simplify setup and deployment creation
 
 ### Resolved Issues
 * Fix VSD Upgrade procedure to check for accurate ejabberd connected user list (METROAE-958)
