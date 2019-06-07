@@ -25,17 +25,16 @@ MENU+=(',container,destroy'         'Destroy the mertroae container'            
 MENU+=(',container,update'          'Update the mertroae container to the latest version'  'container'  'upgrade-engine'         ',container')
 MENU+=(',container,ssh,copyid'      'Copy the container ssh public key to a host'          'container'  'copy-ssh-id'            ',container')
 if [[ ! -z "$METROAE_GUI_ENABLE" ]]; then
-    MENU+=(',container,gui'                    'Manage the MetroAE container GUI/API'         'container'  'gui'                       ',container')
-
     #################################################################################
     #                                GUI COMMANDS                                   #
     #################################################################################
 
-    MENU+=(',container,gui,stop'               'Stop the MetroAE GUI'                         'container'  'stop-ui'                ',container,gui')
-    MENU+=(',container,gui,start'              'Start the MetroAE GUI'                        'container'  'start-ui'               ',container,gui')
-    MENU+=(',container,gui,status'             'Get the status of the MetroAE GUI'            'container'  'status-ui'              ',container,gui')
-    MENU+=(',container,gui,encryption,enable'  'Enable HTTP encryption for the MetroAE GUI'   'container'  'enable-ui-encryption'   ',container,gui')
-    MENU+=(',container,gui,encryption,disable' 'Disable HTTP encryption for the MetroAE GUI'  'container'  'disable-ui-encryption'  ',container,gui')
+    MENU+=(',gui'                    'Manage the MetroAE container GUI/API'         'container'  'gui'                       '')
+    MENU+=(',gui,stop'               'Stop the MetroAE GUI'                         'container'  'stop-ui'                ',gui')
+    MENU+=(',gui,start'              'Start the MetroAE GUI'                        'container'  'start-ui'               ',gui')
+    MENU+=(',gui,status'             'Get the status of the MetroAE GUI'            'container'  'status-ui'              ',gui')
+    MENU+=(',gui,encryption,enable'  'Enable HTTP encryption for the MetroAE GUI'   'container'  'enable-ui-encryption'   ',gui')
+    MENU+=(',gui,encryption,disable' 'Disable HTTP encryption for the MetroAE GUI'  'container'  'disable-ui-encryption'  ',gui')
 fi
 #################################################################################
 #                                  VARIABLES                                    #
@@ -1199,14 +1198,7 @@ function docker_exec_levistate {
 
 
 function config_status {
-    docker_status
-    if [[ -f $SETUP_FILE ]]; then
-        echo "Current MetroAE container settings"
-        while read -r line; do declare $line; done < $SETUP_FILE
-        echo levistate_mount_point=$LEVISTATE_MOUNT_POINT
-    else
-        echo "MetroAE container has not been setup. Quitting."
-    fi
+    container_status
 }
 
 function config_main {
@@ -1385,17 +1377,39 @@ function container_status {
         echo ">>> Getting container configuration from host"
         echo ""
         while read -r line; do declare $line; done < $SETUP_FILE
-        if [[ -z $METROAE_SETUP_TYPE ]] || [[ -z $METROAE_MOUNT_POINT ]]; then
-            echo "Problem in one or more MetroAE configuration files on the host."
-            echo "Please run 'metroae container setup' and try again. Quitting."
+        if [[ -z $METROAE_SETUP_TYPE ]]; then
+            echo ""
+            echo "We couldn't find the MetroAE setup type in the configuration file on disk."
+            echo "Please run 'metroae container setup' and try again."
+            echo ""
+            exit 1
+        elif [[ -z $METROAE_MOUNT_POINT ]]; then
+            echo ""
+            echo "We couldn't find the MetroAE data path in the configuration file on disk."
+            echo "Please run 'metroae container setup' and try again."
+            echo ""
             exit 1
         fi
         if [[ $METROAE_SETUP_TYPE != "c" ]] && [[ -z $IMAGES_MOUNT_POINT ]]; then
-            echo "Problem in one or more MetroAE configuration files on the host."
-            echo "Please run 'metroae container setup' and try again. Quitting."
+            echo ""
+            echo "We couldn't find the MetroAE images path in the configuration file on disk."
+            echo "Please run 'metroae container setup' and try again."
+            echo ""
             exit 1
         fi
-        echo "MetroAE setup type: $METROAE_SETUP_TYPE"
+        if [[ $METROAE_SETUP_TYPE == "c" ]]; then
+            current_setup_type="Config only"
+        elif [[ $METROAE_SETUP_TYPE == "d" ]]; then
+            current_setup_type="Deploy only"
+        elif [[ $METROAE_SETUP_TYPE == "b" ]]; then
+            current_setup_type="Both Config and Deploy"
+        else
+            echo ""
+            echo "The MetroAE setup type in the configuration file on disk is not valid."
+            echo "Please run 'metroae container setup' and try again."
+            echo ""
+        fi
+        echo "MetroAE setup type: $current_setup_type"
         echo "MetroAE container data path: $METROAE_MOUNT_POINT"
         if [[ $METROAE_SETUP_TYPE != "c" ]]; then
             echo "MetroAE container images path: $IMAGES_MOUNT_POINT"
@@ -1410,7 +1424,11 @@ function container_status {
             fi
         fi
     else
-        echo "MetroAE container setup file not found. Please run 'metroae container setup' and try again. Quitting."
+        echo ""
+        echo "MetroAE container setup file not found. Please run 'metroae container setup'"
+        echo "and try again. Quitting."
+        echo ""
+        exit 1
     fi
 }
 
@@ -1439,7 +1457,7 @@ function container_main {
 
     # main functionality
     if [[ $# -ne 0 ]] && [[ $1 == "gui" ]]; then
-        ui_help ",container,gui"
+        ui_help ",gui"
         exit 0
     elif [[ $# -eq 0 ]]; then
         container_help ",container"
@@ -1656,7 +1674,7 @@ function tools_main {
 #################################################################################
 
 function main_help {
-    echo "Nuage Networks Metro Automation Engine (MetroAE) CLI Version:" $METROAE_VERSION
+    echo "Nuage Networks Metro Automation Engine (MetroAE) Version:" $METROAE_VERSION
     echo ""
     echo "MetroAE usage:"
     echo ""
@@ -1704,15 +1722,16 @@ function main_help {
 }
 
 function container_help {
-    echo "Nuage Networks Metro Automation Engine (MetroAE) CLI Version:" $METROAE_VERSION
+    echo "Nuage Networks Metro Automation Engine (MetroAE) Version:" $METROAE_VERSION
     echo ""
     echo "MetroAE container usage:"
     echo ""
     print_menu_help "metroae%-50s %-1s\n" $1
+    echo ""
 }
 
 function config_help {
-    echo "Nuage Networks Metro Automation Engine (MetroAE) CLI Version:" $METROAE_VERSION
+    echo "Nuage Networks Metro Automation Engine (MetroAE) Version:" $METROAE_VERSION
     echo ""
     echo "MetroAE config is a tool that you can use to apply and manage day-zero configurations"
     echo "for a Nuage Networks VSD. MetroAE config is only available via the MetroAE container."
@@ -1725,6 +1744,7 @@ function config_help {
     echo "MetroAE config usage:"
     echo ""
     print_menu_help "metroae%-50s %-1s\n" $1
+    echo ""
 
     get_running_container_id
     if [[ -z $RUNNING_CONTAINER_ID ]]; then
@@ -1741,19 +1761,21 @@ function config_help {
 }
 
 function tools_help {
-    echo "Nuage Networks Metro Automation Engine (MetroAE) CLI Version:" $METROAE_VERSION
+    echo "Nuage Networks Metro Automation Engine (MetroAE) Version:" $METROAE_VERSION
     echo ""
     echo "MetroAE tools usage:"
     echo ""
     print_menu_help "metroae%-50s %-1s\n" $1
+    echo ""
 }
 
 function ui_help {
-    echo "Nuage Networks Metro Automation Engine (MetroAE) CLI Version:" $METROAE_VERSION
+    echo "Nuage Networks Metro Automation Engine (MetroAE) Version:" $METROAE_VERSION
     echo ""
-    echo "MetroAE container gui usage:"
+    echo "MetroAE gui usage:"
     echo ""
     print_menu_help "metroae%-50s %-1s\n" $1
+    echo ""
 }
 
 #################################################################################
