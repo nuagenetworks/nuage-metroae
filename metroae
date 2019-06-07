@@ -5,37 +5,38 @@ set -e
 #                              CONFIG COMMANDS                                  #
 #################################################################################
 
-MENU+=(',config'                    'Configure VSD'                                            'config'      ''                         '')
-MENU+=(',config,help'               'Displays the help text for levistate'                     'config'      'help'                     ',config')
-MENU+=(',config,version'            'Displays the current levistate version'                   'config'      'version'                  ',config')
-MENU+=(',config,engine,update'      'Update levistate to the latest version'                   'config'      'upgrade-engine'           ',config')
-MENU+=(',config,<positional args>'  'Execute levistate inside the container'                   'config'      'help'                     ',config')
-
-#################################################################################
-#                                 UI COMMANDS                                   #
-#################################################################################
-
-MENU+=(',ui'                        'Manage MetroAE GUI'                                       'container'   ''                         '')
-MENU+=(',ui,stop'                   'Stop the MetroAE GUI'                                     'container'   'stop-ui'                  ',ui')
-MENU+=(',ui,start'                  'Start the MetroAE GUI'                                    'container'   'start-ui'                 ',ui')
-MENU+=(',ui,status'                 'Get the status of the MetroAE GUI'                        'container'   'status-ui'                ',ui')
-MENU+=(',ui,encryption,enable'      'Enable HTTP encryption for the MetroAE GUI'               'container'   'enable-ui-encryption'     ',ui')
-MENU+=(',ui,encryption,disable'     'Disable HTTP encryption for the MetroAE GUI'              'container'   'disable-ui-encryption'    ',ui')
+MENU+=(',config'                    'Configure VSD'                                        'config'     ''                       '')
+MENU+=(',config,help'               'Displays the help text for levistate'                 'config'     'help'                   ',config')
+MENU+=(',config,version'            'Displays the current levistate version'               'config'     'version'                ',config')
+MENU+=(',config,engine,update'      'Update levistate to the latest version'               'config'     'upgrade-engine'         ',config')
+MENU+=(',config,<positional args>'  'Execute levistate inside the container'               'config'     'help'                   ',config')
 
 #################################################################################
 #                             CONTAINER COMMANDS                                #
 #################################################################################
 
-MENU+=(',container'                 'Manage the MetroAE container'                             'container'    ''                        '')
-MENU+=(',container,pull'            'Pull a new MetroAE image from the registry'               'container'    'pull'                    ',container')
-MENU+=(',container,setup'           'Setup the mertroae container'                             'container'    'setup'                   ',container')
-MENU+=(',container,start'           'Start the mertroae container'                             'container'    'start'                   ',container')
-MENU+=(',container,stop'            'Stop the mertroae container'                              'container'    'stop'                    ',container')
-MENU+=(',container,status'          'Display the status of the mertroae container'             'container'    'status'                  ',container')
-MENU+=(',container,destroy'         'Destroy the mertroae container'                           'container'    'destroy'                 ',container')
-MENU+=(',container,update'          'Update the mertroae container to the latest version'      'container'    'upgrade-engine'          ',container')
-MENU+=(',container,ssh,copyid'      'Copy the container ssh public key to a host'              'container'    'copy-ssh-id'             ',container')
+MENU+=(',container'                 'Manage the MetroAE container'                         'container'  ''                       '')
+MENU+=(',container,pull'            'Pull a new MetroAE image from the registry'           'container'  'pull'                   ',container')
+MENU+=(',container,setup'           'Setup the mertroae container'                         'container'  'setup'                  ',container')
+MENU+=(',container,start'           'Start the mertroae container'                         'container'  'start'                  ',container')
+MENU+=(',container,stop'            'Stop the mertroae container'                          'container'  'stop'                   ',container')
+MENU+=(',container,status'          'Display the status of the mertroae container'         'container'  'status'                 ',container')
+MENU+=(',container,destroy'         'Destroy the mertroae container'                       'container'  'destroy'                ',container')
+MENU+=(',container,update'          'Update the mertroae container to the latest version'  'container'  'upgrade-engine'         ',container')
+MENU+=(',container,ssh,copyid'      'Copy the container ssh public key to a host'          'container'  'copy-ssh-id'            ',container')
+if [[ ! -z "$METROAE_GUI_ENABLE" ]]; then
+    MENU+=(',container,gui'                    'Manage the MetroAE container GUI/API'         'container'  'gui'                       ',container')
 
+    #################################################################################
+    #                                GUI COMMANDS                                   #
+    #################################################################################
+
+    MENU+=(',container,gui,stop'               'Stop the MetroAE GUI'                         'container'  'stop-ui'                ',container,gui')
+    MENU+=(',container,gui,start'              'Start the MetroAE GUI'                        'container'  'start-ui'               ',container,gui')
+    MENU+=(',container,gui,status'             'Get the status of the MetroAE GUI'            'container'  'status-ui'              ',container,gui')
+    MENU+=(',container,gui,encryption,enable'  'Enable HTTP encryption for the MetroAE GUI'   'container'  'enable-ui-encryption'   ',container,gui')
+    MENU+=(',container,gui,encryption,disable' 'Disable HTTP encryption for the MetroAE GUI'  'container'  'disable-ui-encryption'  ',container,gui')
+fi
 #################################################################################
 #                                  VARIABLES                                    #
 #################################################################################
@@ -69,7 +70,7 @@ fi
 OS_RELEASE=$LINUX
 PATH_ARG=""
 ENVIRONMENT_FILTERS=(PWD PATH HOME USER SHELL MAIL SSH_CONNECTION LOGNAME OLDPWD LESSOPEN _ XDG_RUNTIME_DIR HISTCONTROL)
-CONTAINER_VERSION=1.0.4
+SCRIPT_VERSION=1.0.4
 
 S3_KEY="AKIAJOPWRLAXPCUXZX3A"
 S3_SECRET="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"
@@ -186,15 +187,16 @@ function check_for_prerequisite {
 }
 
 function print_version_and_exit {
+    echo ""
     if [[ $RUN_MODE == "CONTAINER" ]]; then
         get_max_container_version
         if [[ -f $SCRIPT_LOG_FILE ]] && [[ -z $GROUP_CHECK ]]; then
-            echo "MetroAE container version $MAX_CONTAINER_VERSION and MetroAE version $METROAE_VERSION" | tee -a $SCRIPT_LOG_FILE
+            echo "[MetroAE $METROAE_VERSION, script $SCRIPT_VERSION, container $MAX_CONTAINER_VERSION]" | tee -a $SCRIPT_LOG_FILE
         fi
     elif [[ $RUN_MODE == "REPO" ]]; then
-        if [[ ! ${MATCH_MENU[0]} =~ ",container*" ]] && [[ ! ${MATCH_MENU[0]} =~ ",config*" ]] && [[ ! ${MATCH_MENU[0]} =~ ",ui*" ]]; then
+        if [[ ! ${MATCH_MENU[0]} =~ ",container*" ]] && [[ ! ${MATCH_MENU[0]} =~ ",config*" ]] && [[ ! ${MATCH_MENU[0]} =~ ",gui*" ]]; then
             if [[ -f $SCRIPT_LOG_FILE ]] && [[ -z $GROUP_CHECK ]]; then
-                echo "MetroAE workspace version $METROAE_VERSION" | tee -a $SCRIPT_LOG_FILE
+                echo "[MetroAE $METROAE_VERSION, script $SCRIPT_VERSION"] | tee -a $SCRIPT_LOG_FILE
             fi
         fi
     fi
@@ -320,13 +322,14 @@ function delete_container_id {
 }
 
 function destroy {
+    declare -l confirmation
     if [[ -z $1 ]]; then
         confirmation="init"
     else
         confirmation=$1
     fi
 
-    while [[ $confirmation != "yes" ]] && [[ $confirmation  != "no" ]] && [[ $confirmation  != "y" ]] && [[ $confirmation != "n" ]]
+    while [[ $confirmation != "n" ]] && [[ $confirmation  != "y" ]] && [[ $confirmation != "" ]]
     do
         echo ""
         echo "It looks like you are about to destroy the MetroAE container. If you proceed,"
@@ -335,11 +338,11 @@ function destroy {
         echo "not be destroyed. You will be able to use it again by pulling another MetroAE"
         echo "container and running 'metroae container setup'."
         echo ""
-        read -p "Do you really want to destroy the MetroAE container? (yes/no): " confirmation
+        read -p "Do you really want to destroy the MetroAE container? (y/N): " confirmation
     done
 
 
-    if [[ $confirmation != "yes" ]] && [[ $confirmation != "y" ]]
+    if [[ $confirmation != "y" ]]
     then
         echo "Destroy of metorae container was canceled"
         return 1
@@ -430,10 +433,14 @@ function pull {
         repo="Amazon S3"
     else
         if [[ -f $SCRIPT_LOG_FILE ]]; then
-            echo "Pulling the MetroAE container image from Nokia registry..." | tee -a $SCRIPT_LOG_FILE
+            echo ""
+            echo ">>> Pulling the MetroAE container image from Nokia registry..." | tee -a $SCRIPT_LOG_FILE
+            echo ""
             docker pull $METRO_AE_IMAGE:$MAX_CONTAINER_VERSION | tee -a $SCRIPT_LOG_FILE
         else
-            echo "Pulling the MetroAE container image from Nokia registry..."
+            echo ""
+            echo ">>> Pulling the MetroAE container image from Nokia registry..."
+            echo ""
             docker pull $METRO_AE_IMAGE:$MAX_CONTAINER_VERSION
         fi
     fi
@@ -713,112 +720,114 @@ function setup {
         return 1
     fi
 
-    # ui
-    declare -l gui_confirm
-    if [[ ! -z $1 ]]; then
-        gui_confirm="$1"
-        shift
-    else
-        gui_confirm="init"
-    fi
-    while [[ $gui_confirm  != "y" ]] && [[ $gui_confirm != "" ]]
-    do
-        echo ""
-        read -p "Do you want the container to run the beta of the MetroAE REST API/GUI? (y/N): " gui_confirm
-    done
-
-    if [[ $gui_confirm == "y" ]]; then
-        echo ""
-        echo ">>> Configuring MetroAE REST API/GUI"
-        get_host_operating_system
-        declare -i port
-        if [[ $OS_RELEASE -eq $NON_LINUX ]]; then
-            if [[ -z $1 ]]; then
-                echo ""
-                read -p "Specify the REST API/GUI HTTP port for the MetroAE container: " port
-                echo ""
-                echo ">>> Configuring REST API/GUI to use port: $port"
-            else
-                echo ""
-                echo ">>> Setting REST API/GUI access port to $1" | tee -a $SCRIPT_LOG_FILE
-                port=$1
-                shift
-            fi
-            echo UI_PORT=$port >> $SETUP_FILE
-        fi
-        # Ask if TLS needs to be setup
-        declare -l tls_confirm
+    if [[ ! -z "$METROAE_GUI_ENABLE" ]]; then
+        # ui
+        declare -l gui_confirm
         if [[ ! -z $1 ]]; then
-            tls_confirm=$1
+            gui_confirm="$1"
             shift
         else
-            tls_confirm="init"
+            gui_confirm="init"
         fi
-        while [[ $tls_confirm  != "y" ]] && [[ $tls_confirm != "" ]]
+        while [[ $gui_confirm  != "y" ]] && [[ $gui_confirm != "" ]]
         do
             echo ""
-            read -p "Do you want to enable TLS with a security certificate the REST API/GUI? (y/N): " tls_confirm
+            read -p "Do you want the container to run the beta of the MetroAE REST API/GUI? (y/N): " gui_confirm
         done
 
-        if [[ $tls_confirm == "y" ]]; then
+        if [[ $gui_confirm == "y" ]]; then
             echo ""
-            echo ">>> Enabling TLS on the REST API/GUI"
-            certificate='none'
-            declare -i valid_cert_path
-            while [[ $certificate  == "none" ]]
+            echo ">>> Configuring MetroAE REST API/GUI"
+            get_host_operating_system
+            declare -i port
+            if [[ $OS_RELEASE -eq $NON_LINUX ]]; then
+                if [[ -z $1 ]]; then
+                    echo ""
+                    read -p "Specify the REST API/GUI HTTP port for the MetroAE container: " port
+                    echo ""
+                    echo ">>> Configuring REST API/GUI to use port: $port"
+                else
+                    echo ""
+                    echo ">>> Setting REST API/GUI access port to $1" | tee -a $SCRIPT_LOG_FILE
+                    port=$1
+                    shift
+                fi
+                echo UI_PORT=$port >> $SETUP_FILE
+            fi
+            # Ask if TLS needs to be setup
+            declare -l tls_confirm
+            if [[ ! -z $1 ]]; then
+                tls_confirm=$1
+                shift
+            else
+                tls_confirm="init"
+            fi
+            while [[ $tls_confirm  != "y" ]] && [[ $tls_confirm != "" ]]
             do
                 echo ""
-                read -p "Enter the path to the security certificate file: " certificate
-                echo ""
-                stat $certificate
-                valid_cert_path=$?
-                if [[ $valid_cert_path -ne 0 ]]; then
-                    echo ""
-                    echo "We had a problem validating the path you entered: $PATH_ARG. Please try again."
-                    certificate='none'
-                fi
+                read -p "Do you want to enable TLS with a security certificate the REST API/GUI? (y/N): " tls_confirm
             done
-            echo ">>> Using certificate file: $certificate"
-            cp $certificate $data_path/gui_cert
 
-            keyfile='none'
-            declare -i valid_keyfile_path
-            while [[ $keyfile  == "none" ]]
-            do
+            if [[ $tls_confirm == "y" ]]; then
                 echo ""
-                read -p "Enter the path to the security key file: " keyfile
-                echo ""
-                stat $keyfile
-                valid_keyfile_path=$?
-                if [[ $valid_keyfile_path -ne 0 ]]; then
+                echo ">>> Enabling TLS on the REST API/GUI"
+                certificate='none'
+                declare -i valid_cert_path
+                while [[ $certificate  == "none" ]]
+                do
                     echo ""
-                    echo "We had a problem validating the path you entered: $keyfile. Please try again."
-                    keyfile='none'
-                fi
-            done
-            echo ""
-            echo ">>> Using key file: $keyfile"
-            cp $keyfile $data_path/gui_keyfile
+                    read -p "Enter the path to the security certificate file: " certificate
+                    echo ""
+                    stat $certificate
+                    valid_cert_path=$?
+                    if [[ $valid_cert_path -ne 0 ]]; then
+                        echo ""
+                        echo "We had a problem validating the path you entered: $PATH_ARG. Please try again."
+                        certificate='none'
+                    fi
+                done
+                echo ">>> Using certificate file: $certificate"
+                cp $certificate $data_path/gui_cert
 
-            load_certificates /data/gui_cert /data/gui_keyfile
-            return 0
+                keyfile='none'
+                declare -i valid_keyfile_path
+                while [[ $keyfile  == "none" ]]
+                do
+                    echo ""
+                    read -p "Enter the path to the security key file: " keyfile
+                    echo ""
+                    stat $keyfile
+                    valid_keyfile_path=$?
+                    if [[ $valid_keyfile_path -ne 0 ]]; then
+                        echo ""
+                        echo "We had a problem validating the path you entered: $keyfile. Please try again."
+                        keyfile='none'
+                    fi
+                done
+                echo ""
+                echo ">>> Using key file: $keyfile"
+                cp $keyfile $data_path/gui_keyfile
+
+                load_certificates /data/gui_cert /data/gui_keyfile
+                return 0
+            else
+                echo ""
+                echo ">>> Not enabling TLS on the REST API/GUI"
+            fi
+
+            start_ui $1
+            gui_status=$?
+            shift
+            if [[ $gui_status -ne 0 ]]; then
+                echo ""
+                echo "Problem starting the MetroAE REST API/GUI in the container. Return code: $gui_status. Quitting."
+                echo ""
+                return 1
+            fi
         else
             echo ""
-            echo ">>> Not enabling TLS on the REST API/GUI"
+            echo ">>> MetroAE REST API/GUI will not be configured"
         fi
-
-        start_ui $1
-        gui_status=$?
-        shift
-        if [[ $gui_status -ne 0 ]]; then
-            echo ""
-            echo "Problem starting the MetroAE REST API/GUI in the container. Return code: $gui_status. Quitting."
-            echo ""
-            return 1
-        fi
-    else
-        echo ""
-        echo ">>> MetroAE REST API/GUI will not be configured"
     fi
     echo ""
     echo "MetroAE container setup complete. Execute 'metroae container status' for status."
@@ -931,16 +940,25 @@ function interactive {
 }
 
 function docker_status {
-    echo "Script version: $CONTAINER_VERSION"
+    echo ""
+    echo ">>> Getting status of the MetroAE container"
     get_running_container_id
     if [[ ! -z $RUNNING_CONTAINER_ID ]]; then
+        echo ""
+        echo ">>> Getting the output of 'docker ps'"
+        echo ""
         header=`docker ps -a | grep "IMAGE"`
         echo $header
         container_status=`docker ps -a | grep "$METRO_AE_IMAGE"`
         echo $container_status
+        echo ""
+        echo ">>> Getting the versions in the container itself"
+        echo ""
         docker exec $RUNNING_CONTAINER_ID cat /source/version
     else
+        echo ""
         echo "The MetroAE container is not running. Quitting."
+        exit 0
     fi
     echo ""
 }
@@ -956,9 +974,11 @@ function check_for_user_group {
     docker_group=`getent group docker`
     set -e
     if [[ -z $docker_group ]]; then
-        echo "Adding docker group..."
+        echo ""
+        echo ">>> Adding docker group"
         sudo groupadd docker
-        echo "Restarting Docker..."
+        echo ""
+        echo ">>> Restarting Docker"
         sudo systemctl restart docker
         sudo chown -R root:docker $INSTALL_FOLDER
     fi
@@ -1181,7 +1201,7 @@ function docker_exec_levistate {
 function config_status {
     docker_status
     if [[ -f $SETUP_FILE ]]; then
-        echo "Current MetroAE container settings..."
+        echo "Current MetroAE container settings"
         while read -r line; do declare $line; done < $SETUP_FILE
         echo levistate_mount_point=$LEVISTATE_MOUNT_POINT
     else
@@ -1362,19 +1382,35 @@ function gen_example_from_schema {
 function container_status {
     docker_status
     if [[ -f $SETUP_FILE ]]; then
-        echo "Current settings..."
+        echo ">>> Getting container configuration from host"
+        echo ""
         while read -r line; do declare $line; done < $SETUP_FILE
-        echo "MetroAE container images path: $IMAGES_MOUNT_POINT"
+        if [[ -z $METROAE_SETUP_TYPE ]] || [[ -z $METROAE_MOUNT_POINT ]]; then
+            echo "Problem in one or more MetroAE configuration files on the host."
+            echo "Please run 'metroae container setup' and try again. Quitting."
+            exit 1
+        fi
+        if [[ $METROAE_SETUP_TYPE != "c" ]] && [[ -z $IMAGES_MOUNT_POINT ]]; then
+            echo "Problem in one or more MetroAE configuration files on the host."
+            echo "Please run 'metroae container setup' and try again. Quitting."
+            exit 1
+        fi
+        echo "MetroAE setup type: $METROAE_SETUP_TYPE"
         echo "MetroAE container data path: $METROAE_MOUNT_POINT"
-        get_host_operating_system
+        if [[ $METROAE_SETUP_TYPE != "c" ]]; then
+            echo "MetroAE container images path: $IMAGES_MOUNT_POINT"
+        fi
 
-        if [[ $OS_RELEASE -eq $LINUX ]]; then
-            echo "MetroAE container GUI port: 5001"
-    	else
-            echo "MetroAE container GUI port: $UI_PORT"
+        if [[ ! -z $METROAE_GUI_ENABLED ]]; then
+            get_host_operating_system
+            if [[ $OS_RELEASE -eq $LINUX ]]; then
+                echo "MetroAE container GUI port: 5001"
+    	    else
+                echo "MetroAE container GUI port: $UI_PORT"
+            fi
         fi
     else
-        echo "MetroAE container setup file not found. Quitting."
+        echo "MetroAE container setup file not found. Please run 'metroae container setup' and try again. Quitting."
     fi
 }
 
@@ -1402,7 +1438,10 @@ function container_main {
     check_docker
 
     # main functionality
-    if [[ $# -eq 0 ]]; then
+    if [[ $# -ne 0 ]] && [[ $1 == "gui" ]]; then
+        ui_help ",container,gui"
+        exit 0
+    elif [[ $# -eq 0 ]]; then
         container_help ",container"
         exit 0
     fi
@@ -1712,7 +1751,7 @@ function tools_help {
 function ui_help {
     echo "Nuage Networks Metro Automation Engine (MetroAE) CLI Version:" $METROAE_VERSION
     echo ""
-    echo "MetroAE ui usage:"
+    echo "MetroAE container gui usage:"
     echo ""
     print_menu_help "metroae%-50s %-1s\n" $1
 }
@@ -1735,7 +1774,7 @@ function switch_help {
         tools_help "$1"
         exit 0
         ;;
-        ,ui*)
+        ,gui*)
         ui_help "$1"
         exit 0
         ;;
