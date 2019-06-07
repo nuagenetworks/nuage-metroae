@@ -343,7 +343,9 @@ function destroy {
 
     if [[ $confirmation != "y" ]]
     then
+        echo ""
         echo "Destroy of metorae container was canceled"
+        echo ""
         return 1
     fi
 
@@ -361,22 +363,28 @@ function destroy {
 
     get_image_id
     if [[ -z $IMAGE_ID ]]; then
-        echo "Metroae container image not found. Nothing to do."
+        echo "MetroAE container image not found. Nothing to do."
         return 0
     fi
 
-    echo "Destroying MetroAE container..." | tee -a $SCRIPT_LOG_FILE
+    echo ""
+    echo ">>> Destroying MetroAE container" | tee -a $SCRIPT_LOG_FILE
+    echo ""
 
     set +e
     docker rmi $IMAGE_ID 2>> $SCRIPT_LOG_FILE
 
     if [[ $? -ne 0 ]]; then
+        echo ""
         echo "Attempt to remove the MetroAE image failed"
+        echo ""
         return 1
     fi
     set -e
 
+    echo ""
     echo "The MetroAE container image was removed"
+    echo ""
     return 0
 }
 
@@ -433,12 +441,12 @@ function pull {
     else
         if [[ -f $SCRIPT_LOG_FILE ]]; then
             echo ""
-            echo ">>> Pulling the MetroAE container image from Nokia registry..." | tee -a $SCRIPT_LOG_FILE
+            echo ">>> Pulling the MetroAE container image from Nokia registry" | tee -a $SCRIPT_LOG_FILE
             echo ""
             docker pull $METRO_AE_IMAGE:$MAX_CONTAINER_VERSION | tee -a $SCRIPT_LOG_FILE
         else
             echo ""
-            echo ">>> Pulling the MetroAE container image from Nokia registry..."
+            echo ">>> Pulling the MetroAE container image from Nokia registry"
             echo ""
             docker pull $METRO_AE_IMAGE:$MAX_CONTAINER_VERSION
         fi
