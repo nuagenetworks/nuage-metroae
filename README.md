@@ -7,7 +7,7 @@ MetroÆ is an automation engine that deploys and upgrades Nuage Networks compone
 
 ## Important Notes
 
-You can now run `python metroae_wizard.py` to let MetroÆ help you setup your server and create or edit a deployment. The wizard will ask you questions about what you'd like to do and then create the proper files on disk. metroae_wizard.py is most useful when you are working with a clone of the nuage-metro repo. It can be used to generate deployments that can be used with the Docker container version of MetroÆ, but thos edeployments would need to be copied manually from the nuage-metro repo clone to the container's metroae_data directory.
+You can now run `python run_wizard.py` to let MetroÆ help you setup your server and create or edit a deployment. The wizard will ask you questions about what you'd like to do and then create the proper files on disk. run_wizard.py is most useful when you are working with a clone of the nuage-metro repo. It can be used to generate deployments that can be used with the Docker container version of MetroÆ, but those deployments would need to be copied manually from the nuage-metro repo clone to the container's metroae_data directory.
 
 Please see [RELEASE_NOTES.md](Documentation/RELEASE_NOTES.md) for all the details abotu what has changed or been added in this release.
 
