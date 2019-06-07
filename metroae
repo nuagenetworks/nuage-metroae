@@ -176,7 +176,7 @@ function check_for_prerequisite {
                 done
 
                 if [[ $confirmation == "yes" ]] || [[ $confirmation == "y" ]]; then
-                    setup
+                    setup_container
                 else
                     exit 0
                 fi
@@ -278,7 +278,10 @@ function get_image_id {
 }
 
 
-function stop {
+function stop_running_container {
+    echo ""
+    echo ">>> Stopping the MetroAE container"
+    echo ""
     get_running_container_id
 
     if [[ -z $RUNNING_CONTAINER_ID  ]]; then
@@ -300,6 +303,9 @@ function stop {
 }
 
 function delete_container_id {
+    echo ""
+    echo ">>> Deleting the MetroAE container"
+    echo ""
     get_container_id
     if [[ -z $CONTAINER_ID ]]; then
         echo "MetroAE container not found. Nothing to do."
@@ -350,7 +356,7 @@ function destroy {
     fi
 
     set +e
-    stop
+    stop_running_container
     if [[ $? -ne 0 ]]; then
         return 1
     fi
@@ -361,15 +367,15 @@ function destroy {
     fi
     set -e
 
+    echo ""
+    echo ">>> Removing MetroAE image" | tee -a $SCRIPT_LOG_FILE
+    echo ""
+
     get_image_id
     if [[ -z $IMAGE_ID ]]; then
         echo "MetroAE container image not found. Nothing to do."
         return 0
     fi
-
-    echo ""
-    echo ">>> Destroying MetroAE container" | tee -a $SCRIPT_LOG_FILE
-    echo ""
 
     set +e
     docker rmi $IMAGE_ID 2>> $SCRIPT_LOG_FILE
@@ -532,7 +538,7 @@ function run_container {
     return 0
 }
 
-function setup {
+function setup_container {
     local is_ui_run=false
     get_host_operating_system
 
@@ -697,7 +703,7 @@ function setup {
     get_running_container_id
     if [[ ! -z $RUNNING_CONTAINER_ID ]]; then
         echo ">>> Stopping the MetroAE container"
-        stop
+        stop_running_container
     fi
 
     get_container_id
@@ -839,6 +845,7 @@ function setup {
     echo ""
     echo "MetroAE container setup complete. Execute 'metroae container status' for status."
     echo ""
+    return 0
 }
 
 function get_user_path_input {
@@ -1266,7 +1273,7 @@ function config_main {
             shift
             ;;
             stop)
-            stop
+            stop_running_container
             shift
             ;;
             destroy)
@@ -1502,7 +1509,7 @@ function container_main {
             setup)
             if [[ $# -gt 1 ]]; then
                 shift
-                setup "$@"
+                setup_container "$@"
                 shift
                 shift
                 shift
@@ -1512,11 +1519,11 @@ function container_main {
                 shift
             else
                 shift
-                setup
+                setup_container
             fi
             ;;
             stop)
-            stop
+            stop_running_container
             shift
             ;;
             destroy)
@@ -1629,7 +1636,7 @@ function tools_main {
     get_container_id
     if [[ $RUN_MODE == "CONTAINER" ]] && [[ -z $RUNNING_CONTAINER_ID ]]; then
         if [[ -z $CONTAINER_ID ]]; then
-            setup "${setup_args[@]}"
+            setup_container "${setup_args[@]}"
         else
             docker start $CONTAINER_ID
         fi
