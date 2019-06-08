@@ -28,7 +28,7 @@
 * Update instructions for using ovftool with the metroae container
 * Implement check of VSC authentication from Ansible host (METROAE-999)
 * Disable SELinux for Base CentOS image for SD-WAN portal
-* Added run_wizard.py to simplify setup and deployment creation
+* Added metroae_wizard.py to simplify setup and deployment creation
 
 ### Resolved Issues
 * Fix VSD Upgrade procedure to check for accurate ejabberd connected user list (METROAE-958)
