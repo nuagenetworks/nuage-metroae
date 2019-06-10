@@ -27,6 +27,7 @@
 * Enhance error checking in vCenter VSD destroy (METROAE-980)
 * Update instructions for using ovftool with the metroae container
 * Implement check of VSC authentication from Ansible host (METROAE-999)
+* Implement upgrade of GEO redundant VSD cluster (METROAE-989)
 * Disable SELinux for Base CentOS image for SD-WAN portal
 * Added run_wizard.py to simplify setup and deployment creation
 
