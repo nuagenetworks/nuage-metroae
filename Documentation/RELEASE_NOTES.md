@@ -30,7 +30,6 @@
 * Implement upgrade of GEO redundant VSD cluster (METROAE-989)
 * Disable SELinux for Base CentOS image for SD-WAN portal
 * Added run_wizard.py to simplify setup and deployment creation
-* Added metroae_wizard.py to simplify setup and deployment creation
 * Support Active Standby VSTAT cluster (METROAE-853)
 * Support variable number of cpu cores for all components in KVM deployments (METROAE-942)
 
