@@ -29,9 +29,21 @@ iptables_cluster_commands:
 {% endfor %}
 {% endif %}
 {% if vstat_sa_or_ha == "ha" %}
+{% if groups['vstats'] | default([]) %}
 {% for vstat in groups['vstats'] %}
   - "ipset add vsd {{ hostvars[vstat]['mgmt_ip'] }}"
 {% endfor %}
+{% endif %}
+{% if groups['primary_vstats'] | default([]) %}
+{% for vstat in groups['primary_vstats'] %}
+  - "ipset add vsd {{ hostvars[vstat]['mgmt_ip'] }}"
+{% endfor %}
+{% endif %}
+{% if groups['backup_vstats'] | default([]) %}
+{% for vstat in groups['backup_vstats'] %}
+  - "ipset add vsd {{ hostvars[vstat]['mgmt_ip'] }}"
+{% endfor %}
+{% endif %}
 {% endif %}
   - "ipset save -f /etc/sysconfig/ipset"
 {% if enable_ipv6 | default(False) %}

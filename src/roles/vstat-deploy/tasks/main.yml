@@ -44,28 +44,33 @@
     vsd_hostname: "{{ vsd_fqdn }}"
 
 - block:
+  - name: Generate SSH keys
+    include_tasks: generate_ssh_keys.yml
+    vars:
+      group_vstats: "{{ groups['vstats'] }}"
+      vstat_username: "{{ vstat_default_username }}"
+
+    remote_user: "{{ vstat_default_username }}"
+    when: groups['vstats'] is defined
 
   - name: Generate SSH keys
-    shell: ssh-keygen -b 2048 -t rsa -f /root/.ssh/id_rsa -q -N ""
-    args:
-      creates: /root/.ssh/id_rsa
-    delegate_to: "{{ item }}"
-    with_items: "{{ groups['vstats'] }}"
+    include_tasks: generate_ssh_keys.yml
+    vars:
+      group_vstats: "{{ groups['primary_vstats'] }}"
+      vstat_username: "{{ vstat_default_username }}"
 
-  - name: Get generated SSH keys
-    shell: cat ~/.ssh/id_rsa.pub
-    register: ssh_key_lst
-    delegate_to: "{{ item }}"
-    with_items: "{{ groups['vstats'] }}"
+    remote_user: "{{ vstat_default_username }}"
+    when: groups['primary_vstats'] is defined and active
 
-  - name: Add SSH keys to authorized_keys file
-    shell: "echo {{ item[1].stdout }} >> /root/.ssh/authorized_keys"
-    delegate_to: "{{ item[0] }}"
-    with_nested:
-      - "{{ groups['vstats'] }}"
-      - "{{ ssh_key_lst.results }}"
+  - name: Generate SSH keys
+    include_tasks: generate_ssh_keys.yml
+    vars:
+      group_vstats: "{{ groups['backup_vstats'] }}"
+      vstat_username: "{{ vstat_default_username }}"
 
-  remote_user: "{{ vstat_default_username }}"
+    remote_user: "{{ vstat_default_username }}"
+    when: groups['backup_vstats'] is defined and not active
+
   run_once: true
   when: vstat_sa_or_ha is match('ha')
 
@@ -257,7 +262,11 @@
     lineinfile:
       dest: /etc/hosts
       line: "{{ hostvars[item]['mgmt_ip'] }}    {{ hostvars[item]['hostname'] }}"
-    with_items: "{{ groups['vstats'] }}"
+    with_items:
+      - "{{ groups['vstats'] }}"
+      - "{{ groups['primary_vstats'] }}"
+      - "{{ groups['backup_vstats'] }}"
+
     when: vsd_sa_or_ha is match('ha')
     remote_user: "{{ vstat_default_username }}"
 
@@ -327,8 +336,23 @@
           environment:
             SSHPASS: "{{ vstat_default_password }}"
           no_log: True
-          when: vstat_sa_or_ha is match('ha')
+          when: groups['vstats'] is defined
 
+        - name: Execute VSTAT cluster script on standalone or clustered vsds for primary vstats
+          command: /opt/vsd/vsd-es-cluster-config.sh -e {{ groups['primary_vstats'][0] }},{{ groups['primary_vstats'][1] }},{{ groups['primary_vstats'][2] }}
+          delegate_to: "{{ vsd_hostname_list[0] }}"
+          environment:
+            SSHPASS: "{{ vstat_default_password }}"
+          when: groups['primary_vstats'] is defined and active
+
+        - name: Execute VSTAT cluster script on standalone or clustered vsds for backup vstats
+          command: /opt/vsd/vsd-es-cluster-config.sh -e {{ groups['backup_vstats'][0] }},{{ groups['backup_vstats'][1] }},{{ groups['backup_vstats'][2] }}
+          delegate_to: "{{ vsd_hostname_list[0] }}"
+          environment:
+            SSHPASS: "{{ vstat_default_password }}"
+          when: groups['backup_vstats'] is defined and not active
+
+        when: vstat_sa_or_ha is match('ha')
         run_once: True
 
       remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
@@ -340,9 +364,18 @@
     include_role:
       name: common
       tasks_from: vstat-enable-stats.yml
+    vars:
+      failover: False
 
   - name: Enable VSS UI
     import_tasks: setup-vstat-vss-ui.yml
     when: enable_vss_ui | default(False)
+
+  - name: Configure ES primary and backup cluster
+    include_role:
+      name: common
+      tasks_from: vstat-nfs-configuration.yml
+    vars:
+      deploy: True
 
   when: not skip_vstat_deploy
