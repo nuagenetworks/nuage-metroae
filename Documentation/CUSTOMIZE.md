@@ -38,7 +38,7 @@ You have the option of configuring the default deployment files provided in the 
 
 Note that you can edit the deployment files manually at any time. As of v3.3.0, MetroÆ comes with its own wizard for automating the creation and editing of deployment files when you are working with a clone of the nuage-metro repo. To start the wizard:
 ```
-python metroae_wizard.py
+python run_wizard.py
 ```
 You can use the wizard to setup your MetroÆ environment, if you wish. Or you can skip the setup step and go directly to the creation and editing of your deployment.
 

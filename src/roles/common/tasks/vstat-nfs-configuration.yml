@@ -1,0 +1,95 @@
+- block:
+
+  - name: Include variable file.
+    include_vars: "{{ role_path }}/vars/es_cluster.yml"
+    delegate_to: localhost
+
+  - block:
+
+    - name: Update elasticsearch config file
+      lineinfile:
+        line: 'path.repo: ["/mnt/nfs/backup"]'
+        path: /etc/elasticsearch/elasticsearch.yml
+
+    - name: Restart elastic search
+      service:
+        name: elasticsearch
+        state: restarted
+
+    - name: Check to see if elasticsearch restarted
+      command: systemctl status elasticsearch
+      register: status
+      until: status.stdout.find("active (running)") != -1
+      retries: 5
+      delay: 10
+
+    - name: Wait for elasticsearch ports
+      wait_for:
+        port: 9200
+        delay: 10
+
+    - name: Add snaphost repo
+      uri:
+        url: http://localhost:9200/_snapshot/{{ repo_name }}
+        method: PUT
+        status_code: 200
+        body_format: json
+        body: '{
+                  "type": "fs",
+                  "settings": {
+                    		"compress": true,
+                    		"location": "/mnt/nfs/backup"
+                  }
+              }'
+
+    when: deploy | default(false)
+
+  - block:
+    - name: Remove exisiting primary cron table entries
+      cron:
+        name: "Job to take snapshot"
+        state: absent
+
+    - name: Remove exisiting backup cron table entries
+      cron:
+        name: "Job to restore snapshot"
+        state: absent
+
+  - block:
+    - name: Add repo name to curator config
+      lineinfile:
+        line: "repository: {{ repo_name }}"
+        regex: "repository"
+        path: "{{ item }}"
+      with_items:
+        - /root/curator/curator_snapshot.yml
+        - /root/curator/curator_delete.yml
+
+    - name: Add a cron job to trigger backups
+      cron:
+        name: "Job to take snapshot"
+        state: present
+        job: "{{ active_curator }}"
+        minute: "{{ snapshot_interval }}"
+
+    when: active
+
+  - block:
+    - name: Add repo name to curator config
+      lineinfile:
+        line: "repository: {{ repo_name }}"
+        regex: "repository"
+        path: "{{ item }}"
+      with_items:
+        - /root/curator/curator_restore.yml
+
+    - name: Add a cron job to restore backups
+      cron:
+        name: "Job to restore snapshot"
+        state: present
+        job: "{{ standy_curator }}"
+        minute: "{{ restore_interval }}"
+
+    when: not active
+
+  remote_user: "{{ vstat_default_username }}"
