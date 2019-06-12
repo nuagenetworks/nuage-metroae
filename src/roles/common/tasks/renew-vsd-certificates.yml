@@ -3,12 +3,6 @@
 
   - block:
 
-    - name: wait for ejabberd to come up
-      monit_waitfor_service:
-        name: ejabberd
-        timeout_seconds: 600
-        test_interval_seconds: 30
-
     - name: Renew standalone VSD certificate
       command: /opt/vsd/bin/vsd-renew-certs.sh
 
@@ -49,7 +43,7 @@
 
     - name: Restart stats if enabled
       shell: monit restart -g vsd-stats
-      when: vsd_process_list['state'].keys() is search("vsd-stats-status")
+      when: "'vsd-stats-status' in vsd_process_list['state'].keys()"
 
     when:
       - vsd_sa_or_ha is match ('sa')
@@ -73,7 +67,6 @@
       with_items:
         - "{{ groups['primary_vsds'][1] }}"
         - "{{ groups['primary_vsds'][2] }}"
-
 
     - name: Verify if VSD TLS mode is set to allow
       command: /opt/vsd/bin/ejmode status
@@ -126,7 +119,7 @@
 
     - name: Restart stats if enabled
       shell: monit restart -g vsd-stats
-      when: vsd_process_list['state'].keys() is search("vsd-stats-status")
+      when: "'vsd-stats-status' in vsd_process_list['state'].keys()"
       with_items: "{{ groups['primary_vsds'] }}"
 
     when:
