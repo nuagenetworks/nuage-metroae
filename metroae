@@ -16,14 +16,14 @@ MENU+=(',config,<positional args>'  'Execute levistate inside the container'    
 #################################################################################
 
 MENU+=(',container'                 'Manage the MetroAE container'                         'container'  ''                       '')
-MENU+=(',container,pull'            'Pull a new MetroAE image from the registry'           'container'  'pull'                   ',container')
-MENU+=(',container,setup'           'Setup the mertroae container'                         'container'  'setup'                  ',container')
-MENU+=(',container,start'           'Start the mertroae container'                         'container'  'start'                  ',container')
-MENU+=(',container,stop'            'Stop the mertroae container'                          'container'  'stop'                   ',container')
-MENU+=(',container,status'          'Display the status of the mertroae container'         'container'  'status'                 ',container')
-MENU+=(',container,destroy'         'Destroy the mertroae container'                       'container'  'destroy'                ',container')
-MENU+=(',container,update'          'Update the mertroae container to the latest version'  'container'  'upgrade-engine'         ',container')
-MENU+=(',container,ssh,copyid'      'Copy the container ssh public key to a host'          'container'  'copy-ssh-id'            ',container')
+MENU+=(',container,pull'            'Pull a new MetroAE image from the registry'           'container'  'pull'                   ',container,pull')
+MENU+=(',container,setup'           'Setup the mertroae container'                         'container'  'setup'                  ',container,setup')
+MENU+=(',container,start'           'Start the mertroae container'                         'container'  'start'                  ',container,start')
+MENU+=(',container,stop'            'Stop the mertroae container'                          'container'  'stop'                   ',container,stop')
+MENU+=(',container,status'          'Display the status of the mertroae container'         'container'  'status'                 ',container,status')
+MENU+=(',container,destroy'         'Destroy the mertroae container'                       'container'  'destroy'                ',container,destroy')
+MENU+=(',container,update'          'Update the mertroae container to the latest version'  'container'  'upgrade-engine'         ',container,update')
+MENU+=(',container,ssh,copyid'      'Copy the container ssh public key to a host'          'container'  'copy-ssh-id'            ',container,ssh,copyid')
 if [[ ! -z "$METROAE_GUI_ENABLE" ]]; then
     #################################################################################
     #                                GUI COMMANDS                                   #
@@ -1825,13 +1825,14 @@ function get_sub_menu {
 }
 
 function print_menu_help {
-    local match_key=${MATCH_MENU[@]:1:1}
     for (( i=0; i<=${#MENU[@]} - 1; i+=$MENU_STRIDE )); do
         local menu_key=${MENU[@]:$i:1}
+        local text_key=${MENU[@]:$i+1:1}
+        local menu_family_key=${MENU[@]:$i+2:1}
+        local operation_key=${MENU[@]:$i+3:1}
         local help_key=${MENU[@]:$i+4:1}
-        local command_key=${MENU[@]:$i+2:1}
-        if [[ $help_key == $2 ]]; then
-            if [[ $command_key == "playbook" ]]; then
+        if [[ "${menu_key}" == *"$2"* ]] ;then
+            if [[ $menu_family_key == "playbook" ]]; then
                 printf "${1}" "${menu_key//,/ } [deployment] [options]" "${MENU[@]:($i + 1):1}"
             else
                 printf "${1}" "${menu_key//,/ }" "${MENU[@]:($i + 1):1}"
