@@ -195,11 +195,11 @@ WIZARD_SCRIPT = """
     install_msg: |
         You can issue the following to begin installing your components:
 
-        {metro} install_everything
+        {metro} install_everything {deployment}
     upgrade_msg: |
         You can issue the following to begin an upgrade of your components:
 
-        {metro} upgrade_everything
+        {metro} upgrade_everything {deployment}
 
 """
 
@@ -490,15 +490,15 @@ class Wizard(object):
         if "all_target_servers" in self.state:
             servers = self.state["all_target_servers"]
         else:
-            hostname_list = None
-            while hostname_list is None:
-                hostname_list = self._input(
+            servers = None
+            while servers is None:
+                servers = self._input(
                     "Enter target server (hypervisor) addresses (separate "
                     "multiple using commas)")
-                hostname_list = self._format_ip_list(hostname_list)
-                hostname_list = self._validate_hostname_list(hostname_list)
+                servers = self._format_ip_list(servers)
+                servers = self._validate_hostname_list(servers)
 
-            self.state["all_target_servers"] = hostname_list
+            self.state["all_target_servers"] = servers
 
         if "target_server_username" in self.state:
             default = self.state["target_server_username"]
@@ -560,14 +560,20 @@ class Wizard(object):
             if self.in_container:
                 metro = "metroae"
 
+            deployment = ""
+            if ("deployment_name" in self.state and
+                    self.state["deployment_name"] != "default"):
+                deployment = self.state["deployment_name"]
             if "upgrade" in self.state:
                 self._print(
                     self._get_field(data, "upgrade_msg").format(
-                        metro=metro))
+                        metro=metro,
+                        deployment=deployment))
             else:
                 self._print(
                     self._get_field(data, "install_msg").format(
-                        metro=metro))
+                        metro=metro,
+                        deployment=deployment))
             exit(0)
 
     #
