@@ -1,6 +1,30 @@
+- block:
+
+  - name: Set VSD numbering for cluster install
+    set_fact:
+        cluster_node_for_license_application: "{{ groups['vsd_ha_node3'][0] }}"
+    when:
+      - not nuage_upgrade | default(False)
+      - not vsd_standby_cluster | default(False)
+
+  - name: Set VSD numbering for standby cluster install
+    set_fact:
+        cluster_node_for_license_application: "{{ groups['vsd_standby_node3'][0] }}"
+    when:
+      - vsd_standby_cluster | default(False)
+
+  - name: Set VSD numbering for cluster upgrade
+    set_fact:
+        cluster_node_for_license_application: "{{ groups['vsd_ha_node1'][0] }}"
+    when:
+      - nuage_upgrade | default(False)
+      - not vsd_standby_cluster | default(False)
+
+  when: vsd_sa_or_ha is match('ha')
+
 - name: Set Node for VSD license application
   set_fact:
-    node_for_license_install: "{{ (vsd_sa_or_ha is match('ha')) | ternary(third_cluster_node_to_install, inventory_hostname) }}"
+    node_for_license_install: "{{ (vsd_sa_or_ha is match('ha')) | ternary(cluster_node_for_license_application, inventory_hostname) }}"
 
 - block:
 
