@@ -12,7 +12,7 @@
 
     - name: Restart ejabberd
       command: monit restart ejabberd
-      when: "'allow' in ejmode.stdout"
+      when: ejmode.stdout is search('allow')
 
     - name: wait for ejabberd to come up
       monit_waitfor_service:
@@ -72,11 +72,12 @@
       command: /opt/vsd/bin/ejmode status
       register: ejmode
       delegate_to: "{{ item }}"
+      delegate_facts: True
       with_items: "{{ groups['primary_vsds'] }}"
 
     - name: Restart ejabberd
       command: monit restart ejabberd
-      when: "'allow' in ejmode.stdout"
+      when: ejmode.stdout is search('allow')
       delegate_to: "{{ item }}"
       with_items: "{{ groups['primary_vsds'] }}"
 
@@ -144,11 +145,12 @@
       command: /opt/vsd/bin/ejmode status
       register: ejmode
       delegate_to: "{{ item }}"
+      delegate_facts: True
       with_items: "{{ groups['standby_vsds'] }}"
 
     - name: Restart ejabberd
       command: monit restart ejabberd
-      when: "'allow' in ejmode.stdout"
+      when: ejmode.stdout is search('allow')
       delegate_to: "{{ item }}"
       with_items: "{{ groups['standby_vsds'] }}"
 
