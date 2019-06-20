@@ -1463,6 +1463,8 @@ class Wizard(object):
                     username, hostname, bridge))
             if rc == 0:
                 self._unrecord_problem("bridge")
+                self._print("\nSuccessfully verified bridge %s on host %s" % (
+                            bridge, hostname))
                 return True
             else:
                 self._record_problem(
