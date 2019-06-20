@@ -1459,7 +1459,8 @@ class Wizard(object):
     def _verify_bridge(self, username, hostname, bridge):
         try:
             rc, output_lines = self._run_shell(
-                "ssh -oPasswordAuthentication=no %s@%s ip addr show dev %s" % (
+                "ssh -oPasswordAuthentication=no %s@%s PATH=$PATH ip addr show"
+                " dev %s" % (
                     username, hostname, bridge))
             if rc == 0:
                 self._unrecord_problem("bridge")
