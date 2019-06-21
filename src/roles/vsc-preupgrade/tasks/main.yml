@@ -106,14 +106,6 @@
   - name: Print vsc system connetion in json  when verbosity >= 1
     debug: var=vsc_sys_conn_json verbosity=1
 
-  - name: Block access to decoupled VSD node2 from VSC1
-    command: "iptables -I INPUT -s {{ vsc_sys_conn_json['local_ip'] }} -j DROP"
-    remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
-    become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
-    vars:
-      ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"
-    delegate_to: "{{ vsd_hostname_list[1] }}"
-
   - name: check xmpp connectivity after iptables on vsd2
     sros_command:
       commands:
