@@ -82,6 +82,26 @@
   - name: Print deploy_output
     debug: var=deploy_output
 
+  - name: Set MAC address when defined
+    vmware_guest:
+      hostname: "{{ target_server }}"
+      username: "{{ vcenter.username }}"
+      password: "{{ vcenter.password }}"
+      datacenter: "{{ vcenter.datacenter }}"
+      name: "{{ vm_name }}"
+      validate_certs: no
+      state: present
+      networks:
+        - name: "{{ mgmt_bridge }}"
+          mac: "{{ nsgv_mac }}"
+        - name: "{{ data_bridge }}"
+        - name: "{{ access_bridge }}"
+        - name: "{{ access_bridge }}"
+        - name: "{{ access_bridge }}"
+        - name: "{{ access_bridge }}"
+    delegate_to: localhost
+    when: nsgv_mac is defined
+
   - block:
     - name: Mount ISO when ZFB method is metro
       vmware_guest:
