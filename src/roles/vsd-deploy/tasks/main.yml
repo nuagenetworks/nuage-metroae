@@ -301,6 +301,22 @@
     - component_type == "vsd"
     - not vsd_standby_cluster | default(False)
 
+- block:
+
+  - name: Check monit summary
+    include_role:
+      name: vsd-health
+      tasks_from: monit_status
+    vars:
+      no_report: "True"
+
+  - name: Apply licenses to VSD
+    include_role:
+      name: common
+      tasks_from: apply-licenses-to-vsd
+
+  when: component_type == "vsd"
+
 - name: Install nginx
   yum:
     name: nginx
