@@ -303,11 +303,18 @@
 
 - block:
 
-  - name: Wait VSD core to start
+  - name: Get monit summary for all process on VSD
+    vsd_monit:
+      group: all
+    register: proc_list
+
+  - name: wait for VSD common , core and stats services to become running
     monit_waitfor_service:
-      name: ejabberd-status
-      timeout_seconds: 600
+      name: "{{ item }}"
+      timeout_seconds: 1200
       test_interval_seconds: 30
+    when: item not in ['ejabberd-cluster-status']
+    with_items: "{{ proc_list['state'].keys() }}"
 
   - name: Apply licenses to VSD
     include_role:
