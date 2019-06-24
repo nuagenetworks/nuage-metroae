@@ -3,6 +3,7 @@
 
 import glob
 import os
+import re
 import subprocess
 import sys
 import traceback
@@ -45,8 +46,8 @@ WIZARD_SCRIPT = """
     wrong_os_msg: |
 
       The OS is not recognized.  MetroAE requires a Linux based operating
-      system such as CentOS or Ubuntu.  A docker container version of MetroAE is
-      available for other operating system types.
+      system such as CentOS or Ubuntu.  A docker container version of MetroAE
+      is available for other operating system types.
 
 - step: Unzip image files
   description: |
@@ -104,9 +105,9 @@ WIZARD_SCRIPT = """
       hypervisors. A network bridge will be a Distributed Virtual PortGroup
       (DVPG) when deploying on vCenter or a Linux network bridge when deploying
       on KVM. VSP component interfaces will be connected to these bridges so
-      that they can communicate with each other and to the outside. MetroAE will
-      not create the bridges for you. You must create and configure them ahead
-      of time.
+      that they can communicate with each other and to the outside.  MetroAE
+      will not create the bridges for you. You must create and configure them
+      ahead of time.
 
       There are up to three bridges that can be defined:
 
@@ -191,6 +192,14 @@ WIZARD_SCRIPT = """
     complete_msg: |
 
       The wizard is complete!
+    install_msg: |
+        You can issue the following to begin installing your components:
+
+        {metro} install_everything {deployment}
+    upgrade_msg: |
+        You can issue the following to begin an upgrade of your components:
+
+        {metro} upgrade_everything {deployment}
 
 """
 
@@ -481,10 +490,14 @@ class Wizard(object):
         if "all_target_servers" in self.state:
             servers = self.state["all_target_servers"]
         else:
-            servers_str = self._input(
-                "Enter target server (hypervisor) addresses (separate multiple"
-                " using commas)")
-            servers = self._format_ip_list(servers_str)
+            servers = None
+            while servers is None:
+                servers = self._input(
+                    "Enter target server (hypervisor) addresses (separate "
+                    "multiple using commas)")
+                servers = self._format_ip_list(servers)
+                servers = self._validate_hostname_list(servers)
+
             self.state["all_target_servers"] = servers
 
         if "target_server_username" in self.state:
@@ -512,6 +525,24 @@ class Wizard(object):
         for server in servers:
             self._setup_ssh(username, server)
 
+        choice = self._input("Verify SSH connectivity now?", 0,
+                             ["(Y)es", "(N)o"])
+
+        if choice == 1:
+            return
+
+        for server in servers:
+            valid = self._verify_ssh(username, server)
+            if valid and "mgmt_bridge" in self.state:
+                valid = self._verify_bridge(username, server,
+                                            self.state["mgmt_bridge"])
+            if valid and "data_bridge" in self.state:
+                valid = self._verify_bridge(username, server,
+                                            self.state["data_bridge"])
+            if valid and "access_bridge" in self.state:
+                valid = self._verify_bridge(username, server,
+                                            self.state["access_bridge"])
+
     def complete_wizard(self, action, data):
         if self._has_problems():
             self._print(self._get_field(data, "problem_msg"))
@@ -525,6 +556,24 @@ class Wizard(object):
             return
         else:
             self._print(self._get_field(data, "complete_msg"))
+            metro = "./metroae"
+            if self.in_container:
+                metro = "metroae"
+
+            deployment = ""
+            if ("deployment_name" in self.state and
+                    self.state["deployment_name"] != "default"):
+                deployment = self.state["deployment_name"]
+            if "upgrade" in self.state:
+                self._print(
+                    self._get_field(data, "upgrade_msg").format(
+                        metro=metro,
+                        deployment=deployment))
+            else:
+                self._print(
+                    self._get_field(data, "install_msg").format(
+                        metro=metro,
+                        deployment=deployment))
             exit(0)
 
     #
@@ -540,7 +589,7 @@ class Wizard(object):
             sys.stdout.flush()
         self.progress_display_count += 1
 
-    def _input(self, prompt=None, default=None, choices=None):
+    def _input(self, prompt=None, default=None, choices=None, datatype=""):
         input_prompt = self._get_input_prompt(prompt, default, choices)
         value = None
 
@@ -554,7 +603,7 @@ class Wizard(object):
                 self._print(prompt)
             self._print("From args: " + user_value)
             value = self._validate_input(user_value, default,
-                                         choices)
+                                         choices, datatype)
             if value is None:
                 raise Exception("Invalid non-interactive input for %s%s" %
                                 (input_prompt, user_value))
@@ -562,7 +611,8 @@ class Wizard(object):
         else:
             while value is None:
                 user_value = raw_input(input_prompt)
-                value = self._validate_input(user_value, default, choices)
+                value = self._validate_input(user_value, default, choices,
+                                             datatype)
 
         return value
 
@@ -594,7 +644,8 @@ class Wizard(object):
 
         return input_prompt
 
-    def _validate_input(self, user_value, default=None, choices=None):
+    def _validate_input(self, user_value, default=None, choices=None,
+                        datatype=""):
         value = None
         if user_value == "":
             if default is not None:
@@ -608,10 +659,55 @@ class Wizard(object):
             if value is None:
                 self._print(
                     "\nValue is not a valid choice, please reenter\n")
+        elif datatype == "ipaddr":
+            value = self._validate_ipaddr(user_value)
+            if value is None:
+                self._print("\nValue is not a valid ipaddress\n")
+        elif datatype == "int":
+            try:
+                int(user_value)
+            except ValueError:
+                self._print("\nValue is not a valid integer\n")
+                return None
+        elif datatype == "hostname":
+            value = self._validate_hostname(user_value)
+            if value is None:
+                self._print("\nValue is not a valid hostname\n")
+        elif datatype == "version":
+            allowed = re.compile("^[\d][.][\d][.]([A-Z\d]+)$", re.IGNORECASE)
+            if not allowed.match(user_value):
+                self._print("\nValue is not a valid version\n")
+                return None
+            value = user_value
         else:
             value = user_value
 
         return value
+
+    def _validate_ipaddr(self, user_value):
+        try:
+            import netaddr
+            try:
+                netaddr.IPAddress(user_value)
+                return user_value
+            except netaddr.core.AddrFormatError:
+                return None
+        except ImportError:
+            self._print("\nWarning: Python netaddr library not installed. "
+                        "Cannot validate IP address.  This library is also "
+                        "required for MetroAE to run properly.")
+            return user_value
+
+    def _validate_hostname(self, hostname):
+        if len(hostname) > 255:
+            return False
+        if hostname[-1] == ".":
+            hostname = hostname[:-1]
+        allowed = re.compile("(?!-)[A-Z\d-]{1,63}(?<!-)$", re.IGNORECASE)
+        if all(allowed.match(x) for x in hostname.split(".")):
+            return hostname
+        else:
+            return None
 
     def _get_short_choices(self, choices, default=None):
         short_choices = list()
@@ -712,8 +808,8 @@ class Wizard(object):
                     self.current_action_idx += 1
                     continue
                 if choice == 3:
-                    self._print(u"Exiting MetroAE wizard. All progress made has"
-                                u" been saved.")
+                    self._print(u"Exiting MetroAE wizard. All progress made "
+                                u"has been saved.")
                     exit(0)
 
             self._run_action(current_action)
@@ -936,7 +1032,8 @@ class Wizard(object):
         if "dns_domain" in deployment:
             dns_domain_default = deployment["dns_domain"]
 
-        dns_domain = self._input("Top level DNS domain?", dns_domain_default)
+        dns_domain = self._input("Top level DNS domain?", dns_domain_default,
+                                 datatype="hostname")
         deployment["dns_domain"] = dns_domain
         self.state["dns_domain"] = dns_domain
 
@@ -948,7 +1045,7 @@ class Wizard(object):
         self._print(self._get_field(data, "vsd_fqdn_msg"))
 
         vsd_fqdn = self._input("VSD FQDN (we'll add .%s)" % dns_domain,
-                               vsd_fqdn_default)
+                               vsd_fqdn_default, datatype="hostname")
 
         if not vsd_fqdn.endswith(dns_domain):
             vsd_fqdn += "." + dns_domain
@@ -960,11 +1057,18 @@ class Wizard(object):
         else:
             dns_servers_default = None
 
-        dns_server_list = self._input(
-            "Enter DNS server IPs in dotted decmial format (separate multiple "
-            "using commas)", dns_servers_default)
+        dns_server_list = None
 
-        deployment["dns_server_list"] = self._format_ip_list(dns_server_list)
+        while dns_server_list is None:
+
+            dns_server_list = self._input(
+                "Enter DNS server IPs in dotted decmial format (separate "
+                "multiple using commas)", dns_servers_default)
+
+            dns_server_list = self._format_ip_list(dns_server_list)
+            dns_server_list = self._validate_ip_list(dns_server_list)
+
+        deployment["dns_server_list"] = dns_server_list
 
     def _setup_ntp(self, deployment, data):
         self._print(self._get_field(data, "ntp_setup_msg"))
@@ -974,14 +1078,36 @@ class Wizard(object):
         else:
             ntp_servers_default = None
 
-        ntp_server_list = self._input(
-            "Enter NTP server IPs in dotted decmial format (separate multiple "
-            "using commas)", ntp_servers_default)
+        ntp_server_list = None
+        while ntp_server_list is None:
 
-        deployment["ntp_server_list"] = self._format_ip_list(ntp_server_list)
+            ntp_server_list = self._input(
+                "Enter NTP server IPs in dotted decmial format (separate "
+                "multiple using commas)", ntp_servers_default)
+
+            ntp_server_list = self._format_ip_list(ntp_server_list)
+            ntp_server_list = self._validate_ip_list(ntp_server_list)
+
+        deployment["ntp_server_list"] = ntp_server_list
 
     def _format_ip_list(self, ip_str):
         return [x.strip() for x in ip_str.split(",")]
+
+    def _validate_ip_list(self, ip_list):
+        for ip in ip_list:
+            if self._validate_ipaddr(ip) is None:
+                self._print("\n%s is not a valid IP address\n" % ip)
+                return None
+
+        return ip_list
+
+    def _validate_hostname_list(self, hostname_list):
+        for hostname in hostname_list:
+            if self._validate_hostname(hostname) is None:
+                self._print("\n%s is not a valid hostname\n" % hostname)
+                return None
+
+        return hostname_list
 
     def _setup_unzip_dir(self, deployment):
         if "nuage_unzipped_files_dir" in self.state:
@@ -1090,7 +1216,8 @@ class Wizard(object):
             upgrade_from_version_default = None
 
         upgrade_from_version = self._input("Current running version?",
-                                           upgrade_from_version_default)
+                                           upgrade_from_version_default,
+                                           datatype="version")
 
         deployment["upgrade_from_version"] = upgrade_from_version
 
@@ -1100,7 +1227,8 @@ class Wizard(object):
             upgrade_to_version_default = None
 
         upgrade_to_version = self._input("Upgrade to version?",
-                                         upgrade_to_version_default)
+                                         upgrade_to_version_default,
+                                         datatype="version")
 
         deployment["upgrade_to_version"] = upgrade_to_version
 
@@ -1139,7 +1267,8 @@ class Wizard(object):
         else:
             default = item_name.lower() + str(i + 1)
 
-        hostname = self._input("Hostname%s" % dns_message, default)
+        hostname = self._input("Hostname%s" % dns_message, default,
+                               datatype="hostname")
 
         if dns_domain is not None and not hostname.endswith(dns_domain):
             hostname += "." + dns_domain
@@ -1159,7 +1288,8 @@ class Wizard(object):
             else:
                 default = None
 
-            system_ip = self._input("System IP address for routing", default)
+            system_ip = self._input("System IP address for routing", default,
+                                    datatype="ipaddr")
             component["system_ip"] = system_ip
 
         self._setup_target_server(component)
@@ -1171,7 +1301,8 @@ class Wizard(object):
                 component["mgmt_ip"] != ""):
             default = component["mgmt_ip"]
 
-        mgmt_ip = self._input("Management IP address", default)
+        mgmt_ip = self._input("Management IP address", default,
+                              datatype="ipaddr")
         component["mgmt_ip"] = mgmt_ip
         return mgmt_ip
 
@@ -1182,7 +1313,7 @@ class Wizard(object):
             default = str(component["mgmt_ip_prefix"])
 
         mgmt_ip_prefix = self._input("Management IP address prefix length",
-                                     default)
+                                     default, datatype="int")
         component["mgmt_ip_prefix"] = mgmt_ip_prefix
         return mgmt_ip_prefix
 
@@ -1198,7 +1329,8 @@ class Wizard(object):
             octets.append("1")
             default = ".".join(octets)
 
-        mgmt_gateway = self._input("Management IP gateway", default)
+        mgmt_gateway = self._input("Management IP gateway", default,
+                                   datatype="ipaddr")
         component["mgmt_gateway"] = mgmt_gateway
         self.state["mgmt_gateway"] = mgmt_gateway
         return mgmt_gateway
@@ -1212,7 +1344,8 @@ class Wizard(object):
         else:
             default = None
 
-        target_server = self._input("Target server (hypervisor) IP", default)
+        target_server = self._input("Target server (hypervisor) IP", default,
+                                    datatype="hostname")
         component["target_server"] = target_server
         self.state["target_server"] = target_server
 
@@ -1238,8 +1371,8 @@ class Wizard(object):
 
                 self._print(
                     u"\nCould not resolve %s to an IP address, this is "
-                    u"required for MetroAE to operate.  Is the hostname defined"
-                    u" in DNS?" % hostname)
+                    u"required for MetroAE to operate.  Is the hostname "
+                    u"defined in DNS?" % hostname)
         except Exception as e:
             self._record_problem(
                 "dns_resolve", "Error while resolving hostnames with DNS")
@@ -1279,7 +1412,7 @@ class Wizard(object):
                 "ssh-copy-id %s@%s" % (username, hostname))
             if rc == 0:
                 self._unrecord_problem("ssh_keys")
-                self._print("\nSuccessfully setup SSH on host")
+                self._print("\nSuccessfully setup SSH on host %s" % hostname)
                 return True
             else:
                 self._record_problem(
@@ -1293,6 +1426,59 @@ class Wizard(object):
                 "ssh_keys", "Error while setting up password-less SSH")
             self._print("\nAn error occurred while setting up SSH: " +
                         str(e))
+            self._print("Please contact: " + METROAE_CONTACT)
+
+        return False
+
+    def _verify_ssh(self, username, hostname):
+        try:
+            rc, output_lines = self._run_shell(
+                "ssh -oPasswordAuthentication=no %s@%s exit 0" % (
+                    username, hostname))
+            if rc == 0:
+                self._unrecord_problem("ssh_access")
+                self._print("\nSuccessfully connected via SSH to host %s" %
+                            hostname)
+                return True
+            else:
+                self._record_problem(
+                    "ssh_access", "Could not connect via password-less SSH")
+                self._print("\n".join(output_lines))
+                self._print(
+                    u"\nCould not connect via SSH to %s@%s, this is required"
+                    u" for MetroAE to operate." % (username, hostname))
+        except Exception as e:
+            self._record_problem(
+                "ssh_access", "Error while connecting to host via SSH")
+            self._print("\nAn error occurred while connecting to host via "
+                        " SSH: " + str(e))
+            self._print("Please contact: " + METROAE_CONTACT)
+
+        return False
+
+    def _verify_bridge(self, username, hostname, bridge):
+        try:
+            rc, output_lines = self._run_shell(
+                "ssh -oPasswordAuthentication=no %s@%s PATH=$PATH ip addr show"
+                " dev %s" % (
+                    username, hostname, bridge))
+            if rc == 0:
+                self._unrecord_problem("bridge")
+                self._print("\nSuccessfully verified bridge %s on host %s" % (
+                            bridge, hostname))
+                return True
+            else:
+                self._record_problem(
+                    "bridge", "Bridge not present on target server host")
+                self._print("\n".join(output_lines))
+                self._print(
+                    u"\nBridge %s not present on %s, this is required"
+                    u" for components to communicate." % (bridge, hostname))
+        except Exception as e:
+            self._record_problem(
+                "bridge", "Error while verifying bridge interfaces")
+            self._print("\nAn error occurred while verifying bridge interface "
+                        " via SSH: " + str(e))
             self._print("Please contact: " + METROAE_CONTACT)
 
         return False

@@ -47,3 +47,5 @@
 * Fix health checks for VSD with custom username (METROAE-994)
 * Skip monit status for processes and programs that are disabled by user
 * Unzip fixes for SD-WAN portal
+* Set Upgrade Complete flag on VSD for minor upgrade (METROAE-1008)
+* Remove old iptables rule in VSC preupgrade (METROAE-1013)

@@ -46,7 +46,7 @@ See [Setup](SETUP.md) for more details about enabling SSH Access.
 
 ## 4. Install ovftool (for VMware only)  
 
-Download and install the [ovftool](https://www.vmware.com/support/developer/ovf/) from VMware. MetroÆ uses ovftool for OVA operations.
+Download and install the [ovftool](https://www.vmware.com/support/developer/ovf/) from VMware. MetroÆ uses ovftool for OVA operations. Note that MetroÆ is tested using ovftool version 4.3. ovftool version 4.3 is required for proper operation.
 
 Note that running the metroae Docker container for VMware installations and upgrades requires special handling of the location of the ovftool command. Please see [SETUP.md](SETUP.md) for details.
 
