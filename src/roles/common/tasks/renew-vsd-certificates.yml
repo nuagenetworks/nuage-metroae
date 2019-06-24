@@ -112,14 +112,15 @@
       vsd_monit:
         group: all
       register: vsd_process_list
-      delegate_facts: False
-      when: inventory_hostname in groups['primary_vsds'][0]
+      delegate_to: "{{ item }}"
+      delegate_facts: True
+      with_items: "{{ groups['primary_vsds'] }}"
 
     - debug: var=vsd_process_list verbosity=1
 
     - name: Restart stats if enabled
       shell: monit restart -g vsd-stats
-      when: "'vsd-stats-status' in vsd_process_list['state'].keys()"
+      when: "'stats-collector' in vsd_process_list.results[0]['state'].keys()"
       with_items: "{{ groups['primary_vsds'] }}"
 
     when:
