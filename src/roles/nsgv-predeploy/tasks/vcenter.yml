@@ -55,13 +55,23 @@
     set_fact:
       vcenter_path: "{{ target_server }}/{{ vcenter.datacenter }}/host/{{ vcenter.cluster }}{{ (vcenter.host_reference != 'NONE') | ternary ('/{{ vcenter.host_reference | urlencode }}', '') }}{{ (vcenter.resource_pool != 'NONE') | ternary ('/Resources/{{ vcenter.resource_pool | urlencode }}', '') }}"
 
+  - name: Set power on when NSGv mac does not need to be set
+    set_fact:
+      power_on_arg: "--powerOn"
+    when: nsgv_mac is not defined
+
+  - name: Clear power on when NSGv mac does need to be set
+    set_fact:
+      power_on_arg: ""
+    when: nsgv_mac is defined
+
   - name: Configure ovftool command
     set_fact:
       ovftool_command: >-
         {{ vcenter_global.ovftool }}
         --acceptAllEulas
         --noSSLVerify
-        --powerOn
+        {{ power_on_arg }}
         --machineOutput
         -dm=thin
         -ds={{ vcenter.datastore }}
@@ -82,24 +92,38 @@
   - name: Print deploy_output
     debug: var=deploy_output
 
-  - name: Set MAC address when defined
-    vmware_guest:
-      hostname: "{{ target_server }}"
-      username: "{{ vcenter.username }}"
-      password: "{{ vcenter.password }}"
-      datacenter: "{{ vcenter.datacenter }}"
-      name: "{{ vm_name }}"
-      validate_certs: no
-      state: present
-      networks:
-        - name: "{{ mgmt_bridge }}"
-          mac: "{{ nsgv_mac }}"
-        - name: "{{ data_bridge }}"
-        - name: "{{ access_bridge }}"
-        - name: "{{ access_bridge }}"
-        - name: "{{ access_bridge }}"
-        - name: "{{ access_bridge }}"
-    delegate_to: localhost
+  - block:
+
+    - name: Set MAC address when defined
+      vmware_guest:
+        hostname: "{{ target_server }}"
+        username: "{{ vcenter.username }}"
+        password: "{{ vcenter.password }}"
+        datacenter: "{{ vcenter.datacenter }}"
+        name: "{{ vm_name }}"
+        validate_certs: no
+        state: present
+        networks:
+          - name: "{{ mgmt_bridge }}"
+            mac: "{{ nsgv_mac }}"
+          - name: "{{ data_bridge }}"
+          - name: "{{ access_bridge }}"
+          - name: "{{ access_bridge }}"
+          - name: "{{ access_bridge }}"
+          - name: "{{ access_bridge }}"
+      delegate_to: localhost
+
+    - name: Power on guest after setting MAC address
+      vmware_guest:
+        hostname: "{{ target_server }}"
+        username: "{{ vcenter.username }}"
+        password: "{{ vcenter.password }}"
+        datacenter: "{{ vcenter.datacenter }}"
+        name: "{{ vm_name }}"
+        validate_certs: no
+        state: poweredon
+      delegate_to: localhost
+
     when: nsgv_mac is defined
 
   - block:
