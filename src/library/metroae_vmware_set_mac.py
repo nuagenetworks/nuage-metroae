@@ -863,7 +863,7 @@ class PyVmomiHelper(PyVmomi):
                 cpu_limit = None
                 try:
                     cpu_limit = int(self.params['hardware'].get('cpu_limit'))
-                except ValueError as e:
+                except ValueError:
                     self.module.fail_json(msg="hardware.cpu_limit attribute should be an integer value.")
                 cpu_allocation.limit = cpu_limit
                 if vm_obj is None or cpu_allocation.limit != vm_obj.config.cpuAllocation.limit:
