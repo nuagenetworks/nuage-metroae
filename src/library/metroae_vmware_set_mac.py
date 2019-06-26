@@ -841,7 +841,7 @@ class PyVmomiHelper(PyVmomi):
                 mem_limit = None
                 try:
                     mem_limit = int(self.params['hardware'].get('mem_limit'))
-                except ValueError as e:
+                except ValueError:
                     self.module.fail_json(msg="hardware.mem_limit attribute should be an integer value.")
                 memory_allocation.limit = mem_limit
                 if vm_obj is None or memory_allocation.limit != vm_obj.config.memoryAllocation.limit:
@@ -851,7 +851,7 @@ class PyVmomiHelper(PyVmomi):
                 mem_reservation = None
                 try:
                     mem_reservation = int(self.params['hardware'].get('mem_reservation'))
-                except ValueError as e:
+                except ValueError:
                     self.module.fail_json(msg="hardware.mem_reservation should be an integer value.")
 
                 memory_allocation.reservation = mem_reservation
