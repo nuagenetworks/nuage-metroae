@@ -5,6 +5,27 @@
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
 from __future__ import absolute_import, division, print_function
+
+import re
+import time
+
+HAS_PYVMOMI = False
+try:
+    from pyVmomi import vim, vmodl
+    HAS_PYVMOMI = True
+except ImportError:
+    pass
+
+from random import randint
+from distutils.version import StrictVersion
+from ansible.module_utils.basic import AnsibleModule
+from ansible.module_utils._text import to_text, to_native
+from ansible.module_utils.vmware import (find_obj, gather_vm_facts, get_all_objs,
+                                         compile_folder_path_for_object, serialize_spec,
+                                         vmware_argument_spec, set_vm_power_state, PyVmomi,
+                                         find_dvs_by_name, find_dvspg_by_name, wait_for_vm_ip)
+
+
 __metaclass__ = type
 
 ANSIBLE_METADATA = {'metadata_version': '1.1',
@@ -530,25 +551,6 @@ instance:
     sample: None
 '''
 
-import re
-import time
-
-HAS_PYVMOMI = False
-try:
-    from pyVmomi import vim, vmodl
-    HAS_PYVMOMI = True
-except ImportError:
-    pass
-
-from random import randint
-from distutils.version import StrictVersion
-from ansible.module_utils.basic import AnsibleModule
-from ansible.module_utils._text import to_text, to_native
-from ansible.module_utils.vmware import (find_obj, gather_vm_facts, get_all_objs,
-                                         compile_folder_path_for_object, serialize_spec,
-                                         vmware_argument_spec, set_vm_power_state, PyVmomi,
-                                         find_dvs_by_name, find_dvspg_by_name, wait_for_vm_ip)
-
 
 class PyVmomiDeviceHelper(object):
     """ This class is a helper to create easily VMWare Objects for PyVmomiHelper """
@@ -747,11 +749,6 @@ class PyVmomiCache(object):
         return objects
 
     def get_network(self, network):
-        #objects = self.get_all_objs(self.content, [vim.Network], False)
-        #debug = "objects: "
-        #for obj in objects:
-        #    debug += obj.name + ", "
-        #raise Exception(debug)
         if network not in self.networks:
             net_obj = self.find_obj(self.content, [vim.Network], network)
             self.networks[network] = net_obj
@@ -876,7 +873,7 @@ class PyVmomiHelper(PyVmomi):
                 cpu_reservation = None
                 try:
                     cpu_reservation = int(self.params['hardware'].get('cpu_reservation'))
-                except ValueError as e:
+                except ValueError:
                     self.module.fail_json(msg="hardware.cpu_reservation should be an integer value.")
                 cpu_allocation.reservation = cpu_reservation
                 if vm_obj is None or \
@@ -1750,7 +1747,7 @@ class PyVmomiHelper(PyVmomi):
                 rec = self.content.storageResourceManager.RecommendDatastores(storageSpec=storage_spec)
                 rec_action = rec.recommendations[0].action[0]
                 return rec_action.destination.name
-            except Exception as e:
+            except Exception:
                 # There is some error so we fall back to general workflow
                 pass
         datastore = None
