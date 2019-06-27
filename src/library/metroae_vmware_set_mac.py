@@ -15,8 +15,7 @@ from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils._text import to_text, to_native
 from ansible.module_utils.vmware import (find_obj, gather_vm_facts, get_all_objs,
                                          compile_folder_path_for_object, serialize_spec,
-                                         vmware_argument_spec, set_vm_power_state, PyVmomi,
-                                         find_dvs_by_name, find_dvspg_by_name, wait_for_vm_ip)
+                                         vmware_argument_spec, set_vm_power_state, PyVmomi)
 
 HAS_PYVMOMI = False
 try:
