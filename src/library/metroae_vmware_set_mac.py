@@ -1779,30 +1779,9 @@ class PyVmomiHelper(PyVmomi):
         self.configspec = vim.vm.ConfigSpec()
         self.configspec.deviceChange = []
 
-        # self.configure_guestid(vm_obj=self.current_vm_obj)
-        # self.configure_cpu_and_memory(vm_obj=self.current_vm_obj)
-        # self.configure_hardware_params(vm_obj=self.current_vm_obj)
-        # self.configure_disks(vm_obj=self.current_vm_obj)
         self.configure_network(vm_obj=self.current_vm_obj)
-        # self.configure_cdrom(vm_obj=self.current_vm_obj)
-        # self.customize_customvalues(vm_obj=self.current_vm_obj, config_spec=self.configspec)
-        # self.configure_resource_alloc_info(vm_obj=self.current_vm_obj)
-        # self.configure_vapp_properties(vm_obj=self.current_vm_obj)
-
-        # if self.params['annotation'] and self.current_vm_obj.config.annotation != self.params['annotation']:
-        #     self.configspec.annotation = str(self.params['annotation'])
-        #     self.change_detected = True
 
         change_applied = False
-
-        # relospec = vim.vm.RelocateSpec()
-        # if self.params['resource_pool']:
-        #     relospec.pool = self.get_resource_pool()
-
-        #     if relospec.pool != self.current_vm_obj.resourcePool:
-        #         task = self.current_vm_obj.RelocateVM_Task(spec=relospec)
-        #         self.wait_for_task(task)
-        #         change_applied = True
 
         # Only send VMWare task if we see a modification
         if self.change_detected:
@@ -1819,65 +1798,6 @@ class PyVmomiHelper(PyVmomi):
                 # https://kb.vmware.com/selfservice/microsites/search.do?language=en_US&cmd=displayKC&externalId=2021361
                 # https://kb.vmware.com/selfservice/microsites/search.do?language=en_US&cmd=displayKC&externalId=2173
                 return {'changed': change_applied, 'failed': True, 'msg': task.info.error.msg}
-
-        # Rename VM
-        # if self.params['uuid'] and self.params['name'] and self.params['name'] != self.current_vm_obj.config.name:
-        #     task = self.current_vm_obj.Rename_Task(self.params['name'])
-        #     self.wait_for_task(task)
-        #     change_applied = True
-
-        #     if task.info.state == 'error':
-        #         return {'changed': change_applied, 'failed': True, 'msg': task.info.error.msg}
-
-        # Mark VM as Template
-        # if self.params['is_template'] and not self.current_vm_obj.config.template:
-        #     try:
-        #         self.current_vm_obj.MarkAsTemplate()
-        #     except vmodl.fault.NotSupported as e:
-        #         self.module.fail_json(msg="Failed to mark virtual machine [%s] "
-        #                                   "as template: %s" % (self.params['name'], e.msg))
-        #     change_applied = True
-
-        # Mark Template as VM
-        # elif not self.params['is_template'] and self.current_vm_obj.config.template:
-        #     resource_pool = self.get_resource_pool()
-        #     kwargs = dict(pool=resource_pool)
-
-        #     if self.params.get('esxi_hostname', None):
-        #         host_system_obj = self.select_host()
-        #         kwargs.update(host=host_system_obj)
-
-        #     try:
-        #         self.current_vm_obj.MarkAsVirtualMachine(**kwargs)
-        #     except vim.fault.InvalidState as invalid_state:
-        #         self.module.fail_json(msg="Virtual machine is not marked"
-        #                                   " as template : %s" % to_native(invalid_state.msg))
-        #     except vim.fault.InvalidDatastore as invalid_ds:
-        #         self.module.fail_json(msg="Converting template to virtual machine"
-        #                                   " operation cannot be performed on the"
-        #                                   " target datastores: %s" % to_native(invalid_ds.msg))
-        #     except vim.fault.CannotAccessVmComponent as cannot_access:
-        #         self.module.fail_json(msg="Failed to convert template to virtual machine"
-        #                                   " as operation unable access virtual machine"
-        #                                   " component: %s" % to_native(cannot_access.msg))
-        #     except vmodl.fault.InvalidArgument as invalid_argument:
-        #         self.module.fail_json(msg="Failed to convert template to virtual machine"
-        #                                   " due to : %s" % to_native(invalid_argument.msg))
-        #     except Exception as generic_exc:
-        #         self.module.fail_json(msg="Failed to convert template to virtual machine"
-        #                                   " due to generic error : %s" % to_native(generic_exc))
-
-        #     # Automatically update VMWare UUID when converting template to VM.
-        #     # This avoids an interactive prompt during VM startup.
-        #     uuid_action = [x for x in self.current_vm_obj.config.extraConfig if x.key == "uuid.action"]
-        #     if not uuid_action:
-        #         uuid_action_opt = vim.option.OptionValue()
-        #         uuid_action_opt.key = "uuid.action"
-        #         uuid_action_opt.value = "create"
-        #         self.configspec.extraConfig.append(uuid_action_opt)
-        #         self.change_detected = True
-
-        #     change_applied = True
 
         vm_facts = self.gather_facts(self.current_vm_obj)
         return {'changed': change_applied, 'failed': False, 'instance': vm_facts}
@@ -1913,6 +1833,7 @@ def main():
         name_match=dict(type='str', choices=['first', 'last'], default='first'),
         interface_index=dict(type='int', required=True),
         mac=dict(type='str', required=True),
+        uuid=dict(type='str'),
         datacenter=dict(type='str')
     )
 
