@@ -226,6 +226,7 @@ function print_version_and_exit {
 function check_docker {
     set +e
 
+    echo ""
     write_to_screen_and_script_log ">>> Checking docker version"
     if [[ -f $SCRIPT_LOG_FILE ]]; then
         docker --version >> $SCRIPT_LOG_FILE 2>> $SCRIPT_LOG_FILE
@@ -356,8 +357,8 @@ function destroy {
     while [[ $confirmation != "n" ]] && [[ $confirmation  != "y" ]] && [[ $confirmation != "" ]]
     do
         echo ""
-        echo "It looks like you are about to destroy the MetroAE container. If you proceed,"
-        echo "the MetroAE container will be stopped, the MetroAE container image will be"
+        write_to_screen_and_script_log "It looks like you are about to destroy the MetroAE container."
+        echo "If you continue, the MetroAE container will be stopped, the MetroAE container image will be"
         echo "removed from Docker, and your data on disk will be preserved. Your data will"
         echo "not be destroyed. You will be able to use it again by pulling another MetroAE"
         echo "container and running 'metroae container setup'."
@@ -440,13 +441,14 @@ function get_from_s3 {
 
 function pull {
     set +x
-    #TODO: Allow user to specify version to pull
-    #if [[ ! -z $1 ]]; then
-    #    MAX_CONTAINER_VERSION=$1
-    #fi
-
-    # fix to specific container version for softlaunch
-    MAX_CONTAINER_VERSION='new-menu'
+    if [[ ! -z $METROAE_DEPLOY_MENU ]]; then
+        if [[ ! -z $1 ]]; then
+            MAX_CONTAINER_VERSION=$1
+        fi
+    else
+        # fix to specific container version for softlaunch
+        MAX_CONTAINER_VERSION='new-menu'
+    fi
 
     repo="Docker registry"
     if [[ -f $SCRIPT_LOG_FILE ]]; then
@@ -638,22 +640,26 @@ function setup_container {
     declare -l setup_type
     setup_type="init"
     #TODO
-    if [[ -z $1 ]]; then
-        while [[ $setup_type != "c" ]] && [[ $setup_type != "d" ]] && [[ $setup_type != "b" ]] && [[ $setup_type != "" ]]
-        do
+    if [[ ! -z $METROAE_DEPLOY_MENU ]]; then
+        if [[ -z $1 ]]; then
+            while [[ $setup_type != "c" ]] && [[ $setup_type != "d" ]] && [[ $setup_type != "b" ]] && [[ $setup_type != "" ]]
+            do
+                echo ""
+                write_to_screen_and_script_log "Setup can configure the container to support MetroAE (c)onfig, MetroAE (d)eploy,"
+                echo "or (b)oth MetroAE config and deploy. MetroAE config is used for day-zero VSD"
+                echo "configuration tasks. MetroAE deploy is used for installing, upgrading, and"
+                echo "health checking of Nuage VSP components in your environment."
+                echo ""
+                read -p "Do you want to setup MetroAE config, deploy, or both? (c/d/B): " setup_type
+            done
+        else
             echo ""
-            write_to_screen_and_script_log "Setup can configure the container to support MetroAE (c)onfig, MetroAE (d)eploy,"
-            echo "or (b)oth MetroAE config and deploy. MetroAE config is used for day-zero VSD"
-            echo "configuration tasks. MetroAE deploy is used for installing, upgrading, and"
-            echo "health checking of Nuage VSP components in your environment."
-            echo ""
-            read -p "Do you want to setup MetroAE config, deploy, or both? (c/d/B): " setup_type
-        done
+            write_to_screen_and_script_log ">>> Setting setup type to passed in parameter $1"
+            setup_type=$1
+            shift
+        fi
     else
-        echo ""
-        write_to_screen_and_script_log ">>> Setting setup type to passed in parameter $1"
-        setup_type=$1
-        shift
+        setup_type="c"
     fi
 
     if [[ $setup_type == "c" ]]; then
@@ -1706,28 +1712,30 @@ function main_help {
     echo ""
     print_menu_help "metroae%-50s %-1s\n" $1
     echo ""
-    echo "[deployment] is the name of a deployment containing the required"
-    echo "configuration files. The deployments are stored as directories under:"
-    echo $DEPLOYMENTS_BASE_DIR
-    echo ""
-    echo "[options] include:"
-    echo "  -h, --help:            Displays this help."
-    echo "  --ansible-help:        Displays help for ansible arguments."
-    echo "  -v, -vv, -vvv, -vvvv:  Runs with increasing levels of verbosity."
-    echo "  --list:                Shows a list of all supported workflows"
-    echo "  --skip-password:       Do not ask for a password.  Password can be"
-    echo "                         provided via the environment variable"
-    echo "                         METROAE_PASSWORD"
-    echo "  --skip-build:          Runs workflow without performing build."
-    echo "                         This will prevent changes in the deployment"
-    echo "                         from taking effect, but it will be faster."
-    echo "  --set-group <group>:   Sets the ownership of inventory and logs to"
-    echo "                         the specified group so that other users in"
-    echo "                         the group can access these files."
-    echo ""
-    echo "Any additional [options] are passed to the internal Ansible engine"
-    echo "for processing"
-    echo ""
+    if [[ ! -z $METROAE_DEPLOY_MENU ]]; then
+        echo "[deployment] is the name of a deployment containing the required"
+        echo "configuration files. The deployments are stored as directories under:"
+        echo $DEPLOYMENTS_BASE_DIR
+        echo ""
+        echo "[options] include:"
+        echo "  -h, --help:            Displays this help."
+        echo "  --ansible-help:        Displays help for ansible arguments."
+        echo "  -v, -vv, -vvv, -vvvv:  Runs with increasing levels of verbosity."
+        echo "  --list:                Shows a list of all supported workflows"
+        echo "  --skip-password:       Do not ask for a password.  Password can be"
+        echo "                         provided via the environment variable"
+        echo "                         METROAE_PASSWORD"
+        echo "  --skip-build:          Runs workflow without performing build."
+        echo "                         This will prevent changes in the deployment"
+        echo "                         from taking effect, but it will be faster."
+        echo "  --set-group <group>:   Sets the ownership of inventory and logs to"
+        echo "                         the specified group so that other users in"
+        echo "                         the group can access these files."
+        echo ""
+        echo "Any additional [options] are passed to the internal Ansible engine"
+        echo "for processing"
+        echo ""
+    fi
     echo "Additional menu help is available by adding 'help' to the command line,"
     echo "e.g. 'metroae container help'"
     if [[ $RUN_MODE == "CONTAINER" ]]; then
