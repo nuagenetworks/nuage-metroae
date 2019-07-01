@@ -1,23 +1,20 @@
-from ansible.module_utils.basic import AnsibleModule
-import os
 import io
 import urllib3
-import bambou
 import logging
 import sys
 sys.path.insert(0, '/home/caso/dev/research/levistate/')
+from ansible.module_utils.basic import AnsibleModule
 from configuration import Configuration
 from errors import LevistateError
 from template import TemplateStore
 from user_data_parser import UserDataParser
-from vsd_writer import VsdWriter, SOFTWARE_TYPE
-
+from vsd_writer import VsdWriter
+from levistate import LEVISTATE_VERSION
 urllib3.disable_warnings()
 
 STATE_PRESENT = "present"      # for update/create
 STATE_ABSENT = "absent"        # for revert
-LEVISTATE_VERSION = "1.0"
-
+STATE_VALIDATED = "validated"  # for validation
 
 DOCUMENTATION = '''
 ---
@@ -57,23 +54,66 @@ options:
     - ' - password: (string): Password to log into the VSD.'
     - ' - enterprise: (string): Enterprise for VSD'
     - ' - url: (string): Url where the VSD can be reached'
-    - ' - certificate: (string): Certificate file for VSD authentication'
-    - ' - certificate_key: (string): Certificate key file for VSD authentication'
+    - ' - certificate: (string): Certificate file for VSD authentication, required: (False)'
+    - ' - certificate_key: (string): Certificate key file for VSD authentication, required: (False)'
     type: dict
-    default: {
-        username: 'csproot',
-        password: 'csproot',
-        enterprise: 'csp',
-        url: null
-    }
     required: true
   state:
     description:
-      - Apply/Update or revert the configuration on VSD
+      - Apply/Update, Revert or Validate the configuration on VSD
     required: true
     default: null
-    choices: [ "present", "absent" ]
+    choices: [ "present", "absent", "validated" ]
 '''
+
+EXAMPLES = '''
+# Apply the configuration by specifying the user_data_path
+- metroae_config:
+    spec_path: /tmp/metroae_data/vsd-api-specifications/
+    template_path: /tmp/metroae_data/standard-templates/templates/
+    user_data_path: /tmp/metroae_data/standard-templates/user_data/demo.yml
+    credentials:
+         username: csproot
+         password: csproot
+         enterprise: csp
+         url: https://192.168.122.1:8443
+         certificate: /tmp/metroae_data/certificate
+         certificate_key: /tmp/metroae_data/certificate_key
+    state: enabled
+
+# Apply the configuration by specifying the template_name and variables
+- metroae_config:
+    spec_path: /tmp/metroae_data/vsd-api-specifications/
+    template_path: /tmp/metroae_data/standard-templates/templates/
+    template_name: Enterprise
+    variables:
+      - {'enable_application_performance_management': True, 'allow_gateway_management': True, 'vnf_managemen t_enabled': True, 'description': 'Demonstration deployment',
+       'enterprise_name': 'demoExample', 'routing_protocols_enabled': True, 'allow_advanced_qos_configuration': True, 'local_as': 10,
+       'allow_trusted_forwarding_class': True, 'dhcp_lease_interval': 40, 'floating_ips_quota': 25000, 'encryption_management_mode': 'managed'}
+    credentials:
+         username: csproot
+         password: csproot
+         enterprise: csp
+         url: https://192.168.122.1:8443
+         certificate: /tmp/metroae_data/certificate
+         certificate_key: /tmp/metroae_data/certificate_key
+    state: enabled
+
+# Validates the configuration to be applied and checks for any errors
+- metroae_config:
+    spec_path: /tmp/metroae_data/vsd-api-specifications/
+    template_path: /tmp/metroae_data/standard-templates/templates/
+    user_data_path: /tmp/metroae_data/standard-templates/user_data/demo.yml
+    credentials:
+         username: csproot
+         password: csproot
+         enterprise: csp
+         url: https://192.168.122.1:8443
+         certificate: /tmp/metroae_data/certificate
+         certificate_key: /tmp/metroae_data/certificate_key
+    state: validated
+'''
+
 
 class CustomLogHandler(logging.StreamHandler):
 
@@ -91,8 +131,9 @@ class CustomLogHandler(logging.StreamHandler):
             super(CustomLogHandler, self).emit(record)
         record.msg = saved_message
 
+
 class MetroaeConfig(object):
-    def __init__(self,module):
+    def __init__(self, module):
         self.spec_path = module.params['spec_path']
         self.template_path = module.params['template_path']
         self.user_data_path = module.params['user_data_path']
@@ -104,22 +145,21 @@ class MetroaeConfig(object):
         self.device_version = None
         self.module = module
 
-
     def validate(self):
         if (self.credentials['certificate'] is not None and self.credentials['certificate_key'] is None) or (self.credentials['certificate_key'] is not None and self.credentials['certificate'] is None):
             self.module.fail_json(msg="Specify the certificate along with the certificate_key for the VSD API")
 
-        if (self.template_name is None and self.variables is not None and len(self.variables)>0 ):
-            self.module.fail_json(changed=False,msg="Specify a template_name to apply config")
+        if (self.template_name is None and self.variables is not None and len(self.variables) > 0):
+            self.module.fail_json(changed=False, msg="Specify a template_name to apply config")
 
         if (self.template_name is not None and self.variables is None):
-            self.module.fail_json(changed=False,msg="Specify a list of dictionaries of variable/values sets to apply to template")
+            self.module.fail_json(changed=False, msg="Specify a list of dictionaries of variable/values sets to apply to template")
 
         if self.spec_path is None:
-            self.module.fail_json(changed=False,msg="Specify the path to the folder containing the specification of API for VSD")
+            self.module.fail_json(changed=False, msg="Specify the path to the folder containing the specification of API for VSD")
 
         if self.template_path is None:
-            self.module.fail_json(changed=False,msg="Specify The path to the folder containing the templates")
+            self.module.fail_json(changed=False, msg="Specify The path to the folder containing the templates")
 
     def run(self):
 
@@ -148,6 +188,7 @@ class MetroaeConfig(object):
 
         OUTPUT_LEVEL_NUM = logging.ERROR + 5
         logging.addLevelName(OUTPUT_LEVEL_NUM, "OUTPUT")
+
         def output(self, msg, *args, **kwargs):
             if self.isEnabledFor(OUTPUT_LEVEL_NUM):
                 self._log(OUTPUT_LEVEL_NUM, msg, args, **kwargs)
@@ -155,7 +196,7 @@ class MetroaeConfig(object):
         logging.Logger.output = output
         self.logger = logging.getLogger("metroae_config")
         log_formatter = logging.Formatter("%(levelname)-6s: %(message)s")
-        self.log_capture_string =  io.StringIO()
+        self.log_capture_string = io.BytesIO()
         self.logger.setLevel(logging.DEBUG)
         debug_handler = CustomLogHandler(self.log_capture_string)
         debug_handler.setFormatter(log_formatter)
@@ -166,7 +207,7 @@ class MetroaeConfig(object):
         for path in self.template_path:
             try:
                 self.store.read_templates(path)
-            except TemplateParseError as e:
+            except LevistateError as e:
                 self.module.fail_json(msg=str(e))
             except Exception as e:
                 self.module.fail_json(msg=str(e))
@@ -177,21 +218,18 @@ class MetroaeConfig(object):
         for path in self.spec_path:
             try:
                 self.writer.read_api_specifications(path)
-            except InvalidSpecification as e:
+            except LevistateError as e:
                 self.module.fail_json(msg=str(e))
             except Exception as e:
                 self.module.fail_json(msg=str(e))
 
-
     def set_vsd_writer_session(self):
         self.writer.set_session_params(self.credentials['url'],
-                                username=self.credentials['username'],
-                                password=self.credentials['password'],
-                                enterprise=self.credentials['enterprise'],
-                                certificate=(self.credentials['certificate'],
-                                            self.credentials['certificate_key']
-                                            )
-                                )
+                                       username=self.credentials['username'],
+                                       password=self.credentials['password'],
+                                       enterprise=self.credentials['enterprise'],
+                                       certificate=(self.credentials['certificate'],
+                                                    self.credentials['certificate_key']))
         if self.device_version is None:
             try:
                 self.device_version = self.writer.get_version()
@@ -225,17 +263,25 @@ class MetroaeConfig(object):
                 template_name = data[0]
                 template_data = data[1]
                 config.add_template_data(template_name, **template_data)
-
-            self.writer.set_validate_only(False)
-            if self.state == STATE_ABSENT:
-                config.revert(self.writer)           # Revert the configuration
+            if self.state == STATE_VALIDATED:
+                validate_actions = [True]
+                result = False
             else:
-                config.apply(self.writer)           # update/apply the configuration
+                validate_actions = [True, False]
+                result = True
+
+            for validate_only in validate_actions:
+                self.writer.set_validate_only(validate_only)
+
+                if (self.state == STATE_PRESENT) or (self.state == STATE_VALIDATED):
+                    config.apply(self.writer)           # Apply/Update/Validate the configuration
+                else:
+                    config.revert(self.writer)           # Revert the configuration
 
         except Exception as e:
             self.module.fail_json(msg=str(e))
 
-        self.module.exit_json(changed=True, message="All configurations applied to the VSD")
+        self.module.exit_json(changed=result, message="Passed")
 
     def get_software_type(self):
         if self.device_version is not None:
@@ -251,33 +297,33 @@ class MetroaeConfig(object):
 
 
 def main():
-    arg_spec = dict(
-                spec_path=dict(required=True, type='list'),
-                template_path=dict(required=True, type='list'),
-                user_data_path=dict(required=False, type='list'),
-                template_name=dict(required=False,type='str'),
-                variables=dict(required=False,type='list'),
-                credentials=dict(required=True,
-                                type='dict',
-                                no_log=True,
-                                options=dict( username=dict(type='str',required=True),
-                                            password=dict(type='str',required=True),
-                                            enterprise=dict(type='str',required=True),
-                                            url=dict(type='str',required=True),
-                                            certificate=dict(type='str',required=False),
-                                            certificate_key=dict(type='str',required=False)
-                                )
-                            ),
-                state=dict(required=True,type='str',choices=['absent', 'present'])
-                )
-    module = AnsibleModule(argument_spec=arg_spec, supports_check_mode=False,
-                               required_one_of=[['user_data_path','template_name']], required_together=[['template_name','variables']])
+    arg_spec = dict(spec_path=dict(required=True, type='list'),
+                    template_path=dict(required=True, type='list'),
+                    user_data_path=dict(required=False, type='list'),
+                    template_name=dict(required=False, type='str'),
+                    variables=dict(required=False, type='list'),
+                    credentials=dict(required=True,
+                                     type='dict',
+                                     no_log=True,
+                                     options=dict(username=dict(type='str', required=True),
+                                                  password=dict(type='str', required=True),
+                                                  enterprise=dict(type='str', required=True),
+                                                  url=dict(type='str', required=True),
+                                                  certificate=dict(type='str', required=False),
+                                                  certificate_key=dict(type='str', required=False))),
+                    state=dict(required=True, type='str', choices=['absent', 'present', 'validated']))
+
+    module = AnsibleModule(argument_spec=arg_spec,
+                           supports_check_mode=False,
+                           required_one_of=[['user_data_path', 'template_name']],
+                           required_together=[['template_name', 'variables']])
+
     metroae = MetroaeConfig(module)
     metroae.validate()
     metroae.run()
 #    result['changed'] = True
     module.exit_json(msg="Fatal exception has occured")
 
+
 if __name__ == '__main__':
     main()
-
