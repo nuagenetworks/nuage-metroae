@@ -123,6 +123,13 @@ class ExampleFileGenerator(object):
         if is_list:
             indent = "    "
 
+        if self.as_template and "target_server_type" in field:
+            server_type = field["target_server_type"]
+            self.example_lines.append(
+                "%s{%%- if show_target_server_type | default('%s') == "
+                "'%s' %%}" % (indent, server_type, server_type))
+            self.example_lines.append("")
+
         if self.has_comments:
             if "sectionBegin" in field:
                 self.example_lines.append("%s##### %s" % (
@@ -178,11 +185,16 @@ class ExampleFileGenerator(object):
             self.example_lines.append("%s%s: %s" % (indent, name, value))
 
         if self.has_comments:
-            self.example_lines.append("")
             if "sectionEnd" in field:
+                self.example_lines.append("")
                 self.example_lines.append(
                     indent + ("#" * (len(field['sectionEnd']) + 6)))
-                self.example_lines.append("")
+
+        if self.as_template and "target_server_type" in field:
+            self.example_lines.append("%s{%%- endif %%}" % indent)
+
+        if self.has_comments:
+            self.example_lines.append("")
 
     def get_example_value(self, name, field, is_list):
         field_type = "string"
