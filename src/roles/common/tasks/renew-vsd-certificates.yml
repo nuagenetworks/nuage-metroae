@@ -127,15 +127,11 @@
 
   - block:
 
-    - name: Renew primary VSD cert
-      command: /opt/vsd/bin/vsd-renew-certs.sh
-      delegate_to: "{{ item }}"
-      with_items: "{{ groups['vsd_standby_node1'][0] }}"
-
-    - name: Renew other 2 VSD certs
-      command: /opt/vsd/bin/vsd-renew-certs.sh -1 hostvars[groups['standby_vsds'][0]]['hostname']
+    - name: Renew standby VSD certs
+      command: /opt/vsd/bin/vsd-renew-certs.sh -1 {{ hostvars[groups['primary_vsds'][0]]['hostname'] }}
       delegate_to: "{{ item }}"
       with_items: 
+        - "{{ groups['vsd_standby_node1'][0] }}"
         - "{{ groups['vsd_standby_node2'][0] }}"
         - "{{ groups['vsd_standby_node3'][0] }}"
 
