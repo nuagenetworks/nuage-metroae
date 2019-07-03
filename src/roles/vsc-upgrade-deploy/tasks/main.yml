@@ -52,6 +52,15 @@
 - name: Print image version in json  when verbosity >= 1
   debug: var=version_json verbosity=1
 
+- name: Register uptime before reboot
+  sros_command:
+    commands:
+      - show uptime
+    provider: "{{ vsc_creds }}"
+  delegate_to: localhost
+  register: uptime_before_reboot
+  when: target_server_type is match('kvm') or target_server_type is match('vcenter')
+
 - name: Copy new VSC image to VSC nodes
   expect:
     command: "{{ vsc_image_copy }}"
@@ -61,14 +70,6 @@
     timeout: "{{ vsc_scp_timeout_seconds }}"
 
 - block:
-
-  - name: Register uptime before reboot
-    sros_command:
-      commands:
-        - show uptime
-      provider: "{{ vsc_creds }}"
-    delegate_to: localhost
-    register: uptime_before_reboot
 
   - name: Reboot VSC VM (ignoring errors)
     sros_command:
