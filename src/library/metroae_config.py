@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 import io
 import urllib3
 import logging
@@ -195,10 +196,9 @@ class MetroaeConfig(object):
 
         logging.Logger.output = output
         self.logger = logging.getLogger("metroae_config")
-        log_formatter = logging.Formatter("%(levelname)-6s: %(message)s")
-        self.log_capture_string = io.BytesIO()
-        self.logger.setLevel(logging.DEBUG)
-        debug_handler = CustomLogHandler(self.log_capture_string)
+        log_formatter = logging.Formatter("%(levelname)-6s: %(message)s ")
+        self.logger.setLevel(logging.ERROR)
+        debug_handler = CustomLogHandler()
         debug_handler.setFormatter(log_formatter)
         self.logger.addHandler(debug_handler)
 
