@@ -32,6 +32,7 @@
 * Added run_wizard.py to simplify setup and deployment creation
 * Support Active Standby VSTAT cluster (METROAE-853)
 * Support variable number of cpu cores for all components in KVM deployments (METROAE-942)
+* Add VSD Certificate renewal procedure to VSD upgrade (METROAE-1002)
 
 ### Resolved Issues
 * Fix VSD Upgrade procedure to check for accurate ejabberd connected user list (METROAE-958)
