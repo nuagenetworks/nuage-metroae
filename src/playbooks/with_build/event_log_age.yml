@@ -11,6 +11,14 @@
           api_url: "https://vsd1.example.com:8443"
           api_version: v5_0
 
+    - name: Format VSPK auth for VSPK module
+      set_fact:
+        nuage_auth:
+          username: "csproot"
+          password: "csproot"
+          api_url: "https://vsd1.example.com:8443"
+          enterprise: csp
+
     - name: Get Sysconfig
       nuage_vspk:
         auth: "{{ vspk_auth }}"
@@ -18,11 +26,11 @@
         command: find
       register: sysconfig
 
-    - name: Update sysconfig
-      nuage_vspk:
-        auth: "{{ vspk_auth }}"
-        type: SystemConfig
-        state: present
-        properties:
-          eventLogEntryMaxAge: 8
-      register: sysconfig2
+
+    - name: Enable maintainance mode on all l3/l2 domains
+      set_event_log:
+        vsd_auth:
+          "{{ nuage_auth }}"
+        event_log_age: 9
+        api_version: 5
+      register: mode_status
