@@ -1,0 +1,28 @@
+---
+- hosts: localhost
+  gather_facts: yes
+  tasks:
+    - name: Format VSPK auth for VSPK module
+      set_fact:
+        vspk_auth:
+          api_username: "csproot"
+          api_password: "csproot"
+          api_enterprise: "csp"
+          api_url: "https://vsd1.example.com:8443"
+          api_version: v5_0
+
+    - name: Get Sysconfig
+      nuage_vspk:
+        auth: "{{ vspk_auth }}"
+        type: SystemConfig
+        command: find
+      register: sysconfig
+
+    - name: Update sysconfig
+      nuage_vspk:
+        auth: "{{ vspk_auth }}"
+        type: SystemConfig
+        state: present
+        properties:
+          eventLogEntryMaxAge: 8
+      register: sysconfig2
