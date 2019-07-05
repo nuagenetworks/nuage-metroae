@@ -21,24 +21,23 @@ options:
       - VSD version
     required: true
     default: null
-  state:
+  event_log_age:
     description:
-      - The state of maintainance mode
+      - The age of the event log to be set
     required: true
     default: null
-    choices: [ "enabled", "disabled" ]
 '''
 
 EXAMPLES = '''
-# Enable maintainance mode on all l3/l3 domains except domains with shared resources
-- vsd_maintainace:
+# Set event log age to 7
+- set_event_log:
     vsd_auth:
       username: csproot
       password: csproot
       enterprise: csp
       api_url: https://10.0.0.10:8443
-    api_version: 4.0.R8
-    state: enabled
+    api_version: 5.2.3
+    event_log_age: 7
 '''
 
 
@@ -47,15 +46,12 @@ def set_event_log(csproot, event_log_age):
         sysconfig = csproot.system_configs.get_first()
         sysconfig.event_log_entry_max_age = event_log_age
         sysconfig.save()
-        module.exit_json(changed=True, result="This rocks")
+        module.exit_json(changed=True, result="Event log age set to %s" % event_log_age)
 
     except exceptions.BambouHTTPError as be:
-        if "There are no attribute changes" in be.message:
-            module.exit_json(changed=True, result="Maintainance mode is already enabled")
-        else:
-            module.fail_json(msg="Could not set maintainance mode : %s" % be)
+        module.fail_json(msg="Could not set event log age : %s" % be)
     except Exception as e:
-        module.fail_json(msg="Could not set maintainance mode : %s" % e)
+        module.fail_json(msg="Could not set event log age : %s" % e)
 
 
 def format_api_version(version):
