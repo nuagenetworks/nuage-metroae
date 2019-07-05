@@ -183,11 +183,16 @@
 
   - name: Import Intermediate Cert Pem file
     shell: '/usr/java/latest/bin/keytool -importcert  -file /opt/vsd/ejbca/p12/intermediate.cert.pem -keystore /usr/java/latest/lib/security/cacerts -storepass {{ jreStorePwd | default("changeit") }} -alias myintermediateCA -noprompt'
-    when: intermediate_certificate_path is defined
+    when:
+      - intermediate_certificate_path is defined
+      - nuage_upgrade is not defined or not nuage_upgrade
+
 
   - name: Import Root CA Pem file
     shell: '/usr/java/latest/bin/keytool -importcert -file /opt/vsd/ejbca/p12/ca.cert.pem -keystore /usr/java/latest/lib/security/cacerts -storepass {{ jreStorePwd | default("changeit") }} -alias myRootCA -noprompt'
-    when: ca_certificate_path is defined
+    when:
+      - ca_certificate_path is defined
+      - nuage_upgrade is not defined or not nuage_upgrade
 
   - name: Stop vsd-core
     shell: monit -g vsd-core stop
@@ -215,4 +220,3 @@
   when:
     - ca_certificate_path is defined
     - certificate_path is defined
-    - nuage_upgrade is not defined or not nuage_upgrade
