@@ -4,6 +4,7 @@ import urllib3
 import logging
 import sys
 sys.path.insert(0, '../../levistate')
+sys.path.insert(1, '../../../levistate')
 from ansible.module_utils.basic import AnsibleModule
 from configuration import Configuration
 from errors import LevistateError
