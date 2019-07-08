@@ -1,5 +1,11 @@
 - block:
 
+  - name: Clear existing stats
+    command: /opt/vsd/vsd-stats.sh -d
+    delegate_to: "{{ item }}"
+    with_items: "{{ vsd_hostname_list }}"
+    run_once: true
+
   - name: Enable stats collection on standalone vsd when vstat is standalone
     command: /opt/vsd/vsd-stats.sh -e {{ inventory_hostname }}
     delegate_to: "{{ item }}"
@@ -25,6 +31,27 @@
     run_once: true
     when:
       - vstat_sa_or_ha is match('ha')
+      - groups['vstats'] is defined
+
+  - name: Enable stats collection on the vsd(s) on primary vstats
+    command: /opt/vsd/vsd-stats.sh -e {{ groups['primary_vstats'][0] }},{{ groups['primary_vstats'][1] }},{{ groups['primary_vstats'][2] }}
+    delegate_to: "{{ item }}"
+    with_items: "{{ vsd_hostname_list }}"
+    run_once: true
+    when:
+      - vstat_sa_or_ha is match('ha')
+      - groups['primary_vstats'] is defined
+      - active and not failover
+
+  - name: Enable stats collection on the vsd(s) for backup vstats in failover
+    command: /opt/vsd/vsd-stats.sh -e {{ groups['backup_vstats'][0] }},{{ groups['backup_vstats'][1] }},{{ groups['backup_vstats'][2] }}
+    delegate_to: "{{ item }}"
+    with_items: "{{ vsd_hostname_list }}"
+    run_once: true
+    when:
+      - vstat_sa_or_ha is match('ha')
+      - groups['backup_vstats'] is defined
+      - active and failover
 
   remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
   become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"

@@ -10,6 +10,7 @@
     when:
      - upgrade_major_or_minor == 'minor'
      - not inplace_upgrade | default(false)
+     - inventory_hostname in groups['primary_vsds']
 
   - block:
 
@@ -19,14 +20,13 @@
       until: result.rc == 0
       retries: 40
       delay: 30
-      when: inventory_hostname == groups['vsds'][0]
+      when: inventory_hostname == groups['primary_vsds'][0]
 
     - name: Turn on API on vsd's for major upgrade
       shell: "{{ turn_on_api_command }}"
+      when: upgrade_major_or_minor == 'major'
 
-    when:
-      - upgrade_major_or_minor == 'major'
-      - not inplace_upgrade | default(false)
+    when: not inplace_upgrade | default(false)
 
   - import_tasks: check_monit_status.yml
     when: not inplace_upgrade | default(false)

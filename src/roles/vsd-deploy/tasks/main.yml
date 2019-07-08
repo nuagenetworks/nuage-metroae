@@ -95,7 +95,9 @@
           first_cluster_node_to_install: "{{ groups['vsd_ha_node2'][0] }}"
           second_cluster_node_to_install: "{{ groups['vsd_ha_node3'][0] }}"
           third_cluster_node_to_install: "{{ groups['vsd_ha_node1'][0] }}"
-      when: nuage_upgrade | default(False)
+      when:
+        - nuage_upgrade | default(False)
+        - not vsd_standby_cluster | default(False)
 
     when: vsd_sa_or_ha is match('ha')
 
@@ -290,11 +292,6 @@
     command: /opt/vsd/bin/ejmode allow -y
     when: not deploy_vcin
 
-  - name: Apply licenses to VSD
-    include_role:
-      name: common
-      tasks_from: apply-licenses-to-vsd
-
   remote_user: "{{ vsd_default_username }}"
 
 - import_tasks: brand_vsd.yml
@@ -303,6 +300,29 @@
     - branding_zip_file is defined
     - component_type == "vsd"
     - not vsd_standby_cluster | default(False)
+
+- block:
+
+  - name: Get monit summary for all process on VSD
+    vsd_monit:
+      group: all
+    register: proc_list
+
+  - name: wait for VSD common , core and stats services to become running
+    monit_waitfor_service:
+      name: "{{ item }}"
+      timeout_seconds: 1200
+      test_interval_seconds: 30
+    when: item not in ['ejabberd-cluster-status']
+    with_items: "{{ proc_list['state'].keys() }}"
+
+  - name: Apply licenses to VSD
+    include_role:
+      name: common
+      tasks_from: apply-licenses-to-vsd
+
+  when: component_type == "vsd"
+  remote_user: "{{ vsd_default_username }}"
 
 - name: Install nginx
   yum:

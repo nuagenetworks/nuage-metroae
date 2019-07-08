@@ -1,0 +1,24 @@
+- block:
+  - name: Generate SSH keys
+    shell: ssh-keygen -b 2048 -t rsa -f /root/.ssh/id_rsa -q -N ""
+    args:
+      creates: /root/.ssh/id_rsa
+    delegate_to: "{{ item }}"
+    with_items:
+      - "{{ group_vstats }}"
+
+  - name: Get generated SSH keys
+    shell: cat ~/.ssh/id_rsa.pub
+    register: ssh_key_lst
+    delegate_to: "{{ item }}"
+    with_items:
+      - "{{ group_vstats }}"
+
+  - name: Add SSH keys to authorized_keys file
+    shell: "echo {{ item[1].stdout }} >> /root/.ssh/authorized_keys"
+    delegate_to: "{{ item[0] }}"
+    with_nested:
+      - "{{ group_vstats }}"
+      - "{{ ssh_key_lst.results }}"
+
+  remote_user: "{{ vstat_username }}"
