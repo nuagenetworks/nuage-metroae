@@ -49,3 +49,4 @@
 * Unzip fixes for SD-WAN portal
 * Set Upgrade Complete flag on VSD for minor upgrade (METROAE-1008)
 * Remove old iptables rule in VSC preupgrade (METROAE-1013)
+* Set event log max age to 7 as per Nuage Upgrade procedure (METROAE-1001)
