@@ -3,7 +3,7 @@ import io
 import urllib3
 import logging
 import sys
-sys.path.insert(0, '/home/caso/dev/research/levistate/')
+sys.path.insert(0, '../../levistate')
 from ansible.module_utils.basic import AnsibleModule
 from configuration import Configuration
 from errors import LevistateError
