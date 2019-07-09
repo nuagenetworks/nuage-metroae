@@ -28,6 +28,21 @@
   run_once: true
 
 - block:
+  - name: Verify that REST is reachable (ignoring errors)
+    uri:
+      url: https://{{ mgmt_ip }}:8443/index.html
+      method: GET
+      user: "{{ vsd_auth.username }}"
+      password: "{{ vsd_auth.password }}"
+      status_code: 200
+      validate_certs: False
+    register: rest_result
+    delegate_to: localhost
+    retries: 3
+    until: rest_result.status == 200
+    delay: 5
+    ignore_errors: yes
+
   - name: Enable maintainance mode on all l3/l2 domains
     vsd_maintainance:
       vsd_auth:
@@ -36,9 +51,6 @@
       api_version: "{{ vsd_version.stdout }}"
     register: mode_status
     delegate_to: localhost
-    retries: 3
-    until: mode_status.failed != false
-    delay: 5
 
   - name: Print vsd maintainance mode output when verbosity >= 1
     debug: var=mode_status verbosity=1
