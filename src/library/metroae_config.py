@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-import io
 import urllib3
 import logging
 import sys
@@ -312,7 +311,7 @@ def main():
                                                   url=dict(type='str', required=True),
                                                   certificate=dict(type='str', required=False),
                                                   certificate_key=dict(type='str', required=False))),
-                    state=dict(required=True, type='str', choices=['absent', 'present', 'validated']))
+                    state=dict(required=True, type='str', choices=[STATE_PRESENT, STATE_ABSENT, STATE_VALIDATED]))
 
     module = AnsibleModule(argument_spec=arg_spec,
                            supports_check_mode=False,
@@ -322,7 +321,6 @@ def main():
     metroae = MetroaeConfig(module)
     metroae.validate()
     metroae.run()
-#    result['changed'] = True
     module.exit_json(msg="Fatal exception has occured")
 
 
