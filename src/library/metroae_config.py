@@ -275,7 +275,7 @@ class MetroaeConfig(object):
                 self.writer.set_validate_only(validate_only)
 
                 if (self.state == STATE_PRESENT) or (self.state == STATE_VALIDATED):
-                    config.apply(self.writer)           # Apply/Update/Validate the configuration
+                    config.update(self.writer)           # Apply/Update/Validate the configuration
                 else:
                     config.revert(self.writer)           # Revert the configuration
 
