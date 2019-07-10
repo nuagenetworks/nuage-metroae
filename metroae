@@ -109,9 +109,30 @@ POSITIONAL=()
 #                                   SWITCH                                      #
 #################################################################################
 
+function print_write_permission_warning {
+    echo ""
+    echo "WARNING: This user does not have Write permissions for MetroAE log file: $SCRIPT_LOG_FILE"
+    echo "Ensure that the MetroAE install directory $INSTALL_FOLDER and its contents belongs to"
+    echo "group 'docker' and that group write permissions are set. Continuing..."
+    echo ""
+}
+
+function debug {
+    if [[ ! -z $METROAE_DEBUG ]]; then
+        write_to_screen_and_script_log "  DEBUG: $1"
+    fi
+}
+
 function write_to_script_log {
     if [[ -f $SCRIPT_LOG_FILE ]]; then
-        echo "$(date): $1" >> $SCRIPT_LOG_FILE
+        if [ -w "$SCRIPT_LOG_FILE" ]; then
+            echo "$(date): $1" >> $SCRIPT_LOG_FILE
+        else
+            if [ -z $METROAE_WRITE_WARNING_PRINTED ]; then
+                print_write_permission_warning
+                METROAE_WRITE_WARNING_PRINTED=1
+            fi
+        fi
     fi
 }
 
@@ -121,6 +142,7 @@ function write_to_screen_and_script_log {
 }
 
 function check_run_mode {
+    debug ${FUNCNAME[0]}
     if [[ -z $RUN_MODE ]]; then
         if [[ -f $ANSIBLE_CONFIG_FILE ]]; then
             RUN_MODE="REPO"
@@ -132,6 +154,7 @@ function check_run_mode {
 }
 
 function try_get_menu {
+    debug ${FUNCNAME[0]}
     if [[ ! -z $METROAE_DEPLOY_MENU ]]; then
         write_to_script_log "METROAE_DEPLOY_MENU is defined"
         if [[ $RUN_MODE == "INSIDE" ]]; then
@@ -154,6 +177,7 @@ function try_get_menu {
 }
 
 function check_for_prerequisite {
+    debug ${FUNCNAME[0]}
     if [[ $RUN_MODE == "INSIDE" ]]; then
         if [[ ! -f /source/nuage-metro/src/$PLAYBOOK_MENU ]]; then
             write_to_screen_and_script_log "One or more MetroAE config files are missing or incomplete. Please update your workspace and try again."
@@ -203,16 +227,15 @@ function check_for_prerequisite {
 }
 
 function print_version_and_exit {
-    echo ""
-    if [[ $RUN_MODE == "CONTAINER" ]]; then
-        get_max_container_version
-        if [[ -f $SCRIPT_LOG_FILE ]] && [[ -z $GROUP_CHECK ]]; then
-            echo "[MetroAE $METROAE_VERSION, script $SCRIPT_VERSION, container $MAX_CONTAINER_VERSION]" | tee -a $SCRIPT_LOG_FILE
-        fi
-    elif [[ $RUN_MODE == "REPO" ]]; then
-        if [[ ! ${MATCH_MENU[0]} =~ ",container*" ]] && [[ ! ${MATCH_MENU[0]} =~ ",config*" ]] && [[ ! ${MATCH_MENU[0]} =~ ",gui*" ]]; then
-            if [[ -f $SCRIPT_LOG_FILE ]] && [[ -z $GROUP_CHECK ]]; then
-                echo "[MetroAE $METROAE_VERSION, script $SCRIPT_VERSION"] | tee -a $SCRIPT_LOG_FILE
+    debug ${FUNCNAME[0]}
+    if [[ $1 == 0 ]]; then
+        echo ""
+        if [[ $RUN_MODE == "CONTAINER" ]]; then
+            get_max_container_version
+            write_to_screen_and_script_log "[MetroAE $METROAE_VERSION, script $SCRIPT_VERSION, container $MAX_CONTAINER_VERSION]"
+        elif [[ $RUN_MODE == "REPO" ]]; then
+            if [[ ! ${MATCH_MENU[0]} =~ ",container*" ]] && [[ ! ${MATCH_MENU[0]} =~ ",config*" ]] && [[ ! ${MATCH_MENU[0]} =~ ",gui*" ]]; then
+                write_to_screen_and_script_log "[MetroAE $METROAE_VERSION, script $SCRIPT_VERSION]"
             fi
         fi
     fi
@@ -224,12 +247,20 @@ function print_version_and_exit {
 #################################################################################
 
 function check_docker {
+    debug ${FUNCNAME[0]}
     set +e
 
     echo ""
     write_to_script_log ">>> Checking docker version"
     if [[ -f $SCRIPT_LOG_FILE ]]; then
-        docker --version >> $SCRIPT_LOG_FILE 2>> $SCRIPT_LOG_FILE
+        if [ -w "$SCRIPT_LOG_FILE" ]; then
+            docker --version >> $SCRIPT_LOG_FILE 2>> $SCRIPT_LOG_FILE
+        else
+            if [ -z $METROAE_WRITE_WARNING_PRINTED ]; then
+                print_write_permission_warning
+                METROAE_WRITE_WARNING_PRINTED=1
+            fi
+        fi
     else
         docker --version >> /dev/null 2>> /dev/null
     fi
@@ -242,16 +273,19 @@ function check_docker {
 }
 
 function get_host_operating_system {
+    debug ${FUNCNAME[0]}
     set +e
     stat /etc/os-release >> /dev/null 2>> /dev/null
     if [ $? -ne 0 ]
     then
         OS_RELEASE=$NON_LINUX
     fi
+    debug "${FUNCNAME[0]}: OS_RELEASE: $OS_RELEASE"
     set -e
 }
 
 function get_max_container_version {
+    debug ${FUNCNAME[0]}
     if [[ ! -z $IMAGE_TAG ]]; then
         MAX_CONTAINER_VERSION=$IMAGE_TAG
     else
@@ -276,18 +310,21 @@ function get_max_container_version {
 }
 
 function get_container_id {
+    debug ${FUNCNAME[0]}
     get_max_container_version
     CONTAINER_ID=`docker ps -a | grep $METRO_AE_IMAGE | grep $MAX_CONTAINER_VERSION | awk '{ print $1}'`
     write_to_script_log "CONTAINER_ID: $CONTAINER_ID"
 }
 
 function get_running_container_id {
+    debug ${FUNCNAME[0]}
     get_max_container_version
     RUNNING_CONTAINER_ID=`docker ps | grep $METRO_AE_IMAGE | grep $MAX_CONTAINER_VERSION | awk '{ print $1}'`
     write_to_script_log "RUNNING_CONTAINER_ID: $RUNNING_CONTAINER_ID"
 }
 
 function get_image_id {
+    debug ${FUNCNAME[0]}
     get_max_container_version
     IMAGE_ID=`docker images | grep $METRO_AE_IMAGE | grep $MAX_CONTAINER_VERSION | awk '{ print $3}'`
     write_to_script_log "IMAGE_ID: $IMAGE_ID"
@@ -295,6 +332,7 @@ function get_image_id {
 
 
 function stop_running_container {
+    debug ${FUNCNAME[0]}
     echo ""
     write_to_screen_and_script_log ">>> Stopping the MetroAE container"
     echo ""
@@ -319,6 +357,7 @@ function stop_running_container {
 }
 
 function delete_container_id {
+    debug ${FUNCNAME[0]}
     echo ""
     write_to_screen_and_script_log ">>> Deleting the MetroAE container"
     echo ""
@@ -332,7 +371,15 @@ function delete_container_id {
 
     set +e
     if [[ -f $SCRIPT_LOG_FILE ]]; then
-        docker rm $CONTAINER_ID | tee -a $SCRIPT_LOG_FILE
+        if [ -w "$SCRIPT_LOG_FILE" ]; then
+            docker rm $CONTAINER_ID | tee -a $SCRIPT_LOG_FILE
+        else
+            if [ -z $METROAE_WRITE_WARNING_PRINTED ]; then
+                print_write_permission_warning
+                METROAE_WRITE_WARNING_PRINTED=1
+            fi
+            docker rm $CONTAINER_ID
+        fi
     else
         docker rm $CONTAINER_ID
     fi
@@ -347,28 +394,26 @@ function delete_container_id {
 }
 
 function destroy {
+    debug ${FUNCNAME[0]}
     declare -l confirmation
     if [[ -z $1 ]]; then
         confirmation="init"
-    else
-        confirmation=$1
-    fi
-
-    while [[ $confirmation != "n" ]] && [[ $confirmation  != "y" ]] && [[ $confirmation != "" ]]
-    do
         echo ""
         write_to_screen_and_script_log "It looks like you are about to destroy the MetroAE container."
         echo "If you continue, the MetroAE container will be stopped, the MetroAE container image will be"
         echo "removed from Docker, and your data on disk will be preserved. Your data will"
         echo "not be destroyed. You will be able to use it again by pulling another MetroAE"
         echo "container and running 'metroae container setup'."
-        echo ""
-        read -p "Do you really want to destroy the MetroAE container? (y/N): " confirmation
-    done
+        while [[ $confirmation != "n" ]] && [[ $confirmation  != "y" ]] && [[ $confirmation != "" ]]
+        do
+            echo ""
+            read -p "Do you really want to destroy the MetroAE container? (y/N): " confirmation
+        done
+    else
+        confirmation=$1
+    fi
 
-
-    if [[ $confirmation != "y" ]]
-    then
+    if [[ $confirmation != "y" ]]; then
         echo ""
         write_to_screen_and_script_log "Destroy of metorae container was canceled"
         echo ""
@@ -415,6 +460,7 @@ function destroy {
 }
 
 function get_from_s3 {
+    debug ${FUNCNAME[0]}
     CONTAINER_TAR_FILE=metroaecontainer.tar
     aws_path=/metroae_images/
     S3_BUCKET='nuage-devops'
@@ -423,12 +469,25 @@ function get_from_s3 {
     string="GET\n\n$content_type\n$date\n/$S3_BUCKET$aws_path$CONTAINER_TAR_FILE"
     signature=$(echo -en "${string}" | openssl sha1 -hmac "${S3_SECRET}" -binary | base64)
     if [[ -f $SCRIPT_LOG_FILE ]]; then
-        curl -X GET\
-            -H "Host: $S3_BUCKET.s3.amazonaws.com" \
-            -H "Date: $date" \
-            -H "Content-Type: $content_type" \
-            -H "Authorization: AWS ${S3_KEY}:$signature" \
-            "https://$S3_BUCKET.s3.amazonaws.com$aws_path$CONTAINER_TAR_FILE" > $TEMPORARY_DIRECTORY$CONTAINER_TAR_FILE | tee -a $SCRIPT_LOG_FILE 2>> $SCRIPT_LOG_FILE
+        if [ -w "$SCRIPT_LOG_FILE" ]; then
+            curl -X GET\
+                -H "Host: $S3_BUCKET.s3.amazonaws.com" \
+                -H "Date: $date" \
+                -H "Content-Type: $content_type" \
+                -H "Authorization: AWS ${S3_KEY}:$signature" \
+                "https://$S3_BUCKET.s3.amazonaws.com$aws_path$CONTAINER_TAR_FILE" > $TEMPORARY_DIRECTORY$CONTAINER_TAR_FILE | tee -a $SCRIPT_LOG_FILE 2>> $SCRIPT_LOG_FILE
+        else
+            if [ -z $METROAE_WRITE_WARNING_PRINTED ]; then
+                print_write_permission_warning
+                METROAE_WRITE_WARNING_PRINTED=1
+            fi
+            curl -X GET\
+                -H "Host: $S3_BUCKET.s3.amazonaws.com" \
+                -H "Date: $date" \
+                -H "Content-Type: $content_type" \
+                -H "Authorization: AWS ${S3_KEY}:$signature" \
+                "https://$S3_BUCKET.s3.amazonaws.com$aws_path$CONTAINER_TAR_FILE" > $TEMPORARY_DIRECTORY$CONTAINER_TAR_FILE
+        fi
     else
         curl -X GET\
             -H "Host: $S3_BUCKET.s3.amazonaws.com" \
@@ -437,9 +496,11 @@ function get_from_s3 {
             -H "Authorization: AWS ${S3_KEY}:$signature" \
             "https://$S3_BUCKET.s3.amazonaws.com$aws_path$CONTAINER_TAR_FILE" > $TEMPORARY_DIRECTORY$CONTAINER_TAR_FILE
     fi
+    return $?
 }
 
 function pull {
+    debug ${FUNCNAME[0]}
     set +x
     if [[ ! -z $METROAE_DEPLOY_MENU ]]; then
         if [[ ! -z $1 ]]; then
@@ -449,16 +510,33 @@ function pull {
         # fix to specific container version for softlaunch
         MAX_CONTAINER_VERSION='softlaunch'
     fi
+    debug "${FUNCNAME[0]}: MAX_CONTAINER_VERSION: $MAX_CONTAINER_VERSION"
 
     repo="Docker registry"
+    set +e
     if [[ -f $SCRIPT_LOG_FILE ]]; then
-        ping -c 5 $REGISTRY_HOST >> $SCRIPT_LOG_FILE 2>> $SCRIPT_LOG_FILE
+        if [ -w "$SCRIPT_LOG_FILE" ]; then
+            debug "${FUNCNAME[0]}: Script log writable"
+            ping -c 5 $REGISTRY_HOST >> $SCRIPT_LOG_FILE 2>> $SCRIPT_LOG_FILE
+        else
+            if [ -z $METROAE_WRITE_WARNING_PRINTED ]; then
+                print_write_permission_warning
+                METROAE_WRITE_WARNING_PRINTED=1
+            fi
+            debug "${FUNCNAME[0]}: Script log not writable"
+            ping -c 5 $REGISTRY_HOST > /dev/null 2>&1
+        fi
     else
+        debug "${FUNCNAME[0]}: No script log"
         ping -c 5 $REGISTRY_HOST > /dev/null 2>&1
     fi
 
-    set +e
-    if [[ $? -ne 0 || ( ! -z $1 && "$1" = "S3" ) ]]; then
+    ping_rc=$?
+    debug "${FUNCNAME[0]}: ping_rc: $ping_rc"
+    set -e
+
+    if [[ $ping_rc -ne 0 || ( ! -z $1 && "$1" = "S3" ) ]]; then
+        echo ""
         write_to_screen_and_script_log "Could not connect to the Nokia registry to download the MetroAE container image"
         write_to_screen_and_script_log "Retrieving the MetroAE container image from Amazon S3 instead"
         get_from_s3
@@ -475,9 +553,20 @@ function pull {
         write_to_screen_and_script_log ">>> Pulling the MetroAE container image from Nokia registry"
         echo ""
         if [[ -f $SCRIPT_LOG_FILE ]]; then
-            docker pull $METRO_AE_IMAGE:$MAX_CONTAINER_VERSION | tee -a $SCRIPT_LOG_FILE
+            if [ -w "$SCRIPT_LOG_FILE" ]; then
+                debug "Script log is writable"
+                sudo docker pull $METRO_AE_IMAGE:$MAX_CONTAINER_VERSION | tee -a $SCRIPT_LOG_FILE
+            else
+                if [ -z $METROAE_WRITE_WARNING_PRINTED ]; then
+                    print_write_permission_warning
+                    METROAE_WRITE_WARNING_PRINTED=1
+                fi
+                debug "Script log is not writable"
+                sudo docker pull $METRO_AE_IMAGE:$MAX_CONTAINER_VERSION
+            fi
         else
-            docker pull $METRO_AE_IMAGE:$MAX_CONTAINER_VERSION
+            debug "Script log is not found"
+            sudo docker pull $METRO_AE_IMAGE:$MAX_CONTAINER_VERSION
         fi
     fi
 
@@ -485,7 +574,7 @@ function pull {
     if [[ $status -ne 0 ]]; then
         write_to_screen_and_script_log "Attempt to pull the $MAX_CONTAINER_VERSION MetroAE container image failed. Quitting."
     else
-        write_to_screen_and_script_log "Successfully Pulled the MetroAE container image from $repo"
+        write_to_screen_and_script_log "Successfully pulled the MetroAE container image from $repo"
     fi
     set -e
 
@@ -493,6 +582,7 @@ function pull {
 }
 
 function run_container {
+    debug ${FUNCNAME[0]}
 
     get_image_id
 
@@ -554,20 +644,25 @@ function run_container {
 }
 
 function setup_container {
+    debug ${FUNCNAME[0]}
     local is_ui_run=false
     get_host_operating_system
 
     if [[ ! -d $INSTALL_FOLDER ]]; then
         sudo mkdir -p $INSTALL_FOLDER
     fi
+    sudo chown -R root:docker $INSTALL_FOLDER
     if [[ ! -f $SETUP_FILE ]]; then
         sudo touch $SETUP_FILE
         if [[ $OS_RELEASE -eq $NON_LINUX ]]; then
+            debug "sudo chmod 777 $SETUP_FILE"
             sudo chmod 777 $SETUP_FILE
         else
+            debug "sudo chmod 0774 $SETUP_FILE"
             sudo chmod 0774 $SETUP_FILE
         fi
     fi
+    sudo chown root:docker $SETUP_FILE
     if [[ ! -f $SCRIPT_LOG_FILE ]]; then
         sudo touch $SCRIPT_LOG_FILE
         if [[ $OS_RELEASE -eq $NON_LINUX ]]; then
@@ -575,12 +670,11 @@ function setup_container {
         else
             sudo chmod 0774 $SCRIPT_LOG_FILE
         fi
-        write_to_screen_and_script_log "Log file created"
     fi
+    sudo chown root:docker $SCRIPT_LOG_FILE
 
     get_container_id
     get_running_container_id
-
 
     if [[ ! -z $CONTAINER_ID ]] || [[ ! -z $RUNNING_CONTAINER_ID ]]; then
         echo ""
@@ -600,12 +694,16 @@ function setup_container {
         echo ""
 
         declare -l continue_confirm
-        continue_confirm="init"
-        while [[ $continue_confirm != "y" ]] && [[ $continue_confirm != "n" ]] && [[ $continue_confirm != "" ]]
-        do
-            read -p "Do you want to continue with setup? (y/N): " continue_confirm
-        done
-
+        if [[ -z $1 ]]; then
+            continue_confirm="init"
+            while [[ $continue_confirm != "y" ]] && [[ $continue_confirm != "n" ]] && [[ $continue_confirm != "" ]]
+            do
+                read -p "Do you want to continue with setup? (y/N): " continue_confirm
+            done
+        else
+            continue_confirm=$1
+            shift
+        fi
 
         if [[ $continue_confirm != "y" ]] ; then
             echo ""
@@ -639,7 +737,6 @@ function setup_container {
 
     declare -l setup_type
     setup_type="init"
-    #TODO
     if [[ ! -z $METROAE_DEPLOY_MENU ]]; then
         if [[ -z $1 ]]; then
             while [[ $setup_type != "c" ]] && [[ $setup_type != "d" ]] && [[ $setup_type != "b" ]] && [[ $setup_type != "" ]]
@@ -673,7 +770,16 @@ function setup_container {
         write_to_screen_and_script_log ">>> Setup container for both MetroAE config and deploy"
         setup_type="b"
     fi
-    echo METROAE_SETUP_TYPE=$setup_type > $SETUP_FILE
+
+    if [ -w "$SETUP_FILE" ]; then
+        echo "METROAE_SETUP_TYPE=$setup_type" >> $SETUP_FILE
+        write_to_script_log "METROAE_SETUP_TYPE=$setup_type"
+    else
+        echo ""
+        write_to_screen_and_script_log "We couldn't write to the MetroAE setup file ($SETUP_FILE). Please ensure"
+        write_to_screen_and_script_log "that the file has user:group ownership set to 'root:docker' and try again."
+        write_to_screen_and_script_log "You can also delete the file and re-run 'metroae container setup"
+    fi
 
     if [[ -z $1 ]]; then
         echo ""
@@ -695,8 +801,8 @@ function setup_container {
         data_path=$1
         shift
     fi
-    echo METROAE_MOUNT_POINT=$data_path >> $SETUP_FILE
     write_to_script_log "METROAE_MOUNT_POINT=$data_path"
+    echo METROAE_MOUNT_POINT=$data_path >> $SETUP_FILE
 
     if [[ $setup_type != "c" ]]; then
         if [[ -z $1 ]]; then
@@ -760,12 +866,12 @@ function setup_container {
             shift
         else
             gui_confirm="init"
+            while [[ $gui_confirm  != "y" ]] && [[ $gui_confirm != "" ]]
+            do
+                echo ""
+                read -p "Do you want the container to run the beta of the MetroAE REST API/GUI? (y/N): " gui_confirm
+            done
         fi
-        while [[ $gui_confirm  != "y" ]] && [[ $gui_confirm != "" ]]
-        do
-            echo ""
-            read -p "Do you want the container to run the beta of the MetroAE REST API/GUI? (y/N): " gui_confirm
-        done
 
         if [[ $gui_confirm == "y" ]]; then
             echo ""
@@ -793,49 +899,60 @@ function setup_container {
                 shift
             else
                 tls_confirm="init"
+                while [[ $tls_confirm  != "y" ]] && [[ $tls_confirm != "" ]]
+                do
+                    echo ""
+                    read -p "Do you want to enable TLS with a security certificate the REST API/GUI? (y/N): " tls_confirm
+                done
             fi
-            while [[ $tls_confirm  != "y" ]] && [[ $tls_confirm != "" ]]
-            do
-                echo ""
-                read -p "Do you want to enable TLS with a security certificate the REST API/GUI? (y/N): " tls_confirm
-            done
 
             if [[ $tls_confirm == "y" ]]; then
                 echo ""
                 write_to_screen_and_script_log ">>> Enabling TLS on the REST API/GUI"
                 certificate='none'
                 declare -i valid_cert_path
-                while [[ $certificate  == "none" ]]
-                do
-                    echo ""
-                    read -p "Enter the path to the security certificate file: " certificate
-                    echo ""
-                    stat $certificate
-                    valid_cert_path=$?
-                    if [[ $valid_cert_path -ne 0 ]]; then
+                if [[ ! -z $1 ]]; then
+                    valid_cert_path=$1
+                    shift
+                else
+                    valid_cert_path="init"
+                    while [[ $certificate  == "none" ]]
+                    do
                         echo ""
-                        write_to_screen_and_script_log "We had a problem validating the path you entered: $PATH_ARG. Please try again."
-                        certificate='none'
-                    fi
-                done
+                        read -p "Enter the path to the security certificate file: " certificate
+                        echo ""
+                        stat $certificate
+                        valid_cert_path=$?
+                        if [[ $valid_cert_path -ne 0 ]]; then
+                            echo ""
+                            write_to_screen_and_script_log "We had a problem validating the path you entered: $PATH_ARG. Please try again."
+                            certificate='none'
+                        fi
+                    done
+                fi
                 write_to_screen_and_script_log ">>> Using certificate file: $certificate"
                 cp $certificate $data_path/gui_cert
 
                 keyfile='none'
                 declare -i valid_keyfile_path
-                while [[ $keyfile  == "none" ]]
-                do
-                    echo ""
-                    read -p "Enter the path to the security key file: " keyfile
-                    echo ""
-                    stat $keyfile
-                    valid_keyfile_path=$?
-                    if [[ $valid_keyfile_path -ne 0 ]]; then
+                if [[ ! -z $1 ]]; then
+                    valid_keyfile_path=$1
+                    shift
+                else
+                    while [[ $keyfile  == "none" ]]
+                    do
                         echo ""
-                        write_to_screen_and_script_log "We had a problem validating the path you entered: $keyfile. Please try again."
-                        keyfile='none'
-                    fi
-                done
+                        read -p "Enter the path to the security key file: " keyfile
+                        echo ""
+                        stat $keyfile
+                        valid_keyfile_path=$?
+                        if [[ $valid_keyfile_path -ne 0 ]]; then
+                            echo ""
+                            write_to_screen_and_script_log "We had a problem validating the path you entered: $keyfile. Please try again."
+                            keyfile='none'
+                        fi
+                    done
+                fi
                 echo ""
                 write_to_screen_and_script_log ">>> Using key file: $keyfile"
                 cp $keyfile $data_path/gui_keyfile
@@ -868,6 +985,7 @@ function setup_container {
 }
 
 function get_user_path_input {
+    debug ${FUNCNAME[0]}
     valid_path=1
     PATH_ARG=""
 
@@ -901,6 +1019,7 @@ function get_user_path_input {
 }
 
 function upgrade_docker {
+    debug ${FUNCNAME[0]}
     set +e
     destroy
     if [[ $? -ne 0 ]]; then
@@ -916,6 +1035,7 @@ function upgrade_docker {
 }
 
 function run_container_if_not_running {
+    debug ${FUNCNAME[0]}
     get_running_container_id
 
     if [[ -z $RUNNING_CONTAINER_ID ]]; then
@@ -925,6 +1045,7 @@ function run_container_if_not_running {
 }
 
 function docker_exec {
+    debug ${FUNCNAME[0]}
     run_container_if_not_running
 
     if [[ $1 == "env" ]]; then
@@ -957,6 +1078,7 @@ function docker_exec {
 }
 
 function docker_exec_interactive {
+    debug ${FUNCNAME[0]}
     environment=""
     if [[ ! -z $METROAE_PASSWORD ]]; then
         environment=" -e METROAE_PASSWORD=$METROAE_PASSWORD"
@@ -970,11 +1092,13 @@ function docker_exec_interactive {
 }
 
 function interactive {
+    debug ${FUNCNAME[0]}
     run_container_if_not_running
     docker_exec_interactive /bin/bash
 }
 
 function docker_status {
+    debug ${FUNCNAME[0]}
     echo ""
     write_to_screen_and_script_log ">>> Getting status of the MetroAE container"
     get_running_container_id
@@ -992,14 +1116,16 @@ function docker_status {
         docker exec $RUNNING_CONTAINER_ID cat /source/version
     else
         echo ""
-        write_to_screen_and_script_log "The MetroAE container is not running. Quitting."
+        write_to_screen_and_script_log "The MetroAE container is not running. Please run 'metroae container setup'. Quitting."
         exit 0
     fi
     echo ""
 }
 
 function check_for_user_group {
+    debug ${FUNCNAME[0]}
     uid=`id -u`
+    debug "${FUNCNAME[0]}: uid=$uid"
     get_host_operating_system
     if [[ $uid -eq 0 ]] || [[ $OS_RELEASE -eq $NON_LINUX ]]; then
         return 0
@@ -1007,6 +1133,7 @@ function check_for_user_group {
 
     set +e
     docker_group=`getent group docker`
+    debug "${FUNCNAME[0]}: docker_group=$docker_group"
     set -e
     if [[ -z $docker_group ]]; then
         echo ""
@@ -1018,31 +1145,46 @@ function check_for_user_group {
         sudo chown -R root:docker $INSTALL_FOLDER
     fi
 
-    #skip this if the effective user is 0
     uid=`id -u`
+    debug "${FUNCNAME[0]}: uid=$uid"
     get_host_operating_system
 
     set +e
-    docker_part_of_groups=`groups | grep docker`
+    current_user=`whoami`
+    debug "${FUNCNAME[0]}: current_user=$current_user"
+    docker_part_of_groups=`id -nG $current_user | grep docker`
+    debug "${FUNCNAME[0]}: docker_part_of_groups=$docker_part_of_groups"
     set -e
-    if [[ ! -z $1 ]]; then
-        input=$1
-    fi
     if [[ -z "$docker_part_of_groups" ]]; then
-        while [[ $input != "yes" ]] && [[ $input  != "no" ]] && [[ $input  != "y" ]] && [[ $input != "n" ]]
-        do
-            read -p "Current user must belong to the docker group to proceed. Do you want the current user to be added to the docker group: (yes/no) " input
-        done
-
-        if [[ $input != "Yes" ]] && [[ $input != "y" ]] && [[ $input != "yes" ]] && [[ $input != "Y" ]]; then
-            write_to_screen_and_script_log "Please add the current user to the docker group and retry."
-            print_version_and_exit 0
+        echo ""
+        write_to_screen_and_script_log "It looks like the user `whoami` isn't a member of the 'docker' group. `whoami` must"
+        write_to_screen_and_script_log "be a member of the 'docker' group to proceed."
+        declare -l confirmation
+        if [[ -z $1 ]]; then
+            confirmation="init"
+            while [[ $confirmation != "n" ]] && [[ $confirmation  != "y" ]] && [[ $confirmation != "" ]]
+            do
+                echo ""
+                read -p "Do you want the current user to be added to the docker group: (y/N) " confirmation
+            done
+        else
+            confirmation=$1
         fi
 
-        write_to_screen_and_script_log "Executing privileged commands to add the current user to docker group"
-        sudo usermod -aG docker `whoami`
+        if [[ $confirmation != "y" ]]; then
+            echo ""
+            write_to_screen_and_script_log "Please add the current user to the docker group and retry. Quitting"
+            exit 1
+        fi
+
+        echo ""
+        write_to_screen_and_script_log ">>> Adding `whoami` to the docker group"
+        sudo gpasswd -a `whoami` docker >> /dev/null
         if [[ -z $NOT_INTERACTIVE ]]; then
-            newgrp - docker
+            echo ""
+            write_to_screen_and_script_log "We added user `whoami` to the docker group. For this one-time change to take effect,"
+            write_to_screen_and_script_log "you must logout and back in before trying again."
+            exit 0
         fi
     fi
 
@@ -1053,6 +1195,7 @@ function check_for_user_group {
 #################################################################################
 
 function list_workflows {
+    debug ${FUNCNAME[0]}
     for file in $PLAYBOOK_DIR/*.yml
     do
         if [[ -f $file ]]; then
@@ -1072,6 +1215,7 @@ function list_workflows {
 }
 
 function check_password_needed {
+    debug ${FUNCNAME[0]}
     deployment_dir="$1"
 
     if [[ -z $METROAE_PASSWORD ]]; then
@@ -1090,6 +1234,7 @@ function check_password_needed {
 }
 
 function ask_password {
+    debug ${FUNCNAME[0]}
     if [[ $SKIP_PASSWORD -ne 1 ]]; then
         write_to_screen_and_script_log "The deployment contains encrypted content which requires a password to access."
         echo "Enter the password, below, or add the environment variable METROAE_PASSWORD and retry."
@@ -1100,16 +1245,19 @@ function ask_password {
 }
 
 function write_audit_log_entry {
+    debug ${FUNCNAME[0]}
     echo "`date` MetroAE $METROAE_VERSION $ORIGINAL_ARGS" >> $AUDIT_LOG
 }
 
 function audit_log_and_exit {
+    debug ${FUNCNAME[0]}
     echo "`date` MetroAE $METROAE_VERSION exit code $1" >> $AUDIT_LOG
     print_version_and_exit $1
 }
 
 # We just use the old version to parse the options
 function deployment_main {
+    debug ${FUNCNAME[0]}
     set +e
 
     ORIGINAL_ARGS="$*"
@@ -1228,15 +1376,18 @@ function deployment_main {
 #################################################################################
 
 function docker_exec_levistate {
+    debug ${FUNCNAME[0]}
     docker_exec env /usr/bin/python /source/levistate/levistate.py "$@"
 }
 
 
 function config_status {
+    debug ${FUNCNAME[0]}
     container_status
 }
 
 function config_main {
+    debug ${FUNCNAME[0]}
 
     check_docker
 
@@ -1345,6 +1496,7 @@ function config_main {
 #################################################################################
 
 function copy_ssh_id {
+    debug ${FUNCNAME[0]}
     if [[ -z $1 ]]; then
         echo "Usage: metroae tools ssh copyid <user@hostname>"
         print_version_and_exit 1
@@ -1364,15 +1516,18 @@ function copy_ssh_id {
 }
 
 function docker_metro_ae_exec {
+    debug ${FUNCNAME[0]}
     docker_exec env /source/nuage-metro/metroae "$@"
 }
 
 function stop_ui {
+    debug ${FUNCNAME[0]}
     run_container_if_not_running
     docker exec $RUNNING_CONTAINER_ID /source/UI.sh stop
 }
 
 function start_ui {
+    debug ${FUNCNAME[0]}
     run_container_if_not_running
 
     docker_exec_interactive /source/UI.sh start $1
@@ -1380,17 +1535,20 @@ function start_ui {
 }
 
 function ui_status {
+    debug ${FUNCNAME[0]}
     run_container_if_not_running
     docker exec $RUNNING_CONTAINER_ID /source/UI.sh status
 }
 
 function load_certificates {
+    debug ${FUNCNAME[0]}
     get_running_container_id
 
     docker_exec_interactive /source/UI.sh loadCertificates $1 $2 $3
 }
 
 function unzip_files {
+    debug ${FUNCNAME[0]}
     if [[ $# -gt 1 ]]; then
         docker_exec /source/nuage-metro/nuage-unzip.sh "$@"
     else
@@ -1399,14 +1557,17 @@ function unzip_files {
 }
 
 function con_build_vars_to_deployments {
+    debug ${FUNCNAME[0]}
     docker_exec /usr/bin/python /source/nuage-metro/convert_build_vars_to_deployment.py "$@"
 }
 
 function gen_example_from_schema {
+    debug ${FUNCNAME[0]}
     docker_exec /usr/bin/python /source/nuage-metro/generate_example_from_schema.py "$@"
 }
 
 function container_status {
+    debug ${FUNCNAME[0]}
     docker_status
     if [[ -f $SETUP_FILE ]]; then
         write_to_screen_and_script_log ">>> Getting container configuration from host"
@@ -1468,22 +1629,27 @@ function container_status {
 }
 
 function vault_password {
+    debug ${FUNCNAME[0]}
     run_container_if_not_running
 
     docker_exec_interactive /usr/bin/python /source/nuage-metro/encrypt_credentials.py  $1
 }
 
 function disable_encryption {
+    debug ${FUNCNAME[0]}
     run_container_if_not_running
     docker exec $RUNNING_CONTAINER_ID /source/UI.sh disable-encryption
 }
 
 function container_main {
+    debug ${FUNCNAME[0]}
     if [[ ! -z $GROUP_CHECK ]]; then
+        debug "${FUNCNAME[0]} GROUP_CHECK is defined"
         check_for_user_group $1
         shift
         print_version_and_exit 0
     else
+        debug "${FUNCNAME[0]} GROUP_CHECK is not defined"
         check_for_user_group
     fi
 
@@ -1644,6 +1810,7 @@ function container_main {
 #################################################################################
 
 function tools_main {
+    debug ${FUNCNAME[0]}
     local setup_args=""
     if [[ ! -z $NOT_INTERACTIVE ]]; then
         setup_args=("${EXTRA_ARGS[@]:0:7}")
@@ -1706,6 +1873,7 @@ function tools_main {
 #################################################################################
 
 function main_help {
+    debug ${FUNCNAME[0]}
     echo "Nuage Networks Metro Automation Engine (MetroAE) Version:" $METROAE_VERSION
     echo ""
     echo "MetroAE usage:"
@@ -1756,6 +1924,7 @@ function main_help {
 }
 
 function container_help {
+    debug ${FUNCNAME[0]}
     echo "Nuage Networks Metro Automation Engine (MetroAE) Version:" $METROAE_VERSION
     echo ""
     echo "MetroAE container usage:"
@@ -1765,6 +1934,7 @@ function container_help {
 }
 
 function config_help {
+    debug ${FUNCNAME[0]}
     echo "Nuage Networks Metro Automation Engine (MetroAE) Version:" $METROAE_VERSION
     echo ""
     echo "MetroAE config is a tool that you can use to apply and manage day-zero configurations"
@@ -1795,6 +1965,7 @@ function config_help {
 }
 
 function tools_help {
+    debug ${FUNCNAME[0]}
     echo "Nuage Networks Metro Automation Engine (MetroAE) Version:" $METROAE_VERSION
     echo ""
     echo "MetroAE tools usage:"
@@ -1804,6 +1975,7 @@ function tools_help {
 }
 
 function ui_help {
+    debug ${FUNCNAME[0]}
     echo "Nuage Networks Metro Automation Engine (MetroAE) Version:" $METROAE_VERSION
     echo ""
     echo "MetroAE gui usage:"
@@ -1817,6 +1989,7 @@ function ui_help {
 #################################################################################
 
 function switch_help {
+    debug ${FUNCNAME[0]}
     case $1 in
         ,config*)
         config_help "$1"
@@ -1842,6 +2015,7 @@ function switch_help {
 }
 
 function get_sub_menu {
+    debug ${FUNCNAME[0]}
     SUB_MENU=""
     for (( i=0; i<=${#MENU[@]}; i+=$MENU_STRIDE )); do
         if [[ ${MENU[@]:$i:1} == $1 ]]; then
@@ -1851,6 +2025,7 @@ function get_sub_menu {
 }
 
 function print_menu_help {
+    debug ${FUNCNAME[0]}
     for (( i=0; i<=${#MENU[@]} - 1; i+=$MENU_STRIDE )); do
         local menu_key=${MENU[@]:$i:1}
         local text_key=${MENU[@]:$i+1:1}
@@ -1868,6 +2043,7 @@ function print_menu_help {
 }
 
 function parse_menu_args {
+    debug ${FUNCNAME[0]}
     MENU_KEY=""
     MATCH_MENU=""
     EXTRA_ARGS=()
