@@ -209,16 +209,25 @@ function check_for_prerequisite {
                 write_to_screen_and_script_log "It looks like you are trying to run the MetroAE container. One or more config files are missing or incomplete. Please run ‘metroae container setup’ and try again."
                 exit 1
             else
-                confirmation="init"
-                write_to_screen_and_script_log "The MetroAE container has not been setup. Do you want to set it up now? (Yes/no)"
-                while [[ $confirmation != "yes" ]] && [[ $confirmation  != "no" ]] && [[ $confirmation  != "y" ]] && [[ $confirmation != "n" ]]
-                do
-                    read -p "MetroAE was run outside of a local copy of the nuage-metro repo and the MetroAE container is not running. Do you want to setup a container (yes/no): " confirmation
-                done
+                declare -l confirmation
+                if [[ -z $1 ]]; then
+                    echo ""
+                    write_to_screen_and_script_log "It looks like you are trying to run the MetroAE container, but the MetroAE container has not been setup."
+                    confirmation="init"
+                    while [[ $confirmation != "n" ]] && [[ $confirmation  != "y" ]] && [[ $confirmation != "" ]]
+                    do
+                        echo ""
+                        read -p "MetroAE was run outside of a local copy of the nuage-metro repo and the MetroAE container is not running. Do you want to setup a container (y/N): " confirmation
+                    done
+                else
+                    confirmation=$1
+                fi
 
-                if [[ $confirmation == "yes" ]] || [[ $confirmation == "y" ]]; then
+                if [[ $confirmation == "y" ]]; then
                     setup_container
                 else
+                    echo ""
+                    write_to_screen_and_script_log "Setup of MetroAE container canceled. Quitting."
                     exit 0
                 fi
             fi
