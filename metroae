@@ -224,6 +224,7 @@ function check_for_prerequisite {
                 fi
 
                 if [[ $confirmation == "y" ]]; then
+                    check_for_user_group
                     setup_container
                 else
                     echo ""
@@ -298,7 +299,7 @@ function get_max_container_version {
     if [[ ! -z $IMAGE_TAG ]]; then
         MAX_CONTAINER_VERSION=$IMAGE_TAG
     else
-        versions=`docker images | grep $METRO_AE_IMAGE | awk '{ print $2}'`
+        versions=`docker images 2>/dev/null | grep $METRO_AE_IMAGE | awk '{ print $2}'`
         MAX_CONTAINER_VERSION=''
         for version in $versions
         do
@@ -321,21 +322,21 @@ function get_max_container_version {
 function get_container_id {
     debug ${FUNCNAME[0]}
     get_max_container_version
-    CONTAINER_ID=`docker ps -a | grep $METRO_AE_IMAGE | grep $MAX_CONTAINER_VERSION | awk '{ print $1}'`
+    CONTAINER_ID=`docker ps -a 2>/dev/null | grep $METRO_AE_IMAGE | grep $MAX_CONTAINER_VERSION | awk '{ print $1}'`
     write_to_script_log "CONTAINER_ID: $CONTAINER_ID"
 }
 
 function get_running_container_id {
     debug ${FUNCNAME[0]}
     get_max_container_version
-    RUNNING_CONTAINER_ID=`docker ps | grep $METRO_AE_IMAGE | grep $MAX_CONTAINER_VERSION | awk '{ print $1}'`
+    RUNNING_CONTAINER_ID=`docker ps 2>/dev/null | grep $METRO_AE_IMAGE | grep $MAX_CONTAINER_VERSION | awk '{ print $1}'`
     write_to_script_log "RUNNING_CONTAINER_ID: $RUNNING_CONTAINER_ID"
 }
 
 function get_image_id {
     debug ${FUNCNAME[0]}
     get_max_container_version
-    IMAGE_ID=`docker images | grep $METRO_AE_IMAGE | grep $MAX_CONTAINER_VERSION | awk '{ print $3}'`
+    IMAGE_ID=`docker images 2>/dev/null | grep $METRO_AE_IMAGE | grep $MAX_CONTAINER_VERSION | awk '{ print $3}'`
     write_to_script_log "IMAGE_ID: $IMAGE_ID"
 }
 
@@ -724,9 +725,6 @@ function setup_container {
 
     echo ""
     write_to_screen_and_script_log ">>> Setup MetroAE container"
-    echo ""
-    echo "Elevated privileges are required for setup. During setup, we may prompt you"
-    echo "for the sudo password."
 
     set +e
 
