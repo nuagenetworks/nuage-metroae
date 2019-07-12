@@ -49,3 +49,4 @@
 * Unzip fixes for SD-WAN portal
 * Set Upgrade Complete flag on VSD for minor upgrade (METROAE-1008)
 * Remove old iptables rule in VSC preupgrade (METROAE-1013)
+* Update VSPK libraries to import version 5.0 (METROAE-1052)
