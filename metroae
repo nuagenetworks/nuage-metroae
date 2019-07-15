@@ -1188,7 +1188,7 @@ function check_for_user_group {
         write_to_screen_and_script_log "It looks like the user `whoami` isn't a member of the 'docker' group. `whoami` must"
         write_to_screen_and_script_log "be a member of the 'docker' group to proceed."
         declare -l confirmation
-        if [[ -z $1 ]]; then
+        if [[ -z $2 ]]; then
             confirmation="init"
             while [[ $confirmation != "n" ]] && [[ $confirmation  != "y" ]] && [[ $confirmation != "" ]]
             do
@@ -1196,7 +1196,7 @@ function check_for_user_group {
                 read -p "Do you want the current user to be added to the docker group: (y/N) " confirmation
             done
         else
-            confirmation=$1
+            confirmation=$2
         fi
 
         if [[ $confirmation != "y" ]]; then
@@ -1673,12 +1673,12 @@ function container_main {
     debug ${FUNCNAME[0]}
     if [[ ! -z $GROUP_CHECK ]]; then
         debug "${FUNCNAME[0]} GROUP_CHECK is defined"
-        check_for_user_group $1
+        check_for_user_group $@
         shift
         print_version_and_exit 0
     else
         debug "${FUNCNAME[0]} GROUP_CHECK is not defined"
-        check_for_user_group
+        check_for_user_group $@
     fi
 
     # check docker
