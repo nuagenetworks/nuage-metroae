@@ -78,7 +78,8 @@ S3_SECRET="S3X7R9tmSAF5tCU2Ha8uxkthBxg4rBAjx/2DyTn7"
 CONTAINER_TAR_FILE=softlaunch.tar
 S3_BUCKET="nuage-devops"
 S3_FOLDER="images"
-TEMPORARY_DIRECTORY=/tmp/
+S3_HEADER_DUMP_FILE=s3_headers.txt
+TEMPORARY_DIRECTORY=/tmp
 INSTALL_FOLDER=/opt/metroae
 if [[ -z $SCRIPT_LOG_FILE ]]; then
     SCRIPT_LOG_FILE=/opt/metroae/metroae.log
@@ -474,39 +475,52 @@ function destroy {
 
 function get_from_s3 {
     debug ${FUNCNAME[0]}
+    headers=$TEMPORARY_DIRECTORY/$S3_HEADER_DUMP_FILE
+    tarfile=$TEMPORARY_DIRECTORY/$CONTAINER_TAR_FILE
+    set +e
+    rm $tarfile > /dev/null 2>&1
+    rm $headers > /dev/null 2>&1
+    set -e
+    touch $headers
     date=$(date +"%a, %d %b %Y %T %z")
     content_type='application/x-compressed-tar'
     string="GET\n\n$content_type\n$date\n/$S3_BUCKET/$S3_FOLDER/$CONTAINER_TAR_FILE"
     signature=$(echo -en "${string}" | openssl sha1 -hmac "${S3_SECRET}" -binary | base64)
+    CURL_COMMAND=$(cat <<-END
+        curl -X GET \
+            -D $headers \
+            -H "Host: $S3_BUCKET.s3.amazonaws.com" \
+            -H "Date: $date" \
+            -H "Content-Type: $content_type" \
+            -H "Authorization: AWS ${S3_KEY}:$signature" \
+            "https://$S3_BUCKET.s3.amazonaws.com/$S3_FOLDER/$CONTAINER_TAR_FILE" > $TEMPORARY_DIRECTORY/$CONTAINER_TAR_FILE
+	END
+    )
     if [[ -f $SCRIPT_LOG_FILE ]]; then
         if [ -w "$SCRIPT_LOG_FILE" ]; then
-            curl -X GET\
-                -H "Host: $S3_BUCKET.s3.amazonaws.com" \
-                -H "Date: $date" \
-                -H "Content-Type: $content_type" \
-                -H "Authorization: AWS ${S3_KEY}:$signature" \
-                "https://$S3_BUCKET.s3.amazonaws.com/$S3_FOLDER/$CONTAINER_TAR_FILE" > $TEMPORARY_DIRECTORY$CONTAINER_TAR_FILE | tee -a $SCRIPT_LOG_FILE 2>> $SCRIPT_LOG_FILE
+            eval $CURL_COMMAND | tee -a $SCRIPT_LOG_FILE 2>> $SCRIPT_LOG_FILE
         else
             if [ -z $METROAE_WRITE_WARNING_PRINTED ]; then
                 print_write_permission_warning
                 METROAE_WRITE_WARNING_PRINTED=1
             fi
-            curl -X GET\
-                -H "Host: $S3_BUCKET.s3.amazonaws.com" \
-                -H "Date: $date" \
-                -H "Content-Type: $content_type" \
-                -H "Authorization: AWS ${S3_KEY}:$signature" \
-                "https://$S3_BUCKET.s3.amazonaws.com/$S3_FOLDER/$CONTAINER_TAR_FILE" > $TEMPORARY_DIRECTORY$CONTAINER_TAR_FILE
+            eval $CURL_COMMAND 
         fi
     else
-        curl -X GET\
-            -H "Host: $S3_BUCKET.s3.amazonaws.com" \
-            -H "Date: $date" \
-            -H "Content-Type: $content_type" \
-            -H "Authorization: AWS ${S3_KEY}:$signature" \
-            "https://$S3_BUCKET.s3.amazonaws.com/$S3_FOLDER/$CONTAINER_TAR_FILE" > $TEMPORARY_DIRECTORY$CONTAINER_TAR_FILE
+        eval $CURL_COMMAND 
     fi
-    return $?
+    if [[ $? -ne 0 ]]; then
+        echo ""
+        write_to_screen_and_script_log "Command to pull the MetroAE container image from S3 failed. Quitting"
+        print_version_and_exit 1
+    fi
+    status=$(cat $headers | head -n 1 | awk '{print $2}')
+    debug "${FUNCNAME[0]}: status = $status"
+    if [[ $status -ne 200 ]]; then
+        echo ""
+        write_to_screen_and_script_log "Attempt to pull the MetroAE container image from S3 failed. Quitting"
+        print_version_and_exit 1
+    fi
 }
 
 function pull {
@@ -551,12 +565,7 @@ function pull {
         write_to_screen_and_script_log "Retrieving the MetroAE container image from Amazon S3 instead"
         get_from_s3
 
-        if [[ $? -ne 0 ]]; then
-            write_to_screen_and_script_log "Attempt to pull the MetroAE container image failed. Quitting"
-            print_version_and_exit 1
-        fi
-
-        docker load -i $TEMPORARY_DIRECTORY$CONTAINER_TAR_FILE
+        docker load -i $TEMPORARY_DIRECTORY/$CONTAINER_TAR_FILE
         repo="Amazon S3"
     else
         echo ""
