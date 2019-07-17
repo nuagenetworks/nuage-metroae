@@ -81,14 +81,14 @@ def set_maintainance_mode(csproot, state):
         else:
             result_str = result_str + ' No L2 domains found\
                          to %s maintainance mode' % state
-        module.exit_json(changed=True, result="%s" % result_str)
+        module.exit_json(rc=0, changed=True, result="%s" % result_str)
     except exceptions.BambouHTTPError as be:
         if "There are no attribute changes" in be.message:
-            module.exit_json(changed=True, result="Maintainance mode is already enabled")
+            module.exit_json(rc=0, changed=True, result="Maintainance mode is already enabled")
         else:
-            module.fail_json(msg="Could not set maintainance mode : %s" % be)
+            module.fail_json(rc=1, msg="Could not set maintainance mode : %s" % be)
     except Exception as e:
-        module.fail_json(msg="Could not set maintainance mode : %s" % e)
+        module.fail_json(rc=1, msg="Could not set maintainance mode : %s" % e)
 
 
 def format_api_version(version):
@@ -106,7 +106,7 @@ def get_vsd_session(vsd_auth):
         global VSPK
         VSPK = importlib.import_module('vspk.{0:s}'.format(version))
     except ImportError:
-            module.fail_json(msg='vspk is required for this module, or\
+            module.fail_json(rc=1, msg='vspk is required for this module, or\
                              API version specified does not exist.')
     try:
         session = VSPK.NUVSDSession(**vsd_auth)
@@ -114,7 +114,7 @@ def get_vsd_session(vsd_auth):
         csproot = session.user
         return csproot
     except Exception as e:
-        module.fail_json(msg="Could not establish connection to VSD %s" % e)
+        module.fail_json(rc=1, msg="Could not establish connection to VSD %s" % e)
 
 
 arg_spec = dict(
