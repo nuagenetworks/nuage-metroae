@@ -8,6 +8,16 @@
     ssh_user: "{{ vsc_username | default(vsc_default_username) }}"
     check_login: True
 
+- name: Get output of 'show version'
+  sros_command:
+    commands:
+      - show version
+    provider:
+      host: "{{ groups['vscs'][0] }}"
+      username: "{{ vsc_username | default(vsc_default_username) }}"
+      password: "{{ vsc_password | default(vsc_default_password) }}"  delegate_to: localhost
+  register: vsc_version
+
 - name: Get output of 'show vswitch-controller vswitches detail'
   sros_command:
     commands:
@@ -21,7 +31,22 @@
   until: "nsg_detail.stdout[0] | regex_search('JSON Conn. State\\s+: Up') and nsg_detail.stdout[0] | regex_search('Uptime\\s+: [0-9]+d [0-9][0-9]:[0-9][0-9]:[1-9]')"
   retries: 40
   delay: 30
-  when: bootstrap_method != 'none'
+  when: bootstrap_method != 'none' and vsc_version < 6
+
+- name: Get output of 'show vswitch-controller vswitches detail'
+  sros_command:
+    commands:
+      - "show vswitch-controller vswitches detail vs-name VRS-{{ nsgv_ip }}"
+    provider:
+      host: "{{ groups['vscs'][0] }}"
+      username: "{{ vsc_username | default(vsc_default_username) }}"
+      password: "{{ vsc_password | default(vsc_default_password) }}"
+  delegate_to: localhost
+  register: nsg_detail
+  until: "nsg_detail.stdout[0] | regex_search('JSON Conn. State\\s+: Up') and nsg_detail.stdout[0] | regex_search('Uptime\\s+: [0-9]+d [0-9][0-9]:[0-9][0-9]:[1-9]')"
+  retries: 40
+  delay: 30
+  when: bootstrap_method != 'none' and vsc_version >= 6
 
 - block:
 

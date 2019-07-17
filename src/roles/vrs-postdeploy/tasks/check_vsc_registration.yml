@@ -45,13 +45,19 @@
     sros_command:
       commands:
         - show version
-      provider: "{{ vsc_creds }}"
+      provider: "{{ vsc_creds[0] }}"
     delegate_to: localhost
     register: vsc_version
 
-  - name: Print 'show version' when verbosity >= 1
-    debug: var=vsc_version.stdout[0] verbosity=1
-
+  - name: Get output of 'show vswitch-controller information' on VSC ({{ controller_addr }})
+    sros_command:
+      commands:
+        - show vswitch-controller vswitches vs-ip {{ ovs_vtep_ip.stdout }} detail
+      provider: "{{ vsc_creds[0] }}"
+    delegate_to: localhost
+    register: vsc_vsw_info
+    when: vsc_version < 6
+  
   - name: Get output of 'show vswitch-controller information' on VSC ({{ controller_addr }})
     sros_command:
       commands:
@@ -59,6 +65,7 @@
       provider: "{{ vsc_creds[0] }}"
     delegate_to: localhost
     register: vsc_vsw_info
+    when: vsc_version >= 6
 
   - name: Assert that VRS has been registered properly
     assert:
