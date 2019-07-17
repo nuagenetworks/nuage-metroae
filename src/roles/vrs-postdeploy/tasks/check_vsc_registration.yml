@@ -41,6 +41,17 @@
       ssh_user: "{{ vsc_creds[0].username }}"
       check_login: True
 
+  - name: Get output of 'show version'
+    sros_command:
+      commands:
+        - show version
+      provider: "{{ vsc_creds }}"
+    delegate_to: localhost
+    register: vsc_version
+
+  - name: Print 'show version' when verbosity >= 1
+    debug: var=vsc_version.stdout[0] verbosity=1
+
   - name: Get output of 'show vswitch-controller information' on VSC ({{ controller_addr }})
     sros_command:
       commands:
