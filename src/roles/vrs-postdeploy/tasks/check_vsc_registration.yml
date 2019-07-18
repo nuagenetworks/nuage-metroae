@@ -54,13 +54,13 @@
     register: sh_version
 
   - name: Parse version
-    shell: "echo '{{ sh_version.stdout[0] }}'' | awk '{{ version_expr }}'"
+    shell: "echo '{{ sh_version.stdout[0] }}' | awk '{{ version_expr }}'"
     delegate_to: localhost
     register: vsc_version
 
   - debug: var=vsc_version.stdout verbosity=1
 
-  - name: Get output of 'show vswitch-controller information' on VSC ({{ controller_addr }})
+  - name: Get output of 'show vswitch-controller information' on VSC ({{ controller_addr }}) for version less than 6.0.0
     sros_command:
       commands:
         - show vswitch-controller vswitches vs-ip {{ ovs_vtep_ip.stdout }} detail
@@ -69,7 +69,7 @@
     register: vsc_vsw_info
     when: vsc_version is version('6.0.0', '<')
   
-  - name: Get output of 'show vswitch-controller information' on VSC ({{ controller_addr }})
+  - name: Get output of 'show vswitch-controller information' on VSC ({{ controller_addr }}) for version greater than 6.0.0
     sros_command:
       commands:
         - show vswitch-controller vswitches detail vs-name VRS-{{ ovs_vtep_ip.stdout }}
