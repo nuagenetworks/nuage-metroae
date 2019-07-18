@@ -1,18 +1,14 @@
 ---
-- name: Wait for ssh to be ready
-  local_action:
-    module: command ssh -oStrictHostKeyChecking=no -oPasswordAuthentication=no  -o ProxyCommand="ssh -W %h:%p -q {{ ssh_proxy_configuration }}" {{ host_username }}@{{ ssh_host }} exit 0
-  register: wait_for_ssh_output
-  until: wait_for_ssh_output.rc == 0
+
+- name: Add proxy setup
+  set_fact:
+    proxy_conf:  '-o ProxyCommand="ssh -W %h:%p -q {{ ssh_proxy_configuration }}"'
   when: ssh_proxy_configuration is defined
-  retries: "{{ retries | default(20) }}"
-  delay: "{{ delay | default(10) }}"
 
 - name: Wait for ssh to be ready
   local_action:
-    module: command command ssh -oStrictHostKeyChecking=no -oPasswordAuthentication=no {{ host_username }}@{{ ssh_host }} exit 0
+    module: command ssh -oStrictHostKeyChecking=no -oPasswordAuthentication=no {{ proxy_conf | default('') }} {{ host_username }}@{{ ssh_host }} exit 0
   register: wait_for_ssh_output
   until: wait_for_ssh_output.rc == 0
-  when: ssh_proxy_configuration is not defined
   retries: "{{ retries | default(20) }}"
   delay: "{{ delay | default(10) }}"
