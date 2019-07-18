@@ -41,32 +41,33 @@
       ssh_user: "{{ vsc_creds[0].username }}"
       check_login: True
 
-  # - name: Set awk expression for parse the version
-  #   set_fact:
-  #     version_expr: '{ split($1, version, "-"); print version[4] }'
+  - name: Set awk expression for parse the version
+    set_fact:
+      version_expr: '{ split($1, version, "-"); print version[4] }'
 
-  # - name: Get output of 'show version'
-  #   sros_command:
-  #     commands:
-  #       - show version
-  #     provider: "{{ vsc_creds[0] }}"
-  #   delegate_to: localhost
-  #   register: sh_version
+  - name: Get output of 'show version'
+    sros_command:
+      commands:
+        - show version
+      provider: "{{ vsc_creds[0] }}"
+    delegate_to: localhost
+    register: sh_version
 
-  # - name: Parse version
-  #   shell: "{{ sh_version }} | awk '{{ version_expr }}'"
-  #   register: vsc_version
+  - name: Parse version
+    shell: "echo '{{ sh_version.stdout[0] }}'' | awk '{{ version_expr }}'"
+    delegate_to: localhost
+    register: vsc_version
 
-  # - debug: var=vsc_version
+  - debug: var=vsc_version.stdout verbosity=1
 
-  # - name: Get output of 'show vswitch-controller information' on VSC ({{ controller_addr }})
-  #   sros_command:
-  #     commands:
-  #       - show vswitch-controller vswitches vs-ip {{ ovs_vtep_ip.stdout }} detail
-  #     provider: "{{ vsc_creds[0] }}"
-  #   delegate_to: localhost
-  #   register: vsc_vsw_info
-    # when: vsc_version is version('6.0.0', '<')
+  - name: Get output of 'show vswitch-controller information' on VSC ({{ controller_addr }})
+    sros_command:
+      commands:
+        - show vswitch-controller vswitches vs-ip {{ ovs_vtep_ip.stdout }} detail
+      provider: "{{ vsc_creds[0] }}"
+    delegate_to: localhost
+    register: vsc_vsw_info
+    when: vsc_version is version('6.0.0', '<')
   
   - name: Get output of 'show vswitch-controller information' on VSC ({{ controller_addr }})
     sros_command:
@@ -75,7 +76,7 @@
       provider: "{{ vsc_creds[0] }}"
     delegate_to: localhost
     register: vsc_vsw_info
-    # when: vsc_version is version('6.0.0', '>=')
+    when: vsc_version is version('6.0.0', '>=')
 
   - name: Assert that VRS has been registered properly
     assert:
