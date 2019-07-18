@@ -1,0 +1,108 @@
+- name: Update resolv.conf file
+  shell: echo "nameserver {{ dns_server }} " >> /etc/resolv.conf
+  delegate_to: "{{ mgmt_ip }}"
+  remote_user: "{{ target_server_username }}"
+
+- name: Execute a yum update
+  yum:
+    name: '*'
+    state: latest
+  delegate_to: "{{ mgmt_ip }}"
+  remote_user: "{{ target_server_username }}"
+
+- name: Install yum-utils on {{ mgmt_ip }}
+  yum: name=yum-utils state=latest
+  delegate_to: "{{ mgmt_ip }}"
+  remote_user: "{{ target_server_username }}"
+
+- name: Install device-mapper-persistent-data on {{ mgmt_ip }}
+  yum: name=device-mapper-persistent-data state=latest
+  delegate_to: "{{ mgmt_ip }}"
+
+- name: Install lvm2 on {{ mgmt_ip }}
+  yum: name=lvm2 state=latest
+  delegate_to: "{{ mgmt_ip }}"
+  remote_user: "{{ target_server_username }}"
+
+- name: Download pip installer
+  command: curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
+  delegate_to: "{{ mgmt_ip }}"
+  remote_user: "{{ target_server_username }}"
+
+- name: Execute pip installer
+  command: python get-pip.py
+  delegate_to: "{{ mgmt_ip }}"
+  remote_user: "{{ target_server_username }}"
+
+- name: Install pexpect on Portal VM
+  pip:
+    name: pexpect
+  delegate_to: "{{ mgmt_ip }}"
+  remote_user: "{{ target_server_username }}"
+
+- name: Add YUM repository
+  shell: yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
+  delegate_to: "{{ mgmt_ip }}"
+  remote_user: "{{ target_server_username }}"
+
+- name: Install docker-ce on {{ mgmt_ip }}
+  yum: name=docker-ce state=latest
+  delegate_to: "{{ mgmt_ip }}"
+  remote_user: "{{ target_server_username }}"
+
+- name: Enable docker for automatic start
+  service: name=docker enabled=on
+  delegate_to: "{{ mgmt_ip }}"
+  remote_user: "{{ target_server_username }}"
+
+- name: Start docker
+  service: name=docker state=restarted
+  delegate_to: "{{ mgmt_ip }}"
+  remote_user: "{{ target_server_username }}"
+
+- name: Reboot Portal VM
+  shell: nohup bash -c "sleep 2s && shutdown -r now" &
+  delegate_to: "{{ mgmt_ip }}"
+  #ignore_errors: true
+
+- name: Wait for server to come back
+  wait_for:
+    host: "{{ mgmt_ip }}"
+    state: started
+    delay: 30
+    timeout: 300
+    port: 22
+  delegate_to: localhost
+
+- name: Install docker-compose 
+  shell: 
+    curl -L https://github.com/docker/compose/releases/download/1.12.0/docker-compose-Linux-x86_64 > /usr/bin/docker-compose
+  delegate_to: "{{ mgmt_ip }}"
+  remote_user: "{{ target_server_username }}"
+
+- name: Make docker-compose executable
+  file:
+    path: /usr/bin/docker-compose
+    mode: 755
+  delegate_to: "{{ mgmt_ip }}"
+  remote_user: "{{ target_server_username }}"
+
+- block:
+  - name: Generate Portal environment.properties file
+    template: src=environment.properties.j2 backup=no dest=/opt/environment.properties
+
+  - name: Execute the Portal configuration script
+    command: docker run --rm --env-file /opt/environment.properties -v /var/run/docker.sock:/docker.sock -v /opt:/mnt:z -v /etc:/hostetc:z nuage/vnsportal-bootstrap:{{ portal_version }}
+
+  - name: Copy license file to {{ mgmt_ip }}
+    copy:
+      src: "{{ portal_license_file }}"
+      dest: '/opt/vnsportal/tomcat-instance1/'
+      owner: 'root'
+      group: 'root'
+
+  - name: Restart VNSPortal service 
+    command: /opt/vnsportal/restart.sh
+
+  delegate_to: "{{ mgmt_ip }}"
+  remote_user: "{{ target_server_username }}"
