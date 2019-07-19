@@ -15,13 +15,16 @@
 - name: Get output of 'show version'
   sros_command:
     commands:
-      - show version
-    provider: "{{ vsc_creds[0] }}"
+      - "show version"
+    provider:
+      host: "{{ groups['vscs'][0] }}"
+      username: "{{ vsc_username | default(vsc_default_username) }}"
+      password: "{{ vsc_password | default(vsc_default_password) }}"
   delegate_to: localhost
   register: sh_version
 
 - name: Parse version
-  shell: "echo '{{ sh_version.stdout[0] }}'' | awk '{{ version_expr }}'"
+  shell: "echo '{{ sh_version.stdout[0] }}' | awk '{{ version_expr }}'"
   delegate_to: localhost
   register: vsc_version
 
