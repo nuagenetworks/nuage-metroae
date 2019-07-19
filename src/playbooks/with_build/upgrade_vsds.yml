@@ -9,6 +9,19 @@
 
 - hosts: vsd_standby_node1
   gather_facts: no
+  pre_tasks:
+    - name: Lets run VSD deactivate replication slave hooks
+      include_role:
+        name: hooks
+        tasks_from: main
+      vars:
+        - hooks_file_path: "{{ item }}"
+        - hook_location:
+          - vsd_deactivate_replication_slave
+          - upgrade_vsds
+          - upgrade_before_vrs
+          - upgrade_everything
+      with_items: "{{ hooks }}"
   remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
   become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
   vars:

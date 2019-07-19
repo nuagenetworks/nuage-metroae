@@ -2,10 +2,33 @@
   gather_facts: no
   any_errors_fatal: true
   run_once: true
+  pre_tasks:
+    - name: Lets run VSD DB Backup hooks
+      include_role:
+        name: hooks
+        tasks_from: main
+      vars:
+        - hooks_file_path: "{{ item }}"
+        - hook_location:
+          - vsd_dbbackup
+      with_items: "{{ hooks }}"
   roles:
     - vsd-dbbackup
 
 - hosts: vsd_inplace_upgrade_nodes
   gather_facts: no
+  pre_tasks:
+    - name: Lets run VSD inplace upgrade hooks
+      include_role:
+        name: hooks
+        tasks_from: main
+      vars:
+        - hooks_file_path: "{{ item }}"
+        - hook_location:
+          - vsd_inplace_upgrade_nodes
+          - upgrade_vsds
+          - upgrade_before_vrs
+          - upgrade_everything
+      with_items: "{{ hooks }}"
   roles:
     - vsd-upgrade-inplace

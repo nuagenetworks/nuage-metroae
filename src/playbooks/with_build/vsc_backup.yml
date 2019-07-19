@@ -2,5 +2,16 @@
 - hosts: vscs
   gather_facts: no
   connection: local
+  pre_tasks:
+    - name: Lets run VSC backup hooks
+      include_role:
+        name: hooks
+        tasks_from: main
+      vars:
+        - hooks_file_path: "{{ item }}"
+        - hook_location:
+          - vsc_backup
+          - vsc_ha_upgrade_backup_and_prep_1
+      with_items: "{{ hooks }}"
   roles:
     - vsc-backup

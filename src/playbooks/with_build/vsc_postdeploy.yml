@@ -2,5 +2,15 @@
 - hosts: vscs
   gather_facts: no
   serial: 1
+  pre_tasks:
+    - name: Lets run VSC postdeploy hooks
+      include_role:
+        name: hooks
+        tasks_from: main
+      vars:
+        - hooks_file_path: "{{ item }}"
+        - hook_location:
+          - vsc_postdeploy
+      with_items: "{{ hooks }}"
   roles:
     - vsc-postdeploy

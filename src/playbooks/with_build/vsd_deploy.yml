@@ -1,12 +1,22 @@
 ---
 - hosts: primary_vsds
   gather_facts: no
+  pre_tasks:
+    - name: Lets run VSD deploy hooks
+      include_role:
+        name: hooks
+        tasks_from: main
+      vars:
+        - hooks_file_path: "{{ item }}"
+        - hook_location:
+          - vsd_deploy
+          - vsd_ha_upgrade_deploy_1
+          - vsd_sa_upgrade_deploy
+          - vsd_standby_deploy
+      with_items: "{{ hooks }}"
   roles:
     - vsd-deploy
-
-- hosts: primary_vsds
-  gather_facts: no
-  tasks:
+  post_tasks:
     - include_role:
         name: vsd-deploy
         tasks_from: vsd_security_hardening.yml

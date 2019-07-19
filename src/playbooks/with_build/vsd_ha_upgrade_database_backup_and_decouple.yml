@@ -10,6 +10,17 @@
       include_role:
         name: common
         tasks_from: check-upgrade-prereq
+
+    - name: Lets run VSD dbbackup hooks
+      include_role:
+        name: hooks
+        tasks_from: main
+      vars:
+        - hooks_file_path: "{{ item }}"
+        - hook_location:
+          - vsd_dbbackup
+          - vsd_ha_upgrade_database_backup_and_decouple
+      with_items: "{{ hooks }}"
   roles:
     - vsd-dbbackup
 
@@ -17,6 +28,16 @@
   gather_facts: no
   vars:
     report_filename: vsd_ha_upgrade_backup_and_decouple_report.txt
+  pre_tasks:
+    - name: Lets run VSD decouple hooks
+      include_role:
+        name: hooks
+        tasks_from: main
+      vars:
+        - hooks_file_path: "{{ item }}"
+        - hook_location:
+          - vsd_decouple
+      with_items: "{{ hooks }}"
   roles:
     - vsd-decouple
 
