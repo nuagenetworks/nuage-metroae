@@ -1,6 +1,14 @@
-- name: Get list of partitions
+- name: Get list of partitions (ignoring Errors)
   shell: "guestfish -r -a {{ guestfish_qcow2_path }} run : list-filesystems | grep -Ev '(unknown|swap)'"
+  ignore_errors: yes
   register: partitions_list
+
+- name: Check if list of partitions is retrieved.
+  assert:
+    that:
+    - partitions_list.failed == false
+    fail_msg: "{{ partitions_list.stderr_lines }}[0]"
+    success_msg: "Retrieved the list of Paritions"
 
 - name: Check partition content
   shell: "guestfish -r -a {{ guestfish_qcow2_path }} run : mount {{ item.split(':')[0] }} / : ls /"
