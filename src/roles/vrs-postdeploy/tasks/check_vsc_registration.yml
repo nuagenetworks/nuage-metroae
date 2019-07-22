@@ -60,32 +60,40 @@
 
   - debug: var=vsc_version.stdout verbosity=1
 
-  - name: Get output of 'show vswitch-controller information' on VSC ({{ controller_addr }}) for version less than 6.0.0
-    sros_command:
-      commands:
-        - show vswitch-controller vswitches vs-ip {{ ovs_vtep_ip.stdout }} detail
-      provider: "{{ vsc_creds[0] }}"
-    delegate_to: localhost
-    register: vsc_vsw_info
+  - block:
+
+    - name: Get output of 'show vswitch-controller information' on VSC ({{ controller_addr }}) for version less than 6.0.0
+      sros_command:
+        commands:
+          - show vswitch-controller vswitches vs-ip {{ ovs_vtep_ip.stdout }} detail
+        provider: "{{ vsc_creds[0] }}"
+      delegate_to: localhost
+      register: vsc_vsw_info
+
+    - name: Set fact for vswitch_controller_info
+      set_fact:
+        vswitch_controller_info: "{{ vsc_vsw_info.stdout[0] }}"
+
     when: vsc_version.stdout is version('6.0.0', '<')
 
-  - name: Assert that VRS has been registered properly for version less than 6.0.0
-    assert:
-      that: "'Cntrl. Conn. state         : ready' in vsc_vsw_info.stdout[0]"
-    when: vsc_version.stdout is version('6.0.0', '<')
-  
-  - name: Get output of 'show vswitch-controller information' on VSC ({{ controller_addr }}) for version greater than 6.0.0
-    sros_command:
-      commands:
-        - show vswitch-controller vswitches detail vs-name VRS-{{ ovs_vtep_ip.stdout }}
-      provider: "{{ vsc_creds[0] }}"
-    delegate_to: localhost
-    register: vsc_vsw_info
+  - block:
+    
+    - name: Get output of 'show vswitch-controller information' on VSC ({{ controller_addr }}) for version greater than 6.0.0
+      sros_command:
+        commands:
+          - show vswitch-controller vswitches detail vs-name VRS-{{ ovs_vtep_ip.stdout }}
+        provider: "{{ vsc_creds[0] }}"
+      delegate_to: localhost
+      register: vsc_vsw_info
+    
+    - name: Set fact for vswitch_controller_info
+      set_fact:
+        vswitch_controller_info: "{{ vsc_vsw_info.stdout[0] }}"
+
     when: vsc_version.stdout is version('6.0.0', '>=')
 
   - name: Assert that VRS has been registered properly
     assert:
-      that: "'Cntrl. Conn. state         : ready' in vsc_vsw_info.stdout[0]"
-    when: vsc_version.stdout is version('6.0.0', '>=')
+      that: "'Cntrl. Conn. state         : ready' in vswitch_controller_info"
 
   when: vsc_creds | length == 1
