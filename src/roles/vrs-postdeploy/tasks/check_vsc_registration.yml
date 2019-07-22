@@ -68,6 +68,11 @@
     delegate_to: localhost
     register: vsc_vsw_info
     when: vsc_version.stdout is version('6.0.0', '<')
+
+  - name: Assert that VRS has been registered properly for version less than 6.0.0
+    assert:
+      that: "'Cntrl. Conn. state         : ready' in vsc_vsw_info.stdout[0]"
+    when: vsc_version.stdout is version('6.0.0', '<')
   
   - name: Get output of 'show vswitch-controller information' on VSC ({{ controller_addr }}) for version greater than 6.0.0
     sros_command:
@@ -81,5 +86,6 @@
   - name: Assert that VRS has been registered properly
     assert:
       that: "'Cntrl. Conn. state         : ready' in vsc_vsw_info.stdout[0]"
+    when: vsc_version.stdout is version('6.0.0', '>=')
 
   when: vsc_creds | length == 1
