@@ -22,7 +22,8 @@
     command: ping6 -c 1 {{ hostname }}
     ignore_errors: yes
     register: host_ping6_result
-    delegate_to: localhost
+    remote_user: root
+    delegate_to: "{{ ssh_proxy | default('localhost') }}"
 
   - block:
 
@@ -30,7 +31,8 @@
       command: ping6 -c 1 {{ mgmt_ip }}
       ignore_errors: yes
       register: mgmt_ip_ping6_result
-      delegate_to: localhost
+      remote_user: root
+      delegate_to: "{{ ssh_proxy | default('localhost') }}"
 
     - name: Assert reachability of hostname is the same as management IP
       assert:
@@ -65,7 +67,8 @@
       command: ping -c 1 {{ mgmt_ip }}
       ignore_errors: yes
       register: mgmt_ip_ping_result
-      delegate_to: localhost
+      remote_user: root
+      delegate_to: "{{ ssh_proxy | default('localhost') }}"
       when: enable_ipv6 | default(False) != True
 
     - name: Assert reachability of hostname is the same as management IP
