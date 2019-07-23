@@ -29,47 +29,8 @@
     delegate_to: "{{ item }}"
     with_items: "{{ vsd_hostname_list }}"
 
-  - name: Generate ssh key on vsd for vstat upgrade
-    shell: ssh-keygen -b 2048 -t rsa -f /root/.ssh/vstat_rsa -q -N ""
-    args:
-      creates: /root/.ssh/vstat_rsa
-    delegate_to: "{{ vsd_hostname_list[0] }}"
-
-  - name: Get generated SSH keys
-    shell: cat ~/.ssh/vstat_rsa.pub
-    register: ssh_key
-    delegate_to: "{{ vsd_hostname_list[0] }}"
-
-  - name: Copy ssh key from vsd to vstat node(s)
-    shell: "echo {{ ssh_key.stdout }} >> /root/.ssh/authorized_keys"
-
   remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
   become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
   vars:
     ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"
   run_once: true
-
-- block:
-  - name: Generate SSH keys
-    shell: ssh-keygen -b 2048 -t rsa -f /root/.ssh/vstat_rsa -q -N ""
-    args:
-      creates: /root/.ssh/vstat_rsa
-    delegate_to: "{{ item }}"
-    with_items: "{{ groups['vstats'] }}"
-    run_once: true
-
-  - name: Get generated SSH keys
-    shell: cat ~/.ssh/vstat_rsa.pub
-    register: ssh_key_lst
-    delegate_to: "{{ item }}"
-    with_items: "{{ groups['vstats'] }}"
-    run_once: true
-
-  - name: Add SSH keys to authorized_keys file
-    shell: "echo {{ item[1].stdout }} >> /root/.ssh/authorized_keys"
-    delegate_to: "{{ item[0] }}"
-    with_nested:
-      - "{{ groups['vstats'] }}"
-      - "{{ ssh_key_lst.results }}"
-    run_once: true
-  when: vstat_sa_or_ha is match('ha')
