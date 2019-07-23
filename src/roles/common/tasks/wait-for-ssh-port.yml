@@ -9,11 +9,15 @@
   remote_user: root
   delegate_to: "{{ ssh_proxy | default('localhost') }}"
 
+- name: Add proxy setup
+  set_fact:
+    proxy_conf: '-o ProxyCommand="ssh -W %h:%p -q {{ ssh_proxy_configuration }}"'
+  when: ssh_proxy_configuration is defined
+
 - name: Check connectivity to the target
-  shell: 'sshpass -p {{ ssh_password }} ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -tt  {{ssh_user}}@{{ssh_host}} '
+  shell: 'sshpass -p {{ ssh_password }} ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null {{ proxy_conf | default("") }} -tt  {{ssh_user}}@{{ssh_host}} '
   remote_user: root
   delegate_to: "{{ ssh_proxy | default('localhost') }}"
   register: ssh_result
-  no_log: True
   failed_when: not ssh_result.rc == 0
   when: check_login | default(False)
