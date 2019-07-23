@@ -50,3 +50,5 @@
 * Set Upgrade Complete flag on VSD for minor upgrade (METROAE-1008)
 * Remove old iptables rule in VSC preupgrade (METROAE-1013)
 * Update VSPK libraries to import version 5.0 (METROAE-1052)
+* Update the way we get VSD version to protect against a custom user that lacks the VSD_VERSION env variable
+* Made changes to accommodate 6.0.1 command line changes on VSC
