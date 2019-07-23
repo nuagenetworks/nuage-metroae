@@ -41,16 +41,59 @@
       ssh_user: "{{ vsc_creds[0].username }}"
       check_login: True
 
-  - name: Get output of 'show vswitch-controller information' on VSC ({{ controller_addr }})
+  - name: Set awk expression for parse the version
+    set_fact:
+      version_expr: '{ split($1, version, "-"); print version[4] }'
+
+  - name: Get output of 'show version'
     sros_command:
       commands:
-        - show vswitch-controller vswitches vs-ip {{ ovs_vtep_ip.stdout }} detail
+        - show version
       provider: "{{ vsc_creds[0] }}"
     delegate_to: localhost
-    register: vsc_vsw_info
+    register: sh_version
+
+  - name: Parse version
+    shell: "echo '{{ sh_version.stdout[0] }}' | awk '{{ version_expr }}'"
+    delegate_to: localhost
+    register: vsc_version
+
+  - debug: var=vsc_version.stdout verbosity=1
+
+  - block:
+
+    - name: Get output of 'show vswitch-controller information' on VSC ({{ controller_addr }}) for version less than 6.0.1
+      sros_command:
+        commands:
+          - show vswitch-controller vswitches vs-ip {{ ovs_vtep_ip.stdout }} detail
+        provider: "{{ vsc_creds[0] }}"
+      delegate_to: localhost
+      register: vsc_vsw_info
+
+    - name: Set fact for vswitch_controller_info
+      set_fact:
+        vswitch_controller_info: "{{ vsc_vsw_info.stdout[0] }}"
+
+    when: vsc_version.stdout is version('6.0.1', '<')
+
+  - block:
+    
+    - name: Get output of 'show vswitch-controller information' on VSC ({{ controller_addr }}) for version greater than 6.0.1
+      sros_command:
+        commands:
+          - show vswitch-controller vswitches detail vs-name VRS-{{ ovs_vtep_ip.stdout }}
+        provider: "{{ vsc_creds[0] }}"
+      delegate_to: localhost
+      register: vsc_vsw_info
+    
+    - name: Set fact for vswitch_controller_info
+      set_fact:
+        vswitch_controller_info: "{{ vsc_vsw_info.stdout[0] }}"
+
+    when: vsc_version.stdout is version('6.0.1', '>=')
 
   - name: Assert that VRS has been registered properly
     assert:
-      that: "'Cntrl. Conn. state         : ready' in vsc_vsw_info.stdout[0]"
+      that: "'Cntrl. Conn. state         : ready' in vswitch_controller_info"
 
   when: vsc_creds | length == 1
