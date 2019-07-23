@@ -29,6 +29,21 @@
     delegate_to: "{{ item }}"
     with_items: "{{ vsd_hostname_list }}"
 
+  - name: Generate ssh key on vsd for vstat upgrade
+    shell: ssh-keygen -b 2048 -t rsa -f /root/.ssh/vstat_rsa -q -N ""
+    args:
+      creates: /root/.ssh/vstat_rsa
+    delegate_to: "{{ vsd_hostname_list[0] }}"
+
+  - name: Get generated SSH keys
+    shell: cat ~/.ssh/vstat_rsa.pub
+    register: ssh_key
+    delegate_to: "{{ vsd_hostname_list[0] }}"
+
+  - name: Copy ssh key from vsd to vstat node(s)
+    shell: "echo {{ ssh_key.stdout }} >> /root/.ssh/authorized_keys"
+    remote_user: "{{ vstat_default_username }}"
+
   remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
   become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
   vars:

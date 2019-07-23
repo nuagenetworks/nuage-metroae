@@ -102,6 +102,13 @@
       that: es_version.json.version.number is version('6.7.0', '==')
       msg: Expecting ES version 6.7.0, found ES version "{{ es_version.json.version.number }}, quitting."
 
+  - name: Check indices health
+    uri:
+      url: "{{ indicies_health_url }}"
+      method: GET
+    register: indicies_health
+    run_once: true
+
   - name: Migrate old indicies to new ones
     command: "{{ index_migrate_cmd }}"
     run_once: true
@@ -116,6 +123,7 @@
       msg: Expecting ES version 5.5.0, found ES version "{{ es_version.json.version.number }}, quitting."
 
   when: upgrade_to_version is version('6.0.1', '<')
+
 
 - name: Restart Elasticsearch service
   service:
