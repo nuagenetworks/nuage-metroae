@@ -102,6 +102,13 @@
       that: es_version.json.version.number is version('6.7.0', '==')
       msg: Expecting ES version 6.7.0, found ES version "{{ es_version.json.version.number }}, quitting."
 
+  - name: Check nodes status for ES cluster
+    uri:
+      url: "{{ nodes_url }}"
+      method: GET
+    register: nodes_output
+    run_once: true
+
   - name: Check indices health
     uri:
       url: "{{ indicies_health_url }}"
@@ -109,9 +116,29 @@
     register: indicies_health
     run_once: true
 
+  - debug: var={{ indicies_health }}
+
   - name: Migrate old indicies to new ones
     command: "{{ index_migrate_cmd }}"
     run_once: true
+
+  - name: Check recovery health
+    uri:
+      url: "{{ recovery_health_url }}"
+      method: GET
+    register: recover_health
+    run_once: true
+
+  - debug: var={{ recover_health }}
+
+  - name: Check indices health
+    uri:
+      url: "{{ indicies_health_url }}"
+      method: GET
+    register: indicies_health
+    run_once: true
+
+  - debug: var={{ indicies_health }}
 
   when: upgrade_to_version is version('6.0.1', '>=')
 
