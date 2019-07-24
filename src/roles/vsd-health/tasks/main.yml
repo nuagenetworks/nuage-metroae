@@ -263,9 +263,19 @@
     shell: "keytool -keystore /opt/vsd/jboss/standalone/configuration/keyserver.jks -storepass {{ keyServerStorePwd }} -list"
     when: keyServerStorePwd is defined
 
-  - name: Verify jrestore pass is set
+  - name: Show version of the vsd
+    shell: "echo $VSD_VERSION"
+    register: vsd_version
+
+  - debug: var=vsd_version.stdout
+
+  - name: Verify jrestore pass is set for version greater than 6.0.1
+    shell: "keytool -keystore /etc/pki/ca-trust/extracted/java/cacerts -alias vspca -storepass {{ jreStorePwd }} -list"
+    when: jreStorePwd is defined and vsd_version.stdout is version('6.0.1', '>=')
+
+  - name: Verify jrestore pass is set for version less than 6.0.1
     shell: "keytool -keystore /usr/java/latest/lib/security/cacerts -alias vspca -storepass {{ jreStorePwd }} -list"
-    when: jreStorePwd is defined
+    when: jreStorePwd is defined and vsd_version.stdout is version('6.0.1', '<')
 
   - name: Verify cnauser pass is set
     command: "mysql -ucnauser -p{{ cnaPwd }} -e 'select 1'"
