@@ -8,13 +8,27 @@
   vars:
     ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"
 
+- name: Set fact to remove vstat services
+  set_fact:
+    remove_list:
+      - "ejabberd-cluster-status"
+
+- name: Set fact to remove vstat services during upgrade
+  set_fact:
+    remove_list:
+      - "stats-collector-status"
+      - "tca-daemon-status"
+      - "vsd-stats-status"
+      - "ejabberd-cluster-status"
+  when: upgrade | default(false)
+
 - name: wait for VSD common , core and stats services to become running
   monit_waitfor_service:
     name: "{{ item }}"
     timeout_seconds: 1200
     test_interval_seconds: 30
   when: item not in ['vsd-stats-status', 'stats-collector-status', 'tca-daemon-status']
-  with_items: "{{ proc_list['state'].keys() }}"
+  with_items: "{{ proc_list['state'].keys() | difference(remove_list) }}"
   remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
   become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
   vars:
