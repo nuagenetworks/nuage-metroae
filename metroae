@@ -819,15 +819,22 @@ function setup_container {
         echo ""
         echo "Please specify the full path to the data directory on the Docker host. Setup will"
         echo "make sure that the path ends with 'metroae_data'. If the path you specify does"
-        echo "not end with 'metroae_data', setup willl create it."
+        echo "not end with 'metroae_data', setup will create it."
         get_user_path_input "Data directory path" metroae_data
-        data_path=$PATH_ARG
     else
         echo ""
-        write_to_screen_and_script_log ">>> Setting data path to passed in parameter $1"
-        data_path=$1
+        valid_path=1
+        PATH_ARG=$1
+        check_user_path PATH_ARG metroae_data
+        if [[ $valid_path -ne 0 ]]; then
+            exit 1
+        fi
+        write_to_screen_and_script_log ">>> Setting data path to passed in parameter $PATH_ARG"
         shift
     fi
+
+    data_path=$PATH_ARG
+
     write_to_script_log "METROAE_MOUNT_POINT=$data_path"
     echo METROAE_MOUNT_POINT=$data_path >> $SETUP_FILE
 
@@ -844,13 +851,18 @@ function setup_container {
             echo "make sure that the path ends with 'metroae_images'. If the path you specify does"
             echo "not end with 'metroae_images', setup willl create it."
             get_user_path_input "Image directory path" metroae_images
-            images_path=$PATH_ARG
         else
             echo ""
-            write_to_screen_and_script_log ">>> Setting image path to $1"
-            images_path=$1
+            valid_path=1
+            PATH_ARG=$1
+            check_user_path PATH_ARG metroae_images
+            if [[ $valid_path -ne 0 ]]; then
+                exit 1
+            fi
+            write_to_screen_and_script_log ">>> Setting image path to $PATH_ARG"
             shift
         fi
+        images_path=$PATH_ARG
         echo IMAGES_MOUNT_POINT=$images_path >> $SETUP_FILE
         write_to_script_log "IMAGES_MOUNT_POINT=$images_path"
     fi
@@ -1011,11 +1023,34 @@ function setup_container {
     return 0
 }
 
+function check_user_path {
+    debug ${FUNCNAME[0]}
+
+    set +e
+    if [[ -w $SCRIPT_LOG_FILE ]]; then
+        stat $PATH_ARG >> $SCRIPT_LOG_FILE 2>> $SCRIPT_LOG_FILE
+    else
+        stat $PATH_ARG
+    fi
+
+    valid_path=$?
+    if [[ $valid_path -ne 0 ]]; then
+        write_to_screen_and_script_log "We had a problem validating the path you entered: $PATH_ARG. Please try again."
+    fi
+
+    # check to see if the path ends with passed in directory
+    if [[ "$PATH_ARG" != *"$2" ]]; then
+        PATH_ARG=${PATH_ARG%/}/$2
+        mkdir -p $PATH_ARG
+    fi
+    set -e
+}
+
+
 function get_user_path_input {
     debug ${FUNCNAME[0]}
-    valid_path=1
     PATH_ARG=""
-
+    valid_path=1
     set +e
 
     while [[ $valid_path -ne 0 ]]
@@ -1024,22 +1059,9 @@ function get_user_path_input {
         read -p "$1: " PATH_ARG
         echo ""
         write_to_screen_and_script_log "Checking path: $1"
-        if [[ -f $SCRIPT_LOG_FILE ]]; then
-            stat $PATH_ARG >> $SCRIPT_LOG_FILE 2>> $SCRIPT_LOG_FILE
-        fi
-
-        valid_path=$?
-        if [[ $valid_path -ne 0 ]]; then
-            write_to_screen_and_script_log "We had a problem validating the path you entered: $PATH_ARG. Please try again."
-        fi
-
-        # check to see if the path ends with passed in directory
-        if [[ "$PATH_ARG" != *"$2" ]]; then
-            PATH_ARG=${PATH_ARG%/}/$2
-            mkdir -p $PATH_ARG
-        fi
-
+        check_user_path PATH_ARG $2
     done
+
     echo ""
     write_to_screen_and_script_log "$1 set to: $PATH_ARG"
     echo ""
@@ -1170,7 +1192,9 @@ function check_for_user_group {
         echo ""
         write_to_screen_and_script_log ">>> Restarting Docker"
         sudo systemctl restart docker
-        sudo chown -R root:docker $INSTALL_FOLDER
+        if [[ -d $INSTALL_FOLDER ]]; then
+            sudo chown -R root:docker $INSTALL_FOLDER
+        fi
     fi
 
     uid=`id -u`
