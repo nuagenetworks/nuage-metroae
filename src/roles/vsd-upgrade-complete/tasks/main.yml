@@ -13,9 +13,18 @@
      - inventory_hostname in groups['primary_vsds']
 
   - block:
+    - name: Grab the VSD version
+      shell: grep -ir "VSD_VERSION=" /etc/profile.d/vsd-banner.sh | awk -F "=" '{print $2}'
+      register: vsd_version
+      run_once: true
+
+    - name: Grab the VSD build
+      shell: grep -ir "VSD_BUILD=" /etc/profile.d/vsd-banner.sh | awk -F "=" '{print $2}'
+      register: vsd_build
+      run_once: true
 
     - name: Set upgrade complete flag
-      shell: "{{ upgrade_complete_flag_command }}"
+      shell: {{ upgrade_complete_flag_command }}
       register: result
       until: result.rc == 0
       retries: 40
