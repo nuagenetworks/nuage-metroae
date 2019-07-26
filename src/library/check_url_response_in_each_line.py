@@ -29,6 +29,7 @@ options:
     default: null
 '''
 
+
 def main():
     arg_spec = dict(
         url=dict(required=True, type='path'),
@@ -65,5 +66,6 @@ def main():
     else:
         module.fail_json(msg="Did not find the search string %s from response %s within %i seconds" % (search_string, response_text, timeout_seconds))
         # Run the main
+
 
 main()
