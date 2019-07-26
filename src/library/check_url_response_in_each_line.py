@@ -2,7 +2,7 @@
 
 from ansible.module_utils.basic import AnsibleModule
 import time
-import request
+import requests
 
 DOCUMENTATION = '''
 ---
@@ -31,8 +31,8 @@ options:
 
 def main():
     arg_spec = dict(
-        url=dict(required=True, type='string'),
-        search_string=dict(required=True, type='string'),
+        url=dict(required=True, type='path'),
+        search_string=dict(required=True),
         timeout_seconds=dict(required=True, type='int'),
         test_interval_seconds=dict(required=True, type='int')
     )
