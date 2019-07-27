@@ -31,13 +31,14 @@
       delay: 30
       when: inventory_hostname == groups['primary_vsds'][0]
 
+    - import_tasks: check_monit_status
+
     - name: Turn on API on vsd's for major upgrade
       shell: "{{ turn_on_api_command }}"
       when: upgrade_major_or_minor == 'major'
 
-    when: not inplace_upgrade | default(false)
+    - import_tasks: check_monit_status
 
-  - import_tasks: check_monit_status.yml
     when: not inplace_upgrade | default(false)
 
   remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
