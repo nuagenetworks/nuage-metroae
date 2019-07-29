@@ -4,8 +4,18 @@
   delegate_to: localhost
   become: no
 
+- name: Grab the VSD version
+  shell: grep -ir "VSD_VERSION=" /etc/profile.d/vsd-banner.sh | awk -F "=" '{print $2}'
+  register: vsd_version
+  run_once: true
+
+- name: Grab the VSD build
+  shell: grep -ir "VSD_BUILD=" /etc/profile.d/vsd-banner.sh | awk -F "=" '{print $2}'
+  register: vsd_build
+  run_once: true
+
 - name: Get the vsd node info
-  command: /opt/vsd/sysmon/showStatus.py
+  command: VSD_VERSION={{ vsd_version.stdout }} VSD_BUILD={{ vsd_build.stdout }} /opt/vsd/sysmon/showStatus.py
   register: vsd_info
   become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
   remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
