@@ -40,6 +40,20 @@
   shell: "/root/{{ vstat_upgrade_scripts_file }}"
 
 - block:
+  - name: Figure out Active ES cluster
+    shell: grep -i curator_snapshot /etc/crontab
+    register: isActiveCheck
+
+  - name: Skip execute VSD script for backup vstat
+    set_fact:
+      run_command_on_vsd: false
+    when: isActiveCheck.rc != 0
+
+  when:
+    - group[primary_vstats] is defined
+    - group[backup_vstats] is defined
+
+- block:
   - name: Execute VSTAT standalone script
     import_tasks: execute_sa_script.yml
     run_once: true
@@ -61,7 +75,9 @@
       import_tasks: execute_sa_script.yml
       run_once: true
 
-  when: vstat_sa_or_ha is match('sa')
+  when:
+    - vstat_sa_or_ha is match('sa')
+    - run_command_on_vsd | default(true)
 
 - block:
   - name: Execute VSTAT clustered script
@@ -86,7 +102,9 @@
       import_tasks: execute_ha_script.yml
       run_once: true
 
-  when: vstat_sa_or_ha is match('ha')
+  when:
+    - vstat_sa_or_ha is match('ha')
+    - run_command_on_vsd | default(true)
 
 - name: Get ES version
   uri:
