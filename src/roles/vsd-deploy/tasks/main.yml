@@ -308,6 +308,20 @@
       group: all
     register: proc_list
 
+  - name: Set fact to remove ejabberd cluster status services
+    set_fact:
+      remove_list:
+        - "ejabberd-cluster-status"
+
+  - name: Set fact to remove vstat services during upgrade
+    set_fact:
+      remove_list:
+        - "stats-collector-status"
+        - "tca-daemon-status"
+        - "vsd-stats-status"
+        - "ejabberd-cluster-status"
+    when: upgrade | default(false)
+
   - name: wait for VSD common , core and stats services to become running
     monit_waitfor_service:
       name: "{{ item }}"
