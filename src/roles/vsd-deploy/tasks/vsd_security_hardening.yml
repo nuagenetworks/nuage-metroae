@@ -16,18 +16,15 @@
 
 - block:
   - block:
-    - name: Create a group with the custom user name
-      group:
-        name: "{{ vsd_custom_username }}"
+    - name: Create a SSH pass
+        command: openssl passwd -1 {{ vsd_custom_password }}
+        register: openssl_pwd
 
-    - name: Add and set custom user password
-      user:
-        name: "{{ vsd_custom_username }}"
-        groups: "{{ vsd_custom_username }}, wheel"
-        append: yes
+    - name: Create the user if not present
+      command: useradd -p {{ openssl_pwd.stdout }} {{ vsd_custom_username }}
 
-    - name: Set the password for the custom user
-      shell: echo {{ vsd_custom_password }} | passwd --stdin {{ vsd_custom_username }}
+    - name: Add user to sudoers list
+      command: usermod -aG wheel {{ vsd_custom_username }}
 
     - name: Update sshd config file
       lineinfile:
