@@ -41,14 +41,14 @@
 
 - block:
   - name: Figure out Active ES cluster
-    shell: grep -i curator_snapshot /etc/crontab
-    register: isActiveCheck
+    shell: crontab -l
+    register: crontabOutput
     ignore_errors: true
 
   - name: Skip execute VSD script for backup vstat
     set_fact:
       run_command_on_vsd: false
-    when: isActiveCheck.rc != 0
+    when: crontabOutput.find("curator_snapshot") == -1
 
   when:
     - groups['primary_vstats'] is defined

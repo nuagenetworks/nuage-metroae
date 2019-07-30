@@ -9,3 +9,30 @@
   environment:
     SSHPASS: "{{ vstat_default_password }}"
   run_once: true
+  when: is_backup_vstats is not defined
+
+- name: Execute VSTAT clustered script on primary vstats
+  command: /opt/vsd/vsd-es-cluster-config.sh -e {{ groups['primary_vstats'][0] }},{{ groups['primary_vstats'][1] }},{{ primary_groups['vstats'][2] }}
+  delegate_to: "{{ vsd_hostname_list[0] }}"
+  remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
+  become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
+  vars:
+    ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"
+  register: upgrade_status
+  environment:
+    SSHPASS: "{{ vstat_default_password }}"
+  run_once: true
+  when: not is_backup_vstats
+
+- name: Execute VSTAT clustered script on backup vstats
+  command: /opt/vsd/vsd-es-cluster-config.sh -e {{ groups['backup_vstats'][0] }},{{ groups['backup_vstats'][1] }},{{ groups['backup_vstats'][2] }}
+  delegate_to: "{{ vsd_hostname_list[0] }}"
+  remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
+  become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
+  vars:
+    ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"
+  register: upgrade_status
+  environment:
+    SSHPASS: "{{ vstat_default_password }}"
+  run_once: true
+  when: is_backup_vstats
