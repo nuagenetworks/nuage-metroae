@@ -23,7 +23,7 @@
 * Upgrade support for OpenStack (METROAE-995)
 * Make any_errors_fatal a global config item
 * Support for VSD active/standby cluster failover (METROAE-955)
-* Support application of standard and cluster licenses on install and upgrade (METROAE-600)
+* Support application of standard and cluster licenses on install and upgrade for 5.3 and up (METROAE-600)
 * Enhance error checking in vCenter VSD destroy (METROAE-980)
 * Update instructions for using ovftool with the metroae container
 * Implement check of VSC authentication from Ansible host (METROAE-999)
@@ -52,4 +52,3 @@
 * Update VSPK libraries to import version 5.0 (METROAE-1052)
 * Update the way we get VSD version to protect against a custom user that lacks the VSD_VERSION env variable
 * Made changes to accommodate 6.0.1 command line changes on VSC
-* Apply VSD license on VSD version 5.3.X and above
