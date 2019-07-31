@@ -52,3 +52,4 @@
 * Update VSPK libraries to import version 5.0 (METROAE-1052)
 * Update the way we get VSD version to protect against a custom user that lacks the VSD_VERSION env variable
 * Made changes to accommodate 6.0.1 command line changes on VSC
+* Apply VSD license on VSD version 5.3.X and above
