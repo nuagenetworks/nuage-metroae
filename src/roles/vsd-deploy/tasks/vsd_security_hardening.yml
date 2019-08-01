@@ -20,8 +20,13 @@
       command: openssl passwd -1 {{ vsd_custom_password }}
       register: openssl_pwd
 
+    - name: Check if user exists
+      command: id -u {{ vsd_custom_username }}
+      register: user_exists
+
     - name: Create the user if not present
       command: useradd -p {{ openssl_pwd.stdout }} {{ vsd_custom_username }}
+      when: user_exists is search("no such user")
 
     - name: Add user to sudoers list
       command: usermod -aG wheel {{ vsd_custom_username }}
