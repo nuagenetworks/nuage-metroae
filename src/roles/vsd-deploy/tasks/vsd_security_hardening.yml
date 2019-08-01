@@ -15,7 +15,9 @@
   ignore_errors: True
 
 - block:
+
   - block:
+
     - name: Create a group with the custom user name
       group:
         name: "{{ vsd_custom_username }}"
@@ -42,6 +44,7 @@
       shell: 'chown {{ vsd_custom_username }}:{{ vsd_custom_username }} /home/{{ vsd_custom_username }}/.ssh'
 
     - block:
+
       - name: Get the public key for the current user
         local_action: command cat "{{ user_ssh_pub_key }}"
         register: current_user_ssh_key
@@ -59,6 +62,7 @@
 
       - name: Remove temporary copy of authorized_keys file
         file: path=tmp/authorized_keys_temp state=absent
+
       delegate_to: localhost
 
     - name: Set permission on the authorized file to 644
@@ -71,6 +75,7 @@
     - name: Set vsd user to custom user
       set_fact:
         vsd_username: "{{ vsd_custom_username }}"
+
     when:
       - vsd_custom_username is defined
       - vsd_custom_password is defined
@@ -79,41 +84,41 @@
     shell: mysqladmin -u root password "{{ vsd_mysql_password }}"
     when: vsd_mysql_password is defined
 
+  - name: Register failed login attempts and lockout time from file when not defined
+    slurp:
+      src: /etc/pam.d/system-auth-local
+    register: system_auth
+
+  - name: Register failed loging attemps
+    set_fact:
+        failed_login_attempts: "{{ system_auth['content'] | regex_findall('\\bdeny\\b\\=(.+)') }}"
+    when: failed_login_attempts is undefined
+
+  - name: Register failed loging timeout
+    set_fact:
+        failed_login_lockout_time: "{{ system_auth['content'] | regex_findall('\\bunlock_time\\b\\=(.+)') }}"
+    when: failed_login_lockout_time is undefined
+
+  - name: Lockout Time And Failed Login Attempts required
+    lineinfile:
+      path: "{{ item }}"
+      regexp: 'auth        required      pam_faillock.so preauth silent audit deny=3 unlock_time=600'
+      line: 'auth        required      pam_faillock.so preauth silent audit deny={{ failed_login_attempts }} unlock_time={{ failed_login_lockout_time }}'
+    with_items:
+      - "/etc/pam.d/password-auth"
+      - "/etc/pam.d/system-auth"
+
+  - name: Lockout Time And Failed Login Attempts default die
+    lineinfile:
+      path: "{{ item }}"
+      regexp: 'auth        \[default=die\] pam_faillock.so authfail audit deny=3 unlock_time=600'
+      line: 'auth        [default=die] pam_faillock.so authfail audit deny={{ failed_login_attempts }} unlock_time={{ failed_login_lockout_time }}'
+    with_items:
+      - "/etc/pam.d/password-auth"
+      - "/etc/pam.d/system-auth"
+
   - block:
-    - name: Register failed login attempts and lockout time from file when not defined
-      slurp:
-        src: /etc/pam.d/system-auth-local
-      register: system_auth
 
-    - name: Register failed loging attemps
-      set_fact:
-          failed_login_attempts: "{{ system_auth['content'] | regex_findall('\\bdeny\\b\\=(.+)') }}"
-      when: failed_login_attempts is undefined
-
-    - name: Register failed loging timeout
-      set_fact:
-          failed_login_lockout_time: "{{ system_auth['content'] | regex_findall('\\bunlock_time\\b\\=(.+)') }}"
-      when: failed_login_lockout_time is undefined
-
-    - name: Lockout Time And Failed Login Attempts required
-      lineinfile:
-        path: "{{ item }}"
-        regexp: 'auth        required      pam_faillock.so preauth silent audit deny=3 unlock_time=600'
-        line: 'auth        required      pam_faillock.so preauth silent audit deny={{ failed_login_attempts }} unlock_time={{ failed_login_lockout_time }}'
-      with_items:
-        - "/etc/pam.d/password-auth"
-        - "/etc/pam.d/system-auth"
-
-    - name: Lockout Time And Failed Login Attempts default die
-      lineinfile:
-        path: "{{ item }}"
-        regexp: 'auth        \[default=die\] pam_faillock.so authfail audit deny=3 unlock_time=600'
-        line: 'auth        [default=die] pam_faillock.so authfail audit deny={{ failed_login_attempts }} unlock_time={{ failed_login_lockout_time }}'
-      with_items:
-        - "/etc/pam.d/password-auth"
-        - "/etc/pam.d/system-auth"
-
-  - block:
     - name: Enable TLSv1.2
       lineinfile:
         path: /opt/vsd/jboss/standalone/configuration/standalone-full-ha.xml
@@ -147,13 +152,10 @@
       line: '<access-log prefix="access.log" pattern="%a %t %H %p %r %s %D %{CUSTOM}i %{X-Nuage-Request-ID}o">'
     when: advanced_api_access_logging is defined
 
-  remote_user: "{{ vsd_username | default(vsd_default_username) }}"
-  become: "{{ 'no' if vsd_username | default(vsd_default_username) == 'root' else 'yes' }}"
-  vars:
-    ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"
-
+  remote_user: "{{ vsd_default_username }}"
 
 - block:
+
   - name: Copy Root CA to VSD
     copy:
       src: "{{ ca_certificate_path }}"
@@ -186,7 +188,6 @@
     when:
       - intermediate_certificate_path is defined
       - nuage_upgrade is not defined or not nuage_upgrade
-
 
   - name: Import Root CA Pem file
     shell: '/usr/java/latest/bin/keytool -importcert -file /opt/vsd/ejbca/p12/ca.cert.pem -keystore /usr/java/latest/lib/security/cacerts -storepass {{ jreStorePwd | default("changeit") }} -alias myRootCA -noprompt'
@@ -243,7 +244,6 @@
   become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
   vars:
     ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"
-
   when:
     - ca_certificate_path is defined
     - certificate_path is defined
