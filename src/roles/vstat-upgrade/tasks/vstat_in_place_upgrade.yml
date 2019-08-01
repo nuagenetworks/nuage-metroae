@@ -50,6 +50,28 @@
       run_command_on_vsd: false
     when: crontabOutput.stdout.find("curator_snapshot") == -1
 
+  - name: Update elasticsearch config file
+    lineinfile:
+      line: 'path.repo: ["/mnt/nfs/backup"]'
+      path: /etc/elasticsearch/elasticsearch.yml
+
+  - name: Restart elastic search
+    service:
+      name: elasticsearch
+      state: restarted
+
+  - name: Check to see if elasticsearch restarted
+    command: systemctl status elasticsearch
+    register: status
+    until: status.stdout.find("active (running)") != -1
+    retries: 5
+    delay: 10
+
+  - name: Wait for elasticsearch ports
+    wait_for:
+      port: 9200
+      delay: 10
+
   when:
     - groups['primary_vstats'] is defined
     - groups['backup_vstats'] is defined
@@ -181,3 +203,27 @@
   service:
     name: elasticsearch
     state: restarted
+
+
+    -07-31T16:30:32,712][INFO ][o.e.h.n.Netty4HttpServerTransport] [8x9mnXV] publish_address {192.168.122.131:9200}, bound_addresses {[::1]:9200}, {127.0.0.1:9200}, {192.168.122.131:9200}, {[fe80::5054:ff:fe69:aa83]:9200}
+[2019-07-31T16:30:32,713][INFO ][o.e.n.Node               ] [8x9mnXV] started
+[2019-07-31T16:30:32,877][INFO ][o.e.c.s.ClusterSettings  ] [8x9mnXV] updating [cluster.routing.allocation.enable] from [all] to [none]
+[2019-07-31T16:30:32,897][WARN ][o.e.r.f.FsRepository     ] [8x9mnXV] The specified location [/mnt/nfs/backup] should start with a repository path specified by the path.repo setting, but the path.repo setting was not set on this node
+[2019-07-31T16:30:32,903][WARN ][o.e.r.RepositoriesService] [8x9mnXV] failed to create repository [fs][test]
+org.elasticsearch.repositories.RepositoryException: [test] location [/mnt/nfs/backup] doesn't match any of the locations specified by path.repo because this setting is empty
+        at org.elasticsearch.repositories.fs.FsRepository.<init>(FsRepository.java:98) ~[elasticsearch-6.7.0.jar:6.7.0]
+        at org.elasticsearch.repositories.RepositoriesModule.lambda$new$0(RepositoriesModule.java:50) ~[elasticsearch-6.7.0.jar:6.7.0]
+        at org.elasticsearch.repositories.Repository$Factory.create(Repository.java:70) ~[elasticsearch-6.7.0.jar:6.7.0]
+        at org.elasticsearch.repositories.RepositoriesService.createRepository(RepositoriesService.java:413) ~[elasticsearch-6.7.0.jar:6.7.0]
+        at org.elasticsearch.repositories.RepositoriesService.applyClusterState(RepositoriesService.java:334) ~[elasticsearch-6.7.0.jar:6.7.0]
+        at org.elasticsearch.cluster.service.ClusterApplierService.lambda$callClusterStateAppliers$6(ClusterApplierService.java:484) ~[elasticsearch-6.7.0.jar:6.7.0]
+        at java.lang.Iterable.forEach(Iterable.java:75) [?:1.8.0_191]
+        at org.elasticsearch.cluster.service.ClusterApplierService.callClusterStateAppliers(ClusterApplierService.java:481) [elasticsearch-6.7.0.jar:6.7.0]
+        at org.elasticsearch.cluster.service.ClusterApplierService.applyChanges(ClusterApplierService.java:468) [elasticsearch-6.7.0.jar:6.7.0]
+        at org.elasticsearch.cluster.service.ClusterApplierService.runTask(ClusterApplierService.java:419) [elasticsearch-6.7.0.jar:6.7.0]
+        at org.elasticsearch.cluster.service.ClusterApplierService$UpdateTask.run(ClusterApplierService.java:163) [elasticsearch-6.7.0.jar:6.7.0]
+        at org.elasticsearch.common.util.concurrent.ThreadContext$ContextPreservingRunnable.run(ThreadContext.java:681) [elasticsearch-6.7.0.jar:6.7.0]
+        at org.elasticsearch.common.util.concurrent.PrioritizedEsThreadPoolExecutor$TieBreakingPrioritizedRunnable.runAndClean(PrioritizedEsThreadPoolExecutor.java:252) [elasticsearch-6.7.0.jar:6.7.0]
+        at org.elasticsearch.common.util.concurrent.PrioritizedEsThreadPoolExecutor$TieBreakingPrioritizedRunnable.run(PrioritizedEsThreadPoolExecutor.java:215) [elasticsearch-6.7.0.jar:6.7.0]
+        at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149) [?:1.8.0_191]
+:
