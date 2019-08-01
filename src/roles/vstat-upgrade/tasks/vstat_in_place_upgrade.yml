@@ -58,10 +58,6 @@
       run_command_on_vsd: false
     when: crontabOutput.stdout.find("curator_snapshot") == -1
 
-  - name: Update elasticsearch config file
-    lineinfile:
-      line: 'path.repo: ["/mnt/nfs/backup"]'
-      path: /etc/elasticsearch/elasticsearch.yml
 
   when:
     - groups['primary_vstats'] is defined
@@ -121,6 +117,34 @@
     - vstat_sa_or_ha is match('ha')
     - run_command_on_vsd | default(true)
 
+- block:
+
+  - name: Update elasticsearch config file
+    lineinfile:
+    line: 'path.repo: ["/mnt/nfs/backup"]'
+    path: /etc/elasticsearch/elasticsearch.yml
+
+  - name: Restart elastic search
+    service:
+      name: elasticsearch
+      state: restarted
+
+  - name: Check to see if elasticsearch restarted
+    command: systemctl status elasticsearch
+    register: status
+    until: status.stdout.find("active (running)") != -1
+    retries: 5
+    delay: 10
+
+  - name: Wait for elasticsearch ports
+    wait_for:
+      port: 9200
+      delay: 10
+
+  when:
+    - groups['primary_vstats'] is defined
+    - groups['backup_vstats'] is defined
+
 - name: Get ES version
   uri:
     url: "{{ version_url }}"
@@ -145,10 +169,33 @@
   - name: Check indices health before migration
     check_url_response_in_each_line:
       url: "{{ indicies_health_url }}"
-      search_string: "green"
+      search_string: "yellow"
       timeout_seconds: 300
       test_interval_seconds: 30
     run_once: true
+
+    - name: Enable Shard alllocation
+      uri:
+        url: "{{ disable_shard_url }}"
+        method: PUT
+        headers:
+          Content-Type: "application/json"
+        body: '{
+                  "acknowledged" : true,
+                  "persistent" : {
+                    "cluster" : {
+                      "routing" : {
+                        "allocation" : {
+                          "enable" : "all"
+                        }
+                      }
+                    }
+                  },
+                  "transient" : { }
+                }'
+        body_format: json
+        timeout: 300
+      when: vstat_sa_or_ha is match('ha')
 
   - name: Migrate old indicies to new ones
     command: "{{ index_migrate_cmd }}"
