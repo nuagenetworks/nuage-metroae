@@ -159,7 +159,7 @@
       that: es_version.json.version.number is version('6.7.0', '==')
       msg: Expecting ES version 6.7.0, found ES version "{{ es_version.json.version.number }}, quitting."
 
-  - name: Check nodes status for ES cluster
+  - name: Get nodes for ES
     uri:
       url: "{{ nodes_url }}"
       method: GET
@@ -173,6 +173,16 @@
       timeout_seconds: 600
       test_interval_seconds: 10
     run_once: true
+    when: vstat_sa_or_ha is match('ha')
+
+  - name: Check indices health before migration
+    check_url_response_in_each_line:
+      url: "{{ indicies_health_url }}"
+      search_string: "green"
+      timeout_seconds: 600
+      test_interval_seconds: 10
+    run_once: true
+    when: vstat_sa_or_ha is match('sa')
 
   - name: Enable Shard alllocation
     uri:
