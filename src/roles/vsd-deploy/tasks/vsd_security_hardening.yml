@@ -22,11 +22,12 @@
 
     - name: Check if user exists
       command: id -u {{ vsd_custom_username }}
+      ignore_errors: yes
       register: user_exists
 
     - name: Create the user if not present
       command: useradd -p {{ openssl_pwd.stdout }} {{ vsd_custom_username }}
-      when: user_exists.stdout is search("no such user")
+      when: "'no such user' in user_exists.stderr"
 
     - name: Add user to sudoers list
       command: usermod -aG wheel {{ vsd_custom_username }}
@@ -149,10 +150,7 @@
       line: '<access-log prefix="access.log" pattern="%a %t %H %p %r %s %D %{CUSTOM}i %{X-Nuage-Request-ID}o">'
     when: advanced_api_access_logging is defined
 
-  remote_user: "{{ vsd_username | default(vsd_default_username) }}"
-  become: "{{ 'no' if vsd_username | default(vsd_default_username) == 'root' else 'yes' }}"
-  vars:
-    ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"
+  remote_user: "{{ vsd_default_username }}"
 
 
 - block:
