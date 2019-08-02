@@ -26,6 +26,14 @@
   run_once: true
   when: vstat_sa_or_ha is match('ha')
 
+- name: Check indices health before migration
+  check_url_response_in_each_line:
+    url: "{{ indicies_health_url }}"
+    search_string: "green"
+    timeout_seconds: 300
+    test_interval_seconds: 30
+  run_once: true
+
 - name: Disable elasticsearch serivce
   service:
     name: elasticsearch
@@ -38,6 +46,23 @@
 
 - name: Execute upgrade script
   shell: "/root/{{ vstat_upgrade_scripts_file }}"
+
+- block:
+  - name: Figure out Active ES cluster
+    shell: crontab -l
+    register: crontabOutput
+    ignore_errors: true
+
+  - name: Skip execute VSD script for backup vstat
+    set_fact:
+      run_command_on_vsd: false
+    when: crontabOutput.stdout.find("curator_snapshot") == -1
+
+
+  when:
+    - groups['primary_vstats'] is defined
+    - groups['backup_vstats'] is defined
+
 
 - block:
   - name: Execute VSTAT standalone script
@@ -55,13 +80,15 @@
 
     - name: Check ES Unassigned Shards
       fail: msg="Elasticsearch upgrade failed, unassigned_shards != 0"
-      when: es_status.json.status != 'green'
+      when: es_health.json.unassigned_shards != 0
 
     - name: Execute VSTAT standalone script after status turns green
       import_tasks: execute_sa_script.yml
       run_once: true
 
-  when: vstat_sa_or_ha is match('sa')
+  when:
+    - vstat_sa_or_ha is match('sa')
+    - run_command_on_vsd | default(true)
 
 - block:
   - name: Execute VSTAT clustered script
@@ -74,18 +101,134 @@
       import_tasks: get_health_status.yml
       run_once: true
 
-    - name: Check ES status after cluster restart
-      fail: msg="Elasticsearch upgrade failed"
-      when: es_status.json.status == 'red'
+    - name: Check ES Status
+      fail: msg="Elasticsearch upgrade failed, status is not green"
+      when: es_status.json.status != 'green'
+
+    - name: Check ES Unassigned Shards
+      fail: msg="Elasticsearch upgrade failed, unassigned_shards != 0"
+      when: es_health.json.unassigned_shards != 0
 
     - name: Execute VSTAT clustered script after status turns green
       import_tasks: execute_ha_script.yml
-      when:
-        - es_status.json.status == 'green'
-        - es_status.json.unassigned_shards == 0
       run_once: true
 
-  when: vstat_sa_or_ha is match('ha')
+  when:
+    - vstat_sa_or_ha is match('ha')
+    - run_command_on_vsd | default(true)
+
+- block:
+
+  - name: Update elasticsearch config file
+    lineinfile:
+      line: 'path.repo: ["/mnt/nfs/backup"]'
+      path: /etc/elasticsearch/elasticsearch.yml
+
+  - name: Restart elastic search
+    service:
+      name: elasticsearch
+      state: restarted
+
+  - name: Check to see if elasticsearch restarted
+    command: systemctl status elasticsearch
+    register: status
+    until: status.stdout.find("active (running)") != -1
+    retries: 5
+    delay: 10
+
+  - name: Wait for elasticsearch ports
+    wait_for:
+      port: 9200
+      delay: 10
+
+  when:
+    - groups['primary_vstats'] is defined
+    - groups['backup_vstats'] is defined
+
+- name: Get ES version
+  uri:
+    url: "{{ version_url }}"
+    method: GET
+  register: es_version
+  run_once: true
+
+- block:
+
+  - name: Assert that we are running ES version 6.7.0
+    assert:
+      that: es_version.json.version.number is version('6.7.0', '==')
+      msg: Expecting ES version 6.7.0, found ES version "{{ es_version.json.version.number }}, quitting."
+
+  - name: Check nodes status for ES cluster
+    uri:
+      url: "{{ nodes_url }}"
+      method: GET
+    register: nodes_output
+    run_once: true
+
+  - name: Check indices health before migration
+    check_url_response_in_each_line:
+      url: "{{ indicies_health_url }}"
+      search_string: "yellow"
+      timeout_seconds: 600
+      test_interval_seconds: 10
+    run_once: true
+
+  - name: Enable Shard alllocation
+    uri:
+      url: "{{ disable_shard_url }}"
+      method: PUT
+      headers:
+        Content-Type: "application/json"
+      body: '{
+                "acknowledged" : true,
+                "persistent" : {
+                  "cluster" : {
+                    "routing" : {
+                      "allocation" : {
+                        "enable" : "all"
+                      }
+                    }
+                  }
+                },
+                "transient" : { }
+              }'
+      body_format: json
+      timeout: 300
+    when: vstat_sa_or_ha is match('ha')
+
+  - name: Migrate old indicies to new ones
+    command: "{{ index_migrate_cmd }}"
+    run_once: true
+
+  - name: Check recovery health
+    check_url_response_in_each_line:
+      url: "{{ recovery_health_url }}"
+      search_string: "done"
+      timeout_seconds: 300
+      test_interval_seconds: 30
+    run_once: true
+
+  - name: Check indices health after migration
+    check_url_response_in_each_line:
+      url: "{{ indicies_health_url }}"
+      search_string: "green"
+      timeout_seconds: 300
+      test_interval_seconds: 30
+    run_once: true
+
+
+  when: upgrade_to_version is version('6.0.1', '>=')
+
+- block:
+
+  - name: Assert that we are running ES version 5.5.0
+    assert:
+      that: es_version.json.version.number is version('5.5.0', '==')
+      msg: Expecting ES version 5.5.0, found ES version "{{ es_version.json.version.number }}, quitting."
+
+  when: upgrade_to_version is version('6.0.1', '<')
+
 
 - name: Restart Elasticsearch service
   service:
