@@ -33,12 +33,26 @@
     delegate_to: "{{ item }}"
     with_items: "{{ groups['primary_vsds'] }}"
 
+  - name: Get the VSD version
+    shell: grep -ir "VSD_VERSION=" /etc/profile.d/vsd-banner.sh | awk -F "=" '{print $2}'
+    register: vsd_version
+    delegate_to: "{{ groups['primary_vsds'][0] }}"
+
   - name: Deactivate replication on primary VSD cluster
-    command: /opt/vsd/bin/vsd-deactivate-replication-master-cluster.sh
+    shell: /opt/vsd/bin/vsd-deactivate-replication-master-cluster.sh -f
     ignore_errors: vsd_force_cluster_failover | default(no)
     when: is_primary_reachable | default(false)
     delegate_to: "{{ item }}"
     with_items: "{{ groups['primary_vsds'] }}"
+    when: vsd_version.stdout.split('.')[0]|int >= 6
+
+  - name: Deactivate replication on primary VSD cluster
+    shell: /opt/vsd/bin/vsd-deactivate-replication-master-cluster.sh
+    ignore_errors: vsd_force_cluster_failover | default(no)
+    when: is_primary_reachable | default(false)
+    delegate_to: "{{ item }}"
+    with_items: "{{ groups['primary_vsds'] }}"
+    when: vsd_version.stdout.split('.')[0]|int < 6
 
   - name: Switch replication role of standby VSD cluster when using clustered VSTATs
     command: "/opt/vsd/bin/vsd-switch-replication-cluster-role --role active -e hostvars[groups['vstats'][0]]['hostname'],hostvars[groups['vstats'][1]]['hostname'],hostvars[groups['vstats'][2]]['hostname']"
