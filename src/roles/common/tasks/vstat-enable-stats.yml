@@ -11,6 +11,10 @@
     command: /opt/vsd/vsd-stats.sh -e {{ inventory_hostname }}
     delegate_to: "{{ item }}"
     with_items: "{{ vsd_hostname_list }}"
+    retries: 3
+    delay: 10
+    register: result
+    until: result.rc == 0
     run_once: true
     when:
       - vsd_sa_or_ha is match('sa')
@@ -19,6 +23,10 @@
   - name: Enable stats collection on the cluster vsds when vstat is standalone
     command: /opt/vsd/vsd-stats.sh -e {{ inventory_hostname }}
     delegate_to: "{{ item }}"
+    retries: 3
+    delay: 10
+    register: result
+    until: result.rc == 0
     run_once: true
     with_items: "{{ vsd_hostname_list }}"
     when:
@@ -29,6 +37,10 @@
     command: /opt/vsd/vsd-stats.sh -e {{ groups['vstats'][0] }},{{ groups['vstats'][1] }},{{ groups['vstats'][2] }}
     delegate_to: "{{ item }}"
     with_items: "{{ vsd_hostname_list }}"
+    retries: 3
+    delay: 10
+    register: result
+    until: result.rc == 0
     run_once: true
     when:
       - vstat_sa_or_ha is match('ha')
@@ -38,6 +50,10 @@
     command: /opt/vsd/vsd-stats.sh -e {{ groups['primary_vstats'][0] }},{{ groups['primary_vstats'][1] }},{{ groups['primary_vstats'][2] }}
     delegate_to: "{{ item }}"
     with_items: "{{ vsd_hostname_list }}"
+    retries: 3
+    delay: 10
+    register: result
+    until: result.rc == 0
     run_once: true
     when:
       - vstat_sa_or_ha is match('ha')
@@ -48,6 +64,10 @@
     command: /opt/vsd/vsd-stats.sh -e {{ groups['backup_vstats'][0] }},{{ groups['backup_vstats'][1] }},{{ groups['backup_vstats'][2] }}
     delegate_to: "{{ item }}"
     with_items: "{{ vsd_hostname_list }}"
+    retries: 3
+    delay: 10
+    register: result
+    until: result.rc == 0
     run_once: true
     when:
       - vstat_sa_or_ha is match('ha')
