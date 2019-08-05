@@ -11,10 +11,7 @@
     command: /opt/vsd/vsd-stats.sh -e {{ inventory_hostname }}
     delegate_to: "{{ item }}"
     with_items: "{{ vsd_hostname_list }}"
-    retries: 3
-    delay: 10
-    register: result
-    until: result.rc == 0
+    ignore_errors: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
     run_once: true
     when:
       - vsd_sa_or_ha is match('sa')
@@ -23,10 +20,7 @@
   - name: Enable stats collection on the cluster vsds when vstat is standalone
     command: /opt/vsd/vsd-stats.sh -e {{ inventory_hostname }}
     delegate_to: "{{ item }}"
-    retries: 3
-    delay: 10
-    register: result
-    until: result.rc == 0
+    ignore_errors: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
     run_once: true
     with_items: "{{ vsd_hostname_list }}"
     when:
@@ -37,10 +31,7 @@
     command: /opt/vsd/vsd-stats.sh -e {{ groups['vstats'][0] }},{{ groups['vstats'][1] }},{{ groups['vstats'][2] }}
     delegate_to: "{{ item }}"
     with_items: "{{ vsd_hostname_list }}"
-    retries: 3
-    delay: 10
-    register: result
-    until: result.rc == 0
+    ignore_errors: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
     run_once: true
     when:
       - vstat_sa_or_ha is match('ha')
@@ -50,10 +41,7 @@
     command: /opt/vsd/vsd-stats.sh -e {{ groups['primary_vstats'][0] }},{{ groups['primary_vstats'][1] }},{{ groups['primary_vstats'][2] }}
     delegate_to: "{{ item }}"
     with_items: "{{ vsd_hostname_list }}"
-    retries: 3
-    delay: 10
-    register: result
-    until: result.rc == 0
+    ignore_errors: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
     run_once: true
     when:
       - vstat_sa_or_ha is match('ha')
@@ -64,15 +52,26 @@
     command: /opt/vsd/vsd-stats.sh -e {{ groups['backup_vstats'][0] }},{{ groups['backup_vstats'][1] }},{{ groups['backup_vstats'][2] }}
     delegate_to: "{{ item }}"
     with_items: "{{ vsd_hostname_list }}"
-    retries: 3
-    delay: 10
-    register: result
-    until: result.rc == 0
+    ignore_errors: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
     run_once: true
     when:
       - vstat_sa_or_ha is match('ha')
       - groups['backup_vstats'] is defined
       - active and failover
+
+  - name: Get jboss status of all VSDs
+    command: monit status jboss
+    register: jboss_status
+    delegate_to: "{{ item }}"
+    with_items: "{{ vsd_hostname_list }}"
+
+  - name: Verify jboss is active for all VSDs
+    assert:
+      that: "{{ item.rc }} == 0 or
+              {{ item.stdout is search('Running') }}"
+      msg: "JBoss is not Active for VSDs"
+    with_items:
+      - "{{ jboss_status.results }}"
 
   remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
   become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
