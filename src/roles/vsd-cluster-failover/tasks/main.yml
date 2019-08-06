@@ -147,6 +147,16 @@
     with_items:
       - "{{ groups['primary_vsds'][1] }}"
       - "{{ groups['primary_vsds'][2] }}"
+    when: vsd_version.stdout.split('.')[0]|int >= 6
+
+  - name: Start the replication operation on the other 2 standby VSDs
+    command: "/opt/vsd/bin/vsd-prepare-replication-slave-cluster.sh -m /tmp/{{ replication_db | basename }}"
+    delegate_to: "{{ item }}"
+    when: is_primary_reachable | default(false)
+    with_items:
+      - "{{ groups['primary_vsds'][1] }}"
+      - "{{ groups['primary_vsds'][2] }}"
+    when: vsd_version.stdout.split('.')[0]|int < 6
 
   - include_role:
       name: vsd-health
