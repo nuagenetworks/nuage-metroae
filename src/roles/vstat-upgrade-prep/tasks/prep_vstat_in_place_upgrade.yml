@@ -1,18 +1,25 @@
-- name: Get elasticsearch version
-  command: "curl localhost:9200"
-  register: es_version
+- block:
 
-- name: Convert es_version output to json
-  set_fact:
-    es_version_json: "{{ es_version.stdout | from_json }}"
+  - name: Get elasticsearch version
+    command: "curl localhost:9200"
+    register: es_version
 
-- name: Stat the current es version log file
-  stat: path=/root/current_es_version.log
-  register: es_version
+  - name: Convert es_version output to json
+    set_fact:
+      es_version_json: "{{ es_version.stdout | from_json }}"
 
-- name: Write current es version to file on vstat node(s)
-  shell: echo "{{ es_version_json.version.number }}" >> /root/current_es_version.log
-  when: not es_version.stat.exists
+  - name: Stat the current es version log file
+    stat: path=/root/current_es_version.log
+    register: es_version
+
+  - name: Write current es version to file on vstat node(s)
+    shell: echo "{{ es_version_json.version.number }}" >> /root/current_es_version.log
+    when: not es_version.stat.exists
+
+  remote_user: "{{ vstat_username | default(vstat_default_username) }}"
+  become: "{{ 'no' if vstat_username | default(vstat_default_username) == 'root' else 'yes' }}"
+  vars:
+    ansible_become_pass: "{{ vstat_password | default(vstat_default_password) }}"
 
 - name: Get vsd node(s) information
   import_role:
@@ -28,6 +35,10 @@
     command: /opt/vsd/vsd-stats.sh -d
     delegate_to: "{{ item }}"
     with_items: "{{ vsd_hostname_list }}"
+    register: result
+    until: result.rc == 0
+    retries: 5
+    delay: 10
 
   - name: Generate ssh key on vsd for vstat upgrade
     shell: ssh-keygen -b 2048 -t rsa -f /root/.ssh/vstat_rsa -q -N ""
@@ -49,3 +60,32 @@
   vars:
     ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"
   run_once: true
+
+- block:
+  - name: Generate SSH keys
+    shell: ssh-keygen -b 2048 -t rsa -f /root/.ssh/vstat_rsa -q -N ""
+    args:
+      creates: /root/.ssh/vstat_rsa
+    delegate_to: "{{ item }}"
+    with_items: "{{ groups['vstats'] }}"
+    run_once: true
+
+  - name: Get generated SSH keys
+    shell: cat ~/.ssh/vstat_rsa.pub
+    register: ssh_key_lst
+    delegate_to: "{{ item }}"
+    with_items: "{{ groups['vstats'] }}"
+    run_once: true
+
+  - name: Add SSH keys to authorized_keys file
+    shell: "echo {{ item[1].stdout }} >> /root/.ssh/authorized_keys"
+    delegate_to: "{{ item[0] }}"
+    with_nested:
+      - "{{ groups['vstats'] }}"
+      - "{{ ssh_key_lst.results }}"
+    run_once: true
+  when: vstat_sa_or_ha is match('ha')
+  remote_user: "{{ vstat_username | default(vstat_default_username) }}"
+  become: "{{ 'no' if vstat_username | default(vstat_default_username) == 'root' else 'yes' }}"
+  vars:
+    ansible_become_pass: "{{ vstat_password | default(vstat_default_password) }}"

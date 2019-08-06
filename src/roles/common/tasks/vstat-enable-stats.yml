@@ -12,6 +12,7 @@
     delegate_to: "{{ item }}"
     with_items: "{{ vsd_hostname_list }}"
     run_once: true
+    ignore_errors: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
     when:
       - vsd_sa_or_ha is match('sa')
       - vstat_sa_or_ha is match('sa')
@@ -20,6 +21,7 @@
     command: /opt/vsd/vsd-stats.sh -e {{ inventory_hostname }}
     delegate_to: "{{ item }}"
     run_once: true
+    ignore_errors: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
     with_items: "{{ vsd_hostname_list }}"
     when:
       - vsd_sa_or_ha is match('ha')
@@ -30,6 +32,7 @@
     delegate_to: "{{ item }}"
     with_items: "{{ vsd_hostname_list }}"
     run_once: true
+    ignore_errors: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
     when:
       - vstat_sa_or_ha is match('ha')
       - groups['vstats'] is defined
@@ -39,6 +42,7 @@
     delegate_to: "{{ item }}"
     with_items: "{{ vsd_hostname_list }}"
     run_once: true
+    ignore_errors: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
     when:
       - vstat_sa_or_ha is match('ha')
       - groups['primary_vstats'] is defined
@@ -49,10 +53,25 @@
     delegate_to: "{{ item }}"
     with_items: "{{ vsd_hostname_list }}"
     run_once: true
+    ignore_errors: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
     when:
       - vstat_sa_or_ha is match('ha')
       - groups['backup_vstats'] is defined
       - active and failover
+
+  - name: Get jboss status of all VSDs
+    command: monit status jboss
+    register: jboss_status
+    delegate_to: "{{ item }}"
+    with_items: "{{ vsd_hostname_list }}"
+
+  - name: Verify jboss is active for all VSDs
+    assert:
+      that: "{{ item.rc }} == 0 or
+              {{ item.stdout is search('Running') }}"
+      msg: "JBoss is not Active for VSDs"
+    with_items:
+      - "{{ jboss_status.results }}"
 
   remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
   become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
