@@ -1,6 +1,7 @@
 # Metro Automation Engine Release Notes
 ## Release 3.3.0
 ### Feature Enhancements
+* Updated to support Nuage Networks 6.0.1
 * Use ovftool probe mode to validate VSD version in OVA (METROAE-1099)
 * Add telnet_port to NSGv and support MetroÆ on Ubuntu (METROAE-962)
 * Enhanced support for nuagex deployments
