@@ -14,8 +14,8 @@ A patch upgrade is applicable to the VSD cluster when upgrading from one 'u' rel
 * Supported beginning in VSD version 5.4.1. 
 * `upgrade_fron_version` and `upgrade_to_version` variables must be set to 'u' versions of the same release, e.g. 5.4.1 and 5.4.1u1, 5.4.1u1 and 5.4.1u4, etc.
 
-### Active/Standby VSD cluster upgrade
-You can use MetroÆ to upgrade an Active/Standby VSD cluster, also known as a geo-redundant cluster.
+### Active/Standby cluster upgrade
+You can use MetroÆ to upgrade Active/Standby VSD clusters, also known as geo-redundant clusters. You can also use MetroAE to upgrade Active/Standby VSTAT (ES) clusters. The support for this is built into the `upgrade_everything`, `upgrade_vsds`, and `upgrade_vstats` plays. A step-by-step manual procedure is supported, but is not documented here. See [Upgrading By Individual Steps](#Upgrading-By-Individual-Steps-not-including-Active/Standby-clusters) for more information.
 
 ## Example Deployment
 For this example, our clustered (HA) deployment consists of:
@@ -25,25 +25,25 @@ For this example, our clustered (HA) deployment consists of:
 * one VSTAT (Elasticsearch) node
 
 ## Upgrading Automatically
-If your topology does not include VRS you can upgrade everything with one command. If it does includes VRS you can upgrade everything with two commands. MetroÆ also gives you the option of upgrading individual components with a single command for each. If you prefer to have more control over each step in the upgrade process proceed to [Upgrading By Individual Steps](#upgrading-by-individual-steps) for instructions.
+If your upgrade plans do not include upgrading VRSs or other dataplane components, you can upgrade everything with one command. If your upgrade plans do include VRSs or other dataplane components, you can upgrade everything with two commands. MetroÆ also gives you the option of upgrading all instances of a component type, e.g. VSC, with a single command for each component type. If you prefer to have more control over each step in the upgrade process proceed to [Upgrading By Individual Steps](#Upgrading-By-Individual-Steps-not-including-Active/Standby-clusters) for instructions.
 
-### Upgrade All Components (without VRS)
+### Upgrade All Components including Active/Standby clusters (does not pause for external VRS/dataplane upgrade)
 
      metroae upgrade_everything
 
-Issuing this workflow will detect if components are clustered (HA) or not and will upgrade all components that are defined in the deployment.  This option does not pause until completion to allow VRS(s) to be upgraded.  If VRS(s) need to be upgraded, the following option should be performed instead.
+Issuing this workflow will detect if components are clustered (HA) or not and will upgrade all components that are defined in the deployment.  This option does not pause until completion to allow VRSs and other dataplane components to be upgraded.  If dataplane components need to be upgraded, the following option should be performed instead.
 
-### Upgrade All Components (with VRS)
+### Upgrade All Components including Active/Standby clusters (includes pause for VRS)
 
      metroae upgrade_before_vrs
 
-     ( Upgrade the VRS(s) )
+     ( Upgrade the VRSs andn other dataplane components )
 
      metroae upgrade_after_vrs
 
-Issuing the above workflows will detect if components are clustered (HA) or not and will upgrade all components that are defined in the deployment.  This option allows the VRS(s) to be upgraded in-between other components.
+Issuing the above workflows will detect if components are clustered (HA) or not and will upgrade all components that are defined in the deployment.  This option allows the VRSs and other dataplane components to be upgraded between other components.
 
-### Upgrade Individual Components
+### Upgrade Individual Components including Active/Standby clusters
 
      metroae vsp_preupgrade_health
 
@@ -63,8 +63,8 @@ Issuing the above workflows will detect if components are clustered (HA) or not 
 
 Issuing the above workflows will detect if components are clustered (HA) or not and will upgrade all components that are defined in the deployment.  This option allows the VRS(s) to be upgraded in-between other components.  Performing individual workflows can allow specific components to be skipped or upgraded at different times.
 
-## Upgrading By Individual Steps
-The following workflows will upgrade each component in individual steps.  The steps listed below are only applicable for clustered (HA) deployments.  Performing an upgrade in this way allows full control of the timing of the upgrade process.
+## Upgrading By Individual Steps not including Active/Standby clusters
+The following workflows will upgrade each component in individual steps. Performing an upgrade in this way allows full control of the timing of the upgrade process and provides opportunities for you to add custom steps to the overall process. Note that the steps listed below are only applicable for clustered (HA) deployments.  Active/Standby cluster upgrades require additional steps that are not documented here. See the component playbooks `src\playbooks\with_build\upgrade_vsds.yml` and `src\playbooks\with_build\upgrade_vstats.yml` for the full list of steps. 
 
 ### Preupgrade Preparations
 1. Run health checks on VSD, VSC and VSTAT.
