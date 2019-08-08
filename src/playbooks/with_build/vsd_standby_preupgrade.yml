@@ -1,0 +1,54 @@
+---
+- hosts: vsd_standby_node1
+  gather_facts: no
+  remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
+  become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
+  vars:
+    ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"
+  tasks:
+
+    - name: Clean known_hosts of Standby VSD (ignoring errors)
+      known_hosts:
+        name: "{{ inventory_hostname }}"
+        state: absent
+      delegate_to: localhost
+      no_log: True
+      ignore_errors: True
+
+    - name: Create the directory on VSD to store backup files in
+      file:
+        path: "/opt/vsd/data"
+        state: directory
+      when:
+        - vsd_standby | default(false)
+
+    - name: Copy backup files from backup_machine
+      copy:
+        src: "{{ item }}"
+        dest: "/opt/vsd/data/"
+      with_fileglob:
+        - "{{metro_backup_root}}/backup-{{ groups['vsds'][0] }}-latest/*.tar.gz"
+      when:
+        - vsd_standby | default(false)
+
+    - name: Delete log files from /opt/vsd/data/ directory
+      shell:
+        cmd: "rm -rf /opt/vsd/data/*.log"
+        warn: false
+      when:
+        - vsd_standby | default(false)
+
+    - name: Get list of files in /opt/vsd/data/ directory
+      find:
+        path: "/opt/vsd/data/"
+        pattern: "*.tar.gz"
+      register: lst_files
+      when:
+        - vsd_standby | default(false)
+
+    - name: Verify  /opt/vsd/data/ directory contains exactly 3 files
+      assert:
+        that: "lst_files.examined == 3"
+        msg: "/opt/vsd/data does not contain exactly 3 files"
+      when:
+        - vsd_standby | default(false)
