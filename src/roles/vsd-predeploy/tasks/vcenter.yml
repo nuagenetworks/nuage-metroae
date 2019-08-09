@@ -50,8 +50,8 @@
       {{ ovftool_command }} 
       "vi://{{ vcenter.username | urlencode }}:{{ vcenter.password | urlencode }}@{{ vcenter_path }}"
     register: deploy_result
-    ignore_error: yes
-    no_log: yes
+    ignore_errors: yes
+    no_log: true
 
   - name: Debug the deploy logs
     assert:
@@ -59,280 +59,270 @@
       success_msg: "{{deploy_result.stdout}}"
       fail_msg: "{{deploy_result.stderr}}"
 
+  - name: Waiting until VMware tools becomes available
+    connection: local
+    vmware_guest_tools_wait:
+      hostname: "{{ target_server }}"
+      username: "{{ vcenter.username }}"
+      password: "{{ vcenter.password }}"
+      name: "{{ vm_name }}"
+      datacenter: "{{ vcenter.datacenter }}"
+      validate_certs: no
+    register: vm_facts
 
+  - debug: var=vm_facts verbosity=1
 
-  # - name: Deploy VSD image on vCenter (Can take several minutes)
-  #   connection: local
-  #   no_log: true
-  #   shell: >-
-  #     {{ ovftool_command }}
-  #     "vi://{{ vcenter.username | urlencode }}:{{ vcenter.password | urlencode }}@{{ vcenter_path }}"
+  - name: Get Facts of VM
+    vmware_vm_facts:
+      hostname: "{{ target_server }}"
+      username: "{{ vcenter.username }}"
+      password: "{{ vcenter.password }}"
+      validate_certs: no
+    delegate_to: localhost
+    register: vm_list
 
+  - name: Verify that VM exists on Host
+    assert:
+      that: "vm_name in vm_list.virtual_machines"
+      msg: "Desired VM does not exist"
 
-  # - name: Waiting until VMware tools becomes available
-  #   connection: local
-  #   vmware_guest_tools_wait:
-  #     hostname: "{{ target_server }}"
-  #     username: "{{ vcenter.username }}"
-  #     password: "{{ vcenter.password }}"
-  #     name: "{{ vm_name }}"
-  #     datacenter: "{{ vcenter.datacenter }}"
-  #     validate_certs: no
-  #   register: vm_facts
+  - name: Set VM UUID
+    set_fact:
+      uuid: "{{ vm_list.virtual_machines[vm_name]['uuid'] }}"
 
-  # - debug: var=vm_facts verbosity=1
+  - debug: var=uuid
 
-  # - name: Get Facts of VM
-  #   vmware_vm_facts:
-  #     hostname: "{{ target_server }}"
-  #     username: "{{ vcenter.username }}"
-  #     password: "{{ vcenter.password }}"
-  #     validate_certs: no
-  #   delegate_to: localhost
-  #   register: vm_list
+  - name: Turn on autostart
+    connection: local
+    vmware_autostart:
+      name: "{{ vm_name }}"
+      uuid: "{{ uuid }}"
+      hostname: "{{ target_server }}"
+      username: "{{ vcenter.username }}"
+      password: "{{ vcenter.password }}"
+      state: enable
+      validate_certs: no
 
-  # - name: Verify that VM exists on Host
-  #   assert:
-  #     that: "vm_name in vm_list.virtual_machines"
-  #     msg: "Desired VM does not exist"
+  - name: Disabling cloud-init
+    connection: local
+    vmware_vm_shell:
+      hostname: "{{ target_server }}"
+      username: "{{ vcenter.username }}"
+      password: "{{ vcenter.password }}"
+      datacenter: "{{ vcenter.datacenter }}"
+      cluster: "{{ vcenter.cluster }}"
+      validate_certs: no
+      vm_id: "{{ vm_name }}"
+      vm_username: "{{ vsd_default_username }}"
+      vm_password: "{{ vsd_default_password }}"
+      vm_shell: "/bin/systemctl"
+      vm_shell_args: " {{ item }}"
+    with_items:
+      - "stop cloud-init"
+      - "disable cloud-init"
+      - "stop cloud-init-local"
+      - "disable cloud-init-local"
+      - "stop cloud-init-config"
+      - "disable cloud-config"
+      - "stop cloud-final"
+      - "disable cloud-final"
 
-  # - name: Set VM UUID
-  #   set_fact:
-  #     uuid: "{{ vm_list.virtual_machines[vm_name]['uuid'] }}"
+  - name: Writing cloud-init disable file in the VM
+    connection: local
+    vmware_vm_shell:
+      hostname: "{{ target_server }}"
+      username: "{{ vcenter.username }}"
+      password: "{{ vcenter.password }}"
+      datacenter: "{{ vcenter.datacenter }}"
+      cluster: "{{ vcenter.cluster }}"
+      validate_certs: no
+      vm_id: "{{ vm_name }}"
+      vm_username: "{{ vsd_default_username }}"
+      vm_password: "{{ vsd_default_password }}"
+      vm_shell: "/bin/touch"
+      vm_shell_args: " /etc/cloud/cloud-init.disabled"
 
-  # - debug: var=uuid
+  - name: Set the owner and group on the cloud-init disable file in the VM
+    connection: local
+    vmware_vm_shell:
+      hostname: "{{ target_server }}"
+      username: "{{ vcenter.username }}"
+      password: "{{ vcenter.password }}"
+      datacenter: "{{ vcenter.datacenter }}"
+      cluster: "{{ vcenter.cluster }}"
+      validate_certs: no
+      vm_id: "{{ vm_name }}"
+      vm_username: "{{ vsd_default_username }}"
+      vm_password: "{{ vsd_default_password }}"
+      vm_shell: "/usr/bin/chown"
+      vm_shell_args: " 0 0 /etc/cloud/cloud-init.disabled"
 
-  # - name: Turn on autostart
-  #   connection: local
-  #   vmware_autostart:
-  #     name: "{{ vm_name }}"
-  #     uuid: "{{ uuid }}"
-  #     hostname: "{{ target_server }}"
-  #     username: "{{ vcenter.username }}"
-  #     password: "{{ vcenter.password }}"
-  #     state: enable
-  #     validate_certs: no
+  - name: Writing eth0 network script file to the VM
+    connection: local
+    vmware_vm_shell:
+      hostname: "{{ target_server }}"
+      username: "{{ vcenter.username }}"
+      password: "{{ vcenter.password }}"
+      datacenter: "{{ vcenter.datacenter }}"
+      cluster: "{{ vcenter.cluster }}"
+      validate_certs: no
+      vm_id: "{{ vm_name }}"
+      vm_username: "{{ vsd_default_username }}"
+      vm_password: "{{ vsd_default_password }}"
+      vm_shell: "/usr/bin/echo"
+      vm_shell_args: " '{{ lookup('template', 'ifcfg-eth0.j2') }}' > /etc/sysconfig/network-scripts/ifcfg-eth0"
 
-  # - name: Disabling cloud-init
-  #   connection: local
-  #   vmware_vm_shell:
-  #     hostname: "{{ target_server }}"
-  #     username: "{{ vcenter.username }}"
-  #     password: "{{ vcenter.password }}"
-  #     datacenter: "{{ vcenter.datacenter }}"
-  #     cluster: "{{ vcenter.cluster }}"
-  #     validate_certs: no
-  #     vm_id: "{{ vm_name }}"
-  #     vm_username: "{{ vsd_default_username }}"
-  #     vm_password: "{{ vsd_default_password }}"
-  #     vm_shell: "/bin/systemctl"
-  #     vm_shell_args: " {{ item }}"
-  #   with_items:
-  #     - "stop cloud-init"
-  #     - "disable cloud-init"
-  #     - "stop cloud-init-local"
-  #     - "disable cloud-init-local"
-  #     - "stop cloud-init-config"
-  #     - "disable cloud-config"
-  #     - "stop cloud-final"
-  #     - "disable cloud-final"
+  - name: Set the owner and group on the eth0 network script file in the VM
+    connection: local
+    vmware_vm_shell:
+      hostname: "{{ target_server }}"
+      username: "{{ vcenter.username }}"
+      password: "{{ vcenter.password }}"
+      datacenter: "{{ vcenter.datacenter }}"
+      cluster: "{{ vcenter.cluster }}"
+      validate_certs: no
+      vm_id: "{{ vm_name }}"
+      vm_username: "{{ vsd_default_username }}"
+      vm_password: "{{ vsd_default_password }}"
+      vm_shell: "/usr/bin/chown"
+      vm_shell_args: " 0 0 /etc/sysconfig/network-scripts/ifcfg-eth0"
 
-  # - name: Writing cloud-init disable file in the VM
-  #   connection: local
-  #   vmware_vm_shell:
-  #     hostname: "{{ target_server }}"
-  #     username: "{{ vcenter.username }}"
-  #     password: "{{ vcenter.password }}"
-  #     datacenter: "{{ vcenter.datacenter }}"
-  #     cluster: "{{ vcenter.cluster }}"
-  #     validate_certs: no
-  #     vm_id: "{{ vm_name }}"
-  #     vm_username: "{{ vsd_default_username }}"
-  #     vm_password: "{{ vsd_default_password }}"
-  #     vm_shell: "/bin/touch"
-  #     vm_shell_args: " /etc/cloud/cloud-init.disabled"
+  - name: Writing network file to the VM
+    connection: local
+    vmware_vm_shell:
+      hostname: "{{ target_server }}"
+      username: "{{ vcenter.username }}"
+      password: "{{ vcenter.password }}"
+      datacenter: "{{ vcenter.datacenter }}"
+      cluster: "{{ vcenter.cluster }}"
+      validate_certs: no
+      vm_id: "{{ vm_name }}"
+      vm_username: "{{ vsd_default_username }}"
+      vm_password: "{{ vsd_default_password }}"
+      vm_shell: "/usr/bin/echo"
+      vm_shell_args: " '{{ lookup('template', role_path + '/../common/templates/network.j2') }}' > /etc/sysconfig/network"
 
-  # - name: Set the owner and group on the cloud-init disable file in the VM
-  #   connection: local
-  #   vmware_vm_shell:
-  #     hostname: "{{ target_server }}"
-  #     username: "{{ vcenter.username }}"
-  #     password: "{{ vcenter.password }}"
-  #     datacenter: "{{ vcenter.datacenter }}"
-  #     cluster: "{{ vcenter.cluster }}"
-  #     validate_certs: no
-  #     vm_id: "{{ vm_name }}"
-  #     vm_username: "{{ vsd_default_username }}"
-  #     vm_password: "{{ vsd_default_password }}"
-  #     vm_shell: "/usr/bin/chown"
-  #     vm_shell_args: " 0 0 /etc/cloud/cloud-init.disabled"
+  - name: Set the owner and group on the network file in the VM
+    connection: local
+    vmware_vm_shell:
+      hostname: "{{ target_server }}"
+      username: "{{ vcenter.username }}"
+      password: "{{ vcenter.password }}"
+      datacenter: "{{ vcenter.datacenter }}"
+      cluster: "{{ vcenter.cluster }}"
+      validate_certs: no
+      vm_id: "{{ vm_name }}"
+      vm_username: "{{ vsd_default_username }}"
+      vm_password: "{{ vsd_default_password }}"
+      vm_shell: "/usr/bin/chown"
+      vm_shell_args: " 0 0 /etc/sysconfig/network"
 
-  # - name: Writing eth0 network script file to the VM
-  #   connection: local
-  #   vmware_vm_shell:
-  #     hostname: "{{ target_server }}"
-  #     username: "{{ vcenter.username }}"
-  #     password: "{{ vcenter.password }}"
-  #     datacenter: "{{ vcenter.datacenter }}"
-  #     cluster: "{{ vcenter.cluster }}"
-  #     validate_certs: no
-  #     vm_id: "{{ vm_name }}"
-  #     vm_username: "{{ vsd_default_username }}"
-  #     vm_password: "{{ vsd_default_password }}"
-  #     vm_shell: "/usr/bin/echo"
-  #     vm_shell_args: " '{{ lookup('template', 'ifcfg-eth0.j2') }}' > /etc/sysconfig/network-scripts/ifcfg-eth0"
+  - name: Writing hostname file to the VM
+    connection: local
+    vmware_vm_shell:
+      hostname: "{{ target_server }}"
+      username: "{{ vcenter.username }}"
+      password: "{{ vcenter.password }}"
+      datacenter: "{{ vcenter.datacenter }}"
+      cluster: "{{ vcenter.cluster }}"
+      validate_certs: no
+      vm_id: "{{ vm_name }}"
+      vm_username: "{{ vsd_default_username }}"
+      vm_password: "{{ vsd_default_password }}"
+      vm_shell: "/usr/bin/echo"
+      vm_shell_args: " '{{ lookup('template', 'hostname.j2') }}' > /etc/hostname"
 
-  # - name: Set the owner and group on the eth0 network script file in the VM
-  #   connection: local
-  #   vmware_vm_shell:
-  #     hostname: "{{ target_server }}"
-  #     username: "{{ vcenter.username }}"
-  #     password: "{{ vcenter.password }}"
-  #     datacenter: "{{ vcenter.datacenter }}"
-  #     cluster: "{{ vcenter.cluster }}"
-  #     validate_certs: no
-  #     vm_id: "{{ vm_name }}"
-  #     vm_username: "{{ vsd_default_username }}"
-  #     vm_password: "{{ vsd_default_password }}"
-  #     vm_shell: "/usr/bin/chown"
-  #     vm_shell_args: " 0 0 /etc/sysconfig/network-scripts/ifcfg-eth0"
+  - name: Set the owner and group on the hostname file in the VM
+    connection: local
+    vmware_vm_shell:
+      hostname: "{{ target_server }}"
+      username: "{{ vcenter.username }}"
+      password: "{{ vcenter.password }}"
+      datacenter: "{{ vcenter.datacenter }}"
+      cluster: "{{ vcenter.cluster }}"
+      validate_certs: no
+      vm_id: "{{ vm_name }}"
+      vm_username: "{{ vsd_default_username }}"
+      vm_password: "{{ vsd_default_password }}"
+      vm_shell: "/usr/bin/chown"
+      vm_shell_args: " 0 0 /etc/hostname"
 
-  # - name: Writing network file to the VM
-  #   connection: local
-  #   vmware_vm_shell:
-  #     hostname: "{{ target_server }}"
-  #     username: "{{ vcenter.username }}"
-  #     password: "{{ vcenter.password }}"
-  #     datacenter: "{{ vcenter.datacenter }}"
-  #     cluster: "{{ vcenter.cluster }}"
-  #     validate_certs: no
-  #     vm_id: "{{ vm_name }}"
-  #     vm_username: "{{ vsd_default_username }}"
-  #     vm_password: "{{ vsd_default_password }}"
-  #     vm_shell: "/usr/bin/echo"
-  #     vm_shell_args: " '{{ lookup('template', role_path + '/../common/templates/network.j2') }}' > /etc/sysconfig/network"
+  - name: Create the directory /root/.ssh for authorized_keys on the VM
+    connection: local
+    vmware_vm_shell:
+      hostname: "{{ target_server }}"
+      username: "{{ vcenter.username }}"
+      password: "{{ vcenter.password }}"
+      datacenter: "{{ vcenter.datacenter }}"
+      cluster: "{{ vcenter.cluster }}"
+      validate_certs: no
+      vm_id: "{{ vm_name }}"
+      vm_username: "{{ vsd_default_username }}"
+      vm_password: "{{ vsd_default_password }}"
+      vm_shell: "/usr/bin/mkdir"
+      vm_shell_args: " -p /root/.ssh"
 
-  # - name: Set the owner and group on the network file in the VM
-  #   connection: local
-  #   vmware_vm_shell:
-  #     hostname: "{{ target_server }}"
-  #     username: "{{ vcenter.username }}"
-  #     password: "{{ vcenter.password }}"
-  #     datacenter: "{{ vcenter.datacenter }}"
-  #     cluster: "{{ vcenter.cluster }}"
-  #     validate_certs: no
-  #     vm_id: "{{ vm_name }}"
-  #     vm_username: "{{ vsd_default_username }}"
-  #     vm_password: "{{ vsd_default_password }}"
-  #     vm_shell: "/usr/bin/chown"
-  #     vm_shell_args: " 0 0 /etc/sysconfig/network"
+  - name: Set the owner and group for the /root/.ssh directory in the VM
+    connection: local
+    vmware_vm_shell:
+      hostname: "{{ target_server }}"
+      username: "{{ vcenter.username }}"
+      password: "{{ vcenter.password }}"
+      datacenter: "{{ vcenter.datacenter }}"
+      cluster: "{{ vcenter.cluster }}"
+      validate_certs: no
+      vm_id: "{{ vm_name }}"
+      vm_username: "{{ vsd_default_username }}"
+      vm_password: "{{ vsd_default_password }}"
+      vm_shell: "/usr/bin/chown"
+      vm_shell_args: " 0 0 /root/.ssh"
 
-  # - name: Writing hostname file to the VM
-  #   connection: local
-  #   vmware_vm_shell:
-  #     hostname: "{{ target_server }}"
-  #     username: "{{ vcenter.username }}"
-  #     password: "{{ vcenter.password }}"
-  #     datacenter: "{{ vcenter.datacenter }}"
-  #     cluster: "{{ vcenter.cluster }}"
-  #     validate_certs: no
-  #     vm_id: "{{ vm_name }}"
-  #     vm_username: "{{ vsd_default_username }}"
-  #     vm_password: "{{ vsd_default_password }}"
-  #     vm_shell: "/usr/bin/echo"
-  #     vm_shell_args: " '{{ lookup('template', 'hostname.j2') }}' > /etc/hostname"
+  - name: Get the public key for the current user
+    local_action: command cat "{{ user_ssh_pub_key }}"
+    register: current_user_ssh_key
 
-  # - name: Set the owner and group on the hostname file in the VM
-  #   connection: local
-  #   vmware_vm_shell:
-  #     hostname: "{{ target_server }}"
-  #     username: "{{ vcenter.username }}"
-  #     password: "{{ vcenter.password }}"
-  #     datacenter: "{{ vcenter.datacenter }}"
-  #     cluster: "{{ vcenter.cluster }}"
-  #     validate_certs: no
-  #     vm_id: "{{ vm_name }}"
-  #     vm_username: "{{ vsd_default_username }}"
-  #     vm_password: "{{ vsd_default_password }}"
-  #     vm_shell: "/usr/bin/chown"
-  #     vm_shell_args: " 0 0 /etc/hostname"
+  - name: Writing authorized_keys to the VM
+    connection: local
+    vmware_vm_shell:
+      hostname: "{{ target_server }}"
+      username: "{{ vcenter.username }}"
+      password: "{{ vcenter.password }}"
+      datacenter: "{{ vcenter.datacenter }}"
+      cluster: "{{ vcenter.cluster }}"
+      validate_certs: no
+      vm_id: "{{ vm_name }}"
+      vm_username: "{{ vsd_default_username }}"
+      vm_password: "{{ vsd_default_password }}"
+      vm_shell: "/usr/bin/echo"
+      vm_shell_args: " '{{ lookup('template', 'authorized_keys.j2') }}' > /root/.ssh/authorized_keys"
 
-  # - name: Create the directory /root/.ssh for authorized_keys on the VM
-  #   connection: local
-  #   vmware_vm_shell:
-  #     hostname: "{{ target_server }}"
-  #     username: "{{ vcenter.username }}"
-  #     password: "{{ vcenter.password }}"
-  #     datacenter: "{{ vcenter.datacenter }}"
-  #     cluster: "{{ vcenter.cluster }}"
-  #     validate_certs: no
-  #     vm_id: "{{ vm_name }}"
-  #     vm_username: "{{ vsd_default_username }}"
-  #     vm_password: "{{ vsd_default_password }}"
-  #     vm_shell: "/usr/bin/mkdir"
-  #     vm_shell_args: " -p /root/.ssh"
+  - name: Set the mode on the authorized_keys file in the VM
+    connection: local
+    vmware_vm_shell:
+      hostname: "{{ target_server }}"
+      username: "{{ vcenter.username }}"
+      password: "{{ vcenter.password }}"
+      datacenter: "{{ vcenter.datacenter }}"
+      cluster: "{{ vcenter.cluster }}"
+      validate_certs: no
+      vm_id: "{{ vm_name }}"
+      vm_username: "{{ vsd_default_username }}"
+      vm_password: "{{ vsd_default_password }}"
+      vm_shell: "/usr/bin/chmod"
+      vm_shell_args: " 0640 /root/.ssh/authorized_keys"
 
-  # - name: Set the owner and group for the /root/.ssh directory in the VM
-  #   connection: local
-  #   vmware_vm_shell:
-  #     hostname: "{{ target_server }}"
-  #     username: "{{ vcenter.username }}"
-  #     password: "{{ vcenter.password }}"
-  #     datacenter: "{{ vcenter.datacenter }}"
-  #     cluster: "{{ vcenter.cluster }}"
-  #     validate_certs: no
-  #     vm_id: "{{ vm_name }}"
-  #     vm_username: "{{ vsd_default_username }}"
-  #     vm_password: "{{ vsd_default_password }}"
-  #     vm_shell: "/usr/bin/chown"
-  #     vm_shell_args: " 0 0 /root/.ssh"
+  - name: Reboot VM
+    connection: local
+    vmware_vm_shell:
+      hostname: "{{ target_server }}"
+      username: "{{ vcenter.username }}"
+      password: "{{ vcenter.password }}"
+      datacenter: "{{ vcenter.datacenter }}"
+      cluster: "{{ vcenter.cluster }}"
+      validate_certs: no
+      vm_id: "{{ vm_name }}"
+      vm_username: "{{ vsd_default_username }}"
+      vm_password: "{{ vsd_default_password }}"
+      vm_shell: "/usr/sbin/reboot"
 
-  # - name: Get the public key for the current user
-  #   local_action: command cat "{{ user_ssh_pub_key }}"
-  #   register: current_user_ssh_key
-
-  # - name: Writing authorized_keys to the VM
-  #   connection: local
-  #   vmware_vm_shell:
-  #     hostname: "{{ target_server }}"
-  #     username: "{{ vcenter.username }}"
-  #     password: "{{ vcenter.password }}"
-  #     datacenter: "{{ vcenter.datacenter }}"
-  #     cluster: "{{ vcenter.cluster }}"
-  #     validate_certs: no
-  #     vm_id: "{{ vm_name }}"
-  #     vm_username: "{{ vsd_default_username }}"
-  #     vm_password: "{{ vsd_default_password }}"
-  #     vm_shell: "/usr/bin/echo"
-  #     vm_shell_args: " '{{ lookup('template', 'authorized_keys.j2') }}' > /root/.ssh/authorized_keys"
-
-  # - name: Set the mode on the authorized_keys file in the VM
-  #   connection: local
-  #   vmware_vm_shell:
-  #     hostname: "{{ target_server }}"
-  #     username: "{{ vcenter.username }}"
-  #     password: "{{ vcenter.password }}"
-  #     datacenter: "{{ vcenter.datacenter }}"
-  #     cluster: "{{ vcenter.cluster }}"
-  #     validate_certs: no
-  #     vm_id: "{{ vm_name }}"
-  #     vm_username: "{{ vsd_default_username }}"
-  #     vm_password: "{{ vsd_default_password }}"
-  #     vm_shell: "/usr/bin/chmod"
-  #     vm_shell_args: " 0640 /root/.ssh/authorized_keys"
-
-  # - name: Reboot VM
-  #   connection: local
-  #   vmware_vm_shell:
-  #     hostname: "{{ target_server }}"
-  #     username: "{{ vcenter.username }}"
-  #     password: "{{ vcenter.password }}"
-  #     datacenter: "{{ vcenter.datacenter }}"
-  #     cluster: "{{ vcenter.cluster }}"
-  #     validate_certs: no
-  #     vm_id: "{{ vm_name }}"
-  #     vm_username: "{{ vsd_default_username }}"
-  #     vm_password: "{{ vsd_default_password }}"
-  #     vm_shell: "/usr/sbin/reboot"
-
-  # when: not node_present
+  when: not node_present
