@@ -1,21 +1,11 @@
 ---
-
-- name: Get current version of VSD software
-  shell: echo $VSD_VERSION
-  remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
-  register: vsd_version
-
-- name: Print vsd_version output when verbosity >= 1
-  debug: var=vsd_version verbosity=1
-
 - name: Check VSD License
   check_vsd_license_validity:
     vsd_auth:
       "{{ vsd_auth }}"
-    api_version: "{{ vsd_version.stdout }}"
     required_days_left: "{{ vsd_license_required_days_left | default(-1) }}"
   register: license_valid
   delegate_to: localhost
-  no_log: True
+  no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
 
 - debug: var=license_valid verbosity=1

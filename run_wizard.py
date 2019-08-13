@@ -292,14 +292,22 @@ class Wizard(object):
             if self.in_container:
                 self._print(self._get_field(data, "container_msg"))
                 zip_dir = self._input("Please enter the directory relative to "
-                                      "the metroae_images mount point that "
+                                      "the images mount point that "
                                       "contains your zip files", "")
+
+                # Dalston container
+                # zip_dir = self._input("Please enter the directory relative to "
+                #                       "the metroae_images mount point that "
+                #                       "contains your zip files", "")
 
                 if zip_dir.startswith("/"):
                     self._print("\nDirectory must be a relative path.")
                     continue
 
-                full_zip_dir = os.path.join("/metroae_images", zip_dir)
+                # Dalston container
+                # full_zip_dir = os.path.join("/metroae_images", zip_dir)
+                full_zip_dir = os.path.join("/images", zip_dir)
+
             else:
                 zip_dir = self._input("Please enter the directory that "
                                       "contains your zip files", "")
@@ -321,8 +329,12 @@ class Wizard(object):
         if self.in_container:
             valid = False
             while not valid:
+                # Dalston container
+                # unzip_dir = self._input("Please enter the directory relative "
+                #                         "to the metroae_images mount point to "
+                #                         "unzip to")
                 unzip_dir = self._input("Please enter the directory relative "
-                                        "to the metroae_images mount point to "
+                                        "to the images mount point to "
                                         "unzip to")
 
                 if unzip_dir.startswith("/"):
@@ -330,7 +342,9 @@ class Wizard(object):
                 else:
                     valid = True
 
-            full_unzip_dir = os.path.join("/metroae_images", unzip_dir)
+            # Dalston container
+            # full_unzip_dir = os.path.join("/metroae_images", unzip_dir)
+            full_unzip_dir = os.path.join("/images", unzip_dir)
         else:
             unzip_dir = self._input("Please enter the directory to unzip to")
             full_unzip_dir = unzip_dir
@@ -761,17 +775,22 @@ class Wizard(object):
             exit(1)
 
     def _set_container(self):
-        if "RUN_MODE" in os.environ:
-            self.in_container = (os.environ["RUN_MODE"] == "INSIDE")
-        else:
-            self.in_container = False
+        # For Dalston container
+        # if "RUN_MODE" in os.environ:
+        #     self.in_container = (os.environ["RUN_MODE"] == "INSIDE")
+        # else:
+        #     self.in_container = False
+        self.in_container = os.path.isdir("/source/nuage-metro")
 
     def _set_directories(self):
         self.metro_path = os.path.dirname(os.path.abspath(__file__))
         os.chdir(self.metro_path)
         if self.in_container:
-            self.base_deployment_path = os.path.join("/metroae_data",
+            self.base_deployment_path = os.path.join("/data",
                                                      "deployments")
+            # Dalston container
+            # self.base_deployment_path = os.path.join("/metroae_data",
+            #                                          "deployments")
         else:
             self.base_deployment_path = os.path.join(self.metro_path,
                                                      "deployments")
@@ -1408,8 +1427,11 @@ class Wizard(object):
         self._print("Adding SSH keys for %s@%s, may ask for password" % (
             username, hostname))
         try:
+            options = ""
+            if self.in_container:
+                options = "-i /source/id_rsa.pub -o StrictHostKeyChecking=no "
             rc, output_lines = self._run_shell(
-                "ssh-copy-id %s@%s" % (username, hostname))
+                "ssh-copy-id %s%s@%s" % (options, username, hostname))
             if rc == 0:
                 self._unrecord_problem("ssh_keys")
                 self._print("\nSuccessfully setup SSH on host %s" % hostname)
