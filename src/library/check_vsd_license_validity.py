@@ -16,11 +16,6 @@ options:
       - VSD credentials to access VSD GUI
     required: true
     default: null
-  api_version:
-    description:
-      - VSD version
-    required: true
-    default: null
   required_days_left:
     description:
       - Required number of days left before license expiration (-1 for no check)
@@ -36,7 +31,6 @@ EXAMPLES = '''
       password: csproot
       enterprise: csp
       api_url: https://10.0.0.10:8443
-    api_version: 4.0.R8
     required_days_left: 365
 '''
 
@@ -72,17 +66,9 @@ def check_licenses_expiration(licenses, required_days_left):
                                 days_left)
 
 
-def format_api_version(version):
-    # Handle 3.2 seperately
-    if version.startswith('3'):
-        return ('v3_2')
-    else:
-        return ('v' + version[0] + '_0')
-
-
 def get_vsd_session(vsd_auth):
     # Format api version
-    version = format_api_version(module.params['api_version'])
+    version = 'v5_0'
     try:
         global VSPK
         VSPK = importlib.import_module('vspk.{0:s}'.format(version))
@@ -99,7 +85,6 @@ def get_vsd_session(vsd_auth):
 
 
 arg_spec = dict(vsd_auth=dict(required=True, type='dict'),
-                api_version=dict(required=True, type='str'),
                 required_days_left=dict(required=True, type='int'))
 module = AnsibleModule(argument_spec=arg_spec, supports_check_mode=True)
 

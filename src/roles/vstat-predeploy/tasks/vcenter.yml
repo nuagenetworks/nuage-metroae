@@ -61,23 +61,9 @@
 
   - debug: var=vm_facts verbosity=1
 
-  - name: Get Facts of VM
-    vmware_vm_facts:
-      hostname: "{{ target_server }}"
-      username: "{{ vcenter.username }}"
-      password: "{{ vcenter.password }}"
-      validate_certs: no
-    delegate_to: localhost
-    register: vm_list
-
-  - name: Verify VM exists on Host
-    assert:
-      that: "vm_name in vm_list.virtual_machines"
-      msg: "Desired VM does not exist"
-
   - name: Set VM UUID
     set_fact:
-      uuid: "{{ vm_list.virtual_machines[vm_name]['uuid'] }}"
+      uuid: "{{ vm_facts.instance.hw_product_uuid }}"
 
   - debug: var=uuid
 
