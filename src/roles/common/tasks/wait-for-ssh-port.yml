@@ -11,6 +11,8 @@
 - name: Check connectivity to the target
   local_action: 'shell sshpass -p {{ ssh_password }} ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -tt  {{ssh_user}}@{{ssh_host}} '
   register: ssh_result
-  no_log: True
+  no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
   failed_when: not ssh_result.rc == 0
   when: check_login | default(False)
+  retries: 10
+  delay: "{{ ssh_delay_seconds | default(10) }}"

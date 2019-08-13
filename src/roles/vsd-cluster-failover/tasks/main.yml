@@ -8,7 +8,7 @@
     with_items: "{{ groups['standby_vsds'] }}"
 
   - name: Check health of standby vsd cluster
-    include_role: 
+    include_role:
       name: vsd-health
       tasks_from: monit_status
     vars:
@@ -33,12 +33,26 @@
     delegate_to: "{{ item }}"
     with_items: "{{ groups['primary_vsds'] }}"
 
+  - name: Get the VSD version
+    shell: grep -ir "VSD_VERSION=" /etc/profile.d/vsd-banner.sh | awk -F "=" '{print $2}'
+    register: vsd_version
+    delegate_to: "{{ groups['primary_vsds'][0] }}"
+
+  - name: Deactivate replication on primary VSD cluster
+    shell: /opt/vsd/bin/vsd-deactivate-replication-master-cluster.sh -f
+    ignore_errors: vsd_force_cluster_failover | default(no)
+    when: is_primary_reachable | default(false)
+    delegate_to: "{{ item }}"
+    with_items: "{{ groups['primary_vsds'] }}"
+    when: vsd_version.stdout.split('.')[0]|int >= 6
+
   - name: Deactivate replication on primary VSD cluster
     command: /opt/vsd/bin/vsd-deactivate-replication-master-cluster.sh
     ignore_errors: vsd_force_cluster_failover | default(no)
     when: is_primary_reachable | default(false)
     delegate_to: "{{ item }}"
     with_items: "{{ groups['primary_vsds'] }}"
+    when: vsd_version.stdout.split('.')[0]|int < 6
 
   - name: Switch replication role of standby VSD cluster when using clustered VSTATs
     command: "/opt/vsd/bin/vsd-switch-replication-cluster-role --role active -e hostvars[groups['vstats'][0]]['hostname'],hostvars[groups['vstats'][1]]['hostname'],hostvars[groups['vstats'][2]]['hostname']"
@@ -49,7 +63,7 @@
     with_items: "{{ groups['standby_vsds'] }}"
 
   - name: Switch replication role of standby VSD cluster when using 2 stansalone VSTATs
-    command: "/opt/vsd/bin/vsd-switch-replication-cluster-role --role active -e hostvars[groups['vstats'][0]]['hostname'],hostvars[groups['vstats'][1]]['hostname']
+    command: "/opt/vsd/bin/vsd-switch-replication-cluster-role --role active -e hostvars[groups['vstats'][0]]['hostname'],hostvars[groups['vstats'][1]]['hostname']"
     when:
       - groups['vstats'] is defined
       - groups['vstats'] | length == 2
@@ -127,14 +141,24 @@
     delegate_to: "{{ groups['primary_vsds'][0] }}"
 
   - name: Start the replication operation on the other 2 standby VSDs
+    command: "/opt/vsd/bin/vsd-prepare-replication-slave-cluster.sh"
+    delegate_to: "{{ item }}"
+    when: is_primary_reachable | default(false)
+    with_items:
+      - "{{ groups['primary_vsds'][1] }}"
+      - "{{ groups['primary_vsds'][2] }}"
+    when: vsd_version.stdout.split('.')[0]|int >= 6
+
+  - name: Start the replication operation on the other 2 standby VSDs
     command: "/opt/vsd/bin/vsd-prepare-replication-slave-cluster.sh -m /tmp/{{ replication_db | basename }}"
     delegate_to: "{{ item }}"
     when: is_primary_reachable | default(false)
-    with_items: 
+    with_items:
       - "{{ groups['primary_vsds'][1] }}"
       - "{{ groups['primary_vsds'][2] }}"
+    when: vsd_version.stdout.split('.')[0]|int < 6
 
-  - include_role: 
+  - include_role:
       name: vsd-health
       tasks_from: monit_status
     vars:
@@ -143,7 +167,7 @@
     when: is_primary_reachable | default(false)
     ignore_errors: vsd_force_cluster_failover | default(no)
 
-  - include_role: 
+  - include_role:
       name: vsd-health
       tasks_from: monit_status
     vars:
@@ -153,7 +177,7 @@
     ignore_errors: vsd_force_cluster_failover | default(no)
     loop_control:
       loop_var: vsd_ha_node
-    with_items: 
+    with_items:
       - "{{ groups['primary_vsds'][1] }}"
       - "{{ groups['primary_vsds'][2] }}"
 
