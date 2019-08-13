@@ -27,7 +27,12 @@
         --acceptAllEulas
         --noSSLVerify
         --powerOn
+        {% if hostvars[inventory_hostname].ansible_verbosity > 0 %}
+        --X:logLevel=verbose
+        --X:logToConsole
+        {% else %}
         --machineOutput
+        {% endif %}
         -dm=thin
         -ds={{ vcenter.datastore }}
         -n={{ vmname }}
@@ -78,12 +83,20 @@
 
   - name: Deploy VSC image on vCenter (Can take several minutes)
     connection: local
-    no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
     shell: >-
       {{ ovftool_command }}
       "vi://{{ vcenter.username | urlencode }}:{{ vcenter.password | urlencode }}@{{ vcenter_path }}"
+    register: deploy_result
+    ignore_errors: yes
+    no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
 
-  - name: Finding VM folder 
+  - name: Debug the deploy logs
+    assert:
+      that: deploy_result.rc == 0
+      success_msg: "{{deploy_result.stdout}}"
+      fail_msg: "{{deploy_result.stderr}}"
+
+  - name: Finding VM folder
     connection: local
     vmware_guest_find:
       hostname: "{{ target_server }}"
@@ -93,7 +106,7 @@
       validate_certs: no
     register: vsc_vm_folder
 
-  - name: Gathering info on VM 
+  - name: Gathering info on VM
     connection: local
     vmware_guest_facts:
       hostname: "{{ target_server }}"

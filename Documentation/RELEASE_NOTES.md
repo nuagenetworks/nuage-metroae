@@ -2,7 +2,7 @@
 ## Release 3.4.0
 
 ### Feature Enhancements
-* Support bringing up vcenter VMs with interfaces disabled during upgrade (METROAE-644)
+* Support bringing up vCenter VMs with interfaces disabled during upgrade (METROAE-644)
 * NSG Bootstrap support for vCenter (METROAE-1045)
 * Add VSD Certificate renewal procedure to VSD upgrade (METROAE-1002)
 * Added REST API check to VSD health (METROAE-1005)
