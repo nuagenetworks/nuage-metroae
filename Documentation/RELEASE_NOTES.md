@@ -7,6 +7,7 @@
 * Add VSD Certificate renewal procedure to VSD upgrade (METROAE-1002)
 * Added REST API check to VSD health (METROAE-1005)
 * Added METROAE_GROUP environment variable to set the file group of log files
+* Set jinja2 version to 2.10.1
 * Simplify the retrieval of vCenter UUIDs (internal enhancement)
 
 ### Resolved Issues
