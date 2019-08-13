@@ -10,6 +10,7 @@
 * Set jinja2 version to 2.10.1
 * Simplify the retrieval of vCenter UUIDs (internal enhancement)
 * Added option for ovftool verbose logging based on logging level used on the playbook (METROAE-1050)
+* Add DOMAIN specification to VSD interface file (METROAE-1004)
 
 ### Resolved Issues
 * Set event log max age to 7 as per Nuage Upgrade procedure (METROAE-1001)
