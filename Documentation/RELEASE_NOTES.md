@@ -7,3 +7,4 @@
 
 ### Resolved Issues
 * Set event log max age to 7 as per Nuage Upgrade procedure (METROAE-1001)
+* Remove obsolete iptables traffic blocking during HA upgrade (METROAE-1051)
