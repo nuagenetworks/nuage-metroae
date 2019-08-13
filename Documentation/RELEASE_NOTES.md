@@ -21,14 +21,14 @@
 * Add Support for post-installation security features, a.k.a. hardening (METROAE-841)
 * Support to setup VSTAT VSS UI (METROAE-952)
 * Do not run vsd-deploy if vsd-predeploy fails on any node (METROAE-982)
-* Upgrade support for OpenStack (METROAE-995)
+* Upgrade support for VSP on OpenStack (METROAE-995)
 * Make any_errors_fatal a global config item
 * Support for VSD active/standby cluster failover (METROAE-955)
 * Support application of standard and cluster licenses on install and upgrade for 5.3 and up (METROAE-600)
 * Enhance error checking in vCenter VSD destroy (METROAE-980)
 * Update instructions for using ovftool with the metroae container
 * Implement check of VSC authentication from Ansible host (METROAE-999)
-* Implement upgrade of GEO redundant VSD cluster (METROAE-989)
+* Implement upgrade of GEO redundant VSD cluster up to 5.4.1. Upgrade to 6.0.1 is not yet fully supported in the product. (METROAE-989)
 * Disable SELinux for Base CentOS image for SD-WAN portal
 * Added run_wizard.py to simplify setup and deployment creation
 * Support Active Standby VSTAT cluster (METROAE-853)
