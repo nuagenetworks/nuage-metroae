@@ -13,6 +13,15 @@
      - inventory_hostname in groups['primary_vsds']
 
   - block:
+    - name: Get the VSD version
+      shell: grep -ir "VSD_VERSION=" /etc/profile.d/vsd-banner.sh | awk -F "=" '{print $2}'
+      register: vsd_version
+      run_once: true
+
+    - name: Get the VSD build
+      shell: grep -ir "VSD_BUILD=" /etc/profile.d/vsd-banner.sh | awk -F "=" '{print $2}'
+      register: vsd_build
+      run_once: true
 
     - name: Set upgrade complete flag
       shell: "{{ upgrade_complete_flag_command }}"
@@ -22,13 +31,14 @@
       delay: 30
       when: inventory_hostname == groups['primary_vsds'][0]
 
+    - import_tasks: check_monit_status.yml
+
     - name: Turn on API on vsd's for major upgrade
       shell: "{{ turn_on_api_command }}"
       when: upgrade_major_or_minor == 'major'
 
-    when: not inplace_upgrade | default(false)
+    - import_tasks: check_monit_status.yml
 
-  - import_tasks: check_monit_status.yml
     when: not inplace_upgrade | default(false)
 
   remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
