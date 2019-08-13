@@ -48,7 +48,7 @@
       "vi://{{ vcenter.username | urlencode }}:{{ vcenter.password | urlencode }}@{{ vcenter_path }}"
     register: deploy_result
     ignore_errors: yes
-    no_log: true
+    no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
 
   - name: Debug the deploy logs
     assert:
@@ -69,23 +69,9 @@
 
   - debug: var=vm_facts verbosity=1
 
-  - name: Get Facts of VM
-    vmware_vm_facts:
-      hostname: "{{ target_server }}"
-      username: "{{ vcenter.username }}"
-      password: "{{ vcenter.password }}"
-      validate_certs: no
-    delegate_to: localhost
-    register: vm_list
-
-  - name: Verify VM exists on Host
-    assert:
-      that: "vm_name in vm_list.virtual_machines"
-      msg: "Desired VM does not exist"
-
   - name: Set VM UUID
     set_fact:
-      uuid: "{{ vm_list.virtual_machines[vm_name]['uuid'] }}"
+      uuid: "{{ vm_facts.instance.hw_product_uuid }}"
 
   - debug: var=uuid
 
@@ -174,7 +160,7 @@
       vm_password: "{{ vstat_default_password }}"
       vm_shell: "/usr/bin/chown"
       vm_shell_args: " 0 0 /etc/hostname"
-  
+
   - name: Set hostname for VCenter for current session
     connection: local
     vmware_vm_shell:
@@ -189,7 +175,7 @@
       vm_password: "{{ vstat_default_password }}"
       vm_shell: "/usr/bin/hostname"
       vm_shell_args: " '{{ inventory_hostname }}'"
-  
+
   - name: Set hostname for VCenter permanently
     connection: local
     vmware_vm_shell:

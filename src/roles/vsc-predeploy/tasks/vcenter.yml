@@ -88,7 +88,7 @@
       "vi://{{ vcenter.username | urlencode }}:{{ vcenter.password | urlencode }}@{{ vcenter_path }}"
     register: deploy_result
     ignore_errors: yes
-    no_log: true
+    no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
 
   - name: Debug the deploy logs
     assert:
@@ -96,7 +96,7 @@
       success_msg: "{{deploy_result.stdout}}"
       fail_msg: "{{deploy_result.stderr}}"
 
-  - name: Finding VM folder (ignoring errors)
+  - name: Finding VM folder
     connection: local
     vmware_guest_find:
       hostname: "{{ target_server }}"
@@ -105,9 +105,8 @@
       name: "{{ vmname }}"
       validate_certs: no
     register: vsc_vm_folder
-    ignore_errors: on
 
-  - name: Gathering info on VM (ignoring errors)
+  - name: Gathering info on VM
     connection: local
     vmware_guest_facts:
       hostname: "{{ target_server }}"
@@ -118,28 +117,12 @@
       name: "{{ vmname }}"
       validate_certs: no
     register: vsc_vm_facts
-    ignore_errors: on
-    when: vsc_vm_folder is succeeded
 
   - debug: var=vsc_vm_facts verbosity=1
 
-  - name: Get Facts of VM
-    vmware_vm_facts:
-      hostname: "{{ target_server }}"
-      username: "{{ vcenter.username }}"
-      password: "{{ vcenter.password }}"
-      validate_certs: no
-    delegate_to: localhost
-    register: vm_list
-
-  - name: Verify VM exists on Host
-    assert:
-      that: "vm_name in vm_list.virtual_machines"
-      msg: "Desired VM does not exist"
-
   - name: Set VM UUID
     set_fact:
-      uuid: "{{ vm_list.virtual_machines[vm_name]['uuid'] }}"
+      uuid: "{{ vsc_vm_facts.instance.hw_product_uuid }}"
 
   - debug: var=uuid
 
