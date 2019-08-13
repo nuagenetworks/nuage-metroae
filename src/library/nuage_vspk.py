@@ -331,7 +331,7 @@ entities:
 '''
 
 try:
-    from vspk import v4_0 as vsdk
+    from vspk import v5_0 as vsdk
     from bambou.exceptions import BambouHTTPError
     HASVSPK = True
 except ImportError:

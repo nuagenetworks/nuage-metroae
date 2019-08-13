@@ -6,7 +6,7 @@
 - name: Ensure that the hostname maps to the proper mgmt IP
   assert:
     that: "'{{ hostip.stdout }}' ==  '{{ item.mgmt_ip }}'"
-    msg: "IPv4 address for {{item.hostname}} != {{item.mgmt_ip}}"
+    msg: "IP address for {{item.hostname}} != {{item.mgmt_ip}}"
 
 - name: Set hostname for dns lookup
   set_fact:
@@ -16,8 +16,18 @@
   set_fact:
     management_ip: "{{item.mgmt_ip}}"
 
+- name: Set fact for IPv6 argument for IPv6
+  set_fact:
+    addr_family_arg: "AAAA"
+  when: item.mgmt_ip | ipv6
+
+- name: Set fact for IPv6 argument for IPv4
+  set_fact:
+    addr_family_arg: ""
+  when: not item.mgmt_ip | ipv6
+
 - name: Ensure FQDNs are correct in the DNS server list
-  command: "dig +short {{hostname}} @{{dns_server}}"
+  command: "dig {{ addr_family_arg }} +short {{hostname}} @{{dns_server}}"
   with_items: "{{dns_server_list}}"
   register: dns_resolved_addresses
   loop_control:

@@ -1,17 +1,31 @@
----
-- name: List the Virtual Machines on {{ target_server }}
-  virt: command=list_vms
-  register: virt_vms
-  delegate_to: "{{ target_server }}"
-  remote_user: "{{ target_server_username }}"
-  become: "{{ 'no' if target_server_username == 'root' else 'yes' }}"
+- block:
 
-- import_tasks: nsgv_destroy_helper.yml
-  when: vmname in virt_vms.list_vms
+  - name: Pull facts on target_server
+    setup: gather_subset=!all
 
-- name: Destroy the images directory
-  file: path={{ images_path }}/{{ inventory_hostname }}
-        state=absent
+  - name: List the Virtual Machines on target_server
+    virt: command=list_vms
+    register: virt_vms
+
+  - name: Destroy NSGv VM
+    virt:
+      name: "{{ vmname }}"
+      state: destroyed
+      uri: qemu:///system
+    when: vmname in virt_vms.list_vms
+
+  - name: Undefine NSGv VM
+    virt:
+      name: "{{ vmname }}"
+      command: undefine
+      uri: qemu:///system
+    when: vmname in virt_vms.list_vms
+
+  - name: Delete nsgv libvirt image directory and contents
+    file: path={{ images_path }}/{{ vmname }}
+          state=absent
+    when: (not preserve_vm | default( False))
+
   delegate_to: "{{ target_server }}"
   remote_user: "{{ target_server_username }}"
   become: "{{ 'no' if target_server_username == 'root' else 'yes' }}"

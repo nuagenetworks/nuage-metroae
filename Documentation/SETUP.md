@@ -28,7 +28,7 @@ metroae pull
 ```
 metroae setup [path to data directory] [path to image directory]
 ```
-You can optionally specify the data and image directory paths. If you don't specify them on the command line, you will be prompted to enter them. These paths are required for container operation. The data directory is the place where docs, examples, and your deployment files will be kept and edited. The image directory is the place where Nuage Networks image and package files will be pulled from.
+You can optionally specify the data and image directory paths. If you don't specify them on the command line, you will be prompted to enter them. These paths are required for container operation. The data directory is the place where docs, examples, and your deployment files will be kept and edited. The image directory is the place where Nuage Networks image and package files will be pulled from. Note that setup will create subdirectories beneath the directories you specify, `metroae_data` and `metroae_images`. For example, if you specify `/tmp` for both data and images directory paths during setup, setup will create `/tmp/metroae_data` and `/tmp/metroae_images` for you. Setup will copy docs, logs, and deployment files to `/tmp/metroae_data`. Inside the container itself, setup will mount `/tmp/metroae_data` as `/data/` and `/tmp/metroae_images` as `/images/`. Therefore, when you specify path names for metroae when using the container, you should always specify the container-relative path. For example, if you copy your tar.gz files to `/tmp/metroae_images/6.0.1` on the host, this will appear as `/images/6.0.1` inside the container. When you use the unzip-files action on the container, then, you would specify a source path as `/images/6.0.1`. When you complete the nuage_unzipped_files_dir variable in common.yml, you would also specify `/images/6.0.1`. Note that you can run setup multiple times and setup will not destroy or modify the data you have on disk. If you specify the same data and imafges directories that you had specified on earlier runs, metroae will pick up the existing data. Thus you can update the container as often as you like and your deployments will be preserved. 
 ##### 5. Start the container using the following command:
 ```
 metroae start
@@ -60,7 +60,7 @@ The path to the ovftool is configured in your deployment in the common.yml file.
 ```
 metroae start-ui
 ```
-This command will ensure that the MetroÆ GUI server is running. When running, you an point your browser at `http://host:5001` to access the GUI. *THE GUI IS IN BETA!* You are free to use it, but you can expect to run into issues because it is not fully baked.
+This command will ensure that the MetroÆ GUI server is running. When running, you an point your browser at `http://host:5001` to access the GUI. *THE GUI IS IN BETA!* You are free to use it, but you can expect to run into issues because it is not GA quality or supported.
 ##### 9. You can check the status of the container at any time using the following command:
 ```
 metroae status

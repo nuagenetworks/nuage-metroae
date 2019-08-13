@@ -55,31 +55,77 @@
     set_fact:
       vcenter_path: "{{ target_server }}/{{ vcenter.datacenter }}/host/{{ vcenter.cluster }}{{ (vcenter.host_reference != 'NONE') | ternary ('/{{ vcenter.host_reference | urlencode }}', '') }}{{ (vcenter.resource_pool != 'NONE') | ternary ('/Resources/{{ vcenter.resource_pool | urlencode }}', '') }}"
 
+  - name: Set power on when NSGv mac does not need to be set
+    set_fact:
+      power_on_arg: "--powerOn"
+    when: nsgv_mac is not defined
+
+  - name: Clear power on when NSGv mac does need to be set
+    set_fact:
+      power_on_arg: ""
+    when: nsgv_mac is defined
+
   - name: Configure ovftool command
     set_fact:
       ovftool_command: >-
         {{ vcenter_global.ovftool }}
         --acceptAllEulas
         --noSSLVerify
-        --powerOn
+        {{ power_on_arg }}
+        {% if hostvars[inventory_hostname].ansible_verbosity > 0 %}
+        --X:logLevel=verbose
+        --X:logToConsole
+        {% else %}
         --machineOutput
+        {% endif %}
         -dm=thin
         -ds={{ vcenter.datastore }}
         -n={{ vm_name }}
+        --net:"port_vmnic={{ mgmt_bridge }}"
         --net:"OVS DataPath={{ data_bridge }}"
         --net:"OVS Management={{ access_bridge }}"
         "{{ image_path }}/{{ image_file_name }}"
 
   - name: Deploy NSGV image on vCenter (Can take several minutes)
     connection: local
-#    no_log: true
     shell: >-
       {{ ovftool_command }}
       "vi://{{ vcenter.username | urlencode }}:{{ vcenter.password | urlencode }}@{{ vcenter_path }}"
-    register: deploy_output
+    register: deploy_result
+    ignore_errors: yes
+    no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
 
-  - name: Print deploy_output
-    debug: var=deploy_output
+  - name: Debug the deploy logs
+    assert:
+      that: deploy_result.rc == 0
+      success_msg: "{{deploy_result.stdout}}"
+      fail_msg: "{{deploy_result.stderr}}"
+
+  - block:
+
+    - name: Set MAC address when defined
+      metroae_vmware_set_mac:
+        hostname: "{{ target_server }}"
+        username: "{{ vcenter.username }}"
+        password: "{{ vcenter.password }}"
+        datacenter: "{{ vcenter.datacenter }}"
+        name: "{{ vm_name }}"
+        interface_index: 0
+        mac: "{{ nsgv_mac }}"
+      delegate_to: localhost
+
+    - name: Power on guest after setting MAC address
+      vmware_guest:
+        hostname: "{{ target_server }}"
+        username: "{{ vcenter.username }}"
+        password: "{{ vcenter.password }}"
+        datacenter: "{{ vcenter.datacenter }}"
+        name: "{{ vm_name }}"
+        validate_certs: no
+        state: poweredon
+      delegate_to: localhost
+
+    when: nsgv_mac is defined
 
   - block:
     - name: Mount ISO when ZFB method is metro
@@ -89,10 +135,10 @@
         password: "{{ vcenter.password }}"
         name: "{{ vm_name }}"
         validate_certs: no
-        state: reconfigured
+        state: present
         cdrom:
           type: "iso"
-          iso_path: "{{ vcenter.datastore }}/{{ inventory_hostname }}/user_image.iso"
+          iso_path: "[{{ vcenter.datastore }}] {{ inventory_hostname }}/user_image.iso"
       delegate_to: localhost
     when: bootstrap_method == 'zfb_metro'
 
@@ -104,7 +150,7 @@
         password: "{{ vcenter.password }}"
         name: "{{ vm_name }}"
         validate_certs: no
-        state: reconfigured
+        state: present
         cdrom:
           type: "iso"
           iso_path: "{{ iso_path}}/{{ iso_file }}"
