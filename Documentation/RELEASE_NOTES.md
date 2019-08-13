@@ -2,12 +2,13 @@
 ## Release 3.4.0
 
 ### Feature Enhancements
-* Support bringing up vcenter VMs with interfaces disabled during upgrade (METROAE-644)
+* Support bringing up vCenter VMs with interfaces disabled during upgrade (METROAE-644)
 * NSG Bootstrap support for vCenter (METROAE-1045)
 * Add VSD Certificate renewal procedure to VSD upgrade (METROAE-1002)
 * Added REST API check to VSD health (METROAE-1005)
 * Added METROAE_GROUP environment variable to set the file group of log files
 * Simplify the retrieval of vCenter UUIDs (internal enhancement)
+* Added option for ovftool verbose logging based on logging level used on the playbook (METROAE-1050)
 
 ### Resolved Issues
 * Set event log max age to 7 as per Nuage Upgrade procedure (METROAE-1001)
