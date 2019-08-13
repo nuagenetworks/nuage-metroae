@@ -1,0 +1,15 @@
+---
+- hosts: vsd_sa_node
+  gather_facts: no
+  pre_tasks:
+    - name: End play if predeploy is NOT executed with interfaces disabled
+      meta: end_play
+      when: not (vcenter_start_vsd_with_interfaces_disabled | default(False))
+
+    - name: Set upgrade flag and predeploy with interface disabled flags
+      set_fact:
+        nuage_upgrade: True
+        node_disabled_interface: True
+
+  roles:
+    - vsd-predeploy
