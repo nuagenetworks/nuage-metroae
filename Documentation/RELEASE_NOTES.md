@@ -5,6 +5,7 @@
 * NSG Bootstrap support for vCenter (METROAE-1045)
 * Add VSD Certificate renewal procedure to VSD upgrade (METROAE-1002)
 * Simplify the retrieval of vCenter UUIDs (internal enhancement)
+* Added REST API check to VSD health (METROAE-1005)
 
 ### Resolved Issues
 * Set event log max age to 7 as per Nuage Upgrade procedure (METROAE-1001)
