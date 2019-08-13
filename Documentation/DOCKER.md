@@ -13,7 +13,14 @@ The following command options are supported by the metroae command:
 
 **pull** - pulls the MetroÆ container from the registry. By default, the latest container is pulled. You can also specify a valid container tag to pull another version, e.g. `metroae pull 1.0.0`.
 
-**setup** - setup completes the steps necessary to get the MetroÆ container up and running. It prompts you for the full paths to data and image directories that the container uses on your local disk. On Mac OS, you will also be prompted for the port that the API/UI will be listening on. By default, the API/UI listens on port 5001. You can access the API/GUI via URL, `https://host_name_or_ip:5001`, where `host_name_or_ip` is the host name or ip address of the machine on which the container is running. This host name can often be just, `https://localhost:5001`. Note: Running setup multiple times replaces the existing container, but it does not remove the data on your local disk.
+**setup** - setup completes the steps necessary to get the MetroÆ container up and running. It prompts you for the full paths to data and image directories that the container uses on your local disk. The setup action will create the subdirectories `metroae_data` and `metroae_images` on disk, then mount them as `/data/` and `/images/` inside the container. When using the MetroAE container, you must provide paths relative to the paths seen from inside the container. For example, if you tell setup to use `/tmp` for both the data and images directories, setup will create `/tmp/metroae_data` and `/tmp/metroae_images` on your host. The setup will also mount those directories inside the container as `/data/` and `/images/`. If you copy your tar.gz files to `/tmp/metroae_images/6.0.1/` on the host, the container sees these as `/images/6.0.1/`. So, when using unzip or setting `nuage_unzipped_files_dir` in common.yml, you would specify `/images/6.0.1/` as your path.
+
+#### Notes about setup:
+The MetroAE container has support for a REST API and a beta version of the MetroAE GUI. The REST API is supported. The GUI should be considered `preview` or `experimental`. We do not recommend using the GUI for production.
+
+By default, the API/GUI listens on port 5001. You can access the API/GUI via URL, `https://host_name_or_ip:5001`, where `host_name_or_ip` is the host name or ip address of the machine on which the container is running. This host name can often be just, `https://localhost:5001`.
+
+Running setup multiple times replaces the existing container, but it does not remove the data on your local disk.
 
 **start** - starts the container using the settings from setup
 

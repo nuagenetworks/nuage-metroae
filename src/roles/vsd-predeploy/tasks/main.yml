@@ -1,26 +1,30 @@
 ---
-
 - include_role:
     name: skip-actions
   vars:
     - action: vsd_predeploy
 
-- include_role:
-    name: check-node-reachability
+- block:
 
-- name: Get VSD directory stat
-  stat:
-    path: /opt/vsd
-  remote_user: "{{ vsd_default_username }}"
-  register: vsd_dir
-  when: node_reachable
+  - include_role:
+      name: check-node-reachability
 
-- name: Set fact for VSD present
-  set_fact:
-    node_present: "{{ vsd_dir is defined and
-                      vsd_dir.stat is defined and
-                      vsd_dir.stat.isdir is defined and
-                      vsd_dir.stat.isdir }}"
+  - name: Get VSD directory stat
+    stat:
+      path: /opt/vsd
+    remote_user: "{{ vsd_default_username }}"
+    register: vsd_dir
+    when: node_reachable
+
+  - name: Set fact for VSD present
+    set_fact:
+      node_present: "{{ vsd_dir is defined and
+                        vsd_dir.stat is defined and
+                        vsd_dir.stat.isdir is defined and
+                        vsd_dir.stat.isdir }}"
+
+  when:
+    - not (vcenter_start_with_interfaces_disabled | default( False ) and nuage_upgrade | default( False ))
 
 - import_tasks: kvm.yml
   when: target_server_type is match("kvm")
