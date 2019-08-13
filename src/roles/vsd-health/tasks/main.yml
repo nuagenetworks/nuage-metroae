@@ -25,7 +25,7 @@
 - import_tasks: report_header.yml
 
 - name: Get current version of VSD software
-  shell: echo $VSD_VERSION
+  shell: grep -ir "VSD_VERSION=" /etc/profile.d/vsd-banner.sh | awk -F "=" '{print $2}'
   register: vsd_version
   remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
 
@@ -249,6 +249,11 @@
 
   when: check_vsd_license | default(True)
 
+- name: Get the JAVA_HOME
+  shell: echo $JAVA_HOME
+  register: java_home
+  remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
+
 - block:
 
   - name: Verify keystore pass is set
@@ -263,8 +268,8 @@
     shell: "keytool -keystore /opt/vsd/jboss/standalone/configuration/keyserver.jks -storepass {{ keyServerStorePwd }} -list"
     when: keyServerStorePwd is defined
 
-  - name: Verify jrestore pass is set
-    shell: "keytool -keystore /usr/java/latest/lib/security/cacerts -alias vspca -storepass {{ jreStorePwd }} -list"
+  - name: Verify jrestore pass is set for version
+    shell: "keytool -keystore {{ java_home.stdout }}/lib/security/cacerts -alias vspca -storepass {{ jreStorePwd }} -list"
     when: jreStorePwd is defined
 
   - name: Verify cnauser pass is set

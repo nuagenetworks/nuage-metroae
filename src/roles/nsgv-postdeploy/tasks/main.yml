@@ -8,20 +8,27 @@
     ssh_user: "{{ vsc_username | default(vsc_default_username) }}"
     check_login: True
 
-- name: Get output of 'show vswitch-controller vswitches detail'
+- name: Set awk expression for parse the version
+  set_fact:
+    version_expr: '{ split($1, version, "-"); print version[4] }'
+
+- name: Get output of 'show version'
   sros_command:
     commands:
-      - "show vswitch-controller vswitches vs-ip {{ nsgv_ip }} detail"
+      - "show version"
     provider:
       host: "{{ groups['vscs'][0] }}"
       username: "{{ vsc_username | default(vsc_default_username) }}"
       password: "{{ vsc_password | default(vsc_default_password) }}"
   delegate_to: localhost
-  register: nsg_detail
-  until: "nsg_detail.stdout[0] | regex_search('JSON Conn. State\\s+: Up') and nsg_detail.stdout[0] | regex_search('Uptime\\s+: [0-9]+d [0-9][0-9]:[0-9][0-9]:[1-9]')"
-  retries: 40
-  delay: 30
-  when: bootstrap_method != 'none'
+  register: sh_version
+
+- name: Parse version
+  shell: "echo '{{ sh_version.stdout[0] }}' | awk '{{ version_expr }}'"
+  delegate_to: localhost
+  register: vsc_version
+
+- debug: var=vsc_version.stdout verbosity=1
 
 - block:
 
@@ -60,3 +67,33 @@
     delay: 30
 
   when: bootstrap_method == 'zfb_metro'
+
+- name: Get output of 'show vswitch-controller vswitches detail' for version less than 6.0.1
+  sros_command:
+    commands:
+      - "show vswitch-controller vswitches vs-ip {{ nsgv_ip }} detail"
+    provider:
+      host: "{{ groups['vscs'][0] }}"
+      username: "{{ vsc_username | default(vsc_default_username) }}"
+      password: "{{ vsc_password | default(vsc_default_password) }}"
+  delegate_to: localhost
+  register: nsg_detail
+  until: "nsg_detail.stdout[0] | regex_search('JSON Conn. State\\s+: Up') and nsg_detail.stdout[0] | regex_search('Uptime\\s+: [0-9]+d [0-9][0-9]:[0-9][0-9]:[1-9]')"
+  retries: 40
+  delay: 30
+  when: "bootstrap_method != 'none' and vsc_version.stdout is version('6.0.1', '<')"
+
+- name: Get output of 'show vswitch-controller vswitches detail' for version greater than 6.0.1
+  sros_command:
+    commands:
+      - "show vswitch-controller vswitches detail vs-name NSG-{{ nuage_nsg_status.entities[0].systemID }}"
+    provider:
+      host: "{{ groups['vscs'][0] }}"
+      username: "{{ vsc_username | default(vsc_default_username) }}"
+      password: "{{ vsc_password | default(vsc_default_password) }}"
+  delegate_to: localhost
+  register: nsg_detail
+  until: "nsg_detail.stdout[0] | regex_search('Cntrl. Conn. state\\s+: ready') and nsg_detail.stdout[0] | regex_search('Uptime\\s+: [0-9]+d [0-9][0-9]:[0-9][0-9]:[1-9]')"
+  retries: 40
+  delay: 30
+  when: "bootstrap_method != 'none' and vsc_version.stdout is version('6.0.1', '>=')"

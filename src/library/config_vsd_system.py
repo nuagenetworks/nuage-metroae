@@ -25,11 +25,6 @@ options:
       - Get the current gateway purge tiem set
     default: False
     choices: [ True, False ]
-  api_version:
-    description:
-      - VSD version
-    required: true
-    default: null
 
 '''
 
@@ -42,7 +37,6 @@ EXAMPLES = '''
       enterprise: csp
       api_url: https://10.0.0.10:8443
     gateway_purge_time: 7003
-    api_version: 4.0.R8
 
 - config_vsd_system:
     vsd_auth:
@@ -51,21 +45,12 @@ EXAMPLES = '''
       enterprise: csp
       api_url: https://10.0.0.10:8443
     get_gateway_purge_time: True
-    api_version: 4.0.R8
 '''
-
-
-def format_api_version(version):
-    # Handle 3.2 seperately
-    if version.startswith('3'):
-        return ('v3_2')
-    else:
-        return ('v' + version[0] + '_0')
 
 
 def get_vsd_session(vsd_auth):
     # Format api version
-    version = format_api_version(module.params['api_version'])
+    version = 'v5_0'
     try:
         global VSPK
         VSPK = importlib.import_module('vspk.{0:s}'.format(version))
@@ -113,7 +98,6 @@ def get_gateway_purge_time_value(csproot):
 
 arg_spec = dict(
     vsd_auth=dict(required=True, type='dict'),
-    api_version=dict(required=True, type='str'),
     get_gateway_purge_time=dict(default=False, type='bool'),
     gateway_purge_time=dict(type='int')
 )
