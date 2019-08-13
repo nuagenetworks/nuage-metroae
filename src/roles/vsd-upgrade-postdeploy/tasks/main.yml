@@ -13,32 +13,19 @@
       test_interval_seconds: 30
     with_items: "{{ proc_list['state'].keys() }}"
 
-  - name: Get current version of VSD software to use it in loading correct vspk version
-    command: echo $VSD_VERSION
-    register: vsd_version
-
   remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
   become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
   vars:
     ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"
-
-- name: Get current version of VSD software to use it in loading correct vspk version
-  command: echo $VSD_VERSION
-  register: vsd_version
-  remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
-
-- name: Print vsd_version output when verbosity >= 1
-  debug: var=vsd_version verbosity=1
 
 - name: Disable maintainance mode on all l3/l2 domains
   vsd_maintainance:
     vsd_auth:
       "{{ vsd_auth }}"
     state: disabled
-    api_version: "{{ vsd_version.stdout }}"
   register: mode_status
   delegate_to: 127.0.0.1
-  no_log: True
+  no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
 
 - name: Print vsd maintainance mode output when verbosity >= 1
   debug: var=mode_status verbosity=1
@@ -104,7 +91,6 @@
     vsd_auth:
       "{{ vsd_auth }}"
     gateway_purge_time: "{{ purge_time_saved.stdout }}"
-    api_version: "{{ vsd_version.stdout }}"
   register: update_time_status
   delegate_to: 127.0.0.1
-  no_log: True
+  no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"

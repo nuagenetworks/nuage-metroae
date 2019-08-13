@@ -1,5 +1,14 @@
 # Metro Automation Engine Release Notes
 ## Release 3.4.0
-* Added METROAE_GROUP environment variable to set the file group of log files
 
 ### Feature Enhancements
+* Support bringing up vcenter VMs with interfaces disabled during upgrade (METROAE-644)
+* NSG Bootstrap support for vCenter (METROAE-1045)
+* Add VSD Certificate renewal procedure to VSD upgrade (METROAE-1002)
+* Added REST API check to VSD health (METROAE-1005)
+* Added METROAE_GROUP environment variable to set the file group of log files
+* Simplify the retrieval of vCenter UUIDs (internal enhancement)
+
+### Resolved Issues
+* Set event log max age to 7 as per Nuage Upgrade procedure (METROAE-1001)
+* Remove obsolete iptables traffic blocking during HA upgrade (METROAE-1051)
