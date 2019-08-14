@@ -41,18 +41,20 @@
   - name: Deactivate replication on primary VSD cluster
     shell: /opt/vsd/bin/vsd-deactivate-replication-master-cluster.sh -f
     ignore_errors: vsd_force_cluster_failover | default(no)
-    when: is_primary_reachable | default(false)
     delegate_to: "{{ item }}"
     with_items: "{{ groups['primary_vsds'] }}"
-    when: vsd_version.stdout.split('.')[0]|int >= 6
+    when:
+     - vsd_version.stdout.split('.')[0]|int >= 6
+     - is_primary_reachable | default(false)
 
   - name: Deactivate replication on primary VSD cluster
     command: /opt/vsd/bin/vsd-deactivate-replication-master-cluster.sh
     ignore_errors: vsd_force_cluster_failover | default(no)
-    when: is_primary_reachable | default(false)
     delegate_to: "{{ item }}"
     with_items: "{{ groups['primary_vsds'] }}"
-    when: vsd_version.stdout.split('.')[0]|int < 6
+    when:
+      - vsd_version.stdout.split('.')[0]|int < 6
+      - is_primary_reachable | default(false)
 
   - name: Switch replication role of standby VSD cluster when using clustered VSTATs
     command: "/opt/vsd/bin/vsd-switch-replication-cluster-role --role active -e hostvars[groups['vstats'][0]]['hostname'],hostvars[groups['vstats'][1]]['hostname'],hostvars[groups['vstats'][2]]['hostname']"
