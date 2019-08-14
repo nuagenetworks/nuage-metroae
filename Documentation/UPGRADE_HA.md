@@ -84,7 +84,7 @@ The following workflows will upgrade each component in individual steps. Perform
     **Note**
     MetroAE provides a simple tool for optionally cleaning up the backup files that are generated during the upgrade process. The tool deletes the backup files for both VSD and VSC. There are two modes foe clean-up, the first one deletes all the backups and the second one deletes only the latest backup. By default the tool deletes only the latest backup. If you'd like to clean-up the backup files, you can simply run below commands:
     Clean up all the backup files: `metroae vsp_upgrade_cleanup -e delete_everything=true`
-    Clean up the latest backup files: `metroae vsp_upgrade_cleanup`
+    Clean up the latest backup files: `metroae vsp_upgrade_cleanup -e delete_everything=false`
 
 ### Upgrade VSD
 
