@@ -1,5 +1,5 @@
 # Metro Automation Engine Release Notes
-## Release 3.3.0
+## Release 3.3.1
 ### Feature Enhancements
 * Updated to support Nuage Networks 6.0.1
 * Use ovftool probe mode to validate VSD version in OVA (METROAE-1099)
@@ -53,3 +53,4 @@
 * Update VSPK libraries to import version 5.0 (METROAE-1052)
 * Update the way we get VSD version to protect against a custom user that lacks the VSD_VERSION env variable
 * Made changes to accommodate 6.0.1 command line changes on VSC
+* Fixes issue with VSD Cluster failover if Primary Cluster is unreachable
