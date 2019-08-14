@@ -1,3 +1,15 @@
+- name: Check if user has the write permission one the Qcow2 file
+    stat:
+      path: "{{ guestfish_qcow2_path }}"
+    register: permissions
+
+- name: Check if list of partitions is retrieved.
+  assert:
+    that:
+    - permissions.stat.wusr == false
+    fail_msg: "The user does not has a write permission on the {{ guestfish_qcow2_path }} file. Grant the permissions to continue"
+    success_msg: "User has write permissions of {{ guestfish_qcow2_path }} Qcow2 file"
+
 - name: Get list of partitions (ignoring Errors)
   shell: "guestfish -r -a {{ guestfish_qcow2_path }} run : list-filesystems | grep -Ev '(unknown|swap)'"
   ignore_errors: yes
