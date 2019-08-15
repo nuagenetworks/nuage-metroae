@@ -160,9 +160,14 @@
 
 - block:
 
+  - name: Set the URL for the VSD
+    set_fact:
+      vsd_url_address: >-
+        {% if enable_ipv6|default(False) %}[{{mgmt_ip}}]{% else %}{{mgmt_ip}}{% endif %}
+      
   - name: Get the health status of VSD (ignoring errors)
     uri:
-      url: https://{{ mgmt_ip }}:8443/nuage/health?proxyRequest=false
+      url: https://{{ vsd_url_address }}:8443/nuage/health?proxyRequest=false
       method: GET
       user: "{{ vsd_auth.username }}"
       password: "{{ vsd_auth.password }}"
@@ -179,7 +184,7 @@
 
   - name: Verify if VSD is healthy
     assert:
-      that: "{{ health_status.json[0].status == 'GOOD' and health_status.json[0].summary is none }}"
+      that: "not {{health_status.json[0].status == 'BAD' or ( health_status.json[0].summary is not none and 'failed' in health_status.json[0].summary)}}"
       fail_msg: 'VSD health checks failed due to: {{ health_status.json[0].summary }}'
 
   - name: Get monit summary for vsd processes

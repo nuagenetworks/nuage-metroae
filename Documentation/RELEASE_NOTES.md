@@ -11,8 +11,10 @@
 * Simplify the retrieval of vCenter UUIDs (internal enhancement)
 * Added option for ovftool verbose logging based on logging level used on the playbook (METROAE-1050)
 * Add DOMAIN specification to VSD interface file (METROAE-1004)
+* Add playbook to delete VSD backup after upgrade (METROAE-1009)
 
 ### Resolved Issues
 * Set event log max age to 7 as per Nuage Upgrade procedure (METROAE-1001)
 * Remove obsolete iptables traffic blocking during HA upgrade (METROAE-1051)
 * Move config.cfg setting from vsc-predeploy to vsc-deploy (METROAE-896)
+* Fixes issue with VSD Cluster failover if Primary Cluster is unreachable
