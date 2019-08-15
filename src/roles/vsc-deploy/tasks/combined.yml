@@ -1,0 +1,26 @@
+---
+- name: Set local variable with vmname
+  set_fact:
+    vm_name: "{{ vmname }}"
+
+- block:
+
+  - name: Create report folder on ansible deployment host
+    file:
+      path: "/tmp/{{ vm_name }}"
+      state: directory
+    run_once: true
+
+  - name: Setup VSC temporary configuration files
+    template: src={{ item }}.j2 backup=no dest=/tmp/{{ vm_name }}/{{ item }}
+    with_items:
+      - bof.cfg
+      - config.cfg
+
+  - name: Remove temporary configuration files
+    file: path=/tmp/{{ vm_name }}/{{ item }} state=absent
+    with_items:
+      - bof.cfg
+      - config.cfg
+
+  delegate_to: "localhost"
