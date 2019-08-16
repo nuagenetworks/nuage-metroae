@@ -97,6 +97,15 @@
 
     when: skip_copy_images
 
+  - name: Setup VSC temporary configuration files
+    template: src=bof.cfg.j2 backup=no dest={{ images_path }}/{{ vm_name }}/bof.cfg
+
+  - name: Copy temporary configuration files to the VSC image
+    command: guestfish --rw -a {{ images_path }}/{{ vm_name }}/{{ inventory_hostname }}.qcow2 -m {{ vsc_partition }} copy-in {{ images_path }}/{{ vm_name }}/bof.cfg /
+
+  - name: Remove temporary configuration files
+    file: path={{ images_path }}/{{ vm_name }}/bof.cfg state=absent
+
   - name: Preallocate disk space to avoid pausing the VM, this also checks disk space
     shell: "fallocate -l {{ vsc_fallocate_size_gb }}G {{ images_path }}/{{ vm_name }}/{{ inventory_hostname }}.qcow2"
     when: vsc_fallocate_size_gb > 0

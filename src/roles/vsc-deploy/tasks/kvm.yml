@@ -7,22 +7,13 @@
 - block:
 
   - name: Setup VSC temporary configuration files
-    template: src={{ item }}.j2 backup=no dest={{ images_path }}/{{ vm_name }}/{{ item }}
-    with_items:
-      - bof.cfg
-      - config.cfg
+    template: src=config.cfg.j2 backup=no dest={{ images_path }}/{{ vm_name }}/config.cfg
 
   - name: Copy temporary configuration files to the VSC image
-    command: guestfish --rw -a {{ images_path }}/{{ vm_name }}/{{ inventory_hostname }}.qcow2 -m {{ vsc_partition }} copy-in {{ images_path }}/{{ vm_name }}/{{ item }} /
-    with_items:
-      - bof.cfg
-      - config.cfg
+    command: guestfish --rw -a {{ images_path }}/{{ vm_name }}/{{ inventory_hostname }}.qcow2 -m {{ vsc_partition }} copy-in {{ images_path }}/{{ vm_name }}/config.cfg /
 
   - name: Remove temporary configuration files
-    file: path={{ images_path }}/{{ vm_name }}/{{ item }} state=absent
-    with_items:
-      - bof.cfg
-      - config.cfg
+    file: path={{ images_path }}/{{ vm_name }}/config.cfg state=absent
 
   delegate_to: "{{ target_server }}"
   remote_user: "{{ target_server_username }}"
