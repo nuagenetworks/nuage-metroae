@@ -12,16 +12,21 @@
     run_once: true
 
   - name: Setup VSC temporary configuration files
-    template: src={{ item }}.j2 backup=no dest=/tmp/{{ vm_name }}/{{ item }}
-    with_items:
-      - bof.cfg
-      - config.cfg
+    template: src=config.cfg.j2 backup=no dest=/tmp/{{ vm_name }}/new-config.cfg
+
+  - name: Copy VSC config file to the VSC
+    connection: local
+    command: "sshpass -p {{ vsc_password|default('admin') }} scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null /tmp/{{ vm_name }}/new-config.cfg {{ vsc_username|default('admin') }}@{{ mgmt_ip }}:"
+
+  - name: Execute VSC basic configuration
+    sros_command:
+      commands:
+        - exec cf1:\new-config.cfg
+        - admin save
+      provider: "{{ vsc_creds }}"
 
   - name: Remove temporary configuration files
-    file: path=/tmp/{{ vm_name }}/{{ item }} state=absent
-    with_items:
-      - bof.cfg
-      - config.cfg
+    file: path=/tmp/{{ vm_name }}/new-config.cfg state=absent
 
   - name: Create report folder on ansible deployment host
     file:
