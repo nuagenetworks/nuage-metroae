@@ -14,9 +14,20 @@
   - name: Setup VSC temporary configuration files
     template: src=config.cfg.j2 backup=no dest=/tmp/{{ vm_name }}/new-config.cfg
 
+  - name: Wait for VSC ssh to be ready before config
+    include_role:
+      name: common
+      tasks_from: wait-for-ssh-port
+    vars:
+      ssh_host: "{{ hostname }}"
+      ssh_timeout_seconds: 600
+      ssh_password: "{{ vsc_creds.password }}"
+      ssh_user: "{{ vsc_creds.username }}"
+      check_login: True
+
   - name: Copy VSC config file to the VSC
     connection: local
-    command: "sshpass -p {{ vsc_password|default('admin') }} scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null /tmp/{{ vm_name }}/new-config.cfg {{ vsc_username|default('admin') }}@{{ mgmt_ip }}:"
+    command: "sshpass -p {{ vsc_password|default(vsc_default_password) }} scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null /tmp/{{ vm_name }}/new-config.cfg {{ vsc_username|default(vsc_default_username) }}@{{ mgmt_ip }}:"
 
   - name: Execute VSC basic configuration
     sros_command:
