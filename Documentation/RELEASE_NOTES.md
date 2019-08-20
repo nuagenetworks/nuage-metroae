@@ -11,6 +11,7 @@
 * Simplify the retrieval of vCenter UUIDs (internal enhancement)
 * Added option for ovftool verbose logging based on logging level used on the playbook (METROAE-1050)
 * Add DOMAIN specification to VSD interface file (METROAE-1004)
+* Support VSD, VSC and VSTAT(ES) install over SSH proxy (METROAE-1046)
 * Add playbook to delete VSD backup after upgrade (METROAE-1009)
 
 ### Resolved Issues
