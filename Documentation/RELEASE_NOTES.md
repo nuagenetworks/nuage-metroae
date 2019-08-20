@@ -57,4 +57,10 @@
 - Update VSPK libraries to import version 5.0 (METROAE-1052)
 - Update the way we get VSD version to protect against a custom user that lacks the VSD_VERSION env variable
 - Made changes to accommodate 6.0.1 command line changes on VSC
+
+## Release 3.3.1
+
+### Resolved Issues
+
+- Fixes issue with VSD Cluster failover if Primary Cluster is unreachable
 - Remove support for ansible version other than 2.7.10 (METROAE-1065)
