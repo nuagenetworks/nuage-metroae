@@ -3,8 +3,8 @@
   pre_tasks:
     - name: Check for Ansible version
       assert:
-        that: "ansible_version.full is version_compare('2.4', '>=')"
-        msg:  "Ansible version 2.4 and above are required. Found Ansible version {{ansible_version.full}}"
+        that: "ansible_version.full is version_compare('2.7.10', '>=')"
+        msg: "Ansible version 2.7.10 and above are required. Found Ansible version {{ansible_version.full}}"
 
   tasks:
 
@@ -35,27 +35,27 @@
       when: not is_deployment_changed
 
     - block:
+    
+        - include_role:
+            name: common
+            tasks_from: read-deployment
 
-      - include_role:
-          name: common
-          tasks_from: read-deployment
+        - include_role:
+            name: common
+            tasks_from: set-major-minor-versions
 
-      - include_role:
-          name: common
-          tasks_from: set-major-minor-versions
+        - name: Set if inplace upgrade is supported
+          set_fact:
+            inplace: "{{ inplace_upgrade | default(false) }}"
 
-      - name: Set if inplace upgrade is supported
-        set_fact:
-          inplace: "{{ inplace_upgrade | default(false) }}"
+        - include_role:
+            name: build
 
-      - include_role:
-          name: build
-
-      - name: Write deployment MD5 to file
-        copy:
-          content: "{{ deployment_md5_list | to_nice_yaml }}"
-          dest: "{{ inventory_dir }}/deployment.md5.yml"
-        when: not missing_image_file | default(False)
+        - name: Write deployment MD5 to file
+          copy:
+            content: "{{ deployment_md5_list | to_nice_yaml }}"
+            dest: "{{ inventory_dir }}/deployment.md5.yml"
+          when: not missing_image_file | default(False)
 
       when: is_deployment_changed
 
