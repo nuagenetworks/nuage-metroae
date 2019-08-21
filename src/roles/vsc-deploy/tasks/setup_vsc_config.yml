@@ -24,9 +24,14 @@
       ssh_user: "{{ vsc_creds.username }}"
       check_login: True
 
+  - name: Add proxy setup
+    set_fact:
+      proxy_conf: '-o ProxyCommand="ssh -W %h:%p -q {{ ssh_proxy_configuration }}"'
+    when: ssh_proxy_configuration is defined
+
   - name: Copy VSC config file to the VSC
     connection: local
-    command: "sshpass -p {{ vsc_password|default(vsc_default_password) }} scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null /tmp/{{ vm_name }}/new-config.cfg {{ vsc_username|default(vsc_default_username) }}@{{ mgmt_ip }}:"
+    command: "sshpass -p {{ vsc_password|default(vsc_default_password) }} scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null {{ proxy_conf | default('') }} /tmp/{{ vm_name }}/new-config.cfg {{ vsc_username|default(vsc_default_username) }}@{{ mgmt_ip }}:"
 
   - name: Execute VSC basic configuration
     sros_command:
