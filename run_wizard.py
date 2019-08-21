@@ -407,7 +407,8 @@ class Wizard(object):
 
         deployment_file = os.path.join(deployment_dir, "common.yml")
         if os.path.isfile(deployment_file):
-            deployment = self._read_deployment_file(deployment_file)
+            deployment = self._read_deployment_file(deployment_file,
+                                                    is_list=False)
         else:
             self._print(deployment_file + " not found. It will be created.")
             deployment = dict()
@@ -442,7 +443,8 @@ class Wizard(object):
 
         deployment_file = os.path.join(deployment_dir, "upgrade.yml")
         if os.path.isfile(deployment_file):
-            deployment = self._read_deployment_file(deployment_file)
+            deployment = self._read_deployment_file(deployment_file,
+                                                    is_list=False)
         else:
             self._print(deployment_file + " not found. It will be created.")
             deployment = dict()
@@ -461,7 +463,8 @@ class Wizard(object):
 
         deployment_file = os.path.join(deployment_dir, schema + ".yml")
         if os.path.isfile(deployment_file):
-            deployment = self._read_deployment_file(deployment_file)
+            deployment = self._read_deployment_file(deployment_file,
+                                                    is_list=True)
         else:
             self._print(deployment_file + " not found. It will be created.")
             deployment = list()
@@ -679,7 +682,7 @@ class Wizard(object):
                 self._print("\nValue is not a valid ipaddress\n")
         elif datatype == "int":
             try:
-                int(user_value)
+                value = int(user_value)
             except ValueError:
                 self._print("\nValue is not a valid integer\n")
                 return None
@@ -1039,10 +1042,15 @@ class Wizard(object):
 
         return self.state["deployment_dir"]
 
-    def _read_deployment_file(self, deployment_file):
+    def _read_deployment_file(self, deployment_file, is_list):
         with open(deployment_file, "r") as f:
             import yaml
-            return yaml.safe_load(f.read().decode("utf-8"))
+            deployment = yaml.safe_load(f.read().decode("utf-8"))
+            if is_list and type(deployment) != list:
+                deployment = list()
+            if not is_list and type(deployment) != dict:
+                deployment = dict()
+            return deployment
 
     def _setup_dns(self, deployment, data):
         self._print(self._get_field(data, "dns_setup_msg"))
