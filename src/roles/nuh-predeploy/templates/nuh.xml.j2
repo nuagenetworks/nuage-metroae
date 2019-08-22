@@ -1,0 +1,83 @@
+<domain type='kvm'>
+  <name>{{ vmname }}</name>
+  <memory unit='GiB'>{{ nuh_ram }}</memory>
+  <currentMemory unit='GiB'>{{ nuh_ram }}</currentMemory>
+  <vcpu current='{{ nuh_cpu_cores }}'>{{ nuh_cpu_cores }}</vcpu>
+{% if cpuset is defined %}
+  <cputune>
+      {% for cpu in cpuset %}
+        <vcpupin vcpu='{{ loop.index0 }}' cpuset='{{ cpu }}'/>
+      {% endfor %}
+  </cputune>
+{% else %}
+    <vcpu placement='static'>{{ nuh_cpu_cores }}</vcpu>
+{% endif %}
+  <resource>
+    <partition>/machine</partition>
+  </resource>
+  <os>
+    <type arch='x86_64'>hvm</type>
+    <boot dev='hd'/>
+  </os>
+  <features>
+    <acpi/>
+    <apic/>
+    <pae/>
+  </features>
+  <clock offset='utc'/>
+  <on_poweroff>destroy</on_poweroff>
+  <on_reboot>restart</on_reboot>
+  <on_crash>restart</on_crash>
+  <devices>
+    <emulator>{{ libvirt.emulator }}</emulator>
+    <disk type='file' device='disk'>
+      <driver name='qemu' type='qcow2'/>
+      <source file='{{ guestfish_dest }}'/>
+      <target dev='vda' bus='virtio'/>
+      <alias name='virtio-disk0'/>
+      <address type='pci' domain='0x0000' bus='0x00' slot='0x04' function='0x0'/>
+    </disk>
+    <controller type='usb' index='0'>
+      <alias name='usb0'/>
+      <address type='pci' domain='0x0000' bus='0x00' slot='0x01' function='0x2'/>
+    </controller>
+    <controller type='pci' index='0' model='pci-root'>
+      <alias name='pci.0'/>
+    </controller>
+    <interface type='bridge'>
+      <source bridge='{{ mgmt_bridge }}'/>
+      <target dev='vnet0'/>
+      <model type='virtio'/>
+      <alias name='net0'/>
+      <address type='pci' domain='0x0000' bus='0x00' slot='0x03' function='0x0'/>
+    </interface>
+{% if data_ip is defined or data_netmask is defined %}
+    <interface type='bridge'>
+      <source bridge='{{ data_bridge }}'/>
+      <target dev='vnet0'/>
+      <model type='virtio'/>
+      <alias name='net0'/>
+      <address type='pci' domain='0x0000' bus='0x00' slot='0x07' function='0x0'/>
+    </interface>
+{% endif %}
+    <serial type='pty'>
+      <source path='/dev/pts/13'/>
+      <target port='0'/>
+      <alias name='serial0'/>
+    </serial>
+    <console type='pty' tty='/dev/pts/13'>
+      <source path='/dev/pts/13'/>
+      <target type='serial' port='0'/>
+      <alias name='serial0'/>
+    </console>
+    <video>
+      <model type='cirrus' vram='9216' heads='1'/>
+      <alias name='video0'/>
+      <address type='pci' domain='0x0000' bus='0x00' slot='0x02' function='0x0'/>
+    </video>
+    <memballoon model='virtio'>
+      <alias name='balloon0'/>
+      <address type='pci' domain='0x0000' bus='0x00' slot='0x05' function='0x0'/>
+    </memballoon>
+  </devices>
+</domain>
