@@ -139,6 +139,9 @@ Example:
 
 Creates an example vsds configuration file under the "new" deployment.
 
+## Running MetroAE using a Proxy VM
+MetroAE version 3.4.0 onwards supports using a proxy VM for deployment of VSC, VSD and VSTATS(ES). In this configuration, the host on which MetroAE is run on, does not have direct access to the VSD, VSC and VSTATS. In such a case, a proxy VM can be set between the host and individual components which has access to all the components. To operate in such a manner, user can edit their `deployments\<deployment_name>\common.yml` parameters to indicate the proper `ssh_proxy_username` and `ssh_proxy_host` and then run the MetroAE commands as usual.
+
 ## Next Steps
 The next step is to deploy your components. See [DEPLOY.md](DEPLOY.md) for guidance.
 
