@@ -1,0 +1,38 @@
+---
+- block:
+
+  - name: Set NUH KVM image location
+    include_role:
+      name: common
+      tasks_from: find-image.yml
+    vars:
+      pattern: vns-util-*.qcow2
+    when: nuhs | map(attribute='target_server_type') | list is issuperset(["kvm"])
+
+  - name: Verify NUH management gateway is in correct IP range
+    include_role:
+      name: common
+      tasks_from: check-ip-in-range.yml
+    vars:
+      ip_address: "{{ item.mgmt_gateway }}"
+      netaddr: "{{ item.mgmt_ip }}"
+      netmask: "{{ item.mgmt_ip_prefix }}"
+    with_items: "{{ nuhs }}"
+
+  - name: Create host_vars files for nuhs
+    template: src=nuhs.j2 backup=no dest={{ inventory_dir }}/host_vars/{{ item.hostname }}
+    with_items: "{{ nuhs }}"
+
+  - name: Verify NUH DNS entries exist at server {{ dns_server_list[0] }}, and hostnames map to their IPs
+    include_tasks: check-dns.yml
+    with_items: "{{ nuhs }}"
+    when: dns_server_list
+
+  - name: Verify if NUH data FQDN maps to the proper data IP
+    include_tasks: check-dns-data.yml
+    with_items: "{{ nuhs }}"
+
+  when:
+    - nuhs is defined and nuhs
+  tags:
+    - vns
