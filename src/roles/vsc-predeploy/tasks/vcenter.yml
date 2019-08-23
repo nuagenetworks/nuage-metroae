@@ -150,38 +150,4 @@
       search_regex: OpenSSH
       delay: 1
 
-  - name: Creating temp folder for config file
-    connection: local
-    file:
-      path: "/tmp/ansible-config-{{ inventory_hostname }}"
-      state: directory
-
-  - name: Creating VSC config file
-    connection: local
-    template:
-      src: config.cfg.j2
-      dest: "/tmp/ansible-config-{{ inventory_hostname }}/config.cfg"
-
-  - name: Copy VSC config file to VSC
-    connection: local
-    command: "sshpass -p admin scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null /tmp/ansible-config-{{ inventory_hostname }}/config.cfg admin@{{ mgmt_ip }}:"
-
-  - name: Reboot VSC VM
-    connection: local
-    vmware_guest:
-      hostname: "{{ target_server }}"
-      username: "{{ vcenter.username }}"
-      password: "{{ vcenter.password }}"
-      validate_certs: no
-      datacenter: "{{ vcenter.datacenter }}"
-      folder: "/{{ vcenter.datacenter }}{{ vsc_vm_folder['folders'][0] }}"
-      name: "{{ vmname }}"
-      state: "restarted"
-
-  - name: Removing temp folder
-    connection: local
-    file:
-      path: "/tmp/ansible-config-{{ inventory_hostname }}"
-      state: absent
-
   when: not node_present

@@ -160,9 +160,14 @@
 
 - block:
 
+  - name: Set the URL for the VSD
+    set_fact:
+      vsd_url_address: >-
+        {% if enable_ipv6|default(False) %}[{{mgmt_ip}}]{% else %}{{mgmt_ip}}{% endif %}
+      
   - name: Get the health status of VSD (ignoring errors)
     uri:
-      url: https://{{ mgmt_ip }}:8443/nuage/health?proxyRequest=false
+      url: https://{{ vsd_url_address }}:8443/nuage/health?proxyRequest=false
       method: GET
       user: "{{ vsd_auth.username }}"
       password: "{{ vsd_auth.password }}"
@@ -200,7 +205,7 @@
       remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
       become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
       vars:
-        ansible_become_pass: "{{ vsd_password | default(vsd_default_password) }}"
+        ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"
       with_items: "{{ groups['primary_vsds'] }}"
 
     - name: Set JMS Master Node Hostname
@@ -232,7 +237,8 @@
       retries: 5
       delay: 30
       register: webresult
-      delegate_to: localhost
+      remote_user: "{{ ssh_proxy_username | default(None) }}"
+      delegate_to: "{{ ssh_proxy_host | default('localhost') }}"
 
     when:
       - "'activemq-status' in vsd_proc.state"

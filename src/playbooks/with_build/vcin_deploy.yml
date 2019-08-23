@@ -1,6 +1,16 @@
 ---
 - hosts: vcins
   gather_facts: no
+  pre_tasks:
+    - name: Lets run VCIN deploy hooks
+      include_role:
+        name: hooks
+        tasks_from: main
+      vars:
+        - hooks_file_path: "{{ item }}"
+        - hook_location:
+          - vcin_deploy
+      with_items: "{{ hooks | default([]) }}"
   roles:
     - vsd-deploy
     - vcin-create-dvs

@@ -6,9 +6,18 @@
     - name: Set vm name, preserve vm and upgrade flag
       set_fact:
         nuage_upgrade: true
-        vm_name: "{{ vmname }}"
-        preserve_vm: true
-
+    - name: Lets run VSD ha upgrade Shutdown 2 and 3 hooks
+      include_role:
+        name: hooks
+        tasks_from: main
+      vars:
+        - hooks_file_path: "{{ item }}"
+        - hook_location:
+          - vsd_ha_upgrade_shutdown_2_and_3
+      with_items: "{{ hooks | default([]) }}"
+  vars:
+    preserve_vm: true
+    vm_name: "{{ vmname }}"
   roles:
     - vsd-services-stop
     - vsd-destroy

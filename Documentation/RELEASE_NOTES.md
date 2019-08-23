@@ -11,8 +11,13 @@
 * Simplify the retrieval of vCenter UUIDs (internal enhancement)
 * Added option for ovftool verbose logging based on logging level used on the playbook (METROAE-1050)
 * Add DOMAIN specification to VSD interface file (METROAE-1004)
+* Support VSD, VSC and VSTAT(ES) install over SSH proxy (METROAE-1046)
+* Add playbook to delete VSD backup after upgrade (METROAE-1009)
+* Move config.cfg setting from vsc-predeploy to vsc-deploy (METROAE-896)
 * Check file permissions before running guestfish on KVM images (METROAE-752)
 
 ### Resolved Issues
 * Set event log max age to 7 as per Nuage Upgrade procedure (METROAE-1001)
 * Remove obsolete iptables traffic blocking during HA upgrade (METROAE-1051)
+* Fixes issue with VSD Cluster failover if Primary Cluster is unreachable
+* Remove support for ansible version other than 2.7.10 (METROAE-1065)
