@@ -2,28 +2,39 @@
 # This is a generated file. Manual changes to this file
 # will be lost if reset-build or build is run
 #
-target_server_type: kvm
-
-# < Target Server IP or FQDN >
-# Hostname or IP address of the KVM hypervisor where the VSR VM will be instantiated
+{% if nuhs is defined and nuhs %}
+{% for item in nuhs %}
 #
-{%- if item.target_server is defined %}
-target_server: "{{ item.target_server }}"
-{%- else %}
-# target_server: ""
-{%- endif %}
+# NUH {{ loop.index }}
+#
+-
+    target_server_type: kvm
 
-hostname: {{ item.hostname }}
-{% if item.vmname is defined %}
-vmname: {{ item.vmname }}
+    # < Target Server IP or FQDN >
+    # Hostname or IP address of the KVM hypervisor where the VSR VM will be instantiated
+    #
+    {%- if item.target_server is defined %}
+    target_server: "{{ item.target_server }}"
+    {%- else %}
+    # target_server: ""
+    {%- endif %}
+
+    hostname: {{ item.hostname }}
+    {% if item.vmname is defined %}
+    vmname: {{ item.vmname }}
+    {% else %}
+    vmname: {{ item.hostname }}
+    {% endif %}
+
+    mgmt_ip: {{ item.mgmt_ip }}
+    mgmt_prefix: {{ item.mgmt_ip_prefix }}
+    mgmt_gateway: {{ item.mgmt_gateway }}
+
+    {% if item.mgmt_bridge is defined %}
+    mgmt_bridge: {{ item.mgmt_bridge }}
+    {% endif %}
+
+{% endfor %}
 {% else %}
-vmname: {{ item.hostname }}
-{% endif %}
-
-mgmt_ip: {{ item.mgmt_ip }}
-mgmt_prefix: {{ item.mgmt_ip_prefix }}
-mgmt_gateway: {{ item.mgmt_gateway }}
-
-{% if item.mgmt_bridge is defined %}
-mgmt_bridge: {{ item.mgmt_bridge }}
+[ ]
 {% endif %}
