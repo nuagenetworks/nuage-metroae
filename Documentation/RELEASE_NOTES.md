@@ -21,3 +21,4 @@
 * Remove obsolete iptables traffic blocking during HA upgrade (METROAE-1051)
 * Fixes issue with VSD Cluster failover if Primary Cluster is unreachable
 * Remove support for ansible version other than 2.7.10 (METROAE-1065)
+* Fix paths in nuage_health.yml.
