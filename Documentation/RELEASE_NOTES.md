@@ -8,3 +8,4 @@
 * Fixed issue with wizard not reading yaml-empty deployment files correctly
 * Fixed issue with integer type input entries into run_wizard
 * Fixed paths in nuage_health.yml
+* Limit in-place, U-release upgrades to only upgrade_vsds

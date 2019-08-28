@@ -11,8 +11,10 @@ By default, the special enterprise called Shared Infrastructure is created on th
 ### Patch Upgrade for VSD, AKA in-place upgrade
 A patch upgrade is applicable to the VSD cluster when upgrading from one 'u' release to another. A patch upgrade is also referred to as an in-place upgrade. The existing VSDs will remain in service. The migration ISO will be mounted and the migration script will be executed on each VSD. A patch upgrade is:
 
-* Supported beginning in VSD version 5.4.1. 
-* `upgrade_fron_version` and `upgrade_to_version` variables must be set to 'u' versions of the same release, e.g. 5.4.1 and 5.4.1u1, 5.4.1u1 and 5.4.1u4, etc.
+* Supported beginning in VSD version 5.4.1.
+* `upgrade_from_version` and `upgrade_to_version` variables must be set to 'u' versions of the same release, e.g. 5.4.1 and 5.4.1u1, 5.4.1u1 and 5.4.1u4, etc.
+
+Note that MetroAE only supports patch upgrades for VSD using the `upgrade_vsds` play. Attempting to do a patch release upgrade via any other method will result in an error.
 
 ## Example Deployment
 For this example, our standalone (SA) deployment consists of:
