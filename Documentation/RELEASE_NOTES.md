@@ -11,3 +11,4 @@
 * Limit in-place, U-release upgrades to only VSD and running upgrade_vsds
 * Accept upper and lowercase 'u' when specifying upgrade versions
 * Don't look for image files when doing a U-release, VSD-only upgrade
+* Handle u-releases in version comparisons
