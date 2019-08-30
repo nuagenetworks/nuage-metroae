@@ -20,31 +20,35 @@
 
 - block:
 
-  - name: Check that image files were found
-    assert:
-      that: "image_path | default('MISSING') != 'MISSING' and image_file_name | default('MISSING') != 'MISSING'"
-      msg: "Missing image files for {{ hostname | default(vmname) }} under the unzipped file directory, please unzip them."
-    when: target_server_type is match("kvm") or target_server_type is match("vcenter")
+  - block:
 
-  when: component_type | default("NONE") != 'vrs'
+    - name: Check that image files were found
+      assert:
+        that: "image_path | default('MISSING') != 'MISSING' and image_file_name | default('MISSING') != 'MISSING'"
+        msg: "Missing image files for {{ hostname | default(vmname) }} under the unzipped file directory, please unzip them."
+      when: target_server_type is match("kvm") or target_server_type is match("vcenter")
 
-- block:
+    when: component_type | default("NONE") != 'vrs'
 
-  - name: Check that VRS package files were found
-    assert:
-      that: "vrs_package_path | default('MISSING') != 'MISSING'"
-      msg: "Missing VRS package files under the unzipped file directory, please unzip them."
+  - block:
 
-  - name: Check that VRS libnetwork files were found
-    assert:
-      that: "libnetwork_package_path | default('MISSING') != 'MISSING' and libnetwork_package_file_name | default('MISSING') != 'MISSING'"
-      msg: "Missing VRS libnetwork files under the unzipped file directory, please unzip it."
-    when: libnetwork_install | default(False)
+    - name: Check that VRS package files were found
+      assert:
+        that: "vrs_package_path | default('MISSING') != 'MISSING'"
+        msg: "Missing VRS package files under the unzipped file directory, please unzip them."
 
-  - name: Check that DKMS files were found
-    assert:
-      that: "dkms_package_path | default('MISSING') != 'MISSING'"
-      msg: "Missing VRS DKMS files under the unzipped file directory, please unzip it."
-    when: dkms_install
+    - name: Check that VRS libnetwork files were found
+      assert:
+        that: "libnetwork_package_path | default('MISSING') != 'MISSING' and libnetwork_package_file_name | default('MISSING') != 'MISSING'"
+        msg: "Missing VRS libnetwork files under the unzipped file directory, please unzip it."
+      when: libnetwork_install | default(False)
 
-  when: component_type | default("NONE") == 'vrs'
+    - name: Check that DKMS files were found
+      assert:
+        that: "dkms_package_path | default('MISSING') != 'MISSING'"
+        msg: "Missing VRS DKMS files under the unzipped file directory, please unzip it."
+      when: dkms_install
+
+    when: component_type | default("NONE") == 'vrs'
+
+  when: not vsd_inplace_upgrade
