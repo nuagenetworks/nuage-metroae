@@ -57,14 +57,17 @@
   - name: Set the timezone
     command: timedatectl set-timezone {{ nuh_timezone }}
 
-  - name: Copy license file
-    copy:
-      src: "{{ nuh_license_file }}"
-      dest: "/opt/proxy/nuh.license"
-    when: nuh_license_file is defined
+  - block:
 
-  - name: Verify License is valid
-    shell: java -jar /opt/proxy/bin/lm/LicenseManager.jar features
+    - name: Copy license file
+      copy:
+        src: "{{ nuh_license_file }}"
+        dest: "/opt/proxy/nuh.license"
+
+    - name: Verify License is valid
+      shell: java -jar /opt/proxy/bin/lm/LicenseManager.jar features
+
+    when: nuh_license_file is defined
 
   - name: Create and transfer certs
     include_role:
