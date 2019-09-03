@@ -26,19 +26,33 @@
       chdir: /opt/proxy/bin
     when: nuh_sa_or_ha is match('sa')
 
-  - name: Run the setup script for HA
+  - name: Run the setup script for HA primary
     shell: ./setup.sh
     environment:
       HNAME: "{{ hostname }}"
       HA: "y"
       MASTER: "y"
-      PEERADDR: "{{ groups['nuhs'][0] }}"
+      PEERADDR: "{{ groups['nuhs'][1] }}"
       PEERPASSWORD: "{{ nuh_default_password }}"
     args:
       chdir: /opt/proxy/bin
     when:
       - nuh_sa_or_ha is match('ha')
       - inventory_hostname == groups['nuhs'][0]
+
+  - name: Run the setup script for HA secondary
+    shell: ./setup.sh
+    environment:
+      HNAME: "{{ hostname }}"
+      HA: "y"
+      MASTER: "n"
+      PEERADDR: "{{ groups['nuhs'][0] }}"
+      PEERPASSWORD: "{{ nuh_default_password }}"
+    args:
+      chdir: /opt/proxy/bin
+    when:
+      - nuh_sa_or_ha is match('ha')
+      - inventory_hostname == groups['nuhs'][1]
 
   - name: Set the timezone
     command: timedatectl set-timezone {{ nuh_timezone }}
@@ -48,6 +62,9 @@
       src: "{{ nuh_license_file }}"
       dest: "/opt/proxy/nuh.license"
     when: nuh_license_file is defined
+
+  - name: Verify License is valid
+    shell: java -jar /opt/proxy/bin/lm/LicenseManager.jar features
 
   - name: Create and transfer certs
     include_role:
