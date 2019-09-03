@@ -2,6 +2,16 @@
 - hosts: vsds
   gather_facts: no
   serial: 1
+  pre_tasks:
+    - name: Lets run VSD postdeploy hooks
+      include_role:
+        name: hooks
+        tasks_from: main
+      vars:
+        - hooks_file_path: "{{ item }}"
+        - hook_location:
+          - vsd_postdeploy
+      with_items: "{{ hooks | default([]) }}"
+
   roles:
     - vsd-postdeploy
-    

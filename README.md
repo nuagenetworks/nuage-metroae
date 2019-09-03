@@ -1,7 +1,7 @@
 # Nuage Networks Metro Automation Engine (MetroÆ)
 (4 minute read)
 
-Version: 3.3.1
+Version: 3.4.0
 
 MetroÆ is an automation engine that deploys and upgrades Nuage Networks components. You specify the individual details of your target platform, then let MetroÆ install, upgrade, destroy, or health-check the environment for you.
 

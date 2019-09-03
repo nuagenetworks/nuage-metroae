@@ -11,8 +11,8 @@ By default, the special enterprise called Shared Infrastructure is created on th
 ### Patch Upgrade for VSD, AKA in-place upgrade
 A patch upgrade is applicable to the VSD cluster when upgrading from one 'u' release to another. A patch upgrade is also referred to as an in-place upgrade. The existing VSDs will remain in service. The migration ISO will be mounted and the migration script will be executed on each VSD. A patch upgrade is:
 
-* Supported beginning in VSD version 5.4.1. 
-* `upgrade_fron_version` and `upgrade_to_version` variables must be set to 'u' versions of the same release, e.g. 5.4.1 and 5.4.1u1, 5.4.1u1 and 5.4.1u4, etc.
+* Supported beginning in VSD version 5.4.1.
+* `upgrade_from_version` and `upgrade_to_version` variables must be set to 'u' versions of the same release, e.g. 5.4.1 and 5.4.1u1, 5.4.1u1 and 5.4.1u4, etc.
 
 ### Active/Standby cluster upgrade
 You can use MetroAE to upgrade Active/Standby VSD clusters, also known as geo-redundant clusters. You can also use MetroAE to upgrade Active/Standby VSTAT (ES) clusters. The support for this is built into the `upgrade_everything`, `upgrade_vsds`, and `upgrade_vstats` plays. A step-by-step manual procedure is supported, but is not documented here. See [Upgrading By Individual Steps](#upgrading-by-individual-steps-not-including-active-standby-clusters) for more information.
@@ -64,7 +64,7 @@ Issuing the above workflows will detect if components are clustered (HA) or not 
 Issuing the above workflows will detect if components are clustered (HA) or not and will upgrade all components that are defined in the deployment.  This option allows the VRS(s) to be upgraded in-between other components.  Performing individual workflows can allow specific components to be skipped or upgraded at different times.
 
 ## Upgrading By Individual Steps not including Active/Standby clusters
-The following workflows will upgrade each component in individual steps. Performing an upgrade in this way allows full control of the timing of the upgrade process and provides opportunities for you to add custom steps to the overall process. Note that the steps listed below are only applicable for clustered (HA) deployments.  Active/Standby cluster upgrades require additional steps that are not documented here. See the component playbooks `src\playbooks\with_build\upgrade_vsds.yml` and `src\playbooks\with_build\upgrade_vstats.yml` for the full list of steps. 
+The following workflows will upgrade each component in individual steps. Performing an upgrade in this way allows full control of the timing of the upgrade process and provides opportunities for you to add custom steps to the overall process. Note that the steps listed below are only applicable for clustered (HA) deployments.  Active/Standby cluster upgrades require additional steps that are not documented here. See the component playbooks `src\playbooks\with_build\upgrade_vsds.yml` and `src\playbooks\with_build\upgrade_vstats.yml` for the full list of steps.
 
 ### Preupgrade Preparations
 1. Run health checks on VSD, VSC and VSTAT.
@@ -80,6 +80,11 @@ The following workflows will upgrade each component in individual steps. Perform
     `vsd_node1` has been decoupled from the cluster and is running in standalone (SA) mode.
 
     **Troubleshooting**: If you experience a failure, recovery depends on the state of `vsd_node1`. If it is still in the cluster, you can re-execute the command. If not, you must redeploy `vsd_node1` from a backup or otherwise recover.
+
+    **Note**
+    MetroAE provides a simple tool for optionally cleaning up the backup files that are generated during the upgrade process. The tool deletes the backup files for both VSD and VSC. There are two modes foe clean-up, the first one deletes all the backups and the second one deletes only the latest backup. By default the tool deletes only the latest backup. If you'd like to clean-up the backup files, you can simply run below commands:
+    Clean up all the backup files: `metroae vsp_upgrade_cleanup -e delete_all_backups=true`
+    Clean up the latest backup files: `metroae vsp_upgrade_cleanup`
 
 ### Upgrade VSD
 

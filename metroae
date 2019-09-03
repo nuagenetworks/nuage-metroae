@@ -139,11 +139,7 @@ case $key in
     exit 0
     ;;
     --set-group)
-    GROUP="$2"
-    touch ansible.log
-    chgrp $GROUP ansible.log
-    touch $AUDIT_LOG
-    chgrp $GROUP $AUDIT_LOG
+    METROAE_GROUP="$2"
     shift # past argument
     shift # past value
     ;;
@@ -167,6 +163,13 @@ set -- "${POSITIONAL[@]}" # restore positional parameters
 if [[ $# -eq 0 ]] || [[ $1 == -* ]]; then
     usage
     exit 1
+fi
+
+if [[ ! -z $METROAE_GROUP ]]; then
+    touch ansible.log
+    chgrp $METROAE_GROUP ansible.log
+    touch $AUDIT_LOG
+    chgrp $METROAE_GROUP $AUDIT_LOG
 fi
 
 # <workflow> argument
@@ -215,7 +218,7 @@ elif [[ -a $PLAYBOOK_WITH_BUILD_DIR/$WORKFLOW ]]; then
     write_audit_log_entry
     if [[ $SKIP_BUILD -ne 1 ]]; then
         $(which ansible-playbook) -e deployment_dir=\'"$DEPLOYMENT_DIR"\' -e schema_dir=$SCHEMA_DIR $PLAYBOOK_DIR/build.yml "$@" || audit_log_and_exit $?
-        if [[ $GROUP ]]; then chgrp -R $GROUP $INVENTORY_DIR; fi
+        if [[ ! -z $METROAE_GROUP ]]; then chgrp -R $METROAE_GROUP $INVENTORY_DIR; fi
     fi
     $(which ansible-playbook) $PLAYBOOK_WITH_BUILD_DIR/$WORKFLOW "$@" || audit_log_and_exit $?
 else

@@ -72,7 +72,7 @@ Note: If you have an issue with a VM and would like to reinstall it, you must de
 
 When installing or upgrading in a KVM environment, MetroAE copies the QCOW2 image files to the target file server during the predeploy phase. As an option, you can pre-position the qcow2 files for all the components by running copy_qcow2_files. This gives the ability to copy the required images files first and then run install or upgrade later.
 
-When QCOW2 files are pre-positioned, you must add a command-line variable, 'skip_copy_qcow2', to indicate that copying QCOW2 files should be skipped. Otherwise, the QCOW2 files will be copied again. An extra-vars 'skip_copy_qcow2' needs to be passed on the command line during the deployment phase to skip copying of the image files again. For example, to pre-position the QCOW2 images, run:
+When QCOW2 files are pre-positioned, you must add a command-line variable, 'skip_copy_images', to indicate that copying QCOW2 files should be skipped. Otherwise, the QCOW2 files will be copied again. An extra-vars 'skip_copy_images' needs to be passed on the command line during the deployment phase to skip copying of the image files again. For example, to pre-position the QCOW2 images, run:
 
 ```
 metroae copy_qcow2_files
@@ -81,7 +81,7 @@ metroae copy_qcow2_files
 Then, to skip the image copy during the install:
 
 ```
-metroae install_everything.yml --extra-vars skip_copy_qcow2=True
+metroae install_everything.yml --extra-vars skip_copy_images=True
 ```
 
 
