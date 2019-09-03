@@ -31,9 +31,14 @@
     environment:
       HNAME: "{{ hostname }}"
       HA: "y"
+      MASTER: "y"
+      PEERADDR: "{{ groups['nuhs'][0] }}"
+      PEERPASSWORD: "{{ nuh_default_password }}"
     args:
       chdir: /opt/proxy/bin
-    when: nuh_sa_or_ha is match('ha')
+    when:
+      - nuh_sa_or_ha is match('ha')
+      - inventory_hostname == groups['nuhs'][0]
 
   - name: Set the timezone
     command: timedatectl set-timezone {{ nuh_timezone }}
