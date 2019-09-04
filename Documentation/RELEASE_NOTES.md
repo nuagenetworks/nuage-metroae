@@ -20,10 +20,3 @@
 ### Resolved Issues
 * Set event log max age to 7 as per Nuage Upgrade procedure (METROAE-1001)
 * Remove obsolete iptables traffic blocking during HA upgrade (METROAE-1051)
-* Fixes issue with VSD Cluster failover if Primary Cluster is unreachable
-* Remove support for ansible version other than 2.7.10 (METROAE-1065)
-* Fix paths in nuage_health.yml.
-* Limit in-place, U-release upgrades to only VSD and running upgrade_vsds
-* Accept upper and lowercase 'u' when specifying upgrade versions
-* Don't look for image files when doing a U-release, VSD-only upgrade
-* Handle u-releases when doing version compares

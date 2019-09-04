@@ -84,7 +84,7 @@ When installing or upgrading an active-standby, geo-redundant cluster, all 6 VSD
 ### `vstats.yml`
 `vstats.yml` contains the definition of the VSTATs (VSD Statistics) to be operated on in this deployment. This file should be present in your deployment only if you are specifying VSTATs. If not provided, no VSTATs will be operated on. This file is of yaml list type. If it contains exactly 3 VSTAT definitions, a cluster installation or upgrade will be executed. Any other number of VSTAT definitions will result in 1 or more stand-alone VSTATs being installed or upgraded.
 
-## Notes for enabling post-installation security features
+## Enabling post-installation security features
 You can use MetroÆ to enable optional post-installation security features to 'harden' the installation. Your deployment contains a number of optional variables that can be used to accomplish this. These variables are described, below. For more detail, please see the Nuage VSP Install Guide.
 ### `vsds.yml`
 - `ca_certificate_path` is an optional parameter that points to the location of the certificate of the signing authority.
