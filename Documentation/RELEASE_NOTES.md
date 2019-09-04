@@ -16,6 +16,7 @@
 * Move config.cfg setting from vsc-predeploy to vsc-deploy (METROAE-896)
 * Check file permissions before running guestfish on KVM images (METROAE-752)
 * Availability zone support for OpenStack
+* Support Nuage Utility Host(NUH) SA and HA install using MetroAE (METROAE-1062)
 
 ### Resolved Issues
 * Set event log max age to 7 as per Nuage Upgrade procedure (METROAE-1001)
