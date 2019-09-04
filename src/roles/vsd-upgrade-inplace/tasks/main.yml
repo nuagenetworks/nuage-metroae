@@ -1,4 +1,36 @@
-- name: Run the inplace upgrade on each vsd sequentially
-  import_tasks: vsd-upgrade-inplace-tasks.yml
-  delegate_to: "{{ item }}"
-  with_items: "{{ groups['vsd_inplace_upgrade_nodes'] }}"
+- name: Check monit summary before upgrade
+  include_role: 
+    name: vsd-health
+    tasks_from: monit_status
+  vars:
+    no_report: "True"
+
+- block:
+
+  - name: Copy VSD-migration-scripts-xxx.iso
+    copy: src="{{ vsd_migration_iso_path }}/{{ vsd_migration_iso_file_name }}"
+        dest=/tmp/
+
+  - name: Create mount point on /media/CDROM
+    command: mkdir -p /media/CDROM
+
+  - name: Mount VSD-migration-scripts-xxx.iso on /media/CDROM
+    shell: "mount -o loop /tmp/{{ vsd_migration_iso_file_name }} /media/CDROM"
+
+  - name: Check and print what needs to be patched on VSD
+    command: /media/CDROM/vsd-patch.sh -c
+
+  - name: Run the patch
+    command: /media/CDROM/vsd-patch.sh
+
+  remote_user: "{{ vsd_username | default(vsd_default_username) }}"
+  become: "{{ 'no' if vsd_username | default(vsd_default_username) == 'root' else 'yes' }}"
+  vars:
+    ansible_become_pass: "{{ vsd_password | default(vsd_default_password) }}"
+
+- name: Check monit summary after upgrade
+  include_role:
+    name: vsd-health
+    tasks_from: monit_status
+  vars:
+    no_report: "True"
