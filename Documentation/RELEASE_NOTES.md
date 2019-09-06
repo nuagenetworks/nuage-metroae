@@ -15,7 +15,8 @@
 * Add playbook to delete VSD backup after upgrade (METROAE-1009)
 * Move config.cfg setting from vsc-predeploy to vsc-deploy (METROAE-896)
 * Check file permissions before running guestfish on KVM images (METROAE-752)
-* Availability zone support for OpenStack
+* Add availability zone support for OpenStack
+* Add example deployment for geo-redundant VSD deployment
 
 ### Resolved Issues
 * Set event log max age to 7 as per Nuage Upgrade procedure (METROAE-1001)
