@@ -15,7 +15,8 @@
 * Add playbook to delete VSD backup after upgrade (METROAE-1009)
 * Move config.cfg setting from vsc-predeploy to vsc-deploy (METROAE-896)
 * Check file permissions before running guestfish on KVM images (METROAE-752)
-* Availability zone support for OpenStack
+* Add availability zone support for OpenStack
+* Add example deployment for geo-redundant VSD deployment
 * Support Nuage Utility Host(NUH) SA and HA install using MetroAE (METROAE-1062)
 
 ### Resolved Issues
