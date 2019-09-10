@@ -62,11 +62,11 @@ WIZARD_SCRIPT = """
     container_msg: |
 
       MetroAE is running in a container.  The zipped image files must be placed
-      under the metroae_images directory mount point of the container.  The
+      under the metroae_data directory mount point of the container.  The
       mount directory was set during container setup and can be found using
       the command "metroae container status".  Relative paths must be provided
       for both the source and destination directories that are relative to the
-      metroae_images mount point.
+      metroae_data mount point.
 
 - step: Create/read deployment
   description: |
@@ -297,7 +297,7 @@ class Wizard(object):
 
                 # Dalston container
                 # zip_dir = self._input("Please enter the directory relative to "
-                #                       "the metroae_images mount point that "
+                #                       "the metroae_data mount point that "
                 #                       "contains your zip files", "")
 
                 if zip_dir.startswith("/"):
@@ -305,8 +305,8 @@ class Wizard(object):
                     continue
 
                 # Dalston container
-                # full_zip_dir = os.path.join("/metroae_images", zip_dir)
-                full_zip_dir = os.path.join("/images", zip_dir)
+                # full_zip_dir = os.path.join("/metroae_data", zip_dir)
+                full_zip_dir = os.path.join("/data", zip_dir)
 
             else:
                 zip_dir = self._input("Please enter the directory that "
@@ -331,10 +331,10 @@ class Wizard(object):
             while not valid:
                 # Dalston container
                 # unzip_dir = self._input("Please enter the directory relative "
-                #                         "to the metroae_images mount point to "
+                #                         "to the metroae_data mount point to "
                 #                         "unzip to")
                 unzip_dir = self._input("Please enter the directory relative "
-                                        "to the images mount point to "
+                                        "to the data mount point to "
                                         "unzip to")
 
                 if unzip_dir.startswith("/"):
@@ -343,8 +343,8 @@ class Wizard(object):
                     valid = True
 
             # Dalston container
-            # full_unzip_dir = os.path.join("/metroae_images", unzip_dir)
-            full_unzip_dir = os.path.join("/images", unzip_dir)
+            # full_unzip_dir = os.path.join("/metroae_data", unzip_dir)
+            full_unzip_dir = os.path.join("/data", unzip_dir)
         else:
             unzip_dir = self._input("Please enter the directory to unzip to")
             full_unzip_dir = unzip_dir
