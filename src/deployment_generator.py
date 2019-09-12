@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
 import jinja2
-from netaddr import IPAddress
 import os
 import sys
 import yaml
@@ -44,10 +43,11 @@ def write_deployments(var_dict, deployment_name):
         deployment_file = deployment_filename + ".yml"
         write_deployment_file(os.path.join(TEMPLATES_DIRECTORY, deployment_template_file),
                               os.path.join(deployment_dir, deployment_file), var_dict)
-    #To write a single deployment file, use this syntax:
-    #write_deployment_file(os.path.join(TEMPLATES_DIRECTORY, "stcvs.j2"),
-    #                           os.path.join(deployment_dir, "stcvs.yml"),
-    #                           var_dict)
+        # To write a single deployment file, use this syntax:
+        # write_deployment_file(os.path.join(TEMPLATES_DIRECTORY, "stcvs.j2"),
+        #                       os.path.join(deployment_dir, "stcvs.yml"),
+        #                       var_dict)
+
 
 def write_deployment_file(template_file, to_file, var_dict):
     print "Writing " + to_file
