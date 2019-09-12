@@ -21,4 +21,5 @@
 ### Resolved Issues
 * Set event log max age to 7 as per Nuage Upgrade procedure (METROAE-1001)
 * Remove obsolete iptables traffic blocking during HA upgrade (METROAE-1051)
+* Fix VSD node information to get Primary VSD information Rather than XMPP node info (METROAE-1093)
 * Fixed issue with Active Standy VSTAT deploy with VSD in HA mode
