@@ -2,8 +2,11 @@
 # This is a generated file. Manual changes to this file
 # will be lost if reset-build or build is run
 #
-target_server_type: {{ item.target_server_type | default("kvm") }}
-{% if item.target_server_type | match("kvm") %}
+component_type: dns
+hostname: {{ item.hostname }}
+
+target_server_type: {{ item.target_server_type | default('kvm') }}
+{% if item.target_server_type is match("kvm") %}
 target_server: {{ item.target_server }}
 hostname: {{ item.hostname }}
 
@@ -16,6 +19,11 @@ vm_name: {{ item.hostname }}
 mgmt_ip: {{ item.mgmt_ip }}
 mgmt_gateway: {{ item.mgmt_gateway }}
 mgmt_netmask: {{ item.mgmt_netmask }}
+
+{% if item.mgmt_bridge is defined %}
+mgmt_bridge: {{ item.mgmt_bridge }}
+{% endif %}
+
 data_ip: {{ item.data_ip }}
 data_netmask: {{ item.data_netmask }}
 data_subnet: {{ item.data_subnet }}
@@ -25,12 +33,12 @@ data_gateway: {{ item.data_gateway }}
 
 data_static_route: {{ item.data_static_route|to_yaml(default_flow_style=True) }}
 
-{% if qcow2_path is defined %}
-qcow2_path: {{ qcow2_path }}
+{% if item.data_bridge is defined %}
+data_bridge: {{ item.data_bridge }}
 {% endif %}
-{% if qcow2_file_name is defined %}
-qcow2_file_name: {{ qcow2_file_name }}
-{% endif %}
+
+image_path: {{ image_path | default("MISSING") }}
+image_file_name: {{ image_file_name | default("MISSING") }}
 
 mgmt_reverse: {{ item.mgmt_ip.split('.')[2] }}.{{ item.mgmt_ip.split('.')[1] }}.{{ item.mgmt_ip.split('.')[0] }}
 data_reverse: {{ item.data_ip.split('.')[2] }}.{{ item.data_ip.split('.')[1] }}.{{ item.data_ip.split('.')[0] }}

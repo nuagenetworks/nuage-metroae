@@ -5,7 +5,7 @@
 target_server_type: {{ item.target_server_type | default('kvm') }}
 hostname: {{ item.hostname }}
 
-{% if not item.target_server_type | match("aws") %}
+{% if not item.target_server_type is match("aws") %}
 target_server: {{ item.target_server }}
 {% endif %}
 
@@ -19,6 +19,9 @@ mgmt_ip: {{ item.mgmt_ip }}
 mgmt_prefix: {{ item.mgmt_ip_prefix }}
 mgmt_gateway: {{ item.mgmt_gateway }}
 
+{% if item.mgmt_bridge is defined %}
+mgmt_bridge: {{ item.mgmt_bridge }}
+{% endif %}
 
 {% if item.data_fqdn is defined %}
 data_fqdn: {{ item.data_fqdn }}
@@ -30,6 +33,10 @@ data_netmask: {{ item.data_netmask }}
 data_gateway: {{ item.data_gateway }}
 data_static_route: {{ item.data_static_route|to_yaml(default_flow_style=True) }}
 {% endif %}
+{% endif %}
+
+{% if item.data_bridge is defined %}
+data_bridge: {{ item.data_bridge }}
 {% endif %}
 
 {% if item.data_subnet is defined %}
@@ -48,16 +55,8 @@ vsd_fqdn: {{ item.vsd_fqdn }}
 vsd_fqdn: {{ vsd_fqdn_global }}
 {% endif %}
 
-{% if item.target_server_type | match("kvm") %}
-
-{% if qcow2_path is defined %}
-qcow2_path: {{ qcow2_path }}
-{% endif %}
-{% if qcow2_file_name is defined %}
-qcow2_file_name: {{ qcow2_file_name }}
-{% endif %}
-
-{% endif %}
+image_path: {{ image_path | default("MISSING") }}
+image_file_name: {{ image_file_name | default("MISSING") }}
 
 {% if item.cpuset is defined %}
 cpuset:
@@ -66,13 +65,13 @@ cpuset:
 {% endfor %}
 {% endif %}
 
-{% if item.target_server_type | match("vcenter") %}
+{% if item.target_server_type is match("vcenter") %}
 
-{% if ova_path is defined %}
-ova_path: {{ ova_path }}
+{% if image_path is defined %}
+image_path: {{ image_path }}
 {% endif %}
-{% if ova_file_name is defined %}
-ova_file_name: {{ ova_file_name }}
+{% if image_file_name is defined %}
+image_file_name: {{ image_file_name }}
 {% endif %}
 
 vcenter:
@@ -86,7 +85,7 @@ vcenter:
 
 {% endif %}
 
-{% if item.target_server_type | match("aws") %}
+{% if item.target_server_type is match("aws") %}
 
 aws_region: "{{ item.aws_region }}"
 aws_ami_id: "{{ item.aws_ami_id }}"

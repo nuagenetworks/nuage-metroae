@@ -4,12 +4,10 @@
 #
 component_type: nsgv
 target_server_type: {{ item.target_server_type | default('kvm') }}
-hostname: {{ item.hostname }}
-
-{% if item.vmname is defined %}
 vmname: {{ item.vmname }}
-{% else %}
-vmname: {{ item.hostname }}
+
+{% if item.telnet_port is defined %}
+telnet_port: {{ item.telnet_port }}
 {% endif %}
 
 {% if item.nsg_template_id is defined %}
@@ -20,7 +18,7 @@ nsg_template_id: "{{ item.nsg_template_id }}"
 enterprise: "{{ item.enterprise }}"
 {% endif %}
 
-{% if item.target_server_type | match("kvm") and item.userdisk_path is defined %}
+{% if item.target_server_type is match("kvm") and item.userdisk_path is defined %}
 userdisk_path: "{{ item.userdisk_path }}"
 {% endif %}
 
@@ -32,9 +30,21 @@ nsgv_ip: "{{ item.nsgv_ip }}"
 nsgv_mac: "{{ item.nsgv_mac }}"
 {% endif %}
 
+{% if item.mgmt_bridge is defined %}
+mgmt_bridge: {{ item.mgmt_bridge }}
+{% endif %}
+
+{% if item.data_bridge is defined %}
+data_bridge: {{ item.data_bridge }}
+{% endif %}
+
+{% if item.access_bridge is defined %}
+access_bridge: {{ item.access_bridge }}
+{% endif %}
+
 bootstrap_method: {{ item.bootstrap_method | default('none') }}
 
-{% if item.target_server_type | match("kvm") or item.target_server_type | match("vcenter") %}
+{% if item.target_server_type is match("kvm") or item.target_server_type is match("vcenter") %}
 
 target_server: {{ item.target_server }}
 
@@ -73,23 +83,10 @@ port6_bridge: {{item.port6_bridge}}
 
 {% endif %}
 
-{% if item.target_server_type | match("kvm") %}
-{% if qcow2_path is defined %}
-qcow2_path: {{ qcow2_path }}
-{% endif %}
-{% if qcow2_file_name is defined %}
-qcow2_file_name: {{ qcow2_file_name }}
-{% endif %}
-{% endif %}
+image_path: {{ image_path | default("MISSING") }}
+image_file_name: {{ image_file_name | default("MISSING") }}
 
-{% if item.target_server_type | match("vcenter") %}
-
-{% if ova_path is defined %}
-ova_path: {{ ova_path }}
-{% endif %}
-{% if ova_file_name is defined %}
-ova_file_name: {{ ova_file_name }}
-{% endif %}
+{% if item.target_server_type is match("vcenter") %}
 
 vcenter:
   username: {{ encrypted.vcenter_username | indent(8, False) }}
@@ -102,7 +99,7 @@ vcenter:
 
 {% endif %}
 
-{% elif item.target_server_type | match("aws") %}
+{% elif item.target_server_type is match("aws") %}
 
 aws_region: "{{ item.aws_region }}"
 aws_ami_id: "{{ item.aws_ami_id }}"

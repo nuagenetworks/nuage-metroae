@@ -1,6 +1,16 @@
 - hosts: vrss
   gather_facts: no
-  any_errors_fatal: true
+  pre_tasks:
+    - name: Lets run VRS predeploy hooks
+      include_role:
+        name: hooks
+        tasks_from: main
+      vars:
+        - hooks_file_path: "{{ item }}"
+        - hook_location:
+          - vrs_predeploy
+          - install_vrss
+      with_items: "{{ hooks | default([]) }}"
   roles:
     - vrs-predeploy
   become: yes

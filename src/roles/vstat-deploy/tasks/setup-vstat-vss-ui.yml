@@ -1,0 +1,61 @@
+
+- name: Create temp directory
+  file:
+    path: /tmp/nginx-certs
+    state: directory
+  remote_user: "{{ vstat_custom_username | default(vstat_default_username) }}"
+
+- name: Create and transfer certs
+  include_role:
+    name: common
+    tasks_from: vsd-generate-transfer-certificates
+  vars:
+    certificate_password: "{{ vstat_default_password }}"
+    certificate_username: "{{ inventory_hostname }}"
+    commonName: "{{ inventory_hostname }}"
+    certificate_type: server
+    scp_user: "{{ vstat_custom_username | default(vstat_default_username) }}"
+    scp_location: "/tmp/nginx-certs/"
+    additional_parameters:  -d {{ inventory_hostname }}
+
+- block:
+
+  - name: Create ssl directory
+    file:
+      path: /etc/nginx/ssl/
+      state: directory
+      owner: root
+      group: root
+      mode: 0600
+
+  - name: Move certificate to ssl directory
+    shell: "mv /tmp/nginx-certs/* /etc/nginx/ssl/"
+
+  - name: Remove temp directory
+    file:
+      path: /tmp/nginx-certs/
+      state: absent
+
+  - name: Write nginx.conf configuration
+    template:
+      src: nginx.conf.j2
+      dest: /etc/nginx/nginx.conf
+      force: yes
+      backup: no
+
+  - name: Set certificate ownership and permissions
+    file:
+      path: /etc/nginx/ssl/
+      state: directory
+      recurse: True
+      owner: root
+      group: root
+      mode: 0600
+
+  - name: Restart nginx
+    command:
+      cmd: "service nginx restart"
+      warn: no
+
+  remote_user: "{{ vstat_custom_username | default(vstat_default_username) }}"
+  become: "{{ 'no' if vstat_custom_username | default(vstat_default_username) == 'root' else 'yes' }}"

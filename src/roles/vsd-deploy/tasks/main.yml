@@ -26,13 +26,9 @@
   register: vsd_version
   remote_user: "{{ vsd_default_username }}"
 
-- name: Set if VSD versions match qcow2
-  set_fact: vsd_versions_match="{{ vsd_version.stdout == qcow2_file_name | regex_search('([0-9]+\\.[0-9]+\\.[0-9A-Za-z]+)') }}"
-  when: qcow2_file_name is defined
-
-- name: Set if VSD versions match ova
-  set_fact: vsd_versions_match="{{ vsd_version.stdout == ova_file_name | regex_search('([0-9]+\\.[0-9]+\\.[0-9A-Za-z]+)') }}"
-  when: ova_file_name is defined
+- name: Set if VSD versions match image file
+  set_fact: vsd_versions_match="{{ vsd_version.stdout == image_file_name | regex_search('([0-9]+\\.[0-9]+\\.[0-9A-Za-z]+)') }}"
+  when: image_file_name is defined
 
 - name: Set if VSD versions match optional input version
   set_fact: vsd_versions_match="{{ vsd_version.stdout == nuage_software_version }}"
@@ -67,7 +63,7 @@
     - name: Set hostname for AWS permanently
       shell: "echo {{ hostname }} > /etc/hostname"
 
-    when: target_server_type | match("aws")
+    when: target_server_type is match("aws")
 
   - name: Set Major, Minor and Patch VSD version
     set_fact:
@@ -79,19 +75,31 @@
 
     - name: Set VSD numbering for cluster install
       set_fact:
-          first_cluster_node_to_install: "{{ groups['vsds'][0] }}"
-          second_cluster_node_to_install: "{{ groups['vsds'][1] }}"
-          third_cluster_node_to_install: "{{ groups['vsds'][2] }}"
-      when: not nuage_upgrade | default(False)
+          first_cluster_node_to_install: "{{ groups['vsd_ha_node1'][0] }}"
+          second_cluster_node_to_install: "{{ groups['vsd_ha_node2'][0] }}"
+          third_cluster_node_to_install: "{{ groups['vsd_ha_node3'][0] }}"
+      when:
+        - not nuage_upgrade | default(False)
+        - not vsd_standby_cluster | default(False)
+
+    - name: Set VSD numbering for standby cluster install
+      set_fact:
+          first_cluster_node_to_install: "{{ groups['vsd_standby_node1'][0] }}"
+          second_cluster_node_to_install: "{{ groups['vsd_standby_node2'][0] }}"
+          third_cluster_node_to_install: "{{ groups['vsd_standby_node3'][0] }}"
+      when:
+        - vsd_standby_cluster | default(False)
 
     - name: Set VSD numbering for cluster upgrade
       set_fact:
-          first_cluster_node_to_install: "{{ groups['vsds'][1] }}"
-          second_cluster_node_to_install: "{{ groups['vsds'][2] }}"
-          third_cluster_node_to_install: "{{ groups['vsds'][0] }}"
-      when: nuage_upgrade | default(False)
+          first_cluster_node_to_install: "{{ groups['vsd_ha_node2'][0] }}"
+          second_cluster_node_to_install: "{{ groups['vsd_ha_node3'][0] }}"
+          third_cluster_node_to_install: "{{ groups['vsd_ha_node1'][0] }}"
+      when:
+        - nuage_upgrade | default(False)
+        - not vsd_standby_cluster | default(False)
 
-    when: vsd_sa_or_ha | match('ha')
+    when: vsd_sa_or_ha is match('ha')
 
   - name: Set deploy_vcin to false (deploy vsd)
     set_fact:
@@ -116,7 +124,7 @@
 
 - name: Execute OpenStack tasks for the deploy
   import_tasks: openstack.yml
-  when: not skip_vsd_deploy and target_server_type | match("openstack")
+  when: not skip_vsd_deploy and target_server_type is match("openstack")
   tags:
     - vsd
     - openstack
@@ -135,7 +143,7 @@
       import_tasks: cluster_ssh_keys.yml
       when: vsd_major_version | int >= 5
 
-    when: vsd_sa_or_ha | match('ha')
+    when: vsd_sa_or_ha is match('ha')
 
   - name: Update /etc/hosts file on VSD
     lineinfile:
@@ -176,7 +184,7 @@
       dest: /etc/yum.conf
       regexp: "^proxy="
       line: "proxy={{ yum_proxy }}"
-    when: not yum_proxy | match('NONE')
+    when: yum_proxy is not match('NONE')
 
   - name: Execute a yum update (Can take 20 minutes)
     yum:
@@ -199,18 +207,22 @@
     vars:
       rem_user: "{{ vsd_default_username }}"
 
+  - name: Enable IPv6 on VSD
+    command: /opt/vsd/bin/vsd-switch-ipv6.sh
+    when: enable_ipv6 | default(False) == True
+
   - block:
 
     - name: Install VSD software on standalone node (Can take 20 minutes)
-      command: /opt/vsd/vsd-install.sh -t s -y
+      command: "/opt/vsd/vsd-install.sh -t s -y {{ (enable_ipv6 | default(False) == True) | ternary('-6', '') }}"
       when: not deploy_vcin
 
     - name: Install VCIN software on VCIN node (Can take 20 minutes)
-      command: /opt/vsd/vsd-install.sh -t v -y
+      command: "/opt/vsd/vsd-install.sh -t v -y {{ (enable_ipv6 | default(False) == True) | ternary('-6', '') }}"
       when: deploy_vcin
 
     when:
-      - vsd_sa_or_ha | match ('sa')
+      - vsd_sa_or_ha is match ('sa')
       - master_vcin is not defined
 
   - block:
@@ -250,31 +262,31 @@
           mode: push
 
     - name: Install VCIN software on slave VCIN node
-      command: /opt/vsd/vsd-install.sh -t v -y
+      command: "/opt/vsd/vsd-install.sh -t v -y {{ (enable_ipv6 | default(False) == True) | ternary('-6', '') }}"
 
     - name: Start the replication
       command: "/opt/vsd/bin/vsd-start-replication-slave -m {{ master_vcin }}"
 
     when:
-      - vsd_sa_or_ha | match ('sa')
+      - vsd_sa_or_ha is match ('sa')
       - deploy_vcin
       - master_vcin is defined
 
   - block:
 
     - name: Install VSD software on the first cluster node (Can take 20 minutes)
-      command: "/opt/vsd/vsd-install.sh -t 1 -a {{ first_cluster_node_to_install }} -b {{ second_cluster_node_to_install }} -c {{third_cluster_node_to_install}} -x {{vsd_fqdn}} -y"
+      command: "/opt/vsd/vsd-install.sh -t 1 -a {{ first_cluster_node_to_install }} -b {{ second_cluster_node_to_install }} -c {{third_cluster_node_to_install}} -x {{vsd_fqdn}} -y {{ (enable_ipv6 | default(False) == True) | ternary('-6', '') }}"
       when: inventory_hostname == first_cluster_node_to_install
 
     - name: Install VSD software on the second cluster node (Can take 20 minutes)
-      command: "/opt/vsd/vsd-install.sh -1 {{ first_cluster_node_to_install }} -t 2 -x {{ vsd_fqdn }} -y"
+      command: "/opt/vsd/vsd-install.sh -1 {{ first_cluster_node_to_install }} -t 2 -x {{ vsd_fqdn }} -y {{ (enable_ipv6 | default(False) == True) | ternary('-6', '') }}"
       when: inventory_hostname == second_cluster_node_to_install
 
     - name: Install VSD software on the third cluster node (Can take 20 minutes)
-      command: "/opt/vsd/vsd-install.sh -1 {{ first_cluster_node_to_install }} -t 3 -x {{ vsd_fqdn }} -y"
+      command: "/opt/vsd/vsd-install.sh -1 {{ first_cluster_node_to_install }} -t 3 -x {{ vsd_fqdn }} -y {{ (enable_ipv6 | default(False) == True) | ternary('-6', '') }}"
       when: inventory_hostname == third_cluster_node_to_install
 
-    when: vsd_sa_or_ha | match('ha')
+    when: vsd_sa_or_ha is match('ha')
 
   - name: Set XMPP connection to allow both clear and TLS
     command: /opt/vsd/bin/ejmode allow -y
@@ -287,6 +299,46 @@
     - not skip_vsd_deploy
     - branding_zip_file is defined
     - component_type == "vsd"
+    - not vsd_standby_cluster | default(False)
+
+- block:
+
+  - name: Get monit summary for all process on VSD
+    vsd_monit:
+      group: all
+    register: proc_list
+
+  - name: Set fact to skip testing ejabberd cluster status services
+    set_fact:
+      remove_list:
+        - "ejabberd-cluster-status"
+
+  - name: Set fact to skip testing ejabberd cluster and vstat services during upgrade
+    set_fact:
+      remove_list:
+        - "stats-collector-status"
+        - "tca-daemon-status"
+        - "vsd-stats-status"
+        - "ejabberd-cluster-status"
+    when: nuage_upgrade | default(false)
+
+  - name: wait for VSD common , core and stats services to become running
+    monit_waitfor_service:
+      name: "{{ item }}"
+      timeout_seconds: 1200
+      test_interval_seconds: 30
+    with_items: "{{ proc_list['state'].keys() | difference(remove_list) }}"
+
+  - name: Apply licenses to VSD
+    include_role:
+      name: common
+      tasks_from: apply-licenses-to-vsd
+
+  when: 
+    - component_type == "vsd"
+    - (vsd_major_version|int > 5) or
+      (vsd_major_version|int == 5 and vsd_minor_version|int >= 3)
+  remote_user: "{{ vsd_default_username }}"
 
 - name: Install nginx
   yum:

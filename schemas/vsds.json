@@ -20,7 +20,10 @@
             },
             "mgmt_ip": {
                 "type": "string",
-                "format": "ipv4",
+                "anyOf": [
+                    {"format": "ipv4"},
+                    {"format": "ipv6"}
+                ],
                 "title": "Management IP Address",
                 "description": "Management IP of VSD",
                 "propertyOrder": 20
@@ -30,12 +33,15 @@
                 "title": "Management Network Prefix Length",
                 "description": "Management network prefix length for VSD",
                 "minimum": 0,
-                "maximum": 32,
+                "maximum": 128,
                 "propertyOrder": 30
             },
             "mgmt_gateway": {
                 "type": "string",
-                "format": "ipv4",
+                "anyOf": [
+                    {"format": "ipv4"},
+                    {"format": "ipv6"}
+                ],
                 "title": "Management Network Gateway",
                 "description": "Management network gateway for VSD",
                 "sectionEnd": "Management Interface",
@@ -63,7 +69,13 @@
                 "description": "Type of hypervisor environment into which the instance will be created",
                 "propertyOrder": 70,
                 "sectionBegin": "Target Server",
-                "enum": ["kvm", "vcenter", "aws", "openstack"]
+                "enum": [
+                    "kvm",
+                    "vcenter",
+                    "aws",
+                    "openstack",
+                    "nuagex"
+                ]
             },
             "target_server": {
                 "type": "string",
@@ -77,7 +89,7 @@
                 "type": "string",
                 "default": "(global Bridge interface)",
                 "title": "Management Network Bridge",
-                "description": "Network Bridge used for the management interface of a component or the BOF interface on VSC. This will be a Distributed Virtual PortGroup (DVPG) when deploying on vCenter or a Linux network bridge when deploying on KVM. This field can be overridden by defining the management network bridge separately in the component configuration. Defaults to the global setting",
+                "description": "Network Bridge used for the management interface of this component. This will be a Distributed Virtual PortGroup (DVPG) when deploying on vCenter or a Linux network bridge when deploying on KVM. Defaults to the global setting",
                 "advanced": true,
                 "propertyOrder": 90
             },
@@ -180,26 +192,33 @@
                 "target_server_type": "openstack",
                 "propertyOrder": 210
             },
+            "openstack_availability_zone": {
+                "type": "string",
+                "title": "OpenStack Availability Zone",
+                "description": "Name of availability zone on OpenStack for VSD",
+                "target_server_type": "openstack",
+                "propertyOrder": 220
+            },
             "openstack_network": {
                 "type": "string",
                 "title": "OpenStack Network",
                 "description": "Name of network on OpenStack for VSD",
                 "target_server_type": "openstack",
-                "propertyOrder": 220
+                "propertyOrder": 230
             },
             "openstack_subnet": {
                 "type": "string",
                 "title": "OpenStack Subnet",
                 "description": "Name of subnet on OpenStack for VSD",
                 "target_server_type": "openstack",
-                "propertyOrder": 230
+                "propertyOrder": 240
             },
             "openstack_port_name": {
                 "type": "string",
                 "title": "OpenStack Port Name",
                 "description": "Name for Mgmt interface",
                 "target_server_type": "openstack",
-                "propertyOrder": 240
+                "propertyOrder": 250
             },
             "openstack_port_security_groups": {
                 "type": "array",
@@ -207,7 +226,7 @@
                 "description": "Set of security groups to associate with Mgmt interface",
                 "target_server_type": "openstack",
                 "sectionEnd": "OpenStack Parameters",
-                "propertyOrder": 250,
+                "propertyOrder": 260,
                 "items": {
                     "type": "string"
                 }
@@ -216,13 +235,71 @@
                 "type": "array",
                 "title": "KVM cpuset information",
                 "description": "Cpuset information for cpu pinning on KVM. For example, VSD requires 6 cores and sample values will be of the form [ 0, 1, 2, 3, 4, 5 ]",
-                "propertyOrder": 260,
+                "propertyOrder": 270,
                 "advanced": true,
+                "target_server_type": "kvm",
                 "items": {
                     "type": "integer"
                 }
+            },
+            "failed_login_attempts": {
+                "type": "integer",
+                "title": "Failed login attempts",
+                "description": "Lockout the user after reaching the number of failed login attempts",
+                "propertyOrder": 280,
+                "advanced": true,
+            },
+            "failed_login_lockout_time": {
+                "type": "integer",
+                "title": "Failed login lockout time",
+                "description": "Lockout time after failed login attemps",
+                "propertyOrder": 290,
+                "advanced": true,
+            },
+            "advanced_api_access_logging": {
+                "type": "boolean",
+                "title": "Advanced API Access Logging",
+                "description": "Enables advance API access logging",
+                "propertyOrder": 300,
+                "advanced": true,
+            },
+            "tls_version": {
+                "type": "string",
+                "title": "TLS version",
+                "description": "TLS version to use",
+                "propertyOrder": 310,
+                "enum": ["1.0", "1.2"],
+                "advanced": true,
+            },
+            "ca_certificate_path": {
+                "type": "string",
+                "title": "Path to CA certificate pem file",
+                "description": "Path to CA certificate pem file",
+                "propertyOrder": 320,
+                "advanced": true,
+            },
+            "intermediate_certificate_path": {
+                "type": "string",
+                "title": "Path to intermediate certificate pem file",
+                "description": "Path to intermediate certificate pem file",
+                "propertyOrder": 330,
+                "advanced": true,
+            },
+            "certificate_path": {
+                "type": "string",
+                "title": "Path to certificate pem file",
+                "description": "Path to certificate pem file",
+                "propertyOrder": 340,
+                "advanced": true,
             }
         },
-        "required": ["hostname", "target_server_type", "target_server", "mgmt_ip", "mgmt_ip_prefix", "mgmt_gateway"]
+        "required": [
+            "hostname",
+            "target_server_type",
+            "target_server",
+            "mgmt_ip",
+            "mgmt_ip_prefix",
+            "mgmt_gateway"
+        ]
     }
 }

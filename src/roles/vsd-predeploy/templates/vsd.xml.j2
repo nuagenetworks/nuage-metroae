@@ -3,11 +3,12 @@
 {% if component_type == "vcin" %}
   <memory unit='GiB'>{{ vcin_ram }}</memory>
   <currentMemory unit='GiB'>{{ vcin_ram }}</currentMemory>
+  <vcpu current='{{ vcin_cpu_cores }}'>{{ vcin_cpu_cores }}</vcpu>
 {% else %}
   <memory unit='GiB'>{{ vsd_ram }}</memory>
   <currentMemory unit='GiB'>{{ vsd_ram }}</currentMemory>
+  <vcpu current='{{ vsd_cpu_cores }}'>{{ vsd_cpu_cores }}</vcpu>
 {% endif %}
-  <vcpu current='6'>6</vcpu>
 {% if cpuset is defined %}
   <cputune>
       {% for cpu in cpuset %}
@@ -15,7 +16,11 @@
       {% endfor %}
   </cputune>
 {% else %}
-    <vcpu placement='static'>6</vcpu>
+    {% if component_type == "vcin" %}
+      <vcpu placement='static'>{{ vcin_cpu_cores }}</vcpu>
+    {% else %}
+      <vcpu placement='static'>{{ vsd_cpu_cores }}</vcpu>
+    {% endif %}
 {% endif %}
   <resource>
     <partition>/machine</partition>
@@ -77,4 +82,3 @@
     </memballoon>
   </devices>
 </domain>
-

@@ -1,0 +1,252 @@
+- name: Clean known_hosts of VSDs (ignoring errors)
+  known_hosts:
+    name: "{{ mgmt_ip }}"
+    state: absent
+  delegate_to: localhost
+  no_log: True
+  ignore_errors: True
+
+- name: Clean known_hosts of VSDs (ignoring errors)
+  known_hosts:
+    name: "{{ inventory_hostname }}"
+    state: absent
+  delegate_to: localhost
+  no_log: True
+  ignore_errors: True
+
+- block:
+
+  - block:
+
+    - name: Create a SSH pass
+      command: openssl passwd -1 {{ vsd_custom_password }}
+      register: openssl_pwd
+
+    - name: Check if user exists
+      command: id -u {{ vsd_custom_username }}
+      ignore_errors: yes
+      register: user_exists
+
+    - name: Create the user if not present
+      command: useradd -p {{ openssl_pwd.stdout }} {{ vsd_custom_username }}
+      when: "'no such user' in user_exists.stderr"
+
+    - name: Add user to sudoers list
+      command: usermod -aG wheel {{ vsd_custom_username }}
+
+    - name: Update sshd config file
+      lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: '#PermitRootLogin yes'
+        line: 'PermitRootLogin no'
+
+    - name: Create .ssh directory for vsd custom user
+      shell: 'mkdir -p /home/{{ vsd_custom_username }}/.ssh/'
+
+    - name: Change ownership of .ssh directory
+      shell: 'chown {{ vsd_custom_username }}:{{ vsd_custom_username }} /home/{{ vsd_custom_username }}/.ssh'
+
+    - block:
+
+      - name: Get the public key for the current user
+        local_action: command cat "{{ user_ssh_pub_key }}"
+        register: current_user_ssh_key
+
+      - name: Create a temporary copy of the authorized_keys file
+        template: src=authorized_keys.j2 backup=no dest=/tmp/authorized_keys_temp
+
+      - name: Copy authorized file to vsd custom user home directory
+        expect:
+          command: 'scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null /tmp/authorized_keys_temp {{ vsd_custom_username }}@{{ mgmt_ip }}:/home/{{ vsd_custom_username }}/.ssh/authorized_keys'
+          responses:
+            (?i)yes: "yes"
+            (?i)password: "{{ vsd_custom_password }}"
+          timeout: 720
+
+      - name: Remove temporary copy of authorized_keys file
+        file: path=tmp/authorized_keys_temp state=absent
+
+      delegate_to: localhost
+
+    - name: Set permission on the authorized file to 644
+      shell: 'chmod 644 /home/{{ vsd_custom_username }}/.ssh/authorized_keys'
+      remote_user: "{{ vsd_custom_username }}"
+
+    - name: Restart ssh server
+      shell: /bin/systemctl restart  sshd.service
+
+    - name: Set vsd user to custom user
+      set_fact:
+        vsd_username: "{{ vsd_custom_username }}"
+
+    when:
+      - vsd_custom_username is defined
+      - vsd_custom_password is defined
+
+  - name: Set custom password for MySQL root password
+    shell: mysqladmin -u root password "{{ vsd_mysql_password }}"
+    when: vsd_mysql_password is defined
+
+  - name: Register failed login attempts and lockout time from file when not defined
+    slurp:
+      src: /etc/pam.d/system-auth-local
+    register: system_auth
+
+  - name: Register failed loging attemps
+    set_fact:
+        failed_login_attempts: "{{ system_auth['content'] | regex_findall('\\bdeny\\b\\=(.+)') }}"
+    when: failed_login_attempts is undefined
+
+  - name: Register failed loging timeout
+    set_fact:
+        failed_login_lockout_time: "{{ system_auth['content'] | regex_findall('\\bunlock_time\\b\\=(.+)') }}"
+    when: failed_login_lockout_time is undefined
+
+  - name: Lockout Time And Failed Login Attempts required
+    lineinfile:
+      path: "{{ item }}"
+      regexp: 'auth        required      pam_faillock.so preauth silent audit deny=3 unlock_time=600'
+      line: 'auth        required      pam_faillock.so preauth silent audit deny={{ failed_login_attempts }} unlock_time={{ failed_login_lockout_time }}'
+    with_items:
+      - "/etc/pam.d/password-auth"
+      - "/etc/pam.d/system-auth"
+
+  - name: Lockout Time And Failed Login Attempts default die
+    lineinfile:
+      path: "{{ item }}"
+      regexp: 'auth        \[default=die\] pam_faillock.so authfail audit deny=3 unlock_time=600'
+      line: 'auth        [default=die] pam_faillock.so authfail audit deny={{ failed_login_attempts }} unlock_time={{ failed_login_lockout_time }}'
+    with_items:
+      - "/etc/pam.d/password-auth"
+      - "/etc/pam.d/system-auth"
+
+  - block:
+
+    - name: Enable TLSv1.2 for verify-client==false
+      lineinfile:
+        path: /opt/vsd/jboss/standalone/configuration/standalone-full-ha.xml
+        regexp: ".*protocol=\"TLSv1\".*verify-client=\"false\".*"
+        line: '<ssl protocol="TLSv1.2" key-alias="vsd1.example.com" password="Alcateldc" certificate-key-file="${jboss.home.dir}/standalone/configuration/vsd.keystore" verify-client="false" session-cache-size="200" cipher-suite="TLS_RSA_WITH_AES_128_CBC_SHA,TLS_RSA_WITH_AES_128_CBC_SHA256,TLS_RSA_WITH_AES_256_CBC_SHA,TLS_RSA_WITH_AES_256_CBC_SHA256" />'
+
+    - name: Enable TLSv1.2 for verify-client==true
+      lineinfile:
+        path: /opt/vsd/jboss/standalone/configuration/standalone-full-ha.xml
+        regexp: ".*protocol=\"TLSv1\".*verify-client=\"true\".*"
+        line: '<ssl protocol="TLSv1.2" key-alias="vsd1.example.com" password="Alcateldc" certificate-key-file="${jboss.home.dir}/standalone/configuration/vsd.keystore" verify-client="true" ca-certificate-file="${jboss.home.dir}/standalone/configuration/vsd.truststore" ca-certificate-password="Alcateldc" cipher-suite="TLS_RSA_WITH_AES_128_CBC_SHA,TLS_RSA_WITH_AES_128_CBC_SHA256,TLS_RSA_WITH_AES_256_CBC_SHA,TLS_RSA_WITH_AES_256_CBC_SHA256" />'
+
+    - name: Stop JBoss service
+      shell: monit stop jboss
+
+    - name: Start JBoss service
+      shell: monit start jboss
+
+    - name: Wait JBoss to start
+      monit_waitfor_service:
+        name: jboss
+        timeout_seconds: 600
+        test_interval_seconds: 30
+
+    when: tls_version is defined and tls_version == "1.2"
+
+  - name: Advanced API access Logging
+    lineinfile:
+      path: /opt/vsd/jboss/standalone/configuration/standalone-full-ha.xml
+      regexp: ".*<access-log prefix=\"access.log\" pattern=\"%a %t %H %p %r %s %D.*"
+      line: '<access-log prefix="access.log" pattern="%a %t %H %p %r %s %D %{CUSTOM}i %{X-Nuage-Request-ID}o">'
+    when: advanced_api_access_logging is defined
+
+  remote_user: "{{ vsd_default_username }}"
+
+- block:
+
+  - name: Copy Root CA to VSD
+    copy:
+      src: "{{ ca_certificate_path }}"
+      dest: "/opt/vsd/ejbca/p12/ca.cert.pem"
+      owner: ejabberd
+      group: hadoopusers
+      mode: 0640
+    when: ca_certificate_path is defined
+
+  - name: Copy and Intermediate Cert file to VSD
+    copy:
+      src: "{{ intermediate_certificate_path }}"
+      dest: "/opt/vsd/ejbca/p12/intermediate.cert.pem"
+      owner: ejabberd
+      group: hadoopusers
+      mode: 0640
+    when: intermediate_certificate_path is defined
+
+  - name: Copy VSD certificate
+    copy:
+      src: "{{ certificate_path }}"
+      dest: "/opt/vsd/ejbca/p12/{{ certificate_path | basename }}"
+      owner: ejabberd
+      group: hadoopusers
+      mode: 0640
+    when: certificate_path is defined
+
+  - name: Import Intermediate Cert Pem file
+    shell: '/usr/java/latest/bin/keytool -importcert  -file /opt/vsd/ejbca/p12/intermediate.cert.pem -keystore /usr/java/latest/lib/security/cacerts -storepass {{ jreStorePwd | default("changeit") }} -alias myintermediateCA -noprompt'
+    when:
+      - intermediate_certificate_path is defined
+      - nuage_upgrade is not defined or not nuage_upgrade
+
+  - name: Import Root CA Pem file
+    shell: '/usr/java/latest/bin/keytool -importcert -file /opt/vsd/ejbca/p12/ca.cert.pem -keystore /usr/java/latest/lib/security/cacerts -storepass {{ jreStorePwd | default("changeit") }} -alias myRootCA -noprompt'
+    when:
+      - ca_certificate_path is defined
+      - nuage_upgrade is not defined or not nuage_upgrade
+
+  - name: Stop vsd-core
+    shell: monit -g vsd-core stop
+
+  - name: Stop ejabberd
+    shell: monit stop ejabberd
+
+  - name: Start ejabberd
+    shell: monit start ejabberd
+
+  - name: Wait for Ejabberd to start
+    monit_waitfor_service:
+      name: ejabberd
+      timeout_seconds: 600
+      test_interval_seconds: 30
+
+  - name: Start ejabberd-status
+    shell: monit start ejabberd-status
+
+  - name: Wait for Ejabberd to start
+    monit_waitfor_service:
+      name: ejabberd-status
+      timeout_seconds: 600
+      test_interval_seconds: 30
+
+  - name: Start vsd-core
+    shell: monit -g vsd-core start
+
+  - name: Wait for vsd-core to start
+    monit_waitfor_service:
+      name: vsd-core-status
+      timeout_seconds: 600
+      test_interval_seconds: 30
+
+  - name: Stop ejbca status
+    shell: monit stop ejbca-status
+
+  - name: Start ejbca status
+    shell: monit start ejbca-status
+
+  - name: Wait for Ejbca to start
+    monit_waitfor_service:
+      name: ejbca-status
+      timeout_seconds: 600
+      test_interval_seconds: 30
+
+  remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
+  become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
+  vars:
+    ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"
+  when:
+    - ca_certificate_path is defined
+    - certificate_path is defined

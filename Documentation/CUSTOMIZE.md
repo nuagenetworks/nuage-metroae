@@ -1,5 +1,4 @@
 # Customizing Components for a Deployment
-The steps below apply when you choose to work via CLI. A similar set of steps, facilitated by the GUI, is also available if you choose to deploy MetroÆ via Docker Container. If you choose to work via the GUI you can access it by pointing your browser at the address and port that was specified during the container setup. The default address is https://metroaehostname:5001.
 ## Note for users of MetroÆ before version 3.0
 MetroÆ before version 3.0 used the now deprecated build_vars.yml configuration.  In the current version, build_vars.yml is replaced with *deployments* as described in this document.  You can convert an obsolete build_vars.yml file to a deployment using the following tool:
 
@@ -7,17 +6,43 @@ MetroÆ before version 3.0 used the now deprecated build_vars.yml configuration.
 ./convert_build_vars_to_deployment.py <build_vars_file> <deployment_name>
 ```
 
-Deprecation Notice: The convert_build_vars_to_deployment tool is not actively updated for new features and will be removed in MetroÆ v3.4.0. Users of this tool should either edit deployment files directly or modify their process to take advantage of the jinja2 templates available in src/deployment_templates to auto-generate deployment files. 
+Deprecation Notice: The convert_build_vars_to_deployment tool is not actively updated for new features and will be removed in MetroÆ v3.4.0. Users of this tool should either edit deployment files directly or modify their process to take advantage of the jinja2 templates available in src/deployment_templates to auto-generate deployment files.
 
 ## Prerequisites / Requirements
-If you have not already set up your MetroÆ Host environment, see [SETUP.md](SETUP.md) before proceeding.  
+If you have not already set up your MetroÆ Host environment, see [SETUP.md](SETUP.md) before proceeding.
+
+## What is a Deployment?
+
+Deployments are component configuration sets.  They are stored under the `nuage-metro/deployments/<deployment_name>/` directory and the files within describe all of the components to be installed/upgraded.
+
+If you issue:
+
+    ./metroae install_everything
+
+The files under nuage-metro/deployments/default will be used to do an install.
+
+If you issue:
+
+    ./metroae install_everything mydeployment
+
+The files under `nuage-metro/deployments/mydeployment` will be used to do an install.  This allows for different sets of component definitions for various projects.
+
+Each time you issue MetroaÆ, the inventory will be completely rebuilt from the deployment name specified.  This will overwrite any previous inventory, so it will reflect exactly what is configured in the deployment that was specified.
 
 ## Customize Deployment
-Based on your network topology and the specific components you plan on deploying, you will configure several files. Setting configuration files correctly ensures that when you subsequently execute workflows they configure components as intended. Precise syntax is crucial.
+Based on your network topology and the specific components you plan on deploying, you will configure several files. Setting deployment files correctly ensures that when you subsequently execute workflows they configure components as intended. Precise syntax is crucial.
 
-When a workflow is executed, each configuration file is validated against a data schema which ensures that all required fields are present and in the correct syntax. These schemas are located in the [schemas/](/schemas/) directory. They follow the [json-schema.org standard](https://json-schema.org).
+When a workflow is executed, each deployment file is validated against a data schema which ensures that all required fields are present and in the correct syntax. These schemas are located in the [schemas/](/schemas/) directory. They follow the [json-schema.org standard](https://json-schema.org).
 
-You have the option of configuring the default files provided in the deployments/default/ sub-directory or creating your own sub-directories under the deployments/ directory. You can find examples of configuration files for different deployments in the [examples/](/examples/) directory. Unless you specify a different deployment sub-directory name, the default deployment is used when a workflow is executed. This method allows MetroÆ to support many deployments (different configurations) in parallel and the ability to switch between them as required. See below for the supported configuration files that you can specify in a deployments sub-directory.
+You have the option of configuring the default deployment files provided in the deployments/default/ sub-directory or creating your own sub-directories under the deployments/ directory. You can find examples of deployment files for different deployments in the [examples/](/examples/) directory. Unless you specify a different deployment sub-directory name, the default deployment is used when a workflow is executed. This method allows MetroÆ to support many deployments (different configurations) in parallel and the ability to switch between them as required. See below for the supported deployment files that you can specify in a deployments sub-directory.
+
+Note that you can edit the deployment files manually at any time. As of v3.3.0, MetroÆ comes with its own wizard for automating the creation and editing of deployment files when you are working with a clone of the nuage-metro repo. To start the wizard:
+```
+python run_wizard.py
+```
+You can use the wizard to setup your MetroÆ environment, if you wish. Or you can skip the setup step and go directly to the creation and editing of your deployment.
+
+The deployment files that can be configured using the wizard or edited manually are listed, below.
 
 ### `common.yml`
 `common.yml` contains the common configuration parameters for the deployment that are used for all components and workflows.  This file is always required for any workflow.
@@ -51,23 +76,35 @@ ZFB support is included in the nsgv schema and supporting files. In the beta rel
 `vscs.yml` contains the definition of the VSCs to be operated on in this deployment. This file should be present in your deployment only if you are specifying VSCs. If not provided, no VSCs will be operated on. This file is of yaml list type and may contain as many VSC definitions as you require.
 
 ### `vsds.yml`
-`vsds.yml` contains the definition of the VSDs to be operated on in this deployment. This file should be present in your deployment only if you are specifying VSDs. If not provided, no VSDs will be operated on. This file is of yaml list type and must contain either 0, 1 or 3 VSD definitions.
+`vsds.yml` contains the definition of the VSDs to be operated on in this deployment. This file should be present in your deployment only if you are specifying VSDs. If not provided, no VSDs will be operated on. This file is of yaml list type and must contain either 0, 1, 3, or 6 VSD definitions. 1 VSD is for stand-alone VSD operation. 3 VSDs are for a single cluster operation. 6 VSDs are defined for active-standby, geo-redundant operation.
+
+#### Notes on `vsds.yml` for active-standby, geo-redundant deployment and upgrade
+When installing or upgrading an active-standby, geo-redundant cluster, all 6 VSDs must be defined in the `vsds.yml` file in your deployment. The first 3 VSDs are assumed to be `active` and the second 3 VSDs are assumed to be `standby`.
 
 ### `vstats.yml`
-`vstats.yml` contains the definition of the VSTATs (VSD Statistics) to be operated on in this deployment. This file should be present in your deployment only if you are specifying VSTATs. If not provided, no VSTATs will be operated on. This file is of yaml list type and must contain either 0, 1 or 3 VSTAT definitions.
+`vstats.yml` contains the definition of the VSTATs (VSD Statistics) to be operated on in this deployment. This file should be present in your deployment only if you are specifying VSTATs. If not provided, no VSTATs will be operated on. This file is of yaml list type. If it contains exactly 3 VSTAT definitions, a cluster installation or upgrade will be executed. Any other number of VSTAT definitions will result in 1 or more stand-alone VSTATs being installed or upgraded.
 
-### Unsupported Components/Operations
-The following components/operations are not supported in the beta release.
-* dns
-* gmv
-* mesos
-* nsgv bootstrap (install is supported)
-* stcv
-* vsr
-* vrs-vm
-* osc-integration
-* AWS-based VSTAT upgrade
-* upgrade of VRS through VCIN
+## Enabling post-installation security features
+You can use MetroÆ to enable optional post-installation security features to 'harden' the installation. Your deployment contains a number of optional variables that can be used to accomplish this. These variables are described, below. For more detail, please see the Nuage VSP Install Guide.
+### `vsds.yml`
+- `ca_certificate_path` is an optional parameter that points to the location of the certificate of the signing authority.
+- `certificate_path` is an optional parameter that points to the location of the certificate pem file for the vsd.
+- `intermediate_certificate_path` is an optional parameter that points to the location of the chain certificate.
+- `failed_login_attempts` is an optional parameter to set the number of failed login attempts.
+- `failed_login_lockout_time` is an optional parameter that set the lockout time after reaching the max number of failed login attempts.
+- `advanced_api_access_logging` is an optional parameter to enable adding custom header to access log.
+- `tls_version` is an optional parameter to set the minimum TLS version to use.
+
+### `vscs.yml`
+- `ca_certificate_path` is an optional parameter that points to the location of the certificate of the signing authority.
+- `certificate_path` is an optional parameter that points to the location of the certificate pem file for the vsc.
+- `private_key_path` is an optional parameter that points to the location of the certificate private key pem file for the vsc.
+- `ejabberd_id` is an optional parameter that defines the ejabberd username used to when creating the certificate.
+
+### `vrss.yml`
+- `ca_certificate_path` is an optional parameter that points to the location of the certificate of the signing authority.
+- `certificate_path` is an optional parameter that points to the location of the certificate pem file for the vrs.
+- `private_key_path` is an optional parameter that points to the location of the certificate private key pem file for the vrs.
 
 ### Operating using the Default Deployment
 The Default deployment is provided as a starting place for your workflows. It is located in a subdirectory named `Default` within the Deployments directory. You can operate MetroÆ by simply editing the contents of the Default deployment. Follow these steps:
@@ -101,6 +138,9 @@ Example:
 ```
 
 Creates an example vsds configuration file under the "new" deployment.
+
+## Running MetroAE using a Proxy VM
+MetroAE version 3.4.0 onwards supports using a proxy VM for deployment of VSC, VSD and VSTATS(ES). In this configuration, the host on which MetroAE is run on, does not have direct access to the VSD, VSC and VSTATS. In such a case, a proxy VM can be set between the host and individual components which has access to all the components. To operate in such a manner, user can edit their `deployments\<deployment_name>\common.yml` parameters to indicate the proper `ssh_proxy_username` and `ssh_proxy_host` and then run the MetroAE commands as usual.
 
 ## Next Steps
 The next step is to deploy your components. See [DEPLOY.md](DEPLOY.md) for guidance.

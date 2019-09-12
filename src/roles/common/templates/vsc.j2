@@ -10,7 +10,7 @@ hostname: {{ item.1.hostname }}
 system_name: {{ item.1.system_name }}
 {% endif %}
 
-{% if item.1.target_server_type | match("kvm") or item.1.target_server_type | match("vcenter") %}
+{% if item.1.target_server_type is match("kvm") or item.1.target_server_type is match("vcenter") or item.1.target_server_type is match("nuagex") %}
 target_server: {{ item.1.target_server }}
 {% endif %}
 
@@ -27,6 +27,22 @@ vlan_id: {{ item.1.vlan_id }}
 mgmt_ip: {{ item.1.mgmt_ip }}
 mgmt_netmask_prefix: {{ item.1.mgmt_ip_prefix }}
 mgmt_gateway: {{ item.1.mgmt_gateway }}
+
+{% if item.1.mgmt_bridge is defined %}
+mgmt_bridge: {{ item.1.mgmt_bridge }}
+{% endif %}
+
+{% if item.1.data_bridge is defined %}
+data_bridge: {{ item.1.data_bridge }}
+{% endif %}
+
+{% if item.1.mgmt_ip | ipv6 != False %}
+enable_ipv6: true
+{% endif %}
+
+{% if item.1.ctrl_ip is defined and item.1.ctrl_ip | ipv6 != False %}
+enable_ipv6_control: true
+{% endif %}
 
 {% if item.1.internal_mgmt_ip is defined %}
 internal_mgmt_ip: {{ item.1.internal_mgmt_ip }}
@@ -47,13 +63,6 @@ internal_ctrl_ip: {{ item.1.internal_ctrl_ip }}
 internal_data_gateway_ip: {{ item.1.internal_data_gateway_ip }}
 {% endif %}
 
-{% if item.1.mgmt_routed_network_name is defined %}
-mgmt_routed_network_name: {{ item.1.mgmt_routed_network_name }}
-{% endif %}
-{% if item.1.data_routed_network_name is defined %}
-data_routed_network_name: {{ item.1.data_routed_network_name }}
-{% endif %}
-
 mgmt_static_route_list:
 {% if item.1.mgmt_static_route_list is defined %}
 {% for route in item.1.mgmt_static_route_list %}
@@ -71,25 +80,10 @@ cpuset:
 {% endfor %}
 {% endif %}
 
-{% if item.1.target_server_type | match("kvm") %}
+image_path: {{ image_path | default("MISSING") }}
+image_file_name: {{ image_file_name | default("MISSING") }}
 
-{% if qcow2_path is defined %}
-qcow2_path: {{ qcow2_path }}
-{% endif %}
-{% if qcow2_file_name is defined %}
-qcow2_file_name: {{ qcow2_file_name }}
-{% endif %}
-
-{% endif %}
-
-{% if item.1.target_server_type | match("vcenter") %}
-
-{% if ova_path is defined %}
-ova_path: {{ ova_path }}
-{% endif %}
-{% if ova_file_name is defined %}
-ova_file_name: {{ ova_file_name }}
-{% endif %}
+{% if item.1.target_server_type is match("vcenter") %}
 
 vcenter:
   username: {{ encrypted.vcenter_username | indent(8, False) }}
@@ -112,8 +106,12 @@ vsd_fqdn: {{ vsd_fqdn_global }}
 system_ip: {{ item.1.system_ip }}
 {% endif %}
 
+{% if item.1.system_ip is defined and item.1.system_ip | ipv6 != False %}
+enable_ipv6_system: true
+{% endif %}
+
 xmpp:
-  username: {{ item.1.xmpp_username | default("vsc" + item.0 | string) }}
+  username: {{ item.1.xmpp_username | default("vsc" + (item.0 + 1) | string) }}
 
 expected_num_bgp_peers :  {{ item.1.expected_num_bgp_peers | default('0') }}
 expected_num_vswitches :  {{ item.1.expected_num_vswitches | default('0') }}
@@ -121,7 +119,7 @@ expected_num_host_vports : {{ item.1.expected_num_host_vports | default('0') }}
 expected_num_vm_vports :   {{ item.1.expected_num_vm_vports | default('0') }}
 expected_num_gateway_ports : {{ item.1.expected_num_gateway_ports | default('0') }}
 
-{% if item.1.target_server_type | match("openstack") %}
+{% if item.1.target_server_type is match("openstack") %}
 
 openstack_image: {{ item.1.openstack_image }}
 openstack_flavor: {{ item.1.openstack_flavor }}
@@ -151,6 +149,10 @@ openstack_control_port_security_groups:
 {% endfor %}
 {% endif %}
 
+{% if item.1.openstack_availability_zone is defined %}
+openstack_availability_zone: {{ item.1.openstack_availability_zone }}
+{% endif %}
+
 {% endif %}
 
 {% if vsc_tim_path is defined %}
@@ -158,4 +160,21 @@ vsc_tim_path: {{ vsc_tim_path }}
 {% endif %}
 {% if vsc_tim_file_name is defined %}
 vsc_tim_file_name: {{ vsc_tim_file_name }}
+{% endif %}
+
+# Custom user generated certificates
+{% if item.1.private_key_path is defined%}
+private_key_path: {{ item.1.private_key_path }}
+{% endif %}
+{% if item.1.certificate_path is defined %}
+certificate_path: {{ item.1.certificate_path }}
+{% endif %}
+{% if item.1.ca_certificate_path is defined %}
+ca_certificate_path: {{ item.1.ca_certificate_path }}
+{% endif %}
+{% if item.1.ejabberd_id is defined %}
+ejabberd_id: {{ item.1.ejabberd_id }}
+{% endif %}
+{% if item.1.xmpp_domain is defined %}
+xmpp_domain: {{ item.1.xmpp_domain }}
 {% endif %}

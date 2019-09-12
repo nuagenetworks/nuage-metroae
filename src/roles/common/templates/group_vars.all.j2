@@ -16,21 +16,33 @@ vsc_ram: "{{ vsc_ram | default(4) }}"
 vstat_ram: "{{ vstat_ram | default(16) }}"
 vcin_ram: "{{ vcin_ram | default(24) }}"
 portal_ram: "{{ portal_ram | default(24) }}"
+portal_license_file: "{{ portal_license_file | default('NONE') }}"
 vsd_license_required_days_left: {{ vsd_license_required_days_left | default(-1) }}
-
 vsd_fqdn: {{ vsd_fqdn_global | default('NONE') }}
 portal_fqdn_global: {{ portal_fqdn_global | default('NONE') }}
 vstat_fqdn_global: {{ vstat_fqdn_global | default('NONE') }}
-
 mgmt_bridge: {{ mgmt_bridge | default('NONE') }}
 data_bridge: {{ data_bridge | default('NONE') }}
 access_bridge: {{ access_bridge | default('NONE') }}
 images_path: {{ images_path | default('/var/lib/libvirt/images') }}
 ansible_deployment_host: {{ ansible_deployment_host|default('127.0.0.1') }}
 vsdbackup_dir: {{ vsdbackup_path|default('/tmp/vdsbackup') }}
+vstat_cpu_cores: {{ vstat_cpu_cores | default(6)}}
+vnsutil_cpu_cores: {{ vnsutil_cpu_cores | default(2)}}
+vsd_cpu_cores: {{ vsd_cpu_cores | default(6)}}
+portal_cpu_cores: {{ portal_cpu_cores | default(6)}}
+vcin_cpu_cores: {{ vcin_cpu_cores | default(6)}}
+vcenter_start_vsd_with_interfaces_disabled: {{ vcenter_start_vsd_with_interfaces_disabled | default(false) }}
+vsd_inplace_upgrade: {{ inplace | default(false) }}
 
 vsc_command_timeout_seconds: "{{ vsc_command_timeout_seconds|default(180) }}"
 vsc_scp_timeout_seconds: "{{ vsc_scp_timeout_seconds|default(720) }}"
+
+{% if ssh_proxy_host is defined %}
+ssh_proxy_username: {{ ssh_proxy_username | default('root') }}
+ssh_proxy_configuration: {{ ssh_proxy_username | default('root') }}@{{ ssh_proxy_host }}
+ssh_proxy_host: {{ ssh_proxy_host }}
+{% endif %}
 
 {% if ntp_server_list  is defined %}
 ntp_server_list:
@@ -98,6 +110,12 @@ target_server_username: "{{ encrypted.target_server_username | default("root") |
 target_server_password: {{ encrypted.target_server_password | indent(8, False) }}
 {% endif %}
 
+compute_username: "{{ encrypted.compute_username | default(encrypted.target_server_username | default("root"))}}"
+{% if encrypted.compute_password is defined %}
+compute_password: {{ encrypted.compute_password | indent(8, False) }}
+{% endif %}
+
+
 vsd_auth:
   username: {{ encrypted.vsd_auth_username | default("csproot") | indent(8, False) }}
   password: {{ encrypted.vsd_auth_password | default("csproot") | indent(8, False) }}
@@ -111,6 +129,13 @@ vcin_auth:
   {% if vcin_api_url is defined %}
   api_url: {{ vcin_auth_url }}
   {% endif %}
+
+{% if encrypted.vsd_mysql_password is defined %}
+vsd_mysql_password: {{ encrypted.vsd_mysql_password | indent(8, False) }}
+{% endif %}
+{% if encrypted.ejabberd_id_password is defined %}
+ejabberd_id_password: {{ encrypted.ejabberd_id_password | indent(8, False) }}
+{% endif %}
 
 portal_auth:
   username: {{ encrypted.portal_username | default("csproot") | indent(8, False) }}
@@ -195,16 +220,20 @@ openstack_auth:
 
 {% set zfb_nsg_list = nsgvs | selectattr("bootstrap_method", "equalto", "zfb_metro") | list %}
 
+{% if vsd_license_file is defined %}
+vsd_license_file: {{ vsd_license_file }}
+{% endif %}
+
+{% if vsd_cluster_license_file is defined %}
+vsd_cluster_license_file: {{ vsd_cluster_license_file }}
+{% endif %}
+
 {% if zfb_nsg_list | length > 0 %}
-
-vsd_license_file: "{{ vsd_license_file }}"
-
 zfb_proxy_user:
     firstName: {{ proxy_user_first_name }}
     lastName: {{ proxy_user_last_name }}
     email: {{ proxy_user_email }}
     password: {{ encrypted.proxy_user_password | indent(8, False) }}
-
 {% endif %}
 
 {% if stcvs is defined and stcvs | length > 0 %}
@@ -213,3 +242,34 @@ stcv_image_filename: {{ stcv_image_filename }}
 spirent_license_server: {{ spirent_license_server }}
 {% endif %}
 
+{% if portals is defined and portals %}
+
+{% if portals|length == 1 %}
+portal_ip: {{ portals[0].mgmt_ip }}
+
+{% else %}
+
+portal1_ip: {{ portals[0].mgmt_ip }}
+
+portal2_ip: {{ portals[1].mgmt_ip }}
+
+portal3_ip: {{ portals[2].mgmt_ip }}
+
+{% endif %}
+
+{% endif %}
+
+
+#hooks section
+{% if hooks is defined %}
+hooks:
+{% for hook in hooks %}
+  - {{ hook }}
+{% endfor %}
+{% endif %}
+{% if skip_actions is defined %}
+skip_actions:
+{% for action in skip_actions %}
+  - {{ action }}
+{% endfor %}
+{% endif %}

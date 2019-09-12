@@ -32,7 +32,9 @@
 - block:
 
   - name: Check if required OS packages are installed (ignoring errors)
-    command: rpm -q qemu-kvm libvirt bridge-utils libguestfs-tools libvirt-python
+    command:
+      cmd: rpm -q qemu-kvm libvirt bridge-utils libguestfs-tools libvirt-python
+      warn: false
     register: rpm_check
     ignore_errors: True
 
@@ -40,13 +42,14 @@
     debug: var=rpm_check verbosity=1
 
   - name: If RedHat, install packages for RedHat OS family distros
-    yum: name={{ item }} state=present
-    with_items:
-     - qemu-kvm
-     - libvirt
-     - bridge-utils
-     - libguestfs-tools
-     - libvirt-python
+    yum:
+      name:
+       - qemu-kvm
+       - libvirt
+       - bridge-utils
+       - libguestfs-tools
+       - libvirt-python
+      state: present
     when: rpm_check.rc == 1
 
   - name: Make sure libvirtd has started
@@ -72,65 +75,57 @@
 
 - block:
 
-    - name: set skip copy images to default
-      set_fact:
-        skip_copy_images: False
-      when: skip_copy_images is undefined
+  - name: set skip copy images to default
+    set_fact:
+      skip_copy_images: False
+    when: skip_copy_images is undefined
 
-    - include_tasks: copy_qcow2.yml
-      when: not skip_copy_images
+  - include_tasks: copy_qcow2.yml
+    when: not skip_copy_images
 
-    - block:
-      - name: Check to make sure there is an existing qcow image
-        stat:
-          path: "{{ images_path }}/{{ vm_name }}/{{ inventory_hostname }}.qcow2"
-        register: statResult
+  - block:
 
-      - name: check the result of image find command
-        assert:
-          that: statResult.stat.exists == True
-          msg: Missing qcow2 file {{ images_path }}/{{ vm_name }}/{{ inventory_hostname }}.qcow2
+    - name: Check to make sure there is an existing qcow image
+      stat:
+        path: "{{ images_path }}/{{ vm_name }}/{{ inventory_hostname }}.qcow2"
+      register: statResult
 
-      when: skip_copy_images
+    - name: check the result of image find command
+      assert:
+        that: statResult.stat.exists == True
+        msg: Missing qcow2 file {{ images_path }}/{{ vm_name }}/{{ inventory_hostname }}.qcow2
 
-    - name: Setup VSC temporary configuration files
-      template: src={{ item }}.j2 backup=no dest={{ images_path }}/{{ vm_name }}/{{ item }}
-      with_items:
-        - bof.cfg
-        - config.cfg
+    when: skip_copy_images
 
-    - name: Copy temporary configuration files to the VSC image
-      command: guestfish --rw -a {{ images_path }}/{{ vm_name }}/{{ inventory_hostname }}.qcow2 -m {{ vsc_partition }} copy-in {{ images_path }}/{{ vm_name }}/{{ item }} /
-      with_items:
-        - bof.cfg
-        - config.cfg
+  - name: Setup VSC temporary configuration files
+    template: src=bof.cfg.j2 backup=no dest={{ images_path }}/{{ vm_name }}/bof.cfg
 
-    - name: Remove temporary configuration files
-      file: path={{ images_path }}/{{ vm_name }}/{{ item }} state=absent
-      with_items:
-        - bof.cfg
-        - config.cfg
+  - name: Copy temporary configuration files to the VSC image
+    command: guestfish --rw -a {{ images_path }}/{{ vm_name }}/{{ inventory_hostname }}.qcow2 -m {{ vsc_partition }} copy-in {{ images_path }}/{{ vm_name }}/bof.cfg /
 
-    - name: Preallocate disk space to avoid pausing the VM, this also checks disk space
-      shell: "fallocate -l {{ vsc_fallocate_size_gb }}G {{ images_path }}/{{ vm_name }}/{{ inventory_hostname }}.qcow2"
-      when: vsc_fallocate_size_gb > 0
+  - name: Remove temporary configuration files
+    file: path={{ images_path }}/{{ vm_name }}/bof.cfg state=absent
 
-    - name: Define VM
-      virt: name={{ vm_name }}
-            command=define
-            xml="{{ lookup('template', 'vsc.xml.j2') }}"
-            uri=qemu:///system
+  - name: Preallocate disk space to avoid pausing the VM, this also checks disk space
+    shell: "fallocate -l {{ vsc_fallocate_size_gb }}G {{ images_path }}/{{ vm_name }}/{{ inventory_hostname }}.qcow2"
+    when: vsc_fallocate_size_gb > 0
 
-    - name: Autostart
-      virt: name={{ vm_name }}
-            command=status
-            autostart=True
-            uri=qemu:///system
+  - name: Define VM
+    virt: name={{ vm_name }}
+          command=define
+          xml="{{ lookup('template', 'vsc.xml.j2') }}"
+          uri=qemu:///system
 
-    - name: Run VM
-      virt: name={{ vm_name }}
-            state=running
-            uri=qemu:///system
+  - name: Autostart
+    virt: name={{ vm_name }}
+          command=status
+          autostart=True
+          uri=qemu:///system
+
+  - name: Run VM
+    virt: name={{ vm_name }}
+          state=running
+          uri=qemu:///system
 
   when: not node_present
   delegate_to: "{{ target_server }}"

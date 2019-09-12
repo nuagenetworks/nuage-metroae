@@ -1,7 +1,6 @@
 ---
 - hosts: vsc_ha_node1
   gather_facts: no
-  any_errors_fatal: true
   connection: local
   pre_tasks:
     - name: Set upgrade flag
@@ -12,6 +11,16 @@
       include_role:
         name: common
         tasks_from: check-upgrade-prereq
+
+    - name: Lets run VSC upgrade post deploy 1 hooks
+      include_role:
+        name: hooks
+        tasks_from: main
+      vars:
+        - hooks_file_path: "{{ item }}"
+        - hook_location:
+          - vsc_ha_upgrade_postdeploy_1
+      with_items: "{{ hooks | default([]) }}"
   roles:
     - vsc-upgrade-postdeploy
   vars:

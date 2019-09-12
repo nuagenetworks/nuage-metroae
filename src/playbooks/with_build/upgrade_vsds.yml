@@ -7,7 +7,34 @@
         name: common
         tasks_from: check-predeploy-prereq
 
-- name: Run VSD HA Upgrade Database Backup and Prep
+- hosts: vsd_standby_node1
+  gather_facts: no
+  pre_tasks:
+    - name: Lets run VSD deactivate replication slave hooks
+      include_role:
+        name: hooks
+        tasks_from: main
+      vars:
+        - hooks_file_path: "{{ item }}"
+        - hook_location:
+          - upgrade_vsds
+          - vsd_deactivate_replication_slave
+      with_items: "{{ hooks | default([]) }}"
+  remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
+  become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
+  vars:
+    ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"
+  tasks:
+    - name: Stop replication process in the standby node
+      command: /opt/vsd/bin/vsd-deactivate-replication-slave
+
+- name: Run VSD inplace upgrade if eligible
+  import_playbook: "upgrade_vsds_inplace.yml"
+
+- name: Run VSD HA Upgrade vCenter Predeploy Nodes 2 and 3 with interface disabled
+  import_playbook: "vsd_ha_upgrade_vcenter_predeploy_interface_disabled_2_and_3.yml"
+
+- name: Run VSD HA Upgrade Databiase Backup and Prep
   import_playbook: "vsd_ha_upgrade_database_backup_and_decouple.yml"
 
 - name: Run VSD HA Upgrade Nodes 2 and 3 Shutdown
@@ -19,6 +46,9 @@
 - name: Run VSD HA Upgrade Nodes 2 and 3 Deploy
   import_playbook: "vsd_ha_upgrade_deploy_2_and_3.yml"
 
+- name: Run VSD HA Upgrade vCenter Predeploy Node 1 with interface disabled
+  import_playbook: "vsd_ha_upgrade_vcenter_predeploy_interface_disabled_1.yml"
+
 - name: Run VSD HA Upgrade Node 1 Shutdown
   import_playbook: "vsd_ha_upgrade_shutdown_1.yml"
 
@@ -28,6 +58,8 @@
 - name: Run VSD HA Upgrade Node 1 Deploy
   import_playbook: "vsd_ha_upgrade_deploy_1.yml"
 
+- name: Run VSD SA Upgrade vCenter Predeploy Node with interface disabled
+  import_playbook: "vsd_sa_upgrade_vcenter_predeploy_interface_disabled.yml"
 
 - name: Run VSD SA Upgrade Database Backup
   import_playbook: "vsd_sa_upgrade_database_backup.yml"
@@ -41,6 +73,22 @@
 - name: Run VSD SA Upgrade Deploy
   import_playbook: "vsd_sa_upgrade_deploy.yml"
 
+- hosts: standby_vsds
+  gather_facts: no
+  serial: 1
+  roles:
+    - vsd-destroy
+  vars:
+    vm_name: "{{ vmname }}"
+
+- name: Run VSD Standby Predeploy
+  import_playbook: "vsd_standby_predeploy.yml"
+
+- name: Run VSD Standby Preupgrade
+  import_playbook: "vsd_standby_preupgrade.yml"
+
+- name: Run VSD Standby Deploy
+  import_playbook: "vsd_standby_deploy.yml"
 
 - name: Run VSD Upgrade Complete
   import_playbook: "vsd_upgrade_complete.yml"

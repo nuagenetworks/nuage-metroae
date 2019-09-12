@@ -1,0 +1,152 @@
+exit all
+configure
+
+#--------------------------------------------------
+echo "System Configuration"
+#--------------------------------------------------
+    system
+        name {{ system_name | default(inventory_hostname) }}
+        time
+            ntp
+            {% for ntp_server in ntp_server_list %}
+                server {{ ntp_server }}
+            {% endfor %}
+                no shutdown
+            exit
+        exit
+    exit
+#--------------------------------------------------
+#echo "System Security Configuration"
+#--------------------------------------------------
+    system
+        security
+            tls-profile "vsc-tls-profile" create
+                shutdown
+            exit
+        exit
+    exit
+#--------------------------------------------------
+echo "Virtual Switch Controller Configuration"
+#--------------------------------------------------
+    vswitch-controller
+        xmpp-server "{{ xmpp.username }}@{{ vsd_fqdn }}"
+    exit
+
+#--------------------------------------------------
+echo "Router (Network Side) Configuration"
+#--------------------------------------------------
+    router
+        {% if control_ip is defined and control_netmask_prefix is defined %}
+        interface "control"
+            {% if internal_ctrl_ip is defined %}
+            address {{ internal_ctrl_ip }}/{{ control_netmask_prefix }}
+            {% elif enable_ipv6_control | default(False) == True %}
+            ipv6 address {{ control_ip }}/{{ control_netmask_prefix }}
+            {% else %}
+            address {{ control_ip }}/{{ control_netmask_prefix }}
+            {% endif %}
+            no shutdown
+        exit
+        {% endif %}
+        interface "system"
+        {% if system_ip is defined %}
+            {% if enable_ipv6_system | default(False) == True %}
+            ipv6 address {{ system_ip }}/128
+            {% else %}
+            address {{ system_ip }}/32
+            {% endif %}
+            no shutdown
+        {% else %}
+            shutdown
+        {% endif %}
+        exit
+        {% if as_number %}
+        autonomous-system {{ as_number }}
+        {% endif %}
+        {% if system_ip is defined %}
+        router-id {{ system_ip }}
+        {% endif %}
+#--------------------------------------------------
+##echo "Static Route Configuration"
+###--------------------------------------------------
+        {% for vsc_item in groups['vscs'] %}
+          {% if vsc_item != inventory_hostname %}
+            {% if hostvars[vsc_item].system_ip is defined %}
+              {% if hostvars[vsc_item].system_ip != system_ip | default('') %}
+        static-route {{ hostvars[vsc_item].system_ip }}/32 next-hop {{ hostvars[vsc_item].control_ip }}
+              {% endif %}
+            {% endif %}
+          {% endif %}
+        {% endfor %}
+        {% if internal_data_gateway_ip is defined %}
+        static-route 0.0.0.0/0 next-hop {{ internal_data_gateway_ip }}
+        {% endif %}
+    exit
+
+        {% if vlan_id is defined %}
+
+#--------------------------------------------------
+echo "Service Configuration"
+#--------------------------------------------------
+
+    service
+        vprn {{ vlan_id }} customer 1 create
+            interface "control" create
+            exit
+        exit
+        vprn {{ vlan_id }} customer 1 create
+            route-distinguisher {{ as_number }}:{{ vlan_id }}
+            interface "control" create
+                {% if control_ip_vprn is defined %}
+                address {{ control_ip_vprn }}/{{ control_netmask_prefix }}
+                {% else %}
+                address {{ control_ip }}/{{ control_netmask_prefix }}
+                {% endif %}
+                sap A/2:{{ vlan_id }} create
+                exit
+            exit
+
+        {% if control_ip_vprn is defined %}
+        static-route 0.0.0.0/0 next-hop {{ control_ip_vprn.split('.')[0] }}.{{ control_ip_vprn.split('.')[1] }}.{{ control_ip_vprn.split('.')[2] }}.1
+        {% else %}
+        static-route 0.0.0.0/0 next-hop {{ control_ip.split('.')[0] }}.{{ control_ip.split('.')[1] }}.{{ control_ip.split('.')[2] }}.1
+        {% endif %}
+
+            ntp
+                no shutdown
+            exit
+            no shutdown
+        exit
+    exit
+        {% endif %}
+
+#--------------------------------------------------
+##echo "BGP Configuration"
+###--------------------------------------------------
+    router
+        bgp
+            connect-retry 2
+            min-route-advertisement 1
+            outbound-route-filtering
+                extended-community
+                    send-orf
+                exit
+            exit
+            group "internal"
+                type internal
+                {% for vsc_item in groups['vscs'] %}
+                  {% if vsc_item != inventory_hostname %}
+                    {% if hostvars[vsc_item].system_ip is defined %}
+                      {% if hostvars[vsc_item].system_ip != system_ip %}
+                neighbor {{ hostvars[vsc_item].system_ip }}
+                exit
+                      {% endif %}
+                    {% endif %}
+                  {% endif %}
+                {% endfor %}
+                family evpn
+            exit
+        exit
+    exit
+exit
+exit all

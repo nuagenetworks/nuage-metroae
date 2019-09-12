@@ -34,10 +34,12 @@ def encrypt_credentials_file(passcode, deployment_name):
         credentials_file = os.path.join(
             DEPLOYMENT_DIR, deployment_name, 'credentials.yml')
     with open(credentials_file, 'r') as file:
-        credentials = yaml.load(file.read().decode("utf-8"))
+        credentials = yaml.load(file.read().decode("utf-8"),
+                                Loader=yaml.Loader)
 
     with open('schemas/credentials.json') as credentials_schema:
-        data = yaml.load(credentials_schema.read().decode("utf-8"))
+        data = yaml.load(credentials_schema.read().decode("utf-8"),
+                         Loader=yaml.Loader)
     props = data['items']['properties']
     do_not_encrypt_list = []
     for k, v in props.items():
@@ -59,7 +61,7 @@ def encrypt_credentials_file(passcode, deployment_name):
 
         gen_example = ExampleFileGenerator(False, True)
         example_lines = gen_example.generate_example_from_schema(
-            'schemas/credentials.json').encode('utf-8')
+            'schemas/credentials.json')
         template = jinja2.Template(example_lines)
         credentials = template.render(credentials=credentials)
         with open(credentials_file, 'w') as file:

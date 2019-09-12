@@ -1,37 +1,21 @@
 ---
 - block: #VNS UTIL
 
-  - block: #QCOW2
+  - name: Set VNS Utils KVM image location
+    include_role:
+      name: common
+      tasks_from: find-image.yml
+    vars:
+      pattern: vns-util-*.qcow2
+    when: vnsutils | map(attribute='target_server_type') | list is issuperset(["kvm"])
 
-    - name: Find name of VNS UTIL QCOW2 File
-      find: path="{{ nuage_unzipped_files_dir }}/vns/utils"  pattern="vns-util-*.qcow2" recurse=yes
-      register: rc_vnsutil_file
-
-    - debug: var=rc_vnsutil_file verbosity=1
-
-    - name: Register VNS UTIL QCOW2 variables with proper path and image locations for use in other playbooks
-      set_fact:
-        qcow2_path: "{{ rc_vnsutil_file.files[0].path | dirname }}"
-        qcow2_file_name: "{{ rc_vnsutil_file.files[0].path | basename }}"
-      when: rc_vnsutil_file.matched > 0
-
-    when: vnsutils | map(attribute='target_server_type') | list | issuperset(["kvm"])
-
-  - block: #OVA
-
-    - name: Find name of VNS UTIL OVA File
-      find: path="{{ nuage_unzipped_files_dir }}/vns/utils"  pattern="vns-util-*.ova" recurse=yes
-      register: rc_vnsutil_file
-
-    - debug: var=rc_vnsutil_file verbosity=1
-
-    - name: Register VNS UTIL OVA variables with proper path and image locations for use in other playbooks
-      set_fact:
-        ova_path: "{{ rc_vnsutil_file.files[0].path | dirname }}"
-        ova_file_name: "{{ rc_vnsutil_file.files[0].path | basename }}"
-      when: rc_vnsutil_file.matched > 0
-
-    when: vnsutils | map(attribute='target_server_type') | list | issuperset(["vcenter"])
+  - name: Set VNS Utils vCenter image location
+    include_role:
+      name: common
+      tasks_from: find-image.yml
+    vars:
+      pattern: vns-util-*.ova
+    when: vnsutils | map(attribute='target_server_type') | list is issuperset(["vcenter"])
 
   - name: Verify VNSUTIL management gateway is in correct IP range
     include_role:
@@ -45,6 +29,15 @@
 
   - name: Create host_vars files for vnsutil
     template: src=vnsutil.j2 backup=no dest={{ inventory_dir }}/host_vars/{{ item.hostname }}
+    with_items: "{{ vnsutils }}"
+
+  - name: Verify VNS Utils DNS entries exist at server {{ dns_server_list[0] }}, and hostnames map to their IPs
+    include_tasks: check-dns.yml
+    with_items: "{{ vnsutils }}"
+    when: dns_server_list
+
+  - name: Verify if VNS Utils data FQDN maps to the proper data IP
+    include_tasks: check-dns-data.yml
     with_items: "{{ vnsutils }}"
 
   when:

@@ -1,17 +1,27 @@
 ---
+  
 - name: Finding VM folder (ignoring errors)
   connection: local
   vmware_guest_find:
     hostname: "{{ target_server }}"
     username: "{{ vcenter.username }}"
     password: "{{ vcenter.password }}"
-    datacenter: "{{ vcenter.datacenter }}"
     name: "{{ vm_name }}"
     validate_certs: no
   register: vsd_vm_folder
   ignore_errors: on
 
-- name: Gathering info on VM (ignoring errors)
+- name: Check output message for unexpected errors
+  assert:
+    that: vsd_vm_folder.msg is search('Unable to find folders for virtual machine')
+    fail_msg: "{{ vsd_vm_folder.msg }}"
+  when: vsd_vm_folder.msg is defined
+
+- name: Check for exception in VSD VM Folder
+  fail: msg="Exception found {{ vsd_vm_folder.exception }}"
+  when: vsd_vm_folder.exception is defined
+
+- name: Gathering info on VM
   connection: local
   vmware_guest_facts:
     hostname: "{{ target_server }}"
@@ -22,14 +32,7 @@
     name: "{{ vm_name }}"
     validate_certs: no
   register: vsd_vm_facts
-  ignore_errors: on
-  when: vsd_vm_folder|succeeded
-
-- debug: var=vsd_vm_facts verbosity=1
-
-- name: Check for exception in VSD VM facts
-  fail: msg="Exception found {{ vsd_vm_facts.exception }}"
-  when: vsd_vm_facts.exception is defined
+  when: vsd_vm_folder is succeeded
 
 - block:
 
@@ -88,4 +91,4 @@
       state: "absent"
     when: (not preserve_vm | default( False ))
 
-  when: vsd_vm_folder|succeeded and vsd_vm_facts|succeeded
+  when: vsd_vm_folder is succeeded and vsd_vm_facts is succeeded

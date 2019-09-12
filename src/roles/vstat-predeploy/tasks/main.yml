@@ -1,5 +1,10 @@
 ---
 - include_role:
+    name: skip-actions
+  vars:
+    - action: vstat_predeploy
+
+- include_role:
     name: check-node-reachability
 
 - name: Get VSTAT directory stat
@@ -22,25 +27,80 @@
     msg: "vstat-deploy requires VSD information. Please add VSD information to build_vars.yml, re-run the build, then re-run the vstat-deploy. See examples for details."
 
 - import_tasks: kvm.yml
-  when: target_server_type | match("kvm")
+  when: target_server_type is match("kvm")
   tags:
     - vstat
     - vstat-predeploy
 
 - import_tasks: vcenter.yml
-  when: target_server_type | match("vcenter")
+  when: target_server_type is match("vcenter")
   tags:
     - vstat
     - vstat-predeploy
 
 - import_tasks: openstack.yml
-  when: target_server_type | match("openstack")
+  when: target_server_type is match("openstack")
   tags:
     - vstat
     - vstat-predeploy
 
 - import_tasks: aws.yml
-  when: target_server_type | match("aws")
+  when: target_server_type is match("aws")
   tags:
     - vstat
     - vstat-predeploy
+
+- import_tasks: nuagex.yml
+  when: target_server_type is match("nuagex")
+  tags:
+    - nuagex
+    - vstat
+    - vstat-predeploy
+
+- block:
+  - name: Clean known_hosts of VSTATs (ignoring errors)
+    known_hosts:
+      name: "{{ mgmt_ip }}"
+      state: absent
+    delegate_to: localhost
+    no_log: True
+    ignore_errors: True
+
+  - name: Wait for VSTAT ssh to be ready
+    include_role:
+      name: common
+      tasks_from: wait-for-ssh
+    vars:
+      ssh_host: "{{ mgmt_ip }}"
+      host_username: "{{ vstat_default_username }}"
+      retries: 90
+
+  - block:
+    - name: Install NFS Utils
+      yum:
+        name: nfs-utils
+        state: present
+
+    - name: Create Backup directory
+      file:
+        path: /mnt/nfs/backup
+        state: directory
+        owner: elasticsearch
+        group: elasticsearch
+        mode: 0774
+        recurse: yes
+
+    - name: Mount NFS volume
+      mount:
+        path: /mnt/nfs/backup
+        src: "{{ nfs_backup_location }}"
+        state: mounted
+        boot: yes
+        fstype: nfs
+
+    - name: Change ownership of mount point
+      command: chown -R elasticsearch:elasticsearch /mnt/nfs/backup
+
+    remote_user: "{{ vstat_default_username }}"
+
+  when: nfs_backup_location is defined

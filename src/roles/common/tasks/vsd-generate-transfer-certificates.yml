@@ -9,7 +9,7 @@
 - block:
 
   - name: Get VSD version
-    shell: echo $VSD_VERSION
+    shell: grep -ir "VSD_VERSION=" /etc/profile.d/vsd-banner.sh | awk -F "=" '{print $2}'
     register: vsd_version
     delegate_to: "{{ vsd_hostname_list[0] }}"
 
@@ -35,7 +35,7 @@
     until: "created.rc == 0 or (created.stdout is search('fail adding entity'))"
     retries: 10
     delay: 30
-    no_log: True
+    no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
     environment:
       CERT_PASSWORD: "{{ certificate_password }}"
     when: "'4.0.4' not in vsd_version and scp_user is not defined and scp_location is not defined"
@@ -47,7 +47,7 @@
     until: "created.rc == 0 or (created.stdout is search('fail adding entity'))"
     retries: 10
     delay: 30
-    no_log: True
+    no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
     environment:
       CERT_PASSWORD: "{{ certificate_password }}"
     when: "'4.0.4' not in vsd_version and scp_user is defined and scp_location is defined"
@@ -59,7 +59,7 @@
     until: "created.rc == 0 or (created.stdout is search('fail adding entity'))"
     retries: 10
     delay: 30
-    no_log: True
+    no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
     environment:
       CERT_PASSWORD: "{{ certificate_password }}"
     when: "'4.0.4' in vsd_version and scp_user is not defined and scp_location is not defined"
@@ -71,12 +71,12 @@
     until: "created.rc == 0 or (created.stdout is search('fail adding entity'))"
     retries: 10
     delay: 30
-    no_log: True
+    no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
     environment:
       CERT_PASSWORD: "{{ certificate_password }}"
     when: "'4.0.4' in vsd_version and scp_user is defined and scp_location is defined"
 
-  remote_user: "{{ vsd_username | default(vsd_default_username) }}"
-  become: "{{ 'no' if vsd_username | default(vsd_default_username) == 'root' else 'yes' }}"
+  remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
+  become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
   vars:
-    ansible_become_pass: "{{ vsd_password | default(vsd_default_password) }}"
+    ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"

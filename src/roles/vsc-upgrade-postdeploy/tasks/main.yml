@@ -7,6 +7,16 @@
   no_log: True
   ignore_errors: True
 
+- name: Wait for VSC ssh to be ready
+  include_role:
+    name: common
+    tasks_from: wait-for-ssh-port
+  vars:
+    ssh_host: "{{ vsc_creds.host }}"
+    ssh_password: "{{ vsc_creds.password }}"
+    ssh_user: "{{ vsc_creds.username }}"
+    check_login: True
+
 - name: Get output of 'show vswitch-controller xmpp-server detail'
   sros_command:
     commands:
@@ -15,7 +25,7 @@
   delegate_to: localhost
   register: xmpp_detail
   until: xmpp_detail.stdout[0].find('Functional') != -1
-  retries: 5
+  retries: 15
   delay: 30
 
 - name: Print 'show vswitch-controller xmpp-server detail' when verbosity >= 1
@@ -70,19 +80,19 @@
   assert:
     that: "'cna@{{ vsd_fqdn }}' in vsd_detail.stdout[0]"
     msg: "VSD Node1 could not be found in 'show vswitch-controller vsd detail'"
-  when: vsd_sa_or_ha | match('sa')
+  when: vsd_sa_or_ha is match('sa')
 
 - name: Verify VSD Node1 is found in vsd_detail
   assert:
     that: "'cna@{{ vsd_fqdn }}/{{ vsd_hostname_list[0].split('.')[0:1] | join('.') }}' in vsd_detail.stdout[0]"
     msg: "VSD Node1 could not be found in 'show vswitch-controller vsd detail'"
-  when: vsd_sa_or_ha | match('ha')
+  when: vsd_sa_or_ha is match('ha')
 
 - name: Verify VSD Node2 is found in vsd_detail
   assert:
     that: "'cna@{{ vsd_fqdn }}/{{ vsd_hostname_list[1].split('.')[0:1] | join('.') }}' in vsd_detail.stdout[0]"
     msg: "VSD Node2 could not be found in 'show vswitch-controller vsd detail'"
-  when: vsd_sa_or_ha | match('ha')
+  when: vsd_sa_or_ha is match('ha')
 
 - block:
   - name: Set mgmt_ip to second vsc node

@@ -1,49 +1,58 @@
 ---
-
 - include_role:
-    name: check-node-reachability
+    name: skip-actions
+  vars:
+    - action: vsd_predeploy
 
-- name: Get VSD directory stat
-  stat:
-    path: /opt/vsd
-  remote_user: "{{ vsd_default_username }}"
-  register: vsd_dir
-  when: node_reachable
+- block:
 
-- name: Set fact for VSD present
-  set_fact:
-    node_present: "{{ vsd_dir is defined and
-                      vsd_dir.stat is defined and
-                      vsd_dir.stat.isdir is defined and
-                      vsd_dir.stat.isdir }}"
+  - include_role:
+      name: check-node-reachability
+
+  - name: Get VSD directory stat
+    stat:
+      path: /opt/vsd
+    remote_user: "{{ vsd_default_username }}"
+    register: vsd_dir
+    when: node_reachable
+
+  - name: Set fact for VSD present
+    set_fact:
+      node_present: "{{ vsd_dir is defined and
+                        vsd_dir.stat is defined and
+                        vsd_dir.stat.isdir is defined and
+                        vsd_dir.stat.isdir }}"
+
+  when:
+    - not (vcenter_start_vsd_with_interfaces_disabled | default( False ) and nuage_upgrade | default( False ))
 
 - import_tasks: kvm.yml
-  when: target_server_type | match("kvm")
+  when: target_server_type is match("kvm")
   tags:
     - vsd
     - vsd-predeploy
 
 - import_tasks: openstack.yml
-  when: target_server_type | match("openstack")
+  when: target_server_type is match("openstack")
   tags:
     - vsd
     - openstack
     - vsd-predeploy
 
 - import_tasks: vcenter.yml
-  when: target_server_type | match("vcenter")
+  when: target_server_type is match("vcenter")
   tags:
     - vsd
     - vsd-predeploy
 
 - import_tasks: aws.yml
-  when: target_server_type | match("aws")
+  when: target_server_type is match("aws")
   tags:
     - vsd
     - vsd-predeploy
 
 - import_tasks: nuagex.yml
-  when: target_server_type | match("nuagex")
+  when: target_server_type is match("nuagex")
   tags:
     - nuagex
     - vsd

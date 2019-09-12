@@ -9,13 +9,16 @@
     - name: create dns directory
       file: path={{ nuage_unzipped_files_dir }}/dns state=directory
 
-    - name: Find name of VSTAT VM QCOW2 File
-      find: path="{{ nuage_unzipped_files_dir }}/vstat"  pattern="*.qcow2" recurse=yes
-      register: rc_vstat_file
+    - name: Set VSTAT KVM image location
+      include_role:
+        name: common
+        tasks_from: find-image.yml
+      vars:
+        pattern: Nuage-elastic-*.qcow2
 
     - name: Verify that VSTAT VM QCOW2 file was found
       assert: {
-        that: "{{ rc_vstat_file.matched }} > 0",
+        that: "{{ image_file_name | default('MISSING') }} != 'MISSING'",
         msg: "DNS image is taken from VSTAT, but we can't find the image path. Make sure VSTATs are defined in your deployment vstats.yml"
         }
 
@@ -25,7 +28,7 @@
       register: qcow_file
 
     - name: Copy vstat qcow2 image to dns directory
-      copy: src={{ rc_vstat_file.files[0].path }} dest={{ nuage_unzipped_files_dir }}/dns/dns.qcow2 force=yes
+      copy: src={{ image_path }}/{{ image_file_name }} dest={{ nuage_unzipped_files_dir }}/dns/dns.qcow2 force=yes
       when: not qcow_file.stat.exists
 
     - name: Find name of DNS VM QCOW2 File
@@ -36,11 +39,11 @@
 
     - name: Register DNS QCOW2 variables with proper path and image locations for use in other playbooks
       set_fact:
-        qcow2_path: "{{ rc_dns_file.files[0].path | dirname }}"
-        qcow2_file_name: "{{ rc_dns_file.files[0].path | basename }}"
+        image_path: "{{ rc_dns_file.files[0].path | dirname }}"
+        image_file_name: "{{ rc_dns_file.files[0].path | basename }}"
       when: rc_dns_file.matched > 0
 
-    when: dnss | map(attribute='target_server_type') | list | issuperset(["kvm"]) or dnss | map(attribute='target_server_type') | list | issuperset(["heat"])
+    when: dnss | map(attribute='target_server_type') | list is issuperset(["kvm"]) or dnss | map(attribute='target_server_type') | list is issuperset(["heat"])
 
   - name: Create host_vars files for dns
     template: src=dns.j2 backup=no dest={{ inventory_dir }}/host_vars/{{ item.hostname }}

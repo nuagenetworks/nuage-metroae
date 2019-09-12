@@ -3,26 +3,21 @@
   serial: 1
   gather_facts: no
   pre_tasks:
-    - name: Set upgrade flag
+    - name: Set vm name, preserve vm and upgrade flag
       set_fact:
         nuage_upgrade: true
+    - name: Lets run VSD ha upgrade Shutdown 2 and 3 hooks
+      include_role:
+        name: hooks
+        tasks_from: main
+      vars:
+        - hooks_file_path: "{{ item }}"
+        - hook_location:
+          - vsd_ha_upgrade_shutdown_2_and_3
+      with_items: "{{ hooks | default([]) }}"
   vars:
-    vsd_username: "{{ vsd_custom_username | default(vsd_default_username) }}"
-    vsd_password: "{{ vsd_custom_password | default(vsd_default_password) }}"
     preserve_vm: true
     vm_name: "{{ vmname }}"
   roles:
     - vsd-services-stop
     - vsd-destroy
-
-- hosts: vsd_ha_node1
-  gather_facts: no
-  pre_tasks:
-    - name: Set upgrade flag
-      set_fact:
-        nuage_upgrade: true
-  vars:
-    vsd_username: "{{ vsd_custom_username | default(vsd_default_username) }}"
-    vsd_password: "{{ vsd_custom_password | default(vsd_default_password) }}"
-  roles:
-    - vsd-ha-upgrade-block-access

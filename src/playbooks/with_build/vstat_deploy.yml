@@ -1,6 +1,53 @@
 ---
 - hosts: vstats
   gather_facts: no
-  any_errors_fatal: true
+  pre_tasks:
+    - name: Lets run VSTAT deploy hooks
+      include_role:
+        name: hooks
+        tasks_from: main
+      vars:
+        - hooks_file_path: "{{ item }}"
+        - hook_location:
+          - vstat_deploy
+      with_items: "{{ hooks | default([]) }}"
+  roles:
+    - vstat-deploy
+
+- hosts: primary_vstats
+  gather_facts: no
+  pre_tasks:
+    - name: Set active flag
+      set_fact:
+        active: True
+
+    - name: Lets run VSTAT deploy hooks
+      include_role:
+        name: hooks
+        tasks_from: main
+      vars:
+        - hooks_file_path: "{{ item }}"
+        - hook_location:
+          - vstat_deploy
+      with_items: "{{ hooks | default([]) }}"
+  roles:
+    - vstat-deploy
+
+- hosts: backup_vstats
+  gather_facts: no
+  pre_tasks:
+    - name: Set active flag
+      set_fact:
+        active: False
+
+    - name: Lets run VSTAT deploy hooks
+      include_role:
+        name: hooks
+        tasks_from: main
+      vars:
+        - hooks_file_path: "{{ item }}"
+        - hook_location:
+          - vstat_deploy
+      with_items: "{{ hooks | default([]) }}"
   roles:
     - vstat-deploy

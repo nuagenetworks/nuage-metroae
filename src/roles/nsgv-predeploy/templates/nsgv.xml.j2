@@ -34,7 +34,7 @@
     <emulator>{{ libvirt.emulator }}</emulator>
     <disk type='file' device='disk'>
       <driver name='qemu' type='qcow2'/>
-      <source file='{{ images_path }}/{{ vmname }}/{{ qcow2_file_name }}'/>
+      <source file='{{ images_path }}/{{ vmname }}/{{ image_file_name }}'/>
       <target dev='hda' bus='ide'/>
       <address type='drive' controller='0' bus='0' target='0' unit='0'/>
     </disk>
@@ -124,11 +124,25 @@
     </interface>
 {% endif %}
 {% endif %}
+{% if telnet_port is defined %}
+    <serial type='tcp'>
+     <source mode='bind' host='0.0.0.0' service='{{telnet_port}}'/>
+     <protocol type='telnet'/>
+     <target port='0'/>
+     <alias name='serial0'/>
+    </serial>
+    <console type='tcp'>
+     <source mode='bind' host='0.0.0.0' service='{{telnet_port}}'/>
+     <protocol type='telnet'/>
+      <alias name='serial0'/>
+    </console>
+{% else %}
     <console type='pty' tty='/dev/pts/16'>
       <source path='/dev/pts/16'/>
       <target type='serial' port='0'/>
       <alias name='serial0'/>
     </console>
+{% endif %}
     <memballoon model='virtio'>
       <address type='pci' domain='0x0000' bus='0x00' slot='0x06' function='0x0'/>
     </memballoon>

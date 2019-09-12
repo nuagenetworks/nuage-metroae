@@ -16,7 +16,7 @@
     retries: 90
 
 - import_tasks: openstack.yml
-  when: target_server_type | match("openstack")
+  when: target_server_type is match("openstack")
   tags:
     - vstat
     - openstack
@@ -33,7 +33,7 @@
   - name: Set hostname for AWS permanently
     shell: "echo {{ hostname }} > /etc/hostname"
 
-  when: target_server_type | match("aws")
+  when: target_server_type is match("aws")
   remote_user: "{{ vstat_default_username }}"
 
 - name: Get vsd node(s) information
@@ -44,33 +44,40 @@
     vsd_hostname: "{{ vsd_fqdn }}"
 
 - block:
+  - name: Generate SSH keys
+    include_tasks: generate_ssh_keys.yml
+    vars:
+      group_vstats: "{{ groups['vstats'] }}"
+      vstat_username: "{{ vstat_default_username }}"
+
+    remote_user: "{{ vstat_default_username }}"
+    when: groups['vstats'] is defined
 
   - name: Generate SSH keys
-    shell: ssh-keygen -b 2048 -t rsa -f /root/.ssh/id_rsa -q -N ""
-    args:
-      creates: /root/.ssh/id_rsa
-    delegate_to: "{{ item }}"
-    with_items: "{{ groups['vstats'] }}"
+    include_tasks: generate_ssh_keys.yml
+    vars:
+      group_vstats: "{{ groups['primary_vstats'] }}"
+      vstat_username: "{{ vstat_default_username }}"
 
-  - name: Get generated SSH keys
-    shell: cat ~/.ssh/id_rsa.pub
-    register: ssh_key_lst
-    delegate_to: "{{ item }}"
-    with_items: "{{ groups['vstats'] }}"
+    remote_user: "{{ vstat_default_username }}"
+    when: groups['primary_vstats'] is defined and active
 
-  - name: Add SSH keys to authorized_keys file
-    shell: "echo {{ item[1].stdout }} >> /root/.ssh/authorized_keys"
-    delegate_to: "{{ item[0] }}"
-    with_nested:
-      - "{{ groups['vstats'] }}"
-      - "{{ ssh_key_lst.results }}"
+  - name: Generate SSH keys
+    include_tasks: generate_ssh_keys.yml
+    vars:
+      group_vstats: "{{ groups['backup_vstats'] }}"
+      vstat_username: "{{ vstat_default_username }}"
 
-  remote_user: "{{ vstat_default_username }}"
+    remote_user: "{{ vstat_default_username }}"
+    when: groups['backup_vstats'] is defined and not active
+
   run_once: true
-  when: vstat_sa_or_ha | match('ha')
+  when: vstat_sa_or_ha is match('ha')
 
 - name: check for iptables (ignoring errors)
-  shell: "service iptables status"
+  shell:
+    cmd: "service iptables status"
+    warn: false
   register: _svc_iptables
   ignore_errors: True
   remote_user: "{{ vstat_default_username }}"
@@ -92,14 +99,22 @@
       enabled: yes
     remote_user: "{{ vstat_default_username }}"
 
+  - name: Check if ip6tables is already setup for VSD rules (ignoring errors)
+    shell: ip6tables -L INPUT | grep 'match-set vsd src'
+    remote_user: "{{ vstat_default_username }}"
+    register: vstat_ip6tables_result
+    ignore_errors: True
+    when: enable_ipv6 | default(False) == True
+
   - name: Check if iptables is already setup for VSD rules (ignoring errors)
     shell: iptables -L INPUT | grep 'match-set vsd src'
     remote_user: "{{ vstat_default_username }}"
     register: vstat_iptables_result
     ignore_errors: True
+    when: enable_ipv6 | default(False) != True
 
   - name: Set if skipping VSTAT deploy
-    set_fact: skip_vstat_deploy="{{ vstat_iptables_result is defined and vstat_iptables_result.rc == 0 }}"
+    set_fact: skip_vstat_deploy="{{ (vstat_iptables_result is defined and vstat_iptables_result.rc | default(1) == 0) or (vstat_ip6tables_result is defined and vstat_ip6tables_result.rc | default(1) == 0) }}"
 
   - name: Display if skipping VSTAT deploy
     debug:
@@ -134,18 +149,20 @@
       - name: Verify iptables rules installation
         assert:
           that: "{{ item.rc }} == 0 or
-                 {{ item.stderr | search('already exists') }} or
-                 {{ item.stderr | search('already added') }}"
+                 {{ item.stderr is search('already exists') }} or
+                 {{ item.stderr is search('already added') }}"
           msg: "iptables rule was not installed"
         with_items:
           - "{{ iptables_results.results }}"
 
-      when: vsd_sa_or_ha | match('sa')
+      when: vsd_sa_or_ha is match('sa')
 
     - block:
 
       - name: Config iptables on VSTAT vm to accept conn on ports 9200, 9300 from vsd(s) in cluster setup (ignoring errors)
-        shell: "{{ item }}"
+        shell:
+          cmd: "{{ item }}"
+          warn: false
         with_items:
           - "{{ iptables_cluster_commands }}"
         remote_user: "{{ vstat_default_username }}"
@@ -155,20 +172,22 @@
       - name: Verify iptables rules installation
         assert:
           that: "{{ item.rc }} == 0 or
-                 {{ item.stderr | search('already exists') }} or
-                 {{ item.stderr | search('already added') }}"
+                 {{ item.stderr is search('already exists') }} or
+                 {{ item.stderr is search('already added') }}"
           msg: "iptables rule was not installed"
         with_items:
           - "{{ iptables_results.results }}"
 
-      when: vsd_sa_or_ha | match('ha')
+      when: vsd_sa_or_ha is match('ha')
 
     when: not skip_vstat_deploy
 
   when: "_svc_iptables.rc == 0"
 
 - name: check for firewalld (ignoring errors)
-  shell: "service firewalld status"
+  shell:
+    cmd: "service firewalld status"
+    warn: false
   register: _svc_firewalld
   ignore_errors: True
   remote_user: "{{ vstat_default_username }}"
@@ -222,13 +241,13 @@
       with_items:
         - "{{ firewall_std_commands }}"
       remote_user: "{{ vstat_default_username }}"
-      when: vsd_sa_or_ha | match('sa')
+      when: vsd_sa_or_ha is match('sa')
 
     - name: Config firewall on VSTAT vm to accept conn on ports 9200, 9300 from vsd(s) in cluster setup
       shell: "{{ item }}"
       with_items:
         - "{{ firewall_cluster_commands }}"
-      when: vsd_sa_or_ha | match('ha')
+      when: vsd_sa_or_ha is match('ha')
       remote_user: "{{ vstat_default_username }}"
 
     when: not skip_vstat_deploy
@@ -243,8 +262,12 @@
     lineinfile:
       dest: /etc/hosts
       line: "{{ hostvars[item]['mgmt_ip'] }}    {{ hostvars[item]['hostname'] }}"
-    with_items: "{{ groups['vstats'] }}"
-    when: vsd_sa_or_ha | match('ha')
+    with_items:
+      - "{{ groups['vstats'] }}"
+      - "{{ groups['primary_vstats'] | default ([]) }}"
+      - "{{ groups['backup_vstats'] | default ([]) }}"
+
+    when: vsd_sa_or_ha is match('ha')
     remote_user: "{{ vstat_default_username }}"
 
   - name: Configure ntpd and ntpdate and local time zone
@@ -275,7 +298,7 @@
         tasks_from: wait-for-ssh
       vars:
         ssh_host: "{{ vsd_hostname_list[0] }}"
-        host_username: "{{ vsd_default_username }}"
+        host_username: "{{ vsd_custom_username | default(vsd_default_username) }}"
 
     - block:
 
@@ -284,43 +307,79 @@
         register: es_sa_script
         delegate_to: "{{ vsd_hostname_list[0] }}"
         when:
-          - vstat_sa_or_ha | match('sa')
+          - vstat_sa_or_ha is match('sa')
 
       - name: Execute VSTAT standalone script on standalone or clustered vsds
         command: /opt/vsd/vsd-es-standalone.sh -e {{ inventory_hostname }}
-        no_log: True
+        no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
         delegate_to: "{{ vsd_hostname_list[0] }}"
         environment:
           SSHPASS: "{{ vstat_default_password }}"
         when:
-          - vstat_sa_or_ha | match('sa')
+          - vstat_sa_or_ha is match('sa')
           - es_sa_script.stat.exists
           - vstat_default_username == 'root'
 
       - name: Execute VSTAT standalone script on standalone or clustered vsds
         command: /opt/vsd/vsd-es-standalone.sh -e {{ inventory_hostname }}
         delegate_to: "{{ vsd_hostname_list[0] }}"
-        no_log: True
+        no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
         when:
-          - vstat_sa_or_ha | match('sa')
+          - vstat_sa_or_ha is match('sa')
           - es_sa_script.stat.exists
           - vstat_default_username != 'root'
 
-      - name: Execute VSTAT cluster script on standalone or clustered vsds
-        command: /opt/vsd/vsd-es-cluster-config.sh -e {{ groups['vstats'][0] }},{{ groups['vstats'][1] }},{{ groups['vstats'][2] }}
-        delegate_to: "{{ vsd_hostname_list[0] }}"
-        environment:
-          SSHPASS: "{{ vstat_default_password }}"
-        no_log: True
-        when: vstat_sa_or_ha | match('ha')
+      - block:
+        - name: Execute VSTAT cluster script on standalone or clustered vsds
+          command: /opt/vsd/vsd-es-cluster-config.sh -e {{ groups['vstats'][0] }},{{ groups['vstats'][1] }},{{ groups['vstats'][2] }}
+          delegate_to: "{{ vsd_hostname_list[0] }}"
+          environment:
+            SSHPASS: "{{ vstat_default_password }}"
+          no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
+          when: groups['vstats'] is defined
 
-      remote_user: "{{ vsd_default_username }}"
+        - name: Execute VSTAT cluster script on standalone or clustered vsds for primary vstats
+          command: /opt/vsd/vsd-es-cluster-config.sh -e {{ groups['primary_vstats'][0] }},{{ groups['primary_vstats'][1] }},{{ groups['primary_vstats'][2] }}
+          delegate_to: "{{ vsd_hostname_list[0] }}"
+          environment:
+            SSHPASS: "{{ vstat_default_password }}"
+          no_log: True
+          when: groups['primary_vstats'] is defined and active
 
-    run_once: True
+        - name: Execute VSTAT cluster script on standalone or clustered vsds for backup vstats
+          command: /opt/vsd/vsd-es-cluster-config.sh -e {{ groups['backup_vstats'][0] }},{{ groups['backup_vstats'][1] }},{{ groups['backup_vstats'][2] }}
+          delegate_to: "{{ vsd_hostname_list[0] }}"
+          environment:
+            SSHPASS: "{{ vstat_default_password }}"
+          when: groups['backup_vstats'] is defined and not active
+          no_log: True
+
+        when: vstat_sa_or_ha is match('ha')
+        run_once: True
+
+      remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
+      become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
+      vars:
+        ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"
 
   - name: Enable stats
     include_role:
       name: common
       tasks_from: vstat-enable-stats.yml
+    vars:
+      failover: False
+
+  - name: Enable VSS UI
+    import_tasks: setup-vstat-vss-ui.yml
+    when: enable_vss_ui | default(False)
+
+  - name: Configure ES primary and backup cluster
+    include_role:
+      name: common
+      tasks_from: vstat-nfs-configuration.yml
+    vars:
+      deploy: True
+
+    when: nfs_backup_location is defined
 
   when: not skip_vstat_deploy

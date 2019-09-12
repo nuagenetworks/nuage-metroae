@@ -1,3 +1,13 @@
+- name: Wait for VSC ssh to be ready
+  include_role:
+    name: common
+    tasks_from: wait-for-ssh-port
+  vars:
+    ssh_host: "{{ vsc_creds.host }}"
+    ssh_password: "{{ vsc_creds.password }}"
+    ssh_user: "{{ vsc_creds.username }}"
+    check_login: True
+
 - name: Get output of 'show version'
   sros_command:
     commands:
@@ -45,7 +55,7 @@
       provider: "{{ vsc_creds }}"
     delegate_to: localhost
   when:
-    - "{{ vsc_version_json['vsc_version'][0] }} == 3"
+    - vsc_version_json['vsc_version'][0] == 3
     - inventory_hostname in groups['vscs'][0]
     - groups['vscs'][1] is defined
 
@@ -96,15 +106,7 @@
   - name: Print vsc system connetion in json  when verbosity >= 1
     debug: var=vsc_sys_conn_json verbosity=1
 
-  - name: Block access to decoupled VSD node2 from VSC1
-    command: "iptables -I INPUT -s {{ vsc_sys_conn_json['local_ip'] }} -j DROP"
-    remote_user: "{{ vsd_username | default(vsd_default_username) }}"
-    become: "{{ 'no' if vsd_username | default(vsd_default_username) == 'root' else 'yes' }}"
-    vars:
-      ansible_become_pass: "{{ vsd_password | default(vsd_default_password) }}"
-    delegate_to: "{{ vsd_hostname_list[1] }}"
-
-  - name: check xmpp connectivity after iptables on vsd2
+  - name: check xmpp connectivity for VSC
     sros_command:
       commands:
         - show vswitch-controller xmpp-server | match Functional
@@ -119,7 +121,7 @@
   - name: Print vsc xmpp status  when verbosity >= 1
     debug: var=xmpp_status verbosity=1
 
-  when: vsd_sa_or_ha|match('ha')
+  when: vsd_sa_or_ha is match('ha')
 
 - name: Get output of 'show vswitch-controller xmpp-server detail'
   sros_command:
@@ -148,7 +150,7 @@
   assert: {
     that: "{{ expected_xmpp_server_state == xmpp_server_state }}",
     msg: "Invalid xmpp-server state ({{ xmpp_server_state }}) detected. Expected {{ expected_xmpp_server_state }}. Check 'show vswitch-controller xmpp-server details'."  }
-  when: vsd_sa_or_ha|match('ha')
+  when: vsd_sa_or_ha is match('ha')
 
 - name: Save VSC configs
   sros_command:

@@ -11,6 +11,27 @@
   when: node_present
 
 - block:
+
+  - name: Set local variable with upgrade status
+    set_fact:
+      upgrade: "{{ nuage_upgrade|default('False') }}"
+
+  - block:
+    - name: Verify that upgrade_vmname is defined if this is an upgrade
+      assert:
+        that: "upgrade_vmname is defined"
+        msg: "upgrade_vmname is required for upgrade"
+    - name: Set local variable with upgrade_vmname
+      set_fact:
+        vm_name: "{{ upgrade_vmname }}"
+    when: upgrade
+
+  - block:
+    - name: Set local variable with vmname
+      set_fact:
+        vm_name: "{{ vmname }}"
+    when: not upgrade
+
   - name: Get the public key for the current user
     local_action: command cat "{{ user_ssh_pub_key }}"
     register: current_user_ssh_key
@@ -38,19 +59,19 @@
   - name: Creating VSD stack
     register: create_stack
     os_stack:
-      name: "{{ stack_name | default(inventory_hostname) }}"
+      name: "{{ vm_name }}"
       template: "{{ vsd_heat_template }}"
       auth:
         "{{ openstack_auth }}"
       parameters:
-        vm_name: "{{ inventory_hostname }}"
+        vm_name: "{{ vm_name }}"
         vsd_image: "{{ openstack_image }}"
         vsd_flavor: "{{ openstack_flavor }}"
         vsd_network: "{{ openstack_network }}"
         vsd_subnet: "{{ openstack_subnet | default('NONE') }}"
         mgmt_ip: "{{ mgmt_ip | default('NONE') }}"
         ssh_key: "{{ current_user_ssh_key.stdout }}"
-    delegate_to: 127.0.0.1
+    delegate_to: localhost
 
   - debug: var=create_stack['stack']['outputs'][0]['output_value']
 

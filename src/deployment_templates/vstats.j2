@@ -58,7 +58,7 @@
 
     # < Target Server type >
     # Type of hypervisor environment into which the instance will be created
-    # (kvm, vcenter, aws, openstack) 
+    # (kvm, vcenter, aws, openstack, nuagex) 
     #
     target_server_type: "{{ item.target_server_type }}"
 
@@ -87,6 +87,8 @@
     # vsd_fqdn: ""
     {%- endif %}
 
+    {%- if show_target_server_type | default('vcenter') == 'vcenter' %}
+
     ##### vCenter Parameters
 
     # < vCenter Datacenter Name >
@@ -97,6 +99,9 @@
     {%- else %}
     # vcenter_datacenter: (global vCenter Datacenter Name)
     {%- endif %}
+    {%- endif %}
+
+    {%- if show_target_server_type | default('vcenter') == 'vcenter' %}
 
     # < vCenter Cluster Name >
     # Name of the vCenter Cluster on which the VSTAT VM will be deployed. Defaults to the common vCenter Cluster Name if not defined here.
@@ -106,6 +111,9 @@
     {%- else %}
     # vcenter_cluster: (global vCenter Cluster Name)
     {%- endif %}
+    {%- endif %}
+
+    {%- if show_target_server_type | default('vcenter') == 'vcenter' %}
 
     # < vCenter Host Reference >
     # Requires ovftool 4.3. Reference to the host on the vCenter cluster on which to deploy Nuage components
@@ -115,6 +123,9 @@
     {%- else %}
     # vcenter_host_reference: (global vCenter Host Reference)
     {%- endif %}
+    {%- endif %}
+
+    {%- if show_target_server_type | default('vcenter') == 'vcenter' %}
 
     ##### vCenter Parameters
 
@@ -126,6 +137,9 @@
     {%- else %}
     # vcenter_datastore: (global vCenter Datastore Name)
     {%- endif %}
+    {%- endif %}
+
+    {%- if show_target_server_type | default('aws') == 'aws' %}
 
     ##### AWS Parameters
 
@@ -137,6 +151,9 @@
     {%- else %}
     # aws_ami_id: ""
     {%- endif %}
+    {%- endif %}
+
+    {%- if show_target_server_type | default('aws') == 'aws' %}
 
     # < AWS AMI ID for Upgrading Instance >
     # AMI ID of the upgraded image
@@ -146,6 +163,9 @@
     {%- else %}
     # aws_upgrade_ami_id: ""
     {%- endif %}
+    {%- endif %}
+
+    {%- if show_target_server_type | default('aws') == 'aws' %}
 
     # < AWS Instance Type >
     # Instance Type of the AWS Instance
@@ -155,6 +175,9 @@
     {%- else %}
     # aws_instance_type: ""
     {%- endif %}
+    {%- endif %}
+
+    {%- if show_target_server_type | default('aws') == 'aws' %}
 
     # < AWS Keypair Name >
     # Name of the Keypair used to connect to VPC
@@ -164,6 +187,9 @@
     {%- else %}
     # aws_key_name: ""
     {%- endif %}
+    {%- endif %}
+
+    {%- if show_target_server_type | default('aws') == 'aws' %}
 
     # < AWS Management ENI ID >
     # ENI ID for VSTAT Instance on Management Subnetwork
@@ -175,6 +201,9 @@
     {%- endif %}
 
     ####################
+    {%- endif %}
+
+    {%- if show_target_server_type | default('openstack') == 'openstack' %}
 
     ##### OpenStack Parameters
 
@@ -186,6 +215,9 @@
     {%- else %}
     # openstack_image: ""
     {%- endif %}
+    {%- endif %}
+
+    {%- if show_target_server_type | default('openstack') == 'openstack' %}
 
     # < OpenStack Flavor >
     # Name of instance flavor installed on OpenStack for VSTAT
@@ -195,6 +227,21 @@
     {%- else %}
     # openstack_flavor: ""
     {%- endif %}
+    {%- endif %}
+
+    {%- if show_target_server_type | default('openstack') == 'openstack' %}
+
+    # < OpenStack Availability Zone >
+    # Name of availability zone on OpenStack for VSTAT
+    #
+    {%- if item.openstack_availability_zone is defined %}
+    openstack_availability_zone: "{{ item.openstack_availability_zone }}"
+    {%- else %}
+    # openstack_availability_zone: ""
+    {%- endif %}
+    {%- endif %}
+
+    {%- if show_target_server_type | default('openstack') == 'openstack' %}
 
     # < OpenStack Network >
     # Name of network on OpenStack for VSTAT
@@ -204,6 +251,9 @@
     {%- else %}
     # openstack_network: ""
     {%- endif %}
+    {%- endif %}
+
+    {%- if show_target_server_type | default('openstack') == 'openstack' %}
 
     # < OpenStack Subnet >
     # Name of subnet on OpenStack for VSTAT
@@ -213,6 +263,9 @@
     {%- else %}
     # openstack_subnet: ""
     {%- endif %}
+    {%- endif %}
+
+    {%- if show_target_server_type | default('openstack') == 'openstack' %}
 
     # < OpenStack Port Name >
     # Name for Mgmt interface
@@ -222,6 +275,9 @@
     {%- else %}
     # openstack_port_name: ""
     {%- endif %}
+    {%- endif %}
+
+    {%- if show_target_server_type | default('openstack') == 'openstack' %}
 
     # < OpenStack Port Security Groups >
     # Set of security groups to associate with Mgmt interface
@@ -233,6 +289,9 @@
     {%- endif %}
 
     ##########################
+    {%- endif %}
+
+    {%- if show_target_server_type | default('kvm') == 'kvm' %}
 
     # < KVM cpuset information >
     # Cpuset information for cpu pinning on KVM. For example, VSTAT requires 6 cores and sample values will be of the form [ 0, 1, 2, 3, 4, 5 ]
@@ -242,6 +301,56 @@
     {%- else %}
     # cpuset: []
     {%- endif %}
+    {%- endif %}
+
+    # < Enable VSS UI >
+    # Enable the setup of the Virtualized Security Services UI
+    #
+    {%- if item.enable_vss_ui is defined %}
+    enable_vss_ui: {{ item.enable_vss_ui | lower }}
+    {%- else %}
+    # enable_vss_ui: False
+    {%- endif %}
+
+    ##### NFS Backup Configuration
+
+    # < NFS backup location >
+    # NFS share for copying vstat backups. For example, NFS share should contain both the ip address and shared volume in this form 1.1.1.1:/nfshare
+    #
+    {%- if item.nfs_backup_location is defined %}
+    nfs_backup_location: "{{ item.nfs_backup_location }}"
+    {%- else %}
+    # nfs_backup_location: ""
+    {%- endif %}
+
+    # < Interval to restore snapshots >
+    # Interval to restore database snapshots, min value is 0 and max value is 60 minutes
+    #
+    {%- if item.restore_interval is defined %}
+    restore_interval: {{ item.restore_interval }}
+    {%- else %}
+    # restore_interval: 5
+    {%- endif %}
+
+    # < Interval to create snapshots >
+    # Interval to create database snapshots, min value is 0 and max value is 60 minutes
+    #
+    {%- if item.snapshot_interval is defined %}
+    snapshot_interval: {{ item.snapshot_interval }}
+    {%- else %}
+    # snapshot_interval: 5
+    {%- endif %}
+
+    # < Backup repository name >
+    # Repository name for storing backups
+    #
+    {%- if item.repo_name is defined %}
+    repo_name: "{{ item.repo_name }}"
+    {%- else %}
+    # repo_name: ""
+    {%- endif %}
+
+    ##############################
 
 {% endfor %}
 {% else %}

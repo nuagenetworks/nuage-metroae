@@ -1,7 +1,6 @@
 ---
 - hosts: vsd_ha_node1
   gather_facts: no
-  any_errors_fatal: true
   pre_tasks:
     - name: Set upgrade flag
       set_fact:
@@ -11,18 +10,46 @@
       include_role:
         name: common
         tasks_from: check-upgrade-prereq
-  vars:
-    vsd_username: "{{ vsd_custom_username | default(vsd_default_username) }}"
-    vsd_password: "{{ vsd_custom_password | default(vsd_default_password) }}"
+
+    - name: Lets run VSD dbbackup hooks
+      include_role:
+        name: hooks
+        tasks_from: main
+      vars:
+        - hooks_file_path: "{{ item }}"
+        - hook_location:
+          - vsd_dbbackup
+          - vsd_ha_upgrade_database_backup_and_decouple
+      with_items: "{{ hooks | default([]) }}"
   roles:
     - vsd-dbbackup
 
 - hosts: vsd_ha_node1
   gather_facts: no
-  any_errors_fatal: true
   vars:
     report_filename: vsd_ha_upgrade_backup_and_decouple_report.txt
-    vsd_password: "{{ vsd_custom_password | default(vsd_default_password) }}"
-    vsd_username: "{{ vsd_custom_username | default(vsd_default_username) }}"
+  pre_tasks:
+    - name: Lets run VSD decouple hooks
+      include_role:
+        name: hooks
+        tasks_from: main
+      vars:
+        - hooks_file_path: "{{ item }}"
+        - hook_location:
+          - vsd_decouple
+      with_items: "{{ hooks | default([]) }}"
   roles:
     - vsd-decouple
+
+- hosts: vsd_ha_node1
+  gather_facts: no
+  pre_tasks:
+    - name: Set upgrade flag
+      set_fact:
+        nuage_upgrade: true
+  vars:
+    report_filename: vsd_ha_node1_health_report_after_decouple.txt
+    vsd_username: "{{ vsd_custom_username | default(vsd_default_username) }}"
+    vsd_password: "{{ vsd_custom_password | default(vsd_default_password) }}"
+  roles:
+    - vsd-health

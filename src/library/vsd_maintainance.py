@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 
 from ansible.module_utils.basic import AnsibleModule
 import importlib
@@ -14,11 +14,6 @@ options:
   vsd_auth:
     description:
       - VSD credentials to access VSD GUI
-    required: true
-    default: null
-  api_version:
-    description:
-      - VSD version
     required: true
     default: null
   state:
@@ -37,7 +32,6 @@ EXAMPLES = '''
       password: csproot
       enterprise: csp
       api_url: https://10.0.0.10:8443
-    api_version: 4.0.R8
     state: enabled
 '''
 
@@ -81,32 +75,24 @@ def set_maintainance_mode(csproot, state):
         else:
             result_str = result_str + ' No L2 domains found\
                          to %s maintainance mode' % state
-        module.exit_json(changed=True, result="%s" % result_str)
+        module.exit_json(rc=0, changed=True, result="%s" % result_str)
     except exceptions.BambouHTTPError as be:
         if "There are no attribute changes" in be.message:
-            module.exit_json(changed=True, result="Maintainance mode is already enabled")
+            module.exit_json(rc=0, changed=True, result="Maintainance mode is already enabled")
         else:
-            module.fail_json(msg="Could not set maintainance mode : %s" % be)
+            module.fail_json(rc=1, msg="Could not set maintainance mode : %s" % be)
     except Exception as e:
-        module.fail_json(msg="Could not set maintainance mode : %s" % e)
-
-
-def format_api_version(version):
-    # Handle 3.2 seperately
-    if version.startswith('3'):
-        return ('v3_2')
-    else:
-        return ('v' + version[0] + '_0')
+        module.fail_json(rc=1, msg="Could not set maintainance mode : %s" % e)
 
 
 def get_vsd_session(vsd_auth):
     # Format api version
-    version = format_api_version(module.params['api_version'])
+    version = 'v5_0'
     try:
         global VSPK
         VSPK = importlib.import_module('vspk.{0:s}'.format(version))
     except ImportError:
-            module.fail_json(msg='vspk is required for this module, or\
+            module.fail_json(rc=1, msg='vspk is required for this module, or\
                              API version specified does not exist.')
     try:
         session = VSPK.NUVSDSession(**vsd_auth)
@@ -114,12 +100,11 @@ def get_vsd_session(vsd_auth):
         csproot = session.user
         return csproot
     except Exception as e:
-        module.fail_json(msg="Could not establish connection to VSD %s" % e)
+        module.fail_json(rc=1, msg="Could not establish connection to VSD %s" % e)
 
 
 arg_spec = dict(
     vsd_auth=dict(required=True, type='dict'),
-    api_version=dict(required=True, type='str'),
     state=dict(required=True, choices=['enabled', 'disabled'])
 )
 module = AnsibleModule(argument_spec=arg_spec, supports_check_mode=True)

@@ -1,7 +1,6 @@
 ---
 - hosts: vstats
   gather_facts: no
-  any_errors_fatal: true
   pre_tasks:
     - name: Set upgrade flag
       set_fact:
@@ -11,5 +10,20 @@
       include_role:
         name: common
         tasks_from: check-upgrade-prereq
+
+    - name: Set major minor version
+      include_role:
+        name: common
+        tasks_from: set-major-minor-versions
+
+    - name: Lets run VSTAT upgrade wrapup hooks
+      include_role:
+        name: hooks
+        tasks_from: main
+      vars:
+        - hooks_file_path: "{{ item }}"
+        - hook_location:
+          - vstat_upgrade_wrapup
+      with_items: "{{ hooks | default([]) }}"
   roles:
     - vstat-upgrade-wrapup

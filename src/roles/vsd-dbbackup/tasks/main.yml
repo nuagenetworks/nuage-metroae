@@ -9,13 +9,6 @@
 
 - debug: var=username_on_the_host verbosity=1
 
-- name: Get current version of VSD software
-  shell: echo $VSD_VERSION
-  register: vsd_version
-  remote_user: "{{ vsd_username | default(vsd_default_username) }}"
-
-- debug: var=vsd_version verbosity=1
-
 - name: Set name of backup directory
   set_fact: vsd_localhost_backup_dir="{{metro_backup_root}}/backup-{{ inventory_hostname }}-{{ ansible_date_time.iso8601_basic_short }}/"
 
@@ -33,13 +26,24 @@
       vsd_auth:
         "{{ vsd_auth }}"
       state: enabled
-      api_version: "{{ vsd_version.stdout }}"
     register: mode_status
     delegate_to: localhost
-    no_log: True
+    retries: 10
+    until: mode_status.rc == 0
+    no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
+    delay: 20
 
   - name: Print vsd maintainance mode output when verbosity >= 1
     debug: var=mode_status verbosity=1
+
+  - name: Set event log age to 7
+    set_event_log:
+      vsd_auth:
+        "{{ vsd_auth }}"
+      event_log_age: 7
+      api_version: "{{ vsd_version.stdout }}"
+    delegate_to: localhost
+
   when: inventory_hostname in groups['vsds']
 
 - name: Read status of the DB upgrade directory and verify it
@@ -54,10 +58,9 @@
       vsd_auth:
         "{{ vsd_auth }}"
       get_gateway_purge_time: True
-      api_version: "{{ vsd_version.stdout }}"
     register: update_time_status
     delegate_to: localhost
-    no_log: True
+    no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
 
   - debug: var=update_time_status verbosity=1
 
@@ -73,16 +76,20 @@
       vsd_auth:
         "{{ vsd_auth }}"
       gateway_purge_time: 86400
-      api_version: "{{ vsd_version.stdout }}"
     register: update_time_status
     delegate_to: localhost
-    no_log: True
+    no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
 
   - name: Print update time output when verbosity >= 1
     debug: var=update_time_status verbosity=1
   when: inventory_hostname in groups['vsds']
 
 - block:
+
+  - name: Set Purge commands to purge commands with custom password
+    set_fact:
+      purge_cmd: "{{ purge_cmd_with_custom_pass }}"
+    when: vsd_mysql_password is defined
 
   - name: Purge the alarms and event history from database
     shell: "{{ item }}"
@@ -112,7 +119,9 @@
     when: "'iso' in mount_file.stdout"
 
   - name: mount ISO as loop back device
-    shell: "mount -o loop /tmp/{{ vsd_migration_iso_file_name }} /media/CDROM/"
+    shell:
+      cmd: "mount -o loop /tmp/{{ vsd_migration_iso_file_name }} /media/CDROM/"
+      warn: false
     register: mount_out
     when: not is_mounted | default( False )
 
@@ -132,6 +141,13 @@
 
   - name: Run backup script from mount location
     shell: "{{ backup_cmd }}"
+    when: vsd_mysql_password is undefined
+
+  - name: Run backup script from mount location
+    shell: "{{ backup_cmd }}"
+    environment:
+      ENV_MYSQL_ROOT_PWD: "{{ vsd_mysql_password }}"
+    when: vsd_mysql_password is defined
 
   - name: Umount the ISO
     shell: "umount /media/CDROM"
@@ -147,10 +163,10 @@
       - "vsdbackup-*.log"
     register: lst_files
 
-  remote_user: "{{ vsd_username | default(vsd_default_username) }}"
-  become: "{{ 'no' if vsd_username | default(vsd_default_username) == 'root' else 'yes' }}"
+  remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
+  become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
   vars:
-    ansible_become_pass: "{{ vsd_password | default(vsd_default_password) }}"
+    ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"
 
 - name: Print out the list of files
   debug: var="lst_files"
@@ -176,10 +192,10 @@
     flat: yes
     validate_checksum: false
   with_items: "{{ lst_files.results }}"
-  remote_user: "{{ vsd_username | default(vsd_default_username) }}"
-  become: "{{ 'no' if vsd_username | default(vsd_default_username) == 'root' else 'yes' }}"
+  remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
+  become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
   vars:
-    ansible_become_pass: "{{ vsd_password | default(vsd_default_password) }}"
+    ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"
 
 - name: Create symbolic link to backup location
   file: dest="{{metro_backup_root}}/backup-{{ groups['vsds'][0] }}-latest" src="{{ vsd_localhost_backup_dir }}"  state=link
@@ -189,8 +205,8 @@
   file:
     path: "{{ vsd_backup_dir }}"
     state: absent
-  remote_user: "{{ vsd_username | default(vsd_default_username) }}"
-  become: "{{ 'no' if vsd_username | default(vsd_default_username) == 'root' else 'yes' }}"
+  remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
+  become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
   vars:
-    ansible_become_pass: "{{ vsd_password | default(vsd_default_password) }}"
+    ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"
   ignore_errors: True

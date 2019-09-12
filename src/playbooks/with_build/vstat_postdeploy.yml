@@ -1,5 +1,49 @@
 ---
 - hosts: vstats
+  pre_tasks:
+    - name: Lets run VSTAT postdeploy hooks
+      include_role:
+        name: hooks
+        tasks_from: main
+      vars:
+        - hooks_file_path: "{{ item }}"
+        - hook_location:
+          - vstat_postdeploy
+      with_items: "{{ hooks | default([]) }}"
+  roles:
+    - vstat-postdeploy
+  become: yes
+  remote_user: "{{ vstat_default_username }}"
+  gather_facts: no
+
+- hosts: primary_vstats
+  pre_tasks:
+    - name: Lets run VSTAT postdeploy hooks
+      include_role:
+        name: hooks
+        tasks_from: main
+      vars:
+        - hooks_file_path: "{{ item }}"
+        - hook_location:
+          - vstat_postdeploy
+      with_items: "{{ hooks | default([]) }}"
+  roles:
+    - vstat-postdeploy
+  become: yes
+  remote_user: "{{ vstat_default_username }}"
+  gather_facts: no
+
+- hosts: backup_vstats
+  pre_tasks:
+    - name: Lets run VSTAT postdeploy hooks
+      include_role:
+        name: hooks
+        tasks_from: main
+      vars:
+        - hooks_file_path: "{{ item }}"
+        - hook_location:
+          - vstat_postdeploy
+      with_items: "{{ hooks | default([]) }}"
   roles:
     - vstat-postdeploy
   become: yes

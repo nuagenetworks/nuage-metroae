@@ -1,5 +1,5 @@
----
 - block:
+
   - name: Verify that upgrade_vmname is defined if this is an upgrade
     assert:
       that: "upgrade_vmname is defined"
@@ -8,9 +8,11 @@
   - name: Set local variable with upgrade_vmname
     set_fact:
       vm_name: "{{ upgrade_vmname }}"
+
   when: nuage_upgrade | default( False )
 
 - block:
+
   - name: Verify that vmname is defined
     assert:
       that: "vmname is defined"
@@ -19,6 +21,7 @@
   - name: Set local variable with vmname
     set_fact:
       vm_name: "{{ vmname }}"
+
   when: not nuage_upgrade | default( False )
 
 - include_role:
@@ -43,11 +46,18 @@
 
   - name: Deploy VSD image on vCenter (Can take several minutes)
     connection: local
-    no_log: true
     shell: >-
       {{ ovftool_command }}
       "vi://{{ vcenter.username | urlencode }}:{{ vcenter.password | urlencode }}@{{ vcenter_path }}"
+    register: deploy_result
+    ignore_errors: yes
+    no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
 
+  - name: Debug the deploy logs
+    assert:
+      that: deploy_result.rc == 0
+      success_msg: "{{deploy_result.stdout}}"
+      fail_msg: "{{deploy_result.stderr}}"
 
   - name: Waiting until VMware tools becomes available
     connection: local
@@ -62,23 +72,9 @@
 
   - debug: var=vm_facts verbosity=1
 
-  - name: Get Facts of VM
-    vmware_vm_facts:
-      hostname: "{{ target_server }}"
-      username: "{{ vcenter.username }}"
-      password: "{{ vcenter.password }}"
-      validate_certs: no
-    delegate_to: localhost
-    register: vm_list
-
-  - name: Verify that VM exists on Host
-    assert:
-      that: "vm_name in vm_list.virtual_machines"
-      msg: "Desired VM does not exist"
-
   - name: Set VM UUID
     set_fact:
-      uuid: "{{ vm_list.virtual_machines[vm_name]['uuid'] }}"
+      uuid: "{{ vm_facts.instance.hw_product_uuid }}"
 
   - debug: var=uuid
 

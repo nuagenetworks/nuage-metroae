@@ -3,7 +3,8 @@
 - name: Gather deployment file stats
   stat:
     path: "{{ deployment_dir }}/{{ item.name }}.yml"
-    get_md5: yes
+    get_checksum: True
+    checksum_algorithm: md5
   register: deployment_file_stats
   with_items: "{{ deployment_files }}"
 
@@ -11,4 +12,4 @@
 
 - name: Generate md5 checksum list for deployment files
   set_fact:
-    deployment_md5_list: "{{ deployment_file_stats.results | selectattr('stat.exists') | map(attribute='stat.md5') | list | sort }}"
+    deployment_md5_list: "{{ deployment_file_stats.results | selectattr('stat.exists') | map(attribute='stat.checksum') | list | sort }}"

@@ -1,9 +1,25 @@
 ---
 - name: Wait for connection to be ready
-  local_action:
-    module: wait_for
+  wait_for:
     port: "22"
     host: "{{ ssh_host }}"
     search_regex: OpenSSH
     delay: "{{ ssh_delay_seconds | default(5) }}"
     timeout: "{{ ssh_timeout_seconds | default(300) }}"
+  remote_user: "{{ ssh_proxy_username | default(None) }}"
+  delegate_to: "{{ ssh_proxy_host | default('localhost') }}"
+
+- name: Add proxy setup
+  set_fact:
+    proxy_conf: '-o ProxyCommand="ssh -W %h:%p -q {{ ssh_proxy_configuration }}"'
+  when: ssh_proxy_configuration is defined
+
+- name: Check connectivity to the target
+  shell: 'sshpass -p {{ ssh_password }} ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null {{ proxy_conf | default("") }} -tt {{ssh_user}}@{{ssh_host}}'
+  register: ssh_result
+  no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
+  failed_when: not ssh_result.rc == 0
+  when: check_login | default(False)
+  delegate_to: localhost
+  retries: 10
+  delay: "{{ ssh_delay_seconds | default(10) }}"

@@ -4,13 +4,25 @@
   delegate_to: localhost
   become: no
 
-- name: Get the vsd node info
-  command: /opt/vsd/sysmon/showStatus.py
-  register: vsd_info
-  become: "{{ 'no' if vsd_username | default(vsd_default_username) == 'root' else 'yes' }}"
-  remote_user: "{{ vsd_username | default(vsd_default_username) }}"
+- block:
+  - name: Get the VSD version
+    shell: grep -ir "VSD_VERSION=" /etc/profile.d/vsd-banner.sh | awk -F "=" '{print $2}'
+    register: vsd_version
+    run_once: true
+
+  - name: Get the VSD build
+    shell: grep -ir "VSD_BUILD=" /etc/profile.d/vsd-banner.sh | awk -F "=" '{print $2}'
+    register: vsd_build
+    run_once: true
+
+  - name: Get the vsd node info
+    shell: VSD_VERSION={{ vsd_version.stdout }} VSD_BUILD={{ vsd_build.stdout }} /opt/vsd/sysmon/showStatus.py
+    register: vsd_info
+
+  become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
+  remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
   vars:
-    ansible_become_pass: "{{ vsd_password | default(vsd_default_password) }}"
+    ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"
   delegate_to: "{{ ip_addr.stdout.split('\n')[0] }}"
 
 - name: Set vsd deployment mode
@@ -27,10 +39,10 @@
 - name: Extract vsd hostname when standalone
   set_fact:
     vsd_hostname_list: "{{ vsd_info.stdout | regex_findall('Host Name:\\s+(.*)')}}"
-  when: vsd_sa_or_ha | match('sa')
+  when: vsd_sa_or_ha is match('sa')
 
 - name: Extract vsd hostname when clustered
   set_fact:
     vsd_hostname_list: "{{ vsd_info.stdout | regex_findall('VSD Server Node:\\s+(.*)')}}"
-  when: vsd_sa_or_ha | match('ha')
+  when: vsd_sa_or_ha is match('ha')
   run_once: True

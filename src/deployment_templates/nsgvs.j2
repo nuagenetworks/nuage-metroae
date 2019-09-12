@@ -12,19 +12,10 @@
 # NSGv {{ loop.index }}
 #
 -
-    # < Hostname >
-    # Hostname of the NSGv instance
-    #
-    hostname: "{{ item.hostname }}"
-
     # < VM name >
     # Name of the NSGv VM on the hypervisor/vcenter
     #
-    {%- if item.vmname is defined %}
     vmname: "{{ item.vmname }}"
-    {%- else %}
-    # vmname: (Hostname)
-    {%- endif %}
 
     ##### Target Server
 
@@ -45,7 +36,7 @@
 
     # < Bootstrap Method >
     # Bootstrap method for the NSGv. The default is 'none' which means no bootstrap will be performed. 'zfb_metro' creates a boostrap ISO file based on the contents of the file nsgv_bootstrap.yml. 'zfb_external' is used when a 3rd-party ISO file is to be used.
-    # (none, zfb_metro, zfb_external) 
+    # (none, zfb_metro, zfb_external, activation_link) 
     #
     {%- if item.bootstrap_method is defined %}
     bootstrap_method: "{{ item.bootstrap_method }}"
@@ -90,6 +81,35 @@
 
     ##########################
 
+    # < Management Network Bridge >
+    # Network Bridge used for the management path of this component. This will be a Distributed Virtual PortGroup (DVPG) when deploying on vCenter or a Linux network bridge.
+    #
+    {%- if item.mgmt_bridge is defined %}
+    mgmt_bridge: "{{ item.mgmt_bridge }}"
+    {%- else %}
+    # mgmt_bridge: (global Bridge interface)
+    {%- endif %}
+
+    # < Data Network Bridge >
+    # Network Bridge used for the data path of this component. This will be a Distributed Virtual PortGroup (DVPG) when deploying on vCenter or a Linux network bridge.
+    #
+    {%- if item.data_bridge is defined %}
+    data_bridge: "{{ item.data_bridge }}"
+    {%- else %}
+    # data_bridge: (global Bridge interface)
+    {%- endif %}
+
+    # < NSGv Access Bridge >
+    # Network bridge used for the access network when installing an NSGv. This will be a Distributed Virtual PortGroup (DVPG) when deploying on vCenter or a Linux network bridge
+    #
+    {%- if item.access_bridge is defined %}
+    access_bridge: "{{ item.access_bridge }}"
+    {%- else %}
+    # access_bridge: (global Bridge interface)
+    {%- endif %}
+
+    {%- if show_target_server_type | default('vcenter') == 'vcenter' %}
+
     ##### vCenter Parameters
 
     # < vCenter Datacenter Name >
@@ -100,6 +120,9 @@
     {%- else %}
     # vcenter_datacenter: (global vCenter Datacenter Name)
     {%- endif %}
+    {%- endif %}
+
+    {%- if show_target_server_type | default('vcenter') == 'vcenter' %}
 
     # < vCenter Cluster Name >
     # Name of the vCenter Cluster on which the NSG VM will be deployed. Defaults to the common vCenter Cluster Name if not defined here.
@@ -109,6 +132,9 @@
     {%- else %}
     # vcenter_cluster: (global vCenter Cluster Name)
     {%- endif %}
+    {%- endif %}
+
+    {%- if show_target_server_type | default('vcenter') == 'vcenter' %}
 
     # < vCenter Host Reference >
     # Requires ovftool 4.3. Reference to the host on the vCenter cluster on which to deploy Nuage components
@@ -118,6 +144,9 @@
     {%- else %}
     # vcenter_host_reference: (global vCenter Host Reference)
     {%- endif %}
+    {%- endif %}
+
+    {%- if show_target_server_type | default('vcenter') == 'vcenter' %}
 
     # < vCenter Datastore Name >
     # Name of the vCenter Datastore on which the NSG VM will be deployed. Defaults to the common vCenter Datastore Name if not defined here.
@@ -129,6 +158,9 @@
     {%- endif %}
 
     ########################
+    {%- endif %}
+
+    {%- if show_target_server_type | default('aws') == 'aws' %}
 
     ##### AWS Parameters
 
@@ -140,6 +172,9 @@
     {%- else %}
     # aws_region: ""
     {%- endif %}
+    {%- endif %}
+
+    {%- if show_target_server_type | default('aws') == 'aws' %}
 
     # < AWS AMI ID >
     # AMI ID for AWS instance
@@ -149,6 +184,9 @@
     {%- else %}
     # aws_ami_id: ""
     {%- endif %}
+    {%- endif %}
+
+    {%- if show_target_server_type | default('aws') == 'aws' %}
 
     # < AWS AMI ID for Upgrading Instance >
     # AMI ID of the upgraded image
@@ -158,6 +196,9 @@
     {%- else %}
     # aws_upgrade_ami_id: ""
     {%- endif %}
+    {%- endif %}
+
+    {%- if show_target_server_type | default('aws') == 'aws' %}
 
     # < AWS Instance Type >
     # Instance Type of the AWS Instance
@@ -167,6 +208,9 @@
     {%- else %}
     # aws_instance_type: ""
     {%- endif %}
+    {%- endif %}
+
+    {%- if show_target_server_type | default('aws') == 'aws' %}
 
     # < AWS Keypair Name >
     # Name of the Keypair used to connect to VPC
@@ -176,8 +220,9 @@
     {%- else %}
     # aws_key_name: ""
     {%- endif %}
+    {%- endif %}
 
-    ####################
+    {%- if show_target_server_type | default('aws') == 'aws' %}
 
     # < AWS Access ENI >
     # ENI for Access Subnetwork
@@ -187,6 +232,9 @@
     {%- else %}
     # aws_access_eni: ""
     {%- endif %}
+    {%- endif %}
+
+    {%- if show_target_server_type | default('aws') == 'aws' %}
 
     # < AWS Data ENI >
     # ENI for Access Subnetwork
@@ -196,6 +244,9 @@
     {%- else %}
     # aws_data_eni: ""
     {%- endif %}
+    {%- endif %}
+
+    {%- if show_target_server_type | default('aws') == 'aws' %}
 
     # < AWS WAN EIP AllocID >
     # AWS WAN EIP AllocID
@@ -207,6 +258,9 @@
     {%- endif %}
 
     ####################
+    {%- endif %}
+
+    {%- if show_target_server_type | default('aws') == 'aws' %}
 
     ##### AWS VPC Parameters
 
@@ -218,6 +272,9 @@
     {%- else %}
     # provision_vpc_cidr: ""
     {%- endif %}
+    {%- endif %}
+
+    {%- if show_target_server_type | default('aws') == 'aws' %}
 
     # < AWS Provision VPC NSG WAN Subnet CIDR >
     # WAN Subnet CIDR for provisioning a VPC for the NSGv on AWS
@@ -227,6 +284,9 @@
     {%- else %}
     # provision_vpc_nsg_wan_subnet_cidr: ""
     {%- endif %}
+    {%- endif %}
+
+    {%- if show_target_server_type | default('aws') == 'aws' %}
 
     # < AWS Provision VPC NSG LAN Subnet CIDR >
     # LAN Subnet CIDR for provisioning a VPC for the NSGv on AWS
@@ -236,6 +296,9 @@
     {%- else %}
     # provision_vpc_nsg_lan_subnet_cidr: ""
     {%- endif %}
+    {%- endif %}
+
+    {%- if show_target_server_type | default('aws') == 'aws' %}
 
     # < AWS Provision VPC Private Subnet CIDR >
     # Private Subnet CIDR for provisioning a VPC for the NSGv on AWS
@@ -247,6 +310,7 @@
     {%- endif %}
 
     ########################
+    {%- endif %}
 
     ##### NSGv Zero-Factor Bootstrap
 
@@ -414,6 +478,15 @@
     {%- endif %}
 
     ################################
+
+    # < Telnet port for console >
+    # The port for telnet to HV host to access NSGv serial or console terminal
+    #
+    {%- if item.telnet_port is defined %}
+    telnet_port: {{ item.telnet_port }}
+    {%- else %}
+    # telnet_port: 2300
+    {%- endif %}
 
 {% endfor %}
 {% else %}

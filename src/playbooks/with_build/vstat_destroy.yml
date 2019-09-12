@@ -2,6 +2,52 @@
 - hosts: vstats
   gather_facts: no
   serial: 1
+  pre_tasks:
+    - name: Lets run VCIN predeploy hooks
+      include_role:
+        name: hooks
+        tasks_from: main
+      vars:
+        - hooks_file_path: "{{ item }}"
+        - hook_location:
+          - vstat_destroy
+      with_items: "{{ hooks | default([]) }}"
+  roles:
+    - vstat-destroy
+  vars:
+    vm_name: "{{ vmname }}"
+
+- hosts: primary_vstats
+  gather_facts: no
+  serial: 1
+  pre_tasks:
+    - name: Lets run VCIN predeploy hooks
+      include_role:
+        name: hooks
+        tasks_from: main
+      vars:
+        - hooks_file_path: "{{ item }}"
+        - hook_location:
+          - vstat_destroy
+      with_items: "{{ hooks | default([]) }}"
+  roles:
+    - vstat-destroy
+  vars:
+    vm_name: "{{ vmname }}"
+
+- hosts: backup_vstats
+  gather_facts: no
+  serial: 1
+  pre_tasks:
+    - name: Lets run VSTAT destroy hooks
+      include_role:
+        name: hooks
+        tasks_from: main
+      vars:
+        - hooks_file_path: "{{ item }}"
+        - hook_location:
+          - vstat_destroy
+      with_items: "{{ hooks | default([]) }}"
   roles:
     - vstat-destroy
   vars:
