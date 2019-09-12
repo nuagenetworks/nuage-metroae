@@ -27,7 +27,12 @@
         --acceptAllEulas
         --noSSLVerify
         --powerOn
+        {% if hostvars[inventory_hostname].ansible_verbosity > 0 %}
+        --X:logLevel=verbose
+        --X:logToConsole
+        {% else %}
         --machineOutput
+        {% endif %}
         -dm=thin
         -ds={{ vcenter.datastore }}
         -n={{ vmname }}
@@ -78,12 +83,20 @@
 
   - name: Deploy VSC image on vCenter (Can take several minutes)
     connection: local
-    no_log: true
     shell: >-
       {{ ovftool_command }}
       "vi://{{ vcenter.username | urlencode }}:{{ vcenter.password | urlencode }}@{{ vcenter_path }}"
+    register: deploy_result
+    ignore_errors: yes
+    no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
 
-  - name: Finding VM folder (ignoring errors)
+  - name: Debug the deploy logs
+    assert:
+      that: deploy_result.rc == 0
+      success_msg: "{{deploy_result.stdout}}"
+      fail_msg: "{{deploy_result.stderr}}"
+
+  - name: Finding VM folder
     connection: local
     vmware_guest_find:
       hostname: "{{ target_server }}"
@@ -92,9 +105,8 @@
       name: "{{ vmname }}"
       validate_certs: no
     register: vsc_vm_folder
-    ignore_errors: on
 
-  - name: Gathering info on VM (ignoring errors)
+  - name: Gathering info on VM
     connection: local
     vmware_guest_facts:
       hostname: "{{ target_server }}"
@@ -105,28 +117,12 @@
       name: "{{ vmname }}"
       validate_certs: no
     register: vsc_vm_facts
-    ignore_errors: on
-    when: vsc_vm_folder is succeeded
 
   - debug: var=vsc_vm_facts verbosity=1
 
-  - name: Get Facts of VM
-    vmware_vm_facts:
-      hostname: "{{ target_server }}"
-      username: "{{ vcenter.username }}"
-      password: "{{ vcenter.password }}"
-      validate_certs: no
-    delegate_to: localhost
-    register: vm_list
-
-  - name: Verify VM exists on Host
-    assert:
-      that: "vm_name in vm_list.virtual_machines"
-      msg: "Desired VM does not exist"
-
   - name: Set VM UUID
     set_fact:
-      uuid: "{{ vm_list.virtual_machines[vm_name]['uuid'] }}"
+      uuid: "{{ vsc_vm_facts.instance.hw_product_uuid }}"
 
   - debug: var=uuid
 
@@ -153,39 +149,5 @@
       host: "{{ mgmt_ip }}"
       search_regex: OpenSSH
       delay: 1
-
-  - name: Creating temp folder for config file
-    connection: local
-    file:
-      path: "/tmp/ansible-config-{{ inventory_hostname }}"
-      state: directory
-
-  - name: Creating VSC config file
-    connection: local
-    template:
-      src: config.cfg.j2
-      dest: "/tmp/ansible-config-{{ inventory_hostname }}/config.cfg"
-
-  - name: Copy VSC config file to VSC
-    connection: local
-    command: "sshpass -p admin scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null /tmp/ansible-config-{{ inventory_hostname }}/config.cfg admin@{{ mgmt_ip }}:"
-
-  - name: Reboot VSC VM
-    connection: local
-    vmware_guest:
-      hostname: "{{ target_server }}"
-      username: "{{ vcenter.username }}"
-      password: "{{ vcenter.password }}"
-      validate_certs: no
-      datacenter: "{{ vcenter.datacenter }}"
-      folder: "/{{ vcenter.datacenter }}{{ vsc_vm_folder['folders'][0] }}"
-      name: "{{ vmname }}"
-      state: "restarted"
-
-  - name: Removing temp folder
-    connection: local
-    file:
-      path: "/tmp/ansible-config-{{ inventory_hostname }}"
-      state: absent
 
   when: not node_present
