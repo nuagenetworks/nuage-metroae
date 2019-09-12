@@ -1,5 +1,5 @@
 ---
-- hosts: vstats
+- hosts: vstats:primary_vstats:backup_vstats
   gather_facts: no
   pre_tasks:
     - name: Set upgrade flag
@@ -10,6 +10,17 @@
       include_role:
         name: common
         tasks_from: check-upgrade-prereq
+
+    - name: Lets run VSTAT upgrade prep hooks
+      include_role:
+        name: hooks
+        tasks_from: main
+      vars:
+        - hooks_file_path: "{{ item }}"
+        - hook_location:
+          - vstat_upgrade_prep
+          - upgrade_vstats
+      with_items: "{{ hooks | default([]) }}"
   roles:
     - vstat-upgrade-prep
   vars:

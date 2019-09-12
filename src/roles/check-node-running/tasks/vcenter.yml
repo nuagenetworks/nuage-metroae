@@ -25,6 +25,40 @@
   when: vm_folder is succeeded
 
 - block:
+  - name: Get VSD directory if present
+    connection: local
+    vmware_vm_shell:
+      hostname: "{{ target_server }}"
+      username: "{{ vcenter.username }}"
+      password: "{{ vcenter.password }}"
+      datacenter: "{{ vcenter.datacenter }}"
+      cluster: "{{ vcenter.cluster }}"
+      validate_certs: no
+      vm_id: "{{ vm_name }}"
+      vm_username: "{{ vsd_default_username }}"
+      vm_password: "{{ vsd_default_password }}"
+      vm_shell: "/usr/bin/echo"
+      vm_shell_cwd: "/opt/vsd/"
+      vm_shell_args: "0"
+    ignore_errors: yes
+    register: vsd_dir
+
+  - name: Set node present for vcenter interfaces disabled
+    set_fact:
+      node_present: "{{ vsd_dir is succeeded }}"
+
+  - name: Set node present for vcenter interfaces disabled
+    set_fact:
+      do_reachability_checks: False
+
+  when:
+    - vcenter_start_vsd_with_interfaces_disabled | default ( False )
+    - nuage_upgrade | default (False)
+    - inventory_hostname in groups['vsds']
+
+
+
+- block:
   - name: Verify that the VM is not running if not reachable
     assert:
       that: "not (vm_folder is succeeded and vm_facts is succeeded and not node_reachable)"

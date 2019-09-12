@@ -1,5 +1,15 @@
 ---
 - hosts: vrss
   gather_facts: no
+  pre_tasks:
+    - name: Lets run VRS destroy hooks
+      include_role:
+        name: hooks
+        tasks_from: main
+      vars:
+        - hooks_file_path: "{{ item }}"
+        - hook_location:
+          - vrs_destroy
+      with_items: "{{ hooks | default([]) }}"
   roles:
     - vrs-destroy

@@ -1,0 +1,58 @@
+---
+- name: Set local variable with vmname
+  set_fact:
+    vm_name: "{{ vmname }}"
+
+- block:
+
+  - name: Create temporary folder for vsc config
+    file:
+      path: "/tmp/{{ vm_name }}"
+      state: directory
+
+  - name: Setup VSC temporary configuration files
+    template: src=config.cfg.j2 backup=no dest=/tmp/{{ vm_name }}/new-config.cfg
+
+  - name: Wait for VSC ssh to be ready before config
+    include_role:
+      name: common
+      tasks_from: wait-for-ssh-port
+    vars:
+      ssh_host: "{{ hostname }}"
+      ssh_timeout_seconds: 600
+      ssh_password: "{{ vsc_creds.password }}"
+      ssh_user: "{{ vsc_creds.username }}"
+      check_login: True
+
+  - name: Add proxy setup
+    set_fact:
+      proxy_conf: '-o ProxyCommand="ssh -W %h:%p -q {{ ssh_proxy_configuration }}"'
+    when: ssh_proxy_configuration is defined
+
+  - name: Copy VSC config file to the VSC
+    connection: local
+    command: "sshpass -p {{ vsc_password|default(vsc_default_password) }} scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null {{ proxy_conf | default('') }} /tmp/{{ vm_name }}/new-config.cfg {{ vsc_username|default(vsc_default_username) }}@{{ mgmt_ip }}:"
+
+  - name: Execute VSC basic configuration
+    sros_command:
+      commands:
+        - exec cf1:\new-config.cfg
+        - admin save
+      provider: "{{ vsc_creds }}"
+
+  - name: Reboot VSC VM (ignoring errors)
+    sros_command:
+      commands:
+        - admin reboot now
+      provider: "{{ vsc_creds }}"
+    ignore_errors: true
+
+  - name: Remove temporary configuration files
+    file: path=/tmp/{{ vm_name }}/new-config.cfg state=absent
+
+  - name: Delete temporary folder for vsc config
+    file:
+      path: "/tmp/{{ vm_name }}"
+      state: absent
+
+  delegate_to: "localhost"
