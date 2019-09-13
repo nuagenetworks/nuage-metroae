@@ -292,7 +292,7 @@ class Wizard(object):
             if self.in_container:
                 self._print(self._get_field(data, "container_msg"))
                 zip_dir = self._input("Please enter the directory relative to "
-                                      "the images mount point that "
+                                      "the data mount point that "
                                       "contains your zip files", "")
 
                 # Dalston container

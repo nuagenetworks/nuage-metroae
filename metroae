@@ -637,7 +637,7 @@ function run_container {
                 mount_args="-v $METROAE_MOUNT_POINT:/metroae_data:Z"
                 levi_args="-e LEVISTATE_CONTAINER=1"
             else
-                mount_args="-v $METROAE_MOUNT_POINT:/metroae_data:Z -v $IMAGES_MOUNT_POINT:/metroae_images:Z"
+                mount_args="-v $METROAE_MOUNT_POINT:/metroae_data:Z -v $IMAGES_MOUNT_POINT:/metroae_data:Z"
                 levi_args=""
             fi
 
@@ -840,29 +840,6 @@ function setup_container {
     echo METROAE_MOUNT_POINT=$data_path >> $SETUP_FILE
 
     if [[ $setup_type != "c" ]]; then
-        if [[ -z $1 ]]; then
-            write_to_screen_and_script_log "Image directory configuration"
-            echo ""
-            echo "For deployments, the MetroAE container needs access to the Nuage Networks component"
-            echo "image files, e.g. qcow2, ova, rpm, etc. It gets access by internally mounting"
-            echo "a directory from the host. We refer to this as the 'image directory'."
-            echo "The image directory is where you will copy your image files prior to deployment."
-            echo ""
-            echo "Please specify the full path to the image directory on the Docker host. Setup will"
-            echo "make sure that the path ends with 'metroae_images'. If the path you specify does"
-            echo "not end with 'metroae_images', setup willl create it."
-            get_user_path_input "Image directory path" metroae_images
-        else
-            echo ""
-            valid_path=1
-            PATH_ARG=$1
-            check_user_path PATH_ARG metroae_images
-            if [[ $valid_path -ne 0 ]]; then
-                exit 1
-            fi
-            write_to_screen_and_script_log ">>> Setting image path to $PATH_ARG"
-            shift
-        fi
         images_path=$PATH_ARG
         echo IMAGES_MOUNT_POINT=$images_path >> $SETUP_FILE
         write_to_script_log "IMAGES_MOUNT_POINT=$images_path"
@@ -1602,11 +1579,7 @@ function load_certificates {
 
 function unzip_files {
     debug ${FUNCNAME[0]}
-    if [[ $# -gt 1 ]]; then
-        docker_exec /source/nuage-metro/nuage-unzip.sh "$@"
-    else
-        docker_exec /source/nuage-metro/nuage-unzip.sh "$@" /metroae_images/
-    fi
+    docker_exec /source/nuage-metro/nuage-unzip.sh "$@"
 }
 
 function con_build_vars_to_deployments {
