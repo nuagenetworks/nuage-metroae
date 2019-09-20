@@ -17,6 +17,9 @@
 * Check file permissions before running guestfish on KVM images (METROAE-752)
 * Add availability zone support for OpenStack
 * Add example deployment for geo-redundant VSD deployment
+* Port support for CATS environment VSC, DNS, proxy, STCv
+* For VSC, support VLAN ID and vprn for control interface
+* For VSTAT and VNS Utils, support data network static route
 
 ### Resolved Issues
 * Set event log max age to 7 as per Nuage Upgrade procedure (METROAE-1001)
