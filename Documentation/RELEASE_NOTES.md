@@ -20,6 +20,7 @@
 * Port support for CATS environment VSC, DNS, proxy, STCv
 * For VSC, support VLAN ID and vprn for control interface
 * For VSTAT and VNS Utils, support data network static route
+* Support Nuage Utility Host(NUH) SA and HA install using MetroAE (METROAE-1062)
 
 ### Resolved Issues
 * Set event log max age to 7 as per Nuage Upgrade procedure (METROAE-1001)

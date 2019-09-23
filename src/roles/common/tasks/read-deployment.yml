@@ -141,6 +141,13 @@
   when: item.cpuset is defined
   with_items: "{{ vnsutils }}"
 
+- name: Verify that the NUH has the correct number of cpuset defined
+  assert:
+    that: "'{{ item.cpuset | length }}' != {{ nuhs_cpu_cores | default(2) }}"
+    msg: "Incorrect number of cores specified in cpuset for {{ item.hostname }}. Cpuset must have {{ nuh_cpu_cores | default(2) }} elements."
+  when: item.cpuset is defined
+  with_items: "{{ nuhs }}"
+
 - name: Verify that the PORTAL has the correct number of cpuset defined
   assert:
     that: "'{{ item.cpuset | length }}' != {{ portal_cpu_cores | default(6) }}"

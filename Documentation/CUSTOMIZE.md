@@ -69,6 +69,9 @@ ZFB support is included in the nsgv schema and supporting files. In the beta rel
 ### `vnsutils.yml`
 `vnsutils.yml` contains the definition of the VNSUTILs to be operated on in this deployment. This file should be present in your deployment only if you are specifying VNSUTILs. If not provided, no VNSUTILs will be operated on. This file is of yaml list type and may contain as many VNSUTILs definitions as you require, though one is usually sufficient.
 
+### `nuhs.yml`
+`nuhs.yml` contains the definition of the NUHs to be operated on in this deployment. This file should be present in your deployment only if you are specifying NUHs. If not provided, no NUHs will be operated on. This file is of yaml list type and may contain as many NUHs definitions as you require, though one is usually sufficient.
+
 ### `vrss.yml`
 `vrss.yml` contains the definition of the VRSs to be operated on in this deployment. This file should be present in your deployment only if you are specifying VRSs. If not provided, no VRSs will be operated on. This file is of yaml list type and may contain as many VRS defintions as you require.
 

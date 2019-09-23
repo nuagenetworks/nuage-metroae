@@ -1,0 +1,85 @@
+---
+- name: Clean known_hosts of NUH's (ignoring errors)
+  known_hosts:
+    name: "{{ hostname }}"
+    state: absent
+  delegate_to: localhost
+  no_log: True
+  ignore_errors: True
+
+- name: Wait for NUH ssh to be ready
+  include_role:
+    name: common
+    tasks_from: wait-for-ssh
+  vars:
+    ssh_host: "{{ hostname }}"
+    host_username: "root"
+
+- block:
+
+  - name: Run the setup script for SA
+    shell: ./setup.sh
+    environment:
+      HNAME: "{{ hostname }}"
+      HA: "n"
+    args:
+      chdir: /opt/proxy/bin
+    when: nuh_sa_or_ha is match('sa')
+
+  - name: Run the setup script for HA primary
+    shell: ./setup.sh
+    environment:
+      HNAME: "{{ hostname }}"
+      HA: "y"
+      MASTER: "y"
+      PEERADDR: "{{ groups['nuhs'][1] }}"
+      PEERPASSWORD: "{{ nuh_default_password }}"
+    args:
+      chdir: /opt/proxy/bin
+    when:
+      - nuh_sa_or_ha is match('ha')
+      - inventory_hostname == groups['nuhs'][0]
+
+  - name: Run the setup script for HA secondary
+    shell: ./setup.sh
+    environment:
+      HNAME: "{{ hostname }}"
+      HA: "y"
+      MASTER: "n"
+      PEERADDR: "{{ groups['nuhs'][0] }}"
+      PEERPASSWORD: "{{ nuh_default_password }}"
+    args:
+      chdir: /opt/proxy/bin
+    when:
+      - nuh_sa_or_ha is match('ha')
+      - inventory_hostname == groups['nuhs'][1]
+
+  - name: Set the timezone
+    command: timedatectl set-timezone {{ nuh_timezone }}
+
+  - block:
+
+    - name: Copy license file
+      copy:
+        src: "{{ nuh_license_file }}"
+        dest: "/opt/proxy/nuh.license"
+
+    - name: Verify License is valid
+      shell: java -jar /opt/proxy/bin/lm/LicenseManager.jar features
+
+    when: nuh_license_file is defined
+
+  - name: Create and transfer certs
+    include_role:
+      name: common
+      tasks_from: vsd-generate-transfer-certificates
+    vars:
+      certificate_password: "{{ nuh_default_password }}"
+      certificate_username: "{{ inventory_hostname }}"
+      commonName: "{{ inventory_hostname }}"
+      certificate_type: server
+      scp_user: "root"
+      scp_location: /opt/proxy/data/certs
+      additional_parameters:  -d {{ inventory_hostname }}
+
+  remote_user: "{{ nuh_default_username }}"
