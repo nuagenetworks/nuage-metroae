@@ -2,6 +2,10 @@
 - hosts: vsds
   gather_facts: no
   serial: 1
+  remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
+  become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
+  vars:
+    ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"
   tasks:
     - name: Select the vsd node to run backup
       include_role:
