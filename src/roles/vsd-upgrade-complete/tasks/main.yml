@@ -23,6 +23,13 @@
       register: vsd_build
       run_once: true
 
+    - name: Change credentials before upgrade complete flag
+      shell: "{{ change_credentials_command }}"
+      no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
+      when:
+        - inventory_hostname == groups['primary_vsds'][0]
+        - vsd_auth.password | default('csproot') != 'csproot'
+
     - name: Set upgrade complete flag
       shell: "{{ upgrade_complete_flag_command }}"
       register: result
