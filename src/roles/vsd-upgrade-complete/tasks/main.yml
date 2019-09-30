@@ -27,7 +27,7 @@
 
       - name: Set VSD creds to default
         set_fact:
-          vsd_user_cred: "csproot"
+          vsd_user_cred: "{{ vsd_default_auth }}"
 
       - name: Change credentials before upgrade complete flag
         shell: "{{ change_credentials_command }}"
@@ -50,7 +50,7 @@
 
       when:
         - inventory_hostname == groups['primary_vsds'][0]
-        - vsd_auth.password | default('csproot') != 'csproot'
+        - vsd_auth.password | default(vsd_default_auth) != vsd_default_auth
 
     - block:
 
@@ -73,7 +73,7 @@
 
       when:
         - inventory_hostname == groups['primary_vsds'][0]
-        - vsd_auth.password | default('csproot') == 'csproot'
+        - vsd_auth.password | default(vsd_default_auth) == vsd_default_auth
 
     - import_tasks: check_monit_status.yml
 
