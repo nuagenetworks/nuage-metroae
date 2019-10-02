@@ -86,6 +86,24 @@
     file:
       path: "{{ temp_dir }}"
       state: absent
+      - name: Reboot VSC VM
+        os_server_actions:
+          auth:
+            "{{ openstack_auth }}"
+          server: "{{ vm_name }}"
+          action: reboot
+          wait: no
+        delegate_to: localhost
+
+  - name: Wait for VSC ssh to be ready
+    include_role:
+      name: common
+      tasks_from: wait-for-ssh-port
+    vars:
+      ssh_host: "{{ vsc_mgmt_ip }}"
+    tags:
+      - vsc
+      - vsc-deploy
 
   - name: Loading BOF config
     sros_config:
