@@ -56,25 +56,6 @@
   - name: Copy config file to VSC
     command: "sshpass -p {{ vsc_default_password|default('admin') }} scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null {{ temp_dir }}/openstack-config.cfg {{ vsc_default_username|default('admin') }}@{{ vsc_mgmt_ip }}:"
 
-  - name: Reboot VSC VM
-    os_server_actions:
-      auth:
-        "{{ openstack_auth }}"
-      server: "{{ vm_name }}"
-      action: reboot
-      wait: no
-    delegate_to: localhost
-
-  - name: Wait for VSC ssh to be ready
-    include_role:
-      name: common
-      tasks_from: wait-for-ssh-port
-    vars:
-      ssh_host: "{{ vsc_mgmt_ip }}"
-    tags:
-      - vsc
-      - vsc-deploy
-
   - name: Execute configuration on VSC
     sros_command:
       commands:
@@ -86,25 +67,6 @@
     file:
       path: "{{ temp_dir }}"
       state: absent
-
-  - name: Reboot VSC VM
-    os_server_actions:
-      auth:
-        "{{ openstack_auth }}"
-      server: "{{ vm_name }}"
-      action: reboot
-      wait: no
-    delegate_to: localhost
-
-  - name: Wait for VSC ssh to be ready
-    include_role:
-      name: common
-      tasks_from: wait-for-ssh-port
-    vars:
-      ssh_host: "{{ vsc_mgmt_ip }}"
-    tags:
-      - vsc
-      - vsc-deploy
 
   - name: Loading BOF config
     sros_config:
