@@ -24,17 +24,23 @@
       vsd_hostname: "{{ vsd_fqdn }}"
     run_once: true
 
-  - name: Verify if proxy user is connected to the VSD
-    command: /opt/ejabberd/bin/ejabberdctl connected_users
-    register: proxy_user
-    delegate_to: "{{ vsd_hostname_list[0] }}"
-    until: proxy_user.stdout.find('proxy') != -1
-    retries: 5
-    delay: 30
-    remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
-    become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
-    vars:
-      ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"
+  - block:
+    - name: Get custom username for vsd
+      set_fact:
+        vsd_custom_username: "{{ groups['primary_vsds'][0].vsd_custom_username | default(vsd_custom_username) }}"
+        vsd_password_username: "{{ groups['primary_vsds'][0].vsd_custom_password | default(vsd_custom_password) }}"
+
+    - name: Verify if proxy user is connected to the VSD
+      command: /opt/ejabberd/bin/ejabberdctl connected_users
+      register: proxy_user
+      delegate_to: "{{ vsd_hostname_list[0] }}"
+      until: proxy_user.stdout.find('proxy') != -1
+      retries: 5
+      delay: 30
+      remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
+      become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
+      vars:
+        ansible_become_pass: "{{ vsd_password_username | default(vsd_default_password) }}"
 
   # block properties
   remote_user: "{{ vnsutil_default_username }}"
