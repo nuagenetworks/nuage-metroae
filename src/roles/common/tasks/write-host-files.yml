@@ -1,11 +1,16 @@
 - name: Get specific credentials
   set_fact:
     creds: "{{ item }}"
-  when: component.credentials_set and item.name  == component.credentials_set
+  when: component.credentials_set is defined and item.name  == component.credentials_set
   with_items: "{{ credentials }}"
 
 - name: Create host_vars files for vsd
   template: src={{ component_template }}.j2 backup=no dest={{ inventory_dir }}/host_vars/{{ component.hostname }}
   vars:
     item: "{{ component }}"
-    creds: "{{ creds }}"
+
+- name: Unset Credentials
+  set_fact:
+    creds:
+
+- debug: msg="{{ creds }}"

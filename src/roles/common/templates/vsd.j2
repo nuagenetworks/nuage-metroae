@@ -73,11 +73,20 @@ vsd_migration_iso_path:  {{ vsd_migration_iso_path }}
 vsd_migration_iso_file_name: {{ vsd_migration_iso_file_name }}
 {% endif %}
 
+{% if creds is defined %}
 {% if creds.vsd_custom_username is defined %}
 vsd_custom_username: {{ creds.vsd_custom_username | indent(8, False) }}
 {% endif %}
 {% if creds.vsd_custom_password is defined %}
 vsd_custom_password: {{ creds.vsd_custom_password | indent(8, False) }}
+{% endif %}
+
+{% if item.target_server_type is match("kvm") %}
+target_server_username: "{{ creds.target_server_username | default("root") | indent(8, False) }}"
+
+{% if creds.target_server_password is defined %}
+target_server_password: {{ creds.target_server_password | indent(8, False) }}
+{% endif %}
 {% endif %}
 
 {% if item.target_server_type is match("vcenter") %}
@@ -129,6 +138,7 @@ openstack_port_security_groups:
 {% endif %}
 {% if item.openstack_availability_zone is defined %}
 openstack_availability_zone: {{ item.openstack_availability_zone }}
+{% endif %}
 {% endif %}
 {% endif %}
 
