@@ -5,4 +5,5 @@
 ### Resolved Issues
 * Fix VSD node information to get Primary VSD information Rather than XMPP node info (METROAE-1093)
 * Fixed issue with Active Standy VSTAT deploy with VSD in HA mode
+* Add option to skip DNS host resolution checks when DNS servers are not reachable from MetroAE server (METROAE-1117)
 * Fix VSC backup error during HA upgrade (METROAE-1120)
