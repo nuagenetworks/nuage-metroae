@@ -10,6 +10,7 @@
 - name: Get custom username for vsd
   set_fact:
     vsd_custom_username: "{{ hostvars[groups['primary_vsds'][0]].vsd_custom_username | default(vsd_custom_username | default(None)) }}"
+    vsd_custom_password: "{{ hostvars[groups['primary_vsds'][0]].vsd_custom_password | default(vsd_custom_password | default(None)) }}"
 
 - block:
   - name: Get the VSD version
@@ -27,6 +28,9 @@
     register: vsd_info
 
   remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
+  become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
+  vars:
+    ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"
   delegate_to: "{{ ip_addr.stdout.split('\n')[0] }}"
 
 - name: Set vsd deployment mode
