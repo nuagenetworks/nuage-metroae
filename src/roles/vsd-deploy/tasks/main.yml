@@ -145,11 +145,18 @@
 
     when: vsd_sa_or_ha is match('ha')
 
-  - name: Update /etc/hosts file on VSD
+  - name: Update /etc/hosts file with VSD entries
     lineinfile:
       dest: /etc/hosts
       line: "{{ hostvars[item]['mgmt_ip'] }}    {{ hostvars[item]['hostname'] }}"
     with_items: "{{ groups['vsds'] }}"
+
+  - name: Update /etc/hosts file with VCIN entries
+    lineinfile:
+      dest: /etc/hosts
+      line: "{{ hostvars[item]['mgmt_ip'] }}    {{ hostvars[item]['hostname'] }}"
+    with_items: "{{ groups['vcins'] }}"
+    when: deploy_vcin
 
   - block:
 
@@ -334,7 +341,7 @@
       name: common
       tasks_from: apply-licenses-to-vsd
 
-  when: 
+  when:
     - component_type == "vsd"
     - (vsd_major_version|int > 5) or
       (vsd_major_version|int == 5 and vsd_minor_version|int >= 3)
