@@ -7,3 +7,4 @@
 * Fixed issue with Active Standy VSTAT deploy with VSD in HA mode
 * Add option to skip DNS host resolution checks when DNS servers are not reachable from MetroAE server (METROAE-1117)
 * Fix VSC backup error during HA upgrade (METROAE-1120)
+* Use correct vCenter variable references (METROAE-1122)
