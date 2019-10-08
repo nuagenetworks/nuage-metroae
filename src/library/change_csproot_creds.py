@@ -79,7 +79,7 @@ def main():
         module.fail_json(msg="Could not retrieve licenses : %s" % e)
         return
 
-    module.exit_json(changed=False, result="%s" % valid)
+    module.exit_json(changed=False, result="%s" % "true")
 
 
 # Run the main
