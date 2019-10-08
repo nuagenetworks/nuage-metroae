@@ -1,13 +1,29 @@
 - block:
-  - name: Generate Portal environment.properties file
-    template: src=environment.properties.j2 backup=no dest=/opt/environment.properties
+  - name: Create SD-WAN Portal directory
+    command: mkdir -p /opt/vnsportal
+  
+  - name: Generate Portal config.yml file
+    template: src=config.j2 backup=no dest=/opt/vnsportal/config.yml
+
+  - name: stat SSH key
+    stat: path=/root/.ssh/id_rsa.pub
+    register: ssh_key
+
+  - name: Generate SSH keys
+    command: ssh-keygen -b 2048 -t rsa -f /root/.ssh/id_rsa -q -N ""
+    when: not ssh_key.stat.exists
+    
+  - name: Add the public key for localhost
+    shell: 'cat /root/.ssh/id_rsa.pub >> /root/.ssh/authorized_keys'
+
+  - name: Copy the public key to the SD-WAN Portal directory
+    command: cp /root/.ssh/id_rsa.pub /opt/vnsportal/
+
+  - name: Copy the key to the SD-WAN Portal directory
+    command: cp /root/.ssh/id_rsa /opt/vnsportal/
 
   - name: Execute the Portal configuration script
-    command: docker run --rm --env-file /opt/environment.properties -v /var/run/docker.sock:/docker.sock -v /opt:/mnt:z -v /etc:/hostetc:z nuage/vnsportal-bootstrap:{{ portal_version }}
-
-  - name: Configure High Availability
-    include: ha.yml
-    when: portal_sa_or_ha | match('ha')
+    shell: docker run -ti --rm -v /var/run/docker.sock:/docker.sock -v /opt/vnsportal:/mnt:z nuage/vnsportal-installer:{{ portal_version }} --skip
 
   - name: Apply the SD-WAN Portal license
     import_tasks: sdwan_portal_license.yml
