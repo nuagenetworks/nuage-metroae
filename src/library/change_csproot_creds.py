@@ -34,12 +34,6 @@ EXAMPLES = '''
 '''
 
 
-def update_csproot(user):
-    # update the user creds here
-
-    return user
-
-
 def get_vsd_session(vsd_auth):
     # Format api version
     version = 'v5_0'
@@ -70,13 +64,9 @@ def main():
     try:
         csproot = get_vsd_session(vsd_auth)
         csproot.password = new_pass
-        try:
-            update_csproot(csproot)
-        except Exception as e:
-            module.fail_json(msg=str(e))
-            return
+        csproot.save()
     except Exception as e:
-        module.fail_json(msg="Could not retrieve licenses : %s" % e)
+        module.fail_json(msg="Could not change csproot password : %s" % e)
         return
 
     module.exit_json(changed=False, result="%s" % "true")
