@@ -21,6 +21,7 @@
 * For VSC, support VLAN ID and vprn for control interface
 * For VSTAT and VNS Utils, support data network static route
 * Support Nuage Utility Host(NUH) SA and HA install using MetroAE (METROAE-1062)
+* Support SD-WANn Portal 6.0.1
 
 ### Resolved Issues
 * Set event log max age to 7 as per Nuage Upgrade procedure (METROAE-1001)
