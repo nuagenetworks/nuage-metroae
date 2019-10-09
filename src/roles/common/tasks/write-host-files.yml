@@ -8,6 +8,15 @@
   template: src={{ component_template }}.j2 backup=no dest={{ inventory_dir }}/host_vars/{{ component.hostname }}
   vars:
     item: "{{ component }}"
+    is_vcin: "{{ is_vcin | default(false) }}"
+
+- name: Create host_vars files for vsd
+  template: src=component_credentials.j2 backup=no dest={{ inventory_dir }}/host_vars/component_credentials
+  vars:
+    item: "{{ component }}"
+
+- name: Concat credentials with the component host host vars
+  shell: cat {{ inventory_dir }}/host_vars/component_credentials >> {{ inventory_dir }}/host_vars/{{ component.hostname }}
 
 - name: Unset Credentials
   set_fact:
