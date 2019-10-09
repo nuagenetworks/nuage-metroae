@@ -70,8 +70,16 @@
     when: item.internal_mgmt_ip is not defined
 
   - name: Create host_vars files for vsc
-    template: src=vsc.j2 backup=no dest={{ inventory_dir }}/host_vars/{{ item.1.hostname }}
-    with_indexed_items: "{{ vscs }}"
+    include_tasks: write-host-files.yml
+    vars:
+      component_template: vsc
+    loop_control:
+      loop_var: component
+    with_items: "{{ vscs }}"
+
+#  - name: Create host_vars files for vsc
+#    template: src=vsc.j2 backup=no dest={{ inventory_dir }}/host_vars/{{ item.1.hostname }}
+#    with_indexed_items: "{{ vscs }}"
 
   - name: Verify VSC DNS entries exist at server {{ dns_server_list[0] }}, and hostnames map to their IPs
     include_tasks: check-dns.yml

@@ -3,69 +3,69 @@
 # will be lost if reset-build or build is run
 #
 component_type: vsc
-target_server_type: {{ item.1.target_server_type }}
-hostname: {{ item.1.hostname }}
+target_server_type: {{ item.target_server_type }}
+hostname: {{ item.hostname }}
 
-{% if item.1.system_name is defined %}
-system_name: {{ item.1.system_name }}
+{% if item.system_name is defined %}
+system_name: {{ item.system_name }}
 {% endif %}
 
-{% if item.1.target_server_type is match("kvm") or item.1.target_server_type is match("vcenter") or item.1.target_server_type is match("nuagex") %}
-target_server: {{ item.1.target_server }}
+{% if item.target_server_type is match("kvm") or item.target_server_type is match("vcenter") or item.target_server_type is match("nuagex") %}
+target_server: {{ item.target_server }}
 {% endif %}
 
-{% if item.1.vmname is defined %}
-vmname: {{ item.1.vmname }}
+{% if item.vmname is defined %}
+vmname: {{ item.vmname }}
 {% else %}
-vmname: {{ item.1.hostname }}
+vmname: {{ item.hostname }}
 {% endif %}
 
-{% if item.1.vlan_id is defined %}
-vlan_id: {{ item.1.vlan_id }}
+{% if item.vlan_id is defined %}
+vlan_id: {{ item.vlan_id }}
 {% endif %}
 
-mgmt_ip: {{ item.1.mgmt_ip }}
-mgmt_netmask_prefix: {{ item.1.mgmt_ip_prefix }}
-mgmt_gateway: {{ item.1.mgmt_gateway }}
+mgmt_ip: {{ item.mgmt_ip }}
+mgmt_netmask_prefix: {{ item.mgmt_ip_prefix }}
+mgmt_gateway: {{ item.mgmt_gateway }}
 
-{% if item.1.mgmt_bridge is defined %}
-mgmt_bridge: {{ item.1.mgmt_bridge }}
+{% if item.mgmt_bridge is defined %}
+mgmt_bridge: {{ item.mgmt_bridge }}
 {% endif %}
 
-{% if item.1.data_bridge is defined %}
-data_bridge: {{ item.1.data_bridge }}
+{% if item.data_bridge is defined %}
+data_bridge: {{ item.data_bridge }}
 {% endif %}
 
-{% if item.1.mgmt_ip | ipv6 != False %}
+{% if item.mgmt_ip | ipv6 != False %}
 enable_ipv6: true
 {% endif %}
 
-{% if item.1.ctrl_ip is defined and item.1.ctrl_ip | ipv6 != False %}
+{% if item.ctrl_ip is defined and item.ctrl_ip | ipv6 != False %}
 enable_ipv6_control: true
 {% endif %}
 
-{% if item.1.internal_mgmt_ip is defined %}
-internal_mgmt_ip: {{ item.1.internal_mgmt_ip }}
+{% if item.internal_mgmt_ip is defined %}
+internal_mgmt_ip: {{ item.internal_mgmt_ip }}
 {% endif %}
-{% if item.1.ctrl_ip is defined %}
-control_ip: {{ item.1.ctrl_ip }}
+{% if item.ctrl_ip is defined %}
+control_ip: {{ item.ctrl_ip }}
 {% endif %}
-{% if item.1.ctrl_ip_vprn is defined %}
-control_ip_vprn: {{ item.1.ctrl_ip_vprn }}
+{% if item.ctrl_ip_vprn is defined %}
+control_ip_vprn: {{ item.ctrl_ip_vprn }}
 {% endif %}
-{% if item.1.ctrl_ip_prefix is defined %}
-control_netmask_prefix: {{ item.1.ctrl_ip_prefix }}
+{% if item.ctrl_ip_prefix is defined %}
+control_netmask_prefix: {{ item.ctrl_ip_prefix }}
 {% endif %}
-{% if item.1.internal_ctrl_ip is defined %}
-internal_ctrl_ip: {{ item.1.internal_ctrl_ip }}
+{% if item.internal_ctrl_ip is defined %}
+internal_ctrl_ip: {{ item.internal_ctrl_ip }}
 {% endif %}
-{% if item.1.internal_data_gateway_ip is defined %}
-internal_data_gateway_ip: {{ item.1.internal_data_gateway_ip }}
+{% if item.internal_data_gateway_ip is defined %}
+internal_data_gateway_ip: {{ item.internal_data_gateway_ip }}
 {% endif %}
 
 mgmt_static_route_list:
-{% if item.1.mgmt_static_route_list is defined %}
-{% for route in item.1.mgmt_static_route_list %}
+{% if item.mgmt_static_route_list is defined %}
+{% for route in item.mgmt_static_route_list %}
   - {{ route }}
 {% endfor %}
 {% else %}
@@ -73,9 +73,9 @@ mgmt_static_route_list:
   - 128.0.0.0/1
 {% endif %}
 
-{% if item.1.cpuset is defined %}
+{% if item.cpuset is defined %}
 cpuset:
-{% for cpus in item.1.cpuset %}
+{% for cpus in item.cpuset %}
   - {{ cpus }}
 {% endfor %}
 {% endif %}
@@ -83,68 +83,62 @@ cpuset:
 image_path: {{ image_path | default("MISSING") }}
 image_file_name: {{ image_file_name | default("MISSING") }}
 
-{% if item.1.target_server_type is match("vcenter") %}
-
-vcenter:
-  username: {{ encrypted.vcenter_username | indent(8, False) }}
-  password: {{ encrypted.vcenter_password | indent(8, False) }}
-  datacenter: {{ item.vcenter_datacenter | default( vcenter_datacenter ) }}
-  cluster: {{ item.vcenter_cluster | default( vcenter_cluster ) }}
-  datastore: {{ item.vcenter_datastore | default( vcenter_datastore ) }}
-  resource_pool: {{ item.vcenter_resource_pool | default(vcenter_resource_pool | default('NONE')) }}
-  host_reference: {{ item.vcenter_host_reference | default(vcenter_host_reference | default('NONE')) }}
-
+{% if creds is defined %}
+{% if creds.vsc_custom_username is defined %}
+vsc_custom_username: {{ creds.vsc_custom_username | indent(8, False) }}
+{% endif %}
+{% if creds.vsc_custom_password is defined %}
+vsc_custom_password: {{ creds.vsc_custom_password | indent(8, False) }}
+{% endif %}
 {% endif %}
 
-{% if item.1.vsd_fqdn is defined %}
-vsd_fqdn: {{ item.1.vsd_fqdn }}
+{% if item.vsd_fqdn is defined %}
+vsd_fqdn: {{ item.vsd_fqdn }}
 {% else %}
 vsd_fqdn: {{ vsd_fqdn_global }}
 {% endif %}
 
-{% if item.1.system_ip is defined %}
-system_ip: {{ item.1.system_ip }}
+{% if item.system_ip is defined %}
+system_ip: {{ item.system_ip }}
 {% endif %}
 
-{% if item.1.system_ip is defined and item.1.system_ip | ipv6 != False %}
+{% if item.system_ip is defined and item.system_ip | ipv6 != False %}
 enable_ipv6_system: true
 {% endif %}
 
 xmpp:
-  username: {{ item.1.xmpp_username | default("vsc" + (item.0 + 1) | string) }}
+  username: {{ item.xmpp_username | default("vsc" + (item.0 + 1) | string) }}
 
-expected_num_bgp_peers :  {{ item.1.expected_num_bgp_peers | default('0') }}
-expected_num_vswitches :  {{ item.1.expected_num_vswitches | default('0') }}
-expected_num_host_vports : {{ item.1.expected_num_host_vports | default('0') }}
-expected_num_vm_vports :   {{ item.1.expected_num_vm_vports | default('0') }}
-expected_num_gateway_ports : {{ item.1.expected_num_gateway_ports | default('0') }}
+expected_num_bgp_peers :  {{ item.expected_num_bgp_peers | default('0') }}
+expected_num_vswitches :  {{ item.expected_num_vswitches | default('0') }}
+expected_num_host_vports : {{ item.expected_num_host_vports | default('0') }}
+expected_num_vm_vports :   {{ item.expected_num_vm_vports | default('0') }}
+expected_num_gateway_ports : {{ item.expected_num_gateway_ports | default('0') }}
 
-{% if item.1.target_server_type is match("openstack") %}
+{% if item.target_server_type is match("openstack") %}
 
-openstack_image: {{ item.1.openstack_image }}
-openstack_flavor: {{ item.1.openstack_flavor }}
-openstack_mgmt_network: {{ item.1.openstack_mgmt_network }}
-openstack_mgmt_subnet: {{ item.1.openstack_mgmt_subnet }}
-openstack_control_network: {{ item.1.openstack_control_network }}
-openstack_control_subnet: {{ item.1.openstack_control_subnet }}
+openstack_mgmt_network: {{ item.openstack_mgmt_network }}
+openstack_mgmt_subnet: {{ item.openstack_mgmt_subnet }}
+openstack_control_network: {{ item.openstack_control_network }}
+openstack_control_subnet: {{ item.openstack_control_subnet }}
 
-{% if item.1.openstack_mgmt_port_name is defined %}
-openstack_mgmt_port_name: {{ item.1.openstack_mgmt_port_name }}
+{% if item.openstack_mgmt_port_name is defined %}
+openstack_mgmt_port_name: {{ item.openstack_mgmt_port_name }}
 {% endif %}
-{% if item.1.openstack_mgmt_port_security_groups is defined %}
+{% if item.openstack_mgmt_port_security_groups is defined %}
 openstack_mgmt_port_security_groups:
-{% for group in item.1.openstack_mgmt_port_security_groups %}
+{% for group in item.openstack_mgmt_port_security_groups %}
   - {{ group }}
 {% endfor %}
 {% endif %}
 
 
-{% if item.1.openstack_control_port_name is defined %}
-openstack_control_port_name: {{ item.1.openstack_control_port_name }}
+{% if item.openstack_control_port_name is defined %}
+openstack_control_port_name: {{ item.openstack_control_port_name }}
 {% endif %}
-{% if item.1.openstack_control_port_security_groups is defined %}
+{% if item.openstack_control_port_security_groups is defined %}
 openstack_control_port_security_groups:
-{% for group in item.1.openstack_control_port_security_groups %}
+{% for group in item.openstack_control_port_security_groups %}
   - {{ group }}
 {% endfor %}
 {% endif %}
@@ -159,18 +153,18 @@ vsc_tim_file_name: {{ vsc_tim_file_name }}
 {% endif %}
 
 # Custom user generated certificates
-{% if item.1.private_key_path is defined%}
-private_key_path: {{ item.1.private_key_path }}
+{% if item.private_key_path is defined%}
+private_key_path: {{ item.private_key_path }}
 {% endif %}
-{% if item.1.certificate_path is defined %}
-certificate_path: {{ item.1.certificate_path }}
+{% if item.certificate_path is defined %}
+certificate_path: {{ item.certificate_path }}
 {% endif %}
-{% if item.1.ca_certificate_path is defined %}
-ca_certificate_path: {{ item.1.ca_certificate_path }}
+{% if item.ca_certificate_path is defined %}
+ca_certificate_path: {{ item.ca_certificate_path }}
 {% endif %}
-{% if item.1.ejabberd_id is defined %}
-ejabberd_id: {{ item.1.ejabberd_id }}
+{% if item.ejabberd_id is defined %}
+ejabberd_id: {{ item.ejabberd_id }}
 {% endif %}
-{% if item.1.xmpp_domain is defined %}
-xmpp_domain: {{ item.1.xmpp_domain }}
+{% if item.xmpp_domain is defined %}
+xmpp_domain: {{ item.xmpp_domain }}
 {% endif %}
