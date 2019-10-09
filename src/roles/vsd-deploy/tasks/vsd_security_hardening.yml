@@ -14,6 +14,13 @@
   no_log: True
   ignore_errors: True
 
+- name: Check if custom user already exists and is connected via ssh
+  local_action:
+     module: command ssh -oStrictHostKeyChecking=no -oPasswordAuthentication=no {{ vsd_custom_username }}@{{ inventory_hostname }} exit 0
+  register: ssh_custom_user
+  ignore_errors: yes
+  when: vsd_custom_username is defined
+
 - block:
 
   - block:
@@ -82,6 +89,7 @@
     when:
       - vsd_custom_username is defined
       - vsd_custom_password is defined
+      - ssh_custom_user.rc != 0
 
   remote_user: "{{ vsd_default_username }}"
 
