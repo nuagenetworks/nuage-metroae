@@ -3,6 +3,12 @@ Metro&#198; now supports the deployment of SD-WAN Portal for Nuage VNS. For more
 
 SD-WAN Portal deployment requires a RHEL7/CentOS 7 [image](https://cloud.centos.org/centos/7/images/CentOS-7-x86_64-GenericCloud-1901.qcow2) as well as docker images with the product [software](http://nuage-ps-delivery.lab.llama2.cloud/delivery/nuage-portal/)
 
+Supported deployment:
+
+* KVM hypervisor(s)
+* SD-WAN Portal versions 6.0.1+
+
+
 Currently the following workflows are supported:
 
 * install_sdwan_portal - Deploy Portal VM(s) on KVM hypervisor and install the application
@@ -18,6 +24,7 @@ Example deployment files are available under examples/kvm_portal_install
   In your MetroÆ deployment folder, create or edit the `common.yml` configuring the necessary attributes.
   Portal specific attributes include:
   * portal_fqdn_global - SD-WAN Portal Global FQDN. Typically a public (external) FQDN resolvable to the Portal endpoint on a Proxy/LB in both standalone and HA deployments. For standalone - FQDN of a single Portal node
+  * vsd_port_global - Used with vsd_global_fqdn by the SD-WAN Portal to connect to the VSD cluster. Defaults to 8443. 
   * vstat_fqdn_global - ElasticSearch cluster FQDN. SD-WAN Portal accesses the ES cluster to retrieve statistics for visualization and reports. For standalone ES - FQDN of a single ES node.
   * yum_proxy - Portal is using the same Proxy for Docker to pull the images from Docker hub. Optional if using the pre-downloaded SW package.
   * portal_license_file - SD-WAN Portal license. Request through ASLM.

@@ -3,16 +3,17 @@ gr.dc: '1'
 gr.dc1.address: 0.0.0.0
 gr.dc2.address: 0.0.0.0
 gr.enabled: false
-{% if portal_sa_or_ha == sa %}
+{% if portal_sa_or_ha == 'sa' %}
 ha.enabled: false
-ha.node1.address: {{ portal_ip }}
+ha.node1.address: {{ portal1.mgmt_ip }}
 ha.node2.address: ''
 ha.node3.address: ''
 {% else %}
 ha.enabled: true
-ha.node1.address: {{ portal1_ip }}
-ha.node2.address: {{ portal2_ip }}
-ha.node3.address: {{ portal3_ip }}
+ha.node1.address: {{ portal1.mgmt_ip }}
+ha.node2.address: {{ portal2.mgmt_ip }}
+ha.node3.address: {{ portal3.mgmt_ip }}
+{% endif %}
 jms.password: csproot
 jms.username: csproot@csp
 new.account.sender.address: {{ new_account_email }}
@@ -20,12 +21,12 @@ password.reset.sender.address: {{ password_reset_email }}
 proxy.enabled: false
 proxy.port: ''
 proxy.url: 0.0.0.0
-smtp.host: {{ smtp_fqdn }}
+smtp.host: {{ smtp_fqdn | default('None') }}
 smtp.password: {{ smtp_password }}
-smtp.port: {{ smtp_port }}
-smtp.secureConnection: {{ smtp_secure }}
-smtp.user: {{ smtp_port }}
-spring.data.jest.uri: http://{{ vstat_fqdn_global }}:9200
+smtp.port: {{ smtp_port | default('None')  }}
+smtp.secureConnection: {{ smtp_secure | default('false') }}
+smtp.user: {{ smtp_port | default('25')  }}
+spring.data.jest.uri: http://{{ vstat_fqdn_global }}
 sso.custom.entityId: com:nokia:vnsportal:sp
 sso.custom.idp.metadata: idp.metadata.xml
 sso.custom.imagename: nuage/vnsportal-eauth-saml-XYZ
@@ -42,7 +43,7 @@ sso.keystore.key.password: changeit
 sso.keystore.password: changeit
 sso.profile: 0
 vnsportal.csp.fqdn: {{ portal_fqdn_global }}
-vsd.host: {{ vsd_fqdn }}
-vsd.root.org: {{ vsd_auth.enterprise }}
-vsd.root.password: {{ portal_auth.username }}
-vsd.root.username: {{ portal_auth.password }}
+vsd.host: {{ vsd_fqdn }}:{{ vsd_port }}
+vsd.root.org: csp
+vsd.root.password: vnsportal
+vsd.root.username: vnsportal
