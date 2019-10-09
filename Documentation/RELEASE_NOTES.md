@@ -12,3 +12,4 @@
 * Fix VSC backup error during HA upgrade (METROAE-1120)
 * Use correct vCenter variable references (METROAE-1122)
 * Fix update of /etc/hosts on VCIN nodes (METROAE-1123)
+* Fix VSD 'Set upgrade complete flag' fails with non-default csproot password (METROAE-1116)
