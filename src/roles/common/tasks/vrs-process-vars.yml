@@ -214,10 +214,19 @@
       }
     when: openflow_tls | default(True)
 
+  - name: Get specific credentials
+    set_fact:
+      creds: "{{ item.0 }}"
+    when: item.1.credentials_set is defined and item.0.name  == item.1.credentials_set
+    with_subelements:
+      - "{{ credentials }}"
+      - "{{ vrss }}"
+
   - name: Create host_vars files for vrs
     template: src=vrs.j2 backup=no dest={{ inventory_dir }}/host_vars/{{ item.1 }}
     with_subelements:
         - "{{ vrss }}"
         - vrs_ip_list
+        - creds
 
   when: vrss is defined and vrss
