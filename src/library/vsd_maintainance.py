@@ -48,12 +48,16 @@ def set_maintainance_mode(csproot, state):
         if lst_l3_domains:
             for l3_domain in lst_l3_domains:
                 if l3_domain.parent_id in lst_enterprise_ids:
-                    if state == 'enabled':
-                        l3_domain.maintenance_mode = 'ENABLED'
-                        l3_domain.save()
-                    elif state == 'disabled':
-                        l3_domain.maintenance_mode = 'DISABLED'
-                        l3_domain.save()
+                    try:
+                        if state == 'enabled':
+                            l3_domain.maintenance_mode = 'ENABLED'
+                            l3_domain.save()
+                        elif state == 'disabled':
+                            l3_domain.maintenance_mode = 'DISABLED'
+                            l3_domain.save()
+                    except Exception as e:
+                        if 'is reserved' not in str(e):
+                            raise e
             result_str = result_str + \
                 'Maintainance mode for all non shared L3 domains-%s,' % state
         else:
