@@ -41,6 +41,11 @@
     - name: Add user to sudoers list
       command: usermod -aG wheel {{ vsd_custom_username }}
 
+    - name: Set custom password for MySQL root password for non-root user
+      shell: mysqladmin -u root password "{{ vsd_mysql_password }}"
+      when: vsd_mysql_password is defined
+      run_once: true
+
     - name: Update sshd config file
       lineinfile:
         path: /etc/ssh/sshd_config
@@ -85,11 +90,6 @@
     - name: Set vsd user to custom user
       set_fact:
         vsd_username: "{{ vsd_custom_username }}"
-
-    - name: Set custom password for MySQL root password for non-root user
-      shell: mysqladmin -u root password "{{ vsd_mysql_password }}"
-      when: vsd_mysql_password is defined
-      run_once: true
 
     when:
       - vsd_custom_username is defined
