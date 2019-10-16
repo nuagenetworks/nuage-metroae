@@ -1,24 +1,39 @@
-- name: Resolve standalone vsd to ip addr
-  shell: "getent hosts {{ groups['vsd_sa_node'][0] | default(vsd_hostname) }} | awk '{print $1}'"
-  register: ip_addr
-  delegate_to: localhost
-  become: no
+- block:
+  - name: Resolve standalone vsd to ip addr
+    shell: "getent hosts {{ groups['vsd_sa_node'][0] | default(vsd_hostname) }} | awk '{print $1}'"
+    register: ip_addr_sa
+    delegate_to: localhost
+    become: no
+
+  - name: Set Ip addr fact
+    set_fact:
+      ip_addr: ip_addr_sa
+
+  - name: Get custom username for vsd
+    set_fact:
+      vsd_custom_username: "{{ hostvars[groups['vsd_sa_node'][0]].vsd_custom_username | default(vsd_custom_username | default(None)) }}"
+      vsd_custom_password: "{{ hostvars[groups['vsd_sa_node'][0]].vsd_custom_password | default(vsd_custom_password | default(None)) }}"
+
   when: groups['vsd_sa_node'] is defined
 
-- name: Resolve HA vsd node 1 to ip addr
-  shell: "getent hosts {{ groups['vsd_ha_node1'][0] | default(vsd_hostname) }} | awk '{print $1}'"
-  register: ip_addr
-  delegate_to: localhost
-  become: no
+- block:
+  - name: Resolve HA vsd node 1 to ip addr
+    shell: "getent hosts {{ groups['vsd_ha_node1'][0] | default(vsd_hostname) }} | awk '{print $1}'"
+    register: ip_addr_ha
+    delegate_to: localhost
+    become: no
+
+  - name: Set Ip addr fact
+    set_fact:
+      ip_addr: ip_addr_ha
+
+  - name: Get custom username for vsd
+    set_fact:
+      vsd_custom_username: "{{ hostvars[groups['vsd_ha_node1'][0]].vsd_custom_username | default(vsd_custom_username | default(None)) }}"
+      vsd_custom_password: "{{ hostvars[groups['vsd_ha_node1'][0]].vsd_custom_password | default(vsd_custom_password | default(None)) }}"
+
   when: groups['vsd_ha_node1'] is defined
 
-- debug: msg="{{ groups['primary_vsds'][0].vsd_custom_username | default(vsd_custom_username | default(None)) }}"
-- debug: msg="{{ groups['primary_vsds'][0].vsd_custom_password | default(vsd_custom_password | default(None)) }}"
-
-- name: Get custom username for vsd
-  set_fact:
-    vsd_custom_username: "{{ hostvars[groups['primary_vsds'][0]].vsd_custom_username | default(vsd_custom_username | default(None)) }}"
-    vsd_custom_password: "{{ hostvars[groups['primary_vsds'][0]].vsd_custom_password | default(vsd_custom_password | default(None)) }}"
 
 - block:
   - name: Get the VSD version
