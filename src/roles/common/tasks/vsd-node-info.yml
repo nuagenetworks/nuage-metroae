@@ -1,8 +1,16 @@
-- name: Resolve "{{ groups['primary_vsds'][0] | default(vsd_hostname) }}" to ip addr
-  shell: "getent hosts {{ groups['primary_vsds'][0] | default(vsd_hostname) }} | awk '{print $1}'"
+- name: Resolve standalone vsd to ip addr
+  shell: "getent hosts {{ groups['vsd_sa_node'][0] | default(vsd_hostname) }} | awk '{print $1}'"
   register: ip_addr
   delegate_to: localhost
   become: no
+  when: groups['vsd_sa_node'][0] is defined
+
+- name: Resolve HA vsd node 1 to ip addr
+  shell: "getent hosts {{ groups['vsd_ha_node1'][0] | default(vsd_hostname) }} | awk '{print $1}'"
+  register: ip_addr
+  delegate_to: localhost
+  become: no
+  when: groups['vsd_ha_node1'][0] is defined
 
 - debug: msg="{{ groups['primary_vsds'][0].vsd_custom_username | default(vsd_custom_username | default(None)) }}"
 - debug: msg="{{ groups['primary_vsds'][0].vsd_custom_password | default(vsd_custom_password | default(None)) }}"
