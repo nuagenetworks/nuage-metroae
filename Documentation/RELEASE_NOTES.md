@@ -4,6 +4,7 @@
 
 ### Feature Enhancements
 * Support Nuage VSD upgrade to 6.0.2 via Metro (METROAE-1121)
+* Added support for openstack availability zone
 
 ### Resolved Issues
 * Fix VSD node information to get Primary VSD information Rather than XMPP node info (METROAE-1093)
