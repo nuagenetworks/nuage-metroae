@@ -8,6 +8,13 @@
 
     - name: Stop vsd statistics services
       shell: "{{ stop_stats }}"
+      ignore_errors: yes
+      register: stop_stats_output
+      
+    - name: Check if an error should be ignored
+      assert:
+        that: "stop_stats_output.failed == false or stop_stats_output.stderr is search('not found')"
+        msg: "Error while attempting to stop vsd stats services"
 
     - name: Pause for proccesses to exit
       pause:
@@ -25,6 +32,7 @@
       with_items: "{{ list_stats_pids.stdout_lines|default([]) }}"
       ignore_errors: yes
       when: list_stats_pids.stdout.strip()!= ""
+
     when: groups['vstats'] is defined and groups['vstats']
 
   - block:

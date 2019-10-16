@@ -1,16 +1,18 @@
 # Metro Automation Engine Release Notes
 
-## Release 3.3.1
+## Release 3.3.2
+
+### Feature Enhancements
+* Support Nuage VSD upgrade to 6.0.2 via Metro (METROAE-1121)
 
 ### Resolved Issues
-* Fixed issue with VSD Cluster failover if Primary Cluster is unreachable
-* Removed support for ansible version other than 2.7.10, you must run usingn Ansible 2.7.10 (METROAE-1065)
-* Fixed issue with run_wizard not reading yaml-empty deployment files correctly
-* Fixed issue with run_wizard not handling integer type input entries correctly
-* Fixed broken paths in nuage_health.yml
-* Fixed In-place U-release upgrades, e.g. 5.4.1 > 5.4.1U5
-    * Enforce In-place upgrades to be *only* accomplished via `upgrade_vsds`. Any other upgrade play will throw an error.
-    * Accept upper and lowercase 'u' when specifying upgrade versions
-    * Properly parse In-place upgrade version strings
-    * Stop checking for image files when doing a U-release, VSD-only upgrade
-* Documentation enhancements
+* Fix VSD node information to get Primary VSD information Rather than XMPP node info (METROAE-1093)
+* Fixed issue with Active Standy VSTAT deploy with VSD in HA mode
+* Add option to skip DNS host resolution checks when DNS servers are not reachable from MetroAE server (METROAE-1117)
+* Fix VSC backup error during HA upgrade (METROAE-1120)
+* Use correct vCenter variable references (METROAE-1122)
+* Fix update of /etc/hosts on VCIN nodes (METROAE-1123)
+* Mysql password change errors out while running security hardening (METROAE-1126)
+* Fix VSD 'Set upgrade complete flag' fails with non-default csproot password (METROAE-1116)
+* Use primary group instead of username when chown of backup dir (METROAE-1118)
+* Fixes for portal start up order and docker-compose.yml bug

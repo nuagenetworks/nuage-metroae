@@ -72,14 +72,17 @@
 
   - name: Deploy NSGV image on vCenter (Can take several minutes)
     connection: local
-#    no_log: true
+    no_log: true
     shell: >-
       {{ ovftool_command }}
       "vi://{{ vcenter.username | urlencode }}:{{ vcenter.password | urlencode }}@{{ vcenter_path }}"
     register: deploy_output
 
-  - name: Print deploy_output
-    debug: var=deploy_output
+  - name: Print deploy_output.stdout
+    debug: var=deploy_output.stdout
+
+  - name: Print deploy_output.stderr
+    debug: var=deploy_output.stderr
 
   - block:
     - name: Mount ISO when ZFB method is metro
@@ -89,10 +92,10 @@
         password: "{{ vcenter.password }}"
         name: "{{ vm_name }}"
         validate_certs: no
-        state: reconfigured
+        state: present
         cdrom:
           type: "iso"
-          iso_path: "{{ vcenter.datastore }}/{{ inventory_hostname }}/user_image.iso"
+          iso_path: "[{{ vcenter.datastore }}] {{ inventory_hostname }}/user_image.iso"
       delegate_to: localhost
     when: bootstrap_method == 'zfb_metro'
 
@@ -104,7 +107,7 @@
         password: "{{ vcenter.password }}"
         name: "{{ vm_name }}"
         validate_certs: no
-        state: reconfigured
+        state: present
         cdrom:
           type: "iso"
           iso_path: "{{ iso_path}}/{{ iso_file }}"
