@@ -256,12 +256,10 @@
       - name: Get ActiveMQ status of all VSDs
         command: monit status activemq-status
         register: jms_status
-        delegate_to: "{{ item }}"
-        remote_user: "{{ hostvars[item].vsd_custom_username | default(vsd_custom_username | default(vsd_default_username)) }}"
-        become: "{{ 'no' if hostvars[item].vsd_custom_username | default(vsd_custom_username | default(vsd_default_username)) == 'root' else 'yes' }}"
+        remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
+        become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
         vars:
           ansible_become_pass: "{{ hostvars[item].vsd_custom_password | default(vsd_custom_password | default(vsd_default_password)) }}"
-        with_items: "{{ groups['primary_vsds'] }}"
 
       - name: Set JMS Master Node Hostname
         set_fact:
@@ -297,8 +295,6 @@
       when:
         - "'activemq-status' in vsd_proc.state"
         - inventory_hostname in groups['primary_vsds']
-
-    run_once: true
 
   - name: write web interface result
     nuage_append: filename="{{ report_path }}" text="{{ webresult  | to_nice_json}}\n"
