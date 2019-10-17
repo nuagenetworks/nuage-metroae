@@ -257,10 +257,10 @@
         command: monit status activemq-status
         register: jms_status
         delegate_to: "{{ item }}"
-        remote_user: "{{ item.vsd_custom_username | default(vsd_custom_username | default(vsd_default_username)) }}"
-        become: "{{ 'no' if item.vsd_custom_username | default(vsd_custom_username | default(vsd_default_username)) == 'root' else 'yes' }}"
+        remote_user: "{{ hostvars[item].vsd_custom_username | default(vsd_custom_username | default(vsd_default_username)) }}"
+        become: "{{ 'no' if hostvars[item].vsd_custom_username | default(vsd_custom_username | default(vsd_default_username)) == 'root' else 'yes' }}"
         vars:
-          ansible_become_pass: "{{ item.vsd_custom_password | default(vsd_custom_password | default(vsd_default_password)) }}"
+          ansible_become_pass: "{{ hostvars[item].vsd_custom_password | default(vsd_custom_password | default(vsd_default_password)) }}"
         with_items: "{{ groups['primary_vsds'] }}"
 
       - name: Set JMS Master Node Hostname
