@@ -244,11 +244,66 @@
       - "'activemq-status' in vsd_proc.state"
       - inventory_hostname in groups['primary_vsds']
 
+<<<<<<< HEAD
   run_once: true
 
 - name: write web interface result
   nuage_append: filename="{{ report_path }}" text="{{ webresult  | to_nice_json}}\n"
   delegate_to: localhost
+=======
+    - block:
+
+      - name: Get ActiveMQ status of all VSDs
+        command: monit status activemq-status
+        register: jms_status
+        delegate_to: "{{ item }}"
+        remote_user: "{{ item.vsd_custom_username | default(vsd_custom_username | default(vsd_default_username)) }}"
+        become: "{{ 'no' if item.vsd_custom_username | default(vsd_custom_username | default(vsd_default_username)) == 'root' else 'yes' }}"
+        vars:
+          ansible_become_pass: "{{ item.vsd_custom_password | default(vsd_custom_password | default(vsd_default_password)) }}"
+        with_items: "{{ groups['primary_vsds'] }}"
+
+      - name: Set JMS Master Node Hostname
+        set_fact:
+          jms_master_hostname: "{{ item.item }}"
+        when: "'This is Master node' in item.stdout and groups['primary_vsds']|length > 1"
+        with_items: "{{ jms_status.results }}"
+
+      - name: Set JMS Master Node Hostname
+        set_fact:
+          jms_master_hostname: "{{ item.item }}"
+        when: "'PASS' in item.stdout and groups['primary_vsds']|length == 1"
+        with_items: "{{ jms_status.results }}"
+
+      - name: Verify that JMS Master Node exists
+        assert:
+          that: "jms_master_hostname is defined"
+          msg: "No JMS Master Node found"
+
+      - name: Verify that JMS gateway is reachable on Master Node
+        uri:
+          url: https://{{ jms_master_hostname }}:61619
+          method: GET
+          user: "{{ vsd_auth.username }}"
+          password: "{{ vsd_auth.password }}"
+          status_code: 200
+          validate_certs: False
+        until: webresult.status == 200
+        retries: 5
+        delay: 30
+        register: webresult
+        delegate_to: localhost
+
+      when:
+        - "'activemq-status' in vsd_proc.state"
+        - inventory_hostname in groups['primary_vsds']
+
+    run_once: true
+
+  - name: write web interface result
+    nuage_append: filename="{{ report_path }}" text="{{ webresult  | to_nice_json}}\n"
+    delegate_to: localhost
+>>>>>>> Getting custom usename and password from item first
 
 - block:
 
