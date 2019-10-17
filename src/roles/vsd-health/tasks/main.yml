@@ -191,24 +191,17 @@
         remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
         become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
         vars:
-          ansible_become_pass: "{{ hostvars[item].vsd_custom_password | default(vsd_custom_password | default(vsd_default_password)) }}"
+          ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"
 
       - name: Set JMS Master Node Hostname
         set_fact:
-          jms_master_hostname: "{{ item.item }}"
-        when: "'This is Master node' in item.stdout and groups['primary_vsds']|length > 1"
-        with_items: "{{ jms_status.results }}"
+          jms_master_hostname: "{{ hostname }}"
+        when: "'This is Master node' in jms_status.stdout and groups['primary_vsds']|length > 1"
 
       - name: Set JMS Master Node Hostname
         set_fact:
-          jms_master_hostname: "{{ item.item }}"
-        when: "'PASS' in item.stdout and groups['primary_vsds']|length == 1"
-        with_items: "{{ jms_status.results }}"
-
-      - name: Verify that JMS Master Node exists
-        assert:
-          that: "jms_master_hostname is defined"
-          msg: "No JMS Master Node found"
+          jms_master_hostname: "{{ hostname }}"
+        when: "'PASS' in jms_status.stdout and groups['primary_vsds']|length == 1"
 
       - name: Verify that JMS gateway is reachable on Master Node
         uri:
@@ -223,6 +216,7 @@
         delay: 30
         register: webresult
         delegate_to: localhost
+        when: jms_master_hostname is defined
 
       when:
         - "'activemq-status' in vsd_proc.state"
