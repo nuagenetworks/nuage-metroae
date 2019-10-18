@@ -38,34 +38,13 @@
     vsd_hostname: "{{ vsd_fqdn }}"
   run_once: true
 
-- block:
-
-  - name: Change XMPP connection to TLS on VSD
-    command: /opt/vsd/bin/ejmode allow -y
-    delegate_to: "{{ item }}"
-    with_items: "{{ vsd_hostname_list }}"
-    when: xmpp_tls
-
-  - name: wait for ejabberd-status to become running
-    monit_waitfor_service:
-      name: "ejabberd-status"
-      timeout_seconds: 600
-      test_interval_seconds: 30
-    delegate_to: "{{ item }}"
-    with_items: "{{ vsd_hostname_list }}"
-
-  - name: wait for ejbca-status to become running
-    monit_waitfor_service:
-      name: "ejbca-status"
-      timeout_seconds: 600
-      test_interval_seconds: 30
-    delegate_to: "{{ item }}"
-    with_items: "{{ vsd_hostname_list }}"
-
-  remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
-  become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
-  vars:
-    ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"
+- name: Enable ejmode to allow on vsds
+  import_role:
+    name: common
+    tasks_from: allow-ejmode.yml
+  loop_control:
+    loop_var: vsd
+  with_items: "{{ vsd_hostname_list }}"
 
 - name: Optionally setup XMPP TLS
   include_role:
