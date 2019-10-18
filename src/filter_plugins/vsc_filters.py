@@ -414,9 +414,9 @@ def vsc_system_connections_to_json(string):
     dict = {}
     lst_ipaddr = re.findall(r'([0-9]+(?:\.[0-9]+){3})', string)
     dict["Command"] = "show system connections port 5222"
-    if len(lst_ipaddr) >=2:
-      dict["local_ip"] = lst_ipaddr[0]
-      dict["remote_ip"] = lst_ipaddr[1]
+    if len(lst_ipaddr) >= 2:
+        dict["local_ip"] = lst_ipaddr[0]
+        dict["remote_ip"] = lst_ipaddr[1]
     return json.dumps(dict)
 
 
@@ -447,7 +447,6 @@ def vsd_detail_to_json(string):
 def vsc_router_interfaces_to_json(string):
     ''' Given a string representation of the output of "show router interface" command, return
     a JSON representation of the relevant statuses of the interfaces.
-
     Sample output from the command as a string:
     ===============================================================================
     Interface Table (Router: Base)
@@ -462,7 +461,6 @@ def vsc_router_interfaces_to_json(string):
     -------------------------------------------------------------------------------
     Interfaces : 2
     ===============================================================================
-
     Sample output after applying filter:
     "show_router_interfaces_json": {
         "control_Adm": "Up",
