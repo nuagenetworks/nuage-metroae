@@ -42,20 +42,20 @@
   vars:
     ansible_become_pass: "{{ hostvars[vsd].vsd_custom_password | default(vsd_custom_password | default(vsd_default_password)) }}"
 
-  - name: Get jboss status of all VSDs
-    command: monit status jboss
-    register: jboss_status
-    remote_user: "{{ hostvars[item].vsd_custom_username | default(vsd_custom_username | default(vsd_default_username)) }}"
-    become: "{{ 'no' if hostvars[item].vsd_custom_username | default(vsd_custom_username | default(vsd_default_username)) == 'root' else 'yes' }}"
-    vars:
-      ansible_become_pass: "{{ hostvars[item].vsd_custom_password | default(vsd_custom_password | default(vsd_default_password)) }}"
-    delegate_to: "{{ item }}"
-    with_items: "{{ vsd_hostname_list }}"
+- name: Get jboss status of all VSDs
+  command: monit status jboss
+  register: jboss_status
+  remote_user: "{{ hostvars[item].vsd_custom_username | default(vsd_custom_username | default(vsd_default_username)) }}"
+  become: "{{ 'no' if hostvars[item].vsd_custom_username | default(vsd_custom_username | default(vsd_default_username)) == 'root' else 'yes' }}"
+  vars:
+    ansible_become_pass: "{{ hostvars[item].vsd_custom_password | default(vsd_custom_password | default(vsd_default_password)) }}"
+  delegate_to: "{{ item }}"
+  with_items: "{{ vsd_hostname_list }}"
 
-  - name: Verify jboss is active for all VSDs
-    assert:
-      that: "{{ item.rc }} == 0 or
-              {{ item.stdout is search('Running') }}"
-      msg: "JBoss is not Active for VSDs"
-    with_items:
-      - "{{ jboss_status.results }}"
+- name: Verify jboss is active for all VSDs
+  assert:
+    that: "{{ item.rc }} == 0 or
+            {{ item.stdout is search('Running') }}"
+    msg: "JBoss is not Active for VSDs"
+  with_items:
+    - "{{ jboss_status.results }}"
