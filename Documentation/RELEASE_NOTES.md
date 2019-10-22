@@ -17,3 +17,4 @@
 * Fix VSD 'Set upgrade complete flag' fails with non-default csproot password (METROAE-1116)
 * Use primary group instead of username when chown of backup dir (METROAE-1118)
 * Fixes for portal start up order and docker-compose.yml bug
+* VSTAT(ES) in-place upgrade fails with non-default root password (METROAE-1129)
