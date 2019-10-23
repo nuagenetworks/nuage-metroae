@@ -32,45 +32,33 @@
 - block:
 
   - name: Disable stats collection on all VSD nodes
-    command: /opt/vsd/vsd-stats.sh -d
-    delegate_to: "{{ item }}"
+    include_role:
+      name: common
+      tasks_from: disable-stats-on-vsd.yml
     with_items: "{{ vsd_hostname_list }}"
-    ignore_errors: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"  
+    loop_control:
+      loop_vars: vsd
 
-  - name: Get jboss status of all VSDs
-    command: monit status jboss
-    register: jboss_status
-    delegate_to: "{{ item }}"
-    with_items: "{{ vsd_hostname_list }}"
+  - block:
+    - name: Generate ssh key on vsd for vstat upgrade
+      shell: ssh-keygen -b 2048 -t rsa -f /root/.ssh/vstat_rsa -q -N ""
+      args:
+        creates: /root/.ssh/vstat_rsa
 
-  - name: Verify jboss is active for all VSDs
-    assert:
-      that: "{{ item.rc }} == 0 or
-              {{ item.stdout is search('Running') }}"
-      msg: "JBoss is not Active for VSDs"
-    with_items:
-      - "{{ jboss_status.results }}"
+    - name: Get generated SSH keys
+      shell: cat ~/.ssh/vstat_rsa.pub
+      register: ssh_key
 
-  - name: Generate ssh key on vsd for vstat upgrade
-    shell: ssh-keygen -b 2048 -t rsa -f /root/.ssh/vstat_rsa -q -N ""
-    args:
-      creates: /root/.ssh/vstat_rsa
     delegate_to: "{{ vsd_hostname_list[0] }}"
-
-  - name: Get generated SSH keys
-    shell: cat ~/.ssh/vstat_rsa.pub
-    register: ssh_key
-    delegate_to: "{{ vsd_hostname_list[0] }}"
+    remote_user: "{{ hostvars[vsd_hostname_list[0]].vsd_custom_username | default(vsd_custom_username | default(vsd_default_username)) }}"
+    become: "{{ 'no' if hostvars[vsd_hostname_list[0]].vsd_custom_username | default(vsd_custom_username | default(vsd_default_username)) == 'root' else 'yes' }}"
+    vars:
+      ansible_become_pass: "{{ hostvars[vsd_hostname_list[0]].vsd_custom_password | default(vsd_custom_password | default(vsd_default_password)) }}"
+    run_once: true
 
   - name: Copy ssh key from vsd to vstat node(s)
     shell: "echo {{ ssh_key.stdout }} >> /root/.ssh/authorized_keys"
     remote_user: "{{ vstat_default_username }}"
-
-  remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
-  become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
-  vars:
-    ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"
-  run_once: true
 
 - block:
   - name: Generate SSH keys
@@ -96,6 +84,7 @@
       - "{{ ssh_key_lst.results }}"
     run_once: true
   when: vstat_sa_or_ha is match('ha')
+
   remote_user: "{{ vstat_username | default(vstat_default_username) }}"
   become: "{{ 'no' if vstat_username | default(vstat_default_username) == 'root' else 'yes' }}"
   vars:
