@@ -28,3 +28,4 @@
 * Remove obsolete iptables traffic blocking during HA upgrade (METROAE-1051)
 * Fix VSD node information to get Primary VSD information Rather than XMPP node info (METROAE-1093)
 * Fixed issue with Active Standy VSTAT deploy with VSD in HA mode
+* Fix API version format in set_event_log.py (METROAE-1148)
