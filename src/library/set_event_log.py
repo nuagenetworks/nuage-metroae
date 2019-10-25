@@ -55,9 +55,10 @@ def set_event_log(csproot, event_log_age):
 
 
 def format_api_version(version):
-    # Handle 3.2 seperately
     if version.startswith('3'):
         return ('v3_2')
+    elif version.startswith('6'):
+        return ('v' + version[0])
     else:
         return ('v' + version[0] + '_0')
 
