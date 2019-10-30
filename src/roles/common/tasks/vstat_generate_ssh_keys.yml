@@ -1,0 +1,32 @@
+- block:
+  - name: Generate SSH keys
+    shell: ssh-keygen -b 2048 -t rsa -f /root/.ssh/id_rsa -q -N ""
+    args:
+      creates: /root/.ssh/id_rsa
+
+  - name: Get generated SSH keys
+    shell: cat ~/.ssh/id_rsa.pub
+    register: ssh_key_lst
+
+  - name: Add SSH keys to authorized_keys file
+    shell: "echo {{ item[1].stdout }} >> /root/.ssh/authorized_keys"
+    delegate_to: "{{ item[0] }}"
+    with_nested:
+      - "{{ group_vstats }}"
+      - "{{ ssh_key_lst.results }}"
+    when: upgrade is not defined
+
+  - name: Add SSH keys to authorized_keys file
+    shell: "echo {{ item[1].stdout }} >> /root/.ssh/authorized_keys"
+    delegate_to: "{{ item[0] }}"
+    with_nested:
+      - "{{ group_vstats }}"
+      - "{{ ssh_key_lst.results }}"
+    remote_user: "{{ hostvars[item[0]].vstat_custom_username | default(vstat_username| default(vstat_default_username)) }}"
+    become: "{{ 'no' if hostvars[item[0]].vstat_custom_username | default(vstat_username | default(vstat_default_username)) == 'root' else 'yes' }}"
+    vars:
+      ansible_become_pass: "{{ hostvars[item[0]].vstat_custom_password | default(vstat_password | default(vstat_default_password)) }}"
+    when: upgrade is defined
+
+  remote_user: "{{ vstat_username }}"
+  delegate_to: "{{ vstat }}"
