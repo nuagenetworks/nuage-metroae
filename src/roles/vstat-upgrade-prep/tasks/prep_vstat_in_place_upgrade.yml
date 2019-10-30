@@ -60,30 +60,15 @@
     shell: "echo {{ ssh_key.stdout }} >> /root/.ssh/authorized_keys"
     remote_user: "{{ vstat_default_username }}"
 
-- block:
   - name: Generate SSH keys
-    shell: ssh-keygen -b 2048 -t rsa -f /root/.ssh/vstat_rsa -q -N ""
-    args:
-      creates: /root/.ssh/vstat_rsa
-    delegate_to: "{{ item }}"
-    with_items: "{{ groups['vstats'] }}"
-    run_once: true
-
-  - name: Get generated SSH keys
-    shell: cat ~/.ssh/vstat_rsa.pub
-    register: ssh_key_lst
-    delegate_to: "{{ item }}"
-    with_items: "{{ groups['vstats'] }}"
-    run_once: true
-
-  - name: Add SSH keys to authorized_keys file
-    shell: "echo {{ item[1].stdout }} >> /root/.ssh/authorized_keys"
-    delegate_to: "{{ item[0] }}"
-    with_nested:
+    import_role: common
+      include_tasks: vstat_generate_ssh_keys.yml
+    with_items:
       - "{{ groups['vstats'] }}"
-      - "{{ ssh_key_lst.results }}"
-    run_once: true
-  when: vstat_sa_or_ha is match('ha')
+    loop_control:
+      loop_var: vstat
+    vars:
+      vstat_username: "{{ vstat_default_username }}"
 
   remote_user: "{{ vstat_username | default(vstat_default_username) }}"
   become: "{{ 'no' if vstat_username | default(vstat_default_username) == 'root' else 'yes' }}"

@@ -45,27 +45,39 @@
 
 - block:
   - name: Generate SSH keys
-    include_tasks: generate_ssh_keys.yml
+    import_role: common
+      include_tasks: vstat_generate_ssh_keys.yml
+    with_items:
+      - "{{ groups['vstats'] }}"
+    loop_control:
+      loop_var: vstat
     vars:
-      group_vstats: "{{ groups['vstats'] }}"
       vstat_username: "{{ vstat_default_username }}"
 
     remote_user: "{{ vstat_default_username }}"
     when: groups['vstats'] is defined
 
   - name: Generate SSH keys
-    include_tasks: generate_ssh_keys.yml
+    import_role: common
+      include_tasks: vstat_generate_ssh_keys.yml
+    with_items:
+      - "{{ groups['primary_vstats'] }}"
+    loop_control:
+      loop_var: vstat
     vars:
-      group_vstats: "{{ groups['primary_vstats'] }}"
       vstat_username: "{{ vstat_default_username }}"
 
     remote_user: "{{ vstat_default_username }}"
     when: groups['primary_vstats'] is defined and active
 
   - name: Generate SSH keys
-    include_tasks: generate_ssh_keys.yml
+    import_role: common
+      include_tasks: vstat_generate_ssh_keys.yml
+    with_items:
+      - "{{ groups['backup_vstats'] }}"
+    loop_control:
+      loop_var: vstat
     vars:
-      group_vstats: "{{ groups['backup_vstats'] }}"
       vstat_username: "{{ vstat_default_username }}"
 
     remote_user: "{{ vstat_default_username }}"
