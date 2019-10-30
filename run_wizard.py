@@ -164,6 +164,31 @@ WIZARD_SCRIPT = """
     upgrade_vmname: true
     system_ip: false
 
+- step: VNSUtil deployment file
+  description: |
+      This step will create or modify the vnsutils.yml file in your deployment.
+      This file provides parameters for the VNS utility VM (Proxy) nodes
+      in your deployment. This step is only required if you wish to deploy a
+      VNS setup.
+  create_component:
+    schema: vnsutils
+    ha_amount: any
+    item_name: VNSUtil
+    upgrade_vmname: false
+    system_ip: false
+
+- step: NSGvs deployment file
+  description: |
+      This step will create or modify the nsgvs.yml file in your deployment.
+      This file provides parameters for the virtualized Network Service Gateway
+      (NSGv) nodes in your deployment. This step is only required if you wish
+      to deploy a VNS setup.
+  create_component:
+    schema: nsgvs
+    ha_amount: any
+    item_name: NSGv
+    upgrade_vmname: false
+
 - step: Setup SSH on target servers
   description: |
       This step will setup password-less SSH access to the KVM target servers
@@ -456,6 +481,7 @@ class Wizard(object):
     def create_component(self, action, data):
         schema = self._get_field(data, "schema")
         item_name = self._get_field(data, "item_name")
+        is_nsgv = (schema == "nsgvs")
 
         deployment_dir = self._get_deployment_dir()
         if deployment_dir is None:
@@ -476,8 +502,9 @@ class Wizard(object):
         amount = self._get_number_components(deployment, data)
         deployment = deployment[0:amount]
 
-        self._print("\nIf DNS is configured properly, IP addresses can be "
-                    "auto-discovered.")
+        if not is_nsgv:
+            self._print("\nIf DNS is configured properly, IP addresses can be "
+                        "auto-discovered.")
 
         for i in range(amount):
             self._print("\n%s %d\n" % (item_name, i + 1))
@@ -487,14 +514,24 @@ class Wizard(object):
             deployment[i]["target_server_type"] = (
                 self.state["target_server_type"])
 
-            hostname = self._setup_hostname(deployment, i, item_name)
+            if not is_nsgv:
+                hostname = self._setup_hostname(deployment, i, item_name)
 
-            with_upgrade = (self._get_field(data, "upgrade_vmname") and
-                            "upgrade" in self.state)
+                with_upgrade = (self._get_field(data, "upgrade_vmname") and
+                                "upgrade" in self.state)
+            else:
+                hostname = "nsgv" + str(i + 1)
+                with_upgrade = False
+
             self._setup_vmname(deployment, i, hostname, with_upgrade)
 
-            self._setup_ip_addresses(deployment, i, hostname,
-                                     self._get_field(data, "system_ip"))
+            if not is_nsgv:
+                self._setup_ip_addresses(deployment, i, hostname,
+                                         self._get_field(data, "system_ip"))
+            else:
+                component = deployment[i]
+                self._setup_target_server(component)
+                self._setup_nsgv_component(component)
 
         if amount == 0:
             if os.path.isfile(deployment_file):
@@ -533,7 +570,7 @@ class Wizard(object):
         if self.in_container:
             self._print(self._get_field(data, "container_msg"))
 
-        choice = self._input("Setup SSH now?", 0, ["(Y)es", "(N)o"])
+        choice = self._input("Setup SSH now?", 0, ["(Y)es", "(n)o"])
 
         if choice == 1:
             self._print("Skipping step...")
@@ -543,7 +580,7 @@ class Wizard(object):
             self._setup_ssh(username, server)
 
         choice = self._input("Verify SSH connectivity now?", 0,
-                             ["(Y)es", "(N)o"])
+                             ["(Y)es", "(n)o"])
 
         if choice == 1:
             return
@@ -1263,21 +1300,29 @@ class Wizard(object):
         ha_amount = self._get_field(data, "ha_amount")
         deploy_amount = len(deployment)
 
-        default = 0
-        if deploy_amount == 1:
-            default = 1
+        if ha_amount == "any":
+            item_name = self._get_field(data, "item_name")
+            amount = self._input("Number of %ss to setup" % item_name,
+                                 deploy_amount,
+                                 datatype="int")
 
-        choice = self._input("Deployment type", default, [
-            "(h)igh-availability cluster",
-            "(s)tand-alone",
-            "(n)one"])
-
-        if choice == 0:
-            return ha_amount
-        elif choice == 1:
-            return 1
+            return amount
         else:
-            return 0
+            default = 0
+            if deploy_amount == 1:
+                default = 1
+
+            choice = self._input("Deployment type", default, [
+                "(h)igh-availability cluster",
+                "(s)tand-alone",
+                "(n)one"])
+
+            if choice == 0:
+                return ha_amount
+            elif choice == 1:
+                return 1
+            else:
+                return 0
 
     def _setup_hostname(self, deployment, i, item_name):
 
@@ -1430,6 +1475,58 @@ class Wizard(object):
             default = "new-" + vmname
             upgrade_vmname = self._input("Upgrade VM name", default)
             component["upgrade_vmname"] = upgrade_vmname
+
+    def _setup_nsgv_component(self, component):
+
+        default = 1
+        if "bootstrap_method" in component:
+            if component["bootstrap_method"] == "none":
+                default = 0
+            elif component["bootstrap_method"] == "zfb_metro":
+                default = 1
+            elif component["bootstrap_method"] == "zfb_external":
+                default = 2
+            elif component["bootstrap_method"] == "activation_link":
+                default = 3
+
+        choice = self._input("Bootstrap method", default, [
+            "(n)one       - Do not bootstrap",
+            "(M)etro      - MetroAE will perform the bootstrap",
+            "(e)xternal   - Use an external ISO file to bootstrap",
+            "(a)ctivation - Use an activation link for bootstrap"])
+
+        if choice == 0:
+            component["bootstrap_method"] = "none"
+        elif choice == 1:
+            component["bootstrap_method"] = "zfb_metro"
+            default = component.get("nsgv_ip")
+            if default == "":
+                default = None
+            address = self._input("IP address for NSGv", default,
+                                  datatype="ipaddr")
+            component["nsgv_ip"] = address
+            default = component.get("nsgv_mac")
+            if default == "":
+                default = None
+            mac = self._input("MAC address for NSGv", default)
+            component["nsgv_mac"] = mac
+        elif choice == 2:
+            component["bootstrap_method"] = "zfb_external"
+
+            default = None
+            default_path = component.get("iso_path")
+            default_file = component.get("iso_path")
+            if default_path is not None and default_file is not None:
+                default = os.path.join(default_path, default_file)
+
+            path_file = ""
+            while "/" not in path_file:
+                path_file = self._input("Full path to ISO file", default)
+            path, file = os.path.split(path_file)
+            component["iso_path"] = path
+            component["iso_file"] = file
+        elif choice == 3:
+            component["bootstrap_method"] = "activation_link"
 
     def _setup_ssh(self, username, hostname):
         self._print("Adding SSH keys for %s@%s, may ask for password" % (
