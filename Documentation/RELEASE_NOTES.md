@@ -22,6 +22,7 @@
 * For VSTAT and VNS Utils, support data network static route
 * Support Nuage Utility Host(NUH) SA and HA install using MetroAE (METROAE-1062)
 * Support SD-WANn Portal 6.0.1
+* Added script for collecting debug collateral
 
 ### Resolved Issues
 * Set event log max age to 7 as per Nuage Upgrade procedure (METROAE-1001)

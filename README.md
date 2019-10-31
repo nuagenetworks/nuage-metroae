@@ -79,6 +79,21 @@ The following workflows are examples that combine together several of the above 
 * destroy_everything - Destroys all components specified in a deployment.
 * nuage_health - Checks the health of all components specified in a deployment.
 
+## Script for collecting debug collateral : logzip.py
+
+Logzip.py is responsible for creating files which the customer is supposed to share when they run into any issue during deployment, in order to figure out the root cause for the issue.
+The script creates a tar file with following contents:
+ansible.log
+deployments folder
+src/inventory
+
+The scripts takes 2 arguments: 
+tarFileName: this would be the name of the created tar file. By default the name would be of format 'debug-<timestamp>.tar.gz' 
+deploymentName: this would be the folder name under 'deployments' which had the issue. By default, all teh contents of 'deployments' folder would be incorporated in the tar file
+
+Command To run the script:
+python logzip.py [--tarFileName] [--deploymentName]
+
 ## Python-based Ansible Operations Tool
 MetroÆ is based off of the Python-based Ansible operations tool.
 
