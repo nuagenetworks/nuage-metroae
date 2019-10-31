@@ -47,24 +47,26 @@
     shell: cat ~/.ssh/vstat_rsa.pub
     register: ssh_key
 
+  run_once: true
   delegate_to: "{{ vsd_hostname_list[0] }}"
   remote_user: "{{ hostvars[vsd_hostname_list[0]].vsd_custom_username | default(vsd_custom_username | default(vsd_default_username)) }}"
   become: "{{ 'no' if hostvars[vsd_hostname_list[0]].vsd_custom_username | default(vsd_custom_username | default(vsd_default_username)) == 'root' else 'yes' }}"
   vars:
     ansible_become_pass: "{{ hostvars[vsd_hostname_list[0]].vsd_custom_password | default(vsd_custom_password | default(vsd_default_password)) }}"
-  run_once: true
 
 - name: Copy ssh key from vsd to vstat node(s)
   shell: "echo {{ ssh_key.stdout }} >> /root/.ssh/authorized_keys"
-  remote_user: "{{ vstat_username | default(vstat_default_username) }}"
-  become: "{{ 'no' if vstat_username | default(vstat_default_username) == 'root' else 'yes' }}"
+  remote_user: "{{ hostvars[item].vstat_custom_username | default(vstat_username| default(vstat_default_username)) }}"
+  become: "{{ 'no' if hostvars[item].vstat_custom_username | default(vstat_username | default(vstat_default_username)) == 'root' else 'yes' }}"
   vars:
-    ansible_become_pass: "{{ vstat_password | default(vstat_default_password) }}"
+    ansible_become_pass: "{{ hostvars[item].vstat_custom_password | default(vstat_password | default(vstat_default_password)) }}"
+  with_items: "{{ groups['vstats'] }}"
+  run_once: true
 
 - name: Generate SSH keys
   include_role:
     name: common
-    include_tasks: vstat_generate_ssh_keys.yml
+    tasks_from: vstat_generate_ssh_keys.yml
   with_items:
     - "{{ groups['vstats'] }}"
   loop_control:
@@ -72,4 +74,4 @@
   vars:
     vstat_username: "{{ vstat_default_username }}"
     group_vstats: "{{ groups['vstats'] }}"
-    upgrade: true
+    in_upgrade: true
