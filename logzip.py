@@ -3,19 +3,23 @@ import os
 from pathlib2 import Path
 import tarfile
 import argparse
+from time import gmtime, strftime
+now=strftime("%Y-%m-%d-%H-%M-%S",gmtime())
 parser = argparse.ArgumentParser()
-parser.add_argument('--tarFileName', default='files_test')
-parser.add_argument('--deploymentName', default='/deployments')
+parser.add_argument('--tarFileName', default='debug-'+now)
+parser.add_argument('--deploymentName')
 args = parser.parse_args()
 tarFileName=args.tarFileName
-deploymentName=args.deploymentName
+if args.deploymentName:
+	deploymentName="/deployments/"+args.deploymentName
+else:
+	deploymentName="/deployments/"
+
 cwdir=os.getcwd()
 ansibleLogPath=Path(cwdir+'/ansible.log')
 with tarfile.open( tarFileName + '.tar.gz', mode='w:gz') as archive:
-    # archive.add( cwdir + '/deployments/' + deploymentName, arcname='/unzipped/deployments/'+deploymentName,recursive=True)
     try:
-        archive.add( cwdir + '/deployments/' + deploymentName, arcname='/unzipped/deployments/'+deploymentName,recursive=True)
-        
+        archive.add( cwdir + deploymentName, arcname='/unzipped/'+deploymentName,recursive=True)
     except:
         print("deployment directory doenst exits")
     try:
