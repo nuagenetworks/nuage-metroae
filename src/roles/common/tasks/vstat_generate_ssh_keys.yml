@@ -6,14 +6,14 @@
 
   - name: Get generated SSH keys
     shell: cat ~/.ssh/id_rsa.pub
-    register: ssh_key_lst
+    register: ssh_key
 
   - name: Add SSH keys to authorized_keys file
     shell: "echo {{ item[1].stdout }} >> /root/.ssh/authorized_keys"
     delegate_to: "{{ item[0] }}"
     with_nested:
       - "{{ group_vstats }}"
-      - "{{ ssh_key_lst.results }}"
+      - "{{ ssh_key }}"
     when: upgrade is not defined
 
   - name: Add SSH keys to authorized_keys file
@@ -21,7 +21,7 @@
     delegate_to: "{{ item[0] }}"
     with_nested:
       - "{{ group_vstats }}"
-      - "{{ ssh_key_lst.results }}"
+      - "{{ ssh_key }}"
     remote_user: "{{ hostvars[item[0]].vstat_custom_username | default(vstat_username| default(vstat_default_username)) }}"
     become: "{{ 'no' if hostvars[item[0]].vstat_custom_username | default(vstat_username | default(vstat_default_username)) == 'root' else 'yes' }}"
     vars:
