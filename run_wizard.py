@@ -491,6 +491,7 @@ class Wizard(object):
         schema = self._get_field(data, "schema")
         item_name = self._get_field(data, "item_name")
         is_nsgv = (schema == "nsgvs")
+        is_vnsutil = (schema == "vnsutils")
 
         deployment_dir = self._get_deployment_dir()
         if deployment_dir is None:
@@ -541,6 +542,10 @@ class Wizard(object):
                 component = deployment[i]
                 self._setup_target_server(component)
                 self._setup_nsgv_component(component)
+
+            if is_vnsutil:
+                component = deployment[i]
+                self._setup_vnsutils(component, i)
 
         if amount == 0:
             if os.path.isfile(deployment_file):
@@ -1517,6 +1522,71 @@ class Wizard(object):
             upgrade_vmname = self._input("Upgrade VM name", default)
             component["upgrade_vmname"] = upgrade_vmname
 
+    def _setup_vnsutils(self, component, i):
+
+        dns_domain = None
+        dns_message = ""
+        if "dns_domain" in self.state:
+            dns_domain = self.state["dns_domain"]
+            dns_message = " (we'll add .%s)" % dns_domain
+
+        default = None
+        if "data_fqdn" in component and component["data_fqdn"] != "":
+            default = component["data_fqdn"]
+        else:
+            default = "vnsutil%d.data" % (i + 1)
+
+        hostname = self._input("Data network FQDN%s" % dns_message, default,
+                               datatype="hostname")
+
+        if dns_domain is not None and not hostname.endswith(dns_domain):
+            hostname += "." + dns_domain
+
+        component["data_fqdn"] = hostname
+
+        default = self._resolve_hostname(hostname)
+        if (default is None and "data_ip" in component and
+                component["data_ip"] != ""):
+            default = component["data_ip"]
+
+        data_ip = self._input("Data network IP address", default,
+                              datatype="ipaddr")
+        component["data_ip"] = data_ip
+
+        choice = self._input("Will you use DHCP on the VNSUtil?", 0,
+                             ["(Y)es", "(n)o"])
+
+        if choice == 1:
+            if "nsgv_subnet" in component:
+                del component["nsgv_subnet"]
+            if "nsgv_gateway" in component:
+                del component["nsgv_gateway"]
+            return
+
+        default = self._get_value(component, "nsgv_subnet")
+        if default is None:
+            octets = data_ip.split(".")
+            octets.pop()
+            octets.append("0")
+            default = ".".join(octets)
+
+        nsgv_subnet = self._input("Data IP subnet for DHCP bootstrap",
+                                  default, datatype="ipaddr")
+        component["nsgv_subnet"] = nsgv_subnet
+        self.state["nsgv_subnet"] = nsgv_subnet
+
+        default = self._get_value(component, "nsgv_gateway")
+        if default is None:
+            octets = data_ip.split(".")
+            octets.pop()
+            octets.append("1")
+            default = ".".join(octets)
+
+        nsgv_gateway = self._input("Data IP subnet for DHCP bootstrap",
+                                   default, datatype="ipaddr")
+        component["nsgv_gateway"] = nsgv_gateway
+        self.state["nsgv_gateway"] = nsgv_gateway
+
     def _setup_nsgv_component(self, component):
 
         default = 1
@@ -1579,14 +1649,14 @@ class Wizard(object):
         component["access_port_vlan_range"] = vlan_range
 
         default = self._get_value(component, "access_port_vlan_number")
-        vlan = self._input("Name for access port", default,
+        vlan = self._input("Vlan number for access port", default,
                            datatype="int")
         component["access_port_vlan_number"] = vlan
 
     def _bootstrap_component_external(self, component):
         default = None
         default_path = component.get("iso_path")
-        default_file = component.get("iso_path")
+        default_file = component.get("iso_file")
         if default_path is not None and default_file is not None:
             default = os.path.join(default_path, default_file)
 
