@@ -524,14 +524,13 @@ class Wizard(object):
             deployment[i]["target_server_type"] = (
                 self.state["target_server_type"])
 
-            if not is_nsgv:
-                hostname = self._setup_hostname(deployment, i, item_name)
+            hostname = self._setup_hostname(deployment, i, item_name)
 
+            if is_nsgv or is_vnsutil:
+                with_upgrade = False
+            else:
                 with_upgrade = (self._get_field(data, "upgrade_vmname") and
                                 "upgrade" in self.state)
-            else:
-                hostname = "nsgv" + str(i + 1)
-                with_upgrade = False
 
             self._setup_vmname(deployment, i, hostname, with_upgrade)
 
@@ -1553,6 +1552,13 @@ class Wizard(object):
                               datatype="ipaddr")
         component["data_ip"] = data_ip
 
+        default = self._get_value(component, "data_netmask")
+        if default is None:
+            default = "255.255.255.0"
+        address = self._input("Data network subnet mask", default,
+                              datatype="ipaddr")
+        component["data_netmask"] = address
+
         choice = self._input("Will you use DHCP on the VNSUtil?", 0,
                              ["(Y)es", "(n)o"])
 
@@ -1570,7 +1576,7 @@ class Wizard(object):
             octets.append("0")
             default = ".".join(octets)
 
-        nsgv_subnet = self._input("Data IP subnet for DHCP bootstrap",
+        nsgv_subnet = self._input("Data IP subnet for DHCP",
                                   default, datatype="ipaddr")
         component["nsgv_subnet"] = nsgv_subnet
         self.state["nsgv_subnet"] = nsgv_subnet
@@ -1582,7 +1588,7 @@ class Wizard(object):
             octets.append("1")
             default = ".".join(octets)
 
-        nsgv_gateway = self._input("Data IP subnet for DHCP bootstrap",
+        nsgv_gateway = self._input("Data IP gateway given by DHCP",
                                    default, datatype="ipaddr")
         component["nsgv_gateway"] = nsgv_gateway
         self.state["nsgv_gateway"] = nsgv_gateway
