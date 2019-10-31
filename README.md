@@ -83,15 +83,15 @@ The following workflows are examples that combine together several of the above 
 
 Logzip.py is responsible for creating files which the customer is supposed to share when they run into any issue during deployment, in order to figure out the root cause for the issue.
 The script creates a tar file with following contents:
-ansible.log
-deployments folder
-src/inventory
+ansible.log <br/>
+deployments folder <br/>
+src/inventory <br/>
 
-The scripts takes 2 arguments: 
-tarFileName: this would be the name of the created tar file. By default the name would be of format 'debug-<timestamp>.tar.gz' 
-deploymentName: this would be the folder name under 'deployments' which had the issue. By default, all teh contents of 'deployments' folder would be incorporated in the tar file
+The scripts takes 2 arguments: <br/>
+tarFileName: this would be the name of the created tar file. By default the name would be of format 'debug-<timestamp>.tar.gz' <br/>
+deploymentName: this would be the folder name under 'deployments' which had the issue. By default, all teh contents of 'deployments' folder would be incorporated in the tar file <br/>
 
-Command To run the script:
+Command To run the script: <br/>
 python logzip.py [--tarFileName] [--deploymentName]
 
 ## Python-based Ansible Operations Tool
