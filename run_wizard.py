@@ -296,17 +296,17 @@ class Wizard(object):
                                       "contains your zip files", "")
 
                 # Dalston container
-                # zip_dir = self._input("Please enter the directory relative to "
-                #                       "the metroae_data mount point that "
-                #                       "contains your zip files", "")
+                zip_dir = self._input("Please enter the directory relative to "
+                                       "the metroae_data mount point that "
+                                       "contains your zip files", "")
 
                 if zip_dir.startswith("/"):
                     self._print("\nDirectory must be a relative path.")
                     continue
 
                 # Dalston container
-                # full_zip_dir = os.path.join("/metroae_data", zip_dir)
-                full_zip_dir = os.path.join("/data", zip_dir)
+                full_zip_dir = os.path.join("/metroae_data", zip_dir)
+                # full_zip_dir = os.path.join("/data", zip_dir)
 
             else:
                 zip_dir = self._input("Please enter the directory that "
@@ -330,12 +330,12 @@ class Wizard(object):
             valid = False
             while not valid:
                 # Dalston container
-                # unzip_dir = self._input("Please enter the directory relative "
-                #                         "to the metroae_data mount point to "
-                #                         "unzip to")
                 unzip_dir = self._input("Please enter the directory relative "
-                                        "to the data mount point to "
+                                        "to the metroae_data mount point to "
                                         "unzip to")
+                # unzip_dir = self._input("Please enter the directory relative "
+                #                         "to the data mount point to "
+                #                         "unzip to")
 
                 if unzip_dir.startswith("/"):
                     self._print("\nDirectory must be a relative path.")
@@ -343,8 +343,8 @@ class Wizard(object):
                     valid = True
 
             # Dalston container
-            # full_unzip_dir = os.path.join("/metroae_data", unzip_dir)
-            full_unzip_dir = os.path.join("/data", unzip_dir)
+            full_unzip_dir = os.path.join("/metroae_data", unzip_dir)
+            # full_unzip_dir = os.path.join("/data", unzip_dir)
         else:
             unzip_dir = self._input("Please enter the directory to unzip to")
             full_unzip_dir = unzip_dir
@@ -779,10 +779,10 @@ class Wizard(object):
 
     def _set_container(self):
         # For Dalston container
-        # if "RUN_MODE" in os.environ:
-        #     self.in_container = (os.environ["RUN_MODE"] == "INSIDE")
-        # else:
-        #     self.in_container = False
+        if "RUN_MODE" in os.environ:
+            self.in_container = (os.environ["RUN_MODE"] == "INSIDE")
+        else:
+            self.in_container = False
         self.in_container = os.path.isdir("/source/nuage-metro")
 
     def _set_directories(self):
@@ -792,8 +792,8 @@ class Wizard(object):
             self.base_deployment_path = os.path.join("/data",
                                                      "deployments")
             # Dalston container
-            # self.base_deployment_path = os.path.join("/metroae_data",
-            #                                          "deployments")
+            self.base_deployment_path = os.path.join("/metroae_data",
+                                                     "deployments")
         else:
             self.base_deployment_path = os.path.join(self.metro_path,
                                                      "deployments")
