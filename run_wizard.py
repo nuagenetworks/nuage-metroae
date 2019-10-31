@@ -189,6 +189,15 @@ WIZARD_SCRIPT = """
     item_name: NSGv
     upgrade_vmname: false
 
+- step: NSGv bootstrap deployment file
+  description: |
+      This step will create or modify the nsgv_bootstrap.yml file in your
+      deployment.  This file provides the global parameters for bootstrapping
+      your NSGv nodes.  This step is only required if you wish
+      to deploy a VNS setup and you are using metro to perform a zero-factor
+      bootstrap.
+  create_bootstrap: {}
+
 - step: Setup SSH on target servers
   description: |
       This step will setup password-less SSH access to the KVM target servers
@@ -539,6 +548,32 @@ class Wizard(object):
         else:
             self._generate_deployment_file(schema, deployment_file, deployment)
 
+    def create_bootstrap(self, action, data):
+        self._print("")
+        if "metro_bootstrap" not in self.state:
+            choice = self._input("Will you be using metro to bootstrap NSGvs?",
+                                 1, ["(y)es", "(N)o"])
+            if choice == 1:
+                self._print("Skipping step...")
+                return
+
+        deployment_dir = self._get_deployment_dir()
+        if deployment_dir is None:
+            return
+
+        deployment_file = os.path.join(deployment_dir, "nsgv_bootstrap.yml")
+        if os.path.isfile(deployment_file):
+            deployment = self._read_deployment_file(deployment_file,
+                                                    is_list=False)
+        else:
+            self._print(deployment_file + " not found. It will be created.")
+            deployment = dict()
+
+        self._setup_bootstrap(deployment, data)
+
+        self._generate_deployment_file("nsgv_bootstrap", deployment_file,
+                                       deployment)
+
     def setup_target_servers(self, action, data):
 
         if "all_target_servers" in self.state:
@@ -813,6 +848,12 @@ class Wizard(object):
             self._print("Could not install PyYAML, exit code: %d" % rc)
             self._print("Please install PyYAML and run the wizard again.")
             exit(1)
+
+    def _get_value(self, deployment, field):
+        value = deployment.get(field)
+        if value == "":
+            value = None
+        return value
 
     def _set_container(self):
         # For Dalston container
@@ -1499,34 +1540,118 @@ class Wizard(object):
             component["bootstrap_method"] = "none"
         elif choice == 1:
             component["bootstrap_method"] = "zfb_metro"
-            default = component.get("nsgv_ip")
-            if default == "":
-                default = None
-            address = self._input("IP address for NSGv", default,
-                                  datatype="ipaddr")
-            component["nsgv_ip"] = address
-            default = component.get("nsgv_mac")
-            if default == "":
-                default = None
-            mac = self._input("MAC address for NSGv", default)
-            component["nsgv_mac"] = mac
+            self.state["metro_bootstrap"] = True
+            self._bootstrap_component_metro(component)
         elif choice == 2:
             component["bootstrap_method"] = "zfb_external"
-
-            default = None
-            default_path = component.get("iso_path")
-            default_file = component.get("iso_path")
-            if default_path is not None and default_file is not None:
-                default = os.path.join(default_path, default_file)
-
-            path_file = ""
-            while "/" not in path_file:
-                path_file = self._input("Full path to ISO file", default)
-            path, file = os.path.split(path_file)
-            component["iso_path"] = path
-            component["iso_file"] = file
+            self._bootstrap_component_external(component)
         elif choice == 3:
             component["bootstrap_method"] = "activation_link"
+
+    def _bootstrap_component_metro(self, component):
+        default = self._get_value(component, "nsg_name")
+        if default is None:
+            default = self._get_value(component, "vmname")
+        name = self._input("NSGv name on VSD", default)
+        component["nsg_name"] = name
+
+        default = self._get_value(component, "nsgv_ip")
+        address = self._input("IP address for NSGv", default,
+                              datatype="ipaddr")
+        component["nsgv_ip"] = address
+        component["match_type"] = "ip_address"
+        component["match_value"] = address
+        default = self._get_value(component, "nsgv_mac")
+        mac = self._input("MAC address for NSGv", default)
+        component["nsgv_mac"] = mac
+
+        default = self._get_value(component, "network_port_name")
+        network_port = self._input("Name for network port", default)
+        component["network_port_name"] = network_port
+
+        default = self._get_value(component, "access_port_name")
+        access_port = self._input("Name for access port", default)
+        component["access_port_name"] = access_port
+
+        default = self._get_value(component, "access_port_vlan_range")
+        vlan_range = self._input("VLAN range for access port "
+                                 "(format: <start>-<end>)", default)
+        component["access_port_vlan_range"] = vlan_range
+
+        default = self._get_value(component, "access_port_vlan_number")
+        vlan = self._input("Name for access port", default,
+                           datatype="int")
+        component["access_port_vlan_number"] = vlan
+
+    def _bootstrap_component_external(self, component):
+        default = None
+        default_path = component.get("iso_path")
+        default_file = component.get("iso_path")
+        if default_path is not None and default_file is not None:
+            default = os.path.join(default_path, default_file)
+
+        path_file = ""
+        while "/" not in path_file:
+            path_file = self._input("Full path to ISO file", default)
+        path, file = os.path.split(path_file)
+        component["iso_path"] = path
+        component["iso_file"] = file
+
+    def _setup_bootstrap(self, deployment, data):
+
+        default = self._get_value(deployment, "nsgv_organization")
+        org = self._input("Enterprise for NSGvs", default)
+        deployment["nsgv_organization"] = org
+
+        default = self._get_value(deployment, "proxy_user_first_name")
+        first_name = self._input("First name for proxy user", default)
+        deployment["proxy_user_first_name"] = first_name
+
+        default = self._get_value(deployment, "proxy_user_last_name")
+        last_name = self._input("Last name for proxy user", default)
+        deployment["proxy_user_last_name"] = last_name
+
+        default = self._get_value(deployment, "proxy_user_email")
+        email = self._input("Email address for proxy user", default)
+        deployment["proxy_user_email"] = email
+
+        default = self._get_value(deployment, "nsg_infra_profile_name")
+        profile_name = self._input("Name of NSG infrastructure profile",
+                                   default)
+        deployment["nsg_infra_profile_name"] = profile_name
+
+        default = self._get_value(deployment, "nsg_template_name")
+        template_name = self._input("Name of NSG template", default)
+        deployment["nsg_template_name"] = template_name
+
+        default = self._get_value(deployment, "proxy_dns_name")
+        dns_name = self._input("DNS name of proxy (on data network)", default)
+        deployment["proxy_dns_name"] = dns_name
+
+        default = self._get_value(deployment, "vsc_infra_profile_name")
+        profile_name = self._input("Name of VSC infrastructure profile",
+                                   default)
+        deployment["vsc_infra_profile_name"] = profile_name
+
+        default = self._get_value(deployment, "first_controller_address")
+        address = self._input("IP address of primary VSC controller"
+                              " (on data network)", default,
+                              datatype="ipaddr")
+        deployment["first_controller_address"] = address
+
+        choice = self._input("Do you have a secondary VSC controller?", 0,
+                             ["(Y)es", "(n)o"])
+
+        if choice == 1:
+            if "second_controller_address" in deployment:
+                del deployment["second_controller_address"]
+            return
+
+        default = self._get_value(deployment, "second_controller_address")
+        address = self._input("IP address of secondary VSC controller"
+                              " (on data network)",
+                              default, datatype="ipaddr")
+        deployment["second_controller_address"] = address
 
     def _setup_ssh(self, username, hostname):
         self._print("Adding SSH keys for %s@%s, may ask for password" % (
