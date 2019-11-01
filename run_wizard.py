@@ -1563,23 +1563,23 @@ class Wizard(object):
                              ["(Y)es", "(n)o"])
 
         if choice == 1:
-            if "nsgv_subnet" in component:
-                del component["nsgv_subnet"]
+            if "data_subnet" in component:
+                del component["data_subnet"]
             if "nsgv_gateway" in component:
                 del component["nsgv_gateway"]
             return
 
-        default = self._get_value(component, "nsgv_subnet")
+        default = self._get_value(component, "data_subnet")
         if default is None:
             octets = data_ip.split(".")
             octets.pop()
             octets.append("0")
             default = ".".join(octets)
 
-        nsgv_subnet = self._input("Data IP subnet for DHCP",
+        data_subnet = self._input("Data IP subnet for DHCP",
                                   default, datatype="ipaddr")
-        component["nsgv_subnet"] = nsgv_subnet
-        self.state["nsgv_subnet"] = nsgv_subnet
+        component["data_subnet"] = data_subnet
+        self.state["data_subnet"] = data_subnet
 
         default = self._get_value(component, "nsgv_gateway")
         if default is None:
