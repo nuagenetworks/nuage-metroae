@@ -451,7 +451,10 @@ class Wizard(object):
 
         self._setup_target_server_type()
 
-        self._setup_bridges(deployment, data)
+        if self.state["target_server_type"] == "kvm":
+            self._setup_bridges(deployment, data)
+        elif self.state["target_server_type"] == "vcenter":
+            self._setup_vcenter(deployment)
 
         self._setup_dns(deployment, data)
 
@@ -1285,6 +1288,20 @@ class Wizard(object):
 
         self.state["target_server_type"] = TARGET_SERVER_TYPE_VALUES[
             server_type]
+
+    def _setup_vcenter(self, deployment):
+
+        default = self._get_value(deployment, "vcenter_datacenter")
+        datacenter = self._input("vCenter datacenter for components?", default)
+        deployment["vcenter_datacenter"] = datacenter
+
+        default = self._get_value(deployment, "vcenter_cluster")
+        cluster = self._input("vCenter cluster for components", default)
+        deployment["vcenter_cluster"] = cluster
+
+        default = self._get_value(deployment, "vcenter_datastore")
+        datastore = self._input("vCenter datastore for components", default)
+        deployment["vcenter_datastore"] = datastore
 
     def _generate_deployment_file(self, schema, output_file, deployment):
         # Import here because setup may not have been run at the start
