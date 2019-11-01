@@ -460,6 +460,14 @@ class Wizard(object):
 
         self._setup_ntp(deployment, data)
 
+        default = self._get_value(deployment, "vsd_license_file")
+        if default is None:
+            default = ""
+        license = self._input("Path to VSD License file (required only for "
+                              "NSGv bootstrapping)", default)
+        if license != "":
+            deployment["vsd_license_file"] = license
+
         self._generate_deployment_file("common", deployment_file, deployment)
 
     def create_upgrade(self, action, data):
