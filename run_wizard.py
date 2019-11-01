@@ -136,7 +136,6 @@ WIZARD_SCRIPT = """
     ha_amount: 3
     item_name: VSD
     upgrade_vmname: true
-    system_ip: false
 
 - step: VSC deployment file
   description: |
@@ -149,7 +148,6 @@ WIZARD_SCRIPT = """
     ha_amount: 2
     item_name: VSC
     upgrade_vmname: false
-    system_ip: true
 
 - step: VSTAT deployment file
   description: |
@@ -162,7 +160,6 @@ WIZARD_SCRIPT = """
     ha_amount: 3
     item_name: VSTAT
     upgrade_vmname: true
-    system_ip: false
 
 - step: VNSUtil deployment file
   description: |
@@ -175,7 +172,6 @@ WIZARD_SCRIPT = """
     ha_amount: any
     item_name: VNSUtil
     upgrade_vmname: false
-    system_ip: false
 
 - step: NSGvs deployment file
   description: |
@@ -501,6 +497,7 @@ class Wizard(object):
     def create_component(self, action, data):
         schema = self._get_field(data, "schema")
         item_name = self._get_field(data, "item_name")
+        is_vsc = (schema == "vscs")
         is_nsgv = (schema == "nsgvs")
         is_vnsutil = (schema == "vnsutils")
 
@@ -535,7 +532,10 @@ class Wizard(object):
             deployment[i]["target_server_type"] = (
                 self.state["target_server_type"])
 
-            hostname = self._setup_hostname(deployment, i, item_name)
+            if is_nsgv:
+                hostname = "nsgv" + str(i + 1)
+            else:
+                hostname = self._setup_hostname(deployment, i, item_name)
 
             if is_nsgv or is_vnsutil:
                 with_upgrade = False
@@ -546,8 +546,7 @@ class Wizard(object):
             self._setup_vmname(deployment, i, hostname, with_upgrade)
 
             if not is_nsgv:
-                self._setup_ip_addresses(deployment, i, hostname,
-                                         self._get_field(data, "system_ip"))
+                self._setup_ip_addresses(deployment, i, hostname, is_vsc)
             else:
                 component = deployment[i]
                 self._setup_target_server(component)
@@ -1418,18 +1417,28 @@ class Wizard(object):
         component["hostname"] = hostname
         return hostname
 
-    def _setup_ip_addresses(self, deployment, i, hostname, system_ip):
+    def _setup_ip_addresses(self, deployment, i, hostname, is_vsc):
         component = deployment[i]
 
         mgmt_ip = self._setup_mgmt_address(component, hostname)
         self._setup_mgmt_prefix(component)
         self._setup_mgmt_gateway(component, mgmt_ip)
-        if system_ip:
-            if "system_ip" in component and component["system_ip"] != "":
-                default = component["system_ip"]
-            else:
-                default = None
+        if is_vsc:
 
+            default = self._get_value(component, "ctrl_ip")
+            ctrl_ip = self._input("Control IP address for data", default,
+                                  datatype="ipaddr")
+            component["ctrl_ip"] = ctrl_ip
+
+            default = "24"
+            if "ctrl_ip_prefix" in component:
+                default = str(component["ctrl_ip_prefix"])
+
+            ctrl_ip_prefix = self._input("Control IP address prefix length",
+                                         default, datatype="int")
+            component["ctrl_ip_prefix"] = ctrl_ip_prefix
+
+            default = self._get_value(component, "system_ip")
             system_ip = self._input("System IP address for routing", default,
                                     datatype="ipaddr")
             component["system_ip"] = system_ip
