@@ -185,23 +185,13 @@
 
     - block:
 
-      - name: Get ActiveMQ status of all VSDs
-        command: monit status activemq-status
-        register: jms_status
-        remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
-        become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
-        vars:
-          ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"
-
-      - name: Set JMS Master Node Hostname
-        set_fact:
-          jms_master_hostname: "{{ hostname }}"
-        when: "'This is Master node' in jms_status.stdout and groups['primary_vsds']|length > 1"
-
-      - name: Set JMS Master Node Hostname
-        set_fact:
-          jms_master_hostname: "{{ hostname }}"
-        when: "'PASS' in jms_status.stdout and groups['primary_vsds']|length == 1"
+      - name: Get JMS gateway
+        include_role:
+          name: common
+          tasks_from: VSD-JMS-master-node.yml
+        with_items:
+          {{ groups ['primary_vsds'] }}
+        run_once: true
 
       - name: Verify that JMS gateway is reachable on Master Node
         uri:
