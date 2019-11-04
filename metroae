@@ -1096,12 +1096,15 @@ function docker_exec_interactive {
     if [[ ! -z $METROAE_PASSWORD ]]; then
         environment=" -e METROAE_PASSWORD=$METROAE_PASSWORD"
     fi
+    if [[ ! -z $SSHPASS_PASSWORD ]]; then
+        sshpass="sshpass -p$SSHPASS_PASSWORD"
+    fi
 
     if [[ ! -z $NOT_INTERACTIVE ]]; then
         environment="$environment -e NON_INTERACTIVE=true"
-        docker exec $environment $RUNNING_CONTAINER_ID "$@"
+        docker exec $environment $RUNNING_CONTAINER_ID $sshpass "$@"
     else
-        docker exec -it $environment $RUNNING_CONTAINER_ID "$@"
+        docker exec -it $environment $RUNNING_CONTAINER_ID $sshpass "$@"
     fi
 }
 
