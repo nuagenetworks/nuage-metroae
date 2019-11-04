@@ -161,6 +161,17 @@ WIZARD_SCRIPT = """
     item_name: VSTAT
     upgrade_vmname: true
 
+- step: NUH deployment file
+  description: |
+      This step will create or modify the nuhs.yml file in your deployment.
+      This file provides parameters for the Nuage Utility Host VMs (NUHs) in
+      your deployment.
+  create_component:
+    schema: nuhs
+    ha_amount: 2
+    item_name: NUH
+    upgrade_vmname: false
+
 - step: VNSUtil deployment file
   description: |
       This step will create or modify the vnsutils.yml file in your deployment.
@@ -498,6 +509,7 @@ class Wizard(object):
         schema = self._get_field(data, "schema")
         item_name = self._get_field(data, "item_name")
         is_vsc = (schema == "vscs")
+        is_nuh = (schema == "nuhs")
         is_nsgv = (schema == "nsgvs")
         is_vnsutil = (schema == "vnsutils")
 
@@ -543,7 +555,8 @@ class Wizard(object):
                 with_upgrade = (self._get_field(data, "upgrade_vmname") and
                                 "upgrade" in self.state)
 
-            self._setup_vmname(deployment, i, hostname, with_upgrade)
+            if not is_nuh:
+                self._setup_vmname(deployment, i, hostname, with_upgrade)
 
             if not is_nsgv:
                 self._setup_ip_addresses(deployment, i, hostname, is_vsc)
