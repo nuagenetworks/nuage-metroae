@@ -164,8 +164,8 @@
     set_fact:
       vsd_url_address: >-
         {% if enable_ipv6|default(False) %}[{{mgmt_ip}}]{% else %}{{mgmt_ip}}{% endif %}
-      
-  - name: Get the health status of VSD (ignoring errors)
+
+  - name: Get the health status of VSD via HTTPS (ignoring errors)
     uri:
       url: https://{{ vsd_url_address }}:8443/nuage/health?proxyRequest=false
       method: GET
@@ -177,15 +177,15 @@
     delegate_to: localhost
     ignore_errors: yes
 
-  - name: Verify if the response was correct
+  - name: Check the HTTP response of the health status query
     assert:
       that: health_status.status in [200,503]
-      fail_msg: "VSD health checks failed due to File System Freeze or unknown error. '{{ health_status.msg}}'"
+      fail_msg: "VSD API health status check failed: '{{ health_status.msg | default('Empty') }}'"
 
-  - name: Verify if VSD is healthy
+  - name: Verify the HTTP response VSD is healthy
     assert:
-      that: "not {{health_status.json[0].status == 'BAD' or ( health_status.json[0].summary is not none and 'failed' in health_status.json[0].summary)}}"
-      fail_msg: 'VSD health checks failed due to: {{ health_status.json[0].summary }}'
+      that: "not {{ health_status.json[0].status == 'BAD' }}"
+      fail_msg: "VSD health checks failed due to: {{ health_status.json[0].summary | default('Unknown') }}"
 
   - name: Get monit summary for vsd processes
     vsd_monit:
