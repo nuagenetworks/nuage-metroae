@@ -1,12 +1,14 @@
 #!/usr/bin/env python
 
 from generate_example_from_schema import ExampleFileGenerator
-import json
 import jinja2
+import json
+from jsonschema import validate, ValidationError
 import os
 import sys
 
 
+DEBUG = False
 SCHEMAS_DIRECTORY = "schemas"
 DEPLOYMENTS_DIRECTORY = "deployments"
 
@@ -27,10 +29,6 @@ def usage():
 class CsvDeploymentConverter(object):
 
     def __init__(self):
-        self.rows = list()
-        self.schemas = dict()
-        self.tables = list()
-        self.data = dict()
         self.has_output = False
         self.has_debug = False
 
@@ -45,8 +43,12 @@ class CsvDeploymentConverter(object):
         self._read_and_parse_schemas()
         self._find_schema_tables()
         self._parse_tables()
+        self._validate_data()
+        self._generate_deployment_files(deployment_name)
 
     def _read_and_parse_csv(self, csv_file):
+        self.rows = list()
+
         with open(csv_file, 'r') as f:
             lines = f.read().decode("utf-8")
 
@@ -91,6 +93,8 @@ class CsvDeploymentConverter(object):
         self.rows.append(cols)
 
     def _read_and_parse_schemas(self):
+        self.schemas = dict()
+
         for file_name in os.listdir(SCHEMAS_DIRECTORY):
             if (file_name.endswith(".json")):
                 file_path = os.path.join(SCHEMAS_DIRECTORY, file_name)
@@ -105,6 +109,8 @@ class CsvDeploymentConverter(object):
                         file_name, str(e)))
 
     def _find_schema_tables(self):
+
+        self.tables = list()
 
         for r, row in enumerate(self.rows):
             for c, col in enumerate(row):
@@ -121,10 +127,17 @@ class CsvDeploymentConverter(object):
         return table_name.lower().replace(" ", "_")
 
     def _parse_tables(self):
+        self.data = dict()
+        self.validation_errors = list()
+
         for table in self.tables:
             self._output("Reading table %s at %s", table["schema"],
                          self._get_cell_id(table["r"], table["c"]))
             self._parse_table(table)
+
+        if len(self.validation_errors) > 0:
+            error_msg = self._collect_validation_errors()
+            raise Exception("Validation Errors:\n" + error_msg)
 
     def _parse_table(self, table):
 
@@ -162,7 +175,7 @@ class CsvDeploymentConverter(object):
 
     def _lookup_schema_field(self, schema_name, field_name):
         schema = self.schemas[schema_name]
-        if schema["type"] == "array":
+        if self._is_schema_a_list(schema_name):
             fields = schema["items"]["properties"]
         else:
             fields = schema["properties"]
@@ -177,6 +190,23 @@ class CsvDeploymentConverter(object):
                 return field
 
         return None
+
+    def _is_schema_a_list(self, schema_name):
+        schema = self.schemas[schema_name]
+        return schema["type"] == "array"
+
+    def _get_field_datatype(self, schema_name, field_name):
+        schema = self.schemas[schema_name]
+        if self._is_schema_a_list(schema_name):
+            fields = schema["items"]["properties"]
+        else:
+            fields = schema["properties"]
+
+        if field_name in fields:
+            return fields[field_name]["type"]
+        else:
+            raise Exception("No field %s in schema %s" % (field_name,
+                                                          schema_name))
 
     def _read_table(self, table, is_transposed=False):
         field_names = self._get_field_names(table, is_transposed)
@@ -218,17 +248,34 @@ class CsvDeploymentConverter(object):
         r, c = self._next_item(r, c, is_transposed)
         item_values = list()
         while item_values is not None:
-            item_values = self._get_item_values(field_names, r, c,
+            item_values = self._get_item_values(field_names, schema_name, r, c,
                                                 is_transposed)
             if item_values is not None:
                 data.append(item_values)
                 r, c = self._next_item(r, c, is_transposed)
 
-        if len(data) > 0:
-            self.data[schema_name] = data
-            self._debug("Data: %s", str(data))
+        self._update_data(schema_name, data)
 
-    def _get_item_values(self, field_names, r, c, is_transposed=False):
+    def _update_data(self, schema_name, new_data):
+
+        if len(new_data) > 0:
+            is_list = self._is_schema_a_list(schema_name)
+            if schema_name not in self.data:
+                if is_list:
+                    self.data[schema_name] = list()
+                else:
+                    self.data[schema_name] = dict()
+
+            for item in new_data:
+                self._debug("Data: %s", str(item))
+
+                if is_list:
+                    self.data[schema_name].append(item)
+                else:
+                    self.data[schema_name].update(item)
+
+    def _get_item_values(self, field_names, schema_name, r, c,
+                         is_transposed=False):
         values = dict()
         has_data = False
 
@@ -237,7 +284,10 @@ class CsvDeploymentConverter(object):
 
             cell_value = self._get_cell_value(r, c)
             if cell_value is not None:
-                values[field_name] = cell_value
+                values[field_name] = self._format_value(schema_name,
+                                                        r, c,
+                                                        field_name,
+                                                        cell_value)
                 has_data = True
 
             r, c = self._next_field(r, c, is_transposed)
@@ -259,6 +309,102 @@ class CsvDeploymentConverter(object):
                 return None
         else:
             return None
+
+    def _format_value(self, schema_name, r, c, field_name, cell_value):
+        datatype = self._get_field_datatype(schema_name, field_name)
+
+        if datatype == "string":
+            return unicode(cell_value)
+        elif datatype == "integer":
+            try:
+                return int(cell_value)
+            except ValueError:
+                self.validation_errors.append({
+                    "msg": "Invalid integer",
+                    "r": r,
+                    "c": c,
+                    "field_name": field_name,
+                    "schema_name": schema_name,
+                    "value": cell_value})
+        elif datatype == "boolean":
+            if cell_value.lower() in ['true', 'yes']:
+                return True
+            elif cell_value.lower() in ['false', 'no']:
+                return False
+            else:
+                self.validation_errors.append({
+                    "msg": "Invalid Boolean",
+                    "r": r,
+                    "c": c,
+                    "field_name": field_name,
+                    "schema_name": schema_name,
+                    "value": cell_value})
+        elif datatype == "array":
+            return [x.strip() for x in cell_value.split(",")]
+        else:
+            self.validation_errors.append({
+                "msg": "Unsupported datatype",
+                "r": r,
+                "c": c,
+                "field_name": field_name,
+                "schema_name": schema_name,
+                "value": cell_value})
+
+        return None
+
+    def _collect_validation_errors(self):
+        errors = list()
+
+        for error in self.validation_errors:
+            errors.append("At %s: Table %s field %s value %s: %s" % (
+                self._get_cell_id(error["r"], error["c"]),
+                error["schema_name"],
+                error["field_name"],
+                error["value"],
+                error["msg"]))
+
+        return "\n".join(errors)
+
+    def _validate_data(self):
+        for schema_name in self.data:
+            self._validate_against_schema(schema_name, self.data[schema_name])
+
+    def _validate_against_schema(self, schema_name, data):
+        self._debug("Schema validating: %s" % schema_name)
+        try:
+            validate(data, self.schemas[schema_name])
+        except ValidationError as e:
+
+            field = ""
+            if "title" in e.schema:
+                field = " for " + e.schema["title"]
+            msg = "Invalid data in %s%s: %s" % (schema_name, field, e.message)
+            raise Exception(msg)
+
+    def _generate_deployment_files(self, deployment_name):
+        deployment_dir = os.path.join(DEPLOYMENTS_DIRECTORY, deployment_name)
+        if not os.path.isdir(deployment_dir):
+            self._output("Creating deployment directory: %s", deployment_dir)
+            os.mkdir(deployment_dir)
+
+        for schema_name in self.data:
+            file_name = os.path.join(deployment_dir, schema_name + ".yml")
+            self._generate_deployment_file(schema_name, file_name,
+                                           self.data[schema_name])
+
+    def _generate_deployment_file(self, schema_name, file_name, data):
+        self._output("Writing %s", file_name)
+
+        if type(data) == list:
+            data = {schema_name: data}
+        data["generator_script"] = "CSV spreadsheet"
+        gen_example = ExampleFileGenerator(False, True)
+        example_lines = gen_example.generate_example_from_schema(
+            os.path.join("schemas", schema_name + ".json"))
+        template = jinja2.Template(example_lines)
+        rendered = template.render(**data)
+        with open(file_name, 'w') as file:
+            file.write(rendered.encode("utf-8"))
 
     def _next_field(self, r, c, is_transposed=False):
         if is_transposed:
@@ -295,16 +441,15 @@ def main():
 
     converter = CsvDeploymentConverter()
     converter.set_output()
-    converter.set_debug()
-    try:
+    if DEBUG:
+        converter.set_debug()
         converter.convert(csv_file, deployment_name)
-    except Exception as e:
-        print str(e)
-        exit(2)
-
-    # print str(converter.rows)
-    # for row in converter.rows:
-    #     print str(row)
+    else:
+        try:
+            converter.convert(csv_file, deployment_name)
+        except Exception as e:
+            print str(e)
+            exit(2)
 
 
 if __name__ == '__main__':
