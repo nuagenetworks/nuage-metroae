@@ -6,7 +6,8 @@
     vsd_hostname: "{{ vsd_fqdn }}"
   run_once: true
 
-- block:
+- name: When HA
+  block:
 
   - name: Disable shard allocation
     uri:
@@ -47,7 +48,9 @@
 - name: Execute upgrade script
   shell: "/root/{{ vstat_upgrade_scripts_file }}"
 
-- block:
+- name: When primary/backup nodes are defined
+  block:
+
   - name: Figure out Active ES cluster
     shell: crontab -l
     register: crontabOutput
@@ -58,13 +61,14 @@
       run_command_on_vsd: false
     when: crontabOutput.stdout.find("curator_snapshot") == -1
 
-
   when:
     - groups['primary_vstats'] is defined
     - groups['backup_vstats'] is defined
 
 
-- block:
+- name: When SA and we are to execute commands on the VSD
+  block:
+
   - name: Execute VSTAT standalone script
     import_tasks: execute_sa_script.yml
     run_once: true
@@ -90,7 +94,9 @@
     - vstat_sa_or_ha is match('sa')
     - run_command_on_vsd | default(true)
 
-- block:
+- name: When HA and we are to execute commands on the VSD
+  block:
+
   - name: Execute VSTAT clustered script
     import_tasks: execute_ha_script.yml
     delegate_to: "{{ vsd_hostname_list[0] }}"
@@ -117,7 +123,8 @@
     - vstat_sa_or_ha is match('ha')
     - run_command_on_vsd | default(true)
 
-- block:
+- name: When we have pimary/backup nodes
+  block:
 
   - name: Update elasticsearch config file
     lineinfile:
@@ -152,12 +159,20 @@
   register: es_version
   run_once: true
 
-- block:
+- name: Assert that we are running ES version 6.8.0 for 6.0.3 and newer
+  assert:
+    that: es_version.json.version.number is version('6.8.0', '==')
+    msg: Expecting ES version 6.8.0, found ES version "{{ es_version.json.version.number }}, quitting."
+  when: upgrade_to_version is version('6.0.3', '>=')
 
-  - name: Assert that we are running ES version 6.7.0
-    assert:
-      that: es_version.json.version.number is version('6.7.0', '==')
-      msg: Expecting ES version 6.7.0, found ES version "{{ es_version.json.version.number }}, quitting."
+- name: Assert that we are running ES version 6.7.0 for 6.0.1 and 6.0.2
+  assert:
+    that: es_version.json.version.number is version('6.7.0', '==')
+    msg: Expecting ES version 6.7.0, found ES version "{{ es_version.json.version.number }}, quitting."
+  when: (upgrade_to_version is version('6.0.1', '==')) or (upgrade_to_version is version('6.0.2', '=='))
+
+- name: When upgrade_to_version >= 6.0.1
+  block:
 
   - name: Get nodes for ES
     uri:
@@ -227,10 +242,10 @@
       test_interval_seconds: 30
     run_once: true
 
-
   when: upgrade_to_version is version('6.0.1', '>=')
 
-- block:
+- name: When upgrade_to_version < 6.0.1
+  block:
 
   - name: Assert that we are running ES version 5.5.0
     assert:
@@ -238,7 +253,6 @@
       msg: Expecting ES version 5.5.0, found ES version "{{ es_version.json.version.number }}, quitting."
 
   when: upgrade_to_version is version('6.0.1', '<')
-
 
 - name: Restart Elasticsearch service
   service:
