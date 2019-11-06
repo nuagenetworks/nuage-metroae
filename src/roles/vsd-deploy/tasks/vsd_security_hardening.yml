@@ -14,6 +14,13 @@
   no_log: True
   ignore_errors: True
 
+- name: Check if custom user already exists and is connected via ssh
+  local_action:
+     module: command ssh -oStrictHostKeyChecking=no -oPasswordAuthentication=no {{ vsd_custom_username }}@{{ inventory_hostname }} exit 0
+  register: ssh_custom_user
+  ignore_errors: yes
+  when: vsd_custom_username is defined
+
 - block:
 
   - block:
@@ -33,6 +40,11 @@
 
     - name: Add user to sudoers list
       command: usermod -aG wheel {{ vsd_custom_username }}
+
+    - name: Set custom password for MySQL root password for non-root user
+      shell: mysqladmin -u root password "{{ vsd_mysql_password }}"
+      when: vsd_mysql_password is defined
+      run_once: true
 
     - name: Update sshd config file
       lineinfile:
@@ -82,10 +94,18 @@
     when:
       - vsd_custom_username is defined
       - vsd_custom_password is defined
+      - ssh_custom_user.rc != 0
 
-  - name: Set custom password for MySQL root password
+  remote_user: "{{ vsd_default_username }}"
+
+- block:
+
+  - name: Set custom password for MySQL root password for root user
     shell: mysqladmin -u root password "{{ vsd_mysql_password }}"
-    when: vsd_mysql_password is defined
+    run_once: true
+    when: 
+      - vsd_mysql_password is defined
+      - vsd_custom_username is not defined or vsd_custom_password is not defined or ssh_custom_user.rc == 0
 
   - name: Register failed login attempts and lockout time from file when not defined
     slurp:
@@ -155,7 +175,15 @@
       line: '<access-log prefix="access.log" pattern="%a %t %H %p %r %s %D %{CUSTOM}i %{X-Nuage-Request-ID}o">'
     when: advanced_api_access_logging is defined
 
-  remote_user: "{{ vsd_default_username }}"
+  remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
+  become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
+  vars:
+    ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"
+
+- name: Get the JAVA_HOME
+  shell: echo $JAVA_HOME
+  register: java_home
+  remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
 
 - block:
 
@@ -187,13 +215,13 @@
     when: certificate_path is defined
 
   - name: Import Intermediate Cert Pem file
-    shell: '/usr/java/latest/bin/keytool -importcert  -file /opt/vsd/ejbca/p12/intermediate.cert.pem -keystore /usr/java/latest/lib/security/cacerts -storepass {{ jreStorePwd | default("changeit") }} -alias myintermediateCA -noprompt'
+    shell: '{{ java_home.stdout }}/bin/keytool -importcert  -file /opt/vsd/ejbca/p12/intermediate.cert.pem -keystore {{ java_home.stdout }}/lib/security/cacerts -storepass {{ jreStorePwd | default("changeit") }} -alias myintermediateCA -noprompt'
     when:
       - intermediate_certificate_path is defined
       - nuage_upgrade is not defined or not nuage_upgrade
 
   - name: Import Root CA Pem file
-    shell: '/usr/java/latest/bin/keytool -importcert -file /opt/vsd/ejbca/p12/ca.cert.pem -keystore /usr/java/latest/lib/security/cacerts -storepass {{ jreStorePwd | default("changeit") }} -alias myRootCA -noprompt'
+    shell: '{{ java_home.stdout }}/bin/keytool -importcert -file /opt/vsd/ejbca/p12/ca.cert.pem -keystore {{ java_home.stdout }}/lib/security/cacerts -storepass {{ jreStorePwd | default("changeit") }} -alias myRootCA -noprompt'
     when:
       - ca_certificate_path is defined
       - nuage_upgrade is not defined or not nuage_upgrade

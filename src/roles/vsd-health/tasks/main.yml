@@ -207,25 +207,26 @@
         name: common
         tasks_from: VSD-JMS-master-node.yml
 
-    - name: Verify that JMS gateway is reachable on Master Node
-      uri:
-        url: https://{{ jms_master_hostname }}:61619
-        method: GET
-        user: "{{ vsd_auth.username }}"
-        password: "{{ vsd_auth.password }}"
-        status_code: 200
-        validate_certs: False
-      until: webresult.status == 200
-      retries: 5
-      delay: 30
-      register: webresult
-      delegate_to: localhost
-      run_once: true
-      when: jms_master_hostname is defined and jms_master_hostname != ""
+    - block:
+      - name: Verify that JMS gateway is reachable on Master Node
+        uri:
+          url: https://{{ jms_master_hostname }}:61619
+          method: GET
+          user: "{{ vsd_auth.username }}"
+          password: "{{ vsd_auth.password }}"
+          status_code: 200
+          validate_certs: False
+        until: webresult.status == 200
+        retries: 5
+        delay: 30
+        register: webresult
+        delegate_to: localhost
+        run_once: true
+        when: jms_master_hostname is defined and jms_master_hostname != ""
 
-    when:
-      - "'activemq-status' in vsd_proc.state"
-      - inventory_hostname in groups['primary_vsds']
+      when:
+        - "'activemq-status' in vsd_proc.state"
+        - inventory_hostname in groups['primary_vsds']
 
   - name: write web interface result
     nuage_append: filename="{{ report_path }}" text="{{ webresult  | to_nice_json}}\n"
