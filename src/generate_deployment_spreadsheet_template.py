@@ -2,7 +2,6 @@
 
 import json
 import os
-import sys
 import yaml
 
 
@@ -19,31 +18,74 @@ FORMAT = """
 - ""
 - Fill out the fields of this spreadsheet, save as CSV and then issue "metroae
 - wizard" or "convert_csv_to_deployment.py <csv_file> <deployment_name>"
+
 - schema: common
   headers: [Common, Values, "", Descriptions]
+
 - ""
 - For vCenter deployments only
+
 - schema: common
+  no_title: true
   fields:
     - vcenter_datacenter
     - vcenter_cluster
     - vcenter_datastore
   headers: [Common, Values, "", Descriptions]
+
 - ""
 - For upgrade only
+
 - schema: upgrade
   fields:
     - upgrade_from_version
     - upgrade_to_version
-  headers: [Common, Values, "", Descriptions]
+  headers: [Upgrade, Values, "", Descriptions]
+
 - schema: vsds
   headers: [VSDs, VSD 1 (SA), VSD 2 (HA), VSD 3 (HA),
             VSD 4 (Geo-Red), VSD 5 (Geo-Red), VSD 6 (Geo-Red),
             "", Descriptions]
+
 - schema: vscs
-  headers: [VSCs, VSD 1 (SA), VSD 2 (HA), "", Descriptions]
+  headers: [VSCs, VSC 1 (SA), VSC 2 (HA), "", Descriptions]
 
+- schema: vstats
+  headers: [VSTATs, VSTAT 1 (SA), VSTAT 2 (HA), VSTAT 3 (HA),
+            VSTAT 4 (Geo-Red), VSTAT 5 (Geo-Red), VSTAT 6 (Geo-Red),
+            "", Descriptions]
 
+- schema: nuhs
+  headers: [NUHs, NUH 1 (SA), NUH 2 (HA), "", Descriptions]
+
+- ""
+- Configuration for VNS setups
+
+- schema: vnsutils
+  headers: [VNSUtils, VNSUTIL 1 , "", Descriptions]
+
+- schema: nsgvs
+  headers: [NSGvs, NSGv 1, NSGv 2, more..., "", Descriptions]
+
+- ""
+- When using MetroAE for zero-factor bootstrap of NSGvs
+
+- schema: nsgv_bootstrap
+  headers: [NSGv Bootstrap, Values, "", Descriptions]
+  no_title: true
+  fields:
+    - nsgv_organization
+    - proxy_user_first_name
+    - proxy_user_last_name
+    - proxy_user_email
+    - nsg_infra_profile_name
+    - nsg_template_name
+    - proxy_dns_name
+    - vsc_infra_profile_name
+    - first_controller_address
+    - second_controller_address
+
+- ""
 - ""
 - Advanced instructions
 - This spreadsheet can be used to populate deployment files for any of the
@@ -80,8 +122,23 @@ def read_schema(schema_name):
             file_name, str(e)))
 
 
-def write_fields():
-    pass
+def write_fields(lines, schema, width, fields=None):
+    if schema["type"] == "array":
+        schema_props = schema["items"]["properties"]
+        required = schema["items"].get("required")
+    else:
+        schema_props = schema["properties"]
+        required = schema.get("required")
+
+    if fields is None:
+        fields = required
+
+    for field_name in fields:
+        field = schema_props[field_name]
+        description = field.get("description", "")
+        lines.append(field["title"] +
+                     ("," * (width - 1)) +
+                     description)
 
 
 def write_table(table):
@@ -93,10 +150,14 @@ def write_table(table):
     for i in range(TABLE_MARGIN_TOP):
         lines.append("")
 
-    lines.append(escape_line(schema["title"]))
-    lines.append(escape_line(schema["description"]))
+    if "no_title" not in table:
+        lines.append(escape_line(schema["title"]))
+        lines.append(escape_line(schema["description"]))
+        lines.append("")
 
     lines.append(",".join(table["headers"]))
+
+    write_fields(lines, schema, len(table["headers"]), table.get("fields"))
 
     lines = [("," * TABLE_MARGIN_LEFT) + x for x in lines]
 
@@ -108,7 +169,7 @@ def main():
 
     for item in format:
         if type(item) == dict:
-            print write_table(item)
+            print write_table(item).encode("utf-8")
         else:
             print escape_line(item) + ","
 
