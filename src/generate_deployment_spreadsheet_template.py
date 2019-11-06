@@ -21,6 +21,9 @@ FORMAT = """
 
 - schema: common
   headers: [Common, Values, "", Descriptions]
+  extra:
+    - access_bridge
+    - vsd_license_file
 
 - ""
 - For vCenter deployments only
@@ -46,14 +49,22 @@ FORMAT = """
   headers: [VSDs, VSD 1 (SA), VSD 2 (HA), VSD 3 (HA),
             VSD 4 (Geo-Red), VSD 5 (Geo-Red), VSD 6 (Geo-Red),
             "", Descriptions]
+  extra:
+    - vmname
 
 - schema: vscs
   headers: [VSCs, VSC 1 (SA), VSC 2 (HA), "", Descriptions]
+  extra:
+    - vmname
+    - ctrl_ip
+    - ctrl_ip_prefix
 
 - schema: vstats
   headers: [VSTATs, VSTAT 1 (SA), VSTAT 2 (HA), VSTAT 3 (HA),
             VSTAT 4 (Geo-Red), VSTAT 5 (Geo-Red), VSTAT 6 (Geo-Red),
             "", Descriptions]
+  extra:
+    - vmname
 
 - schema: nuhs
   headers: [NUHs, NUH 1 (SA), NUH 2 (HA), "", Descriptions]
@@ -63,9 +74,25 @@ FORMAT = """
 
 - schema: vnsutils
   headers: [VNSUtils, VNSUTIL 1 , "", Descriptions]
+  extra:
+    - vmname
+    - data_ip
+    - data_netmask
+    - nsgv_gateway
 
 - schema: nsgvs
   headers: [NSGvs, NSGv 1, NSGv 2, more..., "", Descriptions]
+  extra:
+    - bootstrap_method
+    - nsgv_ip
+    - nsgv_mac
+    - nsg_name
+    - match_type
+    - match_value
+    - network_port_name
+    - access_port_name
+    - access_port_vlan_range
+    - access_port_vlan_number
 
 - ""
 - When using MetroAE for zero-factor bootstrap of NSGvs
@@ -122,7 +149,11 @@ def read_schema(schema_name):
             file_name, str(e)))
 
 
-def write_fields(lines, schema, width, fields=None):
+def write_fields(lines, schema, table):
+    width = len(table["headers"])
+    fields = table.get("fields")
+    extra = table.get("extra")
+
     if schema["type"] == "array":
         schema_props = schema["items"]["properties"]
         required = schema["items"].get("required")
@@ -132,6 +163,9 @@ def write_fields(lines, schema, width, fields=None):
 
     if fields is None:
         fields = required
+
+    if extra is not None:
+        fields.extend(extra)
 
     for field_name in fields:
         field = schema_props[field_name]
@@ -157,7 +191,7 @@ def write_table(table):
 
     lines.append(",".join(table["headers"]))
 
-    write_fields(lines, schema, len(table["headers"]), table.get("fields"))
+    write_fields(lines, schema, table)
 
     lines = [("," * TABLE_MARGIN_LEFT) + x for x in lines]
 
