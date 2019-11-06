@@ -29,6 +29,7 @@ def usage():
 class CsvDeploymentConverter(object):
 
     def __init__(self):
+        self.data = dict()
         self.has_output = False
         self.has_debug = False
 
@@ -45,6 +46,9 @@ class CsvDeploymentConverter(object):
         self._parse_tables()
         self._validate_data()
         self._generate_deployment_files(deployment_name)
+
+    def get_data(self):
+        return self.data
 
     def _read_and_parse_csv(self, csv_file):
         self.rows = list()
@@ -203,7 +207,10 @@ class CsvDeploymentConverter(object):
             fields = schema["properties"]
 
         if field_name in fields:
-            return fields[field_name]["type"]
+            if "type" in fields[field_name]:
+                return fields[field_name]["type"]
+            else:
+                return "string"
         else:
             raise Exception("No field %s in schema %s" % (field_name,
                                                           schema_name))
@@ -382,7 +389,11 @@ class CsvDeploymentConverter(object):
             raise Exception(msg)
 
     def _generate_deployment_files(self, deployment_name):
-        deployment_dir = os.path.join(DEPLOYMENTS_DIRECTORY, deployment_name)
+        if "/" in deployment_name:
+            deployment_dir = deployment_name
+        else:
+            deployment_dir = os.path.join(DEPLOYMENTS_DIRECTORY,
+                                          deployment_name)
         if not os.path.isdir(deployment_dir):
             self._output("Creating deployment directory: %s", deployment_dir)
             os.mkdir(deployment_dir)

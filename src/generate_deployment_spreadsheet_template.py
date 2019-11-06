@@ -138,7 +138,7 @@ def write_fields(lines, schema, width, fields=None):
         description = field.get("description", "")
         lines.append(field["title"] +
                      ("," * (width - 1)) +
-                     description)
+                     escape_line(description))
 
 
 def write_table(table):
