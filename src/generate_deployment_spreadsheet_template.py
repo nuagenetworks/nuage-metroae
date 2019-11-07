@@ -78,6 +78,7 @@ FORMAT = """
     - vmname
     - data_ip
     - data_netmask
+    - data_subnet
     - nsgv_gateway
 
 - schema: nsgvs
