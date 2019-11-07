@@ -63,14 +63,14 @@
         delay: 30
         ignore_errors: yes
 
-      - name: 
+      - name:
         assert:
           that: "upgrade_complete.rc == 0"
           msg: >-
             The upgrade complete flag could not be set.
             This could happen due to incorrect csproot credentials.
             The correct set of credentials can be provided using vsd_auth_username and
-            vsd_auth_password in the credentials.yml file. 
+            vsd_auth_password in the credentials.yml file.
 
       when:
         - inventory_hostname == groups['primary_vsds'][0]
@@ -86,14 +86,14 @@
 
     when: not inplace_upgrade | default(false)
 
-  - name: Renew VSD certificates
-    include_role: 
-      name: common
-      tasks_from: renew-vsd-certificates
-    when: not deploy_vcin | default(false)
-    run_once: True
-
   remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
   become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
   vars:
     ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"
+
+  - name: Renew VSD certificates
+    include_role:
+      name: common
+      tasks_from: renew-vsd-certificates
+    when: not deploy_vcin | default(false)
+    run_once: True
