@@ -1,0 +1,30 @@
+- block:
+  - name: Verify if VSD TLS mode is set to allow
+    command: /opt/vsd/bin/ejmode status
+    register: ejmode
+
+  - name: Restart ejabberd
+    command: monit restart ejabberd
+    when: ejmode.stdout is search('allow')
+
+  - name: wait for ejabberd to come up
+    monit_waitfor_service:
+      name: ejabberd
+      timeout_seconds: 600
+      test_interval_seconds: 30
+
+  - name: Stop VSD core service
+    shell: monit stop -g vsd-core
+
+  - name: Pause for processes to exit
+    pause:
+      seconds: 20
+
+  - name: Restart the VSD core service
+    shell: monit start -g vsd-core
+
+  delegate_to: "{{ vsd }}"
+  remote_user: "{{ hostvars[vsd].vsd_custom_username | default( vsd_custom_username | default(vsd_default_username)) }}"
+  become: "{{ 'no' if hostvars[vsd].vsd_custom_username | default( vsd_custom_username | default(vsd_default_username)) == 'root' else 'yes' }}"
+  vars:
+    ansible_become_pass: "{{ hostvars[vsd].vsd_custom_pass | default( vsd_custom_pass | default(vsd_default_password)) }}"

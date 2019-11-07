@@ -49,12 +49,21 @@
       - vsd_sa_or_ha is match ('sa')
       - not vsd_standby_cluster | default(False)
 
+    remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
+    become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
+    vars:
+      ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"
+
   - block:
 
     - name: Renew primary VSD cert
       command: /opt/vsd/bin/vsd-renew-certs.sh
       delegate_to: "{{ item }}"
       with_items: "{{ groups['vsd_ha_node1'][0] }}"
+      remote_user: "{{ hostvars[item].vsd_custom_username | default( vsd_custom_username | default(vsd_default_username)) }}"
+      become: "{{ 'no' if hostvars[item].vsd_custom_username | default( vsd_custom_username | default(vsd_default_username)) == 'root' else 'yes' }}"
+      vars:
+        ansible_become_pass: "{{ hostvars[item].vsd_custom_pass | default( vsd_custom_pass | default(vsd_default_password)) }}"
 
     - name: Renew other 2 VSD certs
       command: /opt/vsd/bin/vsd-renew-certs.sh -1 {{ hostvars[groups['primary_vsds'][0]]['hostname'] }}
@@ -62,41 +71,19 @@
       with_items:
         - "{{ groups['vsd_ha_node2'][0] }}"
         - "{{ groups['vsd_ha_node3'][0] }}"
+      remote_user: "{{ hostvars[item].vsd_custom_username | default( vsd_custom_username | default(vsd_default_username)) }}"
+      become: "{{ 'no' if hostvars[item].vsd_custom_username | default( vsd_custom_username | default(vsd_default_username)) == 'root' else 'yes' }}"
+      vars:
+        ansible_become_pass: "{{ hostvars[item].vsd_custom_pass | default( vsd_custom_pass | default(vsd_default_password)) }}"
 
-    - name: Verify if VSD TLS mode is set to allow
-      command: /opt/vsd/bin/ejmode status
-      register: ejmode
-      delegate_to: "{{ item }}"
-      delegate_facts: True
-      with_items: "{{ groups['primary_vsds'] }}"
-
-    - name: Restart ejabberd
-      command: monit restart ejabberd
-      when: ejmode.results[0].stdout is search('allow')
-      delegate_to: "{{ item }}"
-      with_items: "{{ groups['primary_vsds'] }}"
-
-    - name: wait for ejabberd to come up
-      monit_waitfor_service:
-        name: ejabberd
-        timeout_seconds: 600
-        test_interval_seconds: 30
-      delegate_to: "{{ item }}"
-      with_items: "{{ groups['primary_vsds'] }}"
-
-    - name: Stop VSD core service
-      shell: monit stop -g vsd-core
-      delegate_to: "{{ item }}"
-      with_items: "{{ groups['primary_vsds'] }}"
-
-    - name: Pause for processes to exit
-      pause:
-        seconds: 20
-
-    - name: Restart the VSD core service
-      shell: monit start -g vsd-core
-      delegate_to: "{{ item }}"
-      with_items: "{{ groups['primary_vsds'] }}"
+    - name: Restart Ejabberd on cert renewal
+      include_role:
+        name: common
+        tasks_from: restart-ejabberd-on-cert-renew.yml
+      with_items:
+        "{{ groups['primary_vsds'] }}"
+      loop_control:
+        loop_var: vsd
 
     - name: Get monit summary for all process on VSD
       vsd_monit:
@@ -116,7 +103,7 @@
     - name: Renew standby VSD certs
       command: /opt/vsd/bin/vsd-renew-certs.sh -1 {{ hostvars[groups['primary_vsds'][0]]['hostname'] }}
       delegate_to: "{{ item }}"
-      with_items: 
+      with_items:
         - "{{ groups['vsd_standby_node1'][0] }}"
         - "{{ groups['vsd_standby_node2'][0] }}"
         - "{{ groups['vsd_standby_node3'][0] }}"
@@ -143,8 +130,3 @@
       with_items: "{{ groups['standby_vsds'] }}"
 
     when: vsd_standby_cluster | default(False)
-
-  remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
-  become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
-  vars:
-    ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"
