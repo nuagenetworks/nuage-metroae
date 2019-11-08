@@ -152,12 +152,20 @@
   register: es_version
   run_once: true
 
-- block:
+- name: Assert that we are running ES version 6.8.0 for 6.0.3 and newer
+  assert:
+    that: es_version.json.version.number is version('6.8.0', '==')
+    msg: Expecting ES version 6.8.0, found ES version "{{ es_version.json.version.number }}, quitting."
+  when: upgrade_to_version is version('6.0.3', '>=')
 
-  - name: Assert that we are running ES version 6.7.0
-    assert:
-      that: es_version.json.version.number is version('6.7.0', '==')
-      msg: Expecting ES version 6.7.0, found ES version "{{ es_version.json.version.number }}, quitting."
+- name: Assert that we are running ES version 6.7.0 for 6.0.1 and 6.0.2
+  assert:
+    that: es_version.json.version.number is version('6.7.0', '==')
+    msg: Expecting ES version 6.7.0, found ES version "{{ es_version.json.version.number }}, quitting."
+  when: (upgrade_to_version is version('6.0.1', '==')) or (upgrade_to_version is version('6.0.2', '=='))
+
+- name: For version >= 6.0.1
+  block:
 
   - name: Get nodes for ES
     uri:
@@ -227,10 +235,10 @@
       test_interval_seconds: 30
     run_once: true
 
-
   when: upgrade_to_version is version('6.0.1', '>=')
 
-- block:
+- name: For versions < 6.0.1
+  block:
 
   - name: Assert that we are running ES version 5.5.0
     assert:
@@ -238,7 +246,6 @@
       msg: Expecting ES version 5.5.0, found ES version "{{ es_version.json.version.number }}, quitting."
 
   when: upgrade_to_version is version('6.0.1', '<')
-
 
 - name: Restart Elasticsearch service
   service:
