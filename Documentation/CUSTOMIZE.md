@@ -1,19 +1,11 @@
 # Customizing Components for a Deployment
-## Note for users of MetroÆ before version 3.0
-MetroÆ before version 3.0 used the now deprecated build_vars.yml configuration.  In the current version, build_vars.yml is replaced with *deployments* as described in this document.  You can convert an obsolete build_vars.yml file to a deployment using the following tool:
-
-```
-./convert_build_vars_to_deployment.py <build_vars_file> <deployment_name>
-```
-
-Deprecation Notice: The convert_build_vars_to_deployment tool is not actively updated for new features and will be removed in MetroÆ v3.4.0. Users of this tool should either edit deployment files directly or modify their process to take advantage of the jinja2 templates available in src/deployment_templates to auto-generate deployment files.
 
 ## Prerequisites / Requirements
 If you have not already set up your MetroÆ Host environment, see [SETUP.md](SETUP.md) before proceeding.
 
 ## What is a Deployment?
 
-Deployments are component configuration sets.  They are stored under the `nuage-metro/deployments/<deployment_name>/` directory and the files within describe all of the components to be installed/upgraded.
+Deployments are component configuration sets.  You can have one or more deployments in your setup.  When you are working with the MetroAE container, you can find the deployment files under the data directory you specified during `metroae setup`.  For example, if you specified `/tmp` as your data directory path, `metroae setup` created `/tmp/metroae_data` and copied the default deployment to `/tmp/metroae_data/deployments`. When you are working with MetroAE from a workspace you created using `git clone`, deployments are stored in the workspace directory `nuage-metro/deployments/<deployment_name>/`.  In both cases, the files within each deployment directory describe all of the components you want to install or upgrade.
 
 If you issue:
 
@@ -29,20 +21,38 @@ The files under `nuage-metro/deployments/mydeployment` will be used to do an ins
 
 Each time you issue MetroaÆ, the inventory will be completely rebuilt from the deployment name specified.  This will overwrite any previous inventory, so it will reflect exactly what is configured in the deployment that was specified.
 
-## Customize Deployment
+## Customize Your Own Deployment
+
+You can customize the deployment files for your workflows using any of the following methods:
+
+* Edit the files in the `default` deployment
+* Edit the files in a new deployment directory that you have created
+* Run `run_wizard.py` to let MetroAE create or edit your deployment
+* Create your deployment using the MetroAE spreadsheet (CSV file)
+
 Based on your network topology and the specific components you plan on deploying, you will configure several files. Setting deployment files correctly ensures that when you subsequently execute workflows they configure components as intended. Precise syntax is crucial.
 
 When a workflow is executed, each deployment file is validated against a data schema which ensures that all required fields are present and in the correct syntax. These schemas are located in the [schemas/](/schemas/) directory. They follow the [json-schema.org standard](https://json-schema.org).
 
 You have the option of configuring the default deployment files provided in the deployments/default/ sub-directory or creating your own sub-directories under the deployments/ directory. You can find examples of deployment files for different deployments in the [examples/](/examples/) directory. Unless you specify a different deployment sub-directory name, the default deployment is used when a workflow is executed. This method allows MetroÆ to support many deployments (different configurations) in parallel and the ability to switch between them as required. See below for the supported deployment files that you can specify in a deployments sub-directory.
 
-Note that you can edit the deployment files manually at any time. As of v3.3.0, MetroÆ comes with its own wizard for automating the creation and editing of deployment files when you are working with a clone of the nuage-metro repo. To start the wizard:
+Note that you can edit the deployment files manually at any time. MetroÆ comes with its own wizard for automating the creation and editing of deployment files when you are working with a clone of the nuage-metro repo. To start the wizard:
 ```
 python run_wizard.py
 ```
 You can use the wizard to setup your MetroÆ environment, if you wish. Or you can skip the setup step and go directly to the creation and editing of your deployment.
 
-The deployment files that can be configured using the wizard or edited manually are listed, below.
+You can also use the MetroAE spreadsheet to create your deployment. You can find the MetroAE CSV template in `deployment_spreadsheet_template.csv`. When you finish customizing the spreadsheet, save it to a CSV file of your own naming. Then you can either convert the CSV directly to a deployment using this syntax:
+```
+convert_csv_to_deployment.py deployment_spreadsheetname.csv your_deployment_name
+```
+or you can let `metroae` do the conversion for you by specifying the name of the CSV file instead of the name of your deployment:
+```
+metroae deployment_spreadsheet_name.csv
+```
+This will create or update a deployment with the same name as the CSV file - without the extension.
+
+The deployment files that can be configured using the wizard, spreadhseet, or edited manually are listed, below.
 
 ### `common.yml`
 `common.yml` contains the common configuration parameters for the deployment that are used for all components and workflows.  This file is always required for any workflow.
