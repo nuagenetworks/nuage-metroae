@@ -1,12 +1,4 @@
 # Customizing Components for a Deployment
-## Note for users of MetroÆ before version 3.0
-MetroÆ before version 3.0 used the now deprecated build_vars.yml configuration.  In the current version, build_vars.yml is replaced with *deployments* as described in this document.  You can convert an obsolete build_vars.yml file to a deployment using the following tool:
-
-```
-./convert_build_vars_to_deployment.py <build_vars_file> <deployment_name>
-```
-
-Deprecation Notice: The convert_build_vars_to_deployment tool is not actively updated for new features and will be removed in MetroÆ v3.4.0. Users of this tool should either edit deployment files directly or modify their process to take advantage of the jinja2 templates available in src/deployment_templates to auto-generate deployment files.
 
 ## Prerequisites / Requirements
 If you have not already set up your MetroÆ Host environment, see [SETUP.md](SETUP.md) before proceeding.
