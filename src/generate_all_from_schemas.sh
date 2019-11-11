@@ -54,6 +54,9 @@ for dir in $EXAMPLE_DATA_DIR/*/; do
     done
 done
 
+echo "Generate deployment spreadsheet template CSV"
+python src/generate_deployment_spreadsheet_template.py > deployment_spreadsheet_template.csv
+
 # Add specific files to default deployment
 add_to_default_deployment="common credentials upgrade vscs vsds vstats"
 for item in $add_to_default_deployment; do
