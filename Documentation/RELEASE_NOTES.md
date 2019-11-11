@@ -32,6 +32,7 @@
 * Fixed issue with Active Standy VSTAT deploy with VSD in HA mode
 * Add robustness to VSD failover procedure (METROAE-1111)
 * Fix API version format in set_event_log.py (METROAE-1148)
+* Fix to allow sd-wan portal to run without a yum proxy
 
 ### Removed
 * As previously announced, support for converting pre-3.0 build_vars conversion is removed

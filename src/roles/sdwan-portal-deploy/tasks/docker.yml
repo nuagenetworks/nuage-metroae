@@ -3,7 +3,7 @@
     dest: /etc/yum.conf
     regexp: "^proxy="
     line: "proxy={{ yum_proxy }}"
-  when: not yum_proxy | match('NONE')
+  when: yum_proxy is not match('NONE')
 
 - name: Check if required OS packages are installed (ignoring errors)
   command: rpm -q yum-utils device-mapper-persistent-data lvm2 wget
@@ -42,7 +42,7 @@
 
 - name: Create Docker env variables directory
   file: path=/etc/systemd/system/docker.service.d state=directory
-  when: not yum_proxy | match('NONE')
+  when: yum_proxy is not match('NONE')
 
 - name: Configure Docker proxy
   template:
@@ -51,16 +51,24 @@
     dest: /etc/systemd/system/docker.service.d/http-proxy.conf
     owner: root
     group: root
-  when: not yum_proxy | match('NONE')
+  when: yum_proxy is not match('NONE')
 
 - name: Reload Docker daemon
   systemd:
     daemon_reload: yes
     state: restarted
     name: docker
-  when: not yum_proxy | match('NONE')
+  when: yum_proxy is not match('NONE')
 
-- name: Download Docker-Compose
+- name: Download Docker-Compose without using a yum proxy
+  get_url:
+    url: "https://github.com/docker/compose/releases/download/1.23.2/docker-compose-Linux-x86_64"
+    dest: /usr/bin/docker-compose
+    mode: 0755
+    use_proxy: no
+  when: yum_proxy is match('NONE')
+
+- name: Download Docker-Compose with using a yum proxy
   get_url:
     url: "https://github.com/docker/compose/releases/download/1.23.2/docker-compose-Linux-x86_64"
     dest: /usr/bin/docker-compose
@@ -69,3 +77,4 @@
   environment:
     http_proxy: "{{ yum_proxy | default('') }}"
     https_proxy: "{{ yum_proxy | default('') }}"
+  when: yum_proxy is not match('NONE')
