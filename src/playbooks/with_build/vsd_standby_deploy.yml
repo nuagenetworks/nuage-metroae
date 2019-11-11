@@ -1,19 +1,13 @@
 ---
 - hosts: primary_vsds
-  remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
-  become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
-  vars:
-    ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"
+  remote_user: "{{ vsd_default_username }}"
   tasks:
     - name: Run vsd-prepare-replication-master-cluster
       command: "/opt/vsd/bin/vsd-prepare-replication-master-cluster.sh"
       when: vsd_standby | default(false)
 
 - hosts: vsd_ha_node1
-  remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
-  become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
-  vars:
-    ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"
+  remote_user: "{{ vsd_default_username }}"
   tasks:
     - name: Run vsd-prepare-replication-master on first cluster
       command: "/opt/vsd/bin/vsd-prepare-replication-master.sh -a {{ groups['vsd_standby_node1'][0] }} -b {{ groups['vsd_standby_node2'][0] }} -c {{ groups['vsd_standby_node3'][0] }}"
@@ -25,10 +19,7 @@
         - vsd_standby | default(false)
 
 - hosts: vsd_standby_node1
-  remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
-  become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
-  vars:
-    ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"
+  remote_user: "{{ vsd_default_username }}"
   tasks:
     - name: Create data directory on first standby vm
       file:
@@ -47,10 +38,7 @@
         - vsd_standby | default(false)
 
 - hosts: vsd_ha_node1
-  remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
-  become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
-  vars:
-    ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"
+  remote_user: "{{ vsd_default_username }}"
   tasks:
     - name: Transfer data from first VSD to host machine
       synchronize:
@@ -63,10 +51,7 @@
         - vsd_standby | default(false)
 
 - hosts: vsd_standby_node1
-  remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
-  become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
-  vars:
-    ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"
+  remote_user: "{{ vsd_default_username }}"
   tasks:
     - name: Transfer data from host machine to first standby vm
       synchronize:
@@ -88,10 +73,7 @@
     - vsd-deploy
 
 - hosts: vsd_standby_node1
-  remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
-  become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
-  vars:
-    ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"
+  remote_user: "{{ vsd_default_username }}"
   tasks:
     - name: Run the replication script on first standby cluster
       command: "/opt/vsd/bin/vsd-start-replication-slave -m {{ groups['vsd_ha_node1'][0] }}"
