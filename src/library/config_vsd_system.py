@@ -102,10 +102,12 @@ def main():
         except exceptions.BambouHTTPError as e:
             if "There are no attribute changes" in e.message:
                 module.exit_json(changed=True, result="Gateway time is already"
-                                 "updated to %s" % int(gw_purge_time))
+                                 " updated to %s" % int(gw_purge_time))
+                return
         except Exception as e:
             module.fail_json(
                 msg="Could not update gateway purge timer : %s" % e)
+            return
 
         module.exit_json(
             changed=True,
@@ -115,8 +117,10 @@ def main():
         try:
             purge_val = get_gateway_purge_time_value(csproot)
         except Exception as e:
-            module.fail_json(msg="Could not retrieve"
+            module.fail_json(msg="Could not retrieve "
                              "gateway purge timer : %s" % e)
+            return
+
         module.exit_json(changed=True, result=purge_val)
 
 
