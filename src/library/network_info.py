@@ -45,7 +45,7 @@ def parse_ipv4cmd_output(ip_str):
             ip_addr = ip_addr.group(1)
             intf_name = ip_line.split()[1]
             net_info['interfaces'][intf_name] = {'ip': ip_addr}
-        except:
+        except Exception:
             pass
 
 
@@ -56,11 +56,11 @@ def parse_maccmd_output(mac_str):
             mac_addr = mac_addr.group(1)
             intf_name = mac_line.split()[1]
             net_info['interfaces'][intf_name[:-1]]['mac_addr'] = mac_addr
-        except:
+        except Exception:
             pass
 
 
-def execute_cmd(cmd):
+def execute_cmd(module, cmd):
     rc, out, err = module.run_command(cmd, check_rc=False)
     if err is None:
         err = b('')
@@ -78,14 +78,15 @@ def execute_cmd(cmd):
     return (out)
 
 
-arg_spec = dict(
-    mac_addr=dict(type='bool', required=True)
-)
-module = AnsibleModule(argument_spec=arg_spec)
 net_info = {'interfaces': {}}
 
 
 def main():
+    arg_spec = dict(
+        mac_addr=dict(type='bool', required=True)
+    )
+    module = AnsibleModule(argument_spec=arg_spec)
+
     collect_mac_addr = module.params['mac_addr']
     IPCMD = module.get_bin_path('ip', True)
     HOSTCMD = module.get_bin_path('hostname', True)
@@ -94,9 +95,9 @@ def main():
     mac_cmd = "%s -o -family link addr" % (IPCMD)
     host_cmd = "%s -f" % (HOSTCMD)
 
-    ip_str = execute_cmd(ipv4_cmd)
-    mac_str = execute_cmd(mac_cmd)
-    hostname = execute_cmd(host_cmd)
+    ip_str = execute_cmd(module, ipv4_cmd)
+    mac_str = execute_cmd(module, mac_cmd)
+    hostname = execute_cmd(module, host_cmd)
 
     parse_ipv4cmd_output(ip_str)
     if collect_mac_addr:
