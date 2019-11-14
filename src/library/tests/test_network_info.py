@@ -119,4 +119,3 @@ def test__command_error(module_patch):
               stdout="error message",
               stderr="stderr",
               changed=False)])
-
