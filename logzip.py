@@ -30,3 +30,4 @@ with tarfile.open(tarFileName + '.tar.gz', mode='w:gz') as archive:
         archive.add(cwdir + '/ansible.log', arcname='/unzipped/ansible.log')
     else:
         print("ansible.log file doesn't exist")
+        
