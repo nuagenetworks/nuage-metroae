@@ -4,16 +4,16 @@ from pathlib2 import Path
 import tarfile
 import argparse
 from time import gmtime, strftime
-now = strftime("%Y-%m-%d-%H-%M-%S" , gmtime())
+now = strftime("%Y-%m-%d-%H-%M-%S", gmtime())
 parser = argparse.ArgumentParser()
 parser.add_argument('--tarFileName', default='debug-' + now)
 parser.add_argument('--deploymentName')
 args = parser.parse_args()
 tarFileName = args.tarFileName
 if args.deploymentName:
-	deploymentName = "/deployments/" + args.deploymentName
+    deploymentName = "/deployments/" + args.deploymentName
 else:
-	deploymentName = "/deployments/"
+    deploymentName = "/deployments/"
 
 cwdir = os.getcwd()
 ansibleLogPath = Path(cwdir + '/ansible.log')
