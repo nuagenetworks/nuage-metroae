@@ -38,6 +38,7 @@ def test_normal__success(module_patch, sleep_patch, requests_patch):
 
     requests_patch.assert_called_once_with(TEST_PARAMS["url"])
     sleep_patch.assert_not_called()
+    mock_module.fail_json.assert_not_called()
     mock_module.exit_json.assert_called_once_with(changed=True,
                                                   response=test_response)
 
@@ -63,6 +64,7 @@ def test_wait__success(module_patch, sleep_patch, requests_patch):
     requests_patch.assert_has_calls([call(TEST_PARAMS["url"]),
                                      call(TEST_PARAMS["url"])])
     sleep_patch.assert_called_once_with(TEST_PARAMS['test_interval_seconds'])
+    mock_module.fail_json.assert_not_called()
     mock_module.exit_json.assert_called_once_with(changed=True,
                                                   response=test_response)
 

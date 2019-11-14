@@ -241,6 +241,7 @@ class TestCreateZfbProfile(object):
         self.verify_create_iso(vspk_patch)
         self.verify_subproc(mock_subproc)
 
+        mock_module.fail_json.assert_not_called()
         mock_module.exit_json.assert_called_once_with(
             changed=True,
             ansible_facts={"nsgv_already_configured": False})

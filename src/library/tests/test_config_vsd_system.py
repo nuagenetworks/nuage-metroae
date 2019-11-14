@@ -52,7 +52,7 @@ class TestConfigVsdSystem(object):
                                                  'reason': reason,
                                                  'errors': reason})()})())
 
-    def validate_standard(self, import_patch):
+    def validate_session(self, import_patch):
         import_patch.assert_called_once_with("vspk.v5_0")
         self.mock_vspk.NUVSDSession.assert_called_with(
             **TEST_PARAMS["vsd_auth"])
@@ -71,7 +71,8 @@ class TestConfigVsdSystem(object):
 
         main()
 
-        self.validate_standard(import_patch)
+        self.validate_session(import_patch)
+        mock_module.fail_json.assert_not_called()
         mock_module.exit_json.assert_called_once_with(changed=True,
                                                       result=12345)
 
@@ -88,7 +89,7 @@ class TestConfigVsdSystem(object):
 
         main()
 
-        self.validate_standard(import_patch)
+        self.validate_session(import_patch)
         mock_module.fail_json.assert_called_once_with(
             msg="Could not retrieve gateway purge timer : Test")
 
@@ -104,9 +105,10 @@ class TestConfigVsdSystem(object):
 
         gw_purge = TEST_PARAMS['gateway_purge_time']
 
-        self.validate_standard(import_patch)
+        self.validate_session(import_patch)
         assert mock_sys_config.ad_gateway_purge_time == gw_purge
         mock_sys_config.save.assert_called_once_with()
+        mock_module.fail_json.assert_not_called()
         mock_module.exit_json.assert_called_once_with(
             changed=True,
             result="Gateway purge time set to %ssec" % gw_purge)
@@ -125,9 +127,10 @@ class TestConfigVsdSystem(object):
 
         gw_purge = TEST_PARAMS['gateway_purge_time']
 
-        self.validate_standard(import_patch)
+        self.validate_session(import_patch)
         assert mock_sys_config.ad_gateway_purge_time == gw_purge
         mock_sys_config.save.assert_called_once_with()
+        mock_module.fail_json.assert_not_called()
         mock_module.exit_json.assert_called_once_with(
             changed=True,
             result="Gateway time is already updated to %s" % gw_purge)
@@ -145,7 +148,7 @@ class TestConfigVsdSystem(object):
 
         gw_purge = TEST_PARAMS['gateway_purge_time']
 
-        self.validate_standard(import_patch)
+        self.validate_session(import_patch)
         assert mock_sys_config.ad_gateway_purge_time == gw_purge
         mock_sys_config.save.assert_called_once_with()
         mock_module.fail_json.assert_called_once_with(

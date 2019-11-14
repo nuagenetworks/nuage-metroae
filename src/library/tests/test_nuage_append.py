@@ -31,6 +31,7 @@ def test__success(module_patch):
 
     main()
 
+    mock_module.fail_json.assert_not_called()
     mock_module.exit_json.assert_called_once_with(changed=True)
 
     with open(TEST_PARAMS["filename"], "r") as f:
@@ -45,6 +46,7 @@ def test__success(module_patch):
 
     main()
 
+    mock_module.fail_json.assert_not_called()
     mock_module.exit_json.assert_called_once_with(changed=True)
 
     with open(TEST_PARAMS["filename"], "r") as f:

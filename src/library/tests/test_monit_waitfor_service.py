@@ -61,6 +61,7 @@ def test__status_ok(module_patch, sleep_patch):
     sleep_patch.assert_not_called()
     verify_monit(mock_module, 1)
     state = create_expected_state("Status ok", 1)
+    mock_module.fail_json.assert_not_called()
     mock_module.exit_json.assert_called_once_with(changed=True,
                                                   name=TEST_PARAMS["name"][0],
                                                   state=state)
@@ -98,6 +99,7 @@ def test__waiting(module_patch, sleep_patch):
     assert sleep_patch.call_count == 2
     verify_monit(mock_module, 3)
     state = create_expected_state("Running", 3)
+    mock_module.fail_json.assert_not_called()
     mock_module.exit_json.assert_called_once_with(changed=True,
                                                   name=TEST_PARAMS["name"][0],
                                                   state=state)
@@ -141,6 +143,7 @@ def test__restart_success(module_patch, sleep_patch):
         [call("/usr/bin/monit restart " + TEST_PARAMS["name"][0],
               check_rc=True)])
     state = create_expected_state("Running", 3)
+    mock_module.fail_json.assert_not_called()
     mock_module.exit_json.assert_called_once_with(changed=True,
                                                   name=TEST_PARAMS["name"][0],
                                                   state=state)

@@ -3,7 +3,7 @@ from mock import patch, MagicMock
 import os
 
 MODULE_PATCH = "library.read_yaml_with_vault.AnsibleModule"
-YAML_PATCH = "library.read_yaml_with_vault.AnsibleModule"
+YAML_PATCH = "library.read_yaml_with_vault.yaml"
 TEST_PARAMS = {
     "path": os.path.join(os.path.dirname(__file__), "mock_encrypted.yml"),
     "fact_name": "encrypted"
@@ -27,6 +27,7 @@ def test__success(module_patch):
 
     main()
 
+    mock_module.fail_json.assert_not_called()
     assert mock_module.exit_json.call_count == 1
     args, kwargs = mock_module.exit_json.call_args_list[0]
 
@@ -43,5 +44,6 @@ def test__parse_error(module_patch, yaml_patch):
 
     main()
 
-    mock_module.fail_json(msg="Could not load yaml file %s: %s" % (
-        TEST_PARAMS["path"], "Test exception"))
+    mock_module.fail_json.assert_called_once_with(
+        msg="Could not load yaml file %s: %s" % (
+            TEST_PARAMS["path"], "Test exception"))

@@ -46,7 +46,7 @@ class TestVsdLicenseValid(object):
         mock_license.additional_supported_versions = supported_versions
         return mock_license
 
-    def validate_standard(self, import_patch):
+    def validate_session(self, import_patch):
         import_patch.assert_called_once_with("vspk.v5_0")
         self.mock_vspk.NUVSDSession.assert_called_with(
             **TEST_PARAMS["vsd_auth"])
@@ -66,7 +66,8 @@ class TestVsdLicenseValid(object):
         time_patch.return_value = SECONDS_PER_DAY
         main()
 
-        self.validate_standard(import_patch)
+        self.validate_session(import_patch)
+        mock_module.fail_json.assert_not_called()
         mock_module.exit_json.assert_called_once_with(changed=False,
                                                       result="True")
 
@@ -118,7 +119,7 @@ class TestVsdLicenseValid(object):
         time_patch.return_value = SECONDS_PER_DAY
         main()
 
-        self.validate_standard(import_patch)
+        self.validate_session(import_patch)
         mock_module.exit_json.assert_called_once_with(changed=False,
                                                       result="False")
 
@@ -136,7 +137,7 @@ class TestVsdLicenseValid(object):
         time_patch.return_value = SECONDS_PER_DAY
         main()
 
-        self.validate_standard(import_patch)
+        self.validate_session(import_patch)
         mock_module.exit_json.assert_called_once_with(changed=False,
                                                       result="False")
 
@@ -154,7 +155,7 @@ class TestVsdLicenseValid(object):
         time_patch.return_value = SECONDS_PER_DAY
         main()
 
-        self.validate_standard(import_patch)
+        self.validate_session(import_patch)
         mock_module.fail_json.assert_called_once_with(
             msg="VSD License will expire in 364 days")
 
@@ -172,6 +173,6 @@ class TestVsdLicenseValid(object):
         time_patch.return_value = SECONDS_PER_DAY
         main()
 
-        self.validate_standard(import_patch)
+        self.validate_session(import_patch)
         mock_module.fail_json.assert_called_once_with(
             msg="VSD License has expired")

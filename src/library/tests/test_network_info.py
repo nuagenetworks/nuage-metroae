@@ -62,6 +62,7 @@ def test__addresses(module_patch):
     main()
 
     validate_module(mock_module)
+    mock_module.fail_json.assert_not_called()
     mock_module.exit_json.assert_called_once_with(
         changed=True,
         cmd=IP_OUTPUT,
@@ -84,6 +85,7 @@ def test__macs(module_patch):
     main()
 
     validate_module(mock_module)
+    mock_module.fail_json.assert_not_called()
     mock_module.exit_json.assert_called_once_with(
         changed=True,
         cmd=IP_OUTPUT,

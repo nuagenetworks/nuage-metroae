@@ -1,3 +1,4 @@
+from bambou import exceptions
 from library.set_event_log import main
 from mock import patch, MagicMock
 
@@ -44,11 +45,18 @@ class TestSetEventLog(object):
 
         return mock_sys_config
 
-    def validate_standard(self, import_patch):
+    def validate_session(self, import_patch):
         import_patch.assert_called_once_with("vspk.v5_0")
         self.mock_vspk.NUVSDSession.assert_called_with(
             **TEST_PARAMS["vsd_auth"])
         self.mock_session.start.assert_called_with()
+
+    def get_mock_bambou_error(self, status_code, reason):
+        return exceptions.BambouHTTPError(
+            type('', (object,), {
+                'response': type('', (object,), {'status_code': status_code,
+                                                 'reason': reason,
+                                                 'errors': reason})()})())
 
     @patch("importlib.import_module")
     @patch(MODULE_PATCH)
@@ -59,10 +67,11 @@ class TestSetEventLog(object):
 
         main()
 
-        self.validate_standard(import_patch)
+        self.validate_session(import_patch)
         assert mock_sys_config.event_log_entry_max_age == TEST_PARAMS[
             "event_log_age"]
         mock_sys_config.save.assert_called_once_with()
+        mock_module.fail_json.assert_not_called()
         mock_module.exit_json.assert_called_once_with(
             changed=True,
             result="Event log age set to %s" % TEST_PARAMS["event_log_age"])
@@ -79,3 +88,48 @@ class TestSetEventLog(object):
         mock_module.fail_json.assert_called_once_with(
             msg='vspk is required for this module, or '
             'API version specified does not exist.')
+
+    @patch("importlib.import_module")
+    @patch(MODULE_PATCH)
+    def test__cannot_connect(self, module_patch, import_patch):
+        mock_module = setup_module(module_patch)
+        self.setup_session_root(import_patch)
+        self.mock_session.start.side_effect = Exception("cannot connect")
+
+        main()
+
+        import_patch.assert_called_once_with("vspk.v5_0")
+        mock_module.fail_json.assert_called_once_with(
+            msg="Could not establish connection to VSD cannot connect")
+
+    @patch("importlib.import_module")
+    @patch(MODULE_PATCH)
+    def test__bambou_error(self, module_patch, import_patch):
+        mock_module = setup_module(module_patch)
+        mock_root = self.setup_session_root(import_patch)
+        mock_sys_config = self.setup_system_configs(mock_root)
+
+        mock_sys_config.save.side_effect = self.get_mock_bambou_error(
+            400, "save error")
+
+        main()
+
+        import_patch.assert_called_once_with("vspk.v5_0")
+        mock_module.fail_json.assert_called_once_with(
+            msg="Could not set event log age : "
+            "[HTTP 400(save error)] save error")
+
+    @patch("importlib.import_module")
+    @patch(MODULE_PATCH)
+    def test__exception(self, module_patch, import_patch):
+        mock_module = setup_module(module_patch)
+        mock_root = self.setup_session_root(import_patch)
+        mock_sys_config = self.setup_system_configs(mock_root)
+
+        mock_sys_config.save.side_effect = Exception("cannot save")
+
+        main()
+
+        import_patch.assert_called_once_with("vspk.v5_0")
+        mock_module.fail_json.assert_called_once_with(
+            msg="Could not set event log age : cannot save")

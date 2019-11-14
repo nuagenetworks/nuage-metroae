@@ -67,19 +67,13 @@ def format_api_version(version):
 def get_vsd_session(module, vsd_auth):
     # Format api version
     version = format_api_version(module.params['api_version'])
-    try:
-        global VSPK
-        VSPK = importlib.import_module('vspk.{0:s}'.format(version))
-    except ImportError:
-            module.fail_json(msg='vspk is required for this module, or '
-                             'API version specified does not exist.')
-    try:
-        session = VSPK.NUVSDSession(**vsd_auth)
-        session.start()
-        csproot = session.user
-        return csproot
-    except Exception as e:
-        module.fail_json(msg="Could not establish connection to VSD %s" % e)
+    global VSPK
+    VSPK = importlib.import_module('vspk.{0:s}'.format(version))
+
+    session = VSPK.NUVSDSession(**vsd_auth)
+    session.start()
+    csproot = session.user
+    return csproot
 
 
 def main():
@@ -92,7 +86,17 @@ def main():
 
     vsd_auth = module.params['vsd_auth']
     event_log_age = module.params['event_log_age']
-    csproot = get_vsd_session(module, vsd_auth)
+
+    try:
+        csproot = get_vsd_session(module, vsd_auth)
+    except ImportError:
+        module.fail_json(msg='vspk is required for this module, or '
+                         'API version specified does not exist.')
+        return
+    except Exception as e:
+        module.fail_json(msg="Could not establish connection to VSD %s" % e)
+        return
+
     set_event_log(module, csproot, event_log_age)
 
 
