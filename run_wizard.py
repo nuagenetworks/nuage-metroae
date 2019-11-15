@@ -78,6 +78,14 @@ WIZARD_SCRIPT = """
       MetroAE supports multiple deployments, each in its own directory.
   create_deployment: {}
 
+- step: Import CSV Spreadsheet
+  description: |
+      This step can optionally import MetroAE configuration via a CSV
+      spreadsheet.  Any components defined in the spreadsheet can be skipped
+      in the wizard.  A template for the spreadsheet can be found in the root
+      MetroAE directory as "deployment_spreadsheet_template.csv".
+  import_csv_spreadsheet: {}
+
 - step: Common deployment parameters
   description: |
       This step will create or modify the common.yml file in your deployment.
@@ -441,7 +449,20 @@ class Wizard(object):
         if not found:
             os.mkdir(deployment_dir)
 
+    def import_csv_spreadsheet(self, action, data):
+        choice = self._input("Do you have a CSV spreadsheet to import?", 1,
+                             ["(y)es", "(N)o"])
+
+        if choice == 1:
+            return
+
+        self._import_csv()
+
     def create_common(self, action, data):
+
+        if self._check_skip_for_csv("common"):
+            return
+
         deployment_dir = self._get_deployment_dir()
         if deployment_dir is None:
             return
@@ -478,6 +499,9 @@ class Wizard(object):
         self._generate_deployment_file("common", deployment_file, deployment)
 
     def create_upgrade(self, action, data):
+        if self._check_skip_for_csv("upgrade"):
+            return
+
         self._print("")
         choice = self._input("Will you be performing an upgrade?", 0,
                              ["(Y)es", "(N)o"])
@@ -512,6 +536,9 @@ class Wizard(object):
         is_nuh = (schema == "nuhs")
         is_nsgv = (schema == "nsgvs")
         is_vnsutil = (schema == "vnsutils")
+
+        if self._check_skip_for_csv(schema):
+            return
 
         deployment_dir = self._get_deployment_dir()
         if deployment_dir is None:
@@ -576,6 +603,9 @@ class Wizard(object):
             self._generate_deployment_file(schema, deployment_file, deployment)
 
     def create_bootstrap(self, action, data):
+        if self._check_skip_for_csv("nsgv_bootstrap"):
+            return
+
         self._print("")
         if "metro_bootstrap" not in self.state:
             choice = self._input("Will you be using metro to bootstrap NSGvs?",
@@ -1157,6 +1187,78 @@ class Wizard(object):
                 deployment = dict()
             return deployment
 
+    def _import_csv(self):
+        deployment_dir = self._get_deployment_dir()
+        if deployment_dir is None:
+            return
+
+        try:
+            from convert_csv_to_deployment import CsvDeploymentConverter
+            converter = CsvDeploymentConverter()
+        except ImportError:
+            self._print(
+                "Could not import the libraries to parse CSV files."
+                "  Please make sure metro-setup.sh has been run.")
+            return
+
+        valid = False
+        while not valid:
+            csv_file = self._input("Please enter the path to the CSV file", "")
+
+            if csv_file == "" or not os.path.isfile(csv_file):
+                choice = self._input(
+                    "File not found.  Would you like to skip the import?",
+                    0, ["(Y)es", "(n)o"])
+                if choice != 1:
+                    self._print("Skipping import step...")
+                    return
+            else:
+                valid = True
+
+        try:
+            converter.convert(csv_file, deployment_dir)
+        except Exception as e:
+            self._print(
+                "The following errors occurred while parsing the CSV file")
+            self._print(str(e))
+            self._print("Please correct these and rerun this step")
+            return
+
+        data = converter.get_data()
+        self.state["csv_data"] = data
+        self._print("Imported the following schemas from CSV: " +
+                    ", ".join(data.keys()))
+
+        self._read_csv_data(data)
+
+    def _read_csv_data(self, data):
+
+        for schema_name in data:
+            if type(data[schema_name]) == list:
+                for component in data[schema_name]:
+                    if "target_server" in component:
+                        self._append_target_server(component["target_server"])
+
+        if "common" in data:
+            if "mgmt_bridge" in data["common"]:
+                self.state["mgmt_bridge"] = data["common"]["mgmt_bridge"]
+            if "data_bridge" in data["common"]:
+                self.state["data_bridge"] = data["common"]["data_bridge"]
+            if "access_bridge" in data["common"]:
+                self.state["access_bridge"] = data["common"]["access_bridge"]
+
+    def _check_skip_for_csv(self, schema_name):
+        if "csv_data" in self.state and schema_name in self.state["csv_data"]:
+            self._print("This step has been handled via import from CSV.")
+
+            choice = self._input("Do you still wish to continue?",
+                                 1, ["(y)es", "(N)o"])
+            if choice == 1:
+                self._print("Skipping step...")
+                return True
+
+        return False
+
     def _setup_dns(self, deployment, data):
         self._print(self._get_field(data, "dns_setup_msg"))
 
@@ -1513,13 +1615,16 @@ class Wizard(object):
         component["target_server"] = target_server
         self.state["target_server"] = target_server
 
+        self._append_target_server(target_server)
+
+        return target_server
+
+    def _append_target_server(self, target_server):
         if "all_target_servers" not in self.state:
             self.state["all_target_servers"] = list()
 
         if target_server not in self.state["all_target_servers"]:
             self.state["all_target_servers"].append(target_server)
-
-        return target_server
 
     def _resolve_hostname(self, hostname):
         try:
