@@ -2,7 +2,7 @@
 Hooks are predefined locations in the code where an user can execute custom commands. The command can contain predefined Ansible variable in Jinja2 format.
 
 ## Hooks File
-This file contains information about the location and the command that needs to be executed. The path to this file needs to be accessible by Ansible and it needs to be defined in the deployments file for the component under the schema section.
+This file contains information about the location and the command that needs to be executed. The path to this file needs to be accessible by Ansible and it needs to be defined in the deployments file for the component under the hooks section.
 The file format should be yaml.
 <br>
 Example of a file that executes custom script before vstat-predeploy
@@ -117,5 +117,5 @@ vstat_upgrade_wrapup<br>
 
 
 # Skip Actions
-Skip Actions define if a particular playbook should execute or not. For example defining vsd_predeploy in skip actions list will cause Ansbile to skip this playbook all together even when running a playbook that encapsulates vsd_predeploy in it. In this case running install_everything playbook will skip vsd_predeploy playbook.
+Skip Actions define if a particular playbook should execute or not. For example defining vsd_predeploy in skip actions list will cause Ansbile to skip this playbook even when running a playbook that encapsulates vsd_predeploy in it. In this case running install_everything playbook will skip vsd_predeploy playbook.
 Currently 'Skip Actions' is only limited to component pre-deploy playbooks.
