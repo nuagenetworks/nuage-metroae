@@ -6,7 +6,7 @@
 - name: Check if the user has the write permission on the Qcow2 file
   assert:
     that:
-    - permissions.stat.wusr == true
+    - permissions.stat.wusr
     fail_msg: "The user does not has a write permission on the {{ guestfish_qcow2_path }} file. Grant the permissions to continue"
     success_msg: "User has write permissions of {{ guestfish_qcow2_path }} Qcow2 file"
 
@@ -18,7 +18,7 @@
 - name: Check if list of partitions is retrieved.
   assert:
     that:
-    - partitions_list.failed == false
+    - not partitions_list.failed
     fail_msg: "{{ partitions_list.stderr_lines }}[0]"
     success_msg: "Retrieved the list of Paritions"
 
@@ -29,6 +29,7 @@
 
 - name: Find root partition
   set_fact:
-    guestfish_mount: "{{ item.item.split(':')[0]}}"
+    guestfish_mount: "{{ item.item.split(':')[0] }}"
   with_items: "{{ partitions.results }}"
   when: '"proc" in item.stdout'
+

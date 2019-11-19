@@ -15,7 +15,9 @@
   when: ssh_proxy_configuration is defined
 
 - name: Check connectivity to the target
-  shell: 'sshpass -p {{ ssh_password }} ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null {{ proxy_conf | default("") }} -tt {{ssh_user}}@{{ssh_host}}'
+  shell: >-
+    sshpass -p {{ ssh_password }} ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null
+    {{ proxy_conf | default("") }} -tt {{ ssh_user }}@{{ ssh_host }}
   register: ssh_result
   no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
   failed_when: not ssh_result.rc == 0
@@ -23,3 +25,4 @@
   delegate_to: localhost
   retries: 10
   delay: "{{ ssh_delay_seconds | default(10) }}"
+

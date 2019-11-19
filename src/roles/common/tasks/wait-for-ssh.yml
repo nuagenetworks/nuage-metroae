@@ -6,8 +6,8 @@
   when: ssh_proxy_configuration is defined
 
 - name: Wait for ssh to be ready
-  local_action:
-    module: command ssh -oStrictHostKeyChecking=no -oPasswordAuthentication=no {{ proxy_conf | default('') }} {{ host_username }}@{{ ssh_host }} exit 0
+  command: ssh -oStrictHostKeyChecking=no -oPasswordAuthentication=no {{ proxy_conf | default('') }} {{ host_username }}@{{ ssh_host }} exit 0
+  delegate_to: localhost
   register: wait_for_ssh_output
   until: wait_for_ssh_output.rc == 0
   retries: "{{ retries | default(20) }}"

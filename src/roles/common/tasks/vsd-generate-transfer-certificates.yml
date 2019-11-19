@@ -29,7 +29,9 @@
     when: "userExistsOutput.rc == 0"
 
   - name: Create and transfer certs from VSD
-    shell: "/bin/sshpass -p$CERT_PASSWORD /opt/vsd/ejbca/deploy/certMgmt.sh -a generate -u {{ certificate_username }} -c {{ commonName }} -o csp -f pem -t {{ certificate_type }} {{ additional_parameters }} "
+    shell: >-
+      /bin/sshpass -p$CERT_PASSWORD /opt/vsd/ejbca/deploy/certMgmt.sh -a generate -u {{ certificate_username }}
+      -c {{ commonName }} -o csp -f pem -t {{ certificate_type }} {{ additional_parameters }}
     delegate_to: "{{ vsd_hostname_list[0] }}"
     register: created
     until: "created.rc == 0 or (created.stdout is search('fail adding entity'))"
@@ -41,7 +43,10 @@
     when: "'4.0.4' not in vsd_version and scp_user is not defined and scp_location is not defined"
 
   - name: Create and transfer certs from VSD
-    shell: "/bin/sshpass -p$CERT_PASSWORD /opt/vsd/ejbca/deploy/certMgmt.sh -a generate -u {{ certificate_username }} -c {{ commonName }} -o csp -f pem -t {{ certificate_type }} -s {{ scp_user }}@{{ inventory_hostname }}:{{ scp_location }} {{ additional_parameters }} "
+    shell: >-
+      /bin/sshpass -p$CERT_PASSWORD /opt/vsd/ejbca/deploy/certMgmt.sh -a generate -u {{ certificate_username }}
+      -c {{ commonName }} -o csp -f pem -t {{ certificate_type }}
+      -s {{ scp_user }}@{{ inventory_hostname }}:{{ scp_location }} {{ additional_parameters }}
     delegate_to: "{{ vsd_hostname_list[0] }}"
     register: created
     until: "created.rc == 0 or (created.stdout is search('fail adding entity'))"
@@ -53,7 +58,9 @@
     when: "'4.0.4' not in vsd_version and scp_user is defined and scp_location is defined"
 
   - name: Create and transfer certs from 4.0.4 VSD
-    shell: "/bin/sshpass -p$CERT_PASSWORD /opt/vsd/ejbca/deploy/certMgmt.sh -a generate -u {{ certificate_username }} -c {{ commonName }} -o csp -f pem -t {{ certificate_type }}  -n VSPCA {{ additional_parameters }} "
+    shell: >-
+      /bin/sshpass -p$CERT_PASSWORD /opt/vsd/ejbca/deploy/certMgmt.sh -a generate -u {{ certificate_username }}
+      -c {{ commonName }} -o csp -f pem -t {{ certificate_type }}  -n VSPCA {{ additional_parameters }}
     delegate_to: "{{ vsd_hostname_list[0] }}"
     register: created
     until: "created.rc == 0 or (created.stdout is search('fail adding entity'))"
@@ -65,7 +72,10 @@
     when: "'4.0.4' in vsd_version and scp_user is not defined and scp_location is not defined"
 
   - name: Create and transfer certs from 4.0.4 VSD
-    shell: "/bin/sshpass -p$CERT_PASSWORD /opt/vsd/ejbca/deploy/certMgmt.sh -a generate -u {{ certificate_username }} -c {{ commonName }} -o csp -f pem -t {{ certificate_type }} -s {{ scp_user }}@{{ inventory_hostname }}:{{ scp_location }}   -n VSPCA {{ additional_parameters }} "
+    shell: >-
+      /bin/sshpass -p$CERT_PASSWORD /opt/vsd/ejbca/deploy/certMgmt.sh -a generate -u {{ certificate_username }}
+      -c {{ commonName }} -o csp -f pem -t {{ certificate_type }}
+      -s {{ scp_user }}@{{ inventory_hostname }}:{{ scp_location }} -n VSPCA {{ additional_parameters }}
     delegate_to: "{{ vsd_hostname_list[0] }}"
     register: created
     until: "created.rc == 0 or (created.stdout is search('fail adding entity'))"
