@@ -97,35 +97,29 @@ vcin_slaves
 
 {% if vscs is defined and vscs %}
 
-{% if vscs|length == 1 %}
 
-[vsc_sa_node]
-{{ vscs[0].hostname }}
-
-[vscs:children]
-vsc_sa_node
-
-{% elif vscs|length == 2 %}
 
 [vsc_ha_node1]
-{{ vscs[0].hostname }}
+{% for vsc in vscs %}
+  {% if loop.index % 2 == 1 %}
+    vsc.hostname
+  {% endif %}}
+{% endfor %}}
 
+{% if vsc|length > 1 %}}
 [vsc_ha_node2]
-{{ vscs[1].hostname }}
+{% for vsc in vscs %}
+{% if loop.index % 2 == 0 %}
+vsc.hostname
+{% endif %}}
+{% endfor %}}
+{% endif %}}
 
 [vscs:children]
 vsc_ha_node1
+{% if vsc_ha_node2 %}
 vsc_ha_node2
-
-{% else %}
-
-[vscs]
-{% for vsc in vscs %}
-{{ vsc.hostname }}
-
-{% endfor %}
-
-{% endif %}
+{% endif %}}
 
 {% endif %}
 
