@@ -1,10 +1,8 @@
 # Metro Automation Engine Release Notes
 
-## Release v3.3.4
+## Release v3.3.5
 
 ### Feature Enhancements
 
 ### Resolved Issues
-* VSD active standby failover fails with VSTAT present (METROAE-1157)
-* Fix merge error in DNS process vars
-* Update ES version for upgrades to 6.0.3
+* Make openstack availability zone optional for VSC
