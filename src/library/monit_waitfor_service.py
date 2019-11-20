@@ -96,7 +96,7 @@ def main():
         module.exit_json(changed=True, name=proc_name, state=monit_stats)
     else:
         module.fail_json(msg="Process %s did not transition to active within %i seconds" % (proc_name, timeout_seconds))
-        # Run the main
 
 
-main()
+if __name__ == '__main__':
+    main()

@@ -33,7 +33,7 @@ def vault_constructor(loader, node):
     return node.value
 
 
-def validate_against_schema(path, schema):
+def validate_against_schema(module, path, schema):
     with open(schema, 'r') as file:
         try:
             parsed_schema = yaml.safe_load(file.read())
@@ -41,6 +41,7 @@ def validate_against_schema(path, schema):
             msg = "Could not load schema %s: %s" % (schema, str(e))
             print msg
             module.fail_json(msg=msg)
+            return
 
     with open(path, 'r') as file:
         try:
@@ -50,6 +51,7 @@ def validate_against_schema(path, schema):
             msg = "Could not load yaml file %s: %s" % (path, str(e))
             print msg
             module.fail_json(msg=msg)
+            return
 
     if parsed_yaml is None:
         parsed_yaml = dict()
@@ -64,22 +66,22 @@ def validate_against_schema(path, schema):
         msg = "Invalid data in %s%s: %s" % (path, field, e.message)
         print msg
         module.fail_json(msg=msg)
-
-
-arg_spec = dict(
-    path=dict(
-        required=True,
-        type='str'),
-    schema=dict(
-        required=True,
-        type='str'))
-module = AnsibleModule(argument_spec=arg_spec, supports_check_mode=True)
+        return
 
 
 def main():
+    arg_spec = dict(
+        path=dict(
+            required=True,
+            type='str'),
+        schema=dict(
+            required=True,
+            type='str'))
+    module = AnsibleModule(argument_spec=arg_spec, supports_check_mode=True)
+
     path = module.params['path']
     schema = module.params['schema']
-    validate_against_schema(path, schema)
+    validate_against_schema(module, path, schema)
 
 
 if __name__ == '__main__':
