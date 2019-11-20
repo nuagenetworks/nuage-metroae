@@ -500,10 +500,10 @@ function get_from_s3 {
                 print_write_permission_warning
                 METROAE_WRITE_WARNING_PRINTED=1
             fi
-            eval $CURL_COMMAND 
+            eval $CURL_COMMAND
         fi
     else
-        eval $CURL_COMMAND 
+        eval $CURL_COMMAND
     fi
     if [[ $? -ne 0 ]]; then
         echo ""
@@ -1277,7 +1277,7 @@ function audit_log_and_exit {
 # We just use the old version to parse the options
 function deployment_main {
     debug ${FUNCNAME[0]}
-    set +e
+    set +es
 
     ORIGINAL_ARGS="$*"
 
@@ -1351,7 +1351,13 @@ function deployment_main {
         if [[ $1 != -* ]]; then
             DEPLOYMENT="$1"
             shift
-            if [[ -d $DEPLOYMENT ]]; then
+            if [[ $DEPLOYMENT == *.csv ]]; then
+                filename=$(basename -- "$DEPLOYMENT")
+                deployment_name="${filename%.*}"
+                DEPLOYMENT_DIR="$DEPLOYMENTS_BASE_DIR/$deployment_name"
+                rm -f $DEPLOYMENT_DIR/*.yml
+                ./convert_csv_to_deployment.py $DEPLOYMENT $deployment_name
+            elif [[ -d $DEPLOYMENT ]]; then
                 DEPLOYMENT_DIR=$DEPLOYMENT
             elif [[ -d $DEPLOYMENTS_BASE_DIR/$DEPLOYMENT ]]; then
                 DEPLOYMENT_DIR=$DEPLOYMENTS_BASE_DIR/$DEPLOYMENT

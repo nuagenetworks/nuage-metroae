@@ -15,10 +15,12 @@ vsd_ram: "{{ vsd_ram | default(24) }}"
 vsc_ram: "{{ vsc_ram | default(4) }}"
 vstat_ram: "{{ vstat_ram | default(16) }}"
 vcin_ram: "{{ vcin_ram | default(24) }}"
+nuh_ram: "{{ nuh_ram | default(4) }}"
 portal_ram: "{{ portal_ram | default(24) }}"
 portal_license_file: "{{ portal_license_file | default('NONE') }}"
 vsd_license_required_days_left: {{ vsd_license_required_days_left | default(-1) }}
 vsd_fqdn: {{ vsd_fqdn_global | default('NONE') }}
+vsd_port: {{ vsd_port_global | default('8443') }}
 portal_fqdn_global: {{ portal_fqdn_global | default('NONE') }}
 vstat_fqdn_global: {{ vstat_fqdn_global | default('NONE') }}
 mgmt_bridge: {{ mgmt_bridge | default('NONE') }}
@@ -29,6 +31,7 @@ ansible_deployment_host: {{ ansible_deployment_host|default('127.0.0.1') }}
 vsdbackup_dir: {{ vsdbackup_path|default('/tmp/vdsbackup') }}
 vstat_cpu_cores: {{ vstat_cpu_cores | default(6)}}
 vnsutil_cpu_cores: {{ vnsutil_cpu_cores | default(2)}}
+nuh_cpu_cores: {{ nuh_cpu_cores | default(2)}}
 vsd_cpu_cores: {{ vsd_cpu_cores | default(6)}}
 portal_cpu_cores: {{ portal_cpu_cores | default(6)}}
 vcin_cpu_cores: {{ vcin_cpu_cores | default(6)}}
@@ -93,6 +96,9 @@ vnsutil_default_password: Alcateldc
 
 portal_default_username: root
 portal_default_password: Alcateldc
+
+nuh_default_username: root
+nuh_default_password: Alcateldc
 
 dns_username: {{ dns_username | default("root") | indent(8, False) }}
 dns_password: {{ dns_password | default("Alcateldc") | indent(8, False) }}
@@ -228,6 +234,10 @@ vsd_license_file: {{ vsd_license_file }}
 vsd_cluster_license_file: {{ vsd_cluster_license_file }}
 {% endif %}
 
+{% if nuh_license_file is defined %}
+nuh_license_file: {{ nuh_license_file }}
+{% endif %}
+
 {% if zfb_nsg_list | length > 0 %}
 zfb_proxy_user:
     firstName: {{ proxy_user_first_name }}
@@ -245,15 +255,23 @@ spirent_license_server: {{ spirent_license_server }}
 {% if portals is defined and portals %}
 
 {% if portals|length == 1 %}
-portal_ip: {{ portals[0].mgmt_ip }}
+portal1:
+  mgmt_ip: {{ portals[0].mgmt_ip }}
+  hostname: {{ portals[0].hostname }}
 
 {% else %}
 
-portal1_ip: {{ portals[0].mgmt_ip }}
+portal1: 
+  mgmt_ip: {{ portals[0].mgmt_ip }}
+  hostname: {{ portals[0].hostname }}
 
-portal2_ip: {{ portals[1].mgmt_ip }}
+portal2:
+  mgmt_ip: {{ portals[1].mgmt_ip }}
+  hostname: {{ portals[1].hostname }}
 
-portal3_ip: {{ portals[2].mgmt_ip }}
+portal3:
+  mgmt_ip: {{ portals[2].mgmt_ip }}
+  hostname: {{ portals[2].hostname }}
 
 {% endif %}
 

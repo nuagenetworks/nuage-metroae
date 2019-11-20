@@ -17,7 +17,22 @@
 * Check file permissions before running guestfish on KVM images (METROAE-752)
 * Add availability zone support for OpenStack
 * Add example deployment for geo-redundant VSD deployment
+* Port support for CATS environment VSC, DNS, proxy, STCv
+* For VSC, support VLAN ID and vprn for control interface
+* For VSTAT and VNS Utils, support data network static route
+* Support Nuage Utility Host(NUH) SA and HA install using MetroAE (METROAE-1062)
+* Support SD-WANn Portal 6.0.1
+* VNS support in wizard (METROAE-1151)
+* Added support for spreadsheet/CSV input method
 
 ### Resolved Issues
 * Set event log max age to 7 as per Nuage Upgrade procedure (METROAE-1001)
 * Remove obsolete iptables traffic blocking during HA upgrade (METROAE-1051)
+* Fix VSD node information to get Primary VSD information Rather than XMPP node info (METROAE-1093)
+* Fixed issue with Active Standy VSTAT deploy with VSD in HA mode
+* Add robustness to VSD failover procedure (METROAE-1111)
+* Fix API version format in set_event_log.py (METROAE-1148)
+* Fix to allow sd-wan portal to run without a yum proxy
+
+### Removed
+* As previously announced, support for converting pre-3.0 build_vars conversion is removed

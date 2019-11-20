@@ -1,22 +1,67 @@
 - block:
-  - name: Generate Portal environment.properties file
-    template: src=environment.properties.j2 backup=no dest=/opt/environment.properties
+  - name: Create SD-WAN Portal directory
+    command: mkdir -p /opt/vnsportal
+  
+  - name: Generate Portal config.yml file
+    template: src=config.j2 backup=no dest=/opt/vnsportal/config.yml
+  
+  - name: Check if SSH keys are present locally
+    local_action: stat path=/tmp/id_rsa
+    register: ssh_key
 
+  - name: Generate SSH keys for Portal install 
+    local_action: command ssh-keygen -b 2048 -t rsa -f /tmp/id_rsa -q -N ""
+    when: ssh_key.stat.exists == False
+
+  - name: Copy SSH keys to Portal host 1
+    copy:
+      src: "{{ item.src }}"
+      dest: "{{ item.dest }}"
+      mode: '0400'
+    with_items:
+      - { src: '/tmp/id_rsa', dest: '/root/.ssh/id_rsa'}
+      - { src: '/tmp/id_rsa.pub', dest: '/root/.ssh/id_rsa.pub'}
+    
+  - name: Add the public key to authorized_keys
+    shell: 'cat /root/.ssh/id_rsa.pub >> /root/.ssh/authorized_keys'
+
+  - name: Copy the public key to the SD-WAN Portal directory
+    command: cp /root/.ssh/id_rsa.pub /opt/vnsportal/
+  
+  - name: Copy the private key to the SD-WAN Portal directory
+    command: cp /root/.ssh/id_rsa /opt/vnsportal/
+  when: inventory_hostname == portal1.hostname
+
+- block:
+  - name: Add the Portal 1 pub key to Portal 2
+    authorized_key:
+      user: root
+      state: present
+      key: "{{ lookup('file', '/tmp/id_rsa.pub') }}"
+    when: inventory_hostname == portal2.hostname
+
+  - name: Add the Portal 1 pub key to Portal 3
+    authorized_key:
+      user: root
+      state: present
+      key: "{{ lookup('file', '/tmp/id_rsa.pub') }}"
+    when: inventory_hostname == portal3.hostname
+  when: portal_sa_or_ha is match('ha')
+    
+- block:
   - name: Execute the Portal configuration script
-    command: docker run --rm --env-file /opt/environment.properties -v /var/run/docker.sock:/docker.sock -v /opt:/mnt:z -v /etc:/hostetc:z nuage/vnsportal-bootstrap:{{ portal_version }}
+    shell: docker run -ti --rm -v /var/run/docker.sock:/docker.sock -v /opt/vnsportal:/mnt:z nuage/vnsportal-installer:{{ portal_version }} --skip
+  when: inventory_hostname == portal1.hostname
 
-  - name: Configure High Availability
-    include: ha.yml
-    when: portal_sa_or_ha | match('ha')
-
+- block: 
   - name: Apply the SD-WAN Portal license
     import_tasks: sdwan_portal_license.yml
     when: portal_license_file is defined
 
   - name: Start the Portal Cluster
     import_tasks: sdwan_portal_ha_start.yml
-    when: portal_sa_or_ha | match('ha')
+    when: portal_sa_or_ha is match('ha')
 
   - name: Start the standalone Portal instance
     import_tasks: sdwan_portal_sa_start.yml
-    when: portal_sa_or_ha | match('sa')
+    when: portal_sa_or_ha is match('sa')

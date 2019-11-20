@@ -33,33 +33,32 @@ def vault_constructor(loader, node):
     return VAULT_YAML_TAG + node.value
 
 
-def read_yaml_with_vault(path, fact_name):
+def read_yaml_with_vault(module, path, fact_name):
     with open(path, 'r') as file:
-        try:
-            yaml.add_constructor(u'!vault', vault_constructor)
-            parsed_yaml = yaml.load(file.read())
-        except Exception as e:
-            msg = "Could not load yaml file %s: %s" % (path, str(e))
-            print msg
-            module.fail_json(msg=msg)
+        yaml.add_constructor(u'!vault', vault_constructor)
+        parsed_yaml = yaml.load(file.read())
 
     module.exit_json(changed=True, ansible_facts={fact_name: parsed_yaml})
 
 
-arg_spec = dict(
-    path=dict(
-        required=True,
-        type='str'),
-    fact_name=dict(
-        required=True,
-        type='str'))
-module = AnsibleModule(argument_spec=arg_spec, supports_check_mode=True)
-
-
 def main():
+    arg_spec = dict(
+        path=dict(
+            required=True,
+            type='str'),
+        fact_name=dict(
+            required=True,
+            type='str'))
+    module = AnsibleModule(argument_spec=arg_spec, supports_check_mode=True)
+
     path = module.params['path']
     fact_name = module.params['fact_name']
-    read_yaml_with_vault(path, fact_name)
+    try:
+        read_yaml_with_vault(module, path, fact_name)
+    except Exception as e:
+        msg = "Could not load yaml file %s: %s" % (path, str(e))
+        print msg
+        module.fail_json(msg=msg)
 
 
 if __name__ == '__main__':

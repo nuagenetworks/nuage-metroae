@@ -1,0 +1,22 @@
+- block:
+
+  - name: Check for the role file
+    stat:
+      path: /opt/proxy/role
+    register: role_file
+
+  - name: Assert role file present
+    assert:
+      that: role_file.stat.exists == True
+      msg: Could not find the /opt/proxy/role file on NUH.
+
+  - name: Check haproxy status
+    command: systemctl status haproxy
+    register: haproxy_status
+
+  - name: Assert haproxy is active
+    assert:
+      that: "haproxy_status.stdout is search('Active')"
+      msg: haproxy is not active on NUH
+
+  remote_user: "{{ nuh_default_username }}"
