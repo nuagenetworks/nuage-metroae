@@ -31,3 +31,4 @@
 * Fixed issue with Active Standy VSTAT deploy with VSD in HA mode
 * Add robustness to VSD failover procedure (METROAE-1111)
 * Fix API version format in set_event_log.py (METROAE-1148)
+* Replace the primary_vsds groups with vsd_fqdn_global (METROAE-1155)
