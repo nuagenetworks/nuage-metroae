@@ -32,7 +32,7 @@
 * Fixed issue with Active Standy VSTAT deploy with VSD in HA mode
 * Add robustness to VSD failover procedure (METROAE-1111)
 * Fix API version format in set_event_log.py (METROAE-1148)
-* Replace the primary_vsds groups with vsd_fqdn_global (METROAE-1155)
+* Remove VSC dependence on VSD config by using vsd_fqdn_global instead of primary_vsds (METROAE-1155)
 * Fix to allow sd-wan portal to run without a yum proxy
 
 ### Removed
