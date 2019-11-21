@@ -23,6 +23,7 @@
 * Support Nuage Utility Host(NUH) SA and HA install using MetroAE (METROAE-1062)
 * Support SD-WANn Portal 6.0.1
 * VNS support in wizard (METROAE-1151)
+* Added support for spreadsheet/CSV input method
 
 ### Resolved Issues
 * Set event log max age to 7 as per Nuage Upgrade procedure (METROAE-1001)
@@ -32,3 +33,7 @@
 * Add robustness to VSD failover procedure (METROAE-1111)
 * Fix API version format in set_event_log.py (METROAE-1148)
 * Replace the primary_vsds groups with vsd_fqdn_global (METROAE-1155)
+* Fix to allow sd-wan portal to run without a yum proxy
+
+### Removed
+* As previously announced, support for converting pre-3.0 build_vars conversion is removed

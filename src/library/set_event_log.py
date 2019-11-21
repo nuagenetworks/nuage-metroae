@@ -41,12 +41,13 @@ EXAMPLES = '''
 '''
 
 
-def set_event_log(csproot, event_log_age):
+def set_event_log(module, csproot, event_log_age):
     try:
         sysconfig = csproot.system_configs.get_first()
         sysconfig.event_log_entry_max_age = event_log_age
         sysconfig.save()
-        module.exit_json(changed=True, result="Event log age set to %s" % event_log_age)
+        module.exit_json(changed=True,
+                         result="Event log age set to %s" % event_log_age)
 
     except exceptions.BambouHTTPError as be:
         module.fail_json(msg="Could not set event log age : %s" % be)
@@ -63,39 +64,41 @@ def format_api_version(version):
         return ('v' + version[0] + '_0')
 
 
-def get_vsd_session(vsd_auth):
+def get_vsd_session(module, vsd_auth):
     # Format api version
     version = format_api_version(module.params['api_version'])
-    try:
-        global VSPK
-        VSPK = importlib.import_module('vspk.{0:s}'.format(version))
-    except ImportError:
-            module.fail_json(msg='vspk is required for this module, or\
-                             API version specified does not exist.')
-    try:
-        session = VSPK.NUVSDSession(**vsd_auth)
-        session.start()
-        csproot = session.user
-        return csproot
-    except Exception as e:
-        module.fail_json(msg="Could not establish connection to VSD %s" % e)
+    global VSPK
+    VSPK = importlib.import_module('vspk.{0:s}'.format(version))
 
-
-arg_spec = dict(
-    vsd_auth=dict(required=True, type='dict'),
-    api_version=dict(required=True, type='str'),
-    event_log_age=dict(required=True, type='str')
-)
-module = AnsibleModule(argument_spec=arg_spec, supports_check_mode=True)
+    session = VSPK.NUVSDSession(**vsd_auth)
+    session.start()
+    csproot = session.user
+    return csproot
 
 
 def main():
+    arg_spec = dict(
+        vsd_auth=dict(required=True, type='dict'),
+        api_version=dict(required=True, type='str'),
+        event_log_age=dict(required=True, type='str')
+    )
+    module = AnsibleModule(argument_spec=arg_spec, supports_check_mode=True)
+
     vsd_auth = module.params['vsd_auth']
     event_log_age = module.params['event_log_age']
-    csproot = get_vsd_session(vsd_auth)
-    set_event_log(csproot, event_log_age)
+
+    try:
+        csproot = get_vsd_session(module, vsd_auth)
+    except ImportError:
+        module.fail_json(msg='vspk is required for this module, or '
+                         'API version specified does not exist.')
+        return
+    except Exception as e:
+        module.fail_json(msg="Could not establish connection to VSD %s" % e)
+        return
+
+    set_event_log(module, csproot, event_log_age)
 
 
-# Run the main
-
-main()
+if __name__ == '__main__':
+    main()

@@ -46,6 +46,7 @@ def main():
                          stdout=out,
                          stderr=err,
                          changed=False)
+        return
 
     for line in out.split('\n'):
         parts = line.split()
@@ -60,4 +61,5 @@ def main():
     module.exit_json(changed=True, state=monit_status)
 
 
-main()
+if __name__ == '__main__':
+    main()
