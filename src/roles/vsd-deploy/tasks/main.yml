@@ -20,11 +20,13 @@
   ignore_errors: yes
   register: monit_result
   remote_user: "{{ vsd_default_username }}"
+  changed_when: False
 
 - name: Read the VSD version
   shell: echo $VSD_VERSION
   register: vsd_version
   remote_user: "{{ vsd_default_username }}"
+  changed_when: False
 
 - name: Set if VSD versions match image file
   set_fact: vsd_versions_match="{{ vsd_version.stdout == image_file_name | regex_search('([0-9]+\\.[0-9]+\\.[0-9A-Za-z]+)') }}"
@@ -189,7 +191,7 @@
   - name: Execute a yum update (Can take 20 minutes)
     yum:
       name: '*'
-      state: latest
+      state: latest     
     when: yum_update
 
   - name: Disable cloud-init on VSD, to avoid boot time delays

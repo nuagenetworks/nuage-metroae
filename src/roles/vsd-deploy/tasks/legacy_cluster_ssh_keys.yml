@@ -4,16 +4,22 @@
     creates: /root/.ssh/id_rsa
   delegate_to: "{{ item }}"
   with_items: "{{ groups['vsds'] }}"
+  register: ssh_key_generated
+  changed_when: ssh_key_generated.rc == 0 and 'skipped' not in ssh_key_generated.stdout
 
 - name: Get generated SSH keys
   shell: cat ~/.ssh/id_rsa.pub
   register: ssh_key_lst
   delegate_to: "{{ item }}"
   with_items: "{{ groups['vsds'] }}"
+  changed_when: False
 
 - name: Add SSH keys to authorized_keys file
   shell: "echo {{ item[1].stdout }} >> /root/.ssh/authorized_keys"
   delegate_to: "{{ item[0] }}"
+  register: ssh_auth_key
   with_nested:
     - "{{ groups['vsds'] }}"
     - "{{ ssh_key_lst.results }}"
+  changed_when: ssh_auth_key.rc == 0
+  
