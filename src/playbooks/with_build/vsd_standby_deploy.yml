@@ -30,6 +30,22 @@
   vars:
     ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"
   tasks:
+    - name: Clean known_hosts of Standby VSD (ignoring errors)
+      known_hosts:
+        name: "{{ inventory_hostname }}"
+        state: absent
+      delegate_to: localhost
+      no_log: True
+      ignore_errors: True
+
+    - name: Wait for VSD ssh to be ready
+      include_role:
+        name: common
+        tasks_from: wait-for-ssh
+      vars:
+        ssh_host: "{{ inventory_hostname }}"
+        host_username: "{{ vsd_default_username }}"
+
     - name: Create data directory on first standby vm
       file:
         path: "/opt/vsd/data"

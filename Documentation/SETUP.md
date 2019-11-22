@@ -4,22 +4,22 @@ You can set up the MetroÆ host environment either [with a Docker container](#me
 ## Environment
 
 ### Method One: Set up Host Environment Using Docker Container
-Using a Docker container results in a similar setup as a GitHub clone, plus it delivers the following features:  
-* All prerequisites are satisfied by the container. Your only requirement is to run Docker engine.  
-* Your data is located in the file system of the host where Docker is running. You don't need to get inside the container.  
-* You have the option of running an API/UI server allowing you to access MetroÆ functionality via REST API and a front-end GUI.  
+Using a Docker container results in a similar setup as a GitHub clone, plus it delivers the following features:
+* All prerequisites are satisfied by the container. Your only requirement is to run Docker engine.
+* Your data is located in the file system of the host where Docker is running. You don't need to get inside the container.
+* You have the option of running an API/UI server allowing you to access MetroÆ functionality via REST API and a front-end GUI.
 * A future release will include Day 0 Configuration capabilities.
-#### System (and Other) Requirements  
-* Operating System: Enterprise Linux 7 (EL7) CentOS 7.4 or greater or RHEL 7.4 or greater  
+#### System (and Other) Requirements
+* Operating System: Enterprise Linux 7 (EL7) CentOS 7.4 or greater or RHEL 7.4 or greater
 * Locally available image files for VCS or VNS deployments
 * Docker Engine 1.13.1 or greater installed and running
-* Container operations may need to be performed with elevated privileges (*root*, *sudo*)  
+* Container operations may need to be performed with elevated privileges (*root*, *sudo*)
 #### Steps
 ##### 1. Download the MetroÆ RPM package from the [Docker](../docker) folder of this repo.
 ##### 2. Install the MetroÆ RPM package with the following command, replacing [release] and [build] with the appropriate details:
 ```
 yum localinstall MetroAE-[release]-[build].noarch.rpm
-```  
+```
 ##### 3. Pull the latest Docker container using the following command:
 ```
 metroae pull
@@ -28,7 +28,7 @@ metroae pull
 ```
 metroae setup [path to data directory] [path to image directory]
 ```
-You can optionally specify the data and image directory paths. If you don't specify them on the command line, you will be prompted to enter them. These paths are required for container operation. The data directory is the place where docs, examples, and your deployment files will be kept and edited. The image directory is the place where Nuage Networks image and package files will be pulled from. Note that setup will create subdirectories beneath the directories you specify, `metroae_data` and `metroae_images`. For example, if you specify `/tmp` for both data and images directory paths during setup, setup will create `/tmp/metroae_data` and `/tmp/metroae_images` for you. Setup will copy docs, logs, and deployment files to `/tmp/metroae_data`. Inside the container itself, setup will mount `/tmp/metroae_data` as `/data/` and `/tmp/metroae_images` as `/images/`. Therefore, when you specify path names for metroae when using the container, you should always specify the container-relative path. For example, if you copy your tar.gz files to `/tmp/metroae_images/6.0.1` on the host, this will appear as `/images/6.0.1` inside the container. When you use the unzip-files action on the container, then, you would specify a source path as `/images/6.0.1`. When you complete the nuage_unzipped_files_dir variable in common.yml, you would also specify `/images/6.0.1`. Note that you can run setup multiple times and setup will not destroy or modify the data you have on disk. If you specify the same data and imafges directories that you had specified on earlier runs, metroae will pick up the existing data. Thus you can update the container as often as you like and your deployments will be preserved. 
+You can optionally specify the data and image directory paths. If you don't specify them on the command line, you will be prompted to enter them. These paths are required for container operation. The data directory is the place where docs, examples, and your deployment files will be kept and edited. The image directory is the place where Nuage Networks image and package files will be pulled from. Note that setup will create subdirectories beneath the directories you specify, `metroae_data` and `metroae_images`. For example, if you specify `/tmp` for both data and images directory paths during setup, setup will create `/tmp/metroae_data` and `/tmp/metroae_images` for you. Setup will copy docs, logs, and deployment files to `/tmp/metroae_data`. Inside the container itself, setup will mount `/tmp/metroae_data` as `/data/` and `/tmp/metroae_images` as `/images/`. Therefore, when you specify path names for metroae when using the container, you should always specify the container-relative path. For example, if you copy your tar.gz files to `/tmp/metroae_images/6.0.1` on the host, this will appear as `/images/6.0.1` inside the container. When you use the unzip-files action on the container, then, you would specify a source path as `/images/6.0.1`. When you complete the nuage_unzipped_files_dir variable in common.yml, you would also specify `/images/6.0.1`. Note that you can run setup multiple times and setup will not destroy or modify the data you have on disk. If you specify the same data and imafges directories that you had specified on earlier runs, metroae will pick up the existing data. Thus you can update the container as often as you like and your deployments will be preserved.
 ##### 5. Start the container using the following command:
 ```
 metroae start
@@ -70,13 +70,13 @@ That's it! Command metadata, command logs, and container setup information are s
 
 ### Method Two: Set up Host Environment Using GitHub Clone
 If you prefer not to use a Docker container you can set up your environment with a GitHub clone instead.
-#### System (and Other) Requirements  
+#### System (and Other) Requirements
 * Operating System: Enterprise Linux 7 (EL7) CentOS 7.4 or greater or RHEL 7.4 or greater
-* Locally available image files for VCS or VNS deployments  
+* Locally available image files for VCS or VNS deployments
 
 #### Steps
 ##### 1. Clone Repository
-If Git is not already installed on the host, install it with the following command.  
+If Git is not already installed on the host, install it with the following command.
 ```
 yum install -y git
 ```
@@ -96,29 +96,30 @@ sudo ./metro-setup.sh
 ```
 The script writes a detailed log into *metro-setup.log* for your reference. A *Setup complete!* messages appears when the packages have been successfully installed.
 
-##### 3. **For ESXi / vCenter Only**, install additional packages  
+##### 3. **For ESXi / vCenter Only**, install additional packages
 
- Package  | Command  
- -------- | -------  
- pyvmomi  | `pip install pyvmomi`  
+ Package  | Command
+ -------- | -------
+ pyvmomi  | `pip install pyvmomi`
  jmespath | `pip install jmespath`
 
- If you are installing VSP components in a VMware environment (ESXi/vCenter) download and install the [ovftool](https://www.vmware.com/support/developer/ovf/) from VMware. MetroÆ uses ovftool for OVA operations.  
+ If you are installing VSP components in a VMware environment (ESXi/vCenter) download and install the [ovftool](https://www.vmware.com/support/developer/ovf/) from VMware. MetroÆ uses ovftool for OVA operations.
 
 ##### 4. **For OpenStack Only**, install additional packages
 
- Module       | Command  
- ------------ | -------  
+ Module       | Command
+ ------------ | -------
  shade python | `pip install shade`
+ nova client  | `pip install openstackclient`
 
-##### 5. Copy ssh keys  
+##### 5. Copy ssh keys
 Communication between the MetroÆ Host and the target servers (hypervisors) occurs via SSH. For every target server, run the following command to copy the current user's ssh key to the authorized_keys file on the target server:
 ```
 ssh-copy-id [target_server_username]@[target_server]
-```  
+```
 
 ##### 6. Configure NTP sync
-For proper operation Nuage components require clock synchronization with NTP. Best practice is to synchronize time on the target servers that Nuage VMs are deployed on, preferrably to the same NTP server as used by the components themselves.  
+For proper operation Nuage components require clock synchronization with NTP. Best practice is to synchronize time on the target servers that Nuage VMs are deployed on, preferrably to the same NTP server as used by the components themselves.
 
 ## Unzip Nuage Networks tar.gz files
 Ensure that the required unzipped Nuage software files (QCOW2, OVA, and Linux Package files) are available for the components to be installed. Use one of the two methods below.
@@ -127,7 +128,7 @@ Run the command below, replacing [zipped_directory] and [nuage_unzipped_files_di
 ```
 ./nuage-unzip.sh [zipped_directory] [nuage_unzipped_files_dir]
 ```
-Note: After completing setup you will [customize](CUSTOMIZE.md) for your deployment, and you'll need to add this unzipped files directory path to `common.yml`.  
+Note: After completing setup you will [customize](CUSTOMIZE.md) for your deployment, and you'll need to add this unzipped files directory path to `common.yml`.
 
 ### Method Two: Manually
 Alternatively, you can create the directories under the [nuage_unzipped_files_dir] directory and manually copy the appropriate files to those locations as shown in the example below.
@@ -150,13 +151,13 @@ Note: After completing setup you will customize for your deployment, and you'll 
 After you've set up your environment you're ready to [customize](CUSTOMIZE.md) for your topology.
 
 ## You May Also Be Interested in
-[Encrypting Sensitive Data in MetroÆ](VAULT_ENCRYPT.md)  
+[Encrypting Sensitive Data in MetroÆ](VAULT_ENCRYPT.md)
 [Deploying Components in AWS](AWS.md)
 
 ## Questions, Feedback, and Contributing
-Ask questions and get support via the [forums](https://devops.nuagenetworks.net/forum/) on the [MetroÆ site](https://devops.nuagenetworks.net/).  
-You may also contact us directly.  
-  Outside Nokia: [devops@nuagenetworks.net](mailto:deveops@nuagenetworks.net "send email to nuage-metro project")  
+Ask questions and get support via the [forums](https://devops.nuagenetworks.net/forum/) on the [MetroÆ site](https://devops.nuagenetworks.net/).
+You may also contact us directly.
+  Outside Nokia: [devops@nuagenetworks.net](mailto:deveops@nuagenetworks.net "send email to nuage-metro project")
   Internal Nokia: [nuage-metro-interest@list.nokia.com](mailto:nuage-metro-interest@list.nokia.com "send email to nuage-metro project")
 
 Report bugs you find and suggest new features and enhancements via the [GitHub Issues](https://github.com/nuagenetworks/nuage-metro/issues "nuage-metro issues") feature.

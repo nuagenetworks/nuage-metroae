@@ -27,7 +27,6 @@ resources:
 {% if openstack_port_security_groups is defined %}
       security_groups: ["{{ openstack_port_security_groups | join('", "') }}"]
 {% endif %}
-
   mycompute:
     type: OS::Nova::Server
     properties:
@@ -40,6 +39,9 @@ resources:
       networks:
         - port: {get_resource: mgmt_port}
       user_data_format: RAW
+{% if openstack_availability_zone is defined %}
+      availability_zone: "{{ openstack_availability_zone }}"
+{% endif %}
       user_data:
         str_replace:
           template: |
@@ -48,6 +50,7 @@ resources:
             echo usr >> /root/.ssh/authorized_keys
           params:
             usr: {get_param: ssh_key}
+
 outputs:
   server_ip:
     description: mgmt ip assigned to vsd
