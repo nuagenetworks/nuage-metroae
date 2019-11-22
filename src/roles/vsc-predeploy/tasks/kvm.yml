@@ -92,7 +92,7 @@
 
     - name: check the result of image find command
       assert:
-        that: statResult.stat.exists == True
+        that: statResult.stat.exists
         msg: Missing qcow2 file {{ images_path }}/{{ vm_name }}/{{ inventory_hostname }}.qcow2
 
     when: skip_copy_images
@@ -101,7 +101,9 @@
     template: src=bof.cfg.j2 backup=no dest={{ images_path }}/{{ vm_name }}/bof.cfg
 
   - name: Copy temporary configuration files to the VSC image
-    command: guestfish --rw -a {{ images_path }}/{{ vm_name }}/{{ inventory_hostname }}.qcow2 -m {{ vsc_partition }} copy-in {{ images_path }}/{{ vm_name }}/bof.cfg /
+    command: >-
+      guestfish --rw -a {{ images_path }}/{{ vm_name }}/{{ inventory_hostname }}.qcow2
+      -m {{ vsc_partition }} copy-in {{ images_path }}/{{ vm_name }}/bof.cfg /
 
   - name: Remove temporary configuration files
     file: path={{ images_path }}/{{ vm_name }}/bof.cfg state=absent

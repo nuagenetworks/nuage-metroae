@@ -14,7 +14,12 @@
 
 - name: Copy VSC config file to the VSC
   connection: local
-  command: "sshpass -p {{ vsc_password|default('admin') }} scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null /tmp/ansible-nuagex-config-{{ inventory_hostname }}.cfg {{ vsc_username|default('admin') }}@{{ mgmt_ip }}:"
+  command: >-
+    sshpass -p {{ vsc_password|default('admin') }}
+    scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null /tmp/ansible-nuagex-config-{{ inventory_hostname }}.cfg
+    {{ vsc_username|default('admin') }}@{{ mgmt_ip }}:
+  register: copy_config
+  changed_when: copy_config.rc == 0
 
 - name: Execute VSC basic configuration
   sros_command:
