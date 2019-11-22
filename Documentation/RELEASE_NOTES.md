@@ -24,6 +24,7 @@
 * Support SD-WANn Portal 6.0.1
 * VNS support in wizard (METROAE-1151)
 * Added support for spreadsheet/CSV input method
+* Check certificate count before running vsd db backup (METROAE-1055)
 
 ### Resolved Issues
 * Set event log max age to 7 as per Nuage Upgrade procedure (METROAE-1001)
