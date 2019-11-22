@@ -9,6 +9,12 @@
 
 - debug: var=username_on_the_host verbosity=1
 
+- name: get the primary group for the username
+  local_action: command id -gn "{{ username_on_the_host.stdout }}"
+  register: groupname_on_the_host
+
+- debug: var=groupname_on_the_host verbosity=1
+
 - name: Set name of backup directory
   set_fact: vsd_localhost_backup_dir="{{metro_backup_root}}/backup-{{ inventory_hostname }}-{{ ansible_date_time.iso8601_basic_short }}/"
 
@@ -187,7 +193,7 @@
     dest: "{{ vsd_localhost_backup_dir }}"
     state: directory
     owner: "{{ username_on_the_host.stdout }}"
-    group: "{{ username_on_the_host.stdout }}"
+    group: "{{ groupname_on_the_host.stdout }}"
   delegate_to: localhost
 
 - name: Fetch files from vsd and copy them to backup folder on backup_machine
