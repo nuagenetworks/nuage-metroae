@@ -1,11 +1,7 @@
 #!/usr/bin/env python
 
-from vspk.v5_0 import NULicense, NUEnterprise, NUUser, NUNSPortTemplate
-from vspk.v5_0 import NUInfrastructureGatewayProfile, NUNSGatewayTemplate
-from vspk.v5_0 import NUInfrastructureVscProfile, NUVLANTemplate, NUJob
-from vspk.v5_0 import NUNSGateway, NUVSDSession, NUUplinkConnection
+import vspk.v5_0 as VSPK
 import subprocess
-import sys
 from time import sleep
 
 from ansible.module_utils.basic import AnsibleModule
@@ -150,7 +146,7 @@ EXAMPLES = '''
 
 def install_license(csproot, vsd_license):
     # Push the license
-    test_license = NULicense(license=vsd_license)
+    test_license = VSPK.NULicense(license=vsd_license)
     csproot.create_child(test_license)
 
 
@@ -170,31 +166,31 @@ def get_license_unique_id(vsd_license):
     return unicode(stripped[0:16] + stripped[-16:])
 
 
-def create_proxy_user(session):
+def create_proxy_user(module, session):
     zfb_proxy_user = module.params['zfb_proxy_user']
     zfb_constants = module.params['zfb_constants']
 
     # Create proxy user if not present
-    cspenterprise = NUEnterprise()
+    cspenterprise = VSPK.NUEnterprise()
     cspenterprise.id = session.me.enterprise_id
     csp_users = cspenterprise.users.get()
     lst_users = [usr.user_name for usr in csp_users]
     if zfb_constants['proxy_user'] not in lst_users:
-        proxy_user = NUUser(first_name=zfb_proxy_user['firstName'],
-                            last_name=zfb_proxy_user['lastName'],
-                            user_name=zfb_constants['proxy_user'],
-                            email=zfb_proxy_user['email'],
-                            password=zfb_proxy_user['password'])
+        proxy_user = VSPK.NUUser(first_name=zfb_proxy_user['firstName'],
+                                 last_name=zfb_proxy_user['lastName'],
+                                 user_name=zfb_constants['proxy_user'],
+                                 email=zfb_proxy_user['email'],
+                                 password=zfb_proxy_user['password'])
         cspenterprise.create_child(proxy_user)
-        csprootuser = NUUser(id=session.me.id)
+        csprootuser = VSPK.NUUser(id=session.me.id)
         csprootuser.fetch()
         # Add proxy user to root group
         csprootgroup = cspenterprise.groups.get_first(filter="name ==\
                                                       'Root Group'")
-        csprootgroup.assign([proxy_user, csprootuser], NUUser)
+        csprootgroup.assign([proxy_user, csprootuser], VSPK.NUUser)
 
 
-def create_nsg_infra_profile(csproot):
+def create_nsg_infra_profile(module, csproot):
     infra_params = module.params['zfb_nsg_infra']
     zfb_constants = module.params['zfb_constants']
 
@@ -204,40 +200,41 @@ def create_nsg_infra_profile(csproot):
     if nsg_infra is None:
         infra_params['useTwoFactor'] = zfb_constants['useTwoFactor']
         infra_params['upgradeAction'] = zfb_constants['upgradeAction']
-        nsg_infra = NUInfrastructureGatewayProfile(data=infra_params)
+        nsg_infra = VSPK.NUInfrastructureGatewayProfile(data=infra_params)
         csproot.create_child(nsg_infra)
 
     return nsg_infra
 
 
-def create_nsg_gateway_template(csproot, nsg_infra):
+def create_nsg_gateway_template(module, csproot, nsg_infra):
     nsg_params = module.params['zfb_nsg']
 
     nsg_temp = csproot.ns_gateway_templates.get_first(
         "name is '%s'" % nsg_params['nsg_template_name'])
 
     if nsg_temp is None:
-        nsg_temp = NUNSGatewayTemplate(name=nsg_params['nsg_template_name'])
+        nsg_temp = VSPK.NUNSGatewayTemplate(
+            name=nsg_params['nsg_template_name'])
         nsg_temp.infrastructure_profile_id = nsg_infra.id
         csproot.create_child(nsg_temp)
 
     return nsg_temp
 
 
-def create_vsc_infra_profile(csproot):
+def create_vsc_infra_profile(module, csproot):
     vsc_params = module.params['zfb_vsc_infra']
 
     vsc_infra = csproot.infrastructure_vsc_profiles.get_first(
         "name is '%s'" % vsc_params['name'])
 
     if vsc_infra is None:
-        vsc_infra = NUInfrastructureVscProfile(data=vsc_params)
+        vsc_infra = VSPK.NUInfrastructureVscProfile(data=vsc_params)
         csproot.create_child(vsc_infra)
 
     return vsc_infra
 
 
-def create_nsgv_ports(nsg_temp, vsc_infra):
+def create_nsgv_ports(module, nsg_temp, vsc_infra):
     port_params = module.params['zfb_ports']
     zfb_constants = module.params['zfb_constants']
 
@@ -250,15 +247,15 @@ def create_nsgv_ports(nsg_temp, vsc_infra):
 
     if port_temp is None:
         network_port['portType'] = zfb_constants['network_port_type']
-        port_temp = NUNSPortTemplate(data=network_port)
+        port_temp = VSPK.NUNSPortTemplate(data=network_port)
         nsg_temp.create_child(port_temp)
         # Attach vlan0 and vsc profile
-        vlan_temp = NUVLANTemplate()
+        vlan_temp = VSPK.NUVLANTemplate()
         vlan_temp.value = '0'
         vlan_temp.associated_vsc_profile_id = vsc_infra.id
         port_temp.create_child(vlan_temp)
 
-        uplink = NUUplinkConnection()
+        uplink = VSPK.NUUplinkConnection()
         uplink.mode = "Dynamic"
         uplink.role = "PRIMARY"
         vlan_temp.create_child(uplink)
@@ -270,10 +267,10 @@ def create_nsgv_ports(nsg_temp, vsc_infra):
     if port_temp is None:
         vlan_id = access_port.pop('vlan_value')
         access_port['portType'] = zfb_constants['access_port_type']
-        port_temp = NUNSPortTemplate(data=access_port)
+        port_temp = VSPK.NUNSPortTemplate(data=access_port)
         nsg_temp.create_child(port_temp)
         # Attach vlan
-        vlan_temp = NUVLANTemplate()
+        vlan_temp = VSPK.NUVLANTemplate()
         vlan_temp.value = vlan_id
         port_temp.create_child(vlan_temp)
 
@@ -283,13 +280,13 @@ def create_enterprise(csproot, name):
         "name is '%s'" % name)
 
     if enterprise is None:
-        enterprise = NUEnterprise(name=name)
+        enterprise = VSPK.NUEnterprise(name=name)
         csproot.create_child(enterprise)
 
     return enterprise
 
 
-def create_nsg_device(csproot, nsg_temp):
+def create_nsg_device(module, csproot, nsg_temp):
     nsg_params = module.params['zfb_nsg']
     nsg_infra = module.params['zfb_nsg_infra']
 
@@ -309,13 +306,13 @@ def create_nsg_device(csproot, nsg_temp):
         if nsg_infra["instanceSSHOverride"] == "ALLOWED":
             nsg_data["SSHService"] = nsg_params['ssh_service']
 
-        nsg_dev = NUNSGateway(data=nsg_data)
+        nsg_dev = VSPK.NUNSGateway(data=nsg_data)
         metro_org.create_child(nsg_dev)
 
     return metro_org
 
 
-def has_nsg_configuration(csproot):
+def has_nsg_configuration(module, csproot):
     nsg_params = module.params['zfb_nsg']
 
     enterprise = csproot.enterprises.get_first(
@@ -330,12 +327,12 @@ def has_nsg_configuration(csproot):
     return False
 
 
-def create_iso_file(metro_org, nsg_temp):
+def create_iso_file(module, metro_org, nsg_temp):
     zfb_constants = module.params['zfb_constants']
     nsgv_path = module.params['nsgv_path']
 
     # Create an ISO file that's attached to nsgv vm
-    job = NUJob()
+    job = VSPK.NUJob()
     job.command = "GET_ZFB_INFO"
     zfb_constants['iso_params']['associatedEntityID'] = nsg_temp.id
     job.parameters = zfb_constants['iso_params']
@@ -348,7 +345,44 @@ def create_iso_file(metro_org, nsg_temp):
 
 
 def main():
-    # Nsgv_path
+    arg_spec = dict(
+        nsgv_path=dict(
+            required=False,
+            type='str'),
+        skip_iso_create=dict(
+            required=False,
+            type='bool'),
+        fact_name=dict(
+            required=False,
+            type='str'),
+        vsd_license_file=dict(
+            required=True,
+            type='str'),
+        vsd_auth=dict(
+            required=True,
+            no_log=True,
+            type='dict'),
+        zfb_constants=dict(
+            required=True,
+            type='dict'),
+        zfb_proxy_user=dict(
+            required=True,
+            no_log=True,
+            type='dict'),
+        zfb_nsg=dict(
+            required=True,
+            type='dict'),
+        zfb_ports=dict(
+            required=True,
+            type='dict'),
+        zfb_nsg_infra=dict(
+            required=True,
+            type='dict'),
+        zfb_vsc_infra=dict(
+            required=True,
+            type='dict'))
+
+    module = AnsibleModule(argument_spec=arg_spec, supports_check_mode=True)
 
     vsd_license_file = module.params['vsd_license_file']
     vsd_auth = module.params['vsd_auth']
@@ -364,18 +398,18 @@ def main():
             vsd_license = lf.read()
     except Exception as e:
         module.fail_json(msg="ERROR: Failure reading file: %s" % e)
-        sys.exit(1)
+        return
 
     # Create a session as csp user
     try:
-        session = NUVSDSession(**vsd_auth)
+        session = VSPK.NUVSDSession(**vsd_auth)
         session.start()
         csproot = session.user
     except Exception as e:
         module.fail_json(
             msg="ERROR: Could not establish connection to VSD API "
                 "using %s: %s" % (vsd_auth, str(e)))
-        sys.exit(1)
+        return
 
     nsg_already_configured = False
 
@@ -383,63 +417,24 @@ def main():
     if (not is_license_already_installed(csproot, vsd_license)):
         install_license(csproot, vsd_license)
 
-    if has_nsg_configuration(csproot):
+    if has_nsg_configuration(module, csproot):
         nsg_already_configured = True
 
-    create_proxy_user(session)
+    create_proxy_user(module, session)
 
-    nsg_infra = create_nsg_infra_profile(csproot)
-    nsg_temp = create_nsg_gateway_template(csproot, nsg_infra)
-    vsc_infra = create_vsc_infra_profile(csproot)
-    create_nsgv_ports(nsg_temp, vsc_infra)
-    metro_org = create_nsg_device(csproot, nsg_temp)
+    nsg_infra = create_nsg_infra_profile(module, csproot)
+    nsg_temp = create_nsg_gateway_template(module, csproot, nsg_infra)
+    vsc_infra = create_vsc_infra_profile(module, csproot)
+    create_nsgv_ports(module, nsg_temp, vsc_infra)
+    metro_org = create_nsg_device(module, csproot, nsg_temp)
 
     if ("skip_iso_create" not in module.params or
             module.params["skip_iso_create"] is not True):
-        create_iso_file(metro_org, nsg_temp)
+        create_iso_file(module, metro_org, nsg_temp)
 
     module.exit_json(changed=True,
                      ansible_facts={fact_name: nsg_already_configured})
 
-
-arg_spec = dict(
-    nsgv_path=dict(
-        required=False,
-        type='str'),
-    skip_iso_create=dict(
-        required=False,
-        type='bool'),
-    fact_name=dict(
-        required=False,
-        type='str'),
-    vsd_license_file=dict(
-        required=True,
-        type='str'),
-    vsd_auth=dict(
-        required=True,
-        no_log=True,
-        type='dict'),
-    zfb_constants=dict(
-        required=True,
-        type='dict'),
-    zfb_proxy_user=dict(
-        required=True,
-        no_log=True,
-        type='dict'),
-    zfb_nsg=dict(
-        required=True,
-        type='dict'),
-    zfb_ports=dict(
-        required=True,
-        type='dict'),
-    zfb_nsg_infra=dict(
-        required=True,
-        type='dict'),
-    zfb_vsc_infra=dict(
-        required=True,
-        type='dict'))
-
-module = AnsibleModule(argument_spec=arg_spec, supports_check_mode=True)
 
 if __name__ == '__main__':
     main()
