@@ -80,6 +80,7 @@
     warn: false
   register: _svc_iptables
   ignore_errors: True
+  changed_when: False
   remote_user: "{{ vstat_default_username }}"
 
 - name: Print vsd deployment mode when verbosity >= 1
@@ -104,17 +105,20 @@
     remote_user: "{{ vstat_default_username }}"
     register: vstat_ip6tables_result
     ignore_errors: True
-    when: enable_ipv6 | default(False) == True
+    when: enable_ipv6 | default(False)
 
   - name: Check if iptables is already setup for VSD rules (ignoring errors)
     shell: iptables -L INPUT | grep 'match-set vsd src'
     remote_user: "{{ vstat_default_username }}"
     register: vstat_iptables_result
     ignore_errors: True
-    when: enable_ipv6 | default(False) != True
+    when: not enable_ipv6 | default(True)
 
   - name: Set if skipping VSTAT deploy
-    set_fact: skip_vstat_deploy="{{ (vstat_iptables_result is defined and vstat_iptables_result.rc | default(1) == 0) or (vstat_ip6tables_result is defined and vstat_ip6tables_result.rc | default(1) == 0) }}"
+    set_fact:
+      skip_vstat_deploy: >
+        {{ (vstat_iptables_result is defined and vstat_iptables_result.rc | default(1) == 0) or
+        (vstat_ip6tables_result is defined and vstat_ip6tables_result.rc | default(1) == 0) }}
 
   - name: Display if skipping VSTAT deploy
     debug:
@@ -190,6 +194,7 @@
     warn: false
   register: _svc_firewalld
   ignore_errors: True
+  changed_when: False
   remote_user: "{{ vstat_default_username }}"
 
 - block:

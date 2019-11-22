@@ -23,7 +23,7 @@
     when: (data_bridge not in ansible_interfaces) or
           (access_bridge not in ansible_interfaces)
 
-  - name: Check if required OS packages are installed (ignoring errors)
+  - name: Check if required OS packages are installed (ignoring errors)         # noqa 303
     command: rpm -q qemu-kvm libvirt bridge-utils libguestfs-tools libvirt-python
     register: rpm_check
     ignore_errors: True
@@ -78,7 +78,7 @@
 
     - name: check the result of image find command
       assert:
-        that: statResult.stat.exists == True
+        that: statResult.stat.exists
         msg: Missing qcow2 file in {{ images_path }}/{{ vmname }}/{{ image_file_name }}
 
     when: skip_copy_images
@@ -91,12 +91,15 @@
 - block:
 
   - name: Create local temp directory
-    local_action: command mktemp -d "{{ lookup('env', 'TMPDIR') | default('/tmp/', true) }}ansible.XXXX"
+    tempfile:
+      path: "{{ lookup('env', 'TMPDIR') | default('/tmp/',true) }}"
+      state: directory
+    delegate_to: localhost
     register: mktemp_output
 
   - name: Generate ISO file
     create_zfb_profile:
-      nsgv_path: "{{ mktemp_output.stdout }}"
+      nsgv_path: "{{ mktemp_output.path }}"
       fact_name: nsgv_already_configured
       vsd_license_file: "{{ vsd_license_file }}"
       vsd_auth: "{{ vsd_auth }}"
@@ -114,7 +117,7 @@
       msg: "NSGV is already running, but there was no corresponding configuration for it."
 
   - name: Copy the ISO image to virt images directory
-    copy: src="{{ mktemp_output.stdout }}/user_image.iso"
+    copy: src="{{ mktemp_output.path }}/user_image.iso"
           dest={{ images_path }}/{{ vmname }}
           owner={{ libvirt.user }}
           group={{ libvirt.group }}

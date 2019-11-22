@@ -49,7 +49,7 @@
     ignore_errors: True
 
   - name: Get controller connection info (ignoring errors)
-    shell: "ovs-vsctl show | grep -Pzl '(?s)Controller \"ctrl(1|2)\"\\n *target: \"(tcp|ssl):({{ item }}):6633\"\\n *role: (master|slave)\\n *is_connected: true'"
+    shell: "ovs-vsctl show | grep -Pzl '(?s)Controller \"ctrl(1|2)\"\\n *target: \"(tcp|ssl):({{ item }}):6633\"\\n *role: (master|slave)\\n *is_connected: true'"      # noqa 204
     with_items:
       - "{{ active_controller_addr }}"
       - "{{ standby_controller_addr }}"
@@ -232,7 +232,8 @@
     service: name=nuage-openvswitch-switch state=restarted
     when: ansible_os_family == "Debian"
 
-  - pause: seconds=20
+  - name: Pause for 20 seconds
+    pause: seconds=20
 
   remote_user: "{{ compute_username | default(target_server_username) }}"
   become: "{{ 'no' if compute_username == 'root' else 'yes' }}"

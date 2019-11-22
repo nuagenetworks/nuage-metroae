@@ -3,7 +3,7 @@
 
 - name: Set JSON Query to retrieve MgmtIP for VSC({{ controller_addr }})
   set_fact:
-    ctrl_query: "*|[?control_ip=='{{controller_addr}}'].{host: mgmt_ip, username: vsc_default_username, password: vsc_default_password }"
+    ctrl_query: "*|[?control_ip=='{{ controller_addr }}'].{host: mgmt_ip, username: vsc_default_username, password: vsc_default_password }"
 
 - name: Query host variables for VSC Controller({{ controller_addr }})
   set_fact:
@@ -77,7 +77,6 @@
     when: vsc_version.stdout is version('6.0.1', '<')
 
   - block:
-    
     - name: Get output of 'show vswitch-controller information' on VSC ({{ controller_addr }}) for version greater than 6.0.1
       sros_command:
         commands:
@@ -85,7 +84,7 @@
         provider: "{{ vsc_creds[0] }}"
       delegate_to: localhost
       register: vsc_vsw_info
-    
+
     - name: Set fact for vswitch_controller_info
       set_fact:
         vswitch_controller_info: "{{ vsc_vsw_info.stdout[0] }}"
@@ -97,3 +96,4 @@
       that: "'Cntrl. Conn. state         : ready' in vswitch_controller_info"
 
   when: vsc_creds | length == 1
+

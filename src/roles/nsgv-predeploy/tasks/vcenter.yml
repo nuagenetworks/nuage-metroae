@@ -15,12 +15,15 @@
 
   - block:
     - name: Create local temp directory
-      local_action: command mktemp -d "{{ lookup('env', 'TMPDIR') | default('/tmp/', true) }}ansible.XXXX"
+      tempfile:
+        path: "{{ lookup('env', 'TMPDIR') | default('/tmp/', true) }}"
+        state: directory
+      delegate_to: localhost
       register: mktemp_output
 
     - name: Generate ISO file
       create_zfb_profile:
-        nsgv_path: "{{ mktemp_output.stdout }}"
+        nsgv_path: "{{ mktemp_output.path }}"
         fact_name: nsgv_already_configured
         vsd_license_file: "{{ vsd_license_file }}"
         vsd_auth: "{{ vsd_auth }}"
@@ -39,7 +42,7 @@
 
     - name: Copy the ISO image to vcenter datastore
       vsphere_copy:
-            src: "{{ mktemp_output.stdout }}/user_image.iso"
+            src: "{{ mktemp_output.path }}/user_image.iso"
             path: "{{ vmname }}/user_image.iso"
             host: "{{ target_server }}"
             login: "{{ vcenter.username }}"
@@ -53,7 +56,10 @@
 
   - name: Configure vCenter path
     set_fact:
-      vcenter_path: "{{ target_server }}/{{ vcenter.datacenter }}/host/{{ vcenter.cluster }}{{ (vcenter.host_reference != 'NONE') | ternary ('/{{ vcenter.host_reference | urlencode }}', '') }}{{ (vcenter.resource_pool != 'NONE') | ternary ('/Resources/{{ vcenter.resource_pool | urlencode }}', '') }}"
+      vcenter_path: >-
+        {{ target_server }}/{{ vcenter.datacenter }}/host/{{ vcenter.cluster }}
+        {{ (vcenter.host_reference != 'NONE') | ternary ('/{{ vcenter.host_reference | urlencode }}', '') }}
+        {{ (vcenter.resource_pool != 'NONE') | ternary ('/Resources/{{ vcenter.resource_pool | urlencode }}', '') }}
 
   - name: Set power on when NSGv mac does not need to be set
     set_fact:
@@ -98,8 +104,8 @@
   - name: Debug the deploy logs
     assert:
       that: deploy_result.rc == 0
-      success_msg: "{{deploy_result.stdout}}"
-      fail_msg: "{{deploy_result.stderr}}"
+      success_msg: "{{ deploy_result.stdout }}"
+      fail_msg: "{{ deploy_result.stderr }}"
 
   - block:
 
@@ -153,7 +159,7 @@
         state: present
         cdrom:
           type: "iso"
-          iso_path: "{{ iso_path}}/{{ iso_file }}"
+          iso_path: "{{ iso_path }}/{{ iso_file }}"
       delegate_to: localhost
     when: bootstrap_method == 'zfb_external'
 

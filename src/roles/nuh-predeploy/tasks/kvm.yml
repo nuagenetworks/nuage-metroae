@@ -62,7 +62,7 @@
   - name: Check the result of image find command
     set_fact:
       image_present: True
-    when: statResult.stat.exists == True
+    when: statResult.stat.exists
 
   - name: Image stat result
     debug: var=statResult
@@ -78,7 +78,9 @@
       guestfish_dest: "{{ images_path }}/{{ vm_name }}/{{ image_file_name }}"
 
   - name: Get the public key for the current user
-    local_action: command cat "{{ user_ssh_pub_key }}"
+    command: cat "{{ user_ssh_pub_key }}"
+    delegate_to: localhost
+    changed_when: False
     register: current_user_ssh_key
 
   - name: Create a temporary copy of the network script for eth0
@@ -157,7 +159,7 @@
   - name: Set the SSH not to use DNS
     command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} echo "UseDNS no" >> /etc/ssh/sshd_config
 
-  - name: Disable SELinux 
+  - name: Disable SELinux
     command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} sh "sed -i 's/SELINUX\=enforcing/SELINUX\=permissive/g' /etc/selinux/config"
 
   - name: Define VM
