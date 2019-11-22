@@ -6,3 +6,4 @@
 
 ### Resolved Issues
 * Make openstack availability zone optional for VSC
+* VSTAT inplace upgrade fails with non-default root password
