@@ -41,4 +41,5 @@ def main():
     module.exit_json(changed=True)
 
 
-main()
+if __name__ == '__main__':
+    main()

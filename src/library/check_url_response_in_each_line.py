@@ -58,14 +58,17 @@ def main():
             if not found_all_search_strings:
                 break
 
-        time.sleep(test_interval_seconds)
-        time_elapsed = time_elapsed + test_interval_seconds
+        if not found_all_search_strings:
+            time.sleep(test_interval_seconds)
+            time_elapsed = time_elapsed + test_interval_seconds
 
     if found_all_search_strings:
         module.exit_json(changed=True, response=response_text)
     else:
         module.fail_json(msg="Did not find the search string %s from response %s within %i seconds" % (search_string, response_text, timeout_seconds))
-        # Run the main
 
 
-main()
+# Run the main
+
+if __name__ == '__main__':
+    main()
