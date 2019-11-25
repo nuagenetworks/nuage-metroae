@@ -1,0 +1,16 @@
+- name: Check the number of certificates installed on vsd node
+  shell:  ls -1 /opt/vsd/ejbca/p12/*`hostname -d`*.pem | wc -l 
+  ignore_errors: True
+  register: count_files
+
+- name: Set fact for number of certificates found
+  set_fact: 
+    certs_count: "{{count_files.stdout | int | default(0)}}" 
+
+- name: Check if the node has maximum certificates in the cluster
+  set_fact:
+    vsd_backup_node: "{{inventory_hostname}}"
+    max_certs_count: "{{ certs_count }}"
+  delegate_to: localhost
+  delegate_facts: True
+  when: certs_count > (hostvars['localhost'].max_certs_count | default(0))
