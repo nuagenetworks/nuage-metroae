@@ -9,19 +9,17 @@
   vars:
     item: "{{ component }}"
 
-- block:
-  - name: Create credentials files for {{ component_template }}
-    template: src=component_credentials.j2 backup=no dest={{ inventory_dir }}/host_vars/component_credentials
-    vars:
-      item: "{{ component }}"
+- name: Create credentials files for {{ component_template }}
+  template: src=component_credentials.j2 backup=no dest={{ inventory_dir }}/host_vars/component_credentials
+  vars:
+    item: "{{ component }}"
 
-  - name: Concat credentials with the component host host vars
-    shell: cat {{ inventory_dir }}/host_vars/component_credentials >> {{ inventory_dir }}/host_vars/{{ component_hostname }}
+- name: Concat credentials with the component host host vars
+  shell: cat {{ inventory_dir }}/host_vars/component_credentials >> {{ inventory_dir }}/host_vars/{{ component_hostname }}
 
-  - name: Cleanup the temp credentials file
-    shell: rm -f {{ inventory_dir }}/host_vars/component_credentials
+- name: Cleanup the temp credentials file
+  shell: rm -f {{ inventory_dir }}/host_vars/component_credentials
 
-  when: creds is defined and creds !=  ""
 
 - name: Unset Credentials
   set_fact:
