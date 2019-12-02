@@ -53,8 +53,13 @@
       netmask: "{{ item.mgmt_ip_prefix }}"
     with_items: "{{ vcins }}"
 
-  - name: Create host_vars files for vcin
-    template: src=vsd.j2 backup=no dest={{ inventory_dir }}/host_vars/{{ item.hostname }}
+  - name: Create host_vars files for vstat
+    include_tasks: write-host-files.yml
+    vars:
+      component_template: vsd
+      component_hostname: "{{ component.hostname }}"
+    loop_control:
+      loop_var: component
     vars:
       is_vcin: True
     with_items: "{{ vcins }}"

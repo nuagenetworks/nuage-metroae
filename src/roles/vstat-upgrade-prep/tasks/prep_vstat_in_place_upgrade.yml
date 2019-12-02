@@ -29,74 +29,47 @@
     vsd_hostname: "{{ vsd_fqdn }}"
   run_once: true
 
+- name: Disable stats collection on all VSD nodes
+  include_role:
+    name: common
+    tasks_from: disable-stats-on-vsd.yml
+  with_items: "{{ vsd_hostname_list }}"
+  loop_control:
+    loop_var: vsd
+
 - block:
-
-  - name: Disable stats collection on all VSD nodes
-    command: /opt/vsd/vsd-stats.sh -d
-    delegate_to: "{{ item }}"
-    with_items: "{{ vsd_hostname_list }}"
-    ignore_errors: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"  
-
-  - name: Get jboss status of all VSDs
-    command: monit status jboss
-    register: jboss_status
-    delegate_to: "{{ item }}"
-    with_items: "{{ vsd_hostname_list }}"
-
-  - name: Verify jboss is active for all VSDs
-    assert:
-      that: "{{ item.rc }} == 0 or
-              {{ item.stdout is search('Running') }}"
-      msg: "JBoss is not Active for VSDs"
-    with_items:
-      - "{{ jboss_status.results }}"
-
   - name: Generate ssh key on vsd for vstat upgrade
     shell: ssh-keygen -b 2048 -t rsa -f /root/.ssh/vstat_rsa -q -N ""
     args:
       creates: /root/.ssh/vstat_rsa
-    delegate_to: "{{ vsd_hostname_list[0] }}"
 
   - name: Get generated SSH keys
     shell: cat ~/.ssh/vstat_rsa.pub
     register: ssh_key
-    delegate_to: "{{ vsd_hostname_list[0] }}"
 
-  - name: Copy ssh key from vsd to vstat node(s)
-    shell: "echo {{ ssh_key.stdout }} >> /root/.ssh/authorized_keys"
-    remote_user: "{{ vstat_default_username }}"
-
-  remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
-  become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
+  delegate_to: "{{ vsd_hostname_list[0] }}"
+  remote_user: "{{ hostvars[vsd_hostname_list[0]].vsd_custom_username | default(vsd_custom_username | default(vsd_default_username)) }}"
+  become: "{{ 'no' if hostvars[vsd_hostname_list[0]].vsd_custom_username | default(vsd_custom_username | default(vsd_default_username)) == 'root' else 'yes' }}"
   vars:
-    ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"
+    ansible_become_pass: "{{ hostvars[vsd_hostname_list[0]].vsd_custom_password | default(vsd_custom_password | default(vsd_default_password)) }}"
   run_once: true
 
-- block:
-  - name: Generate SSH keys
-    shell: ssh-keygen -b 2048 -t rsa -f /root/.ssh/vstat_rsa -q -N ""
-    args:
-      creates: /root/.ssh/vstat_rsa
-    delegate_to: "{{ item }}"
-    with_items: "{{ groups['vstats'] }}"
-    run_once: true
-
-  - name: Get generated SSH keys
-    shell: cat ~/.ssh/vstat_rsa.pub
-    register: ssh_key_lst
-    delegate_to: "{{ item }}"
-    with_items: "{{ groups['vstats'] }}"
-    run_once: true
-
-  - name: Add SSH keys to authorized_keys file
-    shell: "echo {{ item[1].stdout }} >> /root/.ssh/authorized_keys"
-    delegate_to: "{{ item[0] }}"
-    with_nested:
-      - "{{ groups['vstats'] }}"
-      - "{{ ssh_key_lst.results }}"
-    run_once: true
-  when: vstat_sa_or_ha is match('ha')
+- name: Copy ssh key from vsd to vstat node(s)
+  shell: "echo {{ ssh_key.stdout }} >> /root/.ssh/authorized_keys"
   remote_user: "{{ vstat_username | default(vstat_default_username) }}"
   become: "{{ 'no' if vstat_username | default(vstat_default_username) == 'root' else 'yes' }}"
   vars:
     ansible_become_pass: "{{ vstat_password | default(vstat_default_password) }}"
+
+- name: Generate SSH keys
+  include_role:
+    name: common
+    tasks_from: vstat_generate_ssh_keys.yml
+  with_items:
+    - "{{ groups['vstats'] }}"
+  loop_control:
+    loop_var: vstat
+  vars:
+    vstat_username: "{{ vstat_default_username }}"
+    group_vstats: "{{ groups['vstats'] }}"
+    upgrade: true
