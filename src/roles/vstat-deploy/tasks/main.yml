@@ -45,28 +45,46 @@
 
 - block:
   - name: Generate SSH keys
-    include_tasks: generate_ssh_keys.yml
+    include_role:
+      name: common
+      tasks_from: vstat_generate_ssh_keys.yml
+    with_items:
+      - "{{ groups['vstats'] }}"
+    loop_control:
+      loop_var: vstat
     vars:
-      group_vstats: "{{ groups['vstats'] }}"
       vstat_username: "{{ vstat_default_username }}"
+      group_vstats: "{{ groups['vstats'] }}"
 
     remote_user: "{{ vstat_default_username }}"
     when: groups['vstats'] is defined
 
   - name: Generate SSH keys
-    include_tasks: generate_ssh_keys.yml
+    include_role:
+      name: common
+      tasks_from: vstat_generate_ssh_keys.yml
+    with_items:
+      - "{{ groups['primary_vstats'] }}"
+    loop_control:
+      loop_var: vstat
     vars:
-      group_vstats: "{{ groups['primary_vstats'] }}"
       vstat_username: "{{ vstat_default_username }}"
+      group_vstats: "{{ groups['primary_vstats'] }}"
 
     remote_user: "{{ vstat_default_username }}"
     when: groups['primary_vstats'] is defined and active
 
   - name: Generate SSH keys
-    include_tasks: generate_ssh_keys.yml
+    include_role:
+      name: common
+      tasks_from: vstat_generate_ssh_keys.yml
+    with_items:
+      - "{{ groups['backup_vstats'] }}"
+    loop_control:
+      loop_var: vstat
     vars:
-      group_vstats: "{{ groups['backup_vstats'] }}"
       vstat_username: "{{ vstat_default_username }}"
+      group_vstats: "{{ groups['backup_vstats'] }}"
 
     remote_user: "{{ vstat_default_username }}"
     when: groups['backup_vstats'] is defined and not active
@@ -292,27 +310,29 @@
       vars:
         vsd_hostname: "{{ vsd_fqdn }}"
 
+    - name: SSH host
+      set_fact:
+        vsd_node1_hostname: "{{ vsd_hostname_list[0] }}"
+
     - name: Make sure the first VSD node is ready before we proceed
       include_role:
         name: common
         tasks_from: wait-for-ssh
       vars:
-        ssh_host: "{{ vsd_hostname_list[0] }}"
-        host_username: "{{ vsd_custom_username | default(vsd_default_username) }}"
+        ssh_host: "{{ vsd_node1_hostname }}"
+        host_username: "{{ hostvars[vsd_node1_hostname].vsd_custom_username | default(vsd_custom_username | default(vsd_default_username)) }}"
 
     - block:
 
       - name: Stat the standalone script
         stat: path=/opt/vsd/vsd-es-standalone.sh
         register: es_sa_script
-        delegate_to: "{{ vsd_hostname_list[0] }}"
         when:
           - vstat_sa_or_ha is match('sa')
 
       - name: Execute VSTAT standalone script on standalone or clustered vsds
         command: /opt/vsd/vsd-es-standalone.sh -e {{ inventory_hostname }}
         no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
-        delegate_to: "{{ vsd_hostname_list[0] }}"
         environment:
           SSHPASS: "{{ vstat_default_password }}"
         when:
@@ -322,7 +342,6 @@
 
       - name: Execute VSTAT standalone script on standalone or clustered vsds
         command: /opt/vsd/vsd-es-standalone.sh -e {{ inventory_hostname }}
-        delegate_to: "{{ vsd_hostname_list[0] }}"
         no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
         when:
           - vstat_sa_or_ha is match('sa')
@@ -332,7 +351,6 @@
       - block:
         - name: Execute VSTAT cluster script on standalone or clustered vsds
           command: /opt/vsd/vsd-es-cluster-config.sh -e {{ groups['vstats'][0] }},{{ groups['vstats'][1] }},{{ groups['vstats'][2] }}
-          delegate_to: "{{ vsd_hostname_list[0] }}"
           environment:
             SSHPASS: "{{ vstat_default_password }}"
           no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
@@ -340,7 +358,6 @@
 
         - name: Execute VSTAT cluster script on standalone or clustered vsds for primary vstats
           command: /opt/vsd/vsd-es-cluster-config.sh -e {{ groups['primary_vstats'][0] }},{{ groups['primary_vstats'][1] }},{{ groups['primary_vstats'][2] }}
-          delegate_to: "{{ vsd_hostname_list[0] }}"
           environment:
             SSHPASS: "{{ vstat_default_password }}"
           no_log: True
@@ -348,7 +365,6 @@
 
         - name: Execute VSTAT cluster script on standalone or clustered vsds for backup vstats
           command: /opt/vsd/vsd-es-cluster-config.sh -e {{ groups['backup_vstats'][0] }},{{ groups['backup_vstats'][1] }},{{ groups['backup_vstats'][2] }}
-          delegate_to: "{{ vsd_hostname_list[0] }}"
           environment:
             SSHPASS: "{{ vstat_default_password }}"
           when: groups['backup_vstats'] is defined and not active
@@ -357,10 +373,11 @@
         when: vstat_sa_or_ha is match('ha')
         run_once: True
 
-      remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
-      become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
+      delegate_to: "{{ vsd_node1_hostname }}"
+      remote_user: "{{ hostvars[vsd_node1_hostname].vsd_custom_username | default(vsd_custom_username | default(vsd_default_username)) }}"
+      become: "{{ 'no' if hostvars[vsd_node1_hostname].vsd_custom_username | default(vsd_custom_username | default(vsd_default_username)) == 'root' else 'yes' }}"
       vars:
-        ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"
+        ansible_become_pass: "{{ hostvars[vsd_node1_hostname].vsd_custom_password | default(vsd_custom_password | default(vsd_default_password)) }}"
 
   - name: Enable stats
     include_role:
@@ -368,6 +385,8 @@
       tasks_from: vstat-enable-stats.yml
     vars:
       failover: False
+      vsd: "{{ vsd_hostname_list[0] }}"
+    run_once: true
 
   - name: Enable VSS UI
     import_tasks: setup-vstat-vss-ui.yml

@@ -1,0 +1,26 @@
+- name: Get specific credentials
+  set_fact:
+    creds: "{{ item }}"
+  when: component.credentials_set is defined and item.name  == component.credentials_set
+  with_items: "{{ credentials }}"
+
+- name: Create host_vars files for {{ component_template }}
+  template: src={{ component_template }}.j2 backup=no dest={{ inventory_dir }}/host_vars/{{ component_hostname }}
+  vars:
+    item: "{{ component }}"
+
+- name: Create credentials files for {{ component_template }}
+  template: src=component_credentials.j2 backup=no dest={{ inventory_dir }}/host_vars/component_credentials
+  vars:
+    item: "{{ component }}"
+
+- name: Concat credentials with the component host host vars
+  shell: cat {{ inventory_dir }}/host_vars/component_credentials >> {{ inventory_dir }}/host_vars/{{ component_hostname }}
+
+- name: Cleanup the temp credentials file
+  shell: rm -f {{ inventory_dir }}/host_vars/component_credentials
+
+
+- name: Unset Credentials
+  set_fact:
+    creds: ""

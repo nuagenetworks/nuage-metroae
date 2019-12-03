@@ -76,6 +76,56 @@
     ansible_become_pass: "{{ compute_password | default(target_server_password) }}"
 
 - block:
+  - name: Copy External PKI Certificates
+    expect:
+      command: 'scp {{ item }} {{ compute_username | default(target_server_username) }}@{{ inventory_hostname }}:/etc/default/bootstrap/keys/'
+      responses:
+        (?i)yes: "yes"
+        (?i)password: "{{ compute_password | default(target_server_password) }}"
+      timeout: 720
+    with_items:
+      - "{{ private_key_path }}"
+      - "{{ certificate_path }}"
+      - "{{ ca_certificate_path }}"
+    delegate_to: localhost
+
+  - name: set tls profiles vars
+    set_fact:
+      own_key: "{{ private_key_path | basename }}"
+      own_certificate: "{{ certificate_path | basename }}"
+      own_ca_certificate: "{{ ca_certificate_path | basename }}"
+
+  when:
+    - private_key_path is defined
+    - certificate_path is defined
+    - ca_certificate_path is defined
+
+- block:
+  - name: Generate TLS Certificates for VRS
+    include_role:
+      name: common
+      tasks_from: vsd-generate-transfer-certificates
+    vars:
+      certificate_password: "{{ compute_password | default(target_server_password) }}"
+      certificate_username: vrs-{{ inventory_hostname }}
+      commonName: vrs-{{ inventory_hostname }}
+      certificate_type: vrs
+      scp_user: "{{ compute_username | default(target_server_username) }}"
+      scp_location: "{{ client_keys_path }}"
+      additional_parameters:  -v {{ inventory_hostname }}
+
+  - name: set tls profiles vars
+    set_fact:
+      own_key: "vrs-{{ inventory_hostname }}-Key.pem"
+      own_certificate: "vrs-{{ inventory_hostname }}.pem"
+      own_ca_certificate: "vrs-{{ inventory_hostname }}-CA.pem"
+
+  when:
+    - private_key_path is undefined
+    - certificate_path is undefined
+    - ca_certificate_path is undefined
+
+- block:
 
   - name: Create temporary directory
     file: path={{ temp_dir }}/{{ inventory_hostname }} state=directory
@@ -147,56 +197,6 @@
     when: not openflow_tls
 
   - block:
-
-    - block:
-      - name: Copy External PKI Certificates
-        expect:
-          command: 'scp {{ item }} {{ compute_username | default(target_server_username) }}@{{ inventory_hostname }}:/etc/default/bootstrap/keys/'
-          responses:
-            (?i)yes: "yes"
-            (?i)password: "{{ compute_password | default(target_server_password) }}"
-          timeout: 720
-        with_items:
-          - "{{ private_key_path }}"
-          - "{{ certificate_path }}"
-          - "{{ ca_certificate_path }}"
-        delegate_to: localhost
-
-      - name: set tls profiles vars
-        set_fact:
-          own_key: "{{ private_key_path | basename }}"
-          own_certificate: "{{ certificate_path | basename }}"
-          own_ca_certificate: "{{ ca_certificate_path | basename }}"
-
-      when:
-        - private_key_path is defined
-        - certificate_path is defined
-        - ca_certificate_path is defined
-
-    - block:
-      - name: Generate TLS Certificates for VRS
-        include_role:
-          name: common
-          tasks_from: vsd-generate-transfer-certificates
-        vars:
-          certificate_password: "{{ compute_password | default(target_server_password) }}"
-          certificate_username: vrs-{{ inventory_hostname }}
-          commonName: vrs-{{ inventory_hostname }}
-          certificate_type: vrs
-          scp_user: "{{ compute_username | default(target_server_username) }}"
-          scp_location: "{{ client_keys_path }}"
-          additional_parameters:  -v {{ inventory_hostname }}
-
-      - name: set tls profiles vars
-        set_fact:
-          own_key: "vrs-{{ inventory_hostname }}-Key.pem"
-          own_certificate: "vrs-{{ inventory_hostname }}.pem"
-          own_ca_certificate: "vrs-{{ inventory_hostname }}-CA.pem"
-
-      when:
-        - private_key_path is undefined
-        - certificate_path is undefined
-        - ca_certificate_path is undefined
 
     - name: Update client key path in {{ openvswitch_file }} file
       lineinfile:
