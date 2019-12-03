@@ -32,6 +32,12 @@
   - name: Copy VSC config file to the VSC
     connection: local
     command: "sshpass -p {{ vsc_password|default(vsc_default_password) }} scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null {{ proxy_conf | default('') }} /tmp/{{ vm_name }}/new-config.cfg {{ vsc_username|default(vsc_default_username) }}@{{ mgmt_ip }}:"
+    when: not mgmt_ip | ipv6
+
+  - name: Copy VSC config file to the VSC
+    connection: local
+    command: "sshpass -p {{ vsc_password|default(vsc_default_password) }} scp -6 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null {{ proxy_conf | default('') }} /tmp/{{ vm_name }}/new-config.cfg {{ vsc_username|default(vsc_default_username) }}@\[{{ mgmt_ip }}\]:"
+    when: mgmt_ip | ipv6
 
   - name: Execute VSC basic configuration
     sros_command:
