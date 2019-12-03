@@ -72,7 +72,19 @@ vstat_upgrade_wrapup
 ```
 
 ## Skip Actions
-A Skip Action is invoked when you want a particular workflow to be skipped. For example, defining `vsd_predeploy` in the skip actions list for a component will cause MetroAE to skip this workflow even when running a workflow that encapsulates it, e.g. `install_vsds`. In such a case, running `install_everything` or `install_vsds` will skip the `vsd_predeploy` workflow.
+A Skip Action is invoked when you want a particular workflow to be skipped.
+For example, defining `vsd_predeploy` in the skip actions list for a component
+will cause MetroAE to skip this workflow even when running a workflow that
+encapsulates it, e.g. `install_vsds`. In such a case, running
+`install_everything` or `install_vsds` will skip the `vsd_predeploy` workflow.
+Skip actions need to specified in common.yml file. skip actions in common.yml
+takes a list. Example of skip_actions
+
+```
+skip_actions:
+  - vsd_predeploy
+  - vstat_predeploy
+```
 
 Note: In the current release, Skip Actions are supported for the following workflows:
 ```
