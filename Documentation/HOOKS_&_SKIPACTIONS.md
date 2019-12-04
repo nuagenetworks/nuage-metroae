@@ -7,13 +7,12 @@ One of the reasons to take advantage of fine-grained control is so that you can 
 Hooks are predefined locations that preceed specific MetroAE worflows. They can be thought of as places in the code where MetroAE can execute commands on your behalf. These commands can be any executable available on the Ansible host. If the command is a script, it has access to the full range of MetroAE's Ansible variable, e.g. `echo {{ hostvars[inventory_hostname].name }}`. As you can see, your script should use standard Ansible Jinja2 variable syntax. Each predefined location comes immediately before selected low-level MetroAE workflows. Defining a command or script to run at a specific location means that the command or script will run before the workflow is executed.
 
 ### Hooks File
-A Hooks file is a YAML file that contains the name of the MetroAE workflow that is the location of the hook and the command or script that will be executed before the workflow is executed. The path to a Hooks file is specified in the optional `hooks` section of the deployment file for the component being operated on, e.g. `vsds.yml`. If more than one command needs to be run at a specific location, multiple files need to be created with the same location and
-different command. If the command execution fails Ansible will fail with an error.
+A Hooks file is a YAML file that contains the name of the MetroAE workflow that is the location of the hook and the command or script that will be executed before the workflow is executed. The path to a Hooks file is specified in the optional `hooks` section of the deployment file for the component being operated on, e.g. `vsds.yml`. If more than one command needs to be run at a specific location, multiple Hooks files must be created, each specifying the same location and a unique command. If any one command execution fails, the MetroAE workflow will fail with an error.
 
 Here is an example of a Hooks file that specifies a script to execute prior to running the `vstat_predeploy` workflow:
 ```
-`location: vstat_predeploy`
-`command: "/tmp/myfiles/myscript.sh"`
+location: vstat_predeploy
+command: "/tmp/myfiles/myscript.sh"
 ```
 
 ### Workflow Hook Locations
