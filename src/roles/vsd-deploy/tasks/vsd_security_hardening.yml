@@ -103,7 +103,7 @@
   - name: Set custom password for MySQL root password for root user
     shell: mysqladmin -u root password "{{ vsd_mysql_password }}"
     run_once: true
-    when: 
+    when:
       - vsd_mysql_password is defined
       - vsd_custom_username is not defined or vsd_custom_password is not defined or ssh_custom_user.rc == 0
 
@@ -168,11 +168,25 @@
 
     when: tls_version is defined and tls_version == "1.2"
 
-  - name: Advanced API access Logging
-    lineinfile:
-      path: /opt/vsd/jboss/standalone/configuration/standalone-full-ha.xml
-      regexp: ".*<access-log prefix=\"access.log\" pattern=\"%a %t %H %p %r %s %D.*"
-      line: '<access-log prefix="access.log" pattern="%a %t %H %p %r %s %D %{CUSTOM}i %{X-Nuage-Request-ID}o">'
+  - block:
+    - name: Grep for new access logging pattern
+      shell: grep "access-log pattern" /opt/vsd/jboss/standalone/configuration/standalone-full-ha.xml
+      register: grep_output
+
+    - name: Advanced API access Logging
+      lineinfile:
+        path: /opt/vsd/jboss/standalone/configuration/standalone-full-ha.xml
+        regexp: ".*<access-log pattern=\"%a %t %H %p %r %s %D.*"
+        line: '<access-log pattern="%a %t %H %p %r %s %D %{CUSTOM}i %{X-Nuage-Request-ID}o %{com.alu.cna.cloudmgmt.api.querycount}r" prefix="access.log" rotate="false">'
+      when: grep_output.rc == 0
+
+    - name: Advanced API access Logging
+      lineinfile:
+        path: /opt/vsd/jboss/standalone/configuration/standalone-full-ha.xml
+        regexp: ".*<access-log prefix=\"access.log\" pattern=\"%a %t %H %p %r %s %D.*"
+        line: '<access-log prefix="access.log" pattern="%a %t %H %p %r %s %D %{CUSTOM}i %{X-Nuage-Request-ID}o">'
+      when: grep_output.rc == 1
+
     when: advanced_api_access_logging is defined
 
   remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
