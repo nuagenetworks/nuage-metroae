@@ -68,17 +68,17 @@ The following workflows are examples that combine together several of the above 
 * destroy_everything - Destroys all components specified in a deployment.
 * nuage_health - Checks the health of all components specified in a deployment.
 
-## Collecting Triage Collateral : logzip.py
+## Collecting Triage Collateral : collect_log_files.py
 
-In the event that you contact the MetroAE team for help, often via the team's email address, devops@nuagenetworks.net, you might be asked to provide a set of files that provide the collateral our engineers need to triage the situation. `logzip.py` is provided to make the process of gathering files easier for you. `logzip.py` will create a zip archive that contains the following files and folders:
+In the event that you contact the MetroAE team for help, often via the team's email address, devops@nuagenetworks.net, you might be asked to provide a set of files that provide the collateral our engineers need to triage the situation. `logzip.py` is provided to make the process of gathering files easier for you. `collect_log_files.py` will create a zip archive that contains the following files and folders:
 
 * ansible.log
 * deployments folder
 * src/inventory
 
-If you run `logzip.py` without arguments, it will include the entire contents of the `deployments` folder, the entire contents of the `src/inventory` folder, and the file `ansible.log`, in a zip file in the current directory. The name of the file, by default, will be of the form `debug-<timestamp>.tar.gz`.
+If you run `collect_log_files.py` without arguments, it will include the entire contents of the `deployments` folder, the entire contents of the `src/inventory` folder, and the file `ansible.log`, in a zip file in the current directory. The name of the file, by default, will be of the form `debug-<timestamp>.tar.gz`.
 
-Optionally, you can pass `logzip.py` 1 or 2 parameters:
+Optionally, you can pass `collect_log_files.py` 1 or 2 parameters:
 * tarFileName: The name of the zip file to create. If not specified, the default value is of the form `debug-<timestamp>.tar.gz`
 * deploymentName: The name of the deployment folder under `deployments` to include in the zip file. If not specified, the default action is to include all folders under `deployments`.
 
