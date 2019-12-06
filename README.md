@@ -70,7 +70,7 @@ The following workflows are examples that combine together several of the above 
 
 ## Collecting Triage Collateral : collect_log_files.py
 
-In the event that you contact the MetroAE team for help, often via the team's email address, devops@nuagenetworks.net, you might be asked to provide a set of files that provide the collateral our engineers need to triage the situation. `logzip.py` is provided to make the process of gathering files easier for you. `collect_log_files.py` will create a zip archive that contains the following files and folders:
+In the event that you contact the MetroAE team for help, often via the team's email address, devops@nuagenetworks.net, you might be asked to provide a set of files that provide the collateral our engineers need to triage the situation. `collect_log_files.py` is provided to make the process of gathering files easier for you. `collect_log_files.py` will create a zip archive that contains the following files and folders:
 
 * ansible.log
 * deployments folder
