@@ -158,6 +158,15 @@
       msg: "keyserver@{{ vsd_fqdn }} could not be found in '/opt/ejabberd/bin/ejabberdctl connected_users'"
   when: vsd_sa_or_ha is match('ha')
 
+- name: Get monit summary for vsd processes
+  vsd_monit:
+    group: all
+  register: vsd_proc
+  remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
+  become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
+  vars:
+    ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"
+
 - block:
 
   - name: Set the URL for the VSD
@@ -175,6 +184,9 @@
       validate_certs: False
     register: health_status
     delegate_to: localhost
+    retries: 5
+    delay: 30
+    until: health_status.status in [200,503] and health_status.json[0].status != 'BAD'
     ignore_errors: yes
 
   - name: Check the HTTP response of the health status query
@@ -187,50 +199,40 @@
       that: "not {{ health_status.json[0].status == 'BAD' }}"
       fail_msg: "VSD health checks failed due to: {{ health_status.json[0].summary | default('Unknown') }}"
 
-  - name: Get monit summary for vsd processes
-    vsd_monit:
-      group: all
-    register: vsd_proc
-    remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
-    become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
-    vars:
-      ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"
+  - name: Set JMS gateway to empty string
+    set_fact:
+      jms_master_hostname: ""
+
+  - name: Get JMS gateway
+    include_role:
+      name: common
+      tasks_from: VSD-JMS-master-node.yml
 
   - block:
 
-    - name: Set JMS gateway to empty string
-      set_fact:
-        jms_master_hostname: ""
+    - name: Verify that JMS gateway is reachable on Master Node
+      uri:
+        url: https://{{ jms_master_hostname }}:61619
+        method: GET
+        user: "{{ vsd_auth.username }}"
+        password: "{{ vsd_auth.password }}"
+        status_code: 200
+        validate_certs: False
+      until: webresult.status == 200
+      retries: 5
+      delay: 30
+      register: webresult
+      delegate_to: localhost
 
-    - name: Get JMS gateway
-      include_role:
-        name: common
-        tasks_from: VSD-JMS-master-node.yml
+    - name: write web interface result
+      nuage_append: filename="{{ report_path }}" text="{{ webresult  | to_nice_json}}\n"
+      delegate_to: localhost
 
-    - block:
-      - name: Verify that JMS gateway is reachable on Master Node
-        uri:
-          url: https://{{ jms_master_hostname }}:61619
-          method: GET
-          user: "{{ vsd_auth.username }}"
-          password: "{{ vsd_auth.password }}"
-          status_code: 200
-          validate_certs: False
-        until: webresult.status == 200
-        retries: 5
-        delay: 30
-        register: webresult
-        delegate_to: localhost
-        run_once: true
-        when: jms_master_hostname is defined and jms_master_hostname != ""
+    when: jms_master_hostname is defined and jms_master_hostname != ""
 
-      when:
-        - "'activemq-status' in vsd_proc.state"
-        - inventory_hostname in groups['primary_vsds']
-
-  - name: write web interface result
-    nuage_append: filename="{{ report_path }}" text="{{ webresult  | to_nice_json}}\n"
-    delegate_to: localhost
+  when:
+    - "'activemq-status' in vsd_proc.state"
+    - inventory_hostname in groups['primary_vsds']
 
 - block:
 

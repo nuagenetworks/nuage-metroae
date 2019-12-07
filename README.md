@@ -13,16 +13,10 @@ Please see [RELEASE_NOTES.md](Documentation/RELEASE_NOTES.md) for all the detail
 
 All MetroÆ operations, including Docker container management, use a command `metroae` for consistent usage and syntax. Please see [DOCKER.md](Documentation/DOCKER.md) for details on configuration and use of the container version of MetroÆ.
 
-## Supported Components for Deployment
-MetroÆ supports deployment of the following components as VMs on the target server. These are the same target server types that are supported on the VSP platform.
+## Supported Components for Deployment and Upgrade
+MetroÆ supports deployment and upgrade of the following components as VMs on the target server. These are the same target server types that are supported on the VSP platform.
 
-Component | KVM (el7)<br>Stand-alone (SA) | KVM (el7)<br>Clustered (HA) | ESXi<br>Stand-alone (SA) | ESXi<br>Clustered (HA)
-------- | :---: | :---: | :----: | :---:
-VSD (Virtualized Services Directory) | X | X | X | X
-VSTAT (Elasticsearch stats-in) | X | X | X | X
-VSC (Virtualized Services Controller) | X | X | X | X
-VCIN (vCenter Integration Node) | X |  | X |
-VNSUTIL<br>(Virtualized Network Services-Utility) | X |  | X |
+![supported_components](Documentation/supported_components.png)
 
 #### Supported Dataplane components (installed as package/agent):
 
@@ -34,18 +28,13 @@ Libnetwork on VRS nodes  | X |
 #### Required Auxiliary Services
 * DNS/NTP
 
+## Supported Target Servers
+MetroÆ supports the deployment and upgrade of Nuage VSP components on the following target servers.
+
+![supported_vms](Documentation/supported_vms.png)
+
 ## Typical Nuage Topology
-![topology](Documentation/topology.png)
-
-## Supported Components for Upgrade
-MetroÆ supports upgrade of the following Nuage VSP components.
-
-Component | KVM (el7)<br> SA | KVM (el7)<br> HA | ESXi<br>SA | ESXi<br>HA
-------- | :---: | :---: | :----: | :---:
-VSD | X | X | X | X
-VSTAT (stats-in) | X | X | X | X
-VSC | X | X | X | X
-VCIN | X |  | X |
+![topology_rev](Documentation/topology_rev.png)
 
 ## Main Steps for Using MetroÆ
 

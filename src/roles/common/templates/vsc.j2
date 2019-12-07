@@ -40,10 +40,6 @@ data_bridge: {{ item.data_bridge }}
 enable_ipv6: true
 {% endif %}
 
-{% if item.ctrl_ip is defined and item.ctrl_ip | ipv6 != False %}
-enable_ipv6_control: true
-{% endif %}
-
 {% if item.internal_mgmt_ip is defined %}
 internal_mgmt_ip: {{ item.internal_mgmt_ip }}
 {% endif %}
@@ -83,11 +79,15 @@ cpuset:
 image_path: {{ image_path | default("MISSING") }}
 image_file_name: {{ image_file_name | default("MISSING") }}
 
-{% if encrypted.vsc_custom_username is defined or creds.vsc_custom_username is defined %}
-vsc_custom_username: {{ creds.vsc_custom_username | default(encrypted.vsc_custom_username) | indent(8, False) }}
+{% if creds is defined and creds.vsc_custom_username is defined %}
+vsc_custom_username: {{ creds.vsc_custom_username | indent(8, False) }}
+{% elif encrypted.vsc_custom_username is defined %}
+vsc_custom_username: {{ encrypted.vsc_custom_username | indent(8, False) }}
 {% endif %}
-{% if encrypted.vsc_custom_password is defined or creds.vsc_custom_password is defined %}
-vsc_custom_password: {{ creds.vsc_custom_password | default(encrypted.vsc_custom_password) | indent(8, False) }}
+{% if creds is defined and creds.vsc_custom_password is defined %}
+vsc_custom_password: {{ creds.vsc_custom_password | indent(8, False) }}
+{% elif encrypted.vsc_custom_password is defined %}
+vsc_custom_password: {{ encrypted.vsc_custom_password | indent(8, False) }}
 {% endif %}
 
 {% if item.vsd_fqdn is defined %}
@@ -98,10 +98,6 @@ vsd_fqdn: {{ vsd_fqdn_global }}
 
 {% if item.system_ip is defined %}
 system_ip: {{ item.system_ip }}
-{% endif %}
-
-{% if item.system_ip is defined and item.system_ip | ipv6 != False %}
-enable_ipv6_system: true
 {% endif %}
 
 xmpp:
