@@ -20,7 +20,7 @@ with tarfile.open(tarFileName + '.tar.gz', mode='w:gz') as archive:
     try:
         archive.add(os.path.join(cwdir, deploymentName), arcname=os.path.join('/unzipped/', deploymentName), recursive=True)
     except:
-        print("deployment directory doenst exits")
+        print("Deployment directory doesn't exist")
     try:
         archive.add(os.path.join(cwdir, 'src/inventory'), arcname='/unzipped/src/inventory', recursive=True)
     except:
