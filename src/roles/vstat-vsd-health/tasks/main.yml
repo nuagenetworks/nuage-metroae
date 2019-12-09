@@ -10,13 +10,9 @@
 
   - name: Wait for ES VSD processes to become running
     monit_waitfor_service:
-      name: "{{ item }}"
+      name: "{{ ['elasticsearch-status', 'tca-daemon-status', 'stats-collector-status'] }}"
       timeout_seconds: 600
       test_interval_seconds: 30
-    with_items:
-      - elasticsearch-status
-      - tca-daemon-status
-      - stats-collector-status
     when: not nuage_upgrade | default(false)
     remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
     become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
