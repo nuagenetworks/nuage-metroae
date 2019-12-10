@@ -1,0 +1,19 @@
+- block:
+  - name: Get ActiveMQ status of all VSDs
+    command: monit status activemq-status
+    register: jms_status
+
+  - name: Set JMS Master Node Hostname
+    set_fact:
+      jms_master_hostname: "{{ hostname }}"
+    when: "'This is Master node' in jms_status.stdout and groups['primary_vsds']|length > 1"
+
+  - name: Set JMS Master Node Hostname
+    set_fact:
+      jms_master_hostname: "{{ hostname }}"
+    when: "'PASS' in jms_status.stdout and groups['primary_vsds']|length == 1"
+
+  remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
+  become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
+  vars:
+    ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"

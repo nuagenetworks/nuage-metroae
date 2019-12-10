@@ -27,8 +27,13 @@
       netmask: "{{ item.mgmt_ip_prefix }}"
     with_items: "{{ vnsutils }}"
 
-  - name: Create host_vars files for vnsutil
-    template: src=vnsutil.j2 backup=no dest={{ inventory_dir }}/host_vars/{{ item.hostname }}
+  - name: Create host_vars files for vnsutils
+    include_tasks: write-host-files.yml
+    vars:
+      component_template: vnsutil
+      component_hostname: "{{ component.hostname }}"
+    loop_control:
+      loop_var: component
     with_items: "{{ vnsutils }}"
 
   - name: Verify VNS Utils DNS entries exist at server {{ dns_server_list[0] }}, and hostnames map to their IPs

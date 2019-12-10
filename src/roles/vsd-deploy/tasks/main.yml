@@ -145,11 +145,18 @@
 
     when: vsd_sa_or_ha is match('ha')
 
-  - name: Update /etc/hosts file on VSD
+  - name: Update /etc/hosts file with VSD entries
     lineinfile:
       dest: /etc/hosts
       line: "{{ hostvars[item]['mgmt_ip'] }}    {{ hostvars[item]['hostname'] }}"
     with_items: "{{ groups['vsds'] }}"
+
+  - name: Update /etc/hosts file with VCIN entries
+    lineinfile:
+      dest: /etc/hosts
+      line: "{{ hostvars[item]['mgmt_ip'] }}    {{ hostvars[item]['hostname'] }}"
+    with_items: "{{ groups['vcins'] }}"
+    when: deploy_vcin
 
   - block:
 
@@ -236,10 +243,9 @@
 
       - name: Wait for master VCIN processes to become running
         monit_waitfor_service:
-          name: "{{ item }}"
+          name: "{{ vcin_proc_pre['state'].keys() }}"
           timeout_seconds: 1200
           test_interval_seconds: 10
-        with_items: "{{ vcin_proc_pre['state'].keys() }}"
 
       - name: Preparing the master
         command: /opt/vsd/bin/vsd-prepare-replication-master-cluster.sh
@@ -322,19 +328,18 @@
         - "ejabberd-cluster-status"
     when: nuage_upgrade | default(false)
 
-  - name: wait for VSD common , core and stats services to become running
+  - name: wait for VSD common, core and stats services to become running
     monit_waitfor_service:
-      name: "{{ item }}"
+      name: "{{ proc_list['state'].keys() | difference(remove_list) }}"
       timeout_seconds: 1200
       test_interval_seconds: 30
-    with_items: "{{ proc_list['state'].keys() | difference(remove_list) }}"
 
   - name: Apply licenses to VSD
     include_role:
       name: common
       tasks_from: apply-licenses-to-vsd
 
-  when: 
+  when:
     - component_type == "vsd"
     - (vsd_major_version|int > 5) or
       (vsd_major_version|int == 5 and vsd_minor_version|int >= 3)

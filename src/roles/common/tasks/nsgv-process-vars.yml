@@ -21,8 +21,13 @@
       pattern: NSG-*.ovf
     when: nsgvs | map(attribute='target_server_type') | list is issuperset(["vcenter"])
 
-  - name: Create host_vars files for nsgv
-    template: src=nsgv.j2 backup=no dest={{ inventory_dir }}/host_vars/{{ item.vmname }}
+  - name: Create host_vars files for nsgvs
+    include_tasks: write-host-files.yml
+    vars:
+      component_template: nsgv
+      component_hostname : "{{ component.vmname }}"
+    loop_control:
+      loop_var: component
     with_items: "{{ nsgvs }}"
 
   when: nsgvs is defined and nsgvs

@@ -95,16 +95,21 @@
       delegate_facts: false
       delegate_to: "{{ groups['vsd_standby_node1'][0] }}"
 
+    - name: Set fact to skip testing some monit processes
+      set_fact:
+        remove_list:
+          - 'elasticsearch-status'
+          - 'stats-collector-status'
+          - 'tca-daemon-status'
+
     - name: wait for VSD common and core to become running
       monit_waitfor_service:
-        name: "{{ item[1] }}"
+        name: "{{ proc_list['state'].keys() | difference(remove_list) }}"
         timeout_seconds: 1200
         test_interval_seconds: 30
-      delegate_to: "{{ item[0] }}"
-      when: item[1] not in ['elasticsearch-status', 'stats-collector-status', 'tca-daemon-status']
-      with_nested:
+      delegate_to: "{{ item }}"
+      with_items:
         - "{{ groups['standby_vsds'] }}"
-        - "{{ proc_list['state'].keys() }}"
 
     - block:
 

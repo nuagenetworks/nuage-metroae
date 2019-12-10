@@ -75,28 +75,12 @@
     provider: "{{ vsc_creds }}"
   delegate_to: localhost
   register: xmpp_detail
+  until: xmpp_detail.stdout[0] is search('Functional') or vsd_sa_or_ha is match('sa')
+  retries: 10
+  delay: 30
 
 - name: Print 'show vswitch-controller xmpp-server detail' when verbosity >= 1
   debug: var=xmpp_detail verbosity=1
-
-- name: Create local variable with xmpp-server detail in json
-  set_fact: xmpp_detail_json="{{ xmpp_detail.stdout[0]|xmpp_server_detail_to_json }}"
-
-- name: Print xmpp-server detail in json when verbosity >= 1
-  debug: var=xmpp_detail_json verbosity=1
-
-- name: Create local variable for xmpp-server state
-  set_fact: xmpp_server_state="{{ xmpp_detail_json['State'] }}"
-
-- name: Print xmpp-server state when verbosity >= 1
-  debug: var=xmpp_server_state verbosity=1
-
-- name: Check for the expected xmpp-server state
-  assert: {
-    that: "{{ expected_xmpp_server_state == xmpp_server_state }}",
-    msg: "Invalid xmpp-server state ({{ xmpp_server_state }}) detected. Expected {{ expected_xmpp_server_state }}. Check 'show vswitch-controller xmpp-server details'."
-    }
-  when: vsd_sa_or_ha is match('ha')
 
 - name: Save existing configuration on VSC
   sros_command:

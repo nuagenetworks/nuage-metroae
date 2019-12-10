@@ -49,12 +49,9 @@
       - vsd_sa_or_ha is match ('sa')
       - not vsd_standby_cluster | default(False)
 
-  - block:
+    remote_user: "{{ vsd_default_username }}"
 
-    - name: Set copy ssh keys
-      include_role:
-        name: vsd-deploy
-        tasks_from: legacy_cluster_ssh_keys
+  - block:
 
     - name: Renew primary VSD cert
       command: /opt/vsd/bin/vsd-renew-certs.sh
@@ -115,13 +112,14 @@
       delegate_to: "{{ groups['vsd_ha_node1'][0] }}"
 
     when: vsd_sa_or_ha is match ('ha')
+    remote_user: "{{ vsd_default_username }}"
 
   - block:
 
     - name: Renew standby VSD certs
       command: /opt/vsd/bin/vsd-renew-certs.sh -1 {{ hostvars[groups['primary_vsds'][0]]['hostname'] }}
       delegate_to: "{{ item }}"
-      with_items: 
+      with_items:
         - "{{ groups['vsd_standby_node1'][0] }}"
         - "{{ groups['vsd_standby_node2'][0] }}"
         - "{{ groups['vsd_standby_node3'][0] }}"
@@ -148,8 +146,4 @@
       with_items: "{{ groups['standby_vsds'] }}"
 
     when: vsd_standby_cluster | default(False)
-
-  remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
-  become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
-  vars:
-    ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"
+    remote_user: "{{ vsd_default_username }}"
