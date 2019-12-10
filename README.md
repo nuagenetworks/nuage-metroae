@@ -61,6 +61,7 @@ Postdeploy | performs integration checks, and some basic commissioning tests |
 Health | checks health for a running component without assuming it was deployed with MetroÆ |
 Destroy | removes component(s) from the infrastructure |
 Upgrade | upgrades component(s) from one release to another |
+Services | controls services for component(s) for maintenance |
 
 The following workflows are examples that combine together several of the above operations into simple to use groups:
 
