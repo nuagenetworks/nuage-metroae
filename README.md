@@ -99,6 +99,7 @@ File name | Description
 [UPGRADE_HA.md](Documentation/UPGRADE_HA.md) | Upgrade component(s) from one release to the next in a clustered environment.
 [VAULT_ENCRYPT.md](Documentation/VAULT_ENCRYPT.md) | Safeguard sensitive data
 [DOCKER.md](Documentation/DOCKER.md) | Installing and using MetroÆ Docker container
+[VSD_SERVICES.md](Documentation/VSD_SERVICES.md) | Using MetroÆ to control VSD Services during maintenance
 
 ## Questions, Feedback, and Contributing
 Ask questions and get support via the [forums](https://devops.nuagenetworks.net/forums/) on the [MetroÆ site](https://devops.nuagenetworks.net/).

@@ -1,6 +1,6 @@
 # Controlling VSD Services
 
-There are times when you need to stop, start, or restart VSD services. For example, if you want to move a server and need to cleanly shut down VSD services before the move, then bring the VSD services up after the move, you can use the MetroAE workflows that are provided for these purposes.
+There are times when you need to stop, start, or restart VSD services. For example, if you have a mainenance window in which you want to move the server that hosts a VSD, MetroAE support for VSD Service manipulation will allow you to cleanly shut down VSD services before the move, then bring the VSD services up after the move. You can use the MetroAE workflows that are provided for these purposes.
 
 ## Prerequisites / Requirements
 Before attempting to control the VSD services using MetroAE, you must configure a deployment with infomration about the VSDs. You also must have previously [set up your Nuage MetroAE environment](SETUP.md "link to SETUP documentation") and [customized the environment for your target platform](CUSTOMIZE.md "link to deployment documentation").
