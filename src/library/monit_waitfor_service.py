@@ -72,6 +72,7 @@ def main():
     restarted = False
 
     for proc_name in vsd_stats_proc:
+        desired_state = False
         proc_status = status(proc_name)
         while not desired_state and time_elapsed < timeout_seconds:
             if proc_status == 'status ok' or \
