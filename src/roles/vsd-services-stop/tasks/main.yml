@@ -10,7 +10,7 @@
       shell: "{{ stop_stats }}"
       ignore_errors: yes
       register: stop_stats_output
-      
+
     - name: Check if an error should be ignored
       assert:
         that: "stop_stats_output.failed == false or stop_stats_output.stderr is search('not found')"
@@ -83,6 +83,4 @@
   become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
   vars:
     ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"
-  when:
-    - inventory_hostname == groups['vsds'][0] or inventory_hostname == groups['vsds'][1]
-    - node_reachable
+  when: node_reachable
