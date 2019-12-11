@@ -61,6 +61,7 @@ Postdeploy | performs integration checks, and some basic commissioning tests |
 Health | checks health for a running component without assuming it was deployed with MetroÆ |
 Destroy | removes component(s) from the infrastructure |
 Upgrade | upgrades component(s) from one release to another |
+Services | controls services for component(s) for maintenance |
 
 The following workflows are examples that combine together several of the above operations into simple to use groups:
 
@@ -100,6 +101,7 @@ File name | Description
 [VAULT_ENCRYPT.md](Documentation/VAULT_ENCRYPT.md) | Safeguard sensitive data
 [DOCKER.md](Documentation/DOCKER.md) | Installing and using MetroÆ Docker container
 [HOOKS_&_SKIPACTIONS.md](Documentation/HOOKS_&_SKIPACTIONS.md) | Configure ability to run custom commands in between playbooks and skip playbooks
+[VSD_SERVICES.md](Documentation/VSD_SERVICES.md) | Using MetroÆ to control VSD Services during maintenance
 
 ## Questions, Feedback, and Contributing
 Ask questions and get support via the [forums](https://devops.nuagenetworks.net/forums/) on the [MetroÆ site](https://devops.nuagenetworks.net/).
