@@ -215,9 +215,14 @@
     when: openflow_tls | default(True)
 
   - name: Create host_vars files for vrs
-    template: src=vrs.j2 backup=no dest={{ inventory_dir }}/host_vars/{{ item.1 }}
+    include_tasks: write-host-files.yml
+    vars:
+      component_template: vrs
+      component_hostname: "{{ item.1 }}"
+    loop_control:
+      loop_var: component
     with_subelements:
-        - "{{ vrss }}"
-        - vrs_ip_list
+      - "{{ vrss }}"
+      - vrs_ip_list
 
   when: vrss is defined and vrss

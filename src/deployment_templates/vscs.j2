@@ -102,7 +102,7 @@
     {%- endif %}
 
     # < Management Network Static Routes >
-    # Static Route list to be configured on the management/BOF interface
+    # Static Route list to be configured on the management/BOF interface. Define as empty list if no static routes are to be configured.
     #
     {%- if item.mgmt_static_route_list is defined %}
     mgmt_static_route_list: [ {% for i in item.mgmt_static_route_list | default([]) %}"{{ i }}", {% endfor %}]
@@ -427,6 +427,32 @@
     ##########################
     {%- endif %}
 
+    {%- if show_target_server_type | default('openstack') == 'openstack' %}
+
+    # < OpenStack Port Name >
+    # Name for Mgmt interface
+    #
+    {%- if item.openstack_port_name is defined %}
+    openstack_port_name: "{{ item.openstack_port_name }}"
+    {%- else %}
+    # openstack_port_name: ""
+    {%- endif %}
+    {%- endif %}
+
+    {%- if show_target_server_type | default('openstack') == 'openstack' %}
+
+    # < OpenStack Port Security Groups >
+    # Set of security groups to associate with Mgmt interface
+    #
+    {%- if item.openstack_port_security_groups is defined %}
+    openstack_port_security_groups: [ {% for i in item.openstack_port_security_groups | default([]) %}"{{ i }}", {% endfor %}]
+    {%- else %}
+    # openstack_port_security_groups: []
+    {%- endif %}
+
+    ##########################
+    {%- endif %}
+
     {%- if show_target_server_type | default('kvm') == 'kvm' %}
 
     # < KVM cpuset information >
@@ -482,6 +508,15 @@
     xmpp_domain: "{{ item.xmpp_domain }}"
     {%- else %}
     # xmpp_domain: ""
+    {%- endif %}
+
+    # < Credentials set name >
+    # Name of the credentials set for the vsd
+    #
+    {%- if item.credentials_set is defined %}
+    credentials_set: "{{ item.credentials_set }}"
+    {%- else %}
+    # credentials_set: ""
     {%- endif %}
 
 {% endfor %}

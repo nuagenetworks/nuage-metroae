@@ -3,10 +3,7 @@
   vsd_monit:
     group: all
   register: proc_list
-  remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
-  become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
-  vars:
-    ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"
+  remote_user: "{{ vsd_default_username }}"
 
 - name: Set fact to skip testing ejabberd-cluster-status services
   set_fact:
@@ -24,11 +21,7 @@
 
 - name: wait for VSD common , core and stats services to become running
   monit_waitfor_service:
-    name: "{{ item }}"
+    name: "{{ proc_list['state'].keys() | difference(remove_list) }}"
     timeout_seconds: 1200
     test_interval_seconds: 30
-  with_items: "{{ proc_list['state'].keys() | difference(remove_list) }}"
-  remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
-  become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
-  vars:
-    ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"
+  remote_user: "{{ vsd_default_username }}"

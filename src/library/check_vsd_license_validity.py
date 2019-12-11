@@ -40,12 +40,12 @@ def get_licenses(csproot):
 
 
 def check_licenses_mode(licenses):
-    valid = False
+    valid = True
     for lic in licenses:
         if lic.additional_supported_versions == 0:
             valid = False
 
-    return valid
+    return valid and len(licenses) > 0
 
 
 def check_licenses_expiration(licenses, required_days_left):
@@ -69,27 +69,21 @@ def check_licenses_expiration(licenses, required_days_left):
 def get_vsd_session(vsd_auth):
     # Format api version
     version = 'v5_0'
-    try:
-        global VSPK
-        VSPK = importlib.import_module('vspk.{0:s}'.format(version))
-    except ImportError:
-            module.fail_json(msg='vspk is required for this module, or\
-                             API version specified does not exist.')
-    try:
-        session = VSPK.NUVSDSession(**vsd_auth)
-        session.start()
-        csproot = session.user
-        return csproot
-    except Exception as e:
-        module.fail_json(msg="Could not establish connection to VSD %s" % e)
 
+    global VSPK
+    VSPK = importlib.import_module('vspk.{0:s}'.format(version))
 
-arg_spec = dict(vsd_auth=dict(required=True, type='dict'),
-                required_days_left=dict(required=True, type='int'))
-module = AnsibleModule(argument_spec=arg_spec, supports_check_mode=True)
+    session = VSPK.NUVSDSession(**vsd_auth)
+    session.start()
+    csproot = session.user
+    return csproot
 
 
 def main():
+    arg_spec = dict(vsd_auth=dict(required=True, type='dict'),
+                    required_days_left=dict(required=True, type='int'))
+    module = AnsibleModule(argument_spec=arg_spec, supports_check_mode=True)
+
     vsd_auth = module.params['vsd_auth']
     required_days_left = module.params['required_days_left']
 
@@ -97,13 +91,25 @@ def main():
 
     try:
         csproot = get_vsd_session(vsd_auth)
+    except ImportError:
+        module.fail_json(msg="vspk is required for this module, or "
+                         "API version specified does not exist.")
+        return
+    except Exception as e:
+        module.fail_json(msg="Could not establish connection to VSD %s" % e)
+        return
+
+    try:
         licenses = get_licenses(csproot)
+
         try:
             check_licenses_expiration(licenses, required_days_left)
         except Exception as e:
             module.fail_json(msg=str(e))
             return
+
         valid = check_licenses_mode(licenses)
+
     except Exception as e:
         module.fail_json(msg="Could not retrieve licenses : %s" % e)
         return

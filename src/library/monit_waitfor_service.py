@@ -67,11 +67,13 @@ def main():
         else:
             return ''
 
+    failed_proc = ""
     desired_state = False
     time_elapsed = 0
     restarted = False
 
     for proc_name in vsd_stats_proc:
+        desired_state = False
         proc_status = status(proc_name)
         while not desired_state and time_elapsed < timeout_seconds:
             if proc_status == 'status ok' or \
@@ -80,6 +82,7 @@ def main():
                proc_status == 'not monitored':
                     desired_state = True
             else:
+                failed_proc = proc_name
                 if proc_status == 'failed' and not restarted:
                     restarted = True
                     module.run_command('%s restart %s'
@@ -95,8 +98,10 @@ def main():
     if desired_state:
         module.exit_json(changed=True, name=proc_name, state=monit_stats)
     else:
-        module.fail_json(msg="Process %s did not transition to active within %i seconds" % (proc_name, timeout_seconds))
-        # Run the main
+        module.fail_json(
+            msg="Process %s did not transition to active within %i seconds" % (
+                failed_proc, timeout_seconds))
 
 
-main()
+if __name__ == '__main__':
+    main()

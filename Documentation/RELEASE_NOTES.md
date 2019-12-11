@@ -24,6 +24,9 @@
 * Support SD-WANn Portal 6.0.1
 * VNS support in wizard (METROAE-1151)
 * Added support for spreadsheet/CSV input method
+* Check certificate count before running vsd db backup (METROAE-1055)
+* Added graceful restart of vsd services support (METROAE-1084)
+* Added documentation for Skip and Hooks actions (METROAE-1066)
 
 ### Resolved Issues
 * Set event log max age to 7 as per Nuage Upgrade procedure (METROAE-1001)
@@ -32,7 +35,10 @@
 * Fixed issue with Active Standy VSTAT deploy with VSD in HA mode
 * Add robustness to VSD failover procedure (METROAE-1111)
 * Fix API version format in set_event_log.py (METROAE-1148)
+* Remove VSC dependence on VSD config by using vsd_fqdn_global instead of primary_vsds (METROAE-1155)
 * Fix to allow sd-wan portal to run without a yum proxy
+* Fix VSC openstack bof config management netmask to be user defined instead of hardcoded 24
+* Allow VSC mgmt_static_route_list to accept an explicit empty list "[]" in order to not configure any static routes. (METROAE-1163)
 
 ### Removed
 * As previously announced, support for converting pre-3.0 build_vars conversion is removed

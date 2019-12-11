@@ -8,10 +8,9 @@
 
   - name: Wait for VSD common, core and stats services to become running
     monit_waitfor_service:
-      name: "{{ item }}"
+      name: "{{ proc_list['state'].keys() }}"
       timeout_seconds: 1200
       test_interval_seconds: 30
-    with_items: "{{ proc_list['state'].keys() }}"
 
   remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
   become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
@@ -80,7 +79,7 @@
   when: groups['vscs'] is defined and groups['vscs'][1] is defined
 
 - name: read saved vsd purge time before upgrade
-  command: cat "{{metro_backup_root}}/backup-{{ groups['vsds'][0] }}-latest/purge_time"
+  command: cat "{{metro_backup_root}}/backup-vsd-{{ vsd_fqdn }}-latest/purge_time"
   register: purge_time_saved
   delegate_to: localhost
 
