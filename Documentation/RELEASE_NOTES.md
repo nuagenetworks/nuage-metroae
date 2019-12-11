@@ -36,6 +36,7 @@
 * Fix API version format in set_event_log.py (METROAE-1148)
 * Remove VSC dependence on VSD config by using vsd_fqdn_global instead of primary_vsds (METROAE-1155)
 * Fix to allow sd-wan portal to run without a yum proxy
+* Allow VSC mgmt_static_route_list to accept an explicit empty list "[]" in order to not configure any static routes. (METROAE-1163)
 
 ### Removed
 * As previously announced, support for converting pre-3.0 build_vars conversion is removed
