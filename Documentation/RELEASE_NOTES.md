@@ -26,6 +26,7 @@
 * Added support for spreadsheet/CSV input method
 * Check certificate count before running vsd db backup (METROAE-1055)
 * Added graceful restart of vsd services support (METROAE-1084)
+* Added documentation for Skip and Hooks actions (METROAE-1066)
 
 ### Resolved Issues
 * Set event log max age to 7 as per Nuage Upgrade procedure (METROAE-1001)
