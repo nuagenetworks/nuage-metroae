@@ -20,12 +20,12 @@ with tarfile.open(tarFileName + '.tar.gz', mode='w:gz') as archive:
     try:
         archive.add(os.path.join(cwdir, deploymentName), arcname=os.path.join('/unzipped/', deploymentName), recursive=True)
     except:
-        print("deployment directory doenst exits")
+        print("Deployment not found")
     try:
         archive.add(os.path.join(cwdir, 'src/inventory'), arcname='/unzipped/src/inventory', recursive=True)
     except:
-        print("Inventory doesn't exist")
+        print("Inventory not found")
     if os.path.exists(ansibleLogPath) and os.path.isfile(ansibleLogPath):
         archive.add(os.path.join(cwdir, 'ansible.log'), arcname='/unzipped/ansible.log')
     else:
-        print("ansible.log file doesn't exist")
+        print("ansible.log not found")
