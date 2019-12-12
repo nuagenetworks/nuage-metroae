@@ -24,6 +24,7 @@
 * Support SD-WANn Portal 6.0.1
 * VNS support in wizard (METROAE-1151)
 * Added support for spreadsheet/CSV input method
+* Added script for collecting debug collateral
 * Check certificate count before running vsd db backup (METROAE-1055)
 
 ### Resolved Issues
