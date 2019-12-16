@@ -37,6 +37,12 @@
         ssh_host: "{{ inventory_hostname }}"
         host_username: "{{ vsd_default_username }}"
 
+    - name: Clear data directory on first standby vm
+      file:
+        path: "/opt/vsd/data"
+        state: absent
+      when:
+        - vsd_standby | default(false)
     - name: Create data directory on first standby vm
       file:
         path: "/opt/vsd/data"
@@ -46,6 +52,12 @@
 
 - hosts: localhost
   tasks:
+    - name: Clear any pre-existing backups
+      file:
+        path: /tmp/vsdback
+        state: absent
+      when:
+        - vsd_standby | default(false)
     - name: Create vsd backup directory for localhost
       file:
         path: /tmp/vsdback
