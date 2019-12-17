@@ -1,7 +1,9 @@
 # Metro Automation Engine Release Notes
+
 ## Release 3.4.0
 
 ### Feature Enhancements
+
 * Support bringing up vCenter VMs with interfaces disabled during upgrade (METROAE-644)
 * NSG Bootstrap support for vCenter (METROAE-1045)
 * Add VSD Certificate renewal procedure to VSD upgrade (METROAE-1002)
@@ -30,6 +32,7 @@
 * Added documentation for Skip and Hooks actions (METROAE-1066)
 
 ### Resolved Issues
+
 * Set event log max age to 7 as per Nuage Upgrade procedure (METROAE-1001)
 * Remove obsolete iptables traffic blocking during HA upgrade (METROAE-1051)
 * Fix VSD node information to get Primary VSD information Rather than XMPP node info (METROAE-1093)
@@ -42,4 +45,5 @@
 * Allow VSC mgmt_static_route_list to accept an explicit empty list "[]" in order to not configure any static routes. (METROAE-1163)
 
 ### Removed
+
 * As previously announced, support for converting pre-3.0 build_vars conversion is removed
