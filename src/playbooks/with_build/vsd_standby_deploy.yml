@@ -9,12 +9,37 @@
 - hosts: vsd_ha_node1
   remote_user: "{{ vsd_default_username }}"
   tasks:
+    - name: Clear the backup dir of old backups
+      file:
+        path: "/tmp/backup"
+        state: absent
+      when:
+        - vsd_standby | default(false)
+    - name: Create data directory on first standby vm
+      file:
+        path: "/tmp/backup"
+        state: directory
+      when:
+        - vsd_standby | default(false)
     - name: Run vsd-prepare-replication-master on first cluster
       command: "/opt/vsd/bin/vsd-prepare-replication-master.sh -a {{ groups['vsd_standby_node1'][0] }} -b {{ groups['vsd_standby_node2'][0] }} -c {{ groups['vsd_standby_node3'][0] }}"
       retries: 15
       delay: 10
       register: result
       until: result.rc == 0
+      when:
+        - vsd_standby | default(false)
+    - name: Check for tar.gz files in the backup directory
+      find:
+        paths: "/tmp/backup/"
+        patterns: "*.tar.gz"
+      register: tar_gz_files
+      when:
+        - vsd_standby | default(false)
+    - name: Assert that at least one tar.gz file was found
+      assert:
+        that: tar_gz_files.matched is defined and tar_gz_files.matched > 0
+        msg: "No backup files found on the VSD. Quitting."
       when:
         - vsd_standby | default(false)
 
@@ -37,6 +62,12 @@
         ssh_host: "{{ inventory_hostname }}"
         host_username: "{{ vsd_default_username }}"
 
+    - name: Clear data directory on first standby vm
+      file:
+        path: "/opt/vsd/data"
+        state: absent
+      when:
+        - vsd_standby | default(false)
     - name: Create data directory on first standby vm
       file:
         path: "/opt/vsd/data"
@@ -46,6 +77,12 @@
 
 - hosts: localhost
   tasks:
+    - name: Clear any pre-existing backups
+      file:
+        path: /tmp/vsdback
+        state: absent
+      when:
+        - vsd_standby | default(false)
     - name: Create vsd backup directory for localhost
       file:
         path: /tmp/vsdback
