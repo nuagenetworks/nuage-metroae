@@ -24,8 +24,9 @@
       cmd: "curl -XPOST 'localhost:9200/_flush/synced?pretty'"
       warn: false
 
-  run_once: true
-  when: vstat_sa_or_ha is match('ha')
+  when: 
+    - vstat_sa_or_ha is match('ha')
+    - inventory_hostname in groups['vstat_node1']
 
 - name: Check indices health before migration
   check_url_response_in_each_line:
@@ -33,7 +34,7 @@
     search_string: "green"
     timeout_seconds: 300
     test_interval_seconds: 30
-  run_once: true
+  when: inventory_hostname in groups['vstat_node1']
 
 - name: Disable elasticsearch service
   service:
