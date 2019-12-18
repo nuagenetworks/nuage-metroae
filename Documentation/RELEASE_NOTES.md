@@ -23,7 +23,7 @@
 * For VSC, support VLAN ID and vprn for control interface
 * For VSTAT and VNS Utils, support data network static route
 * Support Nuage Utility Host(NUH) SA and HA install using MetroAE (METROAE-1062)
-* Support SD-WANn Portal 6.0.1
+* Support SD-WAN Portal 6.0.1
 * VNS support in wizard (METROAE-1151)
 * Added support for spreadsheet/CSV input method
 * Added script for collecting debug collateral
