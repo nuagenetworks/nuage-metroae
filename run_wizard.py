@@ -341,8 +341,8 @@ class Wizard(object):
             if self.in_container:
                 self._print(self._get_field(data, "container_msg"))
                 zip_dir = self._input("Please enter the directory relative to "
-                                       "the metroae_data mount point that "
-                                       "contains your zip files", "")
+                                      "the metroae_data mount point that "
+                                      "contains your zip files", "")
 
                 if zip_dir.startswith("/"):
                     self._print("\nDirectory must be a relative path.")
