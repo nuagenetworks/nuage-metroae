@@ -101,10 +101,8 @@ After you have set up the environment and configured your components, you can us
 
 Alternatively, you can deploy individual components or perform individual tasks such as predeploy, deploy and postdeploy. See [DEPLOY.md](DEPLOY.md) for details.
 ## Questions, Feedback, and Contributing  
-Ask questions and get support via the [forum](https://devops.nuagenetworks.net/forums/) on the [MetroÆ site](https://devops.nuagenetworks.net/).  
-You may also contact us directly.  
-  Outside Nokia: [devops@nuagenetworks.net](mailto:deveops@nuagenetworks.net "send email to nuage-metro project")  
-  Internal Nokia: [nuage-metro-interest@list.nokia.com](mailto:nuage-metro-interest@list.nokia.com "send email to nuage-metro project")
+Get support via the [forum](https://devops.nuagenetworks.net/forums/) on the [MetroÆ site](https://devops.nuagenetworks.net/).  
+Ask questions and contact us directly at [devops@nuagenetworks.net](mailto:deveops@nuagenetworks.net "send email to nuage-metro project"). 
 
 Report bugs you find and suggest new features and enhancements via the [GitHub Issues](https://github.com/nuagenetworks/nuage-metro/issues "nuage-metro issues") feature.
 
