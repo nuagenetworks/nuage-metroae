@@ -30,6 +30,7 @@
 * Check certificate count before running vsd db backup (METROAE-1055)
 * Added graceful restart of vsd services support (METROAE-1084)
 * Added documentation for Skip and Hooks actions (METROAE-1066)
+* For VSC, support mgmt and ctrl ports on the same network on Openstack (METROAE-1166)
 
 ### Resolved Issues
 
