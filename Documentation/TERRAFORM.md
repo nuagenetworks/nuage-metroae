@@ -3,11 +3,11 @@
 Nuage Network components can be deployed using [Terraform](https://www.terraform.io/) by allowing the tool to perform the predeploy role while utilizing MetroÆ for deploy and postdeploy roles.  The predeploy role performs the steps to define and spin up VM resources.  The deploy role installs, configures and activates the Nuage Network software on the VM resources.  The postdeploy role provides health checking to ensure that the software is indeed running properly.
 
 ## Steps for Deploying using Terraform and MetroÆ
-[1. Install Terraform and MetroÆ](#1-install-terraform-and-metroÆ) 
-[2. Customize MetroÆ Deployment](#2-customize-metroÆ-deployment) 
-[3. Create Terraform Configuration](#3-create-terraform-configuration) 
-[4. Add Terraform Provisioners and Dependencies](#4-add-terraform-provisioners-and-dependencies) 
-[5. Apply Using Terraform](#5-apply-using-terraform) 
+[1. Install Terraform and MetroÆ](#1-install-terraform-and-metroÆ)  
+[2. Customize MetroÆ Deployment](#2-customize-metroÆ-deployment)  
+[3. Create Terraform Configuration](#3-create-terraform-configuration)  
+[4. Add Terraform Provisioners and Dependencies](#4-add-terraform-provisioners-and-dependencies)  
+[5. Apply Using Terraform](#5-apply-using-terraform)  
 
 ## 1. Install Terraform and MetroÆ
 Both [Terraform](https://www.terraform.io/) and MetroÆ are required to be installed using standard installation procedures.  [Terraform](https://www.terraform.io/) can be installed via the [installation tutorial](https://learn.hashicorp.com/terraform/getting-started/install).  MetroÆ is installed via the [setup guide](SETUP.md).
