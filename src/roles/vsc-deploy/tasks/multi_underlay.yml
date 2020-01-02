@@ -4,5 +4,9 @@
 
 - name: Create VPRN Object
   set_fact: 
-    vprn: { "vlan": "{{ item.split(':')[0] }}", "ipaddr": "{{ '' if item.split(':') | length <= 1 else item.split(':')[1] }}" }
+    vprn: {
+      "vlan": "{{ item.split(':')[0] }}",
+      "ipaddr": "{{ '' if item.split(':') | length <= 1 else item.split(':')[1].split('/')[0] }}",
+      "netmask": "{{ '24' if (item.split(':') | length <=1 or item.split(':')[1].split('/') | length <=1) else item.split(':')[1].split('/')[1] }}"
+    }
   with_items: vprnlist
