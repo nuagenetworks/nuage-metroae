@@ -1,7 +1,9 @@
 - name: Get specific credentials
   set_fact:
-    creds: "{{ item }}"
-  when: component.credentials_set is defined and item.name  == component.credentials_set
+    creds: "{{ credential }}"
+  when: component.credentials_set is defined and credential.name  == component.credentials_set
+  loop_control:
+    loop_var: credential
   with_items: "{{ credentials }}"
 
 - name: Create host_vars files for {{ component_template }}
@@ -14,7 +16,7 @@
   vars:
     item: "{{ component }}"
 
-- name: Concat credentials with the component host host vars
+- name: Concat credentials with the component host vars
   shell: cat {{ inventory_dir }}/host_vars/component_credentials >> {{ inventory_dir }}/host_vars/{{ component_hostname }}
 
 - name: Cleanup the temp credentials file
