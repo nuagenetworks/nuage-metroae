@@ -4,6 +4,7 @@
 
 ### Feature Enhancements
 
+* Support for patch upgrade from 6.0.3 to 6.0.4
 * Support bringing up vCenter VMs with interfaces disabled during upgrade (METROAE-644)
 * NSG Bootstrap support for vCenter (METROAE-1045)
 * Add VSD Certificate renewal procedure to VSD upgrade (METROAE-1002)
