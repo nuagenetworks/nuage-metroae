@@ -67,6 +67,7 @@ def main():
         else:
             return ''
 
+    failed_proc = ""
     desired_state = False
     time_elapsed = 0
     restarted = False
@@ -81,6 +82,7 @@ def main():
                proc_status == 'not monitored':
                     desired_state = True
             else:
+                failed_proc = proc_name
                 if proc_status == 'failed' and not restarted:
                     restarted = True
                     module.run_command('%s restart %s'
@@ -96,7 +98,9 @@ def main():
     if desired_state:
         module.exit_json(changed=True, name=proc_name, state=monit_stats)
     else:
-        module.fail_json(msg="Process %s did not transition to active within %i seconds" % (proc_name, timeout_seconds))
+        module.fail_json(
+            msg="Process %s did not transition to active within %i seconds" % (
+                failed_proc, timeout_seconds))
 
 
 if __name__ == '__main__':
