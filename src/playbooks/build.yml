@@ -11,11 +11,13 @@
         cmd: pip freeze | grep paramiko
       register: paramiko_info
 
-    - debug: var=paramiko_info
+    - debug: var=paramiko_info.stdout
 
     - name: Extract version from output
       set_fact:
-        paramiko_version: "{{ paramiko_info.stdout[10:15] }}"
+        paramiko_version: "{{ paramiko_info.stdout | regex_search('[^=].\d.+\d') }}"
+
+    - debug: var=paramiko_version
 
     - name: Check Paramiko version
       assert:
