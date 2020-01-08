@@ -341,16 +341,14 @@ class Wizard(object):
             if self.in_container:
                 self._print(self._get_field(data, "container_msg"))
                 zip_dir = self._input("Please enter the directory relative to "
-                                       "the metroae_data mount point that "
-                                       "contains your zip files", "")
+                                      "the metroae_data mount point that "
+                                      "contains your zip files", "")
 
                 if zip_dir.startswith("/"):
                     self._print("\nDirectory must be a relative path.")
                     continue
 
-                # Dalston container
                 full_zip_dir = os.path.join("/metroae_data", zip_dir)
-                # full_zip_dir = os.path.join("/data", zip_dir)
 
             else:
                 zip_dir = self._input("Please enter the directory that "
@@ -373,22 +371,15 @@ class Wizard(object):
         if self.in_container:
             valid = False
             while not valid:
-                # Dalston container
                 unzip_dir = self._input("Please enter the directory relative "
                                         "to the metroae_data mount point to "
                                         "unzip to")
-                # unzip_dir = self._input("Please enter the directory relative "
-                #                         "to the data mount point to "
-                #                         "unzip to")
-
                 if unzip_dir.startswith("/"):
                     self._print("\nDirectory must be a relative path.")
                 else:
                     valid = True
 
-            # Dalston container
             full_unzip_dir = os.path.join("/metroae_data", unzip_dir)
-            # full_unzip_dir = os.path.join("/data", unzip_dir)
         else:
             unzip_dir = self._input("Please enter the directory to unzip to")
             full_unzip_dir = unzip_dir
