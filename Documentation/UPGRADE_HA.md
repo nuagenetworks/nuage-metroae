@@ -31,7 +31,7 @@ If your upgrade plans do not include upgrading VRSs or other dataplane component
 
 ### Upgrade All Components including Active/Standby clusters (does not pause for external VRS/dataplane upgrade)
 
-     metroae upgrade_everything
+     metroae upgrade everything
 
 Issuing this workflow will detect if components are clustered (HA) or not and will upgrade all components that are defined in the deployment.  This option does not pause until completion to allow VRSs and other dataplane components to be upgraded.  If dataplane components need to be upgraded, the following option should be performed instead.
 
@@ -49,7 +49,7 @@ Issuing the above workflows will detect if components are clustered (HA) or not 
 
      metroae vsp_preupgrade_health
 
-     metroae upgrade_vsds
+     metroae upgrade vsds
 
      metroae upgrade_vscs_before_vrs
 
@@ -57,7 +57,7 @@ Issuing the above workflows will detect if components are clustered (HA) or not 
 
      metroae upgrade_vscs_after_vrs
 
-     metroae upgrade_vstats
+     metroae upgrade vstats
 
      metroae vsp_upgrade_postdeploy
 
@@ -223,7 +223,7 @@ Our example includes a VSTAT node. If your topology does not include one, procee
 
 3. Upgrade the VSTAT nodes.
 
-     `metroae vstat_upgrade`
+     `metroae upgrade vstat`
 
      Performs an in-place upgrade of the VSTAT nodes.
 
