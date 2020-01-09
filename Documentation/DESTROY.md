@@ -1,4 +1,4 @@
-# Removing Components with MetroÆ
+# Removing Components with MetroAE
 To remove a deployment:
 
 [1. Check existing deployment](#1-check-existing-deployment)  
@@ -19,7 +19,7 @@ You have the option of removing the entire deployment or only specified individu
 ### Remove All Components
 Remove the entire existing deployment with one command as follows:
 ```
-metroae destroy_everything
+metroae destroy everything
 ```
 Note: you may alternate between `install_everything` and `destroy_everything` as needed.
 
@@ -27,17 +27,17 @@ Note: you may alternate between `install_everything` and `destroy_everything` as
 Alternatively, you can remove individual components (VSD, VSC, VRS, etc) as needed. See VSC example below for details.
   #### Example Sequence for VSC:
   Configure components under your deployment  
-  Run `metroae install_everything` to deploy VSD, VSC, VRS, etc.  
+  Run `metroae install everything` to deploy VSD, VSC, VRS, etc.  
   Discover that something needs to be changed in the VSCs  
-  Run **`metroae vsc_destroy`** to tear down just the VSCs  
+  Run **`metroae destroy vsc`** to tear down just the VSCs  
   Edit `vscs.yml` in your deployment to fix the problem  
-  Run `metroae vsc_predeploy`, `metroae vsc_deploy`, and `metroae vsc_postdeploy` to get the VSCs up and running again.
+  Run `metroae install vsc predeploy`, `metroae install vsc deploy`, and `metroae install vsc postdeploy` to get the VSCs up and running again.
 
 ## Questions, Feedback, and Contributing
-Get support via the [forums](https://devops.nuagenetworks.net/forums/) on the [MetroÆ site](https://devops.nuagenetworks.net/).  
+Get support via the [forums](https://devops.nuagenetworks.net/forums/) on the [MetroAE site](https://devops.nuagenetworks.net/).  
 
 Ask questions and contact us directly at [devops@nuagenetworks.net](mailto:deveops@nuagenetworks.net "send email to nuage-metro project"). 
 
 Report bugs you find and suggest new features and enhancements via the [GitHub Issues](https://github.com/nuagenetworks/nuage-metro/issues "nuage-metro issues") feature.
 
-You may also [contribute](../CONTRIBUTING.md) to MetroÆ by submitting your own code to the project.
+You may also [contribute](../CONTRIBUTING.md) to MetroAE by submitting your own code to the project.
