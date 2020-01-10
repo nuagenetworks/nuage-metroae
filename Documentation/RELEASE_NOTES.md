@@ -9,3 +9,6 @@
 
 ### Resolved Issues
 
+### Removed
+
+* Removed obsolete os_vsd_osc_integration playbook and associated role and files. 
