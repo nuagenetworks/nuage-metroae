@@ -1,20 +1,38 @@
 ---
 - block:
 
-  - name: Set VSC KVM image location
-    include_role:
-      name: common
-      tasks_from: find-image.yml
-    vars:
-      pattern: vsc_singledisk.qcow2
+  - block:
+
+    - name: Set VSC KVM image location
+      include_role:
+        name: common
+        tasks_from: find-file.yml
+      vars:
+        dir_name: "{{ nuage_unzipped_files_dir }}"
+        pattern: vsc_singledisk.qcow2
+
+    - name: Register VSC KVM image path and file
+      set_fact:
+        image_path: "{{ file_path }}"
+        image_file_name: "{{ file_name }}"
+
     when: vscs | map(attribute='target_server_type') | list is issuperset(["kvm"])
 
-  - name: Set VSC vCenter image location
-    include_role:
-      name: common
-      tasks_from: find-image.yml
-    vars:
-      pattern: vsc_singledisk.ova
+  - block:
+
+    - name: Set VSC vCenter image location
+      include_role:
+        name: common
+        tasks_from: find-file.yml
+      vars:
+        dir_name: "{{ nuage_unzipped_files_dir }}"
+        pattern: vsc_singledisk.ova
+
+    - name: Register VSC vCenter image path and file
+      set_fact:
+        image_path: "{{ file_path }}"
+        image_file_name: "{{ file_name }}"
+
     when: vscs | map(attribute='target_server_type') | list is issuperset(["vcenter"])
 
   - name: Find VSC single_disk image directory

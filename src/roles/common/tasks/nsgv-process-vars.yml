@@ -5,20 +5,37 @@
       that: openflow_tls | default(true)
       msg: "openflow_tls is False. It must be undefined (default) or set to True in common.yml to support NSGv. Quitting."
 
-  - name: Set NSGV KVM image location
-    include_role:
-      name: common
-      tasks_from: find-image.yml
-    vars:
-      pattern: ncpe_centos7.qcow2
+  - block:
+    - name: Set NSGV KVM image location
+      include_role:
+        name: common
+        tasks_from: find-file.yml
+      vars:
+        dir_name: "{{ nuage_unzipped_files_dir }}"
+        pattern: ncpe_centos7.qcow2
+
+    - name: Register KVM image path and file
+      set_fact:
+        image_path: "{{ file_path }}"
+        image_file_name: "{{ file_name }}"
+
     when: nsgvs | map(attribute='target_server_type') | list is issuperset(["kvm"])
 
-  - name: Set NSGV vCenter image location
-    include_role:
-      name: common
-      tasks_from: find-image.yml
-    vars:
-      pattern: NSG-*.ovf
+  - block:
+
+    - name: Set NSGV vCenter image location
+      include_role:
+        name: common
+        tasks_from: find-file.yml
+      vars:
+        dir_name: "{{ nuage_unzipped_files_dir }}"
+        pattern: NSG-*.ovf
+
+    - name: Register NSGV vCenter image path and file
+      set_fact:
+        image_path: "{{ file_path }}"
+        image_file_name: "{{ file_name }}"
+
     when: nsgvs | map(attribute='target_server_type') | list is issuperset(["vcenter"])
 
   - name: Create host_vars files for nsgvs

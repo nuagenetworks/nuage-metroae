@@ -1,20 +1,38 @@
 
 - block:
 
-  - name: Set VSD KVM image location
-    include_role:
-      name: common
-      tasks_from: find-image.yml
-    vars:
-      pattern: VSD-*.qcow2
+  - block:
+
+    - name: Set VSD KVM image location
+      include_role:
+        name: common
+        tasks_from: find-file.yml
+      vars:
+        dir_name: "{{ nuage_unzipped_files_dir }}"
+        pattern: VSD-*.qcow2
+
+    - name: Register VSD KVM image path and file
+      set_fact:
+        image_path: "{{ file_path }}"
+        image_file_name: "{{ file_name }}"
+
     when: vsds | map(attribute='target_server_type') | list is issuperset(["kvm"])
 
-  - name: Set VSD vCenter image location
-    include_role:
-      name: common
-      tasks_from: find-image.yml
-    vars:
-      pattern: VSD-*.ova
+  - block:
+
+    - name: Set VSD vCenter image location
+      include_role:
+        name: common
+        tasks_from: find-file.yml
+      vars:
+        dir_name: "{{ nuage_unzipped_files_dir }}"
+        pattern: VSD-*.ova
+
+    - name: Register VSD vCenter image path and file
+      set_fact:
+        image_path: "{{ file_path }}"
+        image_file_name: "{{ file_name }}"
+
     when: vsds | map(attribute='target_server_type') | list is issuperset(["vcenter"])
 
   - name: Find name of VSD Migration ISO File
