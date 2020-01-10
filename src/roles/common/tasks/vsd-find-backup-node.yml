@@ -7,10 +7,17 @@
   set_fact:
     certs_count: "{{count_files.stdout | int | default(0)}}"
 
+- name: Set max certs count on localhost when undefined
+  set_fact:
+    max_certs_count: 0
+  delegate_to: localhost
+  delegate_facts: True
+  when: hostvars['localhost'].max_certs_count is undefined
+
 - name: Check if the node has maximum certificates in the cluster
   set_fact:
     vsd_backup_node: "{{inventory_hostname}}"
     max_certs_count: "{{ certs_count }}"
   delegate_to: localhost
   delegate_facts: True
-  when: certs_count > (hostvars['localhost'].max_certs_count | int | default(0))
+  when: certs_count > hostvars['localhost'].max_certs_count
