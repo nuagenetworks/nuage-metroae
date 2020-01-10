@@ -222,7 +222,7 @@ function check_for_prerequisite {
                 fi
 
                 if [[ $confirmation == "y" ]]; then
-                    check_for_user_group
+                    check_for_user_group "$@"
                     setup_container
                 else
                     echo ""
@@ -311,7 +311,7 @@ function get_max_container_version {
         done
 
         if [[ -z $MAX_CONTAINER_VERSION ]]; then
-            MAX_CONTAINER_VERSION='unknown'
+            MAX_CONTAINER_VERSION='current'
         fi
     fi
     write_to_script_log "Newest MetroAE container version found is $MAX_CONTAINER_VERSION"
@@ -1663,12 +1663,12 @@ function container_main {
     debug ${FUNCNAME[0]}
     if [[ ! -z $GROUP_CHECK ]]; then
         debug "${FUNCNAME[0]} GROUP_CHECK is defined"
-        check_for_user_group $@
+        check_for_user_group "$@"
         shift
         print_version_and_exit 0
     else
         debug "${FUNCNAME[0]} GROUP_CHECK is not defined"
-        check_for_user_group $@
+        check_for_user_group "$@"
     fi
 
     # check docker
@@ -2107,7 +2107,7 @@ parse_menu_args "$@"
 
 # Do the file check and setup before running the commands
 if [[ ${MATCH_MENU[0]} != ",container,setup" ]] && [[ ${MATCH_MENU[0]} != ",container,pull" ]] && [[ ${MATCH_MENU[0]} != ",container,destroy" ]] && [[ ${MATCH_MENU[0]} != ",container,status" ]] && [[ ${MATCH_MENU[0]} != ",container,update" ]]; then
-    check_for_prerequisite
+    check_for_prerequisite "$@"
     # parse it again if we loaded the new menu
     parse_menu_args "$@"
 fi
