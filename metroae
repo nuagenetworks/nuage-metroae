@@ -625,7 +625,7 @@ function run_container {
                 mount_args="-v $METROAE_MOUNT_POINT:/metroae_data:Z"
                 levi_args="-e LEVISTATE_CONTAINER=1"
             else
-                mount_args="-v $METROAE_MOUNT_POINT:/metroae_data:Z -v $IMAGES_MOUNT_POINT:/metroae_data:Z"
+                mount_args="-v $METROAE_MOUNT_POINT:/metroae_data:Z"
                 levi_args=""
             fi
 
@@ -822,12 +822,6 @@ function setup_container {
 
     write_to_script_log "METROAE_MOUNT_POINT=$data_path"
     echo METROAE_MOUNT_POINT=$data_path >> $SETUP_FILE
-
-    if [[ $setup_type != "c" ]]; then
-        images_path=$PATH_ARG
-        echo IMAGES_MOUNT_POINT=$images_path >> $SETUP_FILE
-        write_to_script_log "IMAGES_MOUNT_POINT=$images_path"
-    fi
 
     # stop and remove existing container if any
     get_running_container_id
@@ -1603,13 +1597,6 @@ function container_status {
         elif [[ -z $METROAE_MOUNT_POINT ]]; then
             echo ""
             write_to_screen_and_script_log "We couldn't find the MetroAE data path in the configuration file on disk."
-            echo "Please run 'metroae container setup' and try again."
-            echo ""
-            exit 1
-        fi
-        if [[ $METROAE_SETUP_TYPE != "c" ]] && [[ -z $IMAGES_MOUNT_POINT ]]; then
-            echo ""
-            write_to_screen_and_script_log "We couldn't find the MetroAE images path in the configuration file on disk."
             echo "Please run 'metroae container setup' and try again."
             echo ""
             exit 1
