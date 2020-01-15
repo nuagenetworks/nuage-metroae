@@ -97,35 +97,35 @@ vcin_slaves
 
 {% if vscs is defined and vscs %}
 
-{% if vscs|length == 1 %}
-
+{% if vscs|length == 1 or force_vsc_standalone_upgrade | default(false) %}
 [vsc_sa_node]
-{{ vscs[0].hostname }}
-
-[vscs:children]
-vsc_sa_node
-
-{% elif vscs|length == 2 %}
-
-[vsc_ha_node1]
-{{ vscs[0].hostname }}
-
-[vsc_ha_node2]
-{{ vscs[1].hostname }}
-
-[vscs:children]
-vsc_ha_node1
-vsc_ha_node2
-
-{% else %}
-
-[vscs]
 {% for vsc in vscs %}
 {{ vsc.hostname }}
-
 {% endfor %}
-
 {% endif %}
+
+{% if vscs|length > 1 and not force_vsc_standalone_upgrade | default(false) %}
+[vsc_ha_node1]
+{% for vsc in vscs %}
+{% if loop.index % 2 == 1 %}
+{{ vsc.hostname }}
+{% endif %}
+{% endfor %}
+{% endif %}
+
+{% if vscs|length > 1 and not force_vsc_standalone_upgrade | default(false) %}
+[vsc_ha_node2]
+{% for vsc in vscs %}
+{% if loop.index % 2 == 0 %}
+{{ vsc.hostname }}
+{% endif %}
+{% endfor %}
+{% endif %}
+
+[vscs:children]
+{% for vsc in vscs %}
+{{ vsc.hostname }}
+{% endfor %}
 
 {% endif %}
 

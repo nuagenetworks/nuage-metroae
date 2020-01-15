@@ -61,9 +61,9 @@ INVENTORY_DIR=$CURRENT_DIR/src/inventory
 ###############################################################################
 function usage {
   echo ""
-  echo "Setup for Nuage Networks Metro Automation Engine (MetroÆ)"
+  echo "Setup for Nuage Networks Metro Automation Engine (MetroAE)"
   echo ""
-  echo "Installs all required libraries for MetroÆ.  See README.md for"
+  echo "Installs all required libraries for MetroAE.  See README.md for"
   echo "more information."
   echo ""
   echo "Usage:"

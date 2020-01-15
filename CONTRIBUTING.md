@@ -1,6 +1,6 @@
-# Contributing to MetroÆ
+# Contributing to MetroAE
 
-MetroÆ is built on a community model. The code has been architected to make contribution simple and straightforward. You are welcome to join in the community to help us continuously improve MetroÆ.
+MetroAE is built on a community model. The code has been architected to make contribution simple and straightforward. You are welcome to join in the community to help us continuously improve MetroAE.
 
 The following procedure is the recommended, proven way to become a contributor:
 
@@ -19,7 +19,7 @@ You must have a github.com account and have been added as a collaborator to the 
 
 ## 1. Create Your Own Fork
 
-1. Before you start developing code, create your own fork from the upstream MetroÆ repo. [https://github.com/nuagenetworks/nuage-metro/](https://github.com/nuagenetworks/nuage-metro/)
+1. Before you start developing code, create your own fork from the upstream MetroAE repo. [https://github.com/nuagenetworks/nuage-metro/](https://github.com/nuagenetworks/nuage-metro/)
 
 2. Clone your own fork on your machine and switch to the _dev_ branch.
 
@@ -103,7 +103,7 @@ The repo owner will test and review your contributions. After you have addressed
 
 ## Questions and Feedback
 
-Ask questions and get support via the [forums](https://devops.nuagenetworks.net/forums/) on the [MetroÆ site](https://devops.nuagenetworks.net/).  
+Ask questions and get support via the [forums](https://devops.nuagenetworks.net/forums/) on the [MetroAE site](https://devops.nuagenetworks.net/).  
 You may also contact us directly.  
   Outside Nokia: [devops@nuagenetworks.net](mailto:deveops@nuagenetworks.net "send email to nuage-metro project").  
   Internal Nokia: [nuage-metro-interest@list.nokia.com](mailto:nuage-metro-interest@list.nokia.com "send email to nuage-metro project"). 
