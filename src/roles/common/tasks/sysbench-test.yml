@@ -1,0 +1,22 @@
+- name: Prepare sysbench to run
+  shell: "sysbench --test=fileio --file-total-size={{ file_total_size|default(100G) }} prepare"
+
+- name: Run sysbench test
+  shell: "sysbench --test=fileio --file-total-size={{ file_total_size|default(100G) }} --file-test-mode=rndrw --init-rng=on --max-time=300 --max-requests=0 run"
+  register: sysbench_output
+
+- name: Get IOPS
+  set_fact:
+    IOPS: "{{ sysbench_output | regex_search('\\d.*(Requests\/sec)') }}"
+
+- name: Set IOPS value
+  set_fact:
+    IOPS_val: "{{ IOPS | regex_search('\\d.') }}"
+
+- name: Verify IOPS value meets the specified threshold
+  assert:
+    that: "IOPS_val >= {{ iops_threshold }}"
+    msg: "IOPS value does not meet the specified target threshold"
+
+- name: Cleanup sysbench files
+  shell: "sysbench --test=fileio --file-total-size={{ file_total_size|default(100G) }} cleanup"

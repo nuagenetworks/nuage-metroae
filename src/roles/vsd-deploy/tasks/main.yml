@@ -220,6 +220,18 @@
 
   - block:
 
+    - block:
+
+      - name: Test VSD IOPS with sysbench
+        include_role:
+          name: common
+          tasks_from: sysbench-test.yml
+        vars:
+          file_total_size: "{{ file_total_size }}"
+          iops_threshold: "{{ iops_threshold }}"
+
+      when: run_iops_test|default(False)
+
     - name: Install VSD software on standalone node (Can take 20 minutes)
       command: "/opt/vsd/vsd-install.sh -t s -y {{ (enable_ipv6 | default(False) == True) | ternary('-6', '') }}"
       when: not deploy_vcin
@@ -279,6 +291,17 @@
       - master_vcin is defined
 
   - block:
+
+    - block:
+
+      - name: Test VSD IOPS with sysbench
+        include_role:
+          name: common
+          tasks_from: sysbench-test.yml
+        vars:
+          file_total_size: "{{ file_total_size }}"
+          iops_threshold: "{{ iops_threshold }}"
+      when: run_iops_test|default(False)
 
     - name: Install VSD software on the first cluster node (Can take 20 minutes)
       command: "/opt/vsd/vsd-install.sh -t 1 -a {{ first_cluster_node_to_install }} -b {{ second_cluster_node_to_install }} -c {{third_cluster_node_to_install}} -x {{vsd_fqdn}} -y {{ (enable_ipv6 | default(False) == True) | ternary('-6', '') }}"
