@@ -2,11 +2,12 @@
   set_fact:
     vprnlist: ["27","29:192.168.1.7","122:192.168.1.9/23"]
 
-- name: Create VPRN Object
-  set_fact: 
-    vprn: {
-      "vlan": "{{ item.split(':')[0] }}",
-      "ipaddr": "{{ '' if item.split(':') | length <= 1 else item.split(':')[1].split('/')[0] }}",
-      "netmask": "{{ '24' if (item.split(':') | length <=1 or item.split(':')[1].split('/') | length <=1) else item.split(':')[1].split('/')[1] }}"
-    }
+- name: Create empty VPRN object
+  set_fact:
+    vprn_object_list: []
+
+- name: Fill up VPRN Object list
+  include: create_vprn_list.yml vprn={{item}}
   with_items: "{{ vprnlist }}"
+
+- debug: var=vprn_object_list
