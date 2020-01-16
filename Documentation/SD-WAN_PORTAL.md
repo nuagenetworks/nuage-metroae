@@ -21,7 +21,7 @@ Currently the following workflows are supported:
 Example deployment files are available under examples/kvm_portal_install
 
 ### 1. Configure `common.yml`
-  In your MetroÆ deployment folder, create or edit the `common.yml` configuring the necessary attributes.
+  In your MetroAE deployment folder, create or edit the `common.yml` configuring the necessary attributes.
   Portal specific attributes include:
   * portal_fqdn_global - SD-WAN Portal Global FQDN. Typically a public (external) FQDN resolvable to the Portal endpoint on a Proxy/LB in both standalone and HA deployments. For standalone - FQDN of a single Portal node
   * vsd_port_global - Used with vsd_global_fqdn by the SD-WAN Portal to connect to the VSD cluster. Defaults to 8443. 

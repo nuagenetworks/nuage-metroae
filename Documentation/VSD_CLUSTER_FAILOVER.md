@@ -1,4 +1,4 @@
-# VSD cluster failover using MetroÆ
+# VSD cluster failover using MetroAE
 
 You can use this procedure to make the current `standby` VSD cluster the `active` VSD cluster. You can promote the `standby` cluster to `active` when both the `active` and `standby` clusters are in good health. Using the `vsd_force_cluser_failover` flag (see below), you can promote the `standby` cluster even when the `primary` cluster is unhealthy or unreachable.
 
@@ -25,11 +25,9 @@ metroae vsd_cluster_failover [deployment_name] -e vsd_force_cluster_failover=yes
 ```
 
 ## Questions, Feedback, and Contributing
-Ask questions and get support via the [forums](https://devops.nuagenetworks.net/forums/) on the [MetroÆ site](https://devops.nuagenetworks.net/).  
-You may also contact us directly.  
-  Outside Nokia: [devops@nuagenetworks.net](mailto:deveops@nuagenetworks.net "send email to nuage-metro project")  
-  Internal Nokia: [nuage-metro-interest@list.nokia.com](mailto:nuage-metro-interest@list.nokia.com "send email to nuage-metro project")
+Get support via the [forums](https://devops.nuagenetworks.net/forums/) on the [MetroAE site](https://devops.nuagenetworks.net/).  
+Ask questions and contact us directly at [devops@nuagenetworks.net](mailto:deveops@nuagenetworks.net "send email to nuage-metro project").  
 
 Report bugs you find and suggest new features and enhancements via the [GitHub Issues](https://github.com/nuagenetworks/nuage-metro/issues "nuage-metro issues") feature.
 
-You may also [contribute](../CONTRIBUTING.md) to MetroÆ by submitting your own code to the project.
+You may also [contribute](../CONTRIBUTING.md) to MetroAE by submitting your own code to the project.
