@@ -1,8 +1,8 @@
 - name: Prepare sysbench to run
-  shell: "sysbench --test=fileio --file-total-size={{ file_total_size|default(100G) }} prepare"
+  shell: "sysbench --test=fileio --file-total-size=10G prepare"
 
 - name: Run sysbench test
-  shell: "sysbench --test=fileio --file-total-size={{ file_total_size|default(100G) }} --file-test-mode=rndrw --init-rng=on --max-time=300 --max-requests=0 run"
+  shell: "sysbench --test=fileio --file-total-size=10G --file-test-mode=rndrw --init-rng=on --max-time=300 --max-requests=0 run"
   register: sysbench_output
 
 - name: Get IOPS
@@ -15,8 +15,8 @@
 
 - name: Verify IOPS value meets the specified threshold
   assert:
-    that: "IOPS_val >= {{ iops_threshold }}"
+    that: "IOPS_val >= 8000"
     msg: "IOPS value does not meet the specified target threshold"
 
 - name: Cleanup sysbench files
-  shell: "sysbench --test=fileio --file-total-size={{ file_total_size|default(100G) }} cleanup"
+  shell: "sysbench --test=fileio --file-total-size=10G cleanup"
