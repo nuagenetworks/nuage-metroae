@@ -11,13 +11,15 @@
   set_fact:
     IOPS: "{{ sysbench_output.stdout | regex_search('\\d.*(Requests\\/sec)') }}"
 
+- debug: var=IOPS
+
 - name: Set IOPS value
   set_fact:
     IOPS_val: "{{ IOPS | regex_search('\\d.') }}"
 
 - name: Verify IOPS value meets the specified threshold
   assert:
-    that: "IOPS_val >= 100"
+    that: IOPS_val >= 100
     msg: "IOPS value does not meet the specified target threshold"
 
 - name: Cleanup sysbench files
