@@ -10,6 +10,24 @@
   set_fact:
     vprn_object_list: []
 
+- block:
+
+  - name: Add Control IP VPRN and VLAN (to be deprecated)
+    set_fact: 
+      legacy_vprn: [{
+        "vlan": "{{ vlan_id }}",
+        "ipaddr": "{{ '' if not ctrl_ip_vprn else ctrl_ip_vprn }}",
+        "netmask": "{{ '24' }}"
+      }]
+
+  - name: Add VPRN object to the object list
+    set_fact: 
+      vprn_object_list: '{{ vprn_object_list + legacy_vprn }}'
+
+  when: vlan_id is defined
+
+- name: 
+
 - name: Fill up VPRN Object list from deployment
   include: create_vprn_list.yml vprn={{item|string}}
   with_items: "{{ vprn_list }}"
