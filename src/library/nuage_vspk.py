@@ -355,31 +355,31 @@ class NuageEntityManager(object):
         self.type = module.params['type']
 
         self.state = None
-        if 'state' in module.params.keys():
+        if 'state' in list(module.params.keys()):
             self.state = module.params['state']
 
         self.command = None
-        if 'command' in module.params.keys():
+        if 'command' in list(module.params.keys()):
             self.command = module.params['command']
 
         self.match_filter = None
-        if 'match_filter' in module.params.keys():
+        if 'match_filter' in list(module.params.keys()):
             self.match_filter = module.params['match_filter']
 
         self.id = None
-        if 'id' in module.params.keys():
+        if 'id' in list(module.params.keys()):
             self.id = module.params['id']
 
         self.parent_id = None
-        if 'parent_id' in module.params.keys():
+        if 'parent_id' in list(module.params.keys()):
             self.parent_id = module.params['parent_id']
 
         self.parent_type = None
-        if 'parent_type' in module.params.keys():
+        if 'parent_type' in list(module.params.keys()):
             self.parent_type = module.params['parent_type']
 
         self.properties = None
-        if 'properties' in module.params.keys():
+        if 'properties' in list(module.params.keys()):
             self.properties = module.params['properties']
 
         self.entity = None
@@ -408,7 +408,7 @@ class NuageEntityManager(object):
             self.nuage_connection = vsdk.NUVSDSession(username=self.api_username, password=self.api_password,
                                                       enterprise=self.api_enterprise, api_url=self.api_url)
             self.nuage_connection.start()
-        except BambouHTTPError, e:
+        except BambouHTTPError as e:
             self.module.fail_json(
                 msg='Unable to connect to the API URL with given username, password and enterprise: {0}'.format(e))
 
@@ -417,13 +417,13 @@ class NuageEntityManager(object):
         Verifies the parameter input for types and parent correctness and necessary parameters
         """
         # Checking auth parameters
-        if 'api_username' not in self.auth.keys() or not self.auth['api_username']:
+        if 'api_username' not in list(self.auth.keys()) or not self.auth['api_username']:
             self.module.fail_json(msg='Missing api_username parameter in auth')
-        if 'api_password' not in self.auth.keys() or not self.auth['api_password']:
+        if 'api_password' not in list(self.auth.keys()) or not self.auth['api_password']:
             self.module.fail_json(msg='Missing api_password parameter in auth')
-        if 'api_enterprise' not in self.auth.keys() or not self.auth['api_enterprise']:
+        if 'api_enterprise' not in list(self.auth.keys()) or not self.auth['api_enterprise']:
             self.module.fail_json(msg='Missing api_enterprise parameter in auth')
-        if 'api_url' not in self.auth.keys() or not self.auth['api_url']:
+        if 'api_url' not in list(self.auth.keys()) or not self.auth['api_url']:
             self.module.fail_json(msg='Missing api_url parameter in auth')
         self.api_username = self.auth['api_username']
         self.api_password = self.auth['api_password']
@@ -490,7 +490,7 @@ class NuageEntityManager(object):
             self.parent = self.parent_class(id=self.parent_id)
             try:
                 self.parent.fetch()
-            except BambouHTTPError, e:
+            except BambouHTTPError as e:
                 self.module.fail_json(msg='Failed to fetch the specified parent: {0}'.format(e))
 
         self.entity_fetcher = self.parent.fetcher_for_rest_name(self.entity_class.rest_name)
@@ -505,7 +505,7 @@ class NuageEntityManager(object):
             found_entity = self.entity_class(id=self.id)
             try:
                 found_entity.fetch()
-            except BambouHTTPError, e:
+            except BambouHTTPError as e:
                 self.module.fail_json(msg='Failed to fetch the specified entity by ID: {0}'.format(e))
 
             return [found_entity]
@@ -538,7 +538,7 @@ class NuageEntityManager(object):
             found_entity = self.entity_class(id=self.id)
             try:
                 found_entity.fetch()
-            except BambouHTTPError, e:
+            except BambouHTTPError as e:
                 self.module.fail_json(msg='Failed to fetch the specified entity by ID: {0}'.format(e))
 
             return found_entity
@@ -617,7 +617,7 @@ class NuageEntityManager(object):
                 # Need to compare properties in entity and found entity
                 changed = False
                 if self.properties:
-                    for property_name in self.properties.keys():
+                    for property_name in list(self.properties.keys()):
                         if property_name == 'password':
                             continue
                         entity_value = ''
@@ -685,7 +685,7 @@ class NuageEntityManager(object):
         members.append(self.entity)
         try:
             self.parent.assign(members, self.entity_class)
-        except BambouHTTPError, e:
+        except BambouHTTPError as e:
             self.module.fail_json(msg='Unable to assign entity as a member: {0}'.format(e))
         self.result['changed'] = True
         self.result['id'] = self.entity.id
@@ -701,7 +701,7 @@ class NuageEntityManager(object):
                 members.append(member)
         try:
             self.parent.assign(members, self.entity_class)
-        except BambouHTTPError, e:
+        except BambouHTTPError as e:
             self.module.fail_json(msg='Unable to remove entity as a member: {0}'.format(e))
         self.result['changed'] = True
         self.result['id'] = self.entity.id
@@ -714,7 +714,7 @@ class NuageEntityManager(object):
         self.entity = self.entity_class(**self.properties)
         try:
             self.parent.create_child(self.entity)
-        except BambouHTTPError, e:
+        except BambouHTTPError as e:
             self.module.fail_json(msg='Unable to create entity: {0}'.format(e))
         self.result['changed'] = True
         self.result['id'] = self.entity.id
@@ -726,7 +726,7 @@ class NuageEntityManager(object):
         """
         try:
             self.entity.save()
-        except BambouHTTPError, e:
+        except BambouHTTPError as e:
             self.module.fail_json(msg='Unable to update entity: {0}'.format(e))
         self.result['changed'] = True
         self.result['id'] = self.entity.id
@@ -738,7 +738,7 @@ class NuageEntityManager(object):
         """
         try:
             self.entity.delete()
-        except BambouHTTPError, e:
+        except BambouHTTPError as e:
             self.module.fail_json(msg='Unable to delete entity: {0}'.format(e))
         self.result['id'] = None
         self.result['changed'] = True

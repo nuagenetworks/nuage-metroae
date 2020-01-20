@@ -163,7 +163,7 @@ def is_license_already_installed(csproot, vsd_license):
 
 def get_license_unique_id(vsd_license):
     stripped = vsd_license.strip()
-    return unicode(stripped[0:16] + stripped[-16:])
+    return stripped[0:16] + stripped[-16:]
 
 
 def create_proxy_user(module, session):
