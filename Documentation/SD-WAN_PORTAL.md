@@ -24,22 +24,22 @@ Example deployment files are available under examples/kvm_portal_install
   In your MetroAE deployment folder, create or edit the `common.yml` configuring the necessary attributes.
   Portal specific attributes include:
   * portal_fqdn_global - SD-WAN Portal Global FQDN. Typically a public (external) FQDN resolvable to the Portal endpoint on a Proxy/LB in both standalone and HA deployments. For standalone - FQDN of a single Portal node
-  * vsd_port_global - Used with vsd_global_fqdn by the SD-WAN Portal to connect to the VSD cluster. Defaults to 8443.
+  * vsd_port_global - Used with vsd_global_fqdn by the SD-WAN Portal to connect to the VSD cluster. Defaults to 8443. 
   * vstat_fqdn_global - ElasticSearch cluster FQDN. SD-WAN Portal accesses the ES cluster to retrieve statistics for visualization and reports. For standalone ES - FQDN of a single ES node.
   * yum_proxy - Portal is using the same Proxy for Docker to pull the images from Docker hub. Optional if using the pre-downloaded SW package.
   * portal_license_file - SD-WAN Portal license. Request through ASLM.
   * portal_ram - Amount of Portal RAM to allocate, in GB.
 
-### 2. Configure `credentials.yml`
+### 2. Configure `credentials.yml`  
   Create or edit the `credentials.yml` configuring the necessary attributes.
-  Portal specific attributes include:
+  Portal specific attributes include: 
   * portal_username - VSD username reserved for the Portal. (Optional)
   * portal_password - VSD password for the user configured in `portal_username`. (Optional)
   * portal_custom_username - CLI user to log in to the Portal VM
   * portal_custom_password - CLI user password to log in to the Portal VM
   * smtp_auth_username - SMTP server username used by Portal Messaging app to send Portal user management emails
   * smtp_auth_password - Password for SMTP server user.
-
+  
 ### 3. Configure `portals.yml`
   Create or edit the `portals.yml` configuring the necessary attributes. For standalone deployment, only one Portal section is needed. 3 Portal sections are required for HA deployment (see example deployment file). Standard Metro&#198; attributes are used with some unique to SD-WAN Portal ones listed below:
   * password_reset_email; new_account_email; forgot_password_email - Sender address to be used in Portal user management emails
