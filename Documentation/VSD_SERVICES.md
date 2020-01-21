@@ -8,9 +8,9 @@ Before attempting to control the VSD services using MetroAE, you must configure 
 ## Use of MetroAE Command Line
 MetroAE can perform any of the following VSD service workflows using the command-line tool as follows:
 
-    metroae vsd_services_stop [deployment] [options]
-    metroae vsd_services_start [deployment] [options]
-    metroae vsd_services_restart [deployment] [options]
+    metroae vsd services stop [deployment] [options]
+    metroae vsd services start [deployment] [options]
+    metroae vsd services restart [deployment] [options]
 
 * `deployment`: Name of the deployment directory containing configuration files.  See [CUSTOMIZE.md](CUSTOMIZE.md)
 * `options`: Other options for the tool.  These can be shown using --help.  Also, any options not directed to the metroae tool are passed to Ansible.

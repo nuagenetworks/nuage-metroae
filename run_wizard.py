@@ -40,7 +40,7 @@ WIZARD_SCRIPT = """
     missing_msg: |
 
       We would like to run setup to install these.  The command is
-      "sudo ./metro-setup.sh" if you'd like to run it yourself.
+      "sudo ./setup.sh" if you'd like to run it yourself.
       Running this command requires sudo access. You may be asked
       for the sudo password.
     wrong_os_msg: |
@@ -1086,14 +1086,14 @@ class Wizard(object):
         return self._compare_libraries(required_libraries, output_lines)
 
     def _run_setup(self):
-        cmd = "sudo ./metro-setup.sh"
+        cmd = "sudo ./setup.sh"
         self._print("Command: " + cmd)
         self._print("Running setup (may ask for sudo password)")
         try:
             rc, output_lines = self._run_shell(cmd)
             if rc != 0:
                 self._print("\n".join(output_lines))
-                raise Exception("metro-setup.sh exit-code: %d" % rc)
+                raise Exception("setup.sh exit-code: %d" % rc)
 
             self._unrecord_problem("install_libraries")
             self._print(u"\nMetroAE setup completed successfully!")
@@ -1184,7 +1184,7 @@ class Wizard(object):
         except ImportError:
             self._print(
                 "Could not import the libraries to parse CSV files."
-                "  Please make sure metro-setup.sh has been run.")
+                "  Please make sure setup.sh has been run.")
             return
 
         valid = False
@@ -1422,7 +1422,7 @@ class Wizard(object):
                 "deployment_create", "Could not create a deployment file")
             self._print(
                 "Cannot write deployment files because libraries are missing."
-                "  Please make sure metro-setup.sh has been run.")
+                "  Please make sure setup.sh has been run.")
             return
         if type(deployment) == list:
             deployment = {schema: deployment}

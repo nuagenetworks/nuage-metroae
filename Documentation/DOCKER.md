@@ -38,16 +38,16 @@ Running setup multiple times replaces the existing container, but it does not re
 
 **metroae gui status** - displays the status of the API/UI server in the container
 
-**metroae unzip-files** - unzips Nuage Networks tar.gz files into the images directory specified during the setup operation. Use of this command requires that the tar.gz files be placed in either the data or images directory that you specified during setup.
+**metroae tools unzip images** - unzips Nuage Networks tar.gz files into the images directory specified during the setup operation. Use of this command requires that the tar.gz files be placed in either the data or images directory that you specified during setup.
 See the current values of the data and images directories by executing the status command.
 
-**metroae generate-example-from-schema** - generates an example for the specified schema and puts it in the examples directory under the data directory that you specified during setup. You can get the current values of the data and images directories by executing the status command.
+**metroae tools generate example** - generates an example for the specified schema and puts it in the examples directory under the data directory that you specified during setup. You can get the current values of the data and images directories by executing the status command.
 
-**metroae encrypt-credentials** - sets the encryption credentials for encrypting secure user data, e.g. passwords
+**metroae tools encrypt credentials** - sets the encryption credentials for encrypting secure user data, e.g. passwords
 
 **metroae gui encryption enable** - sets up a TLS certificate for the UI access
 
-**metroae guiencryption disable** - disables TLS on the UI
+**metroae gui encryption disable** - disables TLS on the UI
 
 **metroae copy-ssh-id** - copies the container's public key into the ssh authorized_keys file on the specified server. This key is required for passwordless ssh access to all target servers. Usage: `metroae copy-ssh-id user@host_or_ip`
 

@@ -139,7 +139,7 @@ When you are contributing code, or pulling new versions of MetroAE quite often, 
 A sample of the deployment configuration files are provided in the deployments/default/ directory and also in [examples/](/examples/).  If these are overwritten or deleted or if a "no frills" version of the files with only the minimum required parameters are desired, they can be generated with the following command:
 
 ```
-./generate_example_from_schema.py --schema <schema_filename> [--no-comments]
+metroae tools generate example --schema <schema_filename> [--no-comments]
 ```
 
 This will print an example of the deployment file specified by <schema_filename> under the [schemas/](/schemas/) directory to the screen.  The optional `--no-comments` will print the minimum required parameters (with no documentation).
@@ -147,7 +147,7 @@ This will print an example of the deployment file specified by <schema_filename>
 Example:
 
 ```
-./generate_example_from_schema.py --schema vsds > deployments/new/vsds.yml
+metroae tools generate example --schema vsds > deployments/new/vsds.yml
 ```
 
 Creates an example vsds configuration file under the "new" deployment.
@@ -159,9 +159,9 @@ MetroAE version 3.4.0 onwards supports using a proxy VM for deployment of VSC, V
 The next step is to deploy your components. See [DEPLOY.md](DEPLOY.md) for guidance.
 
 ## Questions, Feedback, and Contributing
-Get support via the [forums](https://devops.nuagenetworks.net/forums/) on the [MetroAE site](https://devops.nuagenetworks.net/).  
+Get support via the [forums](https://devops.nuagenetworks.net/forums/) on the [MetroAE site](https://devops.nuagenetworks.net/).
 Ask questions and contact us directly at [devops@nuagenetworks.net](mailto:deveops@nuagenetworks.net "send email to nuage-metro project").
- 
+
 Report bugs you find and suggest new features and enhancements via the [GitHub Issues](https://github.com/nuagenetworks/nuage-metro/issues "nuage-metro issues") feature.
 
 You may also [contribute](../CONTRIBUTING.md) to MetroAE by submitting your own code to the project.
