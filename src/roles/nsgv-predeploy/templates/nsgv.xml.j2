@@ -65,7 +65,6 @@
       <alias name='usb0'/>
       <address type='pci' domain='0x0000' bus='0x00' slot='0x01' function='0x2'/>
     </controller>
-{% if bootstrap_method == 'zfb_metro' or bootstrap_method == 'none' %}
     <interface type='bridge'>
       <source bridge='{{ data_bridge }}'/>
 {% if nsgv_mac is defined %}
@@ -74,55 +73,21 @@
       <target dev='vnet0'/>
       <model type='virtio'/>
     </interface>
+{% if access_bridge is defined %}
     <interface type='bridge'>
       <source bridge='{{ access_bridge }}'/>
       <target dev='vnet1'/>
       <model type='virtio'/>
     </interface>
 {% endif %}
-{% if bootstrap_method == 'zfb_external' or bootstrap_method == 'activation_link' %}
-{% if port1_bridge is defined %}
+{% if access_brides is defined %}
+{% for br in access_bridges %}
     <interface type='bridge'>
-      <source bridge='{{ port1_bridge }}'/>
-      <target dev='vnet0'/>
+      <source bridge='{{ br }}'/>
+      <target dev='vnet{{ loop.index }}'/>
       <model type='virtio'/>
     </interface>
-{% endif %}
-{% if port2_bridge is defined %}
-    <interface type='bridge'>
-      <source bridge='{{ port2_bridge }}'/>
-      <target dev='vnet1'/>
-      <model type='virtio'/>
-    </interface>
-{% endif %}
-{% if port3_bridge is defined %}
-    <interface type='bridge'>
-      <source bridge='{{ port3_bridge }}'/>
-      <target dev='vnet2'/>
-      <model type='virtio'/>
-    </interface>
-{% endif %}
-{% if port4_bridge is defined %}
-    <interface type='bridge'>
-      <source bridge='{{ port4_bridge }}'/>
-      <target dev='vnet3'/>
-      <model type='virtio'/>
-    </interface>
-{% endif %}
-{% if port5_bridge is defined %}
-    <interface type='bridge'>
-      <source bridge='{{ port5_bridge }}'/>
-      <target dev='vnet4'/>
-      <model type='virtio'/>
-    </interface>
-{% endif %}
-{% if port6_bridge is defined %}
-    <interface type='bridge'>
-      <source bridge='{{ port6_bridge }}'/>
-      <target dev='vnet5'/>
-      <model type='virtio'/>
-    </interface>
-{% endif %}
+{% endfor %}
 {% endif %}
 {% if telnet_port is defined %}
     <serial type='tcp'>
