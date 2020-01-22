@@ -1,5 +1,11 @@
+- name: Set sysbench prepare command for testing
+  set_fact:
+    sysbench_prepare_command: "sysbench --test=fileio --file-total-size={{ file_total_size|default(10G) }} prepare"
+
+- debug: var=sysbench_prepare_command
+
 - name: Prepare sysbench to run
-  shell: "sysbench --test=fileio --file-total-size={{ file_total_size|default(10G) }} prepare"
+  shell: "{{ sysbench_prepare_command }}"
 
 - name: Run sysbench test
   shell: "sysbench --test=fileio --file-total-size={{ file_total_size|default(10G) }} --file-test-mode=rndrw --init-rng=on --max-time=300 --max-requests=0 run"
