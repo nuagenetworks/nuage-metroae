@@ -8,4 +8,4 @@
 * Introduce day-zero VSD configuration support via `metroae config` (container only)
 
 ### Resolved Issues
-
+* Fix VSC examples to have valid system ip address (MetroAE-1177)
