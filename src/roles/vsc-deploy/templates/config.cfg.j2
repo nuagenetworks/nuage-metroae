@@ -91,7 +91,7 @@ echo "Service Configuration"
             route-distinguisher {{ as_number }}:{{ vprn_obj.vlan }}
             interface "control" create
                 {% if vprn_obj.ipaddr != "" %}
-                address {{ vprn_obj.ipaddr }}/{{ vprn_obj.netmask }}
+                address {{ vprn_obj.ipaddr }}/{{ vprn_obj.netmask_length }}
                 {% else %}
                 address {{ control_ip }}/{{ control_netmask_prefix }}
                 {% endif %}
@@ -100,7 +100,7 @@ echo "Service Configuration"
             exit
 
         {% if vprn_obj.ipaddr != "" %}
-        static-route 0.0.0.0/0 next-hop {{ vprn_obj.ipaddr | ipsubnet(vprn_obj.netmask, 0) | ipaddr('next_usable') }}
+        static-route 0.0.0.0/0 next-hop {{ vprn_obj.ipaddr | ipsubnet(vprn_obj.netmask_length, 0) | ipaddr('next_usable') }}
         {% else %}
         static-route 0.0.0.0/0 next-hop {{ control_ip | ipsubnet(control_netmask_prefix, 0) | ipaddr('next_usable') }}
         {% endif %}
