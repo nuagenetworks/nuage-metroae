@@ -1,21 +1,15 @@
 - name: Prepare sysbench to run
-  shell: "sysbench --test=fileio --file-total-size=10G prepare"
+  shell: "sysbench --test=fileio --file-total-size={{ file_total_size | default('100G')}} prepare"
 
 - name: Run sysbench test
-  shell: "sysbench --test=fileio --file-total-size={{ file_total_size | default(100G) }} --file-test-mode=rndrw --init-rng=on --max-time=300 --max-requests=0 run"
+  shell: "sysbench --test=fileio --file-total-size={{ file_total_size | default('100G') }} --file-test-mode=rndrw --init-rng=on --max-time=300 --max-requests=0 run"
   register: sysbench_output
 
 - debug: var=sysbench_output.stdout
 
-- name: Get IOPS
+- name: Get IOPS value
   set_fact:
-    IOPS: "{{ sysbench_output.stdout | regex_search('\\d.*(Requests\\/sec)') }}"
-
-- debug: var=IOPS
-
-- name: Set IOPS value
-  set_fact:
-    IOPS_val: "{{ IOPS | regex_search('\\d*\\.\\d*') }}"
+    IOPS_val: "{{ sysbench_output.stdout | regex_search('\\d.*(Requests\\/sec)') | regex_search('\\d*\\.\\d*') }}"
 
 - debug: var=IOPS_val
 
@@ -25,4 +19,4 @@
     msg: "IOPS value does not meet the specified target threshold"
 
 - name: Cleanup sysbench files
-  shell: "sysbench --test=fileio --file-total-size={{ file_total_size | default(100G) }} cleanup"
+  shell: "sysbench --test=fileio --file-total-size={{ file_total_size | default('100G') }} cleanup"
