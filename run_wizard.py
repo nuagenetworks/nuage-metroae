@@ -244,11 +244,11 @@ WIZARD_SCRIPT = """
     install_msg: |
         You can issue the following to begin installing your components:
 
-        {metro} install_everything {deployment}
+        {metro} install everything {deployment}
     upgrade_msg: |
         You can issue the following to begin an upgrade of your components:
 
-        {metro} upgrade_everything {deployment}
+        {metro} upgrade everything {deployment}
 
 """
 
