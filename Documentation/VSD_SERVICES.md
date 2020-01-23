@@ -8,9 +8,9 @@ Before attempting to control the VSD services using MetroAE, you must configure 
 ## Use of MetroAE Command Line
 MetroAE can perform any of the following VSD service workflows using the command-line tool as follows:
 
-    metroae vsd_services_stop [deployment] [options]
-    metroae vsd_services_start [deployment] [options]
-    metroae vsd_services_restart [deployment] [options]
+    metroae vsd services stop [deployment] [options]
+    metroae vsd services start [deployment] [options]
+    metroae vsd services restart [deployment] [options]
 
 * `deployment`: Name of the deployment directory containing configuration files.  See [CUSTOMIZE.md](CUSTOMIZE.md)
 * `options`: Other options for the tool.  These can be shown using --help.  Also, any options not directed to the metroae tool are passed to Ansible.
@@ -18,10 +18,8 @@ MetroAE can perform any of the following VSD service workflows using the command
 Note: The VSD services workflows can be used even if you didn't use MetroAE to install or upgrade your VSD deployment.
 
 ## Questions, Feedback, and Contributing
-Ask questions and get support via the [forums](https://devops.nuagenetworks.net/forums/) on the [MetroAE site](https://devops.nuagenetworks.net/).
-You may also contact us directly.
-  Outside Nokia: [devops@nuagenetworks.net](mailto:deveops@nuagenetworks.net "send email to nuage-metro project")
-  Internal Nokia: [nuage-metro-interest@list.nokia.com](mailto:nuage-metro-interest@list.nokia.com "send email to nuage-metro project")
+Get support via the [forums](https://devops.nuagenetworks.net/forums/) on the [MetroAE site](https://devops.nuagenetworks.net/).
+Ask questions and contact us directly at [devops@nuagenetworks.net](mailto:deveops@nuagenetworks.net "send email to nuage-metro project").
 
 Report bugs you find and suggest new features and enhancements via the [GitHub Issues](https://github.com/nuagenetworks/nuage-metro/issues "nuage-metro issues") feature.
 

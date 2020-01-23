@@ -40,7 +40,7 @@ WIZARD_SCRIPT = """
     missing_msg: |
 
       We would like to run setup to install these.  The command is
-      "sudo ./metro-setup.sh" if you'd like to run it yourself.
+      "sudo ./setup.sh" if you'd like to run it yourself.
       Running this command requires sudo access. You may be asked
       for the sudo password.
     wrong_os_msg: |
@@ -62,11 +62,11 @@ WIZARD_SCRIPT = """
     container_msg: |
 
       MetroAE is running in a container.  The zipped image files must be placed
-      under the metroae_images directory mount point of the container.  The
+      under the metroae_data directory mount point of the container.  The
       mount directory was set during container setup and can be found using
       the command "metroae container status".  Relative paths must be provided
       for both the source and destination directories that are relative to the
-      metroae_images mount point.
+      metroae_data mount point.
 
 - step: Create/read deployment
   description: |
@@ -244,11 +244,11 @@ WIZARD_SCRIPT = """
     install_msg: |
         You can issue the following to begin installing your components:
 
-        {metro} install_everything {deployment}
+        {metro} install everything {deployment}
     upgrade_msg: |
         You can issue the following to begin an upgrade of your components:
 
-        {metro} upgrade_everything {deployment}
+        {metro} upgrade everything {deployment}
 
 """
 
@@ -341,21 +341,14 @@ class Wizard(object):
             if self.in_container:
                 self._print(self._get_field(data, "container_msg"))
                 zip_dir = self._input("Please enter the directory relative to "
-                                      "the images mount point that "
+                                      "the metroae_data mount point that "
                                       "contains your zip files", "")
-
-                # Dalston container
-                # zip_dir = self._input("Please enter the directory relative to "
-                #                       "the metroae_images mount point that "
-                #                       "contains your zip files", "")
 
                 if zip_dir.startswith("/"):
                     self._print("\nDirectory must be a relative path.")
                     continue
 
-                # Dalston container
-                # full_zip_dir = os.path.join("/metroae_images", zip_dir)
-                full_zip_dir = os.path.join("/images", zip_dir)
+                full_zip_dir = os.path.join("/metroae_data", zip_dir)
 
             else:
                 zip_dir = self._input("Please enter the directory that "
@@ -378,22 +371,15 @@ class Wizard(object):
         if self.in_container:
             valid = False
             while not valid:
-                # Dalston container
-                # unzip_dir = self._input("Please enter the directory relative "
-                #                         "to the metroae_images mount point to "
-                #                         "unzip to")
                 unzip_dir = self._input("Please enter the directory relative "
-                                        "to the images mount point to "
+                                        "to the metroae_data mount point to "
                                         "unzip to")
-
                 if unzip_dir.startswith("/"):
                     self._print("\nDirectory must be a relative path.")
                 else:
                     valid = True
 
-            # Dalston container
-            # full_unzip_dir = os.path.join("/metroae_images", unzip_dir)
-            full_unzip_dir = os.path.join("/images", unzip_dir)
+            full_unzip_dir = os.path.join("/metroae_data", unzip_dir)
         else:
             unzip_dir = self._input("Please enter the directory to unzip to")
             full_unzip_dir = unzip_dir
@@ -914,10 +900,10 @@ class Wizard(object):
 
     def _set_container(self):
         # For Dalston container
-        # if "RUN_MODE" in os.environ:
-        #     self.in_container = (os.environ["RUN_MODE"] == "INSIDE")
-        # else:
-        #     self.in_container = False
+        if "RUN_MODE" in os.environ:
+            self.in_container = (os.environ["RUN_MODE"] == "INSIDE")
+        else:
+            self.in_container = False
         self.in_container = os.path.isdir("/source/nuage-metro")
 
     def _set_directories(self):
@@ -927,8 +913,8 @@ class Wizard(object):
             self.base_deployment_path = os.path.join("/data",
                                                      "deployments")
             # Dalston container
-            # self.base_deployment_path = os.path.join("/metroae_data",
-            #                                          "deployments")
+            self.base_deployment_path = os.path.join("/metroae_data",
+                                                     "deployments")
         else:
             self.base_deployment_path = os.path.join(self.metro_path,
                                                      "deployments")
@@ -1100,14 +1086,14 @@ class Wizard(object):
         return self._compare_libraries(required_libraries, output_lines)
 
     def _run_setup(self):
-        cmd = "sudo ./metro-setup.sh"
+        cmd = "sudo ./setup.sh"
         self._print("Command: " + cmd)
         self._print("Running setup (may ask for sudo password)")
         try:
             rc, output_lines = self._run_shell(cmd)
             if rc != 0:
                 self._print("\n".join(output_lines))
-                raise Exception("metro-setup.sh exit-code: %d" % rc)
+                raise Exception("setup.sh exit-code: %d" % rc)
 
             self._unrecord_problem("install_libraries")
             self._print(u"\nMetroAE setup completed successfully!")
@@ -1198,7 +1184,7 @@ class Wizard(object):
         except ImportError:
             self._print(
                 "Could not import the libraries to parse CSV files."
-                "  Please make sure metro-setup.sh has been run.")
+                "  Please make sure setup.sh has been run.")
             return
 
         valid = False
@@ -1436,7 +1422,7 @@ class Wizard(object):
                 "deployment_create", "Could not create a deployment file")
             self._print(
                 "Cannot write deployment files because libraries are missing."
-                "  Please make sure metro-setup.sh has been run.")
+                "  Please make sure setup.sh has been run.")
             return
         if type(deployment) == list:
             deployment = {schema: deployment}

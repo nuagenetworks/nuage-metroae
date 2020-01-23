@@ -1,7 +1,7 @@
-# Deploying Nuage Networks Components in Amazon Web Services (AWS) with MetroÆ (limited support)
+# Deploying Nuage Networks Components in Amazon Web Services (AWS) with MetroAE (limited support)
 
 ## Supported Components
-MetroÆ supports deployment of the following components in AWS.
+MetroAE supports deployment of the following components in AWS.
 * VSD
 * VSC (as KVM running on an AWS bare-metal instance)
 * VSTAT (ElasticSearch)
@@ -17,7 +17,7 @@ MetroÆ supports deployment of the following components in AWS.
 [6. Deploy Components](#6-deploy-components)  
 
 ## 1. Install Libraries
-MetroÆ uses the [CloudFormation](https://docs.ansible.com/ansible/latest/modules/cloudformation_module.html) Ansible module for deploying components in AWS. This module requires the python-boto and python-boto3 python libraries. Use one of the following three methods to install these required libraries on the MetroÆ host.
+MetroAE uses the [CloudFormation](https://docs.ansible.com/ansible/latest/modules/cloudformation_module.html) Ansible module for deploying components in AWS. This module requires the python-boto and python-boto3 python libraries. Use one of the following three methods to install these required libraries on the MetroAE host.
 
 #### Method 1: pip
 
@@ -35,7 +35,7 @@ MetroÆ uses the [CloudFormation](https://docs.ansible.com/ansible/latest/module
     apt-get install python-boto3
 
 ## 2. Upload or Import AMIs
-Amazon Machine Images (AMIs) are used to run instances in EC2. For each Nuage Networks component that you want to deploy (except VSC), you'll need to upload or import an AMI to AWS. The AMI identifiers are provided to MetroÆ for deployment. VSC is not supported as an AMI. It must be deployed as KVM running on an AWS bare-metal instance.
+Amazon Machine Images (AMIs) are used to run instances in EC2. For each Nuage Networks component that you want to deploy (except VSC), you'll need to upload or import an AMI to AWS. The AMI identifiers are provided to MetroAE for deployment. VSC is not supported as an AMI. It must be deployed as KVM running on an AWS bare-metal instance.
 
 ## 3. Setup Virtual Private Cloud
 Before installing Nuage Networks components, you must define and deploy a virtual private cloud (VPC) in AWS. An example file ([aws-example-vpc.yml](../examples/aws_vpc_examples/aws-example-vpc.yml)) of a basic VPC is provided in the [examples directory](../examples/). This VPC must define the network interfaces that will be used by each component. The VPC should also provide connectivity between various components and Internet access (either directly or outgoing only through NAT). We strongly recommend that you define security policies, IP addressing and DNS. The recommended subnets for each component are defined below. Note that the access subnet is expected to have direct Internet access and the management subnet to have outgoing only access.
@@ -85,7 +85,7 @@ To support routed network connectivity, specify the following fields.
 Bootstrapping of NSGvs deployed to AWS is supported through the normal bootstrapping process.  See [NSGV_BOOTSTRAP.md](NSGV_BOOTSTRAP.md) for details.
 
 ### Alternative Specification for NSGv Only Deployments
-If you'd like to deploy only NSGv (no other components), then MetroÆ can optionally provision a suitable VPC.  You will need to configure `nsgvs.yml` in your deployments subdirectory. For the automatic creation of a test VPC on AWS to host your NSGv, the following parameters must be provided in `nsgvs.yml` for each NSGv:
+If you'd like to deploy only NSGv (no other components), then MetroAE can optionally provision a suitable VPC.  You will need to configure `nsgvs.yml` in your deployments subdirectory. For the automatic creation of a test VPC on AWS to host your NSGv, the following parameters must be provided in `nsgvs.yml` for each NSGv:
 
 - provision_vpc_cidr
 - provision_vpc_nsg_wan_subnet_cidr
@@ -95,17 +95,15 @@ If you'd like to deploy only NSGv (no other components), then MetroÆ can option
 The CIDRs for the VPC, WAN interface, LAN interface and private subnet must be specified. When provisioning a VPC in this way, the elastic network interface identifiers `aws_data_eni` and `aws_access_eni` for the NSGv do not need to be specified as they are discovered from the created VPC.
 
 ## 6. Deploy Components
-After you have set up the environment and configured your components, you can use MetroÆ to deploy your components with a single command.
+After you have set up the environment and configured your components, you can use MetroAE to deploy your components with a single command.
 
-    metroae install_everything
+    metroae install everything
 
 Alternatively, you can deploy individual components or perform individual tasks such as predeploy, deploy and postdeploy. See [DEPLOY.md](DEPLOY.md) for details.
 ## Questions, Feedback, and Contributing  
-Ask questions and get support via the [forum](https://devops.nuagenetworks.net/forums/) on the [MetroÆ site](https://devops.nuagenetworks.net/).  
-You may also contact us directly.  
-  Outside Nokia: [devops@nuagenetworks.net](mailto:deveops@nuagenetworks.net "send email to nuage-metro project")  
-  Internal Nokia: [nuage-metro-interest@list.nokia.com](mailto:nuage-metro-interest@list.nokia.com "send email to nuage-metro project")
+Get support via the [forum](https://devops.nuagenetworks.net/forums/) on the [MetroAE site](https://devops.nuagenetworks.net/).  
+Ask questions and contact us directly at [devops@nuagenetworks.net](mailto:deveops@nuagenetworks.net "send email to nuage-metro project"). 
 
 Report bugs you find and suggest new features and enhancements via the [GitHub Issues](https://github.com/nuagenetworks/nuage-metro/issues "nuage-metro issues") feature.
 
-You may also [contribute](../CONTRIBUTING.md) to MetroÆ by submitting your own code to the project.
+You may also [contribute](../CONTRIBUTING.md) to MetroAE by submitting your own code to the project.

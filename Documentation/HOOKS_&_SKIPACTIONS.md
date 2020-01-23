@@ -34,8 +34,6 @@ vnsutil_deploy
 vnsutil_postdeploy
 nsgv_predeploy
 nsgv_postdeploy
-vsd_vns_postdeploy
-vsc_vns_postdeploy
 vcin_predeploy
 vcin_deploy
 vcin_destroy
