@@ -77,33 +77,32 @@ echo "Router (Network Side) Configuration"
         {% endif %}
     exit
 
-        {% if vlan_id is defined %}
-
 #--------------------------------------------------
 echo "Service Configuration"
 #--------------------------------------------------
 
+        {% for vprn_obj in vprn_object_list %}
     service
-        vprn {{ vlan_id }} customer 1 create
+        vprn {{ vprn_obj.vlan }} customer 1 create
             interface "control" create
             exit
         exit
-        vprn {{ vlan_id }} customer 1 create
-            route-distinguisher {{ as_number }}:{{ vlan_id }}
+        vprn {{ vprn_obj.vlan }} customer 1 create
+            route-distinguisher {{ as_number }}:{{ vprn_obj.vlan }}
             interface "control" create
-                {% if control_ip_vprn is defined %}
-                address {{ control_ip_vprn }}/{{ control_netmask_prefix }}
+                {% if vprn_obj.ipaddr != "" %}
+                address {{ vprn_obj.ipaddr }}/{{ vprn_obj.netmask_length }}
                 {% else %}
                 address {{ control_ip }}/{{ control_netmask_prefix }}
                 {% endif %}
-                sap A/2:{{ vlan_id }} create
+                sap A/2:{{ vprn_obj.vlan }} create
                 exit
             exit
 
-        {% if control_ip_vprn is defined %}
-        static-route 0.0.0.0/0 next-hop {{ control_ip_vprn.split('.')[0] }}.{{ control_ip_vprn.split('.')[1] }}.{{ control_ip_vprn.split('.')[2] }}.1
+        {% if vprn_obj.ipaddr != "" %}
+        static-route 0.0.0.0/0 next-hop {{ vprn_obj.ipaddr | ipsubnet(vprn_obj.netmask_length, 0) | ipaddr('next_usable') }}
         {% else %}
-        static-route 0.0.0.0/0 next-hop {{ control_ip.split('.')[0] }}.{{ control_ip.split('.')[1] }}.{{ control_ip.split('.')[2] }}.1
+        static-route 0.0.0.0/0 next-hop {{ control_ip | ipsubnet(control_netmask_prefix, 0) | ipaddr('next_usable') }}
         {% endif %}
 
             ntp
@@ -112,7 +111,7 @@ echo "Service Configuration"
             no shutdown
         exit
     exit
-        {% endif %}
+        {% endfor %}
 
 #--------------------------------------------------
 ##echo "BGP Configuration"
