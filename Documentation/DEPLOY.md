@@ -11,7 +11,7 @@ Before deploying any components, you must have previously [set up your Nuage Met
 Make sure you have unzipped copies of all the Nuage Networks files you are going to need for installation or upgrade. These are generally distributed as `*.tar.gz` files that are downloaded by you from Nokia OLCS/ALED. There are a few ways you can use to unzip:
 
 * If you are running MetroAE via a clone of the nuage-metro repo, you can unzip these files by using the nuage-unzip shell script `nuage-unzip.sh` which will place the files in subdirectories under the path specified for the `nuage_unzipped_files_dir` variable in `common.yml`.
-* If you are running MetroAE via the MetroAE container, you can unzip these files using the metroae command. During the setup, you were promoted for the location of an data directory on the host. This data directory is mounted in the container as `/data`. Therefore, for using the unzip action, you must 1) copy your tar.gz files to a directory under the directory you specified at setup time and 2) you must specify a container-relative path on the unzip command line. For example, if you specified the data directory as `/tmp`, setup created the directory `/data/metroae_data` on your host and mounted that same directory as `/data` in the container. Assuming you copied your tar.gz files to `/tmp/metroae_data/6.0.1` on the docker host, your unzip command line would be as follows: `metroae tools unzip images /data/6.0.1/ /data/6.0.1`. 
+* If you are running MetroAE via the MetroAE container, you can unzip these files using the metroae command. During the setup, you were promoted for the location of an data directory on the host. This data directory is mounted in the container as `/data`. Therefore, for using the unzip action, you must 1) copy your tar.gz files to a directory under the directory you specified at setup time and 2) you must specify a container-relative path on the unzip command line. For example, if you specified the data directory as `/tmp`, setup created the directory `/data/metroae_data` on your host and mounted that same directory as `/data` in the container. Assuming you copied your tar.gz files to `/tmp/metroae_data/6.0.1` on the docker host, your unzip command line would be as follows: `metroae tools unzip images /data/6.0.1/ /data/6.0.1`.
 * You can also unzip the files manually and copy them to their proper locations by hand. For details of this process, including the subdirectory layout that MetroAE expects, see [SETUP.md](SETUP.md). 
 
 
@@ -74,7 +74,7 @@ When installing or upgrading in a KVM environment, MetroAE copies the QCOW2 imag
 When QCOW2 files are pre-positioned, you must add a command-line variable, 'skip_copy_images', to indicate that copying QCOW2 files should be skipped. Otherwise, the QCOW2 files will be copied again. An extra-vars 'skip_copy_images' needs to be passed on the command line during the deployment phase to skip copying of the image files again. For example, to pre-position the QCOW2 images, run:
 
 ```
-metroae copy_qcow2_files
+metroae tools copy qcow
 ```
 
 Then, to skip the image copy during the install:
@@ -107,7 +107,7 @@ After you have successfully deployed Nuage Networks VSP components, you may want
 ## Questions, Feedback, and Contributing  
 Get support via the [forums](https://devops.nuagenetworks.net/forums/) on the [MetroAE site](https://devops.nuagenetworks.net/).  
 Ask questions and contact us directly at [devops@nuagenetworks.net](mailto:deveops@nuagenetworks.net "send email to nuage-metro project").
-
+ 
 Report bugs you find and suggest new features and enhancements via the [GitHub Issues](https://github.com/nuagenetworks/nuage-metro/issues "nuage-metro issues") feature.
 
 You may also [contribute](../CONTRIBUTING.md) to MetroAE by submitting your own code to the project.

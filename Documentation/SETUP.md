@@ -88,9 +88,9 @@ If you don't run the wizard, please continue with the rest of the steps in this 
 ##### 2. Install Packages
 MetroAE code includes a setup script which installs required packages and modules. If any of the packages or modules are already present, the script does not upgrade or overwrite them. You can run the script multiple times without affecting the system. To install the required packages and modules, run the following command.
 ```
-sudo ./metro-setup.sh
+sudo ./setup.sh
 ```
-The script writes a detailed log into *metro-setup.log* for your reference. A *Setup complete!* messages appears when the packages have been successfully installed.
+The script writes a detailed log into *setup.log* for your reference. A *Setup complete!* messages appears when the packages have been successfully installed.
 
 ##### 3. **For ESXi / vCenter Only**, install additional packages
 
@@ -122,7 +122,7 @@ Ensure that the required unzipped Nuage software files (QCOW2, OVA, and Linux Pa
 ### Method One: Automatically
 Run the command below, replacing [zipped_directory] and [nuage_unzipped_files_dir] with the actual paths:
 ```
-./nuage-unzip.sh [zipped_directory] [nuage_unzipped_files_dir]
+metroae tools unzip images [zipped_directory] [nuage_unzipped_files_dir]
 ```
 Note: After completing setup you will [customize](CUSTOMIZE.md) for your deployment, and you'll need to add this unzipped files directory path to `common.yml`.
 
