@@ -35,7 +35,7 @@ def vault_constructor(loader, node):
 
 def read_yaml_with_vault(module, path, fact_name):
     with open(path, 'r') as file:
-        yaml.add_constructor(u'!vault', vault_constructor)
+        yaml.add_constructor('!vault', vault_constructor)
         parsed_yaml = yaml.load(file.read())
 
     module.exit_json(changed=True, ansible_facts={fact_name: parsed_yaml})
@@ -57,7 +57,7 @@ def main():
         read_yaml_with_vault(module, path, fact_name)
     except Exception as e:
         msg = "Could not load yaml file %s: %s" % (path, str(e))
-        print msg
+        print(msg)
         module.fail_json(msg=msg)
 
 
