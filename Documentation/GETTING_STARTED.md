@@ -5,7 +5,7 @@
 1.1 [Readme](../README.md) for information on supported components  
 1.2 [Setup](SETUP.md) for setting up the MetroAE host and enabling SSH  
 1.3 [Customize](CUSTOMIZE.md) for customizing user data and files  
-1.4 [Release Notes](RELEASE_NOTES.md) for information on the latest features   
+1.4 [Release Notes](RELEASE_NOTES.md) for information on the latest features  
 
 ## 2. Setup MetroAE Host
 
@@ -13,7 +13,7 @@
 
 * It can be a VM, physical server or container.
 * It requires CentOS 7.x or RHEL 7.x with basic packages.
-* We recommend that you dedicate a machine (VM) for it.   
+* We recommend that you dedicate a machine (VM) for it.  
 
 2.1 Clone the master branch of the repo onto the **MetroAEe Host**. Read [Setup](SETUP.md) for details.  
 ```
@@ -21,7 +21,7 @@ git clone https://github.com/nuagenetworks/nuage-metro.git
 ```
 2.2 Install the required packages. Run as root or sudo. Read [Setup](SETUP.md) for details.  
 ```
-$ sudo ./metro-setup.sh  
+$ sudo ./setup.sh  
 ```
 
 ## 3. Enable SSH Access
@@ -42,7 +42,7 @@ As MetroAE User on the MetroAE server, copy SSH public key: `ssh-copy-id root@<t
 
 As MetroAE User on the MetroAE server, copy SSH public key: `ssh-copy-id <target_server_username>@<target_server>`.  
 
-See [Setup](SETUP.md) for more details about enabling SSH Access.   
+See [Setup](SETUP.md) for more details about enabling SSH Access.  
 
 ## 4. Install ovftool (for VMware only)  
 
@@ -52,7 +52,7 @@ Note that running the metroae Docker container for VMware installations and upgr
 
 ## 5. Prepare your environment  
 
-5.1 Unzip Nuage files: `./nuage-unzip.sh <zipped_directory> <unzip_directory>`. See [SETUP.md](SETUP.md) for details.  
+5.1 Unzip Nuage files: `metroae tools unzip images <zipped_directory> <unzip_directory>`. See [SETUP.md](SETUP.md) for details.  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Be sure that Nuage packages (tar.gz) are available on localhost (MetroAE host),  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;either in a native directory or NFS-mounted.  
 
@@ -75,10 +75,10 @@ Note that running the metroae Docker container for VMware installations and upgr
 
 Refer to the list of documents in [README.md](../README.md) for guidance on deploying, upgrading, etc.
 
-## Questions, Feedback, and Contributing
+## Questions, Feedback, and Contributing  
 Get support via the [forums](https://devops.nuagenetworks.net/forums/) on the [MetroAE site](https://devops.nuagenetworks.net/).  
-Ask questions and contact us directly at [devops@nuagenetworks.net](mailto:deveops@nuagenetworks.net "send email to nuage-metro project").  
-
+Ask questions and contact us directly at [devops@nuagenetworks.net](mailto:deveops@nuagenetworks.net "send email to nuage-metro project").
+ 
 Report bugs you find and suggest new features and enhancements via the [GitHub Issues](https://github.com/nuagenetworks/nuage-metro/issues "nuage-metro issues") feature.
 
 You may also [contribute](../CONTRIBUTING.md) to MetroAE by submitting your own code to the project.
