@@ -6,6 +6,30 @@
   no_log: True
   ignore_errors: True
 
+- name: Create empty VPRN object
+  set_fact:
+    vprn_object_list: []
+
+- block:
+
+  - name: Add Control IP VPRN and VLAN (to be deprecated)
+    set_fact: 
+      legacy_vprn: [{
+        "vlan": "{{ vlan_id }}",
+        "ipaddr": "{{ '' if control_ip_vprn is not defined else control_ip_vprn }}",
+        "netmask_length": "{{ '24' }}"
+      }]
+
+  - name: Add VPRN object to the object list
+    set_fact: 
+      vprn_object_list: '{{ vprn_object_list + legacy_vprn }}'
+
+  when: vlan_id is defined
+
+- name: Fill up VPRN Object list from deployment
+  include: create_vprn_list.yml vprn={{item|string}}
+  with_items: "{{ ctrl_ip_vprn_list }}"
+
 - import_tasks: openstack.yml
   when: target_server_type is match("openstack")
   tags:

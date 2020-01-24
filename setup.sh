@@ -9,7 +9,7 @@
 ###############################################################################
 # Configurable parameters
 ###############################################################################
-LOG=./metro-setup.log
+LOG=./setup.log
 
 ###############################################################################
 # Global variables
@@ -61,13 +61,13 @@ INVENTORY_DIR=$CURRENT_DIR/src/inventory
 ###############################################################################
 function usage {
   echo ""
-  echo "Setup for Nuage Networks Metro Automation Engine (MetroÆ)"
+  echo "Setup for Nuage Networks Metro Automation Engine (MetroAE)"
   echo ""
-  echo "Installs all required libraries for MetroÆ.  See README.md for"
+  echo "Installs all required libraries for MetroAE.  See README.md for"
   echo "more information."
   echo ""
   echo "Usage:"
-  echo "    metro-setup.sh [options]"
+  echo "    setup.sh [options]"
   echo ""
   echo "Options:"
   echo "    -h, --help:            Displays this help."
@@ -259,6 +259,15 @@ pip_install() {
         unset IFS
         printn "Installing $i..."
         pip install "$i" >> $LOG 2>&1
+        pip3 install "$i" >> $LOG 2>&1
+        check_retcode $?
+    done
+
+    for i in $(cat pip3_requirements.txt)
+    do
+        unset IFS
+        printn "Installing $i..."
+        pip3 install "$i" >> $LOG 2>&1
         check_retcode $?
     done
 }

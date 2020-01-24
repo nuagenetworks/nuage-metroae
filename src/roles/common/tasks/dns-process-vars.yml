@@ -10,12 +10,18 @@
     - name: create dns directory
       file: path={{ nuage_unzipped_files_dir }}/dns state=directory
 
-    - name: Set VSTAT KVM image location
+    - name: Set VSTAT VM QCOW2 location
       include_role:
         name: common
-        tasks_from: find-image.yml
+        tasks_from: find-file.yml
       vars:
-        pattern: Nuage-elastic-*.qcow2
+        dir_name: "{{ nuage_unzipped_files_dir }}"
+        pattern: "Nuage-elastic-*.qcow2"
+
+    - name: Register VSTAT QCOW2 variables with proper path and image locations for use in other playbooks
+      set_fact:
+        image_path: "{{ file_path }}"
+        image_file_name: "{{ file_name }}"
 
     - name: Verify that VSTAT VM QCOW2 file was found
       assert:
@@ -31,17 +37,18 @@
       copy: src={{ image_path }}/{{ image_file_name }} dest={{ nuage_unzipped_files_dir }}/dns/dns.qcow2 force=yes
       when: not qcow_file.stat.exists
 
-    - name: Find name of DNS VM QCOW2 File
-      find: path="{{ nuage_unzipped_files_dir }}/dns"  pattern="*.qcow2" recurse=yes
-      register: rc_dns_file
-
-    - debug: var=rc_dns_file verbosity=1
+    - name: Set DNS VM QCOW2 location
+      include_role:
+        name: common
+        tasks_from: find-file.yml
+      vars:
+        dir_name: "{{ nuage_unzipped_files_dir }}"
+        pattern: "*.qcow2"
 
     - name: Register DNS QCOW2 variables with proper path and image locations for use in other playbooks
       set_fact:
-        image_path: "{{ rc_dns_file.files[0].path | dirname }}"
-        image_file_name: "{{ rc_dns_file.files[0].path | basename }}"
-      when: rc_dns_file.matched > 0
+        image_path: "{{ file_path }}"
+        image_file_name: "{{ file_name }}"
 
     when: dnss | map(attribute='target_server_type') | list is issuperset(["kvm"]) or dnss | map(attribute='target_server_type') | list is issuperset(["heat"])
 
