@@ -7,10 +7,30 @@
   set_fact:
     certs_count: "{{count_files.stdout | int | default(0)}}"
 
+- name: Check type of certs_count
+  debug:
+    msg: "{{ certs_count | type_debug }}"
+
+- debug: var=hostvars['localhost'].max_certs_count
+
+- name: Check type of max_certs_count
+  debug:
+    msg: "{{ hostvars['localhost'].max_certs_count | type_debug }}"
+
+- name: Test int filter on max certs count
+  set_fact:
+    max_certs_count_int: "{{ hostvars['localhost'].max_certs_count | int }}"
+
+- debug: var=max_certs_count_int
+
+- name: Check type after int filter
+  debug:
+    msg: "{{ max_certs_count_int | type_debug }}"
+
 - name: Check if the node has maximum certificates in the cluster
   set_fact:
     vsd_backup_node: "{{inventory_hostname}}"
     max_certs_count: "{{ certs_count }}"
   delegate_to: localhost
   delegate_facts: True
-  when: certs_count | int > (hostvars['localhost'].max_certs_count | default(0))
+  when: certs_count | int > (hostvars['localhost'].max_certs_count | int | default(0))
