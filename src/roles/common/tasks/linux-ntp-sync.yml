@@ -24,33 +24,20 @@
       line: "server {{ item }} iburst"
     with_items: "{{ ntp_server_list }}"
 
-  - name: Stop the ntpd and ntpdate services if running
-    service:
-      name:  "{{ item }}"
-      state: stopped
-    with_items:
-       - "ntpd"
-       - "ntpdate"
-
-  - name: Delete the default steptickers file
-    file:
-      path: /etc/ntp/step-tickers
-      state: absent
-
-  - name: Configure NTP servers for ntpdate
-    lineinfile:
-      dest: /etc/ntp/step-tickers
-      line: "{{ item }}"
-      create: yes
-    with_items: "{{ ntp_server_list }}"
-
   - name: Enable ntpdate
     service:
       name: ntpdate
       enabled: yes
       state: started
+    register: ntpdate_status
+    ignore_errors: yes
 
-  - name: Enable and start ntpd
+  - name: Check for ntpdate failures
+    fail:
+      msg: There seems to be an issue connecting to the specified NTP servers. Please verify the IP addresses and check "systemctl status ntpdate.service" and "journalctl -xe" for further details.
+    when: ntpdate_status.msg is search('ntpdate.service failed')
+
+  - name: Restart ntpd
     service:
       name: ntpd
       enabled: yes
