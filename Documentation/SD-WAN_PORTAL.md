@@ -11,12 +11,12 @@ Supported deployment:
 
 Currently the following workflows are supported:
 
-* install_sdwan_portal - Deploy Portal VM(s) on KVM hypervisor and install the application
-* sdwan_portal_predeploy - Prepares the HV and deploys Portal VMs
-* sdwan_portal_deploy - Installs Docker-CE, SD-WAN Portal on the already prepared VMs
-* sdwan_portal_postdeploy - To be updated. Includes a restart and license update task
-* sdwan_portal_license_update - Copies the license file to the Portal VM(s) and restarts the Portal(s)
-* sdwan_portal_destroy - Destroys Portal VMs and cleans up the files from hypervisor(s)
+* metroae install portal - Deploy Portal VM(s) on KVM hypervisor and install the application
+* metroae install portal predeploy - Prepares the HV and deploys Portal VMs
+* metroae install portal deploy - Installs Docker-CE, SD-WAN Portal on the already prepared VMs
+* metroae install portal postdeploy - To be updated. Includes a restart and license update task
+* metroae install portal license - Copies the license file to the Portal VM(s) and restarts the Portal(s)
+* metroae destroy portal - Destroys Portal VMs and cleans up the files from hypervisor(s)
 
 Example deployment files are available under examples/kvm_portal_install
 
