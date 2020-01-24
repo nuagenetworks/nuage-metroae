@@ -59,9 +59,22 @@
   - name: Check ntp sync state
     shell: ntpstat | awk 'NR==1{print $1}'
     register: sync_status
-    until: sync_status.stdout is match('synchronised')
+    ignore_errors: yes
+
+  - name: Check ntp sync output
+    fail:
+      msg: Unexpected failure when attempting to sync with ntp
+    when:
+      - not sync_status.stdout is match('synchronised')
+      - not sync_status.stdout is match('unsynchronised')
+
+  - name: Check ntp sync state
+    shell: ntpstat | awk 'NR==1{print $1}'
+    register: retry_sync_status
+    until: retry_sync_status.stdout is match('synchronised')
     retries: "{{ ntp_sync_retries }}"
     delay: "{{ ntp_sync_delay }}"
+    when: sync_status.stdout is match('unsynchronised')
 
   remote_user: "{{ rem_user }}"
   tags: ntp
