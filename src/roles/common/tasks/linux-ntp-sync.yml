@@ -24,6 +24,26 @@
       line: "server {{ item }} iburst"
     with_items: "{{ ntp_server_list }}"
 
+  - name: Stop the ntpd and ntpdate services if running
+    service:
+      name:  "{{ item }}"
+      state: stopped
+    with_items:
+       - "ntpd"
+       - "ntpdate"
+
+  - name: Delete the default steptickers file
+    file:
+      path: /etc/ntp/step-tickers
+      state: absent
+
+  - name: Configure NTP servers for ntpdate
+    lineinfile:
+      dest: /etc/ntp/step-tickers
+      line: "{{ item }}"
+      create: yes
+    with_items: "{{ ntp_server_list }}"
+    
   - name: Enable ntpdate
     service:
       name: ntpdate
