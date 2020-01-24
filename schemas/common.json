@@ -11,7 +11,24 @@
             "type": "string",
             "title": "Nuage Unzip Files Directory",
             "description": "Full path to the directory where the Nuage unzipped files for this deployment can be found  E.g. qcow2 files. When using docker container the path needs to be a relative path from the images path specified during setup.",
+            "sectionBegin": "Paths and Domains",
             "propertyOrder": 10
+        },
+        "nuage_software_version": {
+            "type": "string",
+            "title": "Nuage Software Version",
+            "description": "Nuage software version being installed. Optional for version comparison to skip deployment of some components that have already been installed.",
+            "default": "",
+            "propertyOrder": 380,
+            "advanced": true
+        },
+        "images_path": {
+            "type": "string",
+            "title": "KVM Images Directory",
+            "default": "/var/lib/libvirt/images/",
+            "description": "Full path to the directory on the KVM target server where qcow2 files will be copied",
+            "target_server_type": "kvm",
+            "propertyOrder": 140
         },
         "dns_domain": {
             "type": "string",
@@ -19,6 +36,23 @@
             "title": "Domain Name",
             "description": "Domain name for this deployment. E.g. company.net.",
             "propertyOrder": 20
+        },
+        "metro_reports_dir": {
+            "type": "string",
+            "title": "Reports Directory",
+            "default": "./reports",
+            "description": "Full path to the directory where the generated health reports for this deployment will be placed",
+            "propertyOrder": 270,
+            "advanced": true
+        },
+        "branding_zip_file": {
+            "type": "string",
+            "title": "Branding Zip File",
+            "description": "Enables custom branding for the VSD GUI. When not defined, the default VSD branding, already present on the VSD itself, will be used. If branding_zip_file is defined, its value will be used to replace the default VSD branding with the contents of a zip file on the Ansible host.  The files contained in the zip file should conform to the specifications of the VNS install guide. For replacing the default branding on the VSD, this value should be set to one of the following values: 1) The path to a branding zip file on the Ansible host 2) The special value 'nuage' for adding a MetroAE tag to the default VSD branding. This value is provided as an example of a minimal modification of branding. 3) The special value 'metroae' to replace the default VSD branding with a complete MetroAE-themed brand. This value is provided as an example of a complete replacement of all branding components. Note that when this is defined the existing branding will be backed up to the directory specified by the Metro Backup Root variable under (hostname)-branding/. To rollback a branding change, copy the branding zip file out of the backup directory, set this variable to the path to the copied backup file, and run the brand_vsd playbook, i.e. metroae brand_vsd.",
+            "default": "",
+            "propertyOrder": 330,
+            "sectionEnd": "Paths and Domains",
+            "advanced": true
         },
         "vsd_fqdn_global": {
             "type": "string",
@@ -92,7 +126,6 @@
             "description": "List of one or more DNS server addresses for resolving component domain names. Must be in dotted-decimal (IPv4) or hexidecimal (IPv6) format.",
             "minItems": 1,
             "propertyOrder": 110,
-            "sectionEnd": "Network Services",
             "items": {
                 "type": "string",
                 "anyOf": [
@@ -115,22 +148,15 @@
             "title": "Timezone",
             "description": "Timezone specification for the deployment",
             "default": "US/Pacific",
+            "sectionEnd": "Network Services",
             "propertyOrder": 130
-        },
-        "images_path": {
-            "type": "string",
-            "title": "Images Directory",
-            "default": "/var/lib/libvirt/images/",
-            "description": "Full path to the directory on the KVM target server where qcow2 files will be copied",
-            "target_server_type": "kvm",
-            "propertyOrder": 140
         },
         "vcenter_datacenter": {
             "type": "string",
             "title": "vCenter Datacenter",
             "description": "vCenter datacenter to deploy Nuage components",
             "target_server_type": "vcenter",
-            "sectionBegin": "vCenter Parameters",
+            "sectionBegin": "vCenter 1",
             "propertyOrder": 150
         },
         "vcenter_cluster": {
@@ -152,6 +178,7 @@
             "title": "vCenter Datastore Name",
             "description": "Name of the vCenter datastore on which to deploy the Nuage components",
             "target_server_type": "vcenter",
+            "sectionEnd": "vCenter 1",
             "propertyOrder": 180
         },
         "vcenter_resource_pool": {
@@ -159,6 +186,7 @@
             "title": "vCenter Resource Pool",
             "description": "The vCenter resource pool where the VMs need to be located. A resource pool is a logical abstraction of resources. Different resource pools can be configured to have different priorities in case of resource contention and can have different resource reservations and limitations.",
             "target_server_type": "vcenter",
+            "sectionBegin": "vCenter 2",
             "propertyOrder": 190
         },
         "vcenter_ovftool": {
@@ -176,7 +204,7 @@
             "target_server_type": "vcenter",
             "description": "This when set to true starts the VM with disabled interfaces during upgrade process",
             "propertyOrder": 210,
-            "sectionEnd": "vCenter Parameters",
+            "sectionEnd": "vCenter 2",
             "advanced": true
         },
         "openstack_project_name": {
@@ -184,7 +212,7 @@
             "title": "OpenStack Project Name",
             "description": "Project name for OpenStack",
             "default": "",
-            "sectionBegin": "OpenStack Parameters",
+            "sectionBegin": "OpenStack",
             "target_server_type": "openstack",
             "propertyOrder": 220
         },
@@ -194,7 +222,7 @@
             "description": "Keystone URL for OpenStack",
             "default": "",
             "target_server_type": "openstack",
-            "sectionEnd": "OpenStack Parameters",
+            "sectionEnd": "OpenStack",
             "propertyOrder": 230
         },
         "user_ssh_pub_key": {
@@ -203,6 +231,7 @@
             "default": "~/.ssh/id_rsa.pub",
             "description": "Full path to the public key file to be injected into Nuage components to enable passwordless connectivity for configuration. When using docker container changing the path from default can cause connectivity issues",
             "target_server_type": "kvm",
+            "sectionBegin": "Security",
             "propertyOrder": 240,
             "advanced": true
         },
@@ -219,23 +248,8 @@
             "title": "OpenFlow TLS",
             "default": true,
             "description": "Flag to indicate when secure communications via TLS will be used between VSCs and data plane components, e.g. VRS or NSGv; If VRS is defined, target_server_password must be defined in credentials.yml",
+            "sectionEnd": "Security",
             "propertyOrder": 260,
-            "advanced": true
-        },
-        "metro_reports_dir": {
-            "type": "string",
-            "title": "Reports Directory",
-            "default": "./reports",
-            "description": "Full path to the directory where the generated health reports for this deployment will be placed",
-            "propertyOrder": 270,
-            "advanced": true
-        },
-        "vsd_license_required_days_left": {
-            "type": "integer",
-            "title": "VSD License Required Days Left",
-            "description": "Raise a failure if the VSD licenses do not have at least the specified number of days remaining before expiration. If undefined, no check of days remaining before license expiration will be made. If you want to verify that the number of days left before expiration is more than a certain number of days, uncomment this variable and set the value to the number of days.",
-            "default": -1,
-            "propertyOrder": 280,
             "advanced": true
         },
         "vsd_license_file": {
@@ -243,6 +257,7 @@
             "title": "VSD Standard License File",
             "default": "",
             "description": "Path to the standard license file for the VSD",
+            "sectionBegin": "Licenses",
             "propertyOrder": 290,
             "advanced": true
         },
@@ -252,6 +267,14 @@
             "default": "",
             "description": "Path to the cluster license file for the VSD",
             "propertyOrder": 300,
+            "advanced": true
+        },
+        "vsd_license_required_days_left": {
+            "type": "integer",
+            "title": "VSD License Required Days Left",
+            "description": "Raise a failure if the VSD licenses do not have at least the specified number of days remaining before expiration. If undefined, no check of days remaining before license expiration will be made. If you want to verify that the number of days left before expiration is more than a certain number of days, uncomment this variable and set the value to the number of days.",
+            "default": -1,
+            "propertyOrder": 280,
             "advanced": true
         },
         "portal_license_file": {
@@ -267,15 +290,8 @@
             "title": "NUH License File",
             "default": "",
             "description": "Path to the license file for the NUH",
+            "sectionEnd": "Licenses",
             "propertyOrder": 320,
-            "advanced": true
-        },
-        "branding_zip_file": {
-            "type": "string",
-            "title": "Branding Zip File",
-            "description": "Enables custom branding for the VSD GUI. When not defined, the default VSD branding, already present on the VSD itself, will be used. If branding_zip_file is defined, its value will be used to replace the default VSD branding with the contents of a zip file on the Ansible host.  The files contained in the zip file should conform to the specifications of the VNS install guide. For replacing the default branding on the VSD, this value should be set to one of the following values: 1) The path to a branding zip file on the Ansible host 2) The special value 'nuage' for adding a MetroAE tag to the default VSD branding. This value is provided as an example of a minimal modification of branding. 3) The special value 'metroae' to replace the default VSD branding with a complete MetroAE-themed brand. This value is provided as an example of a complete replacement of all branding components. Note that when this is defined the existing branding will be backed up to the directory specified by the Metro Backup Root variable under (hostname)-branding/. To rollback a branding change, copy the branding zip file out of the backup directory, set this variable to the path to the copied backup file, and run the brand_vsd playbook, i.e. metroae brand_vsd.",
-            "propertyOrder": 330,
-            "default": "",
             "advanced": true
         },
         "yum_update": {
@@ -283,81 +299,73 @@
             "title": "Yum update",
             "description": "Flag to indicate whether to perform a Yum update on VSD during the installation",
             "default": true,
-            "advanced": true,
-            "sectionBegin": "Yum",
-            "propertyOrder": 340
+            "sectionBegin": "Yum and SSH Proxy",
+            "propertyOrder": 340,
+            "advanced": true
         },
         "yum_proxy": {
             "type": "string",
             "title": "Proxy for Yum Updates",
             "description": "Proxy URL to be used if Yum repositories cannot be directly reached",
             "default": "NONE",
-            "advanced": true,
-            "sectionEnd": "Yum",
-            "propertyOrder": 350
+            "propertyOrder": 350,
+            "advanced": true
         },
         "ssh_proxy_username": {
             "type": "string",
             "title": "SSH proxy configuration username",
             "default": "root",
             "description": "Username of the SSH proxy host if one is used",
-            "advanced": true,
-            "propertyOrder": 360
+            "propertyOrder": 360,
+            "advanced": true
         },
         "ssh_proxy_host": {
             "type": "string",
             "title": "SSH proxy configuration host",
             "default": "sshhost",
             "description": "IP Address or Hostname of the SSH host if one is used",
-            "advanced": true,
-            "propertyOrder": 370
-        },
-        "nuage_software_version": {
-            "type": "string",
-            "title": "Nuage Software Version",
-            "description": "Nuage software version being installed. Optional for version comparison to skip deployment of some components that have already been installed.",
-            "default": "",
-            "target_server_type": "aws",
-            "advanced": true,
-            "propertyOrder": 380
+            "sectionEnd": "Yum and SSH Proxy",
+            "propertyOrder": 370,
+            "advanced": true
         },
         "vsd_fallocate_size_gb": {
             "type": "integer",
-            "title": "VSD Disk Size",
+            "title": "KVM VSD Disk Size",
             "description": "Amount of VSD disk space to allocate, in GB. Valid only for KVM deployments. Note: Values smaller than the default are for lab and PoC only. Production deployments must use a value greater than or equal to the default.",
             "warning": "Values smaller than the default are for lab and PoC only. Production deployments must use a value greater than or equal to the default.",
             "default": 285,
             "minimum": 0,
             "propertyOrder": 390,
             "target_server_type": "kvm",
-            "sectionBegin": "PoC Parameters",
+            "sectionBegin": "KVM Fallocate",
             "advanced": true
         },
         "vsc_fallocate_size_gb": {
             "type": "integer",
-            "title": "VSC Disk Size",
+            "title": "KVM VSC Disk Size",
             "description": "Amount of VSC disk space to allocate, in GB. Valid only for KVM deployments. Note: Values smaller than the default are for lab and PoC only. Production deployments should not modify this value.",
             "default": 0,
             "minimum": 0,
             "propertyOrder": 400,
             "target_server_type": "kvm",
-            "sectionBegin": "PoC Parameters",
+            "sectionEnd": "KVM Fallocate",
             "advanced": true
         },
          "vsd_ram": {
             "type": "integer",
-            "title": "VSD RAM",
+            "title": "KVM VSD RAM",
             "description": "Amount of VSD RAM to allocate, in GB. Valid only for KVM deployments. Note: Values smaller than the default are for lab and PoC only. Production deployments must use a value greater than or equal to the default.",
             "warning": "Values smaller than the default are for lab and PoC only. Production deployments must use a value greater than or equal to the default.",
             "default": 24,
             "minimum": 0,
+            "sectionBegin": "KVM RAM",
             "propertyOrder": 410,
             "target_server_type": "kvm",
             "advanced": true
         },
         "vsc_ram": {
             "type": "integer",
-            "title": "VSC RAM",
+            "title": "KVM VSC RAM",
             "description": "Amount of VSC RAM to allocate, in GB. Valid only for KVM deployments. Note: Values smaller than the default are for lab and PoC only. Production deployments must use a value greater than or equal to the default.",
             "warning": "Values smaller than the default are for lab and PoC only. Production deployments must use a value greater than or equal to the default.",
             "default": 4,
@@ -368,19 +376,18 @@
         },
         "vstat_ram": {
             "type": "integer",
-            "title": "VSTAT RAM",
+            "title": "KVM VSTAT RAM",
             "description": "Amount of VSTAT RAM to allocate, in GB. Valid only for KVM deployments. Note: Values smaller than the default are for lab and PoC only. Production deployments must use a value greater than or equal to the default.",
             "warning": "Values smaller than the default are for lab and PoC only. Production deployments must use a value greater than or equal to the default.",
             "default": 16,
             "minimum": 0,
             "propertyOrder": 430,
             "target_server_type": "kvm",
-            "sectionEnd": "PoC Parameters",
             "advanced": true
         },
          "vcin_ram": {
             "type": "integer",
-            "title": "VCIN RAM",
+            "title": "KVM VCIN RAM",
             "description": "Amount of VCIN RAM to allocate, in GB. Valid only for KVM deployments. Note: Values smaller than the default are for lab and PoC only. Production deployments must use a value greater than or equal to the default.",
             "warning": "Values smaller than the default are for lab and PoC only. Production deployments must use a value greater than or equal to the default.",
             "default": 24,
@@ -391,7 +398,7 @@
         },
         "nuh_ram": {
             "type": "integer",
-            "title": "NUH RAM",
+            "title": "KVM NUH RAM",
             "description": "Amount of NUH RAM to allocate, in GB. Valid only for KVM deployments. Note: Values smaller than the default are for lab and PoC only. Production deployments must use a value greater than or equal to the default.",
             "warning": "Values smaller than the default are for lab and PoC only. Production deployments must use a value greater than or equal to the default.",
             "default": 4,
@@ -402,18 +409,19 @@
         },
         "portal_ram": {
             "type": "integer",
-            "title": "Portal RAM",
+            "title": "KVM Portal RAM",
             "description": "Amount of Portal RAM to allocate, in GB. Valid only for KVM deployments. Note: Values smaller than the default are for lab and PoC only. Production deployments must use a value greater than or equal to the default.",
             "warning": "Values smaller than the default are for lab and PoC only. Production deployments must use a value greater than or equal to the default.",
             "default": 24,
             "minimum": 0,
             "propertyOrder": 460,
+            "sectionEnd": "KVM RAM",
             "target_server_type": "kvm",
             "advanced": true
         },
         "vsd_cpu_cores": {
             "type": "integer",
-            "title": "VSD CPU cores",
+            "title": "KVM VSD CPU cores",
             "description": "Number of CPU's for VSD. Valid only for KVM deployments",
             "advanced": true,
             "propertyOrder": 470,
@@ -422,7 +430,7 @@
         },
         "vstat_cpu_cores": {
             "type": "integer",
-            "title": "VSTAT CPU cores",
+            "title": "KVM VSTAT CPU cores",
             "description": "Number of CPU's for VSTAT. Valid only for KVM deployments",
             "advanced": true,
             "propertyOrder": 480,
@@ -431,7 +439,7 @@
         },
         "vnsutil_cpu_cores": {
             "type": "integer",
-            "title": "VNSUTIL CPU cores",
+            "title": "KVM VNSUTIL CPU cores",
             "description": "Number of CPU's for VNSUTIL. Valid only for KVM deployments",
             "advanced": true,
             "propertyOrder": 490,
@@ -440,7 +448,7 @@
         },
         "nuh_cpu_cores": {
             "type": "integer",
-            "title": "NUH CPU cores",
+            "title": "KVM NUH CPU cores",
             "description": "Number of CPU's for NUH. Valid only for KVM deployments",
             "advanced": true,
             "propertyOrder": 500,
@@ -449,7 +457,7 @@
         },
         "vcin_cpu_cores": {
             "type": "integer",
-            "title": "VCIN CPU cores",
+            "title": "KVM VCIN CPU cores",
             "description": "Number of CPU's for VCIN. Valid only for KVM deployments",
             "advanced": true,
             "propertyOrder": 510,
@@ -458,7 +466,7 @@
         },
         "portal_cpu_cores": {
             "type": "integer",
-            "title": "Portal vm CPU cores",
+            "title": "KVM Portal VM CPU cores",
             "description": "Number of CPU's for Portal vm. Valid only for KVM deployments",
             "advanced": true,
             "propertyOrder": 520,
