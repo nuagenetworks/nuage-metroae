@@ -32,9 +32,6 @@
        - "ntpd"
        - "ntpdate"
 
-  - name: Sync time with ntp server
-    command: ntpdate -u "{{ntp_server_list[0]}}"
-
   - name: Delete the default steptickers file
     file:
       path: /etc/ntp/step-tickers
@@ -59,26 +56,12 @@
       enabled: yes
       state: restarted
 
-  - name: check ntp sync state
+  - name: Check ntp sync state
     shell: ntpstat | awk 'NR==1{print $1}'
     register: sync_status
-    until: sync_status.stdout is search('synchronised')
+    until: sync_status.stdout is match('synchronised')
     retries: "{{ ntp_sync_retries }}"
     delay: "{{ ntp_sync_delay }}"
 
-  - block:
-    - name: Restart ntpd if not synced yet
-      service:
-        name: ntpd
-        state: restarted
-    - name: check ntp sync state
-      shell: ntpstat | awk 'NR==1{print $1}'
-      register: retry_sync_status
-      until: retry_sync_status.stdout == "synchronised"
-      retries: "{{ ntp_sync_retries }}"
-      delay: "{{ ntp_sync_delay }}"
-    when: not sync_status.stdout is match("synchronised")
-
-# block level parameters
   remote_user: "{{ rem_user }}"
   tags: ntp
