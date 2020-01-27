@@ -1,5 +1,5 @@
 ---
-  
+
 - name: Finding VM folder (ignoring errors)
   connection: local
   vmware_guest_find:
@@ -23,7 +23,7 @@
 
 - name: Gathering info on VM
   connection: local
-  vmware_guest_facts:
+  vmware_guest_info:
     hostname: "{{ target_server }}"
     username: "{{ vcenter.username }}"
     password: "{{ vcenter.password }}"
@@ -34,30 +34,29 @@
   register: vsd_vm_facts
   when: vsd_vm_folder is succeeded
 
+- debug: var=vsd_vm_facts verbosity=1
+
 - block:
 
   - block:
 
     - name: Get Facts of VM
-      vmware_vm_facts:
+      vmware_vm_info:
         hostname: "{{ target_server }}"
         username: "{{ vcenter.username }}"
         password: "{{ vcenter.password }}"
+        name: "{{ vm_name }}"
         validate_certs: no
       delegate_to: localhost
-      register: vm_list
+      register: vm_info
 
-    - name: Set VM UUID
-      set_fact:
-        uuid: "{{ vm_list.virtual_machines[vm_name]['uuid'] }}"
-
-    - debug: var=uuid
+    - debug: var=vm_info
 
     - name: Turn off autostart
       connection: local
       vmware_autostart:
         name: "{{ vm_name }}"
-        uuid: "{{ uuid }}"
+        uuid: "{{ vm_info.uuid }}"
         hostname: "{{ target_server }}"
         username: "{{ vcenter.username }}"
         password: "{{ vcenter.password }}"
