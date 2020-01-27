@@ -27,7 +27,7 @@ for fullpath in $SCHEMA_DIRECTORY/*.json; do
         exit $?
     fi
 
-    # Reordering number
+    # Run the schema property ordering script
     python src/renumber_schema_ordering.py ${filename}.json
 
     # Generate template
