@@ -20,6 +20,13 @@ for fullpath in $SCHEMA_DIRECTORY/*.json; do
 
     echo "Generating resources for schema $filename"
 
+    # Checking the schema sections
+    python src/validate_schema_section.py ${filename}.json
+
+    if [ $? -ne 0 ]; then
+        exit $?
+    fi
+
     # Reordering number
     python src/renumber_schema_ordering.py ${filename}.json
 
