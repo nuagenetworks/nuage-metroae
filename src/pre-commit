@@ -1,0 +1,26 @@
+#!/bin/sh
+
+# This git hook is written to automatically run schema renumbering and example generation script while changing the schema
+
+BASE_DIRECTORY=..
+SCHEMA_DIRECTORY=schemas
+DEFAULT_DEPLOY_DIRECTORY=deployments/default
+TEMPLATE_DIRECTORY=src/deployment_templates
+EXAMPLE_DIR=examples
+EXAMPLE_DATA_DIR=src/raw_example_data
+
+
+if [[ -d schemas/  ]]; then
+    BASE_DIRECTORY=.
+fi
+
+pushd $BASE_DIRECTORY
+
+if git diff --cached --name-status | grep "${SCHEMA_DIRECTORY}\/.*\.json"; then
+	src/generate_all_from_schemas.sh
+	git add ${EXAMPLE_DIR}/
+	git add ${TEMPLATE_DIRECTORY}/
+	git add deployment_spreadsheet_template.csv
+fi
+
+popd
