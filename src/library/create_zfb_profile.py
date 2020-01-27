@@ -69,10 +69,11 @@ options:
       - Parameters required for an NSG ports for ZFB.  Attributes:
       - network_port.name
       - network_port.physicalName
-      - access_port.name
-      - access_port.physicalName
-      - access_port.VLANRange
-      - access_port.vlan_value
+      - access_ports:
+        - access_port.name
+        - access_port.physicalName
+        - access_port.VLANRange
+        - access_port.vlan_value
     required:True
   zfb_nsg_infra:
     description:
@@ -128,11 +129,11 @@ EXAMPLES = '''
         network_port:
             name: port1_network
             physicalName: port1
-        access_port:
-            name: port2_access
-            physicalName: port2
-            VLANRange: "0-100"
-            vlan_value: 20
+        access_ports:
+            - name: port2_access
+              physicalName: port2
+              VLANRange: "0-100"
+              vlan_value: 20
     zfb_nsg_infra:
         name: nsg_infra
         proxyDNSName: vnsutil1.example.com
@@ -239,7 +240,7 @@ def create_nsgv_ports(module, nsg_temp, vsc_infra):
     zfb_constants = module.params['zfb_constants']
 
     network_port = port_params['network_port']
-    access_port = port_params['access_port']
+    access_ports = port_params['access_ports']
 
     # Create network port
     port_temp = nsg_temp.ns_port_templates.get_first(
@@ -260,19 +261,20 @@ def create_nsgv_ports(module, nsg_temp, vsc_infra):
         uplink.role = "PRIMARY"
         vlan_temp.create_child(uplink)
 
-    port_temp = nsg_temp.ns_port_templates.get_first(
-        "name is '%s'" % access_port['name'])
+    for access_port in access_ports:
+        port_temp = nsg_temp.ns_port_templates.get_first(
+            "name is '%s'" % access_port['name'])
 
-    # Create access port
-    if port_temp is None:
-        vlan_id = access_port.pop('vlan_value')
-        access_port['portType'] = zfb_constants['access_port_type']
-        port_temp = VSPK.NUNSPortTemplate(data=access_port)
-        nsg_temp.create_child(port_temp)
-        # Attach vlan
-        vlan_temp = VSPK.NUVLANTemplate()
-        vlan_temp.value = vlan_id
-        port_temp.create_child(vlan_temp)
+        # Create access port
+        if port_temp is None:
+            vlan_id = access_port.pop('vlan_value')
+            access_port['portType'] = zfb_constants['access_port_type']
+            port_temp = VSPK.NUNSPortTemplate(data=access_port)
+            nsg_temp.create_child(port_temp)
+            # Attach vlan
+            vlan_temp = VSPK.NUVLANTemplate()
+            vlan_temp.value = vlan_id
+            port_temp.create_child(vlan_temp)
 
 
 def create_enterprise(csproot, name):

@@ -42,8 +42,8 @@ data_bridge: {{ item.data_bridge }}
 access_bridge: {{ item.access_bridge }}
 {% endif %}
 
-{% if item.access_brides is defined %}
-access_brides: {{ item.access_brides }}
+{% if item.access_ports is defined %}
+access_ports: {{ item.access_ports }}
 {% endif %}
 
 bootstrap_method: {{ item.bootstrap_method | default('none') }}
@@ -84,7 +84,7 @@ aws_eip_allocid: "{{ item.aws_eip_allocid }}"
 {% if item.bootstrap_method | default('none') == "zfb_metro" %}
 
 zfb_nsg:
-    nsg_organization: "{{ item.nsgv_organization | default(nsgv_organization) }}"
+    nsg_organization: "{{ item.nsg_organization | default(nsgv_organization) }}"
     nsg_name: "{{ item.nsg_name }}"
     nsg_template_name: {{ item.nsg_template_name | default(nsg_template_name) }}
     match_type: {{ item.match_type | default("none") | upper }}
@@ -107,10 +107,28 @@ zfb_ports:
     network_port:
         name: {{ item.network_port_name }}
         physicalName: {{ item.network_port_physical_name | default("port1") }}
-    access_port:
-        name: {{ item.access_port_name }}
-        physicalName: {{ item.access_port_physical_name | default("port2") }}
-        VLANRange: "{{ item.access_port_vlan_range }}"
-        vlan_value: {{ item.access_port_vlan_number | default(0) }}
+    access_ports:
+{% if item.access_port_name is defined %}
+        - name: {{ item.access_port_name }}
+          physicalName: {{ item.access_port_physical_name | default("port2") }}
+          vlan_value: {{ item.access_port_vlan_number | default(0) }}
+          VLANRange: {{ item.access_port_vlan_range }}
+{% endif %}
+{% if item.access_ports is defined %}
+{% for acc_port in item.access_ports %}
+{% for port in nsgv_access_ports %}
+{% if port.port_name in acc_port %}
+        - name: {{ port.port_name }}
+{% if port.physicalName is defined %}
+          physicalName: {{ port.port_physical_name }}
+{% else %}
+          physicalName: 'port{{ loop.index + 1 }}'
+{% endif %}
+          vlan_value: {{ port.port_vlan_number | default(0) }}
+          VLANRange: {{ port.port_vlan_range }}
+{% endif %}
+{% endfor %}
+{% endfor %}
+{% endif %}
 
 {% endif %}
