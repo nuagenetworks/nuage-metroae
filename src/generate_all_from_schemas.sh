@@ -20,7 +20,7 @@ for fullpath in $SCHEMA_DIRECTORY/*.json; do
 
     echo "Generating resources for schema $filename"
 
-    # Reordering number
+    # Run the schema property ordering script
     python src/renumber_schema_ordering.py ${filename}.json
 
     # Generate template
