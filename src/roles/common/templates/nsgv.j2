@@ -42,10 +42,6 @@ data_bridge: {{ item.data_bridge }}
 access_bridge: {{ item.access_bridge }}
 {% endif %}
 
-{% if item.access_ports is defined %}
-access_ports: {{ item.access_ports }}
-{% endif %}
-
 bootstrap_method: {{ item.bootstrap_method | default('none') }}
 
 {% if item.target_server_type is match("kvm") or item.target_server_type is match("vcenter") %}
@@ -117,15 +113,26 @@ zfb_ports:
 {% if item.access_ports is defined %}
 {% for acc_port in item.access_ports %}
 {% for port in nsgv_access_ports %}
-{% if port.port_name in acc_port %}
-        - name: {{ port.port_name }}
+{% if port.name in acc_port %}
+        - name: {{ port.name }}
 {% if port.physicalName is defined %}
-          physicalName: {{ port.port_physical_name }}
+          physicalName: {{ port.physical_name }}
 {% else %}
           physicalName: 'port{{ loop.index + 1 }}'
 {% endif %}
-          vlan_value: {{ port.port_vlan_number | default(0) }}
-          VLANRange: {{ port.port_vlan_range }}
+          vlan_value: {{ port.vlan_number | default(0) }}
+          VLANRange: {{ port.vlan_range }}
+{% endif %}
+{% endfor %}
+{% endfor %}
+{% endif %}
+
+{% if item.access_ports is defined %}
+access_brides:
+{% for acc_port in item.access_ports %}
+{% for port in nsgv_access_ports %}
+{% if port.name in acc_port %}
+    -  {{ port.bridge }}
 {% endif %}
 {% endfor %}
 {% endfor %}
