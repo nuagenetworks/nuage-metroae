@@ -36,18 +36,25 @@
         hostname: "{{ target_server }}"
         username: "{{ vcenter.username }}"
         password: "{{ vcenter.password }}"
-        name: "{{ vmname }}"
         validate_certs: no
       delegate_to: localhost
       register: vm_info
 
     - debug: var=vm_info
 
+    - name: Set uuid fact
+      set_fact:
+        uuid: "{{ item.uuid }}"
+      when: item.guest_name == vmname
+      with_items: "{{ vm_info.virtual_machines }}"
+
+    - debug: var=uuid
+
     - name: Turn off autostart
       connection: local
       vmware_autostart:
         name: "{{ vmname }}"
-        uuid: "{{ vm_info.uuid }}"
+        uuid: "{{ uuid }}"
         hostname: "{{ target_server }}"
         username: "{{ vcenter.username }}"
         password: "{{ vcenter.password }}"
