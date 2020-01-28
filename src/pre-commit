@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # This git hook is written to automatically run schema renumbering and example generation script while changing the schema
 
@@ -18,6 +18,11 @@ pushd $BASE_DIRECTORY
 
 if git diff --cached --name-status | grep "${SCHEMA_DIRECTORY}\/.*\.json"; then
 	src/generate_all_from_schemas.sh
+
+	if [[ $? -ne 0 ]]; then
+		exit 1
+	fi
+
 	git add ${EXAMPLE_DIR}/
 	git add ${TEMPLATE_DIRECTORY}/
 	git add deployment_spreadsheet_template.csv

@@ -24,7 +24,7 @@ for fullpath in $SCHEMA_DIRECTORY/*.json; do
     python src/validate_schema_section.py ${filename}.json
 
     if [ $? -ne 0 ]; then
-        exit $?
+        exit 1
     fi
 
     # Run the schema property ordering script
