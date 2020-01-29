@@ -10,6 +10,7 @@
 
 ### Resolved Issues
 * Fix VSC examples to have valid system ip address (MetroAE-1177)
+* Fix fallocate failure on path with symbolic link (METROAE-1167)
 
 ### Removed
-* Removed obsolete os_vsd_osc_integration playbook and associated role and files. 
+* Removed obsolete os_vsd_osc_integration playbook and associated role and files.
