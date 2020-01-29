@@ -10,6 +10,7 @@
 
 ### Resolved Issues
 * Fix VSC examples to have valid system ip address (MetroAE-1177)
+* Fix fallocate failure on path with symbolic link (METROAE-1167)
 * Fix deprecated task and changed result format for vmware_vm_facts (METROAE-1179)
 
 ### Removed
