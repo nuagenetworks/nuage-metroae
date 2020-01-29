@@ -29,6 +29,16 @@ for fullpath in $SCHEMA_DIRECTORY/*.json; do
 
     echo "Generating resources for schema $filename"
 
+    # Run the schema property ordering script
+    python src/renumber_schema_ordering.py ${filename}.json
+
+    # Checking the schema sections
+    python src/validate_schema_section.py ${filename}.json
+
+    if [ $? -ne 0 ]; then
+        exit 1
+    fi
+
     # Generate template
     python generate_example_from_schema.py --schema $filename --as-template > $TEMPLATE_DIRECTORY/$filename.j2
 
