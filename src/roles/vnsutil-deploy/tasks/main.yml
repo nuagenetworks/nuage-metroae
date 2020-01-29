@@ -3,7 +3,7 @@
     name: "{{ mgmt_ip }}"
     state: absent
   delegate_to: localhost
-  no_log: True
+  no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
   ignore_errors: True
 
 - name: Wait for VNS Utility VM ssh to be ready
@@ -42,12 +42,12 @@
       all_nsgvs: "{% for nsgv_name in groups['nsgvs'] %}{{ nsgv_objs.append(hostvars[nsgv_name]) }}{% endfor %}{{ nsgv_objs }}"
     vars:
       nsgv_objs: []
-    no_log: true
+    no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
 
   - name: Filter NSGvs that have IP addresses
     set_fact:
       dhcpd_nsgvs: "{{ all_nsgvs | selectattr('nsgv_ip', 'defined') | list }}"
-    no_log: true
+    no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
 
   when: '"nsgvs" in groups'
 
