@@ -43,7 +43,7 @@
       line: "{{ item }}"
       create: yes
     with_items: "{{ ntp_server_list }}"
-    
+
   - name: Enable ntpdate
     service:
       name: ntpdate
@@ -55,7 +55,9 @@
   - name: Check for ntpdate failures
     fail:
       msg: There seems to be an issue connecting to the specified NTP servers. Please verify the IP addresses and check "systemctl status ntpdate.service" and "journalctl -xe" for further details.
-    when: ntpdate_status.msg is search('ntpdate.service failed')
+    when: 
+      - ntpdate_status.msg is defined
+      - ntpdate_status.msg is search('ntpdate.service failed')
 
   - name: Restart ntpd
     service:
