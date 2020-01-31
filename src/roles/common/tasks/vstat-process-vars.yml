@@ -1,22 +1,40 @@
 ---
 - block:
 
-  - name: Set VSTAT KVM image location
-    include_role:
-      name: common
-      tasks_from: find-image.yml
-    vars:
-      pattern: Nuage-elastic-*.qcow2
+  - block:
+
+    - name: Set VSTAT VM QCOW2 location
+      include_role:
+        name: common
+        tasks_from: find-file.yml
+      vars:
+        dir_name: "{{ nuage_unzipped_files_dir }}"
+        pattern: "Nuage-elastic-*.qcow2"
+
+    - name: Register VSTAT QCOW2 variables with proper path and image locations for use in other playbooks
+      set_fact:
+        image_path: "{{ file_path }}"
+        image_file_name: "{{ file_name }}"
+
     when: vstats | map(attribute='target_server_type') | list is issuperset(["kvm"])
 
-  - name: Set VSTAT vCenter image location
-    include_role:
-      name: common
-      tasks_from: find-image.yml
-    vars:
-      pattern:
-        - Nuage-elastic-*.ova
-        - Nuage-elastic-*.ovf
+  - block:
+
+    - name: Set VSTAT OVA/OVF location
+      include_role:
+        name: common
+        tasks_from: find-file.yml
+      vars:
+        dir_name: "{{ nuage_unzipped_files_dir }}"
+        pattern:
+          - "Nuage-elastic-*.ova"
+          - "Nuage-elastic-*.ovf"
+
+    - name: Register VSTAT OVA/OVF variables with proper path and image locations for use in other playbooks
+      set_fact:
+        image_path: "{{ file_path }}"
+        image_file_name: "{{ file_name }}"
+
     when: vstats | map(attribute='target_server_type') | list is issuperset(["vcenter"])
 
   - name: Find name of VSTAT upgrade Package Files (EL7 architecture)
@@ -62,4 +80,4 @@
     when: dns_server_list
 
   when:
-    - vstats is defined and vstats
+    - vstats is defined and vstats|length > 0

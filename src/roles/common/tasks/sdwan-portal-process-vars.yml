@@ -1,29 +1,28 @@
----
-- name: Find name of SD-WAN Portal OS QCOW2 File
-  find: path="{{ nuage_unzipped_files_dir }}/vns/portal"  pattern="CentOS-7-x86_64-*.qcow2" recurse=yes
-  register: rc_portal_os_file
-
-- name: Portal OS QCOW2 file
-  debug: var=rc_portal_os_file verbosity=1
+- name: Set SD-WAN Portal OS QCOW2 location
+  include_role:
+    name: common
+    tasks_from: find-file.yml
+  vars:
+    dir_name: "{{ nuage_unzipped_files_dir }}"
+    pattern: "CentOS-7-x86_64-*.qcow2"
 
 - name: Register SD-WAN Portal OS QCOW2 variables with proper path and image locations for use in other playbooks
   set_fact:
-    image_path: "{{ rc_portal_os_file.files[0].path | dirname }}"
-    image_file_name: "{{ rc_portal_os_file.files[0].path | basename }}"
-  when: rc_portal_os_file.matched > 0
+    image_path: "{{ file_path }}"
+    image_file_name: "{{ file_name }}"
 
-- name: Find Portal SW package location
-  find: path="{{ nuage_unzipped_files_dir }}/vns/portal" pattern="nuage-portal-container*" recurse=yes
-  register: rc_portal_file
-
-- name: Portal SW package file
-  debug: var=rc_portal_file verbosity=1
+- name: Set Portal SW package location
+  include_role:
+    name: common
+    tasks_from: find-file.yml
+  vars:
+    dir_name: "{{ nuage_unzipped_files_dir }}"
+    pattern: "nuage-portal-container*"
 
 - name: Register SD-WAN PORTAL variable with proper path and image locations for use in other playbooks
   set_fact:
-    portal_path: "{{ rc_portal_file.files[0].path | dirname }}"
-    portal_file_name: "{{ rc_portal_file.files[0].path | basename }}"
-  when: "rc_portal_file.matched > 0"
+    portal_path: "{{ file_path }}"
+    portal_file_name: "{{ file_name }}"
 
 - name: Set portal_check
   set_fact: portal_check={{portals is defined}}
@@ -36,4 +35,3 @@
   template: src=sdwan_portal.j2 backup=no dest={{ inventory_dir }}/host_vars/{{ item.hostname }}
   with_items: "{{ portals }}"
   when: portal_check
-
