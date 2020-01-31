@@ -13,7 +13,7 @@
 
 - name: Gathering info on VM (ignoring errors)
   connection: local
-  vmware_guest_facts:
+  vmware_guest_info:
     hostname: "{{ target_server }}"
     username: "{{ vcenter.username }}"
     password: "{{ vcenter.password }}"
@@ -32,18 +32,21 @@
   - block:
 
     - name: Get Facts of VM
-      vmware_vm_facts:
+      vmware_vm_info:
         hostname: "{{ target_server }}"
         username: "{{ vcenter.username }}"
         password: "{{ vcenter.password }}"
         validate_certs: no
       delegate_to: localhost
-      register: vm_list
+      register: vm_info
 
-    - name: Set VM UUID
+    - debug: var=vm_info
+
+    - name: Set uuid fact
       set_fact:
-        uuid: "{{ vm_list.virtual_machines[vmname]['uuid'] }}"
-      when: vmname in vm_list.virtual_machines
+        uuid: "{{ item.uuid }}"
+      when: item.guest_name == vmname
+      with_items: "{{ vm_info.virtual_machines }}"
 
     - debug: var=uuid
 

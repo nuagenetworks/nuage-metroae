@@ -1,20 +1,38 @@
 ---
 - block: #VNS UTIL
 
-  - name: Set VNS Utils KVM image location
-    include_role:
-      name: common
-      tasks_from: find-image.yml
-    vars:
-      pattern: vns-util-*.qcow2
+  - block:
+
+    - name: Set VNS Utils VM QCOW2 location
+      include_role:
+        name: common
+        tasks_from: find-file.yml
+      vars:
+        dir_name: "{{ nuage_unzipped_files_dir }}"
+        pattern: "vns-util-*.qcow2"
+
+    - name: Register VNS Utils QCOW2 variables with proper path and image locations for use in other playbooks
+      set_fact:
+        image_path: "{{ file_path }}"
+        image_file_name: "{{ file_name }}"
+
     when: vnsutils | map(attribute='target_server_type') | list is issuperset(["kvm"])
 
-  - name: Set VNS Utils vCenter image location
-    include_role:
-      name: common
-      tasks_from: find-image.yml
-    vars:
-      pattern: vns-util-*.ova
+  - block:
+
+    - name: Set VNS Utils VM OVA location
+      include_role:
+        name: common
+        tasks_from: find-file.yml
+      vars:
+        dir_name: "{{ nuage_unzipped_files_dir }}"
+        pattern: "vns-util-*.ova"
+
+    - name: Register VNS Utils OVA variables with proper path and image locations for use in other playbooks
+      set_fact:
+        image_path: "{{ file_path }}"
+        image_file_name: "{{ file_name }}"
+
     when: vnsutils | map(attribute='target_server_type') | list is issuperset(["vcenter"])
 
   - name: Verify VNSUTIL management gateway is in correct IP range
@@ -46,6 +64,6 @@
     with_items: "{{ vnsutils }}"
 
   when:
-    - vnsutils is defined and vnsutils
+    - vnsutils is defined and vnsutils|length > 0
   tags:
     - vns
