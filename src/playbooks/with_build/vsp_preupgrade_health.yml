@@ -49,13 +49,15 @@
   gather_facts: no
   pre_tasks:
     - name: Get free disk space on VSD for backup files
-      command: df /mysql-backup | tail -n 1 | awk '{print $4}'
+      shell: df / | tail -n 1 | awk '{print $4}'
       register: backup_vsd_free_space_kb
+      remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
+      become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
 
     - name: Ensure there is enough free disk space on VSD for backup files
       assert:
-        that: backup_vsd_free_space_kb | int > (500 * 1024 * 1024)
-        msg: "Insufficent disk space {{ backup_vsd_free_space_kb | float / (1024 * 1024) }}GB on VSD {{ ansible_host }} for backup files"
+        that: backup_vsd_free_space_kb.stdout | int > (5 * 1024 * 1024)
+        msg: "Insufficent disk space {{ backup_vsd_free_space_kb.stdout | float / (1024 * 1024) }} GB on VSD {{ ansible_host }} for backup files"
 
 - hosts: vstats
   gather_facts: no
