@@ -11,9 +11,9 @@ SCHEMA_DIRECTORY = "schemas"
 
 def validate_sections(schema_contents, file_name):
     pattern = re.compile(
-      '"' + '(' + SECTION_BEGIN_FIELD +
-      '|' + SECTION_END_FIELD + ')' +
-      '":\\s*"(.*)"')
+        '"' + '(' + SECTION_BEGIN_FIELD +
+        '|' + SECTION_END_FIELD + ')' +
+        '":\\s*"(.*)"')
     it = pattern.finditer(schema_contents)
     stack = []
     for match in it:
