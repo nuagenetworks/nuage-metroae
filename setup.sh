@@ -259,15 +259,6 @@ pip_install() {
         unset IFS
         printn "Installing $i..."
         pip install "$i" >> $LOG 2>&1
-        pip3 install "$i" >> $LOG 2>&1
-        check_retcode $?
-    done
-
-    for i in $(cat pip3_requirements.txt)
-    do
-        unset IFS
-        printn "Installing $i..."
-        pip3 install "$i" >> $LOG 2>&1
         check_retcode $?
     done
 }
