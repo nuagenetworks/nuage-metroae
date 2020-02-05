@@ -56,14 +56,14 @@
     - name: Renew primary VSD cert
       command: /opt/vsd/bin/vsd-renew-certs.sh
       delegate_to: "{{ item }}"
-      with_items: "{{ groups['vsd_ha_node1'][0] }}"
+      with_items: "{{ first_vsd_hostname }}"
 
     - name: Renew other 2 VSD certs
       command: /opt/vsd/bin/vsd-renew-certs.sh -1 {{ hostvars[groups['primary_vsds'][0]]['hostname'] }}
       delegate_to: "{{ item }}"
       with_items:
-        - "{{ groups['vsd_ha_node2'][0] }}"
-        - "{{ groups['vsd_ha_node3'][0] }}"
+        - "{{ second_vsd_hostname }}"
+        - "{{ third_vsd_hostname }}"
 
     - name: Verify if VSD TLS mode is set to allow
       command: /opt/vsd/bin/ejmode status
@@ -104,12 +104,12 @@
       vsd_monit:
         group: all
       register: vsd_process_list
-      delegate_to: "{{ groups['vsd_ha_node1'][0] }}"
+      delegate_to: "{{ first_vsd_hostname }}"
 
     - name: Restart stats if enabled
       shell: monit restart -g vsd-stats
       when: "'stats-collector' in vsd_process_list['state'].keys()"
-      delegate_to: "{{ groups['vsd_ha_node1'][0] }}"
+      delegate_to: "{{ first_vsd_hostname }}"
 
     when: vsd_sa_or_ha is match ('ha')
     remote_user: "{{ vsd_default_username }}"
@@ -120,9 +120,9 @@
       command: /opt/vsd/bin/vsd-renew-certs.sh -1 {{ hostvars[groups['primary_vsds'][0]]['hostname'] }}
       delegate_to: "{{ item }}"
       with_items:
-        - "{{ groups['vsd_standby_node1'][0] }}"
-        - "{{ groups['vsd_standby_node2'][0] }}"
-        - "{{ groups['vsd_standby_node3'][0] }}"
+        - "{{ first_standby_vsd_hostname }}"
+        - "{{ second_standby_vsd_hostname }}"
+        - "{{ third_standby_vsd_hostname }}"
 
     - name: Verify if VSD TLS mode is set to allow
       command: /opt/vsd/bin/ejmode status

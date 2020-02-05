@@ -6,12 +6,12 @@ localhost ansible_connection=local
 
 {% if vsds is defined and vsds|length > 0 %}
 
-{% if vsds|length == 1 %}
+{% if vsds|length == 1 and not inplace %}
 
 [vsd_sa_node]
 {{ vsds[0].hostname }}
 
-{% elif vsds|length > 1 and vsds|length < 6 %}
+{% elif not inplace %}
 
 [vsd_ha_node1]
 {{ vsds[0].hostname }}
@@ -22,7 +22,7 @@ localhost ansible_connection=local
 [vsd_ha_node3]
 {{ vsds[2].hostname }}
 
-{% if vsds|length == 6 and not inplace %}
+{% if vsds|length == 6 %}
 
 [vsd_standby_node1]
 {{ vsds[3].hostname }}
@@ -35,7 +35,7 @@ localhost ansible_connection=local
 
 {% endif %}
 
-{% if inplace %}
+{% else %}
 [vsd_inplace_upgrade_nodes]
 {% for vsd in vsds %}
 {{ vsd.hostname }}
@@ -43,17 +43,14 @@ localhost ansible_connection=local
 
 {% endif %}
 
-{% endif %}
-
 [primary_vsds:children]
-{% if vsds|length == 1 %}
+{% if vsds|length == 1 and not inplace %}
 vsd_sa_node
-{% elif vsds|length > 1 and vsds|length < 6 %}
+{% elif not inplace %}
 vsd_ha_node1
 vsd_ha_node2
 vsd_ha_node3
-{% endif %}
-{% if vsds|length < 6 and inplace %}
+{% else %}
 vsd_inplace_upgrade_nodes
 {% endif %}
 
@@ -260,5 +257,3 @@ portal_ha_node3
 {% if ssh_proxy_host is defined %}
 ansible_ssh_common_args='-o ProxyCommand="ssh -W %h:%p -q {{ ssh_proxy_username | default("root") }}@{{ ssh_proxy_host }}"'
 {% endif %}
-[ansible_deployment_host]
-{{ ansible_deployment_host| default('localhost') }}

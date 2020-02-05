@@ -20,7 +20,7 @@
 
 - block:
   - name: Resolve HA vsd node 1 to ip addr
-    shell: "getent hosts {{ groups['vsd_ha_node1'][0] | default(vsd_hostname) }} | awk '{print $1}'"
+    shell: "getent hosts {{ first_vsd_hostname | default(vsd_hostname) }} | awk '{print $1}'"
     register: ip_addr_ha
     delegate_to: localhost
     become: no
@@ -31,12 +31,12 @@
 
   - name: Get custom username for vsd
     set_fact:
-      custom_username: "{{ hostvars[groups['vsd_ha_node1'][0]].vsd_custom_username | default(vsd_custom_username) }}"
-      custom_password: "{{ hostvars[groups['vsd_ha_node1'][0]].vsd_custom_password | default(vsd_custom_password) }}"
+      custom_username: "{{ hostvars[first_vsd_hostname].vsd_custom_username | default(vsd_custom_username) }}"
+      custom_password: "{{ hostvars[first_vsd_hostname].vsd_custom_password | default(vsd_custom_password) }}"
     when:
-      - hostvars[groups['vsd_ha_node1'][0]].vsd_custom_username is defined or vsd_custom_username is defined
+      - hostvars[first_vsd_hostname].vsd_custom_username is defined or vsd_custom_username is defined
 
-  when: groups['vsd_ha_node1'] is defined
+  when: first_vsd_hostname is defined
 
 - name: Get VSD information
   block:
