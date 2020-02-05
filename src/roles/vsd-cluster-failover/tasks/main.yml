@@ -58,6 +58,26 @@
         - vsd_version.stdout.split('.')[0]|int < 6
         - is_primary_reachable | default(false)
 
+    - block:
+
+      - name: Get ElasticSearch node list from VSD stats.conf
+        shell: grep ^statscollector.elasticsearch.host= /opt/vsd/stats_collector/conf/stats.conf | cut -c 35-
+        register: activeEsNodes
+        changed_when: false
+        delegate_to: "{{ item }}"
+        with_items: "{{ groups['primary_vsds'] }}"
+        run_once: true
+
+      - name: Switch replication role of standby VSD cluster when using active standby VSTATs
+        command: "/opt/vsd/bin/vsd-switch-replication-cluster-role --role active -e {{ activeEsNodes.stdout }}"
+        delegate_to: "{{ item }}"
+        with_items: "{{ groups['standby_vsds'] }}"
+
+      when:
+        - groups['vstats'] is defined
+        - groups['vstats'] | length > 3
+        - is_primary_reachable | default(false)
+
     - name: Switch replication role of standby VSD cluster when using clustered VSTATs
       command: "/opt/vsd/bin/vsd-switch-replication-cluster-role --role active -e hostvars[groups['vstats'][0]]['hostname'],hostvars[groups['vstats'][1]]['hostname'],hostvars[groups['vstats'][2]]['hostname']"
       when:
