@@ -179,7 +179,7 @@ class TestCreateZfbProfile(object):
             vspk_patch.NUNSPortTemplate.assert_has_calls(
                 [call(data=port)])
             self.mock_nsg_template.create_child.assert_has_calls(
-                [call(self.mock_network_port)])
+                [call(self.mock_access_port)])
 
     def setup_nsg_device(self, vspk_patch):
         self.mock_nsg_device = MagicMock()
