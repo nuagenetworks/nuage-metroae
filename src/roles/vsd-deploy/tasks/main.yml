@@ -218,19 +218,16 @@
     command: /opt/vsd/bin/vsd-switch-ipv6.sh
     when: enable_ipv6 | default(False) == True
 
+  - name: Test VSD Disk IOPS
+    include_role:
+      name: common
+      tasks_from: disk-iops-test.yml
+    vars:
+      file_total_size: "{{ vsd_disk_iops_file_total_size }}"
+      iops_target_threshold: "{{ vsd_disk_iops_target_threshold }}"
+    when: not skip_disk_iops_test
+
   - block:
-
-    - block:
-
-      - name: Test VSD Disk IOPS
-        include_role:
-          name: common
-          tasks_from: disk-iops-test.yml
-        vars:
-          file_total_size: "{{ vsd_disk_iops_file_total_size }}"
-          iops_target_threshold: "{{ vsd_disk_iops_target_threshold }}"
-
-      when: not skip_disk_iops_test
 
     - name: Install VSD software on standalone node (Can take 20 minutes)
       command: "/opt/vsd/vsd-install.sh -t s -y {{ (enable_ipv6 | default(False) == True) | ternary('-6', '') }}"
@@ -291,18 +288,6 @@
       - master_vcin is defined
 
   - block:
-
-    - block:
-
-      - name: Test VSD Disk IOPS
-        include_role:
-          name: common
-          tasks_from: disk-iops-test.yml
-        vars:
-          file_total_size: "{{ vsd_disk_iops_file_total_size }}"
-          iops_target_threshold: "{{ vsd_disk_iops_target_threshold }}"
-
-      when: not skip_disk_iops_test
 
     - name: Install VSD software on the first cluster node (Can take 20 minutes)
       command: "/opt/vsd/vsd-install.sh -t 1 -a {{ first_cluster_node_to_install }} -b {{ second_cluster_node_to_install }} -c {{third_cluster_node_to_install}} -x {{vsd_fqdn}} -y {{ (enable_ipv6 | default(False) == True) | ternary('-6', '') }}"
