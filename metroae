@@ -7,10 +7,10 @@ METROAE_VERSION="v4.0.0"
 #################################################################################
 
 MENU+=(',config'                    'Configure VSD'                                        'config'     ''                       '')
-MENU+=(',config,help'               'Displays the help text for levistate'                 'config'     'help'                   ',config')
-MENU+=(',config,version'            'Displays the current levistate version'               'config'     'version'                ',config')
-MENU+=(',config,engine,update'      'Update levistate to the latest version'               'config'     'upgrade-engine'         ',config')
-MENU+=(',config,<positional args>'  'Execute levistate inside the container'               'config'     'help'                   ',config')
+MENU+=(',config,help'               'Displays the help text for MetroAE configuration'     'config'     'help'                   ',config')
+MENU+=(',config,version'            'Displays the current configuration engine version'    'config'     'version'                ',config')
+MENU+=(',config,engine,update'      'Update configuration engine to the latest version'    'config'     'upgrade-engine'         ',config')
+MENU+=(',config,<positional args>'  'Execute configuration engine inside the container'    'config'     'help'                   ',config')
 
 #################################################################################
 #                             CONTAINER COMMANDS                                #
@@ -75,7 +75,10 @@ SCRIPT_VERSION=1.0.6
 
 S3_KEY="AKIAJOPWRLAXPCUXZX3A"
 S3_SECRET="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"
-CONTAINER_TAR_FILE=softlaunch.tar
+CONTAINER_TAR_FILE=metroaecontainer.tar
+if [[ ! -z $IMAGE_NAME ]]; then
+    CONTAINER_TAR_FILE="$IMAGE_NAME.tar"
+fi
 S3_BUCKET="nuage-devops"
 S3_FOLDER="images"
 S3_HEADER_DUMP_FILE=s3_headers.txt
@@ -1330,14 +1333,18 @@ function deployment_main {
 
     # <workflow> argument
     WORKFLOW=$1
-    shift
-
 
     # Add .yml extension if needed
     EXTENSION="${WORKFLOW##*.}"
     if [[ "$EXTENSION" != "yml" ]]; then
         WORKFLOW=${WORKFLOW}.yml
     fi
+
+    if [[ ! -a $PLAYBOOK_DIR/$WORKFLOW  ]] && [[ ! -a $PLAYBOOK_WITH_BUILD_DIR/$WORKFLOW ]]; then
+        write_to_screen_and_script_log "Requested MetroAE workflow ($1) could not be found"
+        print_version_and_exit 1
+    fi
+    shift
 
     # [deployment] argument
     if [[ $# -gt 0 ]]; then
@@ -1355,7 +1362,7 @@ function deployment_main {
             elif [[ -d $DEPLOYMENTS_BASE_DIR/$DEPLOYMENT ]]; then
                 DEPLOYMENT_DIR=$DEPLOYMENTS_BASE_DIR/$DEPLOYMENT
             else
-            write_to_screen_and_script_log "Could not find deployment '$DEPLOYMENT' under" $DEPLOYMENTS_BASE_DIR
+            write_to_screen_and_script_log "Could not find deployment '$DEPLOYMENT' under $DEPLOYMENTS_BASE_DIR"
             print_version_and_exit 1
             fi
         fi
@@ -1571,11 +1578,6 @@ function unzip_files {
     docker_exec /source/nuage-metro/nuage-unzip.sh "$@"
 }
 
-function con_build_vars_to_deployments {
-    debug ${FUNCNAME[0]}
-    docker_exec /usr/bin/python /source/nuage-metro/convert_build_vars_to_deployment.py "$@"
-}
-
 function gen_example_from_schema {
     debug ${FUNCNAME[0]}
     docker_exec /usr/bin/python /source/nuage-metro/generate_example_from_schema.py "$@"
@@ -1782,11 +1784,6 @@ function container_main {
             unzip_files "$@"
             print_version_and_exit 0
             ;;
-            convert-build-vars-to-deployments)
-            shift
-            con_build_vars_to_deployments "$@"
-            print_version_and_exit 0
-            ;;
             generate-example-from-schema)
             shift
             gen_example_from_schema "$@"
@@ -1833,8 +1830,8 @@ function tools_main {
 
     POSITIONAL=()
     local command_to_run=""
-    case ${MATCH_MENU[0]} in
-        ,tools,unzip,images)
+    case ${MATCH_MENU[3]} in
+        unzip-files)
         if [[ $RUN_MODE == "CONTAINER" ]]; then
             docker_exec env /source/nuage-metro/nuage-unzip.sh ${EXTRA_ARGS[@]}
         else
@@ -1842,15 +1839,23 @@ function tools_main {
         fi
         print_version_and_exit 0
         ;;
-        ,tools,convert,buildvars)
+        get_debug)
         if [[ $RUN_MODE == "CONTAINER" ]]; then
-            docker_exec env /usr/bin/python /source/nuage-metro/convert_build_vars_to_deployment.py ${EXTRA_ARGS[@]}
+            docker_exec env /usr/bin/python /source/nuage-metro/get_debug.py ${EXTRA_ARGS[@]}
         else
-            /usr/bin/python convert_build_vars_to_deployment.py ${EXTRA_ARGS[@]}
+            /usr/bin/python get_debug.py ${EXTRA_ARGS[@]}
         fi
         print_version_and_exit 0
         ;;
-        ,tools,generate,example)
+        convert_csv_to_deployment)
+        if [[ $RUN_MODE == "CONTAINER" ]]; then
+            docker_exec env /usr/bin/python /source/nuage-metro/convert_csv_to_deployment.py ${EXTRA_ARGS[@]}
+        else
+            /usr/bin/python convert_csv_to_deployment.py ${EXTRA_ARGS[@]}
+        fi
+        print_version_and_exit 0
+        ;;
+        generate-example-from-schema)
         if [[ $RUN_MODE == "CONTAINER" ]]; then
             docker_exec env /usr/bin/python /source/nuage-metro/generate_example_from_schema.py ${EXTRA_ARGS[@]}
         else
@@ -1858,7 +1863,7 @@ function tools_main {
         fi
         print_version_and_exit 0
         ;;
-        ,tools,encrypt,credentials)
+        encrypt-credentials)
         if [[ $RUN_MODE == "CONTAINER" ]]; then
             docker_exec env /usr/bin/python /source/nuage-metro/encrypt_credentials.py ${EXTRA_ARGS[@]}
         else
@@ -1868,7 +1873,7 @@ function tools_main {
         ;;
         *)
         tools_help ",tools"
-        print_version_and_exit 0
+        print_version_and_exit 1
         ;;
     esac
 }
@@ -2035,7 +2040,7 @@ function print_menu_help {
         local menu_family_key=${MENU[@]:$i+2:1}
         local operation_key=${MENU[@]:$i+3:1}
         local help_key=${MENU[@]:$i+4:1}
-        if [[ "${menu_key}" == *"$2"* ]] ;then
+        if [[ "${menu_key}" == "$2"* ]] ;then
             if [[ $menu_family_key == "playbook" ]]; then
                 printf "${1}" "${menu_key//,/ } [deployment] [options]" "${MENU[@]:($i + 1):1}"
             else
@@ -2121,6 +2126,15 @@ case ${MATCH_MENU[2]} in
         docker_exec_interactive /usr/bin/python /source/nuage-metro/run_wizard.py "${EXTRA_ARGS[@]}"
     else
         ./run_wizard.py "${EXTRA_ARGS[@]}"
+    fi
+    print_version_and_exit 0
+    ;;
+    setup)
+    if [[ $RUN_MODE == "CONTAINER" ]]; then
+        echo "Setup cannot be run in MetroAE container"
+        print_version_and_exit 1
+    else
+        ./setup.sh "${EXTRA_ARGS[@]}"
     fi
     print_version_and_exit 0
     ;;

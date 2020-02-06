@@ -1,20 +1,38 @@
 
 - block:
 
-  - name: Set VSD KVM image location
-    include_role:
-      name: common
-      tasks_from: find-image.yml
-    vars:
-      pattern: VSD-*.qcow2
+  - block:
+
+    - name: Set VSD VM QCOW2 location
+      include_role:
+        name: common
+        tasks_from: find-file.yml
+      vars:
+        dir_name: "{{ nuage_unzipped_files_dir }}"
+        pattern: "VSD-*.qcow2"
+
+    - name: Register VSD QCOW2 variables with proper path and image locations for use in other playbooks
+      set_fact:
+        image_path: "{{ file_path }}"
+        image_file_name: "{{ file_name }}"
+
     when: vsds | map(attribute='target_server_type') | list is issuperset(["kvm"])
 
-  - name: Set VSD vCenter image location
-    include_role:
-      name: common
-      tasks_from: find-image.yml
-    vars:
-      pattern: VSD-*.ova
+  - block:
+
+    - name: Set VSD VM OVA location
+      include_role:
+        name: common
+        tasks_from: find-file.yml
+      vars:
+        dir_name: "{{ nuage_unzipped_files_dir }}"
+        pattern: "VSD-*.ova"
+
+    - name: Register VSD OVA variables with proper path and image locations for use in other playbooks
+      set_fact:
+        image_path: "{{ file_path }}"
+        image_file_name: "{{ file_name }}"
+
     when: vsds | map(attribute='target_server_type') | list is issuperset(["vcenter"])
 
   - name: Find name of VSD Migration ISO File
@@ -62,6 +80,6 @@
   - name: Verify VSD DNS entries exist at server {{ dns_server_list[0] }}, and hostnames map to their IPs
     include_tasks: check-dns.yml
     with_items: "{{ vsds }}"
-    when: dns_server_list
+    when: dns_server_list|length > 0
 
-  when: vsds is defined and vsds
+  when: vsds is defined and vsds|length > 0

@@ -36,6 +36,8 @@
 
     ##########################
 
+    ##### VM and Target Server
+
     # < VM name >
     # Name of the Virtual Machine on the Hypervisor
     #
@@ -54,8 +56,6 @@
     # upgrade_vmname: ""
     {%- endif %}
 
-    ##### Target Server
-
     # < Target Server type >
     # Type of hypervisor environment into which the instance will be created
     # (kvm, vcenter, aws, openstack, nuagex) 
@@ -67,7 +67,7 @@
     #
     target_server: "{{ item.target_server }}"
 
-    ###################
+    ##########################
 
     # < Management Network Bridge >
     # Network Bridge used for the management interface of a component or the BOF interface on VSC. This will be a Distributed Virtual PortGroup (DVPG) when deploying on vCenter or a Linux network bridge when deploying on KVM. This field can be overridden by defining the management network bridge separately in the component configuration. Defaults to the global setting
@@ -127,8 +127,6 @@
 
     {%- if show_target_server_type | default('vcenter') == 'vcenter' %}
 
-    ##### vCenter Parameters
-
     # < vCenter Datastore Name >
     # Name of the vCenter Datastore on which the VSTAT VM will be deployed. Defaults to the common vCenter Datastore Name if not defined here.
     #
@@ -137,6 +135,8 @@
     {%- else %}
     # vcenter_datastore: (global vCenter Datastore Name)
     {%- endif %}
+
+    ########################
     {%- endif %}
 
     {%- if show_target_server_type | default('aws') == 'aws' %}
@@ -291,27 +291,6 @@
     ##########################
     {%- endif %}
 
-    {%- if show_target_server_type | default('kvm') == 'kvm' %}
-
-    # < KVM cpuset information >
-    # Cpuset information for cpu pinning on KVM. For example, VSTAT requires 6 cores and sample values will be of the form [ 0, 1, 2, 3, 4, 5 ]
-    #
-    {%- if item.cpuset is defined %}
-    cpuset: [ {% for i in item.cpuset | default([]) %}{{ i }}, {% endfor %}]
-    {%- else %}
-    # cpuset: []
-    {%- endif %}
-    {%- endif %}
-
-    # < Enable VSS UI >
-    # Enable the setup of the Virtualized Security Services UI
-    #
-    {%- if item.enable_vss_ui is defined %}
-    enable_vss_ui: {{ item.enable_vss_ui | lower }}
-    {%- else %}
-    # enable_vss_ui: False
-    {%- endif %}
-
     ##### NFS Backup Configuration
 
     # < NFS backup location >
@@ -352,6 +331,29 @@
 
     ##############################
 
+    {%- if show_target_server_type | default('kvm') == 'kvm' %}
+
+    ##### Other configuration
+
+    # < KVM cpuset information >
+    # Cpuset information for cpu pinning on KVM. For example, VSTAT requires 6 cores and sample values will be of the form [ 0, 1, 2, 3, 4, 5 ]
+    #
+    {%- if item.cpuset is defined %}
+    cpuset: [ {% for i in item.cpuset | default([]) %}{{ i }}, {% endfor %}]
+    {%- else %}
+    # cpuset: []
+    {%- endif %}
+    {%- endif %}
+
+    # < Enable VSS UI >
+    # Enable the setup of the Virtualized Security Services UI
+    #
+    {%- if item.enable_vss_ui is defined %}
+    enable_vss_ui: {{ item.enable_vss_ui | lower }}
+    {%- else %}
+    # enable_vss_ui: False
+    {%- endif %}
+
     # < Credentials set name >
     # Name of the credentials set for the vsd
     #
@@ -360,6 +362,8 @@
     {%- else %}
     # credentials_set: ""
     {%- endif %}
+
+    #########################
 
 {% endfor %}
 {% else %}

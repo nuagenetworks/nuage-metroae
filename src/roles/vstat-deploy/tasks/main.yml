@@ -3,7 +3,7 @@
     name: "{{ mgmt_ip }}"
     state: absent
   delegate_to: localhost
-  no_log: True
+  no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
   ignore_errors: True
 
 - name: Wait for VSTAT ssh to be ready
@@ -56,7 +56,6 @@
       vstat_username: "{{ vstat_default_username }}"
       group_vstats: "{{ groups['vstats'] }}"
 
-    remote_user: "{{ vstat_default_username }}"
     when: groups['vstats'] is defined
 
   - name: Generate SSH keys
@@ -71,7 +70,6 @@
       vstat_username: "{{ vstat_default_username }}"
       group_vstats: "{{ groups['primary_vstats'] }}"
 
-    remote_user: "{{ vstat_default_username }}"
     when: groups['primary_vstats'] is defined and active
 
   - name: Generate SSH keys
@@ -86,7 +84,6 @@
       vstat_username: "{{ vstat_default_username }}"
       group_vstats: "{{ groups['backup_vstats'] }}"
 
-    remote_user: "{{ vstat_default_username }}"
     when: groups['backup_vstats'] is defined and not active
 
   run_once: true
@@ -95,7 +92,7 @@
 - name: check for iptables (ignoring errors)
   shell:
     cmd: "service iptables status"
-    warn: false
+    warn: no
   register: _svc_iptables
   ignore_errors: True
   remote_user: "{{ vstat_default_username }}"
@@ -180,7 +177,7 @@
       - name: Config iptables on VSTAT vm to accept conn on ports 9200, 9300 from vsd(s) in cluster setup (ignoring errors)
         shell:
           cmd: "{{ item }}"
-          warn: false
+          warn: no
         with_items:
           - "{{ iptables_cluster_commands }}"
         remote_user: "{{ vstat_default_username }}"
@@ -205,7 +202,7 @@
 - name: check for firewalld (ignoring errors)
   shell:
     cmd: "service firewalld status"
-    warn: false
+    warn: no
   register: _svc_firewalld
   ignore_errors: True
   remote_user: "{{ vstat_default_username }}"
@@ -360,7 +357,7 @@
           command: /opt/vsd/vsd-es-cluster-config.sh -e {{ groups['primary_vstats'][0] }},{{ groups['primary_vstats'][1] }},{{ groups['primary_vstats'][2] }}
           environment:
             SSHPASS: "{{ vstat_default_password }}"
-          no_log: True
+          no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
           when: groups['primary_vstats'] is defined and active
 
         - name: Execute VSTAT cluster script on standalone or clustered vsds for backup vstats
@@ -368,7 +365,7 @@
           environment:
             SSHPASS: "{{ vstat_default_password }}"
           when: groups['backup_vstats'] is defined and not active
-          no_log: True
+          no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
 
         when: vstat_sa_or_ha is match('ha')
         run_once: True
