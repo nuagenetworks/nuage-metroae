@@ -52,8 +52,9 @@ MetroAE workflows are the operations that can be performed against a specified d
     metroae --list
 
 Workflows fall into the following categories:
-# Standard Workflows
+#### Standard Workflows
 Standard workflows in MetroAE perform the following operations:
+
 Workflow | Operation Description |
 ------------- | ----------- |
 Predeploy | prepares infrastructure with necessary packages and makes the component(s) reachable |
@@ -70,8 +71,9 @@ The following workflows are examples that combine together several of the above 
 * destroy_everything - Destroys all components specified in a deployment.
 * nuage_health - Checks the health of all components specified in a deployment.
 
-# Special Workflows
+#### Special Workflows
 Special workflows in MetroAE perform certain specific operations. Some of them are shown below.
+
 Workflow | Operation Description |
 ------------- | ----------- |
 copy_qcow2_files | Copy qcow2 images to target server |
