@@ -1,0 +1,17 @@
+- block:
+
+  - name: Prompt user for confirmation before destroying
+    pause:
+      prompt: "You are about to destroy {{ destroy_components_name | default('some') }} components.  Do you wish to continue? (y/n): "
+    register: prompt_result
+
+  - name: Check prompt response
+    assert:
+      that: prompt_result.user_input | lower == 'y'
+      msg: "User cancelled component destroy"
+
+  - name: Set fact to prevent further prompting
+    set_fact:
+      already_prompted_destroy: True
+
+  when: prompt_before_destroy | default(False) and not already_prompted_destroy | default(False)
