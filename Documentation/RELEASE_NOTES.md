@@ -8,6 +8,7 @@
 * Introduce day-zero VSD configuration support via `metroae config` (container only)
 * Add support for Multiple VSC underlay VPRNs (METROAE-1175)
 * Add VSC hardening (METROAE-1183)
+* Add support for VSD certificate renewal standalone procedure (MetroAE-1188)
 
 ### Resolved Issues
 * Fix VSC examples to have valid system ip address (METROAE-1177)
