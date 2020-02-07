@@ -97,6 +97,9 @@ When installing or upgrading an active-standby, geo-redundant cluster, all 6 VSD
 ### `vstats.yml`
 `vstats.yml` contains the definition of the VSTATs (VSD Statistics) to be operated on in this deployment. This file should be present in your deployment only if you are specifying VSTATs. If not provided, no VSTATs will be operated on. This file is of yaml list type. If it contains exactly 3 VSTAT definitions, a cluster installation or upgrade will be executed. Any other number of VSTAT definitions will result in 1 or more stand-alone VSTATs being installed or upgraded.
 
+## VSD Disk I/O Testing
+You can take use MetroAE to verify VSD disk IOPS using the sysbench tool. By default, the disk I/O test will run prior to installing software on the VSD or on a cluster of VSDs. The necessary parameters to modify the test should be included in 'common.yml'. For the VSD disk I/O test, you can modify one of the parameters of the sysbench test, the total file size, which specifies the total size of all the files used by the sysbench tool for the I/O testing. You can also specify the threshold for the final IOPS result depending on your use case. Our default values are what we recommend for VSD performance. You can also decide to skip this test by specifying so in 'common.yml'. If you would like to test your VSD disk performance on a VSD/VSD cluster that has already been installed, there is a separate playbook that can be run. 
+
 ## Enabling post-installation security features
 You can use MetroAE to enable optional post-installation security features to 'harden' the installation. Your deployment contains a number of optional variables that can be used to accomplish this. These variables are described, below. For more detail, please see the Nuage VSP Install Guide.
 ### `vsds.yml`
@@ -161,7 +164,7 @@ The next step is to deploy your components. See [DEPLOY.md](DEPLOY.md) for guida
 ## Questions, Feedback, and Contributing  
 Get support via the [forums](https://devops.nuagenetworks.net/forums/) on the [MetroAE site](https://devops.nuagenetworks.net/).  
 Ask questions and contact us directly at [devops@nuagenetworks.net](mailto:deveops@nuagenetworks.net "send email to nuage-metro project").
- 
+
 Report bugs you find and suggest new features and enhancements via the [GitHub Issues](https://github.com/nuagenetworks/nuage-metro/issues "nuage-metro issues") feature.
 
 You may also [contribute](../CONTRIBUTING.md) to MetroAE by submitting your own code to the project.
