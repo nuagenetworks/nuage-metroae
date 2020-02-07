@@ -19,6 +19,7 @@
 * Check for required disk space on VSD for backup files during upgrade health check (METROAE-1182)
 * Convert shell mkdir tasks to ansible file module (METROAE-1059)
 * Add optional user prompt confirmation before destroying components (METROAE-868)
+* Improved debugging output for vCenter ovftool commands (METROAE-981)
 
 ### Removed
 * Removed obsolete os_vsd_osc_integration playbook and associated role and files.
