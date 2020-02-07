@@ -67,21 +67,22 @@ Services | controls services for component(s) for maintenance |
 
 The following workflows are examples that combine together several of the above operations into simple to use groups:
 
-* install_everything - Deploys all components specified in a deployment.
-* destroy_everything - Destroys all components specified in a deployment.
-* nuage_health - Checks the health of all components specified in a deployment.
+* install everything - Deploys all components specified in a deployment.
+* destroy everything - Destroys all components specified in a deployment.
+* health - Checks the health of all components specified in a deployment.
 
 #### Special Workflows
 Special workflows in MetroAE perform certain specific operations. Some of them are shown below.
 
 Workflow | Operation Description |
 ------------- | ----------- |
-copy_qcow2_files | Copy qcow2 images to target server |
-encrypt-credentials | Encrypt credentials.yml in your deployment |
-unzip-files | Unzip Nuage images |
+tools copy qcow | Copy qcow2 images to target server |
+tools encrypt credentials | Encrypt credentials.yml in your deployment |
+tools unzip images | Unzip Nuage images |
+tools convert csv | Convert spreadsheet (CSV) to deployment |
 wizard | Run MetroAE Wizard |
-renew_vsd_certificates | Renew certificates on VSDs |
-convert_csv_to_deployment | Convert spreadsheet (CSV) to deployment |
+vsd certificates renew | Renew certificates on VSDs |
+vsc harden | Harden the VSC configuration |
 
 
 ## Collecting Triage Collateral : get_debug.py
