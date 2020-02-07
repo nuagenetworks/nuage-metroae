@@ -3,6 +3,14 @@
   set_fact:
     vm_name: "{{ vmname }}"
 
+- name: Setup KVM on target server
+  include_role:
+    name: common
+    tasks_from: setup-kvm
+  vars:
+    required_bridges:
+      - mgmt
+
 - include_role:
     name: check-node-running
 
@@ -18,53 +26,6 @@
   become: "{{ 'no' if target_server_username == 'root' else 'yes' }}"
 
 - block:
-
-  - name: Query Target Server facts
-    action: setup
-    remote_user: "{{ target_server_username }}"
-    delegate_to: "{{ target_server }}"
-
-  - name: Include OS-specific variables.
-    include_vars: "{{ ansible_os_family }}.yml"
-
-  - name: Check target for supported OS
-    fail: msg="Unsupported OS family ({{ ansible_os_family }})"
-    when: ansible_os_family not in supported_target_server_os_family_list
-
-  - name: Check target memory
-    fail: msg="Not enough memory ({{ ansible_memtotal_mb }})"
-    when: ansible_memtotal_mb < target_server_memory_mb_min
-
-  - name: Check target cores
-    fail: msg="Not enough cores ({{ ansible_processor_vcpus }})"
-    when: ansible_processor_vcpus < target_server_vcpus_min
-
-  - name: Check target bridges
-    fail: msg="Required network bridges not found"
-    when: mgmt_bridge not in ansible_interfaces
-
-  - name: Check if required OS packages are installed (ignoring errors)
-    command: 
-      cmd: rpm -q qemu-kvm libvirt bridge-utils libguestfs-tools libvirt-python
-      warn: no
-    register: rpm_check
-    ignore_errors: True
-
-  - name: Check packages for CentOS
-    yum: name={{ item }} state=present
-    with_items:
-     - qemu-kvm
-     - libvirt
-     - bridge-utils
-     - libguestfs-tools
-     - libvirt-python
-    when: rpm_check.rc == 1
-
-  - name: Make sure libvirtd has started
-    service:
-      name: libvirtd
-      enabled: yes
-      state: started
 
   - name: set skip copy images to default
     set_fact:
@@ -179,7 +140,7 @@
   - name: Set the SSH not to use DNS
     command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} echo "UseDNS no" >> /etc/ssh/sshd_config
 
-  - name: Disable SELinux 
+  - name: Disable SELinux
     command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} sh "sed -i 's/SELINUX\=enforcing/SELINUX\=permissive/g' /etc/selinux/config"
 
   - name: Define VM

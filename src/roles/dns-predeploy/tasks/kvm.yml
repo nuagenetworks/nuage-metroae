@@ -1,52 +1,14 @@
 ---
 - block:
 
-  - name: Query {{ target_server }} facts
-    action: setup
-
-  - name: Include OS-specific variables.
-    include_vars: "{{ ansible_os_family }}.yml"
-
-  - name: Check target for supported OS
-    fail: msg="Unsupported OS family ({{ ansible_os_family }})"
-    when: ansible_os_family not in dns_target_server_os_family_list
-
-  - name: Check target memory
-    fail: msg="Not enough memory ({{ ansible_memtotal_mb }})"
-    when: ansible_memtotal_mb < dns_target_server_memory_mb_min
-
-  - name: Check target cores
-    fail: msg="Not enough cores ({{ ansible_processor_vcpus }})"
-    when: ansible_processor_vcpus < dns_target_server_vcpus_min
-
-  - name: Check target bridges
-    fail: msg="Required network bridges not found"
-    when: ( mgmt_bridge not in ansible_interfaces) or
-          ( data_bridge not in ansible_interfaces)
-
-  - name: If RedHat, install packages for RedHat OS family distros
-    yum:
-      name:
-        - qemu-kvm
-        - libvirt
-        - bridge-utils
-        - libguestfs-tools
-        - libvirt-python
-      state: present
-    when: ansible_os_family is match("RedHat")
-    become: true
-
-  - name: If Debian, install packages for Debian OS family distros
-    apt:
-      name:
-        - qemu-kvm
-        - libvirt-bin
-        - bridge-utils
-        - libguestfs-tools
-        - python-libvirt
-      state: present
-    when: ansible_os_family is match("Debian")
-    become: true
+- name: Setup KVM on target server
+  include_role:
+    name: common
+    tasks_from: setup-kvm
+  vars:
+    required_bridges:
+      - mgmt
+      - data
 
   - name: List the Virtual Machines running on {{ target_server }}
     virt: command=list_vms
