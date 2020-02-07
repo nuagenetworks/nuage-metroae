@@ -7,6 +7,7 @@
 * Refactor metroae command to support container management; RPM no longer required.
 * Introduce day-zero VSD configuration support via `metroae config` (container only)
 * Add support for Multiple VSC underlay VPRNs (MetroAE-1175)
+* Add support for VSD disk I/O testing using sysbench (METROAE-1169)
 
 ### Resolved Issues
 * Fix VSC examples to have valid system ip address (MetroAE-1177)
