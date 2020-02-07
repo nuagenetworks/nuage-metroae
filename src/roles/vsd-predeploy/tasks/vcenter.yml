@@ -44,7 +44,7 @@
     vars:
       management_network: "VM Network"
 
-  - name: Deploy VSD image on vCenter (Can take several minutes)
+  - name: Deploy VSD image on vCenter (ignoring errors) (Can take several minutes)
     connection: local
     shell: >-
       {{ ovftool_command }}
@@ -53,10 +53,25 @@
     ignore_errors: yes
     no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
 
-  - name: Debug the deploy logs
+  - name: Show command debug
+    debug:
+      msg: "{{ deploy_result.cmd | replace(vcenter.password | urlencode, '********') }}"
+      verbosity: 1
+
+  - name: Show stdout debug
+    debug:
+      msg: "{{ deploy_result.stdout | replace(vcenter.password | urlencode, '********') }}"
+      verbosity: 1
+
+  - name: Show stderr debug
+    debug:
+      msg: "{{ deploy_result.stderr | replace(vcenter.password | urlencode, '********') }}"
+      verbosity: 1
+
+  - name: Assert command succeeded
     assert:
       that: deploy_result.rc == 0
-      fail_msg: "{{deploy_result.stdout}}"
+      fail_msg: "{{deploy_result.stderr | replace(vcenter.password | urlencode, '********') }}"
 
   - name: Waiting until VMware tools becomes available
     connection: local
