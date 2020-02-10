@@ -51,10 +51,10 @@
 
 - block:
   - name: set skip copy images to default
-    set_fact: 
+    set_fact:
       skip_copy_images: False
-    when: skip_copy_images is undefined 
-    
+    when: skip_copy_images is undefined
+
   - include_role:
       name: common
       tasks_from: copy_qcow2.yml
@@ -63,19 +63,19 @@
       qcow2_file_name: "{{ proxy_vm_qcow2_file_name }}"
     when: not skip_copy_images
 
-  - block: 
+  - block:
     - name: Check to make sure there is an existing qcow image
-      stat: 
+      stat:
         path: "{{ images_path }}/{{ vmname }}/{{ proxy_vm_qcow2_file_name }}"
       register: statResult
-      
+
     - name: check the result of image find command
       assert:
         that: statResult.stat.exists == True
         msg: Missing qcow2 file in {{ images_path }}/{{ vmname }}/{{ proxy_vm_qcow2_file_name }}
-        
+
     when: skip_copy_images
-    
+
   - name: Get list of partitions
     shell: "guestfish -r -a {{ guestfish_dest }} run : list-filesystems | grep -Ev '(unknown|swap)'"
     register: partitions_list
@@ -100,74 +100,62 @@
   register: current_user_ssh_key
 
 - block:
+
   - name: Create a temporary copy of the network script for eth0
-    template: src=ifcfg-eth0.j2 backup=no dest={{ images_path }}/{{ vmname }}/ifcfg-eth0
+    template:
+      src: ifcfg-eth0.j2
+      backup: no
+      dest: "{{ images_path }}/{{ vmname }}/ifcfg-eth0"
 
-  - name: Copy eth0 network script file to the proxy_vm image
-    command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} copy-in {{ images_path }}/{{ vmname }}/ifcfg-eth0 /etc/sysconfig/network-scripts/
+  - name: Inject ifcfg-eth0 into proxy qcow image
+    include_role:
+      name: common
+      tasks_from: kvm-inject-file
+    vars:
+      dest_file_name: ifcfg-eth0
+      dest_path: /etc/sysconfig/network-scripts
 
-  - name: Remove temporary copy of eth0 network script
-    file: path={{ images_path }}/{{ vmname }}/ifcfg-eth0 state=absent
 
-  - name: Set the owner and group on the eth0 network script file in the proxy_vm image
-    command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} chown 0 0 /etc/sysconfig/network-scripts/ifcfg-eth0
+  - name: Create a temporary copy of the hostname file
+    template:
+      src: hostname.j2
+      backup: no
+      dest: "{{ images_path }}/{{ vmname }}/hostname"
 
-  - name: Create the directory /root/.ssh for authorized_keys
-    command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} mkdir-p /root/.ssh
+  - name: Inject network into proxy qcow image
+    include_role:
+      name: common
+      tasks_from: kvm-inject-file
+    vars:
+      dest_file_name: network
+      dest_path: /etc/sysconfig
 
-  - name: Set the mode for the .ssh folder on the proxy_vm image
-    command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} chmod 0700 /root/.ssh
+  - name: "Create a temporary copy of the network script for ifcfg-br0 on {{ target_server }}"
+    template:
+      src: ifcfg-br0.j2
+      backup: no
+      dest: "{{ images_path }}/{{ vmname }}/ifcfg-br0"
 
-  - name: Set the owner and group for the /root/.ssh directory on the proxy_vm image
-    command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} chown 0 0 /root/.ssh
+  - name: Inject ifcfg-br0 into proxy qcow image
+    include_role:
+      name: common
+      tasks_from: kvm-inject-file
+    vars:
+      dest_file_name: ifcfg-br0
+      dest_path: /etc/sysconfig/network-scripts
 
-  - name: Create a temporary copy of the hostname file 
-    template: src=hostname.j2 backup=no dest={{ images_path }}/{{ vmname }}/hostname
+  - name: Inject SSH keys into proxy qcow image
+    include_role:
+      name: common
+      tasks_from: kvm-inject-ssh-keys
 
-  - name: Copy hostname file to the image
-    command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} copy-in {{ images_path }}/{{ vmname }}/hostname /etc/
+  - name: Define and start proxy VM
+    include_role:
+      name: common
+      tasks_from: kvm-start-vm
+    vars:
+      vm_xml: "{{ lookup('template', 'proxy_vm.xml.j2') }}"
+      autostart_enabled: false
 
-  - name: Remove temporary copy of hostname file
-    file: path={{ images_path }}/{{ vmname }}/hostname state=absent
-
-  - name: Set the owner and group for the hostname file on the VSD image
-    command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} chown 0 0 /etc/hostname
-
-  - name: Create a temporary copy of the authorized_keys file
-    template: src=authorized_keys.j2 backup=no dest={{ images_path }}/{{ vmname }}/authorized_keys
-
-  - name: Copy authorized_keys file to the proxy_vm image
-    command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} copy-in {{ images_path }}/{{ vmname }}/authorized_keys /root/.ssh/
-
-  - name: Remove temporary copy of authorized_keys file
-    file: path={{ images_path }}/{{ vmname }}/authorized_keys state=absent
-
-  - name: Set the owner and group for the authorized_keys file on the proxy_vm image
-    command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} chown 0 0 /root/.ssh/authorized_keys
-
-  - name: Set the mode for the authorized_keys file on the proxy_vm image
-    command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} chmod 0640 /root/.ssh/authorized_keys
-
-  - name: Create a temporary copy of the network script for ifcfg-br0 on {{ target_server }}
-    template: src=ifcfg-br0.j2 backup=no dest={{ images_path }}/{{ vmname }}/ifcfg-br0
-
-  - name: Copy ifcfg-br0 network script file to the Proxy VM image on {{ target_server }}
-    command: guestfish --rw -a {{ images_path }}/{{ vmname }}/{{ proxy_vm_qcow2_file_name }} -m {{ guestfish_mount }} copy-in {{ images_path }}/{{ vmname }}/ifcfg-br0 /etc/sysconfig/network-scripts/
-
-  - name: Remove temporary copy of ifcfg-br0 network script
-    file: path={{ images_path }}/{{ vmname }}/ifcfg-br0 state=absent
-
-  - name: Set the owner and group on the ifcfg-br0 network script file in the Proxy VM image
-    command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} chown 0 0 /etc/sysconfig/network-scripts/ifcfg-br0
-
-  - name: "Define new VM"
-    virt: name="{{ vmname }}"
-          command=define
-          xml="{{ lookup('template', 'proxy_vm.xml.j2') }}"
-
-  - name: "Run Proxy VM"
-    virt: name="{{ vmname }}"
-          state=running
-          uri=qemu:///system
   delegate_to: "{{ target_server }}"
   remote_user: "{{ target_server_username }}"
