@@ -3,51 +3,26 @@
   set_fact:
     vm_name: "{{ vmname }}"
 
+- name: Setup KVM on target server
+  include_role:
+    name: common
+    tasks_from: setup-kvm
+  vars:
+    required_bridges:
+      - mgmt
+
 - include_role:
     name: check-node-running
 
 - name: Display if skipping predeploy
   debug:
     msg:
-      - "****************************************************"
+      - "******************************************************"
       - "Skipping NUH VM creation because it is already present"
-      - "****************************************************"
+      - "******************************************************"
   when: node_running
-  delegate_to: "{{ target_server }}"
-  remote_user: "{{ target_server_username }}"
-  become: "{{ 'no' if target_server_username == 'root' else 'yes' }}"
 
 - block:
-
-  - name: Query Target Server facts
-    action: setup
-    remote_user: "{{ target_server_username }}"
-    delegate_to: "{{ target_server }}"
-
-  - name: Include OS-specific variables.
-    include_vars: "{{ ansible_os_family }}.yml"
-
-  - name: Check target for supported OS
-    fail: msg="Unsupported OS family ({{ ansible_os_family }})"
-    when: ansible_os_family not in supported_target_server_os_family_list
-
-  - name: Check target memory
-    fail: msg="Not enough memory ({{ ansible_memtotal_mb }})"
-    when: ansible_memtotal_mb < target_server_memory_mb_min
-
-  - name: Check target cores
-    fail: msg="Not enough cores ({{ ansible_processor_vcpus }})"
-    when: ansible_processor_vcpus < target_server_vcpus_min
-
-  - name: Check target bridges
-    fail: msg="Required network bridges not found"
-    when: mgmt_bridge not in ansible_interfaces
-
-  - name: Make sure libvirtd has started
-    service:
-      name: libvirtd
-      enabled: yes
-      state: started
 
   - name: set skip copy images to default
     set_fact:
@@ -77,13 +52,6 @@
     set_fact:
       guestfish_dest: "{{ images_path }}/{{ vm_name }}/{{ image_file_name }}"
 
-  - name: Get the public key for the current user
-    local_action: command cat "{{ user_ssh_pub_key }}"
-    register: current_user_ssh_key
-
-  - name: Create a temporary copy of the network script for eth0
-    template: src=ifcfg-eth0.j2 backup=no dest={{ images_path }}/{{ vm_name }}/ifcfg-eth0
-
   - name: Get guestfish mount for qcow2
     include_role:
       name: common
@@ -96,14 +64,19 @@
       that: "guestfish_mount is defined"
       msg: "guestfish mount point was not found. Are you using the correct qcow2 file?"
 
-  - name: Copy eth0 network script file to the NUH image
-    command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} copy-in {{ images_path }}/{{ vm_name }}/ifcfg-eth0 /etc/sysconfig/network-scripts/
+  - name: Create a temporary copy of the network script for eth0
+    template:
+      src: ifcfg-eth0.j2
+      backup: no
+      dest: "{{ images_path }}/{{ vm_name }}/ifcfg-eth0"
 
-  - name: Remove temporary copy of eth0 network script
-    file: path={{ images_path }}/{{ vm_name }}/ifcfg-eth0 state=absent
-
-  - name: Set the owner and group on the eth0 network script file in the Portal image
-    command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} chown 0 0 /etc/sysconfig/network-scripts/ifcfg-eth0
+  - name: Inject ifcfg-eth0 into NUH qcow image
+    include_role:
+      name: common
+      tasks_from: kvm-inject-file
+    vars:
+      dest_file_name: ifcfg-eth0
+      dest_path: /etc/sysconfig/network-scripts
 
   - name: Create a temporary copy of the syscfg network file
     template:
@@ -111,71 +84,50 @@
       dest: "{{ images_path }}/{{ vm_name }}/network"
       backup: no
 
-  - name: Copy network file to the Portal image
-    command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} copy-in {{ images_path }}/{{ vm_name }}/network /etc/sysconfig/
-
-  - name: Remove temporary copy of network file
-    file: path={{ images_path }}/{{ vm_name }}/network state=absent
-
-  - name: Set the owner and group for the network hostname file on the Portal image
-    command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} chown 0 0 /etc/sysconfig/network
+  - name: Inject network into NUH qcow image
+    include_role:
+      name: common
+      tasks_from: kvm-inject-file
+    vars:
+      dest_file_name: network
+      dest_path: /etc/sysconfig
 
   - name: Create a temporary copy of the hostname file
-    template: src=hostname.j2 backup=no dest={{ images_path }}/{{ vm_name }}/hostname
+    template:
+      src: "{{ role_path }}/../common/templates/hostname.j2"
+      backup: no
+      dest: "{{ images_path }}/{{ vm_name }}/hostname"
 
-  - name: Copy hostname file to the Portal image
-    command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} copy-in {{ images_path }}/{{ vm_name }}/hostname /etc/
+  - name: Inject hostname into NUH qcow image
+    include_role:
+      name: common
+      tasks_from: kvm-inject-file
+    vars:
+      dest_file_name: hostname
+      dest_path: /etc
 
-  - name: Remove temporary copy of hostname file
-    file: path={{ images_path }}/{{ vm_name }}/hostname state=absent
+  - name: Get the public key for the current user
+    local_action: command cat "{{ user_ssh_pub_key }}"
+    register: current_user_ssh_key
 
-  - name: Set the owner and group for the hostname file on the Portal image
-    command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} chown 0 0 /etc/hostname
-
-  - name: Create the directory /root/.ssh for authorized_keys
-    command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} mkdir-mode /root/.ssh 0700
-    ignore_errors: yes
-
-  - name: Set the owner and group for the /root/.ssh directory on the Portal image
-    command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} chown 0 0 /root/.ssh
-
-  - name: Create a temporary copy of the authorized_keys file
-    template: src=authorized_keys.j2 backup=no dest={{ images_path }}/{{ vm_name }}/authorized_keys
-
-  - name: Copy authorized_keys file to the Portal image
-    command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} copy-in {{ images_path }}/{{ vm_name }}/authorized_keys /root/.ssh/
-
-  - name: Remove temporary copy of authorized_keys file
-    file: path={{ images_path }}/{{ vm_name }}/authorized_keys state=absent
-
-  - name: Set the owner and group for the authorized_keys file on the Portal image
-    command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} chown 0 0 /root/.ssh/authorized_keys
-
-  - name: Set the mode for the authorized_keys file on the Portal image
-    command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} chmod 0640 /root/.ssh/authorized_keys
+  - name: Inject SSH keys into VSD qcow image
+    include_role:
+      name: common
+      tasks_from: kvm-inject-ssh-keys
 
   - name: Set the SSH not to use DNS
     command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} echo "UseDNS no" >> /etc/ssh/sshd_config
 
-  - name: Disable SELinux 
+  - name: Disable SELinux
     command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} sh "sed -i 's/SELINUX\=enforcing/SELINUX\=permissive/g' /etc/selinux/config"
 
-  - name: Define VM
-    virt: name={{ vm_name }}
-          command=define
-          xml="{{ lookup('template', 'nuh.xml.j2') }}"
-          uri=qemu:///system
-
-  - name: Autostart
-    virt: name={{ vm_name }}
-          command=status
-          autostart=True
-          uri=qemu:///system
-
-  - name: Run VM
-    virt: name={{ vm_name }}
-          state=running
-          uri=qemu:///system
+  - name: Define and start NUH VM
+    include_role:
+      name: common
+      tasks_from: kvm-start-vm
+    vars:
+      vm_xml: "{{ lookup('template', 'nuh.xml.j2') }}"
+      autostart_enabled: true
 
   when: not node_running
   delegate_to: "{{ target_server }}"
