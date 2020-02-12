@@ -3,64 +3,14 @@
   set_fact:
     vm_name: "{{ vmname }}"
 
-- name: Query Target Server facts
-  action: setup
-  remote_user: "{{ target_server_username }}"
-  delegate_to: "{{ target_server }}"
-  become: "{{ 'no' if target_server_username == 'root' else 'yes' }}"
-
-- name: Include OS-specific variables.
-  include_vars: "{{ ansible_os_family }}.yml"
-
-- name: Check target for supported OS
-  fail: msg="Unsupported OS family ({{ ansible_os_family }})"
-  when: ansible_os_family not in supported_target_server_os_family_list
-
-- name: Check target memory
-  fail: msg="Not enough memory ({{ ansible_memtotal_mb }})"
-  when: ansible_memtotal_mb < target_server_memory_mb_min
-
-- name: Check target cores
-  fail: msg="Not enough cores ({{ ansible_processor_vcpus }})"
-  when: ansible_processor_vcpus < target_server_vcpus_min
-
-- name: Check target bridges
-  fail: msg="Required network bridges not found"
-  when: (mgmt_bridge not in ansible_interfaces) or
-        (data_bridge not in ansible_interfaces)
-
-- block:
-
-  - name: Check if required OS packages are installed (ignoring errors)
-    command:
-      cmd: rpm -q qemu-kvm libvirt bridge-utils libguestfs-tools libvirt-python
-      warn: no
-    register: rpm_check
-    ignore_errors: True
-
-  - name: Print rpm_check when verbosity >= 1
-    debug: var=rpm_check verbosity=1
-
-  - name: If RedHat, install packages for RedHat OS family distros
-    yum:
-      name:
-       - qemu-kvm
-       - libvirt
-       - bridge-utils
-       - libguestfs-tools
-       - libvirt-python
-      state: present
-    when: rpm_check.rc == 1
-
-  - name: Make sure libvirtd has started
-    service:
-      name: libvirtd
-      enabled: yes
-      state: started
-
-  delegate_to: "{{ target_server }}"
-  remote_user: "{{ target_server_username }}"
-  become: "{{ 'no' if target_server_username == 'root' else 'yes' }}"
+- name: Setup KVM on target server
+  include_role:
+    name: common
+    tasks_from: setup-kvm
+  vars:
+    required_bridges:
+      - mgmt
+      - data
 
 - include_role:
     name: check-node-running
@@ -75,30 +25,17 @@
 
 - block:
 
-  - name: set skip copy images to default
-    set_fact:
-      skip_copy_images: False
-    when: skip_copy_images is undefined
-
-  - include_tasks: copy_qcow2.yml
-    when: not skip_copy_images
-
-  - block:
-
-    - name: Check to make sure there is an existing qcow image
-      stat:
-        path: "{{ images_path }}/{{ vm_name }}/{{ inventory_hostname }}.qcow2"
-      register: statResult
-
-    - name: check the result of image find command
-      assert:
-        that: statResult.stat.exists == True
-        msg: Missing qcow2 file {{ images_path }}/{{ vm_name }}/{{ inventory_hostname }}.qcow2
-
-    when: skip_copy_images
+  - include_role:
+      name: common
+      tasks_from: copy-qcow2
+    vars:
+      dest_filename: "{{ inventory_hostname }}.qcow2"
 
   - name: Setup VSC temporary configuration files
-    template: src=bof.cfg.j2 backup=no dest={{ images_path }}/{{ vm_name }}/bof.cfg
+    template:
+      src: bof.cfg.j2
+      backup: no
+      dest: "{{ images_path }}/{{ vm_name }}/bof.cfg"
 
   - name: Copy temporary configuration files to the VSC image
     command: guestfish --rw -a {{ images_path }}/{{ vm_name }}/{{ inventory_hostname }}.qcow2 -m {{ vsc_partition }} copy-in {{ images_path }}/{{ vm_name }}/bof.cfg /
@@ -110,22 +47,13 @@
     shell: "fallocate -l {{ vsc_fallocate_size_gb }}G {{ images_path }}/{{ vm_name }}/{{ inventory_hostname }}.qcow2"
     when: vsc_fallocate_size_gb > 0
 
-  - name: Define VM
-    virt: name={{ vm_name }}
-          command=define
-          xml="{{ lookup('template', 'vsc.xml.j2') }}"
-          uri=qemu:///system
-
-  - name: Autostart
-    virt: name={{ vm_name }}
-          command=status
-          autostart=True
-          uri=qemu:///system
-
-  - name: Run VM
-    virt: name={{ vm_name }}
-          state=running
-          uri=qemu:///system
+  - name: Define and start VSC VM
+    include_role:
+      name: common
+      tasks_from: kvm-start-vm
+    vars:
+      vm_xml: "{{ lookup('template', 'vsc.xml.j2') }}"
+      autostart_enabled: true
 
   when: not node_present
   delegate_to: "{{ target_server }}"

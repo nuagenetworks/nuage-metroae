@@ -1,68 +1,30 @@
 ---
 - block:
 
-  - name: Query {{ target_server }} facts
-    action: setup
+  - name: Setup KVM on target server
+    include_role:
+      name: common
+      tasks_from: setup-kvm
+    vars:
+      required_bridges:
+        - mgmt
+        - data
 
-  - name: Include OS-specific variables.
-    include_vars: "{{ ansible_os_family }}.yml"
-
-  - name: Check target for supported OS
-    fail: msg="Unsupported OS family ({{ ansible_os_family }})"
-    when: ansible_os_family not in dns_target_server_os_family_list
-
-  - name: Check target memory
-    fail: msg="Not enough memory ({{ ansible_memtotal_mb }})"
-    when: ansible_memtotal_mb < dns_target_server_memory_mb_min
-
-  - name: Check target cores
-    fail: msg="Not enough cores ({{ ansible_processor_vcpus }})"
-    when: ansible_processor_vcpus < dns_target_server_vcpus_min
-
-  - name: Check target bridges
-    fail: msg="Required network bridges not found"
-    when: ( mgmt_bridge not in ansible_interfaces) or
-          ( data_bridge not in ansible_interfaces)
-
-  - name: If RedHat, install packages for RedHat OS family distros
-    yum:
-      name:
-        - qemu-kvm
-        - libvirt
-        - bridge-utils
-        - libguestfs-tools
-        - libvirt-python
-      state: present
-    when: ansible_os_family is match("RedHat")
-    become: true
-
-  - name: If Debian, install packages for Debian OS family distros
-    apt:
-      name:
-        - qemu-kvm
-        - libvirt-bin
-        - bridge-utils
-        - libguestfs-tools
-        - python-libvirt
-      state: present
-    when: ansible_os_family is match("Debian")
-    become: true
-
-  - name: List the Virtual Machines running on {{ target_server }}
+  - name: "List the Virtual Machines running on {{ target_server }}"
     virt: command=list_vms
     register: virt_vms
 
-  - name: Check if the VM is already running on {{ target_server }}
+  - name: "Check if the VM is already running on {{ target_server }}"
     fail: msg="The VM is already defined on this target_server."
     when: vm_name in virt_vms.list_vms
 
-  - name: Create libvirt image directory on {{ target_server }}
+  - name: "Create libvirt image directory on {{ target_server }}"
     file: path={{ images_path }}/{{ vm_name }}
           state=directory
           owner={{ libvirt.user }}
           group={{ libvirt.group }}
 
-  - name: Copy the DNS qcow image to virt images directory on {{ target_server }}
+  - name: "Copy the DNS qcow image to virt images directory on {{ target_server }}"
     copy: src={{ image_path }}/{{ image_file_name }}
           dest={{ images_path }}/{{ vm_name }}
           owner={{ libvirt.user }}
@@ -71,9 +33,6 @@
   - name: Set local variable with vsd guestfish destination
     set_fact:
       guestfish_dest: "{{ images_path }}/{{ vm_name }}/{{ image_file_name }}"
-
-  - name: Create a temporary copy of the network script for eth0 on {{ target_server }}
-    template: src=ifcfg-eth0.j2 backup=no dest={{ images_path }}/{{ vm_name }}/ifcfg-eth0
 
   - name: Get guestfish mount for qcow2
     include_role:
@@ -87,26 +46,33 @@
       that: "guestfish_mount is defined"
       msg: "guestfish mount point was not found. Are you using the correct qcow2 file?"
 
-  - name: Copy eth0 network script file to the DNS image on {{ target_server }}
-    command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} copy-in {{ images_path }}/{{ vm_name }}/ifcfg-eth0 /etc/sysconfig/network-scripts/
+  - name: "Create a temporary copy of the network script for eth0 on {{ target_server }}"
+    template:
+      src: ifcfg-eth0.j2
+      backup: no
+      dest: "{{ images_path }}/{{ vm_name }}/ifcfg-eth0"
 
-  - name: Remove temporary copy of eth0 network script
-    file: path={{ images_path }}/{{ vm_name }}/ifcfg-eth0 state=absent
+  - name: Inject ifcfg-eth0 into DNS qcow image
+    include_role:
+      name: common
+      tasks_from: kvm-inject-file
+    vars:
+      dest_file_name: ifcfg-eth0
+      dest_path: /etc/sysconfig/network-scripts
 
-  - name: Set the owner and group on the eth0 network script file in the DNS image
-    command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} chown 0 0 /etc/sysconfig/network-scripts/ifcfg-eth0
+  - name: "Create a temporary copy of the network script for eth1 on {{ target_server }}"
+    template:
+      src: ifcfg-eth1.j2
+      backup: no
+      dest: "{{ images_path }}/{{ vm_name }}/ifcfg-eth1"
 
-  - name: Create a temporary copy of the network script for eth1 on {{ target_server }}
-    template: src=ifcfg-eth1.j2 backup=no dest={{ images_path }}/{{ vm_name }}/ifcfg-eth1
-
-  - name: Copy eth1 network script file to the DNS image on {{ target_server }}
-    command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} copy-in {{ images_path }}/{{ vm_name }}/ifcfg-eth1 /etc/sysconfig/network-scripts/
-
-  - name: Remove temporary copy of eth1 network script
-    file: path={{ images_path }}/{{ vm_name }}/ifcfg-eth1 state=absent
-
-  - name: Set the owner and group on the eth1 network script file in the DNS image
-    command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} chown 0 0 /etc/sysconfig/network-scripts/ifcfg-eth1
+  - name: Inject ifcfg-eth1 into DNS qcow image
+    include_role:
+      name: common
+      tasks_from: kvm-inject-file
+    vars:
+      dest_file_name: ifcfg-eth1
+      dest_path: /etc/sysconfig/network-scripts
 
   - name: Create a temporary copy of the syscfg network file on {{ target_server }}
     template:
@@ -114,65 +80,53 @@
       dest: "{{ images_path }}/{{ vm_name }}/network"
       backup: no
 
-  - name: Copy network file to the DNS image
-    command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} copy-in {{ images_path }}/{{ vm_name }}/network /etc/sysconfig/
-
-  - name: Remove temporary copy of network file
-    file: path={{ images_path }}/{{ vm_name }}/network state=absent
+  - name: Inject network into DNS qcow image
+    include_role:
+      name: common
+      tasks_from: kvm-inject-file
+    vars:
+      dest_file_name: network
+      dest_path: /etc/sysconfig
 
   - block:
-    - name: Create a temporary copy of the network script for route-eth1 on {{ target_server }}
-      template: src=route-eth1.j2 backup=no dest={{ images_path }}/{{ vm_name }}/route-eth1
 
-    - name: Copy route-eth1 network script file to the DNS image on {{ target_server }}
-      command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} copy-in {{ images_path }}/{{ vm_name }}/route-eth1 /etc/sysconfig/network-scripts/
+    - name: "Create a temporary copy of the network script for route-eth1 on {{ target_server }}"
+      template:
+        src: route-eth1.j2
+        backup: no
+        dest: "{{ images_path }}/{{ vm_name }}/route-eth1"
 
-    - name: Remove temporary copy of route-eth1 network script
-      file: path={{ images_path }}/{{ vm_name }}/route-eth1 state=absent
+    - name: Inject route-eth1 into DNS qcow image
+      include_role:
+        name: common
+        tasks_from: kvm-inject-file
+      vars:
+        dest_file_name: route-eth1
+        dest_path: /etc/sysconfig/network-scripts
 
-    - name: Set the owner and group on the route-eth1 network script file in the DNS image
-      command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} chown 0 0 /etc/sysconfig/network-scripts/route-eth1
     when: data_gateway is defined
 
-  - name: Set the owner and group for the network hostname file on the DNS image
-    command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} chown 0 0 /etc/sysconfig/network
-
-  - name: Create the directory /root/.ssh for authorized_keys (ignoring errors)
-    command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} mkdir-mode /root/.ssh 0700
-    ignore_errors: yes
-
-  - name: Set the owner and group for the /root/.ssh directory on the DNS image
-    command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} chown 0 0 /root/.ssh
+  - name: Inject SSH keys into VSD qcow image
+    include_role:
+      name: common
+      tasks_from: kvm-inject-ssh-keys
 
   - name: Get the public key for the current user
     local_action: command cat "{{ user_ssh_pub_key }}"
     register: current_user_ssh_key
 
-  - name: Create a temporary copy of the authorized_keys file
-    template: src=authorized_keys.j2 backup=no dest={{ images_path }}/{{ vm_name }}/authorized_keys
+  - name: Inject SSH keys into DNS qcow image
+    include_role:
+      name: common
+      tasks_from: kvm-inject-ssh-keys
 
-  - name: Copy authorized_keys file to the DNS image
-    command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} copy-in {{ images_path }}/{{ vm_name }}/authorized_keys /root/.ssh/
-
-  - name: Remove temporary copy of authorized_keys file
-    file: path={{ images_path }}/{{ vm_name }}/authorized_keys state=absent
-
-  - name: Set the owner and group for the authorized_keys file on the DNS image
-    command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} chown 0 0 /root/.ssh/authorized_keys
-
-  - name: Set the mode for the authorized_keys file on the DNS image
-    command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} chmod 0640 /root/.ssh/authorized_keys
-
-  - name: "Define new DNS VM"
-    virt: name="{{ vm_name }}"
-          command=define
-          xml="{{ lookup('template', 'dns.xml.j2') }}"
-          uri=qemu:///system
-
-  - name: "Run DNS VM"
-    virt: name="{{ vm_name }}"
-          state=running
-          uri=qemu:///system
+  - name: Define and start VSD VM
+    include_role:
+      name: common
+      tasks_from: kvm-start-vm
+    vars:
+      vm_xml: "{{ lookup('template', 'dns.xml.j2') }}"
+      autostart_enabled: false
 
   delegate_to: "{{ target_server }}"
   remote_user: "{{ target_server_username }}"
