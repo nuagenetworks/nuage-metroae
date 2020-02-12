@@ -9,7 +9,7 @@
 * Add support for Multiple VSC underlay VPRNs (MetroAE-1175)
 * Add support for VSD disk I/O testing using sysbench (METROAE-1169)
 * Add VSC hardening (METROAE-1183)
-* Add support for VSD certificate renewal standalone procedure (MetroAE-1188)
+* Add support for VSD certificate renewal standalone procedure (METROAE-1188)
 
 ### Resolved Issues
 * Fix VSC examples to have valid system ip address (METROAE-1177)
@@ -21,6 +21,7 @@
 * Convert shell mkdir tasks to ansible file module (METROAE-1059)
 * Add optional user prompt confirmation before destroying components (METROAE-868)
 * Improved debugging output for vCenter ovftool commands (METROAE-981)
+* Vastly improved predeploy roles for code reuse (METROAE-801)
 
 ### Removed
 * Removed obsolete os_vsd_osc_integration playbook and associated role and files.
