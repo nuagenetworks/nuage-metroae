@@ -16,24 +16,19 @@
       ignore_errors: vsd_force_cluster_failover | default(no)
       with_items: "{{ groups['primary_vsds'] }}"
 
-    run_once: true
-
-  - name: Check health of active and standby vsd cluster
-    include_role:
-      name: vsd-health
-      tasks_from: monit_status
-    vars:
-      no_report: "True"
-    when: not skip_health_check | default(false)
-    ignore_errors: vsd_force_cluster_failover | default(no)
-
-  - block:
-
-    - debug: var=ping_result
+    - name: Check health of active and standby vsd cluster
+      include_role:
+        name: vsd-health
+        tasks_from: monit_status
+      vars:
+        no_report: "True"
+      when: not skip_health_check | default(false)
+      ignore_errors: vsd_force_cluster_failover | default(no)
+      run_once: false
 
     - name: Set the reachablility flag for primary vsds
       set_fact:
-        is_primary_reachable: "{{ ping_result.rc == 0 }}"
+        is_primary_reachable: "{{ ping_result|success }}"
       delegate_to: "{{ item }}"
       with_items: "{{ groups['primary_vsds'] }}"
 
