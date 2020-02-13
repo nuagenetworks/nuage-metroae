@@ -9,6 +9,7 @@
 * Add support for Multiple VSC underlay VPRNs (METROAE-1175)
 * Add VSC hardening (METROAE-1183)
 * Add support for VSD certificate renewal standalone procedure (METROAE-1188)
+* Add VSD cluster latency test with configurable max latency (METROAE-766)
 
 ### Resolved Issues
 * Fix VSC examples to have valid system ip address (METROAE-1177)
