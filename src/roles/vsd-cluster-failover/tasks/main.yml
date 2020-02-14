@@ -70,13 +70,13 @@
         run_once: true
 
       - name: Switch replication role of standby VSD cluster when using active standby VSTATs
-        command: "/opt/vsd/bin/vsd-switch-replication-cluster-role --role active -e {{ activeEsNodes.stdout }}"
+        command: "/opt/vsd/bin/vsd-switch-replication-cluster-role --role active -e {{ activeEsNodes.results[0].stdout }}"
         delegate_to: "{{ item }}"
         with_items: "{{ groups['standby_vsds'] }}"
 
       when:
-        - groups['vstats'] is defined
-        - groups['vstats'] | length > 3
+        - groups['backup_vstats'] is defined
+        - groups['backup_vstats'] | length == 3
         - is_primary_reachable | default(false)
 
     - name: Switch replication role of standby VSD cluster when using clustered VSTATs
@@ -105,7 +105,9 @@
 
     - name: Switch replication role of standby VSD cluster when not using VSTAT
       command: "/opt/vsd/bin/vsd-switch-replication-cluster-role --role active"
-      when: groups['vstats'] is not defined or (groups['vstats'] is defined and groups['vstats'] | length == 0)
+      when:
+        - groups['vstats'] is not defined or (groups['vstats'] is defined and groups['vstats'] | length == 0)
+        - groups['backup_vstats'] is not defined
       delegate_to: "{{ item }}"
       with_items: "{{ groups['standby_vsds'] }}"
 
