@@ -1,0 +1,37 @@
+- name: Prepare sysbench to run
+  shell: "sysbench --test=fileio --file-total-size={{ disk_performance_file_total_size }} prepare"
+  register: sysbench_prepare
+  ignore_errors: true
+
+- name: Run sysbench test
+  shell: "sysbench --test=fileio --file-total-size={{ disk_performance_file_total_size }} --file-test-mode=rndrw --init-rng=on --max-time=300 --max-requests=0 run"
+  register: sysbench_output
+  ignore_errors: true
+  when: sysbench_prepare.rc == 0
+
+- name: Cleanup sysbench files
+  shell: "sysbench --test=fileio --file-total-size={{ disk_performance_file_total_size }} cleanup"
+
+- name: Verify sysbench preparation was successful
+  fail:
+    msg: "There was an error during the preparation process. This may have been caused due to insufficient disk space on VSD."
+  when: sysbench_prepare.rc != 0
+
+- name: Verify sysbench test ran successfully
+  fail:
+    msg: "There was an unexpected error during the sysbench run."
+  when: sysbench_output.rc != 0
+
+- block:
+  - name: Get disk performance value
+    set_fact:
+      disk_performance_val: "{{ sysbench_output.stdout | regex_search('\\d.*(Requests\\/sec)') | regex_search('\\d*\\.\\d*') }}"
+
+  - name: Verify disk performance value meets the specified threshold
+    assert:
+      that: "disk_performance_val|int >= {{ disk_performance_minimum_threshold }}"
+      msg: "Disk performance (IOPS) value does not meet the specified minimum threshold"
+
+  when:
+    - sysbench_prepare.rc == 0
+    - sysbench_output.rc == 0
