@@ -1,0 +1,8 @@
+- name: Get free disk space on hypervisor
+  shell: df / | tail -n 1 | awk '{print $4}'
+  register: hypervisor_free_space_kb
+
+- name: Ensure there is enough free space before predeploy
+  assert:
+    that: hypervisor_free_space_kb.stdout | int > (required_available_space * 1024 * 1024)
+    msg: "Insufficent disk space {{ hypervisor_free_space_kb.stdout | float / (1024 * 1024) }} GB for predeploy "
