@@ -52,3 +52,15 @@
     when: component_type | default("NONE") == 'vrs'
 
   when: not vsd_inplace_upgrade | default(false)
+
+- block:
+
+  - name: Check available disk space on hypervisor
+    include_role:
+      name: common
+      tasks_from: check-hypervisor-disk-space
+    vars:
+      required_available_space: "{{ required_available_space }}"
+      path: "{{ path }}"
+
+  when: target_server_type | default('NONE') is match("kvm")

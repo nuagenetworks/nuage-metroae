@@ -43,13 +43,6 @@
   - name: Remove temporary configuration files
     file: path={{ images_path }}/{{ vm_name }}/bof.cfg state=absent
 
-  - name: Check available disk space on hypervisor
-    include_role:
-      name: common
-      tasks_from: check-hypervisor-disk-space
-    vars:
-      required_available_space: "{{ vsc_fallocate_size_gb }}"
-
   - name: Preallocate disk space to avoid pausing the VM, this also checks disk space
     shell: "fallocate -l {{ vsc_fallocate_size_gb }}G {{ images_path }}/{{ vm_name }}/{{ inventory_hostname }}.qcow2"
     when: vsc_fallocate_size_gb > 0
