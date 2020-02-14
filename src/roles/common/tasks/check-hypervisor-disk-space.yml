@@ -2,6 +2,15 @@
   shell: "df {{ path }} | tail -n 1 | awk '{print $4}'"
   register: hypervisor_free_space_kb
 
+- name: Set required space in kb
+  set_fact:
+    required_space_kb: {{ required_available_space | float  * (1024 * 1024) }}
+
+- debug: var=required_available_space
+- debug: var=hypervisor_free_space_kb.stdout
+- debug: var=hypervisor_free_space_kb.stdout | int
+- debug: var=required_space_kb
+
 - name: Ensure there is enough free space before predeploy
   assert:
     that: hypervisor_free_space_kb.stdout | int > (required_available_space * 1024 * 1024)
