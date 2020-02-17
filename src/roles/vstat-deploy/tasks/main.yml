@@ -271,19 +271,6 @@
     - "_svc_firewalld.rc == 0"
     - "_svc_iptables.rc != 0"
 
-- name: Configure yum proxy
-  lineinfile:
-    dest: /etc/yum.conf
-    regexp: "^proxy="
-    line: "proxy={{ yum_proxy }}"
-  when: yum_proxy is not match('NONE')
-
-- name: Execute a yum update (Can take 20 minutes)
-  yum:
-    name: '*'
-    state: latest
-  when: yum_update
-
 - block:
 
   - name: Update /etc/hosts file on VSTAT
@@ -310,6 +297,19 @@
       name: elasticsearch
       state: restarted
     remote_user: "{{ vstat_default_username }}"
+  
+  - name: Configure yum proxy
+    lineinfile:
+      dest: /etc/yum.conf
+      regexp: "^proxy="
+      line: "proxy={{ yum_proxy }}"
+    when: yum_proxy is not match('NONE')
+    
+  - name: Execute a yum update (Can take 20 minutes)
+    yum:
+      name: '*'
+      state: latest
+    when: yum_update
 
   - block:
 
