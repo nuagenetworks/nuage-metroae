@@ -3,7 +3,7 @@
     name: "{{ mgmt_ip }}"
     state: absent
   delegate_to: localhost
-  no_log: True
+  no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
   ignore_errors: True
 
 - name: Create empty VPRN object
@@ -38,6 +38,9 @@
     - vsc-deploy
 
 - import_tasks: setup_vsc_config.yml
+  vars:
+    config_template: config.cfg.j2
+    reboot_vsc: true
   when: target_server_type is match("kvm") or target_server_type is match("vcenter")
   tags:
     - vsc

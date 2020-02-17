@@ -32,6 +32,33 @@
   roles:
     - vsd-health
 
+- hosts: primary_vsds
+  gather_facts: no
+  serial: 1
+  remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
+  become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
+  vars:
+    ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"
+  tasks:
+    - name: Find the vsd node to run backup
+      include_role:
+        name: common
+        tasks_from: vsd-find-backup-node
+
+- hosts: "{{hostvars['localhost'].vsd_backup_node | default(vsd_ha_node1 | default(vsd_sa_node))}}"
+  gather_facts: no
+  pre_tasks:
+    - name: Get free disk space on VSD for backup files
+      shell: df / | tail -n 1 | awk '{print $4}'
+      register: backup_vsd_free_space_kb
+      remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
+      become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
+
+    - name: Ensure there is enough free disk space on VSD for backup files
+      assert:
+        that: backup_vsd_free_space_kb.stdout | int > (required_vsd_free_disk_gb | default(5) * 1024 * 1024)
+        msg: "Insufficent disk space {{ backup_vsd_free_space_kb.stdout | float / (1024 * 1024) }} GB on VSD {{ ansible_host }} for backup files"
+
 - hosts: vstats
   gather_facts: no
   serial: 1

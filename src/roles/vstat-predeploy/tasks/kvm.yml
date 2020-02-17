@@ -20,60 +20,13 @@
     vm_name: "{{ vmname }}"
   when: not upgrade
 
-- block:
-
-  - name: Query Target Server facts
-    action: setup
-
-  - name: Include OS-specific variables.
-    include_vars: "{{ ansible_os_family }}.yml"
-
-  - name: Check target for supported OS
-    fail: msg="Unsupported OS family ({{ ansible_os_family }})"
-    when: ansible_os_family not in supported_target_server_os_family_list
-
-  - name: Check target memory
-    fail: msg="Not enough memory ({{ ansible_memtotal_mb }})"
-    when: ansible_memtotal_mb < target_server_memory_mb_min
-
-  - name: Check target cores
-    fail: msg="Not enough cores ({{ ansible_processor_vcpus }})"
-    when: ansible_processor_vcpus < target_server_vcpus_min
-
-  - name: Check target bridges
-    fail: msg="Required network bridges not found"
-    when: mgmt_bridge not in ansible_interfaces
-
-  - name: Check if required OS packages are installed (ignoring errors)
-    command:
-      cmd: rpm -q qemu-kvm libvirt bridge-utils libguestfs-tools libvirt-python
-      warn: false
-    register: rpm_check
-    ignore_errors: True
-
-  - name: Print rpm_check when verbosity >= 1
-    debug: var=rpm_check verbosity=1
-
-  - name: If RedHat, install packages for RedHat OS family distros
-    yum:
-      name:
-       - qemu-kvm
-       - libvirt
-       - bridge-utils
-       - libguestfs-tools
-       - libvirt-python
-      state: present
-    when: rpm_check.rc == 1
-
-  - name: Make sure libvirtd has started
-    service:
-      name: libvirtd
-      enabled: yes
-      state: started
-
-  delegate_to: "{{ target_server }}"
-  remote_user: "{{ target_server_username }}"
-  become: "{{ 'no' if target_server_username == 'root' else 'yes' }}"
+- name: Setup KVM on target server
+  include_role:
+    name: common
+    tasks_from: setup-kvm
+  vars:
+    required_bridges:
+      - mgmt
 
 - include_role:
     name: check-node-running
@@ -88,26 +41,9 @@
 
 - block:
 
-  - name: set skip copy images to default
-    set_fact:
-      skip_copy_images: False
-    when: skip_copy_images is undefined
-
-  - include_tasks: copy_qcow2.yml
-    when: not skip_copy_images
-
-  - block:
-    - name: Check to make sure there is an existing qcow image
-      stat:
-        path: "{{ images_path }}/{{ vm_name }}/{{ image_file_name }}"
-      register: statResult
-
-    - name: check the result of image find command
-      assert:
-        that: statResult.stat.exists == True
-        msg: Missing qcow2 file {{ images_path }}/{{ vm_name }}/{{ image_file_name }}
-
-    when: skip_copy_images
+  - include_role:
+      name: common
+      tasks_from: copy-qcow2
 
   - name: Set local variable with vsd guestfish destination
     set_fact:
@@ -134,16 +70,18 @@
       msg: "guestfish mount point was not found. Are you using the correct qcow2 file?"
 
   - name: Create a temporary copy of the network script for eth0
-    template: src=ifcfg-eth0.j2 backup=no dest={{ images_path }}/{{ vm_name }}/ifcfg-eth0
+    template:
+      src: ifcfg-eth0.j2
+      backup: no
+      dest: "{{ images_path }}/{{ vm_name }}/ifcfg-eth0"
 
-  - name: Copy eth0 network script file to the VM image
-    command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} copy-in {{ images_path }}/{{ vm_name }}/ifcfg-eth0 /etc/sysconfig/network-scripts/
-
-  - name: Remove temporary copy of eth0 network script
-    file: path={{ images_path }}/{{ vm_name }}/ifcfg-eth0 state=absent
-
-  - name: Set the owner and group on the eth0 network script file in the VM image
-    command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} chown 0 0 /etc/sysconfig/network-scripts/ifcfg-eth0
+  - name: Inject ifcfg-eth0 into VSTAT qcow image
+    include_role:
+      name: common
+      tasks_from: kvm-inject-file
+    vars:
+      dest_file_name: ifcfg-eth0
+      dest_path: /etc/sysconfig/network-scripts
 
   - name: Create a temporary copy of the syscfg network file
     template:
@@ -151,64 +89,40 @@
       dest: "{{ images_path }}/{{ vm_name }}/network"
       backup: no
 
-  - name: Copy network file to the VM image
-    command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} copy-in {{ images_path }}/{{ vm_name }}/network /etc/sysconfig/
-
-  - name: Remove temporary copy of network file
-    file: path={{ images_path }}/{{ vm_name }}/network state=absent
-
-  - name: Set the owner and group for the network hostname file on the VM image
-    command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} chown 0 0 /etc/sysconfig/network
+  - name: Inject network into VSTAT qcow image
+    include_role:
+      name: common
+      tasks_from: kvm-inject-file
+    vars:
+      dest_file_name: network
+      dest_path: /etc/sysconfig
 
   - name: Create a temporary copy of the hostname file (for VSD version 4.0.R7 and on)
-    template: src=hostname.j2 backup=no dest={{ images_path }}/{{ vm_name }}/hostname
+    template:
+      src: "{{ role_path }}/../common/templates/hostname.j2"
+      backup: no
+      dest: "{{ images_path }}/{{ vm_name }}/hostname"
 
-  - name: Copy hostname file to the VM image
-    command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} copy-in {{ images_path }}/{{ vm_name }}/hostname /etc/
+  - name: Inject hostname into VSTAT qcow image
+    include_role:
+      name: common
+      tasks_from: kvm-inject-file
+    vars:
+      dest_file_name: hostname
+      dest_path: /etc
 
-  - name: Remove temporary copy of hostname file
-    file: path={{ images_path }}/{{ vm_name }}/hostname state=absent
+  - name: Inject SSH keys into VSTAT qcow image
+    include_role:
+      name: common
+      tasks_from: kvm-inject-ssh-keys
 
-  - name: Set the owner and group for the hostname file on the VSD image
-    command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} chown 0 0 /etc/hostname
-
-  - name: Create the directory /root/.ssh for authorized_keys
-    command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} mkdir-mode /root/.ssh 0700
-
-  - name: Set the owner and group for the /root/.ssh directory on the VM image
-    command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} chown 0 0 /root/.ssh
-
-  - name: Create a temporary copy of the authorized_keys file
-    template: src=authorized_keys.j2 backup=no dest={{ images_path }}/{{ vm_name }}/authorized_keys
-
-  - name: Copy authorized_keys file to the VM image
-    command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} copy-in {{ images_path }}/{{ vm_name }}/authorized_keys /root/.ssh/
-
-  - name: Remove temporary copy of authorized_keys file
-    file: path={{ images_path }}/{{ vm_name }}/authorized_keys state=absent
-
-  - name: Set the owner and group for the authorized_keys file on the VM image
-    command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} chown 0 0 /root/.ssh/authorized_keys
-
-  - name: Set the mode for the authorized_keys file on the VM image
-    command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} chmod 0640 /root/.ssh/authorized_keys
-
-  - name: Define VM
-    virt: name={{ vm_name }}
-          command=define
-          xml="{{ lookup('template', 'vstat.xml.j2') }}"
-          uri=qemu:///system
-
-  - name: Autostart
-    virt: name={{ vm_name }}
-          command=status
-          autostart=True
-          uri=qemu:///system
-
-  - name: Run VM
-    virt: name={{ vm_name }}
-          state=running
-          uri=qemu:///system
+  - name: Define and start VSD VM
+    include_role:
+      name: common
+      tasks_from: kvm-start-vm
+    vars:
+      vm_xml: "{{ lookup('template', 'vstat.xml.j2') }}"
+      autostart_enabled: true
 
   when: not node_present
   delegate_to: "{{ target_server }}"

@@ -18,7 +18,7 @@
 
   - name: Configure vCenter path
     set_fact:
-      vcenter_path: "{{ target_server }}/{{ vcenter.datacenter }}/host/{{ vcenter.cluster }}{{ (vcenter.host_reference != 'NONE') | ternary ('/{{ vcenter.host_reference | urlencode }}', '') }}{{ (vcenter.resource_pool != 'NONE') | ternary ('/Resources/{{ vcenter.resource_pool | urlencode }}', '') }}"
+      vcenter_path: "{{ target_server }}/{{ vcenter.datacenter }}/host/{{ vcenter.cluster }}{{ (vcenter.host_reference != 'NONE') | ternary ('/' + vcenter.host_reference | urlencode, '') }}{{ (vcenter.resource_pool != 'NONE') | ternary ('/Resources/' + vcenter.resource_pool | urlencode, '') }}"
 
   - name: Configure ovftool command
     set_fact:
@@ -81,20 +81,10 @@
         --prop:"BGP_Group=internal"
         "{{ image_path }}/{{ image_file_name }}"
 
-  - name: Deploy VSC image on vCenter (Can take several minutes)
-    connection: local
-    shell: >-
-      {{ ovftool_command }}
-      "vi://{{ vcenter.username | urlencode }}:{{ vcenter.password | urlencode }}@{{ vcenter_path }}"
-    register: deploy_result
-    ignore_errors: yes
-    no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
-
-  - name: Debug the deploy logs
-    assert:
-      that: deploy_result.rc == 0
-      success_msg: "{{deploy_result.stdout}}"
-      fail_msg: "{{deploy_result.stderr}}"
+  - name: Deploy VSC image on vCenter
+    include_role:
+      name: common
+      tasks_from: vcenter-deploy-image
 
   - name: Finding VM folder
     connection: local

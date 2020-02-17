@@ -3,7 +3,7 @@
     name: "{{ mgmt_ip }}"
     state: absent
   delegate_to: localhost
-  no_log: True
+  no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
   ignore_errors: True
 
 - name: Clean known_hosts of VSDs (ignoring errors)
@@ -11,7 +11,7 @@
     name: "{{ inventory_hostname }}"
     state: absent
   delegate_to: localhost
-  no_log: True
+  no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
   ignore_errors: True
 
 - name: Check if custom user already exists and is connected via ssh
@@ -53,10 +53,11 @@
         line: 'PermitRootLogin no'
 
     - name: Create .ssh directory for vsd custom user
-      shell: 'mkdir -p /home/{{ vsd_custom_username }}/.ssh/'
-
-    - name: Change ownership of .ssh directory
-      shell: 'chown {{ vsd_custom_username }}:{{ vsd_custom_username }} /home/{{ vsd_custom_username }}/.ssh'
+      file:
+        path: '/home/{{ vsd_custom_username }}/.ssh/'
+        state: directory
+        owner: "{{ vsd_custom_username }}"
+        group: "{{ vsd_custom_username }}"
 
     - block:
 
