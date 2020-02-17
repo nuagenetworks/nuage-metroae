@@ -41,20 +41,10 @@
     vars:
       management_network: "Management"
 
-  - name: Deploy VSTAT image on vCenter (Can take several minutes)
-    connection: local
-    shell: >-
-      {{ ovftool_command }}
-      "vi://{{ vcenter.username | urlencode }}:{{ vcenter.password | urlencode }}@{{ vcenter_path }}"
-    register: deploy_result
-    ignore_errors: yes
-    no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
-
-  - name: Debug the deploy logs
-    assert:
-      that: deploy_result.rc == 0
-      success_msg: "{{deploy_result.stdout}}"
-      fail_msg: "{{deploy_result.stderr}}"
+  - name: Deploy VSTAT image on vCenter
+    include_role:
+      name: common
+      tasks_from: vcenter-deploy-image
 
   - name: Waiting until VMware tools becomes available
     connection: local
@@ -86,174 +76,27 @@
       state: enable
       validate_certs: no
 
-  - name: Writing eth0 network script file to the VM
-    connection: local
-    vmware_vm_shell:
-      hostname: "{{ target_server }}"
-      username: "{{ vcenter.username }}"
-      password: "{{ vcenter.password }}"
-      datacenter: "{{ vcenter.datacenter }}"
-      cluster: "{{ vcenter.cluster }}"
-      validate_certs: no
-      vm_id: "{{ vm_name }}"
+  - name: Setup networking on VSTAT
+    include_role:
+      name: common
+      tasks_from: vcenter-setup-networking
+    vars:
       vm_username: "{{ vstat_default_username }}"
       vm_password: "{{ vstat_default_password }}"
-      vm_shell: "/usr/bin/echo"
-      vm_shell_args: " '{{ lookup('template', 'ifcfg-eth0.j2') }}' > /etc/sysconfig/network-scripts/ifcfg-eth0"
-
-  - name: Set the owner and group on the eth0 network script file in the VM
-    connection: local
-    vmware_vm_shell:
-      hostname: "{{ target_server }}"
-      username: "{{ vcenter.username }}"
-      password: "{{ vcenter.password }}"
-      datacenter: "{{ vcenter.datacenter }}"
-      cluster: "{{ vcenter.cluster }}"
-      validate_certs: no
-      vm_id: "{{ vm_name }}"
-      vm_username: "{{ vstat_default_username }}"
-      vm_password: "{{ vstat_default_password }}"
-      vm_shell: "/usr/bin/chown"
-      vm_shell_args: " 0 0 /etc/sysconfig/network-scripts/ifcfg-eth0"
-
-  - name: Writing network file to the VM
-    connection: local
-    vmware_vm_shell:
-      hostname: "{{ target_server }}"
-      username: "{{ vcenter.username }}"
-      password: "{{ vcenter.password }}"
-      datacenter: "{{ vcenter.datacenter }}"
-      cluster: "{{ vcenter.cluster }}"
-      validate_certs: no
-      vm_id: "{{ vm_name }}"
-      vm_username: "{{ vstat_default_username }}"
-      vm_password: "{{ vstat_default_password }}"
-      vm_shell: "/usr/bin/echo"
-      vm_shell_args: " '{{ lookup('template', role_path + '/../common/templates/network.j2') }}' > /etc/sysconfig/network"
-
-  - name: Set the owner and group on the network file in the VM
-    connection: local
-    vmware_vm_shell:
-      hostname: "{{ target_server }}"
-      username: "{{ vcenter.username }}"
-      password: "{{ vcenter.password }}"
-      datacenter: "{{ vcenter.datacenter }}"
-      cluster: "{{ vcenter.cluster }}"
-      validate_certs: no
-      vm_id: "{{ vm_name }}"
-      vm_username: "{{ vstat_default_username }}"
-      vm_password: "{{ vstat_default_password }}"
-      vm_shell: "/usr/bin/chown"
-      vm_shell_args: " 0 0 /etc/sysconfig/network"
-
-  - name: Set the owner and group on the hostname file in the VM
-    connection: local
-    vmware_vm_shell:
-      hostname: "{{ target_server }}"
-      username: "{{ vcenter.username }}"
-      password: "{{ vcenter.password }}"
-      datacenter: "{{ vcenter.datacenter }}"
-      cluster: "{{ vcenter.cluster }}"
-      validate_certs: no
-      vm_id: "{{ vm_name }}"
-      vm_username: "{{ vstat_default_username }}"
-      vm_password: "{{ vstat_default_password }}"
-      vm_shell: "/usr/bin/chown"
-      vm_shell_args: " 0 0 /etc/hostname"
-
-  - name: Set hostname for VCenter for current session
-    connection: local
-    vmware_vm_shell:
-      hostname: "{{ target_server }}"
-      username: "{{ vcenter.username }}"
-      password: "{{ vcenter.password }}"
-      datacenter: "{{ vcenter.datacenter }}"
-      cluster: "{{ vcenter.cluster }}"
-      validate_certs: no
-      vm_id: "{{ vm_name }}"
-      vm_username: "{{ vstat_default_username }}"
-      vm_password: "{{ vstat_default_password }}"
-      vm_shell: "/usr/bin/hostname"
-      vm_shell_args: " '{{ inventory_hostname }}'"
-
-  - name: Set hostname for VCenter permanently
-    connection: local
-    vmware_vm_shell:
-      hostname: "{{ target_server }}"
-      username: "{{ vcenter.username }}"
-      password: "{{ vcenter.password }}"
-      datacenter: "{{ vcenter.datacenter }}"
-      cluster: "{{ vcenter.cluster }}"
-      validate_certs: no
-      vm_id: "{{ vm_name }}"
-      vm_username: "{{ vstat_default_username }}"
-      vm_password: "{{ vstat_default_password }}"
-      vm_shell: "/usr/bin/echo"
-      vm_shell_args: " '{{ lookup('template', 'hostname.j2') }}' > /etc/hostname"
-
-  - name: Create the directory /root/.ssh for authorized_keys on the VM
-    connection: local
-    vmware_vm_shell:
-      hostname: "{{ target_server }}"
-      username: "{{ vcenter.username }}"
-      password: "{{ vcenter.password }}"
-      datacenter: "{{ vcenter.datacenter }}"
-      cluster: "{{ vcenter.cluster }}"
-      validate_certs: no
-      vm_id: "{{ vm_name }}"
-      vm_username: "{{ vstat_default_username }}"
-      vm_password: "{{ vstat_default_password }}"
-      vm_shell: "/usr/bin/mkdir"
-      vm_shell_args: " -p /root/.ssh"
-
-  - name: Set the owner and group for the /root/.ssh directory in the VM
-    connection: local
-    vmware_vm_shell:
-      hostname: "{{ target_server }}"
-      username: "{{ vcenter.username }}"
-      password: "{{ vcenter.password }}"
-      datacenter: "{{ vcenter.datacenter }}"
-      cluster: "{{ vcenter.cluster }}"
-      validate_certs: no
-      vm_id: "{{ vm_name }}"
-      vm_username: "{{ vstat_default_username }}"
-      vm_password: "{{ vstat_default_password }}"
-      vm_shell: "/usr/bin/chown"
-      vm_shell_args: " 0 0 /root/.ssh"
+      ifcfg_eth0_contents: "{{ lookup('template', 'ifcfg-eth0.j2') }}"
+      skip_hostname: False
 
   - name: Get the public key for the current user
     local_action: command cat "{{ user_ssh_pub_key }}"
     register: current_user_ssh_key
 
-  - name: Writing authorized_keys to the VM
-    connection: local
-    vmware_vm_shell:
-      hostname: "{{ target_server }}"
-      username: "{{ vcenter.username }}"
-      password: "{{ vcenter.password }}"
-      datacenter: "{{ vcenter.datacenter }}"
-      cluster: "{{ vcenter.cluster }}"
-      validate_certs: no
-      vm_id: "{{ vm_name }}"
+  - name: Inject SSH keys onto VSTAT
+    include_role:
+      name: common
+      tasks_from: vcenter-inject-ssh-keys
+    vars:
       vm_username: "{{ vstat_default_username }}"
       vm_password: "{{ vstat_default_password }}"
-      vm_shell: "/usr/bin/echo"
-      vm_shell_args: " '{{ lookup('template', 'authorized_keys.j2') }}' > /root/.ssh/authorized_keys"
-
-  - name: Set the mode on the authorized_keys file in the VM
-    connection: local
-    vmware_vm_shell:
-      hostname: "{{ target_server }}"
-      username: "{{ vcenter.username }}"
-      password: "{{ vcenter.password }}"
-      datacenter: "{{ vcenter.datacenter }}"
-      cluster: "{{ vcenter.cluster }}"
-      validate_certs: no
-      vm_id: "{{ vm_name }}"
-      vm_username: "{{ vstat_default_username }}"
-      vm_password: "{{ vstat_default_password }}"
-      vm_shell: "/usr/bin/chmod"
-      vm_shell_args: " 0640 /root/.ssh/authorized_keys"
 
   - name: Restart Network services in the VM
     connection: local
