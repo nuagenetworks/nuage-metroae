@@ -15,6 +15,7 @@
 * Fix deprecated task and changed result format for vmware_vm_facts (METROAE-1179)
 * Detect when unresolved jinja2 is present in inventory (METROAE-820)
 * Check for required disk space on VSD for backup files during upgrade health check (METROAE-1182)
+* Fix issue with VSD failover procedure with Active Standby VSTATs (METROAE-1061)
 
 ### Removed
 * Removed obsolete os_vsd_osc_integration playbook and associated role and files.
