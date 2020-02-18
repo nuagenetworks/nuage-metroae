@@ -265,6 +265,13 @@ STANDARD_FIELDS = ["step", "description"]
 TARGET_SERVER_TYPE_LABELS = ["(K)vm", "(v)center", "(o)penstack", "(a)ws"]
 TARGET_SERVER_TYPE_VALUES = ["kvm", "vcenter", "openstack", "aws"]
 
+COMPONENT_LABELS = ["vs(d)", "vs(c)", "(e)s", "nu(h)", "vns(u)tils", "ns(g)v",
+                    "(n)one of these"]
+COMPONENT_DEFAULT_LABELS = ["vs(D)", "vs(C)", "(E)s", "nu(H)", "vns(U)tils",
+                            "ns(G)v", "(N)one of these"]
+COMPONENT_IMAGE_KEYWORDS = ["vsd", "vsc", "elastic", "nuage-utils", "vns-util",
+                            "ncpe"]
+
 
 class Wizard(object):
 
@@ -1369,6 +1376,22 @@ class Wizard(object):
             self._print(" - bridge: " + interface["bridge"])
             self._print("   address: " + interface["address"])
             self._print("   hostname: " + interface["hostname"])
+
+        return self._kvm_component_choice(vm_info["image_name"])
+
+    def _kvm_component_choice(self, image_name):
+
+        default = len(COMPONENT_IMAGE_KEYWORDS)
+        for i, keyword in enumerate(COMPONENT_IMAGE_KEYWORDS):
+            if keyword in image_name.lower():
+                default = i
+
+        choices = list(COMPONENT_LABELS)
+        choices[default] = COMPONENT_DEFAULT_LABELS[default]
+        choice = self._input("Which component type is this VM?", default,
+                             choices)
+
+        return choice
 
     def _run_on_hypervisor(self, username, hostname, command):
         return self._run_shell("ssh -oPasswordAuthentication=no %s@%s %s" % (
