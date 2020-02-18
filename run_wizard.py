@@ -1360,7 +1360,15 @@ class Wizard(object):
             pass
 
     def _verify_kvm_discovery(self, vm_info):
-        self._print("VM: " + str(vm_info))
+        self._print("\nDiscovered VM")
+        self._print("-------------")
+        self._print("VM name: " + vm_info["vm_name"])
+        self._print("Image: " + vm_info["image_name"])
+        self._print("Interfaces:")
+        for interface in vm_info["interfaces"]:
+            self._print(" - bridge: " + interface["bridge"])
+            self._print("   address: " + interface["address"])
+            self._print("   hostname: " + interface["hostname"])
 
     def _run_on_hypervisor(self, username, hostname, command):
         return self._run_shell("ssh -oPasswordAuthentication=no %s@%s %s" % (
