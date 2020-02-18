@@ -1337,6 +1337,7 @@ class Wizard(object):
         try:
             rc, output_lines = self._run_on_hypervisor(
                 username, hostname, "arp -en | grep " + interface["mac"])
+            print(str(output_lines))
             if rc == 0:
                 interface["address"] = output_lines[0].split(" ")[0]
 
@@ -1350,6 +1351,7 @@ class Wizard(object):
                 rc, output_lines = self._run_on_hypervisor(
                     username, hostname,
                     "getent hosts " + interface["address"])
+                print(str(output_lines))
                 if rc == 0:
                     interface["hostname"] = output_lines[0].split(" ")[-1]
         except Exception as e:
