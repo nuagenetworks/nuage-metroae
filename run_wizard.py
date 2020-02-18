@@ -1874,6 +1874,8 @@ class Wizard(object):
             options = ""
             if self.in_container:
                 options = "-i /source/id_rsa.pub -o StrictHostKeyChecking=no "
+            else:
+                self._setup_ssh_key()
             rc, output_lines = self._run_shell(
                 "ssh-copy-id %s%s@%s" % (options, username, hostname))
             if rc == 0:
@@ -1895,6 +1897,32 @@ class Wizard(object):
             self._print("Please contact: " + METROAE_CONTACT)
 
         return False
+
+    def _setup_ssh_key(self):
+        rc, output_lines = self._run_shell("stat ~/.ssh/id_rsa.pub")
+        if rc != 0:
+            self._print("Could not find your SSH public key "
+                        "~/.ssh/id_rsa.pub")
+
+            choice = self._input("Do you wish to generate a new SSH keypair?",
+                                 0, ["(Y)es", "(n)o"])
+
+            if choice == 0:
+                rc, output_lines = self._run_shell('ssh-keygen -p ""')
+
+                if rc == 0:
+                    self._print("\nSuccessfully generated an SSH keypair")
+                    return True
+                else:
+                    self._record_problem(
+                        "ssh_keys", "Could not generate SSH keypair")
+                    self._print("\n".join(output_lines))
+                    self._print(
+                        "\nCould not generate an SSH keypair, this is"
+                        "required for MetroAE to operate.")
+                    return False
+
+        return True
 
     def _verify_ssh(self, username, hostname):
         try:
