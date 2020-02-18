@@ -78,6 +78,15 @@ WIZARD_SCRIPT = """
       MetroAE supports multiple deployments, each in its own directory.
   create_deployment: {}
 
+- step: Auto-discover existing components
+  description: |
+      This step can optionally attempt to discover components that are already
+      running in your network.  By specifying the connection information of
+      the hypervisors, any VMs running on these systems will be analyzed and
+      entered as deployment data if identified as VSP components.  Any
+      components sucessfully found in this way can be skipped in later steps.
+  discover_components: {}
+
 - step: Import CSV Spreadsheet
   description: |
       This step can optionally import MetroAE configuration via a CSV
@@ -434,6 +443,22 @@ class Wizard(object):
 
         if not found:
             os.mkdir(deployment_dir)
+
+    def discover_components(self, action, data):
+        choice = 0
+        another_string = "a"
+
+        while choice == 0:
+            choice = self._input(
+                "Would you like to try to discover existing components "
+                "automatically from %s hypervisor?" % another_string, 1,
+                ["(y)es", "(N)o"])
+
+            if choice == 1:
+                return
+
+            self._discover_components()
+            another_string = "another"
 
     def import_csv_spreadsheet(self, action, data):
         choice = self._input("Do you have a CSV spreadsheet to import?", 1,
@@ -1173,6 +1198,76 @@ class Wizard(object):
                 deployment = dict()
             return deployment
 
+    def _discover_components(self):
+        hostname = self._input("Enter target server (hypervisor) address")
+        username = self._input(
+            "Enter the username for the target server (hypervisor)", "root")
+
+        valid_ssh = self._setup_discovery_ssh(username, hostname)
+
+        if not valid_ssh:
+            self._print("Auto-discovery requires password-less SSH access")
+            return
+
+        hv_type = self._discover_hypervisor_type(username, hostname)
+        if hv_type == "kvm":
+            self._discover_kvm_components(username, hostname)
+        else:
+            self._print("Unsupported hypervisor type for auto-discovery (only "
+                        "KVM supported)")
+            return
+
+    def _setup_discovery_ssh(self, username, hostname):
+        valid_ssh = self._verify_ssh(username, hostname)
+
+        if valid_ssh:
+            return valid_ssh
+
+        choice = self._input(
+            "Add password-less SSH access to %s?" % hostname, 0,
+            ["(Y)es", "(n)o"])
+
+        if choice != 0:
+            return False
+
+        self._print("\nWe will now configure SSH access to the target "
+                    "server (hypervisors).  This will likely require the "
+                    "SSH password to be entered.\n")
+
+        valid_ssh = self._setup_ssh(username, hostname)
+
+        return valid_ssh
+
+    def _discover_hypervisor_type(self, username, hostname):
+        # TODO
+        return "kvm"
+
+    def _discover_kvm_components(self, username, hostname):
+        try:
+            self._discover_kvm_vm_names(username, hostname)
+            return True
+        except Exception as e:
+            self._print("\nAn error occurred while attempting to auto-discover"
+                        " components: " + str(e))
+            self._print("Please contact: " + METROAE_CONTACT)
+
+        return False
+
+    def _discover_kvm_vm_names(self, username, hostname):
+        rc, output = self._run_on_hypervisor(username, hostname,
+                                             "sudo virsh list --name")
+        if rc == 0:
+            names = output.split("\n")
+            self._print("\nFound VMs: " + ", ".join(names))
+            return names
+        else:
+            self._print("\nCould not find VMs on %s\n%s" % (hostname, output))
+            return list()
+
+    def _run_on_hypervisor(self, username, hostname, command):
+        return self._run_shell("ssh -oPasswordAuthentication=no %s@%s %s" % (
+            username, hostname, command))
+
     def _import_csv(self):
         deployment_dir = self._get_deployment_dir()
         if deployment_dir is None:
@@ -1901,14 +1996,15 @@ class Wizard(object):
     def _setup_ssh_key(self):
         rc, output_lines = self._run_shell("stat ~/.ssh/id_rsa.pub")
         if rc != 0:
-            self._print("Could not find your SSH public key "
-                        "~/.ssh/id_rsa.pub")
+            self._print("\nCould not find your SSH public key "
+                        "~/.ssh/id_rsa.pub\n")
 
             choice = self._input("Do you wish to generate a new SSH keypair?",
                                  0, ["(Y)es", "(n)o"])
 
             if choice == 0:
-                rc, output_lines = self._run_shell('ssh-keygen -p ""')
+                rc, output_lines = self._run_shell('ssh-keygen -P "" '
+                                                   '-f ~/.ssh/id_rsa')
 
                 if rc == 0:
                     self._print("\nSuccessfully generated an SSH keypair")
@@ -1918,7 +2014,7 @@ class Wizard(object):
                         "ssh_keys", "Could not generate SSH keypair")
                     self._print("\n".join(output_lines))
                     self._print(
-                        "\nCould not generate an SSH keypair, this is"
+                        "\nCould not generate an SSH keypair, this is "
                         "required for MetroAE to operate.")
                     return False
 
