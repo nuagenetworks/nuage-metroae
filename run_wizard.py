@@ -1199,6 +1199,10 @@ class Wizard(object):
             return deployment
 
     def _discover_components(self):
+        deployment_dir = self._get_deployment_dir()
+        if deployment_dir is None:
+            return
+
         hostname = self._input("Enter target server (hypervisor) address")
         username = self._input(
             "Enter the username for the target server (hypervisor)", "root")
@@ -1239,12 +1243,22 @@ class Wizard(object):
         return valid_ssh
 
     def _discover_hypervisor_type(self, username, hostname):
-        # TODO
-        return "kvm"
+        rc, output_lines = self._run_on_hypervisor(
+            username, hostname,
+            "ps ax | grep libvirtd | grep -v grep")
+        if rc == 0:
+            return "kvm"
+
+        return "unknown"
 
     def _discover_kvm_components(self, username, hostname):
         try:
-            self._discover_kvm_vm_names(username, hostname)
+            vm_names = self._discover_kvm_vm_names(username, hostname)
+            for vm_name in vm_names:
+                vm_info = self._discover_kvm_vm_info(username, hostname,
+                                                     vm_name)
+                if vm_info is not None:
+                    self._verify_kvm_discovery(vm_info)
             return True
         except Exception as e:
             self._print("\nAn error occurred while attempting to auto-discover"
@@ -1254,15 +1268,68 @@ class Wizard(object):
         return False
 
     def _discover_kvm_vm_names(self, username, hostname):
-        rc, output = self._run_on_hypervisor(username, hostname,
-                                             "sudo virsh list --name")
+        rc, output_lines = self._run_on_hypervisor(username, hostname,
+                                                   "sudo virsh list --name")
         if rc == 0:
-            names = output.split("\n")
+            names = [x for x in output_lines if x.strip() != ""]
             self._print("\nFound VMs: " + ", ".join(names))
             return names
         else:
-            self._print("\nCould not find VMs on %s\n%s" % (hostname, output))
+            self._print("\nError while discovering VMs on %s\n%s" % (
+                hostname, "\n".join(output_lines)))
             return list()
+
+    def _discover_kvm_vm_info(self, username, hostname, vm_name):
+        rc, output_lines = self._run_on_hypervisor(
+            username, hostname, "sudo virsh dumpxml " + vm_name)
+
+        if rc != 0:
+            return None
+
+        vm_info = self._parse_kvm_info("\n".join(output_lines))
+
+        if vm_info is None:
+            return None
+
+        vm_info["target_server"] = hostname
+        vm_info["vmname"] = vm_name
+
+        return vm_info
+
+    def _parse_kvm_info(self, kvm_xml):
+        try:
+            import xml.etree.ElementTree as ET
+        except ImportError:
+            self._print(
+                "Could not import the libraries to parse KVM XML. Discovery "
+                "not possible.")
+            return None
+
+        vm_info = dict()
+        try:
+            root = ET.fromstring(kvm_xml)
+
+            vm_info["image_name"] = (
+                root.find("devices/disk/source").attrib["file"])
+
+            interfaces = list()
+
+            vm_info["interfaces"] = interfaces
+
+            for intf_elem in root.findall("devices/interface[@type='bridge']"):
+                interfaces.append({
+                    "mac": intf_elem.find("mac").attrib["address"],
+                    "bridge": intf_elem.find("source").attrib["bridge"]})
+
+            return vm_info
+
+        except Exception:
+            self._print(
+                "Could not parse KVM XML. Skipping VM.")
+            return None
+
+    def _verify_kvm_discovery(self, vm_info):
+        self._print("VM: " + str(vm_info))
 
     def _run_on_hypervisor(self, username, hostname, command):
         return self._run_shell("ssh -oPasswordAuthentication=no %s@%s %s" % (
