@@ -1292,7 +1292,11 @@ class Wizard(object):
             return None
 
         vm_info["target_server"] = hostname
+        vm_info["target_server_type"] = "kvm"
         vm_info["vmname"] = vm_name
+
+        for interface in vm_info["interfaces"]:
+            self._discover_interface(username, hostname, interface)
 
         return vm_info
 
@@ -1327,6 +1331,30 @@ class Wizard(object):
             self._print(
                 "Could not parse KVM XML. Skipping VM.")
             return None
+
+    def _discover_interface(self, username, hostname, interface):
+        interface["address"] = ""
+        try:
+            rc, output_lines = self._run_on_hypervisor(
+                username, hostname, "arp -en | grep " + interface["mac"])
+            if rc == 0:
+                interface["address"] = output_lines[0].split(" ")[0]
+
+        except Exception as e:
+            self._print("Could not discover IP: " + str(e))
+            pass
+
+        interface["hostname"] = ""
+        try:
+            if interface["address"] != "":
+                rc, output_lines = self._run_on_hypervisor(
+                    username, hostname,
+                    "getent hosts " + interface["address"])
+                if rc == 0:
+                    interface["hostname"] = output_lines[0].split(" ")[-1]
+        except Exception as e:
+            self._print("Could not discover hostname: " + str(e))
+            pass
 
     def _verify_kvm_discovery(self, vm_info):
         self._print("VM: " + str(vm_info))
