@@ -1336,7 +1336,8 @@ class Wizard(object):
         interface["address"] = ""
         try:
             rc, output_lines = self._run_on_hypervisor(
-                username, hostname, "arp -en | grep " + interface["mac"])
+                username, hostname,
+                "/usr/sbin/arp -en | grep " + interface["mac"])
             print(str(output_lines))
             if rc == 0:
                 interface["address"] = output_lines[0].split(" ")[0]
