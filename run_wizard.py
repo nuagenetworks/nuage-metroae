@@ -1368,8 +1368,8 @@ class Wizard(object):
             if interface["address"] != "":
                 rc, output_lines = self._run_on_hypervisor(
                     username, hostname,
-                    "ip address show dev %s | awk '/inet/ {print $2}'" %
-                    interface["bridge"])
+                    "/usr/sbin/ip address show dev %s | "
+                    "awk '/inet/ {print $2}'" % interface["bridge"])
                 if rc == 0:
                     interface["gateway"] = output_lines[0].split("/")[0]
                     interface["prefix"] = int(output_lines[0].split("/")[1])
