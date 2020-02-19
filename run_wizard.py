@@ -266,11 +266,12 @@ TARGET_SERVER_TYPE_LABELS = ["(K)vm", "(v)center", "(o)penstack", "(a)ws"]
 TARGET_SERVER_TYPE_VALUES = ["kvm", "vcenter", "openstack", "aws"]
 
 COMPONENT_LABELS = ["vs(d)", "vs(c)", "(e)s", "nu(h)", "vns(u)tils", "ns(g)v",
-                    "(n)one of these"]
+                    "(n)one of these - skip VM"]
 COMPONENT_DEFAULT_LABELS = ["vs(D)", "vs(C)", "(E)s", "nu(H)", "vns(U)tils",
-                            "ns(G)v", "(N)one of these"]
+                            "ns(G)v", "(N)one of these - skip VM"]
 COMPONENT_IMAGE_KEYWORDS = ["vsd", "vsc", "elastic", "nuage-utils", "vns-util",
                             "ncpe"]
+COMPONENT_SCHEMAS = ["vsds", "vscs", "vstats", "nuhs", "vnsutils", "nsgvs"]
 
 
 class Wizard(object):
@@ -983,11 +984,22 @@ class Wizard(object):
                     self.current_action_idx += 1
                     continue
                 if choice == 3:
-                    self._print(u"Exiting MetroAE wizard. All progress made "
-                                u"has been saved.")
+                    self._print("Exiting MetroAE wizard. All progress made "
+                                "has been saved.")
                     exit(0)
 
-            self._run_action(current_action)
+            try:
+                self._run_action(current_action)
+            except KeyboardInterrupt:
+                self._print("\n\nInterrupt signal received. All progress made "
+                            "before current step has been saved.")
+                choice = self._input(
+                    "Would you like to quit?",
+                    1, ["(y)es", "(N)o"])
+
+                if choice != 1:
+                    exit(1)
+
             self.current_action_idx += 1
 
     def _display_step(self, action):
@@ -1265,7 +1277,11 @@ class Wizard(object):
                 vm_info = self._discover_kvm_vm_info(username, hostname,
                                                      vm_name)
                 if vm_info is not None:
-                    self._verify_kvm_discovery(vm_info)
+                    choice = self._verify_kvm_discovery(vm_info)
+                    try:
+                        self._add_discovered_vm(vm_info, choice)
+                    except Exception:
+                        self._print("\nCould not add VM to deployment.")
             return True
         except Exception as e:
             self._print("\nAn error occurred while attempting to auto-discover"
@@ -1389,7 +1405,10 @@ class Wizard(object):
             self._print("   gateway: " + interface["gateway"])
             self._print("   prefix length: " + str(interface["prefix"]))
 
-        self._print("")
+        self._print("\nThis VM can be added to your deployment.  There will be"
+                    " an opportunity to modify it in later steps of the wizard"
+                    " or those steps can be skipped if the discovered VMs are "
+                    "correct.\n")
         return self._kvm_component_choice(vm_info["image_name"])
 
     def _kvm_component_choice(self, image_name):
@@ -1405,6 +1424,106 @@ class Wizard(object):
                              choices)
 
         return choice
+
+    def _add_discovered_vm(self, vm_info, choice):
+
+        if choice >= len(COMPONENT_LABELS) - 1:
+            # Skip
+            return
+
+        schema = COMPONENT_SCHEMAS[choice]
+        if "discovered_" + schema in self.state:
+            deployment = self.state["discovered_" + schema]
+        else:
+            deployment = list()
+            self.state["discovered_" + schema] = deployment
+
+        component = dict()
+        self._add_discovered_vm_standard(vm_info, component)
+        role = 1
+        if choice == 0:
+            role = self._input("Role of VSD?", 0, [
+                "(P)rimary / stand-alone",
+                "(s)tandby"])
+        if role == 0:
+            deployment.insert(0, component)
+        else:
+            deployment.append(component)
+
+        if choice == 0:
+            # VSD
+            pass
+        elif choice == 1:
+            # VSC
+            self._add_discovered_vm_vsc(vm_info, component)
+        elif choice == 2:
+            # VSTAT
+            pass
+        elif choice == 3:
+            # NUH
+            pass
+        elif choice == 4:
+            # VNSUTIL
+            self._add_discovered_vm_vnsutil(vm_info, component)
+        elif choice == 5:
+            # NSG
+            self._add_discovered_vm_nsgv(vm_info, component)
+        else:
+            # UNKNOWN
+            self._print("\nError: Unknown choice for discovered VM\n")
+            return
+
+        deployment_dir = self._get_deployment_dir()
+        if deployment_dir is None:
+            return
+        deployment_file = os.path.join(deployment_dir, schema + ".yml")
+        self._generate_deployment_file(schema, deployment_file, deployment)
+
+    def _add_discovered_vm_standard(self, vm_info, component):
+        component["target_server_type"] = vm_info["target_server_type"]
+        component["target_server"] = vm_info["target_server"]
+        component["vmname"] = vm_info["vm_name"]
+        component["upgrade_vmname"] = "new-" + vm_info["vm_name"]
+        if "interfaces" in vm_info and len(vm_info["interfaces"]) > 0:
+            first_interface = vm_info["interfaces"][0]
+            component["hostname"] = first_interface["hostname"]
+            component["mgmt_ip"] = first_interface["address"]
+            component["mgmt_ip_prefix"] = first_interface["prefix"]
+            component["mgmt_gateway"] = first_interface["gateway"]
+            component["mgmt_bridge"] = first_interface["bridge"]
+
+    def _add_discovered_vm_vsc(self, vm_info, component):
+        if "interfaces" in vm_info and len(vm_info["interfaces"]) > 1:
+            second_interface = vm_info["interfaces"][1]
+            component["ctrl_ip"] = second_interface["address"]
+            component["ctrl_ip_prefix"] = second_interface["prefix"]
+            component["data_bridge"] = second_interface["bridge"]
+
+        system_ip = self._input("System IP address for routing", None,
+                                datatype="ipaddr")
+        component["system_ip"] = system_ip
+
+    def _add_discovered_vm_vnsutil(self, vm_info, component):
+        if "interfaces" in vm_info and len(vm_info["interfaces"]) > 1:
+            second_interface = vm_info["interfaces"][1]
+            component["data_ip"] = second_interface["address"]
+            component["data_ip_prefix"] = second_interface["prefix"]
+            component["data_bridge"] = second_interface["bridge"]
+
+        self._setup_vnsutils(component, 0)
+
+    def _add_discovered_vm_nsgv(self, vm_info, component):
+        del component["mgmt_bridge"]
+        if "interfaces" in vm_info and len(vm_info["interfaces"]) > 0:
+            first_interface = vm_info["interfaces"][0]
+            component["nsgv_ip"] = first_interface["address"]
+            component["nsgv_mac"] = first_interface["mac"]
+            component["data_bridge"] = first_interface["bridge"]
+        if "interfaces" in vm_info and len(vm_info["interfaces"]) > 1:
+            second_interface = vm_info["interfaces"][1]
+            component["access_bridge"] = second_interface["bridge"]
+
+        self._setup_nsgv_component(component)
 
     def _run_on_hypervisor(self, username, hostname, command):
         return self._run_shell("ssh -oPasswordAuthentication=no %s@%s %s" % (
