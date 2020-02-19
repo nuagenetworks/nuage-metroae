@@ -1372,7 +1372,7 @@ class Wizard(object):
                     interface["bridge"])
                 if rc == 0:
                     interface["gateway"] = output_lines[0].split("/")[0]
-                    interface["prefix"] = output_lines[0].split("/")[1]
+                    interface["prefix"] = int(output_lines[0].split("/")[1])
         except Exception:
             pass
 
@@ -1387,7 +1387,7 @@ class Wizard(object):
             self._print("   address: " + interface["address"])
             self._print("   hostname: " + interface["hostname"])
             self._print("   gateway: " + interface["gateway"])
-            self._print("   prefix length: " + interface["prefix length"])
+            self._print("   prefix length: " + interface["prefix"])
 
         self._print("")
         return self._kvm_component_choice(vm_info["image_name"])
