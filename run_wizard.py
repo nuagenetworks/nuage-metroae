@@ -1300,7 +1300,7 @@ class Wizard(object):
 
         vm_info["target_server"] = hostname
         vm_info["target_server_type"] = "kvm"
-        vm_info["vmname"] = vm_name
+        vm_info["vm_name"] = vm_name
 
         for interface in vm_info["interfaces"]:
             self._discover_interface(username, hostname, interface)
@@ -1345,12 +1345,10 @@ class Wizard(object):
             rc, output_lines = self._run_on_hypervisor(
                 username, hostname,
                 "/usr/sbin/arp -en | grep " + interface["mac"])
-            print(str(output_lines))
             if rc == 0:
                 interface["address"] = output_lines[0].split(" ")[0]
 
-        except Exception as e:
-            self._print("Could not discover IP: " + str(e))
+        except Exception:
             pass
 
         interface["hostname"] = ""
@@ -1359,15 +1357,27 @@ class Wizard(object):
                 rc, output_lines = self._run_on_hypervisor(
                     username, hostname,
                     "getent hosts " + interface["address"])
-                print(str(output_lines))
                 if rc == 0:
                     interface["hostname"] = output_lines[0].split(" ")[-1]
-        except Exception as e:
-            self._print("Could not discover hostname: " + str(e))
+        except Exception:
+            pass
+
+        interface["gateway"] = ""
+        interface["prefix"] = 24
+        try:
+            if interface["address"] != "":
+                rc, output_lines = self._run_on_hypervisor(
+                    username, hostname,
+                    "ip address show dev %s | awk '/inet/ {print $2}'" %
+                    interface["bridge"])
+                if rc == 0:
+                    interface["gateway"] = output_lines[0].split("/")[0]
+                    interface["prefix"] = output_lines[0].split("/")[1]
+        except Exception:
             pass
 
     def _verify_kvm_discovery(self, vm_info):
-        self._print("\nDiscovered VM")
+        self._print("\n\nDiscovered VM")
         self._print("-------------")
         self._print("VM name: " + vm_info["vm_name"])
         self._print("Image: " + vm_info["image_name"])
@@ -1376,7 +1386,10 @@ class Wizard(object):
             self._print(" - bridge: " + interface["bridge"])
             self._print("   address: " + interface["address"])
             self._print("   hostname: " + interface["hostname"])
+            self._print("   gateway: " + interface["gateway"])
+            self._print("   prefix length: " + interface["prefix length"])
 
+        self._print("")
         return self._kvm_component_choice(vm_info["image_name"])
 
     def _kvm_component_choice(self, image_name):
