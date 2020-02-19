@@ -1387,7 +1387,7 @@ class Wizard(object):
             self._print("   address: " + interface["address"])
             self._print("   hostname: " + interface["hostname"])
             self._print("   gateway: " + interface["gateway"])
-            self._print("   prefix length: " + interface["prefix"])
+            self._print("   prefix length: " + str(interface["prefix"]))
 
         self._print("")
         return self._kvm_component_choice(vm_info["image_name"])
