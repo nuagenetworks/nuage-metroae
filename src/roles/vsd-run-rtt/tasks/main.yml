@@ -1,30 +1,16 @@
 - block:
 
   - name: Measure latency between First and Second VSD
-    shell: nping --tcp -p 3306 -c 10 {{ second_cluster_node_to_install }} | grep 'Max rtt:*' | cut -dm -f1 | sed 's/Max rtt://1'
-    register: latency_first_second
-
-  - name: Check if latency lower than required
-    assert:
-      that: "(latency_first_second.stdout | int) < max_cluster_rtt_latency"
-      msg: >-
-        "RTT Latency between {{ second_cluster_node_to_install }} and {{ first_cluster_node_to_install }} is higher than required.
-        Quitting install. Recommended to use RTT cluster latency less than {{ max_cluster_rtt_latency }} milliseconds
-        To ignore this error, set skip_vsd_cluster_rtt_test to true or adjust the value of max_cluster_rtt_latency in common.yml file
-        in your deployment and rerun the MetroAE command again"
+    import_tasks: validate_latency.yml
+    vars:
+      other_node: "{{ second_cluster_node_to_install }}"
+      current_node : "{{ first_cluster_node_to_install }}"
 
   - name: Measure latency between First and Third VSD
-    shell: nping --tcp -p 3306 -c 10 {{ third_cluster_node_to_install }} | grep 'Max rtt:*' | cut -dm -f1 | sed 's/Max rtt://1'
-    register: latency_first_third
-
-  - name: Check if latency lower than required
-    assert:
-      that: "(latency_first_third.stdout | int) < max_cluster_rtt_latency"
-      msg: >-
-        "RTT Latency between {{ third_cluster_node_to_install }} and {{ first_cluster_node_to_install }} is higher than required.
-        Quitting install. Recommended to use RTT cluster latency less than {{ max_cluster_rtt_latency }} milliseconds
-        To ignore this error, set skip_vsd_cluster_rtt_test to true or adjust the value of max_cluster_rtt_latency in common.yml file
-        in your deployment and rerun the MetroAE command again"
+    include_tasks: validate_latency.yml
+    vars:
+      other_node: "{{ third_cluster_node_to_install }}"
+      current_node : "{{ first_cluster_node_to_install }}"
 
   - name: Measure latency between Second and Third VSD
     shell: nping --tcp -p 3306 -c 10 {{ third_cluster_node_to_install }} | grep 'Max rtt:*' | cut -dm -f1 | sed 's/Max rtt://1'
@@ -57,4 +43,4 @@
 
     when: vsd_standby_cluster | default(False)
 
-  when: not skip_vsd_cluster_rtt_test
+  when: not skip_vsd_cluster_rtt_test | default(False)
