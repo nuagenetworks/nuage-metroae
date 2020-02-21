@@ -1526,8 +1526,8 @@ class Wizard(object):
         self._setup_nsgv_component(component)
 
     def _run_on_hypervisor(self, username, hostname, command):
-        return self._run_shell("ssh -oPasswordAuthentication=no %s@%s %s" % (
-            username, hostname, command))
+        return self._run_shell("ssh -oPasswordAuthentication=no %s@%s %s "
+                               "2> /dev/null" % (username, hostname, command))
 
     def _import_csv(self):
         deployment_dir = self._get_deployment_dir()
