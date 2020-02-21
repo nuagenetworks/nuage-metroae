@@ -1294,7 +1294,7 @@ class Wizard(object):
         rc, output_lines = self._run_on_hypervisor(username, hostname,
                                                    "sudo virsh list --name")
         if rc == 0:
-            names = [x for x in output_lines if x.strip() != ""]
+            names = sorted([x for x in output_lines if x.strip() != ""])
             self._print("\nFound VMs: " + ", ".join(names))
             return names
         else:
