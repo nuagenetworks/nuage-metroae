@@ -992,7 +992,7 @@ class Wizard(object):
                 self._run_action(current_action)
             except KeyboardInterrupt:
                 self._print("\n\nInterrupt signal received. All progress made "
-                            "before current step has been saved.")
+                            "before current step has been saved.\n")
                 choice = self._input(
                     "Would you like to quit?",
                     1, ["(y)es", "(N)o"])
