@@ -40,4 +40,21 @@
         To ignore this error, set skip_vsd_cluster_rtt_test to true or adjust the value of max_cluster_rtt_latency in common.yml file
         in your deployment and rerun the MetroAE command again"
 
+  - block:
+
+    - name: Measure latency between First active and First standby VSD
+      shell: nping --tcp -p 3306 -c 10 {{ groups['vsd_ha_node1'][0] }} | grep 'Max rtt:*' | cut -dm -f1 | sed 's/Max rtt://1'
+      register: as_first_first
+
+    - name: Check if latency lower than required
+      assert:
+        that: "(as_first_first.stdout | int) < max_cluster_rtt_latency"
+        msg: >-
+          "RTT Latency between {{ first_cluster_node_to_install }} and {{ groups['vsd_ha_node1'][0] }} is higher than required.
+          Quitting install. Recommended to use RTT cluster latency less than {{ max_cluster_rtt_latency }} milliseconds
+          To ignore this error, set skip_vsd_cluster_rtt_test to true or adjust the value of max_cluster_rtt_latency in common.yml file
+          in your deployment and rerun the MetroAE command again"
+
+    when: vsd_standby_cluster | default(False)
+
   when: not skip_vsd_cluster_rtt_test
