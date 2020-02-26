@@ -24,6 +24,44 @@
 
 - import_tasks: report_header.yml
 
+- block:
+
+  - name: Run VSD Disk Performance Test if it was not run during deploy
+    include_role:
+      name: common
+      tasks_from: disk-performance-test.yml
+    vars:
+      disk_performance_file_total_size: "{{ vsd_disk_performance_test_total_file_size }}"
+      disk_performance_minimum_threshold: "{{ vsd_disk_performance_test_minimum_threshold }}"
+      disk_performance_max_time: "{{ vsd_disk_performance_test_max_time }}"
+      fail_disk_performance_test: "{{ vsd_fail_disk_performance_test }}"
+
+  - name: Write VSD Disk IOPS value to json file
+    nuage_append: filename="{{ report_path }}" text="VSD Disk IOPS value of {{ disk_performance_val | to_nice_json}} did not meet the specified threshold of {{ vsd_disk_performance_test_minimum_threshold | to_nice_json}}\n"
+    delegate_to: localhost
+    when: "disk_performance_val|int < {{ vsd_disk_performance_test_minimum_threshold }}"
+
+  - name: Write VSD Disk IOPS value to json file
+    nuage_append: filename="{{ report_path }}" text="VSD Disk IOPS value of {{ disk_performance_val | to_nice_json}} met the specified threshold of {{ vsd_disk_performance_test_minimum_threshold | to_nice_json}}\n"
+    delegate_to: localhost
+    when: "disk_performance_val|int >= {{ vsd_disk_performance_test_minimum_threshold }}"
+
+  when: not vsd_ran_disk_performance_test | default(False)
+
+- block:
+
+  - name: Write VSD Disk IOPS value to json file
+    nuage_append: filename="{{ report_path }}" text="VSD Disk IOPS value of {{ disk_performance_val | to_nice_json}} did not meet the specified threshold of {{ vsd_disk_performance_test_minimum_threshold | to_nice_json}}\n"
+    delegate_to: localhost
+    when: "disk_performance_val|int < {{ vsd_disk_performance_test_minimum_threshold }}"
+
+  - name: Write VSD Disk IOPS value to json file
+    nuage_append: filename="{{ report_path }}" text="VSD Disk IOPS value of {{ disk_performance_val | to_nice_json}} met the specified threshold of {{ vsd_disk_performance_test_minimum_threshold | to_nice_json}}\n"
+    delegate_to: localhost
+    when: "disk_performance_val|int >= {{ vsd_disk_performance_test_minimum_threshold }}"
+
+  when: vsd_ran_disk_performance_test | default(False)
+
 - name: Get current version of VSD software
   shell: grep -ir "VSD_VERSION=" /etc/profile.d/vsd-banner.sh | awk -F "=" '{print $2}'
   register: vsd_version

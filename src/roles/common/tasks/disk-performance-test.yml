@@ -4,7 +4,7 @@
   ignore_errors: true
 
 - name: Run disk performance test (ignoring errors)
-  shell: "sysbench --test=fileio --file-total-size={{ disk_performance_file_total_size }} --file-test-mode=rndrw --init-rng=on --max-time=300 --max-requests=0 run"
+  shell: "sysbench --test=fileio --file-total-size={{ disk_performance_file_total_size }} --file-test-mode=rndrw --init-rng=on --max-time={{ disk_performance_max_time }} --max-requests=0 run"
   register: disk_performance_test_output
   ignore_errors: true
   when: disk_performance_test_prepare.rc == 0
@@ -29,17 +29,12 @@
     msg: "There was an error when cleaning up the disk performance test files. You may need to clean up the files manually or execute the cleanup command again on the target device."
   when: disk_performance_test_cleanup.rc != 0
 
-- block:
+- name: Set fact for disk performance test result
+  set_fact:
+    disk_performance_val: "{{ disk_performance_test_output.stdout | regex_search('\\d.*(Requests\\/sec)') | regex_search('\\d*\\.\\d*') }}"
 
-  - name: Set fact for disk performance test result
-    set_fact:
-      disk_performance_val: "{{ disk_performance_test_output.stdout | regex_search('\\d.*(Requests\\/sec)') | regex_search('\\d*\\.\\d*') }}"
-
-  - name: Verify disk performance value meets the specified threshold
-    assert:
-      that: "disk_performance_val|int >= {{ disk_performance_minimum_threshold }}"
-      msg: "Disk performance (IOPS) value does not meet the specified minimum threshold"
-
-  when:
-    - disk_performance_test_prepare.rc == 0
-    - disk_performance_test_output.rc == 0
+- name: Verify disk performance value meets the specified threshold
+  assert:
+    that: "disk_performance_val|int >= {{ disk_performance_minimum_threshold }}"
+    msg: "Disk performance (IOPS) value does not meet the specified minimum threshold"
+  when: fail_disk_performance_test == True 
