@@ -3,6 +3,12 @@ import os
 import tarfile
 import argparse
 from time import gmtime, strftime
+
+cwdir = os.getcwd()
+run_mode = "container"
+if(os.path.isfile(os.path.join(cwdir,'ansible.cfg'))):
+    run_mode = "repo"
+
 now = strftime("%Y-%m-%d-%H-%M-%S", gmtime())
 parser = argparse.ArgumentParser(description='This script collects the debug collateral in a tarball')
 parser.add_argument('--tarFileName', default='debug-' + now)
@@ -14,7 +20,6 @@ if args.deploymentName:
 else:
     deploymentName = "deployments"
 
-cwdir = os.getcwd()
 ansibleLogPath = os.path.join(cwdir, 'ansible.log')
 with tarfile.open(tarFileName + '.tar.gz', mode='w:gz') as archive:
     try:
