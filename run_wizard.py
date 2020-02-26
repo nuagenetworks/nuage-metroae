@@ -1318,9 +1318,10 @@ class Wizard(object):
 
     def _get_vcenter_vms(self, username, password, hostname):
         try:
-            from pyVim.connect import SmartConnectNoSSL
+            from pyVim.connect import SmartConnectNoSSL, Disconnect
             from pyVmomi import vim
             import ssl
+            import atexit
         except ImportError:
             self._print("Could not import libraries required to communicate "
                         "with vCenter. Was setup completed successfully?")
@@ -1332,6 +1333,7 @@ class Wizard(object):
             si = SmartConnectNoSSL(host=hostname,
                                    user=username,
                                    pwd=password)
+            atexit.register(Disconnect, si)
 
         except Exception:
             self._print("Could not connect to vCenter")
