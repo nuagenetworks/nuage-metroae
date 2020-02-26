@@ -1275,8 +1275,24 @@ class Wizard(object):
         return valid_ssh
 
     def _verify_vcenter_hypervisor(self, hostname):
-        # TODO
-        return True
+        try:
+            import requests
+        except ImportError:
+            self._print("Could not import libraries required to communicate "
+                        "with vCenter. Was setup completed successfully?")
+            return False
+
+        try:
+            requests.packages.urllib3.disable_warnings()
+            resp = requests.get("https://%s/rest" % hostname, verify=False)
+        except Exception:
+            return False
+
+        if resp.status_code == 200 and "vmware" in resp.text:
+            self.state["target_server_type"] = "vcenter"
+            return True
+
+        return False
 
     def _verify_kvm_hypervisor(self, username, hostname):
         try:
@@ -1284,7 +1300,9 @@ class Wizard(object):
                 username, hostname,
                 "ps ax | grep libvirtd | grep -v grep")
 
-            return rc == 0
+            if rc == 0:
+                self.state["target_server_type"] = "kvm"
+                return True
         except Exception:
             self._print("Could not connect to hypervisor")
             pass
