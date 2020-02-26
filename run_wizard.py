@@ -1230,7 +1230,7 @@ class Wizard(object):
         if self._verify_vcenter_hypervisor(hostname):
             username = self._input(
                 "Enter the username for the target server (hypervisor)",
-                "Administrator@vcenter.local")
+                "Administrator@vsphere.local")
             password = self._input(
                 "Enter the password for the target server",
                 datatype="password")
@@ -1300,7 +1300,7 @@ class Wizard(object):
             self._print("\nFound VMs: " + ", ".join(sorted(vms.keys())))
 
             for vm_name, vm in vms.iteritems():
-                vm_info = self._discover_vcenter_vm_info(vm_name, vm)
+                vm_info = self._discover_vcenter_vm_info(vm, hostname)
                 if vm_info is not None:
                     choice = self._verify_vcenter_discovery(vm_info)
                     try:
@@ -1347,6 +1347,77 @@ class Wizard(object):
             vms_dict.update({managed_object_ref.name: managed_object_ref})
 
         return vms_dict
+
+    def _discover_vcenter_vm_info(self, vm, hostname):
+        try:
+            vm_info = dict()
+
+            vm_info["vm_name"] = vm.name
+            vm_info["target_server"] = hostname
+            vm_info["target_server_type"] = "vcenter"
+
+            self._discover_vcenter_vm_field(
+                vm_info, vm, "product",
+                lambda vm: vm.summary.config.product.name)
+
+            self._discover_vcenter_vm_field(
+                vm_info, vm, "datacenter",
+                lambda vm: vm.summary.runtime.host.parent.parent.parent.name)
+
+            self._discover_vcenter_vm_field(
+                vm_info, vm, "cluster",
+                lambda vm: vm.summary.runtime.host.parent.name)
+
+            self._discover_vcenter_vm_field(
+                vm_info, vm, "datastore",
+                lambda vm: vm.config.datastoreUrl[0].name)
+
+            return vm_info
+
+        except Exception:
+            return None
+
+    def _discover_vcenter_vm_field(self, vm_info, vm, field, get_callback):
+        vm_info[field] = ''
+        try:
+            vm_info[field] = get_callback(vm)
+        except Exception:
+            pass
+
+    def _verify_vcenter_discovery(self, vm_info):
+        self._print("\n\nDiscovered VM")
+        self._print("-------------")
+        self._print("VM name: " + vm_info["vm_name"])
+        self._print("Product: " + vm_info["product"])
+        self._print("Datacenter: " + vm_info["datacenter"])
+        self._print("Cluster: " + vm_info["cluster"])
+        self._print("Datastore: " + vm_info["datastore"])
+        self._print("Interfaces:")
+        # for interface in vm_info["interfaces"]:
+        #     self._print(" - bridge: " + interface["bridge"])
+        #     self._print("   address: " + interface["address"])
+        #     self._print("   hostname: " + interface["hostname"])
+        #     self._print("   gateway: " + interface["gateway"])
+        #     self._print("   prefix length: " + str(interface["prefix"]))
+
+        self._print("\nThis VM can be added to your deployment.  There will be"
+                    " an opportunity to modify it in later steps of the wizard"
+                    " or those steps can be skipped if the discovered VMs are "
+                    "correct.\n")
+        return self._vcenter_component_choice(vm_info["product"])
+
+    def _vcenter_component_choice(self, product):
+
+        default = len(COMPONENT_LABELS) - 1
+        if "vsc" in product.lower():
+            default = 1
+
+        choices = list(COMPONENT_LABELS)
+        choices[default] = COMPONENT_DEFAULT_LABELS[default]
+        choice = self._input("Which component type is this VM?", default,
+                             choices)
+
+        return choice
 
     def _discover_kvm_components(self, username, hostname):
         try:
