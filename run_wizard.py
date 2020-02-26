@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import getpass
 import glob
 import os
 import re
@@ -775,7 +776,10 @@ class Wizard(object):
 
         else:
             while value is None:
-                user_value = raw_input(input_prompt)
+                if datatype == "password":
+                    user_value = getpass.getpass(input_prompt)
+                else:
+                    user_value = raw_input(input_prompt)
                 value = self._validate_input(user_value, default, choices,
                                              datatype)
 
@@ -1223,22 +1227,31 @@ class Wizard(object):
             return
 
         hostname = self._input("Enter target server (hypervisor) address")
-        username = self._input(
-            "Enter the username for the target server (hypervisor)", "root")
-
-        valid_ssh = self._setup_discovery_ssh(username, hostname)
-
-        if not valid_ssh:
-            self._print("Auto-discovery requires password-less SSH access")
-            return
-
-        hv_type = self._discover_hypervisor_type(username, hostname)
-        if hv_type == "kvm":
-            self._discover_kvm_components(username, hostname)
+        if self._verify_vcenter_hypervisor(hostname):
+            username = self._input(
+                "Enter the username for the target server (hypervisor)",
+                "Administrator@vcenter.local")
+            password = self._input(
+                "Enter the password for the target server",
+                datatype="password")
+            self._discover_vcenter_components(username, password, hostname)
         else:
-            self._print("Unsupported hypervisor type for auto-discovery (only "
-                        "KVM supported)")
-            return
+            username = self._input(
+                "Enter the username for the target server (hypervisor)",
+                "root")
+
+            valid_ssh = self._setup_discovery_ssh(username, hostname)
+
+            if not valid_ssh:
+                self._print("Auto-discovery requires password-less SSH access")
+                return
+
+            if self._verify_kvm_hypervisor(username, hostname):
+                self._discover_kvm_components(username, hostname)
+            else:
+                self._print("Unsupported hypervisor type for auto-discovery "
+                            "(only KVM and vCenter supported)")
+                return
 
     def _setup_discovery_ssh(self, username, hostname):
         valid_ssh = self._verify_ssh(username, hostname)
@@ -1261,14 +1274,79 @@ class Wizard(object):
 
         return valid_ssh
 
-    def _discover_hypervisor_type(self, username, hostname):
-        rc, output_lines = self._run_on_hypervisor(
-            username, hostname,
-            "ps ax | grep libvirtd | grep -v grep")
-        if rc == 0:
-            return "kvm"
+    def _verify_vcenter_hypervisor(self, hostname):
+        # TODO
+        return True
 
-        return "unknown"
+    def _verify_kvm_hypervisor(self, username, hostname):
+        try:
+            rc, output_lines = self._run_on_hypervisor(
+                username, hostname,
+                "ps ax | grep libvirtd | grep -v grep")
+
+            return rc == 0
+        except Exception:
+            self._print("Could not connect to hypervisor")
+            pass
+
+        return False
+
+    def _discover_vcenter_components(self, username, password, hostname):
+        try:
+            vms = self._get_vcenter_vms(username, password, hostname)
+            if vms is None:
+                return False
+
+            self._print("\nFound VMs: " + ", ".join(sorted(vms.keys())))
+
+            for vm_name, vm in vms.iteritems():
+                vm_info = self._discover_vcenter_vm_info(vm_name, vm)
+                if vm_info is not None:
+                    choice = self._verify_vcenter_discovery(vm_info)
+                    try:
+                        self._add_discovered_vm(vm_info, choice)
+                    except Exception:
+                        self._print("\nCould not add VM to deployment.")
+            return True
+
+        except Exception as e:
+            self._print("\nAn error occurred while attempting to auto-discover"
+                        " components: " + str(e))
+            self._print("Please contact: " + METROAE_CONTACT)
+
+        return False
+
+    def _get_vcenter_vms(self, username, password, hostname):
+        try:
+            from pyVim.connect import SmartConnectNoSSL
+            from pyVmomi import vim
+            import ssl
+        except ImportError:
+            self._print("Could not import libraries required to communicate "
+                        "with vCenter. Was setup completed successfully?")
+            return None
+
+        try:
+            s = ssl.SSLContext(ssl.PROTOCOL_TLSv1)
+            s.verify_mode = ssl.CERT_NONE
+            si = SmartConnectNoSSL(host=hostname,
+                                   user=username,
+                                   pwd=password)
+
+        except Exception:
+            self._print("Could not connect to vCenter")
+            return None
+
+        return self._get_vcenter_vms_dict(si.content, [vim.VirtualMachine])
+
+    def _get_vcenter_vms_dict(self, connection, vimtype):
+        vms_dict = {}
+        container = connection.viewManager.CreateContainerView(
+            connection.rootFolder, vimtype, True)
+        for managed_object_ref in container.view:
+            vms_dict.update({managed_object_ref.name: managed_object_ref})
+
+        return vms_dict
 
     def _discover_kvm_components(self, username, hostname):
         try:
@@ -1319,7 +1397,7 @@ class Wizard(object):
         vm_info["vm_name"] = vm_name
 
         for interface in vm_info["interfaces"]:
-            self._discover_interface(username, hostname, interface)
+            self._discover_kvm_interface(username, hostname, interface)
 
         return vm_info
 
@@ -1355,7 +1433,7 @@ class Wizard(object):
                 "Could not parse KVM XML. Skipping VM.")
             return None
 
-    def _discover_interface(self, username, hostname, interface):
+    def _discover_kvm_interface(self, username, hostname, interface):
         interface["address"] = ""
         try:
             rc, output_lines = self._run_on_hypervisor(
