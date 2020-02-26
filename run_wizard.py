@@ -1374,6 +1374,11 @@ class Wizard(object):
                 vm_info, vm, "datastore",
                 lambda vm: vm.config.datastoreUrl[0].name)
 
+            interfaces = list()
+            vm_info["interfaces"] = interfaces
+
+            self._discover_vcenter_interfaces(interfaces, vm)
+
             return vm_info
 
         except Exception:
@@ -1386,6 +1391,48 @@ class Wizard(object):
         except Exception:
             pass
 
+    def _discover_vcenter_interfaces(self, interfaces, vm):
+        try:
+            if len(vm.guest.net) > 0:
+                interface = dict()
+                interfaces.append(interface)
+
+                self._discover_vcenter_vm_field(
+                    interface, vm, "address",
+                    lambda vm: vm.guest.net[0].ipAddress[0])
+
+                self._discover_vcenter_vm_field(
+                    interface, vm, "hostname",
+                    lambda vm: vm.guest.ipStack[0].dnsConfig.hostName)
+
+                self._discover_vcenter_vm_field(
+                    interface, vm, "gateway",
+                    lambda vm: vm.guest.ipStack[0].ipRouteConfig
+                    .ipRoute[0].gateway.ipAddress)
+
+                self._discover_vcenter_vm_field(
+                    interface, vm, "prefix",
+                    lambda vm: vm.guest.net[0].ipConfig.ipAddress[0]
+                    .prefixLength)
+
+                if interface['prefix'] == '':
+                    interface['prefix'] = 24
+
+            if len(vm.guest.net) > 1:
+                interface = dict()
+                interfaces.append(interface)
+
+                self._discover_vcenter_vm_field(
+                    interface, vm, "address",
+                    lambda vm: vm.guest.net[1].ipAddress[0])
+
+                interface['hostname'] = ""
+                interface['gateway'] = ""
+                interface['prefix'] = 24
+
+        except Exception:
+            pass
+
     def _verify_vcenter_discovery(self, vm_info):
         self._print("\n\nDiscovered VM")
         self._print("-------------")
@@ -1395,12 +1442,11 @@ class Wizard(object):
         self._print("Cluster: " + vm_info["cluster"])
         self._print("Datastore: " + vm_info["datastore"])
         self._print("Interfaces:")
-        # for interface in vm_info["interfaces"]:
-        #     self._print(" - bridge: " + interface["bridge"])
-        #     self._print("   address: " + interface["address"])
-        #     self._print("   hostname: " + interface["hostname"])
-        #     self._print("   gateway: " + interface["gateway"])
-        #     self._print("   prefix length: " + str(interface["prefix"]))
+        for interface in vm_info["interfaces"]:
+            self._print(" - address: " + interface["address"])
+            self._print("   hostname: " + interface["hostname"])
+            self._print("   gateway: " + interface["gateway"])
+            self._print("   prefix length: " + str(interface["prefix"]))
 
         self._print("\nThis VM can be added to your deployment.  There will be"
                     " an opportunity to modify it in later steps of the wizard"
@@ -1635,20 +1681,32 @@ class Wizard(object):
         component["target_server"] = vm_info["target_server"]
         component["vmname"] = vm_info["vm_name"]
         component["upgrade_vmname"] = "new-" + vm_info["vm_name"]
+
+        if "datacenter" in vm_info and vm_info["datacenter"] != "":
+            component["vcenter_datacenter"] = vm_info["datacenter"]
+
+        if "cluster" in vm_info and vm_info["cluster"] != "":
+            component["vcenter_cluster"] = vm_info["cluster"]
+
+        if "datastore" in vm_info and vm_info["datastore"] != "":
+            component["vcenter_datastore"] = vm_info["datastore"]
+
         if "interfaces" in vm_info and len(vm_info["interfaces"]) > 0:
             first_interface = vm_info["interfaces"][0]
             component["hostname"] = first_interface["hostname"]
             component["mgmt_ip"] = first_interface["address"]
             component["mgmt_ip_prefix"] = first_interface["prefix"]
             component["mgmt_gateway"] = first_interface["gateway"]
-            component["mgmt_bridge"] = first_interface["bridge"]
+            if "bridge" in first_interface:
+                component["mgmt_bridge"] = first_interface["bridge"]
 
     def _add_discovered_vm_vsc(self, vm_info, component):
         if "interfaces" in vm_info and len(vm_info["interfaces"]) > 1:
             second_interface = vm_info["interfaces"][1]
             component["ctrl_ip"] = second_interface["address"]
             component["ctrl_ip_prefix"] = second_interface["prefix"]
-            component["data_bridge"] = second_interface["bridge"]
+            if "bridge" in second_interface:
+                component["data_bridge"] = second_interface["bridge"]
 
         system_ip = self._input("System IP address for routing", None,
                                 datatype="ipaddr")
@@ -1659,7 +1717,8 @@ class Wizard(object):
             second_interface = vm_info["interfaces"][1]
             component["data_ip"] = second_interface["address"]
             component["data_ip_prefix"] = second_interface["prefix"]
-            component["data_bridge"] = second_interface["bridge"]
+            if "bridge" in second_interface:
+                component["data_bridge"] = second_interface["bridge"]
 
         self._setup_vnsutils(component, 0)
 
@@ -1668,11 +1727,14 @@ class Wizard(object):
         if "interfaces" in vm_info and len(vm_info["interfaces"]) > 0:
             first_interface = vm_info["interfaces"][0]
             component["nsgv_ip"] = first_interface["address"]
-            component["nsgv_mac"] = first_interface["mac"]
-            component["data_bridge"] = first_interface["bridge"]
+            if "mac" in first_interface:
+                component["nsgv_mac"] = first_interface["mac"]
+            if "bridge" in first_interface:
+                component["data_bridge"] = first_interface["bridge"]
         if "interfaces" in vm_info and len(vm_info["interfaces"]) > 1:
             second_interface = vm_info["interfaces"][1]
-            component["access_bridge"] = second_interface["bridge"]
+            if "bridge" in second_interface:
+                component["access_bridge"] = second_interface["bridge"]
 
         self._setup_nsgv_component(component)
 
