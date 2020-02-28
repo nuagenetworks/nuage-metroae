@@ -21,9 +21,15 @@
 
 - debug: var=disk_performance_total_file_size_gb
 
+- name: Set fact for specified total file size in Kb
+  set_fact:
+    disk_performance_total_file_size_kb: "{{ disk_performance_total_file_size_gb | float * (1024 * 1024) }}"
+
+- debug: var=disk_performance_total_file_size_kb
+
 - name: Verify that specified total file size does not exceed max total file size
   assert:
-    that: (disk_performance_total_file_size_gb | float * (1024 * 1024)) <= disk_performance_max_total_file_size | float
+    that: disk_performance_total_file_size_kb | float <= disk_performance_max_total_file_size | float
     msg: "The specified total file size for the disk performance test exceeds the maximum space allowed to run the test"
 
 - name: Prepare disk performance test (ignoring errors)
