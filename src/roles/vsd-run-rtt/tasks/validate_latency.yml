@@ -13,17 +13,13 @@
         To ignore this error, set skip_vsd_cluster_rtt_test to true or adjust the value of max_cluster_rtt_latency 
         or max_active_standby_rtt_latency in common.yml file in your deployment and rerun the MetroAE command again"
 
-  - name: Set result fact
+  - name: Store the latency result object
     set_fact:
       single_result: {
         src: '{{ current_node }}',
         dst: '{{ other_node }}',
         latency: '{{ measured_rtt_latency.stdout }}'
       }
-
-  - name: my appender
-    set_fact:
-      latency_test_results: '{{latency_test_results + [single_result]}}'
 
   when: delegate_node is not defined
 
@@ -43,4 +39,16 @@
         To ignore this error, set skip_vsd_cluster_rtt_test to true or adjust the value of max_cluster_rtt_latency 
         or max_active_standby_rtt_latency in common.yml file in your deployment and rerun the MetroAE command again"
 
+  - name: Store the latency result object
+    set_fact:
+      single_result: {
+        src: '{{ delegate_node }}',
+        dst: '{{ other_node }}',
+        latency: '{{ measured_rtt_delegate_latency.stdout }}'
+      }
+
   when: delegate_node is defined
+
+- name: Add the result to previous results
+  set_fact:
+    latency_test_results: '{{latency_test_results + [single_result]}}'
