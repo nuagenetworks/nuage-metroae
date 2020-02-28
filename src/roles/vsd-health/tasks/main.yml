@@ -64,6 +64,28 @@
 
 - import_tasks: monit_status.yml
 
+- block:
+
+  - name: Get the latency test results
+    import_role:
+      name: vsd-run-rtt
+    vars:
+      first_node: "{{ groups['vsd_ha_node1'][0] }}"
+      second_node: "{{ groups['vsd_ha_node2'][0] }}"
+      third_node: "{{ groups['vsd_ha_node3'][0] }}"
+
+  - name: Write network config to json file
+    nuage_append: filename="{{ report_path }}" text="{{ latency_test_results | to_nice_json}}\n"
+    delegate_to: localhost
+
+  when:
+    - not skip_vsd_cluster_rtt_test | default(True)
+    - inventory_hostname == groups['vsd_ha_node1'][0]
+  remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
+  become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
+  vars:
+    ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"
+
 - name: Execute list_p1db command on VSD(s)
   command: "{{ p1db_cmd }}"
   register: list_p1db_output
