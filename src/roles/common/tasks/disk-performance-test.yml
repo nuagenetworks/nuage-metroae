@@ -11,19 +11,19 @@
 
 - name: Set fact for 90% of available space for disk performance test
   set_fact:
-    disk_performance_test_max_total_file_size: "{{ disk_performance_test_free_space_kb | float * 0.9 }}"
+    disk_performance_max_total_file_size: "{{ disk_performance_test_free_space_kb.stdout | float * 0.9 }}"
 
-- debug: var=disk_performance_test_max_total_file_size
+- debug: var=disk_performance_max_total_file_size
 
 - name: Set fact for specified total file size without units
   set_fact:
-    disk_performance_test_total_file_size_gb: "{{ disk_performance_test_total_file_size | regex_search('.*\\d') }}"
+    disk_performance_total_file_size_gb: "{{ disk_performance_file_total_size | regex_search('.*\\d') }}"
 
-- debug: var=disk_performance_test_total_file_size_gb
+- debug: var=disk_performance_total_file_size_gb
 
 - name: Verify that specified total file size does not exceed max total file size
   assert:
-    that: (disk_performance_test_total_file_size_gb | float * (1024 * 1024)) <= disk_performance_test_max_total_file_size | float
+    that: (disk_performance_total_file_size_gb | float * (1024 * 1024)) <= disk_performance_max_total_file_size | float
     msg: "The specified total file size for the disk performance test exceeds the maximum space allowed to run the test"
 
 - name: Prepare disk performance test (ignoring errors)
