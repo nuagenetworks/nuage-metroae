@@ -1,16 +1,44 @@
+- name: Create directory for disk performance test files
+  file:
+    path: /var/disk_performance_test
+    state: directory
+
+- name: Check available space in the disk performance directory
+  shell: "df /var/disk_performance_test | tail -n 1 | awk '{print $4}'"
+  register: disk_performance_test_free_space_kb
+
+- debug: var=disk_performance_test_free_space_kb
+
+- name: Set fact for 90% of available space for disk performance test
+  set_fact:
+    disk_performance_test_max_total_file_size: {{ disk_performance_test_free_space_kb | float * 0.9 }}
+
+- debug: var=disk_performance_test_max_total_file_size
+
+- name: Verify that specified totoal file size does not exceed max total file size
+  assert:
+    that: (disk_performance_test_total_file_size | float * (1024 * 1024)) <= disk_performance_test_max_total_file_size | float
+    msg: "The specified total file size for the disk performance test exceeds the maximum space allowed to run the test"
+
 - name: Prepare disk performance test (ignoring errors)
   shell: "sysbench --test=fileio --file-total-size={{ disk_performance_file_total_size }} prepare"
+  args:
+    chdir: /var/disk_performance_test
   register: disk_performance_test_prepare
   ignore_errors: true
 
 - name: Run disk performance test (ignoring errors)
   shell: "sysbench --test=fileio --file-total-size={{ disk_performance_file_total_size }} --file-test-mode=rndrw --init-rng=on --max-time={{ disk_performance_max_time }} --max-requests=0 run"
+  args:
+    chdir: /var/disk_performance_test
   register: disk_performance_test_output
   ignore_errors: true
   when: disk_performance_test_prepare.rc == 0
 
 - name: Cleanup disk performance test files (ignoring errors)
   shell: "sysbench --test=fileio --file-total-size={{ disk_performance_file_total_size }} cleanup"
+  args:
+    chdir: /var/disk_performance_test
   register: disk_performance_test_cleanup
   ignore_errors: true
 
@@ -37,4 +65,4 @@
   assert:
     that: "disk_performance_val|int >= {{ disk_performance_minimum_threshold }}"
     msg: "Disk performance (IOPS) value does not meet the specified minimum threshold"
-  when: quit_on_disk_performance_test_fail == True 
+  when: quit_on_disk_performance_test_fail == True
