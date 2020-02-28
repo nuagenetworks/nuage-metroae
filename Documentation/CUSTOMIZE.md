@@ -100,7 +100,7 @@ When installing or upgrading an active-standby, geo-redundant cluster, all 6 VSD
 ## VSD Disk Performance Testing
 You can use MetroAE to verify that your VSD setup has sufficient disk performance (IOPS). By default, the disk performance test will run at the beginning of the VSD deploy step, prior to installing the VSD software. The parameters that you can use to control the operation of the test are available in 'common.yml'. You can skip the test, specify the total size of all the files used in the test, and modify the minimum threshold requirement in IOPS for the test. Note that to minimize the effects of file sstem caching, the total file size must exceed the total RAM on the VSD. If MetroAE finds that the test is enabled and the disk performance is below the threshold, an error will occur and installation will stop. The default values that are provided for the test are recommended for best VSD performance in most cases. Your specific situation may require different values or to skip the test entirely.
 
-In addition to the automatic execution that takes place in the VSD deploy step, you can run the VSD disk performance test at any time using `metroae vsd disk test`. 
+In addition to the automatic execution that takes place in the VSD deploy step, you can run the VSD disk performance test at any time using `metroae vsd test disk`. 
 
 ## Enabling post-installation security features
 You can use MetroAE to enable optional post-installation security features to 'harden' the installation. Your deployment contains a number of optional variables that can be used to accomplish this. These variables are described, below. For more detail, please see the Nuage VSP Install Guide.
