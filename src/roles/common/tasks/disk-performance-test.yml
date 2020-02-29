@@ -7,25 +7,17 @@
   shell: "df /var/disk_performance_test | tail -n 1 | awk '{print $4}'"
   register: disk_performance_test_free_space_kb
 
-- debug: var=disk_performance_test_free_space_kb
-
 - name: Set fact for 90% of available space for disk performance test
   set_fact:
     disk_performance_max_total_file_size: "{{ disk_performance_test_free_space_kb.stdout | float * 0.9 }}"
-
-- debug: var=disk_performance_max_total_file_size
 
 - name: Set fact for specified total file size without units
   set_fact:
     disk_performance_total_file_size_gb: "{{ disk_performance_file_total_size | regex_search('.*\\d') }}"
 
-- debug: var=disk_performance_total_file_size_gb
-
 - name: Set fact for specified total file size in Kb
   set_fact:
     disk_performance_total_file_size_kb: "{{ disk_performance_total_file_size_gb | float * (1024 * 1024) }}"
-
-- debug: var=disk_performance_total_file_size_kb
 
 - name: Verify that specified total file size does not exceed max total file size
   assert:
