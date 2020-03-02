@@ -1,0 +1,56 @@
+- block:
+
+  - name: Install Zabbix RPM database
+    command:
+      cmd: "rpm -Uvh {{ zabbix_rpm_url }}"
+      warn: no
+
+  - name: Setup yum for Zabbix install
+    command: yum-config-manager --enable rhel-7-server-optional-rpms
+
+  - name: Install Zabbix agent
+    yum:
+      name: zabbix-agent
+      state: present
+    register: result
+    retries: 10
+    until: result.rc == 0
+    delay: 5
+
+  - name: Enable server access in Zabbix config
+    lineinfile:
+      path: /etc/zabbix/zabbix_agent.conf
+      regexp: '^Server='
+      line: Server=0.0.0.0/0
+
+  - name: Set hostname in Zabbix config
+    lineinfile:
+      path: /etc/zabbix/zabbix_agent.conf
+      regexp: '^Hostname='
+      line: "Hostname={{ inventory_hostname }}"
+
+  - name: Check if iptables is already setup for VSD rules (ignoring errors)
+    shell: iptables -L INPUT | grep 'match-set zabbix'
+    register: iptables_result
+    ignore_errors: True
+
+  - block:
+
+    - name: Add TCP iptables rule for Zabbix
+      shell: iptables -I INPUT -p tcp --match-set zabbix --dport 10050 -j ACCEPT
+
+    - name: Add UDP iptables rule for Zabbix
+      shell: iptables -I INPUT -p udp --match-set zabbix --dport 10050 -j ACCEPT
+
+    - name: Save iptables rules
+      shell: service iptables save
+
+    when: iptables_result.rc != 0
+
+  - name: Start Zabbix service
+    service:
+      name: httpd
+      state: started
+
+  remote_user: "{{ component_username }}"
+  become: "{{ 'no' if component_username == 'root' else 'yes' }}"
