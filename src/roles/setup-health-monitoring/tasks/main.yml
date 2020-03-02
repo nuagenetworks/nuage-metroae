@@ -39,8 +39,14 @@
     - name: Add UDP iptables rule for Zabbix
       shell: iptables -I INPUT -p udp --dport 10050 -j ACCEPT
 
-    - name: Save iptables rules
+    - name: Save iptables rules (ignoring errors)
       shell: service iptables save
+      register: save_result
+      ignore_errors: True
+
+    - name: Save iptables rules when service save not supported
+      shell: iptables-save > /etc/sysconfig/iptables
+      when: save_result.rc != 0
 
     when: iptables_result.rc != 0
 
