@@ -1,104 +1,98 @@
+- name: Set test results to clear
+  set_fact: 
+    latency_test_results: []
+
+- name: Measure latency between First and Second VSD
+  import_tasks: validate_latency.yml
+  vars:
+    other_node: "{{ second_node }}"
+    current_node : "{{ first_node }}"
+    max_rtt_latency: "{{ max_cluster_rtt_latency }}"
+
+- name: Measure latency between First and Third VSD
+  include_tasks: validate_latency.yml
+  vars:
+    other_node: "{{ third_node }}"
+    current_node : "{{ first_node }}"
+    max_rtt_latency: "{{ max_cluster_rtt_latency }}"
+
+- name: Measure latency between Second and Third VSD
+  include_tasks: validate_latency.yml
+  vars:
+    other_node: "{{ third_node }}"
+    current_node : "{{ first_node }}"
+    delegate_node: "{{ second_node }}"
+    max_rtt_latency: "{{ max_cluster_rtt_latency }}"
+
 - block:
 
-  - name: Set test results to clear
-    set_fact: 
-      latency_test_results: []
-
-  - name: Measure latency between First and Second VSD
-    import_tasks: validate_latency.yml
-    vars:
-      other_node: "{{ second_node }}"
-      current_node : "{{ first_node }}"
-      max_rtt_latency: "{{ max_cluster_rtt_latency }}"
-
-  - name: Measure latency between First and Third VSD
+  - name: Measure latency between First active and First standby VSD
     include_tasks: validate_latency.yml
     vars:
-      other_node: "{{ third_node }}"
+      other_node: "{{ groups['vsd_ha_node1'][0] }}"
       current_node : "{{ first_node }}"
-      max_rtt_latency: "{{ max_cluster_rtt_latency }}"
+      max_rtt_latency: "{{ max_active_standby_rtt_latency }}"
 
-  - name: Measure latency between Second and Third VSD
+  - name: Measure latency between Second active and First standby VSD
     include_tasks: validate_latency.yml
     vars:
-      other_node: "{{ third_node }}"
+      other_node: "{{ groups['vsd_ha_node2'][0] }}"
+      current_node : "{{ first_node }}"
+      max_rtt_latency: "{{ max_active_standby_rtt_latency }}"
+
+  - name: Measure latency between Third active and First standby VSD
+    include_tasks: validate_latency.yml
+    vars:
+      other_node: "{{ groups['vsd_ha_node3'][0] }}"
+      current_node : "{{ first_node }}"
+      max_rtt_latency: "{{ max_active_standby_rtt_latency }}"
+
+  - name: Measure latency between First active and Second standby VSD
+    include_tasks: validate_latency.yml
+    vars:
+      other_node: "{{ groups['vsd_ha_node1'][0] }}"
       current_node : "{{ first_node }}"
       delegate_node: "{{ second_node }}"
-      max_rtt_latency: "{{ max_cluster_rtt_latency }}"
+      max_rtt_latency: "{{ max_active_standby_rtt_latency }}"
 
-  - debug: var=latency_test_results
+  - name: Measure latency between Second active and Second standby VSD
+    include_tasks: validate_latency.yml
+    vars:
+      other_node: "{{ groups['vsd_ha_node2'][0] }}"
+      current_node : "{{ first_node }}"
+      delegate_node: "{{ second_node }}"
+      max_rtt_latency: "{{ max_active_standby_rtt_latency }}"
 
-  - block:
+  - name: Measure latency between Third active and Second standby VSD
+    include_tasks: validate_latency.yml
+    vars:
+      other_node: "{{ groups['vsd_ha_node3'][0] }}"
+      current_node : "{{ first_node }}"
+      delegate_node: "{{ second_node }}"
+      max_rtt_latency: "{{ max_active_standby_rtt_latency }}"
 
-    - name: Measure latency between First active and First standby VSD
-      include_tasks: validate_latency.yml
-      vars:
-        other_node: "{{ groups['vsd_ha_node1'][0] }}"
-        current_node : "{{ first_node }}"
-        max_rtt_latency: "{{ max_active_standby_rtt_latency }}"
+  - name: Measure latency between First active and Third standby VSD
+    include_tasks: validate_latency.yml
+    vars:
+      other_node: "{{ groups['vsd_ha_node1'][0] }}"
+      current_node : "{{ first_node }}"
+      delegate_node: "{{ third_node }}"
+      max_rtt_latency: "{{ max_active_standby_rtt_latency }}"
 
-    - name: Measure latency between Second active and First standby VSD
-      include_tasks: validate_latency.yml
-      vars:
-        other_node: "{{ groups['vsd_ha_node2'][0] }}"
-        current_node : "{{ first_node }}"
-        max_rtt_latency: "{{ max_active_standby_rtt_latency }}"
+  - name: Measure latency between Second active and Third standby VSD
+    include_tasks: validate_latency.yml
+    vars:
+      other_node: "{{ groups['vsd_ha_node2'][0] }}"
+      current_node : "{{ first_node }}"
+      delegate_node: "{{ third_node }}"
+      max_rtt_latency: "{{ max_active_standby_rtt_latency }}"
 
-    - name: Measure latency between Third active and First standby VSD
-      include_tasks: validate_latency.yml
-      vars:
-        other_node: "{{ groups['vsd_ha_node3'][0] }}"
-        current_node : "{{ first_node }}"
-        max_rtt_latency: "{{ max_active_standby_rtt_latency }}"
+  - name: Measure latency between Third active and Third standby VSD
+    include_tasks: validate_latency.yml
+    vars:
+      other_node: "{{ groups['vsd_ha_node3'][0] }}"
+      current_node : "{{ first_node }}"
+      delegate_node: "{{ third_node }}"
+      max_rtt_latency: "{{ max_active_standby_rtt_latency }}"
 
-    - name: Measure latency between First active and Second standby VSD
-      include_tasks: validate_latency.yml
-      vars:
-        other_node: "{{ groups['vsd_ha_node1'][0] }}"
-        current_node : "{{ first_node }}"
-        delegate_node: "{{ second_node }}"
-        max_rtt_latency: "{{ max_active_standby_rtt_latency }}"
-
-    - name: Measure latency between Second active and Second standby VSD
-      include_tasks: validate_latency.yml
-      vars:
-        other_node: "{{ groups['vsd_ha_node2'][0] }}"
-        current_node : "{{ first_node }}"
-        delegate_node: "{{ second_node }}"
-        max_rtt_latency: "{{ max_active_standby_rtt_latency }}"
-
-    - name: Measure latency between Third active and Second standby VSD
-      include_tasks: validate_latency.yml
-      vars:
-        other_node: "{{ groups['vsd_ha_node3'][0] }}"
-        current_node : "{{ first_node }}"
-        delegate_node: "{{ second_node }}"
-        max_rtt_latency: "{{ max_active_standby_rtt_latency }}"
-
-    - name: Measure latency between First active and Third standby VSD
-      include_tasks: validate_latency.yml
-      vars:
-        other_node: "{{ groups['vsd_ha_node1'][0] }}"
-        current_node : "{{ first_node }}"
-        delegate_node: "{{ third_node }}"
-        max_rtt_latency: "{{ max_active_standby_rtt_latency }}"
-
-    - name: Measure latency between Second active and Third standby VSD
-      include_tasks: validate_latency.yml
-      vars:
-        other_node: "{{ groups['vsd_ha_node2'][0] }}"
-        current_node : "{{ first_node }}"
-        delegate_node: "{{ third_node }}"
-        max_rtt_latency: "{{ max_active_standby_rtt_latency }}"
-
-    - name: Measure latency between Third active and Third standby VSD
-      include_tasks: validate_latency.yml
-      vars:
-        other_node: "{{ groups['vsd_ha_node3'][0] }}"
-        current_node : "{{ first_node }}"
-        delegate_node: "{{ third_node }}"
-        max_rtt_latency: "{{ max_active_standby_rtt_latency }}"
-
-    when: vsd_standby_cluster | default(False)
-
-  when: not skip_vsd_cluster_rtt_test | default(True)
+  when: vsd_standby_cluster | default(False)

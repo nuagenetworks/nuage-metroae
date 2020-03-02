@@ -99,16 +99,24 @@
         - nuage_upgrade | default(False)
         - not vsd_standby_cluster | default(False)
 
-    - name: Include role for 
-      import_role:
-        name: vsd-run-rtt
-      vars:
-        first_node: "{{ first_cluster_node_to_install }}"
-        second_node: "{{ second_cluster_node_to_install }}"
-        third_node: "{{ third_cluster_node_to_install }}"
-      when: 
+    - block:
+
+      - name: Include role for 
+        import_role:
+          name: vsd-run-rtt
+        vars:
+          first_node: "{{ first_cluster_node_to_install }}"
+          second_node: "{{ second_cluster_node_to_install }}"
+          third_node: "{{ third_cluster_node_to_install }}"
+
+      - name: Set fact that VSD Latency RTT Test ran
+        set_fact:
+          vsd_ran_rtt_test: true
+
+      when:
         - inventory_hostname == first_cluster_node_to_install
         - not nuage_upgrade | default(False)
+        - not skip_vsd_cluster_rtt_test | default(True)
 
     when: vsd_sa_or_ha is match('ha')
 
