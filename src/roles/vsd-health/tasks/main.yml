@@ -66,18 +66,27 @@
 
 - block:
 
-  - name: Get the latency test results
-    import_role:
-      name: vsd-run-rtt
-    vars:
-      first_node: "{{ groups['vsd_ha_node1'][0] }}"
-      second_node: "{{ groups['vsd_ha_node2'][0] }}"
-      third_node: "{{ groups['vsd_ha_node3'][0] }}"
-    when: not vsd_ran_rtt_test | default(false)
-
   - name: Write network config to json file
-    nuage_append: filename="{{ report_path }}" text="{{ latency_test_results | to_nice_json}}\n"
+    nuage_append: filename="{{ latency_report_path }}" text="----------Latency measurements---------------\n"
     delegate_to: localhost
+    run_once: true
+
+  - block:
+
+    - name: Get the latency test results
+      import_role:
+        name: vsd-run-rtt
+      vars:
+        first_node: "{{ groups['vsd_ha_node1'][0] }}"
+        second_node: "{{ groups['vsd_ha_node2'][0] }}"
+        third_node: "{{ groups['vsd_ha_node3'][0] }}"
+      when: not vsd_ran_rtt_test | default(false)
+
+    - name: Write network config to json file
+      nuage_append: filename="{{ latency_report_path }}" text="{{ latency_test_results | to_nice_json}}\n"
+      delegate_to: localhost
+
+    when: inventory_hostname == groups['vsd_ha_node1'][0]
 
   - block:
 
@@ -91,15 +100,15 @@
       when: not vsd_ran_rtt_test | default(false)
 
     - name: Write network config to json file
-      nuage_append: filename="{{ report_path }}" text="{{ latency_test_results | to_nice_json}}\n"
+      nuage_append: filename="{{ latency_report_path }}" text="{{ latency_test_results | to_nice_json}}\n"
       delegate_to: localhost
 
     when:
-      - vsd_standby | default(false)
+      - groups['vsd_standby_node1'] is defined
+      - inventory_hostname == groups['vsd_standby_node1'][0]
 
   when:
     - not skip_vsd_cluster_rtt_test | default(True)
-    - inventory_hostname == groups['vsd_ha_node1'][0] or inventory_hostname == groups['vsd_standby_node1'][0]
     - not nuage_upgrade | default(False)
 
   remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
