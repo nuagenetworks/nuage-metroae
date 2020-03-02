@@ -73,7 +73,7 @@
 
   - block:
 
-    - name: Get the latency test results
+    - name: Run latency tests for Primary cluster
       import_role:
         name: vsd-run-rtt
       vars:
@@ -83,7 +83,7 @@
         standby_cluster: false
       when: not vsd_ran_rtt_test | default(false)
 
-    - name: Write network config to json file
+    - name: Write Primary VSD latency to file
       nuage_append: filename="{{ latency_report_path }}" text="{{ latency_test_results | to_nice_json}}\n"
       delegate_to: localhost
 
@@ -91,7 +91,7 @@
 
   - block:
 
-    - name: Get the latency test results on standby node
+    - name: Run latency tests for Standby cluster
       import_role:
         name: vsd-run-rtt
       vars:
@@ -101,7 +101,7 @@
         standby_cluster: true
       when: not vsd_ran_rtt_test | default(false)
 
-    - name: Write network config to json file
+    - name: Write Secondary VSD latency to file
       nuage_append: filename="{{ latency_report_path }}" text="{{ latency_test_results | to_nice_json}}\n"
       delegate_to: localhost
 

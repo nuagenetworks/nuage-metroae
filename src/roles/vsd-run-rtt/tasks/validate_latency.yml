@@ -15,7 +15,7 @@
         To skip latency tests set skip_vsd_cluster_rtt_test to true"
     ignore_errors: "{{ ignore_errors_rtt_test | default(false) }}"
 
-  - name: Store the latency result object
+  - name: Store the latency result object between current and other VSD
     set_fact:
       single_result: {
         src: '{{ current_node }}',
@@ -27,7 +27,7 @@
 
 - block:
 
-  - name: Measure latency between current and other VSD
+  - name: Measure latency between delegated and other VSD
     shell: nping --tcp -p 3306 -c 10 {{ other_node }} | grep 'Max rtt:*' | cut -dm -f1 | sed 's/Max rtt://1'
     register: measured_rtt_delegate_latency
     delegate_to: "{{ delegate_node | default ('NONE') }}"
@@ -43,7 +43,7 @@
         To skip latency tests set skip_vsd_cluster_rtt_test to true"
     ignore_errors: "{{ ignore_errors_rtt_test | default(false) }}"
 
-  - name: Store the latency result object
+  - name: Store the latency result object between delegated and other VSD
     set_fact:
       single_result: {
         src: '{{ delegate_node }}',
@@ -53,6 +53,6 @@
 
   when: delegate_node is defined
 
-- name: Add the result to previous results
+- name: Add the result to previouly calculated latency results
   set_fact:
     latency_test_results: '{{latency_test_results + [single_result]}}'
