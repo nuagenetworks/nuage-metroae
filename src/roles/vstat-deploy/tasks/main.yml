@@ -376,20 +376,10 @@
       vars:
         ansible_become_pass: "{{ hostvars[vsd_node1_hostname].vsd_custom_password | default(vsd_custom_password | default(vsd_default_password)) }}"
 
-  - block:
-    - name: Configure yum proxy
-      lineinfile:
-        dest: /etc/yum.conf
-        regexp: "^proxy="
-        line: "proxy={{ yum_proxy }}"
-      when: yum_proxy is not match('NONE')
-
-    - name: Execute a yum update (Can take 20 minutes)
-      yum:
-        name: '*'
-        state: latest
-      when: yum_update
-    remote_user: "{{ vstat_default_username }}"
+  - name: Execute yum update for vstat
+    include_role:
+      name: common
+      tasks_from: vstat-yum-update.yml
 
   - name: Enable stats
     include_role:
