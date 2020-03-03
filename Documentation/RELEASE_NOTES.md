@@ -9,6 +9,7 @@
 * Add support for Multiple VSC underlay VPRNs (METROAE-1175)
 * Add VSC hardening (METROAE-1183)
 * Add support for VSD certificate renewal standalone procedure (METROAE-1188)
+* Add support for VSTAT standby only deployment (METROAE-1081)
 * Add discovery of existing components in wizard for KVM and vCenter
 
 ### Resolved Issues
