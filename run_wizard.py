@@ -81,11 +81,13 @@ WIZARD_SCRIPT = """
 
 - step: Auto-discover existing components
   description: |
-      This step can optionally attempt to discover components that are already
+      This optional step can beb used to discover components that are already
       running in your network.  By specifying the connection information of
-      the hypervisors, any VMs running on these systems will be analyzed and
-      entered as deployment data if identified as VSP components.  Any
-      components sucessfully found in this way can be skipped in later steps.
+      the hypervisors, any VMs running on these systems will be analyzed. You
+      will be given the option to identify VMs as VSP components and to have
+      the information discovered automatically entered as deployment data. You
+      will be given the option to review and modify the information discovered
+      at a later stage in this wizard.
   discover_components: {}
 
 - step: Import CSV Spreadsheet
