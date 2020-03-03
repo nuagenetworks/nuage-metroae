@@ -22,6 +22,7 @@
 * Improved debugging output for vCenter ovftool commands (METROAE-981)
 * Vastly improved predeploy roles for code reuse (METROAE-801)
 * Moved default reports directory out of playbooks and into metro root directory (METROAE-879)
+* Get the debug log script working with container (METROAE-1202)
 
 ### Removed
 * Removed obsolete os_vsd_osc_integration playbook and associated role and files.
