@@ -6,7 +6,7 @@ from time import gmtime, strftime
 
 cwdir = os.getcwd()
 run_mode = "container"
-if(os.path.isfile(os.path.join(cwdir,'ansible.cfg'))):
+if(os.path.isfile(os.path.join(cwdir, 'ansible.cfg'))):
     run_mode = "repo"
 
 now = strftime("%Y-%m-%d-%H-%M-%S", gmtime())
