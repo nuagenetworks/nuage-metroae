@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import getpass
 import glob
 import os
 import re
@@ -77,6 +78,17 @@ WIZARD_SCRIPT = """
       properties of each component being installed, upgraded, or configured.
       MetroAE supports multiple deployments, each in its own directory.
   create_deployment: {}
+
+- step: Auto-discover existing components
+  description: |
+      This optional step can beb used to discover components that are already
+      running in your network.  By specifying the connection information of
+      the hypervisors, any VMs running on these systems will be analyzed. You
+      will be given the option to identify VMs as VSP components and to have
+      the information discovered automatically entered as deployment data. You
+      will be given the option to review and modify the information discovered
+      at a later stage in this wizard.
+  discover_components: {}
 
 - step: Import CSV Spreadsheet
   description: |
@@ -256,6 +268,14 @@ STANDARD_FIELDS = ["step", "description"]
 TARGET_SERVER_TYPE_LABELS = ["(K)vm", "(v)center", "(o)penstack", "(a)ws"]
 TARGET_SERVER_TYPE_VALUES = ["kvm", "vcenter", "openstack", "aws"]
 
+COMPONENT_LABELS = ["vs(d)", "vs(c)", "(e)s", "nu(h)", "vns(u)tils", "ns(g)v",
+                    "(n)one of these - skip VM"]
+COMPONENT_DEFAULT_LABELS = ["vs(D)", "vs(C)", "(E)s", "nu(H)", "vns(U)tils",
+                            "ns(G)v", "(N)one of these - skip VM"]
+COMPONENT_IMAGE_KEYWORDS = ["vsd", "vsc", "elastic", "nuage-utils", "vns-util",
+                            "ncpe"]
+COMPONENT_SCHEMAS = ["vsds", "vscs", "vstats", "nuhs", "vnsutils", "nsgvs"]
+
 
 class Wizard(object):
 
@@ -434,6 +454,22 @@ class Wizard(object):
 
         if not found:
             os.mkdir(deployment_dir)
+
+    def discover_components(self, action, data):
+        choice = 0
+        another_string = "a"
+
+        while choice == 0:
+            choice = self._input(
+                "Would you like to try to discover existing components "
+                "automatically from %s hypervisor?" % another_string, 1,
+                ["(y)es", "(N)o"])
+
+            if choice == 1:
+                return
+
+            self._discover_components()
+            another_string = "another"
 
     def import_csv_spreadsheet(self, action, data):
         choice = self._input("Do you have a CSV spreadsheet to import?", 1,
@@ -742,7 +778,10 @@ class Wizard(object):
 
         else:
             while value is None:
-                user_value = raw_input(input_prompt)
+                if datatype == "password":
+                    user_value = getpass.getpass(input_prompt)
+                else:
+                    user_value = raw_input(input_prompt)
                 value = self._validate_input(user_value, default, choices,
                                              datatype)
 
@@ -951,11 +990,22 @@ class Wizard(object):
                     self.current_action_idx += 1
                     continue
                 if choice == 3:
-                    self._print(u"Exiting MetroAE wizard. All progress made "
-                                u"has been saved.")
+                    self._print("Exiting MetroAE wizard. All progress made "
+                                "has been saved.")
                     exit(0)
 
-            self._run_action(current_action)
+            try:
+                self._run_action(current_action)
+            except KeyboardInterrupt:
+                self._print("\n\nInterrupt signal received. All progress made "
+                            "before current step has been saved.\n")
+                choice = self._input(
+                    "Would you like to quit?",
+                    1, ["(y)es", "(N)o"])
+
+                if choice != 1:
+                    exit(1)
+
             self.current_action_idx += 1
 
     def _display_step(self, action):
@@ -1172,6 +1222,546 @@ class Wizard(object):
             if not is_list and type(deployment) != dict:
                 deployment = dict()
             return deployment
+
+    def _discover_components(self):
+        deployment_dir = self._get_deployment_dir()
+        if deployment_dir is None:
+            return
+
+        hostname = self._input("Enter target server (hypervisor) address")
+        if self._verify_vcenter_hypervisor(hostname):
+            username = self._input(
+                "Enter the username for the target server (hypervisor)",
+                "Administrator@vsphere.local")
+            password = self._input(
+                "Enter the password for the target server",
+                datatype="password")
+            self._discover_vcenter_components(username, password, hostname)
+        else:
+            username = self._input(
+                "Enter the username for the target server (hypervisor)",
+                "root")
+
+            valid_ssh = self._setup_discovery_ssh(username, hostname)
+
+            if not valid_ssh:
+                self._print("Auto-discovery requires password-less SSH access")
+                return
+
+            if self._verify_kvm_hypervisor(username, hostname):
+                self._discover_kvm_components(username, hostname)
+            else:
+                self._print("Unsupported hypervisor type for auto-discovery "
+                            "(only KVM and vCenter supported)")
+                return
+
+    def _setup_discovery_ssh(self, username, hostname):
+        valid_ssh = self._verify_ssh(username, hostname)
+
+        if valid_ssh:
+            return valid_ssh
+
+        choice = self._input(
+            "Add password-less SSH access to %s?" % hostname, 0,
+            ["(Y)es", "(n)o"])
+
+        if choice != 0:
+            return False
+
+        self._print("\nWe will now configure SSH access to the target "
+                    "server (hypervisors).  This will likely require the "
+                    "SSH password to be entered.\n")
+
+        valid_ssh = self._setup_ssh(username, hostname)
+
+        return valid_ssh
+
+    def _verify_vcenter_hypervisor(self, hostname):
+        try:
+            import requests
+        except ImportError:
+            self._print("Could not import libraries required to communicate "
+                        "with vCenter. Was setup completed successfully?")
+            return False
+
+        try:
+            requests.packages.urllib3.disable_warnings()
+            resp = requests.get("https://%s/rest" % hostname, verify=False)
+        except Exception:
+            return False
+
+        if resp.status_code == 200 and "vmware" in resp.text:
+            self.state["target_server_type"] = "vcenter"
+            return True
+
+        return False
+
+    def _verify_kvm_hypervisor(self, username, hostname):
+        try:
+            rc, output_lines = self._run_on_hypervisor(
+                username, hostname,
+                "ps ax | grep libvirtd | grep -v grep")
+
+            if rc == 0:
+                self.state["target_server_type"] = "kvm"
+                return True
+        except Exception:
+            self._print("Could not connect to hypervisor")
+            pass
+
+        return False
+
+    def _discover_vcenter_components(self, username, password, hostname):
+        try:
+            vms = self._get_vcenter_vms(username, password, hostname)
+            if vms is None:
+                return False
+
+            self._print("\nFound VMs: " + ", ".join(sorted(vms.keys())))
+
+            for vm_name, vm in vms.iteritems():
+                vm_info = self._discover_vcenter_vm_info(vm, hostname)
+                if vm_info is not None:
+                    choice = self._verify_vcenter_discovery(vm_info)
+                    try:
+                        self._add_discovered_vm(vm_info, choice)
+                    except Exception:
+                        self._print("\nCould not add VM to deployment.")
+            return True
+
+        except Exception as e:
+            self._print("\nAn error occurred while attempting to auto-discover"
+                        " components: " + str(e))
+            self._print("Please contact: " + METROAE_CONTACT)
+
+        return False
+
+    def _get_vcenter_vms(self, username, password, hostname):
+        try:
+            from pyVim.connect import SmartConnectNoSSL, Disconnect
+            from pyVmomi import vim
+            import ssl
+            import atexit
+        except ImportError:
+            self._print("Could not import libraries required to communicate "
+                        "with vCenter. Was setup completed successfully?")
+            return None
+
+        try:
+            s = ssl.SSLContext(ssl.PROTOCOL_TLSv1)
+            s.verify_mode = ssl.CERT_NONE
+            si = SmartConnectNoSSL(host=hostname,
+                                   user=username,
+                                   pwd=password)
+            atexit.register(Disconnect, si)
+
+        except Exception:
+            self._print("Could not connect to vCenter")
+            return None
+
+        return self._get_vcenter_vms_dict(si.content, [vim.VirtualMachine])
+
+    def _get_vcenter_vms_dict(self, connection, vimtype):
+        vms_dict = {}
+        container = connection.viewManager.CreateContainerView(
+            connection.rootFolder, vimtype, True)
+        for managed_object_ref in container.view:
+            vms_dict.update({managed_object_ref.name: managed_object_ref})
+
+        return vms_dict
+
+    def _discover_vcenter_vm_info(self, vm, hostname):
+        try:
+            vm_info = dict()
+
+            vm_info["vm_name"] = vm.name
+            vm_info["target_server"] = hostname
+            vm_info["target_server_type"] = "vcenter"
+
+            self._discover_vcenter_vm_field(
+                vm_info, vm, "product",
+                lambda vm: vm.summary.config.product.name)
+
+            self._discover_vcenter_vm_field(
+                vm_info, vm, "datacenter",
+                lambda vm: vm.summary.runtime.host.parent.parent.parent.name)
+
+            self._discover_vcenter_vm_field(
+                vm_info, vm, "cluster",
+                lambda vm: vm.summary.runtime.host.parent.name)
+
+            self._discover_vcenter_vm_field(
+                vm_info, vm, "datastore",
+                lambda vm: vm.config.datastoreUrl[0].name)
+
+            interfaces = list()
+            vm_info["interfaces"] = interfaces
+
+            self._discover_vcenter_interfaces(interfaces, vm)
+
+            return vm_info
+
+        except Exception:
+            return None
+
+    def _discover_vcenter_vm_field(self, vm_info, vm, field, get_callback):
+        vm_info[field] = ''
+        try:
+            vm_info[field] = get_callback(vm)
+        except Exception:
+            pass
+
+    def _discover_vcenter_interfaces(self, interfaces, vm):
+        try:
+            if len(vm.guest.net) > 0:
+                interface = dict()
+                interfaces.append(interface)
+
+                self._discover_vcenter_vm_field(
+                    interface, vm, "address",
+                    lambda vm: vm.guest.net[0].ipAddress[0])
+
+                self._discover_vcenter_vm_field(
+                    interface, vm, "hostname",
+                    lambda vm: vm.guest.ipStack[0].dnsConfig.hostName)
+
+                self._discover_vcenter_vm_field(
+                    interface, vm, "gateway",
+                    lambda vm: vm.guest.ipStack[0].ipRouteConfig
+                    .ipRoute[0].gateway.ipAddress)
+
+                self._discover_vcenter_vm_field(
+                    interface, vm, "prefix",
+                    lambda vm: vm.guest.net[0].ipConfig.ipAddress[0]
+                    .prefixLength)
+
+                if interface['prefix'] == '':
+                    interface['prefix'] = 24
+
+            if len(vm.guest.net) > 1:
+                interface = dict()
+                interfaces.append(interface)
+
+                self._discover_vcenter_vm_field(
+                    interface, vm, "address",
+                    lambda vm: vm.guest.net[1].ipAddress[0])
+
+                interface['hostname'] = ""
+                interface['gateway'] = ""
+                interface['prefix'] = 24
+
+        except Exception:
+            pass
+
+    def _verify_vcenter_discovery(self, vm_info):
+        self._print("\n\nDiscovered VM")
+        self._print("-------------")
+        self._print("VM name: " + vm_info["vm_name"])
+        self._print("Product: " + vm_info["product"])
+        self._print("Datacenter: " + vm_info["datacenter"])
+        self._print("Cluster: " + vm_info["cluster"])
+        self._print("Datastore: " + vm_info["datastore"])
+        self._print("Interfaces:")
+        for interface in vm_info["interfaces"]:
+            self._print(" - address: " + interface["address"])
+            self._print("   hostname: " + interface["hostname"])
+            self._print("   gateway: " + interface["gateway"])
+            self._print("   prefix length: " + str(interface["prefix"]))
+
+        self._print("\nThis VM can be added to your deployment.  There will be"
+                    " an opportunity to modify it in later steps of the wizard"
+                    " or those steps can be skipped if the discovered VMs are "
+                    "correct.\n")
+        return self._vcenter_component_choice(vm_info["product"])
+
+    def _vcenter_component_choice(self, product):
+
+        default = len(COMPONENT_LABELS) - 1
+        if "vsc" in product.lower():
+            default = 1
+
+        choices = list(COMPONENT_LABELS)
+        choices[default] = COMPONENT_DEFAULT_LABELS[default]
+        choice = self._input("Which component type is this VM?", default,
+                             choices)
+
+        return choice
+
+    def _discover_kvm_components(self, username, hostname):
+        try:
+            vm_names = self._discover_kvm_vm_names(username, hostname)
+            for vm_name in vm_names:
+                vm_info = self._discover_kvm_vm_info(username, hostname,
+                                                     vm_name)
+                if vm_info is not None:
+                    choice = self._verify_kvm_discovery(vm_info)
+                    try:
+                        self._add_discovered_vm(vm_info, choice)
+                    except Exception:
+                        self._print("\nCould not add VM to deployment.")
+            return True
+        except Exception as e:
+            self._print("\nAn error occurred while attempting to auto-discover"
+                        " components: " + str(e))
+            self._print("Please contact: " + METROAE_CONTACT)
+
+        return False
+
+    def _discover_kvm_vm_names(self, username, hostname):
+        rc, output_lines = self._run_on_hypervisor(username, hostname,
+                                                   "sudo virsh list --name")
+        if rc == 0:
+            names = sorted([x for x in output_lines if x.strip() != ""])
+            self._print("\nFound VMs: " + ", ".join(names))
+            return names
+        else:
+            self._print("\nError while discovering VMs on %s\n%s" % (
+                hostname, "\n".join(output_lines)))
+            return list()
+
+    def _discover_kvm_vm_info(self, username, hostname, vm_name):
+        rc, output_lines = self._run_on_hypervisor(
+            username, hostname, "sudo virsh dumpxml " + vm_name)
+
+        if rc != 0:
+            return None
+
+        vm_info = self._parse_kvm_info("\n".join(output_lines))
+
+        if vm_info is None:
+            return None
+
+        vm_info["target_server"] = hostname
+        vm_info["target_server_type"] = "kvm"
+        vm_info["vm_name"] = vm_name
+
+        for interface in vm_info["interfaces"]:
+            self._discover_kvm_interface(username, hostname, interface)
+
+        return vm_info
+
+    def _parse_kvm_info(self, kvm_xml):
+        try:
+            import xml.etree.ElementTree as ET
+        except ImportError:
+            self._print(
+                "Could not import the libraries to parse KVM XML. Discovery "
+                "not possible.")
+            return None
+
+        vm_info = dict()
+        try:
+            root = ET.fromstring(kvm_xml)
+
+            vm_info["image_name"] = (
+                root.find("devices/disk/source").attrib["file"])
+
+            interfaces = list()
+
+            vm_info["interfaces"] = interfaces
+
+            for intf_elem in root.findall("devices/interface[@type='bridge']"):
+                interfaces.append({
+                    "mac": intf_elem.find("mac").attrib["address"],
+                    "bridge": intf_elem.find("source").attrib["bridge"]})
+
+            return vm_info
+
+        except Exception:
+            self._print(
+                "Could not parse KVM XML. Skipping VM.")
+            return None
+
+    def _discover_kvm_interface(self, username, hostname, interface):
+        interface["address"] = ""
+        try:
+            rc, output_lines = self._run_on_hypervisor(
+                username, hostname,
+                "/usr/sbin/arp -en | grep " + interface["mac"])
+            if rc == 0:
+                interface["address"] = output_lines[0].split(" ")[0]
+
+        except Exception:
+            pass
+
+        interface["hostname"] = ""
+        try:
+            if interface["address"] != "":
+                rc, output_lines = self._run_on_hypervisor(
+                    username, hostname,
+                    "getent hosts " + interface["address"])
+                if rc == 0:
+                    interface["hostname"] = output_lines[0].split(" ")[-1]
+        except Exception:
+            pass
+
+        interface["gateway"] = ""
+        interface["prefix"] = 24
+        try:
+            if interface["address"] != "":
+                rc, output_lines = self._run_on_hypervisor(
+                    username, hostname,
+                    "/usr/sbin/ip address show dev %s | "
+                    "awk '/inet/ {print $2}'" % interface["bridge"])
+                if rc == 0:
+                    interface["gateway"] = output_lines[0].split("/")[0]
+                    interface["prefix"] = int(output_lines[0].split("/")[1])
+        except Exception:
+            pass
+
+    def _verify_kvm_discovery(self, vm_info):
+        self._print("\n\nDiscovered VM")
+        self._print("-------------")
+        self._print("VM name: " + vm_info["vm_name"])
+        self._print("Image: " + vm_info["image_name"])
+        self._print("Interfaces:")
+        for interface in vm_info["interfaces"]:
+            self._print(" - bridge: " + interface["bridge"])
+            self._print("   address: " + interface["address"])
+            self._print("   hostname: " + interface["hostname"])
+            self._print("   gateway: " + interface["gateway"])
+            self._print("   prefix length: " + str(interface["prefix"]))
+
+        self._print("\nThis VM can be added to your deployment.  There will be"
+                    " an opportunity to modify it in later steps of the wizard"
+                    " or those steps can be skipped if the discovered VMs are "
+                    "correct.\n")
+        return self._kvm_component_choice(vm_info["image_name"])
+
+    def _kvm_component_choice(self, image_name):
+
+        default = len(COMPONENT_IMAGE_KEYWORDS)
+        for i, keyword in enumerate(COMPONENT_IMAGE_KEYWORDS):
+            if keyword in image_name.lower():
+                default = i
+
+        choices = list(COMPONENT_LABELS)
+        choices[default] = COMPONENT_DEFAULT_LABELS[default]
+        choice = self._input("Which component type is this VM?", default,
+                             choices)
+
+        return choice
+
+    def _add_discovered_vm(self, vm_info, choice):
+
+        if choice >= len(COMPONENT_LABELS) - 1:
+            # Skip
+            return
+
+        schema = COMPONENT_SCHEMAS[choice]
+        if "discovered_" + schema in self.state:
+            deployment = self.state["discovered_" + schema]
+        else:
+            deployment = list()
+            self.state["discovered_" + schema] = deployment
+
+        component = dict()
+        self._add_discovered_vm_standard(vm_info, component)
+        role = 1
+        if choice == 0:
+            role = self._input("Role of VSD?", 0, [
+                "(P)rimary / stand-alone",
+                "(s)tandby"])
+        if role == 0:
+            deployment.insert(0, component)
+        else:
+            deployment.append(component)
+
+        if choice == 0:
+            # VSD
+            pass
+        elif choice == 1:
+            # VSC
+            self._add_discovered_vm_vsc(vm_info, component)
+        elif choice == 2:
+            # VSTAT
+            pass
+        elif choice == 3:
+            # NUH
+            pass
+        elif choice == 4:
+            # VNSUTIL
+            self._add_discovered_vm_vnsutil(vm_info, component)
+        elif choice == 5:
+            # NSG
+            self._add_discovered_vm_nsgv(vm_info, component)
+        else:
+            # UNKNOWN
+            self._print("\nError: Unknown choice for discovered VM\n")
+            return
+
+        deployment_dir = self._get_deployment_dir()
+        if deployment_dir is None:
+            return
+        deployment_file = os.path.join(deployment_dir, schema + ".yml")
+        self._generate_deployment_file(schema, deployment_file, deployment)
+
+    def _add_discovered_vm_standard(self, vm_info, component):
+        component["target_server_type"] = vm_info["target_server_type"]
+        component["target_server"] = vm_info["target_server"]
+        component["vmname"] = vm_info["vm_name"]
+        component["upgrade_vmname"] = "new-" + vm_info["vm_name"]
+
+        if "datacenter" in vm_info and vm_info["datacenter"] != "":
+            component["vcenter_datacenter"] = vm_info["datacenter"]
+
+        if "cluster" in vm_info and vm_info["cluster"] != "":
+            component["vcenter_cluster"] = vm_info["cluster"]
+
+        if "datastore" in vm_info and vm_info["datastore"] != "":
+            component["vcenter_datastore"] = vm_info["datastore"]
+
+        if "interfaces" in vm_info and len(vm_info["interfaces"]) > 0:
+            first_interface = vm_info["interfaces"][0]
+            component["hostname"] = first_interface["hostname"]
+            component["mgmt_ip"] = first_interface["address"]
+            component["mgmt_ip_prefix"] = first_interface["prefix"]
+            component["mgmt_gateway"] = first_interface["gateway"]
+            if "bridge" in first_interface:
+                component["mgmt_bridge"] = first_interface["bridge"]
+
+    def _add_discovered_vm_vsc(self, vm_info, component):
+        if "interfaces" in vm_info and len(vm_info["interfaces"]) > 1:
+            second_interface = vm_info["interfaces"][1]
+            component["ctrl_ip"] = second_interface["address"]
+            component["ctrl_ip_prefix"] = second_interface["prefix"]
+            if "bridge" in second_interface:
+                component["data_bridge"] = second_interface["bridge"]
+
+        system_ip = self._input("System IP address for routing", None,
+                                datatype="ipaddr")
+        component["system_ip"] = system_ip
+
+    def _add_discovered_vm_vnsutil(self, vm_info, component):
+        if "interfaces" in vm_info and len(vm_info["interfaces"]) > 1:
+            second_interface = vm_info["interfaces"][1]
+            component["data_ip"] = second_interface["address"]
+            component["data_ip_prefix"] = second_interface["prefix"]
+            if "bridge" in second_interface:
+                component["data_bridge"] = second_interface["bridge"]
+
+        self._setup_vnsutils(component, 0)
+
+    def _add_discovered_vm_nsgv(self, vm_info, component):
+        del component["mgmt_bridge"]
+        if "interfaces" in vm_info and len(vm_info["interfaces"]) > 0:
+            first_interface = vm_info["interfaces"][0]
+            component["nsgv_ip"] = first_interface["address"]
+            if "mac" in first_interface:
+                component["nsgv_mac"] = first_interface["mac"]
+            if "bridge" in first_interface:
+                component["data_bridge"] = first_interface["bridge"]
+        if "interfaces" in vm_info and len(vm_info["interfaces"]) > 1:
+            second_interface = vm_info["interfaces"][1]
+            if "bridge" in second_interface:
+                component["access_bridge"] = second_interface["bridge"]
+
+        self._setup_nsgv_component(component)
+
+    def _run_on_hypervisor(self, username, hostname, command):
+        return self._run_shell("ssh -oPasswordAuthentication=no  "
+                               "-oLogLevel=ERROR -oStrictHostKeyChecking=no "
+                               "%s@%s %s " % (username, hostname, command))
 
     def _import_csv(self):
         deployment_dir = self._get_deployment_dir()
@@ -1874,6 +2464,8 @@ class Wizard(object):
             options = ""
             if self.in_container:
                 options = "-i /source/id_rsa.pub -o StrictHostKeyChecking=no "
+            else:
+                self._setup_ssh_key()
             rc, output_lines = self._run_shell(
                 "ssh-copy-id %s%s@%s" % (options, username, hostname))
             if rc == 0:
@@ -1895,6 +2487,33 @@ class Wizard(object):
             self._print("Please contact: " + METROAE_CONTACT)
 
         return False
+
+    def _setup_ssh_key(self):
+        rc, output_lines = self._run_shell("stat ~/.ssh/id_rsa.pub")
+        if rc != 0:
+            self._print("\nCould not find your SSH public key "
+                        "~/.ssh/id_rsa.pub\n")
+
+            choice = self._input("Do you wish to generate a new SSH keypair?",
+                                 0, ["(Y)es", "(n)o"])
+
+            if choice == 0:
+                rc, output_lines = self._run_shell('ssh-keygen -P "" '
+                                                   '-f ~/.ssh/id_rsa')
+
+                if rc == 0:
+                    self._print("\nSuccessfully generated an SSH keypair")
+                    return True
+                else:
+                    self._record_problem(
+                        "ssh_keys", "Could not generate SSH keypair")
+                    self._print("\n".join(output_lines))
+                    self._print(
+                        "\nCould not generate an SSH keypair, this is "
+                        "required for MetroAE to operate.")
+                    return False
+
+        return True
 
     def _verify_ssh(self, username, hostname):
         try:
