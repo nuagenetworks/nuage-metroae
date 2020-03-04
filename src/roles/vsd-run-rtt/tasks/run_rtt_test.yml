@@ -1,0 +1,58 @@
+- block:
+
+  - name: Measure RTT between current and other VSD
+    shell: nping --tcp -p 3306 -c 10 {{ other_node }} | grep 'Max rtt:*' | cut -dm -f1 | sed 's/Max rtt://1'
+    register: measured_rtt
+
+  - name: Check if RTT lower than required
+    assert:
+      that: "(measured_rtt.stdout | int) < vsd_max_rtt"
+      msg: >-
+        "RTT between {{ other_node }} and {{ current_node }} is higher than required.
+        Quitting install. Recommended RTT for proper cluster performance is less than {{ vsd_max_rtt }} milliseconds
+        To ignore this error, set vsd_ignore_errors_rtt_test to true or adjust the value of vsd_max_cluster_rtt_msec 
+        or vsd_max_active_standby_rtt_msec in common.yml file in your deployment and rerun the MetroAE command again.
+        To skip RTT tests set vsd_run_cluster_rtt_test to false"
+    ignore_errors: "{{ vsd_ignore_errors_rtt_test | default(false) }}"
+
+  - name: Store the RTT result object between current and other VSD
+    set_fact:
+      single_result: {
+        src: '{{ current_node }}',
+        dst: '{{ other_node }}',
+        rtt: '{{ measured_rtt.stdout }}'
+      }
+
+  when: delegate_node is not defined
+
+- block:
+
+  - name: Measure RTT between delegated and other VSD
+    shell: nping --tcp -p 3306 -c 10 {{ other_node }} | grep 'Max rtt:*' | cut -dm -f1 | sed 's/Max rtt://1'
+    register: measured_delegate_rtt
+    delegate_to: "{{ delegate_node | default ('NONE') }}"
+
+  - name: Check if RTT lower than required
+    assert:
+      that: "(measured_delegate_rtt.stdout | int) < vsd_max_rtt"
+      msg: >-
+        "RTT between {{ other_node }} and {{ delegate_node }} is higher than required.
+        Quitting install. Recommended RTT for proper cluster performsance is less than {{ vsd_max_rtt }} milliseconds
+        To ignore this error, set vsd_ignore_errors_rtt_test to true or adjust the value of vsd_max_cluster_rtt_msec 
+        or vsd_max_active_standby_rtt_msec in common.yml file in your deployment and rerun the MetroAE command again.
+        To skip RTT tests set vsd_run_cluster_rtt_test to false"
+    ignore_errors: "{{ vsd_ignore_errors_rtt_test | default(false) }}"
+
+  - name: Store the RTT result object between delegated and other VSD
+    set_fact:
+      single_result: {
+        src: '{{ delegate_node }}',
+        dst: '{{ other_node }}',
+        rtt: '{{ measured_delegate_rtt.stdout }}'
+      }
+
+  when: delegate_node is defined
+
+- name: Add the result to previouly calculated RTT results
+  set_fact:
+    vsd_rtt_test_results: '{{vsd_rtt_test_results + [single_result]}}'
