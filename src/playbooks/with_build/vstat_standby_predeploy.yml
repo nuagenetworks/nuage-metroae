@@ -1,0 +1,20 @@
+- hosts: backup_vstats
+  gather_facts: no
+  pre_tasks:
+    - name: Check if VSTATs prereq satisfied for predeploy
+      include_role:
+        name: common
+        tasks_from: check-predeploy-prereq
+
+    - name: Lets run VSTAT predeploy hooks
+      include_role:
+        name: hooks
+        tasks_from: main
+      vars:
+        - hooks_file_path: "{{ item }}"
+        - hook_location:
+          - vstat_predeploy
+          - install_vstats
+      with_items: "{{ hooks | default([]) }}"
+  roles:
+    - vstat-predeploy
