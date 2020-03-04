@@ -274,12 +274,8 @@ function setup_tab_completion() {
   fi
 
   cp src/tab-completion-metroae.sh /etc/bash_completion.d/
-  copy_rc=$?
 
-  source src/tab-completion-metroae.sh
-  source_rc=$?
-
-  if [[ $copy_rc -ne 0 || $source_rc -ne 0 ]]
+  if [[ $? -ne 0 ]]
   then
     echo_failure
   else

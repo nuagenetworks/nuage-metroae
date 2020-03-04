@@ -70,7 +70,8 @@ fi
 if [[ -z $SETUP_FILE ]]; then
     SETUP_FILE=/opt/metroae/.metroae
 fi
-
+TAB_COMPLETION_SCRIPT=tab-completion-metroae.sh
+COMPLETION_DIR=/etc/bash_completion.d/
 
 # Deployment variables
 CURRENT_DIR=`pwd`
@@ -819,6 +820,8 @@ function setup_container {
     # start the container
     run_container
 
+    setup_tab_completion
+
     config_status=0
     if [[ $setup_type != "d" ]]; then
         echo ""
@@ -1182,6 +1185,16 @@ function check_for_user_group {
         fi
     fi
 
+}
+
+function setup_tab_completion {
+  if [[ ! -d $COMPLETION_DIR ]]; then
+    write_to_script_log "Creating tab-completion dir: $COMPLETION_DIR"
+    mkdir $COMPLETION_DIR
+  fi
+
+  write_to_script_log "Copying tab-completion to standard dir: $METROAE_MOUNT_POINT/$TAB_COMPLETION_SCRIPT to $COMPLETION_DIR"
+  cp $METROAE_MOUNT_POINT/$TAB_COMPLETION_SCRIPT $COMPLETION_DIR
 }
 
 #################################################################################

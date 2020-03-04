@@ -1,4 +1,5 @@
-#!/usr/bin/env bash
+# To add menu tab completion for MetroAE issue:
+# source tab-completion-metroae.sh
 
 MENU_STRIDE=5
 
