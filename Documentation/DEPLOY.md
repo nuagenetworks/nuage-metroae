@@ -6,6 +6,7 @@ You can execute MetroAE workflows to perform the following installations:
 * [Install a Particular Role or Host](#install-a-particular-role-or-host)
 * [Copy QCOW2 files](#copy-qcow2-files-before-deployment)
 * [Deploy Standby Cluster](#deploy-the-standby-clusters)
+* [Setup a Health Monitoring Agent](#setup-a-health-monitoring-agent)
 * [Debugging](#debugging)
 
 ## Prerequisites / Requirements
@@ -97,6 +98,13 @@ For Standby VSTATs(ES)
 ```
 metroae install vstats standby predeploy
 metroae install vstats standby deploy
+```
+
+## Setup a Health Monitoring Agent
+
+A health monitoring agent can be setup on compatible components during the deploy step. Currently this support includes the [Zabbix](zabbix.com) agent.  An optional parameter `health_monitoring_agent` can be specified on each component in the deployment files to enable setup.  During each component deploy step when enabled, the agent will be downloaded, installed and configured to be operational.  The agent can be installed separately, outside of the deploy role, using the following command:
+```
+metroae health monitoring setup
 ```
 
 ## Debugging
