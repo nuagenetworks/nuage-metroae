@@ -16,15 +16,16 @@ MENU+=(',config,<positional args>'  'Execute configuration engine inside the con
 #                             CONTAINER COMMANDS                                #
 #################################################################################
 
-MENU+=(',container'                 'Manage the MetroAE container'                         'container'  ''                       '')
-MENU+=(',container,pull'            'Pull a new MetroAE image from the registry'           'container'  'pull'                   ',container,pull')
-MENU+=(',container,setup'           'Setup the metroae container'                          'container'  'setup'                  ',container,setup')
-MENU+=(',container,start'           'Start the metroae container'                          'container'  'start'                  ',container,start')
-MENU+=(',container,stop'            'Stop the metroae container'                           'container'  'stop'                   ',container,stop')
-MENU+=(',container,status'          'Display the status of the metroae container'          'container'  'status'                 ',container,status')
-MENU+=(',container,destroy'         'Destroy the metroae container'                        'container'  'destroy'                ',container,destroy')
-MENU+=(',container,update'          'Update the metroae container to the latest version'   'container'  'upgrade-engine'         ',container,update')
-MENU+=(',container,ssh,copyid'      'Copy the container ssh public key to a host'          'container'  'copy-ssh-id'            ',container,ssh,copyid')
+MENU+=(',container'                    'Manage the MetroAE container'                         'container'  ''                       '')
+MENU+=(',container,pull'               'Pull a new MetroAE image from the registry'           'container'  'pull'                   ',container,pull')
+MENU+=(',container,setup'              'Setup the metroae container'                          'container'  'setup'                  ',container,setup')
+MENU+=(',container,start'              'Start the metroae container'                          'container'  'start'                  ',container,start')
+MENU+=(',container,stop'               'Stop the metroae container'                           'container'  'stop'                   ',container,stop')
+MENU+=(',container,status'             'Display the status of the metroae container'          'container'  'status'                 ',container,status')
+MENU+=(',container,destroy'            'Destroy the metroae container'                        'container'  'destroy'                ',container,destroy')
+MENU+=(',container,update'             'Update the metroae container to the latest version'   'container'  'upgrade-engine'         ',container,update')
+MENU+=(',container,ssh,copyid'         'Copy the container ssh public key to a host'          'container'  'copy-ssh-id'            ',container,ssh,copyid')
+MENU+=(',container,download'           'Download the container from Amazon S3 in tar format'  'container'  'download'               ',container,download')
 
 if [[ ! -z "$METROAE_GUI_ENABLE" ]]; then
     #################################################################################
@@ -474,6 +475,9 @@ function get_from_s3 {
     debug ${FUNCNAME[0]}
     headers=$TEMPORARY_DIRECTORY/$S3_HEADER_DUMP_FILE
     tarfile=$TEMPORARY_DIRECTORY/$CONTAINER_TAR_FILE
+    if [[ ! -z $1 ]]; then
+      tarfile=$1
+    fi
     set +e
     rm $tarfile > /dev/null 2>&1
     rm $headers > /dev/null 2>&1
@@ -490,7 +494,7 @@ function get_from_s3 {
             -H "Date: $date" \
             -H "Content-Type: $content_type" \
             -H "Authorization: AWS ${S3_KEY}:$signature" \
-            "https://$S3_BUCKET.s3.amazonaws.com/$S3_FOLDER/$CONTAINER_TAR_FILE" > $TEMPORARY_DIRECTORY/$CONTAINER_TAR_FILE
+            "https://$S3_BUCKET.s3.amazonaws.com/$S3_FOLDER/$CONTAINER_TAR_FILE" > $tarfile
 	END
     )
     debug "${FUNCNAME[0]}: CURL_COMMAND: $CURL_COMMAND"
@@ -519,6 +523,9 @@ function get_from_s3 {
         write_to_screen_and_script_log "Attempt to pull the MetroAE container image from S3 failed. Quitting"
         print_version_and_exit 1
     fi
+
+    write_to_screen_and_script_log "Successfully downloaded the container to $tarfile"
+
 }
 
 function pull {
@@ -1792,6 +1799,15 @@ function container_main {
             copy-ssh-id)
             copy_ssh_id "$2"
             shift
+            shift
+            ;;
+            download)
+            if [[ ! -z $2 ]]; then
+              get_from_s3 $2
+              shift
+            else
+              get_from_s3
+            fi
             shift
             ;;
             *)
