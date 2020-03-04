@@ -1,0 +1,98 @@
+- name: Set test results to clear
+  set_fact: 
+    vsd_rtt_test_results: []
+
+- name: Measure RTT between First and Second VSD
+  import_tasks: run_rtt_test.yml
+  vars:
+    other_node: "{{ second_node }}"
+    current_node : "{{ first_node }}"
+    vsd_max_rtt: "{{ vsd_max_cluster_rtt_msec }}"
+
+- name: Measure RTT between First and Third VSD
+  include_tasks: run_rtt_test.yml
+  vars:
+    other_node: "{{ third_node }}"
+    current_node : "{{ first_node }}"
+    vsd_max_rtt: "{{ vsd_max_cluster_rtt_msec }}"
+
+- name: Measure RTT between Second and Third VSD
+  include_tasks: run_rtt_test.yml
+  vars:
+    other_node: "{{ third_node }}"
+    current_node : "{{ first_node }}"
+    delegate_node: "{{ second_node }}"
+    vsd_max_rtt: "{{ vsd_max_cluster_rtt_msec }}"
+
+- block:
+
+  - name: Measure RTT between First active and First standby VSD
+    include_tasks: run_rtt_test.yml
+    vars:
+      other_node: "{{ groups['vsd_ha_node1'][0] }}"
+      current_node : "{{ first_node }}"
+      vsd_max_rtt: "{{ vsd_max_active_standby_rtt_msec }}"
+
+  - name: Measure RTT between Second active and First standby VSD
+    include_tasks: run_rtt_test.yml
+    vars:
+      other_node: "{{ groups['vsd_ha_node2'][0] }}"
+      current_node : "{{ first_node }}"
+      vsd_max_rtt: "{{ vsd_max_active_standby_rtt_msec }}"
+
+  - name: Measure RTT between Third active and First standby VSD
+    include_tasks: run_rtt_test.yml
+    vars:
+      other_node: "{{ groups['vsd_ha_node3'][0] }}"
+      current_node : "{{ first_node }}"
+      vsd_max_rtt: "{{ vsd_max_active_standby_rtt_msec }}"
+
+  - name: Measure RTT between First active and Second standby VSD
+    include_tasks: run_rtt_test.yml
+    vars:
+      other_node: "{{ groups['vsd_ha_node1'][0] }}"
+      current_node : "{{ first_node }}"
+      delegate_node: "{{ second_node }}"
+      vsd_max_rtt: "{{ vsd_max_active_standby_rtt_msec }}"
+
+  - name: Measure RTT between Second active and Second standby VSD
+    include_tasks: run_rtt_test.yml
+    vars:
+      other_node: "{{ groups['vsd_ha_node2'][0] }}"
+      current_node : "{{ first_node }}"
+      delegate_node: "{{ second_node }}"
+      vsd_max_rtt: "{{ vsd_max_active_standby_rtt_msec }}"
+
+  - name: Measure RTT between Third active and Second standby VSD
+    include_tasks: run_rtt_test.yml
+    vars:
+      other_node: "{{ groups['vsd_ha_node3'][0] }}"
+      current_node : "{{ first_node }}"
+      delegate_node: "{{ second_node }}"
+      vsd_max_rtt: "{{ vsd_max_active_standby_rtt_msec }}"
+
+  - name: Measure RTT between First active and Third standby VSD
+    include_tasks: run_rtt_test.yml
+    vars:
+      other_node: "{{ groups['vsd_ha_node1'][0] }}"
+      current_node : "{{ first_node }}"
+      delegate_node: "{{ third_node }}"
+      vsd_max_rtt: "{{ vsd_max_active_standby_rtt_msec }}"
+
+  - name: Measure RTT between Second active and Third standby VSD
+    include_tasks: run_rtt_test.yml
+    vars:
+      other_node: "{{ groups['vsd_ha_node2'][0] }}"
+      current_node : "{{ first_node }}"
+      delegate_node: "{{ third_node }}"
+      vsd_max_rtt: "{{ vsd_max_active_standby_rtt_msec }}"
+
+  - name: Measure RTT between Third active and Third standby VSD
+    include_tasks: run_rtt_test.yml
+    vars:
+      other_node: "{{ groups['vsd_ha_node3'][0] }}"
+      current_node : "{{ first_node }}"
+      delegate_node: "{{ third_node }}"
+      vsd_max_rtt: "{{ vsd_max_active_standby_rtt_msec }}"
+
+  when: standby_cluster | default(False)
