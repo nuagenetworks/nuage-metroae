@@ -1,11 +1,14 @@
 ---
 - block:
 
-  - name: Check reachability of standby vsd cluster
-    include_role:
-      name: check-node-reachability
+  - block:
+
+    - name: Check reachability of standby vsd cluster
+      include_role:
+        name: check-node-reachability
+      with_items: "{{ groups['standby_vsds'] }}"
+
     delegate_to: "{{ item }}"
-    with_items: "{{ groups['standby_vsds'] }}"
 
   - name: Check reachability of primary vsd cluster
     command: ping -c1 {{ item }}
@@ -190,28 +193,34 @@
       - vsd_version.stdout.split('.')[0]|int < 6
       - is_primary_reachable | default(false)
 
-  - include_role:
-      name: vsd-health
-      tasks_from: monit_status
-    vars:
-      no_report: "True"
-    delegate_to: "{{ groups['primary_vsds'][0] }}"
-    when: is_primary_reachable | default(false)
-    ignore_errors: vsd_force_cluster_failover | default(no)
+  - block:
 
-  - include_role:
-      name: vsd-health
-      tasks_from: monit_status
-    vars:
-      no_report: "True"
-    when: is_primary_reachable | default(false)
+    - include_role:
+        name: vsd-health
+        tasks_from: monit_status
+      vars:
+        no_report: "True"
+      when: is_primary_reachable | default(false)
+      ignore_errors: vsd_force_cluster_failover | default(no)
+
+    delegate_to: "{{ groups['primary_vsds'][0] }}"
+
+  - block:
+
+    - include_role:
+        name: vsd-health
+        tasks_from: monit_status
+      vars:
+        no_report: "True"
+      when: is_primary_reachable | default(false)
+      ignore_errors: vsd_force_cluster_failover | default(no)
+      loop_control:
+        loop_var: vsd_ha_node
+      with_items:
+        - "{{ groups['primary_vsds'][1] }}"
+        - "{{ groups['primary_vsds'][2] }}"
+
     delegate_to: "{{ vsd_ha_node }}"
-    ignore_errors: vsd_force_cluster_failover | default(no)
-    loop_control:
-      loop_var: vsd_ha_node
-    with_items:
-      - "{{ groups['primary_vsds'][1] }}"
-      - "{{ groups['primary_vsds'][2] }}"
 
   - name: Start the replication operation on the new standby VSD
     command: "/opt/vsd/bin/vsd-start-replication-slave -m {{ groups['vsd_standby_node1'][0] }}"
