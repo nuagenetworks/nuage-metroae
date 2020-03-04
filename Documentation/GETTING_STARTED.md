@@ -52,11 +52,15 @@ Note that running the metroae Docker container for VMware installations and upgr
 
 ## 5. Prepare your environment  
 
-### 5.1 Unzip Nuage files: `metroae tools unzip images <zipped_directory> <unzip_directory>`. See [SETUP.md](SETUP.md) for details.  
+### 5.1 Unzip Nuage files
+
+Execute: `metroae tools unzip images <zipped_directory> <unzip_directory>`
+
+See [SETUP.md](SETUP.md) for details.  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Be sure that Nuage packages (tar.gz) are available on localhost (MetroAE host),  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;either in a native directory or NFS-mounted.  
 
-### 5.2 Checklist for Target Servers
+### 5.2 Checklists for Target Servers
 
 #### KVM
 
