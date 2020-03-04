@@ -11,8 +11,10 @@
 * Add support for VSD certificate renewal standalone procedure (METROAE-1188)
 * Add support for VSTAT standby only deployment (METROAE-1081)
 * Add discovery of existing components in wizard for KVM and vCenter
+* Add option to backup the /etc/host file on VSD before upgrade (METROAE-1187)
 
 ### Resolved Issues
+
 * Fix VSC examples to have valid system ip address (METROAE-1177)
 * Fix NTP retries masking non NTP sync errors (METROAE-1153)
 * Fix fallocate failure on path with symbolic link (METROAE-1167)
