@@ -10,6 +10,9 @@
 * Add VSC hardening (METROAE-1183)
 * Add support for VSD certificate renewal standalone procedure (METROAE-1188)
 * Bash tab-completion support for metroae command
+* Add VSD cluster RTT tests with configurable threshold (METROAE-766)
+* Add support for VSTAT standby only deployment (METROAE-1081)
+* Add discovery of existing components in wizard for KVM and vCenter
 
 ### Resolved Issues
 * Fix VSC examples to have valid system ip address (METROAE-1177)
@@ -18,11 +21,13 @@
 * Fix deprecated task and changed result format for vmware_vm_facts (METROAE-1179)
 * Detect when unresolved jinja2 is present in inventory (METROAE-820)
 * Check for required disk space on VSD for backup files during upgrade health check (METROAE-1182)
+* Fix issue with VSD failover procedure with Active Standby VSTATs (METROAE-1061)
 * Convert shell mkdir tasks to ansible file module (METROAE-1059)
 * Add optional user prompt confirmation before destroying components (METROAE-868)
 * Improved debugging output for vCenter ovftool commands (METROAE-981)
 * Vastly improved predeploy roles for code reuse (METROAE-801)
 * Moved default reports directory out of playbooks and into metro root directory (METROAE-879)
+* Get the debug log script working with container (METROAE-1202)
 
 ### Removed
 * Removed obsolete os_vsd_osc_integration playbook and associated role and files.

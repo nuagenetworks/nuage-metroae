@@ -64,6 +64,60 @@
 
 - import_tasks: monit_status.yml
 
+- block:
+
+  - name: Write network config to json file
+    nuage_append: filename="{{ vsd_rtt_report_path }}" text="----------VSD RTT measurements---------------\n"
+    delegate_to: localhost
+    run_once: true
+
+  - block:
+
+    - name: Run RTT tests for Primary cluster
+      import_role:
+        name: vsd-run-rtt
+      vars:
+        first_node: "{{ groups['vsd_ha_node1'][0] }}"
+        second_node: "{{ groups['vsd_ha_node2'][0] }}"
+        third_node: "{{ groups['vsd_ha_node3'][0] }}"
+        standby_cluster: false
+      when: not vsd_ran_rtt_test | default(false)
+
+    - name: Write Primary VSD RTT to file
+      nuage_append: filename="{{ vsd_rtt_report_path }}" text="{{ vsd_rtt_test_results | to_nice_json}}\n"
+      delegate_to: localhost
+
+    when: inventory_hostname == groups['vsd_ha_node1'][0]
+
+  - block:
+
+    - name: Run RTT tests for Standby cluster
+      import_role:
+        name: vsd-run-rtt
+      vars:
+        first_node: "{{ groups['vsd_standby_node1'][0] }}"
+        second_node: "{{ groups['vsd_standby_node2'][0] }}"
+        third_node: "{{ groups['vsd_standby_node3'][0] }}"
+        standby_cluster: true
+      when: not vsd_ran_rtt_test | default(false)
+
+    - name: Write Secondary VSD RTT to file
+      nuage_append: filename="{{ vsd_rtt_report_path }}" text="{{ vsd_rtt_test_results | to_nice_json}}\n"
+      delegate_to: localhost
+
+    when:
+      - groups['vsd_standby_node1'] is defined
+      - inventory_hostname == groups['vsd_standby_node1'][0]
+
+  when:
+    - vsd_run_cluster_rtt_test | default(False)
+    - not nuage_upgrade | default(False)
+
+  remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
+  become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
+  vars:
+    ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"
+
 - name: Execute list_p1db command on VSD(s)
   command: "{{ p1db_cmd }}"
   register: list_p1db_output
