@@ -46,12 +46,10 @@
   register: disk_performance_test_cleanup
   ignore_errors: true
 
-- name: Delete disk performance test files directory (ignoring errors)
+- name: Delete disk performance test files directory
   file:
     path: /var/disk_performance_test
     state: absent
-  register: disk_performance_directory_cleanup
-  ignore_errors: true
 
 - name: Verify that disk performance test preparation succeeded
   fail:
@@ -66,8 +64,7 @@
 - name: Verify that disk performance test files were deleted without error
   fail:
     msg: "There was an error when cleaning up the disk performance test files. You may need to clean up the files manually or execute the cleanup command again on the target device."
-  when:
-    - (disk_performance_test_cleanup.rc != 0) or (disk_performance_directory_cleanup.rc != 0)
+  when: disk_performance_test_cleanup.rc != 0
 
 - name: Set fact for disk performance test result
   set_fact:
