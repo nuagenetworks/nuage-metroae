@@ -1037,16 +1037,20 @@ function upgrade_docker {
 
 function upgrade_metraoe {
 
-    write_to_screen_and_script_log "Upgrading metroae script to the latest"
-    set +e
-    cp $METROAE_MOUNT_POINT/metroae "${BASH_SOURCE[0]}"
+    if [[ $RUN_MODE == "CONTAINER" ]]; then
 
-    if [[ $? -ne 0 ]]; then
-        write_to_screen_and_script_log "Could not upgrade metroae script"
-        return 1
+        write_to_screen_and_script_log "Upgrading metroae script to the latest"
+
+        set +e
+        cp $METROAE_MOUNT_POINT/metroae "${BASH_SOURCE[0]}"
+
+        if [[ $? -ne 0 ]]; then
+            write_to_screen_and_script_log "Could not upgrade metroae script"
+            return 1
+        fi
+
+        set -e
     fi
-
-    set -e
 }
 
 function run_container_if_not_running {
