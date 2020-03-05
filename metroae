@@ -499,6 +499,9 @@ function get_from_s3 {
         write_to_screen_and_script_log "Attempt to pull the MetroAE container image from S3 failed. Quitting"
         print_version_and_exit 1
     fi
+    set +e
+    rm $headers > /dev/null 2>&1
+    set -e
 }
 
 function pull {
@@ -539,6 +542,11 @@ function pull {
 
         docker load -i $TEMPORARY_DIRECTORY/$CONTAINER_TAR_FILE
         repo="Amazon S3"
+
+        set +e
+        rm $TEMPORARY_DIRECTORY/$CONTAINER_TAR_FILE > /dev/null 2>&1
+        set -e
+
     else
         echo ""
         write_to_screen_and_script_log ">>> Pulling the MetroAE container image from Nokia registry"
