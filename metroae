@@ -734,36 +734,42 @@ function setup_container {
     fi
     set -e
 
-    declare -l setup_type
-    setup_type="init"
-    if [[ -z $1 ]]; then
-        while [[ $setup_type != "c" ]] && [[ $setup_type != "d" ]] && [[ $setup_type != "b" ]] && [[ $setup_type != "" ]]
-        do
-            echo ""
-            write_to_screen_and_script_log "Setup can configure the container to support MetroAE (c)onfig, MetroAE (d)eploy,"
-            echo "or (b)oth MetroAE config and deploy. MetroAE config is used for day-zero VSD"
-            echo "configuration tasks. MetroAE deploy is used for installing, upgrading, and"
-            echo "health checking of Nuage VSP components in your environment."
-            echo ""
-            read -p "Do you want to setup MetroAE config, deploy, or both? (c/d/B): " setup_type
-        done
-    else
-        echo ""
-        write_to_screen_and_script_log ">>> Setting setup type to passed in parameter $1"
-        setup_type=$1
-        shift
-    fi
+    if [[ ! -z "$METROAE_CONFIG_ENABLE" ]]; then
 
-    if [[ $setup_type == "c" ]]; then
-        echo ""
-        write_to_screen_and_script_log ">>> Setup container for MetroAE config only"
-    elif [[ $setup_type == "d" ]]; then
-        echo ""
-        write_to_screen_and_script_log ">>> Setup container for MetroAE deploy only"
+        declare -l setup_type
+        setup_type="init"
+        if [[ -z $1 ]]; then
+            while [[ $setup_type != "c" ]] && [[ $setup_type != "d" ]] && [[ $setup_type != "b" ]] && [[ $setup_type != "" ]]
+            do
+                echo ""
+                write_to_screen_and_script_log "Setup can configure the container to support MetroAE (c)onfig, MetroAE (d)eploy,"
+                echo "or (b)oth MetroAE config and deploy. MetroAE config is used for day-zero VSD"
+                echo "configuration tasks. MetroAE deploy is used for installing, upgrading, and"
+                echo "health checking of Nuage VSP components in your environment."
+                echo ""
+                read -p "Do you want to setup MetroAE config, deploy, or both? (c/d/B): " setup_type
+            done
+        else
+            echo ""
+            write_to_screen_and_script_log ">>> Setting setup type to passed in parameter $1"
+            setup_type=$1
+            shift
+        fi
+
+        if [[ $setup_type == "c" ]]; then
+            echo ""
+            write_to_screen_and_script_log ">>> Setup container for MetroAE config only"
+        elif [[ $setup_type == "d" ]]; then
+            echo ""
+            write_to_screen_and_script_log ">>> Setup container for MetroAE deploy only"
+        else
+            echo ""
+            write_to_screen_and_script_log ">>> Setup container for both MetroAE config and deploy"
+            setup_type="b"
+        fi
+
     else
-        echo ""
-        write_to_screen_and_script_log ">>> Setup container for both MetroAE config and deploy"
-        setup_type="b"
+        setup_type="d"
     fi
 
     if [ -w "$SETUP_FILE" ]; then
