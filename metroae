@@ -826,6 +826,8 @@ function setup_container {
     # start the container
     run_container
 
+    upgrade_metraoe
+
     setup_tab_completion
 
     config_status=0
@@ -1029,6 +1031,22 @@ function upgrade_docker {
         pull
     fi
     run_container
+
+    upgrade_metraoe
+}
+
+function upgrade_metraoe {
+
+    write_to_screen_and_script_log "Upgrading metroae script to the latest"
+    set +e
+    cp $METROAE_MOUNT_POINT/metroae "${BASH_SOURCE[0]}"
+
+    if [[ $? -ne 0 ]]; then
+        write_to_screen_and_script_log "Could not upgrade metroae script"
+        return 1
+    fi
+
+    set -e
 }
 
 function run_container_if_not_running {
