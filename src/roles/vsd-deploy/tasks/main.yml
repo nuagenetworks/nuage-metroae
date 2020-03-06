@@ -240,6 +240,24 @@
 
   - block:
 
+    - name: Test VSD Disk IOPS
+      include_role:
+        name: common
+        tasks_from: disk-performance-test.yml
+      vars:
+        disk_performance_file_total_size: "{{ vsd_disk_performance_test_total_file_size }}"
+        disk_performance_minimum_threshold: "{{ vsd_disk_performance_test_minimum_threshold }}"
+        disk_performance_max_time: "{{ vsd_disk_performance_test_max_time }}"
+        ignore_disk_performance_test_errors: "{{ vsd_ignore_disk_performance_test_errors }}"
+
+    - name: Set fact that VSD Disk Performance Test ran
+      set_fact:
+        vsd_ran_disk_performance_test: true
+
+    when: vsd_run_disk_performance_test
+
+  - block:
+
     - name: Install VSD software on standalone node (Can take 20 minutes)
       command: "/opt/vsd/vsd-install.sh -t s -y {{ (enable_ipv6 | default(False) == True) | ternary('-6', '') }}"
       when: not deploy_vcin
