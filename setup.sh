@@ -264,6 +264,28 @@ pip_install() {
 }
 
 ###############################################################################
+# Setup tab-completion
+###############################################################################
+function setup_tab_completion() {
+  printn "Setting up tab-completion... ";
+
+  if [[ ! -d /etc/bash_completion.d/ ]]; then
+    mkdir /etc/bash_completion.d/
+  fi
+
+  cp src/tab-completion-metroae.sh /etc/bash_completion.d/
+
+  if [[ $? -ne 0 ]]
+  then
+    echo_failure
+  else
+    echo_success
+  fi
+  echo
+}
+
+
+###############################################################################
 # Main function
 ###############################################################################
 function main() {
@@ -299,6 +321,9 @@ function main() {
 
   # pip packages
   pip_install
+
+  # tab-completion
+  setup_tab_completion
 
   # Check for any failures and print appropriate message
   if [[ $FAILED -ne 0 ]]
