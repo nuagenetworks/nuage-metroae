@@ -6,13 +6,16 @@
 
 * Refactor metroae command to support container management; RPM no longer required.
 * Introduce day-zero VSD configuration support via `metroae config` (container only)
-* Add support for Multiple VSC underlay VPRNs (METROAE-1175)
+* Add support for Multiple VSC underlay VPRNs (MetroAE-1175)
+* Add support for VSD disk I/O testing using sysbench (METROAE-1169)
 * Add VSC hardening (METROAE-1183)
 * Add support for VSD certificate renewal standalone procedure (METROAE-1188)
+* Bash tab-completion support for metroae command
 * Add VSD cluster RTT tests with configurable threshold (METROAE-766)
 * Add support for VSTAT standby only deployment (METROAE-1081)
 * Add discovery of existing components in wizard for KVM and vCenter
 * Add support for VSTAT yum update via vstat_yum_update (METROAE-1190)
+* Add support for zero factor bootstrapping multi uplinks for NSGvs (METROAE-852)
 
 ### Resolved Issues
 * Fix VSC examples to have valid system ip address (METROAE-1177)

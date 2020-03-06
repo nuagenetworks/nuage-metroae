@@ -2,15 +2,7 @@
 set -e
 
 METROAE_VERSION="v4.0.0"
-#################################################################################
-#                              CONFIG COMMANDS                                  #
-#################################################################################
-
-MENU+=(',config'                    'Configure VSD'                                        'config'     ''                       '')
-MENU+=(',config,help'               'Displays the help text for MetroAE configuration'     'config'     'help'                   ',config')
-MENU+=(',config,version'            'Displays the current configuration engine version'    'config'     'version'                ',config')
-MENU+=(',config,engine,update'      'Update configuration engine to the latest version'    'config'     'upgrade-engine'         ',config')
-MENU+=(',config,<positional args>'  'Execute configuration engine inside the container'    'config'     'help'                   ',config')
+MENU=()
 
 #################################################################################
 #                             CONTAINER COMMANDS                                #
@@ -18,26 +10,13 @@ MENU+=(',config,<positional args>'  'Execute configuration engine inside the con
 
 MENU+=(',container'                 'Manage the MetroAE container'                         'container'  ''                       '')
 MENU+=(',container,pull'            'Pull a new MetroAE image from the registry'           'container'  'pull'                   ',container,pull')
-MENU+=(',container,setup'           'Setup the metroae container'                          'container'  'setup'                  ',container,setup')
-MENU+=(',container,start'           'Start the metroae container'                          'container'  'start'                  ',container,start')
-MENU+=(',container,stop'            'Stop the metroae container'                           'container'  'stop'                   ',container,stop')
-MENU+=(',container,status'          'Display the status of the metroae container'          'container'  'status'                 ',container,status')
-MENU+=(',container,destroy'         'Destroy the metroae container'                        'container'  'destroy'                ',container,destroy')
-MENU+=(',container,update'          'Update the metroae container to the latest version'   'container'  'upgrade-engine'         ',container,update')
-MENU+=(',container,ssh,copyid'      'Copy the container ssh public key to a host'          'container'  'copy-ssh-id'            ',container,ssh,copyid')
+MENU+=(',container,setup'           'Setup the MetroAE container'                          'container'  'setup'                  ',container,setup')
+MENU+=(',container,start'           'Start the MetroAE container'                          'container'  'start'                  ',container,start')
+MENU+=(',container,stop'            'Stop the MetroAE container'                           'container'  'stop'                   ',container,stop')
+MENU+=(',container,status'          'Display the status of the MetroAE container'          'container'  'status'                 ',container,status')
+MENU+=(',container,destroy'         'Destroy the MetroAE container'                        'container'  'destroy'                ',container,destroy')
+MENU+=(',container,update'          'Update the MetroAE container to the latest version'   'container'  'upgrade-engine'         ',container,update')
 
-if [[ ! -z "$METROAE_GUI_ENABLE" ]]; then
-    #################################################################################
-    #                                GUI COMMANDS                                   #
-    #################################################################################
-
-    MENU+=(',gui'                    'Manage the MetroAE container GUI/API'         'container'  'gui'                       '')
-    MENU+=(',gui,stop'               'Stop the MetroAE GUI'                         'container'  'stop-ui'                ',gui')
-    MENU+=(',gui,start'              'Start the MetroAE GUI'                        'container'  'start-ui'               ',gui')
-    MENU+=(',gui,status'             'Get the status of the MetroAE GUI'            'container'  'status-ui'              ',gui')
-    MENU+=(',gui,encryption,enable'  'Enable HTTP encryption for the MetroAE GUI'   'container'  'enable-ui-encryption'   ',gui')
-    MENU+=(',gui,encryption,disable' 'Disable HTTP encryption for the MetroAE GUI'  'container'  'disable-ui-encryption'  ',gui')
-fi
 #################################################################################
 #                                  VARIABLES                                    #
 #################################################################################
@@ -91,7 +70,8 @@ fi
 if [[ -z $SETUP_FILE ]]; then
     SETUP_FILE=/opt/metroae/.metroae
 fi
-
+TAB_COMPLETION_SCRIPT=tab-completion-metroae.sh
+COMPLETION_DIR=/etc/bash_completion.d/
 
 # Deployment variables
 CURRENT_DIR=`pwd`
@@ -519,6 +499,9 @@ function get_from_s3 {
         write_to_screen_and_script_log "Attempt to pull the MetroAE container image from S3 failed. Quitting"
         print_version_and_exit 1
     fi
+    set +e
+    rm $headers > /dev/null 2>&1
+    set -e
 }
 
 function pull {
@@ -559,6 +542,11 @@ function pull {
 
         docker load -i $TEMPORARY_DIRECTORY/$CONTAINER_TAR_FILE
         repo="Amazon S3"
+
+        set +e
+        rm $TEMPORARY_DIRECTORY/$CONTAINER_TAR_FILE > /dev/null 2>&1
+        set -e
+
     else
         echo ""
         write_to_screen_and_script_log ">>> Pulling the MetroAE container image from Nokia registry"
@@ -754,36 +742,42 @@ function setup_container {
     fi
     set -e
 
-    declare -l setup_type
-    setup_type="init"
-    if [[ -z $1 ]]; then
-        while [[ $setup_type != "c" ]] && [[ $setup_type != "d" ]] && [[ $setup_type != "b" ]] && [[ $setup_type != "" ]]
-        do
-            echo ""
-            write_to_screen_and_script_log "Setup can configure the container to support MetroAE (c)onfig, MetroAE (d)eploy,"
-            echo "or (b)oth MetroAE config and deploy. MetroAE config is used for day-zero VSD"
-            echo "configuration tasks. MetroAE deploy is used for installing, upgrading, and"
-            echo "health checking of Nuage VSP components in your environment."
-            echo ""
-            read -p "Do you want to setup MetroAE config, deploy, or both? (c/d/B): " setup_type
-        done
-    else
-        echo ""
-        write_to_screen_and_script_log ">>> Setting setup type to passed in parameter $1"
-        setup_type=$1
-        shift
-    fi
+    if [[ ! -z "$METROAE_CONFIG_ENABLE" ]]; then
 
-    if [[ $setup_type == "c" ]]; then
-        echo ""
-        write_to_screen_and_script_log ">>> Setup container for MetroAE config only"
-    elif [[ $setup_type == "d" ]]; then
-        echo ""
-        write_to_screen_and_script_log ">>> Setup container for MetroAE deploy only"
+        declare -l setup_type
+        setup_type="init"
+        if [[ -z $1 ]]; then
+            while [[ $setup_type != "c" ]] && [[ $setup_type != "d" ]] && [[ $setup_type != "b" ]] && [[ $setup_type != "" ]]
+            do
+                echo ""
+                write_to_screen_and_script_log "Setup can configure the container to support MetroAE (c)onfig, MetroAE (d)eploy,"
+                echo "or (b)oth MetroAE config and deploy. MetroAE config is used for day-zero VSD"
+                echo "configuration tasks. MetroAE deploy is used for installing, upgrading, and"
+                echo "health checking of Nuage VSP components in your environment."
+                echo ""
+                read -p "Do you want to setup MetroAE config, deploy, or both? (c/d/B): " setup_type
+            done
+        else
+            echo ""
+            write_to_screen_and_script_log ">>> Setting setup type to passed in parameter $1"
+            setup_type=$1
+            shift
+        fi
+
+        if [[ $setup_type == "c" ]]; then
+            echo ""
+            write_to_screen_and_script_log ">>> Setup container for MetroAE config only"
+        elif [[ $setup_type == "d" ]]; then
+            echo ""
+            write_to_screen_and_script_log ">>> Setup container for MetroAE deploy only"
+        else
+            echo ""
+            write_to_screen_and_script_log ">>> Setup container for both MetroAE config and deploy"
+            setup_type="b"
+        fi
+
     else
-        echo ""
-        write_to_screen_and_script_log ">>> Setup container for both MetroAE config and deploy"
-        setup_type="b"
+        setup_type="d"
     fi
 
     if [ -w "$SETUP_FILE" ]; then
@@ -839,6 +833,10 @@ function setup_container {
 
     # start the container
     run_container
+
+    upgrade_metroae
+
+    setup_tab_completion
 
     config_status=0
     if [[ $setup_type != "d" ]]; then
@@ -1041,6 +1039,50 @@ function upgrade_docker {
         pull
     fi
     run_container
+
+    upgrade_metroae
+}
+
+function upgrade_metroae {
+
+    if [[ $RUN_MODE == "CONTAINER" ]]; then
+
+        write_to_screen_and_script_log "Upgrading metroae script to the latest"
+
+        if [[ -f $SETUP_FILE ]]; then
+            while read -r line; do declare $line; done < $SETUP_FILE
+        fi
+
+        set +e
+        cp $METROAE_MOUNT_POINT/metroae "${BASH_SOURCE[0]}"
+
+        if [[ $? -ne 0 ]]; then
+            write_to_screen_and_script_log "Could not upgrade metroae script"
+            return 1
+        fi
+
+        set -e
+    fi
+}
+
+function setup_tab_completion {
+    if [[ -f $SETUP_FILE ]]; then
+        while read -r line; do declare $line; done < $SETUP_FILE
+    fi
+
+    set +e
+
+    if [[ ! -d $COMPLETION_DIR ]]; then
+        write_to_script_log "Creating tab-completion dir: $COMPLETION_DIR"
+        mkdir $COMPLETION_DIR
+    fi
+
+    write_to_script_log "Copying tab-completion to standard dir: $METROAE_MOUNT_POINT/$TAB_COMPLETION_SCRIPT to $COMPLETION_DIR"
+    cp $METROAE_MOUNT_POINT/$TAB_COMPLETION_SCRIPT $COMPLETION_DIR
+    if [[ $? -ne 0 ]]; then
+        write_to_screen_and_script_log "Could not setup tab-completion"
+    fi
+    set -e
 }
 
 function run_container_if_not_running {

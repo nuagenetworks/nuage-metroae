@@ -52,24 +52,32 @@ Note that running the metroae Docker container for VMware installations and upgr
 
 ## 5. Prepare your environment  
 
-5.1 Unzip Nuage files: `metroae tools unzip images <zipped_directory> <unzip_directory>`. See [SETUP.md](SETUP.md) for details.  
+### 5.1 Unzip Nuage files
+
+Execute: `metroae tools unzip images <zipped_directory> <unzip_directory>`
+
+See [SETUP.md](SETUP.md) for details.  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Be sure that Nuage packages (tar.gz) are available on localhost (MetroAE host),  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;either in a native directory or NFS-mounted.  
 
-## Checklist for Target Servers
+### 5.2 Checklists for Target Servers
 
-### KVM
+#### KVM
 
-- [ ] MetroAE host has ability to do a password-less SSH as root.  
+- [ ] MetroAE host has ability to do a password-less SSH as root to the target server.  
 - [ ] Sufficient disk space / resources exist to create VMs.  
 - [ ] KVM is installed.  
 - [ ] All required management and data bridges are created.  
 
-### vCenter  
+#### vCenter  
 
 - [ ] User specified has required permissions to create and configure a VM.  
 - [ ] ovftool has been downloaded from VMware onto the MetroAE Host.  
 - [ ] pyvmomi has been installed on MetroAE Host: `pip install pyvmomi`.
+
+### 5.3 Reachability
+
+MetroAE host must be able to resolve the host names of the Nuage components into their correct management IP addresses. This is required so that MetroAE can operate on each component in the deploy, post-deploy, and health workflows.
 
 ## Next Steps
 
