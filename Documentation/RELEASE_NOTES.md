@@ -14,6 +14,7 @@
 * Add VSD cluster RTT tests with configurable threshold (METROAE-766)
 * Add support for VSTAT standby only deployment (METROAE-1081)
 * Add discovery of existing components in wizard for KVM and vCenter
+* Add support for zero factor bootstrapping multi uplinks for NSGvs (METROAE-852)
 
 ### Resolved Issues
 * Fix VSC examples to have valid system ip address (METROAE-1177)

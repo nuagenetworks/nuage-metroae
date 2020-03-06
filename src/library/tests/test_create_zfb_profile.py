@@ -42,11 +42,11 @@ TEST_PARAMS = {
         "network_port": {
             "name": "port1_network",
             "physicalName": "port1"},
-        "access_port": {
+        "access_ports": [{
             "name": "port2_access",
             "physicalName": "port2",
             "VLANRange": "0-100",
-            "vlan_value": 20}},
+            "vlan_value": 20}]},
     "zfb_nsg_infra": {
         "name": "nsg_infra",
         "proxyDNSName": "vnsutil1.example.com",
@@ -167,13 +167,19 @@ class TestCreateZfbProfile(object):
 
     def verify_nsg_ports(self, vspk_patch):
         network_data = dict(TEST_PARAMS["zfb_ports"]["network_port"])
-        access_data = dict(TEST_PARAMS["zfb_ports"]["access_port"])
+        access_ports = list(TEST_PARAMS["zfb_ports"]["access_ports"])
         network_data["portType"] = TEST_PARAMS["zfb_constants"][
             "network_port_type"]
         vspk_patch.NUNSPortTemplate.assert_has_calls(
-            [call(data=network_data), call(data=access_data)])
+            [call(data=network_data)])
         self.mock_nsg_template.create_child.assert_has_calls(
-            [call(self.mock_network_port), call(self.mock_access_port)])
+            [call(self.mock_network_port)])
+
+        for port in access_ports:
+            vspk_patch.NUNSPortTemplate.assert_has_calls(
+                [call(data=port)])
+            self.mock_nsg_template.create_child.assert_has_calls(
+                [call(self.mock_access_port)])
 
     def setup_nsg_device(self, vspk_patch):
         self.mock_nsg_device = MagicMock()

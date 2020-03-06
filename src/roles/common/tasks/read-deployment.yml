@@ -30,7 +30,7 @@
     - "{{ deployment_file_stat.results }}"
 
 - name: Read deployment global files
-  include_vars: 
+  include_vars:
     file: "{{ item.1.stat.path }}"
     name: "{{ item.0.name }}"
   when: item.1.stat.exists and not item.0.is_list and not item.0.encrypted
@@ -156,6 +156,12 @@
     msg: "Incorrect number of cores specified in cpuset for {{ item.hostname }}. Cpuset must have {{ portal_cpu_cores | default(6) }} elements."
   when: item.cpuset is defined
   with_items: "{{ portals }}"
+
+- name: Validate that NSGVs ports are properly configured
+  assert:
+    that: "{{ item.access_port_name is defined and item.access_ports is undefined }}"
+    msg: "Incorrect configuration {{ item.vmname }} has both access_port_name and access_ports defined."
+  with_items: "{{ nsgvs }}"
 
 # TODO:
 # Use the following block to disable the feature for now. We need to update our

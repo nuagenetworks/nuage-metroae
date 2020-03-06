@@ -48,38 +48,10 @@ bootstrap_method: {{ item.bootstrap_method | default('none') }}
 
 target_server: {{ item.target_server }}
 
-{% if item.bootstrap_method == 'zfb_external' or item.bootstrap_method == 'activation_link' %}
-
 {% if item.bootstrap_method == 'zfb_external' %}
 
 iso_path: {{ item.iso_path }}
 iso_file: {{ item.iso_file }}
-
-{% endif %}
-
-{% if item.port1_bridge is defined %}
-port1_bridge: {{item.port1_bridge}}
-{% endif %}
-
-{% if item.port2_bridge is defined %}
-port2_bridge: {{item.port2_bridge}}
-{% endif %}
-
-{% if item.port3_bridge is defined %}
-port3_bridge: {{item.port3_bridge}}
-{% endif %}
-
-{% if item.port4_bridge is defined %}
-port4_bridge: {{item.port4_bridge}}
-{% endif %}
-
-{% if item.port5_bridge is defined %}
-port5_bridge: {{item.port5_bridge}}
-{% endif %}
-
-{% if item.port6_bridge is defined %}
-port6_bridge: {{item.port6_bridge}}
-{% endif %}
 
 {% endif %}
 
@@ -131,10 +103,39 @@ zfb_ports:
     network_port:
         name: {{ item.network_port_name }}
         physicalName: {{ item.network_port_physical_name | default("port1") }}
-    access_port:
-        name: {{ item.access_port_name }}
-        physicalName: {{ item.access_port_physical_name | default("port2") }}
-        VLANRange: "{{ item.access_port_vlan_range }}"
-        vlan_value: {{ item.access_port_vlan_number | default(0) }}
+    access_ports:
+{% if item.access_port_name is defined %}
+        - name: {{ item.access_port_name }}
+          physicalName: {{ item.access_port_physical_name | default("port2") }}
+          vlan_value: {{ item.access_port_vlan_number | default(0) }}
+          VLANRange: {{ item.access_port_vlan_range }}
+{% endif %}
+{% if item.access_ports is defined %}
+{% for port in nsgv_access_ports %}
+{% for acc_port in item.access_ports %}
+{% if port.name in acc_port %}
+        - name: {{ port.name }}
+{% if port.physicalName is defined %}
+          physicalName: {{ port.physical_name }}
+{% else %}
+          physicalName: 'port{{ loop.index  + 1 }}'
+{% endif %}
+          vlan_value: {{ port.vlan_number | default(0) }}
+          VLANRange: {{ port.vlan_range }}
+{% endif %}
+{% endfor %}
+{% endfor %}
+{% endif %}
+
+{% if item.access_ports is defined %}
+access_bridges:
+{% for acc_port in item.access_ports %}
+{% for port in nsgv_access_ports %}
+{% if port.name in acc_port %}
+    -  {{ port.bridge }}
+{% endif %}
+{% endfor %}
+{% endfor %}
+{% endif %}
 
 {% endif %}
