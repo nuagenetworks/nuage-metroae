@@ -11,7 +11,6 @@ import sys
 DEBUG = False
 SCHEMAS_DIRECTORY = "schemas"
 DEPLOYMENTS_DIRECTORY = "deployments"
-CONTAINER_MOUNT_DIRECTORY = "/metroae_data/deployments"
 
 
 def usage():
@@ -391,18 +390,10 @@ class CsvDeploymentConverter(object):
 
     def _generate_deployment_files(self, deployment_name):
         if "/" in deployment_name:
-            dir_name = os.path.dirname(deployment_name)
-                if not os.path.isdir(dir_name):
-                    raise Exception("Parent directory %s does not exist" %(dir_name))
             deployment_dir = deployment_name
         else:
-            if os.path.dir(CONTAINER_MOUNT_DIRECTORY):
-                deployment_dir = os.path.join(CONTAINER_MOUNT_DIRECTORY,
+            deployment_dir = os.path.join(DEPLOYMENTS_DIRECTORY,
                                           deployment_name)
-            else:
-                deployment_dir = os.path.join(DEPLOYMENTS_DIRECTORY,
-                                          deployment_name)
-
         if not os.path.isdir(deployment_dir):
             self._output("Creating deployment directory: %s", deployment_dir)
             os.mkdir(deployment_dir)
