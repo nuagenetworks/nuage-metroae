@@ -49,8 +49,6 @@
       - vsd_sa_or_ha is match ('sa')
       - not vsd_standby_cluster | default(False)
 
-    remote_user: "{{ vsd_default_username }}"
-
   - block:
 
     - name: Renew primary VSD cert
@@ -112,7 +110,6 @@
       delegate_to: "{{ groups['vsd_ha_node1'][0] }}"
 
     when: vsd_sa_or_ha is match ('ha')
-    remote_user: "{{ vsd_default_username }}"
 
   - block:
 
@@ -146,4 +143,8 @@
       with_items: "{{ groups['standby_vsds'] }}"
 
     when: vsd_standby_cluster | default(False)
-    remote_user: "{{ vsd_default_username }}"
+
+  remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
+  become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
+  vars:
+    ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"
