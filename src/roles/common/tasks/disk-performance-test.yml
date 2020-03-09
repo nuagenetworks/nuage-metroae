@@ -1,0 +1,77 @@
+- name: Create directory for disk performance test files
+  file:
+    path: /var/disk_performance_test
+    state: directory
+
+- name: Check available space in the disk performance directory
+  shell: "df /var/disk_performance_test | tail -n 1 | awk '{print $4}'"
+  register: disk_performance_test_free_space_kb
+
+- name: Set fact for 90% of available space for disk performance test
+  set_fact:
+    disk_performance_max_total_file_size: "{{ disk_performance_test_free_space_kb.stdout | float * 0.9 }}"
+
+- name: Set fact for specified total file size without units
+  set_fact:
+    disk_performance_total_file_size_gb: "{{ disk_performance_file_total_size | regex_search('.*\\d') }}"
+
+- name: Set fact for specified total file size in Kb
+  set_fact:
+    disk_performance_total_file_size_kb: "{{ disk_performance_total_file_size_gb | float * (1024 * 1024) }}"
+
+- name: Verify that specified total file size does not exceed max total file size
+  assert:
+    that: disk_performance_total_file_size_kb | float <= disk_performance_max_total_file_size | float
+    msg: "The specified total file size for the disk performance test exceeds the free space available in /var to run the test"
+
+- name: Prepare disk performance test (ignoring errors)
+  shell: "sysbench --test=fileio --file-total-size={{ disk_performance_file_total_size }} prepare"
+  args:
+    chdir: /var/disk_performance_test
+  register: disk_performance_test_prepare
+  ignore_errors: true
+
+- name: Run disk performance test (ignoring errors)
+  shell: "sysbench --test=fileio --file-total-size={{ disk_performance_file_total_size }} --file-test-mode=rndrw --init-rng=on --max-time={{ disk_performance_max_time }} --max-requests=0 run"
+  args:
+    chdir: /var/disk_performance_test
+  register: disk_performance_test_output
+  ignore_errors: true
+  when: disk_performance_test_prepare.rc == 0
+
+- name: Cleanup disk performance test files (ignoring errors)
+  shell: "sysbench --test=fileio --file-total-size={{ disk_performance_file_total_size }} cleanup"
+  args:
+    chdir: /var/disk_performance_test
+  register: disk_performance_test_cleanup
+  ignore_errors: true
+
+- name: Delete disk performance test files directory
+  file:
+    path: /var/disk_performance_test
+    state: absent
+
+- name: Verify that disk performance test preparation succeeded
+  fail:
+    msg: "There was an error during the preparation process. This may have been caused due to insufficient disk space on VSD."
+  when: disk_performance_test_prepare.rc != 0
+
+- name: Verify that disk performance test ran to completion without error
+  fail:
+    msg: "There was an unexpected error during the sysbench run."
+  when: disk_performance_test_output.rc != 0
+
+- name: Verify that disk performance test files were deleted without error
+  fail:
+    msg: "There was an error when cleaning up the disk performance test files. You may need to clean up the files manually or execute the cleanup command again on the target device."
+  when: disk_performance_test_cleanup.rc != 0
+
+- name: Set fact for disk performance test result
+  set_fact:
+    disk_performance_val: "{{ disk_performance_test_output.stdout | regex_search('\\d.*(Requests\\/sec)') | regex_search('\\d*\\.\\d*') }}"
+
+- name: Verify disk performance value meets the specified threshold
+  assert:
+    that: "disk_performance_val|int >= {{ disk_performance_minimum_threshold }}"
+    msg: "Disk performance (IOPS) value does not meet the specified minimum threshold"
+  when: ignore_disk_performance_test_errors == False
