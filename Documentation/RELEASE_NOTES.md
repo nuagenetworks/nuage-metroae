@@ -10,6 +10,7 @@
 * Add support for VSD disk I/O testing using sysbench (METROAE-1169)
 * Add VSC hardening (METROAE-1183)
 * Add support for VSD certificate renewal standalone procedure (METROAE-1188)
+* Add support for setting up Zabbix health monitoring on compatible VSP components.
 * Bash tab-completion support for metroae command
 * Add VSD cluster RTT tests with configurable threshold (METROAE-766)
 * Add support for VSTAT standby only deployment (METROAE-1081)
