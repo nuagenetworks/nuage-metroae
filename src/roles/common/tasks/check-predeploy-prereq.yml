@@ -18,31 +18,26 @@
 
   when: target_server_type | default('NONE') is match("kvm")
 
+- name: Check that image files were found
+  assert:
+    that: "image_path | default('MISSING') != 'MISSING' and image_file_name | default('MISSING') != 'MISSING'"
+    msg: "Missing image files for {{ hostname | default(vmname) }} under the unzipped file directory, please unzip them."
+  when: 
+    - target_server_type is match("kvm") or target_server_type is match("vcenter")
+    - component_type | default("NONE") != 'vrs'
+    - not (vsd_inplace_upgrade | default(false) and component_type | default("NONE") == 'vsd')
+
 - block:
 
-  - block:
+  - name: Check that VRS package files were found
+    assert:
+      that: "vrs_package_path | default('MISSING') != 'MISSING'"
+      msg: "Missing VRS package files under the unzipped file directory, please unzip them."
 
-    - name: Check that image files were found
-      assert:
-        that: "image_path | default('MISSING') != 'MISSING' and image_file_name | default('MISSING') != 'MISSING'"
-        msg: "Missing image files for {{ hostname | default(vmname) }} under the unzipped file directory, please unzip them."
-      when: target_server_type is match("kvm") or target_server_type is match("vcenter")
+  - name: Check that DKMS files were found
+    assert:
+      that: "dkms_package_path | default('MISSING') != 'MISSING'"
+      msg: "Missing VRS DKMS files under the unzipped file directory, please unzip it."
+    when: dkms_install
 
-    when: component_type | default("NONE") != 'vrs'
-
-  - block:
-
-    - name: Check that VRS package files were found
-      assert:
-        that: "vrs_package_path | default('MISSING') != 'MISSING'"
-        msg: "Missing VRS package files under the unzipped file directory, please unzip them."
-
-    - name: Check that DKMS files were found
-      assert:
-        that: "dkms_package_path | default('MISSING') != 'MISSING'"
-        msg: "Missing VRS DKMS files under the unzipped file directory, please unzip it."
-      when: dkms_install
-
-    when: component_type | default("NONE") == 'vrs'
-
-  when: not vsd_inplace_upgrade | default(false) or component_type | default("NONE") != "vsd"
+  when: component_type | default("NONE") == 'vrs'
