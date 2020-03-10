@@ -17,7 +17,7 @@ _metroae_completions()
     MENU+=(',container,status'          'Display the status of the MetroAE container'          'container'  'status'                 ',container,status')
     MENU+=(',container,destroy'         'Destroy the MetroAE container'                        'container'  'destroy'                ',container,destroy')
     MENU+=(',container,update'          'Update the MetroAE container to the latest version'   'container'  'upgrade-engine'         ',container,update')
-    MENU+=(',container,download'        'Download the container from Amazon S3 in tar format'  'container'  'download'               ',container,download')
+    MENU+=(',container,download'        'Download the container in tar format'                 'container'  'download'               ',container,download')
 
     if [[ -z $SETUP_FILE ]]; then
         SETUP_FILE=/opt/metroae/.metroae
