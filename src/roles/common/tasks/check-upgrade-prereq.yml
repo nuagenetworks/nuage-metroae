@@ -8,12 +8,14 @@
   assert:
     that: "upgrade_to_version is defined"
     msg: "Upgrade to version is missing"
-
+    
 - name: Verify that upgrade_vmname is defined
   assert:
     that: "upgrade_vmname is defined"
     msg: "upgrade_vmname is required for upgrade"
-  when: component_type | default("NONE") != 'vsc'
+  when: 
+    - component_type | default("NONE") != 'vsc'
+    - not (vsd_inplace_upgrade | default(false) and component_type | default("NONE") == 'vsd')
 
 - block:
 
@@ -33,6 +35,7 @@
   when:
     - component_type | default("NONE") == 'vsd'
     - target_server_type is match('vcenter')
+    - not vsd_inplace_upgrade
 
 - block:
 
