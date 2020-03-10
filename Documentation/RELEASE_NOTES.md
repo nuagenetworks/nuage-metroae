@@ -15,9 +15,11 @@
 * Add VSD cluster RTT tests with configurable threshold (METROAE-766)
 * Add support for VSTAT standby only deployment (METROAE-1081)
 * Add discovery of existing components in wizard for KVM and vCenter
+* Add option to backup and restore the /etc/host file on VSD during upgrade (METROAE-1187)
 * Add support for zero factor bootstrapping multi uplinks for NSGvs (METROAE-852)
 
 ### Resolved Issues
+
 * Fix VSC examples to have valid system ip address (METROAE-1177)
 * Fix NTP retries masking non NTP sync errors (METROAE-1153)
 * Fix fallocate failure on path with symbolic link (METROAE-1167)
