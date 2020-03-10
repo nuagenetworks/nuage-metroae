@@ -16,6 +16,7 @@
 * Add support for VSTAT standby only deployment (METROAE-1081)
 * Add discovery of existing components in wizard for KVM and vCenter
 * Add support for zero factor bootstrapping multi uplinks for NSGvs (METROAE-852)
+* Add support for downloading the container from S3 in tar format (METROAE-1210)
 
 ### Resolved Issues
 * Fix VSC examples to have valid system ip address (METROAE-1177)
