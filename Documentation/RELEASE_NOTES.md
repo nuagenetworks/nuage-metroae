@@ -17,6 +17,7 @@
 * Add discovery of existing components in wizard for KVM and vCenter
 * Add option to backup and restore the /etc/host file on VSD during upgrade (METROAE-1187)
 * Add support for zero factor bootstrapping multi uplinks for NSGvs (METROAE-852)
+* Add support for downloading the container from S3 in tar format (METROAE-1210)
 
 ### Resolved Issues
 
