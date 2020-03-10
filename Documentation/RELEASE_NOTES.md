@@ -10,13 +10,17 @@
 * Add support for VSD disk I/O testing using sysbench (METROAE-1169)
 * Add VSC hardening (METROAE-1183)
 * Add support for VSD certificate renewal standalone procedure (METROAE-1188)
+* Add support for setting up Zabbix health monitoring on compatible VSP components.
 * Bash tab-completion support for metroae command
 * Add VSD cluster RTT tests with configurable threshold (METROAE-766)
 * Add support for VSTAT standby only deployment (METROAE-1081)
 * Add discovery of existing components in wizard for KVM and vCenter
+* Add option to backup and restore the /etc/host file on VSD during upgrade (METROAE-1187)
 * Add support for zero factor bootstrapping multi uplinks for NSGvs (METROAE-852)
+* Add support for downloading the container from S3 in tar format (METROAE-1210)
 
 ### Resolved Issues
+
 * Fix VSC examples to have valid system ip address (METROAE-1177)
 * Fix NTP retries masking non NTP sync errors (METROAE-1153)
 * Fix fallocate failure on path with symbolic link (METROAE-1167)

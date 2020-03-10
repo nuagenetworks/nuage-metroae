@@ -13,6 +13,8 @@ The following command options are supported by the metroae command:
 
 **pull** - pulls the MetroAE container from the registry. By default, the latest container is pulled. You can also specify a valid container tag to pull another version, e.g. `metroae container pull 1.0.0`.
 
+**download** - pulls the MetroAE container in tar format. This allows you to copy the tar file to systems behind firewalls and convert to Docker images by using `docker load` command.
+
 **setup** - setup completes the steps necessary to get the MetroAE container up and running. It prompts you for the full paths to a data directory that the container uses on your local disk. The setup action will create the subdirectory `metroae_data` on disk, then mount it as `/metroae_data/` inside the container. When using the MetroAE container, you must provide paths relative to this path as seen from inside the container. For example, if you tell setup to use `/tmp` for the data directory, setup will create `/tmp/metroae_data` on your host. The setup will also mount this directory inside the container as `/metroae_data/`. If you copy your tar.gz files to `/tmp/metroae_data/images/6.0.1/` on the host, the container sees this as `/data/images/6.0.1/`. So, when using unzip or setting `nuage_unzipped_files_dir` in common.yml, you would specify `/metroae_data/images/6.0.1/` as your path.
 
 #### Notes about setup:
