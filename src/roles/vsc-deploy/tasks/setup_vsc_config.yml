@@ -48,6 +48,18 @@
         - exec cf1:\new-config.cfg
       provider: "{{ vsc_creds }}"
 
+  - name: Reconnect to ssh after it is hardened
+    include_role:
+      name: common
+      tasks_from: wait-for-ssh-port
+    vars:
+      ssh_host: "{{ hostname }}"
+      ssh_timeout_seconds: 600
+      ssh_password: "{{ vsc_creds.password }}"
+      ssh_user: "{{ vsc_creds.username }}"
+      check_login: True
+    when: enable_hardening | default(True)
+
   - name: Save VSC basic configuration
     sros_command:
       commands:
