@@ -66,39 +66,35 @@
         - admin save
       provider: "{{ vsc_creds }}"
 
-  - name: Register uptime before reboot
-    sros_command:
-      commands:
-        - show uptime
-      provider: "{{ vsc_creds }}"
-    register: uptime_before_reboot
+  - block:
 
-  - name: Reboot VSC VM (ignoring errors)
-    sros_command:
-      commands:
-        - admin reboot now
-      provider: "{{ vsc_creds }}"
-    ignore_errors: true
+    - name: Register uptime before reboot
+      sros_command:
+        commands:
+          - show uptime
+        provider: "{{ vsc_creds }}"
+      register: uptime_before_reboot
+
+    - name: Reboot VSC VM (ignoring errors)
+      sros_command:
+        commands:
+          - admin reboot now
+        provider: "{{ vsc_creds }}"
+      ignore_errors: true
+
+    - name: Register uptime after reboot
+      sros_command:
+        commands:
+          - show uptime
+        provider: "{{ vsc_creds }}"
+      register: uptime_after_reboot
+
+    - name: Verify reboot happened successfully
+      assert:
+        that: "uptime_after_reboot < uptime_before_reboot"
+        fail_msg: "System uptime after reboot step suggests there were issues during reboot. Check log for errors."
+
     when: reboot_vsc
-
-  - name: Reboot VSC VM (ignoring errors)
-    sros_command:
-      commands:
-        - admin reboot now
-      provider: "{{ vsc_creds }}"
-    ignore_errors: true
-
-  - name: Register uptime after reboot
-    sros_command:
-      commands:
-        - show uptime
-      provider: "{{ vsc_creds }}"
-    register: uptime_after_reboot
-
-  - name: Verify reboot happened successfully
-    assert:
-      that: "uptime_after_reboot < uptime_before_reboot"
-      fail_msg: "System uptime after reboot step suggests there were issues during reboot. Check log for errors."
 
   - name: Remove temporary configuration files
     file: path=/tmp/{{ vm_name }}/new-config.cfg state=absent
