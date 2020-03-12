@@ -51,7 +51,7 @@ If all of these prerequisites and assumptions are true, perform the following st
 
 `metroae install vsds postdeploy`
 
-At this point, your original VSD configureation should be restored and up and running.
+At this point, your original VSD configuration should be restored and up and running.
 
 ## Questions, Feedback, and Contributing  
 Get support via the [forums](https://devops.nuagenetworks.net/forums/) on the [MetroAE site](https://devops.nuagenetworks.net/).  
