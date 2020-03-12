@@ -1,5 +1,5 @@
 # Rolling Back VSD Upgrades
-In certain cases, you can use MetroAE to roll-back or restore a VSD configuration outside of the normal upgrade path. 
+In certain cases, you can use MetroAE to roll back or restore a VSD configuration outside of the normal upgrade path. 
 
 ## Use Cases
 
