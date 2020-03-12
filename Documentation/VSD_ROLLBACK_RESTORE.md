@@ -3,11 +3,11 @@ In certain cases, you can use MetroAE to roll-back or restore a VSD configuratio
 
 ## Use Cases
 
-A. If you want to roll back a major upgrade due to failure or bugs in the code, there’s no need to worry. In any event, MetroAE has created a backup during the upgrade. You can roll back that upgrade by: 
+If you want to roll back a major upgrade due to failure or bugs in the code, there’s no need to worry. In any event, MetroAE has created a backup during the upgrade. You can roll back that upgrade by: 
   1. Installing new VSDs with the original version 
   2. Restoring the VSD database of that original version
   
-B. If you have a backup that was taken in the past and your database has become corrupt or the VSD VMs are no longer functional, you can use MetroAE to redeploy the VSD VMs and restore the backup to them. 
+If you have a backup that was taken in the past and your database has become corrupt or the VSD VMs are no longer functional, you can use MetroAE to redeploy the VSD VMs and restore the backup to them. 
 
 
 ## Prerequisites
@@ -33,21 +33,42 @@ If all of these prerequisites and assumptions are true, perform the following st
 #### 1. Shut down all running VSDs. 
    * If the failure was early, terminate manually any VSDs from the original version that are still running.
    * Run the following command to terminate any new VSDs that are running. 
-   
+   ````
+   metroae destroy vsds <deployment_name>
+   ````
   
 #### 2. Configure or create a new deployment as if you intend to install the original version. 
   * Set the nuage_unzipped_files_dir variable in common.yml to point to the original version images. In our example, this would be version 5.4.1.
   * Remove upgrade.yml.
   
 #### 3. Run the following command to bring up new copies of the original VMs (e.g. 5.4.1).
-
+````
+metroae install vsds predeploy
+````
 
 #### 4. Manually copy (via scp) the pre-upgrade backup to /opt/vsd/data on VSD 1.
 
 
 #### 5. Run the following command to start the installation of the VSD software on the VSD VM. This will also restore the backup that you copied to the first VSD.
-
+````
+metroae install vsds deploy
+````
 
 #### 6. Run the following command to run sanity and connectivity checks on the VSDs: 
+````
+metroae install vsds postdeploy
+````
 
+
+## You May Also Be Interested in
+
+
+## Questions, Feedback, and Contributing
+Get support via the [forums](https://devops.nuagenetworks.net/forum/) on the [MetroÆ site](https://devops.nuagenetworks.net/).
+
+Ask questions and contact us directly at [devops@nuagenetworks.net](mailto:deveops@nuagenetworks.net "send email to nuage-metro project").
+
+Report bugs you find and suggest new features and enhancements via the [GitHub Issues](https://github.com/nuagenetworks/nuage-metro/issues "nuage-metro issues") feature.
+
+You may also [contribute](../CONTRIBUTING.md) to MetroÆ by submitting your own code to the project.
 
