@@ -1105,6 +1105,8 @@ function run_container_if_not_running {
 function docker_exec {
     debug ${FUNCNAME[0]}
     run_container_if_not_running
+    environment=""
+    working_dir=""
 
     if [[ $1 == "env" ]]; then
         shift
@@ -1128,11 +1130,15 @@ function docker_exec {
         if [[ ! -z $USER_DATA_PATH ]]; then
             environment="$environment -e USER_DATA_PATH=$USER_DATA_PATH"
         fi
-
-        docker exec $environment $RUNNING_CONTAINER_ID "$@"
-    else
-        docker exec $RUNNING_CONTAINER_ID "$@"
     fi
+
+    if [[ $1 == "workdir" ]]; then
+        working_dir="-w $2"
+        shift
+        shift
+    fi
+
+    docker exec $environment $working_dir $RUNNING_CONTAINER_ID "$@"
 }
 
 function docker_exec_interactive {
@@ -1907,7 +1913,7 @@ function tools_main {
         ;;
         convert_csv_to_deployment)
         if [[ $RUN_MODE == "CONTAINER" ]]; then
-            docker_exec env /usr/bin/python /source/nuage-metro/convert_csv_to_deployment.py ${EXTRA_ARGS[@]}
+            docker_exec env workdir /soruce/nuage-metro /usr/bin/python convert_csv_to_deployment.py ${EXTRA_ARGS[@]}
         else
             /usr/bin/python convert_csv_to_deployment.py ${EXTRA_ARGS[@]}
         fi
