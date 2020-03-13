@@ -305,23 +305,34 @@
       that: "openssl_output.stdout is search('CONNECTED')"
       msg: "Openssl failed to connect with {{ vsd_fqdn }}. Please make sure the certificates are valid"
 
-  - name: Check connected user on ejabberd
-    shell: /opt/ejabberd/bin/ejabberdctl connected_users | wc -l
-    register: ejabberdctl_output
-    until: ejabberdctl_output.stdout | int > 0
-    retries: 5
-    delay: 10
+  - block:
+    - name: Check connected user on ejabberd
+      shell: /opt/ejabberd/bin/ejabberdctl connected_users | wc -l
+      register: ejabberdctl_output
+      until: ejabberdctl_output.stdout | int == 3
+      retries: 5
+      delay: 10
 
-  - name: Assert there are 3 connected user for standalone
-    assert:
-      that: "ejabberdctl_output.stdout == '3'"
-      msg: "Ejabberd failed to connect with all the users. Please make sure the certificates are valid"
+    - name: Assert there are 3 connected user for standalone
+      assert:
+        that: "ejabberdctl_output.stdout == '3'"
+        msg: "Ejabberd failed to connect with all the users. Please make sure the certificates are valid"
+
     when: vsd_sa_or_ha is match ('sa')
 
-  - name: Assert there are 9 connected user for clustered
-    assert:
-      that: "ejabberdctl_output.stdout == '9'"
-      msg: "Ejabberd failed to connect with all the users. Please make sure the certificates are valid"
+  - block:
+    - name: Check connected user on ejabberd
+      shell: /opt/ejabberd/bin/ejabberdctl connected_users | wc -l
+      register: ejabberdctl_output
+      until: ejabberdctl_output.stdout | int == 9
+      retries: 5
+      delay: 10
+
+    - name: Assert there are 9 connected user for clustered
+      assert:
+        that: "ejabberdctl_output.stdout == '9'"
+        msg: "Ejabberd failed to connect with all the users. Please make sure the certificates are valid"
+
     when: vsd_sa_or_ha is match ('ha')
 
   remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
