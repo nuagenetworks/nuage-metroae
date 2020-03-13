@@ -451,6 +451,7 @@ class CsvDeploymentConverter(object):
 def main():
 
     if len(sys.argv) != 3:
+        print sys.argv
         usage()
         exit(1)
 
