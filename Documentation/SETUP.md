@@ -61,18 +61,6 @@ The ovftool command and supporting files are usually installed in the /usr/lib/v
 
 The path to the ovftool is configured in your deployment in the common.yml file. Uncomment and set the variable 'vcenter_ovftool' to the container-relative path to where you copied the `/usr/lib/vmware-ovftool` folder. This is required because metroae will attempt to execute ovftool from within the container. From inside the container, metroae can only access paths that have been mounted from the host. In this case, this is the metroae_data directory which is mounted inside the container as `/metroae_data`. For our example, in common.yml you would set `vcenter_ovftool: /metroae_data/vmware-ovftool/ovftool`.
 
-##### 5. Optional: Start the UI using this command:
-```
-metroae gui start
-```
-This command will ensure that the MetroAE GUI server is running. When running, you an point your browser at `http://host:5001` to access the GUI. *THE GUI IS IN BETA!* You are free to use it, but you can expect to run into issues because it is not GA quality.
-
-##### 6. You can check the status of the container or GUI at any time using the following commands:
-```
-metroae container status
-metroae gui status
-```
-
 That's it! Container configuration data and logs will now appear in the newly created `/opt/metroae` directory. Documentation, examples, deployments, and the ansible.log file will appear in the data directory configured during setup, `/tmp/metroae_data` in our examples, above. See [DOCKER.md](DOCKER.md) for specfic details of each command and container management command options. Now you're ready to [customize](CUSTOMIZE.md) for your topology.
 
 Note: You will continue to use the `metroae` script to run commands, but for best results using the container you should make sure your working directory is *not* the root of a nuage-metro git clone workspace. The `metroae` script can be used for both the container and the git clone workspace versions of MetroAE. At run time, the script checks its working directory. If it finds that the current working directory is the root of a git cloned workspace, it assumes that you are running locally. It will *not* execute commands inside the container. When using the container, you should run `metroae` from a working directory other than a git clone workspace. For example, if the git clone workspace is `/home/username/nuage/nuage-metro`, you can `cd /home/username/nuage` and then invoke the command as `./nuage-metro/metroae install vsds`.
