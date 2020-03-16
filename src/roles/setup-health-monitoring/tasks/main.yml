@@ -1,0 +1,60 @@
+- block:
+
+  - name: Install Zabbix RPM database
+    command:
+      cmd: "rpm -Uvh {{ zabbix_rpm_url }} --force"
+      warn: no
+
+  - name: Install Zabbix agent
+    yum:
+      name: zabbix-agent
+      state: present
+    register: result
+    retries: 10
+    until: result.rc == 0
+    delay: 5
+
+  - name: Enable server access in Zabbix config
+    lineinfile:
+      path: /etc/zabbix/zabbix_agentd.conf
+      regexp: '^Server='
+      line: Server=0.0.0.0/0
+
+  - name: Set hostname in Zabbix config
+    lineinfile:
+      path: /etc/zabbix/zabbix_agentd.conf
+      regexp: '^Hostname='
+      line: "Hostname={{ inventory_hostname }}"
+
+  - name: Check if iptables is already setup for VSD rules (ignoring errors)
+    shell: iptables -nL INPUT | grep 'dpt:10050'
+    register: iptables_result
+    ignore_errors: True
+
+  - block:
+
+    - name: Add TCP iptables rule for Zabbix
+      shell: iptables -I INPUT -p tcp --dport 10050 -j ACCEPT
+
+    - name: Add UDP iptables rule for Zabbix
+      shell: iptables -I INPUT -p udp --dport 10050 -j ACCEPT
+
+    - name: Save iptables rules (ignoring errors)
+      shell: service iptables save
+      register: save_result
+      ignore_errors: True
+
+    - name: Save iptables rules when service save not supported
+      shell: iptables-save > /etc/sysconfig/iptables
+      when: save_result.rc != 0
+
+    when: iptables_result.rc != 0
+
+  - name: Start Zabbix service
+    service:
+      name: zabbix-agent
+      state: started
+
+  remote_user: "{{ component_username }}"
+  become: "{{ 'no' if component_username == 'root' else 'yes' }}"
+  when: health_monitoring_agent | default("none") == "zabbix"

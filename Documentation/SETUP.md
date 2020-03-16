@@ -5,64 +5,77 @@ You can set up the MetroAE host environment either [with a Docker container](#me
 
 ### Method One: Set up Host Environment Using Docker Container
 Using a Docker container results in a similar setup as a GitHub clone, plus it delivers the following features:
-* All prerequisites are satisfied by the container. Your only requirement is to run Docker engine.
+* All prerequisites are satisfied by the container. Your only requirement for your server is that it run Docker engine.
 * Your data is located in the file system of the host where Docker is running. You don't need to get inside the container.
-* You have the option of running an API/UI server allowing you to access MetroAE functionality via REST API and a front-end GUI.
+* You have the option of running an API/UI server allowing you to access MetroAE functionality via REST API and a beta front-end GUI.
 * A future release will include Day 0 Configuration capabilities.
+
 #### System (and Other) Requirements
 * Operating System: Enterprise Linux 7 (EL7) CentOS 7.4 or greater or RHEL 7.4 or greater
 * Locally available image files for VCS or VNS deployments
 * Docker Engine 1.13.1 or greater installed and running
 * Container operations may need to be performed with elevated privileges (*root*, *sudo*)
+
 #### Steps
+
 ##### 1. Pull the latest Docker container using the following command:
 ```
 metroae container pull
 ```
-##### 2. Setup the Docker container using the following command:
+
+##### 2. Setup and start the Docker container using the following command:
 ```
 metroae container setup [path to data directory]
 ```
-You can optionally specify the data directory path. If you don't specify the data directory on the command line, you will be prompted to enter one during setup. This path is required for container operation. The data directory is the place where docs, examples, Nuage images, and your deployment files will be kept and edited. Note that setup will create a subdirectory beneath the data directory you specify, `metroae_data`. For example, if you specify `/tmp` for your data directory path during setup, setup will create `/tmp/metroae_data` for you. Setup will copy docs, logs, and deployment files to `/tmp/metroae_data`. Inside the container itself, setup will mount `/tmp/metroae_data` as `/metroae_data/`. Therefore, when you specify path names for metroae when using the container, you should always specify the container-relative path. For example, if you copy your tar.gz files to `/tmp/metroae_data/6.0.1` on the host, this will appear as `/metroae_data/6.0.1` inside the container. When you use the unzip-files action on the container, then, you would specify a source path as `/metroae_data/6.0.1`. When you complete the nuage_unzipped_files_dir variable in common.yml, you would also specify `/metroae_data/6.0.1`. Note that you can run setup multiple times and setup will not destroy or modify the data you have on disk. If you specify the same data and imafges directories that you had specified on earlier runs, metroae will pick up the existing data. Thus you can update the container as often as you like and your deployments will be preserved.
-##### 3. Start the container using the following command:
+You can optionally specify the data directory path. If you don't specify the data directory on the command line, you will be prompted to enter one during setup. This path is required for container operation. The data directory is the place where docs, examples, Nuage images, and your deployment files will be kept and edited. Note that setup will create a subdirectory beneath the data directory you specify, `metroae_data`. For example, if you specify `/tmp` for your data directory path during setup, setup will create `/tmp/metroae_data` for you. Setup will copy docs, logs, and deployment files to `/tmp/metroae_data`. Inside the container itself, setup will mount `/tmp/metroae_data` as `/metroae_data/`. Therefore, when you specify path names for metroae when using the container, you should always specify the container-relative path. For example, if you copy your tar.gz files to `/tmp/metroae_data/6.0.1` on the host, this will appear as `/metroae_data/6.0.1` inside the container. When you use the unzip-files action on the container, then, you would specify a source path as `/metroae_data/6.0.1`. When you complete the nuage_unzipped_files_dir variable in common.yml, you would also specify `/metroae_data/6.0.1`. 
+
+Note that you can run setup multiple times and setup will not destroy or modify the data you have on disk. If you specify the same data and imafges directories that you had specified on earlier runs, metroae will pick up the existing data. Thus you can update the container as often as you like and your deployments will be preserved.
+
+Note that you can stop and start the MetroAE container at any time using these commands:
+
 ```
+metroae container stop
 metroae container start
 ```
-Note that this step is optional. Running *any* metroae command after startup will start the container for you if it is not already running.
-##### 4. Copy ssh keys using the following command:
+
+##### 3. **For KVM Only**, copy the container ssh keys to your KVM target servers (aka hypervisors) using the following command:
 ```
 metroae container ssh copyid [target_server_username]@[target_server]
 ```
-This command copies the container's public key into the ssh authorized_keys file on the specified target server. This key is required for passwordless ssh access from the container to the target servers. The command must be run once for every target server.
 
-##### 5. **For ESXi / vCenter Only**, install ovftool and copy to metroae_data directory
+This command copies the container's public key into the ssh authorized_keys file on the specified target server. This key is required for passwordless ssh access from the container to the target servers. The command must be run once for every KVM target server. This step should be skipped if your target-server type is anything but KVM, e.g. vCenter or OpenStack.
+
+##### 4. **For ESXi / vCenter Only**, install ovftool and copy to metroae_data directory
 
 When running the MetroAE Docker container, the container will need to have access to the ovftool command installed on the Docker host. The following steps are suggested:
 
-###### 5.1. Install ovftool
+###### 4.1. Install ovftool
 
 Download and install the [ovftool](https://www.vmware.com/support/developer/ovf/) from VMware.
 
-###### 5.2. Copy ovftool installation to metroae_data directory
+###### 4.2. Copy ovftool installation to metroae_data directory
 
-The ovftool command and supporting files are usually installed in the /usr/lib/vmware-ovftool on the host. In order to the metroae container to be able to access these files, you must copy the entire folder to the metroae_data directory on the host. For example, if you have configured the container to use /home/user/metroae_data on your host, you would copy /usr/lib/vmware-ovftool to /home/user/metroae_data/vmware-ovftool. Note: Docker does not support following symlinks. You must copy the files as instructed.
+The ovftool command and supporting files are usually installed in the /usr/lib/vmware-ovftool on the host. In order to the metroae container to be able to access these files, you must copy the entire folder to the metroae_data directory on the host. For example, if you have configured the container to use `/tmp/metroae_data` on your host, you would copy `/usr/lib/vmware-ovftool` to `/tmp/metroae_data/vmware-ovftool`. Note: Docker does not support following symlinks. You must copy the files as instructed.
 
-###### 5.3. Configure the ovftool path in your deployment
+###### 4.3. Configure the ovftool path in your deployment
 
-The path to the ovftool is configured in your deployment in the common.yml file. Uncomment and set the variable 'vcenter_ovftool' to the container-relative path to where you copied the /usr/lib/vmware-ovftool folder. This is required because metroae will attempt to execute ovftool from within the container. From inside the container, metroae can only access paths that have been mounted from the host. In this case, this is the metroae_data directory which is mounted inside the container as '/data'. For our example, in common.yml you would set 'vcenter_ovftool: /data/vmware-ovftool/ovftool'.
+The path to the ovftool is configured in your deployment in the common.yml file. Uncomment and set the variable 'vcenter_ovftool' to the container-relative path to where you copied the `/usr/lib/vmware-ovftool` folder. This is required because metroae will attempt to execute ovftool from within the container. From inside the container, metroae can only access paths that have been mounted from the host. In this case, this is the metroae_data directory which is mounted inside the container as `/metroae_data`. For our example, in common.yml you would set `vcenter_ovftool: /metroae_data/vmware-ovftool/ovftool`.
 
-##### 6. Optional: Start the UI using this command:
+##### 5. Optional: Start the UI using this command:
 ```
 metroae gui start
 ```
-This command will ensure that the MetroAE GUI server is running. When running, you an point your browser at `http://host:5001` to access the GUI. *THE GUI IS IN BETA!* You are free to use it, but you can expect to run into issues because it is not GA quality or supported.
-##### 7. You can check the status of the container or GUI at any time using the following commands:
+This command will ensure that the MetroAE GUI server is running. When running, you an point your browser at `http://host:5001` to access the GUI. *THE GUI IS IN BETA!* You are free to use it, but you can expect to run into issues because it is not GA quality.
+
+##### 6. You can check the status of the container or GUI at any time using the following commands:
 ```
 metroae container status
 metroae gui status
 ```
 
-That's it! Command metadata, command logs, and container setup information are stored in the newly created `/opt/metroae` directory. The `metroae` command becomes available in the `/usr/local/bin` directory. See [DOCKER.md](DOCKER.md) for specfic details of each command and container management command options. Now you're ready to [customize](CUSTOMIZE.md) for your topology.
+That's it! Container configuration data and logs will now appear in the newly created `/opt/metroae` directory. Documentation, examples, deployments, and the ansible.log file will appear in the data directory configured during setup, `/tmp/metroae_data` in our examples, above. See [DOCKER.md](DOCKER.md) for specfic details of each command and container management command options. Now you're ready to [customize](CUSTOMIZE.md) for your topology.
+
+Note: You will continue to use the `metroae` script to run commands, but for best results using the container you should make sure your working directory is *not* the root of a nuage-metro git clone workspace. The `metroae` script can be used for both the container and the git clone workspace versions of MetroAE. At run time, the script checks its working directory. If it finds that the current working directory is the root of a git cloned workspace, it assumes that you are running locally. It will *not* execute commands inside the container. When using the container, you should run `metroae` from a working directory other than a git clone workspace. For example, if the git clone workspace is `/home/username/nuage/nuage-metro`, you can `cd /home/username/nuage` and then invoke the command as `./nuage-metro/metroae install vsds`.
 
 ### Method Two: Set up Host Environment Using GitHub Clone
 If you prefer not to use a Docker container you can set up your environment with a GitHub clone instead.

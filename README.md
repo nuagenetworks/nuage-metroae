@@ -23,7 +23,6 @@ MetroAE supports deployment and upgrade of the following components as VMs on th
 Component |  KVM <br>(el6, el7,ubuntu 14.04/16.04) | ESXi
 --------- | :----: | -------
 VRS (Virtual Routing & Switching) | X | (upgrade only)
-Libnetwork on VRS nodes  | X |
 
 #### Required Auxiliary Services
 * DNS/NTP

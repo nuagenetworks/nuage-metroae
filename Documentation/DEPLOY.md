@@ -4,6 +4,10 @@ You can execute MetroAE workflows to perform the following installations:
 * [Deploy All Components](#deploy-all-components)
 * [Deploy Individual Modules](#deploy-individual-modules)
 * [Install a Particular Role or Host](#install-a-particular-role-or-host)
+* [Copy QCOW2 files](#copy-qcow2-files-before-deployment)
+* [Deploy Standby Cluster](#deploy-the-standby-clusters)
+* [Setup a Health Monitoring Agent](#setup-a-health-monitoring-agent)
+* [Debugging](#debugging)
 
 ## Prerequisites / Requirements
 Before deploying any components, you must have previously [set up your Nuage MetroAE environment](SETUP.md "link to SETUP documentation") and [customized the environment for your target platform](CUSTOMIZE.md "link to deployment documentation").
@@ -83,6 +87,25 @@ Then, to skip the image copy during the install:
 metroae install everything --extra-vars skip_copy_images=True
 ```
 
+## Deploy the Standby Clusters
+
+MetroAE can be used to bring up the Standby VSD and VSTAT(ES) cluster in situations where the active has already been deployed. This can be done using the following commands. For VSD Standby deploy
+```
+metroae install vsds standby predeploy
+metroae install vsds standby deploy
+```
+For Standby VSTATs(ES)
+```
+metroae install vstats standby predeploy
+metroae install vstats standby deploy
+```
+
+## Setup a Health Monitoring Agent
+
+A health monitoring agent can be setup on compatible components during the deploy step. Currently this support includes the [Zabbix](zabbix.com) agent.  An optional parameter `health_monitoring_agent` can be specified on each component in the deployment files to enable setup.  During each component deploy step when enabled, the agent will be downloaded, installed and configured to be operational.  The agent can be installed separately, outside of the deploy role, using the following command:
+```
+metroae health monitoring setup
+```
 
 ## Debugging
 
