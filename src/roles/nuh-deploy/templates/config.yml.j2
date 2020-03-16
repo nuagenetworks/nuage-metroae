@@ -1,6 +1,6 @@
 network:
     namespaces: [{name: Internal}, {name: External}]
-    interfaces: [{dev: eth1, dns1: "", dns2: "", dns3: "", gateway: 192.168.1.1, ipaddr: 192.168.1.144, namespace: Internal, prefix: '24', vlan: 0}, {dhcp: no, dns1: "", dns2: "", dns3: "", namespace: External, dev: eth2, ipaddr: 192.168.123.243, prefix: '24', gateway: 192.168.123.1, vlan: 0}]
+    interfaces: [{dev: eth1, dns1: "", dns2: "", dns3: "", gateway: {{ internal_gateway }}, ipaddr: {{ internal_ip }}, namespace: Internal, prefix: '{{ internal_ip_prefix }}', vlan: 0}, {dhcp: no, dns1: "", dns2: "", dns3: "", namespace: External, dev: eth2, ipaddr: {{ external_ip }}, prefix: '{{ external_ip_prefix }}', gateway: {{ external_gateway }}, vlan: 0}]
     nuagenetwork: Internal
 vrrp: null
 proxy:
@@ -19,12 +19,14 @@ proxy:
     - {interface: eth2.0, role: sdWanPortal, enabled: false, firewallports: [], settings: {httpPort: "", httpsPort: "", ccert: ""}}
     - {interface: eth2.0, role: fileserver, enabled: false, firewallports: [], settings: {port: "", ccert: ""}}
 servers:
-    vsd1: 192.168.1.111
-    vsd2: 192.168.1.112
-    vsd3: 192.168.1.113
-    es1: 192.168.1.131
-    es2: 192.168.1.132
-    es3: 192.168.1.133
+{% if vsd_sa_or_ha is match('ha') %}
+    vsd1: {{ hostvars[groups['vsd_ha_node1'][0]]['mgmt_ip'] }}
+    vsd2: {{ hostvars[groups['vsd_ha_node2'][0]]['mgmt_ip'] }}
+    vsd3: {{ hostvars[groups['vsd_ha_node3'][0]]['mgmt_ip'] }}
+{% endif %}
+{% if vsd_sa_or_ha is match('sa') %}
+    vsd1: {{ hostvars[groups['vsd_sa_node'][0]]['mgmt_ip'] }}
+{% endif %}
 na:
     vsd: {sleepTimer: 2000, socketTimeout: 60000}
     notificationHandlers: []
