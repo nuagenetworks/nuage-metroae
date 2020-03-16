@@ -17,10 +17,6 @@ The following command options are supported by the metroae command:
 
 **setup** - setup completes the steps necessary to get the MetroAE container up and running. It prompts you for the full paths to a data directory that the container uses on your local disk. The setup action will create the subdirectory `metroae_data` on disk, then mount it as `/metroae_data/` inside the container. When using the MetroAE container, you must provide paths relative to this path as seen from inside the container. For example, if you tell setup to use `/tmp` for the data directory, setup will create `/tmp/metroae_data` on your host. The setup will also mount this directory inside the container as `/metroae_data/`. If you copy your tar.gz files to `/tmp/metroae_data/images/6.0.1/` on the host, the container sees this as `/data/images/6.0.1/`. So, when using unzip or setting `nuage_unzipped_files_dir` in common.yml, you would specify `/metroae_data/images/6.0.1/` as your path.
 
-#### Notes about setup:
-The MetroAE container has support for a REST API and a beta version of the MetroAE GUI. The REST API is supported. The GUI should be considered `preview` or `experimental`. We do not recommend using the GUI for production.
-
-By default, the API/GUI listens on port 5001. You can access the API/GUI via URL, `https://host_name_or_ip:5001`, where `host_name_or_ip` is the host name or ip address of the machine on which the container is running. This host name can often be just, `https://localhost:5001`.
 
 Running setup multiple times replaces the existing container, but it does not remove the data on your local disk.
 
@@ -34,22 +30,12 @@ Running setup multiple times replaces the existing container, but it does not re
 
 **metroae container update** - upgrades the container to the latest available release image. You don't need to run setup again after an upgrade.
 
-**metroae gui stop** - stops the UI server running in the container
-
-**metroae gui start** - starts the API/UI server in the container. It prompts you for UI settings, such as whether you want to configure a certificate and whether a password will be used to encrypt passwords. The default port used by the API/UI server is 5001, as in `https://localhost:5001`.
-
-**metroae gui status** - displays the status of the API/UI server in the container
-
 **metroae tools unzip images** - unzips Nuage Networks tar.gz files into the images directory specified during the setup operation. Use of this command requires that the tar.gz files be placed in either the data or images directory that you specified during setup.
 See the current values of the data and images directories by executing the status command.
 
 **metroae tools generate example** - generates an example for the specified schema and puts it in the examples directory under the data directory that you specified during setup. You can get the current values of the data and images directories by executing the status command.
 
 **metroae tools encrypt credentials** - sets the encryption credentials for encrypting secure user data, e.g. passwords
-
-**metroae gui encryption enable** - sets up a TLS certificate for the UI access
-
-**metroae gui encryption disable** - disables TLS on the UI
 
 **metroae copy-ssh-id** - copies the container's public key into the ssh authorized_keys file on the specified server. This key is required for passwordless ssh access to all target servers. Usage: `metroae copy-ssh-id user@host_or_ip`
 
@@ -67,9 +53,6 @@ The MetroAE container is designed so that you run MetroAE workflows, e.g. instal
 
 ### SSH connection problems
 If MetroAE is unable to authenticate with your target server, chances are that passwordless ssh has not been configured properly. The public key of the container must be copied to the authorized_keys file on the target server. Use the `copy-ssh-id` command option, e.g. `metroae copy-ssh-id user@host_name_or_ip`.
-
-### Where are my data and image directories or what are my API/UI settings?
-Determine the current setup by either searching for a file named .metroae in the user's home directory or by executing the status command option, e.g. `metroae container status`.
 
 ### General errors
 metroae.log and ansible.log are located in the data directory you specified during setup.
