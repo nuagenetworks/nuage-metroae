@@ -125,7 +125,7 @@ You can use MetroAE to enable optional post-installation security features to 'h
 - `private_key_path` is an optional parameter that points to the location of the certificate private key pem file for the vrs.
 
 ### `vnsutils`
-Currently post install security hardening is not supported for VNSUTILs(proxy) using MetroAE. If using custom certificates, they need to copied into /opt/proxy/config/keys and supervisord needs to be restarted
+Currently post install security hardening is not supported for VNSUTILs(proxy) using MetroAE. If using custom certificates, they need to copied into /opt/proxy/config/keys and supervisord needs to be restarted.
 
 ### Operating using the Default Deployment
 The Default deployment is provided as a starting place for your workflows. It is located in a subdirectory named `Default` within the Deployments directory. You can operate MetroAE by simply editing the contents of the Default deployment. Follow these steps:
