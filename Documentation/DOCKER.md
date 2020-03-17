@@ -54,6 +54,9 @@ The MetroAE container is designed so that you run MetroAE workflows, e.g. instal
 ### SSH connection problems
 If MetroAE is unable to authenticate with your target server, chances are that passwordless ssh has not been configured properly. The public key of the container must be copied to the authorized_keys file on the target server. Use the `copy-ssh-id` command option, e.g. `metroae copy-ssh-id user@host_name_or_ip`.
 
+### Where is my data directory?	
+You can find out about the current state of your container, including the path to the metroae_data directory, by executing the container status command, `metroae container status`.
+
 ### General errors
 metroae.log and ansible.log are located in the data directory you specified during setup.
 
