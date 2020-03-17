@@ -1137,7 +1137,6 @@ function docker_exec {
         shift
         shift
     fi
-    write_to_screen_and_script_log "docker command executed is $@"
     docker exec $environment $working_dir $RUNNING_CONTAINER_ID "$@"
 }
 
@@ -1878,13 +1877,10 @@ function container_main {
 function tools_main {
     debug ${FUNCNAME[0]}
     local setup_args=""
-    write_to_screen_and_script_log "tools main extra args :${EXTRA_ARGS[@]}"
     if [[ ! -z $NOT_INTERACTIVE ]]; then
         setup_args=("${EXTRA_ARGS[@]:0:6}")
         EXTRA_ARGS=("${EXTRA_ARGS[@]:6}")
     fi
-
-    write_to_screen_and_script_log "tools main extra setup :${EXTRA_ARGS[@]}"
 
     get_running_container_id
     get_container_id
@@ -1917,10 +1913,8 @@ function tools_main {
         ;;
         convert_csv_to_deployment)
         if [[ $RUN_MODE == "CONTAINER" ]]; then
-            write_to_screen_and_script_log "container mode csv depl ${EXTRA_ARGS[@]}"
             docker_exec env workdir /source/nuage-metro /usr/bin/python convert_csv_to_deployment.py ${EXTRA_ARGS[@]}
         else
-            write_to_screen_and_script_log "Run mode csv depl ${EXTRA_ARGS[@]}"
             /usr/bin/python convert_csv_to_deployment.py ${EXTRA_ARGS[@]}
         fi
         print_version_and_exit 0
