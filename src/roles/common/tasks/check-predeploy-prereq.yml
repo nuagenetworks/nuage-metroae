@@ -55,18 +55,32 @@
 
 - block:
 
-  - debug: var=vsd_required_available_space
-  - debug: var=disk_space_path
-
-  - name: Check available disk space on hypervisor
+  - name: "Check available disk space on hypervisor for {{ component_type }}"
     include_role:
       name: common
       tasks_from: check-hypervisor-disk-space
     vars:
       required_available_space: "{{ vsd_required_available_space }}"
       path: "{{ disk_space_path }}"
+    when: component_type | default('NONE') == 'vsd' or component_type | default('NONE') == 'vcin'
+
+  - name: Check available disk space on hypervisor for VSC
+    include_role:
+      name: common
+      tasks_from: check-hypervisor-disk-space
+    vars:
+      required_available_space: "{{ vsc_required_available_space }}"
+      path: "{{ disk_space_path }}"
+    when: component_type | default('NONE') == 'vsc'
+
+  - name: Check available disk space on hypervisor for VSTAT
+    include_role:
+      name: common
+      tasks_from: check-hypervisor-disk-space
+    vars:
+      required_available_space: "{{ vstat_required_available_space }}"
+      path: "{{ disk_space_path }}"
+    when: component_type | default('NONE') == 'vstat'
 
   delegate_to: "{{ target_server }}"
-  when:
-    - target_server_type | default('NONE') is match("kvm")
-    - component_type | default('NONE') == 'vsd'
+  when: target_server_type | default('NONE') is match("kvm")
