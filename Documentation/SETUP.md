@@ -61,16 +61,9 @@ The ovftool command and supporting files are usually installed in the /usr/lib/v
 
 The path to the ovftool is configured in your deployment in the common.yml file. Uncomment and set the variable 'vcenter_ovftool' to the container-relative path to where you copied the `/usr/lib/vmware-ovftool` folder. This is required because metroae will attempt to execute ovftool from within the container. From inside the container, metroae can only access paths that have been mounted from the host. In this case, this is the metroae_data directory which is mounted inside the container as `/metroae_data`. For our example, in common.yml you would set `vcenter_ovftool: /metroae_data/vmware-ovftool/ovftool`.
 
-##### 5. Optional: Start the UI using this command:
-```
-metroae gui start
-```
-This command will ensure that the MetroAE GUI server is running. When running, you an point your browser at `http://host:5001` to access the GUI. *THE GUI IS IN BETA!* You are free to use it, but you can expect to run into issues because it is not GA quality.
-
-##### 6. You can check the status of the container or GUI at any time using the following commands:
-```
-metroae container status
-metroae gui status
+##### 5. You can check the status of the container at any time using the following command:	
+```	
+metroae container status	
 ```
 
 That's it! Container configuration data and logs will now appear in the newly created `/opt/metroae` directory. Documentation, examples, deployments, and the ansible.log file will appear in the data directory configured during setup, `/tmp/metroae_data` in our examples, above. See [DOCKER.md](DOCKER.md) for specfic details of each command and container management command options. Now you're ready to [customize](CUSTOMIZE.md) for your topology.
