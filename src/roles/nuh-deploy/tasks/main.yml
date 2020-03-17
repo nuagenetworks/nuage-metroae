@@ -57,6 +57,13 @@
   - name: Set the timezone
     command: timedatectl set-timezone {{ nuh_timezone }}
 
+  - name: Get vsd node(s) information
+    import_role:
+      name: common
+      tasks_from: vsd-node-info.yml
+    vars:
+      vsd_hostname: "{{ vsd_fqdn }}"
+
   - name: Copy the network config
     template: src=config.yml.j2 backup=no dest=/opt/proxy/data/config.yml owner=root group=root mode=0640
 
@@ -67,9 +74,11 @@
 
   - name: Check if the eth1 is configured on Internal interface
     shell: ip netns exec Internal ip addr list | grep eth1
+    when: internal_ip is defined
 
   - name: Check if the eth2 is configured on External interface
-    shell: ip netns exec Internal ip addr list | grep eth2
+    shell: ip netns exec External ip addr list | grep eth2
+    when: external_ip is defined
 
   - block:
 

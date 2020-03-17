@@ -1,6 +1,31 @@
 network:
-    namespaces: [{name: Internal}, {name: External}]
-    interfaces: [{dev: eth1, dns1: "", dns2: "", dns3: "", gateway: {{ internal_gateway }}, ipaddr: {{ internal_ip }}, namespace: Internal, prefix: '{{ internal_ip_prefix }}', vlan: 0}, {dhcp: no, dns1: "", dns2: "", dns3: "", namespace: External, dev: eth2, ipaddr: {{ external_ip }}, prefix: '{{ external_ip_prefix }}', gateway: {{ external_gateway }}, vlan: 0}]
+    namespaces:
+      - name: Internal
+{% if external_ip is defined %}
+      - name: External
+{% endif %}
+    interfaces:
+      - dev: eth1
+        dns1: ''
+        dns2: ''
+        dns3: ''
+        gateway: {{ internal_gateway }}
+        ipaddr: {{ internal_ip }}
+        namespace: Internal
+        prefix: {{ internal_ip_prefix }}
+        vlan: 0
+{% if external_ip is defined %}
+      - dhcp: 'no'
+        dns1: ''
+        dns2: ''
+        dns3: ''
+        namespace: External
+        dev: eth2
+        ipaddr: {{ external_ip }}
+        prefix: {{ external_ip_prefix }}
+        gateway: {{ external_gateway }}
+        vlan: 0
+{% endif %}
     nuagenetwork: Internal
 vrrp: null
 proxy:
