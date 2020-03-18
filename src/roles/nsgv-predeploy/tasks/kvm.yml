@@ -17,6 +17,10 @@
       name: common
       tasks_from: copy-qcow2
 
+  - name: Set locak variable with nsgv destination
+    set_fact:
+      nsgv_dest: "{{ images_path }}/{{ vm_name }}/{{ image_file_name }}"
+
   when: not node_running
   delegate_to: "{{ target_server }}"
   remote_user: "{{ target_server_username }}"
@@ -69,7 +73,7 @@
 - block:
 
   - name: Preallocate most of NSGV disk space to avoid pausing the VM, this also checks disk space
-    shell: "fallocate -x -l {{ nsgv_fallocate_size_gb }}G {{ guestfish_dest }}"
+    shell: "fallocate -x -l {{ nsgv_fallocate_size_gb }}G {{ nsgv_dest }}"
     when: nsgv_fallocate_size_gb > 0
 
   - name: Define and start VSD VM
