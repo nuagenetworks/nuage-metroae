@@ -393,13 +393,16 @@ class CsvDeploymentConverter(object):
         if "/" in deployment_name:
             dir_name = os.path.dirname(deployment_name)
             if not os.path.isdir(dir_name):
-                raise Exception("Parent directory %s does not exist" %(dir_name))
+                raise Exception("Parent directory %s does not exist" %
+                                (dir_name))
             deployment_dir = deployment_name
         else:
             if os.path.isdir(CONTAINER_MOUNT_DIRECTORY):
-                deployment_dir = os.path.join(CONTAINER_MOUNT_DIRECTORY, deployment_name)
+                deployment_dir = os.path.join(CONTAINER_MOUNT_DIRECTORY,
+                                              deployment_name)
             else:
-                deployment_dir = os.path.join(DEPLOYMENTS_DIRECTORY,deployment_name)
+                deployment_dir = os.path.join(DEPLOYMENTS_DIRECTORY,
+                                              deployment_name)
 
         if not os.path.isdir(deployment_dir):
             self._output("Creating deployment directory: %s", deployment_dir)
