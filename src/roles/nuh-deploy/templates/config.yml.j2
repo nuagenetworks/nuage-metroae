@@ -11,6 +11,15 @@ network:
         dns3: ''
         gateway: {{ internal_gateway }}
         ipaddr: {{ internal_ip }}
+{% if nuh_sa_or_ha is match('ha') %}
+{% if inventory_hostname == groups['nuhs'][0] %}
+        peeripaddr: {{ hostvars[groups['nuhs'][1]].internal_ip }}
+        peerprefix: {{ internal_prefix }}
+{% else %}
+        peeripaddr: {{ hostvars[groups['nuhs'][0]].internal_ip }}
+        peerprefix: {{ internal_prefix }}
+{% endif %}
+{% endif %}
         namespace: Internal
         prefix: {{ internal_prefix }}
         vlan: 0
