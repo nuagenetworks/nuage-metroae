@@ -78,6 +78,7 @@ COMPLETION_DIR=/etc/bash_completion.d/
 CURRENT_DIR=`pwd`
 PLAYBOOK_DIR=$CURRENT_DIR/src/playbooks
 PLAYBOOK_WITH_BUILD_DIR=$CURRENT_DIR/src/playbooks/with_build
+ROLES_DIR=$CURRENT_DIR/src/roles
 SCHEMA_DIR=$CURRENT_DIR/schemas
 DEPLOYMENTS_BASE_DIR=$CURRENT_DIR/deployments
 DEPLOYMENT_DIR=$DEPLOYMENTS_BASE_DIR/default
@@ -1751,6 +1752,164 @@ function container_main {
 }
 
 #################################################################################
+#                                   Plugins                                     #
+#################################################################################
+
+function version_compare {
+    if [[ $1 == $2 ]]
+    then
+        return 0
+    fi
+    local IFS=.
+    local i ver1=($1) ver2=($2)
+    # fill empty fields in ver1 with zeros
+    for ((i=${#ver1[@]}; i<${#ver2[@]}; i++))
+    do
+        ver1[i]=0
+    done
+    for ((i=0; i<${#ver1[@]}; i++))
+    do
+        if [[ -z ${ver2[i]} ]]
+        then
+            # fill empty fields in ver2 with zeros
+            ver2[i]=0
+        fi
+        if ((10#${ver1[i]} > 10#${ver2[i]}))
+        then
+            return 1
+        fi
+        if ((10#${ver1[i]} < 10#${ver2[i]}))
+        then
+            return 2
+        fi
+    done
+    return 0
+}
+
+function check_plugin_version {
+    set +e
+    local plugin_line=`grep required_metro_version $1/plugin-cfg.yml`
+
+    if [[ $? -ne 0 ]]
+    then
+        write_to_screen_and_script_log "Plugin missing or corrupt plugin-cfg.yml"
+        print_version_and_exit 1
+    fi
+
+    local plugin_version=`echo $plugin_line | awk '{ print $2 }'`
+
+    version_compare $plugin_version ${METROAE_VERSION#"v"}
+    if [[ $? -eq 1 ]]
+    then
+        write_to_screen_and_script_log "Plugin requires MetroAE version $plugin_version"
+        print_version_and_exit 1
+    fi
+    set -e
+
+}
+
+function check_plugin_files {
+    for file in $1/*
+    do
+        #echo $file
+        if [[ -d $file ]]
+        then
+            check_plugin_files $file $2 $3
+        elif [[ -f $file ]]
+        then
+            local base_file=${file#$2/}
+            if [[ -f $3/$base_file ]]
+            then
+                write_to_screen_and_script_log "Plugin file $base_file conflicts with existing files"
+                print_version_and_exit 1
+            fi
+        fi
+    done
+}
+
+function copy_plugin_files {
+    for file in $1/*
+    do
+        if [[ -d $file ]]
+        then
+            copy_plugin_files $file $2 $3
+        elif [[ -f $file ]]
+        then
+            local base_file=${file#$2/}
+            write_to_script_log "Copying $file -> $3/$base_file"
+        fi
+    done
+}
+
+function delete_plugin_files {
+    for file in $1/*
+    do
+        if [[ -d $file ]]
+        then
+            delete_plugin_files $file $2 $3
+        elif [[ -f $file ]]
+        then
+            local base_file=${file#$2/}
+            write_to_script_log "Deleting $3/$base_file"
+            if [[ -f $3/$base_file ]]
+            then
+            else
+                write_to_script_log "Not found: $3/$base_file"
+            fi
+        fi
+    done
+}
+
+function install_plugin {
+    echo "install $1"
+    if [[ ! -d $1 ]]
+    then
+        echo "Plugin dir $1 was not found"
+        print_version_and_exit 1
+    fi
+    write_to_screen_and_script_log ">>> Installing plugin: $1"
+    check_plugin_version $1
+    write_to_screen_and_script_log "Checking files..."
+    check_plugin_files $1/playbooks $1/playbooks $PLAYBOOK_WITH_BUILD_DIR
+    check_plugin_files $1/roles $1/roles $ROLES_DIR
+    check_plugin_files $1/schemas $1/schemas $SCHEMA_DIR
+    write_to_screen_and_script_log "Installing plugin files..."
+    copy_plugin_files $1/playbooks $1/playbooks $PLAYBOOK_WITH_BUILD_DIR
+    copy_plugin_files $1/roles $1/roles $ROLES_DIR
+    copy_plugin_files $1/schemas $1/schemas $SCHEMA_DIR
+}
+
+function uninstall_plugin {
+    echo "uninstall $1"
+    if [[ ! -d $1 ]]
+    then
+        echo "Plugin dir $1 was not found"
+        print_version_and_exit 1
+    fi
+    write_to_screen_and_script_log ">>> Uninstalling plugin: $1"
+}
+
+function plugin_main {
+    debug ${FUNCNAME[0]}
+
+    POSITIONAL=()
+    case $1 in
+        install)
+        install_plugin "$2"
+        print_version_and_exit 0
+        ;;
+        uninstall)
+        uninstall_plugin "$2"
+        print_version_and_exit 0
+        ;;
+        *)
+        plugin_help ",plugin"
+        print_version_and_exit 1
+        ;;
+    esac
+}
+
+#################################################################################
 #                                    Tools                                      #
 #################################################################################
 
@@ -1926,6 +2085,16 @@ function tools_help {
     echo ""
 }
 
+function plugin_help {
+    debug ${FUNCNAME[0]}
+    echo "Nuage Networks Metro Automation Engine (MetroAE) Version:" $METROAE_VERSION
+    echo ""
+    echo "MetroAE plugin usage:"
+    echo ""
+    print_menu_help "metroae%-50s %-1s\n" $1
+    echo ""
+}
+
 function ui_help {
     debug ${FUNCNAME[0]}
     echo "Nuage Networks Metro Automation Engine (MetroAE) Version:" $METROAE_VERSION
@@ -1953,6 +2122,10 @@ function switch_help {
         ;;
         ,tools*)
         tools_help "$1"
+        exit 0
+        ;;
+        ,plugin*)
+        plugin_help "$1"
         exit 0
         ;;
         ,gui*)
@@ -2051,6 +2224,10 @@ fi
 case ${MATCH_MENU[2]} in
     tools)
     tools_main
+    print_version_and_exit 0
+    ;;
+    plugin)
+    plugin_main ${MATCH_MENU[3]} "${EXTRA_ARGS[@]}"
     print_version_and_exit 0
     ;;
     config)
