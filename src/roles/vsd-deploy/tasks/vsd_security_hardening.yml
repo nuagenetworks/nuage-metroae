@@ -309,13 +309,13 @@
     - name: Check connected user on ejabberd
       shell: /opt/ejabberd/bin/ejabberdctl connected_users | wc -l
       register: ejabberdctl_output
-      until: ejabberdctl_output.stdout | int == 3
+      until: ejabberdctl_output.stdout | int >= 3
       retries: 10
       delay: 15
 
-    - name: Assert there are 3 connected user for standalone
+    - name: Assert there are more than 3 connected user for standalone
       assert:
-        that: "ejabberdctl_output.stdout == '3'"
+        that: "ejabberdctl_output.stdout | int >= 3"
         msg: "Ejabberd failed to connect with all the users. Please make sure the certificates are valid"
 
     when: vsd_sa_or_ha is match ('sa')
@@ -324,13 +324,13 @@
     - name: Check connected user on ejabberd
       shell: /opt/ejabberd/bin/ejabberdctl connected_users | wc -l
       register: ejabberdctl_output
-      until: ejabberdctl_output.stdout | int == 9
+      until: ejabberdctl_output.stdout | int >= 9
       retries: 10
       delay: 15
 
-    - name: Assert there are 9 connected user for clustered
+    - name: Assert there are more than 9 connected user for clustered
       assert:
-        that: "ejabberdctl_output.stdout == '9'"
+        that: "ejabberdctl_output.stdout | int >= 9"
         msg: "Ejabberd failed to connect with all the users. Please make sure the certificates are valid"
 
     when: vsd_sa_or_ha is match ('ha')
