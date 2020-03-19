@@ -34,7 +34,9 @@
 * Vastly improved predeploy roles for code reuse (METROAE-801)
 * Moved default reports directory out of playbooks and into metro root directory (METROAE-879)
 * Get the debug log script working with container (METROAE-1202)
+* Prevent presence of upgrade.yml from causing install to fail (METROAE-1161)
 * No longer error if patch upgrade includes non-VSD components
 
 ### Removed
+
 * Removed obsolete os_vsd_osc_integration playbook and associated role and files.
