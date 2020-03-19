@@ -6,59 +6,95 @@ localhost ansible_connection=local
 
 {% if vsds is defined and vsds|length > 0 %}
 
-{% if vsds|length == 1 and not inplace %}
+{% if vsds|length == 1 %}
 
 [vsd_sa_node]
 {{ vsds[0].hostname }}
 
-{% elif not inplace %}
-
-[vsd_ha_node1]
-{{ vsds[0].hostname }}
-
-[vsd_ha_node2]
-{{ vsds[1].hostname }}
-
-[vsd_ha_node3]
-{{ vsds[2].hostname }}
-
-{% if vsds|length == 6 %}
-
-[vsd_standby_node1]
-{{ vsds[3].hostname }}
-
-[vsd_standby_node2]
-{{ vsds[4].hostname }}
-
-[vsd_standby_node3]
-{{ vsds[5].hostname }}
-
+{% if not inplace %}
+[vsd_upgrade_sa_node:children]
+vsd_sa_node
 {% endif %}
 
 {% else %}
+
+[vsd_ha_node1]
+{{ vsds[0].hostname }}
+[vsd_ha_node2]
+{{ vsds[1].hostname }}
+[vsd_ha_node3]
+{{ vsds[2].hostname }}
+
+{% if not inplace %}
+[vsd_upgrade_ha_node1:children]
+vsd_ha_node1
+[vsd_upgrade_ha_node2:children]
+vsd_ha_node2
+[vsd_upgrade_ha_node3:children]
+vsd_ha_node3
+{% endif %}
+
+{% if vsds|length == 6 %}
+[vsd_standby_node1]
+{{ vsds[3].hostname }}
+[vsd_standby_node2]
+{{ vsds[4].hostname }}
+[vsd_standby_node3]
+{{ vsds[5].hostname }}
+
+{% if not inplace %}
+[vsd_upgrade_standby_node1:children]
+vsd_standby_node1
+[vsd_upgrade_standby_node2:children]
+vsd_standby_node2
+[vsd_upgrade_standby_node3:children]
+vsd_standby_node3
+{% endif %}
+
+{% endif %}
+
+{% endif %}
+
+{% if inplace %}
 [vsd_inplace_upgrade_nodes]
 {% for vsd in vsds %}
 {{ vsd.hostname }}
 {% endfor %}
-
 {% endif %}
 
 [primary_vsds:children]
-{% if vsds|length == 1 and not inplace %}
+{% if vsds|length == 1 %}
 vsd_sa_node
-{% elif not inplace %}
+{% else %}
 vsd_ha_node1
 vsd_ha_node2
 vsd_ha_node3
+{% endif %}
+
+[primary_upgrade_vsds:children]
+{% if not inplace %}
+{% if vsds|length == 1 %}
+vsd_upgrade_sa_node
+{% else %}
+vsd_upgrade_ha_node1
+vsd_upgrade_ha_node2
+vsd_upgrade_ha_node3
+{% endif %}
 {% else %}
 vsd_inplace_upgrade_nodes
 {% endif %}
 
-{% if vsds|length == 6 and not inplace %}
+{% if vsds|length == 6 %}
 [standby_vsds:children]
 vsd_standby_node1
 vsd_standby_node2
 vsd_standby_node3
+{% if not inplace %}
+[standby_upgrade_vsds:children]
+vsd_upgrade_standby_node1
+vsd_upgrade_standby_node2
+vsd_upgrade_standby_node3
+{% endif %}
 {% endif %}
 
 [vsds:children]
@@ -67,9 +103,7 @@ primary_vsds
 standby_vsds
 {% endif %}
 
-
 {% endif %}
-
 
 {% if vcins is defined and vcins|length > 0 %}
 

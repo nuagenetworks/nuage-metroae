@@ -861,126 +861,6 @@ function setup_container {
         return 1
     fi
 
-    if [[ ! -z "$METROAE_GUI_ENABLE" ]]; then
-        # ui
-        declare -l gui_confirm
-        if [[ ! -z $1 ]]; then
-            gui_confirm="$1"
-            shift
-        else
-            gui_confirm="init"
-            while [[ $gui_confirm  != "y" ]] && [[ $gui_confirm != "" ]]
-            do
-                echo ""
-                read -p "Do you want the container to run the beta of the MetroAE REST API/GUI? (y/N): " gui_confirm
-            done
-        fi
-
-        if [[ $gui_confirm == "y" ]]; then
-            echo ""
-            write_to_screen_and_script_log ">>> Configuring MetroAE REST API/GUI"
-            get_host_operating_system
-            declare -i port
-            if [[ $OS_RELEASE -eq $NON_LINUX ]]; then
-                if [[ -z $1 ]]; then
-                    echo ""
-                    read -p "Specify the REST API/GUI HTTP port for the MetroAE container: " port
-                    echo ""
-                    write_to_screen_and_script_log ">>> Configuring REST API/GUI to use port: $port"
-                else
-                    echo ""
-                    write_to_screen_and_script_log ">>> Setting REST API/GUI access port to $1"
-                    port=$1
-                    shift
-                fi
-                echo UI_PORT=$port >> $SETUP_FILE
-            fi
-            # Ask if TLS needs to be setup
-            declare -l tls_confirm
-            if [[ ! -z $1 ]]; then
-                tls_confirm=$1
-                shift
-            else
-                tls_confirm="init"
-                while [[ $tls_confirm  != "y" ]] && [[ $tls_confirm  != "n" ]] && [[ $tls_confirm != "" ]]
-                do
-                    echo ""
-                    read -p "Do you want to enable TLS with a security certificate the REST API/GUI? (y/N): " tls_confirm
-                done
-            fi
-
-            if [[ $tls_confirm == "y" ]]; then
-                echo ""
-                write_to_screen_and_script_log ">>> Enabling TLS on the REST API/GUI"
-                certificate='none'
-                declare -i valid_cert_path
-                if [[ ! -z $1 ]]; then
-                    valid_cert_path=$1
-                    shift
-                else
-                    valid_cert_path="init"
-                    while [[ $certificate  == "none" ]]
-                    do
-                        echo ""
-                        read -p "Enter the path to the security certificate file: " certificate
-                        echo ""
-                        stat $certificate
-                        valid_cert_path=$?
-                        if [[ $valid_cert_path -ne 0 ]]; then
-                            echo ""
-                            write_to_screen_and_script_log "We had a problem validating the path you entered: $PATH_ARG. Please try again."
-                            certificate='none'
-                        fi
-                    done
-                fi
-                write_to_screen_and_script_log ">>> Using certificate file: $certificate"
-                cp $certificate $data_path/gui_cert
-
-                keyfile='none'
-                declare -i valid_keyfile_path
-                if [[ ! -z $1 ]]; then
-                    valid_keyfile_path=$1
-                    shift
-                else
-                    while [[ $keyfile  == "none" ]]
-                    do
-                        echo ""
-                        read -p "Enter the path to the security key file: " keyfile
-                        echo ""
-                        stat $keyfile
-                        valid_keyfile_path=$?
-                        if [[ $valid_keyfile_path -ne 0 ]]; then
-                            echo ""
-                            write_to_screen_and_script_log "We had a problem validating the path you entered: $keyfile. Please try again."
-                            keyfile='none'
-                        fi
-                    done
-                fi
-                echo ""
-                write_to_screen_and_script_log ">>> Using key file: $keyfile"
-                cp $keyfile $data_path/gui_keyfile
-
-                load_certificates /data/gui_cert /data/gui_keyfile
-                return 0
-            else
-                echo ""
-                write_to_screen_and_script_log ">>> Not enabling TLS on the REST API/GUI"
-            fi
-
-            start_ui $1
-            gui_status=$?
-            shift
-            if [[ $gui_status -ne 0 ]]; then
-                echo ""
-                write_to_screen_and_script_log "Problem starting the MetroAE REST API/GUI in the container. Return code: $gui_status. Quitting."
-                echo ""
-                return 1
-            fi
-        else
-            echo ""
-            write_to_screen_and_script_log ">>> MetroAE REST API/GUI will not be configured"
-        fi
-    fi
     echo ""
     write_to_screen_and_script_log "MetroAE container setup complete. Execute 'metroae container status' for status."
     echo ""
@@ -1105,6 +985,8 @@ function run_container_if_not_running {
 function docker_exec {
     debug ${FUNCNAME[0]}
     run_container_if_not_running
+    environment=""
+    working_dir=""
 
     if [[ $1 == "env" ]]; then
         shift
@@ -1128,11 +1010,14 @@ function docker_exec {
         if [[ ! -z $USER_DATA_PATH ]]; then
             environment="$environment -e USER_DATA_PATH=$USER_DATA_PATH"
         fi
-
-        docker exec $environment $RUNNING_CONTAINER_ID "$@"
-    else
-        docker exec $RUNNING_CONTAINER_ID "$@"
     fi
+
+    if [[ $1 == "workdir" ]]; then
+        working_dir="-w $2"
+        shift
+        shift
+    fi
+    docker exec $environment $working_dir $RUNNING_CONTAINER_ID "$@"
 }
 
 function docker_exec_interactive {
@@ -1873,9 +1758,10 @@ function tools_main {
     debug ${FUNCNAME[0]}
     local setup_args=""
     if [[ ! -z $NOT_INTERACTIVE ]]; then
-        setup_args=("${EXTRA_ARGS[@]:0:7}")
-        EXTRA_ARGS=("${EXTRA_ARGS[@]:7}")
+        setup_args=("${EXTRA_ARGS[@]:0:6}")
+        EXTRA_ARGS=("${EXTRA_ARGS[@]:6}")
     fi
+
     get_running_container_id
     get_container_id
     if [[ $RUN_MODE == "CONTAINER" ]] && [[ -z $RUNNING_CONTAINER_ID ]]; then
@@ -1907,7 +1793,7 @@ function tools_main {
         ;;
         convert_csv_to_deployment)
         if [[ $RUN_MODE == "CONTAINER" ]]; then
-            docker_exec env /usr/bin/python /source/nuage-metro/convert_csv_to_deployment.py ${EXTRA_ARGS[@]}
+            docker_exec env workdir /source/nuage-metro /usr/bin/python convert_csv_to_deployment.py ${EXTRA_ARGS[@]}
         else
             /usr/bin/python convert_csv_to_deployment.py ${EXTRA_ARGS[@]}
         fi
