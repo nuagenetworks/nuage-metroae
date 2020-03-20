@@ -17,6 +17,7 @@
 * Add option to backup and restore the /etc/host file on VSD during upgrade (METROAE-1187)
 * Add support for zero factor bootstrapping multi uplinks for NSGvs (METROAE-852)
 * Add support for downloading the container from S3 in tar format (METROAE-1210)
+* Check for required disk space on VSD for backup files during upgrade health check (METROAE-1182)
 
 ### Resolved Issues
 
@@ -25,7 +26,6 @@
 * Fix fallocate failure on path with symbolic link (METROAE-1167)
 * Fix deprecated task and changed result format for vmware_vm_facts (METROAE-1179)
 * Detect when unresolved jinja2 is present in inventory (METROAE-820)
-* Check for required disk space on VSD for backup files during upgrade health check (METROAE-1182)
 * Fix issue with VSD failover procedure with Active Standby VSTATs (METROAE-1061)
 * Convert shell mkdir tasks to ansible file module (METROAE-1059)
 * Add optional user prompt confirmation before destroying components (METROAE-868)
