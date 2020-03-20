@@ -14,16 +14,16 @@
 * Muti-underlay for VSC
 * VSD Disk Performance Test
 * VSD RTT Cluster Test
-* VSC Security Hardening
+* VSC Security Hardening (METROAE-1183)
 * VSD Certificate renewal
 * NUH Multi-external Interfaces (METROAE-1211)
 * Install Zabbix Heatlh Agents
 * Separate ES standby cluster install
-* Discovery Wizard for Existing configs
-* VSD /etc/hosts backup/restore
+* Discovery Wizard for Existing configs (METROAE-1195)
+* VSD /etc/hosts backup/restore (METROAE-1187)
 * NSGv Bootstrap with multiple uplinks
 * Download Container Tarball (METROAE-1210)
-* VSD backup disk space check
+* VSD backup disk space check (METROAE-1182)
 * mkdir tasks not using file module
 * Prompt before destroy
 * Enhance vCenter debug output
@@ -31,7 +31,7 @@
 * Upgrade multiple VSC pairs
 * Relocate reports directory
 * Patch upgrade to 6.0.5 (METROAE-1322)
-* Document VSD rollback procedure
+* Document VSD rollback procedure (METROAE-1181)
 * Document Terraform best-practices
 * Support Ansible 2.9
 * Enhance no_log: true behavior
@@ -44,14 +44,14 @@
 * Removed depecated code and warnings
 * jinja2 in inventory not throwing an error
 * VSD active/standby failover issue
-* Log-gathering script not working with container
+* Log-gathering script not working with container (METROAE-1202)
 * Presence of upgrade.yml breaking install
 * Patch upgrade of non-CVSD throwing error
 * nsgv_postdeploy fails when VSC username is custom (METROAE-1238)
 * Sample CSV file not copied out of container (METROAE-1208)
-* Skip DNS tests not working as intended
-* Misc wizard bugs
-* VMware Ansible modules deprecated
+* Skip DNS tests not working as intended (METROAE-1203)
+* Misc wizard bugs (METROAE-1196)
+* VMware Ansible modules deprecated (METROAE-1179)
 
 ### Removed
 
