@@ -26,15 +26,26 @@
   set_fact:
     plugin_hosts: ""
 
+- name: Set build hooks
+  set_fact:
+    build_hooks: "{{ common.hooks | default([]) }}"
+
+- name: Add plugin hooks
+  set_fact:
+    build_hooks: "{{ build_hooks + item.hooks }}"
+  loop: "{{ plugin_configs }}"
+
 - name: Lets run build hooks
   include_role:
     name: hooks
     tasks_from: main
   vars:
-    - hooks_file_path: "{{ item }}"
+    - hooks_file_path: "{{ hook }}"
     - hook_location:
       - build
-  with_items: "{{ common.hooks | default([]) }}"
+  loop: "{{ build_hooks }}"
+  loop_control:
+    loop_var: hook
 
 - name: Update VSD variables
   include_role:
