@@ -38,4 +38,5 @@
 
 ### Removed
 
-* Removed obsolete os_vsd_osc_integration playbook and associated role and files.
+* Removed obsolete os_vsd_osc_integration playbook and associated role and files
+* Removed beta GUI from container for security purposes
