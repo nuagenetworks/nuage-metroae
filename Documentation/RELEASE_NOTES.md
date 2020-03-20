@@ -16,12 +16,13 @@
 * VSD RTT Cluster Test
 * VSC Security Hardening
 * VSD Certificate renewal
+* NUH Multi-external Interfaces (METROAE-1211)
 * Install Zabbix Heatlh Agents
 * Separate ES standby cluster install
 * Discovery Wizard for Existing configs
 * VSD /etc/hosts backup/restore
 * NSGv Bootstrap with multiple uplinks
-* Download Container Tarball
+* Download Container Tarball (METROAE-1210)
 * VSD backup disk space check
 * mkdir tasks not using file module
 * Prompt before destroy
@@ -29,7 +30,7 @@
 * Eliminate redundant pre-deploy code
 * Upgrade multiple VSC pairs
 * Relocate reports directory
-* Patch upgrade to 6.0.5
+* Patch upgrade to 6.0.5 (METROAE-1322)
 * Document VSD rollback procedure
 * Document Terraform best-practices
 * Support Ansible 2.9
@@ -46,8 +47,8 @@
 * Log-gathering script not working with container
 * Presence of upgrade.yml breaking install
 * Patch upgrade of non-CVSD throwing error
-* nsgv_postdeploy fails when VSC username is custom
-* Sample CSV file not copied out of container
+* nsgv_postdeploy fails when VSC username is custom (METROAE-1238)
+* Sample CSV file not copied out of container (METROAE-1208)
 * Skip DNS tests not working as intended
 * Misc wizard bugs
 * VMware Ansible modules deprecated
@@ -55,4 +56,4 @@
 ### Removed
 
 * Removed obsolete os_vsd_osc_integration playbook and associated role and files
-* Removed beta GUI from container for security purposes
+* Removed beta GUI from container for security purposes (METROAE-1319)
