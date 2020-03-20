@@ -18,6 +18,11 @@
 * Add support for zero factor bootstrapping multi uplinks for NSGvs (METROAE-852)
 * Add support for downloading the container from S3 in tar format (METROAE-1210)
 * Check for required disk space on VSD for backup files during upgrade health check (METROAE-1182)
+* Convert shell mkdir tasks to ansible file module (METROAE-1059)
+* Add optional user prompt confirmation before destroying components (METROAE-868)
+* Improved debugging output for vCenter ovftool commands (METROAE-981)
+* Vastly improved predeploy roles for code reuse (METROAE-801)
+* Moved default reports directory out of playbooks and into metro root directory (METROAE-879)
 
 ### Resolved Issues
 
@@ -27,11 +32,6 @@
 * Fix deprecated task and changed result format for vmware_vm_facts (METROAE-1179)
 * Detect when unresolved jinja2 is present in inventory (METROAE-820)
 * Fix issue with VSD failover procedure with Active Standby VSTATs (METROAE-1061)
-* Convert shell mkdir tasks to ansible file module (METROAE-1059)
-* Add optional user prompt confirmation before destroying components (METROAE-868)
-* Improved debugging output for vCenter ovftool commands (METROAE-981)
-* Vastly improved predeploy roles for code reuse (METROAE-801)
-* Moved default reports directory out of playbooks and into metro root directory (METROAE-879)
 * Get the debug log script working with container (METROAE-1202)
 * Prevent presence of upgrade.yml from causing install to fail (METROAE-1161)
 * No longer error if patch upgrade includes non-VSD components
