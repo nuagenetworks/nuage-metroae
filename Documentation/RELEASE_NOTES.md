@@ -4,8 +4,7 @@
 
 ### Feature Enhancements
 
-* Refactor metroae command to support container management; RPM no longer required.
-* Introduce day-zero VSD configuration support via `metroae config` (container only)
+* Refactor metroae command to support container management; RPM no longer required
 * Add support for Multiple VSC underlay VPRNs (MetroAE-1175)
 * Add support for VSD disk I/O testing using sysbench (METROAE-1169)
 * Add VSC hardening (METROAE-1183)
