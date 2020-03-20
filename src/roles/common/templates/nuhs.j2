@@ -25,6 +25,20 @@ internal_prefix: {{ item.internal_ip_prefix | default(24) }}
 internal_gateway: {{ item.internal_gateway }}
 {% endif %}
 
+{% if item.external_interface_list is defined %}
+external_interfaces:
+{% for interface in nuh_external_interfaces %}
+{% for external_if in item.external_interface_list %}
+{% if interface.name in external_if %}
+    - name: {{ interface.name }}
+      external_ip_prefix: {{ interface.external_ip_prefix | default(24) }}
+      external_ip: {{ interface.external_ip }}
+      external_gateway: {{ interface.external_gateway }}
+      external_bridge: {{ interface.external_bridge }}
+{% endfor %}
+{% endfor %}
+{% endif %}
+
 {% if item.external_ip is defined and item.external_gateway is defined %}
 external_ip: {{ item.external_ip }}
 external_prefix: {{ item.external_ip_prefix | default(24) }}
@@ -36,9 +50,6 @@ mgmt_bridge: {{ item.mgmt_bridge }}
 {% endif %}
 {% if item.internal_bridge is defined %}
 internal_bridge: {{ item.internal_bridge }}
-{% endif %}
-{% if item.external_bridge is defined %}
-external_bridge: {{ item.external_bridge }}
 {% endif %}
 
 {% if nuhs|length == 1%}
