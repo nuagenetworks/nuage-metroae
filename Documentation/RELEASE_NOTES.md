@@ -1,40 +1,56 @@
 # Metro Automation Engine Release Notes
 
-## Release 4.0.0
+## Release info
+
+* MetroAE Version 4.0.0
+* Nuage Release Alignment 6.0.5
+* Date of Release 31-March-2020
+
+## Release Contents
 
 ### Feature Enhancements
 
-* Refactor metroae command to support container management; RPM no longer required
-* Add support for Multiple VSC underlay VPRNs (MetroAE-1175)
-* Add support for VSD disk I/O testing using sysbench (METROAE-1169)
-* Add VSC hardening (METROAE-1183)
-* Add support for VSD certificate renewal standalone procedure (METROAE-1188)
-* Add support for setting up Zabbix health monitoring on compatible VSP components.
-* Bash tab-completion support for metroae command
-* Add VSD cluster RTT tests with configurable threshold (METROAE-766)
-* Add support for VSTAT standby only deployment (METROAE-1081)
-* Add discovery of existing components in wizard for KVM and vCenter
-* Add option to backup and restore the /etc/host file on VSD during upgrade (METROAE-1187)
-* Add support for zero factor bootstrapping multi uplinks for NSGvs (METROAE-852)
-* Add support for downloading the container from S3 in tar format (METROAE-1210)
-* Check for required disk space on VSD for backup files during upgrade health check (METROAE-1182)
-* Convert shell mkdir tasks to ansible file module (METROAE-1059)
-* Add optional user prompt confirmation before destroying components (METROAE-868)
-* Improved debugging output for vCenter ovftool commands (METROAE-981)
-* Vastly improved predeploy roles for code reuse (METROAE-801)
-* Moved default reports directory out of playbooks and into metro root directory (METROAE-879)
+* New metroae script (New command structure, extensive command-line help, eliminate RPM for container management, bnash tab-completion support, self-updating, backwards compatible)
+* Muti-underlay for VSC
+* VSD Disk Performance Test
+* VSD RTT Cluster Test
+* VSC Security Hardening
+* VSD Certificate renewal
+* Install Zabbix Heatlh Agents
+* Separate ES standby cluster install
+* Discovery Wizard for Existing configs
+* VSD /etc/hosts backup/restore
+* NSGv Bootstrap with multiple uplinks
+* Download Container Tarball
+* VSD backup disk space check
+* mkdir tasks not using file module
+* Prompt before destroy
+* Enhance vCenter debug output
+* Eliminate redundant pre-deploy code
+* Upgrade multiple VSC pairs
+* Relocate reports directory
+* Patch upgrade to 6.0.5
+* Document VSD rollback procedure
+* Document Terraform best-practices
+* Support Ansible 2.9
+* Enhance no_log: true behavior
 
 ### Resolved Issues
 
-* Fix VSC examples to have valid system ip address (METROAE-1177)
-* Fix NTP retries masking non NTP sync errors (METROAE-1153)
-* Fix fallocate failure on path with symbolic link (METROAE-1167)
-* Fix deprecated task and changed result format for vmware_vm_facts (METROAE-1179)
-* Detect when unresolved jinja2 is present in inventory (METROAE-820)
-* Fix issue with VSD failover procedure with Active Standby VSTATs (METROAE-1061)
-* Get the debug log script working with container (METROAE-1202)
-* Prevent presence of upgrade.yml from causing install to fail (METROAE-1161)
-* No longer error if patch upgrade includes non-VSD components
+* VSC Examples had invalid system_ip
+* NTP retries masked real errors
+* fallocate didn't follow symlinks
+* Removed depecated code and warnings
+* jinja2 in inventory not throwing an error
+* VSD active/standby failover issue
+* Log-gathering script not working with container
+* Presence of upgrade.yml breaking install
+* Patch upgrade of non-CVSD throwing error
+* nsgv_postdeploy fails when VSC username is custom
+* Sample CSV file not copied out of container
+* Skip DNS tests not working as intended
+* Misc wizard bugs
+* VMware Ansible modules deprecated
 
 ### Removed
 
