@@ -18,6 +18,24 @@
     nuage_unzipped_files_dir: /metroae_data/{{ nuage_unzipped_files_dir }}
   when: common.nuage_unzipped_files_dir is not match('^/')
 
+- name: Clear plugin group_vars content
+  set_fact:
+    plugin_group_vars: ""
+
+- name: Clear plugin hosts content
+  set_fact:
+    plugin_hosts: ""
+
+- name: Lets run build hooks
+  include_role:
+    name: hooks
+    tasks_from: main
+  vars:
+    - hooks_file_path: "{{ item }}"
+    - hook_location:
+      - build
+  with_items: "{{ common.hooks | default([]) }}"
+
 - name: Update VSD variables
   include_role:
     name: common
