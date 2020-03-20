@@ -1,9 +1,19 @@
-- name: Include hooks file as variables
-  include_vars: "{{ hooks_file_path }}"
+- block:
 
-- name: Run the command from hooks file
-  shell: "{{ command }}"
-  when:
-    - hook_location is defined
-    - location in hook_location
-  delegate_to: localhost
+  - name: Include hooks file as variables
+    include_vars: "{{ hooks_file_path }}"
+
+  - name: Run the command from hooks file
+    shell: "{{ command }}"
+    when:
+      - hook_location is defined
+      - location in hook_location
+    delegate_to: localhost
+
+  when: hooks_file_path is not mapping
+
+- name: Run the specified role
+  include_role:
+    name: "{{ hooks_file_path.role }}"
+    tasks_from: "{{ hooks_file_path.tasks }}"
+  when: hooks_file_path is mapping
