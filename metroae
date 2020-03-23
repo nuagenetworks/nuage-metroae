@@ -619,11 +619,16 @@ function run_container {
             else
                 network_args="-p $UI_PORT:5001"
             fi
+
+            mount_args="-v $METROAE_MOUNT_POINT:/metroae_data:Z"
+
+            if [[ ! -z $IMAGES_MOUNT_POINT ]]; then
+                mount_args="$mount_args -v $IMAGES_MOUNT_POINT:/images:Z"
+            fi
+
             if [[ $METROAE_SETUP_TYPE == "c" ]]; then
-                mount_args="-v $METROAE_MOUNT_POINT:/metroae_data:Z"
                 levi_args="-e LEVISTATE_CONTAINER=1"
             else
-                mount_args="-v $METROAE_MOUNT_POINT:/metroae_data:Z"
                 levi_args=""
             fi
 
@@ -964,8 +969,8 @@ function setup_tab_completion {
         mkdir $COMPLETION_DIR
     fi
 
-    write_to_script_log "Copying tab-completion to standard dir: $METROAE_MOUNT_POINT/$TAB_COMPLETION_SCRIPT to $COMPLETION_DIR"
-    cp $METROAE_MOUNT_POINT/$TAB_COMPLETION_SCRIPT $COMPLETION_DIR
+    write_to_screen_and_script_log "Copying tab-completion to standard dir: $METROAE_MOUNT_POINT/$TAB_COMPLETION_SCRIPT to $COMPLETION_DIR"
+    sudo cp $METROAE_MOUNT_POINT/$TAB_COMPLETION_SCRIPT $COMPLETION_DIR
     if [[ $? -ne 0 ]]; then
         write_to_screen_and_script_log "Could not setup tab-completion"
     fi
