@@ -7,7 +7,6 @@ You can set up the MetroAE host environment either [with a Docker container](#me
 Using a Docker container results in a similar setup as a GitHub clone, plus it delivers the following features:
 * All prerequisites are satisfied by the container. Your only requirement for your server is that it run Docker engine.
 * Your data is located in the file system of the host where Docker is running. You don't need to get inside the container.
-* You have the option of running an API/UI server allowing you to access MetroAE functionality via REST API and a beta front-end GUI.
 * A future release will include Day 0 Configuration capabilities.
 
 #### System (and Other) Requirements
