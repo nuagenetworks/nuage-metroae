@@ -36,6 +36,7 @@
 * Get the debug log script working with container (METROAE-1202)
 * Prevent presence of upgrade.yml from causing install to fail (METROAE-1161)
 * No longer error if patch upgrade includes non-VSD components
+* Fix GEO redundant VSD install issue for v6.0.X
 
 ### Removed
 
