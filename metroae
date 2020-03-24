@@ -1923,6 +1923,36 @@ function delete_single_plugin_file {
 }
 
 function install_plugin {
+    if [[ $1 == *.tar.gz ]]
+    then
+        untar_plugin $1
+        install_plugin_dir $PLUGIN_INSTALL_DIR
+        write_to_screen_and_script_log "Cleaning up: $PLUGIN_INSTALL_DIR"
+        rm -rf install_plugin/
+    else
+        install_plugin_dir $1
+    fi
+}
+
+function untar_plugin {
+    if [[ ! -f $1 ]]
+    then
+        echo "Plugin tarball $1 was not found"
+        print_version_and_exit 1
+    fi
+    write_to_screen_and_script_log "Unzipping: $1"
+    mkdir install_plugin/
+    tar xfz $1 -C install_plugin/
+    for dir in install_plugin/*
+    do
+        if [[ -d $dir ]]
+        then
+            PLUGIN_INSTALL_DIR=$dir
+        fi
+    done
+}
+
+function install_plugin_dir {
     if [[ ! -d $1 ]]
     then
         echo "Plugin dir $1 was not found"
