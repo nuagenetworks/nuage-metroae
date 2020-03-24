@@ -49,18 +49,13 @@
 
 - block:
 
-  - name: Set fact for components for disk space check
-    set_fact:
-      disk_space_check_components: ['vsd', 'vsc', 'vstat', 'nsgv']
-
   - name: Check available disk space on hypervisor
     include_role:
       name: common
       tasks_from: check-hypervisor-disk-space
     vars:
-      required_available_space: "{{ required_available_disk_space }}"
-      path: "{{ disk_space_path }}"
-    when: component_type | default("NONE") in disk_space_check_components
+      required_available_space: "{{ required_available_disk_space | default(0) }}"
+      path: "{{ disk_space_path | default("NONE") }}"
 
   delegate_to: "{{ target_server }}"
   when: target_server_type | default('NONE') is match("kvm")
