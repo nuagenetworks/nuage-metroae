@@ -608,6 +608,10 @@ function run_container {
 
         set +e
         echo ""
+        write_to_screen_and_script_log ">>> Prepare data directory for updates from new container."
+        echo ""
+        rm -rf $METROAE_MOUNT_POINT/version >> /dev/null 2>> /dev/null
+        echo ""
         write_to_screen_and_script_log ">>> Starting the MetroAE container"
         echo ""
         if [[ -z $CONTAINER_ID ]]; then
@@ -938,9 +942,8 @@ function update_container {
 function update_metroae {
 
     if [[ $RUN_MODE == "CONTAINER" ]]; then
-
         echo ""
-        write_to_screen_and_script_log ">>> Checking for a new version of the metroae script in the container data directory"
+        write_to_screen_and_script_log ">>> Checking to see if we can update your metroae script."
         echo ""
 
         if [[ -f $SETUP_FILE ]]; then
@@ -949,7 +952,33 @@ function update_metroae {
 
         if [[ -z "$METROAE_MOUNT_POINT" ]]; then
             write_to_screen_and_script_log "We couldn't find the data directory configuration for the container."
-            echo "It might be that the container setup should be rerun via 'metroae container setup'."
+            echo "Please run 'metroae container setup' to correct this and try again."
+            echo ""
+            return 1
+        fi
+
+        echo ""
+        write_to_screen_and_script_log ">>> Wait for the container to copy a new version file to the data directory"
+        echo ""
+        set +e
+        timeout 30 bash -c -- 'while [[ ! -f $METROAE_MOUNT_POINT/version ]]; do sleep 1; done'
+        if [[ $? -ne 0 ]]; then
+            write_to_screen_and_script_log "We didn't find $METROAE_MOUNT_POINT/version"
+            echo "It could be that the version of metroae script you are running is the latest."
+            echo "Your copy of the metroae script will not be updated. You can continue to use your copy."
+            echo ""
+            set -e
+            return 1
+        fi
+        set -e
+
+        echo ""
+        write_to_screen_and_script_log ">>> Checking for a new version of the metroae script in the container data directory"
+        echo ""
+
+        if [[ ! -f "$METROAE_MOUNT_POINT/metroae" ]]; then
+            write_to_screen_and_script_log "We couldn't find a new copy of the metroae script in the data directory."
+            echo "It could be that the version of metroae script you are running is the latest."
             echo "Your copy of the metroae script will not be updated. You can continue to use your copy."
             echo ""
             return 1
@@ -973,12 +1002,23 @@ function update_metroae {
 
 function setup_tab_completion {
     echo ""
-    write_to_screen_and_script_log ">>> Configure optional metroae script tab completion on your host"
+    write_to_screen_and_script_log ">>> Checking to see if we can setup tab completion for your metroae script."
     echo ""
 
     if [[ -f $SETUP_FILE ]]; then
         while read -r line; do declare $line; done < $SETUP_FILE
     fi
+
+    if [[ -z "$METROAE_MOUNT_POINT" ]]; then
+        write_to_screen_and_script_log "We couldn't find the data directory configuration for the container."
+        echo "Please run 'metroae container setup' to correct this and try again."
+        echo ""
+        return 1
+    fi
+
+    echo ""
+    write_to_screen_and_script_log ">>> Configure optional metroae script tab completion on your host"
+    echo ""
 
     if [[ ! -d $COMPLETION_DIR ]]; then
         write_to_script_log "Creating tab-completion dir: $COMPLETION_DIR"
