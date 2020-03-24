@@ -1,15 +1,16 @@
-- name: Get free disk space on hypervisor
-  shell: "df {{ path }} | tail -n 1 | awk '{print $4}'"
-  register: hypervisor_free_space_kb
+- block:
 
-- name: Set required space in kb
-  set_fact:
-    required_space_kb: "{{ required_available_space | float  * (1024 * 1024) }}"
+  - name: Get free disk space on hypervisor
+    shell: "df {{ path }} | tail -n 1 | awk '{print $4}'"
+    register: hypervisor_free_space_kb
 
-- debug: var=hypervisor_free_space_kb.stdout
-- debug: var=required_space_kb
+  - name: Set required space in kb
+    set_fact:
+      required_space_kb: "{{ required_available_space | float  * (1024 * 1024) }}"
 
-- name: Ensure there is enough free space before predeploy
-  assert:
-    that: (hypervisor_free_space_kb.stdout | float) > (required_space_kb | float)
-    msg: "Insufficent disk space {{ hypervisor_free_space_kb.stdout | float }} KB for predeploy "
+  - name: Ensure there is enough free space before predeploy
+    assert:
+      that: (hypervisor_free_space_kb.stdout | float) > (required_space_kb | float)
+      msg: "Insufficent disk space {{ hypervisor_free_space_kb.stdout | float }} KB for predeploy "
+
+  when: required_available_space > 0

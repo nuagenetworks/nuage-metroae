@@ -37,12 +37,6 @@
         that: "vrs_package_path | default('MISSING') != 'MISSING'"
         msg: "Missing VRS package files under the unzipped file directory, please unzip them."
 
-    - name: Check that VRS libnetwork files were found
-      assert:
-        that: "libnetwork_package_path | default('MISSING') != 'MISSING' and libnetwork_package_file_name | default('MISSING') != 'MISSING'"
-        msg: "Missing VRS libnetwork files under the unzipped file directory, please unzip it."
-      when: libnetwork_install | default(False)
-
     - name: Check that DKMS files were found
       assert:
         that: "dkms_package_path | default('MISSING') != 'MISSING'"
@@ -55,41 +49,13 @@
 
 - block:
 
-  - name: "Check available disk space on hypervisor for VSD"
+  - name: Check available disk space on hypervisor
     include_role:
       name: common
       tasks_from: check-hypervisor-disk-space
     vars:
-      required_available_space: "{{ vsd_required_available_space }}"
-      path: "{{ disk_space_path }}"
-    when: component_type | default('NONE') == 'vsd'
-
-  - name: Check available disk space on hypervisor for VSC
-    include_role:
-      name: common
-      tasks_from: check-hypervisor-disk-space
-    vars:
-      required_available_space: "{{ vsc_required_available_space }}"
-      path: "{{ disk_space_path }}"
-    when: component_type | default('NONE') == 'vsc'
-
-  - name: Check available disk space on hypervisor for VSTAT
-    include_role:
-      name: common
-      tasks_from: check-hypervisor-disk-space
-    vars:
-      required_available_space: "{{ vstat_required_available_space }}"
-      path: "{{ disk_space_path }}"
-    when: component_type | default('NONE') == 'vstat'
-
-  - name: Check available disk space on hypervisor for NSGV
-    include_role:
-      name: common
-      tasks_from: check-hypervisor-disk-space
-    vars:
-      required_available_space: "{{ nsgv_required_available_space }}"
-      path: "{{ disk_space_path }}"
-    when: component_type | default('NONE') == 'nsgv'
+      required_available_space: "{{ required_available_disk_space | default(0) }}"
+      path: "{{ disk_space_path | default('NONE') }}"
 
   delegate_to: "{{ target_server }}"
   when: target_server_type | default('NONE') is match("kvm")
