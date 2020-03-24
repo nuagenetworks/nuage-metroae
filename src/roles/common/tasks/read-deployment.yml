@@ -86,7 +86,7 @@
 
 - name: Validate unique VSC hostnames
   assert:
-    that: "{{ vscs | selectattr('hostname', 'defined') | map(attribute='hostname') | unique | list | length }} == {{ vscs | selectattr('hostname', 'defined') | length }}"
+    that: "{{ vscs | selectattr('hostname', 'defined') | map(attribute='hostname') | unique | list | length }} == {{ vscs | selectattr('hostname', 'defined') | list | length }}"
     msg: "VSC hostname fields must be unique"
 
 - name: Validate unique VSTAT hostnames
@@ -106,6 +106,7 @@
     that: "'{{item.system_name|default(item.hostname)}}'|length <= 32"
     msg: "'{{item.system_name|default(item.hostname)}}' is too long to be a valid VSC system name,
           please define a 'system_name' with up to 32 chars for {{ item.hostname }}"
+  when: item.system_name is defined or item.hostname is defined
   with_items: "{{ vscs }}"
 
 - name: Verify that the VSC has the correct number of cpuset defined
