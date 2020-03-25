@@ -118,7 +118,7 @@ def main():
         if float(available_disk_space) > required_space_kb:
             print("Sufficient disk space: {0}".format(float(available_disk_space)))
         else:
-            print("Insufficent disk space: {0}. Need at least {1}".format(float(available_disk_space), required_space_kb)
+            print("Insufficent disk space: {0}. Need at least {1}".format(float(available_disk_space), required_space_kb))
 
     except Exception as e:
         module.fail_json(msg="Could not get available disk space: %s" % str(e))
