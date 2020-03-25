@@ -14,8 +14,8 @@ def get_esxi_host(ip_addr, port, username, password, id, validate_certs, esxi_ho
     uuid = id
     si = get_connection(ip_addr, username, password, port, validate_certs)
     vm = si.content.searchIndex.FindByIp(None,
-                                           esxi_hostname,
-                                           False)
+                                         esxi_hostname,
+                                         False)
     if vm is not None:
         host = vm.name
         return host
@@ -83,7 +83,6 @@ def main():
                 default=os.environ.get('VMWARE_PASSWORD')
             ),
             validate_certs=dict(required=False, type='bool', default=True),
-            uuid=dict(required=False, type='str'),
             port=dict(required=False, type=int, default=443),
             required_available_space=dict(required=True, type=int),
             disk_space_path=dict(required=True, type='str'),
@@ -94,7 +93,6 @@ def main():
     ip_addr = module.params['hostname']
     username = module.params['username']
     password = module.params['password']
-    uuid = module.params['uuid']
     required_space = module.params['required_available_space']
     path = module.params['disk_space_path']
     port = module.params['port']
