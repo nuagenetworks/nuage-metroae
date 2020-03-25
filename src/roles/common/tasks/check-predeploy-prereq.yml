@@ -62,34 +62,24 @@
 
 - block:
 
-  - name: Waiting until VMware tools becomes available
+  - name: Get info on datastore
     connection: local
-    vmware_host_facts:
+    vmware_datastore_facts:
       hostname: "{{ target_server }}"
       username: "{{ vcenter.username }}"
       password: "{{ vcenter.password }}"
       validate_certs: no
-      esxi_hostname: "{{ vcenter.host_reference }}"
-    register: vm_facts
+      cluster: "{{ vcenter.cluster }}"
+      datacenter: "{{ vcenter.datacenter }}"
+    register: datastore_facts
 
-  - debug: var=vm_facts verbosity=1
+  - debug: var=datastore_facts verbosity=1
 
+  - name: Set fact for datastore free space
+    set_fact:
+      datastore_free_space: "{{ datastore_facts.freeSpace }}"
 #  - name: Set VM UUID
 #    set_fact:
 #      uuid: "{{ vm_facts.instance.hw_product_uuid }}"
 
 #  - debug: var=uuid
-
-  - name: Get free space on hypervisor
-    connection: local
-    vmware_check_hypervisor_disk_space:
-      hostname: "{{ target_server }}"
-      username: "{{ vcenter.username }}"
-      password: "{{ vcenter.password }}"
-      esxi_hostname: "{{ vcenter.host_reference }}"
-      validate_certs: no
-      required_available_space: 10
-      disk_space_path: "{{ images_path }}"
-    register: disk_check
-
-  - debug: var=disk_check verbosity=1
