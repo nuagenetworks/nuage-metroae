@@ -9,15 +9,6 @@ from pyVim.connect import SmartConnectNoSSL
 sys.dont_write_bytecode = True
 
 
-DOCUMENTATION = '''
-
-'''
-
-EXAMPLES = '''
-
-'''
-
-
 def get_esxi_host(ip_addr, port, username, password, id, validate_certs):
     uuid = id
     si = get_connection(ip_addr, username, password, port, validate_certs)
