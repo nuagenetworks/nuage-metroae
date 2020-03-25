@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import requests
 import sys
 from ansible.module_utils.basic import AnsibleModule
@@ -57,8 +59,8 @@ def get_available_disk_space(esxi_host_name, conn, disk_check_args, user, pwd, f
     creds = vim.vm.guest.NamePasswordAuthentication(username=user, password=pwd)
     pm = content.guestOperationsManager.processManager
     ps = vim.vm.guest.ProcessManager.ProgramSpec(
-      programPath="/usr/bin/df",
-      arguments=disk_check_args
+        programPath="/usr/bin/df",
+        arguments=disk_check_args
     )
 
     res = pm.StartProgram(vm, creds, ps)
@@ -123,9 +125,9 @@ def main():
         required_space_kb = (float(required_space) * 1024 * 1024)
 
         if float(available_disk_space) > required_space_kb:
-          print("Sufficient disk space: {0}".format(float(available_disk_space)))
+            print("Sufficient disk space: {0}".format(float(available_disk_space)))
         else:
-          print("Insufficent disk space: {0}. Need at least {1}".format(float(available_disk_space), required_space_kb)
+            print("Insufficent disk space: {0}. Need at least {1}".format(float(available_disk_space), required_space_kb)
 
     except Exception as e:
         module.fail_json(msg="Could not get available disk space: %s" % str(e))
