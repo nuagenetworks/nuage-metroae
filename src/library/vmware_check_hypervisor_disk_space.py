@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 
+import os
 import requests
 import sys
 from ansible.module_utils.basic import AnsibleModule
-from pyVmomi import vim, vmodl
+from pyVmomi import vim
 from pyVim.connect import SmartConnect
 from pyVim.connect import SmartConnectNoSSL
 sys.dont_write_bytecode = True
@@ -54,7 +55,7 @@ def get_available_disk_space(esxi_host_name, conn, disk_check_args, user, pwd, f
         arguments=disk_check_args
     )
 
-    res = pm.StartProgram(vm, creds, ps)
+    pm.StartProgram(vm, creds, ps)
 
     result_file = content.guestOperationsManager.fileManager.InitiateFileTransferFromGuest(vm, creds, file_path)
 
@@ -96,6 +97,8 @@ def main():
     uuid = module.params['uuid']
     required_space = module.params['required_available_space']
     path = module.params['disk_space_path']
+    port = module.params['port']
+    validate_certs = module.params['validate_certs']
 
     try:
         connection = get_connection(ip_addr, username, password, port, validate_certs)
