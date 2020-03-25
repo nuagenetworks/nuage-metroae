@@ -10,8 +10,7 @@ from pyVim.connect import SmartConnectNoSSL
 sys.dont_write_bytecode = True
 
 
-def get_esxi_host(ip_addr, port, username, password, id, validate_certs, esxi_hostname):
-    uuid = id
+def get_esxi_host(ip_addr, port, username, password, validate_certs, esxi_hostname):
     si = get_connection(ip_addr, username, password, port, validate_certs)
     vm = si.content.searchIndex.FindByIp(None,
                                          esxi_hostname,
@@ -105,10 +104,10 @@ def main():
         if connection is None:
             module.fail_json(msg="Establishing connection to %s failed" % ip_addr)
 
-        esxi_host = get_esxi_host(ip_addr, port, username, password, uuid, validate_certs, esxi_hostname)
+        esxi_host = get_esxi_host(ip_addr, port, username, password, validate_certs, esxi_hostname)
 
         if esxi_host is None:
-            module.fail_json(msg="Could not find ESXi host using uuid %s" % uuid)
+            module.fail_json(msg="Could not find ESXi host using esxi hostname %s" % esxi_hostname)
 
         file_path = "/tmp/req_space"
         disk_check_args = "{0} | tail -n 1 | awk '{print $4}' > {1}".format(str(path), str(file_path))
