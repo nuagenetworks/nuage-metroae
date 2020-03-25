@@ -22,9 +22,11 @@ def get_esxi_host(ip_addr, port, username, password, id, validate_certs):
                                            True,
                                            False)
     if vm is not None:
-        host = vm.runtime.host
-        if host is not None:
-            return host.name
+        host = vm.name
+        return host  
+        #host = vm.runtime.host
+        #if host is not None:
+        #    return host.name
 
     return None
 
