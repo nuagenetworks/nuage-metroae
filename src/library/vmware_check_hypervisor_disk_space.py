@@ -1,10 +1,11 @@
-from ansible.module_utils.basic import AnsibleModule
+import requests
 import sys
+from ansible.module_utils.basic import AnsibleModule
 from pyVmomi import vim, vmodl
 from pyVim.connect import SmartConnect
 from pyVim.connect import SmartConnectNoSSL
 sys.dont_write_bytecode = True
-import requests
+
 
 DOCUMENTATION = '''
 
@@ -13,6 +14,7 @@ DOCUMENTATION = '''
 EXAMPLES = '''
 
 '''
+
 
 def get_esxi_host(ip_addr, port, username, password, id, validate_certs):
     uuid = id
@@ -23,12 +25,13 @@ def get_esxi_host(ip_addr, port, username, password, id, validate_certs):
                                            False)
     if vm is not None:
         host = vm.name
-        return host  
-        #host = vm.runtime.host
-        #if host is not None:
+        return host
+        # host = vm.runtime.host
+        # if host is not None:
         #    return host.name
 
     return None
+
 
 def get_connection(ip_addr, user, password, port, validate_certs):
     if validate_certs:
@@ -38,6 +41,7 @@ def get_connection(ip_addr, user, password, port, validate_certs):
         connection = SmartConnectNoSSL(
             host=ip_addr, port=port, user=user, pwd=password)
     return connection
+
 
 def get_available_disk_space(esxi_host_name, conn, disk_check_args, user, pwd, file_path):
     obj = None
@@ -68,6 +72,7 @@ def get_available_disk_space(esxi_host_name, conn, disk_check_args, user, pwd, f
     content.guestOperationsManager.fileManager.DeleteFileInGest(vm, creds, file_path)
 
     return disk_space_check_results
+
 
 def main():
     module = AnsibleModule(
@@ -124,6 +129,7 @@ def main():
 
     except Exception as e:
         module.fail_json(msg="Could not get available disk space: %s" % str(e))
+
 
 if __name__ == "__main__":
     main()
