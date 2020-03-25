@@ -15,11 +15,13 @@
         name: hooks
         tasks_from: main
       vars:
-        - hooks_file_path: "{{ item }}"
+        - hooks_file_path: "{{ hook }}"
         - hook_location:
           - upgrade_vsds
           - vsd_deactivate_replication_slave
-      with_items: "{{ hooks | default([]) }}"
+      loop: "{{ hooks | default([]) }}"
+      loop_control:
+        loop_var: hook
   remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
   become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
   vars:
