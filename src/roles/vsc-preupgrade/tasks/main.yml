@@ -1,3 +1,10 @@
+- name: Get VSD deployment mode
+  include_role:
+    name: common
+    tasks_from: vsd-node-info.yml
+  vars:
+    vsd_hostname: "{{ vsd_fqdn }}"
+
 - name: Wait for VSC ssh to be ready
   include_role:
     name: common
@@ -66,21 +73,6 @@
 - name: Create local variable with bof config in json
   set_fact:
     bof_json: "{{ bof_config.stdout[0]|show_bof_to_json }}"
-
-- name: Get output of 'show system connections port 5222'
-  sros_command:
-    commands:
-      - show system connections port 5222
-    provider: "{{ vsc_creds }}"
-  delegate_to: localhost
-  register: vsc_sys_conn
-
-- name: Get VSD deployment mode
-  include_role:
-    name: common
-    tasks_from: vsd-node-info.yml
-  vars:
-    vsd_hostname: "{{ vsd_fqdn }}"
 
 - block:
 
