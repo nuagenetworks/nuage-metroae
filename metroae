@@ -1959,6 +1959,7 @@ function install_plugin_dir {
         print_version_and_exit 1
     fi
     write_to_screen_and_script_log ">>> Installing plugin: $1"
+    src/validate_plugin.py $1
     get_plugin_name $1
     write_to_screen_and_script_log "Plugin name: $plugin_name"
     check_plugin_version $1
@@ -1993,6 +1994,28 @@ function uninstall_plugin {
     write_to_screen_and_script_log "Plugin removal complete"
 }
 
+function validate_plugin {
+    if [[ $1 == *.tar.gz ]]
+    then
+        untar_plugin $1
+        validate_plugin_dir $PLUGIN_INSTALL_DIR
+        write_to_screen_and_script_log "Cleaning up: $PLUGIN_INSTALL_DIR"
+        rm -rf install_plugin/
+    else
+        validate_plugin_dir $1
+    fi
+}
+
+function validate_plugin_dir {
+    if [[ ! -d $1 ]]
+    then
+        echo "Plugin dir $1 was not found"
+        print_version_and_exit 1
+    fi
+    write_to_screen_and_script_log ">>> Validating plugin: $1"
+    src/validate_plugin.py $1
+}
+
 function plugin_main {
     debug ${FUNCNAME[0]}
 
@@ -2004,6 +2027,10 @@ function plugin_main {
         ;;
         uninstall)
         uninstall_plugin "$2"
+        print_version_and_exit 0
+        ;;
+        validate)
+        validate_plugin "$2"
         print_version_and_exit 0
         ;;
         *)
