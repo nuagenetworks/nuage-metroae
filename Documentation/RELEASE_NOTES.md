@@ -52,6 +52,7 @@
 * Skip DNS tests not working as intended (METROAE-1203)
 * Misc wizard bugs (METROAE-1196)
 * VMware Ansible modules deprecated (METROAE-1179)
+* Fix GEO redundant VSD install issue for v6.0.X
 
 ### Removed
 
