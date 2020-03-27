@@ -73,17 +73,17 @@
       datacenter: "{{ vcenter.datacenter }}"
     register: datastore_facts
 
-  - debug: var=datastore_facts verbosity=1
-
-  - debug: var=datastore_facts['datastores']
-
-  - debug: var=datastore_facts['datastores'][0].freeSpace
-
   - name: Set fact for datastore free space
     set_fact:
       datastore_free_space: "{{ datastore_facts['datastores'][0].freeSpace }}"
-#  - name: Set VM UUID
-#    set_fact:
-#      uuid: "{{ vm_facts.instance.hw_product_uuid }}"
 
-#  - debug: var=uuid
+  - name: Set fact for required available disk space
+    set_fact:
+      required_available_space: "{{ required_available_disk_space | default(0) | float * (1024 * 1024 * 1024) }}"
+
+  - name: Assert datastore has enough space
+    assert:
+      that: (datastore_free_space | float ) > (required_available_space | float)
+      msg: "Insufficient disk space {{ datastore_free_space | float / (1024 * 1024 * 1024) }} GB for predeploy"
+
+  when: target_server_type | default('NONE') is match ("vcenter")
