@@ -75,15 +75,15 @@
 
   - name: Set fact for datastore free space
     set_fact:
-      datastore_free_space: "{{ datastore_facts['datastores'][0].freeSpace }}"
+      datastore_free_space_kb: "{{ datastore_facts['datastores'][0].freeSpace | float / 1024}}"
 
   - name: Set fact for required available disk space
     set_fact:
-      required_available_space: "{{ required_available_disk_space | default(0) | float * (1024 * 1024 * 1024) }}"
+      required_available_space_kb: "{{ required_available_disk_space | default(0) | float * (1024 * 1024) }}"
 
   - name: Assert datastore has enough space for predeploy
     assert:
-      that: (datastore_free_space | float ) > (required_available_space | float)
-      msg: "Insufficient disk space {{ datastore_free_space | float / (1024 * 1024 * 1024) }} GB for predeploy"
+      that: (datastore_free_space_kb | float ) > (required_available_space_kb | float)
+      msg: "Insufficient disk space {{ datastore_free_space_kb | float / (1024 * 1024) }} GB for predeploy"
 
   when: target_server_type | default('NONE') is match ("vcenter")
