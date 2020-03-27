@@ -1,0 +1,30 @@
+- name: Create a netconf user on the VSD
+
+- name: Add permission to the netconf user
+
+- name: Generate keys on VSD for Netconf
+  command: /opt/vsd/ejbca/deploy/certMgmt.sh -a generate -c {{ netconf_username }}  -u {{ netconf_username }} -o csp -f jks -t client -p {{ netconf_password }}
+
+
+- name: Install Java SDK
+  command: yum install java-1.8.0-openjdk
+
+- name: Ensure 4 CPU, 6 GB of memory and 20G of HD
+
+- name: Copy the NETCONF Manager RPM file on the NETCONF Manager VM
+
+- name: Run Netconf install as root user
+  command: yum -y localinstall nuage-netconf-manager-<number>.el7.x86_64.rpm
+
+- name: Copy both the files /opt/vsd/jboss/standalone/configuration/vsd.truststore and the keys /opt/vsd/ejbca/p12/netconfmgr.jks to the NETCONF Manager location /opt/netconfmanager/conf/.
+
+- name: Configure backend port numbers Port 61616 to be used for JMS messages. Port 7443 to be used for REST calls.
+
+- name: Configure front end port numbers 51515 MUST match `jms.port= in /opt/netconfmanager/conf/netconfmanager.properties 5666 MUST match `vsd.port in /opt/netconfmanager/conf/netconfmanager.properties
+
+- name: In /opt/netconfmanager/conf/netconfmanager.properties, edit the three parameters of the JMS Listener jms.queue jms.topic jms.user
+
+- name: Start Netconf manager
+  command: service netconfmanager start
+
+- name: Check the newly created Netconf Managers discovered in VSD, by opening the Open Monitoring Console window in VSD
