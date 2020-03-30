@@ -7,11 +7,27 @@
 
 
 - name: Install Java SDK
-  command: yum install java-1.8.0-openjdk
+  yum: 
+    name: java-1.8.0-openjdk
+    state: present
 
 - name: Ensure 4 CPU, 6 GB of memory and 20G of HD
 
+- name: Find name of NETCONF Manager RPM file
+  find:
+    path: "{{ nuage_unzipped_files_dir }}"
+    use_regex: yes
+    pattern: "nuage-openvswitch-\\d+.*"
+    recurse: yes
+  register: netconf_manager_rpm
+
 - name: Copy the NETCONF Manager RPM file on the NETCONF Manager VM
+  copy:
+    dest: "/etc/hosts"
+    src: "{{ metro_backup_root }}/{{ inventory_hostname }}/hosts"
+    mode: 0644
+    owner: "root"
+    group: "root"
 
 - name: Run Netconf install as root user
   command: yum -y localinstall nuage-netconf-manager-<number>.el7.x86_64.rpm
@@ -24,7 +40,10 @@
 
 - name: In /opt/netconfmanager/conf/netconfmanager.properties, edit the three parameters of the JMS Listener jms.queue jms.topic jms.user
 
-- name: Start Netconf manager
-  command: service netconfmanager start
+- name: Enable and start Docker
+  service:
+    name: netconfmanager
+    state: started
+    enabled: yes
 
 - name: Check the newly created Netconf Managers discovered in VSD, by opening the Open Monitoring Console window in VSD
