@@ -97,6 +97,7 @@ POSITIONAL=()
 #################################################################################
 
 function print_write_permission_warning {
+    debug ${FUNCNAME[0]}
     echo ""
     echo "WARNING: This user does not have Write permissions for MetroAE log file: $SCRIPT_LOG_FILE"
     echo "Ensure that the MetroAE install directory $INSTALL_FOLDER and its contents belongs to"
@@ -946,16 +947,17 @@ function update_container {
 }
 
 function check_if_mount_point_configured {
-        if [[ -z "$METROAE_MOUNT_POINT" ]]; then
-            write_to_screen_and_script_log "We couldn't find the data directory configuration for the container in the configuration file."
-            echo "Please run 'metroae container setup' to correct this and try again."
-            echo ""
-            return 1
-        fi
+    debug ${FUNCNAME[0]}
+    if [[ -z "$METROAE_MOUNT_POINT" ]]; then
+        write_to_screen_and_script_log "We couldn't find the data directory configuration for the container in the configuration file."
+        echo "Please run 'metroae container setup' to correct this and try again."
+        echo ""
+        return 1
+    fi
 }
 
 function update_metroae {
-
+    debug ${FUNCNAME[0]}
     if [[ $RUN_MODE == "CONTAINER" ]]; then
         echo ""
         write_to_screen_and_script_log ">>> Checking to see if we can update your metroae script."
@@ -973,7 +975,7 @@ function update_metroae {
         set +e
         timeout 10 bash -c -- 'while [[ ! -f $METROAE_MOUNT_POINT/version ]]; do sleep 1; done'
         if [[ $? -ne 0 ]]; then
-            write_to_screen_and_script_log "We didn't find $METROAE_MOUNT_POINT/version"
+            write_to_screen_and_script_log "We didn't find $METROAE_MOUNT_POINT/version."
             echo "It could be that the version of metroae script you are running is the latest."
             echo "Your copy of the metroae script will not be updated. You can continue to use your copy."
             echo ""
@@ -1011,6 +1013,7 @@ function update_metroae {
 }
 
 function setup_tab_completion {
+    debug ${FUNCNAME[0]}
     echo ""
     write_to_screen_and_script_log ">>> Checking to see if we can setup tab completion for your metroae script."
     echo ""
