@@ -1,10 +1,33 @@
 - name: Create a netconf user on the VSD
+  connection: local
+  nuage_vspk:
+    auth: "{{ nuage_auth }}"
+    type: User
+    parent_id: "csp"
+    parent_type: Enterprise
+    state: present
+    match_filter: "userName == 'netconfmgr'"
+    properties:
+      email: "user@example.met"
+      first_name: "Netconfmgr"
+      last_name: "Netconfmgr"
+      password: "password"
+      user_name: "netconfmgr"
+  register: netconf_user
 
 - name: Add permission to the netconf user
+  connection: local
+  nuage_vspk:
+    auth: "{{ nuage_auth }}"
+    type: Group
+    parent_id: "{{ netconf_user.id }}"
+    parent_type: User
+    state: present
+    properties:
+      role: "NETCONFMGR"
 
 - name: Generate keys on VSD for Netconf
   command: /opt/vsd/ejbca/deploy/certMgmt.sh -a generate -c {{ netconf_username }}  -u {{ netconf_username }} -o csp -f jks -t client -p {{ netconf_password }}
-
 
 - name: Install Java SDK
   yum: 
