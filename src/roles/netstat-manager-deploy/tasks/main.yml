@@ -13,24 +13,31 @@
 
 - name: Ensure 4 CPU, 6 GB of memory and 20G of HD
 
-- name: Find name of NETCONF Manager RPM file
-  find:
-    path: "{{ nuage_unzipped_files_dir }}"
-    use_regex: yes
-    pattern: "nuage-openvswitch-\\d+.*"
-    recurse: yes
-  register: netconf_manager_rpm
+- name: Set VSC VM QCOW2 location
+  include_role:
+    name: common
+    tasks_from: find-file.yml
+  vars:
+    dir_name: "{{ nuage_unzipped_files_dir }}"
+    pattern: "nuage-netconf-*.rpm"
+
+- name: Register VSC QCOW2 variables with proper path and image locations for use in other playbooks
+  set_fact:
+    image_path: "{{ file_path }}"
+    image_file_name: "{{ file_name }}"
 
 - name: Copy the NETCONF Manager RPM file on the NETCONF Manager VM
   copy:
-    dest: "/etc/hosts"
-    src: "{{ metro_backup_root }}/{{ inventory_hostname }}/hosts"
+    dest: "/tmp/netconfmanager/{{ image_file_name }}"
+    src: "{{ image_path }}/{{ image_file_name }}"
     mode: 0644
     owner: "root"
     group: "root"
 
-- name: Run Netconf install as root user
-  command: yum -y localinstall nuage-netconf-manager-<number>.el7.x86_64.rpm
+- name: yum -y localinstall nuage-netconf-manager-<number>.el7.x86_64.rpm
+  yum:
+    name: "{{ image_path }}/{{ image_file_name }}"
+    state: present
 
 - name: Copy both the files /opt/vsd/jboss/standalone/configuration/vsd.truststore and the keys /opt/vsd/ejbca/p12/netconfmgr.jks to the NETCONF Manager location /opt/netconfmanager/conf/.
 
