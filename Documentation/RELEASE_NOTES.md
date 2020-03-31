@@ -53,6 +53,7 @@
 * Misc wizard bugs (METROAE-1196)
 * VMware Ansible modules deprecated (METROAE-1179)
 * Fix GEO redundant VSD install issue for v6.0.X
+* Fix unzip to handle both qcow2 and ova tar.gz files
 
 ### Removed
 
