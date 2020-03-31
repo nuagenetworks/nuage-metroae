@@ -39,17 +39,17 @@ def validate_against_schema(module, path, schema):
             parsed_schema = yaml.safe_load(file.read())
         except Exception as e:
             msg = "Could not load schema %s: %s" % (schema, str(e))
-            print msg
+            print(msg)
             module.fail_json(msg=msg)
             return
 
     with open(path, 'r') as file:
         try:
-            yaml.add_constructor(u'!vault', vault_constructor)
+            yaml.add_constructor('!vault', vault_constructor)
             parsed_yaml = yaml.load(file.read())
         except Exception as e:
             msg = "Could not load yaml file %s: %s" % (path, str(e))
-            print msg
+            print(msg)
             module.fail_json(msg=msg)
             return
 
@@ -64,7 +64,7 @@ def validate_against_schema(module, path, schema):
         if "title" in e.schema:
             field = " for " + e.schema["title"]
         msg = "Invalid data in %s%s: %s" % (path, field, e.message)
-        print msg
+        print(msg)
         module.fail_json(msg=msg)
         return
 

@@ -4,7 +4,7 @@
     name: "{{ hostname }}"
     state: absent
   delegate_to: localhost
-  no_log: True
+  no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
   ignore_errors: True
 
 - name: Wait for VSD ssh to be ready
@@ -98,6 +98,26 @@
       when:
         - nuage_upgrade | default(False)
         - not vsd_standby_cluster | default(False)
+
+    - block:
+
+      - name: Run RTT tests for within and between VSD clusters
+        import_role:
+          name: vsd-run-rtt
+        vars:
+          first_node: "{{ first_cluster_node_to_install }}"
+          second_node: "{{ second_cluster_node_to_install }}"
+          third_node: "{{ third_cluster_node_to_install }}"
+          standby_cluster: "{{ vsd_standby_cluster | default(false) }}"
+
+      - name: Set fact that VSD RTT Test ran
+        set_fact:
+          vsd_ran_rtt_test: true
+
+      when:
+        - inventory_hostname == first_cluster_node_to_install
+        - not nuage_upgrade | default(False)
+        - vsd_run_cluster_rtt_test | default(False)
 
     when: vsd_sa_or_ha is match('ha')
 
@@ -220,6 +240,24 @@
 
   - block:
 
+    - name: Test VSD Disk IOPS
+      include_role:
+        name: common
+        tasks_from: disk-performance-test.yml
+      vars:
+        disk_performance_file_total_size: "{{ vsd_disk_performance_test_total_file_size }}"
+        disk_performance_minimum_threshold: "{{ vsd_disk_performance_test_minimum_threshold }}"
+        disk_performance_max_time: "{{ vsd_disk_performance_test_max_time }}"
+        ignore_disk_performance_test_errors: "{{ vsd_ignore_disk_performance_test_errors }}"
+
+    - name: Set fact that VSD Disk Performance Test ran
+      set_fact:
+        vsd_ran_disk_performance_test: true
+
+    when: vsd_run_disk_performance_test
+
+  - block:
+
     - name: Install VSD software on standalone node (Can take 20 minutes)
       command: "/opt/vsd/vsd-install.sh -t s -y {{ (enable_ipv6 | default(False) == True) | ternary('-6', '') }}"
       when: not deploy_vcin
@@ -307,6 +345,15 @@
     - component_type == "vsd"
     - not vsd_standby_cluster | default(False)
 
+- name: Setup health monitoring
+  include_role:
+    name: setup-health-monitoring
+  vars:
+    component_username: "{{ vsd_default_username }}"
+  when:
+    - not skip_vsd_deploy
+    - health_monitoring_agent | default("none") != "none"
+
 - block:
 
   - name: Get monit summary for all process on VSD
@@ -334,11 +381,6 @@
       timeout_seconds: 1200
       test_interval_seconds: 30
 
-  - name: Apply licenses to VSD
-    include_role:
-      name: common
-      tasks_from: apply-licenses-to-vsd
-
   when:
     - component_type == "vsd"
     - (vsd_major_version|int > 5) or
@@ -353,4 +395,4 @@
   when:
     - vstats is defined
     - not skip_vsd_deploy
-    - target_server_type | match("nuagex")
+    - target_server_type is match("nuagex")

@@ -1,52 +1,60 @@
 # Metro Automation Engine Release Notes
 
-## Release 3.4.0
+## Release info
+
+* MetroAE Version 4.0.0
+* Nuage Release Alignment 6.0.5
+* Date of Release 31-March-2020
+
+## Release Contents
 
 ### Feature Enhancements
 
-* Support for patch upgrade from 6.0.3 to 6.0.4
-* Support bringing up vCenter VMs with interfaces disabled during upgrade (METROAE-644)
-* NSG Bootstrap support for vCenter (METROAE-1045)
-* Add VSD Certificate renewal procedure to VSD upgrade (METROAE-1002)
-* Added REST API check to VSD health (METROAE-1005)
-* Added METROAE_GROUP environment variable to set the file group of log files
-* Set jinja2 version to 2.10.1
-* Simplify the retrieval of vCenter UUIDs (internal enhancement)
-* Added option for ovftool verbose logging based on logging level used on the playbook (METROAE-1050)
-* Add DOMAIN specification to VSD interface file (METROAE-1004)
-* Support VSD, VSC and VSTAT(ES) install over SSH proxy (METROAE-1046)
-* Add playbook to delete VSD backup after upgrade (METROAE-1009)
-* Move config.cfg setting from vsc-predeploy to vsc-deploy (METROAE-896)
-* Check file permissions before running guestfish on KVM images (METROAE-752)
-* Add availability zone support for OpenStack
-* Add example deployment for geo-redundant VSD deployment
-* Port support for CATS environment VSC, DNS, proxy, STCv
-* For VSC, support VLAN ID and vprn for control interface
-* For VSTAT and VNS Utils, support data network static route
-* Support Nuage Utility Host(NUH) SA and HA install using MetroAE (METROAE-1062)
-* Support SD-WAN Portal 6.0.1
-* VNS support in wizard (METROAE-1151)
-* Added support for spreadsheet/CSV input method
-* Added script for collecting debug collateral
-* Check certificate count before running vsd db backup (METROAE-1055)
-* Added graceful restart of vsd services support (METROAE-1084)
-* Added documentation for Skip and Hooks actions (METROAE-1066)
-* For VSC, support mgmt and ctrl ports on the same network on Openstack (METROAE-1166)
-* Added documentation for deploying with Terraform and MetroÆ (METROAE-1144)
+* New metroae script (New command structure, extensive command-line help, eliminate RPM for container management, bnash tab-completion support, self-updating, backwards compatible)(METROAE-905)
+* Muti-underlay for VSC (METROAE-1175)
+* VSD Disk Performance Test (METROAE-1169)
+* VSD RTT Cluster Test (METROAE-766)
+* VSC Security Hardening (METROAE-1183)
+* VSD Certificate renewal
+* NUH Multi-external Interfaces (METROAE-1211)
+* Install Zabbix Heatlh Agents
+* Separate ES standby cluster install (METROAE-1081)
+* Discovery Wizard for Existing configs (METROAE-1195)
+* VSD /etc/hosts backup/restore (METROAE-1187)
+* NSGv Bootstrap with multiple uplinks (METROAE-852)
+* Download Container Tarball (METROAE-1210)
+* VSD backup disk space check (METROAE-1182)
+* mkdir tasks not using file module (METROAE-1059)
+* Prompt before destroy (METROAE-868)
+* Enhance vCenter debug output
+* Eliminate redundant pre-deploy code (METROAE-801)
+* Upgrade multiple VSC pairs (METROAE-490)
+* Relocate reports directory (METROAE-879)
+* Patch upgrade to 6.0.5 (METROAE-1322)
+* Document VSD rollback procedure (METROAE-1181)
+* Document Terraform best-practices (METROAE-1144)
+* Support Ansible 2.9 (METROAE-1138)
+* Enhance no_log: true behavior (METROAE-981)
 
 ### Resolved Issues
 
-* Set event log max age to 7 as per Nuage Upgrade procedure (METROAE-1001)
-* Remove obsolete iptables traffic blocking during HA upgrade (METROAE-1051)
-* Fix VSD node information to get Primary VSD information Rather than XMPP node info (METROAE-1093)
-* Fixed issue with Active Standy VSTAT deploy with VSD in HA mode
-* Add robustness to VSD failover procedure (METROAE-1111)
-* Fix API version format in set_event_log.py (METROAE-1148)
-* Remove VSC dependence on VSD config by using vsd_fqdn_global instead of primary_vsds (METROAE-1155)
-* Fix to allow sd-wan portal to run without a yum proxy
-* Fix VSC openstack bof config management netmask to be user defined instead of hardcoded 24
-* Allow VSC mgmt_static_route_list to accept an explicit empty list "[]" in order to not configure any static routes. (METROAE-1163)
+* VSC Examples had invalid system_ip (METROAE-1177)
+* NTP retries masked real errors (METROAE-1153)
+* fallocate didn't follow symlinks (METROAE-1167)
+* Removed depecated code and warnings
+* jinja2 in inventory not throwing an error (METROAE-820)
+* VSD active/standby failover issue
+* Log-gathering script not working with container (METROAE-1202)
+* Presence of upgrade.yml breaking install (METROAE-1161)
+* Patch upgrade of non-VSD throwing error
+* nsgv_postdeploy fails when VSC username is custom (METROAE-1238)
+* Sample CSV file not copied out of container (METROAE-1208)
+* Skip DNS tests not working as intended (METROAE-1203)
+* Misc wizard bugs (METROAE-1196)
+* VMware Ansible modules deprecated (METROAE-1179)
+* Fix GEO redundant VSD install issue for v6.0.X
 
 ### Removed
 
-* As previously announced, support for converting pre-3.0 build_vars conversion is removed
+* Removed obsolete os_vsd_osc_integration playbook and associated role and files
+* Removed beta GUI from container for security purposes (METROAE-1319)

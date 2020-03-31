@@ -1,14 +1,13 @@
 - name: Find source file based on pattern
   find:
-    path: "{{ unpack_zipped_files_dir | default(nuage_zipped_files_dir) }}"
+    path: "{{ nuage_zipped_files_dir }}"
     pattern: "{{ unpack_pattern }}"
     use_regex: true
     follow: yes
   register: unpack_src_file
 
-- debug: var=unpack_src_file verbosity=1
-
 - block:
+
   - name: Clean up any previous unzipped files
     file:
       name:  "{{ nuage_unzipped_files_dir }}/{{ unpack_target_folder }}"
@@ -30,7 +29,6 @@
     register:  rc_nokia_vsr_archive
 
   - block:
-      - debug: var=rc_nokia_vsr_archive.files verbosity=1
 
       - name: Move file to root directory
         command: mv '{{ nuage_unzipped_files_dir }}/{{ unpack_target_folder }}/{{ item }}' '{{ nuage_unzipped_files_dir }}/{{ unpack_target_folder }}'
@@ -43,4 +41,5 @@
           state: absent
 
     when: rc_nokia_vsr_archive is defined
+
   when: unpack_src_file.matched > 0

@@ -19,8 +19,32 @@ mgmt_ip: {{ item.mgmt_ip }}
 mgmt_prefix: {{ item.mgmt_ip_prefix }}
 mgmt_gateway: {{ item.mgmt_gateway }}
 
+{% if item.internal_ip is defined %}
+internal_ip: {{ item.internal_ip }}
+internal_prefix: {{ item.internal_ip_prefix | default(24) }}
+internal_gateway: {{ item.internal_gateway }}
+{% endif %}
+
+{% if item.external_interface_list is defined %}
+external_interfaces:
+{% for interface in nuh_external_interfaces %}
+{% for external_if in item.external_interface_list %}
+{% if interface.name in external_if %}
+    - name: {{ interface.name }}
+      external_prefix: {{ interface.external_ip_prefix | default(24) }}
+      external_ip: {{ interface.external_ip }}
+      external_gateway: {{ interface.external_gateway }}
+      external_bridge: {{ interface.external_bridge }}
+{% endif %}
+{% endfor %}
+{% endfor %}
+{% endif %}
+
 {% if item.mgmt_bridge is defined %}
 mgmt_bridge: {{ item.mgmt_bridge }}
+{% endif %}
+{% if item.internal_bridge is defined %}
+internal_bridge: {{ item.internal_bridge }}
 {% endif %}
 
 {% if nuhs|length == 1%}
@@ -32,3 +56,4 @@ nuh_sa_or_ha: ha
 image_path: {{ image_path | default("MISSING") }}
 image_file_name: {{ image_file_name | default("MISSING") }}
 nuh_timezone: {{ item.timezone | default("America/Toronto") }}
+health_monitoring_agent: {{ item.health_monitoring_agent | default("none") }}

@@ -1,0 +1,66 @@
+network:
+    namespaces:
+      - name: Internal
+{% if external_interfaces is defined and external_interfaces|length > 0 %}
+      - name: External
+{% endif %}
+    interfaces:
+      - dev: eth1
+        dns1: ''
+        dns2: ''
+        dns3: ''
+        gateway: {{ internal_gateway }}
+        ipaddr: {{ internal_ip }}
+{% if nuh_sa_or_ha is match('ha') %}
+{% if inventory_hostname == groups['nuhs'][0] %}
+        peeripaddr: {{ hostvars[groups['nuhs'][1]].internal_ip }}
+        peerprefix: {{ internal_prefix }}
+{% else %}
+        peeripaddr: {{ hostvars[groups['nuhs'][0]].internal_ip }}
+        peerprefix: {{ internal_prefix }}
+{% endif %}
+{% endif %}
+        namespace: Internal
+        prefix: {{ internal_prefix }}
+        vlan: 0
+{% if external_interfaces is defined and external_interfaces|length > 0 %}
+      - dhcp: 'no'
+        dns1: ''
+        dns2: ''
+        dns3: ''
+        namespace: External
+        dev: eth2
+        ipaddr: {{ external_interfaces[0].external_ip }}
+        prefix: {{ external_interfaces[0].external_prefix }}
+        gateway: {{ external_interfaces[0].external_gateway }}
+        vlan: 0
+{% endif %}
+    nuagenetwork: Internal
+vrrp: null
+proxy:
+    - {interface: eth1.0, role: nsgbootstrap, enabled: false, firewallports: [], settings: {cport: "", bport: "", ccert: ""}}
+    - {interface: eth1.0, role: vsdconfig, enabled: false, firewallports: [], settings: {uiport: "", apiport: "", xmppport: "", jmsport: "", geo: false}}
+    - {interface: eth1.0, role: nsgstats, enabled: false, firewallports: [], settings: {cport: "", ccert: ""}}
+    - {interface: eth1.0, role: webfilter, enabled: false, firewallports: [], settings: {protobufport: "", downloadport: "", ccert: ""}}
+    - {interface: eth1.0, role: elasticsearch, enabled: false, firewallports: [], settings: {elasticsearch: ""}}
+    - {interface: eth1.0, role: sdWanPortal, enabled: false, firewallports: [], settings: {httpPort: "", httpsPort: "", ccert: ""}}
+    - {interface: eth1.0, role: fileserver, enabled: false, firewallports: [], settings: {port: "", ccert: ""}}
+    - {interface: eth2.0, role: nsgbootstrap, enabled: false, firewallports: [], settings: {cport: "", bport: "", ccert: ""}}
+    - {interface: eth2.0, role: vsdconfig, enabled: false, firewallports: [], settings: {uiport: "", apiport: "", xmppport: "", jmsport: "", geo: false}}
+    - {interface: eth2.0, role: nsgstats, enabled: false, firewallports: [], settings: {cport: "", ccert: ""}}
+    - {interface: eth2.0, role: webfilter, enabled: false, firewallports: [], settings: {protobufport: "", downloadport: "", ccert: ""}}
+    - {interface: eth2.0, role: elasticsearch, enabled: false, firewallports: [], settings: {elasticsearch: ""}}
+    - {interface: eth2.0, role: sdWanPortal, enabled: false, firewallports: [], settings: {httpPort: "", httpsPort: "", ccert: ""}}
+    - {interface: eth2.0, role: fileserver, enabled: false, firewallports: [], settings: {port: "", ccert: ""}}
+servers:
+{% if vsd_sa_or_ha is match('ha') %}
+    vsd1: {{ hostvars[groups['vsd_ha_node1'][0]].mgmt_ip }}
+    vsd2: {{ hostvars[groups['vsd_ha_node2'][0]].mgmt_ip  }}
+    vsd3: {{ hostvars[groups['vsd_ha_node3'][0]].mgmt_ip  }}
+{% endif %}
+{% if vsd_sa_or_ha is match('sa') %}
+    vsd1: {{ hostvars[groups['vsd_sa_node'][0]]['mgmt_ip'] }}
+{% endif %}
+na:
+    vsd: {sleepTimer: 2000, socketTimeout: 60000}
+    notificationHandlers: []

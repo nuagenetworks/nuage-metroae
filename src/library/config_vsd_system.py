@@ -100,7 +100,7 @@ def main():
         try:
             set_gateway_purge_time(csproot, gw_purge_time)
         except exceptions.BambouHTTPError as e:
-            if "There are no attribute changes" in e.message:
+            if "There are no attribute changes" in str(e):
                 module.exit_json(changed=True, result="Gateway time is already"
                                  " updated to %s" % int(gw_purge_time))
                 return

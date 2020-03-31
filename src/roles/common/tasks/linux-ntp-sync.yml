@@ -32,9 +32,6 @@
        - "ntpd"
        - "ntpdate"
 
-  - name: Sync time with ntp server
-    command: ntpdate -u "{{ntp_server_list[0]}}"
-
   - name: Delete the default steptickers file
     file:
       path: /etc/ntp/step-tickers
@@ -52,33 +49,41 @@
       name: ntpdate
       enabled: yes
       state: started
+    register: ntpdate_status
+    ignore_errors: yes
 
-  - name: Enable and start ntpd
+  - name: Check for ntpdate failures
+    fail:
+      msg: There seems to be an issue connecting to the specified NTP servers. Please verify the IP addresses and check "systemctl status ntpdate.service" and "journalctl -xe" for further details.
+    when: 
+      - ntpdate_status.msg is defined
+      - ntpdate_status.msg is search('ntpdate.service failed')
+
+  - name: Restart ntpd
     service:
       name: ntpd
       enabled: yes
       state: restarted
 
-  - name: check ntp sync state
+  - name: Check ntp sync state
     shell: ntpstat | awk 'NR==1{print $1}'
     register: sync_status
-    until: sync_status.stdout is search('synchronised')
+    ignore_errors: yes
+
+  - name: Check ntp sync output
+    fail:
+      msg: Unexpected failure when attempting to sync with ntp
+    when:
+      - not sync_status.stdout is match('synchronised')
+      - not sync_status.stdout is match('unsynchronised')
+
+  - name: Check ntp sync state
+    shell: ntpstat | awk 'NR==1{print $1}'
+    register: retry_sync_status
+    until: retry_sync_status.stdout is match('synchronised')
     retries: "{{ ntp_sync_retries }}"
     delay: "{{ ntp_sync_delay }}"
+    when: sync_status.stdout is match('unsynchronised')
 
-  - block:
-    - name: Restart ntpd if not synced yet
-      service:
-        name: ntpd
-        state: restarted
-    - name: check ntp sync state
-      shell: ntpstat | awk 'NR==1{print $1}'
-      register: retry_sync_status
-      until: retry_sync_status.stdout == "synchronised"
-      retries: "{{ ntp_sync_retries }}"
-      delay: "{{ ntp_sync_delay }}"
-    when: not sync_status.stdout is search("synchronized")
-
-# block level parameters
   remote_user: "{{ rem_user }}"
   tags: ntp
