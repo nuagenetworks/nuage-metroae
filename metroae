@@ -781,10 +781,10 @@ function setup_container {
 
         if [[ $setup_type == "c" ]]; then
             echo ""
-            write_to_screen_and_script_log ">>> Setup container for MetroAE config only"
+            write_to_screen_and_script_log ">>> Setup container for MetroAE config"
         elif [[ $setup_type == "d" ]]; then
             echo ""
-            write_to_screen_and_script_log ">>> Setup container for MetroAE deploy only"
+            write_to_screen_and_script_log ">>> Setup container for MetroAE deploy"
         else
             echo ""
             write_to_screen_and_script_log ">>> Setup container for both MetroAE config and deploy"
@@ -796,6 +796,7 @@ function setup_container {
     fi
 
     if [ -w "$SETUP_FILE" ]; then
+        sed -i '/^METROAE_SETUP_TYPE/d' $SETUP_FILE
         echo "METROAE_SETUP_TYPE=$setup_type" >> $SETUP_FILE
         write_to_script_log "METROAE_SETUP_TYPE=$setup_type"
     else
@@ -833,6 +834,7 @@ function setup_container {
     data_path=$PATH_ARG
 
     write_to_script_log "METROAE_MOUNT_POINT=$data_path"
+    sed -i '/^METROAE_MOUNT_POINT/d' $SETUP_FILE
     echo METROAE_MOUNT_POINT=$data_path >> $SETUP_FILE
 
     # stop and remove existing container if any
@@ -846,10 +848,13 @@ function setup_container {
         delete_container_id
     fi
 
-    # start the container
+    write_to_screen_and_script_log ">>> Prepare data directory for updates from new container."
+    echo ""
+    rm -rf $METROAE_MOUNT_POINT/version >> /dev/null 2>> /dev/null
+
     run_container
 
-    upgrade_metroae
+    update_metroae
 
     setup_tab_completion
 
@@ -920,7 +925,7 @@ function get_user_path_input {
     set -e
 }
 
-function upgrade_docker {
+function update_container {
     debug ${FUNCNAME[0]}
     set +e
     destroy
@@ -935,49 +940,122 @@ function upgrade_docker {
     fi
     run_container
 
-    upgrade_metroae
+    update_metroae
 }
 
-function upgrade_metroae {
+function check_if_mount_point_configured {
+    debug ${FUNCNAME[0]}
+    if [[ -z "$METROAE_MOUNT_POINT" ]]; then
+        write_to_screen_and_script_log "We couldn't find the data directory configuration for the container in the configuration file."
+        echo "Please run 'metroae container setup' to correct this and try again."
+        echo ""
+        return 1
+    fi
+}
 
+function update_metroae {
+    debug ${FUNCNAME[0]}
     if [[ $RUN_MODE == "CONTAINER" ]]; then
-
-        write_to_screen_and_script_log "Upgrading metroae script to the latest"
+        echo ""
+        write_to_screen_and_script_log ">>> Checking to see if we can update your metroae script."
+        echo ""
 
         if [[ -f $SETUP_FILE ]]; then
             while read -r line; do declare $line; done < $SETUP_FILE
         fi
 
-        set +e
-        cp $METROAE_MOUNT_POINT/metroae "${BASH_SOURCE[0]}"
+        check_if_mount_point_configured
 
-        if [[ $? -ne 0 ]]; then
-            write_to_screen_and_script_log "Could not upgrade metroae script"
+        echo ""
+        write_to_screen_and_script_log ">>> Wait for the container to copy a new version file to the data directory"
+        echo ""
+        set +e
+        timeout 10 bash -c -- "while [[ ! -f $METROAE_MOUNT_POINT/version ]]; do sleep 1; done"
+        TEMP_RC=$?
+        debug $TEMP_RC
+        if [[ $TEMP_RC -ne 0 ]]; then
+            write_to_screen_and_script_log "We didn't find $METROAE_MOUNT_POINT/version."
+            echo "It could be that the version of metroae script you are running is the latest."
+            echo "Your copy of the metroae script will not be updated. You can continue to use your copy."
+            echo ""
+            set -e
             return 1
         fi
-
         set -e
+
+        echo ""
+        write_to_screen_and_script_log ">>> Checking for a new version of the metroae script in the container data directory"
+        echo ""
+
+        if [[ ! -f "$METROAE_MOUNT_POINT/metroae" ]]; then
+            write_to_screen_and_script_log "We couldn't find a new copy of the metroae script in the data directory."
+            echo "It could be that the version of metroae script you are running is the latest."
+            echo "Your copy of the metroae script will not be updated. You can continue to use your copy."
+            echo ""
+            return 1
+        else
+            set +e
+            cp $METROAE_MOUNT_POINT/metroae "${BASH_SOURCE[0]}"
+
+            if [[ $? -ne 0 ]]; then
+                write_to_screen_and_script_log "We encountered an error copying $METROAE_MOUNT_POINT/metroae."
+                echo "Your copy of the metroae script will not be updated. You can continue to use your copy."
+                echo ""
+                set -e
+                return 1
+            fi
+            set -e
+            write_to_screen_and_script_log "Successfully updated your metroae script."
+            echo ""
+        fi
     fi
 }
 
 function setup_tab_completion {
+    debug ${FUNCNAME[0]}
+    echo ""
+    write_to_screen_and_script_log ">>> Checking to see if we can setup tab completion for your metroae script."
+    echo ""
+
     if [[ -f $SETUP_FILE ]]; then
         while read -r line; do declare $line; done < $SETUP_FILE
     fi
 
-    set +e
+   check_if_mount_point_configured
+
+    echo ""
+    write_to_screen_and_script_log ">>> Configure optional metroae script tab completion on your host"
+    echo ""
 
     if [[ ! -d $COMPLETION_DIR ]]; then
         write_to_script_log "Creating tab-completion dir: $COMPLETION_DIR"
+        set +e
         mkdir $COMPLETION_DIR
+        if [[ $? -ne 0 ]]; then
+            write_to_screen_and_script_log "We encountered an error creating the tab-completion directory on your host."
+            echo "We will not be configuring optional metroae script tab completion."
+            echo "You may continue to use the metroae script without tab completion."
+            echo ""
+            set -e
+            return 1
+        fi
+        set -e
     fi
 
-    write_to_screen_and_script_log "Copying tab-completion to standard dir: $METROAE_MOUNT_POINT/$TAB_COMPLETION_SCRIPT to $COMPLETION_DIR"
+    write_to_script_log "Copying tab-completion to standard dir: $METROAE_MOUNT_POINT/$TAB_COMPLETION_SCRIPT to $COMPLETION_DIR"
+    set +e
     sudo cp $METROAE_MOUNT_POINT/$TAB_COMPLETION_SCRIPT $COMPLETION_DIR
     if [[ $? -ne 0 ]]; then
-        write_to_screen_and_script_log "Could not setup tab-completion"
+        write_to_screen_and_script_log "We encountered an error copying files to the tab-completion directory on your host."
+        echo "We will not be configuring optional metroae script tab completion."
+        echo "You may continue to use the metroae script without tab completion."
+        echo ""
+        set -e
+        return 1
     fi
     set -e
+    write_to_screen_and_script_log "Successfully configured optional metroae script tab completion."
+    echo ""
 }
 
 function run_container_if_not_running {
@@ -1426,9 +1504,9 @@ function config_main {
             ;;
             upgrade-engine)
             if [[ -z $2 ]]; then
-                upgrade_docker
+                update_container
             else
-                upgrade_docker $2
+                update_container $2
                 shift
             fi
             shift
@@ -1546,9 +1624,9 @@ function container_status {
             exit 1
         fi
         if [[ $METROAE_SETUP_TYPE == "c" ]]; then
-            current_setup_type="Config only"
+            current_setup_type="Config"
         elif [[ $METROAE_SETUP_TYPE == "d" ]]; then
-            current_setup_type="Deploy only"
+            current_setup_type="Deploy"
         elif [[ $METROAE_SETUP_TYPE == "b" ]]; then
             current_setup_type="Both Config and Deploy"
         else
@@ -1669,9 +1747,9 @@ function container_main {
             ;;
             upgrade-engine)
             if [[ -z $2 ]]; then
-                upgrade_docker
+                update_container
             else
-                upgrade_docker $2
+                update_container $2
                 shift
             fi
             shift
