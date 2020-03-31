@@ -1,9 +1,19 @@
 - block:
 
+  - name: Format VSPK auth for VSPK module
+    set_fact:
+      vspk_auth:
+        api_username: "{{ vsd_auth.username }}"
+        api_password: "{{ vsd_auth.password }}"
+        api_enterprise: "{{ vsd_auth.enterprise }}"
+        api_url: "{{ vsd_auth.api_url }}"
+        api_version: v5_0
+    no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
+
   - name: Create a netconf user on the VSD
     connection: local
     nuage_vspk:
-      auth: "{{ nuage_auth }}"
+      auth: "{{ vspk_auth }}"
       type: User
       parent_id: "csp"
       parent_type: Enterprise
@@ -20,7 +30,7 @@
   - name: Add permission to the netconf user
     connection: local
     nuage_vspk:
-      auth: "{{ nuage_auth }}"
+      auth: "{{ vspk_auth }}"
       type: Group
       parent_id: "{{ netconf_user.id }}"
       parent_type: User
