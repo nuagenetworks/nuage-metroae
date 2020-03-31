@@ -23,20 +23,10 @@
     vars:
       management_network: "Management"
 
-  - name: Deploy VNSUTIL image on vCenter (Can take several minutes)
-    connection: local
-    shell: >-
-      {{ ovftool_command }}
-      "vi://{{ vcenter.username | urlencode }}:{{ vcenter.password | urlencode }}@{{ vcenter_path }}"
-    register: deploy_result
-    ignore_errors: yes
-    no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
-
-  - name: Debug the deploy logs
-    assert:
-      that: deploy_result.rc == 0
-      success_msg: "{{deploy_result.stdout}}"
-      fail_msg: "{{deploy_result.stderr}}"
+  - name: Deploy VNSUTIL image on vCenter
+    include_role:
+      name: common
+      tasks_from: vcenter-deploy-image
 
   - name: Waiting until VMware tools becomes available
     connection: local
@@ -51,183 +41,35 @@
 
   - debug: var=vnsutil_vm_facts verbosity=1
 
-  - name: Disabling cloud-init
-    connection: local
-    vmware_vm_shell:
-      hostname: "{{ target_server }}"
-      username: "{{ vcenter.username }}"
-      password: "{{ vcenter.password }}"
-      datacenter: "{{ vcenter.datacenter }}"
-      cluster: "{{ vcenter.cluster }}"
-      validate_certs: no
-      vm_id: "{{ vm_name }}"
+  - name: Disable cloud-init on VNSUTIL
+    include_role:
+      name: common
+      tasks_from: vcenter-disable-cloud-init
+    vars:
       vm_username: "{{ vnsutil_default_username }}"
       vm_password: "{{ vnsutil_default_password }}"
-      vm_shell: "/bin/systemctl"
-      vm_shell_args: " {{ item }}"
-    with_items:
-      - "stop cloud-init"
-      - "disable cloud-init"
-      - "stop cloud-init-local"
-      - "disable cloud-init-local"
-      - "stop cloud-init-config"
-      - "disable cloud-config"
-      - "stop cloud-final"
-      - "disable cloud-final"
 
-  - name: Writing cloud-init disable file in the VM
-    connection: local
-    vmware_vm_shell:
-      hostname: "{{ target_server }}"
-      username: "{{ vcenter.username }}"
-      password: "{{ vcenter.password }}"
-      datacenter: "{{ vcenter.datacenter }}"
-      cluster: "{{ vcenter.cluster }}"
-      validate_certs: no
-      vm_id: "{{ vm_name }}"
+  - name: Setup networking on VNSUTIL
+    include_role:
+      name: common
+      tasks_from: vcenter-setup-networking
+    vars:
       vm_username: "{{ vnsutil_default_username }}"
       vm_password: "{{ vnsutil_default_password }}"
-      vm_shell: "/bin/touch"
-      vm_shell_args: " /etc/cloud/cloud-init.disabled"
-
-  - name: Set the owner and group on the cloud-init disable file in the VM
-    connection: local
-    vmware_vm_shell:
-      hostname: "{{ target_server }}"
-      username: "{{ vcenter.username }}"
-      password: "{{ vcenter.password }}"
-      datacenter: "{{ vcenter.datacenter }}"
-      cluster: "{{ vcenter.cluster }}"
-      validate_certs: no
-      vm_id: "{{ vm_name }}"
-      vm_username: "{{ vnsutil_default_username }}"
-      vm_password: "{{ vnsutil_default_password }}"
-      vm_shell: "/usr/bin/chown"
-      vm_shell_args: " 0 0 /etc/cloud/cloud-init.disabled"
-
-  - name: Writing eth0 network script file to the VNSUTIL VM
-    connection: local
-    vmware_vm_shell:
-      hostname: "{{ target_server }}"
-      username: "{{ vcenter.username }}"
-      password: "{{ vcenter.password }}"
-      datacenter: "{{ vcenter.datacenter }}"
-      cluster: "{{ vcenter.cluster }}"
-      validate_certs: no
-      vm_id: "{{ vm_name }}"
-      vm_username: "{{ vnsutil_default_username }}"
-      vm_password: "{{ vnsutil_default_password }}"
-      vm_shell: "/usr/bin/echo"
-      vm_shell_args: " '{{ lookup('template', 'ifcfg-eth0.j2') }}' > /etc/sysconfig/network-scripts/ifcfg-eth0"
-
-  - name: Set the owner and group on the eth0 network script file in the VNSUTIL VM
-    connection: local
-    vmware_vm_shell:
-      hostname: "{{ target_server }}"
-      username: "{{ vcenter.username }}"
-      password: "{{ vcenter.password }}"
-      datacenter: "{{ vcenter.datacenter }}"
-      cluster: "{{ vcenter.cluster }}"
-      validate_certs: no
-      vm_id: "{{ vm_name }}"
-      vm_username: "{{ vnsutil_default_username }}"
-      vm_password: "{{ vnsutil_default_password }}"
-      vm_shell: "/usr/bin/chown"
-      vm_shell_args: " 0 0 /etc/sysconfig/network-scripts/ifcfg-eth0"
-
-  - name: Writing network file to the VNSUTIL VM
-    connection: local
-    vmware_vm_shell:
-      hostname: "{{ target_server }}"
-      username: "{{ vcenter.username }}"
-      password: "{{ vcenter.password }}"
-      datacenter: "{{ vcenter.datacenter }}"
-      cluster: "{{ vcenter.cluster }}"
-      validate_certs: no
-      vm_id: "{{ vm_name }}"
-      vm_username: "{{ vnsutil_default_username }}"
-      vm_password: "{{ vnsutil_default_password }}"
-      vm_shell: "/usr/bin/echo"
-      vm_shell_args: " '{{ lookup('template', role_path + '/../common/templates/network.j2') }}' > /etc/sysconfig/network"
-
-  - name: Set the owner and group on the network file in the VNSUTIL VM
-    connection: local
-    vmware_vm_shell:
-      hostname: "{{ target_server }}"
-      username: "{{ vcenter.username }}"
-      password: "{{ vcenter.password }}"
-      datacenter: "{{ vcenter.datacenter }}"
-      cluster: "{{ vcenter.cluster }}"
-      validate_certs: no
-      vm_id: "{{ vm_name }}"
-      vm_username: "{{ vnsutil_default_username }}"
-      vm_password: "{{ vnsutil_default_password }}"
-      vm_shell: "/usr/bin/chown"
-      vm_shell_args: " 0 0 /etc/sysconfig/network"
-
-  - name: Create the directory /root/.ssh for authorized_keys on the VNSUTIL VM
-    connection: local
-    vmware_vm_shell:
-      hostname: "{{ target_server }}"
-      username: "{{ vcenter.username }}"
-      password: "{{ vcenter.password }}"
-      datacenter: "{{ vcenter.datacenter }}"
-      cluster: "{{ vcenter.cluster }}"
-      validate_certs: no
-      vm_id: "{{ vm_name }}"
-      vm_username: "{{ vnsutil_default_username }}"
-      vm_password: "{{ vnsutil_default_password }}"
-      vm_shell: "/usr/bin/mkdir"
-      vm_shell_args: " -p /root/.ssh"
-
-  - name: Set the owner and group for the /root/.ssh directory in the VNSUTIL VM
-    connection: local
-    vmware_vm_shell:
-      hostname: "{{ target_server }}"
-      username: "{{ vcenter.username }}"
-      password: "{{ vcenter.password }}"
-      datacenter: "{{ vcenter.datacenter }}"
-      cluster: "{{ vcenter.cluster }}"
-      validate_certs: no
-      vm_id: "{{ vm_name }}"
-      vm_username: "{{ vnsutil_default_username }}"
-      vm_password: "{{ vnsutil_default_password }}"
-      vm_shell: "/usr/bin/chown"
-      vm_shell_args: " 0 0 /root/.ssh"
+      ifcfg_eth0_contents: "{{ lookup('template', 'ifcfg-eth0.j2') }}"
+      skip_hostname: True
 
   - name: Get the public key for the current user
     local_action: command cat "{{ user_ssh_pub_key }}"
     register: current_user_ssh_key
 
-  - name: Writing authorized_keys to the VNSUTIL VM
-    connection: local
-    vmware_vm_shell:
-      hostname: "{{ target_server }}"
-      username: "{{ vcenter.username }}"
-      password: "{{ vcenter.password }}"
-      datacenter: "{{ vcenter.datacenter }}"
-      cluster: "{{ vcenter.cluster }}"
-      validate_certs: no
-      vm_id: "{{ vm_name }}"
+  - name: Inject SSH keys onto VNSUTIL
+    include_role:
+      name: common
+      tasks_from: vcenter-inject-ssh-keys
+    vars:
       vm_username: "{{ vnsutil_default_username }}"
       vm_password: "{{ vnsutil_default_password }}"
-      vm_shell: "/usr/bin/echo"
-      vm_shell_args: " '{{ lookup('template', 'authorized_keys.j2') }}' > /root/.ssh/authorized_keys"
-
-  - name: Set the mode on the authorized_keys file in the VNSUTIL VM
-    connection: local
-    vmware_vm_shell:
-      hostname: "{{ target_server }}"
-      username: "{{ vcenter.username }}"
-      password: "{{ vcenter.password }}"
-      datacenter: "{{ vcenter.datacenter }}"
-      cluster: "{{ vcenter.cluster }}"
-      validate_certs: no
-      vm_id: "{{ vm_name }}"
-      vm_username: "{{ vnsutil_default_username }}"
-      vm_password: "{{ vnsutil_default_password }}"
-      vm_shell: "/usr/bin/chmod"
-      vm_shell_args: " 0640 /root/.ssh/authorized_keys"
 
   - name: Disable NetworkManager
     connection: local

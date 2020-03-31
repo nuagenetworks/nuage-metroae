@@ -2,19 +2,21 @@
     "$schema": "http://json-schema.org/draft-06/schema#",
     "$id": "urn:nuage-metroae:nsgvs",
     "title": "Network Services Gateway",
-    "description": "Specify configuration for Nuage MetroÆ NSGvs.",
+    "description": "Specify configuration for Nuage MetroAE NSGvs.",
     "type": "array",
     "widget": "form",
     "items": {
         "widget": "item",
         "type": "object",
         "title": "NSGv",
+        "additionalProperties": false,
         "properties": {
             "vmname": {
                 "type": "string",
                 "format": "hostname",
                 "title": "VM name",
                 "description": "Name of the NSGv VM on the hypervisor/vcenter",
+                "sectionBegin": "VM and Target Server",
                 "propertyOrder": 10
             },
             "target_server_type": {
@@ -22,7 +24,6 @@
                 "title": "Target Server type",
                 "description": "Type of environment into which the NSGv will be instantiated",
                 "propertyOrder": 20,
-                "sectionBegin": "Target Server",
                 "enum": ["kvm", "vcenter", "aws"]
             },
             "target_server": {
@@ -30,7 +31,7 @@
                 "format": "hostname",
                 "title": "Target Server hostname",
                 "description": "Hostname or IP address of the hypervisor or vCenter server where the NSGv will be instantiated",
-                "sectionEnd": "Target Server",
+                "sectionEnd": "VM and Target Server",
                 "propertyOrder": 30
             },
             "bootstrap_method": {
@@ -75,6 +76,7 @@
                 "title": "Management Network Bridge",
                 "description": "Network Bridge used for the management path of this component. This will be a Distributed Virtual PortGroup (DVPG) when deploying on vCenter or a Linux network bridge.",
                 "advanced": true,
+                "sectionBegin": "Bridge info",
                 "propertyOrder": 90
             },
             "data_bridge": {
@@ -90,6 +92,7 @@
                 "title": "NSGv Access Bridge",
                 "description": "Network bridge used for the access network when installing an NSGv. This will be a Distributed Virtual PortGroup (DVPG) when deploying on vCenter or a Linux network bridge",
                 "default": "(global Bridge interface)",
+                "sectionEnd": "Bridge info",
                 "propertyOrder": 110
             },
             "vcenter_datacenter": {
@@ -264,20 +267,22 @@
                 "description": "Enables SSH on NSGv when set.",
                 "default": false,
                 "advanced": true,
+                "sectionEnd": "NSGv Zero-Factor Bootstrap",
                 "propertyOrder": 320
-            },
-            "nsg_infra_profile_name": {
-                "type": "string",
-                "title": "NSG Infra Profile Name",
-                "description": "Name of the NSG infra profile on the VSD",
-                "default": "",
-                "advanced": true,
-                "propertyOrder": 330
             },
             "nsg_template_name": {
                 "type": "string",
                 "title": "NSG Infra Profile Template Name",
                 "description": "Name of the NSG infra profile template on the VSD",
+                "default": "",
+                "advanced": true,
+                "sectionBegin": "NSG Advanced Options",
+                "propertyOrder": 330
+            },
+            "nsg_infra_profile_name": {
+                "type": "string",
+                "title": "NSG Infra Profile Name",
+                "description": "Name of the NSG infra profile on the VSD",
                 "default": "",
                 "advanced": true,
                 "propertyOrder": 340
@@ -296,6 +301,7 @@
                 "description": "Allows NSGs using this profile to override SSH access.",
                 "default": false,
                 "advanced": true,
+                "sectionEnd": "NSG Advanced Options",
                 "propertyOrder": 360
             },
             "vsc_infra_profile_name": {
@@ -304,6 +310,7 @@
                 "description": "Name of the VSC infra profile for the NSG on the VSD",
                 "default": "",
                 "advanced": true,
+                "sectionBegin": "VSC Info",
                 "propertyOrder": 370
             },
             "first_controller_address": {
@@ -322,6 +329,7 @@
                 "default": "",
                 "format": "hostname",
                 "advanced": true,
+                "sectionEnd": "VSC Info",
                 "propertyOrder": 390
             },
             "network_port_name": {
@@ -338,12 +346,13 @@
                 "description": "Physical name of the network port for the NSG",
                 "default": "port1",
                 "advanced": true,
+                "sectionBegin": "Network and Access Ports",
                 "propertyOrder": 410
             },
             "access_port_name": {
                 "type": "string",
                 "title": "NSG Access Port Name",
-                "description": "Name of the access port for the NSG",
+                "description": "Name of the access port for the NSG. Deprecated in favor of access_ports",
                 "default": "",
                 "advanced": true,
                 "propertyOrder": 420
@@ -351,7 +360,7 @@
             "access_port_physical_name": {
                 "type": "string",
                 "title": "NSG Access Port Physical Name",
-                "description": "Physical name of the access port for the NSG",
+                "description": "Physical name of the access port for the NSG. Deprecated in favor of access_ports",
                 "default": "port2",
                 "advanced": true,
                 "propertyOrder": 430
@@ -359,7 +368,7 @@
             "access_port_vlan_range": {
                 "type": "string",
                 "title": "NSG Access Port VLAN Range",
-                "description": "VLAN range of the access port for the NSG",
+                "description": "VLAN range of the access port for the NSG. Deprecated in favor of access_ports",
                 "default": "",
                 "advanced": true,
                 "propertyOrder": 440
@@ -367,11 +376,20 @@
             "access_port_vlan_number": {
                 "type": "integer",
                 "title": "NSG Access Port VLAN Number",
-                "description": "VLAN number of the NSG access port for the NSG",
+                "description": "VLAN number of the NSG access port for the NSG. Deprecated in favor of access_ports",
                 "default": 0,
                 "advanced": true,
-                "sectionEnd": "NSGv Zero-Factor Bootstrap",
                 "propertyOrder": 450
+            },
+            "access_ports": {
+                "type": "array",
+                "title": "NSGv Access ports list name",
+                "description": "Name of access ports list.",
+                "propertyOrder": 460,
+                "items": {
+                    "type": "string"
+                },
+                "sectionEnd": "Network and Access Ports"
             },
             "telnet_port": {
                 "type": "integer",
@@ -379,16 +397,17 @@
                 "description": "The port for telnet to HV host to access NSGv serial or console terminal",
                 "default": 2300,
                 "advanced": true,
-                "propertyOrder": 460
+                "sectionBegin": "Telnet and Credentials",
+                "propertyOrder": 470
             },
             "credentials_set": {
                 "type": "string",
                 "title": "Credentials set name",
                 "description": "Name of the credentials set for the vsd",
-                "propertyOrder": 470,
+                "sectionEnd": "Telnet and Credentials",
+                "propertyOrder": 480,
                 "advanced": true
             }
-
         },
         "required": ["vmname", "target_server_type", "target_server"]
     }

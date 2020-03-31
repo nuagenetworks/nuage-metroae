@@ -1,5 +1,17 @@
 ---
-- hosts: primary_vsds
+- hosts: primary_upgrade_vsds
+  gather_facts: no
+  remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
+  become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
+  vars:
+    ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"
+  tasks:
+    - name: Backup /etc/hosts files on VSD before upgrade
+      include_role:
+        name: vsd-backup-hostfile
+      when: backup_vsd_host_file | default(false)
+
+- hosts: primary_upgrade_vsds
   gather_facts: no
   serial: 1
   remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
@@ -12,7 +24,7 @@
         name: common
         tasks_from: vsd-find-backup-node
 
-- hosts: "{{hostvars['localhost'].vsd_backup_node | default(vsd_ha_node1)}}"
+- hosts: "{{hostvars['localhost'].vsd_backup_node | default(vsd_upgrade_ha_node1)}}"
   gather_facts: no
   pre_tasks:
     - name: Set upgrade flag
@@ -37,7 +49,7 @@
   roles:
     - vsd-dbbackup
 
-- hosts: vsd_ha_node1
+- hosts: vsd_upgrade_ha_node1
   gather_facts: no
   vars:
     report_filename: vsd_ha_upgrade_backup_and_decouple_report.txt
@@ -54,7 +66,7 @@
   roles:
     - vsd-decouple
 
-- hosts: vsd_ha_node1
+- hosts: vsd_upgrade_ha_node1
   gather_facts: no
   pre_tasks:
     - name: Set upgrade flag

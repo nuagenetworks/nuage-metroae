@@ -121,7 +121,7 @@ def main():
         result_str = set_maintainance_mode(csproot, state)
         module.exit_json(rc=0, changed=True, result="%s" % result_str)
     except exceptions.BambouHTTPError as be:
-        if "There are no attribute changes" in be.message:
+        if "There are no attribute changes" in str(be):
             module.exit_json(rc=0, changed=True,
                              result="Maintainance mode is already enabled")
             return

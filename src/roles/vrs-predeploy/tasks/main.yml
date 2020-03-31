@@ -5,7 +5,7 @@
       name: "{{ inventory_hostname }}"
       state: absent
     delegate_to: localhost
-    no_log: True
+    no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
     ignore_errors: True
 
   - name: Wait for Compute Node VM ssh to be ready
@@ -21,23 +21,14 @@
 
   - name: Remove OVS packages on RHEL/CentOS machines if present
     yum:
-      name: "{{ item }}"
+      name: "{{ redhat_family_ovs_packages }}"
       state: absent
-    with_items: "{{ redhat_family_ovs_packages }}"
-    when: ansible_os_family == "RedHat"
-
-  - name: Remove OVS packages on RHEL/CentOS machines if present
-    yum:
-      name: "{{ item }}"
-      state: absent
-    with_items: "{{ redhat_family_ovs_packages }}"
     when: ansible_os_family == "RedHat"
 
   - name: Remove OVS packages on Debian machines if present
     apt:
-      name: "{{ item }}"
+      name: "{{ debian_family_ovs_packages }}"
       state: absent
-    with_items: "{{ debian_family_ovs_packages }}"
     when: ansible_os_family == "Debian"
 
   - name: Enable optional rpms to install twisted core package on RHEL machines

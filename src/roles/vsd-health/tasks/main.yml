@@ -3,7 +3,7 @@
     name: "{{ mgmt_ip }}"
     state: absent
   delegate_to: localhost
-  no_log: True
+  no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
   ignore_errors: True
 
 - name: Wait for VM to be ready
@@ -19,10 +19,62 @@
     name: "{{ mgmt_ip }}"
     state: absent
   delegate_to: localhost
-  no_log: True
+  no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
   ignore_errors: True
 
 - import_tasks: report_header.yml
+
+- name: Write Disk Performance Test separator to report file
+  nuage_append: filename="{{ report_path }}" text="----------{{ inventory_hostname }} Disk Performance Test measurements---------------\n"
+  delegate_to: localhost
+  run_once: true
+
+- block:
+
+  - block:
+
+    - name: Run VSD Disk Performance Test if it was not run during deploy
+      include_role:
+        name: common
+        tasks_from: disk-performance-test.yml
+      vars:
+        disk_performance_file_total_size: "{{ vsd_disk_performance_test_total_file_size }}"
+        disk_performance_minimum_threshold: "{{ vsd_disk_performance_test_minimum_threshold }}"
+        disk_performance_max_time: "{{ vsd_disk_performance_test_max_time }}"
+        ignore_disk_performance_test_errors: "{{ vsd_ignore_disk_performance_test_errors }}"
+
+    remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
+    become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
+    vars:
+      ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"
+
+  - name: Write VSD Disk IOPS value to json file
+    nuage_append: filename="{{ report_path }}" text="VSD Disk IOPS value of {{ disk_performance_val | to_nice_json}} did not meet the specified threshold of {{ vsd_disk_performance_test_minimum_threshold | to_nice_json}}\n"
+    delegate_to: localhost
+    when: disk_performance_val|int < vsd_disk_performance_test_minimum_threshold
+
+  - name: Write VSD Disk IOPS value to json file
+    nuage_append: filename="{{ report_path }}" text="VSD Disk IOPS value of {{ disk_performance_val | to_nice_json}} met the specified threshold of {{ vsd_disk_performance_test_minimum_threshold | to_nice_json}}\n"
+    delegate_to: localhost
+    when: disk_performance_val|int >= vsd_disk_performance_test_minimum_threshold
+
+  when:
+    - not vsd_ran_disk_performance_test | default(False)
+    - vsd_run_disk_performance_test
+
+- block:
+
+  - name: Write VSD Disk IOPS value to json file
+    nuage_append: filename="{{ report_path }}" text="VSD Disk IOPS value of {{ disk_performance_val | to_nice_json}} did not meet the specified threshold of {{ vsd_disk_performance_test_minimum_threshold | to_nice_json}}\n"
+    delegate_to: localhost
+    when: disk_performance_val|int < vsd_disk_performance_test_minimum_threshold
+
+  - name: Write VSD Disk IOPS value to json file
+    nuage_append: filename="{{ report_path }}" text="VSD Disk IOPS value of {{ disk_performance_val | to_nice_json}} met the specified threshold of {{ vsd_disk_performance_test_minimum_threshold | to_nice_json}}\n"
+    delegate_to: localhost
+    when: disk_performance_val|int >= vsd_disk_performance_test_minimum_threshold
+
+  when: vsd_ran_disk_performance_test | default(False)
 
 - name: Get current version of VSD software
   shell: grep -ir "VSD_VERSION=" /etc/profile.d/vsd-banner.sh | awk -F "=" '{print $2}'
@@ -63,6 +115,60 @@
   delegate_to: localhost
 
 - import_tasks: monit_status.yml
+
+- block:
+
+  - name: Write network config to json file
+    nuage_append: filename="{{ vsd_rtt_report_path }}" text="----------VSD RTT measurements---------------\n"
+    delegate_to: localhost
+    run_once: true
+
+  - block:
+
+    - name: Run RTT tests for Primary cluster
+      import_role:
+        name: vsd-run-rtt
+      vars:
+        first_node: "{{ groups['vsd_ha_node1'][0] }}"
+        second_node: "{{ groups['vsd_ha_node2'][0] }}"
+        third_node: "{{ groups['vsd_ha_node3'][0] }}"
+        standby_cluster: false
+      when: not vsd_ran_rtt_test | default(false)
+
+    - name: Write Primary VSD RTT to file
+      nuage_append: filename="{{ vsd_rtt_report_path }}" text="{{ vsd_rtt_test_results | to_nice_json}}\n"
+      delegate_to: localhost
+
+    when: inventory_hostname == groups['vsd_ha_node1'][0]
+
+  - block:
+
+    - name: Run RTT tests for Standby cluster
+      import_role:
+        name: vsd-run-rtt
+      vars:
+        first_node: "{{ groups['vsd_standby_node1'][0] }}"
+        second_node: "{{ groups['vsd_standby_node2'][0] }}"
+        third_node: "{{ groups['vsd_standby_node3'][0] }}"
+        standby_cluster: true
+      when: not vsd_ran_rtt_test | default(false)
+
+    - name: Write Secondary VSD RTT to file
+      nuage_append: filename="{{ vsd_rtt_report_path }}" text="{{ vsd_rtt_test_results | to_nice_json}}\n"
+      delegate_to: localhost
+
+    when:
+      - groups['vsd_standby_node1'] is defined
+      - inventory_hostname == groups['vsd_standby_node1'][0]
+
+  when:
+    - vsd_run_cluster_rtt_test | default(False)
+    - not nuage_upgrade | default(False)
+
+  remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
+  become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
+  vars:
+    ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"
 
 - name: Execute list_p1db command on VSD(s)
   command: "{{ p1db_cmd }}"

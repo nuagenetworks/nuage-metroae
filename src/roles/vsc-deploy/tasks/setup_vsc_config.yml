@@ -11,7 +11,10 @@
       state: directory
 
   - name: Setup VSC temporary configuration files
-    template: src=config.cfg.j2 backup=no dest=/tmp/{{ vm_name }}/new-config.cfg
+    template:
+      src: "{{ config_template }}"
+      backup: no
+      dest: "/tmp/{{ vm_name }}/new-config.cfg"
 
   - name: Wait for VSC ssh to be ready before config
     include_role:
@@ -43,15 +46,70 @@
     sros_command:
       commands:
         - exec cf1:\new-config.cfg
+      provider: "{{ vsc_creds }}"
+
+  - name: Reconnect to ssh after it is hardened
+    include_role:
+      name: common
+      tasks_from: wait-for-ssh-port
+    vars:
+      ssh_host: "{{ hostname }}"
+      ssh_timeout_seconds: 600
+      ssh_password: "{{ vsc_creds.password }}"
+      ssh_user: "{{ vsc_creds.username }}"
+      check_login: True
+    when: enable_hardening | default(True)
+
+  - name: Save VSC basic configuration
+    sros_command:
+      commands:
         - admin save
       provider: "{{ vsc_creds }}"
 
-  - name: Reboot VSC VM (ignoring errors)
-    sros_command:
-      commands:
-        - admin reboot now
-      provider: "{{ vsc_creds }}"
-    ignore_errors: true
+  - block:
+
+    - name: Pause to ensure VSC uptime is high enough
+      pause:
+        seconds: 30
+
+    - name: Register uptime before reboot
+      sros_command:
+        commands:
+          - show uptime
+        provider: "{{ vsc_creds }}"
+      register: uptime_before_reboot
+
+    - name: Reboot VSC VM (ignoring errors)
+      sros_command:
+        commands:
+          - admin reboot now
+        provider: "{{ vsc_creds }}"
+      ignore_errors: true
+
+    - name: Wait for VSC ssh to be ready
+      include_role:
+        name: common
+        tasks_from: wait-for-ssh-port
+      vars:
+        ssh_host: "{{ hostname }}"
+        ssh_timeout_seconds: 600
+        ssh_password: "{{ vsc_creds.password }}"
+        ssh_user: "{{ vsc_creds.username }}"
+        check_login: True
+
+    - name: Register uptime after reboot
+      sros_command:
+        commands:
+          - show uptime
+        provider: "{{ vsc_creds }}"
+      register: uptime_after_reboot
+
+    - name: Verify reboot happened successfully
+      assert:
+        that: "uptime_after_reboot < uptime_before_reboot"
+        fail_msg: "System uptime after reboot step suggests there were issues during reboot. Check log for errors."
+
+    when: reboot_vsc
 
   - name: Remove temporary configuration files
     file: path=/tmp/{{ vm_name }}/new-config.cfg state=absent

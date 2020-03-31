@@ -25,7 +25,9 @@
 
 - block:
   - name: Check if required OS packages are installed (ignoring errors)
-    command: rpm -q unzip
+    command: 
+      cmd: rpm -q unzip
+      warn: no
     connection: local
     register: rpm_check
     ignore_errors: True
@@ -163,20 +165,6 @@
     - vrs
 
 
-################
-# Libnetwork
-#################
-
-- block:
-  - name: Find and unzip Libnetwork Archive
-    import_tasks: unpack_actions.yml
-    vars:
-      unpack_pattern:        "(?i)Nuage-libnetwork.*"
-      unpack_target_folder:  "libnetwork"
-  tags:
-    - libnetwork
-
-
 #####################
 # VNS Utility/ NSGV
 #####################
@@ -193,23 +181,26 @@
   - name: Find and unzip VNS NSG Archive
     import_tasks: unpack_actions.yml
     vars:
-      unpack_zipped_files_dir: "{{ nuage_unzipped_files_dir }}/vns/"
       unpack_pattern:          "(?i)Nuage-VNS-NSG-.*"
       unpack_target_folder:    "vns/nsg"
 
   - name: Find and unzip VNS Utils Archive
     import_tasks: unpack_actions.yml
     vars:
-      unpack_zipped_files_dir: "{{ nuage_unzipped_files_dir }}/vns/"
       unpack_pattern:          "(?i)Nuage-VNS-Utils-.*"
       unpack_target_folder:    "vns/utils"
 
-  - name: Find and unzip VNS Utils Archive
+  - name: Find and unzip VNS Utils qcow2 Archive
     import_tasks: unpack_actions.yml
     vars:
-      unpack_zipped_files_dir: "{{ nuage_unzipped_files_dir }}/vns/"
-      unpack_pattern:          "(?i)Nuage-utility-host-.*"
+      unpack_pattern:          "(?i)Nuage-utility-host-qcow2.*"
       unpack_target_folder:    "vns/nuh"
+
+  - name: Find and unzip VNS Utils ova Archive
+    import_tasks: unpack_actions.yml
+    vars:
+      unpack_pattern:          "(?i)Nuage-utility-host-ova.*"
+      unpack_target_folder:    "vns/nuh/ova"
 
   # for releases starting from 4.0.R9 when VNS packages were archived to 2 files
   # + unpack AWS archive
@@ -222,7 +213,6 @@
   - name: Find and unzip VNS AWS NSG Archive
     import_tasks: unpack_actions.yml
     vars:
-      unpack_zipped_files_dir: "(?i){{ nuage_unzipped_files_dir }}/vns/nsg/"
       unpack_pattern:         "Nuage-NSG-.*AWS.*"
       unpack_target_folder:   "vns/nsg/aws"
 
@@ -231,12 +221,6 @@
     vars:
       unpack_pattern:        "(?i)Nuage-VNS-Utils.*"
       unpack_target_folder:  "vns/utils"
-
-  - name: Find and unzip VNS Utils Archive
-    import_tasks: unpack_actions.yml
-    vars:
-      unpack_pattern:          "(?i)Nuage-utility-host-.*"
-      unpack_target_folder:    "vns/nuh"
 
   tags:
     - vns

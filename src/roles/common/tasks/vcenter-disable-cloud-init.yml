@@ -1,0 +1,53 @@
+- name: Disabling cloud-init
+  connection: local
+  vmware_vm_shell:
+    hostname: "{{ target_server }}"
+    username: "{{ vcenter.username }}"
+    password: "{{ vcenter.password }}"
+    datacenter: "{{ vcenter.datacenter }}"
+    cluster: "{{ vcenter.cluster }}"
+    validate_certs: no
+    vm_id: "{{ vm_name }}"
+    vm_username: "{{ vm_username }}"
+    vm_password: "{{ vm_password }}"
+    vm_shell: "/bin/systemctl"
+    vm_shell_args: " {{ item }}"
+  with_items:
+    - "stop cloud-init"
+    - "disable cloud-init"
+    - "stop cloud-init-local"
+    - "disable cloud-init-local"
+    - "stop cloud-init-config"
+    - "disable cloud-config"
+    - "stop cloud-final"
+    - "disable cloud-final"
+
+- name: Writing cloud-init disable file in the VM
+  connection: local
+  vmware_vm_shell:
+    hostname: "{{ target_server }}"
+    username: "{{ vcenter.username }}"
+    password: "{{ vcenter.password }}"
+    datacenter: "{{ vcenter.datacenter }}"
+    cluster: "{{ vcenter.cluster }}"
+    validate_certs: no
+    vm_id: "{{ vm_name }}"
+    vm_username: "{{ vm_username }}"
+    vm_password: "{{ vm_password }}"
+    vm_shell: "/bin/touch"
+    vm_shell_args: " /etc/cloud/cloud-init.disabled"
+
+- name: Set the owner and group on the cloud-init disable file in the VM
+  connection: local
+  vmware_vm_shell:
+    hostname: "{{ target_server }}"
+    username: "{{ vcenter.username }}"
+    password: "{{ vcenter.password }}"
+    datacenter: "{{ vcenter.datacenter }}"
+    cluster: "{{ vcenter.cluster }}"
+    validate_certs: no
+    vm_id: "{{ vm_name }}"
+    vm_username: "{{ vm_username }}"
+    vm_password: "{{ vm_password }}"
+    vm_shell: "/usr/bin/chown"
+    vm_shell_args: " 0 0 /etc/cloud/cloud-init.disabled"

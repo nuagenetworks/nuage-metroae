@@ -4,61 +4,97 @@
 #
 localhost ansible_connection=local
 
-{% if vsds is defined and vsds %}
+{% if vsds is defined and vsds|length > 0 %}
 
-{% if vsds|length == 1 and not inplace %}
+{% if vsds|length == 1 %}
 
 [vsd_sa_node]
 {{ vsds[0].hostname }}
 
-{% elif not inplace %}
-
-[vsd_ha_node1]
-{{ vsds[0].hostname }}
-
-[vsd_ha_node2]
-{{ vsds[1].hostname }}
-
-[vsd_ha_node3]
-{{ vsds[2].hostname }}
-
-{% if vsds|length == 6 %}
-
-[vsd_standby_node1]
-{{ vsds[3].hostname }}
-
-[vsd_standby_node2]
-{{ vsds[4].hostname }}
-
-[vsd_standby_node3]
-{{ vsds[5].hostname }}
-
+{% if not inplace %}
+[vsd_upgrade_sa_node:children]
+vsd_sa_node
 {% endif %}
 
 {% else %}
+
+[vsd_ha_node1]
+{{ vsds[0].hostname }}
+[vsd_ha_node2]
+{{ vsds[1].hostname }}
+[vsd_ha_node3]
+{{ vsds[2].hostname }}
+
+{% if not inplace %}
+[vsd_upgrade_ha_node1:children]
+vsd_ha_node1
+[vsd_upgrade_ha_node2:children]
+vsd_ha_node2
+[vsd_upgrade_ha_node3:children]
+vsd_ha_node3
+{% endif %}
+
+{% if vsds|length == 6 %}
+[vsd_standby_node1]
+{{ vsds[3].hostname }}
+[vsd_standby_node2]
+{{ vsds[4].hostname }}
+[vsd_standby_node3]
+{{ vsds[5].hostname }}
+
+{% if not inplace %}
+[vsd_upgrade_standby_node1:children]
+vsd_standby_node1
+[vsd_upgrade_standby_node2:children]
+vsd_standby_node2
+[vsd_upgrade_standby_node3:children]
+vsd_standby_node3
+{% endif %}
+
+{% endif %}
+
+{% endif %}
+
+{% if inplace %}
 [vsd_inplace_upgrade_nodes]
 {% for vsd in vsds %}
 {{ vsd.hostname }}
 {% endfor %}
-
 {% endif %}
 
 [primary_vsds:children]
-{% if vsds|length == 1 and not inplace %}
+{% if vsds|length == 1 %}
 vsd_sa_node
-{% elif not inplace %}
+{% else %}
 vsd_ha_node1
 vsd_ha_node2
 vsd_ha_node3
+{% endif %}
+
+[primary_upgrade_vsds:children]
+{% if not inplace %}
+{% if vsds|length == 1 %}
+vsd_upgrade_sa_node
+{% else %}
+vsd_upgrade_ha_node1
+vsd_upgrade_ha_node2
+vsd_upgrade_ha_node3
+{% endif %}
 {% else %}
 vsd_inplace_upgrade_nodes
 {% endif %}
 
-{% if vsds|length == 6 and not inplace %}
+{% if vsds|length == 6 %}
 [standby_vsds:children]
 vsd_standby_node1
 vsd_standby_node2
 vsd_standby_node3
+{% if not inplace %}
+[standby_upgrade_vsds:children]
+vsd_upgrade_standby_node1
+vsd_upgrade_standby_node2
+vsd_upgrade_standby_node3
+{% endif %}
 {% endif %}
 
 [vsds:children]
@@ -67,11 +103,9 @@ primary_vsds
 standby_vsds
 {% endif %}
 
-
 {% endif %}
 
-
-{% if vcins is defined and vcins %}
+{% if vcins is defined and vcins|length > 0 %}
 
 [vcin_masters]
 {% for vcin in vcins %}
@@ -95,55 +129,55 @@ vcin_slaves
 
 {% endif %}
 
-{% if vscs is defined and vscs %}
+{% if vscs is defined and vscs|length > 0 %}
 
-{% if vscs|length == 1 %}
-
+{% if vscs|length == 1 or upgrade.force_vsc_standalone_upgrade | default(false) %}
 [vsc_sa_node]
-{{ vscs[0].hostname }}
-
+{% for vsc in vscs %}
+{{ vsc.hostname }}
+{% endfor %}
 [vscs:children]
 vsc_sa_node
+{% endif %}
 
-{% elif vscs|length == 2 %}
-
+{% if vscs|length > 1 and not upgrade.force_vsc_standalone_upgrade | default(false) %}
 [vsc_ha_node1]
-{{ vscs[0].hostname }}
+{% for vsc in vscs %}
+{% if loop.index % 2 == 1 %}
+{{ vsc.hostname }}
+{% endif %}
+{% endfor %}
 
 [vsc_ha_node2]
-{{ vscs[1].hostname }}
+{% for vsc in vscs %}
+{% if loop.index % 2 == 0 %}
+{{ vsc.hostname }}
+{% endif %}
+{% endfor %}
 
 [vscs:children]
 vsc_ha_node1
 vsc_ha_node2
 
-{% else %}
-
-[vscs]
-{% for vsc in vscs %}
-{{ vsc.hostname }}
-
-{% endfor %}
-
 {% endif %}
 
 {% endif %}
 
-{% if dnss is defined and dnss %}
+{% if dnss is defined and dnss|length > 0 %}
 [dnss]
 {% for dns in dnss %}
 {{ dns.hostname }}
 {% endfor %}
 {% endif %}
 
-{% if gvms is defined and gvms %}
+{% if gvms is defined and gvms|length > 0 %}
 [gvms]
 {% for gvm in gvms %}
 {{ gvm.hostname }}
 {% endfor %}
 {% endif %}
 
-{% if vnsutils is defined and vnsutils %}
+{% if vnsutils is defined and vnsutils|length > 0 %}
 [vnsutils]
 {% for vnsutil in vnsutils %}
 {{ vnsutil.hostname }}
@@ -151,7 +185,7 @@ vsc_ha_node2
 {% endfor %}
 {% endif %}
 
-{% if nuhs is defined and nuhs %}
+{% if nuhs is defined and nuhs|length > 0 %}
 [nuhs]
 {% for nuh in nuhs %}
 {{ nuh.hostname }}
@@ -159,14 +193,14 @@ vsc_ha_node2
 
 {% endif %}
 
-{% if nsgvs is defined and nsgvs %}
+{% if nsgvs is defined and nsgvs|length > 0 %}
 [nsgvs]
 {% for nsgv in nsgvs %}
 {{ nsgv.vmname }}
 {% endfor %}
 {% endif %}
 
-{% if vstats is defined and vstats %}
+{% if vstats is defined and vstats|length > 0 %}
 
 {% for vstat in vstats %}
 [vstat_node{{ loop.index }}]
@@ -192,37 +226,30 @@ vstat_node{{ loop.index }}
 {% endif %}
 {% endif %}
 
-{% if vrss is defined and vrss %}
+{% if vrss is defined and vrss|length > 0 %}
 [vrss]
 {% for vrs_dict_list in vrss %}
 {% for vrs_dict in vrs_dict_list['vrs_ip_list'] %}
-{{ vrs_dict }} avrs={{ 'avrs' in vrs_dict_list and vrs_dict_list['avrs'] }}
+{{ vrs_dict }}
 {% endfor %}
 {% endfor %}
 {% endif %}
 
-{% if vsrs is defined and vsrs %}
+{% if vsrs is defined and vsrs|length > 0 %}
 [vsrs]
 {% for vsr in vsrs %}
 {{ vsr.hostname }}
 {% endfor %}
 {% endif %}
 
-{% if cis is defined and cis %}
-[cis]
-{% for ci in cis %}
-{{ ci.hostname }}
-{% endfor %}
-{% endif %}
-
-{% if stcvs is defined and stcvs %}
+{% if stcvs is defined and stcvs|length > 0 %}
 [stcvs]
 {% for stcv in stcvs %}
 {{ stcv.hostname }}
 {% endfor %}
 {% endif %}
 
-{% if vrss is defined and vrss %}
+{% if vrss is defined and vrss|length > 0 %}
 [vrss]
 {% for vrs_dict_list in vrss %}
 {% for vrs_dict in vrs_dict_list['vrs_ip_list'] %}
@@ -231,7 +258,7 @@ vstat_node{{ loop.index }}
 {% endfor %}
 {% endif %}
 
-{% if portals is defined and portals %}
+{% if portals is defined and portals|length > 0 %}
 
 {% if portals|length == 1 %}
 [portal_sa_node]
@@ -264,5 +291,3 @@ portal_ha_node3
 {% if ssh_proxy_host is defined %}
 ansible_ssh_common_args='-o ProxyCommand="ssh -W %h:%p -q {{ ssh_proxy_username | default("root") }}@{{ ssh_proxy_host }}"'
 {% endif %}
-[ansible_deployment_host]
-{{ ansible_deployment_host| default('localhost') }}

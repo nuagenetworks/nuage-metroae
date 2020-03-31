@@ -1,15 +1,17 @@
 - block:
   - name: Create SD-WAN Portal directory
-    command: mkdir -p /opt/vnsportal
-  
+    file:
+      path: /opt/vnsportal
+      state: directory
+
   - name: Generate Portal config.yml file
     template: src=config.j2 backup=no dest=/opt/vnsportal/config.yml
-  
+
   - name: Check if SSH keys are present locally
     local_action: stat path=/tmp/id_rsa
     register: ssh_key
 
-  - name: Generate SSH keys for Portal install 
+  - name: Generate SSH keys for Portal install
     local_action: command ssh-keygen -b 2048 -t rsa -f /tmp/id_rsa -q -N ""
     when: ssh_key.stat.exists == False
 
@@ -21,13 +23,13 @@
     with_items:
       - { src: '/tmp/id_rsa', dest: '/root/.ssh/id_rsa'}
       - { src: '/tmp/id_rsa.pub', dest: '/root/.ssh/id_rsa.pub'}
-    
+
   - name: Add the public key to authorized_keys
     shell: 'cat /root/.ssh/id_rsa.pub >> /root/.ssh/authorized_keys'
 
   - name: Copy the public key to the SD-WAN Portal directory
     command: cp /root/.ssh/id_rsa.pub /opt/vnsportal/
-  
+
   - name: Copy the private key to the SD-WAN Portal directory
     command: cp /root/.ssh/id_rsa /opt/vnsportal/
   when: inventory_hostname == portal1.hostname
@@ -47,13 +49,13 @@
       key: "{{ lookup('file', '/tmp/id_rsa.pub') }}"
     when: inventory_hostname == portal3.hostname
   when: portal_sa_or_ha is match('ha')
-    
+
 - block:
   - name: Execute the Portal configuration script
     shell: docker run -ti --rm -v /var/run/docker.sock:/docker.sock -v /opt/vnsportal:/mnt:z nuage/vnsportal-installer:{{ portal_version }} --skip
   when: inventory_hostname == portal1.hostname
 
-- block: 
+- block:
   - name: Apply the SD-WAN Portal license
     import_tasks: sdwan_portal_license.yml
     when: portal_license_file is defined

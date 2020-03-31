@@ -115,7 +115,8 @@ class ExampleFileGenerator(object):
                                   key=lambda (k, v): (v["propertyOrder"], k)):
 
             is_required = name in required
-            self.add_example_field(name, field, is_required, is_list)
+            if "deprecated" not in field:
+                self.add_example_field(name, field, is_required, is_list)
 
     def add_example_field(self, name, field, is_required, is_list=False):
         indent = ""

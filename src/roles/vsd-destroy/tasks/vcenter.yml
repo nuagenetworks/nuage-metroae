@@ -1,5 +1,5 @@
 ---
-  
+
 - name: Finding VM folder (ignoring errors)
   connection: local
   vmware_guest_find:
@@ -23,7 +23,7 @@
 
 - name: Gathering info on VM
   connection: local
-  vmware_guest_facts:
+  vmware_guest_info:
     hostname: "{{ target_server }}"
     username: "{{ vcenter.username }}"
     password: "{{ vcenter.password }}"
@@ -39,17 +39,19 @@
   - block:
 
     - name: Get Facts of VM
-      vmware_vm_facts:
+      vmware_vm_info:
         hostname: "{{ target_server }}"
         username: "{{ vcenter.username }}"
         password: "{{ vcenter.password }}"
         validate_certs: no
       delegate_to: localhost
-      register: vm_list
+      register: vm_info
 
-    - name: Set VM UUID
+    - name: Set uuid fact
       set_fact:
-        uuid: "{{ vm_list.virtual_machines[vm_name]['uuid'] }}"
+        uuid: "{{ item.uuid }}"
+      when: item.guest_name == vm_name
+      with_items: "{{ vm_info.virtual_machines }}"
 
     - debug: var=uuid
 

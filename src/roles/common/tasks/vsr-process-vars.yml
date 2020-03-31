@@ -1,19 +1,37 @@
 - block:
 
-  - name: Set NSGV KVM image location
-    include_role:
-      name: common
-      tasks_from: find-image.yml
-    vars:
-      pattern: sros-vm.qcow2
+  - block:
+
+    - name: Set NSGV VM QCOW2 location
+      include_role:
+        name: common
+        tasks_from: find-file.yml
+      vars:
+        dir_name: "{{ nuage_unzipped_files_dir }}"
+        pattern: "sros-vm.qcow2"
+
+    - name: Register NSGV QCOW2 variables with proper path and image locations for use in other playbooks
+      set_fact:
+        image_path: "{{ file_path }}"
+        image_file_name: "{{ file_name }}"
+
     when: vsrs | map(attribute='target_server_type') | list is issuperset(["kvm"])
 
-  - name: Set NSGV vCenter image location
-    include_role:
-      name: common
-      tasks_from: find-image.yml
-    vars:
-      pattern: sros-vm.ova
+  - block:
+
+    - name: Set NSGV VM OVA image location
+      include_role:
+        name: common
+        tasks_from: find-file.yml
+      vars:
+        dir_name: "{{ nuage_unzipped_files_dir }}"
+        pattern: "sros-vm.ova"
+
+    - name: Register NSGV OVA variables with proper path and image locations for use in other playbooks
+      set_fact:
+        image_path: "{{ file_path }}"
+        image_file_name: "{{ file_name }}"
+
     when: vsrs | map(attribute='target_server_type') | list is issuperset(["vcenter"])
 
   - name: Create host_vars files for vsr
@@ -21,6 +39,6 @@
     with_items: "{{ vsrs }}"
 
   when:
-    - vsrs is defined and vsrs
+    - vsrs is defined and vsrs|length > 0
   tags:
     - vsr
