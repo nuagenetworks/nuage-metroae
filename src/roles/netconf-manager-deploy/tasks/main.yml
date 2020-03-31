@@ -1,79 +1,90 @@
-- name: Create a netconf user on the VSD
-  connection: local
-  nuage_vspk:
-    auth: "{{ nuage_auth }}"
-    type: User
-    parent_id: "csp"
-    parent_type: Enterprise
-    state: present
-    match_filter: "userName == 'netconfmgr'"
-    properties:
-      email: "user@example.met"
-      first_name: "Netconfmgr"
-      last_name: "Netconfmgr"
-      password: "password"
-      user_name: "netconfmgr"
-  register: netconf_user
+- block:
 
-- name: Add permission to the netconf user
-  connection: local
-  nuage_vspk:
-    auth: "{{ nuage_auth }}"
-    type: Group
-    parent_id: "{{ netconf_user.id }}"
-    parent_type: User
-    state: present
-    properties:
-      role: "NETCONFMGR"
+  - name: Create a netconf user on the VSD
+    connection: local
+    nuage_vspk:
+      auth: "{{ nuage_auth }}"
+      type: User
+      parent_id: "csp"
+      parent_type: Enterprise
+      state: present
+      match_filter: "userName == 'netconfmgr'"
+      properties:
+        email: "user@example.met"
+        first_name: "Netconfmgr"
+        last_name: "Netconfmgr"
+        password: "password"
+        user_name: "netconfmgr"
+    register: netconf_user
 
-- name: Generate keys on VSD for Netconf
-  command: /opt/vsd/ejbca/deploy/certMgmt.sh -a generate -c {{ netconf_username }}  -u {{ netconf_username }} -o csp -f jks -t client -p {{ netconf_password }}
+  - name: Add permission to the netconf user
+    connection: local
+    nuage_vspk:
+      auth: "{{ nuage_auth }}"
+      type: Group
+      parent_id: "{{ netconf_user.id }}"
+      parent_type: User
+      state: present
+      properties:
+        role: "NETCONFMGR"
 
-- name: Install Java SDK
-  yum: 
-    name: java-1.8.0-openjdk
-    state: present
+  - name: Generate keys on VSD for Netconf
+    command: /opt/vsd/ejbca/deploy/certMgmt.sh -a generate -c {{ netconf_username }}  -u {{ netconf_username }} -o csp -f jks -t client -p {{ netconf_password }}
 
-- name: Ensure 4 CPU, 6 GB of memory and 20G of HD
-
-- name: Set VSC VM QCOW2 location
-  include_role:
-    name: common
-    tasks_from: find-file.yml
+  remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
+  become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
   vars:
-    dir_name: "{{ nuage_unzipped_files_dir }}"
-    pattern: "nuage-netconf-*.rpm"
+    ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"
 
-- name: Register VSC QCOW2 variables with proper path and image locations for use in other playbooks
-  set_fact:
-    image_path: "{{ file_path }}"
-    image_file_name: "{{ file_name }}"
+- block:
 
-- name: Copy the NETCONF Manager RPM file on the NETCONF Manager VM
-  copy:
-    dest: "/tmp/netconfmanager/{{ image_file_name }}"
-    src: "{{ image_path }}/{{ image_file_name }}"
-    mode: 0644
-    owner: "root"
-    group: "root"
+  - name: Install Java SDK
+    yum: 
+      name: java-1.8.0-openjdk
+      state: present
 
-- name: yum -y localinstall nuage-netconf-manager-<number>.el7.x86_64.rpm
-  yum:
-    name: "{{ image_path }}/{{ image_file_name }}"
-    state: present
+  - name: Ensure 4 CPU, 6 GB of memory and 20G of HD
 
-- name: Copy both the files /opt/vsd/jboss/standalone/configuration/vsd.truststore and the keys /opt/vsd/ejbca/p12/netconfmgr.jks to the NETCONF Manager location /opt/netconfmanager/conf/.
+  - name: Set VSC VM QCOW2 location
+    include_role:
+      name: common
+      tasks_from: find-file.yml
+    vars:
+      dir_name: "{{ nuage_unzipped_files_dir }}"
+      pattern: "nuage-netconf-*.rpm"
 
-- name: Configure backend port numbers Port 61616 to be used for JMS messages. Port 7443 to be used for REST calls.
+  - name: Register VSC QCOW2 variables with proper path and image locations for use in other playbooks
+    set_fact:
+      image_path: "{{ file_path }}"
+      image_file_name: "{{ file_name }}"
 
-- name: Configure front end port numbers 51515 MUST match `jms.port= in /opt/netconfmanager/conf/netconfmanager.properties 5666 MUST match `vsd.port in /opt/netconfmanager/conf/netconfmanager.properties
+  - name: Copy the NETCONF Manager RPM file on the NETCONF Manager VM
+    copy:
+      dest: "/tmp/netconfmanager/{{ image_file_name }}"
+      src: "{{ image_path }}/{{ image_file_name }}"
+      mode: 0644
+      owner: "root"
+      group: "root"
 
-- name: In /opt/netconfmanager/conf/netconfmanager.properties, edit the three parameters of the JMS Listener jms.queue jms.topic jms.user
+  - name: yum -y localinstall nuage-netconf-manager-<number>.el7.x86_64.rpm
+    yum:
+      name: "{{ image_path }}/{{ image_file_name }}"
+      state: present
 
-- name: Enable and start Docker
-  service:
-    name: netconfmanager
-    state: started
-    enabled: yes
+  - name: Copy both the files /opt/vsd/jboss/standalone/configuration/vsd.truststore and the keys /opt/vsd/ejbca/p12/netconfmgr.jks to the NETCONF Manager location /opt/netconfmanager/conf/.
 
-- name: Check the newly created Netconf Managers discovered in VSD, by opening the Open Monitoring Console window in VSD
+  - name: Configure backend port numbers Port 61616 to be used for JMS messages. Port 7443 to be used for REST calls.
+
+  - name: Configure front end port numbers 51515 MUST match `jms.port= in /opt/netconfmanager/conf/netconfmanager.properties 5666 MUST match `vsd.port in /opt/netconfmanager/conf/netconfmanager.properties
+
+  - name: In /opt/netconfmanager/conf/netconfmanager.properties, edit the three parameters of the JMS Listener jms.queue jms.topic jms.user
+
+  - name: Enable and start Docker
+    service:
+      name: netconfmanager
+      state: started
+      enabled: yes
+
+  - name: Check the newly created Netconf Managers discovered in VSD, by opening the Open Monitoring Console window in VSD
+
+  remote_user: root
