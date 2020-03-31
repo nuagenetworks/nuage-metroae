@@ -71,7 +71,27 @@
       name: "{{ image_path }}/{{ image_file_name }}"
       state: present
 
-  - name: Copy both the files /opt/vsd/jboss/standalone/configuration/vsd.truststore and the keys /opt/vsd/ejbca/p12/netconfmgr.jks to the NETCONF Manager location /opt/netconfmanager/conf/.
+  - block:
+
+    - name: Get the VSD truststore
+      fetch:
+        src: "/opt/vsd/jboss/standalone/configuration/vsd.truststore"
+        dest: "/tmp/netconfmanager/"
+        flat: yes
+
+    - name: Get the Netconfmanager jks
+      fetch:
+        src: "/opt/vsd/ejbca/p12/netconfmgr.jks"
+        dest: "/tmp/netconfmanager/"
+        flat: yes
+    delegate_to: vsds
+
+  - name: Copy to netconf manager
+    copy:
+      dest: "/opt/netconfmanager/conf/"
+      src: "/tmp/netconfmanager/"
+
+  delegate_to: vsd1.example.met
 
   - name: Configure backend port numbers Port 61616 to be used for JMS messages. Port 7443 to be used for REST calls.
 
