@@ -3,11 +3,20 @@
 {% if component_type == "vcin" %}
   <memory unit='GiB'>{{ vcin_ram }}</memory>
   <currentMemory unit='GiB'>{{ vcin_ram }}</currentMemory>
-  <vcpu current='{{ vcin_cpu_cores }}'>{{ vcin_cpu_cores }}</vcpu>
+  {% if cpuset is defined %}
+    <vcpu>{{ vcin_cpu_cores }}</vcpu>
+  {% else %}
+    <vcpu placement='static'>{{ vcin_cpu_cores }}</vcpu>
+  {% endif %}
 {% else %}
   <memory unit='GiB'>{{ vsd_ram }}</memory>
   <currentMemory unit='GiB'>{{ vsd_ram }}</currentMemory>
-  <vcpu current='{{ vsd_cpu_cores }}'>{{ vsd_cpu_cores }}</vcpu>
+  {% if cpuset is defined %}
+    <vcpu>{{ vsd_cpu_cores }}</vcpu>
+  {% else %}
+    <vcpu placement='static'>{{ vsd_cpu_cores }}</vcpu>
+  {% endif %}
+  <vcpu placement='static'>{{ vsd_cpu_cores }}</vcpu>
 {% endif %}
 {% if cpuset is defined %}
   <cputune>
@@ -15,12 +24,6 @@
         <vcpupin vcpu='{{ loop.index0 }}' cpuset='{{ cpu }}'/>
       {% endfor %}
   </cputune>
-{% else %}
-    {% if component_type == "vcin" %}
-      <vcpu placement='static'>{{ vcin_cpu_cores }}</vcpu>
-    {% else %}
-      <vcpu placement='static'>{{ vsd_cpu_cores }}</vcpu>
-    {% endif %}
 {% endif %}
   <resource>
     <partition>/machine</partition>
@@ -59,7 +62,7 @@
       <address type='pci' domain='0x0000' bus='0x00' slot='0x03' function='0x0'/>
     </interface>
     <serial type='pty'>
-      <source path='/dev/pts/13'/>
+      <source path='/dev/pts/13'/>m
       <target port='0'/>
       <alias name='serial0'/>
     </serial>
