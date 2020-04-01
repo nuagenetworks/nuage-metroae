@@ -10,7 +10,7 @@
 
 ### Feature Enhancements
 
-* New metroae script (New command structure, extensive command-line help, eliminate RPM for container management, bnash tab-completion support, self-updating, backwards compatible)(METROAE-905)
+* New metroae script (New command structure, extensive command-line help, eliminate RPM for container management, bash tab-completion support, self-updating, backwards compatible)(METROAE-905)
 * Muti-underlay for VSC (METROAE-1175)
 * VSD Disk Performance Test (METROAE-1169)
 * VSD RTT Cluster Test (METROAE-766)
