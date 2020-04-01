@@ -15,8 +15,6 @@
     nuage_vspk:
       auth: "{{ vspk_auth }}"
       type: User
-      parent_id: "csp"
-      parent_type: Enterprise
       state: present
       match_filter: "userName == 'netconfmgr'"
       properties:
@@ -26,6 +24,38 @@
         password: "password"
         user_name: "netconfmgr"
     register: netconf_user
+
+  - name: Get Enterprise from VSD
+    connection: local
+    nuage_vspk:
+      auth: "{{ vspk_auth }}"
+      type: Enterprise
+      command: find
+      properties:
+        name: "csp"
+    register: nuage_enterprise
+
+  - name: Find Administrators group in Enterprise
+    connection: local
+    nuage_vspk:
+      auth: "{{ vspk_auth }}"
+      type: Group
+      parent_id: "{{ nuage_enterprise.id }}"
+      parent_type: Enterprise
+      command: find
+      properties:
+        name: "Netconf Manager Group"
+    register: nuage_group
+
+  - name: Assign netconf user to group
+    connection: local
+    nuage_vspk:
+      auth: "{{ vspk_auth }}"
+      type: User
+      id: "{{ netconf_user.id }}"
+      parent_id: "{{ nuage_group.id }}"
+      parent_type: Group
+      state: present
 
   - name: Add permission to the netconf user
     connection: local
