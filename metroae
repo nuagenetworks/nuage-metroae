@@ -1781,6 +1781,7 @@ function container_main {
 #################################################################################
 
 function copy_plugin_file_into_mount_point_if_necessary {
+    while read -r line; do declare $line; done < $SETUP_FILE
     local plugin_path=${EXTRA_ARGS[0]}
     mkdir -p $METROAE_MOUNT_POINT/metro_plugins
     if [[ -d $plugin_path ]]; then
@@ -2393,7 +2394,9 @@ case ${MATCH_MENU[2]} in
     ;;
     plugin)
     if [[ $RUN_MODE == "CONTAINER" ]]; then
-        copy_plugin_file_into_mount_point_if_necessary
+        if [[ ${MATCH_MENU[3]} == "install" ]] || [[ ${MATCH_MENU[3]} == "validate" ]]; then
+            copy_plugin_file_into_mount_point_if_necessary
+        fi
         container_main plugin ${MATCH_MENU[3]} "${EXTRA_ARGS[@]}"
     else
         plugin_main ${MATCH_MENU[3]} "${EXTRA_ARGS[@]}"
