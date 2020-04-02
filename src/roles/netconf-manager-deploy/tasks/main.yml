@@ -1,34 +1,16 @@
 - block:
 
-  - name: Install Java SDK
-    yum: 
-      name: java-1.8.0-openjdk
-      state: present
-
-  - name: Set VSC VM QCOW2 location
-    include_role:
-      name: common
-      tasks_from: find-file.yml
-    vars:
-      dir_name: "{{ nuage_unzipped_files_dir }}"
-      pattern: "nuage-netconf-*.rpm"
-
-  - name: Register VSC QCOW2 variables with proper path and image locations for use in other playbooks
-    set_fact:
-      image_path: "{{ file_path }}"
-      image_file_name: "{{ file_name }}"
-
   - name: Copy the NETCONF Manager RPM file on the NETCONF Manager VM
     copy:
-      dest: "/tmp/netconfmanager/{{ image_file_name }}"
-      src: "{{ image_path }}/{{ image_file_name }}"
+      dest: "/tmp/netconfmanager/{{ rpm_file_name }}"
+      src: "{{ rpm_path }}/{{ rpm_file_name }}"
       mode: 0644
       owner: "root"
       group: "root"
 
   - name: yum -y localinstall nuage-netconf-manager-<number>.el7.x86_64.rpm
     yum:
-      name: "{{ image_path }}/{{ image_file_name }}"
+      name: "{{ rpm_path }}/{{ image_file_name }}"
       state: present
 
   - block:
