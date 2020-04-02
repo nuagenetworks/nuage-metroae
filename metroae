@@ -948,7 +948,7 @@ function upgrade_docker {
     run_container
 
     upgrade_metroae
-    
+
     while read -r line; do declare $line; done < $SETUP_FILE
     for plugin_path in $METROAE_MOUNT_POINT/metro_plugins/*; do
         if [ -d "$plugin_path" ]; then
@@ -2025,6 +2025,10 @@ function uninstall_plugin {
 
     delete_plugin_files $1
     delete_single_plugin_file $PLUGIN_DIR/$1/uninstall_files
+    while read -r line; do declare $line; done < $SETUP_FILE
+    if [[ -n "$METROAE_MOUNT_POINT" ]] && [[ -n "$1" ]]; then
+        rm -rf "$METROAE_MOUNT_POINT/metro_plugins/$1"
+    fi
 
     write_to_screen_and_script_log "Plugin removal complete"
 }
