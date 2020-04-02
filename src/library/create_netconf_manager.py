@@ -1,14 +1,13 @@
 #!/usr/bin/env python
 
 import vspk.v5_0 as VSPK
-
 from ansible.module_utils.basic import AnsibleModule
 
 DOCUMENTATION = '''
 
 ---
 module: create_netconf_manager
-short_description: Creates a zero-factor bootstrap profile for NSGvs
+short_description: Create Netconf user and attach it to netconf manager group on VSD
 options:
   vsd_auth:
     description:
@@ -25,12 +24,12 @@ options:
       - lastName
       - email
       - password
-      - proxy_user
+      - netconf_user
     required:True
 '''
 
 EXAMPLES = '''
-- create_zfb_profile:
+- create_netconf_manager:
     vsd_auth:
         username: csproot
         password: csproot
@@ -41,11 +40,11 @@ EXAMPLES = '''
         lastName: Doe
         email: user@email.com
         password: pass
-        proxy_user: proxy
+        netconf_user: proxy
 '''
 
 
-def create_proxy_user(module, session):
+def create_netconf_user(module, session):
     netconf_manager_user = module.params['netconf_manager_user']
 
     # Create proxy user if not present
@@ -53,18 +52,18 @@ def create_proxy_user(module, session):
     cspenterprise.id = session.me.enterprise_id
     csp_users = cspenterprise.users.get()
     lst_users = [usr.user_name for usr in csp_users]
-    if netconf_manager_user['proxy_user'] not in lst_users:
-        proxy_user = VSPK.NUUser(first_name=netconf_manager_user['firstName'],
-                                 last_name=netconf_manager_user['lastName'],
-                                 user_name=netconf_manager_user['proxy_user'],
-                                 email=netconf_manager_user['email'],
-                                 password=netconf_manager_user['password'])
-        cspenterprise.create_child(proxy_user)
+    if netconf_manager_user['netconf_user'] not in lst_users:
+        netconf_user = VSPK.NUUser(first_name=netconf_manager_user['firstName'],
+                                   last_name=netconf_manager_user['lastName'],
+                                   user_name=netconf_manager_user['netconf_user'],
+                                   email=netconf_manager_user['email'],
+                                   password=netconf_manager_user['password'])
+        cspenterprise.create_child(netconf_user)
         csprootuser = VSPK.NUUser(id=session.me.id)
         csprootuser.fetch()
         csprootgroup = cspenterprise.groups.get_first(filter="name ==\
                                                       'Netconf Manager Group'")
-        csprootgroup.assign([proxy_user, csprootuser], VSPK.NUUser)
+        csprootgroup.assign([netconf_user, csprootuser], VSPK.NUUser)
 
 
 def main():
@@ -79,7 +78,6 @@ def main():
             type='dict'))
 
     module = AnsibleModule(argument_spec=arg_spec, supports_check_mode=True)
-
     vsd_auth = module.params['vsd_auth']
 
     # Create a session as csp user
@@ -92,8 +90,7 @@ def main():
                 "using %s: %s" % (vsd_auth, str(e)))
         return
 
-    create_proxy_user(module, session)
-
+    create_netconf_user(module, session)
     module.exit_json(changed=True)
 
 
