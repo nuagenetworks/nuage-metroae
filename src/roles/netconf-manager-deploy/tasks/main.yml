@@ -1,5 +1,18 @@
 - block:
 
+  - name: Set the RPM path temporarily
+    set_fact: 
+      rpm_path: /home/caso/nuage-images/netconf/
+
+  - name: Set the RPM filename temporarily
+    set_fact: 
+      rpm_file_name: nuage-netconf-manager-6.0.3-26.el7.x86_64.rpm
+
+  - name: Creates temporary netconf directory
+    file:
+      path: /tmp/netconfmanager
+      state: directory
+
   - name: Copy the NETCONF Manager RPM file on the NETCONF Manager VM
     copy:
       dest: "/tmp/netconfmanager/{{ rpm_file_name }}"
@@ -10,7 +23,7 @@
 
   - name: yum -y localinstall nuage-netconf-manager-<number>.el7.x86_64.rpm
     yum:
-      name: "{{ rpm_path }}/{{ image_file_name }}"
+      name: "/tmp/netconfmanager/{{ rpm_file_name }}"
       state: present
 
   - block:
