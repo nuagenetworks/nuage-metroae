@@ -1,7 +1,7 @@
 # Nuage Networks Metro Automation Engine (MetroAE)
 (4 minute read)
 
-Version: 4.0.0
+Version: 4.0.1
 
 MetroAE is an automation engine that deploys and upgrades Nuage Networks components. You specify the individual details of your target platform, then let MetroAE install, upgrade, destroy, or health-check the environment for you.
 
