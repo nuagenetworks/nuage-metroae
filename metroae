@@ -932,10 +932,33 @@ function get_user_path_input {
     set -e
 }
 
-function upgrade_docker {
+function update_container {
     debug ${FUNCNAME[0]}
+    declare -l confirmation
+    if [[ -z $2 ]]; then
+        confirmation="init"
+        echo ""
+        write_to_screen_and_script_log "You are about to update your MetroAE container to the latest version."
+        echo "We will destroy the existing container, pull the latest version of the container, and start the container"
+        echo "using the existing configuration. Your data on disk will be preserved."
+        while [[ $confirmation != "n" ]] && [[ $confirmation  != "y" ]] && [[ $confirmation != "" ]]
+        do
+            echo ""
+            read -p "Do you really want to update the MetroAE container? (y/N): " confirmation
+        done
+    else
+        confirmation=$2
+    fi
+
+    if [[ $confirmation != "y" ]]; then
+        echo ""
+        write_to_screen_and_script_log "Update of metorae container was canceled"
+        echo ""
+        print_version_and_exit 0
+    fi
+
     set +e
-    destroy
+    destroy y
     if [[ $? -ne 0 ]]; then
         return 1
     fi
@@ -947,7 +970,7 @@ function upgrade_docker {
     fi
     run_container
 
-    upgrade_metroae
+    update_metroae
 
     while read -r line; do declare $line; done < $SETUP_FILE
     for plugin_path in $METROAE_MOUNT_POINT/metro_plugins/*; do
@@ -1445,10 +1468,10 @@ function config_main {
             ;;
             upgrade-engine)
             if [[ -z $2 ]]; then
-                upgrade_docker
+                update_container
             else
-                upgrade_docker $2
                 shift
+                update_container $*
             fi
             shift
             ;;
@@ -1688,10 +1711,10 @@ function container_main {
             ;;
             upgrade-engine)
             if [[ -z $2 ]]; then
-                upgrade_docker
+                update_container
             else
-                upgrade_docker $2
                 shift
+                update_container $*
             fi
             shift
             ;;
