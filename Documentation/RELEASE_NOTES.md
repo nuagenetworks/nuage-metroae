@@ -15,3 +15,4 @@
 ### Resolved Issues
 
 * Support target_server_type == none for skipping predeploy
+* Fix prepositioning qcow2 files as a separate workflow
