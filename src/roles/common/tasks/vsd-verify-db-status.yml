@@ -10,29 +10,29 @@
 - name: Verify that DB upgrade directory exists
   assert:
     that:
-      - db_dir.stat.exists == True
+      - db_dir.stat.exists
     msg: "nuageDbUpgrade dir does not exist"
-    
+
 - name: Set msyql default check for nuageDbUpgrade
   set_fact:
     mysql_db_upgrade: "mysql -e 'show databases;' | grep nuageDbUpgrade"
-    
+ 
 - name: Set mysql check for nuageDbUpgrade
-  set_fact: 
-    mysql_db_upgrade: "mysql -p{{ vsd_mysql_password }} -e 'show databases;' | grep nuageDbUpgrade" 
+  set_fact:
+    mysql_db_upgrade: "mysql -p{{ vsd_mysql_password }} -e 'show databases;' | grep nuageDbUpgrade"
   when: vsd_mysql_password is defined
-  
 
 - name: Check that the database is properly identified by MySQL
-  shell: "{{ mysql_db_upgrade }}" 
+  shell: "{{ mysql_db_upgrade }}"    # noqa 305
   register: db
   remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
   become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
   vars:
     ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"
+  changed_when: True
 
 - name: Verify the upgrade database name
   assert:
     that:
       - "'nuageDbUpgrade' == db.stdout"
-    msg: "Could not find nuageDbUpgrade database in mysql" 
+    msg: "Could not find nuageDbUpgrade database in mysql"
