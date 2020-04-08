@@ -98,6 +98,10 @@ POSITIONAL=()
 #                                   SWITCH                                      #
 #################################################################################
 
+function read_setup_files {
+    while read -r line; do declare $line; done < $SETUP_FILE
+}
+
 function print_write_permission_warning {
     echo ""
     echo "WARNING: This user does not have Write permissions for MetroAE log file: $SCRIPT_LOG_FILE"
@@ -165,7 +169,7 @@ function try_get_menu {
             done
         fi
     elif [[ -f $SETUP_FILE ]]; then
-        while read -r line; do declare $line; done < $SETUP_FILE
+        read_setup_files
         if [[ -f $METROAE_MOUNT_POINT/$PLAYBOOK_MENU ]]; then
             source $METROAE_MOUNT_POINT/$PLAYBOOK_MENU
         fi
@@ -195,7 +199,7 @@ function check_for_prerequisite {
             fi
         # RUN_MODE is CONTAINER
         elif [[ -f $SETUP_FILE ]]; then
-            while read -r line; do declare $line; done < $SETUP_FILE
+            read_setup_files
             if [[ -z $RUNNING_CONTAINER_ID ]] && [[ ! -z $CONTAINER_ID ]]; then
                 echo ""
                 write_to_screen_and_script_log ">>> Starting the stopped container"
@@ -427,7 +431,7 @@ function destroy {
 
     if [[ $confirmation != "y" ]]; then
         echo ""
-        write_to_screen_and_script_log "Destroy of metorae container was canceled"
+        write_to_screen_and_script_log "Destroy of metroae container was canceled"
         echo ""
         print_version_and_exit 0
     fi
@@ -631,7 +635,7 @@ function run_container {
         write_to_screen_and_script_log ">>> Starting the MetroAE container"
         echo ""
         if [[ -z $CONTAINER_ID ]]; then
-            while read -r line; do declare $line; done < $SETUP_FILE
+            read_setup_files
             network_args=""
             get_host_operating_system
             if [[ $OS_RELEASE  -eq $LINUX ]]; then
@@ -972,7 +976,7 @@ function update_container {
 
     upgrade_metroae
 
-    while read -r line; do declare $line; done < $SETUP_FILE
+    read_setup_files
     for plugin_name in `ls $METROAE_MOUNT_POINT/metro_plugins/`; do
         if [ -d "$METROAE_MOUNT_POINT/metro_plugins/${plugin_name}" ]; then
             docker_metro_ae_exec plugin install "/metroae_data/metro_plugins/${plugin_name}"
@@ -987,7 +991,7 @@ function upgrade_metroae {
         write_to_screen_and_script_log "Upgrading metroae script to the latest"
 
         if [[ -f $SETUP_FILE ]]; then
-            while read -r line; do declare $line; done < $SETUP_FILE
+            read_setup_files
         fi
 
         set +e
@@ -1004,7 +1008,7 @@ function upgrade_metroae {
 
 function setup_tab_completion {
     if [[ -f $SETUP_FILE ]]; then
-        while read -r line; do declare $line; done < $SETUP_FILE
+        read_setup_files
     fi
 
     set +e
@@ -1574,7 +1578,7 @@ function container_status {
     if [[ -f $SETUP_FILE ]]; then
         write_to_screen_and_script_log ">>> Getting container configuration from host"
         echo ""
-        while read -r line; do declare $line; done < $SETUP_FILE
+        read_setup_files
         if [[ -z $METROAE_SETUP_TYPE ]]; then
             echo ""
             write_to_screen_and_script_log "We couldn't find the MetroAE setup type in the configuration file on disk."
@@ -1807,15 +1811,15 @@ function container_main {
 #################################################################################
 
 function copy_plugin_file_into_mount_point_if_necessary {
-    while read -r line; do declare $line; done < $SETUP_FILE
-    local plugin_path=${EXTRA_ARGS[0]}
+    read_setup_files
+    local plugin_path=${PLUGIN_INSTALL_ARGS[0]}
     mkdir -p $METROAE_MOUNT_POINT/metro_plugins
     if [[ -d $plugin_path ]]; then
         cp -r $plugin_path $METROAE_MOUNT_POINT/metro_plugins/
     elif [[ -f $plugin_path ]]; then
         cp $plugin_path $METROAE_MOUNT_POINT/metro_plugins/
     fi
-    EXTRA_ARGS[0]=/metroae_data/metro_plugins/${plugin_path##*/}
+    PLUGIN_INSTALL_ARGS[0]=/metroae_data/metro_plugins/${plugin_path##*/}
 }
 
 function version_compare {
@@ -2080,6 +2084,18 @@ function validate_plugin_dir {
 
 function plugin_main {
     debug ${FUNCNAME[0]}
+
+    if [[ $RUN_MODE == "CONTAINER" ]]; then
+        local action=$1
+        shift
+        PLUGIN_INSTALL_ARGS=("$@")
+        if [[ $action == "install" ]] || [[ $action == "validate" ]]; then
+            copy_plugin_file_into_mount_point_if_necessary
+        fi
+        docker_metro_ae_exec plugin $action "${PLUGIN_INSTALL_ARGS[@]}"
+        exit 0
+    fi
+
     POSITIONAL=()
     case $1 in
         install)
@@ -2421,14 +2437,7 @@ case ${MATCH_MENU[2]} in
     print_version_and_exit 0
     ;;
     plugin)
-    if [[ $RUN_MODE == "CONTAINER" ]]; then
-        if [[ ${MATCH_MENU[3]} == "install" ]] || [[ ${MATCH_MENU[3]} == "validate" ]]; then
-            copy_plugin_file_into_mount_point_if_necessary
-        fi
-        container_main plugin ${MATCH_MENU[3]} "${EXTRA_ARGS[@]}"
-    else
-        plugin_main ${MATCH_MENU[3]} "${EXTRA_ARGS[@]}"
-    fi
+    plugin_main ${MATCH_MENU[3]} "${EXTRA_ARGS[@]}"
     print_version_and_exit 0
     ;;
     config)
