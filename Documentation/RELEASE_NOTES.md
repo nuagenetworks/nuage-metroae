@@ -16,6 +16,7 @@
 
 * Support target_server_type == none for skipping predeploy
 * Fix prepositioning qcow2 files as a separate workflow
+* Fix permissions issue on /opt/metroae during setup
 
 ## Test Matrix
 
