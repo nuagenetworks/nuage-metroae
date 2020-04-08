@@ -44,11 +44,13 @@ MetroAE supports the deployment and upgrade of Nuage VSP components on the follo
 
 1. [Setup](Documentation/SETUP.md) the MetroAE host. Setup prepares the host for running MetroAE, including retrieving the repository, installing prerequisite packages and setting up SSH access. You also have the option of installing MetroAE in a container, and then working with it via CLI or the GUI.
 
-2. [Customize](Documentation/CUSTOMIZE.md) your deployment to match your network topology, and describe your Nuage Networks specifics.
+2. Obtain the proper Nuage binary files for your deployment. These can be downloaded from Nuage/Nokia online customer support.
 
-3. [Deploy](Documentation/DEPLOY.md) new components, upgrade a [standalone](Documentation/UPGRADE_SA.md) or [clustered](Documentation/UPGRADE_HA.md) deployment, or run a health check on your system.
+3. [Customize](Documentation/CUSTOMIZE.md) your deployment to match your network topology, and describe your Nuage Networks specifics.
 
-4. If things did not work out as expected, [destroy](Documentation/DESTROY.md) your environment and redeploy.
+4. [Deploy](Documentation/DEPLOY.md) new components, upgrade a [standalone](Documentation/UPGRADE_SA.md) or [clustered](Documentation/UPGRADE_HA.md) deployment, or run a health check on your system.
+
+5. If things did not work out as expected, [destroy](Documentation/DESTROY.md) your environment and redeploy.
 
 ## MetroAE Workflows
 
