@@ -121,52 +121,56 @@ body {
   }
 }
 
-/* .roundedCheck */
-.roundedCheck {
-  width: 28px;
-  height: 28px;
-  position: relative;
+.slideToggle {
+  width: 80px;
+  height: 26px;
+  background: #333;
   margin: 5px auto;
+  position: relative;
+  border-radius: 50px;
+  box-shadow: inset 0px 1px 1px rgba(0, 0, 0, 0.5), 0px 1px 0px rgba(255, 255, 255, 0.2);
+}
+.slideToggle:after {
+  content: 'OFF';
+  color: #000;
+  position: absolute;
+  right: 10px;
+  z-index: 0;
+  font: 12px/26px Arial, sans-serif;
+  font-weight: bold;
+  text-shadow: 1px 1px 0px rgba(255, 255, 255, 0.15);
+}
+.slideToggle:before {
+  content: 'ON';
+  color: #27ae60;
+  position: absolute;
+  left: 10px;
+  z-index: 0;
+  font: 12px/26px Arial, sans-serif;
+  font-weight: bold;
+}
+.slideToggle label {
+  display: block;
+  width: 34px;
+  height: 20px;
+  cursor: pointer;
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  z-index: 1;
   background: #fcfff4;
   background: -webkit-gradient(linear, left top, left bottom, from(#fcfff4), color-stop(40%, #dfe5d7), to(#b3bead));
   background: linear-gradient(to bottom, #fcfff4 0%, #dfe5d7 40%, #b3bead 100%);
   border-radius: 50px;
-  box-shadow: inset 0px 1px 1px white, 0px 1px 3px rgba(0, 0, 0, 0.5);
+  -webkit-transition: all 0.4s ease;
+  transition: all 0.4s ease;
+  box-shadow: 0px 2px 5px 0px rgba(0, 0, 0, 0.3);
 }
-.roundedCheck label {
-  width: 20px;
-  height: 20px;
-  cursor: pointer;
-  position: absolute;
-  left: 4px;
-  top: 4px;
-  background: -webkit-gradient(linear, left top, left bottom, from(#222222), to(#45484d));
-  background: linear-gradient(to bottom, #222222 0%, #45484d 100%);
-  border-radius: 50px;
-  box-shadow: inset 0px 1px 1px rgba(0, 0, 0, 0.5), 0px 1px 0px white;
-}
-.roundedCheck label:after {
-  content: '';
-  width: 16px;
-  height: 16px;
-  position: absolute;
-  top: 2px;
-  left: 2px;
-  background: #27ae60;
-  background: -webkit-gradient(linear, left top, left bottom, from(#27fe60), to(#145b32));
-  background: linear-gradient(to bottom, #27fe60 0%, #145b32 100%);
-  opacity: 0;
-  border-radius: 50px;
-  box-shadow: inset 0px 1px 1px white, 0px 1px 3px rgba(0, 0, 0, 0.5);
-}
-.roundedCheck label:hover::after {
-  opacity: 0.3;
-}
-.roundedCheck input[type=checkbox] {
+.slideToggle input[type=checkbox] {
   visibility: hidden;
 }
-.roundedCheck input[type=checkbox]:checked + label:after {
-  opacity: 1;
+.slideToggle input[type=checkbox]:checked + label {
+  left: 43px;
 }
 
 /* Tooltip container */
@@ -277,7 +281,7 @@ HTML_PAGE_BODY = """
 
     <div class="fileRow">
     <div>
-    <div class="roundedCheck">
+    <div class="slideToggle">
       <input type="checkbox" value="None" id="all" name="all" checked />
       <label for="all"></label>
     </div>
@@ -291,44 +295,6 @@ HTML_PAGE_BODY = """
         <hr class="style">
     </div>
 
-    <div class="fileRow">
-    <div>
-    <div class="roundedCheck">
-      <input type="checkbox" value="None" id="metroae.log" name="metroae.log" checked />
-      <label for="metroae.log"></label>
-    </div>
-    </div>
-    <div class="logName tooltip">
-    metroae.log
-    <span class="tooltiptext">/nuage-metroae/metroae.log</span>
-    </div>
-    </div>
-
-    <div class="fileRow">
-    <div>
-    <div class="roundedCheck">
-      <input type="checkbox" value="None" id="output.log" name="output.log" checked />
-      <label for="output.log"></label>
-    </div>
-    </div>
-    <div class="logName tooltip">
-    output.log
-    <span class="tooltiptext">/nuage-metroae/output.log</span>
-    </div>
-    </div>
-
-    <div class="fileRow">
-    <div>
-    <div class="roundedCheck">
-      <input type="checkbox" value="None" id="aud.log" name="aud.log" checked />
-      <label for="aud.log"></label>
-    </div>
-    </div>
-    <div class="logName tooltip">
-    aud.log
-    <span class="tooltiptext">/nuage-metroae/aud.log</span>
-    </div>
-    </div>
 
 Loading files...
 <div id="loading" class="loader"></div>
@@ -352,17 +318,16 @@ Loading files...
 HTML_PAGE_SCRIPT_HEADERS = "<script>"
 
 HTML_PAGE_SCRIPT_FOOTERS = """
-var files = [
-'nuage-metro/metroae.log',
-'nuage-metro/audit.log',
-'nuage-metro/ansible.log',
-];
+
+var filtered = [];
+
+var toggles = [];
 
 var fileListHeading =
     '<div class="fileRow">\\n' +
     '<div>\\n' +
-    '<div class="roundedCheck">\\n' +
-    '  <input type="checkbox" value="None" id="all" name="all" checked />\\n' +
+    '<div class="slideToggle">\\n' +
+    '  <input type="checkbox" id="all" name="all" checked />\\n' +
     '  <label for="all"></label>\\n' +
     '</div>\\n' +
     '</div>\\n' +
@@ -375,11 +340,11 @@ var fileListHeading =
     '</div>\\n';
 
 var fileListTemplate =
-    '<div class="fileRow">\\n' +
+    '<div class="fileRow" style="--style--">\\n' +
     '<div>\\n' +
-    '<div class="roundedCheck">\\n' +
-    '  <input type="checkbox" value="None" id="--name--" name="--name--" checked />\\n' +
-    '  <label for="--name--"></label>\\n' +
+    '<div class="slideToggle">\\n' +
+    '  <input type="checkbox" id="toggle_--index--" onclick="handleToggle()" checked />\\n' +
+    '  <label for="toggle_--index--"></label>\\n' +
     '</div>\\n' +
     '</div>\\n' +
     '<div class="logName tooltip">\\n' +
@@ -399,7 +364,37 @@ function getNumPageLines() {
     return parseInt(logsElem.clientHeight / 15);
 }
 
-function showLogPage() {
+function getViewingLine() {
+    var filteredLine = getNumPageLines() * curPage;
+    if (filtered.length == 0) {
+        return 0;
+    }
+    if (filteredLine >= filtered.length) {
+        return filtered[filteredLine.length - 1];
+    }
+    return filtered[filteredLine];
+}
+
+function getLineStyle(logNum) {
+    var hue = 0;
+    var sat = 100;
+    var lum = 15;
+
+    numLogFiles = files.length;
+    if (numLogFiles > 16) {
+        hue = Math.floor(720 * logNum / numLogFiles);
+        if (hue >= 360) {
+            hue = Math.floor(hue / 2);
+            sat = 50;
+        }
+    } else if (numLogFiles > 0) {
+        hue = Math.floor(360 * logNum / numLogFiles);
+    }
+
+    return "background-color: hsl(" + hue + "0, " + sat + "%, " + lum + "%);"
+}
+
+function writeLogPage() {
     var logsElem = get("logText");
 
     var numLines = getNumPageLines();
@@ -407,30 +402,17 @@ function showLogPage() {
     // logsElem.style.height = lines.length * 15;
     logsElem.innerHTML = "";
     for (i = offset; i < numLines * 2 + offset; i++) {
-        logsElem.innerHTML += lines[i] + "\\n";
+        if (i < filtered.length) {
+            var logIndex = lines[filtered[i]]
+            var line = lines[filtered[i] + 1]
+            logsElem.innerHTML += "<span style='" + getLineStyle(logIndex) + "'>" + line + "</span>\\n";
+        } else {
+            logsElem.innerHTML += "&nbsp;\\n";
+        }
     }
 }
 
-function handleScroll() {
-    var logsElem = get("logConsole");
-    console.log(logsElem.scrollTop);
-    console.log(logsElem.clientHeight);
-    console.log(logsElem.scrollHeight);
-
-    var scrollThresh = parseInt(logsElem.clientHeight * 0.95);
-    if (logsElem.scrollTop == 0 && curPage > 0) {
-        curPage -= 1;
-        showLogPage();
-        logsElem.scrollTop = scrollThresh;
-    } else if (logsElem.scrollTop > scrollThresh) {
-        curPage += 1;
-        showLogPage();
-        logsElem.scrollTop = 1
-    }
-
-}
-
-document.body.onload = function() {
+function writeLogFileList() {
     var fileListElem = get("fileList");
     var fileList = fileListHeading
 
@@ -438,17 +420,78 @@ document.body.onload = function() {
         var baseName = files[i].split("/");
         baseName = baseName[baseName.length - 1];
         var fileItem = fileListTemplate.replace(/--name--/g, baseName);
+        fileItem = fileItem.replace(/--index--/g, i);
         fileItem = fileItem.replace(/--path--/g, files[i]);
+        fileItem = fileItem.replace(/--style--/g, getLineStyle(i));
         fileList += fileItem;
     }
     fileListElem.innerHTML = fileList;
 
-    showLogPage();
+}
+
+function handleToggle() {
+    for (var i = 0; i < files.length; i++) {
+        toggle = get("toggle_" + i);
+        toggles[i] = toggle.checked;
+    }
+    filterLines();
+}
+
+function filterLines() {
+    console.log("Start filter")
+    var viewingLine = getViewingLine();
+    var numPageLines = getNumPageLines();
+    console.log(viewingLine);
+
+    filtered = [];
+    var filteredLine = 0;
+    curPage = 0;
+    for (var i = 0; i < lines.length; i += 2) {
+        if (toggles[lines[i]]) {
+            filtered.push(i);
+            filteredLine++;
+        }
+        if (numPageLines > 0 && i == viewingLine) {
+            curPage = Math.floor(filtered.length / numPageLines);
+            console.log(curPage);
+        }
+    }
+    console.log("End filter")
+    writeLogPage();
+}
+
+function handleScroll() {
+    var logsElem = get("logConsole");
+    // console.log(logsElem.scrollTop);
+    // console.log(logsElem.clientHeight);
+    // console.log(logsElem.scrollHeight);
+    var numPageLines = getNumPageLines();
+
+    var scrollThresh = parseInt(logsElem.clientHeight * 0.95);
+    if (logsElem.scrollTop == 0 && curPage > 0) {
+        curPage -= 1;
+        writeLogPage();
+        logsElem.scrollTop = scrollThresh;
+        console.log(curPage);
+    } else if (logsElem.scrollTop > scrollThresh && numPageLines * (curPage + 2) < filtered.length) {
+        curPage += 1;
+        writeLogPage();
+        logsElem.scrollTop = 1
+        console.log(curPage);
+    }
+
+}
+
+document.body.onload = function() {
+
+    writeLogFileList();
+
+    handleToggle();
 
     var logsElem = get("logConsole");
     logsElem.onscroll = handleScroll;
 
-    document.body.onresize = showLogPage;
+    document.body.onresize = writeLogPage;
 
     // var logsElem = get("logText");
     // logsElem.innerHTML = lines.join("\\n");
@@ -681,11 +724,18 @@ def write_aggregate_log(log_files, combined, output_file_name):
 
         for line in combined:
             out_file.write(format_log_line(line))
-        # for file_name in log_files:
-        #     output("Adding %s ..." % file_name)
-        #     add_log_to_output_file(file_name, out_file)
 
-        out_file.write("''];\n")
+        out_file.write("  0, ''];\n")
+
+        out_file.write("files = [\n")
+        for i, file_name in enumerate(log_files):
+            out_file.write("'%s'" % file_name)
+            if (i + 1) == len(log_files):
+                out_file.write("\n")
+            else:
+                out_file.write(",\n")
+
+        out_file.write("];\n")
 
         out_file.write(HTML_PAGE_SCRIPT_FOOTERS)
         out_file.write(HTML_PAGE_FOOTERS)
