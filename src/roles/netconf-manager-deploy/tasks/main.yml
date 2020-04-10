@@ -43,23 +43,24 @@
       path: /tmp/netconfmanager
       state: absent
 
-  - name: Configure backend port numbers Port 61616 to be used for JMS messages. Port 7443 to be used for REST calls.
-    command: ls
+  - name: Configure the VSD host 
+    command: sed -i 's/vsd.host.*/vsd.host=vsd1.example.met/' /opt/netconfmanager/conf/netconfmanager.properties
 
-  - name: Configure front end port numbers 51515 MUST match `jms.port= in /opt/netconfmanager/conf/netconfmanager.properties 5666 MUST match `vsd.port in /opt/netconfmanager/conf/netconfmanager.properties
-    command: ls
+  - name: Configure the VSD Port
+    command: "sed -i 's/vsd.port.*/vsd.port=7443/' /opt/netconfmanager/conf/netconfmanager.properties"
 
-  - name: Edit the JMS topic
-    command: sed -i 's/jms.topic.*/jms.topic=jms\/topic\/CNAMessages/' /opt/netconfmanager/conf/netconfmanager.properties
+  - name: Configure the JMS host
+    command: sed -i 's/jms.host.*/jms.host=vsd1.example.met/' /opt/netconfmanager/conf/netconfmanager.properties
 
-  - name: Edit the JMS queue
-    command: sed -i 's/jms.queue.*/jms.queue=jms\/queue\/CNANetconf/' /opt/netconfmanager/conf/netconfmanager.properties
+  - name: Configure the JMS port
+    command: sed -i 's/jms.port.*/jms.port=61616/' /opt/netconfmanager/conf/netconfmanager.properties
 
-  - name: Edit the JMS User
-    command: "sed -i 's/jms.user.*/jms.user={{ email }}/' /opt/netconfmanager/conf/netconfmanager.properties"
+  - name: Configure the keystore alias
+    command: "sed -i 's/keystore.alias.*/keystore.alias=netconfmgr/' /opt/netconfmanager/conf/netconfmanager.properties"
 
-  - name: Edit the JMS password
-    command: sed -i 's/jms.password.*/jms.password=password/' /opt/netconfmanager/conf/netconfmanager.properties
+  - name: Configure the keystore password
+    command: sed -i 's/keystore.password.*/keystore.password=password/' /opt/netconfmanager/conf/netconfmanager.properties
+    no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
 
   - name: Enable and start Netconfmanager
     service:
