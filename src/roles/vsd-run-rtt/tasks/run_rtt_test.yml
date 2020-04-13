@@ -4,6 +4,9 @@
     shell: nping --tcp -p 3306 -c 10 {{ other_node }} | grep 'Max rtt:*' | cut -dm -f1 | sed 's/Max rtt://1'
     register: measured_rtt
 
+  - name: Print measured RTT
+    debug: var=measured_rtt
+
   - name: Check if RTT lower than required
     assert:
       that: "(measured_rtt.stdout | int) <= vsd_max_rtt"
@@ -29,6 +32,9 @@
     shell: nping --tcp -p 3306 -c 10 {{ other_node }} | grep 'Max rtt:*' | cut -dm -f1 | sed 's/Max rtt://1'
     register: measured_delegate_rtt
     delegate_to: "{{ delegate_node | default ('NONE') }}"
+
+  - name: Print measured RTT
+    debug: var=measured_delegate_rtt
 
   - name: Check if RTT lower than required
     assert:
