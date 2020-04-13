@@ -18,6 +18,7 @@
 * Fix prepositioning qcow2 files as a separate workflow
 * Fix permissions on /opt/metroae during setup
 * Fix paramiko version check
+* Fix Ansible syntax error when running disk performance stand-alone
 
 ## Test Matrix
 
