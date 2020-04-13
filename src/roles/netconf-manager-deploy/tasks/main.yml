@@ -31,7 +31,7 @@
         src: "/opt/vsd/ejbca/p12/netconfmgr.jks"
         dest: "/tmp/netconfmanager/"
         flat: yes
-    delegate_to: vsd1.example.met
+    delegate_to: "{{ vsd_hostname_list[0] }}"
 
   - name: Copy to netconf manager
     copy:
@@ -44,22 +44,22 @@
       state: absent
 
   - name: Configure the VSD host 
-    command: sed -i 's/vsd.host.*/vsd.host=vsd1.example.met/' /opt/netconfmanager/conf/netconfmanager.properties
+    command: "sed -i 's/vsd.host.*/vsd.host={{ vsd_hostname_list[0] }}/' /opt/netconfmanager/conf/netconfmanager.properties"
 
   - name: Configure the VSD Port
     command: "sed -i 's/vsd.port.*/vsd.port=7443/' /opt/netconfmanager/conf/netconfmanager.properties"
 
   - name: Configure the JMS host
-    command: sed -i 's/jms.host.*/jms.host=vsd1.example.met/' /opt/netconfmanager/conf/netconfmanager.properties
+    command: "sed -i 's/jms.host.*/jms.host={{ vsd_hostname_list[0] }}/' /opt/netconfmanager/conf/netconfmanager.properties"
 
   - name: Configure the JMS port
-    command: sed -i 's/jms.port.*/jms.port=61616/' /opt/netconfmanager/conf/netconfmanager.properties
+    command: "sed -i 's/jms.port.*/jms.port=61616/' /opt/netconfmanager/conf/netconfmanager.properties"
 
   - name: Configure the keystore alias
-    command: "sed -i 's/keystore.alias.*/keystore.alias=netconfmgr/' /opt/netconfmanager/conf/netconfmanager.properties"
+    command: "sed -i 's/keystore.alias.*/keystore.alias={{ netconf_username }}/' /opt/netconfmanager/conf/netconfmanager.properties"
 
   - name: Configure the keystore password
-    command: sed -i 's/keystore.password.*/keystore.password=password/' /opt/netconfmanager/conf/netconfmanager.properties
+    command: "sed -i 's/keystore.password.*/keystore.password={{ netconf_password }}/' /opt/netconfmanager/conf/netconfmanager.properties"
     no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
 
   - name: Enable and start Netconfmanager
