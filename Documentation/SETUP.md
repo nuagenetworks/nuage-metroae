@@ -132,7 +132,7 @@ metroae tools unzip images [zipped_directory] [nuage_unzipped_files_dir]
 Note: After completing setup you will [customize](CUSTOMIZE.md) for your deployment, and you'll need to add this unzipped files directory path to `common.yml`.
 
 ### Method Two: Manually
-Alternatively, you can create the directories under the [nuage_unzipped_files_dir] directory and manually copy the appropriate files to those locations as shown in the example below.
+Alternatively, you can create the directories under the [nuage_unzipped_files_dir] directory and manually copy or unzip the appropriate files to that location. MetroAE uses `find` to locate the files under [nuage_unzipped_files_dir], so the precise location under that directory is not significant. For reference, the automatic unzip in Method One puts files in the following locations:
 
   ```
   <nuage_unzipped_files_dir>/vsd/qcow2/
@@ -144,8 +144,10 @@ Alternatively, you can create the directories under the [nuage_unzipped_files_di
   <nuage_unzipped_files_dir>/vrs/hyperv/
   <nuage_unzipped_files_dir>/vstat/
   <nuage_unzipped_files_dir>/vns/nsg/
+  <nuage_unzipped_files_dir>/vns/nuh/
   <nuage_unzipped_files_dir>/vns/util/
   ```
+  
 Note: After completing setup you will customize for your deployment, and you'll need to add this unzipped files directory path to `common.yml`.
 
 ## Next Step
