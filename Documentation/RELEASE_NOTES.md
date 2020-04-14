@@ -10,7 +10,7 @@
 
 ### Feature Enhancements
 
-* None
+* Add Netconf Manager Support to MetroAE (METROAE-1204)
 
 ### Resolved Issues
 
