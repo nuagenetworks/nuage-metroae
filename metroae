@@ -283,22 +283,28 @@ function get_max_container_version {
         MAX_CONTAINER_VERSION=$IMAGE_TAG
     else
         versions=`docker images 2>/dev/null | grep $METRO_AE_IMAGE | awk '{ print $2}'`
+        debug "versions = $versions"
         MAX_CONTAINER_VERSION=''
         for version in $versions
         do
-            if [[ -z $MAX_CONTAINER_VERSION ]]; then
-                    MAX_CONTAINER_VERSION=$version
-            fi
+            if [[ $version != "<none>" ]]; then
+                debug "version = $version"
+                if [[ -z $MAX_CONTAINER_VERSION ]]; then
+                        MAX_CONTAINER_VERSION=$version
+                fi
 
-            if [[ $MAX_CONTAINER_VERSION < $version ]]; then
-                    MAX_CONTAINER_VERSION=$version
+                if [[ $MAX_CONTAINER_VERSION < $version ]]; then
+                        MAX_CONTAINER_VERSION=$version
+                fi
             fi
+            debug "MAX_CONTAINER_VERSION = $MAX_CONTAINER_VERSION"
         done
 
         if [[ -z $MAX_CONTAINER_VERSION ]]; then
             MAX_CONTAINER_VERSION='current'
         fi
     fi
+    debug "Newest MetroAE container version found is $MAX_CONTAINER_VERSION"
     write_to_script_log "Newest MetroAE container version found is $MAX_CONTAINER_VERSION"
 }
 
