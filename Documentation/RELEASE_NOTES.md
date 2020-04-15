@@ -22,6 +22,7 @@
 * Added Example for NSGv and NSGv access ports (METROAE-1344)
 * Fix NUH Destroy playbook error and add VMName support (METROAE-1351)
 * Skip docker images that aren't tagged
+* Document that pyvmomi version 6.7.3 should be used for vCenter environments
 
 ## Test Matrix
 
