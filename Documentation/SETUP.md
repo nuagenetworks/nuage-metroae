@@ -17,12 +17,18 @@ Using a Docker container results in a similar setup as a GitHub clone, plus it d
 
 #### Steps
 
-##### 1. Pull the latest Docker container using the following command:
+##### 1. Get a copy of the metroae script from the github repo
+```
+https://github.com/nuagenetworks/nuage-metro/blob/master/metroae
+```
+You can also copy the script out of a cloned workspace on your local machine. You can copy the metroae script to any directory of your choosing, e.g. `/usr/local/bin`. Note that you may need to set the script to be executeable via `chmod +x`.
+
+##### 2. Pull the latest Docker container using the following command:
 ```
 metroae container pull
 ```
 
-##### 2. Setup and start the Docker container using the following command:
+##### 3. Setup and start the Docker container using the following command:
 ```
 metroae container setup [path to data directory]
 ```
@@ -37,30 +43,30 @@ metroae container stop
 metroae container start
 ```
 
-##### 3. **For KVM Only**, copy the container ssh keys to your KVM target servers (aka hypervisors) using the following command:
+##### 4. **For KVM Only**, copy the container ssh keys to your KVM target servers (aka hypervisors) using the following command:
 ```
 metroae container ssh copyid [target_server_username]@[target_server]
 ```
 
 This command copies the container's public key into the ssh authorized_keys file on the specified target server. This key is required for passwordless ssh access from the container to the target servers. The command must be run once for every KVM target server. This step should be skipped if your target-server type is anything but KVM, e.g. vCenter or OpenStack.
 
-##### 4. **For ESXi / vCenter Only**, install ovftool and copy to metroae_data directory
+##### 5. **For ESXi / vCenter Only**, install ovftool and copy to metroae_data directory
 
 When running the MetroAE Docker container, the container will need to have access to the ovftool command installed on the Docker host. The following steps are suggested:
 
-###### 4.1. Install ovftool
+###### 5.1. Install ovftool
 
 Download and install the [ovftool](https://www.vmware.com/support/developer/ovf/) from VMware.
 
-###### 4.2. Copy ovftool installation to metroae_data directory
+###### 5.2. Copy ovftool installation to metroae_data directory
 
 The ovftool command and supporting files are usually installed in the /usr/lib/vmware-ovftool on the host. In order to the metroae container to be able to access these files, you must copy the entire folder to the metroae_data directory on the host. For example, if you have configured the container to use `/tmp/metroae_data` on your host, you would copy `/usr/lib/vmware-ovftool` to `/tmp/metroae_data/vmware-ovftool`. Note: Docker does not support following symlinks. You must copy the files as instructed.
 
-###### 4.3. Configure the ovftool path in your deployment
+###### 5.3. Configure the ovftool path in your deployment
 
 The path to the ovftool is configured in your deployment in the common.yml file. Uncomment and set the variable 'vcenter_ovftool' to the container-relative path to where you copied the `/usr/lib/vmware-ovftool` folder. This is required because metroae will attempt to execute ovftool from within the container. From inside the container, metroae can only access paths that have been mounted from the host. In this case, this is the metroae_data directory which is mounted inside the container as `/metroae_data`. For our example, in common.yml you would set `vcenter_ovftool: /metroae_data/vmware-ovftool/ovftool`.
 
-##### 5. You can check the status of the container at any time using the following command:	
+##### 6. You can check the status of the container at any time using the following command:	
 ```	
 metroae container status	
 ```
