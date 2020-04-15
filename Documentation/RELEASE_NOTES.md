@@ -20,6 +20,7 @@
 * Fix paramiko version check
 * Fix Ansible syntax error when running disk performance stand-alone
 * Added Example for NSGv and NSGv access ports (METROAE-1344)
+* Fix NUH Destroy playbook error and add VMName support (METROAE-1351)
 
 ## Test Matrix
 
