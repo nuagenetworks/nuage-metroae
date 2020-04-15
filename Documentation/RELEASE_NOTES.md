@@ -20,6 +20,7 @@
 * Fix paramiko version check
 * Fix Ansible syntax error when running disk performance stand-alone
 * Added Example for NSGv and NSGv access ports (METROAE-1344)
+* Skip docker images that aren't tagged
 
 ## Test Matrix
 
