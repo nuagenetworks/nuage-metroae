@@ -101,8 +101,10 @@ The script writes a detailed log into *setup.log* for your reference. A *Setup c
 
  Package  | Command
  -------- | -------
- pyvmomi  | `pip install pyvmomi`
+ pyvmomi  | `pip install pyvmomi==6.7.3`
  jmespath | `pip install jmespath`
+ 
+Note that we have specified version 6.7.3 for pyvmomi. We test with this version. Newer versions of pyvmomi may cause package conflicts.
 
  If you are installing VSP components in a VMware environment (ESXi/vCenter) download and install the [ovftool](https://www.vmware.com/support/developer/ovf/) from VMware. MetroAE uses ovftool for OVA operations.
 
