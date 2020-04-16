@@ -211,12 +211,13 @@ hr {
   background-image: -o-linear-gradient(left, #202020, #e0e0e0, #202020);
 }
 
-#filesPane {
-  width: 30%;
+filesPane {
+  width: 20%;
   height: 100%;
+  overflow: scroll;
 }
 
-.fileList {
+#fileList {
   display: flex;
   flex-direction: column;
   align-content: center;
@@ -230,6 +231,8 @@ hr {
   flex-direction: row;
   align-content: baseline;
   justify-content: flex-start;
+  order: 1;
+  -webkit-order: 1;
 }
 
 .logName {
@@ -237,16 +240,56 @@ hr {
   margin: 5px auto;
   margin-left: 5px;
   display: flex;
-  /*justify-content: center;*/
   align-items: center;
 }
 
-#logPane {
-  width: 100%;
+pageControls {
+    height: 100%;
+    width: 55px;
+    display: flex;
+    flex-direction: column;
+    align-content: center;
+    justify-content: center;
+}
+
+.pageButton {
+    width: 50px;
+    height: 50px;
+    margin-top: 10px;
+    margin-bottom: 10px;
+    margin-left: 3px;
+    margin-right: 3px;
+    font-size: 30px;
+    cursor: pointer;
+    outline: none;
+    border-radius: 12px;
+    color: #ddd;
+    background: #333;
+    box-shadow: inset 0px 1px 1px rgba(0, 0, 0, 0.5), 0px 1px 0px rgba(255, 255, 255, 0.2);
+}
+
+logPane {
+  width: calc(80% - 55px);
   height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-content: center;
+  justify-content: center;
+
+}
+
+logControls {
+  height: 30px;
+  width: 100%;
+  overflow: scroll;
+}
+
+#status {
+    float: right;
 }
 
 #logConsole {
+  height: calc(100% - 30px);
   border: 2px solid #606060;
   border-radius: 15px;
   overflow: scroll;
@@ -258,10 +301,30 @@ hr {
   height: 100%;
   padding: 4px;
   font-family: monospace;
+  font-size: 13px;
   white-space: pre;
 }
 
-#screen {
+.logLine {
+    width: 100%;
+    height: 15px;
+    border: 0;
+    margin: 0;
+}
+
+.selected {
+    outline-style: solid;
+    outline-color: yellow;
+    outline-width: 3px;
+}
+
+.found {
+    outline-style: dotted;
+    outline-color: yellow;
+    outline-width: 1px;
+}
+
+screen {
   width: 100%;
   height: 100%;
 
@@ -274,21 +337,16 @@ hr {
 """
 
 HTML_PAGE_BODY = """
-<div id="screen">
-    <div id="filesPane">
+<screen>
+    <filesPane>
 
     <div id="fileList">
 
     <div class="fileRow">
-    <div>
-    <div class="slideToggle">
-      <input type="checkbox" value="None" id="all" name="all" checked />
-      <label for="all"></label>
-    </div>
-    </div>
-    <div class="logName">
-    Show all
-    </div>
+
+    <button onclick="handleAllToggle(true)">All ON</button>
+    <button onclick="handleAllToggle(false)">All OFF</button>
+
     </div>
 
     <div class="fileRow">
@@ -296,23 +354,43 @@ HTML_PAGE_BODY = """
     </div>
 
 
-Loading files...
-<div id="loading" class="loader"></div>
+<div id="loading" class="loader" style="order: 1; -webkit-order: 1;"></div>
 
     </div>
-    </div>
+    </filesPane>
 
-    <div id="logPane">
+    <pageControls>
+        <button class="pageButton" onclick="gotoPage('first')">&#x2912;</button>
+        <button class="pageButton" onclick="gotoPage('bigup')">&#x219F;</button>
+        <button class="pageButton" onclick="gotoPage('prev')">&#8593;</button>
+        <button class="pageButton" onclick="gotoPage('next')">&#8595;</button>
+        <button class="pageButton" onclick="gotoPage('bigdown')">&#x21A1;</button>
+        <button class="pageButton" onclick="gotoPage('last')">&#x2913;</button>
+    </pageControls>
+
+    <logPane>
+
+    <logControls>
+        <input id="find" onkeyup="handleFind();" placeholder="Find">
+        <button onclick="handleFindNext(-1);">Prev</button>
+        <button onclick="handleFindNext(1);">Next</button>
+        <input id="filter" onchange="handleFilter();" placeholder="Filter">
+        <input id="exclude"  onchange="handleExclude();" placeholder="Exclude">
+        <span id="findStatus"></span>
+        <span id="status">Loading...</span>
+    </logControls>
 
     <div id="logConsole">
+
     <div id="logText">Loading logs...
 <div id="loading" class="loader"></div>
 
     </div>
     </div>
 
-    </div>
-</div>
+    </logPane>
+</screen>
+
 """
 
 HTML_PAGE_SCRIPT_HEADERS = "<script>"
@@ -323,27 +401,41 @@ var filtered = [];
 
 var toggles = [];
 
+var curPage = 0;
+
+var findString = "";
+var filterString = "";
+var excludeString = "";
+
+var findLineCols = [];
+var curFindIndex = -1;
+var curWriteFindIndex = 0;
+
+var findAsyncInProgress = false;
+var findCurPage = 0;
+var findAsyncString = "";
+var findNumLines = 0;
+
+var fileRowElems = [];
+
 var fileListHeading =
-    '<div class="fileRow">\\n' +
-    '<div>\\n' +
-    '<div class="slideToggle">\\n' +
-    '  <input type="checkbox" id="all" name="all" checked />\\n' +
-    '  <label for="all"></label>\\n' +
+    '<div class="fileRow" style="order: -2; -webkit-order: -2;">\\n' +
+    '<button onclick="handleAllToggle(true)">All ON</button>\\n' +
+    '<button onclick="handleAllToggle(false)">All OFF</button>\\n' +
     '</div>\\n' +
-    '</div>\\n' +
-    '<div class="logName">\\n' +
-    'Show all\\n' +
-    '</div>\\n' +
-    '</div>\\n' +
-    '<div class="fileRow">\\n' +
+    '<div class="fileRow" style="order: -1; -webkit-order: -1;">\\n' +
     '    <hr class="style">\\n' +
     '</div>\\n';
 
 var fileListTemplate =
-    '<div class="fileRow" style="--style--">\\n' +
+    '<div id="file_row_--index--" class="fileRow highlight_--index--" ' +
+    'style="background-color: --color--; order: 1; -webkit-order: 1;" ' +
+    'onmouseover="logHighlight(--index--, true)" ' +
+    'onmouseout="logHighlight(--index--, false)">\\n' +
     '<div>\\n' +
     '<div class="slideToggle">\\n' +
-    '  <input type="checkbox" id="toggle_--index--" onclick="handleToggle()" checked />\\n' +
+    '  <input class="toggle" type="checkbox" id="toggle_--index--" ' +
+    'onclick="handleToggle()" checked />\\n' +
     '  <label for="toggle_--index--"></label>\\n' +
     '</div>\\n' +
     '</div>\\n' +
@@ -353,19 +445,26 @@ var fileListTemplate =
     '</div>\\n' +
     '</div>\\n';
 
-var curPage = 0;
-
 function get(elementId) {
     return document.getElementById(elementId);
 }
 
-function getNumPageLines() {
+function getLinesPerPage() {
     var logsElem = get("logConsole");
     return parseInt(logsElem.clientHeight / 15);
 }
 
+function getLastPage() {
+    var linesPerPage = getLinesPerPage();
+    var lastPage = 0;
+    if (linesPerPage > 0) {
+        lastPage = Math.floor(filtered.length / linesPerPage) - 1;
+    }
+    return Math.max(lastPage, 0);
+}
+
 function getViewingLine() {
-    var filteredLine = getNumPageLines() * curPage;
+    var filteredLine = getLinesPerPage() * curPage;
     if (filtered.length == 0) {
         return 0;
     }
@@ -375,10 +474,13 @@ function getViewingLine() {
     return filtered[filteredLine];
 }
 
-function getLineStyle(logNum) {
+function getLineColor(logNum, highlighted) {
     var hue = 0;
     var sat = 100;
     var lum = 15;
+    if (highlighted) {
+        lum = 25;
+    }
 
     numLogFiles = files.length;
     if (numLogFiles > 16) {
@@ -391,24 +493,81 @@ function getLineStyle(logNum) {
         hue = Math.floor(360 * logNum / numLogFiles);
     }
 
-    return "background-color: hsl(" + hue + "0, " + sat + "%, " + lum + "%);"
+    return "hsl(" + hue + "0, " + sat + "%, " + lum + "%)"
 }
 
 function writeLogPage() {
+    checkAndResetFind();
+    curWriteFindIndex = 0;
+
+    resetFileRowOrder();
+
     var logsElem = get("logText");
 
-    var numLines = getNumPageLines();
+    var numLines = getLinesPerPage();
     var offset = numLines * curPage;
-    // logsElem.style.height = lines.length * 15;
     logsElem.innerHTML = "";
     for (i = offset; i < numLines * 2 + offset; i++) {
         if (i < filtered.length) {
-            var logIndex = lines[filtered[i]]
-            var line = lines[filtered[i] + 1]
-            logsElem.innerHTML += "<span style='" + getLineStyle(logIndex) + "'>" + line + "</span>\\n";
+            logsElem.innerHTML += formatLogLine(i);
         } else {
-            logsElem.innerHTML += "&nbsp;\\n";
+            logsElem.innerHTML += "<div class='logLine'>&nbsp;</div>";
         }
+    }
+}
+
+function formatLogLine(lineNum) {
+    var logIndex = lines[filtered[lineNum]];
+    var line = lines[filtered[lineNum] + 1];
+
+    moveUpFileRowOrder(logIndex);
+
+    if (curFindIndex != -1) {
+        line = formatSelectLine(line, lineNum);
+    }
+    return "<div class='logLine highlight_" + logIndex + "' style='background-color: " +
+           getLineColor(logIndex, false) +
+           "' onmouseover='logHighlight(" + logIndex + ", true)'" +
+           " onmouseout='logHighlight(" + logIndex + ", false)'>" + line + "</div>";
+}
+
+function formatSelectLine(line, lineNum) {
+    var newLine = "";
+    var curCol = 0;
+
+    var findIndex = nextWriteFindIndex(lineNum);
+    while (findIndex >= 0) {
+        var col = findLineCols[findIndex * 2 + 1];
+        var prefix = "";
+        if (col > 0) {
+            prefix = line.substring(curCol, col);
+        }
+        var selected = line.substr(col, findString.length);
+        var cssClass = "found";
+        if (findIndex == curFindIndex) {
+            cssClass = "selected";
+        }
+
+        newLine += prefix + "<span class='" + cssClass + "'>" +
+                   selected + "</span>";
+
+        curCol = col + findString.length;
+        curWriteFindIndex++;
+        findIndex = nextWriteFindIndex(lineNum);
+    }
+
+    return newLine + line.substring(curCol);
+}
+
+function nextWriteFindIndex(lineNum) {
+    while ((curWriteFindIndex * 2) < findLineCols.length &&
+           findLineCols[curWriteFindIndex * 2] < lineNum) {
+        curWriteFindIndex++;
+    }
+    if (findLineCols[curWriteFindIndex * 2] == lineNum) {
+        return curWriteFindIndex;
+    } else {
+        return -1;
     }
 }
 
@@ -422,11 +581,24 @@ function writeLogFileList() {
         var fileItem = fileListTemplate.replace(/--name--/g, baseName);
         fileItem = fileItem.replace(/--index--/g, i);
         fileItem = fileItem.replace(/--path--/g, files[i]);
-        fileItem = fileItem.replace(/--style--/g, getLineStyle(i));
+        fileItem = fileItem.replace(/--color--/g, getLineColor(i, false));
         fileList += fileItem;
     }
     fileListElem.innerHTML = fileList;
 
+}
+
+function resetFileRowOrder() {
+    for (var i = 0; i < files.length; i++) {
+        fileRowElems[i] = get("file_row_" + i);
+        fileRowElems[i].style["order"] = 1;
+        fileRowElems[i].style["-webkit-order"] = 1;
+    }
+}
+
+function moveUpFileRowOrder(logIndex) {
+    fileRowElems[logIndex].style["order"] = 0;
+    fileRowElems[logIndex].style["-webkit-order"] = 0;
 }
 
 function handleToggle() {
@@ -438,48 +610,282 @@ function handleToggle() {
 }
 
 function filterLines() {
-    console.log("Start filter")
     var viewingLine = getViewingLine();
-    var numPageLines = getNumPageLines();
-    console.log(viewingLine);
+    var linesPerPage = getLinesPerPage();
+    var skipFilters = (filterString == "" && excludeString == "");
 
     filtered = [];
     var filteredLine = 0;
     curPage = 0;
     for (var i = 0; i < lines.length; i += 2) {
         if (toggles[lines[i]]) {
-            filtered.push(i);
-            filteredLine++;
+            if (skipFilters || checkFilters(lines[i + 1])) {
+                filtered.push(i);
+                filteredLine++;
+            }
         }
-        if (numPageLines > 0 && i == viewingLine) {
-            curPage = Math.floor(filtered.length / numPageLines);
-            console.log(curPage);
+        if (linesPerPage > 0 && i == viewingLine) {
+            curPage = Math.floor(filtered.length / linesPerPage);
         }
     }
-    console.log("End filter")
     writeLogPage();
+    updateStatus();
+}
+
+function checkFilters(line) {
+    var lowerLine = line.toLowerCase();
+    if (filterString != "" && lowerLine.indexOf(filterString) < 0) {
+        return false;
+    }
+    if (excludeString != "" && lowerLine.indexOf(excludeString) >= 0) {
+        return false;
+    }
+
+    return true;
 }
 
 function handleScroll() {
     var logsElem = get("logConsole");
-    // console.log(logsElem.scrollTop);
-    // console.log(logsElem.clientHeight);
-    // console.log(logsElem.scrollHeight);
-    var numPageLines = getNumPageLines();
+    var linesPerPage = getLinesPerPage();
 
     var scrollThresh = parseInt(logsElem.clientHeight * 0.95);
     if (logsElem.scrollTop == 0 && curPage > 0) {
         curPage -= 1;
         writeLogPage();
         logsElem.scrollTop = scrollThresh;
-        console.log(curPage);
-    } else if (logsElem.scrollTop > scrollThresh && numPageLines * (curPage + 2) < filtered.length) {
+        updateStatus();
+    } else if (logsElem.scrollTop > scrollThresh && linesPerPage * (curPage + 2) < filtered.length) {
         curPage += 1;
         writeLogPage();
         logsElem.scrollTop = 1
-        console.log(curPage);
+        updateStatus();
+    }
+}
+
+function updateStatus() {
+    var linesPerPage = getLinesPerPage();
+    numPages = getLastPage() + 1;
+
+    var status = get("status");
+    status.innerHTML = "Page: " + (curPage + 1) + "/" + numPages;
+}
+
+function gotoPage(which) {
+    switch (which) {
+        case "first":
+            var logsElem = get("logConsole");
+            curPage = 0;
+            writeLogPage();
+            logsElem.scrollTop = 0;
+            updateStatus();
+            break;
+        case "bigup":
+            var lastPage = getLastPage();
+            curPage -= Math.max(Math.floor(lastPage / 10), 1);
+            curPage = Math.max(curPage, 0);
+            var logsElem = get("logConsole");
+            writeLogPage();
+            updateStatus();
+            break;
+        case "prev":
+            if (curPage > 0) {
+                var logsElem = get("logConsole");
+                curPage -= 1;
+                writeLogPage();
+                updateStatus();
+            }
+            break;
+        case "next":
+            var linesPerPage = getLinesPerPage();
+            var lastPage = getLastPage();
+            if (curPage < lastPage) {
+                curPage += 1;
+                writeLogPage();
+                updateStatus();
+            }
+            break;
+        case "bigdown":
+            var lastPage = getLastPage();
+            curPage += Math.max(Math.floor(lastPage / 10), 1);
+            curPage = Math.min(curPage, lastPage);
+            var logsElem = get("logConsole");
+            writeLogPage();
+            updateStatus();
+            break;
+        case "last":
+            curPage = 0;
+            var linesPerPage = getLinesPerPage();
+            if (linesPerPage > 0) {
+                curPage = Math.floor(filtered.length / linesPerPage) - 1;
+            }
+            curPage = Math.max(curPage, 0);
+            var logsElem = get("logConsole");
+            writeLogPage();
+            logsElem.scrollTop = 0;
+            updateStatus();
+            break;
+        case "find":
+            if (curFindIndex >= 0) {
+                var oldCurPage = curPage;
+                curPage = 0;
+                var linesPerPage = getLinesPerPage();
+
+                if (linesPerPage > 0) {
+                    curPage = Math.floor(findLineCols[curFindIndex * 2] / linesPerPage);
+                }
+                curPage = Math.min(curPage, getLastPage());
+                if (curPage != oldCurPage) {
+                    var logsElem = get("logConsole");
+                    logsElem.scrollTop = 0;
+                }
+                updateStatus();
+            }
+            writeLogPage();
+            break;
+    }
+}
+
+function handleFind() {
+    var findElem = get("find");
+    var value = findElem.value.toLowerCase();
+    findString = value;
+    if (!findAsyncInProgress) {
+        findAsyncInProgress = true;
+        resetFind();
+        window.setTimeout(findAsync, 1);
+    }
+}
+
+function resetFind() {
+    findLineCols = [];
+    findAsyncString = findString;
+    findNumLines = filtered.length;
+    findCurPage = 0;
+    curFindIndex = -1;
+    updateFindStatus();
+}
+
+function checkAndResetFind() {
+   if (findString != findAsyncString || filtered.length != findNumLines) {
+        resetFind();
+    }
+}
+
+function updateFindStatus() {
+    var status = get("findStatus");
+
+    if (findAsyncInProgress || findLineCols.length > 0) {
+        var findStatus = "Found " + (curFindIndex + 1) + "/" + (findLineCols.length / 2);
+
+        if (findAsyncInProgress) {
+            var linesPerPage = getLinesPerPage();
+            var offset = linesPerPage * findCurPage;
+            findStatus += " Finding... " + Math.floor(offset * 100 / filtered.length) + "%";
+        }
+
+        status.innerHTML = findStatus;
+    } else {
+        if (findString == "") {
+            status.innerHTML = "";
+        } else {
+            status.innerHTML = "Found None";
+        }
+    }
+}
+
+function findAsync() {
+
+    checkAndResetFind();
+
+    var linesPerPage = getLinesPerPage();
+    var offset = linesPerPage * findCurPage;
+
+    if (findAsyncString == "" || linesPerPage <= 0) {
+        findAsyncInProgress = false;
+        resetFind();
+        writeLogPage();
+        return;
     }
 
+    updateFindStatus();
+
+    for (var i = offset; i < offset + linesPerPage; i++) {
+        if (i < filtered.length) {
+            var line = lines[filtered[i] + 1];
+            var col = line.toLowerCase().indexOf(findAsyncString);
+            while (col >= 0) {
+                findLineCols.push(i);
+                findLineCols.push(col);
+                if (curFindIndex == -1 && findCurPage >= curPage) {
+                    curFindIndex = (findLineCols.length / 2) - 1;
+                    gotoPage("find");
+                }
+                col = line.toLowerCase().indexOf(findAsyncString,
+                                                 col + findAsyncString.length);
+            }
+        }
+    }
+    findCurPage++;
+
+    if (linesPerPage * findCurPage < filtered.length) {
+        window.setTimeout(findAsync, 1);
+    } else {
+        if (curFindIndex == -1 && findLineCols.length > 0) {
+            curFindIndex = 0;
+        }
+        findAsyncInProgress = false;
+        updateFindStatus();
+        gotoPage("find");
+    }
+}
+
+function handleFindNext(inc) {
+    var numFound = findLineCols.length / 2;
+    if (numFound > 0 && curFindIndex >= 0) {
+        curFindIndex += inc;
+        if (curFindIndex < 0) {
+            curFindIndex = numFound - 1;
+        }
+        if (curFindIndex >= numFound) {
+            curFindIndex = 0;
+        }
+        updateFindStatus();
+        gotoPage("find");
+    }
+}
+
+function handleFilter() {
+    var filterElem = get("filter");
+    filterString = filterElem.value.toLowerCase();
+    filterLines();
+}
+
+function handleExclude() {
+    var excludeElem = get("exclude");
+    excludeString = excludeElem.value.toLowerCase();
+    filterLines();
+}
+
+function logHighlight(logIndex, hover) {
+
+    var elements = document.querySelectorAll('.highlight_' + logIndex);
+    for (var i = 0; i < elements.length; i++) {
+        elements[i].style["background-color"] = getLineColor(logIndex, hover);
+    }
+}
+
+function handleAllToggle(on) {
+
+    for (var i = 0; i < files.length; i++) {
+        toggles[i] = on;
+    }
+
+    var elements = document.querySelectorAll('.toggle');
+    for (var i = 0; i < elements.length; i++) {
+        elements[i].checked = on;
+    }
+
+    filterLines();
 }
 
 document.body.onload = function() {
@@ -493,12 +899,6 @@ document.body.onload = function() {
 
     document.body.onresize = writeLogPage;
 
-    // var logsElem = get("logText");
-    // logsElem.innerHTML = lines.join("\\n");
-
-    // for (i = 0; i < 1000; i++) {
-    //     document.write(lines[i] + '<br>');
-    // }
 }
 </script>
 
@@ -536,12 +936,8 @@ def aggregate_logs(args):
     log_list = read_log_files(log_files)
     timestamps = list()
     for i, log in enumerate(log_list):
-        # output("%d - %s" % (detect_prefix(log), log_files[i]))
-        # output(log[0].strip())
-        # output(" " * detect_prefix(log) + "^")
         output("Detecting timestamps %d/%d ..." % (i + 1, len(log_list)))
         timestamps.append(detect_timestamps(log))
-        # output(str(timestamps[i][0]))
 
     output("Interleaving logs ...")
     combined = interleave_logs(log_list, timestamps)
@@ -627,7 +1023,6 @@ def find_timestamp_in_line(line):
         timestamp_str = " ".join([date_string, time_string])
 
     try:
-        # return dateutil.parser.parse(timestamp_str)
         return (dateutil.parser.parse(timestamp_str) -
                 datetime.datetime(1970, 1, 1)).total_seconds()
     except Exception:
@@ -739,12 +1134,6 @@ def write_aggregate_log(log_files, combined, output_file_name):
 
         out_file.write(HTML_PAGE_SCRIPT_FOOTERS)
         out_file.write(HTML_PAGE_FOOTERS)
-
-
-# def add_log_to_output_file(log_file_name, out_file):
-#     with open(log_file_name, "r") as f:
-#         log_contents = f.read().decode("utf-8", "ignore")
-#         out_file.write(format_log_output(log_contents))
 
 
 def format_log_line(log_line):
