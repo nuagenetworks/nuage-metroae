@@ -24,6 +24,7 @@
 * Skip docker images that aren't tagged
 * Document that pyvmomi version 6.7.3 should be used for vCenter environments
 * Fix VSC incorrectly requiring xmpp_username be defined
+* Set cryptography package to 2.8 to avoid paramiko exception
 
 ## Test Matrix
 
