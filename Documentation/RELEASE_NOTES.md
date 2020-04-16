@@ -23,6 +23,7 @@
 * Fix NUH Destroy playbook error and add VMName support (METROAE-1351)
 * Skip docker images that aren't tagged
 * Document that pyvmomi version 6.7.3 should be used for vCenter environments
+* Fix VSC incorrectly requiring xmpp_username be defined
 
 ## Test Matrix
 
