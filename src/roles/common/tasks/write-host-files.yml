@@ -17,10 +17,13 @@
     item: "{{ component }}"
 
 - name: Concat credentials with the component host vars
-  shell: cat {{ inventory_dir }}/host_vars/component_credentials >> {{ inventory_dir }}/host_vars/{{ component_hostname }}
+  command: cat {{ inventory_dir }}/host_vars/component_credentials >> {{ inventory_dir }}/host_vars/{{ component_hostname }}
+  changed_when: True
 
 - name: Cleanup the temp credentials file
-  shell: rm -f {{ inventory_dir }}/host_vars/component_credentials
+  file:
+    path: {{ inventory_dir }}/host_vars/component_credentials
+    state: absent
 
 - name: Unset Credentials
   set_fact:
