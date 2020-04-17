@@ -15,9 +15,9 @@
   ignore_errors: True
 
 - name: Check if custom user already exists and is connected via ssh
-  local_action:
-     module: command ssh -oStrictHostKeyChecking=no -oPasswordAuthentication=no {{ vsd_custom_username }}@{{ inventory_hostname }} exit 0
+  command: ssh -oStrictHostKeyChecking=no -oPasswordAuthentication=no {{ vsd_custom_username }}@{{ inventory_hostname }} exit 0
   register: ssh_custom_user
+  delegate_to: localhost
   ignore_errors: yes
   when: vsd_custom_username is defined
 
@@ -62,7 +62,8 @@
     - block:
 
       - name: Get the public key for the current user
-        local_action: command cat "{{ user_ssh_pub_key }}"
+        command: cat "{{ user_ssh_pub_key }}"
+        changed_when: False
         register: current_user_ssh_key
 
       - name: Create a temporary copy of the authorized_keys file
@@ -73,7 +74,9 @@
 
       - name: Copy authorized file to vsd custom user home directory
         expect:
-          command: 'scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null /tmp/authorized_keys_temp {{ vsd_custom_username }}@{{ mgmt_ip }}:/home/{{ vsd_custom_username }}/.ssh/authorized_keys'
+          command: >-
+            scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null /tmp/authorized_keys_temp
+            {{ vsd_custom_username }}@{{ mgmt_ip }}:/home/{{ vsd_custom_username }}/.ssh/authorized_keys
           responses:
             (?i)yes: "yes"
             (?i)password: "{{ vsd_custom_password }}"
@@ -105,7 +108,7 @@
 - block:
 
   - name: Set custom password for MySQL root password for root user
-    shell: mysqladmin -u root password "{{ vsd_mysql_password }}"
+    command: mysqladmin -u root password "{{ vsd_mysql_password }}"
     run_once: true
     when:
       - vsd_mysql_password is defined
@@ -146,17 +149,17 @@
 
   - block:
 
-    - name: Enable TLSv1.2 for verify-client==false
+    - name: Enable TLSv1.2 for verify-client false
       lineinfile:
         path: /opt/vsd/jboss/standalone/configuration/standalone-full-ha.xml
         regexp: ".*protocol=\"TLSv1\".*verify-client=\"false\".*"
-        line: '<ssl protocol="TLSv1.2" key-alias="vsd1.example.com" password="Alcateldc" certificate-key-file="${jboss.home.dir}/standalone/configuration/vsd.keystore" verify-client="false" session-cache-size="200" cipher-suite="TLS_RSA_WITH_AES_128_CBC_SHA,TLS_RSA_WITH_AES_128_CBC_SHA256,TLS_RSA_WITH_AES_256_CBC_SHA,TLS_RSA_WITH_AES_256_CBC_SHA256" />'
+        line: '<ssl protocol="TLSv1.2" key-alias="vsd1.example.com" password="Alcateldc" certificate-key-file="${jboss.home.dir}/standalone/configuration/vsd.keystore" verify-client="false" session-cache-size="200" cipher-suite="TLS_RSA_WITH_AES_128_CBC_SHA,TLS_RSA_WITH_AES_128_CBC_SHA256,TLS_RSA_WITH_AES_256_CBC_SHA,TLS_RSA_WITH_AES_256_CBC_SHA256" />'     # noqa 204
 
-    - name: Enable TLSv1.2 for verify-client==true
+    - name: Enable TLSv1.2 for verify-client true
       lineinfile:
         path: /opt/vsd/jboss/standalone/configuration/standalone-full-ha.xml
         regexp: ".*protocol=\"TLSv1\".*verify-client=\"true\".*"
-        line: '<ssl protocol="TLSv1.2" key-alias="vsd1.example.com" password="Alcateldc" certificate-key-file="${jboss.home.dir}/standalone/configuration/vsd.keystore" verify-client="true" ca-certificate-file="${jboss.home.dir}/standalone/configuration/vsd.truststore" ca-certificate-password="Alcateldc" cipher-suite="TLS_RSA_WITH_AES_128_CBC_SHA,TLS_RSA_WITH_AES_128_CBC_SHA256,TLS_RSA_WITH_AES_256_CBC_SHA,TLS_RSA_WITH_AES_256_CBC_SHA256" />'
+        line: '<ssl protocol="TLSv1.2" key-alias="vsd1.example.com" password="Alcateldc" certificate-key-file="${jboss.home.dir}/standalone/configuration/vsd.keystore" verify-client="true" ca-certificate-file="${jboss.home.dir}/standalone/configuration/vsd.truststore" ca-certificate-password="Alcateldc" cipher-suite="TLS_RSA_WITH_AES_128_CBC_SHA,TLS_RSA_WITH_AES_128_CBC_SHA256,TLS_RSA_WITH_AES_256_CBC_SHA,TLS_RSA_WITH_AES_256_CBC_SHA256" />'   # noqa 204
 
     - name: Stop JBoss service
       shell: monit stop jboss
@@ -182,7 +185,7 @@
       lineinfile:
         path: /opt/vsd/jboss/standalone/configuration/standalone-full-ha.xml
         regexp: ".*<access-log pattern=\"%a %t %H %p %r %s %D.*"
-        line: '<access-log pattern="%a %t %H %p %r %s %D %{CUSTOM}i %{X-Nuage-Request-ID}o %{com.alu.cna.cloudmgmt.api.querycount}r" prefix="access.log" rotate="false">'
+        line: '<access-log pattern="%a %t %H %p %r %s %D %{CUSTOM}i %{X-Nuage-Request-ID}o %{com.alu.cna.cloudmgmt.api.querycount}r" prefix="access.log" rotate="false">'       # noqa 204
       when: grep_output.rc == 0
 
     - name: Advanced API access Logging
@@ -200,8 +203,9 @@
     ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"
 
 - name: Get the JAVA_HOME
-  shell: echo $JAVA_HOME
+  command: echo $JAVA_HOME
   register: java_home
+  changed_when: False
   remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
 
 - block:
@@ -252,25 +256,32 @@
     when: ca_certificate_path is defined
 
   - name: Import Intermediate Cert Pem file
-    shell: '{{ java_home.stdout }}/bin/keytool -importcert  -file /opt/vsd/ejbca/p12/intermediate.cert.pem -keystore {{ java_home.stdout }}/lib/security/cacerts -storepass {{ jreStorePwd | default("changeit") }} -alias myintermediateCA -noprompt'
+    command: >-
+      {{ java_home.stdout }}/bin/keytool -importcert  -file /opt/vsd/ejbca/p12/intermediate.cert.pem
+      -keystore {{ java_home.stdout }}/lib/security/cacerts -storepass {{ jreStorePwd | default("changeit") }} -alias myintermediateCA -noprompt
     when:
       - intermediate_certificate_path is defined
       - nuage_upgrade is not defined or not nuage_upgrade
 
   - name: Import Root CA Pem file
-    shell: '{{ java_home.stdout }}/bin/keytool -importcert -file /opt/vsd/ejbca/p12/ca.cert.pem -keystore {{ java_home.stdout }}/lib/security/cacerts -storepass {{ jreStorePwd | default("changeit") }} -alias myRootCA -noprompt'
+    command: >-
+      {{ java_home.stdout }}/bin/keytool -importcert -file /opt/vsd/ejbca/p12/ca.cert.pem
+      -keystore {{ java_home.stdout }}/lib/security/cacerts -storepass {{ jreStorePwd | default("changeit") }} -alias myRootCA -noprompt
     when:
       - ca_certificate_path is defined
       - nuage_upgrade is not defined or not nuage_upgrade
 
   - name: Stop vsd-core
-    shell: monit -g vsd-core stop
+    command: monit -g vsd-core stop
+    changed_when: True
 
   - name: Stop ejabberd
-    shell: monit stop ejabberd
+    command: monit stop ejabberd
+    changed_when: True
 
   - name: Start ejabberd
-    shell: monit start ejabberd
+    command: monit start ejabberd
+    changed_when: True
 
   - name: Wait for Ejabberd to start
     monit_waitfor_service:
@@ -279,7 +290,8 @@
       test_interval_seconds: 30
 
   - name: Start ejabberd-status
-    shell: monit start ejabberd-status
+    command: monit start ejabberd-status
+    changed_when: True
 
   - name: Wait for Ejabberd to start
     monit_waitfor_service:
@@ -288,7 +300,8 @@
       test_interval_seconds: 30
 
   - name: Start vsd-core
-    shell: monit -g vsd-core start
+    command: monit -g vsd-core start
+    changed_when: False
 
   - name: Wait for vsd-core to start
     monit_waitfor_service:
