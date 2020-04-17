@@ -425,6 +425,8 @@ var findAsyncInsertPos = 0;
 var findAsyncWrapped = false;
 var linesSearched = 0;
 
+var disableReorder = false;
+
 var fileRowElems = [];
 
 var fileListHeading =
@@ -598,6 +600,9 @@ function writeLogFileList() {
 }
 
 function resetFileRowOrder() {
+    if (disableReorder) {
+        return;
+    }
     for (var i = 0; i < files.length; i++) {
         fileRowElems[i] = get("file_row_" + i);
         fileRowElems[i].style["order"] = 1;
@@ -606,6 +611,9 @@ function resetFileRowOrder() {
 }
 
 function moveUpFileRowOrder(logIndex) {
+    if (disableReorder) {
+        return;
+    }
     fileRowElems[logIndex].style["order"] = 0;
     fileRowElems[logIndex].style["-webkit-order"] = 0;
 }
@@ -615,7 +623,9 @@ function handleToggle() {
         toggle = get("toggle_" + i);
         toggles[i] = toggle.checked;
     }
+    disableReorder = true;
     filterLines();
+    disableReorder = false;
 }
 
 function filterLines() {
@@ -1010,7 +1020,8 @@ def find_log_files(paths, extensions):
 def find_log_files_in_archive(archive, extensions):
     output("Untar archive %s ..." % archive)
     tar = tarfile.open(archive)
-    tar_dir = os.path.splitext(os.path.basename(archive))[0]
+    tar_dir = os.path.basename(archive).replace(".tgz", "").replace(".tar.gz",
+                                                                    "")
     tar.extractall(tar_dir)
     tar_dirs_to_clean.append(tar_dir)
     return find_log_files([tar_dir], extensions)
