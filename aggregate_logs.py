@@ -10,6 +10,12 @@ import tarfile
 
 MAX_LINE_LENGTH = 2000
 
+DESCRIPTION = """
+Aggregate a set of logs into a single viewable file which is interleaved by log
+timestamps.  Specify a list of log directories, files or tar archives to
+combine.
+"""
+
 RE_MONTH_NAME = "(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)"
 RE_MONTH_NUM = "((1[0-2])|(0?[1-9]))"
 RE_DAY = "(([1-2][0-9])|(3[0-1]|(0?[1-9])))"
@@ -48,9 +54,11 @@ TIME_PATTERNS = [
 
 time_patterns = list()
 
+LOG_TITLE = "Aggregated logs - %s" % datetime.datetime.now()
+
 HTML_PAGE_HEADERS = """
-<html><head><title>Aggregated logs - %s</title></head><body>
-""" % datetime.datetime.now()
+<html><head><title>%s</title></head><body>
+""" % LOG_TITLE
 
 HTML_PAGE_STYLE = """
 <style>
@@ -989,9 +997,23 @@ def aggregate_logs(args):
     output("Interleaving logs ...")
     combined = interleave_logs(log_list, timestamps)
 
-    write_aggregate_log(log_files, combined, args.output_file)
+    output_file_name = args.output_file
 
-    output("\nDone! View in web browser: " + args.output_file)
+    if args.text is True:
+        if output_file_name == "":
+            output_file_name = "aggregated_logs.txt"
+
+        write_aggregate_text_log(log_files, combined, output_file_name)
+
+        output("\nDone! View in editor: " + output_file_name)
+
+    else:
+        if output_file_name == "":
+            output_file_name = "aggregated_logs.html"
+
+        write_aggregate_html_log(log_files, combined, output_file_name)
+
+        output("\nDone! View in web browser: " + output_file_name)
 
 
 def find_log_files(paths, extensions):
@@ -1175,7 +1197,7 @@ def add_log_lines(combined, position, log, timestamp_set, log_index):
         position[0] = None
 
 
-def write_aggregate_log(log_files, combined, output_file_name):
+def write_aggregate_html_log(log_files, combined, output_file_name):
     with open(output_file_name, "w") as out_file:
         out_file.write(HTML_PAGE_HEADERS)
         out_file.write(HTML_PAGE_STYLE)
@@ -1217,10 +1239,32 @@ def format_log_line(log_line):
         return "".join(["'", log_line, "',\n"])
 
 
+def write_aggregate_text_log(log_files, combined, output_file_name):
+    with open(output_file_name, "w") as out_file:
+        out_file.write(LOG_TITLE)
+        out_file.write("\n\n")
+
+        for i, path in enumerate(log_files):
+            out_file.write("LOG[%03d]: %s\n" % (i, path))
+
+        out_file.write("\n")
+        out_file.write("-" * 79)
+        out_file.write("\n")
+
+        for line in combined:
+            if type(line) == int:
+                out_file.write("LOG[%03d]: " % line)
+            else:
+                out_file.write(line.encode("utf-8"))
+                out_file.write("\n")
+
+
 def main():
     parser = argparse.ArgumentParser(
-        description='Aggregate a set of logs into a single viewable file')
-    parser.add_argument("log_paths", help="Log paths or files to aggregate",
+        description=DESCRIPTION)
+    parser.add_argument("log_paths",
+                        help="Log directories, files or tar archives to "
+                             "aggregate",
                         nargs="*")
     parser.add_argument("-x", "--log_extensions",
                         help="File extension for log files",
@@ -1228,9 +1272,16 @@ def main():
     parser.add_argument("-o", "--output_file",
                         help="Path to file to output aggregated logs",
                         action="store",
-                        default="aggregated_logs.html")
+                        default="")
+    parser.add_argument("-t", "--text",
+                        help="Output in text instead of html",
+                        action="store_true")
 
     args = parser.parse_args()
+
+    if len(args.log_paths) == 0:
+        output(parser.print_help())
+        exit(0)
 
     complile_re_patterns()
 
