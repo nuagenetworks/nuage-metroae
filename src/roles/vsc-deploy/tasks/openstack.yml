@@ -11,7 +11,7 @@
   - name: Set vsc control ip
     set_fact:
       control_ip: "{{ control_ip }}"
-      
+
   - name: Set VSC creds
     set_fact:
       heat_vsc_creds:
@@ -47,7 +47,10 @@
       dest: "{{ temp_dir }}/openstack-config.cfg"
 
   - name: Copy config file to VSC
-    command: "sshpass -p {{ vsc_default_password|default('admin') }} scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null {{ temp_dir }}/openstack-config.cfg {{ vsc_default_username|default('admin') }}@{{ vsc_mgmt_ip }}:"
+    command: >-
+      sshpass -p {{ vsc_default_password|default('admin') }} scp -o StrictHostKeyChecking=no
+      -o UserKnownHostsFile=/dev/null {{ temp_dir }}/openstack-config.cfg {{ vsc_default_username|default('admin') }}@{{ vsc_mgmt_ip }}:
+    changed_when: True
 
   - name: Execute configuration on VSC
     sros_command:

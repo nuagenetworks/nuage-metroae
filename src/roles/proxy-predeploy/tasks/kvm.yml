@@ -71,7 +71,7 @@
 
     - name: check the result of image find command
       assert:
-        that: statResult.stat.exists == True
+        that: statResult.stat.exists
         msg: Missing qcow2 file in {{ images_path }}/{{ vmname }}/{{ proxy_vm_qcow2_file_name }}
 
     when: skip_copy_images
@@ -81,23 +81,27 @@
     register: partitions_list
 
   - name: Check partition content
-    shell: "guestfish -r -a {{ guestfish_dest }} run : mount {{ item.split(':')[0] }} / : ls /"
+    command: "guestfish -r -a {{ guestfish_dest }} run : mount {{ item.split(':')[0] }} / : ls /"
     register: partitions
     with_items: "{{ partitions_list.stdout_lines }}"
+    changed_when: True
+
   remote_user: "{{ target_server_username }}"
   delegate_to: "{{ target_server }}"
 
 - name: Find root partition
   set_fact:
-    guestfish_mount: "{{ item.item.split(':')[0]}}"
+    guestfish_mount: "{{ item.item.split(':')[0] }}"
   with_items: "{{ partitions.results }}"
   when: '"proc" in item.stdout'
 
 - debug: var=guestfish_mount verbosity=1
 
 - name: Get the public key for the current user
-  local_action: command cat "{{ user_ssh_pub_key }}"
+  command: cat "{{ user_ssh_pub_key }}"
   register: current_user_ssh_key
+  delegate_to: localhost
+  changed_when: False
 
 - block:
 
