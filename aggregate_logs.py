@@ -5,6 +5,10 @@ import datetime
 import dateutil.parser
 import os
 import re
+import shutil
+import tarfile
+
+MAX_LINE_LENGTH = 2000
 
 RE_MONTH_NAME = "(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)"
 RE_MONTH_NUM = "((1[0-2])|(0?[1-9]))"
@@ -415,6 +419,11 @@ var findAsyncInProgress = false;
 var findCurPage = 0;
 var findAsyncString = "";
 var findNumLines = 0;
+var findAsyncStartLine = 0;
+var findAsyncLimit = 0;
+var findAsyncInsertPos = 0;
+var findAsyncWrapped = false;
+var linesSearched = 0;
 
 var fileRowElems = [];
 
@@ -760,8 +769,13 @@ function resetFind() {
     findLineCols = [];
     findAsyncString = findString;
     findNumLines = filtered.length;
-    findCurPage = 0;
+    findCurPage = curPage;
     curFindIndex = -1;
+    findAsyncStartLine = curPage * getLinesPerPage();
+    findAsyncLimit = filtered.length;
+    findAsyncWrapped = false;
+    findAsyncInsertPos = 0;
+    linesSearched = 0;
     updateFindStatus();
 }
 
@@ -780,7 +794,7 @@ function updateFindStatus() {
         if (findAsyncInProgress) {
             var linesPerPage = getLinesPerPage();
             var offset = linesPerPage * findCurPage;
-            findStatus += " Finding... " + Math.floor(offset * 100 / filtered.length) + "%";
+            findStatus += " Finding... " + Math.floor(linesSearched * 100 / filtered.length) + "%";
         }
 
         status.innerHTML = findStatus;
@@ -810,13 +824,24 @@ function findAsync() {
     updateFindStatus();
 
     for (var i = offset; i < offset + linesPerPage; i++) {
-        if (i < filtered.length) {
+        if (i < findAsyncLimit) {
             var line = lines[filtered[i] + 1];
             var col = line.toLowerCase().indexOf(findAsyncString);
+            linesSearched++;
             while (col >= 0) {
-                findLineCols.push(i);
-                findLineCols.push(col);
-                if (curFindIndex == -1 && findCurPage >= curPage) {
+                if (findAsyncWrapped) {
+                    findLineCols.splice(findAsyncInsertPos, 0, i);
+                    findAsyncInsertPos++;
+                    findLineCols.splice(findAsyncInsertPos, 0, col);
+                    findAsyncInsertPos++;
+                    if (curFindIndex >= 0) {
+                        curFindIndex++;
+                    }
+                } else {
+                    findLineCols.push(i);
+                    findLineCols.push(col);
+                }
+                if (curFindIndex == -1) {
                     curFindIndex = (findLineCols.length / 2) - 1;
                     gotoPage("find");
                 }
@@ -827,7 +852,14 @@ function findAsync() {
     }
     findCurPage++;
 
-    if (linesPerPage * findCurPage < filtered.length) {
+    if (linesPerPage * findCurPage < findAsyncLimit) {
+        window.setTimeout(findAsync, 1);
+    } else if (findAsyncStartLine > 0) {
+        findAsyncLimit = findAsyncStartLine;
+        findAsyncStartLine = 0;
+        findCurPage = 0;
+        findAsyncInsertPos = 0;
+        findAsyncWrapped = true;
         window.setTimeout(findAsync, 1);
     } else {
         if (curFindIndex == -1 && findLineCols.length > 0) {
@@ -908,6 +940,8 @@ HTML_PAGE_FOOTERS = """
 </body></html>
 """
 
+tar_dirs_to_clean = list()
+
 
 def output(msg):
     print(msg)
@@ -934,6 +968,9 @@ def aggregate_logs(args):
     output(str(len(log_files)) + " log files found")
 
     log_list = read_log_files(log_files)
+
+    clean_tar_dirs()
+
     timestamps = list()
     for i, log in enumerate(log_list):
         output("Detecting timestamps %d/%d ..." % (i + 1, len(log_list)))
@@ -950,14 +987,17 @@ def aggregate_logs(args):
 def find_log_files(paths, extensions):
     log_files = list()
     for path in paths:
-        if (os.path.isdir(path)):
+        if os.path.isdir(path):
             for file_name in os.listdir(path):
                 log_files.extend(find_log_files(
                     [os.path.join(path, file_name)], extensions))
         elif os.path.isfile(path):
-            for ext in extensions:
-                if (path.endswith(ext)):
-                    log_files.append(path)
+            if path.endswith(".tar.gz") or path.endswith(".tgz"):
+                log_files.extend(find_log_files_in_archive(path, extensions))
+            else:
+                for ext in extensions:
+                    if path.endswith(ext):
+                        log_files.append(path)
         elif os.path.islink(path):
             pass
         else:
@@ -965,6 +1005,21 @@ def find_log_files(paths, extensions):
                         path)
 
     return log_files
+
+
+def find_log_files_in_archive(archive, extensions):
+    output("Untar archive %s ..." % archive)
+    tar = tarfile.open(archive)
+    tar_dir = os.path.splitext(os.path.basename(archive))[0]
+    tar.extractall(tar_dir)
+    tar_dirs_to_clean.append(tar_dir)
+    return find_log_files([tar_dir], extensions)
+
+
+def clean_tar_dirs():
+    for tar_dir in tar_dirs_to_clean:
+        output("Clean up archive %s ..." % tar_dir)
+        shutil.rmtree(tar_dir)
 
 
 def read_log_files(log_files):
@@ -1005,7 +1060,8 @@ def detect_timestamps(log):
     timestamps = list()
 
     for line in log:
-        timestamps.append(find_timestamp_in_line(line))
+        trimmed_line = line[0:MAX_LINE_LENGTH]
+        timestamps.append(find_timestamp_in_line(trimmed_line))
 
     return timestamps
 
@@ -1140,6 +1196,7 @@ def format_log_line(log_line):
     if type(log_line) == int:
         return "%3d, " % log_line
     else:
+        log_line = log_line[0:MAX_LINE_LENGTH]
         log_line = log_line.encode('ascii', 'xmlcharrefreplace')
         log_line = log_line.replace("'", "&#39;")
         log_line = log_line.replace("\\", "&#92;")
