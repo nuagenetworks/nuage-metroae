@@ -90,7 +90,7 @@
   when: vstat_sa_or_ha is match('ha')
 
 - name: check for iptables (ignoring errors)
-  shell:
+  shell:                                # noqa 301 305
     cmd: "service iptables status"
     warn: no
   register: _svc_iptables
@@ -119,17 +119,20 @@
     remote_user: "{{ vstat_default_username }}"
     register: vstat_ip6tables_result
     ignore_errors: True
-    when: enable_ipv6 | default(False) == True
+    when: enable_ipv6 | default(False)
 
   - name: Check if iptables is already setup for VSD rules (ignoring errors)
     shell: iptables -L INPUT | grep 'match-set vsd src'
     remote_user: "{{ vstat_default_username }}"
     register: vstat_iptables_result
     ignore_errors: True
-    when: enable_ipv6 | default(False) != True
+    when: not enable_ipv6 | default(True)
 
   - name: Set if skipping VSTAT deploy
-    set_fact: skip_vstat_deploy="{{ (vstat_iptables_result is defined and vstat_iptables_result.rc | default(1) == 0) or (vstat_ip6tables_result is defined and vstat_ip6tables_result.rc | default(1) == 0) }}"
+    set_fact:
+      skip_vstat_deploy: >-
+        {{ (vstat_iptables_result is defined and vstat_iptables_result.rc | default(1) == 0) or
+           (vstat_ip6tables_result is defined and vstat_ip6tables_result.rc | default(1) == 0) }}
 
   - name: Display if skipping VSTAT deploy
     debug:
@@ -201,7 +204,7 @@
 
 - name: check for firewalld (ignoring errors)
   shell:
-    cmd: "service firewalld status"
+    cmd: "service firewalld status"     # noqa 301 305
     warn: no
   register: _svc_firewalld
   ignore_errors: True
@@ -372,7 +375,8 @@
 
       delegate_to: "{{ vsd_node1_hostname }}"
       remote_user: "{{ hostvars[vsd_node1_hostname].vsd_custom_username | default(vsd_custom_username | default(vsd_default_username)) }}"
-      become: "{{ 'no' if hostvars[vsd_node1_hostname].vsd_custom_username | default(vsd_custom_username | default(vsd_default_username)) == 'root' else 'yes' }}"
+      become: >-
+        {{ 'no' if hostvars[vsd_node1_hostname].vsd_custom_username | default(vsd_custom_username | default(vsd_default_username)) == 'root' else 'yes' }}
       vars:
         ansible_become_pass: "{{ hostvars[vsd_node1_hostname].vsd_custom_password | default(vsd_custom_password | default(vsd_default_password)) }}"
 
