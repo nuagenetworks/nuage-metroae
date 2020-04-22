@@ -45,12 +45,13 @@
         name: common
         tasks_from: vsd-find-backup-node
 
-- hosts: "{{hostvars['localhost'].vsd_backup_node | default(vsd_upgrade_ha_node1 | default(vsd_sa_node))}}"
+- hosts: "{{ hostvars['localhost'].vsd_backup_node | default(vsd_upgrade_ha_node1) | default(vsd_sa_node) }}"
   gather_facts: no
   pre_tasks:
     - name: Get free disk space on VSD for backup files
-      shell: df / | tail -n 1 | awk '{print $4}'
+      shell: df / | tail -n 1 | awk '{print $4}'        # noqa 306
       register: backup_vsd_free_space_kb
+      changed_when: False
       remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
 
     - name: Ensure there is enough free disk space on VSD for backup files
