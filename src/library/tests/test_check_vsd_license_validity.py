@@ -8,6 +8,7 @@ TEST_PARAMS = {
         "password": "csproot",
         "enterprise": "csp",
         "api_url": "https://localhost:8443"},
+    "vsd_version": "5.4.1",
     "required_days_left": 365
 }
 SECONDS_PER_DAY = 60 * 60 * 24
