@@ -60,6 +60,8 @@ def format_api_version(version):
         return ('v3_2')
     elif version.startswith('6'):
         return ('v' + version[0])
+    elif version.startswith('20'):
+        return ('v6')
     else:
         return ('v' + version[0] + '_0')
 

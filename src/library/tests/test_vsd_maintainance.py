@@ -10,6 +10,7 @@ TEST_PARAMS = {
         "password": "csproot",
         "enterprise": "csp",
         "api_url": "https://localhost:8443"},
+    "vsd_version": "5.4.1",
     "state": "enabled"
 }
 
