@@ -5,7 +5,7 @@ MetroAE is built on a community model. The code has been architected to make con
 ## We Use [Github Flow](https://guides.github.com/introduction/flow/index.html), So All Code Changes Happen Through Pull Requests
 Pull requests are the best way to propose changes to the codebase (we use [Github Flow](https://guides.github.com/introduction/flow/index.html)). We actively welcome your pull requests:
 
-1. Fork the repo and create your branch from `master`.
+1. Fork the repo and create your branch from `dev`.
 2. If you've added code that should be tested, add tests.
 3. Make sure your code passes flake8.
 4. Issue that pull request!
@@ -20,7 +20,8 @@ Pull requests are the best way to propose changes to the codebase (we use [Githu
 
 ## Contributing your code
 
-  1. Developing your code
+  1. Developing your code.
+
     The manner in which you develop the code contribution depends on the extent of the changes. Are you enhancing an existing playbook or role, or are you adding one or more new roles? Making changes to what already exists is simple. Just make your changes to the files that are already there.
 
     Adding a new component or feature is a bit more involved. For example, if you are adding support for the installation of a new component, the following elements would be expected unless otherwise agreed upon by the repo owners:
