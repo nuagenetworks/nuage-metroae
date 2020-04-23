@@ -94,6 +94,7 @@ def get_gateway_purge_time_value(csproot):
 def main():
     arg_spec = dict(
         vsd_auth=dict(required=True, type='dict'),
+        vsd_version=dict(required=True, type='str'),
         get_gateway_purge_time=dict(default=False, type='bool'),
         gateway_purge_time=dict(type='int')
     )

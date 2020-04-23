@@ -97,6 +97,7 @@ def get_vsd_session(vsd_auth, vsd_version):
 
 def main():
     arg_spec = dict(vsd_auth=dict(required=True, type='dict'),
+                    vsd_version=dict(required=True, type='str'),
                     required_days_left=dict(required=True, type='int'))
     module = AnsibleModule(argument_spec=arg_spec, supports_check_mode=True)
 
