@@ -25,6 +25,7 @@
 * Document that pyvmomi version 6.7.3 should be used for vCenter environments
 * Fix VSC incorrectly requiring xmpp_username be defined
 * Set pip package versions to known, tested values
+* When installing, replace default config.cfg on VSC rather than exec
 
 ## Test Matrix
 
