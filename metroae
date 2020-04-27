@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -e
 
-METROAE_VERSION="v4.0.0"
+METROAE_VERSION="v4.0.1"
 MENU=()
 
 #################################################################################
@@ -283,22 +283,28 @@ function get_max_container_version {
         MAX_CONTAINER_VERSION=$IMAGE_TAG
     else
         versions=`docker images 2>/dev/null | grep $METRO_AE_IMAGE | awk '{ print $2}'`
+        debug "versions = $versions"
         MAX_CONTAINER_VERSION=''
         for version in $versions
         do
-            if [[ -z $MAX_CONTAINER_VERSION ]]; then
-                    MAX_CONTAINER_VERSION=$version
-            fi
+            if [[ $version != "<none>" ]]; then
+                debug "version = $version"
+                if [[ -z $MAX_CONTAINER_VERSION ]]; then
+                        MAX_CONTAINER_VERSION=$version
+                fi
 
-            if [[ $MAX_CONTAINER_VERSION < $version ]]; then
-                    MAX_CONTAINER_VERSION=$version
+                if [[ $MAX_CONTAINER_VERSION < $version ]]; then
+                        MAX_CONTAINER_VERSION=$version
+                fi
             fi
+            debug "MAX_CONTAINER_VERSION = $MAX_CONTAINER_VERSION"
         done
 
         if [[ -z $MAX_CONTAINER_VERSION ]]; then
             MAX_CONTAINER_VERSION='current'
         fi
     fi
+    debug "Newest MetroAE container version found is $MAX_CONTAINER_VERSION"
     write_to_script_log "Newest MetroAE container version found is $MAX_CONTAINER_VERSION"
 }
 
@@ -408,7 +414,7 @@ function destroy {
 
     if [[ $confirmation != "y" ]]; then
         echo ""
-        write_to_screen_and_script_log "Destroy of metorae container was canceled"
+        write_to_screen_and_script_log "Destroy of metroae container was canceled"
         echo ""
         print_version_and_exit 0
     fi
@@ -679,6 +685,7 @@ function setup_container {
         sudo mkdir -p $INSTALL_FOLDER
     fi
     sudo chown -R root:docker $INSTALL_FOLDER
+    sudo chmod -R 775 $INSTALL_FOLDER
     if [[ ! -f $SETUP_FILE ]]; then
         sudo touch $SETUP_FILE
         if [[ $OS_RELEASE -eq $NON_LINUX ]]; then
@@ -945,7 +952,7 @@ function update_container {
 
     if [[ $confirmation != "y" ]]; then
         echo ""
-        write_to_screen_and_script_log "Update of metorae container was canceled"
+        write_to_screen_and_script_log "Update of metroae container was canceled"
         echo ""
         print_version_and_exit 0
     fi
@@ -1201,6 +1208,7 @@ function check_for_user_group {
         sudo systemctl restart docker
         if [[ -d $INSTALL_FOLDER ]]; then
             sudo chown -R root:docker $INSTALL_FOLDER
+            sudo chmod -R 775 $INSTALL_FOLDER
         fi
     fi
 
@@ -1219,7 +1227,7 @@ function check_for_user_group {
         write_to_screen_and_script_log "It looks like the user `whoami` isn't a member of the 'docker' group. `whoami` must"
         write_to_screen_and_script_log "be a member of the 'docker' group to proceed."
         declare -l confirmation
-        if [[ -z $2 ]]; then
+        if [[ -z $1 ]]; then
             confirmation="init"
             while [[ $confirmation != "n" ]] && [[ $confirmation  != "y" ]] && [[ $confirmation != "" ]]
             do
@@ -1227,7 +1235,7 @@ function check_for_user_group {
                 read -p "Do you want the current user to be added to the docker group: (y/N) " confirmation
             done
         else
-            confirmation=$2
+            confirmation=$1
         fi
 
         if [[ $confirmation != "y" ]]; then

@@ -1,20 +1,29 @@
----
-- name: Set local variable with vmname
+- name: Set local variable with tmp directory name
   set_fact:
-    vm_name: "{{ vmname }}"
+    tmp_dir_name: "/tmp/{{ vmname }}"
 
-- block:
+- name: Set local variable with default config file name
+  set_fact:
+    config_file_name: "config.cfg"
+
+- name: Update local config file name if not rebooting
+  set_fact:
+    config_file_name: "new-config.cfg"
+  when: not reboot_vsc | default(true)
+
+- name: delegate to localhost
+  block:
 
   - name: Create temporary folder for vsc config
     file:
-      path: "/tmp/{{ vm_name }}"
+      path: "{{ tmp_dir_name }}"
       state: directory
 
   - name: Setup VSC temporary configuration files
     template:
       src: "{{ config_template }}"
       backup: no
-      dest: "/tmp/{{ vm_name }}/new-config.cfg"
+      dest: "{{ tmp_dir_name }}/{{ config_file_name }}"
 
   - name: Wait for VSC ssh to be ready before config
     include_role:
@@ -34,39 +43,45 @@
 
   - name: Copy VSC config file to the VSC
     connection: local
-    command: "sshpass -p {{ vsc_password|default(vsc_default_password) }} scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null {{ proxy_conf | default('') }} /tmp/{{ vm_name }}/new-config.cfg {{ vsc_username|default(vsc_default_username) }}@{{ mgmt_ip }}:"
+    command: "sshpass -p {{ vsc_password|default(vsc_default_password) }} scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null {{ proxy_conf | default('') }} {{ tmp_dir_name }}/{{ config_file_name }} {{ vsc_username|default(vsc_default_username) }}@{{ mgmt_ip }}:"
     when: not mgmt_ip | ipv6
 
   - name: Copy VSC config file to the VSC
     connection: local
-    command: "sshpass -p {{ vsc_password|default(vsc_default_password) }} scp -6 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null {{ proxy_conf | default('') }} /tmp/{{ vm_name }}/new-config.cfg {{ vsc_username|default(vsc_default_username) }}@{{ '[' }}{{ mgmt_ip }}{{ ']' }}:"
+    command: "sshpass -p {{ vsc_password|default(vsc_default_password) }} scp -6 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null {{ proxy_conf | default('') }} {{ tmp_dir_name }}/{{ config_file_name }} {{ vsc_username|default(vsc_default_username) }}@{{ '[' }}{{ mgmt_ip }}{{ ']' }}:"
     when: mgmt_ip | ipv6
 
-  - name: Execute VSC basic configuration
-    sros_command:
-      commands:
-        - exec cf1:\new-config.cfg
-      provider: "{{ vsc_creds }}"
+  - name: Execute if not rebooting
+    block:
 
-  - name: Reconnect to ssh after it is hardened
-    include_role:
-      name: common
-      tasks_from: wait-for-ssh-port
-    vars:
-      ssh_host: "{{ hostname }}"
-      ssh_timeout_seconds: 600
-      ssh_password: "{{ vsc_creds.password }}"
-      ssh_user: "{{ vsc_creds.username }}"
-      check_login: True
-    when: enable_hardening | default(True)
+    - name: Execute VSC basic configuration
+      sros_command:
+        commands:
+          - exec cf1:\new-config.cfg
+        provider: "{{ vsc_creds }}"
 
-  - name: Save VSC basic configuration
-    sros_command:
-      commands:
-        - admin save
-      provider: "{{ vsc_creds }}"
+    - name: Reconnect to ssh after it is hardened
+      include_role:
+        name: common
+        tasks_from: wait-for-ssh-port
+      vars:
+        ssh_host: "{{ hostname }}"
+        ssh_timeout_seconds: 600
+        ssh_password: "{{ vsc_creds.password }}"
+        ssh_user: "{{ vsc_creds.username }}"
+        check_login: True
+      when: enable_hardening | default(True)
 
-  - block:
+    - name: Save VSC basic configuration
+      sros_command:
+        commands:
+          - admin save
+        provider: "{{ vsc_creds }}"
+
+    when: not reboot_vsc | default(true)
+
+  - name: Execute when rebooting
+    block:
 
     - name: Pause to ensure VSC uptime is high enough
       pause:
@@ -109,14 +124,11 @@
         that: "uptime_after_reboot < uptime_before_reboot"
         fail_msg: "System uptime after reboot step suggests there were issues during reboot. Check log for errors."
 
-    when: reboot_vsc
-
-  - name: Remove temporary configuration files
-    file: path=/tmp/{{ vm_name }}/new-config.cfg state=absent
+    when: reboot_vsc | default(true)
 
   - name: Delete temporary folder for vsc config
     file:
-      path: "/tmp/{{ vm_name }}"
+      path: "{{ tmp_dir_name }}"
       state: absent
 
   delegate_to: "localhost"
