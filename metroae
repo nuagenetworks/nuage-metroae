@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -e
 
-METROAE_VERSION="v4.0.0"
+METROAE_VERSION="v4.1.0"
 MENU=()
 
 #################################################################################
@@ -51,7 +51,7 @@ fi
 OS_RELEASE=$LINUX
 PATH_ARG=""
 ENVIRONMENT_FILTERS=(PWD PATH HOME USER SHELL MAIL SSH_CONNECTION LOGNAME OLDPWD LESSOPEN _ XDG_RUNTIME_DIR HISTCONTROL)
-SCRIPT_VERSION=1.0.6
+SCRIPT_VERSION=1.1.0
 
 S3_KEY="AKIAJOPWRLAXPCUXZX3A"
 S3_SECRET="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"
@@ -97,6 +97,7 @@ POSITIONAL=()
 #################################################################################
 
 function print_write_permission_warning {
+    debug ${FUNCNAME[0]}
     echo ""
     echo "WARNING: This user does not have Write permissions for MetroAE log file: $SCRIPT_LOG_FILE"
     echo "Ensure that the MetroAE install directory $INSTALL_FOLDER and its contents belongs to"
@@ -162,7 +163,7 @@ function check_for_prerequisite {
     debug ${FUNCNAME[0]}
     if [[ $RUN_MODE == "INSIDE" ]]; then
         if [[ ! -f /source/nuage-metro/src/$PLAYBOOK_MENU ]]; then
-            write_to_screen_and_script_log "One or more MetroAE config files are missing or incomplete. Please update your workspace and try again."
+            write_to_screen_and_script_log "It looks like you are running MetroAE from inside the container, but we couldn't find the container's menu file in the data directory. Please run 'metroae container setup' and try again."
             exit 1
         fi
     else
@@ -170,7 +171,7 @@ function check_for_prerequisite {
         get_running_container_id
         if [[ $RUN_MODE == "REPO" ]]; then
             if [[ ! -f src/$PLAYBOOK_MENU ]]; then
-                write_to_screen_and_script_log "One or more MetroAE config files are missing or incomplete. Please update your workspace and try again."
+                write_to_screen_and_script_log "It looks like you are trying to run using a clone of MetroAE, but we couldn't find the menu file in the workspace. Please update your workspace and try again."
                 exit 1
             fi
         # RUN_MODE is CONTAINER
@@ -183,12 +184,12 @@ function check_for_prerequisite {
                 docker start $CONTAINER_ID
             fi
             if [[ ! -f $METROAE_MOUNT_POINT/$PLAYBOOK_MENU ]]; then
-                write_to_screen_and_script_log "It looks like you are trying to run the MetroAE container. One or more MetroAE config files are missing or incomplete. Please run ‘metroae container update’ and try again."
+                write_to_screen_and_script_log "It looks like you are trying to run the MetroAE container, but we couldn't find the container's menu file in the data directory. Please run ‘metroae container setup’ and try again."
                 exit 1
             fi
         else
             if [[ ! -z $RUNNING_CONTAINER_ID ]]; then
-                write_to_screen_and_script_log "It looks like you are trying to run the MetroAE container. One or more config files are missing or incomplete. Please run ‘metroae container setup’ and try again."
+                write_to_screen_and_script_log "It looks like the MetroAE container is running, but we couldn't find the container's setup file. Please run ‘metroae container setup’ and try again."
                 exit 1
             else
                 declare -l confirmation
@@ -282,22 +283,28 @@ function get_max_container_version {
         MAX_CONTAINER_VERSION=$IMAGE_TAG
     else
         versions=`docker images 2>/dev/null | grep $METRO_AE_IMAGE | awk '{ print $2}'`
+        debug "versions = $versions"
         MAX_CONTAINER_VERSION=''
         for version in $versions
         do
-            if [[ -z $MAX_CONTAINER_VERSION ]]; then
-                    MAX_CONTAINER_VERSION=$version
-            fi
+            if [[ $version != "<none>" ]]; then
+                debug "version = $version"
+                if [[ -z $MAX_CONTAINER_VERSION ]]; then
+                        MAX_CONTAINER_VERSION=$version
+                fi
 
-            if [[ $MAX_CONTAINER_VERSION < $version ]]; then
-                    MAX_CONTAINER_VERSION=$version
+                if [[ $MAX_CONTAINER_VERSION < $version ]]; then
+                        MAX_CONTAINER_VERSION=$version
+                fi
             fi
+            debug "MAX_CONTAINER_VERSION = $MAX_CONTAINER_VERSION"
         done
 
         if [[ -z $MAX_CONTAINER_VERSION ]]; then
             MAX_CONTAINER_VERSION='current'
         fi
     fi
+    debug "Newest MetroAE container version found is $MAX_CONTAINER_VERSION"
     write_to_script_log "Newest MetroAE container version found is $MAX_CONTAINER_VERSION"
 }
 
@@ -407,7 +414,7 @@ function destroy {
 
     if [[ $confirmation != "y" ]]; then
         echo ""
-        write_to_screen_and_script_log "Destroy of metorae container was canceled"
+        write_to_screen_and_script_log "Destroy of metroae container was canceled"
         echo ""
         print_version_and_exit 0
     fi
@@ -435,7 +442,7 @@ function destroy {
     fi
 
     set +e
-    docker rmi $IMAGE_ID
+    docker rmi -f $IMAGE_ID
 
     if [[ $? -ne 0 ]]; then
         echo ""
@@ -594,7 +601,7 @@ function run_container {
 
     if [[ -z $IMAGE_ID ]];  then
         set +e
-        write_to_screen_and_script_log "We didn't find the MetroAE container image. Pulling a new container from the repo."
+        write_to_screen_and_script_log "We didn't find the MetroAE container image. We are pulling a new container from the repo."
         pull
         status=$?
         set -e
@@ -619,11 +626,16 @@ function run_container {
             else
                 network_args="-p $UI_PORT:5001"
             fi
+
+            mount_args="-v $METROAE_MOUNT_POINT:/metroae_data:Z"
+
+            if [[ ! -z $IMAGES_MOUNT_POINT ]]; then
+                mount_args="$mount_args -v $IMAGES_MOUNT_POINT:/images:Z"
+            fi
+
             if [[ $METROAE_SETUP_TYPE == "c" ]]; then
-                mount_args="-v $METROAE_MOUNT_POINT:/metroae_data:Z"
                 levi_args="-e LEVISTATE_CONTAINER=1"
             else
-                mount_args="-v $METROAE_MOUNT_POINT:/metroae_data:Z"
                 levi_args=""
             fi
 
@@ -651,8 +663,10 @@ function run_container {
 
         status=$?
         if [[ $status -ne 0 ]]; then
+            echo ""
             write_to_screen_and_script_log "Attempt to run the MetroAE container failed. Quitting."
         else
+            echo ""
             write_to_screen_and_script_log "MetroAE container started successfully"
         fi
         set -e
@@ -671,6 +685,7 @@ function setup_container {
         sudo mkdir -p $INSTALL_FOLDER
     fi
     sudo chown -R root:docker $INSTALL_FOLDER
+    sudo chmod -R 775 $INSTALL_FOLDER
     if [[ ! -f $SETUP_FILE ]]; then
         sudo touch $SETUP_FILE
         if [[ $OS_RELEASE -eq $NON_LINUX ]]; then
@@ -773,10 +788,10 @@ function setup_container {
 
         if [[ $setup_type == "c" ]]; then
             echo ""
-            write_to_screen_and_script_log ">>> Setup container for MetroAE config only"
+            write_to_screen_and_script_log ">>> Setup container for MetroAE config"
         elif [[ $setup_type == "d" ]]; then
             echo ""
-            write_to_screen_and_script_log ">>> Setup container for MetroAE deploy only"
+            write_to_screen_and_script_log ">>> Setup container for MetroAE deploy"
         else
             echo ""
             write_to_screen_and_script_log ">>> Setup container for both MetroAE config and deploy"
@@ -788,6 +803,7 @@ function setup_container {
     fi
 
     if [ -w "$SETUP_FILE" ]; then
+        sed -i '/^METROAE_SETUP_TYPE/d' $SETUP_FILE
         echo "METROAE_SETUP_TYPE=$setup_type" >> $SETUP_FILE
         write_to_script_log "METROAE_SETUP_TYPE=$setup_type"
     else
@@ -825,6 +841,7 @@ function setup_container {
     data_path=$PATH_ARG
 
     write_to_script_log "METROAE_MOUNT_POINT=$data_path"
+    sed -i '/^METROAE_MOUNT_POINT/d' $SETUP_FILE
     echo METROAE_MOUNT_POINT=$data_path >> $SETUP_FILE
 
     # stop and remove existing container if any
@@ -838,10 +855,11 @@ function setup_container {
         delete_container_id
     fi
 
-    # start the container
-    run_container
+    write_to_screen_and_script_log ">>> Prepare data directory for updates from new container."
+    echo ""
+    rm -rf $METROAE_MOUNT_POINT/version >> /dev/null 2>> /dev/null
 
-    upgrade_metroae
+    run_container
 
     setup_tab_completion
 
@@ -912,10 +930,33 @@ function get_user_path_input {
     set -e
 }
 
-function upgrade_docker {
+function update_container {
     debug ${FUNCNAME[0]}
+    declare -l confirmation
+    if [[ -z $2 ]]; then
+        confirmation="init"
+        echo ""
+        write_to_screen_and_script_log "You are about to update your MetroAE container to the latest version."
+        echo "We will destroy the existing container, pull the latest version of the container, and start the container"
+        echo "using the existing configuration. Your data on disk will be preserved."
+        while [[ $confirmation != "n" ]] && [[ $confirmation  != "y" ]] && [[ $confirmation != "" ]]
+        do
+            echo ""
+            read -p "Do you really want to update the MetroAE container? (y/N): " confirmation
+        done
+    else
+        confirmation=$2
+    fi
+
+    if [[ $confirmation != "y" ]]; then
+        echo ""
+        write_to_screen_and_script_log "Update of metroae container was canceled"
+        echo ""
+        print_version_and_exit 0
+    fi
+
     set +e
-    destroy
+    destroy y
     if [[ $? -ne 0 ]]; then
         return 1
     fi
@@ -926,50 +967,64 @@ function upgrade_docker {
         pull
     fi
     run_container
-
-    upgrade_metroae
 }
 
-function upgrade_metroae {
-
-    if [[ $RUN_MODE == "CONTAINER" ]]; then
-
-        write_to_screen_and_script_log "Upgrading metroae script to the latest"
-
-        if [[ -f $SETUP_FILE ]]; then
-            while read -r line; do declare $line; done < $SETUP_FILE
-        fi
-
-        set +e
-        cp $METROAE_MOUNT_POINT/metroae "${BASH_SOURCE[0]}"
-
-        if [[ $? -ne 0 ]]; then
-            write_to_screen_and_script_log "Could not upgrade metroae script"
-            return 1
-        fi
-
-        set -e
+function check_if_mount_point_configured {
+    debug ${FUNCNAME[0]}
+    if [[ -z "$METROAE_MOUNT_POINT" ]]; then
+        echo ""
+        write_to_screen_and_script_log "We couldn't find the data directory configuration for the container in the configuration file."
+        echo "Please run 'metroae container setup' to correct this and try again."
+        echo ""
+        return 1
     fi
 }
 
 function setup_tab_completion {
+    debug ${FUNCNAME[0]}
+    echo ""
+    write_to_screen_and_script_log ">>> Checking to see if we can setup tab completion for your metroae script."
+    echo ""
+
     if [[ -f $SETUP_FILE ]]; then
         while read -r line; do declare $line; done < $SETUP_FILE
     fi
 
-    set +e
+   check_if_mount_point_configured
+
+    echo ""
+    write_to_screen_and_script_log ">>> Configure optional metroae script tab completion on your host"
+    echo ""
 
     if [[ ! -d $COMPLETION_DIR ]]; then
         write_to_script_log "Creating tab-completion dir: $COMPLETION_DIR"
+        set +e
         mkdir $COMPLETION_DIR
+        if [[ $? -ne 0 ]]; then
+            write_to_screen_and_script_log "We encountered an error creating the tab-completion directory on your host."
+            echo "We will not be configuring optional metroae script tab completion."
+            echo "You may continue to use the metroae script without tab completion."
+            echo ""
+            set -e
+            return 1
+        fi
+        set -e
     fi
 
     write_to_script_log "Copying tab-completion to standard dir: $METROAE_MOUNT_POINT/$TAB_COMPLETION_SCRIPT to $COMPLETION_DIR"
-    cp $METROAE_MOUNT_POINT/$TAB_COMPLETION_SCRIPT $COMPLETION_DIR
+    set +e
+    sudo cp $METROAE_MOUNT_POINT/$TAB_COMPLETION_SCRIPT $COMPLETION_DIR
     if [[ $? -ne 0 ]]; then
-        write_to_screen_and_script_log "Could not setup tab-completion"
+        write_to_screen_and_script_log "We encountered an error copying files to the tab-completion directory on your host."
+        echo "We will not be configuring optional metroae script tab completion."
+        echo "You may continue to use the metroae script without tab completion."
+        echo ""
+        set -e
+        return 1
     fi
     set -e
+    write_to_screen_and_script_log "Successfully configured optional metroae script tab completion."
+    echo ""
 }
 
 function run_container_if_not_running {
@@ -1091,6 +1146,7 @@ function check_for_user_group {
         sudo systemctl restart docker
         if [[ -d $INSTALL_FOLDER ]]; then
             sudo chown -R root:docker $INSTALL_FOLDER
+            sudo chmod -R 775 $INSTALL_FOLDER
         fi
     fi
 
@@ -1109,7 +1165,7 @@ function check_for_user_group {
         write_to_screen_and_script_log "It looks like the user `whoami` isn't a member of the 'docker' group. `whoami` must"
         write_to_screen_and_script_log "be a member of the 'docker' group to proceed."
         declare -l confirmation
-        if [[ -z $2 ]]; then
+        if [[ -z $1 ]]; then
             confirmation="init"
             while [[ $confirmation != "n" ]] && [[ $confirmation  != "y" ]] && [[ $confirmation != "" ]]
             do
@@ -1117,7 +1173,7 @@ function check_for_user_group {
                 read -p "Do you want the current user to be added to the docker group: (y/N) " confirmation
             done
         else
-            confirmation=$2
+            confirmation=$1
         fi
 
         if [[ $confirmation != "y" ]]; then
@@ -1418,12 +1474,12 @@ function config_main {
             ;;
             upgrade-engine)
             if [[ -z $2 ]]; then
-                upgrade_docker
+                update_container
             else
-                upgrade_docker $2
                 shift
+                update_container $*
             fi
-            shift
+            exit 0
             ;;
             interactive)
             interactive
@@ -1538,9 +1594,9 @@ function container_status {
             exit 1
         fi
         if [[ $METROAE_SETUP_TYPE == "c" ]]; then
-            current_setup_type="Config only"
+            current_setup_type="Config"
         elif [[ $METROAE_SETUP_TYPE == "d" ]]; then
-            current_setup_type="Deploy only"
+            current_setup_type="Deploy"
         elif [[ $METROAE_SETUP_TYPE == "b" ]]; then
             current_setup_type="Both Config and Deploy"
         else
@@ -1661,12 +1717,12 @@ function container_main {
             ;;
             upgrade-engine)
             if [[ -z $2 ]]; then
-                upgrade_docker
+                update_container
             else
-                upgrade_docker $2
                 shift
+                update_container $*
             fi
-            shift
+            exit 0
             ;;
             stop-ui)
             stop_ui
