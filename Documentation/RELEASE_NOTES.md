@@ -14,7 +14,7 @@
 
 ### Resolved Issues
 
-* None
+* Add support for new Nuage version changes (METROAE-1343)
 
 ## Test Matrix
 
