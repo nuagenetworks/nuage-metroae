@@ -2,8 +2,8 @@
 
 ## Release info
 
-* MetroAE Version 4.0.1
-* Nuage Release Alignment 6.0.5
+* MetroAE Version 4.1.0
+* Nuage Release Alignment TBD
 * Date of Release TBD
 
 ## Release Contents
@@ -14,17 +14,7 @@
 
 ### Resolved Issues
 
-* Support target_server_type == none for skipping predeploy
-* Fix prepositioning qcow2 files as a separate workflow
-* Fix permissions on /opt/metroae during setup
-* Fix paramiko version check
-* Fix Ansible syntax error when running disk performance stand-alone
-* Added Example for NSGv and NSGv access ports (METROAE-1344)
-* Fix NUH Destroy playbook error and add VMName support (METROAE-1351)
-* Skip docker images that aren't tagged
-* Document that pyvmomi version 6.7.3 should be used for vCenter environments
-* Fix VSC incorrectly requiring xmpp_username be defined
-* Set pip package versions to known, tested values
+* None
 
 ## Test Matrix
 
