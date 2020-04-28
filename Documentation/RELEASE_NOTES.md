@@ -11,6 +11,7 @@
 ### Feature Enhancements
 
 * Add support for VSTAT yum update via vstat_yum_update (METROAE-1190)
+* Check hypervisor disk space on KVM
 
 ### Resolved Issues
 
