@@ -10,7 +10,7 @@
 
 ### Feature Enhancements
 
-* None
+* Add support for VSTAT yum update via vstat_yum_update (METROAE-1190)
 
 ### Resolved Issues
 
