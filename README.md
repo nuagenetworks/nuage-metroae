@@ -1,7 +1,8 @@
 # Nuage Networks Metro Automation Engine (MetroAE)
+
 (4 minute read)
 
-Version: 4.0.0
+Version: 4.1.0
 
 MetroAE is an automation engine that deploys and upgrades Nuage Networks components. You specify the individual details of your target platform, then let MetroAE install, upgrade, destroy, or health-check the environment for you.
 
@@ -14,44 +15,53 @@ Please see [RELEASE_NOTES.md](Documentation/RELEASE_NOTES.md) for all the detail
 All MetroAE operations, including Docker container management, use a command `metroae` for consistent usage and syntax. Please see [DOCKER.md](Documentation/DOCKER.md) for details on configuration and use of the container version of MetroAE.
 
 ## Supported Components for Deployment and Upgrade
+
 MetroAE supports deployment and upgrade of the following components as VMs on the target server. These are the same target server types that are supported on the VSP platform.
 
 ![supported_components](Documentation/supported_components.png)
 
-#### Supported Dataplane components (installed as package/agent):
+### Supported Dataplane components (installed as package/agent):
 
 Component |  KVM <br>(el6, el7,ubuntu 14.04/16.04) | ESXi
 --------- | :----: | -------
 VRS (Virtual Routing & Switching) | X | (upgrade only)
 
-#### Required Auxiliary Services
+### Required Auxiliary Services
+
 * DNS/NTP
 
 ## Supported Target Servers
+
 MetroAE supports the deployment and upgrade of Nuage VSP components on the following target servers.
 
 ![supported_vms](Documentation/supported_vms.png)
 
 ## Typical Nuage Topology
+
 ![topology_rev](Documentation/topology_rev.png)
 
 ## Main Steps for Using MetroAE
 
 1. [Setup](Documentation/SETUP.md) the MetroAE host. Setup prepares the host for running MetroAE, including retrieving the repository, installing prerequisite packages and setting up SSH access. You also have the option of installing MetroAE in a container, and then working with it via CLI or the GUI.
 
-2. [Customize](Documentation/CUSTOMIZE.md) your deployment to match your network topology, and describe your Nuage Networks specifics.
+2. Obtain the proper Nuage binary files for your deployment. These can be downloaded from Nuage/Nokia online customer support.
 
-3. [Deploy](Documentation/DEPLOY.md) new components, upgrade a [standalone](Documentation/UPGRADE_SA.md) or [clustered](Documentation/UPGRADE_HA.md) deployment, or run a health check on your system.
+3. [Customize](Documentation/CUSTOMIZE.md) your deployment to match your network topology, and describe your Nuage Networks specifics.
 
-4. If things did not work out as expected, [destroy](Documentation/DESTROY.md) your environment and redeploy.
+4. [Deploy](Documentation/DEPLOY.md) new components, upgrade a [standalone](Documentation/UPGRADE_SA.md) or [clustered](Documentation/UPGRADE_HA.md) deployment, or run a health check on your system.
+
+5. If things did not work out as expected, [destroy](Documentation/DESTROY.md) your environment and redeploy.
 
 ## MetroAE Workflows
+
 MetroAE workflows are the operations that can be performed against a specified deployment.  All supported workflows can be listed via:
 
     metroae --list
 
 Workflows fall into the following categories:
-#### Standard Workflows
+
+### Standard Workflows
+
 Standard workflows in MetroAE perform the following operations:
 
 Workflow | Operation Description |
@@ -70,7 +80,8 @@ The following workflows are examples that combine together several of the above 
 * destroy everything - Destroys all components specified in a deployment.
 * health - Checks the health of all components specified in a deployment.
 
-#### Special Workflows
+### Special Workflows
+
 Special workflows in MetroAE perform certain specific operations. Some of them are shown below.
 
 Workflow | Operation Description |
@@ -83,7 +94,6 @@ wizard | Run MetroAE Wizard |
 vsd certificates renew | Renew certificates on VSDs |
 vsc harden | Harden the VSC configuration |
 
-
 ## Collecting Triage Collateral : get_debug.py
 
 In the event that you contact the MetroAE team for help, often via the team's email address, devops@nuagenetworks.net, you might be asked to provide a set of files that provide the collateral our engineers need to triage the situation. `get_debug.py` is provided to make the process of gathering files easier for you. `get_debug.py` will create a zip archive that contains the following files and folders:
@@ -95,6 +105,7 @@ In the event that you contact the MetroAE team for help, often via the team's em
 If you run `get_debug.py` without arguments, it will include the entire contents of the `deployments` folder, the entire contents of the `src/inventory` folder, and the file `ansible.log`, in a zip file in the current directory. The name of the file, by default, will be of the form `debug-<timestamp>.tar.gz`.
 
 Optionally, you can pass `get_debug.py` 1 or 2 parameters:
+
 * tarFileName: The name of the zip file to create. If not specified, the default value is of the form `debug-<timestamp>.tar.gz`
 * deploymentName: The name of the deployment folder under `deployments` to include in the zip file. If not specified, the default action is to include all folders under `deployments`.
 
@@ -102,6 +113,7 @@ Command To run the script: <br/>
 python get_debug.py [--tarFileName name-of-file] [--deploymentName name-of-deployment]
 
 ## Python-based Ansible Operations Tool
+
 MetroAE is based off of the Python-based Ansible operations tool.
 
 **Ansible** provides a method to easily define one or more actions to be performed on one or more computers. These tasks can target the local system Ansible is running from, as well as other systems that Ansible can reach over the network. The Ansible engine has minimal installation requirements. Python, with a few additional libraries, is all that is needed for the core engine. MetroAE includes a few custom Python modules and scripts. Agent software is not required on the hosts to be managed. Communication with target hosts defaults to SSH. Ansible does not require the use of a persistent state engine. Every Ansible run determines state as it goes, and adjusts as necessary given the action requirements. Running Ansible requires only an inventory of potential targets, state directives, either expressed as an ad hoc action, or a series coded in a YAML file, and the credentials necessary to communicate with the target.
@@ -111,6 +123,7 @@ MetroAE is based off of the Python-based Ansible operations tool.
 **Roles** build on the idea of include files and combine them to form clean, reusable abstractions. Roles are ways of automatically loading certain vars files, tasks, and handlers based on a known file structure.
 
 ## Nomenclature
+
 **Ansible Host**: The host where MetroAE runs. Ansible and the required packages are installed on this host. The Ansible Host must run el7 Linux host, e.g. CentOS 7.* or RHEL 7.*.
 
 **MetroAE User**: The user who runs MetroAE to deploy and upgrade components.
@@ -118,6 +131,7 @@ MetroAE is based off of the Python-based Ansible operations tool.
 **Target Server**: The hypervisor on which one or more VSP components are installed as VMs. Each deployment may contain more than one Target Server.
 
 ## Documentation
+
 The [Documentation](Documentation/) directory contains the following guides to assist you in successfully working with MetroAE. The current documentation covers using MetroAE CLI only.
 
 File name | Description
@@ -133,9 +147,11 @@ File name | Description
 [VAULT_ENCRYPT.md](Documentation/VAULT_ENCRYPT.md) | Safeguard sensitive data
 [DOCKER.md](Documentation/DOCKER.md) | Installing and using MetroAE Docker container
 [HOOKS_&_SKIPACTIONS.md](Documentation/HOOKS_&_SKIPACTIONS.md) | Configure ability to run custom commands in between playbooks and skip playbooks
-[VSD_SERVICES.md](Documentation/VSD_SERVICES.md) | Using MetroAE to control VSD Services during maintenance
+[VSD_SERVICES.md](Documentation/VSD_SERVICES.md) | Using MetroÆ to control VSD Services during maintenance
+[VSD_ROLLBACK_RESTORE.md](Documentation/VSD_ROLLBACK_RESTORE.md)| Roll Back or Restore VSD to original version outside normal upgrade path
 
 ## Questions, Feedback, and Contributing
+
 Ask questions and get support via the [forums](https://devops.nuagenetworks.net/forums/) on the [MetroAE site](https://devops.nuagenetworks.net/).
 You may also contact us directly.
   Outside Nokia: [devops@nuagenetworks.net](mailto:deveops@nuagenetworks.net "send email to nuage-metro project")
@@ -146,4 +162,5 @@ Report bugs you find and suggest new features and enhancements via the [GitHub I
 You may also [contribute](CONTRIBUTING.md) to MetroAE by submitting your own code to the project.
 
 ## License
+
 [LICENSE.md](LICENSE.md)

@@ -206,18 +206,10 @@
 
     when: master_vcin is defined
 
-  - name: Configure yum proxy
-    lineinfile:
-      dest: /etc/yum.conf
-      regexp: "^proxy="
-      line: "proxy={{ yum_proxy }}"
-    when: yum_proxy is not match('NONE')
-
-  - name: Execute a yum update (Can take 20 minutes)
-    yum:
-      name: '*'
-      state: latest
-    when: yum_update
+  - name: Excute yum update for vsd
+    include_role:
+      name: common
+      tasks_from: yum-update.yml
 
   - name: Disable cloud-init on VSD, to avoid boot time delays
     command: "{{ item }}"
@@ -249,6 +241,8 @@
         disk_performance_minimum_threshold: "{{ vsd_disk_performance_test_minimum_threshold }}"
         disk_performance_max_time: "{{ vsd_disk_performance_test_max_time }}"
         ignore_disk_performance_test_errors: "{{ vsd_ignore_disk_performance_test_errors }}"
+        disk_performance_username: "{{ vsd_custom_username | default(vsd_default_username) }}"
+        disk_performance_password: "{{ vsd_custom_password | default(vsd_default_password) }}"
 
     - name: Set fact that VSD Disk Performance Test ran
       set_fact:

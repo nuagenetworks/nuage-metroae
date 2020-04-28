@@ -18,26 +18,72 @@
 
   when: target_server_type | default('NONE') is match("kvm")
 
-- name: Check that image files were found
-  assert:
-    that: "image_path | default('MISSING') != 'MISSING' and image_file_name | default('MISSING') != 'MISSING'"
-    msg: "Missing image files for {{ hostname | default(vmname) }} under the unzipped file directory, please unzip them."
-  when: 
-    - target_server_type is match("kvm") or target_server_type is match("vcenter")
-    - component_type | default("NONE") != 'vrs'
-    - not (vsd_inplace_upgrade | default(false) and component_type | default("NONE") == 'vsd')
+- block:
+
+  - block:
+
+    - name: Check that image files were found
+      assert:
+        that: "image_path | default('MISSING') != 'MISSING' and image_file_name | default('MISSING') != 'MISSING'"
+        msg: "Missing image files for {{ hostname | default(vmname) }} under the unzipped file directory, please unzip them."
+      when: target_server_type is match("kvm") or target_server_type is match("vcenter")
+
+    when: component_type | default("NONE") != 'vrs'
+
+  - block:
+
+    - name: Check that VRS package files were found
+      assert:
+        that: "vrs_package_path | default('MISSING') != 'MISSING'"
+        msg: "Missing VRS package files under the unzipped file directory, please unzip them."
+
+    - name: Check that DKMS files were found
+      assert:
+        that: "dkms_package_path | default('MISSING') != 'MISSING'"
+        msg: "Missing VRS DKMS files under the unzipped file directory, please unzip it."
+      when: dkms_install
+
+    when: component_type | default("NONE") == 'vrs'
+
+  when: not vsd_inplace_upgrade | default(false)
 
 - block:
 
-  - name: Check that VRS package files were found
-    assert:
-      that: "vrs_package_path | default('MISSING') != 'MISSING'"
-      msg: "Missing VRS package files under the unzipped file directory, please unzip them."
+  - name: Check available disk space on hypervisor
+    include_role:
+      name: common
+      tasks_from: check-hypervisor-disk-space
+    vars:
+      required_available_space: "{{ required_available_disk_space | default(0) }}"
+      path: "{{ disk_space_path | default('NONE') }}"
 
-  - name: Check that DKMS files were found
-    assert:
-      that: "dkms_package_path | default('MISSING') != 'MISSING'"
-      msg: "Missing VRS DKMS files under the unzipped file directory, please unzip it."
-    when: dkms_install
+  delegate_to: "{{ target_server }}"
+  when: target_server_type | default('NONE') is match("kvm")
 
-  when: component_type | default("NONE") == 'vrs'
+- block:
+
+  - name: Get info on datastore
+    connection: local
+    vmware_datastore_info:
+      hostname: "{{ target_server }}"
+      username: "{{ vcenter.username }}"
+      password: "{{ vcenter.password }}"
+      validate_certs: no
+      cluster: "{{ vcenter.cluster }}"
+      datacenter: "{{ vcenter.datacenter }}"
+    register: datastore_facts
+
+  - name: Set fact for datastore free space
+    set_fact:
+      datastore_free_space_kb: "{{ datastore_facts['datastores'][0].freeSpace | float / 1024}}"
+
+  - name: Set fact for required available disk space
+    set_fact:
+      required_available_space_kb: "{{ required_available_disk_space | default(0) | float * (1024 * 1024) }}"
+
+  - name: Assert datastore has enough space for predeploy
+    assert:
+      that: (datastore_free_space_kb | float ) > (required_available_space_kb | float)
+      msg: "Insufficient disk space {{ datastore_free_space_kb | float / (1024 * 1024) }} GB for predeploy"
+
+  when: target_server_type | default('NONE') is match ("vcenter")
