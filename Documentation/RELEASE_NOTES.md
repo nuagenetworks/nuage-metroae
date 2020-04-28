@@ -2,7 +2,7 @@
 
 ## Release info
 
-* MetroAE Version 4.0.1
+* MetroAE Version 4.0.2
 * Nuage Release Alignment 6.0.5
 * Date of Release 27-April-2020
 
@@ -26,6 +26,7 @@
 * Fix VSC incorrectly requiring xmpp_username be defined
 * Set pip package versions to known, tested values
 * When installing, replace default config.cfg on VSC rather than exec
+* Undo automatic metroae install
 
 ## Test Matrix
 
