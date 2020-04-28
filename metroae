@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -e
 
-METROAE_VERSION="v4.0.0"
+METROAE_VERSION="v4.1.0"
 MENU=()
 
 #################################################################################
@@ -283,22 +283,28 @@ function get_max_container_version {
         MAX_CONTAINER_VERSION=$IMAGE_TAG
     else
         versions=`docker images 2>/dev/null | grep $METRO_AE_IMAGE | awk '{ print $2}'`
+        debug "versions = $versions"
         MAX_CONTAINER_VERSION=''
         for version in $versions
         do
-            if [[ -z $MAX_CONTAINER_VERSION ]]; then
-                    MAX_CONTAINER_VERSION=$version
-            fi
+            if [[ $version != "<none>" ]]; then
+                debug "version = $version"
+                if [[ -z $MAX_CONTAINER_VERSION ]]; then
+                        MAX_CONTAINER_VERSION=$version
+                fi
 
-            if [[ $MAX_CONTAINER_VERSION < $version ]]; then
-                    MAX_CONTAINER_VERSION=$version
+                if [[ $MAX_CONTAINER_VERSION < $version ]]; then
+                        MAX_CONTAINER_VERSION=$version
+                fi
             fi
+            debug "MAX_CONTAINER_VERSION = $MAX_CONTAINER_VERSION"
         done
 
         if [[ -z $MAX_CONTAINER_VERSION ]]; then
             MAX_CONTAINER_VERSION='current'
         fi
     fi
+    debug "Newest MetroAE container version found is $MAX_CONTAINER_VERSION"
     write_to_script_log "Newest MetroAE container version found is $MAX_CONTAINER_VERSION"
 }
 
@@ -436,7 +442,7 @@ function destroy {
     fi
 
     set +e
-    docker rmi $IMAGE_ID
+    docker rmi -f $IMAGE_ID
 
     if [[ $? -ne 0 ]]; then
         echo ""
@@ -855,8 +861,6 @@ function setup_container {
 
     run_container
 
-    update_metroae
-
     setup_tab_completion
 
     config_status=0
@@ -929,7 +933,7 @@ function get_user_path_input {
 function update_container {
     debug ${FUNCNAME[0]}
     declare -l confirmation
-    if [[ -z $1 ]]; then
+    if [[ -z $2 ]]; then
         confirmation="init"
         echo ""
         write_to_screen_and_script_log "You are about to update your MetroAE container to the latest version."
@@ -941,7 +945,7 @@ function update_container {
             read -p "Do you really want to update the MetroAE container? (y/N): " confirmation
         done
     else
-        confirmation=$1
+        confirmation=$2
     fi
 
     if [[ $confirmation != "y" ]]; then
@@ -963,8 +967,6 @@ function update_container {
         pull
     fi
     run_container
-
-    update_metroae
 }
 
 function check_if_mount_point_configured {
@@ -975,64 +977,6 @@ function check_if_mount_point_configured {
         echo "Please run 'metroae container setup' to correct this and try again."
         echo ""
         return 1
-    fi
-}
-
-function update_metroae {
-    debug ${FUNCNAME[0]}
-    if [[ $RUN_MODE == "CONTAINER" ]]; then
-        echo ""
-        write_to_screen_and_script_log ">>> Checking to see if we can update your metroae script."
-        echo ""
-
-        if [[ -f $SETUP_FILE ]]; then
-            while read -r line; do declare $line; done < $SETUP_FILE
-        fi
-
-        check_if_mount_point_configured
-
-        echo ""
-        write_to_screen_and_script_log ">>> Wait for the container to copy a new version file to the data directory"
-        echo ""
-        set +e
-        timeout 10 bash -c -- "while [[ ! -f $METROAE_MOUNT_POINT/version ]]; do sleep 1; done"
-        TEMP_RC=$?
-        debug $TEMP_RC
-        if [[ $TEMP_RC -ne 0 ]]; then
-            write_to_screen_and_script_log "We didn't find $METROAE_MOUNT_POINT/version."
-            echo "It could be that the version of metroae script you are running is the latest."
-            echo "Your copy of the metroae script will not be updated. You can continue to use your copy."
-            echo ""
-            set -e
-            return 1
-        fi
-        set -e
-
-        echo ""
-        write_to_screen_and_script_log ">>> Checking for a new version of the metroae script in the container data directory"
-        echo ""
-
-        if [[ ! -f "$METROAE_MOUNT_POINT/metroae" ]]; then
-            write_to_screen_and_script_log "We couldn't find a new copy of the metroae script in the data directory."
-            echo "It could be that the version of metroae script you are running is the latest."
-            echo "Your copy of the metroae script will not be updated. You can continue to use your copy."
-            echo ""
-            return 1
-        else
-            set +e
-            cp $METROAE_MOUNT_POINT/metroae "${BASH_SOURCE[0]}"
-
-            if [[ $? -ne 0 ]]; then
-                write_to_screen_and_script_log "We encountered an error copying $METROAE_MOUNT_POINT/metroae."
-                echo "Your copy of the metroae script will not be updated. You can continue to use your copy."
-                echo ""
-                set -e
-                return 1
-            fi
-            set -e
-            write_to_screen_and_script_log "Successfully updated your metroae script."
-            echo ""
-        fi
     fi
 }
 
@@ -1221,7 +1165,7 @@ function check_for_user_group {
         write_to_screen_and_script_log "It looks like the user `whoami` isn't a member of the 'docker' group. `whoami` must"
         write_to_screen_and_script_log "be a member of the 'docker' group to proceed."
         declare -l confirmation
-        if [[ -z $2 ]]; then
+        if [[ -z $1 ]]; then
             confirmation="init"
             while [[ $confirmation != "n" ]] && [[ $confirmation  != "y" ]] && [[ $confirmation != "" ]]
             do
@@ -1229,7 +1173,7 @@ function check_for_user_group {
                 read -p "Do you want the current user to be added to the docker group: (y/N) " confirmation
             done
         else
-            confirmation=$2
+            confirmation=$1
         fi
 
         if [[ $confirmation != "y" ]]; then
@@ -1532,10 +1476,10 @@ function config_main {
             if [[ -z $2 ]]; then
                 update_container
             else
-                update_container $2
                 shift
+                update_container $*
             fi
-            shift
+            exit 0
             ;;
             interactive)
             interactive
@@ -1775,10 +1719,10 @@ function container_main {
             if [[ -z $2 ]]; then
                 update_container
             else
-                update_container $2
                 shift
+                update_container $*
             fi
-            shift
+            exit 0
             ;;
             stop-ui)
             stop_ui
@@ -2006,7 +1950,7 @@ function config_help {
     echo "system inside the MetroAE container. To access metroae config help you can"
     echo "execute 'metroae config -h'. This will list the positional arguments that are"
     echo "supported by the tool. To get additional help for each positional argument,"
-    echo "execute 'metroae config <positional arguement> -h', e.g."
+    echo "execute 'metroae config <positional argument> -h', e.g."
     echo "'metroae config create -h'."
     echo ""
     echo "MetroAE config usage:"

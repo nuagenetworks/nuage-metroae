@@ -2,22 +2,24 @@
 
 ## Release info
 
-* MetroAE Version 4.0.1
-* Nuage Release Alignment 6.0.5
+* MetroAE Version 4.1.0
+* Nuage Release Alignment TBD
 * Date of Release TBD
 
 ## Release Contents
 
 ### Feature Enhancements
 
+* Add support for VSTAT yum update via vstat_yum_update (METROAE-1190)
+* Check hypervisor disk space on KVM and vCenter
+* Add NETCONF RPMs to unzip
 * Add Netconf Manager Support to MetroAE (METROAE-1204)
 
 ### Resolved Issues
 
-* Support target_server_type == none for skipping predeploy
-* Fix prepositioning qcow2 files as a separate workflow
-* Fix permissions on /opt/metroae during setup
-* Fix paramiko version check
+* Remove redundant <vcpu> tag from KVM XML
+
+* None
 
 ## Test Matrix
 
