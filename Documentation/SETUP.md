@@ -7,7 +7,6 @@ You can set up the MetroAE host environment either [with a Docker container](#me
 Using a Docker container results in a similar setup as a GitHub clone, plus it delivers the following features:
 * All prerequisites are satisfied by the container. Your only requirement for your server is that it run Docker engine.
 * Your data is located in the file system of the host where Docker is running. You don't need to get inside the container.
-* You have the option of running an API/UI server allowing you to access MetroAE functionality via REST API and a beta front-end GUI.
 * A future release will include Day 0 Configuration capabilities.
 
 #### System (and Other) Requirements
@@ -18,12 +17,18 @@ Using a Docker container results in a similar setup as a GitHub clone, plus it d
 
 #### Steps
 
-##### 1. Pull the latest Docker container using the following command:
+##### 1. Get a copy of the metroae script from the github repo
+```
+https://github.com/nuagenetworks/nuage-metro/blob/master/metroae
+```
+You can also copy the script out of a cloned workspace on your local machine. You can copy the metroae script to any directory of your choosing, e.g. `/usr/local/bin`. Note that you may need to set the script to be executeable via `chmod +x`.
+
+##### 2. Pull the latest Docker container using the following command:
 ```
 metroae container pull
 ```
 
-##### 2. Setup and start the Docker container using the following command:
+##### 3. Setup and start the Docker container using the following command:
 ```
 metroae container setup [path to data directory]
 ```
@@ -38,39 +43,32 @@ metroae container stop
 metroae container start
 ```
 
-##### 3. **For KVM Only**, copy the container ssh keys to your KVM target servers (aka hypervisors) using the following command:
+##### 4. **For KVM Only**, copy the container ssh keys to your KVM target servers (aka hypervisors) using the following command:
 ```
 metroae container ssh copyid [target_server_username]@[target_server]
 ```
 
 This command copies the container's public key into the ssh authorized_keys file on the specified target server. This key is required for passwordless ssh access from the container to the target servers. The command must be run once for every KVM target server. This step should be skipped if your target-server type is anything but KVM, e.g. vCenter or OpenStack.
 
-##### 4. **For ESXi / vCenter Only**, install ovftool and copy to metroae_data directory
+##### 5. **For ESXi / vCenter Only**, install ovftool and copy to metroae_data directory
 
 When running the MetroAE Docker container, the container will need to have access to the ovftool command installed on the Docker host. The following steps are suggested:
 
-###### 4.1. Install ovftool
+###### 5.1. Install ovftool
 
 Download and install the [ovftool](https://www.vmware.com/support/developer/ovf/) from VMware.
 
-###### 4.2. Copy ovftool installation to metroae_data directory
+###### 5.2. Copy ovftool installation to metroae_data directory
 
 The ovftool command and supporting files are usually installed in the /usr/lib/vmware-ovftool on the host. In order to the metroae container to be able to access these files, you must copy the entire folder to the metroae_data directory on the host. For example, if you have configured the container to use `/tmp/metroae_data` on your host, you would copy `/usr/lib/vmware-ovftool` to `/tmp/metroae_data/vmware-ovftool`. Note: Docker does not support following symlinks. You must copy the files as instructed.
 
-###### 4.3. Configure the ovftool path in your deployment
+###### 5.3. Configure the ovftool path in your deployment
 
 The path to the ovftool is configured in your deployment in the common.yml file. Uncomment and set the variable 'vcenter_ovftool' to the container-relative path to where you copied the `/usr/lib/vmware-ovftool` folder. This is required because metroae will attempt to execute ovftool from within the container. From inside the container, metroae can only access paths that have been mounted from the host. In this case, this is the metroae_data directory which is mounted inside the container as `/metroae_data`. For our example, in common.yml you would set `vcenter_ovftool: /metroae_data/vmware-ovftool/ovftool`.
 
-##### 5. Optional: Start the UI using this command:
-```
-metroae gui start
-```
-This command will ensure that the MetroAE GUI server is running. When running, you an point your browser at `http://host:5001` to access the GUI. *THE GUI IS IN BETA!* You are free to use it, but you can expect to run into issues because it is not GA quality.
-
-##### 6. You can check the status of the container or GUI at any time using the following commands:
-```
-metroae container status
-metroae gui status
+##### 6. You can check the status of the container at any time using the following command:	
+```	
+metroae container status	
 ```
 
 That's it! Container configuration data and logs will now appear in the newly created `/opt/metroae` directory. Documentation, examples, deployments, and the ansible.log file will appear in the data directory configured during setup, `/tmp/metroae_data` in our examples, above. See [DOCKER.md](DOCKER.md) for specfic details of each command and container management command options. Now you're ready to [customize](CUSTOMIZE.md) for your topology.
@@ -109,8 +107,10 @@ The script writes a detailed log into *setup.log* for your reference. A *Setup c
 
  Package  | Command
  -------- | -------
- pyvmomi  | `pip install pyvmomi`
+ pyvmomi  | `pip install pyvmomi==6.7.3`
  jmespath | `pip install jmespath`
+ 
+Note that we have specified version 6.7.3 for pyvmomi. We test with this version. Newer versions of pyvmomi may cause package conflicts.
 
  If you are installing VSP components in a VMware environment (ESXi/vCenter) download and install the [ovftool](https://www.vmware.com/support/developer/ovf/) from VMware. MetroAE uses ovftool for OVA operations.
 
@@ -140,7 +140,7 @@ metroae tools unzip images [zipped_directory] [nuage_unzipped_files_dir]
 Note: After completing setup you will [customize](CUSTOMIZE.md) for your deployment, and you'll need to add this unzipped files directory path to `common.yml`.
 
 ### Method Two: Manually
-Alternatively, you can create the directories under the [nuage_unzipped_files_dir] directory and manually copy the appropriate files to those locations as shown in the example below.
+Alternatively, you can create the directories under the [nuage_unzipped_files_dir] directory and manually copy or unzip the appropriate files to that location. MetroAE uses `find` to locate the files under [nuage_unzipped_files_dir], so the precise location under that directory is not significant. For reference, the automatic unzip in Method One puts files in the following locations:
 
   ```
   <nuage_unzipped_files_dir>/vsd/qcow2/
@@ -152,8 +152,10 @@ Alternatively, you can create the directories under the [nuage_unzipped_files_di
   <nuage_unzipped_files_dir>/vrs/hyperv/
   <nuage_unzipped_files_dir>/vstat/
   <nuage_unzipped_files_dir>/vns/nsg/
+  <nuage_unzipped_files_dir>/vns/nuh/
   <nuage_unzipped_files_dir>/vns/util/
   ```
+  
 Note: After completing setup you will customize for your deployment, and you'll need to add this unzipped files directory path to `common.yml`.
 
 ## Next Step

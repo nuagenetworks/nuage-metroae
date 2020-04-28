@@ -241,6 +241,8 @@
         disk_performance_minimum_threshold: "{{ vsd_disk_performance_test_minimum_threshold }}"
         disk_performance_max_time: "{{ vsd_disk_performance_test_max_time }}"
         ignore_disk_performance_test_errors: "{{ vsd_ignore_disk_performance_test_errors }}"
+        disk_performance_username: "{{ vsd_custom_username | default(vsd_default_username) }}"
+        disk_performance_password: "{{ vsd_custom_password | default(vsd_default_password) }}"
 
     - name: Set fact that VSD Disk Performance Test ran
       set_fact:
@@ -337,6 +339,15 @@
     - component_type == "vsd"
     - not vsd_standby_cluster | default(False)
 
+- name: Setup health monitoring
+  include_role:
+    name: setup-health-monitoring
+  vars:
+    component_username: "{{ vsd_default_username }}"
+  when:
+    - not skip_vsd_deploy
+    - health_monitoring_agent | default("none") != "none"
+
 - block:
 
   - name: Get monit summary for all process on VSD
@@ -363,11 +374,6 @@
       name: "{{ proc_list['state'].keys() | difference(remove_list) }}"
       timeout_seconds: 1200
       test_interval_seconds: 30
-
-  - name: Apply licenses to VSD
-    include_role:
-      name: common
-      tasks_from: apply-licenses-to-vsd
 
   when:
     - component_type == "vsd"

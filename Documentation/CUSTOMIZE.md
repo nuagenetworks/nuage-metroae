@@ -58,7 +58,7 @@ The deployment files that can be configured using the wizard, spreadhseet, or ed
 `common.yml` contains the common configuration parameters for the deployment that are used for all components and workflows.  This file is always required for any workflow.
 
 #### Notes for `common.yml`
-- `nuage_unzipped_files_dir` is a required parameter that points to the location of the image and package files used for Install and Upgrade workflows. When running MetroAE in a container, this parameter should *not* begin with a '/' and be set equal to the relative path from the images path you configured when you installed the container. For example, if you set the images path for the container to `/home/username/images` and you will unzip the files you are going to use into `/home/username/images/6.0.1`, set `nuage_unzipped_files_dir` to `6.0.1`. MetroAE will concatenate the two paths to access your files. If, however, you are operating without the container and, instead, cloned the nuage-metro repo to your disk, set `nuage_unzipped_files_dir` to the full, absolute path to the images directory, `/home/username/images/6.0.1` in the example, above.
+- `nuage_unzipped_files_dir` is a required parameter that points to the location of the binary image and package files used for Install and Upgrade workflows. We require that you have obtained those files from Nuage/Nokia online customer support prior to running MetroAE. When running MetroAE in a container, this parameter should *not* begin with a '/' and be set equal to the relative path from the images path you configured when you installed the container. For example, if you set the images path for the container to `/home/username/images` and you will unzip the files you are going to use into `/home/username/images/6.0.1`, set `nuage_unzipped_files_dir` to `6.0.1`. MetroAE will concatenate the two paths to access your files. If, however, you are operating without the container and, instead, cloned the nuage-metro repo to your disk, set `nuage_unzipped_files_dir` to the full, absolute path to the images directory, `/home/username/images/6.0.1` in the example, above.
 - For best performance, `ntp_server_list` should include the same servers that the target servers will be using. This will help to ensure NTP synchronization.
 
 ### `credentials.yml`
@@ -100,7 +100,7 @@ When installing or upgrading an active-standby, geo-redundant cluster, all 6 VSD
 ## VSD Disk Performance Testing
 You can use MetroAE to verify that your VSD setup has sufficient disk performance (IOPS). By default, the disk performance test will run at the beginning of the VSD deploy step, prior to installing the VSD software. The parameters that you can use to control the operation of the test are available in 'common.yml'. You can skip the test, specify the total size of all the files used in the test, and modify the minimum threshold requirement in IOPS for the test. Note that to minimize the effects of file sstem caching, the total file size must exceed the total RAM on the VSD. If MetroAE finds that the test is enabled and the disk performance is below the threshold, an error will occur and installation will stop. The default values that are provided for the test are recommended for best VSD performance in most cases. Your specific situation may require different values or to skip the test entirely.
 
-In addition to the automatic execution that takes place in the VSD deploy step, you can run the VSD disk performance test at any time using `metroae vsd test disk`. 
+In addition to the automatic execution that takes place in the VSD deploy step, you can run the VSD disk performance test at any time using `metroae vsd test disk`.
 
 ## Enabling post-installation security features
 You can use MetroAE to enable optional post-installation security features to 'harden' the installation. Your deployment contains a number of optional variables that can be used to accomplish this. These variables are described, below. For more detail, please see the Nuage VSP Install Guide.
@@ -123,6 +123,9 @@ You can use MetroAE to enable optional post-installation security features to 'h
 - `ca_certificate_path` is an optional parameter that points to the location of the certificate of the signing authority.
 - `certificate_path` is an optional parameter that points to the location of the certificate pem file for the vrs.
 - `private_key_path` is an optional parameter that points to the location of the certificate private key pem file for the vrs.
+
+### `vnsutils`
+Currently post install security hardening is not supported for VNSUTILs(proxy) using MetroAE. If using custom certificates, they need to copied into /opt/proxy/config/keys and supervisord needs to be restarted.
 
 ### Operating using the Default Deployment
 The Default deployment is provided as a starting place for your workflows. It is located in a subdirectory named `Default` within the Deployments directory. You can operate MetroAE by simply editing the contents of the Default deployment. Follow these steps:

@@ -66,7 +66,10 @@
         register: current_user_ssh_key
 
       - name: Create a temporary copy of the authorized_keys file
-        template: src=authorized_keys.j2 backup=no dest=/tmp/authorized_keys_temp
+        template:
+          src: "{{ role_path }}/../common/templates/authorized_keys.j2"
+          backup: no
+          dest: /tmp/authorized_keys_temp
 
       - name: Copy authorized file to vsd custom user home directory
         expect:
@@ -230,6 +233,24 @@
       mode: 0640
     when: certificate_path is defined
 
+  - name: Copy VSD certificate to ejabberd
+    copy:
+      src: "{{ certificate_path }}"
+      dest: "/opt/ejabberd/conf/server.pem"
+      owner: ejabberd
+      group: hadoopusers
+      mode: 0640
+    when: certificate_path is defined
+
+  - name: Copy Root certificate to ejabberd
+    copy:
+      src: "{{ ca_certificate_path }}"
+      dest: "/opt/ejabberd/conf/rootca.pem"
+      owner: ejabberd
+      group: hadoopusers
+      mode: 0640
+    when: ca_certificate_path is defined
+
   - name: Import Intermediate Cert Pem file
     shell: '{{ java_home.stdout }}/bin/keytool -importcert  -file /opt/vsd/ejbca/p12/intermediate.cert.pem -keystore {{ java_home.stdout }}/lib/security/cacerts -storepass {{ jreStorePwd | default("changeit") }} -alias myintermediateCA -noprompt'
     when:
@@ -275,6 +296,44 @@
       timeout_seconds: 1200
       test_interval_seconds: 30
 
+  - name: Check communication with ejabberd
+    shell: /bin/openssl s_client -connect {{ vsd_fqdn }}:5222 -starttls xmpp -showcerts <<< Q
+    register: openssl_output
+
+  - name: Assert that xmpp tls is connected
+    assert:
+      that: "openssl_output.stdout is search('CONNECTED')"
+      msg: "Openssl failed to connect with {{ vsd_fqdn }}. Please make sure the certificates are valid"
+
+  - block:
+    - name: Check connected user on ejabberd
+      shell: /opt/ejabberd/bin/ejabberdctl connected_users | wc -l
+      register: ejabberdctl_output
+      until: ejabberdctl_output.stdout | int >= 3
+      retries: 10
+      delay: 15
+
+    - name: Assert there are more than 3 connected user for standalone
+      assert:
+        that: "ejabberdctl_output.stdout | int >= 3"
+        msg: "Ejabberd failed to connect with all the users. Please make sure the certificates are valid"
+
+    when: vsd_sa_or_ha is match ('sa')
+
+  - block:
+    - name: Check connected user on ejabberd
+      shell: /opt/ejabberd/bin/ejabberdctl connected_users | wc -l
+      register: ejabberdctl_output
+      until: ejabberdctl_output.stdout | int >= 9
+      retries: 10
+      delay: 15
+
+    - name: Assert there are more than 9 connected user for clustered
+      assert:
+        that: "ejabberdctl_output.stdout | int >= 9"
+        msg: "Ejabberd failed to connect with all the users. Please make sure the certificates are valid"
+
+    when: vsd_sa_or_ha is match ('ha')
 
   remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
   become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
