@@ -16,6 +16,8 @@
 
 ### Resolved Issues
 
+* Remove redundant <vcpu> tag from KVM XML
+
 * None
 
 ## Test Matrix
