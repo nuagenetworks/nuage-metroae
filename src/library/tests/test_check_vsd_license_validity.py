@@ -8,7 +8,7 @@ TEST_PARAMS = {
         "password": "csproot",
         "enterprise": "csp",
         "api_url": "https://localhost:8443"},
-    "vsd_version": "5.4.1",
+    "vsd_version": "6.0.3",
     "required_days_left": 365
 }
 SECONDS_PER_DAY = 60 * 60 * 24
@@ -48,7 +48,7 @@ class TestVsdLicenseValid(object):
         return mock_license
 
     def validate_session(self, import_patch):
-        import_patch.assert_called_once_with("vspk.v5_0")
+        import_patch.assert_called_once_with("vspk.v6")
         self.mock_vspk.NUVSDSession.assert_called_with(
             **TEST_PARAMS["vsd_auth"])
         self.mock_session.start.assert_called_with()
@@ -81,7 +81,7 @@ class TestVsdLicenseValid(object):
 
         main()
 
-        import_patch.assert_called_once_with("vspk.v5_0")
+        import_patch.assert_called_once_with("vspk.v6")
         mock_module.fail_json.assert_called_once_with(
             msg="vspk is required for this module, or "
             "API version specified does not exist.")
@@ -102,7 +102,7 @@ class TestVsdLicenseValid(object):
 
         main()
 
-        import_patch.assert_called_once_with("vspk.v5_0")
+        import_patch.assert_called_once_with("vspk.v6")
         mock_vspk.NUVSDSession.assert_called_with(**TEST_PARAMS["vsd_auth"])
         mock_session.start.assert_called_with()
         mock_module.fail_json.assert_called_once_with(
