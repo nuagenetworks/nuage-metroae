@@ -10,11 +10,14 @@
 
 ### Feature Enhancements
 
-* None
+* Add support for VSTAT yum update via vstat_yum_update (METROAE-1190)
+* Check hypervisor disk space on KVM and vCenter
+* Add NETCONF RPMs to unzip
+* Add support for new Nuage version format, e.g. 20.6 (METROAE-1343)
 
 ### Resolved Issues
 
-* Add support for new Nuage version changes (METROAE-1343)
+* Remove redundant <vcpu> tag from KVM XML
 
 ## Test Matrix
 
