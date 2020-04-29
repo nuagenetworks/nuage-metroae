@@ -16,11 +16,12 @@
   run_once: true
 
 - name: Get the es version after upgrade
-  command: "curl localhost:9200"
+  command: "curl localhost:9200"        # noqa 303
   register: upgraded_version
   until: upgraded_version.rc == 0
   retries: 5
   delay: 30
+  changed_when: upgraded_version.rc == 0
 
 - name: Convert version to json format
   set_fact:
@@ -29,6 +30,7 @@
 - name: Get es version saved on vstat node(s)
   command: "cat /root/current_es_version.log"
   register: old_es_version
+  changed_when: False
 
 - name: Compare es versions before and after upgrade
   assert:
