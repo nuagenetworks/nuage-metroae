@@ -59,3 +59,31 @@
 
   delegate_to: "{{ target_server }}"
   when: target_server_type | default('NONE') is match("kvm")
+
+- block:
+
+  - name: Get info on datastore
+    connection: local
+    vmware_datastore_info:
+      hostname: "{{ target_server }}"
+      username: "{{ vcenter.username }}"
+      password: "{{ vcenter.password }}"
+      validate_certs: no
+      cluster: "{{ vcenter.cluster }}"
+      datacenter: "{{ vcenter.datacenter }}"
+    register: datastore_facts
+
+  - name: Set fact for datastore free space
+    set_fact:
+      datastore_free_space_kb: "{{ datastore_facts['datastores'][0].freeSpace | float / 1024}}"
+
+  - name: Set fact for required available disk space
+    set_fact:
+      required_available_space_kb: "{{ required_available_disk_space | default(0) | float * (1024 * 1024) }}"
+
+  - name: Assert datastore has enough space for predeploy
+    assert:
+      that: (datastore_free_space_kb | float ) > (required_available_space_kb | float)
+      msg: "Insufficient disk space {{ datastore_free_space_kb | float / (1024 * 1024) }} GB for predeploy"
+
+  when: target_server_type | default('NONE') is match ("vcenter")

@@ -11,9 +11,12 @@
 ### Feature Enhancements
 
 * Add support for VSTAT yum update via vstat_yum_update (METROAE-1190)
-* Check hypervisor disk space on KVM
+* Check hypervisor disk space on KVM and vCenter
+* Add NETCONF RPMs to unzip
 
 ### Resolved Issues
+
+* Remove redundant <vcpu> tag from KVM XML
 
 * None
 
