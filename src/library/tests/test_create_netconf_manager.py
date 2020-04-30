@@ -14,7 +14,9 @@ TEST_PARAMS = {
         "lastName": "Doe",
         "email": "user@email.com",
         "password": "pass",
-        "netconf_user": "proxy"}}
+        "netconf_user": "proxy"},
+    "vsd_version": "5.4.1"
+}
 
 
 def setup_module(module_patch, params=None):
