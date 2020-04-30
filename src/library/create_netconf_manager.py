@@ -7,7 +7,7 @@ DOCUMENTATION = '''
 
 ---
 module: create_netconf_manager
-short_description: Create Netconf user and attach it to netconf manager group on VSD
+short_description: Create NETCONF user and attach it to NETCONF manager group on VSD
 options:
   vsd_auth:
     description:
