@@ -2,7 +2,7 @@ from library.create_netconf_manager import main
 from mock import call, patch, MagicMock
 
 MODULE_PATCH = "library.create_netconf_manager.AnsibleModule"
-VSPK_PATCH = "library.create_netconf_manager.VSPK"
+YAML_PATCH = "library.create_netconf_manager.AnsibleModule"
 TEST_PARAMS = {
     "vsd_auth": {
         "username": "csproot",
@@ -32,53 +32,67 @@ def setup_module(module_patch, params=None):
 
 class TestCreateNetconfManager(object):
 
-    def setup_session(self, vspk_patch):
+    def setup_session(self, import_patch):
         self.mock_vspk = MagicMock()
-        vspk_patch.return_value = self.mock_vspk
+        import_patch.return_value = self.mock_vspk
         self.mock_session = MagicMock()
-
-        self.mock_root = MagicMock()
-        self.mock_session.user = self.mock_root
+        mock_root = MagicMock()
+        self.mock_session.user = mock_root
         self.mock_vspk.NUVSDSession.return_value = self.mock_session
 
-    def verify_session(self, vspk_patch):
+        return mock_root
+
+    def make_mock_ent(self, name, ent_id):
+        ent = MagicMock()
+        ent.name = name
+        ent.id = ent_id
+        return ent
+
+    def setup_enterprise(self, mock_root):
+        self.enterprises = [
+            self.make_mock_ent("Shared Infrastructure", 1),
+            self.make_mock_ent("ent2", 2),
+            self.make_mock_ent("ent3", 3)
+        ]
+        mock_root.enterprises.get.return_value = self.enterprises
+
+    def verify_session(self, import_patch):
+        import_patch.assert_called_once_with("vspk.v5_0")
         self.mock_vspk.NUVSDSession.assert_called_once_with(
             **TEST_PARAMS["vsd_auth"])
         self.mock_session.start.assert_called_once_with()
 
-    def verify_netconf_user(self, vspk_patch):
-        vspk_patch.NUUser.assert_has_calls([call(
+    def verify_netconf_user(self, import_patch):
+        import_patch.NUUser.assert_has_calls([call(
             first_name=TEST_PARAMS["netconf_manager_user"]['firstName'],
             last_name=TEST_PARAMS["netconf_manager_user"]['lastName'],
             user_name=TEST_PARAMS["netconf_manager_user"]['netconf_user'],
             email=TEST_PARAMS["netconf_manager_user"]['email'],
             password=TEST_PARAMS["netconf_manager_user"]['password'])])
 
+    @patch("importlib.import_module")
     @patch(MODULE_PATCH)
-    @patch(VSPK_PATCH)
-    @patch("subprocess.call")
-    def test_iso_create__success(self, mock_subproc, vspk_patch, module_patch):
+    def test_iso_create__success(self, import_patch, module_patch):
         mock_module = setup_module(module_patch)
-        self.setup_session(vspk_patch)
+        mock_root = self.setup_session(import_patch)
+        self.setup_enterprise(mock_root)
 
         main()
 
-        self.verify_session(vspk_patch)
-        self.verify_netconf_user(vspk_patch)
+        self.verify_session(import_patch)
+        self.verify_netconf_user(import_patch)
 
         mock_module.fail_json.assert_not_called()
 
+    @patch("importlib.import_module")
     @patch(MODULE_PATCH)
-    @patch(VSPK_PATCH)
-    def test__cannot_connect(self, vspk_patch, module_patch):
+    def test__cannot_connect(self, module_patch, import_patch):
         mock_module = setup_module(module_patch)
-
-        mock_session = MagicMock()
-        self.mock_vspk.NUVSDSession.return_value = mock_session
-        mock_session.start.side_effect = Exception("Test")
+        self.setup_session(import_patch)
+        self.mock_session.start.side_effect = Exception("cannot connect")
 
         main()
 
-        mock_module.fail_json.assert_called_once()
-        args, kwargs = mock_module.fail_json.call_args_list[0]
-        assert "ERROR: Could not establish connection to VSD" in kwargs["msg"]
+        import_patch.assert_called_once_with("vspk.v5_0")
+        mock_module.fail_json.assert_called_once_with(
+            msg="Could not establish connection to VSD cannot connect")
