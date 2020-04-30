@@ -1,7 +1,9 @@
 #!/usr/bin/env python
 
-import vspk.v5_0 as VSPK
+import importlib
 from ansible.module_utils.basic import AnsibleModule
+
+VSPK = None
 
 DOCUMENTATION = '''
 
@@ -26,6 +28,11 @@ options:
       - password
       - netconf_user
     required:True
+  vsd_version:
+    description:
+      - VSD version
+    required: true
+    default: null
 '''
 
 EXAMPLES = '''
@@ -41,11 +48,31 @@ EXAMPLES = '''
         email: user@email.com
         password: pass
         netconf_user: proxy
+    vsd_version: 5.4.1
 '''
 
 
-def create_netconf_user(module, session):
-    netconf_manager_user = module.params['netconf_manager_user']
+def format_api_version(version):
+    if version.startswith('3'):
+        return ('v3_2')
+    elif version.startswith('6'):
+        return ('v' + version[0])
+    elif version.startswith('20'):
+        return ('v6')
+    else:
+        return ('v' + version[0] + '_0')
+
+
+def get_vsd_session(vsd_auth, vsd_version):
+    version = format_api_version(vsd_version)
+    global VSPK
+    VSPK = importlib.import_module('vspk.{0:s}'.format(version))
+    session = VSPK.NUVSDSession(**vsd_auth)
+    session.start()
+    return session
+
+
+def create_netconf_user(netconf_manager_user, session):
 
     # Create proxy user if not present
     cspenterprise = VSPK.NUEnterprise()
@@ -75,22 +102,28 @@ def main():
         netconf_manager_user=dict(
             required=True,
             no_log=True,
-            type='dict'))
+            type='dict'),
+        vsd_version=dict(
+            required=True,
+            type='str')
+    )
 
     module = AnsibleModule(argument_spec=arg_spec, supports_check_mode=True)
     vsd_auth = module.params['vsd_auth']
+    vsd_version = module.params['vsd_version']
+    netconf_manager_user = module.params['netconf_manager_user']
 
-    # Create a session as csp user
     try:
-        session = VSPK.NUVSDSession(**vsd_auth)
-        session.start()
+        session = get_vsd_session(vsd_auth, vsd_version)
+    except ImportError:
+        module.fail_json(msg='vspk is required for this module, or '
+                         'API version specified does not exist.')
+        return
     except Exception as e:
-        module.fail_json(
-            msg="ERROR: Could not establish connection to VSD API "
-                "using %s: %s" % (vsd_auth, str(e)))
+        module.fail_json(msg="Could not establish connection to VSD %s" % e)
         return
 
-    create_netconf_user(module, session)
+    create_netconf_user(netconf_manager_user, session)
     module.exit_json(changed=True)
 
 
