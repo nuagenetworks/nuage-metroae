@@ -72,7 +72,7 @@ class TestCreateNetconfManager(object):
 
     @patch("importlib.import_module")
     @patch(MODULE_PATCH)
-    def test_iso_create__success(self, import_patch, module_patch):
+    def test_iso_create__success(self, module_patch, import_patch):
         mock_module = setup_module(module_patch)
         mock_root = self.setup_session(import_patch)
         self.setup_enterprise(mock_root)
