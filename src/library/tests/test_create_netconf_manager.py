@@ -33,14 +33,16 @@ def setup_module(module_patch, params=None):
 class TestCreateNetconfManager(object):
 
     def setup_session(self, vspk_patch):
-
+        self.mock_vspk = MagicMock()
+        vspk_patch.return_value = self.mock_vspk
         self.mock_session = MagicMock()
-        vspk_patch.NUVSDSession.return_value = self.mock_session
+
         self.mock_root = MagicMock()
         self.mock_session.user = self.mock_root
+        self.mock_vspk.NUVSDSession.return_value = self.mock_session
 
     def verify_session(self, vspk_patch):
-        vspk_patch.NUVSDSession.assert_called_once_with(
+        self.mock_vspk.NUVSDSession.assert_called_once_with(
             **TEST_PARAMS["vsd_auth"])
         self.mock_session.start.assert_called_once_with()
 
@@ -72,7 +74,7 @@ class TestCreateNetconfManager(object):
         mock_module = setup_module(module_patch)
 
         mock_session = MagicMock()
-        vspk_patch.NUVSDSession.return_value = mock_session
+        self.mock_vspk.NUVSDSession.return_value = mock_session
         mock_session.start.side_effect = Exception("Test")
 
         main()
