@@ -1,42 +1,76 @@
 # Metro Automation Engine Release Notes
 
-## Release 4.0.0
+## Release info
+
+* MetroAE Version 4.1.0
+* Nuage Release Alignment TBD
+* Date of Release TBD
+
+## Release Contents
 
 ### Feature Enhancements
 
-* Refactor metroae command to support container management; RPM no longer required.
-* Introduce day-zero VSD configuration support via `metroae config` (container only)
-* Add support for Multiple VSC underlay VPRNs (MetroAE-1175)
-* Add support for VSD disk I/O testing using sysbench (METROAE-1169)
-* Add VSC hardening (METROAE-1183)
-* Add support for VSD certificate renewal standalone procedure (METROAE-1188)
-* Add support for setting up Zabbix health monitoring on compatible VSP components.
-* Bash tab-completion support for metroae command
-* Add VSD cluster RTT tests with configurable threshold (METROAE-766)
-* Add support for VSTAT standby only deployment (METROAE-1081)
-* Add discovery of existing components in wizard for KVM and vCenter
-* Add option to backup and restore the /etc/host file on VSD during upgrade (METROAE-1187)
-* Add support for zero factor bootstrapping multi uplinks for NSGvs (METROAE-852)
-* Add support for downloading the container from S3 in tar format (METROAE-1210)
+* Add support for VSTAT yum update via vstat_yum_update (METROAE-1190)
+* Check hypervisor disk space on KVM and vCenter
+* Add NETCONF RPMs to unzip
 
 ### Resolved Issues
 
-* Fix VSC examples to have valid system ip address (METROAE-1177)
-* Fix NTP retries masking non NTP sync errors (METROAE-1153)
-* Fix fallocate failure on path with symbolic link (METROAE-1167)
-* Fix deprecated task and changed result format for vmware_vm_facts (METROAE-1179)
-* Detect when unresolved jinja2 is present in inventory (METROAE-820)
-* Check for required disk space on VSD for backup files during upgrade health check (METROAE-1182)
-* Fix issue with VSD failover procedure with Active Standby VSTATs (METROAE-1061)
-* Convert shell mkdir tasks to ansible file module (METROAE-1059)
-* Add optional user prompt confirmation before destroying components (METROAE-868)
-* Improved debugging output for vCenter ovftool commands (METROAE-981)
-* Vastly improved predeploy roles for code reuse (METROAE-801)
-* Moved default reports directory out of playbooks and into metro root directory (METROAE-879)
-* Get the debug log script working with container (METROAE-1202)
-* Prevent presence of upgrade.yml from causing install to fail (METROAE-1161)
-* No longer error if patch upgrade includes non-VSD components
+* Remove redundant <vcpu> tag from KVM XML
 
-### Removed
+* None
 
-* Removed obsolete os_vsd_osc_integration playbook and associated role and files.
+## Test Matrix
+
+This release was tested according to the following test matrix. Other combinations and versions have been tested in previous releases of MetroAE and are likely to work. We encourage you to test this in your lab before you apply it in production.
+
+Workflow | Target Server | Version
+-------- | -------- | --------
+Install | KVM | Geo-redundant 6.0.3
+Install | KVM | HA 5.3.3
+Install | KVM | HA 5.4.1
+Install | KVM | HA 6.0.3
+Install | KVM | Active-Standby ES 6.0.3
+Install | KVM | HA IPv6 6.0.3
+Install | KVM | SA 5.3.3
+Install | KVM | SA 5.4.1
+Install | KVM | SA 6.0.3
+Install | KVM | Add VSC pair 6.0.3
+Install | KVM | SA CPU pinning 6.0.3
+Install | KVM | SA VNS end-to-end 6.0.3
+Install | KVM | SA VNS multi-uplinks 6.0.3
+Install | KVM | SA feature tests 6.0.3
+Install | KVM | SA IPv6 6.0.3
+Install | KVM | SA Terraform 6.0.3
+Install | KVM | SA via Container 6.0.3
+Install | OpenStack | HA 5.3.2
+Install | OpenStack | HA 6.0.3
+Install | OpenStack | SA 5.3.2
+Install | OpenStack | SA 6.0.3
+Install | vCenter | HA w/VCIN 6.0.3
+Install | vCenter | HA w/Hybrid VCIN 6.0.3
+Install | vCenter | HA 5.3.3
+Install | vCenter | HA 5.4.1
+Install | vCenter | HA 6.0.3
+Install | vCenter | HA Custom passwords 6.0.3
+Install | vCenter | SA 5.3.3
+Install | vCenter | SA 5.4.1
+Install | vCenter | SA 6.0.3
+Install | vCenter | SA Custom passwords 6.0.3
+Upgrade | KVM | Geo-redundant 5.4.1-6.0.3
+Upgrade | KVM | HA 5.3.3-6.0.3
+Upgrade | KVM | HA inplace 5.4.1-5.4.1U5
+Upgrade | KVM | HA 5.4.1-6.0.3
+Upgrade | KVM | HA hardened 5.4.1-6.0.3
+Upgrade | KVM | HA inplace 6.0.3-6.0.5
+Upgrade | OpenStack | HA 5.4.1-6.0.3
+Upgrade | OpenStack | SA 5.4.1-6.0.3
+Upgrade | vCenter | HA 5.4.1-6.0.3
+Upgrade | vCenter | HA hardened 5.4.1-6.0.3
+Upgrade | vCenter | HA inplace 5.4.1-5.4.1U5
+Upgrade | vCenter | HA inplace 6.0.3-6.0.5
+Upgrade | vCenter | SA hardened 5.3.3-6.0.3
+Upgrade | vCenter | SA 5.4.1-6.0.3
+Wizard Install | KVM | SA via container 6.0.3
+Wizard Install | KVM | SA via CSV 6.0.3
+Wizard Upgrade | KVM | SA 5.4.1-6.0.3

@@ -2,36 +2,25 @@
 
 MetroAE is built on a community model. The code has been architected to make contribution simple and straightforward. You are welcome to join in the community to help us continuously improve MetroAE.
 
-The following procedure is the recommended, proven way to become a contributor:
+## We Use [Github Flow](https://guides.github.com/introduction/flow/index.html), So All Code Changes Happen Through Pull Requests
+Pull requests are the best way to propose changes to the codebase (we use [Github Flow](https://guides.github.com/introduction/flow/index.html)). We actively welcome your pull requests:
 
-1. [Create your own fork of the nuage-metro repo and make/test your changes there](#1-create-your-own-fork)
-2. [Finalize code contribution](#2-finalize-code-contribution)
-3. [Create pull request (PR)](#3-create-pull-request-pr)
-4. [Address comments and inquiries](#4-address-comments-and-inquiries)
+1. Fork the repo and create your branch from `dev`.
+2. If you've added code that should be tested, add tests.
+3. Make sure your code passes flake8.
+4. Issue that pull request!
 
 ## Prerequisites / Requirements
 
-All contributions must be consistent with the design of the existing workflows.
+  All contributions must be consistent with the design of the existing workflows.
 
-All contrinbutions must be submitted as pull requests to the _dev_ branch, reviewed, updated, and merged into the nuage-metro repo.
+  All contrinbutions must be submitted as pull requests to the _dev_ branch, reviewed, updated, and merged into the nuage-metro repo.
 
-You must have a github.com account and have been added as a collaborator to the nuage-metro repo.
+  You must have a github.com account and have been added as a collaborator to the nuage-metro repo.
 
-## 1. Create Your Own Fork
+## Contributing your code
 
-1. Before you start developing code, create your own fork from the upstream MetroAE repo. [https://github.com/nuagenetworks/nuage-metro/](https://github.com/nuagenetworks/nuage-metro/)
-
-2. Clone your own fork on your machine and switch to the _dev_ branch.
-
-    Note: By default the fork clones into `nuage-metro`. Consider creating a separate branch, other than dev, for feature development. Alternatively, you may provide a target dir for the clone, as shown below with `metro-fork`.
-
-```
-git clone https://github.com/<your handle>/nuage-metro.git metro-fork/
-cd metro-fork/
-git checkout dev
-```
-
-3. Develop your code
+  1. Developing your code.
 
     The manner in which you develop the code contribution depends on the extent of the changes. Are you enhancing an existing playbook or role, or are you adding one or more new roles? Making changes to what already exists is simple. Just make your changes to the files that are already there.
 
@@ -47,65 +36,46 @@ git checkout dev
     8. Create the proper playbooks to execute the roles: _newcomponent_predeploy.yml_, _newcomponent_deploy.yml_, _newcomponent_postdeploy.yml_, _newcomponent_health.yml_, and _newcomponent_destroy.yml_ should be created under `src/playbooks/with_build`
     9. Test, modify, and retest until your code is working perfectly.
 
-4. Test all proposed contributions on the appropriate hypervisors in the `metro-fork` directory. If you choose not to provide support for one or more supported hypervisors, you must provide graceful error handling for those types.
+  2. Test all proposed contributions on the appropriate hypervisors in the `metro-fork` directory. If you choose not to provide support for one or more supported hypervisors, you must provide graceful error handling for those types.
 
-5. All python files modified or submitted must successfully pass a `flake8 --ignore=E501` test.
+  3. All python files modified or submitted must successfully pass a `flake8 --ignore=E501` test.
 
-6. Add a brief description of your bug fix or enhancement to `RELEASE_NOTES.md`.
+  4. Add a brief description of your bug fix or enhancement to `RELEASE_NOTES.md`.
 
-7. Add your changes to git and do a local code commit:
+## Any contributions you make will be under the APACHE 2.0 Software License
+  In short, when you submit code changes, your submissions are understood to be under the same [APACHE License 2.0](https://www.apache.org/licenses/LICENSE-2.0) that covers the project. Feel free to contact the maintainers if that's a concern.
 
-```
-git add .
-git commit -m "COMMIT WITH THIS MESSAGE"
-```
+## Report bugs using Github's [issues](https://github.com/nuagenetworks/nuage-metroae/issues)
+  We use GitHub issues to track public bugs.
 
-git tip: Use caution when using the `-am` option to turn the above two statements into one. `-am` means "add, then commit using the supplied message". The problem is that `-am` picks up only existing files that have been modified. It ignores new files that have been added and exitsing files that have been deleted.
+## Write bug reports with detail, background, and sample code
 
-## 2. Finalize Code Contribution
+  **Great Bug Reports** tend to have:
 
-1. Ensure your personal fork has the latest changes of the [*dev* branch](https://github.com/nuagenetworks/nuage-metro/tree/dev) included. Do this by by adding the upstream code as additional _remote_, fetch the newest upstream code, and _rebase_ your code:
+  - A quick summary and/or background
+  - Steps to reproduce
+    - Be specific!
+    - Give sample code if you can.
+  - What you expected would happen
+  - What actually happens
+  - Notes (possibly including why you think this might be happening, or stuff you tried that didn't work)
 
-```
-git remote add upstream https://github.com/nuagenetworks/nuage-metro.git
-git fetch
-git rebase upstream/dev
-```
+## Use a Consistent Coding Style
 
-This last command shows you if there are any merge-conflicts to manage, or if your tree can be successfully fast-forwarded to the latest commit of the *dev* branch with your changes on top.
+  * 4 spaces for indentation rather than tabs
+  * 80 character line length
+  * TODO
 
-2. If necessary, resolve all merge conflicts and retest your code.
+## License
+  By contributing, you agree that your contributions will be licensed under its APACHE 2.0 License.
 
-3. Push your changes to your own fork:
-
-Note: It is good practice to create feature branches on your fork, push changes from there and create PRs from there.
-
-```
-git push origin <name of the branch of your fork>
-```
-
-If you had already pushed your code in a previous step as part of development, you may need to add the `--force` parameter to this command to ensure your fork becomes fully aligned with the upstream _dev_ branch history.
-
-## 3. Create Pull Request (PR)
-
-After you have developed and pushed your code into your fork, you may initiate the PR process through the github site:
-
-* Create PRs to the dev branch only. PRs on other branches (eg. the _master_ branch) will be closed without review.
-* Include a summary description of the intent of your pull request.
-* After you create the PR, go to the github page for the PR and check the code differences to verify that the PR contains your intended changes.
-
-Please consider working with many smaller pull requests instead of one large pull request.
-It reduces reviewing time and it gives a gradual evolution of capabilities (instead of step-wise big differences).
-
-## 4. Address Comments and Inquiries
-
-The repo owner will test and review your contributions. After you have addressed any comments or inquiries from the repo owner or other contributors, the repo owner will merge your PR into the `dev` branch.
 
 ## Questions and Feedback
 
 Ask questions and get support via the [forums](https://devops.nuagenetworks.net/forums/) on the [MetroAE site](https://devops.nuagenetworks.net/).  
 You may also contact us directly.  
   Outside Nokia: [devops@nuagenetworks.net](mailto:deveops@nuagenetworks.net "send email to nuage-metro project").  
-  Internal Nokia: [nuage-metro-interest@list.nokia.com](mailto:nuage-metro-interest@list.nokia.com "send email to nuage-metro project"). 
+  Internal Nokia: [nuage-metro-interest@list.nokia.com](mailto:nuage-metro-interest@list.nokia.com "send email to nuage-metro project").
 
-Report bugs you find and suggest new features and enhancements via the [GitHub Issues](https://github.com/nuagenetworks/nuage-metro/issues "nuage-metro issues") feature.
+## References
+  This document was adapted from the open-source contribution guidelines for [Facebook's Draft](https://github.com/facebook/draft-js/blob/a9316a723f9e918afde44dea68b5f9f39b7d9b00/CONTRIBUTING.md)
