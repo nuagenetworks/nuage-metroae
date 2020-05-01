@@ -36,25 +36,14 @@ class TestCreateNetconfManager(object):
         self.mock_vspk = MagicMock()
         import_patch.return_value = self.mock_vspk
         self.mock_session = MagicMock()
-        mock_root = MagicMock()
-        self.mock_session.user = mock_root
+        self.mock_root = MagicMock()
+        self.mock_session.user = self.mock_root
         self.mock_vspk.NUVSDSession.return_value = self.mock_session
 
-        return mock_root
-
-    def make_mock_ent(self, name, ent_id):
-        ent = MagicMock()
-        ent.name = name
-        ent.id = ent_id
-        return ent
-
-    def setup_enterprise(self, mock_root):
-        self.enterprises = [
-            self.make_mock_ent("Shared Infrastructure", 1),
-            self.make_mock_ent("ent2", 2),
-            self.make_mock_ent("ent3", 3)
-        ]
-        mock_root.enterprises.get.return_value = self.enterprises
+    def setup_enterprise(self, import_patch):
+        self.mock_root.enterprises.get_first.return_value = None
+        self.mock_enterprise = MagicMock()
+        import_patch.NUEnterprise.return_value = self.mock_enterprise
 
     def verify_session(self, import_patch):
         import_patch.assert_called_once_with("vspk.v5_0")
@@ -63,7 +52,7 @@ class TestCreateNetconfManager(object):
         self.mock_session.start.assert_called_once_with()
 
     def verify_netconf_user(self, import_patch):
-        import_patch.NUUser.assert_has_calls([call(
+        import_patch.NUEnterprise.assert_has_calls([call(
             first_name=TEST_PARAMS["netconf_manager_user"]['firstName'],
             last_name=TEST_PARAMS["netconf_manager_user"]['lastName'],
             user_name=TEST_PARAMS["netconf_manager_user"]['netconf_user'],
@@ -74,8 +63,8 @@ class TestCreateNetconfManager(object):
     @patch(MODULE_PATCH)
     def test_iso_create__success(self, module_patch, import_patch):
         mock_module = setup_module(module_patch)
-        mock_root = self.setup_session(import_patch)
-        self.setup_enterprise(mock_root)
+        self.setup_session(import_patch)
+        self.setup_enterprise(import_patch)
 
         main()
 
