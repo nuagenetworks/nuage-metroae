@@ -10,7 +10,7 @@
 
 ### Feature Enhancements
 
-* None
+* Upgrade minimum Ansible version to 2.9.2(METROAE-1372)
 
 ### Resolved Issues
 
