@@ -52,7 +52,7 @@ class TestCreateNetconfManager(object):
         self.mock_session.start.assert_called_once_with()
 
     def verify_netconf_user(self, import_patch):
-        import_patch.NUEnterprise.assert_has_calls([call(
+        self.mock_vspk.NUUser.assert_has_calls([call(
             first_name=TEST_PARAMS["netconf_manager_user"]['firstName'],
             last_name=TEST_PARAMS["netconf_manager_user"]['lastName'],
             user_name=TEST_PARAMS["netconf_manager_user"]['netconf_user'],
