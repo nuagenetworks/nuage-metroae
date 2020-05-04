@@ -1,9 +1,3 @@
-- name: Get current version of VSD software
-  shell: grep -ir "VSD_VERSION=" /etc/profile.d/vsd-banner.sh | awk -F "=" '{print $2}'
-  register: vsd_version
-  remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
-
-
 - block:
 
   - name: Format Netconf Manager User
@@ -14,13 +8,6 @@
           lastName: "{{ last_name }}"
           password: "{{ netconf_password }}"
           netconf_user: "{{ netconf_username }}"
-
-  - name: Create Netconf Manager User and Group
-    create_netconf_manager:
-      vsd_auth: "{{ vsd_auth }}"
-      netconf_manager_user: "{{ netconf_manager_user }}"
-      vsd_version: "{{ vsd_version.stdout }}"
-    delegate_to: localhost
 
   - name: Create Netconf Manager Certs
     include_role:
@@ -33,6 +20,13 @@
       certificate_type: client
       file_type: jks
       additional_parameters: "-p {{ netconf_password }}"
+
+  - name: Create Netconf Manager User and Group
+    create_netconf_manager:
+      vsd_auth: "{{ vsd_auth }}"
+      netconf_manager_user: "{{ netconf_manager_user }}"
+      vsd_version: "{{ vsd_version.stdout }}"
+    delegate_to: localhost
 
   remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
   become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
