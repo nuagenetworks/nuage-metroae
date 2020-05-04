@@ -116,10 +116,7 @@ Note that we have specified version 6.7.3 for pyvmomi. We test with this version
 
 ##### 4. **For OpenStack Only**, install additional packages
 
- Module       | Command
- ------------ | -------
- shade python | `pip install shade`
- nova client  | `pip install openstackclient`
+    pip install --upgrade -r openstack_requirements.txt
 
 ##### 5. Copy ssh keys
 Communication between the MetroAE Host and the target servers (hypervisors) occurs via SSH. For every target server, run the following command to copy the current user's ssh key to the authorized_keys file on the target server:
