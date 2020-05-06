@@ -18,8 +18,7 @@
 ### Resolved Issues
 
 * Remove redundant <vcpu> tag from KVM XML
-
-* None
+* Enable schema enforcement
 
 ## Test Matrix
 
