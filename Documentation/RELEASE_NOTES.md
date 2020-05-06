@@ -20,6 +20,7 @@
 * Remove redundant <vcpu> tag from KVM XML
 * Enable schema format enforcement (METROAE-1378)
 * Change default NUH ram to 8 GB from 4 GB (METROAE-1355)
+* Upgrade pyYaml to 4.2b1 to address security vulnerability
 
 ## Test Matrix
 
