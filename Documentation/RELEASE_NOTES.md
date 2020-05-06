@@ -18,9 +18,8 @@
 ### Resolved Issues
 
 * Remove redundant <vcpu> tag from KVM XML
+* Enable schema enforcement
 * Change default NUH ram to 8 GB from 4 GB (METROAE-1355)
-
-* None
 
 ## Test Matrix
 

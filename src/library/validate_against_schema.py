@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from jsonschema import validate, ValidationError
+from jsonschema import FormatChecker, validate, ValidationError
 import yaml
 
 from ansible.module_utils.basic import AnsibleModule
@@ -56,7 +56,8 @@ def validate_against_schema(module, path, schema):
     if parsed_yaml is None:
         parsed_yaml = dict()
     try:
-        validate(parsed_yaml, parsed_schema)
+        validate(parsed_yaml, parsed_schema,
+                 format_checker=FormatChecker())
         module.exit_json(changed=False)
     except ValidationError as e:
 
