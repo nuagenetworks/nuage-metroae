@@ -14,6 +14,8 @@
 * Check hypervisor disk space on KVM and vCenter
 * Add NETCONF RPMs to unzip
 * Add Netconf Manager Support to MetroAE (METROAE-1204)
+* Added support for Python virtual environments (METROAE-1381)
+* Added file check for nsgv_bootstrap.yml and example (METROAE-1379)
 
 ### Resolved Issues
 
@@ -21,6 +23,7 @@
 * Enable schema format enforcement (METROAE-1378)
 * Change default NUH ram to 8 GB from 4 GB (METROAE-1355)
 * Upgrade pyYaml to 4.2b1 to address security vulnerability
+* Fixed deployment examples to have correct variable types (METROAE-1194)
 
 ## Test Matrix
 
