@@ -1,0 +1,75 @@
+- block:
+
+  - name: Create the temporary netconf directory
+    file:
+      path: /tmp/netconfmanager
+      state: directory
+
+  - name: Copy the NETCONF Manager RPM file on the NETCONF Manager VM
+    copy:
+      dest: "/tmp/netconfmanager/{{ rpm_file_name }}"
+      src: "{{ rpm_path }}/{{ rpm_file_name }}"
+      mode: 0644
+      owner: "{{ netconf_vm_username | default('root') }}"
+      group: "{{ netconf_vm_username | default('root') }}"
+
+  - name: Install netconfmanager package using Yum
+    yum:
+      name: "/tmp/netconfmanager/{{ rpm_file_name }}"
+      state: present
+
+  - block:
+
+    - name: Get the VSD truststore
+      fetch:
+        src: "/opt/vsd/jboss/standalone/configuration/vsd.truststore"
+        dest: "/tmp/netconfmanager/"
+        flat: yes
+
+    - name: Get the Netconfmanager jks
+      fetch:
+        src: "/opt/vsd/ejbca/p12/netconfmgr.jks"
+        dest: "/tmp/netconfmanager/"
+        flat: yes
+    delegate_to: "{{ vsd_hostname_list[0] }}"
+
+  - name: Copy to netconf manager
+    copy:
+      dest: "/opt/netconfmanager/conf/"
+      src: "/tmp/netconfmanager/"
+
+  - name: Delete the temporary directory
+    file:
+      path: /tmp/netconfmanager
+      state: absent
+
+  - name: Configure the VSD host 
+    command: "sed -i 's/vsd.host.*/vsd.host={{ vsd_hostname_list[0] }}/' /opt/netconfmanager/conf/netconfmanager.properties"
+
+  - name: Configure the VSD Port
+    command: "sed -i 's/vsd.port.*/vsd.port=7443/' /opt/netconfmanager/conf/netconfmanager.properties"
+
+  - name: Configure the JMS host
+    command: "sed -i 's/jms.host.*/jms.host={{ vsd_hostname_list[0] }}/' /opt/netconfmanager/conf/netconfmanager.properties"
+
+  - name: Configure the JMS port
+    command: "sed -i 's/jms.port.*/jms.port=61616/' /opt/netconfmanager/conf/netconfmanager.properties"
+
+  - name: Configure the keystore alias
+    command: "sed -i 's/keystore.alias.*/keystore.alias={{ netconf_username }}/' /opt/netconfmanager/conf/netconfmanager.properties"
+
+  - name: Configure the keystore password
+    command: "sed -i 's/keystore.password.*/keystore.password={{ netconf_password }}/' /opt/netconfmanager/conf/netconfmanager.properties"
+    no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
+
+  - name: Enable and start Netconfmanager
+    service:
+      name: netconfmanager
+      state: started
+      enabled: yes
+
+  remote_user: "{{ netconf_vm_username | default('root') }}"
+  become: "{{ 'no' if netconf_vm_username | default('root') == 'root' else 'yes' }}"
+  vars:
+    ansible_become_pass: "{{ netconf_vm_password | default(None) }}"
+  delegate_to: "{{ netconf_server }}"
