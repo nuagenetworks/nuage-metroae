@@ -13,11 +13,16 @@
 * Add support for VSTAT yum update via vstat_yum_update (METROAE-1190)
 * Check hypervisor disk space on KVM and vCenter
 * Add NETCONF RPMs to unzip
+* Add Netconf Manager Support to MetroAE (METROAE-1204)
+* Make hostname optional for VSC
 * Add support for new Nuage version format, e.g. 20.6 (METROAE-1343)
 
 ### Resolved Issues
 
-* Remove redundant <vcpu> tag from KVM XML
+* Remove redundant "vcpu" tag from KVM XML
+* Enable schema format enforcement (METROAE-1378)
+* Change default NUH ram to 8 GB from 4 GB (METROAE-1355)
+* Upgrade pyYaml to 4.2b1 to address security vulnerability
 
 ## Test Matrix
 

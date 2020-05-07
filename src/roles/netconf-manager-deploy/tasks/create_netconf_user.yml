@@ -1,0 +1,34 @@
+- block:
+
+  - name: Format Netconf Manager User
+    set_fact:
+      netconf_manager_user:
+          email: "{{ email }}"
+          firstName: "{{ first_name }}"
+          lastName: "{{ last_name }}"
+          password: "{{ netconf_password }}"
+          netconf_user: "{{ netconf_username }}"
+
+  - name: Create Netconf Manager Certs
+    include_role:
+      name: common
+      tasks_from: vsd-generate-transfer-certificates
+    vars:
+      certificate_password: "{{ netconf_password }}"
+      certificate_username: "{{ netconf_username }}"
+      commonName: "{{ netconf_username }}"
+      certificate_type: client
+      file_type: jks
+      additional_parameters: "-p {{ netconf_password }}"
+
+  - name: Create Netconf Manager User and Group
+    create_netconf_manager:
+      vsd_auth: "{{ vsd_auth }}"
+      netconf_manager_user: "{{ netconf_manager_user }}"
+      vsd_version: "{{ vsd_version.stdout }}"
+    delegate_to: localhost
+
+  remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
+  become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
+  vars:
+    ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"
