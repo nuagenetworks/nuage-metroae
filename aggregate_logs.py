@@ -61,347 +61,384 @@ HTML_PAGE_HEADERS = """
 """ % LOG_TITLE
 
 HTML_PAGE_STYLE = """
-<style>
+    <style>
+      body {
+        background-color: #202020;
+        color: #e0e0e0;
+      }
 
-body {
-    background-color: #202020;
-    color: #e0e0e0;
-}
+      .loader {
+        top: 30%;
+        font-size: 10px;
+        margin: 50px auto;
+        text-indent: -9999em;
+        width: 11em;
+        height: 11em;
+        border-radius: 50%;
+        background: #ffffff;
+        background: -moz-linear-gradient(
+          left,
+          #ffffff 10%,
+          rgba(255, 255, 255, 0) 42%
+        );
+        background: -webkit-linear-gradient(
+          left,
+          #ffffff 10%,
+          rgba(255, 255, 255, 0) 42%
+        );
+        background: -o-linear-gradient(
+          left,
+          #ffffff 10%,
+          rgba(255, 255, 255, 0) 42%
+        );
+        background: -ms-linear-gradient(
+          left,
+          #ffffff 10%,
+          rgba(255, 255, 255, 0) 42%
+        );
+        background: linear-gradient(
+          to right,
+          #ffffff 10%,
+          rgba(255, 255, 255, 0) 42%
+        );
+        position: relative;
+        -webkit-animation: load3 1.4s infinite linear;
+        animation: load3 1.4s infinite linear;
+        -webkit-transform: translateZ(0);
+        -ms-transform: translateZ(0);
+        transform: translateZ(0);
+      }
+      .loader:before {
+        width: 50%;
+        height: 50%;
+        background: #ffffff;
+        border-radius: 100% 0 0 0;
+        position: absolute;
+        top: 0;
+        left: 0;
+        content: "";
+      }
+      .loader:after {
+        background: #202020;
+        width: 75%;
+        height: 75%;
+        border-radius: 50%;
+        content: "";
+        margin: auto;
+        position: absolute;
+        top: 0;
+        left: 0;
+        bottom: 0;
+        right: 0;
+      }
+      @-webkit-keyframes load3 {
+        0% {
+          -webkit-transform: rotate(0deg);
+          transform: rotate(0deg);
+        }
+        100% {
+          -webkit-transform: rotate(360deg);
+          transform: rotate(360deg);
+        }
+      }
+      @keyframes load3 {
+        0% {
+          -webkit-transform: rotate(0deg);
+          transform: rotate(0deg);
+        }
+        100% {
+          -webkit-transform: rotate(360deg);
+          transform: rotate(360deg);
+        }
+      }
 
-.loader {
-  top: 30%;
-  font-size: 10px;
-  margin: 50px auto;
-  text-indent: -9999em;
-  width: 11em;
-  height: 11em;
-  border-radius: 50%;
-  background: #ffffff;
-  background: -moz-linear-gradient(left, #ffffff 10%, rgba(255, 255, 255, 0) 42%);
-  background: -webkit-linear-gradient(left, #ffffff 10%, rgba(255, 255, 255, 0) 42%);
-  background: -o-linear-gradient(left, #ffffff 10%, rgba(255, 255, 255, 0) 42%);
-  background: -ms-linear-gradient(left, #ffffff 10%, rgba(255, 255, 255, 0) 42%);
-  background: linear-gradient(to right, #ffffff 10%, rgba(255, 255, 255, 0) 42%);
-  position: relative;
-  -webkit-animation: load3 1.4s infinite linear;
-  animation: load3 1.4s infinite linear;
-  -webkit-transform: translateZ(0);
-  -ms-transform: translateZ(0);
-  transform: translateZ(0);
-}
-.loader:before {
-  width: 50%;
-  height: 50%;
-  background: #ffffff;
-  border-radius: 100% 0 0 0;
-  position: absolute;
-  top: 0;
-  left: 0;
-  content: '';
-}
-.loader:after {
-  background: #202020;
-  width: 75%;
-  height: 75%;
-  border-radius: 50%;
-  content: '';
-  margin: auto;
-  position: absolute;
-  top: 0;
-  left: 0;
-  bottom: 0;
-  right: 0;
-}
-@-webkit-keyframes load3 {
-  0% {
-    -webkit-transform: rotate(0deg);
-    transform: rotate(0deg);
-  }
-  100% {
-    -webkit-transform: rotate(360deg);
-    transform: rotate(360deg);
-  }
-}
-@keyframes load3 {
-  0% {
-    -webkit-transform: rotate(0deg);
-    transform: rotate(0deg);
-  }
-  100% {
-    -webkit-transform: rotate(360deg);
-    transform: rotate(360deg);
-  }
-}
+      .slideToggle {
+        width: 80px;
+        height: 26px;
+        background: #333;
+        margin: 5px auto;
+        position: relative;
+        border-radius: 50px;
+        box-shadow: inset 0px 1px 1px rgba(0, 0, 0, 0.5),
+          0px 1px 0px rgba(255, 255, 255, 0.2);
+      }
+      .slideToggle:after {
+        content: "OFF";
+        color: #000;
+        position: absolute;
+        right: 10px;
+        z-index: 0;
+        font: 12px/26px Arial, sans-serif;
+        font-weight: bold;
+        text-shadow: 1px 1px 0px rgba(255, 255, 255, 0.15);
+      }
+      .slideToggle:before {
+        content: "ON";
+        color: #27ae60;
+        position: absolute;
+        left: 10px;
+        z-index: 0;
+        font: 12px/26px Arial, sans-serif;
+        font-weight: bold;
+      }
+      .slideToggle label {
+        display: block;
+        width: 34px;
+        height: 20px;
+        cursor: pointer;
+        position: absolute;
+        top: 3px;
+        left: 3px;
+        z-index: 1;
+        background: #fcfff4;
+        background: -webkit-gradient(
+          linear,
+          left top,
+          left bottom,
+          from(#fcfff4),
+          color-stop(40%, #dfe5d7),
+          to(#b3bead)
+        );
+        background: linear-gradient(
+          to bottom,
+          #fcfff4 0%,
+          #dfe5d7 40%,
+          #b3bead 100%
+        );
+        border-radius: 50px;
+        -webkit-transition: all 0.4s ease;
+        transition: all 0.4s ease;
+        box-shadow: 0px 2px 5px 0px rgba(0, 0, 0, 0.3);
+      }
+      .slideToggle input[type="checkbox"] {
+        visibility: hidden;
+      }
+      .slideToggle input[type="checkbox"]:checked + label {
+        left: 43px;
+      }
 
-.slideToggle {
-  width: 80px;
-  height: 26px;
-  background: #333;
-  margin: 5px auto;
-  position: relative;
-  border-radius: 50px;
-  box-shadow: inset 0px 1px 1px rgba(0, 0, 0, 0.5), 0px 1px 0px rgba(255, 255, 255, 0.2);
-}
-.slideToggle:after {
-  content: 'OFF';
-  color: #000;
-  position: absolute;
-  right: 10px;
-  z-index: 0;
-  font: 12px/26px Arial, sans-serif;
-  font-weight: bold;
-  text-shadow: 1px 1px 0px rgba(255, 255, 255, 0.15);
-}
-.slideToggle:before {
-  content: 'ON';
-  color: #27ae60;
-  position: absolute;
-  left: 10px;
-  z-index: 0;
-  font: 12px/26px Arial, sans-serif;
-  font-weight: bold;
-}
-.slideToggle label {
-  display: block;
-  width: 34px;
-  height: 20px;
-  cursor: pointer;
-  position: absolute;
-  top: 3px;
-  left: 3px;
-  z-index: 1;
-  background: #fcfff4;
-  background: -webkit-gradient(linear, left top, left bottom, from(#fcfff4), color-stop(40%, #dfe5d7), to(#b3bead));
-  background: linear-gradient(to bottom, #fcfff4 0%, #dfe5d7 40%, #b3bead 100%);
-  border-radius: 50px;
-  -webkit-transition: all 0.4s ease;
-  transition: all 0.4s ease;
-  box-shadow: 0px 2px 5px 0px rgba(0, 0, 0, 0.3);
-}
-.slideToggle input[type=checkbox] {
-  visibility: hidden;
-}
-.slideToggle input[type=checkbox]:checked + label {
-  left: 43px;
-}
+      /* Tooltip container */
+      .tooltip {
+        position: relative;
+        display: inline-block;
+        border-bottom: 1px dotted black; /* If you want dots under the hoverable text */
+      }
 
-/* Tooltip container */
-.tooltip {
-  position: relative;
-  display: inline-block;
-  border-bottom: 1px dotted black; /* If you want dots under the hoverable text */
-}
+      /* Tooltip text */
+      .tooltip .tooltiptext {
+        visibility: hidden;
+        /*width: 120px;*/
+        background-color: #555;
+        color: #fff;
+        text-align: center;
+        padding: 5px 5px;
+        border-radius: 6px;
+        white-space: nowrap;
 
-/* Tooltip text */
-.tooltip .tooltiptext {
-  visibility: hidden;
-  /*width: 120px;*/
-  background-color: #555;
-  color: #fff;
-  text-align: center;
-  padding: 5px 5px;
-  border-radius: 6px;
-  white-space: nowrap;
+        /* Position the tooltip text - see examples below! */
+        position: absolute;
+        z-index: 1;
+      }
 
-  /* Position the tooltip text - see examples below! */
-  position: absolute;
-  z-index: 1;
-}
+      .tooltip:hover .tooltiptext {
+        visibility: visible;
+        transition-delay: 1s;
+      }
 
-.tooltip:hover .tooltiptext {
-  visibility: visible;
-  transition-delay:1s;
-}
+      hr {
+        border: 0;
+        height: 1px;
+        width: 100%;
+        background-image: -webkit-linear-gradient(
+          left,
+          #202020,
+          #e0e0e0,
+          #202020
+        );
+        background-image: -moz-linear-gradient(left, #202020, #e0e0e0, #202020);
+        background-image: -ms-linear-gradient(left, #202020, #e0e0e0, #202020);
+        background-image: -o-linear-gradient(left, #202020, #e0e0e0, #202020);
+      }
 
-hr {
-  border: 0;
-  height: 1px;
-  width: 100%;
-  background-image: -webkit-linear-gradient(left, #202020, #e0e0e0, #202020);
-  background-image: -moz-linear-gradient(left, #202020, #e0e0e0, #202020);
-  background-image: -ms-linear-gradient(left, #202020, #e0e0e0, #202020);
-  background-image: -o-linear-gradient(left, #202020, #e0e0e0, #202020);
-}
+      filesPane {
+        width: 20%;
+        height: 100%;
+        overflow: scroll;
+      }
 
-filesPane {
-  width: 20%;
-  height: 100%;
-  overflow: scroll;
-}
+      #fileList {
+        display: flex;
+        flex-direction: column;
+        align-content: center;
+        justify-content: center;
+      }
 
-#fileList {
-  display: flex;
-  flex-direction: column;
-  align-content: center;
-  justify-content: center;
-}
+      .fileRow {
+        width: 100%;
+        min-width: 200px;
+        display: flex;
+        flex-direction: row;
+        align-content: baseline;
+        justify-content: flex-start;
+        order: 1;
+        -webkit-order: 1;
+      }
 
-.fileRow {
-  width: 100%;
-  min-width: 200px;
-  display: flex;
-  flex-direction: row;
-  align-content: baseline;
-  justify-content: flex-start;
-  order: 1;
-  -webkit-order: 1;
-}
+      .logName {
+        height: 28px;
+        margin: 5px auto;
+        margin-left: 5px;
+        display: flex;
+        align-items: center;
+      }
 
-.logName {
-  height: 28px;
-  margin: 5px auto;
-  margin-left: 5px;
-  display: flex;
-  align-items: center;
-}
+      pageControls {
+        height: 100%;
+        width: 55px;
+        display: flex;
+        flex-direction: column;
+        align-content: center;
+        justify-content: center;
+      }
 
-pageControls {
-    height: 100%;
-    width: 55px;
-    display: flex;
-    flex-direction: column;
-    align-content: center;
-    justify-content: center;
-}
+      .pageButton {
+        width: 50px;
+        height: 50px;
+        margin-top: 10px;
+        margin-bottom: 10px;
+        margin-left: 3px;
+        margin-right: 3px;
+        font-size: 30px;
+        cursor: pointer;
+        outline: none;
+        border-radius: 12px;
+        color: #ddd;
+        background: #333;
+        box-shadow: inset 0px 1px 1px rgba(0, 0, 0, 0.5),
+          0px 1px 0px rgba(255, 255, 255, 0.2);
+      }
 
-.pageButton {
-    width: 50px;
-    height: 50px;
-    margin-top: 10px;
-    margin-bottom: 10px;
-    margin-left: 3px;
-    margin-right: 3px;
-    font-size: 30px;
-    cursor: pointer;
-    outline: none;
-    border-radius: 12px;
-    color: #ddd;
-    background: #333;
-    box-shadow: inset 0px 1px 1px rgba(0, 0, 0, 0.5), 0px 1px 0px rgba(255, 255, 255, 0.2);
-}
+      logPane {
+        width: calc(80% - 55px);
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        align-content: center;
+        justify-content: center;
+      }
 
-logPane {
-  width: calc(80% - 55px);
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  align-content: center;
-  justify-content: center;
+      logControls {
+        height: 30px;
+        width: 100%;
+        overflow: scroll;
+      }
 
-}
+      #status {
+        float: right;
+      }
 
-logControls {
-  height: 30px;
-  width: 100%;
-  overflow: scroll;
-}
+      #logConsole {
+        height: calc(100% - 30px);
+        border: 2px solid #606060;
+        border-radius: 15px;
+        overflow: scroll;
+        scroll-behavior: auto;
+      }
 
-#status {
-    float: right;
-}
+      #logText {
+        width: 100%;
+        height: 100%;
+        padding: 4px;
+        font-family: monospace;
+        font-size: 13px;
+        white-space: pre;
+      }
 
-#logConsole {
-  height: calc(100% - 30px);
-  border: 2px solid #606060;
-  border-radius: 15px;
-  overflow: scroll;
-  scroll-behavior: auto;
-}
+      .logLine {
+        width: 100%;
+        height: 15px;
+        border: 0;
+        margin: 0;
+      }
 
-#logText {
-  width: 100%;
-  height: 100%;
-  padding: 4px;
-  font-family: monospace;
-  font-size: 13px;
-  white-space: pre;
-}
+      .selected {
+        outline-style: solid;
+        outline-color: yellow;
+        outline-width: 3px;
+      }
 
-.logLine {
-    width: 100%;
-    height: 15px;
-    border: 0;
-    margin: 0;
-}
+      .found {
+        outline-style: dotted;
+        outline-color: yellow;
+        outline-width: 1px;
+      }
 
-.selected {
-    outline-style: solid;
-    outline-color: yellow;
-    outline-width: 3px;
-}
+      screen {
+        width: 100%;
+        height: 100%;
 
-.found {
-    outline-style: dotted;
-    outline-color: yellow;
-    outline-width: 1px;
-}
-
-screen {
-  width: 100%;
-  height: 100%;
-
-  display: flex;
-  flex-direction: row;
-}
-
-</style>
+        display: flex;
+        flex-direction: row;
+      }
+    </style>
 
 """
 
 HTML_PAGE_BODY = """
-<screen>
-    <filesPane>
+    <screen>
+      <filesPane>
+        <div id="fileList">
+          <div class="fileRow">
+            <button onclick="debounce(handleAllToggle(true))">All ON</button>
+            <button onclick="debounce(handleAllToggle(false))">All OFF</button>
+          </div>
 
-    <div id="fileList">
+          <div class="fileRow">
+            <hr class="style" />
+          </div>
 
-    <div class="fileRow">
+          <div
+            id="loading"
+            class="loader"
+            style="order: 1; -webkit-order: 1;"
+          ></div>
+        </div>
+      </filesPane>
 
-    <button onclick="handleAllToggle(true)">All ON</button>
-    <button onclick="handleAllToggle(false)">All OFF</button>
-
-    </div>
-
-    <div class="fileRow">
-        <hr class="style">
-    </div>
-
-
-<div id="loading" class="loader" style="order: 1; -webkit-order: 1;"></div>
-
-    </div>
-    </filesPane>
-
-    <pageControls>
+      <pageControls>
         <button class="pageButton" onclick="gotoPage('first')">&#x2912;</button>
         <button class="pageButton" onclick="gotoPage('bigup')">&#x219F;</button>
         <button class="pageButton" onclick="gotoPage('prev')">&#8593;</button>
         <button class="pageButton" onclick="gotoPage('next')">&#8595;</button>
-        <button class="pageButton" onclick="gotoPage('bigdown')">&#x21A1;</button>
+        <button class="pageButton" onclick="gotoPage('bigdown')">
+          &#x21A1;
+        </button>
         <button class="pageButton" onclick="gotoPage('last')">&#x2913;</button>
-    </pageControls>
+      </pageControls>
 
-    <logPane>
+      <logPane>
+        <logControls>
+          <input id="find" onkeyup="debounce(handleFind());" placeholder="Find" />
+          <button onclick="debounce(handleFindNext(-1));">Prev</button>
+          <button onclick="debounce(handleFindNext(1));">Next</button>
+          <input id="filter" onchange="debounce(handleFilter());" placeholder="Filter" />
+          <input
+            id="exclude"
+            onchange="debounce(handleExclude());"
+            placeholder="Exclude"
+          />
+          <span id="findStatus"></span>
+          <span id="status">Loading...</span>
+        </logControls>
 
-    <logControls>
-        <input id="find" onkeyup="handleFind();" placeholder="Find">
-        <button onclick="handleFindNext(-1);">Prev</button>
-        <button onclick="handleFindNext(1);">Next</button>
-        <input id="filter" onchange="handleFilter();" placeholder="Filter">
-        <input id="exclude"  onchange="handleExclude();" placeholder="Exclude">
-        <span id="findStatus"></span>
-        <span id="status">Loading...</span>
-    </logControls>
-
-    <div id="logConsole">
-
-    <div id="logText">Loading logs...
-<div id="loading" class="loader"></div>
-
-    </div>
-    </div>
-
-    </logPane>
-</screen>
+        <div id="logConsole">
+          <div id="logText">
+            Loading logs...
+            <div id="loading" class="loader"></div>
+          </div>
+        </div>
+      </logPane>
+    </screen>
 
 """
 
@@ -409,304 +446,315 @@ HTML_PAGE_SCRIPT_HEADERS = "<script>"
 
 HTML_PAGE_SCRIPT_FOOTERS = """
 
-var filtered = [];
+      var filtered = [];
 
-var toggles = [];
+      var toggles = [];
 
-var curPage = 0;
+      var curPage = 0;
 
-var findString = "";
-var filterString = "";
-var excludeString = "";
+      var findString = "";
+      var filterString = "";
+      var excludeString = "";
 
-var findLineCols = [];
-var curFindIndex = -1;
-var curWriteFindIndex = 0;
+      var findLineCols = [];
+      var curFindIndex = -1;
+      var curWriteFindIndex = 0;
 
-var findAsyncInProgress = false;
-var findCurPage = 0;
-var findAsyncString = "";
-var findNumLines = 0;
-var findAsyncStartLine = 0;
-var findAsyncLimit = 0;
-var findAsyncInsertPos = 0;
-var findAsyncWrapped = false;
-var linesSearched = 0;
+      var findAsyncInProgress = false;
+      var findCurPage = 0;
+      var findAsyncString = "";
+      var findNumLines = 0;
 
-var disableReorder = false;
+      var fileRowElems = [];
 
-var fileRowElems = [];
+      var fileListHeading =
+        '<div class="fileRow" style="order: -2; -webkit-order: -2;">\\n' +
+        '<button onclick="handleAllToggle(true)">All ON</button>\\n' +
+        '<button onclick="handleAllToggle(false)">All OFF</button>\\n' +
+        "</div>\\n" +
+        '<div class="fileRow" style="order: -1; -webkit-order: -1;">\\n' +
+        '    <hr class="style">\\n' +
+        "</div>\\n";
 
-var fileListHeading =
-    '<div class="fileRow" style="order: -2; -webkit-order: -2;">\\n' +
-    '<button onclick="handleAllToggle(true)">All ON</button>\\n' +
-    '<button onclick="handleAllToggle(false)">All OFF</button>\\n' +
-    '</div>\\n' +
-    '<div class="fileRow" style="order: -1; -webkit-order: -1;">\\n' +
-    '    <hr class="style">\\n' +
-    '</div>\\n';
+      var fileListTemplate =
+        '<div id="file_row_--index--" class="fileRow highlight_--index--" ' +
+        'style="background-color: --color--; order: 1; -webkit-order: 1;" ' +
+        'onmouseover="logHighlight(--index--, true)" ' +
+        'onmouseout="logHighlight(--index--, false)">\\n' +
+        "<div>\\n" +
+        '<div class="slideToggle">\\n' +
+        '  <input class="toggle" type="checkbox" id="toggle_--index--" ' +
+        'onclick="handleToggle()" checked />\\n' +
+        '  <label for="toggle_--index--"></label>\\n' +
+        "</div>\\n" +
+        "</div>\\n" +
+        '<div class="logName tooltip">\\n' +
+        "--name--\\n" +
+        '<span class="tooltiptext">--path--</span>\\n' +
+        "</div>\\n" +
+        "</div>\\n";
 
-var fileListTemplate =
-    '<div id="file_row_--index--" class="fileRow highlight_--index--" ' +
-    'style="background-color: --color--; order: 1; -webkit-order: 1;" ' +
-    'onmouseover="logHighlight(--index--, true)" ' +
-    'onmouseout="logHighlight(--index--, false)">\\n' +
-    '<div>\\n' +
-    '<div class="slideToggle">\\n' +
-    '  <input class="toggle" type="checkbox" id="toggle_--index--" ' +
-    'onclick="handleToggle()" checked />\\n' +
-    '  <label for="toggle_--index--"></label>\\n' +
-    '</div>\\n' +
-    '</div>\\n' +
-    '<div class="logName tooltip">\\n' +
-    '--name--\\n' +
-    '<span class="tooltiptext">--path--</span>\\n' +
-    '</div>\\n' +
-    '</div>\\n';
+      function debounce(fn, delay=200) {
+        var timer
+        return function() {
+            var context = this
+            var args = arguments
+            timer && clearTimeout(timer)
+            timer = setTimeout(function() {
+                fn.apply(context, args)
+            }, delay)
+        }
+      }
 
-function get(elementId) {
-    return document.getElementById(elementId);
-}
+      function get(elementId) {
+        return document.getElementById(elementId);
+      }
 
-function getLinesPerPage() {
-    var logsElem = get("logConsole");
-    return parseInt(logsElem.clientHeight / 15);
-}
+      function getLinesPerPage() {
+        var logsElem = get("logConsole");
+        return parseInt(logsElem.clientHeight / 15);
+      }
 
-function getLastPage() {
-    var linesPerPage = getLinesPerPage();
-    var lastPage = 0;
-    if (linesPerPage > 0) {
-        lastPage = Math.floor(filtered.length / linesPerPage) - 1;
-    }
-    return Math.max(lastPage, 0);
-}
+      function getLastPage() {
+        var linesPerPage = getLinesPerPage();
+        var lastPage = 0;
+        if (linesPerPage > 0) {
+          lastPage = Math.floor(filtered.length / linesPerPage) - 1;
+        }
+        return Math.max(lastPage, 0);
+      }
 
-function getViewingLine() {
-    var filteredLine = getLinesPerPage() * curPage;
-    if (filtered.length == 0) {
-        return 0;
-    }
-    if (filteredLine >= filtered.length) {
-        return filtered[filteredLine.length - 1];
-    }
-    return filtered[filteredLine];
-}
+      function getViewingLine() {
+        var filteredLine = getLinesPerPage() * curPage;
+        if (filtered.length == 0) {
+          return 0;
+        }
+        if (filteredLine >= filtered.length) {
+          return filtered[filteredLine.length - 1];
+        }
+        return filtered[filteredLine];
+      }
 
-function getLineColor(logNum, highlighted) {
-    var hue = 0;
-    var sat = 100;
-    var lum = 15;
-    if (highlighted) {
-        lum = 25;
-    }
+      function getLineColor(logNum, highlighted) {
+        var hue = 0;
+        var sat = 100;
+        var lum = 15;
+        if (highlighted) {
+          lum = 25;
+        }
 
-    numLogFiles = files.length;
-    if (numLogFiles > 16) {
-        hue = Math.floor(720 * logNum / numLogFiles);
-        if (hue >= 360) {
+        numLogFiles = files.length;
+        if (numLogFiles > 16) {
+          hue = Math.floor((720 * logNum) / numLogFiles);
+          if (hue >= 360) {
             hue = Math.floor(hue / 2);
             sat = 50;
+          }
+        } else if (numLogFiles > 0) {
+          hue = Math.floor((360 * logNum) / numLogFiles);
         }
-    } else if (numLogFiles > 0) {
-        hue = Math.floor(360 * logNum / numLogFiles);
-    }
 
-    return "hsl(" + hue + "0, " + sat + "%, " + lum + "%)"
-}
+        return "hsl(" + hue + "0, " + sat + "%, " + lum + "%)";
+      }
 
-function writeLogPage() {
-    checkAndResetFind();
-    curWriteFindIndex = 0;
+      function writeLogPage() {
+        checkAndResetFind();
+        curWriteFindIndex = 0;
 
-    resetFileRowOrder();
+        resetFileRowOrder();
 
-    var logsElem = get("logText");
+        var logsElem = get("logText");
 
-    var numLines = getLinesPerPage();
-    var offset = numLines * curPage;
-    logsElem.innerHTML = "";
-    for (i = offset; i < numLines * 2 + offset; i++) {
-        if (i < filtered.length) {
+        var numLines = getLinesPerPage();
+        var offset = numLines * curPage;
+        logsElem.innerHTML = "";
+        for (i = offset; i < numLines * 2 + offset; i++) {
+          if (i < filtered.length) {
             logsElem.innerHTML += formatLogLine(i);
-        } else {
+          } else {
             logsElem.innerHTML += "<div class='logLine'>&nbsp;</div>";
+          }
         }
-    }
-}
+      }
 
-function formatLogLine(lineNum) {
-    var logIndex = lines[filtered[lineNum]];
-    var line = lines[filtered[lineNum] + 1];
+      function formatLogLine(lineNum) {
+        var logIndex = lines[filtered[lineNum]];
+        var line = lines[filtered[lineNum] + 1];
 
-    moveUpFileRowOrder(logIndex);
+        moveUpFileRowOrder(logIndex);
 
-    if (curFindIndex != -1) {
-        line = formatSelectLine(line, lineNum);
-    }
-    return "<div class='logLine highlight_" + logIndex + "' style='background-color: " +
-           getLineColor(logIndex, false) +
-           "' onmouseover='logHighlight(" + logIndex + ", true)'" +
-           " onmouseout='logHighlight(" + logIndex + ", false)'>" + line + "</div>";
-}
+        if (curFindIndex != -1) {
+          line = formatSelectLine(line, lineNum);
+        }
+        return (
+          "<div class='logLine highlight_" +
+          logIndex +
+          "' style='background-color: " +
+          getLineColor(logIndex, false) +
+          "' onmouseover='logHighlight(" +
+          logIndex +
+          ", true)'" +
+          " onmouseout='logHighlight(" +
+          logIndex +
+          ", false)'>" +
+          line +
+          "</div>"
+        );
+      }
 
-function formatSelectLine(line, lineNum) {
-    var newLine = "";
-    var curCol = 0;
+      function formatSelectLine(line, lineNum) {
+        var newLine = "";
+        var curCol = 0;
 
-    var findIndex = nextWriteFindIndex(lineNum);
-    while (findIndex >= 0) {
-        var col = findLineCols[findIndex * 2 + 1];
-        var prefix = "";
-        if (col > 0) {
+        var findIndex = nextWriteFindIndex(lineNum);
+        while (findIndex >= 0) {
+          var col = findLineCols[findIndex * 2 + 1];
+          var prefix = "";
+          if (col > 0) {
             prefix = line.substring(curCol, col);
-        }
-        var selected = line.substr(col, findString.length);
-        var cssClass = "found";
-        if (findIndex == curFindIndex) {
+          }
+          var selected = line.substr(col, findString.length);
+          var cssClass = "found";
+          if (findIndex == curFindIndex) {
             cssClass = "selected";
+          }
+
+          newLine +=
+            prefix + "<span class='" + cssClass + "'>" + selected + "</span>";
+
+          curCol = col + findString.length;
+          curWriteFindIndex++;
+          findIndex = nextWriteFindIndex(lineNum);
         }
 
-        newLine += prefix + "<span class='" + cssClass + "'>" +
-                   selected + "</span>";
+        return newLine + line.substring(curCol);
+      }
 
-        curCol = col + findString.length;
-        curWriteFindIndex++;
-        findIndex = nextWriteFindIndex(lineNum);
-    }
+      function nextWriteFindIndex(lineNum) {
+        while (
+          curWriteFindIndex * 2 < findLineCols.length &&
+          findLineCols[curWriteFindIndex * 2] < lineNum
+        ) {
+          curWriteFindIndex++;
+        }
+        if (findLineCols[curWriteFindIndex * 2] == lineNum) {
+          return curWriteFindIndex;
+        } else {
+          return -1;
+        }
+      }
 
-    return newLine + line.substring(curCol);
-}
+      function writeLogFileList() {
+        var fileListElem = get("fileList");
+        var fileList = fileListHeading;
 
-function nextWriteFindIndex(lineNum) {
-    while ((curWriteFindIndex * 2) < findLineCols.length &&
-           findLineCols[curWriteFindIndex * 2] < lineNum) {
-        curWriteFindIndex++;
-    }
-    if (findLineCols[curWriteFindIndex * 2] == lineNum) {
-        return curWriteFindIndex;
-    } else {
-        return -1;
-    }
-}
+        for (var i = 0; i < files.length; i++) {
+          var baseName = files[i].split("/");
+          baseName = baseName[baseName.length - 1];
+          var fileItem = fileListTemplate.replace(/--name--/g, baseName);
+          fileItem = fileItem.replace(/--index--/g, i);
+          fileItem = fileItem.replace(/--path--/g, files[i]);
+          fileItem = fileItem.replace(/--color--/g, getLineColor(i, false));
+          fileList += fileItem;
+        }
+        fileListElem.innerHTML = fileList;
+      }
 
-function writeLogFileList() {
-    var fileListElem = get("fileList");
-    var fileList = fileListHeading
+      function resetFileRowOrder() {
+        for (var i = 0; i < files.length; i++) {
+          fileRowElems[i] = get("file_row_" + i);
+          fileRowElems[i].style["order"] = 1;
+          fileRowElems[i].style["-webkit-order"] = 1;
+        }
+      }
 
-    for (var i = 0; i < files.length; i++) {
-        var baseName = files[i].split("/");
-        baseName = baseName[baseName.length - 1];
-        var fileItem = fileListTemplate.replace(/--name--/g, baseName);
-        fileItem = fileItem.replace(/--index--/g, i);
-        fileItem = fileItem.replace(/--path--/g, files[i]);
-        fileItem = fileItem.replace(/--color--/g, getLineColor(i, false));
-        fileList += fileItem;
-    }
-    fileListElem.innerHTML = fileList;
+      function moveUpFileRowOrder(logIndex) {
+        fileRowElems[logIndex].style["order"] = 0;
+        fileRowElems[logIndex].style["-webkit-order"] = 0;
+      }
 
-}
+      function handleToggle() {
+        for (var i = 0; i < files.length; i++) {
+          toggle = get("toggle_" + i);
+          toggles[i] = toggle.checked;
+        }
+        filterLines();
+      }
 
-function resetFileRowOrder() {
-    if (disableReorder) {
-        return;
-    }
-    for (var i = 0; i < files.length; i++) {
-        fileRowElems[i] = get("file_row_" + i);
-        fileRowElems[i].style["order"] = 1;
-        fileRowElems[i].style["-webkit-order"] = 1;
-    }
-}
+      function filterLines() {
+        var viewingLine = getViewingLine();
+        var linesPerPage = getLinesPerPage();
+        var skipFilters = filterString == "" && excludeString == "";
 
-function moveUpFileRowOrder(logIndex) {
-    if (disableReorder) {
-        return;
-    }
-    fileRowElems[logIndex].style["order"] = 0;
-    fileRowElems[logIndex].style["-webkit-order"] = 0;
-}
-
-function handleToggle() {
-    for (var i = 0; i < files.length; i++) {
-        toggle = get("toggle_" + i);
-        toggles[i] = toggle.checked;
-    }
-    disableReorder = true;
-    filterLines();
-    disableReorder = false;
-}
-
-function filterLines() {
-    var viewingLine = getViewingLine();
-    var linesPerPage = getLinesPerPage();
-    var skipFilters = (filterString == "" && excludeString == "");
-
-    filtered = [];
-    var filteredLine = 0;
-    curPage = 0;
-    for (var i = 0; i < lines.length; i += 2) {
-        if (toggles[lines[i]]) {
+        filtered = [];
+        var filteredLine = 0;
+        curPage = 0;
+        for (var i = 0; i < lines.length; i += 2) {
+          if (toggles[lines[i]]) {
             if (skipFilters || checkFilters(lines[i + 1])) {
-                filtered.push(i);
-                filteredLine++;
+              filtered.push(i);
+              filteredLine++;
             }
-        }
-        if (linesPerPage > 0 && i == viewingLine) {
+          }
+          if (linesPerPage > 0 && i == viewingLine) {
             curPage = Math.floor(filtered.length / linesPerPage);
+          }
         }
-    }
-    writeLogPage();
-    updateStatus();
-}
-
-function checkFilters(line) {
-    var lowerLine = line.toLowerCase();
-    if (filterString != "" && lowerLine.indexOf(filterString) < 0) {
-        return false;
-    }
-    if (excludeString != "" && lowerLine.indexOf(excludeString) >= 0) {
-        return false;
-    }
-
-    return true;
-}
-
-function handleScroll() {
-    var logsElem = get("logConsole");
-    var linesPerPage = getLinesPerPage();
-
-    var scrollThresh = parseInt(logsElem.clientHeight * 0.95);
-    if (logsElem.scrollTop == 0 && curPage > 0) {
-        curPage -= 1;
         writeLogPage();
-        logsElem.scrollTop = scrollThresh;
         updateStatus();
-    } else if (logsElem.scrollTop > scrollThresh && linesPerPage * (curPage + 2) < filtered.length) {
-        curPage += 1;
-        writeLogPage();
-        logsElem.scrollTop = 1
-        updateStatus();
-    }
-}
+      }
 
-function updateStatus() {
-    var linesPerPage = getLinesPerPage();
-    numPages = getLastPage() + 1;
+      function checkFilters(line) {
+        var lowerLine = line.toLowerCase();
+        if (filterString != "" && lowerLine.indexOf(filterString) < 0) {
+          return false;
+        }
+        if (excludeString != "" && lowerLine.indexOf(excludeString) >= 0) {
+          return false;
+        }
 
-    var status = get("status");
-    status.innerHTML = "Page: " + (curPage + 1) + "/" + numPages;
-}
+        return true;
+      }
 
-function gotoPage(which) {
-    switch (which) {
-        case "first":
+      function handleScroll() {
+        var logsElem = get("logConsole");
+        var linesPerPage = getLinesPerPage();
+
+        var scrollThresh = parseInt(logsElem.clientHeight * 0.95);
+        if (logsElem.scrollTop == 0 && curPage > 0) {
+          curPage -= 1;
+          writeLogPage();
+          logsElem.scrollTop = scrollThresh;
+          updateStatus();
+        } else if (
+          logsElem.scrollTop > scrollThresh &&
+          linesPerPage * (curPage + 2) < filtered.length
+        ) {
+          curPage += 1;
+          writeLogPage();
+          logsElem.scrollTop = 1;
+          updateStatus();
+        }
+      }
+
+      function updateStatus() {
+        var linesPerPage = getLinesPerPage();
+        numPages = getLastPage() + 1;
+
+        var status = get("status");
+        status.innerHTML = "Page: " + (curPage + 1) + "/" + numPages;
+      }
+
+      function gotoPage(which) {
+        switch (which) {
+          case "first":
             var logsElem = get("logConsole");
             curPage = 0;
             writeLogPage();
             logsElem.scrollTop = 0;
             updateStatus();
             break;
-        case "bigup":
+          case "bigup":
             var lastPage = getLastPage();
             curPage -= Math.max(Math.floor(lastPage / 10), 1);
             curPage = Math.max(curPage, 0);
@@ -714,24 +762,24 @@ function gotoPage(which) {
             writeLogPage();
             updateStatus();
             break;
-        case "prev":
+          case "prev":
             if (curPage > 0) {
-                var logsElem = get("logConsole");
-                curPage -= 1;
-                writeLogPage();
-                updateStatus();
+              var logsElem = get("logConsole");
+              curPage -= 1;
+              writeLogPage();
+              updateStatus();
             }
             break;
-        case "next":
+          case "next":
             var linesPerPage = getLinesPerPage();
             var lastPage = getLastPage();
             if (curPage < lastPage) {
-                curPage += 1;
-                writeLogPage();
-                updateStatus();
+              curPage += 1;
+              writeLogPage();
+              updateStatus();
             }
             break;
-        case "bigdown":
+          case "bigdown":
             var lastPage = getLastPage();
             curPage += Math.max(Math.floor(lastPage / 10), 1);
             curPage = Math.min(curPage, lastPage);
@@ -739,11 +787,11 @@ function gotoPage(which) {
             writeLogPage();
             updateStatus();
             break;
-        case "last":
+          case "last":
             curPage = 0;
             var linesPerPage = getLinesPerPage();
             if (linesPerPage > 0) {
-                curPage = Math.floor(filtered.length / linesPerPage) - 1;
+              curPage = Math.floor(filtered.length / linesPerPage) - 1;
             }
             curPage = Math.max(curPage, 0);
             var logsElem = get("logConsole");
@@ -751,207 +799,185 @@ function gotoPage(which) {
             logsElem.scrollTop = 0;
             updateStatus();
             break;
-        case "find":
+          case "find":
             if (curFindIndex >= 0) {
-                var oldCurPage = curPage;
-                curPage = 0;
-                var linesPerPage = getLinesPerPage();
+              var oldCurPage = curPage;
+              curPage = 0;
+              var linesPerPage = getLinesPerPage();
 
-                if (linesPerPage > 0) {
-                    curPage = Math.floor(findLineCols[curFindIndex * 2] / linesPerPage);
-                }
-                curPage = Math.min(curPage, getLastPage());
-                if (curPage != oldCurPage) {
-                    var logsElem = get("logConsole");
-                    logsElem.scrollTop = 0;
-                }
-                updateStatus();
+              if (linesPerPage > 0) {
+                curPage = Math.floor(
+                  findLineCols[curFindIndex * 2] / linesPerPage
+                );
+              }
+              curPage = Math.min(curPage, getLastPage());
+              if (curPage != oldCurPage) {
+                var logsElem = get("logConsole");
+                logsElem.scrollTop = 0;
+              }
+              updateStatus();
             }
             writeLogPage();
             break;
-    }
-}
+        }
+      }
 
-function handleFind() {
-    var findElem = get("find");
-    var value = findElem.value.toLowerCase();
-    findString = value;
-    if (!findAsyncInProgress) {
-        findAsyncInProgress = true;
-        resetFind();
-        window.setTimeout(findAsync, 1);
-    }
-}
+      function handleFind() {
+        var findElem = get("find");
+        var value = findElem.value.toLowerCase();
+        findString = value;
+        if (!findAsyncInProgress) {
+          findAsyncInProgress = true;
+          resetFind();
+          window.setTimeout(findAsync, 1);
+        }
+      }
 
-function resetFind() {
-    findLineCols = [];
-    findAsyncString = findString;
-    findNumLines = filtered.length;
-    findCurPage = curPage;
-    curFindIndex = -1;
-    findAsyncStartLine = curPage * getLinesPerPage();
-    findAsyncLimit = filtered.length;
-    findAsyncWrapped = false;
-    findAsyncInsertPos = 0;
-    linesSearched = 0;
-    updateFindStatus();
-}
+      function resetFind() {
+        findLineCols = [];
+        findAsyncString = findString;
+        findNumLines = filtered.length;
+        findCurPage = 0;
+        curFindIndex = -1;
+        updateFindStatus();
+      }
 
-function checkAndResetFind() {
-   if (findString != findAsyncString || filtered.length != findNumLines) {
-        resetFind();
-    }
-}
+      function checkAndResetFind() {
+        if (findString != findAsyncString || filtered.length != findNumLines) {
+          resetFind();
+        }
+      }
 
-function updateFindStatus() {
-    var status = get("findStatus");
+      function updateFindStatus() {
+        var status = get("findStatus");
 
-    if (findAsyncInProgress || findLineCols.length > 0) {
-        var findStatus = "Found " + (curFindIndex + 1) + "/" + (findLineCols.length / 2);
+        if (findAsyncInProgress || findLineCols.length > 0) {
+          var findStatus =
+            "Found " + (curFindIndex + 1) + "/" + findLineCols.length / 2;
 
-        if (findAsyncInProgress) {
+          if (findAsyncInProgress) {
             var linesPerPage = getLinesPerPage();
             var offset = linesPerPage * findCurPage;
-            findStatus += " Finding... " + Math.floor(linesSearched * 100 / filtered.length) + "%";
-        }
+            findStatus +=
+              " Finding... " +
+              Math.floor((offset * 100) / filtered.length) +
+              "%";
+          }
 
-        status.innerHTML = findStatus;
-    } else {
-        if (findString == "") {
-            status.innerHTML = "";
+          status.innerHTML = findStatus;
         } else {
+          if (findString == "") {
+            status.innerHTML = "";
+          } else {
             status.innerHTML = "Found None";
+          }
         }
-    }
-}
+      }
 
-function findAsync() {
+      function findAsync() {
+        checkAndResetFind();
 
-    checkAndResetFind();
+        var linesPerPage = getLinesPerPage();
+        var offset = linesPerPage * findCurPage;
 
-    var linesPerPage = getLinesPerPage();
-    var offset = linesPerPage * findCurPage;
+        if (findAsyncString == "" || linesPerPage <= 0) {
+          findAsyncInProgress = false;
+          resetFind();
+          writeLogPage();
+          return;
+        }
 
-    if (findAsyncString == "" || linesPerPage <= 0) {
-        findAsyncInProgress = false;
-        resetFind();
-        writeLogPage();
-        return;
-    }
+        updateFindStatus();
 
-    updateFindStatus();
-
-    for (var i = offset; i < offset + linesPerPage; i++) {
-        if (i < findAsyncLimit) {
+        for (var i = offset; i < offset + linesPerPage; i++) {
+          if (i < filtered.length) {
             var line = lines[filtered[i] + 1];
             var col = line.toLowerCase().indexOf(findAsyncString);
-            linesSearched++;
             while (col >= 0) {
-                if (findAsyncWrapped) {
-                    findLineCols.splice(findAsyncInsertPos, 0, i);
-                    findAsyncInsertPos++;
-                    findLineCols.splice(findAsyncInsertPos, 0, col);
-                    findAsyncInsertPos++;
-                    if (curFindIndex >= 0) {
-                        curFindIndex++;
-                    }
-                } else {
-                    findLineCols.push(i);
-                    findLineCols.push(col);
-                }
-                if (curFindIndex == -1) {
-                    curFindIndex = (findLineCols.length / 2) - 1;
-                    gotoPage("find");
-                }
-                col = line.toLowerCase().indexOf(findAsyncString,
-                                                 col + findAsyncString.length);
+              findLineCols.push(i);
+              findLineCols.push(col);
+              if (curFindIndex == -1 && findCurPage >= curPage) {
+                curFindIndex = findLineCols.length / 2 - 1;
+                gotoPage("find");
+              }
+              col = line
+                .toLowerCase()
+                .indexOf(findAsyncString, col + findAsyncString.length);
             }
+          }
         }
-    }
-    findCurPage++;
+        findCurPage++;
 
-    if (linesPerPage * findCurPage < findAsyncLimit) {
-        window.setTimeout(findAsync, 1);
-    } else if (findAsyncStartLine > 0) {
-        findAsyncLimit = findAsyncStartLine;
-        findAsyncStartLine = 0;
-        findCurPage = 0;
-        findAsyncInsertPos = 0;
-        findAsyncWrapped = true;
-        window.setTimeout(findAsync, 1);
-    } else {
-        if (curFindIndex == -1 && findLineCols.length > 0) {
+        if (linesPerPage * findCurPage < filtered.length) {
+          window.setTimeout(findAsync, 1);
+        } else {
+          if (curFindIndex == -1 && findLineCols.length > 0) {
             curFindIndex = 0;
+          }
+          findAsyncInProgress = false;
+          updateFindStatus();
+          gotoPage("find");
         }
-        findAsyncInProgress = false;
-        updateFindStatus();
-        gotoPage("find");
-    }
-}
+      }
 
-function handleFindNext(inc) {
-    var numFound = findLineCols.length / 2;
-    if (numFound > 0 && curFindIndex >= 0) {
-        curFindIndex += inc;
-        if (curFindIndex < 0) {
+      function handleFindNext(inc) {
+        var numFound = findLineCols.length / 2;
+        if (numFound > 0 && curFindIndex >= 0) {
+          curFindIndex += inc;
+          if (curFindIndex < 0) {
             curFindIndex = numFound - 1;
-        }
-        if (curFindIndex >= numFound) {
+          }
+          if (curFindIndex >= numFound) {
             curFindIndex = 0;
+          }
+          updateFindStatus();
+          gotoPage("find");
         }
-        updateFindStatus();
-        gotoPage("find");
-    }
-}
+      }
 
-function handleFilter() {
-    var filterElem = get("filter");
-    filterString = filterElem.value.toLowerCase();
-    filterLines();
-}
+      function handleFilter() {
+        var filterElem = get("filter");
+        filterString = filterElem.value.toLowerCase();
+        filterLines();
+      }
 
-function handleExclude() {
-    var excludeElem = get("exclude");
-    excludeString = excludeElem.value.toLowerCase();
-    filterLines();
-}
+      function handleExclude() {
+        var excludeElem = get("exclude");
+        excludeString = excludeElem.value.toLowerCase();
+        filterLines();
+      }
 
-function logHighlight(logIndex, hover) {
+      function logHighlight(logIndex, hover) {
+        var elements = document.querySelectorAll(".highlight_" + logIndex);
+        for (var i = 0; i < elements.length; i++) {
+          elements[i].style["background-color"] = getLineColor(logIndex, hover);
+        }
+      }
 
-    var elements = document.querySelectorAll('.highlight_' + logIndex);
-    for (var i = 0; i < elements.length; i++) {
-        elements[i].style["background-color"] = getLineColor(logIndex, hover);
-    }
-}
+      function handleAllToggle(on) {
+        for (var i = 0; i < files.length; i++) {
+          toggles[i] = on;
+        }
 
-function handleAllToggle(on) {
+        var elements = document.querySelectorAll(".toggle");
+        for (var i = 0; i < elements.length; i++) {
+          elements[i].checked = on;
+        }
 
-    for (var i = 0; i < files.length; i++) {
-        toggles[i] = on;
-    }
+        filterLines();
+      }
 
-    var elements = document.querySelectorAll('.toggle');
-    for (var i = 0; i < elements.length; i++) {
-        elements[i].checked = on;
-    }
+      document.body.onload = function () {
+        writeLogFileList();
 
-    filterLines();
-}
+        handleToggle();
 
-document.body.onload = function() {
+        var logsElem = get("logConsole");
+        logsElem.onscroll = handleScroll;
 
-    writeLogFileList();
-
-    handleToggle();
-
-    var logsElem = get("logConsole");
-    logsElem.onscroll = handleScroll;
-
-    document.body.onresize = writeLogPage;
-
-}
-</script>
-
+        document.body.onresize = writeLogPage;
+      };
+    </script>
 """
 
 HTML_PAGE_FOOTERS = """
