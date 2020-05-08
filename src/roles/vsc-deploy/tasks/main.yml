@@ -44,14 +44,20 @@
     - vsc
     - vsc-deploy
 
-- import_tasks: setup_vsc_config.yml
-  vars:
-    config_template: config.cfg.j2
-    reboot_vsc: true
-  when: target_server_type is match("kvm") or target_server_type is match("vcenter") or target_server_type is match("none")
-  tags:
-    - vsc
-    - vsc-deploy
+- block:
+
+  - import_tasks: setup_vsc_config.yml
+    vars:
+      config_template: config.cfg.j2
+      reboot_vsc: true
+    tags:
+      - vsc
+      - vsc-deploy
+
+  - name: Reset connections for sros_config after reboot
+    meta: reset_connection
+
+  when: target_server_type is match("kvm") or target_server_type is match("vcenter") or target_server_type is match("openstack") or target_server_type is match("none")
 
 - name: Get vsd node(s) information
   import_role:

@@ -134,7 +134,7 @@ vcin_slaves
 {% if vscs|length == 1 or upgrade.force_vsc_standalone_upgrade | default(false) %}
 [vsc_sa_node]
 {% for vsc in vscs %}
-{{ vsc.hostname }}
+{{ vsc.mgmt_ip }}
 {% endfor %}
 [vscs:children]
 vsc_sa_node
@@ -144,14 +144,14 @@ vsc_sa_node
 [vsc_ha_node1]
 {% for vsc in vscs %}
 {% if loop.index % 2 == 1 %}
-{{ vsc.hostname }}
+{{ vsc.mgmt_ip }}
 {% endif %}
 {% endfor %}
 
 [vsc_ha_node2]
 {% for vsc in vscs %}
 {% if loop.index % 2 == 0 %}
-{{ vsc.hostname }}
+{{ vsc.mgmt_ip }}
 {% endif %}
 {% endfor %}
 
@@ -255,6 +255,13 @@ vstat_node{{ loop.index }}
 {% for vrs_dict in vrs_dict_list['vrs_ip_list'] %}
 {{ vrs_dict }} avrs={{ 'avrs' in vrs_dict_list and vrs_dict_list['avrs'] }}
 {% endfor %}
+{% endfor %}
+{% endif %}
+
+{% if netconf_managers is defined and netconf_managers|length > 0 %}
+[netconf_managers]
+{% for netconf_manager in netconf_managers %}
+netconf_{{ netconf_manager.netconf_server }}
 {% endfor %}
 {% endif %}
 
