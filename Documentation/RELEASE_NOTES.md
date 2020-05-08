@@ -13,6 +13,7 @@
 * Add support for VSTAT yum update via vstat_yum_update (METROAE-1190)
 * Check hypervisor disk space on KVM and vCenter
 * Add NETCONF RPMs to unzip
+* Support for additional functionality via plugins
 
 ### Resolved Issues
 
