@@ -84,11 +84,6 @@
     that: "{{ vsds | map(attribute='hostname') | unique | list | length }} == {{ vsds | length }}"
     msg: "VSD hostname fields must be unique"
 
-- name: Validate unique VSC hostnames
-  assert:
-    that: "{{ vscs | map(attribute='hostname') | unique | list | length }} == {{ vscs | length }}"
-    msg: "VSC hostname fields must be unique"
-
 - name: Validate unique VSTAT hostnames
   assert:
     that: "{{ vstats | map(attribute='hostname') | unique | list | length }} == {{ vstats | length }}"
@@ -106,6 +101,7 @@
     that: "'{{item.system_name|default(item.hostname)}}'|length <= 32"
     msg: "'{{item.system_name|default(item.hostname)}}' is too long to be a valid VSC system name,
           please define a 'system_name' with up to 32 chars for {{ item.hostname }}"
+  when: item.system_name is defined or item.hostname is defined
   with_items: "{{ vscs }}"
 
 - name: Verify that the VSC has the correct number of cpuset defined
