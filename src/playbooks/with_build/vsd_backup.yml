@@ -4,7 +4,7 @@
   roles:
     - vsd-postdeploy
 
-- hosts: vsd_ha_node1,vsd_ha_node2,vsd_ha_node3
+- hosts: primary_vsds
   gather_facts: no
   serial: 1
   remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
@@ -17,7 +17,7 @@
         name: common
         tasks_from: vsd-find-backup-node
 
-- hosts: "{{hostvars['localhost'].vsd_backup_node | default(vsd_ha_node1)}}",vsd_sa_node
+- hosts: "{{hostvars['localhost'].vsd_backup_node | default(vsd_ha_node1 | default(vsd_sa_node))}}"
   gather_facts: no
   roles:
     - vsd-backup-only
