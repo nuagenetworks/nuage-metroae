@@ -17,6 +17,7 @@
 * Upgrade minimum Ansible version to 2.9.2 to eliminate security vulnerability (METROAE-1372)
 * Upgrade minimum PyYaml version to 4.2b1 to eliminate security vulnerability
 * Add missing OpenStack packages to container build
+* Fix skip_dns_resolution_tests flag that was being ignored
 
 ## Test Matrix
 
