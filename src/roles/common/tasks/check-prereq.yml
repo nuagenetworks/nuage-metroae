@@ -28,21 +28,20 @@
     changed_when: False
 
   - name : Output installed group packages
-    command: yum grouplist installed    # noqa 303
+    command: yum grouplist installed
     register: yumgroupoutput
-    changed_when: False
 
   - name : Check if all pip packages are installed
     assert:
       that: "pipoutput.stdout|search('{{ item }}')"
       msg:  "Missing required package {{ item }} . Please refer to setup.sh"
-    with_lines:  sed 's/==.*//' pip_requirements.txt    # noqa 104
+    with_lines:  sed 's/==.*//' pip_requirements.txt
 
   - name : Check if all yum packages are installed
     assert:
       that: "yumoutput.stdout|search('{{ item }}')"
       msg:  "Missing required package {{ item }} . Please refer to setup.sh"
-    with_lines: cat ./yum_requirements.txt      # noqa 104
+    with_lines: cat ./yum_requirements.txt
     when: not item|search('@')
 
   - name : Check if all yum group packages are installed
