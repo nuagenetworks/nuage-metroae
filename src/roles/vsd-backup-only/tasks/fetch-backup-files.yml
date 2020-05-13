@@ -34,6 +34,12 @@
   vars:
     ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"
 
+- name: Remove any old symbolic link to backup location
+  file:
+    path: "{{ metro_backup_root }}/backup-vsd-{{ vsd_fqdn }}-latest"
+    state: absent
+  delegate_to: localhost
+
 - name: Create symbolic link to backup location
   file:
     dest: "{{ metro_backup_root }}/backup-vsd-{{ vsd_fqdn }}-latest"
@@ -51,10 +57,40 @@
     ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"
   ignore_errors: True
 
-# - block:
+- name: "Cleanup old backups"
+  block:
 
+  - name: Find all backup directories
+    find:
+      path: "{{ metro_backup_root }}"
+      patterns: "backup-*"
+      file_type: directory
+    register: backup_dirs_find
 
+  - debug: var=backup_dirs_find
 
-  # when: max_num_stored_backups >= 0
+  - name: Create empty list for backup directories
+    set_fact:
+      backup_dirs_info_list: []
+
+  - name: Add backup directory info to list
+    set_fact:
+      backup_dirs_info_list: "{{ backup_dirs_info_list + [ {'path': item.path, 'timestamp': item.path.split('-') | last } ] }}"
+    loop: "{{ backup_dirs_find.files }}"
+
+  - name: Filter and backup directory info list
+    set_fact:
+      backup_dirs_info_list: "{{ backup_dirs_info_list | rejectattr('path', 'equalto', vsd_localhost_backup_dir) | list | sort(reverse=true, attribute='timestamp') }}"
+
+  - debug: var=backup_dirs_info_list
+
+  - name: Delete old backup files
+    file:
+      path: "{{ backup_dirs_info_list[item].path }}"
+      state: absent
+    loop: "{{ range([max_num_stored_backups - 1, 0] | max, backup_dirs_info_list | length) | list }}"
+
+  delegate_to: localhost
+  when: max_num_stored_backups >= 0
 
 
