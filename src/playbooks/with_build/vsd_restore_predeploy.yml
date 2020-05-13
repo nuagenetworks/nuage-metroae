@@ -1,16 +1,17 @@
 - hosts: localhost
+  gather_facts: no
   tasks:
-   - name: Get list of files in backup directory
-      find:
-        path: "{{ metro_backup_root }}/backup-vsd-{{ vsd_fqdn }}-latest/"
-        pattern: "*.tar.gz"
-      register: lst_files
 
+  - name: Get list of files in backup directory
+    find:
+      path: "{{ metro_backup_root }}/backup-vsd-{{ vsd_fqdn }}-latest/"
+      pattern: "*.tar.gz"
+    register: lst_files
     remote_user: "{{ vsd_default_username }}"
 
   - name: Verify backup contains exactly 3 files
     assert:
-      that: "lst_files.examined == 3"
+      that: "lst_files.matched == 3"
       msg: "Backup directory {{ metro_backup_root }}/backup-vsd-{{ vsd_fqdn }}-latest/ does not contain 3 backup files"
 
 - name: Run VSD Predeploy
