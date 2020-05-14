@@ -15,6 +15,7 @@
 * Add NETCONF RPMs to unzip
 * Add Netconf Manager Support to MetroAE (METROAE-1204)
 * Make hostname optional for VSC
+* Backup and restore functionality for VSD (METROAE-1382)
 
 ### Resolved Issues
 

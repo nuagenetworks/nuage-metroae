@@ -144,6 +144,7 @@ File name | Description
 [DESTROY.md](Documentation/DESTROY.md) | Remove existing deployment(s) and start over.
 [UPGRADE_SA.md](Documentation/UPGRADE_SA.md) | Upgrade component(s) from one release to the next in a standalone environment.
 [UPGRADE_HA.md](Documentation/UPGRADE_HA.md) | Upgrade component(s) from one release to the next in a clustered environment.
+[BACKUP_RESTORE.md](Documentation/BACKUP_RESTORE.md) | Backup and restore component(s).
 [VAULT_ENCRYPT.md](Documentation/VAULT_ENCRYPT.md) | Safeguard sensitive data
 [DOCKER.md](Documentation/DOCKER.md) | Installing and using MetroAE Docker container
 [HOOKS_&_SKIPACTIONS.md](Documentation/HOOKS_&_SKIPACTIONS.md) | Configure ability to run custom commands in between playbooks and skip playbooks
