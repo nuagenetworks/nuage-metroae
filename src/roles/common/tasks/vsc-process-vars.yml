@@ -102,6 +102,12 @@
       msg: "vlan_id and the ctrl_ip_vprn_list cannot be used together for VSC. Use the VPRN list to create all control VPRNs. vlan_id will be deprecated in future releases"
     with_items: "{{ vscs }}"
 
+  - name: Verify hostname is specified if VSC is IPv6
+    assert:
+      that: "(not item.mgmt_ip | ipv6) or (item.mgmt_ip | ipv6 and item.hostname is defined)"
+      msg: "Must define hostname for VSC if using IPv6 as Management IP address"
+    with_items: "{{ vscs }}"
+
   when:
     - vscs is defined and vscs|length > 0
   tags:
