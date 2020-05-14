@@ -2,6 +2,8 @@ heat_template_version: '2014-10-16'
 parameters:
   vm_name:
     type: string
+  ssh_key:
+    type: string
   vnsutil_image:
     type: string
   vnsutil_flavor:
@@ -47,9 +49,6 @@ resources:
   mycompute:
     type: OS::Nova::Server
     properties:
-{% if openstack_availability_zone is defined %}
-      availability_zone: {{ openstack_availability_zone }}
-{% endif %}
       name: {get_param: vm_name}
       flavor: {get_param: vnsutil_flavor}
       image: {get_param: vnsutil_image}
@@ -59,7 +58,18 @@ resources:
       networks:
         - port: {get_resource: mgmt_port}
         - port: {get_resource: data_port}
-
+      user_data_format: RAW
+{% if openstack_availability_zone is defined %}
+      availability_zone: {{ openstack_availability_zone }}
+{% endif %}
+      user_data:
+        str_replace:
+          template: |
+            #!/bin/bash
+            mkdir -p /root/.ssh/
+            echo usr >> /root/.ssh/authorized_keys
+          params:
+            usr: {get_param: ssh_key}
 
 outputs:
   vnsutil_mgmt_ip:
