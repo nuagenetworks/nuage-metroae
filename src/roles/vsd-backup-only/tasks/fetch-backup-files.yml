@@ -80,7 +80,7 @@
 
   - name: Filter and backup directory info list
     set_fact:
-      backup_dirs_info_list: "{{ backup_dirs_info_list | rejectattr('path', 'equalto', vsd_localhost_backup_dir) | list | sort(reverse=true, attribute='timestamp') }}"
+      backup_dirs_info_list: "{{ backup_dirs_info_list | sort(reverse=true, attribute='timestamp') }}"
 
   - debug: var=backup_dirs_info_list
 
@@ -88,7 +88,7 @@
     file:
       path: "{{ backup_dirs_info_list[item].path }}"
       state: absent
-    loop: "{{ range([max_num_stored_backups - 1, 0] | max, backup_dirs_info_list | length) | list }}"
+    loop: "{{ range([max_num_stored_backups, 1] | max, backup_dirs_info_list | length) | list }}"
 
   delegate_to: localhost
   when: max_num_stored_backups >= 0
