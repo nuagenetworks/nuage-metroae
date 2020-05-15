@@ -1,11 +1,12 @@
 - name: Deploy image on vCenter (ignoring errors) (Can take several minutes)
   connection: local
-  shell: >-
+  command: >-
     {{ ovftool_command }}
     "vi://{{ vcenter.username | urlencode }}:{{ vcenter.password | urlencode }}@{{ vcenter_path }}"
   register: deploy_result
   ignore_errors: yes
   no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
+  changed_when: deploy_result.rc == 0
 
 - name: Show command debug
   debug:
@@ -25,4 +26,4 @@
 - name: Assert command succeeded
   assert:
     that: deploy_result.rc == 0
-    fail_msg: "{{deploy_result.stderr | replace(vcenter.password | urlencode, '********') }}"
+    fail_msg: "{{ deploy_result.stderr | replace(vcenter.password | urlencode, '********') }}"

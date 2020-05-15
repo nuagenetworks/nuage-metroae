@@ -14,7 +14,9 @@
 - import_tasks: report_header.yml
 
 - name: get the username running the deploy
-  local_action: command whoami
+  command: whoami
+  delegate_to: localhost
+  changed_when: False
   register: username_on_the_host
 
 - debug: var=username_on_the_host
@@ -31,7 +33,7 @@
 
   - name: Create target directory to mount ISO if necessary
     file: name="/media/CDROM" state=directory mode=0775
-    when: cdrom_dir.stat.exists == false
+    when: not cdrom_dir.stat.exists
 
   - name: mount ISO as loop back device
     mount:
@@ -91,6 +93,7 @@
   register: list_cluster_output
   remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
   become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
+  changed_when: True
   vars:
     ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"
 
@@ -114,11 +117,20 @@
 - name: Verify ejabberd_connected_users_command returns 3 entries
   command: "{{ ejabberd_connected_users_command }}"
   register: client_list
-  until: client_list.stdout.find('cna@' + vsd_fqdn) != -1 and client_list.stdout.find('keyserver@' + vsd_fqdn) != -1 and client_list.stdout.find('push@' + vsd_fqdn) != -1 and client_list.stdout_lines|length == 3
+  until: >
+    client_list.stdout.find('cna@' + vsd_fqdn) != -1 and
+    client_list.stdout.find('keyserver@' + vsd_fqdn) != -1 and
+    client_list.stdout.find('push@' + vsd_fqdn) != -1 and
+    client_list.stdout_lines|length == 3
   retries: 10
   delay: 20
   remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
   become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
+  changed_when: >
+    client_list.stdout.find('cna@' + vsd_fqdn) != -1 and
+    client_list.stdout.find('keyserver@' + vsd_fqdn) != -1 and
+    client_list.stdout.find('push@' + vsd_fqdn) != -1 and
+    client_list.stdout_lines|length == 3
   vars:
     ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"
 

@@ -50,13 +50,14 @@
           mode=0700
 
 - name: Execute upgrade script
-  shell: "/root/{{ vstat_upgrade_scripts_file }}"
+  shell: "/root/{{ vstat_upgrade_scripts_file }}"       # noqa 305
+  changed_when: True
 
 - name: When primary/backup nodes are defined
   block:
 
   - name: Figure out Active ES cluster
-    shell: crontab -l
+    command: crontab -l
     register: crontabOutput
     ignore_errors: true
 
@@ -141,7 +142,7 @@
       state: restarted
 
   - name: Check to see if elasticsearch restarted
-    command: systemctl status elasticsearch
+    command: systemctl status elasticsearch     # noqa 303
     register: status
     until: status.stdout.find("active (running)") != -1
     retries: 5

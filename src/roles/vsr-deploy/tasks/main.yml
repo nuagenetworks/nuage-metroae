@@ -25,27 +25,26 @@
 
 
 - name: Configure DNS in BOF
-  local_action:
-    module: sros_command
+  sros_command:
     commands:
       - "bof dns-domain {{ dns_domain }}"
       - "bof primary-dns {{ dns_server_list[0] }}"
       - "bof save"
     provider: "{{ provider_creds }}"
+  delegate_to: localhost
 
 - name: Create rollback point
-  local_action:
-    module: sros_config
+  sros_config:
     lines:
       - "admin rollback save comment \"Before Metro-Config {{ lookup('pipe', 'date -u +%Y-%m-%d-%H:%M:%s') }}\""
     provider: "{{ provider_creds }}"
+  delegate_to: localhost
 
 - name: Ensure build directory exits to store config fragments in
-  local_action:
-    module: file
+  file:
     state: directory
     path: "{{ config_file_directory }}/{{ inventory_hostname }}"
-
+  delegate_to: localhost
 
 - name: Set configuration fragments
   set_fact:
@@ -55,26 +54,25 @@
      - { file: "router.cfg", prio: "30" }
 
 - name: Generate configuration fragments
-  local_action:
-    module: template
+  template:
     src: "{{ item.file }}.j2"
-    dest: "{{ config_file_directory }}/{{ inventory_hostname }}/{{ item.prio }}-{{ item.file}}"
+    dest: "{{ config_file_directory }}/{{ inventory_hostname }}/{{ item.prio }}-{{ item.file }}"
   with_items: "{{ config_items }}"
+  delegate_to: localhost
 
 - name: Show rootified commands that will be sent to VSR
   debug: msg='{{ lookup("template", "{{ item.file }}.j2" ) | sros_rootify }}' verbosity=1
   with_items: "{{ config_items }}"
 
 - name: Configure additional configuration to integrate VSR with Nuage VSD
-  local_action:
-    module: sros_config
+  sros_config:
     lines: '{{ lookup("template", "{{ item.file }}.j2" ) | sros_rootify }}'
     provider: "{{ provider_creds }}"
   with_items: "{{ config_items }}"
-
+  delegate_to: localhost
 
 - name: Save VSR config
-  local_action:
-    module: sros_config
+  sros_config:
     save: yes
     provider: "{{ provider_creds }}"
+  delegate_to: localhost

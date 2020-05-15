@@ -51,7 +51,7 @@
 
     - name: Find root partition
       set_fact:
-        guestfish_mount: "{{ item.item.split(':')[0]}}"
+        guestfish_mount: "{{ item.item.split(':')[0] }}"
       with_items: "{{ partitions.results }}"
       when: '"boot" in item.stdout'
 
@@ -61,7 +61,9 @@
       template: src=admin.conf.j2 backup=no dest={{ stcv_destination_image_path }}/{{ vmname }}/admin.conf
 
     - name: Copy admin.conf file to the KVM image on {{ target_server }}
-      command: guestfish --rw -a {{ stcv_destination_image_path }}/{{ vmname }}/{{ stcv_image_filename }} -m {{ guestfish_mount }} copy-in {{ stcv_destination_image_path }}/{{ vmname }}/admin.conf /chassis/conf/
+      command: >-
+        guestfish --rw -a {{ stcv_destination_image_path }}/{{ vmname }}/{{ stcv_image_filename }}
+        -m {{ guestfish_mount }} copy-in {{ stcv_destination_image_path }}/{{ vmname }}/admin.conf /chassis/conf/
 
     - name: Remove temporary copy of admin.conf script
       file: path={{ stcv_destination_image_path }}/{{ vmname }}/admin.conf state=absent

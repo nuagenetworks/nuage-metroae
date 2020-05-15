@@ -51,12 +51,12 @@
       ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"
 
   - name: Write VSD Disk IOPS value to json file
-    nuage_append: filename="{{ report_path }}" text="VSD Disk IOPS value of {{ disk_performance_val | to_nice_json}} did not meet the specified threshold of {{ vsd_disk_performance_test_minimum_threshold | to_nice_json}}\n"
+    nuage_append: filename="{{ report_path }}" text="VSD Disk IOPS value of {{ disk_performance_val | to_nice_json }} did not meet the specified threshold of {{ vsd_disk_performance_test_minimum_threshold | to_nice_json }}\n"         # noqa 204
     delegate_to: localhost
     when: disk_performance_val|int < vsd_disk_performance_test_minimum_threshold
 
   - name: Write VSD Disk IOPS value to json file
-    nuage_append: filename="{{ report_path }}" text="VSD Disk IOPS value of {{ disk_performance_val | to_nice_json}} met the specified threshold of {{ vsd_disk_performance_test_minimum_threshold | to_nice_json}}\n"
+    nuage_append: filename="{{ report_path }}" text="VSD Disk IOPS value of {{ disk_performance_val | to_nice_json }} met the specified threshold of {{ vsd_disk_performance_test_minimum_threshold | to_nice_json }}\n"        # noqa 204
     delegate_to: localhost
     when: disk_performance_val|int >= vsd_disk_performance_test_minimum_threshold
 
@@ -67,25 +67,27 @@
 - block:
 
   - name: Write VSD Disk IOPS value to json file
-    nuage_append: filename="{{ report_path }}" text="VSD Disk IOPS value of {{ disk_performance_val | to_nice_json}} did not meet the specified threshold of {{ vsd_disk_performance_test_minimum_threshold | to_nice_json}}\n"
+    nuage_append: filename="{{ report_path }}" text="VSD Disk IOPS value of {{ disk_performance_val | to_nice_json }} did not meet the specified threshold of {{ vsd_disk_performance_test_minimum_threshold | to_nice_json }}\n"       # noqa 204
     delegate_to: localhost
     when: disk_performance_val|int < vsd_disk_performance_test_minimum_threshold
 
   - name: Write VSD Disk IOPS value to json file
-    nuage_append: filename="{{ report_path }}" text="VSD Disk IOPS value of {{ disk_performance_val | to_nice_json}} met the specified threshold of {{ vsd_disk_performance_test_minimum_threshold | to_nice_json}}\n"
+    nuage_append: filename="{{ report_path }}" text="VSD Disk IOPS value of {{ disk_performance_val | to_nice_json }} met the specified threshold of {{ vsd_disk_performance_test_minimum_threshold | to_nice_json }}\n"         # noqa 204
     delegate_to: localhost
     when: disk_performance_val|int >= vsd_disk_performance_test_minimum_threshold
 
   when: vsd_ran_disk_performance_test | default(False)
 
 - name: Get current version of VSD software
-  shell: grep -ir "VSD_VERSION=" /etc/profile.d/vsd-banner.sh | awk -F "=" '{print $2}'
+  shell: grep -ir "VSD_VERSION=" /etc/profile.d/vsd-banner.sh | awk -F "=" '{print $2}'         # noqa 306
   register: vsd_version
+  changed_when: False
   remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
 
 - name: Get configured VSD Hostname
   command: hostname -f
   register: hostname_output
+  changed_when: False
   remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
   become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
   vars:
@@ -97,7 +99,7 @@
     msg: "Configured VSD hostname does not match expected VSD hostname"
 
 - name: Write VSD version to json file
-  nuage_append: filename="{{ report_path }}" text="{{ vsd_version.stdout | to_nice_json}}\n"
+  nuage_append: filename="{{ report_path }}" text="{{ vsd_version.stdout | to_nice_json }}\n"
   delegate_to: localhost
 
 - name: Get current network config of all VSD nodes
@@ -113,7 +115,7 @@
   debug: var=net_conf.info verbosity=1
 
 - name: Write network config to json file
-  nuage_append: filename="{{ report_path }}" text="{{ net_conf.info | to_nice_json}}\n"
+  nuage_append: filename="{{ report_path }}" text="{{ net_conf.info | to_nice_json }}\n"
   delegate_to: localhost
 
 - import_tasks: monit_status.yml
@@ -138,7 +140,7 @@
       when: not vsd_ran_rtt_test | default(false)
 
     - name: Write Primary VSD RTT to file
-      nuage_append: filename="{{ vsd_rtt_report_path }}" text="{{ vsd_rtt_test_results | to_nice_json}}\n"
+      nuage_append: filename="{{ vsd_rtt_report_path }}" text="{{ vsd_rtt_test_results | to_nice_json }}\n"
       delegate_to: localhost
 
     when: inventory_hostname == groups['vsd_ha_node1'][0]
@@ -156,7 +158,7 @@
       when: not vsd_ran_rtt_test | default(false)
 
     - name: Write Secondary VSD RTT to file
-      nuage_append: filename="{{ vsd_rtt_report_path }}" text="{{ vsd_rtt_test_results | to_nice_json}}\n"
+      nuage_append: filename="{{ vsd_rtt_report_path }}" text="{{ vsd_rtt_test_results | to_nice_json }}\n"
       delegate_to: localhost
 
     when:
@@ -174,6 +176,7 @@
 
 - name: Execute list_p1db command on VSD(s)
   command: "{{ p1db_cmd }}"
+  changed_when: True
   register: list_p1db_output
   remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
   become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
@@ -192,6 +195,7 @@
 
 - name: Execute list_cluster command on VSD(s)
   command: "{{ ejabber_cluster_list_command }}"
+  changed_when: True
   register: list_cluster_output
   remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
   become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
@@ -211,6 +215,7 @@
 - name: Execute ejabberd_connected_users_command command on VSD(s)
   command: "{{ ejabberd_connected_users_command }}"
   register: user_list
+  changed_when: True
   remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
   become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
   vars:
@@ -280,7 +285,7 @@
   - name: Set the URL for the VSD
     set_fact:
       vsd_url_address: >-
-        {% if enable_ipv6|default(False) %}[{{mgmt_ip}}]{% else %}{{mgmt_ip}}{% endif %}
+        {% if enable_ipv6|default(False) %}[{{ mgmt_ip }}]{% else %}{{ mgmt_ip }}{% endif %}
 
   - name: Get the health status of VSD via HTTPS (ignoring errors)
     uri:
@@ -333,10 +338,10 @@
       delegate_to: localhost
 
     - name: write web interface result
-      nuage_append: filename="{{ report_path }}" text="{{ webresult  | to_nice_json}}\n"
+      nuage_append: filename="{{ report_path }}" text="{{ webresult  | to_nice_json }}\n"
       delegate_to: localhost
 
-    when: jms_master_hostname is defined and jms_master_hostname != ""
+    when: jms_master_hostname is defined and jms_master_hostname
 
   when:
     - "'activemq-status' in vsd_proc.state"
@@ -350,32 +355,33 @@
       tasks_from: check-vsd-license-validity.yml
 
   - name: Write license valid result
-    nuage_append: filename="{{ report_path }}" text="{{ inventory_hostname }}  License  {{ license_valid | to_nice_json}}\n"
+    nuage_append: filename="{{ report_path }}" text="{{ inventory_hostname }}  License  {{ license_valid | to_nice_json }}\n"
     delegate_to: localhost
 
   when: check_vsd_license | default(True)
 
 - name: Get the JAVA_HOME
   shell: echo $JAVA_HOME
+  changed_when: False
   register: java_home
   remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
 
 - block:
 
   - name: Verify keystore pass is set
-    shell: "keytool -keystore /opt/vsd/jboss/standalone/configuration/vsd.keystore -storepass {{ keyStorePwd }} -list"
+    command: "keytool -keystore /opt/vsd/jboss/standalone/configuration/vsd.keystore -storepass {{ keyStorePwd }} -list"
     when: keyStorePwd is defined
 
   - name: Verify truststore pass is set
-    shell: "keytool -keystore /opt/vsd/jboss/standalone/configuration/vsd.truststore -storepass {{ trustStorePwd }} -list"
+    command: "keytool -keystore /opt/vsd/jboss/standalone/configuration/vsd.truststore -storepass {{ trustStorePwd }} -list"
     when: trustStorePwd is defined
 
   - name: Verify keyserver pass is set
-    shell: "keytool -keystore /opt/vsd/jboss/standalone/configuration/keyserver.jks -storepass {{ keyServerStorePwd }} -list"
+    command: "keytool -keystore /opt/vsd/jboss/standalone/configuration/keyserver.jks -storepass {{ keyServerStorePwd }} -list"
     when: keyServerStorePwd is defined
 
   - name: Verify jrestore pass is set for version
-    shell: "keytool -keystore {{ java_home.stdout }}/lib/security/cacerts -alias vspca -storepass {{ jreStorePwd }} -list"
+    command: "keytool -keystore {{ java_home.stdout }}/lib/security/cacerts -alias vspca -storepass {{ jreStorePwd }} -list"
     when: jreStorePwd is defined
 
   - name: Verify cnauser pass is set
