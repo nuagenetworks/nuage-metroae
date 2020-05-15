@@ -10,6 +10,7 @@ TEST_PARAMS = {
         "enterprise": "csp",
         "api_url": "https://localhost:8443"},
     "gateway_purge_time": 7003,
+    "vsd_version": "5.4.1",
     "get_gateway_purge_time": False
 }
 
