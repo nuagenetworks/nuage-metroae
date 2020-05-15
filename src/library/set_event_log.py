@@ -56,14 +56,10 @@ def set_event_log(module, csproot, event_log_age):
 
 
 def format_api_version(version):
-    if version.startswith('3'):
-        return ('v3_2')
-    elif version.startswith('6'):
-        return ('v' + version[0])
-    elif version.startswith('20'):
-        return ('v6')
+    if version.startswith('5'):
+        return ('v5_0')
     else:
-        return ('v' + version[0] + '_0')
+        return ('v6')
 
 
 def get_vsd_session(module, vsd_auth):
