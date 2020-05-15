@@ -84,4 +84,38 @@
       state: absent
     delegate_to: localhost
 
+  - block:
+
+    - name: Write eth0 file
+      template:
+        src: ifcfg-eth0.j2
+        dest: /etc/sysconfig/network-scripts/ifcfg-eth0
+        backup: no
+
+    - name: Set the owner and group on the eth0 network script file
+      file:
+        path: /etc/sysconfig/network-scripts/ifcfg-eth0
+        owner: root
+        group: root
+
+    - name: Write network file
+      template:
+        src: "{{ role_path }}/../common/templates/network.j2"
+        dest: /etc/sysconfig/network
+        backup: no
+
+    - name: Set the owner and group on the network file
+      file:
+        path: /etc/sysconfig/network
+        owner: root
+        group: root
+
+    - name: Disable NetworkManager
+      command: systemctl disable NetworkManager
+
+    - name: Reboot VNSUTIL VM
+      shell: usr/sbin/reboot  
+
+    remote_user: "{{ vnsutil_default_username }}"
+
   when: not vnsutil_present
