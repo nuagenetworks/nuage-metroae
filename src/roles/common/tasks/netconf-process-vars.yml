@@ -1,0 +1,17 @@
+---
+- name: Find Netconf RPM location
+  include_role:
+    name: common
+    tasks_from: find-file.yml
+  vars:
+    dir_name: "{{ nuage_unzipped_files_dir }}"
+    pattern: "nuage-netconf-*.rpm"
+
+- name: Register Netconf RPM variables with proper path and image locations for use in other locations
+  set_fact:
+    image_path: "{{ file_path }}"
+    image_file_name: "{{ file_name }}"
+
+- name: Create host_vars files for Netconf server
+  template: src=netconf_manager.j2 backup=no dest={{ inventory_dir }}/host_vars/netconf_{{ item.netconf_server }}
+  with_items: "{{ netconf_managers }}"
