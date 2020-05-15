@@ -49,8 +49,10 @@
       guestfish_dest: "{{ images_path }}/{{ vm_name }}/{{ image_file_name }}"
 
   - name: Get the public key for the current user
-    local_action: command cat "{{ user_ssh_pub_key }}"
+    command: cat "{{ user_ssh_pub_key }}"
+    delegate_to: localhost
     register: current_user_ssh_key
+    changed_when: False
 
   - name: Enable IPv6 in qcow image
     command: virt-edit -a {{ guestfish_dest }} /etc/sysctl.conf -e s/net.ipv6.conf.all.disable_ipv6=1/net.ipv6.conf.all.disable_ipv6=0/
@@ -122,7 +124,7 @@
       tasks_from: kvm-inject-ssh-keys
 
   - name: Preallocate most of VSD disk space to avoid pausing the VM, this also checks disk space
-    shell: "fallocate -x -l {{ vsd_fallocate_size_gb }}G {{ guestfish_dest }}"
+    shell: "fallocate -x -l {{ vsd_fallocate_size_gb }}G {{ guestfish_dest }}"  # noqa 305
     when: vsd_fallocate_size_gb > 0
 
   - name: Define and start VSD VM

@@ -2,7 +2,7 @@
   - name: Check for Ansible version
     assert:
       that: "ansible_version.full | version_compare('2.7.10', '==')"
-      msg:  "Ansible version 2.7.10 is required. Found Ansible version {{ansible_version.full}}"
+      msg:  "Ansible version 2.7.10 is required. Found Ansible version {{ ansible_version.full }}"
 
   - name: get the paramiko version
     shell: pip show paramiko | grep ^Version
@@ -19,15 +19,16 @@
       msg:  "Metro only supports RHEL/CentOS as an Ansible host"
 
   - name : Output installed packages yum
-    shell: yum list installed
+    command: yum list installed
     register: yumoutput
 
   - name : Output installed packages pip
-    shell: pip list installed
+    command: pip list installed
     register: pipoutput
+    changed_when: False
 
   - name : Output installed group packages
-    shell: yum grouplist installed
+    command: yum grouplist installed
     register: yumgroupoutput
 
   - name : Check if all pip packages are installed
@@ -48,5 +49,4 @@
       that: "yumgroupoutput.stdout | lower is search('{{ item }}' | lower)"
       msg:  "Missing required group package {{ item }} . Please refer to setup.sh"
     with_lines: cat ./yum_requirements.txt | grep "@" | sed 's/@//'
-
 

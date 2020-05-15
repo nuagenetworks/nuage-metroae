@@ -6,7 +6,7 @@
   set_fact: ovf_url="{{ webserver_vrs_public_path }}{{ vmware_vrs_ovf_file_name }}"
 
 - name: Set vcin_auth variable for authentication to VCIN
-  set_fact: 
+  set_fact:
     vcin_auth:
       api_url: "https://{{ inventory_hostname }}:8443"
 
@@ -16,7 +16,7 @@
       type: VCenter
       command: find
   register: vcin_vcenter
-      
+
 - name: Get Datacenters for each VCenter
   nuage_vspk:
       auth: "{{ vcin_auth }}"
@@ -30,7 +30,7 @@
 
 # Flatten array of entities within array of results into single array, and extract ID from each
 - name: Set Variable for list of Datacenters
-  set_fact: vcin_datacenter_ids="{{ vcin_datacenters.results | sum(attribute='entities', start=[]) | list | map(attribute='ID') | list }}" 
+  set_fact: vcin_datacenter_ids="{{ vcin_datacenters.results | sum(attribute='entities', start=[]) | list | map(attribute='ID') | list }}"
 
 
 - name: Get Clusters within each Datacenter
@@ -56,7 +56,7 @@
       id: "{{ item }}"
       properties:
         ovf_url: "{{ ovf_url }}"
-  with_items: "{{ vcin_cluster_ids }}"  
+  with_items: "{{ vcin_cluster_ids }}"
 
 # name: Run a Job to upgrade all VRS in the Cluster
 - name: Submit Job to upgrade VRS in each cluster

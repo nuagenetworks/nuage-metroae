@@ -1,7 +1,7 @@
 - block:
 
   - name: Get elasticsearch version
-    command: "curl localhost:9200"
+    command: "curl localhost:9200"      # noqa 303
     register: es_version
 
   - name: Convert es_version output to json
@@ -39,12 +39,13 @@
 
 - block:
   - name: Generate ssh key on vsd for vstat upgrade
-    shell: ssh-keygen -b 2048 -t rsa -f /root/.ssh/vstat_rsa -q -N ""
+    command: ssh-keygen -b 2048 -t rsa -f /root/.ssh/vstat_rsa -q -N ""
     args:
       creates: /root/.ssh/vstat_rsa
 
   - name: Get generated SSH keys
-    shell: cat ~/.ssh/vstat_rsa.pub
+    command: cat ~/.ssh/vstat_rsa.pub
+    changed_when: False
     register: ssh_key
 
   delegate_to: "{{ vsd_hostname_list[0] }}"
@@ -58,6 +59,7 @@
   shell: "echo {{ ssh_key.stdout }} >> /root/.ssh/authorized_keys"
   remote_user: "{{ vstat_username | default(vstat_default_username) }}"
   become: "{{ 'no' if vstat_username | default(vstat_default_username) == 'root' else 'yes' }}"
+  changed_when: True
   vars:
     ansible_become_pass: "{{ vstat_password | default(vstat_default_password) }}"
 
