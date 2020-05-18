@@ -34,6 +34,7 @@ resources:
       security_groups: ["{{ openstack_mgmt_port_security_groups | join('", "') }}"]
 {% endif %}
 
+{# Testing without data port creation
   data_port:
     type: OS::Neutron::Port
     properties:
@@ -45,6 +46,7 @@ resources:
 {% if openstack_data_port_security_groups is defined %}
       security_groups: ["{{ openstack_data_port_security_groups | join('", "') }}"]
 {% endif %}
+#}
 
   mycompute:
     type: OS::Nova::Server
@@ -57,7 +59,7 @@ resources:
 {% endif %}
       networks:
         - port: {get_resource: mgmt_port}
-        - port: {get_resource: data_port}
+#        - port: {get_resource: data_port}
       user_data_format: RAW
 {% if openstack_availability_zone is defined %}
       availability_zone: {{ openstack_availability_zone }}
@@ -75,6 +77,6 @@ outputs:
   vnsutil_mgmt_ip:
     description: mgmt ip assigned to vnsutil
     value: { get_attr: [mycompute, networks, {get_param: vnsutil_management_network}, 0]}
-  data_ip:
-    description: data ip assigned to vnsutil
-    value: { get_attr: [mycompute, networks, {get_param: vnsutil_data_network}, 0]}
+#  data_ip:
+#    description: data ip assigned to vnsutil
+#    value: { get_attr: [mycompute, networks, {get_param: vnsutil_data_network}, 0]}
