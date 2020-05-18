@@ -11,36 +11,51 @@
     run_once: true
 
   - name: Clear existing stats
-    shell: VSD_VERSION={{ vsd_version.stdout }} VSD_BUILD={{ vsd_build.stdout }} /opt/vsd/vsd-stats.sh -d
+    command: /opt/vsd/vsd-stats.sh -d
     when: clear_stats | default(false)
 
   - name: Enable stats collection on standalone vsd when vstat is standalone
-    shell: VSD_VERSION={{ vsd_version.stdout }} VSD_BUILD={{ vsd_build.stdout }} /opt/vsd/vsd-stats.sh -e {{ inventory_hostname }}
+    command: /opt/vsd/vsd-stats.sh -e {{ inventory_hostname }}
+    environment:
+      VSD_VERSION: {{ vsd_version.stdout }}
+      VSD_BUILD: {{ vsd_build.stdout }}
     when:
       - vsd_sa_or_ha is match('sa')
       - vstat_sa_or_ha is match('sa')
 
   - name: Enable stats collection on the cluster vsds when vstat is standalone
-    shell: VSD_VERSION={{ vsd_version.stdout }} VSD_BUILD={{ vsd_build.stdout }} /opt/vsd/vsd-stats.sh -e {{ inventory_hostname }}
+    command: /opt/vsd/vsd-stats.sh -e {{ inventory_hostname }}
+    environment:
+      VSD_VERSION: {{ vsd_version.stdout }}
+      VSD_BUILD: {{ vsd_build.stdout }}
     when:
       - vsd_sa_or_ha is match('ha')
       - vstat_sa_or_ha is match('sa')
 
   - name: Enable stats collection on the vsd(s) when vstat is clustered
-    shell: VSD_VERSION={{ vsd_version.stdout }} VSD_BUILD={{ vsd_build.stdout }} /opt/vsd/vsd-stats.sh -e {{ groups['vstats'][0] }},{{ groups['vstats'][1] }},{{ groups['vstats'][2] }}
+    command: /opt/vsd/vsd-stats.sh -e {{ groups['vstats'][0] }},{{ groups['vstats'][1] }},{{ groups['vstats'][2] }}
+    environment:
+      VSD_VERSION: {{ vsd_version.stdout }}
+      VSD_BUILD: {{ vsd_build.stdout }}
     when:
       - vstat_sa_or_ha is match('ha')
       - groups['vstats'] is defined
 
   - name: Enable stats collection on the vsd(s) on primary vstats
-    shell: VSD_VERSION={{ vsd_version.stdout }} VSD_BUILD={{ vsd_build.stdout }} /opt/vsd/vsd-stats.sh -e {{ groups['primary_vstats'][0] }},{{ groups['primary_vstats'][1] }},{{ groups['primary_vstats'][2] }}
+    command: /opt/vsd/vsd-stats.sh -e {{ groups['primary_vstats'][0] }},{{ groups['primary_vstats'][1] }},{{ groups['primary_vstats'][2] }}
+    environment:
+      VSD_VERSION: {{ vsd_version.stdout }}
+      VSD_BUILD: {{ vsd_build.stdout }}
     when:
       - vstat_sa_or_ha is match('ha')
       - groups['primary_vstats'] is defined
       - active and not failover
 
   - name: Enable stats collection on the vsd(s) for backup vstats in failover
-    shell: VSD_VERSION={{ vsd_version.stdout }} VSD_BUILD={{ vsd_build.stdout }} /opt/vsd/vsd-stats.sh -e {{ groups['backup_vstats'][0] }},{{ groups['backup_vstats'][1] }},{{ groups['backup_vstats'][2] }}
+    command: /opt/vsd/vsd-stats.sh -e {{ groups['backup_vstats'][0] }},{{ groups['backup_vstats'][1] }},{{ groups['backup_vstats'][2] }}
+    environment:
+      VSD_VERSION: {{ vsd_version.stdout }}
+      VSD_BUILD: {{ vsd_build.stdout }}
     when:
       - vstat_sa_or_ha is match('ha')
       - groups['backup_vstats'] is defined
@@ -61,6 +76,7 @@
     ansible_become_pass: "{{ hostvars[item].vsd_custom_password | default(vsd_custom_password | default(vsd_default_password)) }}"
   delegate_to: "{{ item }}"
   with_items: "{{ vsd_hostname_list }}"
+  changed_when: False
 
 - name: Verify jboss is active for all VSDs
   assert:
