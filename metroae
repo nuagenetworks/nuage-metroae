@@ -764,42 +764,36 @@ function setup_container {
     fi
     set -e
 
-    if [[ ! -z "$METROAE_CONFIG_ENABLE" ]]; then
-
-        declare -l setup_type
-        setup_type="init"
-        if [[ -z $1 ]]; then
-            while [[ $setup_type != "c" ]] && [[ $setup_type != "d" ]] && [[ $setup_type != "b" ]] && [[ $setup_type != "" ]]
-            do
-                echo ""
-                write_to_screen_and_script_log "Setup can configure the container to support MetroAE (c)onfig, MetroAE (d)eploy,"
-                echo "or (b)oth MetroAE config and deploy. MetroAE config is used for day-zero VSD"
-                echo "configuration tasks. MetroAE deploy is used for installing, upgrading, and"
-                echo "health checking of Nuage VSP components in your environment."
-                echo ""
-                read -p "Do you want to setup MetroAE config, deploy, or both? (c/d/B): " setup_type
-            done
-        else
+    declare -l setup_type
+    setup_type="init"
+    if [[ -z $1 ]]; then
+        while [[ $setup_type != "c" ]] && [[ $setup_type != "d" ]] && [[ $setup_type != "b" ]] && [[ $setup_type != "" ]]
+        do
             echo ""
-            write_to_screen_and_script_log ">>> Setting setup type to passed in parameter $1"
-            setup_type=$1
-            shift
-        fi
-
-        if [[ $setup_type == "c" ]]; then
+            write_to_screen_and_script_log "Setup can configure the container to support MetroAE (c)onfig, MetroAE (d)eploy,"
+            echo "or (b)oth MetroAE config and deploy. MetroAE config is used for day-zero VSD"
+            echo "configuration tasks. MetroAE deploy is used for installing, upgrading, and"
+            echo "health checking of Nuage VSP components in your environment."
             echo ""
-            write_to_screen_and_script_log ">>> Setup container for MetroAE config"
-        elif [[ $setup_type == "d" ]]; then
-            echo ""
-            write_to_screen_and_script_log ">>> Setup container for MetroAE deploy"
-        else
-            echo ""
-            write_to_screen_and_script_log ">>> Setup container for both MetroAE config and deploy"
-            setup_type="b"
-        fi
-
+            read -p "Do you want to setup MetroAE config, deploy, or both? (c/d/B): " setup_type
+        done
     else
-        setup_type="d"
+        echo ""
+        write_to_screen_and_script_log ">>> Setting setup type to passed in parameter $1"
+        setup_type=$1
+        shift
+    fi
+
+    if [[ $setup_type == "c" ]]; then
+        echo ""
+        write_to_screen_and_script_log ">>> Setup container for MetroAE config"
+    elif [[ $setup_type == "d" ]]; then
+        echo ""
+        write_to_screen_and_script_log ">>> Setup container for MetroAE deploy"
+    else
+        echo ""
+        write_to_screen_and_script_log ">>> Setup container for both MetroAE config and deploy"
+        setup_type="b"
     fi
 
     if [ -w "$SETUP_FILE" ]; then
@@ -810,7 +804,7 @@ function setup_container {
         echo ""
         write_to_screen_and_script_log "We couldn't write to the MetroAE setup file ($SETUP_FILE). Please ensure"
         write_to_screen_and_script_log "that the file has user:group ownership set to 'root:docker' and try again."
-        write_to_screen_and_script_log "You can also delete the file and re-run 'metroae container setup"
+        write_to_screen_and_script_log "You can also delete the file and re-run 'metroae container setup'"
     fi
 
     if [[ -z $1 ]]; then
@@ -866,7 +860,7 @@ function setup_container {
     config_status=0
     if [[ $setup_type != "d" ]]; then
         echo ""
-        write_to_screen_and_script_log ">>> Pulling the latest templates and files for MetroAE config in the container"
+        write_to_screen_and_script_log ">>> Pulling the latest feature templates and files for MetroAE config in the container"
         echo ""
         docker_exec_levistate templates update
         config_status=$?
