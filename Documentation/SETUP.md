@@ -19,7 +19,7 @@ Using a Docker container results in a similar setup as a GitHub clone, plus it d
 
 ##### 1. Get a copy of the metroae script from the github repo
 ```
-https://github.com/nuagenetworks/nuage-metro/blob/master/metroae
+https://github.com/nuagenetworks/nuage-metroae/blob/master/metroae
 ```
 You can also copy the script out of a cloned workspace on your local machine. You can copy the metroae script to any directory of your choosing, e.g. `/usr/local/bin`. Note that you may need to set the script to be executeable via `chmod +x`.
 
@@ -73,7 +73,7 @@ metroae container status
 
 That's it! Container configuration data and logs will now appear in the newly created `/opt/metroae` directory. Documentation, examples, deployments, and the ansible.log file will appear in the data directory configured during setup, `/tmp/metroae_data` in our examples, above. See [DOCKER.md](DOCKER.md) for specfic details of each command and container management command options. Now you're ready to [customize](CUSTOMIZE.md) for your topology.
 
-Note: You will continue to use the `metroae` script to run commands, but for best results using the container you should make sure your working directory is *not* the root of a nuage-metro git clone workspace. The `metroae` script can be used for both the container and the git clone workspace versions of MetroAE. At run time, the script checks its working directory. If it finds that the current working directory is the root of a git cloned workspace, it assumes that you are running locally. It will *not* execute commands inside the container. When using the container, you should run `metroae` from a working directory other than a git clone workspace. For example, if the git clone workspace is `/home/username/nuage/nuage-metro`, you can `cd /home/username/nuage` and then invoke the command as `./nuage-metro/metroae install vsds`.
+Note: You will continue to use the `metroae` script to run commands, but for best results using the container you should make sure your working directory is *not* the root of a nuage-metroaegit clone workspace. The `metroae` script can be used for both the container and the git clone workspace versions of MetroAE. At run time, the script checks its working directory. If it finds that the current working directory is the root of a git cloned workspace, it assumes that you are running locally. It will *not* execute commands inside the container. When using the container, you should run `metroae` from a working directory other than a git clone workspace. For example, if the git clone workspace is `/home/username/nuage/nuage-metroae`, you can `cd /home/username/nuage` and then invoke the command as `./nuage-metroae/metroae install vsds`.
 
 ### Method Two: Set up Host Environment Using GitHub Clone
 If you prefer not to use a Docker container you can set up your environment with a GitHub clone instead.
@@ -89,9 +89,9 @@ yum install -y git
 ```
 Clone the repo with the following command.
 ```
-git clone https://github.com/nuagenetworks/nuage-metro.git
+git clone https://github.com/nuagenetworks/nuage-metroae.git
 ```
-Once the nuage-metro repo is cloned, you can skip the rest of this procedure by running the MetroAE wizard, run_wizard.py. You can use the wizard to automatically handle the rest of the steps described in this document plus the steps described in [customize](CUSTOMIZE.md).
+Once the nuage-metroaerepo is cloned, you can skip the rest of this procedure by running the MetroAE wizard, run_wizard.py. You can use the wizard to automatically handle the rest of the steps described in this document plus the steps described in [customize](CUSTOMIZE.md).
 ```
 python run_wizard.py
 ```
@@ -165,8 +165,8 @@ After you've set up your environment you're ready to [customize](CUSTOMIZE.md) f
 ## Questions, Feedback, and Contributing
 Get support via the [forums](https://devops.nuagenetworks.net/forum/) on the [MetroAE site](https://devops.nuagenetworks.net/).
 
-Ask questions and contact us directly at [devops@nuagenetworks.net](mailto:deveops@nuagenetworks.net "send email to nuage-metro project").
+Ask questions and contact us directly at [devops@nuagenetworks.net](mailto:deveops@nuagenetworks.net "send email to nuage-metroaeproject").
 
-Report bugs you find and suggest new features and enhancements via the [GitHub Issues](https://github.com/nuagenetworks/nuage-metro/issues "nuage-metro issues") feature.
+Report bugs you find and suggest new features and enhancements via the [GitHub Issues](https://github.com/nuagenetworks/nuage-metroae/issues "nuage-metroaeissues") feature.
 
 You may also [contribute](../CONTRIBUTING.md) to MetroAE by submitting your own code to the project.

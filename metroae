@@ -144,8 +144,8 @@ function check_run_mode {
 function try_get_menu {
     debug ${FUNCNAME[0]}
     if [[ $RUN_MODE == "INSIDE" ]]; then
-        if [[ -f /source/nuage-metro/src/$PLAYBOOK_MENU ]]; then
-            source /source/nuage-metro/src/$PLAYBOOK_MENU
+        if [[ -f /source/nuage-metroae/src/$PLAYBOOK_MENU ]]; then
+            source /source/nuage-metroae/src/$PLAYBOOK_MENU
         fi
     elif [[ $RUN_MODE == "REPO" ]]; then
         if [[ -f src/$PLAYBOOK_MENU ]]; then
@@ -162,7 +162,7 @@ function try_get_menu {
 function check_for_prerequisite {
     debug ${FUNCNAME[0]}
     if [[ $RUN_MODE == "INSIDE" ]]; then
-        if [[ ! -f /source/nuage-metro/src/$PLAYBOOK_MENU ]]; then
+        if [[ ! -f /source/nuage-metroae/src/$PLAYBOOK_MENU ]]; then
             write_to_screen_and_script_log "It looks like you are running MetroAE from inside the container, but we couldn't find the container's menu file in the data directory. Please run 'metroae container setup' and try again."
             exit 1
         fi
@@ -1527,7 +1527,7 @@ function copy_ssh_id {
 
 function docker_metro_ae_exec {
     debug ${FUNCNAME[0]}
-    docker_exec env /source/nuage-metro/metroae "$@"
+    docker_exec env /source/nuage-metroae/metroae "$@"
 }
 
 function stop_ui {
@@ -1559,12 +1559,12 @@ function load_certificates {
 
 function unzip_files {
     debug ${FUNCNAME[0]}
-    docker_exec /source/nuage-metro/nuage-unzip.sh "$@"
+    docker_exec /source/nuage-metroae/nuage-unzip.sh "$@"
 }
 
 function gen_example_from_schema {
     debug ${FUNCNAME[0]}
-    docker_exec /usr/bin/python /source/nuage-metro/generate_example_from_schema.py "$@"
+    docker_exec /usr/bin/python /source/nuage-metroae/generate_example_from_schema.py "$@"
 }
 
 function container_status {
@@ -1623,7 +1623,7 @@ function vault_password {
     debug ${FUNCNAME[0]}
     run_container_if_not_running
 
-    docker_exec_interactive /usr/bin/python /source/nuage-metro/encrypt_credentials.py  $1
+    docker_exec_interactive /usr/bin/python /source/nuage-metroae/encrypt_credentials.py  $1
 }
 
 function disable_encryption {
@@ -1827,7 +1827,7 @@ function tools_main {
     case ${MATCH_MENU[3]} in
         unzip-files)
         if [[ $RUN_MODE == "CONTAINER" ]]; then
-            docker_exec env /source/nuage-metro/nuage-unzip.sh ${EXTRA_ARGS[@]}
+            docker_exec env /source/nuage-metroae/nuage-unzip.sh ${EXTRA_ARGS[@]}
         else
             ./nuage-unzip.sh ${EXTRA_ARGS[@]}
         fi
@@ -1835,7 +1835,7 @@ function tools_main {
         ;;
         get_debug)
         if [[ $RUN_MODE == "CONTAINER" ]]; then
-            docker_exec env /usr/bin/python /source/nuage-metro/get_debug.py ${EXTRA_ARGS[@]}
+            docker_exec env /usr/bin/python /source/nuage-metroae/get_debug.py ${EXTRA_ARGS[@]}
         else
             /usr/bin/python get_debug.py ${EXTRA_ARGS[@]}
         fi
@@ -1843,7 +1843,7 @@ function tools_main {
         ;;
         convert_csv_to_deployment)
         if [[ $RUN_MODE == "CONTAINER" ]]; then
-            docker_exec env workdir /source/nuage-metro /usr/bin/python convert_csv_to_deployment.py ${EXTRA_ARGS[@]}
+            docker_exec env workdir /source/nuage-metroae/usr/bin/python convert_csv_to_deployment.py ${EXTRA_ARGS[@]}
         else
             /usr/bin/python convert_csv_to_deployment.py ${EXTRA_ARGS[@]}
         fi
@@ -1851,7 +1851,7 @@ function tools_main {
         ;;
         generate-example-from-schema)
         if [[ $RUN_MODE == "CONTAINER" ]]; then
-            docker_exec env /usr/bin/python /source/nuage-metro/generate_example_from_schema.py ${EXTRA_ARGS[@]}
+            docker_exec env /usr/bin/python /source/nuage-metroae/generate_example_from_schema.py ${EXTRA_ARGS[@]}
         else
             /usr/bin/python generate_example_from_schema.py ${EXTRA_ARGS[@]}
         fi
@@ -1859,7 +1859,7 @@ function tools_main {
         ;;
         encrypt-credentials)
         if [[ $RUN_MODE == "CONTAINER" ]]; then
-            docker_exec env /usr/bin/python /source/nuage-metro/encrypt_credentials.py ${EXTRA_ARGS[@]}
+            docker_exec env /usr/bin/python /source/nuage-metroae/encrypt_credentials.py ${EXTRA_ARGS[@]}
         else
             /usr/bin/python encrypt_credentials.py ${EXTRA_ARGS[@]}
         fi
@@ -1884,27 +1884,31 @@ function main_help {
     echo ""
     print_menu_help "metroae%-50s %-1s\n" $1
     echo ""
-    echo "[deployment] is the name of a deployment containing the required"
-    echo "configuration files. The deployments are stored as directories under:"
-    echo $DEPLOYMENTS_BASE_DIR
-    echo ""
+    if [[ ! $METROAE_SETUP_TYPE == "c" ]]; then
+        echo "[deployment] is the name of a deployment containing the required"
+        echo "configuration files. The deployments are stored as directories under:"
+        echo $DEPLOYMENTS_BASE_DIR
+        echo ""
+    fi
     echo "[options] include:"
     echo "  -h, --help:            Displays this help."
-    echo "  --ansible-help:        Displays help for ansible arguments."
-    echo "  -v, -vv, -vvv, -vvvv:  Runs with increasing levels of verbosity."
-    echo "  --list:                Shows a list of all supported workflows"
-    echo "  --skip-password:       Do not ask for a password.  Password can be"
-    echo "                         provided via the environment variable"
-    echo "                         METROAE_PASSWORD"
-    echo "  --skip-build:          Runs workflow without performing build."
-    echo "                         This will prevent changes in the deployment"
-    echo "                         from taking effect, but it will be faster."
-    echo "  --set-group <group>:   Sets the ownership of inventory and logs to"
-    echo "                         the specified group so that other users in"
-    echo "                         the group can access these files."
-    echo ""
-    echo "Any additional [options] are passed to the internal Ansible engine"
-    echo "for processing"
+    if [[ ! $METROAE_SETUP_TYPE == "c" ]]; then
+        echo "  --ansible-help:        Displays help for ansible arguments."
+        echo "  -v, -vv, -vvv, -vvvv:  Runs with increasing levels of verbosity."
+        echo "  --list:                Shows a list of all supported workflows"
+        echo "  --skip-password:       Do not ask for a password.  Password can be"
+        echo "                         provided via the environment variable"
+        echo "                         METROAE_PASSWORD"
+        echo "  --skip-build:          Runs workflow without performing build."
+        echo "                         This will prevent changes in the deployment"
+        echo "                         from taking effect, but it will be faster."
+        echo "  --set-group <group>:   Sets the ownership of inventory and logs to"
+        echo "                         the specified group so that other users in"
+        echo "                         the group can access these files."
+        echo ""
+        echo "Any additional [options] are passed to the internal Ansible engine"
+        echo "for processing"
+    fi
     echo ""
     echo "Additional menu help is available by adding 'help' to the command line,"
     echo "e.g. 'metroae container help'"
@@ -1920,7 +1924,7 @@ function main_help {
             echo "To run from a local copy of the MetroAE repo, change directory to"
             echo "the root of that local copy and try again. If you need to create"
             echo "a local copy of the MetroAE repo, check"
-            echo "https://github.com/nuagenetworks/nuage-metro for details."
+            echo "https://github.com/nuagenetworks/nuage-metroaefor details."
         fi
     fi
 }
@@ -2117,7 +2121,7 @@ case ${MATCH_MENU[2]} in
     ;;
     wizard)
     if [[ $RUN_MODE == "CONTAINER" ]]; then
-        docker_exec_interactive /usr/bin/python /source/nuage-metro/run_wizard.py "${EXTRA_ARGS[@]}"
+        docker_exec_interactive /usr/bin/python /source/nuage-metroae/run_wizard.py "${EXTRA_ARGS[@]}"
     else
         ./run_wizard.py "${EXTRA_ARGS[@]}"
     fi

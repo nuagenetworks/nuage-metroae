@@ -5,19 +5,19 @@ If you have not already set up your MetroAE Host environment, see [SETUP.md](SET
 
 ## What is a Deployment?
 
-Deployments are component configuration sets.  You can have one or more deployments in your setup.  When you are working with the MetroAE container, you can find the deployment files under the data directory you specified during `metroae container setup`.  For example, if you specified `/tmp` as your data directory path, `metroae container setup` created `/tmp/metroae_data` and copied the default deployment to `/tmp/metroae_data/deployments`. When you are working with MetroAE from a workspace you created using `git clone`, deployments are stored in the workspace directory `nuage-metro/deployments/<deployment_name>/`.  In both cases, the files within each deployment directory describe all of the components you want to install or upgrade.
+Deployments are component configuration sets.  You can have one or more deployments in your setup.  When you are working with the MetroAE container, you can find the deployment files under the data directory you specified during `metroae container setup`.  For example, if you specified `/tmp` as your data directory path, `metroae container setup` created `/tmp/metroae_data` and copied the default deployment to `/tmp/metroae_data/deployments`. When you are working with MetroAE from a workspace you created using `git clone`, deployments are stored in the workspace directory `nuage-metroae/deployments/<deployment_name>/`.  In both cases, the files within each deployment directory describe all of the components you want to install or upgrade.
 
 If you issue:
 
     ./metroae install everything
 
-The files under nuage-metro/deployments/default will be used to do an install.
+The files under nuage-metroae/deployments/default will be used to do an install.
 
 If you issue:
 
     ./metroae install everything mydeployment
 
-The files under `nuage-metro/deployments/mydeployment` will be used to do an install.  This allows for different sets of component definitions for various projects.
+The files under `nuage-metroae/deployments/mydeployment` will be used to do an install.  This allows for different sets of component definitions for various projects.
 
 Each time you issue MetroaÆ, the inventory will be completely rebuilt from the deployment name specified.  This will overwrite any previous inventory, so it will reflect exactly what is configured in the deployment that was specified.
 
@@ -36,7 +36,7 @@ When a workflow is executed, each deployment file is validated against a data sc
 
 You have the option of configuring the default deployment files provided in the deployments/default/ sub-directory or creating your own sub-directories under the deployments/ directory. You can find examples of deployment files for different deployments in the [examples/](/examples/) directory. Unless you specify a different deployment sub-directory name, the default deployment is used when a workflow is executed. This method allows MetroAE to support many deployments (different configurations) in parallel and the ability to switch between them as required. See below for the supported deployment files that you can specify in a deployments sub-directory.
 
-Note that you can edit the deployment files manually at any time. MetroAE comes with its own wizard for automating the creation and editing of deployment files when you are working with a clone of the nuage-metro repo. To start the wizard:
+Note that you can edit the deployment files manually at any time. MetroAE comes with its own wizard for automating the creation and editing of deployment files when you are working with a clone of the nuage-metroaerepo. To start the wizard:
 ```
 python run_wizard.py
 ```
@@ -58,7 +58,7 @@ The deployment files that can be configured using the wizard, spreadhseet, or ed
 `common.yml` contains the common configuration parameters for the deployment that are used for all components and workflows.  This file is always required for any workflow.
 
 #### Notes for `common.yml`
-- `nuage_unzipped_files_dir` is a required parameter that points to the location of the binary image and package files used for Install and Upgrade workflows. We require that you have obtained those files from Nuage/Nokia online customer support prior to running MetroAE. When running MetroAE in a container, this parameter should *not* begin with a '/' and be set equal to the relative path from the images path you configured when you installed the container. For example, if you set the images path for the container to `/home/username/images` and you will unzip the files you are going to use into `/home/username/images/6.0.1`, set `nuage_unzipped_files_dir` to `6.0.1`. MetroAE will concatenate the two paths to access your files. If, however, you are operating without the container and, instead, cloned the nuage-metro repo to your disk, set `nuage_unzipped_files_dir` to the full, absolute path to the images directory, `/home/username/images/6.0.1` in the example, above.
+- `nuage_unzipped_files_dir` is a required parameter that points to the location of the binary image and package files used for Install and Upgrade workflows. We require that you have obtained those files from Nuage/Nokia online customer support prior to running MetroAE. When running MetroAE in a container, this parameter should *not* begin with a '/' and be set equal to the relative path from the images path you configured when you installed the container. For example, if you set the images path for the container to `/home/username/images` and you will unzip the files you are going to use into `/home/username/images/6.0.1`, set `nuage_unzipped_files_dir` to `6.0.1`. MetroAE will concatenate the two paths to access your files. If, however, you are operating without the container and, instead, cloned the nuage-metroaerepo to your disk, set `nuage_unzipped_files_dir` to the full, absolute path to the images directory, `/home/username/images/6.0.1` in the example, above.
 - For best performance, `ntp_server_list` should include the same servers that the target servers will be using. This will help to ensure NTP synchronization.
 
 ### `credentials.yml`
@@ -141,7 +141,7 @@ To create a new deployment:
 4. If you'd like to add components that are not included, you can copy a *blank* file from the examples directory.
 
 ## Hosting your deployment files outside of the repo
-When you are contributing code, or pulling new versions of MetroAE quite often, it may make sense to host your variable files in a separate directory outside of `nuage-metro/deployments/`.  A deployment directory in any location can be specified instead of a deployment name when issuing the `metroae` command.
+When you are contributing code, or pulling new versions of MetroAE quite often, it may make sense to host your variable files in a separate directory outside of `nuage-metroae/deployments/`.  A deployment directory in any location can be specified instead of a deployment name when issuing the `metroae` command.
 
 ## Generating example deployment configuration files
 A sample of the deployment configuration files are provided in the deployments/default/ directory and also in [examples/](/examples/).  If these are overwritten or deleted or if a "no frills" version of the files with only the minimum required parameters are desired, they can be generated with the following command:
@@ -168,8 +168,8 @@ The next step is to deploy your components. See [DEPLOY.md](DEPLOY.md) for guida
 
 ## Questions, Feedback, and Contributing  
 Get support via the [forums](https://devops.nuagenetworks.net/forums/) on the [MetroAE site](https://devops.nuagenetworks.net/).  
-Ask questions and contact us directly at [devops@nuagenetworks.net](mailto:deveops@nuagenetworks.net "send email to nuage-metro project").
+Ask questions and contact us directly at [devops@nuagenetworks.net](mailto:deveops@nuagenetworks.net "send email to nuage-metroaeproject").
 
-Report bugs you find and suggest new features and enhancements via the [GitHub Issues](https://github.com/nuagenetworks/nuage-metro/issues "nuage-metro issues") feature.
+Report bugs you find and suggest new features and enhancements via the [GitHub Issues](https://github.com/nuagenetworks/nuage-metroae/issues "nuage-metroaeissues") feature.
 
 You may also [contribute](../CONTRIBUTING.md) to MetroAE by submitting your own code to the project.
