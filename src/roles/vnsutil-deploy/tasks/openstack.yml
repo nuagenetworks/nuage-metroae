@@ -55,7 +55,14 @@
   - name: Add a DNS server to eth0
     lineinfile:
       dest: /etc/sysconfig/network-scripts/ifcfg-eth0
-      line: "DNS1={{ dns_server_list[0] }}"
+      regexp: "DNS1="
+      line: "DNS1={{ infra_ip | dns_server_list[0] }}"
+
+  - name: Kill dhclient
+    command: "pkill dhclient"
+
+  - name: Remove existing default routes
+    command: "route del -net 0.0.0.0/0"
 
   - name: Restart networking
     command: /etc/init.d/network restart
