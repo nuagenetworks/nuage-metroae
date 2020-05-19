@@ -46,6 +46,12 @@
       dest: /etc/sysconfig/network
       backup: no
 
+  - name: Stop Network Manager
+    command: "service NetworkManager stop"
+
+  - name: Disable Network Manager on boot
+    command: "systemctl disable NetworkManager"
+
   - name: Add a DNS server to eth0
     lineinfile:
       dest: /etc/sysconfig/network-scripts/ifcfg-eth0
@@ -54,7 +60,14 @@
   - name: Restart networking
     command: /etc/init.d/network restart
 
-  - name: Resolve fqdn
+  - name: "Wait for DNS change"
+    command: "dig {{ inventory_hostname }}"
+    register: dig_result
+    until: 'dig_result.rc == 0'
+    retries: 60
+    delay: 10
+
+  - name: Update hostname
     command: hostname "{{ inventory_hostname }}"
 
   remote_user: "{{ vnsutil_default_username }}"
