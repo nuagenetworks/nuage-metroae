@@ -65,7 +65,6 @@
         tasks_from: vsd-node-info.yml
       vars:
         vsd_hostname: "{{ vsd_fqdn }}"
-      when: not skip_vsd_installed_check
 
     - name: Copy the network config for NUH internal and external networks
       template: src=config.yml.j2 backup=no dest=/opt/proxy/data/config.yml owner=root group=root mode=0640
@@ -82,7 +81,9 @@
       shell: ip netns exec External ip addr list | grep eth2
       when: external_interfaces is defined and external_interfaces|length > 0
 
-    when: internal_ip is defined
+    when: 
+      - internal_ip is defined
+      - not skip_vsd_installed_check
 
   - block:
 
@@ -100,6 +101,7 @@
     include_role:
       name: common
       tasks_from: vsd-generate-transfer-certificates
+    when: not skip_vsd_installed_check
     vars:
       certificate_password: "{{ nuh_default_password }}"
       certificate_username: "{{ inventory_hostname }}"
@@ -110,7 +112,6 @@
       additional_parameters:  -d {{ inventory_hostname }}
 
   remote_user: "{{ nuh_default_username }}"
-  when: not skip_vsd_installed_check
 
 - name: Setup health monitoring
   include_role:
