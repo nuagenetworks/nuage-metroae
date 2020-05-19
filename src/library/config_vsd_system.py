@@ -16,6 +16,11 @@ options:
       - VSD credentials to access VSD GUI
     required: true
     default: null
+  vsd_version:
+    description:
+      - VSD version
+    required: true
+    default: null
   gateway_purge_time:
     description:
       - Increase or decrease timeout value in VSD
@@ -36,6 +41,7 @@ EXAMPLES = '''
       password: csproot
       enterprise: csp
       api_url: https://10.0.0.10:8443
+    vsd_version: "5.4.1"
     gateway_purge_time: 7003
 
 - config_vsd_system:
@@ -44,13 +50,20 @@ EXAMPLES = '''
       password: csproot
       enterprise: csp
       api_url: https://10.0.0.10:8443
+    vsd_version: "5.4.1"
     get_gateway_purge_time: True
 '''
 
 
-def get_vsd_session(vsd_auth):
-    # Format api version
-    version = 'v5_0'
+def format_api_version(version):
+    if version.startswith('5'):
+        return ('v5_0')
+    else:
+        return ('v6')
+
+
+def get_vsd_session(vsd_auth, vsd_version):
+    version = format_api_version(vsd_version)
 
     global VSPK
     VSPK = importlib.import_module('vspk.{0:s}'.format(version))
@@ -77,17 +90,19 @@ def get_gateway_purge_time_value(csproot):
 def main():
     arg_spec = dict(
         vsd_auth=dict(required=True, type='dict'),
+        vsd_version=dict(required=True, type='str'),
         get_gateway_purge_time=dict(default=False, type='bool'),
         gateway_purge_time=dict(type='int')
     )
     module = AnsibleModule(argument_spec=arg_spec, supports_check_mode=True)
 
     vsd_auth = module.params['vsd_auth']
+    vsd_version = module.params['vsd_version']
     gw_purge_time = module.params['gateway_purge_time']
     get_gateway_purge_time = module.params['get_gateway_purge_time']
 
     try:
-        csproot = get_vsd_session(vsd_auth)
+        csproot = get_vsd_session(vsd_auth, vsd_version)
     except ImportError:
         module.fail_json(msg="vspk is required for this module, or "
                          "API version specified does not exist.")

@@ -1,4 +1,5 @@
-- block:
+- name: Skip DNS tests when boolean is set
+  block:
 
   - name: Retrieve Host IP
     shell: "getent hosts {{ item.hostname }} | awk '{print $1}'"
@@ -7,15 +8,15 @@
   - name: Ensure that the hostname maps to the proper mgmt IP
     assert:
       that: "'{{ hostip.stdout }}' ==  '{{ item.mgmt_ip }}'"
-      msg: "IP address for {{item.hostname}} != {{item.mgmt_ip}}"
+      msg: "IP address for {{ item.hostname }} != {{ item.mgmt_ip }}"
 
   - name: Set hostname for dns lookup
     set_fact:
-      hostname: "{{item.hostname}}"
+      hostname: "{{ item.hostname }}"
 
   - name: Set management ip for dns lookup
     set_fact:
-      management_ip: "{{item.mgmt_ip}}"
+      management_ip: "{{ item.mgmt_ip }}"
 
   - name: Set fact for IPv6 argument for IPv6
     set_fact:
@@ -28,8 +29,8 @@
     when: not item.mgmt_ip | ipv6
 
   - name: Ensure FQDNs are correct in the DNS server list
-    command: "dig {{ addr_family_arg }} +short {{hostname}} @{{dns_server}}"
-    with_items: "{{common.dns_server_list}}"
+    command: "dig {{ addr_family_arg }} +short {{ hostname }} @{{ dns_server }}"
+    with_items: "{{ common.dns_server_list }}"
     register: dns_resolved_addresses
     loop_control:
       loop_var: dns_server
@@ -37,10 +38,10 @@
 
   - name: Set resolved address list
     set_fact:
-      resolved_address_list: "{{ dns_resolved_addresses.results | map(attribute='stdout') | list | join (',')}}"
+      resolved_address_list: "{{ dns_resolved_addresses.results | map(attribute='stdout') | list | join (',') }}"
 
   - name: Assert ip address found by DNS matches the management ip
     assert:
       that: "{{ resolved_address_list is match(management_ip) }}"
 
-  when: not skip_dns_resolution_tests|default(false)
+  when: not skip_dns_resolution_tests | default(common.skip_dns_resolution_tests | default(false))
