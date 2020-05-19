@@ -40,41 +40,19 @@
 
 - block:
 
-  - name: Update hostname
+  - name: Write ifcfg-eth0 file
     template:
-      src: "{{ role_path }}/../common/templates/network.j2"
-      dest: /etc/sysconfig/network
+      src: ifcfg-eth0.j2
+      dest: /etc/sysconfig/network-scripts/ifcfg-eth0
       backup: no
 
-  - name: Stop Network Manager
-    command: "service NetworkManager stop"
-
-  - name: Disable Network Manager on boot
-    command: "systemctl disable NetworkManager"
-
-  - name: Add a DNS server to eth0
-    lineinfile:
-      dest: /etc/sysconfig/network-scripts/ifcfg-eth0
-      regexp: "DNS1="
-      line: "DNS1={{ infra_ip | default(dns_server_list[0]) }}"
-
-  - name: Kill dhclient
-    command: "pkill dhclient"
-
-  - name: Remove existing default routes
-    command: "route del -net 0.0.0.0/0"
+  - name: Write ifcfg-eth1 file
+    template:
+      src: ifcfg-eth1.j2
+      dest: /etc/sysconfig/network-scripts/ifcfg-eth1
+      backup: no
 
   - name: Restart networking
     command: /etc/init.d/network restart
-
-  - name: "Wait for DNS change"
-    command: "dig {{ inventory_hostname }}"
-    register: dig_result
-    until: 'dig_result.rc == 0'
-    retries: 60
-    delay: 10
-
-  - name: Update hostname
-    command: hostname "{{ inventory_hostname }}"
 
   remote_user: "{{ vnsutil_default_username }}"
