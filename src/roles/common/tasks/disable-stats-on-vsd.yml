@@ -2,19 +2,25 @@
   - name: Get the VSD version
     shell: grep -ir "VSD_VERSION=" /etc/profile.d/vsd-banner.sh | awk -F "=" '{print $2}'
     register: vsd_version
+    changed_when: False
     run_once: true
 
   - name: Get the VSD build
     shell: grep -ir "VSD_BUILD=" /etc/profile.d/vsd-banner.sh | awk -F "=" '{print $2}'
     register: vsd_build
+    changed_when: False
     run_once: true
 
   - name: Disable stats collection on all VSD nodes
-    shell: VSD_VERSION={{ vsd_version.stdout }} VSD_BUILD={{ vsd_build.stdout }} /opt/vsd/vsd-stats.sh -d
+    command: /opt/vsd/vsd-stats.sh -d
+    environment:
+      VSD_VERSION: "{{ vsd_version.stdout }}"
+      VSD_BUILD: "{{ vsd_build.stdout }}"
 
   - name: Get jboss status of all VSDs
     command: monit status jboss
     register: jboss_status
+    changed_when: False
 
   - name: Verify jboss is active for all VSDs
     assert:
