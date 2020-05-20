@@ -14,11 +14,10 @@
 
 - name: Copy VSC config file to the VSC
   connection: local
-  shell: >-
-    sshpass -p$SSH_PASSWORD scp -o StrictHostKeyChecking=no
+  command: >-
+    sshpass -p{{ vsc_password | default(vsc_default_password) }} scp -o StrictHostKeyChecking=no
     -o UserKnownHostsFile=/dev/null /tmp/ansible-nuagex-config-{{ inventory_hostname }}.cfg {{ vsc_username | default(vsc_default_username) }}@{{ mgmt_ip }}:
-  environment:
-    SSH_PASSWORD: "{{ vsc_password | default(vsc_default_password) }}"
+  no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
   changed_when: True
 
 - name: Execute VSC basic configuration

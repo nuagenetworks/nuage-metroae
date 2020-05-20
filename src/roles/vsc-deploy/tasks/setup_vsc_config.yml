@@ -24,6 +24,23 @@
       src: "{{ config_template }}"
       backup: no
       dest: "{{ tmp_dir_name }}/{{ config_file_name }}"
+    when: not restore_vsc | default(False)
+
+  - block:
+
+    - name: Set local variable with bof file name
+      set_fact:
+        bof_file_name: "bof.cfg"
+
+    - name: Copy backup files from backup_machine
+      copy:
+        src: "{{ item }}"
+        dest: "{{ tmp_dir_name }}"
+        backup: no
+      with_fileglob:
+        - "{{ metro_backup_root }}/{{ restore_dir | default( 'backup-' + groups['vscs'][0] + '-latest' ) }}/*.cfg"
+
+    when: restore_vsc | default(False)
 
   - name: Wait for VSC ssh to be ready before config
     include_role:
@@ -44,21 +61,41 @@
   - name: Copy VSC config file to the VSC
     connection: local
     shell: >-
-      sshpass -p$VSC_PASSWORD scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null
-      {{ proxy_conf | default('') }} {{ tmp_dir_name }}/{{ config_file_name }} {{ vsc_username|default(vsc_default_username) }}@{{ mgmt_ip }}:
-    environment:
-      VSC_PASSWORD: "{{ vsc_password | default(vsc_default_password) }}"
+      sshpass -p{{ vsc_password | default(vsc_default_password) }} scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null
+      {{ proxy_conf | default('') }} {{ tmp_dir_name }}/{{ config_file_name }} {{ vsc_username | default(vsc_default_username) }}@{{ mgmt_ip }}:
+    no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
     when: not mgmt_ip | ipv6
 
   - name: Copy VSC config file to the VSC
     connection: local
     shell: >-
-      sshpass -p$VSC_PASSWORD scp -6 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null
+      sshpass -p{{ vsc_password | default(vsc_default_password) }} scp -6 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null
       {{ proxy_conf | default('') }} {{ tmp_dir_name }}/{{ config_file_name }}
       {{ vsc_username|default(vsc_default_username) }}@{{ '[' }}{{ mgmt_ip }}{{ ']' }}:
-    environment:
-      VSC_PASSWORD: "{{ vsc_password | default(vsc_default_password) }}"
+    no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
     when: mgmt_ip | ipv6
+
+  - name: Copy BOF on restore
+    block:
+
+    - name: Copy VSC BOF file to the VSC
+      connection: local
+      shell: >-
+        sshpass -p{{ vsc_password | default(vsc_default_password) }} scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null
+        {{ proxy_conf | default('') }} {{ tmp_dir_name }}/{{ bof_file_name }} {{ vsc_username | default(vsc_default_username) }}@{{ mgmt_ip }}:
+      no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
+      when: not mgmt_ip | ipv6
+
+    - name: Copy VSC BOF file to the VSC
+      connection: local
+      shell: >-
+        sshpass -p{{ vsc_password | default(vsc_default_password) }} scp -6 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null
+        {{ proxy_conf | default('') }} {{ tmp_dir_name }}/{{ bof_file_name }}
+        {{ vsc_username|default(vsc_default_username) }}@{{ '[' }}{{ mgmt_ip }}{{ ']' }}:
+      no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
+      when: mgmt_ip | ipv6
+
+    when: restore_vsc | default(False)
 
   - name: Execute if not rebooting
     block:
