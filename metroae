@@ -233,7 +233,7 @@ function print_version_and_exit {
             get_max_container_version
             debug "${FUNCNAME[0]}: [MetroAE $METROAE_VERSION, script $SCRIPT_VERSION, container $MAX_CONTAINER_VERSION]"
         elif [[ $RUN_MODE == "REPO" ]]; then
-            if [[ ! ${MATCH_MENU[0]} =~ ",container*" ]] && [[ ! ${MATCH_MENU[0]} =~ ",config*" ]] && [[ ! ${MATCH_MENU[0]} =~ ",gui*" ]]; then
+            if [[ ! ${MATCH_MENU[0]} =~ ",container*" ]] && [[ ! ${MATCH_MENU[0]} =~ ",config*" ]]; then
                 debug "${FUNCNAME[0]}: [MetroAE $METROAE_VERSION, script $SCRIPT_VERSION]"
             fi
         fi
@@ -267,6 +267,9 @@ function check_docker {
     if [[ $? -ne 0 ]]; then
         write_to_screen_and_script_log "Docker engine must be installed in order to run MetroAE. Quitting. Please install Docker and try again. See https://docs.docker.com for details"
         print_version_and_exit 1
+    else
+        docker_version = $(docker --version)
+        debug "Docker version = $docker_version"
     fi
     set -e
 }
@@ -1647,10 +1650,7 @@ function container_main {
     check_docker
 
     # main functionality
-    if [[ $# -ne 0 ]] && [[ $1 == "gui" ]]; then
-        ui_help ",gui"
-        exit 0
-    elif [[ $# -eq 0 ]]; then
+    if [[ $# -eq 0 ]]; then
         container_help ",container"
         exit 0
     fi
@@ -1980,16 +1980,6 @@ function tools_help {
     echo ""
 }
 
-function ui_help {
-    debug ${FUNCNAME[0]}
-    echo "Nuage Networks Metro Automation Engine (MetroAE) Version:" $METROAE_VERSION
-    echo ""
-    echo "MetroAE gui usage:"
-    echo ""
-    print_menu_help "metroae%-50s %-1s\n" $1
-    echo ""
-}
-
 #################################################################################
 #                                     Menu                                      #
 #################################################################################
@@ -2007,10 +1997,6 @@ function switch_help {
         ;;
         ,tools*)
         tools_help "$1"
-        exit 0
-        ;;
-        ,gui*)
-        ui_help "$1"
         exit 0
         ;;
         *)
