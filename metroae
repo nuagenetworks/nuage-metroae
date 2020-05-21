@@ -1650,10 +1650,8 @@ function container_main {
         check_for_user_group "$@"
     fi
 
-    # check docker
     check_docker
 
-    # main functionality
     if [[ $# -eq 0 ]]; then
         container_help ",container"
         exit 0
@@ -1663,6 +1661,8 @@ function container_main {
 
     POSITIONAL=()
     exec=false
+    echo ""
+    write_to_screen_and_script_log ">>> Checking command options"
     while [ $# -gt 0 ]
     do
         key=$1
@@ -1763,19 +1763,23 @@ function container_main {
             shift
             ;;
             *)
-            if [[ ! $METROAE_SETUP_TYPE == "c" ]]; then
-                POSITIONAL+=("$1")
-                exec=true
-                shift
-            else
-                write_to_screen_and_script_log "Unrecognized command for a config-only setup"
-            fi
+            POSITIONAL+=("$1")
+            exec=true
+            shift
             ;;
         esac
     done
 
     if [[ $exec == true ]]; then
-        docker_metro_ae_exec "${POSITIONAL[@]}"
+        if [[ $METROAE_SETUP_TYPE == "c" ]]; then
+            echo ""
+            write_to_screen_and_script_log "Unrecognized command for a config-only setup: ${POSITIONAL[@]}. Quitting."
+            echo ""
+            echo ""
+            main_help
+        else
+            docker_metro_ae_exec "${POSITIONAL[@]}"
+        fi
     fi
 }
 
