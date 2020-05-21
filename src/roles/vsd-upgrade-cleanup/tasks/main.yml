@@ -1,29 +1,31 @@
-- block:
 
-  - name: Check that backup directory is set
-    assert:
-      that: "metro_backup_root is defined"
-      msg: "Metro Backup directory is missing"
+- name: Check that backup directory is set
+  assert:
+    that: "metro_backup_root is defined"
+    msg: "Metro Backup directory is missing"
 
-  - debug:
-      var: metro_backup_root
+- debug:
+    var: metro_backup_root
 
-  - name: Finding actual path of backup directory from symlink
-    stat:
-      path: "{{metro_backup_root}}/backup-latest-vsd"
-    register: st
+- name: Finding actual path of backup directory from symlink
+  stat:
+    path: "{{metro_backup_root}}/backup-latest-vsd"
+  register: st
 
-  - debug:
-      var: st.stat.lnk_source
+- debug:
+    var: st.stat.lnk_source
 
-  - name: Deleting the actual backup directory
-    file:
-     path: "{{st.stat.lnk_source}}"
-     state: absent
+- name: Deleting the actual backup directory
+  file:
+   path: "{{st.stat.lnk_source}}"
+   state: absent
 
-  - name: Removing the symlink file
-    file:
-      path: "{{metro_backup_root}}/backup-latest-vsd"
-      state: absent
+- name: Removing the symlink file
+  file:
+    path: "{{metro_backup_root}}/backup-latest-vsd"
+    state: absent
 
-when: not keep_upgrade_backups | default(False)
+- name: Removing the symlink file
+  file:
+    path: "{{metro_backup_root}}/backup-latest-upgrade-vsd"
+    state: absent

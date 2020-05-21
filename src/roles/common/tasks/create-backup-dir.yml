@@ -16,7 +16,7 @@
 
 - name: Set name of backup directory
   set_fact:
-    localhost_backup_dir: "{{ metro_backup_root }}/backup-{{ ansible_date_time.iso8601_basic_short }}-{{ backup_type | default(backup_component_name) }}/"
+    localhost_backup_dir: "{{ metro_backup_root }}/backup-{{ ansible_date_time.iso8601_basic_short }}-{{ hostvars['localhost'].backup_type | default(backup_component_name) }}"
   delegate_to: localhost
   delegate_facts: True
   when: hostvars['localhost'].localhost_backup_dir is not defined
@@ -50,4 +50,17 @@
       state: link
     delegate_to: localhost
 
-  when: backup_type | default(backup_component_name) == "full"
+  when: hostvars['localhost'].backup_type | default(backup_component_name) == "full"
+
+- name: Remove any old symbolic link to backup location
+  file:
+    path: "{{ metro_backup_root }}/backup-latest-{{ backup_component_name }}"
+    state: absent
+  delegate_to: localhost
+
+- name: Create symbolic link to backup location
+  file:
+    dest: "{{ metro_backup_root }}/backup-latest-{{ backup_component_name }}"
+    src: "{{ hostvars['localhost'].localhost_backup_dir }}"
+    state: link
+  delegate_to: localhost
