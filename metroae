@@ -2078,7 +2078,23 @@ case ${MATCH_MENU[2]} in
     print_version_and_exit 0
     ;;
     config)
-    config_main ${MATCH_MENU[3]} "${EXTRA_ARGS[@]}"
+    if [[ ! $RUN_MODE == "CONTAINER" ]]; then
+        echo ""
+        write_to_screen_and_script_log "'config' command is not supported without the MetroAE container."
+        echo "You can setup the container with 'metroae container setup'. Quitting."
+        echo ""
+        echo ""
+        main_help
+    elif [[ METROAE_SETUP_TYPE == "d" ]]; then
+        echo ""
+        write_to_screen_and_script_log "'config' command is not supported in a deploy-only setup."
+        echo "Execute 'metroae container setup' to change your setup type. Quitting."
+        echo ""
+        echo ""
+        main_help
+    else
+        config_main ${MATCH_MENU[3]} "${EXTRA_ARGS[@]}"
+    fi
     exit 0
     ;;
     playbook)
