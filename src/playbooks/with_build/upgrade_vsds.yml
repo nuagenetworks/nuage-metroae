@@ -29,7 +29,9 @@
     ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"
   tasks:
     - name: Stop replication process in the standby node
-      command: /opt/vsd/bin/vsd-deactivate-replication-slave # noqa 301
+      command: /opt/vsd/bin/vsd-deactivate-replication-slave
+      register: replication_result
+      changed_when: "replication_result.rc == 0"
 
 - name: Run VSD inplace upgrade if eligible
   import_playbook: "upgrade_vsds_inplace.yml"
