@@ -2,9 +2,28 @@
   gather_facts: no
   tasks:
 
+  - name: Set fact for VSD backup path
+    set_fact:
+      vsd_backup_path_list: []
+
+  - name: Copy backup files from backup_machine
+    set_fact:
+      vsd_backup_path_list: "{{ vsd_backup_path_list + [item] }}"
+    with_fileglob:
+      - "{{ metro_backup_root }}/{{ backup_to_restore }}/vsd-*/"
+
+  - name: Check that exactly one backup is found
+    assert:
+      that: vsd_backup_path_list | length == 1
+      msg: "Did not find exactly one VSD backup set under backup_to_restore directory: {{ metro_backup_root }}/{{ backup_to_restore }}/vsd-*/"
+
+  - name: Set fact for VSD backup path
+    set_fact:
+      vsd_backup_path: "{{ vsd_backup_path_list | first }}"
+
   - name: Get list of files in backup directory
     find:
-      path: "{{ metro_backup_root }}/backup-vsd-{{ vsd_fqdn }}-latest/"
+      path: "{{ vsd_backup_path }}"
       pattern: "*.tar.gz"
     register: lst_files
     remote_user: "{{ vsd_default_username }}"
@@ -12,7 +31,7 @@
   - name: Verify backup contains exactly 3 files
     assert:
       that: "lst_files.matched == 3"
-      msg: "Backup directory {{ metro_backup_root }}/backup-vsd-{{ vsd_fqdn }}-latest/ does not contain 3 backup files"
+      msg: "Backup directory {{ vsd_backup_path }} does not contain 3 backup files"
 
 - name: Run VSD Predeploy
   import_playbook: "vsd_predeploy.yml"

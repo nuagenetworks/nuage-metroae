@@ -25,7 +25,7 @@
 - name: Fetch files from vsd and copy them to backup folder on backup_machine
   fetch:
     src: "{{ item.files[0].path }}"
-    dest: "{{ vsd_localhost_backup_dir }}"
+    dest: "{{ localhost_component_backup_dir }}"
     flat: yes
     validate_checksum: false
   with_items: "{{ lst_files.results }}"
@@ -36,14 +36,14 @@
 
 - name: Remove any old symbolic link to backup location
   file:
-    path: "{{ metro_backup_root }}/backup-vsd-{{ vsd_fqdn }}-latest"
+    path: "{{ metro_backup_root }}/backup-latest-vsd"
     state: absent
   delegate_to: localhost
 
 - name: Create symbolic link to backup location
   file:
-    dest: "{{ metro_backup_root }}/backup-vsd-{{ vsd_fqdn }}-latest"
-    src: "{{ vsd_localhost_backup_dir }}"
+    dest: "{{ metro_backup_root }}/backup-latest-vsd"
+    src: "{{ localhost_component_backup_dir }}"
     state: link
   delegate_to: localhost
 
@@ -57,36 +57,11 @@
     ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"
   ignore_errors: True
 
-- name: "Cleanup old backups"
-  block:
-
-  - name: Find all backup directories
-    find:
-      path: "{{ metro_backup_root }}"
-      patterns: "backup-*"
-      file_type: directory
-    register: backup_dirs_find
-
-  - name: Create empty list for backup directories
-    set_fact:
-      backup_dirs_info_list: []
-
-  - name: Add backup directory info to list
-    set_fact:
-      backup_dirs_info_list: "{{ backup_dirs_info_list + [ {'path': item.path, 'timestamp': item.path.split('-') | last } ] }}"
-    loop: "{{ backup_dirs_find.files }}"
-
-  - name: Filter and backup directory info list
-    set_fact:
-      backup_dirs_info_list: "{{ backup_dirs_info_list | sort(reverse=true, attribute='timestamp') }}"
-
-  - name: Delete old backup files
-    file:
-      path: "{{ backup_dirs_info_list[item].path }}"
-      state: absent
-    loop: "{{ range([max_num_stored_backups, 1] | max, backup_dirs_info_list | length) | list }}"
-
-  delegate_to: localhost
-  when: max_num_stored_backups >= 0
+- name: Clean any extra backups over max
+  include_role:
+    name: common
+    tasks_from: clean-extra-backups
+  vars:
+    backup_component_name: vsd
 
 

@@ -1,33 +1,4 @@
----
-- name: Deleting all backup files for a host
-  block:
-
-  - name: Finding the vsd backup folder to delete
-    find:
-      paths: "{{metro_backup_root}}"
-      patterns: "^backup-{{ groups['vsds'][0] }.*"
-      file_type: directory
-      use_regex: true
-    register: files_to_delete
-
-  - debug:
-      var: files_to_delete
-
-  - name: Removing all retrieved backup folders
-    file:
-      path: "{{ item.path }}"
-      state: absent
-    with_items: "{{ files_to_delete.files }}"
-
-  - name: Removing the symlink
-    file:
-      path: "{{metro_backup_root}}/backup-vsd-{{ vsd_fqdn }}-latest"
-      state: absent
-
-  when: delete_all_backups|default(false)|bool
-
-- name: Deleting the latest backup directory of the host
-  block:
+- block:
 
   - name: Check that backup directory is set
     assert:
@@ -39,7 +10,7 @@
 
   - name: Finding actual path of backup directory from symlink
     stat:
-      path: "{{metro_backup_root}}/backup-vsd-{{ vsd_fqdn }}-latest"
+      path: "{{metro_backup_root}}/backup-latest-vsd"
     register: st
 
   - debug:
@@ -52,7 +23,7 @@
 
   - name: Removing the symlink file
     file:
-      path: "{{metro_backup_root}}/backup-vsd-{{ vsd_fqdn }}-latest"
+      path: "{{metro_backup_root}}/backup-latest-vsd"
       state: absent
 
-  when: not delete_all_backups|default(false)|bool
+when: not keep_upgrade_backups | default(False)

@@ -1,0 +1,22 @@
+- name: "Cleanup old backups"
+  block:
+
+  - name: Find all backup directories
+    find:
+      path: "{{ metro_backup_root }}"
+      patterns: "backup-*-{{ backup_type | default(backup_component_name) }}"
+      file_type: directory
+    register: backup_dirs_find
+
+  - name: Create sorted backup list
+    set_fact:
+      backup_dirs_list: "{{ backup_dirs_find.files | sort(reverse=true) }}"
+
+  - name: Delete old backup files
+    file:
+      path: "{{ backup_dirs_list[item] }}"
+      state: absent
+    loop: "{{ range([max_num_stored_backups, 1] | max, backup_dirs_list | length) | list }}"
+
+  delegate_to: localhost
+  when: max_num_stored_backups >= 0

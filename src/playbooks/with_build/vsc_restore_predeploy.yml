@@ -1,18 +1,22 @@
-- hosts: localhost
+- hosts: vscs
   gather_facts: no
   tasks:
 
+  - name: Set fact for VSC backup path
+    set_fact:
+      vsc_backup_path: "{{ metro_backup_root }}/{{ backup_to_restore }}/vsc-{{ inventory_hostname }}/"
+
   - name: Get list of files in backup directory
     find:
-      path: "{{ metro_backup_root }}/{{ restore_dir | default( 'backup-' + groups['vscs'][0] + '-latest' ) }}"
+      path: "{{ vsc_backup_path }}"
       pattern: "*.cfg"
     register: lst_files
-    remote_user: "{{ vsd_default_username }}"
+    delegate_to: localhost
 
   - name: Verify backup contains exactly 2 files
     assert:
       that: "lst_files.matched == 2"
-      msg: "Backup directory {{ metro_backup_root }}/{{ restore_dir | default( 'backup-' + groups['vscs'][0] + '-latest' ) }}/ does not contain 3 backup files"
+      msg: "Backup directory {{ vsc_backup_path }}/ does not contain 2 backup files"
 
 - name: Run VSC Predeploy
   import_playbook: "vsc_predeploy.yml"

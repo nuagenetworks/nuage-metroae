@@ -77,12 +77,8 @@
 
 - block:
   - name: Copy External PKI Certificates
-    expect:
-      command: 'scp {{ item }} {{ compute_username | default(target_server_username) }}@{{ inventory_hostname }}:/etc/default/bootstrap/keys/'
-      responses:
-        (?i)yes: "yes"
-        (?i)password: "{{ compute_password | default(target_server_password) }}"
-      timeout: 720
+    command: 'sshpass -p{{ compute_password | default(target_server_password) }} scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null {{ item }} {{ compute_username | default(target_server_username) }}@{{ inventory_hostname }}:/etc/default/bootstrap/keys/'
+    no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
     with_items:
       - "{{ private_key_path }}"
       - "{{ certificate_path }}"
