@@ -122,7 +122,6 @@ function write_to_script_log {
             fi
         fi
     fi
-    debug "${FUNCNAME[0]}: $1"
 }
 
 function write_to_screen_and_script_log {
@@ -139,7 +138,7 @@ function check_run_mode {
             RUN_MODE="CONTAINER"
         fi
     fi
-    write_to_script_log "RUN_MODE is $RUN_MODE"
+    debug "${FUNCNAME[0]}: RUN_MODE is $RUN_MODE"
 }
 
 function try_get_menu {
@@ -250,7 +249,7 @@ function check_docker {
     set +e
 
     echo ""
-    write_to_script_log ">>> Checking docker version"
+    write_to_screen_and_script_log ">>> Checking docker version"
     if [[ -f $SCRIPT_LOG_FILE ]]; then
         if [ -w "$SCRIPT_LOG_FILE" ]; then
             docker --version >> $SCRIPT_LOG_FILE 2>> $SCRIPT_LOG_FILE
@@ -310,28 +309,28 @@ function get_max_container_version {
             MAX_CONTAINER_VERSION='current'
         fi
     fi
-    write_to_script_log "Newest MetroAE container version found is $MAX_CONTAINER_VERSION"
+    debug "${FUNCNAME[0]}: Newest MetroAE container version found is $MAX_CONTAINER_VERSION"
 }
 
 function get_container_id {
     debug ${FUNCNAME[0]}
     get_max_container_version
     CONTAINER_ID=`docker ps -a 2>/dev/null | grep $METRO_AE_IMAGE | grep $MAX_CONTAINER_VERSION | awk '{ print $1}'`
-    write_to_script_log "CONTAINER_ID: $CONTAINER_ID"
+    debug "${FUNCNAME[0]}: CONTAINER_ID: $CONTAINER_ID"
 }
 
 function get_running_container_id {
     debug ${FUNCNAME[0]}
     get_max_container_version
     RUNNING_CONTAINER_ID=`docker ps 2>/dev/null | grep $METRO_AE_IMAGE | grep $MAX_CONTAINER_VERSION | awk '{ print $1}'`
-    write_to_script_log "RUNNING_CONTAINER_ID: $RUNNING_CONTAINER_ID"
+    debug "${FUNCNAME[0]}: RUNNING_CONTAINER_ID: $RUNNING_CONTAINER_ID"
 }
 
 function get_image_id {
     debug ${FUNCNAME[0]}
     get_max_container_version
     IMAGE_ID=`docker images 2>/dev/null | grep $METRO_AE_IMAGE | grep $MAX_CONTAINER_VERSION | awk '{ print $3}'`
-    write_to_script_log "${FUNCNAME[0]}: IMAGE_ID: $IMAGE_ID"
+    debug "${FUNCNAME[0]}: IMAGE_ID: $IMAGE_ID"
 }
 
 
@@ -371,7 +370,7 @@ function delete_container_id {
         return 0
     fi
 
-    write_to_script_log "Execute 'docker rm' on the MetroAE container with id $CONTAINER_ID"
+    debug "${FUNCNAME[0]}: Execute 'docker rm' on the MetroAE container with id $CONTAINER_ID"
 
     set +e
     if [[ -f $SCRIPT_LOG_FILE ]]; then
@@ -804,7 +803,7 @@ function setup_container {
     if [ -w "$SETUP_FILE" ]; then
         sed -i '/^METROAE_SETUP_TYPE/d' $SETUP_FILE
         echo "METROAE_SETUP_TYPE=$setup_type" >> $SETUP_FILE
-        write_to_script_log "METROAE_SETUP_TYPE=$setup_type"
+        debug "${FUNCNAME[0]}: METROAE_SETUP_TYPE=$setup_type"
     else
         echo ""
         write_to_screen_and_script_log "We couldn't write to the MetroAE setup file ($SETUP_FILE). Please ensure"
@@ -839,7 +838,7 @@ function setup_container {
 
     data_path=$PATH_ARG
 
-    write_to_script_log "METROAE_MOUNT_POINT=$data_path"
+    debug "${FUNCNAME[0]}: METROAE_MOUNT_POINT=$data_path"
     sed -i '/^METROAE_MOUNT_POINT/d' $SETUP_FILE
     echo METROAE_MOUNT_POINT=$data_path >> $SETUP_FILE
 
@@ -996,7 +995,7 @@ function setup_tab_completion {
     echo ""
 
     if [[ ! -d $COMPLETION_DIR ]]; then
-        write_to_script_log "Creating tab-completion dir: $COMPLETION_DIR"
+        debug "${FUNCNAME[0]}: Creating tab-completion dir: $COMPLETION_DIR"
         set +e
         mkdir $COMPLETION_DIR
         if [[ $? -ne 0 ]]; then
@@ -1010,7 +1009,7 @@ function setup_tab_completion {
         set -e
     fi
 
-    write_to_script_log "Copying tab-completion to standard dir: $METROAE_MOUNT_POINT/$TAB_COMPLETION_SCRIPT to $COMPLETION_DIR"
+    debug "${FUNCNAME[0]}: Copying tab-completion to standard dir: $METROAE_MOUNT_POINT/$TAB_COMPLETION_SCRIPT to $COMPLETION_DIR"
     set +e
     sudo cp $METROAE_MOUNT_POINT/$TAB_COMPLETION_SCRIPT $COMPLETION_DIR
     if [[ $? -ne 0 ]]; then
