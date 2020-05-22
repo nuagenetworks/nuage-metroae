@@ -836,12 +836,11 @@ function setup_container {
     else
         echo ""
         valid_path=1
-        PATH_ARG=$1
-        check_user_path PATH_ARG metroae_data
+        check_user_path $1
         if [[ $valid_path -ne 0 ]]; then
             exit 1
         fi
-        write_to_screen_and_script_log ">>> Setting data path to passed in parameter $PATH_ARG"
+        write_to_screen_and_script_log ">>> Setting data directory path to passed in parameter $1"
         shift
     fi
 
@@ -897,20 +896,23 @@ function check_user_path {
 
     set +e
     if [[ -w $SCRIPT_LOG_FILE ]]; then
-        stat $PATH_ARG >> $SCRIPT_LOG_FILE 2>> $SCRIPT_LOG_FILE
+        stat $1 >> $SCRIPT_LOG_FILE 2>> $SCRIPT_LOG_FILE
     else
-        stat $PATH_ARG
+        stat $1
     fi
 
     valid_path=$?
     if [[ $valid_path -ne 0 ]]; then
-        write_to_screen_and_script_log "We had a problem validating the path you entered: $PATH_ARG. Please try again."
+        write_to_screen_and_script_log "We had a problem validating the path you entered: $1. Please try again."
     fi
+}
 
-    # check to see if the path ends with passed in directory
-    if [[ "$PATH_ARG" != *"$2" ]]; then
-        PATH_ARG=${PATH_ARG%/}/$2
-        mkdir -p $PATH_ARG
+function make_user_path {}
+    debug ${FUNCNAME[0]}
+
+    if [[ "$1" != *"metroae_data" ]]; then
+        USER_PATH=${PATH_ARG%/}/metroae_data
+        mkdir -p $USER_PATH
     fi
     set -e
 }
@@ -928,8 +930,10 @@ function get_user_path_input {
         read -p "$1: " PATH_ARG
         echo ""
         write_to_screen_and_script_log "Checking path: $1"
-        check_user_path PATH_ARG $2
+        check_user_path $PATH_ARG
     done
+
+    make_user_path $PATH_ARG
 
     echo ""
     write_to_screen_and_script_log "$1 set to: $PATH_ARG"
