@@ -330,7 +330,7 @@ HTML_PAGE_STYLE = """
       logControls {
         height: 30px;
         width: 100%;
-        overflow: scroll;
+        overflow: hidden;
       }
 
       #status {
