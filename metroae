@@ -140,9 +140,9 @@ function source_menu {
     debug ${FUNCNAME[0]}
     debug "${FUNCNAME[0]}: RUN_MODE = $RUN_MODE"
     if [[ $RUN_MODE == $INSIDE_RUN_MODE ]]; then
-        if [[ -f /source/nuage-metro/src/$PLAYBOOK_MENU ]]; then
-            source /source/nuage-metro/src/$PLAYBOOK_MENU
-            debug "${FUNCNAME[0]}: source /source/nuage-metro/src/$PLAYBOOK_MENU"
+        if [[ -f /source/nuage-metroae/src/$PLAYBOOK_MENU ]]; then
+            source /source/nuage-metroae/src/$PLAYBOOK_MENU
+            debug "${FUNCNAME[0]}: source /source/nuage-metroae/src/$PLAYBOOK_MENU"
         fi
     elif [[ $RUN_MODE == $REPO_RUN_MODE ]]; then
         if [[ -f src/$PLAYBOOK_MENU ]]; then
@@ -175,25 +175,42 @@ function source_container_config {
 function check_for_prerequisite {
     debug ${FUNCNAME[0]}
     if [[ $RUN_MODE == $INSIDE_RUN_MODE ]]; then
-        if [[ ! -f /source/nuage-metro/src/$PLAYBOOK_MENU ]]; then
+        if [[ ! -f /source/nuage-metroae/src/$PLAYBOOK_MENU ]]; then
             write_to_screen_and_script_log "It looks like you are running MetroAE from inside the container, but we couldn't find the container's menu file in the data directory. Please run 'metroae container setup' and try again."
             exit 1
         fi
-    else
-        get_container_id
+    elif [[ $RUN_MODE == $REPO_RUN_MODE ]]; then
+        if [[ ! -f src/$PLAYBOOK_MENU ]]; then
+            write_to_screen_and_script_log "It looks like you are trying to run using a clone of MetroAE, but we couldn't find the menu file in the workspace. Please update your workspace and try again."
+            exit 1
+        fi
+    else # Must be CONTAINER_RUN_MODE
         get_running_container_id
-        if [[ $RUN_MODE == $REPO_RUN_MODE ]]; then
-            if [[ ! -f src/$PLAYBOOK_MENU ]]; then
-                write_to_screen_and_script_log "It looks like you are trying to run using a clone of MetroAE, but we couldn't find the menu file in the workspace. Please update your workspace and try again."
-                exit 1
-            fi
-        # RUN_MODE is CONTAINER
-        elif [[ -f $SETUP_FILE ]]; then
-            if [[ -z $RUNNING_CONTAINER_ID ]] && [[ ! -z $CONTAINER_ID ]]; then
-                echo ""
-                write_to_screen_and_script_log ">>> Starting the stopped container"
-                echo ""
-                docker start $CONTAINER_ID
+        if [[ -f $SETUP_FILE ]]; then
+            if [[ -z $RUNNING_CONTAINER_ID ]]; then
+                get_container_id
+                if [[ -z $CONTAINER_ID ]]; then
+                    write_to_screen_and_script_log "It looks like there is a MetroAE container setup, but we couldn't find a container image."
+                    confirmation="init"
+                    while [[ $confirmation != "n" ]] && [[ $confirmation  != "y" ]] && [[ $confirmation != "" ]]
+                    do
+                        echo ""
+                        read -p "Do you want to download and setup the MetroAE container (y/N): " confirmation
+                    done
+                    if [[ $confirmation == "y" ]]; then
+                        check_for_user_group "$@"
+                        setup_container
+                    else
+                        echo ""
+                        write_to_screen_and_script_log "Setup of MetroAE container canceled. Quitting."
+                        exit 0
+                    fi
+                else
+                    echo ""
+                    write_to_screen_and_script_log ">>> Starting the stopped container"
+                    echo ""
+                    docker start $CONTAINER_ID
+                fi
             fi
             if [[ ! -f $METROAE_MOUNT_POINT/$PLAYBOOK_MENU ]]; then
                 write_to_screen_and_script_log "It looks like you are trying to run the MetroAE container, but we couldn't find the container's menu file in the data directory. Please run ‘metroae container setup’ and try again."
@@ -1550,7 +1567,7 @@ function copy_ssh_id {
 
 function docker_metro_ae_exec {
     debug ${FUNCNAME[0]}
-    docker_exec env /source/nuage-metro/metroae "$@"
+    docker_exec env /source/nuage-metroae/metroae "$@"
 }
 
 function stop_ui {
@@ -1582,12 +1599,12 @@ function load_certificates {
 
 function unzip_files {
     debug ${FUNCNAME[0]}
-    docker_exec /source/nuage-metro/nuage-unzip.sh "$@"
+    docker_exec /source/nuage-metroae/nuage-unzip.sh "$@"
 }
 
 function gen_example_from_schema {
     debug ${FUNCNAME[0]}
-    docker_exec /usr/bin/python /source/nuage-metro/generate_example_from_schema.py "$@"
+    docker_exec /usr/bin/python /source/nuage-metroae/generate_example_from_schema.py "$@"
 }
 
 function container_status {
@@ -1645,7 +1662,7 @@ function vault_password {
     debug ${FUNCNAME[0]}
     run_container_if_not_running
 
-    docker_exec_interactive /usr/bin/python /source/nuage-metro/encrypt_credentials.py  $1
+    docker_exec_interactive /usr/bin/python /source/nuage-metroae/encrypt_credentials.py  $1
 }
 
 function disable_encryption {
@@ -1827,7 +1844,7 @@ function tools_main {
     case ${MATCH_MENU[3]} in
         unzip-files)
         if [[ $RUN_MODE == $CONTAINER_RUN_MODE ]]; then
-            docker_exec env /source/nuage-metro/nuage-unzip.sh ${EXTRA_ARGS[@]}
+            docker_exec env /source/nuage-metroae/nuage-unzip.sh ${EXTRA_ARGS[@]}
         else
             ./nuage-unzip.sh ${EXTRA_ARGS[@]}
         fi
@@ -1835,7 +1852,7 @@ function tools_main {
         ;;
         get_debug)
         if [[ $RUN_MODE == $CONTAINER_RUN_MODE ]]; then
-            docker_exec env /usr/bin/python /source/nuage-metro/get_debug.py ${EXTRA_ARGS[@]}
+            docker_exec env /usr/bin/python /source/nuage-metroae/get_debug.py ${EXTRA_ARGS[@]}
         else
             /usr/bin/python get_debug.py ${EXTRA_ARGS[@]}
         fi
@@ -1843,7 +1860,7 @@ function tools_main {
         ;;
         convert_csv_to_deployment)
         if [[ $RUN_MODE == $CONTAINER_RUN_MODE ]]; then
-            docker_exec env workdir /source/nuage-metro/usr/bin/python convert_csv_to_deployment.py ${EXTRA_ARGS[@]}
+            docker_exec env workdir /source/nuage-metroae/usr/bin/python convert_csv_to_deployment.py ${EXTRA_ARGS[@]}
         else
             /usr/bin/python convert_csv_to_deployment.py ${EXTRA_ARGS[@]}
         fi
@@ -1851,7 +1868,7 @@ function tools_main {
         ;;
         generate-example-from-schema)
         if [[ $RUN_MODE == $CONTAINER_RUN_MODE ]]; then
-            docker_exec env /usr/bin/python /source/nuage-metro/generate_example_from_schema.py ${EXTRA_ARGS[@]}
+            docker_exec env /usr/bin/python /source/nuage-metroae/generate_example_from_schema.py ${EXTRA_ARGS[@]}
         else
             /usr/bin/python generate_example_from_schema.py ${EXTRA_ARGS[@]}
         fi
@@ -1859,7 +1876,7 @@ function tools_main {
         ;;
         encrypt-credentials)
         if [[ $RUN_MODE == $CONTAINER_RUN_MODE ]]; then
-            docker_exec env /usr/bin/python /source/nuage-metro/encrypt_credentials.py ${EXTRA_ARGS[@]}
+            docker_exec env /usr/bin/python /source/nuage-metroae/encrypt_credentials.py ${EXTRA_ARGS[@]}
         else
             /usr/bin/python encrypt_credentials.py ${EXTRA_ARGS[@]}
         fi
@@ -2129,7 +2146,7 @@ case ${MATCH_MENU[2]} in
     ;;
     wizard)
     if [[ $RUN_MODE == $CONTAINER_RUN_MODE ]]; then
-        docker_exec_interactive /usr/bin/python /source/nuage-metro/run_wizard.py "${EXTRA_ARGS[@]}"
+        docker_exec_interactive /usr/bin/python /source/nuage-metroae/run_wizard.py "${EXTRA_ARGS[@]}"
     else
         ./run_wizard.py "${EXTRA_ARGS[@]}"
     fi
