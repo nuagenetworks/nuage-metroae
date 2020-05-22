@@ -49,7 +49,7 @@ if [[ ! -z $IMAGE_NAME ]]; then
     METRO_AE_IMAGE="$REGISTRY_HOST:5000/$IMAGE_NAME"
 fi
 OS_RELEASE=$LINUX
-PATH_ARG=""
+USER_DATA_PATH=""
 ENVIRONMENT_FILTERS=(PWD PATH HOME USER SHELL MAIL SSH_CONNECTION LOGNAME OLDPWD LESSOPEN _ XDG_RUNTIME_DIR HISTCONTROL)
 SCRIPT_VERSION=1.1.0
 S3_KEY="AKIAJOPWRLAXPCUXZX3A"
@@ -844,11 +844,9 @@ function setup_container {
         shift
     fi
 
-    data_path=$PATH_ARG
-
-    debug "${FUNCNAME[0]}: METROAE_MOUNT_POINT=$data_path"
+    debug "${FUNCNAME[0]}: METROAE_MOUNT_POINT=$USER_DATA_PATH"
     sed -i '/^METROAE_MOUNT_POINT/d' $SETUP_FILE
-    echo METROAE_MOUNT_POINT=$data_path >> $SETUP_FILE
+    echo METROAE_MOUNT_POINT=$USER_DATA_PATH >> $SETUP_FILE
 
     # stop and remove existing container if any
     get_running_container_id
@@ -911,8 +909,7 @@ function make_user_path {
     debug ${FUNCNAME[0]}
 
     if [[ "$1" != *"metroae_data" ]]; then
-        USER_PATH=${PATH_ARG%/}/metroae_data
-        mkdir -p $USER_PATH
+        mkdir -p ${USER_DATA_PATH%/}/metroae_data
     fi
     set -e
 }
@@ -920,23 +917,22 @@ function make_user_path {
 
 function get_user_path_input {
     debug ${FUNCNAME[0]}
-    PATH_ARG=""
     valid_path=1
     set +e
 
     while [[ $valid_path -ne 0 ]]
     do
         echo ""
-        read -p "$1: " PATH_ARG
+        read -p "$1: " USER_DATA_PATH
         echo ""
         write_to_screen_and_script_log "Checking path: $1"
-        check_user_path $PATH_ARG
+        check_user_path $USER_DATA_PATH
     done
 
-    make_user_path $PATH_ARG
+    make_user_path $USER_DATA_PATH
 
     echo ""
-    write_to_screen_and_script_log "$1 set to: $PATH_ARG"
+    write_to_screen_and_script_log "$1 set to: $USER_DATA_PATH"
     echo ""
     set -e
 }
