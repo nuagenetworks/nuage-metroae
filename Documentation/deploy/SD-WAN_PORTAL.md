@@ -18,7 +18,7 @@ Currently the following workflows are supported:
 * metroae install portal license - Copies the license file to the Portal VM(s) and restarts the Portal(s)
 * metroae destroy portal - Destroys Portal VMs and cleans up the files from hypervisor(s)
 
-Example deployment files are available under examples/kvm_portal_install
+Example deployment files are available under examples/deploy/kvm_portal_install
 
 ### 1. Configure `common.yml`
   In your MetroAE deployment folder, create or edit the `common.yml` configuring the necessary attributes.

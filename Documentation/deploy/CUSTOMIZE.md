@@ -34,7 +34,7 @@ Based on your network topology and the specific components you plan on deploying
 
 When a workflow is executed, each deployment file is validated against a data schema which ensures that all required fields are present and in the correct syntax. These schemas are located in the [schemas/](/schemas/) directory. They follow the [json-schema.org standard](https://json-schema.org).
 
-You have the option of configuring the default deployment files provided in the deployments/default/ sub-directory or creating your own sub-directories under the deployments/ directory. You can find examples of deployment files for different deployments in the [examples/](/examples/) directory. Unless you specify a different deployment sub-directory name, the default deployment is used when a workflow is executed. This method allows MetroAE to support many deployments (different configurations) in parallel and the ability to switch between them as required. See below for the supported deployment files that you can specify in a deployments sub-directory.
+You have the option of configuring the default deployment files provided in the deployments/default/ sub-directory or creating your own sub-directories under the deployments/ directory. You can find examples of deployment files for different deployments in the [examples/](../../examples/deploy/) directory. Unless you specify a different deployment sub-directory name, the default deployment is used when a workflow is executed. This method allows MetroAE to support many deployments (different configurations) in parallel and the ability to switch between them as required. See below for the supported deployment files that you can specify in a deployments sub-directory.
 
 Note that you can edit the deployment files manually at any time. MetroAE comes with its own wizard for automating the creation and editing of deployment files when you are working with a clone of the nuage-metroaerepo. To start the wizard:
 ```
@@ -144,7 +144,7 @@ To create a new deployment:
 When you are contributing code, or pulling new versions of MetroAE quite often, it may make sense to host your variable files in a separate directory outside of `nuage-metroae/deployments/`.  A deployment directory in any location can be specified instead of a deployment name when issuing the `metroae` command.
 
 ## Generating example deployment configuration files
-A sample of the deployment configuration files are provided in the deployments/default/ directory and also in [examples/](/examples/).  If these are overwritten or deleted or if a "no frills" version of the files with only the minimum required parameters are desired, they can be generated with the following command:
+A sample of the deployment configuration files are provided in the deployments/default/ directory and also in [examples/](../../examples/deploy/).  If these are overwritten or deleted or if a "no frills" version of the files with only the minimum required parameters are desired, they can be generated with the following command:
 
 ```
 metroae tools generate example --schema <schema_filename> [--no-comments]
