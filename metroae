@@ -790,6 +790,7 @@ function setup_container {
     fi
 
     if [[ $? -ne 0 ]]; then
+        set -e
         return 1
     fi
     set -e
@@ -835,6 +836,7 @@ function setup_container {
         write_to_screen_and_script_log "We couldn't write to the MetroAE setup file ($SETUP_FILE). Please ensure"
         write_to_screen_and_script_log "that the file has user:group ownership set to 'root:docker' and try again."
         write_to_screen_and_script_log "You can also delete the file and re-run 'metroae container setup'. Quitting."
+        exit 1
     fi
 
     if [[ -z $1 ]]; then
@@ -888,20 +890,13 @@ function setup_container {
 
     run_container
 
+    set +e
     common_status=0
     echo ""
     write_to_screen_and_script_log ">>> Pulling common files and documentation for MetroAE in the container"
     echo ""
     docker_exec_copy_common_defaults
     common_status=$?
-
-    if [[ $common_status -ne 0 ]]; then
-        echo ""
-        write_to_screen_and_script_log "Problem copying common files and documentation MetroAE. Return code: $common_status."
-        echo "The MetroAE container is running, but you may not have the latest docs. Try running 'metroae container setup' again."
-        echo ""
-        return 1
-    fi
 
     deploy_status=0
     if [[ $setup_type != "c" ]]; then
@@ -910,14 +905,6 @@ function setup_container {
         echo ""
         docker_exec_copy_deploy_defaults
         deploy_status=$?
-    fi
-
-    if [[ $deploy_status -ne 0 ]]; then
-        echo ""
-        write_to_screen_and_script_log "Problem copying the latest documentation and examples for MetroAE deploy. Return code: $deploy_status."
-        echo "The MetroAE container is running, but you may not have the latest docs. Try running 'metroae container setup' again."
-        echo ""
-        return 1
     fi
 
     deploy_keys_status=0
@@ -929,14 +916,6 @@ function setup_container {
         deploy_keys_status=$?
     fi
 
-    if [[ $deploy_keys_status -ne 0 ]]; then
-        echo ""
-        write_to_screen_and_script_log "Problem generating and copying ssh keys for the container. Return code: $deploy_status."
-        echo "The MetroAE container is running, but you will not be able to copy ssh keys to KVM target servers. Try running 'metroae container setup' again."
-        echo ""
-        return 1
-    fi
-
     config_status=0
     if [[ $setup_type != "d" ]]; then
         echo ""
@@ -946,15 +925,16 @@ function setup_container {
         config_status=$?
     fi
 
-    if [[ $config_status -ne 0 ]]; then
-        echo ""
-        write_to_screen_and_script_log "Problem copying the latest feature templates and files for MetroAE config. Return code: $config_status."
-        echo "The MetroAE container is running, but you may not have the latest feature templates. Try running 'metroae config templates update'."
-        echo ""
-        return 1
-    fi
-
     setup_tab_completion
+
+    set -e
+
+    if [[ $config_status -ne 0 || $deploy_keys_status -ne 0 || $deploy_status -ne 0 || $common_status -ne 0 ]]; then
+        echo ""
+        write_to_screen_and_script_log "Problem copying one or more files to the data directory."
+        echo "The MetroAE container is running, but you may not have the latest files on disk. Try running 'metroae container setup' again."
+        echo ""
+    fi
 
     echo ""
     write_to_screen_and_script_log "MetroAE container setup complete. Execute 'metroae container status' for status."
