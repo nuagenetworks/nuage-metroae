@@ -165,7 +165,7 @@ function source_container_config {
         fi
     else
         METROAE_SETUP_TYPE="d"
-        METROAE_MOUNT_POINT="NONE"
+        METROAE_MOUNT_POINT="./"
     fi
     debug "${FUNCNAME[0]}: RUN_MODE = $RUN_MODE"
     debug "${FUNCNAME[0]}: METROAE_SETUP_TYPE = $METROAE_SETUP_TYPE"
@@ -888,8 +888,6 @@ function setup_container {
 
     run_container
 
-    setup_tab_completion
-
     common_status=0
     echo ""
     write_to_screen_and_script_log ">>> Pulling common files and documentation for MetroAE in the container"
@@ -955,6 +953,8 @@ function setup_container {
         echo ""
         return 1
     fi
+
+    setup_tab_completion
 
     echo ""
     write_to_screen_and_script_log "MetroAE container setup complete. Execute 'metroae container status' for status."
@@ -1055,15 +1055,12 @@ function check_if_mount_point_configured {
 
 function setup_tab_completion {
     debug ${FUNCNAME[0]}
+    set +e
     echo ""
-    write_to_screen_and_script_log ">>> Checking to see if we can setup tab completion for your metroae script."
+    write_to_screen_and_script_log ">>> Setting up optional tab completion for your metroae script."
     echo ""
 
-   check_if_mount_point_configured
-
-    echo ""
-    write_to_screen_and_script_log ">>> Configure optional metroae script tab completion on your host"
-    echo ""
+    check_if_mount_point_configured
 
     if [[ ! -d $COMPLETION_DIR ]]; then
         debug "${FUNCNAME[0]}: Creating tab-completion dir: $COMPLETION_DIR"
@@ -1074,26 +1071,22 @@ function setup_tab_completion {
             echo "We will not be configuring optional metroae script tab completion."
             echo "You may continue to use the metroae script without tab completion."
             echo ""
-            set -e
-            return 1
+        else
+            debug "${FUNCNAME[0]}: Copying tab-completion to standard dir: $METROAE_MOUNT_POINT/$TAB_COMPLETION_SCRIPT to $COMPLETION_DIR"
+            sudo cp $METROAE_MOUNT_POINT/$TAB_COMPLETION_SCRIPT $COMPLETION_DIR
+            if [[ $? -ne 0 ]]; then
+                write_to_screen_and_script_log "We encountered an error copying files to the tab-completion directory on your host."
+                echo "We will not be configuring optional metroae script tab completion."
+                echo "You may continue to use the metroae script without tab completion."
+                echo ""
+            else
+                write_to_screen_and_script_log "Successfully configured optional metroae script tab completion."
+                echo ""
+            fi
         fi
-        set -e
     fi
 
-    debug "${FUNCNAME[0]}: Copying tab-completion to standard dir: $METROAE_MOUNT_POINT/$TAB_COMPLETION_SCRIPT to $COMPLETION_DIR"
-    set +e
-    sudo cp $METROAE_MOUNT_POINT/$TAB_COMPLETION_SCRIPT $COMPLETION_DIR
-    if [[ $? -ne 0 ]]; then
-        write_to_screen_and_script_log "We encountered an error copying files to the tab-completion directory on your host."
-        echo "We will not be configuring optional metroae script tab completion."
-        echo "You may continue to use the metroae script without tab completion."
-        echo ""
-        set -e
-        return 1
-    fi
     set -e
-    write_to_screen_and_script_log "Successfully configured optional metroae script tab completion."
-    echo ""
 }
 
 function run_container_if_not_running {
@@ -1702,7 +1695,7 @@ function container_status {
             echo ""
         fi
         write_to_screen_and_script_log "MetroAE setup type: $current_setup_type"
-        write_to_screen_and_script_log "MetroAE container data path: $METROAE_MOUNT_POINT"
+        write_to_screen_and_script_log "MetroAE container data directory: $METROAE_MOUNT_POINT"
 
         if [[ ! -z "$METROAE_GUI_ENABLE" ]]; then
             get_host_operating_system
