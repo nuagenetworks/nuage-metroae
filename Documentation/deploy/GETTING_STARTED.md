@@ -2,7 +2,7 @@
 
 ## 1. Read documentation
 
-1.1 [Readme](../README.md) for information on supported components  
+1.1 [Readme](../../README.md) for information on supported components  
 1.2 [Setup](SETUP.md) for setting up the MetroAE host and enabling SSH  
 1.3 [Customize](CUSTOMIZE.md) for customizing user data and files  
 1.4 [Release Notes](RELEASE_NOTES.md) for information on the latest features  
