@@ -27,6 +27,7 @@
 * Upgrade pyYaml to 4.2b1 to address security vulnerability
 * Fixed deployment examples to have correct variable types (METROAE-1194)
 * Fixed undefined variable for nsgv-predeploy on vcenter
+* Fix VCENTER upgrades using container
 
 ## Test Matrix
 
