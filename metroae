@@ -884,6 +884,23 @@ function setup_container {
 
     setup_tab_completion
 
+    deploy_status=0
+    if [[ $setup_type != "d" ]]; then
+        echo ""
+        write_to_screen_and_script_log ">>> Pulling the latest documentation and examples for MetroAE deploy in the container"
+        echo ""
+        docker_exec_copy_deploy_defaults
+        deploy_status=$?
+    fi
+
+    if [[ $deploy_status -ne 0 ]]; then
+        echo ""
+        write_to_screen_and_script_log "Problem copying the latest documentation and examples for MetroAE deploy. Return code: $deploy_status."
+        echo "The MetroAE container is running, but you may not have the latest feature templates. Try running 'metroae container setup' again."
+        echo ""
+        return 1
+    fi
+
     config_status=0
     if [[ $setup_type != "d" ]]; then
         echo ""
@@ -895,7 +912,8 @@ function setup_container {
 
     if [[ $config_status -ne 0 ]]; then
         echo ""
-        write_to_screen_and_script_log "Problem setting up MetroAE config in the container. Return code: $config_status. Quitting."
+        write_to_screen_and_script_log "Problem copying the latest feature templates and files for MetroAE config. Return code: $config_status."
+        echo "The MetroAE container is running, but you may not have the latest feature templates. Try running 'metroae config templates update'."
         echo ""
         return 1
     fi
@@ -1430,6 +1448,10 @@ function docker_exec_levistate {
     docker_exec env /usr/bin/python /source/levistate/metroae_config.py "$@"
 }
 
+function docker_exec_copy_deploy_defaults {
+    debug ${FUNCNAME[0]}
+    docker_exec env /source/copyDeployDefaults.sh
+}
 
 function config_status {
     debug ${FUNCNAME[0]}
