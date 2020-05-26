@@ -849,11 +849,17 @@ function setup_container {
         echo "Please specify the full path to the data directory on the Docker host. Setup will"
         echo "make sure that the path ends with 'metroae_data'. If the path you specify does"
         echo "not end with 'metroae_data', setup will create it."
-        get_user_path_input "Data directory path" metroae_data
+        get_valid_data_dir
+
+        create_data_directory $USER_DATA_PATH
+
+        echo ""
+        write_to_screen_and_script_log "Data directory path set to: $USER_DATA_PATH"
+        echo ""
     else
         echo ""
         valid_path=1
-        check_user_path $1
+        validate_directory $1
         if [[ $valid_path -ne 0 ]]; then
             exit 1
         fi
@@ -956,7 +962,7 @@ function setup_container {
     return 0
 }
 
-function check_user_path {
+function validate_directory {
     debug ${FUNCNAME[0]}
 
     set +e
@@ -972,7 +978,7 @@ function check_user_path {
     fi
 }
 
-function make_user_path {
+function create_data_directory {
     debug ${FUNCNAME[0]}
 
     if [[ "$1" != *"metroae_data" ]]; then
@@ -981,8 +987,7 @@ function make_user_path {
     set -e
 }
 
-
-function get_user_path_input {
+function get_valid_data_dir {
     debug ${FUNCNAME[0]}
     valid_path=1
     set +e
@@ -993,15 +998,8 @@ function get_user_path_input {
         read -p "$1: " USER_DATA_PATH
         echo ""
         write_to_screen_and_script_log "Checking path: $1"
-        check_user_path $USER_DATA_PATH
+        validate_directory $USER_DATA_PATH
     done
-
-    make_user_path $USER_DATA_PATH
-
-    echo ""
-    write_to_screen_and_script_log "$1 set to: $USER_DATA_PATH"
-    echo ""
-    set -e
 }
 
 function update_container {
