@@ -884,6 +884,21 @@ function setup_container {
 
     setup_tab_completion
 
+    common_status=0
+    echo ""
+    write_to_screen_and_script_log ">>> Pulling common files and documentation for MetroAE in the container"
+    echo ""
+    docker_exec_copy_common_defaults
+    common_status=$?
+
+    if [[ $common_status -ne 0 ]]; then
+        echo ""
+        write_to_screen_and_script_log "Problem copying common files and documentation MetroAE. Return code: $common_status."
+        echo "The MetroAE container is running, but you may not have the latest docs. Try running 'metroae container setup' again."
+        echo ""
+        return 1
+    fi
+
     deploy_status=0
     if [[ $setup_type != "c" ]]; then
         echo ""
@@ -896,7 +911,7 @@ function setup_container {
     if [[ $deploy_status -ne 0 ]]; then
         echo ""
         write_to_screen_and_script_log "Problem copying the latest documentation and examples for MetroAE deploy. Return code: $deploy_status."
-        echo "The MetroAE container is running, but you may not have the latest feature templates. Try running 'metroae container setup' again."
+        echo "The MetroAE container is running, but you may not have the latest docs. Try running 'metroae container setup' again."
         echo ""
         return 1
     fi
@@ -913,7 +928,7 @@ function setup_container {
     if [[ $deploy_keys_status -ne 0 ]]; then
         echo ""
         write_to_screen_and_script_log "Problem generating and copying ssh keys for the container. Return code: $deploy_status."
-        echo "The MetroAE container is running, but you will not be able to copy ssh keys to target servers. Try running 'metroae container setup' again."
+        echo "The MetroAE container is running, but you will not be able to copy ssh keys to KVM target servers. Try running 'metroae container setup' again."
         echo ""
         return 1
     fi
@@ -1468,6 +1483,11 @@ function docker_exec_config {
 function docker_exec_generate_and_copy_keys {
     debug ${FUNCNAME[0]}
     docker_exec env generateAndCopySshKeys.sh
+}
+
+function docker_exec_copy_common_defaults {
+    debug ${FUNCNAME[0]}
+    docker_exec env /source/copyCommonDefaults.sh
 }
 
 function docker_exec_copy_deploy_defaults {
