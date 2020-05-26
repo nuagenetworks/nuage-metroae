@@ -885,7 +885,7 @@ function setup_container {
     setup_tab_completion
 
     deploy_status=0
-    if [[ $setup_type != "d" ]]; then
+    if [[ $setup_type != "c" ]]; then
         echo ""
         write_to_screen_and_script_log ">>> Pulling the latest documentation and examples for MetroAE deploy in the container"
         echo ""
@@ -901,12 +901,29 @@ function setup_container {
         return 1
     fi
 
+    deploy_keys_status=0
+    if [[ $setup_type != "c" ]]; then
+        echo ""
+        write_to_screen_and_script_log ">>> Generating and copying ssh keys for the container"
+        echo ""
+        docker_exec_generate_and_copy_keys
+        deploy_keys_status=$?
+    fi
+
+    if [[ $deploy_keys_status -ne 0 ]]; then
+        echo ""
+        write_to_screen_and_script_log "Problem generating and copying ssh keys for the container. Return code: $deploy_status."
+        echo "The MetroAE container is running, but you will not be able to copy ssh keys to target servers. Try running 'metroae container setup' again."
+        echo ""
+        return 1
+    fi
+
     config_status=0
     if [[ $setup_type != "d" ]]; then
         echo ""
         write_to_screen_and_script_log ">>> Pulling the latest feature templates and files for MetroAE config in the container"
         echo ""
-        docker_exec_levistate templates update
+        docker_exec_config templates update
         config_status=$?
     fi
 
@@ -1443,9 +1460,14 @@ function deployment_main {
 #                                    Config                                     #
 #################################################################################
 
-function docker_exec_levistate {
+function docker_exec_config {
     debug ${FUNCNAME[0]}
-    docker_exec env /usr/bin/python /source/levistate/metroae_config.py "$@"
+    docker_exec env /usr/bin/python /source/nuage-metroae-config/metroae_config.py "$@"
+}
+
+function docker_exec_generate_and_copy_keys {
+    debug ${FUNCNAME[0]}
+    docker_exec env generateAndCopySshKeys.sh
 }
 
 function docker_exec_copy_deploy_defaults {
@@ -1554,7 +1576,7 @@ function config_main {
     done
 
     if [[ $exec == true ]]; then
-        docker_exec_levistate "${POSITIONAL[@]}"
+        docker_exec_config "${POSITIONAL[@]}"
     fi
 
     if [[ $usage_last == true ]]; then
@@ -2007,10 +2029,10 @@ function config_help {
         echo "when the container is running. Please execute 'metroae container start'"
         echo "and try again."
     elif [[ $NUM_CLI_ARGS == 1 ]]; then
-        docker_exec_levistate -h
+        docker_exec_config -h
     else
         # Remove the string "config"
-        docker_exec_levistate "${CLI_ARGS[@]:1}"
+        docker_exec_config "${CLI_ARGS[@]:1}"
     fi
 }
 
