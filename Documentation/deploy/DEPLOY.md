@@ -128,9 +128,9 @@ If you would like to remove an entire deployment, or individual components, and 
 After you have successfully deployed Nuage Networks VSP components, you may want to upgrade to a newer version at some point in the future. See [UPGRADE_SA.md](UPGRADE_SA.md) for standalone deployments and [UPGRADE_HA.md](UPGRADE_HA.md) for clustered deployments.
 
 ## Questions, Feedback, and Contributing  
-Get support via the [forums](https://devops.nuagenetworks.net/forums/) on the [MetroAE site](https://devops.nuagenetworks.net/).  
+Get support on the [MetroAE site](https://devops.nuagenetworks.net/).  
 Ask questions and contact us directly at [devops@nuagenetworks.net](mailto:deveops@nuagenetworks.net "send email to nuage-metroaeproject").
  
 Report bugs you find and suggest new features and enhancements via the [GitHub Issues](https://github.com/nuagenetworks/nuage-metroae/issues "nuage-metroaeissues") feature.
 
-You may also [contribute](../CONTRIBUTING.md) to MetroAE by submitting your own code to the project.
+You may also [contribute](../../CONTRIBUTING.md) to MetroAE by submitting your own code to the project.

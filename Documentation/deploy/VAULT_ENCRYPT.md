@@ -19,9 +19,9 @@ You can safeguard sensitive data in Metro&#198; by encrypting files with Metro&#
   Alternatively, if you have the environment variable METROAE_PASSWORD set to the right passcode, Metro&#198; does not prompt for the passcode.
 
 ## Questions, Feedback, and Contributing  
-Get support via the [forums](https://devops.nuagenetworks.net/forums/) on the [MetroAE site](https://devops.nuagenetworks.net/).  
+Get support on the [MetroAE site](https://devops.nuagenetworks.net/).  
 Ask questions and contact us directly at [devops@nuagenetworks.net](mailto:deveops@nuagenetworks.net "send email to nuage-metroaeproject").
  
 Report bugs you find and suggest new features and enhancements via the [GitHub Issues](https://github.com/nuagenetworks/nuage-metroae/issues "nuage-metroaeissues") feature.
 
-You may also [contribute](../CONTRIBUTING.md) to MetroAE by submitting your own code to the project.
+You may also [contribute](../../CONTRIBUTING.md) to MetroAE by submitting your own code to the project.
