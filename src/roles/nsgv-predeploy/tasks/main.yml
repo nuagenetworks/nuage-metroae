@@ -1,7 +1,7 @@
 - include_role:
     name: check-skip-target-server
   vars:
-    - target_server_list: ["kvm", "vcenter", "aws", "openstack"]
+    - target_server_list: ["kvm", "vcenter", "aws"]
 
 - include_role:
     name: skip-actions
@@ -16,9 +16,7 @@
     name: check-node-running
   vars:
     do_reachability_checks: False
-  when:
-    - target_server_type is not match("aws")
-    - target_server_type is not match("openstack")
+  when: target_server_type is not match("aws")
 
 - import_tasks: kvm.yml
   when: target_server_type is match("kvm")
@@ -37,13 +35,6 @@
 
 - import_tasks: vcenter.yml
   when: target_server_type is match("vcenter")
-  static: no
-  tags:
-    - nsgv
-    - nsgv-predeploy
-
-- import_tasks: openstack.yml
-  when: target_server_type is match("openstack")
   static: no
   tags:
     - nsgv
