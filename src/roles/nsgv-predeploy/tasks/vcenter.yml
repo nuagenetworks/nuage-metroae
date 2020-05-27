@@ -42,7 +42,7 @@
 
     - name: Copy the ISO image to vcenter datastore
       vsphere_copy_ansible_issue_58168:
-            src: "{{ mktemp_output.stdout }}/user_image.iso"
+            src: "{{ mktemp_output.path }}/user_image.iso"
             path: "{{ vmname }}/user_image.iso"
             host: "{{ target_server }}"
             login: "{{ vcenter.username }}"
@@ -56,10 +56,9 @@
 
   - name: Configure vCenter path
     set_fact:
-      vcenter_path: >-
-        {{ target_server }}/{{ vcenter.datacenter }}/host/{{ vcenter.cluster }}
-        {{ (vcenter.host_reference != 'NONE') | ternary ('/' + vcenter.host_reference | urlencode, '') }}
-        {{ (vcenter.resource_pool != 'NONE') | ternary ('/Resources/' + vcenter.resource_pool | urlencode, '') }}
+      vcenter_path: "{{ target_server }}/{{ vcenter.datacenter }}/host/{{ vcenter.cluster }}\
+        {{ (vcenter.host_reference != 'NONE') | ternary ('/' + vcenter.host_reference | urlencode, '') }}\
+        {{ (vcenter.resource_pool != 'NONE') | ternary ('/Resources/' + vcenter.resource_pool | urlencode, '') }}"
 
   - name: Set power on when NSGv mac does not need to be set
     set_fact:

@@ -27,6 +27,7 @@
 * Change default NUH ram to 8 GB from 4 GB (METROAE-1355)
 * Upgrade pyYaml to 4.2b1 to address security vulnerability
 * Fixed deployment examples to have correct variable types (METROAE-1194)
+* Fixed undefined variable for nsgv-predeploy on vcenter
 
 ## Test Matrix
 
