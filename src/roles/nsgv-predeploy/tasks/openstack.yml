@@ -36,36 +36,6 @@
     state: directory
   delegate_to: localhost
 
-- block:
-
-  - name: Generate ISO file
-    create_zfb_profile:
-      nsgv_path: "{{ temp_dir }}"
-      fact_name: nsgv_already_configured
-      vsd_license_file: "{{ vsd_license_file }}"
-      vsd_auth: "{{ vsd_auth }}"
-      zfb_constants: "{{ zfb_constants }}"
-      zfb_proxy_user: "{{ zfb_proxy_user }}"
-      zfb_nsg: "{{ zfb_nsg }}"
-      zfb_ports: "{{ zfb_ports }}"
-      zfb_nsg_infra: "{{ zfb_nsg_infra }}"
-      zfb_vsc_infra: "{{ zfb_vsc_infra }}"
-    delegate_to: localhost
-
-  - name: Ensure NSGV has the correct configuration
-    assert:
-      that: "not nsgv_already_configured"
-      msg: "NSGV is already running, but there was no corresponding configuration for it."
-
-  - name: Copy the ISO image to images directory
-    copy: src="{{ temp_dir }}/user_image.iso"
-          dest="{{ vmname }}/user_image.iso"
-    delegate_to: localhost
-    #remote_user: "{{ target_server_username }}"
-    #become: "{{ 'no' if target_server_username == 'root' else 'yes' }}"
-
-  when: bootstrap_method is match('zfb_metro')
-
 - name: Create heat template
   template:
     src: openstack.j2
