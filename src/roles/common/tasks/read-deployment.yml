@@ -98,8 +98,8 @@
 
 - name: Verify that the VSC system name is not longer than 32 characters
   assert:
-    that: "'{{item.system_name|default(item.hostname)}}'|length <= 32"
-    msg: "'{{item.system_name|default(item.hostname)}}' is too long to be a valid VSC system name,
+    that: "'{{ item.system_name|default(item.hostname) }}'|length <= 32"
+    msg: "'{{ item.system_name|default(item.hostname) }}' is too long to be a valid VSC system name,
           please define a 'system_name' with up to 32 chars for {{ item.hostname }}"
   when: item.system_name is defined or item.hostname is defined
   with_items: "{{ vscs }}"
@@ -155,7 +155,8 @@
 
 - name: Validate that NSGVs ports are properly configured
   assert:
-    that: "{{ item.access_port_name is defined and item.access_ports is undefined }} or {{ item.access_port_name is undefined and item.access_ports is defined }}"
+    that: "{{ item.access_port_name is defined and item.access_ports is undefined }} or
+       {{ item.access_port_name is undefined and item.access_ports is defined }}"
     msg: "Incorrect configuration {{ item.vmname }} has both access_port_name and access_ports defined."
   with_items: "{{ nsgvs }}"
 
@@ -167,17 +168,17 @@
   - block:
 
     - name: Verify VSD DNS entries exist at server {{ dns_server_list[0] }}, and hostnames map to their m
-      include_tasks: check_dns.yml
+      include_tasks: check-dns.yml
       with_items: "{{ vsds }}"
       when: vsds is defined and vsds|length > 0
 
     - name: Verify VStat DNS entries exist at server {{ dns_server_list[0] }}, and hostnames map to their management IPs
-      include_tasks: check_dns.yml
+      include_tasks: check-dns.yml
       with_items: "{{ vstats }}"
       when: vstats is defined and vstats|length > 0
 
     - name: Verify VNS Utils DNS entries exist at server {{ dns_server_list[0] }}, and hostnames map to their IPs
-      include_tasks: check_dns.yml
+      include_tasks: check-dns.yml
       with_items: "{{ vnsutils }}"
       when: vnsutils is defined and vnsutils|length > 0
 

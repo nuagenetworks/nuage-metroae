@@ -3,7 +3,7 @@
     name: "{{ mgmt_ip }}"
     state: absent
   delegate_to: localhost
-  no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
+  no_log: True
   ignore_errors: True
 
 - name: Wait for DNS Utility VM ssh to be ready
@@ -25,23 +25,13 @@
   - name: Execute a yum update
     yum:
       name: '*'
-      state: latest
+      state: latest # noqa 403
     when: yum_update
 
   - name: Install ntp client on {{ target_server }}
-    yum: name=ntp state=latest
+    yum: name=ntp state=latest # noqa 403
 
   remote_user: "{{ dns_username }}"
-
-#- name: stop and flush firewall
-#  service :
-#    name: "firewalld"
-#    state: "stopped"
-
-#- name: disable firewall services for automatic start
-#  service :
-#    name:  "firewalld"
-#    enabled: no
 
 - name: Configure ntpd and ntpdate and local time zone
   include_role:
@@ -56,10 +46,10 @@
     service: name=network state=restarted
 
   - name: Install bind on {{ target_server }}
-    yum: name=bind state=latest
+    yum: name=bind state=latest # noqa 403
 
   - name: Install bind-utils on {{ target_server }}
-    yum: name=bind-utils state=latest
+    yum: name=bind-utils state=latest # noqa 403
 
   - name: Delete the /etc/named.conf file
     file:

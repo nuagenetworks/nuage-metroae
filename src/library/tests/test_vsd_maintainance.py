@@ -10,6 +10,7 @@ TEST_PARAMS = {
         "password": "csproot",
         "enterprise": "csp",
         "api_url": "https://localhost:8443"},
+    "vsd_version": "20.0.1",
     "state": "enabled"
 }
 
@@ -39,7 +40,7 @@ class TestVsdMaintainance(object):
         return mock_root
 
     def validate_session(self, import_patch):
-        import_patch.assert_called_once_with("vspk.v5_0")
+        import_patch.assert_called_once_with("vspk.v6")
         self.mock_vspk.NUVSDSession.assert_called_with(
             **TEST_PARAMS["vsd_auth"])
         self.mock_session.start.assert_called_with()
@@ -200,7 +201,7 @@ class TestVsdMaintainance(object):
 
         main()
 
-        import_patch.assert_called_once_with("vspk.v5_0")
+        import_patch.assert_called_once_with("vspk.v6")
         mock_module.fail_json.assert_called_once_with(
             msg='vspk is required for this module, or '
             'API version specified does not exist.', rc=1)
@@ -214,7 +215,7 @@ class TestVsdMaintainance(object):
 
         main()
 
-        import_patch.assert_called_once_with("vspk.v5_0")
+        import_patch.assert_called_once_with("vspk.v6")
         mock_module.fail_json.assert_called_once_with(
             msg="Could not establish connection to VSD cannot connect", rc=1)
 
@@ -229,7 +230,7 @@ class TestVsdMaintainance(object):
 
         main()
 
-        import_patch.assert_called_once_with("vspk.v5_0")
+        import_patch.assert_called_once_with("vspk.v6")
         mock_module.fail_json.assert_not_called()
         mock_module.exit_json.assert_called_once_with(
             rc=0, changed=True,
@@ -246,7 +247,7 @@ class TestVsdMaintainance(object):
 
         main()
 
-        import_patch.assert_called_once_with("vspk.v5_0")
+        import_patch.assert_called_once_with("vspk.v6")
         mock_module.fail_json.assert_called_once_with(
             msg="Could not set maintainance mode : "
             "[HTTP 400(save error)] save error", rc=1)
@@ -261,6 +262,6 @@ class TestVsdMaintainance(object):
 
         main()
 
-        import_patch.assert_called_once_with("vspk.v5_0")
+        import_patch.assert_called_once_with("vspk.v6")
         mock_module.fail_json.assert_called_once_with(
             msg="Could not set maintainance mode : cannot save", rc=1)

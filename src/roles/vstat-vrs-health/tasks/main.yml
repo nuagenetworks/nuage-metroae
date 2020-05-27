@@ -1,10 +1,13 @@
 ---
 - name: Checking stats connection info between vrs and vsd
   command: ovs-appctl ofproto/show alubr0
+  changed_when: False
   register: stats_info
 
 - name: Parse output of stats_info for vrs {{ inventory_hostname }}
-  local_action: command python {{ role_path }}/files/vstat_vrs_verify.py "{{stats_info.stdout}}"
+  command: python {{ role_path }}/files/vstat_vrs_verify.py "{{ stats_info.stdout }}"
+  changed_when: False
+  delegate_to: localhost
   register: output
 
 - name: Verification Result Failure Status

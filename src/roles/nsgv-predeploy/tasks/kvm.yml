@@ -29,12 +29,15 @@
 - block:
 
   - name: Create local temp directory
-    local_action: command mktemp -d "{{ lookup('env', 'TMPDIR') | default('/tmp/', true) }}ansible.XXXX"
+    tempfile:
+      state: directory
+      path: "{{ lookup('env', 'TMPDIR') | default('/tmp/', true) }}"
+    delegate_to: localhost
     register: mktemp_output
 
   - name: Generate ISO file
     create_zfb_profile:
-      nsgv_path: "{{ mktemp_output.stdout }}"
+      nsgv_path: "{{ mktemp_output.path }}"
       fact_name: nsgv_already_configured
       vsd_license_file: "{{ vsd_license_file }}"
       vsd_auth: "{{ vsd_auth }}"
@@ -52,7 +55,7 @@
       msg: "NSGV is already running, but there was no corresponding configuration for it."
 
   - name: Copy the ISO image to virt images directory
-    copy: src="{{ mktemp_output.stdout }}/user_image.iso"
+    copy: src="{{ mktemp_output.path }}/user_image.iso"
           dest={{ images_path }}/{{ vmname }}
           owner={{ libvirt.user }}
           group={{ libvirt.group }}
@@ -73,7 +76,7 @@
 - block:
 
   - name: Preallocate most of NSGV disk space to avoid pausing the VM, this also checks disk space
-    shell: "fallocate -x -l {{ nsgv_allocate_size_gb }}G {{ nsgv_dest }}"
+    command: "fallocate -x -l {{ nsgv_allocate_size_gb }}G {{ nsgv_dest }}"
     when: nsgv_allocate_size_gb > 0
 
   - name: Define and start VSD VM

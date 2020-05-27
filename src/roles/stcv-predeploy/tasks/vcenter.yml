@@ -34,11 +34,16 @@
 
 - name: Configure vCenter path
   set_fact:
-    vcenter_path: "vi://'{{ vcenter.username | urlencode }}':'{{ vcenter.password | urlencode }}'@{{ target_server }}/{{ vcenter.datacenter }}/host/{{ vcenter.cluster }}"
+    vcenter_path: "vi://'{{ vcenter.username | urlencode }}':'\
+      {{ vcenter.password | urlencode }}'@{{ target_server }}/\
+      {{ vcenter.datacenter }}/host/{{ vcenter.cluster }}"
 
 - name: Update vCenter path if resource pool is configured
   set_fact:
-    vcenter_path: "vi://'{{ vcenter.username | urlencode }}':'{{ vcenter.password | urlencode }}'@{{ target_server }}/{{ vcenter.datacenter }}/host/{{ vcenter.cluster }}/Resources/{{ vcenter.resource_pool | urlencode }}"
+    vcenter_path: "vi://'{{ vcenter.username | urlencode }}':'\
+      {{ vcenter.password | urlencode }}'@{{ target_server }}/\
+      {{ vcenter.datacenter }}/host/{{ vcenter.cluster }}/\
+      Resources/{{ vcenter.resource_pool | urlencode }}"
   when: vcenter.resource_pool != 'NONE'
 
 - name: Deploy STCv image on vCenter (Can take several minutes)
@@ -61,9 +66,10 @@
     --prop:"netmask={{ mgmt_netmask }}"
     --prop:"gwaddress={{ mgmt_gateway }}"
     --prop:"telnetd=off"
-    --prop:"ntp={{dns_server_list[0]}}"
+    --prop:"ntp={{ dns_server_list[0] }}"
     "{{ stcv_image_path }}/{{ stcv_image_filename }}"
     {{ vcenter_path }}
+  changed_when: True
 
 - name: Waiting until VMware tools becomes available
   connection: local
