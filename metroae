@@ -91,6 +91,9 @@ POSITIONAL=()
 CONTAINER_RUN_MODE="CONTAINER"
 REPO_RUN_MODE="REPO"
 INSIDE_RUN_MODE="INSIDE"
+CONFIG_SETUP_TYPE="c"
+DEPLOY_SETUP_TYPE="d"
+BOTH_SETUP_TYPE="b"
 
 function print_write_permission_warning {
     debug ${FUNCNAME[0]}
@@ -163,7 +166,7 @@ function source_container_config {
     if [[ -f $SETUP_FILE ]]; then
         source $SETUP_FILE
     else
-        METROAE_SETUP_TYPE="d"
+        METROAE_SETUP_TYPE=$DEPLOY_SETUP_TYPE
         METROAE_MOUNT_POINT="./"
     fi
     debug "${FUNCNAME[0]}: METROAE_SETUP_TYPE = $METROAE_SETUP_TYPE"
@@ -270,8 +273,7 @@ function check_docker {
     debug ${FUNCNAME[0]}
     set +e
 
-    echo ""
-    write_to_screen_and_script_log ">>> Checking docker version"
+    debug "${FUNCNAME[0]}: Checking docker version"
     if [[ -f $SCRIPT_LOG_FILE ]]; then
         if [ -w "$SCRIPT_LOG_FILE" ]; then
             docker --version >> $SCRIPT_LOG_FILE 2>> $SCRIPT_LOG_FILE
@@ -661,7 +663,7 @@ function run_container {
                 mount_args="$mount_args -v $IMAGES_MOUNT_POINT:/images:Z"
             fi
 
-            if [[ $METROAE_SETUP_TYPE == "c" ]]; then
+            if [[ $METROAE_SETUP_TYPE == $CONFIG_SETUP_TYPE ]]; then
                 levi_args="-e LEVISTATE_CONTAINER=1"
             else
                 levi_args=""
@@ -796,7 +798,7 @@ function setup_container {
     declare -l setup_type
     setup_type="init"
     if [[ -z $1 ]]; then
-        while [[ $setup_type != "c" ]] && [[ $setup_type != "d" ]] && [[ $setup_type != "b" ]] && [[ $setup_type != "" ]]
+        while [[ $setup_type != $CONFIG_SETUP_TYPE ]] && [[ $setup_type != $DEPLOY_SETUP_TYPE ]] && [[ $setup_type != $BOTH_SETUP_TYPE ]] && [[ $setup_type != "" ]]
         do
             echo ""
             write_to_screen_and_script_log "Setup can configure the container to support MetroAE (c)onfig, MetroAE (d)eploy,"
@@ -813,16 +815,16 @@ function setup_container {
         shift
     fi
 
-    if [[ $setup_type == "c" ]]; then
+    if [[ $setup_type == $CONFIG_SETUP_TYPE ]]; then
         echo ""
         write_to_screen_and_script_log ">>> Setup container for MetroAE config"
-    elif [[ $setup_type == "d" ]]; then
+    elif [[ $setup_type == $DEPLOY_SETUP_TYPE ]]; then
         echo ""
         write_to_screen_and_script_log ">>> Setup container for MetroAE deploy"
     else
         echo ""
         write_to_screen_and_script_log ">>> Setup container for both MetroAE config and deploy"
-        setup_type="b"
+        setup_type=$BOTH_SETUP_TYPE
     fi
 
     if [ -w "$SETUP_FILE" ]; then
@@ -1158,20 +1160,15 @@ function interactive {
 
 function docker_status {
     debug ${FUNCNAME[0]}
-    echo ""
-    write_to_screen_and_script_log ">>> Getting status of the MetroAE container"
+    debug ">>> Getting status of the MetroAE container"
     get_running_container_id
     if [[ ! -z $RUNNING_CONTAINER_ID ]]; then
-        echo ""
-        write_to_screen_and_script_log ">>> Getting the output of 'docker ps'"
-        echo ""
+        debug "${FUNCNAME[0]}: Getting the output of 'docker ps'"
         header=`docker ps -a | grep "IMAGE"`
         write_to_screen_and_script_log $header
         container_status=`docker ps -a | grep "$METRO_AE_IMAGE"`
         write_to_screen_and_script_log $container_status
-        echo ""
-        write_to_screen_and_script_log ">>> Getting the versions in the container itself"
-        echo ""
+        debug "${FUNCNAME[0]}: Getting the versions in the container itself"
         docker exec $RUNNING_CONTAINER_ID cat $CONTAINER_HOME/version
     else
         echo ""
@@ -1180,7 +1177,6 @@ function docker_status {
         echo "Please run 'metroae container setup' to setup a container. Quitting."
         exit 0
     fi
-    echo ""
 }
 
 function check_for_user_group {
@@ -1623,8 +1619,7 @@ function container_status {
     debug ${FUNCNAME[0]}
     docker_status
     if [[ -f $SETUP_FILE ]]; then
-        write_to_screen_and_script_log ">>> Using container configuration from host"
-        echo ""
+        debug "${FUNCNAME[0]}: Using container configuration from host"
         if [[ -z $METROAE_SETUP_TYPE ]]; then
             echo ""
             write_to_screen_and_script_log "We couldn't find the MetroAE setup type in the configuration file on disk."
@@ -1638,11 +1633,11 @@ function container_status {
             echo ""
             exit 1
         fi
-        if [[ $METROAE_SETUP_TYPE == "c" ]]; then
+        if [[ $METROAE_SETUP_TYPE == $CONFIG_SETUP_TYPE ]]; then
             current_setup_type="Config"
-        elif [[ $METROAE_SETUP_TYPE == "d" ]]; then
+        elif [[ $METROAE_SETUP_TYPE == $DEPLOY_SETUP_TYPE ]]; then
             current_setup_type="Deploy"
-        elif [[ $METROAE_SETUP_TYPE == "b" ]]; then
+        elif [[ $METROAE_SETUP_TYPE == $BOTH_SETUP_TYPE ]]; then
             current_setup_type="Both Config and Deploy"
         else
             echo ""
@@ -1652,15 +1647,7 @@ function container_status {
         fi
         write_to_screen_and_script_log "MetroAE setup type: $current_setup_type"
         write_to_screen_and_script_log "MetroAE container data directory: $METROAE_MOUNT_POINT"
-
-        if [[ ! -z "$METROAE_GUI_ENABLE" ]]; then
-            get_host_operating_system
-            if [[ $OS_RELEASE -eq $LINUX ]]; then
-                write_to_screen_and_script_log "MetroAE container GUI port: 5001"
-    	    else
-                write_to_screen_and_script_log "MetroAE container GUI port: $UI_PORT"
-            fi
-        fi
+        write_to_screen_and_script_log "MetroAE run mode: $RUN_MODE"
     else
         echo ""
         write_to_screen_and_script_log "MetroAE container setup file not found. Please run 'metroae container setup'"
@@ -1706,8 +1693,7 @@ function container_main {
 
     POSITIONAL=()
     exec=false
-    echo ""
-    write_to_screen_and_script_log ">>> Checking command options"
+    debug "${FUNCNAME[0]}: Checking command options"
     while [ $# -gt 0 ]
     do
         key=$1
@@ -1816,10 +1802,10 @@ function container_main {
     done
 
     if [[ $exec == true ]]; then
-        if [[ $METROAE_SETUP_TYPE == "c" ]]; then
+        if [[ $METROAE_SETUP_TYPE == $CONFIG_SETUP_TYPE ]]; then
             echo ""
             write_to_screen_and_script_log "Unrecognized command for a config-only setup: ${POSITIONAL[@]}."
-            echo "Execute 'metroae container setup' to change your setup type. Quitting."
+            echo "Execute 'metroae container setup' to change your setup type."
             echo ""
             echo ""
             main_help
@@ -1907,15 +1893,12 @@ function tools_main {
 
 function main_help {
     debug ${FUNCNAME[0]}
-    debug "${FUNCNAME[0]}: METROAE_SETUP_TYPE = $METROAE_SETUP_TYPE"
-    echo ""
-    echo "Nuage Networks Metro Automation Engine (MetroAE) Version:" $METROAE_VERSION
-    echo ""
+    help_header
     echo "MetroAE usage:"
     echo ""
     print_menu_help "metroae%-50s %-1s\n" $1
     echo ""
-    if [[ ! $METROAE_SETUP_TYPE == "c" ]]; then
+    if [[ ! $METROAE_SETUP_TYPE == $CONFIG_SETUP_TYPE ]]; then
         echo "[deployment] is the name of a deployment containing the required"
         echo "configuration files. The deployments are stored as directories under:"
         echo $DEPLOYMENTS_BASE_DIR
@@ -1923,7 +1906,7 @@ function main_help {
     fi
     echo "[options] include:"
     echo "  -h, --help:            Displays this help."
-    if [[ ! $METROAE_SETUP_TYPE == "c" ]]; then
+    if [[ ! $METROAE_SETUP_TYPE == $CONFIG_SETUP_TYPE ]]; then
         echo "  --ansible-help:        Displays help for ansible arguments."
         echo "  -v, -vv, -vvv, -vvvv:  Runs with increasing levels of verbosity."
         echo "  --list:                Shows a list of all supported workflows"
@@ -1962,9 +1945,7 @@ function main_help {
 
 function container_help {
     debug ${FUNCNAME[0]}
-    echo ""
-    echo "Nuage Networks Metro Automation Engine (MetroAE) Version:" $METROAE_VERSION
-    echo ""
+    help_header
     echo "MetroAE container usage:"
     echo ""
     print_menu_help "metroae%-50s %-1s\n" $1
@@ -1973,45 +1954,94 @@ function container_help {
 
 function config_help {
     debug ${FUNCNAME[0]}
-    echo ""
-    echo "Nuage Networks Metro Automation Engine (MetroAE) Version:" $METROAE_VERSION
-    echo ""
-    echo "MetroAE config is a tool that you can use to apply and manage day-zero configurations"
-    echo "for Nuage Networks VSD. MetroAE config is only available via the MetroAE container."
-    echo "You can execute 'metroae config', 'metroae config -h' or 'metroae config --help' to"
-    echo "print this help and usage message."
-    echo ""
-    echo "The output, below, contains a list of 'positional arguments' that are supported by"
-    echo "metroae config. You can execute 'metroae config <positional argument> -h' for help"
-    echo "with each positional argument, e.g. 'metroae config create -h'."
-    echo ""
-    echo "MetroAE config usage:"
-    echo ""
-    print_menu_help "metroae%-50s %-1s\n" $1
-    echo ""
-
-    get_running_container_id
-    if [[ -z $RUNNING_CONTAINER_ID ]]; then
+    if [[ $RUN_MODE == $REPO_RUN_MODE ]]; then
         echo ""
-        echo "The MetroAE container is not running. Full help text can only be accessed"
-        echo "when the container is running. Please execute 'metroae container start'"
-        echo "and try again."
-    elif [[ $NUM_CLI_ARGS == 1 ]]; then
-        docker_exec_config -h
+        echo "It looks like you are trying to get help for MetroAE config. The metroae command"
+        echo "appears to have been executed from a cloned workspace of the nuage-metroae github"
+        echo "repo. MetroAE config is only operated from the MetroAE container. Please change"
+        echo "your working directory and try again."
+        echo ""
+    elif [[ -z $METROAE_SETUP_TYPE ]]; then 
+        echo ""
+        echo "It looks like you are trying to get help for MetroAE config using the container."
+        echo "The MetroAE container setup type (config, deploy, or both) does not appear to be"
+        echo "configured. Please run 'metroae container setup' and try again."
+        echo ""
+    elif [[ $METROAE_SETUP_TYPE == $DEPLOY_SETUP_TYPE ]]; then 
+        echo ""
+        echo "It looks like you are trying to get help for MetroAE config using the container."
+        echo "The MetroAE container appears to have been setup for DEPLOY only. Please change"
+        echo "your setup type using 'metroae container setup' and try again."
+        echo ""
     else
-        # Remove the string "config"
-        docker_exec_config "${CLI_ARGS[@]:1}"
+        help_header
+        echo "MetroAE config is a tool that you can use to apply and manage day-zero configurations"
+        echo "for Nuage Networks VSD. MetroAE config is only available via the MetroAE container."
+        echo "You can execute 'metroae config', 'metroae config -h' or 'metroae config --help' to"
+        echo "print this help and usage message."
+        echo ""
+        echo "The output, below, contains a list of 'positional arguments' that are supported by"
+        echo "metroae config. You can execute 'metroae config <positional argument> -h' for help"
+        echo "with each positional argument, e.g. 'metroae config create -h'."
+        echo ""
+        echo "MetroAE config usage:"
+        echo ""
+        print_menu_help "metroae%-50s %-1s\n" $1
+        echo ""
+
+        get_running_container_id
+        if [[ -z $RUNNING_CONTAINER_ID ]]; then
+            echo ""
+            echo "The MetroAE container is not running. Full help text can only be accessed"
+            echo "when the container is running. Please execute 'metroae container start'"
+            echo "and try again."
+        elif [[ $NUM_CLI_ARGS == 1 ]]; then
+            docker_exec_config -h
+        else
+            # Remove the string "config"
+            docker_exec_config "${CLI_ARGS[@]:1}"
+        fi
     fi
 }
 
 function tools_help {
     debug ${FUNCNAME[0]}
+    if [[ ($RUN_MODE == $CONTAINER_RUN_MODE && $METROAE_SETUP_TYPE != $CONFIG_SETUP_TYPE) || $RUN_MODE == $REPO_RUN_MODE  ]]; then
+        help_header
+        echo "MetroAE tools usage:"
+        echo ""
+        print_menu_help "metroae%-50s %-1s\n" $1
+        echo ""
+    elif [[ -z $METROAE_SETUP_TYPE ]]; then 
+        echo ""
+        echo "It looks like you are trying to get help for MetroAE tools using the container."
+        echo "The MetroAE container setup type (config, deploy, or both) does not appear to be"
+        echo "configured. Please run 'metroae container setup' and try again."
+        echo ""
+    elif [[ $METROAE_SETUP_TYPE == $CONFIG_SETUP_TYPE ]]; then 
+        echo ""
+        echo "It looks like you are trying to get help for MetroAE tools using the container."
+        echo "The MetroAE container appears to have been setup for CONFIG only. Please change"
+        echo "your setup type using 'metroae container setup' and try again."
+        echo ""
+    fi
+}
+
+function help_header {
+    debug ${FUNCNAME[0]}
     echo ""
     echo "Nuage Networks Metro Automation Engine (MetroAE) Version:" $METROAE_VERSION
-    echo ""
-    echo "MetroAE tools usage:"
-    echo ""
-    print_menu_help "metroae%-50s %-1s\n" $1
+    echo "Run mode is" $RUN_MODE
+    if [[ ! -z  $METROAE_SETUP_TYPE ]]; then
+        if [[ $METROAE_SETUP_TYPE == $CONFIG_SETUP_TYPE ]]; then
+            current_setup_type="Config"
+        elif [[ $METROAE_SETUP_TYPE == $DEPLOY_SETUP_TYPE ]]; then
+            current_setup_type="Deploy"
+        else
+            current_setup_type="Both Config and Deploy"
+        fi
+        echo "Setup type is" $current_setup_type
+    fi
     echo ""
 }
 
@@ -2136,10 +2166,10 @@ case ${MATCH_MENU[2]} in
         echo ""
         echo ""
         main_help
-    elif [[ METROAE_SETUP_TYPE == "d" ]]; then
+    elif [[ METROAE_SETUP_TYPE == $DEPLOY_SETUP_TYPE ]]; then
         echo ""
         write_to_screen_and_script_log "'config' command is not supported in a deploy-only setup."
-        echo "Execute 'metroae container setup' to change your setup type. Quitting."
+        echo "Execute 'metroae container setup' to change your setup type."
         echo ""
         echo ""
         main_help
