@@ -1,0 +1,67 @@
+- name: Display if skipping VNSUtil  predeploy
+  debug:
+    msg:
+      - "******************************************************"
+      - "Skipping VNSUTIL predeploy because it is already present"
+      - "******************************************************"
+  when: vnsutil_present
+
+- block:
+
+  - name: Set local variable with vmname
+    set_fact:
+      vm_name: "{{ vmname }}"
+
+  - name: Get the public key for the current user
+    local_action: command cat "{{ user_ssh_pub_key }}"
+    register: current_user_ssh_key
+
+  - name: Set local temp directory name
+    set_fact:
+      temp_dir: "./ansible-heat-{{ inventory_hostname }}"
+
+  - name: Create local temp directory
+    file:
+      path: "{{ temp_dir }}"
+      state: directory
+    delegate_to: localhost
+
+  - name: Create heat template
+    template:
+      src: openstack.j2
+      dest: "{{ temp_dir }}/openstack.yml"
+    delegate_to: localhost
+
+  - name: Set heat template location
+    set_fact:
+      vnsutil_heat_template: "{{ temp_dir }}/openstack.yml"
+
+  - name: Creating VNSUTIL stack
+    register: create_stack
+    os_stack:
+      name: "{{ vm_name }}"
+      template: "{{ vnsutil_heat_template }}"
+      auth:
+        "{{ openstack_auth }}"
+      parameters:
+        vm_name: "{{ vm_name }}"
+        vnsutil_image: "{{ openstack_image }}"
+        vnsutil_flavor: "{{ openstack_flavor }}"
+        vnsutil_management_network: "{{ openstack_mgmt_network }}"
+        vnsutil_management_subnet: "{{ openstack_mgmt_subnet | default('NONE') }}"
+        vnsutil_data_network: "{{ openstack_data_network }}"
+        vnsutil_data_subnet: "{{ openstack_data_subnet | default('NONE') }}"
+        mgmt_ip: "{{ mgmt_ip }}"
+        data_ip: "{{ data_ip | default('NONE') }}"
+        ssh_key: "{{ current_user_ssh_key.stdout }}"
+    delegate_to: localhost
+
+  - debug: var=create_stack['stack']['outputs'][0]['output_value']
+
+  - name: Remove local temp folder
+    file:
+      path: "{{ temp_dir }}"
+      state: absent
+    delegate_to: localhost
+
+  when: not vnsutil_present
