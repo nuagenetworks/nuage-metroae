@@ -5,6 +5,7 @@ MetroAE can create and manage backups of selected components.  It is also capabl
 ## Currently Supported Components for Backup and Restore
 
 * VSD
+* VSC
 
 ## Backup Procedure
 
@@ -43,6 +44,10 @@ Restore can alternatively be performed with each step separately using:
     metroae restore vsds predeploy
     metroae restore vsds deploy
     metroae restore vsds postdeploy
+
+## TLS Configuration on VSC During Restore
+
+If xmpp_tls or openflow_tls is enabled within the `common.yml` deployment file during restore, any TLS configuration within the restored VSC configuration will be removed and readded.  This occurs because the TLS certificates are reobtained from the VSD immediately after the VSC backup config is reapplied during restore.  Any backup TLS configuration cannot be applied due to missing the original TLS certificates.  Note that changes are made in a temporary location and the original backup remains untouched.  When xmpp_tls and openflow_tls are both disabled, no modifications will be made during the restore. 
 
 ## Questions, Feedback, and Contributing  
 Get support via the [forums](https://devops.nuagenetworks.net/forums/) on the [MetroAE site](https://devops.nuagenetworks.net/).  
