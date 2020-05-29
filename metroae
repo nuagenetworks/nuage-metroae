@@ -795,6 +795,49 @@ function setup_container {
     fi
     set -e
 
+    if [[ -z $1 ]]; then
+        echo ""
+        write_to_screen_and_script_log "Data directory configuration"
+        echo ""
+        echo "The MetroAE container needs access to your user data. It gets access by internally"
+        echo "mounting a directory from the host. We refer to this as the 'data directory'."
+        echo "The data directory is where you will have deployments, templates, documentation,"
+        echo "and other useful files."
+        echo ""
+        echo "Please specify the full path to the data directory on the Docker host. Setup will"
+        echo "make sure that the path ends with 'metroae_data'. If the path you specify does"
+        echo "not end with 'metroae_data', setup will create it."
+        get_valid_data_dir
+
+        create_data_directory $USER_DATA_PATH
+
+        echo ""
+        write_to_screen_and_script_log "Data directory path set to: $USER_DATA_PATH"
+        echo ""
+    else
+        echo ""
+        valid_path=1
+        validate_directory $1
+        if [[ $valid_path -ne 0 ]]; then
+            exit 1
+        fi
+        write_to_screen_and_script_log ">>> Setting data directory path to passed in parameter $1"
+        shift
+    fi
+
+    METROAE_MOUNT_POINT=$USER_DATA_PATH
+    if [ -w "$SETUP_FILE" ]; then
+        sed -i '/^METROAE_MOUNT_POINT/d' $SETUP_FILE
+        echo METROAE_MOUNT_POINT=$METROAE_MOUNT_POINT >> $SETUP_FILE
+        debug "${FUNCNAME[0]}: METROAE_MOUNT_POINT=$METROAE_MOUNT_POINT"
+    else
+        echo ""
+        write_to_screen_and_script_log "We couldn't write data directory name to the MetroAE setup file ($SETUP_FILE)."
+        echo "Please ensure that the file has user:group ownership set to 'root:docker' and try again."
+        echo "You can also delete the file and re-run 'metroae container setup'. Quitting."
+        exit 1
+    fi
+
     declare -l setup_type
     setup_type="init"
     if [[ -z $1 ]]; then
@@ -833,46 +876,11 @@ function setup_container {
         debug "${FUNCNAME[0]}: METROAE_SETUP_TYPE=$setup_type"
     else
         echo ""
-        write_to_screen_and_script_log "We couldn't write to the MetroAE setup file ($SETUP_FILE). Please ensure"
-        write_to_screen_and_script_log "that the file has user:group ownership set to 'root:docker' and try again."
-        write_to_screen_and_script_log "You can also delete the file and re-run 'metroae container setup'. Quitting."
+        write_to_screen_and_script_log "We couldn't write setup type to the MetroAE setup file ($SETUP_FILE). Please ensure"
+        echo "that the file has user:group ownership set to 'root:docker' and try again."
+        echo "You can also delete the file and re-run 'metroae container setup'. Quitting."
         exit 1
     fi
-
-    if [[ -z $1 ]]; then
-        echo ""
-        write_to_screen_and_script_log "Data directory configuration"
-        echo ""
-        echo "The MetroAE container needs access to your user data. It gets access by internally"
-        echo "mounting a directory from the host. We refer to this as the 'data directory'."
-        echo "The data directory is where you will have deployments, templates, documentation,"
-        echo "and other useful files."
-        echo ""
-        echo "Please specify the full path to the data directory on the Docker host. Setup will"
-        echo "make sure that the path ends with 'metroae_data'. If the path you specify does"
-        echo "not end with 'metroae_data', setup will create it."
-        get_valid_data_dir
-
-        create_data_directory $USER_DATA_PATH
-
-        echo ""
-        write_to_screen_and_script_log "Data directory path set to: $USER_DATA_PATH"
-        echo ""
-    else
-        echo ""
-        valid_path=1
-        validate_directory $1
-        if [[ $valid_path -ne 0 ]]; then
-            exit 1
-        fi
-        write_to_screen_and_script_log ">>> Setting data directory path to passed in parameter $1"
-        shift
-    fi
-
-    METROAE_MOUNT_POINT=$USER_DATA_PATH
-    debug "${FUNCNAME[0]}: METROAE_MOUNT_POINT=$METROAE_MOUNT_POINT"
-    sed -i '/^METROAE_MOUNT_POINT/d' $SETUP_FILE
-    echo METROAE_MOUNT_POINT=$METROAE_MOUNT_POINT >> $SETUP_FILE
 
     # stop and remove existing container if any
     get_running_container_id
