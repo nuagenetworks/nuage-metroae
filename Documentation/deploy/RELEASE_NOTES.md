@@ -18,6 +18,7 @@
 * Added file check for nsgv_bootstrap.yml and example (METROAE-1379)
 * Make hostname optional for VSC
 * Add support for new Nuage version format, e.g. 20.6 (METROAE-1343)
+* Add support for deploying VNS Utils on Openstack
 
 ### Resolved Issues
 
@@ -27,6 +28,7 @@
 * Upgrade pyYaml to 4.2b1 to address security vulnerability
 * Fixed deployment examples to have correct variable types (METROAE-1194)
 * Fixed undefined variable for nsgv-predeploy on vcenter
+* Fix VCENTER upgrades using container
 
 ## Test Matrix
 
