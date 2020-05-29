@@ -1,0 +1,42 @@
+- name: Set local variable with vmname
+  set_fact:
+    vm_name: "{{ vmname }}"
+
+- name: Get VNSUTIL details from OpenStack
+  os_server_facts:
+    auth:
+      "{{ openstack_auth }}"
+    server: "{{ vm_name }}"
+  register: vnsutil_ip
+  delegate_to: localhost
+
+- name: Set vnsutil mgmt ip
+  set_fact:
+    vnsutil_mgmt_ip: "{{ vnsutil_ip['ansible_facts']['openstack_servers'][0]['addresses'][openstack_mgmt_network][0]['addr'] }}"
+
+- name: Wait for VNSUTIL ssh to be ready
+  include_role:
+    name: common
+    tasks_from: wait-for-ssh
+  vars:
+    ssh_host: "{{ vnsutil_mgmt_ip }}"
+    host_username: "{{ vnsutil_default_username }}"
+
+- block:
+
+  - name: Write ifcfg-eth0 file
+    template:
+      src: ifcfg-eth0.j2
+      dest: /etc/sysconfig/network-scripts/ifcfg-eth0
+      backup: no
+
+  - name: Write ifcfg-eth1 file
+    template:
+      src: ifcfg-eth1.j2
+      dest: /etc/sysconfig/network-scripts/ifcfg-eth1
+      backup: no
+
+  - name: Restart networking
+    command: /etc/init.d/network restart
+
+  remote_user: "{{ vnsutil_default_username }}"
