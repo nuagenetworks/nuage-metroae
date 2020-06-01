@@ -1,0 +1,15 @@
+- hosts: vrss
+  gather_facts: no
+  tasks:
+    - name: Renew TLS Certificates for VRS
+      include_role:
+        name: common
+        tasks_from: vsd-generate-transfer-certificates
+      vars:
+        certificate_password: "{{ compute_password | default(target_server_password) }}"
+        certificate_username: vrs-{{ inventory_hostname }}
+        commonName: vrs-{{ inventory_hostname }}
+        certificate_type: vrs
+        scp_user: "{{ compute_username | default(target_server_username) }}"
+        scp_location: "{{ client_keys_path }}"
+        additional_parameters:  -v {{ inventory_hostname }}

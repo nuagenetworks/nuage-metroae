@@ -1,0 +1,21 @@
+- hosts: vstats
+  gather_facts: no
+  tasks:
+    - name: Create temp directory
+      file:
+        path: /tmp/nginx-certs
+        state: directory
+      remote_user: "{{ vstat_custom_username | default(vstat_default_username) }}"
+
+    - name: Renew VSTAT certs
+      include_role:
+        name: common
+        tasks_from: vsd-renew-transfer-certificates
+      vars:
+        certificate_password: "{{ vstat_default_password }}"
+        certificate_username: "{{ inventory_hostname }}"
+        commonName: "{{ inventory_hostname }}"
+        certificate_type: server
+        scp_user: "{{ vstat_custom_username | default(vstat_default_username) }}"
+        scp_location: "/tmp/nginx-certs/"
+        additional_parameters:  -d {{ inventory_hostname }}
