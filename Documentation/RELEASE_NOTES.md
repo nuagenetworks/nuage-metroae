@@ -29,6 +29,7 @@
 * Fixed deployment examples to have correct variable types (METROAE-1194)
 * Fixed undefined variable for nsgv-predeploy on vcenter
 * Fix VCENTER upgrades using container
+* Fix CPU pinning for NUH and perform NTP sync (METROAE-1397)
 
 ## Test Matrix
 
