@@ -38,7 +38,7 @@
     - name: Write web interface result
       nuage_append: filename="{{ report_path }}" text="{{ webresult  | to_nice_json }}\n"
 
-#    - block:
+    - block:
 #
 #      - name: Setup VSS UI
 #        include_role:
@@ -47,21 +47,22 @@
 #        vars:
 #          certificate_action: generate
 #
-#      - name: Check VSS UI of vstat
-#        uri:
-#          url: https://{{ inventory_hostname }}:6200
-#          method: GET
-#          status_code: 200
-#          validate_certs: False
+      - name: Check VSS UI of vstat (ignoring errors)
+        uri:
+          url: https://{{ inventory_hostname }}:6200
+          method: GET
+          status_code: 200
+          validate_certs: False
 #        retries: 100
 #        delay: 30
-#        register: vss_ui_result
+        register: vss_ui_result
+        ignore_errors: True
 #        until: "'status' in vss_ui_result and vss_ui_result.status == 200"
 #
-#      - name: Write VSS UI result
-#        nuage_append: filename="{{ report_path }}" text="{{ vss_ui_result | to_nice_json }}\n"
+      - name: Write VSS UI result
+        nuage_append: filename="{{ report_path }}" text="{{ vss_ui_result | to_nice_json }}\n"
 #
-#      when: enable_vss_ui | default(False)
+      when: enable_vss_ui | default(False)
 #
     delegate_to: localhost
 
