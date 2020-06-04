@@ -90,10 +90,26 @@
     loop_var: vsd
   run_once: true
 
-- name: Renew VSTAT Certs and Enable VSS UI
-  include_role:
-    name: common
-    tasks_from: setup-vstat-vss-ui
-  vars:
-    certificate_action: renew
+- block:
+
+  - name: Renew VSTAT Certs and Enable VSS UI
+    include_role:
+      name: common
+      tasks_from: setup-vstat-vss-ui
+    vars:
+      certificate_action: renew
+
+  - name: Check VSS UI of vstat
+    uri:
+      url: https://{{ inventory_hostname }}:6200
+      method: GET
+      status_code: 200
+      validate_certs: False
+    retries: 100
+    delay: 30
+    register: vss_ui_result
+    until: "'status' in vss_ui_result and vss_ui_result.status == 200"
+
+  - debug: var=vss_ui_result
+
   when: enable_vss_ui | default(False)
