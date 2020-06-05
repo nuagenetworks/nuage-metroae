@@ -54,7 +54,7 @@ The MetroAE container is designed so that you run MetroAE workflows, e.g. instal
 ### SSH connection problems
 If MetroAE is unable to authenticate with your target server, chances are that passwordless ssh has not been configured properly. The public key of the container must be copied to the authorized_keys file on the target server. Use the `copy-ssh-id` command option, e.g. `metroae container copy-ssh-id user@host_name_or_ip`.
 
-### Where is my data directory?	
+### Where is my data directory?
 You can find out about the current state of your container, including the path to the metroae_data directory, by executing the container status command, `metroae container status`.
 
 ### General errors
@@ -93,7 +93,7 @@ networkArgs is '-p "UI Port":5001'
 
 ## Questions, Feedback, and Contributing
 Get support via the [forums](https://devops.nuagenetworks.net/forums/) on the [MetroAE site](https://devops.nuagenetworks.net/).
-Ask questions and contact us directly at [devops@nuagenetworks.net](mailto:deveops@nuagenetworks.net "send email to nuage-metro project").
+Ask questions and contact us directly at [devops@nuagenetworks.net](mailto:devops@nuagenetworks.net "send email to nuage-metro project").
 
 Report bugs you find and suggest new features and enhancements via the [GitHub Issues](https://github.com/nuagenetworks/nuage-metro/issues "nuage-metro issues") feature.
 
