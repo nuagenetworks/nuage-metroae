@@ -2,6 +2,8 @@
 
 ## Release info
 
+FIX read_deployment before you ship!
+
 * MetroAE Version 4.0.4
 * Nuage Release Alignment 20.5.R1
 * Date of Release 12-June-2020
