@@ -79,7 +79,7 @@ def format_api_version(version):
         return ('v6')
 
 
-def get_vsd_session(vsd_auth):
+def get_vsd_session(vsd_auth, vsd_version):
     version = format_api_version(vsd_version)
 
     global VSPK
