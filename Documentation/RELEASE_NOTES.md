@@ -2,9 +2,9 @@
 
 ## Release info
 
-* MetroAE Version 4.0.3
-* Nuage Release Alignment 6.0.5
-* Date of Release 15-May-2020
+* MetroAE Version 4.0.4
+* Nuage Release Alignment 20.5.R1
+* Date of Release 12-June-2020
 
 ## Release Contents
 
@@ -14,10 +14,7 @@
 
 ### Resolved Issues
 
-* Upgrade minimum Ansible version to 2.9.2 to eliminate security vulnerability (METROAE-1372)
-* Upgrade minimum PyYaml version to 4.2b1 to eliminate security vulnerability
-* Add missing OpenStack packages to container build
-* Fix skip_dns_resolution_tests flag that was being ignored
+* Support 20.5 Nuage Release
 
 ## Test Matrix
 

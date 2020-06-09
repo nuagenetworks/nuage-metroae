@@ -16,6 +16,11 @@ options:
       - VSD credentials to access VSD GUI
     required: true
     default: null
+  vsd_version:
+    description:
+      - VSD version
+    required: true
+    default: null
   required_days_left:
     description:
       - Required number of days left before license expiration (-1 for no check)
@@ -31,6 +36,7 @@ EXAMPLES = '''
       password: csproot
       enterprise: csp
       api_url: https://10.0.0.10:8443
+    vsd_version: 5.4.1
     required_days_left: 365
 '''
 
@@ -66,9 +72,15 @@ def check_licenses_expiration(licenses, required_days_left):
                                 days_left)
 
 
+def format_api_version(version):
+    if version.startswith('5'):
+        return ('v5_0')
+    else:
+        return ('v6')
+
+
 def get_vsd_session(vsd_auth):
-    # Format api version
-    version = 'v5_0'
+    version = format_api_version(vsd_version)
 
     global VSPK
     VSPK = importlib.import_module('vspk.{0:s}'.format(version))
@@ -81,16 +93,18 @@ def get_vsd_session(vsd_auth):
 
 def main():
     arg_spec = dict(vsd_auth=dict(required=True, type='dict'),
+                    vsd_version=dict(required=True, type='str'),
                     required_days_left=dict(required=True, type='int'))
     module = AnsibleModule(argument_spec=arg_spec, supports_check_mode=True)
 
     vsd_auth = module.params['vsd_auth']
+    vsd_version = module.params['vsd_version']
     required_days_left = module.params['required_days_left']
 
     valid = False
 
     try:
-        csproot = get_vsd_session(vsd_auth)
+        csproot = get_vsd_session(vsd_auth, vsd_version)
     except ImportError:
         module.fail_json(msg="vspk is required for this module, or "
                          "API version specified does not exist.")
