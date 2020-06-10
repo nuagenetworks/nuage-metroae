@@ -1,5 +1,15 @@
 - block:
 
+  - name: Check that the ejabberdctl file exists
+    stat:
+      path: /opt/ejabberd/bin/ejabberdctl
+    register: ejabberdctl_result
+
+  - name: Install ejabberdctl if not present
+    shell: "/opt/vsd/install/install_ejabberd.sh -9 /opt/vsd/Packages -x {{ vsd_fqdn }}"
+    when: not ejabberdctl_result.stat.exists
+    ignore_errors: true
+
   - name: Check is ejabberd license is expired
     command: /opt/ejabberd/bin/ejabberdctl license_info
     register: vsd_license_check
