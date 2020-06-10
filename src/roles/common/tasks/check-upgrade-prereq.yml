@@ -26,11 +26,13 @@
 
   - name: Strip off unnecessary characters from version string
     set_fact:
-      clean_version: "{{ upgrade_to_version | upper | regex_replace('R', '') }}"
+      clean_version: "{{ upgrade_to_version | upper | regex_replace('[R]', '') }}"
+
+  - debug: var=clean_version
 
   - name: Check that to version in OVA agrees with what has been set
     assert:
-      that: "vsd_version_from_ova.stdout is search(clean_version"
+      that: "vsd_version_from_ova.stdout is search(clean_version)"
       msg: >
         "VSD version mismatch between {{ image_path }}/{{ image_file_name }} "
         "({{ vsd_version_from_ova.stdout }}) and upgrade_to_version "
