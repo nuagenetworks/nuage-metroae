@@ -16,7 +16,7 @@
 
   - name: Check if ejabberd license is valid or new license file is provided
     assert: 
-      that: "license_check_before_renew.rc == 0 or vsd_ejabberd_license_file is defined is defined"
+      that: "license_check_before_renew.rc == 0 or vsd_ejabberd_license_file is defined"
       msg: "Ejabberd license check failed and vsd_ejabberd_license_file is not defined"
 
   - block:
@@ -52,6 +52,8 @@
       command: /opt/ejabberd/bin/ejabberdctl license_info
       register: license_check_after_renew
 
-    when: vsd_ejabberd_license_file is defined
+    when: 
+      - vsd_ejabberd_license_file is defined
+      - license_check_before_renew.rc != 0
 
   remote_user: "{{ vsd_default_username }}"
