@@ -8,45 +8,39 @@
   - name: Install ejabberdctl if not present
     shell: "/opt/vsd/install/install_ejabberd.sh -9 /opt/vsd/Packages -x {{ vsd_fqdn }}"
     when: not ejabberdctl_result.stat.exists
-    ignore_errors: true
 
   - name: Check is ejabberd license is expired
     command: /opt/ejabberd/bin/ejabberdctl license_info
     register: vsd_license_check
+    ignore_errors: true
 
   - block:
 
     - name: Get filename from file
       command: tar zcf orig_backup.tgz ejabberd.beam ejabberd_admin.beam ejabberd_c2s.beam ejabberd_cluster.beam ejabberd_config.beam ejabberd_listener.beam ejabberd_sm.beam
       args:
-        chdir: "/opt/ejabberd/lib/{{ vsd_ejabberd_license_file | basename }}/ebin"
-
-    - name: Copy the existing license files to root folder
-      copy:
-        src: "/opt/ejabberd/lib/{{ vsd_ejabberd_license_file | basename }}/ebin/license_nuagenetworks-3.2.*"
-        dest: "/root/"
-        remote_src: yes
+        chdir: "/opt/ejabberd/lib/ejabberd_nuagenetworks-3.2.16_10/ebin"
 
     - name: Copy new license file to 
       copy:
-        dest: "/opt/ejabberd/lib/{{ vsd_ejabberd_license_file | basename }}/ebin"
+        dest: "/root/"
         src: "{{ vsd_ejabberd_license_file }}"
 
     - name: Untar the new license files
-      command: "tar zxf /root/{{ vsd_ejabberd_license_file | basename }}.tgz"
+      command: "tar zxf /root/{{ vsd_ejabberd_license_file | basename }}"
       args:
-        chdir: "/opt/ejabberd/lib/{{ vsd_ejabberd_license_file | basename }}/ebin"
+        chdir: "/opt/ejabberd/lib/ejabberd_nuagenetworks-3.2.16_10/ebin"
 
     - name: Change ownership of licenses
       command: "chown ejabberd:hadoopusers ejabberd_license.beam ejabberd_cluster.beam ejabberd_c2s.beam ejabberd.beam ejabberd_sm.beam ejabberd_router.beam ejabberd_listener.beam"
       args:
-        chdir: "/opt/ejabberd/lib/{{ vsd_ejabberd_license_file | basename }}/ebin"
-      when: not(vsd_ejabberd_license_file | basename is search("3.2.13_5")
+        chdir: "/opt/ejabberd/lib/ejabberd_nuagenetworks-3.2.16_10/ebin"
+      when: not(vsd_ejabberd_license_file | basename is search("3.2.13_5"))
 
     - name: Change ownership of licenses
       command: "chown ejabberd:hadoopusers ejabberd_cluster.beam ejabberd_c2s.beam ejabberd.beam ejabberd_sm.beam ejabberd_router.beam ejabberd_listener.beam"
       args:
-        chdir: "/opt/ejabberd/lib/{{ vsd_ejabberd_license_file | basename }}/ebin"
+        chdir: "/opt/ejabberd/lib/ejabberd_nuagenetworks-3.2.16_10/ebin"
       when: vsd_ejabberd_license_file | basename is search("3.2.13_5")
 
     when: vsd_ejabberd_license_file is defined
