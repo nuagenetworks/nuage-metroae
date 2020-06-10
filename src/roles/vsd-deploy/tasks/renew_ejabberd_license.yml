@@ -20,11 +20,15 @@
       msg: "Ejabberd license check failed and vsd_ejabberd_license_file is not defined"
 
   - block:
+    
+    - name: Find the ejabberd base dir
+      command: find /opt/ejabberd/lib/ -type d -name "ejabberd_nuage*"
+      register: ejabberd_base_dir
 
     - name: Get filename from file
       command: tar zcf orig_backup.tgz ejabberd.beam ejabberd_admin.beam ejabberd_c2s.beam ejabberd_cluster.beam ejabberd_config.beam ejabberd_listener.beam ejabberd_sm.beam
       args:
-        chdir: "/opt/ejabberd/lib/ejabberd_nuagenetworks-3.2.16_10/ebin"
+        chdir: "{{ ejabberd_base_dir.stdout }}/ebin"
 
     - name: Copy new license file to 
       copy:
@@ -34,19 +38,19 @@
     - name: Untar the new license files
       command: "tar zxf /root/{{ vsd_ejabberd_license_file | basename }}"
       args:
-        chdir: "/opt/ejabberd/lib/ejabberd_nuagenetworks-3.2.16_10/ebin"
+        chdir: "{{ ejabberd_base_dir.stdout }}/ebin"
 
     - name: Change ownership of licenses
       command: "chown ejabberd:hadoopusers ejabberd_license.beam ejabberd_cluster.beam ejabberd_c2s.beam ejabberd.beam ejabberd_sm.beam ejabberd_router.beam ejabberd_listener.beam"
       args:
-        chdir: "/opt/ejabberd/lib/ejabberd_nuagenetworks-3.2.16_10/ebin"
-      when: not(vsd_ejabberd_license_file | basename is search("3.2.13_5"))
+        chdir: "{{ ejabberd_base_dir.stdout }}/ebin"
+      when: not(ejabberd_base_dir.stdout is search("3.2.13_5"))
 
     - name: Change ownership of licenses
       command: "chown ejabberd:hadoopusers ejabberd_cluster.beam ejabberd_c2s.beam ejabberd.beam ejabberd_sm.beam ejabberd_router.beam ejabberd_listener.beam"
       args:
-        chdir: "/opt/ejabberd/lib/ejabberd_nuagenetworks-3.2.16_10/ebin"
-      when: vsd_ejabberd_license_file | basename is search("3.2.13_5")
+        chdir: "{{ ejabberd_base_dir }}/ebin"
+      when: ejabberd_base_dir.stdout is search("3.2.13_5")
 
     - name: Check that new ejabberd license is valid
       command: /opt/ejabberd/bin/ejabberdctl license_info
