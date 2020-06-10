@@ -147,7 +147,7 @@ File name | Description
 [VAULT_ENCRYPT.md](Documentation/deploy/VAULT_ENCRYPT.md) | Safeguard sensitive data
 [DOCKER.md](Documentation/deploy/DOCKER.md) | Installing and using MetroAE Docker container
 [HOOKS_&_SKIPACTIONS.md](Documentation/deploy/HOOKS_&_SKIPACTIONS.md) | Configure ability to run custom commands in between playbooks and skip playbooks
-[VSD_SERVICES.md](Documentation/deploy/VSD_SERVICES.md) | Using MetroÆ to control VSD Services during maintenance
+[VSD_SERVICES.md](Documentation/deploy/VSD_SERVICES.md) | Using MetroAE to control VSD Services during maintenance
 [VSD_ROLLBACK_RESTORE.md](Documentation/deploy/VSD_ROLLBACK_RESTORE.md)| Roll Back or Restore VSD to original version outside normal upgrade path
 
 ## Questions, Feedback, and Contributing
