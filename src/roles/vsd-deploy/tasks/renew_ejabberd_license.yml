@@ -11,8 +11,13 @@
 
   - name: Check is ejabberd license is expired
     command: /opt/ejabberd/bin/ejabberdctl license_info
-    register: vsd_license_check
+    register: license_check_before_renew
     ignore_errors: true
+
+  - name: Check if ejabberd license is valid or new license file is provided
+    assert: 
+      that: "license_check_before_renew.rc == 0 or vsd_ejabberd_license_file is defined is defined"
+      msg: "Ejabberd license check failed and vsd_ejabberd_license_file is not defined"
 
   - block:
 
@@ -42,6 +47,10 @@
       args:
         chdir: "/opt/ejabberd/lib/ejabberd_nuagenetworks-3.2.16_10/ebin"
       when: vsd_ejabberd_license_file | basename is search("3.2.13_5")
+
+    - name: Check that new ejabberd license is valid
+      command: /opt/ejabberd/bin/ejabberdctl license_info
+      register: license_check_after_renew
 
     when: vsd_ejabberd_license_file is defined
 
