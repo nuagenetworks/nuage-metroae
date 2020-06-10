@@ -24,9 +24,18 @@
       netmask: "{{ item.mgmt_ip_prefix }}"
     with_items: "{{ nuhs }}"
 
-  - name: Create host_vars files for nuhs
-    template: src=nuhs.j2 backup=no dest={{ inventory_dir }}/host_vars/{{ item.hostname }}
-    with_items: "{{ nuhs }}"
+   - name: Create host_vars files for nuhs
+     include_tasks: write-host-files.yml
+     vars:
+       component_template: nuhs
+       component_hostname: "{{ component.mgmt_ip if component.hostname is not defined else component.hostname }}"
+     loop_control:
+       loop_var: component
+     with_items: "{{ nuhs }}"
+
+#  - name: Create host_vars files for nuhs
+#    template: src=nuhs.j2 backup=no dest={{ inventory_dir }}/host_vars/{{ item.hostname }}
+#    with_items: "{{ nuhs }}"
 
   - name: Verify NUH DNS entries exist and hostnames map to their IPs
     include_tasks: check-dns.yml
