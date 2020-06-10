@@ -9,9 +9,15 @@
     shell: "/opt/vsd/install/install_ejabberd.sh -9 /opt/vsd/Packages -x {{ vsd_fqdn }}"
     when: not ejabberdctl_result.stat.exists
 
+  - name: Start ejabberd service
+    command: /opt/ejabberd/bin/ejabberdctl start
+
   - name: Check is ejabberd license is expired
     command: /opt/ejabberd/bin/ejabberdctl license_info
     register: license_check_before_renew
+    retries: 5
+    until: "license_check_before_renew.rc == 0"
+    delay: 20
     ignore_errors: true
 
   - name: Check if ejabberd license is valid or new license file is provided
@@ -61,7 +67,7 @@
       register: license_check_after_renew
       retries: 5
       until: "license_check_after_renew.rc == 0"
-      delay: 30
+      delay: 20
 
     when: 
       - vsd_ejabberd_license_file is defined
