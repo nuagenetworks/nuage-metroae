@@ -30,7 +30,7 @@
       args:
         chdir: "{{ ejabberd_base_dir.stdout }}/ebin"
 
-    - name: Copy new license file to 
+    - name: Copy new license file to root folder on VSD
       copy:
         dest: "/root/"
         src: "{{ vsd_ejabberd_license_file }}"
@@ -52,9 +52,16 @@
         chdir: "{{ ejabberd_base_dir }}/ebin"
       when: ejabberd_base_dir.stdout is search("3.2.13_5")
 
+    - name: Start ejabberd
+      command: /opt/ejabberd/bin/ejabberdctl start
+      register: license_check_after_renew
+
     - name: Check that new ejabberd license is valid
       command: /opt/ejabberd/bin/ejabberdctl license_info
       register: license_check_after_renew
+      retries: 5
+      until: "license_check_after_renew.rc == 0"
+      delay: 30
 
     when: 
       - vsd_ejabberd_license_file is defined
