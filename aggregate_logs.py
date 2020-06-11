@@ -247,6 +247,28 @@ HTML_PAGE_STYLE = """
         transition-delay: 1s;
       }
 
+      /* Tooltip text */
+      .buttontooltip .tooltiptext {
+        visibility: hidden;
+        /*width: 120px;*/
+        background-color: #555;
+        color: #fff;
+        text-align: center;
+        padding: 5px 5px;
+        border-radius: 6px;
+        white-space: nowrap;
+
+        /* Position the tooltip text - see examples below! */
+        position: fixed;
+        z-index: 100;
+      }
+
+      .buttontooltip:hover .tooltiptext {
+        visibility: visible;
+        transition-delay: 1s;
+      }
+
+
       hr {
         border: 0;
         height: 1px;
@@ -291,8 +313,6 @@ HTML_PAGE_STYLE = """
         flex-direction: row;
         align-content: baseline;
         justify-content: flex-start;
-        order: 1;
-        -webkit-order: 1;
       }
 
       .logName {
@@ -412,21 +432,36 @@ HTML_PAGE_BODY = """
               <div
                 id="loading"
                 class="loader"
-                style="order: 1; -webkit-order: 1;"
               ></div>
             </div>
           </filesPane>
       </sideBar>
 
       <pageControls>
-        <button class="pageButton" onclick="gotoPage('first')">&#x2912;</button>
-        <button class="pageButton" onclick="gotoPage('bigup')">&#x219F;</button>
-        <button class="pageButton" onclick="gotoPage('prev')">&#8593;</button>
-        <button class="pageButton" onclick="gotoPage('next')">&#8595;</button>
-        <button class="pageButton" onclick="gotoPage('bigdown')">
-          &#x21A1;
-        </button>
-        <button class="pageButton" onclick="gotoPage('last')">&#x2913;</button>
+        <div class="buttontooltip">
+          <button class="pageButton" onclick="gotoPage('first')">&#x2912;</button>
+          <span class="tooltiptext">First page</span>
+        </div>
+        <div class="buttontooltip">
+          <button class="pageButton" onclick="gotoPage('bigup')">&#x219F;</button>
+          <span class="tooltiptext">Ten percent up</span>
+        </div>
+        <div class="buttontooltip">
+          <button class="pageButton" onclick="gotoPage('prev')">&#8593;</button>
+          <span class="tooltiptext">Page up</span>
+        </div>
+        <div class="buttontooltip">
+          <button class="pageButton" onclick="gotoPage('next')">&#8595;</button>
+          <span class="tooltiptext">Page down</span>
+        </div>
+        <div class="buttontooltip">
+          <button class="pageButton" onclick="gotoPage('bigdown')">&#x21A1;</button>
+          <span class="tooltiptext">Ten percent down</span>
+        </div>
+        <div class="buttontooltip">
+          <button class="pageButton" onclick="gotoPage('last')">&#x2913;</button>
+          <span class="tooltiptext">Last page</span>
+        </div>
       </pageControls>
 
       <logPane>
@@ -481,15 +516,16 @@ HTML_PAGE_SCRIPT_FOOTERS = """
       var fileRowElems = [];
 
       var fileListTemplate =
-        '<div id="file_row_--index--" class="fileRow highlight_--index--" ' +
-        'style="background-color: --color--; order: 1; -webkit-order: 1;" ' +
+        '<div id="file_row--active--_--index--" ' +
+        'class="fileRow highlight_--index--" ' +
+        'style="background-color: --color--; display: flex;" ' +
         'onmouseover="logHighlight(--index--, true)" ' +
         'onmouseout="logHighlight(--index--, false)">\\n' +
         "<div>\\n" +
         '<div class="slideToggle">\\n' +
-        '  <input class="toggle" type="checkbox" id="toggle_--index--" ' +
-        'onclick="handleToggle()" checked />\\n' +
-        '  <label for="toggle_--index--"></label>\\n' +
+        '  <input class="toggle" type="checkbox" id="toggle--active--_--index--" ' +
+        'onclick="handleToggle(this.checked, --index--)" checked />\\n' +
+        '  <label for="toggle--active--_--index--"></label>\\n' +
         "</div>\\n" +
         "</div>\\n" +
         '<div class="logName tooltip">\\n' +
@@ -565,7 +601,8 @@ HTML_PAGE_SCRIPT_FOOTERS = """
         checkAndResetFind();
         curWriteFindIndex = 0;
 
-        resetFileRowOrder();
+        hideAllActiveFileRows();
+        resetHighlights();
 
         var logsElem = get("logText");
 
@@ -585,7 +622,7 @@ HTML_PAGE_SCRIPT_FOOTERS = """
         var logIndex = lines[filtered[lineNum]];
         var line = lines[filtered[lineNum] + 1];
 
-        moveUpFileRowOrder(logIndex);
+        revealActiveFileRow(logIndex);
 
         if (curFindIndex != -1) {
           line = formatSelectLine(line, lineNum);
@@ -646,40 +683,50 @@ HTML_PAGE_SCRIPT_FOOTERS = """
         }
       }
 
+      function writeLogFileRow(i, active) {
+        var baseName = files[i].split("/");
+        baseName = baseName[baseName.length - 1];
+        var fileItem = fileListTemplate.replace(/--name--/g, baseName);
+        fileItem = fileItem.replace(/--active--/g, active);
+        fileItem = fileItem.replace(/--index--/g, i);
+        fileItem = fileItem.replace(/--path--/g, files[i]);
+        fileItem = fileItem.replace(/--color--/g, getLineColor(i, false));
+        return fileItem;
+      }
+
       function writeLogFileList() {
         var fileListElem = get("fileList");
         var fileList = "";
 
         for (var i = 0; i < files.length; i++) {
-          var baseName = files[i].split("/");
-          baseName = baseName[baseName.length - 1];
-          var fileItem = fileListTemplate.replace(/--name--/g, baseName);
-          fileItem = fileItem.replace(/--index--/g, i);
-          fileItem = fileItem.replace(/--path--/g, files[i]);
-          fileItem = fileItem.replace(/--color--/g, getLineColor(i, false));
-          fileList += fileItem;
+          fileList += writeLogFileRow(i, "_active");
+        }
+        fileList += "<div><hr/></div>";
+        for (var i = 0; i < files.length; i++) {
+          fileList += writeLogFileRow(i, "");
         }
         fileListElem.innerHTML = fileList;
       }
 
-      function resetFileRowOrder() {
+      function hideAllActiveFileRows() {
         for (var i = 0; i < files.length; i++) {
-          fileRowElems[i] = get("file_row_" + i);
-          fileRowElems[i].style["order"] = 1;
-          fileRowElems[i].style["-webkit-order"] = 1;
+          fileRowElems[i] = get("file_row_active_" + i);
+          fileRowElems[i].style["display"] = "none";
         }
       }
 
-      function moveUpFileRowOrder(logIndex) {
-        fileRowElems[logIndex].style["order"] = 0;
-        fileRowElems[logIndex].style["-webkit-order"] = 0;
+      function revealActiveFileRow(logIndex) {
+        fileRowElems[logIndex].style["display"] = "flex";
       }
 
-      function handleToggle() {
-        for (var i = 0; i < files.length; i++) {
-          toggle = get("toggle_" + i);
-          toggles[i] = toggle.checked;
+      function handleToggle(on, index) {
+        toggle = get("toggle_" + index);
+        toggle.checked = on;
+        toggle = get("toggle_active_" + index);
+        if (toggle) {
+          toggle.checked = on;
         }
+        toggles[index] = on;
         filterLines();
       }
 
@@ -841,7 +888,12 @@ HTML_PAGE_SCRIPT_FOOTERS = """
         findNumLines = filtered.length;
         findCurPage = 0;
         curFindIndex = -1;
-        updateFindStatus();
+        var status = get("findStatus");
+        if (findString == "") {
+          status.innerHTML = "";
+        } else {
+          status.innerHTML = "(Find results reset)";
+        }
       }
 
       function checkAndResetFind() {
@@ -871,7 +923,7 @@ HTML_PAGE_SCRIPT_FOOTERS = """
           if (findString == "") {
             status.innerHTML = "";
           } else {
-            status.innerHTML = "Found None";
+            status.innerHTML = "(No results found)";
           }
         }
       }
@@ -956,6 +1008,12 @@ HTML_PAGE_SCRIPT_FOOTERS = """
         }
       }
 
+      function resetHighlights() {
+        for (var i = 0; i < files.length; i++) {
+          logHighlight(i, false);
+        }
+      }
+
       function handleAllToggle(on) {
         for (var i = 0; i < files.length; i++) {
           toggles[i] = on;
@@ -972,7 +1030,7 @@ HTML_PAGE_SCRIPT_FOOTERS = """
       document.body.onload = function () {
         writeLogFileList();
 
-        handleToggle();
+        handleAllToggle(true);
 
         var logsElem = get("logConsole");
         logsElem.onscroll = handleScroll;
