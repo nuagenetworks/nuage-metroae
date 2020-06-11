@@ -30,7 +30,8 @@
 * Fixed undefined variable for nsgv-predeploy on vcenter
 * Fix VCENTER upgrades using container
 * Fix CPU pinning for NUH and perform NTP sync (METROAE-1397)
-* Fixed fallocate flag issue during vsc predeploy.
+* Fix missing fallocate flag during vsc predeploy
+
 ## Test Matrix
 
 This release was tested according to the following test matrix. Other combinations and versions have been tested in previous releases of MetroAE and are likely to work. We encourage you to test this in your lab before you apply it in production.
