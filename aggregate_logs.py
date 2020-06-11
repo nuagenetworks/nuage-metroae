@@ -236,8 +236,10 @@ HTML_PAGE_STYLE = """
         white-space: nowrap;
 
         /* Position the tooltip text - see examples below! */
-        position: absolute;
-        z-index: 1;
+        bottom: 0px;
+        left: 0px;
+        position: fixed;
+        z-index: 100;
       }
 
       .tooltip:hover .tooltiptext {
@@ -260,10 +262,17 @@ HTML_PAGE_STYLE = """
         background-image: -o-linear-gradient(left, #202020, #e0e0e0, #202020);
       }
 
-      filesPane {
+      sideBar {
         width: 20%;
         height: 100%;
+        overflow: hidden;
+      }
+
+      filesPane {
+        width: 100%;
+        height: 100%;
         overflow: scroll;
+        display: block;
       }
 
       #fileList {
@@ -271,6 +280,8 @@ HTML_PAGE_STYLE = """
         flex-direction: column;
         align-content: center;
         justify-content: center;
+        overflow: scroll;
+
       }
 
       .fileRow {
@@ -386,24 +397,26 @@ HTML_PAGE_STYLE = """
 
 HTML_PAGE_BODY = """
     <screen>
-      <filesPane>
-        <div id="fileList">
-          <div class="fileRow">
+      <sideBar>
+          <div>
             <button onclick="debounce(handleAllToggle(true))">All ON</button>
             <button onclick="debounce(handleAllToggle(false))">All OFF</button>
           </div>
 
-          <div class="fileRow">
-            <hr class="style" />
+          <div>
+            <hr/>
           </div>
 
-          <div
-            id="loading"
-            class="loader"
-            style="order: 1; -webkit-order: 1;"
-          ></div>
-        </div>
-      </filesPane>
+          <filesPane>
+            <div id="fileList">
+              <div
+                id="loading"
+                class="loader"
+                style="order: 1; -webkit-order: 1;"
+              ></div>
+            </div>
+          </filesPane>
+      </sideBar>
 
       <pageControls>
         <button class="pageButton" onclick="gotoPage('first')">&#x2912;</button>
@@ -466,15 +479,6 @@ HTML_PAGE_SCRIPT_FOOTERS = """
       var findNumLines = 0;
 
       var fileRowElems = [];
-
-      var fileListHeading =
-        '<div class="fileRow" style="order: -2; -webkit-order: -2;">\\n' +
-        '<button onclick="handleAllToggle(true)">All ON</button>\\n' +
-        '<button onclick="handleAllToggle(false)">All OFF</button>\\n' +
-        "</div>\\n" +
-        '<div class="fileRow" style="order: -1; -webkit-order: -1;">\\n' +
-        '    <hr class="style">\\n' +
-        "</div>\\n";
 
       var fileListTemplate =
         '<div id="file_row_--index--" class="fileRow highlight_--index--" ' +
@@ -540,7 +544,7 @@ HTML_PAGE_SCRIPT_FOOTERS = """
         var sat = 100;
         var lum = 15;
         if (highlighted) {
-          lum = 25;
+          lum = 35;
         }
 
         numLogFiles = files.length;
@@ -587,9 +591,7 @@ HTML_PAGE_SCRIPT_FOOTERS = """
           line = formatSelectLine(line, lineNum);
         }
         return (
-          "<div class='logLine highlight_" +
-          logIndex +
-          "' style='background-color: " +
+          "<div class='logLine' style='background-color: " +
           getLineColor(logIndex, false) +
           "' onmouseover='logHighlight(" +
           logIndex +
@@ -646,7 +648,7 @@ HTML_PAGE_SCRIPT_FOOTERS = """
 
       function writeLogFileList() {
         var fileListElem = get("fileList");
-        var fileList = fileListHeading;
+        var fileList = "";
 
         for (var i = 0; i < files.length; i++) {
           var baseName = files[i].split("/");
