@@ -9,21 +9,21 @@
     shell: "/opt/vsd/install/install_ejabberd.sh -9 /opt/vsd/Packages -x {{ vsd_fqdn }}"
     when: not ejabberdctl_result.stat.exists
 
-  - name: Find the ejabberd base dir
+  - name: Find the ejabberd base directory
     command: find /opt/ejabberd/lib/ -type d -name "ejabberd_nuage*"
     register: ejabberd_base_dir
 
-  - name: Get filename from file
+  - name: Backup the current license files for ejabberd
     command: tar zcf orig_backup.tgz ejabberd.beam ejabberd_admin.beam ejabberd_c2s.beam ejabberd_cluster.beam ejabberd_config.beam ejabberd_listener.beam ejabberd_sm.beam
     args:
       chdir: "{{ ejabberd_base_dir.stdout }}/ebin"
 
-  - name: Copy new license file to root folder on VSD
+  - name: Copy new ejabberd license file to root folder on VSD
     copy:
       dest: "/root/"
       src: "{{ vsd_ejabberd_license_file }}"
 
-  - name: Untar the new license files
+  - name: Untar the new ejabberd license file
     command: "tar zxf /root/{{ vsd_ejabberd_license_file | basename }}"
     args:
       chdir: "{{ ejabberd_base_dir.stdout }}/ebin"
@@ -34,7 +34,7 @@
       chdir: "{{ ejabberd_base_dir.stdout }}/ebin"
     when: not(ejabberd_base_dir.stdout is search("3.2.13_5"))
 
-  - name: Change ownership of licenses
+  - name: Change ownership of licenses for version 3.2.13_5
     command: "chown ejabberd:hadoopusers ejabberd_cluster.beam ejabberd_c2s.beam ejabberd.beam ejabberd_sm.beam ejabberd_router.beam ejabberd_listener.beam"
     args:
       chdir: "{{ ejabberd_base_dir }}/ebin"
