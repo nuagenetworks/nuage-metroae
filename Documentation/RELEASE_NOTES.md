@@ -17,6 +17,7 @@ FIX read_deployment before you ship!
 ### Resolved Issues
 
 * Support 20.5 Nuage Release
+* Support Ejabberd license install
 
 ## Test Matrix
 
