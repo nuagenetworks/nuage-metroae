@@ -91,7 +91,9 @@
       shell: ip netns exec External ip addr list | grep eth2
       when: external_interfaces is defined and external_interfaces|length > 0
 
-    when: internal_ip is defined
+    when: 
+      - internal_ip is defined
+      - not skip_vsd_installed_check
 
   - block:
 
@@ -109,6 +111,7 @@
     include_role:
       name: common
       tasks_from: vsd-generate-transfer-certificates
+    when: not skip_vsd_installed_check
     vars:
       certificate_password: "{{ nuh_default_password }}"
       certificate_username: "{{ inventory_hostname }}"

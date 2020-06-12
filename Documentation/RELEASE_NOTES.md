@@ -18,6 +18,7 @@
 * Added file check for nsgv_bootstrap.yml and example (METROAE-1379)
 * Make hostname optional for VSC
 * Add support for new Nuage version format, e.g. 20.6 (METROAE-1343)
+* Support NUH install when VSD is not installed (METROAE-1357)
 * Add support for deploying VNS Utils on Openstack
 
 ### Resolved Issues
@@ -31,6 +32,7 @@
 * Fix VCENTER upgrades using container
 * Fix CPU pinning for NUH and perform NTP sync (METROAE-1397)
 * Support Ejabberd license install
+* Fix missing fallocate flag during vsc predeploy
 
 ## Test Matrix
 
