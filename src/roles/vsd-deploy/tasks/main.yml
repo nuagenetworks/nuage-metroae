@@ -15,6 +15,10 @@
     ssh_host: "{{ hostname }}"
     host_username: "{{ vsd_default_username }}"
 
+- name: Set hostname for Openstack permanently
+  shell: "echo {{ hostname }} > /etc/hostname"
+  when: target_server_type is match("openstack")
+
 - name: Renew VSD ejabberd license
   import_tasks: renew_ejabberd_license.yml
 
@@ -67,10 +71,6 @@
       shell: "echo {{ hostname }} > /etc/hostname"
 
     when: target_server_type is match("aws")
-
-  - name: Set hostname for Openstack permanently
-    shell: "echo {{ hostname }} > /etc/hostname"
-    when: target_server_type is match("openstack")
 
   - name: Set Major, Minor and Patch VSD version
     set_fact:
