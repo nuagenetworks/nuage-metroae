@@ -1178,29 +1178,6 @@ function interactive {
     docker_exec_interactive /bin/bash
 }
 
-function docker_status {
-    debug ${FUNCNAME[0]}
-    debug ">>> Getting status of the MetroAE container"
-    get_running_container_id
-    if [[ ! -z $RUNNING_CONTAINER_ID ]]; then
-        write_to_screen_and_script_log "MetroAE Container Status:"
-        echo ""
-        debug "${FUNCNAME[0]}: Getting the output of 'docker ps'"
-        header=`docker ps -a | grep "IMAGE"`
-        write_to_screen_and_script_log "$header"
-        container_status=`docker ps -a | grep "$METRO_AE_IMAGE"`
-        write_to_screen_and_script_log "$container_status"
-        debug "${FUNCNAME[0]}: Getting the versions in the container itself"
-        docker exec $RUNNING_CONTAINER_ID cat $CONTAINER_HOME/version
-    else
-        echo ""
-        write_to_screen_and_script_log "The MetroAE container is not running."
-        echo "Please run 'metroae container start' to restart a stopped container."
-        echo "Please run 'metroae container setup' to setup a container. Quitting."
-        exit 0
-    fi
-}
-
 function check_for_user_group {
     debug ${FUNCNAME[0]}
     uid=`id -u`
@@ -1639,7 +1616,19 @@ function gen_example_from_schema {
 
 function container_status {
     debug ${FUNCNAME[0]}
-    docker_status
+    get_running_container_id
+    if [[ ! -z $RUNNING_CONTAINER_ID ]]; then
+        write_to_screen_and_script_log "MetroAE Container Status:"
+        echo ""
+        debug "${FUNCNAME[0]}: Getting the versions in the container itself"
+        docker exec $RUNNING_CONTAINER_ID cat $CONTAINER_HOME/version
+    else
+        echo ""
+        write_to_screen_and_script_log "The MetroAE container is not running."
+        echo "Please run 'metroae container start' to restart a stopped container."
+        echo "Please run 'metroae container setup' to setup a container. Quitting."
+        exit 0
+    fi
     if [[ -f $SETUP_FILE ]]; then
         debug "${FUNCNAME[0]}: Using container configuration from host"
         if [[ -z $METROAE_SETUP_TYPE ]]; then
@@ -1676,6 +1665,15 @@ function container_status {
         echo "and try again. Quitting."
         echo ""
         exit 1
+    fi
+    if [[ ! -z $RUNNING_CONTAINER_ID ]]; then
+        write_to_screen_and_script_log "Docker information:"
+        echo ""
+        debug "${FUNCNAME[0]}: Getting the output of 'docker ps'"
+        header=`docker ps -a | grep "IMAGE"`
+        write_to_screen_and_script_log "$header"
+        container_status=`docker ps -a | grep "$METRO_AE_IMAGE"`
+        write_to_screen_and_script_log "$container_status"
     fi
 }
 
