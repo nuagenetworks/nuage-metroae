@@ -31,6 +31,7 @@
 * Fixed undefined variable for nsgv-predeploy on vcenter
 * Fix VCENTER upgrades using container
 * Fix CPU pinning for NUH and perform NTP sync (METROAE-1397)
+* Support Ejabberd license install
 * Fix missing fallocate flag during vsc predeploy
 
 ## Test Matrix
