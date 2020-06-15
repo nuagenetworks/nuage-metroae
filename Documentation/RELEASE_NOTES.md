@@ -18,8 +18,9 @@
 * Added file check for nsgv_bootstrap.yml and example (METROAE-1379)
 * Make hostname optional for VSC
 * Add support for new Nuage version format, e.g. 20.6 (METROAE-1343)
-* Add support for deploying VNS Utils on Openst
-* Added a restriction for vsc_fallocate_size_gb to 1GB, and skip fallocate if its 0 
+* Support NUH install when VSD is not installed (METROAE-1357)
+* Add support for deploying VNS Utils on Openstack
+* Added a restriction for vsc_fallocate_size_gb to 1GB and skip if the value is 0
 ### Resolved Issues
 
 * Remove redundant "vcpu" tag from KVM XML
@@ -29,7 +30,11 @@
 * Fixed deployment examples to have correct variable types (METROAE-1194)
 * Fixed undefined variable for nsgv-predeploy on vcenter
 * Fix VCENTER upgrades using container
-* Fix CPU pinning for NUH and perform NTP sync (METROAE-1397)# Test Matrix
+* Fix CPU pinning for NUH and perform NTP sync (METROAE-1397)
+* Support Ejabberd license install
+* Fix missing fallocate flag during vsc predeploy
+
+## Test Matrix
 
 This release was tested according to the following test matrix. Other combinations and versions have been tested in previous releases of MetroAE and are likely to work. We encourage you to test this in your lab before you apply it in production.
 
