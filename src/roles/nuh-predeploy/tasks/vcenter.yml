@@ -53,18 +53,29 @@
       name: common
       tasks_from: vcenter-deploy-image
 
-  - name: Waiting until VMware tools become available
+  - name: Finding VM folder
     connection: local
-    vmware_guest_tools_wait:
+    vmware_guest_find:
       hostname: "{{ target_server }}"
       username: "{{ vcenter.username }}"
       password: "{{ vcenter.password }}"
-      name: "{{ vm_name }}"
+      name: "{{ vmname }}"
+      validate_certs: no
+    register: nuh_vm_folder
+
+  - name: Gathering info on VM
+    connection: local
+    vmware_guest_info:
+      hostname: "{{ target_server }}"
+      username: "{{ vcenter.username }}"
+      password: "{{ vcenter.password }}"
       datacenter: "{{ vcenter.datacenter }}"
+      folder: "/{{ vcenter.datacenter }}{{ nuh_vm_folder['folders'][0] }}"
+      name: "{{ vmname }}"
       validate_certs: no
     register: nuh_vm_facts
 
-  - debug: var=nuh_vm_facts
+  - debug: var=nuh_vm_facts verbosity=1
 
   - name: Setup networking on NUH
     include_role:
