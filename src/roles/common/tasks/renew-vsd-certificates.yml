@@ -9,13 +9,8 @@
   - name: Run when sa
     block:
 
-    - name: Renew standalone VSD certificate for >= 20.5.1
+    - name: Renew standalone VSD certificate
       shell: yes yes | /opt/vsd/bin/vsd-renew-certs.sh
-      when: vsd_version.stdout is version('20.5.1', '>=')
-
-    - name: Renew standalone VSD certificate for < 20.5.1
-      command: /opt/vsd/bin/vsd-renew-certs.sh
-      when: vsd_version.stdout is version('20.5.1', '<')
 
     - name: Verify if VSD TLS mode is set to allow
       command: /opt/vsd/bin/ejmode status
@@ -63,18 +58,10 @@
   - name: Run when ha
     block:
 
-    - name: Renew VSD1 certificate for >= 6.0.7
+    - name: Renew VSD1 certificate
       shell: yes yes | /opt/vsd/bin/vsd-renew-certs.sh
-      when: vsd_version.stdout is version('6.0.7', '>=')
       delegate_to: "{{ item }}"
       with_items: "{{ groups['vsd_ha_node1'][0] }}"
-
-    - name: Renew standalone VSD certificate < 6.0.7
-      command: /opt/vsd/bin/vsd-renew-certs.sh
-      when: vsd_version.stdout is version('6.0.7', '<')
-      delegate_to: "{{ item }}"
-      with_items: "{{ groups['vsd_ha_node1'][0] }}"
-
 
     - name: Copy new certs to other 2 VSDs
       command: /opt/vsd/bin/vsd-renew-certs.sh -1 {{ hostvars[groups['primary_vsds'][0]]['hostname'] }}
