@@ -7,3 +7,17 @@
   nuage_append: filename="{{ report_path }}" text="VSD Health Report End\n"
   delegate_to: localhost
   run_once: true
+
+- name: Email health report
+  mail:
+    host: "{{ smtp_server }}"
+    port: "{{ smtp_port | default(25) }}"
+    from: "{{ from_address }}"
+    to: "{{ destination_addresses }}"
+    subject: MetroAE VSTAT Health Results
+    attach:
+      - "{{ report_path }}"
+    body: Results from VSTAT health
+    username: "{{ smtp_username }}"
+    password: "{{ smtp_password }}"
+  when: email_health_results | default(False)
