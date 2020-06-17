@@ -26,21 +26,31 @@
     delegate_to: localhost
     run_once: true
 
-  - name: Email health and failure reports
-    mail:
-      host: "{{ smtp_server }}"
-      port: "{{ smtp_port | default(25) }}"
-      from: "{{ from_address }}"
-      to: "{{ destination_addresses }}"
-      subject: MetroAE VSC Health Results
-      attach:
-        - "{{ report_path }}"
-        {% if report.stat.exists %}
-        - "{{ failure_report_path }}"
-        {% endif %}
-      body: Results from VSC health
-      username: "{{ smtp_username }}"
-      password: "{{ smtp_password }}"
-    delegate_to: localhost
+  - name: Set fact for email attachments
+    set_fact:
+      email_attachments: []
+
+  - name: Append report file to attachments
+    set_fact:
+      email_attachments: "{{ email_attachments + [ report_path ] }}"
+
+  - name: Append failure report file to attachments
+    set_fact:
+      email_attachments: "{{ email_attachments + [ failure_report_path ] }}"
+    when: report.stat.exists
+
+  - name: Email VSC health and failure reports
+    include_role:
+      name: common
+      tasks_from: email-health-reports
+    vars:
+      smtp_host: "{{ smtp_server }}"
+      smtp_port_number: "{{ smtp_port | default(25) }}"
+      from_addr: "{{ from_address }}"
+      destination: "{{ destination_addresses }}"
+      email_subject: MetroAE VSC Health Results
+      attachments: "{{ email_attachments }}"
+      email_body: Results from VSC health
+      smtp_user: "{{ smtp_username }}"
+      smtp_pass: "{{ smtp_password }}"
     run_once: true
-    when: email_health_results | default(False)

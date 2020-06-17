@@ -8,18 +8,18 @@
   delegate_to: localhost
   run_once: true
 
-- name: Email health report
-  mail:
-    host: "{{ smtp_server }}"
-    port: "{{ smtp_port | default(25) }}"
-    from: "{{ from_address }}"
-    to: "{{ destination_addresses }}"
-    subject: MetroAE VSD Health Results
-    attach:
-      - "{{ report_path }}"
-    body: Results from VSD health
-    username: "{{ smtp_username }}"
-    password: "{{ smtp_password }}"
-  delegate_to: localhost
+- name: Email VSD health report
+  include_role:
+    name: common
+    tasks_from: email-health-reports
+  vars:
+    smtp_host: "{{ smtp_server }}"
+    smtp_port_number: "{{ smtp_port | default(25) }}"
+    from_addr: "{{ from_address }}"
+    destination: "{{ destination_addresses }}"
+    email_subject: MetroAE VSD Health Results
+    attachments: "{{ report_path }}"
+    email_body: Results from VSD health
+    smtp_user: "{{ smtp_username }}"
+    smtp_pass: "{{ smtp_password }}"
   run_once: true
-  when: email_health_results | default(False)
