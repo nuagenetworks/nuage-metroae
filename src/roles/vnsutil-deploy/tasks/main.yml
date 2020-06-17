@@ -3,7 +3,7 @@
     name: "{{ mgmt_ip }}"
     state: absent
   delegate_to: localhost
-  no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
+  no_log: True
   ignore_errors: True
 
 - name: Wait for VNS Utility VM ssh to be ready
@@ -13,6 +13,13 @@
   vars:
     ssh_host: "{{ mgmt_ip }}"
     host_username: "{{ vnsutil_default_username }}"
+
+- import_tasks: openstack.yml
+  when: target_server_type is match("openstack")
+  tags:
+    - vnsutil
+    - openstack
+    - vnsutil-deploy
 
 - block:
 

@@ -1,0 +1,39 @@
+- block:
+
+  - name: Format VSPK auth for VSPK module
+    set_fact:
+      vspk_auth:
+        api_username: "{{ vsd_auth.username }}"
+        api_password: "{{ vsd_auth.password }}"
+        api_enterprise: "{{ vsd_auth.enterprise }}"
+        api_url: "{{ vsd_auth.api_url }}"
+        api_version: v5_0
+    no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
+
+  - name: Find the VSP on the VSD
+    connection: local
+    nuage_vspk:
+      auth: "{{ vspk_auth }}"
+      type: VSP
+      command: find
+    register: vsp
+
+  - name: Fetch Netconfmanager with connected status
+    connection: local
+    nuage_vspk:
+      auth: "{{ vspk_auth }}"
+      type: NetconfManager
+      parent_id: "{{ vsp.id }}"
+      parent_type: VSP
+      command: find
+      properties:
+        status: "connected"
+    register: netconfmanager
+    retries: 5
+    delay: 30
+    until: netconfmanager is not failed
+
+  remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
+  become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
+  vars:
+    ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"

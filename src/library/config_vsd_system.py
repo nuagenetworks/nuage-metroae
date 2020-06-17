@@ -41,7 +41,7 @@ EXAMPLES = '''
       password: csproot
       enterprise: csp
       api_url: https://10.0.0.10:8443
-    vsd_version: 5.4.1
+    vsd_version: "5.4.1"
     gateway_purge_time: 7003
 
 - config_vsd_system:
@@ -50,7 +50,7 @@ EXAMPLES = '''
       password: csproot
       enterprise: csp
       api_url: https://10.0.0.10:8443
-    vsd_version: 5.4.1
+    vsd_version: "5.4.1"
     get_gateway_purge_time: True
 '''
 

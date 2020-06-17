@@ -170,8 +170,13 @@ class ExampleFileGenerator(object):
 
             if self.has_comments:
                 default_value = '""'
-                if "type" in field and field["type"] == "array":
-                    default_value = '[]'
+                if "type" in field:
+                    if field["type"] == "array":
+                        default_value = '[]'
+                    elif field["type"] == "integer":
+                        default_value = '0'
+                    elif field["type"] == "boolean":
+                        default_value = 'true/false'
                 if "default" in field and field["default"] != "":
                     default_value = field["default"]
                 self.example_lines.append("%s# %s: %s" % (indent,

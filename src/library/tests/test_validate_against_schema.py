@@ -69,3 +69,17 @@ def test__schema_error(module_patch):
     mock_module.fail_json.assert_called_once_with(
         msg="Invalid data in %s for Username: %s" % (
             TEST_PARAMS["path"], "'username' is not of type 'integer'"))
+
+
+@patch(MODULE_PATCH)
+def test__format_error(module_patch):
+    params = dict(TEST_PARAMS)
+    params["path"] = os.path.join(os.path.dirname(__file__),
+                                  "mock_bad_format_data.yml")
+    mock_module = setup_module(module_patch, params)
+
+    main()
+
+    mock_module.fail_json.assert_called_once_with(
+        msg="Invalid data in %s for IPv6 Address: %s" % (
+            params["path"], "'not_ipv6' is not a 'ipv6'"))

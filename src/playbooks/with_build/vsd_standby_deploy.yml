@@ -24,7 +24,11 @@
       when:
         - vsd_standby | default(false)
     - name: Run vsd-prepare-replication-master on first cluster
-      command: "/opt/vsd/bin/vsd-prepare-replication-master.sh -a {{ groups['vsd_standby_node1'][0] }} -b {{ groups['vsd_standby_node2'][0] }} -c {{ groups['vsd_standby_node3'][0] }}"
+      command: >-
+        /opt/vsd/bin/vsd-prepare-replication-master.sh
+        -a {{ groups['vsd_standby_node1'][0] }}
+        -b {{ groups['vsd_standby_node2'][0] }}
+        -c {{ groups['vsd_standby_node3'][0] }}
       retries: 15
       delay: 10
       register: result
@@ -54,7 +58,7 @@
         name: "{{ inventory_hostname }}"
         state: absent
       delegate_to: localhost
-      no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
+      no_log: True
       ignore_errors: True
 
     - name: Wait for VSD ssh to be ready

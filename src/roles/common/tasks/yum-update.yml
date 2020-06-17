@@ -1,0 +1,40 @@
+- name: Proxy for VSD
+  block:
+
+  - name: Configure yum proxy for VSD
+    lineinfile:
+      dest: /etc/yum.conf
+      regexp: "^proxy="
+      line: "proxy={{ yum_proxy }}"
+    when: yum_proxy is not match('NONE')
+
+  - name: Execute a yum update (Can take 20 minutes)
+    yum:
+      name: '*'
+      state: latest # noqa 403
+    when: yum_update
+
+  remote_user: "{{ vsd_default_username }}"
+  when:
+    - "'vsds' in group_names"
+
+- name: Proxy for VSTAT
+  block:
+
+  - name: Configure yum proxy for VSTAT
+    lineinfile:
+      dest: /etc/yum.conf
+      regexp: "^proxy="
+      line: "proxy={{ yum_proxy }}"
+    when: yum_proxy is not match('NONE')
+
+  - name: Execute a yum update for vstat (Can take 20 minutes)
+    yum:
+      name: '*'
+      state: latest # noqa 403
+    when: vstat_yum_update
+
+  remote_user: "{{ vstat_default_username }}"
+  when:
+    - "'vstats' in group_names"
+

@@ -1,10 +1,10 @@
 - name: Wait for Proxy VM ssh to be ready
-  local_action:
-    module: wait_for
+  wait_for:
     port: "22"
     host: "{{ mgmt_ip }}"
     search_regex: OpenSSH
     delay: 1
+  delegate_to: localhost
   when: mgmt_ip is defined
 
 - block:
@@ -42,13 +42,13 @@
   - name: Execute a yum update
     yum:
       name: '*'
-      state: latest
+      state: latest # noqa 403
     when: yum_update
 
   - name: Install requried yum packages
-    yum: 
+    yum:
       name: [haproxy, net-tools, libguestfs-tools]
-      state: latest
+      state: latest # noqa 403
 
   - name: Delete the /etc/haproxy/haproxy.cfg file
     file:

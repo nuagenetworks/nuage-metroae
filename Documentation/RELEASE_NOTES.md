@@ -2,22 +2,50 @@
 
 ## Release info
 
+<<<<<<< HEAD
 FIX read_deployment before you ship!
 
 * MetroAE Version 4.0.4
 * Nuage Release Alignment 20.5.R1
 * Date of Release 12-June-2020
+=======
+* MetroAE Version 4.1.0
+* Nuage Release Alignment TBD
+* Date of Release TBD
+>>>>>>> dev
 
 ## Release Contents
 
 ### Feature Enhancements
 
-* None
+* Add support for VSTAT yum update via vstat_yum_update (METROAE-1190)
+* Check hypervisor disk space on KVM and vCenter
+* Add NETCONF RPMs to unzip
+* Add Netconf Manager Support to MetroAE (METROAE-1204)
+* Added support for Python virtual environments (METROAE-1381)
+* Added file check for nsgv_bootstrap.yml and example (METROAE-1379)
+* Make hostname optional for VSC
+* Add support for new Nuage version format, e.g. 20.6 (METROAE-1343)
+* Support NUH install when VSD is not installed (METROAE-1357)
+* Add support for deploying VNS Utils on Openstack
 
 ### Resolved Issues
 
+<<<<<<< HEAD
 * Support 20.5 Nuage Release
 * Support Ejabberd license install
+=======
+* Remove redundant "vcpu" tag from KVM XML
+* Enable schema format enforcement (METROAE-1378)
+* Change default NUH ram to 8 GB from 4 GB (METROAE-1355)
+* Upgrade pyYaml to 4.2b1 to address security vulnerability
+* Fixed deployment examples to have correct variable types (METROAE-1194)
+* Fixed undefined variable for nsgv-predeploy on vcenter
+* Fix VCENTER upgrades using container
+* Fix CPU pinning for NUH and perform NTP sync (METROAE-1397)
+* Support Ejabberd license install
+* Fix missing fallocate flag during vsc predeploy
+>>>>>>> dev
 
 ## Test Matrix
 
