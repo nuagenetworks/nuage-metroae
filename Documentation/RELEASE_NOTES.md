@@ -2,17 +2,9 @@
 
 ## Release info
 
-<<<<<<< HEAD
-FIX read_deployment before you ship!
-
-* MetroAE Version 4.0.4
-* Nuage Release Alignment 20.5.R1
-* Date of Release 12-June-2020
-=======
 * MetroAE Version 4.1.0
 * Nuage Release Alignment TBD
 * Date of Release TBD
->>>>>>> dev
 
 ## Release Contents
 
@@ -31,10 +23,6 @@ FIX read_deployment before you ship!
 * Added a restriction for vsc_fallocate_size_gb to 1GB and skip if the value is 0
 ### Resolved Issues
 
-<<<<<<< HEAD
-* Support 20.5 Nuage Release
-* Support Ejabberd license install
-=======
 * Remove redundant "vcpu" tag from KVM XML
 * Enable schema format enforcement (METROAE-1378)
 * Change default NUH ram to 8 GB from 4 GB (METROAE-1355)
@@ -45,7 +33,6 @@ FIX read_deployment before you ship!
 * Fix CPU pinning for NUH and perform NTP sync (METROAE-1397)
 * Support Ejabberd license install
 * Fix missing fallocate flag during vsc predeploy
->>>>>>> dev
 
 ## Test Matrix
 
