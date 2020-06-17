@@ -5,7 +5,7 @@
 FIX read_deployment before you ship!
 
 * MetroAE Version 4.0.4
-* Nuage Release Alignment 20.5.R1
+* Nuage Release Alignment 20.5.R1/6.0.7
 * Date of Release 12-June-2020
 
 ## Release Contents
@@ -17,6 +17,7 @@ FIX read_deployment before you ship!
 ### Resolved Issues
 
 * Support 20.5 Nuage Release
+* Support 6.0.7 Nuage Release
 * Support Ejabberd license install
 
 ## Test Matrix
