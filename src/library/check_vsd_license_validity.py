@@ -71,11 +71,10 @@ def check_licenses_expiration(licenses, required_days_left):
             days_left_dict[lic] = days_left
 
             if days_left < required_days_left:
-            #    raise Exception("VSD License will expire in %d days" %
-            #                    days_left)
                 meets_days_requirement[lic] = False
 
     return days_left_dict, meets_days_requirement
+
 
 def format_api_version(version):
     if version.startswith('5'):
