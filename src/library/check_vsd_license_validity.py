@@ -68,12 +68,12 @@ def check_licenses_expiration(licenses, required_days_left):
                 raise Exception("VSD License has expired")
 
             days_left = int(seconds_left / SECONDS_PER_DAY)
-            days_left_dict[lic] = days_left
+            days_left_dict[str(lic)] = days_left
 
             if days_left < required_days_left:
-                meets_days_requirement[lic] = False
+                meets_days_requirement[str(lic)] = False
             else:
-                meets_days_requirement[lic] = True
+                meets_days_requirement[str(lic)] = True
 
     return days_left_dict, meets_days_requirement
 
@@ -126,8 +126,8 @@ def main():
             licenses_days_left, licenses_meet_requirement = check_licenses_expiration(licenses, required_days_left)
             if len(licenses_days_left) > 0:
                 for lic in licenses_meet_requirement:
-                    if not licenses_meet_requirement[lic]:
-                        module.fail_json(msg="VSD License will expire in %d days" % licenses_days_left[lic])
+                    if not licenses_meet_requirement[str(lic)]:
+                        module.fail_json(msg="VSD License will expire in %d days" % licenses_days_left[str(lic)])
                         return
         except Exception as e:
             module.fail_json(msg=str(e))
