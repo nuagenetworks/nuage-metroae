@@ -58,6 +58,8 @@ def check_licenses_expiration(licenses, required_days_left):
     if required_days_left >= 0:
         SECONDS_PER_DAY = 60 * 60 * 24
         current_seconds = int(time.time())
+        days_left_dict = {}
+        meets_days_requirement = True
         for lic in licenses:
             license_expire_seconds = int(lic.expiry_timestamp / 1000)
             seconds_left = license_expire_seconds - current_seconds
@@ -66,11 +68,14 @@ def check_licenses_expiration(licenses, required_days_left):
                 raise Exception("VSD License has expired")
 
             days_left = int(seconds_left / SECONDS_PER_DAY)
+            days_left_dict[lic] = days_left
 
             if days_left < required_days_left:
-                raise Exception("VSD License will expire in %d days" %
-                                days_left)
+            #    raise Exception("VSD License will expire in %d days" %
+            #                    days_left)
+                meets_days_requirement = False
 
+    return days_left_dict, meets_days_requirement
 
 def format_api_version(version):
     if version.startswith('5'):
@@ -117,18 +122,22 @@ def main():
         licenses = get_licenses(csproot)
 
         try:
-            check_licenses_expiration(licenses, required_days_left)
+            licenses_days_left, licenses_meet_requirement = check_licenses_expiration(licenses, required_days_left)
+            if not licenses_meet_requirement:
+                module.fail_json(msg="License does not meet required remaining days %s" % required_days_left)
+                return
         except Exception as e:
             module.fail_json(msg=str(e))
             return
 
         valid = check_licenses_mode(licenses)
+        return_dict = {"validity": valid, "days_left": licenses_days_left}
 
     except Exception as e:
         module.fail_json(msg="Could not retrieve licenses : %s" % e)
         return
 
-    module.exit_json(changed=False, result="%s" % valid)
+    module.exit_json(changed=False, result=return_dict)
 
 
 # Run the main
