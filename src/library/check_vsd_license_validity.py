@@ -125,7 +125,7 @@ def main():
             licenses_days_left, licenses_meet_requirement = check_licenses_expiration(licenses, required_days_left)
             for lic in licenses_meet_requirement:
                 if not licenses_meet_requirement[lic]:
-                    module.fail_json(msg="VSD License will expire in %d days" % days_left_dict[lic])
+                    module.fail_json(msg="VSD License will expire in %d days" % licenses_days_left[lic])
                     return
         except Exception as e:
             module.fail_json(msg=str(e))
