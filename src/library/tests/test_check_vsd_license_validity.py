@@ -67,7 +67,7 @@ class TestVsdLicenseValid(object):
         time_patch.return_value = SECONDS_PER_DAY
         main()
         test_days_left_dict = {lic_1: 365, lic_2: 499}
-        test_result_dict = {"valdity": True, "days_left": test_days_left_dict}
+        test_result_dict = {"validity": True, "days_left": test_days_left_dict}
         self.validate_session(import_patch)
         mock_module.fail_json.assert_not_called()
         mock_module.exit_json.assert_called_once_with(changed=False,
