@@ -66,11 +66,12 @@ class TestVsdLicenseValid(object):
 
         time_patch.return_value = SECONDS_PER_DAY
         main()
-
+        test_days_left_dict = {lic_1: 365, lic_2: 499}
+        test_result_dict = {"valdity": True, "days_left": test_days_left_dict}
         self.validate_session(import_patch)
         mock_module.fail_json.assert_not_called()
         mock_module.exit_json.assert_called_once_with(changed=False,
-                                                      result="True")
+                                                      result=test_result_dict)
 
     @patch("importlib.import_module")
     @patch(MODULE_PATCH)
@@ -119,10 +120,11 @@ class TestVsdLicenseValid(object):
 
         time_patch.return_value = SECONDS_PER_DAY
         main()
-
+        test_days_left_dict = {}
+        test_result_dict = {"validity": False, "days_left": test_days_left_dict}
         self.validate_session(import_patch)
         mock_module.exit_json.assert_called_once_with(changed=False,
-                                                      result="False")
+                                                      result=test_result_dict)
 
     @patch("importlib.import_module")
     @patch("time.time")
@@ -138,9 +140,11 @@ class TestVsdLicenseValid(object):
         time_patch.return_value = SECONDS_PER_DAY
         main()
 
+        test_days_left_dict = {lic_1: 365, lic_2: 499}
+        test_result_dict = {"validity": False, "days_left": test_days_left_dict}
         self.validate_session(import_patch)
         mock_module.exit_json.assert_called_once_with(changed=False,
-                                                      result="False")
+                                                      result=test_result_dict)
 
     @patch("importlib.import_module")
     @patch("time.time")
