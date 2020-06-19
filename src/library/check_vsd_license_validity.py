@@ -128,6 +128,7 @@ def main():
             licenses_days_left, licenses_meet_requirement = check_licenses_expiration(licenses, required_days_left)
             if len(licenses_days_left) > 0:
                 for lic in licenses_meet_requirement:
+                    print("Reqs dict: ", licenses_meet_requirement[lic])
                     if not licenses_meet_requirement[lic]:
                         module.fail_json(msg="VSD License will expire in %d days" % licenses_days_left[lic][0])
                         return
