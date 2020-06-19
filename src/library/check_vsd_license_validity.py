@@ -46,12 +46,14 @@ def get_licenses(csproot):
 
 
 def check_licenses_mode(licenses):
-    valid = True
+    validity_dict = {}
     for lic in licenses:
         if lic.additional_supported_versions == 0:
-            valid = False
+            validity_dict[lic.unique_license_identifier] = False
+        else:
+            validity_dict[lic.unique_license_identifier] = True
 
-    return valid and len(licenses) > 0
+    return validity_dict
 
 
 def check_licenses_expiration(licenses, required_days_left):
@@ -68,12 +70,12 @@ def check_licenses_expiration(licenses, required_days_left):
                 raise Exception("VSD License has expired")
 
             days_left = int(seconds_left / SECONDS_PER_DAY)
-            days_left_dict[str(lic)] = days_left
+            days_left_dict[lic.unique_license_identifier] = [days_left, lic.licensed_feature]
 
             if days_left < required_days_left:
-                meets_days_requirement[str(lic)] = False
+                meets_days_requirement[lic.unique_license_identifier] = False
             else:
-                meets_days_requirement[str(lic)] = True
+                meets_days_requirement[lic.unique_license_identifier] = True
 
     return days_left_dict, meets_days_requirement
 
@@ -107,7 +109,7 @@ def main():
     vsd_version = module.params['vsd_version']
     required_days_left = module.params['required_days_left']
 
-    valid = False
+    valid_dict = {}
 
     try:
         csproot = get_vsd_session(vsd_auth, vsd_version)
@@ -126,15 +128,15 @@ def main():
             licenses_days_left, licenses_meet_requirement = check_licenses_expiration(licenses, required_days_left)
             if len(licenses_days_left) > 0:
                 for lic in licenses_meet_requirement:
-                    if not licenses_meet_requirement[str(lic)]:
-                        module.fail_json(msg="VSD License will expire in %d days" % licenses_days_left[str(lic)])
+                    if not licenses_meet_requirement[lic]:
+                        module.fail_json(msg="VSD License will expire in %d days" % licenses_days_left[lic][0])
                         return
         except Exception as e:
             module.fail_json(msg=str(e))
             return
 
-        valid = check_licenses_mode(licenses)
-        return_dict = {"validity": valid, "days_left": licenses_days_left}
+        valid_dict = check_licenses_mode(licenses)
+        return_dict = {"validity": valid_dict, "days_left, licensed feature": licenses_days_left}
 
     except Exception as e:
         module.fail_json(msg="Could not retrieve licenses : %s" % e)

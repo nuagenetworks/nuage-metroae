@@ -45,6 +45,8 @@ class TestVsdLicenseValid(object):
         mock_license = MagicMock()
         mock_license.expiry_timestamp = expiry_timestamp * 1000
         mock_license.additional_supported_versions = supported_versions
+        mock_license.unique_license_identifier = "aaaaaaa"
+        mock_license.licensed_feature = "vss"
         return mock_license
 
     def validate_session(self, import_patch):
@@ -67,8 +69,10 @@ class TestVsdLicenseValid(object):
         time_patch.return_value = SECONDS_PER_DAY
         main()
 
-        test_days_left_dict = {str(lic_1): 365, str(lic_2): 499}
-        test_result_dict = {"validity": True, "days_left": test_days_left_dict}
+        test_days_left_dict = {lic_1.unique_license_identifier: [365, lic_1.licensed_feature], lic_2.unique_license_identifier: [499, lic2.licensed_feature]}
+        test_valid_dict = {lic_1.unique_license_identifier: True, lic_2:unique_license_identifier: False}
+
+        test_result_dict = {"validity": test_valid_dict, "days_left, licensed_feature": test_days_left_dict}
 
         self.validate_session(import_patch)
         mock_module.fail_json.assert_not_called()
@@ -124,7 +128,9 @@ class TestVsdLicenseValid(object):
         main()
 
         test_days_left_dict = {}
-        test_result_dict = {"validity": False, "days_left": test_days_left_dict}
+        test_valid_dict = {}
+
+        test_result_dict = {"validity": test_valid_dict, "days_left, licensed_feature": test_days_left_dict}
 
         self.validate_session(import_patch)
         mock_module.exit_json.assert_called_once_with(changed=False,
@@ -144,8 +150,10 @@ class TestVsdLicenseValid(object):
         time_patch.return_value = SECONDS_PER_DAY
         main()
 
-        test_days_left_dict = {str(lic_1): 365, str(lic_2): 499}
-        test_result_dict = {"validity": False, "days_left": test_days_left_dict}
+        test_days_left_dict = {lic_1.unique_license_identifier: [365, lic_1.licensed_feature], lic_2.unique_license_identifier: [499, lic2.licensed_feature]}
+        test_valid_dict = {lic_1.unique_license_identifier: True, lic_2.unique_license_identifier: False}
+
+        test_result_dict = {"validity": test_valid_dict, "days_left": test_days_left_dict}
 
         self.validate_session(import_patch)
         mock_module.exit_json.assert_called_once_with(changed=False,
