@@ -125,7 +125,9 @@ def main():
         licenses = get_licenses(csproot)
 
         try:
+            print("required_days_left: ", required_days_left)
             licenses_days_left, licenses_meet_requirement = check_licenses_expiration(licenses, required_days_left)
+            print("days left: ", days_left_dict)
             print("Full reqs dict: ", licenses_meet_requirement)
             if len(licenses_days_left) > 0:
                 for lic in licenses_meet_requirement:
