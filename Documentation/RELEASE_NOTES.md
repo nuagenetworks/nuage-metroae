@@ -20,6 +20,7 @@
 * Add support for new Nuage version format, e.g. 20.6 (METROAE-1343)
 * Support NUH install when VSD is not installed (METROAE-1357)
 * Add support for deploying VNS Utils on Openstack
+* Add support for applyinc custom VSC configurations (METROAE-1328)
 
 ### Resolved Issues
 
