@@ -136,7 +136,7 @@ def main():
             return
 
         valid_dict = check_licenses_mode(licenses)
-        return_dict = {"validity": valid_dict, "days_left, licensed feature": licenses_days_left}
+        return_dict = {"validity": valid_dict, "days_left, licensed_feature": licenses_days_left}
 
     except Exception as e:
         module.fail_json(msg="Could not retrieve licenses : %s" % e)
