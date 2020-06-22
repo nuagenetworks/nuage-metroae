@@ -38,6 +38,7 @@
 * Fix CPU pinning for NUH and perform NTP sync (METROAE-1397)
 * Support Ejabberd license install
 * Fix missing fallocate flag during vsc predeploy
+* Disable chrony and cloud-init for NUH and VSTATs install (METROAE-1401)
 
 ## Test Matrix
 
