@@ -33,7 +33,7 @@
     nuage_append: filename="{{ report_path }}" text="-----Elasticsearch Process Status-----\n"
     delegate_to: localhost
 
-  - name: Write elasticsearch proces result to report file
+  - name: Write elasticsearch process result to report file
     nuage_append: filename="{{ report_path }}" text="{{ es_process_status.stdout }}\n"
     delegate_to: localhost
 
@@ -51,7 +51,7 @@
     delegate_to: localhost
 
   - name: Write shard status result to report file
-    nuage_append: filename="{{ report_path }}" text="{{ es_health.json }}\n"
+    nuage_append: filename="{{ report_path }}" text="{{ es_health.json | to_nice_json }}\n"
     delegate_to: localhost
 
   - name: Check the ES status color
@@ -128,6 +128,9 @@
         validate_certs: False
       register: webresult
       ignore_errors: yes
+
+    - name: Write web interface result separator to report file
+      nuage_append: filename="{{ report_path }}" text="-----VSTAT Web Interface Check-----\n"
 
     - name: Write web interface result
       nuage_append: filename="{{ report_path }}" text="{{ webresult  | to_nice_json }}\n"
