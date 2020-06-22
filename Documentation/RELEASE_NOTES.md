@@ -19,6 +19,10 @@
 * Make hostname optional for VSC
 * Backup and restore functionality for VSD and VSC (METROAE-1382)
 * Add support for new Nuage version format, e.g. 20.6 (METROAE-1343)
+* Support NUH install when VSD is not installed (METROAE-1357)
+* Add support for deploying VNS Utils on Openstack
+* Added a restriction for vsc_fallocate_size_gb to 1GB and skip if the value is 0
+* Add support for applying custom VSC configurations (METROAE-1328)
 
 ### Resolved Issues
 
@@ -28,6 +32,10 @@
 * Upgrade pyYaml to 4.2b1 to address security vulnerability
 * Fixed deployment examples to have correct variable types (METROAE-1194)
 * Fixed undefined variable for nsgv-predeploy on vcenter
+* Fix VCENTER upgrades using container
+* Fix CPU pinning for NUH and perform NTP sync (METROAE-1397)
+* Support Ejabberd license install
+* Fix missing fallocate flag during vsc predeploy
 
 ## Test Matrix
 
