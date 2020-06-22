@@ -16,11 +16,12 @@
   run_once: true
 
 - name: Get the es version after upgrade
-  command: "curl localhost:9200"
+  command: "curl localhost:9200"        # noqa 303
   register: upgraded_version
   until: upgraded_version.rc == 0
   retries: 5
   delay: 30
+  changed_when: upgraded_version.rc == 0
 
 - name: Convert version to json format
   set_fact:
@@ -29,6 +30,7 @@
 - name: Get es version saved on vstat node(s)
   command: "cat /root/current_es_version.log"
   register: old_es_version
+  changed_when: False
 
 - name: Compare es versions before and after upgrade
   assert:
@@ -44,7 +46,7 @@
     register: es_cluster_nuage_index_setting
 
   - name: Execute es-cluster-nuage-index-setting.sh
-    shell: "/root/nuage_elasticsearch/scripts/es-cluster-nuage-index-setting.sh"
+    command: "/root/nuage_elasticsearch/scripts/es-cluster-nuage-index-setting.sh"
     when: es_cluster_nuage_index_setting.stat.exists
 
   - name: stat cluster_nuage_index_setting.sh
@@ -53,7 +55,7 @@
     register: cluster_nuage_index_setting
 
   - name: Execute cluster_nuage_index_setting.sh
-    shell: "/root/nuage_elasticsearch/scripts/cluster_nuage_index_setting.sh"
+    command: "/root/nuage_elasticsearch/scripts/cluster_nuage_index_setting.sh"
     when: cluster_nuage_index_setting.stat.exists and not es_cluster_nuage_index_setting.stat.exists
 
   when: vstat_sa_or_ha is match('ha')

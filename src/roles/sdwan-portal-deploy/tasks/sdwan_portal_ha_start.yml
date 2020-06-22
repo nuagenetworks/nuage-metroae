@@ -3,7 +3,7 @@
   when: inventory_hostname == portal1.hostname
 
 - name: Wait for the Portal 1 bootstrap to complete
-  shell: "docker logs vnsportal-cluster-bootstrap"
+  command: "docker logs vnsportal-cluster-bootstrap"
   register: log_output
   until: log_output.stdout.find("Ready for start up") != -1
   retries: 20
@@ -15,7 +15,7 @@
   when: inventory_hostname == portal2.hostname
 
 - name: Wait for the Portal 2 start up to complete
-  shell: curl http://localhost:8080/vnsportal/health
+  command: curl http://localhost:8080/vnsportal/health    # noqa 303
   no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
   register: curl_output
   until: curl_output.stdout.find("UP") != -1

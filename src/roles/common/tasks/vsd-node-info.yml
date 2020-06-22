@@ -41,15 +41,13 @@
 - name: Get VSD information
   block:
 
-  - name: Get the VSD version
-    shell: grep -ir "VSD_VERSION=" /etc/profile.d/vsd-banner.sh | awk -F "=" '{print $2}'
-    register: vsd_version
-    run_once: true
+  - include_role:
+      name: common
+      tasks_from: get-vsd-version
 
-  - name: Get the VSD build
-    shell: grep -ir "VSD_BUILD=" /etc/profile.d/vsd-banner.sh | awk -F "=" '{print $2}'
-    register: vsd_build
-    run_once: true
+  - include_role:
+      name: common
+      tasks_from: get-vsd-build
 
   - name: Get the vsd node info
     shell: VSD_VERSION={{ vsd_version.stdout }} VSD_BUILD={{ vsd_build.stdout }} /opt/vsd/sysmon/showStatus.py
@@ -74,11 +72,11 @@
 
 - name: Extract vsd hostname when standalone
   set_fact:
-    vsd_hostname_list: "{{ vsd_info.stdout | regex_findall('Host Name:\\s+(.*)')}}"
+    vsd_hostname_list: "{{ vsd_info.stdout | regex_findall('Host Name:\\s+(.*)') }}"
   when: vsd_sa_or_ha is match('sa')
 
 - name: Extract vsd hostname when clustered
   set_fact:
-    vsd_hostname_list: "{{ vsd_info.stdout | regex_findall('VSD Server Node:\\s+(.*)')}}"
+    vsd_hostname_list: "{{ vsd_info.stdout | regex_findall('VSD Server Node:\\s+(.*)') }}"
   when: vsd_sa_or_ha is match('ha')
   run_once: True

@@ -1,6 +1,6 @@
 ---
 - name: "[check-processes] Read out PLATFORM variable from openvswitch config"
-  shell: "grep '^PLATFORM=' {{ openvswitch_config_path }}"
+  shell: "grep '^PLATFORM=' {{ openvswitch_config_path }}"      # noqa 305
   register: platform
   changed_when: false
 
@@ -25,21 +25,21 @@
            (nuage_os_processes if metadata_stat.stat.exists else []) }}
 
 - name: "[check-processes] Get PID values"
-  shell: "cat /var/run/openvswitch/{{ item.name }}.pid"
+  command: "cat /var/run/openvswitch/{{ item.name }}.pid"
   with_items: "{{ processes }}"
   register: pid
   changed_when: false
   failed_when: pid.rc != 0
 
 - name: "[check-processes] Check if processes are actually running agasint the PID"
-  shell: "ps -fp {{ pid.results[item[0]].stdout }}"
+  command: "ps -fp {{ pid.results[item[0]].stdout }}"
   with_indexed_items: "{{ processes }}"
   register: ps_result
   changed_when: false
   failed_when: ps_result.rc != 0
 
 - name: "[check-processes] Check proper socket connection status for each process"
-  shell: netstat --all --program | grep "{{ pid.results[item[0]].stdout }}/" | grep {{ item[1].netstat_status }}
+  shell: netstat --all --program | grep "{{ pid.results[item[0]].stdout }}/" | grep {{ item[1].netstat_status }}        # noqa 306
   with_indexed_items: "{{ processes }}"
   register: netstat_result
   changed_when: false

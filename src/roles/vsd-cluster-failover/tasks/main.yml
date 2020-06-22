@@ -30,20 +30,20 @@
   - name: Set the reachablility flag for primary vsds
     set_fact:
       is_primary_reachable: >-
-        "{{ ping_result.results[0].rc == 0 
+        "{{ ping_result.results[0].rc == 0
         and ping_result.results[1].rc == 0
         and ping_result.results[2].rc == 0
         }}"
     delegate_to: "{{ item }}"
     with_items: "{{ groups['primary_vsds'] }}"
 
-  - name: Get the VSD version
-    shell: grep -ir "VSD_VERSION=" /etc/profile.d/vsd-banner.sh | awk -F "=" '{print $2}'
-    register: vsd_version
-    delegate_to: "{{ groups['primary_vsds'][0] }}"
+  - include_role:
+      name: common
+      tasks_from: get-vsd-version
+    delegate_to: "{{ groups['primary_vsds'][0] }}
 
   - name: Deactivate replication on primary VSD cluster
-    shell: /opt/vsd/bin/vsd-deactivate-replication-master-cluster.sh -f
+    shell: /opt/vsd/bin/vsd-deactivate-replication-master-cluster.sh -f         # noqa 305
     ignore_errors: vsd_force_cluster_failover | default(no)
     delegate_to: "{{ item }}"
     with_items: "{{ groups['primary_vsds'] }}"
@@ -81,7 +81,9 @@
       - is_primary_reachable | default(false)
 
   - name: Switch replication role of standby VSD cluster when using clustered VSTATs
-    command: "/opt/vsd/bin/vsd-switch-replication-cluster-role --role active -e hostvars[groups['vstats'][0]]['hostname'],hostvars[groups['vstats'][1]]['hostname'],hostvars[groups['vstats'][2]]['hostname']"
+    command: >-
+      /opt/vsd/bin/vsd-switch-replication-cluster-role --role active
+      -e hostvars[groups['vstats'][0]]['hostname'],hostvars[groups['vstats'][1]]['hostname'],hostvars[groups['vstats'][2]]['hostname']
     when:
       - groups['vstats'] is defined
       - groups['vstats'] | length == 3
@@ -89,7 +91,9 @@
     with_items: "{{ groups['standby_vsds'] }}"
 
   - name: Switch replication role of standby VSD cluster when using 2 standalone VSTATs
-    command: "/opt/vsd/bin/vsd-switch-replication-cluster-role --role active -e hostvars[groups['vstats'][0]]['hostname'],hostvars[groups['vstats'][1]]['hostname']"
+    command: >-
+      /opt/vsd/bin/vsd-switch-replication-cluster-role --role active
+      -e hostvars[groups['vstats'][0]]['hostname'],hostvars[groups['vstats'][1]]['hostname']
     when:
       - groups['vstats'] is defined
       - groups['vstats'] | length == 2

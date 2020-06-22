@@ -40,7 +40,7 @@
   - name: Check the result of image find command
     set_fact:
       image_present: True
-    when: statResult.stat.exists == True
+    when: statResult.stat.exists
 
   - name: Image stat result
     debug: var=statResult
@@ -62,13 +62,13 @@
     register: partitions_list
 
   - name: Check partition content
-    shell: "guestfish -r -a {{ guestfish_dest }} run : mount {{ item.split(':')[0] }} / : ls /"
+    shell: "guestfish -r -a {{ guestfish_dest }} run : mount {{ item.split(':')[0] }} / : ls /"         # noqa 305
     register: partitions
     with_items: "{{ partitions_list.stdout_lines }}"
 
   - name: Find root partition
     set_fact:
-      guestfish_mount: "{{ item.item.split(':')[0]}}"
+      guestfish_mount: "{{ item.item.split(':')[0] }}"
     with_items: "{{ partitions.results }}"
     when: '"proc" in item.stdout'
 
@@ -121,7 +121,9 @@
       dest_path: /etc
 
   - name: Get the public key for the current user
-    local_action: command cat "{{ user_ssh_pub_key }}"
+    command: cat "{{ user_ssh_pub_key }}"
+    delegate_to: localhost
+    changed_when: False
     register: current_user_ssh_key
 
   - name: Inject SSH keys into Portal qcow image

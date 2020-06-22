@@ -3,7 +3,7 @@
     name: "{{ mgmt_ip }}"
     state: absent
   delegate_to: localhost
-  no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
+  no_log: True
   ignore_errors: True
 
 - name: Create empty VPRN object
@@ -27,7 +27,7 @@
   when: vlan_id is defined
 
 - name: Fill up VPRN Object list from deployment
-  include: create_vprn_list.yml vprn={{item|string}}
+  include: create_vprn_list.yml vprn={{ item|string }}
   with_items: "{{ ctrl_ip_vprn_list | default([]) }}"
 
 - import_tasks: openstack.yml
@@ -79,3 +79,8 @@
   include_role:
     name: common
     tasks_from: vsc-tls-setup
+
+- name: Optionally apply specified configs
+  include_role:
+    name: common
+    tasks_from: vsc-apply-config

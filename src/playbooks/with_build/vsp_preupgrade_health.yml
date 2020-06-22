@@ -34,7 +34,7 @@
   roles:
     - vsd-health
 
-- hosts: primary_vsds
+- hosts: vsd_ha_node1,vsd_ha_node2,vsd_ha_node3
   gather_facts: no
   serial: 1
   remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
@@ -47,7 +47,7 @@
         name: common
         tasks_from: vsd-find-backup-node
 
-- hosts: "{{hostvars['localhost'].vsd_backup_node | default(vsd_upgrade_ha_node1 | default(vsd_sa_node))}}"
+- hosts: "{{ hostvars['localhost'].vsd_backup_node | default(vsd_upgrade_ha_node1 | default('vsd_sa_node')) }}"
   gather_facts: no
   pre_tasks:
     - name: Get free disk space on VSD for backup files

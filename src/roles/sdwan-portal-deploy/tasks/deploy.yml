@@ -8,12 +8,14 @@
     template: src=config.j2 backup=no dest=/opt/vnsportal/config.yml
 
   - name: Check if SSH keys are present locally
-    local_action: stat path=/tmp/id_rsa
+    stat: path=/tmp/id_rsa
+    delegate_to: localhost
     register: ssh_key
 
   - name: Generate SSH keys for Portal install
-    local_action: command ssh-keygen -b 2048 -t rsa -f /tmp/id_rsa -q -N ""
-    when: ssh_key.stat.exists == False
+    command: ssh-keygen -b 2048 -t rsa -f /tmp/id_rsa -q -N ""
+    delegate_to: localhost
+    when: not ssh_key.stat.exists
 
   - name: Copy SSH keys to Portal host 1
     copy:
@@ -52,7 +54,7 @@
 
 - block:
   - name: Execute the Portal configuration script
-    shell: docker run -ti --rm -v /var/run/docker.sock:/docker.sock -v /opt/vnsportal:/mnt:z nuage/vnsportal-installer:{{ portal_version }} --skip
+    command: docker run -ti --rm -v /var/run/docker.sock:/docker.sock -v /opt/vnsportal:/mnt:z nuage/vnsportal-installer:{{ portal_version }} --skip
   when: inventory_hostname == portal1.hostname
 
 - block:
