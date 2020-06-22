@@ -33,7 +33,7 @@ Note that [Terraform](https://www.terraform.io/) will need to perform all of the
 
     resource "<provider>" "vsd1" {
         resource definitions...
-        
+
         provisioner "local-exec" {
             command = "./metroae install vsds deploy"
             working_dir = "<metro-directory>/nuage-metro"
@@ -66,12 +66,11 @@ With all of the tools installed and properly configured, [Terraform](https://www
 
     terraform plan
     terraform apply
-    
+
 ## Questions, Feedback, and Contributing
 Get support via the [forums](https://devops.nuagenetworks.net/forums/) on the [MetroAE site](https://devops.nuagenetworks.net/).
-You may also contact us directly.	Ask questions and contact us directly at [devops@nuagenetworks.net](mailto:deveops@nuagenetworks.net "send email to nuage-metro project").
+You may also contact us directly.	Ask questions and contact us directly at [devops@nuagenetworks.net](mailto:devops@nuagenetworks.net "send email to nuage-metro project").
 
 Report bugs you find and suggest new features and enhancements via the [GitHub Issues](https://github.com/nuagenetworks/nuage-metro/issues "nuage-metro issues") feature.
 
 You may also [contribute](../CONTRIBUTING.md) to MetroAE by submitting your own code to the project.
-
