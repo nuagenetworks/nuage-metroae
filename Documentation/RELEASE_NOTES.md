@@ -13,6 +13,7 @@
 * Add support for VSTAT yum update via vstat_yum_update (METROAE-1190)
 * Check hypervisor disk space on KVM and vCenter
 * Add NETCONF RPMs to unzip
+* Support for additional functionality via plugins
 * Add Netconf Manager Support to MetroAE (METROAE-1204)
 * Added support for Python virtual environments (METROAE-1381)
 * Added file check for nsgv_bootstrap.yml and example (METROAE-1379)

@@ -48,11 +48,13 @@
         name: hooks
         tasks_from: main
       vars:
-        - hooks_file_path: "{{ item }}"
+        - hooks_file_path: "{{ hook }}"
         - hook_location:
           - vsd_dbbackup
           - vsd_ha_upgrade_database_backup_and_decouple
-      with_items: "{{ hooks | default([]) }}"
+      loop: "{{ hooks | default([]) }}"
+      loop_control:
+        loop_var: hook
   roles:
     - vsd-dbbackup
 
@@ -66,10 +68,12 @@
         name: hooks
         tasks_from: main
       vars:
-        - hooks_file_path: "{{ item }}"
+        - hooks_file_path: "{{ hook }}"
         - hook_location:
           - vsd_decouple
-      with_items: "{{ hooks | default([]) }}"
+      loop: "{{ hooks | default([]) }}"
+      loop_control:
+        loop_var: hook
   roles:
     - vsd-decouple
 
