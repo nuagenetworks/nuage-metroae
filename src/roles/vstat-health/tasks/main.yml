@@ -10,6 +10,23 @@
 
 - block:
 
+  - name: Get current network config of all VSTAT nodes
+    network_info:
+      mac_addr: False
+    register: net_conf
+    remote_user: "{{ vstat_username | default(vstat_default_username) }}"
+
+  - name: Print network config when verbosity >= 1
+    debug: var=net_conf.info verbosity=1
+
+  - name: Write network config separator to report file
+    nuage_append: filename="{{ report_path }}" text="-----VSTAT Network Config-----\n"
+    delegate_to: localhost
+
+  - name: Write network config to json file
+    nuage_append: filename="{{ report_path }}" text="{{ net_conf.info | to_nice_json }}\n"
+    delegate_to: localhost
+
   - name: Stat the pid file for elasticsearch process
     stat: path=/var/run/elasticsearch/elasticsearch.pid
     register: pid
@@ -101,22 +118,7 @@
 
     when: vstat_sa_or_ha is match('ha')
 
-  - name: Get current network config of all VSTAT nodes
-    network_info:
-      mac_addr: False
-    register: net_conf
-    remote_user: "{{ vstat_username | default(vstat_default_username) }}"
-
-  - name: Print network config when verbosity >= 1
-    debug: var=net_conf.info verbosity=1
-
   - block:
-
-    - name: Write network config separator to report file
-      nuage_append: filename="{{ report_path }}" text="-----VSTAT Network Config-----\n"
-
-    - name: Write network config to json file
-      nuage_append: filename="{{ report_path }}" text="{{ net_conf.info | to_nice_json }}\n"
 
     - name: Check web interface of vstat (ignoring errors)
       uri:
