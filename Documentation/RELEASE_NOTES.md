@@ -17,6 +17,7 @@
 * Added support for Python virtual environments (METROAE-1381)
 * Added file check for nsgv_bootstrap.yml and example (METROAE-1379)
 * Make hostname optional for VSC
+* Backup and restore functionality for VSD and VSC (METROAE-1382)
 * Add support for new Nuage version format, e.g. 20.6 (METROAE-1343)
 * Support NUH install when VSD is not installed (METROAE-1357)
 * Add support for deploying VNS Utils on Openstack
