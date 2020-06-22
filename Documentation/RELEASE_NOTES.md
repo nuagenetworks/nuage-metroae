@@ -20,6 +20,8 @@
 * Add support for new Nuage version format, e.g. 20.6 (METROAE-1343)
 * Support NUH install when VSD is not installed (METROAE-1357)
 * Add support for deploying VNS Utils on Openstack
+* Added a restriction for vsc_fallocate_size_gb to 1GB and skip if the value is 0
+* Add support for applying custom VSC configurations (METROAE-1328)
 
 ### Resolved Issues
 
