@@ -8,11 +8,13 @@
         name: hooks
         tasks_from: main
       vars:
-        - hooks_file_path: "{{ item }}"
+        - hooks_file_path: "{{ hook }}"
         - hook_location:
           - vsd_dbbackup
           - upgrade_vsds
-      with_items: "{{ hooks | default([]) }}"
+      loop: "{{ hooks | default([]) }}"
+      loop_control:
+        loop_var: hook
   roles:
     - vsd-dbbackup
 
@@ -25,9 +27,11 @@
         name: hooks
         tasks_from: main
       vars:
-        - hooks_file_path: "{{ item }}"
+        - hooks_file_path: "{{ hook }}"
         - hook_location:
           - vsd_inplace_upgrade_nodes
-      with_items: "{{ hooks | default([]) }}"
+      loop: "{{ hooks | default([]) }}"
+      loop_control:
+        loop_var: hook
   roles:
     - vsd-upgrade-inplace
