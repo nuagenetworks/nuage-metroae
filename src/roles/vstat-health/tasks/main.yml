@@ -54,6 +54,24 @@
     nuage_append: filename="{{ report_path }}" text="{{ es_process_status.stdout }}\n"
     delegate_to: localhost
 
+  - name: Check web interface of vstat
+    uri:
+      url: http://{{ inventory_hostname }}:9200
+      method: GET
+      user: "{{ vstat_username | default(vstat_default_username) }}"
+      password: "{{ vstat_password | default(vstat_default_password) }}"
+      status_code: 200
+      validate_certs: False
+    register: webresult
+
+  - name: Write web interface result separator to report file
+    nuage_append: filename="{{ report_path }}" text="-----VSTAT Web Interface Check-----\n"
+    delegate_to: localhost
+
+  - name: Write web interface result
+    nuage_append: filename="{{ report_path }}" text="{{ webresult  | to_nice_json }}\n"
+    delegate_to: localhost
+
   - name: Check the status of shards being processed
     uri:
       url: "http://localhost:9200/_cluster/health?pretty"
@@ -71,14 +89,26 @@
     nuage_append: filename="{{ report_path }}" text="{{ es_health.json | to_nice_json }}\n"
     delegate_to: localhost
 
+  - name: Get vsd node(s) information
+    import_role:
+      name: common
+      tasks_from: vsd-node-info.yml
+    vars:
+      vsd_hostname: "{{ vsd_fqdn }}"
+
   - name: Check the ES status color
     uri:
-      url: "http://localhost:9200/_cluster/health?pretty"
+      url: "http://{{ inventory_hostname }}:9200/_cluster/health?pretty"
       method: GET
     register: es_status
     until: es_status.json.status == 'green'
     retries: 60
     delay: 10
+    delegate_to: "{{ vsd_hostname_list[0] }}"
+    remote_user: "{{ hostvars[vsd_hostname_list[0]].vsd_custom_username | default(vsd_custom_username | default(vsd_default_username)) }}"
+    become: "{{ 'no' if hostvars[vsd_hostname_list[0]].vsd_custom_username | default(vsd_custom_username | default(vsd_default_username)) == 'root' else 'yes' }}"
+    vars:
+      ansible_become_pass: "{{ hostvars[vsd_hostname_list[0]].vsd_custom_password | default(vsd_custom_password | default(vsd_default_password)) }}"
 
   - name: Write ES status color result separator to report file
     nuage_append: filename="{{ report_path }}" text="-----Elasticsearch Status Color-----\n"
@@ -117,25 +147,6 @@
       delegate_to: localhost
 
     when: vstat_sa_or_ha is match('ha')
-
-  - name: Check web interface of vstat (ignoring errors)
-    uri:
-      url: http://{{ inventory_hostname }}:9200
-      method: GET
-      user: "{{ vstat_username | default(vstat_default_username) }}"
-      password: "{{ vstat_password | default(vstat_default_password) }}"
-      status_code: 200
-      validate_certs: False
-    register: webresult
-    ignore_errors: yes
-
-  - name: Write web interface result separator to report file
-    nuage_append: filename="{{ report_path }}" text="-----VSTAT Web Interface Check-----\n"
-    delegate_to: localhost
-
-  - name: Write web interface result
-    nuage_append: filename="{{ report_path }}" text="{{ webresult  | to_nice_json }}\n"
-    delegate_to: localhost
 
   - block:
 
