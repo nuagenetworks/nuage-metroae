@@ -1442,30 +1442,15 @@ function deployment_main {
     set -e
 
 }
-
 #################################################################################
 #                                    Config                                     #
 #################################################################################
 
-function docker_exec_config {
+function docker_exec_levistate {
     debug ${FUNCNAME[0]}
-    docker_exec env /usr/bin/python $CONTAINER_HOME/nuage-metroae-config/metroae_config.py "$@"
+    docker_exec env /usr/bin/python /source/levistate/levistate.py "$@"
 }
 
-function docker_exec_generate_and_copy_keys {
-    debug ${FUNCNAME[0]}
-    docker_exec env $CONTAINER_HOME/generateAndCopySshKeys.sh
-}
-
-function docker_exec_copy_common_defaults {
-    debug ${FUNCNAME[0]}
-    docker_exec env $CONTAINER_HOME/copyCommonDefaults.sh
-}
-
-function docker_exec_copy_deploy_defaults {
-    debug ${FUNCNAME[0]}
-    docker_exec env $CONTAINER_HOME/copyDeployDefaults.sh
-}
 
 function config_status {
     debug ${FUNCNAME[0]}
@@ -1568,7 +1553,7 @@ function config_main {
     done
 
     if [[ $exec == true ]]; then
-        docker_exec_config "${POSITIONAL[@]}"
+        docker_exec_levistate "${POSITIONAL[@]}"
     fi
 
     if [[ $usage_last == true ]]; then
@@ -1595,44 +1580,61 @@ function copy_ssh_id {
     fi
 
     if [[ ! -z $NOT_INTERACTIVE ]]; then
-       docker exec $RUNNING_CONTAINER_ID $sshpass ssh-copy-id -i $CONTAINER_HOME/id_rsa.pub -o StrictHostKeyChecking=no $1
+       docker exec $RUNNING_CONTAINER_ID $sshpass ssh-copy-id -i /source/id_rsa.pub -o StrictHostKeyChecking=no $1
     else
-       docker exec -it $RUNNING_CONTAINER_ID $sshpass ssh-copy-id -i $CONTAINER_HOME/id_rsa.pub -o StrictHostKeyChecking=no $1
+       docker exec -it $RUNNING_CONTAINER_ID $sshpass ssh-copy-id -i /source/id_rsa.pub -o StrictHostKeyChecking=no $1
     fi
 }
 
 function docker_metro_ae_exec {
     debug ${FUNCNAME[0]}
-    docker_exec env $CONTAINER_HOME/nuage-metroae/metroae "$@"
+    docker_exec env /source/nuage-metro/metroae "$@"
+}
+
+function stop_ui {
+    debug ${FUNCNAME[0]}
+    run_container_if_not_running
+    docker exec $RUNNING_CONTAINER_ID /source/UI.sh stop
+}
+
+function start_ui {
+    debug ${FUNCNAME[0]}
+    run_container_if_not_running
+
+    docker_exec_interactive /source/UI.sh start $1
+
+}
+
+function ui_status {
+    debug ${FUNCNAME[0]}
+    run_container_if_not_running
+    docker exec $RUNNING_CONTAINER_ID /source/UI.sh status
+}
+
+function load_certificates {
+    debug ${FUNCNAME[0]}
+    get_running_container_id
+
+    docker_exec_interactive /source/UI.sh loadCertificates $1 $2 $3
 }
 
 function unzip_files {
     debug ${FUNCNAME[0]}
-    docker_exec $CONTAINER_HOME/nuage-metroae/nuage-unzip.sh "$@"
+    docker_exec /source/nuage-metro/nuage-unzip.sh "$@"
 }
 
 function gen_example_from_schema {
     debug ${FUNCNAME[0]}
-    docker_exec /usr/bin/python $CONTAINER_HOME/nuage-metroae/generate_example_from_schema.py "$@"
+    docker_exec /usr/bin/python /source/nuage-metro/generate_example_from_schema.py "$@"
 }
 
 function container_status {
     debug ${FUNCNAME[0]}
-    get_running_container_id
-    if [[ ! -z $RUNNING_CONTAINER_ID ]]; then
-        write_to_screen_and_script_log "MetroAE Container Status:"
-        echo ""
-        debug "${FUNCNAME[0]}: Getting the versions in the container itself"
-        docker exec $RUNNING_CONTAINER_ID cat $CONTAINER_HOME/version
-    else
-        echo ""
-        write_to_screen_and_script_log "The MetroAE container is not running."
-        echo "Please run 'metroae container start' to restart a stopped container."
-        echo "Please run 'metroae container setup' to setup a container. Quitting."
-        exit 0
-    fi
+    docker_status
     if [[ -f $SETUP_FILE ]]; then
-        debug "${FUNCNAME[0]}: Using container configuration from host"
+        write_to_screen_and_script_log ">>> Getting container configuration from host"
+        echo ""
+        while read -r line; do declare $line; done < $SETUP_FILE
         if [[ -z $METROAE_SETUP_TYPE ]]; then
             echo ""
             write_to_screen_and_script_log "We couldn't find the MetroAE setup type in the configuration file on disk."
@@ -1646,11 +1648,11 @@ function container_status {
             echo ""
             exit 1
         fi
-        if [[ $METROAE_SETUP_TYPE == $CONFIG_SETUP_TYPE ]]; then
+        if [[ $METROAE_SETUP_TYPE == "c" ]]; then
             current_setup_type="Config"
-        elif [[ $METROAE_SETUP_TYPE == $DEPLOY_SETUP_TYPE ]]; then
+        elif [[ $METROAE_SETUP_TYPE == "d" ]]; then
             current_setup_type="Deploy"
-        elif [[ $METROAE_SETUP_TYPE == $BOTH_SETUP_TYPE ]]; then
+        elif [[ $METROAE_SETUP_TYPE == "b" ]]; then
             current_setup_type="Both Config and Deploy"
         else
             echo ""
@@ -1659,8 +1661,16 @@ function container_status {
             echo ""
         fi
         write_to_screen_and_script_log "MetroAE setup type: $current_setup_type"
-        write_to_screen_and_script_log "MetroAE container data directory: $METROAE_MOUNT_POINT"
-        write_to_screen_and_script_log "MetroAE run mode: $RUN_MODE"
+        write_to_screen_and_script_log "MetroAE container data path: $METROAE_MOUNT_POINT"
+
+        if [[ ! -z "$METROAE_GUI_ENABLE" ]]; then
+            get_host_operating_system
+            if [[ $OS_RELEASE -eq $LINUX ]]; then
+                write_to_screen_and_script_log "MetroAE container GUI port: 5001"
+    	    else
+                write_to_screen_and_script_log "MetroAE container GUI port: $UI_PORT"
+            fi
+        fi
     else
         echo ""
         write_to_screen_and_script_log "MetroAE container setup file not found. Please run 'metroae container setup'"
@@ -1668,28 +1678,19 @@ function container_status {
         echo ""
         exit 1
     fi
-    if [[ ! -z $RUNNING_CONTAINER_ID ]]; then
-        write_to_screen_and_script_log "Docker information:"
-        echo ""
-        debug "${FUNCNAME[0]}: Getting the output of 'docker ps'"
-        header=`docker ps -a | grep "IMAGE"`
-        write_to_screen_and_script_log "$header"
-        container_status=`docker ps -a | grep "$METRO_AE_IMAGE"`
-        write_to_screen_and_script_log "$container_status"
-    fi
 }
 
 function vault_password {
     debug ${FUNCNAME[0]}
     run_container_if_not_running
 
-    docker_exec_interactive /usr/bin/python $CONTAINER_HOME/nuage-metroae/encrypt_credentials.py  $1
+    docker_exec_interactive /usr/bin/python /source/nuage-metro/encrypt_credentials.py  $1
 }
 
 function disable_encryption {
     debug ${FUNCNAME[0]}
     run_container_if_not_running
-    docker exec $RUNNING_CONTAINER_ID $CONTAINER_HOME/UI.sh disable-encryption
+    docker exec $RUNNING_CONTAINER_ID /source/UI.sh disable-encryption
 }
 
 function container_main {
@@ -1704,9 +1705,14 @@ function container_main {
         check_for_user_group "$@"
     fi
 
+    # check docker
     check_docker
 
-    if [[ $# -eq 0 ]]; then
+    # main functionality
+    if [[ $# -ne 0 ]] && [[ $1 == "gui" ]]; then
+        ui_help ",gui"
+        exit 0
+    elif [[ $# -eq 0 ]]; then
         container_help ",container"
         exit 0
     fi
@@ -1715,11 +1721,9 @@ function container_main {
 
     POSITIONAL=()
     exec=false
-    debug "${FUNCNAME[0]}: Checking command options"
     while [ $# -gt 0 ]
     do
         key=$1
-        debug "POSITIONAL = ${POSITIONAL[*]}"
         case $key in
             help|--h|-h|--help|-help)
             container_help ",container"
@@ -1775,6 +1779,23 @@ function container_main {
             fi
             exit 0
             ;;
+            stop-ui)
+            stop_ui
+            shift
+            ;;
+            start-ui)
+            if [[ -z $2 ]]; then
+                start_ui
+            else
+                start_ui $2
+                shift
+            fi
+            shift
+            ;;
+            status-ui)
+            ui_status
+            shift
+            ;;
             status)
             container_status
             shift
@@ -1786,6 +1807,17 @@ function container_main {
                 vault_password $2
                 shift
             fi
+            shift
+            ;;
+            enable-ui-encryption)
+            load_certificates $2 $3 $4
+            shift
+            shift
+            shift
+            shift
+            ;;
+            disable-ui-encryption)
+            disable_encryption
             shift
             ;;
             interactive)
@@ -1825,16 +1857,7 @@ function container_main {
     done
 
     if [[ $exec == true ]]; then
-        if [[ $METROAE_SETUP_TYPE == $CONFIG_SETUP_TYPE ]]; then
-            echo ""
-            write_to_screen_and_script_log "Unrecognized command for a config-only setup: ${POSITIONAL[@]}."
-            echo "Execute 'metroae container setup' to change your setup type."
-            echo ""
-            echo ""
-            main_help
-        else
-            docker_metro_ae_exec "${POSITIONAL[@]}"
-        fi
+        docker_metro_ae_exec "${POSITIONAL[@]}"
     fi
 }
 
@@ -1849,17 +1872,13 @@ function tools_main {
         setup_args=("${EXTRA_ARGS[@]:0:6}")
         EXTRA_ARGS=("${EXTRA_ARGS[@]:6}")
     fi
-    debug "${FUNCNAME[0]}: setup_args: $setup_args" 
-    debug "${FUNCNAME[0]}: EXTRA_ARGS: $EXTRA_ARGS" 
 
     get_running_container_id
     get_container_id
-    if [[ $RUN_MODE == $CONTAINER_RUN_MODE ]] && [[ -z $RUNNING_CONTAINER_ID ]]; then
+    if [[ $RUN_MODE == "CONTAINER" ]] && [[ -z $RUNNING_CONTAINER_ID ]]; then
         if [[ -z $CONTAINER_ID ]]; then
-            debug "${FUNCNAME[0]}: Setting up container" 
             setup_container "${setup_args[@]}"
         else
-            debug "${FUNCNAME[0]}: Starting container" 
             docker start $CONTAINER_ID
         fi
     fi
@@ -1868,40 +1887,40 @@ function tools_main {
     local command_to_run=""
     case ${MATCH_MENU[3]} in
         unzip-files)
-        if [[ $RUN_MODE == $CONTAINER_RUN_MODE ]]; then
-            docker_exec env $CONTAINER_HOME/nuage-metroae/nuage-unzip.sh ${EXTRA_ARGS[@]}
+        if [[ $RUN_MODE == "CONTAINER" ]]; then
+            docker_exec env /source/nuage-metro/nuage-unzip.sh ${EXTRA_ARGS[@]}
         else
             ./nuage-unzip.sh ${EXTRA_ARGS[@]}
         fi
         print_version_and_exit 0
         ;;
         get_debug)
-        if [[ $RUN_MODE == $CONTAINER_RUN_MODE ]]; then
-            docker_exec env /usr/bin/python $CONTAINER_HOME/nuage-metroae/get_debug.py ${EXTRA_ARGS[@]}
+        if [[ $RUN_MODE == "CONTAINER" ]]; then
+            docker_exec env /usr/bin/python /source/nuage-metro/get_debug.py ${EXTRA_ARGS[@]}
         else
             /usr/bin/python get_debug.py ${EXTRA_ARGS[@]}
         fi
         print_version_and_exit 0
         ;;
         convert_csv_to_deployment)
-        if [[ $RUN_MODE == $CONTAINER_RUN_MODE ]]; then
-            docker_exec env workdir $CONTAINER_HOME/nuage-metroae/usr/bin/python convert_csv_to_deployment.py ${EXTRA_ARGS[@]}
+        if [[ $RUN_MODE == "CONTAINER" ]]; then
+            docker_exec env workdir /source/nuage-metro /usr/bin/python convert_csv_to_deployment.py ${EXTRA_ARGS[@]}
         else
             /usr/bin/python convert_csv_to_deployment.py ${EXTRA_ARGS[@]}
         fi
         print_version_and_exit 0
         ;;
         generate-example-from-schema)
-        if [[ $RUN_MODE == $CONTAINER_RUN_MODE ]]; then
-            docker_exec env /usr/bin/python $CONTAINER_HOME/nuage-metroae/generate_example_from_schema.py ${EXTRA_ARGS[@]}
+        if [[ $RUN_MODE == "CONTAINER" ]]; then
+            docker_exec env /usr/bin/python /source/nuage-metro/generate_example_from_schema.py ${EXTRA_ARGS[@]}
         else
             /usr/bin/python generate_example_from_schema.py ${EXTRA_ARGS[@]}
         fi
         print_version_and_exit 0
         ;;
         encrypt-credentials)
-        if [[ $RUN_MODE == $CONTAINER_RUN_MODE ]]; then
-            docker_exec env /usr/bin/python $CONTAINER_HOME/nuage-metroae/encrypt_credentials.py ${EXTRA_ARGS[@]}
+        if [[ $RUN_MODE == "CONTAINER" ]]; then
+            docker_exec env /usr/bin/python /source/nuage-metro/encrypt_credentials.py ${EXTRA_ARGS[@]}
         else
             /usr/bin/python encrypt_credentials.py ${EXTRA_ARGS[@]}
         fi
@@ -1920,40 +1939,37 @@ function tools_main {
 
 function main_help {
     debug ${FUNCNAME[0]}
-    help_header
+    echo "Nuage Networks Metro Automation Engine (MetroAE) Version:" $METROAE_VERSION
+    echo ""
     echo "MetroAE usage:"
     echo ""
     print_menu_help "metroae%-50s %-1s\n" $1
     echo ""
-    if [[ ! $METROAE_SETUP_TYPE == $CONFIG_SETUP_TYPE ]]; then
-        echo "[deployment] is the name of a deployment containing the required"
-        echo "configuration files. The deployments are stored as directories under:"
-        echo $DEPLOYMENTS_BASE_DIR
-        echo ""
-    fi
+    echo "[deployment] is the name of a deployment containing the required"
+    echo "configuration files. The deployments are stored as directories under:"
+    echo $DEPLOYMENTS_BASE_DIR
+    echo ""
     echo "[options] include:"
     echo "  -h, --help:            Displays this help."
-    if [[ ! $METROAE_SETUP_TYPE == $CONFIG_SETUP_TYPE ]]; then
-        echo "  --ansible-help:        Displays help for ansible arguments."
-        echo "  -v, -vv, -vvv, -vvvv:  Runs with increasing levels of verbosity."
-        echo "  --list:                Shows a list of all supported workflows"
-        echo "  --skip-password:       Do not ask for a password.  Password can be"
-        echo "                         provided via the environment variable"
-        echo "                         METROAE_PASSWORD"
-        echo "  --skip-build:          Runs workflow without performing build."
-        echo "                         This will prevent changes in the deployment"
-        echo "                         from taking effect, but it will be faster."
-        echo "  --set-group <group>:   Sets the ownership of inventory and logs to"
-        echo "                         the specified group so that other users in"
-        echo "                         the group can access these files."
-        echo ""
-        echo "Any additional [options] are passed to the internal Ansible engine"
-        echo "for processing"
-    fi
+    echo "  --ansible-help:        Displays help for ansible arguments."
+    echo "  -v, -vv, -vvv, -vvvv:  Runs with increasing levels of verbosity."
+    echo "  --list:                Shows a list of all supported workflows"
+    echo "  --skip-password:       Do not ask for a password.  Password can be"
+    echo "                         provided via the environment variable"
+    echo "                         METROAE_PASSWORD"
+    echo "  --skip-build:          Runs workflow without performing build."
+    echo "                         This will prevent changes in the deployment"
+    echo "                         from taking effect, but it will be faster."
+    echo "  --set-group <group>:   Sets the ownership of inventory and logs to"
+    echo "                         the specified group so that other users in"
+    echo "                         the group can access these files."
+    echo ""
+    echo "Any additional [options] are passed to the internal Ansible engine"
+    echo "for processing"
     echo ""
     echo "Additional menu help is available by adding 'help' to the command line,"
     echo "e.g. 'metroae container help'"
-    if [[ $RUN_MODE == $CONTAINER_RUN_MODE ]]; then
+    if [[ $RUN_MODE == "CONTAINER" ]]; then
         get_running_container_id
         get_container_id
         if [[ -z $RUNNING_CONTAINER_ID ]] && [[ -z $CONTAINER_ID ]]; then
@@ -1965,14 +1981,15 @@ function main_help {
             echo "To run from a local copy of the MetroAE repo, change directory to"
             echo "the root of that local copy and try again. If you need to create"
             echo "a local copy of the MetroAE repo, check"
-            echo "https://github.com/nuagenetworks/nuage-metroae for details."
+            echo "https://github.com/nuagenetworks/nuage-metro for details."
         fi
     fi
 }
 
 function container_help {
     debug ${FUNCNAME[0]}
-    help_header
+    echo "Nuage Networks Metro Automation Engine (MetroAE) Version:" $METROAE_VERSION
+    echo ""
     echo "MetroAE container usage:"
     echo ""
     print_menu_help "metroae%-50s %-1s\n" $1
@@ -1981,94 +1998,52 @@ function container_help {
 
 function config_help {
     debug ${FUNCNAME[0]}
-    if [[ $RUN_MODE == $REPO_RUN_MODE ]]; then
-        echo ""
-        echo "It looks like you are trying to get help for MetroAE config. The metroae command"
-        echo "appears to have been executed from a cloned workspace of the nuage-metroae github"
-        echo "repo. MetroAE config is only operated from the MetroAE container. Please change"
-        echo "your working directory and try again."
-        echo ""
-    elif [[ -z $METROAE_SETUP_TYPE ]]; then 
-        echo ""
-        echo "It looks like you are trying to get help for MetroAE config using the container."
-        echo "The MetroAE container setup type (config, deploy, or both) does not appear to be"
-        echo "configured. Please run 'metroae container setup' and try again."
-        echo ""
-    elif [[ $METROAE_SETUP_TYPE == $DEPLOY_SETUP_TYPE ]]; then 
-        echo ""
-        echo "It looks like you are trying to get help for MetroAE config using the container."
-        echo "The MetroAE container appears to have been setup for DEPLOY only. Please change"
-        echo "your setup type using 'metroae container setup' and try again."
-        echo ""
-    else
-        help_header
-        echo "MetroAE config is a tool that you can use to apply and manage day-zero configurations"
-        echo "for Nuage Networks VSD. MetroAE config is only available via the MetroAE container."
-        echo "You can execute 'metroae config', 'metroae config -h' or 'metroae config --help' to"
-        echo "print this help and usage message."
-        echo ""
-        echo "The output, below, contains a list of 'positional arguments' that are supported by"
-        echo "metroae config. You can execute 'metroae config <positional argument> -h' for help"
-        echo "with each positional argument, e.g. 'metroae config create -h'."
-        echo ""
-        echo "MetroAE config usage:"
-        echo ""
-        print_menu_help "metroae%-50s %-1s\n" $1
-        echo ""
+    echo "Nuage Networks Metro Automation Engine (MetroAE) Version:" $METROAE_VERSION
+    echo ""
+    echo "MetroAE config is a tool that you can use to apply and manage day-zero configurations"
+    echo "for a Nuage Networks VSD. MetroAE config is only available via the MetroAE container."
+    echo "system inside the MetroAE container. To access metroae config help you can"
+    echo "execute 'metroae config -h'. This will list the positional arguments that are"
+    echo "supported by the tool. To get additional help for each positional argument,"
+    echo "execute 'metroae config <positional arguement> -h', e.g."
+    echo "'metroae config create -h'."
+    echo ""
+    echo "MetroAE config usage:"
+    echo ""
+    print_menu_help "metroae%-50s %-1s\n" $1
+    echo ""
 
-        get_running_container_id
-        if [[ -z $RUNNING_CONTAINER_ID ]]; then
-            echo ""
-            echo "The MetroAE container is not running. Full help text can only be accessed"
-            echo "when the container is running. Please execute 'metroae container start'"
-            echo "and try again."
-        elif [[ $NUM_CLI_ARGS == 1 ]]; then
-            docker_exec_config -h
-        else
-            # Remove the string "config"
-            docker_exec_config "${CLI_ARGS[@]:1}"
-        fi
+    get_running_container_id
+    if [[ -z $RUNNING_CONTAINER_ID ]]; then
+        echo ""
+        echo "The MetroAE container is not running. Full help text can only be accessed"
+        echo "when the container is running. Please execute 'metroae container start'"
+        echo "and try again."
+    elif [[ $NUM_CLI_ARGS == 1 ]]; then
+        docker_exec_levistate -h
+    else
+        # Remove the string "config"
+        docker_exec_levistate "${CLI_ARGS[@]:1}"
     fi
 }
 
 function tools_help {
     debug ${FUNCNAME[0]}
-    if [[ ($RUN_MODE == $CONTAINER_RUN_MODE && $METROAE_SETUP_TYPE != $CONFIG_SETUP_TYPE) || $RUN_MODE == $REPO_RUN_MODE  ]]; then
-        help_header
-        echo "MetroAE tools usage:"
-        echo ""
-        print_menu_help "metroae%-50s %-1s\n" $1
-        echo ""
-    elif [[ -z $METROAE_SETUP_TYPE ]]; then 
-        echo ""
-        echo "It looks like you are trying to get help for MetroAE tools using the container."
-        echo "The MetroAE container setup type (config, deploy, or both) does not appear to be"
-        echo "configured. Please run 'metroae container setup' and try again."
-        echo ""
-    elif [[ $METROAE_SETUP_TYPE == $CONFIG_SETUP_TYPE ]]; then 
-        echo ""
-        echo "It looks like you are trying to get help for MetroAE tools using the container."
-        echo "The MetroAE container appears to have been setup for CONFIG only. Please change"
-        echo "your setup type using 'metroae container setup' and try again."
-        echo ""
-    fi
+    echo "Nuage Networks Metro Automation Engine (MetroAE) Version:" $METROAE_VERSION
+    echo ""
+    echo "MetroAE tools usage:"
+    echo ""
+    print_menu_help "metroae%-50s %-1s\n" $1
+    echo ""
 }
 
-function help_header {
+function ui_help {
     debug ${FUNCNAME[0]}
-    echo ""
     echo "Nuage Networks Metro Automation Engine (MetroAE) Version:" $METROAE_VERSION
-    echo "Run mode is" $RUN_MODE
-    if [[ ! -z  $METROAE_SETUP_TYPE ]]; then
-        if [[ $METROAE_SETUP_TYPE == $CONFIG_SETUP_TYPE ]]; then
-            current_setup_type="Config"
-        elif [[ $METROAE_SETUP_TYPE == $DEPLOY_SETUP_TYPE ]]; then
-            current_setup_type="Deploy"
-        else
-            current_setup_type="Both Config and Deploy"
-        fi
-        echo "Setup type is" $current_setup_type
-    fi
+    echo ""
+    echo "MetroAE gui usage:"
+    echo ""
+    print_menu_help "metroae%-50s %-1s\n" $1
     echo ""
 }
 
@@ -2089,6 +2064,10 @@ function switch_help {
         ;;
         ,tools*)
         tools_help "$1"
+        exit 0
+        ;;
+        ,gui*)
+        ui_help "$1"
         exit 0
         ;;
         *)
@@ -2157,11 +2136,11 @@ function parse_menu_args {
 #                                     Main                                      #
 #################################################################################
 
-check_run_mode
+if [[ -z $RUN_MODE ]]; then
+    check_run_mode
+fi
 
-source_container_config
-
-source_menu
+try_get_menu
 
 if [[ $# == 0 ]]; then
     main_help
@@ -2171,53 +2150,26 @@ fi
 CLI_ARGS=("$@")
 NUM_CLI_ARGS=$#
 
-debug "main: Menu args = $@"
-
 parse_menu_args "$@"
 
 # Do the file check and setup before running the commands
 if [[ ${MATCH_MENU[0]} != ",container,setup" ]] && [[ ${MATCH_MENU[0]} != ",container,pull" ]] && [[ ${MATCH_MENU[0]} != ",container,destroy" ]] && [[ ${MATCH_MENU[0]} != ",container,status" ]] && [[ ${MATCH_MENU[0]} != ",container,update" ]]; then
     check_for_prerequisite "$@"
-    if [ ! -z NOT_INTERACTIVE ]; then
-        shift
-        shift
-        shift
-    fi
     # parse it again if we loaded the new menu
-    debug "main: Menu args = $@"
     parse_menu_args "$@"
 fi
 
 case ${MATCH_MENU[2]} in
     tools)
-    debug "main: tools"
     tools_main
     print_version_and_exit 0
     ;;
     config)
-    debug "main: config"
-    if [[ ! $RUN_MODE == $CONTAINER_RUN_MODE ]]; then
-        echo ""
-        write_to_screen_and_script_log "'config' command is not supported without the MetroAE container."
-        echo "You can setup the container with 'metroae container setup'. Quitting."
-        echo ""
-        echo ""
-        main_help
-    elif [[ METROAE_SETUP_TYPE == $DEPLOY_SETUP_TYPE ]]; then
-        echo ""
-        write_to_screen_and_script_log "'config' command is not supported in a deploy-only setup."
-        echo "Execute 'metroae container setup' to change your setup type."
-        echo ""
-        echo ""
-        main_help
-    else
-        config_main ${MATCH_MENU[3]} "${EXTRA_ARGS[@]}"
-    fi
+    config_main ${MATCH_MENU[3]} "${EXTRA_ARGS[@]}"
     exit 0
     ;;
     playbook)
-    debug "main: playbook"
-    if [[ $RUN_MODE == $CONTAINER_RUN_MODE ]]; then
+    if [[ $RUN_MODE == "CONTAINER" ]]; then
         container_main ${MATCH_MENU[3]} "${EXTRA_ARGS[@]}"
     else
         deployment_main ${MATCH_MENU[3]} "${EXTRA_ARGS[@]}"
@@ -2225,17 +2177,15 @@ case ${MATCH_MENU[2]} in
     print_version_and_exit 0
     ;;
     wizard)
-    debug "main: wizard"
-    if [[ $RUN_MODE == $CONTAINER_RUN_MODE ]]; then
-        docker_exec_interactive /usr/bin/python $CONTAINER_HOME/nuage-metroae/run_wizard.py "${EXTRA_ARGS[@]}"
+    if [[ $RUN_MODE == "CONTAINER" ]]; then
+        docker_exec_interactive /usr/bin/python /source/nuage-metro/run_wizard.py "${EXTRA_ARGS[@]}"
     else
         ./run_wizard.py "${EXTRA_ARGS[@]}"
     fi
     print_version_and_exit 0
     ;;
     setup)
-    debug "main: setup"
-    if [[ $RUN_MODE == $CONTAINER_RUN_MODE ]]; then
+    if [[ $RUN_MODE == "CONTAINER" ]]; then
         echo "Setup cannot be run in MetroAE container"
         print_version_and_exit 1
     else
@@ -2244,13 +2194,11 @@ case ${MATCH_MENU[2]} in
     print_version_and_exit 0
     ;;
     container)
-    debug "main: container"
     container_main ${MATCH_MENU[3]} "${EXTRA_ARGS[@]}"
     print_version_and_exit 0
     ;;
     *)
-    debug "main: other"
-    if [[ $RUN_MODE == $CONTAINER_RUN_MODE ]]; then
+    if [[ $RUN_MODE == "CONTAINER" ]]; then
         container_main "$@"
     else
         deployment_main "$@"
