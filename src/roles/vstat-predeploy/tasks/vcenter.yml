@@ -47,14 +47,28 @@
       name: common
       tasks_from: vcenter-deploy-image
 
+  - name: Get VM Facts
+    connection: local
+    vmware_guest_facts:
+      hostname: "{{ target_server }}"
+      username: "{{ vcenter.username }}"
+      password: "{{ vcenter.password }}"
+      validate_certs: no
+      datacenter: "{{ vcenter.datacenter }}"
+      folder: "{{ vcenter.vm_folder }}"
+      name: "{{ vm_name }}"
+    delegate_to: localhost
+    register: vm_facts
+
+  - debug: var=vm_facts verbosity=1
+
   - name: Waiting until VMware tools becomes available
     connection: local
     vmware_guest_tools_wait:
       hostname: "{{ target_server }}"
       username: "{{ vcenter.username }}"
       password: "{{ vcenter.password }}"
-      name: "{{ vm_name }}"
-      datacenter: "{{ vcenter.datacenter }}"
+      uuid: "{{ vm_facts.instance.hw_product_uuid }}"
       validate_certs: no
     register: vm_facts
 
