@@ -2064,7 +2064,107 @@ function parse_menu_args {
             MENU_KEY=$MENU_KEY","$1
             get_sub_menu $MENU_KEY
             if [[ -z $SUB_MENU ]]; then
-                EXTRA_ARGS+=("$1")
+                EXTRA_ARGS+=("$1")check_run_mode
+
+source_container_config
+
+source_menu
+
+if [[ $# == 0 ]]; then
+    main_help
+    exit 0
+fi
+
+CLI_ARGS=("$@")
+NUM_CLI_ARGS=$#
+
+debug "main: Menu args = $@"
+
+parse_menu_args "$@"
+
+# Do the file check and setup before running the commands
+if [[ ${MATCH_MENU[0]} != ",container,setup" ]] && [[ ${MATCH_MENU[0]} != ",container,pull" ]] && [[ ${MATCH_MENU[0]} != ",container,destroy" ]] && [[ ${MATCH_MENU[0]} != ",container,status" ]] && [[ ${MATCH_MENU[0]} != ",container,update" ]]; then
+    check_for_prerequisite "$@"
+    if [ ! -z NOT_INTERACTIVE ]; then
+        shift
+        shift
+        shift
+    fi
+    # parse it again if we loaded the new menu
+    debug "main: Menu args = $@"
+    parse_menu_args "$@"
+fi
+
+case ${MATCH_MENU[2]} in
+    tools)
+    debug "main: tools"
+    tools_main
+    print_version_and_exit 0
+    ;;
+    config)
+    debug "main: config"
+    if [[ ! $RUN_MODE == $CONTAINER_RUN_MODE ]]; then
+        echo ""
+        write_to_screen_and_script_log "'config' command is not supported without the MetroAE container."
+        echo "You can setup the container with 'metroae container setup'. Quitting."
+        echo ""
+        echo ""
+        main_help
+    elif [[ METROAE_SETUP_TYPE == $DEPLOY_SETUP_TYPE ]]; then
+        echo ""
+        write_to_screen_and_script_log "'config' command is not supported in a deploy-only setup."
+        echo "Execute 'metroae container setup' to change your setup type."
+        echo ""
+        echo ""
+        main_help
+    else
+        config_main ${MATCH_MENU[3]} "${EXTRA_ARGS[@]}"
+    fi
+    exit 0
+    ;;
+    playbook)
+    debug "main: playbook"
+    if [[ $RUN_MODE == $CONTAINER_RUN_MODE ]]; then
+        container_main ${MATCH_MENU[3]} "${EXTRA_ARGS[@]}"
+    else
+        deployment_main ${MATCH_MENU[3]} "${EXTRA_ARGS[@]}"
+    fi
+    print_version_and_exit 0
+    ;;
+    wizard)
+    debug "main: wizard"
+    if [[ $RUN_MODE == $CONTAINER_RUN_MODE ]]; then
+        docker_exec_interactive /usr/bin/python $CONTAINER_HOME/nuage-metroae/run_wizard.py "${EXTRA_ARGS[@]}"
+    else
+        ./run_wizard.py "${EXTRA_ARGS[@]}"
+    fi
+    print_version_and_exit 0
+    ;;
+    setup)
+    debug "main: setup"
+    if [[ $RUN_MODE == $CONTAINER_RUN_MODE ]]; then
+        echo "Setup cannot be run in MetroAE container"
+        print_version_and_exit 1
+    else
+        ./setup.sh "${EXTRA_ARGS[@]}"
+    fi
+    print_version_and_exit 0
+    ;;
+    container)
+    debug "main: container"
+    container_main ${MATCH_MENU[3]} "${EXTRA_ARGS[@]}"
+    print_version_and_exit 0
+    ;;
+    *)
+    debug "main: other"
+    if [[ $RUN_MODE == $CONTAINER_RUN_MODE ]]; then
+        container_main "$@"
+    else
+        deployment_main "$@"
+    fi
+    print_version_and_exit 0
+    ;;
+esac
             else
                 # if we match with different menu, we just clear the extra args
                 if [[ "${MATCH_MENU[@]}" != "('${SUB_MENU[@]}')" ]]; then
@@ -2081,11 +2181,11 @@ function parse_menu_args {
 #                                     Main                                      #
 #################################################################################
 
-if [[ -z $RUN_MODE ]]; then
-    check_run_mode
-fi
+check_run_mode
 
-try_get_menu
+source_container_config
+
+source_menu
 
 if [[ $# == 0 ]]; then
     main_help
@@ -2095,26 +2195,53 @@ fi
 CLI_ARGS=("$@")
 NUM_CLI_ARGS=$#
 
+debug "main: Menu args = $@"
+
 parse_menu_args "$@"
 
 # Do the file check and setup before running the commands
 if [[ ${MATCH_MENU[0]} != ",container,setup" ]] && [[ ${MATCH_MENU[0]} != ",container,pull" ]] && [[ ${MATCH_MENU[0]} != ",container,destroy" ]] && [[ ${MATCH_MENU[0]} != ",container,status" ]] && [[ ${MATCH_MENU[0]} != ",container,update" ]]; then
     check_for_prerequisite "$@"
+    if [ ! -z NOT_INTERACTIVE ]; then
+        shift
+        shift
+        shift
+    fi
     # parse it again if we loaded the new menu
+    debug "main: Menu args = $@"
     parse_menu_args "$@"
 fi
 
 case ${MATCH_MENU[2]} in
     tools)
+    debug "main: tools"
     tools_main
     print_version_and_exit 0
     ;;
     config)
-    config_main ${MATCH_MENU[3]} "${EXTRA_ARGS[@]}"
+    debug "main: config"
+    if [[ ! $RUN_MODE == $CONTAINER_RUN_MODE ]]; then
+        echo ""
+        write_to_screen_and_script_log "'config' command is not supported without the MetroAE container."
+        echo "You can setup the container with 'metroae container setup'. Quitting."
+        echo ""
+        echo ""
+        main_help
+    elif [[ METROAE_SETUP_TYPE == $DEPLOY_SETUP_TYPE ]]; then
+        echo ""
+        write_to_screen_and_script_log "'config' command is not supported in a deploy-only setup."
+        echo "Execute 'metroae container setup' to change your setup type."
+        echo ""
+        echo ""
+        main_help
+    else
+        config_main ${MATCH_MENU[3]} "${EXTRA_ARGS[@]}"
+    fi
     exit 0
     ;;
     playbook)
-    if [[ $RUN_MODE == "CONTAINER" ]]; then
+    debug "main: playbook"
+    if [[ $RUN_MODE == $CONTAINER_RUN_MODE ]]; then
         container_main ${MATCH_MENU[3]} "${EXTRA_ARGS[@]}"
     else
         deployment_main ${MATCH_MENU[3]} "${EXTRA_ARGS[@]}"
@@ -2122,15 +2249,17 @@ case ${MATCH_MENU[2]} in
     print_version_and_exit 0
     ;;
     wizard)
-    if [[ $RUN_MODE == "CONTAINER" ]]; then
-        docker_exec_interactive /usr/bin/python /source/nuage-metro/run_wizard.py "${EXTRA_ARGS[@]}"
+    debug "main: wizard"
+    if [[ $RUN_MODE == $CONTAINER_RUN_MODE ]]; then
+        docker_exec_interactive /usr/bin/python $CONTAINER_HOME/nuage-metroae/run_wizard.py "${EXTRA_ARGS[@]}"
     else
         ./run_wizard.py "${EXTRA_ARGS[@]}"
     fi
     print_version_and_exit 0
     ;;
     setup)
-    if [[ $RUN_MODE == "CONTAINER" ]]; then
+    debug "main: setup"
+    if [[ $RUN_MODE == $CONTAINER_RUN_MODE ]]; then
         echo "Setup cannot be run in MetroAE container"
         print_version_and_exit 1
     else
@@ -2139,11 +2268,13 @@ case ${MATCH_MENU[2]} in
     print_version_and_exit 0
     ;;
     container)
+    debug "main: container"
     container_main ${MATCH_MENU[3]} "${EXTRA_ARGS[@]}"
     print_version_and_exit 0
     ;;
     *)
-    if [[ $RUN_MODE == "CONTAINER" ]]; then
+    debug "main: other"
+    if [[ $RUN_MODE == $CONTAINER_RUN_MODE ]]; then
         container_main "$@"
     else
         deployment_main "$@"
