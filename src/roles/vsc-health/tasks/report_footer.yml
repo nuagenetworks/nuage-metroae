@@ -17,15 +17,6 @@
                 {{ lookup('file',  failure_report_path ) }} "
     when:  report.stat.exists
 
-  - name: Check for failures
-    assert: {
-      that: "not report.stat.exists",
-      msg: "Failures detected. Check {{ failure_report_path }} ."
-      }
-
-    delegate_to: localhost
-    run_once: true
-
   - name: Set fact for email attachments
     set_fact:
       email_attachments: []
@@ -47,3 +38,12 @@
       email_subject: MetroAE VSC Health Results
       attachments: "{{ email_attachments }}"
       email_body: Results from VSC health
+
+  - name: Check for failures
+    assert: {
+      that: "not report.stat.exists",
+      msg: "Failures detected. Check {{ failure_report_path }} ."
+      }
+
+    delegate_to: localhost
+    run_once: true
