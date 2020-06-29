@@ -39,6 +39,7 @@
 * Support Ejabberd license install
 * Fix missing fallocate flag during vsc predeploy
 * Disable chrony and cloud-init for NUH and VSTATs install (METROAE-1401)
+* Restart VSC after OpenStack upgrade (GITHUB #1537)
 
 ## Test Matrix
 
