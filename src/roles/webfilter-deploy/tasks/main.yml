@@ -28,11 +28,31 @@
       file_type: jks
       additional_parameters: "-p {{ webfilter_default_password }} -d {{ inventory_hostname }}"
 
-  - name: Copy the generated certificate to the web filtering VM in the following location /opt/vsd/webfilter/conf/webfilter.jks
-    command: ls
+- block:
 
-  - name: Copy the truststore.jks file from the VSD to the web filtering VM in the following location /opt/vsd/webfilter/conf/truststore.jks
-    command: ls
+  - name: Get the webfilter jks
+    fetch:
+      src: "/opt/vsd/ejbca/p12/webfilter.jks"
+      dest: "/tmp/webfilter/"
+      flat: yes
+
+  - name: Get the truststore jks
+    fetch:
+      src: "/opt/vsd/ejbca/p12/truststore.jks"
+      dest: "/tmp/webfilter/"
+      flat: yes
+
+    delegate_to: "{{ vsd_hostname_list[0] }}"
+
+  - name: Copy to webfilter manager
+    copy:
+      dest: "/opt/vsd/webfilter/conf/"
+      src: "/tmp/webfilter/"
+
+  - name: Delete the temporary directory
+    file:
+      path: /tmp/webfilter
+      state: absent
 
   - name: Verify that the /opt/vsd/webfilter/conf/application.properties file has the
           server.ssl.key-store=/opt/vsd/webfilter/conf/webfilter.jks
