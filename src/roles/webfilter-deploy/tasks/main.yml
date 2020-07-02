@@ -56,13 +56,23 @@
       path: /tmp/webfilter
       state: absent
 
-  - name: Verify that the /opt/vsd/webfilter/conf/application.properties file has the
-          server.ssl.key-store=/opt/vsd/webfilter/conf/webfilter.jks
-          server.ssl.key-store-password=<your-ks-password>
-          server.ssl.key-alias=webfilter
-          server.ssl.trust-store=/opt/vsd/webfilter/conf/truststore.jks
-          server.ssl.trust-store-password=<your-ts-password>
-    command: ls
+  - name: "Ensure application properties contains webfilter"
+    lineinfile:
+      name: /opt/vsd/webfilter/conf/application.properties
+      line: "server.ssl.key-store=/opt/vsd/webfilter/conf/webfilter.jks"
+      state: present
+    check_mode: yes
+    register: conf
+    failed_when: (conf is changed) or (conf is failed)
+
+  - name: "Ensure application properties contains truststore"
+    lineinfile:
+      name: /opt/vsd/webfilter/conf/application.properties
+      line: "server.ssl.trust-store=/opt/vsd/webfilter/conf/truststore.jks"
+      state: present
+    check_mode: yes
+    register: conf
+    failed_when: (conf is changed) or (conf is failed)
 
   - name: Execute the following commands to stop and restart the web filtering process
           monit stop webfilter
@@ -86,6 +96,7 @@
           Program 'incompass-status' Status ok
           System 'localhost.localdomain' Running
     command: ls
+
   - name: Execute the monit summary command to ensure the services are operational
     command: ls
 
