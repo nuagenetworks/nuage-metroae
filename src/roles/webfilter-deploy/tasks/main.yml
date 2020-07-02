@@ -74,28 +74,27 @@
     register: conf
     failed_when: (conf is changed) or (conf is failed)
 
-  - name: Execute the following commands to stop and restart the web filtering process
-          monit stop webfilter
-          monit summary
-          Process 'webfilter' Not monitored
-          Program 'webfilter-status' Not monitored
-          Process 'incompass-34-seed' Running
-          Program 'incompass-34-seed-status' Status ok
-          Process 'incompass' Running
-          Program 'incompass-status' Status ok
-          System 'localhost.localdomain' Running
+  - name: Stop webfilter process
     command: monit stop webfilter
+    ignore_errors: yes
+    register: stop_stats_output
 
-  - name: monit start webfilter-status
-          monit summary
-          Process 'webfilter' Running
-          Program 'webfilter-status' Status ok
-          Process 'incompass-34-seed' Running
-          Program 'incompass-34-seed-status' Status ok
-          Process 'incompass' Running
-          Program 'incompass-status' Status ok
-          System 'localhost.localdomain' Running
-    command: ls
+  - name: Check if an error should be ignored
+    assert:
+      that: "not stop_stats_output.failed or stop_stats_output.stderr is search('not found')"
+      msg: "Error while attempting to stop webfilter services"
+
+  - name: Pause for processes to exit
+    pause:
+      seconds: 20
+
+  - name: Start webfilter process
+    command: monit start webfilter
+
+  - name: Get monit summary for webfilter processes
+    vsd_monit:
+      group: all
+    register: vsd_proc
 
   - name: Execute the monit summary command to ensure the services are operational
     command: ls
