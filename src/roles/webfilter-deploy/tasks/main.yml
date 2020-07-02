@@ -111,13 +111,17 @@
       timeout_seconds: 600
       test_interval_seconds: 10
 
-  - name: /opt/vsd/webfilter/scripts/incompassOperations.sh -a all -p /opt/vsd/webfilter/seed_34
-          /opt/vsd/webfilter/scripts/incompassOperations.sh -a all
-    command: ls
+  - name: Run incompass operation command for seed
+    shell: /opt/vsd/webfilter/scripts/incompassOperations.sh -a all -p /opt/vsd/webfilter/seed_34
 
-  - name: Execute the monit summary command again to ensure the services are still operational after
-          the database download and update.
-    command: ls
+  - name: Run incompass operation command
+    shell: /opt/vsd/webfilter/scripts/incompassOperations.sh -a all
+
+  - name: Wait for webfilter processes to become running
+    monit_waitfor_service:
+      name: "{{ webfilter_proc['state'].keys() }}"
+      timeout_seconds: 600
+      test_interval_seconds: 10
 
   - name: Connect with the NSG
     command: ls
