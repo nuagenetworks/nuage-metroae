@@ -208,37 +208,22 @@ function check_for_prerequisite {
                 fi
             fi
             if [[ ! -f $METROAE_MOUNT_POINT/$PLAYBOOK_MENU ]]; then
-                write_to_screen_and_script_log "It looks like you are trying to run the MetroAE container, but we couldn't find the container's menu file in the data directory. Please run ‘metroae container setup’ and try again."
+                write_to_screen_and_script_log "It looks like you are trying to run the MetroAE container, but we couldn't find the container's menu file in the data directory."
+                write_to_screen_and_script_log "Please run 'metroae container setup' to fix this and try again."
                 exit 1
             fi
         else
             debug "${FUNCNAME[0]}: Not found $SETUP_FILE"
             if [[ ! -z $RUNNING_CONTAINER_ID ]]; then
-                write_to_screen_and_script_log "It looks like the MetroAE container is running, but we couldn't find the container's setup file. Please run ‘metroae container setup’ and try again."
+                write_to_screen_and_script_log "It looks like the MetroAE container is running, but we couldn't find the container's setup file."
+                write_to_screen_and_script_log "Please run 'metroae container setup' to fix this and try again."
                 exit 1
             else
-                declare -l confirmation
-                if [[ -z $1 ]]; then
-                    echo ""
-                    write_to_screen_and_script_log "It looks like you are trying to run the MetroAE container, but the MetroAE container has not been setup."
-                    confirmation="init"
-                    while [[ $confirmation != "n" ]] && [[ $confirmation  != "y" ]] && [[ $confirmation != "" ]]
-                    do
-                        echo ""
-                        read -p "Do you want to setup the MetroAE container (y/N): " confirmation
-                    done
-                else
-                    confirmation=$1
-                fi
-
-                if [[ $confirmation == "y" ]]; then
-                    check_for_user_group "$@"
-                    setup_container "$@"
-                else
-                    echo ""
-                    write_to_screen_and_script_log "Setup of MetroAE container canceled. Quitting."
-                    exit 0
-                fi
+                echo ""
+                write_to_screen_and_script_log "It looks like the MetroAE container has not been setup."
+                write_to_screen_and_script_log "Please run 'metroae container setup' to fix this and try again."
+                echo ""
+                exit 1
             fi
         fi
     fi
@@ -1835,18 +1820,6 @@ function tools_main {
     debug "${FUNCNAME[0]}: setup_args: $setup_args" 
     debug "${FUNCNAME[0]}: EXTRA_ARGS: $EXTRA_ARGS" 
 
-    get_running_container_id
-    get_container_id
-    if [[ $RUN_MODE == $CONTAINER_RUN_MODE ]] && [[ -z $RUNNING_CONTAINER_ID ]]; then
-        if [[ -z $CONTAINER_ID ]]; then
-            debug "${FUNCNAME[0]}: Setting up container" 
-            setup_container "${setup_args[@]}"
-        else
-            debug "${FUNCNAME[0]}: Starting container" 
-            docker start $CONTAINER_ID
-        fi
-    fi
-
     POSITIONAL=()
     local command_to_run=""
     case ${MATCH_MENU[3]} in
@@ -2165,18 +2138,7 @@ done
 
 # Do the file check and setup before running the commands
 if [[ ${MATCH_MENU[0]} != ",container,setup" ]] && [[ ${MATCH_MENU[0]} != ",container,pull" ]] && [[ ${MATCH_MENU[0]} != ",container,destroy" ]] && [[ ${MATCH_MENU[0]} != ",container,status" ]] && [[ ${MATCH_MENU[0]} != ",container,update" ]]; then
-    check_for_prerequisite "$@"
-    if [ ! -z NOT_INTERACTIVE ]; then
-        debug "main: hello"
-        echo "hello there"
-        shift
-        shift
-        echo "hello there"
-        debug "main: hello"
-    fi
-    # parse it again if we loaded the new menu
-    debug "main: Menu args = $@"
-    parse_menu_args "$@"
+    check_for_prerequisite
 fi
 
 for menu_item in $MATCH_MENU
