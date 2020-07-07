@@ -175,20 +175,18 @@ function source_container_config {
 
 function check_for_prerequisite {
     debug ${FUNCNAME[0]}
+    debug "${FUNCNAME[0]}: RUN_MODE = $RUN_MODE"
     if [[ $RUN_MODE == $INSIDE_RUN_MODE ]]; then
-        debug "${FUNCNAME[0]}: RUN_MODE = $INSIDE_RUN_MODE"
         if [[ ! -f $CONTAINER_HOME/nuage-metroae/src/$PLAYBOOK_MENU ]]; then
             write_to_screen_and_script_log "It looks like you are running MetroAE from inside the container, but we couldn't find the container's menu file in the data directory. Please run 'metroae container setup' and try again."
             exit 1
         fi
     elif [[ $RUN_MODE == $REPO_RUN_MODE ]]; then
-        debug "${FUNCNAME[0]}: RUN_MODE = $REPO_RUN_MODE"
         if [[ ! -f src/$PLAYBOOK_MENU ]]; then
             write_to_screen_and_script_log "It looks like you are trying to run using a clone of MetroAE, but we couldn't find the menu file in the workspace. Please update your workspace and try again."
             exit 1
         fi
     else # Must be CONTAINER_RUN_MODE
-        debug "${FUNCNAME[0]}: RUN_MODE = $CONTAINER_RUN_MODE"
         get_running_container_id
         if [[ -f $SETUP_FILE ]]; then
             debug "${FUNCNAME[0]}: Found $SETUP_FILE"
@@ -196,27 +194,11 @@ function check_for_prerequisite {
                 debug "${FUNCNAME[0]}: No container found"
                 get_container_id
                 if [[ -z $CONTAINER_ID ]]; then
+                    echo ""
                     write_to_screen_and_script_log "It looks like there is a MetroAE container setup file, but we couldn't find the container."
-                    confirmation="init"
-                    if [[ -z $1 ]]; then
-                        while [[ $confirmation != "n" ]] && [[ $confirmation  != "y" ]] && [[ $confirmation != "" ]]
-                        do
-                            echo ""
-                            read -p "Do you want to download and setup the MetroAE container (y/N): " confirmation
-                        done
-                    else
-                        confirmation=$1
-                        debug "confirmation = $confirmation"
-                        shift
-                    fi                    
-                    if [[ $confirmation == "y" ]]; then
-                        check_for_user_group "$@"
-                        setup_container "$@"
-                    else
-                        echo ""
-                        write_to_screen_and_script_log "Setup of MetroAE container canceled. Quitting."
-                        exit 0
-                    fi
+                    write_to_screen_and_script_log "Please run 'metroae container setup' to fix this and try again."
+                    echo ""
+                    exit 1
                 else
                     debug "${FUNCNAME[0]}: Container found"
                     echo ""
@@ -1629,6 +1611,7 @@ function container_status {
         write_to_screen_and_script_log "The MetroAE container is not running."
         echo "Please run 'metroae container start' to restart a stopped container."
         echo "Please run 'metroae container setup' to setup a container. Quitting."
+        echo ""
         exit 0
     fi
     if [[ -f $SETUP_FILE ]]; then
@@ -2175,18 +2158,33 @@ debug "main: Menu args = $@"
 
 parse_menu_args "$@"
 
+for menu_item in $MATCH_MENU
+do
+    debug "main: first menu_item = $menu_item"
+done
+
 # Do the file check and setup before running the commands
 if [[ ${MATCH_MENU[0]} != ",container,setup" ]] && [[ ${MATCH_MENU[0]} != ",container,pull" ]] && [[ ${MATCH_MENU[0]} != ",container,destroy" ]] && [[ ${MATCH_MENU[0]} != ",container,status" ]] && [[ ${MATCH_MENU[0]} != ",container,update" ]]; then
     check_for_prerequisite "$@"
     if [ ! -z NOT_INTERACTIVE ]; then
+        debug "main: hello"
+        echo "hello there"
         shift
         shift
-        shift
+        echo "hello there"
+        debug "main: hello"
     fi
     # parse it again if we loaded the new menu
     debug "main: Menu args = $@"
     parse_menu_args "$@"
 fi
+
+for menu_item in $MATCH_MENU
+do
+    debug "main: second menu_item = $menu_item"
+done
+
+debug "main: start case on MATCH_MENU"
 
 case ${MATCH_MENU[2]} in
     tools)
