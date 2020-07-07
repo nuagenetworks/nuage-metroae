@@ -19,6 +19,7 @@
 * Make hostname optional for VSC
 * Add support for new Nuage version format, e.g. 20.6 (METROAE-1343)
 * Add support for deploying VNS Utils on Openstack
+* Allow second disk to be mounted to VSTAT (ES)
 
 ### Resolved Issues
 
