@@ -37,10 +37,10 @@
     delegate_to: "{{ item }}"
     with_items: "{{ groups['primary_vsds'] }}"
 
-  - name: Get the VSD version
-    shell: grep -ir "VSD_VERSION=" /etc/profile.d/vsd-banner.sh | awk -F "=" '{print $2}'
-    register: vsd_version
-    delegate_to: "{{ groups['primary_vsds'][0] }}"
+  - include_role:
+      name: common
+      tasks_from: get-vsd-version
+    delegate_to: "{{ groups['primary_vsds'][0] }}
 
   - name: Deactivate replication on primary VSD cluster
     shell: /opt/vsd/bin/vsd-deactivate-replication-master-cluster.sh -f         # noqa 305
