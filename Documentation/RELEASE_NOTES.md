@@ -42,6 +42,7 @@
 * Disable chrony and cloud-init for NUH and VSTATs install (METROAE-1401)
 * Do not enable maintainance mode for inplace upgrades (METROAE-1404)
 * Restart VSC after OpenStack upgrade (GITHUB #1537)
+* Add NSGv bootstrap example for vcenter (METROAE - 1393)
 
 ## Test Matrix
 
