@@ -71,7 +71,7 @@ echo "Router (Network Side) Configuration"
 #--------------------------------------------------
 ##echo "Static Route Configuration"
 ###--------------------------------------------------
-        {% if route_reflector_present %}
+        {% if not route_reflector_present %}
         {% for vsc_item in groups['vscs'] %}
           {% if vsc_item != inventory_hostname %}
             {% if hostvars[vsc_item].system_ip is defined %}
@@ -137,10 +137,10 @@ echo "Service Configuration"
             group "RR"
                 family evpn
                 type internal
-                neighbor 10.8.255.25
+                {% for route_reflector_ip in route_reflector_ip_list %}
+                neighbor {{ route_reflector_ip }}
                 exit
-                neighbor 10.8.255.26
-                exit
+                {% endfor %}
             {% else %}
             group "internal"
                 type internal
