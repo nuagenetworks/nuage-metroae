@@ -161,9 +161,6 @@ set mail-format {
 #
 # set alert sysadm@foo.bar                       # receive all alerts
 #
-
-set alert {{ monit_destination_address }}
-
 ## Do not alert when Monit starts, stops or performs a user initiated action.
 ## This filter is recommended to avoid getting alerts for trivial cases.
 #
@@ -171,11 +168,19 @@ set alert {{ monit_destination_address }}
 #
 
 {% if monit_alert_only_on is defined %}
-set alert {{ monit_destination_address }} only on { {{ monit_alert_only_on }} }
+{% for alert in monit_alert_only_on %}
+set alert {{ monit_destination_address }} only on { {{ alert }} }
+{% endfor %}
+
+{% elif monit_alert_not_on is defined %}
+{% for alert in monit_alert_not_on %}
+set alert {{ monit_destination_address }} not on { {{ alert }} }
+{% endfor %}
+
+{% else %}
+set alert {{ monit_destination_address }}
 {% endif %}
-{% if monit_alert_not_on is defined %}
-set alert {{ monit_destination_address }} not on { {{ monit_alert_not_on }} }
-{% endif %}
+
 
 ## Monit has an embedded HTTP interface which can be used to view status of
 ## services monitored and manage services from a web interface. The HTTP
