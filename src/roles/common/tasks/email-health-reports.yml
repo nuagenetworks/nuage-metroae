@@ -1,0 +1,20 @@
+- block:
+
+  - name: Set fact for default from address
+    set_fact:
+      default_from_address: "metroae@{{ inventory_hostname }}"
+
+  - name: Email health report files
+    mail:
+      host: "{{ health_report_email_server }}"
+      port: "{{ health_report_email_server_port | default(25) }}"
+      from: "{{ health_report_email_from_address | default(default_from_address) }}"
+      to: "{{ health_report_email_destination_addresses }}"
+      subject: "{{ email_subject }}"
+      attach: "{{ attachments }}"
+      body: "{{ email_body }}"
+      username: "{{ health_report_email_server_username }}"
+      password: "{{ health_report_email_server_password }}"
+    delegate_to: localhost
+
+  when: health_report_email_server != 'NONE'
