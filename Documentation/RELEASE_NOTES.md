@@ -25,7 +25,7 @@
 * Add support for deploying VNS Utils on Openstack
 * Added a restriction for vsc_fallocate_size_gb to 1GB and skip if the value is 0
 * Add support for applying custom VSC configurations (METROAE-1328)
-
+* Added support for installing/checking for libguestfs for target server
 ### Resolved Issues
 
 * Remove redundant "vcpu" tag from KVM XML
