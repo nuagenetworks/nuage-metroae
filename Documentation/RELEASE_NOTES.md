@@ -13,15 +13,20 @@
 * Add support for VSTAT yum update via vstat_yum_update (METROAE-1190)
 * Check hypervisor disk space on KVM and vCenter
 * Add NETCONF RPMs to unzip
+* Support for additional functionality via plugins
 * Add Netconf Manager Support to MetroAE (METROAE-1204)
 * Added support for Python virtual environments (METROAE-1381)
 * Added file check for nsgv_bootstrap.yml and example (METROAE-1379)
 * Make hostname optional for VSC
+* Backup and restore functionality for VSD and VSC (METROAE-1382)
 * Add support for new Nuage version format, e.g. 20.6 (METROAE-1343)
+* Add ability to support custom configuration file for NUH (METROAE-1358)
 * Support NUH install when VSD is not installed (METROAE-1357)
 * Add support for deploying VNS Utils on Openstack
 * Added a restriction for vsc_fallocate_size_gb to 1GB and skip if the value is 0
 * Add support for applying custom VSC configurations (METROAE-1328)
+* Allow second disk to be mounted to VSTAT (ES)
+* Add support for emailing health reports (METROAE-1332)
 
 ### Resolved Issues
 
@@ -35,6 +40,10 @@
 * Fix CPU pinning for NUH and perform NTP sync (METROAE-1397)
 * Support Ejabberd license install
 * Fix missing fallocate flag during vsc predeploy
+* Disable chrony and cloud-init for NUH and VSTATs install (METROAE-1401)
+* Do not enable maintainance mode for inplace upgrades (METROAE-1404)
+* Restart VSC after OpenStack upgrade (GITHUB #1537)
+* Add NSGv bootstrap example for vcenter (METROAE - 1393)
 
 ## Test Matrix
 

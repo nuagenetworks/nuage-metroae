@@ -1,0 +1,16 @@
+- block:
+
+  - name: Create extra disk partition
+    command: "parted -s /dev/{{ extra_disk_device }}  mklabel gpt  mkpart primary 0GB {{ extra_disk_size_gb }}GB"
+
+  - name: Format extra disk partition
+    command: "mkfs.ext4 /dev/{{ extra_disk_device }}1"
+
+  - name: Mount the extra disk
+    command: "mount /dev/{{ extra_disk_device }}1 {{ extra_disk_mount_point }}"
+
+  - name: Set ownership for the extra disk
+    command: "chown -R elasticsearch:elasticsearch {{ extra_disk_mount_point }}"
+
+  when: add_extra_disk | default(False)
+  remote_user: "{{ vstat_default_username }}"
