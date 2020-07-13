@@ -1,0 +1,18 @@
+- hosts: vcins
+  pre_tasks:
+    - name: Lets run VCIN postdeploy hooks
+      include_role:
+        name: hooks
+        tasks_from: main
+      vars:
+        - hooks_file_path: "{{ hook }}"
+        - hook_location:
+          - vcin_postdeploy
+      loop: "{{ hooks | default([]) }}"
+      loop_control:
+        loop_var: hook
+  roles:
+    - vcin-postdeploy
+  become: yes
+  remote_user: "{{ vcin_default_username }}"
+  gather_facts: no
