@@ -25,6 +25,7 @@
 * Add support for deploying VNS Utils on Openstack
 * Added a restriction for vsc_fallocate_size_gb to 1GB and skip if the value is 0
 * Add support for applying custom VSC configurations (METROAE-1328)
+* Added support for checking and installing for libguestfs for target server
 * Allow second disk to be mounted to VSTAT (ES)
 * Add support for emailing health reports (METROAE-1332)
 
