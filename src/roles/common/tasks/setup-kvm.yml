@@ -41,9 +41,13 @@
     - name: Check if required OS packages are installed (ignoring errors)
       command:
         cmd: rpm -q qemu-kvm libvirt bridge-utils libguestfs-tools libvirt-python
-        warn: no
+        warn: yes
       register: rpm_check
       ignore_errors: True
+
+    - name: Install libguestfs-tools if not installed
+      command: yum -y install libguestfs libguestfs-tools
+      when: rpm_check.stdout.find('is not installed') != -1
 
     - name: Print rpm_check when verbosity >= 1
       debug: var=rpm_check verbosity=1
