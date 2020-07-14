@@ -276,6 +276,8 @@
 
 - block:
 
+  - import_tasks: add_extra_disk.yml
+
   - name: Update /etc/hosts file on VSTAT
     lineinfile:
       dest: /etc/hosts
@@ -400,6 +402,8 @@
       enabled: no
       state: stopped
     remote_user: "{{ vstat_default_username }}"
+    register: disable_chrony
+    failed_when: disable_chrony is failed and not 'Could not find the requested service' in disable_chrony.msg
 
   - name: Enable stats
     include_role:
