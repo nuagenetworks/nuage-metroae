@@ -27,6 +27,7 @@
 * Add support for applying custom VSC configurations (METROAE-1328)
 * Allow second disk to be mounted to VSTAT (ES)
 * Add support for emailing health reports (METROAE-1332)
+* Add support for configuring monit email alerts (METROAE-1222)
 
 ### Resolved Issues
 
