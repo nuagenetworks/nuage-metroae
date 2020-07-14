@@ -17,6 +17,24 @@
                 {{ lookup('file',  failure_report_path ) }} "
     when:  report.stat.exists
 
+  - name: Set fact for email attachments
+    set_fact:
+      email_attachments: "{{ [ report_path ] }}"
+
+  - name: Append failure report file to attachments
+    set_fact:
+      email_attachments: "{{ email_attachments + [ failure_report_path ] }}"
+    when: report.stat.exists
+
+  - name: Email VSC health and failure reports
+    include_role:
+      name: common
+      tasks_from: email-health-reports
+    vars:
+      email_subject: MetroAE VSC Health Results
+      attachments: "{{ email_attachments }}"
+      email_body: Results from VSC health
+
   - name: Check for failures
     assert: {
       that: "not report.stat.exists",
