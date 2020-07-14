@@ -28,6 +28,7 @@
 * Added support for checking and installing for libguestfs for target server
 * Allow second disk to be mounted to VSTAT (ES)
 * Add support for emailing health reports (METROAE-1332)
+* Add support for symlinks as files
 
 ### Resolved Issues
 
@@ -45,6 +46,7 @@
 * Do not enable maintainance mode for inplace upgrades (METROAE-1404)
 * Restart VSC after OpenStack upgrade (GITHUB #1537)
 * Add NSGv bootstrap example for vcenter (METROAE - 1393)
+* Add support for checking the size on the specific vCenter datastore if one is provided
 
 ## Test Matrix
 
