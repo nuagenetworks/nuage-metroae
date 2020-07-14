@@ -1,0 +1,18 @@
+- name: Write seperator to report file
+  nuage_append: filename="{{ report_path }}" text="================================================================================\n"
+  delegate_to: localhost
+  run_once: true
+
+- name: Write title to report file
+  nuage_append: filename="{{ report_path }}" text="VSTAT Health Report End\n"
+  delegate_to: localhost
+  run_once: true
+
+- name: Email VSTAT health report
+  include_role:
+    name: common
+    tasks_from: email-health-reports
+  vars:
+    email_subject: MetroAE VSTAT Health Results
+    attachments: "{{ report_path }}"
+    email_body: Results from VSTAT health
