@@ -41,18 +41,19 @@
 - name: Get VSD information
   block:
 
-  - name: Get the VSD version
-    shell: grep -ir "VSD_VERSION=" /etc/profile.d/vsd-banner.sh | awk -F "=" '{print $2}'
-    register: vsd_version
-    run_once: true
+  - include_role:
+      name: common
+      tasks_from: get-vsd-version
 
-  - name: Get the VSD build
-    shell: grep -ir "VSD_BUILD=" /etc/profile.d/vsd-banner.sh | awk -F "=" '{print $2}'
-    register: vsd_build
-    run_once: true
+  - include_role:
+      name: common
+      tasks_from: get-vsd-build
 
   - name: Get the vsd node info
-    shell: VSD_VERSION={{ vsd_version.stdout }} VSD_BUILD={{ vsd_build.stdout }} /opt/vsd/sysmon/showStatus.py
+    command: /opt/vsd/sysmon/showStatus.py
+    environment:
+      VSD_VERSION: "{{ vsd_version.stdout }}"
+      VSD_BUILD: "{{ vsd_build.stdout }}"
     register: vsd_info
 
   remote_user: "{{ custom_username | default(vsd_default_username) }}"

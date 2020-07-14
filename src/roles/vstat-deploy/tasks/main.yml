@@ -276,6 +276,8 @@
 
 - block:
 
+  - import_tasks: add_extra_disk.yml
+
   - name: Update /etc/hosts file on VSTAT
     lineinfile:
       dest: /etc/hosts
@@ -384,6 +386,24 @@
     include_role:
       name: common
       tasks_from: yum-update.yml
+
+  - name: Disable cloud-init on VSTAT, to avoid boot time delays
+    command: "{{ item }}"
+    with_items:
+      - systemctl disable cloud-init
+      - systemctl disable cloud-init-local
+      - systemctl disable cloud-config
+      - systemctl disable cloud-final
+    remote_user: "{{ vstat_default_username }}"
+
+  - name: Disable chrony on VSTAT if present
+    systemd:
+      name: "chronyd"
+      enabled: no
+      state: stopped
+    remote_user: "{{ vstat_default_username }}"
+    register: disable_chrony
+    failed_when: disable_chrony is failed and not 'Could not find the requested service' in disable_chrony.msg
 
   - name: Enable stats
     include_role:

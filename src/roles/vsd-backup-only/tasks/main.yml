@@ -1,0 +1,29 @@
+- name: Create backup directory on localhost
+  include_role:
+    name: common
+    tasks_from: create-backup-dir
+  vars:
+    backup_component_name: vsd
+    backup_host_name: "{{ inventory_hostname }}"
+
+- block:
+
+  - name: Run backup script on VSD
+    shell: "{{ backup_cmd }}"
+    when: vsd_mysql_password is undefined
+
+  - name: Run backup script on VSD
+    shell: "{{ backup_cmd }}"
+    environment:
+      ENV_MYSQL_ROOT_PWD: "{{ vsd_mysql_password }}"
+    when: vsd_mysql_password is defined
+
+  remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
+  become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
+  vars:
+    ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"
+
+- name: Fetch backup files onto localhost
+  include_role:
+    name: vsd-backup-only
+    tasks_from: fetch-backup-files

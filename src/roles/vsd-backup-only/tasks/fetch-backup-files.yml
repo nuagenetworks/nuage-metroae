@@ -1,0 +1,67 @@
+- name: Find files created in {{ vsd_backup_dir }}
+  find:
+    path: "{{ vsd_backup_dir }}"
+    patterns: "{{ item }}"
+  with_items:
+    - "myappconfiguration-*.gz"
+    - "mycertificate-*.gz"
+    - "mydatabase-*.gz"
+    - "vsdbackup-*.log"
+  register: lst_files
+  remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
+  become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
+  vars:
+    ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"
+
+- name: Print out the list of files
+  debug: var="lst_files"
+
+- name: Verify files found in {{ vsd_backup_dir }}
+  assert:
+    that: "{{ item.matched }} > 0"
+    msg: "Could not find file {{ item.item }}"
+  with_items: "{{ lst_files.results }}"
+
+- name: Fetch files from vsd and copy them to backup folder on backup_machine
+  fetch:
+    src: "{{ item.files[0].path }}"
+    dest: "{{ localhost_component_backup_dir }}"
+    flat: yes
+    validate_checksum: false
+  with_items: "{{ lst_files.results }}"
+  remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
+  become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
+  vars:
+    ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"
+
+- name: Remove any old symbolic link to backup location
+  file:
+    path: "{{ metro_backup_root }}/backup-latest-upgrade-vsd"
+    state: absent
+  delegate_to: localhost
+
+- name: Create symbolic link to backup location
+  file:
+    dest: "{{ metro_backup_root }}/backup-latest-upgrade-vsd"
+    src: "{{ localhost_component_backup_dir }}"
+    state: link
+  delegate_to: localhost
+
+- name: Clean up {{ vsd_backup_dir }} (ignoring errors)
+  file:
+    path: "{{ vsd_backup_dir }}"
+    state: absent
+  remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
+  become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
+  vars:
+    ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"
+  ignore_errors: True
+
+- name: Clean any extra backups over max
+  include_role:
+    name: common
+    tasks_from: clean-extra-backups
+  vars:
+    backup_component_name: vsd
+
+

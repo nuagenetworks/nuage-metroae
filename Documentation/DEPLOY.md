@@ -1,6 +1,7 @@
 # Deploying Components with MetroAE
 
 You can execute MetroAE workflows to perform the following installations:
+
 * [Deploy All Components](#deploy-all-components)
 * [Deploy Individual Modules](#deploy-individual-modules)
 * [Install a Particular Role or Host](#install-a-particular-role-or-host)
@@ -10,6 +11,7 @@ You can execute MetroAE workflows to perform the following installations:
 * [Debugging](#debugging)
 
 ## Prerequisites / Requirements
+
 Before deploying any components, you must have previously [set up your Nuage MetroAE environment](SETUP.md "link to SETUP documentation") and [customized the environment for your target platform](CUSTOMIZE.md "link to deployment documentation").
 
 Make sure you have unzipped copies of all the Nuage Networks files you are going to need for installation or upgrade. These are generally distributed as `*.tar.gz` files that are downloaded by you from Nokia OLCS/ALED. There are a few ways you can use to unzip:
@@ -20,6 +22,7 @@ Make sure you have unzipped copies of all the Nuage Networks files you are going
 
 
 ## Use of MetroAE Command Line
+
 MetroAE can perform a workflow using the command-line tool as follows:
 
     metroae <workflow> <componment> [deployment] [options]
@@ -40,6 +43,7 @@ Installs all components described in deployments/default/.
 Takes down only the VSD components described by deployments/east_network/vsds.yml.  Additional output will be displayed with 3 levels of verbosity.
 
 ## Deploy All Components
+
 MetroAE workflows operate on components as you have defined them in your deployment. If you run a workflow for a component not specified, the workflow skips all tasks associated with that component and runs to completion without error. Thus, if you run the `install everything` workflow when only VRS configuration is present, the workflow deploys VRS successfully while ignoring the tasks for the other components not specified. Deploy all specified components with one command as follows:
 
 ```
@@ -57,6 +61,7 @@ VCS | `metroae install vsds` | Installs VSD components
 VNS | `metroae install vscs` | Installs VSC components
 
 ## Install a Particular Role or Host
+
 MetroAE has a complete library of [workflows](/src/playbooks "link to workflows directory"), which are directly linked to each individual role. You can limit your deployment to a particular role or component, or you can skip steps you are confident need not be repeated. For example, to deploy only the VSD VM-images and get them ready for VSD software installation, run:
 ```
 metroae install vsds predeploy
@@ -127,9 +132,10 @@ If you would like to remove an entire deployment, or individual components, and 
 
 After you have successfully deployed Nuage Networks VSP components, you may want to upgrade to a newer version at some point in the future. See [UPGRADE_SA.md](UPGRADE_SA.md) for standalone deployments and [UPGRADE_HA.md](UPGRADE_HA.md) for clustered deployments.
 
-## Questions, Feedback, and Contributing  
-Get support on the [MetroAE site](https://devops.nuagenetworks.net/).  
-Ask questions and contact us directly at [devops@nuagenetworks.net](mailto:deveops@nuagenetworks.net "send email to nuage-metroaeproject").
+## Questions, Feedback, and Contributing
+
+Get support via the [forums](https://devops.nuagenetworks.net/forums/) on the [MetroAE site](https://devops.nuagenetworks.net/).  
+Ask questions and contact us directly at [devops@nuagenetworks.net](mailto:devops@nuagenetworks.net "send email to nuage-metro project").
  
 Report bugs you find and suggest new features and enhancements via the [GitHub Issues](https://github.com/nuagenetworks/nuage-metroae/issues "nuage-metroaeissues") feature.
 

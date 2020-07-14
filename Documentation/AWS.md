@@ -102,7 +102,7 @@ After you have set up the environment and configured your components, you can us
 Alternatively, you can deploy individual components or perform individual tasks such as predeploy, deploy and postdeploy. See [DEPLOY.md](DEPLOY.md) for details.
 ## Questions, Feedback, and Contributing  
 Get support via the [forum](https://devops.nuagenetworks.net/forums/) on the [MetroAE site](https://devops.nuagenetworks.net/).  
-Ask questions and contact us directly at [devops@nuagenetworks.net](mailto:deveops@nuagenetworks.net "send email to nuage-metroaeproject"). 
+Ask questions and contact us directly at [devops@nuagenetworks.net](mailto:devops@nuagenetworks.net "send email to nuage-metro project").
 
 Report bugs you find and suggest new features and enhancements via the [GitHub Issues](https://github.com/nuagenetworks/nuage-metroae/issues "nuage-metroaeissues") feature.
 

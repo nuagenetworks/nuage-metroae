@@ -1,10 +1,11 @@
----
-- block:
+- name: Run as VSD default user
+  block:
 
-  - block:
+  - name: Run when sa
+    block:
 
     - name: Renew standalone VSD certificate
-      command: /opt/vsd/bin/vsd-renew-certs.sh
+      shell: yes yes | /opt/vsd/bin/vsd-renew-certs.sh
 
     - name: Verify if VSD TLS mode is set to allow
       command: /opt/vsd/bin/ejmode status
@@ -49,14 +50,15 @@
       - vsd_sa_or_ha is match ('sa')
       - not vsd_standby_cluster | default(False)
 
-  - block:
+  - name: Run when ha
+    block:
 
-    - name: Renew primary VSD cert
-      command: /opt/vsd/bin/vsd-renew-certs.sh
+    - name: Renew VSD1 certificate
+      shell: yes yes | /opt/vsd/bin/vsd-renew-certs.sh
       delegate_to: "{{ item }}"
       with_items: "{{ groups['vsd_ha_node1'][0] }}"
 
-    - name: Renew other 2 VSD certs
+    - name: Copy new certs to other 2 VSDs
       command: /opt/vsd/bin/vsd-renew-certs.sh -1 {{ hostvars[groups['primary_vsds'][0]]['hostname'] }}
       delegate_to: "{{ item }}"
       with_items:
@@ -111,9 +113,10 @@
 
     when: vsd_sa_or_ha is match ('ha')
 
-  - block:
+  - name: Run when standby
+    block:
 
-    - name: Renew standby VSD certs
+    - name: Copy new certs to standby VSD
       command: /opt/vsd/bin/vsd-renew-certs.sh -1 {{ hostvars[groups['primary_vsds'][0]]['hostname'] }}
       delegate_to: "{{ item }}"
       with_items:

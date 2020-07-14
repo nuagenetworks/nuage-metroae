@@ -1,0 +1,34 @@
+- hosts: localhost
+  gather_facts: no
+  tasks:
+
+  - name: Find backup files on backup_machine
+    find:
+      path: "{{ metro_backup_root }}/{{ backup_to_restore }}"
+      patterns: "vsd-*"
+      file_type: directory
+    register: backup_dirs_find
+
+  - name: Check that exactly one backup is found
+    assert:
+      that: backup_dirs_find.files | length == 1
+      msg: "Did not find exactly one VSD backup set under backup_to_restore directory: {{ metro_backup_root }}/{{ backup_to_restore }}/vsd-*/"
+
+  - name: Set fact for VSD backup path
+    set_fact:
+      vsd_backup_path: "{{ backup_dirs_find.files[0].path }}"
+
+  - name: Get list of files in backup directory
+    find:
+      path: "{{ vsd_backup_path }}"
+      pattern: "*.tar.gz"
+    register: lst_files
+    remote_user: "{{ vsd_default_username }}"
+
+  - name: Verify backup contains exactly 3 files
+    assert:
+      that: "lst_files.matched == 3"
+      msg: "Backup directory {{ vsd_backup_path }} does not contain 3 backup files"
+
+- name: Run VSD Predeploy
+  import_playbook: "vsd_predeploy.yml"

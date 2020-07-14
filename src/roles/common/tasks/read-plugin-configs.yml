@@ -1,0 +1,32 @@
+- name: Find any installed plugin configs
+  find:
+    path: "{{ role_path }}/../../metro_plugins"
+    patterns: "plugin-cfg.yml"
+    recurse: yes
+  register: plugin_config_result
+
+- name: Initialize plugin list
+  set_fact:
+    plugin_configs: []
+
+- name: Read any installed plugin configs
+  include_vars:
+    file: "{{ item.path }}"
+    name: "plugin_{{ index }}"
+  loop: "{{ plugin_config_result.files }}"
+  loop_control:
+    index_var: index
+
+- name: Initialize plugin list
+  set_fact:
+    plugin_configs: "{{ plugin_configs + [hostvars[inventory_hostname]['plugin_' + index | string]] }}"
+  loop: "{{ plugin_config_result.files }}"
+  loop_control:
+    index_var: index
+
+- debug: var=plugin_configs
+
+- name: Add plugin deployment files
+  set_fact:
+    deployment_files: "{{ deployment_files + item.schemas }}"
+  loop: "{{ plugin_configs }}"

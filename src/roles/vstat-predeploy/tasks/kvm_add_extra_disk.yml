@@ -1,0 +1,12 @@
+- block:
+
+  - name: Create extra disk image qcow2
+    command: "qemu-img create -f qcow2 {{ extra_disk_image }} {{ extra_disk_size_gb }}G"
+
+  - name: Preallocate most of VSTAT disk space to avoid pausing the VM, this also checks disk space
+    command: "fallocate -x -l {{ extra_disk_size_gb }}G {{ extra_disk_image }}"
+
+  when: add_extra_disk | default(False)
+  delegate_to: "{{ target_server }}"
+  remote_user: "{{ target_server_username }}"
+  become: "{{ 'no' if target_server_username == 'root' else 'yes' }}"
