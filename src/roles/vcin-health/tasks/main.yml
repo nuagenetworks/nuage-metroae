@@ -6,16 +6,7 @@
   no_log: True
   ignore_errors: True
 
-- import_tasks: report_header.yml
-
-- name: Get current version of VSD software
-  shell: grep -ir "VSD_VERSION=" /etc/profile.d/vsd-banner.sh | awk -F "=" '{print $2}' # noqa 306
-  register: vsd_version
-  remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
-
-- name: Write VSD version to json file
-  nuage_append: filename="{{ report_path }}" text="{{ vsd_version.stdout | to_nice_json }}\n"
-  delegate_to: localhost
+- import_tasks: report_start.yml
 
 - name: Get current network config
   network_info:
@@ -26,10 +17,27 @@
 - name: Print network config when verbosity >= 1
   debug: var=net_conf.info verbosity=1
 
-- name: Write network config to json file
+- name: Write network config separator to report file
+  nuage_append: filename="{{ report_path }}" text="-----VCIN Network Config-----\n"
+  delegate_to: localhost
+
+- name: Write network config to report file
   nuage_append: filename="{{ report_path }}" text="{{ net_conf.info | to_nice_json }}\n"
+  delegate_to: localhost
+
+- name: Get current version of VSD software
+  shell: grep -ir "VSD_VERSION=" /etc/profile.d/vsd-banner.sh | awk -F "=" '{print $2}' # noqa 306
+  register: vsd_version
+  remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
+
+- name: Write VSD version separator to report file
+  nuage_append: filename="{{ report_path }}" text="-----VSD Version-----\n"
+  delegate_to: localhost
+
+- name: Write VSD version to report file
+  nuage_append: filename="{{ report_path }}" text="{{ vsd_version.stdout | to_nice_json }}\n"
   delegate_to: localhost
 
 - import_tasks: monit_status.yml
 
-- import_tasks: report_footer.yml
+- import_tasks: report_end.yml
