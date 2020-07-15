@@ -26,6 +26,7 @@
 * Added a restriction for vsc_fallocate_size_gb to 1GB and skip if the value is 0
 * Add support for applying custom VSC configurations (METROAE-1328)
 * Allow second disk to be mounted to VSTAT (ES)
+* Add capability to enter BGP route reflector IP address for VSC (METROAE-1320)
 
 ### Resolved Issues
 
