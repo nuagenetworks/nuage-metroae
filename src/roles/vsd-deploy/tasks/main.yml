@@ -342,13 +342,17 @@
     command: /opt/vsd/bin/ejmode allow -y
     when: not deploy_vcin
 
-  - name: Write out monitrc file
-    template: src=monitrc.j2 dest=/etc/monitrc backup=no
+  - block:
 
-  - name: Restart monit service
-    service:
-      name: monit
-      state: restarted
+    - name: Write out monitrc file
+      template: src=monitrc.j2 dest=/etc/monitrc backup=no
+
+    - name: Restart monit service
+      service:
+        name: monit
+        state: restarted
+
+    when: monit_mail_server is defined
 
   remote_user: "{{ vsd_default_username }}"
 
