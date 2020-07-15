@@ -10,6 +10,20 @@
         required_available_disk_space: "{{ vstat_allocate_size_gb }}"
         disk_space_path: "{{ images_path }}"
 
+    - block:
+
+      - name: Check available disk space for VSTAT extra disk if enabled
+        include_role:
+          name: common
+          tasks_from: check-hypervisor-disk-space
+        vars:
+          required_available_space: "{{ extra_disk_size_gb }}"
+          path: "{{ extra_disk_image_path }}"
+
+      delegate_to: "{{ target_server }}"
+      remote_user: "{{ target_server_username }}"
+      when: add_extra_disk | default(False)
+
     - name: Lets run VSTAT predeploy hooks
       include_role:
         name: hooks
