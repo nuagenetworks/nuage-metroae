@@ -32,13 +32,13 @@
 
   - block:
 
-    - name: Get the webfilter jks
+    - name: Get the webfilter jks from the VSD
       fetch:
         src: "/opt/vsd/ejbca/p12/webfilter.jks"
         dest: "/tmp/webfilter/"
         flat: yes
 
-    - name: Get the truststore jks
+    - name: Get the truststore jks from the VSD
       fetch:
         src: "/opt/vsd/ejbca/p12/truststore.jks"
         dest: "/tmp/webfilter/"
@@ -46,12 +46,12 @@
 
     delegate_to: "{{ vsd_hostname_list[0] }}"
 
-  - name: Copy to webfilter manager
+  - name: Copy to JKS files to the Webfilter VM
     copy:
       dest: "/opt/vsd/webfilter/conf/"
       src: "/tmp/webfilter/"
 
-  - name: Delete the temporary directory
+  - name: Delete the temporary directory for JKS files
     file:
       path: /tmp/webfilter
       state: absent
@@ -62,8 +62,8 @@
       line: "server.ssl.key-store=/opt/vsd/webfilter/conf/webfilter.jks"
       state: present
     check_mode: yes
-    register: conf
-    failed_when: (conf is changed) or (conf is failed)
+    register: app_properties
+    failed_when: (app_properties is changed) or (app_properties is failed)
 
   - name: "Ensure application properties contains truststore"
     lineinfile:
@@ -71,15 +71,15 @@
       line: "server.ssl.trust-store=/opt/vsd/webfilter/conf/truststore.jks"
       state: present
     check_mode: yes
-    register: conf
-    failed_when: (conf is changed) or (conf is failed)
+    register: truststore_prop
+    failed_when: (truststore_prop is changed) or (truststore_prop is failed)
 
   - name: Stop webfilter process
     command: monit stop webfilter
     ignore_errors: yes
     register: stop_stats_output
 
-  - name: Check if an error should be ignored
+  - name: Check if an error should be ignored while stopping webfilter
     assert:
       that: "not stop_stats_output.failed or stop_stats_output.stderr is search('not found')"
       msg: "Error while attempting to stop webfilter services"
