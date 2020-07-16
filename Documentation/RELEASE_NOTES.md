@@ -29,6 +29,7 @@
 * Add support for emailing health reports (METROAE-1332)
 * Add support for symlinks as files
 * Add support for vCenter VM folder specification.
+
 ### Resolved Issues
 
 * Remove redundant "vcpu" tag from KVM XML
