@@ -28,7 +28,7 @@
 * Allow second disk to be mounted to VSTAT (ES)
 * Add support for emailing health reports (METROAE-1332)
 * Add support for symlinks as files
-* Added support VMware folder specification.
+
 ### Resolved Issues
 
 * Remove redundant "vcpu" tag from KVM XML
