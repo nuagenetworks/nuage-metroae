@@ -34,7 +34,7 @@ File name | Description
 
 ## Important Notes
 
-You can now run `python run_wizard.py` to let MetroAE help you setup your server and create or edit a deployment. The wizard will ask you questions about what you'd like to do and then create the proper files on disk. run_wizard.py is most useful when you are working with a clone of the nuage-metroae repo. It can be used to generate deployments that can be used with the Docker container version of MetroAE, but those deployments would need to be copied manually from the nuage-metroaerepo clone to the container's metroae_data directory.
+You can now run `python run_wizard.py` to let MetroAE help you setup your server and create or edit a deployment. The wizard will ask you questions about what you'd like to do and then create the proper files on disk. run_wizard.py is most useful when you are working with a clone of the nuage-metroae repo. It can be used to generate deployments that can be used with the Docker container version of MetroAE, but those deployments would need to be copied manually from the nuage-metroae repo clone to the container's metroae_data directory.
 
 Please see [RELEASE_NOTES.md](Documentation/RELEASE_NOTES.md) for all the details about what has changed or been added in this release.
 
