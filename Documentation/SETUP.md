@@ -108,7 +108,7 @@ Clone the repo with the following command.
 git clone https://github.com/nuagenetworks/nuage-metroae.git
 ```
 
-Once the nuage-metroaerepo is cloned, you can skip the rest of this procedure by running the MetroAE wizard, run_wizard.py. You can use the wizard to automatically handle the rest of the steps described in this document plus the steps described in [customize](CUSTOMIZE.md).
+Once the nuage-metroae repo is cloned, you can skip the rest of this procedure by running the MetroAE wizard, run_wizard.py. You can use the wizard to automatically handle the rest of the steps described in this document plus the steps described in [customize](CUSTOMIZE.md).
 ```
 python run_wizard.py
 ```
@@ -202,4 +202,4 @@ Ask questions and contact us directly at [devops@nuagenetworks.net](mailto:devop
 
 Report bugs you find and suggest new features and enhancements via the [GitHub Issues](https://github.com/nuagenetworks/nuage-metroae/issues "nuage-metroaeissues") feature.
 
-You may also [contribute](../../CONTRIBUTING.md) to MetroAE by submitting your own code to the project.
+You may also [contribute](../CONTRIBUTING.md) to MetroAE by submitting your own code to the project.
