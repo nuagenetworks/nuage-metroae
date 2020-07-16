@@ -34,17 +34,17 @@ File name | Description
 
 ## Important Notes
 
-You can now run `python run_wizard.py` to let MetroAE help you setup your server and create or edit a deployment. The wizard will ask you questions about what you'd like to do and then create the proper files on disk. run_wizard.py is most useful when you are working with a clone of the nuage-metroaerepo. It can be used to generate deployments that can be used with the Docker container version of MetroAE, but those deployments would need to be copied manually from the nuage-metroaerepo clone to the container's metroae_data directory.
+You can now run `python run_wizard.py` to let MetroAE help you setup your server and create or edit a deployment. The wizard will ask you questions about what you'd like to do and then create the proper files on disk. run_wizard.py is most useful when you are working with a clone of the nuage-metroae repo. It can be used to generate deployments that can be used with the Docker container version of MetroAE, but those deployments would need to be copied manually from the nuage-metroaerepo clone to the container's metroae_data directory.
 
-Please see [RELEASE_NOTES.md](Documentation/deploy/RELEASE_NOTES.md) for all the details about what has changed or been added in this release.
+Please see [RELEASE_NOTES.md](Documentation/RELEASE_NOTES.md) for all the details about what has changed or been added in this release.
 
-All MetroAE operations, including Docker container management, use a command `metroae` for consistent usage and syntax. Please see [DOCKER.md](Documentation/deploy/DOCKER.md) for details on configuration and use of the container version of MetroAE.
+All MetroAE operations, including Docker container management, use a command `metroae` for consistent usage and syntax. Please see [DOCKER.md](Documentation/DOCKER.md) for details on configuration and use of the container version of MetroAE.
 
 ## Supported Components for Deployment and Upgrade
 
 MetroAE supports deployment and upgrade of the following components as VMs on the target server. These are the same target server types that are supported on the VSP platform.
 
-![supported_components](Documentation/deploy/supported_components.png)
+![supported_components](Documentation/supported_components.png)
 
 ### Supported Dataplane components (installed as package/agent):
 
@@ -60,23 +60,23 @@ VRS (Virtual Routing & Switching) | X | (upgrade only)
 
 MetroAE supports the deployment and upgrade of Nuage VSP components on the following target servers.
 
-![supported_vms](Documentation/deploy/supported_vms.png)
+![supported_vms](Documentation/supported_vms.png)
 
 ## Typical Nuage Topology
 
-![topology_rev](Documentation/deploy/topology_rev.png)
+![topology_rev](Documentation/topology_rev.png)
 
 ## Main Steps for Using MetroAE
 
-1. [Setup](Documentation/deploy/SETUP.md) the MetroAE host. Setup prepares the host for running MetroAE, including retrieving the repository, installing prerequisite packages and setting up SSH access. You also have the option of installing MetroAE in a container, and then working with it via CLI or the GUI.
+1. [Setup](Documentation/SETUP.md) the MetroAE host. Setup prepares the host for running MetroAE, including retrieving the repository, installing prerequisite packages and setting up SSH access. You also have the option of installing MetroAE in a container, and then working with it via CLI or the GUI.
 
 2. Obtain the proper Nuage binary files for your deployment. These can be downloaded from Nuage/Nokia online customer support.
 
-3. [Customize](Documentation/deploy/CUSTOMIZE.md) your deployment to match your network topology, and describe your Nuage Networks specifics.
+3. [Customize](Documentation/CUSTOMIZE.md) your deployment to match your network topology, and describe your Nuage Networks specifics.
 
-4. [Deploy](Documentation/deploy/DEPLOY.md) new components, upgrade a [standalone](Documentation/deploy/UPGRADE_SA.md) or [clustered](Documentation/deploy/UPGRADE_HA.md) deployment, or run a health check on your system.
+4. [Deploy](Documentation/DEPLOY.md) new components, upgrade a [standalone](Documentation/deploy/UPGRADE_SA.md) or [clustered](Documentation/deploy/UPGRADE_HA.md) deployment, or run a health check on your system.
 
-5. If things did not work out as expected, [destroy](Documentation/deploy/DESTROY.md) your environment and redeploy.
+5. If things did not work out as expected, [destroy](Documentation/DESTROY.md) your environment and redeploy.
 
 ## MetroAE Workflows
 
@@ -163,7 +163,7 @@ You may also contact us directly.
   Outside Nokia: [devops@nuagenetworks.net](mailto:devops@nuagenetworks.net "send email to nuage-metro project")
   Internal Nokia: [nuage-metro-interest@list.nokia.com](mailto:nuage-metro-interest@list.nokia.com "send email to nuage-metro project")
 
-Report bugs you find and suggest new features and enhancements via the [GitHub Issues](https://github.com/nuagenetworks/nuage-metroae/issues "nuage-metroaeissues") feature.
+Report bugs you find and suggest new features and enhancements via the [GitHub Issues](https://github.com/nuagenetworks/nuage-metroae/issues "nuage-metroae issues") feature.
 
 You may also [contribute](CONTRIBUTING.md) to MetroAE by submitting your own code to the project.
 
