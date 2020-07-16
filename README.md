@@ -74,7 +74,7 @@ MetroAE supports the deployment and upgrade of Nuage VSP components on the follo
 
 3. [Customize](Documentation/CUSTOMIZE.md) your deployment to match your network topology, and describe your Nuage Networks specifics.
 
-4. [Deploy](Documentation/DEPLOY.md) new components, upgrade a [standalone](Documentation/deploy/UPGRADE_SA.md) or [clustered](Documentation/deploy/UPGRADE_HA.md) deployment, or run a health check on your system.
+4. [Deploy](Documentation/DEPLOY.md) new components, upgrade a [standalone](Documentation/UPGRADE_SA.md) or [clustered](Documentation/UPGRADE_HA.md) deployment, or run a health check on your system.
 
 5. If things did not work out as expected, [destroy](Documentation/DESTROY.md) your environment and redeploy.
 
