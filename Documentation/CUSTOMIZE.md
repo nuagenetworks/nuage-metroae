@@ -172,7 +172,7 @@ When you are contributing code, or pulling new versions of MetroAE quite often, 
 
 ## Generating example deployment configuration files
 
-A sample of the deployment configuration files are provided in the deployments/default/ directory and also in [examples/](../../examples/deploy/).  If these are overwritten or deleted or if a "no frills" version of the files with only the minimum required parameters are desired, they can be generated with the following command:
+A sample of the deployment configuration files are provided in the deployments/default/ directory and also in [examples/](../examples/).  If these are overwritten or deleted or if a "no frills" version of the files with only the minimum required parameters are desired, they can be generated with the following command:
 
 ```
 metroae tools generate example --schema <schema_filename> [--no-comments]
