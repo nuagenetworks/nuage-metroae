@@ -29,10 +29,7 @@
 * Allow second disk to be mounted to VSTAT (ES)
 * Add support for emailing health reports (METROAE-1332)
 * Add support for symlinks as files
-<<<<<<< HEAD
 * Add support for vCenter VM folder specification.
-=======
->>>>>>> dev
 
 ### Resolved Issues
 
