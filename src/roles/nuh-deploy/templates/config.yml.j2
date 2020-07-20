@@ -2,7 +2,8 @@ network:
     namespaces:
       - name: Internal
 {% if external_interfaces is defined and external_interfaces|length > 0 %}
-      - name: External
+      - name: {{ external_interfaces[0].name }}
+      - name: {{ external_interfaces[1].name }}
 {% endif %}
     interfaces:
       - dev: eth1
@@ -28,12 +29,12 @@ network:
         dns1: ''
         dns2: ''
         dns3: ''
-        namespace: External
+        namespace: {{ external_interfaces[0].name }}
         dev: eth2
         ipaddr: {{ external_interfaces[0].external_ip }}
         prefix: {{ external_interfaces[0].external_prefix }}
         gateway: {{ external_interfaces[0].external_gateway }}
-        vlan: 0
+        vlan: {{ external_interfaces[0].vlan }}
 {% endif %}
     nuagenetwork: Internal
 vrrp: null
@@ -45,13 +46,13 @@ proxy:
     - {interface: eth1.0, role: elasticsearch, enabled: false, firewallports: [], settings: {elasticsearch: ""}}
     - {interface: eth1.0, role: sdWanPortal, enabled: false, firewallports: [], settings: {httpPort: "", httpsPort: "", ccert: ""}}
     - {interface: eth1.0, role: fileserver, enabled: false, firewallports: [], settings: {port: "", ccert: ""}}
-    - {interface: eth2.0, role: nsgbootstrap, enabled: false, firewallports: [], settings: {cport: "", bport: "", ccert: ""}}
-    - {interface: eth2.0, role: vsdconfig, enabled: false, firewallports: [], settings: {uiport: "", apiport: "", xmppport: "", jmsport: "", geo: false}}
-    - {interface: eth2.0, role: nsgstats, enabled: false, firewallports: [], settings: {cport: "", ccert: ""}}
-    - {interface: eth2.0, role: webfilter, enabled: false, firewallports: [], settings: {protobufport: "", downloadport: "", ccert: ""}}
-    - {interface: eth2.0, role: elasticsearch, enabled: false, firewallports: [], settings: {elasticsearch: ""}}
-    - {interface: eth2.0, role: sdWanPortal, enabled: false, firewallports: [], settings: {httpPort: "", httpsPort: "", ccert: ""}}
-    - {interface: eth2.0, role: fileserver, enabled: false, firewallports: [], settings: {port: "", ccert: ""}}
+    - {interface: eth2.{{ external_interfaces[0].vlan }}, role: nsgbootstrap, enabled: false, firewallports: [], settings: {cport: "", bport: "", ccert: ""}}
+    - {interface: eth2.{{ external_interfaces[0].vlan }}, role: vsdconfig, enabled: false, firewallports: [], settings: {uiport: "", apiport: "", xmppport: "", jmsport: "", geo: false}}
+    - {interface: eth2.{{ external_interfaces[0].vlan }}, role: nsgstats, enabled: false, firewallports: [], settings: {cport: "", ccert: ""}}
+    - {interface: eth2.{{ external_interfaces[0].vlan }}, role: webfilter, enabled: false, firewallports: [], settings: {protobufport: "", downloadport: "", ccert: ""}}
+    - {interface: eth2.{{ external_interfaces[0].vlan }}, role: elasticsearch, enabled: false, firewallports: [], settings: {elasticsearch: ""}}
+    - {interface: eth2.{{ external_interfaces[0].vlan }}, role: sdWanPortal, enabled: false, firewallports: [], settings: {httpPort: "", httpsPort: "", ccert: ""}}
+    - {interface: eth2.{{ external_interfaces[0].vlan }}, role: fileserver, enabled: false, firewallports: [], settings: {port: "", ccert: ""}}
 servers:
 {% if vsd_sa_or_ha is match('ha') %}
     vsd1: {{ hostvars[groups['vsd_ha_node1'][0]].mgmt_ip }}
