@@ -29,6 +29,8 @@
 * Allow second disk to be mounted to VSTAT (ES)
 * Add support for emailing health reports (METROAE-1332)
 * Add support for symlinks as files
+* Add check for HA VSD DNS SRV records (METROAE-1341)
+* Add support for vCenter VM folder specification.
 * Add support for configuring monit email alerts (METROAE-1222)
 
 ### Resolved Issues
@@ -48,6 +50,7 @@
 * Restart VSC after OpenStack upgrade (GITHUB #1537)
 * Add NSGv bootstrap example for vcenter (METROAE - 1393)
 * Add support for checking the size on the specific vCenter datastore if one is provided
+* Add better error reporting for vCenter tasks (METROAE-1406 & METROAE-1407)
 
 ## Test Matrix
 
