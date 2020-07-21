@@ -82,14 +82,19 @@ If you prefer not to use a Docker container you can set up your environment with
 * Locally available image files for VCS or VNS deployments
 
 #### Optionally set up and activate python virtual environment
+If you would like to run MetroAE within a python virtual environment, please follow the steps below.
+
+##### 1. Install pip
 If pip isn't installed on the host, install it with the following command.
 ```
 (sudo) yum install -y python-pip
 ```
-Then, install the virtualenv package using the following command.
+##### 2. Install the virtualenv package
+Install the virtualenv package using the following command.
 ```
 pip install virtualenv
 ```
+##### 3. Set up and activate python virtual environment
 The python virtual environment can be created as follows.
 ```
 virtualenv [path_to_virtual_environment_or_name]
