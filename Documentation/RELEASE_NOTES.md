@@ -48,6 +48,7 @@
 * Restart VSC after OpenStack upgrade (GITHUB #1537)
 * Add NSGv bootstrap example for vcenter (METROAE - 1393)
 * Add support for checking the size on the specific vCenter datastore if one is provided
+* Add better error reporting for vCenter tasks (METROAE-1406 & METROAE-1407)
 
 ## Test Matrix
 
