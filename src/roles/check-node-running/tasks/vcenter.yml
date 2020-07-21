@@ -1,4 +1,4 @@
----
+
 - name: Finding VM folder (ignoring errors)
   connection: local
   vmware_guest_find:
@@ -10,7 +10,12 @@
   register: vm_folder
   ignore_errors: yes
 
-- name: Gathering info on VM (ignoring errors)
+- name: Check error message from vmware guest find
+  assert:
+    that: vm_folder is succeeded or "Unable to find" in vm_folder.msg
+    fail_msg: "Unexpected error from vmware guest find:\n{{ vm_folder.msg | default('') }}"
+
+- name: Gathering info on VM
   connection: local
   vmware_guest_info:
     hostname: "{{ target_server }}"
@@ -21,13 +26,12 @@
     name: "{{ vm_name }}"
     validate_certs: no
   register: vm_facts
-  ignore_errors: yes
   when: vm_folder is succeeded
 
 - debug: var=vm_facts verbosity=1
 
 - block:
-  - name: Get VSD directory if present
+  - name: Get VSD directory if present (ignoring errors)
     connection: local
     vmware_vm_shell:
       hostname: "{{ target_server }}"
@@ -57,8 +61,6 @@
     - vcenter_start_vsd_with_interfaces_disabled | default ( False )
     - nuage_upgrade | default (False)
     - inventory_hostname in groups['vsds']
-
-
 
 - block:
   - name: Verify that the VM is not running if not reachable
