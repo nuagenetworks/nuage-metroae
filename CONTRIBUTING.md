@@ -14,9 +14,9 @@ Pull requests are the best way to propose changes to the codebase (we use [Githu
 
   All contributions must be consistent with the design of the existing workflows.
 
-  All contrinbutions must be submitted as pull requests to the _dev_ branch, reviewed, updated, and merged into the nuage-metro repo.
+  All contrinbutions must be submitted as pull requests to the _dev_ branch, reviewed, updated, and merged into the nuage-metroae repo.
 
-  You must have a github.com account and have been added as a collaborator to the nuage-metro repo.
+  You must have a github.com account and have been added as a collaborator to the nuage-metroae repo.
 
 ## Contributing your code
 
@@ -72,7 +72,7 @@ Pull requests are the best way to propose changes to the codebase (we use [Githu
 
 ## Questions and Feedback
 
-Ask questions and get support via the [forums](https://devops.nuagenetworks.net/forums/) on the [MetroAE site](https://devops.nuagenetworks.net/).  
+Ask questions and get support on the [MetroAE site](https://devops.nuagenetworks.net/).  
 You may also contact us directly.  
   Outside Nokia: [devops@nuagenetworks.net](mailto:devops@nuagenetworks.net "send email to nuage-metro project").  
   Internal Nokia: [nuage-metro-interest@list.nokia.com](mailto:nuage-metro-interest@list.nokia.com "send email to nuage-metro project").
