@@ -2,7 +2,7 @@ network:
     namespaces:
       - name: Internal
 {% for interface in external_interfaces %}
-      - name: {{ interface.name }}
+      - name: "External{{ loop.index }}"
 {% endfor %}
     interfaces:
       - dev: eth1
@@ -28,7 +28,7 @@ network:
         dns1: ''
         dns2: ''
         dns3: ''
-        namespace: {{ interface.name }}
+        namespace: "External{{ loop.index }}"
         dev: eth2
         ipaddr: {{ interface.external_ip }}
         prefix: {{ interface.external_prefix }}
@@ -45,13 +45,15 @@ proxy:
     - {interface: eth1.0, role: elasticsearch, enabled: false, firewallports: [], settings: {elasticsearch: ""}}
     - {interface: eth1.0, role: sdWanPortal, enabled: false, firewallports: [], settings: {httpPort: "", httpsPort: "", ccert: ""}}
     - {interface: eth1.0, role: fileserver, enabled: false, firewallports: [], settings: {port: "", ccert: ""}}
-    - {interface: eth2.{{ external_interfaces[0].vlan }}, role: nsgbootstrap, enabled: false, firewallports: [], settings: {cport: "", bport: "", ccert: ""}}
-    - {interface: eth2.{{ external_interfaces[0].vlan }}, role: vsdconfig, enabled: false, firewallports: [], settings: {uiport: "", apiport: "", xmppport: "", jmsport: "", geo: false}}
-    - {interface: eth2.{{ external_interfaces[0].vlan }}, role: nsgstats, enabled: false, firewallports: [], settings: {cport: "", ccert: ""}}
-    - {interface: eth2.{{ external_interfaces[0].vlan }}, role: webfilter, enabled: false, firewallports: [], settings: {protobufport: "", downloadport: "", ccert: ""}}
-    - {interface: eth2.{{ external_interfaces[0].vlan }}, role: elasticsearch, enabled: false, firewallports: [], settings: {elasticsearch: ""}}
-    - {interface: eth2.{{ external_interfaces[0].vlan }}, role: sdWanPortal, enabled: false, firewallports: [], settings: {httpPort: "", httpsPort: "", ccert: ""}}
-    - {interface: eth2.{{ external_interfaces[0].vlan }}, role: fileserver, enabled: false, firewallports: [], settings: {port: "", ccert: ""}}
+{% for interface in external_interfaces %}
+    - {interface: eth2.{{ interface.vlan }}, role: nsgbootstrap, enabled: false, firewallports: [], settings: {cport: "", bport: "", ccert: ""}}
+    - {interface: eth2.{{ interface.vlan }}, role: vsdconfig, enabled: false, firewallports: [], settings: {uiport: "", apiport: "", xmppport: "", jmsport: "", geo: false}}
+    - {interface: eth2.{{ interface.vlan }}, role: nsgstats, enabled: false, firewallports: [], settings: {cport: "", ccert: ""}}
+    - {interface: eth2.{{ interface.vlan }}, role: webfilter, enabled: false, firewallports: [], settings: {protobufport: "", downloadport: "", ccert: ""}}
+    - {interface: eth2.{{ interface.vlan }}, role: elasticsearch, enabled: false, firewallports: [], settings: {elasticsearch: ""}}
+    - {interface: eth2.{{ interface.vlan }}, role: sdWanPortal, enabled: false, firewallports: [], settings: {httpPort: "", httpsPort: "", ccert: ""}}
+    - {interface: eth2.{{ interface.vlan }}, role: fileserver, enabled: false, firewallports: [], settings: {port: "", ccert: ""}}
+{% endfor %}
 servers:
 {% if vsd_sa_or_ha is match('ha') %}
     vsd1: {{ hostvars[groups['vsd_ha_node1'][0]].mgmt_ip }}
