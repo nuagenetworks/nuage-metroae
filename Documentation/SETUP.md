@@ -94,6 +94,33 @@ If you prefer not to use a Docker container you can set up your environment with
 * Operating System: Enterprise Linux 7 (EL7) CentOS 7.4 or greater or RHEL 7.4 or greater
 * Locally available image files for VCS or VNS deployments
 
+#### Optionally set up and activate python virtual environment
+If you would like to run MetroAE within a python virtual environment, please follow the steps below.
+
+##### 1. Install pip
+If pip isn't installed on the host, install it with the following command.
+```
+(sudo) yum install -y python-pip
+```
+##### 2. Install the virtualenv package
+Install the virtualenv package using the following command.
+```
+pip install virtualenv
+```
+##### 3. Set up and activate python virtual environment
+The python virtual environment can be created as follows.
+```
+virtualenv [path_to_virtual_environment_or_name]
+```
+After which the environment can be activated.
+```
+source [path_to_virtual_environment_or_name]/bin/activate
+```
+After activating the virtual environment, you can proceed with the rest of the document. The steps will then be performed within the virtual environment. Virtual environments can be exited/deactivated with this command.
+```
+deactivate
+```
+
 #### Steps
 
 ##### 1. Clone Repository
@@ -124,13 +151,19 @@ sudo ./setup.sh
 
 The script writes a detailed log into *setup.log* for your reference. A *Setup complete!* messages appears when the packages have been successfully installed.
 
+If you are using a python virtual environment, you will need to run the following command to install the required pip packages.
+```
+pip install -r pip_requirements.txt
+```
+Please ensure that the pip selinux package and the yum libselinux-python packages are successfully installed before running MetroAE within a python virtual environment.
+
 ##### 3. **For ESXi / vCenter Only**, install additional packages
 
  Package  | Command
  -------- | -------
  pyvmomi  | `pip install pyvmomi==6.7.3`
  jmespath | `pip install jmespath`
- 
+
 Note that we have specified version 6.7.3 for pyvmomi. We test with this version. Newer versions of pyvmomi may cause package conflicts.
 
  If you are installing VSP components in a VMware environment (ESXi/vCenter) download and install the [ovftool](https://www.vmware.com/support/developer/ovf/) from VMware. MetroAE uses ovftool for OVA operations.
