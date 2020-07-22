@@ -1,9 +1,11 @@
 network:
     namespaces:
       - name: Internal
+{% if external_interfaces is defined %}
 {% for interface in external_interfaces %}
       - name: "External{{ loop.index }}"
 {% endfor %}
+{% endif %}
     interfaces:
       - dev: eth1
         dns1: ''
@@ -23,6 +25,7 @@ network:
         namespace: Internal
         prefix: {{ internal_prefix }}
         vlan: 0
+{% if external_interfaces is defined %}
 {% for interface in external_interfaces %}
       - dhcp: 'no'
         dns1: ''
@@ -35,6 +38,7 @@ network:
         gateway: {{ interface.external_gateway }}
         vlan: {{ interface.vlan }}
 {% endfor %}
+{% endif %}
     nuagenetwork: Internal
 vrrp: null
 proxy:
@@ -45,6 +49,7 @@ proxy:
     - {interface: eth1.0, role: elasticsearch, enabled: false, firewallports: [], settings: {elasticsearch: ""}}
     - {interface: eth1.0, role: sdWanPortal, enabled: false, firewallports: [], settings: {httpPort: "", httpsPort: "", ccert: ""}}
     - {interface: eth1.0, role: fileserver, enabled: false, firewallports: [], settings: {port: "", ccert: ""}}
+{% if external_interfaces is defined %}
 {% for interface in external_interfaces %}
     - {interface: eth2.{{ interface.vlan }}, role: nsgbootstrap, enabled: false, firewallports: [], settings: {cport: "", bport: "", ccert: ""}}
     - {interface: eth2.{{ interface.vlan }}, role: vsdconfig, enabled: false, firewallports: [], settings: {uiport: "", apiport: "", xmppport: "", jmsport: "", geo: false}}
@@ -54,6 +59,7 @@ proxy:
     - {interface: eth2.{{ interface.vlan }}, role: sdWanPortal, enabled: false, firewallports: [], settings: {httpPort: "", httpsPort: "", ccert: ""}}
     - {interface: eth2.{{ interface.vlan }}, role: fileserver, enabled: false, firewallports: [], settings: {port: "", ccert: ""}}
 {% endfor %}
+{% endif %}
 servers:
 {% if vsd_sa_or_ha is match('ha') %}
     vsd1: {{ hostvars[groups['vsd_ha_node1'][0]].mgmt_ip }}
