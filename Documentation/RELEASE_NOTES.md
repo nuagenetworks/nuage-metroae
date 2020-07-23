@@ -28,6 +28,7 @@
 * Added support for checking and installing for libguestfs for target server
 * Allow second disk to be mounted to VSTAT (ES)
 * Add support for emailing health reports (METROAE-1332)
+* Add support for more than one External interface (METROAE-1337)
 * Add support for symlinks as files
 
 ### Resolved Issues
