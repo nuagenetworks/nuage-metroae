@@ -258,7 +258,7 @@ pip_install() {
     do
         unset IFS
         printn "Installing $i..."
-        pip install "$i" >> $LOG 2>&1
+        pip install "$i"
         check_retcode $?
     done
 }
