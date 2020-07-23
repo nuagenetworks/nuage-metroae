@@ -81,6 +81,8 @@ options:
       - name
       - proxyDNSName
       - instanceSSHOverride
+      - remoteLogServerAddress
+      - remoteLogServerPort
     required:True
   zfb_vsc_infra:
     description:
@@ -138,6 +140,8 @@ EXAMPLES = '''
         name: nsg_infra
         proxyDNSName: vnsutil1.example.com
         instanceSSHOverride: ALLOWED
+        remoteLogServerAddress: 10.0.0.1
+        remoteLogServerPort: 514
     zfb_vsc_infra:
         name: vsc_infra
         firstController: 192.168.1.100
@@ -201,6 +205,16 @@ def create_nsg_infra_profile(module, csproot):
     if nsg_infra is None:
         infra_params['useTwoFactor'] = zfb_constants['useTwoFactor']
         infra_params['upgradeAction'] = zfb_constants['upgradeAction']
+
+        if ("remoteLogServerAddress" in infra_params and
+                infra_params["remoteLogServerAddress"] != ""):
+            infra_params["remoteLogMode"] = "RSYSLOG"
+        else:
+            if "remoteLogServerAddress" in infra_params:
+                del infra_params["remoteLogServerAddress"]
+            if "remoteLogServerPort" in infra_params:
+                del infra_params["remoteLogServerPort"]
+
         nsg_infra = VSPK.NUInfrastructureGatewayProfile(data=infra_params)
         csproot.create_child(nsg_infra)
 
