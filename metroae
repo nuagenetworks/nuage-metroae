@@ -774,17 +774,64 @@ function setup_container {
 
     set +e
 
-    get_image_id
+    images_on_disk=`docker images 2>/dev/null | grep $METRO_AE_IMAGE | awk '{ print $2 }'`
+    num_images=0
+    for image in $images_on_disk
+    do
+        if [[ $image != "<none>" ]]; then
+            num_images=$num_images+1
+        fi
+    done
+    if [[ $num_images -gt 1 ]]; then
+        if [[ -z $3 ]]; then
+            echo "You can set up a container with one of the images currently"
+            echo "pulled on the host machine"
+            echo ""
+            echo $num_images
+            read -p "Which image would you like to use for container setup? Please specify the image tag: " image_to_setup
+            IMAGE_ID=`docker images 2>/dev/null | grep $METRO_AE_IMAGE | grep $image_to_setup | awk '{ print $3 }'`
+        else
+            image_to_setup=''
+            for image in $images_on_disk
+            do
+                if [[ $image == $3 ]]; then
+                    image_to_setup=$image
+                fi
+            done
+            if [[ -z $image_to_setup ]]; then
+                echo ""
+                write_to_screen_and_script_log "The image you would like to set up does not exist on the host machine."
+                echo "Please pull the image from the repository and try again."
+                exit 1
+            else
+                IMAGE_ID=$image_to_setup
+            fi
+        fi
+    elif [[ $num_images -eq 1 ]]; then
+        if [[ -z $3 ]]; then
+            $IMAGE_ID=$images_on_disk
+        else
+            if [[ $3 == $images_on_disk ]]; then
+                $IMAGE_ID=$3
+            else
+                echo ""
+                write_to_screen_and_script_log "The image you have specified does not match the image on the host machine."
+                echo "Please pull the image you would like to set up or run the setup command again without specifying an image."
+                exit 1
+            fi
+        fi
+    else
+        #get_image_id
+        if [[ -z $IMAGE_ID ]]; then
+            echo ""
+            write_to_screen_and_script_log ">>> Pulling the MetroAE container image from the repository"
+            pull
+        fi
 
-    if [[ -z $IMAGE_ID ]]; then
-        echo ""
-        write_to_screen_and_script_log ">>> Pulling the MetroAE container image from the repository"
-        pull
-    fi
-
-    if [[ $? -ne 0 ]]; then
-        set -e
-        return 1
+        if [[ $? -ne 0 ]]; then
+            set -e
+            return 1
+        fi
     fi
     set -e
 
