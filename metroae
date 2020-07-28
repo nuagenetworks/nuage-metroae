@@ -49,7 +49,7 @@ if [[ ! -z $IMAGE_NAME ]]; then
     METRO_AE_IMAGE="$REGISTRY_HOST:5000/$IMAGE_NAME"
 fi
 OS_RELEASE=$LINUX
-USER_DATA_PATH=""
+SETUP_USER_DATA_PATH=""
 ENVIRONMENT_FILTERS=(PWD PATH HOME USER SHELL MAIL SSH_CONNECTION LOGNAME OLDPWD LESSOPEN _ XDG_RUNTIME_DIR HISTCONTROL)
 SCRIPT_VERSION=1.1.0
 S3_KEY="AKIAJOPWRLAXPCUXZX3A"
@@ -802,10 +802,10 @@ function setup_container {
         echo "not end with 'metroae_data', setup will create it."
         get_valid_data_dir
 
-        create_data_directory $USER_DATA_PATH
+        create_data_directory $SETUP_USER_DATA_PATH
 
         echo ""
-        write_to_screen_and_script_log "Data directory path set to: $USER_DATA_PATH"
+        write_to_screen_and_script_log "Data directory path set to: $SETUP_USER_DATA_PATH"
         echo ""
     else
         echo ""
@@ -814,12 +814,12 @@ function setup_container {
         if [[ $valid_path -ne 0 ]]; then
             exit 1
         fi
-        USER_DATA_PATH=$1
+        SETUP_USER_DATA_PATH=$1
         shift
-        write_to_screen_and_script_log ">>> Setting data directory path to passed in parameter $USER_DATA_PATH"
+        write_to_screen_and_script_log ">>> Setting data directory path to passed in parameter $SETUP_USER_DATA_PATH"
     fi
 
-    METROAE_MOUNT_POINT=$USER_DATA_PATH
+    METROAE_MOUNT_POINT=$SETUP_USER_DATA_PATH
     if [ -w "$SETUP_FILE" ]; then
         sed -i '/^METROAE_MOUNT_POINT/d' $SETUP_FILE
         echo METROAE_MOUNT_POINT=$METROAE_MOUNT_POINT >> $SETUP_FILE
@@ -966,9 +966,9 @@ function create_data_directory {
     debug ${FUNCNAME[0]}
 
     if [[ $1 != *metroae_data ]]; then
-        USER_DATA_PATH=${USER_DATA_PATH%/}/metroae_data
+        SETUP_USER_DATA_PATH=${SETUP_USER_DATA_PATH%/}/metroae_data
     fi
-    mkdir -p $USER_DATA_PATH
+    mkdir -p $SETUP_USER_DATA_PATH
 }
 
 function get_valid_data_dir {
@@ -979,10 +979,10 @@ function get_valid_data_dir {
     while [[ $valid_path -ne 0 ]]
     do
         echo ""
-        read -p "Data directory path: " USER_DATA_PATH
+        read -p "Data directory path: " SETUP_USER_DATA_PATH
         echo ""
         write_to_screen_and_script_log "Checking path: $1"
-        validate_directory $USER_DATA_PATH
+        validate_directory $SETUP_USER_DATA_PATH
     done
     set -e
 }
