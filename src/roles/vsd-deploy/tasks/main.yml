@@ -347,10 +347,23 @@
     - name: Write out monitrc file
       template: src=monitrc.j2 dest=/etc/monitrc backup=no
 
+    - name: Modify permissions of monitrc file
+      file:
+        path: /etc/monitrc
+        mode: '0400'
+
     - name: Restart monit service
       service:
         name: monit
         state: restarted
+
+    - name: Verify monit is running correctly
+      vsd_monit:
+        group: all
+      register: vsd_proc
+
+    - name: Print monit status when verbosity >= 1
+      debug: var=vsd_proc verbosity=1
 
     when: monit_mail_server is defined
 
