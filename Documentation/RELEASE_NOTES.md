@@ -28,8 +28,11 @@
 * Add support for applying custom VSC configurations (METROAE-1328)
 * Added support for checking and installing for libguestfs for target server
 * Allow second disk to be mounted to VSTAT (ES)
+* Add capability to enter BGP route reflector IP address for VSC (METROAE-1320)
 * Add support for emailing health reports (METROAE-1332)
 * Add support for symlinks as files
+* Add check for HA VSD DNS SRV records (METROAE-1341)
+* Add support for vCenter VM folder specification.
 
 ### Resolved Issues
 
@@ -48,6 +51,7 @@
 * Restart VSC after OpenStack upgrade (GITHUB #1537)
 * Add NSGv bootstrap example for vcenter (METROAE - 1393)
 * Add support for checking the size on the specific vCenter datastore if one is provided
+* Add better error reporting for vCenter tasks (METROAE-1406 & METROAE-1407)
 
 ## Test Matrix
 

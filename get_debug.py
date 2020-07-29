@@ -25,9 +25,9 @@ if run_mode == "repo":
     deploymentPath = os.path.join(cwdir, deploymentName)
     inventoryPath = os.path.join(cwdir, 'src/inventory')
 else:
-    ansibleLogPath = os.path.join(cwdir, 'nuage-metro', 'ansible.log')
-    deploymentPath = os.path.join(cwdir, 'nuage-metro', deploymentName)
-    inventoryPath = os.path.join(cwdir, 'nuage-metro', 'src/inventory')
+    ansibleLogPath = os.path.join(cwdir, 'nuage-metroae', 'ansible.log')
+    deploymentPath = os.path.join(cwdir, 'nuage-metroae', deploymentName)
+    inventoryPath = os.path.join(cwdir, 'nuage-metroae', 'src/inventory')
     tarFileName = os.path.join('/metroae_data', tarFileName)
 
 with tarfile.open(tarFileName + '.tar.gz', mode='w:gz') as archive:
