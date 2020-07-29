@@ -51,6 +51,7 @@
 * Add NSGv bootstrap example for vcenter (METROAE - 1393)
 * Add support for checking the size on the specific vCenter datastore if one is provided
 * Add better error reporting for vCenter tasks (METROAE-1406 & METROAE-1407)
+* Make bridges optional in deployment configuration and ensure they are set when required (METROAE-1178)
 
 ## Test Matrix
 
