@@ -22,6 +22,7 @@
 * Add support for new Nuage version format, e.g. 20.6 (METROAE-1343)
 * Add ability to support custom configuration file for NUH (METROAE-1358)
 * Support NUH install when VSD is not installed (METROAE-1357)
+* Support Webfilter install using MetroAE (METROAE-1206)
 * Add support for deploying VNS Utils on Openstack
 * Added a restriction for vsc_fallocate_size_gb to 1GB and skip if the value is 0
 * Add support for applying custom VSC configurations (METROAE-1328)
