@@ -34,7 +34,7 @@ File name | Description
 
 ## Important Notes
 
-You can now run `python run_wizard.py` to let MetroAE help you setup your server and create or edit a deployment. The wizard will ask you questions about what you'd like to do and then create the proper files on disk. run_wizard.py is most useful when you are working with a clone of the nuage-metro repo. It can be used to generate deployments that can be used with the Docker container version of MetroAE, but those deployments would need to be copied manually from the nuage-metro repo clone to the container's metroae_data directory.
+You can now run `python run_wizard.py` to let MetroAE help you setup your server and create or edit a deployment. The wizard will ask you questions about what you'd like to do and then create the proper files on disk. run_wizard.py is most useful when you are working with a clone of the nuage-metroae repo. It can be used to generate deployments that can be used with the Docker container version of MetroAE, but those deployments would need to be copied manually from the nuage-metroae repo clone to the container's metroae_data directory.
 
 Please see [RELEASE_NOTES.md](Documentation/RELEASE_NOTES.md) for all the details about what has changed or been added in this release.
 
@@ -158,12 +158,12 @@ MetroAE is based off of the Python-based Ansible operations tool.
 
 ## Questions, Feedback, and Contributing
 
-Ask questions and get support via the [forums](https://devops.nuagenetworks.net/forums/) on the [MetroAE site](https://devops.nuagenetworks.net/).
+Ask questions and get support on the [MetroAE site](https://devops.nuagenetworks.net/).
 You may also contact us directly.
   Outside Nokia: [devops@nuagenetworks.net](mailto:devops@nuagenetworks.net "send email to nuage-metro project")
   Internal Nokia: [nuage-metro-interest@list.nokia.com](mailto:nuage-metro-interest@list.nokia.com "send email to nuage-metro project")
 
-Report bugs you find and suggest new features and enhancements via the [GitHub Issues](https://github.com/nuagenetworks/nuage-metro/issues "nuage-metro issues") feature.
+Report bugs you find and suggest new features and enhancements via the [GitHub Issues](https://github.com/nuagenetworks/nuage-metroae/issues "nuage-metroae issues") feature.
 
 You may also [contribute](CONTRIBUTING.md) to MetroAE by submitting your own code to the project.
 

@@ -10,6 +10,7 @@ When your deployment is correct, use the following command to deactivate the cur
 ```
 metroae vsd failover [deployment_name]
 ```
+
 If both clusters are in good shape, your failover will complete successfully. If the current `primary` cluster is in poor health or unreachable, MetroAE will print an error and quit. If you want to ignore these errors and force the current `standby` cluster to become `primary`, use following command:
 ```
 metroae vsd failover [deployment_name] -e vsd_force_cluster_failover=yes
@@ -19,15 +20,17 @@ MetroAE will also execute a health check on the current `standby` cluster. If th
 ```
 metroae vsd failover [deployment_name] -e skip_health_check=true
 ```
+
 Note that you can use both `vsd_force_cluster_failover` and `skip_health_check` on one command:
 ```
 metroae vsd failover [deployment_name] -e vsd_force_cluster_failover=yes -e skip_health_check=true
 ```
 
-## Questions, Feedback, and Contributing  
+## Questions, Feedback, and Contributing
+
 Get support via the [forums](https://devops.nuagenetworks.net/forums/) on the [MetroAE site](https://devops.nuagenetworks.net/).  
 Ask questions and contact us directly at [devops@nuagenetworks.net](mailto:devops@nuagenetworks.net "send email to nuage-metro project").
  
-Report bugs you find and suggest new features and enhancements via the [GitHub Issues](https://github.com/nuagenetworks/nuage-metro/issues "nuage-metro issues") feature.
+Report bugs you find and suggest new features and enhancements via the [GitHub Issues](https://github.com/nuagenetworks/nuage-metroae/issues "nuage-metroae issues") feature.
 
 You may also [contribute](../CONTRIBUTING.md) to MetroAE by submitting your own code to the project.
