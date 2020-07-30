@@ -154,10 +154,22 @@ function source_menu {
             source $CONTAINER_HOME/nuage-metroae/src/$PLAYBOOK_MENU
             debug "${FUNCNAME[0]}: source $CONTAINER_HOME/nuage-metroae/src/$PLAYBOOK_MENU"
         fi
+        if ls /source/nuage-metro/src/metro_plugins/* 1> /dev/null 2>&1; then
+            for menu in /source/nuage-metro/src/metro_plugins/*/menu
+            do
+                source $menu
+            done
+        fi
     elif [[ $RUN_MODE == $REPO_RUN_MODE ]]; then
         if [[ -f src/$PLAYBOOK_MENU ]]; then
             source src/$PLAYBOOK_MENU
             debug "${FUNCNAME[0]}: source src/$PLAYBOOK_MENU"
+        fi
+        if ls src/metro_plugins/* 1> /dev/null 2>&1; then
+            for menu in src/metro_plugins/*/menu
+            do
+                source $menu
+            done
         fi
     else # RUN_MODE == $CONTAINER_RUN_MODE
         if [[ -f $METROAE_MOUNT_POINT/$PLAYBOOK_MENU ]]; then
@@ -341,8 +353,7 @@ function get_container_id {
 
 function get_running_container_id {
     debug ${FUNCNAME[0]}
-    get_max_container_version
-    RUNNING_CONTAINER_ID=`docker ps 2>/dev/null | grep $METRO_AE_IMAGE | grep $MAX_CONTAINER_VERSION | awk '{ print $1}'`
+    RUNNING_CONTAINER_ID=`docker ps 2>/dev/null | grep $METRO_AE_IMAGE | awk '{ print $1}'`
     debug "${FUNCNAME[0]}: RUNNING_CONTAINER_ID: $RUNNING_CONTAINER_ID"
 }
 
@@ -2350,6 +2361,16 @@ function tools_help {
     fi
 }
 
+function plugin_help {
+    debug ${FUNCNAME[0]}
+    echo "Nuage Networks Metro Automation Engine (MetroAE) Version:" $METROAE_VERSION
+    echo ""
+    echo "MetroAE plugin usage:"
+    echo ""
+    print_menu_help "metroae%-50s %-1s\n" $1
+    echo ""
+}
+
 function help_header {
     debug ${FUNCNAME[0]}
     echo ""
@@ -2387,6 +2408,10 @@ function switch_help {
         tools_help "$1"
         exit 0
         ;;
+        ,plugin*)
+        plugin_help "$1"
+        exit 0
+        ;;        
         *)
         main_help "$1"
         exit 0
