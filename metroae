@@ -346,14 +346,13 @@ function get_max_container_version {
 
 function get_container_id {
     debug ${FUNCNAME[0]}
-    get_max_container_version
     CONTAINER_ID=`docker ps -a 2>/dev/null | grep $METRO_AE_IMAGE | grep $MAX_CONTAINER_VERSION | awk '{ print $1}'`
     debug "${FUNCNAME[0]}: CONTAINER_ID: $CONTAINER_ID"
 }
 
 function get_running_container_id {
     debug ${FUNCNAME[0]}
-    RUNNING_CONTAINER_ID=`docker ps 2>/dev/null | grep $METRO_AE_IMAGE | awk '{ print $1}'`
+    RUNNING_CONTAINER_ID=`docker ps 2>/dev/null | grep $METRO_AE_IMAGE | grep $MAX_CONTAINER_VERSION | awk '{ print $1}'`
     debug "${FUNCNAME[0]}: RUNNING_CONTAINER_ID: $RUNNING_CONTAINER_ID"
 }
 
@@ -2132,19 +2131,19 @@ function validate_plugin_dir {
 
 function plugin_main {
     debug ${FUNCNAME[0]}
-
     if [[ $RUN_MODE == "CONTAINER" ]]; then
+        debug "${FUNCNAME[0]}: RUN_MODE=$RUN_MODE"
         local action=$1
         if [[ ! -z $1 ]]
         then
             shift
+            PLUGIN_INSTALL_ARGS=("$@")
+            if [[ $action == "install" ]] || [[ $action == "validate" ]]; then
+                copy_plugin_file_into_mount_point_if_necessary
+            fi
+            docker_metro_ae_exec plugin $action "${PLUGIN_INSTALL_ARGS[@]}"
+            exit 0
         fi
-        PLUGIN_INSTALL_ARGS=("$@")
-        if [[ $action == "install" ]] || [[ $action == "validate" ]]; then
-            copy_plugin_file_into_mount_point_if_necessary
-        fi
-        docker_metro_ae_exec plugin $action "${PLUGIN_INSTALL_ARGS[@]}"
-        exit 0
     fi
 
     POSITIONAL=()
@@ -2536,6 +2535,7 @@ case ${MATCH_MENU[2]} in
     print_version_and_exit 0
     ;;
     plugin)
+    debug "main: plugin"
     plugin_main ${MATCH_MENU[3]} "${EXTRA_ARGS[@]}"
     print_version_and_exit 0
     ;;
