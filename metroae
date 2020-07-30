@@ -334,22 +334,21 @@ function get_max_container_version {
 
 function get_container_id {
     debug ${FUNCNAME[0]}
-    get_max_container_version
-    CONTAINER_ID=`docker ps -a 2>/dev/null | grep $METRO_AE_IMAGE | grep $MAX_CONTAINER_VERSION | awk '{ print $1}'`
+    CONTAINER_ID=`docker ps -a 2>/dev/null | grep $METRO_AE_IMAGE | awk '{ print $1}'`
     debug "${FUNCNAME[0]}: CONTAINER_ID: $CONTAINER_ID"
 }
 
 function get_running_container_id {
     debug ${FUNCNAME[0]}
-    get_max_container_version
-    RUNNING_CONTAINER_ID=`docker ps 2>/dev/null | grep $METRO_AE_IMAGE | grep $MAX_CONTAINER_VERSION | awk '{ print $1}'`
+    RUNNING_CONTAINER_ID=`docker ps 2>/dev/null | grep $METRO_AE_IMAGE | awk '{ print $1}'`
     debug "${FUNCNAME[0]}: RUNNING_CONTAINER_ID: $RUNNING_CONTAINER_ID"
 }
 
 function get_image_id {
     debug ${FUNCNAME[0]}
-    get_max_container_version
-    IMAGE_ID=`docker images 2>/dev/null | grep $METRO_AE_IMAGE | grep $MAX_CONTAINER_VERSION | awk '{ print $3}'`
+    if [[ ! -z $IMAGE_ID ]]; then
+        get_max_container_version
+        IMAGE_ID=`docker images 2>/dev/null | grep $METRO_AE_IMAGE | grep $MAX_CONTAINER_VERSION | awk '{ print $3}'`
     debug "${FUNCNAME[0]}: IMAGE_ID: $IMAGE_ID"
 }
 
@@ -665,6 +664,10 @@ function run_container {
             user_name=`id -u $(whoami)`
             group_name=`id -g $(whoami)`
 
+            if [[ ! -z $IMAGE_TAG ]]; then
+                MAX_CONTAINER_VERSION=$IMAGE_TAG
+            fi
+
             DOCKER_COMMAND=$(cat <<-END
                 docker run \
                     -e RUN_MODE=$INSIDE_RUN_MODE \
@@ -789,7 +792,8 @@ function setup_container {
             echo ""
             echo $images_on_disk
             read -p "Which image would you like to use for container setup? Please specify the image tag: " image_to_setup
-            IMAGE_ID=`docker images 2>/dev/null | grep $METRO_AE_IMAGE | grep $image_to_setup | awk '{ print $3 }'`
+            IMAGE_TAG=$image_to_setup
+            IMAGE_ID=`docker images 2>/dev/null | grep $METRO_AE_IMAGE | grep $IMAGE_TAG | awk '{ print $3 }'`
         else
             image_to_setup=''
             for image in $images_on_disk
@@ -804,15 +808,18 @@ function setup_container {
                 echo "Please pull the image from the repository and try again."
                 exit 1
             else
-                IMAGE_ID=$image_to_setup
+                IMAGE_TAG=$image_to_setup
+                IMAGE_ID=`docker images 2>/dev/null | grep $METRO_AE_IMAGE | grep $IMAGE_TAG | awk '{ print $3 }'`
             fi
         fi
     elif [[ $num_images -eq 1 ]]; then
         if [[ -z $3 ]]; then
-            $IMAGE_ID=$images_on_disk
+            IMAGE_TAG=$images_on_disk
+            IMAGE_ID=`docker images 2>/dev/null | grep $METRO_AE_IMAGE | grep $IMAGE_TAG | awk '{ print $3 }'`
         else
             if [[ $3 == $images_on_disk ]]; then
-                $IMAGE_ID=$3
+                IMAGE_TAG=$3
+                IMAGE_ID=`docker images 2>/dev/null | grep $METRO_AE_IMAGE | grep $IMAGE_TAG | awk '{ print $3 }'`
             else
                 echo ""
                 write_to_screen_and_script_log "The image you have specified does not match the image on the host machine."
@@ -821,7 +828,7 @@ function setup_container {
             fi
         fi
     else
-        #get_image_id
+        get_image_id
         if [[ -z $IMAGE_ID ]]; then
             echo ""
             write_to_screen_and_script_log ">>> Pulling the MetroAE container image from the repository"
