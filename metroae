@@ -346,7 +346,7 @@ function get_running_container_id {
 
 function get_image_id {
     debug ${FUNCNAME[0]}
-    if [[ ! -z $IMAGE_ID ]]; then
+    if [[ -z $IMAGE_ID ]]; then
         get_max_container_version
         IMAGE_ID=`docker images 2>/dev/null | grep $METRO_AE_IMAGE | grep $MAX_CONTAINER_VERSION | awk '{ print $3}'`
     fi
@@ -444,6 +444,8 @@ function destroy {
     fi
 
     set +e
+    container_image=`docker ps 2>/dev/null | grep $METRO_AE_IMAGE | awk '{ print $2 }'`
+    IMAGE_TAG=${container_image##*:}
     stop_running_container
     if [[ $? -ne 0 ]]; then
         return 1
