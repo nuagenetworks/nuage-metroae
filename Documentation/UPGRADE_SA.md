@@ -113,7 +113,7 @@ The following workflows will upgrade each component in individual steps.  The st
 
 3. Deploy the new VSD node.
 
-     `metroae upgrade sa vsd predeploy`
+     `metroae upgrade sa vsd deploy`
 
      The VSD node is upgraded.
 
