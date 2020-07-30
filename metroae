@@ -2135,7 +2135,10 @@ function plugin_main {
 
     if [[ $RUN_MODE == "CONTAINER" ]]; then
         local action=$1
-        shift
+        if [[ ! -z $1 ]]
+        then
+            shift
+        fi
         PLUGIN_INSTALL_ARGS=("$@")
         if [[ $action == "install" ]] || [[ $action == "validate" ]]; then
             copy_plugin_file_into_mount_point_if_necessary
@@ -2363,12 +2366,25 @@ function tools_help {
 
 function plugin_help {
     debug ${FUNCNAME[0]}
-    echo "Nuage Networks Metro Automation Engine (MetroAE) Version:" $METROAE_VERSION
-    echo ""
-    echo "MetroAE plugin usage:"
-    echo ""
-    print_menu_help "metroae%-50s %-1s\n" $1
-    echo ""
+    if [[ ($RUN_MODE == $CONTAINER_RUN_MODE && $METROAE_SETUP_TYPE != $CONFIG_SETUP_TYPE) || $RUN_MODE == $REPO_RUN_MODE  ]]; then
+        help_header
+        echo "MetroAE plugin usage:"
+        echo ""
+        print_menu_help "metroae%-50s %-1s\n" $1
+        echo ""
+    elif [[ -z $METROAE_SETUP_TYPE ]]; then
+        echo ""
+        echo "It looks like you are trying to get help for MetroAE plugins using the container."
+        echo "The MetroAE container setup type (config, deploy, or both) does not appear to be"
+        echo "configured. Please run 'metroae container setup' and try again."
+        echo ""
+    elif [[ $METROAE_SETUP_TYPE == $CONFIG_SETUP_TYPE ]]; then
+        echo ""
+        echo "It looks like you are trying to get help for MetroAE plugins using the container."
+        echo "The MetroAE container appears to have been setup for CONFIG only. Please change"
+        echo "your setup type using 'metroae container setup' and try again."
+        echo ""
+    fi
 }
 
 function help_header {
@@ -2506,7 +2522,7 @@ if [[ ${MATCH_MENU[0]} != ",container,setup" ]] && [[ ${MATCH_MENU[0]} != ",cont
     check_for_prerequisite "$@"
 fi
 
-for menu_item in check_for_prerequisiteMATCH_MENU
+for menu_item in $MATCH_MENU
 do
     debug "main: second menu_item = $menu_item"
 done
