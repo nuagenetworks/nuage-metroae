@@ -794,24 +794,21 @@ function setup_container {
             echo "pulled on the host machine"
             echo ""
             echo $images_on_disk
-            read -p "Which image would you like to use for container setup? Please specify the image tag: " image_to_setup
-            IMAGE_TAG=$image_to_setup
+            read -p "Which image would you like to use for container setup? Please specify the image tag: " IMAGE_TAG
             IMAGE_ID=`docker images 2>/dev/null | grep $METRO_AE_IMAGE | grep $IMAGE_TAG | awk '{ print $3 }'`
         else
-            image_to_setup=''
             for image in $images_on_disk
             do
                 if [[ $image == $3 ]]; then
-                    image_to_setup=$image
+                    IMAGE_TAG=$image
                 fi
             done
-            if [[ -z $image_to_setup ]]; then
+            if [[ -z $IMAGE_TAG ]]; then
                 echo ""
                 write_to_screen_and_script_log "The image you would like to set up does not exist on the host machine."
                 echo "Please pull the image from the repository and try again."
                 exit 1
             else
-                IMAGE_TAG=$image_to_setup
                 IMAGE_ID=`docker images 2>/dev/null | grep $METRO_AE_IMAGE | grep $IMAGE_TAG | awk '{ print $3 }'`
             fi
         fi
