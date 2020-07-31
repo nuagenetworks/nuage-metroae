@@ -154,10 +154,22 @@ function source_menu {
             source $CONTAINER_HOME/nuage-metroae/src/$PLAYBOOK_MENU
             debug "${FUNCNAME[0]}: source $CONTAINER_HOME/nuage-metroae/src/$PLAYBOOK_MENU"
         fi
+        if ls /source/nuage-metro/src/metro_plugins/* 1> /dev/null 2>&1; then
+            for menu in /source/nuage-metro/src/metro_plugins/*/menu
+            do
+                source $menu
+            done
+        fi
     elif [[ $RUN_MODE == $REPO_RUN_MODE ]]; then
         if [[ -f src/$PLAYBOOK_MENU ]]; then
             source src/$PLAYBOOK_MENU
             debug "${FUNCNAME[0]}: source src/$PLAYBOOK_MENU"
+        fi
+        if ls src/metro_plugins/* 1> /dev/null 2>&1; then
+            for menu in src/metro_plugins/*/menu
+            do
+                source $menu
+            done
         fi
     else # RUN_MODE == $CONTAINER_RUN_MODE
         if [[ -f $METROAE_MOUNT_POINT/$PLAYBOOK_MENU ]]; then
@@ -2121,16 +2133,19 @@ function validate_plugin_dir {
 
 function plugin_main {
     debug ${FUNCNAME[0]}
-
     if [[ $RUN_MODE == "CONTAINER" ]]; then
+        debug "${FUNCNAME[0]}: RUN_MODE=$RUN_MODE"
         local action=$1
-        shift
-        PLUGIN_INSTALL_ARGS=("$@")
-        if [[ $action == "install" ]] || [[ $action == "validate" ]]; then
-            copy_plugin_file_into_mount_point_if_necessary
+        if [[ ! -z $1 ]]
+        then
+            shift
+            PLUGIN_INSTALL_ARGS=("$@")
+            if [[ $action == "install" ]] || [[ $action == "validate" ]]; then
+                copy_plugin_file_into_mount_point_if_necessary
+            fi
+            docker_metro_ae_exec plugin $action "${PLUGIN_INSTALL_ARGS[@]}"
+            exit 0
         fi
-        docker_metro_ae_exec plugin $action "${PLUGIN_INSTALL_ARGS[@]}"
-        exit 0
     fi
 
     POSITIONAL=()
@@ -2350,6 +2365,29 @@ function tools_help {
     fi
 }
 
+function plugin_help {
+    debug ${FUNCNAME[0]}
+    if [[ ($RUN_MODE == $CONTAINER_RUN_MODE && $METROAE_SETUP_TYPE != $CONFIG_SETUP_TYPE) || $RUN_MODE == $REPO_RUN_MODE  ]]; then
+        help_header
+        echo "MetroAE plugin usage:"
+        echo ""
+        print_menu_help "metroae%-50s %-1s\n" $1
+        echo ""
+    elif [[ -z $METROAE_SETUP_TYPE ]]; then
+        echo ""
+        echo "It looks like you are trying to get help for MetroAE plugins using the container."
+        echo "The MetroAE container setup type (config, deploy, or both) does not appear to be"
+        echo "configured. Please run 'metroae container setup' and try again."
+        echo ""
+    elif [[ $METROAE_SETUP_TYPE == $CONFIG_SETUP_TYPE ]]; then
+        echo ""
+        echo "It looks like you are trying to get help for MetroAE plugins using the container."
+        echo "The MetroAE container appears to have been setup for CONFIG only. Please change"
+        echo "your setup type using 'metroae container setup' and try again."
+        echo ""
+    fi
+}
+
 function help_header {
     debug ${FUNCNAME[0]}
     echo ""
@@ -2385,6 +2423,10 @@ function switch_help {
         ;;
         ,tools*)
         tools_help "$1"
+        exit 0
+        ;;
+        ,plugin*)
+        plugin_help "$1"
         exit 0
         ;;
         *)
@@ -2481,7 +2523,7 @@ if [[ ${MATCH_MENU[0]} != ",container,setup" ]] && [[ ${MATCH_MENU[0]} != ",cont
     check_for_prerequisite "$@"
 fi
 
-for menu_item in check_for_prerequisiteMATCH_MENU
+for menu_item in $MATCH_MENU
 do
     debug "main: second menu_item = $menu_item"
 done
@@ -2495,6 +2537,7 @@ case ${MATCH_MENU[2]} in
     print_version_and_exit 0
     ;;
     plugin)
+    debug "main: plugin"
     plugin_main ${MATCH_MENU[3]} "${EXTRA_ARGS[@]}"
     print_version_and_exit 0
     ;;
