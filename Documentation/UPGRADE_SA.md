@@ -1,5 +1,7 @@
 # Upgrading a Standalone Deployment with MetroAE
+
 ## Prerequisites / Requirements / Notes
+
 Before upgrading any components, you must have previously [set up your MetroAE environment](SETUP.md) and [customized the upgrade environment for your target platform](CUSTOMIZE.md).
 
 Ensure that you have added upgrade.yml to your deployment and specified `upgrade_from_version` and `upgrade_to_version`. MetroAE uses these values to determine whether it is to perform a patch upgrade, a major upgrade or a minor upgrade. Failure to populate these variables correctly could cause the wrong type of upgrde to be attempted, possibly resulting in an error. If a minor upgrade is treated as a major upgrade, for example, you may get stuck in the turn-on-api step which should not be executed for minor upgrades.
@@ -9,6 +11,7 @@ Note that if your existing VSP components were not installed using MetroAE or we
 By default, the special enterprise called Shared Infrastructure is created on the VSD. When putting domains in maintenance mode prior to an upgrade, MetroAE skips Shared Infrastructure domains because they cannot be modified.
 
 ### Patch Upgrade for VSD, AKA in-place upgrade
+
 A patch upgrade is applicable to the VSD cluster when upgrading from one 'u' release to another. A patch upgrade is also referred to as an in-place upgrade. The existing VSDs will remain in service. The migration ISO will be mounted and the migration script will be executed on each VSD. A patch upgrade is:
 
 * Supported beginning in VSD version 5.4.1.
@@ -17,13 +20,16 @@ A patch upgrade is applicable to the VSD cluster when upgrading from one 'u' rel
 Note that MetroAE only supports patch upgrades for VSD using the `upgrade_vsds` play. Attempting to do a patch release upgrade via any other method will result in an error.
 
 ## Example Deployment
+
 For this example, our standalone (SA) deployment consists of:
+
 * one VSD node
 * one VSC node
 * VRS instance(s)
 * one VSTAT (Elasticsearch) node
 
 ## Upgrading Automatically
+
 If your topology does not include VRS you can upgrade everything with one command. If it does includes VRS you can upgrade everything with two commands. MetroAE also gives you the option of upgrading individual components with a single command for each. If you prefer to have more control over each step in the upgrade process proceed to [Upgrading By Individual Steps](#upgrading-by-individual-steps) for instructions.
 
 ### Upgrade All Components (without VRS)
@@ -63,9 +69,11 @@ Issuing the above workflows will detect if components are clustered (HA) or not 
 Issuing the above workflows will detect if components are clustered (HA) or not and will upgrade all components that are defined in the deployment.  This option allows the VRS(s) to be upgraded in-between other components.  Performing individual workflows can allow specific components to be skipped or upgraded at different times.
 
 ## Upgrading By Individual Steps
+
 The following workflows will upgrade each component in individual steps.  The steps listed below are only applicable for stand-alone (SA) deployments.  Performing an upgrade in this way allows full control of the timing of the upgrade process.
 
 ### Preupgrade Preparations
+
 1. Run health checks on VSD, VSC and VSTAT.
 
      `metroae upgrade preupgrade health`
@@ -105,7 +113,7 @@ The following workflows will upgrade each component in individual steps.  The st
 
 3. Deploy the new VSD node.
 
-     `metroae upgrade sa vsd predeploy`
+     `metroae upgrade sa vsd deploy`
 
      The VSD node is upgraded.
 
@@ -122,6 +130,7 @@ The following workflows will upgrade each component in individual steps.  The st
 5. Log into the VSD and verify the new version.
 
 ### Upgrade VSC
+
 This example is for one VSC node. If your topology has more than one VSC node, proceed to the **Upgrade VSC Node One** section of  [UPGRADE_HA.md](UPGRADE_HA.md) and follow those instructions through to the end.
 
 1. Run VSC health check (optional).
@@ -153,9 +162,11 @@ This example is for one VSC node. If your topology has more than one VSC node, p
      **Troubleshooting**: If you experience a failure, you can re-execute the command. If it fails a second time, manually copy a valid .tim file to the VSC to affect the deployment. If that fails, deploy a new VSC using the old version, or recover the VM from a backup. You can use MetroAE for the deployment (vsc_predeploy, vsc_deploy, vsc_postdeploy...).
 
 ### Upgrade VRS
+
 Upgrade your VRS(s) and then continue with this procedure. Do not proceed without completing this step.
 
 ### Upgrade VSTAT
+
 Our example includes a VSTAT node. If your topology does not include one, proceed to *Finalize the Upgrade* below.
 
 1. Run VSTAT health check (optional).
@@ -170,7 +181,6 @@ Our example includes a VSTAT node. If your topology does not include one, procee
 
      Sets up SSH and disables stats collection.
 
-
 3. Upgrade the VSTAT node.
 
      `metroae upgrade sa vstat inplace`
@@ -184,6 +194,7 @@ Our example includes a VSTAT node. If your topology does not include one, procee
      Completes the upgrade process, renables stats and performs a series of checks to ensure the VSTAT is healthy.
 
 ### Finalize the Upgrade
+
 1. Finalize the settings.
 
      `metroae upgrade postdeploy`
@@ -198,7 +209,8 @@ Our example includes a VSTAT node. If your topology does not include one, procee
 
      Health reports are created that can be compared with the ones produced during preupgrade preparations. Investigate carefully any errors or discrepancies.
 
-## Questions, Feedback, and Contributing  
+## Questions, Feedback, and Contributing
+
 Get support via the [forums](https://devops.nuagenetworks.net/forums/) on the [MetroAE site](https://devops.nuagenetworks.net/).  
 Ask questions and contact us directly at [devops@nuagenetworks.net](mailto:devops@nuagenetworks.net "send email to nuage-metro project").
 

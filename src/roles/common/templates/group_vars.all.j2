@@ -19,6 +19,7 @@ vsc_ram: "{{ common.vsc_ram | default(4) }}"
 vstat_ram: "{{ common.vstat_ram | default(16) }}"
 vcin_ram: "{{ common.vcin_ram | default(24) }}"
 nuh_ram: "{{ common.nuh_ram | default(8) }}"
+webfilter_ram: "{{ common.webfilter_ram | default(8) }}"
 portal_ram: "{{ common.portal_ram | default(24) }}"
 portal_license_file: "{{ common.portal_license_file | default('NONE') }}"
 vsd_license_required_days_left: {{ common.vsd_license_required_days_left | default(-1) }}
@@ -38,6 +39,7 @@ nuh_cpu_cores: {{ common.nuh_cpu_cores | default(2)}}
 vsd_cpu_cores: {{ common.vsd_cpu_cores | default(6)}}
 portal_cpu_cores: {{ common.portal_cpu_cores | default(6)}}
 vcin_cpu_cores: {{ common.vcin_cpu_cores | default(6)}}
+webfilter_cpu_cores: {{ common.webfilter_cpu_cores | default(2) }}
 vcenter_start_vsd_with_interfaces_disabled: {{ common.vcenter_start_vsd_with_interfaces_disabled | default(false) }}
 vsd_inplace_upgrade: {{ inplace | default(false) }}
 
@@ -113,6 +115,9 @@ portal_default_password: Alcateldc
 nuh_default_username: root
 nuh_default_password: Alcateldc
 
+webfilter_default_username: root
+webfilter_default_password: Alcateldc
+
 dns_username: {{ dns_username | default("root") | indent(8, False) }}
 dns_password: {{ dns_password | default("Alcateldc") | indent(8, False) }}
 
@@ -123,13 +128,13 @@ expected_bgp_admin_state: Up
 expected_bgp_oper_state: Up
 expected_xmpp_server_state: Functional
 
-target_server_username: "{{ encrypted.target_server_username | default("root") | indent(8, False) }}"
+target_server_username: {{ encrypted.target_server_username | default("root") | indent(8, False) }}
 
 {% if encrypted.target_server_password is defined %}
 target_server_password: {{ encrypted.target_server_password | indent(8, False) }}
 {% endif %}
 
-compute_username: "{{ encrypted.compute_username | default(encrypted.target_server_username | default("root"))}}"
+compute_username: {{ encrypted.compute_username | default(encrypted.target_server_username | default("root")) | indent(8, False) }}
 {% if encrypted.compute_password is defined %}
 compute_password: {{ encrypted.compute_password | indent(8, False) }}
 {% endif %}
@@ -356,6 +361,42 @@ health_report_email_destination_addresses:
 {% endfor %}
 {% else %}
 health_report_email_destination_addresses: []
+{% endif %}
+
+{% if common.vsd_monit_mail_server is defined %}
+monit_mail_server: {{ common.vsd_monit_mail_server}}
+{% endif %}
+monit_mail_server_port: {{ common.vsd_monit_mail_server_port | default(25) }}
+{% if encrypted.vsd_monit_mail_server_username is defined %}
+monit_mail_server_username: {{ encrypted.vsd_monit_mail_server_username | indent(8, False) }}
+{% endif %}
+{% if encrypted.vsd_monit_mail_server_password is defined %}
+monit_mail_server_password: {{ encrypted.vsd_monit_mail_server_password | indent(8, False) }}
+{% endif %}
+{% if common.vsd_monit_mail_server_encryption is defined %}
+monit_mail_server_encryption: {{ common.vsd_monit_mail_server_encryption }}
+{% endif %}
+use_monit_eventqueue: {{ common.vsd_use_monit_eventqueue | default(True) }}
+{% if common.vsd_monit_from_address is defined %}
+monit_from_address: {{ common.vsd_monit_from_address }}
+{% endif %}
+{% if common.vsd_monit_reply_to_address is defined %}
+monit_reply_to_address: {{ common.vsd_monit_reply_to_address }}
+{% endif %}
+{% if common.vsd_monit_email_subject is defined %}
+monit_email_subject: {{ vsd_common.monit_email_subject }}
+{% endif %}
+{% if common.vsd_monit_email_message is defined %}
+monit_email_message: {{ common.vsd_monit_email_message }}
+{% endif %}
+{% if common.vsd_monit_destination_address is defined %}
+monit_destination_address: {{ common.vsd_monit_destination_address }}
+{% endif %}
+{% if common.vsd_monit_alert_only_on is defined %}
+monit_alert_only_on: {{ common.vsd_monit_alert_only_on }}
+{% endif %}
+{% if common.vsd_monit_alert_not_on is defined %}
+monit_alert_not_on: {{ common.vsd_monit_alert_not_on }}
 {% endif %}
 
 {{ plugin_group_vars | default("")}}
