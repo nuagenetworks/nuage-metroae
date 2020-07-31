@@ -30,6 +30,7 @@
 * Allow second disk to be mounted to VSTAT (ES)
 * Add capability to enter BGP route reflector IP address for VSC (METROAE-1320)
 * Add support for emailing health reports (METROAE-1332)
+* Add support for more than one External interface (METROAE-1337)
 * Add support for symlinks as files
 * Add check for HA VSD DNS SRV records (METROAE-1341)
 * Add support for vCenter VM folder specification.
