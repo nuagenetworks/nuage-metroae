@@ -34,6 +34,7 @@
 * Add support for symlinks as files
 * Add check for HA VSD DNS SRV records (METROAE-1341)
 * Add support for vCenter VM folder specification.
+* Add support for Rsyslog for NSGvs (METROAE-1231)
 * Add support for configuring monit email alerts (METROAE-1222)
 
 ### Resolved Issues
