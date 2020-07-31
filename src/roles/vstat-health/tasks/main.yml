@@ -167,7 +167,10 @@
     when: enable_vss_ui | default(False)
     delegate_to: localhost
 
-  when: inventory_hostname in groups['vstats']
+  when:
+    - (groups['vstats'] is defined and inventory_hostname in groups['vstats']) or
+      (groups['primary_vstats'] is defined and inventory_hostname in groups['primary_vstats']) or
+      (groups['backup_vstats'] is defined and inventory_hostname in groups['backup_vstats'])
 
 - import_tasks: monit_status.yml
   when: inventory_hostname in groups['vsds']
