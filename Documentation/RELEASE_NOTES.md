@@ -34,6 +34,7 @@
 * Add support for symlinks as files
 * Add check for HA VSD DNS SRV records (METROAE-1341)
 * Add support for vCenter VM folder specification.
+* Add more meaningful fail messages when vrs_package_path and vsd_migration_iso_path is undefined.
 * Add support for Rsyslog for NSGvs (METROAE-1231)
 * Add support for configuring monit email alerts (METROAE-1222)
 
