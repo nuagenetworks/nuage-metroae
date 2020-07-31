@@ -152,6 +152,13 @@
   when: item.cpuset is defined
   with_items: "{{ portals }}"
 
+- name: Verify that the Webfilter has the correct number of cpuset defined
+  assert:
+    that: "'{{ item.cpuset | length }}' != {{ webfilter_cpu_cores | default(2) }}"
+    msg: "Incorrect number of cores specified in cpuset for {{ item.hostname }}. Cpuset must have {{ webfilter_cpu_cores | default(2) }} elements."
+  when: item.cpuset is defined
+  with_items: "{{ webfilters }}"
+
 - name: Validate that NSGVs ports are properly configured
   assert:
     that: "{{ item.access_port_name is defined and item.access_ports is undefined }} or
