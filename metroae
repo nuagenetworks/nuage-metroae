@@ -806,8 +806,14 @@ function setup_container {
             if [[ -z $IMAGE_TAG ]]; then
                 echo ""
                 write_to_screen_and_script_log "The image you would like to set up does not exist on the host machine."
-                echo "Please pull the image from the repository and try again."
-                exit 1
+                echo "Pulling the requested image..."
+                pull $3
+                if [[ $? -ne 0 ]]; then
+                    set -e
+                    return 1
+                fi
+                IMAGE_TAG=$3
+                IMAGE_ID=`docker images 2>/dev/null | grep $METRO_AE_IMAGE | grep $IMAGE_TAG | awk '{ print $3 }'`
             else
                 IMAGE_ID=`docker images 2>/dev/null | grep $METRO_AE_IMAGE | grep $IMAGE_TAG | awk '{ print $3 }'`
             fi
@@ -823,28 +829,41 @@ function setup_container {
             else
                 echo ""
                 write_to_screen_and_script_log "The image you have specified does not match the image on the host machine."
-                echo "Please pull the image you would like to set up or run the setup command again without specifying an image."
-                exit 1
+                echo "Pulling the requested image..."
+                pull $3
+                if [[ $? -ne 0 ]]; then
+                    set -e
+                    return 1
+                fi
+                IMAGE_TAG=$3
+                IMAGE_ID=`docker images 2>/dev/null | grep $METRO_AE_IMAGE | grep $IMAGE_TAG | awk '{ print $3 }'`
             fi
         fi
     else
         if [[ ! -z $3 ]]; then
             echo ""
             write_to_screen_and_script_log "There are no images on the host machine, but an image has been specified for setup."
-            echo "Please pull the image you would like to use and then re-run setup."
+            echo "Pulling the requested image..."
             echo ""
-            return 1
-        fi 
-        get_image_id
-        if [[ -z $IMAGE_ID ]]; then
-            echo ""
-            write_to_screen_and_script_log ">>> Pulling the MetroAE container image from the repository"
-            pull
-        fi
+            pull $3
+            if [[ $? -ne 0 ]]; then
+                set -e
+                return 1
+            fi
+            IMAGE_TAG=$3
+            IMAGE_ID=`docker images 2>/dev/null | grep $METRO_AE_IMAGE | grep $IMAGE_TAG | awk '{ print $3 }'`
+        else
+            get_image_id
+            if [[ -z $IMAGE_ID ]]; then
+                echo ""
+                write_to_screen_and_script_log ">>> Pulling the MetroAE container image from the repository"
+                pull
+            fi
 
-        if [[ $? -ne 0 ]]; then
-            set -e
-            return 1
+            if [[ $? -ne 0 ]]; then
+                set -e
+                return 1
+            fi
         fi
     fi
     set -e
