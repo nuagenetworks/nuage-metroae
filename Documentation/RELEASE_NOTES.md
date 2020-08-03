@@ -3,8 +3,8 @@
 ## Release info
 
 * MetroAE Version 4.1.0
-* Nuage Release Alignment TBD
-* Date of Release TBD
+* Nuage Release Alignment 20.5.1
+* Date of Release 14-Aug-2020
 
 ## Release Contents
 
@@ -22,6 +22,7 @@
 * Add support for new Nuage version format, e.g. 20.6 (METROAE-1343)
 * Add ability to support custom configuration file for NUH (METROAE-1358)
 * Support NUH install when VSD is not installed (METROAE-1357)
+* Support Webfilter install using MetroAE (METROAE-1206)
 * Add support for deploying VNS Utils on Openstack
 * Added a restriction for vsc_fallocate_size_gb to 1GB and skip if the value is 0
 * Add support for applying custom VSC configurations (METROAE-1328)
@@ -29,10 +30,14 @@
 * Allow second disk to be mounted to VSTAT (ES)
 * Add capability to enter BGP route reflector IP address for VSC (METROAE-1320)
 * Add support for emailing health reports (METROAE-1332)
+* Add support for more than one External interface (METROAE-1337)
 * Add support for symlinks as files
 * Add option for specifiying Openstack CA certificate path
 * Add check for HA VSD DNS SRV records (METROAE-1341)
 * Add support for vCenter VM folder specification.
+* Add more meaningful fail messages when vrs_package_path and vsd_migration_iso_path is undefined.
+* Add support for Rsyslog for NSGvs (METROAE-1231)
+* Add support for configuring monit email alerts (METROAE-1222)
 
 ### Resolved Issues
 
@@ -50,8 +55,10 @@
 * Do not enable maintainance mode for inplace upgrades (METROAE-1404)
 * Restart VSC after OpenStack upgrade (GITHUB #1537)
 * Add NSGv bootstrap example for vcenter (METROAE - 1393)
+* Check connectivity before certificate generation and transfer from VSD (METROAE-1360)
 * Add support for checking the size on the specific vCenter datastore if one is provided
 * Add better error reporting for vCenter tasks (METROAE-1406 & METROAE-1407)
+* Make bridges optional in deployment configuration and ensure they are set when required (METROAE-1178)
 
 ## Test Matrix
 

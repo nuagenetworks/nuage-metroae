@@ -5,6 +5,9 @@
 
 target_server_type: kvm
 
+required_bridges:
+  - mgmt
+
 target_server: {{ item.target_server }}
 
 hostname: {{ item.hostname }}
@@ -30,11 +33,12 @@ external_interfaces:
 {% for interface in nuh_external_interfaces %}
 {% for external_if in item.external_interface_list %}
 {% if interface.name in external_if %}
-    - name: {{ interface.name }}
+    - name: "External{{ loop.index }}"
       external_prefix: {{ interface.external_ip_prefix | default(24) }}
       external_ip: {{ interface.external_ip }}
       external_gateway: {{ interface.external_gateway }}
       external_bridge: {{ interface.external_bridge }}
+      vlan: {{ interface.vlan | default(0) }}
 {% endif %}
 {% endfor %}
 {% endfor %}
