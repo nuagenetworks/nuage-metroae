@@ -1,9 +1,34 @@
 - include_role:
     name: check-skip-target-server
   vars:
-    - target_server_list: ["kvm"]
+    - target_server_list: ["kvm", "vcenter"]
 
 - include_role:
     name: check-node-reachability
 
+- name: Get VNSUTIL directory stat
+  stat:
+    path: /opt/nuage
+  remote_user: "{{ vnsutil_default_username }}"
+  register: nuage_dir
+  when: node_reachable
+
+- name: Set fact for VNSUTIL present
+  set_fact:
+    webfilter_present: "{{ nuage_dir is defined and
+                         nuage_dir.stat is defined and
+                         nuage_dir.stat.isdir is defined and
+                         nuage_dir.stat.isdir }}"
+
 - import_tasks: kvm.yml
+  when: target_server_type is match("kvm")
+  tags:
+    - webfilter
+    - webfilter-predeploy
+
+- import_tasks: vcenter.yml
+  when: target_server_type is match("vcenter")
+  static: no
+  tags:
+    - webfilter
+    - webfilter-predeploy
