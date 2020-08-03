@@ -29,7 +29,7 @@ File name | Description
 [TERRAFORM](Documentation/TERRAFORM.md) | Using the Terraform framework in conjunction with MetroAE
 [HOOKS_AND_SKIPACTIONS](Documentation/HOOKS_AND_SKIPACTIONS.md) | Configure ability to run custom commands in between playbooks and skip playbooks
 [AUTOGENERATE_DEPLOYMENTS](Documentation/AUTOGENERATE_DEPLOYMENTS.md) | Generate MetroAE deployment configurations automatically via script
-[CONTRIBUTING](CONTRIBUTING.md) | Contribute to MetroAE development
+[CONTRIBUTING](Documentation/CONTRIBUTING.md) | Contribute to MetroAE development
 [LICENSE](Documentation/LICENSE.md) | License statement for MetroAE
 
 ## Important Notes
