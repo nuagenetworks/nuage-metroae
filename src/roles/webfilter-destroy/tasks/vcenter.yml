@@ -1,0 +1,54 @@
+- name: Finding VM folder (ignoring errors)
+  connection: local
+  vmware_guest_find:
+    hostname: "{{ target_server }}"
+    username: "{{ vcenter.username }}"
+    password: "{{ vcenter.password }}"
+    datacenter: "{{ vcenter.datacenter }}"
+    name: "{{ vmname }}"
+    validate_certs: no
+  register: webfilter_vm_folder
+  ignore_errors: on
+
+- name: Gathering info on VM (ignoring errors)
+  connection: local
+  vmware_guest_info:
+    hostname: "{{ target_server }}"
+    username: "{{ vcenter.username }}"
+    password: "{{ vcenter.password }}"
+    datacenter: "{{ vcenter.datacenter }}"
+    folder: "/{{ vcenter.datacenter }}{{ webfilter_vm_folder['folders'][0] }}"
+    name: "{{ vmname }}"
+    validate_certs: no
+  register: webfilter_vm_facts
+  ignore_errors: on
+  when: webfilter_vm_folder is succeeded
+
+- debug: var=webfilter_vm_facts verbosity=1
+
+- block:
+  - name: Power off the VNS Util VM
+    connection: local
+    vmware_guest:
+      hostname: "{{ target_server }}"
+      username: "{{ vcenter.username }}"
+      password: "{{ vcenter.password }}"
+      validate_certs: no
+      datacenter: "{{ vcenter.datacenter }}"
+      folder: "/{{ vcenter.datacenter }}{{ webfilter_vm_folder['folders'][0] }}"
+      name: "{{ vmname }}"
+      state: "poweredoff"
+    when: webfilter_vm_facts['instance']['hw_power_status'] == 'poweredOn'
+
+  - name: Removing the VNS Util VM
+    connection: local
+    vmware_guest:
+      hostname: "{{ target_server }}"
+      username: "{{ vcenter.username }}"
+      password: "{{ vcenter.password }}"
+      validate_certs: no
+      datacenter: "{{ vcenter.datacenter }}"
+      folder: "/{{ vcenter.datacenter }}{{ webfilter_vm_folder['folders'][0] }}"
+      name: "{{ vmname }}"
+      state: "absent"
+  when: webfilter_vm_folder is succeeded and webfilter_vm_facts is succeeded

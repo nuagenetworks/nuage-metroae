@@ -1,0 +1,22 @@
+- block:
+
+  - name: Destroy Webfilter VM
+    virt:
+      name: "{{ vmname }}"
+      state: destroyed
+      uri: qemu:///system
+
+  - name: Undefine Webfilter VM
+    virt:
+      name: "{{ vmname }}"
+      command: undefine
+      uri: qemu:///system
+
+  - name: Destroy the images directory
+    file:
+      path: "{{ images_path }}/{{ inventory_hostname }}"
+      state: absent
+
+  delegate_to: "{{ target_server }}"
+  remote_user: "{{ target_server_username }}"
+  become: "{{ 'no' if target_server_username == 'root' else 'yes' }}"
