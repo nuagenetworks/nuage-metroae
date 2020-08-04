@@ -23,8 +23,13 @@
       netmask: "{{ item.mgmt_ip_prefix }}"
     with_items: "{{ webfilters }}"
 
-  - name: Create host_vars files for webfilters
-    template: src=webfilter.j2 backup=no dest={{ inventory_dir }}/host_vars/{{ item.hostname }}
+  - name: Create host_vars files for webfilter
+    include_tasks: write-host-files.yml
+    vars:
+      component_template: webfilter
+      component_hostname: "{{ component.hostname }}"
+    loop_control:
+      loop_var: component
     with_items: "{{ webfilters }}"
 
   - name: Verify Webfilter DNS entries exist and hostnames map to their IPs
