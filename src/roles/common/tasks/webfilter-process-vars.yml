@@ -1,17 +1,38 @@
 - block:
 
-  - name: Set Webfilter VM QCOW2 location
-    include_role:
-      name: common
-      tasks_from: find-file.yml
-    vars:
-      dir_name: "{{ nuage_unzipped_files_dir }}"
-      pattern: "Nuage-webfilter-*.qcow2"
+  - block:
 
-  - name: Register Webfilter QCOW2 variables with proper path and image locations for use in other playbooks
-    set_fact:
-      image_path: "{{ file_path }}"
-      image_file_name: "{{ file_name }}"
+    - name: Set Webfilter VM QCOW2 location
+      include_role:
+        name: common
+        tasks_from: find-file.yml
+      vars:
+        dir_name: "{{ nuage_unzipped_files_dir }}"
+        pattern: "Nuage-webfilter-*.qcow2"
+
+    - name: Register Webfilter QCOW2 variables with proper path and image locations for use in other playbooks
+      set_fact:
+        image_path: "{{ file_path }}"
+        image_file_name: "{{ file_name }}"
+
+    when: webfilters | map(attribute='target_server_type') | list is issuperset(["kvm"])
+
+  - block:
+
+    - name: Set Webfilter VM OVA location
+      include_role:
+        name: common
+        tasks_from: find-file.yml
+      vars:
+        dir_name: "{{ nuage_unzipped_files_dir }}"
+        pattern: "Nuage-webfilter-*.ova"
+
+    - name: Register Webfilter OVA variables with proper path and image locations for use in other playbooks
+      set_fact:
+        image_path: "{{ file_path }}"
+        image_file_name: "{{ file_name }}"
+
+    when: webfilters | map(attribute='target_server_type') | list is issuperset(["vcenter"])
 
   - name: Verify Webfilter management gateway is in correct IP range
     include_role:
