@@ -154,11 +154,8 @@ function source_menu {
             source $CONTAINER_HOME/nuage-metroae/src/$PLAYBOOK_MENU
             debug "${FUNCNAME[0]}: source $CONTAINER_HOME/nuage-metroae/src/$PLAYBOOK_MENU"
         fi
-        if ls /source/nuage-metro/src/metro_plugins/* 1> /dev/null 2>&1; then
-            for menu in /source/nuage-metro/src/metro_plugins/*/menu
-            do
-                source $menu
-            done
+        if ls /source/nuage-metroae/src/metro_plugins/* 1> /dev/null 2>&1; then
+            source_plugin_menus /source/nuage-metroae/src/metro_plugins
         fi
     elif [[ $RUN_MODE == $REPO_RUN_MODE ]]; then
         if [[ -f src/$PLAYBOOK_MENU ]]; then
@@ -166,10 +163,7 @@ function source_menu {
             debug "${FUNCNAME[0]}: source src/$PLAYBOOK_MENU"
         fi
         if ls src/metro_plugins/* 1> /dev/null 2>&1; then
-            for menu in src/metro_plugins/*/menu
-            do
-                source $menu
-            done
+            source_plugin_menus src/metro_plugins
         fi
     else # RUN_MODE == $CONTAINER_RUN_MODE
         if [[ -f $METROAE_MOUNT_POINT/$PLAYBOOK_MENU ]]; then
@@ -177,12 +171,29 @@ function source_menu {
             debug "${FUNCNAME[0]}: source $METROAE_MOUNT_POINT/$PLAYBOOK_MENU"
         fi
         if ls $METROAE_MOUNT_POINT/metro_plugins/* 1> /dev/null 2>&1; then
-            for menu in $METROAE_MOUNT_POINT/metro_plugins/*/menu
-            do
-                source $menu
-            done
+            source_plugin_menus $METROAE_MOUNT_POINT/metro_plugins
         fi
     fi
+}
+
+function source_plugin_menus {
+    debug ${FUNCNAME[0]}
+    plugin_dir=$1
+    if [[ ! -d $plugin_dir ]]; then
+        write_to_screen_and_script_log "Could not find plugin directory $plugin_dir"
+        print_version_and_exit 1
+    fi
+    for plugin in $plugin_dir/*
+        do
+            menu_file=$plugin/menu
+            if [[ -f $menu_file ]]; then
+                source $menu_file
+                debug "${FUNCNAME[0]}: source $menu_file"
+            else
+                write_to_screen_and_script_log "Could not find required menu file for plugin $plugin"
+                print_version_and_exit 1
+            fi
+        done
 }
 
 function source_container_config {
@@ -1138,9 +1149,9 @@ function docker_exec {
         shift
         shift
     fi
-    debug "${FUNCNAME[0]}: $environment"
-    debug "${FUNCNAME[0]}: $working_dir"
-    debug "${FUNCNAME[0]}: $RUNNING_CONTAINER_ID"
+    debug "${FUNCNAME[0]}: Env = $environment"
+    debug "${FUNCNAME[0]}: Pwd = $working_dir"
+    debug "${FUNCNAME[0]}: Container = $RUNNING_CONTAINER_ID"
     if [[ ! -z $METROAE_DEBUG ]]; then
         echo "$@"
     fi
@@ -2442,6 +2453,7 @@ function get_sub_menu {
     for (( i=0; i<=${#MENU[@]}; i+=$MENU_STRIDE )); do
         if [[ ${MENU[@]:$i:1} == $1 ]]; then
             SUB_MENU=("${MENU[@]:$i:$MENU_STRIDE}")
+            debug "${FUNCNAME[0]}: SUB_MENU = $SUB_MENU"
         fi
     done
 }
@@ -2469,7 +2481,9 @@ function parse_menu_args {
     MENU_KEY=""
     MATCH_MENU=""
     EXTRA_ARGS=()
+    debug "${FUNCNAME[0]}: Num args = $#"
     while [[ $# -gt 0 ]]; do
+        debug "${FUNCNAME[0]}: Current arg = $1"
         if [[ $1 == "help" ]] || [[ $1 == "?" ]] || [[ $1 == "-h" ]] || [[ $1 == "--h" ]] || [[ $1 == "-help" ]] || [[ $1 == "--help" ]]; then
             MATCH_MENU=(",help" "help" "help" "")
             switch_help $MENU_KEY
@@ -2529,6 +2543,8 @@ do
 done
 
 debug "main: start case on MATCH_MENU"
+
+debug "main: MATCH_MENU[2] = ${MATCH_MENU[2]}"
 
 case ${MATCH_MENU[2]} in
     tools)
