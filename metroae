@@ -917,38 +917,7 @@ function setup_container {
 
     run_container
 
-    set +e
-    common_status=0
-    echo ""
-    write_to_screen_and_script_log ">>> Pulling common files and documentation for MetroAE in the container"
-    echo ""
-    docker_exec_copy_common_defaults
-    common_status=$?
-
-    deploy_status=0
-    if [[ $setup_type != "c" ]]; then
-        echo ""
-        write_to_screen_and_script_log ">>> Pulling the latest documentation and examples for MetroAE deploy in the container"
-        echo ""
-        docker_exec_copy_deploy_defaults
-        deploy_status=$?
-    fi
-
-    deploy_keys_status=0
-    echo ""
-    write_to_screen_and_script_log ">>> Generating and copying ssh keys for the container"
-    echo ""
-    docker_exec_generate_and_copy_keys
-    deploy_keys_status=$?
-
-    config_status=0
-    if [[ $setup_type != "d" ]]; then
-        echo ""
-        write_to_screen_and_script_log ">>> Pulling the latest feature templates and files for MetroAE config in the container"
-        echo ""
-        docker_exec_config templates update
-        config_status=$?
-    fi
+    update_container_files
 
     setup_tab_completion
 
@@ -965,6 +934,43 @@ function setup_container {
     write_to_screen_and_script_log "MetroAE container setup complete. Execute 'metroae container status' for status."
     echo ""
     return 0
+}
+
+function update_container_files {
+    debug ${FUNCNAME[0]}
+
+    set +e
+    common_status=0
+    echo ""
+    write_to_screen_and_script_log ">>> Updating common files and documentation for MetroAE in the container"
+    echo ""
+    docker_exec_copy_common_defaults
+    common_status=$?
+
+    deploy_status=0
+    if [[ $setup_type != "c" ]]; then
+        echo ""
+        write_to_screen_and_script_log ">>> Updating with the latest documentation and examples for MetroAE deploy in the container"
+        echo ""
+        docker_exec_copy_deploy_defaults
+        deploy_status=$?
+    fi
+
+    deploy_keys_status=0
+    echo ""
+    write_to_screen_and_script_log ">>> Generating and copying ssh keys for the container"
+    echo ""
+    docker_exec_generate_and_copy_keys
+    deploy_keys_status=$?
+
+    config_status=0
+    if [[ $setup_type != "d" ]]; then
+        echo ""
+        write_to_screen_and_script_log ">>> Updating with the latest feature templates and files for MetroAE config in the container"
+        echo ""
+        docker_exec_config templates update
+        config_status=$?
+    fi
 }
 
 function validate_directory {
@@ -1046,6 +1052,8 @@ function update_container {
         pull
     fi
     run_container
+
+    update_container_files
 
     read_setup_files
     for plugin_name in `ls $METROAE_MOUNT_POINT/metro_plugins/`; do
