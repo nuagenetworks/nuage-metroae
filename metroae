@@ -154,11 +154,8 @@ function source_menu {
             source $CONTAINER_HOME/nuage-metroae/src/$PLAYBOOK_MENU
             debug "${FUNCNAME[0]}: source $CONTAINER_HOME/nuage-metroae/src/$PLAYBOOK_MENU"
         fi
-        if ls /source/nuage-metro/src/metro_plugins/* 1> /dev/null 2>&1; then
-            for menu in /source/nuage-metro/src/metro_plugins/*/menu
-            do
-                source $menu
-            done
+        if ls /source/nuage-metroae/src/metro_plugins/* 1> /dev/null 2>&1; then
+            source_plugin_menus /source/nuage-metroae/src/metro_plugins
         fi
     elif [[ $RUN_MODE == $REPO_RUN_MODE ]]; then
         if [[ -f src/$PLAYBOOK_MENU ]]; then
@@ -166,10 +163,7 @@ function source_menu {
             debug "${FUNCNAME[0]}: source src/$PLAYBOOK_MENU"
         fi
         if ls src/metro_plugins/* 1> /dev/null 2>&1; then
-            for menu in src/metro_plugins/*/menu
-            do
-                source $menu
-            done
+            source_plugin_menus src/metro_plugins
         fi
     else # RUN_MODE == $CONTAINER_RUN_MODE
         if [[ -f $METROAE_MOUNT_POINT/$PLAYBOOK_MENU ]]; then
@@ -177,12 +171,29 @@ function source_menu {
             debug "${FUNCNAME[0]}: source $METROAE_MOUNT_POINT/$PLAYBOOK_MENU"
         fi
         if ls $METROAE_MOUNT_POINT/metro_plugins/* 1> /dev/null 2>&1; then
-            for menu in $METROAE_MOUNT_POINT/metro_plugins/*/menu
-            do
-                source $menu
-            done
+            source_plugin_menus $METROAE_MOUNT_POINT/metro_plugins
         fi
     fi
+}
+
+function source_plugin_menus {
+    debug ${FUNCNAME[0]}
+    plugin_dir=$1
+    if [[ ! -d $plugin_dir ]]; then
+        write_to_screen_and_script_log "Could not find plugin directory $plugin_dir"
+        print_version_and_exit 1
+    fi
+    for plugin in $plugin_dir/*
+        do
+            menu_file=$plugin/menu
+            if [[ -f $menu_file ]]; then
+                source $menu_file
+                debug "${FUNCNAME[0]}: source $menu_file"
+            else
+                write_to_screen_and_script_log "Could not find required menu file for plugin $plugin"
+                print_version_and_exit 1
+            fi
+        done
 }
 
 function source_container_config {
@@ -906,40 +917,7 @@ function setup_container {
 
     run_container
 
-    set +e
-    common_status=0
-    echo ""
-    write_to_screen_and_script_log ">>> Pulling common files and documentation for MetroAE in the container"
-    echo ""
-    docker_exec_copy_common_defaults
-    common_status=$?
-
-    deploy_status=0
-    if [[ $setup_type != "c" ]]; then
-        echo ""
-        write_to_screen_and_script_log ">>> Pulling the latest documentation and examples for MetroAE deploy in the container"
-        echo ""
-        docker_exec_copy_deploy_defaults
-        deploy_status=$?
-    fi
-
-    deploy_keys_status=0
-    if [[ $setup_type != "c" ]]; then
-        echo ""
-        write_to_screen_and_script_log ">>> Generating and copying ssh keys for the container"
-        echo ""
-        docker_exec_generate_and_copy_keys
-        deploy_keys_status=$?
-    fi
-
-    config_status=0
-    if [[ $setup_type != "d" ]]; then
-        echo ""
-        write_to_screen_and_script_log ">>> Pulling the latest feature templates and files for MetroAE config in the container"
-        echo ""
-        docker_exec_config templates update
-        config_status=$?
-    fi
+    update_container_files
 
     setup_tab_completion
 
@@ -956,6 +934,43 @@ function setup_container {
     write_to_screen_and_script_log "MetroAE container setup complete. Execute 'metroae container status' for status."
     echo ""
     return 0
+}
+
+function update_container_files {
+    debug ${FUNCNAME[0]}
+
+    set +e
+    common_status=0
+    echo ""
+    write_to_screen_and_script_log ">>> Updating common files and documentation for MetroAE in the container"
+    echo ""
+    docker_exec_copy_common_defaults
+    common_status=$?
+
+    deploy_status=0
+    if [[ $setup_type != "c" ]]; then
+        echo ""
+        write_to_screen_and_script_log ">>> Updating with the latest documentation and examples for MetroAE deploy in the container"
+        echo ""
+        docker_exec_copy_deploy_defaults
+        deploy_status=$?
+    fi
+
+    deploy_keys_status=0
+    echo ""
+    write_to_screen_and_script_log ">>> Generating and copying ssh keys for the container"
+    echo ""
+    docker_exec_generate_and_copy_keys
+    deploy_keys_status=$?
+
+    config_status=0
+    if [[ $setup_type != "d" ]]; then
+        echo ""
+        write_to_screen_and_script_log ">>> Updating with the latest feature templates and files for MetroAE config in the container"
+        echo ""
+        docker_exec_config templates update
+        config_status=$?
+    fi
 }
 
 function validate_directory {
@@ -1037,6 +1052,8 @@ function update_container {
         pull
     fi
     run_container
+
+    update_container_files
 
     read_setup_files
     for plugin_name in `ls $METROAE_MOUNT_POINT/metro_plugins/`; do
@@ -1138,9 +1155,9 @@ function docker_exec {
         shift
         shift
     fi
-    debug "${FUNCNAME[0]}: $environment"
-    debug "${FUNCNAME[0]}: $working_dir"
-    debug "${FUNCNAME[0]}: $RUNNING_CONTAINER_ID"
+    debug "${FUNCNAME[0]}: Env = $environment"
+    debug "${FUNCNAME[0]}: Pwd = $working_dir"
+    debug "${FUNCNAME[0]}: Container = $RUNNING_CONTAINER_ID"
     if [[ ! -z $METROAE_DEBUG ]]; then
         echo "$@"
     fi
@@ -1848,11 +1865,15 @@ function copy_plugin_file_into_mount_point_if_necessary {
     local plugin_path=${PLUGIN_INSTALL_ARGS[0]}
     mkdir -p $METROAE_MOUNT_POINT/metro_plugins
     if [[ -d $plugin_path ]]; then
+        debug "${FUNCNAME[0]}: recursive copy from $plugin_path to $METROAE_MOUNT_POINT/metro_plugins/"
         cp -r $plugin_path $METROAE_MOUNT_POINT/metro_plugins/
     elif [[ -f $plugin_path ]]; then
+        debug "${FUNCNAME[0]}: non-recursive copy from $plugin_path to $METROAE_MOUNT_POINT/metro_plugins/"
         cp $plugin_path $METROAE_MOUNT_POINT/metro_plugins/
     fi
-    PLUGIN_INSTALL_ARGS[0]=/metroae_data/metro_plugins/${plugin_path##*/}
+    local container_plugin_path=/metroae_data/metro_plugins/$(basename "$plugin_path")
+    debug "${FUNCNAME[0]}: Modified plugin path is $container_plugin_path"
+    PLUGIN_INSTALL_ARGS[0]=$container_plugin_path
 }
 
 function version_compare {
@@ -2066,7 +2087,7 @@ function install_plugin_dir {
     fi
     write_to_screen_and_script_log ">>> Installing plugin: $1"
     if [[ $RUN_MODE == "INSIDE" ]]; then
-        /source/nuage-metro/src/validate_plugin.py $1
+        /source/nuage-metroae/src/validate_plugin.py $1
     else
         src/validate_plugin.py $1
     fi
@@ -2138,11 +2159,16 @@ function plugin_main {
         local action=$1
         if [[ ! -z $1 ]]
         then
+            debug "${FUNCNAME[0]} args = $@"
             shift
+            debug "${FUNCNAME[0]} args = $@"
             PLUGIN_INSTALL_ARGS=("$@")
+            debug "${FUNCNAME[0]} PLUGIN_INSTALL_ARGS = $PLUGIN_INSTALL_ARGS"
             if [[ $action == "install" ]] || [[ $action == "validate" ]]; then
                 copy_plugin_file_into_mount_point_if_necessary
             fi
+            debug "${FUNCNAME[0]} action = $action"
+            debug "${FUNCNAME[0]} PLUGIN_INSTALL_ARGS = $PLUGIN_INSTALL_ARGS"
             docker_metro_ae_exec plugin $action "${PLUGIN_INSTALL_ARGS[@]}"
             exit 0
         fi
@@ -2442,6 +2468,7 @@ function get_sub_menu {
     for (( i=0; i<=${#MENU[@]}; i+=$MENU_STRIDE )); do
         if [[ ${MENU[@]:$i:1} == $1 ]]; then
             SUB_MENU=("${MENU[@]:$i:$MENU_STRIDE}")
+            debug "${FUNCNAME[0]}: SUB_MENU = $SUB_MENU"
         fi
     done
 }
@@ -2469,7 +2496,9 @@ function parse_menu_args {
     MENU_KEY=""
     MATCH_MENU=""
     EXTRA_ARGS=()
+    debug "${FUNCNAME[0]}: Num args = $#"
     while [[ $# -gt 0 ]]; do
+        debug "${FUNCNAME[0]}: Current arg = $1"
         if [[ $1 == "help" ]] || [[ $1 == "?" ]] || [[ $1 == "-h" ]] || [[ $1 == "--h" ]] || [[ $1 == "-help" ]] || [[ $1 == "--help" ]]; then
             MATCH_MENU=(",help" "help" "help" "")
             switch_help $MENU_KEY
@@ -2529,6 +2558,8 @@ do
 done
 
 debug "main: start case on MATCH_MENU"
+
+debug "main: MATCH_MENU[2] = ${MATCH_MENU[2]}"
 
 case ${MATCH_MENU[2]} in
     tools)
