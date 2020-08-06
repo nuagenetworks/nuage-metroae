@@ -32,6 +32,7 @@
 * Add support for emailing health reports (METROAE-1332)
 * Add support for more than one External interface (METROAE-1337)
 * Add support for symlinks as files
+* Add option for specifiying Openstack CA certificate path
 * Add check for HA VSD DNS SRV records (METROAE-1341)
 * Add support for vCenter VM folder specification.
 * Add more meaningful fail messages when vrs_package_path and vsd_migration_iso_path is undefined.
