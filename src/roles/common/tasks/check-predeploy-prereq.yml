@@ -124,17 +124,16 @@
     msg: "vrs_package_path not defined. Please define it and try again."
   when: vrss is defined and vrss|length > 0
 
- tasks:
+tasks:
+ - name: Get the public key for the current user
+   command: cat "{{ user_ssh_pub_key }}"
+   delegate_to: localhost
+   register: current_user_ssh_key
+   changed_when: False
+   ignore_errors: True
 
-  - name: Get the public key for the current user
-    command: cat "{{ user_ssh_pub_key }}"
-    delegate_to: localhost
-    register: current_user_ssh_key
-    changed_when: False
-    ignore_errors: True
-
-  - name: Fail if SSH key is not defined
-    assert:
-      that: current_user_ssh_key = "No such file or directory"
-      msg: "We couldn’t find the user’s SSH key file {{ user_ssh_pub_key }}. Is user_ssh_pub_key defined correctly in common.yml"
-  when: target_server_type | default('NONE') is match ("kvm") or target_server_type | default('NONE') is match ("vcenter")
+ - name: Fail if SSH key is not defined
+   assert:
+     that: current_user_ssh_key = "No such file or directory"
+     msg: "We couldn’t find the user’s SSH key file {{ user_ssh_pub_key }}. Is user_ssh_pub_key defined correctly in common.yml"
+ when: target_server_type | default('NONE') is match ("kvm") or target_server_type | default('NONE') is match ("vcenter")
