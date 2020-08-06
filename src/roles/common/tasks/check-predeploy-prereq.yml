@@ -128,8 +128,9 @@
   command: cat "{{ user_ssh_pub_key }}"
   delegate_to: localhost
   register: current_user_ssh_key
-  assert:
-    that: rc.current_user_ssh_key != 0
-    msg: "Please define ssh key"
   changed_when: False
   when: target_server_type | default('NONE') is match ("kvm") or target_server_type | default('NONE') is match ("vcenter")
+
+- fail:
+    msg: "SSH key not defined"
+  when: rc.current_user_ssh_key != 0
