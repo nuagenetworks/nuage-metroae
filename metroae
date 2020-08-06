@@ -1865,11 +1865,15 @@ function copy_plugin_file_into_mount_point_if_necessary {
     local plugin_path=${PLUGIN_INSTALL_ARGS[0]}
     mkdir -p $METROAE_MOUNT_POINT/metro_plugins
     if [[ -d $plugin_path ]]; then
+        debug "${FUNCNAME[0]}: recursive copy from $plugin_path to $METROAE_MOUNT_POINT/metro_plugins/"
         cp -r $plugin_path $METROAE_MOUNT_POINT/metro_plugins/
     elif [[ -f $plugin_path ]]; then
+        debug "${FUNCNAME[0]}: non-recursive copy from $plugin_path to $METROAE_MOUNT_POINT/metro_plugins/"
         cp $plugin_path $METROAE_MOUNT_POINT/metro_plugins/
     fi
-    PLUGIN_INSTALL_ARGS[0]=/metroae_data/metro_plugins/${plugin_path##*/}
+    local container_plugin_path=/metroae_data/metro_plugins/$(basename "$plugin_path")
+    debug "${FUNCNAME[0]}: Modified plugin path is $container_plugin_path"
+    PLUGIN_INSTALL_ARGS[0]=$container_plugin_path
 }
 
 function version_compare {
@@ -2155,11 +2159,16 @@ function plugin_main {
         local action=$1
         if [[ ! -z $1 ]]
         then
+            debug "${FUNCNAME[0]} args = $@"
             shift
+            debug "${FUNCNAME[0]} args = $@"
             PLUGIN_INSTALL_ARGS=("$@")
+            debug "${FUNCNAME[0]} PLUGIN_INSTALL_ARGS = $PLUGIN_INSTALL_ARGS"
             if [[ $action == "install" ]] || [[ $action == "validate" ]]; then
                 copy_plugin_file_into_mount_point_if_necessary
             fi
+            debug "${FUNCNAME[0]} action = $action"
+            debug "${FUNCNAME[0]} PLUGIN_INSTALL_ARGS = $PLUGIN_INSTALL_ARGS"
             docker_metro_ae_exec plugin $action "${PLUGIN_INSTALL_ARGS[@]}"
             exit 0
         fi
