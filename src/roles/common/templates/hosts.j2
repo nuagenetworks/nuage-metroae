@@ -34,7 +34,7 @@ vsd_ha_node2
 vsd_ha_node3
 {% endif %}
 
-{% if vsds|length == 6 %}
+{% if vsds|length == 6 and not common.stats_out | default(false) %}
 [vsd_standby_node1]
 {{ vsds[3].hostname }}
 [vsd_standby_node2]
@@ -84,7 +84,7 @@ vsd_upgrade_ha_node3
 vsd_inplace_upgrade_nodes
 {% endif %}
 
-{% if vsds|length == 6 %}
+{% if vsds|length == 6 and not common.stats_out | default(false) %}
 [standby_vsds:children]
 vsd_standby_node1
 vsd_standby_node2
@@ -97,11 +97,22 @@ vsd_upgrade_standby_node3
 {% endif %}
 {% endif %}
 
+{% if common.stats_out | default(false) %}
+[stats_only_vsds]
+{% for name in stats_only_vsds %}
+{{ name }}
+{% endfor %}
+{% endif %}
+
 [vsds:children]
 primary_vsds
-{% if vsds|length == 6 %}
+{% if vsds|length == 6 and not common.stats_out | default(false) %}
 standby_vsds
 {% endif %}
+{% if common.stats_out | default(false) %}
+stats_only_vsds
+{% endif %}
+
 
 {% endif %}
 
