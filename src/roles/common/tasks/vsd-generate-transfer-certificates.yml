@@ -10,15 +10,17 @@
 
   - name: Check Ipv4 connectivity between VSD and Cert transfer server
     command: ping -c1 {{ inventory_hostname }}
-    when: scp_location is defined
     delegate_to: "{{ vsd_hostname_list[0] }}"
-    when: not enable_ipv6 | default(False)
+    when: 
+      - not enable_ipv6 | default(False)
+      - scp_location is defined
 
   - name: Check Ipv6 connectivity between VSD and Cert transfer server
     command: ping6 -c1 {{ inventory_hostname }}
-    when: scp_location is defined
     delegate_to: "{{ vsd_hostname_list[0] }}"
-    when: enable_ipv6 | default(False)
+    when: 
+      - enable_ipv6 | default(False)
+      - scp_location is defined
 
   - name: Get VSD version
     shell: grep -ir "VSD_VERSION=" /etc/profile.d/vsd-banner.sh | awk -F "=" '{print $2}'
