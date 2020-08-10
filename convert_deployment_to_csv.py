@@ -2,6 +2,10 @@ import sys
 from os import listdir
 from os.path import isfile, join, splitext
 import yaml
+import json
+
+
+SCHEMAS_DIRECTORY = "schemas"
 
 
 def usage():
@@ -14,15 +18,27 @@ def usage():
     print ""
 
 
-def getAllSchemas(deployment_folder):
+def getAllDeployments(deployment_folder):
     schemas = [splitext(f)[0] for f in listdir(deployment_folder)
                if isfile(join(deployment_folder, f))]
     print schemas
     return schemas
 
 
-def getValuesFromDeployment(deployment_folder, deployment_name):
-    print yaml.safe_load(open(join(deployment_folder, deployment_name +'.yml')))
+def getValuesFromDeployment(deployment_folder, deployment):
+    print yaml.safe_load(open(join(deployment_folder, deployment +'.yml')))
+
+
+def read_schema(schema_name):
+    file_name = schema_name + ".json"
+    file_path = join(SCHEMAS_DIRECTORY, file_name)
+    with open(file_path, "r") as f:
+        schema_str = f.read().decode("utf-8")
+    try:
+        return json.loads(schema_str)
+    except Exception as e:
+        raise Exception("Could not parse schema: %s\n%s" % (
+            file_name, str(e)))
 
 
 def main():
@@ -33,10 +49,11 @@ def main():
 
     deployment_folder = sys.argv[1]
     csv_file = sys.argv[2]
-    schemas = getAllSchemas(deployment_folder)
-    for schema in schemas:
-        getValuesFromDeployment(deployment_folder, schema)
+    deployments = getAllDeployments(deployment_folder)
+    for deployment in deployments:
+        getValuesFromDeployment(deployment_folder, deployment)
     print csv_file
+    print read_schema('vsds')
 
 
 if __name__ == '__main__':
