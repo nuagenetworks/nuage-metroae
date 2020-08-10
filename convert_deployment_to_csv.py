@@ -64,6 +64,32 @@ def addContent(content):
     return csvContent
 
 
+def write_fields(lines, schema, table):
+    width = len(table["headers"])
+    fields = table.get("fields")
+    extra = table.get("extra")
+
+    if schema["type"] == "array":
+        schema_props = schema["items"]["properties"]
+        required = schema["items"].get("required")
+    else:
+        schema_props = schema["properties"]
+        required = schema.get("required")
+
+    if fields is None:
+        fields = required
+
+    if extra is not None:
+        fields.extend(extra)
+
+    for field_name in fields:
+        field = schema_props[field_name]
+        description = field.get("description", "")
+        lines.append(field["title"] +
+                     ("," * (width - 1)) +
+                     escape_line(description))
+
+
 def write_table(table):
     schema_name = table["schema"]
     schema = read_schema(schema_name)
@@ -79,9 +105,7 @@ def write_table(table):
         lines.append("")
 
     lines.append(",".join(table["headers"]))
-
-    # write_fields(lines, schema, table)
-
+    write_fields(lines, schema, table)
     lines = [("," * TABLE_MARGIN_LEFT) + x for x in lines]
 
     return ",\n".join(lines)
