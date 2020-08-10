@@ -28,7 +28,7 @@ def getAllDeployments(deployment_folder):
 
 
 def getValuesFromDeployment(deployment_folder, deployment):
-    print yaml.safe_load(open(join(deployment_folder, deployment +'.yml')))
+    return yaml.safe_load(open(join(deployment_folder, deployment +'.yml')))
 
 
 def read_schema(schema_name):
@@ -119,21 +119,19 @@ def main():
 
     deployment_folder = sys.argv[1]
     csv_file = sys.argv[2]
-    deployments = getAllDeployments(deployment_folder)
-    for deployment in deployments:
-        getValuesFromDeployment(deployment_folder, deployment)
-    print csv_file
-    print read_schema('vsds')
     content = []
     content.append('MetroAE deployment template CSV')
     content.append('This Spreadsheet can be used for KVM SDWan install')
-    schemaDict = {
-        'schema': 'common',
-        'headers': ['Common', 'Values', "", 'Descriptions'],
-        'extra': ['access_bridge', 'vsd_license_file']
-    }
-    content.append('')
-    content.append(schemaDict)
+    deployments = getAllDeployments(deployment_folder)
+    for deployment in deployments:
+        deploymentData = getValuesFromDeployment(deployment_folder, deployment)
+        print deploymentData
+        schemaDict = {
+            'schema': deployment,
+            'headers': [deployment, 'Values', "", 'Descriptions']
+        }
+        content.append('')
+        content.append(schemaDict)
     contentToWrite = addContent(content)
     writeCsvFile(csv_file, contentToWrite)
 
