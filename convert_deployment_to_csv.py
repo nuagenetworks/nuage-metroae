@@ -134,9 +134,17 @@ def main():
     deployments = getAllDeployments(deployment_folder)
     for deployment in deployments:
         deploymentData = getValuesFromDeployment(deployment_folder, deployment)
+        headerList = [deployment]
+        if type(deploymentData) == list:
+            for i in range(len(deploymentData)):
+                headerList.append(deployment + str(i + 1))
+        else:
+            headerList.append('Values')
+        headerList.append('')
+        headerList.append('Descriptions')
         schemaDict = {
             'schema': deployment,
-            'headers': [deployment, 'Values', "", 'Descriptions'],
+            'headers': headerList,
             'data': deploymentData
         }
         content.append('')
