@@ -41,6 +41,11 @@ def read_schema(schema_name):
             file_name, str(e)))
 
 
+def writeCsvFile(filename, content):
+    f = open(filename, "w")
+    f.write(content)
+
+
 def main():
 
     if len(sys.argv) != 3:
@@ -54,6 +59,7 @@ def main():
         getValuesFromDeployment(deployment_folder, deployment)
     print csv_file
     print read_schema('vsds')
+    writeCsvFile(csv_file, 'Sample content')
 
 
 if __name__ == '__main__':
