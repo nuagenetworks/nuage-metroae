@@ -66,8 +66,6 @@ def addContent(content):
 
 def write_fields(lines, schema, table):
     width = len(table["headers"])
-    fields = table.get("fields")
-    extra = table.get("extra")
     data = table['data']
 
     if schema["type"] == "array":
@@ -77,17 +75,20 @@ def write_fields(lines, schema, table):
         schema_props = schema["properties"]
         required = schema.get("required")
 
-    if fields is None:
-        fields = required
-
-    if extra is not None:
-        fields.extend(extra)
+    if type(data) == list:
+        dataDict = data[0]
+    else:
+        dataDict = data
+    fields = required
+    for k in dataDict.keys():
+        if k not in fields:
+            fields.append(k)
 
     for field_name in fields:
         if type(data) == list:
-            fieldVal = data[0][field_name]
+            fieldVal = dataDict[field_name]
         else:
-            fieldVal = data[field_name]
+            fieldVal = dataDict[field_name]
         if type(fieldVal) == list:
             fieldVal = ','.join(fieldVal)
         field = schema_props[field_name]
