@@ -14,7 +14,8 @@ def usage():
 
 
 def getAllSchemas(deployment_folder):
-    schemas = [splitext(f)[0] for f in listdir(deployment_folder) if isfile(join(deployment_folder, f))]
+    schemas = [splitext(f)[0] for f in listdir(deployment_folder)
+               if isfile(join(deployment_folder, f))]
     print schemas
 
 
