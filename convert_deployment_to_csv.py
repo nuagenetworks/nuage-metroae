@@ -68,6 +68,8 @@ def write_fields(lines, schema, table):
     width = len(table["headers"])
     fields = table.get("fields")
     extra = table.get("extra")
+    data = table['data']
+    print data
 
     if schema["type"] == "array":
         schema_props = schema["items"]["properties"]
@@ -125,10 +127,10 @@ def main():
     deployments = getAllDeployments(deployment_folder)
     for deployment in deployments:
         deploymentData = getValuesFromDeployment(deployment_folder, deployment)
-        print deploymentData
         schemaDict = {
             'schema': deployment,
-            'headers': [deployment, 'Values', "", 'Descriptions']
+            'headers': [deployment, 'Values', "", 'Descriptions'],
+            'data': deploymentData
         }
         content.append('')
         content.append(schemaDict)
