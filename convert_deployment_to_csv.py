@@ -85,13 +85,15 @@ def write_fields(lines, schema, table):
 
     for field_name in fields:
         if type(data) == list:
-            fieldVal = data[0]
+            fieldVal = data[0][field_name]
         else:
-            fieldVal = data
+            fieldVal = data[field_name]
+        if type(fieldVal) == list:
+            fieldVal = ','.join(fieldVal)
         field = schema_props[field_name]
         description = field.get("description", "")
         lines.append(field["title"] + "," +
-                     str(fieldVal[field_name]) +
+                     "\" " + str(fieldVal)+"\" " +
                      ("," * (width - 2)) +
                      escape_line(description))
 
