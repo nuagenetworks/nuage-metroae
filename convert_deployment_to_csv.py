@@ -100,24 +100,17 @@ def main():
         getValuesFromDeployment(deployment_folder, deployment)
     print csv_file
     print read_schema('vsds')
-    content = """
-
-    - MetroAE deployment template CSV
-    - ""
-    - This spreadsheet can be converted to a set of MetroAE deployment files for
-    - use in an install or upgrade.
-    - ""
-    - Fill out the fields of this spreadsheet, save as CSV and then issue "metroae
-    - wizard" or "convert_csv_to_deployment.py <csv_file> <deployment_name>"
-
-    - schema: common
-      headers: [Common, Values, "", Descriptions]
-      extra:
-        - access_bridge
-        - vsd_license_file
-    """
-    contentToWrite = addContent(yaml.safe_load(content))
-    print contentToWrite
+    content = []
+    content.append('MetroAE deployment template CSV')
+    content.append('This Spreadsheet can be used for KVM SDWan install')
+    schemaDict = {
+        'schema': 'common',
+        'headers': ['Common', 'Values', "", 'Descriptions'],
+        'extra': ['access_bridge', 'vsd_license_file']
+    }
+    content.append('')
+    content.append(schemaDict)
+    contentToWrite = addContent(content)
     writeCsvFile(csv_file, contentToWrite)
 
 
