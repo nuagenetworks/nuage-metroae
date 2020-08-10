@@ -69,7 +69,6 @@ def write_fields(lines, schema, table):
     fields = table.get("fields")
     extra = table.get("extra")
     data = table['data']
-    print data
 
     if schema["type"] == "array":
         schema_props = schema["items"]["properties"]
@@ -85,10 +84,15 @@ def write_fields(lines, schema, table):
         fields.extend(extra)
 
     for field_name in fields:
+        if type(data) == list:
+            fieldVal = data[0]
+        else:
+            fieldVal = data
         field = schema_props[field_name]
         description = field.get("description", "")
-        lines.append(field["title"] +
-                     ("," * (width - 1)) +
+        lines.append(field["title"] + "," +
+                     str(fieldVal[field_name]) +
+                     ("," * (width - 2)) +
                      escape_line(description))
 
 
