@@ -105,7 +105,7 @@ def write_fields(lines, schema, table):
         field = schema_props[field_name]
         description = field.get("description", "")
         lines.append(field["title"] + fieldValuesString +
-                     ("," * (width - 2)) +
+                     ("," * 2) +
                      escape_line(description))
 
 
