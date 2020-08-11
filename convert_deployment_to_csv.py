@@ -101,7 +101,7 @@ def write_fields(lines, schema, table):
             fieldValList.append(fieldVal)
         fieldValuesString = ''
         for val in fieldValList:
-            fieldValuesString += "," + "\" " + str(val)+"\" "
+            fieldValuesString += "," + "\"" + str(val) + "\""
         field = schema_props[field_name]
         description = field.get("description", "")
         lines.append(field["title"] + fieldValuesString +
