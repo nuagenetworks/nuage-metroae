@@ -75,8 +75,10 @@ def write_fields(lines, schema, table):
         schema_props = schema["properties"]
         required = schema.get("required")
 
+    dataDict = {}
+    dataDictList = []
     if type(data) == list:
-        dataDict = data[0]
+        dataDictList = data
     else:
         dataDict = data
     fields = required
@@ -85,8 +87,8 @@ def write_fields(lines, schema, table):
             fields.append(k)
 
     for field_name in fields:
-        if type(data) == list:
-            fieldVal = dataDict[field_name]
+        if dataDictList:
+            fieldVal = dataDictList[0][field_name]
         else:
             fieldVal = dataDict[field_name]
         if type(fieldVal) == list:
