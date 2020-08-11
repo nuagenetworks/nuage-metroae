@@ -23,7 +23,6 @@ def usage():
 def getAllDeployments(deployment_folder):
     schemas = [splitext(f)[0] for f in listdir(deployment_folder)
                if isfile(join(deployment_folder, f))]
-    print schemas
     return schemas
 
 
@@ -65,7 +64,6 @@ def addContent(content):
 
 
 def write_fields(lines, schema, table):
-    width = len(table["headers"])
     data = table['data']
 
     if schema["type"] == "array":
