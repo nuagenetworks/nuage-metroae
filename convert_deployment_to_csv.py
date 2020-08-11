@@ -87,16 +87,24 @@ def write_fields(lines, schema, table):
             fields.append(k)
 
     for field_name in fields:
+        fieldValList = []
         if dataDictList:
-            fieldVal = dataDictList[0][field_name]
+            for item in dataDictList:
+                fieldVal = item[field_name]
+                if type(fieldVal) == list:
+                    fieldVal = ','.join(fieldVal)
+                fieldValList.append(fieldVal)
         else:
             fieldVal = dataDict[field_name]
-        if type(fieldVal) == list:
-            fieldVal = ','.join(fieldVal)
+            if type(fieldVal) == list:
+                fieldVal = ','.join(fieldVal)
+            fieldValList.append(fieldVal)
+        fieldValuesString = ''
+        for val in fieldValList:
+            fieldValuesString += "," + "\" " + str(val)+"\" "
         field = schema_props[field_name]
         description = field.get("description", "")
-        lines.append(field["title"] + "," +
-                     "\" " + str(fieldVal)+"\" " +
+        lines.append(field["title"] + fieldValuesString +
                      ("," * (width - 2)) +
                      escape_line(description))
 
