@@ -141,7 +141,7 @@ def main():
     csv_file = sys.argv[2]
     content = []
     content.append('MetroAE deployment template CSV')
-    content.append('This Spreadsheet can be used for KVM SDWan install')
+    content.append('This Spreadsheet can be used as an Input to MetroAE')
     deployments = getAllDeployments(deployment_folder)
     for deployment in deployments:
         deploymentData = getValuesFromDeployment(deployment_folder, deployment)
