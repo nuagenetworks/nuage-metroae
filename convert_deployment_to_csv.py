@@ -101,7 +101,7 @@ def write_fields(lines, schema, table):
             fieldValList.append(fieldVal)
         fieldValuesString = ''
         for val in fieldValList:
-            if type(val) == int:
+            if type(val) == int or val.find(',') == -1:
                 fieldValuesString += "," + str(val)
             else:
                 fieldValuesString += "," + "\"" + str(val) + "\""
