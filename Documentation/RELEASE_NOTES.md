@@ -37,6 +37,7 @@
 * Add support for vCenter VM folder specification.
 * Add more meaningful fail messages when vrs_package_path and vsd_migration_iso_path is undefined.
 * Add support for Rsyslog for NSGvs (METROAE-1231)
+* Add example for CSV input spreadsheet (METROAE-1338)
 * Add support for configuring monit email alerts (METROAE-1222)
 
 ### Resolved Issues
