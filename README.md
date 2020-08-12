@@ -28,7 +28,7 @@ File name | Description
 [VAULT_ENCRYPT](Documentation/VAULT_ENCRYPT.md) | Safeguard sensitive data
 [DEPLOY](Documentation/DEPLOY.md) | Deploy all VSP components or choose components individually.
 [DESTROY](Documentation/DESTROY.md) | Remove existing deployment(s) and start over.
-[CONFIG](Documention/CONFIG.md) | MetroAE Config, the template-driven VSD configuration tool.
+[CONFIG](Documentation/CONFIG.md) | MetroAE Config, the template-driven VSD configuration tool.
 [UPGRADE_SA](Documentation/UPGRADE_SA.md) | Upgrade component(s) from one release to the next in a standalone environment.
 [UPGRADE_HA](Documentation/UPGRADE_HA.md) | Upgrade component(s) from one release to the next in a clustered environment.
 [VSD_SERVICES](Documentation/VSD_SERVICES.md) | Using MetroAE to control VSD Services during maintenance
