@@ -417,12 +417,7 @@ class CsvDeploymentConverter(object):
         self._output("Writing %s", file_name)
 
         if type(data) == list:
-            if schema_name == 'nuh_external_interfaces':
-                data = {'externalinterfaces': data}
-            elif schema_name == 'nsgv_access_ports':
-                data = {'nsgvs': data}
-            else:
-                data = {schema_name: data}
+            data = {schema_name: data}
         data["generator_script"] = "CSV spreadsheet"
         gen_example = ExampleFileGenerator(False, True)
         example_lines = gen_example.generate_example_from_schema(
