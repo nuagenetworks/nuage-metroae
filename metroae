@@ -923,9 +923,9 @@ function setup_container {
 
     set -e
 
-    if [[ $config_status -ne 0 || $deploy_keys_status -ne 0 || $deploy_status -ne 0 || $common_status -ne 0 ]]; then
+    if [[ $config_template_status -ne 0 || $config_docs_status -ne 0 || $deploy_keys_status -ne 0 || $deploy_status -ne 0 || $common_status -ne 0 ]]; then
         echo ""
-        write_to_screen_and_script_log "Problem copying one or more files to the data directory."
+        write_to_screen_and_script_log "We had a problem copying one or more files to the data directory."
         echo "The MetroAE container is running, but you may not have the latest files on disk. Try running 'metroae container setup' again."
         echo ""
     fi
@@ -963,13 +963,13 @@ function update_container_files {
     docker_exec_generate_and_copy_keys
     deploy_keys_status=$?
 
-    config_status=0
+    config_template_status=0
     if [[ $setup_type != "d" ]]; then
         echo ""
         write_to_screen_and_script_log ">>> Updating with the latest feature templates and files for MetroAE Config in the container"
         echo ""
         docker_exec_config templates update
-        config_status=$?
+        config_template_status=$?
     fi
 
     config_docs_status=0
