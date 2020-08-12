@@ -27,7 +27,7 @@ def get_all_schemas(deployment_folder):
 
 
 def getValuesFromDeployment(deployment_folder, deployment):
-    return yaml.safe_load(open(join(deployment_folder, deployment +'.yml')))
+    return yaml.safe_load(open(join(deployment_folder, deployment + '.yml')))
 
 
 def read_schema(schema_name):
@@ -105,9 +105,8 @@ def write_fields(lines, schema, table):
                 fieldValuesString += "," + "\"" + str(val) + "\""
         field = schema_props[field_name]
         description = field.get("description", "")
-        lines.append(field["title"] + fieldValuesString +
-                     ("," * 2) +
-                     escape_line(description))
+        full_line = field["title"] + fieldValuesString + ("," * 2) + escape_line(description)
+        lines.append(full_line)
 
 
 def write_table(table):
