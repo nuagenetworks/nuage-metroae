@@ -20,7 +20,7 @@ def usage():
     print ""
 
 
-def getAllDeployments(deployment_folder):
+def get_all_schemas(deployment_folder):
     schemas = [splitext(f)[0] for f in listdir(deployment_folder)
                if isfile(join(deployment_folder, f))]
     return schemas
@@ -42,7 +42,7 @@ def read_schema(schema_name):
             file_name, str(e)))
 
 
-def writeCsvFile(filename, content):
+def write_csv_file(filename, content):
     f = open(filename, "w")
     f.write(content)
 
@@ -53,7 +53,7 @@ def escape_line(line):
     return line
 
 
-def addContent(content):
+def add_content(content):
     csvContent = ''
     for item in content:
         if type(item) == dict:
@@ -131,18 +131,11 @@ def write_table(table):
     return ",\n".join(lines)
 
 
-def main():
-
-    if len(sys.argv) != 3:
-        usage()
-        exit(1)
-
-    deployment_folder = sys.argv[1]
-    csv_file = sys.argv[2]
+def create_csv_from_deployment(csv_file, deployment_folder):
     content = []
     content.append('MetroAE deployment template CSV')
     content.append('This Spreadsheet can be used as an Input to MetroAE')
-    deployments = getAllDeployments(deployment_folder)
+    deployments = get_all_schemas(deployment_folder)
     for deployment in deployments:
         deploymentData = getValuesFromDeployment(deployment_folder, deployment)
         headerList = [deployment]
@@ -160,8 +153,19 @@ def main():
         }
         content.append('')
         content.append(schemaDict)
-    contentToWrite = addContent(content)
-    writeCsvFile(csv_file, contentToWrite)
+    contentToWrite = add_content(content)
+    write_csv_file(csv_file, contentToWrite)
+
+
+def main():
+
+    if len(sys.argv) != 3:
+        usage()
+        exit(1)
+
+    deployment_folder = sys.argv[1]
+    csv_file = sys.argv[2]
+    create_csv_from_deployment(csv_file, deployment_folder)
 
 
 if __name__ == '__main__':
