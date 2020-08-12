@@ -75,9 +75,18 @@
       datacenter: "{{ vcenter.datacenter }}"
     register: datastore_facts
 
+  - name: Select first datastore by default
+    set_fact:
+      vmware_datastore: "{{ datastore_facts.datastores | first }}"
+
+  - name: Select correct datastore
+    set_fact:
+      vmware_datastore: "{{ (datastore_facts.datastores | selectattr('name','equalto',vcenter.datastore) | first) }}"
+    when: vcenter.datastore is defined
+
   - name: Set fact for datastore free space
     set_fact:
-      datastore_free_space_kb: "{{ datastore_facts['datastores'][0].freeSpace | float / 1024 }}"
+      datastore_free_space_kb: "{{ vmware_datastore.freeSpace | float / 1024 }}"
 
   - name: Set fact for required available disk space
     set_fact:
@@ -89,3 +98,28 @@
       msg: "Insufficient disk space {{ datastore_free_space_kb | float / (1024 * 1024) }} GB for predeploy"
 
   when: target_server_type | default('NONE') is match ("vcenter")
+
+- block:
+
+  - name: Check mgmt target bridge
+    assert:
+      that: '"mgmt" not in required_bridges or mgmt_bridge != "NONE"'
+      msg: "Required mgmt network bridge not configured"
+
+  - name: Check data target bridge
+    assert:
+      that: '"data" not in required_bridges or data_bridge != "NONE"'
+      msg: "Required data network bridge not configured"
+
+  - name: Check access target bridge
+    assert:
+      that: '"access" not in required_bridges or access_bridge != "NONE"'
+      msg: "Required access network bridge not configured"
+
+  when: target_server_type | default('NONE') is match ("kvm") or target_server_type | default('NONE') is match ("vcenter")
+
+- name: Fail if vrs_package_path is not defined
+  assert:
+    that: vrs_package_path != "MISSING"
+    msg: "vrs_package_path not defined. Please define it and try again."
+  when: vrss is defined and vrss|length > 0

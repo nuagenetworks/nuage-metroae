@@ -1,4 +1,5 @@
 # Rolling Back or Restoring VSD
+
 In certain cases, you can use MetroAE to rollback or restore a stand-alone VSD or VSD cluster to its original version outside of the normal upgrade path. 
 
 ## Use Cases
@@ -25,23 +26,24 @@ Before rolling back or restoring a VSD configuration, you must meet the followin
   * The `nuage_unzipped_files_dir` variable in your deployment's `common.yml` file must be set to point to the location where the original VSD image file can be found, e.g. 6.0.3 images.
   * If the original VMs are still on the hypervisor, the VSD VM names in your deployment's `vsds.yml` file must be set to new, unique values. If you have completely destroyed the original VMs, you can use the original VM names.
   
-## Steps 
+## Steps
 
 If all of these prerequisites and assumptions are true, perform the following steps to rollback/restore a VSD configuration: 
 
-#### 1. Shut down all running VSDs. 
-   * The VSDs that are being rolled back or restored cannot be running. Shut them down manually using your hypervisor's controls. Optionally undefine or delete them from disk. 
+#### 1. Shut down all running VSDs.
+
+* The VSDs that are being rolled back or restored cannot be running. Shut them down manually using your hypervisor's controls. Optionally undefine or delete them from disk. 
   
-#### 2. Configure or create a new deployment as if you intend to install the original version. 
-  * Set the `nuage_unzipped_files_dir` variable in `common.yml` to point to the original version image.
-  * If necessary, provide unique VM names in `vsds.yml`.
+#### 2. Configure or create a new deployment as if you intend to install the original version.
+
+* Set the `nuage_unzipped_files_dir` variable in `common.yml` to point to the original version image.
+* If necessary, provide unique VM names in `vsds.yml`.
   
 #### 3. Run the following command to bring up new copies of the original VMs (e.g. 5.4.1).
 
 `metroae install vsds predeploy <deployment name>`
 
 #### 4. Manually copy (via scp) the pre-upgrade backup to /opt/vsd/data on VSD 1.
-
 
 #### 5. Run the following command to start the installation of the VSD software on the VSD VM. This will also restore the backup that you copied to the first VSD.
 
@@ -53,10 +55,11 @@ If all of these prerequisites and assumptions are true, perform the following st
 
 At this point, your original VSD configuration should be restored and up and running.
 
-## Questions, Feedback, and Contributing  
+## Questions, Feedback, and Contributing
+
 Get support via the [forums](https://devops.nuagenetworks.net/forums/) on the [MetroAE site](https://devops.nuagenetworks.net/).  
-Ask questions and contact us directly at [devops@nuagenetworks.net](mailto:deveops@nuagenetworks.net "send email to nuage-metro project").
+Ask questions and contact us directly at [devops@nuagenetworks.net](mailto:devops@nuagenetworks.net "send email to nuage-metro project").
 
-Report bugs you find and suggest new features and enhancements via the [GitHub Issues](https://github.com/nuagenetworks/nuage-metro/issues "nuage-metro issues") feature.
+Report bugs you find and suggest new features and enhancements via the [GitHub Issues](https://github.com/nuagenetworks/nuage-metroae/issues "nuage-metroae issues") feature.
 
-You may also [contribute](../CONTRIBUTING.md) to MetroAE by submitting your own code to the project.
+You may also [contribute](CONTRIBUTING.md) to MetroAE by submitting your own code to the project.

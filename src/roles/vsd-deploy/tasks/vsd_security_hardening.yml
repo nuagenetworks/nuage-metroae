@@ -72,14 +72,10 @@
           dest: /tmp/authorized_keys_temp
 
       - name: Copy authorized file to vsd custom user home directory
-        expect:
-          command: >-
-            scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null /tmp/authorized_keys_temp
+        shell: >-
+            sshpass -p{{ vsd_custom_password }} scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null /tmp/authorized_keys_temp
             {{ vsd_custom_username }}@{{ mgmt_ip }}:/home/{{ vsd_custom_username }}/.ssh/authorized_keys
-          responses:
-            (?i)yes: "yes"
-            (?i)password: "{{ vsd_custom_password }}"
-          timeout: 720
+        no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
 
       - name: Remove temporary copy of authorized_keys file
         file: path=tmp/authorized_keys_temp state=absent

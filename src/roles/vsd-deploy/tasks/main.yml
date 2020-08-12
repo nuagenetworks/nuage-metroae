@@ -152,6 +152,9 @@
     - openstack
     - vsd-deploy
 
+- name: Renew VSD ejabberd license
+  import_tasks: renew_ejabberd_license.yml
+
 - block:
 
   - block:
@@ -338,6 +341,26 @@
   - name: Set XMPP connection to allow both clear and TLS
     command: /opt/vsd/bin/ejmode allow -y
     when: not deploy_vcin
+
+  - block:
+
+    - name: Write out monitrc file
+      template: src=monitrc.j2 dest=/etc/monitrc backup=no
+
+    - name: Restart monit service
+      service:
+        name: monit
+        state: restarted
+
+    - name: Verify monit is running correctly
+      vsd_monit:
+        group: all
+      register: vsd_proc
+
+    - name: Print monit status when verbosity >= 1
+      debug: var=vsd_proc verbosity=1
+
+    when: monit_mail_server is defined
 
   remote_user: "{{ vsd_default_username }}"
 

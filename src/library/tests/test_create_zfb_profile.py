@@ -50,7 +50,9 @@ TEST_PARAMS = {
     "zfb_nsg_infra": {
         "name": "nsg_infra",
         "proxyDNSName": "vnsutil1.example.com",
-        "instanceSSHOverride": "ALLOWED"},
+        "instanceSSHOverride": "ALLOWED",
+        "remoteLogServerAddress": "10.0.0.1",
+        "remoteLogServerPort": 514},
     "zfb_vsc_infra": {
         "name": "vsc_infra",
         "firstController": "192.168.1.100",
@@ -126,6 +128,12 @@ class TestCreateZfbProfile(object):
         nsg_data['useTwoFactor'] = TEST_PARAMS["zfb_constants"]["useTwoFactor"]
         nsg_data['upgradeAction'] = TEST_PARAMS["zfb_constants"][
             "upgradeAction"]
+        nsg_data['remoteLogMode'] = "RSYSLOG"
+        nsg_data['remoteLogServerAddress'] = TEST_PARAMS["zfb_nsg_infra"][
+            "remoteLogServerAddress"]
+        nsg_data['remoteLogServerPort'] = TEST_PARAMS["zfb_nsg_infra"][
+            "remoteLogServerPort"]
+
         vspk_patch.NUInfrastructureGatewayProfile.assert_called_once_with(
             data=nsg_data)
         self.mock_root.create_child.assert_has_calls(

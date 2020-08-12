@@ -3,6 +3,7 @@
 This file describes many of the details of the commands used for managing MetroAE distributed via container. For information on how to setup Docker and the MetroAE Docker container, see [SETUP.md](SETUP.md).
 
 ## The metroae Command
+
 The metroae command is at the heart of interacting with the MetroAE container. It is used both to manage the container and to execute MetroAE inside the container. You can access all of the command options via `metroae <workflow> <component> [action] [deployment] [options]`.
 
 ### metroae Container Management Command Options
@@ -52,32 +53,42 @@ The MetroAE container is designed so that you run MetroAE workflows, e.g. instal
 ## Troubleshooting
 
 ### SSH connection problems
+
 If MetroAE is unable to authenticate with your target server, chances are that passwordless ssh has not been configured properly. The public key of the container must be copied to the authorized_keys file on the target server. Use the `copy-ssh-id` command option, e.g. `metroae container copy-ssh-id user@host_name_or_ip`.
 
-### Where is my data directory?	
+### Where is my data directory?
+
 You can find out about the current state of your container, including the path to the metroae_data directory, by executing the container status command, `metroae container status`.
 
 ### General errors
+
 metroae.log and ansible.log are located in the data directory you specified during setup.
 
 ## Manually use the container without the script (Nokia internal support only)
+
 ### Pull the container
 
     docker pull registry.mv.nuagenetworks.net:5001/metroae:1.0
 
 ### Run the container
+
 docker run -e USER_NAME='user name for the container' -e GROUP_NAME='group name for the container' -d $networkArgs -v 'path to the data mount point':/data:Z -v 'path to images mount point':/images:Z --name metroae registry.mv.nuagenetworks.net:5001/metroae:1.0
+
 #### For Linux host
+
 ```
 networkArgs is '--network host'
 ```
+
 #### For Mac host
+
 ```
 networkArgs is '-p "UI Port":5001'
 ```
+
 ### Execute MetroAE Commands
 
-    docker exec 'running container id' /source/nuage-metro/metroae playbook deployment
+    docker exec 'running container id' /source/nuage-metroae/metroae playbook deployment
 
 ### Stop the container
 
@@ -92,9 +103,10 @@ networkArgs is '-p "UI Port":5001'
     docker rmi 'image id'
 
 ## Questions, Feedback, and Contributing
+
 Get support via the [forums](https://devops.nuagenetworks.net/forums/) on the [MetroAE site](https://devops.nuagenetworks.net/).
-Ask questions and contact us directly at [devops@nuagenetworks.net](mailto:deveops@nuagenetworks.net "send email to nuage-metro project").
+Ask questions and contact us directly at [devops@nuagenetworks.net](mailto:devops@nuagenetworks.net "send email to nuage-metro project").
 
-Report bugs you find and suggest new features and enhancements via the [GitHub Issues](https://github.com/nuagenetworks/nuage-metro/issues "nuage-metro issues") feature.
+Report bugs you find and suggest new features and enhancements via the [GitHub Issues](https://github.com/nuagenetworks/nuage-metroae/issues "nuage-metroae issues") feature.
 
-You may also [contribute](../CONTRIBUTING.md) to MetroAE by submitting your own code to the project.
+You may also [contribute](CONTRIBUTING.md) to MetroAE by submitting your own code to the project.

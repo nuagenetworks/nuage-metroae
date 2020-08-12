@@ -7,9 +7,6 @@
   include_role:
     name: common
     tasks_from: setup-kvm
-  vars:
-    required_bridges:
-      - mgmt
 
 - include_role:
     name: check-node-running
@@ -132,10 +129,10 @@
       tasks_from: kvm-inject-ssh-keys
 
   - name: Set the SSH not to use DNS
-    command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} echo "UseDNS no" >> /etc/ssh/sshd_config
+    shell: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} echo "UseDNS no" >> /etc/ssh/sshd_config  # noqa 305
 
   - name: Disable SELinux
-    command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} sh "sed -i 's/SELINUX\=enforcing/SELINUX\=permissive/g' /etc/selinux/config"
+    shell: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} sh "sed -i 's/SELINUX\=enforcing/SELINUX\=permissive/g' /etc/selinux/config"  # noqa 305
 
   - name: Define and start Portal VM
     include_role:

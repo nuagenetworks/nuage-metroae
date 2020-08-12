@@ -6,7 +6,7 @@
   no_log: True
   ignore_errors: True
 
-- import_tasks: report_header.yml
+- import_tasks: report_start.yml
 
 - block:
 
@@ -19,45 +19,160 @@
   - name: Print network config when verbosity >= 1
     debug: var=net_conf.info verbosity=1
 
-  - block:
-
-    - name: Write network config to json file
-      nuage_append: filename="{{ report_path }}" text="{{ net_conf.info | to_nice_json }}\n"
-
-    - name: Check web interface of vstat (ignoring errors)
-      uri:
-        url: http://{{ inventory_hostname }}:9200
-        method: GET
-        user: "{{ vstat_username | default(vstat_default_username) }}"
-        password: "{{ vstat_password | default(vstat_default_password) }}"
-        status_code: 200
-        validate_certs: False
-      register: webresult
-      ignore_errors: yes
-
-    - name: Write web interface result
-      nuage_append: filename="{{ report_path }}" text="{{ webresult  | to_nice_json }}\n"
-
-    - block:
-
-      - name: Check VSS UI of vstat
-        uri:
-          url: https://{{ inventory_hostname }}:6200
-          method: GET
-          status_code: 200
-          validate_certs: False
-        register: vss_ui_result
-
-      - name: Write VSS UI result
-        nuage_append: filename="{{ report_path }}" text="{{ vss_ui_result | to_nice_json }}\n"
-
-      when: enable_vss_ui | default(False)
-
+  - name: Write network config separator to report file
+    nuage_append: filename="{{ report_path }}" text="-----VSTAT Network Config-----\n"
     delegate_to: localhost
 
-  when: inventory_hostname in groups['vstats']
+  - name: Write network config to json file
+    nuage_append: filename="{{ report_path }}" text="{{ net_conf.info | to_nice_json }}\n"
+    delegate_to: localhost
+
+  - name: Stat the pid file for elasticsearch process
+    stat: path=/var/run/elasticsearch/elasticsearch.pid
+    register: pid
+
+  - name: Verify that the elasticsearch pid file exists
+    assert:
+      that: "pid.stat.exists"
+      msg: "Pid file for elastic search not found, quitting"
+
+  - name: Get status of elasticsearch process
+    command: systemctl is-active elasticsearch    # noqa 303
+    register: es_process_status
+    changed_when: True
+
+  - name: Verify that elasticsearch status is active
+    assert:
+      that: "es_process_status.stdout=='active'"
+      msg: "Elasticsearch status is {{ es_process_status.stdout }}, quitting"
+
+  - name: Write elasticsearch process result separator to report file
+    nuage_append: filename="{{ report_path }}" text="-----Elasticsearch Process Status-----\n"
+    delegate_to: localhost
+
+  - name: Write elasticsearch process result to report file
+    nuage_append: filename="{{ report_path }}" text="{{ es_process_status.stdout }}\n"
+    delegate_to: localhost
+
+  - name: Check web interface of vstat
+    uri:
+      url: http://{{ inventory_hostname }}:9200
+      method: GET
+      user: "{{ vstat_username | default(vstat_default_username) }}"
+      password: "{{ vstat_password | default(vstat_default_password) }}"
+      status_code: 200
+      validate_certs: False
+    register: webresult
+
+  - name: Write web interface result separator to report file
+    nuage_append: filename="{{ report_path }}" text="-----VSTAT Web Interface Check-----\n"
+    delegate_to: localhost
+
+  - name: Write web interface result
+    nuage_append: filename="{{ report_path }}" text="{{ webresult  | to_nice_json }}\n"
+    delegate_to: localhost
+
+  - name: Check the status of shards being processed
+    uri:
+      url: "http://localhost:9200/_cluster/health?pretty"
+      method: GET
+    register: es_health
+    until: es_health.json.unassigned_shards == 0
+    retries: 60
+    delay: 10
+
+  - name: Write shard status result separator to report file
+    nuage_append: filename="{{ report_path }}" text="-----Shard Status Results-----\n"
+    delegate_to: localhost
+
+  - name: Write shard status result to report file
+    nuage_append: filename="{{ report_path }}" text="{{ es_health.json | to_nice_json }}\n"
+    delegate_to: localhost
+
+  - name: Get vsd node(s) information
+    import_role:
+      name: common
+      tasks_from: vsd-node-info.yml
+    vars:
+      vsd_hostname: "{{ vsd_fqdn }}"
+
+  - name: Check the ES status color
+    uri:
+      url: "http://{{ inventory_hostname }}:9200/_cluster/health?pretty"
+      method: GET
+    register: es_status
+    until: es_status.json.status == 'green'
+    retries: 60
+    delay: 10
+    delegate_to: "{{ vsd_hostname_list[0] }}"
+    remote_user: "{{ hostvars[vsd_hostname_list[0]].vsd_custom_username | default(vsd_custom_username | default(vsd_default_username)) }}"
+    become: "{{ 'no' if hostvars[vsd_hostname_list[0]].vsd_custom_username | default(vsd_custom_username | default(vsd_default_username)) == 'root' else 'yes' }}"
+    vars:
+      ansible_become_pass: "{{ hostvars[vsd_hostname_list[0]].vsd_custom_password | default(vsd_custom_password | default(vsd_default_password)) }}"
+
+  - name: Write ES status color result separator to report file
+    nuage_append: filename="{{ report_path }}" text="-----Elasticsearch Status Color-----\n"
+    delegate_to: localhost
+
+  - name: Write ES status color result to report file
+    nuage_append: filename="{{ report_path }}" text="{{ es_status.json.status }}\n"
+    delegate_to: localhost
+
+  - block:
+
+    - name: Check cluster_name
+      assert:
+        that: "es_status.json.cluster_name == 'nuage_elasticsearch'"
+        msg: "Incorrect cluster_name {{ es_status.json.cluster_name }}. Quitting."
+
+    - name: Write cluster_name result separator to report file
+      nuage_append: filename="{{ report_path }}" text="-----Elasticsearch Cluster Name-----\n"
+      delegate_to: localhost
+
+    - name: Write cluster_name result to report file
+      nuage_append: filename="{{ report_path }}" text="{{ es_status.json.cluster_name }}\n"
+      delegate_to: localhost
+
+    - name: Check number_of_nodes
+      assert:
+        that: "es_status.json.number_of_nodes == 3"
+        msg: "Incorrect number_of_nodes {{ es_status.json.number_of_nodes }}. Quitting."
+
+    - name: Write number_of_nodes result separator to report file
+      nuage_append: filename="{{ report_path }}" text="-----Elasticsearch Number of Nodes-----\n"
+      delegate_to: localhost
+
+    - name: Write number_of_nodes result to report file
+      nuage_append: filename="{{ report_path }}" text="{{ es_status.json.number_of_nodes }}\n"
+      delegate_to: localhost
+
+    when: vstat_sa_or_ha is match('ha')
+
+  - block:
+
+    - name: Check VSS UI of vstat
+      uri:
+        url: https://{{ inventory_hostname }}:6200
+        method: GET
+        status_code: 200
+        validate_certs: False
+      register: vss_ui_result
+
+    - name: Write VSS UI result separator to report file
+      nuage_append: filename="{{ report_path }}" text="-----VSTAT VSS UI-----\n"
+
+    - name: Write VSS UI result
+      nuage_append: filename="{{ report_path }}" text="{{ vss_ui_result | to_nice_json }}\n"
+
+    when: enable_vss_ui | default(False)
+    delegate_to: localhost
+
+  when:
+    - (groups['vstats'] is defined and inventory_hostname in groups['vstats']) or
+      (groups['primary_vstats'] is defined and inventory_hostname in groups['primary_vstats']) or
+      (groups['backup_vstats'] is defined and inventory_hostname in groups['backup_vstats'])
 
 - import_tasks: monit_status.yml
   when: inventory_hostname in groups['vsds']
 
-- import_tasks: report_footer.yml
+- import_tasks: report_end.yml

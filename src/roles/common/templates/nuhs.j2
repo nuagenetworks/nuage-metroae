@@ -5,6 +5,9 @@
 
 target_server_type: kvm
 
+required_bridges:
+  - mgmt
+
 target_server: {{ item.target_server }}
 
 hostname: {{ item.hostname }}
@@ -30,11 +33,12 @@ external_interfaces:
 {% for interface in nuh_external_interfaces %}
 {% for external_if in item.external_interface_list %}
 {% if interface.name in external_if %}
-    - name: {{ interface.name }}
+    - name: "External{{ loop.index }}"
       external_prefix: {{ interface.external_ip_prefix | default(24) }}
       external_ip: {{ interface.external_ip }}
       external_gateway: {{ interface.external_gateway }}
       external_bridge: {{ interface.external_bridge }}
+      vlan: {{ interface.vlan | default(0) }}
 {% endif %}
 {% endfor %}
 {% endfor %}
@@ -53,7 +57,19 @@ nuh_sa_or_ha: sa
 nuh_sa_or_ha: ha
 {% endif %}
 
+{% if item.cpuset is defined %}
+cpuset:
+{% for cpus in item.cpuset %}
+  - {{ cpus }}
+{% endfor %}
+{% endif %}
+
 image_path: {{ image_path | default("MISSING") }}
 image_file_name: {{ image_file_name | default("MISSING") }}
 nuh_timezone: {{ item.timezone | default("America/Toronto") }}
+skip_vsd_installed_check: {{ item.skip_vsd_installed_check | default(false) }}
 health_monitoring_agent: {{ item.health_monitoring_agent | default("none") }}
+
+{% if item.custom_configuration_file_location is defined %}
+custom_configuration_file_location: {{ item.custom_configuration_file_location }}
+{% endif %}

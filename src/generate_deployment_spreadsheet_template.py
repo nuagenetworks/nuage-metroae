@@ -66,9 +66,6 @@ FORMAT = """
   extra:
     - vmname
 
-- schema: nuhs
-  headers: [NUHs, NUH 1 (SA), NUH 2 (HA), "", Descriptions]
-
 - ""
 - Configuration for VNS setups
 
@@ -94,6 +91,12 @@ FORMAT = """
     - access_port_name
     - access_port_vlan_range
     - access_port_vlan_number
+
+- schema: nuhs
+  headers: [NUHs, NUH 1 (SA), NUH 2 (HA), "", Descriptions]
+
+- schema: webfilters
+  headers: [Webfilters, Webfilter1, "", Descriptions]
 
 - ""
 - When using MetroAE for zero-factor bootstrap of NSGvs

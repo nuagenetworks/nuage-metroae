@@ -1,6 +1,16 @@
 ---
 - hosts: vsd_upgrade_ha_node1,vsd_upgrade_sa_node
   gather_facts: no
+  pre_tasks:
+    - name: Fail if vsd_migration_iso_path is not defined
+      assert:
+       that: vsd_migration_iso_path != "MISSING"
+       msg: "vsd_migration_iso_path not defined. Please define it and try again."
+
+    - name: Fail if vsd_migration_iso_file_name is not defined
+      assert:
+       that: vsd_migration_iso_file_name != "MISSING"
+       msg: "vsd_migration_iso_file_name not defined. Please define it and try again."
   vars:
     report_filename: vsd_decouple_report.txt
     vsd_password: "{{ vsd_custom_password | default(vsd_default_password) }}"

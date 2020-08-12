@@ -44,4 +44,24 @@
     assert:
       that: "{{ resolved_address_list is match(management_ip) }}"
 
+  - block:
+
+    - name: Check DNS SRV configuration for vsd_fqdn_global {{ common.vsd_fqdn_global }}
+      command: dig {{ '_xmpp-client._tcp.' + common.vsd_fqdn_global }} +short -t SRV @{{ dns_server }}
+      register: dns_srv
+      with_items: "{{ common.dns_server_list }}"
+      loop_control:
+        loop_var: dns_server
+      ignore_errors: True
+
+    - name: Validate DNS SRV config, including XMPP port 5222
+      with_items: "{{ dns_srv.results }}"
+      loop_control:
+        loop_var: dns_srv_output
+      assert:
+        that: "{{ '5222 ' + hostname in dns_srv_output.stdout }}"
+        msg: "VSD DNS SRV configuration is incorrect: FQDN {{ common.vsd_fqdn_global }} missing or has wrong port for {{ hostname }} on DNS server:\n{{ dns_srv_output.stdout }}"
+
+    when: is_vsd | default(False) and vsds | length > 1
+
   when: not skip_dns_resolution_tests | default(common.skip_dns_resolution_tests | default(false))

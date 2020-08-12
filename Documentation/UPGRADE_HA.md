@@ -1,5 +1,7 @@
 # Upgrading a Clustered Deployment with MetroAE
+
 ## Prerequisites / Requirements / Notes
+
 Before upgrading any components, you must have previously [set up your MetroAE environment](SETUP.md) and [customized the upgrade environment for your target platform](CUSTOMIZE.md).
 
 Ensure that you have added upgrade.yml to your deployment and specified `upgrade_from_version` and `upgrade_to_version`. MetroAE uses these values to determine whether it is to perform a patch upgrade, a major upgrade or a minor upgrade. Failure to populate these variables correctly could cause the wrong type of upgrde to be attempted, possibly resulting in an error. If a minor upgrade is treated as a major upgrade, for example, you may get stuck in the turn-on-api step which should not be executed for minor upgrades.
@@ -9,6 +11,7 @@ Note that if your existing VSP components were not installed using MetroAE or we
 By default, the special enterprise called Shared Infrastructure is created on the VSD. When putting domains in maintenance mode prior to an upgrade, MetroAE skips Shared Infrastructure domains because they cannot be modified.
 
 ### Patch Upgrade for VSD, AKA in-place upgrade
+
 A patch upgrade is applicable to the VSD cluster when upgrading from one 'u' release to another. A patch upgrade is also referred to as an in-place upgrade. The existing VSDs will remain in service. The migration ISO will be mounted and the migration script will be executed on each VSD. A patch upgrade is:
 
 * Supported beginning in VSD version 5.4.1.
@@ -17,16 +20,20 @@ A patch upgrade is applicable to the VSD cluster when upgrading from one 'u' rel
 Note that MetroAE only supports patch upgrades for VSD using the `upgrade_vsds` play. Attempting to do a patch release upgrade via any other method will result in an error.
 
 ### Active/Standby cluster upgrade
+
 You can use MetroAE to upgrade Active/Standby VSD clusters, also known as geo-redundant clusters. You can also use MetroAE to upgrade Active/Standby VSTAT (ES) clusters. The support for this is built into the `upgrade_everything`, `upgrade_vsds`, and `upgrade_vstats` plays. A step-by-step manual procedure is supported, but is not documented here. See [Upgrading By Individual Steps](#upgrading-by-individual-steps-not-including-active-standby-clusters) for more information.
 
 ## Example Deployment
+
 For this example, our clustered (HA) deployment consists of:
+
 * three VSD nodes in a cluster
 * two VSC nodes
 * VRS instance(s)
 * one VSTAT (Elasticsearch) node
 
 ## Upgrading Automatically
+
 If your upgrade plans do not include upgrading VRSs or other dataplane components, you can upgrade everything with one command. If your upgrade plans do include VRSs or other dataplane components, you can upgrade everything with two commands. MetroAE also gives you the option of upgrading all instances of a component type, e.g. VSC, with a single command for each component type. If you prefer to have more control over each step in the upgrade process proceed to [Upgrading By Individual Steps](#upgrading-by-individual-steps-not-including-active-standby-clusters) for instructions.
 
 ### Upgrade All Components including Active/Standby clusters (does not pause for external VRS/dataplane upgrade)
@@ -66,9 +73,11 @@ Issuing the above workflows will detect if components are clustered (HA) or not 
 Issuing the above workflows will detect if components are clustered (HA) or not and will upgrade all components that are defined in the deployment.  This option allows the VRS(s) to be upgraded in-between other components.  Performing individual workflows can allow specific components to be skipped or upgraded at different times.
 
 ## Upgrading By Individual Steps not including Active/Standby clusters
+
 The following workflows will upgrade each component in individual steps. Performing an upgrade in this way allows full control of the timing of the upgrade process and provides opportunities for you to add custom steps to the overall process. Note that the steps listed below are only applicable for clustered (HA) deployments.  Active/Standby cluster upgrades require additional steps that are not documented here. See the component playbooks `src\playbooks\with_build\upgrade_vsds.yml` and `src\playbooks\with_build\upgrade_vstats.yml` for the full list of steps.
 
 ### Preupgrade Preparations
+
 1. Run health checks on VSD, VSC and VSTAT.
 
      `metroae upgrade preupgrade health`
@@ -179,6 +188,7 @@ The following workflows will upgrade each component in individual steps. Perform
      **Troubleshooting**: If you experience a failure, you can re-execute the command. If it fails a second time, manually copy (via scp) the .tim file, bof.cfg, and config.cfg (that were backed up before beginning VSC upgrade), to the VSC. Then reboot the VSC.
 
 ### Upgrade VRS
+
 Upgrade your VRS(s) and then continue with this procedure. Do not proceed without completing this step.
 
 ### Upgrade VSC Node Two
@@ -206,6 +216,7 @@ Upgrade your VRS(s) and then continue with this procedure. Do not proceed withou
      **Troubleshooting**: If you experience a failure, you can re-execute the command. If it fails a second time, manually copy (via scp) the .tim file, bof.cfg, and config.cfg (that were backed up before beginning VSC upgrade), to the VSC. Then reboot the VSC.
 
 ### Upgrade VSTAT
+
 Our example includes a VSTAT node. If your topology does not include one, proceed to *Finalize the Upgrade* below.
 
 1. Run VSTAT health check (optional).
@@ -220,7 +231,6 @@ Our example includes a VSTAT node. If your topology does not include one, procee
 
      Sets up SSH and disables stats collection.
 
-
 3. Upgrade the VSTAT nodes.
 
      `metroae upgrade ha vstat inplace`
@@ -234,6 +244,7 @@ Our example includes a VSTAT node. If your topology does not include one, procee
      Completes the upgrade process, renables stats and performs a series of checks to ensure the VSTAT nodes are healthy.
 
 ### Finalize the Upgrade
+
 1. Finalize the settings
 
      `metroae upgrade postdeploy`
@@ -248,10 +259,11 @@ Our example includes a VSTAT node. If your topology does not include one, procee
 
      Health reports are created that can be compared with the ones produced during preupgrade preparations. Investigate carefully any errors or discrepancies.
 
-## Questions, Feedback, and Contributing  
+## Questions, Feedback, and Contributing
+
 Get support via the [forums](https://devops.nuagenetworks.net/forums/) on the [MetroAE site](https://devops.nuagenetworks.net/).  
-Ask questions and contact us directly at [devops@nuagenetworks.net](mailto:deveops@nuagenetworks.net "send email to nuage-metro project").
- 
+Ask questions and contact us directly at [devops@nuagenetworks.net](mailto:devops@nuagenetworks.net "send email to nuage-metro project").
+
 Report bugs you find and suggest new features and enhancements via the [GitHub Issues](https://github.com/nuagenetworks/nuage-metro/issues "nuage-metro issues") feature.
 
-You may also [contribute](../CONTRIBUTING.md) to MetroAE by submitting your own code to the project.
+You may also [contribute](CONTRIBUTING.md) to MetroAE by submitting your own code to the project.

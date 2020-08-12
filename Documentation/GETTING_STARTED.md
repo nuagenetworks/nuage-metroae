@@ -17,7 +17,7 @@
 
 2.1 Clone the master branch of the repo onto the **MetroAEe Host**. Read [Setup](SETUP.md) for details.  
 ```
-git clone https://github.com/nuagenetworks/nuage-metro.git
+git clone https://github.com/nuagenetworks/nuage-metroae.git
 ```
 2.2 Install the required packages. Run as root or sudo. Read [Setup](SETUP.md) for details.  
 ```
@@ -64,16 +64,16 @@ See [SETUP.md](SETUP.md) for details.
 
 #### KVM
 
-- [ ] MetroAE host has ability to do a password-less SSH as root to the target server.  
-- [ ] Sufficient disk space / resources exist to create VMs.  
-- [ ] KVM is installed.  
-- [ ] All required management and data bridges are created.  
+* [ ] MetroAE host has ability to do a password*less SSH as root to the target server.  
+* [ ] Sufficient disk space / resources exist to create VMs.  
+* [ ] KVM is installed.  
+* [ ] All required management and data bridges are created.  
 
 #### vCenter  
 
-- [ ] User specified has required permissions to create and configure a VM.  
-- [ ] ovftool has been downloaded from VMware onto the MetroAE Host.  
-- [ ] pyvmomi has been installed on MetroAE Host: `pip install pyvmomi`.
+* [ ] User specified has required permissions to create and configure a VM.  
+* [ ] ovftool has been downloaded from VMware onto the MetroAE Host.  
+* [ ] pyvmomi has been installed on MetroAE Host: `pip install pyvmomi`.
 
 ### 5.3 Reachability
 
@@ -83,10 +83,11 @@ MetroAE host must be able to resolve the host names of the Nuage components into
 
 Refer to the list of documents in [README.md](../README.md) for guidance on deploying, upgrading, etc.
 
-## Questions, Feedback, and Contributing  
-Get support via the [forums](https://devops.nuagenetworks.net/forums/) on the [MetroAE site](https://devops.nuagenetworks.net/).  
-Ask questions and contact us directly at [devops@nuagenetworks.net](mailto:deveops@nuagenetworks.net "send email to nuage-metro project").
- 
-Report bugs you find and suggest new features and enhancements via the [GitHub Issues](https://github.com/nuagenetworks/nuage-metro/issues "nuage-metro issues") feature.
+## Questions, Feedback, and Contributing
 
-You may also [contribute](../CONTRIBUTING.md) to MetroAE by submitting your own code to the project.
+Get support via the [forums](https://devops.nuagenetworks.net/forums/) on the [MetroAE site](https://devops.nuagenetworks.net/).  
+Ask questions and contact us directly at [devops@nuagenetworks.net](mailto:devops@nuagenetworks.net "send email to nuage-metro project").
+
+Report bugs you find and suggest new features and enhancements via the [GitHub Issues](https://github.com/nuagenetworks/nuage-metroae/issues "nuage-metroae issues") feature.
+
+You may also [contribute](CONTRIBUTING.md) to MetroAE by submitting your own code to the project.

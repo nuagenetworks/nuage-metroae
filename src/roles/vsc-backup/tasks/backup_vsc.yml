@@ -3,50 +3,52 @@
   setup:
   delegate_to: localhost
 
-- name: Install pexpect module via pip
-  pip: name=pexpect state="present"
+- name: Create backup directory on localhost
+  include_role:
+    name: common
+    tasks_from: create-backup-dir
+  vars:
+    backup_component_name: vsc
+    backup_host_name: "{{ inventory_hostname }}"
 
 - name: Set name for backup folder
   set_fact:
-    backup_folder: "backup-{{ inventory_hostname }}-{{ ansible_date_time.iso8601_basic_short }}"
+    backup_folder: "{{ localhost_component_backup_dir }}"
 
-- name: Create backup dir to hold backup files
-  file:
-    path: "{{ metro_backup_root }}/{{ backup_folder }}"
-    state: directory
+- block:
 
-- name: Create temporary dir to hold backup files
-  file:
-    path: "/tmp/{{ backup_folder }}"
-    state: directory
-
-- name: Transfer bof.cfg from VSC to backup_machine
-  expect:
+  - name: Transfer bof.cfg from VSC to backup_machine
     command: "{{ vsc_scp_backup_bof }}"
-    responses:
-      (?i)yes: "yes"
-      (?i)password: "{{ vsc_password|default(vsc_default_password) }}"
-    timeout: "{{ vsc_scp_timeout_seconds }}"
+    no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
 
-- name: Transfer config.cfg from VSC to backup_machine
-  expect:
+  - name: Transfer config.cfg from VSC to backup_machine
     command: "{{ vsc_scp_backup_config }}"
-    responses:
-      (?i)yes: "yes"
-      (?i)password: "{{ vsc_password|default(vsc_default_password) }}"
-    timeout: "{{ vsc_scp_timeout_seconds }}"
+    no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
 
-- name: Transfer primary image from VSC to backup_machine
-  expect:
+  - name: Transfer primary image from VSC to backup_machine
     command: "{{ vsc_scp_backup_primary_image }}"
-    responses:
-      (?i)yes: "yes"
-      (?i)password: "{{ vsc_password|default(vsc_default_password) }}"
-    timeout: "{{ vsc_scp_timeout_seconds }}"
+    no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
+    when: not skip_backup_vsc_image | default(False)
 
-- name: Create symbolic link to backup location
-  file:
-    dest: "{{ metro_backup_root }}/backup-{{ groups['vscs'][0] }}-latest"
-    src: "/tmp/{{  backup_folder }}"
-    state: link
-    follow: false
+  - name: Remove any old symbolic link to backup location
+    file:
+      path: "{{ metro_backup_root }}/backup-latest-vsc"
+      state: absent
+    delegate_to: localhost
+
+  - name: Create symbolic link to backup location
+    file:
+      dest: "{{ metro_backup_root }}/backup-latest-vsc"
+      src: "{{ backup_folder }}"
+      state: link
+      follow: false
+
+  delegate_to: localhost
+
+- name: Clean any extra backups over max
+  include_role:
+    name: common
+    tasks_from: clean-extra-backups
+  vars:
+    backup_component_name: vsc
+
