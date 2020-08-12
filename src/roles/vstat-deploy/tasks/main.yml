@@ -326,31 +326,30 @@
 
     - block:
 
-      - name: Stat the standalone script
-        stat: path=/opt/vsd/vsd-es-standalone.sh
-        register: es_sa_script
-        when:
-          - vstat_sa_or_ha is match('sa')
-          - not stats_out | default(false)
+      - block:
 
-      - name: Execute VSTAT standalone script on standalone or clustered vsds
-        command: /opt/vsd/vsd-es-standalone.sh -e {{ inventory_hostname }}
-        no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
-        environment:
-          SSHPASS: "{{ vstat_default_password }}"
-        when:
-          - vstat_sa_or_ha is match('sa')
-          - es_sa_script.stat.exists
-          - vstat_default_username == 'root'
-          - not stats_out | default(false)
+        - name: Stat the standalone script
+          stat: path=/opt/vsd/vsd-es-standalone.sh
+          register: es_sa_script
 
-      - name: Execute VSTAT standalone script on standalone or clustered vsds
-        command: /opt/vsd/vsd-es-standalone.sh -e {{ inventory_hostname }}
-        no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
+        - name: Execute VSTAT standalone script on standalone or clustered vsds
+          command: /opt/vsd/vsd-es-standalone.sh -e {{ inventory_hostname }}
+          no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
+          environment:
+            SSHPASS: "{{ vstat_default_password }}"
+          when:
+            - es_sa_script.stat.exists
+            - vstat_default_username == 'root'
+
+        - name: Execute VSTAT standalone script on standalone or clustered vsds
+          command: /opt/vsd/vsd-es-standalone.sh -e {{ inventory_hostname }}
+          no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
+          when:
+            - es_sa_script.stat.exists
+            - vstat_default_username != 'root'
+
         when:
           - vstat_sa_or_ha is match('sa')
-          - es_sa_script.stat.exists
-          - vstat_default_username != 'root'
           - not stats_out | default(false)
 
       - block:
