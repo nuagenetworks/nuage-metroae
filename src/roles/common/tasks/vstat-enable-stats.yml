@@ -41,6 +41,7 @@
     when:
       - vstat_sa_or_ha is match('ha')
       - groups['vstats'] is defined
+      - not stats_out | default(false)
 
   - name: Enable stats collection on the vsd(s) on primary vstats
     command: /opt/vsd/vsd-stats.sh -e {{ groups['primary_vstats'][0] }},{{ groups['primary_vstats'][1] }},{{ groups['primary_vstats'][2] }}
@@ -51,6 +52,7 @@
       - vstat_sa_or_ha is match('ha')
       - groups['primary_vstats'] is defined
       - active and not failover
+      - not stats_out | default(false)
 
   - name: Enable stats collection on the vsd(s) for backup vstats in failover
     command: /opt/vsd/vsd-stats.sh -e {{ groups['backup_vstats'][0] }},{{ groups['backup_vstats'][1] }},{{ groups['backup_vstats'][2] }}
@@ -61,6 +63,17 @@
       - vstat_sa_or_ha is match('ha')
       - groups['backup_vstats'] is defined
       - active and failover
+      - not stats_out | default(false)
+
+  - name: Enable stats collection on the vsd(s) when deploying stats-out
+    command: /opt/vsd/vsd-stats.sh -e {{ groups['data_vstats'][0] }},{{ groups['data_vstats'][1] }},{{ groups['data_vstats'][2] }}
+    environment:
+      VSD_VERSION: "{{ vsd_version.stdout }}"
+      VSD_BUILD: "{{ vsd_build.stdout }}"
+    when:
+      - vstat_sa_or_ha is match('ha')
+      - groups['data_vstats'] is defined
+      - stats_out | default(false)
 
   delegate_to: "{{ vsd }}"
   remote_user: "{{ hostvars[vsd].vsd_custom_username | default(vsd_custom_username | default(vsd_default_username)) }}"
