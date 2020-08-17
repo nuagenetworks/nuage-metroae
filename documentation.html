@@ -373,6 +373,7 @@ body {
 <a href="#page-vault_encrypt">VAULT_ENCRYPT</a>
 <a href="#page-deploy">DEPLOY</a>
 <a href="#page-destroy">DESTROY</a>
+<a href="#page-config">CONFIG</a>
 <a href="#page-upgrade_sa">UPGRADE_SA</a>
 <a href="#page-upgrade_ha">UPGRADE_HA</a>
 <a href="#page-vsd_services">VSD_SERVICES</a>
@@ -393,7 +394,17 @@ body {
 <div id="page-readme">
 <h1>Nuage Networks Metro Automation Engine (MetroAE)</h1>
 <p>Version: 4.1.0</p>
-<p>MetroAE is an automation engine that deploys and upgrades Nuage Networks components. You specify the individual details of your target platform, then let MetroAE install, upgrade, destroy, or health-check the environment for you.</p>
+<p>MetroAE is an automation engine that can be used to</p>
+<ul>
+<li>Install</li>
+<li>Health check</li>
+<li>Upgrade</li>
+<li>Configure</li>
+<li>Backup/restore</li>
+<li>Shutdown/restart</li>
+<li>Failover/failback</li>
+</ul>
+<p>Nuage Networks components. You specify the individual details of your target platform, then let MetroAE do the rest.</p>
 <h2>Documentation</h2>
 <p>The <a href="Documentation/">Documentation</a> directory contains the following guides to assist you in successfully working with MetroAE. The current documentation covers using MetroAE CLI only.</p>
 <table>
@@ -409,6 +420,7 @@ body {
 <tr><td><a href="#page-vault_encrypt">VAULT_ENCRYPT</a></td><td>Safeguard sensitive data</td></tr>
 <tr><td><a href="#page-deploy">DEPLOY</a></td><td>Deploy all VSP components or choose components individually.</td></tr>
 <tr><td><a href="#page-destroy">DESTROY</a></td><td>Remove existing deployment(s) and start over.</td></tr>
+<tr><td><a href="#page-config">CONFIG</a></td><td>MetroAE Config, the template-driven VSD configuration tool.</td></tr>
 <tr><td><a href="#page-upgrade_sa">UPGRADE_SA</a></td><td>Upgrade component(s) from one release to the next in a standalone environment.</td></tr>
 <tr><td><a href="#page-upgrade_ha">UPGRADE_HA</a></td><td>Upgrade component(s) from one release to the next in a clustered environment.</td></tr>
 <tr><td><a href="#page-vsd_services">VSD_SERVICES</a></td><td>Using MetroAE to control VSD Services during maintenance</td></tr>
@@ -568,6 +580,7 @@ Internal Nokia: <a href="mailto:nuage-metro-interest@list.nokia.com" title="send
 <li>Add support for emailing health reports (METROAE-1332)</li>
 <li>Add support for more than one External interface (METROAE-1337)</li>
 <li>Add support for symlinks as files</li>
+<li>Add option for specifiying Openstack CA certificate path</li>
 <li>Add check for HA VSD DNS SRV records (METROAE-1341)</li>
 <li>Add support for vCenter VM folder specification.</li>
 <li>Add more meaningful fail messages when vrs_package_path and vsd_migration_iso_path is undefined.</li>
@@ -1233,6 +1246,60 @@ Run <code>metroae install vsc predeploy</code>, <code>metroae install vscs deplo
 Ask questions and contact us directly at <a href="mailto:devops@nuagenetworks.net" title="send email to nuage-metro project">devops@nuagenetworks.net</a>.</p>
 <p>Report bugs you find and suggest new features and enhancements via the <a href="https://github.com/nuagenetworks/nuage-metroae/issues" title="nuage-metroae issues">GitHub Issues</a> feature.</p>
 <p>You may also <a href="#page-contributing">contribute</a> to MetroAE by submitting your own code to the project.</p>
+</div>
+<hr>
+<div id="page-config">
+<h1>MetroAE Config</h1>
+<p>MetroAE Config is a template-driven VSD configuration tool. It utilizes the VSD API along with a set of common Feature Templates to create configuration in the VSD. The user will create a yaml or json data file with the necessary configuration parameters for the particular feature and execute simple CLI commands to push the configuration into VSD.</p>
+<p>MetroAE Config is available via the MetroAE container. Once pulled and setup, additional documentation will be available.</p>
+<h2>Configuration Engine Installation</h2>
+<p>MetroAE Configuration engine is provided as one of the capabilities of the MetroAE Docker container. The installation of the container is handled via the metroae script. Along with the configuration container we also require some additional data.</p>
+<p>On a host where the configuration engine will be installed the following artifacts will be installed:</p>
+<ul>
+<li>Docker container for configuration</li>
+<li>Collection of configuration Templates</li>
+<li>VSD API Specification</li>
+</ul>
+<h3>System Requirements</h3>
+<ul>
+<li>Operating System: RHEL/Centos 7.4+</li>
+<li>Docker: Docker Engine 1.13.1+</li>
+<li>Network Access: Internal and Public</li>
+<li>Storage: At least 800MB</li>
+</ul>
+<h4>Operating system</h4>
+<p>The primary requirement for the configuration container is Docker Engine, however the installation, container operation and functionality is only tested on RHEL/Centos 7.4. Many other operating systems will support Docker Engine, however support for these is not currently provided and would be considered experimental only. A manual set of installation steps is provided for these cases.</p>
+<h4>Docker Engine</h4>
+<p>The configuration engine is packaged into the MetroAE Docker container. This ensures that all package and library requirements are self-contained with no other host dependencies. To support this, Docker Engine must be installed on the host. The configuration container requirements, however, are quite minimal. Primarily, the Docker container mounts a local path on the host as a volume while ensuring that any templates and user data are maintained only on the host. The user never needs to interact directly with the container.</p>
+<h4>Network Access</h4>
+<p>Currently the configuration container is hosted in an internal Docker registry and the public network as a secondary option, while the Templates and API Spec are hosted only publicly. The install script manages the location of these resources. The user does not need any further information. However, without public network access the installation will fail to complete.</p>
+<h4>Storage</h4>
+<p>The configuration container along with the templates requires 800MB of local disk space. Note that the container itself is ~750MB, thus it is recommended that during install a good network connection is available.</p>
+<h4>User Privileges</h4>
+<p>The user must have elevated privileges on the host system.</p>
+<h3>Installation</h3>
+<p>Execute the following operations on the Docker host:</p>
+<ol>
+<li><p>Install Docker Engine</p>
+<p>Various instructions for installing and enabling Docker are available on the Internet. One reliable source of information for Docker CE is hosted here:</p>
+<p><a href="https://docs.docker.com/engine/install/centos/">https://docs.docker.com/engine/install/centos/</a></p></li>
+<li><p>Add the user to the wheel and docker groups on the Docker host.</p></li>
+<li><p>Move or Copy the “metroae” script from the nuage-metroae repo to /usr/bin and set permissions correctly to make the script executable.</p></li>
+<li><p>Switch to the user that will operate &quot;metroae config&quot;.</p></li>
+<li><p>Setup the container using the metroae script.</p>
+<p>We are going to pull the image and setup the metro container in one command below. During the install we will be prompted for a location for the container data directory. This is the location where our user data, templates and VSD API specs will be installed and created and a volume mount for the container will be created. However this can occur orthogonally via “pull” and “setup” running at separate times which can be useful depending on available network bandwidth.</p>
+<p><code>[caso@metroae-host ~]$ metroae container setup</code></p>
+<p>The MetroAE container needs access to your user data. It gets access by internally mounting a directory from the host. We refer to this as the 'data directory’. The data directory is where you will have deployments, templates, documentation, and other useful files. You will be prompted to provide the path to a local directory on the host that will be mounted inside the container. You will be prompted during setup for this path.</p>
+<p>The MetroAE container can be setup in one of the following configurations:</p>
+<ul>
+<li>Config only</li>
+<li>Deploy only</li>
+<li>Both config and deploy</li>
+</ul>
+<p>During setup, you will be prompted to choose one of these options.</p></li>
+<li><p>Follow additional insturctions found in the documentaion that is copied to the Docker host during setup.</p></li>
+</ol>
+<p>Complete documentation will be made available in the data directory you specify during setup. The complete documentation includes how to configure your environment, usage information for the tool, and more.</p>
 </div>
 <hr>
 <div id="page-upgrade_sa">
