@@ -2,64 +2,66 @@
   connection: local
   action: setup
 
-- name: get the username running the deploy
-  local_action: command whoami
-  register: username_on_the_host
+- name: Run on localhost
+  block:
 
-- debug: var=username_on_the_host verbosity=1
+  - name: get the username running the deploy
+    command: whoami
+    changed_when: false
+    register: username_on_the_host
 
-- name: get the primary group for the username
-  local_action: command id -gn "{{ username_on_the_host.stdout }}"
-  register: groupname_on_the_host
+  - debug: var=username_on_the_host verbosity=1
 
-- debug: var=groupname_on_the_host verbosity=1
+  - name: get the primary group for the username
+    command: id -gn "{{ username_on_the_host.stdout }}"
+    changed_when: false
+    register: groupname_on_the_host
 
-- name: Set name of backup directory
-  set_fact:
-    localhost_backup_dir: "{{ metro_backup_root }}/backup-{{ ansible_date_time.iso8601_basic_short }}-{{ hostvars['localhost'].backup_type | default(backup_component_name) }}"
-  delegate_to: localhost
-  delegate_facts: True
-  when: hostvars['localhost'].localhost_backup_dir is not defined
+  - debug: var=groupname_on_the_host verbosity=1
 
-- name: Set name of backup directory for component
-  set_fact:
-    localhost_component_backup_dir: "{{ hostvars['localhost'].localhost_backup_dir }}/{{ backup_component_name }}-{{ backup_host_name }}/"
+  - name: Set name of backup directory
+    set_fact:
+      localhost_backup_dir: >
+        "{{ metro_backup_root }}/backup-{{ ansible_date_time.iso8601_basic_short }}-{{ hostvars['localhost'].backup_type | default(backup_component_name) }}"
+    delegate_facts: True
+    when: hostvars['localhost'].localhost_backup_dir is not defined
 
-- name: Create the backup directory
-  file:
-    path: "{{ localhost_component_backup_dir }}"
-    state: directory
-    mode: 0755
-    owner: "{{ username_on_the_host.stdout }}"
-    group: "{{ groupname_on_the_host.stdout }}"
-  delegate_to: localhost
+  - name: Set name of backup directory for component
+    set_fact:
+      localhost_component_backup_dir: "{{ hostvars['localhost'].localhost_backup_dir }}/{{ backup_component_name }}-{{ backup_host_name }}/"
 
-- block:
+  - name: Create the backup directory
+    file:
+      path: "{{ localhost_component_backup_dir }}"
+      state: directory
+      mode: 0755
+      owner: "{{ username_on_the_host.stdout }}"
+      group: "{{ groupname_on_the_host.stdout }}"
+
+  - block:
+
+    - name: Remove any old symbolic link to backup location
+      file:
+        path: "{{ metro_backup_root }}/backup-latest-full"
+        state: absent
+
+    - name: Create symbolic link to backup location
+      file:
+        dest: "{{ metro_backup_root }}/backup-latest-full"
+        src: "{{ hostvars['localhost'].localhost_backup_dir }}"
+        state: link
+
+    when: hostvars['localhost'].backup_type | default(backup_component_name) == "full"
 
   - name: Remove any old symbolic link to backup location
     file:
-      path: "{{ metro_backup_root }}/backup-latest-full"
+      path: "{{ metro_backup_root }}/backup-latest-{{ backup_component_name }}"
       state: absent
-    delegate_to: localhost
 
   - name: Create symbolic link to backup location
     file:
-      dest: "{{ metro_backup_root }}/backup-latest-full"
+      dest: "{{ metro_backup_root }}/backup-latest-{{ backup_component_name }}"
       src: "{{ hostvars['localhost'].localhost_backup_dir }}"
       state: link
-    delegate_to: localhost
 
-  when: hostvars['localhost'].backup_type | default(backup_component_name) == "full"
-
-- name: Remove any old symbolic link to backup location
-  file:
-    path: "{{ metro_backup_root }}/backup-latest-{{ backup_component_name }}"
-    state: absent
-  delegate_to: localhost
-
-- name: Create symbolic link to backup location
-  file:
-    dest: "{{ metro_backup_root }}/backup-latest-{{ backup_component_name }}"
-    src: "{{ hostvars['localhost'].localhost_backup_dir }}"
-    state: link
   delegate_to: localhost
