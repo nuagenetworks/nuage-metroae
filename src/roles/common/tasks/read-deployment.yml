@@ -83,7 +83,7 @@
   - name: Validate correct number of VSDs for stats-out
     assert:
       that: "{{ vsds | length }} == 6"
-      msg: "When using stats-out, there must be exactly 3 statistics_only VSDs and 3 clustered VSDs."
+      msg: "When deploying stats-out, there must be exactly 3 statistics_only VSDs and 3 clustered VSDs."
 
   - name: Build set of stats only VSDs
     set_fact:
@@ -92,11 +92,16 @@
   - name: Validate correct number of VSTATs for stats-out
     assert:
       that: "{{ vstats | length }} == 6"
-      msg: "When using stats-out, there must be exactly 3 data VSTATs (ES) and 3 clustered VSTATs."
+      msg: "When deploying stats-out, there must be exactly 3 data VSTATs (ES) and 3 clustered VSTATs."
 
   - name: Build set of stats only VSDs
     set_fact:
       data_vstats: "{{ vstats[3:6] | map(attribute='hostname') | list }}"
+
+  - name: Check for valid stats-out proxy address
+    assert:
+      that: "common.stats_out_proxy is defined or nuhs | default([]) | length > 0"
+      msg: "Missing stats_out_proxy address in common.yml and no NUHs are defined to be used as a proxy."
 
   when: common.stats_out | default(false)
 

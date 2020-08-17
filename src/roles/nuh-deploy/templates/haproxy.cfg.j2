@@ -1,0 +1,26 @@
+frontend vsd_7443 *:7443
+    mode tcp
+    option tcp
+    default_backend backend_vsd_7443
+
+backend backend_vsd_7443
+    mode tcp
+    server vsd1 {{ groups['vsd_ha_node1'].hostname }}:7443 check check-ssl port 8443 inter 1s
+    server vsd2 {{ groups['vsd_ha_node2'].hostname }}:7443 backup check check-ssl port 8443 inter 1s
+    server vsd3 {{ groups['vsd_ha_node3'].hostname }}:7443 backup check check-ssl port 8443 inter 1s
+    option log-health-checks
+    option httpchk GET /nuage/health
+    http-check expect status 200
+
+frontend jmsproxy
+    mode tcp
+    bind {{ mgmt_ip }}:61616 transparent
+    option tcplog
+    default_backend jmsproxy_backend
+
+backend jmsproxy_backend
+    mode tcp
+    balance source
+    server vsd1 {{ groups['vsd_ha_node1'].mgmt_ip }}:61616 check inter 1s port 61616
+    server vsd2 {{ groups['vsd_ha_node2'].mgmt_ip }}:61616 backup check inter 1s port 61616
+    server vsd3 {{ groups['vsd_ha_node3'].mgmt_ip }}:61616 backup check inter 1s port 61616

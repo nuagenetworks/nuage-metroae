@@ -98,7 +98,7 @@
       with_items: "{{ external_interfaces }}"
       when: external_interfaces is defined and external_interfaces | length > 0
 
-    when: 
+    when:
       - internal_ip is defined
       - not skip_vsd_installed_check
 
@@ -144,6 +144,30 @@
       scp_user: "root"
       scp_location: /opt/proxy/data/certs
       additional_parameters:  -d {{ inventory_hostname }}
+
+  - block:
+
+    - name: Enable VSD API and JMS passthrough if NUH is stats-out proxy
+      template:
+        src: haproxy.cfg.j2
+        backup: no
+        dest: /etc/haproxy/haproxy.cfg
+
+    - name: Change settings in sysctl
+      blockinfile:
+        dest: "/etc/sysctl.conf"
+        block: |
+          net.ipv4.tcp_tw_reuse=1
+          net.ipv4.tcp_tw_recycle=1
+          net.ipv4.ip_local_port_range=1025 65000
+
+    - name: Reload sysctl to refresh settings
+      command: sysctl -p
+
+    become: "{{ 'no' if nuh_default_username == 'root' else 'yes' }}"
+    when:
+      - stats_out | default(false)
+      - stats_out_proxy | default('NONE') in [hostname, mgmt_ip]
 
   remote_user: "{{ nuh_default_username }}"
 
