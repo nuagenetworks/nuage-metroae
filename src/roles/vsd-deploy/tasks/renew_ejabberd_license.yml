@@ -15,8 +15,10 @@
     register: ejabberd_base_dir
 
   - name: Backup the current license files for ejabberd
+    # noqa 303
     command: >-
-      tar zcf orig_backup.tgz ejabberd.beam ejabberd_admin.beam ejabberd_c2s.beam ejabberd_cluster.beam ejabberd_config.beam ejabberd_listener.beam ejabberd_sm.beam
+      tar zcf orig_backup.tgz ejabberd.beam ejabberd_admin.beam ejabberd_c2s.beam 
+      ejabberd_cluster.beam ejabberd_config.beam ejabberd_listener.beam ejabberd_sm.beam
     args:
       chdir: "{{ ejabberd_base_dir.stdout }}/ebin"
 
@@ -26,18 +28,22 @@
       src: "{{ vsd_ejabberd_license_file }}"
 
   - name: Untar the new ejabberd license file
+    # noqa 303
     command: "tar zxf /root/{{ vsd_ejabberd_license_file | basename }}"
     args:
       chdir: "{{ ejabberd_base_dir.stdout }}/ebin"
 
   - name: Change ownership of licenses
+    # noqa 302
     command: >-
-      chown ejabberd:hadoopusers ejabberd_license.beam ejabberd_cluster.beam ejabberd_c2s.beam ejabberd.beam ejabberd_sm.beam ejabberd_router.beam ejabberd_listener.beam
+      chown ejabberd:hadoopusers ejabberd_license.beam ejabberd_cluster.beam 
+      ejabberd_c2s.beam ejabberd.beam ejabberd_sm.beam ejabberd_router.beam ejabberd_listener.beam
     args:
       chdir: "{{ ejabberd_base_dir.stdout }}/ebin"
     when: not(ejabberd_base_dir.stdout is search("3.2.13_5"))
 
   - name: Change ownership of licenses for version 3.2.13_5
+    # noqa 302
     command: >-
       chown ejabberd:hadoopusers ejabberd_cluster.beam ejabberd_c2s.beam ejabberd.beam ejabberd_sm.beam ejabberd_router.beam ejabberd_listener.beam
     args:
