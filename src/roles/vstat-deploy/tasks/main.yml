@@ -418,11 +418,49 @@
     register: disable_chrony
     failed_when: disable_chrony is failed and not 'Could not find the requested service' in disable_chrony.msg
 
-  - name: Add user for statistics
-    include_role:
-      name: common
-      tasks_from: vsd-add-stats-user
-    run_once: true
+  - block:
+
+    - name: Add user for statistics
+      include_role:
+        name: common
+        tasks_from: vsd-add-stats-user
+      run_once: true
+
+    - name: Create certs for VSD stats
+      include_role:
+        name: common
+        tasks_from: vsd-generate-transfer-certificates
+      vars:
+        certificate_password: "{{ stats_user_password | default(vstat_default_password) }}"
+        certificate_username: "{{ vsd }}"
+        commonName: "{{ stats_user_user_name | default('statsuser') }}"
+        certificate_type: stats
+        file_type: jks
+      loop: "{{ groups['stats_only_vsds'] }}"
+      loop_control:
+        loop_var: vsd
+      run_once: true
+
+    - name: Transfer truststore and certs to stats VSDs
+      include_role:
+        name: common
+        tasks_from: vsd-transfer-truststore.yml
+      loop: "{{ groups['stats_only_vsds'] }}"
+      loop_control:
+        loop_var: stats_vsd
+      run_once: true
+
+    - name: Enable stats for stats-out
+      include_role:
+        name: common
+        tasks_from: vstat-enable-stats.yml
+      vars:
+        failover: False
+      loop: "{{ groups['stats_only_vsds'] }}"
+      loop_control:
+        loop_var: vsd
+      run_once: true
+
     when: stats_out | default(false)
 
   - name: Enable stats
@@ -436,18 +474,6 @@
       loop_var: vsd
     run_once: true
     when: not stats_out | default(false)
-
-  - name: Enable stats for stats-out
-    include_role:
-      name: common
-      tasks_from: vstat-enable-stats.yml
-    vars:
-      failover: False
-    loop: "{{ groups['stats_only_vsds'] }}"
-    loop_control:
-      loop_var: vsd
-    run_once: true
-    when: stats_out | default(false)
 
   - name: Enable VSS UI
     import_tasks: setup-vstat-vss-ui.yml
