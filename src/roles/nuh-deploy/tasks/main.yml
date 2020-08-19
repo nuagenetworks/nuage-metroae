@@ -17,15 +17,20 @@
 
 - block:
 
-  - name: Install NTP package on the NUH vm
-    yum: name=ntp state=present
+  - name: Run NTP package install on IPv4 only
+    block:
 
-  - name: Configure ntpd and ntpdate and local time zone
-    include_role:
-      name: common
-      tasks_from: linux-ntp-sync
-    vars:
-      rem_user: "{{ nuh_default_username }}"
+    - name: Install NTP package on the NUH vm
+      yum: name=ntp state=present
+
+    - name: Configure ntpd and ntpdate and local time zone
+      include_role:
+        name: common
+        tasks_from: linux-ntp-sync
+      vars:
+        rem_user: "{{ nuh_default_username }}"
+
+    when: enable_ipv6 | default(False)
 
   - name: Run the setup script for SA
     command: ./setup.sh
