@@ -1,5 +1,5 @@
 ---
-# Playbook to add a user to the CMS group
+# Playbook to add a user to the Stats group
 #
 # Required variables:
 # - nuage_auth: dict used as authentication parameter for the nuage_vspk calls
@@ -8,8 +8,6 @@
 # It assumes the tasks to be delegated to a server that has the
 # nuage vspk python module installed.
 
-- debug: var=nuage_auth
-
 - name: Get CSP Enterprise ID
   nuage_vspk:
     auth: "{{ nuage_auth }}"
@@ -17,17 +15,22 @@
     command: get_csp_enterprise
   register: nuage_csp_enterprise
 
-- name: Get UUID of requested user
+- name: Create stats user
   nuage_vspk:
     auth: "{{ nuage_auth }}"
     type: User
     parent_id: "{{ nuage_csp_enterprise.id }}"
     parent_type: Enterprise
-    command: find
-    match_filter: "userName == \"{{ cms_user_name | default('csproot') }}\""
-  register: nuage_user
+    state: present
+    properties:
+      userName: "{{ stats_user_user_name | default('statsuser') }}"
+      firstName: "{{ stats_user_first_name | default('Statsuser') }}"
+      lastName: "{{ stats_user_last_name | default('Statsuser') }}"
+      email: "{{ stats_user_email | default('statsuser@csp.com') }}"
+      password: "{{ stats_user_password | default(vstat_default_password) }}"
+  register: stats_user
 
-- name: Get CMS Group
+- name: Get Stats Group
   nuage_vspk:
       auth: "{{ nuage_auth }}"
       type: Group
@@ -35,15 +38,15 @@
       parent_type: Enterprise
       command: find
       properties:
-        name: "CMS Group"
-  register: nuage_cms_group
+        name: "Stats Group"
+  register: stats_group
 
-- name: Assign csproot user to CMS Group
+- name: Assign stats user to Stats Group
   nuage_vspk:
     auth: "{{ nuage_auth }}"
     type: User
-    id: "{{ nuage_user.id }}"
-    parent_id: "{{ nuage_cms_group.id }}"
+    id: "{{ stats_user.id }}"
+    parent_id: "{{ stats_group.id }}"
     parent_type: Group
     state: present
 

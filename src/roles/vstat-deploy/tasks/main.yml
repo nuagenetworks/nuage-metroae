@@ -354,6 +354,11 @@
 
       - block:
 
+        - name: Configure ntpd and ntpdate and local time zone
+          include_role:
+            name: common
+            tasks_from: vsd-add-stats-user
+
         - name: Define data only VSTATs for cluster
           set_fact:
             data_group_params: " -d {{ groups['data_vstats'][0] }},{{ groups['data_vstats'][1] }},{{ groups['data_vstats'][2] }}"
@@ -412,6 +417,13 @@
     remote_user: "{{ vstat_default_username }}"
     register: disable_chrony
     failed_when: disable_chrony is failed and not 'Could not find the requested service' in disable_chrony.msg
+
+  - name: Add user for statistics
+    include_role:
+      name: common
+      tasks_from: vsd-add-stats-user
+    run_once: true
+    when: stats_out | default(false)
 
   - name: Enable stats
     include_role:
