@@ -330,12 +330,16 @@ entities:
         }]
 '''
 
-try:
-    from vspk import v5_0 as vsdk
-    from bambou.exceptions import BambouHTTPError
-    HASVSPK = True
-except ImportError:
-    HASVSPK = False
+from vspk import v5_0 as vsdk
+from bambou.exceptions import BambouHTTPError
+HASVSPK = True
+
+# try:
+#     from vspk import v5_0 as vsdk
+#     from bambou.exceptions import BambouHTTPError
+#     HASVSPK = True
+# except ImportError:
+#     HASVSPK = False
 
 SUPPORTED_COMMANDS = ['find', 'change_password']
 
