@@ -330,9 +330,10 @@ entities:
         }]
 '''
 
-from vspk import v5_0 as vsdk
-from bambou.exceptions import BambouHTTPError
-HASVSPK = True
+if True:
+    from vspk import v5_0 as vsdk
+    from bambou.exceptions import BambouHTTPError
+    HASVSPK = True
 
 # try:
 #     from vspk import v5_0 as vsdk
