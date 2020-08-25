@@ -120,6 +120,13 @@
           replace: "role: vsdconfig, enabled: true, firewallports: ['{{ stats_out_proxy_ui_port }}', '{{ stats_out_proxy_api_port }}', '{{ stats_out_proxy_jms_port }}', '{{ stats_out_proxy_xmpp_port }}'], settings: {uiport: '{{ stats_out_proxy_ui_port }}', apiport: '{{ stats_out_proxy_api_port }}', xmppport: '{{ stats_out_proxy_xmpp_port }}', jmsport: '{{ stats_out_proxy_jms_port }}', geo: false}}"
         when: stats_out_proxy | default('NONE') in [hostname, mgmt_ip]
 
+      - name: Add stats-out proxy entries to NUH configuration
+        replace:
+          path: /opt/proxy/data/config.yml
+          regexp: "role: nsgstats.*$"
+          replace: "role: nsgstats, enabled: true, firewallports: ['{{ stats_out_proxy_api_port }}'], settings: {cport: '{{ stats_out_proxy_api_port }}', ccert: nuh1.example.met}}"
+        when: stats_out_proxy | default('NONE') in [hostname, mgmt_ip]
+
       - name: Run the configuration script on NUH
         command: ansible-playbook configure.yml
         args:
