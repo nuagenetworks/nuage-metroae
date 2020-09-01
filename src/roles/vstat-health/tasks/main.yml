@@ -180,4 +180,11 @@
 - import_tasks: monit_status.yml
   when: inventory_hostname in groups['vsds']
 
+- name: Verify port 39039 is open for listening in stats-out deployment
+  shell: lsof -i:39090 | grep LISTEN
+  remote_user: "{{ vstat_username | default(vstat_default_username) }}"
+  when:
+    - stats_out | default(false)
+    - groups['data_vstats'] is defined and inventory_hostname in groups['data_vstats']
+
 - import_tasks: report_end.yml
