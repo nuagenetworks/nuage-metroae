@@ -68,11 +68,20 @@
 
   - block:
 
-    - name: Enable stats collection on the stats vsd(s) when deploying stats-out
-      command: /opt/vsd/vsd-stats.sh -e {{ groups['data_vstats'][0] }},{{ groups['data_vstats'][1] }},{{ groups['data_vstats'][2] }} -s {{ stats_out_proxy }}
-      environment:
-        VSD_VERSION: "{{ vsd_version.stdout }}"
-        VSD_BUILD: "{{ vsd_build.stdout }}"
+    - block:
+
+      - name: Enable stats collection on the stats vsd(s) when deploying stats-out
+        command: /opt/vsd/vsd-stats.sh -e {{ groups['data_vstats'][0] }},{{ groups['data_vstats'][1] }},{{ groups['data_vstats'][2] }} -s {{ stats_out_proxy }}
+        environment:
+          VSD_VERSION: "{{ vsd_version.stdout }}"
+          VSD_BUILD: "{{ vsd_build.stdout }}"
+
+      - name: wait for elasticsearch service to become running
+        monit_waitfor_service:
+          name: "elasticsearch-status"
+          timeout_seconds: 1200
+          test_interval_seconds: 30
+
       when: vsd in groups['stats_only_vsds']
 
     - name: Enable statistics flag on the primary vsd(s) when deploying stats-out
