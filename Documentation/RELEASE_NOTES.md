@@ -2,19 +2,19 @@
 
 ## Release info
 
-* MetroAE Version 4.?.?
-* Nuage Release Alignment ?
-* Date of Release ?
+* MetroAE Version 4.1.1
+* Nuage Release Alignment 20.5.1, 6.0.8
+* Date of Release TBD
 
 ## Release Contents
 
 ### Feature Enhancements
 
-* Add...
+* None
 
 ### Resolved Issues
 
-* Fix...
+* Fix failure to skip copying qcow2 files when skip flag is set
 
 ## Test Matrix
 
