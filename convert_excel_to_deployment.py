@@ -1,14 +1,18 @@
 #!/usr/bin/env python
 
 import json
+from jsonschema import validate, ValidationError
 from openpyxl import load_workbook
 import os
 import sys
 
 DEPLOYMENTS_DIRECTORY = "deployments"
 SCHEMAS_DIRECTORY = "schemas"
+COLUMN_OFFSET = 1
+ROW_OFFSET = 4
 
 schemas = dict()
+errors = list()
 
 
 def usage():
@@ -59,15 +63,123 @@ def read_worksheet(schema, worksheet):
 
 
 def read_worksheet_list(schema, worksheet):
-    pass
+    properties = schema["items"]["properties"]
+    title_field_map = generate_title_field_map(properties)
+
+    labels = read_labels(worksheet, title_field_map, fields_by_col=True)
+
+    data = list()
+    entry_offset = 0
+    while True:
+        entry = read_data_entry(worksheet, labels, entry_offset,
+                                fields_by_col=True)
+
+        if entry != dict():
+            validate_against_schema(worksheet.title, [entry])
+            data.append(entry)
+            entry_offset += 1
+        else:
+            break
+
+    return data
 
 
 def read_worksheet_object(schema, worksheet):
-    pass
+    properties = schema["properties"]
+    title_field_map = generate_title_field_map(properties)
+
+    labels = read_labels(worksheet, title_field_map, fields_by_col=False)
+    data = read_data_entry(worksheet, labels, 0, fields_by_col=False)
+    validate_against_schema(worksheet.title, data)
+
+    return data
+
+
+def read_labels(worksheet, title_field_map, fields_by_col=False):
+    labels = list()
+
+    col = COLUMN_OFFSET
+    row = ROW_OFFSET
+
+    while True:
+        cell = worksheet.cell(row=row, column=col)
+        value = cell.value
+        if fields_by_col:
+            col += 1
+        else:
+            row += 1
+
+        if value is not None:
+            if value in title_field_map:
+                labels.append(title_field_map[value])
+            else:
+                labels.append(None)
+        else:
+            break
+
+    return labels
+
+
+def read_data_entry(worksheet, labels, entry_offset, fields_by_col=False):
+    entry = dict()
+
+    col = COLUMN_OFFSET
+    row = ROW_OFFSET
+
+    if fields_by_col:
+        row += entry_offset + 1
+    else:
+        col += entry_offset + 1
+
+    for label in labels:
+        cell = worksheet.cell(row=row, column=col)
+        value = cell.value
+        if value is not None:
+            if label is not None:
+                if label.startswith("list:"):
+                    list_name = label[5:]
+                    entry[list_name] = [x.strip() for x in value.split(",")]
+                else:
+                    entry[label] = value
+            else:
+                record_error(worksheet.title, cell.coordinate,
+                             "Data entry for unknown label")
+        if fields_by_col:
+            col += 1
+        else:
+            row += 1
+
+    return entry
+
+
+def validate_against_schema(schema_title, data):
+    schema_name = get_schema_name(schema_title)
+    schema = schemas[schema_name]
+
+    try:
+        validate(data, schema)
+    except ValidationError as e:
+
+        field = ""
+        if "title" in e.schema:
+            field = " for " + e.schema["title"]
+        msg = "Invalid data in %s%s: %s" % (schema_title, field, e.message)
+        raise Exception(msg)
 
 
 def get_schema_name(title):
     return title.replace(" ", "_").lower()
+
+
+def generate_title_field_map(properties):
+    title_field_map = dict()
+    for name, field in properties.iteritems():
+        if field["type"] == "array":
+            title_field_map[field["title"]] = "list:" + name
+        else:
+            title_field_map[field["title"]] = name
+
+    return title_field_map
 
 
 def get_list_name(schema):
@@ -80,6 +192,12 @@ def get_list_name(schema):
             list_name = schema["title"].lower()
 
     return list_name
+
+
+def record_error(schema_title, position, message):
+    errors.append({"schema_title": schema_title,
+                   "position": position,
+                   "message": message})
 
 
 def main():
