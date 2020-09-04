@@ -15,6 +15,7 @@
 ### Resolved Issues
 
 * Fix failure to skip copying qcow2 files when skip flag is set
+* Fix Active Standby Failover issue
 
 ## Test Matrix
 
