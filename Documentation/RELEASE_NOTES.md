@@ -4,7 +4,7 @@
 
 * MetroAE Version 4.1.1
 * Nuage Release Alignment 20.5.1, 6.0.8
-* Date of Release TBD
+* Date of Release 8-Sept-2020
 
 ## Release Contents
 
@@ -14,8 +14,8 @@
 
 ### Resolved Issues
 
-* Fix failure to skip copying qcow2 files when skip flag is set
-* Fix Active Standby Failover issue
+* Fix failure to properly skip copying qcow2 files when skip flag is set
+* Fix VSD Active Standby Failover syntax error
 
 ## Test Matrix
 
