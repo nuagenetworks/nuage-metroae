@@ -9,16 +9,8 @@ import sys
 from generate_example_from_schema import ExampleFileGenerator
 import jinja2
 
-SCHEMAS_DIRECTORY = "schemas"
-COLUMN_OFFSET = 1
-ROW_OFFSET = 4
-
 DEPLOYMENTS_DIRECTORY = "deployments"
 CONTAINER_MOUNT_DIRECTORY = "/metroae_data/deployments"
-
-schemas = dict()
-errors = list()
-cell_positions = dict()
 
 
 def usage():
@@ -34,200 +26,209 @@ def usage():
     print ""
 
 
-def read_and_parse_schemas():
-    for file_name in os.listdir(SCHEMAS_DIRECTORY):
-        if (file_name.endswith(".json")):
-            file_path = os.path.join(SCHEMAS_DIRECTORY, file_name)
-            with open(file_path, "r") as f:
-                schema_str = f.read().decode("utf-8")
+class ExcelParser(object):
 
-            try:
-                schemas[file_name[0:-5]] = json.loads(schema_str)
-            except Exception as e:
-                raise Exception("Could not parse schema: %s\n%s" % (
-                    file_name, str(e)))
+    def __init__(self):
+        self.settings = {
+            "schema_directory": "schemas",
+            "column_offset": 1,
+            "row_offset": 4}
 
+        self.schemas = dict()
+        self.errors = list()
+        self.cell_positions = dict()
 
-def read_xlsx(xlsx_file):
-    data = dict()
-    workbook = load_workbook(xlsx_file)
-    for worksheet in workbook:
-        schema_name = get_schema_name(worksheet.title)
-        schema = schemas[schema_name]
-        data[schema_name] = read_worksheet(schema, worksheet)
+    def read_and_parse_schemas(self):
+        for file_name in os.listdir(self.settings["schema_directory"]):
+            if (file_name.endswith(".json")):
+                file_path = os.path.join(self.settings["schema_directory"],
+                                         file_name)
+                with open(file_path, "r") as f:
+                    schema_str = f.read().decode("utf-8")
 
-    return data
+                try:
+                    self.schemas[file_name[0:-5]] = json.loads(schema_str)
+                except Exception as e:
+                    raise Exception("Could not parse schema: %s\n%s" % (
+                        file_name, str(e)))
 
+    def read_xlsx(self, xlsx_file):
+        data = dict()
+        workbook = load_workbook(xlsx_file)
+        for worksheet in workbook:
+            schema_name = self.get_schema_name(worksheet.title)
+            schema = self.schemas[schema_name]
+            data[schema_name] = self.read_worksheet(schema, worksheet)
 
-def read_worksheet(schema, worksheet):
-    if schema["type"] == "array":
-        data = read_worksheet_list(schema, worksheet)
-    else:
-        data = read_worksheet_object(schema, worksheet)
+        return data
 
-    return data
-
-
-def read_worksheet_list(schema, worksheet):
-    properties = schema["items"]["properties"]
-    title_field_map = generate_title_field_map(properties)
-
-    labels = read_labels(worksheet, title_field_map, fields_by_col=True)
-
-    data = list()
-    entry_offset = 0
-    while True:
-        cell_positions.clear()
-        entry = read_data_entry(worksheet, labels, entry_offset,
-                                fields_by_col=True)
-
-        if entry != dict():
-            validate_entry_against_schema(worksheet.title, [entry])
-            data.append(entry)
-            entry_offset += 1
+    def read_worksheet(self, schema, worksheet):
+        if schema["type"] == "array":
+            data = self.read_worksheet_list(schema, worksheet)
         else:
-            break
+            data = self.read_worksheet_object(schema, worksheet)
 
-    return data
+        return data
 
+    def read_worksheet_list(self, schema, worksheet):
+        properties = schema["items"]["properties"]
+        title_field_map = self.generate_title_field_map(properties)
 
-def read_worksheet_object(schema, worksheet):
-    properties = schema["properties"]
-    title_field_map = generate_title_field_map(properties)
+        labels = self.read_labels(worksheet, title_field_map,
+                                  fields_by_col=True)
 
-    labels = read_labels(worksheet, title_field_map, fields_by_col=False)
-    cell_positions.clear()
-    data = read_data_entry(worksheet, labels, 0, fields_by_col=False)
-    validate_entry_against_schema(worksheet.title, data)
+        data = list()
+        entry_offset = 0
+        while True:
+            self.cell_positions.clear()
+            entry = self.read_data_entry(worksheet, labels, entry_offset,
+                                         fields_by_col=True)
 
-    return data
-
-
-def read_labels(worksheet, title_field_map, fields_by_col=False):
-    labels = list()
-
-    col = COLUMN_OFFSET
-    row = ROW_OFFSET
-
-    while True:
-        cell = worksheet.cell(row=row, column=col)
-        value = cell.value
-        if fields_by_col:
-            col += 1
-        else:
-            row += 1
-
-        if value is not None:
-            if value in title_field_map:
-                labels.append(title_field_map[value])
+            if entry != dict():
+                self.validate_entry_against_schema(worksheet.title, [entry])
+                data.append(entry)
+                entry_offset += 1
             else:
-                labels.append(None)
-        else:
-            break
+                break
 
-    return labels
+        return data
 
+    def read_worksheet_object(self, schema, worksheet):
+        properties = schema["properties"]
+        title_field_map = self.generate_title_field_map(properties)
 
-def read_data_entry(worksheet, labels, entry_offset, fields_by_col=False):
-    entry = dict()
+        labels = self.read_labels(worksheet, title_field_map,
+                                  fields_by_col=False)
+        self.cell_positions.clear()
+        data = self.read_data_entry(worksheet, labels, 0, fields_by_col=False)
+        self.validate_entry_against_schema(worksheet.title, data)
 
-    col = COLUMN_OFFSET
-    row = ROW_OFFSET
+        return data
 
-    if fields_by_col:
-        row += entry_offset + 1
-    else:
-        col += entry_offset + 1
+    def read_labels(self, worksheet, title_field_map, fields_by_col=False):
+        labels = list()
 
-    for label in labels:
-        cell = worksheet.cell(row=row, column=col)
-        value = cell.value
-        if value is not None:
-            if label is not None:
-                if label.startswith("list:"):
-                    list_name = label[5:]
-                    entry[list_name] = [x.strip() for x in value.split(",")]
-                    cell_positions[list_name] = cell.coordinate
-                else:
-                    entry[label] = value
-                    cell_positions[label] = cell.coordinate
+        col = self.settings["column_offset"]
+        row = self.settings["row_offset"]
+
+        while True:
+            cell = worksheet.cell(row=row, column=col)
+            value = cell.value
+            if fields_by_col:
+                col += 1
             else:
-                record_error(worksheet.title, cell.coordinate,
-                             "Data entry for unknown label")
-        else:
-            cell_positions[label] = cell.coordinate
+                row += 1
+
+            if value is not None:
+                if value in title_field_map:
+                    labels.append(title_field_map[value])
+                else:
+                    labels.append(None)
+            else:
+                break
+
+        return labels
+
+    def read_data_entry(self, worksheet, labels, entry_offset,
+                        fields_by_col=False):
+        entry = dict()
+
+        col = self.settings["column_offset"]
+        row = self.settings["row_offset"]
+
         if fields_by_col:
-            col += 1
+            row += entry_offset + 1
         else:
-            row += 1
+            col += entry_offset + 1
 
-    return entry
-
-
-def validate_entry_against_schema(schema_title, data):
-    schema_name = get_schema_name(schema_title)
-    schema = schemas[schema_name]
-
-    try:
-        validate(data, schema)
-    except ValidationError as e:
-        if e.validator == "required":
-            props = e.schema["properties"]
-            for field_name in e.schema["required"]:
-                if type(data) == list:
-                    item = data[0]
+        for label in labels:
+            cell = worksheet.cell(row=row, column=col)
+            value = cell.value
+            if value is not None:
+                if label is not None:
+                    if label.startswith("list:"):
+                        list_name = label[5:]
+                        entry[list_name] = [
+                            x.strip() for x in value.split(",")]
+                        self.cell_positions[list_name] = cell.coordinate
+                    else:
+                        entry[label] = value
+                        self.cell_positions[label] = cell.coordinate
                 else:
-                    item = data
-                if field_name in props:
-                    if field_name not in item:
-                        title = props[field_name]["title"]
-                        position = "??"
-                        if field_name in cell_positions:
-                            position = cell_positions[field_name]
-                        record_error(schema_title, position,
-                                     "Missing required field: " + title)
-                else:
-                    record_error(schema_title, "??", e.message)
-        elif e.relative_path[-1] in cell_positions:
-            field_name = e.relative_path[-1]
-            title = e.schema["title"]
-            record_error(schema_title, cell_positions[field_name],
-                         "Invalid data for %s: %s" % (title, e.message))
+                    self.record_error(worksheet.title, cell.coordinate,
+                                      "Data entry for unknown label")
+            else:
+                self.cell_positions[label] = cell.coordinate
+            if fields_by_col:
+                col += 1
+            else:
+                row += 1
+
+        return entry
+
+    def validate_entry_against_schema(self, schema_title, data):
+        schema_name = self.get_schema_name(schema_title)
+        schema = self.schemas[schema_name]
+
+        try:
+            validate(data, schema)
+        except ValidationError as e:
+            if e.validator == "required":
+                props = e.schema["properties"]
+                for field_name in e.schema["required"]:
+                    if type(data) == list:
+                        item = data[0]
+                    else:
+                        item = data
+                    if field_name in props:
+                        if field_name not in item:
+                            title = props[field_name]["title"]
+                            position = "??"
+                            if field_name in self.cell_positions:
+                                position = self.cell_positions[field_name]
+                            self.record_error(schema_title, position,
+                                              "Missing required field: " +
+                                              title)
+                    else:
+                        self.record_error(schema_title, "??", e.message)
+            elif e.relative_path[-1] in self.cell_positions:
+                field_name = e.relative_path[-1]
+                title = e.schema["title"]
+                self.record_error(schema_title,
+                                  self.cell_positions[field_name],
+                                  "Invalid data for %s: %s" % (title,
+                                                               e.message))
+            else:
+                self.record_error(schema_title, "??", e.message)
+
+    def get_schema_name(self, title):
+        return title.replace(" ", "_").lower()
+
+    def generate_title_field_map(self, properties):
+        title_field_map = dict()
+        for name, field in properties.iteritems():
+            if field["type"] == "array":
+                title_field_map[field["title"]] = "list:" + name
+            else:
+                title_field_map[field["title"]] = name
+
+        return title_field_map
+
+    def get_list_name(self, schema):
+        if "listName" in schema:
+            list_name = schema["listName"]
         else:
-            record_error(schema_title, "??", e.message)
+            if "items" in schema and "title" in schema["items"]:
+                list_name = schema["items"]["title"].lower() + "s"
+            else:
+                list_name = schema["title"].lower()
 
+        return list_name
 
-def get_schema_name(title):
-    return title.replace(" ", "_").lower()
-
-
-def generate_title_field_map(properties):
-    title_field_map = dict()
-    for name, field in properties.iteritems():
-        if field["type"] == "array":
-            title_field_map[field["title"]] = "list:" + name
-        else:
-            title_field_map[field["title"]] = name
-
-    return title_field_map
-
-
-def get_list_name(schema):
-    if "listName" in schema:
-        list_name = schema["listName"]
-    else:
-        if "items" in schema and "title" in schema["items"]:
-            list_name = schema["items"]["title"].lower() + "s"
-        else:
-            list_name = schema["title"].lower()
-
-    return list_name
-
-
-def record_error(schema_title, position, message):
-    errors.append({"schema_title": schema_title,
-                   "position": position,
-                   "message": message})
+    def record_error(self, schema_title, position, message):
+        self.errors.append({"schema_title": schema_title,
+                            "position": position,
+                            "message": message})
 
 
 def generate_deployment_files(deployment_name, data):
@@ -275,11 +276,13 @@ def main():
     xlsx_file = sys.argv[1]
     deployment_name = sys.argv[2]
 
-    read_and_parse_schemas()
-    data = read_xlsx(xlsx_file)
+    parser = ExcelParser()
 
-    if len(errors) > 0:
-        for error in errors:
+    parser.read_and_parse_schemas()
+    data = parser.read_xlsx(xlsx_file)
+
+    if len(parser.errors) > 0:
+        for error in parser.errors:
             print "%s %s | %s" % (error["schema_title"], error["position"],
                                   error["message"])
         exit(1)
