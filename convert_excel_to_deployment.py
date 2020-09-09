@@ -6,13 +6,19 @@ from openpyxl import load_workbook
 import os
 import sys
 
-DEPLOYMENTS_DIRECTORY = "deployments"
+from generate_example_from_schema import ExampleFileGenerator
+import jinja2
+
 SCHEMAS_DIRECTORY = "schemas"
 COLUMN_OFFSET = 1
 ROW_OFFSET = 4
 
+DEPLOYMENTS_DIRECTORY = "deployments"
+CONTAINER_MOUNT_DIRECTORY = "/metroae_data/deployments"
+
 schemas = dict()
 errors = list()
+cell_positions = dict()
 
 
 def usage():
@@ -71,11 +77,12 @@ def read_worksheet_list(schema, worksheet):
     data = list()
     entry_offset = 0
     while True:
+        cell_positions.clear()
         entry = read_data_entry(worksheet, labels, entry_offset,
                                 fields_by_col=True)
 
         if entry != dict():
-            validate_against_schema(worksheet.title, [entry])
+            validate_entry_against_schema(worksheet.title, [entry])
             data.append(entry)
             entry_offset += 1
         else:
@@ -89,8 +96,9 @@ def read_worksheet_object(schema, worksheet):
     title_field_map = generate_title_field_map(properties)
 
     labels = read_labels(worksheet, title_field_map, fields_by_col=False)
+    cell_positions.clear()
     data = read_data_entry(worksheet, labels, 0, fields_by_col=False)
-    validate_against_schema(worksheet.title, data)
+    validate_entry_against_schema(worksheet.title, data)
 
     return data
 
@@ -139,11 +147,15 @@ def read_data_entry(worksheet, labels, entry_offset, fields_by_col=False):
                 if label.startswith("list:"):
                     list_name = label[5:]
                     entry[list_name] = [x.strip() for x in value.split(",")]
+                    cell_positions[list_name] = cell.coordinate
                 else:
                     entry[label] = value
+                    cell_positions[label] = cell.coordinate
             else:
                 record_error(worksheet.title, cell.coordinate,
                              "Data entry for unknown label")
+        else:
+            cell_positions[label] = cell.coordinate
         if fields_by_col:
             col += 1
         else:
@@ -152,19 +164,37 @@ def read_data_entry(worksheet, labels, entry_offset, fields_by_col=False):
     return entry
 
 
-def validate_against_schema(schema_title, data):
+def validate_entry_against_schema(schema_title, data):
     schema_name = get_schema_name(schema_title)
     schema = schemas[schema_name]
 
     try:
         validate(data, schema)
     except ValidationError as e:
-
-        field = ""
-        if "title" in e.schema:
-            field = " for " + e.schema["title"]
-        msg = "Invalid data in %s%s: %s" % (schema_title, field, e.message)
-        raise Exception(msg)
+        if e.validator == "required":
+            props = e.schema["properties"]
+            for field_name in e.schema["required"]:
+                if type(data) == list:
+                    item = data[0]
+                else:
+                    item = data
+                if field_name in props:
+                    if field_name not in item:
+                        title = props[field_name]["title"]
+                        position = "??"
+                        if field_name in cell_positions:
+                            position = cell_positions[field_name]
+                        record_error(schema_title, position,
+                                     "Missing required field: " + title)
+                else:
+                    record_error(schema_title, "??", e.message)
+        elif e.relative_path[-1] in cell_positions:
+            field_name = e.relative_path[-1]
+            title = e.schema["title"]
+            record_error(schema_title, cell_positions[field_name],
+                         "Invalid data for %s: %s" % (title, e.message))
+        else:
+            record_error(schema_title, "??", e.message)
 
 
 def get_schema_name(title):
@@ -200,6 +230,43 @@ def record_error(schema_title, position, message):
                    "message": message})
 
 
+def generate_deployment_files(deployment_name, data):
+    if "/" in deployment_name:
+        dir_name = os.path.dirname(deployment_name)
+        if not os.path.isdir(dir_name):
+            raise Exception("Parent directory %s does not exist" %
+                            (dir_name))
+        deployment_dir = deployment_name
+    else:
+        if os.path.isdir(CONTAINER_MOUNT_DIRECTORY):
+            deployment_dir = os.path.join(CONTAINER_MOUNT_DIRECTORY,
+                                          deployment_name)
+        else:
+            deployment_dir = os.path.join(DEPLOYMENTS_DIRECTORY,
+                                          deployment_name)
+
+    if not os.path.isdir(deployment_dir):
+        os.mkdir(deployment_dir)
+
+    for schema_name in data:
+        file_name = os.path.join(deployment_dir, schema_name + ".yml")
+        generate_deployment_file(schema_name, file_name,
+                                 data[schema_name])
+
+
+def generate_deployment_file(schema_name, file_name, data):
+    if type(data) == list:
+        data = {schema_name: data}
+    data["generator_script"] = "Excel spreadsheet"
+    gen_example = ExampleFileGenerator(False, True)
+    example_lines = gen_example.generate_example_from_schema(
+        os.path.join("schemas", schema_name + ".json"))
+    template = jinja2.Template(example_lines)
+    rendered = template.render(**data)
+    with open(file_name, 'w') as file:
+        file.write(rendered.encode("utf-8"))
+
+
 def main():
     if len(sys.argv) != 3:
         usage()
@@ -211,7 +278,14 @@ def main():
     read_and_parse_schemas()
     data = read_xlsx(xlsx_file)
 
-    print json.dumps(data)
+    if len(errors) > 0:
+        for error in errors:
+            print "%s %s | %s" % (error["schema_title"], error["position"],
+                                  error["message"])
+        exit(1)
+    else:
+        # print json.dumps(data)
+        generate_deployment_files(deployment_name, data)
 
 
 if __name__ == '__main__':
