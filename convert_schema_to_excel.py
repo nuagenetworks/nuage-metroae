@@ -3,7 +3,7 @@
 import json
 from openpyxl import Workbook
 from openpyxl.comments import Comment
-from openpyxl.styles import Border, Font, PatternFill, Side
+from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.worksheet.datavalidation import DataValidation
 import os
 import sys
@@ -30,6 +30,8 @@ class ExcelTemplateGenerator(object):
             "advanced_color": "EEEEEE",
             "advanced_text_color": "888888",
             "border_color": "AAAAAA",
+            "section_color": "8888FF",
+            "section_text_color": "FFFFFF",
             "num_list_entries": 6
         }
 
@@ -82,6 +84,16 @@ class ExcelTemplateGenerator(object):
             row_offset = self.settings["row_offset"]
             col_offset = self.settings["column_offset"]
 
+            if "sectionBegin" in field:
+                cell_start = worksheet.cell(row=row_offset + i,
+                                            column=col_offset)
+                cell_end = worksheet.cell(row=row_offset + i,
+                                          column=col_offset + 1)
+                self.write_section_cells(worksheet,
+                                         field["sectionBegin"],
+                                         cell_start, cell_end)
+                i += 1
+
             self.write_label_cell(worksheet, field, i + row_offset,
                                   col_offset)
             self.write_field_cell(worksheet, field, i + row_offset,
@@ -96,6 +108,31 @@ class ExcelTemplateGenerator(object):
         col.width = self.settings["object_width"]
 
     def generate_schema_list(self, worksheet, schema, example=None):
+        row_offset = self.settings["row_offset"]
+        col_offset = self.settings["column_offset"]
+
+        cell_start = None
+        section_name = "(missing)"
+        i = 0
+        for name, field in sorted(schema["items"]["properties"].iteritems(),
+                                  key=lambda (k, v): (v["propertyOrder"], k)):
+            if "sectionBegin" in field:
+                cell_start = worksheet.cell(row=row_offset,
+                                            column=i + col_offset)
+                section_name = field["sectionBegin"]
+
+            if "sectionEnd" in field and cell_start is not None:
+                cell_end = worksheet.cell(row=row_offset,
+                                          column=i + col_offset)
+
+                self.write_section_cells(worksheet, section_name,
+                                         cell_start, cell_end,
+                                         border=True)
+
+            i += 1
+
+        row_offset += 1
+
         i = 0
         for name, field in sorted(schema["items"]["properties"].iteritems(),
                                   key=lambda (k, v): (v["propertyOrder"], k)):
@@ -103,8 +140,6 @@ class ExcelTemplateGenerator(object):
             field["required"] = ("required" in schema["items"] and
                                  name in schema["items"]["required"])
 
-            row_offset = self.settings["row_offset"]
-            col_offset = self.settings["column_offset"]
 
             self.write_label_cell(worksheet, field, row_offset,
                                   i + col_offset)
@@ -139,8 +174,6 @@ class ExcelTemplateGenerator(object):
         cell.comment = Comment(field["description"] + default, field["name"])
         cell.comment.width = self.settings["comment_width"]
         cell.comment.height = self.settings["comment_height"]
-        # thin = Side(border_style="thin", color="000000")
-        # cell.border = Border(top=thin, left=thin, right=thin, bottom=thin)
         if "required" in field and field["required"]:
             cell.font = Font(bold=True)
             cell.fill = PatternFill("solid",
@@ -171,6 +204,23 @@ class ExcelTemplateGenerator(object):
         else:
             cell.fill = PatternFill("solid",
                                     fgColor=self.settings["normal_color"])
+
+    def write_section_cells(self, worksheet, name, cell_start, cell_end,
+                            border=False):
+        worksheet.merge_cells(cell_start.coordinate + ":" +
+                              cell_end.coordinate)
+
+        cell_start.font = Font(color=self.settings["section_text_color"])
+        cell_start.fill = PatternFill("solid",
+                                      fgColor=self.settings["section_color"])
+        cell_start.alignment = Alignment(horizontal="center",
+                                         vertical="center")
+        cell_start.value = name
+
+        if border:
+            thin = Side(border_style="thin",
+                        color=self.settings["section_text_color"])
+            cell_start.border = Border(left=thin, right=thin)
 
     def add_data_validation(self, worksheet, field, row, col):
         if "enum" in field:

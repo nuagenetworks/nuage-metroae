@@ -32,7 +32,8 @@ class ExcelParser(object):
         self.settings = {
             "schema_directory": "schemas",
             "column_offset": 1,
-            "row_offset": 4}
+            "row_offset": 4,
+            "row_sections_present": True}
 
         self.schemas = dict()
         self.errors = list()
@@ -111,6 +112,9 @@ class ExcelParser(object):
         col = self.settings["column_offset"]
         row = self.settings["row_offset"]
 
+        if self.settings["row_sections_present"] and fields_by_col:
+            row += 1
+
         while True:
             cell = worksheet.cell(row=row, column=col)
             value = cell.value
@@ -138,6 +142,8 @@ class ExcelParser(object):
 
         if fields_by_col:
             row += entry_offset + 1
+            if self.settings["row_sections_present"]:
+                row += 1
         else:
             col += entry_offset + 1
 
@@ -287,8 +293,8 @@ def main():
                                   error["message"])
         exit(1)
     else:
-        # print json.dumps(data)
         generate_deployment_files(deployment_name, data)
+        print json.dumps(data)
 
 
 if __name__ == '__main__':
