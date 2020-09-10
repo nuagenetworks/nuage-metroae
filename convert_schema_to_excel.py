@@ -33,7 +33,8 @@ class ExcelTemplateGenerator(object):
             "border_color": "AAAAAA",
             "section_color": "8888FF",
             "section_text_color": "FFFFFF",
-            "num_list_entries": 6
+            "num_list_entries": 10,
+            "default_fields_by_col": True
         }
 
     def write_workbook(self, output_file, example_dir=None):
@@ -69,7 +70,11 @@ class ExcelTemplateGenerator(object):
 
         self.generate_title(worksheet, schema)
 
-        if schema["type"] == "array":
+        fields_by_col = self.settings["default_fields_by_col"]
+        if "fieldsByCol" in schema:
+            fields_by_col = schema["fieldsByCol"]
+
+        if (schema["type"] == "array" and fields_by_col):
             self.generate_schema_list(worksheet, schema, example)
         else:
             self.generate_schema_object(worksheet, schema, example)
@@ -83,25 +88,36 @@ class ExcelTemplateGenerator(object):
         worksheet["A2"].style = "Headline 3"
 
     def generate_schema_object(self, worksheet, schema, example=None):
+        row_offset = self.settings["row_offset"]
+        col_offset = self.settings["column_offset"]
+
+        is_list = schema["type"] == "array"
+
+        if is_list:
+            properties = schema["items"]["properties"]
+            num_rows = self.get_num_rows(schema, example)
+            list_name = self.get_list_name(schema)
+        else:
+            properties = schema["properties"]
+            num_rows = 1
+
         i = 0
-        for name, field in sorted(schema["properties"].iteritems(),
+        for name, field in sorted(properties.iteritems(),
                                   key=lambda (k, v): (v["propertyOrder"], k)):
             field["name"] = name
-            field["required"] = (
-                "required" in schema and name in schema["required"])
-
-            value = None
-            if example is not None and name in example:
-                value = example[name]
-
-            row_offset = self.settings["row_offset"]
-            col_offset = self.settings["column_offset"]
+            if is_list:
+                field["required"] = (
+                    "required" in schema["items"] and
+                    name in schema["items"]["required"])
+            else:
+                field["required"] = (
+                    "required" in schema and name in schema["required"])
 
             if "sectionBegin" in field:
                 cell_start = worksheet.cell(row=row_offset + i,
                                             column=col_offset)
                 cell_end = worksheet.cell(row=row_offset + i,
-                                          column=col_offset + 1)
+                                          column=col_offset + num_rows)
                 self.write_section_cells(worksheet,
                                          field["sectionBegin"],
                                          cell_start, cell_end)
@@ -109,25 +125,74 @@ class ExcelTemplateGenerator(object):
 
             self.write_label_cell(worksheet, field, i + row_offset,
                                   col_offset)
-            self.write_field_cell(worksheet, field, i + row_offset,
-                                  col_offset + 1, value)
-            self.add_data_validation(worksheet, field, i + row_offset,
-                                     col_offset + 1)
+
+            for j in range(num_rows):
+
+                if is_list:
+                    cell = worksheet.cell(row=1,
+                                          column=j + col_offset + 1)
+                    col = worksheet.column_dimensions[cell.column_letter]
+                    col.width = self.settings["column_width"]
+                    value = self.get_example_row_value(example, name,
+                                                       list_name, j)
+                else:
+                    value = None
+                    if example is not None and name in example:
+                        value = example[name]
+
+                self.write_field_cell(worksheet, field, i + row_offset,
+                                      col_offset + j + 1, value)
+                self.add_data_validation(worksheet, field, i + row_offset,
+                                         col_offset + j + 1)
             i += 1
 
         col = worksheet.column_dimensions['A']
         col.width = self.settings["object_width"]
-        col = worksheet.column_dimensions['B']
-        col.width = self.settings["object_width"]
+        if not is_list:
+            col = worksheet.column_dimensions['B']
+            col.width = self.settings["object_width"]
 
     def generate_schema_list(self, worksheet, schema, example=None):
+        row_offset = self.settings["row_offset"]
+        col_offset = self.settings["column_offset"]
+        properties = schema["items"]["properties"]
+        num_rows = self.get_num_rows(schema, example)
+        list_name = self.get_list_name(schema)
+
+        self.write_row_sections(worksheet, properties)
+        row_offset += 1
+
+        i = 0
+        for name, field in sorted(properties.iteritems(),
+                                  key=lambda (k, v): (v["propertyOrder"], k)):
+            field["name"] = name
+            field["required"] = ("required" in schema["items"] and
+                                 name in schema["items"]["required"])
+
+            self.write_label_cell(worksheet, field, row_offset,
+                                  i + col_offset, row_label=True)
+
+            cell = worksheet.cell(row=row_offset, column=i + col_offset)
+            col = worksheet.column_dimensions[cell.column_letter]
+            col.width = self.settings["column_width"]
+
+            for j in range(num_rows):
+                value = self.get_example_row_value(example, name, list_name, j)
+
+                self.write_field_cell(worksheet, field, row_offset + j + 1,
+                                      i + col_offset, value)
+                self.add_data_validation(worksheet, field, row_offset + j + 1,
+                                         i + col_offset)
+            i += 1
+
+    def write_row_sections(self, worksheet, properties):
         row_offset = self.settings["row_offset"]
         col_offset = self.settings["column_offset"]
 
         cell_start = None
         section_name = "(missing)"
         i = 0
-        for name, field in sorted(schema["items"]["properties"].iteritems(),
+        for name, field in sorted(properties.iteritems(),
                                   key=lambda (k, v): (v["propertyOrder"], k)):
             if "sectionBegin" in field:
                 cell_start = worksheet.cell(row=row_offset,
@@ -144,42 +209,25 @@ class ExcelTemplateGenerator(object):
 
             i += 1
 
-        row_offset += 1
+    def get_num_rows(self, schema, example):
+        num_rows = self.settings["num_list_entries"]
+        list_name = self.get_list_name(schema)
+        if example is not None and list_name in example:
+            num_rows = len(example[list_name])
+        if "numFormEntries" in schema:
+            num_rows = schema["numFormEntries"]
 
-        i = 0
-        for name, field in sorted(schema["items"]["properties"].iteritems(),
-                                  key=lambda (k, v): (v["propertyOrder"], k)):
-            field["name"] = name
-            field["required"] = ("required" in schema["items"] and
-                                 name in schema["items"]["required"])
+        return num_rows
 
-            self.write_label_cell(worksheet, field, row_offset,
-                                  i + col_offset, row_label=True)
-            cell = worksheet.cell(row=row_offset, column=i + col_offset)
-            col = worksheet.column_dimensions[cell.column_letter]
-            col.width = self.settings["column_width"]
+    def get_example_row_value(self, example, name, list_name, index):
+        value = None
+        if (example is not None and list_name in example and
+                index < len(example[list_name])):
+            example_row = example[list_name][index]
+            if name in example_row:
+                value = example_row[name]
 
-            num_rows = self.settings["num_list_entries"]
-            list_name = self.get_list_name(schema)
-            value = None
-            if example is not None and list_name in example:
-                num_rows = len(example[list_name])
-            if "numFormEntries" in schema:
-                num_rows = schema["numFormEntries"]
-
-            for j in range(num_rows):
-                if (example is not None and list_name in example and
-                        j < len(example[list_name])):
-                    example_row = example[list_name][j]
-                    if name in example_row:
-                        value = example_row[name]
-                else:
-                    value = None
-                self.write_field_cell(worksheet, field, row_offset + j + 1,
-                                      i + col_offset, value)
-                self.add_data_validation(worksheet, field, row_offset + j + 1,
-                                         i + col_offset)
-            i += 1
+        return value
 
     def write_label_cell(self, worksheet, field, row, col, row_label=False):
         cell = worksheet.cell(row=row, column=col)
@@ -327,6 +375,8 @@ def main():
     generator = ExcelTemplateGenerator()
     generator.settings["schema_order"] = ["deployment", "common", "upgrade",
                                           "vsds", "vscs", "vstats"]
+    generator.settings["num_list_entries"] = 6
+    generator.settings["default_fields_by_col"] = False
 
     if len(sys.argv) > 1:
         generator.write_workbook(WORKBOOK_FILE, sys.argv[1])

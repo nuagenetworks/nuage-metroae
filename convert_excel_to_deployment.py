@@ -38,7 +38,8 @@ class ExcelParser(object):
             "column_offset": 1,
             "row_offset": 4,
             "row_sections_present": True,
-            "use_list_name": False}
+            "use_list_name": False,
+            "default_fields_by_col": True}
 
         self.schemas = dict()
         self.errors = list()
@@ -88,15 +89,19 @@ class ExcelParser(object):
         properties = schema["items"]["properties"]
         title_field_map = self.generate_title_field_map(properties)
 
+        fields_by_col = self.settings["default_fields_by_col"]
+        if "fieldsByCol" in schema:
+            fields_by_col = schema["fieldsByCol"]
+
         labels = self.read_labels(worksheet, title_field_map,
-                                  fields_by_col=True)
+                                  fields_by_col=fields_by_col)
 
         data = list()
         entry_offset = 0
         while True:
             self.cell_positions.clear()
             entry = self.read_data_entry(worksheet, labels, entry_offset,
-                                         fields_by_col=True)
+                                         fields_by_col=fields_by_col)
 
             if entry != dict():
                 self.validate_entry_against_schema(worksheet.title, [entry])
@@ -301,6 +306,7 @@ def main():
 
     parser = ExcelParser()
     parser.settings["use_list_name"] = True
+    parser.settings["default_fields_by_col"] = False
 
     try:
         data = parser.read_xlsx(xlsx_file)
