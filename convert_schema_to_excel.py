@@ -17,8 +17,8 @@ class ExcelTemplateGenerator(object):
 
     def __init__(self):
         self.settings = {
-            "schemas_directory": "schemas",
-            "schemas": ["common", "vsds", "vscs", "vstats", "credentials"],
+            "schema_directory": "schemas",
+            "schema_order": [],
             "column_offset": 1,
             "row_offset": 4,
             "object_width": 70,
@@ -29,6 +29,7 @@ class ExcelTemplateGenerator(object):
             "normal_color": "FFFFFF",
             "advanced_color": "EEEEEE",
             "advanced_text_color": "888888",
+            "row_label_color": "AAAAAA",
             "border_color": "AAAAAA",
             "section_color": "8888FF",
             "section_text_color": "FFFFFF",
@@ -40,11 +41,23 @@ class ExcelTemplateGenerator(object):
 
         workbook.remove_sheet(workbook.active)
 
-        for schema_name in self.settings["schemas"]:
+        schema_names = self.find_schema_names()
+
+        for schema_name in schema_names:
             self.generate_worksheet(workbook, schema_name, example_dir)
 
         # workbook.template = True
         workbook.save(output_file)
+
+    def find_schema_names(self):
+        schema_names = self.settings["schema_order"]
+        for file_name in sorted(os.listdir(self.settings["schema_directory"])):
+            if (file_name.endswith(".json")):
+                schema_name = file_name[0:-5]
+                if schema_name not in schema_names:
+                    schema_names.append(schema_name)
+
+        return schema_names
 
     def generate_worksheet(self, workbook, schema_name, example_dir=None):
         schema = self.read_schema(schema_name)
@@ -52,7 +65,7 @@ class ExcelTemplateGenerator(object):
         if example_dir is not None:
             example = self.read_example(example_dir, schema_name)
 
-        worksheet = workbook.create_sheet(self.capitalize(schema_name))
+        worksheet = workbook.create_sheet(self.name_to_title(schema_name))
 
         self.generate_title(worksheet, schema)
 
@@ -140,9 +153,8 @@ class ExcelTemplateGenerator(object):
             field["required"] = ("required" in schema["items"] and
                                  name in schema["items"]["required"])
 
-
             self.write_label_cell(worksheet, field, row_offset,
-                                  i + col_offset)
+                                  i + col_offset, row_label=True)
             cell = worksheet.cell(row=row_offset, column=i + col_offset)
             col = worksheet.column_dimensions[cell.column_letter]
             col.width = self.settings["column_width"]
@@ -152,29 +164,45 @@ class ExcelTemplateGenerator(object):
             value = None
             if example is not None and list_name in example:
                 num_rows = len(example[list_name])
+            if "numFormEntries" in schema:
+                num_rows = schema["numFormEntries"]
 
             for j in range(num_rows):
-                if example is not None and list_name in example:
+                if (example is not None and list_name in example and
+                        j < len(example[list_name])):
                     example_row = example[list_name][j]
                     if name in example_row:
                         value = example_row[name]
+                else:
+                    value = None
                 self.write_field_cell(worksheet, field, row_offset + j + 1,
                                       i + col_offset, value)
                 self.add_data_validation(worksheet, field, row_offset + j + 1,
                                          i + col_offset)
             i += 1
 
-    def write_label_cell(self, worksheet, field, row, col):
+    def write_label_cell(self, worksheet, field, row, col, row_label=False):
         cell = worksheet.cell(row=row, column=col)
         cell.value = field["title"]
         default = ""
         if "default" in field:
             default = " [default: %s]" % field["default"]
 
-        cell.comment = Comment(field["description"] + default, field["name"])
+        description = ""
+        if "description" in field:
+            description = field["description"]
+
+        cell.comment = Comment(description + default, field["name"])
         cell.comment.width = self.settings["comment_width"]
         cell.comment.height = self.settings["comment_height"]
-        if "required" in field and field["required"]:
+        if row_label and "required" in field and field["required"]:
+            cell.font = Font(bold=True)
+            cell.fill = PatternFill("solid",
+                                    fgColor=self.settings["row_label_color"])
+        elif row_label:
+            cell.fill = PatternFill("solid",
+                                    fgColor=self.settings["row_label_color"])
+        elif "required" in field and field["required"]:
             cell.font = Font(bold=True)
             cell.fill = PatternFill("solid",
                                     fgColor=self.settings["required_color"])
@@ -231,6 +259,8 @@ class ExcelTemplateGenerator(object):
             dv.errorTitle = "Invalid Entry"
             dv.prompt = "Please select from the list"
             dv.promptTitle = "List Selection"
+        elif "type" not in field:
+            return
         elif field["type"] == "boolean":
             dv = DataValidation(type="list",
                                 formula1='"true,false"',
@@ -255,7 +285,7 @@ class ExcelTemplateGenerator(object):
 
     def read_schema(self, schema_name):
         file_name = schema_name + ".json"
-        file_path = os.path.join(self.settings["schemas_directory"], file_name)
+        file_path = os.path.join(self.settings["schema_directory"], file_name)
         with open(file_path, "r") as f:
             schema_str = f.read().decode("utf-8")
 
@@ -265,32 +295,38 @@ class ExcelTemplateGenerator(object):
             raise Exception("Could not parse schema: %s\n%s" % (
                 file_name, str(e)))
 
-    def capitalize(self, name):
-        return name[0].upper() + name[1:]
+    def name_to_title(self, name):
+        return name[0].upper() + name[1:].replace("_", " ")
 
     def read_example(self, example_dir, schema_name):
         file_name = os.path.join(example_dir, schema_name + ".yml")
-        try:
-            with open(file_name, "r") as f:
-                return yaml.safe_load(f.read().decode("utf-8"))
-        except Exception as e:
-            raise Exception("Could not parse example: %s\n%s" % (
-                file_name, str(e)))
+        if os.path.isfile(file_name):
+            try:
+                with open(file_name, "r") as f:
+                    return yaml.safe_load(f.read().decode("utf-8"))
+            except Exception as e:
+                raise Exception("Could not parse example: %s\n%s" % (
+                    file_name, str(e)))
+        else:
+            return None
 
     def get_list_name(self, schema):
         if "listName" in schema:
             list_name = schema["listName"]
         else:
             if "items" in schema and "title" in schema["items"]:
-                list_name = schema["items"]["title"].lower() + "s"
+                list_name = (
+                    schema["items"]["title"].lower().replace(" ", "_") + "s")
             else:
-                list_name = schema["title"].lower()
+                list_name = schema["title"].lower().replace(" ", "_")
 
         return list_name
 
 
 def main():
     generator = ExcelTemplateGenerator()
+    generator.settings["schema_order"] = ["deployment", "common", "upgrade",
+                                          "vsds", "vscs", "vstats"]
 
     if len(sys.argv) > 1:
         generator.write_workbook(WORKBOOK_FILE, sys.argv[1])

@@ -26,6 +26,10 @@ def usage():
     print ""
 
 
+class ExcelParseError(Exception):
+    pass
+
+
 class ExcelParser(object):
 
     def __init__(self):
@@ -33,11 +37,30 @@ class ExcelParser(object):
             "schema_directory": "schemas",
             "column_offset": 1,
             "row_offset": 4,
-            "row_sections_present": True}
+            "row_sections_present": True,
+            "use_list_name": False}
 
         self.schemas = dict()
         self.errors = list()
         self.cell_positions = dict()
+
+    def read_xlsx(self, xlsx_file):
+        self.read_and_parse_schemas()
+
+        self.data = dict()
+        workbook = load_workbook(xlsx_file)
+        for worksheet in workbook:
+            schema_name = self.get_schema_name(worksheet.title)
+            schema = self.schemas[schema_name]
+            self.data[schema_name] = self.read_worksheet(schema, worksheet)
+
+        if len(self.errors) > 0:
+            exc = ExcelParseError("There were errors while parsing "
+                                  "spreadsheet, see errors member variable")
+            exc.errors = self.errors
+            raise exc
+
+        return self.data
 
     def read_and_parse_schemas(self):
         for file_name in os.listdir(self.settings["schema_directory"]):
@@ -52,16 +75,6 @@ class ExcelParser(object):
                 except Exception as e:
                     raise Exception("Could not parse schema: %s\n%s" % (
                         file_name, str(e)))
-
-    def read_xlsx(self, xlsx_file):
-        data = dict()
-        workbook = load_workbook(xlsx_file)
-        for worksheet in workbook:
-            schema_name = self.get_schema_name(worksheet.title)
-            schema = self.schemas[schema_name]
-            data[schema_name] = self.read_worksheet(schema, worksheet)
-
-        return data
 
     def read_worksheet(self, schema, worksheet):
         if schema["type"] == "array":
@@ -92,6 +105,10 @@ class ExcelParser(object):
             else:
                 break
 
+        if self.settings["use_list_name"]:
+            list_name = self.get_list_name(schema)
+            data = {list_name: data}
+
         return data
 
     def read_worksheet_object(self, schema, worksheet):
@@ -102,7 +119,8 @@ class ExcelParser(object):
                                   fields_by_col=False)
         self.cell_positions.clear()
         data = self.read_data_entry(worksheet, labels, 0, fields_by_col=False)
-        self.validate_entry_against_schema(worksheet.title, data)
+        if data != dict():
+            self.validate_entry_against_schema(worksheet.title, data)
 
         return data
 
@@ -213,7 +231,7 @@ class ExcelParser(object):
     def generate_title_field_map(self, properties):
         title_field_map = dict()
         for name, field in properties.iteritems():
-            if field["type"] == "array":
+            if "type" in field and field["type"] == "array":
                 title_field_map[field["title"]] = "list:" + name
             else:
                 title_field_map[field["title"]] = name
@@ -225,9 +243,10 @@ class ExcelParser(object):
             list_name = schema["listName"]
         else:
             if "items" in schema and "title" in schema["items"]:
-                list_name = schema["items"]["title"].lower() + "s"
+                list_name = (
+                    schema["items"]["title"].lower().replace(" ", "_") + "s")
             else:
-                list_name = schema["title"].lower()
+                list_name = schema["title"].lower().replace(" ", "_")
 
         return list_name
 
@@ -262,8 +281,6 @@ def generate_deployment_files(deployment_name, data):
 
 
 def generate_deployment_file(schema_name, file_name, data):
-    if type(data) == list:
-        data = {schema_name: data}
     data["generator_script"] = "Excel spreadsheet"
     gen_example = ExampleFileGenerator(False, True)
     example_lines = gen_example.generate_example_from_schema(
@@ -283,18 +300,18 @@ def main():
     deployment_name = sys.argv[2]
 
     parser = ExcelParser()
+    parser.settings["use_list_name"] = True
 
-    parser.read_and_parse_schemas()
-    data = parser.read_xlsx(xlsx_file)
-
-    if len(parser.errors) > 0:
+    try:
+        data = parser.read_xlsx(xlsx_file)
+    except ExcelParseError:
         for error in parser.errors:
             print "%s %s | %s" % (error["schema_title"], error["position"],
                                   error["message"])
         exit(1)
-    else:
-        generate_deployment_files(deployment_name, data)
-        print json.dumps(data)
+
+    generate_deployment_files(deployment_name, data)
+    print json.dumps(data)
 
 
 if __name__ == '__main__':
