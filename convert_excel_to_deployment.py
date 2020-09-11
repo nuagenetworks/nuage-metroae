@@ -110,7 +110,7 @@ class ExcelParser(object):
             else:
                 break
 
-        if self.settings["use_list_name"]:
+        if self.settings["use_list_name"] and data != list():
             list_name = self.get_list_name(schema)
             data = {list_name: data}
 
@@ -276,13 +276,24 @@ def generate_deployment_files(deployment_name, data):
             deployment_dir = os.path.join(DEPLOYMENTS_DIRECTORY,
                                           deployment_name)
 
-    if not os.path.isdir(deployment_dir):
-        os.mkdir(deployment_dir)
+    prepare_deployment_dir(deployment_dir)
 
     for schema_name in data:
-        file_name = os.path.join(deployment_dir, schema_name + ".yml")
-        generate_deployment_file(schema_name, file_name,
-                                 data[schema_name])
+        if data[schema_name] != dict() and data[schema_name] != list():
+            file_name = os.path.join(deployment_dir, schema_name + ".yml")
+            generate_deployment_file(schema_name, file_name,
+                                     data[schema_name])
+
+
+def prepare_deployment_dir(deployment_dir):
+    if not os.path.isdir(deployment_dir):
+        os.mkdir(deployment_dir)
+    else:
+        for file_name in os.listdir(deployment_dir):
+            if (file_name.endswith(".yml")):
+                file_path = os.path.join(deployment_dir,
+                                         file_name)
+                os.remove(file_path)
 
 
 def generate_deployment_file(schema_name, file_name, data):

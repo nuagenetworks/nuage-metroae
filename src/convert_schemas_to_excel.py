@@ -10,8 +10,6 @@ import sys
 import yaml
 
 
-WORKBOOK_FILE = "sample_deployment.xlsx"
-
 def usage():
     print "Converts a directory of schemas to an excel spreadsheet template."
     print ""
