@@ -67,10 +67,17 @@ for dir in $EXAMPLE_DATA_DIR/*/; do
 
         python generate_example_from_schema.py --schema $filename --as-example --example_data_folder $EXAMPLE_DATA_DIR/$example_name > "$EXAMPLE_DIR/$example_name/$filename.yml"
     done
+
+    mkdir -p $EXAMPLE_DIR/excel
+    python src/convert_schemas_to_excel.py $EXAMPLE_DIR/excel/${example_name}.xlsx $dir
 done
 
 echo "Generate deployment spreadsheet template CSV"
 python src/generate_deployment_spreadsheet_template.py > deployment_spreadsheet_template.csv
+
+echo "Generate deployment excel spreadsheet template"
+python src/convert_schemas_to_excel.py sample_deployment.xlsx
+python src/convert_schemas_to_excel.py $EXAMPLE_DIR/excel/blank_deployment.xlsx
 
 # Add specific files to default deployment
 add_to_default_deployment="common credentials upgrade vscs vsds vstats"

@@ -12,6 +12,15 @@ import yaml
 
 WORKBOOK_FILE = "sample_deployment.xlsx"
 
+def usage():
+    print "Converts a directory of schemas to an excel spreadsheet template."
+    print ""
+    print "Usage:"
+    print "    " + " ".join([sys.argv[0],
+                             "<xlsx_file>",
+                             "[example_data_file]"])
+    print ""
+
 
 class ExcelTemplateGenerator(object):
 
@@ -23,8 +32,8 @@ class ExcelTemplateGenerator(object):
             "row_offset": 4,
             "object_width": 70,
             "column_width": 25,
-            "comment_width": 300,
-            "comment_height": 100,
+            "comment_width": 600,
+            "comment_height": 300,
             "required_color": "FFFFDD",
             "normal_color": "FFFFFF",
             "advanced_color": "EEEEEE",
@@ -372,16 +381,22 @@ class ExcelTemplateGenerator(object):
 
 
 def main():
+    if len(sys.argv) not in [2, 3]:
+        usage()
+        exit(1)
+
+    xlsx_file = sys.argv[1]
+    example_data_file = None
+    if len(sys.argv) == 3:
+        example_data_file = sys.argv[2]
+
     generator = ExcelTemplateGenerator()
     generator.settings["schema_order"] = ["deployment", "common", "upgrade",
                                           "vsds", "vscs", "vstats"]
     generator.settings["num_list_entries"] = 6
     generator.settings["default_fields_by_col"] = False
 
-    if len(sys.argv) > 1:
-        generator.write_workbook(WORKBOOK_FILE, sys.argv[1])
-    else:
-        generator.write_workbook(WORKBOOK_FILE)
+    generator.write_workbook(xlsx_file, example_data_file)
 
 
 if __name__ == '__main__':
