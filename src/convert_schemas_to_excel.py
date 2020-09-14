@@ -228,6 +228,8 @@ class ExcelTemplateGenerator(object):
 
     def get_example_row_value(self, example, name, list_name, index):
         value = None
+        if type(example) == list:
+            example = {list_name: example}
         if (example is not None and list_name in example and
                 index < len(example[list_name])):
             example_row = example[list_name][index]
