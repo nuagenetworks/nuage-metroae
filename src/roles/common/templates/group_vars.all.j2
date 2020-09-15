@@ -271,7 +271,8 @@ openstack_auth:
 openstack_cacert: {{ common.openstack_cacert | default('null') }}
 {% endif %}
 
-{% set zfb_nsg_list = nsgvs | selectattr("bootstrap_method", "equalto", "zfb_metro") | list %}
+{% set zfb_metro_nsg_list = nsgvs | selectattr("bootstrap_method", "equalto", "zfb_metro") | list %}
+{% set zfb_external_nsg_list = nsgvs | selectattr("bootstrap_method", "equalto", "zfb_external") | list %}
 
 {% if common.vsd_license_file is defined %}
 vsd_license_file: {{ common.vsd_license_file }}
@@ -289,7 +290,7 @@ vsd_ejabberd_license_file: {{ common.vsd_ejabberd_license_file }}
 nuh_license_file: {{ common.nuh_license_file }}
 {% endif %}
 
-{% if zfb_nsg_list | length > 0 %}
+{% if (zfb_metro_nsg_list | length > 0) or (zfb_external_nsg_list | length > 0) %}
 zfb_proxy_user:
     firstName: {{ nsgv_bootstrap.proxy_user_first_name }}
     lastName: {{ nsgv_bootstrap.proxy_user_last_name }}
