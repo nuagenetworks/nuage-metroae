@@ -24,11 +24,14 @@ if run_mode == "repo":
     ansibleLogPath = os.path.join(cwdir, 'ansible.log')
     deploymentPath = os.path.join(cwdir, deploymentName)
     inventoryPath = os.path.join(cwdir, 'src/inventory')
+    print("The Log path is:", ansibleLogPath)
 else:
     ansibleLogPath = os.path.join(cwdir, 'nuage-metroae', 'ansible.log')
     deploymentPath = os.path.join(cwdir, 'nuage-metroae', deploymentName)
     inventoryPath = os.path.join(cwdir, 'nuage-metroae', 'src/inventory')
     tarFileName = os.path.join('/metroae_data', tarFileName)
+    print("The Log path is:",ansibleLogPath)
+    print("The File name is:",tarFileName)
 
 with tarfile.open(tarFileName + '.tar.gz', mode='w:gz') as archive:
     try:
@@ -42,4 +45,5 @@ with tarfile.open(tarFileName + '.tar.gz', mode='w:gz') as archive:
     if os.path.exists(ansibleLogPath) and os.path.isfile(ansibleLogPath):
         archive.add(ansibleLogPath, arcname='/unzipped/ansible.log')
     else:
-        print("ansible.log not found")
+        print("Can't find ansible.log. Skipping.")
+        break
