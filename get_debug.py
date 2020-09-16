@@ -25,6 +25,8 @@ if run_mode == "repo":
     ansibleLogPath = os.path.join(cwdir, 'ansible.log')
     deploymentPath = os.path.join(cwdir, deploymentName)
     inventoryPath = os.path.join(cwdir, 'src/inventory')
+    tarFileName = os.path.join('/metroae_data', tarFileName)
+    print("The Log path is:",tarFileName)
 else:
     ansibleLogPath = os.path.join(cwdir, 'nuage-metroae', 'ansible.log')
     deploymentPath = os.path.join(cwdir, 'nuage-metroae', deploymentName)
