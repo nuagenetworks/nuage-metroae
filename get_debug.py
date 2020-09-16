@@ -15,7 +15,7 @@ parser.add_argument('--tarFileName', default='debug-' + now)
 parser.add_argument('--deploymentName')
 args = parser.parse_args()
 tarFileName = args.tarFileName
-print("The File name is:",tarFileName)
+print("The File name is:"+tarFileName)
 if args.deploymentName:
     deploymentName = os.path.join("deployments", args.deploymentName)
 else:
@@ -25,14 +25,13 @@ if run_mode == "repo":
     ansibleLogPath = os.path.join(cwdir, 'ansible.log')
     deploymentPath = os.path.join(cwdir, deploymentName)
     inventoryPath = os.path.join(cwdir, 'src/inventory')
-    tarFileName1 = os.path.join(cwdir, '/metroae_data', tarFileName)
-    print("The Log path is:",tarFileName1)
+    print('The log path is:'+cwdir+'/metroae_data/'+tarFileName)
 else:
     ansibleLogPath = os.path.join(cwdir, 'nuage-metroae', 'ansible.log')
     deploymentPath = os.path.join(cwdir, 'nuage-metroae', deploymentName)
     inventoryPath = os.path.join(cwdir, 'nuage-metroae', 'src/inventory')
-    tarFileName1 = os.path.join(cwdir, '/metroae_data', tarFileName)
-    print("The Log path is:",tarFileName1)
+    tarFileName = os.path.join(cwdir, '/metroae_data', tarFileName)
+    print('The log path is:'+cwdir+'/metroae_data/'+tarFileName)
 
 with tarfile.open(tarFileName + '.tar.gz', mode='w:gz') as archive:
     try:
@@ -47,3 +46,4 @@ with tarfile.open(tarFileName + '.tar.gz', mode='w:gz') as archive:
         archive.add(ansibleLogPath, arcname='/unzipped/ansible.log')
     else:
         print("Can't find ansible.log. Skipping.")
+        sys.exit()
