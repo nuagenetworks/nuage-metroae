@@ -46,4 +46,4 @@ with tarfile.open(tarFileName + '.tar.gz', mode='w:gz') as archive:
         archive.add(ansibleLogPath, arcname='/unzipped/ansible.log')
     else:
         print("Can't find ansible.log. Skipping.")
-        break
+    break
