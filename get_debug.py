@@ -45,9 +45,9 @@ with tarfile.open(tarFileName + '.tar.gz', mode='w:gz') as archive:
         print("Can't find ansible.log, Skipping.")
 command = "tar -tvf " + tarFileName + ".tar.gz >files.txt"
 os.system(command)
-f = open("files.txt" , "r")
+f = open("files.txt", "r")
 fread = f.read()
-outlist = re.findall("unzipped/.*/.*/(.*)" , fread)
+outlist = re.findall("unzipped/.*/.*/(.*)", fread)
 for i in outlist:
     if(i == ''):
         outlist.remove(i)
