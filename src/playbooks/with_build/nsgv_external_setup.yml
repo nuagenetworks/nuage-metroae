@@ -54,3 +54,20 @@
         owner=caso
         group=caso
       delegate_to: localhost
+
+- hosts: localhost
+  gather_facts: no
+  become: yes
+  tasks:
+    - name: Add user as caso for qemuconf
+      lineinfile:
+        dest: /etc/libvirt/qemu.conf
+        line: "{{ item }}"
+      with_items: 
+        - 'user = "caso"'
+        - 'group = "caso"'
+
+    - name: Restart service libvirt
+      service:
+        name: libvirtd
+        state: restarted
