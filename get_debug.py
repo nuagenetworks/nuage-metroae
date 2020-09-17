@@ -34,7 +34,7 @@ with tarfile.open(tarFileName + '.tar.gz', mode='w:gz') as archive:
     try:
         archive.add(deploymentPath, arcname=os.path.join('/unzipped/', deploymentName), recursive=True)
     except:
-        print("Deployment not found")
+        print("Can't find"+deploymentName+"Skipping.")
     try:
         archive.add(inventoryPath, arcname='/unzipped/src/inventory', recursive=True)
     except:
@@ -42,8 +42,7 @@ with tarfile.open(tarFileName + '.tar.gz', mode='w:gz') as archive:
     if os.path.exists(ansibleLogPath) and os.path.isfile(ansibleLogPath):
         archive.add(ansibleLogPath, arcname='/unzipped/ansible.log')
     else:
-        print("Can't find ansible.log. Skipping.")
-        sys.exit()
+        print("Can't find ansible.log, Skipping.")
 command = "tar -tvf "+tarFileName+".tar.gz >files.txt"
 os.system(command)
 f=open("files.txt","r")
