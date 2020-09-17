@@ -1,6 +1,7 @@
 ---
 - hosts: nsgvs
   gather_facts: no
+  serial: 1
   pre_tasks:
     - name: Set zfb constants
       set_fact:
@@ -16,14 +17,6 @@
             NSGType: ANY
             associatedEntityID: update
   tasks:
-    - name: Set local variable with vmname
-      set_fact:
-        vm_name: "{{ vmname }}"
-
-    - name: Setup KVM on target server
-      include_role:
-        name: common
-        tasks_from: setup-kvm
 
     - name: Create local temp directory
       tempfile:
@@ -46,16 +39,18 @@
         zfb_vsc_infra: "{{ zfb_vsc_infra }}"
       delegate_to: localhost
 
-    - name: Ensure NSGV has the correct configuration
-      assert:
-        that: "not node_running or nsgv_already_configured"
-        msg: "NSGV is already running, but there was no corresponding configuration for it."
+    - name: Create subdirectory for unzipped files
+      file:
+        name: "/home/caso/nsg_iso/{{inventory_hostname}}"
+        state: directory
+        mode: 0775
+      delegate_to: localhost
+      run_once: true
 
-    - name: Copy the ISO image to virt images directory
-      copy: src="{{ mktemp_output.path }}/user_image.iso"
-            dest={{ images_path }}/{{ vmname }}
-            owner={{ libvirt.user }}
-            group={{ libvirt.group }}
-      delegate_to: "{{ target_server }}"
-      remote_user: "{{ target_server_username }}"
-      become: "{{ 'no' if target_server_username == 'root' else 'yes' }}"
+    - name: Copy image files
+      copy: 
+        src={{ mktemp_output.path }}/user_image.iso
+        dest=/home/caso/nsg_iso/{{inventory_hostname}}/user_image.iso
+        owner=caso
+        group=caso
+      delegate_to: localhost
