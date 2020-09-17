@@ -14,7 +14,7 @@ parser.add_argument('--tarFileName', default='debug-' + now)
 parser.add_argument('--deploymentName')
 args = parser.parse_args()
 tarFileName = args.tarFileName
-print("The name of the tar file created:"+tarFileName+".tar.gz")
+print("The name of the tar file created:" + tarFileName + ".tar.gz")
 if args.deploymentName:
     deploymentName = os.path.join("deployments", args.deploymentName)
 else:
@@ -49,11 +49,11 @@ f=open("files.txt", "r" )
 fread=f.read()
 outlist=re.findall("unzipped/.*/.*/(.*)", fread)
 for i in outlist:
-    if(i==''):
+    if(i == '' ):
         outlist.remove(i)
 print("The files included in the " + tarFileName + ".tar.gz are:")
 for i in outlist:
-    if(i == ''):
+    if(i == '' ):
         continue
     else:
         print(i)
