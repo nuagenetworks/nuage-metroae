@@ -15,7 +15,7 @@ parser.add_argument('--tarFileName', default='debug-' + now)
 parser.add_argument('--deploymentName')
 args = parser.parse_args()
 tarFileName = args.tarFileName
-print("The File name is:"+tarFileName)
+print("The name of the tar file created:"+tarFileName)
 if args.deploymentName:
     deploymentName = os.path.join("deployments", args.deploymentName)
 else:
@@ -47,3 +47,5 @@ with tarfile.open(tarFileName + '.tar.gz', mode='w:gz') as archive:
     else:
         print("Can't find ansible.log. Skipping.")
         sys.exit()
+command = "tar -tvf "+tarFileName+".tar.gz"
+print(command)
