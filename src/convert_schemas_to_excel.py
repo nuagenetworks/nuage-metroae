@@ -11,13 +11,13 @@ import yaml
 
 
 def usage():
-    print "Converts a directory of schemas to an excel spreadsheet template."
-    print ""
-    print "Usage:"
-    print "    " + " ".join([sys.argv[0],
+    print("Converts a directory of schemas to an excel spreadsheet template.")
+    print("")
+    print("Usage:")
+    print("    " + " ".join([sys.argv[0],
                              "<xlsx_file>",
-                             "[example_data_file]"])
-    print ""
+                             "[example_data_dir]"]))
+    print("")
 
 
 class ExcelTemplateGenerator(object):
@@ -47,7 +47,7 @@ class ExcelTemplateGenerator(object):
     def write_workbook(self, output_file, example_dir=None):
         workbook = Workbook()
 
-        workbook.remove_sheet(workbook.active)
+        workbook.remove(workbook.active)
 
         schema_names = self.find_schema_names()
 
@@ -109,8 +109,8 @@ class ExcelTemplateGenerator(object):
             num_rows = 1
 
         i = 0
-        for name, field in sorted(properties.iteritems(),
-                                  key=lambda (k, v): (v["propertyOrder"], k)):
+        for name, field in sorted(iter(properties.items()),
+                                  key=lambda v: v[1]["propertyOrder"]):
             field["name"] = name
             if is_list:
                 field["required"] = (
@@ -170,8 +170,8 @@ class ExcelTemplateGenerator(object):
         row_offset += 1
 
         i = 0
-        for name, field in sorted(properties.iteritems(),
-                                  key=lambda (k, v): (v["propertyOrder"], k)):
+        for name, field in sorted(iter(properties.items()),
+                                  key=lambda v: v[1]["propertyOrder"]):
             field["name"] = name
             field["required"] = ("required" in schema["items"] and
                                  name in schema["items"]["required"])
@@ -199,8 +199,8 @@ class ExcelTemplateGenerator(object):
         cell_start = None
         section_name = "(missing)"
         i = 0
-        for name, field in sorted(properties.iteritems(),
-                                  key=lambda (k, v): (v["propertyOrder"], k)):
+        for name, field in sorted(iter(properties.items()),
+                                  key=lambda v: v[1]["propertyOrder"]):
             if "sectionBegin" in field:
                 cell_start = worksheet.cell(row=row_offset,
                                             column=i + col_offset)
@@ -249,7 +249,12 @@ class ExcelTemplateGenerator(object):
         if "description" in field:
             description = field["description"]
 
-        cell.comment = Comment(description + default, field["name"])
+        list_info = ""
+        if "type" in field and field["type"] == "array":
+            list_info = " (List items separated by comma.)"
+
+        cell.comment = Comment(description + default + list_info,
+                               field["name"])
         cell.comment.width = self.settings["comment_width"]
         cell.comment.height = self.settings["comment_height"]
         if row_label and "required" in field and field["required"]:
@@ -343,7 +348,7 @@ class ExcelTemplateGenerator(object):
     def read_schema(self, schema_name):
         file_name = schema_name + ".json"
         file_path = os.path.join(self.settings["schema_directory"], file_name)
-        with open(file_path, "r") as f:
+        with open(file_path, "rb") as f:
             schema_str = f.read().decode("utf-8")
 
         try:
@@ -359,7 +364,7 @@ class ExcelTemplateGenerator(object):
         file_name = os.path.join(example_dir, schema_name + ".yml")
         if os.path.isfile(file_name):
             try:
-                with open(file_name, "r") as f:
+                with open(file_name, "rb") as f:
                     return yaml.safe_load(f.read().decode("utf-8"))
             except Exception as e:
                 raise Exception("Could not parse example: %s\n%s" % (
@@ -386,9 +391,9 @@ def main():
         exit(1)
 
     xlsx_file = sys.argv[1]
-    example_data_file = None
+    example_data_dir = None
     if len(sys.argv) == 3:
-        example_data_file = sys.argv[2]
+        example_data_dir = sys.argv[2]
 
     generator = ExcelTemplateGenerator()
     generator.settings["schema_order"] = ["deployment", "common", "upgrade",
@@ -396,7 +401,7 @@ def main():
     generator.settings["num_list_entries"] = 6
     generator.settings["default_fields_by_col"] = False
 
-    generator.write_workbook(xlsx_file, example_data_file)
+    generator.write_workbook(xlsx_file, example_data_dir)
 
 
 if __name__ == '__main__':

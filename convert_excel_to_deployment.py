@@ -14,16 +14,16 @@ CONTAINER_MOUNT_DIRECTORY = "/metroae_data/deployments"
 
 
 def usage():
-    print "Converts a XLSX file (Excel spreadsheet) into a deployment "
-    print "configuration under the %s/ directory.  A template for the " % (
-        DEPLOYMENTS_DIRECTORY)
-    print "spreadsheet is provided as sample_deployment.xlsx"
-    print ""
-    print "Usage:"
-    print "    " + " ".join([sys.argv[0],
+    print("Converts a XLSX file (Excel spreadsheet) into a deployment ")
+    print("configuration under the %s/ directory.  A template for the " % (
+        DEPLOYMENTS_DIRECTORY))
+    print("spreadsheet is provided as sample_deployment.xlsx")
+    print("")
+    print("Usage:")
+    print("    " + " ".join([sys.argv[0],
                              "<xlsx_file>",
-                             "<deployment_name>"])
-    print ""
+                             "<deployment_name>"]))
+    print("")
 
 
 class ExcelParseError(Exception):
@@ -68,7 +68,7 @@ class ExcelParser(object):
             if (file_name.endswith(".json")):
                 file_path = os.path.join(self.settings["schema_directory"],
                                          file_name)
-                with open(file_path, "r") as f:
+                with open(file_path, "rb") as f:
                     schema_str = f.read().decode("utf-8")
 
                 try:
@@ -235,7 +235,7 @@ class ExcelParser(object):
 
     def generate_title_field_map(self, properties):
         title_field_map = dict()
-        for name, field in properties.iteritems():
+        for name, field in iter(properties.items()):
             if "type" in field and field["type"] == "array":
                 title_field_map[field["title"]] = "list:" + name
             else:
@@ -303,7 +303,7 @@ def generate_deployment_file(schema_name, file_name, data):
         os.path.join("schemas", schema_name + ".json"))
     template = jinja2.Template(example_lines)
     rendered = template.render(**data)
-    with open(file_name, 'w') as file:
+    with open(file_name, 'wb') as file:
         file.write(rendered.encode("utf-8"))
 
 
@@ -323,12 +323,11 @@ def main():
         data = parser.read_xlsx(xlsx_file)
     except ExcelParseError:
         for error in parser.errors:
-            print "%s %s | %s" % (error["schema_title"], error["position"],
-                                  error["message"])
+            print("%s %s | %s" % (error["schema_title"], error["position"],
+                                  error["message"]))
         exit(1)
 
     generate_deployment_files(deployment_name, data)
-    print json.dumps(data)
 
 
 if __name__ == '__main__':
