@@ -17,6 +17,7 @@
 * Fix failure to properly skip copying qcow2 files when skip flag is set
 * Fix VSD Active Standby Failover syntax error
 * Fix NSGv External ZFB Bootstapping error
+* Fix incorrectly looking for container when downloading container tar image
 
 ## Test Matrix
 
