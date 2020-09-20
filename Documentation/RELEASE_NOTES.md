@@ -16,6 +16,7 @@
 
 * Fix failure to properly skip copying qcow2 files when skip flag is set
 * Fix VSD Active Standby Failover syntax error
+* Fix NSGv External ZFB Bootstapping error
 
 ## Test Matrix
 
