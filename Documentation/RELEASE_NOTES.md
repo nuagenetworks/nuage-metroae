@@ -2,7 +2,7 @@
 
 ## Release info
 
-* MetroAE Version 4.1.1
+* MetroAE Version 4.2
 * Nuage Release Alignment 20.5.1, 6.0.8
 * Date of Release 23-Sept-2020
 
@@ -10,15 +10,12 @@
 
 ### Feature Enhancements
 
-* None
+* Add hosts and clusters folder support for vCenter (METROAE-1423)
+* Add hook location for custom external certificates (METROAE-1424)
 
 ### Resolved Issues
 
-* Fix failure to properly skip copying qcow2 files when skip flag is set
-* Fix VSD Active Standby Failover syntax error
-* Fix NSGv External ZFB Bootstapping error
-* Fix incorrectly looking for container when downloading container tar image
-* Fix DNS qcow2 search and schema variable name
+* None
 
 ## Test Matrix
 
