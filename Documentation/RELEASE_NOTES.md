@@ -2,9 +2,9 @@
 
 ## Release info
 
-* MetroAE Version 4.1.0
-* Nuage Release Alignment 20.5.2/6.0.8
-* Date of Release 31-Aug-2020
+* MetroAE Version 4.1.1
+* Nuage Release Alignment 20.5.2, 6.0.8
+* Date of Release 24-Sept-2020
 
 ## Release Contents
 
@@ -41,6 +41,7 @@
 
 ### Resolved Issues
 
+<<<<<<< HEAD
 * Remove redundant "vcpu" tag from KVM XML
 * Enable schema format enforcement (METROAE-1378)
 * Change default NUH ram to 8 GB from 4 GB (METROAE-1355)
@@ -59,6 +60,14 @@
 * Add support for checking the size on the specific vCenter datastore if one is provided
 * Add better error reporting for vCenter tasks (METROAE-1406 & METROAE-1407)
 * Make bridges optional in deployment configuration and ensure they are set when required (METROAE-1178)
+=======
+* Fix failure to properly skip copying qcow2 files when skip flag is set
+* Fix VSD Active Standby Failover syntax error
+* Fix NSGv External ZFB Bootstapping error
+* Fix incorrectly looking for container when downloading container tar image
+* Fix DNS qcow2 search and schema variable name
+* Fix DNS predeploy variable names
+>>>>>>> dev
 
 ## Test Matrix
 
