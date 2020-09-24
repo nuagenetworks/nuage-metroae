@@ -27,6 +27,18 @@
     vars:
       rem_user: "{{ nuh_default_username }}"
 
+  - block:
+
+    - name: Copy license file
+      copy:
+        src: "{{ nuh_license_file }}"
+        dest: "/opt/proxy/nuh.license"
+
+    - name: Verify License is valid
+      shell: java -jar /opt/proxy/bin/lm/LicenseManager.jar features
+
+    when: nuh_license_file is defined
+
   - name: Run the setup script for SA
     command: ./setup.sh
     environment:
@@ -124,18 +136,6 @@
     when:
       - custom_configuration_file_location is defined
       - inventory_hostname == groups['nuhs'][0]
-
-  - block:
-
-    - name: Copy license file
-      copy:
-        src: "{{ nuh_license_file }}"
-        dest: "/opt/proxy/nuh.license"
-
-    - name: Verify License is valid
-      shell: java -jar /opt/proxy/bin/lm/LicenseManager.jar features
-
-    when: nuh_license_file is defined
 
   - name: Create and transfer certs
     include_role:
