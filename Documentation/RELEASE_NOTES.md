@@ -4,7 +4,7 @@
 
 * MetroAE Version 4.1.1
 * Nuage Release Alignment 20.5.1, 6.0.8
-* Date of Release 8-Sept-2020
+* Date of Release 23-Sept-2020
 
 ## Release Contents
 
@@ -18,6 +18,8 @@
 * Fix VSD Active Standby Failover syntax error
 * Fix NSGv External ZFB Bootstapping error
 * Fix incorrectly looking for container when downloading container tar image
+* Fix DNS qcow2 search and schema variable name
+* Fix DNS predeploy variable names
 
 ## Test Matrix
 
