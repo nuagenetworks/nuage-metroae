@@ -14,6 +14,7 @@
 
 ### Resolved Issues
 
+* Add NUH Deploy changes for license install prior to Config (METROAE-1422)
 * Allow VSC to be specified without system ip (METROAE-1413)
 
 ## Test Matrix
