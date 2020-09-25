@@ -2,9 +2,10 @@
 
 ## Release info
 
-* MetroAE Version 4.2
+
+* MetroAE Version 4.2.0
 * Nuage Release Alignment 20.5.1, 6.0.8
-* Date of Release 23-Sept-2020
+* Date of Release
 
 ## Release Contents
 
@@ -15,7 +16,8 @@
 
 ### Resolved Issues
 
-* None
+* Add support for IPv6 NUH install (METROAE-1416)
+* Allow VSC to be specified without system ip (METROAE-1413)
 
 ## Test Matrix
 
