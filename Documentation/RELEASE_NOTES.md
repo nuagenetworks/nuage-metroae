@@ -2,64 +2,19 @@
 
 ## Release info
 
-* MetroAE Version 4.1.0
-* Nuage Release Alignment 20.5.1
-* Date of Release 14-Aug-2020
+* MetroAE Version 4.2.0
+* Nuage Release Alignment 20.5.1, 6.0.8
+* Date of Release
 
 ## Release Contents
 
 ### Feature Enhancements
 
-* Add support for VSTAT yum update via vstat_yum_update (METROAE-1190)
-* Check hypervisor disk space on KVM and vCenter
-* Add NETCONF RPMs to unzip
-* Support for additional functionality via plugins
-* Add Netconf Manager Support to MetroAE (METROAE-1204)
-* Added support for Python virtual environments (METROAE-1381)
-* Added file check for nsgv_bootstrap.yml and example (METROAE-1379)
-* Make hostname optional for VSC
-* Backup and restore functionality for VSD and VSC (METROAE-1382)
-* Add support for new Nuage version format, e.g. 20.6 (METROAE-1343)
-* Add ability to support custom configuration file for NUH (METROAE-1358)
-* Support NUH install when VSD is not installed (METROAE-1357)
-* Support Webfilter install using MetroAE (METROAE-1206)
-* Add support for deploying VNS Utils on Openstack
-* Added a restriction for vsc_fallocate_size_gb to 1GB and skip if the value is 0
-* Add support for applying custom VSC configurations (METROAE-1328)
-* Added support for checking and installing for libguestfs for target server
-* Allow second disk to be mounted to VSTAT (ES)
-* Add capability to enter BGP route reflector IP address for VSC (METROAE-1320)
-* Add support for emailing health reports (METROAE-1332)
-* Add support for more than one External interface (METROAE-1337)
-* Add support for symlinks as files
-* Add option for specifiying Openstack CA certificate path
-* Add check for HA VSD DNS SRV records (METROAE-1341)
-* Add support for vCenter VM folder specification.
-* Add more meaningful fail messages when vrs_package_path and vsd_migration_iso_path is undefined.
-* Add support for Rsyslog for NSGvs (METROAE-1231)
-* Add support for configuring monit email alerts (METROAE-1222)
+* None
 
 ### Resolved Issues
 
-* Remove redundant "vcpu" tag from KVM XML
-* Enable schema format enforcement (METROAE-1378)
-* Change default NUH ram to 8 GB from 4 GB (METROAE-1355)
-* Upgrade pyYaml to 4.2b1 to address security vulnerability
-* Fixed deployment examples to have correct variable types (METROAE-1194)
-* Fixed undefined variable for nsgv-predeploy on vcenter
-* Fix VCENTER upgrades using container
-* Fix CPU pinning for NUH and perform NTP sync (METROAE-1397)
-* Support Ejabberd license install
-* Fix missing fallocate flag during vsc predeploy
-* Disable chrony and cloud-init for NUH and VSTATs install (METROAE-1401)
-* Do not enable maintainance mode for inplace upgrades (METROAE-1404)
-* Restart VSC after OpenStack upgrade (GITHUB #1537)
-* Add NSGv bootstrap example for vcenter (METROAE - 1393)
-* Check connectivity before certificate generation and transfer from VSD (METROAE-1360)
-* Add support for checking the size on the specific vCenter datastore if one is provided
-* Add better error reporting for vCenter tasks (METROAE-1406 & METROAE-1407)
 * Allow VSC to be specified without system ip (METROAE-1413)
-* Make bridges optional in deployment configuration and ensure they are set when required (METROAE-1178)
 
 ## Test Matrix
 
