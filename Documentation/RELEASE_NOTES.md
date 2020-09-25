@@ -10,7 +10,7 @@
 
 ### Feature Enhancements
 
-* None
+* Add support for IPv6 NUH install (METROAE-1416)
 
 ### Resolved Issues
 
