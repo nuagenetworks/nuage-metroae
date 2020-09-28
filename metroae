@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -e
 
-METROAE_VERSION="v4.1.0"
+METROAE_VERSION="v4.1.1"
 MENU=()
 
 #################################################################################
@@ -923,17 +923,19 @@ function setup_container {
 
     set -e
 
-    if [[ $config_status -ne 0 || $deploy_keys_status -ne 0 || $deploy_status -ne 0 || $common_status -ne 0 ]]; then
+    if [[ $config_template_status -ne 0 || $config_docs_status -ne 0 || $deploy_keys_status -ne 0 || $deploy_status -ne 0 || $common_status -ne 0 ]]; then
         echo ""
-        write_to_screen_and_script_log "Problem copying one or more files to the data directory."
-        echo "The MetroAE container is running, but you may not have the latest files on disk. Try running 'metroae container setup' again."
+        write_to_screen_and_script_log "Setup of the MetroAE container is complete. However, we had a problem copying one or more files to the data directory."
+        echo "The MetroAE container is running. You can use it, but you may not have the latest files on disk."
+        echo "You can try running 'metroae container setup' again to correct this problem."
         echo ""
+        exit 1
+    else
+        echo ""
+        write_to_screen_and_script_log "Setup of the MetroAE container is complete. Execute 'metroae container status' for status."
+        echo ""
+        return 0
     fi
-
-    echo ""
-    write_to_screen_and_script_log "MetroAE container setup complete. Execute 'metroae container status' for status."
-    echo ""
-    return 0
 }
 
 function update_container_files {
@@ -963,13 +965,22 @@ function update_container_files {
     docker_exec_generate_and_copy_keys
     deploy_keys_status=$?
 
-    config_status=0
+    config_template_status=0
     if [[ $setup_type != "d" ]]; then
         echo ""
-        write_to_screen_and_script_log ">>> Updating with the latest feature templates and files for MetroAE config in the container"
+        write_to_screen_and_script_log ">>> Updating with the latest feature templates and files for MetroAE Config in the container"
         echo ""
         docker_exec_config templates update
-        config_status=$?
+        config_template_status=$?
+    fi
+
+    config_docs_status=0
+    if [[ $setup_type != "d" ]]; then
+        echo ""
+        write_to_screen_and_script_log ">>> Updating with the documentation for MetroAE Config in the container"
+        echo ""
+        docker_exec_copy_config_defaults
+        config_docs_status=$?
     fi
 }
 
@@ -1481,6 +1492,11 @@ function docker_exec_copy_common_defaults {
 function docker_exec_copy_deploy_defaults {
     debug ${FUNCNAME[0]}
     docker_exec env $CONTAINER_HOME/copyDeployDefaults.sh
+}
+
+function docker_exec_copy_config_defaults {
+    debug ${FUNCNAME[0]}
+    docker_exec env $CONTAINER_HOME/copyConfigDefaults.sh
 }
 
 function config_status {
@@ -2548,7 +2564,7 @@ do
 done
 
 # Do the file check and setup before running the commands
-if [[ ${MATCH_MENU[0]} != ",container,setup" ]] && [[ ${MATCH_MENU[0]} != ",container,pull" ]] && [[ ${MATCH_MENU[0]} != ",container,destroy" ]] && [[ ${MATCH_MENU[0]} != ",container,status" ]] && [[ ${MATCH_MENU[0]} != ",container,update" ]]; then
+if [[ ${MATCH_MENU[0]} != ",container,setup" ]] && [[ ${MATCH_MENU[0]} != ",container,pull" ]] && [[ ${MATCH_MENU[0]} != ",container,destroy" ]] && [[ ${MATCH_MENU[0]} != ",container,status" ]] && [[ ${MATCH_MENU[0]} != ",container,update" ]] && [[ ${MATCH_MENU[0]} != ",container,download" ]]; then
     check_for_prerequisite "$@"
 fi
 

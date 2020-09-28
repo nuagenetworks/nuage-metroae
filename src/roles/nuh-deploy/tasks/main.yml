@@ -17,15 +17,32 @@
 
 - block:
 
-  - name: Install NTP package on the NUH vm
-    yum: name=ntp state=present
+  - name: Run NTP package if required
+    block:
 
-  - name: Configure ntpd and ntpdate and local time zone
-    include_role:
-      name: common
-      tasks_from: linux-ntp-sync
-    vars:
-      rem_user: "{{ nuh_default_username }}"
+    - name: Install NTP package on the NUH vm
+      yum: name=ntp state=present
+
+    - name: Configure ntpd and ntpdate and local time zone
+      include_role:
+        name: common
+        tasks_from: linux-ntp-sync
+      vars:
+        rem_user: "{{ nuh_default_username }}"
+
+    when: install_ntp | default(True)
+
+  - block:
+
+    - name: Copy license file
+      copy:
+        src: "{{ nuh_license_file }}"
+        dest: "/opt/proxy/nuh.license"
+
+    - name: Verify License is valid
+      shell: java -jar /opt/proxy/bin/lm/LicenseManager.jar features
+
+    when: nuh_license_file is defined
 
   - name: Run the setup script for SA
     command: ./setup.sh
@@ -82,13 +99,17 @@
       vars:
         vsd_hostname: "{{ vsd_fqdn }}"
 
-    - name: Copy the network config for NUH internal and external networks
-      template: src=config.yml.j2 backup=no dest=/opt/proxy/data/config.yml owner=root group=root mode=0640
+    - block:
 
-    - name: Run the network config script on NUH
-      command: ansible-playbook configure.yml
-      args:
-        chdir: /opt/proxy/bin/ansible
+      - name: Copy the network config for NUH internal and external networks
+        template: src=config.yml.j2 backup=no dest=/opt/proxy/data/config.yml owner=root group=root mode=0640
+
+      - name: Run the network config script on NUH
+        command: ansible-playbook configure.yml
+        args:
+          chdir: /opt/proxy/bin/ansible
+
+      when: inventory_hostname == groups['nuhs'][0]
 
     - name: Check if the eth1 is configured on Internal interface
       shell: ip netns exec Internal ip addr list | grep eth1
@@ -117,19 +138,9 @@
         args:
           chdir: /opt/proxy/bin/ansible
 
-    when: custom_configuration_file_location is defined
-
-  - block:
-
-    - name: Copy license file
-      copy:
-        src: "{{ nuh_license_file }}"
-        dest: "/opt/proxy/nuh.license"
-
-    - name: Verify License is valid
-      shell: java -jar /opt/proxy/bin/lm/LicenseManager.jar features
-
-    when: nuh_license_file is defined
+    when:
+      - custom_configuration_file_location is defined
+      - inventory_hostname == groups['nuhs'][0]
 
   - name: Create and transfer certs
     include_role:
