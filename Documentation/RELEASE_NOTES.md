@@ -13,6 +13,8 @@
 
 * Add hosts and clusters folder support for vCenter (METROAE-1423)
 * Add hook location for custom external certificates (METROAE-1424)
+* Add support for IPv6 NUH install (METROAE-1416)
+* Add example for CSV input spreadsheet (METROAE-1338)
 
 ### Resolved Issues
 
