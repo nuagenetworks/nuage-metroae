@@ -50,5 +50,4 @@ with open("files.txt", "r") as f:
 outlist = re.findall("unzipped/.*/.*/(.*)", fread)
 outlist = filter(lambda x: x != "", outlist)
 print("The files included in the " + tarFileName + ".tar.gz are:")
-for i in outlist:
-    print(i)
+print("\n".join(outlist))
