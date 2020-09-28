@@ -10,6 +10,7 @@
 
 ### Feature Enhancements
 
+* Support for deploying using Excel spreadsheet (.xlsx) files
 * Add support for IPv6 NUH install (METROAE-1416)
 
 ### Resolved Issues
