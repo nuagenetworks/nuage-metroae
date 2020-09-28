@@ -86,9 +86,10 @@ def write_fields(lines, schema, table):
     else:
         data_dict = data
     fields = required
-    for k in data_dict.keys():
-        if k not in fields:
-            fields.append(k)
+
+    for name, field in sorted(iter(schema_props.items()), key=lambda v: v[1]["propertyOrder"]):
+        if name not in required and name in data_dict.keys():
+            fields.append(str(name))
 
     for field_name in fields:
         field_val_list = []
