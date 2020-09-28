@@ -26,7 +26,7 @@ def get_all_schemas(deployment_folder):
     return schemas
 
 
-def getValuesFromDeployment(deployment_folder, deployment):
+def get_values_from_deployment(deployment_folder, deployment):
     return yaml.safe_load(open(join(deployment_folder, deployment + '.yml')))
 
 
@@ -54,13 +54,13 @@ def escape_line(line):
 
 
 def add_content(content):
-    csvContent = ''
+    csv_content = ''
     for item in content:
         if type(item) == dict:
-            csvContent += (write_table(item).encode("utf-8")) + '\n'
+            csv_content += (write_table(item).encode("utf-8")) + '\n'
         else:
-            csvContent += escape_line(item) + "," + '\n'
-    return csvContent
+            csv_content += escape_line(item) + "," + '\n'
+    return csv_content
 
 
 def write_fields(lines, schema, table):
@@ -73,39 +73,39 @@ def write_fields(lines, schema, table):
         schema_props = schema["properties"]
         required = schema.get("required")
 
-    dataDict = {}
-    dataDictList = []
+    data_dict = {}
+    data_dict_list = []
     if type(data) == list:
-        dataDictList = data
+        data_dict_list = data
     else:
-        dataDict = data
+        data_dict = data
     fields = required
-    for k in dataDict.keys():
+    for k in data_dict.keys():
         if k not in fields:
             fields.append(k)
 
     for field_name in fields:
-        fieldValList = []
-        if dataDictList:
-            for item in dataDictList:
-                fieldVal = item[field_name]
-                if type(fieldVal) == list:
-                    fieldVal = ','.join(fieldVal)
-                fieldValList.append(fieldVal)
+        field_val_list = []
+        if data_dict_list:
+            for item in data_dict_list:
+                field_val = item[field_name]
+                if type(field_val) == list:
+                    field_val = ','.join(field_val)
+                field_val_list.append(field_val)
         else:
-            fieldVal = dataDict[field_name]
-            if type(fieldVal) == list:
-                fieldVal = ','.join(fieldVal)
-            fieldValList.append(fieldVal)
-        fieldValuesString = ''
-        for val in fieldValList:
+            field_val = data_dict[field_name]
+            if type(field_val) == list:
+                field_val = ','.join(field_val)
+            field_val_list.append(field_val)
+        field_values_string = ''
+        for val in field_val_list:
             if type(val) == int or val.find(',') == -1:
-                fieldValuesString += "," + str(val)
+                field_values_string += "," + str(val)
             else:
-                fieldValuesString += "," + "\"" + str(val) + "\""
+                field_values_string += "," + "\"" + str(val) + "\""
         field = schema_props[field_name]
         description = field.get("description", "")
-        full_line = field["title"] + fieldValuesString + ("," * 2) + escape_line(description)
+        full_line = field["title"] + field_values_string + ("," * 2) + escape_line(description)
         lines.append(full_line)
 
 
@@ -136,24 +136,24 @@ def create_csv_from_deployment(csv_file, deployment_folder):
     content.append('This Spreadsheet can be used as an Input to MetroAE')
     deployments = get_all_schemas(deployment_folder)
     for deployment in deployments:
-        deploymentData = getValuesFromDeployment(deployment_folder, deployment)
-        headerList = [deployment]
-        if type(deploymentData) == list:
-            for i in range(len(deploymentData)):
-                headerList.append(deployment + str(i + 1))
+        deployment_data = get_values_from_deployment(deployment_folder, deployment)
+        header_list = [deployment]
+        if type(deployment_data) == list:
+            for i in range(len(deployment_data)):
+                header_list.append(deployment + str(i + 1))
         else:
-            headerList.append('Values')
-        headerList.append('')
-        headerList.append('Descriptions')
+            header_list.append('Values')
+        header_list.append('')
+        header_list.append('Descriptions')
         schemaDict = {
             'schema': deployment,
-            'headers': headerList,
-            'data': deploymentData
+            'headers': header_list,
+            'data': deployment_data
         }
         content.append('')
         content.append(schemaDict)
-    contentToWrite = add_content(content)
-    write_csv_file(csv_file, contentToWrite)
+    content_to_write = add_content(content)
+    write_csv_file(csv_file, content_to_write)
 
 
 def main():
