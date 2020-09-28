@@ -63,6 +63,12 @@ def add_content(content):
     return csv_content
 
 
+def add_field_to_list(field_val, field_val_list):
+    if type(field_val) == list:
+        field_val = ','.join(field_val)
+    field_val_list.append(field_val)
+
+
 def write_fields(lines, schema, table):
     data = table['data']
 
@@ -88,15 +94,9 @@ def write_fields(lines, schema, table):
         field_val_list = []
         if data_dict_list:
             for item in data_dict_list:
-                field_val = item[field_name]
-                if type(field_val) == list:
-                    field_val = ','.join(field_val)
-                field_val_list.append(field_val)
+                add_field_to_list(item[field_name], field_val_list)
         else:
-            field_val = data_dict[field_name]
-            if type(field_val) == list:
-                field_val = ','.join(field_val)
-            field_val_list.append(field_val)
+            add_field_to_list(data_dict[field_name], field_val_list)
         field_values_string = ''
         for val in field_val_list:
             if type(val) == int or val.find(',') == -1:
