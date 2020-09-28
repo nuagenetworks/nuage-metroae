@@ -57,6 +57,7 @@
 * Check connectivity before certificate generation and transfer from VSD (METROAE-1360)
 * Add support for checking the size on the specific vCenter datastore if one is provided
 * Add better error reporting for vCenter tasks (METROAE-1406 & METROAE-1407)
+* Added Serial=1 to prevent on VSD lockout of iptables during VSC's upgrade
 
 ## Test Matrix
 
