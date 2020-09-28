@@ -45,17 +45,10 @@ with tarfile.open(tarFileName + '.tar.gz', mode='w:gz') as archive:
         print("Can't find ansible.log, Skipping.")
 command = "tar -tvf " + tarFileName + ".tar.gz >files.txt"
 os.system(command)
-#f = open("files.txt", "r")
 with open("files.txt", "r") as f:
      fread = f.read()
 outlist = re.findall("unzipped/.*/.*/(.*)", fread)
-#for i in outlist:
-#    if(i == ''):
-#        outlist.remove(i)
 outlist = filter(lambda x: x != "", outlist)
 print("The files included in the " + tarFileName + ".tar.gz are:")
 for i in outlist:
-#    if(i == ''):
-#        continue
-#    else:
     print(i)
