@@ -46,7 +46,7 @@ with tarfile.open(tarFileName + '.tar.gz', mode='w:gz') as archive:
 command = "tar -tvf " + tarFileName + ".tar.gz >files.txt"
 os.system(command)
 with open("files.txt", "r") as f:
-     fread = f.read()
+    fread = f.read()
 outlist = re.findall("unzipped/.*/.*/(.*)", fread)
 outlist = filter(lambda x: x != "", outlist)
 print("The files included in the " + tarFileName + ".tar.gz are:")
