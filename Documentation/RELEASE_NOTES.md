@@ -14,24 +14,6 @@
 
 ### Resolved Issues
 
-
-* Remove redundant "vcpu" tag from KVM XML
-* Enable schema format enforcement (METROAE-1378)
-* Change default NUH ram to 8 GB from 4 GB (METROAE-1355)
-* Upgrade pyYaml to 4.2b1 to address security vulnerability
-* Fixed deployment examples to have correct variable types (METROAE-1194)
-* Fixed undefined variable for nsgv-predeploy on vcenter
-* Fix VCENTER upgrades using container
-* Fix CPU pinning for NUH and perform NTP sync (METROAE-1397)
-* Support Ejabberd license install
-* Fix missing fallocate flag during vsc predeploy
-* Disable chrony and cloud-init for NUH and VSTATs install (METROAE-1401)
-* Do not enable maintainance mode for inplace upgrades (METROAE-1404)
-* Restart VSC after OpenStack upgrade (GITHUB #1537)
-* Add NSGv bootstrap example for vcenter (METROAE - 1393)
-* Check connectivity before certificate generation and transfer from VSD (METROAE-1360)
-* Add support for checking the size on the specific vCenter datastore if one is provided
-* Add better error reporting for vCenter tasks (METROAE-1406 & METROAE-1407)
 * Add NUH Deploy changes for license install prior to Config (METROAE-1422)
 * Allow VSC to be specified without system ip (METROAE-1413)
 * Added Serial=1 to prevent on VSD lockout of iptables during VSC's upgrade
