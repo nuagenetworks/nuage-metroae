@@ -12,6 +12,7 @@
 
 * Support for deploying using Excel spreadsheet (.xlsx) files
 * Add support for IPv6 NUH install (METROAE-1416)
+* Add example for CSV input spreadsheet (METROAE-1338)
 
 ### Resolved Issues
 
