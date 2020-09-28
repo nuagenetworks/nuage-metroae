@@ -1,8 +1,18 @@
 # Nuage Networks Metro Automation Engine (MetroAE)
 
-Version: 4.1.0
+Version: 4.1.1
 
-MetroAE is an automation engine that deploys and upgrades Nuage Networks components. You specify the individual details of your target platform, then let MetroAE install, upgrade, destroy, or health-check the environment for you.
+MetroAE is an automation engine that can be used to
+
+* Install
+* Health check
+* Upgrade
+* Configure
+* Backup/restore
+* Shutdown/restart
+* Failover/failback
+
+Nuage Networks components. You specify the individual details of your target platform, then let MetroAE do the rest.
 
 ## Documentation
 
@@ -18,6 +28,7 @@ File name | Description
 [VAULT_ENCRYPT](Documentation/VAULT_ENCRYPT.md) | Safeguard sensitive data
 [DEPLOY](Documentation/DEPLOY.md) | Deploy all VSP components or choose components individually.
 [DESTROY](Documentation/DESTROY.md) | Remove existing deployment(s) and start over.
+[CONFIG](Documentation/CONFIG.md) | MetroAE Config, the template-driven VSD configuration tool.
 [UPGRADE_SA](Documentation/UPGRADE_SA.md) | Upgrade component(s) from one release to the next in a standalone environment.
 [UPGRADE_HA](Documentation/UPGRADE_HA.md) | Upgrade component(s) from one release to the next in a clustered environment.
 [VSD_SERVICES](Documentation/VSD_SERVICES.md) | Using MetroAE to control VSD Services during maintenance
@@ -29,7 +40,7 @@ File name | Description
 [TERRAFORM](Documentation/TERRAFORM.md) | Using the Terraform framework in conjunction with MetroAE
 [HOOKS_AND_SKIPACTIONS](Documentation/HOOKS_AND_SKIPACTIONS.md) | Configure ability to run custom commands in between playbooks and skip playbooks
 [AUTOGENERATE_DEPLOYMENTS](Documentation/AUTOGENERATE_DEPLOYMENTS.md) | Generate MetroAE deployment configurations automatically via script
-[CONTRIBUTING](CONTRIBUTING.md) | Contribute to MetroAE development
+[CONTRIBUTING](Documentation/CONTRIBUTING.md) | Contribute to MetroAE development
 [LICENSE](Documentation/LICENSE.md) | License statement for MetroAE
 
 ## Important Notes

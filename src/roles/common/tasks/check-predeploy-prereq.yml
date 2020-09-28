@@ -26,7 +26,9 @@
       assert:
         that: "image_path | default('MISSING') != 'MISSING' and image_file_name | default('MISSING') != 'MISSING'"
         msg: "Missing image files for {{ hostname | default(vmname) }} under the unzipped file directory, please unzip them."
-      when: target_server_type is match("kvm") or target_server_type is match("vcenter")
+      when:
+        - target_server_type is match("kvm") or target_server_type is match("vcenter")
+        - not skip_copy_images | default(False)
 
     when: component_type | default("NONE") != 'vrs'
 
@@ -99,8 +101,39 @@
 
   when: target_server_type | default('NONE') is match ("vcenter")
 
+- block:
+
+  - name: Check mgmt target bridge
+    assert:
+      that: '"mgmt" not in required_bridges or mgmt_bridge != "NONE"'
+      msg: "Required mgmt network bridge not configured"
+
+  - name: Check data target bridge
+    assert:
+      that: '"data" not in required_bridges or data_bridge != "NONE"'
+      msg: "Required data network bridge not configured"
+
+  - name: Check access target bridge
+    assert:
+      that: '"access" not in required_bridges or access_bridge != "NONE"'
+      msg: "Required access network bridge not configured"
+
+  when: target_server_type | default('NONE') is match ("kvm") or target_server_type | default('NONE') is match ("vcenter")
+
 - name: Fail if vrs_package_path is not defined
   assert:
     that: vrs_package_path != "MISSING"
     msg: "vrs_package_path not defined. Please define it and try again."
   when: vrss is defined and vrss|length > 0
+
+- name: Get the public key for the current user
+  command: cat "{{ user_ssh_pub_key }}"
+  delegate_to: localhost
+  register: current_user_ssh_key
+  changed_when: False
+  ignore_errors: True
+  when: target_server_type | default('NONE') is match ("kvm") or target_server_type | default('NONE') is match ("vcenter")
+
+- fail:
+    msg: "We couldn't find the user's SSH key file {{ user_ssh_pub_key }}. Is user_ssh_pub_key defined correctly in common.yml?"
+  when: current_user_ssh_key.rc != 0
