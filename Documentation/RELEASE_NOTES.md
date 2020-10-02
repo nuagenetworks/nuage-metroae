@@ -2,9 +2,9 @@
 
 ## Release info
 
-* MetroAE Version 4.1.1
+* MetroAE Version 4.1.2
 * Nuage Release Alignment 20.5.2, 6.0.8
-* Date of Release 24-Sept-2020
+* Date of Release TBD
 
 ## Release Contents
 
@@ -15,11 +15,6 @@
 ### Resolved Issues
 
 * Fix failure to properly skip copying qcow2 files when skip flag is set
-* Fix VSD Active Standby Failover syntax error
-* Fix NSGv External ZFB Bootstapping error
-* Fix incorrectly looking for container when downloading container tar image
-* Fix DNS qcow2 search and schema variable name
-* Fix DNS predeploy variable names
 
 ## Test Matrix
 
