@@ -135,7 +135,12 @@
 
     - name: Check number_of_nodes
       assert:
-        that: "es_status.json.number_of_nodes == 3"
+        that: "es_status.json.number_of_nodes == 3 or stats_out | default(false)"
+        msg: "Incorrect number_of_nodes {{ es_status.json.number_of_nodes }}. Quitting."
+
+    - name: Check number_of_nodes for stats-out
+      assert:
+        that: "es_status.json.number_of_nodes == 6 or not stats_out | default(false)"
         msg: "Incorrect number_of_nodes {{ es_status.json.number_of_nodes }}. Quitting."
 
     - name: Write number_of_nodes result separator to report file

@@ -119,7 +119,7 @@
       with_items: "{{ external_interfaces }}"
       when: external_interfaces is defined and external_interfaces | length > 0
 
-    when: 
+    when:
       - internal_ip is defined
       - not skip_vsd_installed_check
 
@@ -132,6 +132,18 @@
           mode: 0640
           owner: "root"
           group: "root"
+        when: custom_configuration_file_location is defined
+
+      - block:
+
+        - name: Add stats-out proxy entries to NUH configuration
+          replace:
+            path: /opt/proxy/data/config.yml
+            regexp: "role: vsdconfig.*$"
+            replace: "role: vsdconfig, enabled: true, firewallports: ['{{ stats_out_proxy_ui_port }}', '{{ stats_out_proxy_api_port }}', '{{ stats_out_proxy_jms_port }}', '{{ stats_out_proxy_xmpp_port }}'], settings: {uiport: '{{ stats_out_proxy_ui_port }}', apiport: '{{ stats_out_proxy_api_port }}', xmppport: '{{ stats_out_proxy_xmpp_port }}', jmsport: '{{ stats_out_proxy_jms_port }}', geo: false}}"
+          when: stats_out_proxy | default('NONE') in [hostname, mgmt_ip]
+
+        when: NUH_DOES_NOT_YET_SUPPORT_STATS_OUT_PROXY | default(false)
 
       - name: Run the configuration script on NUH
         command: ansible-playbook configure.yml
@@ -139,7 +151,7 @@
           chdir: /opt/proxy/bin/ansible
 
     when:
-      - custom_configuration_file_location is defined
+      - custom_configuration_file_location is defined or stats_out_proxy | default('NONE') in [hostname, mgmt_ip]
       - inventory_hostname == groups['nuhs'][0]
 
   - name: Create and transfer certs
