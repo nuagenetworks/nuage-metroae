@@ -18,6 +18,8 @@
 
 * Add NUH Deploy changes for license install prior to Config (METROAE-1422)
 * Allow VSC to be specified without system ip (METROAE-1413)
+* Added Serial=1 to prevent on VSD lockout of iptables during VSC's upgrade
+
 
 ## Test Matrix
 
