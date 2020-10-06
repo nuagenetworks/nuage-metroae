@@ -14,6 +14,7 @@
 * Add hosts and clusters folder support for vCenter (METROAE-1423)
 * Add hook location for custom external certificates (METROAE-1424)
 * Add support for IPv6 NUH install (METROAE-1416)
+* Add support for Stats-out VSD deployements.
 * Add example for CSV input spreadsheet (METROAE-1338)
 
 ### Resolved Issues
@@ -21,6 +22,8 @@
 * Add support for IPv6 NUH install (METROAE-1416)
 * Add NUH Deploy changes for license install prior to Config (METROAE-1422)
 * Allow VSC to be specified without system ip (METROAE-1413)
+* Added Serial=1 to prevent on VSD lockout of iptables during VSC's upgrade
+
 
 ## Test Matrix
 
