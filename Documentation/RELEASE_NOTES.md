@@ -4,7 +4,7 @@
 
 * MetroAE Version 4.1.2
 * Nuage Release Alignment 20.5.2, 6.0.8
-* Date of Release TBD
+* Date of Release 9-Oct-2020
 
 ## Release Contents
 
