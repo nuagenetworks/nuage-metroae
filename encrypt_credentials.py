@@ -11,7 +11,7 @@ from generate_example_from_schema import ExampleFileGenerator
 DEPLOYMENT_DIR = 'deployments'
 
 
-class VaultYaml(unicode):
+class VaultYaml(str):
     pass
 
 
@@ -24,7 +24,7 @@ def literal_unicode_representer(dumper, data):
 
 
 def encrypt_credentials_file(passcode, deployment_name):
-    yaml.add_constructor(u'!vault', vault_constructor)
+    yaml.add_constructor('!vault', vault_constructor)
     if os.path.isfile(deployment_name):
         credentials_file = deployment_name
     elif os.path.isdir(deployment_name):
@@ -48,7 +48,7 @@ def encrypt_credentials_file(passcode, deployment_name):
 
     if credentials is not None:
         for cred_set in credentials:
-            for cred in cred_set.keys():
+            for cred in list(cred_set.keys()):
                 if cred not in do_not_encrypt_list:
                     secret = VaultSecret(passcode)
                     editor = VaultEditor()
@@ -82,19 +82,19 @@ def main():
         passcode = os.environ["METROAE_PASSWORD"]
     else:
         try:
-            print "This file will encrypt user credentials for MetroAE"
-            print ("All user comments and unsupported fields in the "
-                   "credentials file will be lost")
-            print "Press Ctrl-C to cancel"
+            print("This file will encrypt user credentials for MetroAE")
+            print("All user comments and unsupported fields in the "
+                  "credentials file will be lost")
+            print("Press Ctrl-C to cancel")
             while True:
                 passcode = getpass.getpass()
                 confirm_passcode = getpass.getpass("Confirm passcode:")
                 if passcode != confirm_passcode:
-                    print "Passcodes do not match. Please reenter"
+                    print("Passcodes do not match. Please reenter")
                 else:
                     break
         except Exception:
-            print "Error in getting passcode from command line"
+            print("Error in getting passcode from command line")
             sys.exit()
 
     encrypt_credentials_file(passcode, args.deployment)
