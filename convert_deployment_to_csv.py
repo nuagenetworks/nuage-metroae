@@ -11,13 +11,13 @@ TABLE_MARGIN_LEFT = 1
 
 
 def usage():
-    print "Converts a deployment configuration folder into a CSV file (spreadsheet)"
-    print ""
-    print "Usage:"
-    print "    " + " ".join([sys.argv[0],
+    print("Converts a deployment configuration folder into a CSV file (spreadsheet)")
+    print("")
+    print("Usage:")
+    print("    " + " ".join([sys.argv[0],
                              "<deployment_folder>",
-                             "<csv_file>"])
-    print ""
+                             "<csv_file>"]))
+    print("")
 
 
 def get_all_schemas(deployment_folder):
@@ -88,7 +88,7 @@ def write_fields(lines, schema, table):
     fields = required
 
     for name, field in sorted(iter(schema_props.items()), key=lambda v: v[1]["propertyOrder"]):
-        if name not in required and name in data_dict.keys():
+        if name not in required and name in list(data_dict.keys()):
             fields.append(str(name))
 
     for field_name in fields:

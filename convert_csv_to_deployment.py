@@ -15,16 +15,16 @@ CONTAINER_MOUNT_DIRECTORY = "/metroae_data/deployments"
 
 
 def usage():
-    print "Converts a CSV file (spreadsheet) into a deployment configuration"
-    print "under the %s/ directory.  A template for the spreadsheet is " % (
-        DEPLOYMENTS_DIRECTORY)
-    print "provided as deployment_spreadsheet_template.csv"
-    print ""
-    print "Usage:"
-    print "    " + " ".join([sys.argv[0],
+    print("Converts a CSV file (spreadsheet) into a deployment configuration")
+    print("under the %s/ directory.  A template for the spreadsheet is " % (
+          DEPLOYMENTS_DIRECTORY))
+    print("provided as deployment_spreadsheet_template.csv")
+    print("")
+    print("Usage:")
+    print("    " + " ".join([sys.argv[0],
                              "<csv_file>",
-                             "<deployment_name>"])
-    print ""
+                             "<deployment_name>"]))
+    print("")
 
 
 class CsvDeploymentConverter(object):
@@ -322,7 +322,7 @@ class CsvDeploymentConverter(object):
         datatype = self._get_field_datatype(schema_name, field_name)
 
         if datatype == "string":
-            return unicode(cell_value)
+            return str(cell_value)
         elif datatype == "integer":
             try:
                 return int(cell_value)
@@ -444,11 +444,11 @@ class CsvDeploymentConverter(object):
 
     def _output(self, msg, *args):
         if self.has_output:
-            print msg % args
+            print(msg % args)
 
     def _debug(self, msg, *args):
         if self.has_debug:
-            print msg % args
+            print(msg % args)
 
 
 def main():
@@ -469,7 +469,7 @@ def main():
         try:
             converter.convert(csv_file, deployment_name)
         except Exception as e:
-            print str(e)
+            print(str(e))
             exit(2)
 
 
