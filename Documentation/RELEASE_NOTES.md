@@ -2,20 +2,28 @@
 
 ## Release info
 
-* MetroAE Version 4.1.1
+
+* MetroAE Version 4.2.0
 * Nuage Release Alignment 20.5.1, 6.0.8
-* Date of Release TBD
+* Date of Release
 
 ## Release Contents
 
 ### Feature Enhancements
 
-* None
+* Add hosts and clusters folder support for vCenter (METROAE-1423)
+* Add hook location for custom external certificates (METROAE-1424)
+* Add support for IPv6 NUH install (METROAE-1416)
+* Add support for Stats-out VSD deployements.
+* Add example for CSV input spreadsheet (METROAE-1338)
 
 ### Resolved Issues
 
-* Fix failure to skip copying qcow2 files when skip flag is set
-* Fix Active Standby Failover issue
+* Add support for IPv6 NUH install (METROAE-1416)
+* Add NUH Deploy changes for license install prior to Config (METROAE-1422)
+* Allow VSC to be specified without system ip (METROAE-1413)
+* Added Serial=1 to prevent on VSD lockout of iptables during VSC's upgrade
+
 
 ## Test Matrix
 
