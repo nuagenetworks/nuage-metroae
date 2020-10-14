@@ -322,7 +322,7 @@ class CsvDeploymentConverter(object):
         datatype = self._get_field_datatype(schema_name, field_name)
 
         if datatype == "string":
-            return str(cell_value)
+            return unicode(cell_value)
         elif datatype == "integer":
             try:
                 return int(cell_value)
