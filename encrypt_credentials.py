@@ -11,7 +11,7 @@ from generate_example_from_schema import ExampleFileGenerator
 DEPLOYMENT_DIR = 'deployments'
 
 
-class VaultYaml(str):
+class VaultYaml(unicode):
     pass
 
 
@@ -24,7 +24,7 @@ def literal_unicode_representer(dumper, data):
 
 
 def encrypt_credentials_file(passcode, deployment_name):
-    yaml.add_constructor('!vault', vault_constructor)
+    yaml.add_constructor(u'!vault', vault_constructor)
     if os.path.isfile(deployment_name):
         credentials_file = deployment_name
     elif os.path.isdir(deployment_name):
