@@ -7,11 +7,12 @@ import jinja2
 import os
 from ansible.parsing.vault import VaultEditor, VaultSecret, is_encrypted
 from generate_example_from_schema import ExampleFileGenerator
+from builtins import str
 
 DEPLOYMENT_DIR = 'deployments'
 
 
-class VaultYaml(unicode):
+class VaultYaml(str):
     pass
 
 
