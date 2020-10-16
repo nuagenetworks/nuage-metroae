@@ -89,15 +89,17 @@
         args:
           chdir: /opt/proxy/bin/ansible
 
+      - name: Check if the eth1 is configured on Internal interface
+        shell: ip netns exec Internal ip addr list | grep eth1
+
+      - name: Check if the eth2 is configured on External interfaces
+        shell: ip netns exec {{ item.name }} ip addr list | grep eth2
+        with_items: "{{ external_interfaces }}"
+        when: external_interfaces is defined and external_interfaces | length > 0
+
       when: inventory_hostname == groups['nuhs'][0]
 
-    - name: Check if the eth1 is configured on Internal interface
-      shell: ip netns exec Internal ip addr list | grep eth1
 
-    - name: Check if the eth2 is configured on External interfaces
-      shell: ip netns exec {{ item.name }} ip addr list | grep eth2
-      with_items: "{{ external_interfaces }}"
-      when: external_interfaces is defined and external_interfaces | length > 0
 
     when:
       - internal_ip is defined
