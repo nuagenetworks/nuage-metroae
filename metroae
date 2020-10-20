@@ -1030,6 +1030,7 @@ function get_valid_data_dir {
 function update_container {
     debug ${FUNCNAME[0]}
     declare -l confirmation
+    declare -1 confirmation1
     if [[ -z $2 ]]; then
         confirmation="init"
         echo ""
@@ -1118,6 +1119,7 @@ function update_metroae {
             return 1
         fi
         set -e
+
         echo ""
         write_to_screen_and_script_log ">>> Checking for a new version of the metroae script in the container data directory"
         echo ""
@@ -1130,21 +1132,7 @@ function update_metroae {
             return 1
         else
             set +e
-            echo ""
-            write_to_screen_and_script_log "It looks like you are trying to run the update MetroAE container"
-            confirmation="init"
-            while [[ $confirmation != "n" ]] && [[ $confirmation  != "y" ]] && [[ $confirmation != "" ]]
-            do
-              echo ""
-              read -p "Do you want to update the MetroAE container (y/N): " confirmation
-            done
-            if [[ $confirmation == "y" ]]; then
-                   cp $METROAE_MOUNT_POINT/metroae "${BASH_SOURCE[0]}"
-            else
-                   echo ""
-                   write_to_screen_and_script_log "Update of MetroAE container canceled. Quitting."
-                   exit 0
-            fi
+            cp $METROAE_MOUNT_POINT/metroae "${BASH_SOURCE[0]}"
 
             if [[ $? -ne 0 ]]; then
                 write_to_screen_and_script_log "We encountered an error copying $METROAE_MOUNT_POINT/metroae."
