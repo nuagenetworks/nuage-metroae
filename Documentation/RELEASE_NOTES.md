@@ -2,19 +2,19 @@
 
 ## Release info
 
-* MetroAE Version 4.1.2
+* MetroAE Version 4.2.0
 * Nuage Release Alignment 20.5.2, 6.0.8
-* Date of Release 9-Oct-2020
+* Date of Release
 
 ## Release Contents
 
 ### Feature Enhancements
 
-* None
+* Add NUH enhancements for VRRP, NTP and other NUH config (METROAE-1429)
 
 ### Resolved Issues
 
-* Fix failure to properly skip copying qcow2 files when skip flag is set
+* None
 
 ## Test Matrix
 
