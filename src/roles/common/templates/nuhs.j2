@@ -70,6 +70,24 @@ nuh_timezone: {{ item.timezone | default("America/Toronto") }}
 skip_vsd_installed_check: {{ item.skip_vsd_installed_check | default(false) }}
 health_monitoring_agent: {{ item.health_monitoring_agent | default("none") }}
 
+vsdconfig_enable: {{ nuh_common.vsdconfig_enable | default(false) | lower }}
+elasticsearch_enable: {{ nuh_common.elasticsearch_enable | default(false) | lower }}
+
+{% if nuh_vrrp is defined and nuh_vrrp %}
+vrrp:
+{% for vr in nuh_vrrp %}
+  - router_id: {{ vr.router_id }}
+    interface: {{ vr.interface }}
+{% if vr.vip is defined and vr.vip %}
+    vip:
+{% for vip_address in vr.vip %}
+      - {{ vip_address }}
+{% endfor %}
+{% endif %}
+    enabled: {{ vr.enabled | default(true) }}
+{% endfor %}
+{% endif %}
+
 {% if item.custom_configuration_file_location is defined %}
 custom_configuration_file_location: {{ item.custom_configuration_file_location }}
 {% endif %}
