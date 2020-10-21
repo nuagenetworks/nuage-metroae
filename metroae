@@ -1091,7 +1091,25 @@ function check_if_mount_point_configured {
 
 function update_metroae {
     debug ${FUNCNAME[0]}
+    declare -l confirmation
     if [[ $RUN_MODE == "CONTAINER" ]]; then
+        if [[ -z $2 ]]; then
+            confirmation="init"
+            while [[ $confirmation != "n" ]] && [[ $confirmation  != "y" ]] && [[ $confirmation != "" ]]
+            do
+                echo ""
+                read -p "Do you really want to update the MetroAE Script? (y/N): " confirmation
+            done
+        else
+            confirmation=$2
+        fi
+
+        if [[ $confirmation != "y" ]]; then
+            echo ""
+            write_to_screen_and_script_log "Update of metroae Script was canceled"
+            echo ""
+            print_version_and_exit 0
+        fi
         echo ""
         write_to_screen_and_script_log ">>> Checking to see if we can update your metroae script."
         echo ""
