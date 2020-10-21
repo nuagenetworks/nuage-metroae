@@ -13,6 +13,7 @@
 * Add support for IPv6 NUH install (METROAE-1416)
 * Add support for Stats-out VSD deployements.
 * Add example for CSV input spreadsheet (METROAE-1338)
+* Add support for updating MetroAE Script during Container setup and update.
 
 ### Resolved Issues
 
