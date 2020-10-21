@@ -255,6 +255,18 @@
 
     when: vsd_run_disk_performance_test
 
+  - name: Lets run VSD before install hooks
+    include_role:
+      name: hooks
+      tasks_from: main
+    vars:
+      - hooks_file_path: "{{ hook }}"
+      - hook_location:
+        - vsd_before_install
+    loop: "{{ hooks | default([]) }}"
+    loop_control:
+      loop_var: hook
+
   - block:
 
     - name: Install VSD software on standalone node (Can take 20 minutes)
@@ -422,3 +434,8 @@
     - vstats is defined
     - not skip_vsd_deploy
     - target_server_type is match("nuagex")
+
+- name: Install statistics for stats-out VSDs (Can take 20 minutes)
+  command: /opt/vsd/install.sh -t t -y
+  remote_user: "{{ vsd_default_username }}"
+  when: statistics_only | default(false)
