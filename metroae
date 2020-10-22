@@ -1095,23 +1095,24 @@ function update_metroae {
     if [[ $RUN_MODE == "CONTAINER" ]]; then
         if [[ -z $2 ]]; then
             confirmation="init"
-            while [[ $confirmation != "n" ]] && [[ $confirmation  != "y" ]] && [[ $confirmation != "" ]]
+            while [[ $confirmation != "n" ]] && [[ $confirmation  != "Y" ]] && [[ $confirmation != "" ]]
             do
-                echo ""
-                read -p "Do you really want to update the MetroAE Script? (y/N): " confirmation
+              echo ""
+              echo "We recommend that you update your metroae script to the same version as the container you are loading."
+              read -p "Would you like us to update the metroae script for you? (Y/n): " confirmation
             done
         else
             confirmation=$2
         fi
 
-        if [[ $confirmation != "y" ]]; then
+        if [[ $confirmation == "n" ]]; then
             echo ""
             write_to_screen_and_script_log "Update of metroae Script was canceled"
             echo ""
             print_version_and_exit 0
         fi
         echo ""
-        write_to_screen_and_script_log ">>> Checking to see if we can update your metroae script."
+        write_to_screen_and_script_log ">>> Updating your metroae script"
         echo ""
 
         if [[ -f $SETUP_FILE ]]; then
@@ -1135,33 +1136,21 @@ function update_metroae {
             set -e
             return 1
         fi
-        set -e
+        set +e
+        cp $METROAE_MOUNT_POINT/metroae "${BASH_SOURCE[0]}"
 
-        echo ""
-        write_to_screen_and_script_log ">>> Checking for a new version of the metroae script in the container data directory"
-        echo ""
-
-        if [[ ! -f "$METROAE_MOUNT_POINT/metroae" ]]; then
-            write_to_screen_and_script_log "We couldn't find a new copy of the metroae script in the data directory."
-            echo "It could be that the version of metroae script you are running is the latest."
-            echo "Your copy of the metroae script will not be updated. You can continue to use your copy."
+        if [[ $? -ne 0 ]]; then
+            write_to_screen_and_script_log "We encountered an error copying $METROAE_MOUNT_POINT/metroae."
+            echo "Your copy of the metroae script will not be updated. You can continue to use your copy,"
+            echo "but we suggest that you update your metroae script from the Github repo before continuing."
             echo ""
-            return 1
-        else
-            set +e
-            cp $METROAE_MOUNT_POINT/metroae "${BASH_SOURCE[0]}"
-
-            if [[ $? -ne 0 ]]; then
-                write_to_screen_and_script_log "We encountered an error copying $METROAE_MOUNT_POINT/metroae."
-                echo "Your copy of the metroae script will not be updated. You can continue to use your copy."
-                echo ""
-                set -e
-                return 1
-            fi
             set -e
-            write_to_screen_and_script_log "Successfully updated your metroae script."
-            echo ""
+            return 1
         fi
+        set -e
+        write_to_screen_and_script_log "Successfully updated your metroae script."
+        echo ""
+      fi
     fi
 }
 
