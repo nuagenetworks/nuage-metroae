@@ -9,7 +9,7 @@
     shell: "virsh domiflist {{ item }} | awk '/alubr0/ { print $1 }'"
     with_items: "{{ virt_vms.list_vms }}"
     register: tapinterfaces
-    changed_when: false
+    changed_when: False
 
   - name: Check if corresponding Interface and Port exist on OVS
     shell: |
@@ -17,7 +17,7 @@
       for v in ${vnics//\\n/ }; do ovs-vsctl show | grep -Pzl "(?s)Port \"$v\"\\n.*Interface \"$v\""; done
     args:
       executable: /bin/bash
-    changed_when: false
+    changed_when: False
     with_items: "{{ tapinterfaces.results | map(attribute='stdout') | list }}"
 
   - name: Check if EVPN got resolved for each VPort
@@ -28,7 +28,7 @@
       executable: /bin/bash
     register: results
     failed_when: results.rc == 0
-    changed_when: false
+    changed_when: False
     with_items: "{{ tapinterfaces.results | map(attribute='stdout') | list }}"
 
   when: (personality.stdout|lower == 'vrs')
@@ -38,25 +38,25 @@
   - name: Get list of all Bridge VPorts
     shell: "ovs-appctl bridge/show | awk '/Name/ {print $4}'"
     register: bridge_ports
-    changed_when: false
+    changed_when: False
 
   - name: Check if EVPN got resolved for each Bridge VPort
     shell: "ovs-appctl bridge/port-show | grep '{{ item }}' -A 3 | grep -q 'evpn_id: 0'"
     with_items: "{{ bridge_ports.stdout_lines }}"
     register: results
-    changed_when: false
+    changed_when: False
     failed_when: results.rc ==  0
 
   - name: Get list of all Host VPorts
     shell: "ovs-appctl host/show | awk '/Name/ {print $4}'"
     register: host_ports
-    changed_when: false
+    changed_when: False
 
   - name: Check if EVPN got resolved for each Host VPort
     shell: "ovs-appctl host/port-show | grep '{{ item }}' -A 3 | grep -q 'evpn_id: 0'"
     with_items: "{{ host_ports.stdout_lines }}"
     register: results
-    changed_when: false
+    changed_when: False
     failed_when: results.rc ==  0
   when: (personality.stdout|lower == 'vrs-g')
 
