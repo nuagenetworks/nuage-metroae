@@ -11,6 +11,7 @@
 
 ### Feature Enhancements
 
+* Support for deploying using Excel spreadsheet (.xlsx) files
 * Add hosts and clusters folder support for vCenter (METROAE-1423)
 * Add hook location for custom external certificates (METROAE-1424)
 * Add support for IPv6 NUH install (METROAE-1416)
