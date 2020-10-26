@@ -1328,6 +1328,12 @@ function deployment_main {
                 DEPLOYMENT_DIR="$DEPLOYMENTS_BASE_DIR/$deployment_name"
                 rm -f $DEPLOYMENT_DIR/*.yml
                 ./convert_csv_to_deployment.py $DEPLOYMENT $deployment_name
+            elif [[ $DEPLOYMENT == *.xlsx ]]; then
+                filename=$(basename -- "$DEPLOYMENT")
+                deployment_name="${filename%.*}"
+                DEPLOYMENT_DIR="$DEPLOYMENTS_BASE_DIR/$deployment_name"
+                rm -f $DEPLOYMENT_DIR/*.yml
+                ./convert_excel_to_deployment.py $DEPLOYMENT $deployment_name
             elif [[ -d $DEPLOYMENT ]]; then
                 DEPLOYMENT_DIR=$DEPLOYMENT
             elif [[ -d $DEPLOYMENTS_BASE_DIR/$DEPLOYMENT ]]; then
@@ -2139,6 +2145,14 @@ function tools_main {
             docker_exec env workdir $CONTAINER_HOME/nuage-metroae /usr/bin/python convert_csv_to_deployment.py ${EXTRA_ARGS[@]}
         else
             /usr/bin/python convert_csv_to_deployment.py ${EXTRA_ARGS[@]}
+        fi
+        print_version_and_exit 0
+        ;;
+        convert_excel_to_deployment)
+        if [[ $RUN_MODE == $CONTAINER_RUN_MODE ]]; then
+            docker_exec env workdir $CONTAINER_HOME/nuage-metroae /usr/bin/python convert_excel_to_deployment.py ${EXTRA_ARGS[@]}
+        else
+            /usr/bin/python convert_excel_to_deployment.py ${EXTRA_ARGS[@]}
         fi
         print_version_and_exit 0
         ;;
