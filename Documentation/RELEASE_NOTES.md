@@ -17,6 +17,7 @@
 * Add support for Stats-out VSD deployements.
 * Add example for CSV input spreadsheet (METROAE-1338)
 * Support Inplace upgrades for Geo-redundant VSD
+* Moved MetroAE container to Docker hub (METROAE-1430)
 
 ### Resolved Issues
 
