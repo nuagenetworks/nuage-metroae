@@ -19,6 +19,7 @@
 * Add example for CSV input spreadsheet (METROAE-1338)
 * Support Inplace upgrades for Geo-redundant VSD
 * Add NUH enhancements for VRRP, NTP and other NUH config (METROAE-1429)
+* Add support for updating MetroAE Script during Container setup and update. (METROAE - 1427)
 
 ### Resolved Issues
 
