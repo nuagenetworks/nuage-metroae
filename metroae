@@ -531,6 +531,7 @@ function pull {
     status=$?
     if [[ $status -ne 0 ]]; then
         write_to_screen_and_script_log "Attempt to pull the $MAX_CONTAINER_VERSION MetroAE container image failed. Quitting."
+        exit 1
     else
         write_to_screen_and_script_log "Successfully pulled the MetroAE container image from Docker hub"
     fi
@@ -609,6 +610,7 @@ function run_container {
         if [[ $status -ne 0 ]]; then
             echo ""
             write_to_screen_and_script_log "Attempt to run the MetroAE container failed. Quitting."
+            print_version_and_exit 1
         else
             echo ""
             write_to_screen_and_script_log "MetroAE container started successfully"
@@ -1160,7 +1162,7 @@ function check_for_user_group {
         if [[ $confirmation != "y" ]]; then
             echo ""
             write_to_screen_and_script_log "Please add the current user to the docker group and retry. Quitting"
-            exit 1
+            print_version_and_exit 1
         fi
 
         echo ""
@@ -1575,13 +1577,13 @@ function container_status {
             write_to_screen_and_script_log "We couldn't find the MetroAE setup type in the configuration file on disk."
             echo "Please run 'metroae container setup' and try again."
             echo ""
-            exit 1
+            print_version_and_exit 1
         elif [[ -z $METROAE_MOUNT_POINT ]]; then
             echo ""
             write_to_screen_and_script_log "We couldn't find the MetroAE data path in the configuration file on disk."
             echo "Please run 'metroae container setup' and try again."
             echo ""
-            exit 1
+            print_version_and_exit 1
         fi
         if [[ $METROAE_SETUP_TYPE == $CONFIG_SETUP_TYPE ]]; then
             current_setup_type="Config"
@@ -1603,7 +1605,7 @@ function container_status {
         write_to_screen_and_script_log "MetroAE container setup file not found. Please run 'metroae container setup'"
         echo "and try again. Quitting."
         echo ""
-        exit 1
+        print_version_and_exit 1
     fi
     if [[ ! -z $RUNNING_CONTAINER_ID ]]; then
         write_to_screen_and_script_log "Docker information:"
