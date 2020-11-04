@@ -28,6 +28,7 @@
 * Allow VSC to be specified without system ip (METROAE-1413)
 * Added Serial=1 to prevent on VSD lockout of iptables during VSC's upgrade
 * Fixed static route gateway issue in VNSUTIL
+* Fixed the issue with VSD license with better error message when it expires (METROAE-1432)
 
 
 ## Test Matrix
