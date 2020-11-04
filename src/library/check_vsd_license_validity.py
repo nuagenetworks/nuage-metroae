@@ -66,7 +66,7 @@ def check_licenses_expiration(licenses, required_days_left):
             license_expire_seconds = int(lic.expiry_timestamp / 1000)
             seconds_left = license_expire_seconds - current_seconds
 
-            if True:
+            if seconds_left < 0:
                 raise Exception("The VSD License has expired, please renew the License before proceeding to install the VSD image")
 
             days_left = int(seconds_left / SECONDS_PER_DAY)
