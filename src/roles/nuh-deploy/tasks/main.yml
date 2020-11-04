@@ -81,6 +81,22 @@
 
     - block:
 
+      - name: Create and transfer certs
+        include_role:
+          name: common
+          tasks_from: vsd-generate-transfer-certificates
+        when: not skip_vsd_installed_check
+        vars:
+          certificate_password: "{{ nuh_default_password }}"
+          certificate_username: "nuhproxy"
+          commonName: "nuhproxy"
+          certificate_type: server
+          scp_user: "root"
+          scp_location: /opt/proxy/data/certs
+          additional_parameters:  -d {{ item.external_fqdn }}
+        with_items:
+          - external_interfaces
+
       - name: Copy the network config for NUH internal and external networks
         template: src=config.yml.j2 backup=no dest=/opt/proxy/data/config.yml owner=root group=root mode=0640
 
@@ -98,24 +114,6 @@
         when: external_interfaces is defined and external_interfaces | length > 0
 
       when: inventory_hostname == groups['nuhs'][0]
-
-
-
-    - name: Create and transfer certs
-      include_role:
-        name: common
-        tasks_from: vsd-generate-transfer-certificates
-      when: not skip_vsd_installed_check
-      vars:
-        certificate_password: "{{ nuh_default_password }}"
-        certificate_username: "nuhproxy"
-        commonName: "nuhproxy"
-        certificate_type: server
-        scp_user: "root"
-        scp_location: /opt/proxy/data/certs
-        additional_parameters:  -d {{ item.external_fqdn }}
-      with_items:
-        - external_interfaces
 
     when:
       - internal_ip is defined
