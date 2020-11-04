@@ -14,7 +14,7 @@ TEST_PARAMS = {
 SECONDS_PER_DAY = 60 * 60 * 24
 
 
-class TestVsdLicenseValid(object):
+#class TestVsdLicenseValid(object):
 
     #def setup_module(self, module_patch, params=None):
     #    mock_module = MagicMock()
