@@ -69,6 +69,19 @@
   - name: Set the timezone
     command: timedatectl set-timezone {{ nuh_timezone }}
 
+  - name: Create and transfer certs
+    include_role:
+      name: common
+      tasks_from: vsd-generate-transfer-certificates
+    when: not skip_vsd_installed_check
+    vars:
+      certificate_password: "{{ nuh_default_password }}"
+      certificate_username: "{{ inventory_hostname }}"
+      commonName: "{{ inventory_hostname }}"
+      certificate_type: server
+      scp_user: "root"
+      scp_location: /opt/proxy/data/certs
+      additional_parameters:  -d {{ inventory_hostname }}
 
   - block:
 
@@ -99,6 +112,9 @@
 
       - name: Copy the network config for NUH internal and external networks
         template: src=config.yml.j2 backup=no dest=/opt/proxy/data/config.yml owner=root group=root mode=0640
+
+      - name: get new CRls
+        shell: /opt/proxy/bin/fetchcrl.sh {{ hostvars[groups['vsds'][0]].mgmt_ip }}
 
       - name: Run the network config script on NUH
         command: ansible-playbook configure.yml
@@ -149,21 +165,6 @@
     when:
       - custom_configuration_file_location is defined or stats_out_proxy | default('NONE') in [hostname, mgmt_ip]
       - inventory_hostname == groups['nuhs'][0]
-
-  - name: Create and transfer certs
-    include_role:
-      name: common
-      tasks_from: vsd-generate-transfer-certificates
-    when: not skip_vsd_installed_check
-    vars:
-      certificate_password: "{{ nuh_default_password }}"
-      certificate_username: "{{ inventory_hostname }}"
-      commonName: "{{ inventory_hostname }}"
-      certificate_type: server
-      scp_user: "root"
-      scp_location: /opt/proxy/data/certs
-      additional_parameters:  -d {{ inventory_hostname }}
-
   remote_user: "{{ nuh_default_username }}"
 
 - name: Setup health monitoring
