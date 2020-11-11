@@ -67,7 +67,7 @@ def check_licenses_expiration(licenses, required_days_left):
             seconds_left = license_expire_seconds - current_seconds
 
             if seconds_left < 0:
-                raise Exception("VSD License has expired")
+                raise Exception("The VSD License has expired, please renew the License before proceeding to install the VSD image")
 
             days_left = int(seconds_left / SECONDS_PER_DAY)
             days_left_dict[lic.unique_license_identifier] = [days_left, lic.licensed_feature]
@@ -100,7 +100,7 @@ def get_vsd_session(vsd_auth, vsd_version):
 
 
 def main():
-    arg_spec = dict(vsd_auth=dict(required=True, type='dict'),
+    arg_spec = dict(vsd_auth=dict(required=True, type='dict', no_log=True),
                     vsd_version=dict(required=True, type='str'),
                     required_days_left=dict(required=True, type='int'))
     module = AnsibleModule(argument_spec=arg_spec, supports_check_mode=True)
@@ -136,7 +136,7 @@ def main():
             return
 
         valid_dict = check_licenses_mode(licenses)
-        return_dict = {"validity": valid_dict, "days_left, licensed_feature": licenses_days_left}
+        return_dict = {"validity": valid_dict, "days_left": licenses_days_left}
 
     except Exception as e:
         module.fail_json(msg="Could not retrieve licenses : %s" % e)
