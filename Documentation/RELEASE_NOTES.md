@@ -2,19 +2,19 @@
 
 ## Release info
 
-* MetroAE Version 4.2.0
-* Nuage Release Alignment 20.5.2, 6.0.8
-* Date of Release 20-Oct-2020
+* MetroAE Version 4.2.1
+* Nuage Release Alignment 20.10.R1
+* Date of Release 13-Nov-2020
 
 ## Release Contents
 
 ### Feature Enhancements
 
-* Add NUH enhancements for VRRP, NTP and other NUH config (METROAE-1429)
+* None
 
 ### Resolved Issues
 
-* None
+* Fix ES upgrade to support 20.10.R1
 
 ## Test Matrix
 
