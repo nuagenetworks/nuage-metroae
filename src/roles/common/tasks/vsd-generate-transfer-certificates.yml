@@ -11,14 +11,14 @@
   - name: Check Ipv4 connectivity between VSD and Cert transfer server
     command: ping -c1 {{ inventory_hostname }}
     delegate_to: "{{ vsd_hostname_list[0] }}"
-    when: 
+    when:
       - not enable_ipv6 | default(False)
       - scp_location is defined
 
   - name: Check Ipv6 connectivity between VSD and Cert transfer server
     command: ping6 -c1 {{ inventory_hostname }}
     delegate_to: "{{ vsd_hostname_list[0] }}"
-    when: 
+    when:
       - enable_ipv6 | default(False)
       - scp_location is defined
 
@@ -43,6 +43,7 @@
     when: "userExistsOutput.rc == 0"
 
   - name: Create and transfer certs from VSD
+    # noqa 305
     shell: >-
       /bin/sshpass -p{{ certificate_password }} /opt/vsd/ejbca/deploy/certMgmt.sh
       -a generate -u {{ certificate_username }} -c {{ commonName }} -o csp
@@ -63,6 +64,7 @@
     when: "'vscs' in group_names and hostvars[inventory_hostname].hostname is defined and hostvars[inventory_hostname].hostname | ipaddr"
 
   - name: Create and transfer certs from VSD
+    # noqa 305
     shell: >-
       /bin/sshpass -p{{ certificate_password }} /opt/vsd/ejbca/deploy/certMgmt.sh
       -a generate -u {{ certificate_username }} -c {{ commonName }} -o csp
@@ -77,6 +79,7 @@
     when: "'4.0.4' not in vsd_version and scp_user is defined and scp_location is defined"
 
   - name: Create and transfer certs from 4.0.4 VSD
+    # noqa 305
     shell: >-
       /bin/sshpass -p{{ certificate_password }} /opt/vsd/ejbca/deploy/certMgmt.sh
       -a generate -u {{ certificate_username }} -c {{ commonName }} -o csp
@@ -91,6 +94,7 @@
     when: "'4.0.4' in vsd_version and scp_user is not defined and scp_location is not defined"
 
   - name: Create and transfer certs from 4.0.4 VSD
+    # noqa 305
     shell: >-
       /bin/sshpass -p{{ certificate_password }} /opt/vsd/ejbca/deploy/certMgmt.sh -a generate
       -u {{ certificate_username }} -c {{ commonName }} -o csp

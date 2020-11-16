@@ -26,7 +26,7 @@
       assert:
         that: "image_path | default('MISSING') != 'MISSING' and image_file_name | default('MISSING') != 'MISSING'"
         msg: "Missing image files for {{ hostname | default(vmname) }} under the unzipped file directory, please unzip them."
-      when:
+      when: 
         - target_server_type is match("kvm") or target_server_type is match("vcenter")
         - not skip_copy_images | default(False)
 
@@ -134,6 +134,7 @@
   ignore_errors: True
   when: target_server_type | default('NONE') is match ("kvm") or target_server_type | default('NONE') is match ("vcenter")
 
-- fail:
+- name: Check if ssh key file was found
+  fail:
     msg: "We couldn't find the user's SSH key file {{ user_ssh_pub_key }}. Is user_ssh_pub_key defined correctly in common.yml?"
   when: target_server_type | default('NONE') is not match ("openstack") and current_user_ssh_key.rc != 0

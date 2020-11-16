@@ -71,13 +71,15 @@ class ExampleFileGenerator(object):
                 if "listName" in schema:
                     list_name = schema["listName"]
                 else:
-                    list_name = schema["items"]["title"].lower() + "s"
+                    list_name = (
+                        schema["items"]["title"].lower().replace(" ", "_") +
+                        "s")
             else:
                 item_name = schema["title"][0:-1]
                 if "listName" in schema:
                     list_name = schema["listName"]
                 else:
-                    list_name = schema["title"].lower()
+                    list_name = schema["title"].lower().replace(" ", "_")
             if self.as_template:
                 self.example_lines.append(
                     "{%% if %s is defined and %s %%}" % (list_name,

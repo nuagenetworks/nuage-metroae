@@ -2,20 +2,23 @@
 
 ## Release info
 
-
-* MetroAE Version 4.2.0
-* Nuage Release Alignment 20.5.1, 6.0.8
-* Date of Release
+* MetroAE Version 4.3.0
+* Nuage Release Alignment 20.10.R1
+* Date of Release TBD
 
 ## Release Contents
 
 ### Feature Enhancements
 
+* Support for deploying using Excel spreadsheet (.xlsx) files
 * Add hosts and clusters folder support for vCenter (METROAE-1423)
 * Add hook location for custom external certificates (METROAE-1424)
 * Add support for IPv6 NUH install (METROAE-1416)
 * Add support for Stats-out VSD deployements.
 * Add example for CSV input spreadsheet (METROAE-1338)
+* Support Inplace upgrades for Geo-redundant VSD
+* Add NUH enhancements for VRRP, NTP and other NUH config (METROAE-1429)
+* Add support for updating MetroAE Script during Container setup and update. (METROAE - 1427)
 
 ### Resolved Issues
 
@@ -23,7 +26,9 @@
 * Add NUH Deploy changes for license install prior to Config (METROAE-1422)
 * Allow VSC to be specified without system ip (METROAE-1413)
 * Added Serial=1 to prevent on VSD lockout of iptables during VSC's upgrade
-
+* Fixed static route gateway issue in VNSUTIL
+* Fixed issue with SDWAN Portal configuration (METROAE-244)
+* Fixed the issue with VSD license with better error message when it expires (METROAE-1432)
 
 ## Test Matrix
 

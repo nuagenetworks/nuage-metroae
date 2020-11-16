@@ -28,17 +28,17 @@ def renumber_schema(schema_contents):
 def main():
 
     if len(sys.argv) < 2:
-        print "Usage: " + sys.argv[0] + " <schema_file>"
+        print("Usage: " + sys.argv[0] + " <schema_file>")
         exit(1)
 
     schema_file = os.path.join(SCHEMA_DIRECTORY, sys.argv[1])
 
-    with open(schema_file, "r") as f:
+    with open(schema_file, "rb") as f:
         schema_contents = f.read().decode("utf-8")
 
     new_contents = renumber_schema(schema_contents)
 
-    with open(schema_file, "w") as f:
+    with open(schema_file, "wb") as f:
         schema_contents = f.write(new_contents.encode("utf-8"))
 
 

@@ -1,9 +1,11 @@
 - name: Create the directory /root/.ssh for authorized_keys (ignoring errors)
-  command: "guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} mkdir-mode /root/.ssh 0700"
+  command: "guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} mkdir-mode /root/.ssh 0700" # noqa 301
   ignore_errors: yes
 
 - name: Set the owner and group for the /root/.ssh directory on the qcow image
   command: "guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} chown 0 0 /root/.ssh"
+  register: chown_result
+  changed_when: "chown_result.rc == 0"
 
 - name: Create a temporary copy of the authorized_keys file
   template:
@@ -21,3 +23,5 @@
 
 - name: Set the mode for the authorized_keys file on the qcow image
   command: "guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} chmod 0640 /root/.ssh/authorized_keys"
+  register: chmod_result
+  changed_when: "chmod_result.rc == 0"
