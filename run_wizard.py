@@ -845,7 +845,8 @@ class Wizard(object):
             if value is None:
                 self._print("\nValue is not a valid hostname\n")
         elif datatype == "version":
-            allowed = re.compile("^[\d][.][\d][.]([A-Z\d]+)$", re.IGNORECASE)
+            allowed = re.compile("^[0-9]+[.][0-9]+[.]([A-Z\d]+)$", re.IGNORECASE)
+            print user_value
             if not allowed.match(user_value):
                 self._print("\nValue is not a valid version\n")
                 return None
