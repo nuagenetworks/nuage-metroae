@@ -68,7 +68,7 @@
 
   - name: Write VSC router interface table to report
     nuage_append: filename="{{ report_path }}" text="{{ show_router_interfaces.stdout_lines|to_nice_json }}\n"
-    
+
   - name: Create local variable with show router interface output in json
     set_fact: show_router_interfaces_json="{{ show_router_interfaces.stdout[0]|vsc_router_interfaces_to_json }}"
 
@@ -88,7 +88,13 @@
     assert: {
       that: "{{ show_router_interfaces_json.control_Oprv4 is match('Up') }}",
       msg: "Invalid Oprv4 status for control interface. ({{ show_router_interfaces_json.control_Oprv4 }}) detected. Expected 'Up'. Check 'show router interface'." }    # noqa 204
-    when: control_ip is defined
+    when: control_ip is defined and not enable_ipv6
+
+  - name: Check for expected control Oprv6 Status
+    assert: {
+      that: "{{ show_router_interfaces_json.control_Oprv6 is match('Up') }}",
+      msg: "Invalid Oprv6 status for control interface. ({{ show_router_interfaces_json.control_Oprv6 }}) detected. Expected 'Up'. Check 'show router interface'." }    # noqa 204
+    when: control_ip is defined and enable_ipv6
 
   - name: Run if System IP is defined
     block:
@@ -104,6 +110,14 @@
         that: "{{ show_router_interfaces_json.system_Oprv4 is match('Up') }}",
         msg: "Invalid Oprv4 status for system interface. ({{ show_router_interfaces_json.system_Oprv4 }}) detected. Expected 'Up'. Check 'show router interface'."
         }
+      when: not enable_ipv6
+
+    - name: Check for expected system Oprv6 Status
+      assert: {
+        that: "{{ show_router_interfaces_json.system_Oprv6 is match('Up') }}",
+        msg: "Invalid Oprv6 status for system interface. ({{ show_router_interfaces_json.system_Oprv6 }}) detected. Expected 'Up'. Check 'show router interface'."
+        }
+      when: enable_ipv6
 
     - name: Get output of 'show router bgp summary'
       sros_command:

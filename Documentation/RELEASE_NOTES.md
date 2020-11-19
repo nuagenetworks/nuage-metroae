@@ -20,6 +20,7 @@
 * Moved MetroAE container to Docker hub (METROAE-1430)
 * Add NUH enhancements for VRRP, NTP and other NUH config (METROAE-1429)
 * Add support for updating MetroAE Script during Container setup and update. (METROAE - 1427)
+* Add support for configuring only IPV6 environment in vcenter. (METROAE-276)
 
 ### Resolved Issues
 
