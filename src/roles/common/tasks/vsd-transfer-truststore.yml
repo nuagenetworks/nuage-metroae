@@ -9,8 +9,9 @@
 
 - name: Copy truststore and certificates to stats VSD
   command:
-    cmd: /bin/sshpass -p{{ hostvars[stats_vsd].vsd_custom_password | default(vsd_custom_password | default(vsd_default_password)) }} \
-         scp -o StrictHostKeyChecking=no truststore.jks {{ stats_vsd }}.jks {{ stats_vsd }}.pem root@{{ stats_vsd }}:/opt/vsd/ejbca/p12/
+    cmd: >-
+        sshpass -p{{ hostvars[stats_vsd].vsd_custom_password | default(vsd_custom_password | default(vsd_default_password)) }}
+        scp -o StrictHostKeyChecking=no truststore.jks {{ stats_vsd }}.jks {{ stats_vsd }}.pem root@{{ stats_vsd }}:/opt/vsd/ejbca/p12/
     chdir:  /opt/vsd/ejbca/p12/
   delegate_to: "{{ vsd_hostname_list[0] }}"
   remote_user: "{{ hostvars[vsd_hostname_list[0]].vsd_custom_username | default(vsd_custom_username | default(vsd_default_username)) }}"
@@ -21,10 +22,7 @@
   changed_when: false
 
 - name: Change ownership of certificates
-  file:
-    path: /opt/vsd/ejbca/p12/{{ stats_vsd }}*
-    owner: vsd
-    group: hadoopusers
+  shell: chown vsd:hadoopusers /opt/vsd/ejbca/p12/{{ stats_vsd }}*
   delegate_to: "{{ stats_vsd }}"
   remote_user: "{{ hostvars[stats_vsd].vsd_custom_username | default(vsd_custom_username | default(vsd_default_username)) }}"
   become: "{{ 'no' if hostvars[stats_vsd].vsd_custom_username | default(vsd_custom_username | default(vsd_default_username)) == 'root' else 'yes' }}"
