@@ -90,6 +90,8 @@ INSIDE_RUN_MODE="INSIDE"
 CONFIG_SETUP_TYPE="c"
 DEPLOY_SETUP_TYPE="d"
 BOTH_SETUP_TYPE="b"
+CONTAINER_STOPPED=0
+CONTAINER_DELETED=0
 
 function read_setup_files {
     while read -r line; do declare -g $line; done < $SETUP_FILE
@@ -351,22 +353,22 @@ function get_max_container_version {
 
 function get_container_id {
     debug ${FUNCNAME[0]}
-    get_max_container_version
-    CONTAINER_ID=`docker ps -a 2>/dev/null | grep $METRO_AE_IMAGE | grep $MAX_CONTAINER_VERSION | awk '{ print $1}'`
+    CONTAINER_ID=`docker ps -a 2>/dev/null | grep $METRO_AE_IMAGE | awk '{ print $1}'`
     debug "${FUNCNAME[0]}: CONTAINER_ID: $CONTAINER_ID"
 }
 
 function get_running_container_id {
     debug ${FUNCNAME[0]}
-    get_max_container_version
-    RUNNING_CONTAINER_ID=`docker ps 2>/dev/null | grep $METRO_AE_IMAGE | grep $MAX_CONTAINER_VERSION | awk '{ print $1}'`
+    RUNNING_CONTAINER_ID=`docker ps 2>/dev/null | grep $METRO_AE_IMAGE | awk '{ print $1}'`
     debug "${FUNCNAME[0]}: RUNNING_CONTAINER_ID: $RUNNING_CONTAINER_ID"
 }
 
 function get_image_id {
     debug ${FUNCNAME[0]}
-    get_max_container_version
-    IMAGE_ID=`docker images 2>/dev/null | grep $METRO_AE_IMAGE | grep $MAX_CONTAINER_VERSION | awk '{ print $3}'`
+    if [[ -z $IMAGE_ID ]]; then
+        get_max_container_version
+        IMAGE_ID=`docker images 2>/dev/null | grep $METRO_AE_IMAGE | grep $MAX_CONTAINER_VERSION | awk '{ print $3}'`
+    fi
     debug "${FUNCNAME[0]}: IMAGE_ID: $IMAGE_ID"
 }
 
@@ -390,6 +392,7 @@ function stop_running_container {
         write_to_screen_and_script_log "Attempt to stop MetroAE container failed"
     else
         write_to_screen_and_script_log "The MetroAE container was stopped"
+        CONTAINER_STOPPED=1
     fi
     set -e
 
@@ -431,6 +434,7 @@ function delete_container_id {
     set -e
 
     write_to_screen_and_script_log "Execute of 'docker rm' on the MetroAE container was successful"
+    CONTAINER_DELETED=1
 }
 
 function destroy {
@@ -461,6 +465,8 @@ function destroy {
     fi
 
     set +e
+    container_image=`docker ps 2>/dev/null | grep $METRO_AE_IMAGE | awk '{ print $2 }'`
+    IMAGE_TAG=${container_image##*:}
     stop_running_container
     if [[ $? -ne 0 ]]; then
         return 1
@@ -483,20 +489,30 @@ function destroy {
     fi
 
     set +e
-    docker rmi -f $IMAGE_ID
+    if [[ "$CONTAINER_STOPPED" -eq "1" ]] && [[ "$CONTAINER_DELETED" -eq "1" ]]; then
 
-    if [[ $? -ne 0 ]]; then
+        docker rmi -f $IMAGE_ID
+
+        if [[ $? -ne 0 ]]; then
+          echo ""
+          write_to_screen_and_script_log "Attempt to remove the MetroAE image failed"
+          echo ""
+          return 1
+        fi
+
+        set -e
         echo ""
-        write_to_screen_and_script_log "Attempt to remove the MetroAE image failed"
+        write_to_screen_and_script_log "The MetroAE container image was removed"
         echo ""
-        return 1
+
+        return 0
+
     fi
-    set -e
 
     echo ""
-    write_to_screen_and_script_log "The MetroAE container image was removed"
+    write_to_screen_and_script_log "No container stopped and removed. No MetroAE container image needs to be removed"
     echo ""
-    return 0
+
 }
 
 function pull {
@@ -586,6 +602,10 @@ function run_container {
 
             user_name=`id -u $(whoami)`
             group_name=`id -g $(whoami)`
+
+            if [[ ! -z $IMAGE_TAG ]]; then
+                MAX_CONTAINER_VERSION=$IMAGE_TAG
+            fi
 
             DOCKER_COMMAND=$(cat <<-END
                 docker run \
@@ -697,17 +717,94 @@ function setup_container {
 
     set +e
 
-    get_image_id
+    images_on_disk=`docker images 2>/dev/null | grep $METRO_AE_IMAGE | awk '{ print $2 }'`
+    num_images=0
+    for image in $images_on_disk
+    do
+        if [[ $image != "<none>" ]]; then
+            num_images=$((num_images+1))
+        fi
+    done
+    if [[ $num_images -gt 1 ]]; then
+        if [[ -z $3 ]]; then
+            echo "You can set up a container with one of the images currently"
+            echo "pulled on the host machine"
+            echo ""
+            echo $images_on_disk
+            read -p "Which image would you like to use for container setup? Please specify the image tag: " IMAGE_TAG_SELECTION
+            if [[ ! -z $IMAGE_TAG_SELECTION ]]; then
+                IMAGE_TAG=$IMAGE_TAG_SELECTION
+            fi
+            IMAGE_ID=`docker images 2>/dev/null | grep $METRO_AE_IMAGE | grep $IMAGE_TAG | awk '{ print $3 }'`
+        else
+            for image in $images_on_disk
+            do
+                if [[ $image == $3 ]]; then
+                    IMAGE_TAG=$image
+                fi
+            done
+            if [[ -z $IMAGE_TAG ]]; then
+                echo ""
+                write_to_screen_and_script_log "The image you would like to set up does not exist on the host machine."
+                echo "Pulling the requested image..."
+                pull $3
+                if [[ $? -ne 0 ]]; then
+                    set -e
+                    return 1
+                fi
+                IMAGE_TAG=$3
+                IMAGE_ID=`docker images 2>/dev/null | grep $METRO_AE_IMAGE | grep $IMAGE_TAG | awk '{ print $3 }'`
+            else
+                IMAGE_ID=`docker images 2>/dev/null | grep $METRO_AE_IMAGE | grep $IMAGE_TAG | awk '{ print $3 }'`
+            fi
+        fi
+    elif [[ $num_images -eq 1 ]]; then
+        if [[ -z $3 ]]; then
+            IMAGE_TAG=$images_on_disk
+            IMAGE_ID=`docker images 2>/dev/null | grep $METRO_AE_IMAGE | grep $IMAGE_TAG | awk '{ print $3 }'`
+        else
+            if [[ $3 == $images_on_disk ]]; then
+                IMAGE_TAG=$3
+                IMAGE_ID=`docker images 2>/dev/null | grep $METRO_AE_IMAGE | grep $IMAGE_TAG | awk '{ print $3 }'`
+            else
+                echo ""
+                write_to_screen_and_script_log "The image you have specified does not match the image on the host machine."
+                echo "Pulling the requested image..."
+                pull $3
+                if [[ $? -ne 0 ]]; then
+                    set -e
+                    return 1
+                fi
+                IMAGE_TAG=$3
+                IMAGE_ID=`docker images 2>/dev/null | grep $METRO_AE_IMAGE | grep $IMAGE_TAG | awk '{ print $3 }'`
+            fi
+        fi
+    else
+        if [[ ! -z $3 ]]; then
+            echo ""
+            write_to_screen_and_script_log "There are no images on the host machine, but an image has been specified for setup."
+            echo "Pulling the requested image..."
+            echo ""
+            pull $3
+            if [[ $? -ne 0 ]]; then
+                set -e
+                return 1
+            fi
+            IMAGE_TAG=$3
+            IMAGE_ID=`docker images 2>/dev/null | grep $METRO_AE_IMAGE | grep $IMAGE_TAG | awk '{ print $3 }'`
+        else
+            get_image_id
+            if [[ -z $IMAGE_ID ]]; then
+                echo ""
+                write_to_screen_and_script_log ">>> Pulling the MetroAE container image from the repository"
+                pull
+            fi
 
-    if [[ -z $IMAGE_ID ]]; then
-        echo ""
-        write_to_screen_and_script_log ">>> Pulling the MetroAE container image from the repository"
-        pull
-    fi
-
-    if [[ $? -ne 0 ]]; then
-        set -e
-        return 1
+            if [[ $? -ne 0 ]]; then
+                set -e
+                return 1
+            fi
+        fi
     fi
     set -e
 
