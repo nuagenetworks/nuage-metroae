@@ -5,6 +5,7 @@
     "description": "Configuration for external interfaces for NUH",
     "type": "array",
     "widget": "form",
+    "listName": "nuh_external_interfaces",
     "items": {
         "widget": "item",
         "type": "object",
@@ -21,7 +22,10 @@
             },
             "external_ip": {
                 "type": "string",
-                "format": "ipv4",
+                "anyOf": [
+                    {"format": "ipv4"},
+                    {"format": "ipv6"}
+                ],
                 "title": "External Network IP address",
                 "description": "IP address of the external network interface. This network is the one where NSGs reside",
                 "propertyOrder": 20
@@ -31,25 +35,36 @@
                 "title": "External Network IP Prefix Length",
                 "description": "IP Prefix length for the external network",
                 "minimum": 0,
-                "maximum": 32,
+                "maximum": 128,
                 "propertyOrder": 30
             },
             "external_gateway": {
                 "type": "string",
-                "format": "ipv4",
+                "anyOf": [
+                    {"format": "ipv4"},
+                    {"format": "ipv6"}
+                ],
                 "title": "External Network Gateway IP",
                 "description": "IP address of the gateway on the external network",
                 "propertyOrder": 40
-            },            
+            },
+            "vlan": {
+                "type": "integer",
+                "title": "External Network VLAN ID",
+                "description": "Optional VLAN ID for external network. Must be unique per external interface. If unspecified, VLAN is unassigned and only one external interface can be used",
+                "default": 0,
+                "advanced": true,
+                "propertyOrder": 50
+            },
             "external_bridge": {
                 "type": "string",
                 "default": "(access bridge)",
                 "title": "External Network Bridge",
                 "description": "Network Bridge used for the external network on the NUH. This will be a Linux network bridge when deploying on KVM. Defaults to using access bridge",
                 "sectionEnd": "External Network",
-                "propertyOrder": 50
+                "propertyOrder": 60
             }
         },
-        "required": ["name", "external_ip", "external_gateway", "external_bridge"]
+        "required": ["name", "external_ip", "external_gateway"]
     }
 }

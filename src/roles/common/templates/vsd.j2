@@ -7,6 +7,10 @@ component_type: vcin
 {% else %}
 component_type: vsd
 {% endif %}
+
+required_bridges:
+  - mgmt
+
 target_server_type: {{ item.target_server_type | default('kvm') }}
 hostname: {{ item.hostname }}
 
@@ -30,14 +34,20 @@ master_vcin: {{ item.master_vcin }}
 
 {% else %}
 
-{% if vsds|length == 1%}
+{% if vsds|length == 1 or item.hostname in stats_only_vsds | default([]) %}
 vsd_sa_or_ha: sa
 {% else %}
 vsd_sa_or_ha: ha
 {% endif %}
 
-{% if vsds|length == 6%}
+{% if vsds|length == 6 and not common.stats_out | default(false) %}
 vsd_standby: true
+{% endif %}
+
+{% if common.stats_out | default(false) %}
+statistics_only: {{ item.hostname in stats_only_vsds }}
+{% else %}
+statistics_only: false
 {% endif %}
 
 {% endif %}

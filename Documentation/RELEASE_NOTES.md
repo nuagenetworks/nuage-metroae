@@ -2,54 +2,36 @@
 
 ## Release info
 
-* MetroAE Version 4.1.0
-* Nuage Release Alignment TBD
+* MetroAE Version 4.3.0
+* Nuage Release Alignment 20.10.R1
 * Date of Release TBD
 
 ## Release Contents
 
 ### Feature Enhancements
 
-* Add support for VSTAT yum update via vstat_yum_update (METROAE-1190)
-* Check hypervisor disk space on KVM and vCenter
-* Add NETCONF RPMs to unzip
-* Support for additional functionality via plugins
-* Add Netconf Manager Support to MetroAE (METROAE-1204)
-* Added support for Python virtual environments (METROAE-1381)
-* Added file check for nsgv_bootstrap.yml and example (METROAE-1379)
-* Make hostname optional for VSC
-* Backup and restore functionality for VSD and VSC (METROAE-1382)
-* Add support for new Nuage version format, e.g. 20.6 (METROAE-1343)
-* Add ability to support custom configuration file for NUH (METROAE-1358)
-* Support NUH install when VSD is not installed (METROAE-1357)
-* Add support for deploying VNS Utils on Openstack
-* Added a restriction for vsc_fallocate_size_gb to 1GB and skip if the value is 0
-* Add support for applying custom VSC configurations (METROAE-1328)
-* Added support for checking and installing for libguestfs for target server
-* Allow second disk to be mounted to VSTAT (ES)
-* Add support for emailing health reports (METROAE-1332)
-* Add support for symlinks as files
-* Add check for HA VSD DNS SRV records (METROAE-1341)
-* Add support for vCenter VM folder specification.
+* Support for deploying using Excel spreadsheet (.xlsx) files
+* Add hosts and clusters folder support for vCenter (METROAE-1423)
+* Add hook location for custom external certificates (METROAE-1424)
+* Add support for IPv6 NUH install (METROAE-1416)
+* Add support for Stats-out VSD deployements.
+* Add example for CSV input spreadsheet (METROAE-1338)
+* Support Inplace upgrades for Geo-redundant VSD
+* Moved MetroAE container to Docker hub (METROAE-1430)
+* Add NUH enhancements for VRRP, NTP and other NUH config (METROAE-1429)
+* Add support for updating MetroAE Script during Container setup and update. (METROAE - 1427)
+* Add support for configuring only IPV6 environment in vcenter. (METROAE-276)
+* Make MetroAE python scripts Python3 compatible (METROAE-1418)
 
 ### Resolved Issues
 
-* Remove redundant "vcpu" tag from KVM XML
-* Enable schema format enforcement (METROAE-1378)
-* Change default NUH ram to 8 GB from 4 GB (METROAE-1355)
-* Upgrade pyYaml to 4.2b1 to address security vulnerability
-* Fixed deployment examples to have correct variable types (METROAE-1194)
-* Fixed undefined variable for nsgv-predeploy on vcenter
-* Fix VCENTER upgrades using container
-* Fix CPU pinning for NUH and perform NTP sync (METROAE-1397)
-* Support Ejabberd license install
-* Fix missing fallocate flag during vsc predeploy
-* Disable chrony and cloud-init for NUH and VSTATs install (METROAE-1401)
-* Do not enable maintainance mode for inplace upgrades (METROAE-1404)
-* Restart VSC after OpenStack upgrade (GITHUB #1537)
-* Add NSGv bootstrap example for vcenter (METROAE - 1393)
-* Add support for checking the size on the specific vCenter datastore if one is provided
-* Add better error reporting for vCenter tasks (METROAE-1406 & METROAE-1407)
+* Add support for IPv6 NUH install (METROAE-1416)
+* Add NUH Deploy changes for license install prior to Config (METROAE-1422)
+* Allow VSC to be specified without system ip (METROAE-1413)
+* Added Serial=1 to prevent on VSD lockout of iptables during VSC's upgrade
+* Fixed static route gateway issue in VNSUTIL
+* Fixed issue with SDWAN Portal configuration (METROAE-244)
+* Fixed the issue with VSD license with better error message when it expires (METROAE-1432)
 
 ## Test Matrix
 

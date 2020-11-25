@@ -5,6 +5,9 @@
 
 target_server_type: kvm
 
+required_bridges:
+  - mgmt
+
 target_server: {{ item.target_server }}
 
 hostname: {{ item.hostname }}
@@ -19,6 +22,10 @@ mgmt_ip: {{ item.mgmt_ip }}
 mgmt_prefix: {{ item.mgmt_ip_prefix }}
 mgmt_gateway: {{ item.mgmt_gateway }}
 
+{% if item.mgmt_ip | ipv6 != False %}
+enable_ipv6: true
+{% endif %}
+
 {% if item.internal_ip is defined %}
 internal_ip: {{ item.internal_ip }}
 internal_prefix: {{ item.internal_ip_prefix | default(24) }}
@@ -30,11 +37,12 @@ external_interfaces:
 {% for interface in nuh_external_interfaces %}
 {% for external_if in item.external_interface_list %}
 {% if interface.name in external_if %}
-    - name: {{ interface.name }}
+    - name: "External{{ loop.index }}"
       external_prefix: {{ interface.external_ip_prefix | default(24) }}
       external_ip: {{ interface.external_ip }}
       external_gateway: {{ interface.external_gateway }}
       external_bridge: {{ interface.external_bridge }}
+      vlan: {{ interface.vlan | default(0) }}
 {% endif %}
 {% endfor %}
 {% endfor %}
@@ -65,6 +73,24 @@ image_file_name: {{ image_file_name | default("MISSING") }}
 nuh_timezone: {{ item.timezone | default("America/Toronto") }}
 skip_vsd_installed_check: {{ item.skip_vsd_installed_check | default(false) }}
 health_monitoring_agent: {{ item.health_monitoring_agent | default("none") }}
+
+vsdconfig_enable: {{ nuh_common.vsdconfig_enable | default(false) | lower }}
+elasticsearch_enable: {{ nuh_common.elasticsearch_enable | default(false) | lower }}
+
+{% if nuh_vrrp is defined and nuh_vrrp %}
+vrrp:
+{% for vr in nuh_vrrp %}
+  - router_id: {{ vr.router_id }}
+    interface: {{ vr.interface }}
+{% if vr.vip is defined and vr.vip %}
+    vip:
+{% for vip_address in vr.vip %}
+      - {{ vip_address }}
+{% endfor %}
+{% endif %}
+    enabled: {{ vr.enabled | default(true) }}
+{% endfor %}
+{% endif %}
 
 {% if item.custom_configuration_file_location is defined %}
 custom_configuration_file_location: {{ item.custom_configuration_file_location }}

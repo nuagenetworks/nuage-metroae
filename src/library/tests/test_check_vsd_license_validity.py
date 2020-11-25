@@ -72,7 +72,7 @@ class TestVsdLicenseValid(object):
         test_days_left_dict = {lic_1.unique_license_identifier: [365, lic_1.licensed_feature], lic_2.unique_license_identifier: [499, lic_2.licensed_feature]}
         test_valid_dict = {lic_1.unique_license_identifier: True, lic_2.unique_license_identifier: True}
 
-        test_result_dict = {"validity": test_valid_dict, "days_left, licensed_feature": test_days_left_dict}
+        test_result_dict = {"validity": test_valid_dict, "days_left": test_days_left_dict}
 
         self.validate_session(import_patch)
         mock_module.fail_json.assert_not_called()
@@ -130,7 +130,7 @@ class TestVsdLicenseValid(object):
         test_days_left_dict = {}
         test_valid_dict = {}
 
-        test_result_dict = {"validity": test_valid_dict, "days_left, licensed_feature": test_days_left_dict}
+        test_result_dict = {"validity": test_valid_dict, "days_left": test_days_left_dict}
 
         self.validate_session(import_patch)
         mock_module.exit_json.assert_called_once_with(changed=False,
@@ -153,7 +153,7 @@ class TestVsdLicenseValid(object):
         test_days_left_dict = {lic_1.unique_license_identifier: [365, lic_1.licensed_feature], lic_2.unique_license_identifier: [499, lic_2.licensed_feature]}
         test_valid_dict = {lic_1.unique_license_identifier: True, lic_2.unique_license_identifier: False}
 
-        test_result_dict = {"validity": test_valid_dict, "days_left, licensed_feature": test_days_left_dict}
+        test_result_dict = {"validity": test_valid_dict, "days_left": test_days_left_dict}
 
         self.validate_session(import_patch)
         mock_module.exit_json.assert_called_once_with(changed=False,
@@ -193,4 +193,4 @@ class TestVsdLicenseValid(object):
 
         self.validate_session(import_patch)
         mock_module.fail_json.assert_called_once_with(
-            msg="VSD License has expired")
+            msg="The VSD License has expired, please renew the License before proceeding to install the VSD image")

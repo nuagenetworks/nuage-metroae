@@ -38,7 +38,7 @@ See the current values of the data and images directories by executing the statu
 
 **metroae tools encrypt credentials** - sets the encryption credentials for encrypting secure user data, e.g. passwords
 
-**metroae copy-ssh-id** - copies the container's public key into the ssh authorized_keys file on the specified server. This key is required for passwordless ssh access to all target servers. Usage: `metroae copy-ssh-id user@host_or_ip`
+**metroae container ssh copyid** - copies the container's public key into the ssh authorized_keys file on the specified server. This key is required for passwordless ssh access to all target servers. Usage: `metroae container ssh copyid user@host_or_ip`
 
 **metroae --list** - lists the workflows that are supported by MetroAE
 
@@ -109,4 +109,4 @@ Ask questions and contact us directly at [devops@nuagenetworks.net](mailto:devop
 
 Report bugs you find and suggest new features and enhancements via the [GitHub Issues](https://github.com/nuagenetworks/nuage-metroae/issues "nuage-metroae issues") feature.
 
-You may also [contribute](../CONTRIBUTING.md) to MetroAE by submitting your own code to the project.
+You may also [contribute](CONTRIBUTING.md) to MetroAE by submitting your own code to the project.

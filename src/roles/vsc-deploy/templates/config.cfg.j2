@@ -49,14 +49,22 @@ echo "Router (Network Side) Configuration"
             {% if internal_ctrl_ip is defined %}
             address {{ internal_ctrl_ip }}/{{ control_netmask_prefix }}
             {% else %}
+              {% if enable_ipv6 is defined %}
+            ipv6 address {{ control_ip }}/{{ control_netmask_prefix }}
+              {% else %}
             address {{ control_ip }}/{{ control_netmask_prefix }}
+              {% endif %}
             {% endif %}
             no shutdown
         exit
         {% endif %}
         interface "system"
         {% if system_ip is defined %}
+          {% if enable_ipv6 is defined %}
+            ipv6 address {{ system_ip }}/128
+          {% else %}
             address {{ system_ip }}/32
+          {% endif %}
             no shutdown
         {% else %}
             shutdown
@@ -71,17 +79,27 @@ echo "Router (Network Side) Configuration"
 #--------------------------------------------------
 ##echo "Static Route Configuration"
 ###--------------------------------------------------
+        {% if route_reflector_ip_list is not defined or route_reflector_ip_list | length == 0 %}
         {% for vsc_item in groups['vscs'] %}
           {% if vsc_item != inventory_hostname %}
             {% if hostvars[vsc_item].system_ip is defined %}
               {% if hostvars[vsc_item].system_ip != system_ip | default('') and hostvars[vsc_item].control_ip is defined %}
+                {% if enable_ipv6 is defined %}
+        static-route {{ hostvars[vsc_item].system_ip }}/128 next-hop {{ hostvars[vsc_item].control_ip }}
+                {% else %}
         static-route {{ hostvars[vsc_item].system_ip }}/32 next-hop {{ hostvars[vsc_item].control_ip }}
+                {% endif %}
               {% endif %}
             {% endif %}
           {% endif %}
         {% endfor %}
+        {% endif %}
         {% if internal_data_gateway_ip is defined %}
+          {% if enable_ipv6 is defined %}
+        static-route ::/0 next-hop {{ internal_data_gateway_ip }}
+          {% else %}
         static-route 0.0.0.0/0 next-hop {{ internal_data_gateway_ip }}
+          {% endif %}
         {% endif %}
     exit
 
@@ -129,6 +147,17 @@ echo "Service Configuration"
                     send-orf
                 exit
             exit
+            {% if route_reflector_ip_list is defined and route_reflector_ip_list | length > 0 %}
+            rapid-withdrawal
+            rapid-update l2-vpn mvpn-ipv4 mdt-safi evpn
+            group "RR"
+                family evpn
+                type internal
+                {% for route_reflector_ip in route_reflector_ip_list %}
+                neighbor {{ route_reflector_ip }}
+                exit
+                {% endfor %}
+            {% else %}
             group "internal"
                 type internal
                 {% for vsc_item in groups['vscs'] %}
@@ -143,6 +172,7 @@ echo "Service Configuration"
                 {% endfor %}
                 family evpn
             exit
+            {% endif %}
         exit
     exit
 exit

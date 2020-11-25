@@ -80,7 +80,7 @@ def main():
                proc_status == 'running' or \
                proc_status == 'accessible' or \
                proc_status == 'not monitored':
-                    desired_state = True
+                desired_state = True
             else:
                 failed_proc = proc_name
                 if proc_status == 'failed' and not restarted:

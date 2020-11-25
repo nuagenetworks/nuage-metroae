@@ -85,7 +85,11 @@
     # < System IP address >
     # Required for BGP pairing with peers
     #
+    {%- if item.system_ip is defined %}
     system_ip: "{{ item.system_ip }}"
+    {%- else %}
+    # system_ip: ""
+    {%- endif %}
 
     # < VM name >
     # Name of the virtual machine on the Hypervisor/vCenter Server.
@@ -187,6 +191,15 @@
     # internal_data_gateway_ip: ""
     {%- endif %}
 
+    # < List of route reflector IPs >
+    # List of route reflector IP addresses if present
+    #
+    {%- if item.route_reflector_ip_list is defined %}
+    route_reflector_ip_list: [ {% for i in item.route_reflector_ip_list | default([]) %}"{{ i }}", {% endfor %}]
+    {%- else %}
+    # route_reflector_ip_list: []
+    {%- endif %}
+
     ############################
 
     {%- if show_target_server_type | default('vcenter') == 'vcenter' %}
@@ -248,6 +261,18 @@
     vcenter_vmfolder: "{{ item.vcenter_vmfolder }}"
     {%- else %}
     # vcenter_vmfolder: (global vCenter VM folder)
+    {%- endif %}
+    {%- endif %}
+
+    {%- if show_target_server_type | default('vcenter') == 'vcenter' %}
+
+    # < vCenter Hosts and Clusters Folder >
+    # Optional path to a hosts and clusters folder defined on vCenter where VM will be instantiated
+    #
+    {%- if item.vcenter_host_clusters_folder is defined %}
+    vcenter_host_clusters_folder: "{{ item.vcenter_host_clusters_folder }}"
+    {%- else %}
+    # vcenter_host_clusters_folder: ""
     {%- endif %}
 
     ########################

@@ -37,10 +37,13 @@
     delegate_to: "{{ item }}"
     with_items: "{{ groups['primary_vsds'] }}"
 
-  - include_role:
-      name: common
-      tasks_from: get-vsd-version
-    delegate_to: "{{ groups['primary_vsds'][0] }}
+  - block:
+
+    - include_role:
+        name: common
+        tasks_from: get-vsd-version
+
+    delegate_to: "{{ groups['primary_vsds'][0] }}"
 
   - name: Deactivate replication on primary VSD cluster
     shell: /opt/vsd/bin/vsd-deactivate-replication-master-cluster.sh -f         # noqa 305
@@ -65,7 +68,7 @@
     - name: Get ElasticSearch node list from VSD stats.conf
       shell: grep ^statscollector.elasticsearch.host= /opt/vsd/stats_collector/conf/stats.conf | cut -c 35-
       register: activeEsNodes
-      changed_when: false
+      changed_when: False
       delegate_to: "{{ item }}"
       with_items: "{{ groups['primary_vsds'] }}"
       run_once: true
@@ -129,6 +132,8 @@
         - 'elasticsearch-status'
         - 'stats-collector-status'
         - 'tca-daemon-status'
+        - 'logstash'
+        - 'logstash-status'
 
   - name: wait for VSD common and core to become running
     monit_waitfor_service:
