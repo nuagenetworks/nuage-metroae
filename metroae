@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -e
 
-METROAE_VERSION="v4.1.1"
+METROAE_VERSION="v4.3.0"
 MENU=()
 
 #################################################################################
@@ -43,25 +43,19 @@ IMAGE_ID=''
 if [[ -z $MAX_CONTAINER_VERSION ]]; then
     MAX_CONTAINER_VERSION='current'
 fi
-REGISTRY_HOST='registry.mv.nuagenetworks.net'
-METRO_AE_IMAGE="$REGISTRY_HOST:5000/metroae"
+DOCKER_REPO="nuagenetworks"
+METRO_AE_IMAGE="$DOCKER_REPO/metroae"
 if [[ ! -z $IMAGE_NAME ]]; then
-    METRO_AE_IMAGE="$REGISTRY_HOST:5000/$IMAGE_NAME"
+    METRO_AE_IMAGE="$DOCKER_REPO/$IMAGE_NAME"
 fi
 OS_RELEASE=$LINUX
 SETUP_USER_DATA_PATH=""
 ENVIRONMENT_FILTERS=(PWD PATH HOME USER SHELL MAIL SSH_CONNECTION LOGNAME OLDPWD LESSOPEN _ XDG_RUNTIME_DIR HISTCONTROL)
 SCRIPT_VERSION=1.1.0
-S3_KEY="AKIAJOPWRLAXPCUXZX3A"
-S3_SECRET="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"
 CONTAINER_TAR_FILE=metroaecontainer.tar
 if [[ ! -z $IMAGE_NAME ]]; then
     CONTAINER_TAR_FILE="$IMAGE_NAME.tar"
 fi
-S3_BUCKET="nuage-devops"
-S3_FOLDER="images"
-S3_HEADER_DUMP_FILE=s3_headers.txt
-TEMPORARY_DIRECTORY=/tmp
 CONTAINER_HOME=/source
 INSTALL_FOLDER=/opt/metroae
 if [[ -z $SCRIPT_LOG_FILE ]]; then
@@ -96,6 +90,8 @@ INSIDE_RUN_MODE="INSIDE"
 CONFIG_SETUP_TYPE="c"
 DEPLOY_SETUP_TYPE="d"
 BOTH_SETUP_TYPE="b"
+CONTAINER_STOPPED=0
+CONTAINER_DELETED=0
 
 function read_setup_files {
     while read -r line; do declare -g $line; done < $SETUP_FILE
@@ -357,22 +353,22 @@ function get_max_container_version {
 
 function get_container_id {
     debug ${FUNCNAME[0]}
-    get_max_container_version
-    CONTAINER_ID=`docker ps -a 2>/dev/null | grep $METRO_AE_IMAGE | grep $MAX_CONTAINER_VERSION | awk '{ print $1}'`
+    CONTAINER_ID=`docker ps -a 2>/dev/null | grep $METRO_AE_IMAGE | awk '{ print $1}'`
     debug "${FUNCNAME[0]}: CONTAINER_ID: $CONTAINER_ID"
 }
 
 function get_running_container_id {
     debug ${FUNCNAME[0]}
-    get_max_container_version
-    RUNNING_CONTAINER_ID=`docker ps 2>/dev/null | grep $METRO_AE_IMAGE | grep $MAX_CONTAINER_VERSION | awk '{ print $1}'`
+    RUNNING_CONTAINER_ID=`docker ps 2>/dev/null | grep $METRO_AE_IMAGE | awk '{ print $1}'`
     debug "${FUNCNAME[0]}: RUNNING_CONTAINER_ID: $RUNNING_CONTAINER_ID"
 }
 
 function get_image_id {
     debug ${FUNCNAME[0]}
-    get_max_container_version
-    IMAGE_ID=`docker images 2>/dev/null | grep $METRO_AE_IMAGE | grep $MAX_CONTAINER_VERSION | awk '{ print $3}'`
+    if [[ -z $IMAGE_ID ]]; then
+        get_max_container_version
+        IMAGE_ID=`docker images 2>/dev/null | grep $METRO_AE_IMAGE | grep $MAX_CONTAINER_VERSION | awk '{ print $3}'`
+    fi
     debug "${FUNCNAME[0]}: IMAGE_ID: $IMAGE_ID"
 }
 
@@ -396,6 +392,7 @@ function stop_running_container {
         write_to_screen_and_script_log "Attempt to stop MetroAE container failed"
     else
         write_to_screen_and_script_log "The MetroAE container was stopped"
+        CONTAINER_STOPPED=1
     fi
     set -e
 
@@ -437,6 +434,7 @@ function delete_container_id {
     set -e
 
     write_to_screen_and_script_log "Execute of 'docker rm' on the MetroAE container was successful"
+    CONTAINER_DELETED=1
 }
 
 function destroy {
@@ -467,6 +465,8 @@ function destroy {
     fi
 
     set +e
+    container_image=`docker ps 2>/dev/null | grep $METRO_AE_IMAGE | awk '{ print $2 }'`
+    IMAGE_TAG=${container_image##*:}
     stop_running_container
     if [[ $? -ne 0 ]]; then
         return 1
@@ -489,80 +489,30 @@ function destroy {
     fi
 
     set +e
-    docker rmi -f $IMAGE_ID
+    if [[ "$CONTAINER_STOPPED" -eq "1" ]] && [[ "$CONTAINER_DELETED" -eq "1" ]]; then
 
-    if [[ $? -ne 0 ]]; then
-        echo ""
-        write_to_screen_and_script_log "Attempt to remove the MetroAE image failed"
-        echo ""
-        return 1
-    fi
-    set -e
+        docker rmi -f $IMAGE_ID
 
-    echo ""
-    write_to_screen_and_script_log "The MetroAE container image was removed"
-    echo ""
-    return 0
-}
-
-function get_from_s3 {
-    debug ${FUNCNAME[0]}
-    headers=$TEMPORARY_DIRECTORY/$S3_HEADER_DUMP_FILE
-    tarfile=$TEMPORARY_DIRECTORY/$CONTAINER_TAR_FILE
-    if [[ ! -z $1 ]]; then
-      tarfile=$1
-    fi
-    set +e
-    rm $tarfile > /dev/null 2>&1
-    rm $headers > /dev/null 2>&1
-    set -e
-    touch $headers
-    date=$(date +"%a, %d %b %Y %T %z")
-    content_type='application/x-compressed-tar'
-    string="GET\n\n$content_type\n$date\n/$S3_BUCKET/$S3_FOLDER/$CONTAINER_TAR_FILE"
-    signature=$(echo -en "${string}" | openssl sha1 -hmac "${S3_SECRET}" -binary | base64)
-    CURL_COMMAND=$(cat <<-END
-        curl -X GET \
-            -D $headers \
-            -H "Host: $S3_BUCKET.s3.amazonaws.com" \
-            -H "Date: $date" \
-            -H "Content-Type: $content_type" \
-            -H "Authorization: AWS ${S3_KEY}:$signature" \
-            "https://$S3_BUCKET.s3.amazonaws.com/$S3_FOLDER/$CONTAINER_TAR_FILE" > $tarfile
-	END
-    )
-    debug "${FUNCNAME[0]}: CURL_COMMAND: $CURL_COMMAND"
-    if [[ -f $SCRIPT_LOG_FILE ]]; then
-        if [ -w "$SCRIPT_LOG_FILE" ]; then
-            eval $CURL_COMMAND | tee -a $SCRIPT_LOG_FILE 2>> $SCRIPT_LOG_FILE
-        else
-            if [ -z $METROAE_WRITE_WARNING_PRINTED ]; then
-                print_write_permission_warning
-                METROAE_WRITE_WARNING_PRINTED=1
-            fi
-            eval $CURL_COMMAND
+        if [[ $? -ne 0 ]]; then
+          echo ""
+          write_to_screen_and_script_log "Attempt to remove the MetroAE image failed"
+          echo ""
+          return 1
         fi
-    else
-        eval $CURL_COMMAND
-    fi
-    if [[ $? -ne 0 ]]; then
+
+        set -e
         echo ""
-        write_to_screen_and_script_log "Command to pull the MetroAE container image from S3 failed. Quitting"
-        print_version_and_exit 1
-    fi
-    status=$(cat $headers | head -n 1 | awk '{print $2}')
-    debug "${FUNCNAME[0]}: status = $status"
-    if [[ $status -ne 200 ]]; then
+        write_to_screen_and_script_log "The MetroAE container image was removed"
         echo ""
-        write_to_screen_and_script_log "Attempt to pull the MetroAE container image from S3 failed. Quitting"
-        print_version_and_exit 1
+
+        return 0
+
     fi
 
-    write_to_screen_and_script_log "Successfully downloaded the container to $tarfile"
+    echo ""
+    write_to_screen_and_script_log "No container stopped and removed. No MetroAE container image needs to be removed"
+    echo ""
 
-    set +e
-    rm $headers > /dev/null 2>&1
-    set -e
 }
 
 function pull {
@@ -572,69 +522,34 @@ function pull {
     fi
     debug "${FUNCNAME[0]}: MAX_CONTAINER_VERSION: $MAX_CONTAINER_VERSION"
 
-    repo="Docker registry"
-    set +e
+    set -e
+
+    echo ""
+    write_to_screen_and_script_log ">>> Pulling the MetroAE container image from Docker hub"
+    echo ""
     if [[ -f $SCRIPT_LOG_FILE ]]; then
         if [ -w "$SCRIPT_LOG_FILE" ]; then
-            debug "${FUNCNAME[0]}: Script log writable"
-            ping -c 5 $REGISTRY_HOST >> $SCRIPT_LOG_FILE 2>> $SCRIPT_LOG_FILE
+            debug "${FUNCNAME[0]}: Script log is writable"
+            sudo docker pull $METRO_AE_IMAGE:$MAX_CONTAINER_VERSION | tee -a $SCRIPT_LOG_FILE
         else
             if [ -z $METROAE_WRITE_WARNING_PRINTED ]; then
                 print_write_permission_warning
                 METROAE_WRITE_WARNING_PRINTED=1
             fi
-            debug "${FUNCNAME[0]}: Script log not writable"
-            ping -c 5 $REGISTRY_HOST > /dev/null 2>&1
-        fi
-    else
-        debug "${FUNCNAME[0]}: No script log"
-        ping -c 5 $REGISTRY_HOST > /dev/null 2>&1
-    fi
-
-    ping_rc=$?
-    debug "${FUNCNAME[0]}: ping_rc: $ping_rc"
-    set -e
-
-    if [[ $ping_rc -ne 0 || ( ! -z $1 && "$1" = "S3" ) ]]; then
-        echo ""
-        write_to_screen_and_script_log "Could not connect to the Nokia registry to download the MetroAE container image"
-        write_to_screen_and_script_log "Retrieving the MetroAE container image from Amazon S3 instead"
-        get_from_s3
-
-        docker load -i $TEMPORARY_DIRECTORY/$CONTAINER_TAR_FILE
-        repo="Amazon S3"
-
-        set +e
-        rm $TEMPORARY_DIRECTORY/$CONTAINER_TAR_FILE > /dev/null 2>&1
-        set -e
-
-    else
-        echo ""
-        write_to_screen_and_script_log ">>> Pulling the MetroAE container image from Nokia registry"
-        echo ""
-        if [[ -f $SCRIPT_LOG_FILE ]]; then
-            if [ -w "$SCRIPT_LOG_FILE" ]; then
-                debug "${FUNCNAME[0]}: Script log is writable"
-                sudo docker pull $METRO_AE_IMAGE:$MAX_CONTAINER_VERSION | tee -a $SCRIPT_LOG_FILE
-            else
-                if [ -z $METROAE_WRITE_WARNING_PRINTED ]; then
-                    print_write_permission_warning
-                    METROAE_WRITE_WARNING_PRINTED=1
-                fi
-                debug "${FUNCNAME[0]}: Script log is not writable"
-                sudo docker pull $METRO_AE_IMAGE:$MAX_CONTAINER_VERSION
-            fi
-        else
-            debug "${FUNCNAME[0]}: Script log is not found"
+            debug "${FUNCNAME[0]}: Script log is not writable"
             sudo docker pull $METRO_AE_IMAGE:$MAX_CONTAINER_VERSION
         fi
+    else
+        debug "${FUNCNAME[0]}: Script log is not found"
+        sudo docker pull $METRO_AE_IMAGE:$MAX_CONTAINER_VERSION
     fi
 
     status=$?
     if [[ $status -ne 0 ]]; then
         write_to_screen_and_script_log "Attempt to pull the $MAX_CONTAINER_VERSION MetroAE container image failed. Quitting."
+        exit 1
     else
-        write_to_screen_and_script_log "Successfully pulled the MetroAE container image from $repo"
+        write_to_screen_and_script_log "Successfully pulled the MetroAE container image from Docker hub"
     fi
     set -e
 
@@ -688,6 +603,10 @@ function run_container {
             user_name=`id -u $(whoami)`
             group_name=`id -g $(whoami)`
 
+            if [[ ! -z $IMAGE_TAG ]]; then
+                MAX_CONTAINER_VERSION=$IMAGE_TAG
+            fi
+
             DOCKER_COMMAND=$(cat <<-END
                 docker run \
                     -e RUN_MODE=$INSIDE_RUN_MODE \
@@ -711,6 +630,7 @@ function run_container {
         if [[ $status -ne 0 ]]; then
             echo ""
             write_to_screen_and_script_log "Attempt to run the MetroAE container failed. Quitting."
+            print_version_and_exit 1
         else
             echo ""
             write_to_screen_and_script_log "MetroAE container started successfully"
@@ -797,17 +717,94 @@ function setup_container {
 
     set +e
 
-    get_image_id
+    images_on_disk=`docker images 2>/dev/null | grep $METRO_AE_IMAGE | awk '{ print $2 }'`
+    num_images=0
+    for image in $images_on_disk
+    do
+        if [[ $image != "<none>" ]]; then
+            num_images=$((num_images+1))
+        fi
+    done
+    if [[ $num_images -gt 1 ]]; then
+        if [[ -z $3 ]]; then
+            echo "You can set up a container with one of the images currently"
+            echo "pulled on the host machine"
+            echo ""
+            echo $images_on_disk
+            read -p "Which image would you like to use for container setup? Please specify the image tag: " IMAGE_TAG_SELECTION
+            if [[ ! -z $IMAGE_TAG_SELECTION ]]; then
+                IMAGE_TAG=$IMAGE_TAG_SELECTION
+            fi
+            IMAGE_ID=`docker images 2>/dev/null | grep $METRO_AE_IMAGE | grep $IMAGE_TAG | awk '{ print $3 }'`
+        else
+            for image in $images_on_disk
+            do
+                if [[ $image == $3 ]]; then
+                    IMAGE_TAG=$image
+                fi
+            done
+            if [[ -z $IMAGE_TAG ]]; then
+                echo ""
+                write_to_screen_and_script_log "The image you would like to set up does not exist on the host machine."
+                echo "Pulling the requested image..."
+                pull $3
+                if [[ $? -ne 0 ]]; then
+                    set -e
+                    return 1
+                fi
+                IMAGE_TAG=$3
+                IMAGE_ID=`docker images 2>/dev/null | grep $METRO_AE_IMAGE | grep $IMAGE_TAG | awk '{ print $3 }'`
+            else
+                IMAGE_ID=`docker images 2>/dev/null | grep $METRO_AE_IMAGE | grep $IMAGE_TAG | awk '{ print $3 }'`
+            fi
+        fi
+    elif [[ $num_images -eq 1 ]]; then
+        if [[ -z $3 ]]; then
+            IMAGE_TAG=$images_on_disk
+            IMAGE_ID=`docker images 2>/dev/null | grep $METRO_AE_IMAGE | grep $IMAGE_TAG | awk '{ print $3 }'`
+        else
+            if [[ $3 == $images_on_disk ]]; then
+                IMAGE_TAG=$3
+                IMAGE_ID=`docker images 2>/dev/null | grep $METRO_AE_IMAGE | grep $IMAGE_TAG | awk '{ print $3 }'`
+            else
+                echo ""
+                write_to_screen_and_script_log "The image you have specified does not match the image on the host machine."
+                echo "Pulling the requested image..."
+                pull $3
+                if [[ $? -ne 0 ]]; then
+                    set -e
+                    return 1
+                fi
+                IMAGE_TAG=$3
+                IMAGE_ID=`docker images 2>/dev/null | grep $METRO_AE_IMAGE | grep $IMAGE_TAG | awk '{ print $3 }'`
+            fi
+        fi
+    else
+        if [[ ! -z $3 ]]; then
+            echo ""
+            write_to_screen_and_script_log "There are no images on the host machine, but an image has been specified for setup."
+            echo "Pulling the requested image..."
+            echo ""
+            pull $3
+            if [[ $? -ne 0 ]]; then
+                set -e
+                return 1
+            fi
+            IMAGE_TAG=$3
+            IMAGE_ID=`docker images 2>/dev/null | grep $METRO_AE_IMAGE | grep $IMAGE_TAG | awk '{ print $3 }'`
+        else
+            get_image_id
+            if [[ -z $IMAGE_ID ]]; then
+                echo ""
+                write_to_screen_and_script_log ">>> Pulling the MetroAE container image from the repository"
+                pull
+            fi
 
-    if [[ -z $IMAGE_ID ]]; then
-        echo ""
-        write_to_screen_and_script_log ">>> Pulling the MetroAE container image from the repository"
-        pull
-    fi
-
-    if [[ $? -ne 0 ]]; then
-        set -e
-        return 1
+            if [[ $? -ne 0 ]]; then
+                set -e
+                return 1
+            fi
+        fi
     fi
     set -e
 
@@ -1331,7 +1328,7 @@ function check_for_user_group {
         if [[ $confirmation != "y" ]]; then
             echo ""
             write_to_screen_and_script_log "Please add the current user to the docker group and retry. Quitting"
-            exit 1
+            print_version_and_exit 1
         fi
 
         echo ""
@@ -1746,13 +1743,13 @@ function container_status {
             write_to_screen_and_script_log "We couldn't find the MetroAE setup type in the configuration file on disk."
             echo "Please run 'metroae container setup' and try again."
             echo ""
-            exit 1
+            print_version_and_exit 1
         elif [[ -z $METROAE_MOUNT_POINT ]]; then
             echo ""
             write_to_screen_and_script_log "We couldn't find the MetroAE data path in the configuration file on disk."
             echo "Please run 'metroae container setup' and try again."
             echo ""
-            exit 1
+            print_version_and_exit 1
         fi
         if [[ $METROAE_SETUP_TYPE == $CONFIG_SETUP_TYPE ]]; then
             current_setup_type="Config"
@@ -1774,7 +1771,7 @@ function container_status {
         write_to_screen_and_script_log "MetroAE container setup file not found. Please run 'metroae container setup'"
         echo "and try again. Quitting."
         echo ""
-        exit 1
+        print_version_and_exit 1
     fi
     if [[ ! -z $RUNNING_CONTAINER_ID ]]; then
         write_to_screen_and_script_log "Docker information:"
