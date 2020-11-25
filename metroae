@@ -96,6 +96,8 @@ INSIDE_RUN_MODE="INSIDE"
 CONFIG_SETUP_TYPE="c"
 DEPLOY_SETUP_TYPE="d"
 BOTH_SETUP_TYPE="b"
+CONTAINER_STOPPED=0
+CONTAINER_DELETED=0
 
 function read_setup_files {
     while read -r line; do declare -g $line; done < $SETUP_FILE
@@ -373,6 +375,7 @@ function stop_running_container {
         write_to_screen_and_script_log "Attempt to stop MetroAE container failed"
     else
         write_to_screen_and_script_log "The MetroAE container was stopped"
+        CONTAINER_STOPPED=1
     fi
     set -e
 
@@ -414,6 +417,7 @@ function delete_container_id {
     set -e
 
     write_to_screen_and_script_log "Execute of 'docker rm' on the MetroAE container was successful"
+    CONTAINER_DELETED=1
 }
 
 function destroy {
@@ -468,13 +472,17 @@ function destroy {
     fi
 
     set +e
-    docker rmi -f $IMAGE_ID
+    if [[ "$CONTAINER_STOPPED" -eq "1" ]] && [[ "$CONTAINER_STOPPED" -eq "1" ]]; then
 
-    if [[ $? -ne 0 ]]; then
-        echo ""
-        write_to_screen_and_script_log "Attempt to remove the MetroAE image failed"
-        echo ""
-        return 1
+        docker rmi -f $IMAGE_ID
+
+        if [[ $? -ne 0 ]]; then
+          echo ""
+          write_to_screen_and_script_log "Attempt to remove the MetroAE image failed"
+          echo ""
+          return 1
+        fi
+
     fi
     set -e
 
