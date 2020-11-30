@@ -89,6 +89,10 @@
   changed_when: False
   remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
 
+- name: Get VSD major version
+  set_fact:
+    vsd_major_version: "{{ vsd_version.split('.')[0] }}"
+
 - name: Get configured VSD Hostname
   command: hostname -f
   register: hostname_output
@@ -419,7 +423,9 @@
 
   - name: Verify jrestore pass is set for version
     command: "keytool -keystore {{ java_home.stdout }}/lib/security/cacerts -alias vspca -storepass {{ jreStorePwd }} -list"
-    when: jreStorePwd is defined
+    when:
+      - jreStorePwd is defined
+      - vsd_major_version|int < 6
 
   - name: Verify cnauser pass is set
     command: "mysql -ucnauser -p{{ cnaPwd }} -e 'select 1'"
