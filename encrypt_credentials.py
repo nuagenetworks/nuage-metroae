@@ -7,11 +7,12 @@ import jinja2
 import os
 from ansible.parsing.vault import VaultEditor, VaultSecret, is_encrypted
 from generate_example_from_schema import ExampleFileGenerator
+from builtins import str
 
 DEPLOYMENT_DIR = 'deployments'
 
 
-class VaultYaml(unicode):
+class VaultYaml(str):
     pass
 
 
@@ -48,7 +49,7 @@ def encrypt_credentials_file(passcode, deployment_name):
 
     if credentials is not None:
         for cred_set in credentials:
-            for cred in cred_set.keys():
+            for cred in list(cred_set.keys()):
                 if cred not in do_not_encrypt_list:
                     secret = VaultSecret(passcode)
                     editor = VaultEditor()
@@ -82,19 +83,19 @@ def main():
         passcode = os.environ["METROAE_PASSWORD"]
     else:
         try:
-            print "This file will encrypt user credentials for MetroAE"
-            print ("All user comments and unsupported fields in the "
-                   "credentials file will be lost")
-            print "Press Ctrl-C to cancel"
+            print("This file will encrypt user credentials for MetroAE")
+            print("All user comments and unsupported fields in the "
+                  "credentials file will be lost")
+            print("Press Ctrl-C to cancel")
             while True:
                 passcode = getpass.getpass()
                 confirm_passcode = getpass.getpass("Confirm passcode:")
                 if passcode != confirm_passcode:
-                    print "Passcodes do not match. Please reenter"
+                    print("Passcodes do not match. Please reenter")
                 else:
                     break
         except Exception:
-            print "Error in getting passcode from command line"
+            print("Error in getting passcode from command line")
             sys.exit()
 
     encrypt_credentials_file(passcode, args.deployment)
