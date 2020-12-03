@@ -1362,7 +1362,7 @@ function container_load {
         print_version_and_exit 1
     fi
 
-    if ![[ -f $1 ]]; then
+    if ! [[ -f $1 ]]; then
         write_to_screen_and_script_log "Tar file $1 does not exist"
         print_version_and_exit 1
     fi
@@ -1393,9 +1393,10 @@ function download_container {
 
     set +e
     docker --version >> /dev/null 2>> /dev/null
+    exitcode=$?
     set -e
 
-    if [[ $? -eq 0 ]]; then
+    if [[ $exitcode -eq 0 ]]; then
         download_using_docker "$METRO_AE_IMAGE:$imageTag"
     else
         download_from_docker_hub "$METRO_AE_IMAGE:$imageTag"
@@ -1409,9 +1410,10 @@ function download_using_docker {
 
     set +e
     docker save $1 > $CONTAINER_TAR_FILE
+    exitcode=$?
     set -e
 
-    if [[ $? -eq 0 ]]; then
+    if [[ $exitcode -eq 0 ]]; then
         write_to_screen_and_script_log "Download of images into '$CONTAINER_TAR_FILE' complete."
         echo "Copy this file to MetroAE Docker host and issue:"
         echo "  metroae container load $CONTAINER_TAR_FILE"
