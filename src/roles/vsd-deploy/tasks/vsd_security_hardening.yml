@@ -203,6 +203,20 @@
   remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
   changed_when: False
 
+- name: Get current version of VSD software
+  shell: grep -ir "VSD_VERSION=" /etc/profile.d/vsd-banner.sh | awk -F "=" '{print $2}'         # noqa 306
+  register: vsd_version
+  remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
+  changed_when: False
+
+- name: Clean VSD version
+  set_fact:
+    vsd_version_clean: "{{ vsd_version.stdout | to_nice_json }}"
+
+- name: Get VSD major version
+  set_fact:
+    vsd_major_version: "{{ vsd_version_clean.split('.')[0] | replace('\"', '')}}"
+
 - block:
 
   - name: Copy Root CA to VSD
@@ -250,6 +264,42 @@
       mode: 0640
     when: ca_certificate_path is defined
 
+  - block:
+
+    - name: Copy Intermediate Cert to VSD
+      copy:
+        src: "{{ intermediate_certificate_path }}"
+        dest: "/etc/pki/ca-trust/source/anchors/"
+        owner: ejabberd
+        group: hadoopusers
+        mode: 0640
+
+    - name: Import Intermediate Cert Pem File
+      command: /usr/bin/update-ca-trust
+
+    when:
+      - intermediate_certificate_path is defined
+      - nuage_upgrade is not defined or not nuage_upgrade
+      - vsd_major_version|int > 6
+
+  - block:
+
+    - name: Copy Root Cert to VSD
+      copy:
+        src: "{{ ca_certificate_path }}"
+        dest: "/opt/vsd/ejbca/p12/ca.cert.pem"
+        owner: ejabberd
+        group: hadoopusers
+        mode: 0640
+
+    - name: Import Root CA Pem File
+      command: /usr/bin/update-ca-trust
+
+    when:
+      - ca_certificate_path is defined
+      - nuage_upgrade is not defined or not nuage_upgrade
+      - vsd_major_version|int > 6
+
   - name: Import Intermediate Cert Pem file
     command: >-
       {{ java_home.stdout }}/bin/keytool -importcert  -file /opt/vsd/ejbca/p12/intermediate.cert.pem
@@ -257,6 +307,7 @@
     when:
       - intermediate_certificate_path is defined
       - nuage_upgrade is not defined or not nuage_upgrade
+      - vsd_major_version|int < 6
 
   - name: Import Root CA Pem file
     command: >-
@@ -265,6 +316,7 @@
     when:
       - ca_certificate_path is defined
       - nuage_upgrade is not defined or not nuage_upgrade
+      - vsd_major_version|int < 6
 
   - name: Stop vsd-core
     command: monit -g vsd-core stop
