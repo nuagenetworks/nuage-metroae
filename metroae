@@ -16,7 +16,8 @@ MENU+=(',container,stop'            'Stop the MetroAE container'                
 MENU+=(',container,status'          'Display the status of the MetroAE container'          'container'  'status'                 ',container,status')
 MENU+=(',container,destroy'         'Destroy the MetroAE container'                        'container'  'destroy'                ',container,destroy')
 MENU+=(',container,update'          'Update the MetroAE container to the latest version'   'container'  'upgrade-engine'         ',container,update')
-MENU+=(',container,download'        'Download the container in tar format'                 'container'  'download'               ',container,download')
+MENU+=(',container,download'        'Download the container in tar format'                 'tools'      'download'               ',container,download')
+MENU+=(',container,load'            'Load container onto host from downloaded tar file'    'container'  'load'               ',container,download')
 
 #################################################################################
 #                                  VARIABLES                                    #
@@ -56,6 +57,10 @@ CONTAINER_TAR_FILE=metroaecontainer.tar
 if [[ ! -z $IMAGE_NAME ]]; then
     CONTAINER_TAR_FILE="$IMAGE_NAME.tar"
 fi
+DOCKER_REGISTRY_BASE='https://registry-1.docker.io'
+DOCKER_AUTH_BASE='https://auth.docker.io'
+DOCKER_AUTH_SERVICE='registry.docker.io'
+DOCKER_DOWNLOAD_WORK_DIR="metroaecontainer-download"
 CONTAINER_HOME=/source
 INSTALL_FOLDER=/opt/metroae
 if [[ -z $SCRIPT_LOG_FILE ]]; then
@@ -1349,6 +1354,538 @@ function check_for_user_group {
 
 }
 
+function container_load {
+    debug ${FUNCNAME[0]}
+
+    if [[ -z $1 ]]; then
+        write_to_screen_and_script_log "Please specify the tar file downloaded from Docker hub"
+        print_version_and_exit 1
+    fi
+
+    if ! [[ -f $1 ]]; then
+        write_to_screen_and_script_log "Tar file $1 does not exist"
+        print_version_and_exit 1
+    fi
+
+    docker load < $1
+
+    write_to_screen_and_script_log ">>> MetroAE container sucessfully loaded from tar file"
+    write_to_screen_and_script_log "You can run 'metroae container setup' to setup"
+}
+
+#################################################################################
+#                             CONTAINER DOWNLOAD                                #
+#################################################################################
+
+# The following code was adapted from the Moby project (under Apache 2 license)
+# https://github.com/moby/moby/
+# Specifically from the Docker hub download script
+# https://raw.githubusercontent.com/moby/moby/master/contrib/download-frozen-image-v2.sh
+
+function download_container {
+    debug ${FUNCNAME[0]}
+
+    if [[ -z $1 ]]; then
+        imageTag=current
+    else
+        imageTag=$1
+    fi
+
+    set +e
+    docker --version >> /dev/null 2>> /dev/null
+    exitcode=$?
+    set -e
+
+    if [[ $exitcode -eq 0 ]]; then
+        download_using_docker "$METRO_AE_IMAGE:$imageTag"
+    else
+        download_from_docker_hub "$METRO_AE_IMAGE:$imageTag"
+    fi
+}
+
+function download_using_docker {
+    debug ${FUNCNAME[0]}
+
+    write_to_screen_and_script_log ">>> Downloading $1 using docker"
+
+    set +e
+    docker save $1 > $CONTAINER_TAR_FILE
+    exitcode=$?
+    set -e
+
+    if [[ $exitcode -eq 0 ]]; then
+        write_to_screen_and_script_log "Download of images into '$CONTAINER_TAR_FILE' complete."
+        echo "Copy this file to MetroAE Docker host and issue:"
+        echo "  metroae container load $CONTAINER_TAR_FILE"
+    else
+        write_to_screen_and_script_log "Error using docker to download, trying directly from Docker hub..."
+        download_from_docker_hub $1
+    fi
+}
+
+function download_from_docker_hub {
+    debug ${FUNCNAME[0]}
+
+    write_to_screen_and_script_log ">>> Downloading $1 from Docker hub"
+
+    check_download_requirements
+
+    mkdir -p "$DOCKER_DOWNLOAD_WORK_DIR"
+
+    # hacky workarounds for Bash 3 support (no associative arrays)
+    images=()
+    rm -f "$DOCKER_DOWNLOAD_WORK_DIR"/tags-*.tmp
+    manifestJsonEntries=()
+    doNotGenerateManifestJson=
+
+    # bash v4 on Windows CI requires CRLF separator... and linux doesn't seem to care either way
+    newlineIFS=$'\n'
+    major=$(echo "${BASH_VERSION%%[^0.9]}" | cut -d. -f1)
+    if [ "$major" -ge 4 ]; then
+        newlineIFS=$'\r\n'
+    fi
+
+    imageTag="$1"
+
+    image="${imageTag%%[:@]*}"
+    imageTag="${imageTag#*:}"
+    digest="${imageTag##*@}"
+    tag="${imageTag%%@*}"
+
+    # add prefix library if passed official image
+    if [[ "$image" != *"/"* ]]; then
+        image="library/$image"
+    fi
+
+    imageFile="${image//\//_}" # "/" can't be in filenames :)
+
+    token="$(curl -fsSL "$DOCKER_AUTH_BASE/token?service=$DOCKER_AUTH_SERVICE&scope=repository:$image:pull" | jq --raw-output '.token')"
+
+    manifestJson="$(
+        curl -fsSL \
+            -H "Authorization: Bearer $token" \
+            -H 'Accept: application/vnd.docker.distribution.manifest.v2+json' \
+            -H 'Accept: application/vnd.docker.distribution.manifest.list.v2+json' \
+            -H 'Accept: application/vnd.docker.distribution.manifest.v1+json' \
+            "$DOCKER_REGISTRY_BASE/v2/$image/manifests/$digest"
+    )"
+    if [ "${manifestJson:0:1}" != '{' ]; then
+        write_to_screen_and_script_log "error: /v2/$image/manifests/$digest returned something unexpected:"
+        write_to_screen_and_script_log "  $manifestJson"
+        exit 1
+    fi
+
+    imageIdentifier="$image:$tag@$digest"
+
+    schemaVersion="$(echo "$manifestJson" | jq --raw-output '.schemaVersion')"
+    case "$schemaVersion" in
+        2)
+            mediaType="$(echo "$manifestJson" | jq --raw-output '.mediaType')"
+
+            case "$mediaType" in
+                application/vnd.docker.distribution.manifest.v2+json)
+                    handle_single_manifest_v2 "$manifestJson"
+                    ;;
+                application/vnd.docker.distribution.manifest.list.v2+json)
+                    layersFs="$(echo "$manifestJson" | jq --raw-output --compact-output '.manifests[]')"
+                    IFS="$newlineIFS"
+                                        while IFS= read -r line; do
+                                            layers+=("$line")
+                                        done <<< "$layersFs"
+                    unset IFS
+
+                    found=""
+                    targetArch="$(get_target_arch)"
+                    # parse first level multi-arch manifest
+                    for i in "${!layers[@]}"; do
+                        layerMeta="${layers[$i]}"
+                        maniArch="$(echo "$layerMeta" | jq --raw-output '.platform.architecture')"
+                        if [ "$maniArch" = "${targetArch}" ]; then
+                            digest="$(echo "$layerMeta" | jq --raw-output '.digest')"
+                            # get second level single manifest
+                            submanifestJson="$(
+                                curl -fsSL \
+                                    -H "Authorization: Bearer $token" \
+                                    -H 'Accept: application/vnd.docker.distribution.manifest.v2+json' \
+                                    -H 'Accept: application/vnd.docker.distribution.manifest.list.v2+json' \
+                                    -H 'Accept: application/vnd.docker.distribution.manifest.v1+json' \
+                                    "$DOCKER_REGISTRY_BASE/v2/$image/manifests/$digest"
+                            )"
+                            handle_single_manifest_v2 "$submanifestJson"
+                            found="found"
+                            break
+                        fi
+                    done
+                    if [ -z "$found" ]; then
+                        write_to_screen_and_script_log "error: manifest for $maniArch is not found"
+                        exit 1
+                    fi
+                    ;;
+                *)
+                    write_to_screen_and_script_log "error: unknown manifest mediaType ($imageIdentifier): '$mediaType'"
+                    exit 1
+                    ;;
+            esac
+            ;;
+
+        1)
+            if [ -z "$doNotGenerateManifestJson" ]; then
+                write_to_screen_and_script_log "warning: '$imageIdentifier' uses schemaVersion '$schemaVersion'"
+                write_to_screen_and_script_log "  this script cannot (currently) recreate the 'image config' to put in a 'manifest.json' (thus any schemaVersion 2+ images will be imported in the old way, and their 'docker history' will suffer)"
+                write_to_screen_and_script_log
+                doNotGenerateManifestJson=1
+            fi
+
+            layersFs="$(echo "$manifestJson" | jq --raw-output '.fsLayers | .[] | .blobSum')"
+            IFS="$newlineIFS"
+                        while IFS= read -r line; do
+                            layers+=("$line")
+                        done <<< "$layersFs"
+            unset IFS
+
+            history="$(echo "$manifestJson" | jq '.history | [.[] | .v1Compatibility]')"
+            imageId="$(echo "$history" | jq --raw-output '.[0]' | jq --raw-output '.id')"
+
+            echo "Downloading '$imageIdentifier' (${#layers[@]} layers)..."
+            for i in "${!layers[@]}"; do
+                imageJson="$(echo "$history" | jq --raw-output ".[${i}]")"
+                layerId="$(echo "$imageJson" | jq --raw-output '.id')"
+                imageLayer="${layers[$i]}"
+
+                mkdir -p "$DOCKER_DOWNLOAD_WORK_DIR/$layerId"
+                echo '1.0' > "$DOCKER_DOWNLOAD_WORK_DIR/$layerId/VERSION"
+
+                echo "$imageJson" > "$DOCKER_DOWNLOAD_WORK_DIR/$layerId/json"
+
+                # TODO figure out why "-C -" doesn't work here
+                # "curl: (33) HTTP server doesn't seem to support byte ranges. Cannot resume."
+                # "HTTP/1.1 416 Requested Range Not Satisfiable"
+                if [ -f "$DOCKER_DOWNLOAD_WORK_DIR/$layerId/layer.tar" ]; then
+                    # TODO hackpatch for no -C support :'(
+                    echo "skipping existing ${layerId:0:12}"
+                    continue
+                fi
+                token="$(curl -fsSL "$DOCKER_AUTH_BASE/token?service=$DOCKER_AUTH_SERVICE&scope=repository:$image:pull" | jq --raw-output '.token')"
+                fetch_blob "$token" "$image" "$imageLayer" "$DOCKER_DOWNLOAD_WORK_DIR/$layerId/layer.tar" --progress-bar
+            done
+            ;;
+
+        *)
+            write_to_screen_and_script_log "error: unknown manifest schemaVersion ($imageIdentifier): '$schemaVersion'"
+            exit 1
+            ;;
+    esac
+
+    echo
+
+    if [ -s "$DOCKER_DOWNLOAD_WORK_DIR/tags-$imageFile.tmp" ]; then
+        echo -n ', ' >> "$DOCKER_DOWNLOAD_WORK_DIR/tags-$imageFile.tmp"
+    else
+        images=("${images[@]}" "$image")
+    fi
+    echo -n '"'"$tag"'": "'"$imageId"'"' >> "$DOCKER_DOWNLOAD_WORK_DIR/tags-$imageFile.tmp"
+
+    echo -n '{' > "$DOCKER_DOWNLOAD_WORK_DIR/repositories"
+    firstImage=1
+    for image in "${images[@]}"; do
+        imageFile="${image//\//_}" # "/" can't be in filenames :)
+        image="${image#library\/}"
+
+        [ "$firstImage" ] || echo -n ',' >> "$DOCKER_DOWNLOAD_WORK_DIR/repositories"
+        firstImage=
+        echo -n $'\n\t' >> "$DOCKER_DOWNLOAD_WORK_DIR/repositories"
+        echo -n '"'"$image"'": { '"$(cat "$DOCKER_DOWNLOAD_WORK_DIR/tags-$imageFile.tmp")"' }' >> "$DOCKER_DOWNLOAD_WORK_DIR/repositories"
+    done
+    echo -n $'\n}\n' >> "$DOCKER_DOWNLOAD_WORK_DIR/repositories"
+
+    rm -f "$DOCKER_DOWNLOAD_WORK_DIR"/tags-*.tmp
+
+    if [ -z "$doNotGenerateManifestJson" ] && [ "${#manifestJsonEntries[@]}" -gt 0 ]; then
+        echo '[]' | jq --raw-output ".$(for entry in "${manifestJsonEntries[@]}"; do echo " + [ $entry ]"; done)" > "$DOCKER_DOWNLOAD_WORK_DIR/manifest.json"
+    else
+        rm -f "$DOCKER_DOWNLOAD_WORK_DIR/manifest.json"
+    fi
+
+
+    tar -cC $DOCKER_DOWNLOAD_WORK_DIR . > $CONTAINER_TAR_FILE
+    rm -rf $DOCKER_DOWNLOAD_WORK_DIR
+    write_to_screen_and_script_log "Download of images into '$CONTAINER_TAR_FILE' complete."
+    echo "Copy this file to MetroAE Docker host and issue:"
+    echo "  metroae container load $CONTAINER_TAR_FILE"
+
+}
+
+function check_download_requirements {
+    debug ${FUNCNAME[0]}
+
+    # check if essential commands are in our PATH
+    all_commands_present=1
+
+    if ! command -v jq &> /dev/null; then
+        write_to_screen_and_script_log "The command 'jq' was not found in PATH"
+        write_to_screen_and_script_log "This is a small utility for parsing JSON output"
+        write_to_screen_and_script_log "It is needed for parsing Docker hub manifest output"
+        write_to_screen_and_script_log "Please install this utility with:"
+        write_to_screen_and_script_log ""
+        write_to_screen_and_script_log "sudo yum install jq"
+        write_to_screen_and_script_log ""
+        all_commands_present=0
+    fi
+
+    if ! command -v curl &> /dev/null; then
+        write_to_screen_and_script_log "The command 'curl' was not found in PATH"
+        write_to_screen_and_script_log "This is a small utility for downloading files from the Internet"
+        write_to_screen_and_script_log "It is needed for downloading files from Docker hub"
+        write_to_screen_and_script_log "Please install this utility with:"
+        write_to_screen_and_script_log ""
+        write_to_screen_and_script_log "sudo yum install curl"
+        write_to_screen_and_script_log ""
+        all_commands_present=0
+    fi
+
+    if ! command -v sha256sum &> /dev/null; then
+        write_to_screen_and_script_log "The command 'sha256sum' was not found in PATH"
+        write_to_screen_and_script_log "This is a small utility for calculating SHA256 checksums"
+        write_to_screen_and_script_log "It is needed for validating files downloaded from Docker hub"
+        write_to_screen_and_script_log "Please install this utility with:"
+        write_to_screen_and_script_log ""
+        write_to_screen_and_script_log "sudo yum install coreutils"
+        write_to_screen_and_script_log ""
+        all_commands_present=0
+    fi
+
+    if [[ $all_commands_present -ne 1 ]]; then
+        print_version_and_exit 1
+    fi
+}
+
+fetch_blob() {
+    debug ${FUNCNAME[0]}
+
+    local token="$1"
+    shift
+    local image="$1"
+    shift
+    local digest="$1"
+    shift
+    local targetFile="$1"
+    shift
+    local curlArgs=("$@")
+
+    local curlHeaders
+    curlHeaders="$(
+        curl -S "${curlArgs[@]}" \
+            -H "Authorization: Bearer $token" \
+            "$DOCKER_REGISTRY_BASE/v2/$image/blobs/$digest" \
+            -o "$targetFile" \
+            -D-
+    )"
+    curlHeaders="$(echo "$curlHeaders" | tr -d '\r')"
+    if grep -qE "^HTTP/[0-9].[0-9] 3" <<< "$curlHeaders"; then
+        rm -f "$targetFile"
+
+        local blobRedirect
+        blobRedirect="$(echo "$curlHeaders" | awk -F ': ' 'tolower($1) == "location" { print $2; exit }')"
+        if [ -z "$blobRedirect" ]; then
+            write_to_screen_and_script_log "error: failed fetching '$image' blob '$digest'"
+            echo "$curlHeaders" | head -1 >&2
+            return 1
+        fi
+
+        curl -fSL "${curlArgs[@]}" \
+            "$blobRedirect" \
+            -o "$targetFile"
+    fi
+}
+
+# handle 'application/vnd.docker.distribution.manifest.v2+json' manifest
+handle_single_manifest_v2() {
+    debug ${FUNCNAME[0]}
+
+    local manifestJson="$1"
+    shift
+
+    local configDigest
+    configDigest="$(echo "$manifestJson" | jq --raw-output '.config.digest')"
+    local imageId="${configDigest#*:}" # strip off "sha256:"
+
+    local configFile="$imageId.json"
+    fetch_blob "$token" "$image" "$configDigest" "$DOCKER_DOWNLOAD_WORK_DIR/$configFile" -s
+
+    local layersFs
+    layersFs="$(echo "$manifestJson" | jq --raw-output --compact-output '.layers[]')"
+    local IFS="$newlineIFS"
+    local layers
+        while IFS= read -r line; do
+            layers+=("$line")
+        done <<< "$layersFs"
+    unset IFS
+
+    echo "Downloading '$imageIdentifier' (${#layers[@]} layers)..."
+    local layerId=
+    local layerFiles=()
+    for i in "${!layers[@]}"; do
+        local layerMeta="${layers[$i]}"
+
+                if [[ -z $layerMeta ]]; then
+                    continue
+                fi
+
+        local layerMediaType
+        layerMediaType="$(echo "$layerMeta" | jq --raw-output '.mediaType')"
+        local layerDigest
+        layerDigest="$(echo "$layerMeta" | jq --raw-output '.digest')"
+
+        # save the previous layer's ID
+        local parentId="$layerId"
+        # create a new fake layer ID based on this layer's digest and the previous layer's fake ID
+        layerId="$(echo "$parentId"$'\n'"$layerDigest" | sha256sum | cut -d' ' -f1)"
+        # this accounts for the possibility that an image contains the same layer twice (and thus has a duplicate digest value)
+
+        mkdir -p "$DOCKER_DOWNLOAD_WORK_DIR/$layerId"
+        echo '1.0' > "$DOCKER_DOWNLOAD_WORK_DIR/$layerId/VERSION"
+
+        if [ ! -s "$DOCKER_DOWNLOAD_WORK_DIR/$layerId/json" ]; then
+            local parentJson
+            parentJson="$(printf ', parent: "%s"' "$parentId")"
+            local addJson
+            addJson="$(printf '{ id: "%s"%s }' "$layerId" "${parentId:+$parentJson}")"
+            # this starter JSON is taken directly from Docker's own "docker save" output for unimportant layers
+            jq "$addJson + ." > "$DOCKER_DOWNLOAD_WORK_DIR/$layerId/json" << EOJSON
+                {
+                    "created": "0001-01-01T00:00:00Z",
+                    "container_config": {
+                        "Hostname": "",
+                        "Domainname": "",
+                        "User": "",
+                        "AttachStdin": false,
+                        "AttachStdout": false,
+                        "AttachStderr": false,
+                        "Tty": false,
+                        "OpenStdin": false,
+                        "StdinOnce": false,
+                        "Env": null,
+                        "Cmd": null,
+                        "Image": "",
+                        "Volumes": null,
+                        "WorkingDir": "",
+                        "Entrypoint": null,
+                        "OnBuild": null,
+                        "Labels": null
+                    }
+                }
+EOJSON
+# ^^ Do not indent or put anything else on previous line (multiline block string)
+        fi
+
+        case "$layerMediaType" in
+            application/vnd.docker.image.rootfs.diff.tar.gzip)
+                local layerTar="$layerId/layer.tar"
+                layerFiles=("${layerFiles[@]}" "$layerTar")
+                # TODO figure out why "-C -" doesn't work here
+                # "curl: (33) HTTP server doesn't seem to support byte ranges. Cannot resume."
+                # "HTTP/1.1 416 Requested Range Not Satisfiable"
+                if [ -f "$DOCKER_DOWNLOAD_WORK_DIR/$layerTar" ]; then
+                    # TODO hackpatch for no -C support :'(
+                    echo "skipping existing ${layerId:0:12}"
+                    continue
+                fi
+                local token
+                token="$(curl -fsSL "$DOCKER_AUTH_BASE/token?service=$DOCKER_AUTH_SERVICE&scope=repository:$image:pull" | jq --raw-output '.token')"
+                fetch_blob "$token" "$image" "$layerDigest" "$DOCKER_DOWNLOAD_WORK_DIR/$layerTar" --progress-bar
+                ;;
+
+            *)
+                write_to_screen_and_script_log "error: unknown layer mediaType ($imageIdentifier, $layerDigest): '$layerMediaType'"
+                exit 1
+                ;;
+        esac
+    done
+
+    # change "$imageId" to be the ID of the last layer we added (needed for old-style "repositories" file which is created later -- specifically for older Docker daemons)
+    imageId="$layerId"
+
+    # munge the top layer image manifest to have the appropriate image configuration for older daemons
+    local imageOldConfig
+    imageOldConfig="$(jq --raw-output --compact-output '{ id: .id } + if .parent then { parent: .parent } else {} end' "$DOCKER_DOWNLOAD_WORK_DIR/$imageId/json")"
+    jq --raw-output "$imageOldConfig + del(.history, .rootfs)" "$DOCKER_DOWNLOAD_WORK_DIR/$configFile" > "$DOCKER_DOWNLOAD_WORK_DIR/$imageId/json"
+
+    local manifestJsonEntry
+    manifestJsonEntry="$(
+        echo '{}' | jq --raw-output '. + {
+            Config: "'"$configFile"'",
+            RepoTags: ["'"${image#library\/}:$tag"'"],
+            Layers: '"$(echo '[]' | jq --raw-output ".$(for layerFile in "${layerFiles[@]}"; do echo " + [ \"$layerFile\" ]"; done)")"'
+        }'
+    )"
+    manifestJsonEntries=("${manifestJsonEntries[@]}" "$manifestJsonEntry")
+}
+
+get_target_arch() {
+    debug ${FUNCNAME[0]}
+
+    if [ -n "${TARGETARCH:-}" ]; then
+        echo "${TARGETARCH}"
+        return 0
+    fi
+
+    if type go > /dev/null; then
+        go env GOARCH
+        return 0
+    fi
+
+    if type dpkg > /dev/null; then
+        debArch="$(dpkg --print-architecture)"
+        case "${debArch}" in
+            armel | armhf)
+                echo "arm"
+                return 0
+                ;;
+            *64el)
+                echo "${debArch%el}le"
+                return 0
+                ;;
+            *)
+                echo "${debArch}"
+                return 0
+                ;;
+        esac
+    fi
+
+    if type uname > /dev/null; then
+        uArch="$(uname -m)"
+        case "${uArch}" in
+            x86_64)
+                echo amd64
+                return 0
+                ;;
+            arm | armv[0-9]*)
+                echo arm
+                return 0
+                ;;
+            aarch64)
+                echo arm64
+                return 0
+                ;;
+            mips*)
+                write_to_screen_and_script_log "I see you are running on mips but I don't know how to determine endianness yet, so I cannot select a correct arch to fetch."
+                write_to_screen_and_script_log "Consider installing \"go\" on the system which I can use to determine the correct arch or specify it explictly by setting TARGETARCH"
+                exit 1
+                ;;
+            *)
+                echo "${uArch}"
+                return 0
+                ;;
+        esac
+
+    fi
+
+    # default value
+    write_to_screen_and_script_log "Unable to determine CPU arch, falling back to amd64. You can specify a target arch by setting TARGETARCH"
+    echo amd64
+}
+
+
 #################################################################################
 #                                 DEPLOYMENT                                    #
 #################################################################################
@@ -1917,14 +2454,10 @@ function container_main {
             shift
             shift
             ;;
-            download)
-            if [[ ! -z $2 ]]; then
-              get_from_s3 $2
-              shift
-            else
-              get_from_s3
-            fi
+            load)
             shift
+            container_load "$@"
+            print_version_and_exit 0
             ;;
             *)
             POSITIONAL+=("$1")
@@ -2343,6 +2876,10 @@ function tools_main {
         else
             /usr/bin/python encrypt_credentials.py ${EXTRA_ARGS[@]}
         fi
+        print_version_and_exit 0
+        ;;
+        download)
+        download_container ${EXTRA_ARGS[@]}
         print_version_and_exit 0
         ;;
         *)
