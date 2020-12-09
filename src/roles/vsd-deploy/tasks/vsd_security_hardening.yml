@@ -142,6 +142,12 @@
       - "/etc/pam.d/password-auth"
       - "/etc/pam.d/system-auth"
 
+  - name: Grep for TLS version 1
+    shell: grep 'protocol="TLSv1"' /opt/vsd/jboss/standalone/configuration/standalone-full-ha.xml
+    register: grep_output
+    changed_when: false
+    ignore_errors: true
+
   - block:
 
     - name: Enable TLSv1.2 for verify-client false
@@ -168,7 +174,10 @@
         timeout_seconds: 1200
         test_interval_seconds: 30
 
-    when: tls_version is defined and tls_version == "1.2"
+    when: 
+      - tls_version is defined 
+      - tls_version == "1.2"
+      - grep_output.rc == 0
 
   - block:
 
