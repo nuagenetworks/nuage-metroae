@@ -83,19 +83,10 @@
 
   when: vsd_ran_disk_performance_test | default(False)
 
-- name: Get current version of VSD software
-  shell: grep -ir "VSD_VERSION=" /etc/profile.d/vsd-banner.sh | awk -F "=" '{print $2}'         # noqa 306
-  register: vsd_version
-  changed_when: False
+- include_role:
+    name: common
+    tasks_from: get-vsd-version
   remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
-
-- name: Clean VSD version
-  set_fact:
-    vsd_version_clean: "{{ vsd_version.stdout | to_nice_json }}"
-
-- name: Get VSD major version
-  set_fact:
-    vsd_major_version: "{{ vsd_version_clean.split('.')[0] | replace('\"', '')}}"
 
 - name: Get configured VSD Hostname
   command: hostname -f

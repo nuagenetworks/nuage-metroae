@@ -174,8 +174,8 @@
         timeout_seconds: 1200
         test_interval_seconds: 30
 
-    when: 
-      - tls_version is defined 
+    when:
+      - tls_version is defined
       - tls_version == "1.2"
       - grep_output.rc == 0
 
@@ -186,18 +186,26 @@
         path: /opt/vsd/jboss/standalone/configuration/standalone-full-ha.xml
         regexp: ".*<access-log pattern=\"%a %t %H %p %r %s %D.*"
         line: '<access-log pattern="%a %t %H %p %r %s %D %{CUSTOM}i %{X-Nuage-Request-ID}o %{com.alu.cna.cloudmgmt.api.querycount}r" prefix="access.log" rotate="false">'       # noqa 204
+      register: api_logging_result_v5
 
     - name: Set Advanced API access Logging if matching for 6.*
       lineinfile:
         path: /opt/vsd/jboss/standalone/configuration/standalone-full-ha.xml
         regexp: ".*<access-log prefix=\"access.log\" pattern=\"%a %t %H %p %r %s %D.*false\">"
         line: '<access-log prefix="access.log" pattern="%a %t %H %p %r %s %D %{CUSTOM}i %{X-Nuage-Request-ID}o %{com.alu.cna.cloudmgmt.api.querycount}r" rotate="false">'
+      register: api_logging_result_v6
 
     - name: Set Advanced API access Logging if matching for 20.*
       lineinfile:
         path: /opt/vsd/jboss/standalone/configuration/standalone-full-ha.xml
         regexp: ".*<access-log prefix=\"access.log\" pattern=\"%a %t %H %p %r %s %D.*/>"
         line: '<access-log prefix="access." directory="web.access" relative-to="jboss.server.log.dir" pattern="%a %t %H %p %r %s %D %{CUSTOM}i %{o,X-Nuage-Request-ID} %{r,com.alu.cna.cloudmgmt.api.querycount}" rotate="false" />'
+      register: api_logging_result_v20
+
+    - name: Assert that line replacement was successful
+      assert:
+        that: "api_logging_result_v5.changed is search('true') or api_logging_result_v6.changed is search('true') or api_logging_result_v20 is search('true')"
+        msg: "Advanced API access logging was not set"
 
     when: advanced_api_access_logging is defined
 
@@ -212,19 +220,10 @@
   remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
   changed_when: False
 
-- name: Get current version of VSD software
-  shell: grep -ir "VSD_VERSION=" /etc/profile.d/vsd-banner.sh | awk -F "=" '{print $2}'         # noqa 306
-  register: vsd_version
+- include_role:
+    name: common
+    tasks_from: get-vsd-version
   remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
-  changed_when: False
-
-- name: Clean VSD version
-  set_fact:
-    vsd_version_clean: "{{ vsd_version.stdout | to_nice_json }}"
-
-- name: Get VSD major version
-  set_fact:
-    vsd_major_version: "{{ vsd_version_clean.split('.')[0] | replace('\"', '')}}"
 
 - block:
 
@@ -237,7 +236,7 @@
       mode: 0640
     when: ca_certificate_path is defined
 
-  - name: Copy and Intermediate Cert file to VSD
+  - name: Copy Intermediate Cert file to VSD
     copy:
       src: "{{ intermediate_certificate_path }}"
       dest: "/opt/vsd/ejbca/p12/intermediate.cert.pem"
@@ -275,7 +274,7 @@
 
   - block:
 
-    - name: Copy Intermediate Cert to VSD
+    - name: Copy Intermediate Cert to VSD for version 20.*
       copy:
         src: "{{ intermediate_certificate_path }}"
         dest: "/etc/pki/ca-trust/source/anchors/"
@@ -283,7 +282,7 @@
         group: hadoopusers
         mode: 0640
 
-    - name: Import Intermediate Cert Pem File
+    - name: Import Intermediate Cert Pem File for version 20.*
       command: /usr/bin/update-ca-trust
 
     when:
@@ -293,15 +292,15 @@
 
   - block:
 
-    - name: Copy Root Cert to VSD
+    - name: Copy Root Cert to VSD for version 20.*
       copy:
         src: "{{ ca_certificate_path }}"
-        dest: "/opt/vsd/ejbca/p12/ca.cert.pem"
+        dest: "/etc/pki/ca-trust/source/anchors/"
         owner: ejabberd
         group: hadoopusers
         mode: 0640
 
-    - name: Import Root CA Pem File
+    - name: Import Root CA Pem File for version 20.*
       command: /usr/bin/update-ca-trust
 
     when:
@@ -316,7 +315,7 @@
     when:
       - intermediate_certificate_path is defined
       - nuage_upgrade is not defined or not nuage_upgrade
-      - vsd_major_version|int < 6
+      - vsd_major_version|int <= 6
 
   - name: Import Root CA Pem file
     command: >-
@@ -325,7 +324,7 @@
     when:
       - ca_certificate_path is defined
       - nuage_upgrade is not defined or not nuage_upgrade
-      - vsd_major_version|int < 6
+      - vsd_major_version|int <= 6
 
   - name: Stop vsd-core
     command: monit -g vsd-core stop
