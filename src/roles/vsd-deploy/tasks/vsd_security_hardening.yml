@@ -142,6 +142,12 @@
       - "/etc/pam.d/password-auth"
       - "/etc/pam.d/system-auth"
 
+  - name: Grep for TLS version 1
+    shell: grep 'protocol="TLSv1"' /opt/vsd/jboss/standalone/configuration/standalone-full-ha.xml
+    register: grep_output
+    changed_when: false
+    ignore_errors: true
+
   - block:
 
     - name: Enable TLSv1.2 for verify-client false
@@ -168,27 +174,30 @@
         timeout_seconds: 1200
         test_interval_seconds: 30
 
-    when: tls_version is defined and tls_version == "1.2"
+    when: 
+      - tls_version is defined 
+      - tls_version == "1.2"
+      - grep_output.rc == 0
 
   - block:
-    - name: Grep for new access logging pattern
-      shell: grep "access-log pattern" /opt/vsd/jboss/standalone/configuration/standalone-full-ha.xml
-      register: grep_output
-      ignore_errors: true
 
-    - name: Advanced API access Logging
+    - name: Set Advanced API access Logging if matching for 5.*
       lineinfile:
         path: /opt/vsd/jboss/standalone/configuration/standalone-full-ha.xml
         regexp: ".*<access-log pattern=\"%a %t %H %p %r %s %D.*"
         line: '<access-log pattern="%a %t %H %p %r %s %D %{CUSTOM}i %{X-Nuage-Request-ID}o %{com.alu.cna.cloudmgmt.api.querycount}r" prefix="access.log" rotate="false">'       # noqa 204
-      when: grep_output.rc == 0
 
-    - name: Advanced API access Logging
+    - name: Set Advanced API access Logging if matching for 6.*
       lineinfile:
         path: /opt/vsd/jboss/standalone/configuration/standalone-full-ha.xml
-        regexp: ".*<access-log prefix=\"access.log\" pattern=\"%a %t %H %p %r %s %D.*"
-        line: '<access-log prefix="access.log" pattern="%a %t %H %p %r %s %D %{CUSTOM}i %{X-Nuage-Request-ID}o">'
-      when: grep_output.rc != 0
+        regexp: ".*<access-log prefix=\"access.log\" pattern=\"%a %t %H %p %r %s %D.*false\">"
+        line: '<access-log prefix="access.log" pattern="%a %t %H %p %r %s %D %{CUSTOM}i %{X-Nuage-Request-ID}o %{com.alu.cna.cloudmgmt.api.querycount}r" rotate="false">'
+
+    - name: Set Advanced API access Logging if matching for 20.*
+      lineinfile:
+        path: /opt/vsd/jboss/standalone/configuration/standalone-full-ha.xml
+        regexp: ".*<access-log prefix=\"access.log\" pattern=\"%a %t %H %p %r %s %D.*/>"
+        line: '<access-log prefix="access." directory="web.access" relative-to="jboss.server.log.dir" pattern="%a %t %H %p %r %s %D %{CUSTOM}i %{o,X-Nuage-Request-ID} %{r,com.alu.cna.cloudmgmt.api.querycount}" rotate="false" />'
 
     when: advanced_api_access_logging is defined
 
