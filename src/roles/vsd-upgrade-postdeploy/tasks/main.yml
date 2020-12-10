@@ -1,6 +1,10 @@
 ---
 - block:
 
+  - include_role:
+      name: common
+      tasks_from: get-vsd-version
+
   - name: Get monit summary for all process on VSD
     vsd_monit:
       group: all
@@ -16,11 +20,6 @@
   become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
   vars:
     ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"
-
-- include_role:
-    name: common
-    tasks_from: get-vsd-version
-  remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
 
 - name: Disable maintainance mode on all l3/l2 domains
   vsd_maintainance:
