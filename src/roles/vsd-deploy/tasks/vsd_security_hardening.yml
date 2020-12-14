@@ -182,34 +182,34 @@
   - block:
 
     - name: Set Advanced API access Logging if matching for 5.*
-      lineinfile:
+      replace:
         path: /opt/vsd/jboss/standalone/configuration/standalone-full-ha.xml
         regexp: ".*<access-log pattern=\"%a %t %H %p %r %s %D.*"
-        line: '<access-log pattern="%a %t %H %p %r %s %D %{CUSTOM}i %{X-Nuage-Request-ID}o %{com.alu.cna.cloudmgmt.api.querycount}r" prefix="access.log" rotate="false">'       # noqa 204
+        replace: '<access-log pattern="%a %t %H %p %r %s %D %{CUSTOM}i %{X-Nuage-Request-ID}o %{com.alu.cna.cloudmgmt.api.querycount}r" prefix="access.log" rotate="false">'       # noqa 204
       register: api_logging_result_v5
 
     - debug: var=api_logging_result_v5.changed
 
     - name: Set Advanced API access Logging if matching for 6.*
-      lineinfile:
+      replace:
         path: /opt/vsd/jboss/standalone/configuration/standalone-full-ha.xml
         regexp: ".*<access-log prefix=\"access.log\" pattern=\"%a %t %H %p %r %s %D.*false\">"
-        line: '<access-log prefix="access.log" pattern="%a %t %H %p %r %s %D %{CUSTOM}i %{X-Nuage-Request-ID}o %{com.alu.cna.cloudmgmt.api.querycount}r" rotate="false">'
+        replace: '<access-log prefix="access.log" pattern="%a %t %H %p %r %s %D %{CUSTOM}i %{X-Nuage-Request-ID}o %{com.alu.cna.cloudmgmt.api.querycount}r" rotate="false">'
       register: api_logging_result_v6
 
     - debug: var=api_logging_result_v6.changed
 
     - name: Set Advanced API access Logging if matching for 20.*
-      lineinfile:
+      replace:
         path: /opt/vsd/jboss/standalone/configuration/standalone-full-ha.xml
-        regexp: ".*<access-log prefix=\"access.log\" pattern=\"%a %t %H %p %r %s %D.*/>"
-        line: '<access-log prefix="access." directory="web.access" relative-to="jboss.server.log.dir" pattern="%a %t %H %p %r %s %D %{CUSTOM}i %{o,X-Nuage-Request-ID} %{r,com.alu.cna.cloudmgmt.api.querycount}" rotate="false" />'
+        regexp: ".*<access-log prefix=\"access.\" directory=\"web.access\".*/>"
+        replace: '<access-log prefix="access." directory="web.access" relative-to="jboss.server.log.dir" pattern="%a %t %H %p %r %s %D %{CUSTOM}i %{o,X-Nuage-Request-ID} %{r,com.alu.cna.cloudmgmt.api.querycount}" rotate="false" />'
       register: api_logging_result_v20
 
     - debug: var=api_logging_result_v20.changed
 
     - name: Assert that line replacement was successful
-      assert: 
+      assert:
         that: "api_logging_result_v5.changed == true or api_logging_result_v6.changed == true or api_logging_result_v20 == true"
         msg: "Advanced API access logging was not set"
 
