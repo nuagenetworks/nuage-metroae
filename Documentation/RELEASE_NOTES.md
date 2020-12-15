@@ -34,6 +34,7 @@
 * Fixed issue with SDWAN Portal configuration (METROAE-244)
 * Fixed the issue with VSD license with better error message when it expires (METROAE-1432)
 * Add retries to yum update in case there are connection issues with repos
+* Increased the retries for ejabberd connected users
 
 ## Test Matrix
 
