@@ -35,6 +35,7 @@
 * Fixed the issue with VSD license with better error message when it expires (METROAE-1432)
 * Add retries to yum update in case there are connection issues with repos
 * Increased the retries for ejabberd connected users
+* Skip testing for bootstrap complete when using activation link method
 
 ## Test Matrix
 
