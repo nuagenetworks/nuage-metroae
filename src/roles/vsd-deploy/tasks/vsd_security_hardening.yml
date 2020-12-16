@@ -305,6 +305,12 @@
         group: hadoopusers
         mode: 0640
 
+    - name: View symlinks before importing certs
+      command: ll /opt/ejabberd/conf/*
+      register: symlinks_before_certs
+
+    - debug: var=symlinks_before_certs
+
     - name: Import Root CA Pem File for version 20.*
       command: /usr/bin/update-ca-trust
 
@@ -330,6 +336,12 @@
       - ca_certificate_path is defined
       - nuage_upgrade is not defined or not nuage_upgrade
       - vsd_major_version|int <= 6
+
+  - name: View symlinks after importing certs
+    command: ll /opt/ejabberd/conf/*
+    register: symlinks_after_certs
+
+  - debug: var=symlinks_after_certs
 
   - name: Stop vsd-core
     command: monit -g vsd-core stop
@@ -372,6 +384,12 @@
     assert:
       that: "openssl_output.stdout is search('CONNECTED')"
       msg: "Openssl failed to connect with {{ vsd_fqdn }}. Please make sure the certificates are valid"
+
+  - name: View symlinks after restarting monit processes
+    command: ll /opt/ejabberd/conf/*
+    register: symlinks_after_process_restarts
+
+  - debug: var=symlinks_after_process_restarts
 
   - block:
     - name: Check connected user on ejabberd
