@@ -232,62 +232,54 @@
       name: common
       tasks_from: get-vsd-version
 
-  - name: Copy Root CA to VSD
-    copy:
-      src: "{{ ca_certificate_path }}"
-      dest: "/opt/vsd/ejbca/p12/ca.cert.pem"
-      owner: ejabberd
-      group: hadoopusers
-      mode: 0640
-    when: ca_certificate_path is defined
+  - block:
 
-  - name: Copy Intermediate Cert file to VSD
-    copy:
-      src: "{{ intermediate_certificate_path }}"
-      dest: "/opt/vsd/ejbca/p12/intermediate.cert.pem"
-      owner: ejabberd
-      group: hadoopusers
-      mode: 0640
-    when: intermediate_certificate_path is defined
+    - name: Copy Root CA to VSD
+      copy:
+        src: "{{ ca_certificate_path }}"
+        dest: "/opt/vsd/ejbca/p12/ca.cert.pem"
+        owner: ejabberd
+        group: hadoopusers
+        mode: 0640
+      when: ca_certificate_path is defined
 
-  - name: Copy VSD certificate
-    copy:
-      src: "{{ certificate_path }}"
-      dest: "/opt/vsd/ejbca/p12/{{ certificate_path | basename }}"
-      owner: ejabberd
-      group: hadoopusers
-      mode: 0640
-    when: certificate_path is defined
+    - name: Copy Intermediate Cert file to VSD
+      copy:
+        src: "{{ intermediate_certificate_path }}"
+        dest: "/opt/vsd/ejbca/p12/intermediate.cert.pem"
+        owner: ejabberd
+        group: hadoopusers
+        mode: 0640
+      when: intermediate_certificate_path is defined
 
-  - name: View symlinks before copying certs
-    shell: ls -l /opt/ejabberd/conf/*
-    register: symlinks_before_cert_copy
+    - name: Copy VSD certificate
+      copy:
+        src: "{{ certificate_path }}"
+        dest: "/opt/vsd/ejbca/p12/{{ certificate_path | basename }}"
+        owner: ejabberd
+        group: hadoopusers
+        mode: 0640
+      when: certificate_path is defined
 
-  - debug: var=symlinks_before_cert_copy
+    - name: Copy VSD certificate to ejabberd
+      copy:
+        src: "{{ certificate_path }}"
+        dest: "/opt/ejabberd/conf/server.pem"
+        owner: ejabberd
+        group: hadoopusers
+        mode: 0640
+      when: certificate_path is defined
 
-  - name: Copy VSD certificate to ejabberd
-    copy:
-      src: "{{ certificate_path }}"
-      dest: "/opt/ejabberd/conf/server.pem"
-      owner: ejabberd
-      group: hadoopusers
-      mode: 0640
-    when: certificate_path is defined
+    - name: Copy Root certificate to ejabberd
+      copy:
+        src: "{{ ca_certificate_path }}"
+        dest: "/opt/ejabberd/conf/rootca.pem"
+        owner: ejabberd
+        group: hadoopusers
+        mode: 0640
+      when: ca_certificate_path is defined
 
-  - name: Copy Root certificate to ejabberd
-    copy:
-      src: "{{ ca_certificate_path }}"
-      dest: "/opt/ejabberd/conf/rootca.pem"
-      owner: ejabberd
-      group: hadoopusers
-      mode: 0640
-    when: ca_certificate_path is defined
-
-  - name: View symlinks after copying certs
-    shell: ls -l /opt/ejabberd/conf/*
-    register: symlinks_after_cert_copy
-
-  - debug: var=symlinks_after_cert_copy
+    when: vsd_major_version|int <= 6
 
   - block:
 
@@ -309,6 +301,12 @@
 
   - block:
 
+    - name: View symlinks before copying certs
+      shell: ls -l /opt/ejabberd/conf/*
+      register: symlinks_before_copying_certs
+
+    - debug: var=symlinks_before_copying_certs
+
     - name: Copy Root Cert to VSD for version 20.*
       copy:
         src: "{{ ca_certificate_path }}"
@@ -319,9 +317,9 @@
 
     - name: View symlinks before importing certs
       shell: ls -l /opt/ejabberd/conf/*
-      register: symlinks_before_certs
+      register: symlinks_before_importing_certs
 
-    - debug: var=symlinks_before_certs
+    - debug: var=symlinks_before_importing_certs
 
     - name: Import Root CA Pem File for version 20.*
       command: /usr/bin/update-ca-trust
