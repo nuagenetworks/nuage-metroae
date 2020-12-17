@@ -66,7 +66,7 @@
       msg: "In IPv6, the vsc must define the hostname field"
     when: "'vscs' in group_names and hostvars[inventory_hostname].hostname is defined and hostvars[inventory_hostname].hostname | ipaddr"
 
-  - name: Create and transfer certs from VSD
+  - name: Create and transfer certs from VSD (ignoring errors)
     # noqa 305
     shell: >-
       /bin/sshpass -p{{ certificate_password }} /opt/vsd/ejbca/deploy/certMgmt.sh
@@ -74,42 +74,75 @@
       -f {{ file_type | default('pem') }}
       -t {{ certificate_type }} -s {{ scp_user }}@{{ inventory_hostname }}:{{ scp_location }} {{ additional_parameters }}
     delegate_to: "{{ vsd_hostname_list[0] }}"
-    register: created
-    until: "created.rc == 0 or (created.stdout is search('fail adding entity'))"
-    retries: 20
-    delay: 30
+    register: first_run
     no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
     when: "'4.0.4' not in vsd_version and scp_user is defined and scp_location is defined"
+    ignore_errors: True
 
-  - name: Create and transfer certs from 4.0.4 VSD
-    # noqa 305
-    shell: >-
-      /bin/sshpass -p{{ certificate_password }} /opt/vsd/ejbca/deploy/certMgmt.sh
-      -a generate -u {{ certificate_username }} -c {{ commonName }} -o csp
-      -f {{ file_type | default('pem') }}
-      -t {{ certificate_type }}  -n VSPCA {{ additional_parameters }}
-    delegate_to: "{{ vsd_hostname_list[0] }}"
-    register: created
-    until: "created.rc == 0 or (created.stdout is search('fail adding entity'))"
-    retries: 10
-    delay: 30
-    no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
-    when: "'4.0.4' in vsd_version and scp_user is not defined and scp_location is not defined"
+  - block:
 
-  - name: Create and transfer certs from 4.0.4 VSD
-    # noqa 305
-    shell: >-
-      /bin/sshpass -p{{ certificate_password }} /opt/vsd/ejbca/deploy/certMgmt.sh -a generate
-      -u {{ certificate_username }} -c {{ commonName }} -o csp
-      -f {{ file_type | default('pem') }} -t {{ certificate_type }}
-      -s {{ scp_user }}@{{ inventory_hostname }}:{{ scp_location }}   -n VSPCA {{ additional_parameters }}
-    delegate_to: "{{ vsd_hostname_list[0] }}"
-    register: created
-    until: "created.rc == 0 or (created.stdout is search('fail adding entity'))"
-    retries: 10
-    delay: 30
-    no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
-    when: "'4.0.4' in vsd_version and scp_user is defined and scp_location is defined"
+    - name: Revoke certs if password issue
+      command: "/opt/vsd/ejbca/deploy/certMgmt.sh -a revoke -u {{ certificate_username }} -c {{ commonName }}"
+      delegate_to: "{{ vsd_hostname_list[0] }}"
+      register: revoke_first
+      until: "revoke_first.rc == 0 or (revoke_first.stdout is search('fail adding entity'))"
+      retries: 10
+      delay: 30
+
+    - name: Set fact for revoking certs
+      set_fact:
+        revoked_certs: "True"
+
+    when: "'Failed to use the password file please check if file and permission exists' in first_run.stdout"
+
+  - block:
+
+    - name: Create and transfer certs from VSD
+      # noqa 305
+      shell: >-
+        /bin/sshpass -p{{ certificate_password }} /opt/vsd/ejbca/deploy/certMgmt.sh
+        -a generate -u {{ certificate_username }} -c {{ commonName }} -o csp
+        -f {{ file_type | default('pem') }}
+        -t {{ certificate_type }} -s {{ scp_user }}@{{ inventory_hostname }}:{{ scp_location }} {{ additional_parameters }}
+      delegate_to: "{{ vsd_hostname_list[0] }}"
+      register: created
+      until: "created.rc == 0 or (created.stdout is search('fail adding entity'))"
+      retries: 20
+      delay: 30
+      no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
+      when: "'4.0.4' not in vsd_version and scp_user is defined and scp_location is defined"
+
+    - name: Create and transfer certs from 4.0.4 VSD
+      # noqa 305
+      shell: >-
+        /bin/sshpass -p{{ certificate_password }} /opt/vsd/ejbca/deploy/certMgmt.sh
+        -a generate -u {{ certificate_username }} -c {{ commonName }} -o csp
+        -f {{ file_type | default('pem') }}
+        -t {{ certificate_type }}  -n VSPCA {{ additional_parameters }}
+      delegate_to: "{{ vsd_hostname_list[0] }}"
+      register: created
+      until: "created.rc == 0 or (created.stdout is search('fail adding entity'))"
+      retries: 10
+      delay: 30
+      no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
+      when: "'4.0.4' in vsd_version and scp_user is not defined and scp_location is not defined"
+
+    - name: Create and transfer certs from 4.0.4 VSD
+      # noqa 305
+      shell: >-
+        /bin/sshpass -p{{ certificate_password }} /opt/vsd/ejbca/deploy/certMgmt.sh -a generate
+        -u {{ certificate_username }} -c {{ commonName }} -o csp
+        -f {{ file_type | default('pem') }} -t {{ certificate_type }}
+        -s {{ scp_user }}@{{ inventory_hostname }}:{{ scp_location }}   -n VSPCA {{ additional_parameters }}
+      delegate_to: "{{ vsd_hostname_list[0] }}"
+      register: created
+      until: "created.rc == 0 or (created.stdout is search('fail adding entity'))"
+      retries: 10
+      delay: 30
+      no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
+      when: "'4.0.4' in vsd_version and scp_user is defined and scp_location is defined"
+
+    when: not revoked_certs | default("False")
 
   remote_user: "{{ hostvars[vsd_hostname_list[0]].vsd_custom_username | default(vsd_custom_username | default(vsd_default_username)) }}"
   become: "{{ 'no' if hostvars[vsd_hostname_list[0]].vsd_custom_username | default(vsd_custom_username | default(vsd_default_username)) == 'root' else 'yes' }}"
