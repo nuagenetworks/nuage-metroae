@@ -17,6 +17,10 @@ To use MetroAE bootstrapping, specify the `bootstrap_method` parameter to be `zf
 
 An NSGv may be bootstrapped using a provided 3rd-party ISO file.  In this mode, MetroAE assumes any required VSD configuration is already in place.  In the `nsgvs.yml` deployment file, specify the `bootstrap_method` parameter to be `zfb_external` for each NSGv using this mode.  The parameters `iso_path` and `iso_file` are required to provide the path and filename of the ISO file on the MetroAE host.  During the predeploy phase of the NSGv, the provided ISO will be used for bootstrapping.
 
+## Activation Link
+
+If you would like to use an activation link for bootstrapping the NSGv, MetroAE will spin up with NSGv without configuring it for bootstrap. Bootstrap configuration will be left to the user. To use an activation link as the bootstrap method, you can specify the `bootstrap_method` parameter to be `activation_link` in the `nsgvs.yml` deployment file. You will not need the `nsgv_bootstrap.yml` deployment file if you specify activation link as your bootstrap method.
+
 ## Questions, Feedback, and Contributing
 
 Get support via the [forums](https://devops.nuagenetworks.net/forums/) on the [MetroAE site](https://devops.nuagenetworks.net/).  
