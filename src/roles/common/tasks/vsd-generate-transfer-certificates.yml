@@ -6,13 +6,6 @@
     vsd_hostname: "{{ vsd_fqdn }}"
   run_once: true
 
-- name: Check if custom user already exists and is connected via ssh
-  command: ssh -oStrictHostKeyChecking=no -oPasswordAuthentication=no {{ vsd_custom_username }}@{{ inventory_hostname }} exit 0
-  register: ssh_custom_user
-  delegate_to: localhost
-  ignore_errors: yes
-  when: vsd_custom_username is defined
-
 - block:
 
   - include_role:
@@ -34,7 +27,6 @@
       - vsd_custom_username is defined
       - vsd_custom_password is defined
       - vsd_major_version|int > 6
-      - ssh_custom_user.rc == 0
 
   remote_user: "{{ hostvars[vsd_hostname_list[0]].vsd_custom_username | default(vsd_custom_username | default(vsd_default_username)) }}"
   become: "{{ 'no' if hostvars[vsd_hostname_list[0]].vsd_custom_username | default(vsd_custom_username | default(vsd_default_username)) == 'root' else 'yes' }}"
