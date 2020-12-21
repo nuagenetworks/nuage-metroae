@@ -8,68 +8,6 @@
 
 - block:
 
-  - include_role:
-      name: common
-      tasks_from: get-vsd-version
-
-  - block:
-
-    - name: Update sshd config file to re-enable root login
-      lineinfile:
-        path: /etc/ssh/sshd_config
-        regexp: 'PermitRootLogin no'
-        line: '#PermitRootLogin yes'
-
-    - name: Restart ssh server
-      shell: /bin/systemctl restart  sshd.service
-
-    when:
-      - vsd_custom_username is defined
-      - vsd_custom_password is defined
-      - vsd_major_version|int > 6
-
-  remote_user: "{{ hostvars[vsd_hostname_list[0]].vsd_custom_username | default(vsd_custom_username | default(vsd_default_username)) }}"
-  become: "{{ 'no' if hostvars[vsd_hostname_list[0]].vsd_custom_username | default(vsd_custom_username | default(vsd_default_username)) == 'root' else 'yes' }}"
-  vars:
-    ansible_become_pass: "{{ hostvars[vsd_hostname_list[0]].vsd_custom_password | default(vsd_custom_password | default(vsd_default_password)) }}"
-
-- block:
-
-  - name: Check if the user is already present (ignoring errors) 20.*
-    shell: '/opt/vsd/ejbca/bin/ejbca.sh ra listendentities -S 40 | grep "End Entity: {{ certificate_username }}"'
-    register: userExistsOutput
-    delegate_to: "{{ vsd_hostname_list[0] }}"
-    ignore_errors: yes
-
-  - name: Revoke certs from VSD 20.*
-    command: "/opt/vsd/ejbca/deploy/certMgmt.sh -a revoke -u {{ certificate_username }} -c {{ commonName }}"
-    delegate_to: "{{ vsd_hostname_list[0] }}"
-    register: revoked
-    until: "revoked.rc == 0 or (revoked.stdout is search('fail adding entity'))"
-    retries: 10
-    delay: 30
-    when: "userExistsOutput.rc == 0"
-
-  - name: Create and transfer certs from VSD 20.*
-    # noqa 305
-    shell: >-
-      /bin/sshpass -p{{ certificate_password }} /opt/vsd/ejbca/deploy/certMgmt.sh
-      -a generate -u {{ certificate_username }} -c {{ commonName }} -o csp
-      -f {{ file_type | default('pem') }}
-      -t {{ certificate_type }} -s {{ scp_user }}@{{ inventory_hostname }}:{{ scp_location }} {{ additional_parameters }}
-    delegate_to: "{{ vsd_hostname_list[0] }}"
-    register: created
-    until: "created.rc == 0 or (created.stdout is search('fail adding entity'))"
-    retries: 20
-    delay: 30
-    no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
-    when: "'4.0.4' not in vsd_version and scp_user is defined and scp_location is defined"
-
-  when: vsd_major_version|int > 6
-  remote_user: "{{ vsd_default_username }}"
-
-- block:
-
   - name: Check Ipv4 connectivity between VSD and Cert transfer server
     command: ping -c1 {{ inventory_hostname }}
     delegate_to: "{{ vsd_hostname_list[0] }}"
@@ -176,5 +114,6 @@
   when: vsd_major_version|int <= 6
   remote_user: "{{ hostvars[vsd_hostname_list[0]].vsd_custom_username | default(vsd_custom_username | default(vsd_default_username)) }}"
   become: "{{ 'no' if hostvars[vsd_hostname_list[0]].vsd_custom_username | default(vsd_custom_username | default(vsd_default_username)) == 'root' else 'yes' }}"
+  become_flags: '-i'
   vars:
     ansible_become_pass: "{{ hostvars[vsd_hostname_list[0]].vsd_custom_password | default(vsd_custom_password | default(vsd_default_password)) }}"
