@@ -232,36 +232,36 @@
       name: common
       tasks_from: get-vsd-version
 
+  - name: Copy Root CA to VSD
+    copy:
+      src: "{{ ca_certificate_path }}"
+      dest: "/opt/vsd/ejbca/p12/ca.cert.pem"
+      owner: ejabberd
+      group: hadoopusers
+      mode: 0640
+    when: ca_certificate_path is defined
+
+  - name: Copy Intermediate Cert file to VSD
+    copy:
+      src: "{{ intermediate_certificate_path }}"
+      dest: "/opt/vsd/ejbca/p12/intermediate.cert.pem"
+      owner: ejabberd
+      group: hadoopusers
+      mode: 0640
+    when: intermediate_certificate_path is defined
+
+  - name: Copy VSD certificate
+    copy:
+      src: "{{ certificate_path }}"
+      dest: "/opt/vsd/ejbca/p12/{{ certificate_path | basename }}"
+      owner: ejabberd
+      group: hadoopusers
+      mode: 0640
+    when: certificate_path is defined
+
   - block:
 
-    - name: Copy Root CA to VSD
-      copy:
-        src: "{{ ca_certificate_path }}"
-        dest: "/opt/vsd/ejbca/p12/ca.cert.pem"
-        owner: ejabberd
-        group: hadoopusers
-        mode: 0640
-      when: ca_certificate_path is defined
-
-    - name: Copy Intermediate Cert file to VSD
-      copy:
-        src: "{{ intermediate_certificate_path }}"
-        dest: "/opt/vsd/ejbca/p12/intermediate.cert.pem"
-        owner: ejabberd
-        group: hadoopusers
-        mode: 0640
-      when: intermediate_certificate_path is defined
-
-    - name: Copy VSD certificate
-      copy:
-        src: "{{ certificate_path }}"
-        dest: "/opt/vsd/ejbca/p12/{{ certificate_path | basename }}"
-        owner: ejabberd
-        group: hadoopusers
-        mode: 0640
-      when: certificate_path is defined
-
-    - name: Copy VSD certificate to ejabberd
+    - name: Copy VSD certificate to ejabberd for versions <= 6
       copy:
         src: "{{ certificate_path }}"
         dest: "/opt/ejabberd/conf/server.pem"
@@ -270,7 +270,7 @@
         mode: 0640
       when: certificate_path is defined
 
-    - name: Copy Root certificate to ejabberd
+    - name: Copy Root certificate to ejabberd for versions <= 6
       copy:
         src: "{{ ca_certificate_path }}"
         dest: "/opt/ejabberd/conf/rootca.pem"
@@ -279,79 +279,51 @@
         mode: 0640
       when: ca_certificate_path is defined
 
+    - block:
+
+      - name: Import Intermediate Cert Pem file for versions <= 6
+        command: >-
+          {{ java_home.stdout }}/bin/keytool -importcert  -file /opt/vsd/ejbca/p12/intermediate.cert.pem
+          -keystore {{ java_home.stdout }}/lib/security/cacerts -storepass {{ jreStorePwd | default("changeit") }} -alias myintermediateCA -noprompt
+        when: intermediate_certificate_path is defined
+
+      - name: Import Root CA Pem file for versions <= 6
+        command: >-
+          {{ java_home.stdout }}/bin/keytool -importcert -file /opt/vsd/ejbca/p12/ca.cert.pem
+          -keystore {{ java_home.stdout }}/lib/security/cacerts -storepass {{ jreStorePwd | default("changeit") }} -alias myRootCA -noprompt
+        when: ca_certificate_path is defined
+
+      when: nuage_upgrade is not defined or not nuage_upgrade
+
     when: vsd_major_version|int <= 6
 
   - block:
 
-    - name: Copy Intermediate Cert to VSD for version 20.*
+    - name: Copy Intermediate Cert to VSD for versions > 6
       copy:
         src: "{{ intermediate_certificate_path }}"
         dest: "/etc/pki/ca-trust/source/anchors/"
         owner: ejabberd
         group: hadoopusers
         mode: 0640
+      when: intermediate_certificate_path is defined
 
-    - name: Import Intermediate Cert Pem File for version 20.*
-      command: /usr/bin/update-ca-trust
-
-    when:
-      - intermediate_certificate_path is defined
-      - nuage_upgrade is not defined or not nuage_upgrade
-      - vsd_major_version|int > 6
-
-  - block:
-
-    - name: View symlinks before copying certs
-      shell: ls -l /opt/ejabberd/conf/*
-      register: symlinks_before_copying_certs
-
-    - debug: var=symlinks_before_copying_certs
-
-    - name: Copy Root Cert to VSD for version 20.*
+    - name: Copy Root Cert to VSD for versions > 6
       copy:
         src: "{{ ca_certificate_path }}"
         dest: "/etc/pki/ca-trust/source/anchors/"
         owner: ejabberd
         group: hadoopusers
         mode: 0640
+      when: ca_certificate_path is defined
 
-    - name: View symlinks before importing certs
-      shell: ls -l /opt/ejabberd/conf/*
-      register: symlinks_before_importing_certs
-
-    - debug: var=symlinks_before_importing_certs
-
-    - name: Import Root CA Pem File for version 20.*
+    - name: Import Certificates for versions > 6
       command: /usr/bin/update-ca-trust
 
     when:
-      - ca_certificate_path is defined
+      - intermediate_certificate_path is defined or ca_certificate_path is defined
       - nuage_upgrade is not defined or not nuage_upgrade
       - vsd_major_version|int > 6
-
-  - name: Import Intermediate Cert Pem file
-    command: >-
-      {{ java_home.stdout }}/bin/keytool -importcert  -file /opt/vsd/ejbca/p12/intermediate.cert.pem
-      -keystore {{ java_home.stdout }}/lib/security/cacerts -storepass {{ jreStorePwd | default("changeit") }} -alias myintermediateCA -noprompt
-    when:
-      - intermediate_certificate_path is defined
-      - nuage_upgrade is not defined or not nuage_upgrade
-      - vsd_major_version|int <= 6
-
-  - name: Import Root CA Pem file
-    command: >-
-      {{ java_home.stdout }}/bin/keytool -importcert -file /opt/vsd/ejbca/p12/ca.cert.pem
-      -keystore {{ java_home.stdout }}/lib/security/cacerts -storepass {{ jreStorePwd | default("changeit") }} -alias myRootCA -noprompt
-    when:
-      - ca_certificate_path is defined
-      - nuage_upgrade is not defined or not nuage_upgrade
-      - vsd_major_version|int <= 6
-
-  - name: View symlinks after importing certs
-    shell: ls -l /opt/ejabberd/conf/*
-    register: symlinks_after_certs
-
-  - debug: var=symlinks_after_certs
 
   - name: Stop vsd-core
     command: monit -g vsd-core stop
@@ -395,14 +367,9 @@
       that: "openssl_output.stdout is search('CONNECTED')"
       msg: "Openssl failed to connect with {{ vsd_fqdn }}. Please make sure the certificates are valid"
 
-  - name: View symlinks after restarting monit processes
-    shell: ls -l /opt/ejabberd/conf/*
-    register: symlinks_after_process_restarts
-
-  - debug: var=symlinks_after_process_restarts
-
   - block:
-    - name: Check connected user on ejabberd
+
+    - name: Check connected users on ejabberd
       shell: /opt/ejabberd/bin/ejabberdctl connected_users | wc -l
       register: ejabberdctl_output
       until: ejabberdctl_output.stdout | int >= 3
@@ -417,7 +384,8 @@
     when: vsd_sa_or_ha is match ('sa')
 
   - block:
-    - name: Check connected user on ejabberd
+
+    - name: Check connected users on ejabberd
       shell: /opt/ejabberd/bin/ejabberdctl connected_users | wc -l
       register: ejabberdctl_output
       until: ejabberdctl_output.stdout | int >= 9
