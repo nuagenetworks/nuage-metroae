@@ -241,7 +241,7 @@
         owner: ejabberd
         group: hadoopusers
         mode: 0640
-      when: vsd_major_version | int <= 6
+      when: vsd_major_version|int <= 6
 
     - name: Copy Root CA to VSD for versions > 6
       copy:
@@ -321,13 +321,19 @@
         mode: 0640
       when: intermediate_certificate_path is defined
 
-    - name: Copy Root Cert to VSD for versions > 6
-      copy:
-        src: "{{ ca_certificate_path }}"
-        dest: "/etc/pki/ca-trust/source/anchors/"
-        owner: ejabberd
-        group: hadoopusers
-        mode: 0640
+    - block:
+
+      - name: Copy Root Cert to VSD for versions > 6
+        copy:
+          src: "{{ ca_certificate_path }}"
+          dest: "/etc/pki/ca-trust/source/anchors/"
+          owner: ejabberd
+          group: hadoopusers
+          mode: 0640
+
+      - name: Generate CA DER certificate
+        command: openssl x509 -outform der -in /etc/pki/ca-trust/source/anchors/csproot-CA.pem -out /etc/pki/ca-trust/source/anchors/ca.der
+
       when: ca_certificate_path is defined
 
     - name: Import Certificates for versions > 6
