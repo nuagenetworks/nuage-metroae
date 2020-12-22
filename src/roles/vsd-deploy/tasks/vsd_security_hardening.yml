@@ -232,13 +232,26 @@
       name: common
       tasks_from: get-vsd-version
 
-  - name: Copy Root CA to VSD
-    copy:
-      src: "{{ ca_certificate_path }}"
-      dest: "/opt/vsd/ejbca/p12/ca.cert.pem"
-      owner: ejabberd
-      group: hadoopusers
-      mode: 0640
+  - block:
+
+    - name: Copy Root CA to VSD for versions <= 6
+      copy:
+        src: "{{ ca_certificate_path }}"
+        dest: "/opt/vsd/ejbca/p12/ca.cert.pem"
+        owner: ejabberd
+        group: hadoopusers
+        mode: 0640
+      when: vsd_major_version | int <= 6
+
+    - name: Copy Root CA to VSD for versions > 6
+      copy:
+        src: "{{ ca_certificate_path }}"
+        dest: "/opt/vsd/ejbca/p12/rootca.pem"
+        owner: ejabberd
+        group: hadoopusers
+        mode: 0640
+      when: vsd_major_version|int > 6
+
     when: ca_certificate_path is defined
 
   - name: Copy Intermediate Cert file to VSD
