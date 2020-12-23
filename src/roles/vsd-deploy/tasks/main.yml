@@ -39,17 +39,22 @@
 - name: Set if skipping VSD deploy
   set_fact: skip_vsd_deploy="{{ vsd_versions_match is defined and vsd_versions_match and monit_result.rc == 0 }}"
 
-- name: Display if skipping VSD deploy
-  debug:
-    msg:
-      - "*************************************************"
-      - "Skipping VSD deploy because it is already running"
-      - "*************************************************"
+- block:
+
+  - name: Display if skipping VSD deploy
+    debug:
+      msg:
+        - "*************************************************"
+        - "Skipping VSD deploy because it is already running"
+        - "*************************************************"
+
+  - name: Stop playbook
+    meta: end_play
+
   when: skip_vsd_deploy or vsd_inplace_upgrade
 
 - name: Set VSD Credentials
   import_tasks: set_vsd_creds.yml
-  when: not skip_vsd_deploy
 
 - block:
 
@@ -146,7 +151,7 @@
 
 - name: Execute OpenStack tasks for the deploy
   import_tasks: openstack.yml
-  when: not skip_vsd_deploy and target_server_type is match("openstack")
+  when: target_server_type is match("openstack")
   tags:
     - vsd
     - openstack
@@ -378,7 +383,6 @@
 
 - import_tasks: brand_vsd.yml
   when:
-    - not skip_vsd_deploy
     - branding_zip_file is defined
     - component_type == "vsd"
     - not vsd_standby_cluster | default(False)
@@ -388,9 +392,7 @@
     name: setup-health-monitoring
   vars:
     component_username: "{{ vsd_default_username }}"
-  when:
-    - not skip_vsd_deploy
-    - health_monitoring_agent | default("none") != "none"
+  when: health_monitoring_agent | default("none") != "none"
 
 - block:
 
@@ -433,7 +435,6 @@
   remote_user: "{{ vsd_default_username }}"
   when:
     - vstats is defined
-    - not skip_vsd_deploy
     - target_server_type is match("nuagex")
 
 - name: Install statistics for stats-out VSDs (Can take 20 minutes)
