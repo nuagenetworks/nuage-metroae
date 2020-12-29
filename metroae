@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 set -e
 
-METROAE_VERSION="v4.1.1"
+METROAE_VERSION="4.3.0"
+SCRIPT_VERSION="1.2.0"
 MENU=()
 
 #################################################################################
@@ -16,7 +17,8 @@ MENU+=(',container,stop'            'Stop the MetroAE container'                
 MENU+=(',container,status'          'Display the status of the MetroAE container'          'container'  'status'                 ',container,status')
 MENU+=(',container,destroy'         'Destroy the MetroAE container'                        'container'  'destroy'                ',container,destroy')
 MENU+=(',container,update'          'Update the MetroAE container to the latest version'   'container'  'upgrade-engine'         ',container,update')
-MENU+=(',container,download'        'Download the container in tar format'                 'container'  'download'               ',container,download')
+MENU+=(',container,download'        'Download the container in tar format'                 'tools'      'download'               ',container,download')
+MENU+=(',container,load'            'Load container onto host from downloaded tar file'    'container'  'load'               ',container,download')
 
 #################################################################################
 #                                  VARIABLES                                    #
@@ -43,25 +45,22 @@ IMAGE_ID=''
 if [[ -z $MAX_CONTAINER_VERSION ]]; then
     MAX_CONTAINER_VERSION='current'
 fi
-REGISTRY_HOST='registry.mv.nuagenetworks.net'
-METRO_AE_IMAGE="$REGISTRY_HOST:5000/metroae"
+DOCKER_REPO="nuagenetworks"
+METRO_AE_IMAGE="$DOCKER_REPO/metroae"
 if [[ ! -z $IMAGE_NAME ]]; then
-    METRO_AE_IMAGE="$REGISTRY_HOST:5000/$IMAGE_NAME"
+    METRO_AE_IMAGE="$DOCKER_REPO/$IMAGE_NAME"
 fi
 OS_RELEASE=$LINUX
 SETUP_USER_DATA_PATH=""
 ENVIRONMENT_FILTERS=(PWD PATH HOME USER SHELL MAIL SSH_CONNECTION LOGNAME OLDPWD LESSOPEN _ XDG_RUNTIME_DIR HISTCONTROL)
-SCRIPT_VERSION=1.1.0
-S3_KEY="AKIAJOPWRLAXPCUXZX3A"
-S3_SECRET="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"
 CONTAINER_TAR_FILE=metroaecontainer.tar
 if [[ ! -z $IMAGE_NAME ]]; then
     CONTAINER_TAR_FILE="$IMAGE_NAME.tar"
 fi
-S3_BUCKET="nuage-devops"
-S3_FOLDER="images"
-S3_HEADER_DUMP_FILE=s3_headers.txt
-TEMPORARY_DIRECTORY=/tmp
+DOCKER_REGISTRY_BASE='https://registry-1.docker.io'
+DOCKER_AUTH_BASE='https://auth.docker.io'
+DOCKER_AUTH_SERVICE='registry.docker.io'
+DOCKER_DOWNLOAD_WORK_DIR="metroaecontainer-download"
 CONTAINER_HOME=/source
 INSTALL_FOLDER=/opt/metroae
 if [[ -z $SCRIPT_LOG_FILE ]]; then
@@ -96,6 +95,8 @@ INSIDE_RUN_MODE="INSIDE"
 CONFIG_SETUP_TYPE="c"
 DEPLOY_SETUP_TYPE="d"
 BOTH_SETUP_TYPE="b"
+CONTAINER_STOPPED=0
+CONTAINER_DELETED=0
 
 function read_setup_files {
     while read -r line; do declare -g $line; done < $SETUP_FILE
@@ -357,22 +358,22 @@ function get_max_container_version {
 
 function get_container_id {
     debug ${FUNCNAME[0]}
-    get_max_container_version
-    CONTAINER_ID=`docker ps -a 2>/dev/null | grep $METRO_AE_IMAGE | grep $MAX_CONTAINER_VERSION | awk '{ print $1}'`
+    CONTAINER_ID=`docker ps -a 2>/dev/null | grep $METRO_AE_IMAGE | awk '{ print $1}'`
     debug "${FUNCNAME[0]}: CONTAINER_ID: $CONTAINER_ID"
 }
 
 function get_running_container_id {
     debug ${FUNCNAME[0]}
-    get_max_container_version
-    RUNNING_CONTAINER_ID=`docker ps 2>/dev/null | grep $METRO_AE_IMAGE | grep $MAX_CONTAINER_VERSION | awk '{ print $1}'`
+    RUNNING_CONTAINER_ID=`docker ps 2>/dev/null | grep $METRO_AE_IMAGE | awk '{ print $1}'`
     debug "${FUNCNAME[0]}: RUNNING_CONTAINER_ID: $RUNNING_CONTAINER_ID"
 }
 
 function get_image_id {
     debug ${FUNCNAME[0]}
-    get_max_container_version
-    IMAGE_ID=`docker images 2>/dev/null | grep $METRO_AE_IMAGE | grep $MAX_CONTAINER_VERSION | awk '{ print $3}'`
+    if [[ -z $IMAGE_ID ]]; then
+        get_max_container_version
+        IMAGE_ID=`docker images 2>/dev/null | grep $METRO_AE_IMAGE | grep $MAX_CONTAINER_VERSION | awk '{ print $3}'`
+    fi
     debug "${FUNCNAME[0]}: IMAGE_ID: $IMAGE_ID"
 }
 
@@ -396,6 +397,7 @@ function stop_running_container {
         write_to_screen_and_script_log "Attempt to stop MetroAE container failed"
     else
         write_to_screen_and_script_log "The MetroAE container was stopped"
+        CONTAINER_STOPPED=1
     fi
     set -e
 
@@ -437,6 +439,7 @@ function delete_container_id {
     set -e
 
     write_to_screen_and_script_log "Execute of 'docker rm' on the MetroAE container was successful"
+    CONTAINER_DELETED=1
 }
 
 function destroy {
@@ -467,6 +470,8 @@ function destroy {
     fi
 
     set +e
+    container_image=`docker ps 2>/dev/null | grep $METRO_AE_IMAGE | awk '{ print $2 }'`
+    IMAGE_TAG=${container_image##*:}
     stop_running_container
     if [[ $? -ne 0 ]]; then
         return 1
@@ -489,80 +494,30 @@ function destroy {
     fi
 
     set +e
-    docker rmi -f $IMAGE_ID
+    if [[ "$CONTAINER_STOPPED" -eq "1" ]] && [[ "$CONTAINER_DELETED" -eq "1" ]]; then
 
-    if [[ $? -ne 0 ]]; then
-        echo ""
-        write_to_screen_and_script_log "Attempt to remove the MetroAE image failed"
-        echo ""
-        return 1
-    fi
-    set -e
+        docker rmi -f $IMAGE_ID
 
-    echo ""
-    write_to_screen_and_script_log "The MetroAE container image was removed"
-    echo ""
-    return 0
-}
-
-function get_from_s3 {
-    debug ${FUNCNAME[0]}
-    headers=$TEMPORARY_DIRECTORY/$S3_HEADER_DUMP_FILE
-    tarfile=$TEMPORARY_DIRECTORY/$CONTAINER_TAR_FILE
-    if [[ ! -z $1 ]]; then
-      tarfile=$1
-    fi
-    set +e
-    rm $tarfile > /dev/null 2>&1
-    rm $headers > /dev/null 2>&1
-    set -e
-    touch $headers
-    date=$(date +"%a, %d %b %Y %T %z")
-    content_type='application/x-compressed-tar'
-    string="GET\n\n$content_type\n$date\n/$S3_BUCKET/$S3_FOLDER/$CONTAINER_TAR_FILE"
-    signature=$(echo -en "${string}" | openssl sha1 -hmac "${S3_SECRET}" -binary | base64)
-    CURL_COMMAND=$(cat <<-END
-        curl -X GET \
-            -D $headers \
-            -H "Host: $S3_BUCKET.s3.amazonaws.com" \
-            -H "Date: $date" \
-            -H "Content-Type: $content_type" \
-            -H "Authorization: AWS ${S3_KEY}:$signature" \
-            "https://$S3_BUCKET.s3.amazonaws.com/$S3_FOLDER/$CONTAINER_TAR_FILE" > $tarfile
-	END
-    )
-    debug "${FUNCNAME[0]}: CURL_COMMAND: $CURL_COMMAND"
-    if [[ -f $SCRIPT_LOG_FILE ]]; then
-        if [ -w "$SCRIPT_LOG_FILE" ]; then
-            eval $CURL_COMMAND | tee -a $SCRIPT_LOG_FILE 2>> $SCRIPT_LOG_FILE
-        else
-            if [ -z $METROAE_WRITE_WARNING_PRINTED ]; then
-                print_write_permission_warning
-                METROAE_WRITE_WARNING_PRINTED=1
-            fi
-            eval $CURL_COMMAND
+        if [[ $? -ne 0 ]]; then
+          echo ""
+          write_to_screen_and_script_log "Attempt to remove the MetroAE image failed"
+          echo ""
+          return 1
         fi
-    else
-        eval $CURL_COMMAND
-    fi
-    if [[ $? -ne 0 ]]; then
+
+        set -e
         echo ""
-        write_to_screen_and_script_log "Command to pull the MetroAE container image from S3 failed. Quitting"
-        print_version_and_exit 1
-    fi
-    status=$(cat $headers | head -n 1 | awk '{print $2}')
-    debug "${FUNCNAME[0]}: status = $status"
-    if [[ $status -ne 200 ]]; then
+        write_to_screen_and_script_log "The MetroAE container image was removed"
         echo ""
-        write_to_screen_and_script_log "Attempt to pull the MetroAE container image from S3 failed. Quitting"
-        print_version_and_exit 1
+
+        return 0
+
     fi
 
-    write_to_screen_and_script_log "Successfully downloaded the container to $tarfile"
+    echo ""
+    write_to_screen_and_script_log "No container stopped and removed. No MetroAE container image needs to be removed"
+    echo ""
 
-    set +e
-    rm $headers > /dev/null 2>&1
-    set -e
 }
 
 function pull {
@@ -572,69 +527,34 @@ function pull {
     fi
     debug "${FUNCNAME[0]}: MAX_CONTAINER_VERSION: $MAX_CONTAINER_VERSION"
 
-    repo="Docker registry"
-    set +e
+    set -e
+
+    echo ""
+    write_to_screen_and_script_log ">>> Pulling the MetroAE container image from Docker hub"
+    echo ""
     if [[ -f $SCRIPT_LOG_FILE ]]; then
         if [ -w "$SCRIPT_LOG_FILE" ]; then
-            debug "${FUNCNAME[0]}: Script log writable"
-            ping -c 5 $REGISTRY_HOST >> $SCRIPT_LOG_FILE 2>> $SCRIPT_LOG_FILE
+            debug "${FUNCNAME[0]}: Script log is writable"
+            sudo docker pull $METRO_AE_IMAGE:$MAX_CONTAINER_VERSION | tee -a $SCRIPT_LOG_FILE
         else
             if [ -z $METROAE_WRITE_WARNING_PRINTED ]; then
                 print_write_permission_warning
                 METROAE_WRITE_WARNING_PRINTED=1
             fi
-            debug "${FUNCNAME[0]}: Script log not writable"
-            ping -c 5 $REGISTRY_HOST > /dev/null 2>&1
-        fi
-    else
-        debug "${FUNCNAME[0]}: No script log"
-        ping -c 5 $REGISTRY_HOST > /dev/null 2>&1
-    fi
-
-    ping_rc=$?
-    debug "${FUNCNAME[0]}: ping_rc: $ping_rc"
-    set -e
-
-    if [[ $ping_rc -ne 0 || ( ! -z $1 && "$1" = "S3" ) ]]; then
-        echo ""
-        write_to_screen_and_script_log "Could not connect to the Nokia registry to download the MetroAE container image"
-        write_to_screen_and_script_log "Retrieving the MetroAE container image from Amazon S3 instead"
-        get_from_s3
-
-        docker load -i $TEMPORARY_DIRECTORY/$CONTAINER_TAR_FILE
-        repo="Amazon S3"
-
-        set +e
-        rm $TEMPORARY_DIRECTORY/$CONTAINER_TAR_FILE > /dev/null 2>&1
-        set -e
-
-    else
-        echo ""
-        write_to_screen_and_script_log ">>> Pulling the MetroAE container image from Nokia registry"
-        echo ""
-        if [[ -f $SCRIPT_LOG_FILE ]]; then
-            if [ -w "$SCRIPT_LOG_FILE" ]; then
-                debug "${FUNCNAME[0]}: Script log is writable"
-                sudo docker pull $METRO_AE_IMAGE:$MAX_CONTAINER_VERSION | tee -a $SCRIPT_LOG_FILE
-            else
-                if [ -z $METROAE_WRITE_WARNING_PRINTED ]; then
-                    print_write_permission_warning
-                    METROAE_WRITE_WARNING_PRINTED=1
-                fi
-                debug "${FUNCNAME[0]}: Script log is not writable"
-                sudo docker pull $METRO_AE_IMAGE:$MAX_CONTAINER_VERSION
-            fi
-        else
-            debug "${FUNCNAME[0]}: Script log is not found"
+            debug "${FUNCNAME[0]}: Script log is not writable"
             sudo docker pull $METRO_AE_IMAGE:$MAX_CONTAINER_VERSION
         fi
+    else
+        debug "${FUNCNAME[0]}: Script log is not found"
+        sudo docker pull $METRO_AE_IMAGE:$MAX_CONTAINER_VERSION
     fi
 
     status=$?
     if [[ $status -ne 0 ]]; then
         write_to_screen_and_script_log "Attempt to pull the $MAX_CONTAINER_VERSION MetroAE container image failed. Quitting."
+        exit 1
     else
-        write_to_screen_and_script_log "Successfully pulled the MetroAE container image from $repo"
+        write_to_screen_and_script_log "Successfully pulled the MetroAE container image from Docker hub"
     fi
     set -e
 
@@ -688,6 +608,10 @@ function run_container {
             user_name=`id -u $(whoami)`
             group_name=`id -g $(whoami)`
 
+            if [[ ! -z $IMAGE_TAG ]]; then
+                MAX_CONTAINER_VERSION=$IMAGE_TAG
+            fi
+
             DOCKER_COMMAND=$(cat <<-END
                 docker run \
                     -e RUN_MODE=$INSIDE_RUN_MODE \
@@ -711,6 +635,7 @@ function run_container {
         if [[ $status -ne 0 ]]; then
             echo ""
             write_to_screen_and_script_log "Attempt to run the MetroAE container failed. Quitting."
+            print_version_and_exit 1
         else
             echo ""
             write_to_screen_and_script_log "MetroAE container started successfully"
@@ -797,17 +722,99 @@ function setup_container {
 
     set +e
 
-    get_image_id
+    images_on_disk=`docker images 2>/dev/null | grep $METRO_AE_IMAGE | awk '{ print $2 }'`
+    num_images=0
+    for image in $images_on_disk
+    do
+        if [[ $image != "<none>" ]]; then
+            num_images=$((num_images+1))
+        fi
+    done
+    if [[ $num_images -gt 1 ]]; then
+        if [[ -z $3 ]]; then
+            echo "You can set up a container with one of the images currently"
+            echo "pulled on the host machine"
+            echo ""
+            echo $images_on_disk
+            read -p "Which image would you like to use for container setup? Please specify the image tag: " IMAGE_TAG_SELECTION
+            if [[ ! -z $IMAGE_TAG_SELECTION ]]; then
+                IMAGE_TAG=$IMAGE_TAG_SELECTION
+            fi
+            IMAGE_ID=`docker images 2>/dev/null | grep $METRO_AE_IMAGE | grep $IMAGE_TAG | awk '{ print $3 }'`
+        else
+            for image in $images_on_disk
+            do
+                if [[ $image == $3 ]]; then
+                    IMAGE_TAG=$image
+                fi
+            done
+            if [[ -z $IMAGE_TAG ]]; then
+                echo ""
+                write_to_screen_and_script_log "The image you would like to set up does not exist on the host machine."
+                echo "Pulling the requested image..."
+                pull $3
+                if [[ $? -ne 0 ]]; then
+                    set -e
+                    return 1
+                fi
+                IMAGE_TAG=$3
+                IMAGE_ID=`docker images 2>/dev/null | grep $METRO_AE_IMAGE | grep $IMAGE_TAG | awk '{ print $3 }'`
+            else
+                IMAGE_ID=`docker images 2>/dev/null | grep $METRO_AE_IMAGE | grep $IMAGE_TAG | awk '{ print $3 }'`
+            fi
+        fi
+    elif [[ $num_images -eq 1 ]]; then
+        if [[ -z $3 ]]; then
+            for image in $images_on_disk
+            do
+                if [[ $image != "<none>" ]]; then
+                    IMAGE_TAG=$image
+                fi
+            done
+            IMAGE_ID=`docker images 2>/dev/null | grep $METRO_AE_IMAGE | grep $IMAGE_TAG | awk '{ print $3 }'`
+        else
+            if [[ $3 == $images_on_disk ]]; then
+                IMAGE_TAG=$3
+                IMAGE_ID=`docker images 2>/dev/null | grep $METRO_AE_IMAGE | grep $IMAGE_TAG | awk '{ print $3 }'`
+            else
+                echo ""
+                write_to_screen_and_script_log "The image you have specified does not match the image on the host machine."
+                echo "Pulling the requested image..."
+                pull $3
+                if [[ $? -ne 0 ]]; then
+                    set -e
+                    return 1
+                fi
+                IMAGE_TAG=$3
+                IMAGE_ID=`docker images 2>/dev/null | grep $METRO_AE_IMAGE | grep $IMAGE_TAG | awk '{ print $3 }'`
+            fi
+        fi
+    else
+        if [[ ! -z $3 ]]; then
+            echo ""
+            write_to_screen_and_script_log "There are no images on the host machine, but an image has been specified for setup."
+            echo "Pulling the requested image..."
+            echo ""
+            pull $3
+            if [[ $? -ne 0 ]]; then
+                set -e
+                return 1
+            fi
+            IMAGE_TAG=$3
+            IMAGE_ID=`docker images 2>/dev/null | grep $METRO_AE_IMAGE | grep $IMAGE_TAG | awk '{ print $3 }'`
+        else
+            get_image_id
+            if [[ -z $IMAGE_ID ]]; then
+                echo ""
+                write_to_screen_and_script_log ">>> Pulling the MetroAE container image from the repository"
+                pull
+            fi
 
-    if [[ -z $IMAGE_ID ]]; then
-        echo ""
-        write_to_screen_and_script_log ">>> Pulling the MetroAE container image from the repository"
-        pull
-    fi
-
-    if [[ $? -ne 0 ]]; then
-        set -e
-        return 1
+            if [[ $? -ne 0 ]]; then
+                set -e
+                return 1
+            fi
+        fi
     fi
     set -e
 
@@ -916,6 +923,9 @@ function setup_container {
     rm -rf $METROAE_MOUNT_POINT/version >> /dev/null 2>> /dev/null
 
     run_container
+    if [[ -z $NOT_INTERACTIVE ]]; then
+      update_metroae
+    fi
 
     update_container_files
 
@@ -1063,7 +1073,9 @@ function update_container {
         pull
     fi
     run_container
-
+    if [[ -z $NOT_INTERACTIVE ]]; then
+      update_metroae
+    fi
     update_container_files
 
     read_setup_files
@@ -1083,6 +1095,70 @@ function check_if_mount_point_configured {
         echo ""
         return 1
     fi
+}
+
+function update_metroae {
+    debug ${FUNCNAME[0]}
+    declare -l confirmation
+    if [[ $RUN_MODE == "CONTAINER" ]]; then
+        if [[ -z $2 ]]; then
+            confirmation="init"
+            while [[ $confirmation != "n" ]] && [[ $confirmation  != "y" ]] && [[ $confirmation != "" ]]
+            do
+              echo ""
+              echo "We recommend that you update your metroae script to the same version as the container you are loading."
+              read -p "Would you like us to update the metroae script for you? (Y/n): " confirmation
+            done
+        else
+            confirmation=$2
+        fi
+
+        if [[ $confirmation == "n" ]]; then
+            echo ""
+            write_to_screen_and_script_log "Update of metroae Script was canceled"
+            echo ""
+            return 0
+        fi
+        echo ""
+        write_to_screen_and_script_log ">>> Updating your metroae script"
+        echo ""
+
+        if [[ -f $SETUP_FILE ]]; then
+            while read -r line; do declare $line; done < $SETUP_FILE
+        fi
+
+        check_if_mount_point_configured
+
+        echo ""
+        write_to_screen_and_script_log ">>> Wait for the container to copy a new version file to the data directory"
+        echo ""
+        set +e
+        timeout 10 bash -c -- "while [[ ! -f $METROAE_MOUNT_POINT/version ]]; do sleep 1; done"
+        TEMP_RC=$?
+        debug $TEMP_RC
+        if [[ $TEMP_RC -ne 0 ]]; then
+            write_to_screen_and_script_log "We didn't find $METROAE_MOUNT_POINT/version."
+            echo "It could be that the version of metroae script you are running is the latest."
+            echo "Your copy of the metroae script will not be updated. You can continue to use your copy."
+            echo ""
+            set -e
+            return 1
+        fi
+        set +e
+        cp $METROAE_MOUNT_POINT/metroae "${BASH_SOURCE[0]}"
+
+        if [[ $? -ne 0 ]]; then
+            write_to_screen_and_script_log "We encountered an error copying $METROAE_MOUNT_POINT/metroae."
+            echo "Your copy of the metroae script will not be updated. You can continue to use your copy,"
+            echo " but we suggest that you update your metroae script from the Github repo before continuing."
+            echo ""
+            set -e
+            return 1
+        fi
+        set -e
+        write_to_screen_and_script_log "Successfully updated your metroae script."
+        echo ""
+      fi
 }
 
 function setup_tab_completion {
@@ -1262,7 +1338,7 @@ function check_for_user_group {
         if [[ $confirmation != "y" ]]; then
             echo ""
             write_to_screen_and_script_log "Please add the current user to the docker group and retry. Quitting"
-            exit 1
+            print_version_and_exit 1
         fi
 
         echo ""
@@ -1277,6 +1353,538 @@ function check_for_user_group {
     fi
 
 }
+
+function container_load {
+    debug ${FUNCNAME[0]}
+
+    if [[ -z $1 ]]; then
+        write_to_screen_and_script_log "Please specify the tar file downloaded from Docker hub"
+        print_version_and_exit 1
+    fi
+
+    if ! [[ -f $1 ]]; then
+        write_to_screen_and_script_log "Tar file $1 does not exist"
+        print_version_and_exit 1
+    fi
+
+    docker load < $1
+
+    write_to_screen_and_script_log ">>> MetroAE container sucessfully loaded from tar file"
+    write_to_screen_and_script_log "You can run 'metroae container setup' to setup"
+}
+
+#################################################################################
+#                             CONTAINER DOWNLOAD                                #
+#################################################################################
+
+# The following code was adapted from the Moby project (under Apache 2 license)
+# https://github.com/moby/moby/
+# Specifically from the Docker hub download script
+# https://raw.githubusercontent.com/moby/moby/master/contrib/download-frozen-image-v2.sh
+
+function download_container {
+    debug ${FUNCNAME[0]}
+
+    if [[ -z $1 ]]; then
+        imageTag=current
+    else
+        imageTag=$1
+    fi
+
+    set +e
+    docker --version >> /dev/null 2>> /dev/null
+    exitcode=$?
+    set -e
+
+    if [[ $exitcode -eq 0 ]]; then
+        download_using_docker "$METRO_AE_IMAGE:$imageTag"
+    else
+        download_from_docker_hub "$METRO_AE_IMAGE:$imageTag"
+    fi
+}
+
+function download_using_docker {
+    debug ${FUNCNAME[0]}
+
+    write_to_screen_and_script_log ">>> Downloading $1 using docker"
+
+    set +e
+    docker save $1 > $CONTAINER_TAR_FILE
+    exitcode=$?
+    set -e
+
+    if [[ $exitcode -eq 0 ]]; then
+        write_to_screen_and_script_log "Download of images into '$CONTAINER_TAR_FILE' complete."
+        echo "Copy this file to MetroAE Docker host and issue:"
+        echo "  metroae container load $CONTAINER_TAR_FILE"
+    else
+        write_to_screen_and_script_log "Error using docker to download, trying directly from Docker hub..."
+        download_from_docker_hub $1
+    fi
+}
+
+function download_from_docker_hub {
+    debug ${FUNCNAME[0]}
+
+    write_to_screen_and_script_log ">>> Downloading $1 from Docker hub"
+
+    check_download_requirements
+
+    mkdir -p "$DOCKER_DOWNLOAD_WORK_DIR"
+
+    # hacky workarounds for Bash 3 support (no associative arrays)
+    images=()
+    rm -f "$DOCKER_DOWNLOAD_WORK_DIR"/tags-*.tmp
+    manifestJsonEntries=()
+    doNotGenerateManifestJson=
+
+    # bash v4 on Windows CI requires CRLF separator... and linux doesn't seem to care either way
+    newlineIFS=$'\n'
+    major=$(echo "${BASH_VERSION%%[^0.9]}" | cut -d. -f1)
+    if [ "$major" -ge 4 ]; then
+        newlineIFS=$'\r\n'
+    fi
+
+    imageTag="$1"
+
+    image="${imageTag%%[:@]*}"
+    imageTag="${imageTag#*:}"
+    digest="${imageTag##*@}"
+    tag="${imageTag%%@*}"
+
+    # add prefix library if passed official image
+    if [[ "$image" != *"/"* ]]; then
+        image="library/$image"
+    fi
+
+    imageFile="${image//\//_}" # "/" can't be in filenames :)
+
+    token="$(curl -fsSL "$DOCKER_AUTH_BASE/token?service=$DOCKER_AUTH_SERVICE&scope=repository:$image:pull" | jq --raw-output '.token')"
+
+    manifestJson="$(
+        curl -fsSL \
+            -H "Authorization: Bearer $token" \
+            -H 'Accept: application/vnd.docker.distribution.manifest.v2+json' \
+            -H 'Accept: application/vnd.docker.distribution.manifest.list.v2+json' \
+            -H 'Accept: application/vnd.docker.distribution.manifest.v1+json' \
+            "$DOCKER_REGISTRY_BASE/v2/$image/manifests/$digest"
+    )"
+    if [ "${manifestJson:0:1}" != '{' ]; then
+        write_to_screen_and_script_log "error: /v2/$image/manifests/$digest returned something unexpected:"
+        write_to_screen_and_script_log "  $manifestJson"
+        exit 1
+    fi
+
+    imageIdentifier="$image:$tag@$digest"
+
+    schemaVersion="$(echo "$manifestJson" | jq --raw-output '.schemaVersion')"
+    case "$schemaVersion" in
+        2)
+            mediaType="$(echo "$manifestJson" | jq --raw-output '.mediaType')"
+
+            case "$mediaType" in
+                application/vnd.docker.distribution.manifest.v2+json)
+                    handle_single_manifest_v2 "$manifestJson"
+                    ;;
+                application/vnd.docker.distribution.manifest.list.v2+json)
+                    layersFs="$(echo "$manifestJson" | jq --raw-output --compact-output '.manifests[]')"
+                    IFS="$newlineIFS"
+                                        while IFS= read -r line; do
+                                            layers+=("$line")
+                                        done <<< "$layersFs"
+                    unset IFS
+
+                    found=""
+                    targetArch="$(get_target_arch)"
+                    # parse first level multi-arch manifest
+                    for i in "${!layers[@]}"; do
+                        layerMeta="${layers[$i]}"
+                        maniArch="$(echo "$layerMeta" | jq --raw-output '.platform.architecture')"
+                        if [ "$maniArch" = "${targetArch}" ]; then
+                            digest="$(echo "$layerMeta" | jq --raw-output '.digest')"
+                            # get second level single manifest
+                            submanifestJson="$(
+                                curl -fsSL \
+                                    -H "Authorization: Bearer $token" \
+                                    -H 'Accept: application/vnd.docker.distribution.manifest.v2+json' \
+                                    -H 'Accept: application/vnd.docker.distribution.manifest.list.v2+json' \
+                                    -H 'Accept: application/vnd.docker.distribution.manifest.v1+json' \
+                                    "$DOCKER_REGISTRY_BASE/v2/$image/manifests/$digest"
+                            )"
+                            handle_single_manifest_v2 "$submanifestJson"
+                            found="found"
+                            break
+                        fi
+                    done
+                    if [ -z "$found" ]; then
+                        write_to_screen_and_script_log "error: manifest for $maniArch is not found"
+                        exit 1
+                    fi
+                    ;;
+                *)
+                    write_to_screen_and_script_log "error: unknown manifest mediaType ($imageIdentifier): '$mediaType'"
+                    exit 1
+                    ;;
+            esac
+            ;;
+
+        1)
+            if [ -z "$doNotGenerateManifestJson" ]; then
+                write_to_screen_and_script_log "warning: '$imageIdentifier' uses schemaVersion '$schemaVersion'"
+                write_to_screen_and_script_log "  this script cannot (currently) recreate the 'image config' to put in a 'manifest.json' (thus any schemaVersion 2+ images will be imported in the old way, and their 'docker history' will suffer)"
+                write_to_screen_and_script_log
+                doNotGenerateManifestJson=1
+            fi
+
+            layersFs="$(echo "$manifestJson" | jq --raw-output '.fsLayers | .[] | .blobSum')"
+            IFS="$newlineIFS"
+                        while IFS= read -r line; do
+                            layers+=("$line")
+                        done <<< "$layersFs"
+            unset IFS
+
+            history="$(echo "$manifestJson" | jq '.history | [.[] | .v1Compatibility]')"
+            imageId="$(echo "$history" | jq --raw-output '.[0]' | jq --raw-output '.id')"
+
+            echo "Downloading '$imageIdentifier' (${#layers[@]} layers)..."
+            for i in "${!layers[@]}"; do
+                imageJson="$(echo "$history" | jq --raw-output ".[${i}]")"
+                layerId="$(echo "$imageJson" | jq --raw-output '.id')"
+                imageLayer="${layers[$i]}"
+
+                mkdir -p "$DOCKER_DOWNLOAD_WORK_DIR/$layerId"
+                echo '1.0' > "$DOCKER_DOWNLOAD_WORK_DIR/$layerId/VERSION"
+
+                echo "$imageJson" > "$DOCKER_DOWNLOAD_WORK_DIR/$layerId/json"
+
+                # TODO figure out why "-C -" doesn't work here
+                # "curl: (33) HTTP server doesn't seem to support byte ranges. Cannot resume."
+                # "HTTP/1.1 416 Requested Range Not Satisfiable"
+                if [ -f "$DOCKER_DOWNLOAD_WORK_DIR/$layerId/layer.tar" ]; then
+                    # TODO hackpatch for no -C support :'(
+                    echo "skipping existing ${layerId:0:12}"
+                    continue
+                fi
+                token="$(curl -fsSL "$DOCKER_AUTH_BASE/token?service=$DOCKER_AUTH_SERVICE&scope=repository:$image:pull" | jq --raw-output '.token')"
+                fetch_blob "$token" "$image" "$imageLayer" "$DOCKER_DOWNLOAD_WORK_DIR/$layerId/layer.tar" --progress-bar
+            done
+            ;;
+
+        *)
+            write_to_screen_and_script_log "error: unknown manifest schemaVersion ($imageIdentifier): '$schemaVersion'"
+            exit 1
+            ;;
+    esac
+
+    echo
+
+    if [ -s "$DOCKER_DOWNLOAD_WORK_DIR/tags-$imageFile.tmp" ]; then
+        echo -n ', ' >> "$DOCKER_DOWNLOAD_WORK_DIR/tags-$imageFile.tmp"
+    else
+        images=("${images[@]}" "$image")
+    fi
+    echo -n '"'"$tag"'": "'"$imageId"'"' >> "$DOCKER_DOWNLOAD_WORK_DIR/tags-$imageFile.tmp"
+
+    echo -n '{' > "$DOCKER_DOWNLOAD_WORK_DIR/repositories"
+    firstImage=1
+    for image in "${images[@]}"; do
+        imageFile="${image//\//_}" # "/" can't be in filenames :)
+        image="${image#library\/}"
+
+        [ "$firstImage" ] || echo -n ',' >> "$DOCKER_DOWNLOAD_WORK_DIR/repositories"
+        firstImage=
+        echo -n $'\n\t' >> "$DOCKER_DOWNLOAD_WORK_DIR/repositories"
+        echo -n '"'"$image"'": { '"$(cat "$DOCKER_DOWNLOAD_WORK_DIR/tags-$imageFile.tmp")"' }' >> "$DOCKER_DOWNLOAD_WORK_DIR/repositories"
+    done
+    echo -n $'\n}\n' >> "$DOCKER_DOWNLOAD_WORK_DIR/repositories"
+
+    rm -f "$DOCKER_DOWNLOAD_WORK_DIR"/tags-*.tmp
+
+    if [ -z "$doNotGenerateManifestJson" ] && [ "${#manifestJsonEntries[@]}" -gt 0 ]; then
+        echo '[]' | jq --raw-output ".$(for entry in "${manifestJsonEntries[@]}"; do echo " + [ $entry ]"; done)" > "$DOCKER_DOWNLOAD_WORK_DIR/manifest.json"
+    else
+        rm -f "$DOCKER_DOWNLOAD_WORK_DIR/manifest.json"
+    fi
+
+
+    tar -cC $DOCKER_DOWNLOAD_WORK_DIR . > $CONTAINER_TAR_FILE
+    rm -rf $DOCKER_DOWNLOAD_WORK_DIR
+    write_to_screen_and_script_log "Download of images into '$CONTAINER_TAR_FILE' complete."
+    echo "Copy this file to MetroAE Docker host and issue:"
+    echo "  metroae container load $CONTAINER_TAR_FILE"
+
+}
+
+function check_download_requirements {
+    debug ${FUNCNAME[0]}
+
+    # check if essential commands are in our PATH
+    all_commands_present=1
+
+    if ! command -v jq &> /dev/null; then
+        write_to_screen_and_script_log "The command 'jq' was not found in PATH"
+        write_to_screen_and_script_log "This is a small utility for parsing JSON output"
+        write_to_screen_and_script_log "It is needed for parsing Docker hub manifest output"
+        write_to_screen_and_script_log "Please install this utility with:"
+        write_to_screen_and_script_log ""
+        write_to_screen_and_script_log "sudo yum install jq"
+        write_to_screen_and_script_log ""
+        all_commands_present=0
+    fi
+
+    if ! command -v curl &> /dev/null; then
+        write_to_screen_and_script_log "The command 'curl' was not found in PATH"
+        write_to_screen_and_script_log "This is a small utility for downloading files from the Internet"
+        write_to_screen_and_script_log "It is needed for downloading files from Docker hub"
+        write_to_screen_and_script_log "Please install this utility with:"
+        write_to_screen_and_script_log ""
+        write_to_screen_and_script_log "sudo yum install curl"
+        write_to_screen_and_script_log ""
+        all_commands_present=0
+    fi
+
+    if ! command -v sha256sum &> /dev/null; then
+        write_to_screen_and_script_log "The command 'sha256sum' was not found in PATH"
+        write_to_screen_and_script_log "This is a small utility for calculating SHA256 checksums"
+        write_to_screen_and_script_log "It is needed for validating files downloaded from Docker hub"
+        write_to_screen_and_script_log "Please install this utility with:"
+        write_to_screen_and_script_log ""
+        write_to_screen_and_script_log "sudo yum install coreutils"
+        write_to_screen_and_script_log ""
+        all_commands_present=0
+    fi
+
+    if [[ $all_commands_present -ne 1 ]]; then
+        print_version_and_exit 1
+    fi
+}
+
+fetch_blob() {
+    debug ${FUNCNAME[0]}
+
+    local token="$1"
+    shift
+    local image="$1"
+    shift
+    local digest="$1"
+    shift
+    local targetFile="$1"
+    shift
+    local curlArgs=("$@")
+
+    local curlHeaders
+    curlHeaders="$(
+        curl -S "${curlArgs[@]}" \
+            -H "Authorization: Bearer $token" \
+            "$DOCKER_REGISTRY_BASE/v2/$image/blobs/$digest" \
+            -o "$targetFile" \
+            -D-
+    )"
+    curlHeaders="$(echo "$curlHeaders" | tr -d '\r')"
+    if grep -qE "^HTTP/[0-9].[0-9] 3" <<< "$curlHeaders"; then
+        rm -f "$targetFile"
+
+        local blobRedirect
+        blobRedirect="$(echo "$curlHeaders" | awk -F ': ' 'tolower($1) == "location" { print $2; exit }')"
+        if [ -z "$blobRedirect" ]; then
+            write_to_screen_and_script_log "error: failed fetching '$image' blob '$digest'"
+            echo "$curlHeaders" | head -1 >&2
+            return 1
+        fi
+
+        curl -fSL "${curlArgs[@]}" \
+            "$blobRedirect" \
+            -o "$targetFile"
+    fi
+}
+
+# handle 'application/vnd.docker.distribution.manifest.v2+json' manifest
+handle_single_manifest_v2() {
+    debug ${FUNCNAME[0]}
+
+    local manifestJson="$1"
+    shift
+
+    local configDigest
+    configDigest="$(echo "$manifestJson" | jq --raw-output '.config.digest')"
+    local imageId="${configDigest#*:}" # strip off "sha256:"
+
+    local configFile="$imageId.json"
+    fetch_blob "$token" "$image" "$configDigest" "$DOCKER_DOWNLOAD_WORK_DIR/$configFile" -s
+
+    local layersFs
+    layersFs="$(echo "$manifestJson" | jq --raw-output --compact-output '.layers[]')"
+    local IFS="$newlineIFS"
+    local layers
+        while IFS= read -r line; do
+            layers+=("$line")
+        done <<< "$layersFs"
+    unset IFS
+
+    echo "Downloading '$imageIdentifier' (${#layers[@]} layers)..."
+    local layerId=
+    local layerFiles=()
+    for i in "${!layers[@]}"; do
+        local layerMeta="${layers[$i]}"
+
+                if [[ -z $layerMeta ]]; then
+                    continue
+                fi
+
+        local layerMediaType
+        layerMediaType="$(echo "$layerMeta" | jq --raw-output '.mediaType')"
+        local layerDigest
+        layerDigest="$(echo "$layerMeta" | jq --raw-output '.digest')"
+
+        # save the previous layer's ID
+        local parentId="$layerId"
+        # create a new fake layer ID based on this layer's digest and the previous layer's fake ID
+        layerId="$(echo "$parentId"$'\n'"$layerDigest" | sha256sum | cut -d' ' -f1)"
+        # this accounts for the possibility that an image contains the same layer twice (and thus has a duplicate digest value)
+
+        mkdir -p "$DOCKER_DOWNLOAD_WORK_DIR/$layerId"
+        echo '1.0' > "$DOCKER_DOWNLOAD_WORK_DIR/$layerId/VERSION"
+
+        if [ ! -s "$DOCKER_DOWNLOAD_WORK_DIR/$layerId/json" ]; then
+            local parentJson
+            parentJson="$(printf ', parent: "%s"' "$parentId")"
+            local addJson
+            addJson="$(printf '{ id: "%s"%s }' "$layerId" "${parentId:+$parentJson}")"
+            # this starter JSON is taken directly from Docker's own "docker save" output for unimportant layers
+            jq "$addJson + ." > "$DOCKER_DOWNLOAD_WORK_DIR/$layerId/json" << EOJSON
+                {
+                    "created": "0001-01-01T00:00:00Z",
+                    "container_config": {
+                        "Hostname": "",
+                        "Domainname": "",
+                        "User": "",
+                        "AttachStdin": false,
+                        "AttachStdout": false,
+                        "AttachStderr": false,
+                        "Tty": false,
+                        "OpenStdin": false,
+                        "StdinOnce": false,
+                        "Env": null,
+                        "Cmd": null,
+                        "Image": "",
+                        "Volumes": null,
+                        "WorkingDir": "",
+                        "Entrypoint": null,
+                        "OnBuild": null,
+                        "Labels": null
+                    }
+                }
+EOJSON
+# ^^ Do not indent or put anything else on previous line (multiline block string)
+        fi
+
+        case "$layerMediaType" in
+            application/vnd.docker.image.rootfs.diff.tar.gzip)
+                local layerTar="$layerId/layer.tar"
+                layerFiles=("${layerFiles[@]}" "$layerTar")
+                # TODO figure out why "-C -" doesn't work here
+                # "curl: (33) HTTP server doesn't seem to support byte ranges. Cannot resume."
+                # "HTTP/1.1 416 Requested Range Not Satisfiable"
+                if [ -f "$DOCKER_DOWNLOAD_WORK_DIR/$layerTar" ]; then
+                    # TODO hackpatch for no -C support :'(
+                    echo "skipping existing ${layerId:0:12}"
+                    continue
+                fi
+                local token
+                token="$(curl -fsSL "$DOCKER_AUTH_BASE/token?service=$DOCKER_AUTH_SERVICE&scope=repository:$image:pull" | jq --raw-output '.token')"
+                fetch_blob "$token" "$image" "$layerDigest" "$DOCKER_DOWNLOAD_WORK_DIR/$layerTar" --progress-bar
+                ;;
+
+            *)
+                write_to_screen_and_script_log "error: unknown layer mediaType ($imageIdentifier, $layerDigest): '$layerMediaType'"
+                exit 1
+                ;;
+        esac
+    done
+
+    # change "$imageId" to be the ID of the last layer we added (needed for old-style "repositories" file which is created later -- specifically for older Docker daemons)
+    imageId="$layerId"
+
+    # munge the top layer image manifest to have the appropriate image configuration for older daemons
+    local imageOldConfig
+    imageOldConfig="$(jq --raw-output --compact-output '{ id: .id } + if .parent then { parent: .parent } else {} end' "$DOCKER_DOWNLOAD_WORK_DIR/$imageId/json")"
+    jq --raw-output "$imageOldConfig + del(.history, .rootfs)" "$DOCKER_DOWNLOAD_WORK_DIR/$configFile" > "$DOCKER_DOWNLOAD_WORK_DIR/$imageId/json"
+
+    local manifestJsonEntry
+    manifestJsonEntry="$(
+        echo '{}' | jq --raw-output '. + {
+            Config: "'"$configFile"'",
+            RepoTags: ["'"${image#library\/}:$tag"'"],
+            Layers: '"$(echo '[]' | jq --raw-output ".$(for layerFile in "${layerFiles[@]}"; do echo " + [ \"$layerFile\" ]"; done)")"'
+        }'
+    )"
+    manifestJsonEntries=("${manifestJsonEntries[@]}" "$manifestJsonEntry")
+}
+
+get_target_arch() {
+    debug ${FUNCNAME[0]}
+
+    if [ -n "${TARGETARCH:-}" ]; then
+        echo "${TARGETARCH}"
+        return 0
+    fi
+
+    if type go > /dev/null; then
+        go env GOARCH
+        return 0
+    fi
+
+    if type dpkg > /dev/null; then
+        debArch="$(dpkg --print-architecture)"
+        case "${debArch}" in
+            armel | armhf)
+                echo "arm"
+                return 0
+                ;;
+            *64el)
+                echo "${debArch%el}le"
+                return 0
+                ;;
+            *)
+                echo "${debArch}"
+                return 0
+                ;;
+        esac
+    fi
+
+    if type uname > /dev/null; then
+        uArch="$(uname -m)"
+        case "${uArch}" in
+            x86_64)
+                echo amd64
+                return 0
+                ;;
+            arm | armv[0-9]*)
+                echo arm
+                return 0
+                ;;
+            aarch64)
+                echo arm64
+                return 0
+                ;;
+            mips*)
+                write_to_screen_and_script_log "I see you are running on mips but I don't know how to determine endianness yet, so I cannot select a correct arch to fetch."
+                write_to_screen_and_script_log "Consider installing \"go\" on the system which I can use to determine the correct arch or specify it explictly by setting TARGETARCH"
+                exit 1
+                ;;
+            *)
+                echo "${uArch}"
+                return 0
+                ;;
+        esac
+
+    fi
+
+    # default value
+    write_to_screen_and_script_log "Unable to determine CPU arch, falling back to amd64. You can specify a target arch by setting TARGETARCH"
+    echo amd64
+}
+
 
 #################################################################################
 #                                 DEPLOYMENT                                    #
@@ -1677,13 +2285,13 @@ function container_status {
             write_to_screen_and_script_log "We couldn't find the MetroAE setup type in the configuration file on disk."
             echo "Please run 'metroae container setup' and try again."
             echo ""
-            exit 1
+            print_version_and_exit 1
         elif [[ -z $METROAE_MOUNT_POINT ]]; then
             echo ""
             write_to_screen_and_script_log "We couldn't find the MetroAE data path in the configuration file on disk."
             echo "Please run 'metroae container setup' and try again."
             echo ""
-            exit 1
+            print_version_and_exit 1
         fi
         if [[ $METROAE_SETUP_TYPE == $CONFIG_SETUP_TYPE ]]; then
             current_setup_type="Config"
@@ -1705,7 +2313,7 @@ function container_status {
         write_to_screen_and_script_log "MetroAE container setup file not found. Please run 'metroae container setup'"
         echo "and try again. Quitting."
         echo ""
-        exit 1
+        print_version_and_exit 1
     fi
     if [[ ! -z $RUNNING_CONTAINER_ID ]]; then
         write_to_screen_and_script_log "Docker information:"
@@ -1846,14 +2454,10 @@ function container_main {
             shift
             shift
             ;;
-            download)
-            if [[ ! -z $2 ]]; then
-              get_from_s3 $2
-              shift
-            else
-              get_from_s3
-            fi
+            load)
             shift
+            container_load "$@"
+            print_version_and_exit 0
             ;;
             *)
             POSITIONAL+=("$1")
@@ -2272,6 +2876,10 @@ function tools_main {
         else
             /usr/bin/python encrypt_credentials.py ${EXTRA_ARGS[@]}
         fi
+        print_version_and_exit 0
+        ;;
+        download)
+        download_container ${EXTRA_ARGS[@]}
         print_version_and_exit 0
         ;;
         *)

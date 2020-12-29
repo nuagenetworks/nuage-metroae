@@ -22,9 +22,12 @@
       - enable_ipv6 | default(False)
       - scp_location is defined
 
-  - name: Get VSD version
-    shell: grep -ir "VSD_VERSION=" /etc/profile.d/vsd-banner.sh | awk -F "=" '{print $2}'
-    register: vsd_version
+  - block:
+
+    - include_role:
+        name: common
+        tasks_from: get-vsd-version
+
     delegate_to: "{{ vsd_hostname_list[0] }}"
 
   - name: Check if the user is already present (ignoring errors)
@@ -73,7 +76,7 @@
     delegate_to: "{{ vsd_hostname_list[0] }}"
     register: created
     until: "created.rc == 0 or (created.stdout is search('fail adding entity'))"
-    retries: 10
+    retries: 20
     delay: 30
     no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
     when: "'4.0.4' not in vsd_version and scp_user is defined and scp_location is defined"
@@ -110,5 +113,6 @@
 
   remote_user: "{{ hostvars[vsd_hostname_list[0]].vsd_custom_username | default(vsd_custom_username | default(vsd_default_username)) }}"
   become: "{{ 'no' if hostvars[vsd_hostname_list[0]].vsd_custom_username | default(vsd_custom_username | default(vsd_default_username)) == 'root' else 'yes' }}"
+  become_flags: '-i'
   vars:
     ansible_become_pass: "{{ hostvars[vsd_hostname_list[0]].vsd_custom_password | default(vsd_custom_password | default(vsd_default_password)) }}"
