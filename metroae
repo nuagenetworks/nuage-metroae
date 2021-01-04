@@ -103,6 +103,8 @@ CONTAINER_STOPPED=0
 CONTAINER_DELETED=0
 TEMPLATE_TAR_LOCATION="https://metroae-config-templates.s3.amazonaws.com/metroae_config.tar"
 VSD_SPECIFICATIONS_LOCATION="https://vsd-api-specifications.s3.us-east-2.amazonaws.com/specifications.tar"
+TEMPLATE_DIR="standard-templates"
+SPECIFICATION_DIR="vsd-api-specifications"
 
 function read_setup_files {
     while read -r line; do declare -g $line; done < $SETUP_FILE
@@ -1392,8 +1394,21 @@ function container_load_templates {
         print_version_and_exit 1
     fi
 
-    filename=$(basename $1)
-    tar -zxvf "$1" -C $METROAE_MOUNT_POINT/$filename
+    tar -xvf "$1"
+
+    templates_filename=$(basename $TEMPLATE_TAR_LOCATION)
+    specs_filename=$(basename $VSD_SPECIFICATIONS_LOCATION)
+
+    template_path=$METROAE_MOUNT_POINT/$TEMPLATE_DIR
+    mkdir -p "$template_path"
+    tar -xvf "$templates_filename" -C $template_path
+
+    specs_path=$METROAE_MOUNT_POINT/$SPECIFICATION_DIR
+    mkdir -p "$specs_path"
+    tar -xvf "$specs_filename" -C $specs_path
+
+    rm -f $templates_filename
+    rm -f $specs_filename
 }
 #################################################################################
 #                             CONTAINER DOWNLOAD                                #
@@ -1439,6 +1454,15 @@ function download_container_templates {
     fi
     curl -O $TEMPLATE_TAR_LOCATION
     curl -O $VSD_SPECIFICATIONS_LOCATION
+    template_tar_file=$(basename $TEMPLATE_TAR_LOCATION)
+    specs_tar_file=$(basename $VSD_SPECIFICATIONS_LOCATION)
+    tar -cf $template_tar_file $specs_tar_file
+    template_and_specs_tar_file="metroae_templates_specs.tar"
+    mv $template_tar_file $template_and_specs_tar_file
+    rm -f $template_tar_file
+    rm -f $specs_tar_file
+    write_to_screen_and_script_log "The latest MetroAE templates and VSD API Specifications have been downloaded"
+    write_to_screen_and_script_log "They can be found in $template_and_specs_tar_file"
 }
 
 function download_using_docker {
@@ -3233,7 +3257,7 @@ do
 done
 
 # Do the file check and setup before running the commands
-if [[ ${MATCH_MENU[0]} != ",container,setup" ]] && [[ ${MATCH_MENU[0]} != ",container,pull" ]] && [[ ${MATCH_MENU[0]} != ",container,destroy" ]] && [[ ${MATCH_MENU[0]} != ",container,status" ]] && [[ ${MATCH_MENU[0]} != ",container,update" ]] && [[ ${MATCH_MENU[0]} != ",container,download" ]] && [[ ${MATCH_MENU[0]} != ",container,download,templates" ]]; then
+if [[ ${MATCH_MENU[0]} != ",container,setup" ]] && [[ ${MATCH_MENU[0]} != ",container,pull" ]] && [[ ${MATCH_MENU[0]} != ",container,destroy" ]] && [[ ${MATCH_MENU[0]} != ",container,status" ]] && [[ ${MATCH_MENU[0]} != ",container,update" ]] && [[ ${MATCH_MENU[0]} != ",container,download" ]] && [[ ${MATCH_MENU[0]} != ",container,download,image" ]] && [[ ${MATCH_MENU[0]} != ",container,download,templates" ]]; then
     check_for_prerequisite "$@"
 fi
 
