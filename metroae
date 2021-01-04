@@ -9,16 +9,20 @@ MENU=()
 #                             CONTAINER COMMANDS                                #
 #################################################################################
 
-MENU+=(',container'                 'Manage the MetroAE container'                         'container'  ''                       '')
-MENU+=(',container,pull'            'Pull a new MetroAE image from the registry'           'container'  'pull'                   ',container,pull')
-MENU+=(',container,setup'           'Setup the MetroAE container'                          'container'  'setup'                  ',container,setup')
-MENU+=(',container,start'           'Start the MetroAE container'                          'container'  'start'                  ',container,start')
-MENU+=(',container,stop'            'Stop the MetroAE container'                           'container'  'stop'                   ',container,stop')
-MENU+=(',container,status'          'Display the status of the MetroAE container'          'container'  'status'                 ',container,status')
-MENU+=(',container,destroy'         'Destroy the MetroAE container'                        'container'  'destroy'                ',container,destroy')
-MENU+=(',container,update'          'Update the MetroAE container to the latest version'   'container'  'upgrade-engine'         ',container,update')
-MENU+=(',container,download'        'Download the container in tar format'                 'tools'      'download'               ',container,download')
-MENU+=(',container,load'            'Load container onto host from downloaded tar file'    'container'  'load'               ',container,download')
+MENU+=(',container'                    'Manage the MetroAE container'                         'container'  ''                       '')
+MENU+=(',container,pull'               'Pull a new MetroAE image from the registry'           'container'  'pull'                   ',container,pull')
+MENU+=(',container,setup'              'Setup the MetroAE container'                          'container'  'setup'                  ',container,setup')
+MENU+=(',container,start'              'Start the MetroAE container'                          'container'  'start'                  ',container,start')
+MENU+=(',container,stop'               'Stop the MetroAE container'                           'container'  'stop'                   ',container,stop')
+MENU+=(',container,status'             'Display the status of the MetroAE container'          'container'  'status'                 ',container,status')
+MENU+=(',container,destroy'            'Destroy the MetroAE container'                        'container'  'destroy'                ',container,destroy')
+MENU+=(',container,update'             'Update the MetroAE container to the latest version'   'container'  'upgrade-engine'         ',container,update')
+MENU+=(',container,download'           'Download the container in tar format'                 'tools'      'download'               ',container,download')
+MENU+=(',container,download,image'     'Download the container in tar format'                 'tools'      'download'               ',container,download,image')
+MENU+=(',container,download,templates' 'Download the container in tar format'                 'tools'      'download-templates'     ',container,download,templates')
+MENU+=(',container,load'               'Load container onto host from downloaded tar file'    'container'  'load'                   ',container,download')
+MENU+=(',container,load,image'         'Load container onto host from downloaded tar file'    'container'  'load'                   ',container,download')
+MENU+=(',container,load,templates'     'Load container onto host from downloaded tar file'    'container'  'load-templates'         ',container,load,templates')
 
 #################################################################################
 #                                  VARIABLES                                    #
@@ -97,6 +101,8 @@ DEPLOY_SETUP_TYPE="d"
 BOTH_SETUP_TYPE="b"
 CONTAINER_STOPPED=0
 CONTAINER_DELETED=0
+TEMPLATE_TAR_LOCATION="https://metroae-config-templates.s3.amazonaws.com/metroae_config.tar"
+VSD_SPECIFICATIONS_LOCATION="https://vsd-api-specifications.s3.us-east-2.amazonaws.com/specifications.tar"
 
 function read_setup_files {
     while read -r line; do declare -g $line; done < $SETUP_FILE
@@ -1373,6 +1379,22 @@ function container_load {
     write_to_screen_and_script_log "You can run 'metroae container setup' to setup"
 }
 
+function container_load_templates {
+    debug ${FUNCNAME[0]}
+
+    if [[ -z $1 ]]; then
+        write_to_screen_and_script_log "Please specify the path to the tar file"
+        print_version_and_exit 1
+    fi
+
+    if ! [[ -f $1 ]]; then
+        write_to_screen_and_script_log "Tar file $1 does not exist"
+        print_version_and_exit 1
+    fi
+
+    filename=$(basename $1)
+    tar -zxvf "$1" -C $METROAE_MOUNT_POINT/$filename
+}
 #################################################################################
 #                             CONTAINER DOWNLOAD                                #
 #################################################################################
@@ -1401,6 +1423,22 @@ function download_container {
     else
         download_from_docker_hub "$METRO_AE_IMAGE:$imageTag"
     fi
+}
+
+function download_container_templates {
+    debug ${FUNCNAME[0]}
+    if ! command -v curl &> /dev/null; then
+        write_to_screen_and_script_log "The command 'curl' was not found in PATH"
+        write_to_screen_and_script_log "This is a small utility for downloading files from the Internet"
+        write_to_screen_and_script_log "It is needed for downloading templates from Amazon S3"
+        write_to_screen_and_script_log "Please install this utility with:"
+        write_to_screen_and_script_log ""
+        write_to_screen_and_script_log "sudo yum install curl"
+        write_to_screen_and_script_log ""
+        exit 1
+    fi
+    curl -O $TEMPLATE_TAR_LOCATION
+    curl -O $VSD_SPECIFICATIONS_LOCATION
 }
 
 function download_using_docker {
@@ -2459,6 +2497,11 @@ function container_main {
             container_load "$@"
             print_version_and_exit 0
             ;;
+            load-templates)
+            shift
+            container_load_templates "$@"
+            print_version_and_exit 0
+            ;;
             *)
             POSITIONAL+=("$1")
             exec=true
@@ -2882,6 +2925,10 @@ function tools_main {
         download_container ${EXTRA_ARGS[@]}
         print_version_and_exit 0
         ;;
+        download-templates)
+        download_container_templates ${EXTRA_ARGS[@]}
+        print_version_and_exit 0
+        ;;
         *)
         tools_help ",tools"
         print_version_and_exit 1
@@ -3186,7 +3233,7 @@ do
 done
 
 # Do the file check and setup before running the commands
-if [[ ${MATCH_MENU[0]} != ",container,setup" ]] && [[ ${MATCH_MENU[0]} != ",container,pull" ]] && [[ ${MATCH_MENU[0]} != ",container,destroy" ]] && [[ ${MATCH_MENU[0]} != ",container,status" ]] && [[ ${MATCH_MENU[0]} != ",container,update" ]] && [[ ${MATCH_MENU[0]} != ",container,download" ]]; then
+if [[ ${MATCH_MENU[0]} != ",container,setup" ]] && [[ ${MATCH_MENU[0]} != ",container,pull" ]] && [[ ${MATCH_MENU[0]} != ",container,destroy" ]] && [[ ${MATCH_MENU[0]} != ",container,status" ]] && [[ ${MATCH_MENU[0]} != ",container,update" ]] && [[ ${MATCH_MENU[0]} != ",container,download" ]] && [[ ${MATCH_MENU[0]} != ",container,download,templates" ]]; then
     check_for_prerequisite "$@"
 fi
 
