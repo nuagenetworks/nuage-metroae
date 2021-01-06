@@ -83,10 +83,12 @@
 
   when: vsd_ran_disk_performance_test | default(False)
 
-- name: Get current version of VSD software
-  shell: grep -ir "VSD_VERSION=" /etc/profile.d/vsd-banner.sh | awk -F "=" '{print $2}'         # noqa 306
-  register: vsd_version
-  changed_when: False
+- block:
+
+  - include_role:
+      name: common
+      tasks_from: get-vsd-version
+
   remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
 
 - name: Get configured VSD Hostname
@@ -419,7 +421,9 @@
 
   - name: Verify jrestore pass is set for version
     command: "keytool -keystore {{ java_home.stdout }}/lib/security/cacerts -alias vspca -storepass {{ jreStorePwd }} -list"
-    when: jreStorePwd is defined
+    when:
+      - jreStorePwd is defined
+      - vsd_major_version|int < 6
 
   - name: Verify cnauser pass is set
     command: "mysql -ucnauser -p{{ cnaPwd }} -e 'select 1'"

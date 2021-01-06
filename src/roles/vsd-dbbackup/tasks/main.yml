@@ -6,10 +6,12 @@
     backup_component_name: vsd
     backup_host_name: "{{ inventory_hostname }}"
 
-- name: Get current version of VSD software
-  shell: grep -ir "VSD_VERSION=" /etc/profile.d/vsd-banner.sh | awk -F "=" '{print $2}' # noqa 306
-  changed_when: False
-  register: vsd_version
+- block:
+
+  - include_role:
+      name: common
+      tasks_from: get-vsd-version
+
   remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
 
 - block:
