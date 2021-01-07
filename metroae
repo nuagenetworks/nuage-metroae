@@ -990,6 +990,22 @@ function update_container_files {
         echo ""
         docker_exec_config templates update
         config_template_status=$?
+
+        if [[ $config_template_status -eq 9 ]]; then
+            echo ""
+            read -p "Would you like to continue with MetroAE container setup? (y/n) " CONTINUE_SETUP
+            if [[ $CONTINUE_SETUP == "n" ]]; then
+                echo ""
+                write_to_screen_and_script_log "Quitting MetroAE container setup..."
+                echo "You can run 'metroae container setup' at any time to complete the setup process"
+                exit 1
+            else
+                echo ""
+                write_to_screen_and_script_log "Continuing with MetroAE container setup..."
+                config_template_status=0
+            fi
+        fi
+
     fi
 
     config_docs_status=0
@@ -1490,7 +1506,7 @@ function download_container_templates {
     tar -rf $template_and_specs_tar_file $template_tar_file $specs_tar_file
     tar_exit_code=$?
     set -e
-    
+
     if [[ $tar_exit_code -eq 0 ]]; then
         write_to_screen_and_script_log "The latest MetroAE templates and VSD API Specifications have been downloaded"
         write_to_screen_and_script_log "They can be found in $template_and_specs_tar_file"
