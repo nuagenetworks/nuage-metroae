@@ -941,7 +941,7 @@ function setup_container {
 
     set -e
 
-    if [[ $config_docs_status -ne 0 || $deploy_keys_status -ne 0 || $deploy_status -ne 0 || $common_status -ne 0 ]]; then
+    if [[ $config_template_status -ne 0 ]] || [[ $config_docs_status -ne 0 || $deploy_keys_status -ne 0 || $deploy_status -ne 0 || $common_status -ne 0 ]]; then
         echo ""
         write_to_screen_and_script_log "Setup of the MetroAE container is complete. However, we had a problem copying one or more files to the data directory."
         echo "The MetroAE container is running. You can use it, but you may not have the latest files on disk."
@@ -991,7 +991,7 @@ function update_container_files {
         docker_exec_config templates update
         config_template_status=$?
 
-        if [[ $config_template_status -ne 0 ]]; then
+        if [[ $config_template_status -eq 9 ]]; then
             echo ""
             read -p "Would you like to continue with MetroAE container setup? (y/n) " CONTINUE_SETUP
             if [[ $CONTINUE_SETUP == "n" ]]; then
@@ -1002,6 +1002,7 @@ function update_container_files {
             else
                 echo ""
                 write_to_screen_and_script_log "Continuing with MetroAE container setup..."
+                config_template_status=0
             fi
         fi
 
