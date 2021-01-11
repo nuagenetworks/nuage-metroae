@@ -1073,17 +1073,20 @@ function update_container {
         pull
     fi
     run_container
+    update_container_files
+
     if [[ -z $NOT_INTERACTIVE ]]; then
       update_metroae
     fi
-    update_container_files
 
     read_setup_files
-    for plugin_name in `ls $METROAE_MOUNT_POINT/metro_plugins/`; do
-        if [ -d "$METROAE_MOUNT_POINT/metro_plugins/${plugin_name}" ]; then
-            docker_metro_ae_exec plugin install "/metroae_data/metro_plugins/${plugin_name}"
-        fi
-    done
+    if [ -d $METROAE_MOUNT_POINT/metro_plugins/ ]; then
+        for plugin_name in `ls $METROAE_MOUNT_POINT/metro_plugins/`; do
+            if [ -d "$METROAE_MOUNT_POINT/metro_plugins/${plugin_name}" ]; then
+                docker_metro_ae_exec plugin install "/metroae_data/metro_plugins/${plugin_name}"
+            fi
+        done
+    fi
 }
 
 function check_if_mount_point_configured {
