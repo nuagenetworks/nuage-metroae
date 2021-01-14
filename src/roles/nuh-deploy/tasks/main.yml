@@ -113,8 +113,10 @@
       - name: Copy the network config for NUH internal and external networks
         template: src=config.yml.j2 backup=no dest=/opt/proxy/data/config.yml owner=root group=root mode=0640
 
-      - name: get new CRls
-        shell: /opt/proxy/bin/fetchcrl.sh {{ hostvars[groups['vsds'][0]].mgmt_ip }}
+      - name: Update haproxy Service
+        lineinfile:
+          path: /opt/proxy/bin/ansible/roles/common/handlers/main.yml
+          regex: "shell: systemctl reload-or-restart haproxy"
 
       - name: Run the network config script on NUH
         command: ansible-playbook configure.yml
