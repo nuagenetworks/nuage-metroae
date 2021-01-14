@@ -11,6 +11,7 @@
 ### Resolved Issues
 
 * Fixed automatic update of metroae script with container (METROAE-289)
+* Add rsync to metroae setup (METROAE-293)
 
 ## Test Matrix
 
