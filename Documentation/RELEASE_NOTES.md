@@ -36,6 +36,7 @@
 * Add retries to yum update in case there are connection issues with repos
 * Increased the retries for ejabberd connected users
 * Skip testing for bootstrap complete when using activation link method
+* Add rsync to metroae setup (METROAE-293)
 
 ## Test Matrix
 
