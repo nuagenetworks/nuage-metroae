@@ -23,6 +23,7 @@ Add NUH enhancements for VRRP, NTP and other NUH config (METROAE-1429)
 Add support for updating MetroAE Script during Container setup and update. (METROAE-1427)
 Add support for configuring only IPV6 environment in vcenter. (METROAE-276)
 Make MetroAE python scripts Python3 compatible (METROAE-1418)
+Enhance several license file descriptions to include the file name
 
 ### Resolved Issues
 
