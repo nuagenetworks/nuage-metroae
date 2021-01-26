@@ -135,13 +135,8 @@
     shell: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} \
            sh "sed -i 's/SELINUX\=enforcing/SELINUX\=permissive/g' /etc/selinux/config"  # noqa 305
 
-  - block:
-    - name: Preallocate most of VSD disk space to avoid pausing the VM, this also checks disk space
-      shell: "fallocate -x -l {{ portal_allocate_size_gb }}G {{ guestfish_dest }}"  # noqa 305
-
-    - name: Increase Virtual size of the disk
-      shell: "qemu-img resize {{ guestfish_dest }} +{{ portal_allocate_size_gb }}"
-
+  - name: Increase Virtual size of the disk
+    shell: "qemu-img resize {{ guestfish_dest }} +{{ portal_allocate_size_gb }}G"
     when: portal_allocate_size_gb > 0
 
   - name: Define and start Portal VM
@@ -151,6 +146,22 @@
     vars:
       vm_xml: "{{ lookup('template', 'portal.xml.j2') }}"
       autostart_enabled: true
+
+  - block:
+    - name: Wait for PORTAL VM ssh to be ready
+      include_role:
+        name: common
+        tasks_from: wait-for-ssh
+      vars:
+        ssh_host: "{{ mgmt_ip }}"
+        host_username: "{{ portal_default_username }}"
+
+    - name: Grow partition on the vm
+      shell: "growpart /dev/vda 1"
+      delegate_to: {{ inventory_hostname }}
+      remote_user: "{{ portal_default_username }}"
+
+    when: portal_allocate_size_gb > 0
 
   when: not node_running
   delegate_to: "{{ target_server }}"
