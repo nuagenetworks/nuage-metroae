@@ -142,9 +142,6 @@
     - name: Increase the virtual vm size
       shell: "qemu-img resize {{ guestfish_dest }} +{{ portal_allocate_size_gb | int - 8 }}G"
 
-    - name: Grow root fs
-      shell: "xfs_growfs /"
-
     when: portal_allocate_size_gb > 0
 
   - name: Define and start Portal VM
@@ -166,6 +163,11 @@
 
     - name: Grow partition on the vm
       shell: "growpart /dev/vda 1"
+      delegate_to: "{{ inventory_hostname }}"
+      remote_user: "{{ portal_default_username }}"
+
+    - name: Grow root fs
+      shell: "xfs_growfs /"
       delegate_to: "{{ inventory_hostname }}"
       remote_user: "{{ portal_default_username }}"
 
