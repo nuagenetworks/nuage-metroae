@@ -2,16 +2,20 @@
 
 ## Release info
 
-* MetroAE Version 4.3.1
-* Nuage Release Alignment 20.10.R2
-* Date of Release 14-Jan-2021
+* MetroAE Version 4.4.0
+* Nuage Release Alignment TBD
+* Date of Release TBD
 
 ## Release Contents
 
+### Feature Enhancements
+
+
+
 ### Resolved Issues
 
-* Fixed automatic update of metroae script with container (METROAE-289)
-* Add rsync to metroae setup (METROAE-293)
+Enhance several license file descriptions to include the file name
+Updated SDWAN portal to support 20.11 version
 
 ## Test Matrix
 

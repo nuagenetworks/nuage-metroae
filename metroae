@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -e
 
-METROAE_VERSION="4.3.1"
+METROAE_VERSION="4.4.0"
 SCRIPT_VERSION="1.2.1"
 MENU=()
 
@@ -9,16 +9,20 @@ MENU=()
 #                             CONTAINER COMMANDS                                #
 #################################################################################
 
-MENU+=(',container'                 'Manage the MetroAE container'                         'container'  ''                       '')
-MENU+=(',container,pull'            'Pull a new MetroAE image from the registry'           'container'  'pull'                   ',container,pull')
-MENU+=(',container,setup'           'Setup the MetroAE container'                          'container'  'setup'                  ',container,setup')
-MENU+=(',container,start'           'Start the MetroAE container'                          'container'  'start'                  ',container,start')
-MENU+=(',container,stop'            'Stop the MetroAE container'                           'container'  'stop'                   ',container,stop')
-MENU+=(',container,status'          'Display the status of the MetroAE container'          'container'  'status'                 ',container,status')
-MENU+=(',container,destroy'         'Destroy the MetroAE container'                        'container'  'destroy'                ',container,destroy')
-MENU+=(',container,update'          'Update the MetroAE container to the latest version'   'container'  'upgrade-engine'         ',container,update')
-MENU+=(',container,download'        'Download the container in tar format'                 'tools'      'download'               ',container,download')
-MENU+=(',container,load'            'Load container onto host from downloaded tar file'    'container'  'load'               ',container,download')
+MENU+=(',container'                    'Manage the MetroAE container'                                                             'container'  ''                       '')
+MENU+=(',container,pull'               'Pull a new MetroAE image from the registry'                                               'container'  'pull'                   ',container,pull')
+MENU+=(',container,setup'              'Setup the MetroAE container'                                                              'container'  'setup'                  ',container,setup')
+MENU+=(',container,start'              'Start the MetroAE container'                                                              'container'  'start'                  ',container,start')
+MENU+=(',container,stop'               'Stop the MetroAE container'                                                               'container'  'stop'                   ',container,stop')
+MENU+=(',container,status'             'Display the status of the MetroAE container'                                              'container'  'status'                 ',container,status')
+MENU+=(',container,destroy'            'Destroy the MetroAE container'                                                            'container'  'destroy'                ',container,destroy')
+MENU+=(',container,update'             'Update the MetroAE container to the latest version'                                       'container'  'upgrade-engine'         ',container,update')
+MENU+=(',container,download'           'Download the container in tar format'                                                     'tools'      'download'               ',container,download')
+MENU+=(',container,download,image'     'Download the container in tar format'                                                     'tools'      'download'               ',container,download')
+MENU+=(',container,download,templates' 'Download the MetroAE Config templates and VSD specifications in tar format'               'tools'      'download-templates'     ',container,download,templates')
+MENU+=(',container,load'               'Load container onto host from downloaded tar file'                                        'container'  'load'                   ',container,download')
+MENU+=(',container,load,image'         'Load container onto host from downloaded tar file'                                        'container'  'load'                   ',container,download')
+MENU+=(',container,load,templates'     'Load MetroAE Config templates and VSD specifications onto host from downloaded tar file'  'container'  'load-templates'         ',container,load,templates')
 
 #################################################################################
 #                                  VARIABLES                                    #
@@ -97,6 +101,10 @@ DEPLOY_SETUP_TYPE="d"
 BOTH_SETUP_TYPE="b"
 CONTAINER_STOPPED=0
 CONTAINER_DELETED=0
+TEMPLATE_TAR_LOCATION="https://metroae-config-templates.s3.amazonaws.com/metroae_config.tar"
+VSD_SPECIFICATIONS_LOCATION="https://vsd-api-specifications.s3.us-east-2.amazonaws.com/specifications.tar"
+TEMPLATE_DIR="standard-templates"
+SPECIFICATION_DIR="vsd-api-specifications"
 
 function read_setup_files {
     while read -r line; do declare -g $line; done < $SETUP_FILE
@@ -982,6 +990,22 @@ function update_container_files {
         echo ""
         docker_exec_config templates update
         config_template_status=$?
+
+        if [[ $config_template_status -eq 9 ]]; then
+            echo ""
+            read -p "Would you like to continue with MetroAE container setup? (y/n) " CONTINUE_SETUP
+            if [[ $CONTINUE_SETUP == "n" ]]; then
+                echo ""
+                write_to_screen_and_script_log "Quitting MetroAE container setup..."
+                echo "You can run 'metroae container setup' at any time to complete the setup process"
+                exit 1
+            else
+                echo ""
+                write_to_screen_and_script_log "Continuing with MetroAE container setup..."
+                config_template_status=0
+            fi
+        fi
+
     fi
 
     config_docs_status=0
@@ -1376,6 +1400,63 @@ function container_load {
     write_to_screen_and_script_log "You can run 'metroae container setup' to setup"
 }
 
+function container_load_templates {
+    debug ${FUNCNAME[0]}
+
+    if [[ -z $1 ]]; then
+        write_to_screen_and_script_log "Please specify the path to the tar file"
+        print_version_and_exit 1
+    fi
+
+    if ! [[ -f $1 ]]; then
+        write_to_screen_and_script_log "Tar file $1 does not exist"
+        print_version_and_exit 1
+    fi
+
+    write_to_screen_and_script_log "Extracting template and specifications tarballs..."
+    tar -xvf "$1"
+    if [[ $? -ne 0 ]]; then
+        write_to_screen_and_script_log "There was an issue extracting tarballs from $1"
+        exit 1
+    fi
+
+    templates_filename=$(basename $TEMPLATE_TAR_LOCATION)
+    specs_filename=$(basename $VSD_SPECIFICATIONS_LOCATION)
+
+    template_path=$METROAE_MOUNT_POINT/$TEMPLATE_DIR
+    mkdir -p "$template_path"
+    write_to_screen_and_script_log "Extracting template files to $template_path..."
+    tar -xvf "$templates_filename" -C $template_path
+    if [[ $? -ne 0 ]]; then
+        write_to_screen_and_script_log "There was an issue extracting template files from $templates_filename"
+        exit 1
+    fi
+
+    specs_path=$METROAE_MOUNT_POINT/$SPECIFICATION_DIR
+    mkdir -p "$specs_path"
+    write_to_screen_and_script_log "Extracting specification files to $specs_path..."
+    tar -xvf "$specs_filename" -C $specs_path
+    if [[ $? -ne 0 ]]; then
+        write_to_screen_and_script_log "There was an issue extracting VSD API Specifications from $specs_filename"
+        exit 1
+    fi
+
+    write_to_screen_and_script_log "Templates and specifications have been extracted"
+    write_to_screen_and_script_log "They can be found in $template_path and $specs_path"
+
+    rm -f $templates_filename
+    rm -f $specs_filename
+
+    if [[ -e $templates_filename ]] || [[ -e $specs_filename ]]; then
+        write_to_screen_and_script_log "Could not remove one or both of the intermediate tar files"
+        write_to_screen_and_script_log "They can be found here: $templates_filename and $specs_filename"
+        exit 1
+    fi
+
+    exit 0
+
+}
+
 #################################################################################
 #                             CONTAINER DOWNLOAD                                #
 #################################################################################
@@ -1404,6 +1485,49 @@ function download_container {
     else
         download_from_docker_hub "$METRO_AE_IMAGE:$imageTag"
     fi
+}
+
+function download_container_templates {
+    debug ${FUNCNAME[0]}
+    if ! command -v curl &> /dev/null; then
+        write_to_screen_and_script_log "The command 'curl' was not found in PATH"
+        write_to_screen_and_script_log "This is a small utility for downloading files from the Internet"
+        write_to_screen_and_script_log "It is needed for downloading templates from Amazon S3"
+        write_to_screen_and_script_log "Please install this utility with:"
+        write_to_screen_and_script_log ""
+        write_to_screen_and_script_log "sudo yum install curl"
+        write_to_screen_and_script_log ""
+        exit 1
+    fi
+    curl -O $TEMPLATE_TAR_LOCATION
+    curl -O $VSD_SPECIFICATIONS_LOCATION
+    template_tar_file=$(basename $TEMPLATE_TAR_LOCATION)
+    specs_tar_file=$(basename $VSD_SPECIFICATIONS_LOCATION)
+    template_and_specs_tar_file="metroae_templates_specs.tar"
+
+    set +e
+    tar -rf $template_and_specs_tar_file $template_tar_file $specs_tar_file
+    tar_exit_code=$?
+    set -e
+
+    if [[ $tar_exit_code -eq 0 ]]; then
+        write_to_screen_and_script_log "The latest MetroAE templates and VSD API Specifications have been downloaded"
+        write_to_screen_and_script_log "They can be found in $template_and_specs_tar_file"
+    else
+        write_to_screen_and_script_log "There was an issue when archiving the tarballs, please try again."
+        exit 1
+    fi
+
+    rm -f $template_tar_file
+    rm -f $specs_tar_file
+
+    if [[ -e $template_tar_file ]] || [[ -e $specs_tar_file ]]; then
+        write_to_screen_and_script_log "Could not remove one or both of the intermediate tar files"
+        write_to_screen_and_script_log "They can be found here: $template_tar_file and $specs_tar_file"
+        exit 1
+    fi
+
+    exit 0
 }
 
 function download_using_docker {
@@ -2462,6 +2586,11 @@ function container_main {
             container_load "$@"
             print_version_and_exit 0
             ;;
+            load-templates)
+            shift
+            container_load_templates "$@"
+            print_version_and_exit 0
+            ;;
             *)
             POSITIONAL+=("$1")
             exec=true
@@ -2885,6 +3014,10 @@ function tools_main {
         download_container ${EXTRA_ARGS[@]}
         print_version_and_exit 0
         ;;
+        download-templates)
+        download_container_templates ${EXTRA_ARGS[@]}
+        print_version_and_exit 0
+        ;;
         *)
         tools_help ",tools"
         print_version_and_exit 1
@@ -3189,7 +3322,7 @@ do
 done
 
 # Do the file check and setup before running the commands
-if [[ ${MATCH_MENU[0]} != ",container,setup" ]] && [[ ${MATCH_MENU[0]} != ",container,pull" ]] && [[ ${MATCH_MENU[0]} != ",container,destroy" ]] && [[ ${MATCH_MENU[0]} != ",container,status" ]] && [[ ${MATCH_MENU[0]} != ",container,update" ]] && [[ ${MATCH_MENU[0]} != ",container,download" ]]; then
+if [[ ${MATCH_MENU[0]} != ",container,setup" ]] && [[ ${MATCH_MENU[0]} != ",container,pull" ]] && [[ ${MATCH_MENU[0]} != ",container,destroy" ]] && [[ ${MATCH_MENU[0]} != ",container,status" ]] && [[ ${MATCH_MENU[0]} != ",container,update" ]] && [[ ${MATCH_MENU[0]} != ",container,download" ]] && [[ ${MATCH_MENU[0]} != ",container,download,image" ]] && [[ ${MATCH_MENU[0]} != ",container,download,templates" ]]; then
     check_for_prerequisite "$@"
 fi
 
