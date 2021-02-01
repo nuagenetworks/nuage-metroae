@@ -26,7 +26,7 @@
       assert:
         that: "image_path | default('MISSING') != 'MISSING' and image_file_name | default('MISSING') != 'MISSING'"
         msg: "Missing image files for {{ hostname | default(vmname) }} under the unzipped file directory, please unzip them."
-      when: 
+      when:
         - target_server_type is match("kvm") or target_server_type is match("vcenter")
         - not skip_copy_images | default(False)
 
@@ -48,6 +48,12 @@
     when: component_type | default("NONE") == 'vrs'
 
   when: not vsd_inplace_upgrade | default(false)
+
+- name: Check the image path for portal container
+  assert:
+    that: "portal_path | default('MISSING') != 'MISSING' or portal_file_name | default('MISSING') != 'MISSING'"
+    msg: "Missing SDWAN portal container tar file under the unzipped directory, Please Copy it"
+  when: component_type | default("NONE") == 'portal'
 
 - block:
 
