@@ -15,6 +15,7 @@
 ### Resolved Issues
 
 Enhance several license file descriptions to include the file name
+Updated SDWAN portal to support 20.11 version
 
 ## Test Matrix
 
