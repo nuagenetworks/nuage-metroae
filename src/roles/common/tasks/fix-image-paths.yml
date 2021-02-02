@@ -1,22 +1,26 @@
 ---
+- name: Get unzipped files dir
+  set_fact:
+    nuage_unzipped_files_dir: "{{ common.nuage_unzipped_files_dir }}"
+
 - name: replace non-relative path
   set_fact:
-    common.nuage_unzipped_files_dir: "{{ common.nuage_unzipped_files_dir | regex_replace('.+?(?=metroae_data)', '/') }}"
+    nuage_unzipped_files_dir: "{{ nuage_unzipped_files_dir | regex_replace('.+?(?=metroae_data)', '/') }}"
   when: common.nuage_unzipped_files_dir | regex_search("/metroae_data/")
 
 - name: replace relative path
   set_fact: 
-    common.nuage_unzipped_files_dir: "{{ '/metroae_data/' + common.nuage_unzipped_files_dir }}"
+    nuage_unzipped_files_dir: "{{ '/metroae_data/' + nuage_unzipped_files_dir }}"
   when: common.nuage_unzipped_files_dir | regex_search("^[^/]")
 
 - name: get stats of resulting path
   stat: 
-    path: common.nuage_unzipped_files_dir
+    path: nuage_unzipped_files_dir
   register: sym
 
 - name: check resulting path validity
   assert:
     that:
     - sym.stat.exists
-    fail_msg: "resulting path {{ common.nuage_unzipped_files_dir }} is invalid"
-    success_msg: "resulting path {{ common.nuage_unzipped_files_dir }} is valid"
+    fail_msg: "resulting path {{ nuage_unzipped_files_dir }} is invalid"
+    success_msg: "resulting path {{ nuage_unzipped_files_dir }} is valid"
