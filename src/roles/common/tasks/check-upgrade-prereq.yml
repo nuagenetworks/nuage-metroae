@@ -47,6 +47,7 @@
     - not vsd_inplace_upgrade
 
 - block:
+
   - name: Check that VSTAT upgrade scripts path and file
     set_fact:
       is_VSTAT_upgrade_script_path_missing: "{{ vstat_upgrade_scripts_path | default('MISSING') == 'MISSING' }}"
@@ -72,16 +73,17 @@
   when: component_type | default("NONE") == 'vstat'
 
 - block:
+
   - name: Check that TIM file is found for VSC
     set_fact: 
       is_TIM_file_missing: "{{ vsc_tim_path | default('MISSING') == 'MISSING' and vsc_tim_file_name | default('MISSING') == 'MISSING' }}" 
   
   - name: Delete the md5 files
-  file:
-    path: "{{ inventory_dir }}/deployment.md5.yml"
-    state: absent 
-  when: is_VSTAT_upgrade_script_path_missing or is_VSTAT_upgrade_script_file_missing
-  delegate_to: localhost
+    file:
+      path: "{{ inventory_dir }}/deployment.md5.yml"
+      state: absent 
+    when: is_VSTAT_upgrade_script_path_missing or is_VSTAT_upgrade_script_file_missing
+    delegate_to: localhost
 
   - name: Check that TIM file was found for VSC
     assert:
