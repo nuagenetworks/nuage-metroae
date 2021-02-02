@@ -16,6 +16,7 @@
 
 Enhance several license file descriptions to include the file name
 Updated SDWAN portal to support 20.11 version
+Updated SDWAN portal unzip task to copy the container tar file to correct folder
 
 ## Test Matrix
 
