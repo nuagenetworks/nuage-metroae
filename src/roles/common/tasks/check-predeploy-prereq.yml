@@ -22,37 +22,70 @@
 
   - block:
 
+    - name: Check that image files are not missing
+      set_fact:
+        is_file_missing: "{{ image_path | default ('MISSING') == 'MISSING' or image_file_name | default ('MISSING') == 'MISSING' }}"
+
+    - name: Delete the md5 files
+      file:
+        path: "{{ inventory_dir }}/deployment.md5.yml"
+        state: absent
+      when: is_file_missing
+      delegate_to: localhost
+
     - name: Check that image files were found
       assert:
-        that: "image_path | default('MISSING') != 'MISSING' and image_file_name | default('MISSING') != 'MISSING'"
+        that: not is_file_missing
         msg: "Missing image files for {{ hostname | default(vmname) }} under the unzipped file directory, please unzip them."
-      when:
-        - target_server_type is match("kvm") or target_server_type is match("vcenter")
-        - not skip_copy_images | default(False)
-
-    when: component_type | default("NONE") != 'vrs'
+    when:
+    - component_type | default("NONE") != 'vrs'
+    - target_server_type is match("kvm") or target_server_type is match("vcenter")
+    - not skip_copy_images | default(False)
 
   - block:
 
+    - name: Check that image files are not missing
+      set_fact:
+        is_vrs_package_missing: "{{ vrs_package_path | default ('MISSING') == 'MISSING' }}"
+        is_dkms_package_missing: "{{ dkms_install and dkms_package_path  | default ('MISSING') == 'MISSING'}}"
+
+    - name: Delete the md5 files
+      file:
+        path: "{{ inventory_dir }}/deployment.md5.yml"
+        state: absent
+      when: is_vrs_package_missing or is_dkms_package_missing
+      delegate_to: localhost
+
     - name: Check that VRS package files were found
       assert:
-        that: "vrs_package_path | default('MISSING') != 'MISSING'"
+        that: not is_vrs_package_missing
         msg: "Missing VRS package files under the unzipped file directory, please unzip them."
 
     - name: Check that DKMS files were found
       assert:
-        that: "dkms_package_path | default('MISSING') != 'MISSING'"
+        that: not is_dkms_package_missing
         msg: "Missing VRS DKMS files under the unzipped file directory, please unzip it."
-      when: dkms_install
 
     when: component_type | default("NONE") == 'vrs'
 
   when: not vsd_inplace_upgrade | default(false)
 
+- name: Check for portal files missing
+  set_fact:
+    is_portal_path_missing: "{{ portal_path | default('MISSING') != 'MISSING' }}"
+    is_portal_file_missing: "{{ portal_file_name | default('MISSING') != 'MISSING' }}"
+
+- name: Delete the md5 files
+  file:
+    path: "{{ inventory_dir }}/deployment.md5.yml"
+    state: absent
+  when: is_portal_file_missing or is_portal_path_missing
+  delegate_to: localhost
+
 - name: Check the image path for portal container
   assert:
-    that: "portal_path | default('MISSING') != 'MISSING' or portal_file_name | default('MISSING') != 'MISSING'"
-    msg: "Missing SDWAN portal container tar file under the unzipped directory, Please Copy it"
+    that: not is_portal_file_missing or not is_portal_path_missing
+    msg: "Missing SDWAN portal container tar or CentOS image for portal under the unzipped directory, Please Copy it"
   when: component_type | default("NONE") == 'portal'
 
 - block:
