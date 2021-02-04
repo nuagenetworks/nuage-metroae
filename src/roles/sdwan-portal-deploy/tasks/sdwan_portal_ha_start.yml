@@ -15,10 +15,13 @@
   when: inventory_hostname == portal2.hostname
 
 - name: Wait for the Portal 2 start up to complete
-  command: curl http://localhost:8080/vnsportal/health    # noqa 303
+  uri:
+    url: https://localhost/vnsportal/health
+    method: GET
+    validate_certs: False
   no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
   register: curl_output
-  until: curl_output.stdout.find("UP") != -1
+  until: curl_output.status == 200
   retries: 30
   delay: 5
   when: inventory_hostname == portal2.hostname

@@ -28,6 +28,8 @@ $ sudo ./setup.sh
 
 Passwordless SSH must be configured between the MetroAE host and all target servers, a.k.a. hypervisors. This is accomplished by generating SSH keys for the MetroAE user, then copying those keys to the authorized_keys files for the `target_server_username` on every `target_server`. The following steps should be executed on the MetroAE server as the MetroAE user.
 
+Please note that this is only a requirement for target servers that are KVMs. Passwordless SSH is not required for these other target-server types: AWS, Openstack, and vCenter.
+
 ### 3.1 Generate keys for the MetroAE user
 
 3.1.1 As MetroAE User on the MetroAE server, generate SSH keys: `ssh-keygen`
