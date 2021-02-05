@@ -2,16 +2,17 @@
 - name: Get unzipped files dir
   set_fact:
     nuage_unzipped_files_dir: "{{ common.nuage_unzipped_files_dir }}"
+    # role_path: "{{ common.role_path }}"
 
 - name: Replace non-relative path
   set_fact:
     nuage_unzipped_files_dir: "{{ nuage_unzipped_files_dir | regex_replace('.+?(?=metroae_data)', '/') }}"
-  when: common.nuage_unzipped_files_dir | regex_search("/metroae_data/")
+  when: common.nuage_unzipped_files_dir | regex_search("/metroae_data/") and {{ role_path }} | regex_search("^\/source\/nuage-metroae")
 
 - name: Replace relative path
   set_fact: 
     nuage_unzipped_files_dir: "{{ '/metroae_data/' + nuage_unzipped_files_dir }}"
-  when: common.nuage_unzipped_files_dir | regex_search("^[^/]")
+  when: common.nuage_unzipped_files_dir | regex_search("^[^/]") and {{ role_path }} | regex_search("^\/source\/nuage-metroae")
 
 - name: Get stats of resulting path
   stat: 
