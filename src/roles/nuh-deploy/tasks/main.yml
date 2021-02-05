@@ -118,13 +118,6 @@
           vsd_hostname: "{{ vsd_fqdn }}"
         run_once: true
 
-      - name: Get custom username for vsd
-        set_fact:
-          custom_username: "{{ hostvars[groups['vsd_ha_node1'][0]].vsd_custom_username | default(vsd_custom_username) }}"
-          custom_password: "{{ hostvars[groups['vsd_ha_node1'][0]].vsd_custom_password | default(vsd_custom_password) }}"
-        when:
-          - hostvars[groups['vsd_ha_node1'][0]].vsd_custom_username is defined
-
       - name: Create notification application user on vsd
         command: /opt/ejabberd/bin/ejabberdctl register {{ item.username }} {{ xmpp_domain }} {{ item.password }}
         delegate_to: vsd_hostname_list[0]
