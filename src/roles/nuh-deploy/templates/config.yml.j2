@@ -68,9 +68,9 @@ proxy:
     - {interface: eth1.0, role: fileserver, enabled: false, firewallports: [], settings: {port: "", ccert: ""}}
 {% if external_interfaces is defined %}
 {% for interface in external_interfaces %}
-    - {interface: eth2.{{ interface.vlan }}, role: nsgbootstrap, enabled: true, firewallports: ['11443', '12443'], settings: {cport: '11443', bport: '12443', ccert: "nuhproxy", precert: "nuhproxy", postcert: "nuhproxy" }}
+    - {interface: eth2.{{ interface.vlan }}, role: nsgbootstrap, enabled: true, firewallports: ['11443', '12443'], settings: {cport: '11443', bport: '12443', ccert: "proxy", precert: "proxy", postcert: "proxy" }}
     - {interface: eth2.{{ interface.vlan }}, role: vsdconfig, enabled: {{ vsdconfig_enable }}, firewallports: ['8443', '9443', "", ""], settings: {uiport: '8443', apiport: '9443', xmppport: "", jmsport: "", geo: false}}
-    - {interface: eth2.{{ interface.vlan }}, role: nsgstats, enabled: true, firewallports: ['39090'], settings: {cport: '39090', ccert: "nuhproxy"}}
+    - {interface: eth2.{{ interface.vlan }}, role: nsgstats, enabled: true, firewallports: ['39090'], settings: {cport: '39090', ccert: "proxy"}}
     - {interface: eth2.{{ interface.vlan }}, role: webfilter, enabled: false, firewallports: [], settings: {protobufport: "", downloadport: "", ccert: ""}}
     - {interface: eth2.{{ interface.vlan }}, role: elasticsearch, enabled: {{ elasticsearch_enable }}, firewallports: ['9200'], settings: {elasticsearch: '9200'}}
     - {interface: eth2.{{ interface.vlan }}, role: sdWanPortal, enabled: false, firewallports: [], settings: {httpPort: "", httpsPort: "", ccert: ""}}
@@ -91,11 +91,17 @@ na:
     vsd: {sleepTimer: 2000, socketTimeout: 60000, password: {{ vsd_auth.password }}, useJmsForEvents: false, useXmppForEvents: true, username: {{ vsd_auth.username }}, enterprise: {{ vsd_auth.enterprise }}}
 {% endif %}
     notificationHandlers: []
-xmpp:
-  user:
-    primary: {{ notification_app1.username }}
-    secondary: null
-  password:
-    primary: {{ notification_app1.password }}
-    secondary: null
-  service: {{ vsd_fqdn }}
+{% if notification_app1 is defined %}
+    xmpp:
+      user:
+        primary: {{ notification_app1.username }}
+{% if notification_app2 is defined %}
+        secondary: {{ notification_app2.username }}
+{% endif %}
+      password:
+        primary: {{ notification_app1.password }}
+{% if notification_app2 is defined %}
+        secondary: {{ notification_app2.password }}
+{% endif %}
+      service: {{ vsd_fqdn }}
+{% endif %}
