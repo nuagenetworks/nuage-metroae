@@ -9,7 +9,7 @@
 ## Release Contents
 
 ### Feature Enhancements
-
+Fix up the image paths to root at /metroae_data/ when in the container
 
 
 ### Resolved Issues
