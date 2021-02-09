@@ -136,7 +136,11 @@
 - name: Create user data for bootstrap
   command: cat /home/caso/nsg_iso/nsgv1/user_image.yml
   delegate_to: localhost
-  register: nsg_ami_user_data
+  register: bootstrap_user_data
+
+- name: Set NSG User Data
+  set_fact:
+    nsg_ami_user_data: "{{ bootstrap_user_data.stdout }}"
 
 - debug: var=nsg_ami_user_data
 
@@ -145,6 +149,12 @@
   template:
     src: "aws-nsg.json.j2"
     dest: "/tmp/aws-nsg-{{ inventory_hostname }}.json"
+
+- name: Check CloudFormation Template
+  command: cat "/tmp/aws-nsg-{{ inventory_hostname }}.json"
+  register: template_dump
+
+- debug: var=template_dump.stdout
 
 - name: Deploy NSG-AWS Stack
   delegate_to: localhost
