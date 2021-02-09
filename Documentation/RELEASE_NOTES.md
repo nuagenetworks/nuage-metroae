@@ -10,7 +10,7 @@
 
 ### Feature Enhancements
 Fix up the image paths to root at /metroae_data/ when in the container
-
+Added support for bootstraping NSGv using NUH external interfaces
 
 ### Resolved Issues
 
