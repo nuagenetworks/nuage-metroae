@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -e
 
-METROAE_VERSION="4.3.0"
-SCRIPT_VERSION="1.2.0"
+METROAE_VERSION="4.4.0"
+SCRIPT_VERSION="1.2.1"
 MENU=()
 
 #################################################################################
@@ -931,11 +931,11 @@ function setup_container {
     rm -rf $METROAE_MOUNT_POINT/version >> /dev/null 2>> /dev/null
 
     run_container
+    update_container_files
+
     if [[ -z $NOT_INTERACTIVE ]]; then
       update_metroae
     fi
-
-    update_container_files
 
     setup_tab_completion
 
@@ -1097,17 +1097,20 @@ function update_container {
         pull
     fi
     run_container
+    update_container_files
+
     if [[ -z $NOT_INTERACTIVE ]]; then
       update_metroae
     fi
-    update_container_files
 
     read_setup_files
-    for plugin_name in `ls $METROAE_MOUNT_POINT/metro_plugins/`; do
-        if [ -d "$METROAE_MOUNT_POINT/metro_plugins/${plugin_name}" ]; then
-            docker_metro_ae_exec plugin install "/metroae_data/metro_plugins/${plugin_name}"
-        fi
-    done
+    if [ -d $METROAE_MOUNT_POINT/metro_plugins/ ]; then
+        for plugin_name in `ls $METROAE_MOUNT_POINT/metro_plugins/`; do
+            if [ -d "$METROAE_MOUNT_POINT/metro_plugins/${plugin_name}" ]; then
+                docker_metro_ae_exec plugin install "/metroae_data/metro_plugins/${plugin_name}"
+            fi
+        done
+    fi
 }
 
 function check_if_mount_point_configured {
@@ -1154,19 +1157,19 @@ function update_metroae {
         check_if_mount_point_configured
 
         echo ""
-        write_to_screen_and_script_log ">>> Wait for the container to copy a new version file to the data directory"
+        write_to_screen_and_script_log ">>> Wait for the container to copy a new metroae file to the data directory"
         echo ""
         set +e
-        timeout 10 bash -c -- "while [[ ! -f $METROAE_MOUNT_POINT/version ]]; do sleep 1; done"
+        timeout 10 bash -c -- "while [[ ! -f $METROAE_MOUNT_POINT/metroae ]]; do sleep 1; done"
         TEMP_RC=$?
         debug $TEMP_RC
         if [[ $TEMP_RC -ne 0 ]]; then
-            write_to_screen_and_script_log "We didn't find $METROAE_MOUNT_POINT/version."
+            write_to_screen_and_script_log "We didn't find $METROAE_MOUNT_POINT/metroae."
             echo "It could be that the version of metroae script you are running is the latest."
             echo "Your copy of the metroae script will not be updated. You can continue to use your copy."
             echo ""
             set -e
-            return 1
+            return 0
         fi
         set +e
         cp $METROAE_MOUNT_POINT/metroae "${BASH_SOURCE[0]}"
@@ -1177,7 +1180,7 @@ function update_metroae {
             echo " but we suggest that you update your metroae script from the Github repo before continuing."
             echo ""
             set -e
-            return 1
+            return 0
         fi
         set -e
         write_to_screen_and_script_log "Successfully updated your metroae script."

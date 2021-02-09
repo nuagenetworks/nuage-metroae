@@ -2,40 +2,23 @@
 
 ## Release info
 
-* MetroAE Version 4.3.0
-* Nuage Release Alignment 20.10.R2
-* Date of Release 29-Dec-2020
+* MetroAE Version 4.4.0
+* Nuage Release Alignment TBD
+* Date of Release TBD
 
 ## Release Contents
 
 ### Feature Enhancements
+Fix up the image paths to root at /metroae_data/ when in the container
 
-* Support for deploying using Excel spreadsheet (.xlsx) files
-* Add hosts and clusters folder support for vCenter (METROAE-1423)
-* Add hook location for custom external certificates (METROAE-1424)
-* Add support for IPv6 NUH install (METROAE-1416)
-* Add support for Stats-out VSD deployements.
-* Add example for CSV input spreadsheet (METROAE-1338)
-* Support Inplace upgrades for Geo-redundant VSD
-* Moved MetroAE container to Docker hub (METROAE-1430)
-* Support for downloading container image from Docker hub (METROAE-245)
-* Add NUH enhancements for VRRP, NTP and other NUH config (METROAE-1429)
-* Add support for updating MetroAE Script during Container setup and update. (METROAE-1427)
-* Add support for configuring only IPV6 environment in vcenter. (METROAE-276)
-* Make MetroAE python scripts Python3 compatible (METROAE-1418)
 
 ### Resolved Issues
 
-* Add support for IPv6 NUH install (METROAE-1416)
-* Add NUH Deploy changes for license install prior to Config (METROAE-1422)
-* Allow VSC to be specified without system ip (METROAE-1413)
-* Added Serial=1 to prevent on VSD lockout of iptables during VSC's upgrade
-* Fixed static route gateway issue in VNSUTIL
-* Fixed issue with SDWAN Portal configuration (METROAE-244)
-* Fixed the issue with VSD license with better error message when it expires (METROAE-1432)
-* Add retries to yum update in case there are connection issues with repos
-* Increased the retries for ejabberd connected users
-* Skip testing for bootstrap complete when using activation link method
+Enhance several license file descriptions to include the file name
+Updated SDWAN portal to support 20.11 version
+Force rebuild after missing files (METROAE-298)
+Updated SDWAN portal unzip task to copy the container tar file to correct folder
+Fixed VSD deploy task to be idempotent (METROAE-304)
 
 ## Test Matrix
 
