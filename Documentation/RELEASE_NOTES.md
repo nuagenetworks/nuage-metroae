@@ -9,14 +9,16 @@
 ## Release Contents
 
 ### Feature Enhancements
-
+Fix up the image paths to root at /metroae_data/ when in the container
 
 
 ### Resolved Issues
 
 Enhance several license file descriptions to include the file name
 Updated SDWAN portal to support 20.11 version
-Force rebuild after missing files (METROAE-298) 
+Force rebuild after missing files (METROAE-298)
+Updated SDWAN portal unzip task to copy the container tar file to correct folder
+Fixed VSD deploy task to be idempotent (METROAE-304)
 
 ## Test Matrix
 
