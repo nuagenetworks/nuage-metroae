@@ -10,6 +10,7 @@
 
 ### Feature Enhancements
 Fix up the image paths to root at /metroae_data/ when in the container
+Fixed removed vstat_fqdn requirement during portal install (METROAE-301)
 
 
 ### Resolved Issues
