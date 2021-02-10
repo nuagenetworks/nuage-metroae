@@ -2,7 +2,7 @@
 
 ## Release info
 
-* MetroAE Version 4.3.1
+* MetroAE Version 4.3.2
 * Nuage Release Alignment 20.10.R2
 * Date of Release 14-Jan-2021
 
@@ -10,8 +10,7 @@
 
 ### Resolved Issues
 
-* Fixed automatic update of metroae script with container (METROAE-289)
-* Add rsync to metroae setup (METROAE-293)
+* Updated and Reorder Pip requirements  
 
 ## Test Matrix
 
