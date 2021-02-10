@@ -10,7 +10,6 @@
 
 ### Feature Enhancements
 Fix up the image paths to root at /metroae_data/ when in the container
-Fixed removed vstat_fqdn requirement during portal install (METROAE-301)
 
 
 ### Resolved Issues
@@ -20,6 +19,7 @@ Updated SDWAN portal to support 20.11 version
 Force rebuild after missing files (METROAE-298)
 Updated SDWAN portal unzip task to copy the container tar file to correct folder
 Fixed VSD deploy task to be idempotent (METROAE-304)
+Fixed removed vstat_fqdn requirement during portal install (METROAE-301)
 
 ## Test Matrix
 
