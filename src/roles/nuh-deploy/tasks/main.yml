@@ -16,6 +16,51 @@
     host_username: "root"
 
 - block:
+    - name: Check if ha proxy is running
+      command: systemctl status haproxy
+      ignore_errors: true
+      register: haproxy_output
+
+      - name: Define skip nuh installation
+        set_fact:
+          ha_proxy_active: haproxy_output.stdout.find("active(running)") != -1
+          skip_nuh_deploy: {{ ha_proxy_active }}
+
+      - block:
+        - name: Check if the eth1 is configured on Internal interface
+          shell: set -o pipefail && ip netns exec Internal ip addr list | grep eth1 | awk '{ print $2 }'
+          register: internal_output
+
+        - name: Set skip nuh deploy based on Internal IP check
+          set_fact:
+            skip_nuh_deploy: internal_output.stdout.find(internal_ip) != -1
+
+        - name: Check if the eth2 is configured on External interfaces
+          shell: set -o pipefail && ip netns exec {{ item.name }} ip addr list | grep eth2 | awk '{ print $2 }'
+          with_items: "{{ external_interfaces }}"
+          when:
+            - external_interfaces is defined and external_interfaces | length > 0
+            - skip_nuh_deploy
+          register: external_output
+
+        - name: Set skip nuh deploy based on external IP checks
+          set_fact:
+            skip_nuh_deploy: {{ skip_nuh_deploy }} and {{ item.stdout.find(item.item.external_ip) != -1 }}
+          when: skip_nuh_deploy
+          with_items:
+            - "{{ external_output }}"
+
+        when: ha_proxy_active
+
+- name: Display if skipping NUH deploy
+  debug:
+    msg:
+      - "*************************************************"
+      - "Skipping NUH deploy because it is already running"
+      - "*************************************************"
+  when: skip_nuh_deploy
+
+- block:
 
   - block:
 
@@ -194,6 +239,7 @@
     when:
       - custom_configuration_file_location is defined or stats_out_proxy | default('NONE') in [hostname, mgmt_ip]
       - inventory_hostname == groups['nuhs'][0]
+      - not skip_nuh_deploy
   remote_user: "{{ nuh_default_username }}"
 
 - name: Setup health monitoring
