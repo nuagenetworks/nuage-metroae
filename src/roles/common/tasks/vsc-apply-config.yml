@@ -5,6 +5,7 @@
       username: "{{ vsc_username|default(vsc_default_username) }}"
       password: "{{ vsc_password|default(vsc_default_password) }}"
       timeout: "{{ vsc_command_timeout_seconds }}"
+  when: vsc_creds is not defined
 
 - name: Wait for VSC ssh to be ready
   include_role:
@@ -16,16 +17,14 @@
     ssh_user: "{{ vsc_creds.username }}"
     check_login: True
 
-- block:
-  - name: Apply specified configurations
-    sros_config:
-      src: "{{ item }}"
-      provider: "{{ vsc_creds }}"
-      save: yes
-    delegate_to: localhost
-    loop: "{{ vsc_config_file_paths }}"
-    
-  when: False
+- name: Apply specified configurations
+  sros_config:
+    src: "{{ item }}"
+    provider: "{{ vsc_creds }}"
+    save: yes
+  delegate_to: localhost
+  loop: "{{ vsc_config_file_paths }}"
+  when: not override_vsc_config
 
 - block:
   - name: Copy VSC config file to the VSC
@@ -53,4 +52,4 @@
     provider: "{{ vsc_creds }}"
   delegate_to: localhost
 
-  when: true
+  when: override_vsc_config
