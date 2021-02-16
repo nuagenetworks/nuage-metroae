@@ -19,6 +19,7 @@ Updated SDWAN portal to support 20.11 version
 Force rebuild after missing files (METROAE-298)
 Updated SDWAN portal unzip task to copy the container tar file to correct folder
 Fixed VSD deploy task to be idempotent (METROAE-304)
+Fixed sshpass quotes for passwords that has special characters (METROAE-312)
 
 ## Test Matrix
 
