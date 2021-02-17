@@ -93,7 +93,8 @@
       - mgmt_ip | ipv6
       - not override_vsc_config
 
-  - block:
+  - name: Override using user provided config
+    block:
     - name: Copy user provided config file for VSC(IPv4)
       connection: local
       shell: >-
@@ -111,14 +112,14 @@
       loop: "{{ vsc_config_file_paths }}"
       when: mgmt_ip | ipv6
 
-  - name: Save user provided config file
-    sros_command:
-      commands:
-        - exec cf1:\{{ item | basename }}
-        - admin save
-      provider: "{{ vsc_creds }}"
-    loop: "{{ vsc_config_file_paths }}"
-    delegate_to: localhost
+    - name: Save user provided config file
+      sros_command:
+        commands:
+          - exec cf1:\{{ item | basename }}
+          - admin save
+        provider: "{{ vsc_creds }}"
+      loop: "{{ vsc_config_file_paths }}"
+      delegate_to: localhost
 
     when: override_vsc_config
 
