@@ -9,18 +9,20 @@
 ## Release Contents
 
 ### Feature Enhancements
-Fix up the image paths to root at /metroae_data/ when in the container
-Added support for bootstraping NSGv using NUH external interfaces
+* Fix up the image paths to root at /metroae_data/ when in the container
+* Added support for bootstraping NSGv using NUH external interfaces
+* Support multiple KVM bridges for NUH external interfaces
+* Added multi cpu core support for NSGV (METROAE-309)
 
 ### Resolved Issues
 
-Enhance several license file descriptions to include the file name
-Updated SDWAN portal to support 20.11 version
-Force rebuild after missing files (METROAE-298)
-Updated SDWAN portal unzip task to copy the container tar file to correct folder
-Fixed VSD deploy task to be idempotent (METROAE-304)
-Add option to override VSC config (METROAE-314)
-Fixed sshpass quotes for passwords that has special characters (METROAE-312)
+* Enhance several license file descriptions to include the file name
+* Updated SDWAN portal to support 20.11 version
+* Force rebuild after missing files (METROAE-298)
+* Updated SDWAN portal unzip task to copy the container tar file to correct folder
+* Fixed VSD deploy task to be idempotent (METROAE-304)
+* Fixed sshpass quotes for passwords that has special characters (METROAE-312)
+* Add option to override VSC config (METROAE-314)
 
 ## Test Matrix
 
