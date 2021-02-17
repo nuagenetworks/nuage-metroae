@@ -22,6 +22,7 @@
 * Updated SDWAN portal unzip task to copy the container tar file to correct folder
 * Fixed VSD deploy task to be idempotent (METROAE-304)
 * Fixed sshpass quotes for passwords that has special characters (METROAE-312)
+* Add option to override VSC config (METROAE-314)
 
 ## Test Matrix
 
