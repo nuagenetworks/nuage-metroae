@@ -13,8 +13,7 @@
 
 * It can be a VM, physical server or container.
 * It requires CentOS 7.x or RHEL 7.x with basic packages.
-* We recommend that you dedicate a machine that has following requirements:
-  * Use a dedicated server on VM
+* We recommend that you dedicate a server or VM that has following requirements:
   * Minimum of 2 CPUs, 4 GBs memory, and 40 GB disk
   * A read/write NFS mount for accessing the Nuage software images  
 
