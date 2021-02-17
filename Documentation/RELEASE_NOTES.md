@@ -20,6 +20,8 @@ Force rebuild after missing files (METROAE-298)
 Updated SDWAN portal unzip task to copy the container tar file to correct folder
 Fixed VSD deploy task to be idempotent (METROAE-304)
 Fixed removed vstat_fqdn requirement during portal install (METROAE-301)
+Fixed sshpass quotes for passwords that has special characters (METROAE-312)
+
 
 ## Test Matrix
 
