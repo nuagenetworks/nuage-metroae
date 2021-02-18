@@ -15,7 +15,6 @@
 * Added multi cpu core support for NSGV (METROAE-309)
 
 ### Resolved Issues
-
 * Enhance several license file descriptions to include the file name
 * Updated SDWAN portal to support 20.11 version
 * Force rebuild after missing files (METROAE-298)
@@ -23,6 +22,8 @@
 * Fixed VSD deploy task to be idempotent (METROAE-304)
 * Fixed sshpass quotes for passwords that has special characters (METROAE-312)
 * Add option to override VSC config (METROAE-314)
+* Fixed removed vstat_fqdn requirement during portal install (METROAE-301)
+
 
 ## Test Matrix
 
