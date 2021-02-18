@@ -350,9 +350,18 @@
   - name: Stop ejabberd
     command: monit stop ejabberd
 
-  - name: Pause for processes to exit
-    pause:
-      seconds: 20
+  - name: Wait for shutdown of core processes on VSD
+    vsd_monit:
+      group: vsd-core
+    register: proc_list
+    # until: proc_list >= 3
+    # retries: 10
+    # delay: 5
+
+  - debug: var=proc_list
+
+  - fail:
+      msg: "Halt for debugging"
 
   - name: Start ejabberd
     command: monit start ejabberd
