@@ -350,9 +350,20 @@
   - name: Stop ejabberd
     command: monit stop ejabberd
 
-  - name: Pause for processes to exit
-    pause:
-      seconds: 20
+  - name: Wait for shutdown of core processes on VSD
+    vsd_monit:
+      group: vsd-core
+    register: proc_list
+    until: '"running" not in proc_list["state"] | to_json and "pending" not in proc_list["state"] | to_json'
+    retries: 10
+    delay: 5
+
+  - name: Wait for shutdown of ejabberd
+    shell: monit summary ejabberd | grep "Not monitored"        # noqa 306
+    register: grep_result
+    until: grep_result.rc == 0
+    retries: 10
+    delay: 5
 
   - name: Start ejabberd
     command: monit start ejabberd
