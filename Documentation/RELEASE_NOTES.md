@@ -16,7 +16,6 @@
 * Improve VSD security hardening to monitor service shutdown (METROAE-285)
 
 ### Resolved Issues
-
 * Enhance several license file descriptions to include the file name
 * Updated SDWAN portal to support 20.11 version
 * Force rebuild after missing files (METROAE-298)
@@ -25,6 +24,7 @@
 * Fixed sshpass quotes for passwords that has special characters (METROAE-312)
 * Add option to override VSC config (METROAE-314)
 * Fix DNS dns_mgmt and dns_data to relax requirement of having specific length. (METROAE-315)
+* Fixed removed vstat_fqdn requirement during portal install (METROAE-301)
 
 ## Test Matrix
 
