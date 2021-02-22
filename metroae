@@ -69,7 +69,9 @@ DOCKER_AUTH_SERVICE='registry.docker.io'
 DOCKER_DOWNLOAD_WORK_DIR="metroaecontainer-download"
 CONTAINER_HOME=/source
 UUID_FILE=.uuid
-UUID=""
+if [[ -z $UUID ]]; then
+    UUID=""
+fi
 if [[ -z $SKIP_UUID ]]; then
     SKIP_UUID=$FALSE
 fi
@@ -234,7 +236,7 @@ function generate_and_save_UUID {
     if [[ $RUN_MODE == $INSIDE_RUN_MODE ]]; then
         debug "${FUNCNAME[0]}: Creating $CONTAINER_MOUNT_POINT/$UUID_FILE"
         touch $CONTAINER_MOUNT_POINT/$UUID_FILE
-        chmod root:docker $CONTAINER_MOUNT_POINT/$UUID_FILE
+        chown root:docker $CONTAINER_MOUNT_POINT/$UUID_FILE
         if [[ $SKIP_UUID -eq $FALSE ]]; then
             generate_UUID
             echo UUID=$UUID > $CONTAINER_MOUNT_POINT/$UUID_FILE
@@ -255,7 +257,7 @@ function generate_and_save_UUID {
     else # RUN_MODE == $CONTAINER_RUN_MODE
         debug "${FUNCNAME[0]}: Creating $METROAE_MOUNT_POINT/$UUID_FILE"
         touch $METROAE_MOUNT_POINT/$UUID_FILE
-        chmod root:docker $METROAE_MOUNT_POINT/$UUID_FILE
+        chown root:docker $METROAE_MOUNT_POINT/$UUID_FILE
         if [[ $SKIP_UUID -eq $FALSE ]]; then
             generate_UUID
             echo UUID=$UUID > $METROAE_MOUNT_POINT/$UUID_FILE
