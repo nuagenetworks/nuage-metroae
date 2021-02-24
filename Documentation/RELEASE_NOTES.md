@@ -15,6 +15,7 @@
 * Added multi cpu core support for NSGV (METROAE-309)
 * Improve VSD security hardening to monitor service shutdown (METROAE-285)
 * Add next-hop to VSC VPRN config (METROAE-319)
+* Add VCIN SA upgrade support for Major Minor and Inplace Upgrade(METROAE-317)
 
 ### Resolved Issues
 * Enhance several license file descriptions to include the file name
