@@ -186,7 +186,7 @@ function phone_home {
         curl -vvvv -k -H "Content-Type: application/json"\
           -H "x-apikey: $PHONE_HOME_API_KEY"\
           -X POST -d "{$json_data}"\
-          $PHONE_HOME_URL >> src/tmp.log 2>&1
+          $PHONE_HOME_URL >> /dev/null 2>&1 &
     fi
 }
 
@@ -196,7 +196,8 @@ function  check_if_internal_user {
     if [[ $SKIP_UUID -eq $TRUE ]]; then
         debug "${FUNCNAME[0]}: Using existing UUID $UUID"
     else
-        ping -c 5 github.mv.usa.alcatel.com >> $SCRIPT_LOG_FILE 2>&1
+        int_user_check=`ping -c 5 github.mv.usa.alcatel.com 2>&1`
+        debug "${FUNCNAME[0]} $int_user_check"
         SKIP_UUID=$?
 
         if [[ $SKIP_UUID -eq $FALSE ]]; then
