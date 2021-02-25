@@ -1,0 +1,33 @@
+- hosts: localhost
+  gather_facts: no
+  tasks:
+    - name: Set fact for backup type
+      set_fact:
+        backup_type: upgrade-vcin
+      when: backup_type is not defined
+
+- hosts: vcin_upgrade_sa_node
+  gather_facts: no
+  pre_tasks:
+    - name: Fail if vsd_migration_iso_path is not defined
+      assert:
+       that: vsd_migration_iso_path != "MISSING"
+       msg: "vsd_migration_iso_path not defined. Please define it and try again."
+
+    - name: Fail if vsd_migration_iso_file_name is not defined
+      assert:
+       that: vsd_migration_iso_file_name != "MISSING"
+       msg: "vsd_migration_iso_file_name not defined. Please define it and try again."
+
+    - name: Set upgrade flag
+      set_fact:
+        nuage_upgrade: true
+
+    - name: Check if prereq satisfied for upgrade
+      include_role:
+        name: common
+        tasks_from: check-upgrade-prereq
+  vars:
+    vcin_backup: True
+  roles:
+    - vsd-dbbackup
