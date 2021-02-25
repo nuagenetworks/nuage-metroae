@@ -11,6 +11,7 @@
 ### Feature Enhancements
 Fix up the image paths to root at /metroae_data/ when in the container
 Added support for bootstraping NSGv using NUH external interfaces
+Adding support for sending usage back to MetroAE team
 
 ### Resolved Issues
 
