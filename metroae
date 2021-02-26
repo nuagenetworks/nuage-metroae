@@ -43,6 +43,8 @@ PLAYBOOK_MENU="menu"
 # Common
 LINUX=0
 NON_LINUX=1
+FALSE=0
+TRUE=1
 CONTAINER_ID=''
 RUNNING_CONTAINER_ID=''
 IMAGE_ID=''
@@ -66,6 +68,16 @@ DOCKER_AUTH_BASE='https://auth.docker.io'
 DOCKER_AUTH_SERVICE='registry.docker.io'
 DOCKER_DOWNLOAD_WORK_DIR="metroaecontainer-download"
 CONTAINER_HOME=/source
+UUID_FILE=.uuid
+if [[ -z $UUID ]]; then
+    UUID=""
+fi
+if [[ -z $SKIP_UUID ]]; then
+    SKIP_UUID=$FALSE
+fi
+PHONE_HOME_URL="https://nuagemetroae-487c.restdb.io/rest/usage"
+PHONE_HOME_API_KEY="ce4d6cfa136a9cf10b46d92fd613eb8c50f4d"
+CONTAINER_MOUNT_POINT=/metroae_data
 INSTALL_FOLDER=/opt/metroae
 if [[ -z $SCRIPT_LOG_FILE ]]; then
     SCRIPT_LOG_FILE=/opt/metroae/metroae.log
@@ -153,6 +165,136 @@ function check_run_mode {
         fi
     fi
     debug "${FUNCNAME[0]}: RUN_MODE is $RUN_MODE"
+}
+
+function phone_home {
+    if [[ $UUID == "" ]]; then
+        debug "${FUNCNAME[0]}: Skipping Phone home"
+    else
+        # append and create json data
+        json_data=""
+        while [[ $# -gt 0 ]]; do
+          json_data+="$1,"
+          shift
+        done
+        json_data=`echo $json_data | sed 's/.$//'`
+        debug "${FUNCNAME[0]}: curl -vvvv -k -H \"Content-Type: application/json\"\
+          -H \"x-apikey: $PHONE_HOME_API_KEY\"\
+          -X POST -d '{$json_data}'\
+          $PHONE_HOME_URL"
+
+        curl -vvvv -k -H "Content-Type: application/json"\
+          -H "x-apikey: $PHONE_HOME_API_KEY"\
+          -X POST -d "{$json_data}"\
+          $PHONE_HOME_URL >> /dev/null 2>&1 &
+    fi
+}
+
+function  check_if_internal_user {
+    debug ${FUNCNAME[0]}
+
+    if [[ $SKIP_UUID -eq $TRUE ]]; then
+        debug "${FUNCNAME[0]}: Using existing UUID $UUID"
+    else
+        int_user_check=`ping -c 5 github.mv.usa.alcatel.com 2>&1`
+        debug "${FUNCNAME[0]} $int_user_check"
+        SKIP_UUID=$?
+
+        if [[ $SKIP_UUID -eq $FALSE ]]; then
+            echo ""
+            write_to_screen_and_script_log "We have detected that this setup of MetroAE is internal to Nokia."
+            write_to_screen_and_script_log "We would like to collect usage information to improve the tool,"
+            write_to_screen_and_script_log "no personally identifiable information will be collected as part of this process."
+            if [[ $RUN_MODE == $REPO ]]; then
+                write_to_screen_and_script_log "Just remove file src/$UUID_FILE to opt out later"
+            else
+                write_to_screen_and_script_log "Just remove file $METROAE_MOUNT_POINT/$UUID_FILE to opt out later"
+            echo ""
+
+            declare -l continue_confirm
+            continue_confirm="init"
+            while [[ $continue_confirm != "y" ]] && [[ $continue_confirm != "n" ]] && [[ $continue_confirm != "" ]]
+            do
+                read -p " Would like to share usage data with MetroAE team? (y/N): " continue_confirm
+            done
+
+            if [[ $continue_confirm != "y" ]] ; then
+                SKIP_UUID=$TRUE
+            fi
+        fi
+    fi
+}
+
+function generate_UUID {
+    debug ${FUNCNAME[0]}
+    UUID=`uuidgen`
+    debug "${FUNCNAME[0]}: UUID=$UUID"
+}
+
+function generate_and_save_UUID {
+    debug ${FUNCNAME[0]}
+    if [[ $SKIP_UUID -eq $TRUE ]]; then
+        debug "${FUNCNAME[0]}: Skipping UUID generation"
+    else
+
+        check_if_internal_user
+
+        debug "${FUNCNAME[0]}: RUN_MODE = $RUN_MODE"
+        if [[ $RUN_MODE == $INSIDE_RUN_MODE ]]; then
+            debug "${FUNCNAME[0]}: Creating $CONTAINER_MOUNT_POINT/$UUID_FILE"
+            touch $CONTAINER_MOUNT_POINT/$UUID_FILE
+            chown root:docker $CONTAINER_MOUNT_POINT/$UUID_FILE
+            if [[ $SKIP_UUID -eq $FALSE ]]; then
+                generate_UUID
+                echo UUID=$UUID > $CONTAINER_MOUNT_POINT/$UUID_FILE
+                SKIP_UUID=$TRUE
+            fi
+            debug "${FUNCNAME[0]}: SKIP_UUID = $SKIP_UUID"
+            echo SKIP_UUID=$SKIP_UUID >> $CONTAINER_MOUNT_POINT/$UUID_FILE
+        elif [[ $RUN_MODE == $REPO_RUN_MODE ]]; then
+            debug "${FUNCNAME[0]}: Creating src/$UUID_FILE"
+            touch src/$UUID_FILE
+            if [[ $SKIP_UUID -eq $FALSE ]]; then
+                generate_UUID
+                echo UUID=$UUID > src/$UUID_FILE
+                SKIP_UUID=$TRUE
+            fi
+            debug "${FUNCNAME[0]}: SKIP_UUID = $SKIP_UUID"
+            echo SKIP_UUID=$SKIP_UUID >> src/$UUID_FILE
+        else # RUN_MODE == $CONTAINER_RUN_MODE
+            debug "${FUNCNAME[0]}: Creating $METROAE_MOUNT_POINT/$UUID_FILE"
+            touch $METROAE_MOUNT_POINT/$UUID_FILE
+            chown root:docker $METROAE_MOUNT_POINT/$UUID_FILE
+            if [[ $SKIP_UUID -eq $FALSE ]]; then
+                generate_UUID
+                echo UUID=$UUID > $METROAE_MOUNT_POINT/$UUID_FILE
+                SKIP_UUID=$TRUE
+            fi
+            debug "${FUNCNAME[0]}: SKIP_UUID = $SKIP_UUID"
+            echo SKIP_UUID=$SKIP_UUID >> $METROAE_MOUNT_POINT/$UUID_FILE
+        fi
+    fi
+}
+
+function source_UUID {
+    debug ${FUNCNAME[0]}
+    debug "${FUNCNAME[0]}: RUN_MODE = $RUN_MODE"
+    if [[ $RUN_MODE == $INSIDE_RUN_MODE ]]; then
+        if [[ -f $CONTAINER_MOUNT_POINT/$UUID_FILE ]]; then
+            source $CONTAINER_MOUNT_POINT/$UUID_FILE
+            debug "${FUNCNAME[0]}: source $CONTAINER_MOUNT_POINT/$UUID_FILE"
+        fi
+    elif [[ $RUN_MODE == $REPO_RUN_MODE ]]; then
+        if [[ -f src/$UUID_FILE ]]; then
+            source src/$UUID_FILE
+            debug "${FUNCNAME[0]}: source src/$UUID_FILE"
+        fi
+    else # RUN_MODE == $CONTAINER_RUN_MODE
+        if [[ -f $METROAE_MOUNT_POINT/$UUID_FILE ]]; then
+            source $METROAE_MOUNT_POINT/$UUID_FILE
+            debug "${FUNCNAME[0]}: source $METROAE_MOUNT_POINT/$UUID_FILE"
+        fi
+    fi
 }
 
 function source_menu {
@@ -941,6 +1083,8 @@ function setup_container {
 
     set -e
 
+    generate_and_save_UUID
+
     if [[ $config_template_status -ne 0 || $config_docs_status -ne 0 || $deploy_keys_status -ne 0 || $deploy_status -ne 0 || $common_status -ne 0 ]]; then
         echo ""
         write_to_screen_and_script_log "Setup of the MetroAE container is complete. However, we had a problem copying one or more files to the data directory."
@@ -1242,7 +1386,7 @@ function docker_exec {
 
     if [[ $1 == "env" ]]; then
         shift
-        environment='-e ANSIBLE_FORCE_COLOR=true'
+        environment='-e ANSIBLE_FORCE_COLOR=true -e UUID=$UUID'
         for env in `env`
         do
             filtered=0
@@ -2079,6 +2223,8 @@ function audit_log_and_exit {
 }
 
 function deployment_main {
+    generate_and_save_UUID
+
     debug ${FUNCNAME[0]}
     set +e
 
@@ -2195,6 +2341,8 @@ function deployment_main {
         $(which ansible-playbook) -e deployment_dir=\'"$DEPLOYMENT_DIR"\' -e schema_dir=$SCHEMA_DIR $PLAYBOOK_DIR/$WORKFLOW "$@" || audit_log_and_exit $?
     elif [[ -a $PLAYBOOK_WITH_BUILD_DIR/$WORKFLOW ]]; then
         write_audit_log_entry
+        phone_home_args=("\"UUID\":\"${UUID}\"" "\"Actions\":\"${WORKFLOW}\"" "\"Mode\":\"${RUN_MODE}\"" "\"timestamp\":\"$(date)\"" "\"Version\":\"${METROAE_VERSION}\"")
+        phone_home "${phone_home_args[@]}"
         if [[ $SKIP_BUILD -ne 1 ]]; then
             $(which ansible-playbook) -e deployment_dir=\'"$DEPLOYMENT_DIR"\' -e schema_dir=$SCHEMA_DIR $PLAYBOOK_DIR/build.yml "$@" || audit_log_and_exit $?
             if [[ $GROUP ]]; then chgrp -R $GROUP $INVENTORY_DIR; fi
@@ -2340,7 +2488,11 @@ function config_main {
         esac
     done
 
+    generate_and_save_UUID
+
     if [[ $exec == true ]]; then
+        phone_home_args=("\"UUID\":\"${UUID}\"" "\"Actions\":\"${POSITIONAL[1]}\"" "\"Mode\":\"${RUN_MODE}\"" "\"timestamp\":\"$(date)\"" "\"Version\":\"${METROAE_VERSION}\"")
+        phone_home "${phone_home_args[@]}"
         docker_exec_config "${POSITIONAL[@]}"
     fi
 
@@ -3301,6 +3453,8 @@ function parse_menu_args {
 check_run_mode
 
 source_container_config
+
+source_UUID
 
 source_menu
 
