@@ -128,6 +128,21 @@
         with_items:
           - "{{ external_interfaces }}"
 
+      - name: Copy proxy certificates over to secondary nuh
+        synchronize:
+          src: "{{ item }}"
+          dest: "{{ item }}"
+          mode: pull
+          private_key: "/root/.ssh/proxypeer"
+        delegate_to: "{{ groups['nuhs'][1] }}"
+        run_once: true
+        with_items:
+          - "/opt/proxy/data/certs/proxy-CA.pem"
+          - "/opt/proxy/data/certs/proxyCert.pem"
+          - "/opt/proxy/data/certs/proxy-crl.pem"
+          - "/opt/proxy/data/certs/proxy-Key.pem"
+          - "/opt/proxy/data/certs/proxy.pem"
+
       - block:
         - name: Create notification application user on vsd
           command: /opt/ejabberd/bin/ejabberdctl register {{ notification_app1.username }} {{ vsd_fqdn }} {{ notification_app1.password }}
