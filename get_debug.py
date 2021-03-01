@@ -23,11 +23,13 @@ if run_mode == "repo":
     ansibleLogPath = os.path.join(cwdir, 'ansible.log')
     deploymentPath = os.path.join(cwdir, deploymentName)
     inventoryPath = os.path.join(cwdir, 'src/inventory')
+    auditLogPath = os.path.join(cwdir, 'audit.log')
     print('The log path is:' + cwdir + '/' + tarFileName + ".tar.gz")
 else:
     ansibleLogPath = os.path.join(cwdir, 'nuage-metroae', 'ansible.log')
     deploymentPath = os.path.join(cwdir, 'nuage-metroae', deploymentName)
     inventoryPath = os.path.join(cwdir, 'nuage-metroae', 'src/inventory')
+    auditLogPath = os.path.join(cwdir, 'audit.log')
     tarFileName = os.path.join(cwdir, '/metroae_data', tarFileName)
     print('The log path is:' + '/' + tarFileName + ".tar.gz")
 with tarfile.open(tarFileName + '.tar.gz', mode='w:gz') as archive:
@@ -43,6 +45,10 @@ with tarfile.open(tarFileName + '.tar.gz', mode='w:gz') as archive:
         archive.add(ansibleLogPath, arcname='/unzipped/ansible.log')
     else:
         print("Can't find ansible.log, Skipping.")
+    if os.path.exists(auditLogPath) and os.path.isfile(auditLogPath):
+        archive.add(auditLogPath,arcname='/unzipped/audit.log')
+    else:
+        print("Can't find audit.log file, Skipping.")
 command = "tar -tvf " + tarFileName + ".tar.gz >files.txt"
 os.system(command)
 with open("files.txt", "r") as f:
