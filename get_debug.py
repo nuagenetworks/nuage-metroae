@@ -46,7 +46,7 @@ with tarfile.open(tarFileName + '.tar.gz', mode='w:gz') as archive:
     else:
         print("Can't find ansible.log, Skipping.")
     if os.path.exists(auditLogPath) and os.path.isfile(auditLogPath):
-        archive.add(auditLogPath,arcname='/unzipped/audit.log')
+        archive.add(auditLogPath, arcname='/unzipped/audit.log')
     else:
         print("Can't find audit.log file, Skipping.")
 command = "tar -tvf " + tarFileName + ".tar.gz >files.txt"
