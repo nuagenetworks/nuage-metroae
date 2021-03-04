@@ -10,7 +10,8 @@ MetroAE supports the installation of a stats-out deployment with the following r
 MetroAE will install a 3 node VSD cluster as is standard in HA deployments.  In addition,
 an additional 3 nodes of stats VSDs are installed for stats-out.  Similarly, MetroAE will
 install a standard 3 node cluster of VSTATs (ElasticSearch) and an additional 3 nodes of
-data VSTATS for stats-out.
+data VSTATS for stats-out.  If the stats_out_proxy provided is the same as the NUH
+internal_ip address, then the NUH will be configured to be used for stats-out.
 
 ## Configure Components
 Configuring components for stats-out is similar to configuring for other deployments. See
