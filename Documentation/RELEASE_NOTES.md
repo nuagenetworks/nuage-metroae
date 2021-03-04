@@ -17,6 +17,7 @@
 * Add next-hop to VSC VPRN config (METROAE-319)
 * Add VCIN SA upgrade support for Major Minor and Inplace Upgrade(METROAE-317)
 * Adding support for sending usage back to MetroAE team
+* Support for configuring NUH for stats-out proxy (METROAE-288)
 
 ### Resolved Issues
 * Enhance several license file descriptions to include the file name

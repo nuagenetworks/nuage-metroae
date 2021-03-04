@@ -214,10 +214,19 @@
           replace:
             path: /opt/proxy/data/config.yml
             regexp: "role: vsdconfig.*$"
-            replace: "role: vsdconfig, enabled: true, firewallports: ['{{ stats_out_proxy_ui_port }}', '{{ stats_out_proxy_api_port }}', '{{ stats_out_proxy_jms_port }}', '{{ stats_out_proxy_xmpp_port }}'], settings: {uiport: '{{ stats_out_proxy_ui_port }}', apiport: '{{ stats_out_proxy_api_port }}', xmppport: '{{ stats_out_proxy_xmpp_port }}', jmsport: '{{ stats_out_proxy_jms_port }}', geo: false}}"
-          when: stats_out_proxy | default('NONE') in [hostname, mgmt_ip]
+            replace: "role: vsdconfig, enabled: true, firewallports: ['{{ stats_out_proxy_ui_port }}', '{{ stats_out_proxy_api_port }}', '{{ stats_out_proxy_jms_port }}', '{{ stats_out_proxy_xmpp_port }}', '{{ stats_out_proxy_cert_port }}'], settings: {uiport: '{{ stats_out_proxy_ui_port }}', apiport: '{{ stats_out_proxy_api_port }}', xmppport: '{{ stats_out_proxy_xmpp_port }}', jmsport: '{{ stats_out_proxy_jms_port }}', geo: false, certport: '{{ stats_out_proxy_cert_port }}'}}"
 
-        when: NUH_DOES_NOT_YET_SUPPORT_STATS_OUT_PROXY | default(false)
+        - name: Add stats-out proxy entries to NUH configuration
+          blockinfile:
+            path: /opt/proxy/data/config.yml
+            marker: ""
+            block: |
+              nsgstats:
+                {% for vstat in groups['vstats'] | list + groups['data_vstats'] | list %}
+                - {{ hostvars[vstat]['mgmt_ip'] }}
+                {% endfor %}
+
+        when: stats_out_proxy | default('NONE') == internal_ip
 
       - name: Run the configuration script on NUH
         command: ansible-playbook configure.yml
@@ -225,7 +234,7 @@
           chdir: /opt/proxy/bin/ansible
 
     when:
-      - custom_configuration_file_location is defined or stats_out_proxy | default('NONE') in [hostname, mgmt_ip]
+      - custom_configuration_file_location is defined or stats_out_proxy | default('NONE') == internal_ip
       - inventory_hostname == groups['nuhs'][0]
 
   when:
