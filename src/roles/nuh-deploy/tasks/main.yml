@@ -211,7 +211,7 @@
                 - {{ hostvars[vstat]['mgmt_ip'] }}
                 {% endfor %}
 
-        when: stats_out_proxy | default('NONE') in [hostname, mgmt_ip]
+        when: stats_out_proxy | default('NONE') == internal_ip
 
       - name: Run the configuration script on NUH
         command: ansible-playbook configure.yml
@@ -219,7 +219,7 @@
           chdir: /opt/proxy/bin/ansible
 
     when:
-      - custom_configuration_file_location is defined or stats_out_proxy | default('NONE') in [hostname, mgmt_ip]
+      - custom_configuration_file_location is defined or stats_out_proxy | default('NONE') == internal_ip
       - inventory_hostname == groups['nuhs'][0]
 
   when:
