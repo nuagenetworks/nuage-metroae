@@ -128,6 +128,21 @@
         with_items:
           - "{{ external_interfaces }}"
 
+      - name: Copy proxy certificates over to secondary nuh
+        synchronize:
+          src: "{{ item }}"
+          dest: "{{ item }}"
+          mode: pull
+          private_key: "/root/.ssh/proxypeer"
+        delegate_to: "{{ groups['nuhs'][1] }}"
+        run_once: true
+        when: groups['nuhs'] | length > 1
+        with_items:
+          - "/opt/proxy/data/certs/proxy-CA.pem"
+          - "/opt/proxy/data/certs/proxyCert.pem"
+          - "/opt/proxy/data/certs/proxy-Key.pem"
+          - "/opt/proxy/data/certs/proxy.pem"
+
       - block:
         - name: Create notification application user on vsd
           command: /opt/ejabberd/bin/ejabberdctl register {{ notification_app1.username }} {{ vsd_fqdn }} {{ notification_app1.password }}
@@ -199,10 +214,19 @@
           replace:
             path: /opt/proxy/data/config.yml
             regexp: "role: vsdconfig.*$"
-            replace: "role: vsdconfig, enabled: true, firewallports: ['{{ stats_out_proxy_ui_port }}', '{{ stats_out_proxy_api_port }}', '{{ stats_out_proxy_jms_port }}', '{{ stats_out_proxy_xmpp_port }}'], settings: {uiport: '{{ stats_out_proxy_ui_port }}', apiport: '{{ stats_out_proxy_api_port }}', xmppport: '{{ stats_out_proxy_xmpp_port }}', jmsport: '{{ stats_out_proxy_jms_port }}', geo: false}}"
-          when: stats_out_proxy | default('NONE') in [hostname, mgmt_ip]
+            replace: "role: vsdconfig, enabled: true, firewallports: ['{{ stats_out_proxy_ui_port }}', '{{ stats_out_proxy_api_port }}', '{{ stats_out_proxy_jms_port }}', '{{ stats_out_proxy_xmpp_port }}', '{{ stats_out_proxy_cert_port }}'], settings: {uiport: '{{ stats_out_proxy_ui_port }}', apiport: '{{ stats_out_proxy_api_port }}', xmppport: '{{ stats_out_proxy_xmpp_port }}', jmsport: '{{ stats_out_proxy_jms_port }}', geo: false, certport: '{{ stats_out_proxy_cert_port }}'}}"
 
-        when: NUH_DOES_NOT_YET_SUPPORT_STATS_OUT_PROXY | default(false)
+        - name: Add stats-out proxy entries to NUH configuration
+          blockinfile:
+            path: /opt/proxy/data/config.yml
+            marker: ""
+            block: |
+              nsgstats:
+                {% for vstat in groups['vstats'] | list + groups['data_vstats'] | list %}
+                - {{ hostvars[vstat]['mgmt_ip'] }}
+                {% endfor %}
+
+        when: stats_out_proxy | default('NONE') == internal_ip | default("not_set")
 
       - name: Run the configuration script on NUH
         command: ansible-playbook configure.yml
@@ -210,7 +234,7 @@
           chdir: /opt/proxy/bin/ansible
 
     when:
-      - custom_configuration_file_location is defined or stats_out_proxy | default('NONE') in [hostname, mgmt_ip]
+      - custom_configuration_file_location is defined or stats_out_proxy | default('NONE') == internal_ip | default("not_set")
       - inventory_hostname == groups['nuhs'][0]
 
   when:
