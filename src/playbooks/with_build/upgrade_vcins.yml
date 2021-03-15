@@ -1,0 +1,30 @@
+- hosts: vcin_upgrade_sa_node
+  gather_facts: no
+  pre_tasks:
+    - name: Check if VCIN prereq satisfied for predeploy
+      include_role:
+        name: common
+        tasks_from: check-predeploy-prereq
+      vars:
+        required_available_disk_space: "{{ vcin_allocate_size_gb }}"
+
+- name: Run VCIN inplace upgrade if eligible
+  import_playbook: "upgrade_vcins_inplace.yml"
+
+- name: Run VCIN SA Upgrade vCenter Predeploy Node with interface disabled
+  import_playbook: "vcin_sa_upgrade_vcenter_predeploy_interface_disabled.yml"
+
+- name: Run VCIN SA Upgrade Database Backup
+  import_playbook: "vcin_sa_upgrade_database_backup.yml"
+
+- name: Run VCIN SA Upgrade Shutdown
+  import_playbook: "vcin_sa_upgrade_shutdown.yml"
+
+- name: Run VCIN SA Upgrade Predeploy
+  import_playbook: "vcin_sa_upgrade_predeploy.yml"
+
+- name: Run VCIN SA Upgrade Deploy
+  import_playbook: "vcin_sa_upgrade_deploy.yml"
+
+- name: Run VCIN Upgrade Complete
+  import_playbook: "vcin_upgrade_complete.yml"

@@ -13,9 +13,11 @@
 
 * It can be a VM, physical server or container.
 * It requires CentOS 7.x or RHEL 7.x with basic packages.
-* We recommend that you dedicate a machine (VM) for it.  
+* We recommend that you dedicate a server or VM that has following requirements:
+  * Minimum of 2 CPUs, 4 GBs memory, and 40 GB disk
+  * A read/write NFS mount for accessing the Nuage software images  
 
-2.1 Clone the master branch of the repo onto the **MetroAEe Host**. Read [Setup](SETUP.md) for details.  
+2.1 Clone the master branch of the repo onto the **MetroAE Host**. Read [Setup](SETUP.md) for details.  
 ```
 git clone https://github.com/nuagenetworks/nuage-metroae.git
 ```
