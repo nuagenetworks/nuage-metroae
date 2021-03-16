@@ -128,7 +128,7 @@ class ExcelParser(object):
         properties = schema["properties"]
         title_field_map, title_cast_map = self.generate_title_field_map(properties)
 
-        labels = self.read_labels(worksheet, title_field_map
+        labels = self.read_labels(worksheet, title_field_map,
                                   fields_by_col=False)
         self.cell_positions.clear()
         data = self.read_data_entry(worksheet, labels, 0,
@@ -196,7 +196,7 @@ class ExcelParser(object):
                                 title_cast_map[list_name](x.strip()) for x in value.split(",")]
                         self.cell_positions[list_name] = cell.coordinate
                     else:
-                        if label in title_cast_map and value != type(title_cast_map[label]):
+                        if label in title_cast_map and type(value) != title_cast_map[label]:
                             value = title_cast_map[label](value)
 
                         entry[label] = value
@@ -261,7 +261,7 @@ class ExcelParser(object):
             else:
                 title_field_map[field["title"]] = name
                 if "type" in field:
-                    title_cast_map[name] =  TYPE_CAST_MAP[field["type"]]
+                    title_cast_map[name] = TYPE_CAST_MAP[field["type"]]
 
         return title_field_map, title_cast_map
 
