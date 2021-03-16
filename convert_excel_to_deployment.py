@@ -12,6 +12,13 @@ import jinja2
 DEPLOYMENTS_DIRECTORY = "deployments"
 CONTAINER_MOUNT_DIRECTORY = "/metroae_data/deployments"
 
+TYPE_CAST_MAP = {
+      "integer": int,
+      "string": str,
+      "boolean": bool,
+      "number": float
+}
+
 
 def usage():
     print("Converts a XLSX file (Excel spreadsheet) into a deployment ")
@@ -87,7 +94,7 @@ class ExcelParser(object):
 
     def read_worksheet_list(self, schema, worksheet):
         properties = schema["items"]["properties"]
-        title_field_map = self.generate_title_field_map(properties)
+        title_field_map, title_cast_map = self.generate_title_field_map(properties)
 
         fields_by_col = self.settings["default_fields_by_col"]
         if "fieldsByCol" in schema:
@@ -101,6 +108,7 @@ class ExcelParser(object):
         while True:
             self.cell_positions.clear()
             entry = self.read_data_entry(worksheet, labels, entry_offset,
+                                         title_cast_map,
                                          fields_by_col=fields_by_col)
 
             if entry != dict():
@@ -118,12 +126,13 @@ class ExcelParser(object):
 
     def read_worksheet_object(self, schema, worksheet):
         properties = schema["properties"]
-        title_field_map = self.generate_title_field_map(properties)
+        title_field_map, title_cast_map = self.generate_title_field_map(properties)
 
-        labels = self.read_labels(worksheet, title_field_map,
+        labels = self.read_labels(worksheet, title_field_map
                                   fields_by_col=False)
         self.cell_positions.clear()
-        data = self.read_data_entry(worksheet, labels, 0, fields_by_col=False)
+        data = self.read_data_entry(worksheet, labels, 0,
+                                    title_cast_map, fields_by_col=False)
         if data != dict():
             self.validate_entry_against_schema(worksheet.title, data)
 
@@ -156,7 +165,7 @@ class ExcelParser(object):
 
         return labels
 
-    def read_data_entry(self, worksheet, labels, entry_offset,
+    def read_data_entry(self, worksheet, labels, entry_offset, title_cast_map,
                         fields_by_col=False):
         entry = dict()
 
@@ -173,14 +182,23 @@ class ExcelParser(object):
         for label in labels:
             cell = worksheet.cell(row=row, column=col)
             value = cell.value
+            if sys.version_info[0] < 3 and type(value) == long:
+                value = int(value)
+
             if value is not None:
                 if label is not None:
                     if label.startswith("list:"):
                         list_name = label[5:]
-                        entry[list_name] = [
-                            x.strip() for x in value.split(",")]
+                        if type(value) == int:
+                            entry[list_name] = [value]
+                        else:
+                            entry[list_name] = [
+                                title_cast_map[list_name](x.strip()) for x in value.split(",")]
                         self.cell_positions[list_name] = cell.coordinate
                     else:
+                        if label in title_cast_map and value != type(title_cast_map[label]):
+                            value = title_cast_map[label](value)
+
                         entry[label] = value
                         self.cell_positions[label] = cell.coordinate
                 else:
@@ -235,13 +253,17 @@ class ExcelParser(object):
 
     def generate_title_field_map(self, properties):
         title_field_map = dict()
+        title_cast_map = dict()
         for name, field in iter(properties.items()):
             if "type" in field and field["type"] == "array":
                 title_field_map[field["title"]] = "list:" + name
+                title_cast_map[name] = TYPE_CAST_MAP[field["items"]["type"]]
             else:
                 title_field_map[field["title"]] = name
+                if "type" in field:
+                    title_cast_map[name] =  TYPE_CAST_MAP[field["type"]]
 
-        return title_field_map
+        return title_field_map, title_cast_map
 
     def get_list_name(self, schema):
         if "listName" in schema:
