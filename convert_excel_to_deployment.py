@@ -13,10 +13,10 @@ DEPLOYMENTS_DIRECTORY = "deployments"
 CONTAINER_MOUNT_DIRECTORY = "/metroae_data/deployments"
 
 TYPE_CAST_MAP = {
-      "integer": int,
-      "string": str,
-      "boolean": bool,
-      "number": float
+    "integer": int,
+    "string": str,
+    "boolean": bool,
+    "number": float
 }
 
 
