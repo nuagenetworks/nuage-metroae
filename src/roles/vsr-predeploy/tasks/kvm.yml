@@ -83,11 +83,16 @@
     remote_user: "{{ target_server_username }}"
     become: "{{ 'no' if target_server_username == 'root' else 'yes' }}"
 
-  - name: Set VM uuid generated
-    set_fact:
-      vsr_vm_uuid: '{{ rc_vsr_license_content.stdout.split(" ")[0] }}'
+  - name: Run only if license file is specified
+    block:
 
-  - debug: var=vsr_vm_uuid verbosity=1
+    - name: Set VM uuid generated
+      set_fact:
+        vsr_vm_uuid: '{{ rc_vsr_license_content.stdout.split(" ")[0] }}'
+
+    - debug: var=vsr_vm_uuid verbosity=1
+
+    when: license_file is defined
 
   - import_tasks: kvm_define_vsr_vm.yml
 
