@@ -34,6 +34,16 @@
 
     when: vsrs | map(attribute='target_server_type') | list is issuperset(["vcenter"])
 
+  - name: Verify that only one of license file or remote license file location is present
+    assert:
+      that: >-
+        "(item.remote_license_file_location is not defined
+        and item.license_file is defined)
+        or (item.license_file is not defined
+        and item.remote_license_file_location is defined)"
+      msg: "Please specify either license_file or remote_license_file_location for VSR and not both"
+    with_items: "{{ vsrs }}"
+
   - name: Create host_vars files for vsr
     template: src=vsr.j2 backup=no dest={{ inventory_dir }}/host_vars/{{ item.hostname }}
     with_items: "{{ vsrs }}"
