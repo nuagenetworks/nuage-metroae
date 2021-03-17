@@ -13,6 +13,11 @@
 * Added support for bootstraping NSGv using NUH external interfaces
 * Support multiple KVM bridges for NUH external interfaces
 * Added multi cpu core support for NSGV (METROAE-309)
+* Improve VSD security hardening to monitor service shutdown (METROAE-285)
+* Add next-hop to VSC VPRN config (METROAE-319)
+* Add VCIN SA upgrade support for Major Minor and Inplace Upgrade(METROAE-317)
+* Adding support for sending usage back to MetroAE team
+* Support for configuring NUH for stats-out proxy (METROAE-288)
 
 ### Resolved Issues
 * Enhance several license file descriptions to include the file name
@@ -22,8 +27,9 @@
 * Fixed VSD deploy task to be idempotent (METROAE-304)
 * Fixed sshpass quotes for passwords that has special characters (METROAE-312)
 * Add option to override VSC config (METROAE-314)
-* Fixed removed vstat_fqdn requirement during portal install (METROAE-301)
-
+* Fix DNS dns_mgmt and dns_data to relax requirement of having specific length. (METROAE-315)
+* Add vstat-health role to vstat_health playbook (METROAE-322)
+* Remove vstat-vsd-health role from vstat_health playbook (METROAE-322)
 
 ## Test Matrix
 
