@@ -2,15 +2,16 @@
 
 ## Release info
 
-* MetroAE Version 4.3.2
+* MetroAE Version 4.3.3
 * Nuage Release Alignment 20.10.R2
-* Date of Release 10-Feb-2021
+* Date of Release 17-Mar-2021
 
 ## Release Contents
 
 ### Resolved Issues
 
-* Updated and Reorder Pip requirements because of pip package version changes 
+* Updated and Reorder Pip requirements because of pip package version changes
+* Fix MetroAE setup error for setuptools install
 
 ## Test Matrix
 
