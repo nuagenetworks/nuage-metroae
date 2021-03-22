@@ -27,6 +27,7 @@
 * Fixed VSD deploy task to be idempotent (METROAE-304)
 * Fixed sshpass quotes for passwords that has special characters (METROAE-312)
 * Add option to override VSC config (METROAE-314)
+* Fix VSR deploy errors (METROAE-310)
 * Fix DNS dns_mgmt and dns_data to relax requirement of having specific length. (METROAE-315)
 * Add vstat-health role to vstat_health playbook (METROAE-322)
 * Hide log output in vsd-node-info (METROAE-332)
