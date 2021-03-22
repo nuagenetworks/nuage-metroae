@@ -31,6 +31,8 @@
 * Add vstat-health role to vstat_health playbook (METROAE-322)
 * Hide log output in vsd-node-info (METROAE-332)
 * Remove vstat-vsd-health role from vstat_health playbook (METROAE-322)
+* Removed extra DEBUG line from nsgv-postdeploy (METROAE-334)
+
 
 ## Test Matrix
 
