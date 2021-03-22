@@ -2,7 +2,7 @@
 
   - block:
 
-    - name: Set NSGV VM QCOW2 location
+    - name: Set VSR VM QCOW2 location
       include_role:
         name: common
         tasks_from: find-file.yml
@@ -10,7 +10,7 @@
         dir_name: "{{ nuage_unzipped_files_dir }}"
         pattern: "sros-vm.qcow2"
 
-    - name: Register NSGV QCOW2 variables with proper path and image locations for use in other playbooks
+    - name: Register VSR QCOW2 variables with proper path and image locations for use in other playbooks
       set_fact:
         image_path: "{{ file_path }}"
         image_file_name: "{{ file_name }}"
@@ -19,7 +19,7 @@
 
   - block:
 
-    - name: Set NSGV VM OVA image location
+    - name: Set VSR VM OVA image location
       include_role:
         name: common
         tasks_from: find-file.yml
@@ -27,12 +27,22 @@
         dir_name: "{{ nuage_unzipped_files_dir }}"
         pattern: "sros-vm.ova"
 
-    - name: Register NSGV OVA variables with proper path and image locations for use in other playbooks
+    - name: Register VSR OVA variables with proper path and image locations for use in other playbooks
       set_fact:
         image_path: "{{ file_path }}"
         image_file_name: "{{ file_name }}"
 
     when: vsrs | map(attribute='target_server_type') | list is issuperset(["vcenter"])
+
+  - name: Verify that only one of license file or remote license file location is present
+    assert:
+      that: >-
+        (item.remote_license_file_location is not defined
+        and item.license_file is defined)
+        or (item.license_file is not defined
+        and item.remote_license_file_location is defined)
+      msg: "Please specify either license_file or remote_license_file_location for VSR and not both"
+    with_items: "{{ vsrs }}"
 
   - name: Create host_vars files for vsr
     template: src=vsr.j2 backup=no dest={{ inventory_dir }}/host_vars/{{ item.hostname }}
