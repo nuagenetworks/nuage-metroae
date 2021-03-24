@@ -1650,21 +1650,26 @@ function download_container_templates {
     curl http://google.com > /dev/null 2>&1
     connection_status=$?
 
-    if [[ $connection_status != 0 ]]; then
-        while [[ $user_input != "y" || $user_input != "n" ]]; do
-            echo "Warning: Internet connection not detected"
-            read -p "Would you like to continue setup? (y/n) " user_input
-            if [[ $user_input == "n" ]]; then
-                echo "Exiting..."
-                exit 0
-            elif [[ $user_input == "y" ]]; then
-                break
-            else
-                echo "Invalid input. Please enter one of the following: y, n"
-            fi
-        done
-    elif [[ $connection_status == 0 ]]; then
-        echo "connection found"
+    if [[ -z $1 ]]; then
+        if [[ $connection_status != 0 ]]; then
+            while [[ $user_input != "y" || $user_input != "n" ]]; do
+                echo "Warning: Internet connection not detected"
+                read -p "Would you like to continue setup? (y/n) " user_input
+                if [[ $user_input == "n" ]]; then
+                    echo "Exiting..."
+                    exit 0
+                elif [[ $user_input == "y" ]]; then
+                    break
+                else
+                    echo "Invalid input. Please enter one of the following: y, n"
+                fi
+            done
+        elif [[ $connection_status == 0 ]]; then
+            echo "connection found"
+        fi
+    else
+        user_input=$1
+        shift
     fi
 
     echo "initiating setup..."
