@@ -1644,6 +1644,31 @@ function download_container_templates {
         write_to_screen_and_script_log ""
         exit 1
     fi
+
+    echo "checking for connection..."
+
+    curl http://google.com > /dev/null 2>&1
+    connection_status=$?
+
+    if [[ $connection_status != 0 ]]; then
+        while [[ $user_input != "y" || $user_input != "n" ]]; do
+            echo "Warning: Internet connection not detected"
+            read -p "Would you like to continue setup? (y/n) " user_input
+            if [[ $user_input == "n" ]]; then
+                echo "Exiting..."
+                exit 0
+            elif [[ $user_input == "y" ]]; then
+                break
+            else
+                echo "Invalid input. Please enter one of the following: y, n"
+            fi
+        done
+    elif [[ $connection_status == 0 ]]; then
+        echo "connection found"
+    fi
+
+    echo "initiating setup..."
+
     curl -O $TEMPLATE_TAR_LOCATION
     curl -O $VSD_SPECIFICATIONS_LOCATION
     template_tar_file=$(basename $TEMPLATE_TAR_LOCATION)
