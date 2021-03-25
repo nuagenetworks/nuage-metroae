@@ -34,13 +34,7 @@
       assert:
         that: "not vsd_license_output.failed or vsd_license_output.msg is search('The license already exists in the system')"
         msg: "The basic license was not already present and could not be applied"
-      when: not vsd_continue_on_license_failure | default(false) 
-      
-    - name: Printing Warning for license fail and continuing execution
-      fail:
-        msg: "The basic license was not already present and could not be applied"
-      ignore_errors: yes
-      when: (vsd_continue_on_license_failure | default(false)) and (vsd_license_output.failed or not vsd_license_output.msg is search('The license already exists in the system'))
+      ignore_errors: vsd_continue_on_license_failure | default(false)
 
     when: vsd_license_file is defined
 
@@ -67,16 +61,9 @@
       assert:
         that: "not vsd_cluster_license_output.failed or vsd_cluster_license_output.msg is search('The license already exists in the system')"
         msg: "The cluster license was not already present and could not be applied"
-      when: not vsd_continue_on_license_failure | default(false)
+      ignore_errors: not vsd_continue_on_license_failure | default(false)
 
-    - name: Printing Warning for license fail and continuing execution
-      fail:
-        msg: "The cluster license was not already present and could not be applied"
-      ignore_errors: yes
-      when: (vsd_continue_on_license_failure  | default(false)) and (vsd_cluster_license_output.failed or vsd_cluster_license_output.msg is search('The license already exists in the system'))
-
-
-
+    
     when:
       - vsd_cluster_license_file is defined
       - vsd_sa_or_ha is match('ha')
