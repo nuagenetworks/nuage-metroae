@@ -5,6 +5,8 @@
 
 component_type: vsr
 
+required_bridges: []
+
 # VSR hypervisor definition
 target_server_type: {{ item.target_server_type | default('kvm') }}
 hostname: {{ item.hostname }}
@@ -36,10 +38,12 @@ mgmt_netmask_prefix: {{ item.mgmt_netmask_prefix }}
 mgmt_gateway: {{ item.mgmt_gateway }}
 mgmt_to_hv_bridge: '{{ item.mgmt_to_hv_bridge }}'
 
+{% if item.mgmt_static_route_list is defined %}
 mgmt_static_route_list:
 {% for route in item.mgmt_static_route_list %}
   - {{ route }}
 {% endfor %}
+{% endif %}
 
 # VSR router address configuration
 router:
@@ -53,6 +57,9 @@ nuage_integration: {{ item.nuage_integration | default(False) }}
 # License and config file locations
 {% if 'license_file' in item %}
 license_file: {{ item.license_file }}
+{% endif %}
+{% if item.remote_license_file_location is defined %}
+remote_license_file_location: {{ item.remote_license_file_location }}
 {% endif %}
 {% if 'deploy_cfg_file' in item %}
 deploy_cfg_file: {{ item.deploy_cfg_file }}

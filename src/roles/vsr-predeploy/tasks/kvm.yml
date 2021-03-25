@@ -1,76 +1,99 @@
 ---
-- name: Pull facts on target_server {{ target_server }}
-  action: setup
-  remote_user: '{{ target_server_username }}'
-  delegate_to: '{{ target_server }}'
-
-- name: Set vsr facts for memory, cpu, image file path and license path
+- name: Set local variable with vmname
   set_fact:
-    vsr_memory: '{{ vmmemory|default(vsr_target_server_memory_gb_min) }}'
-    vsr_vcpu:   '{{ vmvcpu|default(vsr_target_server_vcpus_min) }}'
-    vsr_target_qcow2_file_path: '{{ images_path }}/{{ vmname }}/{{ inventory_hostname }}.qcow2'
-    vsr_target_license_file: '{{ images_path }}/{{ vmname }}/license.txt'
+    vm_name: "{{ vmname }}"
 
-- import_tasks: kvm_check_hypervisor.yml
+- include_role:
+    name: check-node-running
 
-- import_tasks: kvm_check_resources.yml
+- name: Display if skipping predeploy
+  debug:
+    msg:
+      - "****************************************************"
+      - "Skipping VSR predeploy because it is already present"
+      - "****************************************************"
+  when: node_running
 
-- block:
+- name: Run when VSR not present
+  block:
 
-  - name: List the Virtual Machines
-    virt: command=list_vms
-    register: virt_vms
+  - name: Pull facts on target_server {{ target_server }}
+    action: setup
+    remote_user: '{{ target_server_username }}'
+    delegate_to: '{{ target_server }}'
 
-  - name: Verify that the VM is not already running
-    assert:
-      that: "vmname not in virt_vms.list_vms"
-      msg: "{{ vmname }} is already running on {{ target_server }}"
+  - name: Set vsr facts for memory, cpu, image file path and license path
+    set_fact:
+      vsr_memory: '{{ vmmemory|default(vsr_target_server_memory_gb_min) }}'
+      vsr_vcpu:   '{{ vmvcpu|default(vsr_target_server_vcpus_min) }}'
+      vsr_target_qcow2_file_path: '{{ images_path }}/{{ vmname }}/{{ inventory_hostname }}.qcow2'
+      vsr_target_license_file: '{{ images_path }}/{{ vmname }}/license.txt'
 
-  - name: Include OS-specific variables.
-    include_vars: "{{ ansible_os_family }}.yml"
+  - import_tasks: kvm_check_hypervisor.yml
 
-  - name: Create VSR directory
-    file:
-      path:  '{{ images_path }}/{{ vmname }}'
-      state: directory
-      owner: '{{ libvirt.user }}'
-      group: '{{ libvirt.group }}'
+  - import_tasks: kvm_check_resources.yml
 
-  delegate_to: "{{ target_server }}"
-  remote_user: "{{ target_server_username }}"
-  become: "{{ 'no' if target_server_username == 'root' else 'yes' }}"
+  - block:
 
-- import_tasks: kvm_upload_license_file.yml
+    - name: List the Virtual Machines
+      virt: command=list_vms
+      register: virt_vms
 
-- import_tasks: kvm_deploy_image_file.yml
+    - name: Verify that the VM is not already running
+      assert:
+        that: "vmname not in virt_vms.list_vms"
+        msg: "{{ vmname }} is already running on {{ target_server }}"
 
-- block:
+    - name: Include OS-specific variables.
+      include_vars: "{{ ansible_os_family }}.yml"
 
-  - name: Get license file content
-    command: cat {{ vsr_target_license_file }}
-    register: rc_vsr_license_content
+    - name: Create VSR directory
+      file:
+        path:  '{{ images_path }}/{{ vmname }}'
+        state: directory
+        owner: '{{ libvirt.user }}'
+        group: '{{ libvirt.group }}'
 
-  - name: Delete license file
-    file:
-      path: '{{ vsr_target_license_file }}'
-      state: absent
+    delegate_to: "{{ target_server }}"
+    remote_user: "{{ target_server_username }}"
+    become: "{{ 'no' if target_server_username == 'root' else 'yes' }}"
 
-  delegate_to: "{{ target_server }}"
-  remote_user: "{{ target_server_username }}"
-  become: "{{ 'no' if target_server_username == 'root' else 'yes' }}"
+  - import_tasks: kvm_upload_license_file.yml
+    when: license_file is defined
 
-- name: Set VM uuid generated
-  set_fact:
-    vsr_vm_uuid: '{{ rc_vsr_license_content.stdout.split(" ")[0] }}'
+  - name: Deploy KVM image
+    import_tasks: kvm_deploy_image_file.yml
+    vars:
+      dest_filename: "{{ inventory_hostname }}.qcow2"
+    when: license_file is defined
 
-- debug: var=vsr_vm_uuid verbosity=1
+  - block:
 
-- import_tasks: kvm_define_vsr_vm.yml
+    - name: Get license file content
+      command: cat {{ vsr_target_license_file }}
+      register: rc_vsr_license_content
 
-- name: Wait for VSR ssh to be ready
-  include_role:
-    name: common
-    tasks_from: wait-for-ssh
-  vars:
-    ssh_host: "{{ mgmt_ip }}"
-    host_username: "root"
+    - name: Delete license file
+      file:
+        path: '{{ vsr_target_license_file }}'
+        state: absent
+
+    when: license_file is defined
+    delegate_to: "{{ target_server }}"
+    remote_user: "{{ target_server_username }}"
+    become: "{{ 'no' if target_server_username == 'root' else 'yes' }}"
+
+  - name: Run only if license file is specified
+    block:
+
+    - name: Set VM uuid generated
+      set_fact:
+        vsr_vm_uuid: '{{ rc_vsr_license_content.stdout.split(" ")[0] }}'
+
+    - debug: var=vsr_vm_uuid verbosity=1
+
+    when: license_file is defined
+
+  - import_tasks: kvm_define_vsr_vm.yml
+
+  when: not node_running
