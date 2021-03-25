@@ -29,6 +29,7 @@
 * Add option to override VSC config (METROAE-314)
 * Allow portal install without VSTAT fqdn (METROAE-301)
 * Fix VSR deploy errors (METROAE-310)
+* Fix vsd-install script parameters (METROAE-347)
 * Fix DNS dns_mgmt and dns_data to relax requirement of having specific length. (METROAE-315)
 * Add vstat-health role to vstat_health playbook (METROAE-322)
 * Hide log output in vsd-node-info (METROAE-332)
