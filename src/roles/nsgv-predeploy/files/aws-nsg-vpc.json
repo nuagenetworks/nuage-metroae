@@ -31,7 +31,6 @@
       "AllowedPattern": "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})",
       "ConstraintDescription": "must be a valid IP CIDR range of the form x.x.x.x/x."
     },
-
     "PrivateSubnetCIDR" : {
       "Type" : "String",
       "Description" : "Private subnet to launch VMs in",
@@ -41,16 +40,36 @@
       "AllowedPattern": "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})",
       "ConstraintDescription": "must be a valid IP CIDR range of the form x.x.x.x/x."
     },
-
     "ProxyExternalIP" : {
       "Type" : "String",
       "Description" : "IP Address for the Proxy",
       "MinLength": "7",
-      "MaxLength": "15"
+      "MaxLength": "15",
+      "Default": ""
+    },
+    "NSGvOnlyOnAWS" : {
+      "Type": "String",
+      "Description": "Whether to deploy all components on AWS or just the NSGv",
+      "AllowedValues": [
+        "true",
+        "false"
+      ],
+      "Default": "false",
+      "ConstraintDescription": "must specify either true or false"
     }
 
   },
 
+  "Conditions" : {
+    "NSGvConfig" : {
+      "Fn::Equals" : [
+        {
+          "Ref" : "NSGvOnlyOnAWS"
+        },
+        "true"
+      ]
+    }
+  },
   "Resources" : {
 
     "VPC" : {
@@ -118,7 +137,6 @@
       "Properties" : {
         "SubnetId" : { "Ref" : "NSGWANSubnet" },
         "Description" :"Interface for NSG-AWS WAN",
-        "PrivateIpAddress": "10.1.10.15",
         "GroupSet":  [ { "Ref": "NSGWANSecurityGroup" } ],
         "SourceDestCheck" : "false",
         "Tags" : [
@@ -252,6 +270,7 @@
 
     "PrivateHostedZone" : {
       "Type" : "AWS::Route53::HostedZone",
+      "Condition" : "NSGvConfig",
       "Properties" : {
         "Name" : "example.met",
         "VPCs" : [
@@ -264,6 +283,7 @@
     },
     "ProxyDNSRecord" : {
       "Type" : "AWS::Route53::RecordSet",
+      "Condition" : "NSGvConfig",
       "Properties" : {
         "HostedZoneId" : { "Ref" : "PrivateHostedZone" },
         "Name" : "nuh1.data.example.met.",
