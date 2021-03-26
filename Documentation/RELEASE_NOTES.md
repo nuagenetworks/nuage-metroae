@@ -35,6 +35,8 @@
 * Hide log output in vsd-node-info (METROAE-332)
 * Remove vstat-vsd-health role from vstat_health playbook (METROAE-322)
 * Removed extra DEBUG line from nsgv-postdeploy (METROAE-334)
+* Removed DEBUG tasks which are not working in upgrade shutdown playbooks ( METROAE-358)
+
 
 
 ## Test Matrix
