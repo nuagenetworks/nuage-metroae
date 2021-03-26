@@ -1,0 +1,22 @@
+primary-image        cf3:\timos\i386-both.tim
+primary-config       cf3:\config.cfg
+autonegotiate
+duplex               full
+speed                100
+wait                 3
+persist              off
+console-speed        115200
+address          {{ mgmt_ip }}/{{ mgmt_netmask_prefix }}
+primary-dns      {{ dns_server_list[0] }}
+{% if dns_server_list[1] is defined %}
+secondary-dns    {{ dns_server_list[1] }}
+{% endif %}
+{% if dns_server_list[2] is defined %}
+tertiary-dns     {{ dns_server_list[2] }}
+{% endif %}
+dns-domain       {{ dns_domain }}
+{% if mgmt_static_route_list is defined %}
+{% for static_route in mgmt_static_route_list %}
+static-route {{ static_route }} next-hop {{ mgmt_gateway }}
+{% endfor %}
+{% endif %}
