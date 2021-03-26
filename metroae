@@ -1642,8 +1642,6 @@ function download_container {
 }
 
 function download_container_templates {
-    # TODO: delete the line directly below later
-    echo "download_container_templates is being called!!!!!!!"
     debug ${FUNCNAME[0]}
     if ! command -v curl &> /dev/null; then
         write_to_screen_and_script_log "The command 'curl' was not found in PATH"
@@ -1662,27 +1660,37 @@ function download_container_templates {
     connection_status=$?
 
     if [[ $SKIP_UUID -eq $TRUE ]]; then
-        user_input="y"
-        # TODO: delete the line below once working
-        echo "user_input value is: $user_input"
+        if [[ $connection_status == 0 ]]; then
+            user_input="y"
+        elif [[ $connection_status != 0 ]]; then
+            user_input="n"
+        fi
     else
         if [[ $connection_status != 0 ]]; then
-            while [[ $user_input != "y" || $user_input != "n" ]]; do
+            while true; do
                 echo "Warning: Internet connection not detected"
                 read -p "Would you like to continue setup? (y/n) " user_input
-                if [[ $user_input == "n" ]]; then
-                    echo "Exiting..."
-                    exit 1
-                elif [[ $user_input == "y" ]]; then
-                    echo "skipping..."
-                    exit 0
-                else
-                    echo "Invalid input. Please enter one of the following: y, n"
+                if [ $user_input == "y" || $user_input == "n" ]; then
+                    break
                 fi
+                echo "Invalid input. Please enter one of the following: y, n"
             done
-        elif [[ $connection_status == 0 ]]; then
-            echo "connection found"
         fi
+    fi
+    
+    # user_input is defined. testing is happening, or user has no connection from container
+    if [[ -n $user_input ]]; then
+        if [[ $user_input == "n" ]]; then
+            echo "Exiting..."
+            exit 1
+        elif [[ $user_input == "y" ]]; then
+            echo "skipping..."
+            exit 0
+        fi
+    fi
+
+    if [[ $connection_status == 0 ]]; then
+        echo "connection found"
     fi
 
     echo "initiating setup..."
