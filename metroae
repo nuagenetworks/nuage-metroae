@@ -1664,33 +1664,15 @@ function download_container_templates {
     connection_status=$?
 
     if [[ $SKIP_UUID -eq $TRUE ]]; then
-        if [[ $ATTEMPT_MANUAL_CONFIG_SETUP -eq $TRUE ]]; then
-            user_input="y"
-        else
-            user_input="n"
-        fi
-    else
-        if [[ $connection_status != 0 ]]; then
-            while true; do
-                echo "Warning: Internet connection not detected"
-                read -p "Would you like to continue setup? (y/n) " user_input
-                if [ $user_input == "y" || $user_input == "n" ]; then
-                    break
-                fi
-                echo "Invalid input. Please enter one of the following: y, n"
-            done
-        fi
+        connection_status=1
     fi
-    
-    # user_input is defined. testing is happening, or user has no connection from container
-    if [[ -n $user_input ]]; then
-        if [[ $user_input == "n" ]]; then
-            echo "Exiting..."
-            exit 1
-        elif [[ $user_input == "y" ]]; then
-            echo "skipping..."
-            exit 0
-        fi
+
+    if [[ $connection_status != 0 ]]; then
+        echo "Warning: Internet connection not detected. Template files were not downloaded"
+        echo "Please download the templates manually from the following URL:"
+        # TODO
+        echo "REPLACE THIS TEXT WITH CORRECT URL"
+        exit 0
     fi
 
     if [[ $connection_status == 0 ]]; then
