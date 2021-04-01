@@ -330,9 +330,26 @@
 
   - block:
 
+    - name: Set install for standby if applicable
+      set_fact:
+        install_options: '-t 1'
+      when: vsd_standby_cluster | default(False)
+
+    - name: Set install param for stats only if applicable
+      set_fact:
+        install_options: '-t t'
+      when: 
+        - groups['stats_only_vsds'] is defined
+        - inventory_hostname in groups['stats_only_vsds']
+
+    - name: Set install param for all others
+      set_fact:
+        install_options: '-t g'
+      when: install_options is not defined
+
     - name: Install VSD software on the first cluster node (Can take 20 minutes)
       command: >-
-        /opt/vsd/vsd-install.sh -t 1 -a {{ first_cluster_node_to_install }}
+        /opt/vsd/vsd-install.sh {{ install_options }} -a {{ first_cluster_node_to_install }}
         -b {{ second_cluster_node_to_install }} -c {{ third_cluster_node_to_install }}
         -x {{ vsd_fqdn }} -y {{ (enable_ipv6 | default(False)) | ternary('-6', '') }}
       when: inventory_hostname == first_cluster_node_to_install
