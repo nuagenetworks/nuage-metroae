@@ -15,13 +15,13 @@
 - include_role:
     name: check-node-running
 
-- name: Display if skipping VNSUTIL predeploy
+- name: Display if skipping DEMOVM predeploy
   debug:
     msg:
       - "********************************************************"
-      - "Skipping VNSUTIL predeploy because it is already present"
+      - "Skipping DEMOVM predeploy because it is already present"
       - "********************************************************"
-  when: vnsutil_present
+  when: demovm_present
 
 - block:
 
@@ -29,7 +29,7 @@
       name: common
       tasks_from: copy-qcow2
 
-  - name: Set local variable with vnsutil guestfish destination
+  - name: Set local variable with demovm guestfish destination
     set_fact:
       guestfish_dest: "{{ images_path }}/{{ vm_name }}/{{ image_file_name }}"
 
@@ -51,7 +51,7 @@
       backup: no
       dest: "{{ images_path }}/{{ vmname }}/ifcfg-eth0"
 
-  - name: Inject ifcfg-eth0 into vnsutil qcow image
+  - name: Inject ifcfg-eth0 into demovm qcow image
     include_role:
       name: common
       tasks_from: kvm-inject-file
@@ -71,7 +71,7 @@
         backup: no
         dest: "{{ images_path }}/{{ vmname }}/ifcfg-eth1"
 
-    - name: Inject ifcfg-eth1 into vnsutil qcow image
+    - name: Inject ifcfg-eth1 into demovm qcow image
       include_role:
         name: common
         tasks_from: kvm-inject-file
@@ -103,7 +103,7 @@
         backup: no
         dest: "{{ images_path }}/{{ vmname }}/route-eth1"
 
-    - name: Inject route-eth1 into vnsutil qcow image
+    - name: Inject route-eth1 into demovm qcow image
       include_role:
         name: common
         tasks_from: kvm-inject-file
@@ -117,20 +117,20 @@
     local_action: command cat "{{ user_ssh_pub_key }}"
     register: current_user_ssh_key
 
-  - name: Inject SSH keys into vnsutil qcow image
+  - name: Inject SSH keys into demovm qcow image
     include_role:
       name: common
       tasks_from: kvm-inject-ssh-keys
 
-  - name: Define and start vnsutil VM
+  - name: Define and start demovm VM
     include_role:
       name: common
       tasks_from: kvm-start-vm
     vars:
-      vm_xml: "{{ lookup('template', 'vnsutil.xml.j2') }}"
+      vm_xml: "{{ lookup('template', 'demovm.xml.j2') }}"
       autostart_enabled: false
 
   delegate_to: "{{ target_server }}"
   remote_user: "{{ target_server_username }}"
   become: "{{ 'no' if target_server_username == 'root' else 'yes' }}"
-  when: not vnsutil_present
+  when: not demovm_present
