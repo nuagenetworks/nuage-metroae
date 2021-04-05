@@ -1653,11 +1653,9 @@ function download_container_templates {
         write_to_screen_and_script_log ""
         exit 1
     fi
-
-    curl -O $TEMPLATE_TAR_LOCATION
-    connection_status=$?
-
-    if [[ $connection_status != 0 ]]; then
+    {
+        curl -O $TEMPLATE_TAR_LOCATION
+    } || {
         echo "Warning: Internet connection not detected. Template files were not downloaded"
         echo "Please download the templates manually from the following URL:"
         echo "$TEMPLATE_TAR_LOCATION"
@@ -1666,35 +1664,75 @@ function download_container_templates {
         echo "$VSD_SPECIFICATIONS_LOCATION"
         echo "Upon successful download of the two tar files, execute the following commands in sequence:"
         echo "untar the files to: $METROAE_MOUNT_POINT"
+        exit 0
+    }
+    curl -O $VSD_SPECIFICATIONS_LOCATION
+    template_tar_file=$(basename $TEMPLATE_TAR_LOCATION)
+    specs_tar_file=$(basename $VSD_SPECIFICATIONS_LOCATION)
+    template_and_specs_tar_file="metroae_templates_specs.tar"
+
+    set +e
+    tar -rf $template_and_specs_tar_file $template_tar_file $specs_tar_file
+    tar_exit_code=$?
+    set -e
+
+    if [[ $tar_exit_code -eq 0 ]]; then
+        write_to_screen_and_script_log "The latest MetroAE templates and VSD API Specifications have been downloaded"
+        write_to_screen_and_script_log "They can be found in $template_and_specs_tar_file"
     else
-        curl -O $VSD_SPECIFICATIONS_LOCATION
-        template_tar_file=$(basename $TEMPLATE_TAR_LOCATION)
-        specs_tar_file=$(basename $VSD_SPECIFICATIONS_LOCATION)
-        template_and_specs_tar_file="metroae_templates_specs.tar"
-
-        set +e
-        tar -rf $template_and_specs_tar_file $template_tar_file $specs_tar_file
-        tar_exit_code=$?
-        set -e
-
-        if [[ $tar_exit_code -eq 0 ]]; then
-            write_to_screen_and_script_log "The latest MetroAE templates and VSD API Specifications have been downloaded"
-            write_to_screen_and_script_log "They can be found in $template_and_specs_tar_file"
-        else
-            write_to_screen_and_script_log "There was an issue when archiving the tarballs, please try again."
-            exit 1
-        fi
-
-        rm -f $template_tar_file
-        rm -f $specs_tar_file
-
-        if [[ -e $template_tar_file ]] || [[ -e $specs_tar_file ]]; then
-            write_to_screen_and_script_log "Could not remove one or both of the intermediate tar files"
-            write_to_screen_and_script_log "They can be found here: $template_tar_file and $specs_tar_file"
-            exit 1
-        fi
-
+        write_to_screen_and_script_log "There was an issue when archiving the tarballs, please try again."
+        exit 1
     fi
+
+    rm -f $template_tar_file
+    rm -f $specs_tar_file
+
+    if [[ -e $template_tar_file ]] || [[ -e $specs_tar_file ]]; then
+        write_to_screen_and_script_log "Could not remove one or both of the intermediate tar files"
+        write_to_screen_and_script_log "They can be found here: $template_tar_file and $specs_tar_file"
+        exit 1
+    fi
+
+    # connection_status=$?
+
+    # if [[ $connection_status != 0 ]]; then
+    #     echo "Warning: Internet connection not detected. Template files were not downloaded"
+    #     echo "Please download the templates manually from the following URL:"
+    #     echo "$TEMPLATE_TAR_LOCATION"
+    #     echo ""
+    #     echo "Copy the VSD specifications from this URL"
+    #     echo "$VSD_SPECIFICATIONS_LOCATION"
+    #     echo "Upon successful download of the two tar files, execute the following commands in sequence:"
+    #     echo "untar the files to: $METROAE_MOUNT_POINT"
+    # else
+    #     curl -O $VSD_SPECIFICATIONS_LOCATION
+    #     template_tar_file=$(basename $TEMPLATE_TAR_LOCATION)
+    #     specs_tar_file=$(basename $VSD_SPECIFICATIONS_LOCATION)
+    #     template_and_specs_tar_file="metroae_templates_specs.tar"
+
+    #     set +e
+    #     tar -rf $template_and_specs_tar_file $template_tar_file $specs_tar_file
+    #     tar_exit_code=$?
+    #     set -e
+
+    #     if [[ $tar_exit_code -eq 0 ]]; then
+    #         write_to_screen_and_script_log "The latest MetroAE templates and VSD API Specifications have been downloaded"
+    #         write_to_screen_and_script_log "They can be found in $template_and_specs_tar_file"
+    #     else
+    #         write_to_screen_and_script_log "There was an issue when archiving the tarballs, please try again."
+    #         exit 1
+    #     fi
+
+    #     rm -f $template_tar_file
+    #     rm -f $specs_tar_file
+
+    #     if [[ -e $template_tar_file ]] || [[ -e $specs_tar_file ]]; then
+    #         write_to_screen_and_script_log "Could not remove one or both of the intermediate tar files"
+    #         write_to_screen_and_script_log "They can be found here: $template_tar_file and $specs_tar_file"
+    #         exit 1
+    #     fi
+
+    # fi
 
 
     exit 0
