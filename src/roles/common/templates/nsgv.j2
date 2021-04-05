@@ -50,16 +50,14 @@ access_bridges:
 
 bootstrap_method: {{ item.bootstrap_method | default('none') }}
 
+{% if item.bootstrap_method is not match ("zfb_metro") %}
+iso_path: {{ item.iso_path }}
+iso_file: {{ item.iso_file }}
+{% endif %}
+
 {% if item.target_server_type is match("kvm") or item.target_server_type is match("vcenter") %}
 
 target_server: {{ item.target_server }}
-
-{% if item.bootstrap_method == 'zfb_external' %}
-
-iso_path: {{ item.iso_path }}
-iso_file: {{ item.iso_file }}
-
-{% endif %}
 
 image_path: {{ image_path | default("MISSING") }}
 image_file_name: {{ image_file_name | default("MISSING") }}
@@ -72,6 +70,10 @@ provision_vpc:
   NSGWANSubnetCIDR: "{{ item.provision_vpc_nsg_wan_subnet_cidr }}"
   NSGLANSubnetCIDR: "{{ item.provision_vpc_nsg_lan_subnet_cidr }}"
   PrivateSubnetCIDR: "{{ item.provision_vpc_private_subnet_cidr }}"
+{% if item.proxy_external_ip is defined %}
+  ProxyExternalIP: "{{ item.proxy_external_ip }}"
+{% endif %}
+  NSGvOnlyOnAWS: "{{ item.deploy_only_nsgv | default("false") }}"
 {% else %}
 aws_access_eni: {{ item.aws_access_eni }}
 aws_data_eni: {{ item.aws_data_eni }}
