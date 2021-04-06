@@ -1,0 +1,40 @@
+- name: Start Portal VMs
+  virt:
+    name: "{{ vm_name }}"
+    state: running
+    uri: qemu:///system
+  delegate_to: "{{ target_server }}"
+  remote_user: "{{ target_server_username }}"
+  become: "{{ 'no' if target_server_username == 'root' else 'yes' }}"
+
+- name: Wait for Portal VM ssh to be ready
+  include_role:
+    name: common
+    tasks_from: wait-for-ssh
+  vars:
+    ssh_host: "{{ mgmt_ip }}"
+    host_username: "{{ portal_default_password }}"
+
+- block:
+
+  - name: Check ntp sync state
+    shell: ntpstat | awk 'NR==1{print $1}'
+    register: sync_status
+    ignore_errors: yes
+
+  - name: Check ntp sync output
+    fail:
+      msg: Unexpected failure when attempting to sync with ntp
+    when:
+      - not sync_status.stdout is match('synchronised')
+      - not sync_status.stdout is match('unsynchronised')
+
+  - name: Check ntp sync state
+    shell: ntpstat | awk 'NR==1{print $1}'
+    register: retry_sync_status
+    until: retry_sync_status.stdout is match('synchronised')
+    retries: "{{ ntp_sync_retries }}"
+    delay: "{{ ntp_sync_delay }}"
+    when: sync_status.stdout is match('unsynchronised')
+
+  remote_user: "{{ portal_default_username }}"

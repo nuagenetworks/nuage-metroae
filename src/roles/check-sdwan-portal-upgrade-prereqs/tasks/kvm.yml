@@ -1,0 +1,25 @@
+- block:
+
+  - name: Ensure there are database backups
+    find:
+      paths: '/opt/vnsportal/db-backups/'
+    register: db_backups
+
+  - name: Backup database if there are no backups
+    shell: sh /etc/cron.daily/vnsportal-backup-cron
+    when:
+      - db_backups.matched == 0
+      - skip_portal_db_backup != true
+
+  when: inventory_hostname == portal1.hostname
+
+- name: Check Portal health
+  shell: curl -k https://localhost/vnsportal/health
+  register: portal_health
+  until: portal_health.stdout.find("Up") != -1
+  retries: 10
+  delay: 5
+
+- name: Check cluster health
+  shell: /opt/vnsportal/cluster_check.sh
+  when: portal_sa_or_ha is match('ha')
