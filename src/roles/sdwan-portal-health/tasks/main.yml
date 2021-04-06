@@ -1,0 +1,15 @@
+- name: Check Portal endpoint health
+  uri:
+    url: https://localhost/vnsportal/health
+    method: GET
+    validate_certs: False
+  no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
+  register: curl_output
+  until: curl_output.status == 200
+  retries: 30
+  delay: 5
+
+- name: Check cluster health (ignoring errors)
+  shell: /opt/vnsportal/cluster_check.sh
+  ignore_errors: True
+  when: portal_sa_or_ha is match('ha')
