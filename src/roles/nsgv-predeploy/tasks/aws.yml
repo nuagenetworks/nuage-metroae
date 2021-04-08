@@ -107,7 +107,7 @@
      - { key: "NSGLANENI", value: "{{ rc_aws_cfn_nuagevpc.stack_outputs.NSGLANENIId }}" }
      - { key: "NSGWANENI", value: "{{ rc_aws_cfn_nuagevpc.stack_outputs.NSGWANENIId }}" }
      - { key: "NSGLANENIIP", value: "{{ rc_aws_cfn_nuagevpc.stack_outputs.NSGLANENIIP }}" }
-    when: (rc_aws_cfn_nuagevpc.failed is not defined)
+    when: "'Stack CREATE complete' in rc_aws_cfn_nuagevpc.output"
 
   when: provision_vpc is defined
 
@@ -132,6 +132,17 @@
     when: (rc_aws_nsg_lan_eni_facts.network_interfaces|length > 0 )
 
   when: provision_vpc is not defined
+
+- name: Create user data for bootstrap
+  command: cat "{{ iso_path }}/{{ iso_file }}"
+  delegate_to: localhost
+  register: bootstrap_user_data
+
+- name: Set NSGv User Data
+  set_fact:
+    nsg_ami_user_data: "{{ bootstrap_user_data.stdout }}"
+
+- debug: var=nsg_ami_user_data
 
 - name: Generate CloudFormation Template
   delegate_to: localhost

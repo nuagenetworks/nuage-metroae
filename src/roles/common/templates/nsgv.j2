@@ -17,18 +17,6 @@ nsgv_cpu_cores: {{ item.cpu_cores | default(1) }}
 telnet_port: {{ item.telnet_port }}
 {% endif %}
 
-{% if item.nsg_template_id is defined %}
-nsg_template_id: "{{ item.nsg_template_id }}"
-{% endif %}
-
-{% if item.enterprise is defined %}
-enterprise: "{{ item.enterprise }}"
-{% endif %}
-
-{% if item.target_server_type is match("kvm") and item.userdisk_path is defined %}
-userdisk_path: "{{ item.userdisk_path }}"
-{% endif %}
-
 {% if item.nsgv_ip is defined %}
 nsgv_ip: "{{ item.nsgv_ip }}"
 {% endif %}
@@ -62,16 +50,14 @@ access_bridges:
 
 bootstrap_method: {{ item.bootstrap_method | default('none') }}
 
+{% if item.bootstrap_method is not match ("zfb_metro") %}
+iso_path: {{ item.iso_path }}
+iso_file: {{ item.iso_file }}
+{% endif %}
+
 {% if item.target_server_type is match("kvm") or item.target_server_type is match("vcenter") %}
 
 target_server: {{ item.target_server }}
-
-{% if item.bootstrap_method == 'zfb_external' %}
-
-iso_path: {{ item.iso_path }}
-iso_file: {{ item.iso_file }}
-
-{% endif %}
 
 image_path: {{ image_path | default("MISSING") }}
 image_file_name: {{ image_file_name | default("MISSING") }}
@@ -84,6 +70,10 @@ provision_vpc:
   NSGWANSubnetCIDR: "{{ item.provision_vpc_nsg_wan_subnet_cidr }}"
   NSGLANSubnetCIDR: "{{ item.provision_vpc_nsg_lan_subnet_cidr }}"
   PrivateSubnetCIDR: "{{ item.provision_vpc_private_subnet_cidr }}"
+{% if item.proxy_external_ip is defined %}
+  ProxyExternalIP: "{{ item.proxy_external_ip }}"
+{% endif %}
+  NSGvOnlyOnAWS: "{{ item.deploy_only_nsgv | default("false") }}"
 {% else %}
 aws_access_eni: {{ item.aws_access_eni }}
 aws_data_eni: {{ item.aws_data_eni }}
@@ -98,7 +88,7 @@ aws_eip_allocid: "{{ item.aws_eip_allocid }}"
 {% if (item.bootstrap_method | default('none') == "zfb_metro") or (item.bootstrap_method | default("none") == "zfb_external") %}
 
 zfb_nsg:
-    nsg_organization: "{{ item.nsgv_organization | default(nsgv_bootstrap.nsgv_organization) }}"
+    nsg_organization: "{{ item.nsg_organization | default(nsgv_bootstrap.nsgv_organization) }}"
     nsg_name: "{{ item.nsg_name }}"
     nsg_template_name: {{ item.nsg_template_name | default(nsgv_bootstrap.nsg_template_name) }}
     match_type: {{ item.match_type | default("none") | upper }}

@@ -166,11 +166,17 @@
         template: src=config.yml.j2 backup=no dest=/opt/proxy/data/config.yml owner=root group=root mode=0640
         no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
 
+      - name: Check if NUH Version is 20.X
+        shell: "rpm -qa | grep 'nuage-proxy-utils-20'"
+        ignore_errors: true
+        register: nuhv20
+
       - name: Update haproxy Service
         lineinfile:
           path: /opt/proxy/bin/ansible/roles/common/handlers/main.yml
           regex: "shell: systemctl reload-or-restart haproxy"
           line: "  shell: systemctl restart haproxy"
+        when: nuhv20.rc == 0
 
       - name: Run the network config script on NUH
         command: ansible-playbook configure.yml
@@ -182,6 +188,7 @@
           path: /opt/proxy/bin/ansible/roles/common/handlers/main.yml
           regex: "shell: systemctl restart haproxy"
           line: "  shell: systemctl reload-or-restart haproxy"
+        when: nuhv20.rc == 0
 
       - name: Check if the eth1 is configured on Internal interface
         shell: set -o pipefail && ip netns exec Internal ip addr list | grep eth1

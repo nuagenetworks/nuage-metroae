@@ -81,10 +81,26 @@
 
       when: is_deployment_changed
 
-    - name: Verify that inventory can be read successfully
+    - name: checking for the inventory file 
+      stat:
+        path: "{{ inventory_dir }}/group_vars/all"
+      register: group_vars_file
+      ignore_errors: True
+
+    - name: Print message about inventory file present or not 
+      assert:
+        that:
+          - group_vars_file.stat.exists 
+        fail_msg: "{{ inventory_dir }}/group_vars/all file does not exist"
+        success_msg: "{{ inventory_dir }}/group_vars/all file exist"
+
+    - name: load inventory file values to include_vars
       include_vars: "{{ inventory_dir }}/group_vars/all"
       no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
 
-    - name: Verify passwords can be decrypted
-      debug: var=vsd_auth
-      no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
+    - name: checking variable, if vsd_auth is defined or not
+      assert:
+        that:
+          - vsd_auth is defined
+        fail_msg: "vsd_auth not defined"
+        success_msg: "vsd_auth is defined"

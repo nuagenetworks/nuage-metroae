@@ -19,6 +19,7 @@
 * Adding support for sending usage back to MetroAE team
 * Support for configuring NUH for stats-out proxy (METROAE-288)
 * Add plugin examples and documentation to MetroAE (METROAE-354)
+* Added support for instantiating and bootstrapping NSGv on AWS with VSP components deployed outside AWS (METROAE-355)
 
 ### Resolved Issues
 * Enhance several license file descriptions to include the file name
@@ -35,6 +36,11 @@
 * Add vstat-health role to vstat_health playbook (METROAE-322)
 * Hide log output in vsd-node-info (METROAE-332)
 * Remove vstat-vsd-health role from vstat_health playbook (METROAE-322)
+* Removed extra DEBUG line from nsgv-postdeploy (METROAE-334)
+* Removed DEBUG tasks which are not working in upgrade shutdown playbooks ( METROAE-358)
+
+
+* Allowing metroae to continue execution if the vsd_continue_on_failure is set to true (METROAE-324)
 
 ## Test Matrix
 
