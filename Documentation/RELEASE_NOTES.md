@@ -2,16 +2,55 @@
 
 ## Release info
 
+<<<<<<< HEAD
 * MetroAE Version 4.3.3
 * Nuage Release Alignment 20.10.R2
 * Date of Release 17-Mar-2021
+=======
+* MetroAE Version 4.4.0
+* Nuage Release Alignment TBD
+* Date of Release TBD
+>>>>>>> dev
 
 ## Release Contents
 
-### Resolved Issues
+### Feature Enhancements
+* Fix up the image paths to root at /metroae_data/ when in the container
+* Added support for bootstraping NSGv using NUH external interfaces
+* Support multiple KVM bridges for NUH external interfaces
+* Added multi cpu core support for NSGV (METROAE-309)
+* Improve VSD security hardening to monitor service shutdown (METROAE-285)
+* Add next-hop to VSC VPRN config (METROAE-319)
+* Add VCIN SA upgrade support for Major Minor and Inplace Upgrade(METROAE-317)
+* Adding support for sending usage back to MetroAE team
+* Support for configuring NUH for stats-out proxy (METROAE-288)
+* Added support for instantiating and bootstrapping NSGv on AWS with VSP components deployed outside AWS (METROAE-355)
 
+### Resolved Issues
+* Enhance several license file descriptions to include the file name
+* Updated SDWAN portal to support 20.11 version
+* Force rebuild after missing files (METROAE-298)
+* Updated SDWAN portal unzip task to copy the container tar file to correct folder
+* Fixed VSD deploy task to be idempotent (METROAE-304)
+* Fixed sshpass quotes for passwords that has special characters (METROAE-312)
+* Add option to override VSC config (METROAE-314)
+* Allow portal install without VSTAT fqdn (METROAE-301)
+* Fix VSR deploy errors (METROAE-310)
+* Fix vsd-install script parameters (METROAE-347)
+* Fix DNS dns_mgmt and dns_data to relax requirement of having specific length. (METROAE-315)
+* Add vstat-health role to vstat_health playbook (METROAE-322)
+* Hide log output in vsd-node-info (METROAE-332)
+* Remove vstat-vsd-health role from vstat_health playbook (METROAE-322)
+* Removed extra DEBUG line from nsgv-postdeploy (METROAE-334)
+* Removed DEBUG tasks which are not working in upgrade shutdown playbooks ( METROAE-358)
+
+
+<<<<<<< HEAD
 * Updated and Reorder Pip requirements because of pip package version changes
 * Fix MetroAE setup error for setuptools install
+=======
+* Allowing metroae to continue execution if the vsd_continue_on_failure is set to true (METROAE-324)
+>>>>>>> dev
 
 ## Test Matrix
 

@@ -27,6 +27,7 @@ nuh_ram: "{{ common.nuh_ram | default(8) }}"
 webfilter_ram: "{{ common.webfilter_ram | default(8) }}"
 portal_ram: "{{ common.portal_ram | default(24) }}"
 portal_license_file: "{{ common.portal_license_file | default('NONE') }}"
+portal_allocate_size_gb: "{{ portal_allocate_size_gb | default(16) }}"
 vsd_license_required_days_left: {{ common.vsd_license_required_days_left | default(-1) }}
 vsd_fqdn: {{ common.vsd_fqdn_global | default('NONE') }}
 vsd_port: {{ common.vsd_port_global | default('8443') }}
@@ -47,6 +48,19 @@ vcin_cpu_cores: {{ common.vcin_cpu_cores | default(6)}}
 webfilter_cpu_cores: {{ common.webfilter_cpu_cores | default(2) }}
 vcenter_start_vsd_with_interfaces_disabled: {{ common.vcenter_start_vsd_with_interfaces_disabled | default(false) }}
 vsd_inplace_upgrade: {{ inplace | default(false) }}
+
+
+{% if encrypted.nuh_notification_app_1_username is defined and encrypted.nuh_notification_app_1_password is defined %}
+notification_app1:
+  username: {{ encrypted.nuh_notification_app_1_username | indent(8, False) }}
+  password: {{ encrypted.nuh_notification_app_1_password | indent(8, False) }}
+{% endif %}
+
+{% if encrypted.nuh_notification_app_2_username is defined and encrypted.nuh_notification_app_2_password is defined %}
+notification_app2:
+  username: {{ encrypted.nuh_notification_app_2_username | indent(8, False) }}
+  password: {{ encrypted.nuh_notification_app_2_password | indent(8, False) }}
+{% endif %}
 
 vsc_command_timeout_seconds: "{{ vsc_command_timeout_seconds|default(180) }}"
 vsc_scp_timeout_seconds: "{{ vsc_scp_timeout_seconds|default(720) }}"
@@ -152,6 +166,7 @@ vsd_auth:
   password: {{ encrypted.vsd_auth_password | default(vsd_default_auth) | indent(8, False) }}
   enterprise: "{{ common.vsd_auth_enterprise | default("csp") }}"
   api_url: "{{ common.vsd_auth_url | default("https://" + common.vsd_fqdn_global + ":8443") }}"
+
 
 vcin_auth:
   api_username: {{ encrypted.vcin_auth_username | default(vsd_default_auth) | indent(8, False) }}
@@ -413,3 +428,5 @@ monit_alert_not_on: {{ common.vsd_monit_alert_not_on }}
 {% endif %}
 
 {{ plugin_group_vars | default("")}}
+
+vsd_continue_on_license_failure: {{common.vsd_continue_on_license_failure | default(false) }}

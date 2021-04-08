@@ -1,6 +1,10 @@
 # Nuage Networks Metro Automation Engine (MetroAE)
 
+<<<<<<< HEAD
 Version: 4.3.3
+=======
+Version: 4.4.0
+>>>>>>> dev
 
 MetroAE is an automation engine that can be used to
 

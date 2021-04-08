@@ -10,7 +10,7 @@
       "MinLength": "9",
       "MaxLength": "18",
       "Default": "10.1.0.0/16",
-      "AllowedPattern": "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})", 
+      "AllowedPattern": "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})",
       "ConstraintDescription": "must be a valid IP CIDR range of the form x.x.x.x/x."
     },
     "NSGWANSubnetCIDR" :{
@@ -31,7 +31,6 @@
       "AllowedPattern": "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})",
       "ConstraintDescription": "must be a valid IP CIDR range of the form x.x.x.x/x."
     },
-
     "PrivateSubnetCIDR" : {
       "Type" : "String",
       "Description" : "Private subnet to launch VMs in",
@@ -40,10 +39,36 @@
       "Default": "10.1.30.0/24",
       "AllowedPattern": "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})",
       "ConstraintDescription": "must be a valid IP CIDR range of the form x.x.x.x/x."
+    },
+    "ProxyExternalIP" : {
+      "Type" : "String",
+      "Description" : "IP Address for the Proxy",
+      "MinLength": "7",
+      "MaxLength": "15"
+    },
+    "NSGvOnlyOnAWS" : {
+      "Type": "String",
+      "Description": "Whether to deploy all components on AWS or just the NSGv",
+      "AllowedValues": [
+        "true",
+        "false"
+      ],
+      "Default": "false",
+      "ConstraintDescription": "must specify either true or false"
     }
 
   },
 
+  "Conditions" : {
+    "NSGvConfig" : {
+      "Fn::Equals" : [
+        {
+          "Ref" : "NSGvOnlyOnAWS"
+        },
+        "true"
+      ]
+    }
+  },
   "Resources" : {
 
     "VPC" : {
@@ -156,7 +181,7 @@
         "GatewayId" : { "Ref" : "InternetGateway" }
       }
     },
-    
+
     "NSGWANSubnetRouteTableAssociation" : {
       "Type" : "AWS::EC2::SubnetRouteTableAssociation",
       "Properties" : {
@@ -174,7 +199,7 @@
         ]
       }
     },
-    
+
     "PrivateDefaultRoute" : {
       "Type" : "AWS::EC2::Route",
       "Properties" : {
@@ -213,7 +238,9 @@
           { "IpProtocol" : "udp", "FromPort" : "4789", "ToPort" : "4789", "CidrIp" : "0.0.0.0/0"},
           { "IpProtocol" : "udp", "FromPort" : "5770", "ToPort" : "5770", "CidrIp" : "0.0.0.0/0"},
           { "IpProtocol" : "47",  "CidrIp" : "0.0.0.0/0"},
-          { "IpProtocol" : "50",  "CidrIp" : "0.0.0.0/0"}
+          { "IpProtocol" : "50",  "CidrIp" : "0.0.0.0/0"},
+          { "IpProtocol" : "udp", "FromPort" : "53", "ToPort" : "53", "CidrIp" : "0.0.0.0/0"},
+          { "IpProtocol" : "icmp", "FromPort" : "-1", "ToPort" : "-1", "CidrIp" : "0.0.0.0/0"}
          ],
          "SecurityGroupEgress" : [
           { "IpProtocol" : "-1", "CidrIp" : "0.0.0.0/0"}
@@ -238,7 +265,34 @@
           { "Key" : "Name", "Value" :  { "Fn::Join" : ["-", [ { "Ref" : "AWS::StackName" }, "NSG-LAN-SG" ] ] } }
          ]
       }
-     }
+    },
+
+    "PrivateHostedZone" : {
+      "Type" : "AWS::Route53::HostedZone",
+      "Condition" : "NSGvConfig",
+      "Properties" : {
+        "Name" : "example.met",
+        "VPCs" : [
+          {
+            "VPCId": { "Ref" : "VPC" },
+            "VPCRegion" : { "Ref" : "AWS::Region" }
+          }
+        ]
+      }
+    },
+    "ProxyDNSRecord" : {
+      "Type" : "AWS::Route53::RecordSet",
+      "Condition" : "NSGvConfig",
+      "Properties" : {
+        "HostedZoneId" : { "Ref" : "PrivateHostedZone" },
+        "Name" : "nuh1.data.example.met.",
+        "Type" : "A",
+        "TTL" : "900",
+        "ResourceRecords" : [
+          { "Ref" : "ProxyExternalIP" }
+        ]
+      }
+    }
   },
 
   "Outputs" : {
@@ -254,9 +308,9 @@
       "Description" : "EC2 Network Interface Id to be used to attach the NSG LAN Interface to",
       "Value" :  { "Ref" : "NSGLANENI" }
     },
-    "NSGLANENIIP": { 
+    "NSGLANENIIP": {
       "Description" : "IP address that will be associated with the NSG LAN Interface",
       "Value" :  { "Fn::GetAtt" : [ "NSGLANENI" ,"PrimaryPrivateIpAddress" ] }
-    } 
+    }
   }
 }
