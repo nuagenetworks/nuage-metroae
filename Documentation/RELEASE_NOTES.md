@@ -18,6 +18,7 @@
 * Add VCIN SA upgrade support for Major Minor and Inplace Upgrade(METROAE-317)
 * Adding support for sending usage back to MetroAE team
 * Support for configuring NUH for stats-out proxy (METROAE-288)
+* Add plugin examples and documentation to MetroAE (METROAE-354)
 * Added support for instantiating and bootstrapping NSGv on AWS with VSP components deployed outside AWS (METROAE-355)
 
 ### Resolved Issues
