@@ -76,6 +76,7 @@
   remote_user: "{{ portal_default_username }}"
 
 - block:
+
   - name: Display if installing from a tarball
     debug:
       msg:
@@ -84,42 +85,21 @@
         - "*************************************************"
     when: not tomcat_running
 
-  - block:
+  - name: Copy image to Portal host
+    copy:
+      src: "{{ portal_path }}/{{ portal_file_name }}"
+      dest: /opt/
+      owner: root
+      group: root
+    when: not tomcat_loaded
 
-    - name: Copy image to Portal host
-      copy:
-        src: "{{ portal_path }}/{{ portal_file_name }}"
-        dest: /opt/
-        owner: root
-        group: root
-      when: not tomcat_loaded
+  - name: Load Portal Docker containers
+    command: docker load -i /opt/{{ portal_file_name }}
+    when: not tomcat_loaded
 
-    - name: Load Portal Docker containers
-      command: docker load -i /opt/{{ portal_file_name }}
-      when: not tomcat_loaded
-
-    - name: Execute tasks for Portal deploy
-      import_tasks: deploy.yml
-      when: not tomcat_running
-
-    when: not upgrade_portal|default(False)
-
-  - block:
-
-    - name: Copy upgrade image to Portal host
-      copy:
-        src: "{{ portal_upgrade_path }}/{{ portal_upgrade_file_name }}"
-        dest: /opt/
-        owner: root
-        group: root
-
-    - name: Load Portal Docker containers
-      command: docker load -i /opt/{{ portal_upgrade_file_name }}
-
-    - name: Execute tasks for Portal upgrade deploy
-      import_tasks: deploy.yml
-
-    when: upgrade_portal|default(False)
+  - name: Execute tasks for Portal deploy
+    import_tasks: deploy.yml
+    when: not tomcat_running
 
   when: portal_file_name is defined
   remote_user: "{{ portal_default_username }}"
