@@ -185,6 +185,20 @@ MetroAE defines a menuing system for workflows.  The menus organize content and 
 - *Forth item*: The parameter for the action.  This will almost always be the playbook name to issue.
 - *Fifth item*: The help level to show context-specific help.
 
+### Passing custom variables to plugin
+
+Another use-case of a plugin is to provide custom variables for a host to run custom tasks that require it to be used.
+
+The `medium` plugin should be able to achieve this functionality. This example can be found in `examples\plugin\medium` folder. In this example, a new user is added to the VSD. This new user is added via a custom variable `my_new_vsd_user` in the `newcredentials` schema file and is available for use in the custom playbooks and roles. Important thing to note here is the appending of credentials to the appropriate host_vars file as described here in the  
+
+```
+    - name: Append credentials to the component host vars
+      blockinfile:
+        path: "{{ inventory_dir }}/host_vars/{{ newcredentials.name }}"
+        block: "{{ lookup('file', '{{ inventory_dir }}/host_vars/newcredentials') }}"
+        insertafter: EOF
+```
+
 ### Package and Distribute Plugin
 
 Once all of the steps of plugin development have been successfully developed, the plugin can be packaged.  The packaging is described at the top of this document. The result of packaging is a zipped tarball.  The tarball can be distributed to users by any means.  The user can install or uninstall the plugin using the procedure defined at the top of this document.
