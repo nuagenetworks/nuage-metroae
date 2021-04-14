@@ -36,7 +36,7 @@
     command: cp /root/.ssh/id_rsa /opt/vnsportal/
   when:
     - inventory_hostname == portal1.hostname
-    - not upgrade_portal|default(False)
+    - not portal_upgrade|default(False)
 
 - block:
   - name: Add the Portal 1 pub key to Portal 2
@@ -54,13 +54,7 @@
     when: inventory_hostname == portal3.hostname
   when:
     - portal_sa_or_ha is match('ha')
-    - not upgrade_portal|default(False)
-
-- name: Execute the Portal configuration script
-  command: docker run -ti --rm -v /var/run/docker.sock:/docker.sock -v /opt/vnsportal:/mnt:z nuage/vnsportal-installer:{{ portal_version }} --skip
-  when:
-    - inventory_hostname == portal1.hostname
-    - not upgrade_portal|default(False)
+    - not portal_upgrade|default(False)
 
 - name: Execute the Portal configuration script
   command: docker run -ti --rm -v /var/run/docker.sock:/docker.sock -v /opt/vnsportal:/mnt:z nuage/vnsportal-installer:{{ portal_version }} --skip
