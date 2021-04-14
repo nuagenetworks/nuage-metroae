@@ -14,10 +14,6 @@
       uri: qemu:///system
     when: vm_name in virt_vms.list_vms
 
-  - name: Snapshot Portal VM
-    shell: "virsh snapshot-create-as {{ vm_name }} --name {{ vm_name }}-snapshot-{{ ansible_date_time.iso8601 }}"
-    when: not skip_portal_snapshot|default(False)
-
   - name: Wait for Portal VM to be shutdown
     virt:
       name: "{{ vm_name }}"
@@ -27,6 +23,10 @@
     until: portal_vm_status.status is match('shutdown')
     retries: 10
     delay: 5
+
+  - name: Snapshot Portal VM
+    shell: "virsh snapshot-create-as {{ vm_name }} --name {{ vm_name }}-snapshot-{{ ansible_date_time.iso8601 }}"
+    when: not skip_portal_snapshot|default(False)
 
   delegate_to: "{{ target_server }}"
   remote_user: "{{ target_server_username }}"

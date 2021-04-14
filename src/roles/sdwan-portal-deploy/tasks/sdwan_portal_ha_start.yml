@@ -8,7 +8,19 @@
   until: log_output.stdout.find("Ready for start up") != -1
   retries: 20
   delay: 5
-  when: inventory_hostname == portal1.hostname
+  when:
+    - inventory_hostname == portal1.hostname
+    - not portal_upgrade|default(False)
+
+- name: Wait for the Portal 1 bootstrap to complete
+  command: "docker logs vnsportal-cluster-bootstrap"
+  register: log_output
+  until: log_output.stdout.find("Synchronized with group, ready for connections") != -1
+  retries: 20
+  delay: 5
+  when:
+    - inventory_hostname == portal1.hostname
+    - portal_upgrade|default(False)
 
 - name: SD-WAN Portal 2 start up
   command: /opt/vnsportal/start.sh
