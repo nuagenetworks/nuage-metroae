@@ -38,9 +38,8 @@
 * Remove vstat-vsd-health role from vstat_health playbook (METROAE-322)
 * Removed extra DEBUG line from nsgv-postdeploy (METROAE-334)
 * Removed DEBUG tasks which are not working in upgrade shutdown playbooks ( METROAE-358)
-
-
 * Allowing metroae to continue execution if the vsd_continue_on_failure is set to true (METROAE-324)
+* Fix webfilter install required bridges issue (METROAE-371)
 
 ## Test Matrix
 
