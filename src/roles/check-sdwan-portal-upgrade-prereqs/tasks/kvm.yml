@@ -1,20 +1,33 @@
 - block:
 
+  - name: Ensure there are database backups within the last day (ignoring errors)
+    find:
+      paths: /opt/vnsportal/db-backups/
+      file_type: directory
+      recurse: no
+      age: -1d
+    register: db_backups
+    ignore_errors: true
+
   - block:
 
-    - name: Ensure there are database backups (ignoring errors)
-      find:
-        paths: '/opt/vnsportal/db-backups/'
-      register: db_backups
-      ignore_errors: true
+    - name: Get disk usage percentage
+      shell: df -PTh /opt/vnsportal/db-backups/ | awk '{if(NR>1)print $6}'
+      register: usage_percentage
+
+    - name: Clean usage output
+      set_fact:
+        usage_amount: "{{ usage_percentage|replace('%', '') }}"
+
+    - name: Assert that there is enough disk space available for database backup
+      assert:
+        that: "usage_amount|int <= {{ portal_maximum_disk_usage }}"
+        msg: "There is not enough free disk space to do a database backup."
 
     - name: Backup database if there are no backups
       shell: sh /etc/cron.daily/vnsportal-backup-cron
-      when:
-        - db_backups.matched == 0
-        - skip_portal_db_backup|default(false) != true
 
-    when: inventory_hostname == portal1.hostname
+    when: db_backups.matched == 0 or (db_backups.matched == 1 and db_backups.files is search('installer'))
 
   - include_role:
       name: sdwan-portal-health

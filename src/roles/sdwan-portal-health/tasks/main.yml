@@ -8,6 +8,30 @@
 
 - block:
 
+  - block:
+
+    - name: Get Docker log output
+      command: "docker logs vnsportal-cluster-bootstrap"
+      register: log_output
+
+    - name: Set fact for errors in docker logs
+      set_fact:
+        docker_log_failures: True
+      when: log_output.stdout.find("[ERROR]") != -1 or log_output.stderr.find("[ERROR]") != -1
+
+    - name: Check cluster health
+      shell: "/opt/vnsportal/cluster_check.sh {{ portal_database_default_username }} {{ portal_database_default_password }}"
+      no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
+
+    - name: Fail if there were errors in docker logs
+      fail:
+        msg: "There were errors during the portal upgrade. Check 'docker logs vnsportal-cluster-bootstrap' for more details. You can rollback to the previously installed Portal(s) using 'metroae rollback portal'"
+      when:
+        - log_output is defined
+        - docker_log_failures is defined and docker_log_failures
+
+    when: portal_sa_or_ha is match('ha')
+
   - name: Check Portal endpoint health
     uri:
       url: https://localhost/vnsportal/health
@@ -18,10 +42,5 @@
     until: curl_output.status == 200
     retries: 30
     delay: 5
-
-  - name: Check cluster health
-    shell: "/opt/vnsportal/cluster_check.sh {{ portal_database_default_username }} {{ portal_database_default_password }}"
-    no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
-    when: portal_sa_or_ha is match('ha')
 
   remote_user: "{{ portal_default_username }}"
