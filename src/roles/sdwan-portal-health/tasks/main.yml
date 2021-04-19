@@ -8,6 +8,30 @@
 
 - block:
 
+  - name: Check Portal endpoint health (ignoring errors)
+    uri:
+      url: https://localhost/vnsportal/health
+      method: GET
+      validate_certs: False
+    no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
+    register: curl_output
+    until: curl_output.status == 200
+    retries: 30
+    delay: 5
+    ignore_errors: true
+
+  - name: Set fact if unable to reach health endpoint
+    set_fact:
+      health_endpoint_unreachable: True
+    when: curl_output.status != 200
+
+  - name: Fail if health endpoint is unreachable
+    fail:
+      msg: "Health endpoint is unreachable. Please try again."
+    when:
+      - health_endpoint_unreachable is defined
+      - portal_sa_or_ha is match('sa')
+
   - block:
 
     - name: Get Docker log output
@@ -25,22 +49,9 @@
 
     - name: Fail if there were errors in docker logs
       fail:
-        msg: "There were errors during the portal upgrade. Check 'docker logs vnsportal-cluster-bootstrap' for more details. You can rollback to the previously installed Portal(s) using 'metroae rollback portal'"
-      when:
-        - log_output is defined
-        - docker_log_failures is defined and docker_log_failures
+        msg: "There were errors during the portal upgrade. Check 'docker logs vnsportal-cluster-bootstrap' for more details. You can roll back to the previously installed Portal(s) version using 'metroae rollback portal'"
+      when: docker_log_failures is defined or health_endpoint_unreachable is defined
 
     when: portal_sa_or_ha is match('ha')
-
-  - name: Check Portal endpoint health
-    uri:
-      url: https://localhost/vnsportal/health
-      method: GET
-      validate_certs: False
-    no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
-    register: curl_output
-    until: curl_output.status == 200
-    retries: 30
-    delay: 5
 
   remote_user: "{{ portal_default_username }}"
