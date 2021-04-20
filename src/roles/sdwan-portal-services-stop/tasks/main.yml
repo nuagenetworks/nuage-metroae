@@ -9,3 +9,16 @@
 - name: Stop Portal services
   shell: /opt/vnsportal/stop.sh
   remote_user: "{{ portal_default_username }}"
+
+- block:
+
+  - name: Delete the containers
+    shell: docker rm `docker ps -qa`
+
+  - name: Delete the images
+    shell: docker rmi -f `docker images -q`
+
+  - name: Delete the vnsportal directory
+    shell: rm -rf /opt/vnsportal
+
+  when: uninstall_portal|default(False)
