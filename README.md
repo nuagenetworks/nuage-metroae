@@ -1,10 +1,12 @@
 # Nuage Networks Metro Automation Engine (MetroAE)
 
-<<<<<<< HEAD
+
 Version: 4.3.3
-=======
+
 Version: 4.4.0
->>>>>>> dev
+
+Version: 4.4.0
+
 
 MetroAE is an automation engine that can be used to
 
@@ -43,6 +45,7 @@ File name | Description
 [AWS](Documentation/AWS.md) | Using MetroAE to deploy on Amazon Web Services (AWS)
 [TERRAFORM](Documentation/TERRAFORM.md) | Using the Terraform framework in conjunction with MetroAE
 [HOOKS_AND_SKIPACTIONS](Documentation/HOOKS_AND_SKIPACTIONS.md) | Configure ability to run custom commands in between playbooks and skip playbooks
+[PLUGINS](Documentation/PLUGINS.md) | Add or remove plugins to MetroAE
 [AUTOGENERATE_DEPLOYMENTS](Documentation/AUTOGENERATE_DEPLOYMENTS.md) | Generate MetroAE deployment configurations automatically via script
 [CONTRIBUTING](Documentation/CONTRIBUTING.md) | Contribute to MetroAE development
 [LICENSE](Documentation/LICENSE.md) | License statement for MetroAE

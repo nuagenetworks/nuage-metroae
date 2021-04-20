@@ -1,13 +1,9 @@
 #!/usr/bin/env bash
 set -e
 
-<<<<<<< HEAD
-METROAE_VERSION="4.3.2"
-SCRIPT_VERSION="1.2.2"
-=======
 METROAE_VERSION="4.4.0"
-SCRIPT_VERSION="1.2.1"
->>>>>>> dev
+SCRIPT_VERSION="1.3.0"
+
 MENU=()
 
 #################################################################################
@@ -91,6 +87,7 @@ fi
 if [[ -z $SETUP_FILE ]]; then
     SETUP_FILE=/opt/metroae/.metroae
 fi
+
 TAB_COMPLETION_SCRIPT=tab-completion-metroae.sh
 COMPLETION_DIR=/etc/bash_completion.d/
 CURRENT_DIR=`pwd`
@@ -1649,8 +1646,23 @@ function download_container_templates {
         write_to_screen_and_script_log ""
         exit 1
     fi
-    curl -O $TEMPLATE_TAR_LOCATION
-    curl -O $VSD_SPECIFICATIONS_LOCATION
+    {
+        curl -O $TEMPLATE_TAR_LOCATION &> /dev/null &&
+        curl -O $VSD_SPECIFICATIONS_LOCATION &> /dev/null
+    } || {
+        echo "Warning: Internet connection not detected from the container."
+        echo "MetroAE Config Templates and VSD Specification files were not downloaded."
+        echo "Please exit the container first and download the tar files from the provided URLs below."
+        echo "Download the MetroAE Config Template files from the following URL:"
+        echo "$TEMPLATE_TAR_LOCATION"
+        echo ""
+        echo "Download the VSD Specification files from the following URL:"
+        echo "$VSD_SPECIFICATIONS_LOCATION"
+        echo "Upon successful download of the two tar files"
+        echo "untar the files to: $METROAE_MOUNT_POINT"
+        echo ""
+        exit 0
+    }
     template_tar_file=$(basename $TEMPLATE_TAR_LOCATION)
     specs_tar_file=$(basename $VSD_SPECIFICATIONS_LOCATION)
     template_and_specs_tar_file="metroae_templates_specs.tar"
