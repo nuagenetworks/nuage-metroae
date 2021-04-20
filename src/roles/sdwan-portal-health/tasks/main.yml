@@ -34,14 +34,17 @@
 
   - block:
 
-    - name: Get Docker log output
-      command: "docker logs vnsportal-cluster-bootstrap"
-      register: log_output
+    - name: Check if cluster bootstrap log already exists
+      stat:
+        path: /tmp/vnsportal_cluster_bootstrap.log
+      register: cluster_bootstrap_log_exists
 
     - name: Set fact for errors in docker logs
       set_fact:
         docker_log_failures: True
-      when: log_output.stdout.find("[ERROR]") != -1 or log_output.stderr.find("[ERROR]") != -1
+      when:
+        - cluster_bootstrap_log_exists.stat.exists
+        - log_output.stdout.find("[ERROR]") != -1 or log_output.stderr.find("[ERROR]") != -1
 
     - name: Check cluster health
       shell: "/opt/vnsportal/cluster_check.sh {{ portal_database_default_username }} {{ portal_database_default_password }}"
