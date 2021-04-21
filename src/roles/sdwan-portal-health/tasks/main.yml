@@ -39,12 +39,18 @@
         path: /tmp/vnsportal_cluster_bootstrap.log
       register: cluster_bootstrap_log_exists
 
-    - name: Set fact for errors in docker logs
-      set_fact:
-        docker_log_failures: True
-      when:
-        - cluster_bootstrap_log_exists.stat.exists
-        - log_output.stdout.find("[ERROR]") != -1 or log_output.stderr.find("[ERROR]") != -1
+    - block:
+
+      - name: Collect output of cluster bootstrap log
+        shell: cat /tmp/vnsportal_cluster_bootstrap.log
+        register: cluster_bootstrap_log_contents
+
+      - name: Set fact for errors in docker logs
+        set_fact:
+          docker_log_failures: True
+        when: cluster_bootstrap_log_contents.stdout.find("[ERROR]") != -1
+
+      when: cluster_bootstrap_log_exists.stat.exists
 
     - name: Check cluster health
       shell: "/opt/vnsportal/cluster_check.sh {{ portal_database_default_username }} {{ portal_database_default_password }}"
