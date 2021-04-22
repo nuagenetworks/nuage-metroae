@@ -1,42 +1,50 @@
 - block:
-  - name: Create SD-WAN Portal directory
-    file:
-      path: /opt/vnsportal
-      state: directory
 
-  - name: Generate Portal config.yml file
-    template: src=config.j2 backup=no dest=/opt/vnsportal/config.yml
+  - block:
 
-  - name: Check if SSH keys are present locally
-    stat: path=/tmp/id_rsa
-    delegate_to: localhost
-    register: ssh_key
+    - name: Create SD-WAN Portal directory
+      file:
+        path: /opt/vnsportal
+        state: directory
 
-  - name: Generate SSH keys for Portal install
-    command: ssh-keygen -b 2048 -t rsa -f /tmp/id_rsa -q -N ""
-    delegate_to: localhost
-    when: not ssh_key.stat.exists
+    - name: Generate Portal config.yml file
+      template: src=config.j2 backup=no dest=/opt/vnsportal/config.yml
 
-  - name: Copy SSH keys to Portal host 1
-    copy:
-      src: "{{ item.src }}"
-      dest: "{{ item.dest }}"
-      mode: '0400'
-    with_items:
-      - { src: '/tmp/id_rsa', dest: '/root/.ssh/id_rsa'}
-      - { src: '/tmp/id_rsa.pub', dest: '/root/.ssh/id_rsa.pub'}
+    when: not portal_rollback|default(False)
 
-  - name: Add the public key to authorized_keys
-    shell: 'cat /root/.ssh/id_rsa.pub >> /root/.ssh/authorized_keys'
+  - block:
 
-  - name: Copy the public key to the SD-WAN Portal directory
-    command: cp /root/.ssh/id_rsa.pub /opt/vnsportal/
+    - name: Check if SSH keys are present locally
+      stat: path=/tmp/id_rsa
+      delegate_to: localhost
+      register: ssh_key
 
-  - name: Copy the private key to the SD-WAN Portal directory
-    command: cp /root/.ssh/id_rsa /opt/vnsportal/
-  when:
-    - inventory_hostname == portal1.hostname
-    - not portal_upgrade|default(False)
+    - name: Generate SSH keys for Portal install
+      command: ssh-keygen -b 2048 -t rsa -f /tmp/id_rsa -q -N ""
+      delegate_to: localhost
+      when: not ssh_key.stat.exists
+
+    - name: Copy SSH keys to Portal host 1
+      copy:
+        src: "{{ item.src }}"
+        dest: "{{ item.dest }}"
+        mode: '0400'
+      with_items:
+        - { src: '/tmp/id_rsa', dest: '/root/.ssh/id_rsa'}
+        - { src: '/tmp/id_rsa.pub', dest: '/root/.ssh/id_rsa.pub'}
+
+    - name: Add the public key to authorized_keys
+      shell: 'cat /root/.ssh/id_rsa.pub >> /root/.ssh/authorized_keys'
+
+    - name: Copy the public key to the SD-WAN Portal directory
+      command: cp /root/.ssh/id_rsa.pub /opt/vnsportal/
+
+    - name: Copy the private key to the SD-WAN Portal directory
+      command: cp /root/.ssh/id_rsa /opt/vnsportal/
+
+    when: not portal_upgrade|default(False)
+
+  when: inventory_hostname == portal1.hostname
 
 - block:
   - name: Add the Portal 1 pub key to Portal 2
