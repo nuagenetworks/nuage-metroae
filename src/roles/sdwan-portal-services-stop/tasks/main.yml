@@ -12,11 +12,21 @@
 
 - block:
 
-  - name: Delete the containers
-    shell: docker rm `docker ps -qa`
+  - name: Get all docker container IDs
+    shell: docker ps -qa
+    register: all_container_ids
 
-  - name: Delete the images
-    shell: docker rmi -f `docker images -q`
+  - name: Delete the docker containers
+    shell: "docker rm {{ item }}"
+    with_items: "{{ all_container_ids.stdout_lines }}"
+
+  - name: Get all docker image IDs
+    shell: docker images -q
+    register: all_image_ids
+
+  - name: Delete the docker images
+    shell: "docker rmi -f {{ item }}"
+    with_items: "{{ all_image_ids.stdout_lines }}"
 
   - name: Delete the vnsportal directory
     shell: rm -rf /opt/vnsportal
