@@ -8,9 +8,9 @@
     register: db_container_id
 
   - name: Check database status
-    shell: "docker exec -it {{ db_container_id }} mysql -u {{ portal_database_default_username }} -p{{ portal_database_default_password }} --execute="SHOW STATUS LIKE 'wsrep%';""
+    shell: "docker exec -it {{ db_container_id.stdout }} mysql -u {{ portal_database_default_username }} -p{{ portal_database_default_password }} --execute=\"SHOW STATUS LIKE 'wsrep%';\""
     register: database_cluster_status
-    until: database_cluster_status.stdout.find("ERROR") == -1
+    until: database_cluster_status.stdout.find("ERROR") == -1 and database_cluster_status.stdout.find("Synced") != -1
     retries: 10
     delay: 5
 
@@ -25,7 +25,7 @@
   - name: Check for expected cluster status
     set_fact:
       expected_cluster_status: True
-    when: "Primary" in cluster_status
+    when: '"Primary" in cluster_status'
 
   - name: Set fact for wsrep connected
     set_fact:
@@ -34,7 +34,7 @@
   - name: Check for expected wsrep connected
     set_fact:
       expected_wsrep_connected: True
-    when: "ON" in wsrep_connected
+    when: '"ON" in wsrep_connected'
 
   - name: Set fact for wsrep evs state
     set_fact:
@@ -43,7 +43,7 @@
   - name: Check for expected wsrep evs state
     set_fact:
       expected_wsrep_evs_state: True
-    when: "OPERATIONAL" in wsrep_evs_state
+    when: '"OPERATIONAL" in wsrep_evs_state'
 
   - name: Set fact for wsrep local state comment
     set_fact:
@@ -52,10 +52,10 @@
   - name: Check for expected wsrep local state comment
     set_fact:
       expected_wsrep_local_state_comment: True
-    when: "Synced" in wsrep_local_state_comment
+    when: '"Synced" in wsrep_local_state_comment'
 
   - name: Capture cluster bootstrap log output
-    shell: docker logs vnsportal-cluster-bootstrap | tee /tmp/vnsportal_cluster_bootstrap.log
+    shell: docker logs vnsportal-cluster-bootstrap >& /tmp/vnsportal_cluster_bootstrap.log
 
   when: inventory_hostname == portal1.hostname
 
