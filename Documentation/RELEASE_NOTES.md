@@ -43,6 +43,7 @@
 * Allowing metroae to continue execution if the vsd_continue_on_failure is set to true (METROAE-324)
 * Allowing metroae to continue execution if the vsd_continue_on_failure is set to true (METROAE-324)
 * Fix webfilter install required bridges issue (METROAE-371)
+* Added playbook and menu option to run security hardening on VSD after the VSD installation (METROAE-328)
 
 ## Test Matrix
 
