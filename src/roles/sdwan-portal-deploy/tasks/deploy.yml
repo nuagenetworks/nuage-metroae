@@ -56,6 +56,46 @@
     - portal_sa_or_ha is match('ha')
     - not portal_upgrade|default(False)
 
+- block:
+
+  - block:
+
+    - name: Get backup directory
+      find:
+        paths: "/tmp/{{ inventory_hostname }}/opt/vnsportal/db-backups/"
+        file_type: directory
+        recurse: no
+        excludes: 'installer'
+      register: db_backups
+
+    - name: Get latest backup directory
+      set_fact:
+        backup_dir: "{{ db_backups.files | sort(attribute='mtime', reverse=true) | first }}"
+
+    - name: Get latest backup directory name
+      set_fact:
+        backup_dir_name: "{{ backup_dir.path | basename }}"
+
+    delegate_to: localhost
+
+  - name: Copy vnsportal tarball to Portal
+    copy:
+      src: "/tmp/{{ inventory_hostname }}/opt/vnsportal/db-backups/{{ backup_dir_name }}/files/vnsportal.tar.gz"
+      dest: /tmp/
+
+  - name: Untar vnsportal tarball
+    shell: "tar xvzf /tmp/vnsportal.tar.gz"
+
+  - name: Copy config.yml file to /opt/vnsportal/
+    copy:
+      src: /tmp/opt/vnsportal/config.yml
+      dest: /opt/vnsportal/config.yml
+      remote_src: yes
+
+  when:
+    - portal_rollback|default(False)
+    - inventory_hostname == portal1.hostname
+
 - name: Execute the Portal configuration script
   command: docker run -ti --rm -v /var/run/docker.sock:/docker.sock -v /opt/vnsportal:/mnt:z nuage/vnsportal-installer:{{ portal_version }} --skip
   when: inventory_hostname == portal1.hostname
