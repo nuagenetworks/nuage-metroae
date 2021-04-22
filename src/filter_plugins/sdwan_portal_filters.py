@@ -17,16 +17,18 @@ import json
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+
 def string_name_value_helper(name, delimiter, string):
     ''' Matches "name <delimiter> <text_value>" in the string and returns <text_value>
     If no match, returns "None"
     '''
-    VALUE_RE = "\s*" + "\\"+delimiter + "\s*(\S+)\s+"
+    VALUE_RE = "\s*" + "\\" + delimiter + "\s*(\S+)\s+"
     scratch = re.search(name + VALUE_RE, string)
     if scratch:
         return scratch.group(1)
     else:
         return "None"
+
 
 def cluster_bootstrap_status_to_json(string):
     WSREP_CLUSTER_STATUS = "wsrep_cluster_status"
@@ -42,6 +44,7 @@ def cluster_bootstrap_status_to_json(string):
     dict[WSREP_LOCAL_STATE_COMMENT] = string_name_value_helper(WSREP_LOCAL_STATE_COMMENT, "|", string) + ","
 
     return json.dumps(dict)
+
 
 class FilterModule(object):
 
