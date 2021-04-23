@@ -35,6 +35,7 @@ def cluster_bootstrap_status_to_json(string):
     WSREP_CONNECTED = "wsrep_connected"
     WSREP_EVS_STATE = "wsrep_evs_state"
     WSREP_LOCAL_STATE_COMMENT = "wsrep_local_state_comment"
+    WSREP_READY = "wsrep_ready"
 
     dict = {}
 
@@ -42,6 +43,7 @@ def cluster_bootstrap_status_to_json(string):
     dict[WSREP_CONNECTED] = string_name_value_helper(WSREP_CONNECTED, "\\|", string) + ","
     dict[WSREP_EVS_STATE] = string_name_value_helper(WSREP_EVS_STATE, "\\|", string) + ","
     dict[WSREP_LOCAL_STATE_COMMENT] = string_name_value_helper(WSREP_LOCAL_STATE_COMMENT, "\\|", string) + ","
+    dict[WSREP_READY] = string_name_value_helper(WSREP_READY, "\\|", string) + ","
 
     return json.dumps(dict)
 
