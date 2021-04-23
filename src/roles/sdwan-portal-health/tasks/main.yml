@@ -8,6 +8,18 @@
 
 - block:
 
+  - name: Get running container IDs
+    shell: docker ps -q
+    register: all_running_container_ids
+
+  - name: Get all container IDs
+    shell: docker ps -qa
+    register: all_container_ids
+
+  - name: Set fact for exited container ID(s)
+    set_fact:
+      exited_container_ids: "{{ all_container_ids.stdout_lines | difference(all_running_container_ids.stdout_lines) }}"
+
   - name: Check Portal endpoint health (ignoring errors)
     uri:
       url: https://localhost/vnsportal/health
@@ -62,5 +74,10 @@
       when: docker_log_failures is defined or health_endpoint_unreachable is defined
 
     when: portal_sa_or_ha is match('ha')
+
+  - name: Fail if not all docker containers are running
+    fail:
+      msg: "Container(s) with ID(s): {{ exited_container_ids | list | to_json }} should be running."
+    when: exited_container_ids | length > 0
 
   remote_user: "{{ portal_default_username }}"
