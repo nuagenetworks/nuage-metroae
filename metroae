@@ -196,9 +196,11 @@ function  check_if_internal_user {
     if [[ $SKIP_UUID -eq $TRUE ]]; then
         debug "${FUNCNAME[0]}: Using existing UUID $UUID"
     else
+        set +e
         int_user_check=`ping -c 5 github.mv.usa.alcatel.com 2>&1`
-        debug "${FUNCNAME[0]} $int_user_check"
         SKIP_UUID=$?
+        set -e
+        debug "${FUNCNAME[0]} $int_user_check"
 
         if [[ $SKIP_UUID -eq $FALSE ]]; then
             echo ""
@@ -209,7 +211,7 @@ function  check_if_internal_user {
                 write_to_screen_and_script_log "Just remove file src/$UUID_FILE to opt out later"
             else
                 write_to_screen_and_script_log "Just remove file $METROAE_MOUNT_POINT/$UUID_FILE to opt out later"
-	    fi
+            fi
             echo ""
 
             declare -l continue_confirm
