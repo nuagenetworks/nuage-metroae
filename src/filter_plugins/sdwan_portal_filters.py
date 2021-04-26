@@ -48,9 +48,31 @@ def cluster_bootstrap_status_to_json(string):
     return json.dumps(dict)
 
 
+def cluster_status_to_json(string):
+    WSREP_CONNECTED = "wsrep_connected"
+    WSREP_LOCAL_STATE_COMMENT = "wsrep_local_state_comment"
+    WSREP_READY = "wsrep_ready"
+
+    WSREP_CLUSTER_SIZE = "wsrep_cluster_size"
+    WSREP_CLUSTER_STATUS = "wsrep_cluster_status"
+    WSREP_INCOMING_ADDRESSES = "wsrep_incoming_addresses"
+
+    dict = {}
+
+    dict[WSREP_CONNECTED] = string_name_value_helper(WSREP_CONNECTED, "\\|", string) + ","
+    dict[WSREP_LOCAL_STATE_COMMENT] = string_name_value_helper(WSREP_LOCAL_STATE_COMMENT, "\\|", string) + ","
+    dict[WSREP_READY] = string_name_value_helper(WSREP_READY, "\\|", string) + ","
+    dict[WSREP_CLUSTER_SIZE] = string_name_value_helper(WSREP_CLUSTER_SIZE, "\\|", string) + ","
+    dict[WSREP_CLUSTER_STATUS] = string_name_value_helper(WSREP_CLUSTER_STATUS, "\\|", string) + ","
+    dict[WSREP_INCOMING_ADDRESSES] = string_name_value_helper(WSREP_INCOMING_ADDRESSES, "\\|", string) + ","
+
+    return json.dumps(dict)
+
+
 class FilterModule(object):
 
     def filters(self):
         return {
-            'cluster_bootstrap_status_to_json': cluster_bootstrap_status_to_json
+            'cluster_bootstrap_status_to_json': cluster_bootstrap_status_to_json,
+            'cluster_status_to_json': cluster_status_to_json
         }

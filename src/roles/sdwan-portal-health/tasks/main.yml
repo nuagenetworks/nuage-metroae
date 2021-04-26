@@ -67,6 +67,68 @@
     - name: Check cluster health
       shell: "/opt/vnsportal/cluster_check.sh {{ portal_database_default_username }} {{ portal_database_default_password }}"
       no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
+      register: cluster_check
+
+    - name: Clean cluster check health output
+      set_fact:
+        cluster_health_json: "{{ cluster_check.stdout | cluster_status_to_json }}"
+
+    - name: Set fact for wsrep connected
+      set_fact:
+        wsrep_connected: "{{ cluster_health_json['wsrep_connected'] }}"
+
+    - name: Check for expected wsrep connected
+      set_fact:
+        expected_wsrep_connected: True
+      when: '"ON" in wsrep_connected'
+
+    - name: Set fact for wsrep local state
+      set_fact:
+        wsrep_local_state_comment: "{{ cluster_health_json['wsrep_local_state_comment'] }}"
+
+    - name: Check for expected wsrep local state
+      set_fact:
+        expected_wsrep_local_state_comment: True
+      when: '"SYNCED" in wsrep_local_state_comment'
+
+    - name: Set fact for wsrep ready
+      set_fact:
+        wsrep_ready: "{{ cluster_health_json['wsrep_ready'] }}"
+
+    - name: Check for expected wsrep ready
+      set_fact:
+        expected_wsrep_ready: True
+      when: '"ON" in wsrep_ready'
+
+    - name: Set fact for wsrep cluster size
+      set_fact:
+        wsrep_cluster_size: "{{ cluster_health_json['wsrep_cluster_size'] }}"
+
+    - name: Check for expected wsrep cluster size
+      set_fact:
+        expected_wsrep_cluster_size: True
+      when: portals|length in wsrep_cluster_size
+
+    - name: Set fact for wsrep cluster status
+      set_fact:
+        wsrep_cluster_status: "{{ cluster_health_json['wsrep_cluster_status'] }}"
+
+    - name: Check for expected wsrep cluster status
+      set_fact:
+        expected_wsrep_cluster_status: True
+      when: '"PRIMARY" in wsrep_cluster_status'
+
+    - name: Set fact for wsrep incoming addresses
+      set_fact:
+        wsrep_incoming_addresses: "{{ cluster_health_json['wsrep_incoming_addresses'] }}"
+
+    - name: Check for expected wsrep_incoming_addresses
+      set_fact:
+        expected_wsrep_incoming_addresses: True
+      when:
+        - portal1.mgmt_ip in wsrep_incoming_addresses
+        - portal2.mgmt_ip in wsrep_incoming_addresses
+        - portal3.mgmt_ip in wsrep_incoming_addresses
 
     - name: Fail if there were errors in docker logs
       fail:
