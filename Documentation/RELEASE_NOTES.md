@@ -2,44 +2,16 @@
 
 ## Release info
 
-* MetroAE Version 4.4.0
+* MetroAE Version 4.4.1
 * Nuage Release Alignment 20.10
-* Date of Release 14-April-2021
+* Date of Release 28-April-2021
 
 ## Release Contents
 
 ### Feature Enhancements
-* Fix up the image paths to root at /metroae_data/ when in the container
-* Added support for bootstraping NSGv using NUH external interfaces
-* Support multiple KVM bridges for NUH external interfaces
-* Added multi cpu core support for NSGV (METROAE-309)
-* Improve VSD security hardening to monitor service shutdown (METROAE-285)
-* Add next-hop to VSC VPRN config (METROAE-319)
-* Add VCIN SA upgrade support for Major Minor and Inplace Upgrade(METROAE-317)
-* Adding support for sending usage back to MetroAE team
-* Support for configuring NUH for stats-out proxy (METROAE-288)
-* Add plugin examples and documentation to MetroAE (METROAE-354)
-* Added support for instantiating and bootstrapping NSGv on AWS with VSP components deployed outside AWS (METROAE-355)
 
 ### Resolved Issues
-* Enhance several license file descriptions to include the file name
-* Updated SDWAN portal to support 20.11 version
-* Force rebuild after missing files (METROAE-298)
-* Updated SDWAN portal unzip task to copy the container tar file to correct folder
-* Fixed VSD deploy task to be idempotent (METROAE-304)
-* Fixed sshpass quotes for passwords that has special characters (METROAE-312)
-* Add option to override VSC config (METROAE-314)
-* Allow portal install without VSTAT fqdn (METROAE-301)
-* Fix VSR deploy errors (METROAE-310)
-* Fix vsd-install script parameters (METROAE-347)
-* Fix DNS dns_mgmt and dns_data to relax requirement of having specific length. (METROAE-315)
-* Add vstat-health role to vstat_health playbook (METROAE-322)
-* Hide log output in vsd-node-info (METROAE-332)
-* Remove vstat-vsd-health role from vstat_health playbook (METROAE-322)
-* Removed extra DEBUG line from nsgv-postdeploy (METROAE-334)
-* Removed DEBUG tasks which are not working in upgrade shutdown playbooks ( METROAE-358)
-* Allowing metroae to continue execution if the vsd_continue_on_failure is set to true (METROAE-324)
-* Fix webfilter install required bridges issue (METROAE-371)
+* Fixed failing phone home internal user check when unable to ping local github
 
 ## Test Matrix
 
@@ -59,7 +31,7 @@ INSTALL    | GCP             | HA-5.4.1
 INSTALL    | GCP             | HA-6.0.3            
 INSTALL    | GCP             | SA-20.10.R1         
 INSTALL    | GCP             | SA-20.10.R1-ACTIVE-STANDBY-ES
-INSTALL    | GCP             | SA-20.10.R1-ADD-VSC 
+INSTALL    | GCP             | SA-20.10.R1-ADD-VSC
 INSTALL    | GCP             | SA-20.10.R1-CONTAINER
 INSTALL    | GCP             | SA-20.10.R1-CPU-CORE
 INSTALL    | GCP             | SA-20.10.R1-CPU-CORES-CPU_PINNING
@@ -68,7 +40,7 @@ INSTALL    | GCP             | SA-20.10.R1-E2E
 INSTALL    | GCP             | SA-20.10.R1-E2E-MUTLI-UPLINKS
 INSTALL    | GCP             | SA-20.10.R1-FEATURES
 INSTALL    | GCP             | SA-20.10.R1-IPV6    
-INSTALL    | GCP             | SA-20.10.R1-PLUGINS 
+INSTALL    | GCP             | SA-20.10.R1-PLUGINS
 INSTALL    | GCP             | SA-20.10.R1-TERRAFORM
 INSTALL    | GCP             | SA-5.4.1            
 INSTALL    | GCP             | SA-6.0.3            
