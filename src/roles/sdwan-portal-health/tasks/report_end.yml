@@ -15,9 +15,10 @@
       attachments: "{{ report_path }}"
       email_body: Results from SD-WAN Portal health
 
-  - name: Check if there are errors in the report file
+  - name: Check if there are errors in the report file (ignoring errors)
     shell: "grep ERROR {{ report_path }}"
     register: errors_in_report_file
+    ignore_errors: yes
 
   - block:
 
@@ -28,6 +29,6 @@
       fail:
         msg: "We encountered some unexpected values/results when doing the health checks. Please check the {{ report_path }} log file for more information. It has also been printed to the screen for your convenience."
 
-    when: errors_in_report_file|length > 0
+    when: errors_in_report_file.stdout|length > 0
 
   delegate_to: localhost

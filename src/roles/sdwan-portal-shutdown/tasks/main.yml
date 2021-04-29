@@ -7,6 +7,10 @@
     virt: command=list_vms
     register: virt_vms
 
+  - name: Snapshot Portal VM
+    shell: "virsh snapshot-create-as {{ vm_name }} --name {{ vm_name }}-snapshot-{{ ansible_date_time.iso8601 }}"
+    when: not skip_portal_snapshot|default(False)
+
   - name: Shutdown Portal VM
     virt:
       name: "{{ vm_name }}"
@@ -23,10 +27,6 @@
     until: portal_vm_status.status is match('shutdown')
     retries: 10
     delay: 5
-
-  - name: Snapshot Portal VM
-    shell: "virsh snapshot-create-as {{ vm_name }} --name {{ vm_name }}-snapshot-{{ ansible_date_time.iso8601 }}"
-    when: not skip_portal_snapshot|default(False)
 
   delegate_to: "{{ target_server }}"
   remote_user: "{{ target_server_username }}"
