@@ -39,11 +39,11 @@ def cluster_bootstrap_status_to_json(string):
 
     dict = {}
 
-    dict[WSREP_CLUSTER_STATUS] = string_name_value_helper(WSREP_CLUSTER_STATUS, "\\|", string) + ","
-    dict[WSREP_CONNECTED] = string_name_value_helper(WSREP_CONNECTED, "\\|", string) + ","
-    dict[WSREP_EVS_STATE] = string_name_value_helper(WSREP_EVS_STATE, "\\|", string) + ","
-    dict[WSREP_LOCAL_STATE_COMMENT] = string_name_value_helper(WSREP_LOCAL_STATE_COMMENT, "\\|", string) + ","
-    dict[WSREP_READY] = string_name_value_helper(WSREP_READY, "\\|", string) + ","
+    dict[WSREP_CLUSTER_STATUS] = string_name_value_helper(WSREP_CLUSTER_STATUS, "\\|", string)
+    dict[WSREP_CONNECTED] = string_name_value_helper(WSREP_CONNECTED, "\\|", string)
+    dict[WSREP_EVS_STATE] = string_name_value_helper(WSREP_EVS_STATE, "\\|", string)
+    dict[WSREP_LOCAL_STATE_COMMENT] = string_name_value_helper(WSREP_LOCAL_STATE_COMMENT, "\\|", string)
+    dict[WSREP_READY] = string_name_value_helper(WSREP_READY, "\\|", string)
 
     return json.dumps(dict)
 
@@ -59,12 +59,12 @@ def cluster_status_to_json(string):
 
     dict = {}
 
-    dict[WSREP_CONNECTED] = string_name_value_helper(WSREP_CONNECTED, "\\|", string) + ","
-    dict[WSREP_LOCAL_STATE_COMMENT] = string_name_value_helper(WSREP_LOCAL_STATE_COMMENT, "\\|", string) + ","
-    dict[WSREP_READY] = string_name_value_helper(WSREP_READY, "\\|", string) + ","
-    dict[WSREP_CLUSTER_SIZE] = string_name_value_helper(WSREP_CLUSTER_SIZE, "\\|", string) + ","
-    dict[WSREP_CLUSTER_STATUS] = string_name_value_helper(WSREP_CLUSTER_STATUS, "\\|", string) + ","
-    dict[WSREP_INCOMING_ADDRESSES] = string_name_value_helper(WSREP_INCOMING_ADDRESSES, "\\|", string) + ","
+    dict[WSREP_CONNECTED] = string_name_value_helper(WSREP_CONNECTED, "\\|", string)
+    dict[WSREP_LOCAL_STATE_COMMENT] = string_name_value_helper(WSREP_LOCAL_STATE_COMMENT, "\\|", string)
+    dict[WSREP_READY] = string_name_value_helper(WSREP_READY, "\\|", string)
+    dict[WSREP_CLUSTER_SIZE] = string_name_value_helper(WSREP_CLUSTER_SIZE, "\\|", string)
+    dict[WSREP_CLUSTER_STATUS] = string_name_value_helper(WSREP_CLUSTER_STATUS, "\\|", string)
+    dict[WSREP_INCOMING_ADDRESSES] = string_name_value_helper(WSREP_INCOMING_ADDRESSES, "\\|", string)
 
     return json.dumps(dict)
 

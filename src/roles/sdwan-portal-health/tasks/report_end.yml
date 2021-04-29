@@ -1,0 +1,33 @@
+- block:
+
+  - name: Write separator to report file
+    nuage_append: filename="{{ report_path }}" text="================================================================================\n"
+
+  - name: Write footer to report file
+    nuage_append: filename="{{ report_path }}" text="SD-WAN Portal Health Report End\n"
+
+  - name: Email SD-WAN Portal health report
+    include_role:
+      name: common
+      tasks_from: email-health-reports
+    vars:
+      email_subject: MetroAE SD-WAN Portal Health Results
+      attachments: "{{ report_path }}"
+      email_body: Results from SD-WAN Portal health
+
+  - name: Check if there are errors in the report file
+    shell: "grep ERROR {{ report_path }}"
+    register: errors_in_report_file
+
+  - block:
+
+    - name: Print the contents of the report file
+      shell: "cat {{ report_path }}"
+
+    - name: Fail if there are errors in the report file
+      fail:
+        msg: "We encountered some unexpected values/results when doing the health checks. Please check the {{ report_path }} log file for more information. It has also been printed to the screen for your convenience."
+
+    when: errors_in_report_file|length > 0
+
+  delegate_to: localhost
