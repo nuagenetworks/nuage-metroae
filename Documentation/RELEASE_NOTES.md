@@ -4,7 +4,7 @@
 
 * MetroAE Version 4.4.0
 * Nuage Release Alignment 20.10
-* Date of Release 14-April-2021s
+* Date of Release 14-April-2021
 
 ## Release Contents
 
@@ -38,9 +38,6 @@
 * Remove vstat-vsd-health role from vstat_health playbook (METROAE-322)
 * Removed extra DEBUG line from nsgv-postdeploy (METROAE-334)
 * Removed DEBUG tasks which are not working in upgrade shutdown playbooks ( METROAE-358)
-* Updated and Reorder Pip requirements because of pip package version changes
-* Fix MetroAE setup error for setuptools install
-* Allowing metroae to continue execution if the vsd_continue_on_failure is set to true (METROAE-324)
 * Allowing metroae to continue execution if the vsd_continue_on_failure is set to true (METROAE-324)
 * Fix webfilter install required bridges issue (METROAE-371)
 * Added playbook and menu option to run security hardening on VSD after the VSD installation (METROAE-328)
