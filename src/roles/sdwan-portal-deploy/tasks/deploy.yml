@@ -1,50 +1,40 @@
 - block:
 
-  - block:
+  - name: Create SD-WAN Portal directory
+    file:
+      path: /opt/vnsportal
+      state: directory
 
-    - name: Create SD-WAN Portal directory
-      file:
-        path: /opt/vnsportal
-        state: directory
+  - name: Generate Portal config.yml file
+    template: src=config.j2 backup=no dest=/opt/vnsportal/config.yml
 
-    - name: Generate Portal config.yml file
-      template: src=config.j2 backup=no dest=/opt/vnsportal/config.yml
+  - name: Check if SSH keys are present locally
+    stat: path=/tmp/id_rsa
+    delegate_to: localhost
+    register: ssh_key
 
-    when: not portal_rollback|default(False)
+  - name: Generate SSH keys for Portal install
+    command: ssh-keygen -b 2048 -t rsa -f /tmp/id_rsa -q -N ""
+    delegate_to: localhost
+    when: not ssh_key.stat.exists
 
-  - block:
+  - name: Copy SSH keys to Portal host 1
+    copy:
+      src: "{{ item.src }}"
+      dest: "{{ item.dest }}"
+      mode: '0400'
+    with_items:
+      - { src: '/tmp/id_rsa', dest: '/root/.ssh/id_rsa'}
+      - { src: '/tmp/id_rsa.pub', dest: '/root/.ssh/id_rsa.pub'}
 
-    - name: Check if SSH keys are present locally
-      stat: path=/tmp/id_rsa
-      delegate_to: localhost
-      register: ssh_key
+  - name: Add the public key to authorized_keys
+    shell: 'cat /root/.ssh/id_rsa.pub >> /root/.ssh/authorized_keys'
 
-    - name: Generate SSH keys for Portal install
-      command: ssh-keygen -b 2048 -t rsa -f /tmp/id_rsa -q -N ""
-      delegate_to: localhost
-      when: not ssh_key.stat.exists
+  - name: Copy the public key to the SD-WAN Portal directory
+    command: cp /root/.ssh/id_rsa.pub /opt/vnsportal/
 
-    - name: Copy SSH keys to Portal host 1
-      copy:
-        src: "{{ item.src }}"
-        dest: "{{ item.dest }}"
-        mode: '0400'
-      with_items:
-        - { src: '/tmp/id_rsa', dest: '/root/.ssh/id_rsa'}
-        - { src: '/tmp/id_rsa.pub', dest: '/root/.ssh/id_rsa.pub'}
-
-    - name: Add the public key to authorized_keys
-      shell: 'cat /root/.ssh/id_rsa.pub >> /root/.ssh/authorized_keys'
-
-    - name: Copy the public key to the SD-WAN Portal directory
-      command: cp /root/.ssh/id_rsa.pub /opt/vnsportal/
-
-    - name: Copy the private key to the SD-WAN Portal directory
-      command: cp /root/.ssh/id_rsa /opt/vnsportal/
-
-    when:
-      - not portal_upgrade|default(False)
-      - not portal_rollback|default(False)
+  - name: Copy the private key to the SD-WAN Portal directory
+    command: cp /root/.ssh/id_rsa /opt/vnsportal/
 
   when: inventory_hostname == portal1.hostname
 
@@ -64,50 +54,6 @@
     when: inventory_hostname == portal3.hostname
   when:
     - portal_sa_or_ha is match('ha')
-    - not portal_upgrade|default(False)
-    - not portal_rollback|default(False)
-
-- block:
-
-  - block:
-
-    - name: Get backup directory
-      find:
-        paths: "/tmp/{{ inventory_hostname }}/opt/vnsportal/db-backups/"
-        file_type: directory
-        recurse: no
-        excludes: 'installer'
-      register: db_backups
-
-    - name: Get latest backup directory
-      set_fact:
-        backup_dir: "{{ db_backups.files | sort(attribute='mtime', reverse=true) | first }}"
-
-    - name: Get latest backup directory name
-      set_fact:
-        backup_dir_name: "{{ backup_dir.path | basename }}"
-
-    delegate_to: localhost
-
-  - name: Copy vnsportal tarball to Portal
-    copy:
-      src: "/tmp/{{ inventory_hostname }}/opt/vnsportal/db-backups/{{ backup_dir_name }}/files/vnsportal.tar.gz"
-      dest: /tmp/
-
-  - name: Untar vnsportal tarball
-    shell: "tar xvzf vnsportal.tar.gz"
-    args:
-      chdir: /tmp/
-
-  - name: Copy config.yml file to /opt/vnsportal/
-    copy:
-      src: /tmp/opt/vnsportal/config.yml
-      dest: /opt/vnsportal/config.yml
-      remote_src: yes
-
-  when:
-    - portal_rollback|default(False)
-    - inventory_hostname == portal1.hostname
 
 - name: Execute the Portal configuration script
   command: docker run -ti --rm -v /var/run/docker.sock:/docker.sock -v /opt/vnsportal:/mnt:z nuage/vnsportal-installer:{{ portal_version }} --skip
