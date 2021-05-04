@@ -14,55 +14,6 @@
     retries: 10
     delay: 5
 
-  - name: Clean output
-    set_fact:
-      cluster_bootstrap_json: "{{ database_cluster_status.stdout | cluster_bootstrap_status_to_json }}"
-
-  - name: Set fact for cluster status
-    set_fact:
-      cluster_status: "{{ cluster_bootstrap_json['wsrep_cluster_status'] }}"
-
-  - name: Check for expected cluster status
-    set_fact:
-      expected_cluster_status: True
-    when: '"Primary" in cluster_status'
-
-  - name: Set fact for wsrep connected
-    set_fact:
-      wsrep_connected: "{{ cluster_bootstrap_json['wsrep_connected'] }}"
-
-  - name: Check for expected wsrep connected
-    set_fact:
-      expected_wsrep_connected: True
-    when: '"ON" in wsrep_connected'
-
-  - name: Set fact for wsrep evs state
-    set_fact:
-      wsrep_evs_state: "{{ cluster_bootstrap_json['wsrep_evs_state'] }}"
-
-  - name: Check for expected wsrep evs state
-    set_fact:
-      expected_wsrep_evs_state: True
-    when: '"OPERATIONAL" in wsrep_evs_state'
-
-  - name: Set fact for wsrep local state comment
-    set_fact:
-      wsrep_local_state_comment: "{{ cluster_bootstrap_json['wsrep_local_state_comment'] }}"
-
-  - name: Check for expected wsrep local state comment
-    set_fact:
-      expected_wsrep_local_state_comment: True
-    when: '"Synced" in wsrep_local_state_comment'
-
-  - name: Set fact for wsrep_ready
-    set_fact:
-      wsrep_ready: "{{ cluster_bootstrap_json['wsrep_ready'] }}"
-
-  - name: Check for expected wsrep ready status
-    set_fact:
-      expected_wsrep_ready: True
-    when: '"ON" in wsrep_ready'
-
   - name: Capture cluster bootstrap log output
     shell: docker logs vnsportal-cluster-bootstrap |& tee vnsportal_cluster_bootstrap.log
 
