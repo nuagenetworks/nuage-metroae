@@ -10,6 +10,14 @@ Note that if your existing VSP components were not installed using MetroAE or we
 
 By default, the special enterprise called Shared Infrastructure is created on the VSD. When putting domains in maintenance mode prior to an upgrade, MetroAE skips Shared Infrastructure domains because they cannot be modified.
 
+### Patch Upgrade for VSD, while installing VSD
+A inplace upgrade can be carried out during the installation of the VSD cluster. The VSDs are installed and patch will be performed directly if the [vsd_install_inplace_upgrade] is set to true. The migration ISO wil be mounted and the migration script will be executed after the successful installation of VSD. A VSD inplace upgrade during the installation is:
+
+* Supported beginning in VSD version 5.4.1.
+* The [upgrade_from_version] variable must be set to main version of VSD i.e. 5.4.1,6.0.3 or 20.10.R1 and [upgrade_to_version] variable must be set to respactive patch versions i.e for 5.4.1 it could be 5.4.1u1, for 6.0.3 it could be 6.0.5, for 20.10.R1 it could be 20.10.R2 etc.
+
+Note that to upgrade VSDs during the installation it can be done using `install everything`, `install vsds` commands.
+
 ### Patch Upgrade for VSD, AKA in-place upgrade
 
 A patch upgrade is applicable to the VSD cluster when upgrading from one 'u' release to another. A patch upgrade is also referred to as an in-place upgrade. The existing VSDs will remain in service. The migration ISO will be mounted and the migration script will be executed on each VSD. A patch upgrade is:
