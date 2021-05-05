@@ -41,6 +41,8 @@
 * Removed DEBUG tasks which are not working in upgrade shutdown playbooks ( METROAE-358)
 * Allowing metroae to continue execution if the vsd_continue_on_failure is set to true (METROAE-324)
 * Fix webfilter install required bridges issue (METROAE-371)
+* Added playbook for portal deployment, this is deployemnt in an already created VMs for portal (METROAE-273)
+
 
 ## Test Matrix
 
