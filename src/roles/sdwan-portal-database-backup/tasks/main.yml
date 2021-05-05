@@ -1,3 +1,11 @@
+- name: Create SD-WAN Portal backup directory on localhost
+  include_role:
+    name: common
+    tasks_from: create-backup-dir
+  vars:
+    backup_component_name: portal
+    backup_host_name: "{{ inventory_hostname }}"
+
 - block:
 
   - name: Ensure there are database backups within the last day (ignoring errors)
@@ -49,7 +57,20 @@
   - name: Copy database backup to MetroAE host
     fetch:
       src: "{{ item.path }}"
-      dest: /tmp/
+      dest: "{{ localhost_component_backup_dir }}"
     with_items: "{{ latest_backup_files.files }}"
+
+  - name: Remove any old symbolic link to backup location
+    file:
+      path: "{{ metro_backup_root }}/backup-latest-upgrade-portal"
+      state: absent
+    delegate_to: localhost
+
+  - name: Create symbolic link to backup location
+    file:
+      dest: "{{ metro_backup_root }}/backup-latest-upgrade-portal"
+      src: "{{ localhost_component_backup_dir }}"
+      state: link
+    delegate_to: localhost
 
   remote_user: "{{ portal_default_username }}"
