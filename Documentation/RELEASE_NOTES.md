@@ -40,6 +40,7 @@
 * Removed DEBUG tasks which are not working in upgrade shutdown playbooks ( METROAE-358)
 * Allowing metroae to continue execution if the vsd_continue_on_failure is set to true (METROAE-324)
 * Fix webfilter install required bridges issue (METROAE-371)
+* Fixed NSG package Unzipped Twice (METROAE-415)
 
 ## Test Matrix
 
