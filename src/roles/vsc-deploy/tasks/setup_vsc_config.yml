@@ -24,7 +24,7 @@
       src: "{{ config_template }}"
       backup: no
       dest: "{{ tmp_dir_name }}/{{ config_file_name }}"
-    when: 
+    when:
       - not restore_vsc | default(False)
       - not override_vsc_config
 
@@ -56,6 +56,8 @@
 
     when: restore_vsc | default(False)
 
+  - meta: reset_connection
+
   - name: Wait for VSC ssh to be ready before config
     include_role:
       name: common
@@ -78,7 +80,7 @@
       sshpass -p'{{ vsc_password | default(vsc_default_password) }}' scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null
       {{ proxy_conf | default('') }} {{ tmp_dir_name }}/{{ config_file_name }} {{ vsc_username | default(vsc_default_username) }}@{{ mgmt_ip }}:
     no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
-    when: 
+    when:
       - not mgmt_ip | ipv6
       - not override_vsc_config
 
