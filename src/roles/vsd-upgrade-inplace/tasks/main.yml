@@ -4,6 +4,29 @@
     tasks_from: monit_status
   vars:
     no_report: "True"
+  when: not vsd_install_inplace_upgrade | default (False)
+
+- block:
+
+  - block:
+
+    - name: getting migration scripts path for patch version
+      include_role:
+        name: common
+        tasks_from: find-file.yml
+      vars:
+        pattern: "VSD-migration-scripts-*.iso"
+        dir_name: /home/caso/nuage-images/vsd/migration
+
+    delegate_to: localhost
+    
+
+  - name: setting fact for migration file
+    set_fact:
+      vsd_migration_iso_path: "{{ file_path }}"
+      vsd_migration_iso_file_name: "{{ file_name }}"
+  
+  when: vsd_install_inplace_upgrade | default (False)
 
 - block:
 
