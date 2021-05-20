@@ -70,6 +70,10 @@
           set_fact:
             inplace: "{{ inplace_upgrade | default(false) }}"
 
+        - name: Set if patching to 20.10.R4
+          set_fact:
+            to_patch_2010R4: "{{ patch_2010R4 | default(false) }}"
+
         - include_role:
             name: build
 
@@ -81,16 +85,16 @@
 
       when: is_deployment_changed
 
-    - name: checking for the inventory file 
+    - name: checking for the inventory file
       stat:
         path: "{{ inventory_dir }}/group_vars/all"
       register: group_vars_file
       ignore_errors: True
 
-    - name: Print message about inventory file present or not 
+    - name: Print message about inventory file present or not
       assert:
         that:
-          - group_vars_file.stat.exists 
+          - group_vars_file.stat.exists
         fail_msg: "{{ inventory_dir }}/group_vars/all file does not exist"
         success_msg: "{{ inventory_dir }}/group_vars/all file exist"
 
