@@ -12,20 +12,19 @@
         that: vsd_migration_iso_file_name != "MISSING"
         msg: "vsd_migration_iso_file_name not defined. Please define it and try again."
 
-    - name: Lets run VSD inplace upgrade hooks
-      include_role:
-        name: hooks
-        tasks_from: main
-      vars:
-        - hooks_file_path: "{{ hook }}"
-        - hook_location:
-          - vsd_inplace_upgrade_nodes
-      loop: "{{ hooks | default([]) }}"
-      loop_control:
-        loop_var: hook
-
     - name: Set Fact for 20.10.R4 Patch
       set_fact:
         patch_to_2010R4: True
   roles:
     - vsd-upgrade-inplace
+
+- hosts: vsd_inplace_upgrade_2010R4_nodes[1]:vsd_inplace_upgrade_2010R4_nodes[2]
+  gather_facts: no
+  serial: 1
+  tasks:
+    - name: Allow XMPP Connections to Nodes 2 and 3 for 20.10.R4 upgrade
+      include_role:
+        name: common
+        tasks_from: allow-xmpp-connections
+      vars:
+        patch_to_2010R4: True
