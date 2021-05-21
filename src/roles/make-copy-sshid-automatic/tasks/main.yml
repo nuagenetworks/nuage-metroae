@@ -1,9 +1,17 @@
+- name: Wait for VSD ssh to be ready
+  include_role:
+    name: common
+    tasks_from: wait-for-ssh
+  vars:
+    ssh_host: "{{ hostname }}"
+    host_username: "{{ vsd_default_username }}"
+
 - name: Copy SSH keys to VSDs
   delegate_to: localhost
-  command: "ssh-copy-id {{ vsd_custom_username | default(vsd_default_username) }}@{{ inventory_hostname }}"
+  command: "/bin/sshpass -p{{ vsd_custom_password | default(vsd_default_password) }} ssh-copy-id {{ vsd_custom_username | default(vsd_default_username) }}@{{ inventory_hostname }}"
   when: component_type|default("NONE") == 'vsd'
 
 - name: Copy SSH keys to vstat
   delegate_to: localhost
-  command: "ssh-copy-id {{ vstat_custom_username | default(vstat_default_username) }}@{{ inventory_hostname }}"
+  command: "/bin/sshpass -p{{ vsd_custom_password | default(vsd_default_password) }} ssh-copy-id {{ vstat_custom_username | default(vstat_default_username) }}@{{ inventory_hostname }}"
   when: component_type|default("NONE") == 'vstat'
