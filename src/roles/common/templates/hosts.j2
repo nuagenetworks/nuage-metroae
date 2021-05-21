@@ -11,7 +11,7 @@ localhost ansible_connection=local ansible_python_interpreter=python
 [vsd_sa_node]
 {{ vsds[0].hostname }}
 
-{% if not inplace and not to_patch_2010R4 %}
+{% if not inplace and not to_patch_2010R4_only %}
 [vsd_upgrade_sa_node:children]
 vsd_sa_node
 {% endif %}
@@ -25,7 +25,7 @@ vsd_sa_node
 [vsd_ha_node3]
 {{ vsds[2].hostname }}
 
-{% if not inplace and not to_patch_2010R4 %}
+{% if not inplace and not to_patch_2010R4_only %}
 [vsd_upgrade_ha_node1:children]
 vsd_ha_node1
 [vsd_upgrade_ha_node2:children]
@@ -42,7 +42,7 @@ vsd_ha_node3
 [vsd_standby_node3]
 {{ vsds[5].hostname }}
 
-{% if not inplace and not to_patch_2010R4 %}
+{% if not inplace and not to_patch_2010R4_only %}
 [vsd_upgrade_standby_node1:children]
 vsd_standby_node1
 [vsd_upgrade_standby_node2:children]
@@ -62,7 +62,7 @@ vsd_standby_node3
 {% endfor %}
 {% endif %}
 
-{% if not inplace and to_patch_2010R4 %}
+{% if not inplace and (to_patch_2010R4 or patch_2010R4_only) %}
 [vsd_inplace_upgrade_2010R4_nodes]
 {% for vsd in vsds %}
 {{ vsd.hostname }}
@@ -87,10 +87,10 @@ vsd_upgrade_ha_node1
 vsd_upgrade_ha_node2
 vsd_upgrade_ha_node3
 {% endif %}
-{% if inplace and not to_patch_2010R4 %}
+{% if inplace %}
 vsd_inplace_upgrade_nodes
 {% endif %}
-{% if not inplace and to_patch_2010R4 %}
+{% if not inplace and (to_patch_2010R4 or to_patch_2010R4_only) %}
 vsd_inplace_upgrade_2010R4_nodes
 {% endif %}
 {% endif %}
