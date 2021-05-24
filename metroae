@@ -99,7 +99,6 @@ DEPLOYMENT_DIR=$DEPLOYMENTS_BASE_DIR/default
 INVENTORY_DIR=$CURRENT_DIR/src/inventory
 PLUGIN_DIR=$CURRENT_DIR/src/metro_plugins
 VAULT_ENV_FILE=$CURRENT_DIR/src/vault-env
-ENCRYPTED_DEPLOYMENT_FILE=credentials.yml
 ENCRYPTED_TOKEN=\$ANSIBLE_VAULT
 AUDIT_LOG=audit.log
 ORIGINAL_ARGS=""
@@ -2204,15 +2203,13 @@ function check_password_needed {
     debug ${FUNCNAME[0]}
     deployment_dir="$1"
 
+    encrypted_files=$(grep -Ril $ENCRYPTED_TOKEN $deployment_dir)
+
     if [[ -z $METROAE_PASSWORD ]]; then
-        if [[ -a $deployment_dir/$ENCRYPTED_DEPLOYMENT_FILE ]]; then
-            fail=0
-            grep $ENCRYPTED_TOKEN "$deployment_dir/$ENCRYPTED_DEPLOYMENT_FILE" > /dev/null || fail=1
-            if [[ $fail -ne 0 ]]; then
-                SKIP_PASSWORD=1
-            fi
-        else
+        if [[ -z "$encrypted_files" ]]; then
             SKIP_PASSWORD=1
+        else
+            SKIP_PASSWORD=0
         fi
     else
         SKIP_PASSWORD=1
