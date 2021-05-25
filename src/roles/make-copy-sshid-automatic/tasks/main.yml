@@ -2,10 +2,18 @@
   delegate_to: localhost
   command: "/bin/sshpass -p{{ vsd_custom_password | default(vsd_default_password) }} ssh-copy-id {{ vsd_custom_username | default(vsd_default_username) }}@{{ inventory_hostname }}"
   ignore_errors: yes
+  register: status
+  until: status.stdout.find("Connection refused") == -1
+  retries: 10
+  delay: 10
   when: component_type|default("NONE") == 'vsd'
 
 - name: Copy SSH Public Key to VSTAT (ignoring errors)
   delegate_to: localhost
   command: "/bin/sshpass -p{{ vstat_custom_password | default(vstat_default_password) }} ssh-copy-id {{ vstat_custom_username | default(vstat_default_username) }}@{{ inventory_hostname }}"
   ignore_errors: yes
+  register: status
+  until: status.stdout.find("Connection refused") == -1
+  retries: 10
+  delay: 10
   when: component_type|default("NONE") == 'vstat'
