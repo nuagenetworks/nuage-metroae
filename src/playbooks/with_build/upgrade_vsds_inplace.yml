@@ -28,7 +28,7 @@
   roles:
     - vsd-dbbackup
 
-- hosts: vsd_inplace_upgrade_nodes
+- hosts: vsd_inplace_upgrade_nodes[1]:vsd_inplace_upgrade_nodes[2]
   gather_facts: no
   serial: 1
   pre_tasks:
@@ -55,3 +55,66 @@
         loop_var: hook
   roles:
     - vsd-upgrade-inplace
+  post_tasks:
+    - name: Set major or minor upgrade flag
+      include_role:
+        name: common
+        tasks_from: set-major-minor-versions.yml
+
+    - name: name: Allow XMPP Connections to Nodes 2 and 3 if necessary
+      include_role:
+        name: common
+        tasks_from: allow-xmpp-connections
+      vars:
+        allow_xmpp_connection: "{{ block_and_allow_xmpp_connection | default(False) }}"
+
+- hosts: vsd_inplace_upgrade_nodes[0]
+  gather_facts: no
+  pre_tasks:
+    - name: Fail if vsd_migration_iso_path is not defined
+      assert:
+       that: vsd_migration_iso_path != "MISSING"
+       msg: "vsd_migration_iso_path not defined. Please define it and try again."
+
+    - name: Fail if vsd_migration_iso_file_name is not defined
+      assert:
+        that: vsd_migration_iso_file_name != "MISSING"
+        msg: "vsd_migration_iso_file_name not defined. Please define it and try again."
+
+    - name: name: Set major or minor upgrade flag
+      include_role:
+        name: common
+        tasks_from: set-major-minor-versions.yml
+
+    - name: Block XMPP Connections to Nodes 2 and 3 if necessary
+      include_role:
+        name: common
+        tasks_from: block-xmpp-connections
+      vars:
+        block_xmpp_connection: "{{ block_and_allow_xmpp_connection | default(False) }}"
+
+    - name: Lets run VSD inplace upgrade hooks
+      include_role:
+        name: hooks
+        tasks_from: main
+      vars:
+        - hooks_file_path: "{{ hook }}"
+        - hook_location:
+          - vsd_inplace_upgrade_nodes
+      loop: "{{ hooks | default([]) }}"
+      loop_control:
+        loop_var: hook
+  roles:
+    - vsd-upgrade-inplace
+  post_tasks:
+    - name: Set major or minor upgrade flag
+      include_role:
+        name: common
+        tasks_from: set-major-minor-versions.yml
+
+    - name: name: Allow XMPP Connections to Nodes 2 and 3 if necessary
+      include_role:
+        name: common
+        tasks_from: allow-xmpp-connections
+      vars:
+        allow_xmpp_connection: "{{ block_and_allow_xmpp_connection | default(False) }}"
