@@ -1,19 +1,21 @@
 - name: Copy SSH Public Key to VSD (ignoring errors)
-  delegate_to: localhost
-  command: "/bin/sshpass -p{{ vsd_custom_password | default(vsd_default_password) }} ssh-copy-id {{ vsd_custom_username | default(vsd_default_username) }}@{{ inventory_hostname }}"
+  authorized_key:
+      user: "{{ vsd_custom_username | default(vsd_default_username) }}"
+      key: "{{ lookup('file', lookup('env','HOME') + '/.ssh/id_rsa.pub') }}"
+  remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
+  become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
+  vars:
+    ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"
   ignore_errors: yes
-  register: status
-  until: status.stdout.find("Connection refused") == -1
-  retries: 10
-  delay: 10
   when: component_type|default("NONE") == 'vsd'
 
 - name: Copy SSH Public Key to VSTAT (ignoring errors)
-  delegate_to: localhost
-  command: "/bin/sshpass -p{{ vstat_custom_password | default(vstat_default_password) }} ssh-copy-id {{ vstat_custom_username | default(vstat_default_username) }}@{{ inventory_hostname }}"
+  authorized_key:
+      user: "{{ vstat_custom_username | default(vstat_default_username) }}"
+      key: "{{ lookup('file', '~/.ssh/id_rsa.pub') }}"
+  remote_user: "{{ vstat_custom_username | default(vstat_default_username) }}"
+  become: "{{ 'no' if vstat_custom_username | default(vstat_default_username) == 'root' else 'yes' }}"
+  vars:
+    ansible_become_pass: "{{ vstat_custom_password | default(vstat_default_password) }}"
   ignore_errors: yes
-  register: status
-  until: status.stdout.find("Connection refused") == -1
-  retries: 10
-  delay: 10
   when: component_type|default("NONE") == 'vstat'
