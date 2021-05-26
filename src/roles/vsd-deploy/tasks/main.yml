@@ -338,7 +338,7 @@
     - name: Set install param for stats only if applicable
       set_fact:
         install_options: '-t t'
-      when: 
+      when:
         - groups['stats_only_vsds'] is defined
         - inventory_hostname in groups['stats_only_vsds']
 
@@ -391,7 +391,7 @@
       debug: var=vsd_proc verbosity=1
 
     when: monit_mail_server is defined
-  
+
   when: not skip_vsd_deploy
   remote_user: "{{ vsd_default_username }}"
 
@@ -464,6 +464,5 @@
   include_role:
     name: vsd-upgrade-inplace
     tasks_from: main.yml
-  when: 
-    - vsd_install_inplace_upgrade | default(False)
-    - not nuage_upgrade | default(False)
+  when:
+    - (vsd_install_inplace_upgrade | default(False) and not nuage_upgrade | default(False)) or (patch_ejabberd|default(False))
