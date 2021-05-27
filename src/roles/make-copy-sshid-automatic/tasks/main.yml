@@ -1,10 +1,10 @@
-- name: Wait for VSD ssh to be ready
+- name: Wait for ssh to be ready
   include_role:
     name: common
     tasks_from: wait-for-ssh
   vars:
     ssh_host: "{{ hostname }}"
-    host_username: "{{ vsd_default_username }}"
+    host_username: "{{ component_username }}"
     
 - name: Copy SSH Public Key to VSD (ignoring errors)
   authorized_key:
@@ -20,7 +20,7 @@
 - name: Copy SSH Public Key to VSTAT (ignoring errors)
   authorized_key:
       user: "{{ vstat_custom_username | default(vstat_default_username) }}"
-      key: "{{ lookup('file', '~/.ssh/id_rsa.pub') }}"
+      key: "{{ lookup('file', lookup('env','HOME') + '~/.ssh/id_rsa.pub') }}"
   remote_user: "{{ vstat_custom_username | default(vstat_default_username) }}"
   become: "{{ 'no' if vstat_custom_username | default(vstat_default_username) == 'root' else 'yes' }}"
   vars:
