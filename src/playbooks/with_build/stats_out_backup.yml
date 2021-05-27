@@ -1,0 +1,72 @@
+- hosts: upgrade_stats_only_vsds
+  gather_facts: no
+  serial: 1
+  tasks:
+    - name: Create Statsout backup directory on localhost
+      include_role:
+        name: common
+        tasks_from: create-backup-dir
+      vars:
+        backup_component_name: stats-out
+        backup_host_name: "{{ inventory_hostname }}"
+
+    - name: Set name for stats-out backup folder
+      set_fact:
+        backup_folder: "{{ localhost_component_backup_dir }}"
+
+    - name: Find Certificates on stats out node
+      find:
+        path: "/opt/vsd/ejbca/p12/"
+        patterns: "{{ item }}"
+      with_items:
+        - "*.jks"
+        - "*.pem"
+      register: lst_files
+      remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
+      become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
+      vars:
+        ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"
+
+    - name: Print out the list of files
+      debug: var="lst_files"
+
+    - name: Verify atleast 2 certificates found
+      assert:
+        that: "{{ item.matched }} >= 2"
+        msg: "Could not find file {{ item.item }}"
+      with_items: "{{ lst_files.results }}"
+
+    - name: Fetch Certificates from stats out node
+      fetch:
+        src: "{{ item.files[0].path }}"
+        dest: "{{ localhost_component_backup_dir }}"
+        flat: yes
+        validate_checksum: false
+      with_items: "{{ lst_files.results }}"
+      remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
+      become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
+      vars:
+        ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"
+
+    - name: Remove any old symbolic link to backup location
+      file:
+        path: "{{ metro_backup_root }}/backup-latest-stats-out"
+        state: absent
+      delegate_to: localhost
+
+    - name: Create symbolic link to backup location
+      file:
+        dest: "{{ metro_backup_root }}/backup-latest-stats-out"
+        src: "{{ backup_folder }}"
+        state: link
+        follow: false
+      delegate_to: localhost
+
+    - name: Clean any extra backups over max
+      include_role:
+        name: common
+        tasks_from: clean-extra-backups
+      vars:
+        backup_component_name: stats-out
+
+
