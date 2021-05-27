@@ -460,10 +460,24 @@
   remote_user: "{{ vsd_default_username }}"
   when: statistics_only | default(false)
 
-- name: Executing VSD inplace upgrade if the vsd_install_upgrade is true
-  include_role:
-    name: vsd-upgrade-inplace
-    tasks_from: main.yml
-  throttle: 1
-  when:
-    - (vsd_install_inplace_upgrade | default(False) and not nuage_upgrade | default(False)) or (patch_ejabberd|default(False))
+- block:
+
+  - name: Executing VSD inplace upgrade on node 2
+    include_role:
+      name: vsd-upgrade-inplace
+      tasks_from: main.yml
+    when: inventory_hostname == first_cluster_node_to_install
+
+  - name: Executing VSD inplace upgrade on node 3
+    include_role:
+      name: vsd-upgrade-inplace
+      tasks_from: main.yml
+    when: inventory_hostname == second_cluster_node_to_install
+
+  - name: Executing VSD inplace upgrade on node 1
+    include_role:
+      name: vsd-upgrade-inplace
+      tasks_from: main.yml
+    when: inventory_hostname == third_cluster_node_to_install
+
+  whenn: (vsd_install_inplace_upgrade | default(False) and not nuage_upgrade | default(False)) or (patch_ejabberd|default(False))
