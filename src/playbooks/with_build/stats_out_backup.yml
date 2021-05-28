@@ -36,13 +36,17 @@
         msg: "Could not find file {{ item.item }}"
       with_items: "{{ lst_files.results }}"
 
+    - name: Check list of files
+      set_fact: 
+        files_to_backup: "{{ lst_files.results | map(attribute='files') | flatten | map(attribute='path') | list }}"
+
     - name: Fetch Certificates from stats out node
       fetch:
-        src: "{{ item.files[0].path }}"
+        src: "{{ item }}"
         dest: "{{ localhost_component_backup_dir }}"
         flat: yes
         validate_checksum: false
-      with_items: "{{ lst_files.results }}"
+      with_items: "{{ files_to_backup }}"
       remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
       become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
       vars:
@@ -68,5 +72,3 @@
         tasks_from: clean-extra-backups
       vars:
         backup_component_name: stats-out
-
-
