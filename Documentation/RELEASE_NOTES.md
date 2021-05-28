@@ -11,6 +11,7 @@
 ### Feature Enhancements
 * Added support for upgrading inplace VSD after the installation of VSD is finished (METRO-235)
 * Add support for Encrypted plugin variables for Metroae (METROAE-372)
+* Added copy-sshid command automatic to copy ssh key to VSDs and VSTATs(ES) (METROAE-419)
 * Added support for upgrading SD-WAN Portal (METROAE-126)
 
 ### Resolved Issues
