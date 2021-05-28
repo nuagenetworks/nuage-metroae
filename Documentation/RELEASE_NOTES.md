@@ -11,6 +11,7 @@
 ### Feature Enhancements
 * Added support for upgrading inplace VSD after the installation of VSD is finished (METRO-235)
 * Add support for Encrypted plugin variables for Metroae (METROAE-372)
+* Added support for upgrading SD-WAN Portal (METROAE-126)
 
 ### Resolved Issues
 * Added playbook and menu option to run security hardening on VSD after the VSD installation (METROAE-328)
