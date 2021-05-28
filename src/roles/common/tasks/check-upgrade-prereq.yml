@@ -52,11 +52,11 @@
     set_fact:
       is_VSTAT_upgrade_script_path_missing: "{{ vstat_upgrade_scripts_path | default('MISSING') == 'MISSING' }}"
       is_VSTAT_upgrade_script_file_missing: "{{ vstat_upgrade_scripts_file | default('MISSING') == 'MISSING' }}"
-  
+
   - name: Delete the md5 files
     file:
       path: "{{ inventory_dir }}/deployment.md5.yml"
-      state: absent 
+      state: absent
     when: is_VSTAT_upgrade_script_path_missing or is_VSTAT_upgrade_script_file_missing
     delegate_to: localhost
 
@@ -75,13 +75,13 @@
 - block:
 
   - name: Check that TIM file is found for VSC
-    set_fact: 
-      is_TIM_file_missing: "{{ vsc_tim_path | default('MISSING') == 'MISSING' and vsc_tim_file_name | default('MISSING') == 'MISSING' }}" 
-  
+    set_fact:
+      is_TIM_file_missing: "{{ vsc_tim_path | default('MISSING') == 'MISSING' and vsc_tim_file_name | default('MISSING') == 'MISSING' }}"
+
   - name: Delete the md5 files
     file:
       path: "{{ inventory_dir }}/deployment.md5.yml"
-      state: absent 
+      state: absent
     when: is_TIM_file_missing
     delegate_to: localhost
 
@@ -89,7 +89,7 @@
     assert:
       that: not is_TIM_file_missing
       msg: "Missing VSC TIM image file for {{ hostname }} under the unzipped file directory, please unzip it and issue reset_build"
-  
+
   when: component_type | default("NONE") == 'vsc'
 
 - name: Check that the number of vscs is even when force_vsc_standalone_upgrade is not set
@@ -97,3 +97,28 @@
     that: "force_vsc_standalone_upgrade | default(false) or vscs|length == 1 or vscs|length % 2 == 0"
     msg: "Cannot upgrade on odd number of vscs in pairs. Please use force_vsc_standalone_upgrade to upgrade vscs as standalone"
   when: vscs is defined and vscs
+
+- block:
+
+  - name: Check for portal files missing
+    set_fact:
+      is_portal_path_missing: "{{ portal_path | default('MISSING') == 'MISSING' }}"
+      is_portal_file_missing: "{{ portal_file_name | default('MISSING') == 'MISSING' }}"
+
+  - name: Delete the md5 files
+    file:
+      path: "{{ inventory_dir }}/deployment.md5.yml"
+      state: absent
+    when: is_portal_file_missing or is_portal_path_missing
+    delegate_to: localhost
+
+  - name: Check the image path for portal container
+    assert:
+      that: not is_portal_file_missing and not is_portal_path_missing
+      msg: "Missing SDWAN portal container tar or CentOS image for portal under the unzipped directory, Please Copy it"
+
+  - include_role:
+      name: check-sdwan-portal-upgrade-prereqs
+      tasks_from: main
+
+  when: component_type | default("NONE") == 'portal'
