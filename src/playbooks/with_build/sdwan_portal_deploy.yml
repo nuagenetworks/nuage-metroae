@@ -1,5 +1,18 @@
 ---
 - hosts: portals
   gather_facts: no
+  pre_tasks:
+    - name: Set fact for portal upgrade
+      set_fact:
+        portal_upgrade: "{{ upgrade_portal|default(False) }}"
+    - name: Run Portal upgrade predeploy
+      virt:
+        name: "{{ vmname }}"
+        command: start
+        uri: qemu:///system
+      delegate_to: "{{ target_server }}"
+      remote_user: "{{ target_server_username }}"
+      become: "{{ 'no' if target_server_username == 'root' else 'yes' }}"
+      when: portal_upgrade is defined and portal_upgrade
   roles:
     - sdwan-portal-deploy
