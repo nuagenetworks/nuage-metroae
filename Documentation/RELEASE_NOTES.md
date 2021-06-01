@@ -20,6 +20,7 @@
 * Added playbook for portal deployment, this is deployemnt in an already created VMs for portal (METROAE-273)
 * Fixed NSG package Unzipped Twice (METROAE-415)
 * Added ansible reset connection to fix VSC connectivity issues
+* Fix openstack ssl connection error (METROAE-425)
 
 ## Test Matrix
 
