@@ -2,13 +2,29 @@
   gather_facts: no
   serial: 1
   tasks:
+    - name: Set VSD numbering for cluster install
+      set_fact:
+          stats_vm_number: 1
+      when: inventory_hostname in groups['upgrade_stats_only_vsds'][0]
+
+    - name: Set VSD numbering for cluster install
+      set_fact:
+          stats_vm_number: 2
+      when: inventory_hostname in groups['upgrade_stats_only_vsds'][1]
+
+    - name: Set VSD numbering for cluster install
+      set_fact:
+          stats_vm_number: 3
+      when: inventory_hostname in groups['upgrade_stats_only_vsds'][2]
+
     - name: Restore stats out certificates
       copy:
         src: "{{ item }}"
-        dest: "{{ tmp_dir_name }}"
+        dest: "/opt/vsd/ejbca/p12/"
         backup: no
       with_fileglob:
-        - "{{ metro_backup_root }}/{{ restore_dir | default( 'backup-latest-full' ) }}/stats-out-{{ inventory_hostname }}/*"
+        - "{{ metro_backup_root }}/backup-latest-stats-out{{ stats_vm_number }}/*"
+      remote_user: "{{ vsd_default_username }}"
 
 - hosts: upgrade_stats_only_vsds
   gather_facts: no
