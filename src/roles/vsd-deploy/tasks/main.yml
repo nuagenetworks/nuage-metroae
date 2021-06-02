@@ -272,7 +272,16 @@
 
     - name: Install VSD software on standalone node (Can take 20 minutes)
       command: "/opt/vsd/vsd-install.sh -t s -y {{ (enable_ipv6 | default(False)) | ternary('-6', '') }}"
-      when: not deploy_vcin
+      when:
+        - not deploy_vcin
+        - groups['stats_only_vsds'] is not defined
+
+    - name: Install VSD software on standalone node (Can take 20 minutes)
+      command: "/opt/vsd/vsd-install.sh -t t -y {{ (enable_ipv6 | default(False)) | ternary('-6', '') }}"
+      when: 
+        - not deploy_vcin
+        - groups['stats_only_vsds'] is defined
+        - inventory_hostname in groups['stats_only_vsds']
 
     - name: Install VCIN software on VCIN node (Can take 20 minutes)
       command: "/opt/vsd/vsd-install.sh -t v -y {{ (enable_ipv6 | default(False)) | ternary('-6', '') }}"
