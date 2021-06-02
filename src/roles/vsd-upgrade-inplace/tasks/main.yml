@@ -1,3 +1,15 @@
+- name: Set major or minor upgrade flag
+  include_role:
+    name: common
+    tasks_from: set-major-minor-versions.yml
+
+- name: Block XMPP Connections if patching Ejabberd
+  include_role:
+    name: common
+    tasks_from: block-xmpp-connections
+  vars:
+    block_xmpp_connection: "{{ block_and_allow_xmpp_connection | default(False) }}"
+
 - name: Check monit summary before upgrade
   include_role:
     name: vsd-health
@@ -19,13 +31,13 @@
         dir_name: /home/caso/nuage-images/vsd/migration
 
     delegate_to: localhost
-    
+
 
   - name: setting fact for migration file
     set_fact:
       vsd_migration_iso_path: "{{ file_path }}"
       vsd_migration_iso_file_name: "{{ file_name }}"
-  
+
   when: vsd_install_inplace_upgrade | default (False)
 
 - block:
@@ -47,6 +59,11 @@
 
   - name: Run the patch
     command: /media/CDROM/vsd-patch.sh
+    when: not patch_ejabberd|default(False)
+
+  - name: Run the patch
+    command: /media/CDROM/vsd-patch.sh -y
+    when: patch_ejabberd|default(False)
 
   remote_user: "{{ vsd_username | default(vsd_default_username) }}"
   become: "{{ 'no' if vsd_username | default(vsd_default_username) == 'root' else 'yes' }}"
@@ -59,3 +76,10 @@
     tasks_from: monit_status
   vars:
     no_report: "True"
+
+- name: Allow XMPP Connections after patching Ejabberd
+  include_role:
+    name: common
+    tasks_from: allow-xmpp-connections
+  vars:
+    allow_xmpp_connection: "{{ block_and_allow_xmpp_connection | default(False) }}"
