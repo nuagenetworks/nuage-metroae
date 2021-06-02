@@ -51,6 +51,10 @@
   import_tasks: set_vsd_creds.yml
   when: not skip_vsd_deploy
 
+- name: Stats only VM
+  set_fact:
+    stats_only_vm: "{{ (groups['stats_only_vsds'] is defined) and (inventory_hostname in groups['stats_only_vsds']) }}"
+
 - block:
 
   - block:
@@ -280,8 +284,7 @@
       command: "/opt/vsd/vsd-install.sh -t t -y {{ (enable_ipv6 | default(False)) | ternary('-6', '') }}"
       when: 
         - not deploy_vcin
-        - groups['stats_only_vsds'] is defined
-        - inventory_hostname in groups['stats_only_vsds']
+        - stats_only_vm
 
     - name: Install VCIN software on VCIN node (Can take 20 minutes)
       command: "/opt/vsd/vsd-install.sh -t v -y {{ (enable_ipv6 | default(False)) | ternary('-6', '') }}"
@@ -347,9 +350,7 @@
     - name: Set install param for stats only if applicable
       set_fact:
         install_options: '-t t'
-      when: 
-        - groups['stats_only_vsds'] is defined
-        - inventory_hostname in groups['stats_only_vsds']
+      when: stats_only_vm
 
     - name: Set install param for all others
       set_fact:
@@ -381,7 +382,7 @@
     command: /opt/vsd/bin/ejmode allow -y
     when: 
       - not deploy_vcin
-      - (groups['stats_only_vsds'] is not defined) or (inventory_hostname not in groups['stats_only_vsds'])
+      - not stats_only_vm
 
   - block:
 
@@ -412,6 +413,7 @@
     - branding_zip_file is defined
     - component_type == "vsd"
     - not vsd_standby_cluster | default(False)
+    - not stats_only_vm
 
 - name: Setup health monitoring
   include_role:
@@ -453,6 +455,7 @@
     - component_type == "vsd"
     - (vsd_major_version|int > 5) or
       (vsd_major_version|int == 5 and vsd_minor_version|int >= 3)
+    - not stats_only_vm
   remote_user: "{{ vsd_default_username }}"
 
 - name: Install nginx
