@@ -96,6 +96,22 @@
     that: certificate_expiration_time.stdout is search('ocspsigner')
     fail_msg: "There is no ocspsigner user"
 
+- name: Get timestamp from the system
+  shell: "date +%Y-%m-%d%H:%M:%S"
+  register: tstamp
+  remote_user: "{{ vsd_default_username }}"
+
+- name: Set variables
+  set_fact:
+   cur_date: "{{ tstamp.stdout[0:10]}}"
+   cur_time: "{{ tstamp.stdout[10:]}}"
+   cur_date_time: "{{ tstamp.stdout[0:10]}} {{ tstamp.stdout[10:]}}"
+
+- name: Print current date and time
+  debug:
+   msg:  "Current date and time: {{ cur_date_time }}"
+  
+
 - name: Renew VSD certificates
   include_role:
     name: common
