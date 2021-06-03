@@ -2,7 +2,7 @@
 
 ## Release info
 
-* MetroAE Version 4.4.1
+* MetroAE Version 4.4.2
 * Nuage Release Alignment 20.10
 * Date of Release 28-April-2021
 
@@ -11,7 +11,7 @@
 ### Feature Enhancements
 
 ### Resolved Issues
-* Fixed failing phone home internal user check when unable to ping local github
+* Fixed failing PIP requirements.
 
 ## Test Matrix
 
