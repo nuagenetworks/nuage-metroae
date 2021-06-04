@@ -1,5 +1,8 @@
 - hosts: vscs
   gather_facts: no
+  connection: network_cli
+  collections:
+  - nokia.sros
   pre_tasks:
     - name: Lets run VSC deploy hooks
       include_role:
@@ -12,7 +15,13 @@
       loop: "{{ hooks | default([]) }}"
       loop_control:
         loop_var: hook
-  collections:
-  - nokia.sros
+    - name: get the device Info
+      device_info:
+      register: device_info
+
+    - name: debug the device_info var
+      debug: var=device_info
+
+ 
   roles:
     - vsc-deploy
