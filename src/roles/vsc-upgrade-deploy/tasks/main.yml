@@ -20,10 +20,9 @@
 
 - name: Get output of 'show bof'
   cli_command:
-    commands:
+    command:
       - show bof
     provider: "{{ vsc_creds }}"
-  delegate_to: localhost
   register: bof_config
 
 - name: Print 'show bof' when verbosity >= 1
@@ -38,10 +37,9 @@
 
 - name: Get current file version of image on VSC
   cli_command:
-    commands:
+    command:
       - file version "{{ bof_json['primary_image'] }}"
     provider: "{{ vsc_creds }}"
-  delegate_to: localhost
   register: image
 
 - name: Print image version when verbosity >= 1
@@ -56,10 +54,9 @@
 
 - name: Register uptime before reboot
   cli_command:
-    commands:
+    command:
       - show uptime
     provider: "{{ vsc_creds }}"
-  delegate_to: localhost
   register: uptime_before_reboot
   when: target_server_type is match('kvm') or target_server_type is match('vcenter') or target_server_type is match('openstack') or target_server_type is match("none")
 
@@ -71,10 +68,9 @@
 
   - name: Reboot VSC VM (ignoring errors)
     cli_command:
-      commands:
+      command:
         - admin reboot now
       provider: "{{ vsc_creds }}"
-    delegate_to: localhost
     ignore_errors: true
 
   - meta: reset_connection
@@ -92,10 +88,9 @@
 
   - name: Register uptime after reboot
     cli_command:
-      commands:
+      command:
         - show uptime
       provider: "{{ vsc_creds }}"
-    delegate_to: localhost
     register: uptime_after_reboot
 
   - name: Verify reboot happened successfully
