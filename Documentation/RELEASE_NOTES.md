@@ -11,12 +11,16 @@
 ### Feature Enhancements
 * Added support for upgrading inplace VSD after the installation of VSD is finished (METRO-235)
 * Add support for Encrypted plugin variables for Metroae (METROAE-372)
+* Added copy-sshid command automatic to copy ssh key to VSDs and VSTATs(ES) (METROAE-419)
+* Added support for upgrading to 20.10.R4 (METROAE-406)
+* Added support for upgrading SD-WAN Portal (METROAE-126)
 
 ### Resolved Issues
 * Added playbook and menu option to run security hardening on VSD after the VSD installation (METROAE-328)
 * Added playbook for portal deployment, this is deployemnt in an already created VMs for portal (METROAE-273)
 * Fixed NSG package Unzipped Twice (METROAE-415)
 * Added ansible reset connection to fix VSC connectivity issues
+* Fix openstack ssl connection error (METROAE-425)
 
 ## Test Matrix
 
