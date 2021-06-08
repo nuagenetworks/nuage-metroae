@@ -287,12 +287,12 @@ function setup_tab_completion() {
 ##############################################################################
 # Ansible-Galaxy Install
 ##############################################################################
-# function ansible_galaxy_install(){
-#   printn "Installing collections";
-#   ansible-galaxy install collection -r collection_requirement.yml
-#   check_retcode $?
+function ansible_galaxy_install(){
+  printn "Installing collections";
+  ansible-galaxy collection install -r collection_requirement.yml
+  check_retcode $?
 
-# }
+}
 
 ###############################################################################
 # Main function
