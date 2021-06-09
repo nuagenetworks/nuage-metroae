@@ -3,14 +3,17 @@
   - name: Set local variable with vmname
     set_fact:
       vm_name: "{{ vmname }}"
+    delegate_to: localhost
 
   - name: Set vsc mgmt ip
     set_fact:
       vsc_mgmt_ip: "{{ mgmt_ip }}"
+    delegate_to: localhost
 
   - name: Set vsc control ip
     set_fact:
       control_ip: "{{ control_ip }}"
+    delegate_to: localhost
 
   - name: Set VSC creds
     set_fact:
@@ -18,7 +21,7 @@
         host: "{{ vsc_mgmt_ip }}"
         username: "{{ vsc_default_username | default('admin') }}"
         password: "{{ vsc_default_password | default('admin') }}"
-
+    delegate_to: localhost
   - meta: reset_connection
 
   - name: Wait for VSC ssh to be ready
@@ -33,14 +36,15 @@
     tags:
       - vsc
       - vsc-deploy
+    delegate_to: localhost
 
   - name: Loading BOF config
     cli_config:
-      lines:
-        - bof address "{{ vsc_mgmt_ip }}/{{ mgmt_netmask_prefix }}"
-        - bof primary-dns "{{ infra_ip | default(dns_server_list[0]) }}"
-        - bof dns-domain "{{ dns_domain }}"
-        - bof save "cf1:"
+      config: |
+        bof address "{{ vsc_mgmt_ip }}/{{ mgmt_netmask_prefix }}"
+        bof primary-dns "{{ infra_ip | default(dns_server_list[0]) }}"
+        bof dns-domain "{{ dns_domain }}"
+        bof save "cf1:"
       provider: "{{ heat_vsc_creds }}"
 
-  delegate_to: localhost
+  

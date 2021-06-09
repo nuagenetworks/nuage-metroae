@@ -61,34 +61,31 @@
 
   - name: Configure the security profile on the VSC
     cli_config:
-      lines:
-          - configure system security tls-profile vsc-tls-profile own-key cf1:\{{ own_key }}
-          - configure system security tls-profile vsc-tls-profile own-certificate cf1:\{{ own_certificate }}
-          - configure system security tls-profile vsc-tls-profile ca-certificate cf1:\{{ own_ca_certificate }}
-          - configure system security tls-profile vsc-tls-profile no shutdown
-          - admin save
+      config: |
+          configure system security tls-profile vsc-tls-profile own-key cf1:\{{ own_key }}
+          configure system security tls-profile vsc-tls-profile own-certificate cf1:\{{ own_certificate }}
+          configure system security tls-profile vsc-tls-profile ca-certificate cf1:\{{ own_ca_certificate }}
+          configure system security tls-profile vsc-tls-profile no shutdown
+          admin save
       provider: "{{ vsc_creds }}"
-    delegate_to: localhost
   when: xmpp_tls or openflow_tls
 
 - block:
 
   - name: Configure XMPP to use the security profile
     cli_config:
-      lines:
-          - configure vswitch-controller xmpp tls-profile vsc-tls-profile
-          - configure system time ntp ntp-server
-          - admin save
+      config: |
+          configure vswitch-controller xmpp tls-profile vsc-tls-profile
+          configure system time ntp ntp-server
+          admin save
       provider: "{{ vsc_creds }}"
-    delegate_to: localhost
 
   - block:
     - name: Configure XMPP server to the custom ejabberd id and password
       cli_config:
-        lines:
-          - configure vswitch-controller xmpp-server {{ ejabberd_id }}@{{ xmpp_domain }}
+        config: |
+          configure vswitch-controller xmpp-server {{ ejabberd_id }}@{{ xmpp_domain }}
         provider: "{{ vsc_creds }}"
-      delegate_to: localhost
 
     - name: Get vsd node(s) information
       import_role:
@@ -113,7 +110,6 @@
     until: xmpp_status.stdout[0].find('Functional') != -1
     retries: 30
     delay: 10
-    delegate_to: localhost
 
   - name: Print output of 'show vswitch-controller xmpp-server' when verbosity >= 1
     debug: var=xmpp_status verbosity=1
@@ -122,10 +118,9 @@
 
 - name: Configure OpenFlow to use the security profile
   cli_config:
-    lines:
-        - configure vswitch-controller open-flow tls-profile vsc-tls-profile
-        - configure system time ntp ntp-server
-        - admin save
+    config: |
+        configure vswitch-controller open-flow tls-profile vsc-tls-profile
+        configure system time ntp ntp-server
+        admin save
     provider: "{{ vsc_creds }}"
-  delegate_to: localhost
   when: openflow_tls
