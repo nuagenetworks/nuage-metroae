@@ -291,7 +291,7 @@ function ansible_galaxy_install(){
   printn "Installing collections";
   ansible-galaxy collection install -r collection_requirements.yml
   check_retcode $?
-  chown caso:caso ansible.log
+  # chown caso:caso ansible.log
 
 }
 
