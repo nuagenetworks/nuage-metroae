@@ -284,6 +284,16 @@ function setup_tab_completion() {
   echo
 }
 
+##############################################################################
+# Ansible-Galaxy Install
+##############################################################################
+function ansible_galaxy_install(){
+  printn "Installing collections";
+  ansible-galaxy collection install -r collection_requirement.yml
+  check_retcode $?
+  chown caso:caso ansible.log
+
+}
 
 ###############################################################################
 # Main function
@@ -324,6 +334,9 @@ function main() {
 
   # tab-completion
   setup_tab_completion
+
+  #ansible-galaxy package
+  ansible_galaxy_install
 
   # Check for any failures and print appropriate message
   if [[ $FAILED -ne 0 ]]
