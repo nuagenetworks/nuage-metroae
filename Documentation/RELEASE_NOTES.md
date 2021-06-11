@@ -14,6 +14,7 @@
 * Added copy-sshid command automatic to copy ssh key to VSDs and VSTATs(ES) (METROAE-419)
 * Added support for upgrading to 20.10.R4 (METROAE-406)
 * Added support for upgrading SD-WAN Portal (METROAE-126)
+* Added Support for Stats Out Major/Minor and Inplace Upgrade (METROAE-347)
 
 ### Resolved Issues
 * Added playbook and menu option to run security hardening on VSD after the VSD installation (METROAE-328)
