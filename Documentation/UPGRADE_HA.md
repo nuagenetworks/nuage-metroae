@@ -31,6 +31,10 @@ Note that MetroAE only supports patch upgrades for VSD using the `upgrade_vsds` 
 
 You can use MetroAE to upgrade Active/Standby VSD clusters, also known as geo-redundant clusters. You can also use MetroAE to upgrade Active/Standby VSTAT (ES) clusters. The support for this is built into the `upgrade_everything`, `upgrade_vsds`, and `upgrade_vstats` plays. A step-by-step manual procedure is supported, but is not documented here. See [Upgrading By Individual Steps](#upgrading-by-individual-steps-not-including-active-standby-clusters) for more information.
 
+### Stats out upgrade
+
+You can use MetroAE to upgrade VSD in stats-out mode. The support for this is built into `upgrade_vsd_stats` play. Note, upgrade the Stats Out VSD nodes only after the primary VSD cluster and Elasticsearch nodes have been upgraded. This has been incorporated into `upgrade_everything` procedure as well if upgrading everything at once is desired. A patch upgrade of the stats out node can also be done by running `upgrade_vsd_stats_inplace` procedure.
+
 ## Example Deployment
 
 For this example, our clustered (HA) deployment consists of:
