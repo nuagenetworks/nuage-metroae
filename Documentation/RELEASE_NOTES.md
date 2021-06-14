@@ -22,6 +22,7 @@
 * Fixed NSG package Unzipped Twice (METROAE-415)
 * Added ansible reset connection to fix VSC connectivity issues
 * Fix openstack ssl connection error (METROAE-425)
+* Add option to skip disable stats collection during VSTAT Upgrade (METROAE-430)
 
 ## Test Matrix
 
