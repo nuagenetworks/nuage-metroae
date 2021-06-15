@@ -22,6 +22,10 @@
   no_log: True
   ignore_errors: True
 
+- name: Stats only VM
+  set_fact:
+    stats_only_vm: "{{ (groups['stats_only_vsds'] is defined) and (inventory_hostname in groups['stats_only_vsds']) }}"
+
 - import_tasks: report_start.yml
 
 - block:
@@ -193,89 +197,94 @@
   vars:
     ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"
 
-- name: Execute list_p1db command on VSD(s)
-  shell: "{{ p1db_cmd }}"  # noqa 305
-  changed_when: True
-  register: list_p1db_output
-  remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
-  become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
-  vars:
-    ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"
+- block:
 
-- name: Print ejabberd list_p1db output when verbosity >= 1
-  debug: var=list_p1db_output verbosity=1
+  - name: Execute list_p1db command on VSD(s)
+    shell: "{{ p1db_cmd }}"  # noqa 305
+    changed_when: True
+    register: list_p1db_output
+    remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
+    become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
+    vars:
+      ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"
 
-- name: Create local variable with p1db output to json
-  set_fact: ejabberd_p1db_json="{{ list_p1db_output.stdout|ejabberd_p1db_to_json }}"
+  - name: Print ejabberd list_p1db output when verbosity >= 1
+    debug: var=list_p1db_output verbosity=1
 
-- name: Write list_p1db command separator to report file
-  nuage_append: filename="{{ report_path }}" text="-----Result from {{ p1db_cmd }}-----\n"
-  delegate_to: localhost
+  - name: Create local variable with p1db output to json
+    set_fact: ejabberd_p1db_json="{{ list_p1db_output.stdout|ejabberd_p1db_to_json }}"
 
-- name: Write p1bd JSON to file
-  nuage_append: filename="{{ report_path }}" text="{{ inventory_hostname }} {{ ejabberd_p1db_json|to_nice_json }}\n"
-  delegate_to: localhost
+  - name: Write list_p1db command separator to report file
+    nuage_append: filename="{{ report_path }}" text="-----Result from {{ p1db_cmd }}-----\n"
+    delegate_to: localhost
 
-- name: Execute list_cluster command on VSD(s)
-  shell: "{{ ejabber_cluster_list_command }}"  # noqa 305
-  changed_when: True
-  register: list_cluster_output
-  remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
-  become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
-  vars:
-    ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"
+  - name: Write p1bd JSON to file
+    nuage_append: filename="{{ report_path }}" text="{{ inventory_hostname }} {{ ejabberd_p1db_json|to_nice_json }}\n"
+    delegate_to: localhost
 
-- name: Print ejabberd list_cluster_output when verbosity >= 1
-  debug: var=list_cluster_output verbosity=1
+  - name: Execute list_cluster command on VSD(s)
+    shell: "{{ ejabber_cluster_list_command }}"  # noqa 305
+    changed_when: True
+    register: list_cluster_output
+    remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
+    become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
+    vars:
+      ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"
 
-- name: Create local variable with ejabberd cluster output to json
-  set_fact: ejabberd_cluster_json="{{ list_cluster_output.stdout|ejabberd_cluster_to_json }}"
+  - name: Print ejabberd list_cluster_output when verbosity >= 1
+    debug: var=list_cluster_output verbosity=1
 
-- name: Write ejabberd cluster output separator to report file
-  nuage_append: filename="{{ report_path }}" text="-----Result from executing {{ ejabber_cluster_list_command }}-----\n"
-  delegate_to: localhost
+  - name: Create local variable with ejabberd cluster output to json
+    set_fact: ejabberd_cluster_json="{{ list_cluster_output.stdout|ejabberd_cluster_to_json }}"
 
-- name: Write cluster JSON to file
-  nuage_append: filename="{{ report_path }}" text="{{ inventory_hostname }} {{ ejabberd_cluster_json|to_nice_json }}\n"
-  delegate_to: localhost
+  - name: Write ejabberd cluster output separator to report file
+    nuage_append: filename="{{ report_path }}" text="-----Result from executing {{ ejabber_cluster_list_command }}-----\n"
+    delegate_to: localhost
 
-- name: Execute ejabberd_connected_users_command command on VSD(s)
-  shell: "{{ ejabberd_connected_users_command }}"  # noqa 305
-  register: user_list
-  changed_when: True
-  remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
-  become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
-  vars:
-    ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"
+  - name: Write cluster JSON to file
+    nuage_append: filename="{{ report_path }}" text="{{ inventory_hostname }} {{ ejabberd_cluster_json|to_nice_json }}\n"
+    delegate_to: localhost
 
-- name: Print ejabberd connected_users output when verbosity >= 1
-  debug: var=user_list verbosity=1
+  - name: Execute ejabberd_connected_users_command command on VSD(s)
+    shell: "{{ ejabberd_connected_users_command }}"  # noqa 305
+    register: user_list
+    changed_when: True
+    remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
+    become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
+    vars:
+      ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"
 
-- name: Create local variable with ejabberd connected users to json
-  set_fact: ejabberd_users_json="{{ user_list.stdout|ejabberd_clients_to_json }}"
+  - name: Print ejabberd connected_users output when verbosity >= 1
+    debug: var=user_list verbosity=1
 
-- name: Write connected_users output separator to report file
-  nuage_append: filename="{{ report_path }}" text="-----Results from executing {{ ejabberd_connected_users_command }}-----\n"
-  delegate_to: localhost
+  - name: Create local variable with ejabberd connected users to json
+    set_fact: ejabberd_users_json="{{ user_list.stdout|ejabberd_clients_to_json }}"
 
-- name: Write users JSON to file
-  nuage_append: filename="{{ report_path }}" text="{{ inventory_hostname }} {{ ejabberd_users_json|to_nice_json }}\n"
-  delegate_to: localhost
+  - name: Write connected_users output separator to report file
+    nuage_append: filename="{{ report_path }}" text="-----Results from executing {{ ejabberd_connected_users_command }}-----\n"
+    delegate_to: localhost
 
-- name: Verify connected VSCs
-  assert:
-    that: "user_list.stdout|search('{{ hostvars[item].xmpp.username }}')"
-    msg: "{{ hostvars[item].xmpp.username }} could not be found in '/opt/ejabberd/bin/ejabberdctl connected_users'"
-  remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
-  become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
-  vars:
-    ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"
-  with_items: "{{ groups['vscs'] }}"
-  when:
-    - groups['vscs'] is defined
-    - groups['vscs']
-    - not postdeploy_only | default('False')
-    - not skip_vsc | default('False')
+  - name: Write users JSON to file
+    nuage_append: filename="{{ report_path }}" text="{{ inventory_hostname }} {{ ejabberd_users_json|to_nice_json }}\n"
+    delegate_to: localhost
+
+  - name: Verify connected VSCs
+    assert:
+      that: "user_list.stdout|search('{{ hostvars[item].xmpp.username }}')"
+      msg: "{{ hostvars[item].xmpp.username }} could not be found in '/opt/ejabberd/bin/ejabberdctl connected_users'"
+    remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
+    become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
+    vars:
+      ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"
+    with_items: "{{ groups['vscs'] }}"
+    when:
+      - groups['vscs'] is defined
+      - groups['vscs']
+      - not postdeploy_only | default('False')
+      - not skip_vsc | default('False')
+
+  when: not stats_only_vm
+
 
 - name: Get VSD deployment mode
   include_role:

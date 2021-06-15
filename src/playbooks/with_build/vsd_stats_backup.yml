@@ -1,0 +1,89 @@
+- hosts: upgrade_stats_only_vsds
+  gather_facts: no
+  serial: 1
+  tasks:
+    - name: Set VSD numbering for cluster install
+      set_fact:
+          stats_vm_number: 1
+      when: inventory_hostname in groups['upgrade_stats_only_vsds'][0]
+
+    - name: Set VSD numbering for cluster install
+      set_fact:
+          stats_vm_number: 2
+      when: inventory_hostname in groups['upgrade_stats_only_vsds'][1]
+
+    - name: Set VSD numbering for cluster install
+      set_fact:
+          stats_vm_number: 3
+      when: inventory_hostname in groups['upgrade_stats_only_vsds'][2]
+
+    - name: Create Statsout backup directory on localhost
+      include_role:
+        name: common
+        tasks_from: create-backup-dir
+      vars:
+        backup_component_name: "stats-out{{ stats_vm_number }}"
+        backup_host_name: "{{ inventory_hostname }}"
+
+    - name: Set name for stats-out backup folder
+      set_fact:
+        backup_folder: "{{ localhost_component_backup_dir }}"
+
+    - name: Find Certificates on stats out node
+      find:
+        path: "/opt/vsd/ejbca/p12/"
+        patterns: "{{ item }}"
+      with_items:
+        - "*.jks"
+        - "*.pem"
+      register: lst_files
+      remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
+      become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
+      vars:
+        ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"
+
+    - name: Print out the list of files
+      debug: var="lst_files"
+
+    - name: Verify atleast 2 certificates found
+      assert:
+        that: "{{ item.matched }} >= 2"
+        msg: "Could not find file {{ item.item }}"
+      with_items: "{{ lst_files.results }}"
+
+    - name: Check list of files
+      set_fact: 
+        files_to_backup: "{{ lst_files.results | map(attribute='files') | flatten | map(attribute='path') | list }}"
+
+    - name: Fetch Certificates from stats out node
+      fetch:
+        src: "{{ item }}"
+        dest: "{{ localhost_component_backup_dir }}"
+        flat: yes
+        validate_checksum: false
+      with_items: "{{ files_to_backup }}"
+      remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
+      become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
+      vars:
+        ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"
+
+    - name: Remove any old symbolic link to backup location
+      file:
+        path: "{{ metro_backup_root }}/backup-latest-stats-out{{ stats_vm_number }}"
+        state: absent
+      delegate_to: localhost
+
+    - name: Create symbolic link to backup location
+      file:
+        dest: "{{ metro_backup_root }}/backup-latest-stats-out{{ stats_vm_number }}"
+        src: "{{ backup_folder }}"
+        state: link
+        follow: false
+      delegate_to: localhost
+
+    - name: Clean any extra backups over max
+      include_role:
+        name: common
+        tasks_from: clean-extra-backups
+      vars:
+        backup_component_name: "stats-out{{ stats_vm_number }}"
