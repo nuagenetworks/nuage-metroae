@@ -60,7 +60,7 @@
       - ca_certificate_path is undefined
 
   - name: Configure the security profile on the VSC
-    cli_config:
+    sros_config:
       config: |
           configure system security tls-profile vsc-tls-profile own-key cf1:\{{ own_key }}
           configure system security tls-profile vsc-tls-profile own-certificate cf1:\{{ own_certificate }}
@@ -73,7 +73,7 @@
 - block:
 
   - name: Configure XMPP to use the security profile
-    cli_config:
+    sros_config:
       config: |
           configure vswitch-controller xmpp tls-profile vsc-tls-profile
           configure system time ntp ntp-server
@@ -82,7 +82,7 @@
 
   - block:
     - name: Configure XMPP server to the custom ejabberd id and password
-      cli_config:
+      sros_config:
         config: |
           configure vswitch-controller xmpp-server {{ ejabberd_id }}@{{ xmpp_domain }}
         provider: "{{ vsc_creds }}"
@@ -102,7 +102,7 @@
       - ejabberd_id is defined
 
   - name: check xmpp connectivity between VSC and VSD after enabling TLS
-    cli_command:
+    sros_command:
       command:
         - show vswitch-controller xmpp-server | match Functional
       provider: "{{ vsc_creds }}"
@@ -117,7 +117,7 @@
   when: xmpp_tls
 
 - name: Configure OpenFlow to use the security profile
-  cli_config:
+  sros_config:
     config: |
         configure vswitch-controller open-flow tls-profile vsc-tls-profile
         configure system time ntp ntp-server

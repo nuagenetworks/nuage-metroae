@@ -18,7 +18,7 @@
     check_login: True
 
 - name: Get output of 'show version'
-  cli_command:
+  sros_command:
     command:
       - show version
     provider: "{{ vsc_creds }}"
@@ -36,7 +36,7 @@
       mgmt_ip: "{{ hostvars[groups['vscs'][0]]['mgmt_ip'] }}"
 
   - name: Configure PBR backward compatibility on first VSC node running 3.2 version
-    cli_config:
+    sros_config:
       lines:
         - configure router bgp evpn-pre-rfc send-opaque-community
         - configure router bgp evpn-pre-rfc non-compliant
@@ -49,7 +49,7 @@
       mgmt_ip: "{{ hostvars[groups['vscs'][1]]['mgmt_ip'] }}"
 
   - name: Configure PBR backward compatibility on second VSC node running 3.2 version
-    cli_config:
+    sros_config:
       lines:
         - configure router bgp evpn-pre-rfc send-opaque-community
         - configure router bgp evpn-pre-rfc non-compliant
@@ -63,7 +63,7 @@
     - groups['vscs'][1] is defined
 
 - name: Get output of 'show bof'
-  cli_command:
+  sros_command:
     command:
       - show bof
     provider: "{{ vsc_creds }}"
@@ -77,7 +77,7 @@
 - block:
 
   - name: Get output of 'show system connections port 5222'
-    cli_command:
+    sros_command:
       command:
         - show system connections port 5222
       provider: "{{ vsc_creds }}"
@@ -89,7 +89,7 @@
       vsc_sys_conn_json: "{{ vsc_sys_conn.stdout[0]|vsc_system_connections_to_json }}"
 
   - name: check xmpp connectivity for VSC
-    cli_command:
+    sros_command:
       command:
         - show vswitch-controller xmpp-server | match Functional
       wait_for:
@@ -103,7 +103,7 @@
   when: vsd_sa_or_ha is match('ha')
 
 - name: Get output of 'show vswitch-controller xmpp-server detail'
-  cli_command:
+  sros_command:
     command:
       - show vswitch-controller xmpp-server detail
     provider: "{{ vsc_creds }}"
@@ -132,7 +132,7 @@
   when: vsd_sa_or_ha is match('ha')
 
 - name: Save VSC configs
-  cli_command:
+  sros_command:
     command:
       - admin save
     provider: "{{ vsc_creds }}"
