@@ -1,4 +1,5 @@
 - block:
+
   - name: Create SD-WAN Portal directory
     file:
       path: /opt/vnsportal
@@ -34,6 +35,7 @@
 
   - name: Copy the private key to the SD-WAN Portal directory
     command: cp /root/.ssh/id_rsa /opt/vnsportal/
+
   when: inventory_hostname == portal1.hostname
 
 - block:
@@ -50,11 +52,11 @@
       state: present
       key: "{{ lookup('file', '/tmp/id_rsa.pub') }}"
     when: inventory_hostname == portal3.hostname
-  when: portal_sa_or_ha is match('ha')
+  when:
+    - portal_sa_or_ha is match('ha')
 
-- block:
-  - name: Execute the Portal configuration script
-    command: docker run -ti --rm -v /var/run/docker.sock:/docker.sock -v /opt/vnsportal:/mnt:z nuage/vnsportal-installer:{{ portal_version }} --skip
+- name: Execute the Portal configuration script
+  command: docker run -ti --rm -v /var/run/docker.sock:/docker.sock -v /opt/vnsportal:/mnt:z nuage/vnsportal-installer:{{ portal_version }} --skip
   when: inventory_hostname == portal1.hostname
 
 - block:
