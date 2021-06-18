@@ -124,7 +124,7 @@
 
     - name: Save user provided config file
       sros_command:
-        command:
+        commands:
           - exec cf1:\{{ item | basename }}
           - admin save
         provider: "{{ vsc_creds }}"
@@ -161,7 +161,7 @@
 
     - name: Execute VSC basic configuration
       sros_command:
-        command:
+        commands:
           - exec cf1:\new-config.cfg
         provider: "{{ vsc_creds }}"
 
@@ -179,7 +179,7 @@
 
     - name: Save VSC basic configuration
       sros_command:
-        command:
+        commands:
           - admin save
         provider: "{{ vsc_creds }}"
 
@@ -194,17 +194,20 @@
 
     - name: Register uptime before reboot
       connection: network_cli
+      remote_user: "{{ vsc_default_username }}"
       sros_command:
-        command:
+        commands:
           - show uptime
-        provider: "{{ vsc_creds }}"
+        
       register: uptime_before_reboot
 
     - name: Reboot VSC VM (ignoring errors)
+      connection: network_cli
+      remote_user: "{{ vsc_default_username }}"
+      ansible_ssh_pass: "{{ vsc_default_password }}"
       sros_command:
-        command:
+        commands:
           - admin reboot now
-        provider: "{{ vsc_creds }}"
       ignore_errors: true
 
     - meta: reset_connection
@@ -221,8 +224,10 @@
         check_login: True
 
     - name: Register uptime after reboot
+      connection: network_cli
+      remote_user: "{{ vsc_default_username }}"
       sros_command:
-        command:
+        commands:
           - show uptime
         provider: "{{ vsc_creds }}"
       register: uptime_after_reboot
