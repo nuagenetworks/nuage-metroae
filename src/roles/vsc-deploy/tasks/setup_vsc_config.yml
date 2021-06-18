@@ -191,10 +191,12 @@
     - name: Pause to ensure VSC uptime is high enough
       pause:
         seconds: 30
-
+    - name: set fact fpr collection
+      set_fact:
+        ansible_user: "{{ vsc_default_username }}"
+        ansible_password: "{{ vsc_default_password }}"
     - name: Register uptime before reboot
       connection: network_cli
-      remote_user: "{{ vsc_default_username }}"
       sros_command:
         commands:
           - show uptime
@@ -203,8 +205,8 @@
 
     - name: Reboot VSC VM (ignoring errors)
       connection: network_cli
-      remote_user: "{{ vsc_default_username }}"
-      ansible_ssh_pass: "{{ vsc_default_password }}"
+      become: yes
+      become_method: enable
       sros_command:
         commands:
           - admin reboot now
