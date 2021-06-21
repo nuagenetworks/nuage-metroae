@@ -33,22 +33,24 @@
   fail: msg='VSR reports about "missing license record". Try redeploy with valid license file.'
   when: '"License status : card reboot pending, missing license record" == vsr_license_info.stdout_lines[0][3]'
 
+- name: set fact for SROS config
+    set_fact:
+      ansible_user: "{{ vsc_default_username }}"
+      ansible_password: "{{ vsc_default_password }}"
 
 - name: Configure DNS in BOF
+  connection: network_cli
   sros_command:
     commands:
       - "bof dns-domain {{ dns_domain }}"
       - "bof primary-dns {{ dns_server_list[0] }}"
       - "bof save"
-    provider: "{{ provider_creds }}"
-  delegate_to: localhost
 
 - name: Create rollback point
+  connection: network_cli
   sros_config:
     lines:
       - "admin rollback save comment \"Before Metro-Config {{ lookup('pipe', 'date -u +%Y-%m-%d-%H:%M:%s') }}\""
-    provider: "{{ provider_creds }}"
-  delegate_to: localhost
 
 - name: Ensure build directory exits to store config fragments in
   file:
@@ -75,14 +77,12 @@
   with_items: "{{ config_items }}"
 
 - name: Configure additional configuration to integrate VSR with Nuage VSD
+  connection: network_cli
   sros_config:
     lines: '{{ lookup("template", "{{ item.file }}.j2" ) | sros_rootify }}'
-    provider: "{{ provider_creds }}"
   with_items: "{{ config_items }}"
-  delegate_to: localhost
 
 - name: Save VSR config
+  connection: network_cli
   sros_config:
     save: yes
-    provider: "{{ provider_creds }}"
-  delegate_to: localhost

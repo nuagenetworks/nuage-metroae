@@ -19,10 +19,15 @@
     ssh_user: "{{ vsc_creds.username }}"
     check_login: True
 
+- name: set fact for SROS config
+    set_fact:
+      ansible_user: "{{ vsc_default_username }}"
+      ansible_password: "{{ vsc_default_password }}"
+
 - name: Apply specified configurations
+  connection: network_cli
   sros_config:
     src: "{{ item }}"
-    provider: "{{ vsc_creds }}"
     save: yes
   loop: "{{ vsc_config_file_paths }}"
   when: not override_vsc_config

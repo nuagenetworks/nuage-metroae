@@ -39,12 +39,18 @@
       path: "{{ failure_report_path }}"
       state: absent
 
+  - name: set fact for SROS command
+    set_fact:
+      ansible_user: "{{ vsc_default_username }}"
+      ansible_password: "{{ vsc_default_password }}"
+
   - name: Get output of 'show version'
+    connection: network_cli
     sros_command:
       commands:
         - show version
-      provider: "{{ vsc_creds }}"
     register: sh_version
+    delegate_to: vscs
 
   - name: Print 'show version' when verbosity >= 1
     debug: var=sh_version verbosity=1
@@ -56,11 +62,12 @@
     nuage_append: filename="{{ report_path }}" text="{{ inventory_hostname }} {{ sh_version.stdout_lines|to_nice_json }}\n"
 
   - name: Get output of 'show router interface'
+    connection: network_cli
     sros_command:
       commands:
         - show router interface
-      provider: "{{ vsc_creds }}"
     register: show_router_interfaces
+    delegate_to: vscs
 
   - name: Print output of 'show router interface' when verbosity >= 1
     debug: var=show_router_interfaces verbosity=1
@@ -122,11 +129,12 @@
       when: enable_ipv6 | default(false)
 
     - name: Get output of 'show router bgp summary'
+      connection: network_cli
       sros_command:
         commands:
           - show router bgp summary
-        provider: "{{ vsc_creds }}"
       register: bgp_summary
+      delegate_to: vscs
 
     - name: Print 'show router bgp summary' when verbosity >= 1
       debug: var=bgp_summary verbosity=1
@@ -183,14 +191,15 @@
     when: system_ip is defined
 
   - name: Get output of 'show vswitch-controller xmpp-server detail'
+    connection: network_cli
     sros_command:
       commands:
         - show vswitch-controller xmpp-server detail
-      provider: "{{ vsc_creds }}"
     register: xmpp_detail
     until: xmpp_detail.stdout[0].find('Functional') != -1
     retries: 15
     delay: 30
+    delegate_to: network_cli
 
   - name: Print 'show vswitch-controller xmpp-server detail' when verbosity >= 1
     debug: var=xmpp_detail verbosity=1
@@ -218,11 +227,12 @@
     ignore_errors: "{{ not nuage_upgrade | default(False) }}"
 
   - name: Get output of 'show vswitch-controller vsd detail'
+    connection: network_cli
     sros_command:
       commands:
         - show vswitch-controller vsd detail
-      provider: "{{ vsc_creds }}"
     register: vsd_detail
+    delegate_to: vscs
 
   - name: Print 'show vswitch-controller vsd detail' when verbosity >= 1
     debug: var=vsd_detail verbosity=1
@@ -237,11 +247,12 @@
     nuage_append: filename="{{ report_path }}" text="{{ inventory_hostname }} {{ vsd_detail_json|to_nice_json }}\n"
 
   - name: Get output of 'show vswitch-controller vswitches'
+    connection: network_cli
     sros_command:
       commands:
         - show vswitch-controller vswitches
-      provider: "{{ vsc_creds }}"
     register: show_vswitches
+    delegate_to: vscs
 
   - name: Print output of 'show vswitch-controller vswitches' when verbosity >= 1
     debug: var=show_vswitches verbosity=1
@@ -263,11 +274,12 @@
     when: expected_num_vswitches | default(0) > 0
 
   - name: Get output of 'show vswitch-controller vports type host'
+    connection: network_cli
     sros_command:
       commands:
         - show vswitch-controller vports type host
-      provider: "{{ vsc_creds }}"
     register: show_host_vports
+    delegate_to: vscs
 
   - name: Print output of 'show vswitch-controller vports type host' when verbosity >= 1
     debug: var=show_host_vports verbosity=1
@@ -289,11 +301,12 @@
     when: expected_num_host_vports | default(0) > 0
 
   - name: Get output of 'show vswitch-controller vports type vm'
+    connection: 
     sros_command:
       commands:
         - show vswitch-controller vports type vm
-      provider: "{{ vsc_creds }}"
     register: show_vm_vports
+    delegate_to: vscs
 
   - name: Print output of 'show vswitch-controller vports type vm' when verbosity >= 1
     debug: var=show_vm_vports verbosity=1
@@ -315,11 +328,12 @@
     when: expected_num_vm_vports | default(0) > 0
 
   - name: Get output of 'show vswitch-controller gateway ports'
+    connection: network_cli
     sros_command:
       commands:
         - show vswitch-controller gateway ports
-      provider: "{{ vsc_creds }}"
     register: show_gateway_ports
+    delegate_to: vscs
 
   - name: Print output of 'show vswitch-controller gateway ports' when verbosity >= 1
     debug: var=show_gateway_ports verbosity=1
@@ -341,14 +355,15 @@
     when: expected_num_gateway_ports | default(0) > 0
 
   - name: Get NTP status
+    connection: network_cli
     sros_command:
       commands:
         - show system ntp | match "Clock Source"
-      provider: "{{ vsc_creds }}"
     register: ntp_status
     until: not ntp_status.stdout[0] is search('none')
     retries: "{{ ntp_sync_retries }}"
     delay: "{{ ntp_sync_delay }}"
+    delegate_to: vscs
 
   - name: Verify NTP status
     assert:

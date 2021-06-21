@@ -18,11 +18,16 @@
     ssh_user: "{{ vsc_creds.username }}"
     check_login: True
 
+- name: set fact for SROS config and command
+    set_fact:
+      ansible_user: "{{ vsc_default_username }}"
+      ansible_password: "{{ vsc_default_password }}"
+
 - name: Get output of 'show bof'
+  connection: network_cli
   sros_command:
     commands:
       - show bof
-    provider: "{{ vsc_creds }}"
   register: bof_config
 
 - name: Print 'show bof' when verbosity >= 1
@@ -36,10 +41,10 @@
   debug: var=bof_json verbosity=1
 
 - name: Get current file version of image on VSC
+  connection: network_cli
   sros_command:
     commands:
       - file version "{{ bof_json['primary_image'] }}"
-    provider: "{{ vsc_creds }}"
   register: image
 
 - name: Print image version when verbosity >= 1
@@ -53,10 +58,10 @@
   debug: var=version_json verbosity=1
 
 - name: Register uptime before reboot
+  connection: network_cli
   sros_command:
     commands:
       - show uptime
-    provider: "{{ vsc_creds }}"
   register: uptime_before_reboot
   when: target_server_type is match('kvm') or target_server_type is match('vcenter') or target_server_type is match('openstack') or target_server_type is match("none")
 
@@ -67,10 +72,10 @@
 - block:
 
   - name: Reboot VSC VM (ignoring errors)
+    connection: network_cli
     sros_command:
       commands:
         - admin reboot now
-      provider: "{{ vsc_creds }}"
     ignore_errors: true
 
   - meta: reset_connection
@@ -87,10 +92,10 @@
       check_login: True
 
   - name: Register uptime after reboot
+    connection: network_cli
     sros_command:
       commands:
         - show uptime
-      provider: "{{ vsc_creds }}"
     register: uptime_after_reboot
 
   - name: Verify reboot happened successfully

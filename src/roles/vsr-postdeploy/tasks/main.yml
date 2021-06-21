@@ -9,12 +9,17 @@
 - name: Copy Python python scripts
   import_tasks: "copy_python_scripts.yml"
 
+- name: set fact for SROS config
+    set_fact:
+      ansible_user: "{{ vsc_default_username }}"
+      ansible_password: "{{ vsc_default_password }}"
+
 - name: Create rollback point
+  connection: network_cli
   sros_config:
     lines:
       - "admin rollback save comment \"Before Metro-DCGW Integration {{ lookup('pipe', 'date -u +%Y-%m-%d-%H:%M:%s') }}\""
-    provider: "{{ provider_creds }}"
-  delegate_to: localhost
+
 
 - block:
   - name: "Check if directory {{ config_file_directory }}/{{ inventory_hostname }} exists"
@@ -39,13 +44,12 @@
 
 
 - name: Configure additional configuration to integrate VSR with Nuage VSD
+  connection: network_cli
   sros_config:
     lines: '{{ lookup("template", "vsd_integration.cfg.j2" ) | sros_rootify }}'
-    provider: "{{ provider_creds }}"
-  delegate_to: localhost
 
 - name: Save VSR config
+  connection: network_cli
   sros_config:
     save: yes
-    provider: "{{ provider_creds }}"
-  delegate_to: localhost
+

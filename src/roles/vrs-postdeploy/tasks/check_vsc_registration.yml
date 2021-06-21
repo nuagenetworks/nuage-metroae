@@ -9,6 +9,11 @@
   set_fact:
    vsc_creds: '{{ hostvars|json_query(ctrl_query) }}'
 
+- name: set fact for SROS command
+    set_fact:
+      ansible_user: "{{ vsc_default_username }}"
+      ansible_password: "{{ vsc_default_password }}"
+
 - block:
   - name: Clean known_hosts of VSC Controller (ignoring errors)
     known_hosts:
@@ -44,11 +49,10 @@
       version_expr: '{ split($1, version, "-"); print version[4] }'
 
   - name: Get output of 'show version'
+    connection: network_cli
     sros_command:
       commands:
         - show version
-      provider: "{{ vsc_creds[0] }}"
-    delegate_to: localhost
     register: sh_version
 
   - name: Parse version
@@ -59,11 +63,10 @@
   - block:
 
     - name: Get output of 'show vswitch-controller information' on VSC ({{ controller_addr }}) for version less than 6.0.1
+      connection: network_cli
       sros_command:
         commands:
           - show vswitch-controller vswitches vs-ip {{ ovs_vtep_ip.stdout }} detail
-        provider: "{{ vsc_creds[0] }}"
-      delegate_to: localhost
       register: vsc_vsw_info
 
     - name: Set fact for vswitch_controller_info
@@ -75,11 +78,10 @@
   - block:
 
     - name: Get output of 'show vswitch-controller information' on VSC ({{ controller_addr }}) for version greater than 6.0.1
+      connection: network_cli
       sros_command:
         commands:
           - show vswitch-controller vswitches detail vs-name VRS-{{ ovs_vtep_ip.stdout }}
-        provider: "{{ vsc_creds[0] }}"
-      delegate_to: localhost
       register: vsc_vsw_info
 
     - name: Set fact for vswitch_controller_info

@@ -24,13 +24,17 @@
       ssh_user: "{{ vsc_creds.username }}"
       check_login: True
 
+  - name: set fact for SROS command
+    set_fact:
+      ansible_user: "{{ vsc_default_username }}"
+      ansible_password: "{{ vsc_default_password }}"
+
   - name: Get output of 'show version' (ignoring errors)
+    connection: network_cli
     sros_command:
       commands:
         - show version
-      provider: "{{ vsc_creds }}"
     ignore_errors: yes
-    delegate_to: localhost
     register: sh_version
 
   when: node_reachable

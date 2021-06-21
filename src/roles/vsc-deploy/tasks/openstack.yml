@@ -36,13 +36,19 @@
       - vsc
       - vsc-deploy
 
+- name: set fact for SROS config
+    set_fact:
+      ansible_user: "{{ vsc_default_username }}"
+      ansible_password: "{{ vsc_default_password }}"
+
   - name: Loading BOF config
+    collection: network_cli
     sros_config:
-      config: |
-        bof address "{{ vsc_mgmt_ip }}/{{ mgmt_netmask_prefix }}"
-        bof primary-dns "{{ infra_ip | default(dns_server_list[0]) }}"
-        bof dns-domain "{{ dns_domain }}"
-        bof save "cf1:"
-      provider: "{{ heat_vsc_creds }}"
+      lines:
+        - bof address "{{ vsc_mgmt_ip }}/{{ mgmt_netmask_prefix }}"
+        - bof primary-dns "{{ infra_ip | default(dns_server_list[0]) }}"
+        - bof dns-domain "{{ dns_domain }}"
+        - bof save "cf1:"
+
 
   

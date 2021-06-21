@@ -17,12 +17,16 @@
     ssh_user: "{{ vsc_creds.username }}"
     check_login: True
 
+- name: set fact for SROS config and commands
+    set_fact:
+      ansible_user: "{{ vsc_default_username }}"
+      ansible_password: "{{ vsc_default_password }}"
+
 - name: Get output of 'show version'
+  connection: network_cli
   sros_command:
     commands:
       - show version
-    provider: "{{ vsc_creds }}"
-  delegate_to: localhost
   register: vsc_version
 
 - name: Create local variable with show version in json
@@ -36,26 +40,27 @@
       mgmt_ip: "{{ hostvars[groups['vscs'][0]]['mgmt_ip'] }}"
 
   - name: Configure PBR backward compatibility on first VSC node running 3.2 version
+    connection: network_cli
     sros_config:
       lines:
         - configure router bgp evpn-pre-rfc send-opaque-community
         - configure router bgp evpn-pre-rfc non-compliant
         - configure router bgp no shutdown
         - admin save
-      provider: "{{ vsc_creds }}"
+      
 
   - name: Set mgmt_ip to second vsc node
     set_fact:
       mgmt_ip: "{{ hostvars[groups['vscs'][1]]['mgmt_ip'] }}"
 
   - name: Configure PBR backward compatibility on second VSC node running 3.2 version
+    connection: network_cli
     sros_config:
       lines:
         - configure router bgp evpn-pre-rfc send-opaque-community
         - configure router bgp evpn-pre-rfc non-compliant
         - configure router bgp no shutdown
         - admin save
-      provider: "{{ vsc_creds }}"
 
   when:
     - vsc_version_json['vsc_version'][0] == 3
@@ -63,11 +68,10 @@
     - groups['vscs'][1] is defined
 
 - name: Get output of 'show bof'
+  connection: network_cli
   sros_command:
     commands:
       - show bof
-    provider: "{{ vsc_creds }}"
-  delegate_to: localhost
   register: bof_config
 
 - name: Create local variable with bof config in json
@@ -77,11 +81,10 @@
 - block:
 
   - name: Get output of 'show system connections port 5222'
+    connection: network_cli
     sros_command:
       commands:
         - show system connections port 5222
-      provider: "{{ vsc_creds }}"
-    delegate_to: localhost
     register: vsc_sys_conn
 
   - name: Create local variable with VSC system connetion in json
@@ -89,25 +92,23 @@
       vsc_sys_conn_json: "{{ vsc_sys_conn.stdout[0]|vsc_system_connections_to_json }}"
 
   - name: check xmpp connectivity for VSC
+    connection: network_cli
     sros_command:
       commands:
         - show vswitch-controller xmpp-server | match Functional
       wait_for:
         - result[0] contains Functional
-      provider: "{{ vsc_creds }}"
       interval: 10
       retries: 6
-    delegate_to: localhost
     register: xmpp_status
 
   when: vsd_sa_or_ha is match('ha')
 
 - name: Get output of 'show vswitch-controller xmpp-server detail'
+  connection: network_cli
   sros_command:
     commands:
       - show vswitch-controller xmpp-server detail
-    provider: "{{ vsc_creds }}"
-  delegate_to: localhost
   register: xmpp_detail
 
 - name: Print 'show vswitch-controller xmpp-server detail' when verbosity >= 1
@@ -132,11 +133,10 @@
   when: vsd_sa_or_ha is match('ha')
 
 - name: Save VSC configs
+  connection: network_cli
   sros_command:
     commands:
       - admin save
-    provider: "{{ vsc_creds }}"
-  delegate_to: localhost
   register: vsc_config_save
 
 - name: Print 'admin save' when verbosity >= 1

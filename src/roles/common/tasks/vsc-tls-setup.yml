@@ -9,6 +9,11 @@
     ssh_user: "{{ vsc_creds.username }}"
     check_login: True
 
+- name: set fact for SROS config
+    set_fact:
+      ansible_user: "{{ vsc_default_username }}"
+      ansible_password: "{{ vsc_default_password }}"
+
 - block:
   - block:
     - name: Copy external certificates
@@ -60,31 +65,32 @@
       - ca_certificate_path is undefined
 
   - name: Configure the security profile on the VSC
+    connection: network_cli
     sros_config:
-      config: |
-          configure system security tls-profile vsc-tls-profile own-key cf1:\{{ own_key }}
-          configure system security tls-profile vsc-tls-profile own-certificate cf1:\{{ own_certificate }}
-          configure system security tls-profile vsc-tls-profile ca-certificate cf1:\{{ own_ca_certificate }}
-          configure system security tls-profile vsc-tls-profile no shutdown
-          admin save
-      provider: "{{ vsc_creds }}"
+      lines: 
+        - configure system security tls-profile vsc-tls-profile own-key cf1:\{{ own_key }}
+        - configure system security tls-profile vsc-tls-profile own-certificate cf1:\{{ own_certificate }}
+        - configure system security tls-profile vsc-tls-profile ca-certificate cf1:\{{ own_ca_certificate }}
+        - configure system security tls-profile vsc-tls-profile no shutdown
+        - admin save
   when: xmpp_tls or openflow_tls
 
 - block:
 
   - name: Configure XMPP to use the security profile
+    connection: network_cli
     sros_config:
-      config: |
-          configure vswitch-controller xmpp tls-profile vsc-tls-profile
-          configure system time ntp ntp-server
-          admin save
-      provider: "{{ vsc_creds }}"
+      lines:
+        - configure vswitch-controller xmpp tls-profile vsc-tls-profile
+        - configure system time ntp ntp-server
+        - admin save
 
   - block:
     - name: Configure XMPP server to the custom ejabberd id and password
+      connection: network_cli
       sros_config:
-        config: |
-          configure vswitch-controller xmpp-server {{ ejabberd_id }}@{{ xmpp_domain }}
+        lines:
+          - configure vswitch-controller xmpp-server {{ ejabberd_id }}@{{ xmpp_domain }}
         provider: "{{ vsc_creds }}"
 
     - name: Get vsd node(s) information
@@ -102,10 +108,10 @@
       - ejabberd_id is defined
 
   - name: check xmpp connectivity between VSC and VSD after enabling TLS
+    connection: network_cli
     sros_command:
       commands:
         - show vswitch-controller xmpp-server | match Functional
-      provider: "{{ vsc_creds }}"
     register: xmpp_status
     until: xmpp_status.stdout[0].find('Functional') != -1
     retries: 30
@@ -117,10 +123,10 @@
   when: xmpp_tls
 
 - name: Configure OpenFlow to use the security profile
+  connection: network_cli
   sros_config:
-    config: |
-        configure vswitch-controller open-flow tls-profile vsc-tls-profile
-        configure system time ntp ntp-server
-        admin save
-    provider: "{{ vsc_creds }}"
+    lines:
+      - configure vswitch-controller open-flow tls-profile vsc-tls-profile
+      - configure system time ntp ntp-server
+      - admin save
   when: openflow_tls

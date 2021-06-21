@@ -12,6 +12,11 @@
 
 - meta: reset_connection
 
+- name: set fact for SROS collection
+    set_fact:
+      ansible_user: "{{ vsc_default_username }}"
+      ansible_password: "{{ vsc_default_password }}"
+
 - name: Wait for VSC ssh to be ready
   include_role:
     name: common
@@ -23,11 +28,10 @@
     check_login: True
 
 - name: Get output of 'show bof'
+  connection: network_cli
   sros_command:
     commands:
       - show bof
-    provider: "{{ vsc_creds }}"
-  delegate_to: localhost
   register: bof_config
 
 - name: Create local variable with bof config in json
@@ -43,11 +47,10 @@
 
 - block:
   - name: Get output of 'show system connections port 5222'
+    connection: network_cli
     sros_command:
       commands:
         - show system connections port 5222
-      provider: "{{ vsc_creds }}"
-    delegate_to: localhost
     register: vsc_sys_conn
 
   - name: Create local variable with vsc system connection in json
@@ -57,23 +60,21 @@
   when: vsd_sa_or_ha is match('ha')
 
 - name: Get output of 'show vswitch-controller xmpp-server detail'
+  connection: network_cli
   sros_command:
     commands:
       - show vswitch-controller xmpp-server detail
-    provider: "{{ vsc_creds }}"
-  delegate_to: localhost
   register: xmpp_detail
   until: xmpp_detail.stdout[0] is search('Functional') or vsd_sa_or_ha is match('sa')
   retries: 10
   delay: 30
 
 - name: Save existing configuration on VSC
+  connection: network_cli
   sros_command:
     commands:
       - bof save
       - admin save
-    provider: "{{ vsc_creds }}"
-  delegate_to: localhost
   register: conf_save
 
 - import_tasks: backup_vsc.yml
