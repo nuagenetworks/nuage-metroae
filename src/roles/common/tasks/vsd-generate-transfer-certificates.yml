@@ -11,6 +11,10 @@
     set_fact:
       vsd_host: "{{ vsd_hostname_list[0] }}"
 
+  - name: Debug values
+    debug:
+      var: vsd_host
+
   - name: Check Ipv4 connectivity between VSD and Cert transfer server
     command: ping -c1 {{ inventory_hostname }}
     delegate_to: "{{ vsd_host }} "
@@ -20,7 +24,7 @@
 
   - name: Check Ipv6 connectivity between VSD and Cert transfer server
     command: ping6 -c1 {{ inventory_hostname }}
-    delegate_to: "{{ vsd_hostname_list[0] }}"
+    delegate_to: "{{ vsd_host }}"
     when:
       - enable_ipv6 | default(False)
       - scp_location is defined
@@ -36,12 +40,12 @@
   - name: Check if the user is already present (ignoring errors)
     shell: '/opt/vsd/ejbca/bin/ejbca.sh ra listendentities -S 40 | grep "End Entity: {{ certificate_username }}"'
     register: userExistsOutput
-    delegate_to: "{{ vsd_hostname_list[0] }}"
+    delegate_to: "{{ vsd_host }}"
     ignore_errors: yes
 
   - name: Revoke certs from VSD
     command: "/opt/vsd/ejbca/deploy/certMgmt.sh -a revoke -u {{ certificate_username }} -c {{ commonName }}"
-    delegate_to: "{{ vsd_hostname_list[0] }}"
+    delegate_to: "{{ vsd_host }}"
     register: revoked
     until: "revoked.rc == 0 or (revoked.stdout is search('fail adding entity'))"
     retries: 10
@@ -55,7 +59,7 @@
       -a generate -u {{ certificate_username }} -c {{ commonName }} -o csp
       -f {{ file_type | default('pem') }}
       -t {{ certificate_type }} {{ additional_parameters }}
-    delegate_to: "{{ vsd_hostname_list[0] }}"
+    delegate_to: "{{ vsd_host }}"
     register: created
     until: "created.rc == 0 or (created.stdout is search('fail adding entity'))"
     retries: 10
@@ -76,7 +80,7 @@
       -a generate -u {{ certificate_username }} -c {{ commonName }} -o csp
       -f {{ file_type | default('pem') }}
       -t {{ certificate_type }} -s {{ scp_user }}@{{ inventory_hostname }}:{{ scp_location }} {{ additional_parameters }}
-    delegate_to: "{{ vsd_hostname_list[0] }}"
+    delegate_to: "{{ vsd_host }}"
     register: created
     until: "created.rc == 0 or (created.stdout is search('fail adding entity'))"
     retries: 20
@@ -91,7 +95,7 @@
       -a generate -u {{ certificate_username }} -c {{ commonName }} -o csp
       -f {{ file_type | default('pem') }}
       -t {{ certificate_type }}  -n VSPCA {{ additional_parameters }}
-    delegate_to: "{{ vsd_hostname_list[0] }}"
+    delegate_to: "{{ vsd_host }}"
     register: created
     until: "created.rc == 0 or (created.stdout is search('fail adding entity'))"
     retries: 10
@@ -106,7 +110,7 @@
       -u {{ certificate_username }} -c {{ commonName }} -o csp
       -f {{ file_type | default('pem') }} -t {{ certificate_type }}
       -s {{ scp_user }}@{{ inventory_hostname }}:{{ scp_location }}   -n VSPCA {{ additional_parameters }}
-    delegate_to: "{{ vsd_hostname_list[0] }}"
+    delegate_to: "{{ vsd_host }}"
     register: created
     until: "created.rc == 0 or (created.stdout is search('fail adding entity'))"
     retries: 10
