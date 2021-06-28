@@ -11,3 +11,40 @@
     validate_certs: false
     networks: "{u\'{{ management_network }}\':u\'{{ mgmt_bridge }}\'}"
   delegate_to: localhost
+  when: not vcenter_vsc_deploy | default(False)
+
+- name: Deploy VSC on vcenter
+  vmware_deploy_ovf:
+    hostname: "{{ target_server }}"
+    username: "{{ vcenter.username }}"
+    password: "{{ vcenter.password }}"
+    ovf: "{{ image_path }}/{{ image_file_name }}"
+    datastore: "{{ vcenter.datastore }}"
+    cluster: "{{ vcenter.cluster }}"
+    datacenter: "{{ vcenter.datacenter }}" # folder: "{{ vcenter.vmfolder | default(omit) }}"
+    name: "{{ vmname }}"
+    validate_certs: false
+    networks: "{u\'{{ management_network }}\':u\'{{ mgmt_bridge }}\',
+              u\'Datapath Network={{ data_bridge }}\' }"
+    properties:
+      DHCP: False
+      Management_IP: "{{ mgmt_ip }}/{{ mgmt_netmask_prefix }}" #Todo. Conditionally add static routes
+      Static_Routes: "{% for sr in mgmt_static_route_list %}{{ sr }} {{ mgmt_gateway }}{% if not loop.last %};{% endif %}{% endfor %}"
+      DNS_Server_1: "{{ dns_server_list[0] }}" #Todo: Add more DNS servers
+      DNS_Server_2: "0.0.0.0"
+      DNS_Server_3: "0.0.0.0"
+      DNS_Search_Domain: "{{ dns_domain }}"
+      VSC_name: "{{ inventory_hostname }}"
+      BGP_Peer_1: "0.0.0.0"
+      BGP_Peer_2: "0.0.0.0"
+      Autonomous_System: 64000
+      BGP_Group: internal
+      Datapath_DFGW: "0.0.0.0"
+      System_IP: "{{ system_ip }}" # Todo: Run conditional for system IP
+      SNTP_Server: "{{ ntp_server_list[0] }}" #Todo: Run conditional
+      Datapath_IP: "{{ control_ip }}/{{ control_netmask_prefix }}" # Todo: Run conditonal
+      XMPP_Server: "{{ vsd_fqdn }}"
+
+  delegate_to: localhost
+  when: vcenter_vsc_deploy | default(False)
+
