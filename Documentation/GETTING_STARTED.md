@@ -48,7 +48,9 @@ As MetroAE User on the MetroAE server, copy SSH public key: `ssh-copy-id <target
 
 See [Setup](SETUP.md) for more details about enabling SSH Access.  
 
-## 4. Install ovftool (for VMware only)  
+## 4. Install ovftool (for VMware only)
+
+Note: From MetroAE 4.6.0 onwards MetroAE does not require installation of ovftool. So the ovftool install will not be needed unless you are using an older version of MetroAE
 
 Download and install the [ovftool](https://www.vmware.com/support/developer/ovf/) from VMware. MetroAE uses ovftool for OVA operations. Note that MetroAE is tested using ovftool version 4.3. ovftool version 4.3 is required for proper operation.
 
