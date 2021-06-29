@@ -11,7 +11,9 @@
     validate_certs: false
     networks: "{u\'{{ management_network }}\':u\'{{ mgmt_bridge }}\'}"
   delegate_to: localhost
-  when: not vcenter_vsc_deploy | default(False)
+  when: 
+    - not vcenter_vsc_deploy | default(False)
+    - not vcenter_nsg_deploy | default(False)
 
 - name: Deploy VSC on vcenter
   vmware_deploy_ovf:
@@ -50,3 +52,22 @@
   delegate_to: localhost
   when: vcenter_vsc_deploy | default(False)
 
+- name: Deploy image on VCenter
+  vmware_deploy_ovf:
+    hostname: "{{ target_server }}"
+    username: "{{ vcenter.username }}"
+    password: "{{ vcenter.password }}"
+    ovf: "{{ image_path }}/{{ image_file_name }}"
+    datastore: "{{ vcenter.datastore }}"
+    cluster: "{{ vcenter.cluster }}"
+    datacenter: "{{ vcenter.datacenter }}" # folder: "{{ vcenter.vmfolder | default(omit) }}"
+    name: "{{ vm_name }}"
+    validate_certs: false
+    power_on: "{{ power_on_arg }}"
+    networks: 
+      port_vmnic: "{{ mgmt_bridge }}"
+      OVS DataPath: "{{ data_bridge }}"
+      OVS Management: "{{ access_bridge }}"
+
+  delegate_to: localhost
+  when: vcenter_nsg_deploy | default(False)

@@ -24,30 +24,6 @@
 
 - block:
 
-  - name: Get the version from OVA file
-    shell: '{{ vcenter_global.ovftool }} --hideEula "{{ image_path }}/{{ image_file_name }}" | grep ^Name: | cut -d- -f2'
-    register: vsd_version_from_ova
-    delegate_to: localhost
-
-  - name: Strip off unnecessary characters from version string
-    set_fact:
-      clean_version: "{{ upgrade_to_version|upper|replace('R','') }}"
-
-  - name: Check that to version in OVA agrees with what has been set
-    assert:
-      that: "vsd_version_from_ova.stdout is search(clean_version)"
-      msg: >
-        "VSD version mismatch between {{ image_path }}/{{ image_file_name }} "
-        "({{ vsd_version_from_ova.stdout }}) and upgrade_to_version "
-        "({{ clean_version }}). Quitting."
-
-  when:
-    - component_type | default("NONE") == 'vsd'
-    - target_server_type is match('vcenter')
-    - not vsd_inplace_upgrade
-
-- block:
-
   - name: Check that VSTAT upgrade scripts path and file
     set_fact:
       is_VSTAT_upgrade_script_path_missing: "{{ vstat_upgrade_scripts_path | default('MISSING') == 'MISSING' }}"

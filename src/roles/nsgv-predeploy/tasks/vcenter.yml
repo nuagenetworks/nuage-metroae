@@ -63,35 +63,13 @@
 
   - name: Set power on when NSGv mac does not need to be set
     set_fact:
-      power_on_arg: "--powerOn"
+      power_on_arg: yes
     when: nsgv_mac is not defined
 
   - name: Clear power on when NSGv mac does need to be set
     set_fact:
-      power_on_arg: ""
+      power_on_arg: no
     when: nsgv_mac is defined
-
-### Make sure to remove the ovftool here and add network options later
-  - name: Configure ovftool command
-    set_fact:
-      ovftool_command: >-
-        {{ vcenter_global.ovftool }}
-        --acceptAllEulas
-        --noSSLVerify
-        {{ power_on_arg }}
-        {% if hostvars[inventory_hostname].ansible_verbosity > 0 %}
-        --X:logLevel=verbose
-        --X:logToConsole
-        {% else %}
-        --machineOutput
-        {% endif %}
-        -dm=thin
-        -ds={{ vcenter.datastore }}
-        -n={{ vm_name }}
-        --net:"port_vmnic={{ mgmt_bridge }}"
-        --net:"OVS DataPath={{ data_bridge }}"
-        --net:"OVS Management={{ access_bridge }}"
-        "{{ image_path }}/{{ image_file_name }}"
 
   - name: Deploy NSGv image on vCenter
     include_role:
@@ -99,6 +77,7 @@
       tasks_from: vcenter-deploy-image
     vars:
       management_network: "Management"
+      vcenter_nsg_deploy: True
 
   - block:
 
