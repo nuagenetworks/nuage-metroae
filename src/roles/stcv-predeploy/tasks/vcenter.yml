@@ -48,30 +48,12 @@
       Resources/{{ vcenter.resource_pool | urlencode }}"
   when: vcenter.resource_pool != 'NONE'
 
-- name: Deploy STCv image on vCenter (Can take several minutes)
-  connection: local
-  command: >
-    {{ vcenter_global.ovftool }}
-    --acceptAllEulas
-    --noSSLVerify
-    --powerOn
-    --machineOutput
-    -dm=thin
-    -ds={{ vcenter.datastore }}
-    -n={{ hostname }}
-    --net:"ManagementNet={{ mgmt_bridge }}"
-    --net:"TestNet1={{ data_bridge1 }}"
-    {% if data_bridge2 is defined %}
-    --net:"TestNet2={{ data_bridge2 }}"
-    {% endif %}
-    --prop:"ipaddress={{ mgmt_ip }}"
-    --prop:"netmask={{ mgmt_netmask }}"
-    --prop:"gwaddress={{ mgmt_gateway }}"
-    --prop:"telnetd=off"
-    --prop:"ntp={{ dns_server_list[0] }}"
-    "{{ stcv_image_path }}/{{ stcv_image_filename }}"
-    {{ vcenter_path }}
-  changed_when: True
+- name: Deploy NSGv image on vCenter
+  include_role:
+    name: common
+    tasks_from: vcenter-deploy-image
+  vars:
+    vcenter_stcv_deploy: True
 
 - name: Waiting until VMware tools becomes available
   connection: local

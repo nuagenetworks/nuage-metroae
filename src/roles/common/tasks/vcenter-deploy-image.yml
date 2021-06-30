@@ -14,6 +14,7 @@
   when: 
     - not vcenter_vsc_deploy | default(False)
     - not vcenter_nsg_deploy | default(False)
+    - not vcenter_stcv_deploy | default(False)
 
 - name: Deploy VSC on vcenter
   vmware_deploy_ovf:
@@ -52,7 +53,7 @@
   delegate_to: localhost
   when: vcenter_vsc_deploy | default(False)
 
-- name: Deploy image on VCenter
+- name: Deploy NSG image on VCenter
   vmware_deploy_ovf:
     hostname: "{{ target_server }}"
     username: "{{ vcenter.username }}"
@@ -71,3 +72,31 @@
 
   delegate_to: localhost
   when: vcenter_nsg_deploy | default(False)
+
+- name: Deploy NSG image on VCenter
+  vmware_deploy_ovf:
+    hostname: "{{ target_server }}"
+    username: "{{ vcenter.username }}"
+    password: "{{ vcenter.password }}"
+    ovf: "{{ stcv_image_path }}/{{ stcv_image_filename }}"
+    datastore: "{{ vcenter.datastore }}"
+    cluster: "{{ vcenter.cluster }}"
+    datacenter: "{{ vcenter.datacenter }}" # folder: "{{ vcenter.vmfolder | default(omit) }}"
+    name: "{{ hostname }}"
+    validate_certs: false
+    networks:
+      OVS Management: "{{ access_bridge }}"
+      ManagementNet: "{{ mgmt_bridge }}"
+      TestNet1: "{{ data_bridge1 }}"
+    #{% if data_bridge2 is defined %}
+    #  TestNet2: "{{ data_bridge2 }}"
+    #{% endif %}
+    prop:
+      ipaddress: "{{ mgmt_ip }}"
+      netmask: "{{ mgmt_netmask }}"
+      gwaddress: "{{ mgmt_gateway }}"
+      telnetd: "off"
+      ntp: "{{ dns_server_list[0] }}"
+
+  delegate_to: localhost
+  when: vcenter_stcv_deploy | default(False)
