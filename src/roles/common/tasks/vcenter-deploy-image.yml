@@ -30,6 +30,16 @@
       control_ip_address: "0.0.0.0/32"
     when: control_ip is not defined or control_netmask_prefix is not defined
 
+  - name: Set management static route list if defined
+    set_fact:
+      static_route_list: "{% for sr in mgmt_static_route_list %}{{ sr }} {{ mgmt_gateway }}{% if not loop.last %};{% endif %}{% endfor %}"
+    when: mgmt_static_route_list is defined
+
+  - name: Set management static route list if not defined
+    set_fact:
+      static_route_list: ""
+    when: mgmt_static_route_list is not defined
+
   - name: Deploy VSC on vcenter
     vmware_deploy_ovf:
       hostname: "{{ target_server }}"
@@ -47,8 +57,8 @@
         Datapath Network: "{{ data_bridge }}"
       properties:
         DHCP: False
-        Management_IP: "{{ mgmt_ip }}/{{ mgmt_netmask_prefix }}" #Todo. Conditionally add static routes
-        Static_Routes: "{% for sr in mgmt_static_route_list %}{{ sr }} {{ mgmt_gateway }}{% if not loop.last %};{% endif %}{% endfor %}"
+        Management_IP: "{{ mgmt_ip }}/{{ mgmt_netmask_prefix }}"
+        Static_Routes: "{{ static_route_list }}"
         DNS_Server_1: "{{ dns_server_list[0] }}"
         DNS_Server_2: "{{ '0.0.0.0' if dns_server_list | length <= 1 else dns_server_list[1] }}"
         DNS_Server_3: "{{ '0.0.0.0' if dns_server_list | length <= 2 else dns_server_list[2] }}"
