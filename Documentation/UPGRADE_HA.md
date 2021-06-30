@@ -255,6 +255,25 @@ Our example includes a VSTAT node. If your topology does not include one, procee
 
      Completes the upgrade process, renables stats and performs a series of checks to ensure the VSTAT nodes are healthy.
 
+### Upgrade Stats-out Nodes
+
+1. Upgrade the VSD stats-out nodes
+
+     `metroae upgrade vsd stats`
+
+     After the VSTAT Upgrade, Upgrade the VSD Stats-out nodes using the following command.
+
+2. Patch the stats-out VSDs if neeeded
+
+     If a inplace patch upgrade is needed, for e.g. Patch from 20.10.R1 to 20.10.R4, first patch the VSDs using the following command.
+
+     `metroae upgrade vsds inplace`
+
+     Then apply the patch upgrade to the VSD stats node by using this command.
+
+     `metroae upgrade vsd stats inplace`
+
+
 ### Finalize the Upgrade
 
 1. Finalize the settings
