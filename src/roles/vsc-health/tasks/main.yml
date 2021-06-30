@@ -43,13 +43,17 @@
     set_fact:
       ansible_user: "{{ vsc_default_username }}"
       ansible_password: "{{ vsc_default_password }}"
+  
+  delegate_to: localhost
 
-  - name: Get output of 'show version'
-    connection: network_cli
-    sros_command:
-      commands:
-        - show version
-    register: sh_version
+- name: Get output of 'show version'
+  connection: network_cli
+  sros_command:
+    commands:
+      - show version
+  register: sh_version
+
+- block:
 
   - name: Print 'show version' when verbosity >= 1
     debug: var=sh_version verbosity=1
@@ -60,12 +64,16 @@
   - name: Write show version json to report
     nuage_append: filename="{{ report_path }}" text="{{ inventory_hostname }} {{ sh_version.stdout_lines|to_nice_json }}\n"
 
-  - name: Get output of 'show router interface'
-    connection: network_cli
-    sros_command:
-      commands:
-        - show router interface
-    register: show_router_interfaces
+  delegate_to: localhost
+
+- name: Get output of 'show router interface'
+  connection: network_cli
+  sros_command:
+    commands:
+      - show router interface
+  register: show_router_interfaces
+
+- block:
 
   - name: Print output of 'show router interface' when verbosity >= 1
     debug: var=show_router_interfaces verbosity=1
@@ -106,98 +114,106 @@
   - name: Run if System IP is defined
     block:
 
-    - name: Check for expected system Adm Status
-      assert: {
-        that: "{{ show_router_interfaces_json.system_Adm is match('Up') }}",
-        msg: "Invalid Adm status for system interface. ({{ show_router_interfaces_json.system_Adm }}) detected. Expected 'Up'. Check 'show router interface'."
-        }
+    - block:
 
-    - name: Check for expected system Oprv4 Status
-      assert: {
-        that: "{{ show_router_interfaces_json.system_Oprv4 is match('Up') }}",
-        msg: "Invalid Oprv4 status for system interface. ({{ show_router_interfaces_json.system_Oprv4 }}) detected. Expected 'Up'. Check 'show router interface'."
-        }
-      when: not enable_ipv6 | default(false)
+      - name: Check for expected system Adm Status
+        assert: {
+          that: "{{ show_router_interfaces_json.system_Adm is match('Up') }}",
+          msg: "Invalid Adm status for system interface. ({{ show_router_interfaces_json.system_Adm }}) detected. Expected 'Up'. Check 'show router interface'."
+          }
 
-    - name: Check for expected system Oprv6 Status
-      assert: {
-        that: "{{ show_router_interfaces_json.system_Oprv6 is match('Up') }}",
-        msg: "Invalid Oprv6 status for system interface. ({{ show_router_interfaces_json.system_Oprv6 }}) detected. Expected 'Up'. Check 'show router interface'."
-        }
-      when: enable_ipv6 | default(false)
+      - name: Check for expected system Oprv4 Status
+        assert: {
+          that: "{{ show_router_interfaces_json.system_Oprv4 is match('Up') }}",
+          msg: "Invalid Oprv4 status for system interface. ({{ show_router_interfaces_json.system_Oprv4 }}) detected. Expected 'Up'. Check 'show router interface'."
+          }
+        when: not enable_ipv6 | default(false)
 
+      - name: Check for expected system Oprv6 Status
+        assert: {
+          that: "{{ show_router_interfaces_json.system_Oprv6 is match('Up') }}",
+          msg: "Invalid Oprv6 status for system interface. ({{ show_router_interfaces_json.system_Oprv6 }}) detected. Expected 'Up'. Check 'show router interface'."
+          }
+        when: enable_ipv6 | default(false)
+     
+     delegate_to: localhost
+  
     - name: Get output of 'show router bgp summary'
       connection: network_cli
       sros_command:
         commands:
           - show router bgp summary
       register: bgp_summary
+    
+    - block:
+      - name: Print 'show router bgp summary' when verbosity >= 1
+        debug: var=bgp_summary verbosity=1
 
-    - name: Print 'show router bgp summary' when verbosity >= 1
-      debug: var=bgp_summary verbosity=1
+      - name: Create local variable with BGP Summary in json
+        set_fact: bgp_summary_json="{{ bgp_summary.stdout[0]|bgp_summary_to_json }}"
 
-    - name: Create local variable with BGP Summary in json
-      set_fact: bgp_summary_json="{{ bgp_summary.stdout[0]|bgp_summary_to_json }}"
+      - name: Print BGP Summary in json when verbosity >= 1
+        debug: var=bgp_summary_json verbosity=1
 
-    - name: Print BGP Summary in json when verbosity >= 1
-      debug: var=bgp_summary_json verbosity=1
+      - name: Write BGP Admin State JSON to file
+        nuage_append: filename="{{ report_path }}" text="{{ inventory_hostname }} {{ bgp_summary_json|to_nice_json }}\n"
 
-    - name: Write BGP Admin State JSON to file
-      nuage_append: filename="{{ report_path }}" text="{{ inventory_hostname }} {{ bgp_summary_json|to_nice_json }}\n"
+      - name: Create local variable with BGP Admin State
+        set_fact: bgp_admin_state="{{ bgp_summary_json['BGP Admin State'] }}"
 
-    - name: Create local variable with BGP Admin State
-      set_fact: bgp_admin_state="{{ bgp_summary_json['BGP Admin State'] }}"
+      - name: Print BGP Admin State when verbosity >= 1
+        debug: var=bgp_admin_state verbosity=1
 
-    - name: Print BGP Admin State when verbosity >= 1
-      debug: var=bgp_admin_state verbosity=1
+      - name: Check for expected BGP Admin State
+        assert: {
+          that: "'{{ expected_bgp_admin_state }}' in bgp_admin_state",
+          msg: "Unexpected BGP Admin State - {{ bgp_admin_state }}. Expected '{{ expected_bgp_admin_state }}'. Check output of 'show router bgp summary'."
+          }
+        ignore_errors: "{{ not nuage_upgrade | default(False) }}"
 
-    - name: Check for expected BGP Admin State
-      assert: {
-        that: "'{{ expected_bgp_admin_state }}' in bgp_admin_state",
-        msg: "Unexpected BGP Admin State - {{ bgp_admin_state }}. Expected '{{ expected_bgp_admin_state }}'. Check output of 'show router bgp summary'."
-        }
-      ignore_errors: "{{ not nuage_upgrade | default(False) }}"
+      - name: Create local variable for BGP Oper State
+        set_fact: bgp_oper_state="{{ bgp_summary_json['BGP Oper State'] }}"
 
-    - name: Create local variable for BGP Oper State
-      set_fact: bgp_oper_state="{{ bgp_summary_json['BGP Oper State'] }}"
+      - name: Print BGP Oper State when verbosity >= 1
+        debug: var=bgp_oper_state verbosity=1
 
-    - name: Print BGP Oper State when verbosity >= 1
-      debug: var=bgp_oper_state verbosity=1
+      - name: Check for expected BGP Oper State
+        assert: {
+          that: "'{{ expected_bgp_oper_state }}' in bgp_oper_state",
+          msg: "Unexpected BGP Oper State - {{ bgp_oper_state }}. Expected '{{ expected_bgp_oper_state }}'. Check output of 'show router bgp summary'."
+          }
+        ignore_errors: "{{ not nuage_upgrade | default(False) }}"
 
-    - name: Check for expected BGP Oper State
-      assert: {
-        that: "'{{ expected_bgp_oper_state }}' in bgp_oper_state",
-        msg: "Unexpected BGP Oper State - {{ bgp_oper_state }}. Expected '{{ expected_bgp_oper_state }}'. Check output of 'show router bgp summary'."
-        }
-      ignore_errors: "{{ not nuage_upgrade | default(False) }}"
+      - name: Create local variable for BGP Peer Count
+        set_fact: bgp_peer_count="{{ bgp_summary_json['Total Peers'] }}"
 
-    - name: Create local variable for BGP Peer Count
-      set_fact: bgp_peer_count="{{ bgp_summary_json['Total Peers'] }}"
+      - name: Print BGP Peer Count when verbosity >= 1
+        debug: var=bgp_peer_count verbosity=1
 
-    - name: Print BGP Peer Count when verbosity >= 1
-      debug: var=bgp_peer_count verbosity=1
-
-    - name: Check for expected BGP Peer Count
-      assert: {
-        that: "{{ expected_num_bgp_peers }} == {{ bgp_peer_count }}",
-        msg: "Invalid BGP Peer count ({{ bgp_peer_count }}) detected. Expected '{{ expected_num_bgp_peers }}'. Check 'show router bgp summary'."
-        }
-      ignore_errors: "{{ not nuage_upgrade | default(False) }}"
-      when: expected_num_bgp_peers | default(0) > 0
+      - name: Check for expected BGP Peer Count
+        assert: {
+          that: "{{ expected_num_bgp_peers }} == {{ bgp_peer_count }}",
+          msg: "Invalid BGP Peer count ({{ bgp_peer_count }}) detected. Expected '{{ expected_num_bgp_peers }}'. Check 'show router bgp summary'."
+          }
+        ignore_errors: "{{ not nuage_upgrade | default(False) }}"
+        when: expected_num_bgp_peers | default(0) > 0
+      
+      delegate_to: localhost
 
     when: system_ip is defined
 
-  - name: Get output of 'show vswitch-controller xmpp-server detail'
-    connection: network_cli
-    sros_command:
-      commands:
-        - show vswitch-controller xmpp-server detail
-    register: xmpp_detail
-    until: xmpp_detail.stdout[0].find('Functional') != -1
-    retries: 15
-    delay: 30
-    delegate_to: network_cli
+- name: Get output of 'show vswitch-controller xmpp-server detail'
+  connection: network_cli
+  sros_command:
+    commands:
+      - show vswitch-controller xmpp-server detail
+  register: xmpp_detail
+  until: xmpp_detail.stdout[0].find('Functional') != -1
+  retries: 15
+  delay: 30
+  delegate_to: network_cli
 
+- block:
   - name: Print 'show vswitch-controller xmpp-server detail' when verbosity >= 1
     debug: var=xmpp_detail verbosity=1
 
@@ -222,14 +238,17 @@
       msg: "Invalid xmpp-server state ({{ xmpp_server_state }}) detected. Expected {{ expected_xmpp_server_state }}. Check 'show vswitch-controller xmpp-server details'."      # noqa 204
       }
     ignore_errors: "{{ not nuage_upgrade | default(False) }}"
+  
+  delegate_to: localhost
 
-  - name: Get output of 'show vswitch-controller vsd detail'
-    connection: network_cli
-    sros_command:
-      commands:
-        - show vswitch-controller vsd detail
-    register: vsd_detail
+- name: Get output of 'show vswitch-controller vsd detail'
+  connection: network_cli
+  sros_command:
+    commands:
+      - show vswitch-controller vsd detail
+  register: vsd_detail
 
+- block:
   - name: Print 'show vswitch-controller vsd detail' when verbosity >= 1
     debug: var=vsd_detail verbosity=1
 
@@ -241,14 +260,17 @@
 
   - name: Write vsd detail json to report
     nuage_append: filename="{{ report_path }}" text="{{ inventory_hostname }} {{ vsd_detail_json|to_nice_json }}\n"
+  
+  delegate_to: localhost
 
-  - name: Get output of 'show vswitch-controller vswitches'
-    connection: network_cli
-    sros_command:
-      commands:
-        - show vswitch-controller vswitches
-    register: show_vswitches
+- name: Get output of 'show vswitch-controller vswitches'
+  connection: network_cli
+  sros_command:
+    commands:
+      - show vswitch-controller vswitches
+  register: show_vswitches
 
+- block:
 
   - name: Print output of 'show vswitch-controller vswitches' when verbosity >= 1
     debug: var=show_vswitches verbosity=1
@@ -268,14 +290,17 @@
       msg: "Invalid vswitch count ({{ show_vswitches_json['No. of virtual switches'] }}) detected.Expected {{ expected_num_vswitches }}. Check 'show vswitch-controller vswitches'." }  # noqa 204
     ignore_errors: "{{ not nuage_upgrade | default(False) }}"
     when: expected_num_vswitches | default(0) > 0
+  
+  delegate_to: localhost
 
-  - name: Get output of 'show vswitch-controller vports type host'
-    connection: network_cli
-    sros_command:
-      commands:
-        - show vswitch-controller vports type host
-    register: show_host_vports
+- name: Get output of 'show vswitch-controller vports type host'
+  connection: network_cli
+  sros_command:
+    commands:
+      - show vswitch-controller vports type host
+  register: show_host_vports
 
+- block:
 
   - name: Print output of 'show vswitch-controller vports type host' when verbosity >= 1
     debug: var=show_host_vports verbosity=1
@@ -295,14 +320,17 @@
       msg: "Invalid host vport count ({{ show_host_vports_json['No. of virtual ports'] }}) detected. Expected {{ expected_num_host_vports }}. Check 'show vswitch-controller vports type host'." }      # noqa 204
     ignore_errors: "{{ not nuage_upgrade | default(False) }}"
     when: expected_num_host_vports | default(0) > 0
+  
+  delegate_to: localhost
 
-  - name: Get output of 'show vswitch-controller vports type vm'
-    connection: 
-    sros_command:
-      commands:
-        - show vswitch-controller vports type vm
-    register: show_vm_vports
+- name: Get output of 'show vswitch-controller vports type vm'
+  connection: 
+  sros_command:
+    commands:
+      - show vswitch-controller vports type vm
+  register: show_vm_vports
 
+- block:
 
   - name: Print output of 'show vswitch-controller vports type vm' when verbosity >= 1
     debug: var=show_vm_vports verbosity=1
@@ -322,15 +350,17 @@
       msg: "Invalid vm vport count ({{ show_vm_vports_json['No. of virtual ports'] }}) detected. Expected {{ expected_num_vm_vports }}. Check 'show vswitch-controller vports type vm'." }      # noqa 204
     ignore_errors: "{{ not nuage_upgrade | default(False) }}"
     when: expected_num_vm_vports | default(0) > 0
+  
+  delegate_to: localhost
 
-  - name: Get output of 'show vswitch-controller gateway ports'
-    connection: network_cli
-    sros_command:
-      commands:
-        - show vswitch-controller gateway ports
-    register: show_gateway_ports
+- name: Get output of 'show vswitch-controller gateway ports'
+  connection: network_cli
+  sros_command:
+    commands:
+      - show vswitch-controller gateway ports
+  register: show_gateway_ports
 
-
+- block:
   - name: Print output of 'show vswitch-controller gateway ports' when verbosity >= 1
     debug: var=show_gateway_ports verbosity=1
 
@@ -349,18 +379,20 @@
       msg: "Invalid gateway port count ({{ show_gateway_ports_json['No. of Ports'] }}) detected. Expected {{ expected_num_gateway_ports }}. Check 'show vswitch-controller gateway ports'." }   # noqa 204
     ignore_errors: "{{ not nuage_upgrade | default(False) }}"
     when: expected_num_gateway_ports | default(0) > 0
+  
+  delegate_to: localhost
+  
+- name: Get NTP status
+  connection: network_cli
+  sros_command:
+    commands:
+      - show system ntp | match "Clock Source"
+  register: ntp_status
+  until: not ntp_status.stdout[0] is search('none')
+  retries: "{{ ntp_sync_retries }}"
+  delay: "{{ ntp_sync_delay }}"
 
-  - name: Get NTP status
-    connection: network_cli
-    sros_command:
-      commands:
-        - show system ntp | match "Clock Source"
-    register: ntp_status
-    until: not ntp_status.stdout[0] is search('none')
-    retries: "{{ ntp_sync_retries }}"
-    delay: "{{ ntp_sync_delay }}"
-
-
+- block:
   - name: Verify NTP status
     assert:
       that: not ntp_status.stdout[0] is search('none')
