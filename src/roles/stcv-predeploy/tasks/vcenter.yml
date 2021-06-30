@@ -32,22 +32,6 @@
     that: "stcv_vm_facts.failed"
     msg: "VM {{ hostname }} already exists, quiting"
 
-- name: Configure vCenter path
-  set_fact:
-    vcenter_path: "vi://'{{ vcenter.username | urlencode }}':'\
-      {{ vcenter.password | urlencode }}'@{{ target_server }}/\
-      {{ vcenter.datacenter }}/host/\
-      {{ (vcenter.host_clusters_folder != 'NONE') | ternary (vcenter.host_clusters_folder + '/' | urlencode, '') }}{{ vcenter.cluster }}"
-
-- name: Update vCenter path if resource pool is configured
-  set_fact:
-    vcenter_path: "vi://'{{ vcenter.username | urlencode }}':'\
-      {{ vcenter.password | urlencode }}'@{{ target_server }}/\
-      {{ vcenter.datacenter }}/host/\
-      {{ (vcenter.host_clusters_folder != 'NONE') | ternary (vcenter.host_clusters_folder + '/' | urlencode, '') }}{{ vcenter.cluster }}/\
-      Resources/{{ vcenter.resource_pool | urlencode }}"
-  when: vcenter.resource_pool != 'NONE'
-
 - name: Deploy NSGv image on vCenter
   include_role:
     name: common
