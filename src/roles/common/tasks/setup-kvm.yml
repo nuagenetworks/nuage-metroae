@@ -36,27 +36,16 @@
       that: '"access" not in required_bridges or access_bridge in ansible_interfaces'
       msg: "Required access network bridge not found"
 
-  - block:
-
-    - name: Check if required OS packages are installed (ignoring errors)
-      command:
-        cmd: rpm -q qemu-kvm libvirt bridge-utils libguestfs-tools libvirt-python
-        warn: yes
-      register: rpm_check
-      ignore_errors: True
-
-    - name: If RedHat, install packages for RedHat OS family distros
-      yum:
-        name:
-         - qemu-kvm
-         - libvirt
-         - bridge-utils
-         - libguestfs
-         - libguestfs-tools
-         - libvirt-python
-        state: present
-      when: rpm_check.rc != 0
-
+  - name: If RedHat, install packages for RedHat OS family distros
+    yum:
+      name:
+       - qemu-kvm
+       - libvirt
+       - bridge-utils
+       - libguestfs
+       - libguestfs-tools
+       - libvirt-python
+      state: present
     when: ansible_os_family == "RedHat"
 
   - name: If Debian, install packages for Debian OS family distros
