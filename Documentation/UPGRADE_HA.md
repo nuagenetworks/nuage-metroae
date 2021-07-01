@@ -33,7 +33,11 @@ You can use MetroAE to upgrade Active/Standby VSD clusters, also known as geo-re
 
 ### Stats out upgrade
 
-You can use MetroAE to upgrade VSD in stats-out mode. The support for this is built into `upgrade_vsd_stats` play. Note, upgrade the Stats Out VSD nodes only after the primary VSD cluster and Elasticsearch nodes have been upgraded. This has been incorporated into `upgrade_everything` procedure as well if upgrading everything at once is desired. A patch upgrade of the stats out node can also be done by running `upgrade_vsd_stats_inplace` procedure.
+You can use MetroAE to upgrade VSDs in stats-out mode. The `upgrade_everthing` play supports upgrade of all the components including Stats Out VSD Nodes.
+
+Alternatively, the Stats Out VSDs can also be upgraded using `upgrade_vsd_stats` play if upgrading VSDs in Stats Out mode only is desired rather than all components at once. Note, upgrade the Stats Out VSD nodes only after the primary VSD cluster and Elasticsearch nodes have been upgraded. 
+
+A patch upgrade of the stats out node can also be done by running `upgrade_vsd_stats_inplace` procedure.
 
 ## Example Deployment
 
