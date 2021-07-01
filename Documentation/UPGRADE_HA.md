@@ -31,11 +31,13 @@ Note that MetroAE only supports patch upgrades for VSD using the `upgrade_vsds` 
 
 You can use MetroAE to upgrade Active/Standby VSD clusters, also known as geo-redundant clusters. You can also use MetroAE to upgrade Active/Standby VSTAT (ES) clusters. The support for this is built into the `upgrade_everything`, `upgrade_vsds`, and `upgrade_vstats` plays. A step-by-step manual procedure is supported, but is not documented here. See [Upgrading By Individual Steps](#upgrading-by-individual-steps-not-including-active-standby-clusters) for more information.
 
-### Stats out upgrade
+### VSD Stats-out upgrade
 
-You can use MetroAE to upgrade VSDs in stats-out mode. The `upgrade_everthing` play supports upgrade of all the components including Stats Out VSD Nodes.
+By default, Nuage VSD and VSTAT components are deployed in what is referred to as 'stats-in' mode. This refers to the fact that the stats collector process that feeds data to the ES cluster runs 'in' the VSDs. And alternative to this deployment, installation of which is also supported by MetroAE, is a 'stats-out' mode. in 'stats-out', three additional VSDs are deployed specifically to handle the stats collection. We refer to those extra VSD nodes as VSD stats-out nodes. In such a case, the stats collection work is not running 'in' the regular VSD cluster. Stats collection is done 'out' in the cluster of 3 VSD stats-out nodes. ES nodes are also deployed in a special way, with 3 ES nodes in a cluster and 3+ ES nodes configured as 'data' nodes. You can find out more detail about the deployments in the Nuage documentation.
 
-Alternatively, the Stats Out VSDs can also be upgraded using `upgrade_vsd_stats` play if upgrading VSDs in Stats Out mode only is desired rather than all components at once. Note: Upgrade the Stats Out VSD nodes only after the primary VSD cluster and Elasticsearch nodes have been upgraded.
+You can use MetroAE to install or upgrade upgrade your stats-out configuration. Special workflows have been created to support the stats-out upgrade. These special workflows have been included automatically in the `metroae upgrade everything` command. Alternatively you can use the step-by-step upgrade procedure to perform your upgrade. The `metroae upgrade vsd stats` command will handle upgrading the separate VSD stats-out nodes. The `metroae upgrade vsd stats inplace` command will apply a patch (in-place) upgrade of the VSD stats-out nodes.
+
+Note: Upgrade of the VSD stats-out nodes should take place only after the primary VSD cluster and all Elasticsearch nodes have been upgraded.
 
 A patch upgrade of the stats out node can also be done by running `upgrade_vsd_stats_inplace` procedure.
 
