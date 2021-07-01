@@ -259,23 +259,21 @@ Our example includes a VSTAT node. If your topology does not include one, procee
 
      `metroae upgrade ha vstat wrapup`
 
-     Completes the upgrade process, renables stats and performs a series of checks to ensure the VSTAT nodes are healthy.
+     Completes the VSTAT upgrade process, renables stats, and performs a series of checks to ensure the VSTAT nodes are healthy.
 
 ### Upgrade Stats-out Nodes
 
 1. Upgrade the VSD stats-out nodes
 
+     If the upgrade is a major upgrade, e.g., 6.0.* -> 20.10.* , use the following command to upgrade the VSD stats-out nodes:
+
      `metroae upgrade vsd stats`
 
-     After the VSTAT Upgrade, Upgrade the VSD Stats-out nodes using the following command.
-
-2. Patch the stats-out VSDs if neeeded
-
-     If a inplace patch upgrade is needed, for e.g. Patch from 20.10.R1 to 20.10.R4, first patch the VSDs using the following command.
+     If the upgrade is a patch (in-place), e.g., 20.10.R1 -> 20.10.R4, first make sure that the main VSD cluster has been upgraded/patched. If the upgrade of the main VSD cluster hasn't been done, you can use the following command to patch the main VSD cluster:
 
      `metroae upgrade vsds inplace`
 
-     Then apply the patch upgrade to the VSD stats node by using this command.
+     When you are certain that the main VSD cluster has been patched, you can use the following command to apply the patch to the VSD stat-out nodes:
 
      `metroae upgrade vsd stats inplace`
 
