@@ -1,3 +1,9 @@
+- name: Set Vcenter cluster location
+  set_fact:
+    vcenter_cluster_location: "{{ (vcenter.host_clusters_folder != 'NONE') | ternary (vcenter.host_clusters_folder + '/', '') }}{{ vcenter.cluster }} \
+      {{ (vcenter.host_reference != 'NONE') | ternary ('/' + vcenter.host_reference, '') }}"
+
+
 - name: Deploy image on VCenter
   vmware_deploy_ovf:
     hostname: "{{ target_server }}"
@@ -5,11 +11,9 @@
     password: "{{ vcenter.password }}"
     ovf: "{{ image_path }}/{{ image_file_name }}"
     datastore: "{{ vcenter.datastore }}"
-    cluster: "{{ vcenter.cluster }}"
+    cluster: "{{ vcenter_cluster_location }}"
     datacenter: "{{ vcenter.datacenter }}" 
     folder: "{{ vcenter.vmfolder | default('') }}"
-    # Add host cluster folder
-    # Add host reference
     resource_pool: "{{ (vcenter.resource_pool != 'NONE') | ternary ('/Resources/' + vcenter.resource_pool, 'Resources') }}"
     name: "{{ vm_name }}"
     validate_certs: false
@@ -51,10 +55,9 @@
       password: "{{ vcenter.password }}"
       ovf: "{{ image_path }}/{{ image_file_name }}"
       datastore: "{{ vcenter.datastore }}"
-      cluster: "{{ vcenter.cluster }}"
+      cluster: "{{ vcenter_cluster_location }}"
       datacenter: "{{ vcenter.datacenter }}" 
       folder: "{{ vcenter.vmfolder | default('') }}"
-      # Add host cluster folder
       # Add host reference
       resource_pool: "{{ (vcenter.resource_pool != 'NONE') | ternary ('/Resources/' + vcenter.resource_pool, 'Resources') }}"
       name: "{{ vmname }}"
@@ -92,12 +95,10 @@
     password: "{{ vcenter.password }}"
     ovf: "{{ image_path }}/{{ image_file_name }}"
     datastore: "{{ vcenter.datastore }}"
-    cluster: "{{ vcenter.cluster }}"
+    cluster: "{{ vcenter_cluster_location }}"
     datacenter: "{{ vcenter.datacenter }}" 
     folder: "{{ vcenter.vmfolder | default('') }}"
     resource_pool: "{{ (vcenter.resource_pool != 'NONE') | ternary ('/Resources/' + vcenter.resource_pool, 'Resources') }}"
-    #{{ (vcenter.host_clusters_folder != 'NONE') | ternary (vcenter.host_clusters_folder + '/' | urlencode, '') }}{{ vcenter.cluster }}\
-    #{{ (vcenter.host_reference != 'NONE') | ternary ('/' + vcenter.host_reference | urlencode, '') }}\
     name: "{{ vm_name }}"
     validate_certs: false
     power_on: "{{ power_on_arg }}"
@@ -116,7 +117,7 @@
     password: "{{ vcenter.password }}"
     ovf: "{{ stcv_image_path }}/{{ stcv_image_filename }}"
     datastore: "{{ vcenter.datastore }}"
-    cluster: "{{ vcenter.cluster }}"
+    cluster: "{{ vcenter_cluster_location }}"
     datacenter: "{{ vcenter.datacenter }}" 
     folder: "{{ vcenter.vmfolder | default('') }}"
     name: "{{ hostname }}"

@@ -61,6 +61,8 @@ This command copies the container's public key into the ssh authorized_keys file
 
 ##### 5. **For ESXi / vCenter Only**, install ovftool and copy to metroae_data directory
 
+Note: From MetroAE 4.6.0 onwards MetroAE does not require installation of ovftool. So the ovftool install will not be needed unless you are using an older version of MetroAE
+
 When running the MetroAE Docker container, the container will need to have access to the ovftool command installed on the Docker host. The following steps are suggested:
 
 ###### 5.1. Install ovftool
