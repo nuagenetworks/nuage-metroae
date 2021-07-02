@@ -1,0 +1,66 @@
+- name: Set Vcenter cluster location
+  set_fact:
+    vcenter_cluster_location: "{{ (vcenter.host_clusters_folder != 'NONE') | ternary (vcenter.host_clusters_folder + '/', '') }}{{ vcenter.cluster }}\
+      {{ (vcenter.host_reference != 'NONE') | ternary ('/' + vcenter.host_reference, '')}}"
+
+- name: Stop virtual machine
+  vmware_guest:
+    hostname: "{{ target_server }}"
+    username: "{{ vcenter.username }}"
+    password:  "{{ vcenter.password }}"
+    validate_certs: "false"
+    folder: "{{ vcenter.vmfolder | default('') }}"
+    cluster: "{{ vcenter_cluster_location }}"
+    datacenter: "{{ vcenter.datacenter }}" 
+    name: "{{ vm_name }}"
+    resource_pool: "{{ (vcenter.resource_pool != 'NONE') | ternary ('/Resources/' + vcenter.resource_pool, 'Resources') }}"
+    state: "poweredoff"
+  delegate_to: "localhost"
+  register: stop_vm
+
+- name: reconfigure CPU and RAM of VM
+  vmware_guest:
+    hostname: "{{ target_server }}"
+    username: "{{ vcenter.username }}"
+    password:  "{{ vcenter.password }}"
+    validate_certs: "false"
+    folder: "{{ vcenter.vmfolder | default('') }}"
+    cluster: "{{ vcenter_cluster_location }}"
+    datacenter: "{{ vcenter.datacenter }}" 
+    name: "{{ vm_name }}"
+    resource_pool: "{{ (vcenter.resource_pool != 'NONE') | ternary ('/Resources/' + vcenter.resource_pool, 'Resources') }}"
+    state: "present"
+    hardware:
+      memory_mb: "4096"
+      num_cpus: "4"
+    disk:
+      size_gb: "12"
+  delegate_to: "localhost"
+
+- name: Stop virtual machine
+  vmware_guest:
+    hostname: "{{ target_server }}"
+    username: "{{ vcenter.username }}"
+    password:  "{{ vcenter.password }}"
+    validate_certs: "false"
+    folder: "{{ vcenter.vmfolder | default('') }}"
+    cluster: "{{ vcenter_cluster_location }}"
+    datacenter: "{{ vcenter.datacenter }}" 
+    name: "{{ vm_name }}"
+    resource_pool: "{{ (vcenter.resource_pool != 'NONE') | ternary ('/Resources/' + vcenter.resource_pool, 'Resources') }}"
+    state: "poweredoff"
+  delegate_to: "localhost"
+  register: stop_vm
+
+- name: Power on the VM
+  vmware_guest:
+    hostname: "{{ target_server }}"
+    username: "{{ vcenter.username }}"
+    password:  "{{ vcenter.password }}"
+    validate_certs: "false"
+    folder: "{{ vcenter.vmfolder | default('') }}"
+    cluster: "{{ vcenter_cluster_location }}"
+    datacenter: "{{ vcenter.datacenter }}" 
+    name: "{{ vm_name }}"
+    resource_pool: "{{ (vcenter.resource_pool != 'NONE') | ternary ('/Resources/' + vcenter.resource_pool, 'Resources') }}"
+    state: "present"
