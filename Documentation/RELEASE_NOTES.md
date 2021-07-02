@@ -23,6 +23,7 @@
 * Added ansible reset connection to fix VSC connectivity issues
 * Fix openstack ssl connection error (METROAE-425)
 * Add option to skip disable stats collection during VSTAT Upgrade (METROAE-430)
+* Fixed issue with installing required libvirt libraries on target host (METROAE-447)
 
 ## Test Matrix
 
