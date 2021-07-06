@@ -18,7 +18,7 @@
   delegate_to: "localhost"
   register: stop_vm
 
-- name: reconfigure CPU and RAM of VM
+- name: Reconfigure CPU and RAM of VM
   vmware_guest:
     hostname: "{{ target_server }}"
     username: "{{ vcenter.username }}"
@@ -31,10 +31,10 @@
     resource_pool: "{{ (vcenter.resource_pool != 'NONE') | ternary ('/Resources/' + vcenter.resource_pool, 'Resources') }}"
     state: "present"
     hardware:
-      memory_mb: "8192"
-      num_cpus: "2"
+      memory_mb: "{{ vsd_ram * 1024 }}"
+      num_cpus: "{{ vsd_cpu_cores }}"
     disk:
-      - size_gb: "266"
+      - size_gb: "{{ vsd_fallocate_size_gb }}"
         type: thin
   delegate_to: "localhost"
 
