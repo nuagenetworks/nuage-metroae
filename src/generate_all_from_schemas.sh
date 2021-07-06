@@ -16,7 +16,15 @@ fi
 
 pushd $BASE_DIRECTORY
 
-directories_to_clean="$TEMPLATE_DIRECTORY $DEFAULT_DEPLOY_DIRECTORY $EXAMPLE_DIR $BLANK_DEPLOYMENT_DIR $MIN_BLANK_DEPLOYMENT_DIR"
+for fullpath in $EXAMPLE_DIR/*; do
+    dir_name=$(basename -- "$fullpath")
+    dir_name="${dir_name%.*}"
+    if [[ -d $fullpath && $dir_name != "plugins" ]]; then
+        rm -rf $fullpath
+    fi
+done
+
+directories_to_clean="$TEMPLATE_DIRECTORY $DEFAULT_DEPLOY_DIRECTORY $BLANK_DEPLOYMENT_DIR $MIN_BLANK_DEPLOYMENT_DIR"
 for item in $directories_to_clean; do
     if [ -d "$item" ]; then
         rm -rf $item

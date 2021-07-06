@@ -79,12 +79,20 @@
     - name: Turn on API on vsd's for major upgrade
       shell: "{{ turn_on_api_command }}"
       when: upgrade_major_or_minor == 'major'
+      retries: 5
+      delay: 10
+      register: result
+      until: result.rc == 0
 
     - import_tasks: check_monit_status.yml
 
-    when: not inplace_upgrade | default(false)
+    when:
+      - not inplace_upgrade | default(false)
+      - not patch_2010R4_only | default(false)
 
   remote_user: "{{ vsd_default_username }}"
+
+- import_tasks: check_certificate_expiration_time.yml
 
 - name: Renew VSD certificates
   include_role:
@@ -93,4 +101,5 @@
   when:
     - not deploy_vcin | default(false)
     - not inplace_upgrade | default(false)
+    - not patch_2010R4_only | default(false)
   run_once: True

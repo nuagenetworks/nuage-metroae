@@ -10,6 +10,14 @@ Note that if your existing VSP components were not installed using MetroAE or we
 
 By default, the special enterprise called Shared Infrastructure is created on the VSD. When putting domains in maintenance mode prior to an upgrade, MetroAE skips Shared Infrastructure domains because they cannot be modified.
 
+### Patch Upgrade for VSD, while installing VSD
+A inplace upgrade can be carried out during the installation of the VSD cluster. The VSDs are installed and patch will be performed directly if the `vsd_install_inplace_upgrade` is set to true. The migration ISO wil be mounted and the migration script will be executed after the successful installation of VSD. A VSD inplace upgrade during the installation is:
+
+* Supported beginning in VSD version 5.4.1.
+* The `upgrade_from_version` variable must be set to main version of VSD i.e. 5.4.1,6.0.3 or 20.10.R1 and `upgrade_to_version` variable must be set to respactive patch versions i.e for 5.4.1 it could be 5.4.1u1, for 6.0.3 it could be 6.0.5, for 20.10.R1 it could be 20.10.R2 etc.
+
+Note that to upgrade VSDs during the installation it can be done using `install everything`, `install vsds` commands.
+
 ### Patch Upgrade for VSD, AKA in-place upgrade
 
 A patch upgrade is applicable to the VSD cluster when upgrading from one 'u' release to another. A patch upgrade is also referred to as an in-place upgrade. The existing VSDs will remain in service. The migration ISO will be mounted and the migration script will be executed on each VSD. A patch upgrade is:
@@ -22,6 +30,16 @@ Note that MetroAE only supports patch upgrades for VSD using the `upgrade_vsds` 
 ### Active/Standby cluster upgrade
 
 You can use MetroAE to upgrade Active/Standby VSD clusters, also known as geo-redundant clusters. You can also use MetroAE to upgrade Active/Standby VSTAT (ES) clusters. The support for this is built into the `upgrade_everything`, `upgrade_vsds`, and `upgrade_vstats` plays. A step-by-step manual procedure is supported, but is not documented here. See [Upgrading By Individual Steps](#upgrading-by-individual-steps-not-including-active-standby-clusters) for more information.
+
+### VSD Stats-out upgrade
+
+By default, Nuage VSD and VSTAT components are deployed in what is referred to as 'stats-in' mode. This refers to the fact that the stats collector process that feeds data to the ES cluster runs 'in' the VSDs. An alternative to this deployment, installation of which is also supported by MetroAE, is a 'stats-out' mode. In 'stats-out', three additional VSDs are deployed specifically to handle the stats collection. We refer to those extra VSD nodes as VSD stats-out nodes. In such a case, the stats collection work is not running 'in' the regular VSD cluster. Stats collection is done 'out' in the cluster of 3 VSD stats-out nodes. ES nodes are also deployed in a special way, with 3 ES nodes in a cluster and 3+ ES nodes configured as 'data' nodes. You can find out more detail about the deployments in the Nuage documentation.
+
+You can use MetroAE to install or upgrade upgrade your stats-out configuration. Special workflows have been created to support the stats-out upgrade. These special workflows have been included automatically in the `metroae upgrade everything` command. Alternatively you can use the step-by-step upgrade procedure to perform your upgrade. The `metroae upgrade vsd stats` command will handle upgrading the separate VSD stats-out nodes. The `metroae upgrade vsd stats inplace` command will apply a patch (in-place) upgrade of the VSD stats-out nodes.
+
+Note: Upgrade of the VSD stats-out nodes should take place only after the primary VSD cluster and all Elasticsearch nodes have been upgraded.
+
+A patch upgrade of the stats out node can also be done by running `upgrade_vsd_stats_inplace` procedure.
 
 ## Example Deployment
 
@@ -241,7 +259,24 @@ Our example includes a VSTAT node. If your topology does not include one, procee
 
      `metroae upgrade ha vstat wrapup`
 
-     Completes the upgrade process, renables stats and performs a series of checks to ensure the VSTAT nodes are healthy.
+     Completes the VSTAT upgrade process, renables stats, and performs a series of checks to ensure the VSTAT nodes are healthy.
+
+### Upgrade Stats-out Nodes
+
+1. Upgrade the VSD stats-out nodes
+
+     If the upgrade is a major upgrade, e.g., 6.0.* -> 20.10.* , use the following command to upgrade the VSD stats-out nodes:
+
+     `metroae upgrade vsd stats`
+
+     If the upgrade is a patch (in-place), e.g., 20.10.R1 -> 20.10.R4, first make sure that the main VSD cluster has been upgraded/patched. If the upgrade of the main VSD cluster hasn't been done, you can use the following command to patch the main VSD cluster:
+
+     `metroae upgrade vsds inplace`
+
+     When you are certain that the main VSD cluster has been patched, you can use the following command to apply the patch to the VSD stat-out nodes:
+
+     `metroae upgrade vsd stats inplace`
+
 
 ### Finalize the Upgrade
 

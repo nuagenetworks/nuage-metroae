@@ -1,0 +1,32 @@
+- block:
+
+  - name: Pull facts from target server
+    setup: gather_subset=!all
+
+  - name: List the Virtual Machines on target server
+    virt: command=list_vms
+    register: virt_vms
+
+  - name: Snapshot Portal VM
+    shell: "virsh snapshot-create-as {{ vm_name }} --name {{ vm_name }}-snapshot-{{ ansible_date_time.iso8601 }}"
+
+  - name: Shutdown Portal VM
+    virt:
+      name: "{{ vm_name }}"
+      state: shutdown
+      uri: qemu:///system
+    when: vm_name in virt_vms.list_vms
+
+  - name: Wait for Portal VM to be shutdown
+    virt:
+      name: "{{ vm_name }}"
+      command: status
+      uri: qemu:///system
+    register: portal_vm_status
+    until: portal_vm_status.status is match('shutdown')
+    retries: 10
+    delay: 5
+
+  delegate_to: "{{ target_server }}"
+  remote_user: "{{ target_server_username }}"
+  become: "{{ 'no' if target_server_username == 'root' else 'yes' }}"
