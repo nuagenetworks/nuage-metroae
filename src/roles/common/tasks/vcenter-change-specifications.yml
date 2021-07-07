@@ -37,6 +37,26 @@
       - size_gb: "{{ component_size_gb }}"
         type: thin
   delegate_to: "localhost"
+  when: component_size_gb is defined
+
+- name: Reconfigure CPU and RAM of VM
+  vmware_guest:
+    hostname: "{{ target_server }}"
+    username: "{{ vcenter.username }}"
+    password:  "{{ vcenter.password }}"
+    validate_certs: "false"
+    folder: "{{ vcenter.vmfolder | default('') }}"
+    cluster: "{{ vcenter_cluster_location }}"
+    datacenter: "{{ vcenter.datacenter }}" 
+    name: "{{ vm_name }}"
+    resource_pool: "{{ (vcenter.resource_pool != 'NONE') | ternary ('/Resources/' + vcenter.resource_pool, 'Resources') }}"
+    state: "present"
+    hardware:
+      memory_mb: "{{ component_ram }}"
+      num_cpus: "{{ component_cpus }}"
+  delegate_to: "localhost"
+  when: component_size_gb is not defined
+
 
 - name: Power on the VM
   vmware_guest:
