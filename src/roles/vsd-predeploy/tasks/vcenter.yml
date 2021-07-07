@@ -37,6 +37,13 @@
 
 - block:
 
+  - name: Overwrite deploy_vcin to true (deploy vcin)
+    set_fact:
+      deploy_vcin: true
+    when:
+      - vcin_mode is defined
+      - vcin_mode
+
   - name: Deploy VSD image on vCenter
     include_role:
       name: common
@@ -44,7 +51,7 @@
     vars:
       management_network: "VM Network"
 
-  - name: Update VM specifications
+  - name: Update VM specifications for VSD
     include_role:
       name: common
       tasks_from: vcenter-change-specifications
@@ -53,6 +60,18 @@
       component_ram: "{{ vsd_ram * 1024 }}"
       component_cpus: "{{ vsd_cpu_cores }}"
       component_size_gb: "{{ vsd_fallocate_size_gb }}"
+    when: not deploy_vcin | default(False)
+
+  - name: Update VM specifications for VCIN
+    include_role:
+      name: common
+      tasks_from: vcenter-change-specifications
+    vars:
+      management_network: "VM Network"
+      component_ram: "{{ vcin_ram * 1024 }}"
+      component_cpus: "{{ vcin_cpu_cores }}"
+      component_size_gb: "{{ vcin_allocate_size_gb }}"
+    when: deploy_vcin | default(False)
 
   - name: Waiting until VMware tools becomes available
     connection: local
