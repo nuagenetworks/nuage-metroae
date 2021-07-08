@@ -11,6 +11,8 @@
 ### Feature Enhancements
 
 ### Resolved Issues
+
+* Added a task to check existence of vsd migration script during upgrade (METROAE-306)
 * Fixed issue with installing required libvirt libraries on target host (METROAE-447)
 
 
