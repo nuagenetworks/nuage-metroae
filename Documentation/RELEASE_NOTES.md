@@ -23,6 +23,7 @@
 * Added ansible reset connection to fix VSC connectivity issues
 * Fix openstack ssl connection error (METROAE-425)
 * Add option to skip disable stats collection during VSTAT Upgrade (METROAE-430)
+* Added a task to check existence of vsd migration script during upgrade (METROAE-306)
 
 ## Test Matrix
 
