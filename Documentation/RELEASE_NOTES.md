@@ -2,28 +2,17 @@
 
 ## Release info
 
-* MetroAE Version 4.5.0
+* MetroAE Version 4.6.0
 * Nuage Release Alignment 20.10
-* Date of Release 06-July-2021
+* Date of Release TBD
 
 ## Release Contents
 
 ### Feature Enhancements
-* Added support for upgrading inplace VSD after the installation of VSD is finished (METRO-235)
-* Add support for Encrypted plugin variables for Metroae (METROAE-372)
-* Added copy-sshid command automatic to copy ssh key to VSDs and VSTATs(ES) (METROAE-419)
-* Added support for upgrading to 20.10.R4 (METROAE-406)
-* Added support for upgrading SD-WAN Portal (METROAE-126)
-* Added Support for Stats Out Major/Minor and Inplace Upgrade (METROAE-347)
 
 ### Resolved Issues
-* Added playbook and menu option to run security hardening on VSD after the VSD installation (METROAE-328)
-* Added playbook for portal deployment, this is deployemnt in an already created VMs for portal (METROAE-273)
-* Fixed NSG package Unzipped Twice (METROAE-415)
-* Added ansible reset connection to fix VSC connectivity issues
-* Fix openstack ssl connection error (METROAE-425)
-* Add option to skip disable stats collection during VSTAT Upgrade (METROAE-430)
-* For VSD upgrade check for 3 tar.gz files and not 3 files
+* Fixed issue with installing required libvirt libraries on target host (METROAE-447)
+
 
 ## Test Matrix
 
