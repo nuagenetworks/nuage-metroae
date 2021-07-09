@@ -1,7 +1,11 @@
 - name: Set Vcenter cluster location
   set_fact:
-    vcenter_cluster_location: "{{ (vcenter.host_clusters_folder != 'NONE') | ternary (vcenter.host_clusters_folder + '/', '') }}{{ vcenter.cluster }}\
-      {{ (vcenter.host_reference != 'NONE') | ternary ('/' + vcenter.host_reference, '')}}"
+    vcenter_cluster_location: "{{ (vcenter.host_clusters_folder != 'NONE') | ternary (vcenter.host_clusters_folder + '/', '') }}{{ vcenter.cluster }}"
+
+- name: Set Vcenter Folder location
+  set_fact: 
+    vcenter_folder: "{{ (vcenter.host_reference != 'NONE') | ternary ('/' + vcenter.host_reference, '')}}\
+      {{ vcenter.vmfolder | default('') }}"
 
 
 - name: Deploy image on VCenter
@@ -13,7 +17,7 @@
     datastore: "{{ vcenter.datastore }}"
     cluster: "{{ vcenter_cluster_location }}"
     datacenter: "{{ vcenter.datacenter }}" 
-    folder: "{{ vcenter.vmfolder | default('') }}"
+    folder: ""
     resource_pool: "{{ (vcenter.resource_pool != 'NONE') | ternary ('/Resources/' + vcenter.resource_pool, 'Resources') }}"
     name: "{{ vm_name }}"
     validate_certs: false
@@ -57,7 +61,7 @@
       datastore: "{{ vcenter.datastore }}"
       cluster: "{{ vcenter_cluster_location }}"
       datacenter: "{{ vcenter.datacenter }}" 
-      folder: "{{ vcenter.vmfolder | default('') }}"
+      folder: "{{ vcenter_folder }}"
       # Add host reference
       resource_pool: "{{ (vcenter.resource_pool != 'NONE') | ternary ('/Resources/' + vcenter.resource_pool, 'Resources') }}"
       name: "{{ vmname }}"
@@ -97,7 +101,7 @@
     datastore: "{{ vcenter.datastore }}"
     cluster: "{{ vcenter_cluster_location }}"
     datacenter: "{{ vcenter.datacenter }}" 
-    folder: "{{ vcenter.vmfolder | default('') }}"
+    folder: "{{ vcenter_folder }}"
     resource_pool: "{{ (vcenter.resource_pool != 'NONE') | ternary ('/Resources/' + vcenter.resource_pool, 'Resources') }}"
     name: "{{ vm_name }}"
     validate_certs: false
@@ -119,7 +123,7 @@
     datastore: "{{ vcenter.datastore }}"
     cluster: "{{ vcenter_cluster_location }}"
     datacenter: "{{ vcenter.datacenter }}" 
-    folder: "{{ vcenter.vmfolder | default('') }}"
+    folder: "{{ vcenter_folder }}"
     name: "{{ hostname }}"
     validate_certs: false
     networks:
