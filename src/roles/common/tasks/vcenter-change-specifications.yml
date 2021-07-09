@@ -1,7 +1,11 @@
 - name: Set Vcenter cluster location
   set_fact:
-    vcenter_cluster_location: "{{ (vcenter.host_clusters_folder != 'NONE') | ternary (vcenter.host_clusters_folder + '/', '') }}{{ vcenter.cluster }}\
-      {{ (vcenter.host_reference != 'NONE') | ternary ('/' + vcenter.host_reference, '')}}"
+    vcenter_cluster_location: "{{ (vcenter.host_clusters_folder != 'NONE') | ternary (vcenter.host_clusters_folder + '/', '') }}{{ vcenter.cluster }}"
+
+- name: Set Vcenter Folder location
+  set_fact: 
+    vcenter_folder: "{{ (vcenter.host_reference != 'NONE') | ternary ('/' + vcenter.host_reference, '')}}\
+      {{ vcenter.vmfolder | default('') }}"
 
 - name: Stop virtual machine
   vmware_guest:
@@ -9,7 +13,7 @@
     username: "{{ vcenter.username }}"
     password:  "{{ vcenter.password }}"
     validate_certs: "false"
-    folder: "{{ vcenter.vmfolder | default('') }}"
+    folder: "{{ vcenter_folder }}"
     cluster: "{{ vcenter_cluster_location }}"
     datacenter: "{{ vcenter.datacenter }}" 
     name: "{{ vm_name }}"
@@ -24,7 +28,7 @@
     username: "{{ vcenter.username }}"
     password:  "{{ vcenter.password }}"
     validate_certs: "false"
-    folder: "{{ vcenter.vmfolder | default('') }}"
+    folder: "{{ vcenter_folder }}"
     cluster: "{{ vcenter_cluster_location }}"
     datacenter: "{{ vcenter.datacenter }}" 
     name: "{{ vm_name }}"
@@ -45,7 +49,7 @@
     username: "{{ vcenter.username }}"
     password:  "{{ vcenter.password }}"
     validate_certs: "false"
-    folder: "{{ vcenter.vmfolder | default('') }}"
+    folder: "{{ vcenter_folder }}"
     cluster: "{{ vcenter_cluster_location }}"
     datacenter: "{{ vcenter.datacenter }}" 
     name: "{{ vm_name }}"
@@ -64,7 +68,7 @@
     username: "{{ vcenter.username }}"
     password:  "{{ vcenter.password }}"
     validate_certs: "false"
-    folder: "{{ vcenter.vmfolder | default('') }}"
+    folder: "{{ vcenter_folder }}"
     cluster: "{{ vcenter_cluster_location }}"
     datacenter: "{{ vcenter.datacenter }}" 
     name: "{{ vm_name }}"
