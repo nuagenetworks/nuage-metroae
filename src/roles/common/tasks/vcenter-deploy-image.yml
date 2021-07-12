@@ -2,11 +2,9 @@
   set_fact:
     vcenter_cluster_location: "{{ (vcenter.host_clusters_folder != 'NONE') | ternary (vcenter.host_clusters_folder + '/', '') }}{{ vcenter.cluster }}"
 
-- name: Set Vcenter Folder location
+- name: Set Vcenter esxi host refence is provided
   set_fact: 
-    vcenter_folder: "{{ (vcenter.host_reference != 'NONE') | ternary ('/' + vcenter.host_reference, '')}}\
-      {{ vcenter.vmfolder | default('') }}"
-
+    vcenter_host_reference: "{{ (vcenter.host_reference != 'NONE') | ternary ('/' + vcenter.host_reference, '')}}"
 
 - name: Deploy image on VCenter
   vmware_deploy_ovf:
@@ -17,7 +15,7 @@
     datastore: "{{ vcenter.datastore }}"
     cluster: "{{ vcenter_cluster_location }}"
     datacenter: "{{ vcenter.datacenter }}" 
-    folder: "{{ vcenter_folder }}"
+    folder: "{{ vcenter.vmfolder | default('') }}"
     resource_pool: "{{ (vcenter.resource_pool != 'NONE') | ternary ('/Resources/' + vcenter.resource_pool, 'Resources') }}"
     name: "{{ vm_name }}"
     validate_certs: false
@@ -27,6 +25,28 @@
     - not vcenter_vsc_deploy | default(False)
     - not vcenter_nsg_deploy | default(False)
     - not vcenter_stcv_deploy | default(False)
+    - vcenter_host_reference == ''
+
+- name: Deploy image on VCenter
+  vmware_deploy_ovf:
+    hostname: "{{ target_server }}"
+    username: "{{ vcenter.username }}"
+    password: "{{ vcenter.password }}"
+    ovf: "{{ image_path }}/{{ image_file_name }}"
+    datastore: "{{ vcenter.datastore }}"
+    esxi_hostname: "{{ vcenter_host_reference }}"
+    datacenter: "{{ vcenter.datacenter }}" 
+    folder: "{{ vcenter.vmfolder | default('') }}"
+    resource_pool: "{{ (vcenter.resource_pool != 'NONE') | ternary ('/Resources/' + vcenter.resource_pool, 'Resources') }}"
+    name: "{{ vm_name }}"
+    validate_certs: false
+    networks: "{u\'{{ management_network }}\':u\'{{ mgmt_bridge }}\'}"
+  delegate_to: localhost
+  when: 
+    - not vcenter_vsc_deploy | default(False)
+    - not vcenter_nsg_deploy | default(False)
+    - not vcenter_stcv_deploy | default(False)
+    - vcenter_host_reference != ''
 
 - block:
 
@@ -61,8 +81,7 @@
       datastore: "{{ vcenter.datastore }}"
       cluster: "{{ vcenter_cluster_location }}"
       datacenter: "{{ vcenter.datacenter }}" 
-      folder: "{{ vcenter_folder }}"
-      # Add host reference
+      folder: "{{ vcenter.vmfolder | default('') }}"
       resource_pool: "{{ (vcenter.resource_pool != 'NONE') | ternary ('/Resources/' + vcenter.resource_pool, 'Resources') }}"
       name: "{{ vmname }}"
       validate_certs: false
@@ -88,6 +107,44 @@
         Datapath_IP: "{{ control_ip_address }}"
         Datapath_DFGW: "0.0.0.0"
         XMPP_Server: "{{ vsd_fqdn }}"
+    when: vcenter_host_reference == ''
+
+  - name: Deploy VSC on vcenter with esxi hostname
+    vmware_deploy_ovf:
+      hostname: "{{ target_server }}"
+      username: "{{ vcenter.username }}"
+      password: "{{ vcenter.password }}"
+      ovf: "{{ image_path }}/{{ image_file_name }}"
+      datastore: "{{ vcenter.datastore }}"
+      esxi_hostname: "{{ vcenter_host_reference }}"
+      datacenter: "{{ vcenter.datacenter }}" 
+      folder: "{{ vcenter.vmfolder | default('') }}"
+      resource_pool: "{{ (vcenter.resource_pool != 'NONE') | ternary ('/Resources/' + vcenter.resource_pool, 'Resources') }}"
+      name: "{{ vmname }}"
+      validate_certs: false
+      networks:
+        Management Network: "{{ mgmt_bridge }}"
+        Datapath Network: "{{ data_bridge }}"
+      properties:
+        DHCP: False
+        Management_IP: "{{ mgmt_ip }}/{{ mgmt_netmask_prefix }}"
+        Static_Routes: "{{ static_route_list }}"
+        DNS_Server_1: "{{ dns_server_list[0] }}"
+        DNS_Server_2: "{{ '0.0.0.0' if dns_server_list | length <= 1 else dns_server_list[1] }}"
+        DNS_Server_3: "{{ '0.0.0.0' if dns_server_list | length <= 2 else dns_server_list[2] }}"
+        DNS_Search_Domain: "{{ dns_domain }}"
+        VSC_name: "{{ inventory_hostname }}"
+        BGP_Peer_1: "0.0.0.0"
+        BGP_Peer_2: "0.0.0.0"
+        Autonomous_System: "64000"
+        BGP_Group: internal
+        Datapath_DFGW: "0.0.0.0"
+        System_IP: "{{ '0.0.0.0' if system_ip is not defined else system_ip }}"
+        SNTP_Server: "{{ '0.0.0.0' if ntp_server_list is not defined else ntp_server_list[0] }}"
+        Datapath_IP: "{{ control_ip_address }}"
+        Datapath_DFGW: "0.0.0.0"
+        XMPP_Server: "{{ vsd_fqdn }}"
+    when: vcenter_host_reference != ''
 
   delegate_to: localhost
   when: vcenter_vsc_deploy | default(False)
@@ -101,7 +158,7 @@
     datastore: "{{ vcenter.datastore }}"
     cluster: "{{ vcenter_cluster_location }}"
     datacenter: "{{ vcenter.datacenter }}" 
-    folder: "{{ vcenter_folder }}"
+    folder: "{{ vcenter.vmfolder | default('') }}"
     resource_pool: "{{ (vcenter.resource_pool != 'NONE') | ternary ('/Resources/' + vcenter.resource_pool, 'Resources') }}"
     name: "{{ vm_name }}"
     validate_certs: false
@@ -112,9 +169,35 @@
       OVS Management: "{{ access_bridge }}"
 
   delegate_to: localhost
-  when: vcenter_nsg_deploy | default(False)
+  when: 
+    - vcenter_nsg_deploy | default(False)
+    - vcenter_host_reference == ''
 
 - name: Deploy NSG image on VCenter
+  vmware_deploy_ovf:
+    hostname: "{{ target_server }}"
+    username: "{{ vcenter.username }}"
+    password: "{{ vcenter.password }}"
+    ovf: "{{ image_path }}/{{ image_file_name }}"
+    datastore: "{{ vcenter.datastore }}"
+    esxi_hostname: "{{ vcenter_host_reference }}"
+    datacenter: "{{ vcenter.datacenter }}" 
+    folder: "{{ vcenter.vmfolder | default('') }}"
+    resource_pool: "{{ (vcenter.resource_pool != 'NONE') | ternary ('/Resources/' + vcenter.resource_pool, 'Resources') }}"
+    name: "{{ vm_name }}"
+    validate_certs: false
+    power_on: "{{ power_on_arg }}"
+    networks: 
+      port_vmnic: "{{ mgmt_bridge }}"
+      OVS DataPath: "{{ data_bridge }}"
+      OVS Management: "{{ access_bridge }}"
+
+  delegate_to: localhost
+  when: 
+    - vcenter_nsg_deploy | default(False)
+    - vcenter_host_reference != ''
+
+- name: Deploy STCV image on VCenter
   vmware_deploy_ovf:
     hostname: "{{ target_server }}"
     username: "{{ vcenter.username }}"
@@ -123,7 +206,7 @@
     datastore: "{{ vcenter.datastore }}"
     cluster: "{{ vcenter_cluster_location }}"
     datacenter: "{{ vcenter.datacenter }}" 
-    folder: "{{ vcenter_folder }}"
+    folder: "{{ vcenter.vmfolder | default('') }}"
     name: "{{ hostname }}"
     validate_certs: false
     networks:
@@ -139,4 +222,35 @@
       ntp: "{{ dns_server_list[0] }}"
 
   delegate_to: localhost
-  when: vcenter_stcv_deploy | default(False)
+  when: 
+    - vcenter_stcv_deploy | default(False)
+    - vcenter_host_reference == ''
+
+- name: Deploy STCV image on VCenter for hostname
+  vmware_deploy_ovf:
+    hostname: "{{ target_server }}"
+    username: "{{ vcenter.username }}"
+    password: "{{ vcenter.password }}"
+    ovf: "{{ stcv_image_path }}/{{ stcv_image_filename }}"
+    datastore: "{{ vcenter.datastore }}"
+    esxi_hostname: "{{ vcenter_host_reference }}"
+    datacenter: "{{ vcenter.datacenter }}" 
+    folder: "{{ vcenter.vmfolder | default('') }}"
+    name: "{{ hostname }}"
+    validate_certs: false
+    networks:
+      OVS Management: "{{ access_bridge }}"
+      ManagementNet: "{{ mgmt_bridge }}"
+      TestNet1: "{{ data_bridge1 }}"
+      TestNet2: "{{ data_bridge2 | default('') }}"
+    prop:
+      ipaddress: "{{ mgmt_ip }}"
+      netmask: "{{ mgmt_netmask }}"
+      gwaddress: "{{ mgmt_gateway }}"
+      telnetd: "off"
+      ntp: "{{ dns_server_list[0] }}"
+
+  delegate_to: localhost
+  when: 
+    - vcenter_stcv_deploy | default(False)
+    - vcenter_host_reference != ''
