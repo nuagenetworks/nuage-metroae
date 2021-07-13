@@ -1,0 +1,30 @@
+
+- hosts: localhost
+  gather_facts: no
+  tasks:
+
+  - name: Find backup files on backup_machine
+    find:
+      path: "{{ metro_backup_root }}/{{ backup_to_restore }}"
+      patterns: "vsd-*"
+      file_type: directory
+    register: backup_dirs_find
+
+  - name: Check that exactly one backup is found
+    assert:
+      that: backup_dirs_find.files | length == 1
+      msg: "Did not find exactly one VSD backup set under backup_to_restore directory: {{ metro_backup_root }}/{{ backup_to_restore }}/vsd-*/"
+
+  - name: Set fact for VSD backup path
+    set_fact:
+      vsd_backup_path: "{{ backup_dirs_find.files[0].path }}"
+
+- hosts: primary_vsds
+  gather_facts: no
+  roles:
+    - vsd-upgrade-prepare-for-deploy
+  vars:
+    restore_dir: "{{ hostvars['localhost'].vsd_backup_path }}"
+
+- name: Run VSD Deploy
+  import_playbook: "vsd_deploy.yml"

@@ -14,13 +14,13 @@ Pull requests are the best way to propose changes to the codebase (we use [Githu
 
   All contributions must be consistent with the design of the existing workflows.
 
-  All contrinbutions must be submitted as pull requests to the _dev_ branch, reviewed, updated, and merged into the nuage-metro repo.
+  All contrinbutions must be submitted as pull requests to the _dev_ branch, reviewed, updated, and merged into the nuage-metroae repo.
 
-  You must have a github.com account and have been added as a collaborator to the nuage-metro repo.
+  You must have a github.com account and have been added as a collaborator to the nuage-metroae repo.
 
 ## Contributing your code
 
-  1. Developing your code.
+1. Developing your code.
 
     The manner in which you develop the code contribution depends on the extent of the changes. Are you enhancing an existing playbook or role, or are you adding one or more new roles? Making changes to what already exists is simple. Just make your changes to the files that are already there.
 
@@ -36,11 +36,11 @@ Pull requests are the best way to propose changes to the codebase (we use [Githu
     8. Create the proper playbooks to execute the roles: _newcomponent_predeploy.yml_, _newcomponent_deploy.yml_, _newcomponent_postdeploy.yml_, _newcomponent_health.yml_, and _newcomponent_destroy.yml_ should be created under `src/playbooks/with_build`
     9. Test, modify, and retest until your code is working perfectly.
 
-  2. Test all proposed contributions on the appropriate hypervisors in the `metro-fork` directory. If you choose not to provide support for one or more supported hypervisors, you must provide graceful error handling for those types.
+2. Test all proposed contributions on the appropriate hypervisors in the `metro-fork` directory. If you choose not to provide support for one or more supported hypervisors, you must provide graceful error handling for those types.
 
-  3. All python files modified or submitted must successfully pass a `flake8 --ignore=E501` test.
+3. All python files modified or submitted must successfully pass a `flake8 --ignore=E501` test.
 
-  4. Add a brief description of your bug fix or enhancement to `RELEASE_NOTES.md`.
+4. Add a brief description of your bug fix or enhancement to `RELEASE_NOTES.md`.
 
 ## Any contributions you make will be under the APACHE 2.0 Software License
   In short, when you submit code changes, your submissions are understood to be under the same [APACHE License 2.0](https://www.apache.org/licenses/LICENSE-2.0) that covers the project. Feel free to contact the maintainers if that's a concern.
@@ -72,7 +72,7 @@ Pull requests are the best way to propose changes to the codebase (we use [Githu
 
 ## Questions and Feedback
 
-Ask questions and get support via the [forums](https://devops.nuagenetworks.net/forums/) on the [MetroAE site](https://devops.nuagenetworks.net/).  
+Ask questions and get support on the [MetroAE site](https://devops.nuagenetworks.net/).  
 You may also contact us directly.  
   Outside Nokia: [devops@nuagenetworks.net](mailto:devops@nuagenetworks.net "send email to nuage-metro project").  
   Internal Nokia: [nuage-metro-interest@list.nokia.com](mailto:nuage-metro-interest@list.nokia.com "send email to nuage-metro project").

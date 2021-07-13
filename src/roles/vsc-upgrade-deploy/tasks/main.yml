@@ -6,6 +6,8 @@
   no_log: True
   ignore_errors: True
 
+- meta: reset_connection
+
 - name: Wait for VSC ssh to be ready
   include_role:
     name: common
@@ -62,12 +64,8 @@
   when: target_server_type is match('kvm') or target_server_type is match('vcenter') or target_server_type is match('openstack') or target_server_type is match("none")
 
 - name: Copy new VSC image to VSC nodes
-  expect:
-    command: "{{ vsc_image_copy }}"
-    responses:
-      (?i)yes: "yes"
-      (?i)password: "{{ vsc_password|default(vsc_default_password) }}"
-    timeout: "{{ vsc_scp_timeout_seconds }}"
+  command: "{{ vsc_image_copy }}"
+  no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
 
 - block:
 
@@ -78,6 +76,8 @@
       provider: "{{ vsc_creds }}"
     delegate_to: localhost
     ignore_errors: true
+
+  - meta: reset_connection
 
   - name: Wait for VSC ssh to be ready
     include_role:
@@ -103,4 +103,4 @@
       that: "uptime_after_reboot < uptime_before_reboot"
       fail_msg: "System uptime after reboot step suggests there were issues during reboot. Check log for errors."
 
-  when: target_server_type is match('kvm') or target_server_type is match('vcenter') or target_server_type is match('vcenter') or target_server_type is match("none")
+  when: target_server_type is match('kvm') or target_server_type is match('vcenter') or target_server_type is match('openstack') or target_server_type is match("none")

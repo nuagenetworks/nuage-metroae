@@ -1,6 +1,10 @@
 ---
 - block:
 
+  - include_role:
+      name: common
+      tasks_from: get-vsd-version
+
   - name: Get monit summary for all process on VSD
     vsd_monit:
       group: all
@@ -16,11 +20,6 @@
   become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
   vars:
     ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"
-
-- name: Get current version of VSD software
-  shell: grep -ir "VSD_VERSION=" /etc/profile.d/vsd-banner.sh | awk -F "=" '{print $2}'
-  register: vsd_version
-  remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
 
 - name: Disable maintainance mode on all l3/l2 domains
   vsd_maintainance:
@@ -85,7 +84,7 @@
   when: groups['vscs'] is defined and groups['vscs'][1] is defined
 
 - name: read saved vsd purge time before upgrade
-  command: cat "{{ metro_backup_root }}/backup-vsd-{{ vsd_fqdn }}-latest/purge_time"
+  command: cat "{{ metro_backup_root }}/backup-latest-upgrade-vsd/purge_time"
   register: purge_time_saved
   delegate_to: localhost
 

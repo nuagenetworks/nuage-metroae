@@ -72,7 +72,7 @@
     target_server_type: "{{ item.target_server_type }}"
 
     # < Target Server IP or FQDN >
-    # Hostname or IP address of the hypervisor where VM  will be instantiated. In the case of deployment in a vCenter environment, this will be the FQDN of the vCenter Server
+    # Hostname or IP address of the hypervisor where VM  will be instantiated. In the case of deployment in a vCenter environment, this will be the FQDN of the vCenter Server. When target_server_type is set to openstack, this property is unused and should be set to 0.0.0.0
     #
     target_server: "{{ item.target_server }}"
 
@@ -125,6 +125,30 @@
     vcenter_datastore: "{{ item.vcenter_datastore }}"
     {%- else %}
     # vcenter_datastore: (global vCenter Datastore Name)
+    {%- endif %}
+    {%- endif %}
+
+    {%- if show_target_server_type | default('vcenter') == 'vcenter' %}
+
+    # < vCenter VM Folder >
+    # Optional path to a folder defined on vCenter where VM will be instantiated
+    #
+    {%- if item.vcenter_vmfolder is defined %}
+    vcenter_vmfolder: "{{ item.vcenter_vmfolder }}"
+    {%- else %}
+    # vcenter_vmfolder: (global vCenter VM folder)
+    {%- endif %}
+    {%- endif %}
+
+    {%- if show_target_server_type | default('vcenter') == 'vcenter' %}
+
+    # < vCenter Hosts and Clusters Folder >
+    # Optional path to a hosts and clusters folder defined on vCenter where VM will be instantiated
+    #
+    {%- if item.vcenter_host_clusters_folder is defined %}
+    vcenter_host_clusters_folder: "{{ item.vcenter_host_clusters_folder }}"
+    {%- else %}
+    # vcenter_host_clusters_folder: ""
     {%- endif %}
 
     ########################
@@ -374,7 +398,7 @@
     ##### Security and Certificates
 
     # < TLS version >
-    # TLS version to use
+    # Deprecated TLS version to use - always set to 1.2 starting in version 6.*
     # (1.0, 1.2) 
     #
     {%- if item.tls_version is defined %}

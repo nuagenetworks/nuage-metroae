@@ -7,9 +7,6 @@
   include_role:
     name: common
     tasks_from: setup-kvm
-  vars:
-    required_bridges:
-      - mgmt
 
 - include_role:
     name: check-node-running
@@ -132,10 +129,20 @@
       tasks_from: kvm-inject-ssh-keys
 
   - name: Set the SSH not to use DNS
-    command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} echo "UseDNS no" >> /etc/ssh/sshd_config
+    shell: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} echo "UseDNS no" >> /etc/ssh/sshd_config  # noqa 305
 
   - name: Disable SELinux
-    command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} sh "sed -i 's/SELINUX\=enforcing/SELINUX\=permissive/g' /etc/selinux/config"
+    shell: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} \
+           sh "sed -i 's/SELINUX\=enforcing/SELINUX\=permissive/g' /etc/selinux/config"  # noqa 305
+
+  - block:
+    - name: Preallocate most of Portal disk space to avoid pausing the VM, this also checks disk space
+      shell: "fallocate -x -l {{ portal_allocate_size_gb }}G {{ guestfish_dest }}"  # noqa 305
+
+    - name: Increase the virtual vm size
+      shell: "qemu-img resize {{ guestfish_dest }} +{{ portal_allocate_size_gb | int - 8 }}G"
+
+    when: portal_allocate_size_gb > 0
 
   - name: Define and start Portal VM
     include_role:
@@ -144,6 +151,27 @@
     vars:
       vm_xml: "{{ lookup('template', 'portal.xml.j2') }}"
       autostart_enabled: true
+
+  - block:
+    - name: Wait for PORTAL VM ssh to be ready
+      include_role:
+        name: common
+        tasks_from: wait-for-ssh
+      vars:
+        ssh_host: "{{ mgmt_ip }}"
+        host_username: "{{ portal_default_username }}"
+
+    - name: Grow partition on the vm
+      shell: "growpart /dev/vda 1"
+      delegate_to: "{{ inventory_hostname }}"
+      remote_user: "{{ portal_default_username }}"
+
+    - name: Grow root fs
+      shell: "xfs_growfs /"
+      delegate_to: "{{ inventory_hostname }}"
+      remote_user: "{{ portal_default_username }}"
+
+    when: portal_allocate_size_gb > 0
 
   when: not node_running
   delegate_to: "{{ target_server }}"

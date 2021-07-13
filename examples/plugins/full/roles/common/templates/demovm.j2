@@ -1,0 +1,74 @@
+# *** WARNING ***
+# This is a generated file. Manual changes to this file
+# will be lost if reset-build or build is run
+#
+
+required_bridges:
+  - mgmt
+  - data
+
+target_server_type: {{ item.target_server_type | default('kvm') }}
+hostname: {{ item.hostname }}
+
+{% if not item.target_server_type is match("aws") %}
+target_server: {{ item.target_server }}
+{% endif %}
+
+{% if item.vmname is defined %}
+vmname: {{ item.vmname }}
+{% else %}
+vmname: {{ item.hostname }}
+{% endif %}
+
+mgmt_ip: {{ item.mgmt_ip }}
+mgmt_prefix: {{ item.mgmt_ip_prefix }}
+mgmt_gateway: {{ item.mgmt_gateway }}
+
+{% if item.mgmt_bridge is defined %}
+mgmt_bridge: {{ item.mgmt_bridge }}
+{% endif %}
+
+{% if item.data_fqdn is defined %}
+data_fqdn: {{ item.data_fqdn }}
+{% endif %}
+{% if item.data_ip is defined %}
+data_ip: {{ item.data_ip }}
+data_netmask: {{ item.data_netmask }}
+{% if item.data_gateway is defined and item.data_static_route is defined %}
+data_gateway: {{ item.data_gateway }}
+data_static_route: {{ item.data_static_route|to_yaml(default_flow_style=True) }}
+{% endif %}
+{% endif %}
+
+{% if item.data_bridge is defined %}
+data_bridge: {{ item.data_bridge }}
+{% endif %}
+
+{% if item.data_subnet is defined %}
+data_subnet: {{ item.data_subnet }}
+{% endif %}
+
+{% if item.nsgv_gateway is defined %}
+nsgv_gateway: {{ item.nsgv_gateway }}
+{% elif item.data_ip is defined %}
+nsgv_gateway: {{ item.data_ip }}
+{% endif %}
+
+{% if item.vsd_fqdn is defined %}
+vsd_fqdn: {{ item.vsd_fqdn }}
+{% else %}
+vsd_fqdn: {{ common.vsd_fqdn_global }}
+{% endif %}
+
+image_path: {{ image_path | default("MISSING") }}
+image_file_name: {{ image_file_name | default("MISSING") }}
+
+{% if item.cpuset is defined %}
+cpuset:
+{% for cpus in item.cpuset %}
+  - {{ cpus }}
+{% endfor %}
+{% endif %}
+
+health_monitoring_agent: {{ item.health_monitoring_agent | default("none") }}
+

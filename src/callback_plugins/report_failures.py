@@ -43,7 +43,7 @@ class CallbackModule(CallbackBase):
 
     def log_failed(self, host, category, res):
         now = time.strftime(self.TIME_FORMAT, time.localtime())
-        if type(res) == dict and 'msg' in res.keys():
+        if type(res) == dict and 'msg' in list(res.keys()):
             with open(self.DESTINATION_FILE, "ab") as fd:
                 fd.write(u'{0}: {1}: {2}: {3}\n'.format(now, category, host, res['msg']))
         else:

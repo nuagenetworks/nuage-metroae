@@ -1,15 +1,19 @@
 # Setting Up the Environment
+
 You can set up the MetroAE host environment either [with a Docker container](#method-one-set-up-host-environment-using-docker-container) or [with a GitHub clone](#method-two-set-up-host-environment-using-github-clone).
 
 ## Environment
 
 ### Method One: Set up Host Environment Using Docker Container
+
 Using a Docker container results in a similar setup as a GitHub clone, plus it delivers the following features:
+
 * All prerequisites are satisfied by the container. Your only requirement for your server is that it run Docker engine.
 * Your data is located in the file system of the host where Docker is running. You don't need to get inside the container.
 * A future release will include Day 0 Configuration capabilities.
 
 #### System (and Other) Requirements
+
 * Operating System: Enterprise Linux 7 (EL7) CentOS 7.4 or greater or RHEL 7.4 or greater
 * Locally available image files for VCS or VNS deployments
 * Docker Engine 1.13.1 or greater installed and running
@@ -18,20 +22,24 @@ Using a Docker container results in a similar setup as a GitHub clone, plus it d
 #### Steps
 
 ##### 1. Get a copy of the metroae script from the github repo
+
 ```
-https://github.com/nuagenetworks/nuage-metro/blob/master/metroae
+https://github.com/nuagenetworks/nuage-metroae/blob/master/metroae
 ```
 You can also copy the script out of a cloned workspace on your local machine. You can copy the metroae script to any directory of your choosing, e.g. `/usr/local/bin`. Note that you may need to set the script to be executeable via `chmod +x`.
 
 ##### 2. Pull the latest Docker container using the following command:
+
 ```
 metroae container pull
 ```
 
 ##### 3. Setup and start the Docker container using the following command:
+
 ```
 metroae container setup [path to data directory]
 ```
+
 You can optionally specify the data directory path. If you don't specify the data directory on the command line, you will be prompted to enter one during setup. This path is required for container operation. The data directory is the place where docs, examples, Nuage images, and your deployment files will be kept and edited. Note that setup will create a subdirectory beneath the data directory you specify, `metroae_data`. For example, if you specify `/tmp` for your data directory path during setup, setup will create `/tmp/metroae_data` for you. Setup will copy docs, logs, and deployment files to `/tmp/metroae_data`. Inside the container itself, setup will mount `/tmp/metroae_data` as `/metroae_data/`. Therefore, when you specify path names for metroae when using the container, you should always specify the container-relative path. For example, if you copy your tar.gz files to `/tmp/metroae_data/6.0.1` on the host, this will appear as `/metroae_data/6.0.1` inside the container. When you use the unzip-files action on the container, then, you would specify a source path as `/metroae_data/6.0.1`. When you complete the nuage_unzipped_files_dir variable in common.yml, you would also specify `/metroae_data/6.0.1`. 
 
 Note that you can run setup multiple times and setup will not destroy or modify the data you have on disk. If you specify the same data and imafges directories that you had specified on earlier runs, metroae will pick up the existing data. Thus you can update the container as often as you like and your deployments will be preserved.
@@ -44,6 +52,7 @@ metroae container start
 ```
 
 ##### 4. **For KVM Only**, copy the container ssh keys to your KVM target servers (aka hypervisors) using the following command:
+
 ```
 metroae container ssh copyid [target_server_username]@[target_server]
 ```
@@ -66,42 +75,87 @@ The ovftool command and supporting files are usually installed in the /usr/lib/v
 
 The path to the ovftool is configured in your deployment in the common.yml file. Uncomment and set the variable 'vcenter_ovftool' to the container-relative path to where you copied the `/usr/lib/vmware-ovftool` folder. This is required because metroae will attempt to execute ovftool from within the container. From inside the container, metroae can only access paths that have been mounted from the host. In this case, this is the metroae_data directory which is mounted inside the container as `/metroae_data`. For our example, in common.yml you would set `vcenter_ovftool: /metroae_data/vmware-ovftool/ovftool`.
 
-##### 6. You can check the status of the container at any time using the following command:	
+##### 6. You can check the status of the container at any time using the following command:
+
 ```	
-metroae container status	
+metroae container status
 ```
 
 That's it! Container configuration data and logs will now appear in the newly created `/opt/metroae` directory. Documentation, examples, deployments, and the ansible.log file will appear in the data directory configured during setup, `/tmp/metroae_data` in our examples, above. See [DOCKER.md](DOCKER.md) for specfic details of each command and container management command options. Now you're ready to [customize](CUSTOMIZE.md) for your topology.
 
-Note: You will continue to use the `metroae` script to run commands, but for best results using the container you should make sure your working directory is *not* the root of a nuage-metro git clone workspace. The `metroae` script can be used for both the container and the git clone workspace versions of MetroAE. At run time, the script checks its working directory. If it finds that the current working directory is the root of a git cloned workspace, it assumes that you are running locally. It will *not* execute commands inside the container. When using the container, you should run `metroae` from a working directory other than a git clone workspace. For example, if the git clone workspace is `/home/username/nuage/nuage-metro`, you can `cd /home/username/nuage` and then invoke the command as `./nuage-metro/metroae install vsds`.
+Note: You will continue to use the `metroae` script to run commands, but for best results using the container you should make sure your working directory is *not* the root of a nuage-metroaegit clone workspace. The `metroae` script can be used for both the container and the git clone workspace versions of MetroAE. At run time, the script checks its working directory. If it finds that the current working directory is the root of a git cloned workspace, it assumes that you are running locally. It will *not* execute commands inside the container. When using the container, you should run `metroae` from a working directory other than a git clone workspace. For example, if the git clone workspace is `/home/username/nuage/nuage-metroae`, you can `cd /home/username/nuage` and then invoke the command as `./nuage-metroae/metroae install vsds`.
 
 ### Method Two: Set up Host Environment Using GitHub Clone
+
 If you prefer not to use a Docker container you can set up your environment with a GitHub clone instead.
+
 #### System (and Other) Requirements
+
 * Operating System: Enterprise Linux 7 (EL7) CentOS 7.4 or greater or RHEL 7.4 or greater
 * Locally available image files for VCS or VNS deployments
 
+#### Optionally set up and activate python virtual environment
+If you would like to run MetroAE within a python virtual environment, please follow the steps below.
+
+##### 1. Install pip
+If pip isn't installed on the host, install it with the following command.
+```
+(sudo) yum install -y python-pip
+```
+##### 2. Install the virtualenv package
+Install the virtualenv package using the following command.
+```
+pip install virtualenv
+```
+##### 3. Set up and activate python virtual environment
+The python virtual environment can be created as follows.
+```
+virtualenv [path_to_virtual_environment_or_name]
+```
+After which the environment can be activated.
+```
+source [path_to_virtual_environment_or_name]/bin/activate
+```
+After activating the virtual environment, you can proceed with the rest of the document. The steps will then be performed within the virtual environment. Virtual environments can be exited/deactivated with this command.
+```
+deactivate
+```
+
 #### Steps
+
 ##### 1. Clone Repository
+
 If Git is not already installed on the host, install it with the following command.
 ```
 yum install -y git
 ```
+
 Clone the repo with the following command.
 ```
-git clone https://github.com/nuagenetworks/nuage-metro.git
+git clone https://github.com/nuagenetworks/nuage-metroae.git
 ```
-Once the nuage-metro repo is cloned, you can skip the rest of this procedure by running the MetroAE wizard, run_wizard.py. You can use the wizard to automatically handle the rest of the steps described in this document plus the steps described in [customize](CUSTOMIZE.md).
+
+Once the nuage-metroae repo is cloned, you can skip the rest of this procedure by running the MetroAE wizard, run_wizard.py. You can use the wizard to automatically handle the rest of the steps described in this document plus the steps described in [customize](CUSTOMIZE.md).
 ```
 python run_wizard.py
 ```
+
 If you don't run the wizard, please continue with the rest of the steps in this document.
+
 ##### 2. Install Packages
+
 MetroAE code includes a setup script which installs required packages and modules. If any of the packages or modules are already present, the script does not upgrade or overwrite them. You can run the script multiple times without affecting the system. To install the required packages and modules, run the following command.
 ```
 sudo ./setup.sh
 ```
+
 The script writes a detailed log into *setup.log* for your reference. A *Setup complete!* messages appears when the packages have been successfully installed.
+
+If you are using a python virtual environment, you will need to run the following command to install the required pip packages.
+```
+pip install -r pip_requirements.txt
+```
+Please ensure that the pip selinux package and the yum libselinux-python packages are successfully installed before running MetroAE within a python virtual environment.
 
 ##### 3. **For ESXi / vCenter Only**, install additional packages
 
@@ -109,64 +163,76 @@ The script writes a detailed log into *setup.log* for your reference. A *Setup c
  -------- | -------
  pyvmomi  | `pip install pyvmomi==6.7.3`
  jmespath | `pip install jmespath`
- 
+
 Note that we have specified version 6.7.3 for pyvmomi. We test with this version. Newer versions of pyvmomi may cause package conflicts.
 
  If you are installing VSP components in a VMware environment (ESXi/vCenter) download and install the [ovftool](https://www.vmware.com/support/developer/ovf/) from VMware. MetroAE uses ovftool for OVA operations.
 
 ##### 4. **For OpenStack Only**, install additional packages
 
-    pip install --upgrade -r openstack_requirements.txt
+```
+pip install --upgrade -r openstack_requirements.txt
+```
 
 ##### 5. Copy ssh keys
+
 Communication between the MetroAE Host and the target servers (hypervisors) occurs via SSH. For every target server, run the following command to copy the current user's ssh key to the authorized_keys file on the target server:
 ```
 ssh-copy-id [target_server_username]@[target_server]
 ```
 
 ##### 6. Configure NTP sync
+
 For proper operation Nuage components require clock synchronization with NTP. Best practice is to synchronize time on the target servers that Nuage VMs are deployed on, preferrably to the same NTP server as used by the components themselves.
 
 ## Unzip Nuage Networks tar.gz files
+
 Ensure that the required unzipped Nuage software files (QCOW2, OVA, and Linux Package files) are available for the components to be installed. Use one of the two methods below.
+
 ### Method One: Automatically
+
 Run the command below, replacing [zipped_directory] and [nuage_unzipped_files_dir] with the actual paths:
 ```
 metroae tools unzip images [zipped_directory] [nuage_unzipped_files_dir]
 ```
+
 Note: After completing setup you will [customize](CUSTOMIZE.md) for your deployment, and you'll need to add this unzipped files directory path to `common.yml`.
 
 ### Method Two: Manually
+
 Alternatively, you can create the directories under the [nuage_unzipped_files_dir] directory and manually copy or unzip the appropriate files to that location. MetroAE uses `find` to locate the files under [nuage_unzipped_files_dir], so the precise location under that directory is not significant. For reference, the automatic unzip in Method One puts files in the following locations:
 
-  ```
-  <nuage_unzipped_files_dir>/vsd/qcow2/
-  <nuage_unzipped_files_dir>/vsd/ova/ (for VMware)
-  <nuage_unzipped_files_dir>/vsc/
-  <nuage_unzipped_files_dir>/vrs/el7/
-  <nuage_unzipped_files_dir>/vrs/ul16_04/
-  <nuage_unzipped_files_dir>/vrs/vmware/
-  <nuage_unzipped_files_dir>/vrs/hyperv/
-  <nuage_unzipped_files_dir>/vstat/
-  <nuage_unzipped_files_dir>/vns/nsg/
-  <nuage_unzipped_files_dir>/vns/nuh/
-  <nuage_unzipped_files_dir>/vns/util/
-  ```
+```
+<nuage_unzipped_files_dir>/vsd/qcow2/
+<nuage_unzipped_files_dir>/vsd/ova/ (for VMware)
+<nuage_unzipped_files_dir>/vsc/
+<nuage_unzipped_files_dir>/vrs/el7/
+<nuage_unzipped_files_dir>/vrs/ul16_04/
+<nuage_unzipped_files_dir>/vrs/vmware/
+<nuage_unzipped_files_dir>/vrs/hyperv/
+<nuage_unzipped_files_dir>/vstat/
+<nuage_unzipped_files_dir>/vns/nsg/
+<nuage_unzipped_files_dir>/vns/nuh/
+<nuage_unzipped_files_dir>/vns/util/
+```
   
 Note: After completing setup you will customize for your deployment, and you'll need to add this unzipped files directory path to `common.yml`.
 
-## Next Step
+## Next Steps
+
 After you've set up your environment you're ready to [customize](CUSTOMIZE.md) for your topology.
 
 ## You May Also Be Interested in
+
 [Encrypting Sensitive Data in MetroAE](VAULT_ENCRYPT.md)
 [Deploying Components in AWS](AWS.md)
 
 ## Questions, Feedback, and Contributing
+
 Get support via the [forums](https://devops.nuagenetworks.net/forum/) on the [MetroAE site](https://devops.nuagenetworks.net/).
 
 Ask questions and contact us directly at [devops@nuagenetworks.net](mailto:devops@nuagenetworks.net "send email to nuage-metro project").
 
-Report bugs you find and suggest new features and enhancements via the [GitHub Issues](https://github.com/nuagenetworks/nuage-metro/issues "nuage-metro issues") feature.
+Report bugs you find and suggest new features and enhancements via the [GitHub Issues](https://github.com/nuagenetworks/nuage-metroae/issues "nuage-metroae issues") feature.
 
-You may also [contribute](../CONTRIBUTING.md) to MetroAE by submitting your own code to the project.
+You may also [contribute](CONTRIBUTING.md) to MetroAE by submitting your own code to the project.

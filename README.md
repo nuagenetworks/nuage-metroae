@@ -1,14 +1,52 @@
 # Nuage Networks Metro Automation Engine (MetroAE)
 
-(4 minute read)
+Version: 4.5.0
 
-Version: 4.1.0
+MetroAE is an automation engine that can be used to
 
-MetroAE is an automation engine that deploys and upgrades Nuage Networks components. You specify the individual details of your target platform, then let MetroAE install, upgrade, destroy, or health-check the environment for you.
+* Install
+* Health check
+* Upgrade
+* Configure
+* Backup/restore
+* Shutdown/restart
+* Failover/failback
+
+Nuage Networks components. You specify the individual details of your target platform, then let MetroAE do the rest.
+
+## Documentation
+
+The [Documentation](Documentation/) directory contains the following guides to assist you in successfully working with MetroAE. The current documentation covers using MetroAE CLI only.
+
+File name | Description
+--------- | --------
+[RELEASE_NOTES](Documentation/RELEASE_NOTES.md) | New features, resolved issues and known limitations and issues
+[GETTING_STARTED](Documentation/GETTING_STARTED.md) | MetroAE Quick Start Guide
+[DOCKER](Documentation/DOCKER.md) | Installing and using MetroAE Docker container
+[SETUP](Documentation/SETUP.md) | Set up your environment by cloning the repo, installing packages and configuring access.
+[CUSTOMIZE](Documentation/CUSTOMIZE.md) | Populate variable files for a deployment and unzip Nuage software.
+[VAULT_ENCRYPT](Documentation/VAULT_ENCRYPT.md) | Safeguard sensitive data
+[DEPLOY](Documentation/DEPLOY.md) | Deploy all VSP components or choose components individually.
+[DESTROY](Documentation/DESTROY.md) | Remove existing deployment(s) and start over.
+[CONFIG](Documentation/CONFIG.md) | MetroAE Config, the template-driven VSD configuration tool.
+[UPGRADE_SA](Documentation/UPGRADE_SA.md) | Upgrade component(s) from one release to the next in a standalone environment.
+[UPGRADE_HA](Documentation/UPGRADE_HA.md) | Upgrade component(s) from one release to the next in a clustered environment.
+[VSD_SERVICES](Documentation/VSD_SERVICES.md) | Using MetroAE to control VSD Services during maintenance
+[VSD_ROLLBACK_RESTORE](Documentation/VSD_ROLLBACK_RESTORE.md)| Roll Back or Restore VSD to original version outside normal upgrade path
+[VSD_CLUSTER_FAILOVER](Documentation/VSD_CLUSTER_FAILOVER.md) | Managing VSD cluster failover and failback
+[NSGV_BOOTSTRAP](Documentation/NSGV_BOOTSTRAP.md) | Using MetroAE to bootstrap NSGv components
+[SD-WAN_PORTAL](Documentation/SD-WAN_PORTAL.md) | Deploying SD-WAN portal using MetroAE
+[AWS](Documentation/AWS.md) | Using MetroAE to deploy on Amazon Web Services (AWS)
+[TERRAFORM](Documentation/TERRAFORM.md) | Using the Terraform framework in conjunction with MetroAE
+[HOOKS_AND_SKIPACTIONS](Documentation/HOOKS_AND_SKIPACTIONS.md) | Configure ability to run custom commands in between playbooks and skip playbooks
+[PLUGINS](Documentation/PLUGINS.md) | Add or remove plugins to MetroAE
+[AUTOGENERATE_DEPLOYMENTS](Documentation/AUTOGENERATE_DEPLOYMENTS.md) | Generate MetroAE deployment configurations automatically via script
+[CONTRIBUTING](Documentation/CONTRIBUTING.md) | Contribute to MetroAE development
+[LICENSE](Documentation/LICENSE.md) | License statement for MetroAE
 
 ## Important Notes
 
-You can now run `python run_wizard.py` to let MetroAE help you setup your server and create or edit a deployment. The wizard will ask you questions about what you'd like to do and then create the proper files on disk. run_wizard.py is most useful when you are working with a clone of the nuage-metro repo. It can be used to generate deployments that can be used with the Docker container version of MetroAE, but those deployments would need to be copied manually from the nuage-metro repo clone to the container's metroae_data directory.
+You can now run `python run_wizard.py` to let MetroAE help you setup your server and create or edit a deployment. The wizard will ask you questions about what you'd like to do and then create the proper files on disk. run_wizard.py is most useful when you are working with a clone of the nuage-metroae repo. It can be used to generate deployments that can be used with the Docker container version of MetroAE, but those deployments would need to be copied manually from the nuage-metroae repo clone to the container's metroae_data directory.
 
 Please see [RELEASE_NOTES.md](Documentation/RELEASE_NOTES.md) for all the details about what has changed or been added in this release.
 
@@ -130,37 +168,17 @@ MetroAE is based off of the Python-based Ansible operations tool.
 
 **Target Server**: The hypervisor on which one or more VSP components are installed as VMs. Each deployment may contain more than one Target Server.
 
-## Documentation
-
-The [Documentation](Documentation/) directory contains the following guides to assist you in successfully working with MetroAE. The current documentation covers using MetroAE CLI only.
-
-File name | Description
---------- | --------
-[RELEASE_NOTES.md](Documentation/RELEASE_NOTES.md) | New features, resolved issues and known limitations and issues
-[GETTING_STARTED.md](Documentation/GETTING_STARTED.md) | MetroAE Quick Start Guide
-[SETUP.md](Documentation/SETUP.md) | Set up your environment by cloning the repo, installing packages and configuring access.
-[CUSTOMIZE.md](Documentation/CUSTOMIZE.md) | Populate variable files for a deployment and unzip Nuage software.
-[DEPLOY.md](Documentation/DEPLOY.md) | Deploy all VSP components or choose components individually.
-[DESTROY.md](Documentation/DESTROY.md) | Remove existing deployment(s) and start over.
-[UPGRADE_SA.md](Documentation/UPGRADE_SA.md) | Upgrade component(s) from one release to the next in a standalone environment.
-[UPGRADE_HA.md](Documentation/UPGRADE_HA.md) | Upgrade component(s) from one release to the next in a clustered environment.
-[VAULT_ENCRYPT.md](Documentation/VAULT_ENCRYPT.md) | Safeguard sensitive data
-[DOCKER.md](Documentation/DOCKER.md) | Installing and using MetroAE Docker container
-[HOOKS_&_SKIPACTIONS.md](Documentation/HOOKS_&_SKIPACTIONS.md) | Configure ability to run custom commands in between playbooks and skip playbooks
-[VSD_SERVICES.md](Documentation/VSD_SERVICES.md) | Using MetroÆ to control VSD Services during maintenance
-[VSD_ROLLBACK_RESTORE.md](Documentation/VSD_ROLLBACK_RESTORE.md)| Roll Back or Restore VSD to original version outside normal upgrade path
-
 ## Questions, Feedback, and Contributing
 
-Ask questions and get support via the [forums](https://devops.nuagenetworks.net/forums/) on the [MetroAE site](https://devops.nuagenetworks.net/).
+Ask questions and get support on the [MetroAE site](https://devops.nuagenetworks.net/).
 You may also contact us directly.
   Outside Nokia: [devops@nuagenetworks.net](mailto:devops@nuagenetworks.net "send email to nuage-metro project")
   Internal Nokia: [nuage-metro-interest@list.nokia.com](mailto:nuage-metro-interest@list.nokia.com "send email to nuage-metro project")
 
-Report bugs you find and suggest new features and enhancements via the [GitHub Issues](https://github.com/nuagenetworks/nuage-metro/issues "nuage-metro issues") feature.
+Report bugs you find and suggest new features and enhancements via the [GitHub Issues](https://github.com/nuagenetworks/nuage-metroae/issues "nuage-metroae issues") feature.
 
 You may also [contribute](CONTRIBUTING.md) to MetroAE by submitting your own code to the project.
 
 ## License
 
-[LICENSE.md](LICENSE.md)
+[LICENSE](Documentation/LICENSE.md)

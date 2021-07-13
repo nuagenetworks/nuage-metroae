@@ -7,9 +7,6 @@
   include_role:
     name: common
     tasks_from: setup-kvm
-  vars:
-    required_bridges:
-      - mgmt
 
 - include_role:
     name: check-node-running
@@ -113,13 +110,17 @@
     delegate_to: localhost
     register: current_user_ssh_key
 
+  - name: Enable IPv6 in qcow image
+    command: virt-edit -a {{ guestfish_dest }} /etc/sysctl.conf -e s/net.ipv6.conf.all.disable_ipv6=1/net.ipv6.conf.all.disable_ipv6=0/
+    when: enable_ipv6 | default(False)
+
   - name: Inject SSH keys into VSD qcow image
     include_role:
       name: common
       tasks_from: kvm-inject-ssh-keys
 
   - name: Set the SSH not to use DNS
-    command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} echo "UseDNS no" >> /etc/ssh/sshd_config
+    shell: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} echo "UseDNS no" >> /etc/ssh/sshd_config  # noqa 305
 
   - name: Disable SELinux
     command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} sh "sed -i 's/SELINUX\=enforcing/SELINUX\=permissive/g' /etc/selinux/config"

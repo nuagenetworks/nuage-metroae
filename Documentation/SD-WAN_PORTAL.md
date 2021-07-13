@@ -17,6 +17,12 @@ Currently the following workflows are supported:
 * metroae install portal postdeploy - To be updated. Includes a restart and license update task
 * metroae install portal license - Copies the license file to the Portal VM(s) and restarts the Portal(s)
 * metroae destroy portal - Destroys Portal VMs and cleans up the files from hypervisor(s)
+* metroae upgrade portal - Upgrade Portal VM(s) on KVM hypervisor
+* metroae upgrade portal preupgrade health - Performs prerequisite and health checks of a Portal VM or cluster before initiating an upgrade
+* metroae upgrade portal shutdown - Performs database backup if necessary, Portal VM snapshot and stops all services
+* metroae upgrade portal deploy - Performs an install of the new SD-WAN Portal version
+* metroae upgrade portal postdeploy - Performs post-upgrade checks to verify Portal VM health, cluster status, and verify successful upgrade
+* metroae rollback portal - In the event of an unsuccessful upgrade, Portal(s) can be rolled back to the previously installed software version.
 
 Example deployment files are available under examples/kvm_portal_install
 
@@ -24,7 +30,7 @@ Example deployment files are available under examples/kvm_portal_install
   In your MetroAE deployment folder, create or edit the `common.yml` configuring the necessary attributes.
   Portal specific attributes include:
   * portal_fqdn_global - SD-WAN Portal Global FQDN. Typically a public (external) FQDN resolvable to the Portal endpoint on a Proxy/LB in both standalone and HA deployments. For standalone - FQDN of a single Portal node
-  * vsd_port_global - Used with vsd_global_fqdn by the SD-WAN Portal to connect to the VSD cluster. Defaults to 8443. 
+  * vsd_port_global - Used with vsd_global_fqdn by the SD-WAN Portal to connect to the VSD cluster. Defaults to 8443.
   * vstat_fqdn_global - ElasticSearch cluster FQDN. SD-WAN Portal accesses the ES cluster to retrieve statistics for visualization and reports. For standalone ES - FQDN of a single ES node.
   * yum_proxy - Portal is using the same Proxy for Docker to pull the images from Docker hub. Optional if using the pre-downloaded SW package.
   * portal_license_file - SD-WAN Portal license. Request through ASLM.
@@ -32,14 +38,14 @@ Example deployment files are available under examples/kvm_portal_install
 
 ### 2. Configure `credentials.yml`  
   Create or edit the `credentials.yml` configuring the necessary attributes.
-  Portal specific attributes include: 
+  Portal specific attributes include:
   * portal_username - VSD username reserved for the Portal. (Optional)
   * portal_password - VSD password for the user configured in `portal_username`. (Optional)
   * portal_custom_username - CLI user to log in to the Portal VM
   * portal_custom_password - CLI user password to log in to the Portal VM
   * smtp_auth_username - SMTP server username used by Portal Messaging app to send Portal user management emails
   * smtp_auth_password - Password for SMTP server user.
-  
+
 ### 3. Configure `portals.yml`
   Create or edit the `portals.yml` configuring the necessary attributes. For standalone deployment, only one Portal section is needed. 3 Portal sections are required for HA deployment (see example deployment file). Standard Metro&#198; attributes are used with some unique to SD-WAN Portal ones listed below:
   * password_reset_email; new_account_email; forgot_password_email - Sender address to be used in Portal user management emails
@@ -48,3 +54,19 @@ Example deployment files are available under examples/kvm_portal_install
   * smtp_secure - Specifies whether user/password authentication is required. If True, configure username and password in credentials.yml
   * sdwan_portal_secure - Enables SSL for the SD-WAN Portal
   * portal_version - if using Docker hub to pull the images, specifies the tag of the Docker image
+
+For upgrades of the SD-WAN Portal, example deployment files can be found under examples/kvm_portal_upgrade. The files required for upgrading SD-WAN Portal(s) are listed below:
+
+### 1. Configure `common.yml`
+  This file can be updated for the Portal upgrade. The only change needed for the Portal upgrade is the following:
+  * nuage_unzipped_files_dir - Update if necessary to point to the location of the SD-WAN Portal upgrade files
+
+### 2. Configure `upgrade.yml`
+  The `upgrade.yml` file will need to be included in order to perform the upgrade. The necessary parameter is:
+  * upgrade_portal - A boolean value to determine whether or not to upgrade the portals
+
+### 3. Configure `portals.yml`
+  This file will can be updated to reflect the the version of the new SD-WAN Portal software to be installed.
+  * portal_version - This needs to be included to pull the Docker images from Docker Hub, but is not necessary if the upgrade images are already present on the hypervisor
+
+For rollbacks of the SD-WAN Portal or cluster, use the same deployment files as the initial installation.

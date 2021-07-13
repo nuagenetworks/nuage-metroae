@@ -13,11 +13,13 @@
 
 * It can be a VM, physical server or container.
 * It requires CentOS 7.x or RHEL 7.x with basic packages.
-* We recommend that you dedicate a machine (VM) for it.  
+* We recommend that you dedicate a server or VM that has following requirements:
+  * Minimum of 2 CPUs, 4 GBs memory, and 40 GB disk
+  * A read/write NFS mount for accessing the Nuage software images  
 
-2.1 Clone the master branch of the repo onto the **MetroAEe Host**. Read [Setup](SETUP.md) for details.  
+2.1 Clone the master branch of the repo onto the **MetroAE Host**. Read [Setup](SETUP.md) for details.  
 ```
-git clone https://github.com/nuagenetworks/nuage-metro.git
+git clone https://github.com/nuagenetworks/nuage-metroae.git
 ```
 2.2 Install the required packages. Run as root or sudo. Read [Setup](SETUP.md) for details.  
 ```
@@ -27,6 +29,8 @@ $ sudo ./setup.sh
 ## 3. Enable SSH Access
 
 Passwordless SSH must be configured between the MetroAE host and all target servers, a.k.a. hypervisors. This is accomplished by generating SSH keys for the MetroAE user, then copying those keys to the authorized_keys files for the `target_server_username` on every `target_server`. The following steps should be executed on the MetroAE server as the MetroAE user.
+
+Please note that this is only a requirement for target servers that are KVMs. Passwordless SSH is not required for these other target-server types: AWS, Openstack, and vCenter.
 
 ### 3.1 Generate keys for the MetroAE user
 
@@ -64,16 +68,16 @@ See [SETUP.md](SETUP.md) for details.
 
 #### KVM
 
-- [ ] MetroAE host has ability to do a password-less SSH as root to the target server.  
-- [ ] Sufficient disk space / resources exist to create VMs.  
-- [ ] KVM is installed.  
-- [ ] All required management and data bridges are created.  
+* [ ] MetroAE host has ability to do a password*less SSH as root to the target server.  
+* [ ] Sufficient disk space / resources exist to create VMs.  
+* [ ] KVM is installed.  
+* [ ] All required management and data bridges are created.  
 
 #### vCenter  
 
-- [ ] User specified has required permissions to create and configure a VM.  
-- [ ] ovftool has been downloaded from VMware onto the MetroAE Host.  
-- [ ] pyvmomi has been installed on MetroAE Host: `pip install pyvmomi`.
+* [ ] User specified has required permissions to create and configure a VM.  
+* [ ] ovftool has been downloaded from VMware onto the MetroAE Host.  
+* [ ] pyvmomi has been installed on MetroAE Host: `pip install pyvmomi`.
 
 ### 5.3 Reachability
 
@@ -83,10 +87,11 @@ MetroAE host must be able to resolve the host names of the Nuage components into
 
 Refer to the list of documents in [README.md](../README.md) for guidance on deploying, upgrading, etc.
 
-## Questions, Feedback, and Contributing  
+## Questions, Feedback, and Contributing
+
 Get support via the [forums](https://devops.nuagenetworks.net/forums/) on the [MetroAE site](https://devops.nuagenetworks.net/).  
 Ask questions and contact us directly at [devops@nuagenetworks.net](mailto:devops@nuagenetworks.net "send email to nuage-metro project").
- 
-Report bugs you find and suggest new features and enhancements via the [GitHub Issues](https://github.com/nuagenetworks/nuage-metro/issues "nuage-metro issues") feature.
 
-You may also [contribute](../CONTRIBUTING.md) to MetroAE by submitting your own code to the project.
+Report bugs you find and suggest new features and enhancements via the [GitHub Issues](https://github.com/nuagenetworks/nuage-metroae/issues "nuage-metroae issues") feature.
+
+You may also [contribute](CONTRIBUTING.md) to MetroAE by submitting your own code to the project.

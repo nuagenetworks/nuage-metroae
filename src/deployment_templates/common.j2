@@ -100,12 +100,20 @@ vstat_fqdn_global: "{{ vstat_fqdn_global }}"
 # < Management Network Bridge >
 # Network Bridge used for the management interface of a component or the BOF interface on VSC. This will be a Distributed Virtual PortGroup (DVPG) when deploying on vCenter or a Linux network bridge when deploying on KVM. This field can be overridden by defining the management network bridge separately in the component configuration
 #
+{%- if mgmt_bridge is defined %}
 mgmt_bridge: "{{ mgmt_bridge }}"
+{%- else %}
+# mgmt_bridge: ""
+{%- endif %}
 
 # < Data Network Bridge >
 # Network Bridge used for the data path of a component or the Control interface on VSC. This will be a Distributed Virtual PortGroup (DVPG) when deploying on vCenter or a Linux network bridge when deploying on KVM. This field can be overridden by defining the Data network bridge separately in the component configuration
 #
+{%- if data_bridge is defined %}
 data_bridge: "{{ data_bridge }}"
+{%- else %}
+# data_bridge: ""
+{%- endif %}
 
 # < NSGv Access Bridge >
 # Network bridge used for the access network when installing an NSGv. This will be a Distributed Virtual PortGroup (DVPG) when deploying on vCenter or a Linux network bridge when installing on KVM
@@ -131,6 +139,28 @@ ntp_server_list: [ {% for i in ntp_server_list | default([]) %}"{{ i }}", {% end
 dns_server_list: [ {% for i in dns_server_list | default([]) %}"{{ i }}", {% endfor %}]
 
 ######################
+
+##### Stats Out
+
+# < Statistics Out Deployment >
+# Set the deployment for stats-out.  At this time, only exactly 3 clustered VSDs and exactly 3 stats VSDs are supported.  The first 3 VSDs specified are clustered and the remaining are marked statistics only
+#
+{%- if stats_out is defined %}
+stats_out: {{ stats_out | lower }}
+{%- else %}
+# stats_out: False
+{%- endif %}
+
+# < Statistics Out Proxy Address >
+# Set the proxy address for a stats-out deployment.  If unspecified the first NUH to be deployed will be used as the proxy.  If there are no NUHs being deployed, an alternative proxy address must be specified.
+#
+{%- if stats_out_proxy is defined %}
+stats_out_proxy: "{{ stats_out_proxy }}"
+{%- else %}
+# stats_out_proxy: (first NUH hostname)
+{%- endif %}
+
+###############
 
 ##### Options
 
@@ -244,6 +274,37 @@ prompt_before_destroy: {{ prompt_before_destroy | lower }}
 
 #############
 
+##### Backup and Restore
+
+# < Backup directory >
+# Specifies the global directory root to store backup file sets on the MetroAE host.  This overrides metro_backup_root in the upgrade deployment file if specified.  If neither is specified, a backups directory will be created off of nuage_unzipped_files_dir.
+#
+{%- if backup_directory_root is defined %}
+backup_directory_root: "{{ backup_directory_root }}"
+{%- else %}
+# backup_directory_root: ""
+{%- endif %}
+
+# < Maximum number of backups to store. >
+# Specifies the maximum number of backups to store in backup_directory_root.  The oldest backups of the same type exceeding this amount will be deleted at backup time.  The default of -1 specifies no limit.
+#
+{%- if max_num_stored_backups is defined %}
+max_num_stored_backups: {{ max_num_stored_backups }}
+{%- else %}
+# max_num_stored_backups: -1
+{%- endif %}
+
+# < Backup set directory to be restored. >
+# The name of the backup file set directory under the backup_directory_root to restore.
+#
+{%- if backup_to_restore is defined %}
+backup_to_restore: "{{ backup_to_restore }}"
+{%- else %}
+# backup_to_restore: backup-latest-full
+{%- endif %}
+
+########################
+
 {%- if show_target_server_type | default('vcenter') == 'vcenter' %}
 
 ##### vCenter infrastructure
@@ -292,6 +353,30 @@ vcenter_datastore: "{{ vcenter_datastore }}"
 {%- else %}
 # vcenter_datastore: ""
 {%- endif %}
+{%- endif %}
+
+{%- if show_target_server_type | default('vcenter') == 'vcenter' %}
+
+# < vCenter VM Folder >
+# Optional path to a folder defined on vCenter where VM will be instantiated
+#
+{%- if vcenter_vmfolder is defined %}
+vcenter_vmfolder: "{{ vcenter_vmfolder }}"
+{%- else %}
+# vcenter_vmfolder: ""
+{%- endif %}
+{%- endif %}
+
+{%- if show_target_server_type | default('vcenter') == 'vcenter' %}
+
+# < vCenter Hosts and Clusters Folder >
+# Optional path to a hosts and clusters folder defined on vCenter where VM will be instantiated
+#
+{%- if vcenter_host_clusters_folder is defined %}
+vcenter_host_clusters_folder: "{{ vcenter_host_clusters_folder }}"
+{%- else %}
+# vcenter_host_clusters_folder: ""
+{%- endif %}
 
 ############################
 {%- endif %}
@@ -313,7 +398,7 @@ vcenter_resource_pool: "{{ vcenter_resource_pool }}"
 {%- if show_target_server_type | default('vcenter') == 'vcenter' %}
 
 # < OVF tool location >
-# This is the full path to the vCenter OVFtool executable. When running metroae from a clone of the nuage-metro repo, this should be set to the path to ovftool on the host, usually /usr/bin/ovftool. When running the metroae Docker container, the ovftool installation directory, /usr/lib/vmware-ovftool, must be copied to the metroae_data directory and this parameter must be set to the internal container path to the ovftool in that directory, /data/vmware-ovftool/ovftool.
+# This is the full path to the vCenter OVFtool executable. When running metroae from a clone of the nuage-metroae repo, this should be set to the path to ovftool on the host, usually /usr/bin/ovftool. When running the metroae Docker container, the ovftool installation directory, /usr/lib/vmware-ovftool, must be copied to the metroae_data directory and this parameter must be set to the internal container path to the ovftool in that directory, /data/vmware-ovftool/ovftool.
 #
 {%- if vcenter_ovftool is defined %}
 vcenter_ovftool: "{{ vcenter_ovftool }}"
@@ -360,6 +445,42 @@ openstack_auth_url: "{{ openstack_auth_url }}"
 {%- else %}
 # openstack_auth_url: ""
 {%- endif %}
+{%- endif %}
+
+{%- if show_target_server_type | default('openstack') == 'openstack' %}
+
+# < OpenStack Project Domain Name >
+# Project domain name for OpenStack if required
+#
+{%- if openstack_project_domain_name is defined %}
+openstack_project_domain_name: "{{ openstack_project_domain_name }}"
+{%- else %}
+# openstack_project_domain_name: default
+{%- endif %}
+{%- endif %}
+
+{%- if show_target_server_type | default('openstack') == 'openstack' %}
+
+# < OpenStack User Domain Name >
+# User domain name for OpenStack if required
+#
+{%- if openstack_user_domain_name is defined %}
+openstack_user_domain_name: "{{ openstack_user_domain_name }}"
+{%- else %}
+# openstack_user_domain_name: default
+{%- endif %}
+{%- endif %}
+
+{%- if show_target_server_type | default('openstack') == 'openstack' %}
+
+# < OpenStack CA Certificate >
+# CA cetrificate file path for Openstack if necessary
+#
+{%- if openstack_cacert is defined %}
+openstack_cacert: "{{ openstack_cacert }}"
+{%- else %}
+# openstack_cacert: ""
+{%- endif %}
 
 ###############
 {%- endif %}
@@ -401,7 +522,7 @@ openflow_tls: {{ openflow_tls | lower }}
 ##### Licenses
 
 # < VSD Standard License File >
-# Path to the standard license file for the VSD
+# Path to the standard license file for the VSD including the file name
 #
 {%- if vsd_license_file is defined %}
 vsd_license_file: "{{ vsd_license_file }}"
@@ -410,7 +531,7 @@ vsd_license_file: "{{ vsd_license_file }}"
 {%- endif %}
 
 # < VSD Cluster License File >
-# Path to the cluster license file for the VSD
+# Path to the cluster license file for the VSD including the file name
 #
 {%- if vsd_cluster_license_file is defined %}
 vsd_cluster_license_file: "{{ vsd_cluster_license_file }}"
@@ -419,7 +540,7 @@ vsd_cluster_license_file: "{{ vsd_cluster_license_file }}"
 {%- endif %}
 
 # < VSD License Required Days Left >
-# Raise a failure if the VSD licenses do not have at least the specified number of days remaining before expiration. If undefined, no check of days remaining before license expiration will be made. If you want to verify that the number of days left before expiration is more than a certain number of days, uncomment this variable and set the value to the number of days.
+# Raise a failure if the VSD licenses (Standard or cluster only) do not have at least the specified number of days remaining before expiration. If undefined, no check of days remaining before VSD license expiration will be made. If you want to verify that the number of days left before expiration is more than a certain number of days, uncomment this variable and set the value to the number of days.
 #
 {%- if vsd_license_required_days_left is defined %}
 vsd_license_required_days_left: {{ vsd_license_required_days_left }}
@@ -427,8 +548,26 @@ vsd_license_required_days_left: {{ vsd_license_required_days_left }}
 # vsd_license_required_days_left: -1
 {%- endif %}
 
-# < SD-WAN Portal License Filename >
-# Path to the license file for the SD-WAN Portal
+# < Continue Metroae execution on VSD license failure >
+# Continue Metroae execution even after license failure if this is set to true
+#
+{%- if vsd_continue_on_license_failure is defined %}
+vsd_continue_on_license_failure: {{ vsd_continue_on_license_failure | lower }}
+{%- else %}
+# vsd_continue_on_license_failure: False
+{%- endif %}
+
+# < VSD Ejabberd License File >
+# Path to the Ejabberd license file for the VSD including the file name
+#
+{%- if vsd_ejabberd_license_file is defined %}
+vsd_ejabberd_license_file: "{{ vsd_ejabberd_license_file }}"
+{%- else %}
+# vsd_ejabberd_license_file: ""
+{%- endif %}
+
+# < SD-WAN Portal License File >
+# Path to the license file for the SD-WAN Portal including the file name
 #
 {%- if portal_license_file is defined %}
 portal_license_file: "{{ portal_license_file }}"
@@ -437,7 +576,7 @@ portal_license_file: "{{ portal_license_file }}"
 {%- endif %}
 
 # < NUH License File >
-# Path to the license file for the NUH
+# Path to the license file for the NUH including the file name
 #
 {%- if nuh_license_file is defined %}
 nuh_license_file: "{{ nuh_license_file }}"
@@ -499,7 +638,7 @@ ssh_proxy_host: "{{ ssh_proxy_host }}"
 ##### Disk Space
 
 # < VSD Disk Size >
-# Amount of VSD disk space to allocate, in GB. Note: Values smaller than the default are for lab and PoC only. Production deployments must use a value greater than or equal to the default.
+# Amount of VSD disk space to pre-allocate, in GB. Note: Values smaller than the default are for lab and PoC only. Production deployments must use a value greater than or equal to the default.
 #
 {%- if vsd_fallocate_size_gb is defined %}
 vsd_fallocate_size_gb: {{ vsd_fallocate_size_gb }}
@@ -508,16 +647,16 @@ vsd_fallocate_size_gb: {{ vsd_fallocate_size_gb }}
 {%- endif %}
 
 # < VSC Disk Size >
-# Amount of VSC disk space to allocate, in GB. Note: Values smaller than the default are for lab and PoC only. Production deployments should not modify this value.
+# Amount of VSC disk space to pre-allocate, in GB. The only valid values are 0 and 1. When undefined or 0, file size allocation will be skipped. Production deployments should set this value to 1.
 #
 {%- if vsc_fallocate_size_gb is defined %}
 vsc_fallocate_size_gb: {{ vsc_fallocate_size_gb }}
 {%- else %}
-# vsc_fallocate_size_gb: 2
+# vsc_fallocate_size_gb: 0
 {%- endif %}
 
 # < VSTAT Disk Size >
-# Amount of VSTAT disk space to allocate, in GB. Note: Values smaller than the default are for lab and PoC only. Production deployments should not modify this value.
+# Amount of VSTAT disk space to pre-allocate, in GB. Note: Values smaller than the default are for lab and PoC only. Production deployments should not modify this value.
 #
 {%- if vstat_allocate_size_gb is defined %}
 vstat_allocate_size_gb: {{ vstat_allocate_size_gb }}
@@ -525,8 +664,17 @@ vstat_allocate_size_gb: {{ vstat_allocate_size_gb }}
 # vstat_allocate_size_gb: 100
 {%- endif %}
 
+# < Portal Disk Size >
+# Amount of Portal disk space to pre-allocate, in GB. Note: Values smaller than the default are for lab and PoC only. Production deployments should not modify this value.
+#
+{%- if portal_allocate_size_gb is defined %}
+portal_allocate_size_gb: {{ portal_allocate_size_gb }}
+{%- else %}
+# portal_allocate_size_gb: 16
+{%- endif %}
+
 # < VCIN Disk Size >
-# Amount of VCIN disk space to allocate, in GB. Note: Values smaller than the default are for lab and PoC only. Production deployments should not modify this value.
+# Amount of VCIN disk space to pre-allocate, in GB. Note: Values smaller than the default are for lab and PoC only. Production deployments should not modify this value.
 #
 {%- if vcin_allocate_size_gb is defined %}
 vcin_allocate_size_gb: {{ vcin_allocate_size_gb }}
@@ -535,7 +683,7 @@ vcin_allocate_size_gb: {{ vcin_allocate_size_gb }}
 {%- endif %}
 
 # < NSGV Disk Size >
-# Amount of NSGV disk space to allocate, in GB. Note: Values smaller than the default are for lab and PoC only. Production deployments should not modify this value.
+# Amount of NSGV disk space to pre-allocate, in GB. Note: Values smaller than the default are for lab and PoC only. Production deployments should not modify this value.
 #
 {%- if nsgv_allocate_size_gb is defined %}
 nsgv_allocate_size_gb: {{ nsgv_allocate_size_gb }}
@@ -604,6 +752,18 @@ vcin_ram: {{ vcin_ram }}
 nuh_ram: {{ nuh_ram }}
 {%- else %}
 # nuh_ram: 8
+{%- endif %}
+{%- endif %}
+
+{%- if show_target_server_type | default('kvm') == 'kvm' %}
+
+# < KVM Webfilter RAM >
+# Amount of Webfilter RAM to allocate, in GB. Valid only for KVM deployments. Note: Values smaller than the default are for lab and PoC only. Production deployments must use a value greater than or equal to the default.
+#
+{%- if webfilter_ram is defined %}
+webfilter_ram: {{ webfilter_ram }}
+{%- else %}
+# webfilter_ram: 8
 {%- endif %}
 {%- endif %}
 
@@ -705,6 +865,18 @@ portal_cpu_cores: {{ portal_cpu_cores }}
 {%- else %}
 # portal_cpu_cores: 6
 {%- endif %}
+{%- endif %}
+
+{%- if show_target_server_type | default('kvm') == 'kvm' %}
+
+# < KVM Webfilter VM CPU cores >
+# Number of CPU's for Webfilter vm. Valid only for KVM deployments
+#
+{%- if webfilter_cpu_cores is defined %}
+webfilter_cpu_cores: {{ webfilter_cpu_cores }}
+{%- else %}
+# webfilter_cpu_cores: 2
+{%- endif %}
 
 #############
 {%- endif %}
@@ -770,4 +942,156 @@ skip_actions: [ {% for i in skip_actions | default([]) %}"{{ i }}", {% endfor %}
 {%- endif %}
 
 ###########
+
+##### Component Health Report Email Options
+
+# < Health Report SMTP Server >
+# Address of SMTP server to be used if emailing health results
+#
+{%- if health_report_email_server is defined %}
+health_report_email_server: "{{ health_report_email_server }}"
+{%- else %}
+# health_report_email_server: ""
+{%- endif %}
+
+# < Health Report SMTP Server Port >
+# Port to be used on the SMTP Server
+#
+{%- if health_report_email_server_port is defined %}
+health_report_email_server_port: {{ health_report_email_server_port }}
+{%- else %}
+# health_report_email_server_port: 25
+{%- endif %}
+
+# < Health Report Email From Address >
+# Email address from which health report will be sent
+#
+{%- if health_report_email_from_address is defined %}
+health_report_email_from_address: "{{ health_report_email_from_address }}"
+{%- else %}
+# health_report_email_from_address: ""
+{%- endif %}
+
+# < Health Report Destination Email Address(es) >
+# List of destination email addresses
+#
+{%- if health_report_email_destination_addresses is defined %}
+health_report_email_destination_addresses: [ {% for i in health_report_email_destination_addresses | default([]) %}"{{ i }}", {% endfor %}]
+{%- else %}
+# health_report_email_destination_addresses: []
+{%- endif %}
+
+###########################################
+
+##### VSD Monit Email Alerts Configuration
+
+# < VSD Monit Mail Server >
+# Address of the mail server to be used to receive monit alerts via email
+#
+{%- if vsd_monit_mail_server is defined %}
+vsd_monit_mail_server: "{{ vsd_monit_mail_server }}"
+{%- else %}
+# vsd_monit_mail_server: ""
+{%- endif %}
+
+# < VSD Monit Mail Server Port >
+# Port on mail server to be used for monit alerts
+#
+{%- if vsd_monit_mail_server_port is defined %}
+vsd_monit_mail_server_port: {{ vsd_monit_mail_server_port }}
+{%- else %}
+# vsd_monit_mail_server_port: 25
+{%- endif %}
+
+# < VSD Monit Mail Server Encryption Type >
+# Encryption to be used when sending monit alerts via email
+#
+{%- if vsd_monit_mail_server_encryption is defined %}
+vsd_monit_mail_server_encryption: "{{ vsd_monit_mail_server_encryption }}"
+{%- else %}
+# vsd_monit_mail_server_encryption: ""
+{%- endif %}
+
+# < Use VSD Monit Eventqueue >
+# Enables use of monit eventqueue to store alerts if email alerts fail to send
+#
+{%- if vsd_use_monit_eventqueue is defined %}
+vsd_use_monit_eventqueue: {{ vsd_use_monit_eventqueue | lower }}
+{%- else %}
+# vsd_use_monit_eventqueue: True
+{%- endif %}
+
+# < VSD Monit From Email Address >
+# Email address from which monit alerts will be sent
+#
+{%- if vsd_monit_from_address is defined %}
+vsd_monit_from_address: "{{ vsd_monit_from_address }}"
+{%- else %}
+# vsd_monit_from_address: ""
+{%- endif %}
+
+# < VSD Monit Reply-To Email Address >
+# Email address to reply to monit alert emails
+#
+{%- if vsd_monit_reply_to_address is defined %}
+vsd_monit_reply_to_address: "{{ vsd_monit_reply_to_address }}"
+{%- else %}
+# vsd_monit_reply_to_address: ""
+{%- endif %}
+
+# < VSD Monit Email Alert Subject >
+# Email subject for alert emails. Overrides monit default alert subject
+#
+{%- if vsd_monit_email_subject is defined %}
+vsd_monit_email_subject: "{{ vsd_monit_email_subject }}"
+{%- else %}
+# vsd_monit_email_subject: ""
+{%- endif %}
+
+# < VSD Monit Email Alert Message >
+# Email message for alert emails. Overrides monit default alert message
+#
+{%- if vsd_monit_email_message is defined %}
+vsd_monit_email_message: "{{ vsd_monit_email_message }}"
+{%- else %}
+# vsd_monit_email_message: ""
+{%- endif %}
+
+# < VSD Monit Destination Email Address >
+# Destination email address for monit alerts
+#
+{%- if vsd_monit_destination_address is defined %}
+vsd_monit_destination_address: "{{ vsd_monit_destination_address }}"
+{%- else %}
+# vsd_monit_destination_address: ""
+{%- endif %}
+
+# < VSD Monit Only Alert On >
+# Specific events for which alerts should be sent. One string can be used to hold multiple events, separated by commas
+#
+{%- if vsd_monit_alert_only_on is defined %}
+vsd_monit_alert_only_on: "{{ vsd_monit_alert_only_on }}"
+{%- else %}
+# vsd_monit_alert_only_on: ""
+{%- endif %}
+
+# < VSD Monit Do Not Alert On >
+# Events for which alerts should not be sent. One string can be used to hold multiple events, separated by commas
+#
+{%- if vsd_monit_alert_not_on is defined %}
+vsd_monit_alert_not_on: "{{ vsd_monit_alert_not_on }}"
+{%- else %}
+# vsd_monit_alert_not_on: ""
+{%- endif %}
+
+##########################################
+
+# < VSD In-place upgrade during Install  >
+# Allowing VSD in-place upgrade during Installation
+#
+{%- if vsd_install_inplace_upgrade is defined %}
+vsd_install_inplace_upgrade: {{ vsd_install_inplace_upgrade | lower }}
+{%- else %}
+# vsd_install_inplace_upgrade: False
+{%- endif %}
 

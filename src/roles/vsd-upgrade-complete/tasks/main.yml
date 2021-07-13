@@ -14,15 +14,13 @@
 
   - block:
 
-    - name: Get the VSD version
-      shell: grep -ir "VSD_VERSION=" /etc/profile.d/vsd-banner.sh | awk -F "=" '{print $2}'
-      register: vsd_version
-      run_once: true
+    - include_role:
+        name: common
+        tasks_from: get-vsd-version
 
-    - name: Get the VSD build
-      shell: grep -ir "VSD_BUILD=" /etc/profile.d/vsd-banner.sh | awk -F "=" '{print $2}'
-      register: vsd_build
-      run_once: true
+    - include_role:
+        name: common
+        tasks_from: get-vsd-build
 
     - block:
 
@@ -81,12 +79,20 @@
     - name: Turn on API on vsd's for major upgrade
       shell: "{{ turn_on_api_command }}"
       when: upgrade_major_or_minor == 'major'
+      retries: 5
+      delay: 10
+      register: result
+      until: result.rc == 0
 
     - import_tasks: check_monit_status.yml
 
-    when: not inplace_upgrade | default(false)
+    when:
+      - not inplace_upgrade | default(false)
+      - not patch_2010R4_only | default(false)
 
   remote_user: "{{ vsd_default_username }}"
+
+- import_tasks: check_certificate_expiration_time.yml
 
 - name: Renew VSD certificates
   include_role:
@@ -95,4 +101,5 @@
   when:
     - not deploy_vcin | default(false)
     - not inplace_upgrade | default(false)
+    - not patch_2010R4_only | default(false)
   run_once: True

@@ -1,5 +1,7 @@
 <domain type="kvm">
+  {% if vsr_vm_uuid is defined %}
   <uuid>{{ vsr_vm_uuid }}</uuid>
+  {% endif %}
   <name>{{ vmname }}</name>
   <memory unit="G">{{ vsr_memory }}</memory>
   <vcpu>{{ vsr_vcpu }}</vcpu>
@@ -9,7 +11,7 @@
   <sysinfo type="smbios">
     <system>
 {% set _static_routes = mgmt_static_route_list+[''] %}
-      <entry name="product">TIMOS:slot=A chassis=VSR-I card=cpm-v mda/1=m20-v address={{ (mgmt_ip ~ '/' ~ mgmt_netmask_prefix) }}@active {{ _static_routes|join('@' ~ mgmt_gateway ~ ' ') }} license-file=cf3:/license.txt</entry>
+      <entry name="product">TIMOS:slot=A chassis=VSR-I card=cpm-v mda/1=m20-v address={{ (mgmt_ip ~ '/' ~ mgmt_netmask_prefix) }}@active {{ _static_routes|join('@' ~ mgmt_gateway ~ ' ') }} license-file={{ remote_license_file_location | default('cf3:/license.txt') }}</entry>
     </system>
   </sysinfo>
   <os>
@@ -32,7 +34,9 @@
     </disk>
     <interface type="bridge">
       <source bridge="{{ mgmt_to_hv_bridge }}" />
-      <model type="virtio" />
+      <target dev='vnet0'/>
+      <model type='virtio'/>
+      <alias name='net0'/>
     </interface>
 {% for bridge in ports_to_hv_bridges %}
     <interface type="bridge">

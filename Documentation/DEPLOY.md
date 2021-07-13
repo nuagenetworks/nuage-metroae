@@ -1,6 +1,7 @@
 # Deploying Components with MetroAE
 
 You can execute MetroAE workflows to perform the following installations:
+
 * [Deploy All Components](#deploy-all-components)
 * [Deploy Individual Modules](#deploy-individual-modules)
 * [Install a Particular Role or Host](#install-a-particular-role-or-host)
@@ -10,16 +11,18 @@ You can execute MetroAE workflows to perform the following installations:
 * [Debugging](#debugging)
 
 ## Prerequisites / Requirements
+
 Before deploying any components, you must have previously [set up your Nuage MetroAE environment](SETUP.md "link to SETUP documentation") and [customized the environment for your target platform](CUSTOMIZE.md "link to deployment documentation").
 
 Make sure you have unzipped copies of all the Nuage Networks files you are going to need for installation or upgrade. These are generally distributed as `*.tar.gz` files that are downloaded by you from Nokia OLCS/ALED. There are a few ways you can use to unzip:
 
-* If you are running MetroAE via a clone of the nuage-metro repo, you can unzip these files by using the nuage-unzip shell script `nuage-unzip.sh` which will place the files in subdirectories under the path specified for the `nuage_unzipped_files_dir` variable in `common.yml`.
+* If you are running MetroAE via a clone of the nuage-metroae repo, you can unzip these files by using the nuage-unzip shell script `nuage-unzip.sh` which will place the files in subdirectories under the path specified for the `nuage_unzipped_files_dir` variable in `common.yml`.
 * If you are running MetroAE via the MetroAE container, you can unzip these files using the metroae command. During the setup, you were promoted for the location of an data directory on the host. This data directory is mounted in the container as `/data`. Therefore, for using the unzip action, you must 1) copy your tar.gz files to a directory under the directory you specified at setup time and 2) you must specify a container-relative path on the unzip command line. For example, if you specified the data directory as `/tmp`, setup created the directory `/data/metroae_data` on your host and mounted that same directory as `/data` in the container. Assuming you copied your tar.gz files to `/tmp/metroae_data/6.0.1` on the docker host, your unzip command line would be as follows: `metroae tools unzip images /data/6.0.1/ /data/6.0.1`.
 * You can also unzip the files manually and copy them to their proper locations by hand. For details of this process, including the subdirectory layout that MetroAE expects, see [SETUP.md](SETUP.md). 
 
 
 ## Use of MetroAE Command Line
+
 MetroAE can perform a workflow using the command-line tool as follows:
 
     metroae <workflow> <componment> [deployment] [options]
@@ -40,6 +43,7 @@ Installs all components described in deployments/default/.
 Takes down only the VSD components described by deployments/east_network/vsds.yml.  Additional output will be displayed with 3 levels of verbosity.
 
 ## Deploy All Components
+
 MetroAE workflows operate on components as you have defined them in your deployment. If you run a workflow for a component not specified, the workflow skips all tasks associated with that component and runs to completion without error. Thus, if you run the `install everything` workflow when only VRS configuration is present, the workflow deploys VRS successfully while ignoring the tasks for the other components not specified. Deploy all specified components with one command as follows:
 
 ```
@@ -57,6 +61,7 @@ VCS | `metroae install vsds` | Installs VSD components
 VNS | `metroae install vscs` | Installs VSC components
 
 ## Install a Particular Role or Host
+
 MetroAE has a complete library of [workflows](/src/playbooks "link to workflows directory"), which are directly linked to each individual role. You can limit your deployment to a particular role or component, or you can skip steps you are confident need not be repeated. For example, to deploy only the VSD VM-images and get them ready for VSD software installation, run:
 ```
 metroae install vsds predeploy
@@ -127,10 +132,11 @@ If you would like to remove an entire deployment, or individual components, and 
 
 After you have successfully deployed Nuage Networks VSP components, you may want to upgrade to a newer version at some point in the future. See [UPGRADE_SA.md](UPGRADE_SA.md) for standalone deployments and [UPGRADE_HA.md](UPGRADE_HA.md) for clustered deployments.
 
-## Questions, Feedback, and Contributing  
+## Questions, Feedback, and Contributing
+
 Get support via the [forums](https://devops.nuagenetworks.net/forums/) on the [MetroAE site](https://devops.nuagenetworks.net/).  
 Ask questions and contact us directly at [devops@nuagenetworks.net](mailto:devops@nuagenetworks.net "send email to nuage-metro project").
  
-Report bugs you find and suggest new features and enhancements via the [GitHub Issues](https://github.com/nuagenetworks/nuage-metro/issues "nuage-metro issues") feature.
+Report bugs you find and suggest new features and enhancements via the [GitHub Issues](https://github.com/nuagenetworks/nuage-metroae/issues "nuage-metroae issues") feature.
 
-You may also [contribute](../CONTRIBUTING.md) to MetroAE by submitting your own code to the project.
+You may also [contribute](CONTRIBUTING.md) to MetroAE by submitting your own code to the project.

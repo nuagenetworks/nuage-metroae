@@ -2,86 +2,93 @@
 
 ## Release info
 
-* MetroAE Version 4.1.0
-* Nuage Release Alignment TBD
+* MetroAE Version 4.6.0
+* Nuage Release Alignment 20.10
 * Date of Release TBD
 
 ## Release Contents
 
 ### Feature Enhancements
 
-* Add support for VSTAT yum update via vstat_yum_update (METROAE-1190)
-* Check hypervisor disk space on KVM and vCenter
-* Add NETCONF RPMs to unzip
-* Add Netconf Manager Support to MetroAE (METROAE-1204)
-* Added support for Python virtual environments (METROAE-1381)
-* Added file check for nsgv_bootstrap.yml and example (METROAE-1379)
-* Make hostname optional for VSC
-* Add support for new Nuage version format, e.g. 20.6 (METROAE-1343)
-* Add support for deploying VNS Utils on Openstack
-
 ### Resolved Issues
 
-* Remove redundant "vcpu" tag from KVM XML
-* Enable schema format enforcement (METROAE-1378)
-* Change default NUH ram to 8 GB from 4 GB (METROAE-1355)
-* Upgrade pyYaml to 4.2b1 to address security vulnerability
-* Fixed deployment examples to have correct variable types (METROAE-1194)
-* Fixed undefined variable for nsgv-predeploy on vcenter
-* Fix VCENTER upgrades using container
-* Fix CPU pinning for NUH and perform NTP sync (METROAE-1397)
+* Added a task to check existence of vsd migration script during upgrade (METROAE-306)
+* Fixed issue with installing required libvirt libraries on target host (METROAE-447)
+
 
 ## Test Matrix
 
-This release was tested according to the following test matrix. Other combinations and versions have been tested in previous releases of MetroAE and are likely to work. We encourage you to test this in your lab before you apply it in production.
+This release was tested according to the following test matrix. Other combinations and versions have been tested in previous releases of MetroAE and are likely to work. We encourage you to test MetroAE in your lab before you apply it in production.
 
-Workflow | Target Server | Version
--------- | -------- | --------
-Install | KVM | Geo-redundant 6.0.3
-Install | KVM | HA 5.3.3
-Install | KVM | HA 5.4.1
-Install | KVM | HA 6.0.3
-Install | KVM | Active-Standby ES 6.0.3
-Install | KVM | HA IPv6 6.0.3
-Install | KVM | SA 5.3.3
-Install | KVM | SA 5.4.1
-Install | KVM | SA 6.0.3
-Install | KVM | Add VSC pair 6.0.3
-Install | KVM | SA CPU pinning 6.0.3
-Install | KVM | SA VNS end-to-end 6.0.3
-Install | KVM | SA VNS multi-uplinks 6.0.3
-Install | KVM | SA feature tests 6.0.3
-Install | KVM | SA IPv6 6.0.3
-Install | KVM | SA Terraform 6.0.3
-Install | KVM | SA via Container 6.0.3
-Install | OpenStack | HA 5.3.2
-Install | OpenStack | HA 6.0.3
-Install | OpenStack | SA 5.3.2
-Install | OpenStack | SA 6.0.3
-Install | vCenter | HA w/VCIN 6.0.3
-Install | vCenter | HA w/Hybrid VCIN 6.0.3
-Install | vCenter | HA 5.3.3
-Install | vCenter | HA 5.4.1
-Install | vCenter | HA 6.0.3
-Install | vCenter | HA Custom passwords 6.0.3
-Install | vCenter | SA 5.3.3
-Install | vCenter | SA 5.4.1
-Install | vCenter | SA 6.0.3
-Install | vCenter | SA Custom passwords 6.0.3
-Upgrade | KVM | Geo-redundant 5.4.1-6.0.3
-Upgrade | KVM | HA 5.3.3-6.0.3
-Upgrade | KVM | HA inplace 5.4.1-5.4.1U5
-Upgrade | KVM | HA 5.4.1-6.0.3
-Upgrade | KVM | HA hardened 5.4.1-6.0.3
-Upgrade | KVM | HA inplace 6.0.3-6.0.5
-Upgrade | OpenStack | HA 5.4.1-6.0.3
-Upgrade | OpenStack | SA 5.4.1-6.0.3
-Upgrade | vCenter | HA 5.4.1-6.0.3
-Upgrade | vCenter | HA hardened 5.4.1-6.0.3
-Upgrade | vCenter | HA inplace 5.4.1-5.4.1U5
-Upgrade | vCenter | HA inplace 6.0.3-6.0.5
-Upgrade | vCenter | SA hardened 5.3.3-6.0.3
-Upgrade | vCenter | SA 5.4.1-6.0.3
-Wizard Install | KVM | SA via container 6.0.3
-Wizard Install | KVM | SA via CSV 6.0.3
-Wizard Upgrade | KVM | SA 5.4.1-6.0.3
+Workflow   | Target Server   | Version
+---------- | --------------- | --------------------
+CONFIGURE  | GCP             | SA-20.10.R1         
+CONFIGURE  | GCP             | SA-5.4.1            
+CONFIGURE  | GCP             | SA-6.0.3            
+INSTALL    | GCP             | GEO-20.10.R1        
+INSTALL    | GCP             | HA-20.10.R1         
+INSTALL    | GCP             | HA-20.10.R1-ACTIVE-STANDBY-ES
+INSTALL    | GCP             | HA-20.10.R1-IPv6    
+INSTALL    | GCP             | HA-20.10.R1-NO-VSC-FALLOCATE
+INSTALL    | GCP             | HA-5.4.1            
+INSTALL    | GCP             | HA-6.0.3            
+INSTALL    | GCP             | SA-20.10.R1         
+INSTALL    | GCP             | SA-20.10.R1-ACTIVE-STANDBY-ES
+INSTALL    | GCP             | SA-20.10.R1-ADD-VSC
+INSTALL    | GCP             | SA-20.10.R1-CONTAINER
+INSTALL    | GCP             | SA-20.10.R1-CPU-CORE
+INSTALL    | GCP             | SA-20.10.R1-CPU-CORES-CPU_PINNING
+INSTALL    | GCP             | SA-20.10.R1-CPU_PINNING
+INSTALL    | GCP             | SA-20.10.R1-E2E     
+INSTALL    | GCP             | SA-20.10.R1-E2E-MUTLI-UPLINKS
+INSTALL    | GCP             | SA-20.10.R1-FEATURES
+INSTALL    | GCP             | SA-20.10.R1-IPV6    
+INSTALL    | GCP             | SA-20.10.R1-PLUGINS
+INSTALL    | GCP             | SA-20.10.R1-TERRAFORM
+INSTALL    | GCP             | SA-5.4.1            
+INSTALL    | GCP             | SA-6.0.3            
+INSTALL    | GCP             | STATS-OUT-20.10.R1  
+INSTALL    | OPENSTACK       | HA-20.10.R1         
+INSTALL    | OPENSTACK       | HA-6.0.3            
+INSTALL    | OPENSTACK       | SA-20.10.R1         
+INSTALL    | OPENSTACK       | SA-6.0.3            
+INSTALL    | OPENSTACK       | SA-CONTAINER-6.0.3  
+INSTALL    | VCENTER         | 20.10.R1-HYBRID-VCIN
+INSTALL    | VCENTER         | HA-20.10.R1         
+INSTALL    | VCENTER         | HA-20.10.R1-CHANGE-VSDPASS
+INSTALL    | VCENTER         | HA-20.10.R1-VCIN    
+INSTALL    | VCENTER         | HA-5.4.1            
+INSTALL    | VCENTER         | HA-6.0.3            
+INSTALL    | VCENTER         | SA-20.10.R1         
+INSTALL    | VCENTER         | SA-20.10.R1-CHANGE-VSDPASS
+INSTALL    | VCENTER         | SA-20.10.R1-VENV    
+INSTALL    | VCENTER         | SA-5.4.1            
+INSTALL    | VCENTER         | SA-6.0.3            
+RESTORE    | GCP             | HA-6.0.3            
+RESTORE    | GCP             | SA-6.0.3            
+UPGRADE    | GCP             | GEO-5.4.1-6.0.3     
+UPGRADE    | GCP             | GEO-6.0.3-20.10.R1  
+UPGRADE    | GCP             | GEO-6.0.3-6.0.7-INPLACE
+UPGRADE    | GCP             | HA-5.4.1-5.4.1U5-INPLACE
+UPGRADE    | GCP             | HA-5.4.1-6.0.3      
+UPGRADE    | GCP             | HA-5.4.1-6.0.3-HARDENED
+UPGRADE    | GCP             | HA-6.0.3-20.10.R1   
+UPGRADE    | GCP             | HA-6.0.3-20.10.R1-HARDENED
+UPGRADE    | GCP             | HA-6.0.3-6.0.7-INPLACE
+UPGRADE    | GCP             | SA-5.4.1-6.0.3      
+UPGRADE    | GCP             | SA-5.4.1-6.0.3-HARDENED
+UPGRADE    | GCP             | SA-5.4.1-6.0.3-VSD-SECURITY
+UPGRADE    | GCP             | SA-6.0.3-20.10.R1   
+UPGRADE    | GCP             | SA-6.0.3-6.0.7-INPLACE
+UPGRADE    | OPENSTACK       | HA-5.4.1-6.0.3      
+UPGRADE    | OPENSTACK       | SA-5.4.1-6.0.3      
+UPGRADE    | VCENTER         | HA-5.4.1-6.0.3      
+UPGRADE    | VCENTER         | HA-5.4.1-6.0.3-HARDENED
+UPGRADE    | VCENTER         | HA-6.0.3-20.10.R1   
+UPGRADE    | VCENTER         | HA-6.0.3-20.10.R1-HARDENED
+UPGRADE    | VCENTER         | HA-INPLACE-5.4.1-5.4.1U5
+UPGRADE    | VCENTER         | HA-INPLACE-6.0.3-6.0.7
+UPGRADE    | VCENTER         | SA-5.4.1-6.0.3      
+UPGRADE    | VCENTER         | SA-5.4.1-6.0.3-CONTAINER
+UPGRADE    | VCENTER         | SA-6.0.3-20.10.R1   
+UPGRADE    | VCENTER         | SA-6.0.3-20.10.R1-HARDENED

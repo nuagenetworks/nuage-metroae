@@ -1,4 +1,3 @@
----
 
 - name: Gather deployment file stats
   stat:
@@ -79,6 +78,33 @@
     that: "{{ vsds | length in [0, 1, 3, 6] }}"
     msg: "There needs to be exactly 0, 1, 3 or 6 VSDs defined"
 
+- block:
+
+  - name: Validate correct number of VSDs for stats-out
+    assert:
+      that: "{{ vsds | length }} == 6"
+      msg: "When deploying stats-out, there must be exactly 3 statistics_only VSDs and 3 clustered VSDs."
+
+  - name: Build set of stats only VSDs
+    set_fact:
+      stats_only_vsds: "{{ vsds[3:6] | map(attribute='hostname') | list }}"
+
+  - name: Validate correct number of VSTATs for stats-out
+    assert:
+      that: "{{ vstats | length }} == 6"
+      msg: "When deploying stats-out, there must be exactly 3 data VSTATs (ES) and 3 clustered VSTATs."
+
+  - name: Build set of stats only VSDs
+    set_fact:
+      data_vstats: "{{ vstats[3:6] | map(attribute='hostname') | list }}"
+
+  - name: Check for valid stats-out proxy address
+    assert:
+      that: "common.stats_out_proxy is defined or nuhs | default([]) | length > 0"
+      msg: "Missing stats_out_proxy address in common.yml and no NUHs are defined to be used as a proxy."
+
+  when: common.stats_out | default(false)
+
 - name: Validate unique VSD hostnames
   assert:
     that: "{{ vsds | map(attribute='hostname') | unique | list | length }} == {{ vsds | length }}"
@@ -152,6 +178,13 @@
     msg: "Incorrect number of cores specified in cpuset for {{ item.hostname }}. Cpuset must have {{ portal_cpu_cores | default(6) }} elements."
   when: item.cpuset is defined
   with_items: "{{ portals }}"
+
+- name: Verify that the Webfilter has the correct number of cpuset defined
+  assert:
+    that: "'{{ item.cpuset | length }}' != {{ webfilter_cpu_cores | default(2) }}"
+    msg: "Incorrect number of cores specified in cpuset for {{ item.hostname }}. Cpuset must have {{ webfilter_cpu_cores | default(2) }} elements."
+  when: item.cpuset is defined
+  with_items: "{{ webfilters }}"
 
 - name: Validate that NSGVs ports are properly configured
   assert:

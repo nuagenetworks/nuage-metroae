@@ -1,6 +1,14 @@
----
+- hosts: localhost
+  gather_facts: no
+  tasks:
+    - name: Set fact for backup type
+      set_fact:
+        backup_type: upgrade-vsc
+      when: backup_type is not defined
+
 - hosts: vsc_ha_node2
   gather_facts: no
+  serial: 1
   connection: local
   pre_tasks:
     - name: Set upgrade flag
@@ -17,14 +25,16 @@
         name: hooks
         tasks_from: main
       vars:
-        - hooks_file_path: "{{ item }}"
+        - hooks_file_path: "{{ hook }}"
         - hook_location:
           - vsc_ha_upgrade_backup_and_prep_2
           - upgrade_vscs_after_vrs
           - upgrade_after_vrs
           - vsc_upgrade
           - vsc_preupgrade
-      with_items: "{{ hooks | default([]) }}"
+      loop: "{{ hooks | default([]) }}"
+      loop_control:
+        loop_var: hook
   roles:
     - vsc-backup
     - vsc-preupgrade

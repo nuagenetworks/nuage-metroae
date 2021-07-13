@@ -1,14 +1,12 @@
 - block:
 
-  - name: Get the VSD version
-    shell: grep -ir "VSD_VERSION=" /etc/profile.d/vsd-banner.sh | awk -F "=" '{print $2}'
-    register: vsd_version
-    run_once: true
+  - include_role:
+      name: common
+      tasks_from: get-vsd-version
 
-  - name: Get the VSD build
-    shell: grep -ir "VSD_BUILD=" /etc/profile.d/vsd-banner.sh | awk -F "=" '{print $2}'
-    register: vsd_build
-    run_once: true
+  - include_role:
+      name: common
+      tasks_from: get-vsd-build
 
   - name: Clear existing stats
     command: /opt/vsd/vsd-stats.sh -d
@@ -35,34 +33,73 @@
       - vsd_sa_or_ha is match('ha')
       - vstat_sa_or_ha is match('sa')
 
-  - name: Enable stats collection on the vsd(s) when vstat is clustered
-    command: /opt/vsd/vsd-stats.sh -e {{ groups['vstats'][0] }},{{ groups['vstats'][1] }},{{ groups['vstats'][2] }}
-    environment:
-      VSD_VERSION: "{{ vsd_version.stdout }}"
-      VSD_BUILD: "{{ vsd_build.stdout }}"
-    when:
-      - vstat_sa_or_ha is match('ha')
-      - groups['vstats'] is defined
+  - block:
 
-  - name: Enable stats collection on the vsd(s) on primary vstats
-    command: /opt/vsd/vsd-stats.sh -e {{ groups['primary_vstats'][0] }},{{ groups['primary_vstats'][1] }},{{ groups['primary_vstats'][2] }}
-    environment:
-      VSD_VERSION: "{{ vsd_version.stdout }}"
-      VSD_BUILD: "{{ vsd_build.stdout }}"
-    when:
-      - vstat_sa_or_ha is match('ha')
-      - groups['primary_vstats'] is defined
-      - active and not failover
+    - name: Enable stats collection on the vsd(s) when vstat is clustered
+      command: /opt/vsd/vsd-stats.sh -e {{ groups['vstats'][0] }},{{ groups['vstats'][1] }},{{ groups['vstats'][2] }}
+      environment:
+        VSD_VERSION: "{{ vsd_version.stdout }}"
+        VSD_BUILD: "{{ vsd_build.stdout }}"
+      when:
+        - vstat_sa_or_ha is match('ha')
+        - groups['vstats'] is defined
 
-  - name: Enable stats collection on the vsd(s) for backup vstats in failover
-    command: /opt/vsd/vsd-stats.sh -e {{ groups['backup_vstats'][0] }},{{ groups['backup_vstats'][1] }},{{ groups['backup_vstats'][2] }}
-    environment:
-      VSD_VERSION: "{{ vsd_version.stdout }}"
-      VSD_BUILD: "{{ vsd_build.stdout }}"
+    - name: Enable stats collection on the vsd(s) on primary vstats
+      command: /opt/vsd/vsd-stats.sh -e {{ groups['primary_vstats'][0] }},{{ groups['primary_vstats'][1] }},{{ groups['primary_vstats'][2] }}
+      environment:
+        VSD_VERSION: "{{ vsd_version.stdout }}"
+        VSD_BUILD: "{{ vsd_build.stdout }}"
+      when:
+        - vstat_sa_or_ha is match('ha')
+        - groups['primary_vstats'] is defined
+        - active and not failover
+
+    - name: Enable stats collection on the vsd(s) for backup vstats in failover
+      command: /opt/vsd/vsd-stats.sh -e {{ groups['backup_vstats'][0] }},{{ groups['backup_vstats'][1] }},{{ groups['backup_vstats'][2] }}
+      environment:
+        VSD_VERSION: "{{ vsd_version.stdout }}"
+        VSD_BUILD: "{{ vsd_build.stdout }}"
+      when:
+        - vstat_sa_or_ha is match('ha')
+        - groups['backup_vstats'] is defined
+        - active and failover
+
+    when: not stats_out | default(false)
+
+  - block:
+
+    - block:
+
+      - name: Enable stats collection on the stats vsd(s) when deploying stats-out
+        command: /opt/vsd/vsd-stats.sh -e {{ groups['data_vstats'][0] }},{{ groups['data_vstats'][1] }},{{ groups['data_vstats'][2] }} -s {{ stats_out_proxy }}
+        environment:
+          VSD_VERSION: "{{ vsd_version.stdout }}"
+          VSD_BUILD: "{{ vsd_build.stdout }}"
+
+      - name: wait for elasticsearch service to become running
+        monit_waitfor_service:
+          name: "elasticsearch-status"
+          timeout_seconds: 1200
+          test_interval_seconds: 30
+
+      - name: Verify port 39039 is open for listening in stats-out deployment
+        shell: lsof -i:39090 | grep LISTEN
+
+      when: vsd in groups['stats_only_vsds']
+
+    - name: Enable statistics flag on the primary vsd(s) when deploying stats-out
+      command: >-
+        /opt/vsd/vsd-stats.sh -e {{ groups['vstats'][0] }},{{ groups['vstats'][1] }},{{ groups['vstats'][2] }}
+        -v {{ hostvars[groups['stats_only_vsds'][0]]['mgmt_ip'] }},{{ hostvars[groups['stats_only_vsds'][1]]['mgmt_ip'] }},{{ hostvars[groups['stats_only_vsds'][2]]['mgmt_ip'] }}
+      environment:
+        VSD_VERSION: "{{ vsd_version.stdout }}"
+        VSD_BUILD: "{{ vsd_build.stdout }}"
+      when: vsd not in groups['stats_only_vsds']
+
     when:
       - vstat_sa_or_ha is match('ha')
-      - groups['backup_vstats'] is defined
-      - active and failover
+      - groups['data_vstats'] is defined
+      - stats_out | default(false)
 
   delegate_to: "{{ vsd }}"
   remote_user: "{{ hostvars[vsd].vsd_custom_username | default(vsd_custom_username | default(vsd_default_username)) }}"

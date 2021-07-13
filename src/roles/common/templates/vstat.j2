@@ -3,6 +3,10 @@
 # will be lost if reset-build or build is run
 #
 component_type: vstat
+
+required_bridges:
+  - mgmt
+
 target_server_type: {{ item.target_server_type | default('kvm') }}
 hostname: {{ item.hostname }}
 
@@ -37,7 +41,7 @@ vsd_fqdn: {{ item.vsd_fqdn }}
 vsd_fqdn: {{ common.vsd_fqdn_global }}
 {% endif %}
 
-{% if (vstats and (vstats| length == 3) or (vstats| length == 6)) %}
+{% if (vstats and (vstats | length == 3) or (vstats | length == 6)) %}
 vstat_sa_or_ha: ha
 {% else %}
 vstat_sa_or_ha: sa
@@ -67,6 +71,15 @@ cpuset:
 {% endif %}
 
 health_monitoring_agent: {{ item.health_monitoring_agent | default("none") }}
+
+add_extra_disk: {{ item.add_extra_disk | default(False) }}
+{% if item.add_extra_disk | default(False) %}
+extra_disk_image_path: {{ item.extra_disk_image_path | default("/var/lib/libvirt/images") }}
+extra_disk_image: {{ item.extra_disk_image_path | default("/var/lib/libvirt/images") }}/{{ item.extra_disk_image_file_name | default("extra-disk-" + item.hostname) }}.qcow2
+extra_disk_size_gb: {{ item.extra_disk_size_gb | default(1000) }}
+extra_disk_device: vdb
+extra_disk_mount_point: /var/lib/elasticsearch/
+{% endif %}
 
 {% if vstat_nfs_server is defined %}
 vstat_nfs_server_with_folder: {{ vstat_nfs_server }}:{{ vstat_nfs_folder }}

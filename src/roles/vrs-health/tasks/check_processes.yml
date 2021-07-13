@@ -2,20 +2,18 @@
 - name: "[check-processes] Read out PLATFORM variable from openvswitch config"
   shell: "grep '^PLATFORM=' {{ openvswitch_config_path }}"      # noqa 305
   register: platform
-  changed_when: false
+  changed_when: False
 
 - name: "[check-processes] Read out PERSONALITY variable from openvswitch config"
   shell: "awk -F '=' '/^PERSONALITY/ {print $2}' {{ openvswitch_config_path }}"
   register: personality
-  changed_when: false
+  changed_when: False
 
 - name: Check if this is Openstack compute node with metadata package installed (ignoring errors)
   stat: path="/etc/default/nuage-metadata-agent"
   register: metadata_stat
   ignore_errors: yes
-  changed_when: no
-
-- debug: var=personality.stdout
+  changed_when: False
 
 - name: "[check-processes] Construct processes list based on PERSONALITY variable setting"
   set_fact:
@@ -28,20 +26,20 @@
   command: "cat /var/run/openvswitch/{{ item.name }}.pid"
   with_items: "{{ processes }}"
   register: pid
-  changed_when: false
+  changed_when: False
   failed_when: pid.rc != 0
 
 - name: "[check-processes] Check if processes are actually running agasint the PID"
   command: "ps -fp {{ pid.results[item[0]].stdout }}"
   with_indexed_items: "{{ processes }}"
   register: ps_result
-  changed_when: false
+  changed_when: False
   failed_when: ps_result.rc != 0
 
 - name: "[check-processes] Check proper socket connection status for each process"
   shell: netstat --all --program | grep "{{ pid.results[item[0]].stdout }}/" | grep {{ item[1].netstat_status }}        # noqa 306
   with_indexed_items: "{{ processes }}"
   register: netstat_result
-  changed_when: false
+  changed_when: False
   failed_when: netstat_result.rc != 0
   when: item[1].netstat_status is defined and pid.results[item[0]].rc == 0

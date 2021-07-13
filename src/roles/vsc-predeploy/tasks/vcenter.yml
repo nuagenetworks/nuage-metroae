@@ -18,7 +18,8 @@
 
   - name: Configure vCenter path
     set_fact:
-      vcenter_path: "{{ target_server }}/{{ vcenter.datacenter }}/host/{{ vcenter.cluster }}\
+      vcenter_path: "{{ target_server }}/{{ vcenter.datacenter }}/host/\
+        {{ (vcenter.host_clusters_folder != 'NONE') | ternary (vcenter.host_clusters_folder + '/' | urlencode, '') }}{{ vcenter.cluster }}\
         {{ (vcenter.host_reference != 'NONE') | ternary ('/' + vcenter.host_reference | urlencode, '') }}\
         {{ (vcenter.resource_pool != 'NONE') | ternary ('/Resources/' + vcenter.resource_pool | urlencode, '') }}"
 
@@ -37,6 +38,9 @@
         {% endif %}
         -dm=thin
         -ds={{ vcenter.datastore }}
+        {% if vcenter.vmfolder is defined %}
+        -vf={{ vcenter.vmfolder }}
+        {% endif %}
         -n={{ vmname }}
         --net:"Management Network={{ mgmt_bridge }}"
         --net:"Datapath Network={{ data_bridge }}"

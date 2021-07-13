@@ -1,32 +1,88 @@
-- name: SD-WAN Portal 1 bootstrap
-  command: /opt/vnsportal/cluster_bootstrap.sh
+- block:
+
+  - name: SD-WAN Portal 1 bootstrap
+    command: /opt/vnsportal/cluster_bootstrap.sh
+
+  - name: Get docker container ID
+    shell: docker ps -a | grep 'vnsportal-cluster-bootstrap' | awk '{print $1}'
+    register: db_container_id
+
+  - name: Check database status
+    shell: "docker exec -it {{ db_container_id.stdout }} mysql -u {{ portal_database_default_username }} -p{{ portal_database_default_password }} --execute=\"SHOW STATUS LIKE 'wsrep%';\""
+    register: database_cluster_status
+    until: database_cluster_status.stdout.find("ERROR") == -1 and database_cluster_status.stdout.find("Primary") != -1
+    retries: 10
+    delay: 5
+
+  - name: Capture cluster bootstrap log output
+    shell: docker logs vnsportal-cluster-bootstrap |& tee vnsportal_cluster_bootstrap.log
+
+  - name: Copy cluster bootstrap log to MetroAE host machine
+    fetch:
+      src: vnsportal_cluster_bootstrap.log
+      dest: "{{ metro_reports_dir }}/"
+
+  - name: Remove cluster bootstrap log on Portal 1
+    file:
+      path: vnsportal_cluster_bootstrap.log
+      state: absent
+
   when: inventory_hostname == portal1.hostname
 
-- name: Wait for the Portal 1 bootstrap to complete
-  command: "docker logs vnsportal-cluster-bootstrap"
-  register: log_output
-  until: log_output.stdout.find("Ready for start up") != -1
-  retries: 20
-  delay: 5
-  when: inventory_hostname == portal1.hostname
+- block:
 
-- name: SD-WAN Portal 2 start up
-  command: /opt/vnsportal/start.sh
+  - name: SD-WAN Portal 2 start up
+    command: /opt/vnsportal/start.sh
+    when: inventory_hostname == portal2.hostname
+
+  - name: Check Portal endpoint health (ignoring errors)
+    uri:
+      url: https://localhost/vnsportal/health
+      method: GET
+      validate_certs: False
+    no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
+    register: curl_output
+    until: curl_output.status == 200
+    retries: 30
+    delay: 5
+    ignore_errors: true
+
   when: inventory_hostname == portal2.hostname
 
-- name: Wait for the Portal 2 start up to complete
-  command: curl http://localhost:8080/vnsportal/health    # noqa 303
-  no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
-  register: curl_output
-  until: curl_output.stdout.find("UP") != -1
-  retries: 30
-  delay: 5
-  when: inventory_hostname == portal2.hostname
+- block:
 
-- name: SD-WAN Portal 3 start up
-  command: /opt/vnsportal/start.sh
+  - name: SD-WAN Portal 3 start up
+    command: /opt/vnsportal/start.sh
+
+  - name: Check Portal endpoint health (ignoring errors)
+    uri:
+      url: https://localhost/vnsportal/health
+      method: GET
+      validate_certs: False
+    no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
+    register: curl_output
+    until: curl_output.status == 200
+    retries: 30
+    delay: 5
+    ignore_errors: true
+
   when: inventory_hostname == portal3.hostname
 
-- name: SD-WAN Portal 1 start up
-  command: /opt/vnsportal/start.sh
+- block:
+
+  - name: SD-WAN Portal 1 start up
+    command: /opt/vnsportal/start.sh
+
+  - name: Check Portal endpoint health (ignoring errors)
+    uri:
+      url: https://localhost/vnsportal/health
+      method: GET
+      validate_certs: False
+    no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
+    register: curl_output
+    until: curl_output.status == 200
+    retries: 30
+    delay: 5
+    ignore_errors: true
+
   when: inventory_hostname == portal1.hostname

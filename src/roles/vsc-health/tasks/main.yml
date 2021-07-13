@@ -6,7 +6,9 @@
   no_log: True
   ignore_errors: True
 
-- import_tasks: report_header.yml
+- import_tasks: report_start.yml
+
+- meta: reset_connection
 
 - block:
 
@@ -47,67 +49,138 @@
   - name: Print 'show version' when verbosity >= 1
     debug: var=sh_version verbosity=1
 
-  - name: Write show version json to report
-    nuage_append: filename="{{ report_path }}" text="{{ inventory_hostname }} {{ sh_version|to_nice_json }}\n"
+  - name: Write version separator to report file
+    nuage_append: filename="{{ report_path }}" text="-----VSC version information-----\n"
 
-  - name: Get output of 'show router bgp summary'
+  - name: Write show version json to report
+    nuage_append: filename="{{ report_path }}" text="{{ inventory_hostname }} {{ sh_version.stdout_lines|to_nice_json }}\n"
+
+  - name: Get output of 'show router interface'
     sros_command:
       commands:
-        - show router bgp summary
+        - show router interface
       provider: "{{ vsc_creds }}"
-    register: bgp_summary
+    register: show_router_interfaces
 
-  - name: Print 'show router bgp summary' when verbosity >= 1
-    debug: var=bgp_summary verbosity=1
+  - name: Print output of 'show router interface' when verbosity >= 1
+    debug: var=show_router_interfaces verbosity=1
 
-  - name: Create local variable with BGP Summary in json
-    set_fact: bgp_summary_json="{{ bgp_summary.stdout[0]|bgp_summary_to_json }}"
+  - name: Write VSC router interface table separator to report file
+    nuage_append: filename="{{ report_path }}" text="-----VSC Router Interface Table-----\n"
 
-  - name: Print BGP Summary in json when verbosity >= 1
-    debug: var=bgp_summary_json verbosity=1
+  - name: Write VSC router interface table to report
+    nuage_append: filename="{{ report_path }}" text="{{ show_router_interfaces.stdout_lines|to_nice_json }}\n"
 
-  - name: Write BGP Admin State JSON to file
-    nuage_append: filename="{{ report_path }}" text="{{ inventory_hostname }} {{ bgp_summary_json|to_nice_json }}\n"
+  - name: Create local variable with show router interface output in json
+    set_fact: show_router_interfaces_json="{{ show_router_interfaces.stdout[0]|vsc_router_interfaces_to_json }}"
 
-  - name: Create local variable with BGP Admin State
-    set_fact: bgp_admin_state="{{ bgp_summary_json['BGP Admin State'] }}"
+  - name: Print show router interface in json when verbosity >= 1
+    debug: var=show_router_interfaces_json verbosity=1
 
-  - name: Print BGP Admin State when verbosity >= 1
-    debug: var=bgp_admin_state verbosity=1
+  - name: Write router interfaces to report
+    nuage_append: filename="{{ report_path }}" text="{{ inventory_hostname }} INTERFACES {{ show_router_interfaces_json|to_nice_json }}\n"
 
-  - name: Check for expected BGP Admin State
+  - name: Check for expected control Adm Status
     assert: {
-      that: "'{{ expected_bgp_admin_state }}' in bgp_admin_state",
-      msg: "Unexpected BGP Admin State - {{ bgp_admin_state }}. Expected '{{ expected_bgp_admin_state }}'. Check output of 'show router bgp summary'."
-      }
-    ignore_errors: "{{ not nuage_upgrade | default(False) }}"
+      that: "{{ show_router_interfaces_json.control_Adm is match('Up') }}",
+      msg: "Invalid Adm status for control interface. ({{ show_router_interfaces_json.control_Adm }}) detected.
+        Expected 'Up'. Check 'show router interface'." }        # noqa 204
 
-  - name: Create local variable for BGP Oper State
-    set_fact: bgp_oper_state="{{ bgp_summary_json['BGP Oper State'] }}"
-
-  - name: Print BGP Oper State when verbosity >= 1
-    debug: var=bgp_oper_state verbosity=1
-
-  - name: Check for expected BGP Oper State
+  - name: Check for expected control Oprv4 Status
     assert: {
-      that: "'{{ expected_bgp_oper_state }}' in bgp_oper_state",
-      msg: "Unexpected BGP Oper State - {{ bgp_oper_state }}. Expected '{{ expected_bgp_oper_state }}'. Check output of 'show router bgp summary'."
-      }
-    ignore_errors: "{{ not nuage_upgrade | default(False) }}"
+      that: "{{ show_router_interfaces_json.control_Oprv4 is match('Up') }}",
+      msg: "Invalid Oprv4 status for control interface. ({{ show_router_interfaces_json.control_Oprv4 }}) detected. Expected 'Up'. Check 'show router interface'." }    # noqa 204
+    when: control_ip is defined and not enable_ipv6 | default(false)
 
-  - name: Create local variable for BGP Peer Count
-    set_fact: bgp_peer_count="{{ bgp_summary_json['Total Peers'] }}"
-
-  - name: Print BGP Peer Count when verbosity >= 1
-    debug: var=bgp_peer_count verbosity=1
-
-  - name: Check for expected BGP Peer Count
+  - name: Check for expected control Oprv6 Status
     assert: {
-      that: "{{ expected_num_bgp_peers }} == {{ bgp_peer_count }}",
-      msg: "Invalid BGP Peer count ({{ bgp_peer_count }}) detected. Expected '{{ expected_num_bgp_peers }}'. Check 'show router bgp summary'."
-      }
-    ignore_errors: "{{ not nuage_upgrade | default(False) }}"
-    when: expected_num_bgp_peers | default(0) > 0
+      that: "{{ show_router_interfaces_json.control_Oprv6 is match('Up') }}",
+      msg: "Invalid Oprv6 status for control interface. ({{ show_router_interfaces_json.control_Oprv6 }}) detected. Expected 'Up'. Check 'show router interface'." }    # noqa 204
+    when: control_ip is defined and enable_ipv6 | default(false)
+
+  - name: Run if System IP is defined
+    block:
+
+    - name: Check for expected system Adm Status
+      assert: {
+        that: "{{ show_router_interfaces_json.system_Adm is match('Up') }}",
+        msg: "Invalid Adm status for system interface. ({{ show_router_interfaces_json.system_Adm }}) detected. Expected 'Up'. Check 'show router interface'."
+        }
+
+    - name: Check for expected system Oprv4 Status
+      assert: {
+        that: "{{ show_router_interfaces_json.system_Oprv4 is match('Up') }}",
+        msg: "Invalid Oprv4 status for system interface. ({{ show_router_interfaces_json.system_Oprv4 }}) detected. Expected 'Up'. Check 'show router interface'."
+        }
+      when: not enable_ipv6 | default(false)
+
+    - name: Check for expected system Oprv6 Status
+      assert: {
+        that: "{{ show_router_interfaces_json.system_Oprv6 is match('Up') }}",
+        msg: "Invalid Oprv6 status for system interface. ({{ show_router_interfaces_json.system_Oprv6 }}) detected. Expected 'Up'. Check 'show router interface'."
+        }
+      when: enable_ipv6 | default(false)
+
+    - name: Get output of 'show router bgp summary'
+      sros_command:
+        commands:
+          - show router bgp summary
+        provider: "{{ vsc_creds }}"
+      register: bgp_summary
+
+    - name: Print 'show router bgp summary' when verbosity >= 1
+      debug: var=bgp_summary verbosity=1
+
+    - name: Create local variable with BGP Summary in json
+      set_fact: bgp_summary_json="{{ bgp_summary.stdout[0]|bgp_summary_to_json }}"
+
+    - name: Print BGP Summary in json when verbosity >= 1
+      debug: var=bgp_summary_json verbosity=1
+
+    - name: Write BGP Admin State JSON to file
+      nuage_append: filename="{{ report_path }}" text="{{ inventory_hostname }} {{ bgp_summary_json|to_nice_json }}\n"
+
+    - name: Create local variable with BGP Admin State
+      set_fact: bgp_admin_state="{{ bgp_summary_json['BGP Admin State'] }}"
+
+    - name: Print BGP Admin State when verbosity >= 1
+      debug: var=bgp_admin_state verbosity=1
+
+    - name: Check for expected BGP Admin State
+      assert: {
+        that: "'{{ expected_bgp_admin_state }}' in bgp_admin_state",
+        msg: "Unexpected BGP Admin State - {{ bgp_admin_state }}. Expected '{{ expected_bgp_admin_state }}'. Check output of 'show router bgp summary'."
+        }
+      ignore_errors: "{{ not nuage_upgrade | default(False) }}"
+
+    - name: Create local variable for BGP Oper State
+      set_fact: bgp_oper_state="{{ bgp_summary_json['BGP Oper State'] }}"
+
+    - name: Print BGP Oper State when verbosity >= 1
+      debug: var=bgp_oper_state verbosity=1
+
+    - name: Check for expected BGP Oper State
+      assert: {
+        that: "'{{ expected_bgp_oper_state }}' in bgp_oper_state",
+        msg: "Unexpected BGP Oper State - {{ bgp_oper_state }}. Expected '{{ expected_bgp_oper_state }}'. Check output of 'show router bgp summary'."
+        }
+      ignore_errors: "{{ not nuage_upgrade | default(False) }}"
+
+    - name: Create local variable for BGP Peer Count
+      set_fact: bgp_peer_count="{{ bgp_summary_json['Total Peers'] }}"
+
+    - name: Print BGP Peer Count when verbosity >= 1
+      debug: var=bgp_peer_count verbosity=1
+
+    - name: Check for expected BGP Peer Count
+      assert: {
+        that: "{{ expected_num_bgp_peers }} == {{ bgp_peer_count }}",
+        msg: "Invalid BGP Peer count ({{ bgp_peer_count }}) detected. Expected '{{ expected_num_bgp_peers }}'. Check 'show router bgp summary'."
+        }
+      ignore_errors: "{{ not nuage_upgrade | default(False) }}"
+      when: expected_num_bgp_peers | default(0) > 0
+
+    when: system_ip is defined
 
   - name: Get output of 'show vswitch-controller xmpp-server detail'
     sros_command:
@@ -267,50 +340,6 @@
     ignore_errors: "{{ not nuage_upgrade | default(False) }}"
     when: expected_num_gateway_ports | default(0) > 0
 
-  - name: Get output of 'show router interface'
-    sros_command:
-      commands:
-        - show router interface
-      provider: "{{ vsc_creds }}"
-    register: show_router_interfaces
-
-  - name: Print output of 'show router interface' when verbosity >= 1
-    debug: var=show_router_interfaces verbosity=1
-
-  - name: Create local variable with show router interface output in json
-    set_fact: show_router_interfaces_json="{{ show_router_interfaces.stdout[0]|vsc_router_interfaces_to_json }}"
-
-  - name: Print show router interface in json when verbosity >= 1
-    debug: var=show_router_interfaces_json verbosity=1
-
-  - name: Write router interfaces to report
-    nuage_append: filename="{{ report_path }}" text="{{ inventory_hostname }} INTERFACES {{ show_router_interfaces_json|to_nice_json }}\n"
-
-  - name: Check for expected control Adm Status
-    assert: {
-      that: "{{ show_router_interfaces_json.control_Adm is match('Up') }}",
-      msg: "Invalid Adm status for control interface. ({{ show_router_interfaces_json.control_Adm }}) detected.
-        Expected 'Up'. Check 'show router interface'." }        # noqa 204
-
-  - name: Check for expected control Oprv4 Status
-    assert: {
-      that: "{{ show_router_interfaces_json.control_Oprv4 is match('Up') }}",
-      msg: "Invalid Oprv4 status for control interface. ({{ show_router_interfaces_json.control_Oprv4 }}) detected. Expected 'Up'. Check 'show router interface'." }    # noqa 204
-    when: control_ip is defined
-
-  - name: Check for expected system Adm Status
-    assert: {
-      that: "{{ show_router_interfaces_json.system_Adm is match('Up') }}",
-      msg: "Invalid Adm status for system interface. ({{ show_router_interfaces_json.system_Adm }}) detected. Expected 'Up'. Check 'show router interface'."
-      }
-
-  - name: Check for expected system Oprv4 Status
-    assert: {
-      that: "{{ show_router_interfaces_json.system_Oprv4 is match('Up') }}",
-      msg: "Invalid Oprv4 status for system interface. ({{ show_router_interfaces_json.system_Oprv4 }}) detected. Expected 'Up'. Check 'show router interface'."
-      }
-    when: system_ip is defined
-
   - name: Get NTP status
     sros_command:
       commands:
@@ -329,6 +358,6 @@
   - name: Write NTP status to report
     nuage_append: filename="{{ report_path }}" text="{{ inventory_hostname }} NTP Status {{ ntp_status.stdout[0] }}\n"
 
-  - import_tasks: report_footer.yml
+  - import_tasks: report_end.yml
 
   delegate_to: localhost

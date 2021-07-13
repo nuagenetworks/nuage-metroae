@@ -9,14 +9,27 @@
   tags:
     - always
 
-- name: Get unzipped files dir
-  set_fact:
-    nuage_unzipped_files_dir: "{{ common.nuage_unzipped_files_dir }}"
+- name: Fix image paths for unzipped images if necessary
+  import_role: 
+    name: common
+    tasks_from: fix-image-paths
 
-- name: Set nuage unzipped directory to start with images if not absolute path
+- name: Clear plugin group_vars content
   set_fact:
-    nuage_unzipped_files_dir: /metroae_data/{{ nuage_unzipped_files_dir }}
-  when: common.nuage_unzipped_files_dir is not match('^/')
+    plugin_group_vars: ""
+
+- name: Clear plugin hosts content
+  set_fact:
+    plugin_hosts: ""
+
+- name: Set build hooks
+  set_fact:
+    build_hooks: "{{ common.hooks | default([]) }}"
+
+- name: Add plugin hooks
+  set_fact:
+    build_hooks: "{{ build_hooks + item.hooks }}"
+  loop: "{{ plugin_configs }}"
 
 - name: Update VSD variables
   include_role:
@@ -100,18 +113,6 @@
     tasks_from: dns-process-vars
   tags: dns
 
-- name: Update hosts variables
-  include_role:
-    name: common
-    tasks_from: hosts-process-vars
-  tags: always
-
-- name: Update groups variables
-  include_role:
-    name: common
-    tasks_from: groups-process-vars
-  tags: always
-
 - name: Update STCvs variables
   include_role:
     name: common
@@ -122,4 +123,33 @@
   include_role:
     name: common
     tasks_from: proxy-process-vars
+  tags: always
+
+- name: Update Webfilter variables
+  include_role:
+    name: common
+    tasks_from: webfilter-process-vars
+
+- name: Lets run build hooks
+  include_role:
+    name: hooks
+    tasks_from: main
+  vars:
+    - hooks_file_path: "{{ hook }}"
+    - hook_location:
+      - build
+  loop: "{{ build_hooks }}"
+  loop_control:
+    loop_var: hook
+
+- name: Update hosts variables
+  include_role:
+    name: common
+    tasks_from: hosts-process-vars
+  tags: always
+
+- name: Update groups variables
+  include_role:
+    name: common
+    tasks_from: groups-process-vars
   tags: always

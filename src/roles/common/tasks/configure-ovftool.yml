@@ -1,6 +1,7 @@
 - name: Configure vCenter path
   set_fact:
-    vcenter_path: "{{ target_server }}/{{ vcenter.datacenter }}/host/{{ vcenter.cluster }}\
+    vcenter_path: "{{ target_server }}/{{ vcenter.datacenter }}/host/\
+      {{ (vcenter.host_clusters_folder != 'NONE') | ternary (vcenter.host_clusters_folder + '/' | urlencode, '') }}{{ vcenter.cluster }}\
       {{ (vcenter.host_reference != 'NONE') | ternary ('/' + vcenter.host_reference | urlencode, '') }}\
       {{ (vcenter.resource_pool != 'NONE') | ternary ('/Resources/' + vcenter.resource_pool | urlencode, '') }}"
 
@@ -13,6 +14,9 @@
       --powerOn
       -dm=thin
       -ds={{ vcenter.datastore }}
+      {% if vcenter.vmfolder is defined %}
+      -vf={{ vcenter.vmfolder }}
+      {% endif %}
       {% if hostvars[inventory_hostname].ansible_verbosity > 0 %}
       --X:logLevel=verbose
       --X:logToConsole
@@ -22,4 +26,3 @@
       -n={{ vm_name }}
       --net:"{{ management_network }}={{ mgmt_bridge }}"
       "{{ image_path }}/{{ image_file_name }}"
-

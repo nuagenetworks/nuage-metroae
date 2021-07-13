@@ -845,7 +845,7 @@ class Wizard(object):
             if value is None:
                 self._print("\nValue is not a valid hostname\n")
         elif datatype == "version":
-            allowed = re.compile("^[\d][.][\d][.]([A-Z\d]+)$", re.IGNORECASE)
+            allowed = re.compile("^[\d]+[.][\d]+[.]([A-Z\d]+)$", re.IGNORECASE)
             if not allowed.match(user_value):
                 self._print("\nValue is not a valid version\n")
                 return None
@@ -943,7 +943,7 @@ class Wizard(object):
             self.in_container = (os.environ["RUN_MODE"] == "INSIDE")
         else:
             self.in_container = False
-        self.in_container = os.path.isdir("/source/nuage-metro")
+        self.in_container = os.path.isdir("/source/nuage-metroae")
 
     def _set_directories(self):
         self.metro_path = os.path.dirname(os.path.abspath(__file__))

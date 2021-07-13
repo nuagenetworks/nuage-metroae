@@ -1,0 +1,28 @@
+- name: Set VSC Creds if not defined
+  set_fact:
+    vsc_creds:
+      host: "{{ mgmt_ip }}"
+      username: "{{ vsc_username|default(vsc_default_username) }}"
+      password: "{{ vsc_password|default(vsc_default_password) }}"
+      timeout: "{{ vsc_command_timeout_seconds }}"
+  no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
+  when: vsc_creds is not defined
+
+- name: Wait for VSC ssh to be ready
+  include_role:
+    name: common
+    tasks_from: wait-for-ssh-port
+  vars:
+    ssh_host: "{{ vsc_creds.host }}"
+    ssh_password: "{{ vsc_creds.password }}"
+    ssh_user: "{{ vsc_creds.username }}"
+    check_login: True
+
+- name: Apply specified configurations
+  sros_config:
+    src: "{{ item }}"
+    provider: "{{ vsc_creds }}"
+    save: yes
+  delegate_to: localhost
+  loop: "{{ vsc_config_file_paths }}"
+  when: not override_vsc_config

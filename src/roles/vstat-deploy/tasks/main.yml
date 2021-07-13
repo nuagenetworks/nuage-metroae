@@ -276,6 +276,8 @@
 
 - block:
 
+  - import_tasks: add_extra_disk.yml
+
   - name: Update /etc/hosts file on VSTAT
     lineinfile:
       dest: /etc/hosts
@@ -284,6 +286,7 @@
       - "{{ groups['vstats'] | default([]) }}"
       - "{{ groups['primary_vstats'] | default([]) }}"
       - "{{ groups['backup_vstats'] | default([]) }}"
+      - "{{ groups['data_vstats'] | default([]) }}"
 
     when: vsd_sa_or_ha is match('ha')
     remote_user: "{{ vstat_default_username }}"
@@ -295,10 +298,10 @@
     vars:
       rem_user: "{{ vstat_default_username }}"
 
-  - name: Restart elastic search
+  - name: Stop elastic search
     systemd:
       name: elasticsearch
-      state: restarted
+      state: stopped
     remote_user: "{{ vstat_default_username }}"
 
   - block:
@@ -324,33 +327,40 @@
 
     - block:
 
-      - name: Stat the standalone script
-        stat: path=/opt/vsd/vsd-es-standalone.sh
-        register: es_sa_script
-        when:
-          - vstat_sa_or_ha is match('sa')
+      - block:
 
-      - name: Execute VSTAT standalone script on standalone or clustered vsds
-        command: /opt/vsd/vsd-es-standalone.sh -e {{ inventory_hostname }}
-        no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
-        environment:
-          SSHPASS: "{{ vstat_default_password }}"
-        when:
-          - vstat_sa_or_ha is match('sa')
-          - es_sa_script.stat.exists
-          - vstat_default_username == 'root'
+        - name: Stat the standalone script
+          stat: path=/opt/vsd/vsd-es-standalone.sh
+          register: es_sa_script
 
-      - name: Execute VSTAT standalone script on standalone or clustered vsds
-        command: /opt/vsd/vsd-es-standalone.sh -e {{ inventory_hostname }}
-        no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
+        - name: Execute VSTAT standalone script on standalone or clustered vsds
+          command: /opt/vsd/vsd-es-standalone.sh -e {{ inventory_hostname }}
+          no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
+          environment:
+            SSHPASS: "{{ vstat_default_password }}"
+          when:
+            - es_sa_script.stat.exists
+            - vstat_default_username == 'root'
+
+        - name: Execute VSTAT standalone script on standalone or clustered vsds
+          command: /opt/vsd/vsd-es-standalone.sh -e {{ inventory_hostname }}
+          no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
+          when:
+            - es_sa_script.stat.exists
+            - vstat_default_username != 'root'
+
         when:
           - vstat_sa_or_ha is match('sa')
-          - es_sa_script.stat.exists
-          - vstat_default_username != 'root'
 
       - block:
+
+        - name: Define data only VSTATs for cluster
+          set_fact:
+            data_group_params: " -d {{ groups['data_vstats'][0] }},{{ groups['data_vstats'][1] }},{{ groups['data_vstats'][2] }}"
+          when: stats_out | default(false)
+
         - name: Execute VSTAT cluster script on standalone or clustered vsds
-          command: /opt/vsd/vsd-es-cluster-config.sh -e {{ groups['vstats'][0] }},{{ groups['vstats'][1] }},{{ groups['vstats'][2] }}
+          command: /opt/vsd/vsd-es-cluster-config.sh -e {{ groups['vstats'][0] }},{{ groups['vstats'][1] }},{{ groups['vstats'][2] }}{{ data_group_params | default('') }}
           environment:
             SSHPASS: "{{ vstat_default_password }}"
           no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
@@ -385,6 +395,24 @@
       name: common
       tasks_from: yum-update.yml
 
+  - name: Disable cloud-init on VSTAT, to avoid boot time delays
+    command: "{{ item }}"
+    with_items:
+      - systemctl disable cloud-init
+      - systemctl disable cloud-init-local
+      - systemctl disable cloud-config
+      - systemctl disable cloud-final
+    remote_user: "{{ vstat_default_username }}"
+
+  - name: Disable chrony on VSTAT if present
+    systemd:
+      name: "chronyd"
+      enabled: no
+      state: stopped
+    remote_user: "{{ vstat_default_username }}"
+    register: disable_chrony
+    failed_when: disable_chrony is failed and not 'Could not find the requested service' in disable_chrony.msg
+
   - name: Enable stats
     include_role:
       name: common
@@ -395,6 +423,7 @@
     loop_control:
       loop_var: vsd
     run_once: true
+    when: not stats_out | default(false)
 
   - name: Enable VSS UI
     import_tasks: setup-vstat-vss-ui.yml

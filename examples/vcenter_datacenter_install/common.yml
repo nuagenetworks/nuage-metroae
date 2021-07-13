@@ -92,6 +92,20 @@ dns_server_list: [ "10.1.0.2", ]
 
 ######################
 
+##### Stats Out
+
+# < Statistics Out Deployment >
+# Set the deployment for stats-out.  At this time, only exactly 3 clustered VSDs and exactly 3 stats VSDs are supported.  The first 3 VSDs specified are clustered and the remaining are marked statistics only
+#
+# stats_out: False
+
+# < Statistics Out Proxy Address >
+# Set the proxy address for a stats-out deployment.  If unspecified the first NUH to be deployed will be used as the proxy.  If there are no NUHs being deployed, an alternative proxy address must be specified.
+#
+# stats_out_proxy: (first NUH hostname)
+
+###############
+
 ##### Options
 
 # < Timezone >
@@ -156,6 +170,25 @@ dns_server_list: [ "10.1.0.2", ]
 
 #############
 
+##### Backup and Restore
+
+# < Backup directory >
+# Specifies the global directory root to store backup file sets on the MetroAE host.  This overrides metro_backup_root in the upgrade deployment file if specified.  If neither is specified, a backups directory will be created off of nuage_unzipped_files_dir.
+#
+# backup_directory_root: ""
+
+# < Maximum number of backups to store. >
+# Specifies the maximum number of backups to store in backup_directory_root.  The oldest backups of the same type exceeding this amount will be deleted at backup time.  The default of -1 specifies no limit.
+#
+# max_num_stored_backups: -1
+
+# < Backup set directory to be restored. >
+# The name of the backup file set directory under the backup_directory_root to restore.
+#
+# backup_to_restore: backup-latest-full
+
+########################
+
 ##### vCenter infrastructure
 
 # < vCenter Datacenter >
@@ -178,6 +211,16 @@ vcenter_cluster: "Cluster-A"
 #
 vcenter_datastore: "datastoreA"
 
+# < vCenter VM Folder >
+# Optional path to a folder defined on vCenter where VM will be instantiated
+#
+# vcenter_vmfolder: ""
+
+# < vCenter Hosts and Clusters Folder >
+# Optional path to a hosts and clusters folder defined on vCenter where VM will be instantiated
+#
+# vcenter_host_clusters_folder: ""
+
 ############################
 
 ##### vCenter common
@@ -188,7 +231,7 @@ vcenter_datastore: "datastoreA"
 # vcenter_resource_pool: ""
 
 # < OVF tool location >
-# This is the full path to the vCenter OVFtool executable. When running metroae from a clone of the nuage-metro repo, this should be set to the path to ovftool on the host, usually /usr/bin/ovftool. When running the metroae Docker container, the ovftool installation directory, /usr/lib/vmware-ovftool, must be copied to the metroae_data directory and this parameter must be set to the internal container path to the ovftool in that directory, /data/vmware-ovftool/ovftool.
+# This is the full path to the vCenter OVFtool executable. When running metroae from a clone of the nuage-metroae repo, this should be set to the path to ovftool on the host, usually /usr/bin/ovftool. When running the metroae Docker container, the ovftool installation directory, /usr/lib/vmware-ovftool, must be copied to the metroae_data directory and this parameter must be set to the internal container path to the ovftool in that directory, /data/vmware-ovftool/ovftool.
 #
 vcenter_ovftool: "/usr/bin/ovftool"
 
@@ -214,27 +257,37 @@ vcenter_ovftool: "/usr/bin/ovftool"
 ##### Licenses
 
 # < VSD Standard License File >
-# Path to the standard license file for the VSD
+# Path to the standard license file for the VSD including the file name
 #
 # vsd_license_file: ""
 
 # < VSD Cluster License File >
-# Path to the cluster license file for the VSD
+# Path to the cluster license file for the VSD including the file name
 #
 # vsd_cluster_license_file: ""
 
 # < VSD License Required Days Left >
-# Raise a failure if the VSD licenses do not have at least the specified number of days remaining before expiration. If undefined, no check of days remaining before license expiration will be made. If you want to verify that the number of days left before expiration is more than a certain number of days, uncomment this variable and set the value to the number of days.
+# Raise a failure if the VSD licenses (Standard or cluster only) do not have at least the specified number of days remaining before expiration. If undefined, no check of days remaining before VSD license expiration will be made. If you want to verify that the number of days left before expiration is more than a certain number of days, uncomment this variable and set the value to the number of days.
 #
 # vsd_license_required_days_left: -1
 
-# < SD-WAN Portal License Filename >
-# Path to the license file for the SD-WAN Portal
+# < Continue Metroae execution on VSD license failure >
+# Continue Metroae execution even after license failure if this is set to true
+#
+# vsd_continue_on_license_failure: False
+
+# < VSD Ejabberd License File >
+# Path to the Ejabberd license file for the VSD including the file name
+#
+# vsd_ejabberd_license_file: ""
+
+# < SD-WAN Portal License File >
+# Path to the license file for the SD-WAN Portal including the file name
 #
 # portal_license_file: ""
 
 # < NUH License File >
-# Path to the license file for the NUH
+# Path to the license file for the NUH including the file name
 #
 # nuh_license_file: ""
 
@@ -272,27 +325,32 @@ vcenter_ovftool: "/usr/bin/ovftool"
 ##### Disk Space
 
 # < VSD Disk Size >
-# Amount of VSD disk space to allocate, in GB. Note: Values smaller than the default are for lab and PoC only. Production deployments must use a value greater than or equal to the default.
+# Amount of VSD disk space to pre-allocate, in GB. Note: Values smaller than the default are for lab and PoC only. Production deployments must use a value greater than or equal to the default.
 #
 # vsd_fallocate_size_gb: 285
 
 # < VSC Disk Size >
-# Amount of VSC disk space to allocate, in GB. Note: Values smaller than the default are for lab and PoC only. Production deployments should not modify this value.
+# Amount of VSC disk space to pre-allocate, in GB. The only valid values are 0 and 1. When undefined or 0, file size allocation will be skipped. Production deployments should set this value to 1.
 #
-# vsc_fallocate_size_gb: 2
+# vsc_fallocate_size_gb: 0
 
 # < VSTAT Disk Size >
-# Amount of VSTAT disk space to allocate, in GB. Note: Values smaller than the default are for lab and PoC only. Production deployments should not modify this value.
+# Amount of VSTAT disk space to pre-allocate, in GB. Note: Values smaller than the default are for lab and PoC only. Production deployments should not modify this value.
 #
 # vstat_allocate_size_gb: 100
 
+# < Portal Disk Size >
+# Amount of Portal disk space to pre-allocate, in GB. Note: Values smaller than the default are for lab and PoC only. Production deployments should not modify this value.
+#
+# portal_allocate_size_gb: 16
+
 # < VCIN Disk Size >
-# Amount of VCIN disk space to allocate, in GB. Note: Values smaller than the default are for lab and PoC only. Production deployments should not modify this value.
+# Amount of VCIN disk space to pre-allocate, in GB. Note: Values smaller than the default are for lab and PoC only. Production deployments should not modify this value.
 #
 # vcin_allocate_size_gb: 285
 
 # < NSGV Disk Size >
-# Amount of NSGV disk space to allocate, in GB. Note: Values smaller than the default are for lab and PoC only. Production deployments should not modify this value.
+# Amount of NSGV disk space to pre-allocate, in GB. Note: Values smaller than the default are for lab and PoC only. Production deployments should not modify this value.
 #
 # nsgv_allocate_size_gb: 4
 
@@ -335,3 +393,91 @@ vcenter_ovftool: "/usr/bin/ovftool"
 # skip_actions: []
 
 ###########
+
+##### Component Health Report Email Options
+
+# < Health Report SMTP Server >
+# Address of SMTP server to be used if emailing health results
+#
+# health_report_email_server: ""
+
+# < Health Report SMTP Server Port >
+# Port to be used on the SMTP Server
+#
+# health_report_email_server_port: 25
+
+# < Health Report Email From Address >
+# Email address from which health report will be sent
+#
+# health_report_email_from_address: ""
+
+# < Health Report Destination Email Address(es) >
+# List of destination email addresses
+#
+# health_report_email_destination_addresses: []
+
+###########################################
+
+##### VSD Monit Email Alerts Configuration
+
+# < VSD Monit Mail Server >
+# Address of the mail server to be used to receive monit alerts via email
+#
+# vsd_monit_mail_server: ""
+
+# < VSD Monit Mail Server Port >
+# Port on mail server to be used for monit alerts
+#
+# vsd_monit_mail_server_port: 25
+
+# < VSD Monit Mail Server Encryption Type >
+# Encryption to be used when sending monit alerts via email
+#
+# vsd_monit_mail_server_encryption: ""
+
+# < Use VSD Monit Eventqueue >
+# Enables use of monit eventqueue to store alerts if email alerts fail to send
+#
+# vsd_use_monit_eventqueue: True
+
+# < VSD Monit From Email Address >
+# Email address from which monit alerts will be sent
+#
+# vsd_monit_from_address: ""
+
+# < VSD Monit Reply-To Email Address >
+# Email address to reply to monit alert emails
+#
+# vsd_monit_reply_to_address: ""
+
+# < VSD Monit Email Alert Subject >
+# Email subject for alert emails. Overrides monit default alert subject
+#
+# vsd_monit_email_subject: ""
+
+# < VSD Monit Email Alert Message >
+# Email message for alert emails. Overrides monit default alert message
+#
+# vsd_monit_email_message: ""
+
+# < VSD Monit Destination Email Address >
+# Destination email address for monit alerts
+#
+# vsd_monit_destination_address: ""
+
+# < VSD Monit Only Alert On >
+# Specific events for which alerts should be sent. One string can be used to hold multiple events, separated by commas
+#
+# vsd_monit_alert_only_on: ""
+
+# < VSD Monit Do Not Alert On >
+# Events for which alerts should not be sent. One string can be used to hold multiple events, separated by commas
+#
+# vsd_monit_alert_not_on: ""
+
+##########################################
+
+# < VSD In-place upgrade during Install  >
+# Allowing VSD in-place upgrade during Installation
+#
+# vsd_install_inplace_upgrade: False

@@ -41,10 +41,12 @@ class TestVsdLicenseValid(object):
         mock_root.licenses = MagicMock()
         mock_root.licenses.get.return_value = licenses
 
-    def get_mock_license(self, expiry_timestamp, supported_versions):
+    def get_mock_license(self, expiry_timestamp, supported_versions, id):
         mock_license = MagicMock()
         mock_license.expiry_timestamp = expiry_timestamp * 1000
         mock_license.additional_supported_versions = supported_versions
+        mock_license.unique_license_identifier = id
+        mock_license.licensed_feature = "vss"
         return mock_license
 
     def validate_session(self, import_patch):
@@ -59,18 +61,23 @@ class TestVsdLicenseValid(object):
     def test__success(self, module_patch, time_patch, import_patch):
         mock_module = self.setup_module(module_patch)
         mock_root = self.setup_session_root(import_patch)
-        lic_1 = self.get_mock_license(SECONDS_PER_DAY * 366, 1)
-        lic_2 = self.get_mock_license(SECONDS_PER_DAY * 500, 1)
+        lic_1 = self.get_mock_license(SECONDS_PER_DAY * 366, 1, "lic1")
+        lic_2 = self.get_mock_license(SECONDS_PER_DAY * 500, 1, "lic2")
 
         self.setup_licenses(mock_root, [lic_1, lic_2])
 
         time_patch.return_value = SECONDS_PER_DAY
         main()
 
+        test_days_left_dict = {lic_1.unique_license_identifier: [365, lic_1.licensed_feature], lic_2.unique_license_identifier: [499, lic_2.licensed_feature]}
+        test_valid_dict = {lic_1.unique_license_identifier: True, lic_2.unique_license_identifier: True}
+
+        test_result_dict = {"validity": test_valid_dict, "days_left": test_days_left_dict}
+
         self.validate_session(import_patch)
         mock_module.fail_json.assert_not_called()
         mock_module.exit_json.assert_called_once_with(changed=False,
-                                                      result="True")
+                                                      result=test_result_dict)
 
     @patch("importlib.import_module")
     @patch(MODULE_PATCH)
@@ -120,9 +127,14 @@ class TestVsdLicenseValid(object):
         time_patch.return_value = SECONDS_PER_DAY
         main()
 
+        test_days_left_dict = {}
+        test_valid_dict = {}
+
+        test_result_dict = {"validity": test_valid_dict, "days_left": test_days_left_dict}
+
         self.validate_session(import_patch)
         mock_module.exit_json.assert_called_once_with(changed=False,
-                                                      result="False")
+                                                      result=test_result_dict)
 
     @patch("importlib.import_module")
     @patch("time.time")
@@ -130,17 +142,22 @@ class TestVsdLicenseValid(object):
     def test__bad_mode(self, module_patch, time_patch, import_patch):
         mock_module = self.setup_module(module_patch)
         mock_root = self.setup_session_root(import_patch)
-        lic_1 = self.get_mock_license(SECONDS_PER_DAY * 366, 1)
-        lic_2 = self.get_mock_license(SECONDS_PER_DAY * 500, 0)
+        lic_1 = self.get_mock_license(SECONDS_PER_DAY * 366, 1, "lic1")
+        lic_2 = self.get_mock_license(SECONDS_PER_DAY * 500, 0, "lic2")
 
         self.setup_licenses(mock_root, [lic_1, lic_2])
 
         time_patch.return_value = SECONDS_PER_DAY
         main()
 
+        test_days_left_dict = {lic_1.unique_license_identifier: [365, lic_1.licensed_feature], lic_2.unique_license_identifier: [499, lic_2.licensed_feature]}
+        test_valid_dict = {lic_1.unique_license_identifier: True, lic_2.unique_license_identifier: False}
+
+        test_result_dict = {"validity": test_valid_dict, "days_left": test_days_left_dict}
+
         self.validate_session(import_patch)
         mock_module.exit_json.assert_called_once_with(changed=False,
-                                                      result="False")
+                                                      result=test_result_dict)
 
     @patch("importlib.import_module")
     @patch("time.time")
@@ -148,8 +165,8 @@ class TestVsdLicenseValid(object):
     def test__will_expire(self, module_patch, time_patch, import_patch):
         mock_module = self.setup_module(module_patch)
         mock_root = self.setup_session_root(import_patch)
-        lic_1 = self.get_mock_license(SECONDS_PER_DAY * 365, 1)
-        lic_2 = self.get_mock_license(SECONDS_PER_DAY * 500, 0)
+        lic_1 = self.get_mock_license(SECONDS_PER_DAY * 365, 1, "lic1")
+        lic_2 = self.get_mock_license(SECONDS_PER_DAY * 500, 0, "lic2")
 
         self.setup_licenses(mock_root, [lic_1, lic_2])
 
@@ -166,8 +183,8 @@ class TestVsdLicenseValid(object):
     def test__has_expired(self, module_patch, time_patch, import_patch):
         mock_module = self.setup_module(module_patch)
         mock_root = self.setup_session_root(import_patch)
-        lic_1 = self.get_mock_license(SECONDS_PER_DAY - 1, 1)
-        lic_2 = self.get_mock_license(SECONDS_PER_DAY * 500, 0)
+        lic_1 = self.get_mock_license(SECONDS_PER_DAY - 1, 1, "lic1")
+        lic_2 = self.get_mock_license(SECONDS_PER_DAY * 500, 0, "lic2")
 
         self.setup_licenses(mock_root, [lic_1, lic_2])
 
@@ -176,4 +193,4 @@ class TestVsdLicenseValid(object):
 
         self.validate_session(import_patch)
         mock_module.fail_json.assert_called_once_with(
-            msg="VSD License has expired")
+            msg="The VSD License has expired, please renew the License before proceeding to install the VSD image")
