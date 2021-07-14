@@ -11,115 +11,146 @@
     vsd_host: "{{vsd_hostname_list[0]}}"
     _vsd_hostname: "{{hostvars[inventory_hostname].vsd_info.stdout | regex_findall('Host Name:\\s+(.*)')}}"
 
+
+- name: Check Ipv4 connectivity between VSD and Cert transfer server
+  command: ping -c1 {{ inventory_hostname }}
+  delegate_to: "{{vsd_host}}"
+  when:
+    - not enable_ipv6 | default(False)
+    - scp_location is defined
+  
+  remote_user: "{{ hostvars[vsd_hostname_list[0]].vsd_custom_username | default(vsd_custom_username | default(vsd_default_username)) }}"
+  become: "{{ 'no' if hostvars[vsd_hostname_list[0]].vsd_custom_username | default(vsd_custom_username | default(vsd_default_username)) == 'root' else 'yes' }}"
+  vars:
+    ansible_become_pass: "{{ hostvars[vsd_hostname_list[0]].vsd_custom_password | default(vsd_custom_password | default(vsd_default_password)) }}"
+
+- name: Check Ipv6 connectivity between VSD and Cert transfer server
+  command: ping6 -c1 {{ inventory_hostname }}
+  delegate_to: "{{vsd_host}}"
+  when:
+    - enable_ipv6 | default(False)
+    - scp_location is defined
+  remote_user: "{{ hostvars[vsd_host].vsd_custom_username | default(vsd_custom_username | default(vsd_default_username)) }}"
+  become: "{{ 'no' if hostvars[vsd_host].vsd_custom_username | default(vsd_custom_username | default(vsd_default_username)) == 'root' else 'yes' }}"
+  vars:
+    ansible_become_pass: "{{ hostvars[vsd_host].vsd_custom_password | default(vsd_custom_password | default(vsd_default_password)) }}"
+
 - block:
 
-  - name: Debug values
-    debug:
-      var: vsd_host
+  - include_role:
+      name: common
+      tasks_from: get-vsd-version
 
-  - name: Check Ipv4 connectivity between VSD and Cert transfer server
-    command: ping -c1 {{ inventory_hostname }}
-    delegate_to: "{{vsd_host}}"
-    when:
-      - not enable_ipv6 | default(False)
-      - scp_location is defined
+  delegate_to: "{{vsd_host}}"
+  remote_user: "{{ hostvars[vsd_host].vsd_custom_username | default(vsd_custom_username | default(vsd_default_username)) }}"
+  become: "{{ 'no' if hostvars[vsd_host].vsd_custom_username | default(vsd_custom_username | default(vsd_default_username)) == 'root' else 'yes' }}"
+  vars:
+    ansible_become_pass: "{{ hostvars[vsd_host].vsd_custom_password | default(vsd_custom_password | default(vsd_default_password)) }}"
 
-  - name: Check Ipv6 connectivity between VSD and Cert transfer server
-    command: ping6 -c1 {{ inventory_hostname }}
-    delegate_to: "{{vsd_host}}"
-    when:
-      - enable_ipv6 | default(False)
-      - scp_location is defined
+- name: Check if the user is already present (ignoring errors)
+  shell: '/opt/vsd/ejbca/bin/ejbca.sh ra listendentities -S 40 | grep "End Entity: {{ certificate_username }}"'
+  register: userExistsOutput
+  delegate_to: "{{vsd_host}}"
+  ignore_errors: yes
+  remote_user: "{{ hostvars[vsd_host].vsd_custom_username | default(vsd_custom_username | default(vsd_default_username)) }}"
+  become: "{{ 'no' if hostvars[vsd_host].vsd_custom_username | default(vsd_custom_username | default(vsd_default_username)) == 'root' else 'yes' }}"
+  vars:
+    ansible_become_pass: "{{ hostvars[vsd_host].vsd_custom_password | default(vsd_custom_password | default(vsd_default_password)) }}"
 
-  - block:
+- name: Revoke certs from VSD
+  command: "/opt/vsd/ejbca/deploy/certMgmt.sh -a revoke -u {{ certificate_username }} -c {{ commonName }}"
+  delegate_to: "{{vsd_host}}"
+  register: revoked
+  until: "revoked.rc == 0 or (revoked.stdout is search('fail adding entity'))"
+  retries: 10
+  delay: 30
+  when: "userExistsOutput.rc == 0"
+  remote_user: "{{ hostvars[vsd_host].vsd_custom_username | default(vsd_custom_username | default(vsd_default_username)) }}"
+  become: "{{ 'no' if hostvars[vsd_host].vsd_custom_username | default(vsd_custom_username | default(vsd_default_username)) == 'root' else 'yes' }}"
+  vars:
+    ansible_become_pass: "{{ hostvars[vsd_host].vsd_custom_password | default(vsd_custom_password | default(vsd_default_password)) }}"
 
-    - include_role:
-        name: common
-        tasks_from: get-vsd-version
+- name: Create and transfer certs from VSD
+  # noqa 305
+  shell: >-
+    /bin/sshpass -p'{{ certificate_password }}' /opt/vsd/ejbca/deploy/certMgmt.sh
+    -a generate -u {{ certificate_username }} -c {{ commonName }} -o csp
+    -f {{ file_type | default('pem') }}
+    -t {{ certificate_type }} {{ additional_parameters }}
+  delegate_to: "{{vsd_host}}"
+  register: created
+  until: "created.rc == 0 or (created.stdout is search('fail adding entity'))"
+  retries: 10
+  delay: 30
+  no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
+  when: "'4.0.4' not in vsd_version and scp_user is not defined and scp_location is not defined"
+  remote_user: "{{ hostvars[vsd_host].vsd_custom_username | default(vsd_custom_username | default(vsd_default_username)) }}"
+  become: "{{ 'no' if hostvars[vsd_host].vsd_custom_username | default(vsd_custom_username | default(vsd_default_username)) == 'root' else 'yes' }}"
+  vars:
+    ansible_become_pass: "{{ hostvars[vsd_host].vsd_custom_password | default(vsd_custom_password | default(vsd_default_password)) }}"
 
-    delegate_to: "{{vsd_host}}"
+- name: Check vsc hostname existence in IPv6
+  assert:
+    that: "hostvars[inventory_hostname].hostname | ipv6"
+    msg: "In IPv6, the vsc must define the hostname field"
+  when: "'vscs' in group_names and hostvars[inventory_hostname].hostname is defined and hostvars[inventory_hostname].hostname | ipaddr"
+  remote_user: "{{ hostvars[vsd_host].vsd_custom_username | default(vsd_custom_username | default(vsd_default_username)) }}"
+  become: "{{ 'no' if hostvars[vsd_host].vsd_custom_username | default(vsd_custom_username | default(vsd_default_username)) == 'root' else 'yes' }}"
+  vars:
+    ansible_become_pass: "{{ hostvars[vsd_host].vsd_custom_password | default(vsd_custom_password | default(vsd_default_password)) }}"
 
-  - name: Check if the user is already present (ignoring errors)
-    shell: '/opt/vsd/ejbca/bin/ejbca.sh ra listendentities -S 40 | grep "End Entity: {{ certificate_username }}"'
-    register: userExistsOutput
-    delegate_to: "{{vsd_host}}"
-    ignore_errors: yes
+- name: Create and transfer certs from VSD
+  # noqa 305
+  shell: >-
+    /bin/sshpass -p'{{ certificate_password }}' /opt/vsd/ejbca/deploy/certMgmt.sh
+    -a generate -u {{ certificate_username }} -c {{ commonName }} -o csp
+    -f {{ file_type | default('pem') }}
+    -t {{ certificate_type }} -s {{ scp_user }}@{{ inventory_hostname }}:{{ scp_location }} {{ additional_parameters }}
+  delegate_to: "{{ vsd_host }}"
+  register: created
+  until: "created.rc == 0 or (created.stdout is search('fail adding entity'))"
+  retries: 20
+  delay: 30
+  no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
+  when: "'4.0.4' not in vsd_version and scp_user is defined and scp_location is defined"
+  remote_user: "{{ hostvars[vsd_host].vsd_custom_username | default(vsd_custom_username | default(vsd_default_username)) }}"
+  become: "{{ 'no' if hostvars[vsd_host].vsd_custom_username | default(vsd_custom_username | default(vsd_default_username)) == 'root' else 'yes' }}"
+  vars:
+    ansible_become_pass: "{{ hostvars[vsd_host].vsd_custom_password | default(vsd_custom_password | default(vsd_default_password)) }}"
 
-  - name: Revoke certs from VSD
-    command: "/opt/vsd/ejbca/deploy/certMgmt.sh -a revoke -u {{ certificate_username }} -c {{ commonName }}"
-    delegate_to: "{{vsd_host}}"
-    register: revoked
-    until: "revoked.rc == 0 or (revoked.stdout is search('fail adding entity'))"
-    retries: 10
-    delay: 30
-    when: "userExistsOutput.rc == 0"
+- name: Create and transfer certs from 4.0.4 VSD
+  # noqa 305
+  shell: >-
+    /bin/sshpass -p'{{ certificate_password }}' /opt/vsd/ejbca/deploy/certMgmt.sh
+    -a generate -u {{ certificate_username }} -c {{ commonName }} -o csp
+    -f {{ file_type | default('pem') }}
+    -t {{ certificate_type }}  -n VSPCA {{ additional_parameters }}
+  delegate_to: "{{vsd_host}}"
+  register: created
+  until: "created.rc == 0 or (created.stdout is search('fail adding entity'))"
+  retries: 10
+  delay: 30
+  no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
+  when: "'4.0.4' in vsd_version and scp_user is not defined and scp_location is not defined"
+  remote_user: "{{ hostvars[vsd_host].vsd_custom_username | default(vsd_custom_username | default(vsd_default_username)) }}"
+  become: "{{ 'no' if hostvars[vsd_host].vsd_custom_username | default(vsd_custom_username | default(vsd_default_username)) == 'root' else 'yes' }}"
+  vars:
+    ansible_become_pass: "{{ hostvars[vsd_host].vsd_custom_password | default(vsd_custom_password | default(vsd_default_password)) }}"
 
-  - name: Create and transfer certs from VSD
-    # noqa 305
-    shell: >-
-      /bin/sshpass -p'{{ certificate_password }}' /opt/vsd/ejbca/deploy/certMgmt.sh
-      -a generate -u {{ certificate_username }} -c {{ commonName }} -o csp
-      -f {{ file_type | default('pem') }}
-      -t {{ certificate_type }} {{ additional_parameters }}
-    delegate_to: "{{vsd_host}}"
-    register: created
-    until: "created.rc == 0 or (created.stdout is search('fail adding entity'))"
-    retries: 10
-    delay: 30
-    no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
-    when: "'4.0.4' not in vsd_version and scp_user is not defined and scp_location is not defined"
-
-  - name: Check vsc hostname existence in IPv6
-    assert:
-      that: "hostvars[inventory_hostname].hostname | ipv6"
-      msg: "In IPv6, the vsc must define the hostname field"
-    when: "'vscs' in group_names and hostvars[inventory_hostname].hostname is defined and hostvars[inventory_hostname].hostname | ipaddr"
-
-  - name: Create and transfer certs from VSD
-    # noqa 305
-    shell: >-
-      /bin/sshpass -p'{{ certificate_password }}' /opt/vsd/ejbca/deploy/certMgmt.sh
-      -a generate -u {{ certificate_username }} -c {{ commonName }} -o csp
-      -f {{ file_type | default('pem') }}
-      -t {{ certificate_type }} -s {{ scp_user }}@{{ inventory_hostname }}:{{ scp_location }} {{ additional_parameters }}
-    delegate_to: "{{ vsd_host }}"
-    register: created
-    until: "created.rc == 0 or (created.stdout is search('fail adding entity'))"
-    retries: 20
-    delay: 30
-    no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
-    when: "'4.0.4' not in vsd_version and scp_user is defined and scp_location is defined"
-
-  - name: Create and transfer certs from 4.0.4 VSD
-    # noqa 305
-    shell: >-
-      /bin/sshpass -p'{{ certificate_password }}' /opt/vsd/ejbca/deploy/certMgmt.sh
-      -a generate -u {{ certificate_username }} -c {{ commonName }} -o csp
-      -f {{ file_type | default('pem') }}
-      -t {{ certificate_type }}  -n VSPCA {{ additional_parameters }}
-    delegate_to: "{{vsd_host}}"
-    register: created
-    until: "created.rc == 0 or (created.stdout is search('fail adding entity'))"
-    retries: 10
-    delay: 30
-    no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
-    when: "'4.0.4' in vsd_version and scp_user is not defined and scp_location is not defined"
-
-  - name: Create and transfer certs from 4.0.4 VSD
-    # noqa 305
-    shell: >-
-      /bin/sshpass -p'{{ certificate_password }}' /opt/vsd/ejbca/deploy/certMgmt.sh -a generate
-      -u {{ certificate_username }} -c {{ commonName }} -o csp
-      -f {{ file_type | default('pem') }} -t {{ certificate_type }}
-      -s {{ scp_user }}@{{ inventory_hostname }}:{{ scp_location }}   -n VSPCA {{ additional_parameters }}
-    delegate_to: "{{vsd_host}}"
-    register: created
-    until: "created.rc == 0 or (created.stdout is search('fail adding entity'))"
-    retries: 10
-    delay: 30
-    no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
-    when: "'4.0.4' in vsd_version and scp_user is defined and scp_location is defined"
-
+- name: Create and transfer certs from 4.0.4 VSD
+  # noqa 305
+  shell: >-
+    /bin/sshpass -p'{{ certificate_password }}' /opt/vsd/ejbca/deploy/certMgmt.sh -a generate
+    -u {{ certificate_username }} -c {{ commonName }} -o csp
+    -f {{ file_type | default('pem') }} -t {{ certificate_type }}
+    -s {{ scp_user }}@{{ inventory_hostname }}:{{ scp_location }}   -n VSPCA {{ additional_parameters }}
+  delegate_to: "{{vsd_host}}"
+  register: created
+  until: "created.rc == 0 or (created.stdout is search('fail adding entity'))"
+  retries: 10
+  delay: 30
+  no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
+  when: "'4.0.4' in vsd_version and scp_user is defined and scp_location is defined"
   remote_user: "{{ hostvars[vsd_host].vsd_custom_username | default(vsd_custom_username | default(vsd_default_username)) }}"
   become: "{{ 'no' if hostvars[vsd_host].vsd_custom_username | default(vsd_custom_username | default(vsd_default_username)) == 'root' else 'yes' }}"
   vars:
