@@ -65,6 +65,7 @@
   - debug: var=uuid
 
   - name: Add an extra ES Disk
+    connection: local
     vmware_guest_disk:
       hostname: "{{ target_server }}"
       username: "{{ vcenter.username }}"
@@ -73,13 +74,13 @@
       validate_certs: no
       uuid: "{{ uuid }}"
       disk:
-        - size_gb: 10
+        - size_gb: "{{ extra_disk_size_gb }}"
           type: thin
           datastore: "{{ vcenter.datastore }}"
           state: present
           scsi_controller: 1
           unit_number: 1
-          scsi_type: 'paravirtual'
+    when: extra_disk_size_gb is defined
 
   - name: Turn on autostart
     connection: local
