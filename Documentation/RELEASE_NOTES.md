@@ -15,6 +15,7 @@
 * Added a task to check existence of vsd migration script during upgrade (METROAE-306)
 * Fixed issue with installing required libvirt libraries on target host (METROAE-447)
 * VSD inplace upgrade should unmount the ISO after upgrade (METROAE-449)
+* Fix stats out upgrade for hardened Stats-out VSD nodes (METROAE-450)
 
 
 ## Test Matrix
