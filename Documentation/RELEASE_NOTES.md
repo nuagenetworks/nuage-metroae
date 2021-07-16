@@ -10,6 +10,8 @@
 
 ### Feature Enhancements
 
+* Allow custom configuration of RAM, CPU and Memory for VCenter (METROAE-433)
+
 ### Resolved Issues
 
 * Added a task to check existence of vsd migration script during upgrade (METROAE-306)
