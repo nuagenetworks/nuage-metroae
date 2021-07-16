@@ -10,6 +10,8 @@
 
 ### Feature Enhancements
 
+* Added support for extra ES disk on vmware (METROAE-341)
+
 ### Resolved Issues
 
 * Added a task to check existence of vsd migration script during upgrade (METROAE-306)
