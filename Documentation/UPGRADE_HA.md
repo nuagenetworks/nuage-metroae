@@ -31,6 +31,10 @@ Note that MetroAE only supports patch upgrades for VSD using the `upgrade_vsds` 
 
 You can use MetroAE to upgrade Active/Standby VSD clusters, also known as geo-redundant clusters. You can also use MetroAE to upgrade Active/Standby VSTAT (ES) clusters. The support for this is built into the `upgrade_everything`, `upgrade_vsds`, and `upgrade_vstats` plays. A step-by-step manual procedure is supported, but is not documented here. See [Upgrading By Individual Steps](#upgrading-by-individual-steps-not-including-active-standby-clusters) for more information.
 
+If you want to perform a standby VSD cluster inplace upgrade only, You can use the following command.
+
+`metroae upgrade vsds standby inplace`
+
 ### VSD Stats-out upgrade
 
 By default, Nuage VSD and VSTAT components are deployed in what is referred to as 'stats-in' mode. This refers to the fact that the stats collector process that feeds data to the ES cluster runs 'in' the VSDs. An alternative to this deployment, installation of which is also supported by MetroAE, is a 'stats-out' mode. In 'stats-out', three additional VSDs are deployed specifically to handle the stats collection. We refer to those extra VSD nodes as VSD stats-out nodes. In such a case, the stats collection work is not running 'in' the regular VSD cluster. Stats collection is done 'out' in the cluster of 3 VSD stats-out nodes. ES nodes are also deployed in a special way, with 3 ES nodes in a cluster and 3+ ES nodes configured as 'data' nodes. You can find out more detail about the deployments in the Nuage documentation.
