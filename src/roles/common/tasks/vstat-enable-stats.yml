@@ -107,7 +107,10 @@
 - name: Get jboss status of all VSDs
   command: monit status jboss
   register: jboss_status
-  remote_user: "{{ vsd_default_username }}"
+  remote_user: "{{ hostvars[item].vsd_custom_username | default(vsd_custom_username | default(vsd_default_username)) }}"
+  become: "{{ 'no' if hostvars[item].vsd_custom_username | default(vsd_custom_username | default(vsd_default_username)) == 'root' else 'yes' }}"
+  vars:
+    ansible_become_pass: "{{ hostvars[item].vsd_custom_password | default(vsd_custom_password | default(vsd_default_password)) }}"
   delegate_to: "{{ item }}"
   with_items: "{{ vsd_hostname_list }}"
   changed_when: False
