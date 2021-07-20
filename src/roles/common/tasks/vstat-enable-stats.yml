@@ -1,3 +1,12 @@
+- name: Get custom username for vsd
+  set_fact:
+    primary_custom_username: "{{ hostvars[vsd].vsd_custom_username | default(vsd_custom_username | default(vsd_default_username)) }}"
+    primary_custom_password: "{{ hostvars[vsd].vsd_custom_password | default(vsd_custom_password | default(vsd_default_password)) }}"
+  no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
+  when:
+    - hostvars[vsd].vsd_custom_username is defined or vsd_custom_username is defined
+    - not stats_out_node | default (False)
+
 - block:
 
   - include_role:
@@ -102,7 +111,10 @@
       - stats_out | default(false)
 
   delegate_to: "{{ vsd }}"
-  remote_user: "{{ vsd_default_username }}"
+  remote_user: "{{ primary_custom_username | default(vsd_default_username) }}"
+  become: "{{ 'no' if primary_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
+  vars:
+    ansible_become_pass: "{{ primary_custom_password | default(vsd_default_password) }}"
 
 - name: Get jboss status of all VSDs
   command: monit status jboss
