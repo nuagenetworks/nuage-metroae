@@ -102,18 +102,12 @@
       - stats_out | default(false)
 
   delegate_to: "{{ vsd }}"
-  remote_user: "{{ hostvars[vsd].vsd_custom_username | default(vsd_custom_username | default(vsd_default_username)) }}"
-  become: "{{ 'no' if hostvars[vsd].vsd_custom_username | default(vsd_custom_username | default(vsd_default_username)) == 'root' else 'yes' }}"
-  vars:
-    ansible_become_pass: "{{ hostvars[vsd].vsd_custom_password | default(vsd_custom_password | default(vsd_default_password)) }}"
+  remote_user: "{{ vsd_default_username }}"
 
 - name: Get jboss status of all VSDs
   command: monit status jboss
   register: jboss_status
-  remote_user: "{{ hostvars[item].vsd_custom_username | default(vsd_custom_username | default(vsd_default_username)) }}"
-  become: "{{ 'no' if hostvars[item].vsd_custom_username | default(vsd_custom_username | default(vsd_default_username)) == 'root' else 'yes' }}"
-  vars:
-    ansible_become_pass: "{{ hostvars[item].vsd_custom_password | default(vsd_custom_password | default(vsd_default_password)) }}"
+  remote_user: "{{ vsd_default_username }}"
   delegate_to: "{{ item }}"
   with_items: "{{ vsd_hostname_list }}"
   changed_when: False
