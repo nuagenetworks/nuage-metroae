@@ -11,6 +11,7 @@
 ### Feature Enhancements
 
 * Added support for extra ES disk on vmware (METROAE-341)
+* Added support for different disk provisioning type for VSD and VSTAT (METROAE-453)
 
 ### Resolved Issues
 
