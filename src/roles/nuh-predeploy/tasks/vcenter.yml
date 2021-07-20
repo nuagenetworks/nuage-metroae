@@ -80,16 +80,6 @@
 
   - debug: var=nuh_vm_facts verbosity=1
 
-  - name: Setup networking on NUH
-    include_role:
-      name: common
-      tasks_from: vcenter-setup-networking
-    vars:
-      vm_username: "{{ nuh_default_username }}"
-      vm_password: "{{ nuh_default_password }}"
-      ifcfg_eth0_contents: "{{ lookup('template', 'ifcfg-eth0.j2') }}"
-      skip_hostname: False
-
   - name: Get the public key for the current user
     command: cat "{{ user_ssh_pub_key }}"
     delegate_to: localhost
@@ -102,36 +92,6 @@
     vars:
       vm_username: "{{ nuh_default_username }}"
       vm_password: "{{ nuh_default_password }}"
-
-  - name: Set the ssh not to use DNS
-    connection: local
-    vmware_vm_shell:
-      hostname: "{{ target_server }}"
-      username: "{{ vcenter.username }}"
-      password: "{{ vcenter.password }}"
-      datacenter: "{{ vcenter.datacenter }}"
-      cluster: "{{ vcenter.cluster }}"
-      validate_certs: no
-      vm_id: "{{ vm_name }}"
-      vm_username: "{{ nuh_default_username }}"
-      vm_password: "{{ nuh_default_password }}"
-      vm_shell: "/usr/bin/echo"
-      vm_shell_args: " \"UseDNS no\" > /etc/ssh/sshd_config"
-
-  - name: Disable SELinux
-    connection: local
-    vmware_vm_shell:
-      hostname: "{{ target_server }}"
-      username: "{{ vcenter.username }}"
-      password: "{{ vcenter.password }}"
-      datacenter: "{{ vcenter.datacenter }}"
-      cluster: "{{ vcenter.cluster }}"
-      validate_certs: no
-      vm_id: "{{ vm_name }}"
-      vm_username: "{{ nuh_default_username }}"
-      vm_password: "{{ nuh_default_password }}"
-      vm_shell: "/usr/bin/sh"
-      vm_shell_args: " sed -i 's/SELINUX\\=enforcing/SELINUX\\=permissive/g' /etc/selinux/config"
 
   - name: Reboot NUH VM
     connection: local
