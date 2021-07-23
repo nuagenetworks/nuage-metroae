@@ -386,9 +386,14 @@
   - name: Start vsd-core
     command: monit -g vsd-core start
 
-  - name: Wait for vsd-core to start
+  - name: Get monit summary for core processes on VSD
+    vsd_monit:
+      group: vsd-core
+    register: proc_list
+
+  - name: Wait for VSD core processes to become running
     monit_waitfor_service:
-      name: vsd-core-status
+      name: "{{ proc_list['state'].keys() }}"
       timeout_seconds: 1200
       test_interval_seconds: 30
 
