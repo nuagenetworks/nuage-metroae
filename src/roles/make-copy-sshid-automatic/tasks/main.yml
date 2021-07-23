@@ -25,3 +25,13 @@
   vars:
     ansible_become_pass: "{{ vstat_custom_password | default(vstat_default_password) }}"
   when: component_type|default("NONE") == 'vstat'
+
+  - name: Copy SSH Public Key to NUH
+  authorized_key:
+      user: "{{ nuh_custom_username | default(nuh_default_username) }}"
+      key: "{{ lookup('file', lookup('env','HOME') + '/.ssh/id_rsa.pub') }}"
+  remote_user: "{{ nuh_custom_username | default(nuh_default_username) }}"
+  become: "{{ 'no' if nuh_custom_username | default(nuh_default_username) == 'root' else 'yes' }}"
+  vars:
+    ansible_become_pass: "{{ nuh_custom_password | default(nuh_default_password) }}"
+  when: component_type|default("NONE") == 'nuh'
