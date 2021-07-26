@@ -57,10 +57,10 @@ def change_password(session):
 
     # Create proxy user if not present
     session_user = session.user
-    csprootuser = VSPK.NUUser(id=session_user.id)
-    csprootuser.fetch()
-    csprootuser.password = 'rootcaso'
-    csprootuser.save()
+    csproot = VSPK.NUUser(id=session_user.id)
+    csproot.fetch()
+    csproot.password = 'rootcaso'
+    csproot.save()
 
 
 def main():
