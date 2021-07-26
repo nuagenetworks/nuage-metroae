@@ -47,6 +47,18 @@ external_interfaces:
 {% endif %}
 {% endfor %}
 {% endfor %}
+{% if target_server_type | default("kvm") is match "vcenter" %}
+external_interface_networks:
+{% for interface in nuh_external_interfaces %}
+{% for external_if in item.external_interface_list %}
+{% if interface.name in external_if %}
+  - state: new
+    name: "{{ interface.external_bridge }}"
+    connected: true
+    start_connected: true
+{% if interface.dvswitch_name is defined %}
+    dvswitch_name: "{{ interface.dvswitch_name }}"
+{% endif %}
 {% endif %}
 
 {% if item.mgmt_bridge is defined %}
