@@ -33,6 +33,15 @@
         image_path: "{{ file_path }}"
         image_file_name: "{{ file_name }}"
 
+    - name: Get version from file name
+      set_fact:
+        nuh_version: "{{ image_file_name | regex_search('([0-9]+\\.[0-9]+\\.[0-9A-Za-z]+)') }}"
+
+    - name: Assert that NUH version is at least 20.10.R5
+      assert:
+        that: nuh_version|upper|replace('R','') is version_compare('20.10.5', '>=')
+        msg: "NUH version must be at least 20.10.R5 to be deployed in VMware"
+
     when: nuhs | map(attribute='target_server_type') | list is issuperset(["vcenter"])
 
   - name: Verify NUH management gateway is in correct IP range

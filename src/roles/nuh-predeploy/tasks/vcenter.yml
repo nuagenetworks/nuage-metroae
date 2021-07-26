@@ -74,11 +74,20 @@
       name: "{{ vmname }}"
       validate_certs: no
     register: nuh_vm_facts
-    retries: 60
-    delay: 5
-    until: nuh_vm_facts.instance.guest_tools_status == "guestToolsRunning"
 
   - debug: var=nuh_vm_facts verbosity=1
+
+  - name: Waiting until VMware tools becomes available
+    connection: local
+    vmware_guest_tools_wait:
+      hostname: "{{ target_server }}"
+      username: "{{ vcenter.username }}"
+      password: "{{ vcenter.password }}"
+      name: "{{ vm_name }}"
+      datacenter: "{{ vcenter.datacenter }}"
+      folder: "{{ vcenter.vmfolder | default(omit) }}"
+      validate_certs: no
+    register: vm_facts
 
   - name: Add network adapters to NUH
     connection: local
