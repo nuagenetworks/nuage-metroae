@@ -105,7 +105,10 @@ def main():
                     required_days_left=dict(required=True, type='int'))
     module = AnsibleModule(argument_spec=arg_spec, supports_check_mode=True)
 
-    vsd_auth = module.params['vsd_auth']
+    vsd_auth = {"username": "csproot",
+                "password": "csproot",
+                "enterprise": "csp",
+                "api_url": "https://vsd1.example.com:8443"}
     vsd_version = module.params['vsd_version']
     required_days_left = module.params['required_days_left']
 
