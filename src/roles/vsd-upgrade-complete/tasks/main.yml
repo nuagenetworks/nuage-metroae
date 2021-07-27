@@ -26,7 +26,7 @@
 
       - name: Set VSD creds to default
         set_fact:
-          vsd_user_cred: "{{ vsd_auth | default(vsd_default_auth) }}"
+          vsd_user_cred: "{{ vsd_auth.password }}"
 
       - name: Change credentials before upgrade complete flag
         shell: "{{ change_credentials_command }}"
@@ -38,14 +38,6 @@
         until: result.rc == 0
         retries: 40
         delay: 30
-
-      - name: Set VSD creds to default
-        set_fact:
-          vsd_user_cred: "{{ vsd_auth.password }}"
-
-      - name: Change credentials before upgrade complete flag
-        shell: "{{ change_credentials_command }}"
-        no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
 
       when:
         - inventory_hostname == groups['primary_vsds'][0]
