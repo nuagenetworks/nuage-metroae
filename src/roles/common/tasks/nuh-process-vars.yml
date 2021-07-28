@@ -16,7 +16,7 @@
         image_path: "{{ file_path }}"
         image_file_name: "{{ file_name }}"
 
-    when: nuhs | map(attribute='target_server_type') | list is issuperset(["kvm"]) or nuhs | map(attribute='target_server_type') | list | length == 0
+    when: nuhs | selectattr('target_server_type', 'defined') | list | length == 0 or nuhs | selectattr('target_server_type', 'defined') | map(attribute='target_server_type') | list is issuperset(["kvm"])
 
   - block:
 
@@ -47,7 +47,7 @@
         that: nuh_version|upper|replace('R','') is version('20.10.5', '>=')
         msg: "NUH version is {{ nuh_version }}. It must be at least 20.10.5 to be deployed in VMware using MetroAE."
 
-    when: nuhs | map(attribute='target_server_type') | list is issuperset(["vcenter"])
+    when: nuhs | selectattr('target_server_type', 'defined') | map(attribute='target_server_type') | list is issuperset(["vcenter"])
 
   - name: Verify NUH management gateway is in correct IP range
     include_role:
