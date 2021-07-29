@@ -13,7 +13,7 @@
 * Allow custom configuration of RAM, CPU and Memory for VCenter (METROAE-433)
 * Added support for extra ES disk on vmware (METROAE-341)
 * Added support for different disk provisioning type for VSD and VSTAT (METROAE-453)
-* Added an option to provide optional VSD GUI password in the credentials file (METROAE-454)
+* Added an option to provide custom VSD GUI password during VSD upgrade (METROAE-454)
 
 ### Resolved Issues
 
