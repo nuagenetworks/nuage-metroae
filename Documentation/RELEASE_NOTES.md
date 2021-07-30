@@ -22,6 +22,7 @@
 * Fix stats out upgrade for hardened Stats-out VSD nodes (METROAE-450)
 * Fix VSD Standby nodes inplace upgrade (METROAE-452)
 * Added fix for DNS destroy uses inventory_hostname instead of vmname(METROAE-405)
+* Upgraded ansible version and packages to remove depandabot alerts (METROAE-401)
 * Fixed Upgrade with Custom VSD GUI password(METROAE-454)
 
 ## Test Matrix
