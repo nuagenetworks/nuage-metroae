@@ -13,7 +13,6 @@
 * Allow custom configuration of RAM, CPU and Memory for VCenter (METROAE-433)
 * Added support for extra ES disk on vmware (METROAE-341)
 * Added support for different disk provisioning type for VSD and VSTAT (METROAE-453)
-* Added an option to provide custom VSD GUI password during VSD upgrade (METROAE-454)
 
 ### Resolved Issues
 
@@ -22,6 +21,7 @@
 * VSD inplace upgrade should unmount the ISO after upgrade (METROAE-449)
 * Fix VSD Standby nodes inplace upgrade (METROAE-452)
 * Added fix for DNS destroy uses inventory_hostname instead of vmname(METROAE-405)
+* Fixed Upgrade with Custom VSD GUI password and move it to resolved issues(METROAE-454)
 
 ## Test Matrix
 
