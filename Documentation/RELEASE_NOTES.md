@@ -13,6 +13,7 @@
 ### Resolved Issues
 
 * Fix VSD Standby nodes inplace upgrade (METROAE-452)
+* Changed validate_certs to false (METROAE-464)
 
 ## Test Matrix
 
