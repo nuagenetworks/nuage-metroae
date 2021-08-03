@@ -18,6 +18,8 @@
     ssh_user: "{{ vsc_creds.username }}"
     check_login: True
 
+- meta: reset_connection
+
 - name: Get output of 'show bof'
   sros_command:
     commands:
@@ -35,6 +37,8 @@
 
 - name: Print bof config in json  when verbosity >= 1
   debug: var=bof_json verbosity=1
+
+- meta: reset_connection
 
 - name: Get current file version of image on VSC
   sros_command:
@@ -54,6 +58,8 @@
 - name: Print image version in json  when verbosity >= 1
   debug: var=version_json verbosity=1
 
+- meta: reset_connection
+
 - name: Register uptime before reboot
   sros_command:
     commands:
@@ -68,6 +74,8 @@
   no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
 
 - block:
+
+  - meta: reset_connection
 
   - name: Reboot VSC VM (ignoring errors)
     sros_command:
@@ -89,6 +97,8 @@
       ssh_password: "{{ vsc_creds.password }}"
       ssh_user: "{{ vsc_creds.username }}"
       check_login: True
+
+  - meta: reset_connection
 
   - name: Register uptime after reboot
     sros_command:
