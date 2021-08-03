@@ -22,8 +22,8 @@
       tasks_from: vsd-generate-transfer-certificates
     vars:
       certificate_password: "{{ webfilter_default_password }}"
-      certificate_username: "webfilter"
-      commonName: "webfilter"
+      certificate_username: "{{ cert_name }}"
+      commonName: "{{ cert_name }}"
       certificate_type: server
       file_type: jks
       additional_parameters: "-p {{ webfilter_default_password }} -d {{ inventory_hostname }}"
@@ -111,11 +111,15 @@
       timeout_seconds: 600
       test_interval_seconds: 10
 
-  - name: Run incompass operation command for seed
-    shell: /opt/vsd/webfilter/scripts/incompassOperations.sh -a all -p /opt/vsd/webfilter/seed_34
+  - block:
 
-  - name: Run incompass operation command
-    shell: /opt/vsd/webfilter/scripts/incompassOperations.sh -a all
+    - name: Run incompass operation command for seed
+      shell: /opt/vsd/webfilter/scripts/incompassOperations.sh -a all -p /opt/vsd/webfilter/seed_34
+
+    - name: Run incompass operation command
+      shell: /opt/vsd/webfilter/scripts/incompassOperations.sh -a all
+  
+    when: run_incompass_operation is defined
 
   - name: Wait for webfilter processes to become running
     monit_waitfor_service:
