@@ -22,6 +22,8 @@
     ssh_user: "{{ vsc_creds.username }}"
     check_login: True
 
+- meta: reset_connection
+
 - name: Get output of 'show bof'
   sros_command:
     commands:
@@ -42,6 +44,9 @@
     vsd_hostname: "{{ vsd_fqdn }}"
 
 - block:
+
+  - meta: reset_connection
+
   - name: Get output of 'show system connections port 5222'
     sros_command:
       commands:
@@ -56,6 +61,8 @@
 
   when: vsd_sa_or_ha is match('ha')
 
+- meta: reset_connection
+
 - name: Get output of 'show vswitch-controller xmpp-server detail'
   sros_command:
     commands:
@@ -66,6 +73,8 @@
   until: xmpp_detail.stdout[0] is search('Functional') or vsd_sa_or_ha is match('sa')
   retries: 10
   delay: 30
+
+- meta: reset_connection
 
 - name: Save existing configuration on VSC
   sros_command:

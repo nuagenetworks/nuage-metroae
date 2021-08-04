@@ -1,4 +1,6 @@
 ---
+- meta: reset_connection
+
 - name: Wait for VSC ssh to be ready
   include_role:
     name: common
@@ -59,6 +61,8 @@
       - certificate_path is undefined
       - ca_certificate_path is undefined
 
+  - meta: reset_connection
+
   - name: Configure the security profile on the VSC
     sros_config:
       lines:
@@ -73,6 +77,8 @@
 
 - block:
 
+  - meta: reset_connection
+
   - name: Configure XMPP to use the security profile
     sros_config:
       lines:
@@ -83,6 +89,9 @@
     delegate_to: localhost
 
   - block:
+
+    - meta: reset_connection
+
     - name: Configure XMPP server to the custom ejabberd id and password
       sros_config:
         lines:
@@ -104,6 +113,8 @@
       - ca_certificate_path is defined
       - ejabberd_id is defined
 
+  - meta: reset_connection
+
   - name: check xmpp connectivity between VSC and VSD after enabling TLS
     sros_command:
       commands:
@@ -119,6 +130,8 @@
     debug: var=xmpp_status verbosity=1
 
   when: xmpp_tls
+
+- meta: reset_connection
 
 - name: Configure OpenFlow to use the security profile
   sros_config:
