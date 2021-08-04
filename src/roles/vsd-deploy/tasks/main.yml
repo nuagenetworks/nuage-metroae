@@ -377,7 +377,11 @@
       when: inventory_hostname == third_cluster_node_to_install
     
     - name: Prevent connections from VSCs, VSGs and WBXs
-      shell: iptables -I INPUT 1 -i eth0 -p tcp --destination-port 5222 -j DROP
+      include_role:
+        name: common
+        tasks_from: block-xmpp-connections
+      vars:
+        block_xmpp_connection: "{{ nuage_upgrade and not vsd_standby_cluster and not stats_only_vm }}""
       when: 
         - nuage_upgrade | default (False)
         - not vsd_standby_cluster | default(False)
