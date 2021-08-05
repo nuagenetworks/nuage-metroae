@@ -28,7 +28,7 @@
 
 ## Test Matrix
 
-This release was tested according to the following test matrix. Other combinations and versions have been tested in previous releases of MetroAE and are likely to work. We encourage you to test MetroAE in your lab before you apply it in production.
+This release was tested according to the following test matrix. Other combinations and versions have been tested in previous releases of MetroAE and are likely to work. We encourage you to test MetroAE in your lab before you apply it in production. Testing for teams
 
 Workflow   | Target Server   | Version
 ---------- | --------------- | --------------------
