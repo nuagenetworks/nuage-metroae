@@ -20,6 +20,13 @@ If you issue:
 
 The files under `nuage-metroae/deployments/mydeployment` will be used to do an install.  This allows for different sets of component definitions for various projects.
 
+You can also do:
+```
+./metroae install everything deployment_spreadsheet_name.xlsx
+```
+
+to run the install everything playbook using the deployment information present in the specified Excel spreadsheet. More details about Excel deployments can be found in the `Customize Your Own Deployment` section below.
+
 Each time you issue MetroaÆ, the inventory will be completely rebuilt from the deployment name specified.  This will overwrite any previous inventory, so it will reflect exactly what is configured in the deployment that was specified.
 
 ## Customize Your Own Deployment
@@ -48,11 +55,11 @@ You can also use the MetroAE spreadsheet to create your deployment. You can find
 ```
 convert_csv_to_deployment.py deployment_spreadsheet_name.csv your_deployment_name
 ```
-or you can let `metroae` handle the conversion for you by running the build step and providing the name of your CSV file:
+or you can let `metroae` handle the conversion for you by  specifying the name of the CSV file instead of the name of your deployment::
 ```
-metroae build deployment_spreadsheet_name.csv
+metroae deployment_spreadsheet_name.csv
 ```
-This will generate a deployment with the same name as the deployment spreadsheet - without the csv extension - and populate necessary inventory files.
+This will create or update a deployment with the same name as the CSV file - without the extension.
 
 MetroAE also supports deployment files filled out in an Excel (.xlsx) spreadsheet. You can find examples under the [examples/excel](../examples/excel) directory. Similar to a csv-based deployment, you have multiple options for creating a deployment from an Excel spreadsheet. You can run the converter script directly:
 ```
@@ -62,6 +69,8 @@ or you can use `metroae` do the conversion for you by running build, like this:
 ```
 metroae build deployment_spreadsheet_name.xlsx
 ```
+
+For Excel deployments, all playbooks (aside from `nuage_unzip` and `reset_build`) invoke the build step and can replace build in the command above.
 
 The deployment files that can be configured using the wizard, spreadsheet (csv or xlsx), or edited manually are listed, below.
 
