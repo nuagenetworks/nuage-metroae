@@ -25,6 +25,7 @@
 * Added fix for DNS destroy uses inventory_hostname instead of vmname(METROAE-405)
 * Upgraded ansible version and packages to remove depandabot alerts (METROAE-401)
 * Fixed Upgrade with Custom VSD GUI password(METROAE-454)
+* Fixed validate certs in vsd-deploy for OpenStack(METRO-464)
 
 ## Test Matrix
 
