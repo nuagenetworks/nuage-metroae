@@ -7,18 +7,23 @@
         nuage_upgrade: true
         preserve_vm: true
         vm_name: "{{ vmname }}"
+    - name: set vsd hosts to drop iptables rules
+      set_fact:
+        vsd_hosts: [vsd_upgrade_ha_node2,vsd_upgrade_ha_node3]
   tasks:
-    - block:
       - name: Allow XMPP Connections after patching Ejabberd
         include_role:
           name: common
           tasks_from: allow-xmpp-connections
         vars:
           allow_xmpp_connection: true
- 
-      delegate_to: vsd_upgrade_ha_node2:vsd_upgrade_ha_node3
+          apply:
+            delegate_to: "{{ item }}"
+          with_items:
+            - vsd_upgrade_ha_node2
+            - vsd_upgrade_ha_node3
+
 
   roles:
     - vsd-services-stop
     - vsd-destroy
-  
