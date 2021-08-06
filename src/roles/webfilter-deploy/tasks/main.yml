@@ -59,11 +59,18 @@
   - name: "Ensure application properties contains webfilter"
     lineinfile:
       name: /opt/vsd/webfilter/conf/application.properties
-      line: "server.ssl.key-store=/opt/vsd/webfilter/conf/webfilter.jks"
+      regexp: "server.ssl.key-store=/opt/vsd/webfilter/conf/webfilter.jks"
+      line: "server.ssl.key-store=/opt/vsd/webfilter/conf/{{ cert_name }}.jks"
       state: present
-    check_mode: yes
     register: app_properties
-    failed_when: (app_properties is changed) or (app_properties is failed)
+
+  - name: "Ensure application properties contains webfilter"
+    lineinfile:
+      name: /opt/vsd/webfilter/conf/application.properties
+      regexp: "server.ssl.key-alias=webfilter"
+      line: "server.ssl.key-alias={{ cert_name }}"
+      state: present
+    register: app_properties
 
   - name: "Ensure application properties contains truststore"
     lineinfile:
@@ -119,12 +126,12 @@
     - name: Run incompass operation command
       shell: /opt/vsd/webfilter/scripts/incompassOperations.sh -a all
   
-    when: run_incompass_operation is defined
+    - name: Wait for webfilter processes to become running
+      monit_waitfor_service:
+        name: "{{ webfilter_proc['state'].keys() }}"
+        timeout_seconds: 600
+        test_interval_seconds: 10
 
-  - name: Wait for webfilter processes to become running
-    monit_waitfor_service:
-      name: "{{ webfilter_proc['state'].keys() }}"
-      timeout_seconds: 600
-      test_interval_seconds: 10
+    when: run_incompass_operation is defined
 
   remote_user: "{{ webfilter_default_username }}"
