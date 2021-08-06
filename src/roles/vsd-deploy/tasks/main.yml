@@ -375,6 +375,17 @@
         /opt/vsd/vsd-install.sh -1 {{ first_cluster_node_to_install }} -t 3
         -x {{ vsd_fqdn }} -y {{ (enable_ipv6 | default(False)) | ternary('-6', '') }}
       when: inventory_hostname == third_cluster_node_to_install
+    
+    - name: Prevent connections from VSCs, VSGs and WBXs
+      include_role:
+        name: common
+        tasks_from: block-xmpp-connections
+      vars:
+        block_xmpp_connection: true
+      when: 
+        - nuage_upgrade | default (False)
+        - not vsd_standby_cluster | default(False)
+        - not stats_only_vm
 
     when: vsd_sa_or_ha is match('ha')
 
@@ -451,6 +462,16 @@
       timeout_seconds: 1200
       test_interval_seconds: 30
 
+  - name: Allow XMPP Connections to vsd node after vsd process are stopped
+    include_role:
+      name: common
+      tasks_from: allow-xmpp-connections
+    vars:
+      allow_xmpp_connection: true
+    when: 
+      - nuage_upgrade | default (False)
+      - not vsd_standby_cluster | default(False)
+      - inventory_hostname == third_cluster_node_to_install
   when:
     - component_type == "vsd"
     - (vsd_major_version|int > 5) or
