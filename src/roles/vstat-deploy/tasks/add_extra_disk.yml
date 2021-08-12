@@ -15,9 +15,31 @@
     # noqa 303
     command: "mount /dev/{{ extra_disk_device }}1 {{ extra_disk_mount_point }}"
 
+  - name: Update fstab to preserve extra disk on reboot
+    lineinfile:
+      path: /etc/fstab
+      line: "/dev/{{ extra_disk_device }}1 {{ extra_disk_moint_point }}  ext4 defaults 0 0"
+      insertafter: EOF
+
+  - name: Verify elasticsearch is stopped
+    systemd:
+      state: stopped
+      name: elasticsearch
+
+  - name: Update data directory for elasticsearch
+    lineinfile:
+      path: /etc/sysconfig/elasticsearch
+      line: "DATA_DIR={{ extra_disk_mount_point }}/elasticsearch"
+      regexp: 'DATA_DIR='
+
+  - name: Remove previous data directory
+    file:
+      path: /var/lib/elasticsearch/
+      state: absent
+
   - name: Set ownership for the extra disk
-    # noqa 302
-    command: "chown -R elasticsearch:elasticsearch {{ extra_disk_mount_point }}"
+  # noqa 302
+  command: "chown -R elasticsearch:elasticsearch {{ extra_disk_mount_point }}"
 
   when: add_extra_disk | default(False)
   remote_user: "{{ vstat_default_username }}"

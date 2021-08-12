@@ -390,6 +390,16 @@
       vars:
         ansible_become_pass: "{{ hostvars[vsd_node1_hostname].vsd_custom_password | default(vsd_custom_password | default(vsd_default_password)) }}"
 
+  - name: Update elasticsearch data path
+    lineinfile:
+      path: /etc/elasticsearch/elasticsearch.yml
+      line: "path.data: {{ extra_disk_mount_point }}/elasticsearch"
+      regexp: 'path.data:' 
+    become: >-
+      {{ 'no' if hostvars[vsd_node1_hostname].vsd_custom_username | default(vsd_custom_username | default(vsd_default_username)) == 'root' else 'yes' }}
+    vars:
+      ansible_become_pass: "{{ hostvars[vsd_node1_hostname].vsd_custom_password | default(vsd_custom_password | default(vsd_default_password)) }}"
+
   - name: Execute yum update for vstat
     include_role:
       name: common
