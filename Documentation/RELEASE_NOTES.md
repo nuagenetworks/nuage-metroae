@@ -27,6 +27,7 @@
 * Upgraded ansible version and packages to remove depandabot alerts (METROAE-401)
 * Fixed Upgrade with Custom VSD GUI password(METROAE-454)
 * Fixed validate certs in vsd-deploy for OpenStack(METRO-464)
+* Removed redundant known_hosts in vsc-health & vsd-health(METROAE-482)
 
 ## Test Matrix
 
