@@ -27,21 +27,28 @@
       line: "/dev/{{ extra_disk_device }}1 {{ extra_disk_mount_point }}  ext4 defaults 0 0"
       insertafter: EOF
 
-  - name: Verify elasticsearch is stopped
-    systemd:
-      state: stopped
-      name: elasticsearch
+  - block:
 
-  - name: Update data directory for elasticsearch
-    lineinfile:
-      path: /etc/sysconfig/elasticsearch
-      line: "DATA_DIR={{ extra_disk_mount_point }}/elasticsearch"
-      regexp: 'DATA_DIR='
+    - name: Verify elasticsearch is stopped
+      systemd:
+        state: stopped
+        name: elasticsearch
 
-  # - name: Remove previous data directory
-  #   file:
-  #     path: /var/lib/elasticsearch/
-  #     state: absent
+    - name: Update data directory for elasticsearch
+      lineinfile:
+        path: /etc/sysconfig/elasticsearch
+        line: "DATA_DIR={{ extra_disk_mount_point }}/elasticsearch"
+        regexp: 'DATA_DIR='
+
+    - name: Remove previous data directory
+      file:
+        path: /var/lib/elasticsearch
+        state: absent
+    
+    delegate_to: "{{ item }}"
+    with_items: "{{ groups['data_vstats`] }}"
+    remote_user: "{{ vstat_default_username }}"
+    when: groups['data_vstats'] is defined 
 
   - name: Set ownership for the extra disk
   # noqa 302
