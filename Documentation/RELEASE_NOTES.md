@@ -12,7 +12,10 @@
 
 * Allow custom configuration of RAM, CPU and Memory for VCenter (METROAE-433)
 * Added support for extra ES disk on vmware (METROAE-341)
+* Add Support for Single-Step VSD Stats-out Upgrade and Patch (METROAE-470)
 * Added support for different disk provisioning type for VSD and VSTAT (METROAE-453)
+* Added support for blocking iptables VSC entries during upgrade (METROAE-427) 
+* Added support for deploying NUH in VMware - requires Ansible 2.9.7 or greater and NUH version 20.10.5 or newer (METROAE-435)
 
 ### Resolved Issues
 
@@ -24,6 +27,7 @@
 * Added fix for DNS destroy uses inventory_hostname instead of vmname(METROAE-405)
 * Upgraded ansible version and packages to remove depandabot alerts (METROAE-401)
 * Fixed Upgrade with Custom VSD GUI password(METROAE-454)
+* Fixed validate certs in vsd-deploy for OpenStack(METRO-464)
 
 ## Test Matrix
 
