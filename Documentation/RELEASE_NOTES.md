@@ -15,6 +15,7 @@
 * Add Support for Single-Step VSD Stats-out Upgrade and Patch (METROAE-470)
 * Added support for different disk provisioning type for VSD and VSTAT (METROAE-453)
 * Added support for blocking iptables VSC entries during upgrade (METROAE-427) 
+* Add support for BGP interface for VSC (METROAE-484)
 * Added support for deploying NUH in VMware - requires Ansible 2.9.7 or greater and NUH version 20.10.5 or newer (METROAE-435)
 
 ### Resolved Issues
