@@ -29,6 +29,7 @@
 * Upgraded ansible version and packages to remove depandabot alerts (METROAE-401)
 * Fixed Upgrade with Custom VSD GUI password(METROAE-454)
 * Fixed validate certs in vsd-deploy for OpenStack(METRO-464)
+* Removed failure_report_path from vsc-health and group_vars/all(METROAE-483)
 
 ## Test Matrix
 
