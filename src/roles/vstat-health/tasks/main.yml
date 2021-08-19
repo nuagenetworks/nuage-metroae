@@ -120,19 +120,26 @@
 
   - block:
 
-    - name: Verify number of nodes
-      uri:
-        url: "http://{{ inventory_hostname }}:9200/_cluster/health?pretty"
-        method: GET
-      register: es_num_nodes
-      until: es_num_nodes.json.number_of_nodes == '3' or es_num_nodes.json.number_of_nodes == '6'
-      retries: 100
-      delay: 10
-      delegate_to: "{{ vsd_hostname_list[0] }}"
-      remote_user: "{{ hostvars[vsd_hostname_list[0]].vsd_custom_username | default(vsd_custom_username | default(vsd_default_username)) }}"
-      become: "{{ 'no' if hostvars[vsd_hostname_list[0]].vsd_custom_username | default(vsd_custom_username | default(vsd_default_username)) == 'root' else 'yes' }}"
-      vars:
-        ansible_become_pass: "{{ hostvars[vsd_hostname_list[0]].vsd_custom_password | default(vsd_custom_password | default(vsd_default_password)) }}"
+    - block:
+
+      - name: Wait for number of nodes to update
+        uri:
+          url: "http://{{ inventory_hostname }}:9200/_cluster/health?pretty"
+          method: GET
+        register: es_num_nodes
+        until: es_num_nodes.json.number_of_nodes == 3 or es_num_nodes.json.number_of_nodes == 6
+        retries: 10
+        delay: 10
+        delegate_to: "{{ vsd_hostname_list[0] }}"
+        remote_user: "{{ hostvars[vsd_hostname_list[0]].vsd_custom_username | default(vsd_custom_username | default(vsd_default_username)) }}"
+        become: "{{ 'no' if hostvars[vsd_hostname_list[0]].vsd_custom_username | default(vsd_custom_username | default(vsd_default_username)) == 'root' else 'yes' }}"
+        vars:
+          ansible_become_pass: "{{ hostvars[vsd_hostname_list[0]].vsd_custom_password | default(vsd_custom_password | default(vsd_default_password)) }}"
+
+      - name: Update variable when waiting for number of nodes
+        set_fact:
+          es_status: "{{ es_num_nodes }}"
+
       when: es_status.json.number_of_nodes != 3 or es_status.json.number_of_nodes != 6
 
     - name: Check cluster_name
