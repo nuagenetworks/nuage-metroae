@@ -122,12 +122,12 @@
 
     - block:
 
-      - name: Wait for number of nodes to update
+      - name: Wait for stats out cluster to form
         uri:
           url: "http://{{ inventory_hostname }}:9200/_cluster/health?pretty"
           method: GET
-        register: es_num_nodes
-        until: es_num_nodes.json.status == 'green' and (es_num_nodes.json.number_of_nodes == 3 or es_num_nodes.json.number_of_nodes == 6)
+        register: es_stats_out
+        until: es_stats_out.json.status == 'green' and es_stats_out.json.number_of_nodes == 6
         retries: 10
         delay: 10
         delegate_to: "{{ vsd_hostname_list[0] }}"
@@ -136,11 +136,13 @@
         vars:
           ansible_become_pass: "{{ hostvars[vsd_hostname_list[0]].vsd_custom_password | default(vsd_custom_password | default(vsd_default_password)) }}"
 
-      - name: Update variable when waiting for number of nodes
+      - name: Update ES status for stats out cluster
         set_fact:
-          es_status: "{{ es_num_nodes }}"
+          es_status: "{{ es_stats_out }}"
 
-      when: es_status.json.number_of_nodes != 3 or es_status.json.number_of_nodes != 6
+      when:
+        - es_status.json.number_of_nodes != 6
+        - stats_out | default(False)
 
     - name: Check cluster_name
       assert:
