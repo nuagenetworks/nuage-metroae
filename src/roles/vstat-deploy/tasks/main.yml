@@ -400,26 +400,14 @@
       vars:
         ansible_become_pass: "{{ hostvars[vsd_node1_hostname].vsd_custom_password | default(vsd_custom_password | default(vsd_default_password)) }}"
 
-  - block:
-
-    # - name: Copy files to mount point
-    #   copy:
-    #     src: "/var/lib/elasticsearch"
-    #     dest: "{{ extra_disk_mount_point }}/"
-    #     remote_src: yes
-
-    - name: Update elasticsearch data path
-      lineinfile:
-        path: /etc/elasticsearch/elasticsearch.yml
-        line: "path.data: {{ extra_disk_mount_point }}/elasticsearch"
-        regexp: 'path.data:'
-
-    # - name: Remove previous data directory
-    #   file:
-    #     path: /var/lib/elasticsearch/
-    #     state: absent
-
-    when: add_extra_disk | default(False)
+  - name: Update elasticsearch data path
+    lineinfile:
+      path: /etc/elasticsearch/elasticsearch.yml
+      line: "path.data: {{ extra_disk_mount_point }}/elasticsearch"
+      regexp: 'path.data:'
+    when:
+      - add_extra_disk | default(False)
+      - extra_disk_mount_point | default("/var/lib/elasticsearch/") is not match("/var/lib/elasticsearch/")
     remote_user: "{{ vstat_default_username }}"
 
   - name: Execute yum update for vstat
