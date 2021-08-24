@@ -14,12 +14,6 @@
       dev: "/dev/{{ extra_disk_device }}1"
       fstype: ext4
 
-  # - name: Create extra disk partition
-  #   command: "parted -s /dev/{{ extra_disk_device }}  mklabel gpt  mkpart primary 0GB {{ extra_disk_size_gb }}GB"
-  #
-  # - name: Format extra disk partition
-  #   command: "mkfs.ext4 /dev/{{ extra_disk_device }}1"
-
   - block:
 
     - name: Create extra disk mount point directory
@@ -33,7 +27,7 @@
         dest: "{{ extra_disk_mount_point }}/"
         remote_src: yes
 
-    when: extra_disk_mount_point|default("/var/lib/elasticsearch/")|regex_replace('\\/$', '') is not match("/var/lib/elasticsearch") 
+    when: extra_disk_mount_point|default("/var/lib/elasticsearch/")|regex_replace('\\/$', '') is not match("/var/lib/elasticsearch")
 
   - name: Mount the extra disk
     mount:
@@ -42,25 +36,9 @@
       fstype: ext4
       state: mounted
 
-  # - name: Mount the extra disk
-  #   # noqa 303
-  #   command: "mount /dev/{{ extra_disk_device }}1 {{ extra_disk_mount_point }}"
-  #
-  # - name: Update fstab to preserve extra disk on reboot
-  #   lineinfile:
-  #     path: /etc/fstab
-  #     line: "/dev/{{ extra_disk_device }}1 {{ extra_disk_mount_point }}  ext4 defaults 0 0"
-  #     insertafter: EOF
-
-  - name: Get all mounts
-    setup: filter=ansible_mounts
-    register: mounts
-
   - name: Get extra disk mount device
-    set_fact:
-      mount_device: "{{ item.device }}"
-    with_items: "{{ mounts.ansible_facts.ansible_mounts }}"
-    when: extra_disk_mount_point | regex_replace('\\/$', '') in item.mount
+    shell: "df -ah | grep {{ extra_disk_mount_point | regex_replace('\\/$', '') }} | awk '{print $1}'"
+    register: mount_device
 
   - name: Verify extra disk mount device is correct
     assert:
@@ -85,7 +63,6 @@
         path: /var/lib/elasticsearch
         state: absent
 
-    remote_user: "{{ vstat_default_username }}"
     when: groups['data_vstats'] is defined and inventory_hostname in groups['data_vstats']
 
   - name: Set ownership for the extra disk
@@ -95,10 +72,6 @@
       state: directory
       owner: elasticsearch
       group: elasticsearch
-
-  # - name: Set ownership for the extra disk
-  # # noqa 302
-  #   command: "chown -R elasticsearch:elasticsearch {{ extra_disk_mount_point }}"
 
   when: add_extra_disk | default(False)
   remote_user: "{{ vstat_default_username }}"
