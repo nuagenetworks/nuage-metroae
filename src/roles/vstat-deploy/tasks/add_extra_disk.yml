@@ -20,16 +20,20 @@
   # - name: Format extra disk partition
   #   command: "mkfs.ext4 /dev/{{ extra_disk_device }}1"
 
-  - name: Create extra disk mount point directory
-    file:
-      path: "{{ extra_disk_mount_point }}"
-      state: directory
+  - block:
 
-  - name: Copy files to mount point
-    copy:
-      src: "/var/lib/elasticsearch"
-      dest: "{{ extra_disk_mount_point }}/"
-      remote_src: yes
+    - name: Create extra disk mount point directory
+      file:
+        path: "{{ extra_disk_mount_point }}"
+        state: directory
+
+    - name: Copy files to mount point
+      copy:
+        src: "/var/lib/elasticsearch"
+        dest: "{{ extra_disk_mount_point }}/"
+        remote_src: yes
+
+    when: extra_disk_mount_point|default("/var/lib/elasticsearch/")|regex_replace('\\/$', '') is not match("/var/lib/elasticsearch") 
 
   - name: Mount the extra disk
     mount:
