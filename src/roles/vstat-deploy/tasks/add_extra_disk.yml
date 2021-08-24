@@ -27,7 +27,7 @@
         dest: "{{ extra_disk_mount_point }}/"
         remote_src: yes
 
-    when: extra_disk_mount_point|default("/var/lib/elasticsearch/") is not match("/var/lib/elasticsearch/")
+    when: extra_disk_mount_point | default("/var/lib/elasticsearch/") is not match("/var/lib/elasticsearch/")
 
   - name: Mount the extra disk
     mount:
@@ -63,7 +63,9 @@
         path: /var/lib/elasticsearch
         state: absent
 
-    when: groups['data_vstats'] is defined and inventory_hostname in groups['data_vstats']
+    when:
+      - groups['data_vstats'] is defined and inventory_hostname in groups['data_vstats']
+      - extra_disk_mount_point | default("/var/lib/elasticsearch/") is not match("/var/lib/elasticsearch/")
 
   - name: Set ownership for the extra disk
     file:
