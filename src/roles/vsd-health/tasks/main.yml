@@ -101,6 +101,10 @@
     that: "hostname_output.stdout is search('{{ inventory_hostname }}')"
     msg: "Configured VSD hostname does not match expected VSD hostname"
 
+- name: Write VSD hostname to report file
+  nuage_append: filename="{{ report_path }}" text="VSD Hostname {{ hostname_output.stdout }}\n"
+  delegate_to: localhost
+
 - name: Write VSD version to json file
   nuage_append: filename="{{ report_path }}" text="VSD Version {{ vsd_version.stdout | to_nice_json }}\n"
   delegate_to: localhost
@@ -113,9 +117,6 @@
   become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
   vars:
     ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"
-
-- name: Print network config when verbosity >= 1
-  debug: var=net_conf.info verbosity=1
 
 - name: Write network config separator to report file
   nuage_append: filename="{{ report_path }}" text="-----VSD Network Config-----\n"
@@ -200,9 +201,6 @@
     vars:
       ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"
 
-  - name: Print ejabberd list_p1db output when verbosity >= 1
-    debug: var=list_p1db_output verbosity=1
-
   - name: Create local variable with p1db output to json
     set_fact: ejabberd_p1db_json="{{ list_p1db_output.stdout|ejabberd_p1db_to_json }}"
 
@@ -223,9 +221,6 @@
     vars:
       ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"
 
-  - name: Print ejabberd list_cluster_output when verbosity >= 1
-    debug: var=list_cluster_output verbosity=1
-
   - name: Create local variable with ejabberd cluster output to json
     set_fact: ejabberd_cluster_json="{{ list_cluster_output.stdout|ejabberd_cluster_to_json }}"
 
@@ -245,9 +240,6 @@
     become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
     vars:
       ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"
-
-  - name: Print ejabberd connected_users output when verbosity >= 1
-    debug: var=user_list verbosity=1
 
   - name: Create local variable with ejabberd connected users to json
     set_fact: ejabberd_users_json="{{ user_list.stdout|ejabberd_clients_to_json }}"
@@ -405,6 +397,11 @@
   changed_when: False
   register: java_home
   remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
+
+- name: Write license validity check separator to report file
+  nuage_append: filename="{{ report_path }}" text="JAVA_HOME = {{ java_home.stdout }}\n"
+  delegate_to: localhost
+
 
 - block:
 
