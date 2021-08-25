@@ -33,6 +33,7 @@
 * Fixed validate certs in vsd-deploy for OpenStack(METRO-464)
 * Removed redundant known_hosts in vsc-health & vsd-health(METROAE-482)
 * Fixed incorrect smtp.user and smtp.port specifications for portal(METROAE-496)
+* Added support install of SD-WAN portal without the SMTP address(METROAE-492)
 
 ## Test Matrix
 
