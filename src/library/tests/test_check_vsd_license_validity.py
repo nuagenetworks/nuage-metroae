@@ -112,8 +112,11 @@ class TestVsdLicenseValid(object):
 
         main()
 
-        import_patch.assert_called_once_with("vspk.v6")
-        mock_vspk.NUVSDSession.assert_called_with(**TEST_PARAMS["vsd_auth"])
+        import_patch.assert_called_once_with("vspk.{0:s}".format(TEST_PARAMS["vsd_auth"]["api_version"]))
+        mock_vspk.NUVSDSession.assert_called_with(username=TEST_PARAMS["vsd_auth"]["username"],
+                                                  password=TEST_PARAMS["vsd_auth"]["password"],
+                                                  enterprise=TEST_PARAMS["vsd_auth"]["enterprise"],
+                                                  api_url=TEST_PARAMS["vsd_auth"]["api_url"])
         mock_session.start.assert_called_with()
         mock_module.fail_json.assert_called_once_with(
             msg="Could not establish connection to VSD cannot connect")
