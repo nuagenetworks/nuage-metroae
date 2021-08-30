@@ -25,6 +25,9 @@
       ignore_errors: yes
       no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
       register: vsd_license_output
+      retries: 5
+      delay: 10
+      until: not vsd_license_output.failed
 
     - name: Print basic license application output for debugging
       debug: var=vsd_license_output
@@ -52,6 +55,9 @@
       ignore_errors: yes
       no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
       register: vsd_cluster_license_output
+      retries: 5
+      delay: 10
+      until: not vsd_cluster_license_output.failed
 
     - name: Print cluster license application output for debugging
       debug: var=vsd_cluster_license_output
@@ -63,7 +69,7 @@
         msg: "The cluster license was not already present and could not be applied"
       ignore_errors: not vsd_continue_on_license_failure | default(false)
 
-    
+
     when:
       - vsd_cluster_license_file is defined
       - vsd_sa_or_ha is match('ha')
