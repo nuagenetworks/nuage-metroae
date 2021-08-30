@@ -277,9 +277,9 @@ def create_nsgv_ports(module, nsg_temp, csproot):
         if 'vlans' in network_port:
             for vlan in network_port['vlans']:
                 vsc_params = {
-                    'name': vlan.vsc_infra_profile_name,
-                    'firstController': vlan.firstController,
-                    'secondController': vlan.secondController
+                    'name': vlan['vsc_infra_profile_name'],
+                    'firstController': vlan['firstController'],
+                    'secondController': vlan['secondController']
                 }
 
                 vsc_infra = create_vsc_infra_profile(module, csproot, vsc_params)
