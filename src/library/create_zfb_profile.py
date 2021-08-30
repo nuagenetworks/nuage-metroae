@@ -69,6 +69,11 @@ options:
       - Parameters required for an NSG ports for ZFB.  Attributes:
       - network_port.name
       - network_port.physicalName
+      - network_port.vlans:
+        - vlan_value
+        - vsc_infra_profile_name
+        - firstController
+        - secondController
       - access_ports:
         - access_port.name
         - access_port.physicalName
@@ -90,7 +95,7 @@ options:
       - name
       - firstController
       - secondController
-    required:True
+    required:False
 
 '''
 
@@ -131,6 +136,11 @@ EXAMPLES = '''
         network_port:
             name: port1_network
             physicalName: port1
+            vlans:
+                - vlan_value: 242
+                - vsc_infra_profile_name: vsc_infra
+                - firstController: 192.168.1.100
+                - secondController: 192.168.1.101
         access_ports:
             - name: port2_access
               physicalName: port2
@@ -236,8 +246,7 @@ def create_nsg_gateway_template(module, csproot, nsg_infra):
     return nsg_temp
 
 
-def create_vsc_infra_profile(module, csproot):
-    vsc_params = module.params['zfb_vsc_infra']
+def create_vsc_infra_profile(module, csproot, vsc_params):
 
     vsc_infra = csproot.infrastructure_vsc_profiles.get_first(
         "name is '%s'" % vsc_params['name'])
@@ -249,7 +258,7 @@ def create_vsc_infra_profile(module, csproot):
     return vsc_infra
 
 
-def create_nsgv_ports(module, nsg_temp, vsc_infra):
+def create_nsgv_ports(module, nsg_temp):
     port_params = module.params['zfb_ports']
     zfb_constants = module.params['zfb_constants']
 
@@ -264,16 +273,39 @@ def create_nsgv_ports(module, nsg_temp, vsc_infra):
         network_port['portType'] = zfb_constants['network_port_type']
         port_temp = VSPK.NUNSPortTemplate(data=network_port)
         nsg_temp.create_child(port_temp)
-        # Attach vlan0 and vsc profile
-        vlan_temp = VSPK.NUVLANTemplate()
-        vlan_temp.value = '0'
-        vlan_temp.associated_vsc_profile_id = vsc_infra.id
-        port_temp.create_child(vlan_temp)
 
-        uplink = VSPK.NUUplinkConnection()
-        uplink.mode = "Dynamic"
-        uplink.role = "PRIMARY"
-        vlan_temp.create_child(uplink)
+        if 'vlans' in network_port:
+            for vlan in network_port['vlans']:
+                vsc_params = { 
+                    'name': vlan.vsc_infra_profile_name,
+                    'firstController': vlan.firstController,
+                    'secondController': vlan.secondController
+                }
+            
+                vsc_infra = create_vsc_infra_profile(module, csproot, vsc_params)
+                # Attach vlan and vsc profile
+                vlan_temp = VSPK.NUVLANTemplate()
+                vlan_temp.value = vlan['vlan_number']
+                vlan_temp.associated_vsc_profile_id = vsc_infra.id
+                port_temp.create_child(vlan_temp)
+
+                uplink = VSPK.NUUplinkConnection()
+                uplink.mode = "Dynamic"
+                uplink.role = "PRIMARY"
+                vlan_temp.create_child(uplink)
+        else:
+            vsc_params = module.params['zfb_vsc_infra']
+            vsc_infra = create_vsc_infra_profile(module, csproot, vsc_params)
+            # Attach vlan0 and vsc profile
+            vlan_temp = VSPK.NUVLANTemplate()
+            vlan_temp.value = '0'
+            vlan_temp.associated_vsc_profile_id = vsc_infra.id
+            port_temp.create_child(vlan_temp)
+
+            uplink = VSPK.NUUplinkConnection()
+            uplink.mode = "Dynamic"
+            uplink.role = "PRIMARY"
+            vlan_temp.create_child(uplink)
 
     for access_port in access_ports:
         port_temp = nsg_temp.ns_port_templates.get_first(
@@ -440,8 +472,7 @@ def main():
 
     nsg_infra = create_nsg_infra_profile(module, csproot)
     nsg_temp = create_nsg_gateway_template(module, csproot, nsg_infra)
-    vsc_infra = create_vsc_infra_profile(module, csproot)
-    create_nsgv_ports(module, nsg_temp, vsc_infra)
+    create_nsgv_ports(module, nsg_temp)
     metro_org = create_nsg_device(module, csproot, nsg_temp)
 
     if ("skip_iso_create" not in module.params or
