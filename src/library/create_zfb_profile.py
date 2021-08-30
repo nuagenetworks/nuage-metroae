@@ -258,7 +258,7 @@ def create_vsc_infra_profile(module, csproot, vsc_params):
     return vsc_infra
 
 
-def create_nsgv_ports(module, nsg_temp):
+def create_nsgv_ports(module, nsg_temp, csproot):
     port_params = module.params['zfb_ports']
     zfb_constants = module.params['zfb_constants']
 
@@ -276,12 +276,12 @@ def create_nsgv_ports(module, nsg_temp):
 
         if 'vlans' in network_port:
             for vlan in network_port['vlans']:
-                vsc_params = { 
+                vsc_params = {
                     'name': vlan.vsc_infra_profile_name,
                     'firstController': vlan.firstController,
                     'secondController': vlan.secondController
                 }
-            
+
                 vsc_infra = create_vsc_infra_profile(module, csproot, vsc_params)
                 # Attach vlan and vsc profile
                 vlan_temp = VSPK.NUVLANTemplate()
@@ -472,7 +472,7 @@ def main():
 
     nsg_infra = create_nsg_infra_profile(module, csproot)
     nsg_temp = create_nsg_gateway_template(module, csproot, nsg_infra)
-    create_nsgv_ports(module, nsg_temp)
+    create_nsgv_ports(module, nsg_temp, csproot)
     metro_org = create_nsg_device(module, csproot, nsg_temp)
 
     if ("skip_iso_create" not in module.params or
