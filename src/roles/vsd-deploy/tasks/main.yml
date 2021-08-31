@@ -284,7 +284,7 @@
 
     - name: Install VSD software on standalone node (Can take 20 minutes)
       command: "/opt/vsd/vsd-install.sh -t t -y {{ (enable_ipv6 | default(False)) | ternary('-6', '') }}"
-      when: 
+      when:
         - not deploy_vcin
         - stats_only_vm
 
@@ -377,14 +377,14 @@
         /opt/vsd/vsd-install.sh -1 {{ first_cluster_node_to_install }} -t 3
         -x {{ vsd_fqdn }} -y {{ (enable_ipv6 | default(False)) | ternary('-6', '') }}
       when: inventory_hostname == third_cluster_node_to_install
-    
+
     - name: Prevent connections from VSCs, VSGs and WBXs
       include_role:
         name: common
         tasks_from: block-xmpp-connections
       vars:
         block_xmpp_connection: true
-      when: 
+      when:
         - nuage_upgrade | default (False)
         - not vsd_standby_cluster | default(False)
         - not stats_only_vm
@@ -393,7 +393,7 @@
 
   - name: Set XMPP connection to allow both clear and TLS
     command: /opt/vsd/bin/ejmode allow -y
-    when: 
+    when:
       - not deploy_vcin
       - not stats_only_vm
 
@@ -471,7 +471,7 @@
         tasks_from: allow-xmpp-connections
       vars:
         allow_xmpp_connection: true
-      when: 
+      when:
         - nuage_upgrade | default (False)
         - not vsd_standby_cluster | default(False)
         - inventory_hostname == third_cluster_node_to_install
@@ -527,7 +527,7 @@
     include_role:
       name: vsd-upgrade-inplace
       tasks_from: main.yml
-    when: 
+    when:
       - vsd_sa_or_ha is match('sa')
       - not stats_only_vm | default(False)
 
