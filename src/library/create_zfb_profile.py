@@ -405,8 +405,8 @@ def get_uplinks(module):
         return []
 
     uplinks = [int(x['vlan_value']) for x in network_port['vlans'] if x['uplink']]
-    vlan0_uplink = next((x for x in uplinks if x==0), None)
-    if vlan0_uplink != None:
+    vlan0_uplink = next((x for x in uplinks if x == 0), None)
+    if vlan0_uplink is not None:
         # Don't create uplinks on other vlans if we need one on vlan 0
         uplinks = [0]
 
