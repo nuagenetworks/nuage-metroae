@@ -17,6 +17,8 @@
     ssh_user: "{{ vsc_creds.username }}"
     check_login: True
 
+- meta: reset_connection
+
 - name: Get output of 'show vswitch-controller xmpp-server detail'
   sros_command:
     commands:
@@ -51,6 +53,8 @@
 - name: define variable to match vsd strings in show vswitch vsd details
   set_fact:
     vsd1_s: "cna@{{ vsd_fqdn }}"
+
+- meta: reset_connection
 
 - name: Get output of 'show vswitch-controller vsd detail'
   sros_command:
@@ -99,6 +103,8 @@
     set_fact:
       mgmt_ip: "{{ hostvars[groups['vscs'][1]]['mgmt_ip'] }}"
 
+  - meta: reset_connection
+
   - name: Check if vsc ha node2 is configured with PBR config
     sros_command:
       commands: admin display-config
@@ -108,6 +114,8 @@
 
   - name: Print 'admin display-config' when verbosity >= 1
     debug: var=pbr_config_ha_node2.stdout[0] verbosity=1
+
+  - meta: reset_connection
 
   - name: Delete PBR backward compatibility config on second VSC node
     sros_config:
@@ -123,6 +131,8 @@
     set_fact:
       mgmt_ip: "{{ hostvars[groups['vscs'][0]]['mgmt_ip'] }}"
 
+  - meta: reset_connection
+
   - name: Check if vsc ha node1 is configured with PBR config
     sros_command:
       commands: admin display-config
@@ -132,6 +142,8 @@
 
   - name: Print 'admin display-config' when verbosity >= 1
     debug: var=pbr_config_ha_node1.stdout[0] verbosity=1
+
+  - meta: reset_connection
 
   - name: Delete PBR backward compatibility config on first VSC node
     sros_config:

@@ -1,0 +1,31 @@
+---
+- name: Set VSC creds
+  set_fact:
+    nuagex_vsc_creds:
+      host: "{{ mgmt_ip }}"
+      username: "{{ vsc_username | default(vsc_default_username) }}"
+      password: "{{ vsc_password | default(vsc_default_password) }}"
+
+- name: Creating VNS config file
+  connection: local
+  template:
+    src: config.cfg.j2
+    dest: "/tmp/ansible-nuagex-config-{{ inventory_hostname }}.cfg"
+
+- name: Copy VSC config file to the VSC
+  connection: local
+  command: >-
+    sshpass -p'{{ vsc_password | default(vsc_default_password) }}' scp -o StrictHostKeyChecking=no
+    -o UserKnownHostsFile=/dev/null /tmp/ansible-nuagex-config-{{ inventory_hostname }}.cfg {{ vsc_username | default(vsc_default_username) }}@{{ mgmt_ip }}:
+  no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
+  changed_when: True
+
+- meta: reset_connection
+
+- name: Execute VSC basic configuration
+  sros_command:
+    commands:
+      - exec cf1:\ansible-nuagex-config-{{ inventory_hostname }}.cfg
+      - admin save
+    provider: "{{ nuagex_vsc_creds }}"
+  delegate_to: localhost

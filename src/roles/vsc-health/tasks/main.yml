@@ -25,19 +25,14 @@
       - vsc
       - vsc-health
 
-  - name: Clean known_hosts of VSC's (ignoring errors)
-    known_hosts:
-      name: "{{ mgmt_ip }}"
-      state: absent
-    no_log: True
-    ignore_errors: True
-
   # Without this, the run creates a false positive as it finds the files
   # from the previous run
   - name: Remove older failure_report.log files
     file:
       path: "{{ failure_report_path }}"
       state: absent
+
+  - meta: reset_connection
 
   - name: Get output of 'show version'
     sros_command:
@@ -54,6 +49,8 @@
 
   - name: Write show version json to report
     nuage_append: filename="{{ report_path }}" text="{{ inventory_hostname }} {{ sh_version.stdout_lines|to_nice_json }}\n"
+
+  - meta: reset_connection
 
   - name: Get output of 'show router interface'
     sros_command:
@@ -121,6 +118,8 @@
         }
       when: enable_ipv6 | default(false)
 
+    - meta: reset_connection
+
     - name: Get output of 'show router bgp summary'
       sros_command:
         commands:
@@ -182,6 +181,8 @@
 
     when: system_ip is defined
 
+  - meta: reset_connection
+
   - name: Get output of 'show vswitch-controller xmpp-server detail'
     sros_command:
       commands:
@@ -217,6 +218,8 @@
       }
     ignore_errors: "{{ not nuage_upgrade | default(False) }}"
 
+  - meta: reset_connection
+
   - name: Get output of 'show vswitch-controller vsd detail'
     sros_command:
       commands:
@@ -235,6 +238,8 @@
 
   - name: Write vsd detail json to report
     nuage_append: filename="{{ report_path }}" text="{{ inventory_hostname }} {{ vsd_detail_json|to_nice_json }}\n"
+
+  - meta: reset_connection
 
   - name: Get output of 'show vswitch-controller vswitches'
     sros_command:
@@ -262,6 +267,8 @@
     ignore_errors: "{{ not nuage_upgrade | default(False) }}"
     when: expected_num_vswitches | default(0) > 0
 
+  - meta: reset_connection
+
   - name: Get output of 'show vswitch-controller vports type host'
     sros_command:
       commands:
@@ -287,6 +294,8 @@
       msg: "Invalid host vport count ({{ show_host_vports_json['No. of virtual ports'] }}) detected. Expected {{ expected_num_host_vports }}. Check 'show vswitch-controller vports type host'." }      # noqa 204
     ignore_errors: "{{ not nuage_upgrade | default(False) }}"
     when: expected_num_host_vports | default(0) > 0
+
+  - meta: reset_connection
 
   - name: Get output of 'show vswitch-controller vports type vm'
     sros_command:
@@ -314,6 +323,8 @@
     ignore_errors: "{{ not nuage_upgrade | default(False) }}"
     when: expected_num_vm_vports | default(0) > 0
 
+  - meta: reset_connection
+
   - name: Get output of 'show vswitch-controller gateway ports'
     sros_command:
       commands:
@@ -339,6 +350,8 @@
       msg: "Invalid gateway port count ({{ show_gateway_ports_json['No. of Ports'] }}) detected. Expected {{ expected_num_gateway_ports }}. Check 'show vswitch-controller gateway ports'." }   # noqa 204
     ignore_errors: "{{ not nuage_upgrade | default(False) }}"
     when: expected_num_gateway_ports | default(0) > 0
+
+  - meta: reset_connection
 
   - name: Get NTP status
     sros_command:

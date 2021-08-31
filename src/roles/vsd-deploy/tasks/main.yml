@@ -87,6 +87,7 @@
       when:
         - not nuage_upgrade | default(False)
         - not vsd_standby_cluster | default(False)
+        - not stats_only_vm | default(False)
 
     - name: Set VSD numbering for standby cluster install
       set_fact:
@@ -104,6 +105,7 @@
       when:
         - nuage_upgrade | default(False)
         - not vsd_standby_cluster | default(False)
+        - not stats_only_vm | default(False)
 
     - block:
 
@@ -282,7 +284,7 @@
 
     - name: Install VSD software on standalone node (Can take 20 minutes)
       command: "/opt/vsd/vsd-install.sh -t t -y {{ (enable_ipv6 | default(False)) | ternary('-6', '') }}"
-      when: 
+      when:
         - not deploy_vcin
         - stats_only_vm
 
@@ -376,11 +378,22 @@
         -x {{ vsd_fqdn }} -y {{ (enable_ipv6 | default(False)) | ternary('-6', '') }}
       when: inventory_hostname == third_cluster_node_to_install
 
+    - name: Prevent connections from VSCs, VSGs and WBXs
+      include_role:
+        name: common
+        tasks_from: block-xmpp-connections
+      vars:
+        block_xmpp_connection: true
+      when:
+        - nuage_upgrade | default (False)
+        - not vsd_standby_cluster | default(False)
+        - not stats_only_vm
+
     when: vsd_sa_or_ha is match('ha')
 
   - name: Set XMPP connection to allow both clear and TLS
     command: /opt/vsd/bin/ejmode allow -y
-    when: 
+    when:
       - not deploy_vcin
       - not stats_only_vm
 
@@ -451,6 +464,18 @@
       timeout_seconds: 1200
       test_interval_seconds: 30
 
+  - block:
+    - name: Allow XMPP Connections to vsd node after vsd process are stopped
+      include_role:
+        name: common
+        tasks_from: allow-xmpp-connections
+      vars:
+        allow_xmpp_connection: true
+      when:
+        - nuage_upgrade | default (False)
+        - not vsd_standby_cluster | default(False)
+        - inventory_hostname == third_cluster_node_to_install
+    when: vsd_sa_or_ha is match('ha')
   when:
     - component_type == "vsd"
     - (vsd_major_version|int > 5) or
@@ -501,6 +526,8 @@
     include_role:
       name: vsd-upgrade-inplace
       tasks_from: main.yml
-    when: vsd_sa_or_ha is match('sa')
+    when:
+      - vsd_sa_or_ha is match('sa')
+      - not stats_only_vm | default(False)
 
   when: (vsd_install_inplace_upgrade | default(False) and not nuage_upgrade | default(False)) or (patch_ejabberd|default(False))
