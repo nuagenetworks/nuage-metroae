@@ -494,8 +494,8 @@ def main():
     uplinks = get_uplinks(module)
 
     nsg_infra = create_nsg_infra_profile(module, csproot)
-    nsg_temp = create_nsg_gateway_template(module, csproot, nsg_infra, uplinks)
-    create_nsgv_ports(module, nsg_temp, csproot)
+    nsg_temp = create_nsg_gateway_template(module, csproot, nsg_infra)
+    create_nsgv_ports(module, nsg_temp, csproot, uplinks)
     metro_org = create_nsg_device(module, csproot, nsg_temp, uplinks)
 
     if ("skip_iso_create" not in module.params or
