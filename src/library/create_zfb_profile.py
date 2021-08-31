@@ -258,7 +258,7 @@ def create_vsc_infra_profile(module, csproot, vsc_params):
     return vsc_infra
 
 
-def create_nsgv_ports(module, nsg_temp, csproot):
+def create_nsgv_ports(module, nsg_temp, csproot, uplinks):
     port_params = module.params['zfb_ports']
     zfb_constants = module.params['zfb_constants']
 
@@ -278,9 +278,10 @@ def create_nsgv_ports(module, nsg_temp, csproot):
             for vlan in network_port['vlans']:
                 vsc_params = {
                     'name': vlan['vsc_infra_profile_name'],
-                    'firstController': vlan['firstController'],
-                    'secondController': vlan['secondController']
+                    'firstController': vlan['firstController']
                 }
+                if 'secondController' in vlan:
+                    vsc_params['secondController'] = vlan['secondController']
 
                 vsc_infra = create_vsc_infra_profile(module, csproot, vsc_params)
                 # Attach vlan and vsc profile
@@ -289,10 +290,11 @@ def create_nsgv_ports(module, nsg_temp, csproot):
                 vlan_temp.associated_vsc_profile_id = vsc_infra.id
                 port_temp.create_child(vlan_temp)
 
-                uplink = VSPK.NUUplinkConnection()
-                uplink.mode = "Dynamic"
-                uplink.role = "PRIMARY"
-                vlan_temp.create_child(uplink)
+                if int(vlan['vlan_value']) in uplinks:
+                    uplink = VSPK.NUUplinkConnection()
+                    uplink.mode = "Dynamic"
+                    uplink.role = "PRIMARY"
+                    vlan_temp.create_child(uplink)
         else:
             vsc_params = module.params['zfb_vsc_infra']
             vsc_infra = create_vsc_infra_profile(module, csproot, vsc_params)
@@ -334,7 +336,7 @@ def create_enterprise(csproot, name):
     return enterprise
 
 
-def create_nsg_device(module, csproot, nsg_temp):
+def create_nsg_device(module, csproot, nsg_temp, uplinks):
     nsg_params = module.params['zfb_nsg']
     nsg_infra = module.params['zfb_nsg_infra']
 
@@ -353,6 +355,9 @@ def create_nsg_device(module, csproot, nsg_temp):
                     "personality": "NSG"}
         if nsg_infra["instanceSSHOverride"] == "ALLOWED":
             nsg_data["SSHService"] = nsg_params['ssh_service']
+
+        if len(uplinks) > 1:
+            nsg_data["networkAcceleration"] = "PERFORMANCE"
 
         nsg_dev = VSPK.NUNSGateway(data=nsg_data)
         metro_org.create_child(nsg_dev)
@@ -390,6 +395,22 @@ def create_iso_file(module, metro_org, nsg_temp):
     sleep(1)
     # Copy ISO file to nsg-deploy files folder
     subprocess.call("gzip -f -d %s/user_image.iso.gz" % nsgv_path, shell=True)
+
+
+def get_uplinks(module):
+    port_params = module.params['zfb_ports']
+    network_port = port_params['network_port']
+
+    if 'vlans' not in network_port:
+        return []
+
+    uplinks = [int(x['vlan_value']) for x in network_port['vlans'] if x['uplink']]
+    vlan0_uplink = next((x for x in uplinks if x==0), None)
+    if vlan0_uplink != None:
+        # Don't create uplinks on other vlans if we need one on vlan 0
+        uplinks = [0]
+
+    return uplinks
 
 
 def main():
@@ -470,10 +491,12 @@ def main():
 
     create_proxy_user(module, session)
 
+    uplinks = get_uplinks(module)
+
     nsg_infra = create_nsg_infra_profile(module, csproot)
-    nsg_temp = create_nsg_gateway_template(module, csproot, nsg_infra)
+    nsg_temp = create_nsg_gateway_template(module, csproot, nsg_infra, uplinks)
     create_nsgv_ports(module, nsg_temp, csproot)
-    metro_org = create_nsg_device(module, csproot, nsg_temp)
+    metro_org = create_nsg_device(module, csproot, nsg_temp, uplinks)
 
     if ("skip_iso_create" not in module.params or
             module.params["skip_iso_create"] is not True):
