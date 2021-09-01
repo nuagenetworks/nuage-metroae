@@ -42,7 +42,7 @@ File name | Description
 [HOOKS_AND_SKIPACTIONS](Documentation/HOOKS_AND_SKIPACTIONS.md) | Configure ability to run custom commands in between playbooks and skip playbooks
 [PLUGINS](Documentation/PLUGINS.md) | Add or remove plugins to MetroAE
 [AUTOGENERATE_DEPLOYMENTS](Documentation/AUTOGENERATE_DEPLOYMENTS.md) | Generate MetroAE deployment configurations automatically via script
-[CONTRIBUTING](Documentation/CONTRIBUTING.md) | Contribute to MetroAE development
+[CONTRIBUTING](CONTRIBUTING.md) | Contribute to MetroAE development
 [LICENSE](Documentation/LICENSE.md) | License statement for MetroAE
 
 ## Important Notes
