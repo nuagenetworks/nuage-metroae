@@ -22,6 +22,14 @@
 
 ### Resolved Issues
 
+* Added playbook and menu option to run security hardening on VSD after the VSD installation (METROAE-328)
+* Added playbook for portal deployment, this is deployemnt in an already created VMs for portal (METROAE-273)
+* Fixed NSG package Unzipped Twice (METROAE-415)
+* Added ansible reset connection to fix VSC connectivity issues
+* Fix openstack ssl connection error (METROAE-425)
+* Add option to skip disable stats collection during VSTAT Upgrade (METROAE-430)
+* For VSD upgrade check for 3 tar.gz files and not 3 files
+* Removed unnecessary debug lines (METROAE-455)
 * Added a task to check existence of vsd migration script during upgrade (METROAE-306)
 * Fixed issue with installing required libvirt libraries on target host (METROAE-447)
 * VSD inplace upgrade should unmount the ISO after upgrade (METROAE-449)
