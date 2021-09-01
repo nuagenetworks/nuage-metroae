@@ -16,11 +16,6 @@ options:
       - VSD credentials to access VSD GUI
     required: true
     default: null
-  vsd_version:
-    description:
-      - VSD version
-    required: true
-    default: null
   required_days_left:
     description:
       - Required number of days left before license expiration (-1 for no check)
@@ -36,7 +31,7 @@ EXAMPLES = '''
       password: csproot
       enterprise: csp
       api_url: https://10.0.0.10:8443
-    vsd_version: 5.4.1
+      api_version: v6
     required_days_left: 365
 '''
 
@@ -80,20 +75,14 @@ def check_licenses_expiration(licenses, required_days_left):
     return days_left_dict, meets_days_requirement
 
 
-def format_api_version(version):
-    if version.startswith('5'):
-        return ('v5_0')
-    else:
-        return ('v6')
-
-
-def get_vsd_session(vsd_auth, vsd_version):
-    version = format_api_version(vsd_version)
-
+def get_vsd_session(vsd_auth):
     global VSPK
-    VSPK = importlib.import_module('vspk.{0:s}'.format(version))
+    VSPK = importlib.import_module('vspk.{0:s}'.format(vsd_auth['api_version']))
 
-    session = VSPK.NUVSDSession(**vsd_auth)
+    session = VSPK.NUVSDSession(username=vsd_auth['username'],
+                                password=vsd_auth['password'],
+                                enterprise=vsd_auth['enterprise'],
+                                api_url=vsd_auth['api_url'])
     session.start()
     csproot = session.user
     return csproot
@@ -101,18 +90,16 @@ def get_vsd_session(vsd_auth, vsd_version):
 
 def main():
     arg_spec = dict(vsd_auth=dict(required=True, type='dict', no_log=True),
-                    vsd_version=dict(required=True, type='str'),
                     required_days_left=dict(required=True, type='int'))
     module = AnsibleModule(argument_spec=arg_spec, supports_check_mode=True)
 
     vsd_auth = module.params['vsd_auth']
-    vsd_version = module.params['vsd_version']
     required_days_left = module.params['required_days_left']
 
     valid_dict = {}
 
     try:
-        csproot = get_vsd_session(vsd_auth, vsd_version)
+        csproot = get_vsd_session(vsd_auth)
     except ImportError:
         module.fail_json(msg="vspk is required for this module, or "
                          "API version specified does not exist.")

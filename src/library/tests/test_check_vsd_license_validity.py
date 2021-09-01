@@ -7,8 +7,8 @@ TEST_PARAMS = {
         "username": "csproot",
         "password": "csproot",
         "enterprise": "csp",
-        "api_url": "https://localhost:8443"},
-    "vsd_version": "6.0.3",
+        "api_url": "https://localhost:8443",
+        "api_version": "v6"},
     "required_days_left": 365
 }
 SECONDS_PER_DAY = 60 * 60 * 24
@@ -50,9 +50,12 @@ class TestVsdLicenseValid(object):
         return mock_license
 
     def validate_session(self, import_patch):
-        import_patch.assert_called_once_with("vspk.v6")
+        import_patch.assert_called_once_with("vspk.{0:s}".format(TEST_PARAMS["vsd_auth"]["api_version"]))
         self.mock_vspk.NUVSDSession.assert_called_with(
-            **TEST_PARAMS["vsd_auth"])
+            username=TEST_PARAMS["vsd_auth"]["username"],
+            password=TEST_PARAMS["vsd_auth"]["password"],
+            enterprise=TEST_PARAMS["vsd_auth"]["enterprise"],
+            api_url=TEST_PARAMS["vsd_auth"]["api_url"])
         self.mock_session.start.assert_called_with()
 
     @patch("importlib.import_module")
@@ -109,8 +112,11 @@ class TestVsdLicenseValid(object):
 
         main()
 
-        import_patch.assert_called_once_with("vspk.v6")
-        mock_vspk.NUVSDSession.assert_called_with(**TEST_PARAMS["vsd_auth"])
+        import_patch.assert_called_once_with("vspk.{0:s}".format(TEST_PARAMS["vsd_auth"]["api_version"]))
+        mock_vspk.NUVSDSession.assert_called_with(username=TEST_PARAMS["vsd_auth"]["username"],
+                                                  password=TEST_PARAMS["vsd_auth"]["password"],
+                                                  enterprise=TEST_PARAMS["vsd_auth"]["enterprise"],
+                                                  api_url=TEST_PARAMS["vsd_auth"]["api_url"])
         mock_session.start.assert_called_with()
         mock_module.fail_json.assert_called_once_with(
             msg="Could not establish connection to VSD cannot connect")
