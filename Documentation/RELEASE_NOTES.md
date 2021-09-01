@@ -19,6 +19,7 @@
 * Added support for deploying NUH in VMware - requires Ansible 2.9.7 or greater and NUH version 20.10.5 or newer (METROAE-435)
 * Added support for multiple webfilters deployment (METROAE-458)
 * Added support for mounting an extra disk on VSTAT in a VMware environment (METROAE-480)
+* Added support for destroying NUH in VMware (METROAE-506)
 
 ### Resolved Issues
 
