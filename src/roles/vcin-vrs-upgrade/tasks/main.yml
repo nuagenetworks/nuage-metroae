@@ -5,10 +5,16 @@
 - name: Set HTTP URL for VRS OVF
   set_fact: ovf_url="{{ webserver_vrs_public_path }}{{ vmware_vrs_ovf_file_name }}"
 
+- name: Get current VSD API version
+  include_role:
+    name: common
+    tasks_from: get-current-vsd-api-version
+
 - name: Set vcin_auth variable for authentication to VCIN
   set_fact:
     vcin_auth:
       api_url: "https://{{ inventory_hostname }}:8443"
+      api_version: "{{ current_api_version }}"
 
 - name: Get VCenters registered in VCIN
   nuage_vspk:
@@ -78,8 +84,3 @@
 - name: Assert that all jobs were ran successful
   assert: that="'{{ job_statuses[item[0]] }}'  == 'SUCCESS'"
   with_indexed_items: "{{ vcin_cluster_ids }}"
-
-
-
-
-
