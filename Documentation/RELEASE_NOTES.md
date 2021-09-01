@@ -35,6 +35,7 @@
 * Fixed Upgrade with Custom VSD GUI password(METROAE-454)
 * Apply VSD Custom Branding for patch upgrades(METROAE-469)
 * Fixed validate certs in vsd-deploy for OpenStack(METRO-464)
+* Removed failure_report_path from vsc-health and group_vars/all(METROAE-483)
 * Removed redundant known_hosts in vsc-health & vsd-health(METROAE-482)
 * Fixed incorrect smtp.user and smtp.port specifications for portal(METROAE-496)
 * Fixed VSTAT VSC health check to look for correct VSDs when using stats out configuration

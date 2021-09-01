@@ -7,24 +7,9 @@
   - name: Write title to report file
     nuage_append: filename="{{ report_path }}" text="VSC Health Report End\n"
 
-  - name: Lookup the error report file
-    stat:
-      path: "{{ failure_report_path }}"
-    register: report
-
-  - name : Print out all the vsc health failures
-    debug: msg="The following errors were detected when executing vsc_health
-                {{ lookup('file',  failure_report_path ) }} "
-    when:  report.stat.exists
-
   - name: Set fact for email attachments
     set_fact:
       email_attachments: "{{ [ report_path ] }}"
-
-  - name: Append failure report file to attachments
-    set_fact:
-      email_attachments: "{{ email_attachments + [ failure_report_path ] }}"
-    when: report.stat.exists
 
   - name: Email VSC health and failure reports
     include_role:
@@ -34,12 +19,3 @@
       email_subject: MetroAE VSC Health Results
       attachments: "{{ email_attachments }}"
       email_body: Results from VSC health
-
-  - name: Check for failures
-    assert: {
-      that: "not report.stat.exists",
-      msg: "Failures detected. Check {{ failure_report_path }} ."
-      }
-
-    delegate_to: localhost
-    run_once: true
