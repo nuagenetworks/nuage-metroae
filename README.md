@@ -34,6 +34,7 @@ File name | Description
 [VSD_SERVICES](Documentation/VSD_SERVICES.md) | Using MetroAE to control VSD Services during maintenance
 [VSD_ROLLBACK_RESTORE](Documentation/VSD_ROLLBACK_RESTORE.md)| Roll Back or Restore VSD to original version outside normal upgrade path
 [VSD_CLUSTER_FAILOVER](Documentation/VSD_CLUSTER_FAILOVER.md) | Managing VSD cluster failover and failback
+[VSD_DISABLED_INTERFACE](Documentation/VSD_DISBALE_INTERFACE.md) | Configure MetroAE to bring up VSD on vCenter with interfaces disabled
 [NSGV_BOOTSTRAP](Documentation/NSGV_BOOTSTRAP.md) | Using MetroAE to bootstrap NSGv components
 [SD-WAN_PORTAL](Documentation/SD-WAN_PORTAL.md) | Deploying SD-WAN portal using MetroAE
 [AWS](Documentation/AWS.md) | Using MetroAE to deploy on Amazon Web Services (AWS)
@@ -41,7 +42,7 @@ File name | Description
 [HOOKS_AND_SKIPACTIONS](Documentation/HOOKS_AND_SKIPACTIONS.md) | Configure ability to run custom commands in between playbooks and skip playbooks
 [PLUGINS](Documentation/PLUGINS.md) | Add or remove plugins to MetroAE
 [AUTOGENERATE_DEPLOYMENTS](Documentation/AUTOGENERATE_DEPLOYMENTS.md) | Generate MetroAE deployment configurations automatically via script
-[CONTRIBUTING](Documentation/CONTRIBUTING.md) | Contribute to MetroAE development
+[CONTRIBUTING](CONTRIBUTING.md) | Contribute to MetroAE development
 [LICENSE](Documentation/LICENSE.md) | License statement for MetroAE
 
 ## Important Notes

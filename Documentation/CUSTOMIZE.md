@@ -20,6 +20,13 @@ If you issue:
 
 The files under `nuage-metroae/deployments/mydeployment` will be used to do an install.  This allows for different sets of component definitions for various projects.
 
+You can also do:
+```
+./metroae install everything deployment_spreadsheet_name.xlsx
+```
+
+to run the install everything playbook using the deployment information present in the specified Excel spreadsheet. More details about Excel deployments can be found in the `Customize Your Own Deployment` section below.
+
 Each time you issue MetroaÆ, the inventory will be completely rebuilt from the deployment name specified.  This will overwrite any previous inventory, so it will reflect exactly what is configured in the deployment that was specified.
 
 ## Customize Your Own Deployment
@@ -30,6 +37,7 @@ You can customize the deployment files for your workflows using any of the follo
 * Edit the files in a new deployment directory that you have created
 * Run `run_wizard.py` to let MetroAE create or edit your deployment
 * Create your deployment using the MetroAE spreadsheet (CSV file)
+* Create your deployment using an Excel spreadsheet (XLSX file)
 
 Based on your network topology and the specific components you plan on deploying, you will configure several files. Setting deployment files correctly ensures that when you subsequently execute workflows they configure components as intended. Precise syntax is crucial.
 
@@ -45,15 +53,26 @@ You can use the wizard to setup your MetroAE environment, if you wish. Or you ca
 
 You can also use the MetroAE spreadsheet to create your deployment. You can find the MetroAE CSV template in `deployment_spreadsheet_template.csv`. When you finish customizing the spreadsheet, save it to a CSV file of your own naming. Then you can either convert the CSV directly to a deployment using this syntax:
 ```
-convert_csv_to_deployment.py deployment_spreadsheetname.csv your_deployment_name
+convert_csv_to_deployment.py deployment_spreadsheet_name.csv your_deployment_name
 ```
-or you can let `metroae` do the conversion for you by specifying the name of the CSV file instead of the name of your deployment:
+or you can let `metroae` handle the conversion for you by  specifying the name of the CSV file instead of the name of your deployment::
 ```
 metroae deployment_spreadsheet_name.csv
 ```
 This will create or update a deployment with the same name as the CSV file - without the extension.
 
-The deployment files that can be configured using the wizard, spreadhseet, or edited manually are listed, below.
+MetroAE also supports deployment files filled out in an Excel (.xlsx) spreadsheet. You can find examples under the [examples/excel](../examples/excel) directory. Similar to a csv-based deployment, you have multiple options for creating a deployment from an Excel spreadsheet. You can run the converter script directly:
+```
+convert_excel_to_deployment.py deployment_spreadsheet_name.xlsx your_deployment_name
+```
+or you can use `metroae` do the conversion for you by running build, like this:
+```
+metroae build deployment_spreadsheet_name.xlsx
+```
+
+For Excel deployments, all playbooks (aside from `nuage_unzip` and `reset_build`) invoke the build step and can replace build in the command above.
+
+The deployment files that can be configured using the wizard, spreadsheet (csv or xlsx), or edited manually are listed, below.
 
 ### `common.yml`
 
@@ -117,7 +136,7 @@ When installing or upgrading an active-standby, geo-redundant cluster, all 6 VSD
 
 ## VSD Disk Performance Testing
 
-You can use MetroAE to verify that your VSD setup has sufficient disk performance (IOPS). By default, the disk performance test will run at the beginning of the VSD deploy step, prior to installing the VSD software. The parameters that you can use to control the operation of the test are available in 'common.yml'. You can skip the test, specify the total size of all the files used in the test, and modify the minimum threshold requirement in IOPS for the test. Note that to minimize the effects of file sstem caching, the total file size must exceed the total RAM on the VSD. If MetroAE finds that the test is enabled and the disk performance is below the threshold, an error will occur and installation will stop. The default values that are provided for the test are recommended for best VSD performance in most cases. Your specific situation may require different values or to skip the test entirely.
+You can use MetroAE to verify that your VSD setup has sufficient disk performance (IOPS). By default, the disk performance test will run at the beginning of the VSD deploy step, prior to installing the VSD software. The parameters that you can use to control the operation of the test are available in 'common.yml'. You can skip the test, specify the total size of all the files used in the test, and modify the minimum threshold requirement in IOPS for the test. Note that to minimize the effects of file system caching, the total file size must exceed the total RAM on the VSD. If MetroAE finds that the test is enabled and the disk performance is below the threshold, an error will occur and installation will stop. The default values that are provided for the test are recommended for best VSD performance in most cases. Your specific situation may require different values or to skip the test entirely.
 
 In addition to the automatic execution that takes place in the VSD deploy step, you can run the VSD disk performance test at any time using `metroae vsd test disk`.
 
@@ -206,4 +225,4 @@ Ask questions and contact us directly at [devops@nuagenetworks.net](mailto:devop
 
 Report bugs you find and suggest new features and enhancements via the [GitHub Issues](https://github.com/nuagenetworks/nuage-metroae/issues "nuage-metroae issues") feature.
 
-You may also [contribute](CONTRIBUTING.md) to MetroAE by submitting your own code to the project.
+You may also [contribute](../CONTRIBUTING.md) to MetroAE by submitting your own code to the project.

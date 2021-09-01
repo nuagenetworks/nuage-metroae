@@ -14,14 +14,6 @@
     ssh_host: "{{ mgmt_ip }}"
     host_username: "{{ vsd_custom_username | default(vsd_default_username) }}"
 
-- name: Clean known_hosts (ignoring errors)
-  known_hosts:
-    name: "{{ mgmt_ip }}"
-    state: absent
-  delegate_to: localhost
-  no_log: True
-  ignore_errors: True
-
 - name: Stats only VM
   set_fact:
     stats_only_vm: "{{ (groups['stats_only_vsds'] is defined) and (inventory_hostname in groups['stats_only_vsds']) }}"
@@ -109,6 +101,10 @@
     that: "hostname_output.stdout is search('{{ inventory_hostname }}')"
     msg: "Configured VSD hostname does not match expected VSD hostname"
 
+- name: Write VSD hostname to report file
+  nuage_append: filename="{{ report_path }}" text="VSD Hostname {{ hostname_output.stdout }}\n"
+  delegate_to: localhost
+
 - name: Write VSD version to json file
   nuage_append: filename="{{ report_path }}" text="VSD Version {{ vsd_version.stdout | to_nice_json }}\n"
   delegate_to: localhost
@@ -121,9 +117,6 @@
   become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
   vars:
     ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"
-
-- name: Print network config when verbosity >= 1
-  debug: var=net_conf.info verbosity=1
 
 - name: Write network config separator to report file
   nuage_append: filename="{{ report_path }}" text="-----VSD Network Config-----\n"
@@ -208,9 +201,6 @@
     vars:
       ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"
 
-  - name: Print ejabberd list_p1db output when verbosity >= 1
-    debug: var=list_p1db_output verbosity=1
-
   - name: Create local variable with p1db output to json
     set_fact: ejabberd_p1db_json="{{ list_p1db_output.stdout|ejabberd_p1db_to_json }}"
 
@@ -231,9 +221,6 @@
     vars:
       ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"
 
-  - name: Print ejabberd list_cluster_output when verbosity >= 1
-    debug: var=list_cluster_output verbosity=1
-
   - name: Create local variable with ejabberd cluster output to json
     set_fact: ejabberd_cluster_json="{{ list_cluster_output.stdout|ejabberd_cluster_to_json }}"
 
@@ -253,9 +240,6 @@
     become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
     vars:
       ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"
-
-  - name: Print ejabberd connected_users output when verbosity >= 1
-    debug: var=user_list verbosity=1
 
   - name: Create local variable with ejabberd connected users to json
     set_fact: ejabberd_users_json="{{ user_list.stdout|ejabberd_clients_to_json }}"
@@ -414,44 +398,152 @@
   register: java_home
   remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
 
+- name: Write java home path
+  nuage_append: filename="{{ report_path }}" text="JAVA_HOME = {{ java_home.stdout }}\n"
+  delegate_to: localhost
+
+
 - block:
 
   - name: Verify keystore pass is set
     command: "keytool -keystore /opt/vsd/jboss/standalone/configuration/vsd.keystore -storepass {{ keyStorePwd }} -list"
+    register: keystore_pass_check
+    when: keyStorePwd is defined
+
+  - name: Write keystore password check separator to report file
+    nuage_append: filename="{{ report_path }}" text="-----Results of verifying if keystore password is set-----\n"
+    delegate_to: localhost
+    when: keyStorePwd is defined
+
+  - name: Write keystore password check result
+    nuage_append: filename="{{ report_path }}" text="{{ keystore_pass_check | dict2items | rejectattr("key", "eq", "cmd") | list | items2dict | to_nice_json }}\n"
+    delegate_to: localhost
     when: keyStorePwd is defined
 
   - name: Verify truststore pass is set
     command: "keytool -keystore /opt/vsd/jboss/standalone/configuration/vsd.truststore -storepass {{ trustStorePwd }} -list"
+    register: truststore_pass_check
+    when: trustStorePwd is defined
+
+  - name: Write truststore password check separator to report file
+    nuage_append: filename="{{ report_path }}" text="-----Results of verifying truststore password-----\n"
+    delegate_to: localhost
+    when: trustStorePwd is defined
+
+  - name: Write truststore password check result
+    nuage_append: filename="{{ report_path }}" text="{{ truststore_pass_check | dict2items | rejectattr("key", "eq", "cmd") | list | items2dict | to_nice_json }}\n"
+    delegate_to: localhost
     when: trustStorePwd is defined
 
   - name: Verify keyserver pass is set
     command: "keytool -keystore /opt/vsd/jboss/standalone/configuration/keyserver.jks -storepass {{ keyServerStorePwd }} -list"
+    register: keyserver_pass_check
+    when: keyServerStorePwd is defined
+  
+  - name: Write keyserver password check separator to report file
+    nuage_append: filename="{{ report_path }}" text="-----Results of verifying keyserver password-----\n"
+    delegate_to: localhost
+    when: keyServerStorePwd is defined
+
+  - name: Write keyserver password check result
+    nuage_append: filename="{{ report_path }}" text="{{ keyserver_pass_check | dict2items | rejectattr("key", "eq", "cmd") | list | items2dict | to_nice_json }}\n"
+    delegate_to: localhost
     when: keyServerStorePwd is defined
 
   - name: Verify jrestore pass is set for version
     command: "keytool -keystore {{ java_home.stdout }}/lib/security/cacerts -alias vspca -storepass {{ jreStorePwd }} -list"
+    register: jrestore_pass_check
+    when:
+      - jreStorePwd is defined
+      - vsd_major_version|int < 6
+
+  - name: Write jrestore password check separator to report file
+    nuage_append: filename="{{ report_path }}" text="-----Results of verifying jrestore password-----\n"
+    delegate_to: localhost
+    when:
+      - jreStorePwd is defined
+      - vsd_major_version|int < 6
+
+  - name: Write jrestore password check result
+    nuage_append: filename="{{ report_path }}" text="{{ jrestore_pass_check | dict2items | rejectattr("key", "eq", "cmd") | list | items2dict | to_nice_json }}\n"
+    delegate_to: localhost
     when:
       - jreStorePwd is defined
       - vsd_major_version|int < 6
 
   - name: Verify cnauser pass is set
     command: "mysql -ucnauser -p{{ cnaPwd }} -e 'select 1'"
+    register: cnauser_pass_check
+    when: cnaPwd is defined
+
+  - name: Write cnauser password check separator to report file
+    nuage_append: filename="{{ report_path }}" text="-----Results of verifying cnauser password-----\n"
+    delegate_to: localhost
+    when: cnaPwd is defined
+
+  - name: Write cnauser password check result
+    nuage_append: filename="{{ report_path }}" text="{{ cnauser_pass_check | dict2items | rejectattr("key", "eq", "cmd") | list | items2dict | to_nice_json }}\n"
+    delegate_to: localhost
     when: cnaPwd is defined
 
   - name: Verify ejbcauser pass is set
     command: "mysql -uejbcauser -p{{ ejbcaPwd }} -e 'select 1'"
+    register: ejbcauser_pass_check
+    when: ejbcaPwd is defined
+
+  - name: Write ejbcauser password check separator to report file
+    nuage_append: filename="{{ report_path }}" text="-----Results of verifying ejbcauser password-----\n"
+    delegate_to: localhost
+    when: ejbcaPwd is defined
+
+  - name: Write ejbcauser password check result
+    nuage_append: filename="{{ report_path }}" text="{{ ejbcauser_pass_check | dict2items | rejectattr("key", "eq", "cmd") | list | items2dict | to_nice_json }}\n"
+    delegate_to: localhost
     when: ejbcaPwd is defined
 
   - name: Verify amquser pass is set
     command: "mysql -uamquser -p{{ ampPwd }} -e 'select 1'"
+    register: amquser_pass_check
+    when: ampPwd is defined
+
+  - name: Write amquser password check separator to report file
+    nuage_append: filename="{{ report_path }}" text="-----Results of verifying amquser password-----\n"
+    delegate_to: localhost
+    when: ampPwd is defined
+
+  - name: Write amquser password check result
+    nuage_append: filename="{{ report_path }}" text="{{ amquser_pass_check | dict2items | rejectattr("key", "eq", "cmd") | list | items2dict | to_nice_json }}\n"
+    delegate_to: localhost
     when: ampPwd is defined
 
   - name: Verify adminuser pass is set
     command: "mysql -udbadmin -p{{ adminPwd }} -e 'select 1'"
+    register: adminuser_pass_check
+    when: adminPwd is defined
+
+  - name: Write adminuser password  check separator to report file
+    nuage_append: filename="{{ report_path }}" text="-----Results of verifying adminuser password-----\n"
+    delegate_to: localhost
+    when: adminPwd is defined
+
+  - name: Write adminuser password check result
+    nuage_append: filename="{{ report_path }}" text="{{ adminuser_pass_check | dict2items | rejectattr("key", "eq", "cmd") | list | items2dict | to_nice_json }}\n"
+    delegate_to: localhost
     when: adminPwd is defined
 
   - name: Verify monituser pass is set
     command: "mysql -umonituser -p{{ monitPwd }} -e 'select 1'"
+    register: monituser_pass_check
+    when: monitPwd is defined
+
+  - name: Write monituser password check separator to report file
+    nuage_append: filename="{{ report_path }}" text="-----Results of verifying monituser password-----\n"
+    delegate_to: localhost
+    when: monitPwd is defined
+
+  - name: Write monituser password check result
+    nuage_append: filename="{{ report_path }}" text="{{ monituser_pass_check | dict2items | rejectattr("key", "eq", "cmd") | list | items2dict | to_nice_json }}\n"
+    delegate_to: localhost
     when: monitPwd is defined
 
   remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"

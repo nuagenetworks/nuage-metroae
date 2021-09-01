@@ -96,12 +96,16 @@
     vars:
       vsd_hostname: "{{ vsd_fqdn }}"
 
-  - name: Check the ES status color
+  - name: Set fact for expected number of ES nodes
+    set_fact:
+      expected_es_node_count: "{{ groups['vstats'] | default([]) | length + groups['data_vstats'] | default([]) | length + groups['primary_vstats'] | default([]) | length + groups['backup_vstats'] | default([]) | length }}"
+
+  - name: Check the ES status color and node count
     uri:
       url: "http://{{ inventory_hostname }}:9200/_cluster/health?pretty"
       method: GET
     register: es_status
-    until: es_status.json.status == 'green'
+    until: es_status.json.status == 'green' and es_status.json.number_of_nodes == expected_es_node_count|int
     retries: 60
     delay: 10
     delegate_to: "{{ vsd_hostname_list[0] }}"
