@@ -19,6 +19,14 @@
         name: common
         tasks_from: check-upgrade-prereq
 
+    - name: debug var before assert
+      debug: var=hostvars[inventory_hostname].groups.vsc_sa_node
+
+    - name: Check that the number of vscs is even
+      assert:
+        that: "hostvars[inventory_hostname].groups.vsc_sa_node|length == 1"
+        msg: "Cannot upgrade on number of standalone vscs in pairs. Create multiple deployment directories for upgrading multiple standalone vscs"
+
     - name: Lets run VSC SA upgrade backup and prep hooks
       include_role:
         name: hooks
