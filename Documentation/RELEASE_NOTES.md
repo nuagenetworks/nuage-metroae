@@ -49,6 +49,7 @@
 * Fixed VSTAT VSC health check to look for correct VSDs when using stats out configuration
 * Reset vsd_sa_or_ha internal flag to sa before doing stats out VSDs upgrade
 * Removed multiple standalone VSC upgrade feature (METROAE-418)
+* Removed redundant checks in VSTAT health(METROAE-508)
 * Removed redundant debug statements in VSTAT health (METROAE-517)
 
 ## Test Matrix
