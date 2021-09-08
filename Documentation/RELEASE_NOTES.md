@@ -51,6 +51,7 @@
 * Removed multiple standalone VSC upgrade feature (METROAE-418)
 * Removed redundant checks in VSTAT health(METROAE-508)
 * Removed redundant debug statements in VSTAT health (METROAE-517)
+* Removed redundant debug statements in vstat-destroy (METROAE-518)
 
 ## Test Matrix
 
