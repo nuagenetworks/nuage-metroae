@@ -24,6 +24,32 @@
 
 - block:
 
+  - name: Check that the VSD migration scripts path and file exists
+    set_fact:
+      is_VSD_migration_script_path_missing: "{{ vsd_migration_iso_path | default('MISSING') == 'MISSING' }}"
+      is_VSD_migration_script_file_missing: "{{ vsd_migration_iso_file_name | default('MISSING') == 'MISSING' }}"
+
+  - name: Delete the md5 files
+    file:
+      path: "{{ inventory_dir }}/deployment.md5.yml"
+      state: absent
+    when: is_VSD_migration_script_path_missing or is_VSD_migration_script_file_missing
+    delegate_to: localhost
+
+  - name: Check that VSD migration scripts path is defined
+    assert:
+      that: not is_VSD_migration_script_path_missing
+      msg: "vsd_migration_scripts_path is missing"
+
+  - name: Check that VSD migration scripts file is defined
+    assert:
+      that: not is_VSD_migration_script_file_missing
+      msg: "vsd_migration_scripts_file is missing"
+
+  when: component_type | default("NONE") == 'vsd'
+
+- block:
+
   - name: Get the version from OVA file
     shell: '{{ vcenter_global.ovftool }} --hideEula "{{ image_path }}/{{ image_file_name }}" | grep ^Name: | cut -d- -f2'
     register: vsd_version_from_ova
@@ -92,10 +118,10 @@
 
   when: component_type | default("NONE") == 'vsc'
 
-- name: Check that the number of vscs is even when force_vsc_standalone_upgrade is not set
+- name: Check that the number of vscs is '1' or even
   assert:
-    that: "force_vsc_standalone_upgrade | default(false) or vscs|length == 1 or vscs|length % 2 == 0"
-    msg: "Cannot upgrade on odd number of vscs in pairs. Please use force_vsc_standalone_upgrade to upgrade vscs as standalone"
+    that: "vscs|length == 1 or vscs|length % 2 == 0"
+    msg: "Cannot upgrade on odd number of vscs in pairs."
   when: vscs is defined and vscs
 
 - block:

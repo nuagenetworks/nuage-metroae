@@ -11,6 +11,8 @@
     ssh_user: "{{ vsc_creds.username }}"
     check_login: True
 
+- meta: reset_connection
+
 - name: Get output of 'show vswitch-controller information' on VSC
   sros_command:
     commands:
@@ -29,8 +31,16 @@
   assert:
     that: "vsc_info_out | regex_search('Statistics Enabled *: True')"
 
-- name: Check if all VSDs are registered
+- name: Check if all Primary VSDs are registered
   assert:
    that:
     - "vsc_info_out  | regex_search('Stats Server [0-9] Address *: {{ hostvars[item].mgmt_ip }}')"
   with_items: "{{ groups['primary_vsds'] }}"
+  when: not stats_out | default(False)
+
+- name: Check if all Stats only VSDs are registered
+  assert:
+   that:
+    - "vsc_info_out  | regex_search('Stats Server [0-9] Address *: {{ hostvars[item].mgmt_ip }}')"
+  with_items: "{{ groups['stats_only_vsds'] }}"
+  when: stats_out | default(False)

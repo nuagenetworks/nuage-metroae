@@ -40,6 +40,9 @@
       tasks_from: configure-ovftool
     vars:
       management_network: "Management"
+      number_of_cpus: "{{ vstat_cpu_cores }}"
+      memory_size: "{{ vstat_ram }}"
+      diskSize: "{{ vstat_fallocate_size_gb }}"
 
   - name: Deploy VSTAT image on vCenter
     include_role:
@@ -63,6 +66,24 @@
       uuid: "{{ vm_facts.instance.hw_product_uuid }}"
 
   - debug: var=uuid
+
+  - name: Add an extra ES Disk
+    connection: local
+    vmware_guest_disk:
+      hostname: "{{ target_server }}"
+      username: "{{ vcenter.username }}"
+      password: "{{ vcenter.password }}"
+      datacenter: "{{ vcenter.datacenter }}"
+      validate_certs: no
+      uuid: "{{ uuid }}"
+      disk:
+        - size_gb: "{{ extra_disk_size_gb }}"
+          type: thin
+          datastore: "{{ vcenter.datastore }}"
+          state: present
+          scsi_controller: 1
+          unit_number: 1
+    when: extra_disk_size_gb is defined
 
   - name: Turn on autostart
     connection: local

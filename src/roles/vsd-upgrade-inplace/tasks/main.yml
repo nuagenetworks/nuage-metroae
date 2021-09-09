@@ -28,7 +28,7 @@
         tasks_from: find-file.yml
       vars:
         pattern: "VSD-migration-scripts-*.iso"
-        dir_name: /home/caso/nuage-images/vsd/migration
+        dir_name: "{{ nuage_unzipped_files_dir }}"
 
     delegate_to: localhost
 
@@ -65,6 +65,9 @@
     command: /media/CDROM/vsd-patch.sh -y
     when: patch_ejabberd|default(False)
 
+  - name: Umount the ISO
+    shell: "umount /media/CDROM"
+
   remote_user: "{{ vsd_username | default(vsd_default_username) }}"
   become: "{{ 'no' if vsd_username | default(vsd_default_username) == 'root' else 'yes' }}"
   vars:
@@ -83,3 +86,22 @@
     tasks_from: allow-xmpp-connections
   vars:
     allow_xmpp_connection: "{{ block_and_allow_xmpp_connection | default(False) }}"
+
+- block:
+
+  - name: Stats only VM
+    set_fact:
+      stats_only_vm: "{{ (groups['stats_only_vsds'] is defined) and (inventory_hostname in groups['stats_only_vsds']) }}"
+
+  - name: Standby VSDs
+    set_fact:
+      standby_vsds: "{{ (groups['standby_vsds'] is defined) and (inventory_hostname in groups['standby_vsds']) }}"
+
+  - include_role:
+      name: vsd-deploy
+      tasks_from: brand_vsd
+    when:
+      - not standby_vsds
+      - not stats_only_vm
+
+  when:  branding_zip_file is defined and not vsd_install_inplace_upgrade

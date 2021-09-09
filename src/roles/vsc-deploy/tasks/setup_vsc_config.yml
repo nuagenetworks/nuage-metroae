@@ -114,6 +114,8 @@
       loop: "{{ vsc_config_file_paths }}"
       when: mgmt_ip | ipv6
 
+    - meta: reset_connection
+
     - name: Save user provided config file
       sros_command:
         commands:
@@ -150,6 +152,8 @@
   - name: Execute if not rebooting
     block:
 
+    - meta: reset_connection
+
     - name: Execute VSC basic configuration
       sros_command:
         commands:
@@ -168,6 +172,8 @@
         check_login: True
       when: enable_hardening | default(True)
 
+    - meta: reset_connection
+
     - name: Save VSC basic configuration
       sros_command:
         commands:
@@ -183,12 +189,16 @@
       pause:
         seconds: 30
 
+    - meta: reset_connection
+
     - name: Register uptime before reboot
       sros_command:
         commands:
           - show uptime
         provider: "{{ vsc_creds }}"
       register: uptime_before_reboot
+
+    - meta: reset_connection
 
     - name: Reboot VSC VM (ignoring errors)
       sros_command:
@@ -209,6 +219,8 @@
         ssh_password: "{{ vsc_creds.password }}"
         ssh_user: "{{ vsc_creds.username }}"
         check_login: True
+
+    - meta: reset_connection
 
     - name: Register uptime after reboot
       sros_command:

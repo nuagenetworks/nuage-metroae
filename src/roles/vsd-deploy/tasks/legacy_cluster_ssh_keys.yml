@@ -4,19 +4,19 @@
     args:
       creates: /root/.ssh/id_rsa
     delegate_to: "{{ item }}"
-    with_items: "{{ groups['vsds'] }}"
+    with_items: "{{ groups['primary_vsds'] }}"
 
   - name: Get generated SSH keys
     command: cat ~/.ssh/id_rsa.pub
     register: ssh_key_lst
     delegate_to: "{{ item }}"
-    with_items: "{{ groups['vsds'] }}"
+    with_items: "{{ groups['primary_vsds'] }}"
 
   - name: Add SSH keys to authorized_keys file
     shell: "echo {{ item[1].stdout }} >> /root/.ssh/authorized_keys"  # noqa 305
     delegate_to: "{{ item[0] }}"
     with_nested:
-      - "{{ groups['vsds'] }}"
+      - "{{ groups['primary_vsds'] }}"
       - "{{ ssh_key_lst.results }}"
 
   remote_user: "{{ vsd_default_username }}"
