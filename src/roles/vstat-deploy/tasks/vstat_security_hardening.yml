@@ -16,7 +16,7 @@
 
 - name: Check if custom user is already exists and is connected via ssh
   command: ssh -oStrictHostKeyChecking=no -oPasswordAuthentication=no {{ vstat_custom_username }}@{{ inventory_hostname }} exit 0
-  register: ssh_customer_user
+  register: ssh_custom_user
   delegate_to: localhost
   ignore_errors: yes
   when: vstat_custom_username is defined
@@ -67,7 +67,7 @@
 
       - name: Create a temporary copy of the autorized_keys file
         template:
-          src: "{{ role_path }}/../common/templetes/authorized_keys.j2"
+          src: "{{ role_path }}/../common/templates/authorized_keys.j2"
           backup: no
           dest: /tmp/authorized_keys_temp
 
@@ -94,21 +94,14 @@
         vstat_username: "{{ vstat_custom_username }}"
     
     when:
-      - vstat_custom_user is defined
+      - vstat_custom_username is defined
       - vstat_custom_password is defined 
-      - ssh_custom_user.rc != 0 
+      # - ssh_custom_user.rc != 0 
 
   remote_user: "{{ vstat_default_username }}"
 
 - block:
   
-  - name: Set custom password for MySQL root password for root user
-    command: mysqladmin -u root password "{{ vstat_mysql_password }}"
-    run_once: True
-    when:
-      - vstat_mysql_password is defined
-      - vstat_custom_username is not defined or vstat_custom_password is not defined or ssh_custom_user.rc == 0
-
   - name: Register failed login attempts and lockout time from file when not defined
     slurp:
       src: /etc/pam.d/system-auth-local
@@ -141,3 +134,8 @@
     with_items:
       - "/etc/pam.d/password-auth"
       - "/etc/pam.d/system-auth"
+  
+  remote_user: "{{ vstat_custom_username | default(vstat_default_username) }}"
+  become: "{{ 'no' if vstat_custom_username | default(vstat_default_username) == 'root' else 'yes' }}"
+  vars:
+    ansible_become_pass: "{{ vstat_custom_password | default(vstat_default_password) }}"
