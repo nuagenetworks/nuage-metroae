@@ -52,6 +52,7 @@
 * Removed redundant checks in VSTAT health(METROAE-508)
 * Removed redundant debug statements in VSTAT health (METROAE-517)
 * Removed redundant debug statements in vstat-destroy (METROAE-518)
+* Removed redundant debug statements in vsd-services-stop (METROAE-519)
 
 ## Test Matrix
 
