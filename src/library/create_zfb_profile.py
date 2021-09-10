@@ -283,11 +283,12 @@ def create_nsgv_ports(module, nsg_temp, csproot, uplinks):
                 if 'secondController' in vlan:
                     vsc_params['secondController'] = vlan['secondController']
 
-                vsc_infra = create_vsc_infra_profile(module, csproot, vsc_params)
-                # Attach vlan and vsc profile
                 vlan_temp = VSPK.NUVLANTemplate()
                 vlan_temp.value = vlan['vlan_value']
-                vlan_temp.associated_vsc_profile_id = vsc_infra.id
+                if vlan['uplink']:
+                    # Attach vlan and vsc profile
+                    vsc_infra = create_vsc_infra_profile(module, csproot, vsc_params)
+                    vlan_temp.associated_vsc_profile_id = vsc_infra.id
                 port_temp.create_child(vlan_temp)
 
                 if int(vlan['vlan_value']) in uplinks:
