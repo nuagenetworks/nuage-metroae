@@ -1,3 +1,30 @@
+- name: Run when ejabberd license file is not defined
+  block:
+  
+  - name: Getting the current license is expiration date
+    command: /opt/ejabberd/bin/ejabberdctl license_info
+	  register: license_check_expiry
+
+  - name: Get timestamp from the system
+    command: "date +%Y-%m-%d%H-%M-%S"
+    register: tstamp
+	
+  - name: Set variables
+    set_fact:
+      cur_date: "{{ tstamp.stdout[0:10] }}"
+      exp_date: "{{ license_check_expiry.split('.')[2]).split(' ')[5] }}"
+
+  - debug:
+      msg: "{{ cur_date > license_check_expiry }}"
+
+  - name: Check license expiry  
+    assert:
+      that: cur_time > exp_date
+      msg: Ejabberd license is expired. Please provide a new license and retry.
+	
+  when: vsd_ejabberd_license_file is not defined
+  remote_user: "{{ vsd_default_username }}"
+
 - name: Run when ejabberd license file is defined
   block:
 
