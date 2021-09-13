@@ -21,6 +21,7 @@
 * Added support for multiple webfilters deployment (METROAE-458)
 * Added support for mounting an extra disk on VSTAT in a VMware environment (METROAE-480)
 * Added support for destroying NUH in VMware (METROAE-506)
+* Added support for hardening Elasticsreach nodes (METROAE-486)
 
 ### Resolved Issues
 
