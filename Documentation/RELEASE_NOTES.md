@@ -53,6 +53,7 @@
 * Removed redundant debug statements in VSTAT health (METROAE-517)
 * Removed redundant debug statements in vstat-destroy (METROAE-518)
 * Removed redundant debug statements in vsd-services-stop (METROAE-519)
+* Fixed yum lock timeout issue when installing packages in KVM (METROAE-507)
 
 ## Test Matrix
 
