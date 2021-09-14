@@ -1,41 +1,14 @@
-- name: Run when ejabberd license file is not defined
-  block:
-  
-  - name: Getting the current license expiration date
-    command: /opt/ejabberd/bin/ejabberdctl license_info
-    register: license_check_expiry
+- name: Check that the ejabberdctl file exists
+  stat:
+    path: /opt/ejabberd/bin/ejabberdctl
+  register: ejabberdctl_result
 
-  - name: Get timestamp from the system
-    command: "date +%Y-%m-%d%H-%M-%S"
-    register: tstamp
-
-  - name: Set variables
-    set_fact:
-      cur_date: "{{ tstamp.stdout[0:10] }}"
-      exp_date: "{{ license_check_expiry.split('.')[2]).split(' ')[5] }}"
-
-  - debug:
-      msg: "{{ cur_date > license_check_expiry }}"
-
-  - name: Check license expiry  
-    assert:
-      that: cur_time > exp_date
-      msg: Ejabberd license is expired. Please provide a new license and retry.
-
-  when: vsd_ejabberd_license_file is not defined
-  remote_user: "{{ vsd_default_username }}"
+- name: Install ejabberdctl if not present
+  command: "/opt/vsd/install/install_ejabberd.sh -9 /opt/vsd/Packages -x {{ vsd_fqdn }}"
+  when: not ejabberdctl_result.stat.exists
 
 - name: Run when ejabberd license file is defined
   block:
-
-  - name: Check that the ejabberdctl file exists
-    stat:
-      path: /opt/ejabberd/bin/ejabberdctl
-    register: ejabberdctl_result
-
-  - name: Install ejabberdctl if not present
-    command: "/opt/vsd/install/install_ejabberd.sh -9 /opt/vsd/Packages -x {{ vsd_fqdn }}"
-    when: not ejabberdctl_result.stat.exists
 
   - name: Find the ejabberd base directory
     command: find /opt/ejabberd/lib/ -type d -name "ejabberd_nuage*"
@@ -77,19 +50,24 @@
       chdir: "{{ ejabberd_base_dir }}/ebin"
     when: ejabberd_base_dir.stdout is search("3.2.13_5")
 
-  - name: Start ejabberd
-    command: /opt/ejabberd/bin/ejabberdctl start
-    register: license_check_after_renew
-
-  - name: Check that new ejabberd license is valid
-    command: /opt/ejabberd/bin/ejabberdctl license_info
-    register: license_check_after_renew
-    retries: 5
-    until: "license_check_after_renew.rc == 0"
-    delay: 20
-
-  - name: Stop ejabberd service
-    command: /opt/ejabberd/bin/ejabberdctl stop
-
   when: vsd_ejabberd_license_file is defined
   remote_user: "{{ vsd_default_username }}"
+
+- name: Start ejabberd
+  command: /opt/ejabberd/bin/ejabberdctl start
+
+- name: Check that new ejabberd license is valid
+  command: /opt/ejabberd/bin/ejabberdctl license_info
+  register: license_check_after_renew
+  retries: 5
+  until: "license_check_after_renew.rc == 0"
+  delay: 20
+  ignore_errors: yes
+
+- name: Stop ejabberd service
+  command: /opt/ejabberd/bin/ejabberdctl stop
+
+- name: Check if the license has expired
+  asset:
+    that: "license_check_after_renew.rc == 0"
+    msg: "Problem checking the expiration date of the ejabberd license. Please check if it has expired."
