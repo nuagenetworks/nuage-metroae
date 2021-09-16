@@ -11,6 +11,7 @@
 ### Feature Enhancements
 
 * Allow custom configuration of RAM, CPU and Memory for VCenter (METROAE-433)
+* Allow custom configuration of RAM, CPU and Memory for VSD and VSTAT (METROAE-477)
 * Added support for extra ES disk on vmware (METROAE-341)
 * Add Support for Single-Step VSD Stats-out Upgrade and Patch (METROAE-470)
 * Added support for different disk provisioning type for VSD and VSTAT (METROAE-453)
