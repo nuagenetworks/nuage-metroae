@@ -27,7 +27,7 @@ options:
   vsd_license_file:
     description:
       - Set path to VSD license file.
-    required:True
+    required:False
   vsd_auth:
     description:
       - Credentials for accessing VSD.  Attributes:
@@ -372,7 +372,7 @@ def main():
             required=False,
             type='str'),
         vsd_license_file=dict(
-            required=True,
+            required=False,
             type='str'),
         vsd_auth=dict(
             required=True,
@@ -409,12 +409,13 @@ def main():
 
     # Get VSD license
     vsd_license = ""
-    try:
-        with open(vsd_license_file, 'r') as lf:
-            vsd_license = lf.read()
-    except Exception as e:
-        module.fail_json(msg="ERROR: Failure reading file: %s" % e)
-        return
+    if vsd_license_file is not None:
+        try:
+            with open(vsd_license_file, 'r') as lf:
+                vsd_license = lf.read()
+        except Exception as e:
+            module.fail_json(msg="ERROR: Failure reading file: %s" % e)
+            return
 
     # Create a session as csp user
     try:
