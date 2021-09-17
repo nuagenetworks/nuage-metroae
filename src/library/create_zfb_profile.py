@@ -430,8 +430,9 @@ def main():
     nsg_already_configured = False
 
     # Create nsg templates and iso file
-    if (not is_license_already_installed(csproot, vsd_license)):
-        install_license(csproot, vsd_license)
+    if vsd_license_file != '':
+        if (not is_license_already_installed(csproot, vsd_license)):
+            install_license(csproot, vsd_license)
 
     if has_nsg_configuration(module, csproot):
         nsg_already_configured = True
