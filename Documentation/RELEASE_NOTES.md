@@ -4,7 +4,7 @@
 
 * MetroAE Version 4.6.0
 * Nuage Release Alignment 20.10
-* Date of Release TBD
+* Date of Release 16-September-2021
 
 ## Release Contents
 
@@ -39,6 +39,7 @@
 * Fix VSD Standby nodes inplace upgrade (METROAE-452)
 * Added fix for DNS destroy uses inventory_hostname instead of vmname(METROAE-405)
 * Removed nuagex support (METROAE-467)
+* Apply VSD Branding only for primary VSDs(METROAE-471)
 * Upgraded ansible version and packages to remove depandabot alerts (METROAE-401)
 * Fixed Upgrade with Custom VSD GUI password(METROAE-454)
 * Apply VSD Custom Branding for patch upgrades(METROAE-469)
