@@ -415,7 +415,6 @@ def main():
                 vsd_license = lf.read()
         except Exception as e:
             module.fail_json(msg="ERROR: Failure reading file: %s" % e)
-            return
 
     # Create a session as csp user
     try:
