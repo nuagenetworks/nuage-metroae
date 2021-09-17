@@ -409,7 +409,7 @@ def main():
 
     # Get VSD license
     vsd_license = ""
-    if vsd_license_file is not None:
+    if vsd_license_file != '':
         try:
             with open(vsd_license_file, 'r') as lf:
                 vsd_license = lf.read()
