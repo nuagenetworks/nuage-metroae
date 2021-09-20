@@ -55,6 +55,7 @@
 * Removed redundant debug statements in VSTAT health (METROAE-517)
 * Removed redundant debug statements in vstat-destroy (METROAE-518)
 * Removed redundant debug statements in vsd-services-stop (METROAE-519)
+* Install NUH without VSD on VCenter (METROAE-523)
 
 ## Test Matrix
 
