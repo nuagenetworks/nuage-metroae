@@ -2,28 +2,17 @@
 
 ## Release info
 
-* MetroAE Version 4.6.0
+* MetroAE Version 4.6.1
 * Nuage Release Alignment 20.10
-* Date of Release TBD
+* Date of Release 16-September-2021
 
 ## Release Contents
 
 ### Feature Enhancements
 
-* Allow custom configuration of RAM, CPU and Memory for VCenter (METROAE-433)
-* Added support for extra ES disk on vmware (METROAE-341)
-* Add Support for Single-Step VSD Stats-out Upgrade and Patch (METROAE-470)
-* Added support for different disk provisioning type for VSD and VSTAT (METROAE-453)
-* Added support for blocking iptables VSC entries during upgrade (METROAE-427)
-* Add support for BGP interface for VSC (METROAE-484)
-* Added support for deploying NUH in VMware - requires Ansible 2.9.7 or greater and NUH version 20.10.5 or newer (METROAE-435)
-* Added documentation for starting VSD with interfaces disabled on vCenter
-* Added support for multiple webfilters deployment (METROAE-458)
-* Added support for mounting an extra disk on VSTAT in a VMware environment (METROAE-480)
-* Added support for destroying NUH in VMware (METROAE-506)
-
 ### Resolved Issues
 
+<<<<<<< HEAD
 * Added playbook and menu option to run security hardening on VSD after the VSD installation (METROAE-328)
 * Added playbook for portal deployment, this is deployemnt in an already created VMs for portal (METROAE-273)
 * Fixed NSG package Unzipped Twice (METROAE-415)
@@ -55,6 +44,9 @@
 * Removed redundant debug statements in vstat-destroy (METROAE-518)
 * Removed redundant debug statements in vsd-services-stop (METROAE-519)
 * Check for ejabberd license expiry (METROAE-505)
+=======
+* Install NUH without VSD on VCenter (METROAE-523)
+>>>>>>> origin/dev
 
 ## Test Matrix
 
