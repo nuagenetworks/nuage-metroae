@@ -61,6 +61,22 @@
       line: "log_rotate_size: 10485760"
     when: "vsd_version.stdout is version('20.10.1', '>=')"
 
+  - name: Start ejabberd
+    command: /opt/ejabberd/bin/ejabberdctl start
+
+  - name: Check the current ejabberd license status
+    command: /opt/ejabberd/bin/ejabberdctl status
+    register: ejabberd_status
+    retries: 20
+    until: "ejabberd_status.rc == 0" and "ejabberd_status.stdout.find('nodedown') == -1"
+    delay: 20
+    ignore_errors: yes
+
+  - name: Check if not able to start ejabberd
+    assert:
+      that: "{{ ejabberd_status.rc }} == 0" and "ejabberd_status.stdout.find('nodedown') == -1"
+      msg: "We are not able to start ejabberd may be because of invalid license."
+
   - name: Check that new ejabberd license is valid
     command: /opt/ejabberd/bin/ejabberdctl license_info
     register: license_check_after_renew
@@ -73,10 +89,6 @@
     assert:
       that: "{{ license_check_after_renew.rc }} == 0"
       msg: "Problem checking the expiration date of the ejabberd license. It may be expired, please check the output from the license check below. {{ license_check_after_renew.stdout }}"
-      
-  - name: Start ejabberd
-    command: /opt/ejabberd/bin/ejabberdctl start
-    when: "license_check_after_renew.rc == 0"
 
   - name: Stop ejabberd service
     command: /opt/ejabberd/bin/ejabberdctl stop
