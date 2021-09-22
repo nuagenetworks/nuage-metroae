@@ -177,7 +177,13 @@ The following workflows will upgrade each component in individual steps. Perform
 
      **Troubleshooting**: If you experience a failure, you can re-execute the command.
 
-8. Log into the VSDs and verify the new versions.
+8. Apply VSD license (if needed)
+     
+     `metroae vsd license`
+
+     The VSD license will be applied.
+     
+9. Log into the VSDs and verify the new versions.
 
 ### Upgrade VSC Node One
 
