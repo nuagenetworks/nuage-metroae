@@ -13,6 +13,7 @@
 ### Resolved Issues
 
 * Install NUH without VSD on VCenter (METROAE-523)
+* Upgrade VSTATS if VSD GUI password has changed (METROAE-533)
 
 ## Test Matrix
 
