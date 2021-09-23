@@ -291,7 +291,7 @@ class TestCreateZfbProfile(object):
 
         main()
 
-        mock_module.fail_json.assert_not_called()
+        # mock_module.fail_json.assert_not_called()
         args, kwargs = mock_module.fail_json.call_args_list[0]
         assert "ERROR: Failure reading file: " in kwargs["msg"]
 
