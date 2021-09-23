@@ -67,7 +67,7 @@
   - name: Check ejabberd status
     command: /opt/ejabberd/bin/ejabberdctl status
     register: ejabberd_status
-    retries: 20
+    retries: 5
     until: "ejabberd_status.rc == 0 and ejabberd_status.stdout.find('started with status: started') != -1"
     delay: 20
     ignore_errors: yes
@@ -75,20 +75,7 @@
   - name: Check if not able to start ejabberd
     assert:
       that: "{{ ejabberd_status.rc }} == 0 and ejabberd_status.stdout.find('nodedown') == -1"
-      msg: "We are not able to start ejabberd may be because of invalid license."
-
-  - name: Check that new ejabberd license is valid
-    command: /opt/ejabberd/bin/ejabberdctl license_info
-    register: license_check_after_renew
-    retries: 20
-    until: "license_check_after_renew.rc == 0"
-    delay: 20
-    ignore_errors: yes
-
-  - name: Check if the license has expired
-    assert:
-      that: "{{ license_check_after_renew.rc }} == 0"
-      msg: "Problem checking the expiration date of the ejabberd license. It may be expired, please check the output from the license check below. {{ license_check_after_renew.stdout }}"
+      msg: "Error starting ejabberd. Please check if the ejabberd license has expired."
 
   - name: Stop ejabberd service
     command: /opt/ejabberd/bin/ejabberdctl stop
