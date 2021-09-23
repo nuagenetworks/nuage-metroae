@@ -12,41 +12,8 @@
 
 ### Resolved Issues
 
-<<<<<<< HEAD
-* Added playbook and menu option to run security hardening on VSD after the VSD installation (METROAE-328)
-* Added playbook for portal deployment, this is deployemnt in an already created VMs for portal (METROAE-273)
-* Fixed NSG package Unzipped Twice (METROAE-415)
-* Added ansible reset connection to fix VSC connectivity issues
-* Fix openstack ssl connection error (METROAE-425)
-* Add option to skip disable stats collection during VSTAT Upgrade (METROAE-430)
-* For VSD upgrade check for 3 tar.gz files and not 3 files
-* Removed unnecessary debug lines (METROAE-455)
-* Added a task to check existence of vsd migration script during upgrade (METROAE-306)
-* Fixed issue with installing required libvirt libraries on target host (METROAE-447)
-* VSD inplace upgrade should unmount the ISO after upgrade (METROAE-449)
-* Fix stats out upgrade for hardened Stats-out VSD nodes (METROAE-450)
-* Fix VSD Standby nodes inplace upgrade (METROAE-452)
-* Added fix for DNS destroy uses inventory_hostname instead of vmname(METROAE-405)
-* Removed nuagex support (METROAE-467)
-* Upgraded ansible version and packages to remove depandabot alerts (METROAE-401)
-* Fixed Upgrade with Custom VSD GUI password(METROAE-454)
-* Apply VSD Custom Branding for patch upgrades(METROAE-469)
-* Fixed validate certs in vsd-deploy for OpenStack(METRO-464)
-* Removed failure_report_path from vsc-health and group_vars/all(METROAE-483)
-* Removed redundant known_hosts in vsc-health & vsd-health(METROAE-482)
-* Fixed incorrect smtp.user and smtp.port specifications for portal(METROAE-496)
-* Fixed VSTAT VSC health check to look for correct VSDs when using stats out configuration
-* Reset vsd_sa_or_ha internal flag to sa before doing stats out VSDs upgrade
-* Removed multiple standalone VSC upgrade feature (METROAE-418)
-* Removed redundant checks in VSTAT health(METROAE-508)
-* Allow VSD Decoupling to finish before check status(METROAE-522)
-* Removed redundant debug statements in VSTAT health (METROAE-517)
-* Removed redundant debug statements in vstat-destroy (METROAE-518)
-* Removed redundant debug statements in vsd-services-stop (METROAE-519)
-* Check for ejabberd license expiry (METROAE-505)
-=======
 * Install NUH without VSD on VCenter (METROAE-523)
->>>>>>> origin/dev
+* Check for ejabberd license expiry (METROAE-505)
 
 ## Test Matrix
 
