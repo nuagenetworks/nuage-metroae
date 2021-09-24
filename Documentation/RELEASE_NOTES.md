@@ -14,6 +14,7 @@
 
 * Install NUH without VSD on VCenter (METROAE-523)
 * Upgrade VSTATS if VSD GUI password has changed (METROAE-533)
+* Fixing message issue for docker pull(METROAE-527)
 
 ## Test Matrix
 
