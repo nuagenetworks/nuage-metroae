@@ -1,6 +1,6 @@
 # Nuage Networks Metro Automation Engine (MetroAE)
 
-Version: 4.5.0
+Version: 4.6.0
 
 MetroAE is an automation engine that can be used to
 
@@ -34,6 +34,7 @@ File name | Description
 [VSD_SERVICES](Documentation/VSD_SERVICES.md) | Using MetroAE to control VSD Services during maintenance
 [VSD_ROLLBACK_RESTORE](Documentation/VSD_ROLLBACK_RESTORE.md)| Roll Back or Restore VSD to original version outside normal upgrade path
 [VSD_CLUSTER_FAILOVER](Documentation/VSD_CLUSTER_FAILOVER.md) | Managing VSD cluster failover and failback
+[VSD_DISABLED_INTERFACE](Documentation/VSD_DISABLED_INTERFACE.md) | Configure MetroAE to bring up VSD on vCenter with interfaces disabled
 [NSGV_BOOTSTRAP](Documentation/NSGV_BOOTSTRAP.md) | Using MetroAE to bootstrap NSGv components
 [SD-WAN_PORTAL](Documentation/SD-WAN_PORTAL.md) | Deploying SD-WAN portal using MetroAE
 [AWS](Documentation/AWS.md) | Using MetroAE to deploy on Amazon Web Services (AWS)
