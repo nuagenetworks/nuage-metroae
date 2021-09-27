@@ -12,18 +12,6 @@
 
 ### Resolved Issues
 
-* Added a task to check existence of vsd migration script during upgrade (METROAE-306)
-* Fixed issue with installing required libvirt libraries on target host (METROAE-447)
-* VSD inplace upgrade should unmount the ISO after upgrade (METROAE-449)
-* Fix stats out upgrade for hardened Stats-out VSD nodes (METROAE-450)
-* Fix VSD Standby nodes inplace upgrade (METROAE-452)
-* Added fix for DNS destroy uses inventory_hostname instead of vmname(METROAE-405)
-* Upgraded ansible version and packages to remove depandabot alerts (METROAE-401)
-* Fixed Upgrade with Custom VSD GUI password(METROAE-454)
-* Apply VSD Custom Branding for patch upgrades(METROAE-469)
-* Fixed validate certs in vsd-deploy for OpenStack(METRO-464)
-* Removed redundant known_hosts in vsc-health & vsd-health(METROAE-482)
-* Fixed incorrect smtp.user and smtp.port specifications for portal(METROAE-496)
 * Added support install of SD-WAN portal without the SMTP address(METROAE-492)
 * Install NUH without VSD on VCenter (METROAE-523)
 * Upgrade VSTATS if VSD GUI password has changed (METROAE-533)
