@@ -359,7 +359,7 @@
             data_group_params: " -d {{ groups['data_vstats'][0] }},{{ groups['data_vstats'][1] }},{{ groups['data_vstats'][2] }}"
           when: stats_out | default(false)
 
-        - name: Execute VSTAT cluster script on standalone or clustered vsds
+        - name: Execute VSTAT cluster script on standalone or clustered vsds (ignoring errors)
           command: /opt/vsd/vsd-es-cluster-config.sh -e {{ groups['vstats'][0] }},{{ groups['vstats'][1] }},{{ groups['vstats'][2] }}{{ data_group_params | default('') }}
           environment:
             SSHPASS: "{{ vstat_default_password }}"
@@ -369,6 +369,13 @@
           delay: 10
           register: result
           until: result.rc == 0 or result.stdout is search('may be running elasticsearch already')
+          ignore_errors: True
+
+        - name: Assert that cluster script was successful
+          assert:
+            that: result.stdout is search('may be running elasticsearch already')
+            msg: "Cluster script may not have been successfully executed. Check the execution output below for more details. {{ result.stdout }}"
+          when: groups['vstats'] is defined and result.rc != 0
 
         - name: Execute VSTAT cluster script on standalone or clustered vsds for primary vstats
           command: /opt/vsd/vsd-es-cluster-config.sh -e {{ groups['primary_vstats'][0] }},{{ groups['primary_vstats'][1] }},{{ groups['primary_vstats'][2] }}
@@ -376,6 +383,17 @@
             SSHPASS: "{{ vstat_default_password }}"
           no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
           when: groups['primary_vstats'] is defined and active
+          retries: 3
+          delay: 10
+          register: result
+          until: result.rc == 0 or result.stdout is search('may be running elasticsearch already')
+          ignore_errors: True
+
+        - name: Assert that primary cluster script was successful
+          assert:
+            that: result.stdout is search('may be running elasticsearch already')
+            msg: "Cluster script may not have been successfully executed. Check the execution output below for more details. {{ result.stdout }}"
+          when: groups['primary_vstats'] is defined and active and result.rc != 0
 
         - name: Execute VSTAT cluster script on standalone or clustered vsds for backup vstats
           command: /opt/vsd/vsd-es-cluster-config.sh -e {{ groups['backup_vstats'][0] }},{{ groups['backup_vstats'][1] }},{{ groups['backup_vstats'][2] }}
@@ -383,6 +401,17 @@
             SSHPASS: "{{ vstat_default_password }}"
           when: groups['backup_vstats'] is defined and not active
           no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
+          retries: 3
+          delay: 10
+          register: result
+          until: result.rc == 0 or result.stdout is search('may be running elasticsearch already')
+          ignore_errors: True
+
+        - name: Assert that backup cluster script was successful
+          assert:
+            that: result.stdout is search('may be running elasticsearch already')
+            msg: "Cluster script may not have been successfully executed. Check the execution output below for more details. {{ result.stdout }}"
+          when: groups['backup_vstats'] is defined and not active and result.rc != 0
 
         when: vstat_sa_or_ha is match('ha')
         run_once: True
@@ -393,6 +422,16 @@
         {{ 'no' if hostvars[vsd_node1_hostname].vsd_custom_username | default(vsd_custom_username | default(vsd_default_username)) == 'root' else 'yes' }}
       vars:
         ansible_become_pass: "{{ hostvars[vsd_node1_hostname].vsd_custom_password | default(vsd_custom_password | default(vsd_default_password)) }}"
+
+  - name: Update elasticsearch data path
+    lineinfile:
+      path: /etc/elasticsearch/elasticsearch.yml
+      line: "path.data: {{ extra_disk_mount_point }}/elasticsearch"
+      regexp: 'path.data:'
+    when:
+      - add_extra_disk | default(False)
+      - extra_disk_mount_point | default("/var/lib/elasticsearch/") is not match("/var/lib/elasticsearch/")
+    remote_user: "{{ vstat_default_username }}"
 
   - name: Execute yum update for vstat
     include_role:

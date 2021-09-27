@@ -123,9 +123,10 @@
           vsd_ran_rtt_test: true
 
       when:
-        - inventory_hostname == first_cluster_node_to_install
+        - inventory_hostname == first_cluster_node_to_install | default("")
         - not nuage_upgrade | default(False)
         - vsd_run_cluster_rtt_test | default(False)
+        - not stats_only_vm | default(False)
 
     when: vsd_sa_or_ha is match('ha')
 
@@ -492,7 +493,6 @@
   when:
     - vstats is defined
     - not skip_vsd_deploy
-    - target_server_type is match("nuagex")
 
 - name: Install statistics for stats-out VSDs (Can take 20 minutes)
   command: /opt/vsd/install.sh -t t -y

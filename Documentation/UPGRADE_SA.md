@@ -134,8 +134,13 @@ The following workflows will upgrade each component in individual steps.  The st
      The upgrade flag is set to complete.
 
      **Troubleshooting**: If you experience a failure, you can re-execute the command.
+5. Apply VSD license (if needed)
+     
+     `metroae vsd license`
 
-5. Log into the VSD and verify the new version.
+     The VSD license will be applied.
+     
+6. Log into the VSD and verify the new version.
 
 ### Upgrade VSC
 

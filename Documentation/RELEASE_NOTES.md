@@ -2,37 +2,18 @@
 
 ## Release info
 
-* MetroAE Version 4.6.0
+* MetroAE Version 4.6.1
 * Nuage Release Alignment 20.10
-* Date of Release TBD
+* Date of Release 16-September-2021
 
 ## Release Contents
 
 ### Feature Enhancements
 
-* Allow custom configuration of RAM, CPU and Memory for VCenter (METROAE-433)
-* Added support for extra ES disk on vmware (METROAE-341)
-* Add Support for Single-Step VSD Stats-out Upgrade and Patch (METROAE-470)
-* Added support for different disk provisioning type for VSD and VSTAT (METROAE-453)
-* Added support for blocking iptables VSC entries during upgrade (METROAE-427) 
-* Add support for BGP interface for VSC (METROAE-484)
-* Added support for deploying NUH in VMware - requires Ansible 2.9.7 or greater and NUH version 20.10.5 or newer (METROAE-435)
-* Added support for multiple webfilters deployment (METROAE-458)
-
 ### Resolved Issues
 
-* Added a task to check existence of vsd migration script during upgrade (METROAE-306)
-* Fixed issue with installing required libvirt libraries on target host (METROAE-447)
-* VSD inplace upgrade should unmount the ISO after upgrade (METROAE-449)
-* Fix stats out upgrade for hardened Stats-out VSD nodes (METROAE-450)
-* Fix VSD Standby nodes inplace upgrade (METROAE-452)
-* Added fix for DNS destroy uses inventory_hostname instead of vmname(METROAE-405)
-* Upgraded ansible version and packages to remove depandabot alerts (METROAE-401)
-* Fixed Upgrade with Custom VSD GUI password(METROAE-454)
-* Apply VSD Custom Branding for patch upgrades(METROAE-469)
-* Fixed validate certs in vsd-deploy for OpenStack(METRO-464)
-* Removed redundant known_hosts in vsc-health & vsd-health(METROAE-482)
-* Fixed incorrect smtp.user and smtp.port specifications for portal(METROAE-496)
+* Install NUH without VSD on VCenter (METROAE-523)
+* Upgrade VSTATS if VSD GUI password has changed (METROAE-533)
 
 ## Test Matrix
 

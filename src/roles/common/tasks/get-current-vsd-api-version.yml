@@ -1,0 +1,20 @@
+- name: Get supported API versions
+  uri:
+    url: "{{ vsd_auth.api_url }}/nuage"
+    method: GET
+    user: "{{ vsd_auth.username }}"
+    password: "{{ vsd_auth.password }}"
+    validate_certs: False
+  register: supported_api_versions
+  delegate_to: localhost
+  no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
+  retries: 5
+  delay: 20
+  until: supported_api_versions.status == 200
+
+- name: Get current API version
+  set_fact:
+    current_api_version: "{{ item.url | regex_search('[^/]*$') }}"
+  with_items: "{{ supported_api_versions.json.versions }}"
+  when: "'CURRENT' in item.status"
+  no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
