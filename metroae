@@ -677,42 +677,85 @@ function destroy {
 
 function pull {
     debug ${FUNCNAME[0]}
-    if [[ ! -z $1 ]]; then
-        MAX_CONTAINER_VERSION=$1
-    fi
-    debug "${FUNCNAME[0]}: MAX_CONTAINER_VERSION: $MAX_CONTAINER_VERSION"
+    if [[ ! -z $1 ]] && [[ $1 == "--repo" ]]; then
+        REPO=$2
+        debug "${FUNCNAME[0]}: REPO: $REPO"
+        
+        set -e
 
-    set -e
+        echo ""
+        write_to_screen_and_script_log ">>> Pulling the MetroAE container image from Docker hub"
+        echo ""
 
-    echo ""
-    write_to_screen_and_script_log ">>> Pulling the MetroAE container image from Docker hub"
-    echo ""
-    if [[ -f $SCRIPT_LOG_FILE ]]; then
-        if [ -w "$SCRIPT_LOG_FILE" ]; then
-            debug "${FUNCNAME[0]}: Script log is writable"
-            sudo docker pull $METRO_AE_IMAGE:$MAX_CONTAINER_VERSION | tee -a $SCRIPT_LOG_FILE
-        else
-            if [ -z $METROAE_WRITE_WARNING_PRINTED ]; then
-                print_write_permission_warning
-                METROAE_WRITE_WARNING_PRINTED=1
+        if [[ -f $SCRIPT_LOG_FILE ]]; then
+            if [ -w "$SCRIPT_LOG_FILE" ]; then
+                debug "${FUNCNAME[0]}: Script log is writable"
+                sudo docker pull $REPO | tee -a $SCRIPT_LOG_FILE
+                ((status=$?+$PIPESTATUS))
+            else
+                if [ -z $METROAE_WRITE_WARNING_PRINTED ]; then
+                    print_write_permission_warning
+                    METROAE_WRITE_WARNING_PRINTED=1
+                    status=$?
+                fi
+                debug "${FUNCNAME[0]}: Script log is not writable"
+                sudo docker pull $REPO
+                status=$?
             fi
-            debug "${FUNCNAME[0]}: Script log is not writable"
-            sudo docker pull $METRO_AE_IMAGE:$MAX_CONTAINER_VERSION
+        else
+            debug "${FUNCNAME[0]}: Script log is not found"
+            sudo docker pull $REPO
+            status=$?
         fi
-    else
-        debug "${FUNCNAME[0]}: Script log is not found"
-        sudo docker pull $METRO_AE_IMAGE:$MAX_CONTAINER_VERSION
-    fi
 
-    status=$?
-    if [[ $status -ne 0 ]]; then
-        write_to_screen_and_script_log "Attempt to pull the $MAX_CONTAINER_VERSION MetroAE container image failed. Quitting."
-        exit 1
+        if [[ $status -ne 0 ]]; then
+            write_to_screen_and_script_log "Attempt to pull the $REPO MetroAE container image failed. Quitting."
+            exit 1
+        else
+            write_to_screen_and_script_log "Successfully pulled the MetroAE container image from specified repository."
+        fi
+        set -e
     else
-        write_to_screen_and_script_log "Successfully pulled the MetroAE container image from Docker hub"
-    fi
-    set -e
+        if [[ ! -z $1 ]]; then
+            MAX_CONTAINER_VERSION=$1
+            debug "${FUNCNAME[0]}: MAX_CONTAINER_VERSION: $MAX_CONTAINER_VERSION"
+        fi
 
+        set -e
+
+        echo ""
+        write_to_screen_and_script_log ">>> Pulling the MetroAE container image from Docker hub"
+        echo ""
+        
+        if [[ -f $SCRIPT_LOG_FILE ]]; then
+            if [ -w "$SCRIPT_LOG_FILE" ]; then
+                debug "${FUNCNAME[0]}: Script log is writable"
+                sudo docker pull $METRO_AE_IMAGE:$MAX_CONTAINER_VERSION | tee -a $SCRIPT_LOG_FILE
+                ((status=$?+$PIPESTATUS))
+            else
+                if [ -z $METROAE_WRITE_WARNING_PRINTED ]; then
+                    print_write_permission_warning
+                    METROAE_WRITE_WARNING_PRINTED=1
+                    status=$?
+                fi
+                debug "${FUNCNAME[0]}: Script log is not writable"
+                sudo docker pull $METRO_AE_IMAGE:$MAX_CONTAINER_VERSION
+                status=$?
+            fi
+        else
+            debug "${FUNCNAME[0]}: Script log is not found"
+            sudo docker pull $METRO_AE_IMAGE:$MAX_CONTAINER_VERSION
+            status=$?
+        fi
+
+        if [[ $status -ne 0 ]]; then
+            write_to_screen_and_script_log "Attempt to pull the $MAX_CONTAINER_VERSION MetroAE container image failed. Quitting."
+            exit 1
+        else
+            write_to_screen_and_script_log "Successfully pulled the MetroAE container image from Docker hub"
+        fi
+        set -e
+    fi
     return $status
 }
 
@@ -2678,8 +2721,12 @@ function container_main {
             if [[ -z $2 ]]; then
                 pull
             else
-                pull $2
                 shift
+                num_params=$#
+                pull "$@"
+                for (( i=1; i<$num_params; i+=1 )); do
+                    shift
+                done
             fi
             shift
             ;;
