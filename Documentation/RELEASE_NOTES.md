@@ -2,14 +2,14 @@
 
 ## Release info
 
-* MetroAE Version 4.6.1
+* MetroAE Version 4.7.0
 * Nuage Release Alignment 20.10
 * Date of Release 16-September-2021
 
 ## Release Contents
 
 ### Feature Enhancements
-
+* Predeploy NSGV without vsd license file (METROAE-497)
 ### Resolved Issues
 
 * Install NUH without VSD on VCenter (METROAE-523)
