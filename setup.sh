@@ -264,6 +264,14 @@ pip_install() {
 }
 
 ###############################################################################
+# Creates virtual environment 
+###############################################################################
+setup_venv() {
+    python3 -m venv metroae-venv
+    . metroae-venv/bin/activate
+}
+
+###############################################################################
 # Setup tab-completion
 ###############################################################################
 function setup_tab_completion() {
@@ -318,6 +326,9 @@ function main() {
 
   # apt packages
   apt_install
+
+  # virtual environment setup
+  setup_venv
 
   # pip packages
   pip_install
