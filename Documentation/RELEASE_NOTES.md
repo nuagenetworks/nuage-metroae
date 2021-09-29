@@ -4,11 +4,13 @@
 
 * MetroAE Version 4.6.1
 * Nuage Release Alignment 20.10
-* Date of Release 16-September-2021
+* Date of Release 29-September-2021
 
 ## Release Contents
 
 ### Feature Enhancements
+
+* None
 
 ### Resolved Issues
 
