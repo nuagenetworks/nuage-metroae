@@ -3,6 +3,7 @@
 import vspk.v5_0 as VSPK
 import subprocess
 from time import sleep
+import ipaddress
 
 from ansible.module_utils.basic import AnsibleModule
 
@@ -74,6 +75,9 @@ options:
         - vsc_infra_profile_name
         - firstController
         - secondController
+        - static_ip
+        - static_gateway
+        - static_dns
       - access_ports:
         - access_port.name
         - access_port.physicalName
@@ -141,6 +145,9 @@ EXAMPLES = '''
                 - vsc_infra_profile_name: vsc_infra
                 - firstController: 192.168.1.100
                 - secondController: 192.168.1.101
+                - static_ip: 192.168.2.2/24
+                - static_gateway: 192.168.2.1
+                - static_dns: 8.8.8.8
         access_ports:
             - name: port2_access
               physicalName: port2
@@ -292,10 +299,21 @@ def create_nsgv_ports(module, nsg_temp, csproot, uplinks):
                 port_temp.create_child(vlan_temp)
 
                 if int(vlan['vlan_value']) in uplinks:
-                    uplink = VSPK.NUUplinkConnection()
-                    uplink.mode = "Dynamic"
-                    uplink.role = "PRIMARY"
-                    vlan_temp.create_child(uplink)
+                    if vlan['static_ip'] == None:
+                        uplink = VSPK.NUUplinkConnection()
+                        uplink.mode = "Dynamic"
+                        uplink.role = "PRIMARY"
+                        vlan_temp.create_child(uplink)
+                    else:
+                        ip = ipaddress.IPv4Interface(vlan["static_ip"])
+                        uplink = VSPK.NUUplinkConnection()
+                        uplink.mode = "Static"
+                        uplink.address = ip.ip.compressed
+                        uplink.netmask =  ip.netmask.compressed
+                        uplink.gateway = vlan["static_gateway"]
+                        uplink.dnsaddress = vlan["static_dns"]
+                        uplink.role = "PRIMARY"
+                        vlan_temp.create_child(uplink)
         else:
             vsc_params = module.params['zfb_vsc_infra']
             vsc_infra = create_vsc_infra_profile(module, csproot, vsc_params)
