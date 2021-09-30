@@ -677,6 +677,7 @@ function destroy {
 
 function pull {
     debug ${FUNCNAME[0]}
+    set +e
     if [[ ! -z $1 ]]; then
         if [ $1 == "--repo" ]; then
             REPO=$2
@@ -689,16 +690,12 @@ function pull {
             debug "${FUNCNAME[0]}: MAX_CONTAINER_VERSION: $MAX_CONTAINER_VERSION"
             debug "${FUNCNAME[0]}: MAX_AE_IMAGE: $MAX_AE_IMAGE"
 
-            set +e
-
             echo ""
             write_to_screen_and_script_log ">>> Pulling the MetroAE container image from $METRO_AE_IMAGE"
             echo ""
         else
             MAX_CONTAINER_VERSION=$1
             debug "${FUNCNAME[0]}: MAX_CONTAINER_VERSION: $MAX_CONTAINER_VERSION"
-
-            set +e
 
             echo ""
             write_to_screen_and_script_log ">>> Pulling the MetroAE container image from Docker hub"
@@ -729,6 +726,7 @@ function pull {
 
     if [[ $status -ne 0 ]]; then
         write_to_screen_and_script_log "Attempt to pull the $METRO_AE_IMAGE:$MAX_CONTAINER_VERSION MetroAE container image failed. Quitting."
+        set -e
         exit 1
     else
         if [ $REPO = "" ]; then
