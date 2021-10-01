@@ -4,16 +4,19 @@
 
 * MetroAE Version 4.6.1
 * Nuage Release Alignment 20.10
-* Date of Release 16-September-2021
+* Date of Release 29-September-2021
 
 ## Release Contents
 
 ### Feature Enhancements
 
+* None
+
 ### Resolved Issues
 
 * Install NUH without VSD on VCenter (METROAE-523)
 * Upgrade VSTATS if VSD GUI password has changed (METROAE-533)
+* Apply VSD license during upgrade (MetroAE-528)
 
 ## Test Matrix
 
