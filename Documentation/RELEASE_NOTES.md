@@ -17,6 +17,7 @@
 * Install NUH without VSD on VCenter (METROAE-523)
 * Upgrade VSTATS if VSD GUI password has changed (METROAE-533)
 * Apply VSD license during upgrade (MetroAE-528)
+* Fixed Check passwordless ssh from metro host to hypervisors and components ( METROAE-520)
 
 ## Test Matrix
 
