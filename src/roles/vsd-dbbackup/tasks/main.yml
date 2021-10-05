@@ -104,9 +104,6 @@
     shell: "{{ item }}"         # noqa 305
     with_items: "{{ purge_cmd }}"
 
-  # - name: Check VSD database before upgrade
-  #   shell: ./pre-upgrade-backup.sh -s
-
   - name: Copy the VSD migration script ISO to VSD's temp directory
     copy: src={{ vsd_migration_iso_path }}/{{ vsd_migration_iso_file_name }}
         dest=/tmp/
@@ -150,6 +147,9 @@
       that:
         - "'.iso' in mount_file.stdout"
       msg: "Did not find iso file in mount path"
+
+  - name: Check VSD database before upgrade
+    shell: /media/CDROM/pre-upgrade-backup.sh -s
 
   - name: Run backup script from mount location
     shell: "{{ backup_cmd }}"   # noqa 305
