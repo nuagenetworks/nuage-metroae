@@ -348,25 +348,11 @@
   - block:
 
     - name: Verify that JMS gateway is reachable on Master Node
-      uri:
-        url: https://{{ jms_master_hostname }}:61619
-        method: GET
-        user: "{{ vsd_auth.username }}"
-        password: "{{ vsd_auth.password }}"
-        status_code: 200
-        validate_certs: False
-      until: webresult.status == 200
+      wait_for:
+        host: {{ jms_master_hostname }}
+        port: 61619
       retries: 15
       delay: 60
-      register: webresult
-      delegate_to: localhost
-
-    - name: Write JMS Gateway accessibility separator to report file
-      nuage_append: filename="{{ report_path }}" text="-----Results of verifying JMS gateway accessibility from master node-----\n"
-      delegate_to: localhost
-
-    - name: Write web interface result
-      nuage_append: filename="{{ report_path }}" text="{{ webresult  | to_nice_json }}\n"
       delegate_to: localhost
 
     when: jms_master_hostname is defined and jms_master_hostname
