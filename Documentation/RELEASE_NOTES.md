@@ -10,13 +10,11 @@
 
 ### Feature Enhancements
 
-* None
+* Added support for hardening Elasticsearch nodes (METROAE-486)
 
 ### Resolved Issues
 
-* Install NUH without VSD on VCenter (METROAE-523)
-* Upgrade VSTATS if VSD GUI password has changed (METROAE-533)
-* Apply VSD license during upgrade (MetroAE-528)
+* None
 
 ## Test Matrix
 
