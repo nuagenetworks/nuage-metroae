@@ -1,6 +1,6 @@
 - name: Clean known_hosts of VSTATs (ignoring errors)
   known_hosts:
-    name: "{{ mgmt_ip }}"
+    name: "{{ hostname }}"
     state: absent
   delegate_to: localhost
   no_log: True
@@ -375,7 +375,7 @@
           assert:
             that: result.stdout is search('may be running elasticsearch already')
             msg: "Cluster script may not have been successfully executed. Check the execution output below for more details. {{ result.stdout }}"
-          when: result.rc != 0
+          when: groups['vstats'] is defined and result.rc != 0
 
         - name: Execute VSTAT cluster script on standalone or clustered vsds for primary vstats
           command: /opt/vsd/vsd-es-cluster-config.sh -e {{ groups['primary_vstats'][0] }},{{ groups['primary_vstats'][1] }},{{ groups['primary_vstats'][2] }}
@@ -383,6 +383,17 @@
             SSHPASS: "{{ vstat_default_password }}"
           no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
           when: groups['primary_vstats'] is defined and active
+          retries: 3
+          delay: 10
+          register: result
+          until: result.rc == 0 or result.stdout is search('may be running elasticsearch already')
+          ignore_errors: True
+
+        - name: Assert that primary cluster script was successful
+          assert:
+            that: result.stdout is search('may be running elasticsearch already')
+            msg: "Cluster script may not have been successfully executed. Check the execution output below for more details. {{ result.stdout }}"
+          when: groups['primary_vstats'] is defined and active and result.rc != 0
 
         - name: Execute VSTAT cluster script on standalone or clustered vsds for backup vstats
           command: /opt/vsd/vsd-es-cluster-config.sh -e {{ groups['backup_vstats'][0] }},{{ groups['backup_vstats'][1] }},{{ groups['backup_vstats'][2] }}
@@ -390,6 +401,17 @@
             SSHPASS: "{{ vstat_default_password }}"
           when: groups['backup_vstats'] is defined and not active
           no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
+          retries: 3
+          delay: 10
+          register: result
+          until: result.rc == 0 or result.stdout is search('may be running elasticsearch already')
+          ignore_errors: True
+
+        - name: Assert that backup cluster script was successful
+          assert:
+            that: result.stdout is search('may be running elasticsearch already')
+            msg: "Cluster script may not have been successfully executed. Check the execution output below for more details. {{ result.stdout }}"
+          when: groups['backup_vstats'] is defined and not active and result.rc != 0
 
         when: vstat_sa_or_ha is match('ha')
         run_once: True
