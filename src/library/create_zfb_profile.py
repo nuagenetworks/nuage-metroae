@@ -27,7 +27,7 @@ options:
   vsd_license_file:
     description:
       - Set path to VSD license file.
-    required:True
+    required:False
   vsd_auth:
     description:
       - Credentials for accessing VSD.  Attributes:
@@ -426,7 +426,7 @@ def main():
             required=False,
             type='str'),
         vsd_license_file=dict(
-            required=True,
+            required=False,
             type='str'),
         vsd_auth=dict(
             required=True,
@@ -463,12 +463,12 @@ def main():
 
     # Get VSD license
     vsd_license = ""
-    try:
-        with open(vsd_license_file, 'r') as lf:
-            vsd_license = lf.read()
-    except Exception as e:
-        module.fail_json(msg="ERROR: Failure reading file: %s" % e)
-        return
+    if vsd_license_file != '':
+        try:
+            with open(vsd_license_file, 'r') as lf:
+                vsd_license = lf.read()
+        except Exception as e:
+            module.fail_json(msg="ERROR: Failure reading file: %s" % e)
 
     # Create a session as csp user
     try:
@@ -484,8 +484,9 @@ def main():
     nsg_already_configured = False
 
     # Create nsg templates and iso file
-    if (not is_license_already_installed(csproot, vsd_license)):
-        install_license(csproot, vsd_license)
+    if vsd_license_file != '':
+        if (not is_license_already_installed(csproot, vsd_license)):
+            install_license(csproot, vsd_license)
 
     if has_nsg_configuration(module, csproot):
         nsg_already_configured = True
