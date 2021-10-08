@@ -14,7 +14,7 @@
 
 ### Resolved Issues
 
-* None
+* Replacing known_hosts module mgmt_ip to hostname (METROAE-481)
 
 ## Test Matrix
 
