@@ -14,6 +14,7 @@
 
 ### Resolved Issues
 
+* Fixed yum lock timeout issue when installing packages in KVM (METROAE-507)
 * Replacing known_hosts module mgmt_ip to hostname (METROAE-481)
 
 ## Test Matrix
