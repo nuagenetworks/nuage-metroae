@@ -4,16 +4,19 @@
 
 * MetroAE Version 4.7.0
 * Nuage Release Alignment 20.10
-* Date of Release 16-September-2021
+* Date of Release 29-September-2021
 
 ## Release Contents
 
 ### Feature Enhancements
+
 * Predeploy NSGV without vsd license file (METROAE-497)
+* Added support for hardening Elasticsearch nodes (METROAE-486)
+
 ### Resolved Issues
 
-* Install NUH without VSD on VCenter (METROAE-523)
-* Upgrade VSTATS if VSD GUI password has changed (METROAE-533)
+* Fixed yum lock timeout issue when installing packages in KVM (METROAE-507)
+* Replacing known_hosts module mgmt_ip to hostname (METROAE-481)
 
 ## Test Matrix
 
