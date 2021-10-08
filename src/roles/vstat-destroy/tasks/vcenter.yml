@@ -25,8 +25,6 @@
   ignore_errors: yes
   when: vstat_vm_folder is succeeded
 
-- debug: var=vstat_vm_facts verbosity=1
-
 - name: Check for exceptions in VSTAT Vm facts
   fail: msg="Exception found {{ vstat_vm_facts.exception }}"
   when: vstat_vm_facts.exception is defined
@@ -42,15 +40,11 @@
     delegate_to: localhost
     register: vm_info
 
-  - debug: var=vm_info
-
   - name: Set uuid fact
     set_fact:
       uuid: "{{ item.uuid }}"
     when: item.guest_name == vm_name
     with_items: "{{ vm_info.virtual_machines }}"
-
-  - debug: var=uuid
 
   - name: Turn off autostart
     connection: local
