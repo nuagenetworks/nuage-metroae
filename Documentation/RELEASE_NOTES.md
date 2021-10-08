@@ -17,6 +17,7 @@
 * Install NUH without VSD on VCenter (METROAE-523)
 * Upgrade VSTATS if VSD GUI password has changed (METROAE-533)
 * Apply VSD license during upgrade (MetroAE-528)
+* Remove unnecessary debug lines from vsc-health (MetroAE-541)
 
 ## Test Matrix
 
