@@ -15,6 +15,7 @@
 
 ### Resolved Issues
 
+* Check for ejabberd license expiry (METROAE-505)
 * Added support install of SD-WAN portal without the SMTP address(METROAE-492)
 * Fixed yum lock timeout issue when installing packages in KVM (METROAE-507)
 * Replacing known_hosts module mgmt_ip to hostname (METROAE-481)
