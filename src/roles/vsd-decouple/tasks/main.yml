@@ -63,9 +63,12 @@
     pause:
       seconds: 10
 
-  - name: Execute list_p1db command on node3
+  - name: Wait until VSD is decoupled
     shell: "{{ p1db_cmd }}"  # noqa 305
     register: list_p1db_output
+    retries: 6
+    delay: 10
+    until: list_p1db_output.stdout == ""
 
   remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
   become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
