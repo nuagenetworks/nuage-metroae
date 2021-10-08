@@ -153,12 +153,12 @@
       path: "/media/CDROM/"
       pattern: "pre-upgrade-backup.sh"
     register: preupgrade_script
-    when: vsd_preupgrade_db_script_path is match("/media/CDROM")
+    when: vsd_preupgrade_db_check_script_path is match("/media/CDROM")
 
   - block:
 
     - name: Check VSD database before upgrade
-      shell: "{{ vsd_preupgrade_db_script_path }}/pre-upgrade-backup.sh -s"
+      shell: "{{ vsd_preupgrade_db_check_script_path }}/pre-upgrade-backup.sh -s"
       register: preupgrade_db_check
 
     - name: Assert that db preupgrade check was successful
@@ -166,7 +166,7 @@
         that: "'Successfully executed pre-upgrade-backup script' in preupgrade_db_check.stdout"
         msg: "The preupgrade database check was not successfully executed. Please check /opt/vsd/logs/upgrade_issue.log for more details."
 
-    when: preupgrade_script.matched == 1 or vsd_preupgrade_db_script_path is not match("/media/CDROM")
+    when: preupgrade_script.matched == 1 or vsd_preupgrade_db_check_script_path is not match("/media/CDROM")
 
   - name: Run backup script from mount location
     shell: "{{ backup_cmd }}"   # noqa 305
