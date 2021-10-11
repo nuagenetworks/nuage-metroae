@@ -19,6 +19,7 @@
 * Added support install of SD-WAN portal without the SMTP address(METROAE-492)
 * Fixed yum lock timeout issue when installing packages in KVM (METROAE-507)
 * Replacing known_hosts module mgmt_ip to hostname (METROAE-481)
+* Remove unnecessary debug lines from vsc-health (MetroAE-541)
 
 ## Test Matrix
 
