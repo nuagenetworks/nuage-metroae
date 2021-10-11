@@ -1,0 +1,31 @@
+---
+- hosts: localhost
+  gather_facts: no
+  tasks:
+    - name: Prompt for destroy confirmation
+      include_role:
+        name: common
+        tasks_from: prompt-before-destroy
+      vars:
+        destroy_components_name: VSD
+
+- hosts: vsds
+  gather_facts: no
+  serial: 1
+  pre_tasks:
+    - name: Lets run VSD destroy hooks
+      include_role:
+        name: hooks
+        tasks_from: main
+      vars:
+        - hooks_file_path: "{{ hook }}"
+        - hook_location:
+          - vsd_destroy
+      loop: "{{ hooks | default([]) }}"
+      loop_control:
+        loop_var: hook
+  roles:
+    - vsd-destroy
+  vars:
+    vm_name: "{{ vmname }}"
+    vm_name: "{{ upgrade_vmname }}"

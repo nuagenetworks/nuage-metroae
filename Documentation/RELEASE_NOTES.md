@@ -20,6 +20,7 @@
 * Fixed yum lock timeout issue when installing packages in KVM (METROAE-507)
 * Replacing known_hosts module mgmt_ip to hostname (METROAE-481)
 * Remove unnecessary debug lines from vsc-health (MetroAE-541)
+* Fixing vsd-destroy to destroy old and new VMs (METROAE-504)
 
 ## Test Matrix
 
