@@ -149,28 +149,11 @@
         - "'.iso' in mount_file.stdout"
       msg: "Did not find iso file in mount path"
 
-  - block:
-
-    - name: Find database pre-upgrade backup script
-      include_role:
-        name: common
-        tasks_from: find-file.yml
-      vars:
-        dir_name: "{{ vsd_preupgrade_db_check_script_path }}"
-        pattern: "pre-upgrade-backup.*"
-      delegate_to: localhost
-
-    - name: VSD pre upgrade backup script location
-      set_fact:
-        image_path: "{{ file_path }}"
-        image_file_name: "{{ file_name }}"
-
-    - name: Copy and send preupgrade check script to vsd
-      copy:
-        src: "{{ image_path }}/{{ image_name }}"
-        dest: "/media/CDROM/"
-      delegate_to: localhost
-
+  - name: Copy preupgrade database check script to vsd
+    copy:
+      src: "{{ vsd_preupgrade_db_check_script_path }}/pre-upgrade-backup.sh"
+      dest: "/media/CDROM/"
+    delegate_to: localhost
     when: vsd_preupgrade_db_check_script_path is defined
 
   - name: Check if database pre-upgrade script exists in migration ISO
