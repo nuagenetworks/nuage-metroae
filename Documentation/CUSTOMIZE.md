@@ -139,7 +139,7 @@ When installing or upgrading an active-standby, geo-redundant cluster, all 6 VSD
 You can use MetroAE to verify that your VSD setup has sufficient RTT performance. By default, the RTT performance test will run at the beginning of the VSD deploy step, prior to installing the VSD software. The parameters that you can use to control the operation of the test are available in 'common.yml':
 
 * `vsd_run_cluster_rtt_test` When true, run RTT tests between VSDs in a cluster or standby/active cluster, else skip the test
-* `vsd_ignore_errors_rtt_test` When true, continue metroae execution upon error and do not validate the RTT between VSDs in a cluster is less than max RTT, else stop metorae execution upon error
+* `vsd_ignore_errors_rtt_test` When true, continue MetroAE execution upon error and do not validate the RTT between VSDs in a cluster is less than max RTT, else stop MetroAE execution upon error
 * `vsd_max_cluster_rtt_msec` Maximum RTT in milliseconds between VSDs in a cluster
 * `vsd_max_active_standby_rtt_msec` Maximum RTT in milliseconds between Active and Standby VSDs
 
@@ -153,7 +153,7 @@ You can use MetroAE to verify that your VSD setup has sufficient disk performanc
 * `vsd_disk_performance_test_total_file_size` Sets the total size of created files for VSD disk performance test. For a valid measurement, the total file size must be larger than VSD RAM to minimize the effects of caching.
 * `vsd_disk_performance_test_minimum_threshold` Sets the minimum value for VSD disk performance test in IOPS
 * `vsd_disk_performance_test_max_time` Sets the duration of the VSD disk performance test in seconds
-* `vsd_ignore_disk_performance_test_errors` When true, continue metroae execution upon error and ignore the results of the VSD disk performance test, else stop metorae execution upon error
+* `vsd_ignore_disk_performance_test_errors` When true, continue MetroAE execution upon error and ignore the results of the VSD disk performance test, else stop MetroAE execution upon error
 
 You can skip the test, specify the total size of all the files used in the test, and modify the minimum threshold requirement in IOPS for the test. Note that to minimize the effects of file system caching, the total file size must exceed the total RAM on the VSD. If MetroAE finds that the test is enabled and the disk performance is below the threshold, an error will occur and installation will stop. The default values that are provided for the test are recommended for best VSD performance in most cases. Your specific situation may require different values or to skip the test entirely.
 
