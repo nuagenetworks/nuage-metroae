@@ -134,9 +134,28 @@ When installing or upgrading an active-standby, geo-redundant cluster, all 6 VSD
 
 `vstats.yml` contains the definition of the VSTATs (VSD Statistics) to be operated on in this deployment. This file should be present in your deployment only if you are specifying VSTATs. If not provided, no VSTATs will be operated on. This file is of yaml list type. If it contains exactly 3 VSTAT definitions, a cluster installation or upgrade will be executed. Any other number of VSTAT definitions will result in 1 or more stand-alone VSTATs being installed or upgraded.
 
+## VSD RTT Performance Testing
+
+You can use MetroAE to verify that your VSD setup has sufficient RTT performance. By default, the RTT performance test will run at the beginning of the VSD deploy step, prior to installing the VSD software. The parameters that you can use to control the operation of the test are available in 'common.yml':
+
+* `vsd_run_cluster_rtt_test` When true, run RTT tests between VSDs in a cluster or standby/active cluster, else skip the test
+* `vsd_ignore_errors_rtt_test` When true, continue MetroAE execution upon error and do not validate the RTT between VSDs in a cluster is less than max RTT, else stop MetroAE execution upon error
+* `vsd_max_cluster_rtt_msec` Maximum RTT in milliseconds between VSDs in a cluster
+* `vsd_max_active_standby_rtt_msec` Maximum RTT in milliseconds between Active and Standby VSDs
+
+In addition to the automatic execution that takes place in the VSD deploy step, you can run the VSD disk performance test at any time using `metroae vsd test rtt`.
+
 ## VSD Disk Performance Testing
 
-You can use MetroAE to verify that your VSD setup has sufficient disk performance (IOPS). By default, the disk performance test will run at the beginning of the VSD deploy step, prior to installing the VSD software. The parameters that you can use to control the operation of the test are available in 'common.yml'. You can skip the test, specify the total size of all the files used in the test, and modify the minimum threshold requirement in IOPS for the test. Note that to minimize the effects of file system caching, the total file size must exceed the total RAM on the VSD. If MetroAE finds that the test is enabled and the disk performance is below the threshold, an error will occur and installation will stop. The default values that are provided for the test are recommended for best VSD performance in most cases. Your specific situation may require different values or to skip the test entirely.
+You can use MetroAE to verify that your VSD setup has sufficient disk performance (IOPS). By default, the disk performance test will run at the beginning of the VSD deploy step, prior to installing the VSD software. The parameters that you can use to control the operation of the test are available in 'common.yml':
+
+* `vsd_run_disk_performance_test` Run the VSD disk performance test when true, else skip the test
+* `vsd_disk_performance_test_total_file_size` Sets the total size of created files for VSD disk performance test. For a valid measurement, the total file size must be larger than VSD RAM to minimize the effects of caching.
+* `vsd_disk_performance_test_minimum_threshold` Sets the minimum value for VSD disk performance test in IOPS
+* `vsd_disk_performance_test_max_time` Sets the duration of the VSD disk performance test in seconds
+* `vsd_ignore_disk_performance_test_errors` When true, continue MetroAE execution upon error and ignore the results of the VSD disk performance test, else stop MetroAE execution upon error
+
+You can skip the test, specify the total size of all the files used in the test, and modify the minimum threshold requirement in IOPS for the test. Note that to minimize the effects of file system caching, the total file size must exceed the total RAM on the VSD. If MetroAE finds that the test is enabled and the disk performance is below the threshold, an error will occur and installation will stop. The default values that are provided for the test are recommended for best VSD performance in most cases. Your specific situation may require different values or to skip the test entirely.
 
 In addition to the automatic execution that takes place in the VSD deploy step, you can run the VSD disk performance test at any time using `metroae vsd test disk`.
 
