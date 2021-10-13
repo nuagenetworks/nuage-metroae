@@ -1,5 +1,4 @@
-- name: Run when ejabberd license file is defined
-  block:
+- block:
 
   - name: Check that the ejabberdctl file exists
     stat:
@@ -10,59 +9,75 @@
     command: "/opt/vsd/install/install_ejabberd.sh -9 /opt/vsd/Packages -x {{ vsd_fqdn }}"
     when: not ejabberdctl_result.stat.exists
 
-  - name: Find the ejabberd base directory
-    command: find /opt/ejabberd/lib/ -type d -name "ejabberd_nuage*"
-    register: ejabberd_base_dir
+  - name: Run when ejabberd license file is defined
+    block:
 
-  - name: Backup the current license files for ejabberd
-    # noqa 303
-    command: >-
-      tar zcf orig_backup.tgz ejabberd.beam ejabberd_admin.beam ejabberd_c2s.beam
-      ejabberd_cluster.beam ejabberd_config.beam ejabberd_listener.beam ejabberd_sm.beam
-    args:
-      chdir: "{{ ejabberd_base_dir.stdout }}/ebin"
+    - name: Find the ejabberd base directory
+      command: find /opt/ejabberd/lib/ -type d -name "ejabberd_nuage*"
+      register: ejabberd_base_dir
 
-  - name: Copy new ejabberd license file to root folder on VSD
-    copy:
-      dest: "/root/"
-      src: "{{ vsd_ejabberd_license_file }}"
+    - name: Backup the current license files for ejabberd
+      # noqa 303
+      command: >-
+        tar zcf orig_backup.tgz ejabberd.beam ejabberd_admin.beam ejabberd_c2s.beam
+        ejabberd_cluster.beam ejabberd_config.beam ejabberd_listener.beam ejabberd_sm.beam
+      args:
+        chdir: "{{ ejabberd_base_dir.stdout }}/ebin"
 
-  - name: Untar the new ejabberd license file
-    # noqa 303
-    command: "tar zxf /root/{{ vsd_ejabberd_license_file | basename }}"
-    args:
-      chdir: "{{ ejabberd_base_dir.stdout }}/ebin"
+    - name: Copy new ejabberd license file to root folder on VSD
+      copy:
+        dest: "/root/"
+        src: "{{ vsd_ejabberd_license_file }}"
 
-  - name: Change ownership of licenses
-    # noqa 302
-    command: >-
-      chown ejabberd:hadoopusers ejabberd_license.beam ejabberd_cluster.beam
-      ejabberd_c2s.beam ejabberd.beam ejabberd_sm.beam ejabberd_router.beam ejabberd_listener.beam
-    args:
-      chdir: "{{ ejabberd_base_dir.stdout }}/ebin"
-    when: not(ejabberd_base_dir.stdout is search("3.2.13_5"))
+    - name: Untar the new ejabberd license file
+      # noqa 303
+      command: "tar zxf /root/{{ vsd_ejabberd_license_file | basename }}"
+      args:
+        chdir: "{{ ejabberd_base_dir.stdout }}/ebin"
 
-  - name: Change ownership of licenses for version 3.2.13_5
-    # noqa 302
-    command: >-
-      chown ejabberd:hadoopusers ejabberd_cluster.beam ejabberd_c2s.beam ejabberd.beam ejabberd_sm.beam ejabberd_router.beam ejabberd_listener.beam
-    args:
-      chdir: "{{ ejabberd_base_dir }}/ebin"
-    when: ejabberd_base_dir.stdout is search("3.2.13_5")
+    - name: Change ownership of licenses
+      # noqa 302
+      command: >-
+        chown ejabberd:hadoopusers ejabberd_license.beam ejabberd_cluster.beam
+        ejabberd_c2s.beam ejabberd.beam ejabberd_sm.beam ejabberd_router.beam ejabberd_listener.beam
+      args:
+        chdir: "{{ ejabberd_base_dir.stdout }}/ebin"
+      when: not(ejabberd_base_dir.stdout is search("3.2.13_5"))
+
+    - name: Change ownership of licenses for version 3.2.13_5
+      # noqa 302
+      command: >-
+        chown ejabberd:hadoopusers ejabberd_cluster.beam ejabberd_c2s.beam ejabberd.beam ejabberd_sm.beam ejabberd_router.beam ejabberd_listener.beam
+      args:
+        chdir: "{{ ejabberd_base_dir }}/ebin"
+      when: ejabberd_base_dir.stdout is search("3.2.13_5")
+
+    when: vsd_ejabberd_license_file is defined and vsd_ejabberd_license_file
+
+  - name: Changing log_rotate_size to non-zero
+    lineinfile:
+      path: /opt/ejabberd/conf/ejabberd.yml
+      regexp: '^log_rotate_size:'
+      line: "log_rotate_size: 10485760"
+    when: "vsd_version.stdout is version('20.10.1', '>=')"
 
   - name: Start ejabberd
     command: /opt/ejabberd/bin/ejabberdctl start
-    register: license_check_after_renew
 
-  - name: Check that new ejabberd license is valid
-    command: /opt/ejabberd/bin/ejabberdctl license_info
-    register: license_check_after_renew
+  - name: Check ejabberd status
+    command: /opt/ejabberd/bin/ejabberdctl status
+    register: ejabberd_status
     retries: 5
-    until: "license_check_after_renew.rc == 0"
+    until: "ejabberd_status.rc == 0 and ejabberd_status.stdout.find('started with status: started') != -1"
     delay: 20
+    ignore_errors: yes
+
+  - name: Check if not able to start ejabberd
+    assert:
+      that: "{{ ejabberd_status.rc }} == 0 and ejabberd_status.stdout.find('started with status: started') != -1"
+      msg: "Error starting ejabberd. Please check if the ejabberd license has expired."
 
   - name: Stop ejabberd service
     command: /opt/ejabberd/bin/ejabberdctl stop
-
-  when: vsd_ejabberd_license_file is defined
+  
   remote_user: "{{ vsd_default_username }}"
