@@ -1,6 +1,6 @@
 # MetroAE Config
 
-MetroAE Config is a template-driven VSD configuration tool. It utilizes the VSD API along with a set of common Feature Templates to create configuration in the VSD. The user will create a yaml or excel spreadsheets (.xlsx files) with the necessary configuration parameters for the particular feature and execute simple CLI commands to push the configuration into VSD.
+MetroAE Config is a template-driven VSD configuration tool. It utilizes the VSD API along with a set of common Feature Templates to create configuration in the VSD. The user will create a yaml or Excel spreadsheet (.xlsx file) with the necessary configuration parameters for the particular feature and execute simple CLI commands to push the configuration into VSD.
 
 MetroAE Config is available via the MetroAE container. Once pulled and setup, additional documentation will be available.
 
