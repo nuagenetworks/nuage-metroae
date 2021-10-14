@@ -2363,16 +2363,14 @@ function deployment_main {
     if [[ -a $PLAYBOOK_DIR/$WORKFLOW  ]]; then
         echo "$PLAYBOOK_DIR/$WORKFLOW -> PLAYBOOK_DIR/WORKFLOW"
         write_audit_log_entry
-        echo "$(which ansible-playbook) -> $ansible-playbook -> playbook"
-        echo "$SCHEMA_DIR -> SCHEMA_DIR"
-        echo "$@ -> "
-        
         $(which ansible-playbook) -e deployment_dir=\'"$DEPLOYMENT_DIR"\' -e schema_dir=$SCHEMA_DIR $PLAYBOOK_DIR/$WORKFLOW "$@" || audit_log_and_exit $?
     elif [[ -a $PLAYBOOK_WITH_BUILD_DIR/$WORKFLOW ]]; then
         write_audit_log_entry
+        echo "here $SCHEMA_DIR [s] $PLAYBOOK_DIR [pd]"
         phone_home_args=("\"UUID\":\"${UUID}\"" "\"Actions\":\"${WORKFLOW}\"" "\"Mode\":\"${RUN_MODE}\"" "\"timestamp\":\"$(date)\"" "\"Version\":\"${METROAE_VERSION}\"")
         phone_home "${phone_home_args[@]}"
         if [[ $SKIP_BUILD -ne 1 ]]; then
+            echo "here 2 $SCHEMA_DIR [s] $PLAYBOOK_DIR [pd]"
             $(which ansible-playbook) -e deployment_dir=\'"$DEPLOYMENT_DIR"\' -e schema_dir=$SCHEMA_DIR $PLAYBOOK_DIR/build.yml "$@" || audit_log_and_exit $?
             if [[ $GROUP ]]; then chgrp -R $GROUP $INVENTORY_DIR; fi
         fi
