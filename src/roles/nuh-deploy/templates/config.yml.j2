@@ -1,3 +1,6 @@
+geo: 
+  active: true
+  site: a
 network:
     namespaces:
       - name: Internal
@@ -11,6 +14,7 @@ network:
         dns1: ''
         dns2: ''
         dns3: ''
+        domain: example.met
         gateway: {{ internal_gateway }}
         ipaddr: {{ internal_ip }}
 {% if nuh_sa_or_ha is match('ha') %}
@@ -27,7 +31,7 @@ network:
         vlan: 0
 {% if external_interfaces is defined %}
 {% for interface in external_interfaces %}
-      - dhcp: no
+      - dhcp: false
         dns1: ''
         dns2: ''
         dns3: ''
@@ -41,11 +45,15 @@ network:
 {% endfor %}
 {% endif %}
     nuagenetwork: Internal
+    ssh:
+      - Internal
 {% if vrrp is defined and vrrp %}
 vrrp:
 {% for vrrp_item in vrrp %}
     - router_id: {{ vrrp_item.router_id }}
       interface: {{ vrrp_item.interface }}
+      meta:
+        ns: Internal
 {% if vrrp_item.vip is defined and vrrp_item.vip %}
       vip:
 {% for vip_entry in vrrp_item.vip %}
@@ -76,6 +84,9 @@ proxy:
     - {interface: eth2.{{ interface.vlan }}, role: fileserver, enabled: false, firewallports: [], settings: {port: "", ccert: ""}}
 {% endfor %}
 {% endif %}
+sdwanportal:
+    - "192.168.1.100"
+    - "192.168.1.101"
 servers:
 {% if vsd_sa_or_ha is match('ha') %}
     vsd1: {{ hostvars[groups['vsd_ha_node1'][0]].mgmt_ip }}
@@ -85,6 +96,8 @@ servers:
 {% if vsd_sa_or_ha is match('sa') %}
     vsd1: {{ hostvars[groups['vsd_sa_node'][0]]['mgmt_ip'] }}
 {% endif %}
+    es1: "192.168.1.115"
+    es2: "192.168.1.116"
 na:
 {% if vsd_auth is defined %}
     vsd: {sleepTimer: 2000, socketTimeout: 60000, password: {{ vsd_auth.password }}, useJmsForEvents: false, useXmppForEvents: true, username: {{ vsd_auth.username }}, enterprise: {{ vsd_auth.enterprise }}}
