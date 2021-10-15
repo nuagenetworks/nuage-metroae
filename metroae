@@ -241,9 +241,8 @@ function generate_and_save_UUID {
     if [[ $SKIP_UUID -eq $TRUE ]]; then
         debug "${FUNCNAME[0]}: Skipping UUID generation"
     else
-
-        check_if_internal_user
-
+        check_if_internal_user "$@"
+        shift
         debug "${FUNCNAME[0]}: RUN_MODE = $RUN_MODE"
         if [[ $RUN_MODE == $INSIDE_RUN_MODE ]]; then
             debug "${FUNCNAME[0]}: Creating $CONTAINER_MOUNT_POINT/$UUID_FILE"
@@ -1088,7 +1087,8 @@ function setup_container {
 
     set -e
 
-    generate_and_save_UUID
+    generate_and_save_UUID "$@"
+    shift
 
     if [[ $config_template_status -ne 0 || $config_docs_status -ne 0 || $deploy_keys_status -ne 0 || $deploy_status -ne 0 || $common_status -ne 0 ]]; then
         echo ""
@@ -2241,8 +2241,8 @@ function audit_log_and_exit {
 }
 
 function deployment_main {
-    generate_and_save_UUID
-
+    generate_and_save_UUID "$@"
+    shift
     debug ${FUNCNAME[0]}
     set +e
 
@@ -2510,7 +2510,8 @@ function config_main {
         esac
     done
 
-    generate_and_save_UUID
+    generate_and_save_UUID "$@"
+    shift
 
     if [[ $exec == true ]]; then
         phone_home_args=("\"UUID\":\"${UUID}\"" "\"Actions\":\"${POSITIONAL[1]}\"" "\"Mode\":\"${RUN_MODE}\"" "\"timestamp\":\"$(date)\"" "\"Version\":\"${METROAE_VERSION}\"")
