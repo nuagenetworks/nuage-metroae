@@ -191,16 +191,21 @@ function phone_home {
 }
 
 function  check_if_internal_user {
+    echo "here 1"
     debug ${FUNCNAME[0]}
-    
+    echo "here 2"
     if [[ $SKIP_UUID -eq $TRUE ]]; then
         debug "${FUNCNAME[0]}: Using existing UUID $UUID"
+        echo "here if"
     else
-        echo "here"
+        echo "here else"
         set +e
         int_user_check=`ping -c 5 github.mv.usa.alcatel.com 2>&1`
         SKIP_UUID=$?
         debug "${FUNCNAME[0]} $int_user_check"
+        set -e
+        
+        echo "$SKIP_UUID = UUID"
 
         if [[ $SKIP_UUID -eq $FALSE ]]; then
             echo ""
@@ -215,11 +220,16 @@ function  check_if_internal_user {
             echo ""
 
             declare -l continue_confirm
-            continue_confirm="init"
-            while [[ $continue_confirm != "y" ]] && [[ $continue_confirm != "n" ]] && [[ $continue_confirm != "" ]]
-            do
-                read -p " Would like to share usage data with MetroAE team? (y/N): " continue_confirm
-            done
+            if [[ -z $1 ]]; then
+                continue_confirm="init"
+                while [[ $continue_confirm != "y" ]] && [[ $continue_confirm != "n" ]] && [[ $continue_confirm != "" ]]
+                do
+                    read -p " Would like to share usage data with MetroAE team? (y/N): " continue_confirm
+                done
+            else
+                continue_confirm=$1
+                shift
+            fi
 
             if [[ $continue_confirm != "y" ]] ; then
                 SKIP_UUID=$TRUE
@@ -227,9 +237,7 @@ function  check_if_internal_user {
         else
             SKIP_UUID=$TRUE
         fi
-        set -e
-    fi
-    
+    fi   
 }
 
 function generate_UUID {
