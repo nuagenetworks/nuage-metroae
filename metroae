@@ -191,21 +191,15 @@ function phone_home {
 }
 
 function  check_if_internal_user {
-    write_to_screen_and_script_log "here 1"
     debug ${FUNCNAME[0]}
-    write_to_screen_and_script_log "here 2"
     if [[ $SKIP_UUID -eq $TRUE ]]; then
         debug "${FUNCNAME[0]}: Using existing UUID $UUID"
-        write_to_screen_and_script_log "here if"
     else
-        write_to_screen_and_script_log "here else"
         set +e
         int_user_check=`ping -c 5 github.mv.usa.alcatel.com 2>&1`
         SKIP_UUID=$?
         debug "${FUNCNAME[0]} $int_user_check"
         set -e
-        
-        write_to_screen_and_script_log "$SKIP_UUID = UUID"
 
         if [[ $SKIP_UUID -eq $FALSE ]]; then
             echo ""
@@ -243,30 +237,23 @@ function  check_if_internal_user {
 function generate_UUID {
     debug ${FUNCNAME[0]}
     UUID=`uuidgen`
-    write_to_screen_and_script_log "$UUID"
     debug "${FUNCNAME[0]}: UUID=$UUID"
-    write_to_screen_and_script_log "$UUID"
 }
 
 function generate_and_save_UUID {
     debug ${FUNCNAME[0]}
     if [[ $SKIP_UUID -eq $TRUE ]]; then
         debug "${FUNCNAME[0]}: Skipping UUID generation"
-        write_to_screen_and_script_log "Skipping UUID generation"
     else
 
         check_if_internal_user "$@"
 
-        write_to_screen_and_script_log "$SKIP_UUID = UUID"
-
         debug "${FUNCNAME[0]}: RUN_MODE = $RUN_MODE"
         if [[ $RUN_MODE == $INSIDE_RUN_MODE ]]; then
-            write_to_screen_and_script_log "if $SKIP_UUID = SKIP_UUID"
             debug "${FUNCNAME[0]}: Creating $CONTAINER_MOUNT_POINT/$UUID_FILE"
             touch $CONTAINER_MOUNT_POINT/$UUID_FILE
             sudo chown root:docker $CONTAINER_MOUNT_POINT/$UUID_FILE
             if [[ $SKIP_UUID -eq $FALSE ]]; then
-                write_to_screen_and_script_log "inside if"
                 generate_UUID
                 echo UUID=$UUID > $CONTAINER_MOUNT_POINT/$UUID_FILE
                 SKIP_UUID=$TRUE
@@ -274,11 +261,9 @@ function generate_and_save_UUID {
             debug "${FUNCNAME[0]}: SKIP_UUID = $SKIP_UUID"
             echo SKIP_UUID=$SKIP_UUID >> $CONTAINER_MOUNT_POINT/$UUID_FILE
         elif [[ $RUN_MODE == $REPO_RUN_MODE ]]; then
-            write_to_screen_and_script_log "elif $SKIP_UUID = SKIP_UUID"
             debug "${FUNCNAME[0]}: Creating src/$UUID_FILE"
             touch src/$UUID_FILE
             if [[ $SKIP_UUID -eq $FALSE ]]; then
-                write_to_screen_and_script_log "inside elif"
                 generate_UUID
                 echo UUID=$UUID > src/$UUID_FILE
                 SKIP_UUID=$TRUE
@@ -286,12 +271,10 @@ function generate_and_save_UUID {
             debug "${FUNCNAME[0]}: SKIP_UUID = $SKIP_UUID"
             echo SKIP_UUID=$SKIP_UUID >> src/$UUID_FILE
         else # RUN_MODE == $CONTAINER_RUN_MODE
-            write_to_screen_and_script_log "else $SKIP_UUID = SKIP_UUID"
             debug "${FUNCNAME[0]}: Creating $METROAE_MOUNT_POINT/$UUID_FILE"
             touch $METROAE_MOUNT_POINT/$UUID_FILE
             sudo chown root:docker $METROAE_MOUNT_POINT/$UUID_FILE
             if [[ $SKIP_UUID -eq $FALSE ]]; then
-                write_to_screen_and_script_log "inside else"
                 generate_UUID
                 echo UUID=$UUID > $METROAE_MOUNT_POINT/$UUID_FILE
                 SKIP_UUID=$TRUE
@@ -299,7 +282,6 @@ function generate_and_save_UUID {
             debug "${FUNCNAME[0]}: SKIP_UUID = $SKIP_UUID"
             echo SKIP_UUID=$SKIP_UUID >> $METROAE_MOUNT_POINT/$UUID_FILE
         fi
-        write_to_screen_and_script_log "$SKIP_UUID = SKIP_UUID and $UUID = UUID"
     fi
 }
 
