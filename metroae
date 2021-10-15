@@ -252,10 +252,13 @@ function generate_and_save_UUID {
         debug "${FUNCNAME[0]}: Skipping UUID generation"
     else
 
-        check_if_internal_user
+        check_if_internal_user "$@"
+
+        echo "$SKIP_UUID = UUID"
 
         debug "${FUNCNAME[0]}: RUN_MODE = $RUN_MODE"
         if [[ $RUN_MODE == $INSIDE_RUN_MODE ]]; then
+            echo "if"
             debug "${FUNCNAME[0]}: Creating $CONTAINER_MOUNT_POINT/$UUID_FILE"
             touch $CONTAINER_MOUNT_POINT/$UUID_FILE
             sudo chown root:docker $CONTAINER_MOUNT_POINT/$UUID_FILE
@@ -267,6 +270,7 @@ function generate_and_save_UUID {
             debug "${FUNCNAME[0]}: SKIP_UUID = $SKIP_UUID"
             echo SKIP_UUID=$SKIP_UUID >> $CONTAINER_MOUNT_POINT/$UUID_FILE
         elif [[ $RUN_MODE == $REPO_RUN_MODE ]]; then
+            echo "elif"
             debug "${FUNCNAME[0]}: Creating src/$UUID_FILE"
             touch src/$UUID_FILE
             if [[ $SKIP_UUID -eq $FALSE ]]; then
