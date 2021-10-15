@@ -193,39 +193,42 @@ function phone_home {
 function  check_if_internal_user {
     debug ${FUNCNAME[0]}
 
-    if [[ $SKIP_UUID -eq $TRUE ]]; then
-        debug "${FUNCNAME[0]}: Using existing UUID $UUID"
-    else
-        set +e
-        int_user_check=`ping -c 5 github.mv.usa.alcatel.com 2>&1`
-        SKIP_UUID=$?
-        set -e
-        debug "${FUNCNAME[0]} $int_user_check"
+    if [[ -z $1 ]]; then
 
-        if [[ $SKIP_UUID -eq $FALSE ]]; then
-            echo ""
-            write_to_screen_and_script_log "We have detected that this setup of MetroAE is internal to Nokia."
-            write_to_screen_and_script_log "We would like to collect usage information to improve the tool,"
-            write_to_screen_and_script_log "no personally identifiable information will be collected as part of this process."
-            if [[ $RUN_MODE == $REPO ]]; then
-                write_to_screen_and_script_log "Just remove file src/$UUID_FILE to opt out later"
+        if [[ $SKIP_UUID -eq $TRUE ]]; then
+            debug "${FUNCNAME[0]}: Using existing UUID $UUID"
+        else
+            set +e
+            int_user_check=`ping -c 5 github.mv.usa.alcatel.com 2>&1`
+            SKIP_UUID=$?
+            set -e
+            debug "${FUNCNAME[0]} $int_user_check"
+
+            if [[ $SKIP_UUID -eq $FALSE ]]; then
+                echo ""
+                write_to_screen_and_script_log "We have detected that this setup of MetroAE is internal to Nokia."
+                write_to_screen_and_script_log "We would like to collect usage information to improve the tool,"
+                write_to_screen_and_script_log "no personally identifiable information will be collected as part of this process."
+                if [[ $RUN_MODE == $REPO ]]; then
+                    write_to_screen_and_script_log "Just remove file src/$UUID_FILE to opt out later"
+                else
+                    write_to_screen_and_script_log "Just remove file $METROAE_MOUNT_POINT/$UUID_FILE to opt out later"
+                fi
+                echo ""
+
+                declare -l continue_confirm
+                continue_confirm="init"
+                while [[ $continue_confirm != "y" ]] && [[ $continue_confirm != "n" ]] && [[ $continue_confirm != "" ]]
+                do
+                    read -p " Would like to share usage data with MetroAE team? (y/N): " continue_confirm
+                done
+
+                if [[ $continue_confirm != "y" ]] ; then
+                    SKIP_UUID=$TRUE
+                fi
             else
-                write_to_screen_and_script_log "Just remove file $METROAE_MOUNT_POINT/$UUID_FILE to opt out later"
-            fi
-            echo ""
-
-            declare -l continue_confirm
-            continue_confirm="init"
-            while [[ $continue_confirm != "y" ]] && [[ $continue_confirm != "n" ]] && [[ $continue_confirm != "" ]]
-            do
-                read -p " Would like to share usage data with MetroAE team? (y/N): " continue_confirm
-            done
-
-            if [[ $continue_confirm != "y" ]] ; then
                 SKIP_UUID=$TRUE
             fi
-        else
-            SKIP_UUID=$TRUE
         fi
     fi
 }
@@ -238,44 +241,47 @@ function generate_UUID {
 
 function generate_and_save_UUID {
     debug ${FUNCNAME[0]}
-    if [[ $SKIP_UUID -eq $TRUE ]]; then
-        debug "${FUNCNAME[0]}: Skipping UUID generation"
-    else
-        check_if_internal_user "$@"
-        shift
-        debug "${FUNCNAME[0]}: RUN_MODE = $RUN_MODE"
-        if [[ $RUN_MODE == $INSIDE_RUN_MODE ]]; then
-            debug "${FUNCNAME[0]}: Creating $CONTAINER_MOUNT_POINT/$UUID_FILE"
-            touch $CONTAINER_MOUNT_POINT/$UUID_FILE
-            sudo chown root:docker $CONTAINER_MOUNT_POINT/$UUID_FILE
-            if [[ $SKIP_UUID -eq $FALSE ]]; then
-                generate_UUID
-                echo UUID=$UUID > $CONTAINER_MOUNT_POINT/$UUID_FILE
-                SKIP_UUID=$TRUE
+    if [[ -z $1 ]]; then
+
+        if [[ $SKIP_UUID -eq $TRUE ]]; then
+            debug "${FUNCNAME[0]}: Skipping UUID generation"
+        else
+            check_if_internal_user "$@"
+            shift
+            debug "${FUNCNAME[0]}: RUN_MODE = $RUN_MODE"
+            if [[ $RUN_MODE == $INSIDE_RUN_MODE ]]; then
+                debug "${FUNCNAME[0]}: Creating $CONTAINER_MOUNT_POINT/$UUID_FILE"
+                touch $CONTAINER_MOUNT_POINT/$UUID_FILE
+                sudo chown root:docker $CONTAINER_MOUNT_POINT/$UUID_FILE
+                if [[ $SKIP_UUID -eq $FALSE ]]; then
+                    generate_UUID
+                    echo UUID=$UUID > $CONTAINER_MOUNT_POINT/$UUID_FILE
+                    SKIP_UUID=$TRUE
+                fi
+                debug "${FUNCNAME[0]}: SKIP_UUID = $SKIP_UUID"
+                echo SKIP_UUID=$SKIP_UUID >> $CONTAINER_MOUNT_POINT/$UUID_FILE
+            elif [[ $RUN_MODE == $REPO_RUN_MODE ]]; then
+                debug "${FUNCNAME[0]}: Creating src/$UUID_FILE"
+                touch src/$UUID_FILE
+                if [[ $SKIP_UUID -eq $FALSE ]]; then
+                    generate_UUID
+                    echo UUID=$UUID > src/$UUID_FILE
+                    SKIP_UUID=$TRUE
+                fi
+                debug "${FUNCNAME[0]}: SKIP_UUID = $SKIP_UUID"
+                echo SKIP_UUID=$SKIP_UUID >> src/$UUID_FILE
+            else # RUN_MODE == $CONTAINER_RUN_MODE
+                debug "${FUNCNAME[0]}: Creating $METROAE_MOUNT_POINT/$UUID_FILE"
+                touch $METROAE_MOUNT_POINT/$UUID_FILE
+                sudo chown root:docker $METROAE_MOUNT_POINT/$UUID_FILE
+                if [[ $SKIP_UUID -eq $FALSE ]]; then
+                    generate_UUID
+                    echo UUID=$UUID > $METROAE_MOUNT_POINT/$UUID_FILE
+                    SKIP_UUID=$TRUE
+                fi
+                debug "${FUNCNAME[0]}: SKIP_UUID = $SKIP_UUID"
+                echo SKIP_UUID=$SKIP_UUID >> $METROAE_MOUNT_POINT/$UUID_FILE
             fi
-            debug "${FUNCNAME[0]}: SKIP_UUID = $SKIP_UUID"
-            echo SKIP_UUID=$SKIP_UUID >> $CONTAINER_MOUNT_POINT/$UUID_FILE
-        elif [[ $RUN_MODE == $REPO_RUN_MODE ]]; then
-            debug "${FUNCNAME[0]}: Creating src/$UUID_FILE"
-            touch src/$UUID_FILE
-            if [[ $SKIP_UUID -eq $FALSE ]]; then
-                generate_UUID
-                echo UUID=$UUID > src/$UUID_FILE
-                SKIP_UUID=$TRUE
-            fi
-            debug "${FUNCNAME[0]}: SKIP_UUID = $SKIP_UUID"
-            echo SKIP_UUID=$SKIP_UUID >> src/$UUID_FILE
-        else # RUN_MODE == $CONTAINER_RUN_MODE
-            debug "${FUNCNAME[0]}: Creating $METROAE_MOUNT_POINT/$UUID_FILE"
-            touch $METROAE_MOUNT_POINT/$UUID_FILE
-            sudo chown root:docker $METROAE_MOUNT_POINT/$UUID_FILE
-            if [[ $SKIP_UUID -eq $FALSE ]]; then
-                generate_UUID
-                echo UUID=$UUID > $METROAE_MOUNT_POINT/$UUID_FILE
-                SKIP_UUID=$TRUE
-            fi
-            debug "${FUNCNAME[0]}: SKIP_UUID = $SKIP_UUID"
-            echo SKIP_UUID=$SKIP_UUID >> $METROAE_MOUNT_POINT/$UUID_FILE
         fi
     fi
 }
