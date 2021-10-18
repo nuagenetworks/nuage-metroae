@@ -12,6 +12,7 @@
 
 * Predeploy NSGV without vsd license file (METROAE-497)
 * Added support for hardening Elasticsearch nodes (METROAE-486)
+* Allow custom configuration of RAM, CPU and Memory for VSD and VSTAT (METROAE-477)
 
 ### Resolved Issues
 
@@ -22,6 +23,8 @@
 * Remove unnecessary debug lines from vsc-health (MetroAE-541)
 * Fixing vsd-destroy to destroy old and new VMs (METROAE-504)
 * Custom username and password for VSC in installation (METROAE-531)
+* Fixed Check passwordless ssh from metro host to hypervisors and components ( METROAE-520)
+
 
 ## Test Matrix
 
