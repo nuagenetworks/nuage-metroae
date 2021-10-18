@@ -1,5 +1,9 @@
 geo: 
+{% if vsd_sa_or_ha is match('ha') %}
   active: true
+{% else %}
+  active: false
+{% endif %}
   site: a
 network:
     namespaces:
@@ -14,7 +18,7 @@ network:
         dns1: ''
         dns2: ''
         dns3: ''
-        domain: example.met
+        domain: {{ dns_domain }}
         gateway: {{ internal_gateway }}
         ipaddr: {{ internal_ip }}
 {% if nuh_sa_or_ha is match('ha') %}
@@ -52,8 +56,6 @@ vrrp:
 {% for vrrp_item in vrrp %}
     - router_id: {{ vrrp_item.router_id }}
       interface: {{ vrrp_item.interface }}
-      meta:
-        ns: Internal
 {% if vrrp_item.vip is defined and vrrp_item.vip %}
       vip:
 {% for vip_entry in vrrp_item.vip %}
@@ -84,7 +86,12 @@ proxy:
     - {interface: eth2.{{ interface.vlan }}, role: fileserver, enabled: false, firewallports: [], settings: {port: "", ccert: ""}}
 {% endfor %}
 {% endif %}
+{% if groups['portals'] | default([]) %}
 sdwanportal:
+{% for portal in groups['portals'] %}
+    - {{ hostvars[portal]['mgmt_ip'] }}
+{% endfor %}
+{% endif %}
     - "192.168.1.100"
     - "192.168.1.101"
 servers:
@@ -96,8 +103,15 @@ servers:
 {% if vsd_sa_or_ha is match('sa') %}
     vsd1: {{ hostvars[groups['vsd_sa_node'][0]]['mgmt_ip'] }}
 {% endif %}
-    es1: "192.168.1.115"
-    es2: "192.168.1.116"
+{% if groups['vstats'] is defined and groups['vstats'] | length >= 1 %}
+    es1: {{ hostvars[groups['vstats'][0]]['mgmt_ip'] }}
+{% if groups['vstats'] is defined and groups['vstats'] | length >= 2 %}
+    es2: {{ hostvars[groups['vstats'][1]]['mgmt_ip'] }}
+{% if groups['vstats'] is defined and groups['vstats'] | length >= 3 %}
+    es3: {{ hostvars[groups['vstats'][2]]['mgmt_ip'] }}
+{% endif %}
+{% endif %}
+{% endif %}
 na:
 {% if vsd_auth is defined %}
     vsd: 
