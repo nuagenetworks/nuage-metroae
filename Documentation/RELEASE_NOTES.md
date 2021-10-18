@@ -21,6 +21,7 @@
 * Replacing known_hosts module mgmt_ip to hostname (METROAE-481)
 * Remove unnecessary debug lines from vsc-health (MetroAE-541)
 * Fixing vsd-destroy to destroy old and new VMs (METROAE-504)
+* Custom username and password for VSC in installation (METROAE-531)
 
 ## Test Matrix
 
