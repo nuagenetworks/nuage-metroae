@@ -258,17 +258,9 @@ pip_install() {
     do
         unset IFS
         printn "Installing $i..."
-        pip install "$i" >> $LOG 2>&1
+        pip3 install "$i" >> $LOG 2>&1
         check_retcode $?
     done
-}
-
-###############################################################################
-# Creates virtual environment 
-###############################################################################
-setup_venv() {
-    python3 -m venv metroae-venv
-    . metroae-venv/bin/activate
 }
 
 ###############################################################################
@@ -326,9 +318,6 @@ function main() {
 
   # apt packages
   apt_install
-
-  # virtual environment setup
-  setup_venv
 
   # pip packages
   pip_install
