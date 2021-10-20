@@ -25,6 +25,7 @@
 * Fixing vsd-destroy to destroy old and new VMs (METROAE-504)
 * Fixed Check passwordless ssh from metro host to hypervisors and components ( METROAE-520)
 * Added ES servers to NUH GUI ( METROAE-491)
+* test phone home prompt message(METROAE-356)
 
 ## Test Matrix
 
