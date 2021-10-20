@@ -13,6 +13,7 @@
 * Predeploy NSGV without vsd license file (METROAE-497)
 * Added support for hardening Elasticsearch nodes (METROAE-486)
 * Allow custom configuration of RAM, CPU and Memory for VSD and VSTAT (METROAE-477)
+* Run VSD Database pre-upgrade checks (METROAE-428)
 
 ### Resolved Issues
 
