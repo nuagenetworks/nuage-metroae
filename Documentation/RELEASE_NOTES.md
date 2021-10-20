@@ -24,6 +24,7 @@
 * Fixing vsd-destroy to destroy old and new VMs (METROAE-504)
 * Fixed Check passwordless ssh from metro host to hypervisors and components ( METROAE-520)
 * Added ES servers to NUH GUI ( METROAE-491)
+* Fix NUH install on 20.10.R5 (METROAE-490)
 
 ## Test Matrix
 
