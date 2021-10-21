@@ -17,8 +17,6 @@
 
 ### Resolved Issues
 
-* Install NUH without VSD on VCenter (METROAE-523)
-* Check for ejabberd license expiry (METROAE-505)
 * Check for ejabberd license expiry (METROAE-505)
 * Added support install of SD-WAN portal without the SMTP address(METROAE-492)
 * Fixed yum lock timeout issue when installing packages in KVM (METROAE-507)
