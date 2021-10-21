@@ -2,13 +2,18 @@
 
 ## Release info
 
-* MetroAE Version 4.6.1
+* MetroAE Version 4.7.0
 * Nuage Release Alignment 20.10
-* Date of Release 16-September-2021
+* Date of Release 29-September-2021
 
 ## Release Contents
 
 ### Feature Enhancements
+
+* Predeploy NSGV without vsd license file (METROAE-497)
+* Added support for hardening Elasticsearch nodes (METROAE-486)
+* Allow custom configuration of RAM, CPU and Memory for VSD and VSTAT (METROAE-477)
+* Run VSD Database pre-upgrade checks (METROAE-428)
 
 ### Resolved Issues
 
