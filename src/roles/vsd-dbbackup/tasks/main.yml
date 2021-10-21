@@ -60,6 +60,7 @@
   tags: vsd
 
 - block:
+
   - name: Read gateway purge timer
     config_vsd_system:
       vsd_auth:
@@ -147,6 +148,48 @@
       that:
         - "'.iso' in mount_file.stdout"
       msg: "Did not find iso file in mount path"
+
+  - block:
+
+    - name: Copy pre-upgrade database check script to vsd
+      copy:
+        src: "{{ vsd_preupgrade_db_check_script_path }}/pre-upgrade-backup.sh"
+        dest: "/opt/vsd/data/"
+        mode: '0744'
+
+    - name: Set fact for path to script on VSD
+      set_fact:
+        db_preupgrade_script_vsd_path: "/opt/vsd/data"
+
+    when: vsd_preupgrade_db_check_script_path is defined
+
+  - block:
+
+    - name: Check if pre-upgrade database check script exists in migration ISO
+      find:
+        path: "/media/CDROM/"
+        pattern: "pre-upgrade-backup.sh"
+      register: preupgrade_script
+
+    - name: Set fact for path to script on VSD
+      set_fact:
+        db_preupgrade_script_vsd_path: "/media/CDROM"
+      when: preupgrade_script.matched == 1
+
+    when: vsd_preupgrade_db_check_script_path is not defined
+
+  - block:
+
+    - name: Check VSD database before upgrade
+      shell: "{{ db_preupgrade_script_vsd_path }}/pre-upgrade-backup.sh -s"
+      register: preupgrade_db_check
+
+    - name: Assert that db preupgrade check was successful
+      assert:
+        that: "'Successfully executed pre-upgrade-backup script' in preupgrade_db_check.stdout"
+        msg: "The preupgrade database check was not successfully executed. Please check /opt/vsd/logs/upgrade_issue.log for more details."
+
+    when: db_preupgrade_script_vsd_path is defined
 
   - name: Run backup script from mount location
     shell: "{{ backup_cmd }}"   # noqa 305
