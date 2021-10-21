@@ -12,8 +12,14 @@
 
 ### Resolved Issues
 
-* Install NUH without VSD on VCenter (METROAE-523)
-* Upgrade VSTATS if VSD GUI password has changed (METROAE-533)
+* Check for ejabberd license expiry (METROAE-505)
+* Added support install of SD-WAN portal without the SMTP address(METROAE-492)
+* Fixed yum lock timeout issue when installing packages in KVM (METROAE-507)
+* Replacing known_hosts module mgmt_ip to hostname (METROAE-481)
+* Remove unnecessary debug lines from vsc-health (MetroAE-541)
+* Fixing vsd-destroy to destroy old and new VMs (METROAE-504)
+* Fixed Check passwordless ssh from metro host to hypervisors and components ( METROAE-520)
+* Added ES servers to NUH GUI ( METROAE-491)
 * Fixing message issue for docker pull(METROAE-527)
 
 ## Test Matrix
