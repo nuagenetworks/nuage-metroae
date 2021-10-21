@@ -85,6 +85,15 @@ servers:
 {% if vsd_sa_or_ha is match('sa') %}
     vsd1: {{ hostvars[groups['vsd_sa_node'][0]]['mgmt_ip'] }}
 {% endif %}
+{% if groups['vstats'] is defined and groups['vstats'] | length >= 1 %}
+    es1: {{ hostvars[groups['vstats'][0]]['mgmt_ip'] }}
+{% if groups['vstats'] is defined and groups['vstats'] | length >= 2 %}
+    es2: {{ hostvars[groups['vstats'][1]]['mgmt_ip'] }}
+{% if groups['vstats'] is defined and groups['vstats'] | length >= 3 %}
+    es3: {{ hostvars[groups['vstats'][2]]['mgmt_ip'] }}
+{% endif %}
+{% endif %}
+{% endif %}
 na:
 {% if vsd_auth is defined %}
     vsd: {sleepTimer: 2000, socketTimeout: 60000, password: {{ vsd_auth.password }}, useJmsForEvents: false, useXmppForEvents: true, username: {{ vsd_auth.username }}, enterprise: {{ vsd_auth.enterprise }}}
