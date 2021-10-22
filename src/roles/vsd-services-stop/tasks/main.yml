@@ -52,24 +52,27 @@
       ignore_errors: yes
       when: list_core_pids.stdout.strip()!=""   # noqa 602
 
-    - name: Stop vsd common services (ignoring errors)
-      shell: "{{ stop_vsd_common }}"
-      ignore_errors: yes
-      when: "'stats_only_vsds' in groups and inventory_hostname not in groups['stats_only_vsds']"
+    - block:
 
-    - name: Pause for processes to exit
-      pause:
-        seconds: 20
+      - name: Stop vsd common services (ignoring errors)
+        shell: "{{ stop_vsd_common }}"
+        ignore_errors: yes
+      
+      - name: Pause for processes to exit
+        pause:
+          seconds: 20
 
-    - name: Check for left over vsd common processes
-      shell: "{{ common_pids }}"
-      register: list_common_pids
+      - name: Check for left over vsd common processes
+        shell: "{{ common_pids }}"
+        register: list_common_pids
 
-    - name: Kill the vsd-common pids if they exists (ignoring errors)
-      shell: "kill -9 {{ item }}"
-      with_items: "{{ list_common_pids.stdout_lines|default([]) }}"
-      ignore_errors: yes
-      when: list_common_pids.stdout.strip()!=""         # noqa 602
+      - name: Kill the vsd-common pids if they exists (ignoring errors)
+        shell: "kill -9 {{ item }}"
+        with_items: "{{ list_common_pids.stdout_lines|default([]) }}"
+        ignore_errors: yes
+        when: list_common_pids.stdout.strip()!=""         # noqa 602
+
+      when: not ('stats_only_vsds' in groups and inventory_hostname in groups['stats_only_vsds'])
 
   remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
   become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
