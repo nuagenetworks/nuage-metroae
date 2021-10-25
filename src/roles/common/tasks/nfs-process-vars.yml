@@ -1,0 +1,79 @@
+---
+- block:
+
+  # - block:
+
+  #   - name: Set NUH VM QCOW2 location
+  #     include_role:
+  #       name: common
+  #       tasks_from: find-file.yml
+  #     vars:
+  #       dir_name: "{{ nuage_unzipped_files_dir }}"
+  #       pattern: "nuage-utils-*.qcow2"
+
+  #   - name: Register NUH QCOW2 variables with proper path and image locations for use in other playbooks
+  #     set_fact:
+  #       image_path: "{{ file_path }}"
+  #       image_file_name: "{{ file_name }}"
+
+  #   when: nuhs | selectattr('target_server_type', 'defined') | list | length == 0 or nuhs | selectattr('target_server_type', 'defined') | map(attribute='target_server_type') | list is issuperset(["kvm"])
+
+  # - block:
+
+  #   - name: Assert that Ansible version is at least 2.9.7
+  #     assert:
+  #       that: "ansible_version.full is version('2.9.7', operator='ge', strict=True)"
+  #       msg: "Ansible version must be greater than or equal to 2.9.7 in order to deploy NUH in VMware. Found Ansible version {{ ansible_version.full }}"
+
+  #   - name: Set NUH VM OVA location
+  #     include_role:
+  #       name: common
+  #       tasks_from: find-file.yml
+  #     vars:
+  #       dir_name: "{{ nuage_unzipped_files_dir }}"
+  #       pattern: "nuage-utils-*.ova"
+
+  #   - name: Register NUH OVA variables with proper path and image locations for use in other playbooks
+  #     set_fact:
+  #       image_path: "{{ file_path }}"
+  #       image_file_name: "{{ file_name }}"
+
+  #   - name: Get version from file name
+  #     set_fact:
+  #       nuh_version: "{{ image_file_name | regex_search('([0-9]+\\.[0-9]+\\.[0-9A-Za-z]+)') }}"
+
+  #   - name: Assert that NUH version is at least 20.10.R5
+  #     assert:
+  #       that: nuh_version|upper|replace('R','') is version('20.10.5', '>=')
+  #       msg: "NUH version is {{ nuh_version }}. It must be at least 20.10.5 to be deployed in VMware using MetroAE."
+
+  #   when: nuhs | selectattr('target_server_type', 'defined') | map(attribute='target_server_type') | list is issuperset(["vcenter"])
+
+  - name: Verify NFS management gateway is in correct IP range
+    include_role:
+      name: common
+      tasks_from: check-ip-in-range.yml
+    vars:
+      ip_address: "{{ item.mgmt_gateway }}"
+      netaddr: "{{ item.mgmt_ip }}"
+      netmask: "{{ item.mgmt_ip_prefix }}"
+    with_items: "{{ nfss }}"
+
+  - name: Create host_vars files for nuhs
+    include_tasks: write-host-files.yml
+    vars:
+      component_template: nfss
+      component_hostname: "{{ component.mgmt_ip if component.hostname is not defined else component.hostname }}"
+    loop_control:
+      loop_var: component
+    with_items: "{{ nfss }}"
+
+  # - name: Verify nfss DNS entries exist and hostnames map to their IPs
+  #   include_tasks: check-dns.yml
+  #   with_items: "{{ nfss }}"
+  #   when: common.dns_server_list | length > 0
+
+  when:
+    - nfss is defined and nfss|length > 0
+  tags:
+    # - vns
