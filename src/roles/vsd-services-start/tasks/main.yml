@@ -44,19 +44,22 @@
 
     - name: Start VSD stats processes
       command: monit -g vsd-stats start
+      register: monit_stats_output
 
     - name: Get monit summary for stats processes on VSD
       vsd_monit:
         group: vsd-stats
       register: proc_list
+      when: monit_stats_output.rc == 0
 
     - name: Wait for VSD stats processes to become running
       monit_waitfor_service:
-        name: "{{ proc_list['state'].keys() }}"
+        name: "{{ proc_list['state'].keys() | list }}"
         timeout_seconds: 1200
         test_interval_seconds: 30
+      when: monit_stats_output.rc == 0
 
-    when: not (groups['vstats'] is defined and groups['vstats'] and inventory_hostname in groups['standby_vsds'])
+    when: "'data_vstats' in groups and inventory_hostname in groups['data_vstats']"
 
   remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
   become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
