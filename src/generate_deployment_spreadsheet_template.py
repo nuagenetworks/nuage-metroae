@@ -97,6 +97,9 @@ FORMAT = """
 
 - schema: webfilters
   headers: [Webfilters, Webfilter1, "", Descriptions]
+  
+- schema: nfss
+  headers: [NFSs, NFS Server 1 , NFS Server 2, "", Descriptions]
 
 - ""
 - When using MetroAE for zero-factor bootstrap of NSGvs
