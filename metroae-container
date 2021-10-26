@@ -4,7 +4,7 @@
 
 #TODO: we need to pass in the proxy env variables to be able to use pip and yum on a corp network
 TAG=$(git rev-parse --short HEAD)
-docker image inspect metroaecontaine1r:$TAG > /dev/null 2>&1
+docker image inspect metroaecontainer:$TAG > /dev/null 2>&1
 if [[ "$?" != "0" ]]
 then
     echo "The docker image for this repo head does not exist. We will build it. Press any key to continue"
@@ -14,5 +14,8 @@ then
     set +e
 fi
 
+SSHMOUNT=""
+[[ -e .ssh ]] && SSHMOUNT="-v `pwd`/.ssh:/root/.ssh"
+
 # Run the command inside docker
-docker run --rm -ti -v `pwd`:/metroae metroaecontainer:$TAG ./metroae $@
+docker run --rm -ti $SSHMOUNT -v "`pwd`:/metroae" metroaecontainer:$TAG ./metroae $@
