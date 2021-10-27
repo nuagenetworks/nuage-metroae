@@ -40,6 +40,13 @@
       test_interval_seconds: 30
     when: monit_core_output.rc == 0
 
+  - name: Check that 'vsd-stats' group is present in vsd
+    command: monit -g vsd-stats status
+
+  - name: Check return code of last monit command for 'vsd-stats' group
+    command: echo $?
+    register: group_status
+
   - block:
 
     - name: Start VSD stats processes
@@ -56,7 +63,7 @@
         timeout_seconds: 1200
         test_interval_seconds: 30
 
-    when: groups['vstats'] is defined and groups['vstats'] and inventory_hostname in groups['primary_vsds']
+    when: "group_status.rc == 0"
 
   remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
   become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
