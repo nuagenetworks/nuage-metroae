@@ -32,7 +32,7 @@ class ExcelParser(object):
     def read_and_encrypt_credentials_excel_sheet(self, passcode, spreadsheet_path):
         with open('schemas/credentials.json') as credentials_schema:
             schema_data = yaml.load(credentials_schema.read().decode("utf-8"),
-                             Loader=yaml.Loader)
+                                    Loader=yaml.Loader)
         props = schema_data['items']['properties']
 
         title_field_map = self.generate_title_field_map(props)
