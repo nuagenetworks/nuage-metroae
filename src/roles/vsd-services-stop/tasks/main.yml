@@ -7,11 +7,11 @@
   - name: Check that 'vsd-stats' group is present in vsd
     command: monit -g vsd-stats status
     ignore_errors: yes
-    register: group_status
+    register: group_status_stats
 
   - name: Check if an error should be ignored
     assert:
-      that: "not group_status.failed or group_status.stderr is search("'vsd-stats' not found")"
+      that: "not group_status_stats.failed or group_status_stats.stderr is search("'vsd-stats' not found")"
       msg: "Error while attempting to check group is present in current vsd"
 
   - block:
@@ -39,7 +39,17 @@
       ignore_errors: yes
       when: list_stats_pids.stdout.strip()!= ""         # noqa 602
 
-    when: group_status.rc == 0
+    when: group_status_stats.rc == 0
+
+  - name: Check that 'vsd-core' group is present in vsd
+    command: monit -g vsd-core status
+    ignore_errors: yes
+    register: group_status_core
+
+  - name: Check if an error should be ignored
+    assert:
+      that: "not group_status_core.failed or group_status_core.stderr is search('not found')"
+      msg: "Error while attempting to check group is present in current vsd"
 
   - block:
 
@@ -61,27 +71,39 @@
       ignore_errors: yes
       when: list_core_pids.stdout.strip()!=""   # noqa 602
 
-    - block:
+    when: group_status_core.rc == 0
 
-      - name: Stop vsd common services (ignoring errors)
-        shell: "{{ stop_vsd_common }}"
-        ignore_errors: yes
-      
-      - name: Pause for processes to exit
-        pause:
-          seconds: 20
+  - name: Check that 'vsd-common' group is present in vsd
+    command: monit -g vsd-common status
+    ignore_errors: yes
+    register: group_status_common
 
-      - name: Check for left over vsd common processes
-        shell: "{{ common_pids }}"
-        register: list_common_pids
+  - name: Check if an error should be ignored
+    assert:
+      that: "not group_status_common.failed or group_status_common.stderr is search('not found')"
+      msg: "Error while attempting to check group is present in current vsd"
 
-      - name: Kill the vsd-common pids if they exists (ignoring errors)
-        shell: "kill -9 {{ item }}"
-        with_items: "{{ list_common_pids.stdout_lines|default([]) }}"
-        ignore_errors: yes
-        when: list_common_pids.stdout.strip()!=""         # noqa 602
+  - block:
 
-      when: not ('stats_only_vsds' in groups and inventory_hostname in groups['stats_only_vsds'])
+    - name: Stop vsd common services (ignoring errors)
+      shell: "{{ stop_vsd_common }}"
+      ignore_errors: yes
+    
+    - name: Pause for processes to exit
+      pause:
+        seconds: 20
+
+    - name: Check for left over vsd common processes
+      shell: "{{ common_pids }}"
+      register: list_common_pids
+
+    - name: Kill the vsd-common pids if they exists (ignoring errors)
+      shell: "kill -9 {{ item }}"
+      with_items: "{{ list_common_pids.stdout_lines|default([]) }}"
+      ignore_errors: yes
+      when: list_common_pids.stdout.strip()!=""         # noqa 602
+
+    when: group_status_common.rc == 0
 
   remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
   become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
