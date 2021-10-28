@@ -3,11 +3,8 @@ import sys
 import yaml
 import getpass
 import argparse
-import jinja2
 import os
 from ansible.parsing.vault import VaultEditor, VaultSecret, is_encrypted
-from generate_example_from_schema import ExampleFileGenerator
-from builtins import str
 from openpyxl import load_workbook
 
 
@@ -32,7 +29,6 @@ class ExcelParser(object):
         self.errors = list()
         self.cell_positions = dict()
 
-
     def read_and_encrypt_credentials_excel_sheet(self, passcode, spreadsheet_path):
         with open('schemas/credentials.json') as credentials_schema:
             schema_data = yaml.load(credentials_schema.read().decode("utf-8"),
@@ -48,7 +44,7 @@ class ExcelParser(object):
 
         # print("LABELS: ", labels)
 
-        data = list()
+        # data = list()
         entry_offset = 0
         do_not_encrypt_list = self.get_do_not_encrypt_list()
         while True:
@@ -71,7 +67,6 @@ class ExcelParser(object):
         #
         # return data
 
-
     def generate_title_field_map(self, properties):
         title_field_map = dict()
         for name, field in iter(properties.items()):
@@ -81,7 +76,6 @@ class ExcelParser(object):
                 title_field_map[field["title"]] = name
 
         return title_field_map
-
 
     def read_labels(self, worksheet, title_field_map, fields_by_col=False):
         labels = list()
@@ -109,7 +103,6 @@ class ExcelParser(object):
                 break
 
         return labels
-
 
     def read_data_entry(self, wb, file_path, worksheet, labels, entry_offset,
                         do_not_encrypt_list, passcode, fields_by_col=False):
@@ -175,7 +168,6 @@ class ExcelParser(object):
 
         return do_not_encrypt_list
 
-
     def encrypt_value(self, value, passcode):
         secret = VaultSecret(passcode)
         editor = VaultEditor()
@@ -186,7 +178,6 @@ class ExcelParser(object):
         encrypted_val = '!vault |\n' + (vaultCode)
 
         return encrypted_val
-
 
 # def vault_constructor(loader, node):
 #     return node.value
@@ -262,7 +253,7 @@ def main():
     parser.settings["default_fields_by_col"] = False
 
     try:
-        data = parser.read_and_encrypt_credentials_excel_sheet(passcode, args.deployment_spreadsheet_path)
+        parser.read_and_encrypt_credentials_excel_sheet(passcode, args.deployment_spreadsheet_path)
         # print("DATA TYPE: ", type(data))
         # print("DATA: ", data)
     except ExcelParseError:
