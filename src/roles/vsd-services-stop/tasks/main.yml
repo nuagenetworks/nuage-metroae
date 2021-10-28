@@ -9,18 +9,21 @@
     ignore_errors: yes
     register: group_status
 
+  - name: Check if an error should be ignored
+    assert:
+      that: "not group_status.failed or group_status.stderr is search('vsd-stats not found')"
+      msg: "Error while attempting to check group in current vsd"
+
   - block:
 
     - name: Stop vsd statistics services
       shell: "{{ stop_stats }}"
-      ignore_errors: yes
       register: stop_stats_output
-      when: group_status.rc == 0
 
-    - name: Check if an error should be ignored
-      assert:
-        that: "not stop_stats_output.failed or stop_stats_output.stderr is search('not found')"
-        msg: "Error while attempting to stop vsd stats services"
+    # - name: Check if an error should be ignored
+    #   assert:
+    #     that: "not stop_stats_output.failed or stop_stats_output.stderr is search('not found')"
+    #     msg: "Error while attempting to stop vsd stats services"
 
     - name: Pause for processes to exit
       pause:
@@ -36,7 +39,7 @@
       ignore_errors: yes
       when: list_stats_pids.stdout.strip()!= ""         # noqa 602
 
-    when: groups['vstats'] is defined and groups['vstats']
+    when: group_status.rc == 0
 
   - block:
 
