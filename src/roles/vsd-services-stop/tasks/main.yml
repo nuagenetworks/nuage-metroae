@@ -4,21 +4,17 @@
 
 - block:
 
-  - name: Check that 'vsd-stats' group is present in vsd
-    command: monit -g vsd-stats status
-    ignore_errors: yes
-
-  - name: Check return code of last monit command for 'vsd-stats' group
-    command: echo $?
-    register: group_status
-
   - block:
 
-    - name: Stop vsd statistics services
-      shell: "{{ stop_stats }}"
-      ignore_errors: yes
-      register: stop_stats_output
-      when: group_status.rc == 0
+    - block:
+
+      - name: Stop vsd statistics services
+        shell: "{{ stop_stats }}"
+        ignore_errors: yes
+        register: stop_stats_output
+        when: "'standby_vsds'] in groups['standby_vsds'] and inventory_hostname in groups['standby_vsds']"
+
+      when: not stats_out | default(false)
 
     - name: Check if an error should be ignored
       assert:

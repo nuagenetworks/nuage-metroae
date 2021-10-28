@@ -20,7 +20,9 @@
         timeout_seconds: 1200
         test_interval_seconds: 30
         
-    when: not ('stats_only_vsds' in groups and inventory_hostname in groups['stats_only_vsds'])
+    when:
+      - not ('stats_only_vsds' in groups and inventory_hostname in groups['stats_only_vsds'])
+      - not ('standby_vsds' in groups and inventory_hostname in groups['standby_vsds'])
 
   - name: Start VSD core processes (ignoring errors)
     command: monit -g vsd-core start
@@ -40,31 +42,27 @@
       test_interval_seconds: 30
     when: monit_core_output.rc == 0
 
-  - name: Check that 'vsd-stats' group is present in vsd
-    command: monit -g vsd-stats status
-    ignore_errors: yes
-
-  - name: Check return code of last monit command for 'vsd-stats' group
-    command: echo $?
-    register: group_status
-
   - block:
 
-    - name: Start VSD stats processes
-      command: monit -g vsd-stats start
+    - block:
 
-    - name: Get monit summary for stats processes on VSD
-      vsd_monit:
-        group: vsd-stats
-      register: proc_list
+      - name: Start VSD stats processes
+        command: monit -g vsd-stats start
 
-    - name: Wait for VSD stats processes to become running
-      monit_waitfor_service:
-        name: "{{ proc_list['state'].keys() }}"
-        timeout_seconds: 1200
-        test_interval_seconds: 30
+      - name: Get monit summary for stats processes on VSD
+        vsd_monit:
+          group: vsd-stats
+        register: proc_list
 
-    when: group_status.rc == 0
+      - name: Wait for VSD stats processes to become running
+        monit_waitfor_service:
+          name: "{{ proc_list['state'].keys() }}"
+          timeout_seconds: 1200
+          test_interval_seconds: 30
+
+      when: "'standby_vsds' in groups and inventory_hostname in groups['standby_vsds']"
+
+    when: not stats_out | default(false)
 
   remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
   become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
