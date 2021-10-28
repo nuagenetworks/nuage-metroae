@@ -5,7 +5,7 @@
     state: directory
 
 - name: Edit /etc/exports file to make an entry of directory
-  shell: "echo \"{{ mount_directory_location }}/es-backup/ 10.0.0.0/8(rw,sync,no_root_squash,no_subtree_check)\" >> /etc/exports | echo \"# ES storage\" >> /etc/exports"
+  shell: "echo \"# ES storage\" >> /etc/exports | echo \"{{ mount_directory_location }}/es-backup/            10.0.0.0/8(rw,sync,no_root_squash,no_subtree_check)\" >> /etc/exports"
 
 - name: Export the shared directories
   command: exportfs -a
@@ -16,5 +16,5 @@
 
 - name: Check NFS Server Configuration
   assert:
-    that: nfs_status.stdout = '/nfs/es-backup\t10.0.0.0/8(sync,wdelay,hide,no_subtree_check,sec=sys,rw,no_root_squash,no_all_squash)'
+    that: "'{{ nfs_status.stdout }}' == '/nfs/es-backup\t10.0.0.0/8(sync,wdelay,hide,no_subtree_check,sec=sys,rw,no_root_squash,no_all_squash)'"
     msg: "Error in NFS Server Configuration in /etc/exports file(invalid entry of directory)"
