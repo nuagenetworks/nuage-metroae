@@ -88,7 +88,7 @@ class ExcelParser(object):
 
         return labels
 
-    def read_and_encrypt_data_entry(self, wb, file_path, worksheet, labels, entry_offset,
+    def read_and_encrypt_data_entry(self, workbook, spreadsheet_path, worksheet, labels, entry_offset,
                                     do_not_encrypt_list, passcode, fields_by_col=False):
         entry = dict()
 
@@ -110,7 +110,7 @@ class ExcelParser(object):
                     if label not in do_not_encrypt_list:
                         encrypted_value = self.encrypt_value(value, passcode)
                         cell.value = encrypted_value
-                        wb.save(file_path)
+                        workbook.save(spreadsheet_path)
                         entry[label] = encrypted_value
                     self.cell_positions[label] = cell.coordinate
                 else:
