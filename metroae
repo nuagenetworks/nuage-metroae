@@ -691,23 +691,20 @@ function pull {
         if [ -w "$SCRIPT_LOG_FILE" ]; then
             debug "${FUNCNAME[0]}: Script log is writable"
             sudo docker pull $METRO_AE_IMAGE:$MAX_CONTAINER_VERSION | tee -a $SCRIPT_LOG_FILE
-            ((status=$?+$PIPESTATUS))
         else
             if [ -z $METROAE_WRITE_WARNING_PRINTED ]; then
                 print_write_permission_warning
                 METROAE_WRITE_WARNING_PRINTED=1
-                status=$?
             fi
             debug "${FUNCNAME[0]}: Script log is not writable"
             sudo docker pull $METRO_AE_IMAGE:$MAX_CONTAINER_VERSION
-            status=$?
         fi
     else
         debug "${FUNCNAME[0]}: Script log is not found"
         sudo docker pull $METRO_AE_IMAGE:$MAX_CONTAINER_VERSION
-        status=$?
     fi
 
+    status=$?
     if [[ $status -ne 0 ]]; then
         write_to_screen_and_script_log "Attempt to pull the $MAX_CONTAINER_VERSION MetroAE container image failed. Quitting."
         exit 1
@@ -756,6 +753,13 @@ function run_container {
             if [[ ! -z $IMAGES_MOUNT_POINT ]]; then
                 mount_args="$mount_args -v $IMAGES_MOUNT_POINT:/images:Z"
             fi
+
+            home_dir=`getent passwd $SUDO_USER | cut -d: -f6`
+
+            echo "SUDO USER: $SUDO_USER"
+            echo "USER: $USER"
+
+            mount_args="$mount_args -v $HOME/.ssh:/root/.ssh:Z"
 
             if [[ $METROAE_SETUP_TYPE == $CONFIG_SETUP_TYPE ]]; then
                 levi_args="-e LEVISTATE_CONTAINER=1"
@@ -2738,6 +2742,15 @@ function container_main {
             fi
             shift
             ;;
+            encrypt-credentials-excel)
+            if [[ -z $2 ]]; then
+                vault_password
+            else
+                vault_password $2
+                shift
+            fi
+            shift
+            ;;
             interactive)
             interactive
             shift
@@ -3194,6 +3207,14 @@ function tools_main {
         download_container_templates ${EXTRA_ARGS[@]}
         print_version_and_exit 0
         ;;
+        encrypt-credentials-excel)
+        if [[ $RUN_MODE == $CONTAINER_RUN_MODE ]]; then
+            docker_exec env /usr/bin/python $CONTAINER_HOME/nuage-metroae/encrypt_credentials_excel.py ${EXTRA_ARGS[@]}
+        else
+            /usr/bin/python encrypt_credentials_excel.py ${EXTRA_ARGS[@]}
+        fi
+        print_version_and_exit 0
+        ;;
         *)
         tools_help ",tools"
         print_version_and_exit 1
@@ -3366,7 +3387,7 @@ function plugin_help {
 
 function help_header {
     debug ${FUNCNAME[0]}
-    
+
     echo ""
     echo "Nuage Networks Metro Automation Engine (MetroAE) Version:" $METROAE_VERSION
     echo "Run mode is" $RUN_MODE
@@ -3378,7 +3399,7 @@ function help_header {
         else
             current_setup_type="Both Config and Deploy"
         fi
-        echo "Setup type is" $current_setup_type  
+        echo "Setup type is" $current_setup_type
         if [[ $current_setup_type == "Both Config and Deploy" || $current_setup_type == "Config" ]]; then
             metroae_config_engine_version=`docker_exec_config version`
             echo "Nuage Networks" $metroae_config_engine_version
