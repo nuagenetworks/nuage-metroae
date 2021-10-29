@@ -8,10 +8,6 @@ from ansible.parsing.vault import VaultEditor, VaultSecret, is_encrypted
 from openpyxl import load_workbook
 
 
-# class VaultYaml(str):
-#     pass
-
-
 class ExcelParseError(Exception):
     pass
 
@@ -42,30 +38,18 @@ class ExcelParser(object):
         labels = self.read_labels(worksheet, title_field_map,
                                   fields_by_col=fields_by_col)
 
-        # print("LABELS: ", labels)
-
-        # data = list()
         entry_offset = 0
         do_not_encrypt_list = self.get_do_not_encrypt_list()
         while True:
             self.cell_positions.clear()
-            entry = self.read_data_entry(workbook, spreadsheet_path, worksheet,
-                                         labels, entry_offset, do_not_encrypt_list, passcode,
-                                         fields_by_col=fields_by_col)
-
-            print("ENTRY: ", entry)
-            print("ENTRY TYPE: ", type(entry))
+            entry = self.read_and_encrypt_data_entry(workbook, spreadsheet_path, worksheet,
+                                                     labels, entry_offset, do_not_encrypt_list,
+                                                     passcode, fields_by_col=fields_by_col)
 
             if entry != dict():
                 entry_offset += 1
             else:
                 break
-
-        # if self.settings["use_list_name"] and data != list():
-        #     list_name = self.get_list_name(schema_data)
-        #     data = {list_name: data}
-        #
-        # return data
 
     def generate_title_field_map(self, properties):
         title_field_map = dict()
@@ -104,8 +88,8 @@ class ExcelParser(object):
 
         return labels
 
-    def read_data_entry(self, wb, file_path, worksheet, labels, entry_offset,
-                        do_not_encrypt_list, passcode, fields_by_col=False):
+    def read_and_encrypt_data_entry(self, wb, file_path, worksheet, labels, entry_offset,
+                                    do_not_encrypt_list, passcode, fields_by_col=False):
         entry = dict()
 
         col = self.settings["column_offset"]
@@ -128,33 +112,17 @@ class ExcelParser(object):
                         cell.value = encrypted_value
                         wb.save(file_path)
                         entry[label] = encrypted_value
-                    # else:
-                    #     entry[label] = value
                     self.cell_positions[label] = cell.coordinate
                 else:
-                    self.record_error(worksheet.title, cell.coordinate,
-                                      "Data entry for unknown label")
+                    self.record_error(cell.coordinate, "Data entry for unknown label")
             else:
                 self.cell_positions[label] = cell.coordinate
-                # entry[label] = value
             if fields_by_col:
                 col += 1
             else:
                 row += 1
 
         return entry
-
-    # def get_list_name(self, schema):
-    #     if "listName" in schema:
-    #         list_name = schema["listName"]
-    #     else:
-    #         if "items" in schema and "title" in schema["items"]:
-    #             list_name = (
-    #                 schema["items"]["title"].lower().replace(" ", "_") + "s")
-    #         else:
-    #             list_name = schema["title"].lower().replace(" ", "_")
-    #
-    #     return list_name
 
     def get_do_not_encrypt_list(self):
         with open('schemas/credentials.json') as credentials_schema:
@@ -179,43 +147,9 @@ class ExcelParser(object):
 
         return encrypted_val
 
-# def vault_constructor(loader, node):
-#     return node.value
-#
-#
-# def literal_unicode_representer(dumper, data):
-#     return dumper.represent_scalar("!vault", data, style='|')
-#
-#
-# def encrypt_credentials_sheet(passcode, credentials_data):
-#     yaml.add_constructor(u'!vault', vault_constructor)
-#     with open('schemas/credentials.json') as credentials_schema:
-#         data = yaml.load(credentials_schema.read().decode("utf-8"),
-#                          Loader=yaml.Loader)
-#     props = data['items']['properties']
-#     do_not_encrypt_list = []
-#     for k, v in props.items():
-#         if ('encrypt' in v) and (not v['encrypt']):
-#             do_not_encrypt_list.append(k)
-#
-#     if credentials_data is not None:
-#         print("cred data type: ", type(credentials_data))
-#         print("values: ", credentials_data.values())
-#         print("values dict: ", credentials_data.values()[0][0])
-#         print("values type: ", type(credentials_data.values()[0][0]))
-#         # print("cred keys: ". list(credentials_data.keys()))
-#         for cred in list(credentials_data.values()[0][0]):
-#             if cred not in do_not_encrypt_list:
-#                 secret = VaultSecret(passcode)
-#                 editor = VaultEditor()
-#                 if not is_encrypted(credentials_data.values()[0][0][cred]):
-#                     vaultCode = editor.encrypt_bytes(credentials_data.values()[0][0][cred],
-#                                                      secret)
-#                 else:
-#                     vaultCode = credentials_data.values()[0][0][cred]
-#                 credentials_data.values()[0][0][cred] = '!vault |\n' + (vaultCode)
-#
-#     return credentials_data
+    def record_error(self, position, message):
+        self.errors.append({"position": position,
+                            "message": message})
 
 
 def main():
@@ -254,19 +188,10 @@ def main():
 
     try:
         parser.read_and_encrypt_credentials_excel_sheet(passcode, args.deployment_spreadsheet_path)
-        # print("DATA TYPE: ", type(data))
-        # print("DATA: ", data)
     except ExcelParseError:
         for error in parser.errors:
-            print("ERROR POSITION AND MESSAGE: %s | %s" % error["position"], error["message"])
-        # for error in parser.errors:
-        #     print("%s %s | %s" % (error["schema_title"], error["position"],
-        #                           error["message"]))
-        # exit(1)
-
-    # test = encrypt_credentials_sheet(passcode, data)
-    # print("ENCRYPTED DATA" , test)
-    # print("TYPE OF ENCRYPTED DATA: ", type(test))
+            print("%s | %s" % error["position"], error["message"])
+        exit(1)
 
 
 if __name__ == '__main__':
