@@ -27,6 +27,7 @@
 * Added ES servers to NUH GUI ( METROAE-491)
 * Fix NUH install on 20.10.R5 (METROAE-490)
 * Fixing message issue for docker pull(METROAE-527)
+* Add procudure for NUH copy certificates if installed before VSD(METROAE-559)
 
 ## Test Matrix
 
