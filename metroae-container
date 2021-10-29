@@ -1,5 +1,4 @@
 #!/bin/sh
-set -x
 
 # WARNING: Any paths defined in the deployment files must be relative to this folder. No absolute paths, and no paths outside of this folder
 
@@ -22,4 +21,6 @@ TI=""
 [ -t 0 ] && TI="-ti"
 # Run the command inside docker
 args=( "$@" )
-docker run --rm $TI $SSHMOUNT -v "`pwd`:/metroae" metroaecontainer:$TAG ./metroae "${args[@]}"
+
+# we use host networking because we want the host's dns server and host file
+docker run --network=host --rm $TI $SSHMOUNT -v "`pwd`:/metroae" metroaecontainer:$TAG ./metroae "${args[@]}"
