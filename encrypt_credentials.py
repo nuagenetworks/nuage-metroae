@@ -211,7 +211,7 @@ def main():
     args = parser.parse_args()
 
     if "METROAE_PASSWORD" in os.environ:
-        passcode = os.environ["METROAE _PASSWORD"]
+        passcode = os.environ["METROAE_PASSWORD"]
     else:
         try:
             print("This file will encrypt user credentials for MetroAE")
