@@ -14,6 +14,7 @@
 * Added support for hardening Elasticsearch nodes (METROAE-486)
 * Allow custom configuration of RAM, CPU and Memory for VSD and VSTAT (METROAE-477)
 * Run VSD Database pre-upgrade checks (METROAE-428)
+* Support NFS server config using MetroAE(METROAE-557)
 
 ### Resolved Issues
 
@@ -27,7 +28,6 @@
 * Added ES servers to NUH GUI ( METROAE-491)
 * Fix NUH install on 20.10.R5 (METROAE-490)
 * Fixing message issue for docker pull(METROAE-527)
-* Support NFS server config using MetroAE(METROAE-557)
 
 ## Test Matrix
 
