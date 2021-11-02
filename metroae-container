@@ -1,0 +1,23 @@
+#!/bin/sh
+
+# WARNING: Any paths defined in the deployment files must be relative to this folder. No absolute paths, and no paths outside of this folder
+
+#TODO: we need to pass in the proxy env variables to be able to use pip and yum on a corp network
+TAG=$(git rev-parse --short HEAD)
+docker image inspect metroaecontainer:$TAG > /dev/null 2>&1
+if [[ "$?" != "0" ]]
+then
+    echo "The docker image for this repo head does not exist. We will build it. Press any key to continue"
+    read -n 1
+    set -e
+    ./build-container raw
+    set +e
+fi
+
+SSHMOUNT=""
+[[ -e .ssh ]] && SSHMOUNT="-v `pwd`/.ssh:/root/.ssh"
+
+TI=""
+[ -t 0 ] && TI="-ti"
+# Run the command inside docker
+docker run --rm $TI $SSHMOUNT -v "`pwd`:/metroae" metroaecontainer:$TAG ./metroae $@

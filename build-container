@@ -1,0 +1,15 @@
+#!/bin/sh
+
+#TODO: we need to pass in the proxy env variables to be able to use pip and yum on a corp network
+TAG=$(git rev-parse --short HEAD)
+if [[ -n "$http_proxy" ]]
+then
+    export buildproxy="--build-arg http_proxy=http://$proxy --build-arg https_proxy=http://$proxy"
+fi
+docker build $buildproxy -t metroaecontainer:$TAG .
+
+if [[ "$1" != "raw" ]]
+then
+    docker save -o metroae-docker-container.tar metroaecontainer:$TAG 
+    echo "File metroae-docker-container.tar was created"
+fi
