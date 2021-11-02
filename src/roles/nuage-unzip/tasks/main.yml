@@ -20,7 +20,7 @@
 # Install Prerequisites
 ##########################
 - name: Pull facts of localhost
-  connection: local
+  delegate_to: localhost
   action: setup
 
 - block:
@@ -28,13 +28,15 @@
     command:
       cmd: rpm -q unzip
       warn: no
-    connection: local
+    delegate_to: localhost
     register: rpm_check
     ignore_errors: True
 
   - name: Install packages for RedHat OS family distros
     yum: name=unzip state=present
-    connection: local
+    vars:
+      ansible_python_interpreter: /usr/bin/python2
+    delegate_to: localhost
     environment:
       http_proxy: "{{ yum_proxy | default('') }}"
       https_proxy: "{{ yum_proxy | default('') }}"
@@ -43,7 +45,7 @@
 
 - name: Install unzip on Debian OS family distribution
   apt: name=unzip state=present
-  connection: local
+  delegate_to: localhost
   when: ansible_os_family is match("Debian")
 
 
