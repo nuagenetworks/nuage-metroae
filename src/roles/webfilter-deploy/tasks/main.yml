@@ -120,6 +120,25 @@
 
   - block:
 
+    - name: Edit file for adding proxy into "/usr/local/gcf1/etc/gcf1.conf"
+      command: sed -i 's/# Proxy Settings/Proxy Settings/;s/PROXY_HOST=/PROXY_HOST=135.245.192.7/;s/PROXY_PORT=/PROXY_PORT=8000/' /usr/local/gcf1/etc/gcf1.conf
+
+    - name: Edit file for adding proxy into "/opt/vsd/webfilter/seed_34/gcf1/etc/gcf1.conf"
+      command: sed -i 's/# Proxy Settings/Proxy Settings/;s/PROXY_HOST=/PROXY_HOST=135.245.192.7/;s/PROXY_PORT=/PROXY_PORT=8000/' /usr/local/gcf1/etc/gcf1.conf
+
+    - name: Restart the incompass monits to set the new proxy
+      command: monit restart incompass
+
+    - name: Restart the incompass monits to set the new proxy for seed
+      command: monit restart incompass-34-seed
+
+    - name: Get monit summary for webfilter
+      command: monit summary
+
+    when: http_proxy is defined
+
+  - block:
+
     - name: Run incompass operation command for seed
       shell: /opt/vsd/webfilter/scripts/incompassOperations.sh -a all -p /opt/vsd/webfilter/seed_34
 
