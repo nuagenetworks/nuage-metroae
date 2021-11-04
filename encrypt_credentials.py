@@ -182,10 +182,10 @@ def get_do_not_encrypt_list():
 
 
 def encrypt_value(value, passcode):
-    secret = VaultSecret(bytes(str(passcode).encode('utf-8')))
+    secret = VaultSecret(bytes(str(passcode).encode('ascii')))
     editor = VaultEditor()
     if not is_encrypted(value):
-        vaultCode = editor.encrypt_bytes(value, secret).decode('utf-8')
+        vaultCode = editor.encrypt_bytes(value, secret).decode('ascii')
     else:
         vaultCode = value
     encrypted_val = '!vault |\n' + (vaultCode)
