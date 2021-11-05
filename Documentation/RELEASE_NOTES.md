@@ -14,6 +14,7 @@
 * Added support for hardening Elasticsearch nodes (METROAE-486)
 * Allow custom configuration of RAM, CPU and Memory for VSD and VSTAT (METROAE-477)
 * Run VSD Database pre-upgrade checks (METROAE-428)
+* Support NFS server config using MetroAE(METROAE-557)
 * Add support for encrypting credentials in Excel spreadsheet (METROAE-552)
 
 ### Resolved Issues
@@ -24,10 +25,12 @@
 * Replacing known_hosts module mgmt_ip to hostname (METROAE-481)
 * Remove unnecessary debug lines from vsc-health (MetroAE-541)
 * Fixing vsd-destroy to destroy old and new VMs (METROAE-504)
+* Fix MetroAE errors while deploying using SSH Proxy (MetroAE-574)
 * Fixed Check passwordless ssh from metro host to hypervisors and components ( METROAE-520)
 * Added ES servers to NUH GUI ( METROAE-491)
 * Fix NUH install on 20.10.R5 (METROAE-490)
 * Fixing message issue for docker pull(METROAE-527)
+* Add procedure for NUH copy certificates if installed before VSD(METROAE-559)
 
 ## Test Matrix
 
