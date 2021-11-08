@@ -14,6 +14,7 @@
 
 * Install NUH without VSD on VCenter (METROAE-523)
 * Upgrade VSTATS if VSD GUI password has changed (METROAE-533)
+* Allow for a custom config file during VSC Upgrade (METROAE-485)
 
 ## Test Matrix
 
