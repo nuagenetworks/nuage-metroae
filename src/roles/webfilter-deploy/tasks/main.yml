@@ -121,10 +121,10 @@
   - block:
 
     - name: Edit file for adding proxy into "/usr/local/gcf1/etc/gcf1.conf"
-      command: sed -i 's/# Proxy Settings/Proxy Settings/;s/PROXY_HOST=/PROXY_HOST=135.245.192.7/;s/PROXY_PORT=/PROXY_PORT=8000/' /usr/local/gcf1/etc/gcf1.conf
+      command: sed -i 's/# Proxy Settings/Proxy Settings/;s/PROXY_HOST=/PROXY_HOST=${proxy_host}/;s/PROXY_PORT=/PROXY_PORT=${proxy_port}/' /usr/local/gcf1/etc/gcf1.conf
 
     - name: Edit file for adding proxy into "/opt/vsd/webfilter/seed_34/gcf1/etc/gcf1.conf"
-      command: sed -i 's/# Proxy Settings/Proxy Settings/;s/PROXY_HOST=/PROXY_HOST=135.245.192.7/;s/PROXY_PORT=/PROXY_PORT=8000/' /usr/local/gcf1/etc/gcf1.conf
+      command: sed -i 's/# Proxy Settings/Proxy Settings/;s/PROXY_HOST=/PROXY_HOST=${proxy_host}/;s/PROXY_PORT=/PROXY_PORT=${proxy_port}/' /usr/local/gcf1/etc/gcf1.conf
 
     - name: Restart the incompass monits to set the new proxy
       command: monit restart incompass
@@ -132,8 +132,11 @@
     - name: Restart the incompass monits to set the new proxy for seed
       command: monit restart incompass-34-seed
 
-    - name: Get monit summary for webfilter
-      command: monit summary
+    - name: Wait for webfilter processes to become running
+      monit_waitfor_service:
+        name: "{{ webfilter_proc['state'].keys() }}"
+        timeout_seconds: 600
+        test_interval_seconds: 10
 
     when: http_proxy is defined
 
