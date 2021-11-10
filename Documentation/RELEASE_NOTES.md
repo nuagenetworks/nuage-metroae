@@ -15,6 +15,7 @@
 * Allow custom configuration of RAM, CPU and Memory for VSD and VSTAT (METROAE-477)
 * Run VSD Database pre-upgrade checks (METROAE-428)
 * Support NFS server config using MetroAE(METROAE-557)
+* Webfilter should optionally use HTTP Proxy (METROAE-493)
 * Add support for encrypting credentials in Excel spreadsheet (METROAE-552)
 
 ### Resolved Issues
