@@ -101,6 +101,34 @@
       scp_location: /opt/proxy/data/certs
       additional_parameters:  -d {{ inventory_hostname }}
 
+  - name: Create and transfer certs for NUH-pre user
+    include_role:
+      name: common
+      tasks_from: vsd-generate-transfer-certificates
+    when: not skip_vsd_installed_check
+    vars:
+      certificate_password: "{{ nuh_default_password }}"
+      certificate_username: "{{ inventory_hostname }}-pre"
+      commonName: "{{ inventory_hostname }}-pre"
+      certificate_type: server
+      scp_user: "root"
+      scp_location: /opt/proxy/data/certs
+      additional_parameters:  "-d {{ inventory_hostname }}-pre"
+
+  - name: Create and transfer certs for NUH-post user
+    include_role:
+      name: common
+      tasks_from: vsd-generate-transfer-certificates
+    when: not skip_vsd_installed_check
+    vars:
+      certificate_password: "{{ nuh_default_password }}"
+      certificate_username: "{{ inventory_hostname }}-post"
+      commonName: "{{ inventory_hostname }}-post"
+      certificate_type: server
+      scp_user: "root"
+      scp_location: /opt/proxy/data/certs
+      additional_parameters:  "-d {{ inventory_hostname }}-post"
+
   - name: Copy NUH certificates 
     import_role:
       name: nuh-deploy
