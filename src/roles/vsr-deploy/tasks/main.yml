@@ -37,61 +37,61 @@
 
 - meta: reset_connection
 
-# - name: Configure DNS in BOF
-#   sros_command:
-#     commands:
-#       - "bof dns-domain {{ dns_domain }}"
-#       - "bof primary-dns {{ dns_server_list[0] }}"
-#       - "bof save"
-#     provider: "{{ provider_creds }}"
-#   delegate_to: localhost
+- name: Configure DNS in BOF
+  sros_command:
+    commands:
+      - "bof dns-domain {{ dns_domain }}"
+      - "bof primary-dns {{ dns_server_list[0] }}"
+      - "bof save"
+    provider: "{{ provider_creds }}"
+  delegate_to: localhost
 
-# - meta: reset_connection
+- meta: reset_connection
 
-# - name: Create rollback point
-#   sros_config:
-#     lines:
-#       - "admin rollback save comment \"Before Metro-Config {{ lookup('pipe', 'date -u +%Y-%m-%d-%H:%M:%s') }}\""
-#     provider: "{{ provider_creds }}"
-#   delegate_to: localhost
+- name: Create rollback point
+  sros_config:
+    lines:
+      - "admin rollback save comment \"Before Metro-Config {{ lookup('pipe', 'date -u +%Y-%m-%d-%H:%M:%s') }}\""
+    provider: "{{ provider_creds }}"
+  delegate_to: localhost
 
-# - name: Ensure build directory exits to store config fragments in
-#   file:
-#     state: directory
-#     path: "{{ config_file_directory }}/{{ inventory_hostname }}"
-#   delegate_to: localhost
+- name: Ensure build directory exits to store config fragments in
+  file:
+    state: directory
+    path: "{{ config_file_directory }}/{{ inventory_hostname }}"
+  delegate_to: localhost
 
-# - name: Set configuration fragments
-#   set_fact:
-#     config_items:
-#      - { file: "system.cfg", prio: "10" }
-#      - { file: "ports.cfg", prio: "20" }
-#      - { file: "router.cfg", prio: "30" }
+- name: Set configuration fragments
+  set_fact:
+    config_items:
+     - { file: "system.cfg", prio: "10" }
+     - { file: "ports.cfg", prio: "20" }
+     - { file: "router.cfg", prio: "30" }
 
-# - name: Generate configuration fragments
-#   template:
-#     src: "{{ item.file }}.j2"
-#     dest: "{{ config_file_directory }}/{{ inventory_hostname }}/{{ item.prio }}-{{ item.file }}"
-#   with_items: "{{ config_items }}"
-#   delegate_to: localhost
+- name: Generate configuration fragments
+  template:
+    src: "{{ item.file }}.j2"
+    dest: "{{ config_file_directory }}/{{ inventory_hostname }}/{{ item.prio }}-{{ item.file }}"
+  with_items: "{{ config_items }}"
+  delegate_to: localhost
 
-# - name: Show rootified commands that will be sent to VSR
-#   debug: msg='{{ lookup("template", "{{ item.file }}.j2" ) | sros_rootify }}' verbosity=1
-#   with_items: "{{ config_items }}"
+- name: Show rootified commands that will be sent to VSR
+  debug: msg='{{ lookup("template", "{{ item.file }}.j2" ) | sros_rootify }}' verbosity=1
+  with_items: "{{ config_items }}"
 
-# - meta: reset_connection
+- meta: reset_connection
 
-# - name: Configure additional configuration to integrate VSR with Nuage VSD
-#   sros_config:
-#     lines: '{{ lookup("template", "{{ item.file }}.j2" ) | sros_rootify }}'
-#     provider: "{{ provider_creds }}"
-#   with_items: "{{ config_items }}"
-#   delegate_to: localhost
+- name: Configure additional configuration to integrate VSR with Nuage VSD
+  sros_config:
+    lines: '{{ lookup("template", "{{ item.file }}.j2" ) | sros_rootify }}'
+    provider: "{{ provider_creds }}"
+  with_items: "{{ config_items }}"
+  delegate_to: localhost
 
-# - meta: reset_connection
+- meta: reset_connection
 
-# - name: Save VSR config
-#   sros_config:
-#     save: yes
-#     provider: "{{ provider_creds }}"
-#   delegate_to: localhost
+- name: Save VSR config
+  sros_config:
+    save: yes
+    provider: "{{ provider_creds }}"
+  delegate_to: localhost
