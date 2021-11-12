@@ -83,17 +83,13 @@
   - block:
 
     # Required variables:
-    # - nuage_auth: dict used as authentication parameter for the nuage_vspk calls
     # - cms_user_name (default: csproot)
     #
     # It assumes the tasks to be delegated to a server that has the
-    # nuage vspk python module installed.
-    
-    - debug: var=nuage_auth
 
     - name: Get CSP Enterprise ID
       nuage_vspk:
-        auth: "{{ nuage_auth }}"
+        auth: "{{ vspk_auth }}"
         type: Enterprise
         command: get_csp_enterprise
       register: nuage_csp_enterprise
@@ -102,7 +98,7 @@
     #
     - name: Get UUID of requested user
       nuage_vspk:
-        auth: "{{ nuage_auth }}"
+        auth: "{{ vspk_auth }}"
         type: User
         parent_id: "{{ nuage_csp_enterprise.id }}"
         parent_type: Enterprise
@@ -113,7 +109,7 @@
     - name: Create NUH users
       delegate_to: localhost
       nuage_vspk:
-        auth: "{{ nuage_auth }}"
+        auth: "{{ vspk_auth }}"
         type: User
         parent_id: "{{ nuage_csp_enterprise }}"
         parent_type: Enterprise
@@ -141,7 +137,7 @@
     # 
     - name: Get CMS Group
       nuage_vspk:
-        auth: "{{ nuage_auth }}"
+        auth: "{{ vspk_auth }}"
         type: Group
         parent_id: "{{ nuage_csp_enterprise.id }}"
         parent_type: Enterprise
@@ -155,7 +151,7 @@
     #
     - name: Get Root Group
       nuage_vspk:
-        auth: "{{ nuage_auth }}"
+        auth: "{{ vspk_auth }}"
         type: Group
         parent_id: "{{ nuage_csp_enterprise.id }}"
         parent_type: Enterprise
@@ -166,7 +162,7 @@
       
     - name: Get BootstrapCA Group
       nuage_vspk:
-        auth: "{{ nuage_auth }}"
+        auth: "{{ vspk_auth }}"
         type: Group
         parent_id: "{{ nuage_csp_enterprise.id }}"
         parent_type: Enterprise
@@ -177,7 +173,7 @@
       
     - name: Get VSPCA Group
       nuage_vspk:
-        auth: "{{ nuage_auth }}"
+        auth: "{{ vspk_auth }}"
         type: Group
         parent_id: "{{ nuage_csp_enterprise.id }}"
         parent_type: Enterprise
@@ -212,7 +208,7 @@
     - name: Add NUH users in appropriate group
       delegate_to: localhost
       nuage_vspk:
-        auth: "{{ nuage_auth }}"
+        auth: "{{ vspk_auth }}"
         type: User
         id: "{{ item.user }}"
         parent_id: "{{ item.group }}"
