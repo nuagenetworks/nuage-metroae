@@ -31,6 +31,7 @@
 * Fix NUH install on 20.10.R5 (METROAE-490)
 * Fixing message issue for docker pull(METROAE-527)
 * Add procedure for NUH copy certificates if installed before VSD(METROAE-559)
+* Create NSG certs for NUH users (METROAE-487)
 
 ## Test Matrix
 
