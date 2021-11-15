@@ -1,6 +1,5 @@
-### Please check proper veriables, sequence and conditions
 - block: 
-   
+
   - name: Create and transfer certs
     include_role:
       name: common
@@ -82,29 +81,12 @@
 
   - block:
 
-    # Required variables:
-    # - cms_user_name (default: csproot)
-    #
-    # It assumes the tasks to be delegated to a server that has the
-
     - name: Get CSP Enterprise ID
       nuage_vspk:
         auth: "{{ vspk_auth }}"
         type: Enterprise
         command: get_csp_enterprise
       register: nuage_csp_enterprise
-
-    ###Do we need this? I think no as we are using diff method from the vsd-add-user-to-cmsgroup.yml
-    #
-    - name: Get UUID of requested user
-      nuage_vspk:
-        auth: "{{ vspk_auth }}"
-        type: User
-        parent_id: "{{ nuage_csp_enterprise.id }}"
-        parent_type: Enterprise
-        command: find
-        match_filter: "userName == \"{{ cms_user_name | default('csproot') }}\""
-      register: nuage_user
 
     - name: Create NUH users
       delegate_to: localhost
@@ -133,22 +115,6 @@
         nuh_pre_user: "{{ nuh_certs_users.results[1].id }}"
         nuh_post_user: "{{ nuh_certs_users.results[2].id }}"
 
-    ### Do we need this?(CMS Group) as we don't have anything to do with CMS group
-    # 
-    - name: Get CMS Group
-      nuage_vspk:
-        auth: "{{ vspk_auth }}"
-        type: Group
-        parent_id: "{{ nuage_csp_enterprise.id }}"
-        parent_type: Enterprise
-        command: find
-        properties:
-          name: "CMS Group"
-      register: nuage_cms_group  
-      
-    ###Does name is right for Root? mean is it define as "Root Group"?(name) 
-    #  This Q is also includes other two groups.
-    #
     - name: Get Root Group
       nuage_vspk:
         auth: "{{ vspk_auth }}"
@@ -159,7 +125,7 @@
         properties:
           name: "Root Group"
       register: nuh_root_group
-      
+
     - name: Get BootstrapCA Group
       nuage_vspk:
         auth: "{{ vspk_auth }}"
@@ -170,7 +136,7 @@
         properties:
           name: "BootstrapCA Group"
       register: nuh_bootstrap_group  
-      
+
     - name: Get VSPCA Group
       nuage_vspk:
         auth: "{{ vspk_auth }}"
@@ -181,29 +147,6 @@
         properties:
           name: "VSPCA Group"
       register: nuh_vspca_group
-
-    # - name: get group IDs in Enterprise CMS
-    #   uri:
-    #     url: "https://{{ vsd_fqdn }}/nuage/api/v6/enterprises/{{ nuage_csp_enterprise }}/groups"
-    #     method: GET
-    #     user: csproot
-    #     return_content: yes
-    #     HEADER_Content-Type: "application/json"
-    #     HEADER_Authorization: "{{ auth_token }}"
-    #     HEADER_X-Nuage-Organization: "csp"    
-    #     validate_certs: no
-    #     body_format: json
-    #     timeout: 30
-    #   register: cms_groups
-
-    # Do the same for other 3 groups
-
-    # - set_fact:
-    #     cms_group: "{{ cms_groups.json[1].ID }}"
-    #     root_group: "{{ cms_groups.json[5].ID }}"
-    #     bootstrap_group: "{{ cms_groups.json[0].ID }}"
-    #     vspca_group: "{{ cms_groups.json[7].ID }}"
-    #   ignore_errors: yes
 
     - name: Add NUH users in appropriate group
       delegate_to: localhost
