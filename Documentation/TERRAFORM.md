@@ -41,12 +41,12 @@ Note that [Terraform](https://www.terraform.io/) will need to perform all of the
         resource definitions...
 
         provisioner "local-exec" {
-            command = "./metroae install vsds deploy"
+            command = "./metroae-container install vsds deploy"
             working_dir = "<metro-directory>/nuage-metroae"
         }
 
         provisioner "local-exec" {
-            command = "./metroae install vsds postdeploy"
+            command = "./metroae-container install vsds postdeploy"
             working_dir = "<metro-directory>/nuage-metroae"
         }
     }

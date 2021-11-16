@@ -10,18 +10,18 @@ Supported deployment:
 
 Currently the following workflows are supported:
 
-* metroae install portal - Deploy Portal VM(s) on KVM hypervisor and install the application
-* metroae install portal predeploy - Prepares the HV and deploys Portal VMs
-* metroae install portal deploy - Installs Docker-CE, SD-WAN Portal on the already prepared VMs
-* metroae install portal postdeploy - To be updated. Includes a restart and license update task
-* metroae install portal license - Copies the license file to the Portal VM(s) and restarts the Portal(s)
-* metroae destroy portal - Destroys Portal VMs and cleans up the files from hypervisor(s)
-* metroae upgrade portal - Upgrade Portal VM(s) on KVM hypervisor
-* metroae upgrade portal preupgrade health - Performs prerequisite and health checks of a Portal VM or cluster before initiating an upgrade
-* metroae upgrade portal shutdown - Performs database backup if necessary, Portal VM snapshot and stops all services
-* metroae upgrade portal deploy - Performs an install of the new SD-WAN Portal version
-* metroae upgrade portal postdeploy - Performs post-upgrade checks to verify Portal VM health, cluster status, and verify successful upgrade
-* metroae rollback portal - In the event of an unsuccessful upgrade, Portal(s) can be rolled back to the previously installed software version.
+* metroae-container install portal - Deploy Portal VM(s) on KVM hypervisor and install the application
+* metroae-container install portal predeploy - Prepares the HV and deploys Portal VMs
+* metroae-container install portal deploy - Installs Docker-CE, SD-WAN Portal on the already prepared VMs
+* metroae-container install portal postdeploy - To be updated. Includes a restart and license update task
+* metroae-container install portal license - Copies the license file to the Portal VM(s) and restarts the Portal(s)
+* metroae-container destroy portal - Destroys Portal VMs and cleans up the files from hypervisor(s)
+* metroae-container upgrade portal - Upgrade Portal VM(s) on KVM hypervisor
+* metroae-container upgrade portal preupgrade health - Performs prerequisite and health checks of a Portal VM or cluster before initiating an upgrade
+* metroae-container upgrade portal shutdown - Performs database backup if necessary, Portal VM snapshot and stops all services
+* metroae-container upgrade portal deploy - Performs an install of the new SD-WAN Portal version
+* metroae-container upgrade portal postdeploy - Performs post-upgrade checks to verify Portal VM health, cluster status, and verify successful upgrade
+* metroae-container rollback portal - In the event of an unsuccessful upgrade, Portal(s) can be rolled back to the previously installed software version.
 
 Example deployment files are available under examples/kvm_portal_install
 
