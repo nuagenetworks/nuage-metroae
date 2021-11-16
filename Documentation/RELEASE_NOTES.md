@@ -33,6 +33,7 @@
 * Fixing message issue for docker pull(METROAE-527)
 * Install NUH optionally without DNS entry (METROAE-375)
 * Add procedure for NUH copy certificates if installed before VSD(METROAE-559)
+* Create NUH users and certs for NSG bootstrapping (METROAE-487)
 
 ## Test Matrix
 
