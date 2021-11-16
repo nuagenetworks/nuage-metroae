@@ -367,11 +367,27 @@
         -x {{ vsd_fqdn }} -y {{ (enable_ipv6 | default(False)) | ternary('-6', '') }}
       when: inventory_hostname == first_cluster_node_to_install
 
+    - name: Wait for Second VSD SSH ready
+      command: "/opt/vsd/install/checkSSH.sh -n '{{ first_cluster_node_to_install }}' -t vsd"
+      when: inventory_hostname == second_cluster_node_to_install
+      retries: 20
+      delay: 20
+      register: second_cluster_ssh_ready
+      until: second_cluster_ssh_ready.rc == 0
+
     - name: Install VSD software on the second cluster node (Can take 20 minutes)
       command: >-
         /opt/vsd/vsd-install.sh -1 {{ first_cluster_node_to_install }}
         -t 2 -x {{ vsd_fqdn }} -y {{ (enable_ipv6 | default(False)) | ternary('-6', '') }}
       when: inventory_hostname == second_cluster_node_to_install
+
+    - name: Wait for Third VSD SSH ready
+      command: "/opt/vsd/install/checkSSH.sh -n '{{ first_cluster_node_to_install }}' -t vsd"
+      when: inventory_hostname == third_cluster_node_to_install
+      retries: 20
+      delay: 20
+      register: third_cluster_ssh_ready
+      until: third_cluster_ssh_ready.rc == 0
 
     - name: Install VSD software on the third cluster node (Can take 20 minutes)
       command: >-
