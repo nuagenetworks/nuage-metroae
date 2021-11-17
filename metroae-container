@@ -23,8 +23,13 @@ fi
 SSHMOUNT=""
 [[ -e .ssh ]] && SSHMOUNT="-v `pwd`/.ssh:/root/.ssh"
 
+VAULTPASS=""
+if [[ ! -z $METROAE_PASSWORD ]]; then
+    VAULTPASS=" -e METROAE_PASSWORD=$METROAE_PASSWORD"
+fi
+
 # Run the command inside docker
 args=( "$@" )
 
 # we use host networking because we want the host's dns server and host file
-docker run --network=host --rm $TI $SSHMOUNT -v "`pwd`:/metroae" metroaecontainer:$TAG ./metroae "${args[@]}"
+docker run --network=host --rm $TI $SSHMOUNT $VAULTPASS -v "`pwd`:/metroae" metroaecontainer:$TAG ./metroae "${args[@]}"
