@@ -194,18 +194,23 @@
   - name: Run backup script from mount location
     shell: "{{ backup_cmd }}"   # noqa 305
     when: vsd_mysql_password is undefined
+    vars:
+      ansible_python_interpreter: /opt/rh/rh-python36/root/usr/bin/python
 
   - name: Run backup script from mount location
     shell: "{{ backup_cmd }}"   # noqa 305
     environment:
       ENV_MYSQL_ROOT_PWD: "{{ vsd_mysql_password }}"
     when: vsd_mysql_password is defined
+    vars:
+      ansible_python_interpreter: /opt/rh/rh-python36/root/usr/bin/python
 
   - name: Umount the ISO
     shell: "umount /media/CDROM"        # noqa 305
 
   remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
   become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
+  become_flags: '-i'
   vars:
     ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"
 
