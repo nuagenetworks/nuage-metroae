@@ -75,7 +75,7 @@
     when: ssh_proxy_configuration is defined
 
   - name: Copy VSC config file to the VSC
-    connection: local
+    delegate_to: localhost
     shell: >-
       sshpass -p'{{ vsc_password | default(vsc_default_password) }}' scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null
       {{ proxy_conf | default('') }} {{ tmp_dir_name }}/{{ config_file_name }} {{ vsc_username | default(vsc_default_username) }}@{{ mgmt_ip }}:
@@ -85,7 +85,7 @@
       - not override_vsc_config
 
   - name: Copy VSC config file to the VSC
-    connection: local
+    delegate_to: localhost
     shell: >-
       sshpass -p'{{ vsc_password | default(vsc_default_password) }}' scp -6 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null
       {{ proxy_conf | default('') }} {{ tmp_dir_name }}/{{ config_file_name }}
@@ -98,7 +98,7 @@
   - name: Override using user provided config
     block:
     - name: Copy user provided config file for VSC(IPv4)
-      connection: local
+      delegate_to: localhost
       shell: >-
         sshpass -p'{{ vsc_password | default(vsc_default_password) }}' scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null
         {{ proxy_conf | default('') }} {{ item }} {{ vsc_username | default(vsc_default_username) }}@{{ mgmt_ip }}:
@@ -106,7 +106,7 @@
       when: not mgmt_ip | ipv6
 
     - name: Copy user provided config file for VSC(IPv6)
-      connection: local
+      delegate_to: localhost
       shell: >-
         sshpass -p'{{ vsc_password | default(vsc_default_password) }}' scp -6 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null
         {{ proxy_conf | default('') }} {{ item }}
@@ -131,7 +131,7 @@
     block:
 
     - name: Copy VSC BOF file to the VSC
-      connection: local
+      delegate_to: localhost
       shell: >-
         sshpass -p'{{ vsc_password | default(vsc_default_password) }}' scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null
         {{ proxy_conf | default('') }} {{ tmp_dir_name }}/{{ bof_file_name }} {{ vsc_username | default(vsc_default_username) }}@{{ mgmt_ip }}:
@@ -139,7 +139,7 @@
       when: not mgmt_ip | ipv6
 
     - name: Copy VSC BOF file to the VSC
-      connection: local
+      delegate_to: localhost
       shell: >-
         sshpass -p'{{ vsc_password | default(vsc_default_password) }}' scp -6 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null
         {{ proxy_conf | default('') }} {{ tmp_dir_name }}/{{ bof_file_name }}
@@ -231,7 +231,7 @@
 
     - name: Verify reboot happened successfully
       assert:
-        that: "uptime_after_reboot < uptime_before_reboot"
+        that: "uptime_after_reboot.stdout < uptime_before_reboot.stdout"
         fail_msg: "System uptime after reboot step suggests there were issues during reboot. Check log for errors."
 
     when: reboot_vsc | default(true)

@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -e
 
-METROAE_VERSION="4.6.0"
-SCRIPT_VERSION="1.5.0"
+METROAE_VERSION="4.6.1"
+SCRIPT_VERSION="1.5.1"
 MENU=()
 
 #################################################################################
@@ -691,20 +691,23 @@ function pull {
         if [ -w "$SCRIPT_LOG_FILE" ]; then
             debug "${FUNCNAME[0]}: Script log is writable"
             sudo docker pull $METRO_AE_IMAGE:$MAX_CONTAINER_VERSION | tee -a $SCRIPT_LOG_FILE
+            ((status=$?+$PIPESTATUS))
         else
             if [ -z $METROAE_WRITE_WARNING_PRINTED ]; then
                 print_write_permission_warning
                 METROAE_WRITE_WARNING_PRINTED=1
+                status=$?
             fi
             debug "${FUNCNAME[0]}: Script log is not writable"
             sudo docker pull $METRO_AE_IMAGE:$MAX_CONTAINER_VERSION
+            status=$?
         fi
     else
         debug "${FUNCNAME[0]}: Script log is not found"
         sudo docker pull $METRO_AE_IMAGE:$MAX_CONTAINER_VERSION
+        status=$?
     fi
 
-    status=$?
     if [[ $status -ne 0 ]]; then
         write_to_screen_and_script_log "Attempt to pull the $MAX_CONTAINER_VERSION MetroAE container image failed. Quitting."
         exit 1
@@ -1391,7 +1394,7 @@ function docker_exec {
 
     if [[ $1 == "env" ]]; then
         shift
-        environment='-e ANSIBLE_FORCE_COLOR=true -e UUID=$UUID'
+        environment="-e ANSIBLE_FORCE_COLOR=true -e UUID=$UUID"
         for env in `env`
         do
             filtered=0
@@ -2387,7 +2390,7 @@ function deployment_main {
 
 function docker_exec_config {
     debug ${FUNCNAME[0]}
-    docker_exec env /usr/bin/python $CONTAINER_HOME/nuage-metroae-config/metroae_config.py "$@"
+    docker_exec env /usr/bin/python3 $CONTAINER_HOME/nuage-metroae-config/metroae_config.py "$@"
 }
 
 function docker_exec_generate_and_copy_keys {
@@ -2559,7 +2562,7 @@ function unzip_files {
 
 function gen_example_from_schema {
     debug ${FUNCNAME[0]}
-    docker_exec /usr/bin/python $CONTAINER_HOME/nuage-metroae/generate_example_from_schema.py "$@"
+    docker_exec /usr/bin/python3 $CONTAINER_HOME/nuage-metroae/generate_example_from_schema.py "$@"
 }
 
 function container_status {
@@ -2630,7 +2633,7 @@ function vault_password {
     debug ${FUNCNAME[0]}
     run_container_if_not_running
 
-    docker_exec_interactive /usr/bin/python $CONTAINER_HOME/nuage-metroae/encrypt_credentials.py  $1
+    docker_exec_interactive /usr/bin/python3 $CONTAINER_HOME/nuage-metroae/encrypt_credentials.py  $1
 }
 
 function disable_encryption {
@@ -3145,41 +3148,41 @@ function tools_main {
         ;;
         get_debug)
         if [[ $RUN_MODE == $CONTAINER_RUN_MODE ]]; then
-            docker_exec env /usr/bin/python $CONTAINER_HOME/nuage-metroae/get_debug.py ${EXTRA_ARGS[@]}
+            docker_exec env /usr/bin/python3 $CONTAINER_HOME/nuage-metroae/get_debug.py ${EXTRA_ARGS[@]}
         else
-            /usr/bin/python get_debug.py ${EXTRA_ARGS[@]}
+            /usr/bin/python3 get_debug.py ${EXTRA_ARGS[@]}
         fi
         print_version_and_exit 0
         ;;
         convert_csv_to_deployment)
         if [[ $RUN_MODE == $CONTAINER_RUN_MODE ]]; then
-            docker_exec env workdir $CONTAINER_HOME/nuage-metroae /usr/bin/python convert_csv_to_deployment.py ${EXTRA_ARGS[@]}
+            docker_exec env workdir $CONTAINER_HOME/nuage-metroae /usr/bin/python3 convert_csv_to_deployment.py ${EXTRA_ARGS[@]}
         else
-            /usr/bin/python convert_csv_to_deployment.py ${EXTRA_ARGS[@]}
+            /usr/bin/python3 convert_csv_to_deployment.py ${EXTRA_ARGS[@]}
         fi
         print_version_and_exit 0
         ;;
         convert_excel_to_deployment)
         if [[ $RUN_MODE == $CONTAINER_RUN_MODE ]]; then
-            docker_exec env workdir $CONTAINER_HOME/nuage-metroae /usr/bin/python convert_excel_to_deployment.py ${EXTRA_ARGS[@]}
+            docker_exec env workdir $CONTAINER_HOME/nuage-metroae /usr/bin/python3 convert_excel_to_deployment.py ${EXTRA_ARGS[@]}
         else
-            /usr/bin/python convert_excel_to_deployment.py ${EXTRA_ARGS[@]}
+            /usr/bin/python3 convert_excel_to_deployment.py ${EXTRA_ARGS[@]}
         fi
         print_version_and_exit 0
         ;;
         generate-example-from-schema)
         if [[ $RUN_MODE == $CONTAINER_RUN_MODE ]]; then
-            docker_exec env /usr/bin/python $CONTAINER_HOME/nuage-metroae/generate_example_from_schema.py ${EXTRA_ARGS[@]}
+            docker_exec env /usr/bin/python3 $CONTAINER_HOME/nuage-metroae/generate_example_from_schema.py ${EXTRA_ARGS[@]}
         else
-            /usr/bin/python generate_example_from_schema.py ${EXTRA_ARGS[@]}
+            /usr/bin/python3 generate_example_from_schema.py ${EXTRA_ARGS[@]}
         fi
         print_version_and_exit 0
         ;;
         encrypt-credentials)
         if [[ $RUN_MODE == $CONTAINER_RUN_MODE ]]; then
-            docker_exec env /usr/bin/python $CONTAINER_HOME/nuage-metroae/encrypt_credentials.py ${EXTRA_ARGS[@]}
+            docker_exec env /usr/bin/python3 $CONTAINER_HOME/nuage-metroae/encrypt_credentials.py ${EXTRA_ARGS[@]}
         else
-            /usr/bin/python encrypt_credentials.py ${EXTRA_ARGS[@]}
+            /usr/bin/python3 encrypt_credentials.py ${EXTRA_ARGS[@]}
         fi
         print_version_and_exit 0
         ;;
@@ -3363,7 +3366,7 @@ function plugin_help {
 
 function help_header {
     debug ${FUNCNAME[0]}
-    
+
     echo ""
     echo "Nuage Networks Metro Automation Engine (MetroAE) Version:" $METROAE_VERSION
     echo "Run mode is" $RUN_MODE
@@ -3375,7 +3378,7 @@ function help_header {
         else
             current_setup_type="Both Config and Deploy"
         fi
-        echo "Setup type is" $current_setup_type  
+        echo "Setup type is" $current_setup_type
         if [[ $current_setup_type == "Both Config and Deploy" || $current_setup_type == "Config" ]]; then
             metroae_config_engine_version=`docker_exec_config version`
             echo "Nuage Networks" $metroae_config_engine_version
@@ -3559,7 +3562,7 @@ case ${MATCH_MENU[2]} in
     wizard)
     debug "main: wizard"
     if [[ $RUN_MODE == $CONTAINER_RUN_MODE ]]; then
-        docker_exec_interactive /usr/bin/python $CONTAINER_HOME/nuage-metroae/run_wizard.py "${EXTRA_ARGS[@]}"
+        docker_exec_interactive /usr/bin/python3 $CONTAINER_HOME/nuage-metroae/run_wizard.py "${EXTRA_ARGS[@]}"
     else
         ./run_wizard.py "${EXTRA_ARGS[@]}"
     fi

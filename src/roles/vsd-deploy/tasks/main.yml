@@ -308,7 +308,7 @@
 
       - name: Wait for master VCIN processes to become running
         monit_waitfor_service:
-          name: "{{ vcin_proc_pre['state'].keys() }}"
+          name: "{{ vcin_proc_pre['state'].keys() | list }}"
           timeout_seconds: 1200
           test_interval_seconds: 10
 
@@ -461,7 +461,7 @@
 
   - name: wait for VSD common, core and stats services to become running
     monit_waitfor_service:
-      name: "{{ proc_list['state'].keys() | difference(remove_list) }}"
+      name: "{{ proc_list['state'].keys() | list | difference(remove_list) }}"
       timeout_seconds: 1200
       test_interval_seconds: 30
 
@@ -493,6 +493,8 @@
   when:
     - vstats is defined
     - not skip_vsd_deploy
+  vars:
+    ansible_python_interpreter: /usr/bin/python2
 
 - name: Install statistics for stats-out VSDs (Can take 20 minutes)
   command: /opt/vsd/install.sh -t t -y

@@ -44,9 +44,13 @@
        - bridge-utils
        - libguestfs
        - libguestfs-tools
+       - libvirt-devel
        - libvirt-python
+      lock_timeout: 100
       state: present
     when: ansible_os_family == "RedHat"
+    vars:
+      ansible_python_interpreter: /usr/bin/python2
 
   - name: If Debian, install packages for Debian OS family distros
     apt:
@@ -54,9 +58,12 @@
         - qemu-kvm
         - libvirt-bin
         - bridge-utils
-        - python-libvirt
+        - libvirt-dev
       state: present
     when: ansible_os_family == "Debian"
+
+  - name: Install libvirt python package
+    pip: name=libvirt-python
 
   - name: Make sure libvirtd has started
     service:
