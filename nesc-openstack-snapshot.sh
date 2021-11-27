@@ -1,10 +1,56 @@
 #!/usr/bin/env bash
-echo "Please enter your choice of credentials/variables for creating a snopshot."
-echo "1. Default MetroAE NESC OpenStack"
-echo "2. Custom"
-echo "3. Exit"
-echo ">> Enter: "
-read -sr OS_CRED_CHOICE
+echo "NESC OPENSTACK - METROAE"
+source nesc-openstack-source.sh
+status=$?
+
+if [[ $status -ne 0 ]]; then
+        echo "Setting default MetroAE NESC OpenStack authencation failure."
+        exit 1
+    else
+        echo "Successfully added authencation. Check it."
+        env | grep OS_
+    fi
+
+echo ""
+echo ""
+nova list
+status=$?
+echo ""
+echo "******************************************************END OF THE LIST*****************************************************"
+
+if [[ $status -ne 0 ]]; then
+        echo "Error to list down instanses from OpenStack"
+        exit 1
+fi
+echo "Check the list of instances and select."
+
+read -p "Enter instance name:" nesc_instance
+
+openstack server stop myInstance
+status=$?
+
+if [[ $status -ne 0 ]]; then
+        echo "Failed to stop $nesc_instance. May be that instance is not valid."
+        exit 1
+fi
+
+echo ""
+echo ""
+nova list
+status=$?
+echo ""
+echo "******************************************************END OF THE LIST*****************************************************"
+
+if [[ $status -ne 0 ]]; then
+        echo "Error to list down instanses from OpenStack"
+        exit 1
+fi
+
+
+
+
+
+
 
 
 
