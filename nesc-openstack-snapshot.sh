@@ -26,7 +26,7 @@ echo "Check the list of instances and select."
 
 read -p "Enter instance name:" nesc_instance
 
-openstack server stop myInstance
+openstack server stop $nesc_instance
 status=$?
 
 if [[ $status -ne 0 ]]; then
@@ -36,13 +36,12 @@ fi
 
 echo ""
 echo ""
-nova list
+nova list | grep $nesc_instance
 status=$?
 echo ""
-echo "******************************************************END OF THE LIST*****************************************************"
 
 if [[ $status -ne 0 ]]; then
-    echo "Error to list down instanses from OpenStack"
+    echo "Error to list down instanse infromation from OpenStack"
     exit 1
 fi
 
@@ -56,7 +55,18 @@ if [[ $status -ne 0 ]]; then
     exit 1
 fi
 
-nova image-list
+openstack image list
+status=$?
+if [[ $status -ne 0 ]]; then
+    echo "Error to list down images from OpenStack"
+    exit 1
+fi
+echo ""
+echo "****END OF THE LIST****"
+echo ""
+echo "Newly created image information"
+
+openstack image list | grep $nesc_instance_snap
 status=$?
 if [[ $status -ne 0 ]]; then
     echo "Error to list down images from OpenStack"
@@ -75,7 +85,6 @@ done
 if [[ $user_choice -eq "y" ]]; then
     read -p "Enter image ID of snapshot: " nesc_snapshot_id
     openstack image save --file snapshot.raw $nesc_snapshot_id
-    
     status=$?
     if [[ $status -ne 0 ]]; then
         echo "Error to download images from OpenStack"
@@ -94,7 +103,6 @@ if [[ $status -ne 0 ]]; then
 fi
 read -p "Select snapshot flavor:" nesc_snapshot_flavor
 
-
 openstack network list
 status=$?
 if [[ $status -ne 0 ]]; then
@@ -112,3 +120,14 @@ if [[ $status -ne 0 ]]; then
     echo "Error to boot new instance from the snapshot"
     exit 1
 fi
+
+echo ""
+echo "*****STATUS OF INSTANCE AND SNAPSHOT*****"
+echo "________________________________________________________________________________________________________"
+nova list | grep $nesc_instance
+echo ""
+echo "________________________________________________________________________________________________________"
+nova list | grep $nesc_snap_new_instance
+echo ""
+echo "________________________________________________________________________________________________________"
+openstack image list | grep $nesc_instance_snap
