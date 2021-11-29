@@ -107,3 +107,8 @@ echo ""
 read -p "Enter new name for new instance: " nesc_snap_new_instance
 
 nova boot --flavor $nesc_snapshot_flavor --nic net-id=$nesc_openstack_net_id --image $nesc_instance_snap $nesc_snap_new_instance
+status=$?
+if [[ $status -ne 0 ]]; then
+    echo "Error to boot new instance from the snapshot"
+    exit 1
+fi
