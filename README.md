@@ -48,7 +48,10 @@ File name | Description
 
 You can now run `python run_wizard.py` to let MetroAE help you setup your server and create or edit a deployment. The wizard will ask you questions about what you'd like to do and then create the proper files on disk. run_wizard.py is most useful when you are working with a clone of the nuage-metroae repo. 
 
-MetroAE uses docker containers to hold the required environment. Previous versions of MetroAE used the command `metroae` but the script `metroae-container` is now used
+MetroAE uses docker containers to hold the required environment. Previous versions of MetroAE used the command `metroae` but the script `metroae-container` is now used. If an older version of the MetroAE container exists, it should be removed from the host byt following this procedure:
+
+- Verify if the container is running: `docker ps`. See if metroae is running and note the container ID.
+- `docker rm -f <container ID>`
 
 Please see [RELEASE_NOTES.md](Documentation/RELEASE_NOTES.md) for all the details about what has changed or been added in this release.
 
