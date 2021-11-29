@@ -11,7 +11,6 @@
 - include_role:
     name: check-node-running
 
-
 - name: Display if skipping predeploy
   debug:
     msg:
@@ -135,10 +134,7 @@
   - name: Disable SELinux
     shell: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} \
            sh "sed -i 's/SELINUX\=enforcing/SELINUX\=permissive/g' /etc/selinux/config"  # noqa 305
-           
-  - name: Enable IP forwarding
-    shell: echo "net.ipv4.ip_forward = 1" > /etc/sysctl.conf
-             sysctl -p
+
   - block:
     - name: Preallocate most of Portal disk space to avoid pausing the VM, this also checks disk space
       shell: "fallocate -x -l {{ portal_allocate_size_gb }}G {{ guestfish_dest }}"  # noqa 305
@@ -147,6 +143,10 @@
       shell: "qemu-img resize {{ guestfish_dest }} +{{ portal_allocate_size_gb | int - 8 }}G"
 
     when: portal_allocate_size_gb > 0
+
+  - name: Enable IP forwarding
+    shell: echo "net.ipv4.ip_forward = 1" > /etc/sysctl.conf
+           sysctl -p
 
   - name: Define and start Portal VM
     include_role:
