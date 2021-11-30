@@ -17,6 +17,7 @@
 * Support NFS server config using MetroAE(METROAE-557)
 * Webfilter should optionally use HTTP Proxy (METROAE-493)
 * Add support for encrypting credentials in Excel spreadsheet (METROAE-552)
+* Add Ansible 3.4.0 support (METROAE-344)
 
 ### Resolved Issues
 
@@ -35,6 +36,7 @@
 * Add procedure for NUH copy certificates if installed before VSD(METROAE-559)
 * Create NUH users and certs for NSG bootstrapping (METROAE-487)
 * VSTAT VSS UI should be set for all VSTATS (METROAE-580)
+* Make changes into documentation for supporting ansible version upgrade(METROAE-588)
 
 ## Test Matrix
 

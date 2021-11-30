@@ -57,6 +57,8 @@ Please see [RELEASE_NOTES.md](Documentation/RELEASE_NOTES.md) for all the detail
 
 All MetroAE operations use a command `metroae-container` for consistent usage and syntax.
 
+MetroAE git clone version now requires Ansible version 3.4.0 or higher. Using the `metroae-container` automatically uses the 3.4.0 ansible version.
+
 ## Supported Components for Deployment and Upgrade
 
 MetroAE supports deployment and upgrade of the following components as VMs on the target server. These are the same target server types that are supported on the VSP platform.
