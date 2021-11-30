@@ -2167,7 +2167,7 @@ class Wizard(object):
                     "multiple using commas)", default)
                 external_interface_list = self._format_interface_list(external_interface_list)
 
-            deployment["external_interface_list"] = external_interface_list
+            component["external_interface_list"] = external_interface_list
 
         self._setup_target_server(component)
 
