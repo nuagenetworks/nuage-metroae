@@ -608,7 +608,7 @@ class Wizard(object):
                 self._setup_vmname(deployment, i, hostname, with_upgrade)
 
             if not is_nsgv:
-                self._setup_ip_addresses(deployment, i, hostname, is_vsc)
+                self._setup_ip_addresses(deployment, i, hostname, is_vsc, is_nuh)
             else:
                 component = deployment[i]
                 self._setup_target_server(component)
@@ -1892,7 +1892,7 @@ class Wizard(object):
         while ntp_server_list is None:
 
             ntp_server_list = self._input(
-                "Enter NTP server IPs in dotted decmial format (separate "
+                "Enter NTP server IPs in dotted decimal format (separate "
                 "multiple using commas)", ntp_servers_default)
 
             ntp_server_list = self._format_ip_list(ntp_server_list)
@@ -2108,7 +2108,7 @@ class Wizard(object):
         component["hostname"] = hostname
         return hostname
 
-    def _setup_ip_addresses(self, deployment, i, hostname, is_vsc):
+    def _setup_ip_addresses(self, deployment, i, hostname, is_vsc, is_nuh):
         component = deployment[i]
 
         mgmt_ip = self._setup_mgmt_address(component, hostname)
@@ -2133,8 +2133,46 @@ class Wizard(object):
             system_ip = self._input("System IP address for routing", default,
                                     datatype="ipaddr")
             component["system_ip"] = system_ip
+        if is_nuh:
+
+            default = self._get_value(component, "internal_ip")
+            internal_ip = self._input("IP address on Internal interface",
+                                      default, datatype="ipaddr")
+            component["internal_ip"] = internal_ip
+
+            default = "24"
+            if "internal_ip_prefix" in component:
+                default = str(component["internal_ip_prefix"])
+
+            internal_ip_prefix = self._input("Internal IP address prefix length",
+                                             default, datatype="int")
+            component["internal_ip_prefix"] = internal_ip_prefix
+
+            if "internal_gateway" in component and component["internal_gateway"] != "":
+                default = self._get_value(component, "internal_gateway")
+            else:
+                default = None
+            internal_gateway = self._input("Gateway for Internal interface",
+                                           default, datatype="ipaddr")
+            component["internal_gateway"] = internal_gateway
+
+            if "external_interface_list" in component and component["external_interface_list"] != []:
+                default = self._get_value(component, "external_interface_list")
+            else:
+                default = None
+            external_interface_list = None
+            while external_interface_list is None:
+                external_interface_list = self._input(
+                    "Enter External interface names in string format (separate "
+                    "multiple using commas)", default)
+                external_interface_list = self._format_interface_list(external_interface_list)
+
+            deployment["external_interface_list"] = external_interface_list
 
         self._setup_target_server(component)
+
+    def _format_interface_list(self, inter_str):
+        return [x.strip() for x in inter_str.split(",")]
 
     def _setup_mgmt_address(self, component, hostname):
 
