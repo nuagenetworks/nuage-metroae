@@ -749,7 +749,7 @@ class Wizard(object):
     #
 
     def _print(self, msg):
-        print msg.encode("utf-8")
+        print(msg)
 
     def _print_progress(self):
         if self.progress_display_count % self.progress_display_rate == 0:
@@ -781,7 +781,7 @@ class Wizard(object):
                 if datatype == "password":
                     user_value = getpass.getpass(input_prompt)
                 else:
-                    user_value = raw_input(input_prompt)
+                    user_value = input(input_prompt)
                 value = self._validate_input(user_value, default, choices,
                                              datatype)
 
@@ -1024,7 +1024,7 @@ class Wizard(object):
         action_func(action, data)
 
     def _get_action_name(self, action):
-        keys = action.keys()
+        keys = list(action.keys())
         for standard_field in STANDARD_FIELDS:
             if standard_field in keys:
                 keys.remove(standard_field)
@@ -1317,7 +1317,7 @@ class Wizard(object):
             if vms is None:
                 return False
 
-            self._print("\nFound VMs: " + ", ".join(sorted(vms.keys())))
+            self._print("\nFound VMs: " + ", ".join(sorted(list(vms.keys()))))
 
             for vm_name, vm in vms.iteritems():
                 vm_info = self._discover_vcenter_vm_info(vm, hostname)
@@ -1803,7 +1803,7 @@ class Wizard(object):
         data = converter.get_data()
         self.state["csv_data"] = data
         self._print("Imported the following schemas from CSV: " +
-                    ", ".join(data.keys()))
+                    ", ".join(list(data.keys())))
 
         self._read_csv_data(data)
 
@@ -2575,8 +2575,8 @@ def main():
         wizard()
     except Exception:
         traceback.print_exc()
-        print "\nThere was an unexpected error running the wizard"
-        print "Please contact: " + METROAE_CONTACT
+        print("\nThere was an unexpected error running the wizard")
+        print("Please contact: " + METROAE_CONTACT)
         exit(1)
 
 
