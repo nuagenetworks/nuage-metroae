@@ -53,11 +53,11 @@ MetroAE uses docker containers to hold the required environment. Previous versio
 - Verify if the container is running: `docker ps`. See if metroae is running.
 - `metroae container destroy -y`
 
-MetroAE now requires Ansible version 3.4.0 or higher. Alternatively, use the new `metroae-container` for using the latest container.
-
 Please see [RELEASE_NOTES.md](Documentation/RELEASE_NOTES.md) for all the details about what has changed or been added in this release.
 
 All MetroAE operations use a command `metroae-container` for consistent usage and syntax.
+
+MetroAE git clone version now requires Ansible version 3.4.0 or higher. Using the `metroae-container` automatically uses the 3.4.0 ansible version.
 
 ## Supported Components for Deployment and Upgrade
 
