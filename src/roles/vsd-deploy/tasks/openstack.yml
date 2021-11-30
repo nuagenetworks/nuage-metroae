@@ -20,7 +20,7 @@
   when: not upgrade
 
 - name: Get VSD details from OpenStack
-  os_server_facts:
+  os_server_info:
     auth:
       "{{ openstack_auth }}"
     server: "{{ vm_name }}"
@@ -35,11 +35,14 @@
 - name: Display vsd_ip var
   ansible.builtin.debug:
     var: vsd_ip
-    verbosity: 4
+    verbosity: 2
+  ansible.builtin.debug:
+    var: vsd_ip['openstack_servers']
+    verbosity: 2
 
 - name: Set vsd mgmt ip
   set_fact:
-    vsd_mgmt_ip: "{{ vsd_ip['ansible_facts']['openstack_servers'][0]['addresses'][openstack_network][0]['addr'] }}"
+    vsd_mgmt_ip: "{{ vsd_ip['openstack_servers'][0]['addresses'][openstack_network][0]['addr'] }}"
 
 - name: Wait for VSD ssh to be ready
   include_role:
