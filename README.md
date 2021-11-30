@@ -22,7 +22,6 @@ File name | Description
 --------- | --------
 [RELEASE_NOTES](Documentation/RELEASE_NOTES.md) | New features, resolved issues and known limitations and issues
 [GETTING_STARTED](Documentation/GETTING_STARTED.md) | MetroAE Quick Start Guide
-[DOCKER](Documentation/DOCKER.md) | Installing and using MetroAE Docker container
 [SETUP](Documentation/SETUP.md) | Set up your environment by cloning the repo, installing packages and configuring access.
 [CUSTOMIZE](Documentation/CUSTOMIZE.md) | Populate variable files for a deployment and unzip Nuage software.
 [VAULT_ENCRYPT](Documentation/VAULT_ENCRYPT.md) | Safeguard sensitive data
@@ -47,11 +46,16 @@ File name | Description
 
 ## Important Notes
 
-You can now run `python run_wizard.py` to let MetroAE help you setup your server and create or edit a deployment. The wizard will ask you questions about what you'd like to do and then create the proper files on disk. run_wizard.py is most useful when you are working with a clone of the nuage-metroae repo. It can be used to generate deployments that can be used with the Docker container version of MetroAE, but those deployments would need to be copied manually from the nuage-metroae repo clone to the container's metroae_data directory.
+You can now run `python run_wizard.py` to let MetroAE help you setup your server and create or edit a deployment. The wizard will ask you questions about what you'd like to do and then create the proper files on disk. run_wizard.py is most useful when you are working with a clone of the nuage-metroae repo. 
+
+MetroAE uses docker containers to hold the required environment. Previous versions of MetroAE used the command `metroae` but the script `metroae-container` is now used. If an older version of the MetroAE container exists, it should be removed from the host by following this procedure:
+
+- Verify if the container is running: `docker ps`. See if metroae is running.
+- `metroae container destroy -y`
 
 Please see [RELEASE_NOTES.md](Documentation/RELEASE_NOTES.md) for all the details about what has changed or been added in this release.
 
-All MetroAE operations, including Docker container management, use a command `metroae` for consistent usage and syntax. Please see [DOCKER.md](Documentation/DOCKER.md) for details on configuration and use of the container version of MetroAE.
+All MetroAE operations use a command `metroae-container` for consistent usage and syntax.
 
 ## Supported Components for Deployment and Upgrade
 
@@ -81,7 +85,7 @@ MetroAE supports the deployment and upgrade of Nuage VSP components on the follo
 
 ## Main Steps for Using MetroAE
 
-1. [Setup](Documentation/SETUP.md) the MetroAE host. Setup prepares the host for running MetroAE, including retrieving the repository, installing prerequisite packages and setting up SSH access. You also have the option of installing MetroAE in a container, and then working with it via CLI or the GUI.
+1. [Setup](Documentation/SETUP.md) the MetroAE host. Setup prepares the host for running MetroAE, including retrieving the repository, installing prerequisite packages and setting up SSH access. 
 
 2. Obtain the proper Nuage binary files for your deployment. These can be downloaded from Nuage/Nokia online customer support.
 
@@ -95,7 +99,7 @@ MetroAE supports the deployment and upgrade of Nuage VSP components on the follo
 
 MetroAE workflows are the operations that can be performed against a specified deployment.  All supported workflows can be listed via:
 
-    metroae --list
+    metroae-container --list
 
 Workflows fall into the following categories:
 

@@ -41,17 +41,17 @@ If all of these prerequisites and assumptions are true, perform the following st
   
 #### 3. Run the following command to bring up new copies of the original VMs (e.g. 5.4.1).
 
-`metroae install vsds predeploy <deployment name>`
+`metroae-container install vsds predeploy <deployment name>`
 
 #### 4. Manually copy (via scp) the pre-upgrade backup to /opt/vsd/data on VSD 1.
 
 #### 5. Run the following command to start the installation of the VSD software on the VSD VM. This will also restore the backup that you copied to the first VSD.
 
-`metroae install vsds deploy <deployment name>`
+`metroae-container install vsds deploy <deployment name>`
 
 #### 6. Run the following command to run sanity and connectivity checks on the VSDs: 
 
-`metroae install vsds postdeploy <deployment name>`
+`metroae-container install vsds postdeploy <deployment name>`
 
 At this point, your original VSD configuration should be restored and up and running.
 

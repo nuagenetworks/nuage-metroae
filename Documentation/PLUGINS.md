@@ -8,7 +8,7 @@ The overview of the process is:
 
 1. Create the proper files and subdirectories (see below) in a directory of your choosing
 1. Package the plugin using the `package-plugin.sh` script
-1. Install the plugin using the `metroae plugin install` command
+1. Install the plugin using the `metroae-container plugin install` command
 1. Add the proper data files, if required, to your deployment directory
 1. Execute your role
 
@@ -32,7 +32,7 @@ This will create a tarball of the plugin ready for distribution to users.
 
 Users who wish to install the plugin can issue:
 
-    ./metroae plugin install <plugin-tarball-or-directory>
+    ./metroae-container plugin install <plugin-tarball-or-directory>
 
 This should be issued from the nuage-metro repo or container.  Note that a tarball or unzipped directory can both be installed.
 
@@ -40,7 +40,7 @@ This should be issued from the nuage-metro repo or container.  Note that a tarba
 
 To uninstall a plugin, the user can issue:
 
-    ./metroae plugin uninstall <plugin-name>
+    ./metroae-container plugin uninstall <plugin-name>
 
 This should be issued from the nuage-metro repo or container.  Uninstall is by plugin name as all installed files were recorded and will be rolled back.
 
