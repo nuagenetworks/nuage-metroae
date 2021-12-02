@@ -15,6 +15,9 @@
       mac_addr: False
     register: net_conf
     remote_user: "{{ vstat_username | default(vstat_default_username) }}"
+    become: "{{ 'no' if vstat_username | default(vstat_default_username) == 'root' else 'yes' }}"
+    vars:
+      ansible_become_pass: "{{ vstat_password | default(vstat_default_password) }}"
 
   - name: Print network config when verbosity >= 1
     debug: var=net_conf.info verbosity=1
@@ -109,7 +112,7 @@
     retries: 60
     delay: 10
     delegate_to: "{{ vsd_hostname_list[0] }}"
-    remote_user: "{{ hostvars[vsd_hostname_list[0]].vsd_custom_username | default(vsd_custom_username | default(vsd_default_username)) }}"
+    remote_user: "{{ hostvars[hostvars[inventory_hostname].vsd_hostname_list[0]].vsd_custom_username | default(vsd_custom_username | default(vsd_default_username)) }}"
     become: "{{ 'no' if hostvars[vsd_hostname_list[0]].vsd_custom_username | default(vsd_custom_username | default(vsd_default_username)) == 'root' else 'yes' }}"
     vars:
       ansible_become_pass: "{{ hostvars[vsd_hostname_list[0]].vsd_custom_password | default(vsd_custom_password | default(vsd_default_password)) }}"
