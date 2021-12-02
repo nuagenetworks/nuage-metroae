@@ -35,6 +35,7 @@
 * Install NUH optionally without DNS entry (METROAE-375)
 * Add procedure for NUH copy certificates if installed before VSD(METROAE-559)
 * Create NUH users and certs for NSG bootstrapping (METROAE-487)
+* Enhance check to accept both access_port_name and access_ports variables being undefined (METROAE-585)
 * VSTAT VSS UI should be set for all VSTATS (METROAE-580)
 * Make changes into documentation for supporting ansible version upgrade(METROAE-588)
 
