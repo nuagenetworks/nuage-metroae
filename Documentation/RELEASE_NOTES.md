@@ -36,6 +36,7 @@
 * Add procedure for NUH copy certificates if installed before VSD(METROAE-559)
 * Create NUH users and certs for NSG bootstrapping (METROAE-487)
 * VSTAT VSS UI should be set for all VSTATS (METROAE-580)
+* Fix MetroAE VSD in-place upgrades for custom credentials (METROAE-586)
 * Make changes into documentation for supporting ansible version upgrade(METROAE-588)
 
 ## Test Matrix
