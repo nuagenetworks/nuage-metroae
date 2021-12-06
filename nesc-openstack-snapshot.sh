@@ -26,7 +26,7 @@ echo "Check the list of instances and select."
 
 read -p "Enter instance name:" nesc_instance
 
-openstack server stop $nesc_instance
+openstack server stop vpatel-docker-test --os-username=NI_NME_SERVICES_DELIVERYAUTOMATION_CLOUD --os-project-id=f36f2db6bb434484b71a45aa84b9d790 --os-project-domain-id=default --os-user-domain-id=default --os-password=casoCASO1$ --os-project-name=NI_NME_SERVICES_DELIVERYAUTOMATION_CLOUD --os-auth-url=http://ch-dc-os-gsn-32.eecloud.nsn-net.net:5000/v3 --os-image-url=http://ch-dc-os-gsn-32.eecloud.nsn-net.net:9292
 status=$?
 
 if [[ $status -ne 0 ]]; then
@@ -46,7 +46,7 @@ if [[ $status -ne 0 ]]; then
 fi
 
 read -p "Enter snapshot name:" nesc_instance_snap
-
+openstack server image create --name snaptestcmd vpatel-docker-test --os-username=NI_NME_SERVICES_DELIVERYAUTOMATION_CLOUD --os-project-domain-id=default --os-user-domain-id=default --os-password=casoCASO1$ --os-project-name=Default --os-auth-url=http://ch-dc-os-gsn-32.eecloud.nsn-net.net:5000/v3 --os-image-url=http://ch-dc-os-gsn-32.eecloud.nsn-net.net:9292
 openstack server image create --name $nesc_instance_snap $nesc_instance
 
 status=$?
@@ -131,3 +131,16 @@ nova list | grep $nesc_snap_new_instance
 echo ""
 echo "________________________________________________________________________________________________________"
 openstack image list | grep $nesc_instance_snap
+
+
+
+
+openstack server start vpatel-docker-test --os-username=NI_NME_SERVICES_DELIVERYAUTOMATION_CLOUD --os-project-id=f36f2db6bb434484b71a45aa84b9d790 --os-project-domain-id=default --os-user-domain-id=default --os-password=casoCASO1$ --os-project-name=NI_NME_SERVICES_DELIVERYAUTOMATION_CLOUD --os-auth-url=http://ch-dc-os-gsn-32.eecloud.nsn-net.net:5000/v3
+
+openstack server image create --name snaptestcmd vpatel-docker-test --os-username=NI_NME_SERVICES_DELIVERYAUTOMATION_CLOUD --os-project-id=f36f2db6bb434484b71a45aa84b9d790 --os-project-domain-id=default --os-user-domain-id=default --os-password=casoCASO1$ --os-project-name=NI_NME_SERVICES_DELIVERYAUTOMATION_CLOUD --os-auth-url=http://ch-dc-os-gsn-32.eecloud.nsn-net.net:5000/v3
+
+openstack volume snapshot create --name snaptestcmd2 --os-username=NI_NME_SERVICES_DELIVERYAUTOMATION_CLOUD --os-project-id=f36f2db6bb434484b71a45aa84b9d790 --os-project-domain-id=default --os-user-domain-id=default --os-password=casoCASO1$ --os-project-name=NI_NME_SERVICES_DELIVERYAUTOMATION_CLOUD --os-auth-url=http://ch-dc-os-gsn-32.eecloud.nsn-net.net:5000/v3 vpatel-docker-test
+
+openstack server image create --name snaptestcmd vpatel-docker-test --os-username=NI_NME_SERVICES_DELIVERYAUTOMATION_CLOUD --os-project-id=f36f2db6bb434484b71a45aa84b9d790 --os-project-domain-id=default --os-user-domain-id=default --os-password=casoCASO1$ --os-project-name=NI_NME_SERVICES_DELIVERYAUTOMATION_CLOUD --os-auth-url=http://ch-dc-os-gsn-32.eecloud.nsn-net.net:5000/v3
+
+openstack image list --status --os-username=NI_NME_SERVICES_DELIVERYAUTOMATION_CLOUD --os-project-id=f36f2db6bb434484b71a45aa84b9d790 --os-project-domain-id=default --os-user-domain-id=default --os-password=casoCASO1$ --os-project-name=NI_NME_SERVICES_DELIVERYAUTOMATION_CLOUD --os-auth-url=http://ch-dc-os-gsn-32.eecloud.nsn-net.net:5000/v3 | grep snaptestcmd
