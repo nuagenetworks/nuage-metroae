@@ -143,4 +143,15 @@ openstack volume snapshot create --name snaptestcmd2 --os-username=NI_NME_SERVIC
 
 openstack server image create --name snaptestcmd vpatel-docker-test --os-username=NI_NME_SERVICES_DELIVERYAUTOMATION_CLOUD --os-project-id=f36f2db6bb434484b71a45aa84b9d790 --os-project-domain-id=default --os-user-domain-id=default --os-password=casoCASO1$ --os-project-name=NI_NME_SERVICES_DELIVERYAUTOMATION_CLOUD --os-auth-url=http://ch-dc-os-gsn-32.eecloud.nsn-net.net:5000/v3
 
+openstack server delete snaptestcmd --os-username=NI_NME_SERVICES_DELIVERYAUTOMATION_CLOUD --os-project-id=f36f2db6bb434484b71a45aa84b9d790 --os-project-domain-id=default --os-user-domain-id=default --os-password=casoCASO1$ --os-project-name=NI_NME_SERVICES_DELIVERYAUTOMATION_CLOUD --os-auth-url=http://ch-dc-os-gsn-32.eecloud.nsn-net.net:5000/v3
+
+openstack image delete snaptestcmd --os-username=NI_NME_SERVICES_DELIVERYAUTOMATION_CLOUD --os-project-id=f36f2db6bb434484b71a45aa84b9d790 --os-project-domain-id=default --os-user-domain-id=default --os-password=casoCASO1$ --os-project-name=NI_NME_SERVICES_DELIVERYAUTOMATION_CLOUD --os-auth-url=http://ch-dc-os-gsn-32.eecloud.nsn-net.net:5000/v3
+openstack image delete 
+
+openstack image list snapshot_test_vpatel --os-username=NI_NME_SERVICES_DELIVERYAUTOMATION_CLOUD --os-project-id=f36f2db6bb434484b71a45aa84b9d790 --os-project-domain-id=default --os-user-domain-id=default --os-password=casoCASO1$ --os-project-name=NI_NME_SERVICES_DELIVERYAUTOMATION_CLOUD --os-auth-url=http://ch-dc-os-gsn-32.eecloud.nsn-net.net:5000/v3
+
+openstack image list --status --os-username=NI_NME_SERVICES_DELIVERYAUTOMATION_CLOUD --os-project-id=f36f2db6bb434484b71a45aa84b9d790 --os-project-domain-id=default --os-user-domain-id=default --os-password=casoCASO1$ --os-project-name=NI_NME_SERVICES_DELIVERYAUTOMATION_CLOUD --os-auth-url=http://ch-dc-os-gsn-32.eecloud.nsn-net.net:5000/v3 | grep snapshot_test_vpatel
+
+openstack image list --status --os-username=NI_NME_SERVICES_DELIVERYAUTOMATION_CLOUD --os-project-id=f36f2db6bb434484b71a45aa84b9d790 --os-project-domain-id=default --os-user-domain-id=default --os-password=casoCASO1$ --os-project-name=NI_NME_SERVICES_DELIVERYAUTOMATION_CLOUD --os-auth-url=http://ch-dc-os-gsn-32.eecloud.nsn-net.net:5000/v3 | grep snapshot_test_vpatel | grep active
+
 openstack image list --status --os-username=NI_NME_SERVICES_DELIVERYAUTOMATION_CLOUD --os-project-id=f36f2db6bb434484b71a45aa84b9d790 --os-project-domain-id=default --os-user-domain-id=default --os-password=casoCASO1$ --os-project-name=NI_NME_SERVICES_DELIVERYAUTOMATION_CLOUD --os-auth-url=http://ch-dc-os-gsn-32.eecloud.nsn-net.net:5000/v3 | grep snaptestcmd
