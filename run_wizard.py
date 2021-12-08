@@ -8,6 +8,7 @@ import re
 import subprocess
 import sys
 import traceback
+from builtins import input
 
 METROAE_CONTACT = "devops@nuagenetworks.net"
 
@@ -292,9 +293,15 @@ class Wizard(object):
         self.current_action_idx = 0
         self.progress_display_count = 0
         self.progress_display_rate = 1
+        self.non_interactive = False
 
-        if "NON_INTERACTIVE" in os.environ:
+        non_interactive, idx = self._check_non_interactive(sys.argv)
+
+        if non_interactive:
             self.args = list(sys.argv)
+            if idx != -1:
+                self.args.pop(idx)
+            self.non_interactive = True
             self.args.pop(0)
         else:
             self.args = list()
@@ -784,8 +791,16 @@ class Wizard(object):
     # Private class internals
     #
 
+    def _check_non_interactive(self, args):
+        if "NON_INTERACTIVE" is os.environ:
+            return True, -1
+        for i in range(len(args)):
+            if "NON_INTERACTIVE" in args[i]:
+                return True, i
+        return False
+
     def _print(self, msg):
-        print msg.encode("utf-8")
+        print(msg)
 
     def _print_progress(self):
         if self.progress_display_count % self.progress_display_rate == 0:
@@ -797,7 +812,7 @@ class Wizard(object):
         input_prompt = self._get_input_prompt(prompt, default, choices)
         value = None
 
-        if "NON_INTERACTIVE" in os.environ:
+        if self.non_interactive:
             if len(self.args) < 1:
                 raise Exception(
                     "Out of args for non-interactive input for %s" %
@@ -817,7 +832,7 @@ class Wizard(object):
                 if datatype == "password":
                     user_value = getpass.getpass(input_prompt)
                 else:
-                    user_value = raw_input(input_prompt)
+                    user_value = input(input_prompt)
                 value = self._validate_input(user_value, default, choices,
                                              datatype)
 
@@ -1060,7 +1075,7 @@ class Wizard(object):
         action_func(action, data)
 
     def _get_action_name(self, action):
-        keys = action.keys()
+        keys = list(action.keys())
         for standard_field in STANDARD_FIELDS:
             if standard_field in keys:
                 keys.remove(standard_field)
@@ -1085,7 +1100,8 @@ class Wizard(object):
                                    shell=True,
                                    cwd=self.metro_path,
                                    stdout=subprocess.PIPE,
-                                   stderr=subprocess.STDOUT)
+                                   stderr=subprocess.STDOUT,
+                                   encoding='utf8')
 
         output_lines = list()
         rc = self._capture_output(process, output_lines)
@@ -2698,8 +2714,8 @@ def main():
         wizard()
     except Exception:
         traceback.print_exc()
-        print "\nThere was an unexpected error running the wizard"
-        print "Please contact: " + METROAE_CONTACT
+        print("\nThere was an unexpected error running the wizard")
+        print("Please contact: " + METROAE_CONTACT)
         exit(1)
 
 
