@@ -192,6 +192,12 @@ WIZARD_SCRIPT = """
     item_name: NUH
     upgrade_vmname: false
 
+- step: NUH External Interfaces deployment file
+  description: |
+      This step will create or modify the nuh_external_interfaces.yml file in your deployment.
+      This file provides parameters for the external interfaces on the NUHs in your deployment.
+  create_interfaces: {}
+
 - step: VNSUtil deployment file
   description: |
       This step will create or modify the vnsutils.yml file in your deployment.
@@ -623,6 +629,36 @@ class Wizard(object):
                 os.remove(deployment_file)
         else:
             self._generate_deployment_file(schema, deployment_file, deployment)
+
+    def create_interfaces(self, action, data):
+        if self._check_skip_for_csv("nuh_external_interfaces"):
+            return
+
+        self._print("")
+        deployment_dir = self._get_deployment_dir()
+        if deployment_dir is None:
+            return
+
+        deployment_file = os.path.join(deployment_dir, "nuh_external_interfaces.yml")
+        if os.path.isfile(deployment_file):
+            deployment = self._read_deployment_file(deployment_file,
+                                                    is_list=False)
+        else:
+            self._print(deployment_file + " not found. It will be created.")
+            deployment = list()
+
+        default = 0
+        ext_interface_amount = self._input("Number of external interfaces to setup", default, datatype="int")
+
+        for i in range(ext_interface_amount):
+            self._print("\n%s %d\n" % ("NUH External Interface", i + 1))
+            deployment.append(dict())
+            self._setup_external_interfaces(deployment, data, i)
+        if ext_interface_amount == 0:
+            if os.path.isfile(deployment_file):
+                os.remove(deployment_file)
+        else:
+            self._generate_deployment_file("nuh_external_interfaces", deployment_file, deployment)
 
     def create_bootstrap(self, action, data):
         if self._check_skip_for_csv("nsgv_bootstrap"):
@@ -2494,6 +2530,55 @@ class Wizard(object):
                               " (on data network)",
                               default, datatype="ipaddr")
         deployment["second_controller_address"] = address
+
+    def _setup_external_interfaces(self, deployment, data, i):
+        component = deployment[i]
+        if "external_ip" in component and component["external_ip"] != "":
+            default = component["external_ip"]
+        else:
+            default = None
+        external_ip = self._input("IP address of the external interface",
+                                  default, datatype="ipaddr")
+        component["external_ip"] = external_ip
+
+        if "external_ip_prefix" in component and component["external_ip_prefix"] != "":
+            default = component["external_ip_prefix"]
+        else:
+            default = None
+        external_ip_prefix = self._input("IP prefix length for the external network",
+                                         default, datatype="int")
+        component["external_ip_prefix"] = external_ip_prefix
+
+        if "external_gateway" in component and component["external_gateway"] != "":
+            default = component["external_gateway"]
+        else:
+            default = None
+        external_gateway = self._input("IP address of the external interface gateway",
+                                       default, datatype="ipaddr")
+        component["external_gateway"] = external_gateway
+
+        if "vlan" in component and component["vlan"] != "":
+            default = component["vlan"]
+        else:
+            default = None
+        vlan = self._input("VLAN ID of the external interface", default,
+                           datatype="int")
+        component["vlan"] = vlan
+
+        if "external_bridge" in component and component["external_bridge"] != "":
+            default = component["external_bridge"]
+        else:
+            default = None
+        external_bridge = self._input("Network bridge used for external interface", default)
+        component["external_bridge"] = external_bridge
+
+        default = None
+        name = self._input("Name of the external interface", default)
+        component["name"] = name
+
+        default = None
+        external_fqdn = self._input("FQDN for the external interface", default)
+        component["external_fqdn"] = external_fqdn
 
     def _setup_ssh(self, username, hostname):
         self._print("Adding SSH keys for %s@%s, may ask for password" % (
