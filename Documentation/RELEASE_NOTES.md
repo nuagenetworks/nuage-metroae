@@ -37,6 +37,7 @@
 * Create NUH users and certs for NSG bootstrapping (METROAE-487)
 * Enhance check to accept both access_port_name and access_ports variables being undefined (METROAE-585)
 * VSTAT VSS UI should be set for all VSTATS (METROAE-580)
+* Remove Old MetroAE container support (METROAE-564)
 * Fix MetroAE VSD in-place upgrades for custom credentials (METROAE-586)
 * Make changes into documentation for supporting ansible version upgrade(METROAE-588)
 * Fix MetroAE inplace upgrade from 20.10.R6.1 to 20.10.R6.3(METROAE-590)
