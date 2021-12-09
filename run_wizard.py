@@ -9,6 +9,7 @@ import subprocess
 import sys
 import traceback
 from builtins import input
+from io import open
 
 METROAE_CONTACT = "devops@nuagenetworks.net"
 
@@ -2078,8 +2079,8 @@ class Wizard(object):
             os.path.join("schemas", schema + ".json"))
         template = jinja2.Template(example_lines)
         rendered = template.render(**deployment)
-        with open(output_file, 'w') as file:
-            file.write(rendered.encode("utf-8"))
+        with open(output_file, 'w', encoding='utf-8') as file:
+            file.write(rendered)
 
         self._unrecord_problem("deployment_create")
         self._print("\nWrote deployment file: " + output_file)
