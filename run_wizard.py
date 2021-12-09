@@ -792,7 +792,7 @@ class Wizard(object):
     #
 
     def _check_non_interactive(self, args):
-        if "NON_INTERACTIVE" is os.environ:
+        if "NON_INTERACTIVE" in os.environ:
             return True, -1
         for i in range(len(args)):
             if "NON_INTERACTIVE" in args[i]:
