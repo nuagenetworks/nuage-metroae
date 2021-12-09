@@ -4,37 +4,71 @@
     command: /opt/vsd/sysmon/bootPercona.py --force
     when: "'vsd_ha_node1' in groups and inventory_hostname in groups['vsd_ha_node1']"
 
-  - name: Start VSD common processes
-    command: monit -g vsd-common start
+  - name: Check that 'vsd-common' group is present in vsd
+    command: monit -g vsd-common status
+    ignore_errors: yes
+    register: group_status_common
 
-  - name: Get monit summary for common processes on VSD
-    vsd_monit:
-      group: vsd-common
-    register: proc_list
+  - name: Check if an error should be ignored
+    assert:
+      that: "not group_status_common.failed or group_status_common.stderr is search('not found')"
+      msg: "Error while attempting to check group is present in current vsd"
 
-  - name: Wait for VSD common processes to become running
-    monit_waitfor_service:
-      name: "{{ proc_list['state'].keys() }}"
-      timeout_seconds: 1200
-      test_interval_seconds: 30
+  - block:  
 
-  - name: Start VSD core processes (ignoring errors)
-    command: monit -g vsd-core start
-    register: monit_core_output
-    ignore_errors: inventory_hostname not in groups['primary_vsds']
+    - name: Start VSD common processes
+      command: monit -g vsd-common start
+      
+    - name: Get monit summary for common processes on VSD
+      vsd_monit:
+        group: vsd-common
+      register: proc_list
 
-  - name: Get monit summary for core processes on VSD
-    vsd_monit:
-      group: vsd-core
-    register: proc_list
-    when: monit_core_output.rc == 0
+    - name: Wait for VSD common processes to become running
+      monit_waitfor_service:
+        name: "{{ proc_list['state'].keys() | list }}"
+        timeout_seconds: 1200
+        test_interval_seconds: 30
+        
+    when: group_status_common.rc == 0
 
-  - name: Wait for VSD core processes to become running
-    monit_waitfor_service:
-      name: "{{ proc_list['state'].keys() }}"
-      timeout_seconds: 1200
-      test_interval_seconds: 30
-    when: monit_core_output.rc == 0
+  - name: Check that 'vsd-core' group is present in vsd
+    command: monit -g vsd-core status
+    ignore_errors: yes
+    register: group_status_core
+
+  - name: Check if an error should be ignored
+    assert:
+      that: "not group_status_core.failed or group_status_core.stderr is search('not found')"
+      msg: "Error while attempting to check group is present in current vsd"
+
+  - block:
+
+    - name: Start VSD core processes (ignoring errors)
+      command: monit -g vsd-core start
+
+    - name: Get monit summary for core processes on VSD
+      vsd_monit:
+        group: vsd-core
+      register: proc_list
+
+    - name: Wait for VSD core processes to become running
+      monit_waitfor_service:
+        name: "{{ proc_list['state'].keys() | list }}"
+        timeout_seconds: 1200
+        test_interval_seconds: 30
+
+    when: group_status_core.rc == 0
+
+  - name: Check that 'vsd-stats' group is present in vsd
+    command: monit -g vsd-stats status
+    ignore_errors: yes
+    register: group_status_stats
+
+  - name: Check if an error should be ignored
+    assert:
+      that: "not group_status_stats.failed or group_status_stats.stderr is search('not found')"
+      msg: "Error while attempting to check group is present in current vsd"
 
   - block:
 
@@ -48,11 +82,11 @@
 
     - name: Wait for VSD stats processes to become running
       monit_waitfor_service:
-        name: "{{ proc_list['state'].keys() }}"
+        name: "{{ proc_list['state'].keys() | list }}"
         timeout_seconds: 1200
         test_interval_seconds: 30
 
-    when: groups['vstats'] is defined and groups['vstats'] and inventory_hostname in groups['primary_vsds']
+    when: group_status_stats.rc == 0
 
   remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
   become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
