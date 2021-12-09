@@ -41,6 +41,7 @@
 * Fix MetroAE VSD in-place upgrades for custom credentials (METROAE-586)
 * Make changes into documentation for supporting ansible version upgrade(METROAE-588)
 * Fix MetroAE inplace upgrade from 20.10.R6.1 to 20.10.R6.3(METROAE-590)
+* Allow for a custom config file during VSC Upgrade (METROAE-485)
 
 ## Test Matrix
 
