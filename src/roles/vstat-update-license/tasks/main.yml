@@ -5,12 +5,12 @@
 
   - name: Copy license file to VSTAT
     copy:
-      src: "/metroae/images/misc/license/nuage-networks-production-18719f17-358b-4539-9d64-2350ba7661bc-v5.json"
+      src: "{{ vstat_license_file }}"
       dest: "~"
 
   - name: Apply the patch
     shell: curl –X PUT http://{{inventory_hostname}}:9200/_license -H "Content-Type:application/json" \​
-            -d @nuage-networks-production-18719f17-358b-4539-9d64-2350ba7661bc-v5.json
+            -d @{{ vstat_license_file }}
     ignore_errors: true
     register: license_applied
 
@@ -43,7 +43,13 @@
       that: (time_diff | int) > 1
       fail_msg: "The VSTAT license has expired"
 
+  - name: Remove license file from vstat
+    file:
+      path: "~/{{ vstat_license_file }}"
+      state: absent
+
     remote_user: "{{ vstat_username | default(vstat_default_username) }}"
     become: "{{ 'no' if vstat_username | default(vstat_default_username) == 'root' else 'yes' }}"
     vars:
       ansible_become_pass: "{{ vstat_password | default(vstat_default_password) }}"
+    when: vstat_license_file is defined
