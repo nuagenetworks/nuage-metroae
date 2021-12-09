@@ -1268,9 +1268,9 @@ class Wizard(object):
         return self.state["deployment_dir"]
 
     def _read_deployment_file(self, deployment_file, is_list):
-        with open(deployment_file, "r") as f:
+        with open(deployment_file, "r", encoding='utf-8') as f:
             import yaml
-            deployment = yaml.safe_load(f.read().decode("utf-8"))
+            deployment = yaml.safe_load(f.read())
             if is_list and type(deployment) != list:
                 deployment = list()
             if not is_list and type(deployment) != dict:
