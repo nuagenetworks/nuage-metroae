@@ -34,10 +34,11 @@ WIZARD_SCRIPT = """
 
       The following steps will be performed:
 
-- step: Verify proper MetroAE installation
+- step: Verify proper MetroAE installation (DEPRECATED)
   description: |
       This step will verify that the MetroAE tool has been properly installed
-      with all required libraries.
+      with all required libraries. This step is now deprecated as users are encouraged
+      to use MetroAE with the new container, which ensures a proper MetroAE installation.
   verify_install:
     missing_msg: |
 
@@ -797,7 +798,7 @@ class Wizard(object):
         for i in range(len(args)):
             if "NON_INTERACTIVE" in args[i]:
                 return True, i
-        return False
+        return False, -1
 
     def _print(self, msg):
         print(msg)
