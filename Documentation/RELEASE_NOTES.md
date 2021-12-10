@@ -40,6 +40,7 @@
 * Remove Old MetroAE container support (METROAE-564)
 * Fix MetroAE VSD in-place upgrades for custom credentials (METROAE-586)
 * Make changes into documentation for supporting ansible version upgrade(METROAE-588)
+* Document where credentials are used(METROAE-532)
 * Fix MetroAE inplace upgrade from 20.10.R6.1 to 20.10.R6.3(METROAE-590)
 
 ## Test Matrix
