@@ -179,8 +179,8 @@ function  check_if_internal_user {
         set +e
         int_user_check=`ping -c 5 github.mv.usa.alcatel.com 2>&1`
         SKIP_UUID=$?
-        set -e
         debug "${FUNCNAME[0]} $int_user_check"
+        set -e
 
         if [[ $SKIP_UUID -eq $FALSE ]]; then
             echo ""
@@ -195,11 +195,16 @@ function  check_if_internal_user {
             echo ""
 
             declare -l continue_confirm
-            continue_confirm="init"
-            while [[ $continue_confirm != "y" ]] && [[ $continue_confirm != "n" ]] && [[ $continue_confirm != "" ]]
-            do
-                read -p " Would like to share usage data with MetroAE team? (y/N): " continue_confirm
-            done
+            if [[ -z $1 ]]; then
+                continue_confirm="init"
+                while [[ $continue_confirm != "y" ]] && [[ $continue_confirm != "n" ]] && [[ $continue_confirm != "" ]]
+                do
+                    read -p " Would like to share usage data with MetroAE team? (y/N): " continue_confirm
+                done
+            else
+                continue_confirm=$1
+                shift
+            fi
 
             if [[ $continue_confirm != "y" ]] ; then
                 SKIP_UUID=$TRUE
@@ -222,7 +227,7 @@ function generate_and_save_UUID {
         debug "${FUNCNAME[0]}: Skipping UUID generation"
     else
 
-        check_if_internal_user
+        check_if_internal_user "$@"
 
         debug "${FUNCNAME[0]}: RUN_MODE = $RUN_MODE"
         if [[ $RUN_MODE == $INSIDE_RUN_MODE ]]; then
@@ -643,7 +648,7 @@ function audit_log_and_exit {
 }
 
 function deployment_main {
-    generate_and_save_UUID
+    generate_and_save_UUID "$@"
 
     debug ${FUNCNAME[0]}
     set +e
