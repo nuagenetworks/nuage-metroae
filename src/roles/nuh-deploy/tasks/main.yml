@@ -87,19 +87,13 @@
   - name: Set the timezone
     command: timedatectl set-timezone {{ nuh_timezone }}
 
-  - name: Create and transfer certs
-    include_role:
-      name: common
-      tasks_from: vsd-generate-transfer-certificates
-    when: not skip_vsd_installed_check
-    vars:
-      certificate_password: "{{ nuh_default_password }}"
-      certificate_username: "{{ inventory_hostname }}"
-      commonName: "{{ inventory_hostname }}"
-      certificate_type: server
-      scp_user: "root"
-      scp_location: /opt/proxy/data/certs
-      additional_parameters:  -d {{ inventory_hostname }}
+  - name: Create NUH users and generate certificates
+    import_role:
+      name: nuh-deploy
+      tasks_from: nuh_create_users_certs.yml
+    when:
+      - internal_ip is defined
+      - not skip_vsd_installed_check
 
   - name: Copy NUH certificates 
     import_role:
@@ -111,39 +105,39 @@
 
   - block:
 
-      - name: Copy the Custom configuration file if provided by user
-        copy:
-          dest: "/opt/proxy/data/config.yml"
-          src: "{{ custom_configuration_file_location }}"
-          mode: 0640
-          owner: "root"
-          group: "root"
-        when: custom_configuration_file_location is defined
+    - name: Copy the Custom configuration file if provided by user
+      copy:
+        dest: "/opt/proxy/data/config.yml"
+        src: "{{ custom_configuration_file_location }}"
+        mode: 0640
+        owner: "root"
+        group: "root"
+      when: custom_configuration_file_location is defined
 
-      - block:
+    - block:
 
-        - name: Add stats-out proxy entries to NUH configuration
-          replace:
-            path: /opt/proxy/data/config.yml
-            regexp: "role: vsdconfig.*$"
-            replace: "role: vsdconfig, enabled: true, firewallports: ['{{ stats_out_proxy_ui_port }}', '{{ stats_out_proxy_api_port }}', '{{ stats_out_proxy_jms_port }}', '{{ stats_out_proxy_xmpp_port }}', '{{ stats_out_proxy_cert_port }}'], settings: {uiport: '{{ stats_out_proxy_ui_port }}', apiport: '{{ stats_out_proxy_api_port }}', xmppport: '{{ stats_out_proxy_xmpp_port }}', jmsport: '{{ stats_out_proxy_jms_port }}', geo: false, certport: '{{ stats_out_proxy_cert_port }}'}}"
+      - name: Add stats-out proxy entries to NUH configuration
+        replace:
+          path: /opt/proxy/data/config.yml
+          regexp: "role: vsdconfig.*$"
+          replace: "role: vsdconfig, enabled: true, firewallports: ['{{ stats_out_proxy_ui_port }}', '{{ stats_out_proxy_api_port }}', '{{ stats_out_proxy_jms_port }}', '{{ stats_out_proxy_xmpp_port }}', '{{ stats_out_proxy_cert_port }}'], settings: {uiport: '{{ stats_out_proxy_ui_port }}', apiport: '{{ stats_out_proxy_api_port }}', xmppport: '{{ stats_out_proxy_xmpp_port }}', jmsport: '{{ stats_out_proxy_jms_port }}', geo: false, certport: '{{ stats_out_proxy_cert_port }}'}}"
 
-        - name: Add stats-out proxy entries to NUH configuration
-          blockinfile:
-            path: /opt/proxy/data/config.yml
-            marker: ""
-            block: |
-              nsgstats:
-                {% for stats_only_vsds in groups['stats_only_vsds'] | list %}
-                - {{ hostvars[stats_only_vsds]['mgmt_ip'] }}
-                {% endfor %}
+      - name: Add stats-out proxy entries to NUH configuration
+        blockinfile:
+          path: /opt/proxy/data/config.yml
+          marker: ""
+          block: |
+            nsgstats:
+              {% for stats_only_vsds in groups['stats_only_vsds'] | list %}
+              - {{ hostvars[stats_only_vsds]['mgmt_ip'] }}
+              {% endfor %}
 
-        when: stats_out_proxy | default('NONE') == internal_ip | default("not_set")
+      when: stats_out_proxy | default('NONE') == internal_ip | default("not_set")
 
-      - name: Run the configuration script on NUH
-        command: ansible-playbook configure.yml
-        args:
-          chdir: /opt/proxy/bin/ansible
+    - name: Run the configuration script on NUH
+      command: ansible-playbook configure.yml
+      args:
+        chdir: /opt/proxy/bin/ansible
 
     when:
       - custom_configuration_file_location is defined or stats_out_proxy | default('NONE') == internal_ip | default("not_set")

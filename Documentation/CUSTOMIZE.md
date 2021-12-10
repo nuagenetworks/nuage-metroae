@@ -6,23 +6,26 @@ If you have not already set up your MetroAE Host environment, see [SETUP.md](SET
 
 ## What is a Deployment?
 
-Deployments are component configuration sets.  You can have one or more deployments in your setup.  When you are working with the MetroAE container, you can find the deployment files under the data directory you specified during `metroae container setup`.  For example, if you specified `/tmp` as your data directory path, `metroae container setup` created `/tmp/metroae_data` and copied the default deployment to `/tmp/metroae_data/deployments`. When you are working with MetroAE from a workspace you created using `git clone`, deployments are stored in the workspace directory `nuage-metroae/deployments/<deployment_name>/`.  In both cases, the files within each deployment directory describe all of the components you want to install or upgrade.
+Deployments are component configuration sets.  You can have one or more deployments in your setup.
+The files within each deployment directory describe all of the components you want to install or upgrade.
 
 If you issue:
 
-    ./metroae install everything
+    ./metroae-container install everything
 
 The files under nuage-metroae/deployments/default will be used to do an install.
 
 If you issue:
 
-    ./metroae install everything mydeployment
+    ./metroae-container install everything mydeployment
 
 The files under `nuage-metroae/deployments/mydeployment` will be used to do an install.  This allows for different sets of component definitions for various projects.
 
+The deployment files and the image files must be located within the git clone folder. The docker container will mount the git clone folder inside the container and will not have access to files outside of that location. All file paths must be defined as relative to the git clone folder and never using absolute paths
+
 You can also do:
 ```
-./metroae install everything deployment_spreadsheet_name.xlsx
+./metroae-container install everything deployment_spreadsheet_name.xlsx
 ```
 
 to run the install everything playbook using the deployment information present in the specified Excel spreadsheet. More details about Excel deployments can be found in the `Customize Your Own Deployment` section below.
@@ -55,9 +58,9 @@ You can also use the MetroAE spreadsheet to create your deployment. You can find
 ```
 convert_csv_to_deployment.py deployment_spreadsheet_name.csv your_deployment_name
 ```
-or you can let `metroae` handle the conversion for you by  specifying the name of the CSV file instead of the name of your deployment::
+or you can let `metroae-container` handle the conversion for you by  specifying the name of the CSV file instead of the name of your deployment::
 ```
-metroae deployment_spreadsheet_name.csv
+metroae-container deployment_spreadsheet_name.csv
 ```
 This will create or update a deployment with the same name as the CSV file - without the extension.
 
@@ -65,9 +68,9 @@ MetroAE also supports deployment files filled out in an Excel (.xlsx) spreadshee
 ```
 convert_excel_to_deployment.py deployment_spreadsheet_name.xlsx your_deployment_name
 ```
-or you can use `metroae` do the conversion for you by running build, like this:
+or you can use `metroae-container` do the conversion for you by running build, like this:
 ```
-metroae build deployment_spreadsheet_name.xlsx
+metroae-container build deployment_spreadsheet_name.xlsx
 ```
 
 For Excel deployments, all playbooks (aside from `nuage_unzip` and `reset_build`) invoke the build step and can replace build in the command above.
@@ -143,7 +146,7 @@ You can use MetroAE to verify that your VSD setup has sufficient RTT performance
 * `vsd_max_cluster_rtt_msec` Maximum RTT in milliseconds between VSDs in a cluster
 * `vsd_max_active_standby_rtt_msec` Maximum RTT in milliseconds between Active and Standby VSDs
 
-In addition to the automatic execution that takes place in the VSD deploy step, you can run the VSD disk performance test at any time using `metroae vsd test rtt`.
+In addition to the automatic execution that takes place in the VSD deploy step, you can run the VSD disk performance test at any time using `metroae-container vsd test rtt`.
 
 ## VSD Disk Performance Testing
 
@@ -157,7 +160,7 @@ You can use MetroAE to verify that your VSD setup has sufficient disk performanc
 
 You can skip the test, specify the total size of all the files used in the test, and modify the minimum threshold requirement in IOPS for the test. Note that to minimize the effects of file system caching, the total file size must exceed the total RAM on the VSD. If MetroAE finds that the test is enabled and the disk performance is below the threshold, an error will occur and installation will stop. The default values that are provided for the test are recommended for best VSD performance in most cases. Your specific situation may require different values or to skip the test entirely.
 
-In addition to the automatic execution that takes place in the VSD deploy step, you can run the VSD disk performance test at any time using `metroae vsd test disk`.
+In addition to the automatic execution that takes place in the VSD deploy step, you can run the VSD disk performance test at any time using `metroae-container vsd test disk`.
 
 ## Enabling post-installation security features
 
@@ -216,7 +219,7 @@ When you are contributing code, or pulling new versions of MetroAE quite often, 
 A sample of the deployment configuration files are provided in the deployments/default/ directory and also in [examples/](../examples/).  If these are overwritten or deleted or if a "no frills" version of the files with only the minimum required parameters are desired, they can be generated with the following command:
 
 ```
-metroae tools generate example --schema <schema_filename> [--no-comments]
+metroae-container tools generate example --schema <schema_filename> [--no-comments]
 ```
 
 This will print an example of the deployment file specified by <schema_filename> under the [schemas/](/schemas/) directory to the screen.  The optional `--no-comments` will print the minimum required parameters (with no documentation).
@@ -224,7 +227,7 @@ This will print an example of the deployment file specified by <schema_filename>
 Example:
 
 ```
-metroae tools generate example --schema vsds > deployments/new/vsds.yml
+metroae-container tools generate example --schema vsds > deployments/new/vsds.yml
 ```
 
 Creates an example vsds configuration file under the "new" deployment.
