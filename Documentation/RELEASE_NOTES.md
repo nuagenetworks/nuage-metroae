@@ -18,6 +18,7 @@
 * Webfilter should optionally use HTTP Proxy (METROAE-493)
 * Add support for encrypting credentials in Excel spreadsheet (METROAE-552)
 * Add Ansible 3.4.0 support (METROAE-344)
+* Allow installing/renewal of VSTAT(ES) licenses during install, upgrade and standalone (METROAE-591)
 
 ### Resolved Issues
 
