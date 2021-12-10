@@ -37,6 +37,7 @@
 * Create NUH users and certs for NSG bootstrapping (METROAE-487)
 * VSTAT VSS UI should be set for all VSTATS (METROAE-580)
 * Make changes into documentation for supporting ansible version upgrade(METROAE-588)
+* Document where credentials are used(METROAE-532)
 
 ## Test Matrix
 
