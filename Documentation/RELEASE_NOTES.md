@@ -17,6 +17,8 @@
 * Install NUH without VSD on VCenter (METROAE-523)
 * Upgrade VSTATS if VSD GUI password has changed (METROAE-533)
 * Apply VSD license during upgrade (MetroAE-528)
+* Allow installing/renewal of VSTAT(ES) licenses during install, upgrade and standalone (METROAE-591)
+* Fix MetroAE VSD in-place upgrades for custom credentials (METROAE-586)
 
 ## Test Matrix
 
