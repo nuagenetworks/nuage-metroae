@@ -103,3 +103,22 @@
 
   when: portal_file_name is defined
   remote_user: "{{ portal_default_username }}"
+
+
+#############################################
+# Installing Nuage SD-WAN Customer Portal GRCN using the tarball file
+#nuage-portal-container-20.11.1-65.tar.gz
+
+- name: Copy tarball file into /tmp for GRCN 1
+  copy:
+    src: "/nfs-data/20.10.R1/nuage-unpacked/vns/portal/nuage-portal-container-20.11.1-65.tar.gz"
+    dest: "/tmp/"
+
+- name: Unzip tarball file
+  command: gunzip -c nuage-portal-container-20.11.1-65.tar.gz | docker load
+
+- name: Execute Nuage SD-WAN GRCN configuration script on GRCN Node
+  command: docker run -ti --rm -v /var/run/docker.sock:/docker.sock -v /opt:/mnt:z -v /etc:/hostetc:z nuage/vnsportal-bootstrap-grcn:20.11.1-65
+
+#####################
+#Upgrading Nuage SD-WAN Customer Portal GRCN
