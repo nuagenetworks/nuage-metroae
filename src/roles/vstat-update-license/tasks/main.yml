@@ -13,11 +13,9 @@
             -d @vstat_license
     ignore_errors: true
     register: license_applied
-
-  - name: Assert license apply acknowledged by VSTAT
-    assert:
-      that: "license_applied.stdout is search('\"acknowledged\":true')"
-      msg: "Check if license is applied"
+    retries: 5
+    delay: 30
+    until: "license_applied.stdout is search('\"acknowledged\":true')"
 
   - name: Check the license on VSTAT after renewal
     shell: curl -X GET localhost:9200/_license?pretty --stderr - | grep expiry
