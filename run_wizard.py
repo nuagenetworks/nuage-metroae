@@ -297,13 +297,9 @@ class Wizard(object):
         self.progress_display_rate = 1
         self.non_interactive = False
 
-        non_interactive, idx = self._check_non_interactive(sys.argv)
-
-        if non_interactive:
-            self.args = list(sys.argv)
-            if idx != -1:
-                self.args.pop(idx)
+        if "NON_INTERACTIVE" in os.environ:
             self.non_interactive = True
+            self.args = list(sys.argv)
             self.args.pop(0)
         else:
             self.args = list()
@@ -792,14 +788,6 @@ class Wizard(object):
     #
     # Private class internals
     #
-
-    def _check_non_interactive(self, args):
-        if "NON_INTERACTIVE" in os.environ:
-            return True, -1
-        for i in range(len(args)):
-            if "NON_INTERACTIVE" in args[i]:
-                return True, i
-        return False, -1
 
     def _print(self, msg):
         print(msg)
