@@ -1,8 +1,6 @@
-#!/bin/sh
-
+#!/bin/bash
 # WARNING: Any paths defined in the deployment files must be relative to this folder. No absolute paths, and no paths outside of this folder
 
-#TODO: we need to pass in the proxy env variables to be able to use pip and yum on a corp network
 TAG=$(git rev-parse --short HEAD)
 TI=""
 ENCRYPTED_TOKEN=\$ANSIBLE_VAULT
@@ -65,7 +63,15 @@ fi
 # Run the command inside docker
 args=( "$@" )
 
-#ENVVARS=$(env | grep -Ev '^(PWD|PATH|HOME|USER|SHELL|MAIL|SSH_CONNECTION|LOGNAME|OLDPWD|LESSOPEN|_XDG_RUNTIME_DIR|HISTCONTROL)' | sed 's/^/-e /g')
-
 # we use host networking because we want the host's dns server and host file
-docker run --network=host --rm $TI $SSHMOUNT $VAULTPASS -v "`pwd`:/metroae" $ENVVARS metroaecontainer:$TAG ./metroae "${args[@]}"
+docker run \
+    --network=host \
+    --rm \
+    $TI \
+    $SSHMOUNT \
+    $VAULTPASS \
+    --env-file <(env | grep -Ev '^(PWD|PATH|HOME|USER|SHELL|MAIL|SSH_CONNECTION|LOGNAME|OLDPWD|LESSOPEN|_XDG_RUNTIME_DIR|HISTCONTROL)') \
+    -v \
+    "`pwd`:/metroae" \
+    metroaecontainer:$TAG \
+    ./metroae "${args[@]}"
