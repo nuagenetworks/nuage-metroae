@@ -64,7 +64,10 @@
       timeout_seconds: 1200
       test_interval_seconds: 30
 
-  remote_user: "{{ vsd_default_username }}"
+  remote_user: "{{ vsd_username | default(vsd_default_username) }}"
+  become: "{{ 'no' if vsd_username | default(vsd_default_username) == 'root' else 'yes' }}"
+  vars:
+    ansible_become_pass: "{{ vsd_password | default(vsd_default_password) }}"
 
 - name: Create backup directory for original branding
   file:
@@ -77,4 +80,7 @@
     src: "/tmp/original-nuage-branding.zip"
     dest: "{{ metro_backup_root }}/{{ hostname }}-branding"
     fail_on_missing: yes
-  remote_user: "{{ vsd_default_username }}"
+  remote_user: "{{ vsd_username | default(vsd_default_username) }}"
+  become: "{{ 'no' if vsd_username | default(vsd_default_username) == 'root' else 'yes' }}"
+  vars:
+    ansible_become_pass: "{{ vsd_password | default(vsd_default_password) }}"
