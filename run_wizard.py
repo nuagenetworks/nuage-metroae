@@ -1,4 +1,4 @@
-print#!/usr/bin/env python
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
 import getpass
@@ -331,7 +331,7 @@ class Wizard(object):
 
         if self.in_container:
             print("\nWizard is being run inside a Docker container.  "
-                        "No need to verify installation.  Skipping step...")
+                  "No need to verify installation.  Skipping step...")
             return
 
         if not os.path.isfile("/etc/os-release"):
@@ -1104,7 +1104,7 @@ class Wizard(object):
                 if "DEBUG_WIZARD" in os.environ:
                     print(line)
                 else:
-                    print_progress()
+                    self._print_progress()
             else:
                 # Flush stdout buffer
                 lines = process.stdout.read()
@@ -1113,7 +1113,7 @@ class Wizard(object):
                     if "DEBUG_WIZARD" in os.environ:
                         print(line)
                     else:
-                        print_progress()
+                        self._print_progress()
                 return retcode
 
     def _record_problem(self, problem_name, problem_descr):
