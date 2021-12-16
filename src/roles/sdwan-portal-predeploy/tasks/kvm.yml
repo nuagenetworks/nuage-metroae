@@ -63,17 +63,21 @@
     register: partitions
     with_items: "{{ partitions_list.stdout_lines }}"
 
-  - name: Find root partition
-    set_fact:
-      guestfish_mount: "{{ item.item.split(':')[0] }}"
-    with_items: "{{ partitions.results }}"
+  - block:
+
+    - name: Find root partition
+      set_fact:
+        guestfish_mount: "{{ item.item.split(':')[0] }}"
+      with_items: "{{ partitions.results }}"
+
+    - name: Create cloud-init disable file
+      command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} touch /etc/cloud/cloud-init.disabled
+
+    - name: Set the owner and group on the cloud-init disable file
+      command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} chown 0 0 /etc/cloud/cloud-init.disabled
+
     when: '"proc" in item.stdout'
-
-  - name: Create cloud-init disable file
-    command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} touch /etc/cloud/cloud-init.disabled
-
-  - name: Set the owner and group on the cloud-init disable file
-    command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} chown 0 0 /etc/cloud/cloud-init.disabled
+    with_items: "{{ partitions.results }}"
 
   - name: Create a temporary copy of the network script for eth0
     template:
@@ -128,12 +132,17 @@
       name: common
       tasks_from: kvm-inject-ssh-keys
 
-  - name: Set the SSH not to use DNS
-    shell: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} echo "UseDNS no" >> /etc/ssh/sshd_config  # noqa 305
+  - block:
 
-  - name: Disable SELinux
-    shell: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} \
-           sh "sed -i 's/SELINUX\=enforcing/SELINUX\=permissive/g' /etc/selinux/config"  # noqa 305
+    - name: Set the SSH not to use DNS
+      shell: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} echo "UseDNS no" >> /etc/ssh/sshd_config  # noqa 305
+
+    - name: Disable SELinux
+      shell: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} \
+            sh "sed -i 's/SELINUX\=enforcing/SELINUX\=permissive/g' /etc/selinux/config"  # noqa 305
+
+    when: '"proc" in item.stdout'
+    with_items: "{{ partitions.results }}"
 
   - block:
     - name: Preallocate most of Portal disk space to avoid pausing the VM, this also checks disk space
@@ -142,7 +151,7 @@
     - name: Increase the virtual vm size
       shell: "qemu-img resize {{ guestfish_dest }} +{{ portal_allocate_size_gb | int - 8 }}G"
 
-    when: portal_allocate_size_gb > 0
+    when: ( portal_allocate_size_gb | int ) > 0
 
   - name: Enable IP forwarding
     shell: echo "net.ipv4.ip_forward = 1" > /etc/sysctl.conf
@@ -175,7 +184,7 @@
       delegate_to: "{{ inventory_hostname }}"
       remote_user: "{{ portal_default_username }}"
 
-    when: portal_allocate_size_gb > 0
+    when: ( portal_allocate_size_gb | int ) > 0
 
   when: not node_running
   delegate_to: "{{ target_server }}"
