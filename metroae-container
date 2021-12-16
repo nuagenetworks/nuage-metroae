@@ -1,5 +1,4 @@
-#!/bin/sh
-
+#!/bin/bash
 # WARNING: Any paths defined in the deployment files must be relative to this folder. No absolute paths, and no paths outside of this folder
 
 TAG=$(git rev-parse --short HEAD)
@@ -60,8 +59,19 @@ if [[ ! -z $METROAE_PASSWORD ]]; then
     VAULTPASS=" -e METROAE_PASSWORD=$METROAE_PASSWORD"
 fi
 
+
 # Run the command inside docker
 args=( "$@" )
 
 # we use host networking because we want the host's dns server and host file
-docker run --network=host --rm $TI $SSHMOUNT $VAULTPASS -v "`pwd`:/metroae" metroaecontainer:$TAG ./metroae "${args[@]}"
+docker run \
+    --network=host \
+    --rm \
+    $TI \
+    $SSHMOUNT \
+    $VAULTPASS \
+    --env-file <(env | grep -Ev '^(PWD|PATH|HOME|USER|SHELL|MAIL|SSH_CONNECTION|LOGNAME|OLDPWD|LESSOPEN|_XDG_RUNTIME_DIR|HISTCONTROL)') \
+    -v \
+    "`pwd`:/metroae" \
+    metroaecontainer:$TAG \
+    ./metroae "${args[@]}"
