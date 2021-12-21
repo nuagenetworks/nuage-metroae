@@ -63,17 +63,20 @@
     register: partitions
     with_items: "{{ partitions_list.stdout_lines }}"
 
-  - name: Find root partition
-    set_fact:
-      guestfish_mount: "{{ item.item.split(':')[0] }}"
-    with_items: "{{ partitions.results }}"
+  - block:
+
+    - name: Find root partition
+      set_fact:
+        guestfish_mount: "{{ item.item.split(':')[0] }}"
+      with_items: "{{ partitions.results }}"
+
+    - name: Create cloud-init disable file
+      command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} touch /etc/cloud/cloud-init.disabled
+
+    - name: Set the owner and group on the cloud-init disable file
+      command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} chown 0 0 /etc/cloud/cloud-init.disabled
+
     when: '"proc" in item.stdout'
-
-  - name: Create cloud-init disable file
-    command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} touch /etc/cloud/cloud-init.disabled
-
-  - name: Set the owner and group on the cloud-init disable file
-    command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} chown 0 0 /etc/cloud/cloud-init.disabled
 
   - name: Create a temporary copy of the network script for eth0
     template:
