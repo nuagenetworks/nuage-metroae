@@ -84,7 +84,7 @@ WIZARD_SCRIPT = """
 
 - step: Auto-discover existing components
   description: |
-      This optional step can beb used to discover components that are already
+      This optional step can be used to discover components that are already
       running in your network.  By specifying the connection information of
       the hypervisors, any VMs running on these systems will be analyzed. You
       will be given the option to identify VMs as VSP components and to have
