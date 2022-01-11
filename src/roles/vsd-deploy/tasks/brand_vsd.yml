@@ -55,14 +55,18 @@
     command: "/opt/vsd/install/brand-ui -b /tmp/branding/branding.zip -u {{ rc_war_file.files[0].path }}"
     changed_when: True
 
-  - name: Restart jboss
-    command: monit restart jboss
+  - block:
 
-  - name: Wait for jboss to restart
-    monit_waitfor_service:
-      name: jboss
-      timeout_seconds: 1200
-      test_interval_seconds: 30
+    - name: Restart jboss
+      command: monit restart jboss
+
+    - name: Wait for jboss to restart
+      monit_waitfor_service:
+        name: jboss
+        timeout_seconds: 1200
+        test_interval_seconds: 30
+
+    throttle: 1
 
   remote_user: "{{ vsd_username | default(vsd_default_username) }}"
   become: "{{ 'no' if vsd_username | default(vsd_default_username) == 'root' else 'yes' }}"
