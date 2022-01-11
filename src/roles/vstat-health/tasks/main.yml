@@ -111,11 +111,8 @@
     until: es_status.json.status == 'green' and es_status.json.number_of_nodes == expected_es_node_count|int
     retries: 60
     delay: 10
-    delegate_to: "{{ vsd_hostname_list[0] }}"
+    delegate_to: "{{ hostvars[inventory_hostname].vsd_hostname_list[0] }}"
     remote_user: "{{ hostvars[hostvars[inventory_hostname].vsd_hostname_list[0]].vsd_custom_username | default(vsd_custom_username | default(vsd_default_username)) }}"
-    become: "{{ 'no' if hostvars[vsd_hostname_list[0]].vsd_custom_username | default(vsd_custom_username | default(vsd_default_username)) == 'root' else 'yes' }}"
-    vars:
-      ansible_become_pass: "{{ hostvars[vsd_hostname_list[0]].vsd_custom_password | default(vsd_custom_password | default(vsd_default_password)) }}"
 
   - name: Check the ES data node count when active/standby
     uri:
@@ -125,11 +122,8 @@
     until: es_status_active_standby.json.number_of_data_nodes == groups['backup_vstats']|length|int
     retries: 60
     delay: 10
-    delegate_to: "{{ vsd_hostname_list[0] }}"
+    delegate_to: "{{ hostvars[inventory_hostname].vsd_hostname_list[0] }}"
     remote_user: "{{ hostvars[hostvars[inventory_hostname].vsd_hostname_list[0]].vsd_custom_username | default(vsd_custom_username | default(vsd_default_username)) }}"
-    become: "{{ 'no' if hostvars[vsd_hostname_list[0]].vsd_custom_username | default(vsd_custom_username | default(vsd_default_username)) == 'root' else 'yes' }}"
-    vars:
-      ansible_become_pass: "{{ hostvars[vsd_hostname_list[0]].vsd_custom_password | default(vsd_custom_password | default(vsd_default_password)) }}"
     when: groups['backup_vstats'] is defined and groups['backup_vstats']|length > 0
 
   - name: Write ES status color result separator to report file
