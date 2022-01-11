@@ -69,6 +69,8 @@
     when:
       - nuh_sa_or_ha is match('ha')
       - inventory_hostname == groups['nuhs'][0]
+    tags:
+    - primary_setup
 
   - name: Run the setup script for HA secondary
     command: ./setup.sh
@@ -83,6 +85,8 @@
     when:
       - nuh_sa_or_ha is match('ha')
       - inventory_hostname == groups['nuhs'][1]
+    tags:
+    - secondary_setup
 
   - name: Set the timezone
     command: timedatectl set-timezone {{ nuh_timezone }}
@@ -138,6 +142,8 @@
       command: ansible-playbook configure.yml
       args:
         chdir: /opt/proxy/bin/ansible
+      tags:
+      - configure
 
     when:
       - custom_configuration_file_location is defined or stats_out_proxy | default('NONE') == internal_ip | default("not_set")
