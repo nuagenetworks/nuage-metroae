@@ -43,6 +43,7 @@
 * Make changes into documentation for supporting ansible version upgrade(METROAE-588)
 * Document where credentials are used(METROAE-532)
 * Fix MetroAE inplace upgrade from 20.10.R6.1 to 20.10.R6.3(METROAE-590)
+* Fix TLS mode to required optionally (METROAE-536)
 
 ## Test Matrix
 
