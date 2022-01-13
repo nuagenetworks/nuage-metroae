@@ -120,10 +120,12 @@
   command: monit status jboss
   register: jboss_status
   remote_user: "{{ hostvars[hostvars[inventory_hostname].vsd_hostname_list].vsd_custom_username | default(vsd_custom_username | default(vsd_default_username)) }}"
-  become: "{{ 'no' if hostvars[item].vsd_custom_username | default(vsd_custom_username | default(vsd_default_username)) == 'root' else 'yes' }}"
+  become: "{{ 'no' if hostvars[vsd].vsd_custom_username | default(vsd_custom_username | default(vsd_default_username)) == 'root' else 'yes' }}"
   vars:
-    ansible_become_pass: "{{ hostvars[item].vsd_custom_password | default(vsd_custom_password | default(vsd_default_password)) }}"
-  delegate_to: "{{ item }}"
+    ansible_become_pass: "{{ hostvars[vsd].vsd_custom_password | default(vsd_custom_password | default(vsd_default_password)) }}"
+  delegate_to: "{{ vsd }}"
+  loop_control:
+    loop_var: vsd
   with_items: "{{ vsd_hostname_list }}"
   changed_when: False
 
