@@ -18,14 +18,14 @@
       tasks_from: get-vsd-build
 
   - name: Clear existing stats
-    command: /opt/vsd/vsd-stats.sh -d
+    command: "{{ sshpass_command | default('') }} /opt/vsd/vsd-stats.sh -d"
     environment:
       VSD_VERSION: "{{ vsd_version.stdout }}"
       VSD_BUILD: "{{ vsd_build.stdout }}"
     when: clear_stats | default(false)
 
   - name: Enable stats collection on standalone vsd when vstat is standalone
-    command: /opt/vsd/vsd-stats.sh -e {{ inventory_hostname }}
+    command: "{{ sshpass_command | default('') }} /opt/vsd/vsd-stats.sh -e {{ inventory_hostname }}"
     environment:
       VSD_VERSION: "{{ vsd_version.stdout }}"
       VSD_BUILD: "{{ vsd_build.stdout }}"
@@ -34,7 +34,7 @@
       - vstat_sa_or_ha is match('sa')
 
   - name: Enable stats collection on the cluster vsds when vstat is standalone
-    command: /opt/vsd/vsd-stats.sh -e {{ inventory_hostname }}
+    command: "{{ sshpass_command | default('') }} /opt/vsd/vsd-stats.sh -e {{ inventory_hostname }}"
     environment:
       VSD_VERSION: "{{ vsd_version.stdout }}"
       VSD_BUILD: "{{ vsd_build.stdout }}"
@@ -45,7 +45,7 @@
   - block:
 
     - name: Enable stats collection on the vsd(s) when vstat is clustered
-      command: /opt/vsd/vsd-stats.sh -e {{ groups['vstats'][0] }},{{ groups['vstats'][1] }},{{ groups['vstats'][2] }}
+      command: "{{ sshpass_command | default('') }} /opt/vsd/vsd-stats.sh -e {{ groups['vstats'][0] }},{{ groups['vstats'][1] }},{{ groups['vstats'][2] }}"
       environment:
         VSD_VERSION: "{{ vsd_version.stdout }}"
         VSD_BUILD: "{{ vsd_build.stdout }}"
@@ -54,7 +54,7 @@
         - groups['vstats'] is defined
 
     - name: Enable stats collection on the vsd(s) on primary vstats
-      command: /opt/vsd/vsd-stats.sh -e {{ groups['primary_vstats'][0] }},{{ groups['primary_vstats'][1] }},{{ groups['primary_vstats'][2] }}
+      command: "{{ sshpass_command | default('') }} /opt/vsd/vsd-stats.sh -e {{ groups['primary_vstats'][0] }},{{ groups['primary_vstats'][1] }},{{ groups['primary_vstats'][2] }}"
       environment:
         VSD_VERSION: "{{ vsd_version.stdout }}"
         VSD_BUILD: "{{ vsd_build.stdout }}"
@@ -64,7 +64,7 @@
         - active and not failover
 
     - name: Enable stats collection on the vsd(s) for backup vstats in failover
-      command: /opt/vsd/vsd-stats.sh -e {{ groups['backup_vstats'][0] }},{{ groups['backup_vstats'][1] }},{{ groups['backup_vstats'][2] }}
+      command: "{{ sshpass_command | default('') }} /opt/vsd/vsd-stats.sh -e {{ groups['backup_vstats'][0] }},{{ groups['backup_vstats'][1] }},{{ groups['backup_vstats'][2] }}"
       environment:
         VSD_VERSION: "{{ vsd_version.stdout }}"
         VSD_BUILD: "{{ vsd_build.stdout }}"
@@ -80,7 +80,7 @@
     - block:
 
       - name: Enable stats collection on the stats vsd(s) when deploying stats-out
-        command: /opt/vsd/vsd-stats.sh -e {{ groups['data_vstats'][0] }},{{ groups['data_vstats'][1] }},{{ groups['data_vstats'][2] }} -s {{ stats_out_proxy }}
+        command: "{{ sshpass_command | default('') }} /opt/vsd/vsd-stats.sh -e {{ groups['data_vstats'][0] }},{{ groups['data_vstats'][1] }},{{ groups['data_vstats'][2] }} -s {{ stats_out_proxy }}"
         environment:
           VSD_VERSION: "{{ vsd_version.stdout }}"
           VSD_BUILD: "{{ vsd_build.stdout }}"
@@ -98,8 +98,8 @@
 
     - name: Enable statistics flag on the primary vsd(s) when deploying stats-out
       command: >-
-        /opt/vsd/vsd-stats.sh -e {{ groups['vstats'][0] }},{{ groups['vstats'][1] }},{{ groups['vstats'][2] }}
-        -v {{ hostvars[groups['stats_only_vsds'][0]]['mgmt_ip'] }},{{ hostvars[groups['stats_only_vsds'][1]]['mgmt_ip'] }},{{ hostvars[groups['stats_only_vsds'][2]]['mgmt_ip'] }}
+        "{{ sshpass_command | default('') }} /opt/vsd/vsd-stats.sh -e {{ groups['vstats'][0] }},{{ groups['vstats'][1] }},{{ groups['vstats'][2] }}
+        -v {{ hostvars[groups['stats_only_vsds'][0]]['mgmt_ip'] }},{{ hostvars[groups['stats_only_vsds'][1]]['mgmt_ip'] }},{{ hostvars[groups['stats_only_vsds'][2]]['mgmt_ip'] }}"
       environment:
         VSD_VERSION: "{{ vsd_version.stdout }}"
         VSD_BUILD: "{{ vsd_build.stdout }}"
