@@ -22,6 +22,7 @@
     environment:
       VSD_VERSION: "{{ vsd_version.stdout }}"
       VSD_BUILD: "{{ vsd_build.stdout }}"
+    no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
     when: clear_stats | default(false)
 
   - name: Enable stats collection on standalone vsd when vstat is standalone
@@ -29,6 +30,7 @@
     environment:
       VSD_VERSION: "{{ vsd_version.stdout }}"
       VSD_BUILD: "{{ vsd_build.stdout }}"
+    no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
     when:
       - vsd_sa_or_ha is match('sa')
       - vstat_sa_or_ha is match('sa')
@@ -38,6 +40,7 @@
     environment:
       VSD_VERSION: "{{ vsd_version.stdout }}"
       VSD_BUILD: "{{ vsd_build.stdout }}"
+    no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
     when:
       - vsd_sa_or_ha is match('ha')
       - vstat_sa_or_ha is match('sa')
@@ -49,6 +52,7 @@
       environment:
         VSD_VERSION: "{{ vsd_version.stdout }}"
         VSD_BUILD: "{{ vsd_build.stdout }}"
+      no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
       when:
         - vstat_sa_or_ha is match('ha')
         - groups['vstats'] is defined
@@ -58,6 +62,7 @@
       environment:
         VSD_VERSION: "{{ vsd_version.stdout }}"
         VSD_BUILD: "{{ vsd_build.stdout }}"
+      no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
       when:
         - vstat_sa_or_ha is match('ha')
         - groups['primary_vstats'] is defined
@@ -68,6 +73,7 @@
       environment:
         VSD_VERSION: "{{ vsd_version.stdout }}"
         VSD_BUILD: "{{ vsd_build.stdout }}"
+      no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
       when:
         - vstat_sa_or_ha is match('ha')
         - groups['backup_vstats'] is defined
@@ -81,6 +87,7 @@
 
       - name: Enable stats collection on the stats vsd(s) when deploying stats-out
         command: "{{ sshpass_command | default('') }} /opt/vsd/vsd-stats.sh -e {{ groups['data_vstats'][0] }},{{ groups['data_vstats'][1] }},{{ groups['data_vstats'][2] }} -s {{ stats_out_proxy }}"
+        no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
         environment:
           VSD_VERSION: "{{ vsd_version.stdout }}"
           VSD_BUILD: "{{ vsd_build.stdout }}"
@@ -100,6 +107,7 @@
       command: >-
         "{{ sshpass_command | default('') }} /opt/vsd/vsd-stats.sh -e {{ groups['vstats'][0] }},{{ groups['vstats'][1] }},{{ groups['vstats'][2] }}
         -v {{ hostvars[groups['stats_only_vsds'][0]]['mgmt_ip'] }},{{ hostvars[groups['stats_only_vsds'][1]]['mgmt_ip'] }},{{ hostvars[groups['stats_only_vsds'][2]]['mgmt_ip'] }}"
+      no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
       environment:
         VSD_VERSION: "{{ vsd_version.stdout }}"
         VSD_BUILD: "{{ vsd_build.stdout }}"
