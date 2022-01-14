@@ -44,6 +44,7 @@
 * Document where credentials are used(METROAE-532)
 * Fix MetroAE inplace upgrade from 20.10.R6.1 to 20.10.R6.3(METROAE-590)
 * Added the VSPCA field in the installer settings for sdwan portal (METROAE-550)
+* Clean up temporary ISO file on VSD after mounting (METROAE-598)
 
 ## Test Matrix
 

@@ -2,6 +2,7 @@
 
   - name: Check the current license validity for VSTAT
     shell: curl -X GET localhost:9200/_license?pretty --stderr - | grep expiry
+    ignore_errors: true
 
   - name: Copy license file to VSTAT
     copy:
@@ -9,15 +10,12 @@
       dest: "~/vstat_license"
 
   - name: Apply the patch
-    shell: curl –X PUT http://{{inventory_hostname}}:9200/_license -H "Content-Type:application/json" \​
-            -d @vstat_license
+    shell: curl -X PUT http://{{inventory_hostname}}:9200/_license -H "Content-Type:application/json" -d @vstat_license
     ignore_errors: true
     register: license_applied
-
-  - name: Assert license apply acknowledged by VSTAT
-    assert:
-      that: "license_applied.stdout is search('\"acknowledged\":true')"
-      msg: "Check if license is applied"
+    retries: 5
+    delay: 30
+    until: "license_applied.stdout is search('\"acknowledged\":true')"
 
   - name: Check the license on VSTAT after renewal
     shell: curl -X GET localhost:9200/_license?pretty --stderr - | grep expiry

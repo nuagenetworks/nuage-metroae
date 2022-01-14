@@ -17,7 +17,7 @@
   * Minimum of 2 CPUs, 4 GBs memory, and 40 GB disk
   * A read/write NFS mount for accessing the Nuage software images  
 
-2.1 Clone the master branch of the repo onto the **MetroAE Host**. Read [Setup](SETUP.md) for details.  
+2.1 Clone the master branch of the repo onto the **MetroAE Host**. Read [Setup](SETUP.md) for details. NOTE: Please clone the repo in a location that can be read by libvirt/qemu.
 ```
 git clone https://github.com/nuagenetworks/nuage-metroae.git
 ```
