@@ -101,7 +101,7 @@
 
   - name: Set fact for expected number of ES nodes
     set_fact:
-      expected_es_node_count: "{{ groups['vstats'] | default([]) | length + groups['data_vstats'] | default([]) | length + groups['primary_vstats'] | default([]) | length + groups['backup_vstats'] | default([]) | length }}"
+      expected_es_node_count: "{{ groups['vstats'] | default([]) | length + groups['data_vstats'] | default([]) | length + groups['primary_vstats'] | default([]) | length }}"
 
   - name: Check the ES status color and node count
     uri:
@@ -116,6 +116,21 @@
     become: "{{ 'no' if hostvars[vsd_hostname_list[0]].vsd_custom_username | default(vsd_custom_username | default(vsd_default_username)) == 'root' else 'yes' }}"
     vars:
       ansible_become_pass: "{{ hostvars[vsd_hostname_list[0]].vsd_custom_password | default(vsd_custom_password | default(vsd_default_password)) }}"
+
+  - name: Check the ES data node count when active/standby
+    uri:
+      url: "http://{{ inventory_hostname }}:9200/_cluster/health?pretty"
+      method: GET
+    register: es_status_active_standby
+    until: es_status_active_standby.json.number_of_data_nodes == groups['backup_vstats']|length|int
+    retries: 60
+    delay: 10
+    delegate_to: "{{ vsd_hostname_list[0] }}"
+    remote_user: "{{ hostvars[hostvars[inventory_hostname].vsd_hostname_list[0]].vsd_custom_username | default(vsd_custom_username | default(vsd_default_username)) }}"
+    become: "{{ 'no' if hostvars[vsd_hostname_list[0]].vsd_custom_username | default(vsd_custom_username | default(vsd_default_username)) == 'root' else 'yes' }}"
+    vars:
+      ansible_become_pass: "{{ hostvars[vsd_hostname_list[0]].vsd_custom_password | default(vsd_custom_password | default(vsd_default_password)) }}"
+    when: groups['backup_vstats'] is defined and groups['backup_vstats']|length > 0
 
   - name: Write ES status color result separator to report file
     nuage_append: filename="{{ report_path }}" text="-----Elasticsearch Status Color-----\n"

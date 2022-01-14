@@ -208,7 +208,7 @@ def main():
         nargs='?',
         help="Required path when encrypting an Excel spreadsheet. Optional if using a deployment name - will default to 'default' deployment",
         default="default")
-    args = parser.parse_args()
+    args, unknown = parser.parse_known_args()
 
     if "METROAE_PASSWORD" in os.environ:
         passcode = os.environ["METROAE_PASSWORD"]
