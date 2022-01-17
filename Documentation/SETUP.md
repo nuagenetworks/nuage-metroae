@@ -22,7 +22,8 @@ If Git is not already installed on the host, install it with the following comma
 yum install -y git
 ```
 
-Clone the repo with the following command.
+Clone the repo with the following command. NOTE: Please clone the repo in a location that can be
+read by libvirt/qemu.
 ```
 git clone https://github.com/nuagenetworks/nuage-metroae.git
 ```
@@ -75,7 +76,7 @@ Alternatively, you can create the directories under the [nuage_unzipped_files_di
 <nuage_unzipped_files_dir>/vns/nuh/
 <nuage_unzipped_files_dir>/vns/util/
 ```
-  
+
 Note: After completing setup you will customize for your deployment, and you'll need to add this unzipped files directory path to `common.yml`.
 
 ## Next Steps
