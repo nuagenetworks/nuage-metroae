@@ -1,11 +1,16 @@
 ---
   - hosts: nuhs[0]
     tasks:
-      - name: "set up primary"
-        include_role:
-          name: nuh-deploy
-          tasks_from: main.yml
-          tags: primary_setup
-          
-    
-    
+      - name: "Run the setup script for HA primary"
+        command: ./setup.sh
+        environment:
+          HNAME: "{{ hostname }}"
+          HA: "y"
+          MASTER: "y"
+          PEERADDR: "{{ groups['nuhs'][1] }}"
+          PEERPASSWORD: "{{ nuh_default_password }}"
+        args:
+          chdir: /opt/proxy/bin
+        when:
+          - nuh_sa_or_ha is match('ha')
+          - inventory_hostname == groups['nuhs'][0]
