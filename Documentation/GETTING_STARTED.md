@@ -17,13 +17,9 @@
   * Minimum of 2 CPUs, 4 GBs memory, and 40 GB disk
   * A read/write NFS mount for accessing the Nuage software images  
 
-2.1 Clone the master branch of the repo onto the **MetroAE Host**. Read [Setup](SETUP.md) for details.  
+2.1 Clone the master branch of the repo onto the **MetroAE Host**. Read [Setup](SETUP.md) for details. NOTE: Please clone the repo in a location that can be read by libvirt/qemu.
 ```
 git clone https://github.com/nuagenetworks/nuage-metroae.git
-```
-2.2 Install the required packages. Run as root or sudo. Read [Setup](SETUP.md) for details.  
-```
-$ sudo ./setup.sh  
 ```
 
 ## 3. Enable SSH Access
@@ -52,13 +48,11 @@ See [Setup](SETUP.md) for more details about enabling SSH Access.
 
 Download and install the [ovftool](https://www.vmware.com/support/developer/ovf/) from VMware. MetroAE uses ovftool for OVA operations. Note that MetroAE is tested using ovftool version 4.3. ovftool version 4.3 is required for proper operation.
 
-Note that running the metroae Docker container for VMware installations and upgrades requires special handling of the location of the ovftool command. Please see [SETUP.md](SETUP.md) for details.
-
 ## 5. Prepare your environment  
 
 ### 5.1 Unzip Nuage files
 
-Execute: `metroae tools unzip images <zipped_directory> <unzip_directory>`
+Execute: `metroae-container tools unzip images <zipped_directory> <unzip_directory>`
 
 See [SETUP.md](SETUP.md) for details.  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Be sure that Nuage packages (tar.gz) are available on localhost (MetroAE host),  

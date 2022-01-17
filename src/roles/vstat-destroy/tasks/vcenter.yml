@@ -1,6 +1,6 @@
 ---
 - name: Finding VM folder (ignoring errors)
-  connection: local
+  delegate_to: localhost
   vmware_guest_find:
     hostname: "{{ target_server }}"
     username: "{{ vcenter.username }}"
@@ -12,13 +12,13 @@
   ignore_errors: yes
 
 - name: Gathering info on VM (ignoring errors)
-  connection: local
+  delegate_to: localhost
   vmware_guest_info:
     hostname: "{{ target_server }}"
     username: "{{ vcenter.username }}"
     password: "{{ vcenter.password }}"
     datacenter: "{{ vcenter.datacenter }}"
-    folder: "/{{ vcenter.datacenter }}{{ vstat_vm_folder['folders'][0] }}"
+    folder: "{{ vstat_vm_folder['folders'][0] }}"
     name: "{{ vm_name }}"
     validate_certs: no
   register: vstat_vm_facts
@@ -47,7 +47,7 @@
     with_items: "{{ vm_info.virtual_machines }}"
 
   - name: Turn off autostart
-    connection: local
+    delegate_to: localhost
     vmware_autostart:
       name: "{{ vm_name }}"
       uuid: "{{ uuid }}"
@@ -58,27 +58,27 @@
       validate_certs: no
 
   - name: Power off the Stats VM
-    connection: local
+    delegate_to: localhost
     vmware_guest:
       hostname: "{{ target_server }}"
       username: "{{ vcenter.username }}"
       password: "{{ vcenter.password }}"
       validate_certs: no
       datacenter: "{{ vcenter.datacenter }}"
-      folder: "/{{ vcenter.datacenter }}{{ vstat_vm_folder['folders'][0] }}"
+      folder: "{{ vstat_vm_folder['folders'][0] }}"
       name: "{{ vm_name }}"
       state: "poweredoff"
     when: vstat_vm_facts['instance']['hw_power_status'] == 'poweredOn'
 
   - name: Removing the Stats VM
-    connection: local
+    delegate_to: localhost
     vmware_guest:
       hostname: "{{ target_server }}"
       username: "{{ vcenter.username }}"
       password: "{{ vcenter.password }}"
       validate_certs: no
       datacenter: "{{ vcenter.datacenter }}"
-      folder: "/{{ vcenter.datacenter }}{{ vstat_vm_folder['folders'][0] }}"
+      folder: "{{ vstat_vm_folder['folders'][0] }}"
       name: "{{ vm_name }}"
       state: "absent"
     when: (not preserve_vm | default( False ))

@@ -270,7 +270,7 @@ def main():
         default=False, help="Generates as a jinja2 template")
     parser.add_argument(
         "--as-example", dest="as_example", action='store_true', default=False,
-        help="Generates a example schema using example data")
+        help="Generates an example schema using example data")
     parser.add_argument(
         "--example_data_folder", help="Location of example data folder")
     args = parser.parse_args()
