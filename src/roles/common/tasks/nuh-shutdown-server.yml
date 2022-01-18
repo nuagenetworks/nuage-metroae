@@ -1,7 +1,3 @@
-# - name: "shut down nuh server"
-  # remote_user: "{{ nuh_default_username }}"
-  # shell: shutdown -h now
-  
 - block:
 
   - name: Pull facts from target server
@@ -10,9 +6,6 @@
   - name: List the Virtual Machines on target server
     virt: command=list_vms
     register: virt_vms
-
-  - name: Snapshot Portal VM
-    shell: "virsh snapshot-create-as {{ vm_name }} --name {{ vm_name }}-snapshot-{{ ansible_date_time.iso8601 }}"
 
   - name: Shutdown Portal VM
     virt:
@@ -32,5 +25,5 @@
     delay: 5
 
   delegate_to: "{{ target_server }}"
-  remote_user: "{{ target_server_username }}" # "{{ nuh_default_username }}"
+  remote_user: "{{ target_server_username }}"
   become: "{{ 'no' if target_server_username == 'root' else 'yes' }}"
