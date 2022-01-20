@@ -84,7 +84,8 @@ INVENTORY_DIR=$CURRENT_DIR/src/inventory
 PLUGIN_DIR=$CURRENT_DIR/src/metro_plugins
 VAULT_ENV_FILE=$CURRENT_DIR/src/vault-env
 ENCRYPTED_TOKEN=\$ANSIBLE_VAULT
-AUDIT_LOG=audit.log
+LOGS_DIRECTORY=logs
+AUDIT_LOG=$LOGS_DIRECTORY/audit.log
 ORIGINAL_ARGS=""
 SKIP_BUILD=0
 SKIP_PASSWORD=0
@@ -679,8 +680,12 @@ function deployment_main {
         ;;
         --set-group)
         GROUP="$2"
-        touch ansible.log
-        chgrp $GROUP ansible.log
+        mkdir $LOGS_DIRECTORY
+        touch $LOGS_DIRECTORY/ansible.log
+        chgrp $GROUP $LOGS_DIRECTORY/ansible.log
+        current_time=$(date "+%Y.%m.%d-%H.%M.%S")
+        touch ansible.log.$current_time
+        ln -s $LOGS_DIRECTORY/ansible.log ansible.log.$current_time
         touch $AUDIT_LOG
         chgrp $GROUP $AUDIT_LOG
         shift # past argument
