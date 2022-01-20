@@ -3,6 +3,13 @@
     remote_user: "{{ nuh_default_username }}"
     gather_facts: no
     tasks:
+      - name: Clean known_hosts of NUH's (ignoring errors)
+        known_hosts:
+          name: "{{ hostname }}"
+          state: absent
+        no_log: True
+        ignore_errors: True
+
       - name: "Run the setup script for HA primary"
         command: ./setup.sh
         environment:
@@ -15,4 +22,3 @@
           chdir: /opt/proxy/bin
         when:
           - nuh_sa_or_ha is match('ha')
-          - inventory_hostname == groups['nuhs'][0]
