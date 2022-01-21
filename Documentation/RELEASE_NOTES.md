@@ -44,6 +44,7 @@
 * Document where credentials are used(METROAE-532)
 * Fix MetroAE inplace upgrade from 20.10.R6.1 to 20.10.R6.3(METROAE-590)
 * Clean up temporary ISO file on VSD after mounting (METROAE-598)
+* Fix the error caused by multiple installation of branding on VSD (METROAE-604)
 
 ## Test Matrix
 
