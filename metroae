@@ -85,6 +85,7 @@ PLUGIN_DIR=$CURRENT_DIR/src/metro_plugins
 VAULT_ENV_FILE=$CURRENT_DIR/src/vault-env
 ENCRYPTED_TOKEN=\$ANSIBLE_VAULT
 LOGS_DIRECTORY=logs
+ANSIBLE_LOG=$LOGS_DIRECTORY/ansible.log
 AUDIT_LOG=$LOGS_DIRECTORY/audit.log
 ORIGINAL_ARGS=""
 SKIP_BUILD=0
@@ -643,8 +644,18 @@ function audit_log_and_exit {
     print_version_and_exit $1
 }
 
+function setup_log_files {
+    debug ${FUNCNAME[0]}
+    mkdir $LOGS_DIRECTORY
+    touch $ANSIBLE_LOG
+    touch $AUDIT_LOG
+    current_time=$(date "+%Y.%m.%d-%H.%M.%S")
+    ln -s $ANSIBLE_LOG ansible.log.$current_time
+}
+
 function deployment_main {
     generate_and_save_UUID
+    setup_log_files
 
     debug ${FUNCNAME[0]}
     set +e
@@ -680,13 +691,7 @@ function deployment_main {
         ;;
         --set-group)
         GROUP="$2"
-        mkdir $LOGS_DIRECTORY
-        touch $LOGS_DIRECTORY/ansible.log
-        chgrp $GROUP $LOGS_DIRECTORY/ansible.log
-        current_time=$(date "+%Y.%m.%d-%H.%M.%S")
-        touch ansible.log.$current_time
-        ln -s $LOGS_DIRECTORY/ansible.log ansible.log.$current_time
-        touch $AUDIT_LOG
+        chgrp $GROUP ansible.log
         chgrp $GROUP $AUDIT_LOG
         shift # past argument
         shift # past value
