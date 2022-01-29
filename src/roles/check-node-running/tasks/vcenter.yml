@@ -60,11 +60,16 @@
     - nuage_upgrade | default (False)
     - inventory_hostname in groups['vsds']
 
+- name: set hw_power
+  set_fact:
+    hw_power: vm_facts.hw_power_status is match('poweredOn')
+
 - block:
   - name: Verify that the VM is not running if not reachable
     assert:
-      that: "not (vm_folder is succeeded and vm_facts is succeeded and not node_reachable)"
+      that: "not (vm_folder is succeeded and vm_facts is succeeded)"
       msg: "{{ vm_name }} is running on {{ target_server }} but is not reachable. Quitting."
+    when: not node_reachable and not hw_power
 
   - name: Verify that the VM is running if reachable
     assert:
