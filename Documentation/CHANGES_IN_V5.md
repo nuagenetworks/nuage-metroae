@@ -8,6 +8,10 @@ In v4 and before, MetroAE shipped with 2 modes of operation. The container and g
 1. Download or git pull the latest metroae code
 2. Make sure docker is installed and running. The `docker ps` command can verify this. 
 3. Use `./metroae-container` instead of `./metroae`. All other arguments remain the same. 
+   e.g. Instead of this initial command
+   `./metroae install vsds -vvv` use `./metroae-container install vsds -vvv`
+   Another example for deployments other than defaults
+   `./metroae install vsds specialdeployment -vvv` use `./metroae-container install vsds specialdeployment -vvv`
 4. For all image paths, make sure they start with `/metroae`. Here `/metroae` refers to the present working directory for the user. 
    e.g. 
    `nuage_unzipped_files_dir: ./images/20.10.R4` changes to `nuage_unzipped_files_dir: /metroae/images/20.10.R4`
@@ -20,6 +24,10 @@ In v4 and before, MetroAE shipped with 2 modes of operation. The container and g
 1. Download or git pull the latest metroae code
 2. Destroy the old container using `./metroae-container destroy` command
 3. Use `./metroae-container` instead of `/metroae`. All other arguments remain the same.
+   e.g. Instead of this initial command
+   `metroae install vsds -vvv` use `./metroae-container install vsds -vvv`
+   Another example for deployments other than defaults
+   `metroae install vsds specialdeployment -vvv` use `./metroae-container install vsds specialdeployment -vvv`
 4. For all image paths, make sure they start with `/metroae` instead of `/metroae_data`. Here `/metroae` refers to the present working directory for the user. 
    e.g. 
    `nuage_unzipped_files_dir: /metroae_data/images/20.10.R4` changes to `nuage_unzipped_files_dir: /metroae/images/20.10.R4`
