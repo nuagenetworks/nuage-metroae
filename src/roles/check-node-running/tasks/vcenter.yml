@@ -63,13 +63,14 @@
 - name: set hw_power
   set_fact:
     hw_power: "{{ vm_facts.hw_power_status is match('poweredOn') }}"
+  when: vm_facts is defined and vm_facts.hw_power is defined
 
 - block:
   - name: Verify that the VM is not running if not reachable
     assert:
       that: "not (vm_folder is succeeded and vm_facts is succeeded and not node_reachable)"
       msg: "{{ vm_name }} is running on {{ target_server }} but is not reachable. Quitting."
-    when: hw_power
+    when: hw_power is defined and hw_power
 
   - name: Verify that the VM is running if reachable
     assert:
