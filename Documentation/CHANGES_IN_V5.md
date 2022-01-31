@@ -14,6 +14,7 @@ In v4 and before, MetroAE shipped with 2 modes of operation. The container and g
 5. All the specified paths for licenses, unzipped files, backup directories should be inside the metroae repository. e.g. you cannot specify /opt or /tmp for the metroae host. If your mount directory for images is outside the metroae folder, you can use a mount bind to put them inside the metroae directory. 
    e.g. 
    `sudo mount --bind -o ro /mnt/nfs-data /<your-repo-location>/images`
+6. Users do not need to run setup at all, all dependencies will be automatically taken care of with the new container in the background.
 
 ### Moving from MetroAE v4 container/download to MetroAE v5
 1. Download or git pull the latest metroae code
