@@ -18,6 +18,8 @@ Nuage Networks components. You specify the individual details of your target pla
 
 The [Documentation](Documentation/) directory contains the following guides to assist you in successfully working with MetroAE. The current documentation covers using MetroAE CLI only.
 
+Note: For users migrating from v4.X to v5, there are some major changes worth looking at. These changes have been summarized [here](Documentation/CHANGES_IN_V5.md). If this is your first time using metroae, you can ignore the document.
+
 File name | Description
 --------- | --------
 [RELEASE_NOTES](Documentation/RELEASE_NOTES.md) | New features, resolved issues and known limitations and issues
