@@ -19,7 +19,7 @@
 * Add support for encrypting credentials in Excel spreadsheet (METROAE-552)
 * Add Ansible 3.4.0 support (METROAE-344)
 * Allow installing/renewal of VSTAT(ES) licenses during install, upgrade and standalone (METROAE-591)
-* Allow creating custom username and passwords without hardening (METROAE-592)
+* Allow creating custom username and passwords without hardening for VSD and VSTAT (METROAE-592)
 
 ### Resolved Issues
 
