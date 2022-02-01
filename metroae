@@ -651,16 +651,17 @@ function setup_log_files {
     touch $AUDIT_LOG
     current_time=$(date "+%Y.%m.%d-%H.%M.%S")
     ln -s $ANSIBLE_LOG ansible.log.$current_time
+    ansible.log.$WORKFLOW.$DEPLOYMENT.$current_time
 }
 
 function deployment_main {
     generate_and_save_UUID
-    setup_log_files
 
     debug ${FUNCNAME[0]}
     set +e
 
     ORIGINAL_ARGS="$*"
+    setup_log_files
 
     #
     # Parse arguments
@@ -771,6 +772,7 @@ function deployment_main {
             fi
         fi
     fi
+    setup_log_files $WORKFLOW $DEPLOYMENT
 
     # Get password if needed
     check_password_needed "$DEPLOYMENT_DIR"
