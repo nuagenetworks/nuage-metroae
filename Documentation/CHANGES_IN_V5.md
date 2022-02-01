@@ -34,7 +34,7 @@ In v4 and before, MetroAE shipped with 2 modes of operation. The container and g
 5. You can create a `images` folder in `nuage-metroae` and move the `/metroae_data` mount folder under `/<your-repo-location>/images` athat way you can replace `/metroae_data` with `/metroae_data/images` in the deployment files. 
 
 ## Ansible and Python Changes
-MetroAE is now supported with Ansible version 3.4.0 and higher. Python3 is now required. Do not worry, the container that gets dynamically created should take care of the python, ansible and any other dependencies that are needed. 
+MetroAE is now supported with Ansible version 3.4.0 and higher. Python3 is now required. Do not worry, the container that gets dynamically created should take care of the python, ansible and any other dependencies that are needed. This will not affect the user environment as all dependencies will be installed in the MetroAE container.
 
 ## MetroAE Config
 MetroaAE Config is no longer bundled with MetroAE. Please refer to https://github.com/nuagenetworks/nuage-metroae-config to get information on how use MetroAE Config.
