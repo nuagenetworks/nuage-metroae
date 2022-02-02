@@ -1,7 +1,17 @@
-- name: Updating dr.sh on Portal 1
+- name: Updating dr.sh on GRCN datacenter 1
   lineinfile:
     path: /opt/vnsportal/dr.sh
     line: "{{ item }}"
   with_items:
-    - "{{ export OWNADDRESS={{ grcn1_ip }} }}"
-    - "{{ export DC1={{ groups['portal_ha_node1'][0] }},{{ groups['portal_ha_node1'][1] }},{{ groups['portal_ha_node1'][2] }},{{ groups['portal_grcn_node'][0] }} }}"
+    - "export OWNADDRESS={{ grcn1.mgmt_ip }}"
+    - "export DC1={{ groups['portal_ha_node1'][0] }},{{ groups['portal_ha_node2'][0] }},{{ groups['portal_ha_node3'][0] }},{{ groups['portal_grcn_node'][0] }}"
+  when: portal_grcn[0].current_dc == 'dc1'
+
+- name: Updating dr.sh on GRCN datacenter 1
+  lineinfile:
+    path: /opt/vnsportal/dr.sh
+    line: "{{ item }}"
+  with_items:
+    - "export OWNADDRESS={{ grcn1.mgmt_ip }}"
+    - "export DC1={{ groups['portal_ha_node1'][0] }},{{ groups['portal_ha_node2'][0] }},{{ groups['portal_ha_node3'][0] }},{{ groups['portal_grcn_node'][0] }}"
+  when: portal_grcn[0].current_dc == 'dc1'
