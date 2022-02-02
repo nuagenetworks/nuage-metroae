@@ -11,12 +11,17 @@
     ssh_user: "{{ vsc_creds.username }}"
     check_login: True
 
+- name: Add proxy setup
+  set_fact:
+    proxy_conf: '-o ProxyCommand="ssh -W %h:%p -q {{ ssh_proxy_configuration }}"'
+  when: ssh_proxy_configuration is defined
+
 - block:
   - block:
     - name: Copy external certificates
       command: >-
         sshpass -p'{{ vsc_default_password }}' scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null
-        {{ item }} {{ vsc_default_username }}@{{ mgmt_ip }}:/{{ item | basename }}
+        {{ proxy_conf | default("") }} {{ item }} {{ vsc_default_username }}@{{ mgmt_ip }}:/{{ item | basename }}
       no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
       with_items:
         - "{{ private_key_path }}"

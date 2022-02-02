@@ -44,6 +44,7 @@
 * Document where credentials are used(METROAE-532)
 * Fix MetroAE inplace upgrade from 20.10.R6.1 to 20.10.R6.3(METROAE-590)
 * On applying branding to the VSD jboss restart should happen serially (METROAE-597)
+* Clean up temporary ISO file on VSD after mounting (METROAE-598)
 
 ## Test Matrix
 
