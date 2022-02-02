@@ -2,7 +2,9 @@
 We have Made the following changes to MetroAE in v5 as compared to previous versions of MetroAE. All changes are summarised in this document.
 
 ## MetroAE operation changes
-In v4 and before, MetroAE shipped with 2 modes of operation. The container and git clone. With the new release, we have made things a bit easier for the users. There is a single mode of operation. The metroae container option. This new container will be dynamically built on the users machine. The only pre-requisite for the user will be to have docker installed on their MetroAE Host Machine. The changes for moving from v4 to v5 are as below depending on type of installation. 
+In v4 and before, MetroAE shipped with 2 modes of operation. The container and git clone. With the new release, we have made things a bit easier for the users. There is a single mode of operation - a new MetroAE container. This will replace the old MetroAE container, which will no longer be supported.
+
+This new container will be dynamically built on the users machine. The only pre-requisite for the user is to have docker installed on their MetroAE Host Machine. The changes for moving from v4 to v5 are as below depending on type of installation. 
 
 ### Moving from MetroAE git clone/download to MetroAE v5
 1. Download or git pull the latest metroae code
@@ -19,6 +21,7 @@ In v4 and before, MetroAE shipped with 2 modes of operation. The container and g
    e.g. 
    `sudo mount --bind -o ro /mnt/nfs-data /<your-repo-location>/images`
 6. Users do not need to run setup at all, all dependencies will be automatically taken care of with the new container in the background.
+7. For vcenter users only, metroae should be cloned or downloaded in a directory where libvirt is present. In short, the path to libvirt should be somewhere inside the metroae top level folder.
 
 ### Moving from MetroAE v4 container/download to MetroAE v5
 1. Download or git pull the latest metroae code
