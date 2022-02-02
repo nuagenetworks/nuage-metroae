@@ -4,7 +4,7 @@ We have Made the following changes to MetroAE in v5 as compared to previous vers
 ## MetroAE operation changes
 In v4 and before, MetroAE shipped with 2 modes of operation. The container and git clone. With the new release, we have made things a bit easier for the users. There is a single mode of operation - a new MetroAE container. This will replace the old MetroAE container, which will no longer be supported.
 
-This new container will be dynamically built on the users machine. The only pre-requisite for the user is to have docker installed on their MetroAE Host Machine. The changes for moving from v4 to v5 are as below depending on type of installation. 
+This new container will be dynamically built on the users machine. Users will need to get the latest metroae repository on their machine. The only other pre-requisite for the user is to have docker installed on their MetroAE Host Machine. The changes for moving from v4 to v5 are as below depending on type of installation. 
 
 ### Moving from MetroAE git clone/download to MetroAE v5
 1. Download or git pull the latest metroae code
