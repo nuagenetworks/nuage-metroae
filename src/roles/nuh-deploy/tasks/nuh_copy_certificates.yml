@@ -29,25 +29,6 @@
         # - external_interfaces is defined
         # - external_interfaces | length > 0
 
-    - name: Copy proxy certificates over to secondary nuh
-      synchronize:
-        src: "{{ item }}"
-        dest: "{{ item }}"
-        mode: pull
-        private_key: "/root/.ssh/proxypeer"
-      delegate_to: "{{ groups['nuhs'][1] }}"
-      run_once: true
-      when: 
-        - groups['nuhs'] | length > 1
-        - nuh_copy_certs | default(true)
-        - external_interfaces is defined
-        - external_interfaces | length > 0
-      with_items:
-        - "/opt/proxy/data/certs/proxy-CA.pem"
-        - "/opt/proxy/data/certs/proxyCert.pem"
-        - "/opt/proxy/data/certs/proxy-Key.pem"
-        - "/opt/proxy/data/certs/proxy.pem"
-
     - block:
       - name: Get all registered users on VSD
         command: /opt/ejabberd/bin/ejabberdctl registered_users {{ vsd_fqdn }}
