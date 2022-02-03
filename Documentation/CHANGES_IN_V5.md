@@ -21,7 +21,8 @@ This new container will be dynamically built on the users machine. Users will ne
    e.g. 
    `sudo mount --bind -o ro /mnt/nfs-data /<your-repo-location>/images`
 6. Users do not need to run setup at all, all dependencies will be automatically taken care of with the new container in the background.
-7. For vcenter users only, metroae should be cloned or downloaded in a directory where libvirt is present. In short, the path to libvirt should be somewhere inside the metroae top level folder.
+7. For vcenter users only, metroae should be cloned or downloaded in a directory where ovftool is present. In short, the path to ovftool should be somewhere inside the metroae top level folder. You can mount bind the ovftool to the metro repo location.
+   `sudo mount --bind -o ro /usr/lib/vmware-ovftool /<your-repo-location>/ovftool`
 
 ### Moving from MetroAE v4 container/download to MetroAE v5
 1. Download or git pull the latest metroae code
