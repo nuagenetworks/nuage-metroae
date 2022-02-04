@@ -64,7 +64,7 @@ The files required for an install of SD-WAN Portal are listed below.
 * sdwan_portal_secure - Enables SSL for the SD-WAN Portal
 * portal_version - if using Docker hub to pull the images, specifies the tag of the Docker image
 
-## To install portal with Geo-Redundant Control Node (GRCN)
+## To install Portal with Geo-Redundant Control Node (GRCN)
 
 ### Configure `portal_grcn.yml` for install
 
