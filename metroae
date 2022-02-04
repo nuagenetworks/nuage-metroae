@@ -644,14 +644,17 @@ function audit_log_and_exit {
     print_version_and_exit $1
 }
 
-function setup_log_files {
+function create_log_files {
     debug ${FUNCNAME[0]}
     mkdir $LOGS_DIRECTORY
     touch $ANSIBLE_LOG
     touch $AUDIT_LOG
+}
+
+function setup_log_files {
+    debug ${FUNCNAME[0]}
     current_time=$(date "+%Y.%m.%d-%H.%M.%S")
-    ln -s $ANSIBLE_LOG ansible.log.$current_time
-    ansible.log.$WORKFLOW.$DEPLOYMENT.$current_time
+    ln -s $ANSIBLE_LOG ansible.log.$WORKFLOW.$DEPLOYMENT.$current_time
 }
 
 function deployment_main {
@@ -661,7 +664,7 @@ function deployment_main {
     set +e
 
     ORIGINAL_ARGS="$*"
-    setup_log_files
+    create_log_files
 
     #
     # Parse arguments

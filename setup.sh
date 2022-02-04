@@ -357,9 +357,8 @@ case $key in
     ;;
     --set-group)
     GROUP="$2"
-    mkdir logs
-    touch /logs/ansible.log
-    chgrp $GROUP /logs/ansible.log
+    touch ansible.log
+    chgrp $GROUP ansible.log
     touch metroae.log
     chgrp $GROUP metroae.log
     chgrp -R $GROUP $INVENTORY_DIR
