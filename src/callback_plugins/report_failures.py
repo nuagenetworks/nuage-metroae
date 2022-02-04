@@ -45,10 +45,10 @@ class CallbackModule(CallbackBase):
         now = time.strftime(self.TIME_FORMAT, time.localtime())
         if type(res) == dict and 'msg' in list(res.keys()):
             with open(self.DESTINATION_FILE, "ab") as fd:
-                fd.write(u'{0}: {1}: {2}: {3}\n'.format(now, category, host, res['msg']))
+                fd.write('{0}: {1}: {2}: {3}\n'.format(now, category, host, res['msg']).encode())
         else:
             with open(self.DESTINATION_FILE, "ab") as fd:
-                fd.write(u'{0}: {1}: {2}: {3}\n'.format(now, category, host, "Unknown failure"))
+                fd.write('{0}: {1}: {2}: {3}\n'.format(now, category, host, "Unknown failure").encode())
 
     def runner_on_failed(self, host, res, ignore_errors=False):
         self.log_failed(host, 'FAILED', res)

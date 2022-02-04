@@ -64,6 +64,19 @@ The files required for an install of SD-WAN Portal are listed below.
 * sdwan_portal_secure - Enables SSL for the SD-WAN Portal
 * portal_version - if using Docker hub to pull the images, specifies the tag of the Docker image
 
+## To install portal with Geo-Redundant Control Node (GRCN)
+
+### Configure `portal_grcn.yml` for install
+
+  In your MetroAE deployment folder, create or edit the `portal_grcn.yml` configuring the necessary attributes.
+  Standard MetroAE attributes are used with some unique to SD-WAN Portal GRCN ones listed below:
+
+* current_dc - Current Datacenter name (dc1 or dc2)
+* other_dc_portal1_ip: Other Datacenter's Portal 1 management ip address
+* other_dc_portal2_ip: Other Datacenter's Portal 2 management ip address
+* other_dc_portal3_ip: Other Datacenter's Portal 3 management ip address
+* other_dc_grcn_ip: Other Datacenter's GRCN management ip address
+
 ## Portal Upgrade
 
 For upgrades of the SD-WAN Portal, example deployment files can be found under examples/kvm_portal_upgrade. The files required for upgrading SD-WAN Portal(s) are listed below:
