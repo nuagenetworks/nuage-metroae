@@ -279,20 +279,20 @@ def validate_hooks(plugin_directory, hooks):
 
 def main():
     if len(sys.argv) != 2:
-        print "Validates the format of a MetroAE plugin"
-        print "Usage:"
-        print "  " + sys.argv[0] + " <plugin-directory>"
+        print("Validates the format of a MetroAE plugin")
+        print("Usage:")
+        print("  " + sys.argv[0] + " <plugin-directory>")
         sys.exit(1)
 
     plugin_directory = sys.argv[1]
 
     if not os.path.isdir(plugin_directory):
-        print plugin_directory + " is not a plugin directory"
+        print(plugin_directory + " is not a plugin directory")
         sys.exit(1)
 
     validate_plugin(plugin_directory)
 
-    print "Plugin OK!"
+    print("Plugin OK!")
 
 
 if __name__ == '__main__':

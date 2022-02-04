@@ -41,6 +41,9 @@
         {% else %}
         --machineOutput
         {% endif %}
+        {% if vcenter.vmfolder is defined %}
+        -vf={{ vcenter.vmfolder }}
+        {% endif %}
         -n={{ vm_name }}
         --net:"Management={{ mgmt_bridge }}"
         {% if internal_bridge is defined %}
@@ -54,7 +57,7 @@
       tasks_from: vcenter-deploy-image
 
   - name: Finding VM folder
-    connection: local
+    delegate_to: localhost
     vmware_guest_find:
       hostname: "{{ target_server }}"
       username: "{{ vcenter.username }}"
@@ -64,13 +67,13 @@
     register: nuh_vm_folder
 
   - name: Gathering info on VM
-    connection: local
+    delegate_to: localhost
     vmware_guest_info:
       hostname: "{{ target_server }}"
       username: "{{ vcenter.username }}"
       password: "{{ vcenter.password }}"
       datacenter: "{{ vcenter.datacenter }}"
-      folder: "/{{ vcenter.datacenter }}{{ nuh_vm_folder['folders'][0] }}"
+      folder: "{{ nuh_vm_folder['folders'][0] }}"
       name: "{{ vmname }}"
       validate_certs: no
     register: nuh_vm_facts
@@ -78,24 +81,30 @@
   - debug: var=nuh_vm_facts verbosity=1
 
   - name: Add external network adapters to NUH
-    connection: local
+    delegate_to: localhost
     vmware_guest_network:
       hostname: "{{ target_server }}"
       username: "{{ vcenter.username }}"
       password: "{{ vcenter.password }}"
       datacenter: "{{ vcenter.datacenter }}"
-      folder: "/{{ vcenter.datacenter }}{{ nuh_vm_folder['folders'][0] }}"
+      folder: "{{ nuh_vm_folder['folders'][0] }}"
       name: "{{ vmname }}"
       validate_certs: no
       gather_network_info: false
-      networks: "{{ external_interface_networks }}"
+      connected: true
+      start_connected: true
+      state: "present"
+      network_name: "{{ item.network_name }}"
+      switch: "{{ item.dvswitch_name | default(omit) }}"
+      label: "{{ item.label }}"
     register: network_info
+    loop: "{{ external_interface_networks }}"
     when: external_interface_networks is defined and external_interface_networks | length > 0
 
   - debug: var=network_info verbosity=1
 
   - name: Waiting until VMware tools becomes available
-    connection: local
+    delegate_to: localhost
     vmware_guest_tools_wait:
       hostname: "{{ target_server }}"
       username: "{{ vcenter.username }}"
@@ -130,7 +139,7 @@
       vm_password: "{{ nuh_default_password }}"
 
   - name: Reboot NUH VM
-    connection: local
+    delegate_to: localhost
     vmware_vm_shell:
       hostname: "{{ target_server }}"
       username: "{{ vcenter.username }}"

@@ -308,7 +308,7 @@
 
       - name: Wait for master VCIN processes to become running
         monit_waitfor_service:
-          name: "{{ vcin_proc_pre['state'].keys() }}"
+          name: "{{ vcin_proc_pre['state'].keys() | list }}"
           timeout_seconds: 1200
           test_interval_seconds: 10
 
@@ -421,7 +421,11 @@
   when: not skip_vsd_deploy
   remote_user: "{{ vsd_default_username }}"
 
-- import_tasks: brand_vsd.yml
+- name: Apply VSD branding 
+  include_tasks: brand_vsd.yml
+  loop: "{{ groups['primary_vsds'] }}"
+  loop_control:
+    loop_var: vsd_branding_host
   when:
     - not skip_vsd_deploy
     - branding_zip_file is defined
@@ -461,7 +465,7 @@
 
   - name: wait for VSD common, core and stats services to become running
     monit_waitfor_service:
-      name: "{{ proc_list['state'].keys() | difference(remove_list) }}"
+      name: "{{ proc_list['state'].keys() | list | difference(remove_list) }}"
       timeout_seconds: 1200
       test_interval_seconds: 30
 
@@ -493,6 +497,8 @@
   when:
     - vstats is defined
     - not skip_vsd_deploy
+  vars:
+    ansible_python_interpreter: /usr/bin/python2
 
 - name: Install statistics for stats-out VSDs (Can take 20 minutes)
   command: /opt/vsd/install.sh -t t -y
