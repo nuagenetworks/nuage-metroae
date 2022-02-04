@@ -11,6 +11,7 @@
 ### Feature Enhancements
 
 ### Resolved Issues
+* Fix the error caused by multiple installation of branding on VSD (METROAE-604)
 
 ## Test Matrix
 
