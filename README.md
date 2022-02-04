@@ -1,6 +1,6 @@
 # Nuage Networks Metro Automation Engine (MetroAE)
 
-Version: 4.6.1
+Version: 5.0.0
 
 MetroAE is an automation engine that can be used to
 
@@ -17,6 +17,8 @@ Nuage Networks components. You specify the individual details of your target pla
 ## Documentation
 
 The [Documentation](Documentation/) directory contains the following guides to assist you in successfully working with MetroAE. The current documentation covers using MetroAE CLI only.
+
+Note: For users migrating from v4.X to v5, there are some major changes worth looking at. These changes have been summarized [here](Documentation/CHANGES_IN_V5.md). If this is your first time using metroae, you can ignore the document.
 
 File name | Description
 --------- | --------
