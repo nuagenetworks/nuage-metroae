@@ -69,6 +69,8 @@
       path: /tmp/branding/branding.zip
       state: absent
 
+  run_once: True
+  delegate_to: "{{ vsd_branding_host }}"
   remote_user: "{{ vsd_username | default(vsd_default_username) }}"
   become: "{{ 'no' if vsd_username | default(vsd_default_username) == 'root' else 'yes' }}"
   vars:
@@ -76,15 +78,19 @@
 
 - name: Create backup directory for original branding
   file:
-    path: "{{ metro_backup_root }}/{{ hostname }}-branding"
+    path: "{{ metro_backup_root }}/{{ vsd_branding_host }}-branding"
     state: directory
   delegate_to: localhost
+  run_once: True
 
 - name: Backup original branding
   fetch:
     src: "/tmp/original-nuage-branding.zip"
-    dest: "{{ metro_backup_root }}/{{ hostname }}-branding"
+    dest: "{{ metro_backup_root }}/{{ vsd_branding_host }}-branding/"
     fail_on_missing: yes
+    flat: yes
+  run_once: True
+  delegate_to: "{{ vsd_branding_host }}"
   remote_user: "{{ vsd_username | default(vsd_default_username) }}"
   become: "{{ 'no' if vsd_username | default(vsd_default_username) == 'root' else 'yes' }}"
   vars:
