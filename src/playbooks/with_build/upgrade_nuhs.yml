@@ -1,24 +1,36 @@
 ---
-  - name: "Shut down secondary NUH HA server"
+  - hosts: nuhs
+    gather_facts: no
+    pre_tasks:
+      - name: Set fact for nuage upgrade
+        set_fact:
+          nuage_upgrade: true
+
+      - name: Check if prereq satisfied for upgrade
+        include_role:
+          name: common
+          tasks_from: check-upgrade-prereq
+
+  - name: Shut down secondary NUH HA server
     import_playbook: nuh_ha_upgrade_shutdown_2.yml
 
-  - name: "Predeploy secondary NUH HA server"
+  - name: Predeploy secondary NUH HA server
     import_playbook: nuh_ha_upgrade_predeploy_2.yml
 
-  - name: "Deploy secondary NUH HA server"
+  - name: Deploy secondary NUH HA server
     import_playbook: nuh_ha_upgrade_deploy_2.yml
 
-  - name: "Set up primary NUH HA server"
+  - name: Set up primary NUH HA server
     import_playbook: nuh_ha_upgrade_setup_1.yml
 
-  - name: "Configure primary NUH HA server"
+  - name: Configure primary NUH HA server
     import_playbook: nuh_ha_upgrade_configure_1.yml
 
-  - name: "Shut down primary NUH HA server"
+  - name: Shut down primary NUH HA server
     import_playbook: nuh_ha_upgrade_shutdown_1.yml
 
-  - name: "Predeploy primary NUH HA server"
+  - name: Predeploy primary NUH HA server
     import_playbook: nuh_ha_upgrade_predeploy_1.yml
 
-  - name: "Deploy primary NUH HA server"
+  - name: Deploy primary NUH HA server
     import_playbook: nuh_ha_upgrade_deploy_1.yml
