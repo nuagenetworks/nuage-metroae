@@ -13,6 +13,8 @@
 ### Resolved Issues
 * Fix the error caused by multiple installation of branding on VSD (METROAE-604)
 
+* MetroAE logging enhancements (METROAE-475)
+
 ## Test Matrix
 
 This release was tested according to the following test matrix. Other combinations and versions have been tested in previous releases of MetroAE and are likely to work. We encourage you to test MetroAE in your lab before you apply it in production.
