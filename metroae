@@ -84,7 +84,9 @@ INVENTORY_DIR=$CURRENT_DIR/src/inventory
 PLUGIN_DIR=$CURRENT_DIR/src/metro_plugins
 VAULT_ENV_FILE=$CURRENT_DIR/src/vault-env
 ENCRYPTED_TOKEN=\$ANSIBLE_VAULT
-AUDIT_LOG=audit.log
+LOGS_DIRECTORY=logs
+ANSIBLE_LOG=$LOGS_DIRECTORY/ansible.log
+AUDIT_LOG=$LOGS_DIRECTORY/audit.log
 ORIGINAL_ARGS=""
 SKIP_BUILD=0
 SKIP_PASSWORD=0
@@ -642,6 +644,19 @@ function audit_log_and_exit {
     print_version_and_exit $1
 }
 
+function create_log_files {
+    debug ${FUNCNAME[0]}
+    mkdir $LOGS_DIRECTORY
+    touch $ANSIBLE_LOG
+    touch $AUDIT_LOG
+}
+
+function setup_log_files {
+    debug ${FUNCNAME[0]}
+    current_time=$(date "+%Y.%m.%d-%H.%M.%S")
+    ln -s $ANSIBLE_LOG ansible.log.$WORKFLOW.$DEPLOYMENT.$current_time
+}
+
 function deployment_main {
     generate_and_save_UUID
 
@@ -649,6 +664,7 @@ function deployment_main {
     set +e
 
     ORIGINAL_ARGS="$*"
+    create_log_files
 
     #
     # Parse arguments
@@ -679,9 +695,7 @@ function deployment_main {
         ;;
         --set-group)
         GROUP="$2"
-        touch ansible.log
-        chgrp $GROUP ansible.log
-        touch $AUDIT_LOG
+        chgrp $GROUP $ANSIBLE_LOG
         chgrp $GROUP $AUDIT_LOG
         shift # past argument
         shift # past value
@@ -761,6 +775,7 @@ function deployment_main {
             fi
         fi
     fi
+    setup_log_files $WORKFLOW $DEPLOYMENT
 
     # Get password if needed
     check_password_needed "$DEPLOYMENT_DIR"
