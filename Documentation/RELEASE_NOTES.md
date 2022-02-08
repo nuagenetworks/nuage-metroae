@@ -14,6 +14,7 @@
 * Fix the error caused by multiple installation of branding on VSD (METROAE-604)
 
 * MetroAE logging enhancements (METROAE-475)
+* Added the VSPCA field in the installer settings for sdwan portal (METROAE-550)
 
 ## Test Matrix
 
