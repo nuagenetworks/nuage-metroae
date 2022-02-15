@@ -9,6 +9,7 @@
 ## Release Contents
 
 ### Feature Enhancements
+* Add Geo-Redundant Control Node (GRCN) on SD-WAN Portal (METROAE-555)
 
 ### Resolved Issues
 * Fix the error caused by multiple installation of branding on VSD (METROAE-604)
