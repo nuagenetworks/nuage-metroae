@@ -14,5 +14,4 @@ class FilterModule(object):
     ''' Query filter '''
 
     def filters(self):
-        return {'relative_path_to_absolute_path': relative_path_to_absolute_path}
-      
+        return {'relative_path_to_absolute_path': relative_path_to_absolute_path}    
