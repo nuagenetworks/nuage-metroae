@@ -416,12 +416,12 @@
         when: vstat_sa_or_ha is match('ha')
         run_once: True
 
-      delegate_to: "{{ vsd_node1_hostname }}"
-      remote_user: "{{ hostvars[hostvars[inventory_hostname].vsd_node1_hostname].vsd_custom_username | default(vsd_custom_username | default(vsd_default_username)) }}"
+      delegate_to: "{{ hostvars[inventory_hostname].vsd_hostname_list[0] }}"
+      remote_user: "{{ hostvars[hostvars[inventory_hostname].vsd_hostname_list[0]].vsd_custom_username | default(vsd_custom_username | default(vsd_default_username)) }}"
       become: >-
-        {{ 'no' if hostvars[vsd_node1_hostname].vsd_custom_username | default(vsd_custom_username | default(vsd_default_username)) == 'root' else 'yes' }}
+        {{ 'no' if hostvars[inventory_hostname].vsd_hostname_list[0].vsd_custom_username | default(vsd_custom_username | default(vsd_default_username)) == 'root' else 'yes' }}
       vars:
-        ansible_become_pass: "{{ hostvars[vsd_node1_hostname].vsd_custom_password | default(vsd_custom_password | default(vsd_default_password)) }}"
+        ansible_become_pass: "{{ hostvars[inventory_hostname].vsd_hostname_list[0].vsd_custom_password | default(vsd_custom_password | default(vsd_default_password)) }}"
 
   - name: Update elasticsearch data path
     lineinfile:

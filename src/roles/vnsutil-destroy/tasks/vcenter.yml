@@ -5,11 +5,20 @@
     hostname: "{{ target_server }}"
     username: "{{ vcenter.username }}"
     password: "{{ vcenter.password }}"
-    datacenter: "{{ vcenter.datacenter }}"
     name: "{{ vmname }}"
     validate_certs: no
   register: vnsutil_vm_folder
   ignore_errors: on
+
+- name: Check output message for unexpected errors
+  assert:
+    that: vnsutil_vm_folder.msg is search('Unable to find folders for virtual machine')
+    fail_msg: "{{ vnsutil_vm_folder.msg }}"
+  when: vnsutil_vm_folder.msg is defined
+
+- name: Check for exception in VNSUTIL VM Folder
+  fail: msg="Exception found {{ vnsutil_vm_folder.exception }}"
+  when: vnsutil_vm_folder.exception is defined
 
 - name: Gathering info on VM (ignoring errors)
   delegate_to: localhost

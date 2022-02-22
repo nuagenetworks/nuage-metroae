@@ -22,9 +22,9 @@
   when: vstat_custom_username is defined
 
 - block:
-  
+
   - block:
-    
+
     - name: Create a SSH pass
       command: openssl passwd -1 {{ vstat_custom_password }}
       register: openssl_pwd
@@ -33,7 +33,7 @@
       command: id -u {{ vstat_custom_username }}
       ignore_errors: yes
       register: user_exists
-    
+
     - name: Create the user if not present
       command: useradd -p {{ openssl_pwd.stdout }} {{ vstat_custom_username }}
       when: "'no such user' in user_exists.stderr"
@@ -46,6 +46,7 @@
         path: /etc/ssh/sshd_config
         regexp: '#PermitRootLogin yes'
         line: 'PermitRootLogin no'
+      when: not keep_root_access
 
     - name: Create .ssh directory for vstat custom user
       file:
@@ -53,9 +54,9 @@
         state: directory
         owner: "{{ vstat_custom_username }}"
         group: "{{ vstat_custom_username }}"
-    
-    - block: 
-    
+
+    - block:
+
       - name: Get the public key for the curren user
         command: cat "{{ user_ssh_pub_key }}"
         register: current_user_ssh_key
@@ -66,15 +67,20 @@
           backup: no
           dest: /tmp/authorized_keys_temp
 
+      - name: Add proxy setup
+        set_fact:
+          proxy_conf: '-o ProxyCommand="ssh -W %h:%p -q {{ ssh_proxy_configuration }}"'
+        when: ssh_proxy_configuration is defined
+
       - name: Copy authorized file to vstat custom user home directory
         shell: >-
-            sshpass -p'{{vstat_custom_password }}' scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null /tmp/authorized_keys_temp
-            {{ vstat_custom_username }}@{{ mgmt_ip }}:/home/{{ vstat_custom_username }}/.ssh/authorized_keys
+            sshpass -p'{{vstat_custom_password }}' scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null {{ proxy_conf | default("") }}
+            /tmp/authorized_keys_temp {{ vstat_custom_username }}@{{ mgmt_ip }}:/home/{{ vstat_custom_username }}/.ssh/authorized_keys
         no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
 
       - name: Remove temporary copy of authorized_key file
         file: path=tmp/authorized_keys_temp state=absent
-      
+
       delegate_to: localhost
 
     - name: Set permission on the authorized file to 644
@@ -83,15 +89,14 @@
 
     - name: Restart ssh server
       shell: /bin/systemctl restart sshd.service
-    
+
     - name: Set vstat user to custom user
       set_fact:
         vstat_username: "{{ vstat_custom_username }}"
-    
+
     when:
       - vstat_custom_username is defined
-      - vstat_custom_password is defined 
-      - ssh_custom_user.rc != 0 
+      - vstat_custom_password is defined
+      - ssh_custom_user.rc != 0
 
   remote_user: "{{ vstat_default_username }}"
-

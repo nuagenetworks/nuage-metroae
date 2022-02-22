@@ -55,12 +55,19 @@
     register: python_exec
     become: no
 
+  - name: Setup custom pass to pass to VSD hostname
+    set_fact:
+      sshpass_command: "sshpass -p{{ custom_password }} sudo VSD_VERSION=$VSD_VERSION VSD_BUILD=$VSD_BUILD"
+    no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
+    when: custom_password | default(vsd_default_password) != vsd_default_password
+
   - name: Get the vsd node info
-    shell: "{{ python_exec.stdout }} /opt/vsd/sysmon/showStatus.py" # noqa 305
+    shell: "{{ sshpass_command | default('') }} {{ python_exec.stdout }} /opt/vsd/sysmon/showStatus.py" # noqa 305
     environment:
       VSD_VERSION: "{{ vsd_version.stdout }}"
       VSD_BUILD: "{{ vsd_build.stdout }}"
     register: vsd_info
+    no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
 
   remote_user: "{{ custom_username | default(vsd_default_username) }}"
   become: "{{ 'no' if custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
