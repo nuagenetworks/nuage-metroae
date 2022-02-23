@@ -9,21 +9,8 @@
 ## Release Contents
 
 ### Feature Enhancements
-<<<<<<< HEAD
-
-* Predeploy NSGV without vsd license file (METROAE-497)
-* Added support for hardening Elasticsearch nodes (METROAE-486)
-* Allow custom configuration of RAM, CPU and Memory for VSD and VSTAT (METROAE-477)
-* Run VSD Database pre-upgrade checks (METROAE-428)
-* Support NFS server config using MetroAE(METROAE-557)
-* Webfilter should optionally use HTTP Proxy (METROAE-493)
-* Add support for encrypting credentials in Excel spreadsheet (METROAE-552)
-* Add Ansible 3.4.0 support (METROAE-344)
-* Allow installing/renewal of VSTAT(ES) licenses during install, upgrade and standalone (METROAE-591)
-* Allow creating custom username and passwords without hardening for VSD and VSTAT (METROAE-592)
-=======
 * Add Geo-Redundant Control Node (GRCN) on SD-WAN Portal (METROAE-555)
->>>>>>> dev
+* Added ability to list installed plugins (METROAE-366)
 
 ### Resolved Issues
 * Fix the error caused by multiple installation of branding on VSD (METROAE-604)
