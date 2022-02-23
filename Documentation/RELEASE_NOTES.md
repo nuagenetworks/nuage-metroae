@@ -30,6 +30,8 @@
 * MetroAE logging enhancements (METROAE-475)
 * Delete the files leftover by metro on VSD's /tmp directory (METROAE-609)
 * Added the VSPCA field in the installer settings for sdwan portal (METROAE-550)
+* Allow for a custom config file during VSC Upgrade (METROAE-485)
+* NUH changes for stats-out (METROAE-620)
 
 ## Test Matrix
 
