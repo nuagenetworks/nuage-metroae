@@ -9,13 +9,17 @@
 ## Release Contents
 
 ### Feature Enhancements
+* Add Geo-Redundant Control Node (GRCN) on SD-WAN Portal (METROAE-555)
+* Added ability to list installed plugins (METROAE-366)
 * All paths to files on the MetroAE host are relative with the exception of the path to image directories that need to be unzipped prior to MetroAE execution (METROAE-610)
 
 ### Resolved Issues
 * Fix the error caused by multiple installation of branding on VSD (METROAE-604)
-
 * MetroAE logging enhancements (METROAE-475)
+* Delete the files leftover by metro on VSD's /tmp directory (METROAE-609)
 * Added the VSPCA field in the installer settings for sdwan portal (METROAE-550)
+* Allow for a custom config file during VSC Upgrade (METROAE-485)
+* NUH changes for stats-out (METROAE-620)
 
 ## Test Matrix
 

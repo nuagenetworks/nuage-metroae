@@ -1062,6 +1062,13 @@ function uninstall_plugin {
         rm -rf /metroae_data/metro_plugins/$1
     fi
     write_to_screen_and_script_log "Plugin removal complete"
+    pluginfiles=`ls $PLUGIN_DIR`
+    if [[ -z "$pluginfiles" ]]
+    then
+        rmdir $PLUGIN_DIR
+        write_to_screen_and_script_log "No plugins left"
+        write_to_screen_and_script_log "Deleting Plugins Directory"
+    fi
 }
 
 function validate_plugin {
@@ -1088,6 +1095,21 @@ function validate_plugin_dir {
     src/validate_plugin.py $1
 }
 
+function list_plugin {
+    debug ${FUNCNAME[0]}
+    if [[ ! -d $PLUGIN_DIR ]]
+    then
+        echo "Plugins are not installed"
+        print_version_and_exit 0
+    else
+    pluginfiles=`ls $PLUGIN_DIR`
+    for eachplugin in $pluginfiles
+    do
+      echo "$eachplugin"
+    done
+    fi
+}
+
 function plugin_main {
     debug ${FUNCNAME[0]}
 
@@ -1103,6 +1125,10 @@ function plugin_main {
         ;;
         validate)
         validate_plugin "$2"
+        print_version_and_exit 0
+        ;;
+        list)
+        list_plugin "$2"
         print_version_and_exit 0
         ;;
         *)
