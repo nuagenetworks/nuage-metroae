@@ -9,6 +9,7 @@
 ## Release Contents
 
 ### Feature Enhancements
+* All paths to files on the MetroAE host are relative with the exception of the path to image directories that need to be unzipped prior to MetroAE execution (METROAE-610)
 
 ### Resolved Issues
 * Fix the error caused by multiple installation of branding on VSD (METROAE-604)
