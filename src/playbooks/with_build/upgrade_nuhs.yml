@@ -1,0 +1,43 @@
+---
+  - hosts: nuhs
+    gather_facts: no
+    pre_tasks:
+      - name: Set fact for nuage upgrade
+        set_fact:
+          nuage_upgrade: true
+
+      - name: Check if prereq satisfied for upgrade
+        include_role:
+          name: common
+          tasks_from: check-upgrade-prereq
+
+  # Only runs if the secondary nuh exists, that is if
+  # the deployment is HA.
+  - name: Shut down secondary NUH server
+    import_playbook: nuh_upgrade_shutdown_2.yml
+
+  # Only runs if the secondary nuh exists, that is if
+  # the deployment is HA.
+  - name: Predeploy secondary NUH server
+    import_playbook: nuh_upgrade_predeploy_2.yml
+
+  # Only runs if the secondary nuh exists, that is if
+  # the deployment is HA.
+  - name: Deploy secondary NUH server
+    import_playbook: nuh_upgrade_deploy_2.yml
+
+  - name: Set up primary NUH server
+    import_playbook: nuh_upgrade_setup_1.yml
+
+  - name: Configure primary NUH server
+    import_playbook: nuh_upgrade_configure_1.yml
+
+  - name: Shut down primary NUH server
+    import_playbook: nuh_upgrade_shutdown_1.yml
+
+  - name: Predeploy primary NUH server
+    import_playbook: nuh_upgrade_predeploy_1.yml
+
+  - name: Deploy primary NUH server
+    import_playbook: nuh_upgrade_deploy_1.yml
+
