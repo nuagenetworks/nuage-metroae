@@ -19,6 +19,7 @@
 * Added the VSPCA field in the installer settings for sdwan portal (METROAE-550)
 * Allow for a custom config file during VSC Upgrade (METROAE-485)
 * NUH changes for stats-out (METROAE-620)
+* Updated deprecated settings in ansible.cfg (METROAE-602)
 
 ## Test Matrix
 
