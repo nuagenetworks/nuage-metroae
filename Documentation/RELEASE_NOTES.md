@@ -11,7 +11,7 @@
 ### Feature Enhancements
 * Add Geo-Redundant Control Node (GRCN) on SD-WAN Portal (METROAE-555)
 * Added ability to list installed plugins (METROAE-366)
-* Add support for container-relative paths. More information can be found in [CHANGES_IN_V5.md](/nuage-metroae/Documentation/CHANGES_IN_V5.md) (METROAE-610)
+* Add support for container-relative paths. More information can be found in [CHANGES_IN_V5.md](/Documentation/CHANGES_IN_V5.md) (METROAE-610)
 
 ### Resolved Issues
 * Fix the error caused by multiple installation of branding on VSD (METROAE-604)
