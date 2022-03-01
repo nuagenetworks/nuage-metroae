@@ -11,7 +11,7 @@
 ### Feature Enhancements
 * Add Geo-Redundant Control Node (GRCN) on SD-WAN Portal (METROAE-555)
 * Added ability to list installed plugins (METROAE-366)
-* All paths to files on the MetroAE host are relative with the exception of the path to image directories that need to be unzipped prior to MetroAE execution (METROAE-610)
+* Add support for container-relative paths. More information can be found in <CHANGES_IN_V5.md> (METROAE-610)
 
 ### Resolved Issues
 * Fix the error caused by multiple installation of branding on VSD (METROAE-604)
