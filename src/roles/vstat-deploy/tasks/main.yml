@@ -487,5 +487,11 @@
     vars:
       component_username: "{{ vstat_default_username }}"
     when: health_monitoring_agent | default("none") != "none"
+    
+  - name: Adding the additional data nodes to existing elasticsearch cluster
+    command: /root/nuage_elasticsearch/scripts/es-cluster-add-node.sh -e {{ groups['primary_vstats'][0] }},{{ groups['primary_vstats'][1] }},{{ groups['primary_vstats'][2] }} -y
+    when: 
+      - groups['add_data_vstats'] | length > 0
+      - inventory_hostname in groups['add_data_vstats'] 
 
   when: not skip_vstat_deploy
