@@ -61,13 +61,24 @@
   - name: Resolve fqdn
     command: hostname "{{ inventory_hostname }}"
 
-  - name: Add additional volume on VSTATS
-    os_server_volume:
-      state: present
-      auth: "{{ openstack_auth }}"
-      server: "{{ vm_name }}"
-      volume: Additional-Disk
-      device: "/dev/vdb"
+  - block: 
+  
+    - name: Create a volume for OpenStack
+      openstack.cloud.volume:
+        state: present
+        auth: "{{ openstack_auth }}"
+        size: 40
+        display_name: Volume
+
+    - name: Attach a volume on VSTATS
+      os_server_volume:
+        state: present
+        auth: "{{ openstack_auth }}"
+        server: "{{ vm_name }}"
+        volume: Volume
+        device: "/dev/vdb"
+
+    delegate_to: localhost  
     when: add_extra_volume | default('false')
 
   remote_user: "{{ vstat_default_username }}"
