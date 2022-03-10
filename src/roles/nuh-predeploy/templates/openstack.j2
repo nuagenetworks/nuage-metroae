@@ -14,11 +14,17 @@ parameters:
     type: string
   nuh_internal_subnet:
     type: string
+  nuh_external_network:
+    type: string
+  nuh_external_subnet:
+    type: string
   nuh_flavor:
     type: string
   mgmt_ip:
     type: string
   internal_ip:
+    type: string
+  external_ip:
     type: string
 
 resources:
@@ -38,6 +44,11 @@ resources:
     properties:
       network_id: {get_param: nuh_internal_network}
       fixed_ips: [{"subnet": {get_param: nuh_internal_subnet}, "ip_address": {get_param: internal_ip}}]
+  external_port:
+    type: OS::Neutron::Port
+    properties:
+      network_id: {get_param: nuh_external_network}
+      fixed_ips: [{"subnet": {get_param: nuh_external_subnet}, "ip_address": {get_param: external_ip}}]
 
   mycompute:
     type: OS::Nova::Server
@@ -51,6 +62,7 @@ resources:
       networks:
         - port: {get_resource: mgmt_port}
         - port: {get_resource: internal_port}
+        - port: {get_resource: external_port}
       user_data_format: RAW
 {% if openstack_availability_zone is defined %}
       availability_zone: "{{ openstack_availability_zone }}"

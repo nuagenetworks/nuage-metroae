@@ -49,6 +49,14 @@
     set_fact:
       nuh_heat_template: "{{ temp_dir }}/openstack.yml"
 
+  - name: Setting external interface variable
+    set_fact:
+      ext_ip: "{{ item.external_ip }}"
+      openstack_ext_network: "{{ item.openstack_external_network }}"
+      openstack_ext_subnet: "{{ item.openstack_external_subnet}}"
+    with_items: "{{ external_interfaces }}"
+    when: external_interfaces is defined and external_interfaces | length > 0
+
   - name: Creating NUH stack
     register: create_stack
     os_stack:
@@ -70,6 +78,9 @@
         nuh_internal_network: "{{ openstack_network }}"
         nuh_internal_subnet: "{{ openstack_subnet | default('NONE') }}"
         internal_ip: "{{ internal_ip | default('NONE') }}"
+        nuh_external_network: "{{ openstack_ext_network }}"
+        nuh_external_subnet: "{{ openstack_ext_subnet | default('NONE') }}"
+        external_ip: "{{ ext_ip | default('NONE') }}"
         ssh_key: "{{ current_user_ssh_key.stdout }}"
     delegate_to: localhost
 
