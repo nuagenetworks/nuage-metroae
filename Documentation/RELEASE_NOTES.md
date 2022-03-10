@@ -3,7 +3,7 @@
 ## Release info
 
 * MetroAE Version 5.1.0
-* Nuage Release Alignment 
+* Nuage Release Alignment
 * Date of Release TBD
 
 ## Release Contents
@@ -20,6 +20,7 @@
 * Allow for a custom config file during VSC Upgrade (METROAE-485)
 * NUH changes for stats-out (METROAE-620)
 * Updated deprecated settings in ansible.cfg (METROAE-602)
+* Fix NSGv deployment when bootstrap method is None
 
 ## Test Matrix
 
