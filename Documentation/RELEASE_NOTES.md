@@ -21,6 +21,7 @@
 * NUH changes for stats-out (METROAE-620)
 * Updated deprecated settings in ansible.cfg (METROAE-602)
 * Fix NSGv deployment when bootstrap method is None
+* Fix custom username and password for VSC in installation (METROAE-531)
 
 ## Test Matrix
 
