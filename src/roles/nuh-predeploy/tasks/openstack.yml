@@ -84,21 +84,25 @@
         ssh_key: "{{ current_user_ssh_key.stdout }}"
     delegate_to: localhost
 
-  # - block: 
+  - block: 
 
-  #   - name: Create ssh directory
-  #     shell: sshpass -p {{ nuh_default_password }} ssh {{ nuh_default_username }}@{{ inventory_hostname }} 'mkdir -p /root/.ssh/'
+    - name: Create ssh directory
+      shell: sshpass -p {{ nuh_default_password }} ssh {{ nuh_default_username }}@{{ inventory_hostname }} 'mkdir -p /root/.ssh/'
 
-  #   - name: Create authorized Key file
-  #     shell: sshpass -p {{ nuh_default_password }} ssh {{ nuh_default_username }}@{{ inventory_hostname }} 'echo {{ current_user_ssh_key.stdout }} >> /root/.ssh/authorized_keys'
+    - name: Create authorized Key file
+      shell: sshpass -p {{ nuh_default_password }} ssh {{ nuh_default_username }}@{{ inventory_hostname }} 'echo {{ current_user_ssh_key.stdout }} >> /root/.ssh/authorized_keys'
+      register: sshoutput
 
-  #   ignore_errors: yes
-  #   delegate_to: localhost
+    retries: 5
+    delay: 30
+    until: sshoutput.rc == 0
+    ignore_errors: yes
+    delegate_to: localhost
 
   - debug: var=create_stack['stack']['outputs'][0]['output_value']
 
-  # - name: Remove local temp folder
-  #   file:
-  #     path: "{{ temp_dir }}"
-  #     state: absent
-  #   delegate_to: localhost
+  - name: Remove local temp folder
+    file:
+      path: "{{ temp_dir }}"
+      state: absent
+    delegate_to: localhost
