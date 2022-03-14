@@ -88,14 +88,18 @@
 
     - name: Create ssh directory
       shell: sshpass -p {{ nuh_default_password }} ssh {{ nuh_default_username }}@{{ inventory_hostname }} 'mkdir -p /root/.ssh/'
+      register: output
+      retries: 5
+      delay: 30
+      until: output.rc == 0
 
     - name: Create authorized Key file
       shell: sshpass -p {{ nuh_default_password }} ssh {{ nuh_default_username }}@{{ inventory_hostname }} 'echo {{ current_user_ssh_key.stdout }} >> /root/.ssh/authorized_keys'
       register: sshoutput
-
-    retries: 5
-    delay: 30
-    until: sshoutput.rc == 0
+      retries: 5
+      delay: 30
+      until: sshoutput.rc == 0
+      
     ignore_errors: yes
     delegate_to: localhost
 
