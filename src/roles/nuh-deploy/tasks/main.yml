@@ -7,6 +7,32 @@
   no_log: True
   ignore_errors: True
 
+- name: Get the public key for the current user
+  command: cat "{{ user_ssh_pub_key }}"
+  changed_when: False
+  delegate_to: localhost
+  register: current_user_ssh_key
+
+- block: 
+
+  - name: Create ssh directory
+    shell: sshpass -p {{ nuh_default_password }} ssh {{ nuh_default_username }}@{{ inventory_hostname }} 'mkdir -p /root/.ssh/'
+    register: output
+    retries: 10
+    delay: 30
+    until: output.rc == 0
+
+  - name: Create authorized Key file
+    shell: sshpass -p {{ nuh_default_password }} ssh {{ nuh_default_username }}@{{ inventory_hostname }} 'echo {{ current_user_ssh_key.stdout }} >> /root/.ssh/authorized_keys'
+    register: sshoutput
+    retries: 10
+    delay: 30
+    until: sshoutput.rc == 0
+    
+  ignore_errors: yes
+  delegate_to: localhost
+  when: target_server_type is match("openstack")
+
 - name: Wait for NUH ssh to be ready
   include_role:
     name: common
