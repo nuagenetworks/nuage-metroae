@@ -58,6 +58,30 @@
 
   - meta: reset_connection
 
+  - name: Add VSC Custom User
+    sros_config:
+      lines:
+        - /configure system security user {{ vsc_custom_username }} password {{ vsc_custom_password }} 
+        - /configure system security user {{ vsc_custom_username }} console member "administrative"
+        - /configure system security user {{ vsc_custom_username }} access console
+        - admin save
+      provider: "{{ vsc_creds }}"
+    no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
+    when: vsc_custom_username is defined | default(false)
+  
+  - meta: reset_connection
+  
+  - name: Remove admin access
+    sros_config:
+      lines:
+        - /configure system security user "admin" no access console
+      provider: "{{ vsc_creds }}"
+    when: 
+      - vsc_custom_username is defined | default(false)
+      - not keep_root_access | default(false)
+
+  - meta: reset_connection
+
   - name: Wait for VSC ssh to be ready before config
     include_role:
       name: common
@@ -236,29 +260,29 @@
 
     when: reboot_vsc | default(true)
 
-  - meta: reset_connection
+#  - meta: reset_connection
 
-  - name: Add VSC Custom User
-    sros_config:
-      lines:
-        - /configure system security user {{ vsc_custom_username }} password {{ vsc_custom_password }} 
-        - /configure system security user {{ vsc_custom_username }} console member "administrative"
-        - /configure system security user {{ vsc_custom_username }} access console
-        - admin save
-      provider: "{{ vsc_creds }}"
-    no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
-    when: vsc_custom_username is defined | default(false)
+#  - name: Add VSC Custom User
+#    sros_config:
+#      lines:
+#        - /configure system security user {{ vsc_custom_username }} password {{ vsc_custom_password }} 
+#        - /configure system security user {{ vsc_custom_username }} console member "administrative"
+#        - /configure system security user {{ vsc_custom_username }} access console
+#        - admin save
+#      provider: "{{ vsc_creds }}"
+#    no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
+#    when: vsc_custom_username is defined | default(false)
   
-  - meta: reset_connection
+#  - meta: reset_connection
   
-  - name: Remove admin access
-    sros_config:
-      lines:
-        - /configure system security user "admin" no access console
-      provider: "{{ vsc_creds }}"
-    when: 
-      - vsc_custom_username is defined | default(false)
-      - not keep_root_access | default(false)
+#  - name: Remove admin access
+#    sros_config:
+#      lines:
+#        - /configure system security user "admin" no access console
+#      provider: "{{ vsc_creds }}"
+#    when: 
+#      - vsc_custom_username is defined | default(false)
+#      - not keep_root_access | default(false)
       
   - name: Delete temporary folder for vsc config
     file:
