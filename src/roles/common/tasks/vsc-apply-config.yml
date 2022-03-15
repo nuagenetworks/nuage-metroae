@@ -2,8 +2,8 @@
   set_fact:
     vsc_creds:
       host: "{{ mgmt_ip }}"
-      username: "{{ vsc_username|default(vsc_default_username) }}"
-      password: "{{ vsc_password|default(vsc_default_password) }}"
+      username: "{{ vsc_custom_username |default(vsc_default_username) }}"
+      password: "{{ vsc_custom_password |default(vsc_default_password) }}"
       timeout: "{{ vsc_command_timeout_seconds }}"
   no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
   when: vsc_creds is not defined
@@ -14,8 +14,8 @@
     tasks_from: wait-for-ssh-port
   vars:
     ssh_host: "{{ vsc_creds.host }}"
-    ssh_password: "{{ vsc_creds.password }}"
-    ssh_user: "{{ vsc_creds.username }}"
+    ssh_password: "{{ vsc_creds.vsc_custom_password | default(vsc_creds.password) }}"
+    ssh_user: "{{ vsc_creds.vsc_custom_username | default(vsc_creds.username) }}"
     check_login: True
 
 - meta: reset_connection
