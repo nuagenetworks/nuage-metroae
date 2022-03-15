@@ -32,11 +32,12 @@
 
     - name: Check notification app status
       command: systemctl status notification-app
-      register: notification-app_status
+      register: notification_app_status
+      ignore_errors: yes
 
     - name: Restart notification app when not active
       command: systemctl restart notification-app
-      when: notification-app_status.stdout.find('active (running)') != -1
+      when: notification_app_status.stdout is not search('active (running)')
 
     - name: Verify that notification application 1 is connected to VSD
       command: "/opt/ejabberd/bin/ejabberdctl connected_users"

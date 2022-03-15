@@ -87,14 +87,16 @@
   - block: 
 
     - name: Create ssh directory
-      shell: sshpass -p {{ nuh_default_password }} ssh {{ nuh_default_username }}@{{ inventory_hostname }} 'mkdir -p /root/.ssh/'
+      shell: "sshpass -p {{ nuh_default_password }} ssh {{ nuh_default_username }}@{{ inventory_hostname }} \"mkdir -p /root/.ssh/\""
+      no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
       register: output
       retries: 5
       delay: 30
       until: output.rc == 0
 
     - name: Create authorized Key file
-      shell: sshpass -p {{ nuh_default_password }} ssh {{ nuh_default_username }}@{{ inventory_hostname }} 'echo {{ current_user_ssh_key.stdout }} >> /root/.ssh/authorized_keys'
+      shell: "sshpass -p {{ nuh_default_password }} ssh {{ nuh_default_username }}@{{ inventory_hostname }} \"echo {{ current_user_ssh_key.stdout }} >> /root/.ssh/authorized_keys\""
+      no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
       register: sshoutput
       retries: 5
       delay: 30
