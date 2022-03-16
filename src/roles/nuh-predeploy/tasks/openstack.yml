@@ -57,7 +57,7 @@
     with_items: "{{ external_interfaces }}"
     when: external_interfaces is defined and external_interfaces | length > 0
 
-  - name: Creating NUH stack
+  - name: Creating first NUH stack
     register: create_stack
     os_stack:
       name: "{{ vm_name }}"
@@ -83,6 +83,32 @@
         external_ip: "{{ ext_ip | default('NONE') }}"
         ssh_key: "{{ current_user_ssh_key.stdout }}"
     delegate_to: localhost
+    when: inventory_hostname == "{{ groups['nuh_first_node'][0] }}"
+
+  - name: Creating second NUH stack
+    register: create_stack
+    os_stack:
+      name: "{{ vm_name }}"
+      template: "{{ nuh_heat_template }}"
+      client_cert: null
+      client_key: null
+      cacert: "{{ openstack_cacert }}"
+      validate_certs: false
+      auth:
+        "{{ openstack_auth }}"
+      parameters:
+        vm_name: "{{ vm_name }}"
+        nuh_image: "{{ openstack_image }}"
+        nuh_flavor: "{{ openstack_flavor }}"
+        nuh_network: "{{ openstack_network }}"
+        nuh_subnet: "{{ openstack_subnet | default('NONE') }}"
+        mgmt_ip: "{{ mgmt_ip | default('NONE') }}"
+        nuh_internal_network: "{{ openstack_network }}"
+        nuh_internal_subnet: "{{ openstack_subnet | default('NONE') }}"
+        internal_ip: "{{ internal_ip | default('NONE') }}"
+        ssh_key: "{{ current_user_ssh_key.stdout }}"
+    delegate_to: localhost
+    when: inventory_hostname == "{{ groups['nuh_second_node'][0] }}"
 
   - block: 
 
