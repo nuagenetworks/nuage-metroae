@@ -78,54 +78,28 @@
         nuh_internal_network: "{{ openstack_network }}"
         nuh_internal_subnet: "{{ openstack_subnet | default('NONE') }}"
         internal_ip: "{{ internal_ip | default('NONE') }}"
-        nuh_external_network: "{{ openstack_ext_network }}"
-        nuh_external_subnet: "{{ openstack_ext_subnet | default('NONE') }}"
-        external_ip: "{{ ext_ip | default('NONE') }}"
+        # nuh_external_network: "{{ openstack_ext_network }}"
+        # nuh_external_subnet: "{{ openstack_ext_subnet | default('NONE') }}"
+        # external_ip: "{{ ext_ip | default('NONE') }}"
         ssh_key: "{{ current_user_ssh_key.stdout }}"
     delegate_to: localhost
-    when: inventory_hostname == "{{ groups['nuh_first_node'][0] }}"
-
-  - name: Creating second NUH stack
-    register: create_stack
-    os_stack:
-      name: "{{ vm_name }}"
-      template: "{{ nuh_heat_template }}"
-      client_cert: null
-      client_key: null
-      cacert: "{{ openstack_cacert }}"
-      validate_certs: false
-      auth:
-        "{{ openstack_auth }}"
-      parameters:
-        vm_name: "{{ vm_name }}"
-        nuh_image: "{{ openstack_image }}"
-        nuh_flavor: "{{ openstack_flavor }}"
-        nuh_network: "{{ openstack_network }}"
-        nuh_subnet: "{{ openstack_subnet | default('NONE') }}"
-        mgmt_ip: "{{ mgmt_ip | default('NONE') }}"
-        nuh_internal_network: "{{ openstack_network }}"
-        nuh_internal_subnet: "{{ openstack_subnet | default('NONE') }}"
-        internal_ip: "{{ internal_ip | default('NONE') }}"
-        ssh_key: "{{ current_user_ssh_key.stdout }}"
-    delegate_to: localhost
-    when: inventory_hostname == "{{ groups['nuh_second_node'][0] }}"
 
   - block: 
 
     - name: Create ssh directory
-      shell: "sshpass -p {{ nuh_default_password }} ssh {{ nuh_default_username }}@{{ inventory_hostname }} \"mkdir -p /root/.ssh/\""
+      shell: "sshpass -p {{ nuh_default_password }} ssh {{ nuh_default_username }}@{{ inventory_hostname }} 'mkdir -p /root/.ssh/'"
       no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
-      register: output
+      register: output_var
       retries: 5
-      delay: 30
-      until: output.rc == 0
+      delay: 10
+      until: output_var.rc == 0
 
     - name: Create authorized Key file
-      shell: "sshpass -p {{ nuh_default_password }} ssh {{ nuh_default_username }}@{{ inventory_hostname }} \"echo {{ current_user_ssh_key.stdout }} >> /root/.ssh/authorized_keys\""
+      shell: "sshpass -p {{ nuh_default_password }} ssh {{ nuh_default_username }}@{{ inventory_hostname }} 'echo {{ current_user_ssh_key.stdout }} >> /root/.ssh/authorized_keys'"
       no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
       register: sshoutput
       retries: 5
-      delay: 30
+      delay: 10
       until: sshoutput.rc == 0
       
     ignore_errors: yes
