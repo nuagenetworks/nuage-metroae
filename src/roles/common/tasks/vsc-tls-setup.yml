@@ -1,4 +1,10 @@
 ---
+vars:
+  vsc_custom_creds:
+  host: "{{ mgmt_ip }}"
+  username: "{{ vsc_custom_username | default(vsc_default_username) }}"
+  password: "{{ vsc_custom_password | default(vsc_default_password) }}"
+
 - meta: reset_connection
 
 - name: Wait for VSC ssh to be ready
@@ -21,7 +27,7 @@
     - name: Copy external certificates
       command: >-
         sshpass -p'{{ vsc_custom_password | default(vsc_default_password) }}' scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null
-        {{ proxy_conf | default("") }} {{ item }} {{ vsc_custom_username | default(vsc_default_username) }}@{{ mgmt_ip }}:/{{ item | basename }}
+        {{ proxy_conf | default("") }} {{ item }} {{ vsc_custom_username | default(vsc_default_username }}@{{ mgmt_ip }}:/{{ item | basename }}
       no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
       with_items:
         - "{{ private_key_path }}"
@@ -78,7 +84,7 @@
           - configure system security tls-profile vsc-tls-profile ca-certificate cf1:\{{ own_ca_certificate }}
           - configure system security tls-profile vsc-tls-profile no shutdown
           - admin save
-      provider: "{{ vsc_creds }}"
+      provider: "{{ vsc_custom_creds | default(vsc_creds) }}"
     delegate_to: localhost
   when: xmpp_tls or openflow_tls
 
