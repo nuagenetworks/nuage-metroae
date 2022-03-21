@@ -51,7 +51,7 @@
 
   - name: Setting external interface variable
     set_fact:
-      ext_ip: "{{ item.external_ip }}"
+      external_ip: "{{ item.external_ip }}"
       openstack_ext_network: "{{ item.openstack_external_network }}"
       openstack_ext_subnet: "{{ item.openstack_external_subnet}}"
     with_items: "{{ external_interfaces }}"
@@ -84,6 +84,9 @@
         ssh_key: "{{ current_user_ssh_key.stdout }}"
     delegate_to: localhost
 
+  - set_fact:
+      nuh_vm_id: "{{ create_stack.stack.id }}"
+
   - name: Attach an external interface to NUH
     openstack.cloud.port:
       state: present
@@ -91,15 +94,15 @@
       name: "external_port"
       network: "{{ openstack_ext_network }}"
       fixed_ips:
-        - ip_address: "{{ ext_ip | default('NONE') }}"
-        - subnet_id: "{{ openstack_subnet | default('NONE') }}"
+        - ip_address: "{{ external_ip | default('NONE') }}"
+      device_id: "{{ nuh_vm_id }}"
     when: inventory_hostname == "{{ groups['nuh_first_node'][0] }}"
     delegate_to: localhost
 
   - block: 
 
     - name: Create ssh directory
-      shell: "sshpass -p {{ nuh_default_password }} ssh {{ nuh_default_username }}@{{ inventory_hostname }} 'mkdir -p /root/.ssh/'"
+      shell: "sshpass -p {{ nuh_default_password }} ssh {{ nuh_default_username }}@{{ inventory_hostname }} \"mkdir -p /root/.ssh/\""
       no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
       register: output_var
       retries: 5
@@ -107,7 +110,7 @@
       until: output_var.rc == 0
 
     - name: Create authorized Key file
-      shell: "sshpass -p {{ nuh_default_password }} ssh {{ nuh_default_username }}@{{ inventory_hostname }} 'echo {{ current_user_ssh_key.stdout }} >> /root/.ssh/authorized_keys'"
+      shell: "sshpass -p {{ nuh_default_password }} ssh {{ nuh_default_username }}@{{ inventory_hostname }} \"echo {{ current_user_ssh_key.stdout }} >> /root/.ssh/authorized_keys\""
       no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
       register: sshoutput
       retries: 5
