@@ -84,6 +84,17 @@
         ssh_key: "{{ current_user_ssh_key.stdout }}"
     delegate_to: localhost
 
+  - name: Attach an external interface to NUH
+    openstack.cloud.port:
+      state: present
+      auth: "{{ openstack_auth }}"
+      name: "external_port"
+      network: "{{ openstack_ext_network }}"
+      fixed_ips:
+        - ip_address: "{{ ext_ip | default('NONE') }}"
+        - subnet_id: "{{ openstack_subnet | default('NONE') }}"
+    when: inventory_hostname == "{{ groups['nuh_first_node'][0] }}"
+
   - block: 
 
     - name: Create ssh directory
