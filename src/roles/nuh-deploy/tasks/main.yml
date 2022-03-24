@@ -90,6 +90,20 @@
   - name: Set the timezone
     command: timedatectl set-timezone {{ nuh_timezone }}
 
+  - name: Create cert directory
+    cmd: mkdir -p /opt/proxy/data/certs
+    ignore_errors: yes
+
+  - name: Creating empty cert files
+    file:
+      path: "/opt/proxy/data/certs/{{ item }}.pem"
+      state: touch
+    with_items:
+      - "{{ inventory_hostname }}-crl"
+      - "{{ inventory_hostname }}-post-crl"
+      - "{{ inventory_hostname }}-pre-crl"
+      - "proxy-crl"
+
   - name: Create NUH users and generate certificates
     import_role:
       name: nuh-deploy
