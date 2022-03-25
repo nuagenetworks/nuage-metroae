@@ -74,36 +74,13 @@
 
     - block:
 
-      - name: Creating snapshot directories
-        file:
-          path: /tmp/{{ item }}
-          state: directory
-        with_items:
-          - snapshot1
-          - snapshot2
-
-      - name: Copying the content of before running script
-        copy:
-          src: /opt/proxy/data/
-          dest: /tmp/snapshot1/
-          remote_src: yes
-      
       - name: Run the network config script on NUH
         command: ansible-playbook configure.yml
         args:
           chdir: /opt/proxy/bin/ansible
-        ignore_errors: yes
-
-      - name: Run the network config script on NUH again
-        command: ansible-playbook configure.yml
-        args:
-          chdir: /opt/proxy/bin/ansible
-
-      - name: Copying the content after running script
-        copy:
-          src: /opt/proxy/data/
-          dest: /tmp/snapshot2/
-          remote_src: yes
+        register: script_output
+        retries: 2
+        until: script_output.rc == 0
 
       - name: Reset haproxy Service
         lineinfile:
