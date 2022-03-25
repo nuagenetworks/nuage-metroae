@@ -74,14 +74,29 @@
 
     - block:
 
-      - name: Reload the haproxy
-        command: systemctl reload haproxy
-        ignore_errors: yes
+      - name: Creating snapshot directories
+        file:
+          path: /tmp/{{ item }}
+          state: directory
+        with_items:
+          - snapshot1
+          - snapshot2
+
+      - name: Copying the content of before running script
+        copy:
+          src: /opt/proxy/data/
+          dst: /tmp/snapshot1/
       
       - name: Run the network config script on NUH
         command: ansible-playbook configure.yml
         args:
           chdir: /opt/proxy/bin/ansible
+        ignore_errors: yes
+
+      - name: Copying the content after running script
+        copy:
+          src: /opt/proxy/data/
+          dst: /tmp/snapshot2/
 
       - name: Reset haproxy Service
         lineinfile:
