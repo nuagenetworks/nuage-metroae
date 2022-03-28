@@ -58,18 +58,21 @@
     set_fact:
       nuh_heat_template: "{{ temp_dir }}/openstack.yml"
 
-  - name: Setting external interface variable
-    set_fact:
-      ext_ip: "{{ item.external_ip }}"
-      openstack_ext_network: "{{ item.openstack_external_network }}"
-      openstack_ext_subnet: "{{ item.openstack_external_subnet}}"
-    with_items: "{{ external_interfaces }}"
-    when: external_interfaces is defined and external_interfaces | length > 0
+  - block:
+  
+    - name: Setting external interface variable
+      set_fact:
+        ext_ip: "{{ item.external_ip }}"
+        openstack_ext_network: "{{ item.openstack_external_network }}"
+        openstack_ext_subnet: "{{ item.openstack_external_subnet}}"
+      with_items: "{{ external_interfaces }}"
 
-  - name: Setting external peer ip if defined
-    set_fact:
-      ext_peer_ip: "{{ external_interfaces.external_peer_ip }}"
-    when: external_interfaces.external_peer_ip is defined
+    - name: Setting external peer ip if defined
+      set_fact:
+        ext_peer_ip: "{{ external_interfaces.external_peer_ip }}"
+      when: external_interfaces.external_peer_ip is defined
+    
+    when: external_interfaces is defined and external_interfaces | length > 0
 
   - name: Creating first NUH stack
     register: create_stack
