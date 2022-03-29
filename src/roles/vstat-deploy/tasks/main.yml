@@ -487,5 +487,24 @@
     vars:
       component_username: "{{ vstat_default_username }}"
     when: health_monitoring_agent | default("none") != "none"
+    
+  - block:
+
+    - name: Adding the additional data nodes to existing elasticsearch cluster
+      command: /root/nuage_elasticsearch/scripts/es-cluster-add-node.sh -e {{ groups['vstats'][0] }},{{ groups['vstats'][1] }},{{ groups['vstats'][2] }} -y
+      retries: 3
+      delay: 10
+      register: cmdresult
+      until: cmdresult.stdout is search('already running elastic search')
+      ignore_errors: True
+
+    - name: Assert that addition of node was successful
+      assert:
+        that: cmdresult.stdout is search('already running elastic search')
+        msg: "Cluster add node script may not have been successfully executed. Check the execution output below for more details. {{ cmdresult.stdout }}"      
+    
+    when: 
+      - groups['add_data_vstats'] is defined and inventory_hostname in groups['add_data_vstats']
+      - groups['vstats'] is defined
 
   when: not skip_vstat_deploy
