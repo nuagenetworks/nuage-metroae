@@ -1175,7 +1175,7 @@ class Wizard(object):
         return self._compare_libraries(required_libraries, output_lines)
 
     def _run_setup(self):
-        cmd = "sudo ./setup.sh"
+        cmd = "./setup.sh"
         print("Command: " + cmd)
         print("Running setup (may ask for sudo password)")
         try:
