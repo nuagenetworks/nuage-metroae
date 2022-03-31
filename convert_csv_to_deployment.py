@@ -56,7 +56,7 @@ class CsvDeploymentConverter(object):
         self.rows = list()
 
         with open(csv_file, 'r') as f:
-            lines = f.read()
+            lines = f.read().decode("utf-8")
 
         for row in lines.split("\n"):
             self._parse_row(row)
@@ -106,7 +106,7 @@ class CsvDeploymentConverter(object):
                 file_path = os.path.join(SCHEMAS_DIRECTORY, file_name)
                 self._debug("Reading schema %s", file_path)
                 with open(file_path, "r") as f:
-                    schema_str = f.read()
+                    schema_str = f.read().decode("utf-8")
 
                 try:
                     self.schemas[file_name[0:-5]] = json.loads(schema_str)
