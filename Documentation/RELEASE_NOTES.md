@@ -24,6 +24,7 @@
 * Updated deprecated settings in ansible.cfg (METROAE-602)
 * Fix NSGv deployment when bootstrap method is None
 * Updated MetroAE to use External Interface Name when building the external_interface list in the nuh template (METROAE-632)
+* Fix custom username and password for VSC in installation (METROAE-531)
 
 ## Test Matrix
 
