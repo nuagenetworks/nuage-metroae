@@ -23,6 +23,7 @@
 * NUH changes for stats-out (METROAE-620)
 * Updated deprecated settings in ansible.cfg (METROAE-602)
 * Fix NSGv deployment when bootstrap method is None
+* Removed the option to validate environment in Wizard (METROAE-635)
 
 ## Test Matrix
 
