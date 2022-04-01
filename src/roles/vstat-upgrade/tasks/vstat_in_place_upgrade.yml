@@ -8,8 +8,8 @@
 
 - name: Set variable for upgrade versions
   set_fact:
-    upgrade_60_2010R1:
-      "{{ upgrade_from_version|upper|replace('R','') is search('6.0.') and upgrade_to_version|upper|replace('R','') is version('20.10.5', '>=') }}"
+    upgrade_60_2010:
+      "{{ upgrade_from_version|upper|replace('R','') is search('6.0.') and upgrade_to_version|upper|replace('R','') is version('20.10.1', '>=') }}"
 
 - name: When not upgrade from 6.0 to 20.10
   block:
@@ -53,7 +53,7 @@
       name: elasticsearch
       state: stopped
 
-  when: not upgrade_60_2010R1
+  when: not upgrade_60_2010
 
 - name: Copy upgrade bundle to vstat node(s)
   copy: src={{ vstat_upgrade_scripts_path }}/{{ vstat_upgrade_scripts_file }}
@@ -171,7 +171,7 @@
       - groups['backup_vstats'] is defined
 
   when:
-    - not upgrade_60_2010R1
+    - not upgrade_60_2010
 
 - name: Get ES version
   uri:
@@ -259,7 +259,7 @@
 
   when:
     - upgrade_to_version is version('6.0.1', '>=')
-    - not upgrade_60_2010R1
+    - not upgrade_60_2010
     - (groups['data_vstats'] is not defined or inventory_hostname not in groups['data_vstats'])
 
 - name: Assert that we are running ES version 5.5.0
@@ -273,4 +273,4 @@
     name: elasticsearch
     state: restarted
   when:
-    - not upgrade_60_2010R1
+    - not upgrade_60_2010
