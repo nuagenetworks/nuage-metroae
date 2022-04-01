@@ -24,11 +24,8 @@
 * NUH changes for stats-out (METROAE-620)
 * Updated deprecated settings in ansible.cfg (METROAE-602)
 * Fix NSGv deployment when bootstrap method is None
-<<<<<<< HEAD
 * Removed the option to validate environment in Wizard (METROAE-635)
-=======
 * Updated MetroAE to use External Interface Name when building the external_interface list in the nuh template (METROAE-632)
->>>>>>> dev
 
 ## Test Matrix
 
