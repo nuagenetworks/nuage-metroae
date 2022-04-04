@@ -18,6 +18,8 @@ vmname: {{ item.vmname }}
 vmname: {{ item.hostname }}
 {% endif %}
 
+upgrade_vmname: {{ item.upgrade_vmname is defined | ternary( item.upgrade_vmname, [ item.vmname | default(item.hostname), "new" ] | join('-') ) }}
+
 mgmt_ip: {{ item.mgmt_ip }}
 mgmt_prefix: {{ item.mgmt_ip_prefix }}
 mgmt_gateway: {{ item.mgmt_gateway }}
@@ -37,13 +39,23 @@ external_interfaces:
 {% for interface in nuh_external_interfaces %}
 {% for external_if in item.external_interface_list %}
 {% if interface.name in external_if %}
-    - name: "External{{ loop.index }}"
+    - name: "{{ interface.name }}"
       external_prefix: {{ interface.external_ip_prefix | default(24) }}
       external_ip: {{ interface.external_ip }}
+{% if interface.external_peer_ip is defined %}
+      external_peer_ip: {{ interface.external_peer_ip }}
+{% endif %}
       external_gateway: {{ interface.external_gateway }}
       external_bridge: {{ interface.external_bridge }}
       vlan: {{ interface.vlan | default(0) }}
       external_fqdn: {{ interface.external_fqdn }}
+{% if interface.external_peer_fqdn is defined %}
+      external_peer_fqdn: {{ interface.external_peer_fqdn }}
+{% endif %}
+{% if item.target_server_type | default("kvm") is match("openstack") %}
+      openstack_external_network: {{ interface.openstack_external_network }}
+      openstack_external_subnet: {{ interface.openstack_external_subnet }}
+{% endif %}
 {% endif %}
 {% endfor %}
 {% endfor %}

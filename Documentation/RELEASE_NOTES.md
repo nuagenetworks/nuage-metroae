@@ -3,7 +3,7 @@
 ## Release info
 
 * MetroAE Version 5.1.0
-* Nuage Release Alignment 
+* Nuage Release Alignment
 * Date of Release TBD
 
 ## Release Contents
@@ -11,7 +11,11 @@
 ### Feature Enhancements
 * Add Geo-Redundant Control Node (GRCN) on SD-WAN Portal (METROAE-555)
 * Added ability to list installed plugins (METROAE-366)
+* Added support for volume for ES nodes in OpenStack (METROAE-460)
+* Added support for addition of additional ES data nodes to existing stats-out deployment (METROAE-440)
+* Added support for NUH deployment in OpenStack environment (METROAE-463)
 * Add support for container-relative paths. More information can be found in [CHANGES_IN_V5.md](/Documentation/CHANGES_IN_V5.md) (METROAE-610)
+
 
 ### Resolved Issues
 * Fix the error caused by multiple installation of branding on VSD (METROAE-604)
@@ -20,6 +24,9 @@
 * Added the VSPCA field in the installer settings for sdwan portal (METROAE-550)
 * Allow for a custom config file during VSC Upgrade (METROAE-485)
 * NUH changes for stats-out (METROAE-620)
+* Updated deprecated settings in ansible.cfg (METROAE-602)
+* Fix NSGv deployment when bootstrap method is None
+* Updated MetroAE to use External Interface Name when building the external_interface list in the nuh template (METROAE-632)
 
 ## Test Matrix
 

@@ -1,0 +1,82 @@
+heat_template_version: '2014-10-16'
+parameters:
+  vm_name:
+    type: string
+  ssh_key:
+    type: string
+  nuh_image:
+    type: string
+  nuh_network:
+    type: string
+  nuh_subnet:
+    type: string
+  nuh_internal_network:
+    type: string
+  nuh_internal_subnet:
+    type: string
+  nuh_external_network:
+    type: string
+  nuh_external_subnet:
+    type: string
+  nuh_flavor:
+    type: string
+  mgmt_ip:
+    type: string
+  internal_ip:
+    type: string
+  external_ip:
+    type: string
+
+resources:
+  mgmt_port:
+    type: OS::Neutron::Port
+    properties:
+      network_id: {get_param: nuh_network}
+      fixed_ips: [{"subnet": {get_param: nuh_subnet}, "ip_address": {get_param: mgmt_ip}}]
+{% if openstack_port_name is defined %}
+      name: {{ openstack_port_name }}
+{% endif %}
+{% if openstack_port_security_groups is defined %}
+      security_groups: ["{{ openstack_port_security_groups | join('", "') }}"]
+{% endif %}
+  internal_port:
+    type: OS::Neutron::Port
+    properties:
+      network_id: {get_param: nuh_internal_network}
+      fixed_ips: [{"subnet": {get_param: nuh_internal_subnet}, "ip_address": {get_param: internal_ip}}]
+  external_port:
+    type: OS::Neutron::Port
+    properties:
+      network_id: {get_param: nuh_external_network}
+      fixed_ips: [{"subnet": {get_param: nuh_external_subnet}, "ip_address": {get_param: external_ip}}]
+
+  mycompute:
+    type: OS::Nova::Server
+    properties:
+      name: {get_param: vm_name}
+      flavor: {get_param: nuh_flavor}
+      image: {get_param: nuh_image}
+{% if openstack_availability_zone is defined %}
+      availability_zone: {{ openstack_availability_zone }}
+{% endif %}
+      networks:
+        - port: {get_resource: mgmt_port}
+        - port: {get_resource: internal_port}
+        - port: {get_resource: external_port}
+      user_data_format: RAW
+{% if openstack_availability_zone is defined %}
+      availability_zone: "{{ openstack_availability_zone }}"
+{% endif %}
+      user_data:
+        str_replace:
+          template: |
+            #!/bin/bash
+            mkdir -p /root/.ssh/
+            echo usr >> /root/.ssh/authorized_keys
+          params:
+            usr: {get_param: ssh_key}
+
+outputs:
+  server_ip:
+    description: mgmt ip assigned to nuh
+    value: { get_attr: [mycompute, networks, {get_param: nuh_network}, 0]}
