@@ -18,7 +18,7 @@
       vm_name: "{{ vmname }}"
   when: not upgrade
 
-- name: Get VSTAT details from OpenStack
+- name: Get NUH details from OpenStack
   os_server_info:
     auth:
       "{{ openstack_auth }}"
@@ -27,20 +27,20 @@
     client_key: null
     cacert: "{{ openstack_cacert }}"
     validate_certs: false
-  register: vstat_ip
+  register: nuh_ip
   delegate_to: localhost
 
-- name: Set vstat mgmt ip
+- name: Set nuh mgmt ip
   set_fact:
-    vstat_mgmt_ip: "{{ vstat_ip['openstack_servers'][0]['addresses'][openstack_network][0]['addr'] }}"
+    nuh_mgmt_ip: "{{ nuh_ip['openstack_servers'][0]['addresses'][openstack_network][0]['addr'] }}"
 
-- name: Wait for VSTAT ssh to be ready
+- name: Wait for NUH ssh to be ready
   include_role:
     name: common
     tasks_from: wait-for-ssh
   vars:
-    ssh_host: "{{ vstat_mgmt_ip }}"
-    host_username: "{{ vstat_default_username }}"
+    ssh_host: "{{ nuh_mgmt_ip }}"
+    host_username: "{{ nuh_default_username }}"
 
 - block:
 
@@ -61,24 +61,4 @@
   - name: Resolve fqdn
     command: hostname "{{ inventory_hostname }}"
 
-  - block: 
-  
-    - name: Create a volume for OpenStack
-      openstack.cloud.volume:
-        state: present
-        auth: "{{ openstack_auth }}"
-        size: "{{ volume_size_gb }}"
-        display_name: "{{ volume_name }}"
-
-    - name: Attach a volume on VSTATS
-      os_server_volume:
-        state: present
-        auth: "{{ openstack_auth }}"
-        server: "{{ vm_name }}"
-        volume: "{{ volume_name }}"
-        device: "/dev/{{ volume_device }}"
-
-    delegate_to: localhost  
-    when: add_volume | default('false')
-
-  remote_user: "{{ vstat_default_username }}"
+  remote_user: "{{ nuh_default_username }}"
