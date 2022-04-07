@@ -6,7 +6,7 @@
     vsd_hostname: "{{ vsd_fqdn }}"
   run_once: true
 
-- name: Set variable for upgrade versions # Ran
+- name: Set variable for upgrade versions
   set_fact:
     upgrade_60_2010R1:
       "{{ upgrade_from_version|upper|replace('R','') is search('6.0.') and upgrade_to_version|upper|replace('R','') is search('20.10.') }}"
@@ -17,7 +17,7 @@
   - name: When HA
     block:
 
-    - name: Disable shard allocation # Skipped
+    - name: Disable shard allocation
       uri:
         url: "{{ disable_shard_url }}"
         method: PUT
@@ -40,7 +40,7 @@
     when:
       - vstat_sa_or_ha is match('ha')
 
-  - name: Check indices health before migration # Skipped
+  - name: Check indices health before migration
     check_url_response_in_each_line:
       url: "{{ indicies_health_url }}"
       search_string: "green"
@@ -48,19 +48,19 @@
       test_interval_seconds: 30
     run_once: true
 
-  - name: Disable elasticsearch service # Skipped
+  - name: Disable elasticsearch service
     service:
       name: elasticsearch
       state: stopped
 
-  when: not upgrade_60_2010R1 # Skipped this whole block.
+  when: not upgrade_60_2010R1
 
-- name: Copy upgrade bundle to vstat node(s) # Ran
+- name: Copy upgrade bundle to vstat node(s)
   copy: src={{ vstat_upgrade_scripts_path }}/{{ vstat_upgrade_scripts_file }}
           dest=/root/
           mode=0700
 
-- name: Execute upgrade script # Ran
+- name: Execute upgrade script
   shell: "/root/{{ vstat_upgrade_scripts_file }}"       # noqa 305
   changed_when: True
 
@@ -70,12 +70,12 @@
   - name: When primary/backup nodes are defined
     block:
 
-    - name: Figure out Active ES cluster # Skipped
+    - name: Figure out Active ES cluster
       command: crontab -l
       register: crontabOutput
       ignore_errors: true
 
-    - name: Skip execute VSD script for backup vstat # Skipped
+    - name: Skip execute VSD script for backup vstat
       set_fact:
         run_command_on_vsd: false
       when: crontabOutput.stdout.find("curator_snapshot") == -1
@@ -87,7 +87,7 @@
   - name: When SA and we are to execute commands on the VSD
     block:
 
-    - name: Execute VSTAT standalone script # Skipped
+    - name: Execute VSTAT standalone script
       import_tasks: execute_sa_script.yml
       run_once: true
 
@@ -115,7 +115,7 @@
   - name: When HA and we are to execute commands on the VSD
     block:
 
-    - name: Execute VSTAT clustered script # Skipped
+    - name: Execute VSTAT clustered script
       import_tasks: execute_ha_script.yml
       delegate_to: "{{ vsd_hostname_list[0] }}"
       run_once: true
@@ -144,17 +144,17 @@
   - name: When we have pimary/backup nodes
     block:
 
-    - name: Update elasticsearch config file # Skipped
+    - name: Update elasticsearch config file
       lineinfile:
         line: 'path.repo: ["/mnt/nfs/backup"]'
         path: /etc/elasticsearch/elasticsearch.yml
 
-    - name: Restart elastic search # Skipped
+    - name: Restart elastic search
       service:
         name: elasticsearch
         state: restarted
 
-    - name: Check to see if elasticsearch restarted # Skipped
+    - name: Check to see if elasticsearch restarted
       command: systemctl status elasticsearch     # noqa 303
       register: status
       until: status.stdout.find("active (running)") != -1
@@ -171,16 +171,16 @@
       - groups['backup_vstats'] is defined
 
   when:
-    - not upgrade_60_2010R1 # Skipped this whole block.
+    - not upgrade_60_2010R1
 
-- name: Get ES version # RAN
+- name: Get ES version
   uri:
     url: "{{ version_url }}"
     method: GET
   register: es_version
   run_once: true
 
-- name: Assert that we are running ES version 6.8.0 for 6.0.3 and newer # RAN
+- name: Assert that we are running ES version 6.8.0 for 6.0.3 and newer
   assert:
     that: es_version.json.version.number is version('6.8.0', '==')
     msg: Expecting ES version 6.8.0, found ES version "{{ es_version.json.version.number }}, quitting."
@@ -189,14 +189,14 @@
 - name: When upgrade_to_version >= 6.0.1
   block:
 
-  - name: Get nodes for ES # Skipped
+  - name: Get nodes for ES
     uri:
       url: "{{ nodes_url }}"
       method: GET
     register: nodes_output
     run_once: true
 
-  - name: Check indices health before migration # Skipped
+  - name: Check indices health before migration
     check_url_response_in_each_line:
       url: "{{ indicies_health_url }}"
       search_string: "yellow"
@@ -205,7 +205,7 @@
     run_once: true
     when: vstat_sa_or_ha is match('ha')
 
-  - name: Check indices health before migration # Skipped
+  - name: Check indices health before migration
     check_url_response_in_each_line:
       url: "{{ indicies_health_url }}"
       search_string: "green"
@@ -214,7 +214,7 @@
     run_once: true
     when: vstat_sa_or_ha is match('sa')
 
-  - name: Enable Shard alllocation # Skipped
+  - name: Enable Shard alllocation
     uri:
       url: "{{ disable_shard_url }}"
       method: PUT
@@ -237,11 +237,11 @@
       timeout: 300
     when: vstat_sa_or_ha is match('ha')
 
-  - name: Migrate old indicies to new ones # Skipped
+  - name: Migrate old indicies to new ones
     shell: "{{ index_migrate_cmd }}"  # noqa 305
     run_once: true
 
-  - name: Check recovery health # Skipped
+  - name: Check recovery health
     check_url_response_in_each_line:
       url: "{{ recovery_health_url }}"
       search_string: "done"
@@ -249,7 +249,7 @@
       test_interval_seconds: 30
     run_once: true
 
-  - name: Check indices health after migration # Skipped
+  - name: Check indices health after migration
     check_url_response_in_each_line:
       url: "{{ indicies_health_url }}"
       search_string: "green"
@@ -257,18 +257,18 @@
       test_interval_seconds: 30
     run_once: true
 
-  when: # Skipped this whole block.
+  when:
     - upgrade_to_version is version('6.0.1', '>=')
     - not upgrade_60_2010R1
     - (groups['data_vstats'] is not defined or inventory_hostname not in groups['data_vstats'])
 
-- name: Assert that we are running ES version 5.5.0 # Skipped
+- name: Assert that we are running ES version 5.5.0
   assert:
     that: es_version.json.version.number is version('5.5.0', '==')
     msg: Expecting ES version 5.5.0, found ES version "{{ es_version.json.version.number }}, quitting."
   when: upgrade_to_version is version('6.0.1', '<')
 
-- name: Restart Elasticsearch service # RAN
+- name: Restart Elasticsearch service
   service:
     name: elasticsearch
     state: restarted
