@@ -30,6 +30,15 @@
         vsd_hostname: "{{ vsd_fqdn }}"
       run_once: true
 
+    - name: Check notification app status
+      command: systemctl status notification-app
+      register: notification_app_status
+      ignore_errors: yes
+
+    - name: Restart notification app when not active
+      command: systemctl restart notification-app
+      when: notification_app_status.stdout is not search('active (running)')
+
     - name: Verify that notification application 1 is connected to VSD
       command: "/opt/ejabberd/bin/ejabberdctl connected_users"
       run_once: true
