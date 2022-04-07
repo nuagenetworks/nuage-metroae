@@ -14,9 +14,9 @@ This new container will be dynamically built on the users machine. Users will ne
    `./metroae install vsds -vvv` use `./metroae-container install vsds -vvv`
    Another example for deployments other than defaults
    `./metroae install vsds specialdeployment -vvv` use `./metroae-container install vsds specialdeployment -vvv`
-4. For all image paths, make sure they start with `/metroae`. Here `/metroae` refers to the present working directory for the user.
+4. Users can now specify file locations relative to the MetroAE container using `./` instead of `/metroae`. Here `/metroae` refers to the present working directory for the user. 
    e.g.
-   `nuage_unzipped_files_dir: ./images/20.10.R4` changes to `nuage_unzipped_files_dir: /metroae/images/20.10.R4`
+   `nuage_unzipped_files_dir: ./images/20.10.R4` automatically changes to `nuage_unzipped_files_dir: /metroae/images/20.10.R4`
 5. All the specified paths for licenses, unzipped files, backup directories should be inside the MetroAE repository. e.g. you cannot specify `/opt` or `/tmp` for the MetroAE host. If your mount directory for images is outside the MetroAE folder, you can use a mount bind to put them inside the MetroAE directory.
    e.g.
    `sudo mount --bind -o ro /mnt/nfs-data /<your-repo-location>/images`
