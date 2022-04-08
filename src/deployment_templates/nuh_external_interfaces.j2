@@ -33,6 +33,15 @@
     #
     external_ip: "{{ item.external_ip }}"
 
+    # < Peer's External Network IP address >
+    # IP address of the external network interface of NUH peer. This network is the one where NSGs reside
+    #
+    {%- if item.external_peer_ip is defined %}
+    external_peer_ip: "{{ item.external_peer_ip }}"
+    {%- else %}
+    # external_peer_ip: ""
+    {%- endif %}
+
     # < External Network IP Prefix Length >
     # IP Prefix length for the external network
     #
@@ -61,6 +70,15 @@
     #
     external_fqdn: "{{ item.external_fqdn }}"
 
+    # < Peer's External FQDN Name >
+    # Optional External FQDN name of NUH peer. A valid cert of this FQDN will be generated from the VSD and transferred to NUH
+    #
+    {%- if item.external_peer_fqdn is defined %}
+    external_peer_fqdn: "{{ item.external_peer_fqdn }}"
+    {%- else %}
+    # external_peer_fqdn: ""
+    {%- endif %}
+
     # < External Network Bridge >
     # Network Bridge used for the external network on the NUH. This will be a Linux network bridge when deploying on KVM. Defaults to using access bridge
     #
@@ -80,6 +98,30 @@
     {%- endif %}
 
     ######################
+
+    {%- if show_target_server_type | default('openstack') == 'openstack' %}
+
+    # < OpenStack External Network >
+    # Name of external network on OpenStack for NUH
+    #
+    {%- if item.openstack_external_network is defined %}
+    openstack_external_network: "{{ item.openstack_external_network }}"
+    {%- else %}
+    # openstack_external_network: ""
+    {%- endif %}
+    {%- endif %}
+
+    {%- if show_target_server_type | default('openstack') == 'openstack' %}
+
+    # < OpenStack External Subnet >
+    # Name of external subnet on OpenStack for NUH
+    #
+    {%- if item.openstack_external_subnet is defined %}
+    openstack_external_subnet: "{{ item.openstack_external_subnet }}"
+    {%- else %}
+    # openstack_external_subnet: ""
+    {%- endif %}
+    {%- endif %}
 
 {% endfor %}
 {% else %}
