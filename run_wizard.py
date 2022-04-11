@@ -35,24 +35,6 @@ WIZARD_SCRIPT = """
 
       The following steps will be performed:
 
-- step: Verify proper MetroAE installation (DEPRECATED)
-  description: |
-      This step will verify that the MetroAE tool has been properly installed
-      with all required libraries. This step is now deprecated as users are encouraged
-      to use MetroAE with the new container, which ensures a proper MetroAE installation.
-  verify_install:
-    missing_msg: |
-
-      We would like to run setup to install these.  The command is
-      "sudo ./setup.sh" if you'd like to run it yourself.
-      Running this command requires sudo access. You may be asked
-      for the sudo password.
-    wrong_os_msg: |
-
-      The OS is not recognized.  MetroAE requires a Linux based operating
-      system such as CentOS or Ubuntu.  A docker container version of MetroAE
-      is available for other operating system types.
-
 - step: Unzip image files
   description: |
       This step will unzip the image files needed for the VSP components.  The
@@ -325,46 +307,6 @@ class Wizard(object):
         for step in self.script:
             if "step" in step:
                 print("  - " + step["step"])
-
-    def verify_install(self, action, data):
-        print(u"\nVerifying MetroAE installation")
-
-        if self.in_container:
-            print("\nWizard is being run inside a Docker container.  "
-                  "No need to verify installation.  Skipping step...")
-            return
-
-        if not os.path.isfile("/etc/os-release"):
-            self._record_problem("wrong_os", "Unsupported operating system")
-            print(self._get_field(data, "wrong_os_msg"))
-
-            choice = self._input("Do you wish to continue anyway?", 0,
-                                 ["(Y)es", "(n)o"])
-
-            if choice == 1:
-                print("Quitting wizard...")
-                exit(0)
-
-        missing = self._verify_pip()
-        yum_missing = self._verify_yum()
-
-        missing.extend(yum_missing)
-
-        if len(missing) == 0:
-            self._unrecord_problem("install_libraries")
-            print(u"\nMetroAE Installation OK!")
-        else:
-            self._record_problem(
-                "install_libraries",
-                u"Your MetroAE installation is missing libraries")
-            print(u"\nYour MetroAE installation is missing libraries:\n")
-            print("\n".join(missing))
-            print(self._get_field(data, "missing_msg"))
-            choice = self._input("Do you want to run setup now?", 0,
-                                 ["(Y)es", "(n)o"])
-
-            if choice != 1:
-                self._run_setup()
 
     def unzip_images(self, action, data):
         valid = False
