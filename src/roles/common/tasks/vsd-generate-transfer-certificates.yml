@@ -6,10 +6,6 @@
     vsd_hostname: "{{ vsd_fqdn }}"
   run_once: true
 
-- name: test the vsd_hostname_list values
-  debug:
-    msg: "{{ vsd_hostname_list }}"
-
 - block:
 
   - name: Check Ipv4 connectivity between VSD and Cert transfer server
@@ -72,12 +68,11 @@
 
   - name: Create and transfer certs from VSD
     # noqa 305
-    # hard code the -i and -d option to test the certs 
     shell: >-
       /bin/sshpass -p'{{ certificate_password }}' /opt/vsd/ejbca/deploy/certMgmt.sh
       -a generate -u {{ certificate_username }} -c {{ commonName }} -o csp
       -f {{ file_type | default('pem') }}
-      -t {{ certificate_type }} -i vsc1@vsd1.example.met -s {{ scp_user }}@{{ inventory_hostname }}:{{ scp_location }} {{ additional_parameters }}
+      -t {{ certificate_type }} -s {{ scp_user }}@{{ inventory_hostname }}:{{ scp_location }} {{ additional_parameters }}
     delegate_to: "{{ vsd_hostname_list[0] }}"
     register: created
     until: "created.rc == 0 or (created.stdout is search('fail adding entity'))"
