@@ -17,32 +17,6 @@
 * Add support for container-relative paths. More information can be found in [CHANGES_IN_V5.md](/Documentation/CHANGES_IN_V5.md) (METROAE-610)
 
 ### Resolved Issues
-<<<<<<< HEAD
-
-* Check for ejabberd license expiry (METROAE-505)
-* Added support install of SD-WAN portal without the SMTP address(METROAE-492)
-* Fixed yum lock timeout issue when installing packages in KVM (METROAE-507)
-* Replacing known_hosts module mgmt_ip to hostname (METROAE-481)
-* Remove unnecessary debug lines from vsc-health (MetroAE-541)
-* Fixing vsd-destroy to destroy old and new VMs (METROAE-504)
-* Fix MetroAE errors while deploying using SSH Proxy (MetroAE-574)
-* Fixed Check passwordless ssh from metro host to hypervisors and components ( METROAE-520)
-* Added ES servers to NUH GUI ( METROAE-491)
-* Fix NUH install on 20.10.R5 (METROAE-490)
-* Fixing message issue for docker pull(METROAE-527)
-* Install NUH optionally without DNS entry (METROAE-375)
-* Add procedure for NUH copy certificates if installed before VSD(METROAE-559)
-* Create NUH users and certs for NSG bootstrapping (METROAE-487)
-* Enhance check to accept both access_port_name and access_ports variables being undefined (METROAE-585)
-* VSTAT VSS UI should be set for all VSTATS (METROAE-580)
-* Remove Old MetroAE container support (METROAE-564)
-* Fix MetroAE VSD in-place upgrades for custom credentials (METROAE-586)
-* Make changes into documentation for supporting ansible version upgrade(METROAE-588)
-* Document where credentials are used(METROAE-532)
-* Fix MetroAE inplace upgrade from 20.10.R6.1 to 20.10.R6.3(METROAE-590)
-* Fix TLS mode to required optionally (METROAE-536)
-* Clean up temporary ISO file on VSD after mounting (METROAE-598)
-=======
 * Fix the error caused by multiple installation of branding on VSD (METROAE-604)
 * MetroAE logging enhancements (METROAE-475)
 * Delete the files leftover by metro on VSD's /tmp directory (METROAE-609)
@@ -55,7 +29,6 @@
 * Updated MetroAE to use External Interface Name when building the external_interface list in the nuh template (METROAE-632)
 * Fixed custom username and password for VSC in installation (METROAE-531)
 * NUH stats out sets stats out proxy as elasticsearch proxy (METROAE-599)
->>>>>>> dev
 
 ## Test Matrix
 
