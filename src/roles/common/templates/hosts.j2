@@ -252,6 +252,14 @@ vsc_ha_node2
 {% for nuh in nuhs %}
 {{ nuh.hostname }}
 {% endfor %}
+[nuh_first_node]
+{{ nuhs[0].hostname }}
+
+{% if nuhs|length > 1 %}
+[nuh_second_node]
+{{ nuhs[1].hostname }}
+{% endif %}
+
 {% endif %}
 
 {% if nfss is defined and nfss|length > 0 %}
@@ -275,7 +283,7 @@ vsc_ha_node2
 {{ vstat.hostname }}
 {% endfor %}
 
-{% if vstats|length == 6 %}
+{% if vstats|length >= 6 %}
 
 {% if common.stats_out | default(false) %}
 
@@ -288,6 +296,13 @@ vstat_node{{ i }}
 {% for name in data_vstats %}
 {{ name }}
 {% endfor %}
+
+{% if vstats|length > 6 %}
+[add_data_vstats]
+{% for name in add_data_vstats %}
+{{ name }}
+{% endfor %}
+{% endif %}
 
 {% else %}
 
@@ -380,10 +395,25 @@ portal_sa_node
 [portal_ha_node3]
 {{ portals[2].hostname }} {% if 'mgmt_bridge' in portals[2] %} mgmt_bridge={{ portals[2].mgmt_bridge }}{% endif %}
 
+{% if portal_grcn is defined and portal_grcn %}
+
+[portal_grcn_node]
+{{ portal_grcn[0].hostname }} {% if 'mgmt_bridge' in portal_grcn[0] %} mgmt_bridge={{ portal_grcn[0].mgmt_bridge }}{% endif %}
+
 [portals:children]
 portal_ha_node1
 portal_ha_node2
 portal_ha_node3
+portal_grcn_node
+
+{% else %}
+
+[portals:children]
+portal_ha_node1
+portal_ha_node2
+portal_ha_node3
+
+{% endif %}
 
 {% endif %}
 

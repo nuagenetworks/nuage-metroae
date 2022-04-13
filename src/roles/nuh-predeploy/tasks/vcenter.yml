@@ -1,6 +1,24 @@
+---
+- name: Set local variable with upgrade status
+  set_fact:
+    upgrade: "{{ nuage_upgrade|default('False') }}"
+
+- block:
+
+  - name: Verify that upgrade_vmname is defined if this is an upgrade
+    assert:
+      that: "upgrade_vmname is defined"
+      msg: "upgrade_vmname is required for upgrade"
+  - name: Set local variable with upgrade_vmname
+    set_fact:
+      vm_name: "{{ upgrade_vmname }}"
+
+  when: upgrade
+
 - name: Set local variable with vmname
   set_fact:
     vm_name: "{{ vmname }}"
+  when: not upgrade
 
 - include_role:
     name: check-node-running
@@ -41,6 +59,9 @@
         {% else %}
         --machineOutput
         {% endif %}
+        {% if vcenter.vmfolder is defined %}
+        -vf={{ vcenter.vmfolder }}
+        {% endif %}
         -n={{ vm_name }}
         --net:"Management={{ mgmt_bridge }}"
         {% if internal_bridge is defined %}
@@ -59,7 +80,7 @@
       hostname: "{{ target_server }}"
       username: "{{ vcenter.username }}"
       password: "{{ vcenter.password }}"
-      name: "{{ vmname }}"
+      name: "{{ vm_name }}"
       validate_certs: no
     register: nuh_vm_folder
 
@@ -71,7 +92,7 @@
       password: "{{ vcenter.password }}"
       datacenter: "{{ vcenter.datacenter }}"
       folder: "{{ nuh_vm_folder['folders'][0] }}"
-      name: "{{ vmname }}"
+      name: "{{ vm_name }}"
       validate_certs: no
     register: nuh_vm_facts
 
@@ -85,7 +106,7 @@
       password: "{{ vcenter.password }}"
       datacenter: "{{ vcenter.datacenter }}"
       folder: "{{ nuh_vm_folder['folders'][0] }}"
-      name: "{{ vmname }}"
+      name: "{{ vm_name }}"
       validate_certs: no
       gather_network_info: false
       connected: true

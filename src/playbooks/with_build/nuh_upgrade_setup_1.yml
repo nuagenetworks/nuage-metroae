@@ -1,0 +1,25 @@
+---
+  - hosts: nuh_first_node
+    remote_user: "{{ nuh_default_username }}"
+    gather_facts: no
+    tasks:
+      - name: Clean known_hosts of NUH's (ignoring errors)
+        known_hosts:
+          name: "{{ groups['nuh_second_node'][0] }}"
+          state: absent
+        ignore_errors: True
+        remote_user: "{{ nuh_default_username }}"
+
+      - name: "Run the setup script for HA primary"
+        command: ./setup.sh
+        environment:
+          HNAME: "{{ hostname }}"
+          HA: "y"
+          MASTER: "y"
+          PEERADDR: "{{ groups['nuh_second_node'][0] }}"
+          PEERPASSWORD: "{{ nuh_default_password }}"
+        args:
+          chdir: /opt/proxy/bin
+        when:
+          - nuh_sa_or_ha is match('ha')
+
