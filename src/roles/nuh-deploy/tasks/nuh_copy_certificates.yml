@@ -38,7 +38,7 @@
         set_fact: notification_app_username1 = notification_app1.username
         when: 
           - notification_app1 is defined
-          - string(notification_app1.username)
+          - not (notification_app1.username is vault_encrypted)
 
       - block:
         - name: Load vault password to memory
@@ -49,13 +49,13 @@
           register: notification_app_username1
         when: 
           - notification_app1 is defined
-          - not string(notification_app1.username)
+          - notification_app1.username is vault_encrypted
 
       - name: Set notification_app_username2 for string
         set_fact: notification_app_username2 = notification_app2.username
         when: 
           - notification_app2 is defined
-          - string(notification_app2.username)
+          - not (notification_app2.username is vault_encrypted)
 
       - block:
         - name: Load vault password to memory
@@ -66,7 +66,7 @@
           register: notification_app_username2
         when: 
           - notification_app2 is defined 
-          - not string(notification_app2.username)
+          - notification_app2.username is vault_encrypted
       
       - name: Create notification application user on vsd
         command: /opt/ejabberd/bin/ejabberdctl register {{ notification_app1.username }} {{ vsd_fqdn }} {{ notification_app1.password }}
