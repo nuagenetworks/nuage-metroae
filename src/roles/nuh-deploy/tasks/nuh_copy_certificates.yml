@@ -33,6 +33,40 @@
         run_once: true
         no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
         register: notification_app_check
+
+      - name: Set notification_app_username1 for string
+        set_fact: notification_app_username1 = notification_app1.username
+        when: 
+          - notification_app1 is defined
+          - string(notification_app1.username)
+
+      - block:
+        - name: Load vault password to memory
+          set_fact: vaultpword = "{{ lookup('env','METROAE_PASSWORD') }}"
+
+        - name: Set notification_app_username1 for vault encrypted
+          shell: "notification_app1.username | ansible-vault --vault-id {{ vaultpword }} decrypt"
+          register: notification_app_username1
+        when: 
+          - notification_app1 is defined
+          - not string(notification_app1.username)
+
+      - name: Set notification_app_username2 for string
+        set_fact: notification_app_username2 = notification_app2.username
+        when: 
+          - notification_app2 is defined
+          - string(notification_app2.username)
+
+      - block:
+        - name: Load vault password to memory
+          set_fact: vaultpword = "{{ lookup('env','METROAE_PASSWORD') }}"
+
+        - name: Set notification_app_username2 for vault encrypted
+          shell: "notification_app2.username | ansible-vault --vault-id {{ vaultpword }} decrypt"
+          register: notification_app_username2
+        when: 
+          - notification_app2 is defined 
+          - not string(notification_app2.username)
       
       - name: Create notification application user on vsd
         command: /opt/ejabberd/bin/ejabberdctl register {{ notification_app1.username }} {{ vsd_fqdn }} {{ notification_app1.password }}
@@ -40,7 +74,7 @@
         no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
         when: 
           - notification_app1 is defined
-          - notification_app1.username|string() not in notification_app_check.stdout
+          - notification_app_username1 not in notification_app_check.stdout
 
       - name: Create notification application user on vsd
         command: /opt/ejabberd/bin/ejabberdctl register {{ notification_app2.username }} {{ vsd_fqdn }} {{ notification_app2.password }}
@@ -48,7 +82,7 @@
         no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
         when: 
           - notification_app2 is defined
-          - notification_app2.username|string() not in notification_app_check.stdout
+          - notification_username2 not in notification_app_check.stdout
 
       delegate_to: "{{ vsd_hostname_list[0] }}"
       remote_user: "{{ custom_username | default(vsd_default_username) }}"
