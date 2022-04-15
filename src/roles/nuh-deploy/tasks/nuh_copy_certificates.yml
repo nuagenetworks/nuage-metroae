@@ -45,16 +45,27 @@
         - name: Set fact for encrypted username
           set_fact: 
             encrypted_notication_app_username1: notification_app1.username
+          cacheable: yes
 
-        - name: Load vault password to memory
-          set_fact: 
-            vaultpword: "{{ lookup('env','METROAE_PASSWORD') }}"
+        - block:
+          - name: Load vault password to memory
+            set_fact: 
+              vaultpword: "{{ lookup('env','METROAE_PASSWORD') }}"
+            cacheable: yes
+
+          - name: Set notification_app_username1 for vault encrypted
+            shell: "{{ hostvars['nuh1.example.met']['ansible_facts']['encrypted_notication_app_username1'] }} | ansible-vault --vault-id {{ vaultpword }} decrypt"
+            register: localhost_notification_app_username1
+
+          - name: Set fact for notification_app_username1
+            set_fact:
+              notification_app_username1: localhost_notification_app_username1
+            cacheable: yes
           delegate_to: localhost
 
-        - name: Set notification_app_username1 for vault encrypted
-          shell: "notification_app1.username | ansible-vault --vault-id {{ vaultpword }} decrypt"
-          register: notification_app_username1
-          delegate_to: localhost
+        - name: Set fact on vsd for notification_app_username1
+          set_fact:
+            notification_app_username1: "{{ hostvars['localhost']['ansible_facts']['notification_app_username1'] }}"
         when: 
           - notification_app1 is defined
           - notification_app1.username is vault_encrypted
