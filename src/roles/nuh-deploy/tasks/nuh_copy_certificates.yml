@@ -42,13 +42,19 @@
           - not (notification_app1.username is vault_encrypted)
 
       - block:
+        - name: Set fact for encrypted username
+          set_fact: 
+            encrypted_notication_app_username1: notification_app1.username
+
         - name: Load vault password to memory
           set_fact: 
             vaultpword: "{{ lookup('env','METROAE_PASSWORD') }}"
+          delegate_to: localhost
 
         - name: Set notification_app_username1 for vault encrypted
           shell: "notification_app1.username | ansible-vault --vault-id {{ vaultpword }} decrypt"
           register: notification_app_username1
+          delegate_to: localhost
         when: 
           - notification_app1 is defined
           - notification_app1.username is vault_encrypted
