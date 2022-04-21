@@ -27,6 +27,7 @@
 * Fix NSGv deployment when bootstrap method is None
 * Removed the option to validate environment in Wizard (METROAE-635)
 * Updated MetroAE to use External Interface Name when building the external_interface list in the nuh template (METROAE-632)
+* Fixed custom username and password for VSC in installation (METROAE-531)
 * NUH stats out sets stats out proxy as elasticsearch proxy (METROAE-599)
 
 ## Test Matrix
