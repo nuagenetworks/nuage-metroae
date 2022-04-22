@@ -16,7 +16,6 @@
 * Added support for NUH deployment in OpenStack environment (METROAE-463)
 * Add support for container-relative paths. More information can be found in [CHANGES_IN_V5.md](/Documentation/CHANGES_IN_V5.md) (METROAE-610)
 
-
 ### Resolved Issues
 * Fix the error caused by multiple installation of branding on VSD (METROAE-604)
 * MetroAE logging enhancements (METROAE-475)
@@ -28,6 +27,8 @@
 * Fix NSGv deployment when bootstrap method is None
 * Removed the option to validate environment in Wizard (METROAE-635)
 * Updated MetroAE to use External Interface Name when building the external_interface list in the nuh template (METROAE-632)
+* Fixed custom username and password for VSC in installation (METROAE-531)
+* NUH stats out sets stats out proxy as elasticsearch proxy (METROAE-599)
 
 ## Test Matrix
 
