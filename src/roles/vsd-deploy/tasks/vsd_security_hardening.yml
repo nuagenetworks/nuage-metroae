@@ -24,6 +24,18 @@
 - block:
 
   - block:
+    - name: Create password
+      command: openssl passwd -1 {{ vsd_custom_password }}
+      register: openssl_pwd
+
+    - name: Change user password
+      command: usermod -p {{ openssl_pwd.stdout }} {{ vsd_default_username }}
+
+    when:
+      - vsd_custom_username is not defined
+      - vsd_custom_password is defined
+
+  - block:
 
     - name: Create a SSH pass
       command: openssl passwd -1 {{ vsd_custom_password }}
