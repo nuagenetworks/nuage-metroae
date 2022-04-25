@@ -30,6 +30,7 @@
 * Updated MetroAE to use External Interface Name when building the external_interface list in the nuh template (METROAE-632)
 * Fixed custom username and password for VSC in installation (METROAE-531)
 * NUH stats out sets stats out proxy as elasticsearch proxy (METROAE-599)
+* Added support for multiple VLANs in NUH config (METROAE-513)
 
 ## Test Matrix
 

@@ -37,9 +37,9 @@ internal_gateway: {{ item.internal_gateway }}
 {% if item.external_interface_list is defined %}
 external_interfaces:
 {% for interface in nuh_external_interfaces %}
-{% for external_if in item.external_interface_list %}
-{% if interface.name in external_if %}
+{% if interface.name in item.external_interface_list %}
     - name: "{{ interface.name }}"
+      dev: "eth{{ interface.dev | default(loop.index + 1) }}"
       external_prefix: {{ interface.external_ip_prefix | default(24) }}
       external_ip: {{ interface.external_ip }}
 {% if interface.external_peer_ip is defined %}
@@ -58,19 +58,18 @@ external_interfaces:
 {% endif %}
 {% endif %}
 {% endfor %}
-{% endfor %}
 {% if item.target_server_type | default("kvm") is match("vcenter") %}
 external_interface_networks:
 {% for interface in nuh_external_interfaces %}
-{% for external_if in item.external_interface_list %}
-{% if interface.name in external_if %}
-  - network_name: "{{ interface.external_bridge }}"
-    label: {{ interface.label | default("Network Adapter " ~ ((loop.index|int + 2)|string)) }}
+{% if interface.name in item.external_interface_list %}
+  - state: new
+    name: "{{ interface.external_bridge }}"
+    connected: true
+    start_connected: true
 {% if interface.dvswitch_name is defined %}
     dvswitch_name: "{{ interface.dvswitch_name }}"
 {% endif %}
 {% endif %}
-{% endfor %}
 {% endfor %}
 {% endif %}
 {% endif %}
