@@ -15,6 +15,7 @@
 * Added support for addition of additional ES data nodes to existing stats-out deployment (METROAE-440)
 * Added support for NUH deployment in OpenStack environment (METROAE-463)
 * Add support for container-relative paths. More information can be found in [CHANGES_IN_V5.md](/Documentation/CHANGES_IN_V5.md) (METROAE-610)
+* Added support for changing root user's password (METROAE-593)
 
 ### Resolved Issues
 * Fix the error caused by multiple installation of branding on VSD (METROAE-604)
@@ -30,6 +31,7 @@
 * Fixed custom username and password for VSC in installation (METROAE-531)
 * NUH stats out sets stats out proxy as elasticsearch proxy (METROAE-599)
 * Fixed set tls mode require optionally (METROAE-536) 
+* Added support for multiple VLANs in NUH config (METROAE-513)
 
 ## Test Matrix
 
