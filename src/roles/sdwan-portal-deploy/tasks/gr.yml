@@ -1,0 +1,19 @@
+- name: Updating dr.sh on GRCN datacenter 1
+  lineinfile:
+    path: /opt/vnsportal/dr.sh
+    line: "{{ item }}"
+  with_items:
+    - "export OWNADDRESS={{ grcn1.mgmt_ip }}"
+    - "export DC1={{ portal1.mgmt_ip}},{{ portal2.mgmt_ip }},{{ portal3.mgmt_ip }},{{ grcn1.other_dc_grcn_ip }},{{ grcn1.mgmt_ip }}"
+    - "export DC2={{ grcn1.other_dc_portal1_ip }},{{ grcn1.other_dc_portal2_ip }},{{ grcn1.other_dc_portal3_ip }},{{ grcn1.other_dc_grcn_ip }},{{ grcn1.mgmt_ip }}"
+  when: grcn1.current_dc == 'dc1'
+
+- name: Updating dr.sh on GRCN datacenter 2
+  lineinfile:
+    path: /opt/vnsportal/dr.sh
+    line: "{{ item }}"
+  with_items:
+    - "export OWNADDRESS={{ grcn1.other_dc_grcn_ip }}"
+    - "export DC2={{ portal1.mgmt_ip}},{{ portal2.mgmt_ip }},{{ portal3.mgmt_ip }},{{ grcn1.other_dc_grcn_ip }},{{ grcn1.mgmt_ip }}"
+    - "export DC1={{ grcn1.other_dc_portal1_ip }},{{ grcn1.other_dc_portal2_ip }},{{ grcn1.other_dc_portal3_ip }},{{ grcn1.other_dc_grcn_ip }},{{ grcn1.mgmt_ip }}"
+  when: grcn1.current_dc == 'dc2'

@@ -61,4 +61,24 @@
   - name: Resolve fqdn
     command: hostname "{{ inventory_hostname }}"
 
+  - block: 
+  
+    - name: Create a volume for OpenStack
+      openstack.cloud.volume:
+        state: present
+        auth: "{{ openstack_auth }}"
+        size: "{{ volume_size_gb }}"
+        display_name: "{{ volume_name }}"
+
+    - name: Attach a volume on VSTATS
+      os_server_volume:
+        state: present
+        auth: "{{ openstack_auth }}"
+        server: "{{ vm_name }}"
+        volume: "{{ volume_name }}"
+        device: "/dev/{{ volume_device }}"
+
+    delegate_to: localhost  
+    when: add_volume | default('false')
+
   remote_user: "{{ vstat_default_username }}"

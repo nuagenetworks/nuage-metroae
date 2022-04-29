@@ -2,49 +2,36 @@
 
 ## Release info
 
-* MetroAE Version 5.0.0
-* Nuage Release Alignment 20.10
-* Date of Release 4-February-2022
+* MetroAE Version 5.1.0
+* Nuage Release Alignment
+* Date of Release TBD
 
 ## Release Contents
 
 ### Feature Enhancements
-
-* Predeploy NSGV without vsd license file (METROAE-497)
-* Added support for hardening Elasticsearch nodes (METROAE-486)
-* Allow custom configuration of RAM, CPU and Memory for VSD and VSTAT (METROAE-477)
-* Run VSD Database pre-upgrade checks (METROAE-428)
-* Support NFS server config using MetroAE(METROAE-557)
-* Webfilter should optionally use HTTP Proxy (METROAE-493)
-* Add support for encrypting credentials in Excel spreadsheet (METROAE-552)
-* Add Ansible 3.4.0 support (METROAE-344)
-* Allow installing/renewal of VSTAT(ES) licenses during install, upgrade and standalone (METROAE-591)
+* Add Geo-Redundant Control Node (GRCN) on SD-WAN Portal (METROAE-555)
+* Added ability to list installed plugins (METROAE-366)
+* Added support for volume for ES nodes in OpenStack (METROAE-460)
+* Added support for addition of additional ES data nodes to existing stats-out deployment (METROAE-440)
+* Added support for NUH deployment in OpenStack environment (METROAE-463)
+* Add support for container-relative paths. More information can be found in [CHANGES_IN_V5.md](/Documentation/CHANGES_IN_V5.md) (METROAE-610)
+* Added support for changing root user's password (METROAE-593)
 
 ### Resolved Issues
-
-* Check for ejabberd license expiry (METROAE-505)
-* Added support install of SD-WAN portal without the SMTP address(METROAE-492)
-* Fixed yum lock timeout issue when installing packages in KVM (METROAE-507)
-* Replacing known_hosts module mgmt_ip to hostname (METROAE-481)
-* Remove unnecessary debug lines from vsc-health (MetroAE-541)
-* Fixing vsd-destroy to destroy old and new VMs (METROAE-504)
-* Fix MetroAE errors while deploying using SSH Proxy (MetroAE-574)
-* Fixed Check passwordless ssh from metro host to hypervisors and components ( METROAE-520)
-* Added ES servers to NUH GUI ( METROAE-491)
-* Fix NUH install on 20.10.R5 (METROAE-490)
-* Fixing message issue for docker pull(METROAE-527)
-* Install NUH optionally without DNS entry (METROAE-375)
-* Add procedure for NUH copy certificates if installed before VSD(METROAE-559)
-* Create NUH users and certs for NSG bootstrapping (METROAE-487)
-* Enhance check to accept both access_port_name and access_ports variables being undefined (METROAE-585)
-* VSTAT VSS UI should be set for all VSTATS (METROAE-580)
-* Remove Old MetroAE container support (METROAE-564)
-* Fix MetroAE VSD in-place upgrades for custom credentials (METROAE-586)
-* Make changes into documentation for supporting ansible version upgrade and new container(METROAE-588)
-* Document where credentials are used(METROAE-532)
-* Fix MetroAE inplace upgrade from 20.10.R6.1 to 20.10.R6.3(METROAE-590)
-* On applying branding to the VSD jboss restart should happen serially (METROAE-597)
-* Clean up temporary ISO file on VSD after mounting (METROAE-598)
+* Fix the error caused by multiple installation of branding on VSD (METROAE-604)
+* MetroAE logging enhancements (METROAE-475)
+* Delete the files leftover by metro on VSD's /tmp directory (METROAE-609)
+* Added the VSPCA field in the installer settings for sdwan portal (METROAE-550)
+* Allow for a custom config file during VSC Upgrade (METROAE-485)
+* NUH changes for stats-out (METROAE-620)
+* Updated deprecated settings in ansible.cfg (METROAE-602)
+* Fix NSGv deployment when bootstrap method is None
+* Removed the option to validate environment in Wizard (METROAE-635)
+* Updated MetroAE to use External Interface Name when building the external_interface list in the nuh template (METROAE-632)
+* Fixed custom username and password for VSC in installation (METROAE-531)
+* NUH stats out sets stats out proxy as elasticsearch proxy (METROAE-599)
+* Fixed set tls mode require optionally (METROAE-536) 
+* Added support for multiple VLANs in NUH config (METROAE-513)
 
 ## Test Matrix
 

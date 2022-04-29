@@ -36,7 +36,11 @@ network:
         dns2: ''
         dns3: ''
         namespace: {{ interface.name }}
-        dev: eth2
+{% if nuh_sa_or_ha is match('ha') %}
+        peeripaddr: {{ interface.external_peer_ip }}
+        peerprefix: {{ interface.external_prefix }}
+{% endif %}
+        dev: {{ interface.dev }}
         ipaddr: {{ interface.external_ip }}
         prefix: {{ interface.external_prefix }}
         gateway: {{ interface.external_gateway }}
@@ -65,21 +69,21 @@ vrrp: null
 {% endif %}
 proxy:
     - {interface: eth1.0, role: nsgbootstrap, enabled: false, firewallports: [], settings: {cport: "", bport: "", ccert: ""}}
-    - {interface: eth1.0, role: vsdconfig, enabled: {{ vsdconfig_enable }}, firewallports: ['8443', '9443', '5222', '61616'], settings: {uiport: '8443', apiport: '9443', xmppport: '5222', jmsport: '61616', geo: false}}
+    - {interface: eth1.0, role: vsdconfig, enabled: {{ vsdconfig_enable }}, firewallports: ['8443', '9443', '5222', '61616'], settings: {uiport: '8443', apiport: '9443', xmppport: '5222', jmsport: '61616', geo: false,  certport: '7443' }}
     - {interface: eth1.0, role: nsgstats, enabled: false, firewallports: [], settings: {cport: "", ccert: ""}}
     - {interface: eth1.0, role: webfilter, enabled: false, firewallports: [], settings: {protobufport: "", downloadport: "", ccert: ""}}
-    - {interface: eth1.0, role: elasticsearch, enabled: {{ elasticsearch_enable }}, firewallports: ['9200'], settings: {elasticsearch: '9200'}}
+    - {interface: eth1.0, role: elasticsearch, enabled: {{ elasticsearch_enable }}, firewallports: ['9200', '6200'], settings: {elasticsearch: '9200', httpsEnabled: yes, httpsPort: '6200', ccert: "proxy", httpEnabled: yes}}
     - {interface: eth1.0, role: sdWanPortal, enabled: false, firewallports: [], settings: {httpPort: "", httpsPort: "", ccert: ""}}
     - {interface: eth1.0, role: fileserver, enabled: false, firewallports: [], settings: {port: "", ccert: ""}}
 {% if external_interfaces is defined %}
 {% for interface in external_interfaces %}
-    - {interface: eth2.{{ interface.vlan }}, role: nsgbootstrap, enabled: true, firewallports: ['11443', '12443'], settings: {cport: '11443', bport: '12443', ccert: "proxy", precert: "proxy", postcert: "proxy" }}
-    - {interface: eth2.{{ interface.vlan }}, role: vsdconfig, enabled: {{ vsdconfig_enable }}, firewallports: ['8443', '9443', "", ""], settings: {uiport: '8443', apiport: '9443', xmppport: "", jmsport: "", geo: false}}
-    - {interface: eth2.{{ interface.vlan }}, role: nsgstats, enabled: true, firewallports: ['39090'], settings: {cport: '39090', ccert: "proxy"}}
-    - {interface: eth2.{{ interface.vlan }}, role: webfilter, enabled: false, firewallports: [], settings: {protobufport: "", downloadport: "", ccert: ""}}
-    - {interface: eth2.{{ interface.vlan }}, role: elasticsearch, enabled: {{ elasticsearch_enable }}, firewallports: ['9200'], settings: {elasticsearch: '9200'}}
-    - {interface: eth2.{{ interface.vlan }}, role: sdWanPortal, enabled: false, firewallports: [], settings: {httpPort: "", httpsPort: "", ccert: ""}}
-    - {interface: eth2.{{ interface.vlan }}, role: fileserver, enabled: false, firewallports: [], settings: {port: "", ccert: ""}}
+    - {interface: {{ interface.dev }}.{{ interface.vlan }}, role: nsgbootstrap, enabled: true, firewallports: ['11443', '12443'], settings: {cport: '11443', bport: '12443', ccert: "proxy", precert: "proxy", postcert: "proxy" }}
+    - {interface: {{ interface.dev }}.{{ interface.vlan }}, role: vsdconfig, enabled: {{ vsdconfig_enable }}, firewallports: ['8443', '9443', "", ""], settings: {uiport: '8443', apiport: '9443', xmppport: "", jmsport: "", geo: false,  certport: '7443' }}
+    - {interface: {{ interface.dev }}.{{ interface.vlan }}, role: nsgstats, enabled: true, firewallports: ['39090'], settings: {cport: '39090', ccert: "proxy"}}
+    - {interface: {{ interface.dev }}.{{ interface.vlan }}, role: webfilter, enabled: false, firewallports: [], settings: {protobufport: "", downloadport: "", ccert: ""}}
+    - {interface: {{ interface.dev }}.{{ interface.vlan }}, role: elasticsearch, enabled: {{ elasticsearch_enable }}, firewallports: ['9200', '6200'], settings: {elasticsearch: '9200', httpsEnabled: yes, httpsPort: '6200', ccert: "proxy", httpEnabled: yes}}
+    - {interface: {{ interface.dev }}.{{ interface.vlan }}, role: sdWanPortal, enabled: false, firewallports: [], settings: {httpPort: "", httpsPort: "", ccert: ""}}
+    - {interface: {{ interface.dev }}.{{ interface.vlan }}, role: fileserver, enabled: false, firewallports: [], settings: {port: "", ccert: ""}}
 {% endfor %}
 {% endif %}
 {% if groups['portals'] | default([]) %}

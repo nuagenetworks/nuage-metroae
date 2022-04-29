@@ -14,7 +14,6 @@
       include_role:
         name: common
         tasks_from: vsd-generate-transfer-certificates
-      when: not skip_vsd_installed_check
       vars:
         certificate_password: "{{ nuh_default_password }}"
         certificate_username: "proxy"
@@ -25,34 +24,31 @@
         additional_parameters:  -d {{ item.external_fqdn }}
       with_items:
         - "{{ external_interfaces }}"
-
-    - name: Copy proxy certificates over to secondary nuh
-      synchronize:
-        src: "{{ item }}"
-        dest: "{{ item }}"
-        mode: pull
-        private_key: "/root/.ssh/proxypeer"
-      delegate_to: "{{ groups['nuhs'][1] }}"
-      run_once: true
-      when: groups['nuhs'] | length > 1
-      with_items:
-        - "/opt/proxy/data/certs/proxy-CA.pem"
-        - "/opt/proxy/data/certs/proxyCert.pem"
-        - "/opt/proxy/data/certs/proxy-Key.pem"
-        - "/opt/proxy/data/certs/proxy.pem"
+      when: 
+        - not skip_vsd_installed_check
 
     - block:
+      - name: Get all registered users on VSD
+        command: /opt/ejabberd/bin/ejabberdctl registered_users {{ vsd_fqdn }}
+        run_once: true
+        no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
+        register: notification_app_check
+      
       - name: Create notification application user on vsd
         command: /opt/ejabberd/bin/ejabberdctl register {{ notification_app1.username }} {{ vsd_fqdn }} {{ notification_app1.password }}
         run_once: true
         no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
-        when: notification_app1 is defined
+        when: 
+          - notification_app1 is defined
+          - notification_app1.username not in notification_app_check.stdout
 
       - name: Create notification application user on vsd
         command: /opt/ejabberd/bin/ejabberdctl register {{ notification_app2.username }} {{ vsd_fqdn }} {{ notification_app2.password }}
         run_once: true
         no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
-        when: notification_app2 is defined
+        when: 
+          - notification_app2 is defined
+          - notification_app2.username not in notification_app_check.stdout
 
       delegate_to: "{{ vsd_hostname_list[0] }}"
       remote_user: "{{ custom_username | default(vsd_default_username) }}"
@@ -82,6 +78,9 @@
         command: ansible-playbook configure.yml
         args:
           chdir: /opt/proxy/bin/ansible
+        register: script_output
+        retries: 2
+        until: script_output.rc == 0
 
       - name: Reset haproxy Service
         lineinfile:
@@ -101,6 +100,6 @@
       when:
         - internal_ip is defined
 
-    when: inventory_hostname == groups['nuhs'][0]
+    when: inventory_hostname == "{{ groups['nuh_first_node'][0] }}"
 
   remote_user: "{{ nuh_default_username }}"
