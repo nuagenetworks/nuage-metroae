@@ -1,9 +1,19 @@
 - include_role:
     name: check-skip-target-server
   vars:
-    - target_server_list: ["kvm"]
+    - target_server_list: ["kvm","openstack"]
 
 - include_role:
     name: check-node-reachability
 
 - import_tasks: kvm.yml
+  when: target_server_type is match("kvm")
+  tags:
+    - vstat
+    - vstat-predeploy
+
+- import_tasks: openstack.yml
+  when: target_server_type is match("openstack")
+  tags:
+    - vstat
+    - vstat-predeploy
