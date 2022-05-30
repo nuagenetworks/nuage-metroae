@@ -2,14 +2,15 @@
 
 ## Release info
 
-* MetroAE Version 5.1.0
+* MetroAE Version 5.2.0
 * Nuage Release Alignment
 * Date of Release TBD
 
 ## Release Contents
 
 ### Feature Enhancements
-
+* Deploy SD-WAN Portal on OpenStack (METROAE-462)
+* Support GRCN SD-WAN portal install for Openstack (METROAE-595)
 
 ### Resolved Issues
 * Included data nodes in NUH (METROAE-648)
