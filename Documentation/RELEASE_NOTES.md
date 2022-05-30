@@ -9,8 +9,11 @@
 ## Release Contents
 
 ### Feature Enhancements
+* Deploy SD-WAN Portal on OpenStack (METROAE-462)
+* Support GRCN SD-WAN portal install for Openstack (METROAE-595)
 
 ### Resolved Issues
+
 
 ## Test Matrix
 
