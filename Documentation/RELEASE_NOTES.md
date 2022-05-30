@@ -13,7 +13,7 @@
 * Support GRCN SD-WAN portal install for Openstack (METROAE-595)
 
 ### Resolved Issues
-
+* Included data nodes in NUH (METROAE-648)
 
 ## Test Matrix
 
