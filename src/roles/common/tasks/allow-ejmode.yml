@@ -17,7 +17,13 @@
     delegate_to: "{{ vsd }}"
     register: tls_mode_status
     when: xmpp_tls
-    
+
+  - name: Validate the tls mode status
+    assert:
+      #that: "{{ xmpp_tls_mode }} in tls_mode_status.stdout"
+      that: "tls_mode_status | regex_search('{{ xmpp_tls_mode }}')"
+      msg: "Tls mode failed to update the expected mode {{ xmpp_tls_mode }}"
+
   remote_user: "{{ hostvars[vsd].vsd_custom_username | default(vsd_custom_username | default(vsd_default_username)) }}"
   become: "{{ 'no' if hostvars[vsd].vsd_custom_username | default(vsd_custom_username | default(vsd_default_username)) == 'root' else 'yes' }}"
   vars:
