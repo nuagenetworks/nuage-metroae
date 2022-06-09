@@ -14,9 +14,27 @@ parameters:
     type: string
   vsc_control_subnet:
     type: string
+  vsc_external_network1:
+    type: string
+  vsc_external_subnet1:
+    type: string
+  vsc_external_network2:
+    type: string
+  vsc_external_subnet2:
+    type: string
+  vsc_external_network3:
+    type: string
+  vsc_external_subnet3:
+    type: string
   mgmt_ip:
     type: string
   control_ip:
+    type: string
+  external_ip1:
+    type: string
+  external_ip2:
+    type: string
+  external_ip3:
     type: string
 resources:
   mgmt_port:
@@ -43,6 +61,58 @@ resources:
       security_groups: ["{{ openstack_control_port_security_groups | join('", "') }}"]
 {% endif %}
 
+  external_port1:
+    type: OS::Neutron::Port
+    properties:
+      network_id: {get_param: vsc_exetrnal_network1}
+      fixed_ips: [{"subnet": {get_param: vsc_external_subnet1}, "ip_address": {get_param: external_ip1}}]
+{% if openstack_external_port1_name is defined %}
+      name: {{ openstack_external_port1_name }}
+{% endif %}
+{% if openstack_external_port1_security_groups is defined %}
+      security_groups: ["{{ openstack_external_port1_security_groups | join('", "') }}"]
+{% endif %}
+
+  external_port2:
+    type: OS::Neutron::Port
+    properties:
+      network_id: {get_param: vsc_exetrnal_network2}
+      fixed_ips: [{"subnet": {get_param: vsc_external_subnet2}, "ip_address": {get_param: external_ip2}}]
+{% if openstack_external_port2_name is defined %}
+      name: {{ openstack_external_port2_name }}
+{% endif %}
+{% if openstack_external_port2_security_groups is defined %}
+      security_groups: ["{{ openstack_external_port2_security_groups | join('", "') }}"]
+{% endif %}
+
+  external_port3:
+    type: OS::Neutron::Port
+    properties:
+      network_id: {get_param: vsc_exetrnal_network3}
+      fixed_ips: [{"subnet": {get_param: vsc_external_subnet3}, "ip_address": {get_param: external_ip3}}]
+{% if openstack_external_port3_name is defined %}
+      name: {{ openstack_external_port3_name }}
+{% endif %}
+{% if openstack_external_port3_security_groups is defined %}
+      security_groups: ["{{ openstack_external_port3_security_groups | join('", "') }}"]
+{% endif %}
+
+  my_trunk:
+    type: OS::Neutron::Trunk
+    properties:
+      name: My_Trunk
+      parent_port: {get_resource: control_port}
+      subports:
+        - {port: {get_resource: external_port1},
+          segmentation_type: vlan,
+          segmentation_id: 10}
+        - {port: {get_resource: external_port2},
+          segmentation_type: vlan,
+          segmentation_id: 20}
+        - {port: {get_resource: external_port3},
+          segmentation_type: vlan,
+          segmentation_id: 30}
+        
   mycompute:
     type: OS::Nova::Server
     properties:
@@ -58,6 +128,7 @@ resources:
       networks:
         - port: {get_resource: mgmt_port}
         - port: {get_resource: control_port}
+        - port: {get_attr: [my_trunk, parent_port]}
 
 outputs:
   vsc_mgmt_ip:
