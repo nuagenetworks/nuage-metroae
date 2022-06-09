@@ -14,6 +14,7 @@
 
 ### Resolved Issues
 * Included data nodes in NUH (METROAE-648)
+* Run stats collection script in additional 3 data nodes (METROAE-649)
 
 ## Test Matrix
 
