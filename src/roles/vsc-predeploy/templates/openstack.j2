@@ -101,8 +101,8 @@ resources:
     type: OS::Neutron::Trunk
     properties:
       name: My_Trunk
-      parent_port: {get_resource: control_port}
-      subports:
+      port: {get_resource: control_port}
+      sub_ports:
         - {port: {get_resource: external_port1},
           segmentation_type: vlan,
           segmentation_id: 10}
@@ -115,6 +115,7 @@ resources:
         
   mycompute:
     type: OS::Nova::Server
+    depends_on: my_trunk
     properties:
 {% if openstack_availability_zone is defined %}
       availability_zone: {{ openstack_availability_zone }}
@@ -128,10 +129,10 @@ resources:
       networks:
         - port: {get_resource: mgmt_port}
         - port: {get_resource: control_port}
-        - port: {get_resource: external_port1}
-        - port: {get_resource: external_port2}
-        - port: {get_resource: external_port3}
-        - port: {get_attr: [my_trunk, parent_port]}
+#        - port: {get_resource: external_port1}
+#        - port: {get_resource: external_port2}
+#        - port: {get_resource: external_port3}
+#        - port: {get_attr: [my_trunk, port_id]}
 
 outputs:
   vsc_mgmt_ip:
