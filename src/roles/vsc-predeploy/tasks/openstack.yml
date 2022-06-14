@@ -52,6 +52,30 @@
         vsc_management_subnet: "{{ openstack_mgmt_subnet | default('NONE') }}"
         vsc_control_network: "{{ openstack_control_network }}"
         vsc_control_subnet: "{{ openstack_control_subnet | default('NONE') }}"
+        mgmt_ip: "{{ mgmt_ip }}"
+        control_ip: "{{ control_ip | default('NONE') }}"
+    delegate_to: localhost
+    when: not vsc_trunking
+
+  - name: Creating VSC stack
+    register: create_stack
+    os_stack:
+      name: "{{ vm_name }}"
+      template: "{{ vsc_heat_template }}"
+      client_cert: null
+      client_key: null
+      cacert: "{{ openstack_cacert }}"
+      validate_certs: false
+      auth:
+        "{{ openstack_auth }}"
+      parameters:
+        vm_name: "{{ vm_name }}"
+        vsc_image: "{{ openstack_image }}"
+        vsc_flavor: "{{ openstack_flavor }}"
+        vsc_management_network: "{{ openstack_mgmt_network }}"
+        vsc_management_subnet: "{{ openstack_mgmt_subnet | default('NONE') }}"
+        vsc_control_network: "{{ openstack_control_network }}"
+        vsc_control_subnet: "{{ openstack_control_subnet | default('NONE') }}"
         vsc_external_network1: "{{ openstack_external_network1 }}"
         vsc_external_subnet1: "{{ openstack_external_subnet1 | default('NONE') }}"
         vsc_external_network2: "{{ openstack_external_network2 }}"
@@ -64,6 +88,7 @@
         external_ip2: "{{ external_ip2 | default('NONE') }}"
         external_ip3: "{{ external_ip3 | default('NONE') }}"
     delegate_to: localhost
+    when: vsc_trunking
 
   - debug: var=create_stack['stack']['outputs'][0]['output_value']
 

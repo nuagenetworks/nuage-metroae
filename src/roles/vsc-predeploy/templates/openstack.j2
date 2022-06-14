@@ -14,6 +14,7 @@ parameters:
     type: string
   vsc_control_subnet:
     type: string
+{% if vsc_trunking %}
   vsc_external_network1:
     type: string
   vsc_external_subnet1:
@@ -26,16 +27,19 @@ parameters:
     type: string
   vsc_external_subnet3:
     type: string
+{% endif %}
   mgmt_ip:
     type: string
   control_ip:
     type: string
+{% if vsc_trunking %}
   external_ip1:
     type: string
   external_ip2:
     type: string
   external_ip3:
     type: string
+{% endif %}
 resources:
   mgmt_port:
     type: OS::Neutron::Port
@@ -60,7 +64,7 @@ resources:
 {% if openstack_control_port_security_groups is defined %}
       security_groups: ["{{ openstack_control_port_security_groups | join('", "') }}"]
 {% endif %}
-
+{% if vsc_trunking %}
   external_port1:
     type: OS::Neutron::Port
     properties:
@@ -112,10 +116,12 @@ resources:
         - {port: {get_resource: external_port3},
           segmentation_type: vlan,
           segmentation_id: 30}
-        
+{% endif %}        
   mycompute:
     type: OS::Nova::Server
+{% if vsc_trunking %}
     depends_on: my_trunk
+{% endif %}
     properties:
 {% if openstack_availability_zone is defined %}
       availability_zone: {{ openstack_availability_zone }}
@@ -129,10 +135,6 @@ resources:
       networks:
         - port: {get_resource: mgmt_port}
         - port: {get_resource: control_port}
-#        - port: {get_resource: external_port1}
-#        - port: {get_resource: external_port2}
-#        - port: {get_resource: external_port3}
-#        - port: {get_attr: [my_trunk, port_id]}
 
 outputs:
   vsc_mgmt_ip:
