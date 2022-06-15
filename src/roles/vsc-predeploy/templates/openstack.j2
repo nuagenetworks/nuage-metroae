@@ -15,6 +15,8 @@ parameters:
   vsc_control_subnet:
     type: string
 {% if vsc_trunking %}
+  trunk_name:
+    type: string
   vsc_external_network1:
     type: string
   vsc_external_subnet1:
@@ -39,6 +41,12 @@ parameters:
     type: string
   external_ip3:
     type: string
+  segmentation_id1:
+    type: number
+  segmentation_id2:
+    type: number
+  segmentation_id3:
+    type: number
 {% endif %}
 resources:
   mgmt_port:
@@ -104,18 +112,18 @@ resources:
   my_trunk:
     type: OS::Neutron::Trunk
     properties:
-      name: My_Trunk
+      name: {get_param: trunk_name}
       port: {get_resource: control_port}
       sub_ports:
         - {port: {get_resource: external_port1},
           segmentation_type: vlan,
-          segmentation_id: 10}
+          segmentation_id: {get_param: segmentation_id1}}
         - {port: {get_resource: external_port2},
           segmentation_type: vlan,
-          segmentation_id: 20}
+          segmentation_id: {get_param: segmentation_id2}}
         - {port: {get_resource: external_port3},
           segmentation_type: vlan,
-          segmentation_id: 30}
+          segmentation_id: {get_param: segmentation_id3}}
 {% endif %}        
   mycompute:
     type: OS::Nova::Server
