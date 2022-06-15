@@ -12,6 +12,12 @@
 
 ### Resolved Issues
 * Improve the logging and status check for tls mode (METROAE-646)
+* Deploy SD-WAN Portal on OpenStack (METROAE-462)
+* Support GRCN SD-WAN portal install for Openstack (METROAE-595)
+
+### Resolved Issues
+* Included data nodes in NUH (METROAE-648)
+* Run stats collection script in additional 3 data nodes (METROAE-649)
 
 ## Test Matrix
 

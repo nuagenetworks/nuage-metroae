@@ -1,0 +1,89 @@
+---
+# TODO:
+# Check for existing stack or vms
+- name: Display if skipping Portal predeploy
+  debug:
+    msg:
+      - "******************************************************"
+      - "Skipping Portal predeploy because it is already present"
+      - "******************************************************"
+  when: node_present
+
+- block:
+
+  - name: Set local variable with upgrade status
+    set_fact:
+      upgrade: "{{ nuage_upgrade|default('False') }}"
+
+  - block:
+    - name: Verify that upgrade_vmname is defined if this is an upgrade
+      assert:
+        that: "upgrade_vmname is defined"
+        msg: "upgrade_vmname is required for upgrade"
+    - name: Set local variable with upgrade_vmname
+      set_fact:
+        vm_name: "{{ upgrade_vmname }}"
+    when: upgrade
+
+  - block:
+    - name: Set local variable with vmname
+      set_fact:
+        vm_name: "{{ vmname }}"
+    when: not upgrade
+
+  - name: Get the public key for the current user
+    command: cat "{{ user_ssh_pub_key }}"
+    changed_when: False
+    delegate_to: localhost
+    register: current_user_ssh_key
+
+  - name: Set local temp directory name
+    set_fact:
+      temp_dir: "./ansible-heat-{{ inventory_hostname }}"
+
+  - name: Create local temp directory
+    file:
+      path: "{{ temp_dir }}"
+      state: directory
+    delegate_to: localhost
+
+  - name: Create heat template
+    template:
+      src: openstack.j2
+      dest: "{{ temp_dir }}/openstack.yml"
+    delegate_to: localhost
+
+  - name: Set heat template location
+    set_fact:
+      portal_heat_template: "{{ temp_dir }}/openstack.yml"
+
+  - name: Creating PORTAL stack
+    register: create_stack
+    os_stack:
+      name: "{{ vm_name }}"
+      template: "{{ portal_heat_template }}"
+      client_cert: null
+      client_key: null
+      cacert: "{{ openstack_cacert }}"
+      validate_certs: false
+      auth:
+        "{{ openstack_auth }}"
+      parameters:
+        vm_name: "{{ vm_name }}"
+        portal_image: "{{ openstack_image }}"
+        portal_flavor: "{{ openstack_flavor }}"
+        portal_network: "{{ openstack_network }}"
+        portal_subnet: "{{ openstack_subnet | default('NONE') }}"
+        mgmt_ip: "{{ mgmt_ip | default('NONE') }}"
+        ssh_key: "{{ current_user_ssh_key.stdout }}"
+    delegate_to: localhost
+
+  - debug: var=create_stack['stack']['outputs'][0]['output_value']
+
+  - name: Remove local temp folder
+    file:
+      path: "{{ temp_dir }}"
+      state: absent
+    delegate_to: localhost
+
+  when: not node_present
