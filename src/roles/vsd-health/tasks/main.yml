@@ -532,6 +532,20 @@
     delegate_to: localhost
     when: monitPwd is defined
 
+- block:
+
+  - name: Verify the CPU Usages
+    command: "top -b -n 1"
+    register: cpu_usage
+
+  - name: Write the CPU usage to report file
+    nuage_append: filename="{{ report_path }}" text="-----Results of CPU usgage check-----\n"
+    delegate_to: localhost
+
+  - name: Write CPU Usages result
+    nuage_append: filename="{{ report_path }}" text="{{ cpu_usage.stdout_lines[2].split()[3]} }} System CPU Usage \n"
+    delegate_to: localhost
+
   remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
   no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
   become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
