@@ -3,12 +3,15 @@
 ## Release info
 
 * MetroAE Version 5.2.0
-* Nuage Release Alignment
-* Date of Release TBD
+* Nuage Release Alignment 20.10
+* Date of Release 17-June-2022
 
 ## Release Contents
 
 ### Feature Enhancements
+
+### Resolved Issues
+* Improve the logging and status check for tls mode (METROAE-646)
 * Deploy SD-WAN Portal on OpenStack (METROAE-462)
 * Support GRCN SD-WAN portal install for Openstack (METROAE-595)
 * Support trunking between vsc control port and its underlay ports in OpenStack (METROAE-653)
