@@ -19,6 +19,7 @@
 ### Resolved Issues
 * Included data nodes in NUH (METROAE-648)
 * Run stats collection script in additional 3 data nodes (METROAE-649)
+* Add ability to deploy Portal without GRCN (METROAE-654)
 
 ## Test Matrix
 
