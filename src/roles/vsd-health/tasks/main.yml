@@ -324,7 +324,7 @@
     retries: 15
     delay: 60
     until: health_status.status in [200,503] and health_status.json[0].status != 'BAD'
-    ignore_errors: yes
+    ignore_errors: True
 
   - name: Check the HTTP response of the health status query
     assert:
@@ -534,16 +534,16 @@
 
 - block:
 
-  - name: Verify the CPU Usages
-    command: "top -b -n 1"
+  - name: Verify the Memory and CPU Usages
+    command: "monit status '{{ inventory_hostname }}' "
     register: cpu_usage
 
-  - name: Write the CPU usage to report file
-    nuage_append: filename="{{ report_path }}" text="-----Results of CPU usgage check-----\n"
+  - name: Write the Memory and CPU usage to report file
+    nuage_append: filename="{{ report_path }}" text="-----Results of Memory & CPU usgage check-----\n"
     delegate_to: localhost
 
-  - name: Write CPU Usages result
-    nuage_append: filename="{{ report_path }}" text="{{ cpu_usage.stdout_lines[2].split()[3] }} System CPU Usage \n"
+  - name: Write Memory and  CPU Usages result
+    nuage_append: filename="{{ report_path }}" text="{{ inventory_hostname }} Memory & CPU Usages {{ cpu_usage.stdout_lines | dict2items | rejectattr('key', "eq", "cmd") | list | items2dict | to_nice_json }}\n"
     delegate_to: localhost
 
   remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
