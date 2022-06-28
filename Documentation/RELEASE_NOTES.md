@@ -9,8 +9,6 @@
 ## Release Contents
 
 ### Feature Enhancements
-
-### Resolved Issues
 * Improve the logging and status check for tls mode (METROAE-646)
 * Deploy SD-WAN Portal on OpenStack (METROAE-462)
 * Support GRCN SD-WAN portal install for Openstack (METROAE-595)
