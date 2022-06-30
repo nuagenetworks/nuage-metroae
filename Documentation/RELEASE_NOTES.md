@@ -9,12 +9,11 @@
 ## Release Contents
 
 ### Feature Enhancements
-
-### Resolved Issues
 * Improve the logging and status check for tls mode (METROAE-646)
 * Deploy SD-WAN Portal on OpenStack (METROAE-462)
 * Support GRCN SD-WAN portal install for Openstack (METROAE-595)
 * Support trunking between vsc control port and its underlay ports in OpenStack (METROAE-653)
+* Provide option to create custom password for vstat root user (METROAE-650)
 
 ### Resolved Issues
 * Included data nodes in NUH (METROAE-648)
