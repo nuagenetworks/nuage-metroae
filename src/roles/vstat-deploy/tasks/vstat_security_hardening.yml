@@ -99,4 +99,18 @@
       - vstat_custom_password is defined
       - ssh_custom_user.rc != 0
 
+  - block:
+  
+    - name: Create a custom SSH pass for root user
+      command: openssl passwd -1 "{{ vstat_custom_password }}"
+      register: changed_root_pwd
+
+    - name: Update Root user's Password
+      user:
+        name: "{{ vstat_default_username }}"
+        update_password: always
+        password: "{{ changed_root_pwd.stdout }}"
+
+    when: vstat_custom_password is defined and vstat_custom_username is not defined
+
   remote_user: "{{ vstat_default_username }}"
