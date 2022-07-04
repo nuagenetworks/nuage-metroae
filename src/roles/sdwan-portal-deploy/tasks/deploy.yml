@@ -58,7 +58,7 @@
       user: root
       state: present
       key: "{{ lookup('file', '/tmp/id_rsa.pub') }}"
-    when: inventory_hostname == grcn1.hostname
+    when: grcn1 is defined and inventory_hostname == grcn1.hostname
   when:
     - portal_sa_or_ha is match('ha')
 
@@ -69,7 +69,7 @@
   - name: Configure Nuage SD-WAN Customer Portal for Geo Redundancy
     import_tasks : gr.yml
     
-  when: portal_sa_or_ha is match('ha') and inventory_hostname == grcn1.hostname
+  when: portal_sa_or_ha is match('ha') and inventory_hostname == grcn1.hostname and grcn1 is defined
 
 - name: Execute the Portal configuration script
   command: docker run -ti --rm -v /var/run/docker.sock:/docker.sock -v /opt/vnsportal:/mnt:z nuage/vnsportal-installer:{{ portal_version }} --skip
@@ -78,7 +78,9 @@
 - block:
   - name: Apply the SD-WAN Portal license
     import_tasks: sdwan_portal_license.yml
-    when: portal_license_file is defined and not inventory_hostname == grcn1.hostname
+    when: 
+      - portal_license_file is defined
+      - inventory_hostname == portal1.hostname or inventory_hostname == portal2.hostname or inventory_hostname == portal3.hostname 
 
   - name: Start the Portal Cluster
     import_tasks: sdwan_portal_ha_start.yml
@@ -90,4 +92,4 @@
 
   - name: Start the GRCN
     import_tasks: grcn_start.yml
-    when: portal_sa_or_ha is match('ha') and inventory_hostname == grcn1.hostname
+    when: portal_sa_or_ha is match('ha') and inventory_hostname == grcn1.hostname and grcn1 is defined

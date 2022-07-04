@@ -324,7 +324,7 @@
     retries: 15
     delay: 60
     until: health_status.status in [200,503] and health_status.json[0].status != 'BAD'
-    ignore_errors: yes
+    ignore_errors: True
 
   - name: Check the HTTP response of the health status query
     assert:
@@ -532,6 +532,20 @@
     delegate_to: localhost
     when: monitPwd is defined
 
+- block:
+
+  - name: Verify the Memory and CPU Usages
+    command: "monit status '{{ inventory_hostname }}' "
+    register: memory_cpu_usage
+
+  - name: Write the Memory and CPU usage to report file
+    nuage_append: filename="{{ report_path }}" text="-----Results of Memory & CPU usgage check-----\n"
+    delegate_to: localhost
+
+  - name: Write Memory and  CPU Usages result
+    nuage_append: filename="{{ report_path }}" text="{{ inventory_hostname }} Memory & CPU Usages {{ memory_cpu_usage | dict2items | rejectattr('key', "eq", "cmd") | list | items2dict | to_nice_json }}\n"
+    delegate_to: localhost
+
   remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
   no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
   become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
@@ -539,3 +553,4 @@
     ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"
 
 - import_tasks: report_end.yml
+

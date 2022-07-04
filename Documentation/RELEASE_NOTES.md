@@ -2,36 +2,24 @@
 
 ## Release info
 
-* MetroAE Version 5.1.0
-* Nuage Release Alignment 20.10
-* Date of Release 29-April-2022
+* MetroAE Version 5.2.0
+* Nuage Release Alignment 20.10.R1
+* Date of Release 04-July-2022
 
 ## Release Contents
 
 ### Feature Enhancements
-* Add Geo-Redundant Control Node (GRCN) on SD-WAN Portal (METROAE-555)
-* Added ability to list installed plugins (METROAE-366)
-* Added support for volume for ES nodes in OpenStack (METROAE-460)
-* Added support for addition of additional ES data nodes to existing stats-out deployment (METROAE-440)
-* Added support for NUH deployment in OpenStack environment (METROAE-463)
-* Add support for container-relative paths. More information can be found in [CHANGES_IN_V5.md](/Documentation/CHANGES_IN_V5.md) (METROAE-610)
-* Added support for changing root user's password (METROAE-593)
+* Improve the logging and status check for tls mode (METROAE-646)
+* Deploy SD-WAN Portal on OpenStack (METROAE-462)
+* Support GRCN SD-WAN portal install for Openstack (METROAE-595)
+* Support trunking between vsc control port and its underlay ports in OpenStack (METROAE-653)
+* Provide option to create custom password for vstat root user (METROAE-650)
+* Added Memory and CPU Usage check of VSD health (METROAE-645) 
 
 ### Resolved Issues
-* Fix the error caused by multiple installation of branding on VSD (METROAE-604)
-* MetroAE logging enhancements (METROAE-475)
-* Delete the files leftover by metro on VSD's /tmp directory (METROAE-609)
-* Added the VSPCA field in the installer settings for sdwan portal (METROAE-550)
-* Allow for a custom config file during VSC Upgrade (METROAE-485)
-* NUH changes for stats-out (METROAE-620)
-* Updated deprecated settings in ansible.cfg (METROAE-602)
-* Fix NSGv deployment when bootstrap method is None
-* Removed the option to validate environment in Wizard (METROAE-635)
-* Updated MetroAE to use External Interface Name when building the external_interface list in the nuh template (METROAE-632)
-* Fixed custom username and password for VSC in installation (METROAE-531)
-* NUH stats out sets stats out proxy as elasticsearch proxy (METROAE-599)
-* Fixed set tls mode require optionally (METROAE-536) 
-* Added support for multiple VLANs in NUH config (METROAE-513)
+* Included data nodes in NUH (METROAE-648)
+* Run stats collection script in additional 3 data nodes (METROAE-649)
+* Add ability to deploy Portal without GRCN (METROAE-654)
 
 ## Test Matrix
 
