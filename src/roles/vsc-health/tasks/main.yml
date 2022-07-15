@@ -351,8 +351,14 @@
   - name: Write System CPU  usage separator to report file
     nuage_append: filename="{{ report_path }}" text="-----System CPU Usage-----\n"
 
+  - name: Print 'show system cpu' when verbosity >= 1
+    debug: var=show_system_cpu verbosity=1
+
+  - name: Create local variable with syetem cpu in json
+    set_fact: system_cpu_json="{{ show_system_cpu.stdout[0]|system_cpu_detail_to_json }}"
+
   - name: Write System CPU Usage to report
-    nuage_append: filename="{{ report_path }}" text="{{ inventory_hostname }} System CPU Usages  {{ show_system_cpu.stdout_lines|to_nice_json }}\n"
+    nuage_append: filename="{{ report_path }}" text="{{ inventory_hostname }} System CPU Usages \n {{ system_cpu_json }}\n"
 
   - meta: reset_connection
 
@@ -366,8 +372,14 @@
   - name: Write System Memory usage separator to report file
     nuage_append: filename="{{ report_path }}" text="-----System Memory Pools Usage-----\n"
 
+  - name: Print 'show system memory-pools' when verbosity >= 1
+    debug: var=show_system_memory_pools verbosity=1
+
+  - name: Create local variable with memory pool in json
+    set_fact: memory_pool_json="{{ show_system_memory_pools.stdout[0]|memory_pool_detail_to_json }}"
+
   - name: Write System Memory Usage to report
-    nuage_append: filename="{{ report_path }}" text="{{ inventory_hostname }}  System Memory {{ show_system_memory_pools.stdout_lines|to_nice_json }}\n"
+    nuage_append: filename="{{ report_path }}" text="{{ inventory_hostname }}  System Memory {{ memory_pool_json|to_nice_json }}\n"
 
   - import_tasks: report_end.yml
 
