@@ -513,8 +513,8 @@ def memory_pool_detail_to_json(string):
     dict[Current_Total_Size] = string_name_value_helper(Current_Total_Size, ':', string)
     dict[Total_In_Use] = string_name_value_helper(Total_In_Use, ':', string)
     dict[Available_Memory] = string_name_value_helper(Available_Memory, ':', string)
-
     return json.dumps(dict)
+
 
 def system_cpu_detail_to_json(string):
     ''' Given a string representation of the output of "show system cpu"
