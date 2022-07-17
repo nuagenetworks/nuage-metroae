@@ -549,5 +549,6 @@ class FilterModule(object):
             'vsc_system_connections_to_json': vsc_system_connections_to_json,
             'vsd_detail_to_json': vsd_detail_to_json,
             'vsc_router_interfaces_to_json': vsc_router_interfaces_to_json,
-            'memory_pool_detail_to_json': memory_pool_detail_to_json
+            'memory_pool_detail_to_json': memory_pool_detail_to_json,
+            'system_cpu_detail_to_json': system_cpu_detail_to_json
         }
