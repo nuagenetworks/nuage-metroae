@@ -543,7 +543,8 @@
     delegate_to: localhost
 
   - name: Write Memory and  CPU Usages result
-    nuage_append: filename="{{ report_path }}" text="{{ inventory_hostname }} Memory & CPU Usages {{ memory_cpu_usage | dict2items | rejectattr('key', "eq", "cmd") | list | items2dict | to_nice_json }}\n"
+    nuage_append: filename="{{ report_path }}" text="{{ item }}\n"
+    with_items: "{{ memory_cpu_usage.stdout_lines[2:9] }}"
     delegate_to: localhost
 
   remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
@@ -553,4 +554,3 @@
     ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"
 
 - import_tasks: report_end.yml
-
