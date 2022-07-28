@@ -1,8 +1,22 @@
 - block:
 
-  - name: Define data only VSTATs for cluster
-    set_fact:
-      data_group_params: " -d {{ groups['data_vstats'][0] }},{{ groups['data_vstats'][1] }},{{ groups['data_vstats'][2] }}"
+  - block: 
+
+    - name: Define data only VSTATs for cluster
+      set_fact:
+        data_group_params: " -d {{ groups['data_vstats'][0] }},{{ groups['data_vstats'][1] }},{{ groups['data_vstats'][2] }}"
+      when: groups['add_data_vstats'] is defined is not defined
+
+    - name: Define data only VSTATs for cluster
+      set_fact:
+        data_group_params: " -d {{ groups['data_vstats'][0] }},{{ groups['data_vstats'][1] }},{{ groups['data_vstats'][2] }}"
+      when: groups['add_data_vstats'] is defined is defined and add_extra_3_data_nodes
+
+    - name: Define data only VSTATs for cluster
+      set_fact:
+        data_group_params: " -d {{ groups['data_vstats'][0] }},{{ groups['data_vstats'][1] }},{{ groups['data_vstats'][2],groups['add_data_vstats'][0] }},{{ groups['add_data_vstats'][1] }},{{ groups['add_data_vstats'][2] }}"
+      when: groups['add_data_vstats'] is defined is defined and not add_extra_3_data_nodes
+    
     when: stats_out | default(false)
 
   - name: Execute VSTAT clustered script
