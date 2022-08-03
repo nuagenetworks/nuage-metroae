@@ -1,22 +1,8 @@
-- block:
+- block: 
 
-  - block: 
-
-    - name: Define data only VSTATs for cluster
-      set_fact:
-        data_group_params: " -d {{ groups['data_vstats'][0] }},{{ groups['data_vstats'][1] }},{{ groups['data_vstats'][2] }}"
-      when: groups['add_data_vstats'] is not defined
-
-    # - name: Define data only VSTATs for cluster
-    #   set_fact:
-    #     data_group_params: " -d {{ groups['data_vstats'][0] }},{{ groups['data_vstats'][1] }},{{ groups['data_vstats'][2] }}"
-    #   when: groups['add_data_vstats'] is defined is defined and add_extra_3_data_nodes
-
-    # - name: Define data only VSTATs for cluster
-    #   set_fact:
-    #     data_group_params: " -d {{ groups['data_vstats'][0] }},{{ groups['data_vstats'][1] }},{{ groups['data_vstats'][2],groups['add_data_vstats'][0] }},{{ groups['add_data_vstats'][1] }},{{ groups['add_data_vstats'][2] }}"
-    #   when: groups['add_data_vstats'] is defined is defined and not add_extra_3_data_nodes
-    
+  - name: Define data only VSTATs for cluster
+    set_fact:
+      data_group_params: " -d {{ groups['data_vstats'][0] }},{{ groups['data_vstats'][1] }},{{ groups['data_vstats'][2] }}"
     when: stats_out | default(false)
 
   - name: Execute VSTAT clustered script
@@ -27,7 +13,7 @@
     run_once: true
     retries: 5
     until: upgrade_status.rc == 0
-    when: is_backup_vstats is not defined
+    when: is_backup_vstats is not defined or not is_backup_vstats
 
   - name: Execute VSTAT clustered script on primary vstats
     command: /opt/vsd/vsd-es-cluster-config.sh -e {{ groups['primary_vstats'][0] }},{{ groups['primary_vstats'][1] }},{{ groups['primary_vstats'][2] }}
