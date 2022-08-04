@@ -12,7 +12,7 @@ Note that docker is required on the host in order to run MetroAE. All file paths
 * Operating System: Enterprise Linux 7 (EL7) CentOS 7.4 or greater or RHEL 7.4 or greater
 * Locally available image files for VCS or VNS deployments within the git clone folder
 * Docker engine
-NOTE: SElinux must be disabled or set to permissive for MetroAE to work.
+ NOTE: SElinux must be disabled or set to permissive for MetroAE to work.
 
 #### Steps
 
@@ -24,7 +24,7 @@ yum install -y git
 ```
 
 Clone the repo with the following command. NOTE: Please clone the repo in a location that can be
-read by #####libvirt/qemu.
+read by **libvirt/qemu**.
 ```
 git clone https://github.com/nuagenetworks/nuage-metroae.git
 ```
