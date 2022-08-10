@@ -2,24 +2,20 @@
 
 ## Release info
 
-* MetroAE Version 5.2.0
+* MetroAE Version 5.3.0
 * Nuage Release Alignment 20.10.R1
-* Date of Release 04-July-2022
+* Date of Release 
 
 ## Release Contents
 
 ### Feature Enhancements
-* Improve the logging and status check for tls mode (METROAE-646)
-* Deploy SD-WAN Portal on OpenStack (METROAE-462)
-* Support GRCN SD-WAN portal install for Openstack (METROAE-595)
-* Support trunking between vsc control port and its underlay ports in OpenStack (METROAE-653)
-* Provide option to create custom password for vstat root user (METROAE-650)
-* Added Memory and CPU Usage check of VSD health (METROAE-645) 
+* Add support for VSD upgrade to 20.10.R9 (METROAE-652)
+* Add support for VSTAT(ES) upgrade to 20.10.R8 (METROAE-659)
+* Allow users to shut down VMs (METROAE-629)
 
 ### Resolved Issues
-* Included data nodes in NUH (METROAE-648)
-* Run stats collection script in additional 3 data nodes (METROAE-649)
-* Add ability to deploy Portal without GRCN (METROAE-654)
+* Update Documentation about SELinux and supported components (METROAE-660)
+* Investigate stats-out ES Upgrade from 20.10.R5 to 20.10.R7 (METROAE-608)
 
 ## Test Matrix
 
