@@ -15,7 +15,7 @@
 
 ### Resolved Issues
 * Update Documentation about SELinux and supported components (METROAE-660)
-* Investigate stats-out ES Upgrade from 20.10.R5 to 20.10.R7 (METROAE-608)
+* Investigate stats-out ES Upgrade from 20.10.R5 to 20.10.R7 (METROAE-608) 
 
 ## Test Matrix
 
