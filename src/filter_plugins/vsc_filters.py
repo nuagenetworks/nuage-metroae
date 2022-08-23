@@ -496,6 +496,42 @@ def vsc_router_interfaces_to_json(string):
     return json.dumps(dict)
 
 
+def memory_pool_detail_to_json(string):
+    ''' Given a string representation of the output of "show system memory-pools"
+    as a string, return a JSON representation of a subset of the data in that output.
+    A sample of the output:
+    {
+      "Current Total Size: "340,787,200 bytes",
+      "Total In Use": "276,417,200 bytes",
+      "Available Memory": "2,490,368,000 bytes",
+    }
+    '''
+    dict = {}
+    Current_Total_Size = "Current Total Size "
+    Total_In_Use = "Total In Use       "
+    Available_Memory = "Available Memory   "
+    dict[Current_Total_Size] = string_name_value_helper(Current_Total_Size, ':', string)
+    dict[Total_In_Use] = string_name_value_helper(Total_In_Use, ':', string)
+    dict[Available_Memory] = string_name_value_helper(Available_Memory, ':', string)
+    return json.dumps(dict)
+
+
+def system_cpu_detail_to_json(string):
+    ''' Given a string representation of the output of "show system cpu"
+    as a string, return a string representation of a subset of the data in that output.
+    A sample of the output:
+    {
+      "Total                                 4,002,499         100.00%               ",
+      "Idle                                  3,976,677          99.35%                ",
+      "Usage                                 25,822             0.64%                ",
+      "Busiest Core Utilization              11,218             1.12%
+    }
+    '''
+    outputs = re.findall(r"Total[\a-z\d\,\%]+[\d\%]+", string)
+    output = ' '.join(outputs)
+    return output
+
+
 class FilterModule(object):
     ''' Query filter '''
 
@@ -512,5 +548,7 @@ class FilterModule(object):
             'show_version_to_json': show_version_to_json,
             'vsc_system_connections_to_json': vsc_system_connections_to_json,
             'vsd_detail_to_json': vsd_detail_to_json,
-            'vsc_router_interfaces_to_json': vsc_router_interfaces_to_json
+            'vsc_router_interfaces_to_json': vsc_router_interfaces_to_json,
+            'memory_pool_detail_to_json': memory_pool_detail_to_json,
+            'system_cpu_detail_to_json': system_cpu_detail_to_json
         }
