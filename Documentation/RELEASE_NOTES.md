@@ -11,6 +11,7 @@
 ### Feature Enhancements
 * Add support for VSD upgrade to 20.10.R9 (METROAE-652)
 * Add support for VSTAT(ES) upgrade to 20.10.R8 (METROAE-659)
+* Allow users to shut down VMs (METROAE-629)
 
 ### Resolved Issues
 * Update Documentation about SELinux and supported components (METROAE-660)
