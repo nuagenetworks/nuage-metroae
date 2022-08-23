@@ -9,9 +9,12 @@
 ## Release Contents
 
 ### Feature Enhancements
+* Add support for VSD upgrade to 20.10.R9 (METROAE-652)
+* Add support for VSTAT(ES) upgrade to 20.10.R8 (METROAE-659)
 
 ### Resolved Issues
 * Update Documentation about SELinux and supported components (METROAE-660)
+* Investigate stats-out ES Upgrade from 20.10.R5 to 20.10.R7 (METROAE-608) 
 
 ## Test Matrix
 
