@@ -77,20 +77,6 @@
       dest_file_name: 01-netcfg.yaml
       dest_path: /etc/netplan
 
-  # - name: Create a temporary copy of the syscfg network file
-  #   template:
-  #     src: "{{ role_path }}/../common/templates/network.j2"
-  #     dest: "{{ images_path }}/{{ vm_name }}/network"
-  #     backup: no
-
-  # - name: Inject network into TPM qcow image
-  #   include_role:
-  #     name: common
-  #     tasks_from: kvm-inject-file
-  #   vars:
-  #     dest_file_name: network
-  #     dest_path: /etc/netplan
-
   - name: Create a temporary copy of the hostname file
     template:
       src: "{{ role_path }}/../common/templates/hostname.j2"
@@ -105,22 +91,6 @@
       dest_file_name: hostname
       dest_path: /etc
 
-  - name: Get the public key for the current user
-    command: cat "{{ user_ssh_pub_key }}"
-    delegate_to: localhost
-    register: current_user_ssh_key
-
-  - name: Inject SSH keys into VSD qcow image
-    include_role:
-      name: common
-      tasks_from: kvm-inject-ssh-keys
-
-  - name: Set the SSH not to use DNS
-    command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} echo "UseDNS no" >> /etc/ssh/sshd_config
-
-  # - name: Disable SELinux
-  #   command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} sh "sed -i 's/SELINUX\=enforcing/SELINUX\=permissive/g' /etc/selinux/config"
-
   - name: Define and start Webfiler VM
     include_role:
       name: common
@@ -128,6 +98,24 @@
     vars:
       vm_xml: "{{ lookup('template', 'tpm.xml.j2') }}"
       autostart_enabled: true
+
+  - name: Wait for TPM ssh to be ready
+    include_role:
+      name: common
+      tasks_from: wait-for-tpm-ssh-port
+    vars:
+      ssh_host: "{{ hostname }}"
+      ssh_timeout_seconds: 600
+      ssh_password: "{{ tpm_default_password }}"
+      ssh_user: "{{ tpm_default_username }}"
+
+  - name: Setup passwordless ssh for TPM
+    shell: "sshpass -p {{ tpm_default_password }} ssh -o StrictHostKeyChecking=no {{ tpm_default_username }}@{{ inventory_hostname }} -p 2222 \"echo {{ current_user_ssh_key.stdout }} >> /root/.ssh/authorized_keys\""
+    no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
+    register: sshoutput
+    retries: 5
+    delay: 10
+    until: sshoutput.rc == 0
 
   when: not node_running
   delegate_to: "{{ target_server }}"
