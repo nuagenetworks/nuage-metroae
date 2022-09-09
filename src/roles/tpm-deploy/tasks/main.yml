@@ -6,7 +6,7 @@
   no_log: True
   ignore_errors: True
 
-- name: Wait for VSC ssh to be ready before config
+- name: Wait for TPM ssh to be ready before config
   include_role:
     name: common
     tasks_from: wait-for-tpm-ssh-port
@@ -16,158 +16,35 @@
     ssh_password: "{{ tpm_default_password }}"
     ssh_user: "{{ tpm_default_username }}"
 
-# - block:
+- block:
 
-#   - name: Create Webfilter SSL certs
-#     include_role:
-#       name: common
-#       tasks_from: vsd-generate-transfer-certificates
-#     vars:
-#       certificate_password: "{{ webfilter_default_password }}"
-#       certificate_username: "{{ cert_name }}"
-#       commonName: "{{ cert_name }}"
-#       certificate_type: server
-#       file_type: jks
-#       additional_parameters: "-p {{ webfilter_default_password }} -d {{ inventory_hostname }}"
+  - block:
 
-# - block:
+    - block:
 
-#   - block:
+      - name: Generate certs for all 3 TPM server
+        command: rc gen-certs -m {{ tpm1.name }} {{ tpm2.name }} {{ tpm3.name }} -v
 
-#     - name: Get the webfilter jks from the VSD
-#       fetch:
-#         src: "/opt/vsd/ejbca/p12/{{cert_name}}.jks"
-#         dest: "/tmp/webfilter/"
-#         flat: yes
+      - name: Copy the certificates over to second TPM server
+        command: scp -P 2222 {{ tpm2.name }}.tar.gz administrator@{{ tpm2.hostname }}:/home/administrator/
 
-#     - name: Get the truststore jks from the VSD
-#       fetch:
-#         src: "/opt/vsd/ejbca/p12/truststore.jks"
-#         dest: "/tmp/webfilter/"
-#         flat: yes
+      - name: Copy the certificates over to third TPM server
+        command: scp -P 2222 {{ tpm3.name }}.tar.gz administrator@{{ tpm3.hostname }}:/home/administrator/
+      
+      when: inventory_hostname == tpm1.hostname
 
-#     delegate_to: "{{ vsd_hostname_list[0] }}"
+    - name: Enable redundancy with the deployed certificate on the first TPM server
+      command: rc initiate -c {{ tpm1.name }}.tar.gz -v
+      when: inventory_hostname == tpm1.hostname
 
-#   - name: Copy to JKS files to the Webfilter VM
-#     copy:
-#       dest: "/opt/vsd/webfilter/conf/"
-#       src: "/tmp/webfilter/"
+    - name: Enable redundancy with the deployed certificate on the second TPM server
+      command: rc initiate -c {{ tpm2.name }}.tar.gz -v
+      when: inventory_hostname == tpm2.hostname
 
-#   - name: Delete the temporary directory for JKS files
-#     file:
-#       path: /tmp/webfilter
-#       state: absent
+    - name: Enable redundancy with the deployed certificate on the third TPM server
+      command: rc initiate -c {{ tpm3.name }}.tar.gz -f -v
+      when: inventory_hostname == tpm3.hostname
 
-#   - name: "Adding the {{ cert_name }} jks to application.properties"
-#     lineinfile:
-#       name: /opt/vsd/webfilter/conf/application.properties
-#       regexp: "server.ssl.key-store=/opt/vsd/webfilter/conf/webfilter.jks"
-#       line: "server.ssl.key-store=/opt/vsd/webfilter/conf/{{ cert_name }}.jks"
-#       state: present
-#     register: app_properties
+    when: tpm_sa_or_ha is match('ha')
 
-#   - name: "Changing {{ cert_name }} as server.ssl.key-alias"
-#     lineinfile:
-#       name: /opt/vsd/webfilter/conf/application.properties
-#       regexp: "server.ssl.key-alias=webfilter"
-#       line: "server.ssl.key-alias={{ cert_name }}"
-#       state: present
-#     register: app_properties
-
-#   - name: "Ensure application properties contains truststore"
-#     lineinfile:
-#       name: /opt/vsd/webfilter/conf/application.properties
-#       line: "server.ssl.trust-store=/opt/vsd/webfilter/conf/truststore.jks"
-#       state: present
-#     check_mode: yes
-#     register: truststore_prop
-#     failed_when: (truststore_prop is changed) or (truststore_prop is failed)
-
-#   - name: Stop webfilter process
-#     command: monit stop webfilter
-#     ignore_errors: yes
-#     register: stop_stats_output
-
-#   - name: Check if an error should be ignored while stopping webfilter
-#     assert:
-#       that: "not stop_stats_output.failed or stop_stats_output.stderr is search('not found')"
-#       msg: "Error while attempting to stop webfilter services"
-
-#   - name: Pause for processes to exit
-#     pause:
-#       seconds: 20
-
-#   - name: Start webfilter process
-#     command: monit start webfilter
-
-#   - name: Get monit summary for webfilter processes
-#     vsd_monit:
-#       group: all
-#     register: webfilter_proc
-
-#   - name: Wait for webfilter processes to become running
-#     monit_waitfor_service:
-#       name: "{{ webfilter_proc['state'].keys() | list }}"
-#       timeout_seconds: 600
-#       test_interval_seconds: 10
-
-#   - name: Start webfilter-status process
-#     command: monit start webfilter-status
-
-#   - name: Wait for webfilter processes to become running
-#     monit_waitfor_service:
-#       name: "{{ webfilter_proc['state'].keys() | list }}"
-#       timeout_seconds: 600
-#       test_interval_seconds: 10
-
-#   - block:
-
-#     - name: Enable Proxy Settings in "/usr/local/gcf1/etc/gcf1.conf"
-#       command: "sed -i 's/^# Proxy Settings.*/Proxy Settings/' /usr/local/gcf1/etc/gcf1.conf"
-
-#     - name: Add PROXY_HOST in "/usr/local/gcf1/etc/gcf1.conf"
-#       command: "sed -i 's/^PROXY_HOST=.*/PROXY_HOST={{ web_proxy_host }}/' /usr/local/gcf1/etc/gcf1.conf"
-
-#     - name: Add PROXY_PORT in "/usr/local/gcf1/etc/gcf1.conf"
-#       command: "sed -i 's/^PROXY_PORT=.*/PROXY_PORT={{ web_proxy_port }}/' /usr/local/gcf1/etc/gcf1.conf"
-
-#     - name: Enable Proxy Settings in "/opt/vsd/webfilter/seed_34/gcf1/etc/gcf1.conf"
-#       command: "sed -i 's/^# Proxy Settings.*/Proxy Settings/' /opt/vsd/webfilter/seed_34/gcf1/etc/gcf1.conf"
-
-#     - name: Add PROXY_HOST in "/opt/vsd/webfilter/seed_34/gcf1/etc/gcf1.conf"
-#       command: "sed -i 's/^PROXY_HOST=.*/PROXY_HOST={{ web_proxy_host }}/' /opt/vsd/webfilter/seed_34/gcf1/etc/gcf1.conf"
-
-#     - name: Add PROXY_PORT in "/opt/vsd/webfilter/seed_34/gcf1/etc/gcf1.conf"
-#       command: "sed -i 's/^PROXY_PORT=.*/PROXY_PORT={{ web_proxy_port }}/' /opt/vsd/webfilter/seed_34/gcf1/etc/gcf1.conf"
-
-#     - name: Restart the incompass monits to set the new proxy
-#       command: monit restart incompass
-
-#     - name: Restart the incompass monits to set the new proxy for seed
-#       command: monit restart incompass-34-seed
-
-#     - name: Wait for webfilter processes to become running
-#       monit_waitfor_service:
-#         name: "{{ webfilter_proc['state'].keys() }}"
-#         timeout_seconds: 600
-#         test_interval_seconds: 10
-
-#     when: web_http_proxy is defined and web_http_proxy
-
-#   - block:
-
-#     - name: Run incompass operation command for seed
-#       shell: /opt/vsd/webfilter/scripts/incompassOperations.sh -a all -p /opt/vsd/webfilter/seed_34
-
-#     - name: Run incompass operation command
-#       shell: /opt/vsd/webfilter/scripts/incompassOperations.sh -a all
-  
-#     - name: Wait for webfilter processes to become running
-#       monit_waitfor_service:
-#         name: "{{ webfilter_proc['state'].keys() | list }}"
-#         timeout_seconds: 600
-#         test_interval_seconds: 10
-
-#     when: run_incompass_operation is defined and run_incompass_operation
-
-#   remote_user: "{{ webfilter_default_username }}"
+  remote_user: "{{ tpm_default_username }}"
