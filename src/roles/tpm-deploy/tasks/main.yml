@@ -20,10 +20,20 @@
 
   - block:
 
-    - name: Get current VSD API version
-      include_role:
-        name: common
-        tasks_from: get-current-vsd-api-version
+    - name: Get current VSD information
+      block:
+      - include_role:
+          name: common
+          tasks_from: get-current-vsd-api-version
+
+      - include_role:
+          name: common
+          tasks_from: get-vsd-version
+      delegate_to: "{{ hostvars[groups['primary_vsds'][0]].mgmt_ip }}"
+      remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
+      become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
+      vars:
+        ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"
 
     - name: Format VSPK auth for VSPK module
       set_fact:
@@ -35,17 +45,26 @@
           api_version: "{{ current_api_version }}"
       no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
 
-    - name: Set TPM server information on VSD
+    - name: Configure TPM server information on VSD
       nuage_vspk:
         auth: "{{ vspk_auth }}"
         type: SystemConfig
         state: present
         properties:
-          threat_prevention_server: "{{ tpm1.hostname }}:8443" 
+          threat_prevention_server: "{{ tpm1.hostname }}:8443"
           threat_prevention_server_username: "{{ tpm_cli_username }}"
           threat_prevention_server_password: "{{ tpm_cli_password }}"
+      delegate_to: localhost
+
+    - name: Enable signature update through cloud parameter on VSD
+      nuage_vspk:
+        auth: "{{ vspk_auth }}"
+        type: SystemConfig
+        state: present
+        properties:
           signature_update_through_cloud_enabled: True
       delegate_to: localhost
+      when: vsd_version_clean >= "20.10.5"
 
     when: inventory_hostname == tpm1.hostname
 
@@ -61,19 +80,31 @@
 
       - name: Copy the certificates over to third TPM server
         command: sshpass -p {{ tpm_default_password }} scp -P 2222 -o StrictHostKeyChecking=no {{ tpm3.name }}.tar.gz administrator@{{ tpm3.mgmt_ip }}:/home/administrator/
-      
+
       when: inventory_hostname == tpm1.hostname
 
     - name: Enable redundancy with the deployed certificate on the first TPM server
-      command: rc initiate -c {{ tpm1.name }}.tar.gz -v
+      command: sudo rc initiate -c {{ tpm1.name }}.tar.gz -v
+      register: tpm1_initiation
+      until: tpm1_initiation.rc == 0 or tpm1_initiation.stdout is match ('The redundancy cluster has already been enabled')
+      retries: 3
+      delay: 5
       when: inventory_hostname == tpm1.hostname
 
     - name: Enable redundancy with the deployed certificate on the second TPM server
-      command: rc initiate -c {{ tpm2.name }}.tar.gz -v
+      command: sudo rc initiate -c {{ tpm2.name }}.tar.gz -v
+      register: tpm2_initiation
+      until: tpm2_initiation.rc == 0 or tpm2_initiation.stdout is match ('The redundancy cluster has already been enabled')
+      retries: 3
+      delay: 5
       when: inventory_hostname == tpm2.hostname
 
     - name: Enable redundancy with the deployed certificate on the third TPM server
-      command: rc initiate -c {{ tpm3.name }}.tar.gz -f -v
+      command: sudo rc initiate -c {{ tpm3.name }}.tar.gz -f -v
+      register: tpm3_initiation
+      until: tpm3_initiation.rc == 0 or tpm3_initiation.stdout is match ('The redundancy cluster has already been enabled')
+      retries: 3
+      delay: 5
       when: inventory_hostname == tpm3.hostname
 
     when: tpm_sa_or_ha is match('ha')
