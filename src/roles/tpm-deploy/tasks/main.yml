@@ -1,4 +1,4 @@
-- name: Clean known_hosts of VSD's (ignoring errors)
+- name: Clean known_hosts of TPM's (ignoring errors)
   known_hosts:
     name: "{{ hostname }}"
     state: absent
@@ -83,28 +83,49 @@
 
       when: inventory_hostname == tpm1.hostname
 
-    - name: Enable redundancy with the deployed certificate on the first TPM server
-      command: sudo rc initiate -c {{ tpm1.name }}.tar.gz -v
-      register: tpm1_initiation
-      until: tpm1_initiation.rc == 0 or tpm1_initiation.stdout is search ('The redundancy cluster has already been enabled')
-      retries: 3
-      delay: 5
+    - block: 
+      - name: Enable redundancy with the deployed certificate on the first TPM server
+        command: sudo rc initiate -c {{ tpm1.name }}.tar.gz -v
+        register: tpm1_initiation
+        retries: 3
+        delay: 5
+        ignore_errors: yes
+
+      - name: Assert that the redundacy is enabled
+        assert:
+          that: tpm1_initiation.stdout is search ('The redundancy cluster has already been enabled')
+        when: tpm1_initiation.rc != 0
+
       when: inventory_hostname == tpm1.hostname
 
-    - name: Enable redundancy with the deployed certificate on the second TPM server
-      command: sudo rc initiate -c {{ tpm2.name }}.tar.gz -v
-      register: tpm2_initiation
-      until: tpm2_initiation.rc == 0 or tpm2_initiation.stdout is search ('The redundancy cluster has already been enabled')
-      retries: 3
-      delay: 5
+    - block: 
+      - name: Enable redundancy with the deployed certificate on the first TPM server
+        command: sudo rc initiate -c {{ tpm2.name }}.tar.gz -v
+        register: tpm2_initiation
+        retries: 3
+        delay: 5
+        ignore_errors: yes
+
+      - name: Assert that the redundacy is enabled
+        assert:
+          that: tpm2_initiation.stdout is search ('The redundancy cluster has already been enabled')
+        when: tpm2_initiation.rc != 0
+
       when: inventory_hostname == tpm2.hostname
 
-    - name: Enable redundancy with the deployed certificate on the third TPM server
-      command: sudo rc initiate -c {{ tpm3.name }}.tar.gz -f -v
-      register: tpm3_initiation
-      until: tpm3_initiation.rc == 0 or tpm3_initiation.stdout is search ('The redundancy cluster has already been enabled')
-      retries: 3
-      delay: 5
+    - block: 
+      - name: Enable redundancy with the deployed certificate on the first TPM server
+        command: sudo rc initiate -c {{ tpm3.name }}.tar.gz -f -v
+        register: tpm3_initiation
+        retries: 3
+        delay: 5
+        ignore_errors: yes
+
+      - name: Assert that the redundacy is enabled
+        assert:
+          that: tpm3_initiation.stdout is search ('The redundancy cluster has already been enabled')
+        when: tpm3_initiation.rc != 0
+
       when: inventory_hostname == tpm3.hostname
 
     when: tpm_sa_or_ha is match('ha')
