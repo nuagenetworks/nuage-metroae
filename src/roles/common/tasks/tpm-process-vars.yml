@@ -23,8 +23,13 @@
       netmask: "{{ item.mgmt_ip_prefix }}"
     with_items: "{{ tpms }}"
 
-  - name: Create host_vars files for tpms
-    template: src=tpm.j2 backup=no dest={{ inventory_dir }}/host_vars/{{ item.hostname }}
+  - name: Create host_vars files for vstat
+    include_tasks: write-host-files.yml
+    vars:
+      component_template: tpm
+      component_hostname: "{{ component.hostname }}"
+    loop_control:
+      loop_var: component
     with_items: "{{ tpms }}"
 
   - name: Verify TPM DNS entries exist and hostnames map to their IPs
