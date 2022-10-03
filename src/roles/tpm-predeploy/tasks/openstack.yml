@@ -79,6 +79,15 @@
         ssh_key: "{{ current_user_ssh_key.stdout }}"
     delegate_to: localhost
 
+  - name: Setup passwordless ssh for TPM
+    shell: "sshpass -p {{ tpm_default_password }} ssh -o StrictHostKeyChecking=no {{ tpm_default_username }}@{{ inventory_hostname }} -p 2222 \"echo {{ current_user_ssh_key.stdout }} >> .ssh/authorized_keys\""
+    no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
+    register: sshoutput
+    delegate_to: localhost
+    retries: 5
+    delay: 10
+    until: sshoutput.rc == 0
+
   - debug: var=create_stack['stack']['outputs'][0]['output_value']
 
   - name: Remove local temp folder
