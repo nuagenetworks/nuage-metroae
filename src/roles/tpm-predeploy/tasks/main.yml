@@ -6,6 +6,20 @@
 - include_role:
     name: check-node-reachability
 
+- name: Get TPM elasticsearch directory stat
+  stat:
+    path: /opt/elasticsearch
+  remote_user: "{{ tpm_default_username }}"
+  register: tpm_dir
+  when: node_reachable
+
+- name: Set fact for VSD present
+  set_fact:
+    node_present: "{{ tpm_dir is defined and
+                      tpm_dir.stat is defined and
+                      tpm_dir.stat.isdir is defined and
+                      tpm_dir.stat.isdir }}"
+
 - import_tasks: kvm.yml
   when: target_server_type is match("kvm")
 
