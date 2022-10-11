@@ -9,7 +9,7 @@
 ## Release Contents
 
 ### Feature Enhancements
-* Add lowercase proxy env support (METROAE-662)
+* Add option to provide internal network for NUH deployment on OpenStack (METROAE-663)
 
 ### Resolved Issues
 
