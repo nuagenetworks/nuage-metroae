@@ -216,7 +216,7 @@ def validate_plugin(plugin_directory):
 
     if not os.path.isfile(plugin_config_file):
         print(plugin_directory + " is missing config file " +
-               PLUGIN_CONFIG_NAME)
+                                           PLUGIN_CONFIG_NAME)
         sys.exit(1)
 
     plugin_config = parse_plugin_config(plugin_config_file)
