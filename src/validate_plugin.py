@@ -260,7 +260,7 @@ def validate_schemas(plugin_directory, schemas):
 
         if not os.path.isfile(schema_file):
             print(plugin_directory + " is missing schema file " +
-                   schema_file)
+                  schema_file)
             sys.exit(1)
 
         parse_yaml(schema_file, PLUGIN_SCHEMA_SCHEMA)
@@ -273,7 +273,7 @@ def validate_hooks(plugin_directory, hooks):
 
         if not os.path.isfile(role_file):
             print(plugin_directory + " is missing role file " +
-                   role_file)
+                  role_file)
             sys.exit(1)
 
 

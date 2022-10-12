@@ -47,7 +47,7 @@ def setup_script(vsdParams):
         if not rtwan.startswith('target'):
             rtwan = "target:" + rtwan
         print('servicetype, VPLS id, rtdc, vni, rddc, rdwan, rtwan:',
-               servicetype, vplsSvc_id, rtdc, vni, rddc, rdwan, rtwan)
+              servicetype, vplsSvc_id, rtdc, vni, rddc, rdwan, rtwan)
         dyn.add_cli("""
         configure service
            vpls %(vplsSvc_id)s customer 1 create

@@ -33,7 +33,7 @@ def setup_script(vsdParams):
     vplsSvc_id = dyn.select_free_id("service-id")
     vprnSvc_id = dyn.select_free_id("service-id")
     print("this are the free svc ids picked up by the system: VPLS:" +
-           vplsSvc_id + " + VPRN:" + vprnSvc_id)
+          vplsSvc_id + " + VPRN:" + vprnSvc_id)
 
     if servicetype == "L2DOMAIN-IRB":
         vprn_RD = metadata['vprnRD']

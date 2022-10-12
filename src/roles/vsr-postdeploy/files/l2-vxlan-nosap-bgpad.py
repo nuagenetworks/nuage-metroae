@@ -33,7 +33,7 @@ def setup_script(vsdParams):
         # vprn_Lo = metadata ['vprnLo']
         # irb_GW = metadata ['irbGW']
         print('servicetype, VPLS id, rt, vni, rd',
-               servicetype, vplsSvc_id, rt, vni, rd)
+              servicetype, vplsSvc_id, rt, vni, rd)
         dyn.add_cli("""
         configure service
           vpls %(vplsSvc_id)s customer 1 name vpls%(vplsSvc_id)s create
