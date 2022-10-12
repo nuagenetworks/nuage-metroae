@@ -215,7 +215,7 @@ def validate_plugin(plugin_directory):
     plugin_config_file = os.path.join(plugin_directory, PLUGIN_CONFIG_NAME)
 
     if not os.path.isfile(plugin_config_file):
-        print (plugin_directory + " is missing config file " +
+        print(plugin_directory + " is missing config file " +
                PLUGIN_CONFIG_NAME)
         sys.exit(1)
 
@@ -259,7 +259,7 @@ def validate_schemas(plugin_directory, schemas):
                                    schema["name"] + ".json")
 
         if not os.path.isfile(schema_file):
-            print (plugin_directory + " is missing schema file " +
+            print(plugin_directory + " is missing schema file " +
                    schema_file)
             sys.exit(1)
 
@@ -272,7 +272,7 @@ def validate_hooks(plugin_directory, hooks):
                                  "tasks", hook["tasks"] + ".yml")
 
         if not os.path.isfile(role_file):
-            print (plugin_directory + " is missing role file " +
+            print(plugin_directory + " is missing role file " +
                    role_file)
             sys.exit(1)
 

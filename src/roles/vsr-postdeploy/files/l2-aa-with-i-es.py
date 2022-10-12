@@ -17,7 +17,7 @@ from alc import dyn
 
 def setup_script(vsdParams):
 
-    print ("These are the VSD params: " + str(vsdParams))
+    print("These are the VSD params: " + str(vsdParams))
     servicetype = vsdParams['servicetype']
     vni = vsdParams['vni']
     rtdc = vsdParams['rt']
@@ -32,12 +32,12 @@ def setup_script(vsdParams):
 # remove trailing space at the end of the metadata
     metadata = metadata.rstrip()
 
-    print ("VSD metadata" + str(metadata))
+    print("VSD metadata" + str(metadata))
 
     metadata = dict(e.split('=') for e in metadata.split(','))
-    print ("Modified metadata" + str(metadata))
+    print("Modified metadata" + str(metadata))
     vplsSvc_id = str(int(dyn.select_free_id("service-id")) + 500)
-    print ("this is the free svc id picked up by the system: " + vplsSvc_id)
+    print("this is the free svc id picked up by the system: " + vplsSvc_id)
 
     if servicetype == "L2DOMAIN":
 
@@ -46,7 +46,7 @@ def setup_script(vsdParams):
         rtwan = metadata['rtwan']
         if not rtwan.startswith('target'):
             rtwan = "target:" + rtwan
-        print ('servicetype, VPLS id, rtdc, vni, rddc, rdwan, rtwan:',
+        print('servicetype, VPLS id, rtdc, vni, rddc, rdwan, rtwan:',
                servicetype, vplsSvc_id, rtdc, vni, rddc, rdwan, rtwan)
         dyn.add_cli("""
         configure service
@@ -91,23 +91,23 @@ def setup_script(vsdParams):
 
 def modify_script(vsdParams, setup_result):
 
-    print (
+    print(
         "These are the setup_result params for modify_script: " +
         str(setup_result))
-    print ("These are the VSD params for modify_script: " + str(vsdParams))
+    print("These are the VSD params for modify_script: " + str(vsdParams))
 
     # remove trailing space at the end of the metadata
     metadata = vsdParams['metadata'].rstrip()
 
-    print ("VSD metadata" + str(metadata))
+    print("VSD metadata" + str(metadata))
     metadata = dict(e.split('=') for e in metadata.split(','))
-    print ("Modified metadata" + str(metadata))
+    print("Modified metadata" + str(metadata))
 
     # updating the setup_result dict
     setup_result.update(metadata)
     params = setup_result
 
-    print (
+    print(
         "The updated params from metadata and return from the setup result: " +
         str(params))
 
@@ -127,10 +127,10 @@ def modify_script(vsdParams, setup_result):
 
 
 def revert_script(vsdParams, setup_result):
-    print (
+    print(
         "These are the setup_result params for revert_script: " +
         str(setup_result))
-    print ("These are the VSD params for revert_script: " + str(vsdParams))
+    print("These are the VSD params for revert_script: " + str(vsdParams))
 
     # When modify fails, the revert is called and then the teardown is called.
     # It is recommended to revert to same value as used in setup for the
@@ -154,7 +154,7 @@ def revert_script(vsdParams, setup_result):
 
 
 def teardown_script(setupParams):
-    print ("These are the teardown_script setupParams: " + str(setupParams))
+    print("These are the teardown_script setupParams: " + str(setupParams))
     servicetype = setupParams['servicetype']
     if servicetype == "L2DOMAIN":
         dyn.add_cli("""
