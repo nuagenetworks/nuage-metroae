@@ -70,22 +70,55 @@
 
   - block:
 
+    - name: Adding the TPMs information in each other hosts directory
+      block:
+
+      - name: Updating tpm1 /etc/hosts
+        lineinfile:
+          path: /etc/hosts
+          line: "{{ item }}"
+        with_items:
+          - "{{ tpm2.mgmt_ip }}    {{ tpm2.name }}"
+          - "{{ tpm3.mgmt_ip }}    {{ tpm3.name }}"
+        when: inventory_hostname == tpm1.hostname
+
+      - name: Updating tpm2 /etc/hosts
+        lineinfile:
+          path: /etc/hosts
+          line: "{{ item }}"
+        with_items:
+          - "{{ tpm1.mgmt_ip }}    {{ tpm1.name }}"
+          - "{{ tpm3.mgmt_ip }}    {{ tpm3.name }}"
+        when: inventory_hostname == tpm2.hostname
+
+      - name: Updating tpm3 /etc/hosts
+        lineinfile:
+          path: /etc/hosts
+          line: "{{ item }}"
+        with_items:
+          - "{{ tpm2.mgmt_ip }}    {{ tpm2.name }}"
+          - "{{ tpm1.mgmt_ip }}    {{ tpm1.name }}"
+        when: inventory_hostname == tpm3.hostname
+
+      - name: Restart DNS
+        command: systemctl restart dnsmasq
+
     - block:
 
       - name: Generate certs for all 3 TPM server
         command: rc gen-certs -m {{ tpm1.name }} {{ tpm2.name }} {{ tpm3.name }} -v
 
       - name: Copy the certificates over to second TPM server
-        command: sshpass -p {{ tpm_default_password }} scp -P 2222 -o StrictHostKeyChecking=no {{ tpm2.name }}.tar.gz administrator@{{ tpm2.mgmt_ip }}:/home/administrator/
+        command: sshpass -p {{ tpm_default_password }} scp -P 2222 -o StrictHostKeyChecking=no {{ tpm2.name }}.tar.gz administrator@{{ tpm2.name }}:/home/administrator/
 
       - name: Copy the certificates over to third TPM server
-        command: sshpass -p {{ tpm_default_password }} scp -P 2222 -o StrictHostKeyChecking=no {{ tpm3.name }}.tar.gz administrator@{{ tpm3.mgmt_ip }}:/home/administrator/
+        command: sshpass -p {{ tpm_default_password }} scp -P 2222 -o StrictHostKeyChecking=no {{ tpm3.name }}.tar.gz administrator@{{ tpm3.name }}:/home/administrator/
 
       when: inventory_hostname == tpm1.hostname
 
     - block: 
       - name: Enable redundancy with the deployed certificate on the first TPM server
-        command: sudo rc initiate -c {{ tpm1.name }}.tar.gz -v
+        command: rc initiate -c {{ tpm1.name }}.tar.gz -v
         register: tpm1_initiation
         retries: 3
         delay: 5
@@ -100,7 +133,7 @@
 
     - block: 
       - name: Enable redundancy with the deployed certificate on the second TPM server
-        command: sudo rc initiate -c {{ tpm2.name }}.tar.gz -v
+        command: rc initiate -c {{ tpm2.name }}.tar.gz -v
         register: tpm2_initiation
         retries: 3
         delay: 5
@@ -115,7 +148,7 @@
 
     - block: 
       - name: Enable redundancy with the deployed certificate on the third TPM server
-        command: sudo rc initiate -c {{ tpm3.name }}.tar.gz -f -v
+        command: rc initiate -c {{ tpm3.name }}.tar.gz -f -v
         register: tpm3_initiation
         retries: 3
         delay: 5
@@ -129,5 +162,6 @@
       when: inventory_hostname == tpm3.hostname
 
     when: tpm_sa_or_ha is match('ha')
+    become: yes
 
   remote_user: "{{ tpm_default_username }}"
