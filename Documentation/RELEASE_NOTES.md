@@ -10,7 +10,7 @@
 
 ### Feature Enhancements
 * Add lowercase proxy env support (METROAE-662)
-* Add Support for TPM server Deployment (MEYROAE-461)
+* Add Support for TPM server Deployment (METROAE-461)
 
 ### Resolved Issues
 
