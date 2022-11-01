@@ -1,0 +1,124 @@
+---
+- name: Set local variable with vmname
+  set_fact:
+    vm_name: "{{ vmname }}"
+
+- name: Setup KVM on target server
+  include_role:
+    name: common
+    tasks_from: setup-kvm
+
+- include_role:
+    name: check-node-running
+
+- name: Display if skipping predeploy
+  debug:
+    msg:
+      - "************************************************************"
+      - "Skipping TPM VM creation because it is already present"
+      - "************************************************************"
+  when: node_running
+
+- block:
+
+  - name: set skip copy images to default
+    set_fact:
+      image_present: False
+    when: image_present is undefined
+
+  - name: Check to make sure there is an existing qcow image
+    stat:
+      path: "{{ images_path }}/{{ vm_name }}/{{ image_file_name }}"
+    register: statResult
+
+  - name: Check the result of image find command
+    set_fact:
+      image_present: True
+    when: statResult.stat.exists
+
+  - include_role:
+      name: common
+      tasks_from: copy-qcow2
+    when: not image_present
+
+  - name: Set local variable with portal guestfish destination
+    set_fact:
+      guestfish_dest: "{{ images_path }}/{{ vm_name }}/{{ image_file_name }}"
+
+  - name: Get guestfish mount for qcow2
+    include_role:
+      name: common
+      tasks_from: get-guestfish-mount
+    vars:
+      guestfish_qcow2_path: "{{ guestfish_dest }}"
+
+  - name: Verify that mount was found
+    assert:
+      that: "guestfish_mount is defined"
+      msg: "guestfish mount point was not found. Are you using the correct qcow2 file?"
+
+  - name: Disable Cloudinit
+    command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} echo "network\:^ {config\:^ disabled}" >> /etc/cloud/cloud.cfg.d/99-disable-network-config.cfg
+
+  - name: Removing file from /etc/netplan
+    command: guestfish --rw -a {{ guestfish_dest }} -m {{ guestfish_mount }} sh "rm --force /etc/netplan/*"
+
+  - name: Create a temporary copy of the network script for eth0
+    template:
+      src: 01-netcfg.j2
+      backup: no
+      dest: "{{ images_path }}/{{ vm_name }}/01-netcfg.yaml"
+
+  - name: Inject ifcfg-eth0 into TPM qcow image
+    include_role:
+      name: common
+      tasks_from: kvm-inject-file
+    vars:
+      dest_file_name: 01-netcfg.yaml
+      dest_path: /etc/netplan
+
+  - name: Create a temporary copy of the hostname file
+    template:
+      src: "{{ role_path }}/../common/templates/hostname.j2"
+      backup: no
+      dest: "{{ images_path }}/{{ vm_name }}/hostname"
+
+  - name: Inject hostname into TPM qcow image
+    include_role:
+      name: common
+      tasks_from: kvm-inject-file
+    vars:
+      dest_file_name: hostname
+      dest_path: /etc
+
+  - name: Define and start TPM VM
+    include_role:
+      name: common
+      tasks_from: kvm-start-vm
+    vars:
+      vm_xml: "{{ lookup('template', 'tpm.xml.j2') }}"
+      autostart_enabled: true
+
+  - name: Wait for TPM ssh to be ready
+    include_role:
+      name: common
+      tasks_from: wait-for-tpm-ssh-port
+    vars:
+      ssh_host: "{{ hostname }}"
+      ssh_timeout_seconds: 600
+      ssh_password: "{{ tpm_default_password }}"
+      ssh_user: "{{ tpm_default_username }}"
+
+  - name: Setup passwordless ssh for TPM
+    shell: "sshpass -p {{ tpm_default_password }} ssh -o StrictHostKeyChecking=no {{ tpm_default_username }}@{{ inventory_hostname }} -p 2222 \"echo {{ current_user_ssh_key.stdout }} >> .ssh/authorized_keys\""
+    no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
+    register: sshoutput
+    delegate_to: localhost
+    retries: 5
+    delay: 10
+    until: sshoutput.rc == 0
+
+  when: not node_running
+  delegate_to: "{{ target_server }}"
+  remote_user: "{{ target_server_username }}"
+  become: "{{ 'no' if target_server_username == 'root' else 'yes' }}"
