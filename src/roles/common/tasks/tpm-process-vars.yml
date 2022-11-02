@@ -1,0 +1,40 @@
+- block:
+
+  - name: Set TPM VM QCOW2 location
+    include_role:
+      name: common
+      tasks_from: find-file.yml
+    vars:
+      dir_name: "{{ nuage_unzipped_files_dir }}"
+      pattern: "nuage-threat-*.qcow2"
+
+  - name: Register TPM QCOW2 variables with proper path and image locations for use in other playbooks
+    set_fact:
+      image_path: "{{ file_path }}"
+      image_file_name: "{{ file_name }}"
+
+  - name: Verify TPM management gateway is in correct IP range
+    include_role:
+      name: common
+      tasks_from: check-ip-in-range.yml
+    vars:
+      ip_address: "{{ item.mgmt_gateway }}"
+      netaddr: "{{ item.mgmt_ip }}"
+      netmask: "{{ item.mgmt_ip_prefix }}"
+    with_items: "{{ tpms }}"
+
+  - name: Create host_vars files for vstat
+    include_tasks: write-host-files.yml
+    vars:
+      component_template: tpm
+      component_hostname: "{{ component.hostname }}"
+    loop_control:
+      loop_var: component
+    with_items: "{{ tpms }}"
+
+  - name: Verify TPM DNS entries exist and hostnames map to their IPs
+    include_tasks: check-dns.yml
+    with_items: "{{ tpms }}"
+    when: common.dns_server_list | length > 0
+
+  when: tpms is defined and tpms|length > 0
