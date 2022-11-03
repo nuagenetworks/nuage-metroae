@@ -191,6 +191,13 @@
   when: item.cpuset is defined
   with_items: "{{ webfilters }}"
 
+- name: Verify that the TPM has the correct number of cpuset defined
+  assert:
+    that: "'{{ item.cpuset | length }}' != {{ tpm_cpu_cores | default(2) }}"
+    msg: "Incorrect number of cores specified in cpuset for {{ item.hostname }}. Cpuset must have {{ tpm_cpu_cores | default(2) }} elements."
+  when: item.cpuset is defined
+  with_items: "{{ tpms }}"
+
 - name: Validate that NSGVs ports are properly configured
   assert:
     that: "{{ not (item.access_port_name is defined and item.access_ports is defined) }}"

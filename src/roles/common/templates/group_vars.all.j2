@@ -25,6 +25,7 @@ vstat_ram: "{{ common.vstat_ram | default(16) }}"
 vcin_ram: "{{ common.vcin_ram | default(24) }}"
 nuh_ram: "{{ common.nuh_ram | default(8) }}"
 webfilter_ram: "{{ common.webfilter_ram | default(8) }}"
+tpm_ram: "{{ common.tpm_ram | default(8) }}"
 portal_ram: "{{ common.portal_ram | default(24) }}"
 portal_license_file: "{{ common.portal_license_file | default('NONE') }}"
 portal_allocate_size_gb: "{{ portal_allocate_size_gb | default(16) }}"
@@ -47,6 +48,7 @@ vsc_cpu_cores: {{ common.vsc_cpu_cores | default(6)}}
 portal_cpu_cores: {{ common.portal_cpu_cores | default(6)}}
 vcin_cpu_cores: {{ common.vcin_cpu_cores | default(6)}}
 webfilter_cpu_cores: {{ common.webfilter_cpu_cores | default(2) }}
+tpm_cpu_cores: {{ common.tpm_cpu_cores | default(2) }}
 vcenter_start_vsd_with_interfaces_disabled: {{ common.vcenter_start_vsd_with_interfaces_disabled | default(false) }}
 vsd_inplace_upgrade: {{ inplace | default(false) }}
 vsd_install_inplace_upgrade: {{ common.vsd_install_inplace_upgrade | default(false) }}
@@ -158,6 +160,12 @@ nuh_default_password: Alcateldc
 
 webfilter_default_username: root
 webfilter_default_password: Alcateldc
+
+tpm_default_username: administrator
+tpm_default_password: administrator
+
+tpm_cli_username: admin
+tpm_cli_password: Alcateldc1!
 
 dns_username: {{ dns_username | default("root") | indent(8, False) }}
 dns_password: {{ dns_password | default("Alcateldc") | indent(8, False) }}
@@ -400,6 +408,34 @@ grcn1:
 
 {% endif %}
 
+{% if tpms is defined and tpms %}
+
+{% if tpms|length == 1 %}
+tpm1:
+  mgmt_ip: {{ tpms[0].mgmt_ip }}
+  hostname: {{ tpms[0].hostname }}
+  name: {{ tpms[0].hostname.split('.')[0] | lower }}
+
+{% else %}
+
+tpm1:
+  mgmt_ip: {{ tpms[0].mgmt_ip }}
+  hostname: {{ tpms[0].hostname }}
+  name: {{ tpms[0].hostname.split('.')[0] | lower }}
+
+tpm2:
+  mgmt_ip: {{ tpms[1].mgmt_ip }}
+  hostname: {{ tpms[1].hostname }}
+  name: {{ tpms[1].hostname.split('.')[0] | lower }}
+
+tpm3:
+  mgmt_ip: {{ tpms[2].mgmt_ip }}
+  hostname: {{ tpms[2].hostname }}
+  name: {{ tpms[2].hostname.split('.')[0] | lower }}
+
+{% endif %}
+
+{% endif %}
 
 #hooks section
 {% if common.hooks is defined %}

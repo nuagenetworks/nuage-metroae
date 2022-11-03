@@ -1,0 +1,169 @@
+- name: Clean known_hosts of TPM's (ignoring errors)
+  known_hosts:
+    name: "{{ hostname }}"
+    state: absent
+  delegate_to: localhost
+  no_log: True
+  ignore_errors: True
+
+- name: Wait for TPM ssh to be ready before config
+  include_role:
+    name: common
+    tasks_from: wait-for-tpm-ssh-port
+  vars:
+    ssh_host: "{{ hostname }}"
+    ssh_timeout_seconds: 600
+    ssh_password: "{{ tpm_default_password }}"
+    ssh_user: "{{ tpm_default_username }}"
+
+- block:
+
+  - block:
+
+    - name: Get current VSD information
+      block:
+      - include_role:
+          name: common
+          tasks_from: get-current-vsd-api-version
+
+      - include_role:
+          name: common
+          tasks_from: get-vsd-version
+      delegate_to: "{{ hostvars[groups['primary_vsds'][0]].mgmt_ip }}"
+      remote_user: "{{ vsd_custom_username | default(vsd_default_username) }}"
+      become: "{{ 'no' if vsd_custom_username | default(vsd_default_username) == 'root' else 'yes' }}"
+      vars:
+        ansible_become_pass: "{{ vsd_custom_password | default(vsd_default_password) }}"
+
+    - name: Format VSPK auth for VSPK module
+      set_fact:
+        vspk_auth:
+          api_username: "{{ vsd_auth.username }}"
+          api_password: "{{ vsd_auth.password }}"
+          api_enterprise: "{{ vsd_auth.enterprise }}"
+          api_url: "{{ vsd_auth.api_url }}"
+          api_version: "{{ current_api_version }}"
+      no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
+
+    - name: Configure TPM server information on VSD
+      nuage_vspk:
+        auth: "{{ vspk_auth }}"
+        type: SystemConfig
+        state: present
+        properties:
+          threat_prevention_server: "{{ tpm1.hostname }}:8443"
+          threat_prevention_server_username: "{{ tpm_cli_username }}"
+          threat_prevention_server_password: "{{ tpm_cli_password }}"
+      delegate_to: localhost
+
+    - name: Enable signature update through cloud parameter on VSD
+      nuage_vspk:
+        auth: "{{ vspk_auth }}"
+        type: SystemConfig
+        state: present
+        properties:
+          signature_update_through_cloud_enabled: True
+      delegate_to: localhost
+      when: "{{ vsd_version_clean }} is version ('20.10.5', '>=')"
+
+    when: inventory_hostname == tpm1.hostname
+
+  - block:
+
+    - name: Adding the TPMs information in each other hosts directory
+      block:
+
+      - name: Updating tpm1 /etc/hosts
+        lineinfile:
+          path: /etc/hosts
+          line: "{{ item }}"
+        with_items:
+          - "{{ tpm2.mgmt_ip }}    {{ tpm2.name }}    {{ tpm2.hostname }}"
+          - "{{ tpm3.mgmt_ip }}    {{ tpm3.name }}    {{ tpm3.hostname }}"
+        when: inventory_hostname == tpm1.hostname
+
+      - name: Updating tpm2 /etc/hosts
+        lineinfile:
+          path: /etc/hosts
+          line: "{{ item }}"
+        with_items:
+          - "{{ tpm1.mgmt_ip }}    {{ tpm1.name }}    {{ tpm1.hostname }}"
+          - "{{ tpm3.mgmt_ip }}    {{ tpm3.name }}    {{ tpm3.hostname }}"
+        when: inventory_hostname == tpm2.hostname
+
+      - name: Updating tpm3 /etc/hosts
+        lineinfile:
+          path: /etc/hosts
+          line: "{{ item }}"
+        with_items:
+          - "{{ tpm2.mgmt_ip }}    {{ tpm2.name }}    {{ tpm2.hostname }}"
+          - "{{ tpm1.mgmt_ip }}    {{ tpm1.name }}    {{ tpm1.hostname }}"
+        when: inventory_hostname == tpm3.hostname
+
+      - name: Restart DNS
+        command: systemctl restart dnsmasq
+
+    - block:
+
+      - name: Generate certs for all 3 TPM server
+        command: rc gen-certs -m {{ tpm1.name }} {{ tpm2.name }} {{ tpm3.name }} -v
+
+      - name: Copy the certificates over to second TPM server
+        command: sshpass -p {{ tpm_default_password }} scp -P 2222 -o StrictHostKeyChecking=no {{ tpm2.name }}.tar.gz administrator@{{ tpm2.name }}:/home/administrator/
+
+      - name: Copy the certificates over to third TPM server
+        command: sshpass -p {{ tpm_default_password }} scp -P 2222 -o StrictHostKeyChecking=no {{ tpm3.name }}.tar.gz administrator@{{ tpm3.name }}:/home/administrator/
+
+      when: inventory_hostname == tpm1.hostname
+
+    - block: 
+      - name: Enable redundancy with the deployed certificate on the first TPM server
+        command: rc initiate -c {{ tpm1.name }}.tar.gz -v
+        register: tpm1_initiation
+        retries: 3
+        delay: 5
+        until: tpm1_initiation.rc == 0
+        ignore_errors: yes
+
+      - name: Assert that the redundacy is enabled
+        assert:
+          that: tpm1_initiation.stdout is search ('The redundancy cluster has already been enabled')
+        when: tpm1_initiation.rc != 0
+
+      when: inventory_hostname == tpm1.hostname
+
+    - block: 
+      - name: Enable redundancy with the deployed certificate on the second TPM server
+        command: rc initiate -c {{ tpm2.name }}.tar.gz -v
+        register: tpm2_initiation
+        retries: 3
+        delay: 5
+        until: tpm2_initiation.rc == 0
+        ignore_errors: yes
+
+      - name: Assert that the redundacy is enabled
+        assert:
+          that: tpm2_initiation.stdout is search ('The redundancy cluster has already been enabled')
+        when: tpm2_initiation.rc != 0
+
+      when: inventory_hostname == tpm2.hostname
+
+    - block: 
+      - name: Enable redundancy with the deployed certificate on the third TPM server
+        command: rc initiate -c {{ tpm3.name }}.tar.gz -f -v
+        register: tpm3_initiation
+        retries: 3
+        delay: 5
+        until: tpm3_initiation.rc == 0
+        ignore_errors: yes
+
+      - name: Assert that the redundacy is enabled
+        assert:
+          that: tpm3_initiation.stdout is search ('The redundancy cluster has already been enabled')
+        when: tpm3_initiation.rc != 0
+
+      when: inventory_hostname == tpm3.hostname
+
+    when: tpm_sa_or_ha is match('ha')
+
+  remote_user: "{{ tpm_default_username }}"
