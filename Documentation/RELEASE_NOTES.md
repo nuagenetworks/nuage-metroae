@@ -10,11 +10,16 @@
 
 ### Feature Enhancements
 <<<<<<< HEAD
+<<<<<<< HEAD
 * Add option to provide internal network for NUH deployment on OpenStack (METROAE-663)
 =======
 * Add lowercase proxy env support (METROAE-662)
 * Add Support for TPM server Deployment (METROAE-461)
 >>>>>>> dev
+=======
+* Add lowercase proxy env support (METROAE-662)
+* Add Support for TPM server Deployment (METROAE-461)
+>>>>>>> 147f58afa8feafd8254ddebf55fc7a63e457fe5e
 
 ### Resolved Issues
 
