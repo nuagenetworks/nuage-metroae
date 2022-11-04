@@ -13,7 +13,7 @@ Note that docker is required on the host in order to run MetroAE. All file paths
 * Locally available image files for VCS or VNS deployments within the git clone folder
 * Docker engine
 
-NOTE: SElinux must be disabled or set to permissive for MetroAE to work.
+##### NOTE: SElinux must be disabled or set to permissive for MetroAE to work.
 
 #### Steps
 
