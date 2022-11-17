@@ -2443,9 +2443,9 @@ class Wizard(object):
                                    default)
         deployment["nsg_infra_profile_name"] = profile_name
 
-        default = self._get_value(deployment, "nsg_template_name")
+        default = self._get_value(deployment, "NSGv_template_name")
         template_name = self._input("Name of NSG template", default)
-        deployment["nsg_template_name"] = template_name
+        deployment["NSGv_template_name"] = template_name
 
         default = self._get_value(deployment, "proxy_dns_name")
         dns_name = self._input("DNS name of proxy (on data network)", default)

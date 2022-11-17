@@ -59,7 +59,7 @@ options:
       - Parameters required for an NSG profile for ZFB.  Attributes:
       - nsg_organization
       - nsg_name
-      - nsg_template_name
+      - NSGv_template_name
       - match_type
       - match_value
       - ssh_service
@@ -128,7 +128,7 @@ EXAMPLES = '''
     zfb_nsg:
         nsg_organization: enterprise
         nsg_name: NSG1
-        nsg_template_name: nsg_template
+        NSGv_template_name: nsg_template
         match_type: ip_address
         match_value: 192.168.1.1
         ssh_service: DISABLED
@@ -235,11 +235,11 @@ def create_nsg_gateway_template(module, csproot, nsg_infra):
     nsg_params = module.params['zfb_nsg']
 
     nsg_temp = csproot.ns_gateway_templates.get_first(
-        "name is '%s'" % nsg_params['nsg_template_name'])
+        "name is '%s'" % nsg_params['NSGv_template_name'])
 
     if nsg_temp is None:
         nsg_temp = VSPK.NUNSGatewayTemplate(
-            name=nsg_params['nsg_template_name'])
+            name=nsg_params['NSGv_template_name'])
         nsg_temp.infrastructure_profile_id = nsg_infra.id
         csproot.create_child(nsg_temp)
 
