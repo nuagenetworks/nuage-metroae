@@ -2438,14 +2438,14 @@ class Wizard(object):
         email = self._input("Email address for proxy user", default)
         deployment["proxy_user_email"] = email
 
-        default = self._get_value(deployment, "nsg_infra_profile_name")
+        default = self._get_value(deployment, "nsgv_template_name")
         profile_name = self._input("Name of NSG infrastructure profile",
                                    default)
-        deployment["nsg_infra_profile_name"] = profile_name
+        deployment["nsgv_template_name"] = profile_name
 
-        default = self._get_value(deployment, "NSGv_template_name")
+        default = self._get_value(deployment, "nsg_template_name")
         template_name = self._input("Name of NSG template", default)
-        deployment["NSGv_template_name"] = template_name
+        deployment["nsg_template_name"] = template_name
 
         default = self._get_value(deployment, "proxy_dns_name")
         dns_name = self._input("DNS name of proxy (on data network)", default)

@@ -112,8 +112,8 @@ FORMAT = """
     - proxy_user_first_name
     - proxy_user_last_name
     - proxy_user_email
-    - nsg_infra_profile_name
-    - NSGv_template_name
+    - nsgv_template_name
+    - Nsg_template_name
     - proxy_dns_name
     - vsc_infra_profile_name
     - first_controller_address

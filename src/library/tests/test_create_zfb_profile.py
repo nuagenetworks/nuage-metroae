@@ -34,7 +34,7 @@ TEST_PARAMS = {
     "zfb_nsg": {
         "nsg_organization": "enterprise",
         "nsg_name": "NSG1",
-        "NSGv_template_name": "nsg_template",
+        "Nsg_template_name": "nsg_template",
         "match_type": "ip_address",
         "match_value": "192.168.1.1",
         "ssh_service": "DISABLED"},
@@ -147,7 +147,7 @@ class TestCreateZfbProfile(object):
 
     def verify_nsg_template(self, vspk_patch):
         vspk_patch.NUNSGatewayTemplate.assert_called_once_with(
-            name=TEST_PARAMS["zfb_nsg"]["NSGv_template_name"])
+            name=TEST_PARAMS["zfb_nsg"]["Nsg_template_name"])
         self.mock_root.create_child.assert_has_calls(
             [call(self.mock_nsg_template)])
         assert (self.mock_nsg_template.infrastructure_profile_id ==
