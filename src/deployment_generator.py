@@ -10,15 +10,15 @@ DEPLOYMENTS_DIRECTORY = "deployments"
 
 
 def usage():
-    print "Converts single user data file into a current"
-    print "deployment configuration under the %s/ directory." % (
-        DEPLOYMENTS_DIRECTORY)
-    print ""
-    print "Usage:"
-    print "    " + " ".join([sys.argv[0],
+    print("Converts single user data file into a current")
+    print("deployment configuration under the %s/ directory." % (
+        DEPLOYMENTS_DIRECTORY))
+    print("")
+    print("Usage:")
+    print("    " + " ".join([sys.argv[0],
                              "<user_input_file>",
-                             "<deployment_name>"])
-    print ""
+                             "<deployment_name>"]))
+    print("")
 
 
 def read_user_input(user_input_file):
@@ -50,7 +50,7 @@ def write_deployments(var_dict, deployment_name):
 
 
 def write_deployment_file(template_file, to_file, var_dict):
-    print "Writing " + to_file
+    print("Writing " + to_file)
 
     with open(template_file, "r") as file:
         template_string = file.read().decode("utf-8")
