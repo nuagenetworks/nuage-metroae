@@ -37,10 +37,10 @@ def verify_vrs_stats(stats_str):
 if __name__ == "__main__":
     stats_str = sys.argv[1]
     if not stats_str:
-        print "ERROR: No ouput from 'ovs-appctl ofproto/show alubr0' command"
+        print("ERROR: No ouput from 'ovs-appctl ofproto/show alubr0' command")
         sys.exit(1)
 
     result = verify_vrs_stats(stats_str)
 
     # Display final result
-    print ("{0}" .format(result))
+    print("{0}" .format(result))
