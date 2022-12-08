@@ -184,7 +184,7 @@ class ExcelParser(object):
                         entry[label] = value
                         self.cell_positions[label] = cell.coordinate
                 else:
-                    self.record_error(worksheet.title, cell.coordinate,"Data entry for unknown label")
+                    self.record_error(worksheet.title, cell.coordinate, "Data entry for unknown label")
                     if (worksheet.title == 'Nsgvs' and cell.coordinate == "B49"):
                         print("WARNING: NSG Template Name has been changed to NSG Template Name. Please update your excel spreadsheet to be compatible with latest metroae version. You can find excel spreadsheet in the metro github repo.")
             else:
