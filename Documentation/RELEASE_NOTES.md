@@ -11,6 +11,7 @@
 ### Feature Enhancements
 * Add lowercase proxy env support (METROAE-662)
 * Add Support for TPM server Deployment (METROAE-461)
+* Update the title for nsg_template_name to reflect the correct description (METROAE-501)
 
 ### Resolved Issues
 
