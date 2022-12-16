@@ -15,7 +15,7 @@
 * Remove {{ }} from when clauses in metro (METROAE-643)
 
 ### Resolved Issues
-* Update the DevOps Website (devops.nuagenetworks.net) with latest MetroAE container information (METROAE-627)
+* Update the DevOps Website (devops.nuagenetworks.net) with the latest MetroAE container information (METROAE-627)
 * Fix internal network option for NUH deployment on OpenStack (METROAE-663)
 
 ## Test Matrix
