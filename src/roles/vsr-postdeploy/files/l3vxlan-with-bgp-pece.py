@@ -16,7 +16,7 @@ from alc import dyn
 
 def setup_script(vsdParams):
 
-    print ("These are the VSD params: " + str(vsdParams))
+    print("These are the VSD params: " + str(vsdParams))
     servicetype = vsdParams.get('servicetype')
     vni = vsdParams.get('vni')
     rt = vsdParams.get('rt')
@@ -31,13 +31,13 @@ def setup_script(vsdParams):
 # remove trailing space at the end of the metadata
     metadata = metadata.rstrip()
 
-    print ("VSD metadata" + str(metadata))
+    print("VSD metadata" + str(metadata))
     metadata = dict(e.split('=') for e in metadata.split(','))
-    print ("Modified metadata" + str(metadata))
+    print("Modified metadata" + str(metadata))
     vplsSvc_id = dyn.select_free_id("service-id")
     vprnSvc_id = dyn.select_free_id("service-id")
-    print ("this are the free svc ids picked up by the system: VPLS:" +
-           vplsSvc_id + " + VPRN:" + vprnSvc_id)
+    print("this are the free svc ids picked up by the system: VPLS:" +
+          vplsSvc_id + " + VPRN:" + vprnSvc_id)
 
     if servicetype == "VRF-VXLAN":
 
@@ -52,7 +52,7 @@ def setup_script(vsdParams):
         customerpass = metadata['customerpass']
         customersubnet = metadata['customersubnet']
         customersap = metadata['customersap']
-        print (
+        print(
             'servicetype, VPLS id, rt, vni, rd, VPRN id, vprn_AS, vprn_RD, vprn_RT, vprn_Lo, customer, customeras, customerip, customerpass, customersubnet, customersap:',
             servicetype,
             vplsSvc_id,
@@ -170,7 +170,7 @@ def setup_script(vsdParams):
 
 
 def teardown_script(setupParams):
-    print ("These are the teardown_script setupParams: " + str(setupParams))
+    print("These are the teardown_script setupParams: " + str(setupParams))
     servicetype = setupParams.get('servicetype')
     if servicetype == "VRF-VXLAN":
         dyn.add_cli("""

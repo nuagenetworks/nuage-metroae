@@ -46,7 +46,7 @@ def validate_sections(schema_contents, file_name):
 def main():
 
     if len(sys.argv) < 2:
-        print "Usage: " + sys.argv[0] + " <schema_file>"
+        print("Usage: " + sys.argv[0] + " <schema_file>")
         exit(1)
 
     schema_file = os.path.join(SCHEMA_DIRECTORY, sys.argv[1])

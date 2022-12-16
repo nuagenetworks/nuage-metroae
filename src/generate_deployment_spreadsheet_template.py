@@ -210,9 +210,9 @@ def main():
 
     for item in format:
         if type(item) == dict:
-            print write_table(item).encode("utf-8")
+            print(write_table(item).encode("utf-8"))
         else:
-            print escape_line(item) + ","
+            print(escape_line(item) + ",")
 
 
 if __name__ == '__main__':
