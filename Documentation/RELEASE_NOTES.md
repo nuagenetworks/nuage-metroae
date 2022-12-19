@@ -9,14 +9,14 @@
 ## Release Contents
 
 ### Feature Enhancements
-* Add lowercase proxy env support (METROAE-662)
 * Add Support for TPM server Deployment (METROAE-461)
-* Update the title for nsg_template_name to reflect the correct description (METROAE-501)
+* Add lowercase proxy env support (METROAE-662)
 * Remove {{ }} from when clauses in metro (METROAE-643)
 
 ### Resolved Issues
 * Update the DevOps Website (devops.nuagenetworks.net) with the latest MetroAE container information (METROAE-627)
 * Fix internal network option for NUH deployment on OpenStack (METROAE-663)
+* Update the title for nsg_template_name to reflect the correct description (METROAE-501)
 
 ## Test Matrix
 
