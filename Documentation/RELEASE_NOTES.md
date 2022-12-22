@@ -2,23 +2,21 @@
 
 ## Release info
 
-* MetroAE Version 5.3.0
+* MetroAE Version 5.4.0
 * Nuage Release Alignment 20.10.R1
-* Date of Release 05-September-2022
+* Date of Release 22-December-2022
 
 ## Release Contents
 
 ### Feature Enhancements
-* Add support for VSD upgrade to 20.10.R9 (METROAE-652)
-* Add support for VSTAT(ES) upgrade to 20.10.R8 (METROAE-659)
-* Allow users to shut down VMs (METROAE-629)
-* Add support for VSC CPU, memory  health check (METROAE-657) 
-* Enhance VSD health check report for CPU and memory (METROAE-656)
+* Add Support for TPM server Deployment (METROAE-461)
+* Add lowercase proxy env support (METROAE-662)
+* Remove {{ }} from when clauses in metro (METROAE-643)
 
 ### Resolved Issues
-* Update Documentation about SELinux and supported components (METROAE-660)
-* Investigate stats-out ES Upgrade from 20.10.R5 to 20.10.R7 (METROAE-608)
-* Fixed package 'Six' issue (METROAE-658)
+* Update the DevOps Website (devops.nuagenetworks.net) with the latest MetroAE container information (METROAE-627)
+* Fix internal network option for NUH deployment on OpenStack (METROAE-663)
+* Update the title for nsg_template_name to reflect the correct description (METROAE-501)
 
 ## Test Matrix
 
