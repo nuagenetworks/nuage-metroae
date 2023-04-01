@@ -52,7 +52,25 @@
         chdir: "{{ ejabberd_base_dir }}/ebin"
       when: ejabberd_base_dir.stdout is search("3.2.13_5")
 
-    when: vsd_ejabberd_license_file is defined and vsd_ejabberd_license_file
+    when: vsd_ejabberd_license_file is defined and vsd_ejabberd_license_file and vsd_version.stdout is version('20.10.1', '<')
+
+    block: 
+
+    - name: Find the ejabberd base directory
+      command: find /opt/ejabberd/lib/ -type d -name "ejabberd_be*"
+      register: ejabberd_base_dir
+
+    - name: Copy new ejabberd license file to root folder on VSD
+      copy:
+        dest: "/root/"
+        src: "{{ vsd_ejabberd_license_file }}"
+
+    - name: Untar the new ejabberd license file
+      # noqa 303
+      command: "tar zxf /root/{{ vsd_ejabberd_license_file | basename }}"
+      args:
+        chdir: "{{ ejabberd_base_dir.stdout }}/ebin"
+    when: "vsd_version.stdout is version('20.10.1', '>=')"
 
   - name: Changing log_rotate_size to non-zero
     lineinfile:
