@@ -78,6 +78,7 @@
       command: "tar zxf /root/{{ vsd_ejabberd_license_file | basename }}"
       args:
         chdir: "{{ ejabberd_base_dir.stdout }}/ebin"
+
     when: vsd_ejabberd_license_file is defined and vsd_ejabberd_license_file and vsd_version.stdout is version('20.10.1', '>=')
 
   - name: Changing log_rotate_size to non-zero
@@ -91,7 +92,7 @@
     command: /opt/ejabberd/bin/ejabberdctl start
 
   - name: Check ejabberd status
-    command: /opt/ejabberd/bin/ejabberdctl status
+    command: /opt/ejabberd/bin/ejabberdctl license_info
     register: ejabberd_status
     retries: 5
     until: "ejabberd_status.rc == 0 and ejabberd_status.stdout.find('started with status: started') != -1"
