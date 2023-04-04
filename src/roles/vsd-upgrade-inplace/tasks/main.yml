@@ -54,13 +54,44 @@
     copy: src="{{ vsd_migration_iso_path }}/{{ vsd_migration_iso_file_name }}"
         dest=/tmp/
 
-  - name: Create mount point on /media/CDROM
-    file:
-      path: /media/CDROM
-      state: directory
+  - name: Copy ejjaberd license rpm file if it exists
+    copy: src="{{ vsd_ejabberd_rpm_file }}"
+        dest=/tmp/
+    when: patch_ejabberd|default(False)
 
-  - name: Mount VSD-migration-scripts-xxx.iso on /media/CDROM
-    command: "mount -o loop /tmp/{{ vsd_migration_iso_file_name }} /media/CDROM"  # noqa 303
+  - block:
+
+    - name: Create mount point on /media/CDROM
+      file:
+        path: /media/CDROM
+        state: directory
+
+    - name: Mount VSD-migration-scripts-xxx.iso on /media/CDROM
+      command: "mount -o loop /tmp/{{ vsd_migration_iso_file_name }} /media/CDROM"  # noqa 303
+
+    when: not patch_ejabberd|default(False)    
+
+  - block:
+
+    - name: Mount VSD-migration-scripts-xxx.iso on /mnt
+      command: "mount -o loop /tmp/{{ vsd_migration_iso_file_name }} /mnt"  # noqa 303
+
+    - name: Create new directory to run upgrade from
+      file:
+        path: /root/upgrade
+        state: directory
+
+    - name: Copy content of the migration ISO to new directory
+      copy:
+        dest: "/root/upgrade/"
+        src: "/mnt/*"
+
+    - name: Copy the downloaded ejabberd license rpm into Packages directory
+      copy:
+        dest: "/root/upgrade/Packages/"
+        src: "/tmp/ejabberd-4.2002.23-0.x86_64.rpm"
+
+    when: patch_ejabberd|default(False)    
 
   - name: Upgrade to RHEL 7.9
     command: /media/CDROM/vsd-patch-20.10.sh -y
@@ -83,6 +114,11 @@
 
   - name: Umount the ISO
     shell: "umount /media/CDROM"
+    when: not patch_ejabberd|default(False)
+
+  - name: Umount the ISO
+    shell: "umount /mnt"
+    when: patch_ejabberd|default(False)
 
   - name: Delete the VSD migration script ISO from VSD's temp directory
     file:
@@ -101,6 +137,10 @@
     tasks_from: monit_status
   vars:
     no_report: "True"
+
+- name: Run the ejabberd GUI update script
+  command: /opt/vsd/sysmon/ejabberdLicenseExpiryDateUpdater.py
+  when: upgrade_to_version|upper|replace('R','') is version('20.10.7', '>=')
 
 - name: Allow XMPP Connections after patching Ejabberd
   include_role:
