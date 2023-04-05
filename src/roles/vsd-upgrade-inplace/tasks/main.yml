@@ -55,7 +55,7 @@
         dest=/tmp/
 
   - name: Copy ejjaberd license rpm file if it exists
-    copy: src="{{ vsd_ejabberd_rpm_file }}"
+    copy: src="/metroae/images/misc/license/ejabberd-4.2002.23-0.x86_64.rpm"
         dest=/tmp/
     when: patch_ejabberd|default(False)
 
@@ -84,12 +84,17 @@
     - name: Copy content of the migration ISO to new directory
       copy:
         dest: "/root/upgrade/"
-        src: "/mnt/*"
+        src: "{{ item }}"
+        recurse: "true"
+      with_fileglob:
+        - "/mnt/*"
 
     - name: Copy the downloaded ejabberd license rpm into Packages directory
       copy:
         dest: "/root/upgrade/Packages/"
-        src: "/tmp/ejabberd-4.2002.23-0.x86_64.rpm"
+        src: "{{ item }}"
+      with_fileglob:
+        - "/tmp/ejabberd-4*.rpm"
 
     when: patch_ejabberd|default(False)    
 
@@ -97,27 +102,34 @@
     command: /media/CDROM/vsd-patch-20.10.sh -y
     when: upgrade_to_version|upper|replace('R','') is version('20.10.8', '>=')
 
-  - name: Check and print what needs to be patched on VSD
-    command: /media/CDROM/vsd-patch.sh -c
+  - block: 
 
-  - name: Run the patch
-    command: /media/CDROM/vsd-patch.sh
-    when: not patch_ejabberd|default(False)
-    vars:
-      ansible_python_interpreter: "{{ python_location }}"
+    - name: Check and print what needs to be patched on VSD
+      command: /media/CDROM/vsd-patch.sh -c
 
-  - name: Run the patch
-    command: /media/CDROM/vsd-patch.sh -y
-    when: patch_ejabberd|default(False)
-    vars:
-      ansible_python_interpreter: "{{ python_location }}"
+    - name: Run the patch
+      command: /media/CDROM/vsd-patch.sh
+      vars:
+        ansible_python_interpreter: "{{ python_location }}"
 
-  - name: Umount the ISO
-    shell: "umount /media/CDROM"
+    - name: Umount the ISO
+      shell: "umount /media/CDROM"
+    
     when: not patch_ejabberd|default(False)
 
-  - name: Umount the ISO
-    shell: "umount /mnt"
+  - block: 
+
+    - name: Check and print what needs to be patched on VSD
+      command: /root/upgrade/vsd-patch.sh -c
+
+    - name: Run the patch
+      command: /root/upgrade/vsd-patch.sh -y
+      vars:
+        ansible_python_interpreter: "{{ python_location }}"
+
+    - name: Umount the ISO
+      shell: "umount /mnt"
+
     when: patch_ejabberd|default(False)
 
   - name: Delete the VSD migration script ISO from VSD's temp directory
