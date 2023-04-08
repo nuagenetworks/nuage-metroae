@@ -69,6 +69,21 @@
     - name: Mount VSD-migration-scripts-xxx.iso on /media/CDROM
       command: "mount -o loop /tmp/{{ vsd_migration_iso_file_name }} /media/CDROM"  # noqa 303
 
+    - name: Upgrade to RHEL 7.9
+      command: /media/CDROM/vsd-patch-20.10.sh -y
+      when: upgrade_to_version|upper|replace('R','') is version('20.10.8', '>=')
+
+    - name: Check and print what needs to be patched on VSD
+      command: /media/CDROM/vsd-patch.sh -c
+
+    - name: Run the patch
+      command: /media/CDROM/vsd-patch.sh
+      vars:
+        ansible_python_interpreter: "{{ python_location }}"
+
+    - name: Umount the ISO
+      shell: "umount /media/CDROM"
+
     when: not patch_ejabberd|default(False)
 
   - block:
@@ -91,32 +106,9 @@
         src: "/tmp/ejabberd-4.2002.23-0.x86_64.rpm"
         remote_src: yes
 
-    when: patch_ejabberd|default(False)
-
-  - name: Upgrade to RHEL 7.9
-    command: /media/CDROM/vsd-patch-20.10.sh -y
-    when: upgrade_to_version|upper|replace('R','') is version('20.10.8', '>=') and not patch_ejabberd|default(False)
-
-  - name: Upgrade to RHEL 7.9
-    command: /root/upgrade/vsd-patch-20.10.sh -y
-    when: upgrade_to_version|upper|replace('R','') is version('20.10.8', '>=') and patch_ejabberd|default(False)
-
-  - block:
-
-    - name: Check and print what needs to be patched on VSD
-      command: /media/CDROM/vsd-patch.sh -c
-
-    - name: Run the patch
-      command: /media/CDROM/vsd-patch.sh
-      vars:
-        ansible_python_interpreter: "{{ python_location }}"
-
-    - name: Umount the ISO
-      shell: "umount /media/CDROM"
-
-    when: not patch_ejabberd|default(False)
-
-  - block:
+    - name: Upgrade to RHEL 7.9
+      command: /root/upgrade/vsd-patch-20.10.sh -y
+      when: upgrade_to_version|upper|replace('R','') is version('20.10.8', '>=')
 
     - name: Check and print what needs to be patched on VSD
       command: /root/upgrade/vsd-patch.sh -c
