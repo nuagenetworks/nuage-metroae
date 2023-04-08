@@ -54,11 +54,6 @@
     copy: src="{{ vsd_migration_iso_path }}/{{ vsd_migration_iso_file_name }}"
         dest=/tmp/
 
-  - name: Copy ejjaberd license rpm file if it exists
-    copy: src="{{ vsd_ejabberd_rpm_file }}"
-        dest=/tmp/
-    when: patch_ejabberd|default(False)
-
   - block:
 
     - name: Create mount point on /media/CDROM
@@ -87,6 +82,14 @@
     when: not patch_ejabberd|default(False)
 
   - block:
+
+    - name: Check if rpm file is defined
+      fail: msg="For upgrade to 20.10.R4+, you are supposed to define vsd_ejabberd_rpm_file variable which is the path to rpm file needed to renew the ejabberd license file for VSD. It should be defined under upgrade.yml"
+      when: vsd_ejabberd_rpm_file is undefined
+
+    - name: Copy ejjaberd license rpm file if it exists
+      copy: src="{{ vsd_ejabberd_rpm_file }}"
+          dest=/tmp/
 
     - name: Mount VSD-migration-scripts-xxx.iso on /mnt
       command: "mount -o loop /tmp/{{ vsd_migration_iso_file_name }} /mnt"  # noqa 303
