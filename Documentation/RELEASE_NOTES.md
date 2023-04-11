@@ -13,6 +13,7 @@
 ### Resolved Issues
 * Fix DNS restart issue for TPM server HA deployment (METROAE-668)
 * Update/Renew VSD ejabberd license for 20.10.Rx version (METROAE-669)
+* Fix SD-WAN Portal standalone deployment (METROAE-667)
 
 ## Test Matrix
 
