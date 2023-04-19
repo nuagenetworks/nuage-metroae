@@ -1,0 +1,78 @@
+#!/bin/bash
+# WARNING: Any paths defined in the deployment files must be relative to this folder. No absolute paths, and no paths outside of this folder
+
+TAG=$(git rev-parse --short HEAD)
+TI=""
+ENCRYPTED_TOKEN=\$ANSIBLE_VAULT
+CURRENT_DIR=`pwd`
+DEPLOYMENTS_BASE_DIR=$CURRENT_DIR/deployments
+DEPLOYMENT_DIR=$DEPLOYMENTS_BASE_DIR/default
+[ -t 0 ] && TI="-ti"
+
+function check_password_needed {
+    deployment_dir="$1"
+
+    encrypted_files=$(grep -Ril $ENCRYPTED_TOKEN $deployment_dir)
+
+    if [[ -z $METROAE_PASSWORD ]]; then
+        if [[ -z "$encrypted_files" ]]; then
+            SKIP_PASSWORD=1
+        else
+            SKIP_PASSWORD=0
+        fi
+    else
+        SKIP_PASSWORD=1
+    fi
+}
+
+function ask_password {
+    if [[ $SKIP_PASSWORD -ne 1 ]]; then
+        write_to_screen_and_script_log "The deployment contains encrypted content which requires a password to access."
+        echo "Enter the password, below, or add the environment variable METROAE_PASSWORD and retry."
+        echo ""
+        read -s -p "Enter password: " METROAE_PASSWORD
+        export METROAE_PASSWORD
+    fi
+}
+
+podman image inspect metroaecontainer:$TAG > /dev/null 2>&1
+if [[ "$?" != "0" ]]
+then
+    if [[ -n "$TI" ]]
+    then
+        echo "The podman image for this repo head does not exist. We will build it. Press any key to continue"
+        read -n 1
+    fi
+    set -e
+    ./podman/build-container raw
+    set +e
+fi
+
+SSHMOUNT=""
+[[ -e .ssh ]] && SSHMOUNT="-v `pwd`/.ssh:/root/.ssh"
+
+check_password_needed "$DEPLOYMENT_DIR"
+ask_password
+
+VAULTPASS=""
+if [[ ! -z $METROAE_PASSWORD ]]; then
+    VAULTPASS=" -e METROAE_PASSWORD=$METROAE_PASSWORD"
+fi
+
+
+# Run the command inside podman
+args=( "$@" )
+
+# we use host networking because we want the host's dns server and host file
+podman run \
+    --network=host \
+    --rm \
+    $TI \
+    $SSHMOUNT \
+    $VAULTPASS \
+    --env-file <(env | grep -iE '^(PWD|PATH|HOME|USER|SHELL|MAIL|SSH_CONNECTION|LOGNAME|OLDPWD|LESSOPEN|_XDG_RUNTIME_DIR|HISTCONTROL)') \
+    -v \
+    "`pwd`:/metroae" \
+    -e METROAE_DIR=`pwd` \
+    metroaecontainer:$TAG \
+    ./metroae "${args[@]}"
