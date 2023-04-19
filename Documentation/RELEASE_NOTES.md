@@ -2,21 +2,18 @@
 
 ## Release info
 
-* MetroAE Version 5.4.0
+* MetroAE Version 5.5.0
 * Nuage Release Alignment 20.10.R1
-* Date of Release 22-December-2022
+* Date of Release
 
 ## Release Contents
 
 ### Feature Enhancements
-* Add Support for TPM server Deployment (METROAE-461)
-* Add lowercase proxy env support (METROAE-662)
-* Remove {{ }} from when clauses in metro (METROAE-643)
 
 ### Resolved Issues
-* Update the DevOps Website (devops.nuagenetworks.net) with the latest MetroAE container information (METROAE-627)
-* Fix internal network option for NUH deployment on OpenStack (METROAE-663)
-* Update the title for nsg_template_name to reflect the correct description (METROAE-501)
+* Fix DNS restart issue for TPM server HA deployment (METROAE-668)
+* Update/Renew VSD ejabberd license for 20.10.Rx version (METROAE-669)
+* Fix SD-WAN Portal standalone deployment (METROAE-667)
 
 ## Test Matrix
 
