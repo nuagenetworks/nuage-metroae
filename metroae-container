@@ -9,6 +9,9 @@ DEPLOYMENTS_BASE_DIR=$CURRENT_DIR/deployments
 DEPLOYMENT_DIR=$DEPLOYMENTS_BASE_DIR/default
 [ -t 0 ] && TI="-ti"
 
+# PLATFORM AS Servcie docker/podman
+PLATFORM_AS_SERVICE="${PLATFORM_TYPE=docker}"
+
 function check_password_needed {
     deployment_dir="$1"
 
@@ -35,16 +38,22 @@ function ask_password {
     fi
 }
 
+if [[ "$PLATFORM_AS_SERVICE" == "podman" ]];
+then
 podman image inspect metroaecontainer:$TAG > /dev/null 2>&1
+else
+docker image inspect metroaecontainer:$TAG > /dev/null 2>&1
+fi
+
 if [[ "$?" != "0" ]]
 then
     if [[ -n "$TI" ]]
     then
-        echo "The podman image for this repo head does not exist. We will build it. Press any key to continue"
+        echo "The docker image for this repo head does not exist. We will build it. Press any key to continue"
         read -n 1
     fi
     set -e
-    ./podman/build-container raw
+    ./docker/build-container raw
     set +e
 fi
 
@@ -60,10 +69,12 @@ if [[ ! -z $METROAE_PASSWORD ]]; then
 fi
 
 
-# Run the command inside podman
+# Run the command inside docker
 args=( "$@" )
 
 # we use host networking because we want the host's dns server and host file
+if [[ "$PLATFORM_AS_SERVICE" == "podman" ]];
+then
 podman run \
     --network=host \
     --rm \
@@ -76,3 +87,17 @@ podman run \
     -e METROAE_DIR=`pwd` \
     metroaecontainer:$TAG \
     ./metroae "${args[@]}"
+else
+docker run \
+    --network=host \
+    --rm \
+    $TI \
+    $SSHMOUNT \
+    $VAULTPASS \
+    --env-file <(env | grep -Ev '^(PWD|PATH|HOME|USER|SHELL|MAIL|SSH_CONNECTION|LOGNAME|OLDPWD|LESSOPEN|_XDG_RUNTIME_DIR|HISTCONTROL)') \
+    -v \
+    "`pwd`:/metroae" \
+    -e METROAE_DIR=`pwd` \
+    metroaecontainer:$TAG \
+    ./metroae "${args[@]}"
+fi

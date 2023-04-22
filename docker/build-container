@@ -22,10 +22,25 @@ fi
 cp -f ../yum_requirements.txt ./
 cp -f ../pip_requirements.txt ./
 cp -f ../openstack_requirements.txt ./
-podman build $buildproxy -t metroaecontainer:$TAG .
 
-if [[ "$1" != "raw" ]]
+if [[ "$PLATFORM_AS_SERVICE" == "podman" ]];
 then
-    podman save -o metroae-docker-container.tar metroaecontainer:$TAG 
-    echo "File metroae-docker-container.tar was created"
+podman build $buildproxy -t metroaecontainer:$TAG .
+else
+docker build $buildproxy -t metroaecontainer:$TAG .
 fi
+if [[ "$PLATFORM_AS_SERVICE" == "podman" ]];
+then
+    if [[ "$1" != "raw" ]]
+    then
+        podman save -o metroae-docker-container.tar metroaecontainer:$TAG 
+        echo "File metroae-docker-container.tar was created"
+    fi
+else
+    if [[ "$1" != "raw" ]]
+    then
+        docker save -o metroae-docker-container.tar metroaecontainer:$TAG 
+        echo "File metroae-docker-container.tar was created"
+    fi
+fi
+
