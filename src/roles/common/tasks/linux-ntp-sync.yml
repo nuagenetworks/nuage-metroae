@@ -40,6 +40,9 @@
     with_items: "{{ ntp_server_list }}"
     when: ansible_os_family == "Redhat"
 
+  - name: Enable the NTP synchronization 
+    systemctl: "timedatectl set-ntp true"
+
   - name: Stop the ntpd and ntpdate services if running
     service:
       name:  "{{ item }}"
@@ -89,6 +92,17 @@
     when:
       - ntpdate_status.msg is defined
       - ntpdate_status.msg is search('ntpdate.service failed')
+      - ansible_os_family == "CentOS"
+
+    #- name: Check for chronyd failures
+    #fail:
+    #  msg: >-
+    #   There seems to be an issue connecting to the specified NTP servers.
+    #   Please verify the IP addresses and check "systemctl status ntpdate.service" and "journalctl -xe" for further details.
+    #when:
+    #  - ntpdate_status.msg is defined
+      #- ntpdate_status.msg is search('ntpdate.service failed')
+    #  - ansible_os_family == "Redhat"
 
   - name: Restart ntpd
     service:
