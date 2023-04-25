@@ -17,31 +17,13 @@
       dest: /etc/ntp.conf
       regexp: "^server"
       state: absent
-    when: ansible_os_family == "CentOS"
-
-  - name: Remove old NTP servers
-    lineinfile:
-      dest: /etc/chrony.conf
-      regexp: "^server"
-      state: absent
-    when: ansible_os_family == "Redhat"
 
   - name: Configure NTP servers
     lineinfile:
       dest: /etc/ntp.conf
       line: "server {{ item }} iburst"
     with_items: "{{ ntp_server_list }}"
-    when: ansible_os_family == "CentOS"
 
-  - name: Configure NTP servers
-    lineinfile:
-      dest: /etc/chrony.conf
-      line: "server {{ item }} iburst"
-    with_items: "{{ ntp_server_list }}"
-    when: ansible_os_family == "Redhat"
-
-  - name: Enable the NTP synchronization 
-    systemctl: "timedatectl set-ntp true"
 
   - name: Stop the ntpd and ntpdate services if running
     service:
@@ -50,22 +32,11 @@
     with_items:
        - "ntpd"
        - "ntpdate"
-    when: ansible_os_family == "CentOS"
-
-  - name: Stop the ntpd and ntpdate services if running
-    service:
-      name:  "{{ item }}"
-      state: stopped
-    with_items:
-       - "chronyd"
-       #- "ntpdate"
-    when: ansible_os_family == "Redhat"
 
   - name: Delete the default steptickers file
     file:
       path: /etc/ntp/step-tickers
       state: absent
-    when: ansible_os_family == "CentOS"
 
   - name: Configure NTP servers for ntpdate
     lineinfile:
@@ -73,7 +44,6 @@
       line: "{{ item }}"
       create: yes
     with_items: "{{ ntp_server_list }}"
-    when: ansible_os_family == "CentOS"
 
   - name: Enable ntpdate
     service:
@@ -82,7 +52,6 @@
       state: started
     register: ntpdate_status
     ignore_errors: yes
-    when: ansible_os_family == "CentOS"
 
   - name: Check for ntpdate failures
     fail:
@@ -92,31 +61,12 @@
     when:
       - ntpdate_status.msg is defined
       - ntpdate_status.msg is search('ntpdate.service failed')
-      - ansible_os_family == "CentOS"
-
-    #- name: Check for chronyd failures
-    #fail:
-    #  msg: >-
-    #   There seems to be an issue connecting to the specified NTP servers.
-    #   Please verify the IP addresses and check "systemctl status ntpdate.service" and "journalctl -xe" for further details.
-    #when:
-    #  - ntpdate_status.msg is defined
-      #- ntpdate_status.msg is search('ntpdate.service failed')
-    #  - ansible_os_family == "Redhat"
 
   - name: Restart ntpd
     service:
       name: ntpd
       enabled: yes
       state: restarted
-    when: ansible_os_family == "CentOS"
-
-  - name: Restart chronyd
-    service:
-      name: chronyd
-      enabled: yes
-      state: restarted
-    when: ansible_os_family == "Redhat"
 
   - name: Check ntp sync state
     shell: ntpstat | awk 'NR==1{print $1}'
