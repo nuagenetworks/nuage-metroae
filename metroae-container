@@ -7,6 +7,12 @@ ENCRYPTED_TOKEN=\$ANSIBLE_VAULT
 CURRENT_DIR=`pwd`
 DEPLOYMENTS_BASE_DIR=$CURRENT_DIR/deployments
 DEPLOYMENT_DIR=$DEPLOYMENTS_BASE_DIR/default
+
+if [[ -z $DOCKER_BIN ]]
+then
+    DOCKER_BIN="docker"
+fi
+
 [ -t 0 ] && TI="-ti"
 
 function check_password_needed {
@@ -35,7 +41,7 @@ function ask_password {
     fi
 }
 
-docker image inspect metroaecontainer:$TAG > /dev/null 2>&1
+$DOCKER_BIN image inspect metroaecontainer:$TAG > /dev/null 2>&1
 if [[ "$?" != "0" ]]
 then
     if [[ -n "$TI" ]]
@@ -64,12 +70,13 @@ fi
 args=( "$@" )
 
 # we use host networking because we want the host's dns server and host file
-docker run \
+$DOCKER_BIN run \
     --network=host \
     --rm \
     $TI \
     $SSHMOUNT \
     $VAULTPASS \
+    -e SKIP_PROMPTS \
     --env-file <(env | grep -Ev '^(PWD|PATH|HOME|USER|SHELL|MAIL|SSH_CONNECTION|LOGNAME|OLDPWD|LESSOPEN|_XDG_RUNTIME_DIR|HISTCONTROL)') \
     -v \
     "`pwd`:/metroae" \
