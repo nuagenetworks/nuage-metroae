@@ -68,6 +68,13 @@ fi
 # Run the command inside docker
 args=( "$@" )
 
+if [[ $DOCKER_BIN == 'docker'  ]];
+then
+arg_env=-Ev
+else
+arg_env=-iE
+fi
+
 # we use host networking because we want the host's dns server and host file
 $DOCKER_BIN run \
     --network=host \
@@ -76,7 +83,7 @@ $DOCKER_BIN run \
     $SSHMOUNT \
     $VAULTPASS \
     -e SKIP_PROMPTS \
-    --env-file <(env | grep -Ev '^(PWD|PATH|HOME|USER|SHELL|MAIL|SSH_CONNECTION|LOGNAME|OLDPWD|LESSOPEN|_XDG_RUNTIME_DIR|HISTCONTROL)') \
+    --env-file <(env | grep $arg_env '^(PWD|PATH|HOME|USER|SHELL|MAIL|SSH_CONNECTION|LOGNAME|OLDPWD|LESSOPEN|_XDG_RUNTIME_DIR|HISTCONTROL)') \
     -v \
     "`pwd`:/metroae" \
     -e METROAE_DIR=`pwd` \
