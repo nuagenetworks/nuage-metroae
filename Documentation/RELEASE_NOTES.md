@@ -9,6 +9,7 @@
 ## Release Contents
 
 ### Feature Enhancements
+* Add support for multiple external interfaces in NUH (METROAE-670)
 
 ### Resolved Issues
 * Fix DNS restart issue for TPM server HA deployment (METROAE-668)
