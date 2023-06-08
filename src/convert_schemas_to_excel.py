@@ -348,8 +348,8 @@ class ExcelTemplateGenerator(object):
     def read_schema(self, schema_name):
         file_name = schema_name + ".json"
         file_path = os.path.join(self.settings["schema_directory"], file_name)
-        with open(file_path, "rb") as f:
-            schema_str = f.read().decode("utf-8")
+        with open(file_path, "r", encoding="utf-8") as f:
+            schema_str = f.read()
 
         try:
             return json.loads(schema_str)
@@ -364,8 +364,8 @@ class ExcelTemplateGenerator(object):
         file_name = os.path.join(example_dir, schema_name + ".yml")
         if os.path.isfile(file_name):
             try:
-                with open(file_name, "rb") as f:
-                    return yaml.safe_load(f.read().decode("utf-8"))
+                with open(file_name, "r", encoding="utf-8") as f:
+                    return yaml.safe_load(f.read())
             except Exception as e:
                 raise Exception("Could not parse example: %s\n%s" % (
                     file_name, str(e)))

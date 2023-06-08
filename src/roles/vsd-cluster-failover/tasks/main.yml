@@ -14,7 +14,7 @@
     command: ping -c1 {{ item }}
     delegate_to: localhost
     register: ping_result
-    ignore_errors: "{{ vsd_force_cluster_failover | default(no) }}"
+    ignore_errors: "{{ vsd_force_cluster_failover | default(false) }}"
     with_items: "{{ groups['primary_vsds'] }}"
 
   - name: Check health of active and standby vsd cluster
@@ -24,7 +24,7 @@
     vars:
       no_report: "True"
     when: not skip_health_check | default(false)
-    ignore_errors: "{{ vsd_force_cluster_failover | default(no) }}"
+    ignore_errors: "{{ vsd_force_cluster_failover | default(false) }}"
     run_once: false
 
   - name: Set the reachablility flag for primary vsds
@@ -47,7 +47,7 @@
 
   - name: Deactivate replication on primary VSD cluster
     shell: /opt/vsd/bin/vsd-deactivate-replication-master-cluster.sh -f         # noqa 305
-    ignore_errors: "{{ vsd_force_cluster_failover | default(no) }}"
+    ignore_errors: "{{ vsd_force_cluster_failover | default(false) }}"
     delegate_to: "{{ item }}"
     with_items: "{{ groups['primary_vsds'] }}"
     when:
@@ -56,7 +56,7 @@
 
   - name: Deactivate replication on primary VSD cluster
     command: /opt/vsd/bin/vsd-deactivate-replication-master-cluster.sh
-    ignore_errors: "{{ vsd_force_cluster_failover | default(no) }}"
+    ignore_errors: "{{ vsd_force_cluster_failover | default(false) }}"
     delegate_to: "{{ item }}"
     with_items: "{{ groups['primary_vsds'] }}"
     when:
@@ -210,7 +210,7 @@
       vars:
         no_report: "True"
       when: is_primary_reachable | default(false)
-      ignore_errors: "{{ vsd_force_cluster_failover | default(no) }}"
+      ignore_errors: "{{ vsd_force_cluster_failover | default(false) }}"
 
     delegate_to: "{{ groups['primary_vsds'][0] }}"
 
@@ -222,7 +222,7 @@
       vars:
         no_report: "True"
       when: is_primary_reachable | default(false)
-      ignore_errors: "{{ vsd_force_cluster_failover | default(no) }}"
+      ignore_errors: "{{ vsd_force_cluster_failover | default(false) }}"
       loop_control:
         loop_var: vsd_ha_node
       with_items:
