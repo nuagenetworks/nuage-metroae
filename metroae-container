@@ -3,8 +3,8 @@
 
 TAG=$(git rev-parse --short HEAD)
 TI=""
-ENCRYPTED_TOKEN=\$ANSIBLE_VAULT
-CURRENT_DIR=`pwd`
+ENCRYPTED_TOKEN="\$ANSIBLE_VAULT"
+CURRENT_DIR=$(pwd)
 DEPLOYMENTS_BASE_DIR=$CURRENT_DIR/deployments
 DEPLOYMENT_DIR=$DEPLOYMENTS_BASE_DIR/default
 [ -t 0 ] && TI="-ti"
@@ -27,8 +27,8 @@ function check_password_needed {
 
 function ask_password {
     if [[ $SKIP_PASSWORD -ne 1 ]]; then
-        write_to_screen_and_script_log "The deployment contains encrypted content which requires a password to access."
-        echo "Enter the password, below, or add the environment variable METROAE_PASSWORD and retry."
+        write_to_screen_and_script_log "The deployment contains encrypted content that requires a password to access."
+        echo "Enter the password below or add the environment variable METROAE_PASSWORD and retry."
         echo ""
         read -s -p "Enter password: " METROAE_PASSWORD
         export METROAE_PASSWORD
@@ -38,9 +38,8 @@ function ask_password {
 docker image inspect metroaecontainer:$TAG > /dev/null 2>&1
 if [[ "$?" != "0" ]]
 then
-    if [[ -n "$TI" ]]
-    then
-        echo "The docker image for this repo head does not exist. We will build it. Press any key to continue"
+    if [[ -n "$TI" ]]; then
+        echo "The Docker image for this repo head does not exist. We will build it. Press any key to continue."
         read -n 1
     fi
     set -e
@@ -49,30 +48,28 @@ then
 fi
 
 SSHMOUNT=""
-[[ -e .ssh ]] && SSHMOUNT="-v `pwd`/.ssh:/root/.ssh"
+[[ -e .ssh ]] && SSHMOUNT="-v $(pwd)/.ssh:/root/.ssh"
 
 check_password_needed "$DEPLOYMENT_DIR"
 ask_password
 
-VAULTPASS=""
-if [[ ! -z $METROAE_PASSWORD ]]; then
-    VAULTPASS=" -e METROAE_PASSWORD=$METROAE_PASSWORD"
-fi
-
-
-# Run the command inside docker
+# Run the command inside Docker
 args=( "$@" )
 
-# we use host networking because we want the host's dns server and host file
+# Use host networking because we want the host's DNS server and host file
 docker run \
     --network=host \
     --rm \
     $TI \
     $SSHMOUNT \
-    $VAULTPASS \
-    --env-file <(env | grep -Ev '^(PWD|PATH|HOME|USER|SHELL|MAIL|SSH_CONNECTION|LOGNAME|OLDPWD|LESSOPEN|_XDG_RUNTIME_DIR|HISTCONTROL)') \
-    -v \
-    "`pwd`:/metroae" \
-    -e METROAE_DIR=`pwd` \
+    -e METROAE_DIR="$(pwd)" \
+    -e METROAE_PASSWORD="$METROAE_PASSWORD" \
+    -e ANSIBLE_VAULT="$ENCRYPTED_TOKEN" \
+    -e TAG="$TAG" \
+    -e DEPLOYMENT_DIR="$DEPLOYMENT_DIR" \
+    -e CURRENT_DIR="$CURRENT_DIR" \
+    -e SKIP_PASSWORD="$SKIP_PASSWORD" \
+    "${args[@]}" \
+    -v "$(pwd):/metroae" \
     metroaecontainer:$TAG \
-    ./metroae "${args[@]}"
+    ./metroae
