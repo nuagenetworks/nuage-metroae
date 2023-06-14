@@ -36,19 +36,44 @@
       that: '"access" not in required_bridges or access_bridge in ansible_interfaces'
       msg: "Required access network bridge not found"
 
-  - name: If RedHat, install packages for RedHat OS family distros
-    dnf:
-      name:
-       - qemu-kvm
-       - libvirt
-       - bridge-utils
-       - libguestfs
-       - libguestfs-tools
-       - libvirt-devel
-       - libvirt-python
-      lock_timeout: 100
-      state: present
+  - name: Determine package manager
+    set_fact:
+      package_manager: "{{ 'dnf' if ansible_pkg_mgr == 'dnf' else 'yum' }}"
+
+  - block:
+
+    - name: If RedHat, install packages for RedHat OS family distros
+      yum:
+        name:
+         - qemu-kvm
+         - libvirt
+         - bridge-utils
+         - libguestfs
+         - libguestfs-tools
+         - libvirt-devel
+         - libvirt-python
+        lock_timeout: 100
+        state: present
+      when: package_manager == 'yum'
+      vars:
+        ansible_python_interpreter: /usr/bin/python2
+
+    - name: If RedHat, install packages for RedHat OS family distros
+      dnf:
+        name:
+         - qemu-kvm
+         - libvirt-daemon
+         - iproute-tc
+         - libguestfs
+         - libguestfs-tools
+         - libvirt-devel
+         - python3-libvirt
+        lock_timeout: 100
+        state: present
+      when: package_manager == 'dnf'
+
     when: ansible_os_family == "RedHat"
+
 
   - name: If Debian, install packages for Debian OS family distros
     apt:
@@ -72,3 +97,4 @@
   delegate_to: "{{ target_server }}"
   remote_user: "{{ target_server_username }}"
   become: "{{ 'no' if target_server_username == 'root' else 'yes' }}"
+  
