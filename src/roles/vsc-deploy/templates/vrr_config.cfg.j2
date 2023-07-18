@@ -1,0 +1,286 @@
+exit all
+configure
+
+#--------------------------------------------------
+echo "System Configuration"
+#--------------------------------------------------
+    system
+        name {{ system_name | default(inventory_hostname) }}
+        snmp
+        exit 
+        time
+            ntp
+            {% for ntp_server in ntp_server_list %}
+                server {{ ntp_server }}
+            {% endfor %}
+                no shutdown
+            exit
+            sntp
+                shutdown
+            exit
+        exit
+    exit
+#--------------------------------------------------
+#echo "System Security Configuration"
+#--------------------------------------------------
+    system
+        security
+            profile "zabbix" 
+                entry 10 
+                    match "exit" 
+                    action permit 
+            exit 
+                entry 20 
+                    match "show uptime" 
+                    action permit 
+                exit 
+                entry 30 
+                    match "logout" 
+                    action permit 
+                exit  
+            exit 
+            user "admin" 
+                password "RrP6i9tNez2Sg5DBO7a8nouPskUVDaF3wvO5YEMqiiY" hash2 
+                access console 
+                console 
+                    member "administrative" 
+                exit 
+            exit 
+            user "zabbix" 
+                password "ajtAvhntoLtUBnhRUjv54k" hash2 
+                access console 
+                console 
+                    no member "default" 
+                    member "zabbix" 
+                exit 
+            exit 
+            snmp 
+                community "XiKK74vjRvsfSjdUZFiUaMMvrMjcY9Ms" hash2 r version v2c 
+            exit 
+            ssh 
+                preserve-key 
+            exit    
+        exit
+    exit
+#-------------------------------------------------- 
+echo "Log Configuration" 
+#-------------------------------------------------- 
+    log 
+        file-id 33 
+            location cf1: 
+            rollover 1440 retention 120 
+        exit 
+        syslog 1 
+            description "zabbixproxy1" 
+            address 100.70.2.10 
+            level warning 
+            log-prefix "POC1-OnPrem-{{ system_name | default(inventory_hostname) }}" 
+        exit 
+        log-id 33 
+            from debug-trace main security change 
+            to file 33 
+        exit 
+        log-id 66 
+            description "output to syslog 1" 
+            from debug-trace main security change 
+            to syslog 1 
+        exit 
+    exit 
+#--------------------------------------------------
+echo "Virtual Switch Controller Configuration"
+#--------------------------------------------------
+    vswitch-controller 
+        open-flow 
+        exit 
+        xmpp 
+        exit 
+        ovsdb 
+        exit 
+    exit
+#-------------------------------------------------- 
+echo "System Security Cpm Hw Filters and PKI Configuration" 
+#-------------------------------------------------- 
+    system 
+        security 
+        exit 
+    exit 
+#-------------------------------------------------- 
+echo "QoS Policy Configuration" 
+#-------------------------------------------------- 
+    qos 
+    exit 
+#-------------------------------------------------- 
+echo "Card Configuration" 
+#-------------------------------------------------- 
+#-------------------------------------------------- 
+echo "Service Configuration" 
+#-------------------------------------------------- 
+    service 
+        customer 1 create 
+            description "Default customer" 
+        exit 
+    exit 
+#-------------------------------------------------- 
+echo "LAG Configuration" 
+#-------------------------------------------------- 
+    lag 98 
+        description "Multichassis interconnect LAG" 
+        encap-type dot1q 
+        qos 
+        exit 
+        lacp active administrative-key 36864 
+        no shutdown 
+    exit 
+#-------------------------------------------------- 
+echo "Management Router Configuration" 
+#-------------------------------------------------- 
+    router management 
+    exit 
+#--------------------------------------------------
+echo "Router (Network Side) Configuration"
+#--------------------------------------------------
+    router
+        interface "control" 
+            shutdown 
+        exit 
+        {% if control_ip is defined and control_netmask_prefix is defined %}
+        interface "control2"
+            {% if internal_ctrl_ip is defined %}
+            address {{ internal_ctrl_ip }}/{{ control_netmask_prefix }}
+            {% else %}
+              {% if enable_ipv6 is defined %}
+            ipv6 address {{ control_ip }}/{{ control_netmask_prefix }}
+              {% else %}
+            address {{ control_ip }}/{{ control_netmask_prefix }}
+              {% endif %}
+            {% endif %}
+            port A/2:{{ ctrl_port_vlan }}
+            no shutdown
+        exit
+        {% endif %}
+        {% if bgp_interface_ip_address is defined %}
+        interface "bgp"
+            address {{ bgp_interface_ip_address }}/{{ bgp_interface_ip_prefix }}
+            port A/2:{{ bgp_interface_vlan_id }}
+            no shutdown
+        exit
+        {% endif %}
+        interface "system"
+        {% if system_ip is defined %}
+          {% if enable_ipv6 is defined %}
+            ipv6 address {{ system_ip }}/128
+          {% else %}
+            address {{ system_ip }}/32
+          {% endif %}
+            no shutdown
+        {% else %}
+            shutdown
+        {% endif %}
+        exit
+        {% if as_number %}
+        autonomous-system {{ as_number }}
+        {% endif %}
+        {% if router_id is defined %}
+        router-id {{ router_id }}
+        {% elif system_ip is defined %}
+        router-id {{ system_ip }}
+        {% endif %}
+#--------------------------------------------------
+##echo "Static Route Configuration"
+###--------------------------------------------------
+        {% if route_reflector_ip_list is not defined or route_reflector_ip_list | length == 0 %}
+        {% for vsc_item in groups['vscs'] %}
+          {% if vsc_item != inventory_hostname %}
+            {% if hostvars[vsc_item].system_ip is defined %}
+              {% if hostvars[vsc_item].system_ip != system_ip | default('') and hostvars[vsc_item].control_ip is defined %}
+                {% if enable_ipv6 is defined %}
+        static-route {{ hostvars[vsc_item].system_ip }}/128 next-hop {{ hostvars[vsc_item].control_ip }}
+                {% else %}
+        static-route {{ hostvars[vsc_item].system_ip }}/32 next-hop {{ hostvars[vsc_item].control_ip }}
+                {% endif %}
+              {% endif %}
+            {% endif %}
+          {% endif %}
+        {% endfor %}
+        {% endif %}
+        {% if internal_data_gateway_ip is defined %}
+          {% if enable_ipv6 is defined %}
+        static-route ::/0 next-hop {{ internal_data_gateway_ip }}
+          {% else %}
+        static-route 0.0.0.0/0 next-hop {{ internal_data_gateway_ip }}
+          {% endif %}
+        {% endif %}
+    exit
+
+#--------------------------------------------------
+echo "Static Route Configuration"
+#--------------------------------------------------
+{% if internal_data_gateway_ip is defined %}
+        static-route 0.0.0.0/0 next-hop {{ internal_data_gateway_ip }}
+{% endif %}
+echo "Web Portal Protocol Configuration" 
+#-------------------------------------------------- 
+    exit 
+#-------------------------------------------------- 
+echo "Service Configuration" 
+#-------------------------------------------------- 
+    service 
+    exit 
+#-------------------------------------------------- 
+echo "Router (Service Side) Configuration" 
+#-------------------------------------------------- 
+    router 
+#-------------------------------------------------- 
+echo "System Time NTP Configuration" 
+#-------------------------------------------------- 
+    system 
+        time 
+            ntp 
+            exit 
+        exit 
+    exit 
+#--------------------------------------------------
+##echo "BGP Configuration"
+###--------------------------------------------------
+    router
+        bgp
+            connect-retry 2
+            min-route-advertisement 1
+            outbound-route-filtering
+                extended-community
+                    send-orf
+                exit
+            exit
+            {% if route_reflector_ip_list is defined and route_reflector_ip_list | length > 0 %}
+            route-ref-exp-backoff 
+            group "RR"
+                family evpn
+                type internal
+                cluster 1.1.1.1
+                local-as {{ as_number }} private no-prepend-global-as 
+                local-address {{ control_ip }}
+                {% for route_reflector_ip in route_reflector_ip_list %}
+                neighbor {{ route_reflector_ip }}
+                exit
+                {% endfor %}
+            {% else %}
+            group "internal"
+                type internal
+                {% for vsc_item in groups['vscs'] %}
+                  {% if vsc_item != inventory_hostname %}
+                    {% if hostvars[vsc_item].system_ip is defined %}
+                      {% if hostvars[vsc_item].system_ip != system_ip %}
+                neighbor {{ hostvars[vsc_item].system_ip }}
+                exit
+                      {% endif %}
+                    {% endif %}
+                  {% endif %}
+                {% endfor %}
+                family evpn
+            exit
+            {% endif %}           
+            exit
+            no shutdown
+        exit
+    exit
+exit all

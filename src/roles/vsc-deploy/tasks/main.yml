@@ -24,11 +24,14 @@
     set_fact:
       vprn_object_list: '{{ vprn_object_list + legacy_vprn }}'
 
-  when: vlan_id is defined
+  when: 
+    - vlan_id is defined
+    - vrr_enabled is not defined or not vrr_enabled
 
 - name: Fill up VPRN Object list from deployment
   include: create_vprn_list.yml vprn={{ item|string }}
   with_items: "{{ ctrl_ip_vprn_list | default([]) }}"
+  when: vrr_enabled is not defined or not vrr_enabled
 
 - import_tasks: openstack.yml
   when: target_server_type is match("openstack")
@@ -50,36 +53,59 @@
   - name: Reset connections for sros_config after reboot
     meta: reset_connection
 
-  when: target_server_type is match("kvm") or target_server_type is match("vcenter") or target_server_type is match("openstack") or target_server_type is match("none")
+  when: 
+    - target_server_type is match("kvm") or target_server_type is match("vcenter") or target_server_type is match("openstack") or target_server_type is match("none")
+    - vrr_enabled is not defined or not vrr_enabled
 
-- name: Get vsd node(s) information
-  import_role:
-    name: common
-    tasks_from: vsd-node-info.yml
-  vars:
-    vsd_hostname: "{{ vsd_fqdn }}"
-  run_once: true
+- block:
 
-- name: Enable ejmode to allow/require on vsds
-  include_role:
-    name: common
-    tasks_from: allow-ejmode.yml
-  loop_control:
-    loop_var: vsd
-  with_items: "{{ vsd_hostname_list }}"
+  - import_tasks: setup_vsc_config.yml
+    vars:
+      config_template: vrr_config.cfg.j2
+      reboot_vsc: true
+    tags:
+      - vsc
+      - vsc-deploy
 
-- name: Optionally setup XMPP TLS
-  include_role:
-    name: common
-    tasks_from: vsc-tls-setup
+  - name: Reset connections for sros_config after reboot
+    meta: reset_connection
 
-- name: Optionally apply specified configs
-  include_role:
-    name: common
-    tasks_from: vsc-apply-config
+  when: 
+    - target_server_type is match("kvm") or target_server_type is match("vcenter") or target_server_type is match("openstack") or target_server_type is match("none")
+    - vrr_enabled is defined and vrr_enabled
 
-- name: Create Custom User 
-  include_role:
-    name: common
-    tasks_from: vsc-custom-user
+- block:
+
+  - name: Get vsd node(s) information
+    import_role:
+      name: common
+      tasks_from: vsd-node-info.yml
+    vars:
+      vsd_hostname: "{{ vsd_fqdn }}"
+    run_once: true
+
+  - name: Enable ejmode to allow/require on vsds
+    include_role:
+      name: common
+      tasks_from: allow-ejmode.yml
+    loop_control:
+      loop_var: vsd
+    with_items: "{{ vsd_hostname_list }}"
+
+  - name: Optionally setup XMPP TLS
+    include_role:
+      name: common
+      tasks_from: vsc-tls-setup
+
+  - name: Optionally apply specified configs
+    include_role:
+      name: common
+      tasks_from: vsc-apply-config
+
+  - name: Create Custom User 
+    include_role:
+      name: common
+      tasks_from: vsc-custom-user
+
+  when: vrr_enabled is not defined or not vrr_enabled
 
