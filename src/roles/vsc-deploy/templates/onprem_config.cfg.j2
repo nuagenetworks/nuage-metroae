@@ -157,24 +157,22 @@ echo "Static Route Configuration"
 #--------------------------------------------------
 echo "Service Configuration"
 #--------------------------------------------------
-
-        {% for vprn_obj in vprn_object_list %}
     service
+    {% for vprn_obj in vprn_object_list %}
         vprn {{ vprn_obj.vlan }} customer 1 create
             description "internet underlay" 
-            route-distinguisher {{ vprn_obj.as_number }}{{ vprn_obj.vlan }}
+            route-distinguisher {{ vprn_obj.as_number }}:{{ vprn_obj.vlan }}
             interface "{{ vprn_obj.interface_name }}" create
                 {% if vprn_obj.ipaddr != "" %}
                 address {{ vprn_obj.ipaddr }}/{{ vprn_obj.netmask_length }}
-                {% elif control_ip is defined %}
-                address {{ control_ip }}/{{ control_netmask_prefix }}
                 {% endif %}
                 sap A/2:{{ vprn_obj.vlan }} create
+                exit
             exit
             interface "public" create 
                 address {{ vprn_obj.customer_ip }}/32 
                 loopback 
-            exit
+                exit
         {% if vprn_obj.nexthop != "" %}
         static-route 0.0.0.0/0 next-hop {{ vprn_obj.nexthop }}
         {% endif %}
@@ -185,8 +183,8 @@ echo "Service Configuration"
             exit 
             no shutdown
         exit
+    {% endfor %}
     exit
-        {% endfor %}
 
 #--------------------------------------------------
 echo "BGP Configuration"
@@ -207,7 +205,7 @@ echo "BGP Configuration"
                 family evpn
                 type internal
                 local-as {{ as_number }} private no-prepend-global-as 
-                local-address 
+                local-address {{ control_ip }}
                 {% for route_reflector_ip in route_reflector_ip_list %}
                 neighbor {{ route_reflector_ip }}
                 exit
