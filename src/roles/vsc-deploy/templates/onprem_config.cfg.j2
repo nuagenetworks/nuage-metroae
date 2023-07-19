@@ -148,39 +148,12 @@ echo "Router (Network Side) Configuration"
         router-id {{ system_ip }}
         {% endif %}
 #--------------------------------------------------
-##echo "Static Route Configuration"
-###--------------------------------------------------
-        {% if route_reflector_ip_list is not defined or route_reflector_ip_list | length == 0 %}
-        {% for vsc_item in groups['vscs'] %}
-          {% if vsc_item != inventory_hostname %}
-            {% if hostvars[vsc_item].system_ip is defined %}
-              {% if hostvars[vsc_item].system_ip != system_ip | default('') and hostvars[vsc_item].control_ip is defined %}
-                {% if enable_ipv6 is defined %}
-        static-route {{ hostvars[vsc_item].system_ip }}/128 next-hop {{ hostvars[vsc_item].control_ip }}
-                {% else %}
-        static-route {{ hostvars[vsc_item].system_ip }}/32 next-hop {{ hostvars[vsc_item].control_ip }}
-                {% endif %}
-              {% endif %}
-            {% endif %}
-          {% endif %}
-        {% endfor %}
-        {% endif %}
-        {% if internal_data_gateway_ip is defined %}
-          {% if enable_ipv6 is defined %}
-        static-route ::/0 next-hop {{ internal_data_gateway_ip }}
-          {% else %}
-        static-route 0.0.0.0/0 next-hop {{ internal_data_gateway_ip }}
-          {% endif %}
-        {% endif %}
-    exit
-
-#--------------------------------------------------
 echo "Static Route Configuration"
 #--------------------------------------------------
 {% if internal_data_gateway_ip is defined %}
         static-route 0.0.0.0/0 next-hop {{ internal_data_gateway_ip }}
 {% endif %}
-
+    exit
 #--------------------------------------------------
 echo "Service Configuration"
 #--------------------------------------------------
@@ -217,8 +190,8 @@ echo "Service Configuration"
         {% endfor %}
 
 #--------------------------------------------------
-##echo "BGP Configuration"
-###--------------------------------------------------
+echo "BGP Configuration"
+#--------------------------------------------------
     router
         bgp
             connect-retry 2

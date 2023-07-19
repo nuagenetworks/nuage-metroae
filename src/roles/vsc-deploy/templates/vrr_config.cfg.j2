@@ -7,7 +7,7 @@ echo "System Configuration"
     system
         name {{ system_name | default(inventory_hostname) }}
         snmp
-        exit 
+        exit
         time
             ntp
             {% for ntp_server in ntp_server_list %}
@@ -25,59 +25,59 @@ echo "System Configuration"
 #--------------------------------------------------
     system
         security
-            profile "zabbix" 
-                entry 10 
-                    match "exit" 
-                    action permit 
-                exit 
-                entry 20 
-                    match "show uptime" 
-                    action permit 
-                exit 
-                entry 30 
-                    match "logout" 
-                    action permit 
-                exit  
-            exit 
-            snmp 
-                community "XiKK74vjRvsfSjdUZFiUaMMvrMjcY9Ms" hash2 r version v2c 
-            exit 
-            ssh 
-                preserve-key 
-            exit    
+            profile "zabbix"
+                entry 10
+                    match "exit"
+                    action permit
+                exit
+                entry 20
+                    match "show uptime"
+                    action permit
+                exit
+                entry 30
+                    match "logout"
+                    action permit
+                exit
+            exit
+            snmp
+                community "XiKK74vjRvsfSjdUZFiUaMMvrMjcY9Ms" hash2 r version v2c
+            exit
+            ssh
+                preserve-key
+            exit
         exit
     exit
-#-------------------------------------------------- 
-echo "Log Configuration" 
-#-------------------------------------------------- 
-    log 
-        file-id 33 
-            location cf1: 
-            rollover 1440 retention 120 
-        exit 
-        syslog 1 
-            description "zabbixproxy1" 
-            address 100.70.2.10 
-            level warning 
-            log-prefix "POC1-OnPrem-{{ system_name | default(inventory_hostname) }}" 
-        exit 
-        log-id 33 
-            from debug-trace main security change 
-            to file 33 
-        exit 
-        log-id 66 
-            description "output to syslog 1" 
-            from debug-trace main security change 
-            to syslog 1 
-        exit 
-    exit 
+#--------------------------------------------------
+echo "Log Configuration"
+#--------------------------------------------------
+    log
+        file-id 33
+            location cf1:
+            rollover 1440 retention 120
+        exit
+        syslog 1
+            description "zabbixproxy1"
+            address 100.70.2.10
+            level warning
+            log-prefix "POC1-OnPrem-{{ system_name | default(inventory_hostname) }}"
+        exit
+        log-id 33
+            from debug-trace main security change
+            to file 33
+        exit
+        log-id 66
+            description "output to syslog 1"
+            from debug-trace main security change
+            to syslog 1
+        exit
+    exit
 #--------------------------------------------------
 echo "Router (Network Side) Configuration"
 #--------------------------------------------------
     router
-        interface "control" 
-            shutdown 
-        exit 
+        interface "control"
+            shutdown
+        exit
         {% if control_ip is defined and control_netmask_prefix is defined %}
         interface "control2"
             {% if internal_ctrl_ip is defined %}
@@ -121,38 +121,12 @@ echo "Router (Network Side) Configuration"
         router-id {{ system_ip }}
         {% endif %}
 #--------------------------------------------------
-##echo "Static Route Configuration"
-###--------------------------------------------------
-        {% if route_reflector_ip_list is not defined or route_reflector_ip_list | length == 0 %}
-        {% for vsc_item in groups['vscs'] %}
-          {% if vsc_item != inventory_hostname %}
-            {% if hostvars[vsc_item].system_ip is defined %}
-              {% if hostvars[vsc_item].system_ip != system_ip | default('') and hostvars[vsc_item].control_ip is defined %}
-                {% if enable_ipv6 is defined %}
-        static-route {{ hostvars[vsc_item].system_ip }}/128 next-hop {{ hostvars[vsc_item].control_ip }}
-                {% else %}
-        static-route {{ hostvars[vsc_item].system_ip }}/32 next-hop {{ hostvars[vsc_item].control_ip }}
-                {% endif %}
-              {% endif %}
-            {% endif %}
-          {% endif %}
-        {% endfor %}
-        {% endif %}
-        {% if internal_data_gateway_ip is defined %}
-          {% if enable_ipv6 is defined %}
-        static-route ::/0 next-hop {{ internal_data_gateway_ip }}
-          {% else %}
-        static-route 0.0.0.0/0 next-hop {{ internal_data_gateway_ip }}
-          {% endif %}
-        {% endif %}
-    exit
-
-#--------------------------------------------------
 echo "Static Route Configuration"
 #--------------------------------------------------
 {% if internal_data_gateway_ip is defined %}
         static-route 0.0.0.0/0 next-hop {{ internal_data_gateway_ip }}
 {% endif %}
+    exit
 #--------------------------------------------------
 echo "BGP Configuration"
 #--------------------------------------------------
@@ -166,12 +140,12 @@ echo "BGP Configuration"
                 exit
             exit
             {% if route_reflector_ip_list is defined and route_reflector_ip_list | length > 0 %}
-            route-ref-exp-backoff 
+            route-ref-exp-backoff
             group "RR"
                 family evpn
                 type internal
                 cluster 1.1.1.1
-                local-as {{ as_number }} private no-prepend-global-as 
+                local-as {{ as_number }} private no-prepend-global-as
                 local-address {{ control_ip }}
                 {% for route_reflector_ip in route_reflector_ip_list %}
                 neighbor {{ route_reflector_ip }}
@@ -192,7 +166,7 @@ echo "BGP Configuration"
                 {% endfor %}
                 family evpn
             exit
-            {% endif %}           
+            {% endif %}
             exit
             no shutdown
         exit
