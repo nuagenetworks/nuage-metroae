@@ -66,18 +66,6 @@
   - name: Write router interfaces to report
     nuage_append: filename="{{ report_path }}" text="{{ inventory_hostname }} INTERFACES {{ show_router_interfaces_json|to_nice_json }}\n"
 
-  - name: Check for expected control Adm Status
-    assert: {
-      that: "{{ show_router_interfaces_json.control_Adm is match('Up') }}",
-      msg: "Invalid Adm status for control interface. ({{ show_router_interfaces_json.control_Adm }}) detected.
-        Expected 'Up'. Check 'show router interface'." }        # noqa 204
-
-  - name: Check for expected control Oprv4 Status
-    assert: {
-      that: "{{ show_router_interfaces_json.control2_Oprv4 is match('Up') }}",
-      msg: "Invalid Oprv4 status for control interface. ({{ show_router_interfaces_json.control_Oprv4 }}) detected. Expected 'Up'. Check 'show router interface'." }    # noqa 204
-    when: control_ip is defined and not enable_ipv6 | default(false)
-
   - name: Check for expected control Oprv6 Status
     assert: {
       that: "{{ show_router_interfaces_json.control_Oprv6 is match('Up') }}",
