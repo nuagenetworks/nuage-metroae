@@ -1,0 +1,85 @@
+- block:
+
+    - name: Get current VSD API version
+      include_role:
+        name: common
+        tasks_from: get-current-vsd-api-version
+
+    - name: Format VSPK auth for VSPK module
+      set_fact:
+        vspk_auth:
+          api_username: "{{ vsd_auth.username }}"
+          api_password: "{{ vsd_auth.password }}"
+          api_enterprise: "{{ vsd_auth.enterprise }}"
+          api_url: "{{ vsd_auth.api_url }}"
+          api_version: "{{ current_api_version }}"
+      no_log: "{{ lookup('env', 'METROAE_NO_LOG') or 'true' }}"
+
+    - name: Check if the user already exists (ignoring errors)
+      nuage_vspk:
+        auth: "{{ vspk_auth }}"
+        type: User
+        command: find
+        properties:
+          userName: "{{ item }}"
+      ignore_errors: yes
+      register: nuage_check_user
+      with_items:
+        - "{{ portal_vsd_root_username }}"
+
+  - block:
+
+    - name: Get CSP Enterprise ID
+      nuage_vspk:
+        auth: "{{ vspk_auth }}"
+        type: Enterprise
+        command: get_csp_enterprise
+      register: nuage_csp_enterprise
+
+    - name: Create Portal users
+      delegate_to: localhost
+      nuage_vspk:
+        auth: "{{ vspk_auth }}"
+        type: User
+        parent_id: "{{ nuage_csp_enterprise.id }}"
+        parent_type: Enterprise
+        state: present
+        match_filter: "userName == '{{ item }}'"
+        properties:
+          email: "example@example.com"
+          first_name: "Sample"
+          last_name: "User"
+          password: "sample-password"
+          user_name: "{{ item }}"
+      register: portal_user
+      with_items:
+        - "{{ portal_vsd_root_username }}"
+
+    - name: Save user ids
+      set_fact:
+        port_user: "{{ portal_user.results[0].id }}"
+
+    - name: Get Root Group
+      nuage_vspk:
+        auth: "{{ vspk_auth }}"
+        type: Group
+        parent_id: "{{ nuage_csp_enterprise.id }}"
+        parent_type: Enterprise
+        command: find
+        properties:
+          name: "Root Group"
+      register: portal_root_group
+
+    - name: Add Portal user in root group
+      delegate_to: localhost
+      nuage_vspk:
+        auth: "{{ vspk_auth }}"
+        type: User
+        id: "{{ item.user }}"
+        parent_id: "{{ item.group }}"
+        parent_type: Group
+        state: present
+      with_items:
+        - { user: "{{ port_user }}", group: "{{ portal_root_group.id }}" }
+
+    when: nuage_check_user is failed
