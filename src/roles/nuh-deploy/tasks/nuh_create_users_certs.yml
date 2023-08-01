@@ -4,43 +4,52 @@
     include_role:
       name: common
       tasks_from: vsd-generate-transfer-certificates
-    when: not skip_vsd_installed_check
     vars:
       certificate_password: "{{ nuh_default_password }}"
-      certificate_username: "{{ inventory_hostname }}"
-      commonName: "{{ inventory_hostname }}"
+      certificate_username: "proxy"
+      commonName: "proxy"
       certificate_type: server
       scp_user: "root"
       scp_location: /opt/proxy/data/certs
-      additional_parameters:  -d {{ inventory_hostname }}
+      additional_parameters:  -d {{ item.external_fqdn }}
+    with_items:
+      - "{{ external_interfaces }}"
+    when: 
+      - not skip_vsd_installed_check
 
-  - name: Create and transfer certs for "nuh-pre" user
+  - name: Create and transfer certs for "proxy-pre" user
     include_role:
       name: common
       tasks_from: vsd-generate-transfer-certificates
-    when: not skip_vsd_installed_check
     vars:
       certificate_password: "{{ nuh_default_password }}"
-      certificate_username: "{{ inventory_hostname }}-pre"
-      commonName: "{{ inventory_hostname }}-pre"
+      certificate_username: "proxy-pre"
+      commonName: "proxy-pre"
       certificate_type: server
       scp_user: "root"
       scp_location: /opt/proxy/data/certs
-      additional_parameters:  "-d {{ inventory_hostname }}-pre"
+      additional_parameters:  -d {{ item.external_fqdn }}
+    with_items:
+      - "{{ external_interfaces }}"
+    when: 
+      - not skip_vsd_installed_check
 
-  - name: Create and transfer certs for "nuh-post" user
+  - name: Create and transfer certs for "proxy-pre" user
     include_role:
       name: common
       tasks_from: vsd-generate-transfer-certificates
-    when: not skip_vsd_installed_check
     vars:
       certificate_password: "{{ nuh_default_password }}"
-      certificate_username: "{{ inventory_hostname }}-post"
-      commonName: "{{ inventory_hostname }}-post"
+      certificate_username: "proxy-post"
+      commonName: "proxy-post"
       certificate_type: server
       scp_user: "root"
       scp_location: /opt/proxy/data/certs
-      additional_parameters:  "-d {{ inventory_hostname }}-post"
+      additional_parameters:  -d {{ item.external_fqdn }}
+    with_items:
+      - "{{ external_interfaces }}"
+    when: 
+      - not skip_vsd_installed_check
 
   - block:
 
@@ -69,9 +78,9 @@
       ignore_errors: yes
       register: nuage_check_user
       with_items:
-        - "{{ inventory_hostname }}"
-        - "{{ inventory_hostname }}-pre"
-        - "{{ inventory_hostname }}-post"
+        - "proxy"
+        - "proxy-pre"
+        - "proxy-post"
 
   - block:
 
@@ -99,9 +108,9 @@
           user_name: "{{ item }}"
       register: nuh_certs_users
       with_items:
-        - "{{ inventory_hostname }}"
-        - "{{ inventory_hostname }}-pre"
-        - "{{ inventory_hostname }}-post"
+        - "proxy"
+        - "proxy-pre"
+        - "proxy-post"
 
     - name: Save user ids
       set_fact:
