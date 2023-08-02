@@ -66,9 +66,18 @@
       delegate_to: localhost
       when: "{{ vsd_version_clean }} is version ('20.10.5', '>=')"
       register: result
-      until: result is not failed or result.failed == False
-      retries: 3
-      delay: 10
+
+    - name: Retry enabling signature update through cloud parameter on VSD
+      nuage_vspk:
+        auth: "{{ vspk_auth }}"
+        type: SystemConfig
+        state: present
+        properties:
+          signature_update_through_cloud_enabled: True
+      delegate_to: localhost
+      when: 
+        - "{{ vsd_version_clean }} is version ('20.10.5', '>=')"
+        - result is failed or result.failed == True
 
     when: inventory_hostname == tpm1.hostname
 
