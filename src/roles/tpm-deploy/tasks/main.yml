@@ -68,6 +68,19 @@
       ignore_errors: True
       register: result
 
+    - name: Set signature update through cloud parameter on VSD to False
+      nuage_vspk:
+        auth: "{{ vspk_auth }}"
+        type: SystemConfig
+        state: present
+        properties:
+          signature_update_through_cloud_enabled: False
+      delegate_to: localhost
+      ignore_errors: True
+      when: 
+        - "{{ vsd_version_clean }} is version ('20.10.5', '>=')"
+        - result is failed or result.failed == True
+
     - name: Retry enabling signature update through cloud parameter on VSD
       nuage_vspk:
         auth: "{{ vspk_auth }}"
