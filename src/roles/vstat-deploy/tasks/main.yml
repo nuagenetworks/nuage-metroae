@@ -508,4 +508,19 @@
       - groups['add_data_vstats'] is defined and inventory_hostname in groups['add_data_vstats']
       - groups['vstats'] is defined
 
+  - block:
+
+    - name: Flush the iptables for data nodes
+      shell: iptables -F
+      ignore_errors: True 
+
+    - name: Save the changed iptables config
+      shell: service iptables save
+      ignore_errors: True  
+    
+    when: 
+      - groups['add_data_vstats'] is defined and groups['data_vstats'] is defined
+      - inventory_hostname in groups['data_vstats'] or inventory_hostname in groups['add_data_vstats']
+      - groups['vstats'] is defined
+
   when: not skip_vstat_deploy
