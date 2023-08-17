@@ -14,6 +14,19 @@
 - name: delegate to localhost
   block:
 
+  - meta: reset_connection
+
+  - name: Wait for VSC ssh to be ready before config
+    include_role:
+      name: common
+      tasks_from: wait-for-ssh-port
+    vars:
+      ssh_host: "{{ hostname }}"
+      ssh_timeout_seconds: 600
+      ssh_password: "{{ vsc_creds.password }}"
+      ssh_user: "{{ vsc_creds.username }}"
+      check_login: True
+
   - name: Set awk expression for parse the version
     set_fact:
       version_expr: '{ split($1, version, "-"); print version[4] }'
